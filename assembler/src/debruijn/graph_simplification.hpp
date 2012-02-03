@@ -443,26 +443,13 @@ double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
 	}
 }
 
-template<size_t k>
-void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
-		omnigraph::GraphLabeler<Graph>& tot_lab, size_t iteration_count,
+void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_handler_f,
+		omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
 		const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
-	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 	detail_info_printer printer(gp, labeler, output_folder, "graph.dot");
 	printer(ipp_before_simplification);
-
-//	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
-	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g,
-			edge_qual,
-			labeler,
-			output_folder);
-
-	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
-//			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
-			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
-			boost::ref(qual_removal_handler), _1);
 
 	EdgeRemover<Graph> edge_remover(gp.g,
 			cfg::get().simp.removal_checks_enabled, removal_handler_f);
@@ -481,6 +468,11 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 
 	PostSimplification(gp.g, edge_remover, removal_handler_f, printer);
 	INFO("Graph simplification finished");
+
+	INFO("Counting average coverage");
+	AvgCovereageCounter<Graph> cov_counter(gp.g);
+	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
+	INFO("Average coverage counted and equal to " << cfg::get().ds.avg_coverage);
 }
 
 }

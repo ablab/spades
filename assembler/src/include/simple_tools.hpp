@@ -47,56 +47,14 @@ std::string ToString(std::vector<T>& t) {
  */
 bool fileExists(std::string filename);
 
-/**
- * Exit(1) if file doesn't exists, writes FATAL log message.
- */
-void checkFileExistenceFATAL(std::string filename);
-
-/**
- * Use vector<T> as input-stream with operator>>(T& t)
- */
-template <typename T>
-class VectorStream : public io::IReader<T> {
-	std::vector<T> data_;
-	size_t pos_;
-	bool closed_;
-public:
-	VectorStream(const std::vector<T>& data) : data_(data), pos_(0), closed_(false) {
-
-	}
-
-	virtual ~VectorStream() {
-
-	}
-
-	virtual bool eof() /*const */{
-		return pos_ == data_.size();
-	}
-
-	VectorStream<T>& operator>>(T& t) {
-		t = data_[pos_++];
-		return *this;
-	}
-
-	void close() {
-		closed_ = true;
-	}
-
-	virtual bool is_open() /*const */{
-		return !closed_;
-	}
-
-	void reset() {
-		pos_ = 0;
-	}
-
-};
-
 inline bool fileExists(std::string filename) {
 	namespace fs = boost::filesystem;
 	return fs::is_regular_file(filename);
 }
 
+/**
+ * Exit(1) if file doesn't exists, writes FATAL log message.
+ */
 inline void checkFileExistenceFATAL(std::string filename) {
 	if (!fileExists(filename)) {
 		VERIFY_MSG(false, "File " << filename << " doesn't exist or can't be read!\n");

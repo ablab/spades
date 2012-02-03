@@ -209,7 +209,7 @@ template<class Graph>
 void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids,
 		const PairedInfoIndex<Graph>& paired_index) {
 	paired_info_index all_paths(g);
-    GetAllDistances<Graph>(paired_index, all_paths, GraphDistanceFinder<Graph>(g, *cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta));
+    GetAllDistances<Graph>(paired_index, all_paths, GraphDistanceFinder<Graph>(g, *cfg::get().ds.IS, cfg::get().ds.RL, size_t(*cfg::get().ds.is_var)));
 
 	string dir_name = cfg::get().output_dir + "estimation_qual/";
 	make_dir(dir_name);
@@ -247,7 +247,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 
 	paired_info_index etalon_paired_index(gp.g);
 	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
-			*cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta, true);
+			*cfg::get().ds.IS, cfg::get().ds.RL, *cfg::get().ds.is_var, true);
     INFO("Counting correlation between etalon and clustered paired infos statistics");
     std::map<PairOfEdges<EdgeId> , vector<int> > my_index;
     std::map<int, int> gr;

@@ -41,6 +41,7 @@ enum OffsetType {
   SolexaOffset
 };
 
+//todo extract code about offset from here
 class SingleRead {
  public:
   static const int UNKNOWN_OFFSET = 0;

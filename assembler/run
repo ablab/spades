@@ -19,6 +19,7 @@ case $1 in
 'rd' ) run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info ;;
 'dd' ) run_n_measure build/debug/debruijn/debruijn configs/debruijn/config.info ;;
 'ddt' ) run_n_measure build/debug/test/debruijn/debruijn_test ;;
+'rdt' ) run_n_measure build/release/test/debruijn/debruijn_test ;;
 'dit' ) run_n_measure build/debug/test/include_test/include_test ;;
 'dt') run_n_measure build/debug/test/debruijn/debruijn_test && run_n_measure build/debug/test/include_test/include_test ;;
 

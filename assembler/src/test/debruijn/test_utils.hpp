@@ -5,6 +5,7 @@
 #include "launch.hpp"
 #include "graph_construction.hpp"
 #include "io/rc_reader_wrapper.hpp"
+#include "io/vector_reader.hpp"
 #include "simple_tools.hpp"
 #include "seq_map.hpp"
 #include <tr1/unordered_set>
@@ -140,7 +141,7 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
 
 template<size_t kmer_size_>
 void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges) {
-	typedef VectorStream<SingleRead> RawStream;
+	typedef io::VectorReader<SingleRead> RawStream;
 	typedef io::RCReaderWrapper<SingleRead> Stream;
 	RawStream raw_stream(MakeReads(reads));
 	Stream read_stream(raw_stream);
@@ -202,7 +203,7 @@ void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, co
 template<size_t k>
 void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, const vector<MyEdge>& etalon_edges
 		, const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
-	typedef VectorStream<PairedRead> RawStream;
+	typedef io::VectorReader<PairedRead> RawStream;
 	typedef io::RCReaderWrapper<PairedRead> Stream;
 
 	RawStream raw_stream(MakePairedReads(paired_reads, insert_size));

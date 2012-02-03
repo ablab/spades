@@ -722,15 +722,20 @@ class PairedInfoWeightNormalizer {
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& g_;
 	const size_t insert_size_;
+	//todo use this param!
+	const double is_var_;
 	const size_t read_length_;
 	const size_t k_;
+	const double avg_coverage_;
 public:
 
 	//Delta better to be around 5-10% of insert size
-	PairedInfoWeightNormalizer(const Graph& g, size_t insert_size,
-			size_t read_length, size_t k) :
-			g_(g), insert_size_(insert_size), read_length_(read_length), k_(k) {
-
+	PairedInfoWeightNormalizer(const Graph& g, size_t insert_size, double is_var,
+			size_t read_length, size_t k, double avg_coverage) :
+			g_(g), insert_size_(insert_size), is_var_(is_var), read_length_(read_length),
+			k_(k), avg_coverage_(avg_coverage) {
+		cout << "is " << insert_size_ << " is_var " << is_var_ << " rl "
+				<< read_length_ << " k " << k_ << " cov " << avg_coverage_ << endl;
 	}
 
 	const PairInfo<EdgeId> NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
@@ -751,12 +756,11 @@ public:
 		}
 
 		double result_weight = pair_info.weight;
-        //TODO: config it
-        if (math::gr(w, -10.)) {
-			result_weight /= (w + 10);
-		}else {
-//            cout << "HOHOHOH " << result_weight << " " << w << " " << g_.length(pair_info.first) << " " << g_.length(pair_info.second) << endl;
-        }
+        if (math::gr(w, /*-10.*/0.)) {
+			result_weight /= w;//(w + 10);
+		}
+        double cov_norm_coeff = avg_coverage_ / (2*(read_length_ - k_));
+        result_weight /= cov_norm_coeff;
 
 		PairInfo<EdgeId> result(pair_info);
 		result.weight = result_weight;

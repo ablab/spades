@@ -3,6 +3,7 @@
 
 #include "omni_utils.hpp"
 #include "paired_info.hpp"
+#include "simple_tools.hpp"
 
 namespace omnigraph {
 
@@ -39,7 +40,7 @@ class Compressor {
 
 public:
 	Compressor(Graph &graph) :
-		graph_(graph) {
+			graph_(graph) {
 	}
 
 	/**
@@ -51,7 +52,10 @@ public:
 		TRACE("Processing vertex " << v << " started");
 		if (!graph_.CheckUniqueOutgoingEdge(v)
 				|| !graph_.CheckUniqueIncomingEdge(v)) {
-			TRACE("Vertex " << v << " judged NOT compressible. Proceeding to the next vertex");
+			TRACE(
+					"Vertex "
+							<< v
+							<< " judged NOT compressible. Proceeding to the next vertex");
 			TRACE("Processing vertex " << v << " finished");
 			return false;
 		}
@@ -59,7 +63,8 @@ public:
 		EdgeId e = graph_.GetUniqueOutgoingEdge(v);
 		EdgeId start_edge = e;
 		while (GoUniqueWayBackward(e) && e != start_edge
-				&& !graph_.RelatedVertices(graph_.EdgeStart(e), graph_.EdgeEnd(e))) {
+				&& !graph_.RelatedVertices(graph_.EdgeStart(e),
+						graph_.EdgeEnd(e))) {
 		}
 		vector<EdgeId> mergeList;
 		//		e = graph_.conjugate(e);
@@ -67,9 +72,12 @@ public:
 		do {
 			mergeList.push_back(e);
 		} while (GoUniqueWayForward(e) && e != start_edge
-				&& !graph_.RelatedVertices(graph_.EdgeStart(e), graph_.EdgeEnd(e)));
+				&& !graph_.RelatedVertices(graph_.EdgeStart(e),
+						graph_.EdgeEnd(e)));
 		EdgeId new_edge = graph_.MergePath(mergeList);
-		TRACE("Vertex " << v << " compressed and is now part of edge " << new_edge);
+		TRACE(
+				"Vertex " << v << " compressed and is now part of edge "
+						<< new_edge);
 		TRACE("Processing vertex " << v << " finished");
 		return true;
 	}
@@ -103,7 +111,7 @@ class Cleaner {
 
 public:
 	Cleaner(Graph &graph) :
-		graph_(graph) {
+			graph_(graph) {
 	}
 
 	void Clean() {
@@ -131,12 +139,15 @@ class IsolatedEdgeRemover {
 	}
 
 public:
-	IsolatedEdgeRemover(Graph& g, size_t max_length): g_(g), max_length_(max_length) {
+	IsolatedEdgeRemover(Graph& g, size_t max_length) :
+			g_(g), max_length_(max_length) {
 	}
 
 	void RemoveIsolatedEdges() {
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (IsTerminalVertex(g_.EdgeStart(*it)) && IsTerminalVertex(g_.EdgeEnd(*it)) && g_.length(*it) <= max_length_) {
+			if (IsTerminalVertex(g_.EdgeStart(*it))
+					&& IsTerminalVertex(g_.EdgeEnd(*it))
+					&& g_.length(*it) <= max_length_) {
 				g_.DeleteEdge(*it);
 			}
 		}
@@ -154,7 +165,7 @@ private:
 	Graph &graph_;
 public:
 	GraphCopier(Graph &graph) :
-		graph_(graph) {
+			graph_(graph) {
 	}
 	template<class CopyGraph>
 	void StructureCopy(CopyGraph &new_graph,
@@ -164,7 +175,7 @@ public:
 		typedef typename CopyGraph::VertexId NewVertexId;
 		for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
 			NewVertexId new_vertex = new_graph.AddVertex(graph_.data(*iter));
-			DEBUG("Added vertex "<< new_vertex);
+			DEBUG("Added vertex " << new_vertex);
 			VerticesCopies.insert(make_pair(*iter, new_vertex));
 		}
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -181,7 +192,7 @@ public:
 		typedef typename CopyGraph::VertexId NewVertexId;
 		map<EdgeId, NewEdgeId> EdgesCopies;
 		map<VertexId, NewVertexId> VerticesCopies;
-		StructureCopy<CopyGraph> (new_graph, VerticesCopies, EdgesCopies);
+		StructureCopy<CopyGraph>(new_graph, VerticesCopies, EdgesCopies);
 	}
 	template<class CopyGraph>
 	void TotalCopy(CopyGraph &new_graph) {
@@ -189,7 +200,7 @@ public:
 		typedef typename CopyGraph::VertexId NewVertexId;
 		map<EdgeId, NewEdgeId> EdgesCopies;
 		map<VertexId, NewVertexId> VerticesCopies;
-		StructureCopy<CopyGraph> (new_graph, VerticesCopies, EdgesCopies);
+		StructureCopy<CopyGraph>(new_graph, VerticesCopies, EdgesCopies);
 	}
 };
 
@@ -201,7 +212,7 @@ private:
 	Graph &graph_;
 public:
 	ConjugateGraphCopier(Graph &graph) :
-		graph_(graph) {
+			graph_(graph) {
 	}
 
 	template<class CopyGraph>
@@ -211,8 +222,8 @@ public:
 		map<VertexId, NewVertexId> copy;
 		for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
 			if (copy.count(*iter) == 0) {
-				NewVertexId new_vertex =
-						new_graph.AddVertex(graph_.data(*iter));
+				NewVertexId new_vertex = new_graph.AddVertex(
+						graph_.data(*iter));
 				copy.insert(make_pair(*iter, new_vertex));
 				copy.insert(
 						make_pair(graph_.conjugate(*iter),
@@ -239,8 +250,8 @@ private:
 	const Graph &graph_;
 	const size_t bound_;
 public:
-	TrivialEdgePairChecker(const Graph &graph, size_t bound = (size_t) -1) :
-		graph_(graph), bound_(bound) {
+	TrivialEdgePairChecker(const Graph &graph, size_t bound = (size_t) - 1) :
+			graph_(graph), bound_(bound) {
 	}
 
 	/*
@@ -310,7 +321,7 @@ private:
 
 public:
 	PairInfoChecker(const EdgesPositionHandler<Graph> &positions,
-		size_t first_bound, size_t second_bound) :
+			size_t first_bound, size_t second_bound) :
 			positions_(positions), first_bound_(first_bound), second_bound_(
 					second_bound) {
 	}
@@ -334,8 +345,10 @@ public:
 	}
 
 	size_t CheckSingleInfo(PairInfo<EdgeId> info) {
-		const vector<EdgePosition> &pos1 = positions_.GetEdgePositions(info.first);
-		const vector<EdgePosition> &pos2 = positions_.GetEdgePositions(info.second);
+		const vector<EdgePosition> &pos1 = positions_.GetEdgePositions(
+				info.first);
+		const vector<EdgePosition> &pos2 = positions_.GetEdgePositions(
+				info.second);
 		bool good_match_found = false;
 		for (size_t i = 0; i < pos1.size(); i++)
 			for (size_t j = 0; j < pos2.size(); j++) {
@@ -351,7 +364,7 @@ public:
 					good_match_found = true;
 				}
 			}
-		if(good_match_found) {
+		if (good_match_found) {
 			return 1;
 		} else {
 			return 2;
@@ -361,7 +374,7 @@ public:
 	void WriteResultsToFile(vector<double> results, const string &file_name) {
 		sort(results.begin(), results.end());
 		ofstream os;
-		os.open(file_name);
+		os.open(file_name.c_str());
 		for (size_t i = 0; i < results.size(); i++) {
 			os << results[i] << endl;
 		}
@@ -369,9 +382,9 @@ public:
 	}
 
 	void WriteResults(const string &folder_name) {
-		mkdir(folder_name.c_str(),
-				S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-		WriteResultsToFile(perfect_matches_, folder_name + "/perfect_matches.txt");
+		make_dir(folder_name);
+		WriteResultsToFile(perfect_matches_,
+				folder_name + "/perfect_matches.txt");
 		WriteResultsToFile(good_matches_, folder_name + "/good_matches.txt");
 		WriteResultsToFile(mismatches_, folder_name + "/mismatches.txt");
 		WriteResultsToFile(imperfect_matches_,
@@ -379,27 +392,67 @@ public:
 	}
 };
 
-template <class Graph>
+template<class Graph>
 class AvgCovereageCounter {
 private:
 	const Graph &graph_;
 	const size_t min_length_;
 public:
-	AvgCovereageCounter(const Graph &graph, size_t min_length = 0) : graph_(graph), min_length_(min_length) {
+	AvgCovereageCounter(const Graph &graph, size_t min_length = 0) :
+			graph_(graph), min_length_(min_length) {
 	}
 
 	double Count() const {
 		double cov = 0;
-		double length = 0;
-		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if(graph_.length(*it) >= min_length_) {
+		size_t length = 0;
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (graph_.length(*it) >= min_length_) {
 				cov += graph_.coverage(*it) * graph_.length(*it);
 				length += graph_.length(*it);
 			}
 		}
-		if(length == 0)
-			return 0;
+		if (length == 0)
+			return 0.;
 		return cov / length;
+	}
+};
+
+template <class Graph>
+class PairInfoStatsEstimator {
+private:
+	const Graph &graph_;
+	const PairedInfoIndex<Graph>& paired_index_;
+	const size_t enough_edge_length_;
+
+	double mean_;
+	double deviation_;
+	map<size_t, double> percentiles_;
+public:
+	PairInfoStatsEstimator(const Graph &graph
+			, const PairedInfoIndex<Graph>& paired_index, size_t enough_edge_length) : graph_(graph)
+	, enough_edge_length_(enough_edge_length), mean_(0.), deviation_(0.) {
+	}
+
+	void EstimateStats() {
+		//todo implement
+		VERIFY(false);
+	}
+
+	double mean() {
+		return mean_;
+	}
+
+	double deviation() {
+		return deviation_;
+	}
+
+	double percentile(size_t perc) {
+		VERIFY(percentiles_.find(perc) != percentiles_.end());
+		return percentiles_[perc];
+	}
+
+	const map<size_t, double>& percentiles() {
+		return percentiles_;
 	}
 };
 
@@ -432,11 +485,11 @@ private:
 	}
 
 	vector<size_t> ConstructHistogram(vector<double> coverage_set) const {
-		vector<size_t> result;
+		vector < size_t > result;
 		size_t cur = 0;
 		result.push_back(0);
-		for(size_t i = 0; i < coverage_set.size(); i++) {
-			if(coverage_set[i] >= cur + 1) {
+		for (size_t i = 0; i < coverage_set.size(); i++) {
+			if (coverage_set[i] >= cur + 1) {
 				result.push_back(0);
 				cur++;
 			}
@@ -445,9 +498,11 @@ private:
 		return result;
 	}
 
-	double weight(size_t value, vector<size_t> histogram, size_t backet_width) const {
+	double weight(size_t value, vector<size_t> histogram,
+			size_t backet_width) const {
 		double result = 0;
-		for(size_t i = 0; i < backet_width && value + i < histogram.size(); i++) {
+		for (size_t i = 0; i < backet_width && value + i < histogram.size();
+				i++) {
 			result += histogram[value + i] * std::min(i + 1, backet_width - i);
 		}
 		return result;
@@ -456,7 +511,7 @@ private:
 	double AvgCoverage() const {
 		double cov = 0;
 		double length = 0;
-		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			cov += graph_.coverage(*it) * graph_.length(*it);
 			length += graph_.length(*it);
 		}
@@ -464,9 +519,9 @@ private:
 	}
 
 	double Median() const {
-        vector<double> coverages;
-		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if(graph_.length(*it) > 500)
+		vector<double> coverages;
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (graph_.length(*it) > 500)
 				coverages.push_back(graph_.coverage(*it));
 		}
 		sort(coverages.begin(), coverages.end());
@@ -474,36 +529,43 @@ private:
 	}
 
 public:
-	ErroneousConnectionThresholdFinder(const Graph &graph, size_t backet_width = 0) :
+	ErroneousConnectionThresholdFinder(const Graph &graph, size_t backet_width =
+			0) :
 			graph_(graph), backet_width_(backet_width) {
 	}
 
 	double FindThreshold(vector<size_t> histogram) const {
 		size_t backet_width = backet_width_;
-		if(backet_width == 0) {
-			backet_width = (size_t)(0.3 * AvgCovereageCounter<Graph>(graph_).Count() + 5);
+		if (backet_width == 0) {
+			backet_width = (size_t)(
+					0.3 * AvgCovereageCounter<Graph>(graph_).Count() + 5);
 		}
 		INFO("Bucket size: " << backet_width);
 		size_t cnt = 0;
-		for(size_t i = 1; i + backet_width < histogram.size(); i++) {
-			if(weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width)) {
+		for (size_t i = 1; i + backet_width < histogram.size(); i++) {
+			if (weight(i, histogram, backet_width)
+					> weight(i - 1, histogram, backet_width)) {
 				cnt++;
 			}
-			if(i > backet_width && weight(i - backet_width, histogram, backet_width) > weight(i - backet_width - 1, histogram, backet_width)) {
+			if (i > backet_width
+					&& weight(i - backet_width, histogram, backet_width)
+							> weight(i - backet_width - 1, histogram,
+									backet_width)) {
 				cnt--;
 			}
-			if(2 * cnt >= backet_width)
+			if (2 * cnt >= backet_width)
 				return i;
-			
+
 		}
-		INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");
+		INFO(
+				"Proper threshold was not found. Threshold set to 0.1 of average coverage");
 		return 0.1 * AvgCovereageCounter<Graph>(graph_).Count();
 	}
 
 	double FindThreshold() const {
 		INFO("Finding threshold started");
 		vector<double> weights = CollectWeights();
-		vector<size_t> histogram = ConstructHistogram(weights);
+		vector < size_t > histogram = ConstructHistogram(weights);
 		double result = FindThreshold(histogram);
 		INFO("Threshold finding finished. Threshold is set to " << result);
 		return result;

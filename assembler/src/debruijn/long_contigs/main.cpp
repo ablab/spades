@@ -48,9 +48,9 @@ int main() {
 		pairedInfos.clear();
 		AddRealInfo<K>(g, index, intIds, pairedInfos, mapper, lc_cfg::get().use_new_metrics);
 
-		if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
-			SavePairedInfo(g, intIds, pairedInfos, output_dir + lc_cfg::get().paired_info_file_prefix, !lc_cfg::get().use_new_metrics);
-		}
+//		if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
+//			SavePairedInfo(g, intIds, pairedInfos, output_dir + lc_cfg::get().paired_info_file_prefix, !lc_cfg::get().use_new_metrics);
+//		}
 
 		if (lc_cfg::get().paired_info_for_resolved) {
 		    Graph rg(K);
@@ -70,7 +70,7 @@ int main() {
             r_pairedInfos.push_back(PairedInfoIndexLibrary(rg, pairedInfos[0].readSize, pairedInfos[0].insertSize, pairedInfos[0].is_delta, pairedInfos[0].deDelta, pairedInfos[0].var,
                     &r_pairedIndex));
 
-            SavePairedInfo(rg, r_intIds, r_pairedInfos, output_dir + lc_cfg::get().paired_info_file_prefix + "resolved_", lc_cfg::get().use_new_metrics);
+//            SavePairedInfo(rg, r_intIds, r_pairedInfos, output_dir + lc_cfg::get().paired_info_file_prefix + "resolved_", lc_cfg::get().use_new_metrics);
 
 		    return 0;
 		}

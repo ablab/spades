@@ -1148,7 +1148,7 @@ public:
 			return false;
 		}
 
-		if(start == end) {
+		if (start == end) {
 			return false;
 		}
 

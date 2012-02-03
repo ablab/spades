@@ -2,19 +2,17 @@
 
 sc_de
 {
-    delta               50
-    linkage_distance    20
-    max_distance        20
-    filter_threshold    5.0 ;bigger than in non-single cell because normalization is disabled
+    linkage_distance_coeff  1.
+    max_distance_coeff  	1.
+    filter_threshold        5.0 ;bigger than in non-single cell because normalization is disabled
 }
 
 
 usual_de
 {
-    delta               10
-    linkage_distance    20
-    max_distance        45
-    filter_threshold    0.5
+    linkage_distance_coeff    1.
+    max_distance_coeff        1.
+    filter_threshold          0.3
 }
 
 ; advanced distance estimator:

@@ -10,6 +10,7 @@
 #include "standard.hpp"
 #include "construction.hpp"
 #include "omni_labelers.hpp"
+#include "omni/omni_tools.hpp"
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
@@ -35,23 +36,37 @@ void PrintWeightDistribution(Graph &g, const string &file_name) {
 	os.close();
 }
 
-void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
-		paired_info_index& paired_index) {
+void simplify_graph(conj_graph_pack& gp) {
 	using namespace omnigraph;
 
+	exec_construction(gp);
+
+	INFO("STAGE == Simplifying graph");
+
+//	PrintWeightDistribution<K>(gp.g, "distribution.txt");
+	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
 
-	exec_construction(stream, gp, tot_lab, paired_index);
-	INFO("STAGE == Simplifying graph");
+	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
-	EdgeQuality<Graph> quality_labeler(gp.g, gp.index, gp.kmer_mapper, gp.genome);
+//	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
+	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g,
+			edge_qual,
+			labeler,
+			cfg::get().output_dir);
 
-//	PrintWeightDistribution<K>(gp.g, "distribution.txt");
-	SimplifyGraph<K>(gp, quality_labeler, tot_lab, 10,
-			cfg::get().output_dir/*, etalon_paired_index*/);
+	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+//			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
+			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
+			boost::ref(qual_removal_handler), _1);
 
-	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
+
+	SimplifyGraph(gp, removal_handler_f, tot_lab, 10,
+			cfg::get().output_dir);
+
+	AvgCovereageCounter<Graph> cov_counter(gp.g);
+	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
 
 	//experimental
 //	if (cfg::get().paired_mode) {
@@ -71,24 +86,24 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	//            cfg::get().ds.IS, int_ids, paired_index, EdgePos);
 }
 
-void load_simplification(conj_graph_pack& gp, paired_info_index& paired_index,
-		files_t* used_files) {
+void load_simplification(conj_graph_pack& gp, files_t* used_files) {
 	fs::path p = fs::path(cfg::get().load_from) / "simplified_graph";
 	used_files->push_back(p);
 
-	// TODO: what's the difference with construction?
-	ScanWithPairedIndex(p.string(), gp, paired_index);
+	ScanGraphPack(p.string(), gp);
+	load_estimated_params(p.string());
 }
 
-void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
+void save_simplification(conj_graph_pack& gp) {
 	fs::path p = fs::path(cfg::get().output_saves) / "simplified_graph";
 
-	PrintWithPairedIndex(p.string(), gp, paired_index);
+	PrintGraphPack(p.string(), gp);
+    write_estimated_params(p.string());
 
 	//todo temporary solution!!!
 	OutputContigs(gp.g, cfg::get().additional_contigs);
 	OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
-    cfg::get_writeable().final_contigs_file = cfg::get().output_dir + "final_contigs.fasta";
+    cfg::get_writable().final_contigs_file = cfg::get().output_dir + "final_contigs.fasta";
 
 // run script automatically takes simplified contigs from correct path
 
@@ -96,16 +111,15 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 //			cfg::get().output_root + "../" + cfg::get().additional_contigs);
 }
 
-void exec_simplification(PairedReadStream& stream, conj_graph_pack& gp, paired_info_index& paired_index) {
+void exec_simplification(conj_graph_pack& gp) {
 	if (cfg::get().entry_point <= ws_simplification) {
-
-		simplify_graph(stream, gp, paired_index);
-		save_simplification(gp, paired_index);
+		simplify_graph(gp);
+		save_simplification(gp);
 	} else {
 		INFO("Loading Simplification");
 
 		files_t used_files;
-		load_simplification(gp, paired_index, &used_files);
+		load_simplification(gp, &used_files);
 		copy_files_by_prefix(used_files, cfg::get().output_saves);
 	}
 }

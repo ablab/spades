@@ -309,50 +309,50 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 	}
 }
 
-void SavePairedInfo(const Graph& g, IdTrackHandler<Graph>& intIds, PairedInfoIndices& pairedInfos, const std::string& fileNamePrefix,
-		bool advEstimator = false) {
-
-	INFO("Saving paired info");
-
-	PrinterTraits<Graph>::Printer printer(g, g.begin(), g.end(), intIds);
-
-	for (auto lib = pairedInfos.begin(); lib != pairedInfos.end(); ++lib) {
-		std::string fileName = fileNamePrefix + "IS" + ToString(lib->insertSize) + "_RS" + ToString(lib->readSize);
-		INFO("Saving to " << fileName);
-
-		if (lc_cfg::get().cluster_paired_info) {
-			GraphDistanceFinder<Graph> dist_finder(g, lib->insertSize, lib->readSize, lib->deDelta);
-
-			if (!advEstimator) {
-				PairedInfoIndex<Graph> clustered_index(g);
-
-				DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), dist_finder, cfg::get().de.linkage_distance, cfg::get().de.max_distance);
-				estimator.Estimate(clustered_index);
-
-				PrintPairedIndex(fileName + "_clustered", printer, clustered_index);
-			} else {
-
-				PairedInfoIndex<Graph> clustered_index_(g);
-				AdvancedDistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), dist_finder,
-						cfg::get().de.linkage_distance,
-						cfg::get().ade.threshold,
-						cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff,
-						cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints,
-						cfg::get().ade.inv_density, cfg::get().ade.percentage,
-						cfg::get().ade.derivative_threshold);
-
-				estimator.Estimate(clustered_index_);
-
-				PrintPairedIndex(fileName + "acl", printer, clustered_index_);
-			}
-		}
-		if (params.write_raw_paired_info) {
-			PrintPairedIndex(fileName, printer, *(lib->pairedInfoIndex));
-		}
-	}
-
-	INFO("Saved");
-}
+//void SavePairedInfo(const Graph& g, IdTrackHandler<Graph>& intIds, PairedInfoIndices& pairedInfos, const std::string& fileNamePrefix,
+//		bool advEstimator = false) {
+//
+//	INFO("Saving paired info");
+//
+//	PrinterTraits<Graph>::Printer printer(g, g.begin(), g.end(), intIds);
+//
+//	for (auto lib = pairedInfos.begin(); lib != pairedInfos.end(); ++lib) {
+//		std::string fileName = fileNamePrefix + "IS" + ToString(lib->insertSize) + "_RS" + ToString(lib->readSize);
+//		INFO("Saving to " << fileName);
+//
+//		if (lc_cfg::get().cluster_paired_info) {
+//			GraphDistanceFinder<Graph> dist_finder(g, lib->insertSize, lib->readSize, lib->deDelta);
+//
+//			if (!advEstimator) {
+//				PairedInfoIndex<Graph> clustered_index(g);
+//
+//				DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), dist_finder, cfg::get().de.linkage_distance, cfg::get().de.max_distance);
+//				estimator.Estimate(clustered_index);
+//
+//				PrintPairedIndex(fileName + "_clustered", printer, clustered_index);
+//			} else {
+//
+//				PairedInfoIndex<Graph> clustered_index_(g);
+//				AdvancedDistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), dist_finder,
+//						cfg::get().de.linkage_distance,
+//						cfg::get().ade.threshold,
+//						cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff,
+//						cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints,
+//						cfg::get().ade.inv_density, cfg::get().ade.percentage,
+//						cfg::get().ade.derivative_threshold);
+//
+//				estimator.Estimate(clustered_index_);
+//
+//				PrintPairedIndex(fileName + "acl", printer, clustered_index_);
+//			}
+//		}
+//		if (params.write_raw_paired_info) {
+//			PrintPairedIndex(fileName, printer, *(lib->pairedInfoIndex));
+//		}
+//	}
+//
+//	INFO("Saved");
+//}
 
 void DeleteAdditionalInfo(PairedInfoIndices& pairedInfos) {
 	while (pairedInfos.size() > 1) {

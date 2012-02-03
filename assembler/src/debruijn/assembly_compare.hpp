@@ -232,7 +232,14 @@ public:
 		gp_t gp;
 		CompositeContigStream stream(stream1, stream2);
 		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, stream);
-		RemoveBulges(gp.g);
+
+		debruijn_config::simplification::bulge_remover br_config;
+		br_config.max_bulge_length_coefficient = 4;
+		br_config.max_coverage = 1000.;
+		br_config.max_relative_coverage = 1.2;
+		br_config.max_delta = 3;
+		br_config.max_relative_delta = 0.1;
+		RemoveBulges(gp.g, br_config);
 
 		CoveredRangesFinder<gp_t> crs_finder(gp);
 		CoveredRanges crs1;
@@ -253,7 +260,7 @@ public:
 		StrGraphLabeler<Graph> str_labeler(gp.g);
 		CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
 
-		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/500);
+		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
 		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
 		make_dir("assembly_comparison");
 		WriteComponents(gp.g, splitter, filter,

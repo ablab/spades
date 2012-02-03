@@ -28,9 +28,6 @@ etalon_graph_mode false
 ; iterative mode switcher, activates additional contigs usage
 use_additional_contigs false
 
-; use single reads if they are provided
-use_single_reads true
-
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
 paired_mode true
 

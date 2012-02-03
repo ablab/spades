@@ -87,6 +87,7 @@ using boost::lexical_cast;
 //==our
 // utils
 #include "cpp_utils.hpp"
+#include "fs_path_utils.hpp"
 
 // err handling
 #include "stacktrace.hpp"
@@ -100,6 +101,9 @@ inline void assertion_failed(char const * expr, char const * function, char cons
     __assert_fail (expr, file, line, function);
 }
 } // namespace boost
+
+
+#include "simple_tools.hpp"
 
 // io
 #include "io/ireader.hpp"
@@ -121,11 +125,10 @@ namespace debruijn_graph
 
 inline bool make_dir(fs::path p)
 {
+	namespace fs = boost::filesystem;
 	if (fs::is_directory(p) || fs::create_directories(p))
 		return true;
 
 	WARN("Can't create directory " << p);
 	return false;
 }
-
-

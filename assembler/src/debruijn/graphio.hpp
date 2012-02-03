@@ -768,6 +768,13 @@ void PrintWithPairedIndex(const string& file_name,
 	PrintWithPairedIndex(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index);
 }
 
+template <class graph_pack, class VertexIt>
+void PrinGraphPack(const string& file_name,
+		const graph_pack& gp, VertexIt begin, VertexIt end) {
+	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g, begin, end, gp.int_ids);
+	PrintGraphPack(file_name, printer, gp);
+}
+
 template <class graph_pack>
 void PrintWithClusteredIndex(const string& file_name,
 		const graph_pack& gp,

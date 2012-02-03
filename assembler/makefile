@@ -6,6 +6,9 @@ rd:
 dd:
 	make -C build/debug/debruijn
 
+rdt:
+	make -C build/release/test/debruijn
+
 ddt:
 	make -C build/debug/test/debruijn
 

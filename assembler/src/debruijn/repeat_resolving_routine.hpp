@@ -87,7 +87,7 @@ template<size_t k, class graph_pack>
 void SelectReadsForConsensusBefore(graph_pack& etalon_gp,
 		typename graph_pack::graph_t& cur_graph,
 		EdgeLabelHandler<typename graph_pack::graph_t>& LabelsAfter,
-		const EdgeIndex<K + 1, typename graph_pack::graph_t>& index
+		const EdgeIndex<k + 1, typename graph_pack::graph_t>& index
 		,vector<ReadStream *>& reads , string& consensus_output_dir) {
 	INFO("ReadMapping started");
 	map<typename graph_pack::graph_t::EdgeId, int> contigNumbers;
@@ -144,7 +144,7 @@ template<size_t k, class graph_pack>
 void SelectReadsForConsensus(graph_pack& etalon_gp,
 		typename graph_pack::graph_t& cur_graph,
 		EdgeLabelHandler<typename graph_pack::graph_t>& LabelsAfter,
-		const EdgeIndex<K + 1, typename graph_pack::graph_t>& index
+		const EdgeIndex<k + 1, typename graph_pack::graph_t>& index
 		,vector<ReadStream *>& reads , string& consensus_output_dir) {
 	INFO("ReadMapping started");
 	map<typename graph_pack::graph_t::EdgeId, int> contigNumbers;
@@ -226,10 +226,6 @@ string GeneratePostfix() {
 	else
 		s += "usual_est_";
 
-	if (cfg::get().late_paired_info)
-		s += "late_pi_";
-	else
-		s += "early_pi_";
 	s += "k";
 	s += ToString(K);
 	if (cfg::get().path_set_graph) {
@@ -417,13 +413,12 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	{
 	    OutputContigs(resolved_gp.g, cfg::get().output_dir + "resolved_and_cleared" + postfix);
 	    OutputContigs(resolved_gp.g, cfg::get().output_dir + "final_contigs.fasta");
-	    cfg::get_writeable().final_contigs_file = cfg::get().output_dir + "final_contigs.fasta";
+	    cfg::get_writable().final_contigs_file = cfg::get().output_dir + "final_contigs.fasta";
 	}
 
 
 	omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-
-	cfg::get().output_dir + subfolder + graph_name + "_4_cleared.dot",
+			cfg::get().output_dir + subfolder + graph_name + "_4_cleared.dot",
 			"no_repeat_graph");
 
 	if (output_contigs) {
@@ -486,10 +481,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 }
 
 template<class graph_pack>
-
 set<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(const graph_pack& origin_gp, typename graph_pack::graph_t::EdgeId& first_edge, typename graph_pack::graph_t::EdgeId& second_edge) {
 	PathReceiverCallback <typename graph_pack::graph_t> callback(origin_gp.g);
-	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, 0, *cfg::get().ds.IS - K + cfg::get().de.delta,
+	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, 0, *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var),
 																origin_gp.g.EdgeEnd(first_edge),
 																origin_gp.g.EdgeStart(second_edge), callback);
 	path_processor.Process();
@@ -503,7 +497,7 @@ set<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(const
 template<class graph_pack>
 int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, PairInfo<typename graph_pack::graph_t::EdgeId>& first_info, PairInfo<typename graph_pack::graph_t::EdgeId>& second_info, bool fill_missing) {
 
-	size_t max_comparable_path = *cfg::get().ds.IS - K + cfg::get().de.delta;
+	size_t max_comparable_path = *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var);
 	auto first_edge = first_info.second;
 	auto first_weight = first_info.weight;
 	if (first_info.d * second_info.d < 0.0001)
@@ -573,8 +567,10 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 
 template<class graph_pack>
 void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
+	size_t k = graph_pack::k_value;
+	size_t delta = size_t(*cfg::get().ds.is_var);
+	size_t max_comparable_path = *cfg::get().ds.IS + delta - k;
 	int missing_paired_info_count = 0;
-	size_t max_comparable_path = *cfg::get().ds.IS - K + cfg::get().de.delta;
 	int extra_paired_info_count = 0;
 	int long_edges_count = 0;
 

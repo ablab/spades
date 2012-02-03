@@ -9,6 +9,7 @@
 
 #include "standard.hpp"
 #include "io/easy_reader.hpp"
+#include "io/vector_reader.hpp"
 #include "omni_labelers.hpp"
 
 namespace debruijn_graph {
@@ -25,125 +26,110 @@ typedef io::IReader<io::SingleRead> ReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::SingleRead> MultiFileStream;
 
-// update with conj_graph_pack
-void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
-		graph_labeler& labeler, paired_info_index& paired_index,
-		SingleReadStream* single_stream = 0, SingleReadStream* contigs_stream =
-				0) {
+void construct_graph(ReadStream& stream, conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
 	INFO("STAGE == Constructing Graph");
-
-	if (cfg::get().paired_mode && !cfg::get().late_paired_info) {
-		ConstructGraphWithPairedInfo<K>(gp, paired_index, stream, single_stream,
-				contigs_stream);
-	} else {
-		vector<SingleReadStream*> streams;
-	    UnitedStream united_stream(stream);
-
-		if(!cfg::get().etalon_graph_mode)
-			streams.push_back(&united_stream);
-
-		if (single_stream)
-			streams.push_back(single_stream);
-
-		MultiFileStream composite_stream(streams);
-		ConstructGraphWithCoverage<K>(gp.g, gp.index, composite_stream, contigs_stream);
-	}
-
-	//todo extract everything connected with etalon to separate tool
-//	if (cfg::get().paired_mode) {
-//		FillEtalonPairedIndex<K>(gp.etalon_paired_index, gp.g, gp.index, gp.kmer_mapper,
-//				gp.genome);
-//	}
-
-	//TODO:
-	//ProduceInfo<K>(gp.g, gp.index, labeler, gp.genome, cfg::get().output_dir + "edge_graph.dot", "edge_graph");
-
-	// todo by single_cell
-	//FillEdgesPos(gp.g, gp.index, gp.genome, gp.edge_pos, gp.kmer_mapper);
+	ConstructGraphWithCoverage<K>(gp.g, gp.index, stream,
+			contigs_stream);
 }
 
-void load_construction(conj_graph_pack& gp, total_labeler& tl,
-		paired_info_index& paired_index, files_t* files) {
+string estimated_param_filename(const string& prefix) {
+	return prefix + "_est_params.info";
+}
+
+void load_estimated_params(const string& prefix) {
+	string filename = estimated_param_filename(prefix);
+	//todo think of better architecture
+	if (fileExists(filename)) {
+		load_param(filename, "IS", cfg::get_writable().ds.IS);
+		load_param(filename, "is_var", cfg::get_writable().ds.is_var);
+		load_param_map(filename, "perc", cfg::get_writable().ds.percentiles);
+		load_param(filename, "avg_coverage", cfg::get_writable().ds.avg_coverage);
+	}
+}
+
+void write_estimated_params(const string& prefix) {
+	string filename = estimated_param_filename(prefix);
+	write_param(filename, "IS", cfg::get().ds.IS);
+	write_param(filename, "is_var", cfg::get().ds.is_var);
+	write_param_map(filename, "perc", cfg::get().ds.percentiles);
+	write_param(filename, "avg_coverage", cfg::get().ds.avg_coverage);
+}
+
+void load_construction(conj_graph_pack& gp, files_t* files) {
 	fs::path p = fs::path(cfg::get().load_from) / "constructed_graph";
 	files->push_back(p);
-	ScanWithPairedIndex(p.string(), gp, paired_index);
+	ScanGraphPack(p.string(), gp);
+	load_estimated_params(p.string());
 }
 
-void save_construction(conj_graph_pack& gp, total_labeler& tl,
-		paired_info_index& paired_index) {
+void save_construction(conj_graph_pack& gp) {
 	fs::path p = fs::path(cfg::get().output_saves) / "constructed_graph";
-	PrintWithPairedIndex(p.string(), gp, paired_index);
+	PrintGraphPack(p.string(), gp);
+	write_estimated_params(p.string());
 }
 
-boost::optional<string> single_reads_filename(
-		const boost::optional<string>& raw_name, const string& dir) {
-	if (raw_name) {
-		string full_name = dir + *raw_name;
-		if (fileExists(full_name)) {
-			return boost::optional<string>(full_name);
-		}
-	}
-	return boost::none;
+//boost::optional<string> single_reads_filename(
+//		const boost::optional<string>& raw_name, const string& dir) {
+//	if (raw_name) {
+//		string full_name = dir + *raw_name;
+//		if (fileExists(full_name)) {
+//			return boost::optional<string>(full_name);
+//		}
+//	}
+//	return boost::none;
+//}
+
+string input_file(string filename) {
+	 return cfg::get().input_dir + filename;
 }
 
-void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
-		total_labeler& tl, paired_info_index& paired_index) {
+void exec_construction(conj_graph_pack& gp) {
 	typedef io::EasyReader EasyStream;
 
 	if (cfg::get().entry_point <= ws_construction) {
-		//todo use boost::optional
-		ReadStream* single_read_stream = 0;
-		ReadStream* additional_contigs_stream = 0;
-
-		INFO("Use single reads = " << cfg::get().use_single_reads);
-		INFO("Checking for single reads usage flag and files");
-		if(cfg::get().etalon_graph_mode) {
-			// TODO we already have ref genome read by this point, so no need to read again. Use ds.reference_genome
-			single_read_stream = new EasyStream(*single_reads_filename(cfg::get().ds.reference_genome_filename, cfg::get().input_dir));
+		if (cfg::get().etalon_graph_mode) {
+			typedef io::VectorReader<io::SingleRead> GenomeStream;
+			GenomeStream genome_stream(
+					io::SingleRead("genome", gp.genome.str(), /*qual*/""));
+			construct_graph(genome_stream, gp);
 		} else {
-			if (cfg::get().use_single_reads
-					&& single_reads_filename(cfg::get().ds.single_first,
-							cfg::get().input_dir)
-					&& single_reads_filename(cfg::get().ds.single_second,
-							cfg::get().input_dir)) {
-				INFO("Single read files found and WILL be used");
-				ReadStream* single_stream_1 = new EasyStream(
-						*single_reads_filename(cfg::get().ds.single_first,
-								cfg::get().input_dir));
-				ReadStream* single_stream_2 = new EasyStream(
-						*single_reads_filename(cfg::get().ds.single_second,
-								cfg::get().input_dir));
-				vector<ReadStream*> single_streams = {single_stream_1, single_stream_2};
-				single_read_stream = new MultiFileStream(single_streams, true);
+			vector<ReadStream*> streams;
+			//adding files with paired reads
+			streams.push_back(new EasyStream(input_file(cfg::get().ds.first)));
+			streams.push_back(new EasyStream(input_file(cfg::get().ds.second)));
+
+			//adding files with single reads
+			if (cfg::get().ds.single_first
+					&& cfg::get().ds.single_second) {
+				INFO("Files with single reads provided");
+				streams.push_back(new EasyStream(input_file(*cfg::get().ds.single_first)));
+				streams.push_back(new EasyStream(input_file(*cfg::get().ds.single_second)));
 			} else {
-				INFO("Single read files WILL NOT be used");
+				INFO("No files with single reads provided");
 			}
+
+			//will delete all the streams in destructor
+			MultiFileStream concat_stream(streams, true);
+
+			//has to be separate stream for not counting it in coverage
+			ReadStream* additional_contigs_stream = 0;
+			//adding file with additional contigs
+			if (cfg::get().use_additional_contigs) {
+				INFO("Additional contigs will be used");
+				additional_contigs_stream = new EasyStream(cfg::get().additional_contigs);
+			} else {
+				INFO("Additional contigs won't be used");
+			}
+
+			construct_graph(concat_stream, gp, additional_contigs_stream);
 		}
 
-		INFO("Use additional contigs = " << cfg::get().use_additional_contigs);
-		INFO("Checking for additional contigs usage flag and file");
-
-		string additional_contigs_file = cfg::get().additional_contigs;
-		if (cfg::get().use_additional_contigs
-				&& fileExists(additional_contigs_file)) {
-			INFO("Additional contigs file found and WILL be used");
-			additional_contigs_stream = new EasyStream(additional_contigs_file);
-//			io::RCReaderWrapper<io::SingleRead> rc_additional_contigs_stream(additional_contigs_stream);
-		} else {
-			INFO("Additional contigs file WILL NOT be used");
-		}
-
-		construct_graph(stream, gp, tl, paired_index, single_read_stream,
-				additional_contigs_stream);
-		save_construction(gp, tl, paired_index);
-
-		delete additional_contigs_stream;
-		delete single_read_stream;
+		save_construction(gp);
 	} else {
 		INFO("Loading Construction");
 
 		files_t used_files;
-		load_construction(gp, tl, paired_index, &used_files);
+		load_construction(gp, &used_files);
 		copy_files_by_prefix(used_files, cfg::get().output_saves);
 	}
 	FillEdgesPos(gp, gp.genome, "0");

@@ -94,7 +94,7 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		const EdgeIndex<k + 1, Graph>& index,
 		const KmerMapper<k+1, Graph>& kmer_mapper,
 		const Sequence& genome) {
-	FillEtalonPairedIndex<k>(etalon_paired_index, g, index, kmer_mapper, *cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta, genome);
+	FillEtalonPairedIndex<k>(etalon_paired_index, g, index, kmer_mapper, *cfg::get().ds.IS, cfg::get().ds.RL, size_t(*cfg::get().ds.is_var), genome);
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
 	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
