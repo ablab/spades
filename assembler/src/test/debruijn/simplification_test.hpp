@@ -131,4 +131,16 @@ BOOST_AUTO_TEST_CASE( UniquePath ) {
 	BOOST_CHECK_EQUAL(g.size(), 12);
 }
 
+BOOST_AUTO_TEST_CASE( SelfComp ) {
+       Graph g(55);
+       IdTrackHandler<Graph> int_ids(g);
+       ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g, int_ids);
+       EdgeRemover<Graph> edge_remover(g, false);
+       debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
+       tec_config.uniqueness_length = 1500;
+       MaxFlowRemoveErroneousEdges<Graph>(g, tec_config, edge_remover);
+
+       BOOST_CHECK_EQUAL(g.size(), 4);
+}
+
 BOOST_AUTO_TEST_SUITE_END()}
