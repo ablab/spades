@@ -379,6 +379,30 @@ public:
 	}
 };
 
+template <class Graph>
+class AvgCovereageCounter {
+private:
+	const Graph &graph_;
+	const size_t min_length_;
+public:
+	AvgCovereageCounter(const Graph &graph, size_t min_length = 0) : graph_(graph), min_length_(min_length) {
+	}
+
+	double Count() const {
+		double cov = 0;
+		double length = 0;
+		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if(graph_.length(*it) >= min_length_) {
+				cov += graph_.coverage(*it) * graph_.length(*it);
+				length += graph_.length(*it);
+			}
+		}
+		if(length == 0)
+			return 0;
+		return cov / length;
+	}
+};
+
 template<class Graph>
 class ErroneousConnectionThresholdFinder {
 private:
@@ -457,7 +481,7 @@ public:
 	double FindThreshold(vector<size_t> histogram) const {
 		size_t backet_width = backet_width_;
 		if(backet_width == 0) {
-			backet_width = (size_t)(0.3 * AvgCoverage() + 5);
+			backet_width = (size_t)(0.3 * AvgCovereageCounter<Graph>(graph_).Count() + 5);
 		}
 		INFO("Bucket size: " << backet_width);
 		size_t cnt = 0;
@@ -473,7 +497,7 @@ public:
 			
 		}
 		INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");
-		return 0.1 * AvgCoverage();
+		return 0.1 * AvgCovereageCounter<Graph>(graph_).Count();
 	}
 
 	double FindThreshold() const {
