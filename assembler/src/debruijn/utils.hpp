@@ -1131,6 +1131,8 @@ public:
 			WriteComponents(g_, splitter, "locality_of_edge_" + ToString(g_.int_id(edge))
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
 					, empty_coloring, labeler_);
+		} else {
+			DEBUG("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 		}
 	}
 

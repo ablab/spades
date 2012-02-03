@@ -276,7 +276,7 @@ template<class Graph>
 bool MaxFlowRemoveErroneousEdges(Graph &g,
 		const debruijn_config::simplification::max_flow_ec_remover& mfec_config,
 		EdgeRemover<Graph>& edge_remover) {
-	INFO("Removal of erroneous edges based on topology started");
+	INFO("Removal of erroneous edges based on max flow started");
 	omnigraph::MaxFlowECRemover<Graph> erroneous_edge_remover(g,
 			mfec_config.max_length, mfec_config.uniqueness_length,
 			mfec_config.plausibility_length, edge_remover);
