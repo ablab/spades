@@ -49,16 +49,32 @@ private:
 	;
 };
 
+class LengthThresholdFinder {
+public:
+	static size_t MaxTipLength(size_t read_length, size_t k, double coefficient) {
+		return (size_t)((read_length - k) * coefficient);
+	}
+
+	static size_t MaxBulgeLength(size_t k, double coefficient) {
+		return (size_t)(k * coefficient);
+	}
+
+	static size_t MaxErroneousConnectionLength(size_t k, size_t coefficient) {
+		return k + coefficient;
+	}
+};
+
 template<class Graph>
 void ClipTips(Graph &g,
 		const debruijn_config::simplification::tip_clipper& tc_config,
+		size_t read_length,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t iteration_count = 1, size_t i = 0) {
 	VERIFY(i < iteration_count);
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);
-	size_t max_tip_length = tc_config.max_tip_length;
+	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(read_length, g.k(), tc_config.max_tip_length_coefficient);
 	size_t max_coverage = tc_config.max_coverage;
 	double max_relative_coverage = tc_config.max_relative_coverage;
 	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(
@@ -76,7 +92,7 @@ template<class Graph>
 void ClipTips(Graph &g,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t iteration_count = 1, size_t i = 0) {
-	ClipTips(g, cfg::get().simp.tc, removal_handler, iteration_count, i);
+	ClipTips(g, cfg::get().simp.tc, cfg::get().ds.RL, removal_handler, iteration_count, i);
 }
 
 template<class Graph>
@@ -99,7 +115,7 @@ void RemoveBulges(Graph &g,
 		typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF bulge_cond,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
-	size_t max_length = br_config.max_length_div_K * g.k();
+	size_t max_length = LengthThresholdFinder::MaxBulgeLength(g.k(), br_config.max_bulge_length_coefficient);
 	if (additional_length_bound != 0 && additional_length_bound < max_length) {
 		max_length = additional_length_bound;
 	}
@@ -154,8 +170,8 @@ void RemoveBulges2(Graph &g) {
 	double max_relative_coverage = cfg::get().simp.br.max_relative_coverage;
 	double max_delta = cfg::get().simp.br.max_delta;
 	double max_relative_delta = cfg::get().simp.br.max_relative_delta;
-	size_t max_length_div_K = cfg::get().simp.br.max_length_div_K;
-	omnigraph::BulgeRemover<Graph> bulge_remover(g, max_length_div_K * g.k(),
+	size_t max_length = LengthThresholdFinder::MaxBulgeLength(g.k(), cfg::get().simp.br.max_bulge_length_coefficient);
+	omnigraph::BulgeRemover<Graph> bulge_remover(g, max_length,
 			max_coverage, 0.5 * max_relative_coverage, max_delta,
 			max_relative_delta, &TrivialCondition<Graph>);
 	bulge_remover.RemoveBulges();
@@ -204,9 +220,9 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 	INFO("Removing low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 
-	int max_length_div_K = cfg::get().simp.ec.max_length_div_K;
+	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), cfg::get().simp.ec.max_ec_length_coefficient);
 	omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
-			max_length_div_K * g.k(), max_coverage / iteration_count * (i + 1),
+			max_length, max_coverage / iteration_count * (i + 1),
 			edge_remover);
 	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 	//			max_length_div_K * g.k(), max_coverage);
@@ -225,7 +241,7 @@ bool CheatingRemoveErroneousEdges(
 		const debruijn_config::simplification::cheating_erroneous_connections_remover& cec_config,
 		EdgeRemover<Graph>& edge_remover) {
 	INFO("Cheating removal of erroneous edges started");
-	size_t max_length = cec_config.max_length;
+	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), cec_config.max_ec_length_coefficient);
 	double coverage_gap = cec_config.coverage_gap;
 	size_t sufficient_neighbour_length = cec_config.sufficient_neighbour_length;
 	omnigraph::TopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(g,
@@ -246,11 +262,12 @@ bool TopologyRemoveErroneousEdges(
 	INFO("Removal of erroneous edges based on topology started");
 	bool changed = true;
 	size_t iteration_count = 0;
+	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), tec_config.max_ec_length_coefficient);
 	while (changed) {
 		changed = false;
 		INFO("Iteration " << iteration_count++);
 		omnigraph::AdvancedTopologyChimericEdgeRemover<Graph> erroneous_edge_remover(
-			g, tec_config.max_length,
+			g, max_length,
 			tec_config.uniqueness_length,
 			tec_config.plausibility_length,
 			edge_remover);
@@ -277,8 +294,9 @@ bool MaxFlowRemoveErroneousEdges(Graph &g,
 		const debruijn_config::simplification::max_flow_ec_remover& mfec_config,
 		EdgeRemover<Graph>& edge_remover) {
 	INFO("Removal of erroneous edges based on max flow started");
+	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), mfec_config.max_ec_length_coefficient);
 	omnigraph::MaxFlowECRemover<Graph> erroneous_edge_remover(g,
-			mfec_config.max_length, mfec_config.uniqueness_length,
+			max_length, mfec_config.uniqueness_length,
 			mfec_config.plausibility_length, edge_remover);
 	return erroneous_edge_remover.RemoveEdges();
 }
@@ -320,7 +338,7 @@ void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
 		const PairedInfoIndex<Graph>& paired_index,
 		EdgeRemover<Graph>& edge_remover) {
 	INFO("Removing erroneous edges using paired info");
-	size_t max_length = cfg::get().simp.piec.max_length;
+	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(),cfg::get().simp.piec.max_ec_length_coefficient);
 	size_t min_neighbour_length = cfg::get().simp.piec.min_neighbour_length;
 	omnigraph::PairInfoAwareErroneousEdgeRemover<Graph> erroneous_edge_remover(
 			g, paired_index, max_length, min_neighbour_length, *cfg::get().ds.IS,

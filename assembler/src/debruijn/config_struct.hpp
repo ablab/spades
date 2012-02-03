@@ -217,13 +217,13 @@ struct debruijn_config
 
 	struct simplification {
 		struct tip_clipper {
-			size_t max_tip_length;
+			double max_tip_length_coefficient;
 			double max_coverage;
 			double max_relative_coverage;
 		};
 
 		struct bulge_remover {
-			double max_length_div_K;
+			double max_bulge_length_coefficient;
 			double max_coverage;
 			double max_relative_coverage;
 			double max_delta;
@@ -231,31 +231,31 @@ struct debruijn_config
 		};
 
 		struct erroneous_connections_remover {
-            bool				estimate_max_coverage;
-			double				max_coverage;
-			int 				max_length_div_K;
+			double	max_ec_length_coefficient;
+            bool	estimate_max_coverage;
+			double	max_coverage;
 		};
 
 		struct cheating_erroneous_connections_remover {
-			size_t max_length;
-			double coverage_gap;
+			double max_ec_length_coefficient;
 			size_t sufficient_neighbour_length;
+			double coverage_gap;
 		};
 
 		struct topology_based_ec_remover {
-			size_t max_length;
+			size_t max_ec_length_coefficient;
 			size_t uniqueness_length;
 			size_t plausibility_length;
 		};
 
 		struct max_flow_ec_remover {
-			size_t max_length;
+			double max_ec_length_coefficient;
 			size_t uniqueness_length;
 			size_t plausibility_length;
 		};
 
 		struct pair_info_ec_remover {
-			size_t max_length;
+			double max_ec_length_coefficient;
 			size_t min_neighbour_length;
 		};
 
@@ -401,9 +401,9 @@ public:
 inline void load(debruijn_config::simplification::tip_clipper& tc, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(tc.max_tip_length				, pt, "max_tip_length"		 );
-	load(tc.max_coverage				, pt, "max_coverage"		 );
-	load(tc.max_relative_coverage		, pt, "max_relative_coverage");
+	load(tc.max_tip_length_coefficient	, pt, "max_tip_length_coefficient"	);
+	load(tc.max_coverage				, pt, "max_coverage"		 		);
+	load(tc.max_relative_coverage		, pt, "max_relative_coverage"		);
 }
 
 inline void load(working_stage& entry_point, boost::property_tree::ptree const& pt, std::string const& key, bool complete)
@@ -428,55 +428,55 @@ inline void load(debruijn_config::simplification::bulge_remover& br, boost::prop
 {
 	using config_common::load;
 
-	load(br.max_length_div_K     , pt, "max_length_div_K"		);
-	load(br.max_coverage         , pt, "max_coverage"			);
-	load(br.max_relative_coverage, pt, "max_relative_coverage"  );
-	load(br.max_delta		     , pt, "max_delta"			    );
-	load(br.max_relative_delta   , pt, "max_relative_delta"	    );
+	load(br.max_bulge_length_coefficient	, pt, "max_bulge_length_coefficient"	);
+	load(br.max_coverage         			, pt, "max_coverage"					);
+	load(br.max_relative_coverage			, pt, "max_relative_coverage"			);
+	load(br.max_delta		     			, pt, "max_delta"			    		);
+	load(br.max_relative_delta   			, pt, "max_relative_delta"	    		);
 }
 
 inline void load(debruijn_config::simplification::pair_info_ec_remover& ec, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
 
-	load(ec.max_length,           pt, "max_length"			);
-	load(ec.min_neighbour_length, pt, "min_neighbour_length");
+	load(ec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
+	load(ec.min_neighbour_length		, pt, "min_neighbour_length"		);
 }
 
 inline void load(debruijn_config::simplification::erroneous_connections_remover& ec, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
 
-	load(ec.estimate_max_coverage	, pt, "estimate_max_coverage");
-	load(ec.max_coverage    	, pt, "max_coverage"    );
-	load(ec.max_length_div_K	, pt, "max_length_div_K");
+	load(ec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
+	load(ec.estimate_max_coverage		, pt, "estimate_max_coverage"		);
+	load(ec.max_coverage    			, pt, "max_coverage"    			);
 }
 
 inline void load(debruijn_config::simplification::cheating_erroneous_connections_remover& cec, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
 
-	load(cec.max_length                 , pt, "max_length"  );
-	load(cec.coverage_gap               , pt, "coverage_gap");
-	load(cec.sufficient_neighbour_length, pt, "sufficient_neighbour_length");
+	load(cec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
+	load(cec.coverage_gap               , pt, "coverage_gap"				);
+	load(cec.sufficient_neighbour_length, pt, "sufficient_neighbour_length"	);
 }
 
 inline void load(debruijn_config::simplification::topology_based_ec_remover& tec, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
 
-	load(tec.max_length         , pt, "max_length"         );
-	load(tec.plausibility_length, pt, "plausibility_length");
-	load(tec.uniqueness_length  , pt, "uniqueness_length"  );
+	load(tec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
+	load(tec.plausibility_length		, pt, "plausibility_length"			);
+	load(tec.uniqueness_length			, pt, "uniqueness_length"			);
 }
 
 inline void load(debruijn_config::simplification::max_flow_ec_remover& mfec, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
 
-	load(mfec.max_length         , pt, "max_length"         );
-	load(mfec.plausibility_length, pt, "plausibility_length");
-	load(mfec.uniqueness_length  , pt, "uniqueness_length"  );
+	load(mfec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
+	load(mfec.plausibility_length		, pt, "plausibility_length"			);
+	load(mfec.uniqueness_length			, pt, "uniqueness_length"  			);
 }
 
 inline void load(debruijn_config::distance_estimator& de, boost::property_tree::ptree const& pt, bool complete)

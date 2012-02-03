@@ -8,62 +8,62 @@ sc_simplification
 	; tip clipper:
 	tc
 	{
-		max_tip_length				140
-		max_coverage				100000
-		max_relative_coverage		10000   ; tip_cov < this * not_tip_cov
+		max_tip_length_coefficient	3.5	; max_tip_length = (read_length - k) * max_tip_length_coefficient
+		max_coverage			100000
+		max_relative_coverage		10000	; tip_cov < this * not_tip_cov
 	}
 
 	; bulge remover:
 	br
 	{
-		max_length_div_K			5
-		max_coverage				1000000.0
-		max_relative_coverage		10000.0	; bulge_cov < this * not_bulge_cov
-		max_delta					2.1
-		max_relative_delta			0.1
+		max_bulge_length_coefficient	5		; max_bulge_length = max_bulge_length_coefficient * k
+		max_coverage			1000000.0
+		max_relative_coverage		10000.0		; bulge_cov < this * not_bulge_cov
+		max_delta			2.1
+		max_relative_delta		0.1
 	}
 	
 	; erroneous connections remover:
 	ec
 	{
-        estimate_max_coverage		true
-		max_coverage				20.0
-		max_length_div_K			2
+		max_ec_length_coefficient	10	; max_ec_length = k + max_ec_length_coefficient
+		estimate_max_coverage		true
+		max_coverage			20.0
 	}
 	
 	; cheating erroneous connections remover
 	cec
 	{
-		max_length					100
-		coverage_gap				5.0
+		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient	
+		coverage_gap			5.0
 		sufficient_neighbour_length	1000
 	}
 
 	; topology based erroneous connection connections remover
 	tec
 	{
-		max_length					100
-		uniqueness_length			1500
-		plausibility_length			200
+		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
+		uniqueness_length		1500
+		plausibility_length		200
 	}
 	
 	; max flow erroneous connection connections remover
 	mfec
 	{
-		max_length					100
-		uniqueness_length			1500
-		plausibility_length			200
+		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
+		uniqueness_length		1500
+		plausibility_length		200
 	}
 	
 	piec
 	{
-		max_length					100
+		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
 		min_neighbour_length		100
 	}
 
 	isolated_min_len 160
 	
-	removal_checks_enabled         true
+	removal_checks_enabled              true
 }
 
 usual_simplification
@@ -74,60 +74,60 @@ usual_simplification
 	; tip clipper:
 	tc
 	{
-		max_tip_length				100
-		max_coverage				1000
-		max_relative_coverage		2.0		; tip_cov < this * not_tip_cov
+		max_tip_length_coefficient	2.5	; max_tip_length = (read_length - k) * max_tip_length_coefficient
+		max_coverage			1000
+		max_relative_coverage		2.0	; tip_cov < this * not_tip_cov
 	}
 	
 	; bulge remover:
 	br
 	{
-		max_length_div_K			4
-		max_coverage				1000.0
-		max_relative_coverage		1.1		; bulge_cov < this * not_bulge_cov
-		max_delta					3.0
-		max_relative_delta			0.1
+		max_bulge_length_coefficient	4	; max_bulge_length = max_bulge_length_coefficient * k
+		max_coverage			1000.0
+		max_relative_coverage		1.1	; bulge_cov < this * not_bulge_cov
+		max_delta			3.0
+		max_relative_delta		0.1
 	}
 	
 	; erroneous connections remover:
 	ec
 	{
-        estimate_max_coverage		true
-		max_coverage				40.0 ; erroneous_connection < this * not_erroneous_connection_cov
-		max_length_div_K			5
+		max_ec_length_coefficient	10	; max_ec_length = k + max_ec_length_coefficient
+	        estimate_max_coverage		true
+		max_coverage			40.0	; erroneous_connection < this * not_erroneous_connection_cov
 	}
 	
 	; cheating erroneous connections remover
 	cec
 	{
-		max_length					0
-		coverage_gap				5.0
+		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
+		coverage_gap			5.0
 		sufficient_neighbour_length	1000
 	}
 	
 	; topology based erroneous connection connections remover
 	tec
 	{
-		max_length					100
-		uniqueness_length			5000
-		plausibility_length			200
+		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
+		uniqueness_length		5000
+		plausibility_length		200
 	}
 
 	; max flow erroneous connection connections remover
 	mfec
 	{
-		max_length					100
-		uniqueness_length			1500
-		plausibility_length			200
+		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
+		uniqueness_length		1500
+		plausibility_length		200
 	}
 	
 	piec
 	{
-		max_length					100
+		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
 		min_neighbour_length		100
 	}
 
 	isolated_min_len 160
 	
-	removal_checks_enabled         true
+	removal_checks_enabled              true
 }
