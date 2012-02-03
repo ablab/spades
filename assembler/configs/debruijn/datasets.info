@@ -17,6 +17,16 @@ ECOLI_IS220_QUAKE ; old QUAKE_FULL
 	reference_genome  E.coli/MG1655-K12.fasta.gz	; length 4639675
 }
 
+ECOLI_IS220_IDEAL ; Emulated
+{
+        first   E.coli/is220/MG1655-K12_IDEAL_1.fastq.gz
+        second  E.coli/is220/MG1655-K12_IDEAL_2.fastq.gz
+        RL              100             ; read length
+        IS              220     ; insert size
+        single_cell     false
+        reference_genome  E.coli/MG1655-K12.fasta.gz    ; length 4639675
+}
+
 ECOLI_IS220_BH
 {
         first   E.coli/is220_bh/05.reads.left.corrected.fastq
