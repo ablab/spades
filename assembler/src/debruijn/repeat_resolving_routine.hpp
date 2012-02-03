@@ -286,6 +286,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
 //			origin_gp.g);
 	ProduceLongEdgesStat( origin_gp,  clustered_index);
+	ProduceLongEdgesStat( origin_gp,  clustered_index);
+
 	DEBUG("New index size: "<< clustered_index.size());
 	// todo: make printGraph const to its arguments
 
@@ -543,8 +545,10 @@ void ProduceLongEdgesStat(const graph_pack& origin_gp, PairedInfoIndex<typename 
 						double ratio = (1.0 * second_weight)/first_weight;
 						if (ratio > 1)
 							ratio = 1/ratio;
-//						if (first_weight > second_weight * 2)
-//							clustered_index.DeleteEdgePairInfo(*e_iter, )
+						if (first_weight > second_weight * 2)
+							clustered_index.RemovePairInfo(*i_iter);
+						else if (second_weight > first_weight * 2)
+							clustered_index.RemovePairInfo(*j_iter);
 						INFO("contradictional paired info from edge " <<origin_gp.int_ids.ReturnIntId(*e_iter) << " to edges "<<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "weights ratio " << ratio);
 					} else {
 						DEBUG("no contras");

@@ -230,6 +230,12 @@ public:
 		data_.erase(LowerBound(e), UpperBound(e));
 	}
 
+	void DeletePairInfo(const PairInfo<EdgeId>& info) {
+
+		data_.erase(info);
+//		data_.erase(LowerBound(e), UpperBound(e));
+	}
+
 	void DeleteEdgePairInfo(EdgeId e1, EdgeId e2) {
 		data_.erase(LowerBound(e1, e2), UpperBound(e1, e2));
 		if(e1 != e2)
@@ -437,6 +443,9 @@ public:
 
 	void RemoveEdgeInfo(EdgeId edge) {
 		data_.DeleteEdgeInfo(edge);
+	}
+	void RemovePairInfo(const PairInfo<EdgeId>& pair_info) {
+		data_.DeletePairInfo(pair_info);
 	}
 
 private:
