@@ -11,7 +11,20 @@ info_printers
        write_components_along_genome    false
        save_full_graph                  false
     }
-    
+
+;	before_simplification
+;	tip_clipping
+;	bulge_removal
+;	err_con_removal
+;	before_final_err_con_removal
+;	final_err_con_removal
+;	final_tip_clipping
+;	final_bulge_removal
+;	removing_isolated_edges
+;	final_simplified
+;	before_repeat_resolution
+
+
 ;    final_simplified
 ;    {
 ;       write_components                 true
