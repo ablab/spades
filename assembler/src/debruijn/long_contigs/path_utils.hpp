@@ -1023,7 +1023,7 @@ void RemoveOverlaps(const Graph& g, std::vector<BidirectionalPath>& paths) {
 							bool found = true;
 
 							for (int j = i - 1; j >= 0; --j) {
-							    if (j < 0) {
+							    if (j < 0 || j + diff < 0) {
 							        found = false;
 							        break;
 							    }
@@ -1033,7 +1033,6 @@ void RemoveOverlaps(const Graph& g, std::vector<BidirectionalPath>& paths) {
 									break;
 								}
 							}
-
 							if (found && overlap < i) {
 								overlap = i;
 								overlaped = l;
@@ -1042,7 +1041,6 @@ void RemoveOverlaps(const Graph& g, std::vector<BidirectionalPath>& paths) {
 					}
 				}
             }
-
             if (overlap != -1) {
             	size_t overlapLength = 0;
 				for (int i = 0; i <= overlap; ++i) {
