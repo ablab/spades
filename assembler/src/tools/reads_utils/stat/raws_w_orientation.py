@@ -32,6 +32,7 @@ delim = '/'
 ffC = 0
 frC = 0
 rfC = 0
+aaC = 0
 
 prevLine = ""
 for line in inFile:
@@ -45,12 +46,14 @@ for line in inFile:
 
 		or2 = l1[1]
 		or1 = l2[1]
+		chr2 = l1[2]
+		chr1 = l2[2]
 		pos2 = int(l1[3])
 		pos1 = int(l2[3])
                	len2 = len(l1[4])
                	len1 = len(l2[4])
 
-		if not wChrs or chr1 == chr2:
+		if chr1 == chr2:
 			addPos = 0
 			if wChrs:
 				addPos = chrs[chr1] 
@@ -80,6 +83,8 @@ for line in inFile:
 
 			else:
 				print('Something wrong: '+str(pos1)+' '+str(len1)+' '+or1+' '+str(pos2)+' '+str(len2)+' '+or2+'\n')
+		else:
+			aaC += 1
 
 	else:
 		print("Non-equal pairs\n")
@@ -90,7 +95,7 @@ for line in inFile:
 	prevLine = ""
 
 
-print('FR: '+str(frC)+'\nRF: '+str(rfC)+'\nFF: '+str(ffC)+'\n')
+print(str(frC)+' '+str(rfC)+' '+str(ffC)+' '+str(aaC)+'\n')
 
 inFile.close()
 frFile.close()
