@@ -10,6 +10,7 @@
 //headers with tests
 #include "debruijn_graph_test.hpp"
 #include "simplification_test.hpp"
+//#include "pair_info_test.hpp"
 
 //todo!!!
 //#include "pair_info_test.hpp"
