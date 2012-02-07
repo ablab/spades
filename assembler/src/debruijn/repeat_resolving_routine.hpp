@@ -923,6 +923,14 @@ void resolve_repeats() {
 
 		INFO("Combined resolving finished");
 	}
+
+	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangle) {
+		INFO("Rectangle resolving started");
+
+		// TODO: everything :)
+
+		INFO("Rectangle resolving finished");
+	}
 }
 
 void exec_repeat_resolving() {

@@ -46,7 +46,7 @@ etalon_info_mode  false
 ; Collect paired information before or after graph simplification
 late_paired_info true
 
-; repeat resolving mode (none split path_extend jump combined)
+; repeat resolving mode (none split path_extend jump combined rectangle)
 resolving_mode split
 
 andrey_params {
