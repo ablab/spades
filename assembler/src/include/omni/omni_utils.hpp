@@ -1410,14 +1410,19 @@ private:
         return false;
     }
 
-
     bool CheckTipTip(EdgeId tip, EdgeId alter){
         if (backward){
-            for (size_t i = 0; i<graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)); ++i) 
-                if (IsTip(graph_.OutgoingEdges(graph_.EdgeStart(alter))[i])) return true; 
+            for (size_t i = 0; i<graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)); ++i){
+                EdgeId alter_tip = graph_.OutgoingEdges(graph_.EdgeStart(alter))[i];
+                if (IsTip(graph_.OutgoingEdges(graph_.EdgeStart(alter))[i])) 
+                    return math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip)); 
+            }
         }else{
-            for (size_t i = 0; i<graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)); ++i)
-                if (IsTip(graph_.IncomingEdges(graph_.EdgeEnd(alter))[i])) return true;
+            for (size_t i = 0; i<graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)); ++i){
+                EdgeId alter_tip = graph_.IncomingEdges(graph_.EdgeEnd(alter))[i];
+                if (IsTip(graph_.IncomingEdges(graph_.EdgeEnd(alter))[i])) 
+                    return math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip));
+            }
         }
         return false;
     }
@@ -1446,13 +1451,13 @@ private:
 
     //      trimming
             VERIFY(path_length == seq_builder.size());
-            sequence = seq_builder.BuildSequence().Subseq(0, sequence_tip.size());
+            sequence = seq_builder.BuildSequence().Subseq(seq_builder.size() - sequence_tip.size(), seq_builder.size());
             VERIFY(sequence.size() == sequence_tip.size());
             
             size_t dist = edit_distance(sequence.str(), sequence_tip.str());
 
-            coverage[(size_t) 10.*graph_.coverage(tip)]++;
-            lentolev[(size_t) 100.*dist/sequence_tip.size()]++;
+            //coverage[(size_t) 10.*graph_.coverage(tip)]++;
+            //lentolev[(size_t) 100.*dist/sequence_tip.size()]++;
             len[sequence_tip.size()]++;
             
             VERIFY(dist <= sequence_tip.size());
@@ -1460,8 +1465,8 @@ private:
             if (dist < size_hist) hist[dist]++;
             if (dist < max_distance_){
                 if (qual_f_ && math::gr(qual_f_(tip), 0.)) {
-                    coverageq[(size_t) 10.*graph_.coverage(tip)]++;
-                    lentolevq[(size_t) 100.*dist/sequence_tip.size()]++;
+                    //coverageq[(size_t) 10.*graph_.coverage(tip)]++;
+                    //lentolevq[(size_t) 100.*dist/sequence_tip.size()]++;
                     lenq[sequence_tip.size()]++;
                     histq[dist]++;
                     
@@ -1480,7 +1485,7 @@ private:
                     for (auto iter = path.rbegin(); iter != path.rend(); ++iter) 
                         cout << "Path edge " << graph_.int_id(*iter) << " length " << graph_.length(*iter) << " quality " << qual_f_(*iter) << " Coverage " << graph_.coverage(*iter) << endl;
                 }
-                if ((path.size() == 1) && (CheckAlternativeForEC(tip, path[0])) && math::ls(graph_.coverage(path[0]), 20.)) 
+                if ((path.size() == 1) && (CheckAlternativeForEC(tip, path[0])))// && math::ls(graph_.coverage(path[0]), 2.)) 
                     return false;
                 //cout << "TRUE" << endl;
                 return true;
@@ -1511,8 +1516,8 @@ private:
             
             size_t dist = edit_distance(sequence.str(), sequence_tip.str());
 
-            coverage[(size_t) 10.*graph_.coverage(tip)]++;
-            lentolev[(size_t) 100.*dist/(sequence_tip.size())]++;
+            //coverage[(size_t) 10.*graph_.coverage(tip)]++;
+            //lentolev[(size_t) 100.*dist/(sequence_tip.size())]++;
             len[sequence_tip.size()]++;
             
             VERIFY(dist <= sequence_tip.size());
@@ -1521,8 +1526,8 @@ private:
 
             if (dist < max_distance_){
                 if (qual_f_ && math::gr(qual_f_(tip), 0.)) {
-                    coverageq[(size_t) 10.*graph_.coverage(tip)]++;
-                    lentolevq[(size_t) 100.*dist/sequence_tip.size()]++;
+                    //coverageq[(size_t) 10.*graph_.coverage(tip)]++;
+                    //lentolevq[(size_t) 100.*dist/sequence_tip.size()]++;
                     lenq[sequence_tip.size()]++;
                     histq[dist]++;
 
@@ -1543,7 +1548,7 @@ private:
                     for (auto iter = path.begin(); iter != path.end(); ++iter) 
                         cout << "Path edge " << graph_.int_id(*iter) << " length " << graph_.length(*iter) << " quality " << qual_f_(*iter) << " Coverage " << graph_.coverage(*iter) << endl;
                 }
-                if ((path.size() == 1) && (CheckAlternativeForEC(tip, path[0])) && math::ls(graph_.coverage(path[0]), 20.)) 
+                if ((path.size() == 1) && (CheckAlternativeForEC(tip, path[0])))// && math::ls(graph_.coverage(path[0]), 2.)) 
                     return false;
                 //cout << "TRUE" << endl;
                 return true;

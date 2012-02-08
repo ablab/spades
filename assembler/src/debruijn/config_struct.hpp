@@ -203,6 +203,7 @@ struct debruijn_config {
 			double max_coverage;
 			double max_relative_coverage;
             size_t max_iterations;
+            bool advanced_checks;
             size_t max_levenshtein;
 		};
 
@@ -393,6 +394,7 @@ inline void load(debruijn_config::simplification::tip_clipper& tc,
 	load(tc.max_coverage				, pt, "max_coverage"		 );
 	load(tc.max_relative_coverage		, pt, "max_relative_coverage");
 	load(tc.max_iterations        		, pt, "max_iterations"       );
+	load(tc.advanced_checks     		, pt, "advanced_checks_enabled"      );
 	load(tc.max_levenshtein     		, pt, "max_levenshtein"      );
 }
 

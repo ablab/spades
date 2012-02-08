@@ -1073,18 +1073,10 @@ public:
         total = 0;
 	}
 
-    void CheckQuality(EdgeId edge){
-        if (math::gr(quality_handler_.quality(edge), 0.)){
-            INFO("Checking the quality of the edge " << g_.int_id(edge) << " : " << quality_handler_.quality(edge));   
-        }else{
-            INFO("Checking the quality of the edge " << g_.int_id(edge) << " : ZERO_QUALITY");   
-        }
-    }
-
 	void HandleDelete(EdgeId edge) {
         total++;
 		if (math::gr(quality_handler_.quality(edge), 0.)) {
-            INFO("Deleting good edge " << g_.int_id(edge) << " with quality " << quality_handler_.quality(edge) << " cov " << g_.coverage(edge) << " length " << g_.length(edge));
+            TRACE("Deleting good edge " << g_.int_id(edge) << " with quality " << quality_handler_.quality(edge) << " cov " << g_.coverage(edge) << " length " << g_.length(edge));
 		}else{
             black_removed_++;
         }
@@ -1158,12 +1150,12 @@ public:
 			, const GraphLabeler<Graph>& labeler
 			, const string& output_folder) :
 			g_(g), quality_handler_(quality_handler),
-			labeler_(labeler), output_folder_(output_folder) {
+			labeler_(labeler), output_folder_(output_folder){
 	}
 
 	void HandleDelete(EdgeId edge) {
-		if (quality_handler_.IsPositiveQuality(edge)) {
-			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
+        if (quality_handler_.IsPositiveQuality(edge)) {
+			INFO("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 			string folder = output_folder_ + "colored_edges_deleted/";
 			make_dir(folder);
 			//todo magic constant
@@ -1176,6 +1168,116 @@ public:
 		} else {
 			DEBUG("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 		}
+	}
+
+private:
+	DECL_LOGGER("QualityEdgeLocalityPrintingRH")
+	;
+};
+
+template<class Graph>
+class EdgePairInfoWrapper {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef omnigraph::PairInfo<EdgeId> PairInfo;
+	typedef vector<PairInfo> PairInfos;
+	const Graph& g_;
+    const PairedInfoIndex<ConjugateDeBruijnGraph>& index_;
+//	size_t black_removed_;
+//	size_t colored_removed_;
+public:
+	EdgePairInfoWrapper(const Graph& g
+            , const PairedInfoIndex<ConjugateDeBruijnGraph>& index) :
+			g_(g), index_(index) {
+	}
+
+	double GetTotalWeight(EdgeId edge) {
+            PairInfos infos = index_.GetEdgeInfo(edge);
+            double total_weight = 0.;
+            for (size_t i = 0; i<infos.size(); i++){
+                total_weight += infos[i].weight;
+                //cout << "Tip Info " << infos[i].first << " " << infos[i].second << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance << endl;
+            }
+            return total_weight;
+	}
+
+private:
+};
+
+template<class Graph>
+class QualityPairInfoHandler {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef omnigraph::PairInfo<EdgeId> PairInfo;
+	typedef vector<PairInfo> PairInfos;
+	const Graph& g_;
+	const EdgeQuality<Graph>& quality_handler_;
+	const GraphLabeler<Graph>& labeler_;
+	const string& output_folder_;
+    const PairedInfoIndex<ConjugateDeBruijnGraph>& index_;
+//	size_t black_removed_;
+//	size_t colored_removed_;
+public:
+	QualityPairInfoHandler(const Graph& g
+			, const EdgeQuality<Graph>& quality_handler
+			, const GraphLabeler<Graph>& labeler
+			, const string& output_folder
+            , const PairedInfoIndex<ConjugateDeBruijnGraph>& index) :
+			g_(g), quality_handler_(quality_handler),
+			labeler_(labeler), output_folder_(output_folder), index_(index) {
+	}
+
+	void HandleDelete(EdgeId edge) {
+        if (quality_handler_.IsPositiveQuality(edge)) {
+			cout << "Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge) << endl;
+			string folder = output_folder_ + "colored_edges_deleted/";
+			make_dir(folder);
+			//todo magic constant
+            PairInfos infos = index_.GetEdgeInfo(edge);
+            for (size_t i = 0; i<infos.size(); i++){
+                cout << "Tip Info " << g_.int_id(infos[i].first) << " " << g_.int_id(infos[i].second) << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance << endl;
+            }
+			map<EdgeId, string> empty_coloring;
+			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
+					250);
+            
+			WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
+					, empty_coloring, labeler_);
+        }
+	}
+
+private:
+};
+
+template<class Graph>
+class EdgeLocalityPrintingRH {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	const Graph& g_;
+	const GraphLabeler<Graph>& labeler_;
+	const string& output_folder_;
+//	size_t black_removed_;
+//	size_t colored_removed_;
+public:
+	EdgeLocalityPrintingRH(const Graph& g
+			, const GraphLabeler<Graph>& labeler
+			, const string& output_folder) :
+			g_(g), 
+			labeler_(labeler), output_folder_(output_folder) {
+	}
+
+	void HandleDelete(EdgeId edge) {
+			TRACE("Deleting edge " << g_.str(edge));
+			string folder = output_folder_ + "edges_deleted/";
+			make_dir(folder);
+			//todo magic constant
+			map<EdgeId, string> empty_coloring;
+			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
+					250);
+			WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+					, folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot"
+					, empty_coloring, labeler_);
 	}
 
 private:

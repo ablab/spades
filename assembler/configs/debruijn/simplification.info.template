@@ -12,6 +12,7 @@ sc_simplification
 		max_coverage				100000
 		max_relative_coverage		10000   ; tip_cov < this * not_tip_cov
         max_iterations              200
+        advanced_checks_enabled     false
         max_levenshtein             30
 	}
 
@@ -80,6 +81,7 @@ usual_simplification
 		max_coverage				1000
 		max_relative_coverage		2.0		; tip_cov < this * not_tip_cov
         max_iterations              200
+        advanced_checks_enabled     false
         max_levenshtein             20
 	}
 	

@@ -66,7 +66,7 @@ public:
 };
 
 template<class Graph>
-void ClipTips(Graph &g,
+vector<typename Graph::EdgeId> ClipTips(Graph &g,
 		const debruijn_config::simplification::tip_clipper& tc_config,
 		size_t read_length,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
@@ -78,15 +78,17 @@ void ClipTips(Graph &g,
 	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(read_length, g.k(), tc_config.max_tip_length_coefficient);
 	size_t max_coverage = tc_config.max_coverage;
 	double max_relative_coverage = tc_config.max_relative_coverage;
-	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(
+
+    omnigraph::TipClipper<Graph, LengthComparator<Graph> > tc(
 			g,
 			comparator,
 			(size_t) math::round(
 					(double) max_tip_length / 2
 							* (1 + (i + 1.) / iteration_count)), max_coverage,
-			max_relative_coverage, removal_handler);
-	tc.ClipTips();
+			max_relative_coverage, removal_handler); //removal_handler
 	INFO("Clipping tips finished");
+    //return tc.ClipTips(static_cast<double (*)(typename Graph::EdgeId)>(&foo));
+    return  tc.ClipTips();
 }
 
 template<class Graph>
@@ -367,11 +369,11 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 }
 
 void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
-		boost::function<void(EdgeId)> &removal_handler_f,
-		detail_info_printer &printer, size_t iteration_count) {
-	//INFO("Early ErroneousConnectionsRemoval");
-    //RemoveLowCoverageEdges(graph, edge_remover, 1, 0, 10);
-	//INFO("ErroneousConnectionsRemoval stats");
+		boost::function<void (EdgeId)> &removal_handler_f,
+        detail_info_printer &printer, size_t iteration_count){
+    //INFO("Early ErroneousConnectionsRemoval");
+    //RemoveLowCoverageEdges(graph, edge_remover, 1, 0, 1.5);
+    //INFO("ErroneousConnectionsRemoval stats");
 
 	INFO("Early TipClipping");
 	ClipTips(graph, removal_handler_f);
@@ -387,8 +389,8 @@ void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 
 void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
-		detail_info_printer &printer, size_t iteration_count,
-		size_t iteration, double max_coverage) {
+        detail_info_printer &printer, size_t iteration_count,
+		size_t iteration, double max_coverage){
 	INFO("-----------------------------------------");
 	INFO("Iteration " << iteration);
 
@@ -411,7 +413,7 @@ void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
 
 void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
-		detail_info_printer &printer) {
+        detail_info_printer &printer){
 
 	INFO("Final ErroneousConnectionsRemoval");
 	printer(ipp_before_final_err_con_removal);
@@ -419,6 +421,7 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_final_err_con_removal);
 
 	INFO("Final TipClipping");
+	
 	ClipTips(graph, removal_handler_f);
 	printer(ipp_final_tip_clipping);
 
@@ -458,8 +461,11 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
 	EdgeRemover<Graph> edge_remover(gp.g,
 			cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
+
+    //ec auto threshold
 	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g);
-	if (cfg::get().ds.single_cell) 
+
+    if (cfg::get().ds.single_cell) 
         PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
 
 //	double max_coverage = cfg::get().simp.ec.threshold_percentile
@@ -471,9 +477,17 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
 			CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
 		}
 
-		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,
-				iteration_count, i, max_coverage);
-	}
+        SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,
+                iteration_count, i, max_coverage);
+    }
+
+    //EdgeLocalityPrintingRH<Graph> removal_handler1(gp.g,
+            //labeler,
+            //output_folder);
+
+    //boost::function<void(EdgeId)> removal_handler_f1 = boost::bind(
+            //&EdgeLocalityPrintingRH<Graph>::HandleDelete,
+            //boost::ref(removal_handler1), _1);
 
 	PostSimplification(gp.g, edge_remover, removal_handler_f, printer);
 	INFO("Graph simplification finished");

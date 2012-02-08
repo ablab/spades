@@ -71,7 +71,7 @@ protected:
 		return graph_.IncomingEdgeCount(v) + graph_.OutgoingEdgeCount(v) == 1;
 	}
 
-	/**
+/**
 	 * This method checks if given edge topologically looks like a tip.
 	 * @param edge edge vertex to be checked
 	 * @return true if edge judged to be tip and false otherwise.
@@ -128,7 +128,7 @@ public:
 	/**
 	 * Method clips tips of the graph.
 	 */
-	vector<EdgeId> ClipTips() {
+	vector<EdgeId> ClipTips(boost::function<double(EdgeId)> get_total_weight = 0) {
         vector<EdgeId> ans;
         size_t removed = 0;
         size_t removed_with_check = 0;
@@ -143,10 +143,19 @@ public:
 				if (AdditionalCondition(tip)) {
                     TRACE("Additional sequence comparing");
                     removed++;
-                    if (tipchecker.TipCanBeProjected(tip)){
+                    //if (get_total_weight && math::gr(get_total_weight(tip), 0.)){ 
+                        //if (qual_handler_ && math::gr(qual_handler_(tip), 0.)){
+                            //INFO("Pair INFO FOR GOOD TIP " << graph_.int_id(tip) << " " << get_total_weight(tip) << " " << qual_handler_(tip));
+                        //}else{ 
+                            //INFO("Pair INFO FOR BAD TIP " << graph_.int_id(tip) << " " << get_total_weight(tip));
+                        //}
+                    //}
+                    //if (qual_handler_ && math::gr(qual_handler_(tip), 0.)) 
+                        //INFO("Good edge " << graph_.int_id(tip));
+
+                    if (!cfg::get().simp.tc.advanced_checks || tipchecker.TipCanBeProjected(tip)){
 					    TRACE("Edge " << tip << " judged to be tip");
     					removed_with_check++;
-                        //if (math::gr(qual_handler_(tip), 0.)) INFO("Good edge " << graph_.int_id(tip));
                         RemoveTip(tip);
 					    TRACE("Edge " << tip << " removed as tip");
                     }else 
