@@ -23,15 +23,11 @@
 #include "long_contigs/lc_launch.hpp"
 #include "rectangle_resolver.hpp"
 
-//typedef io::IReader<io::SingleRead> ReadStream;
-//typedef io::IReader<io::PairedRead> PairedReadStream;
-////typedef io::RCReaderWrapper<io::SingleRead> RCStream;
-//typedef io::MultifileReader<io::SingleRead> MultiFileStream;
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
 namespace debruijn_graph
-
 {
+
 void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
 } // debruijn_graph
 
@@ -286,9 +282,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 //	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
 //			origin_gp.g);
-	ProduceLongEdgesStat( origin_gp,  clustered_index);
-	ProduceLongEdgesStat( origin_gp,  clustered_index);
-
+//	ProduceLongEdgesStat( origin_gp,  clustered_index);
+	CorrectPairedInfo( origin_gp,  clustered_index);
+	CorrectPairedInfo( origin_gp,  clustered_index);
 	DEBUG("New index size: "<< clustered_index.size());
 	// todo: make printGraph const to its arguments
 
@@ -490,78 +486,118 @@ void process_resolve_repeats(graph_pack& origin_gp,
 }
 
 template<class graph_pack>
-void ProduceLongEdgesStat(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
-//	int missing_paired_info_count = 0;
-//	size_t tmp = *cfg::get().ds.IS;
 
+set<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(const graph_pack& origin_gp, typename graph_pack::graph_t::EdgeId& first_edge, typename graph_pack::graph_t::EdgeId& second_edge) {
+	PathReceiverCallback <typename graph_pack::graph_t> callback(origin_gp.g);
+	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, 0, *cfg::get().ds.IS - K + cfg::get().de.delta,
+																origin_gp.g.EdgeEnd(first_edge),
+																origin_gp.g.EdgeStart(second_edge), callback);
+	path_processor.Process();
+	auto paths = callback.paths();
+    TRACE(origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge) << " "<< paths.size());
+
+	return paths;
+
+}
+
+template<class graph_pack>
+int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, PairInfo<typename graph_pack::graph_t::EdgeId>& first_info, PairInfo<typename graph_pack::graph_t::EdgeId>& second_info, bool fill_missing) {
+
+	size_t max_comparable_path = *cfg::get().ds.IS - K + cfg::get().de.delta;
+	auto first_edge = first_info.second;
+	auto first_weight = first_info.weight;
+	if (first_info.d * second_info.d < 0.0001)
+		return 0;
+
+	auto second_edge = second_info.second;
+	auto second_weight = second_info.weight;
+	DEBUG("Threating edges" << origin_gp.int_ids.ReturnIntId(first_edge) <<" " << origin_gp.int_ids.ReturnIntId(first_edge));
+	auto paths = GetAllPathsFromSameEdge(origin_gp, first_edge, second_edge);
+	vector<size_t> distances;
+	for (auto paths_it = paths.begin(); paths_it != paths.end(); paths_it ++) {
+		distances.push_back(CummulativeLength<typename graph_pack::graph_t>(origin_gp.g, *paths_it));
+	}
+	//= callback.distances();
+	paths = GetAllPathsFromSameEdge(origin_gp, second_edge, first_edge);
+	for (auto paths_it = paths.begin(); paths_it != paths.end(); paths_it ++) {
+		distances.push_back(CummulativeLength<typename graph_pack::graph_t>(origin_gp.g, *paths_it));
+	}
+	bool comparable = false;
+	for(size_t i = 0; i < distances.size(); i++) {
+		DEBUG(distances[i] );
+		if (distances[i] < max_comparable_path) {
+			comparable = true;
+			break;
+		}
+	}
+	if (! fill_missing) {
+		if (comparable == false){
+			double ratio = (1.0 * second_weight)/first_weight;
+			if (ratio > 1)
+				ratio = 1/ratio;
+				if (first_weight > second_weight * 2)
+					clustered_index.RemovePairInfo(first_info);
+				else if (second_weight > first_weight * 2)
+					clustered_index.RemovePairInfo(second_info);
+				INFO("contradictional paired info from edge " <<origin_gp.int_ids.ReturnIntId(first_info.first) << " to edges "<<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "weights ratio " << ratio);
+				return 1;
+		} else {
+			DEBUG("no contras");
+			return 0;
+		}
+	} else {
+		if (paths.size() == 1 && first_info.variance == 0 && second_info.variance == 0) {
+			int nonzero_info = 0;
+			double tmpd = first_info.d + origin_gp.g.length(first_info.second);
+			double w = (first_info.weight + second_info.weight)/2;
+			for (auto path_iter = paths.begin()->begin(); path_iter != paths.begin()->end(); path_iter++) {
+
+				if (clustered_index.GetEdgePairInfo(first_info.first, *path_iter).size() > 0) {
+//					PairInfo* toAdd = new
+					nonzero_info ++;
+				} else {
+					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 0));
+				}
+				tmpd += origin_gp.g.length(*path_iter);
+			}
+			if (! nonzero_info) {
+				if (paths.begin()->size() != 0)
+					INFO("filled missing " << paths.begin()->size() << "edges");
+				return paths.begin()->size();
+			}
+		}
+		return 0;
+	}
+
+}
+
+template<class graph_pack>
+void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
+	int missing_paired_info_count = 0;
+	size_t max_comparable_path = *cfg::get().ds.IS - K + cfg::get().de.delta;
 	int extra_paired_info_count = 0;
 	int long_edges_count = 0;
-	size_t max_comparable_path = *cfg::get().ds.IS - K + cfg::get().de.delta;
+
 	INFO ("max path cutoff " << max_comparable_path);
 	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-		if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length){
+		if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length)
 			long_edges_count ++;
-			auto pi = clustered_index.GetEdgeInfo(*e_iter);
-			for (auto i_iter = pi.begin(); i_iter!= pi.end(); ++i_iter){
-				auto first_edge = i_iter->second;
-				double first_weight = i_iter->weight;
-				if (i_iter->d < 0)
-					continue;
-				for(auto j_iter = i_iter + 1; j_iter != pi.end(); ++j_iter) {
-					auto second_edge = j_iter->second;
-					double second_weight = j_iter->weight;
-					if (j_iter->d < 0)
-										continue;
-
-					DifferentDistancesCallback<typename graph_pack::graph_t> callback(origin_gp.g);
-					PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, 0, *cfg::get().ds.IS - K + cfg::get().de.delta,
-														    origin_gp.g.EdgeEnd(first_edge),
-														    origin_gp.g.EdgeStart(second_edge), callback);
-										path_processor.Process();
-					vector<size_t> distances = callback.distances();
-					bool comparable = false;
-					for(size_t i = 0; i < distances.size(); i++) {
-						DEBUG(distances[i] );
-						if (distances[i] < max_comparable_path) {
-							comparable = true;
-							break;
-						}
-					}
-					DEBUG("reversing");
-
-					PathProcessor<typename graph_pack::graph_t> path_processor2(origin_gp.g, 0, *cfg::get().ds.IS - K + cfg::get().de.delta,
-									    origin_gp.g.EdgeEnd(second_edge),
-										origin_gp.g.EdgeStart(first_edge), callback);
-					path_processor2.Process();
-					distances = callback.distances();
-					for(size_t i = 0; i < distances.size(); i++) {
-						DEBUG(distances[i]);
-						if (distances[i] < max_comparable_path) {
-							comparable = true;
-							break;
-						}
-					}
-					if (comparable == false){
-						extra_paired_info_count++;
-						double ratio = (1.0 * second_weight)/first_weight;
-						if (ratio > 1)
-							ratio = 1/ratio;
-						if (first_weight > second_weight * 2)
-							clustered_index.RemovePairInfo(*i_iter);
-						else if (second_weight > first_weight * 2)
-							clustered_index.RemovePairInfo(*j_iter);
-						INFO("contradictional paired info from edge " <<origin_gp.int_ids.ReturnIntId(*e_iter) << " to edges "<<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "weights ratio " << ratio);
-					} else {
-						DEBUG("no contras");
-					}
-
+		auto pi = clustered_index.GetEdgeInfo(*e_iter);
+		for (auto i_iter = pi.begin(); i_iter!= pi.end(); ++i_iter) {
+			for(auto j_iter = i_iter + 1; j_iter != pi.end(); ++j_iter) {
+				PairInfo<typename graph_pack::graph_t::EdgeId> first_info = *i_iter;
+				PairInfo<typename graph_pack::graph_t::EdgeId> second_info = *j_iter;
+				if (origin_gp.g.length(*e_iter) >= cfg::get().ds.RL * 2) { //TODO: change to something reasonable.
+					missing_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 1);
+				}
+				if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length) {
+					extra_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 0);
 				}
 			}
 		}
 	}
-	INFO("long edges: " << long_edges_count << " contradictional paired info: " << extra_paired_info_count);
+	INFO("missing: " << missing_paired_info_count << " contradictional " << extra_paired_info_count);
 }
-
 template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
