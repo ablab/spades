@@ -68,9 +68,4 @@ Updated 26 Aug 2011
 
 == Mac OS X ==
 
-brew install log4cxx
-brew install https://github.com/adamv/homebrew-alt/raw/master/duplicates/gcc.rb --enable-cxx
-relink /usr/bin/c++, g++, gcc to /usr/local/bin/c++-4.6, g++-4.6, gcc-4.6
-brew install https://raw.github.com/mxcl/homebrew/7dde1d05fed3924371d0571c759f5fb4239d6180/Library/Formula/boost.rb (or brew install boost)
-brew install https://raw.github.com/vyahhi/homebrew-alt/834a63f1b90793884852c80cf5cb338bda43fcd7/duplicates/zlib.rb
-
+Anything except 64-bit Linux currently is not supported! We'll add it in future if there'll be any need.
