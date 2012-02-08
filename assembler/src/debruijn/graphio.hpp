@@ -683,6 +683,13 @@ void PrintGraphPack(const string& file_name,
 	printer.saveKmerMapper(file_name, gp.kmer_mapper);
 }
 
+template<class graph_pack>
+void PrintGraphPack(const string& file_name,
+		const graph_pack& gp) {
+	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g, gp.int_ids);
+	PrintGraphPack(file_name, printer, gp);
+}
+
 template<class Graph>
 void PrintPairedIndex(const string& file_name, DataPrinter<Graph>& printer,
 		const PairedInfoIndex<Graph>& paired_index) {

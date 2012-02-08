@@ -21,6 +21,7 @@
 #include  "omni/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 #include "long_contigs/lc_launch.hpp"
+#include "rectangle_resolver.hpp"
 
 //typedef io::IReader<io::SingleRead> ReadStream;
 //typedef io::IReader<io::PairedRead> PairedReadStream;
@@ -925,11 +926,7 @@ void resolve_repeats() {
 	}
 
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangle) {
-		INFO("Rectangle resolving started");
-
-		// TODO: everything :)
-
-		INFO("Rectangle resolving finished");
+		debruijn_graph::RectangleResolver::resolve(conj_gp);
 	}
 }
 
