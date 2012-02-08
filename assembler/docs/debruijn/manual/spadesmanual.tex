@@ -124,8 +124,8 @@ package & description & recommended version\\
 \subsection{RAM}
 It is recommended to run {\spades} on a $64$-bit linux system. %with at least $30$Gb of RAM.
 E.g., on a multi-cell {\it E. coli} dataset {\spades} uses about $700$Mb of RAM,
-while on a single-cell {\it E. coli} datset {\spades} needs about $6$Gb of RAM
-and about $30$Gb of RAM if error correction (see subsection~\ref{subsec:bh}) is used.
+while on a single-cell {\it E. coli} datset {\spades} needs about $6$Gb of RAM.
+%and about $30$Gb of RAM if error correction (see subsection~\ref{subsec:bh}) is used.
 
 \section{Compiling}
 When all the required packages are installed (see 
@@ -138,51 +138,51 @@ in the root directory.
 This collects all dependencies and runs {\tt cmake}.
 
 \section{Preparing input data}
-\subsection{Correcting errors in your dataset}\label{subsec:bh}
-You can do error correction with your favourite tool and then supply the resulting reads to {\spades}, but the recommended error correction tool for
-the {\spades} project is {\bh} which is also supplied in this release. To use {\bh}, you need to create a {\tt bayeshammer.info} file similar to the one
-\todo[inline]{Insert path to sample bayeshammer.info file.}
-Here are the options from the {\tt bayeshammer.info} file that you would most often want to change:
-\begin{itemize}
-\item \verb$input_working_dir$~--- directory where BayesHammer will put its temporary files and output;
-\item \verb$input_numfiles$~--- number of input files (should match the number of entries in the list below);
-\item \verb$input_paired$~--- $0$ if the input files are unpaired, 1 if paired; if $\texttt{input\_paired}=1$, \verb$input_numfiles$ should be even;
-\item \verb$input_file_0$, \verb$input_file_1$, \ldots ~--- paths to the input files;
-\item \verb$input_qvoffset$~---- PHRED quality offset in the input reads (usually $33$ or $64$);
-\item \verb$general_max_iterations$~--- number of iterations for {\bh} to run (usually, the second iteration does improve upon the first, but then it's
-diminishing returns).
-\end{itemize}
-
-After that, run {\bh} as
-\begin{verbatim}
-./assembler/build/release/hammer/main [your_bayeshammer.info_file]
-\end{verbatim}
-
-As a result, {\bh} will produce corrected files in the \verb$input_working_dir$ directory. The resulting corrected files will be named as
-\begin{verbatim}
-[iteration_num].reads.0.bad
-[iteration_num].reads.0.corrected
-[iteration_num].reads.1.bad
-[iteration_num].reads.1.corrected
-...
-\end{verbatim}
-if the input was unpaired, and
-\begin{verbatim}
-[iteration_num].reads.0.left.bad
-[iteration_num].reads.0.left.corrected
-[iteration_num].reads.0.left.unpaired
-[iteration_num].reads.0.right.bad
-[iteration_num].reads.0.right.corrected
-[iteration_num].reads.0.right.unpaired
-[iteration_num].reads.1.left.bad
-...
-\end{verbatim}
-in paired mode. The \verb$unpaired$ files contain reads that have been successfully corrected, but their paired reads have not
-(a read is not corrected successfully if it does not contain any solid $k$-mers at all). The \verb$bad$ files contain reads for which
-both the left and right read have not been successfully corrected.
-
-Note that {\bh} may use quite a lot of space for its temporary files (even though it gzips them by default), so choose the location
-of the working directory wisely.
+%\subsection{Correcting errors in your dataset}\label{subsec:bh}
+%You can do error correction with your favourite tool and then supply the resulting reads to {\spades}, but the recommended error correction tool for
+%the {\spades} project is {\bh} which is also supplied in this release. To use {\bh}, you need to create a {\tt bayeshammer.info} file similar to the one
+%\todo[inline]{Insert path to sample bayeshammer.info file.}
+%Here are the options from the {\tt bayeshammer.info} file that you would most often want to change:
+%\begin{itemize}
+%\item \verb$input_working_dir$~--- directory where BayesHammer will put its temporary files and output;
+%\item \verb$input_numfiles$~--- number of input files (should match the number of entries in the list below);
+%\item \verb$input_paired$~--- $0$ if the input files are unpaired, 1 if paired; if $\texttt{input\_paired}=1$, \verb$input_numfiles$ should be even;
+%\item \verb$input_file_0$, \verb$input_file_1$, \ldots ~--- paths to the input files;
+%\item \verb$input_qvoffset$~---- PHRED quality offset in the input reads (usually $33$ or $64$);
+%\item \verb$general_max_iterations$~--- number of iterations for {\bh} to run (usually, the second iteration does improve upon the first, but then it's
+%diminishing returns).
+%\end{itemize}
+%
+%After that, run {\bh} as
+%\begin{verbatim}
+%./assembler/build/release/hammer/main [your_bayeshammer.info_file]
+%\end{verbatim}
+%
+%As a result, {\bh} will produce corrected files in the \verb$input_working_dir$ directory. The resulting corrected files will be named as
+%\begin{verbatim}
+%[iteration_num].reads.0.bad
+%[iteration_num].reads.0.corrected
+%[iteration_num].reads.1.bad
+%[iteration_num].reads.1.corrected
+%...
+%\end{verbatim}
+%if the input was unpaired, and
+%\begin{verbatim}
+%[iteration_num].reads.0.left.bad
+%[iteration_num].reads.0.left.corrected
+%[iteration_num].reads.0.left.unpaired
+%[iteration_num].reads.0.right.bad
+%[iteration_num].reads.0.right.corrected
+%[iteration_num].reads.0.right.unpaired
+%[iteration_num].reads.1.left.bad
+%...
+%\end{verbatim}
+%in paired mode. The \verb$unpaired$ files contain reads that have been successfully corrected, but their paired reads have not
+%(a read is not corrected successfully if it does not contain any solid $k$-mers at all). The \verb$bad$ files contain reads for which
+%both the left and right read have not been successfully corrected.
+%
+%Note that {\bh} may use quite a lot of space for its temporary files (even though it gzips them by default), so choose the location
+%of the working directory wisely.
 
 \subsection{Adding your dataset to the config file}\label{subsec:datasets}
 {\spades} requires paired end reads to be in separate files.
@@ -193,7 +193,7 @@ there are no requirements on the number of reads in the last two files (any of t
 Files are expected to be in fasta or fastq formats and can be compressed.
 
 In file {\tt configs/debruijn/datasets.info} add a new entry according to the following self-explaining pattern (recall that parts of lines starting from
-semicolon are comments):
+semicolon are comments). Note that this file may contain any number of such entries.
 \begin{lstlisting}
 ECOLI_IS220_QUAKE
 {
