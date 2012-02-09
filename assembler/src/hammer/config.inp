@@ -1,6 +1,6 @@
 ; = HAMMER =
 ; input options: working dir, input files, offset, and possibly kmers
-input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/test_dir
+input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/test_feb02
 input_numfiles				2
 input_paired				1
 input_file_0				/home/snikolenko/data/reads.input.0.head.gz
@@ -19,7 +19,7 @@ general_change_n_to_a		0
 general_hard_memory_limit	15
 general_max_nthreads		4
 general_tau					1
-general_gzip				1
+general_gzip				0
 general_max_iterations		1
 general_blob_margin			0.25
 general_gzip_margin			4.0
@@ -65,3 +65,7 @@ correct_do					1
 correct_use_threshold		1
 correct_threshold			0.98
 correct_nthreads			4
+
+
+
+

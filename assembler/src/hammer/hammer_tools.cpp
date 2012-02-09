@@ -257,9 +257,9 @@ void HammerTools::CountAndSplitKMers(bool writeFiles) {
 				Globals::pr->at(i).setRCBit(gen.pos() - 1);
 			}*/
 			if (writeFiles) {
-				boost::iostreams::filtering_ostream & cur_gz = ostreams[hash_function(gen.kmer()) % cfg::get().count_numfiles]->fs;
+				boost::iostreams::filtering_ostream & cur_gz = ostreams[hash_function(cur_kmer) % cfg::get().count_numfiles]->fs;
 				double correct_probability = 1 - gen.correct_probability();
-				cur_gz << (Globals::pr->at(i).start() + gen.pos() - 1) << "\t" << correct_probability << "\n";
+				cur_gz << cur_pos << "\t" << correct_probability << "\t" << "\n";
 			}
 			gen.Next();
 		}
