@@ -13,6 +13,7 @@
 
 \def\spades{SPAdes}
 \def\bh{BayesHammer}
+\def\ecoli{\it E.~coli}
 
 \usepackage{listings}
 \definecolor{light-gray}{gray}{0.92}
@@ -23,18 +24,30 @@
 %  {\end{lstlisting}}
 
 \begin{document}
-\title{{\spades} Manual\\{\small Revision: \today}}
+\title{{\spades} 1.0.0 Manual\\{\small Revision: \today}}
 \date{}
 \maketitle
 
-%\begin{abstract}
 {\spades} stands for St.~Petersburg genome assembler.
 It is intended for both single cell and standard (multicell) 
 assemblies. This manual will help you to install and run
 {\spades}.
 
+We recommend to run {\spades} with pre-processing (error correction) and postprocessing (contig refinement) steps.
 
-%\end{abstract}
+In our experience, the error correction tools BayesHammer and Quake work well for multicell datasets. 
+However, for single cell datasets, we recommend BayesHammer rather than Quake; 
+Quake was not designed for single-cell datasets, and produces inferior results. 
+The performance of {\spades} on single-cell datasets deteriorates 
+significantly without running BayesHammer. 
+
+While {\spades} produces accurate assemblies, 
+we recommend running NGS-Refine after {\spades} to further reduce the number of 
+small errors (single nucleotide substitutions and small indels).
+
+BayesHammer and NGS-Refine will be released after the papers describing these tools are accepted. 
+Meanwhile, if you need to run these tools please contact SPAdes support (\url{spades.support@bioinf.spbau.ru}).
+
 
 \renewcommand{\contentsname}{}
 \tableofcontents
@@ -104,28 +117,35 @@ package & description & recommended version\\
 \midrule
 {\tt gcc++-4.4} & GNU C Compiler & 4.4\\
 {\tt python2.6-dev} & Python & 2.6\\
-% {\tt java-common} & Java & \\ % needed for quality
 {\tt cmake} & make system & 2.6\\
 {\tt cmake-curses-gui} & curses based user interface for cmake & 2.6\\
 {\tt liblog4cxx10-dev} & logging library for {\tt C++} & \\
 {\tt libboost1.42-all-dev} & Boost {\tt C++} libraries & 1.42\\
-{\tt zlib-bin} & compression library & \\
+{\tt zlib1g-dev} & compression library & \\
 %%% the following libraries are needed for quality tool
-%{\tt python-matplotlib} & plotting system & \\
-%{\tt python-numpy} & fast arrays for python & \\
-%{\tt bioperl} & Perl tools for computational molecular biology & \\
-%{\tt mummer} & efficient sequence alignment of full genomes & \\
-%{\tt r-recommended} & GNU R recommended packages & \\
-%{\tt pdftk} & tool for manipulating PDF documents & \\
+{\tt java-common} & Java &\\
+{\tt python-matplotlib} & plotting system & \\
+{\tt python-numpy} & fast arrays for python & \\
+{\tt bioperl} & Perl tools for computational molecular biology & \\
+{\tt mummer} & efficient sequence alignment of full genomes & \\
+{\tt r-recommended} & GNU R recommended packages & \\
+{\tt pdftk} & tool for manipulating PDF documents & \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \subsection{RAM}
-It is recommended to run {\spades} on a $64$-bit linux system. %with at least $30$Gb of RAM.
-E.g., on a multi-cell {\it E. coli} dataset {\spades} uses about $700$Mb of RAM,
-while on a single-cell {\it E. coli} datset {\spades} needs about $6$Gb of RAM.
-%and about $30$Gb of RAM if error correction (see subsection~\ref{subsec:bh}) is used.
+{\spades} requires a 64-bit Linux system.
+On our test datasets,
+our multi-cell {\ecoli} dataset uses 700 Mb peak memory, and our single cell
+{\ecoli} dataset uses 6 Gb peak memory. 
+These datasets can be found at:
+\begin{itemize}
+  \item multi-cell {\ecoli}:\\ \url{http://spades.bioinf.spbau.ru/spades_test_datasets/E.coli/reads/ECOLI_MC/}
+  \item single-cell {\ecoli}:\\ \url{http://spades.bioinf.spbau.ru/spades_test_datasets/E.coli/reads/ECOLI_SC/}
+  \item {\ecoli} reference:\\ \url{http://spades.bioinf.spbau.ru/spades_test_datasets/E.coli/reference/MG1655-K12.fasta.gz}
+\end{itemize}
+More datasets that {\spades} was tested on are described in section~\ref{sec:testdatasets}.
 
 \section{Compiling}
 When all the required packages are installed (see 
@@ -134,11 +154,22 @@ just run
 \begin{lstlisting}
 ./prepare_cfg
 \end{lstlisting}
-in the root directory. 
+in the root directory of the assembler. 
 This collects all dependencies and runs {\tt cmake}.
 
 \section{Preparing input data}
-%\subsection{Correcting errors in your dataset}\label{subsec:bh}
+\subsection{Correcting errors in your dataset}\label{subsec:bh}
+We recommend to run {\spades} with error correction step.
+
+In our experience, the error correction tools BayesHammer and Quake work well for multicell datasets. 
+However, for single cell datasets, we recommend BayesHammer rather than Quake; 
+Quake was not designed for single-cell datasets, and produces inferior results. 
+The performance of {\spades} on single-cell datasets deteriorates 
+significantly without running BayesHammer. 
+
+BayesHammer will be released after the papers describing the tool is accepted. 
+Meanwhile, if you need to run these tools please contact SPAdes support (\url{spades.support@bioinf.spbau.ru}).
+
 %You can do error correction with your favourite tool and then supply the resulting reads to {\spades}, but the recommended error correction tool for
 %the {\spades} project is {\bh} which is also supplied in this release. To use {\bh}, you need to create a {\tt bayeshammer.info} file similar to the one
 %\todo[inline]{Insert path to sample bayeshammer.info file.}
@@ -180,7 +211,7 @@ This collects all dependencies and runs {\tt cmake}.
 %in paired mode. The \verb$unpaired$ files contain reads that have been successfully corrected, but their paired reads have not
 %(a read is not corrected successfully if it does not contain any solid $k$-mers at all). The \verb$bad$ files contain reads for which
 %both the left and right read have not been successfully corrected.
-%
+
 %Note that {\bh} may use quite a lot of space for its temporary files (even though it gzips them by default), so choose the location
 %of the working directory wisely.
 
@@ -192,7 +223,7 @@ unpaired reads which originally were right parts. The first two files should con
 there are no requirements on the number of reads in the last two files (any of them can even be empty).
 Files are expected to be in fasta or fastq formats and can be compressed.
 
-In file {\tt configs/debruijn/datasets.info} add a new entry according to the following self-explaining pattern (recall that parts of lines starting from
+In the file {\tt configs/debruijn/datasets.info} add a new entry according to the following self-explaining pattern (recall that parts of lines after from
 semicolon are comments). Note that this file may contain any number of such entries.
 \begin{lstlisting}
 ECOLI_IS220_QUAKE
@@ -207,7 +238,7 @@ ECOLI_IS220_QUAKE
   reference_genome E.coli/MG1655-K12.fasta.gz ; optional
 }
 \end{lstlisting}
-Note that you do not need to specify the insert size and its deviation as {\spades}
+Note that you do not need to specify the insert size or its standard deviation as {\spades}
 computes them itself.
 
 \section{Running {\spades}}
@@ -215,7 +246,10 @@ To run {\spades} type
 \begin{lstlisting}
 ./spades.py <config.info>
 \end{lstlisting}
-By default (i.e., if no config file is given) {\spades} uses the file {\tt spades\_config.info}. Below we first give an example of a config file
+By default (i.e., if no config file is given) {\spades} uses the file {\tt spades\_config.info}. 
+Typing just {\tt ./spades.py} right after downloading and compiling runs {\spades}
+on a test dataset (the first 1Kb of {\ecoli}) that is provided together with the source code.
+Below we first give an example of a config file
 and then explain its contents in detail.
 
 \begin{lstlisting}
@@ -229,39 +263,59 @@ output_to_console   true
 \end{lstlisting}
 
 \begin{description}
-\item[{\tt iterative\_K}] allows to set several $k$-mer sizes. Informally, smaller values of $k$ make graph more connected,
-but at the same time more tangled, while higher values of $k$ may defragment the graph, but allow to resolve short repeats.
-See the paper for more details.
+\item[{\tt iterative\_K}] specifies one or more $k$-mer (vertex) sizes.  Informally, smaller values of $k$ make the graph more connected, but at the same time more tangled, while higher values of $k$ may defragment the graph, but allow to resolving short repeats. See the paper (\cite{main}) for more details.  Note that in the configuration file, $K$ 
+is the size of a vertex, while in the paper, $K$ is the size of an edge (one higher).
 \item[{\tt paired\_mode}] turns on/off the repeat resolver.
 \item[{\tt dataset}] is the name of the dataset as it is given in {\tt configs/debruijn/datasets.info} (see subsection~\ref{subsec:datasets}).
 \item[{\tt input\_dir}] is the directory where the corresponding dataset is stored.
 \item[{\tt output\_dir}] is the output directory.
-\item[{\tt measure\_quality}] flag allows to call quality estimation tool after the assembly is performed (the tool computes usual
-metrics like N50, genome coverage, number of misassemblies, etc).
+\item[{\tt measure\_quality}] flag: if set to true, the quality estimation tool will be called after the assembly is performed.  The tool computes metrics such as N50, genome coverage, number of misassemblies, etc.
 \item[{\tt output\_to\_console}] flag controls outputting log messages to the console.
 \end{description}
 
 \section{Understanding the output}
-Results can be found in {\tt data/debruijn/DATASET\_NAME/K.../DATE\_TIME}.
-The specific directory is given at the end of the log, e.g.:
+Results can be found in {\tt data/debruijn/DATASET\_NAME/DATE\_TIME}.
+The specific directory is given at the end of the log.
+Also, there is a folder containing statistics on various metrics (like N50) of the resulting contigs.
 \begin{lstlisting}
-289 ... Outputting contigs to ./data/debruijn/ECOLI_IS220_QUAKE/K55/
-                                          01.16_19.05.28/contigs.fasta
-289  INFO d (.../debruijn_stats.hpp:540) - Contigs written
-290  INFO d (.../debruijn/launch.hpp:50) - Genome Assembling Finished
-290  INFO d (.../debruijn/main.cpp:157) - Assembling ECOLI_IS220_QUAKE_1K 
-                                          dataset finished
+All the resulting information can be found here: 
+ ./data/debruijn/SAUREUS_JCVI_BH/build_02.07_19.05.56/
+ * Resulting contigs are called final_contigs.fasta
+ * Assessment of their quality is in quality_results/
+
+Thank you for using SPAdes!
+
+== Assembly finished. See the log file at: 
+  ./data/debruijn/SAUREUS_JCVI_BH/build_02.07_19.05.56/spades.log
 \end{lstlisting}
 
-%The symlink {\tt latest} in the subfolder {\tt K...} leads to the latest run results folder.
-%There are a lot of files there but the most important are the ones ending with {\tt .fasta}. Files {\tt before*} and {\tt after*} are contigs before 
-%and after repeat resolution, respectively.
 
-\section{FAQ}
-\todo[inline]{Kira, Sonya, Yasha, what questions have you faced? =) }
+\section{Test datasets}\label{sec:testdatasets}
+Some of the datasets that {\spades} was tested on can be found at
+\url{http://bix.ucsd.edu/projects/singlecell/nbt_data.html}.
+Our datasets correposnd to the followinf datasets at this page:
+\begin{itemize}
+\item ``ECOLI-SC'' is called ``{\ecoli}, first single cell MDA, lane 1''
+\item ``ECOLI-MC'' is called ``{\ecoli} reference, lane 6''
+\item ``{\it S. aureus}'' is ``{\it S. aureus}, single cell MDA, lane 7''
+\item ``SAR324'' is ``{\it Deltaproteobacteria}, single cell MDA, lane 1''
+\end{itemize}
+The dataset ECOLI-MC may also be obtained as
+``EMBL-EBI Sequence Read Archive, ascension number ERA000206''
+at \url{http://www.ebi.ac.uk/ena/data/view/ERA000206&display=html}.
+
+\section{Bug reports}
+Bug reports should be sent to \url{spades.support@bioinf.spbau.ru}.
+
+
+%\section{FAQ}
+%\todo[inline]{Kira, Sonya, Yasha, what questions have you faced? =) }
 %\subsection{How to choose the $k$-mer size?}
 %\subsection{What if my question is not here?}
 
+
+\bibliographystyle{plain}
+\bibliography{manualbib}
 
 
 \end{document}
