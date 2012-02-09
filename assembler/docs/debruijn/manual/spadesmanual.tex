@@ -108,28 +108,29 @@ sudo ./install_prerequirements
 installs all these packages automatically if you are using {\tt apt} (advanced package tool).
 %This installs all the required packages in a debian-like unix systems through {\tt apt-get install}.
 If your operating system does not support {\tt apt-get} command you
-need to install all the packages manually. 
+need to install all the packages manually. Packages 8--14 are only needed if you are going
+to use the quality tool (it measures the quality of assembly, see section~\ref{sec:running}).
 
 \begin{center}
-\begin{tabular}{lll}
+\begin{tabular}{rlll}
 \toprule
-package & description & recommended version\\
+& package & description & recommended version\\
 \midrule
-{\tt gcc++-4.4} & GNU C Compiler & 4.4\\
-{\tt python2.6-dev} & Python & 2.6\\
-{\tt cmake} & make system & 2.6\\
-{\tt cmake-curses-gui} & curses based user interface for cmake & 2.6\\
-{\tt liblog4cxx10-dev} & logging library for {\tt C++} & \\
-{\tt libboost1.42-all-dev} & Boost {\tt C++} libraries & 1.42\\
-{\tt zlib1g-dev} & compression library & \\
+1 & {\tt gcc++-4.4} & GNU C Compiler & 4.4\\
+2 & {\tt python2.6-dev} & Python & 2.6\\
+3 & {\tt cmake} & make system & 2.6\\
+4 & {\tt cmake-curses-gui} & curses based user interface for cmake & 2.6\\
+5 & {\tt liblog4cxx10-dev} & logging library for {\tt C++} & \\
+6 & {\tt libboost1.42-all-dev} & Boost {\tt C++} libraries & 1.42\\
+7 & {\tt zlib1g-dev} & compression library & \\
 %%% the following libraries are needed for quality tool
-{\tt java-common} & Java &\\
-{\tt python-matplotlib} & plotting system & \\
-{\tt python-numpy} & fast arrays for python & \\
-{\tt bioperl} & Perl tools for computational molecular biology & \\
-{\tt mummer} & efficient sequence alignment of full genomes & \\
-{\tt r-recommended} & GNU R recommended packages & \\
-{\tt pdftk} & tool for manipulating PDF documents & \\
+8 & {\tt java-common} & Java &\\
+9 & {\tt python-matplotlib} & plotting system & \\
+10 & {\tt python-numpy} & fast arrays for python & \\
+11 & {\tt bioperl} & Perl tools for computational molecular biology & \\
+12 & {\tt mummer} & efficient sequence alignment of full genomes & \\
+13 & {\tt r-recommended} & GNU R recommended packages & \\
+14 & {\tt pdftk} & tool for manipulating PDF documents & \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -241,18 +242,24 @@ ECOLI_IS220_QUAKE
 Note that you do not need to specify the insert size or its standard deviation as {\spades}
 computes them itself.
 
-\section{Running {\spades}}
+\section{Running {\spades}}\label{sec:running}
 To run {\spades} type
 \begin{lstlisting}
 ./spades.py <config.info>
 \end{lstlisting}
+Note that the script requires {\tt python} version~2.6.
+If your default {\tt python} version is lower  type
+\begin{lstlisting}
+python26 ./spades.py <config.info>
+\end{lstlisting}
+
 By default (i.e., if no config file is given) {\spades} uses the file {\tt spades\_config.info}. 
 Typing just {\tt ./spades.py} right after downloading and compiling runs {\spades}
 on a test dataset (the first 1Kb of {\ecoli}) that is provided together with the source code.
 Below we first give an example of a config file
 and then explain its contents in detail.
 
-\begin{lstlisting}
+\begin{lstlisting}																																																																																																																																																																																																																																																																																																																			
 iterative_K         21 33 55
 paired_mode         true 
 dataset             ECOLI_IS220_QUAKE_1K
