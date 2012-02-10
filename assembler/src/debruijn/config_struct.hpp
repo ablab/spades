@@ -314,8 +314,13 @@ struct debruijn_config {
 	};
 
 	struct gap_closer {
-		bool enable;
-		int minimal_intersection;
+	    bool    enable;
+		int     minimal_intersection;
+		bool    before_simplify;
+		bool    in_simplify;
+		bool    after_simplify;
+		bool    use_extended_mapper;
+		double  weight_threshold;
 	};
 
 	struct info_printer {
@@ -514,6 +519,11 @@ inline void load(debruijn_config::gap_closer& gc,
 	using config_common::load;
 	load(gc.enable, pt, "enable");
 	load(gc.minimal_intersection, pt, "minimal_intersection");
+	load(gc.before_simplify     , pt, "before_simplify"     );
+	load(gc.in_simplify         , pt, "in_simplify"         );
+	load(gc.after_simplify      , pt, "after_simplify"      );
+	load(gc.use_extended_mapper , pt, "use_extended_mapper" );
+	load(gc.weight_threshold    , pt, "weight_threshold"    );
 }
 
 inline void load(debruijn_config::dataset& ds,

@@ -89,8 +89,14 @@ pos
 
 gap_closer
 {
-    enable	false
+    enable			true
     minimal_intersection	10
+    before_simplify		true
+    in_simplify    		false
+    after_simplify 		true
+    use_extended_mapper		true
+    weight_threshold		0.0
+
 }
 
 

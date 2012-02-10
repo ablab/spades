@@ -49,7 +49,9 @@ void simplify_graph(conj_graph_pack& gp) {
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
 
-	FirstCloseGap<K>(stream, gp);
+	if (cfg::get().gc.enable && cfg::get().gc.before_simplify)
+		CloseGap<K>(stream, gp, cfg::get().gc.use_extended_mapper);
+	
 	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
 //	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
@@ -69,6 +71,12 @@ void simplify_graph(conj_graph_pack& gp) {
 
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
 	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
+
+	if (cfg::get().gc.enable && cfg::get().gc.after_simplify)
+		CloseGap<K>(stream, gp, cfg::get().gc.use_extended_mapper);
+	
+	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
+
 
 	//experimental
 //	if (cfg::get().paired_mode) {

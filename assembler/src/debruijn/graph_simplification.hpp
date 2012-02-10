@@ -463,7 +463,10 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
 //			: cfg::get().simp.ec.max_coverage;
     
 	for (size_t i = 0; i < iteration_count; i++) {
-//		FirstCloseGap<K>(stream, gp);
+		if ((cfg::get().gc.enable)&&(cfg::get().gc.in_simplify)){
+			CloseGap<K>(stream, gp, cfg::get().gc.use_extended_mapper);
+		}
+
 		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,
 				iteration_count, i, max_coverage);
 	}
