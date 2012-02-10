@@ -267,7 +267,6 @@ public:
 				"breakpoint_graph", "assembly_comparison/breakpoint_graph.dot",
 				coloring, labeler);
 	}
-
 };
 
 template<class gp_t>
@@ -285,7 +284,8 @@ public:
 		single_blue,
 		simple_bulge,
 		simple_misassembly,
-		complex_misassembly
+		complex_misassembly,
+		size
 	};
 
 private:
@@ -370,6 +370,43 @@ public:
 				}
 		}
 		return component_type::complex_misassembly;
+	}
+};
+
+template<class gp_t>
+class BreakPointGraphStatistics : public GraphComponentFilter<Graph> {
+private:
+	typedef typename gp_t::graph_t Graph;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename AssemblyComparer<gp_t>::edge_type edge_type;
+	typedef typename ComponentClassificator<gp_t>::component_type component_type;
+
+	const gp_t &gp_;
+	ComponentClassificator<gp_t> cc_;
+	vector<size_t> ct_counter;
+	bool ready_;
+
+public:
+	BreakPointGraphStatistics(const gp_t &gp) : gp_(gp), cc_(gp), ct_counter(component_type::size), ready_(false) {
+	}
+
+	bool Check(vector<VertexId> component) {
+		component_type t = cc_.GetComponentType(component);
+		ct_counter[t]++;
+		return t == component_type::complex_misassembly;
+	}
+
+	void CountStats(const map<EdgeId, string> &coloring, const GraphLabeler<Graph>& labeler) {
+		make_dir("assembly_comparison");
+		WriteComponents(gp_.g, LongEdgesExclusiveSplitter<Graph>(gp_.g, 1000000000), *this,
+			"breakpoint_graph", "assembly_comparison/breakpoint_graph.dot",
+			coloring, labeler);
+		ready_ = true;
+	}
+
+	size_t GetComponentNumber(component_type t) const {
+		return ct_counter[t];
 	}
 };
 
