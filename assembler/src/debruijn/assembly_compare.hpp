@@ -151,7 +151,7 @@ private:
 				VERIFY(i < breaks.size());
 			}
 			while (breaks[i] != it->end_pos) {
-				coloring[i] = (edge_type)((int)coloring[i] + (int) paint);
+				coloring[i] = (edge_type)((int)coloring[i] | (int) paint);
 				++i;
 				VERIFY(i < breaks.size());
 			}
@@ -268,6 +268,109 @@ public:
 				coloring, labeler);
 	}
 
+};
+
+template<class gp_t>
+class ComponentClassificator {
+private:
+	typedef typename gp_t::graph_t Graph;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename AssemblyComparer<gp_t>::edge_type edge_type;
+
+public:
+	enum component_type {
+		error = 0,
+		single_red,
+		single_blue,
+		simple_bulge,
+		simple_misassembly,
+		complex_misassembly
+	};
+
+private:
+	const gp_t &gp_;
+	const size_t bulge_length_;
+
+public:
+	ComponentClassificator(const gp_t &gp, size_t bulge_length) :
+			gp_(gp), bulge_length_(bulge_length) {
+	}
+
+	ComponentClassificator(const gp_t &gp) :
+			gp_(gp), bulge_length_(gp.g.k() * 5) {
+	}
+
+	edge_type GetColour(EdgeId edge) {
+		return edge_type::red;
+	}
+
+	bool CheckSimpleMisassembly(vector<size_t> sources, vector<size_t> sinks) {
+		if(sources.size() != 2 || sinks.size() != 2)
+			return false;
+		for(size_t i = 0; i < sources.size(); i++)
+			for(size_t j = 0; j < sinks.size(); j++) {
+				if(gp_.g.GetEdgesBetween(sources[i], sinks[j]).size() != 1) {
+					return false;
+				}
+			}
+		for(size_t i = 0; i < 2; i++) {
+			if(gp_.g.GetEdgesBetween(sources[i], sources[1 - i]).size() != 0)
+				return false;
+			if(gp_.g.GetEdgesBetween(sinks[i], sinks[1 - i]).size() != 0)
+				return false;
+		}
+		for(size_t i = 0; i < 2; i++) {
+			if(GetColour(gp_.g.GetEdgesBetween(sources[i], sinks[0])) == GetColour(gp_.g.GetEdgesBetween(sources[i], sinks[1])))
+				return false;
+			if(GetColour(gp_.g.GetEdgesBetween(sources[0], sinks[i])) == GetColour(gp_.g.GetEdgesBetween(sources[1], sinks[i])))
+				return false;
+		}
+		return true;
+	}
+
+	component_type GetComponentType(const vector<VertexId> &component) {
+		if(component.size() < 2)
+			return component_type::error;
+		if(component.size() == 2) {
+			vector<EdgeId> edges01 = gp_.g.GetEdgesBetween(component[0], component[1]);
+			vector<EdgeId> edges10 = gp_.g.GetEdgesBetween(component[0], component[1]);
+			if(edges01.size() > 0 && edges10.size() > 0) {
+				return component_type::complex_misassembly;
+			}
+			vector<EdgeId> edges;
+			edges.insert(edges.end(), edges01.begin(), edges01.end());
+			edges.insert(edges.end(), edges10.begin(), edges10.end());
+			if(edges.size() == 1) {
+				if(GetColour(edges[0]) == edge_type::red) {
+					return component_type::single_red;
+				} else {
+					return component_type::single_blue;
+				}
+			}
+			if(edges.size() == 2 && gp_.g.length(edges[0]) < bulge_length_ && gp_.g.length(edges[1]) < bulge_length_) {
+				return component_type::simple_bulge;
+			}
+			return component_type::complex_misassembly;
+		}
+		if(component.size() == 4) {
+			for(size_t i = 0; i < 4; i++)
+				for(size_t j = i + 1; j < 4; j++) {
+					vector<size_t> sources;
+					sources.push_back(i);
+					sources.push_back(j);
+					vector<size_t> sinks;
+					for(int k = 0; k < 4; k++) {
+						if(k != i && k != j)
+							sinks.push_back(k);
+					}
+					if(CheckSimpleMisassembly(sources, sinks)) {
+						return component_type::simple_misassembly;
+					}
+				}
+		}
+		return component_type::complex_misassembly;
+	}
 };
 
 }
