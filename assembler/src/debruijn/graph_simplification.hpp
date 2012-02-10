@@ -17,6 +17,7 @@
 #include "omni/bulge_remover.hpp"
 #include "omni/erroneous_connection_remover.hpp"
 #include "omni/mf_ec_remover.hpp"
+#include "gap_closer.hpp"
 
 namespace debruijn_graph {
 
@@ -445,7 +446,7 @@ double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
 
 void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_handler_f,
 		omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
-		const string& output_folder) {
+		const string& output_folder, PairedReadStream& stream) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 	detail_info_printer printer(gp, labeler, output_folder, "graph.dot");
@@ -462,6 +463,7 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
 //			: cfg::get().simp.ec.max_coverage;
     
 	for (size_t i = 0; i < iteration_count; i++) {
+//		FirstCloseGap<K>(stream, gp);
 		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,
 				iteration_count, i, max_coverage);
 	}

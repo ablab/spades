@@ -9,6 +9,7 @@
 
 #include "standard.hpp"
 #include "construction.hpp"
+#include "gap_closer.hpp"
 #include "omni_labelers.hpp"
 #include "omni/omni_tools.hpp"
 
@@ -48,6 +49,7 @@ void simplify_graph(conj_graph_pack& gp) {
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
 
+	FirstCloseGap<K>(stream, gp);
 	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
 //	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
@@ -63,7 +65,7 @@ void simplify_graph(conj_graph_pack& gp) {
 
 
 	SimplifyGraph(gp, removal_handler_f, tot_lab, 10,
-			cfg::get().output_dir);
+			cfg::get().output_dir, stream/*, etalon_paired_index*/);
 
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
 	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
