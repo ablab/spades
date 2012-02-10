@@ -261,8 +261,8 @@ void SaveResolvedPairedInfo(
 		graph_pack& resolved_gp,
 		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info,
 		const string& graph_name, const string& subfolder) {
-
-	std::string rr_filename = cfg::get().output_dir + subfolder + graph_name;
+	INFO(subfolder);
+	std::string rr_filename = (cfg::get().output_dir + subfolder) + graph_name;
 	INFO("Saving graph and paired info to " << rr_filename);
 	PrintWithClusteredIndex(rr_filename, resolved_gp,
 			resolved_graph_paired_info);
@@ -281,6 +281,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //	ProduceLongEdgesStat( origin_gp,  clustered_index);
 	CorrectPairedInfo( origin_gp,  clustered_index);
 	CorrectPairedInfo( origin_gp,  clustered_index);
+	GenerateMatePairStats(origin_gp,  clustered_index);
 	DEBUG("New index size: "<< clustered_index.size());
 	// todo: make printGraph const to its arguments
 
@@ -489,9 +490,38 @@ set<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(const
 	path_processor.Process();
 	auto paths = callback.paths();
     TRACE(origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge) << " "<< paths.size());
-
 	return paths;
+}
 
+template<class graph_pack>
+size_t GetAllPathsQuantity (const graph_pack& origin_gp, typename graph_pack::graph_t::EdgeId& first_edge, typename graph_pack::graph_t::EdgeId& second_edge , double dist) {
+	PathReceiverCallback <typename graph_pack::graph_t> callback(origin_gp.g);
+	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, dist - origin_gp.g.length(first_edge) - cfg::get().de.delta, dist - origin_gp.g.length(first_edge) + cfg::get().de.delta,
+																	origin_gp.g.EdgeEnd(first_edge),
+																	origin_gp.g.EdgeStart(second_edge), callback);
+	path_processor.Process();
+	auto paths = callback.paths();
+	TRACE(origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge) << " "<< paths.size());
+	return paths.size();
+}
+
+template<class graph_pack>
+void GenerateMatePairStats(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
+	map<size_t, size_t> sizes;
+	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+		auto pi = clustered_index.GetEdgeInfo(*e_iter);
+		for (auto i_iter = pi.begin(); i_iter!= pi.end(); ++i_iter) {
+			if (i_iter->d >= origin_gp.g.length(i_iter->first)) {
+				size_t tmp = GetAllPathsQuantity(origin_gp, i_iter->first, i_iter->second, i_iter->d);
+				if (sizes.find(tmp) == sizes.end())
+					sizes.insert(make_pair(tmp, 0 ));
+				sizes[tmp] ++;
+			}
+		}
+	}
+	for(auto s_iter = sizes.begin(); s_iter != sizes.end(); s_iter ++) {
+		INFO("Size: " << s_iter->first << "pathsets " << s_iter ->second);
+	}
 }
 
 template<class graph_pack>
