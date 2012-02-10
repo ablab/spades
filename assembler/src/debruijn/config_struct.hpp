@@ -366,7 +366,7 @@ public:
 	bool advanced_estimator_mode;
 	bool componential_resolve;
 
-	size_t is_infinity;
+//	size_t is_infinity;
 
 	resolving_mode rm;
 	long_contigs::lc_config::lc_params andrey_params;
@@ -691,11 +691,19 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.jump, pt, "jump");
 
 	load_reference_genome(cfg.ds, cfg.input_dir);
-	cfg.is_infinity = 100000000;
+//	cfg.is_infinity = 100000000;
 }
 
 } // debruijn_graph
 
 typedef config_common::config<debruijn_graph::debruijn_config> cfg;
+
+namespace debruijn_graph {
+
+inline string input_file(string filename) {
+	 return cfg::get().input_dir + filename;
+}
+
+}
 
 #endif

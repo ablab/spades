@@ -25,7 +25,7 @@ void late_pair_info_count(conj_graph_pack& gp,
 		io::PairedEasyReader stream(
 				make_pair(input_file(cfg::get().ds.first),
 						input_file(cfg::get().ds.second)),
-				cfg::get().is_infinity);
+				*cfg::get().ds.IS);
 
 		if (cfg::get().advanced_estimator_mode)
 			FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,

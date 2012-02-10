@@ -446,7 +446,7 @@ double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
 
 void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_handler_f,
 		omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
-		const string& output_folder, PairedReadStream& stream) {
+		const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 	detail_info_printer printer(gp, labeler, output_folder, "graph.dot");
@@ -464,7 +464,7 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
     
 	for (size_t i = 0; i < iteration_count; i++) {
 		if ((cfg::get().gc.enable)&&(cfg::get().gc.in_simplify)){
-			CloseGap<K>(stream, gp, cfg::get().gc.use_extended_mapper);
+			CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
 		}
 
 		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,

@@ -79,10 +79,6 @@ void save_construction(conj_graph_pack& gp) {
 //	return boost::none;
 //}
 
-string input_file(string filename) {
-	 return cfg::get().input_dir + filename;
-}
-
 void exec_construction(conj_graph_pack& gp) {
 	typedef io::EasyReader EasyStream;
 

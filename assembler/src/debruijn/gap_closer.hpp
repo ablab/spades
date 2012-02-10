@@ -216,7 +216,11 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
 
 
 template<size_t k>
-void CloseGap(PairedReadStream& stream, conj_graph_pack& gp, bool use_extended_mapper = true){
+void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
+	io::PairedEasyReader stream(
+			make_pair(input_file(cfg::get().ds.first),
+					input_file(cfg::get().ds.second)),
+			0);
 	stream.reset();
 	INFO("Closing gaps");
 	if (use_extended_mapper) {
