@@ -13,7 +13,54 @@ namespace debruijn_graph {
 typedef io::IReader<io::SingleRead> ContigStream;
 typedef io::MultifileReader<io::SingleRead> CompositeContigStream;
 
-template<class gp_t>
+enum edge_type {
+	//don't change order!!!
+	black = 0, red, blue, violet
+};
+
+template <class Graph>
+class ColorHandler : public GraphActionHandler<Graph> {
+	typedef GraphActionHandler<Graph> base;
+	typedef typename Graph::EdgeId EdgeId;
+
+	map<EdgeId, edge_type> data_;
+public:
+	static string color_str(edge_type color) {
+		static string colors[] = {"black", "red", "blue", "purple"};
+		return colors[(int)color];
+	}
+
+	ColorHandler(const Graph& g) : base(g, "ColorHandler") {
+
+	}
+
+	void PaintEdge(EdgeId e, edge_type color) {
+		data_[e] = (edge_type)((int)data_[e] | (int) color);
+	}
+
+	edge_type Color(EdgeId e) const {
+		auto it = data_.find(e);
+		if (it == data_.end())
+			return edge_type::black;
+		else
+			return it->second;
+	}
+
+	/*virtual*/ void HandleDelete(EdgeId e) {
+		data_.erase(e);
+	}
+
+	map<EdgeId, string> color_str_map() {
+		map<EdgeId, string> answer;
+		for (auto it = this->g(); !it.IsEnd(); ++it) {
+			answer[*it] = color_str(Color(*it));
+		}
+		return answer;
+	}
+
+};
+
+template <class gp_t>
 class CoveredRangesFinder {
 	const gp_t& gp_;
 
@@ -90,16 +137,16 @@ class BreakPointsFilter: public GraphComponentFilter<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	const map<EdgeId, string>& coloring_;
+	const ColorHandler<Graph> coloring_;
 	size_t color_threshold_;
 public:
-	BreakPointsFilter(const Graph& graph, const map<EdgeId, string>& coloring, size_t color_threshold) :
+	BreakPointsFilter(const Graph& graph, const ColorHandler<Graph>& coloring, size_t color_threshold) :
 			base(graph), coloring_(coloring), color_threshold_(color_threshold) {
 
 	}
 
 	bool MultiColored(const GraphComponent<Graph>& component) const {
-		set<string> colors;
+		set<edge_type> colors;
 		for (auto it = component.e_begin(); it != component.e_end(); ++it) {
 			auto color_it = coloring_.find(*it);
 			VERIFY(color_it != coloring_.end());
@@ -119,22 +166,11 @@ public:
 
 template<class gp_t>
 class AssemblyComparer {
-public:
-	enum edge_type {
-		//don't change order!!!
-		black = 0, red, blue, violet
-	};
-
-	static string color_str(edge_type color) {
-		static string colors[] = {"black", "red", "blue", "purple"};
-		return colors[(int)color];
-	}
-
 private:
 	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef map<EdgeId, vector<Range>> CoveredRanges;
-	typedef map<EdgeId, pair<vector<size_t>, vector<edge_type>>> BreakPoints;
+	typedef map<EdgeId, vector<size_t>> BreakPoints;
 
 	void AddBreaks(set<size_t>& breaks, const vector<Range>& ranges) {
 		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
@@ -143,49 +179,30 @@ private:
 		}
 	}
 
-	void Paint(vector<edge_type>& coloring, const vector<Range>& ranges, const vector<size_t>& breaks, edge_type paint) {
-		size_t i = 0;
-		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
-			while (breaks[i] != it->start_pos) {
-				++i;
-				VERIFY(i < breaks.size());
-			}
-			while (breaks[i] != it->end_pos) {
-				coloring[i] = (edge_type)((int)coloring[i] | (int) paint);
-				++i;
-				VERIFY(i < breaks.size());
-			}
-		}
-	}
-
-	pair<vector<size_t>, vector<edge_type>> CombineCoveredRanges(const vector<Range>& ranges1, const vector<Range>& ranges2) {
+	vector<size_t> CombineCoveredRanges(const vector<Range>& ranges1, const vector<Range>& ranges2) {
 		set<size_t> tmp_breaks;
 		AddBreaks(tmp_breaks, ranges1);
 		AddBreaks(tmp_breaks, ranges2);
 		vector<size_t> breaks(tmp_breaks.begin(), tmp_breaks.end());
-		VERIFY(breaks.size() >= 2);
 		//breaks contain 0 and edge_length here!
-		vector<edge_type> coloring(breaks.size() - 1, edge_type::black);
-		Paint(coloring, ranges1, breaks, edge_type::red);
-		Paint(coloring, ranges2, breaks, edge_type::blue);
+		VERIFY(breaks.size() >= 2);
 		//cleaning breaks from 0 and edge_length
 		vector<size_t> final_breaks;
 		for (size_t i = 1; i < breaks.size() - 1; ++i) {
 			final_breaks.push_back(breaks[i]);
 		}
-		return make_pair(final_breaks, coloring);
+		return final_breaks;
 	}
 
 	void FindBreakPoints(const Graph& g, BreakPoints& bps, /*const */CoveredRanges& crs1, /*const */CoveredRanges& crs2) {
 		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			EdgeId e = *it;
 			bps[e] = CombineCoveredRanges(crs1[e], crs2[e]);
-			VERIFY(bps[e].first.empty() || bps[e].first.back() < g.length(e));
+			VERIFY(bps[e].empty() || bps[e].back() < g.length(e));
 		}
 	}
 
-	void SplitEdge(const vector<size_t>& breaks, const vector<edge_type>& colors, EdgeId e, Graph& g, map<EdgeId, string>& coloring) {
-		VERIFY(breaks.size() + 1 == colors.size());
+	void SplitEdge(const vector<size_t>& breaks, EdgeId e, Graph& g) {
 		vector<size_t> shifts(breaks.size());
 		if (!breaks.empty()) {
 			shifts[0] = breaks[0];
@@ -196,14 +213,11 @@ private:
 		EdgeId curr_e = e;
 		for (size_t i = 0; i < breaks.size(); ++i) {
 			auto split_result = g.SplitEdge(curr_e, shifts[i]);
-			//todo doesn't work for paired graph!!!
-			coloring.insert(make_pair(split_result.first, color_str(colors[i])));
 			curr_e = split_result.second;
 		}
-		coloring.insert(make_pair(curr_e, color_str(colors[breaks.size()])));
 	}
 
-	void SplitGraph(/*const */BreakPoints& bps, Graph& g, map<EdgeId, string>& coloring) {
+	void SplitGraph(/*const */BreakPoints& bps, Graph& g) {
 		set<EdgeId> initial_edges;
 		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			initial_edges.insert(*it);
@@ -212,7 +226,7 @@ private:
 			EdgeId e = *it;
 			VERIFY(bps.find(e) != bps.end());
 			VERIFY(bps[e].first.empty() || bps[e].first.back() < g.length(e));
-			SplitEdge(bps[e].first, bps[e].second, e, g, coloring);
+			SplitEdge(bps[e], e, g);
 		}
 	}
 
@@ -222,6 +236,29 @@ private:
 		while (!stream.eof()) {
 			stream >> read;
 			FillEdgesPos(gp, read.sequence(), stream_prefix + read.name());
+		}
+	}
+
+	void DeleteVioletEdges(Graph& g, const ColorHandler<Graph>& coloring) {
+		for (auto it = g.SmartEdgebegin(); !it.IsEnd(); ++it) {
+			if (coloring(*it) == edge_type::violet) {
+				g.DeleteEdge(*it);
+			}
+		}
+	}
+
+	void ColorPath(const Path<EdgeId>& path, ColorHandler<Graph>& coloring, edge_type color) {
+		for (size_t i = 0; i < path.size(); ++i) {
+			coloring.PaintEdge(path[i], color);
+		}
+	}
+
+	void ColorGraph(const gp_t& gp, ColorHandler<Graph>& coloring, ContigStream& stream, edge_type color) {
+		io::SingleRead read;
+		stream.reset();
+		NewExtendedSequenceMapper<gp_t::k_value + 1, typename gp_t::graph_t> mapper(gp.g, gp.index, gp.kmer_mapper);
+		while (!stream.eof()) {
+			ColorPath(mapper.MapSequence(read.sequence()).simple_path(), coloring, color);
 		}
 	}
 
@@ -239,7 +276,7 @@ public:
 		br_config.max_relative_coverage = 1.2;
 		br_config.max_delta = 3;
 		br_config.max_relative_delta = 0.1;
-		RemoveBulges(gp.g, br_config);
+//		RemoveBulges(gp.g, br_config);
 
 		CoveredRangesFinder<gp_t> crs_finder(gp);
 		CoveredRanges crs1;
@@ -248,10 +285,15 @@ public:
 		crs_finder.FindCoveredRanges(crs2, stream2);
 		BreakPoints bps;
 		FindBreakPoints(gp.g, bps, crs1, crs2);
-		map<EdgeId, string> coloring;
 
-		//todo color after split!!! for dealing with conjugate graphs
-		SplitGraph(bps, gp.g, coloring);
+		SplitGraph(bps, gp.g);
+
+		ColorHandler<Graph> coloring(gp.g);
+
+		ColorGraph(gp, coloring, stream1, edge_type::red);
+		ColorGraph(gp, coloring, stream2, edge_type::blue);
+
+		DeleteVioletEdges(gp.g, coloring);
 
 		FillPos(gp, stream1, name1);
 		FillPos(gp, stream2, name2);
@@ -270,7 +312,7 @@ public:
 };
 
 template<class gp_t>
-class ComponentClassificator {
+class ComponentClassifier {
 private:
 	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
@@ -293,11 +335,11 @@ private:
 	const size_t bulge_length_;
 
 public:
-	ComponentClassificator(const gp_t &gp, size_t bulge_length) :
+	ComponentClassifier(const gp_t &gp, size_t bulge_length) :
 			gp_(gp), bulge_length_(bulge_length) {
 	}
 
-	ComponentClassificator(const gp_t &gp) :
+	ComponentClassifier(const gp_t &gp) :
 			gp_(gp), bulge_length_(gp.g.k() * 5) {
 	}
 
