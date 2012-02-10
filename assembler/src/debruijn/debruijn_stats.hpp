@@ -452,8 +452,9 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
 	if (config.write_components) {
 		make_dir(folder + "components/");
+		size_t threshold = 500;//cfg::get().ds.IS ? *cfg::get().ds.IS : 250;
 		WriteComponents(gp.g, labeler, folder + "components/" + file_name, graph_name,
-				*cfg::get().ds.IS, path1, path2);
+				threshold, path1, path2);
 	}
 
 	if (!config.components_for_kmer.empty()) {
@@ -464,9 +465,10 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
 	if (config.write_components_along_genome) {
 		make_dir(folder + "along_genome/");
+		size_t threshold = 500;//cfg::get().ds.IS ? *cfg::get().ds.IS : 250;
 		WriteGraphComponentsAlongGenome(gp.g, gp.int_ids, gp.index,
 				gp.kmer_mapper, labeler, gp.genome, folder + "along_genome/", file_name,
-				"components_along_genome", *cfg::get().ds.IS);
+				"components_along_genome", threshold);
 	}
 
 	if (config.save_full_graph) {
