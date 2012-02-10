@@ -16,6 +16,7 @@
 #include "omni/omni_tools.hpp"
 #include "standard.hpp"
 #include "omni_labelers.hpp"
+#include "io/easy_reader.hpp"
 
 namespace debruijn_graph {
 

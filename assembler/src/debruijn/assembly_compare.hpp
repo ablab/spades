@@ -421,11 +421,10 @@ private:
 	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef typename AssemblyComparer<gp_t>::edge_type edge_type;
-	typedef typename ComponentClassificator<gp_t>::component_type component_type;
+	typedef typename ComponentClassifier<gp_t>::component_type component_type;
 
 	const gp_t &gp_;
-	ComponentClassificator<gp_t> cc_;
+	ComponentClassifier<gp_t> cc_;
 	vector<size_t> ct_counter;
 	bool ready_;
 
