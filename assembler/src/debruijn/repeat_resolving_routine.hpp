@@ -496,7 +496,7 @@ set<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(const
 template<class graph_pack>
 size_t GetAllPathsQuantity (const graph_pack& origin_gp, typename graph_pack::graph_t::EdgeId& first_edge, typename graph_pack::graph_t::EdgeId& second_edge , double dist) {
 	PathReceiverCallback <typename graph_pack::graph_t> callback(origin_gp.g);
-	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, dist - origin_gp.g.length(first_edge) - cfg::get().de.delta, dist - origin_gp.g.length(first_edge) + cfg::get().de.delta,
+	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, dist - origin_gp.g.length(first_edge) - size_t(*cfg::get().ds.is_var), dist - origin_gp.g.length(first_edge) + size_t(*cfg::get().ds.is_var),
 																	origin_gp.g.EdgeEnd(first_edge),
 																	origin_gp.g.EdgeStart(second_edge), callback);
 	path_processor.Process();
