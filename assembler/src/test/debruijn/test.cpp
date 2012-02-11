@@ -15,7 +15,7 @@
 DECL_PROJECT_LOGGER("dt")
 
 namespace debruijn_graph {
-
+//
 //BOOST_AUTO_TEST_CASE( CompareAssemblies ) {
 //	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, 101>> comparer;
 ////    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");

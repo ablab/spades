@@ -298,11 +298,16 @@ public:
 			"breakpoint_graph", "assembly_comparison/breakpoint_graph.dot",
 			coloring_.color_str_map(), labeler);
 		ready_ = true;
+		for (size_t i = 0; i < component_type::size; ++i) {
+			INFO("Number of components of type " << i << " is " << ct_counter[i]);
+		}
 	}
 
 	size_t GetComponentNumber(component_type t) const {
 		return ct_counter[t];
 	}
+private:
+	DECL_LOGGER("BreakPointGraphStatistics");
 };
 
 template<class gp_t>
@@ -397,8 +402,9 @@ private:
 	void ColorGraph(const gp_t& gp, ColorHandler<Graph>& coloring, ContigStream& stream, edge_type color) {
 		io::SingleRead read;
 		stream.reset();
-		NewExtendedSequenceMapper<gp_t::k_value + 1, typename gp_t::graph_t> mapper(gp.g, gp.index, gp.kmer_mapper);
+		NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp.g, gp.index, gp.kmer_mapper);
 		while (!stream.eof()) {
+			stream >> read;
 			ColorPath(mapper.MapSequence(read.sequence()).simple_path(), coloring, color);
 		}
 	}
@@ -409,33 +415,41 @@ public:
 			, const string& name1, const string& name2) {
 		gp_t gp;
 		CompositeContigStream stream(stream1, stream2);
+		INFO("Constructing graph");
 		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, stream);
 
-		debruijn_config::simplification::bulge_remover br_config;
-		br_config.max_bulge_length_coefficient = 4;
-		br_config.max_coverage = 1000.;
-		br_config.max_relative_coverage = 1.2;
-		br_config.max_delta = 3;
-		br_config.max_relative_delta = 0.1;
+//		debruijn_config::simplification::bulge_remover br_config;
+//		br_config.max_bulge_length_coefficient = 4;
+//		br_config.max_coverage = 1000.;
+//		br_config.max_relative_coverage = 1.2;
+//		br_config.max_delta = 3;
+//		br_config.max_relative_delta = 0.1;
+//		INFO("Removing bulges");
 //		RemoveBulges(gp.g, br_config);
 
+		INFO("Determining covered ranges");
 		CoveredRangesFinder<gp_t> crs_finder(gp);
 		CoveredRanges crs1;
 		crs_finder.FindCoveredRanges(crs1, stream1);
 		CoveredRanges crs2;
 		crs_finder.FindCoveredRanges(crs2, stream2);
 		BreakPoints bps;
+		INFO("Determining breakpoints");
 		FindBreakPoints(gp.g, bps, crs1, crs2);
 
+		INFO("Splitting graph");
 		SplitGraph(bps, gp.g);
 
 		ColorHandler<Graph> coloring(gp.g);
 
+		INFO("Coloring graph");
 		ColorGraph(gp, coloring, stream1, edge_type::red);
 		ColorGraph(gp, coloring, stream2, edge_type::blue);
 
+		INFO("Removing unnecessary edges");
 		DeleteVioletEdges(gp.g, coloring);
 
+		INFO("Filling contig positions");
 		FillPos(gp, stream1, name1);
 		FillPos(gp, stream2, name2);
 
@@ -445,9 +459,12 @@ public:
 
 //		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
 //		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
+		INFO("Counting stats, outputting pictures");
 		BreakPointGraphStatistics<Graph> stats(gp.g, coloring);
 		stats.CountStats(labeler);
 	}
+private:
+	DECL_LOGGER("AssemblyComparer");
 };
 
 }
