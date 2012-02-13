@@ -17,9 +17,9 @@ if len(sys.argv) < 2:
 	exit(1)
 
 if sys.argv[1] == "-c":
-	sortkey = lambda (name, seq): -float(re.search("cov_([.0-9]+)", name).group(1))
+	sortkey = lambda (name, seq): -float(re.search("cov\w*_([.0-9]+)", name).group(1))
 else:
-	sortkey = lambda (name, seq): -float(re.search("len_([.0-9]+)", name).group(1))
+	sortkey = lambda (name, seq): -float(re.search("len\w*_([.0-9]+)", name).group(1))
 
 nameonly = (sys.argv[2] == "-n")
 
