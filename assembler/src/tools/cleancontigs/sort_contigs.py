@@ -11,16 +11,29 @@ sys.path.append('../quality/libs')
 import fastaparser
 
 if len(sys.argv) < 2:
-	print 'Usage', sys.argv[0], 'in.fasta > out.fasta'
+	print 'Usage:\n', sys.argv[0], '(-l|-c) (-n|-f) in.fasta > out.fasta'
+	print "-l | -c\tsort by Length or Coverage"
+	print "-n | -f\toutput Name only or Full recode"
 	exit(1)
 
-fastafilename = sys.argv[1]
+if sys.argv[1] == "-c":
+	sortkey = lambda (name, seq): -float(re.search("cov_([.0-9]+)", name).group(1))
+else:
+	sortkey = lambda (name, seq): -float(re.search("len_([.0-9]+)", name).group(1))
+
+nameonly = (sys.argv[2] == "-n")
+
+fastafilename = sys.argv[3]
 fasta = fastaparser.read_fasta(fastafilename)
 fasta_res = []
 
 for name, seq in fasta:
     fasta_res += [(name, seq)]
 
-fasta_res = sorted(fasta_res, key=lambda (name, seq): -float(re.search("cov_([.0-9]+)", name).group(1)))
+fasta_res = sorted(fasta_res, key=sortkey)
 
-fastaparser.write_fasta((name, seq) for name, seq in fasta_res)
+if nameonly:
+    for name, seq in fasta_res
+    	print name
+else:
+	fastaparser.write_fasta((name, seq) for name, seq in fasta_res)
