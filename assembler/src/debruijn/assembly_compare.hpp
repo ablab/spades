@@ -174,10 +174,20 @@ public:
 		single_red,
 		single_blue,
 		simple_bulge,
+		tip,
 		simple_misassembly,
+		monochrome,
 		complex_misassembly,
 		size
 	};
+
+	static string info_printer_pos_name(component_type t) {
+		const string names[] = { "error", "single_red", "single_blue",
+				"simple_bulge", "tip", "final_tip_clipping",
+				"simple_misassembly", "monochrome", "complex_misassembly",
+				"size" };
+		return names[t];
+	}
 
 private:
 	const Graph &g_;
@@ -195,6 +205,26 @@ public:
 
 	edge_type GetColour(EdgeId edge) const {
 		return coloring_.Color(edge);
+	}
+
+	bool CheckSimpleMisassembly(const vector<VertexId> &component) const {
+		if(component.size() == 4) {
+			for(size_t i = 0; i < 4; i++)
+				for(size_t j = i + 1; j < 4; j++) {
+					vector<VertexId> sources;
+					sources.push_back(component[i]);
+					sources.push_back(component[j]);
+					vector<VertexId> sinks;
+					for(size_t k = 0; k < 4; k++) {
+						if(k != i && k != j)
+							sinks.push_back(component[k]);
+					}
+					if(CheckSimpleMisassembly(sources, sinks)) {
+						return true;
+					}
+				}
+		}
+		return false;
 	}
 
 	bool CheckSimpleMisassembly(const vector<VertexId>& sources, const vector<VertexId>& sinks) const {
@@ -221,46 +251,94 @@ public:
 		return true;
 	}
 
+	bool CheckIsolated(edge_type colour, const vector<VertexId> &component) const {
+		if(component.size() != 2)
+			return false;
+		vector<EdgeId> edges01 = g_.GetEdgesBetween(component[0], component[1]);
+		vector<EdgeId> edges10 = g_.GetEdgesBetween(component[1], component[0]);
+		vector<EdgeId> edges;
+		edges.insert(edges.end(), edges01.begin(), edges01.end());
+		edges.insert(edges.end(), edges10.begin(), edges10.end());
+		if(edges.size() != 1) {
+			return false;
+		}
+		return GetColour(edges[0]) == colour;
+	}
+
+	bool CheckBulge(const vector<VertexId> &component) const {
+		if(component.size() != 2)
+			return false;
+		vector<EdgeId> edges01 = g_.GetEdgesBetween(component[0], component[1]);
+		vector<EdgeId> edges10 = g_.GetEdgesBetween(component[1], component[0]);
+		vector<EdgeId> edges;
+		edges.insert(edges.end(), edges01.begin(), edges01.end());
+		edges.insert(edges.end(), edges10.begin(), edges10.end());
+		return (edges01.size() == 0 || edges10.size() == 0) && edges.size() == 2
+				&& g_.length(edges[0]) < bulge_length_
+				&& g_.length(edges[1]) < bulge_length_;
+	}
+
+	size_t EdgeNumber(const vector<VertexId> &component) const {
+		size_t result = 0;
+		for(size_t i = 0; i < component.size(); i++)
+			for(size_t j = 0; j < component.size(); j++) {
+				result += g_.GetEdgesBetween(component[i], component[j]).size();
+			}
+		return result;
+	}
+
+	bool Connected(VertexId v1, VertexId v2) const {
+		return g_.GetEdgesBetween(v1, v2).size() > 0;
+	}
+
+	bool CheckTip(const vector<VertexId> &component) const {
+		if(component.size() != 3)
+			return false;
+		if(EdgeNumber(component) != 2)
+			return false;
+		for(size_t i = 0; i < 3; i++) {
+			if(CheckFork(component[i], component[(i + 1) % 3], component[(i + 2) % 3]))
+				return true;
+		}
+		return false;
+	}
+
+	bool CheckFork(VertexId base, VertexId tip1, VertexId tip2) const {
+		return (Connected(base, tip1) && Connected(base, tip2)) || (Connected(tip1, base) && Connected(tip2, base));
+	}
+
+	bool CheckMonochrome(const vector<VertexId> &component) const {
+		set<edge_type> colours;
+		for(size_t i = 0; i < component.size(); i++)
+			for(size_t j = 0; j < component.size(); j++) {
+				vector<EdgeId> edges = g_.GetEdgesBetween(component[i], component[j]);
+				for(auto it = edges.begin(); it != edges.end(); ++it) {
+					colours.insert(GetColour(*it));
+				}
+			}
+		return colours.size() == 1;
+	}
+
 	component_type GetComponentType(const vector<VertexId> &component) const {
 		if(component.size() < 2)
 			return component_type::error;
 		if(component.size() == 2) {
-			vector<EdgeId> edges01 = g_.GetEdgesBetween(component[0], component[1]);
-			vector<EdgeId> edges10 = g_.GetEdgesBetween(component[0], component[1]);
-			if(edges01.size() > 0 && edges10.size() > 0) {
-				return component_type::complex_misassembly;
-			}
-			vector<EdgeId> edges;
-			edges.insert(edges.end(), edges01.begin(), edges01.end());
-			edges.insert(edges.end(), edges10.begin(), edges10.end());
-			if(edges.size() == 1) {
-				if(GetColour(edges[0]) == edge_type::red) {
-					return component_type::single_red;
-				} else {
-					return component_type::single_blue;
-				}
-			}
-			if(edges.size() == 2 && g_.length(edges[0]) < bulge_length_ && g_.length(edges[1]) < bulge_length_) {
+			if(CheckIsolated(edge_type::red, component))
+				return component_type::single_red;
+			if(CheckIsolated(edge_type::blue, component))
+				return component_type::single_blue;
+			if(CheckBulge(component)) {
 				return component_type::simple_bulge;
 			}
 			return component_type::complex_misassembly;
 		}
-		if(component.size() == 4) {
-			for(size_t i = 0; i < 4; i++)
-				for(size_t j = i + 1; j < 4; j++) {
-					vector<VertexId> sources;
-					sources.push_back(component[i]);
-					sources.push_back(component[j]);
-					vector<VertexId> sinks;
-					for(size_t k = 0; k < 4; k++) {
-						if(k != i && k != j)
-							sinks.push_back(component[k]);
-					}
-					if(CheckSimpleMisassembly(sources, sinks)) {
-						return component_type::simple_misassembly;
-					}
-				}
+		if(CheckTip(component)) {
+			return component_type::tip;
 		}
+		if(CheckSimpleMisassembly(component))
+			return component_type::simple_misassembly;
+		if(CheckMonochrome(component))
+			return component_type::monochrome;
 		return component_type::complex_misassembly;
 	}
 };
@@ -299,7 +377,7 @@ public:
 			coloring_.color_str_map(), labeler);
 		ready_ = true;
 		for (size_t i = 0; i < component_type::size; ++i) {
-			INFO("Number of components of type " << i << " is " << ct_counter[i]);
+			INFO("Number of components of type " << ComponentClassifier<Graph>::info_printer_pos_name((component_type)i) << " is " << ct_counter[i]);
 		}
 	}
 
@@ -391,6 +469,7 @@ private:
 				g.DeleteEdge(*it);
 			}
 		}
+		Cleaner<Graph>(g).Clean();
 	}
 
 	void ColorPath(const Path<EdgeId>& path, ColorHandler<Graph>& coloring, edge_type color) {
