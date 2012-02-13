@@ -181,7 +181,7 @@ public:
 		size
 	};
 
-	static string info_printer_pos_name(component_type t) {
+	static string info_printer_pos_name(size_t t) {
 		const string names[] = { "error", "single_red", "single_blue",
 				"simple_bulge", "tip", "final_tip_clipping",
 				"simple_misassembly", "monochrome", "complex_misassembly",
@@ -344,6 +344,68 @@ public:
 };
 
 template<class Graph>
+class ComponentTypeFilter: public GraphComponentFilter<Graph> {
+private:
+	typedef GraphComponentFilter<Graph> base;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename ComponentClassifier<Graph>::component_type component_type;
+
+	component_type to_draw_;
+	ComponentClassifier<Graph> cc_;
+
+public:
+	ComponentTypeFilter(const Graph &g, component_type to_draw,
+			const ColorHandler<Graph> &coloring) :
+			base(g), to_draw_(to_draw), cc_(g, coloring) {
+	}
+
+	/*virtual*/ bool Check(const vector<VertexId>& component) const {
+		return cc_.GetComponentType(component) == to_draw_;
+	}
+
+private:
+	DECL_LOGGER("ComponentTypeFilter");
+};
+
+template<class Graph>
+class Component {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	vector<size_t> edge_lengths_;
+	vector<VertexId> component_;
+public:
+	Component(const Graph &g, const vector<VertexId> &component) : component_(component) {
+		for(size_t i = 0; i < component.size(); i++)
+			for(size_t j = 0; j < component.size(); j++) {
+				vector<EdgeId> edges = g.GetEdgesBetween(component[i], component[j]);
+				for(auto it = edges.begin(); it != edges.end(); ++it) {
+					edge_lengths_.push_back(g.length(*it));
+				}
+			}
+		std::sort(edge_lengths_.rbegin(), edge_lengths_.rend());
+	}
+
+	bool operator<(const Component<Graph> &that) const {
+		size_t i = 0;
+		while (i < this->edge_lengths_.size() && i < that.edge_lengths_.size()
+				&& this->edge_lengths_[i] == that.edge_lengths_[i])
+			i++;
+		if(i == this->edge_lengths_.size())
+			return true;
+		if(i == that.edge_lengths_.size())
+			return false;
+		return this->edge_lengths_[i] < that.edge_lengths_[i];
+	}
+
+	const vector<size_t> &edge_lengths() {
+		return edge_lengths_;
+	}
+};
+
+template<class Graph>
 class BreakPointGraphStatistics : public GraphComponentFilter<Graph> {
 private:
 	typedef GraphComponentFilter<Graph> base;
@@ -353,20 +415,24 @@ private:
 
 	const ColorHandler<Graph> &coloring_;
 	ComponentClassifier<Graph> cc_;
-	mutable vector<size_t> ct_counter;
+	mutable vector<vector<Component<Graph>>> components_;
 	bool ready_;
 
+	void UpdateStats(const vector<VertexId>& component) const {
+		component_type t = cc_.GetComponentType(component);
+		Component<Graph> c(this->graph(), component);
+		components_[t].push_back(c);
+	}
+
 public:
-	BreakPointGraphStatistics(const Graph &g,
-			const ColorHandler<Graph> &coloring) :
-			base(g), coloring_(coloring), cc_(g, coloring), ct_counter(component_type::size), ready_(
-					false) {
+	BreakPointGraphStatistics(const Graph &g, const ColorHandler<Graph> &coloring) :
+				base(g), coloring_(coloring), cc_(g, coloring), components_(component_type::size), ready_(
+						false) {
 	}
 
 	/*virtual*/ bool Check(const vector<VertexId>& component) const {
-		component_type t = cc_.GetComponentType(component);
-		ct_counter[t]++;
-		return t == component_type::complex_misassembly;
+		UpdateStats(component);
+		return false;
 	}
 
 	void CountStats(const GraphLabeler<Graph>& labeler) {
@@ -377,13 +443,19 @@ public:
 			coloring_.color_str_map(), labeler);
 		ready_ = true;
 		for (size_t i = 0; i < component_type::size; ++i) {
-			INFO("Number of components of type " << ComponentClassifier<Graph>::info_printer_pos_name((component_type)i) << " is " << ct_counter[i]);
+			INFO("Number of components of type " << ComponentClassifier<Graph>::info_printer_pos_name(i) << " is " << GetComponentNumber(i));
 		}
 	}
 
-	size_t GetComponentNumber(component_type t) const {
-		return ct_counter[t];
+	size_t GetComponentNumber(size_t t) const {
+		return components_[t].size();
 	}
+
+	const vector<Component<Graph>> &GetComponents(size_t t) {
+		std::sort(components_[t].rbegin(), components_[t].rend());
+		return components_[t];
+	}
+
 private:
 	DECL_LOGGER("BreakPointGraphStatistics");
 };
