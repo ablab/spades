@@ -183,9 +183,8 @@ public:
 
 	static string info_printer_pos_name(size_t t) {
 		const string names[] = { "error", "single_red", "single_blue",
-				"simple_bulge", "tip", "final_tip_clipping",
-				"simple_misassembly", "monochrome", "complex_misassembly",
-				"size" };
+				"simple_bulge", "tip", "simple_misassembly",
+				"monochrome", "complex_misassembly", "size" };
 		return names[t];
 	}
 
@@ -351,11 +350,11 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename ComponentClassifier<Graph>::component_type component_type;
 
-	component_type to_draw_;
+	size_t to_draw_;
 	ComponentClassifier<Graph> cc_;
 
 public:
-	ComponentTypeFilter(const Graph &g, component_type to_draw,
+	ComponentTypeFilter(const Graph &g, size_t to_draw,
 			const ColorHandler<Graph> &coloring) :
 			base(g), to_draw_(to_draw), cc_(g, coloring) {
 	}
@@ -393,17 +392,36 @@ public:
 		while (i < this->edge_lengths_.size() && i < that.edge_lengths_.size()
 				&& this->edge_lengths_[i] == that.edge_lengths_[i])
 			i++;
-		if(i == this->edge_lengths_.size())
-			return true;
 		if(i == that.edge_lengths_.size())
 			return false;
+		if(i == this->edge_lengths_.size())
+			return true;
 		return this->edge_lengths_[i] < that.edge_lengths_[i];
 	}
 
-	const vector<size_t> &edge_lengths() {
+	bool operator==(const Component<Graph> &that) const {
+		if(this->edge_lengths_.size() != that.edge_lengths_.size())
+			return false;
+		for(size_t i = 0; i < this->edge_lengths_.size(); i++)
+			if(this->edge_lengths_[i] != that.edge_lengths_[i])
+				return false;
+		return true;
+	}
+
+	const vector<size_t> &edge_lengths() const {
 		return edge_lengths_;
 	}
+
 };
+
+template<class Stream, class Graph>
+Stream &operator<<(Stream &stream, const Component<Graph> &component) {
+	const vector<size_t> &lengths = component.edge_lengths();
+	for(size_t i = 0; i < lengths.size(); i++) {
+		stream << lengths[i] << " ";
+	}
+	return stream;
+}
 
 template<class Graph>
 class BreakPointGraphStatistics : public GraphComponentFilter<Graph> {
@@ -435,7 +453,8 @@ public:
 		return false;
 	}
 
-	void CountStats(const GraphLabeler<Graph>& labeler) {
+	void CountStats() {
+		EmptyGraphLabeler<Graph> labeler;
 		make_dir("assembly_comparison");
 		LongEdgesExclusiveSplitter<Graph> splitter(this->graph(), 1000000000);
 		WriteComponents(this->graph(), splitter, *this,
@@ -451,13 +470,62 @@ public:
 		return components_[t].size();
 	}
 
-	const vector<Component<Graph>> &GetComponents(size_t t) {
+	const vector<Component<Graph>> &GetComponents(size_t t) const {
 		std::sort(components_[t].rbegin(), components_[t].rend());
 		return components_[t];
 	}
 
 private:
 	DECL_LOGGER("BreakPointGraphStatistics");
+};
+
+template<class Graph>
+class BPGraphStatCounter {
+private:
+	typedef typename ComponentClassifier<Graph>::component_type component_type;
+	const Graph &graph_;
+	const ColorHandler<Graph> &coloring_;
+public:
+	BPGraphStatCounter(const Graph &g, const ColorHandler<Graph> &coloring) :
+			graph_(g), coloring_(coloring) {
+	}
+
+	void PrintComponents(size_t c_type, const GraphLabeler<Graph>& labeler) const {
+		make_dir("assembly_comparison/");
+		string type_dir = "assembly_comparison/" + ComponentClassifier<Graph>::info_printer_pos_name(c_type) + "/";
+		make_dir(type_dir);
+		string picture_dir = type_dir + "pictures/";
+		make_dir(picture_dir);
+		LongEdgesExclusiveSplitter<Graph> splitter(graph_, 1000000000);
+		ComponentTypeFilter<Graph> stats(graph_, c_type, coloring_);
+		WriteComponents(this->graph_, splitter, stats,
+			"breakpoint_graph", picture_dir + "breakpoint_graph.dot",
+			coloring_.color_str_map(), labeler);
+	}
+
+	void PrintStats(const BreakPointGraphStatistics<Graph> &stats) const {
+		make_dir("assembly_comparison/");
+		for(size_t t = 0; t < component_type::size; t++) {
+			string type_dir = "assembly_comparison/" + ComponentClassifier<Graph>::info_printer_pos_name(t) + "/";
+			make_dir(type_dir);
+			ofstream stream;
+			stream.open((type_dir + "components.txt").c_str());
+			const vector<Component<Graph>> &components = stats.GetComponents(t);
+			for(auto it = components.begin(); it != components.end(); ++it) {
+				stream << *it << endl;
+			}
+			stream.close();
+		}
+	}
+
+	void CountStats(const GraphLabeler<Graph>& labeler) const {
+		make_dir("assembly_comparison/");
+		BreakPointGraphStatistics<Graph> stats(graph_, coloring_);
+		stats.CountStats();
+		PrintStats(stats);
+		PrintComponents(component_type::complex_misassembly, labeler);
+		PrintComponents(component_type::monochrome, labeler);
+	}
 };
 
 template<class gp_t>
@@ -611,8 +679,8 @@ public:
 //		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
 //		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
 		INFO("Counting stats, outputting pictures");
-		BreakPointGraphStatistics<Graph> stats(gp.g, coloring);
-		stats.CountStats(labeler);
+		BPGraphStatCounter<Graph> counter(gp.g, coloring);
+		counter.CountStats(labeler);
 	}
 private:
 	DECL_LOGGER("AssemblyComparer");
