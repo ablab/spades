@@ -150,6 +150,60 @@ public:
                             //INFO("Pair INFO FOR BAD TIP " << graph_.int_id(tip) << " " << get_total_weight(tip));
                         //}
                     //}
+
+                    if (!cfg::get().simp.tc.advanced_checks || tipchecker.TipCanBeProjected(tip)){
+					    TRACE("Edge " << tip << " judged to be tip");
+    					removed_with_check++;
+                        //if (qual_handler_ && math::eq(qual_handler_(tip), 0.))
+                            RemoveTip(tip);
+					    TRACE("Edge " << tip << " removed as tip");
+                    }else 
+                        ans.push_back(tip);
+				} else {
+					TRACE("Edge " << tip << " judged NOT to be tip");
+				}
+			} else {
+				TRACE("Edge " << tip << " judged NOT to look like tip topologically");
+			}
+			TRACE("Try to find next edge");
+			++iterator;
+			TRACE("Use next edge");
+		}
+		TRACE("Tip clipping finished");
+        INFO("REMOVED STATS " << removed_with_check << " " << removed);
+        tipchecker.PrintTimeStats();
+		Compressor<Graph> compressor(graph_);
+		compressor.CompressAllVertices();
+        return ans;
+	}
+
+// -------------------------------------Clipping tips for Resolver-------------------------------------
+
+
+	vector<EdgeId> ClipTipsForResolver(boost::function<void(EdgeId)> plotter = 0) {
+        vector<EdgeId> ans;
+        size_t removed = 0;
+        size_t removed_with_check = 0;
+		TRACE("Tip clipping started");
+        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein);
+		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
+			EdgeId tip = *iterator;
+			TRACE("Checking edge for being tip " << tip);
+			if (IsTip(tip)) {
+				TRACE("Edge " << tip << " judged to look like tip topologically");
+                if (AdditionalCondition(tip)){
+                    if (plotter) 
+                        plotter(tip);
+                    
+                    TRACE("Additional sequence comparing");
+                    removed++;
+                    //if (get_total_weight && math::gr(get_total_weight(tip), 0.)){ 
+                        //if (qual_handler_ && math::gr(qual_handler_(tip), 0.)){
+                            //INFO("Pair INFO FOR GOOD TIP " << graph_.int_id(tip) << " " << get_total_weight(tip) << " " << qual_handler_(tip));
+                        //}else{ 
+                            //INFO("Pair INFO FOR BAD TIP " << graph_.int_id(tip) << " " << get_total_weight(tip));
+                        //}
+                    //}
                     //if (qual_handler_ && math::gr(qual_handler_(tip), 0.)) 
                         //INFO("Good edge " << graph_.int_id(tip));
 
@@ -237,6 +291,8 @@ public:
 			base(graph, comparator, max_tip_length, removal_handler), max_coverage_(
 					max_coverage), max_relative_coverage_(max_relative_coverage) {
 	}
+
+
 
 private:
 	DECL_LOGGER("TipClipper")

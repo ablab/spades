@@ -1126,6 +1126,104 @@ public:
 
 };
 
+template<class Graph>
+class CoverageStatistics{
+    
+private:
+    Graph& graph_;
+    EdgeQuality<Graph> & edge_qual_;
+    
+    
+    bool DoesSuit(VertexId vertex){
+        bool ans = true;
+        for (size_t i = 0; ans && i<graph_.OutgoingEdgeCount(vertex); i++) 
+            ans = ans & math::gr(edge_qual_.quality(graph_.OutgoingEdges(vertex)[i]), 0.);
+        for (size_t i = 0; ans && i<graph_.IncomingEdgeCount(vertex); i++) 
+            ans = ans & math::gr(edge_qual_.quality(graph_.IncomingEdges(vertex)[i]), 0.);
+        return ans; 
+    }
+    
+public:
+    CoverageStatistics(Graph& graph, EdgeQuality<Graph>& edge_qual):
+    graph_(graph), edge_qual_(edge_qual){
+    }
+
+    virtual ~CoverageStatistics(){}
+
+    virtual void Count(){
+
+        map<double, size_t> cov_map;
+        map<double, size_t> ratio_map;
+        map<double, size_t> len_map;
+        size_t area = 0;
+        size_t area15 = 0;
+        size_t area10 = 0;
+        size_t area5 = 0;
+        size_t area2 = 0;
+        for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
+            len_map[graph_.length(*iter)]++;
+        }
+        for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) 
+            if (true || DoesSuit(*iter) ){
+
+                double plus_cov = 0.;
+                double min_cov = 0.;
+                double plus_all_cov = 0.;
+                double min_all_cov = 0.;
+                bool suit_us = true;
+
+                if (graph_.IncomingEdgeCount(*iter)*graph_.OutgoingEdgeCount(*iter) == 0) continue;
+                
+                for (size_t i = 0; suit_us && i<graph_.IncomingEdgeCount(*iter); i++) 
+                    if (graph_.length(graph_.IncomingEdges(*iter)[i]) < 80){
+                        if (math::ge(edge_qual_.quality(graph_.IncomingEdges(*iter)[i]), 1.))
+                            plus_cov += graph_.coverage(graph_.IncomingEdges(*iter)[i]);
+                        plus_all_cov += graph_.coverage(graph_.IncomingEdges(*iter)[i]);
+                    }else suit_us = false;
+                for (size_t i = 0; suit_us && i<graph_.OutgoingEdgeCount(*iter); i++) 
+                    if (graph_.length(graph_.OutgoingEdges(*iter)[i]) < 80){
+                        if (math::ge(edge_qual_.quality(graph_.OutgoingEdges(*iter)[i]), 1.))
+                            min_cov += graph_.coverage(graph_.OutgoingEdges(*iter)[i]);
+                        min_all_cov += graph_.coverage(graph_.OutgoingEdges(*iter)[i]);
+                    }else suit_us = false;
+
+                if (!suit_us) continue;
+
+                if (math::eq(min_cov, 0.) || math::eq(plus_cov, 0.)) continue;
+
+                double delta_cov = math::round(1000.*(plus_cov - min_cov)/(plus_cov + min_cov));
+                
+                double ratio_cov = math::round(1000.*(plus_cov + min_cov)/(plus_all_cov + min_all_cov));
+
+                if (math::ls(abs(delta_cov), 150.)) area15++;
+                if (math::ls(abs(delta_cov), 100.)) area10++;
+                if (math::ls(abs(delta_cov), 50.)) area5++;
+                if (math::ls(abs(delta_cov), 20.)) area2++;
+                area++;
+                
+                cov_map[delta_cov/10.]++;
+                ratio_map[ratio_cov/10.]++;
+            
+        }
+
+        for (auto iter = ratio_map.begin(); iter != ratio_map.end(); ++iter){
+            cout << "Ratio " << (*iter).first << " " << (*iter).second << endl;
+        }
+
+        for (auto iter = cov_map.begin(); iter != cov_map.end(); ++iter){
+            cout << "Cov " << (*iter).first << " " << (*iter).second << endl;
+        }
+
+        cout << "stats_cov "  << area << " " << area2 << " " << area5 << " " << area10 << " " << area15 <<  endl;
+        
+        for (auto iter = len_map.begin(); iter != len_map.end(); ++iter){
+            cout << "Len " << (*iter).first << " " << (*iter).second << endl;
+        }
+           
+    }
+    
+};
+
 }
 
 #endif /* STATISTICS_HPP_ */

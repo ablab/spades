@@ -1257,27 +1257,32 @@ class EdgeLocalityPrintingRH {
 	const Graph& g_;
 	const GraphLabeler<Graph>& labeler_;
 	const string& output_folder_;
+    boost::function<double (EdgeId)> quality_f_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
 public:
 	EdgeLocalityPrintingRH(const Graph& g
 			, const GraphLabeler<Graph>& labeler
-			, const string& output_folder) :
+			, const string& output_folder
+            , boost::function<double (EdgeId)> quality_f = 0) :
 			g_(g), 
-			labeler_(labeler), output_folder_(output_folder) {
+			labeler_(labeler), output_folder_(output_folder),
+            quality_f_(quality_f){
 	}
 
 	void HandleDelete(EdgeId edge) {
 			TRACE("Deleting edge " << g_.str(edge));
-			string folder = output_folder_ + "edges_deleted/";
+            if (quality_f_ && math::gr(quality_f_(edge), 0.)) 
+                INFO("EdgeLocalityPrintRH handling the edge with positive quality : " << quality_f_(edge) << " " << g_.str(edge));
+        
+            string folder = output_folder_ + "edges_deleted/";
 			make_dir(folder);
 			//todo magic constant
 			map<EdgeId, string> empty_coloring;
 			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
 					250);
-			WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
-					, folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot"
-					, empty_coloring, labeler_);
+            WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+                    , folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
 	}
 
 private:

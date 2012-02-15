@@ -99,17 +99,18 @@ void ClipTips(Graph &g,
 }
 
 template<class Graph>
-void ClipTipsForResolver(Graph &g) {
+void ClipTipsForResolver(Graph &g, boost::function<void(typename Graph::EdgeId)>& plotter) {
 	INFO("-----------------------------------------");
-	INFO("Clipping tips");
+	INFO("Clipping tips for Resolver");
+        plotter(*g.SmartEdgeBegin());
 	omnigraph::LengthComparator<Graph> comparator(g);
 	//	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
 	size_t max_coverage = cfg::get().simp.tc.max_coverage;
 	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
 	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, 100,
-			max_coverage, max_relative_coverage * 0.5);
-	tc.ClipTips();
-	INFO("Clipping tips finished");
+			max_coverage, max_relative_coverage);
+	tc.ClipTipsForResolver(plotter);
+	INFO("Clipping tips for Resolver finished");
 }
 
 template<class Graph>
@@ -450,6 +451,13 @@ double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
 	}
 }
 
+void IdealSimplification(Graph& graph, Compressor<Graph>& compressor, boost::function<double (EdgeId)> quality_handler_f){
+    for (auto iterator = graph.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator){
+        if (math::eq(quality_handler_f(*iterator), 0.)) graph.DeleteEdge(*iterator);
+    }
+    compressor.CompressAllVertices();   
+}
+
 void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_handler_f,
 		omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
 		const string& output_folder) {
@@ -465,12 +473,16 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
     //ec auto threshold
 	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g);
 
+
+    //Compressor<Graph> compressor(gp.g);
+    //IdealSimplification(gp.g, compressor, quality_handler_f);
+
     if (cfg::get().ds.single_cell) 
         PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
 
-//	double max_coverage = cfg::get().simp.ec.threshold_percentile
-//			? PrecountThreshold(gp.g, *cfg::get().simp.ec.threshold_percentile)
-//			: cfg::get().simp.ec.max_coverage;
+    //double max_coverage = cfg::get().simp.ec.threshold_percentile
+            //? PrecountThreshold(gp.g, *cfg::get().simp.ec.threshold_percentile)
+            //: cfg::get().simp.ec.max_coverage;
     
 	for (size_t i = 0; i < iteration_count; i++) {
 		if ((cfg::get().gc.enable)&&(cfg::get().gc.in_simplify)){
