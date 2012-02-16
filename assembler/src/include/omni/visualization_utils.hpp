@@ -534,12 +534,17 @@ void WriteComponentsAlongPath(const Graph& g,
 		const string& graph_name, size_t split_edge_length,
 		const MappingPath<typename Graph::EdgeId>& path,
 		Path<typename Graph::EdgeId> color1 = Path<typename Graph::EdgeId>(),
-		Path<typename Graph::EdgeId> color2 = Path<typename Graph::EdgeId>()) {
+		Path<typename Graph::EdgeId> color2 = Path<typename Graph::EdgeId>(), bool colour_path = false) {
 //	Path<typename Graph::EdgeId> simple_path1 = color1.simple_path();
 //	Path<typename Graph::EdgeId> simple_path2 = color2.simple_path();
 	PathColorer<Graph> path_colorer(g, /*simple_path1*/color1, /*simple_path2*/
 			color2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+	if(colour_path) {
+		for(size_t i = 0; i < path.size(); i++) {
+			coloring[path[i].first] = "green";
+		}
+	}
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
 	ReliableSplitterAlongPath<Graph> inner_splitter(g, 60, split_edge_length,

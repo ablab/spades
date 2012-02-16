@@ -58,6 +58,23 @@ public:
 		return answer;
 	}
 
+//	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
+//		for(auto it = old_edges.begin(); it != old_edges.end(); ++it) {
+//			PaintEdge(new_edge, Color(*it));
+//		}
+//	}
+//
+//	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+//		PaintEdge(new_edge, Color(edge1));
+//		PaintEdge(new_edge, Color(edge2));
+//	}
+//
+//	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
+//			EdgeId new_edge2) {
+//		PaintEdge(new_edge_1, Color(old_edge));
+//		PaintEdge(new_edge2, Color(old_edge));
+//	}
+
 };
 
 template <class gp_t>
