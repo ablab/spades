@@ -434,18 +434,35 @@ private:
 	const ColorHandler<Graph> &coloring_;
 	ComponentClassifier<Graph> cc_;
 	mutable vector<vector<Component<Graph>>> components_;
+	mutable vector<size_t> total_red_;
+	mutable vector<size_t> total_blue_;
 	bool ready_;
+
+	void UpdateTotalEdgeLength(component_type t, const vector<VertexId>& component) const {
+		for(size_t i = 0; i < component.size(); i++) {
+			for(size_t j = 0; j < component.size(); j++) {
+				vector<EdgeId> edges = this->graph().GetEdgesBetween(component[i], component[j]);
+				for(auto it = edges.begin(); it != edges.end(); ++it) {
+					if(coloring_.Color(*it) == edge_type::red)
+						total_red_[t] += this->graph().length(*it);
+					if(coloring_.Color(*it) == edge_type::blue)
+						total_blue_[t] += this->graph().length(*it);
+				}
+			}
+		}
+	}
 
 	void UpdateStats(const vector<VertexId>& component) const {
 		component_type t = cc_.GetComponentType(component);
 		Component<Graph> c(this->graph(), component);
 		components_[t].push_back(c);
+		UpdateTotalEdgeLength(t, component);
 	}
 
 public:
 	BreakPointGraphStatistics(const Graph &g, const ColorHandler<Graph> &coloring) :
-				base(g), coloring_(coloring), cc_(g, coloring), components_(component_type::size), ready_(
-						false) {
+		base(g), coloring_(coloring), cc_(g, coloring), components_(component_type::size), total_red_(component_type::size), total_blue_(component_type::size), ready_(
+			false) {
 	}
 
 	/*virtual*/ bool Check(const vector<VertexId>& component) const {
@@ -463,6 +480,8 @@ public:
 		ready_ = true;
 		for (size_t i = 0; i < component_type::size; ++i) {
 			INFO("Number of components of type " << ComponentClassifier<Graph>::info_printer_pos_name(i) << " is " << GetComponentNumber(i));
+			INFO("Total length of red edges in these components is " << total_red_[i]);
+			INFO("Total length of blue edges in these components is " << total_blue_[i]);
 		}
 	}
 
@@ -525,6 +544,8 @@ public:
 		PrintStats(stats);
 		PrintComponents(component_type::complex_misassembly, labeler);
 		PrintComponents(component_type::monochrome, labeler);
+		PrintComponents(component_type::tip, labeler);
+		PrintComponents(component_type::simple_misassembly, labeler);
 	}
 };
 
@@ -665,9 +686,6 @@ public:
 		ColorGraph(gp, coloring, stream1, edge_type::red);
 		ColorGraph(gp, coloring, stream2, edge_type::blue);
 
-		INFO("Removing unnecessary edges");
-		DeleteVioletEdges(gp.g, coloring);
-
 		INFO("Filling contig positions");
 		FillPos(gp, stream1, name1);
 		FillPos(gp, stream2, name2);
@@ -675,6 +693,19 @@ public:
 		EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
 		StrGraphLabeler<Graph> str_labeler(gp.g);
 		CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
+
+//		WriteToDotFile(gp.g, labeler, "oppa.dot", "oppa");
+
+		LongEdgesInclusiveSplitter<Graph> splitter(gp.g, 10000);
+		ComponentSizeFilter<Graph> filter(gp.g, 1000000000, 2);
+		make_dir("assembly_comparison");
+		make_dir("assembly_comparison/initial_pics/");
+		WriteComponents(gp.g, splitter, filter,
+			"breakpoint_graph", "assembly_comparison/initial_pics/breakpoint_graph.dot",
+			coloring.color_str_map(), labeler);
+
+		INFO("Removing unnecessary edges");
+		DeleteVioletEdges(gp.g, coloring);
 
 //		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
 //		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
