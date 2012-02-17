@@ -542,6 +542,8 @@ inline void load(debruijn_config::dataset& ds,
 	ds.jump_rl = pt.get_optional<size_t>("jump_rl");
 
 	load(ds.RL, pt, "RL");
+        ds.is_var = pt.get_optional<size_t>("is_var");
+
 	ds.IS = pt.get_optional<size_t>("IS");
 	load(ds.single_cell, pt, "single_cell");
 

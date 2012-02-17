@@ -386,6 +386,18 @@ DELTA_BH ; new DeltaProteo
 ; ================================================
 ; ================== S. Aureus ===================
 ; ================================================
+SAUREUS_JCVI_BH_CLEANED_HUMAN_ECOLI_PLASMID ; old SAUREUS_JCVI
+{
+        first   S.aureus/jcvi/bh20111208/02.reads.left.corrected.fastq.gz
+        second  S.aureus/jcvi/bh20111208/02.reads.right.corrected.fastq.gz
+        single_first    S.aureus/jcvi/bh20111208/02.reads.left.unpaired.fastq.gz
+        single_second   S.aureus/jcvi/bh20111208/02.reads.right.unpaired.fastq.gz
+        RL              100     ; read length
+        IS              207     ; insert size todo check!!!!
+        single_cell     true
+        is_var		18
+        reference_genome  S.aureus/USA300_FPR3757.fasta.gz      ; length 2872769
+}
 
 SAUREUS_JCVI_BH ; old SAUREUS_JCVI
 {
