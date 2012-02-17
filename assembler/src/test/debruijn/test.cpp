@@ -16,7 +16,34 @@ DECL_PROJECT_LOGGER("dt")
 
 namespace debruijn_graph {
 
-//BOOST_AUTO_TEST_CASE( CompareAssemblies ) {
+	template<class gp_t>
+	inline void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly, const string& base_prefix
+			, ContigStream& assembly_to_thread, const string& to_thread_prefix, const string& output_dir) {
+		typedef typename gp_t::graph_t Graph;
+		gp_t gp;
+//		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, base_assembly);
+		ScanGraphPack(base_saves, gp);
+		base_assembly.reset();
+		FillPos(gp, base_assembly, base_prefix);
+		FillPos(gp, assembly_to_thread, to_thread_prefix);
+
+		EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
+		StrGraphLabeler<Graph> str_labeler(gp.g);
+		CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
+
+		NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp.g, gp.index, gp.kmer_mapper);
+
+		assembly_to_thread.reset();
+		io::SingleRead read;
+		while (!assembly_to_thread.eof()) {
+			assembly_to_thread >> read;
+			WriteComponentsAlongPath(gp.g, labeler, output_dir + read.name()
+					, read.name(), /*split_edge_length*/400, mapper.MapSequence(read.sequence())
+					, Path<typename Graph::EdgeId>(), Path<typename Graph::EdgeId>(), true);
+		}
+	}
+
+//BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
 //	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, 101>> comparer;
 ////    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
 ////    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
@@ -30,6 +57,16 @@ namespace debruijn_graph {
 //	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence2.fasta");
 //	comparer.CompareAssemblies(stream1, stream2, "spades_", "evsc_");
 //}
+
+BOOST_AUTO_TEST_CASE( ThreadingContigsOverGraph ) {
+	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
+	io::EasyReader base_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence1.fasta");
+	io::EasyReader other_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence2.fasta");
+	string base_saves = "";
+	string output_dir = "assembly_comparison";
+	make_dir(output_dir);
+	ThreadAssemblies<gp_t>(base_saves, base_contigs, "spades", other_contigs, "velvet", output_dir);
+}
 
 //BOOST_AUTO_TEST_CASE( GenerateGraphFragment ) {
 //	std::string input_path = "./data/debruijn/HMP_LANE_3_0/K55/latest/saves/simplified_graph";

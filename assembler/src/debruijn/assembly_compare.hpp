@@ -567,6 +567,15 @@ public:
 };
 
 template<class gp_t>
+void FillPos(gp_t& gp, ContigStream& stream, string stream_prefix) {
+	io::SingleRead read;
+	while (!stream.eof()) {
+		stream >> read;
+		FillEdgesPos(gp, read.sequence(), stream_prefix + read.name());
+	}
+}
+
+template<class gp_t>
 class AssemblyComparer {
 private:
 	typedef typename gp_t::graph_t Graph;
@@ -629,15 +638,6 @@ private:
 			VERIFY(bps.find(e) != bps.end());
 			VERIFY(bps[e].empty() || bps[e].back() < g.length(e));
 			SplitEdge(bps[e], e, g);
-		}
-	}
-
-	void FillPos(gp_t& gp, ContigStream& stream, string stream_prefix) {
-		stream.reset();
-		io::SingleRead read;
-		while (!stream.eof()) {
-			stream >> read;
-			FillEdgesPos(gp, read.sequence(), stream_prefix + read.name());
 		}
 	}
 
@@ -704,7 +704,9 @@ public:
 		ColorGraph(gp, coloring, stream2, edge_type::blue);
 
 		INFO("Filling contig positions");
+		stream1.reset();
 		FillPos(gp, stream1, name1);
+		stream2.reset();
 		FillPos(gp, stream2, name2);
 
 		EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);

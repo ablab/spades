@@ -528,6 +528,7 @@ void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 }
 
 //todo alert!!! magic constants!!!
+//todo refactoring of params needed
 template<class Graph>
 void WriteComponentsAlongPath(const Graph& g,
 		const GraphLabeler<Graph>& labeler, const string& file_name,
