@@ -140,7 +140,6 @@ public:
 		INFO("Before prepare");
 		PrepareShiftMaps();
 		INFO("after prepare");
-        return;
 		stream_.reset();
 		while (!stream_.eof()) {
 			io::PairedRead p_r;

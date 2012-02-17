@@ -612,7 +612,7 @@ void process_resolve_repeats<conj_graph_pack> (conj_graph_pack& origin_gp,
 
         handler_pict.HandleDelete(*resolved_gp.g.SmartEdgeBegin());
         plotter(*resolved_gp.g.SmartEdgeBegin());
-		ClipTipsForResolver(resolved_gp.g, plotter);
+		ClipTipsForResolver(resolved_gp.g);
 
 		if (cfg::get().path_set_graph == false) {
 

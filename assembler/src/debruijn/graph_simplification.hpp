@@ -99,18 +99,26 @@ void ClipTips(Graph &g,
 }
 
 template<class Graph>
-void ClipTipsForResolver(Graph &g, boost::function<void(typename Graph::EdgeId)>& plotter) {
+void ClipTipsForResolver(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips for Resolver");
-        plotter(*g.SmartEdgeBegin());
+
 	omnigraph::LengthComparator<Graph> comparator(g);
-	//	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
+	
+	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(cfg::get().ds.RL, g.k(), cfg::get().simp.tc.max_tip_length_coefficient);
 	size_t max_coverage = cfg::get().simp.tc.max_coverage;
 	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
-	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, 100,
+	
+    omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, max_tip_length,
 			max_coverage, max_relative_coverage);
-	tc.ClipTipsForResolver(plotter);
-	INFO("Clipping tips for Resolver finished");
+	vector<EdgeId> edges = tc.ClipTipsForResolver();
+    
+    //some stats
+    for (size_t i = 0; i < edges.size(); i++) {
+        DEBUG("LEFT " << g.int_id(edges[i]));
+    }
+	
+    INFO("Clipping tips for Resolver finished");
 }
 
 template<class Graph>
@@ -474,7 +482,7 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
 	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g);
 
 
-    //Compressor<Graph> compressor(gp.g);
+    Compressor<Graph> compressor(gp.g);
     //IdealSimplification(gp.g, compressor, quality_handler_f);
 
     if (cfg::get().ds.single_cell) 

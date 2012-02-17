@@ -83,6 +83,58 @@ protected:
 						+ graph_.IncomingEdgeCount(graph_.EdgeEnd(edge)) > 2);
 	}
 
+	double MaxCompetitorCoverage(EdgeId tip, vector<EdgeId> competitors) const {
+		double result = 0;
+		for (auto it = competitors.begin(); it != competitors.end(); ++it) {
+			if (*it != tip)
+				result = max(result, this->graph().coverage(*it));
+		}
+		return result;
+	}
+
+	//todo strange semantics, discuss with Anton
+	double MaxCompetitorCoverage(EdgeId tip) const {
+		return max(
+				MaxCompetitorCoverage(
+						tip,
+						this->graph().OutgoingEdges(
+								this->graph().EdgeStart(tip))),
+				MaxCompetitorCoverage(
+						tip,
+						this->graph().IncomingEdges(
+								this->graph().EdgeEnd(tip))));
+	}
+    bool CheckAllAlternativesAreTips(EdgeId tip){
+        VertexId start = graph_.EdgeStart(tip);
+        TRACE("Check started");
+        VertexId end = graph_.EdgeEnd(tip);
+        for (size_t i = 0; i<graph_.OutgoingEdgeCount(start); ++i){
+            EdgeId edge = graph_.OutgoingEdges(start)[i];
+            if (edge != tip){
+                if (!IsTip(edge))
+                    return false;
+            }
+        }
+        for (size_t i = 0; i<graph_.IncomingEdgeCount(end); ++i){
+            EdgeId edge = graph_.IncomingEdges(end)[i];
+            if (edge != tip){
+                if (!IsTip(edge))
+                    return false;
+            }
+        }
+        TRACE("Check finished");
+        return true;
+    }
+
+    bool TipHasAVeryLowRelativeCoverage(EdgeId tip){
+        double max_coverage = MaxCompetitorCoverage(tip);
+        return math::ls(200.*graph_.coverage(tip), max_coverage);
+    }
+
+
+//--------------------------------------------------------------------------------------------------
+
+
 	void CompressSplitVertex(VertexId splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
 			EdgeId edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
@@ -132,14 +184,17 @@ public:
         vector<EdgeId> ans;
         size_t removed = 0;
         size_t removed_with_check = 0;
+        size_t good_removed = 0;
+        size_t good_total = 0;
 		TRACE("Tip clipping started");
-        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein);
+        
+        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_);
+
 		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
 			EdgeId tip = *iterator;
-			TRACE("Checking edge for being tip " << tip);
+			TRACE("Checking edge for being a tip " << tip);
 			if (IsTip(tip)) {
-				TRACE(
-						"Edge " << tip << " judged to look like tip topologically");
+				TRACE("Edge " << tip << " judged to look like tip topologically");
 				if (AdditionalCondition(tip)) {
                     TRACE("Additional sequence comparing");
                     removed++;
@@ -150,28 +205,44 @@ public:
                             //INFO("Pair INFO FOR BAD TIP " << graph_.int_id(tip) << " " << get_total_weight(tip));
                         //}
                     //}
+                    if (false && TipHasAVeryLowRelativeCoverage(tip)){
+					    TRACE("Edge " << tip << " judged to be a tip with a very low coverage");
+                        removed_with_check++;
 
-                    if (!cfg::get().simp.tc.advanced_checks || tipchecker.TipCanBeProjected(tip)){
-					    TRACE("Edge " << tip << " judged to be tip");
+                        RemoveTip(tip);
+                        
+                        TRACE("Edge " << tip << " removed as a tip");
+                    }else if (CheckAllAlternativesAreTips(tip)){
+					    TRACE("Edge " << tip << " judged to be a meaningless tip");
+                        
+                        RemoveTip(tip);
+                        
+                        TRACE("Edge " << tip << " removed as a tip");
+                    }else if (!cfg::get().simp.tc.advanced_checks || tipchecker.TipCanBeProjected(tip)){
+					    TRACE("Edge " << tip << " judged to be a tip");
     					removed_with_check++;
-                        //if (qual_handler_ && math::eq(qual_handler_(tip), 0.))
-                            RemoveTip(tip);
-					    TRACE("Edge " << tip << " removed as tip");
+
+                        RemoveTip(tip);
+					    
+                        TRACE("Edge " << tip << " removed as a tip");
                     }else 
                         ans.push_back(tip);
 				} else {
-					TRACE("Edge " << tip << " judged NOT to be tip");
+					TRACE("Edge " << tip << " judged NOT to be a tip");
 				}
 			} else {
-				TRACE("Edge " << tip << " judged NOT to look like tip topologically");
+				TRACE("Edge " << tip << " judged NOT to look like a tip topologically");
 			}
 			TRACE("Try to find next edge");
 			++iterator;
 			TRACE("Use next edge");
 		}
 		TRACE("Tip clipping finished");
-        INFO("REMOVED STATS " << removed_with_check << " " << removed);
-        tipchecker.PrintTimeStats();
+        
+        DEBUG("REMOVED STATS " << removed_with_check << " " << removed);
+        DEBUG("REMOVED GOOD " << good_removed);
+        DEBUG("TOTAL GOOD " << good_total);
+
 		Compressor<Graph> compressor(graph_);
 		compressor.CompressAllVertices();
         return ans;
@@ -180,35 +251,33 @@ public:
 // -------------------------------------Clipping tips for Resolver-------------------------------------
 
 
-	vector<EdgeId> ClipTipsForResolver(boost::function<void(EdgeId)> plotter = 0) {
+	vector<EdgeId> ClipTipsForResolver() {
         vector<EdgeId> ans;
         size_t removed = 0;
         size_t removed_with_check = 0;
 		TRACE("Tip clipping started");
-        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein);
+        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_);
 		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
 			EdgeId tip = *iterator;
 			TRACE("Checking edge for being tip " << tip);
 			if (IsTip(tip)) {
 				TRACE("Edge " << tip << " judged to look like tip topologically");
                 if (AdditionalCondition(tip)){
-                    if (plotter) 
-                        plotter(tip);
                     
                     TRACE("Additional sequence comparing");
                     removed++;
-                    //if (get_total_weight && math::gr(get_total_weight(tip), 0.)){ 
-                        //if (qual_handler_ && math::gr(qual_handler_(tip), 0.)){
-                            //INFO("Pair INFO FOR GOOD TIP " << graph_.int_id(tip) << " " << get_total_weight(tip) << " " << qual_handler_(tip));
-                        //}else{ 
-                            //INFO("Pair INFO FOR BAD TIP " << graph_.int_id(tip) << " " << get_total_weight(tip));
-                        //}
-                    //}
-                    //if (qual_handler_ && math::gr(qual_handler_(tip), 0.)) 
-                        //INFO("Good edge " << graph_.int_id(tip));
 
-                    if (!cfg::get().simp.tc.advanced_checks || tipchecker.TipCanBeProjected(tip)){
-					    TRACE("Edge " << tip << " judged to be tip");
+                    if (TipHasAVeryLowRelativeCoverage(tip)){
+					    TRACE("Edge " << tip << " judged to be a tip with a very low coverage");
+                        removed_with_check++;
+                        RemoveTip(tip);
+                        TRACE("Edge " << tip << " removed as a tip");
+                    }else if (CheckAllAlternativesAreTips(tip)){
+                        TRACE("Edge " << tip << " judged to be a meaningless tip");
+                        RemoveTip(tip);
+                        TRACE("Edge " << tip << " removed as a tip");
+                    }else if (!cfg::get().simp.tc.advanced_checks || tipchecker.TipCanBeProjected(tip)){
+					    TRACE("Edge " << tip << " judged to be a tip");
     					removed_with_check++;
                         RemoveTip(tip);
 					    TRACE("Edge " << tip << " removed as tip");
@@ -225,8 +294,9 @@ public:
 			TRACE("Use next edge");
 		}
 		TRACE("Tip clipping finished");
-        INFO("REMOVED STATS " << removed_with_check << " " << removed);
-        tipchecker.PrintTimeStats();
+
+        DEBUG("REMOVED STATS " << removed_with_check << " " << removed);
+        
 		Compressor<Graph> compressor(graph_);
 		compressor.CompressAllVertices();
         return ans;
@@ -252,27 +322,6 @@ private:
 	//		}
 	//	}
 
-	double MaxCompetitorCoverage(EdgeId tip, vector<EdgeId> competitors) const {
-		double result = 0;
-		for (auto it = competitors.begin(); it != competitors.end(); ++it) {
-			if (*it != tip)
-				result = max(result, this->graph().coverage(*it));
-		}
-		return result;
-	}
-
-	//todo strange semantics, discuss with Anton
-	double MaxCompetitorCoverage(EdgeId tip) const {
-		return max(
-				MaxCompetitorCoverage(
-						tip,
-						this->graph().OutgoingEdges(
-								this->graph().EdgeStart(tip))),
-				MaxCompetitorCoverage(
-						tip,
-						this->graph().IncomingEdges(
-								this->graph().EdgeEnd(tip))));
-	}
 
 	/*virtual*/
 	bool AdditionalCondition(EdgeId tip) const {
