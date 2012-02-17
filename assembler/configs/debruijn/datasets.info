@@ -396,7 +396,7 @@ SAUREUS_JCVI_BH_CLEANED_HUMAN_ECOLI_PLASMID ; old SAUREUS_JCVI
         IS              207     ; insert size todo check!!!!
         single_cell     true
         is_var		18
-        reference_genome  S.aureus/USA300_FPR3757.fasta.gz      ; length 2872769
+;        reference_genome  S.aureus/USA300_FPR3757.fasta.gz      ; length 2872769
 }
 
 SAUREUS_JCVI_BH ; old SAUREUS_JCVI

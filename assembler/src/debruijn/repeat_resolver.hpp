@@ -1565,8 +1565,8 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 		}
 	}
 
-	MultiSplit(vid);
-	return cur_color;
+	vector<typename Graph::VertexId> new_vertices = MultiSplit(vid);
+	return new_vertices.size();
 }
 
 
