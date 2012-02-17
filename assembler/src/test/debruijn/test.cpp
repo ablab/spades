@@ -58,15 +58,15 @@ namespace debruijn_graph {
 //	comparer.CompareAssemblies(stream1, stream2, "spades_", "evsc_");
 //}
 
-BOOST_AUTO_TEST_CASE( ThreadingContigsOverGraph ) {
-	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
-	io::EasyReader base_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence1.fasta");
-	io::EasyReader other_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence2.fasta");
-	string base_saves = "";
-	string output_dir = "assembly_comparison";
-	make_dir(output_dir);
-	ThreadAssemblies<gp_t>(base_saves, base_contigs, "spades", other_contigs, "velvet", output_dir);
-}
+//BOOST_AUTO_TEST_CASE( ThreadingContigsOverGraph ) {
+//	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
+//	io::EasyReader base_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence1.fasta");
+//	io::EasyReader other_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence2.fasta");
+//	string base_saves = "";
+//	string output_dir = "assembly_comparison";
+//	make_dir(output_dir);
+//	ThreadAssemblies<gp_t>(base_saves, base_contigs, "spades", other_contigs, "velvet", output_dir);
+//}
 
 //BOOST_AUTO_TEST_CASE( GenerateGraphFragment ) {
 //	std::string input_path = "./data/debruijn/HMP_LANE_3_0/K55/latest/saves/simplified_graph";
