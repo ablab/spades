@@ -313,6 +313,8 @@ void PrintPathLengthStats(const Graph& g, std::vector<BidirectionalPath>& paths)
 	}
 }
 
+
+
 //Prints coverage of all edges by given paths and total edge coverage
 double PrintPathCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) {
 	std::multiset<EdgeId> covered;
@@ -321,6 +323,12 @@ double PrintPathCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) 
 		for(auto iter = path->begin(); iter != path->end(); ++iter) {
 			covered.insert(*iter);
 		}
+	}
+
+	DEBUG("EDGE STAT")
+	for (auto iter = covered.begin(); iter != covered.end(); ++iter) {
+	    DEBUG(g.int_id(*iter) << " (" << g.length(*iter) << ") = " << covered.count(*iter));
+
 	}
 
 	std::map<size_t, size_t> coveredTimes;

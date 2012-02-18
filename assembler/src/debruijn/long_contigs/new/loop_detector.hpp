@@ -14,7 +14,7 @@
 #ifndef LOOP_DETECTOR_HPP_
 #define LOOP_DETECTOR_HPP_
 
-#include "bidirectional_path.h"
+#include "bidirectional_path.hpp"
 
 namespace long_contigs {
 
@@ -25,7 +25,7 @@ protected:
 	size_t iteration;
 	double maxWeight;
 
-	std::map<EdgeId, double> alternatives;
+	std::map <EdgeId, double> alternatives;
 
 public:
 	LoopDetectorData(size_t i, double w): iteration(i), maxWeight(w), alternatives()  {
