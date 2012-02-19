@@ -22,14 +22,14 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
 protected:
     boost::function<double(int)> weight_f_;
 
-	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
+	virtual vector<pair<int, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
 			const vector<PairInfo<EdgeId>>& data,
 			const vector<size_t>& raw_forward) const {
 
         size_t first_len = this->graph().length(first);
         size_t second_len = this->graph().length(second);
         
-		vector<pair<size_t, double>> result;
+		vector<pair<int, double>> result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());
 		vector<size_t> forward;
@@ -52,18 +52,18 @@ protected:
 					&& math::ls(forward[cur_dist + 1] - data[i].d,
 							data[i].d - (int) forward[cur_dist])) {
 				cur_dist++;
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
+				if (math::le(abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
 					weights[cur_dist] += data[i].weight * weight_f_((int) forward[cur_dist] - data[i].d);
 			} else if (cur_dist + 1 < forward.size()
 					&& math::eq(forward[cur_dist + 1] - data[i].d,
 							data[i].d - (int) forward[cur_dist])) {
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
+				if (math::le(abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
 					weights[cur_dist] += data[i].weight * 0.5 * weight_f_((int) forward[cur_dist] - data[i].d);
 				cur_dist++;
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
+				if (math::le(abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
 					weights[cur_dist] += data[i].weight * 0.5 * weight_f_((int) forward[cur_dist] - data[i].d);
 			} else {
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
+				if (math::le(abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
 					weights[cur_dist] += data[i].weight * weight_f_((int) forward[cur_dist] - data[i].d);
 			}
 		}

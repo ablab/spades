@@ -48,6 +48,13 @@ class DataDivider {
         size_t threshold_;
 
         template <class EdgeId>
+        void Print(const vector<PairInfo<EdgeId> >& data) const {
+            for (size_t i = 0; i < data.size(); ++i) {
+                TRACE(data[i].d << " " << data[i].weight);   
+            }
+        }
+
+        template <class EdgeId>
         bool IsANewCluster(size_t index, const vector<PairInfo<EdgeId> >& data) {
             VERIFY(index < data_size_ - 1);
             return (abs(data[index + 1].d - data[index].d) > threshold_);
@@ -86,6 +93,9 @@ class DataDivider {
             data_size_ = data.size();
             VERIFY(data_size_ > 0);
             vector<Interval> answer;
+            
+            TRACE("Data");
+            Print(data);
 
             min_value_ = rounded_d(data.front());
             max_value_ = rounded_d(data.back());
@@ -110,10 +120,14 @@ class DataDivider {
                 }
             }
             //answer.push_back(make_pair(beginc, new_data.size()));
+            TRACE("New_data ");
+            Print(new_data);
 
             return answer;
         }
 
+    private:
+        DECL_LOGGER("DataDivider");
     };
 }
 

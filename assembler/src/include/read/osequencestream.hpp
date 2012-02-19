@@ -16,10 +16,31 @@
 
 #include <fstream>
 
+using std::string;
+using std::endl;
+
+
 class osequencestream {
-private:
-	ofstream ofstream_;
+
+protected:
+	std::ofstream ofstream_;
+
 	int id_;
+
+
+	void write_str(const string& s) {
+        size_t cur = 0;
+        while (cur < s.size()) {
+            ofstream_ << s.substr(cur, 60) << endl;
+            cur += 60;
+        }
+	}
+
+	virtual void write_header(const string& s) {
+        // Velvet format: NODE_1_length_24705_cov_358.255249
+	    ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << endl;
+	}
+
 public:
 	osequencestream(const string& filename): id_(0) {
 		ofstream_.open(filename.c_str());
@@ -29,132 +50,131 @@ public:
 		ofstream_.close();
 	}
 
+    osequencestream& operator<<(const string& s) {
+        write_header(s);
+        write_str(s);
+        return *this;
+    }
+
 	osequencestream& operator<<(const Sequence& seq) {
-//		DEBUG("outputting");
-		string s = seq.str();
-		ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << endl;
-		// Velvet format: NODE_1_length_24705_cov_358.255249
-		size_t cur = 0;
-		while (cur < s.size()) {
-			ofstream_ << s.substr(cur, 60) << endl;
-			cur += 60;
-		}
-		return *this;
+	    std::string s = seq.str();
+		return operator <<(s);
 	}
 };
 
-class osequencestream_cov {
-private:
-	ofstream ofstream_;
-	int id_;
+
+class osequencestream_cov: public osequencestream {
+protected:
+
 	double coverage_;
+
+
+    virtual void write_header(const string& s) {
+        // Velvet format: NODE_1_length_24705_cov_358.255249
+        ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << coverage_ << endl;
+    }
+
+
 public:
-	osequencestream_cov(const string& filename): id_(0), coverage_(0.) {
-		ofstream_.open(filename.c_str());
+	osequencestream_cov(const string& filename): osequencestream(filename), coverage_(0.) {
 	}
 
-	virtual ~osequencestream_cov() {
-		ofstream_.close();
-	}
+    virtual ~osequencestream_cov() {
+        ofstream_.close();
+    }
 
 	osequencestream_cov& operator<<(double coverage) {
 		coverage_ = coverage;
 		return *this;
 	}
 
+	osequencestream_cov& operator<<(const string& s) {
+        write_header(s);
+        write_str(s);
+        return *this;
+    }
+
 	osequencestream_cov& operator<<(const Sequence& seq) {
-		string s = seq.str();
-		ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << coverage_ << endl;
-		// Velvet format: NODE_1_length_24705_cov_358.255249
-		size_t cur = 0;
-		while (cur < s.size()) {
-			ofstream_ << s.substr(cur, 60) << endl;
-			cur += 60;
-		}
-		return *this;
-	}
+        std::string s = seq.str();
+        return operator <<(s);
+    }
+
 };
 
 
-class osequencestream_with_id {
-private:
-	ofstream ofstream_;
-	int id_;
+class osequencestream_with_id: public osequencestream {
+protected:
+	int uid_;
 
-	void* uid_;
 	double cov_;
 
+    virtual void write_header(const string& s) {
+        ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << cov_ << "_ID_" << uid_ << endl;
+    }
+
 public:
-	osequencestream_with_id(const string& filename): id_(0), uid_(0), cov_(0.0) {
-		ofstream_.open(filename.c_str());
+	osequencestream_with_id(const string& filename): osequencestream(filename), uid_(0), cov_(0.0) {
 	}
 
-	virtual ~osequencestream_with_id() {
-		ofstream_.close();
-	}
+    virtual ~osequencestream_with_id() {
+        ofstream_.close();
+    }
+
 
 	void setCoverage(double c) {
 		cov_ = c;
 	}
 
-	void setID(void* uid) {
+	void setID(int uid) {
 		uid_ = uid;
 	}
 
+	osequencestream_with_id& operator<<(const string& s) {
+        write_header(s);
+        write_str(s);
+        return *this;
+    }
+
 	osequencestream_with_id& operator<<(const Sequence& seq) {
-		string s = seq.str();
-		ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << cov_ << "_ID_" << uid_ << endl;
-		size_t cur = 0;
-		while (cur < s.size()) {
-			ofstream_ << s.substr(cur, 60) << endl;
-			cur += 60;
-		}
-		return *this;
-	}
+        std::string s = seq.str();
+        return operator <<(s);
+    }
+
 };
 
 
-class osequencestream_with_data_for_scaffold {
-private:
-	ofstream ofstream_;
-	ofstream scstream_;
-	int id_;
+class osequencestream_with_data_for_scaffold: public osequencestream_with_id  {
+protected:
+    std::ofstream scstream_;
 
-	int uid_;
-	double cov_;
+    virtual void write_header(const string& s) {
+        scstream_ << id_ << "\tNODE_" << id_ << "\t" << s.size() << "\t" << (int) round(cov_) << endl;
+        ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << cov_ << "_ID_" << uid_ << endl;
+    }
 
 public:
-	osequencestream_with_data_for_scaffold(const string& filename): id_(1), uid_(0), cov_(0.0) {
-		ofstream_.open(filename.c_str());
-		string sc_filename = filename + ".info";
-		scstream_.open(sc_filename);
+	osequencestream_with_data_for_scaffold(const string& filename): osequencestream_with_id(filename) {
+	    id_ = 1;
+		std::string sc_filename = filename + ".info";
+		scstream_.open(sc_filename.c_str());
 	}
 
 	virtual ~osequencestream_with_data_for_scaffold() {
-		ofstream_.close();
+	    ofstream_.close();
 		scstream_.close();
 	}
 
-	void setCoverage(double c) {
-		cov_ = c;
-	}
-
-	void setID(size_t uid) {
-		uid_ = uid;
-	}
+	osequencestream_with_data_for_scaffold& operator<<(const string& s) {
+        write_header(s);
+        write_str(s);
+        return *this;
+    }
 
 	osequencestream_with_data_for_scaffold& operator<<(const Sequence& seq) {
-		string s = seq.str();
-		scstream_ << id_ << "\tNODE_" << id_ << "\t" << s.size() << "\t" << (int) round(cov_) << endl;
-		ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << cov_ << "_ID_" << uid_ << endl;
+        std::string s = seq.str();
+        return operator <<(s);
+    }
 
-		size_t cur = 0;
-		while (cur < s.size()) {
-			ofstream_ << s.substr(cur, 60) << endl;
-			cur += 60;
-		}
-		return *this;
-	}
 };
 
 #endif /* OSEQUENCESTREAM_HPP_ */

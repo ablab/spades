@@ -59,6 +59,14 @@ void estimate_with_estimator(const Graph& graph,
 	} else {
 		estimator.Estimate(raw_clustered_index);
 	}
+    DEBUG("Size of clustered index is " << raw_clustered_index.size());
+    for (auto iter = raw_clustered_index.begin(); iter != raw_clustered_index.end(); ++iter) {
+        const vector<PairInfo<EdgeId> >& infos = *iter;
+        DEBUG("Size " << infos.size());
+        for (auto infos_iter = infos.begin(); infos_iter != infos.end(); ++infos_iter) {
+            DEBUG("Pair info " << *infos_iter);   
+        }
+    }
 	INFO("Normalizing Weights");
 	paired_info_index normalized_index(graph);
 	normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index);
@@ -98,13 +106,15 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 		boost::function<double(int)> weight_function;
 
-		if (cfg::get().est_mode
-				== debruijn_graph::estimation_mode::em_weighted || cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing) {
+		if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_weighted || 
+            cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing || 
+            cfg::get().est_mode == debruijn_graph::estimation_mode::em_extensive) {
 			INFO("Retaining insert size distribution for it");
-			auto streams = paired_binary_readers(false, 0);
-			InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist =
-					GetInsertSizeHistogram(streams, gp, *cfg::get().ds.IS,
-							*cfg::get().ds.is_var);
+			InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist = cfg::get().ds.hist;
+			//auto streams = paired_binary_readers(false, 0);
+			//InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist =
+					//GetInsertSizeHistogram(streams, gp, *cfg::get().ds.IS,
+							//*cfg::get().ds.is_var);
 			WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
 			INFO("Weight Wrapper Done");
 			weight_function = boost::bind(&WeightDEWrapper::CountWeight,
@@ -128,8 +138,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		PairedInfoNormalizer<Graph> normalizer(normalizing_f);
 		INFO("Normalizer Done");
 
-		PairInfoWeightFilter<Graph> filter(gp.g,
-				cfg::get().de.filter_threshold);
+		PairInfoWeightFilter<Graph> filter(gp.g, cfg::get().de.filter_threshold);
 		INFO("Weight Filter Done");
 
 		if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_simple) {
@@ -168,10 +177,9 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 					clustered_index);
 		} else if (cfg::get().est_mode
 				== debruijn_graph::estimation_mode::em_smoothing) {
-			PairInfoWeightFilter<Graph> filter(gp.g, 0.);
 			const AbstractDistanceEstimator<Graph>& estimator =
 					SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index,
-							dist_finder, weight_function, linkage_distance,
+							dist_finder, weight_function, linkage_distance, max_distance,
 							cfg::get().ade.threshold,
 							cfg::get().ade.range_coeff,
 							cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,

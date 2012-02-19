@@ -144,9 +144,7 @@ public:
 	}
 
 	virtual void Visualize(const GraphComponent<Graph>& component) {
-		for (auto v_it = component.v_begin(); v_it != component.v_end(); ++v_it) {
-			printer_.AddVertex(*v_it);
-		}
+		printer_.AddVertices(component.vertices());
 		for (auto e_it = component.e_begin(); e_it != component.e_end();
 				++e_it) {
 			printer_.AddEdge(*e_it);

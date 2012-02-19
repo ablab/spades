@@ -179,8 +179,9 @@ public:
 	}
 
 	virtual string GetColour(VertexId element) const {
-		VERIFY(false);
-		return "";
+		//TODO Explain why
+		//VERIFY(false);
+		return "white";
 	}
 
 	virtual map<VertexId, string> GetColours(const set<VertexId> &elements) const {

@@ -578,6 +578,10 @@ public:
 		data_.DeletePairInfo(pair_info);
 	}
 
+	void Clear() {
+	    data_.clear();
+	}
+
 private:
 	//	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
 	//		PairInfos vec = GetEdgePairInfo(edge1, edge2);
@@ -732,6 +736,8 @@ public:
 	//		return true;
 	//	}
 
+private:
+    DECL_LOGGER("PairInfo");
 };
 
 /**
@@ -1026,8 +1032,9 @@ public:
 
 	void FillNormalizedIndex(const PairedInfoIndex<Graph>& paired_index, PairedInfoIndex<Graph>& normalized_index) const {
 		for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
-			vector<PairInfo<EdgeId>> infos = *it;
+			const vector<PairInfo<EdgeId> >& infos = *it;
 			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
+                DEBUG("Normalized pair info " << (*it2) << " " << normalizing_function_(*it2));
 				normalized_index.AddPairInfo(normalizing_function_(*it2), false);
 			}
 		}

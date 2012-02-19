@@ -15,7 +15,7 @@
 #define CONFIG_STRUCT_HDIP_
 
 #include "config_common.hpp"
-#include "long_contigs/lc_config_struct.hpp"
+#include "path_extend/pe_config_struct.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <io/reader.hpp>
@@ -63,6 +63,7 @@ enum resolving_mode
     rm_split          ,
     rm_path_extend    ,
     rm_combined       ,
+    rm_split_scaff    ,
     rm_jump
 };
 
@@ -176,9 +177,10 @@ struct debruijn_config {
 	{
 		resolve_mode_id_mapping::value_type info [] = {
         resolve_mode_id_mapping::value_type("none"             , rm_none           ),
-        resolve_mode_id_mapping::value_type("split"  			, rm_split			),
+        resolve_mode_id_mapping::value_type("split"  		   , rm_split		   ),
         resolve_mode_id_mapping::value_type("path_extend"      , rm_path_extend    ),
         resolve_mode_id_mapping::value_type("combined"         , rm_combined       ),
+        resolve_mode_id_mapping::value_type("split_scaff"      , rm_split_scaff    ),
         resolve_mode_id_mapping::value_type("jump"             , rm_jump           ),
     };
 
@@ -537,11 +539,12 @@ public:
     estimation_mode est_mode;
 
 	resolving_mode rm;
-	long_contigs::lc_config::lc_params andrey_params;
+	path_extend::pe_config::MainPEParamsT pe_params;
 
 	distance_estimator de;
 	smoothing_distance_estimator ade;
 	repeat_resolver rr;
+	bool use_scaffolder;
 	dataset ds;
 	position_handler pos;
 	gap_closer gc;
@@ -996,20 +999,19 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.de, pt, (cfg.ds.single_cell ? "sc_de" : "usual_de"));
 
-	load(cfg.ade, pt, "ade"); // advanced distance estimator:
+	load(cfg.ade, pt, (cfg.ds.single_cell ? "sc_ade" : "usual_ade")); // advanced distance estimator:
 	load(cfg.rr, pt, (cfg.ds.single_cell ? "sc_rr" : "usual_rr")); // repeat resolver:
 	load(cfg.pos, pt, "pos"); // position handler:
 
     load(cfg.paired_metr, pt, "paired_metrics");
 
     load(cfg.est_mode, pt, "estimation_mode");
-	load(cfg.rm, pt, "resolving_mode");
-	if (cfg.rm == rm_path_extend || cfg.rm == rm_combined
-			|| cfg.rm == rm_jump) {
-		cfg.andrey_params.param_set_name =
-				cfg.ds.single_cell ? "singlecell" : "multicell";
-		load(cfg.andrey_params, pt, "andrey_params");
-	}
+
+	load(cfg.rm               , pt, "resolving_mode"   );
+    cfg.pe_params.name = cfg.ds.single_cell ? "singlecell" : "multicell";
+    load(cfg.pe_params, pt, "andrey_params"    );
+    load(cfg.use_scaffolder, pt, "use_scaffolder");
+
 
 	load(cfg.gc, pt, "gap_closer");
 	load(cfg.sw, pt, "SAM_writer");

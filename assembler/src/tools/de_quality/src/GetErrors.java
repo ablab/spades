@@ -90,7 +90,7 @@ public class GetErrors implements Runnable{
 			MyScanner in, in2, incl, fnrin, fprin, inpaths;
 			
 			Locale.setDefault(Locale.US);
-			if (filename.length()>0){
+			if (filename.length() > 0) {
 				int a = 0;
 				while (a < filename.length() && filename.charAt(a)!='.') a++;
 				filename = filename.substring(0, a);
@@ -111,12 +111,12 @@ public class GetErrors implements Runnable{
 			in2.nextInt();
 			int[] edges = new int[Nmax];
 			int ind = 0;
-			while (in2.hasMoreTokens()){
+			while (in2.hasMoreTokens()) {
 				String s = in2.nextToken();
-				if (s.equals("Edge")){
-                                	ind = in2.nextInt();					
-				}
-				else if (s.equals("=")) edges[ind-1] = in2.nextInt();
+				if (s.equals("Edge"))
+                    ind = in2.nextInt();					
+				else if (s.equals("=")) 
+                    edges[ind-1] = in2.nextInt();
 			}
 
             TreeSet<Pair> set = new TreeSet<Pair>();
@@ -136,21 +136,21 @@ public class GetErrors implements Runnable{
 			e1 = 0;
 			e2 = 0;
 			filtering = false;
-			while (fprin.hasMoreTokens()){
+			while (fprin.hasMoreTokens()) {
 				int a = fprin.nextInt();
 				int b = fprin.nextInt();
 				double x = fprin.nextDouble();
 				double y = fprin.nextDouble();
 				double z = fprin.nextDouble();
 				fprin.nextToken();
-				if (!(a == e1 && b == e2)){
-					if (out != null && filtering){
+				if (!(a == e1 && b == e2)) {
+					if (out != null && filtering) {
 						out.println(buf);
 						out.close();
 						buf = new StringBuffer("");
 					}	
 					filtering = (isAcceptable(edges[a-1], edges[b-1]));
-					if (filtering){
+					if (filtering) {
                         set.add(new Pair(e1, e2));
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
                         String folder1 = output_dir + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
@@ -159,15 +159,17 @@ public class GetErrors implements Runnable{
 						out = new PrintWriter(folder1 + "fpr.prd");
 					}
 				}
-				if (filtering) if (x > 0 && x*x + y*y != 0){
+				if (filtering) if (x > 0) {
                     buf.append(x + " " + 0 + "\n");
                 }
 				e1 = a;
 				e2 = b;
 			}
-		    if (out != null && filtering) 
-                out.println(buf);
-            out.close();
+		    if (out != null) {
+                if (filtering) 
+                    out.println(buf);
+                out.close();
+            }
             fprin.close();
 
 
@@ -180,21 +182,21 @@ public class GetErrors implements Runnable{
 			e2 = 0;
             out = null;
 			filtering = false;
-			while (fnrin.hasMoreTokens()){
+			while (fnrin.hasMoreTokens()) {
 				int a = fnrin.nextInt();
 				int b = fnrin.nextInt();
 				double x = fnrin.nextDouble();
 				double y = fnrin.nextDouble();
 				double z = fnrin.nextDouble();
 				fnrin.nextToken();
-				if (!(a == e1 && b == e2)){
-					if (out != null && filtering){
+				if (!(a == e1 && b == e2)) {
+					if (out != null && filtering) {
 						out.println(buf);
 						out.close();
 						buf = new StringBuffer("");
 					}	
 					filtering = (isAcceptable(edges[a-1], edges[b-1]));
-					if (filtering){
+					if (filtering) {
 
 						//debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
                         set.add(new Pair(e1, e2));
@@ -204,41 +206,45 @@ public class GetErrors implements Runnable{
 						out = new PrintWriter(folder1 + "fnr.prd");
 					}
 				}
-				if (filtering) if (x > 0 && x*x + y*y != 0){
+				if (filtering) if (x > 0) {
                     buf.append(x + " " + 0 + "\n");
                 }
 				e1 = a;
 				e2 = b;
 			}
-		    if (out != null && filtering) out.println(buf);
-            out.close();
+		    if (out != null) {
+                if (filtering) 
+                    out.println(buf);
+                out.close();
+            }
             fnrin.close();
                         
             e1 = e2 = 0;
 //          getting paired info
 			debug("Paired Info");
 			in.nextInt();
-			while (in.hasMoreTokens()){
+			while (in.hasMoreTokens()) {
 				int a = in.nextInt(); //edge1
 				int b = in.nextInt(); //edge2
 				double x = in.nextDouble(); //distance
 				double y = in.nextDouble(); //weight
 				double z = in.nextDouble(); //variance
 				in.nextToken();
-				if (!(a == e1 && b == e2)){
-					if (out != null && filtering){
+				if (!(a == e1 && b == e2)) {
+					if (out != null && filtering) {
 						out.println(buf);
 						out.close();
 						buf = new StringBuffer("");
 					}	
-					filtering = (isAcceptable(edges[a-1], edges[b-1]));
-					if (filtering){
+					filtering = (isAcceptable(edges[a - 1], edges[b - 1]));
+					if (filtering) {
 
-						if (!set.contains(new Pair(a, b))) continue;
-                        String folder1 = output_dir + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+						if (!set.contains(new Pair(a, b))) 
+                            continue;
+                        String folder1 = output_dir + "/" + a + "_" + b + "_" + edges[a - 1] + "_" + edges[b - 1] + "/";
                         out = new PrintWriter(folder1 + "unclustered.prd");
                         //generating config
-						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+						debug("Current edge is processing : " + a + " " + b + " " + edges[a - 1] + " " + edges[b - 1]);
                         debug("Generating config files");
                         PrintWriter out1 = new PrintWriter(folder1 + "plot.conf");
                         String text =
@@ -256,21 +262,23 @@ public class GetErrors implements Runnable{
                         "set term png enhanced size 1920, 1080 14\n" +
                         "plot \"unclustered.prd\" with linespoints, \"clustered.prd\" with impulses," + 
                         "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 1," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 1, " + " \"paths.prd\" with impulses lt 1 lw 2 lc 5\n" +
-                        "set output \"" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + ".png\"\n" +
+                        "set output \"" + a + "_" + b + "_" + edges[a - 1] + "_" + edges[b - 1] + ".png\"\n" +
                         "replot\n";
                         out1.print(text);
                         out1.close();
 					}
 				}
-				if (filtering) if (x > 0. && y != 0.){
-                    //for (int x1 = (int) (x - z); x1 <= x + z; x1++) 
-                        buf.append(x + " " + y + "\n");
+				if (filtering) if (x > 0. && y != 0.) {
+                    buf.append(x + " " + y + "\n");
                 }
 				e1 = a;
 				e2 = b;
 			}
-		    if (out != null && filtering) out.println(buf);
-            out.close();
+		    if (out != null) {
+                if (filtering) 
+                    out.println(buf);
+                out.close();
+            }
 			in.close();
 
 //          getting clustered info
@@ -284,21 +292,21 @@ public class GetErrors implements Runnable{
 			e1 = 0;
 			e2 = 0;
 			filtering = false;
-			while (incl.hasMoreTokens()){
+			while (incl.hasMoreTokens()) {
 				int a = incl.nextInt();
 				int b = incl.nextInt();
 				double x = incl.nextDouble();
 				double y = incl.nextDouble();
 				double z = incl.nextDouble();
 				incl.nextToken();
-				if (!(a == e1 && b == e2)){
-					if (out != null && filtering){
+				if (!(a == e1 && b == e2)) {
+					if (out != null && filtering) {
 						out.println(buf);
 						out.close();
 						buf = new StringBuffer("");
 					}	
 					filtering = (isAcceptable(edges[a-1], edges[b-1]));
-					if (filtering){
+					if (filtering) {
 
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
 						if (!set.contains(new Pair(a, b))) continue;
@@ -306,16 +314,17 @@ public class GetErrors implements Runnable{
 						out = new PrintWriter(folder1 + "clustered.prd");
 					}
 				}
-				if (filtering) if (x > 0. && x*x + y*y != 0){
-                    //for (int x1 = (int) (x - z); x1 <= x + z; x1++) 
-                        buf.append(x + " " + y + "\n");
-
+				if (filtering) if (x > 0.) {
+                    buf.append(x + " " + y + "\n");
                 }
 				e1 = a;
 				e2 = b;
 			}
-		    if (out != null && filtering) out.println(buf);
-            out.close();
+		    if (out != null) {
+                if (filtering) 
+                    out.println(buf);
+                out.close();
+            }
             incl.close();
 
 //          getting paths info
@@ -328,21 +337,21 @@ public class GetErrors implements Runnable{
 			e1 = 0;
 			e2 = 0;
 			filtering = false;
-			while (inpaths.hasMoreTokens()){
+			while (inpaths.hasMoreTokens()) {
 				int a = inpaths.nextInt();
 				int b = inpaths.nextInt();
 				double x = inpaths.nextDouble();
 				double y = inpaths.nextDouble();
 				double z = inpaths.nextDouble();
 				inpaths.nextToken();
-				if (!(a == e1 && b == e2)){
-					if (out != null && filtering){
+				if (!(a == e1 && b == e2)) {
+					if (out != null && filtering) {
 						out.println(buf);
 						out.close();
 						buf = new StringBuffer("");
 					}	
 					filtering = (isAcceptable(edges[a-1], edges[b-1]));
-					if (filtering){
+					if (filtering) {
 
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
 						if (!set.contains(new Pair(a, b))) continue;
@@ -350,23 +359,24 @@ public class GetErrors implements Runnable{
 						out = new PrintWriter(folder1 + "paths.prd");
 					}
 				}
-				if (filtering){
+				if (filtering) {
                         buf.append(x + " " + y + "\n");
                 }
 				e1 = a;
 				e2 = b;
 			}
-		    if (out != null && filtering) out.println(buf);
-            out.close();
+		    if (out != null) {
+                if (filtering) 
+                    out.println(buf);
+                out.close();
+            }
             inpaths.close();
              
 			
 			                                              
-		}catch(Exception e){
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 }
-
-

@@ -4,7 +4,7 @@ i=0
 if [ "x$3" != "x" ]
 then
     i=$3
-    i=$i-1
+    i=`expr $i - 1`
 fi
 STRR=`wc -l $1`
 SIZZE=`echo $STRR | cut --delimiter=' ' -f 1`

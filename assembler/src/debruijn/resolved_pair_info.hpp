@@ -84,7 +84,7 @@ public:
 			ProcessInfos(new_pair_info, *it);
 		}
 		if (no_current_copies) {
-			WARN("There were no current copies for " << no_current_copies_ids.size() << " old graph edges: "<<ToString(no_current_copies_ids));
+			DEBUG("There were no current copies for " << no_current_copies_ids.size() << " old graph edges: "<<ToString(no_current_copies_ids));
 		}
 	}
 private:

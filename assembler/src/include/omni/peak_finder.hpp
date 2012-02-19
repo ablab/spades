@@ -196,18 +196,17 @@ private:
 	bool IsLocalMaximum(int peak, size_t range, int left_bound, int right_bound, int delta) const {
 
         DEBUG("Is local maximum :  peak " << peak << " range " << range << " bounds " << left_bound << " " << right_bound << " delta " << delta);
-		for (int i = left_bound + (int) range; i < right_bound - (int) range; ++i) {
-			int index_max = i - (int) range;
-			for (int j = i - (int) range; j < i + (int) range; j++)
-				if (math::ls(hist_[index_max - x_left_].real(), hist_[j - x_left_].real())) {
-					index_max = j;
-				}// else if (j < i && hist_[index_max - x_left_][0] == hist_[j - x_left][0] ) index_max = j;
-			
+        int index_max = peak;
+        TRACE("Looking for the maximum");
+        for (int j = left_bound; j < right_bound; ++j)
+            if (math::ls(hist_[index_max - x_left_].real(), hist_[j - x_left_].real())) {
+                index_max = j;
+            }// else if (j < i && hist_[index_max - x_left_][0] == hist_[j - x_left][0] ) index_max = j;
+        TRACE("Maximum is " << index_max);
 
-            if (!((index_max > (int) i - ( (int) range >> 1)) && (index_max < (int) i + ( (int) range >> 1)))) continue;
-            if  (abs(index_max - peak) <= delta) 
-                return true;
-		}
+        if  (abs(index_max - peak) <= delta) 
+            return true;
+
 		return false;
     }
 
@@ -216,7 +215,7 @@ private:
     }
 
 public:
-	PeakFinder(vector<PairInfo<EdgeId> > data, size_t begin, size_t end, size_t range, size_t delta, double percentage, double derivative_threshold) : 
+	PeakFinder(const vector<PairInfo<EdgeId> >& data, size_t begin, size_t end, size_t range, size_t delta, double percentage, double derivative_threshold) : 
             delta_(delta), 
             percentage_(percentage), 
             derivative_threshold_(derivative_threshold)
@@ -236,11 +235,11 @@ public:
         return weight_;
     }
 
-	void PrintStats() const {
+	void PrintStats(string host) const {
 		for (size_t i = 0; i < data_len_; ++i)
-			cout << (x_left_ + (int) i) << " " << hist_[i] << endl;
+		    DEBUG(host << (x_left_ + (int) i) << " " << hist_[i])
 
-		cout << endl;
+		DEBUG("");
 	}
 
 	void FFTSmoothing(double cutoff) {
@@ -250,20 +249,27 @@ public:
             return;
 		}
 		ExtendLinear(hist_);
-		InitBaseline();
-		SubtractBaseline();
-        FFTForward(hist_);
-		size_t Ncrit = (size_t) (cutoff);
+        PrintStats("extended linearly");
+		//InitBaseline();
+        //PrintStats("baseline");
+		//SubtractBaseline();
+        //PrintStats("subtracted");
+        //FFTForward(hist_);
+        //PrintStats("fft done");
+		//size_t Ncrit = (size_t) (cutoff);
 
-//      cutting off - standard parabolic filter
-        for (size_t i = 0; i < data_len_ && i < Ncrit; ++i)
-            hist_[i] *= 1. - (i * i * 1.) / (Ncrit * Ncrit);
+////      cutting off - standard parabolic filter
+        //for (size_t i = 0; i < data_len_ && i < Ncrit; ++i)
+            //hist_[i] *= 1. - (i * i * 1.) / (Ncrit * Ncrit);
 		
-		for (size_t i = Ncrit; i < hist_.size(); ++i)
-			hist_[i] = 0.;
+		//for (size_t i = Ncrit; i < hist_.size(); ++i)
+			//hist_[i] = 0.;
 
-        FFTBackward(hist_);
-		AddBaseline();
+        //PrintStats("doing backward fft");
+        //FFTBackward(hist_);
+        //PrintStats("done");
+		//AddBaseline();
+        //PrintStats("adding baseline");
 	}
 
 	bool IsPeak(int dist, size_t range) const {
@@ -274,11 +280,22 @@ public:
         return IsLocalMaximum(dist, 10);
 	}
 
-    vector<pair<size_t, double> > ListPeaks(int delta = 5) const {
+//  looking for one maximum in the picture
+    vector<pair<int, double> > ListPeaks(int delta = 3) const {
+        TRACE("Smoothed data");
+        //size_t index_max = 0;
+        //for (size_t i = 0; i < data_len_; ++i) {
+            //TRACE(x_left_ + (int) i << " " << hist_[i]);
+            //if (hist_[i].real() > hist_[index_max].real())
+                //index_max = i;
+        //}
+        //vector<pair<int, double> > result;
+        //result.push_back(make_pair(x_left_ + index_max, hist_[index_max].real()));
+        //return result;
         DEBUG("Listing peaks");
-        map<size_t, double> peaks_;
+        map<int, double> peaks_;
         //another data_len_
-        size_t data_len_ = x_right_ - x_left_;
+        size_t data_len_ = (size_t) (x_right_ - x_left_);
         vector<bool> was;
         //srand(time(NULL));    
         for (size_t i = 0; i < data_len_; ++i) 
@@ -312,7 +329,7 @@ public:
                     break;
             }
 
-            TRACE("FOUND ");
+            TRACE("FOUND " << index);
 
             //double right_derivative = RightDerivative(index);
             //double left_derivative = LeftDerivative(index);
@@ -320,20 +337,20 @@ public:
             if (index < 0)
                 continue;
 
-            if (index >= x_right_ - delta || index < x_left_ + delta) 
-                continue;
+            //if (index >= x_right_ - delta || index < x_left_ + delta) 
+                //continue;
         
             TRACE("Is in range");
 
-            if (IsPeak(index)) {
+            if (IsPeak(index, 5)) {
                 TRACE("Is local maximum " << index);
                 double weight_ = 0.;
-                int left_bound = (x_left_ > (index - (delta << 2)) ? x_left_ : (index - (delta << 2)));
-                int right_bound = (x_right_ < (index + 1 + (delta << 2)) ? x_right_ : (index + 1 + (delta << 2)));
+                int left_bound = (x_left_ > (index - 20) ? x_left_ : (index - 20));
+                int right_bound = (x_right_ < (index + 1 + 20) ? x_right_ : (index + 1 + 20));
                 for (int i = left_bound; i < right_bound; ++i)
                     weight_ += hist_[i - x_left_].real();
                 TRACE("WEIGHT counted");
-                pair<size_t, double> tmp_pair = make_pair(index, weight_);
+                pair<int, double> tmp_pair = make_pair(index, 10000. * weight_);
                 if (!peaks_.count(index)) {
                     TRACE("Peaks size " << peaks_.size() << ", inserting " << tmp_pair);
                     peaks_.insert(tmp_pair);
@@ -342,10 +359,16 @@ public:
                 }
             }
         }
-        TRACE("FINISHED");
-        vector<pair<size_t, double> > peaks;
-        for (auto iterator = peaks_.begin(); iterator != peaks_.end(); ++iterator)
-            peaks.push_back(*iterator);
+        TRACE("FINISHED " << peaks_.size());
+        vector<pair<int, double> > peaks;
+        for (auto iter = peaks_.begin(); iter != peaks_.end(); ++iter) {
+            const pair<int, double>& tmp_pair = *iter;
+            TRACE("next peak " << tmp_pair);
+            peaks.push_back(tmp_pair);
+            //for (int i = -10; i <= 10; ++i) {
+                //peaks.push_back(make_pair(tmp_pair.first + i, tmp_pair.second / 21.));
+            //}
+        }
 		return peaks;
 	}
 

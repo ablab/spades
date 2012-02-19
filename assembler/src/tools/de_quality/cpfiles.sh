@@ -16,7 +16,7 @@ else
 fi
 
 mkdir -p $output_dir
-mkdir $input_dir
+mkdir $input_dir > /dev/null
 ant
 
 cp $path/saves/distance_estimation* $input_dir
@@ -33,14 +33,14 @@ cd $proj_dir
 ./genStats.sh
 
 cd $input_dir
-sort -rnk 4,4 fp.prd > fpr.prd
-mv fpr.prd fp.prd
-sort -rnk 4,4 tp.prd > tpr.prd
-mv tpr.prd tp.prd
-sort -rnk 4,4 etalon.prd > temp.prd
-mv temp.prd etalon.prd
-sort -rnk 4,4 clustered.prd > temp.prd
-mv temp.prd clustered.prd
+#sort -rnk 4,4 fp.prd > fpr.prd
+#mv fpr.prd fp.prd
+#sort -rnk 4,4 tp.prd > tpr.prd
+#mv tpr.prd tp.prd
+#sort -rnk 4,4 etalon.prd > temp.prd
+#mv temp.prd etalon.prd
+#sort -rnk 4,4 clustered.prd > temp.prd
+#mv temp.prd clustered.prd
 cd $proj_dir
 
 ./genPlot.sh

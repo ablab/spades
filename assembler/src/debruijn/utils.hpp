@@ -1579,7 +1579,7 @@ public:
         if (!(xx >= 0 && xx < (int) new_hist.size())) return 0.;
         //cout << x << " " << xx << " " << new_hist[xx] << endl;
         VERIFY(math::le(new_hist[xx], 1.));
-        return new_hist[xx];
+        return 1000. * new_hist[xx];
     }
 };
 

@@ -102,15 +102,15 @@ protected:
 	}
 
 	vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2,
-			const vector<pair<size_t, double> >& estimated) const {
+			const vector<pair<int, double> >& estimated) const {
 
 		vector<PairInfo<EdgeId>> result;
 		for (size_t i = 0; i < estimated.size(); i++) {
 			size_t left = i;
 			double weight = estimated[i].second;
 			while (i + 1 < estimated.size()
-					&& estimated[i + 1].first - estimated[i].first
-							<= linkage_distance_) {
+					&& (estimated[i + 1].first - estimated[i].first)
+							<= (int) linkage_distance_) {
 				i++;
 				weight += estimated[i].second;
 			}
@@ -168,12 +168,12 @@ protected:
         }
     }
 
-	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
+	virtual vector<pair<int, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
 			const vector<PairInfo<EdgeId>>& data,
 			const vector<size_t>& raw_forward) const {
         size_t first_len = this->graph().length(first);
         size_t second_len = this->graph().length(second);
-		vector<pair<size_t, double>> result;
+		vector<pair<int, double>> result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());
 		vector<size_t> forward;
@@ -242,7 +242,7 @@ protected:
 	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
 		if (make_pair(first, second) <= ConjugatePair(first, second)) {
 			const vector<size_t>& forward = this->GetGraphDistancesLengths(first, second);
-			const vector<pair<size_t, double> >& estimated = EstimateEdgePairDistances(first, second, data, forward);
+			const vector<pair<int, double> >& estimated = EstimateEdgePairDistances(first, second, data, forward);
 			const vector<PairInfo<EdgeId>>& res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
 			this->AddToResult(result, ConjugateInfos(res));

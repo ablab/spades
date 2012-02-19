@@ -26,7 +26,7 @@ while [ $i -lt $SIZZE ]; do
         grep -P $LINE1'.*'$LINE2'.*:' $2
     fi
     cd $f
-    pwd
-    gnuplot -geometry 1280x1024 plot.conf || { echo "Gnuplot exited "; exit 1; }
+    #pwd
+    gnuplot -geometry 1920x1200 plot.conf > /dev/null 2> /dev/null || { echo "Gnuplot exited "; exit 1; }
     cd $PROJ_DIR
 done;

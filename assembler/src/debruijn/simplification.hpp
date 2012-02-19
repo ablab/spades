@@ -190,12 +190,6 @@ void save_simplification(conj_graph_pack& gp) {
 				+ "final_contigs.fasta";
 	}
 
-	OutputContigs(gp.g, cfg::get().output_dir + "contigs_before_RR.fasta");
-
-// run script automatically takes simplified contigs from correct path
-
-//	OutputContigs(gp.g,
-//			cfg::get().output_root + "../" + cfg::get().additional_contigs);
 }
 
 void corrected_and_save_reads(const conj_graph_pack& gp) {

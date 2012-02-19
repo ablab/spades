@@ -42,6 +42,7 @@ public:
 	virtual void close() = 0;
 
 	virtual void AddVertex(VertexId v) = 0;
+	virtual void AddVertices(const std::set<VertexId> &elements) = 0;
 
 	virtual void AddEdge(EdgeId e, const int length = 0) = 0;
 
@@ -99,6 +100,14 @@ public:
 		recordVertex<VertexId>(this->out(), vertex);
 	}
 
+	void AddVertices(const set<VertexId> &elements) {
+		map<VertexId, string> colours = this->colorer().GetColours(elements);
+		for (auto it = colours.begin(); it != colours.end(); ++ it) {
+			Vertex<VertexId> vertex(it->first, this->labeler().label(it->first), it->second);
+			recordVertex<VertexId>(this->out(), vertex);
+		}
+	}
+
 	void AddEdge(EdgeId e, const int length = 0) {
 		Edge<VertexId> edge(this->g().EdgeStart(e), this->g().EdgeEnd(e)
 				, this->labeler().label(e), this->colorer().GetColour(e), length);
@@ -137,6 +146,14 @@ public:
 		VertexId conjugate = this->g().conjugate(v);
 		paired_printer_.AddVertex(v, this->labeler().label(v), conjugate
 				, this->labeler().label(conjugate), this->colorer().GetColour(v));
+	}
+
+	void AddVertices(const set<VertexId> &elements) {
+			map<VertexId, string> colours = this->colorer().GetColours(elements);
+			for (auto it = colours.begin(); it != colours.end(); ++ it) {
+				Vertex<VertexId> vertex(it->first, this->labeler().label(it->first), it->second);
+				recordVertex<VertexId>(this->out(), vertex);
+		}
 	}
 
 	void AddEdge(EdgeId e, const int length = 0) {

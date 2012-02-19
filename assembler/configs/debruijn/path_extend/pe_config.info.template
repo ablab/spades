@@ -1,26 +1,10 @@
 dataset         QUAKE_FULL
-etalon_mode     false
 
-syminfo       false
-; input options
+#include "pe_libs.info"
 
-from_file     true	  ; always true
-syminfo       false
-
-;Only precount and estimate
-paired_info_only    false
-paired_info_for_resolved false
-resolved_graph ./data/
-
-; paired info options
-cluster_paired_info     true
-use_new_metrics      true
-
-
-write_real_paired_info  false
-paired_info_file_prefix "paired_info_"
-
-
+pe_params {
+	#include "pe_params.info"
+}
 
 utils 
 {
@@ -38,8 +22,4 @@ utils
     advanced    ./data/debruijn/QUAKE_FULL/K55/SC/09.29_07_30/paired_info_IS270_RS100_acl
 }    
 
-#include "lc_libs.info"
 
-lc_params {
-	#include "lc_params.info"
-}

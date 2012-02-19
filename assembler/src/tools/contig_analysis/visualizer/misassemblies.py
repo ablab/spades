@@ -11,7 +11,7 @@ import math
 
 def similarThreshold(total):
 	if total <= 2:
-		return 2;
+		return 2
 	return total  / 2 + total % 2 
 
 
@@ -37,8 +37,8 @@ class Settings:
 		self.plotXScale = self.assemblyWidth / (self.maxCovPos + 1)
 
 		#coverage plot 
-		self.plotHeight = 80.0
-		self.plotMargin = 20.0
+		self.plotHeight = 130.0
+		self.plotMargin = 40.0
 		self.dotLength = self.plotXScale
 		
 		self.maxLogCov = math.ceil(math.log10(self.maxCov))
@@ -82,6 +82,8 @@ class Settings:
 			self.yTics = 1.0
 		else:
 			self.yTics = 2.0
+			self.maxLogCov -= int(self.maxLogCov) % 2
+			self.plotYScale = self.plotHeight / self.maxLogCov
 
 		self.genomeLength = self.maxPos
 		self.genomeAnnotationScale = math.pow(10, math.ceil(math.log10(self.xTics)))
@@ -110,17 +112,17 @@ class Settings:
 		#names parameters
 		self.nameAnnotationXStep = 15
 		self.nameAnnotationYStep = 15
-		self.xticsStep = 3
-		self.yticsStep = self.ticLength + 3
-		self.xLabelStep = self.xticsStep + 13
-		self.yLabelStep = self.yticsStep + 60
+		self.xticsStep = 6
+		self.yticsStep = self.ticLength + 5
+		self.xLabelStep = self.xticsStep + 25
+		self.yLabelStep = self.yticsStep + 95
 
 		self.totalHeight = self.plotHeight + self.plotMargin + assembliesNum * self.assemblyStep + self.lastMargin
 		self.totalWidth = self.xOffset + self.assemblyWidth
 
 
-		self.contigEdgeDelta = 1000
-		self.minSimilarContig = 5000
+		self.contigEdgeDelta = 3000
+		self.minSimilarContig = 10000
 
 		self.minConnectedBlock = 2000
 		self.maxBlockGap = 10000
@@ -154,6 +156,10 @@ class Alignment:
 
 	def Center(self):
 		return (self.end + self.start) / 2
+
+
+	def CompareInexact(self, alignment, settings):
+		return abs(alignment.start - self.start) <= settings.contigEdgeDelta and abs(alignment.end - self.end) <= settings.contigEdgeDelta
 
 
 
@@ -213,16 +219,35 @@ class Assembly:
 			self.contigs[cid].alignments.append(len(self.blocks) - 1)
 
 
+	def Find(self, alignment, settings):
+		if alignment.Length() < settings.minSimilarContig:
+			return -1
+
+		i = 0
+		while i < len(self.blocks) and not alignment.CompareInexact(self.blocks[i], settings):
+			i += 1
+
+		if i == len(self.blocks):
+			return -1
+		else:
+			return i
+
+
+
 	def ApplyColor(self, settings):
 		for al in self.blocks:
 			al.vPositionDelta += settings.oddStep[al.order]
 			if al.misasembled:
 				if not al.similar:
 					al.color = settings.colorMisasembled[al.order]
+				else:
+					al.color = settings.colorMisasembledSimilar[al.order]
 			else:
 				al.vPositionDelta + settings.goodStep
 				if not al.similar:
 					al.color = settings.colorCorrect[al.order]
+				else:
+					al.color = settings.colorCorrectSimilar[al.order]
 
 
 	def DrawArcs(self, settings):
@@ -278,7 +303,39 @@ class Assemblies:
 
 
 	def FindSimilar(self, settings):
-		pass
+		for i in range(0, len(self.assemblies)):
+#			print("processing assembly " + str(i))
+			order = 0
+			for block_num in range(0, len(self.assemblies[i].blocks)):
+				al = self.assemblies[i].blocks[block_num]
+				if al.similar:
+					order = (al.order + 1) % 2
+					continue
+
+				total = 0
+				sim_block_ids_within_asm = [-1 for jj in range(0, len(self.assemblies))]
+				sim_block_ids_within_asm[i] = block_num
+
+				for j in range(0, len(self.assemblies)):
+					if i == j:
+						continue
+
+					block_id = self.assemblies[j].Find(al, settings)
+					if block_id != -1 and al.misasembled == self.assemblies[j].blocks[block_id].misasembled:
+						sim_block_ids_within_asm[j] = block_id
+						total += 1
+
+				if total < similarThreshold(len(self.assemblies)):
+					continue
+
+				for j in range(0, len(self.assemblies)):
+					block_id = sim_block_ids_within_asm[j]
+					if block_id == -1:
+						continue
+					self.assemblies[j].blocks[block_id].similar = True
+					self.assemblies[j].blocks[block_id].order = order
+
+				order = (order + 1) % 2
 
 
 	def DrawArcs(self, settings):
@@ -338,7 +395,7 @@ class Visualizer:
 
 			self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.settings.ticLength), c="black", lw=self.settings.axisWeight))
 
-			self.subplot.annotate(str(round(float(i) / self.settings.genomeAnnotationScale ,1)), (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=6, horizontalalignment='left', verticalalignment='top')
+			self.subplot.annotate(str(round(float(i) / self.settings.genomeAnnotationScale ,1)), (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=8, horizontalalignment='left', verticalalignment='top')
 
 			i += self.settings.xTics
 
@@ -348,9 +405,9 @@ class Visualizer:
 			self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1] + self.settings.plotHeight , self.settings.lastMargin), c="grey", ls=':', lw=self.settings.dashLineWeight))
 		self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.settings.ticLength), c="black", lw=self.settings.axisWeight))
 
-		self.subplot.annotate(str(round(float(self.settings.genomeLength) / self.settings.genomeAnnotationScale ,2)), (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=6, horizontalalignment='left', verticalalignment='top')
+		self.subplot.annotate(str(round(float(self.settings.genomeLength) / self.settings.genomeAnnotationScale ,2)), (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=8, horizontalalignment='left', verticalalignment='top')
 
-		self.subplot.annotate(self.settings.genomeAnnotation, (offset[0] + self.settings.assemblyWidth / 2.0, offset[1] - self.settings.xLabelStep), fontsize=8, horizontalalignment='center', verticalalignment='top')
+		self.subplot.annotate(self.settings.genomeAnnotation, (offset[0] + self.settings.assemblyWidth / 2.0, offset[1] - self.settings.xLabelStep), fontsize=11, horizontalalignment='center', verticalalignment='top')
 
 
 
@@ -361,10 +418,10 @@ class Visualizer:
 		while (cov <= self.settings.maxLogCov):
 			y = offset[1] + cov * self.settings.plotYScale
 			self.subplot.add_line(matplotlib.lines.Line2D((offset[0] - self.settings.ticLength, offset[0]), (y, y), c="black", lw=self.settings.axisWeight))
-			self.subplot.annotate(str(int(round(math.pow(10, cov)))), (offset[0] - self.settings.yticsStep, y), fontsize=6, horizontalalignment='right', verticalalignment='center')
+			self.subplot.annotate(str(int(round(math.pow(10, cov)))), (offset[0] - self.settings.yticsStep, y), fontsize=8, horizontalalignment='right', verticalalignment='center')
 			cov += self.settings.yTics
 
-		self.subplot.annotate("Coverage", (offset[0] - self.settings.yLabelStep, offset[1] + self.settings.plotYScale * self.settings.maxCov / 2.0), fontsize=8, horizontalalignment='center', verticalalignment='center', rotation = "vertical")
+		self.subplot.annotate("Coverage", (offset[0] - self.settings.yLabelStep, offset[1] + self.settings.plotYScale * self.settings.maxLogCov / 2.0), fontsize=11, horizontalalignment='center', verticalalignment='center', rotation = "vertical")
 
 		for pos in covHist:
 			x = offset[0] + pos * self.settings.plotXScale
@@ -405,7 +462,7 @@ class Visualizer:
 
 
 	def visualize(self):
-		self.subplot.add_patch(matplotlib.patches.Rectangle((0,0), self.settings.totalWidth + self.settings.lastMargin, self.settings.totalHeight, color="white", fill=True, lw=0))
+		self.subplot.add_patch(matplotlib.patches.Rectangle((-20,0), self.settings.totalWidth + 20 + self.settings.lastMargin, self.settings.totalHeight + 0, color="white", fill=True, lw=0))
 
 		self.plot_genome_axis( (self.settings.xOffset, self.settings.totalHeight - self.settings.plotHeight) )
 
@@ -502,14 +559,15 @@ if genomeLength == 0:
 settings = Settings(genomeLength, maxPos, maxCov, asmNumber)
 
 if assemblies is not None:
-	assemblies.ApplyColors(settings)
-
 	if arcs and assemblies is not None:
 		settings.assemblyStep += 40
 		assemblies.DrawArcs(settings)
 
 	if similar and assemblies is not None:
 		assemblies.FindSimilar(settings)
+
+	assemblies.ApplyColors(settings)
+
 
 v = Visualizer(assemblies, hist, settings)
 v.visualize()
@@ -520,12 +578,4 @@ if outputName is None:
 	outputName = "coverage"
 
 v.save(outputName)
-
-
-
-
-		
-
-
-
 

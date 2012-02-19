@@ -86,11 +86,13 @@ estimation_mode simple
 paired_metrics read_count
 ; read_count, product
 
-; repeat resolving mode (none split path_extend jump combined)
+; repeat resolving mode (none split path_extend combined)
 resolving_mode split
 
+use_scaffolder  true
+
 andrey_params {
-	#include "long_contigs/lc_params.info"
+	#include "path_extend/pe_params.info"
 }
 
 ; Produce info for all components of graph and run repeat resolver for each component.

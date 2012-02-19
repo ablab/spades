@@ -4,7 +4,7 @@ import java.util.*;
 
 public class MyScanner{
 	private BufferedReader in;
-	private StringTokenizer st;
+	private StringTokenizer st = null;
 
 	public String nextToken() {
 		if (hasMoreTokens()){
@@ -23,19 +23,21 @@ public class MyScanner{
 	public MyScanner(InputStream inp){
 		try{                                   
                 	in = new BufferedReader(new InputStreamReader(inp));
-		}catch (Exception e){
+		} catch (Exception e){
 			e.printStackTrace();
 		}
 	}
 
-	public boolean hasMoreTokens(){
+	public boolean hasMoreTokens() {
 		String s = null;
 		try{
-			while ((st==null || !st.hasMoreTokens())&& (s=in.readLine()) != null) st = new StringTokenizer(s);
-			if ((st==null || !st.hasMoreTokens())&& s==null) return false;
-	        }catch(IOException e){
-	        	e.printStackTrace();
-	        }
+			while ((st==null || !st.hasMoreTokens()) && ((s=in.readLine()) != null)) 
+                st = new StringTokenizer(s);
+			if ((st==null || !st.hasMoreTokens()) && s==null) 
+                return false;
+	    } catch(IOException e) {
+	        e.printStackTrace();
+	    }
 		return true;
 	}
 

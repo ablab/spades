@@ -1,0 +1,23 @@
+TEMPLATE_DATASET
+{
+    	graph_file       .
+    
+    	param_set        singlecell 
+    
+	reference_genome  ./data/input/E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+    
+	libs {
+	    count  
+	    
+	    item_0
+	    {
+		read_size     100
+		insert_size   220
+		var           10
+
+		path  .
+	   
+	    }
+	}
+}
+

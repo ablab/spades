@@ -97,7 +97,7 @@ protected:
     }
 
     // left edge being extended to the left, shift is negative always
-    void ExtendLeftDFS(EdgeId current, const EdgeId last, vector<PairInfo<EdgeId>>& data, int shift) const {
+    void ExtendLeftDFS(EdgeId current, const EdgeId last, vector<PairInfo<EdgeId>>& data, int shift, const size_t max_shift) const {
         VertexId start = this->graph().EdgeStart(current);
         
         if (current == last) 
@@ -113,8 +113,8 @@ protected:
             
             const vector<PairInfo<EdgeId>>& infos = this->histogram().GetEdgePairInfo(next, last);
 
-            if (-shift < 10000)
-                ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next));
+            if (-shift < (int) max_shift)
+                ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next), max_shift);
  
             const vector<PairInfo<EdgeId>>& filtered_infos = FilterPositive(infos, this->graph().length(next), this->graph().length(last));
 
@@ -124,7 +124,7 @@ protected:
     }
 
     // right edge being extended to the right, shift is negative always
-    void ExtendRightDFS(const EdgeId first, EdgeId current, vector<PairInfo<EdgeId>>& data, int shift) const {
+    void ExtendRightDFS(const EdgeId first, EdgeId current, vector<PairInfo<EdgeId>>& data, int shift, const size_t max_shift) const {
         VertexId end = this->graph().EdgeEnd(current);
 
         if (current == first)
@@ -139,8 +139,8 @@ protected:
 
             const vector<PairInfo<EdgeId>>& infos = this->histogram().GetEdgePairInfo(first, next);
 
-            if (-shift < 10000)
-                ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current));
+            if (-shift < (int) max_shift)
+                ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current), max_shift);
 
             const vector<PairInfo<EdgeId>>& filtered_infos = FilterPositive(infos, this->graph().length(first), this->graph().length(next));
 
@@ -150,12 +150,12 @@ protected:
     }
 
 
-    void ExtendInfoLeft(const EdgeId first, const EdgeId second, vector<PairInfo<EdgeId>>& data) const {
-        ExtendLeftDFS(first, second, data, 0);
+    void ExtendInfoLeft(const EdgeId first, const EdgeId second, vector<PairInfo<EdgeId>>& data, const size_t max_shift = 1000) const {
+        ExtendLeftDFS(first, second, data, 0, max_shift);
     }
 
-    void ExtendInfoRight(const EdgeId first, const EdgeId second, vector<PairInfo<EdgeId>>& data) const {
-        ExtendRightDFS(first, second, data, 0);
+    void ExtendInfoRight(const EdgeId first, const EdgeId second, vector<PairInfo<EdgeId>>& data, const size_t max_shift = 1000) const {
+        ExtendRightDFS(first, second, data, 0, max_shift);
     }
 
 	void ProcessEdgePair(const EdgeId first, const EdgeId second, const vector<PairInfo<EdgeId>>& raw_data, PairedInfoIndex<Graph> &result) const {
@@ -194,7 +194,7 @@ protected:
 
             DEBUG("Weight increased " << (WeightSum(data) - weight_0));
 
-			vector<pair<size_t, double> > estimated = this->EstimateEdgePairDistances(first, second,
+			vector<pair<int, double> > estimated = this->EstimateEdgePairDistances(first, second,
 				data, forward);
 			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
