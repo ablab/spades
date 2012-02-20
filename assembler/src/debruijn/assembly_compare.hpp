@@ -648,6 +648,7 @@ class AssemblyComparer {
 private:
 	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
 	typedef map<EdgeId, vector<Range>> CoveredRanges;
 	typedef map<EdgeId, vector<size_t>> BreakPoints;
 
@@ -798,7 +799,7 @@ public:
 		make_dir("assembly_comparison/initial_pics/");
 		WriteComponents(gp.g, splitter, filter, "breakpoint_graph",
 				"assembly_comparison/initial_pics/breakpoint_graph.dot",
-				coloring.EdgeColorMap(), labeler);
+				coloring.EdgeColorMap(), MapColorer<Graph, VertexId>(coloring.VertexColorMap()), labeler);
 
 		INFO("Removing unnecessary edges");
 		DeleteVioletEdges(gp.g, coloring);
