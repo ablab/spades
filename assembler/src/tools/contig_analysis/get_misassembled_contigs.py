@@ -43,9 +43,10 @@ if (len(sys.argv) == 4):
 
     for (name, seq) in input_contigs:
         corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
-        print ("name is_" + corr_name + "__")
 
         if mis_contigs_ids.count(corr_name) != 0:
-            mis_contigs.write(name + "\n" + seq + "\n")
+            mis_contigs.write(name + '\n')
+            for i in xrange(0, len(seq), 60):
+                mis_contigs.write(seq[i:i+60] + '\n')
 
-    mis_contigs.close() 
+    mis_contigs.close()
