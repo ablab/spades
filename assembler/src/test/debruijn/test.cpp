@@ -37,7 +37,7 @@ namespace debruijn_graph {
 		io::SingleRead read;
 		while (!assembly_to_thread.eof()) {
 			assembly_to_thread >> read;
-			WriteComponentsAlongPath(gp.g, labeler, output_dir + read.name()
+			WriteComponentsAlongPath(gp.g, labeler, output_dir + read.name() + ".dot"
 					, read.name(), /*split_edge_length*/400, mapper.MapSequence(read.sequence())
 					, Path<typename Graph::EdgeId>(), Path<typename Graph::EdgeId>(), true);
 		}
@@ -60,10 +60,10 @@ namespace debruijn_graph {
 
 //BOOST_AUTO_TEST_CASE( ThreadingContigsOverGraph ) {
 //	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
-//	io::EasyReader base_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence1.fasta");
-//	io::EasyReader other_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence2.fasta");
-//	string base_saves = "";
-//	string output_dir = "assembly_comparison";
+//	io::EasyReader base_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/andrew_nurk.fasta");
+//	io::EasyReader other_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/velvet-sc.fasta");
+//	string base_saves = "/home/anton/gitrep/algorithmic-biology/assembler/data/debruijn/LBOUILLONII_QUAKE/saves/simplified_graph";
+//	string output_dir = "bul_comparison/ac";
 //	make_dir(output_dir);
 //	ThreadAssemblies<gp_t>(base_saves, base_contigs, "spades", other_contigs, "velvet", output_dir);
 //}

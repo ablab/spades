@@ -118,6 +118,80 @@ public:
 	}
 };
 
+template<class Graph, typename ElementId>
+class AbstractColorer {
+public:
+	virtual string GetColour(ElementId element) const = 0;
+
+	virtual map<ElementId, string> GetColours(const set<ElementId> &elements) const {
+		map<ElementId, string> result;
+		for(auto it = elements.begin(); it != elements.end(); ++it) {
+			result[*it] = GetColour(*it);
+		}
+		return result;
+	}
+};
+
+template<class Graph, typename ElementId>
+class MapColorer : public AbstractColorer<Graph, ElementId> {
+private:
+	const map<ElementId, string> &color_map_;
+public:
+	MapColorer(const map<ElementId, string> &color_map) : color_map_(color_map) {
+	}
+
+	virtual string GetColour(ElementId element) const {
+		auto it = color_map_.find(element);
+		VERIFY(it != color_map_.end());
+		return it->second;
+	}
+
+};
+
+template<class Graph>
+class BorderVertexColorer : public AbstractColorer<Graph, typename Graph::VertexId> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph &graph_;
+
+	bool IsBorder(VertexId v, const set<VertexId> &vs) const {
+		set<VertexId> vertices(vs.begin(), vs.end());
+		const vector<EdgeId> outgoing_edges = graph_.OutgoingEdges(v);
+		const vector<EdgeId> incoming_edges = graph_.IncomingEdges(v);
+		set<EdgeId> adjacent_edges;
+		adjacent_edges.insert(outgoing_edges.begin(), outgoing_edges.end());
+		adjacent_edges.insert(incoming_edges.begin(), incoming_edges.end());
+		for (auto e_it = adjacent_edges.begin(); e_it != adjacent_edges.end();
+				++e_it) {
+			if (vertices.count(graph_.EdgeStart(*e_it)) == 0
+					|| vertices.count(graph_.EdgeEnd(*e_it)) == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+public:
+
+	BorderVertexColorer(const Graph &graph) :
+			graph_(graph) {
+	}
+
+	virtual string GetColour(VertexId element) const {
+		VERIFY(false);
+		return "";
+	}
+
+	virtual map<VertexId, string> GetColours(const set<VertexId> &elements) const {
+		map<VertexId, string> result;
+		for(auto it = elements.begin(); it != elements.end(); ++it) {
+			result[*it] = IsBorder(*it, elements) ? "yellow" : "white";
+		}
+		return result;
+	}
+};
+
 template<class Graph>
 class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 	typedef PartialGraphVisualizer<Graph> super;
@@ -125,24 +199,9 @@ class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	const omnigraph::GraphLabeler<Graph>& gl_;
 	const map<EdgeId, string>& edge_colors_;
+	const AbstractColorer<Graph, VertexId> &vertex_colours_;
 	const string default_color_;
 	const string border_vertex_color_;
-
-	bool IsBorder(VertexId v, const set<VertexId>& vertices) {
-		const vector<EdgeId> outgoing_edges = super::g_.OutgoingEdges(v);
-		const vector<EdgeId> incoming_edges = super::g_.IncomingEdges(v);
-		set<EdgeId> adjacent_edges;
-		adjacent_edges.insert(outgoing_edges.begin(), outgoing_edges.end());
-		adjacent_edges.insert(incoming_edges.begin(), incoming_edges.end());
-		for (auto e_it = adjacent_edges.begin(); e_it != adjacent_edges.end();
-				++e_it) {
-			if (vertices.count(super::g_.EdgeStart(*e_it)) == 0
-					|| vertices.count(super::g_.EdgeEnd(*e_it)) == 0) {
-				return true;
-			}
-		}
-		return false;
-	}
 
 	string EdgeColor(EdgeId e) {
 		string edge_color = default_color_;
@@ -157,19 +216,18 @@ public:
 	ColoredGraphVisualizer(const Graph& g, gvis::GraphPrinter<VertexId>& gp,
 			const omnigraph::GraphLabeler<Graph>& gl,
 			const map<EdgeId, string>& edge_colors,
+			const AbstractColorer<Graph, VertexId> &vertex_colours,
 			const string& default_color = "",
 			const string& border_vertex_color = "yellow") :
-			super(g, gp), gl_(gl), edge_colors_(edge_colors), default_color_(
+			super(g, gp), gl_(gl), edge_colors_(edge_colors), vertex_colours_(vertex_colours), default_color_(
 					default_color), border_vertex_color_(border_vertex_color) {
 	}
 
 	virtual void Visualize(const vector<VertexId>& vertices) {
 		set<VertexId> vertex_set(vertices.begin(), vertices.end());
+		map<VertexId, string> vertex_colour_map = vertex_colours_.GetColours(vertex_set);
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
-			string vertex_color =
-					IsBorder(*v_it, vertex_set) ?
-							border_vertex_color_ : "white";
-			super::gp_.AddVertex(*v_it, gl_.label(*v_it), vertex_color);
+			super::gp_.AddVertex(*v_it, gl_.label(*v_it), vertex_colour_map[*v_it]);
 		}
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			const vector<EdgeId> edges = super::g_.OutgoingEdges(*v_it);
@@ -186,7 +244,6 @@ public:
 			}
 		}
 	}
-
 };
 
 template<class Graph>
@@ -288,7 +345,8 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 	gvis::DotGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, coloring);
+	BorderVertexColorer<Graph> v_colorer(g);
+	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, coloring, v_colorer);
 	AdapterGraphVisualizer<Graph> result_vis(g, gv);
 	result_vis.Visualize();
 	filestr.close();
@@ -307,7 +365,8 @@ void WritePaired(
 	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, coloring);
+	BorderVertexColorer<Graph> v_colorer(g);
+	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, coloring, v_colorer);
 	AdapterGraphVisualizer<Graph> result_vis(g, gv);
 	result_vis.Visualize();
 	filestr.close();
@@ -333,6 +392,7 @@ private:
 	const Graph &graph_;
 	const GraphLabeler<Graph> &labeler_;
 	const map<EdgeId, string> &coloring_;
+	const AbstractColorer<Graph, VertexId> &v_colorer_;
 
 	gvis::GraphPrinter<VertexId>* PrinterInstance(
 			const AbstractConjugateGraph<typename Graph::DataMaster>& graph, const string &graph_name,
@@ -350,8 +410,9 @@ private:
 public:
 	ColoredVisualizerFactory(const Graph& graph,
 			const GraphLabeler<Graph> &labeler,
-			const map<EdgeId, string> &coloring) :
-			graph_(graph), labeler_(labeler), coloring_(coloring) {
+			const map<EdgeId, string> &coloring,
+			const AbstractColorer<Graph, VertexId> &v_colorer) :
+			graph_(graph), labeler_(labeler), coloring_(coloring), v_colorer_(v_colorer) {
 	}
 
 	virtual gvis::GraphPrinter<typename Graph::VertexId> *GetPrinterInstance(
@@ -362,7 +423,7 @@ public:
 	virtual PartialGraphVisualizer<Graph> *GetVisualizerInstance(
 			gvis::GraphPrinter<typename Graph::VertexId> &gp) {
 		return new ColoredGraphVisualizer<Graph>(graph_, gp, labeler_,
-				coloring_);
+				coloring_, v_colorer_);
 	}
 
 	virtual ~ColoredVisualizerFactory() {
@@ -479,11 +540,35 @@ void WriteComponents(const Graph& g,
 		ComponentSplitter<typename Graph::VertexId> &splitter,
 		const string& graph_name, const string& file_name,
 		const map<typename Graph::EdgeId, string> &coloring,
+		const AbstractColorer<Graph, typename Graph::VertexId> &v_colorer,
 		const GraphLabeler<Graph>& labeler) {
-	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
+	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring, v_colorer);
 	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
 			graph_name, 4000);
 	gv.Visualize();
+}
+
+template<class Graph>
+void WriteComponents(const Graph& g,
+		ComponentSplitter<typename Graph::VertexId> &splitter,
+		const string& graph_name, const string& file_name,
+		const map<typename Graph::EdgeId, string> &coloring,
+		const GraphLabeler<Graph>& labeler) {
+	const BorderVertexColorer<Graph> v_colorer(g);
+	WriteComponents(g, splitter, graph_name, file_name, coloring, v_colorer, labeler);
+}
+
+template<class Graph>
+void WriteComponents(const Graph& g,
+		ComponentSplitter<typename Graph::VertexId> &inner_splitter,
+		const AbstractFilter<vector<typename Graph::VertexId>> &checker,
+		const string& graph_name, const string& file_name,
+		const map<typename Graph::EdgeId, string> &coloring,
+		const AbstractColorer<Graph, typename Graph::VertexId> &v_colorer,
+		const GraphLabeler<Graph>& labeler) {
+	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
+	WriteComponents<Graph>(g, splitter, graph_name, file_name, coloring, v_colorer,
+			labeler);
 }
 
 template<class Graph>

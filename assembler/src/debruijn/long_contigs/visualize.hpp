@@ -100,7 +100,8 @@ void WriteGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_nam
 
 	CompositeLabeler<Graph> composite_labeler = {&str_labeler, &path_labeler, &pos_labeler};
 
-	ColoredGraphVisualizer<Graph> gv(gp.g, printer, composite_labeler, coloring);
+	BorderVertexColorer<Graph> v_colorer(gp.g);
+	ColoredGraphVisualizer<Graph> gv(gp.g, printer, composite_labeler, coloring, v_colorer);
 	AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
 	result_vis.Visualize();
 	filestr.close();
