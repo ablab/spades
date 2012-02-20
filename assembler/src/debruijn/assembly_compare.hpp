@@ -15,30 +15,33 @@ typedef io::MultifileReader<io::SingleRead> CompositeContigStream;
 
 enum edge_type {
 	//don't change order!!!
-	black = 0, red, blue, violet
+	black = 0,
+	red,
+	blue,
+	violet
 };
 
-template <class Graph>
-class ColorHandler : public GraphActionHandler<Graph> {
+template<class Graph, class Element>
+class ElementColorHandler: public GraphActionHandler<Graph> {
 	typedef GraphActionHandler<Graph> base;
-	typedef typename Graph::EdgeId EdgeId;
 
-	map<EdgeId, edge_type> data_;
+	map<Element, edge_type> data_;
 public:
 	static string color_str(edge_type color) {
-		static string colors[] = {"black", "red", "blue", "purple"};
-		return colors[(int)color];
+		static string colors[] = { "black", "red", "blue", "purple" };
+		return colors[(int) color];
 	}
 
-	ColorHandler(const Graph& g) : base(g, "ColorHandler") {
+	ElementColorHandler(const Graph& g) :
+			base(g, "ElementColorHandler") {
 
 	}
 
-	void PaintEdge(EdgeId e, edge_type color) {
-		data_[e] = (edge_type)((int)data_[e] | (int) color);
+	void Paint(Element e, edge_type color) {
+		data_[e] = (edge_type) ((int) data_[e] | (int) color);
 	}
 
-	edge_type Color(EdgeId e) const {
+	edge_type Color(Element e) const {
 		auto it = data_.find(e);
 		if (it == data_.end())
 			return edge_type::black;
@@ -46,16 +49,13 @@ public:
 			return it->second;
 	}
 
-	/*virtual*/ void HandleDelete(EdgeId e) {
-		data_.erase(e);
+	string ColorStr(Element e) const {
+		return color_str(Color(e));
 	}
 
-	map<EdgeId, string> color_str_map() const {
-		map<EdgeId, string> answer;
-		for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			answer[*it] = color_str(Color(*it));
-		}
-		return answer;
+	/*virtual*/
+	void HandleDelete(Element e) {
+		data_.erase(e);
 	}
 
 //	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
@@ -77,7 +77,56 @@ public:
 
 };
 
-template <class gp_t>
+template<class Graph>
+class ColorHandler: public GraphActionHandler<Graph> {
+	typedef GraphActionHandler<Graph> base;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	ElementColorHandler<Graph, EdgeId> edge_color_;
+	ElementColorHandler<Graph, VertexId> vertex_color_;
+public:
+
+	ColorHandler(const Graph& g) :
+			base(g, "ColorHandler"), edge_color_(g), vertex_color_(g) {
+
+	}
+
+	void Paint(EdgeId e, edge_type color) {
+		edge_color_.Paint(e, color);
+	}
+
+	void Paint(VertexId v, edge_type color) {
+		vertex_color_.Paint(v, color);
+	}
+
+	edge_type Color(EdgeId e) const {
+		return edge_color_.Color(e);
+	}
+
+	edge_type Color(VertexId v) const {
+		return vertex_color_.Color(v);
+	}
+
+	map<EdgeId, string> EdgeColorMap() const {
+		map<EdgeId, string> answer;
+		for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			answer[*it] = edge_color_.ColorStr(*it);
+		}
+		return answer;
+	}
+
+	map<VertexId, string> VertexColorMap() const {
+		map<VertexId, string> answer;
+		for (auto it = this->g().begin(); it != this->g().end(); ++it) {
+			answer[*it] = vertex_color_.ColorStr(*it);
+		}
+		return answer;
+	}
+
+};
+
+template<class gp_t>
 class CoveredRangesFinder {
 	const gp_t& gp_;
 
@@ -138,8 +187,8 @@ public:
 	void FindCoveredRanges(CoveredRanges& crs, ContigStream& stream) {
 		io::SingleRead read;
 		stream.reset();
-		NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp_.g, gp_.index,
-				gp_.kmer_mapper);
+		NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp_.g,
+				gp_.index, gp_.kmer_mapper);
 		while (!stream.eof()) {
 			stream >> read;
 			ProcessPath(mapper.MapSequence(read.sequence()), crs);
@@ -157,7 +206,8 @@ class BreakPointsFilter: public GraphComponentFilter<Graph> {
 	const ColorHandler<Graph> coloring_;
 	size_t color_threshold_;
 public:
-	BreakPointsFilter(const Graph& graph, const ColorHandler<Graph>& coloring, size_t color_threshold) :
+	BreakPointsFilter(const Graph& graph, const ColorHandler<Graph>& coloring,
+			size_t color_threshold) :
 			base(graph), coloring_(coloring), color_threshold_(color_threshold) {
 
 	}
@@ -173,7 +223,8 @@ public:
 	/*virtual*/
 	//todo change to set or GraphComponent and add useful protected methods
 	bool Check(const vector<VertexId> &component_veritces) const {
-		GraphComponent<Graph> component(this->graph(), component_veritces.begin(), component_veritces.end());
+		GraphComponent<Graph> component(this->graph(),
+				component_veritces.begin(), component_veritces.end());
 		return component.v_size() > 2 && MultiColored(component);
 	}
 
@@ -200,8 +251,8 @@ public:
 
 	static string info_printer_pos_name(size_t t) {
 		const string names[] = { "error", "single_red", "single_blue",
-				"simple_bulge", "tip", "simple_misassembly",
-				"monochrome", "complex_misassembly", "size" };
+				"simple_bulge", "tip", "simple_misassembly", "monochrome",
+				"complex_misassembly", "size" };
 		return names[t];
 	}
 
@@ -211,7 +262,8 @@ private:
 	const size_t bulge_length_;
 
 public:
-	ComponentClassifier(const Graph &g, const ColorHandler<Graph> &coloring, size_t bulge_length) :
+	ComponentClassifier(const Graph &g, const ColorHandler<Graph> &coloring,
+			size_t bulge_length) :
 			g_(g), coloring_(coloring), bulge_length_(bulge_length) {
 	}
 
@@ -224,18 +276,18 @@ public:
 	}
 
 	bool CheckSimpleMisassembly(const vector<VertexId> &component) const {
-		if(component.size() == 4) {
-			for(size_t i = 0; i < 4; i++)
-				for(size_t j = i + 1; j < 4; j++) {
+		if (component.size() == 4) {
+			for (size_t i = 0; i < 4; i++)
+				for (size_t j = i + 1; j < 4; j++) {
 					vector<VertexId> sources;
 					sources.push_back(component[i]);
 					sources.push_back(component[j]);
 					vector<VertexId> sinks;
-					for(size_t k = 0; k < 4; k++) {
-						if(k != i && k != j)
+					for (size_t k = 0; k < 4; k++) {
+						if (k != i && k != j)
 							sinks.push_back(component[k]);
 					}
-					if(CheckSimpleMisassembly(sources, sinks)) {
+					if (CheckSimpleMisassembly(sources, sinks)) {
 						return true;
 					}
 				}
@@ -243,46 +295,50 @@ public:
 		return false;
 	}
 
-	bool CheckSimpleMisassembly(const vector<VertexId>& sources, const vector<VertexId>& sinks) const {
-		if(sources.size() != 2 || sinks.size() != 2)
+	bool CheckSimpleMisassembly(const vector<VertexId>& sources,
+			const vector<VertexId>& sinks) const {
+		if (sources.size() != 2 || sinks.size() != 2)
 			return false;
-		for(size_t i = 0; i < sources.size(); i++)
-			for(size_t j = 0; j < sinks.size(); j++) {
-				if(g_.GetEdgesBetween(sources[i], sinks[j]).size() != 1) {
+		for (size_t i = 0; i < sources.size(); i++)
+			for (size_t j = 0; j < sinks.size(); j++) {
+				if (g_.GetEdgesBetween(sources[i], sinks[j]).size() != 1) {
 					return false;
 				}
 			}
-		for(size_t i = 0; i < 2; i++) {
-			if(g_.GetEdgesBetween(sources[i], sources[1 - i]).size() != 0)
+		for (size_t i = 0; i < 2; i++) {
+			if (g_.GetEdgesBetween(sources[i], sources[1 - i]).size() != 0)
 				return false;
-			if(g_.GetEdgesBetween(sinks[i], sinks[1 - i]).size() != 0)
+			if (g_.GetEdgesBetween(sinks[i], sinks[1 - i]).size() != 0)
 				return false;
 		}
-		for(size_t i = 0; i < 2; i++) {
-			if(GetColour(g_.GetEdgesBetween(sources[i], sinks[0])[0]) == GetColour(g_.GetEdgesBetween(sources[i], sinks[1])[0]))
+		for (size_t i = 0; i < 2; i++) {
+			if (GetColour(g_.GetEdgesBetween(sources[i], sinks[0])[0])
+					== GetColour(g_.GetEdgesBetween(sources[i], sinks[1])[0]))
 				return false;
-			if(GetColour(g_.GetEdgesBetween(sources[0], sinks[i])[0]) == GetColour(g_.GetEdgesBetween(sources[1], sinks[i])[0]))
+			if (GetColour(g_.GetEdgesBetween(sources[0], sinks[i])[0])
+					== GetColour(g_.GetEdgesBetween(sources[1], sinks[i])[0]))
 				return false;
 		}
 		return true;
 	}
 
-	bool CheckIsolated(edge_type colour, const vector<VertexId> &component) const {
-		if(component.size() != 2)
+	bool CheckIsolated(edge_type colour,
+			const vector<VertexId> &component) const {
+		if (component.size() != 2)
 			return false;
 		vector<EdgeId> edges01 = g_.GetEdgesBetween(component[0], component[1]);
 		vector<EdgeId> edges10 = g_.GetEdgesBetween(component[1], component[0]);
 		vector<EdgeId> edges;
 		edges.insert(edges.end(), edges01.begin(), edges01.end());
 		edges.insert(edges.end(), edges10.begin(), edges10.end());
-		if(edges.size() != 1) {
+		if (edges.size() != 1) {
 			return false;
 		}
 		return GetColour(edges[0]) == colour;
 	}
 
 	bool CheckBulge(const vector<VertexId> &component) const {
-		if(component.size() != 2)
+		if (component.size() != 2)
 			return false;
 		vector<EdgeId> edges01 = g_.GetEdgesBetween(component[0], component[1]);
 		vector<EdgeId> edges10 = g_.GetEdgesBetween(component[1], component[0]);
@@ -296,8 +352,8 @@ public:
 
 	size_t EdgeNumber(const vector<VertexId> &component) const {
 		size_t result = 0;
-		for(size_t i = 0; i < component.size(); i++)
-			for(size_t j = 0; j < component.size(); j++) {
+		for (size_t i = 0; i < component.size(); i++)
+			for (size_t j = 0; j < component.size(); j++) {
 				result += g_.GetEdgesBetween(component[i], component[j]).size();
 			}
 		return result;
@@ -308,27 +364,30 @@ public:
 	}
 
 	bool CheckTip(const vector<VertexId> &component) const {
-		if(component.size() != 3)
+		if (component.size() != 3)
 			return false;
-		if(EdgeNumber(component) != 2)
+		if (EdgeNumber(component) != 2)
 			return false;
-		for(size_t i = 0; i < 3; i++) {
-			if(CheckFork(component[i], component[(i + 1) % 3], component[(i + 2) % 3]))
+		for (size_t i = 0; i < 3; i++) {
+			if (CheckFork(component[i], component[(i + 1) % 3],
+					component[(i + 2) % 3]))
 				return true;
 		}
 		return false;
 	}
 
 	bool CheckFork(VertexId base, VertexId tip1, VertexId tip2) const {
-		return (Connected(base, tip1) && Connected(base, tip2)) || (Connected(tip1, base) && Connected(tip2, base));
+		return (Connected(base, tip1) && Connected(base, tip2))
+				|| (Connected(tip1, base) && Connected(tip2, base));
 	}
 
 	bool CheckMonochrome(const vector<VertexId> &component) const {
 		set<edge_type> colours;
-		for(size_t i = 0; i < component.size(); i++)
-			for(size_t j = 0; j < component.size(); j++) {
-				vector<EdgeId> edges = g_.GetEdgesBetween(component[i], component[j]);
-				for(auto it = edges.begin(); it != edges.end(); ++it) {
+		for (size_t i = 0; i < component.size(); i++)
+			for (size_t j = 0; j < component.size(); j++) {
+				vector<EdgeId> edges = g_.GetEdgesBetween(component[i],
+						component[j]);
+				for (auto it = edges.begin(); it != edges.end(); ++it) {
 					colours.insert(GetColour(*it));
 				}
 			}
@@ -336,24 +395,24 @@ public:
 	}
 
 	component_type GetComponentType(const vector<VertexId> &component) const {
-		if(component.size() < 2)
+		if (component.size() < 2)
 			return component_type::error;
-		if(component.size() == 2) {
-			if(CheckIsolated(edge_type::red, component))
+		if (component.size() == 2) {
+			if (CheckIsolated(edge_type::red, component))
 				return component_type::single_red;
-			if(CheckIsolated(edge_type::blue, component))
+			if (CheckIsolated(edge_type::blue, component))
 				return component_type::single_blue;
-			if(CheckBulge(component)) {
+			if (CheckBulge(component)) {
 				return component_type::simple_bulge;
 			}
 			return component_type::complex_misassembly;
 		}
-		if(CheckTip(component)) {
+		if (CheckTip(component)) {
 			return component_type::tip;
 		}
-		if(CheckSimpleMisassembly(component))
+		if (CheckSimpleMisassembly(component))
 			return component_type::simple_misassembly;
-		if(CheckMonochrome(component))
+		if (CheckMonochrome(component))
 			return component_type::monochrome;
 		return component_type::complex_misassembly;
 	}
@@ -376,12 +435,14 @@ public:
 			base(g), to_draw_(to_draw), cc_(g, coloring) {
 	}
 
-	/*virtual*/ bool Check(const vector<VertexId>& component) const {
+	/*virtual*/
+	bool Check(const vector<VertexId>& component) const {
 		return cc_.GetComponentType(component) == to_draw_;
 	}
 
 private:
-	DECL_LOGGER("ComponentTypeFilter");
+	DECL_LOGGER("ComponentTypeFilter")
+	;
 };
 
 template<class Graph>
@@ -393,11 +454,13 @@ private:
 	vector<size_t> edge_lengths_;
 	vector<VertexId> component_;
 public:
-	Component(const Graph &g, const vector<VertexId> &component) : component_(component) {
-		for(size_t i = 0; i < component.size(); i++)
-			for(size_t j = 0; j < component.size(); j++) {
-				vector<EdgeId> edges = g.GetEdgesBetween(component[i], component[j]);
-				for(auto it = edges.begin(); it != edges.end(); ++it) {
+	Component(const Graph &g, const vector<VertexId> &component) :
+			component_(component) {
+		for (size_t i = 0; i < component.size(); i++)
+			for (size_t j = 0; j < component.size(); j++) {
+				vector<EdgeId> edges = g.GetEdgesBetween(component[i],
+						component[j]);
+				for (auto it = edges.begin(); it != edges.end(); ++it) {
 					edge_lengths_.push_back(g.length(*it));
 				}
 			}
@@ -409,18 +472,18 @@ public:
 		while (i < this->edge_lengths_.size() && i < that.edge_lengths_.size()
 				&& this->edge_lengths_[i] == that.edge_lengths_[i])
 			i++;
-		if(i == that.edge_lengths_.size())
+		if (i == that.edge_lengths_.size())
 			return false;
-		if(i == this->edge_lengths_.size())
+		if (i == this->edge_lengths_.size())
 			return true;
 		return this->edge_lengths_[i] < that.edge_lengths_[i];
 	}
 
 	bool operator==(const Component<Graph> &that) const {
-		if(this->edge_lengths_.size() != that.edge_lengths_.size())
+		if (this->edge_lengths_.size() != that.edge_lengths_.size())
 			return false;
-		for(size_t i = 0; i < this->edge_lengths_.size(); i++)
-			if(this->edge_lengths_[i] != that.edge_lengths_[i])
+		for (size_t i = 0; i < this->edge_lengths_.size(); i++)
+			if (this->edge_lengths_[i] != that.edge_lengths_[i])
 				return false;
 		return true;
 	}
@@ -434,14 +497,14 @@ public:
 template<class Stream, class Graph>
 Stream &operator<<(Stream &stream, const Component<Graph> &component) {
 	const vector<size_t> &lengths = component.edge_lengths();
-	for(size_t i = 0; i < lengths.size(); i++) {
+	for (size_t i = 0; i < lengths.size(); i++) {
 		stream << lengths[i] << " ";
 	}
 	return stream;
 }
 
 template<class Graph>
-class BreakPointGraphStatistics : public GraphComponentFilter<Graph> {
+class BreakPointGraphStatistics: public GraphComponentFilter<Graph> {
 private:
 	typedef GraphComponentFilter<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
@@ -461,9 +524,9 @@ private:
 				vector<EdgeId> edges = this->graph().GetEdgesBetween(component[i], component[j]);
 				for(auto it = edges.begin(); it != edges.end(); ++it) {
 					if(coloring_.Color(*it) == edge_type::red)
-						total_red_[t] += this->graph().length(*it);
+					total_red_[t] += this->graph().length(*it);
 					if(coloring_.Color(*it) == edge_type::blue)
-						total_blue_[t] += this->graph().length(*it);
+					total_blue_[t] += this->graph().length(*it);
 				}
 			}
 		}
@@ -478,11 +541,11 @@ private:
 
 public:
 	BreakPointGraphStatistics(const Graph &g, const ColorHandler<Graph> &coloring) :
-		base(g), coloring_(coloring), cc_(g, coloring), components_(component_type::size), total_red_(component_type::size), total_blue_(component_type::size), ready_(
+	base(g), coloring_(coloring), cc_(g, coloring), components_(component_type::size), total_red_(component_type::size), total_blue_(component_type::size), ready_(
 			false) {
 	}
 
-	/*virtual*/ bool Check(const vector<VertexId>& component) const {
+	/*virtual*/bool Check(const vector<VertexId>& component) const {
 		UpdateStats(component);
 		return false;
 	}
@@ -492,8 +555,8 @@ public:
 		make_dir("assembly_comparison");
 		LongEdgesExclusiveSplitter<Graph> splitter(this->graph(), 1000000000);
 		WriteComponents(this->graph(), splitter, *this,
-			"breakpoint_graph", "assembly_comparison/breakpoint_graph.dot",
-			coloring_.color_str_map(), labeler);
+				"breakpoint_graph", "assembly_comparison/breakpoint_graph.dot",
+				coloring_.EdgeColorMap(), labeler);
 		ready_ = true;
 		for (size_t i = 0; i < component_type::size; ++i) {
 			INFO("Number of components of type " << ComponentClassifier<Graph>::info_printer_pos_name(i) << " is " << GetComponentNumber(i));
@@ -526,28 +589,33 @@ public:
 			graph_(g), coloring_(coloring) {
 	}
 
-	void PrintComponents(size_t c_type, const GraphLabeler<Graph>& labeler) const {
+	void PrintComponents(size_t c_type,
+			const GraphLabeler<Graph>& labeler) const {
 		make_dir("assembly_comparison/");
-		string type_dir = "assembly_comparison/" + ComponentClassifier<Graph>::info_printer_pos_name(c_type) + "/";
+		string type_dir = "assembly_comparison/"
+				+ ComponentClassifier<Graph>::info_printer_pos_name(c_type)
+				+ "/";
 		make_dir(type_dir);
 		string picture_dir = type_dir + "pictures/";
 		make_dir(picture_dir);
 		LongEdgesExclusiveSplitter<Graph> splitter(graph_, 1000000000);
 		ComponentTypeFilter<Graph> stats(graph_, c_type, coloring_);
-		WriteComponents(this->graph_, splitter, stats,
-			"breakpoint_graph", picture_dir + "breakpoint_graph.dot",
-			coloring_.color_str_map(), labeler);
+		WriteComponents(this->graph_, splitter, stats, "breakpoint_graph",
+				picture_dir + "breakpoint_graph.dot", coloring_.EdgeColorMap(),
+				labeler);
 	}
 
 	void PrintStats(const BreakPointGraphStatistics<Graph> &stats) const {
 		make_dir("assembly_comparison/");
-		for(size_t t = 0; t < component_type::size; t++) {
-			string type_dir = "assembly_comparison/" + ComponentClassifier<Graph>::info_printer_pos_name(t) + "/";
+		for (size_t t = 0; t < component_type::size; t++) {
+			string type_dir = "assembly_comparison/"
+					+ ComponentClassifier<Graph>::info_printer_pos_name(t)
+					+ "/";
 			make_dir(type_dir);
 			ofstream stream;
 			stream.open((type_dir + "components.txt").c_str());
 			const vector<Component<Graph>> &components = stats.GetComponents(t);
-			for(auto it = components.begin(); it != components.end(); ++it) {
+			for (auto it = components.begin(); it != components.end(); ++it) {
 				stream << *it << endl;
 			}
 			stream.close();
@@ -590,7 +658,8 @@ private:
 		}
 	}
 
-	vector<size_t> CombineCoveredRanges(const vector<Range>& ranges1, const vector<Range>& ranges2) {
+	vector<size_t> CombineCoveredRanges(const vector<Range>& ranges1,
+			const vector<Range>& ranges2) {
 		set<size_t> tmp_breaks;
 		AddBreaks(tmp_breaks, ranges1);
 		AddBreaks(tmp_breaks, ranges2);
@@ -605,7 +674,8 @@ private:
 		return final_breaks;
 	}
 
-	void FindBreakPoints(const Graph& g, BreakPoints& bps, /*const */CoveredRanges& crs1, /*const */CoveredRanges& crs2) {
+	void FindBreakPoints(const Graph& g, BreakPoints& bps, /*const */
+			CoveredRanges& crs1, /*const */CoveredRanges& crs2) {
 		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			EdgeId e = *it;
 			bps[e] = CombineCoveredRanges(crs1[e], crs2[e]);
@@ -618,7 +688,7 @@ private:
 		if (!breaks.empty()) {
 			shifts[0] = breaks[0];
 			for (size_t i = 1; i < breaks.size(); ++i) {
-				shifts[i] = breaks[i] - breaks[i-1];
+				shifts[i] = breaks[i] - breaks[i - 1];
 			}
 		}
 		EdgeId curr_e = e;
@@ -633,7 +703,8 @@ private:
 		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			initial_edges.insert(*it);
 		}
-		for (auto it = SmartSetIterator<Graph, EdgeId>(g, initial_edges.begin(), initial_edges.end()); !it.IsEnd(); ++it) {
+		for (auto it = SmartSetIterator<Graph, EdgeId>(g, initial_edges.begin(),
+				initial_edges.end()); !it.IsEnd(); ++it) {
 			EdgeId e = *it;
 			VERIFY(bps.find(e) != bps.end());
 			VERIFY(bps[e].empty() || bps[e].back() < g.length(e));
@@ -650,26 +721,32 @@ private:
 		Cleaner<Graph>(g).Clean();
 	}
 
-	void ColorPath(const Path<EdgeId>& path, ColorHandler<Graph>& coloring, edge_type color) {
+	void ColorPath(const Graph& g, const Path<EdgeId>& path, ColorHandler<Graph>& coloring,
+			edge_type color) {
 		for (size_t i = 0; i < path.size(); ++i) {
-			coloring.PaintEdge(path[i], color);
+			coloring.Paint(path[i], color);
+			coloring.Paint(g.EdgeStart(path[i]), color);
+			coloring.Paint(g.EdgeEnd(path[i]), color);
 		}
 	}
 
-	void ColorGraph(const gp_t& gp, ColorHandler<Graph>& coloring, ContigStream& stream, edge_type color) {
+	void ColorGraph(const gp_t& gp, ColorHandler<Graph>& coloring,
+			ContigStream& stream, edge_type color) {
 		io::SingleRead read;
 		stream.reset();
-		NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp.g, gp.index, gp.kmer_mapper);
+		NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp.g,
+				gp.index, gp.kmer_mapper);
 		while (!stream.eof()) {
 			stream >> read;
-			ColorPath(mapper.MapSequence(read.sequence()).simple_path(), coloring, color);
+			ColorPath(gp.g, mapper.MapSequence(read.sequence()).simple_path(),
+					coloring, color);
 		}
 	}
 
 public:
 
-	void CompareAssemblies(ContigStream& stream1, ContigStream& stream2
-			, const string& name1, const string& name2) {
+	void CompareAssemblies(ContigStream& stream1, ContigStream& stream2,
+			const string& name1, const string& name2) {
 		gp_t gp;
 		CompositeContigStream stream(stream1, stream2);
 		INFO("Constructing graph");
@@ -719,9 +796,9 @@ public:
 		ComponentSizeFilter<Graph> filter(gp.g, 1000000000, 2);
 		make_dir("assembly_comparison");
 		make_dir("assembly_comparison/initial_pics/");
-		WriteComponents(gp.g, splitter, filter,
-			"breakpoint_graph", "assembly_comparison/initial_pics/breakpoint_graph.dot",
-			coloring.color_str_map(), labeler);
+		WriteComponents(gp.g, splitter, filter, "breakpoint_graph",
+				"assembly_comparison/initial_pics/breakpoint_graph.dot",
+				coloring.EdgeColorMap(), labeler);
 
 		INFO("Removing unnecessary edges");
 		DeleteVioletEdges(gp.g, coloring);
@@ -733,7 +810,8 @@ public:
 		counter.CountStats(labeler);
 	}
 private:
-	DECL_LOGGER("AssemblyComparer");
+	DECL_LOGGER("AssemblyComparer")
+	;
 };
 
 }
