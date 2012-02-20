@@ -332,18 +332,22 @@ def readCoverage(fileName):
 
 
 
-if len(sys.argv) != 3:
-	print("Usage: " + sys.argv[0] + " <files with assemblies files> <file with coverage histogram>")	
+if len(sys.argv) < 3:
+	print("Usage: " + sys.argv[0] + " <files with assemblies files> <file with coverage histogram> [genome length]")	
 	sys.exit()
 
 inFileName = sys.argv[1]
 covFileName = sys.argv[2]
 
-assemblies = readAssemblies(inFileName)
-findSimilar(assemblies[0])
+assemblies, maxPos = readAssemblies(inFileName)
+
+if len(sys.argv) == 4:
+	maxPos = int(sys.argv[3])
+
+findSimilar(assemblies)
 covHist = readCoverage(covFileName)
 
-v = Visualizer(assemblies, covHist)
+v = Visualizer((assemblies, maxPos), covHist)
 v.visualize()
 #v.show()
 outFileName, ext = os.path.splitext(inFileName)
