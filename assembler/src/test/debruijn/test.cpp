@@ -9,8 +9,8 @@
 
 
 //headers with tests
-//#include "debruijn_graph_test.hpp"
-//#include "simplification_test.hpp"
+#include "debruijn_graph_test.hpp"
+#include "simplification_test.hpp"
 //#include "pair_info_test.hpp"
 
 DECL_PROJECT_LOGGER("dt")
@@ -44,25 +44,25 @@ namespace debruijn_graph {
 		}
 	}
 
-BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
-	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, 101>> comparer;
-//    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
-//    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
-	//todo split N's
-//	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0002_allpaths.fasta.gz");
-//	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0002_spades.fasta.gz");
-
-//	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
-//	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_EVSC.fasta.gz");
-
-	io::Reader<io::SingleRead> raw_reader_1("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence1.fasta");
-	io::Reader<io::SingleRead> raw_reader_2("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/sequence2.fasta");
-	io::SplittingWrapper filtered_reader_1(raw_reader_1);
-	io::SplittingWrapper filtered_reader_2(raw_reader_2);
-	io::RCReaderWrapper<io::SingleRead> rc_reader_1(filtered_reader_1);
-	io::RCReaderWrapper<io::SingleRead> rc_reader_2(filtered_reader_2);
-	comparer.CompareAssemblies(rc_reader_1, rc_reader_2, "spades_", "evsc_");
-}
+//BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
+//	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, 101>> comparer;
+////    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
+////    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
+//	//todo split N's
+////	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0002_allpaths.fasta.gz");
+////	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0002_spades.fasta.gz");
+//
+////	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
+////	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_EVSC.fasta.gz");
+//
+//	io::Reader<io::SingleRead> raw_reader_1("/home/sergey/assembly_compare/PGINGIVALIS_LANE2_BH_split.fasta.gz");
+//	io::Reader<io::SingleRead> raw_reader_2("/home/sergey/assembly_compare/TDC60.fasta");
+//	io::SplittingWrapper filtered_reader_1(raw_reader_1);
+//	io::SplittingWrapper filtered_reader_2(raw_reader_2);
+//	io::RCReaderWrapper<io::SingleRead> rc_reader_1(filtered_reader_1);
+//	io::RCReaderWrapper<io::SingleRead> rc_reader_2(filtered_reader_2);
+//	comparer.CompareAssemblies(rc_reader_1, rc_reader_2, "spades_", "ref_");
+//}
 
 //BOOST_AUTO_TEST_CASE( ThreadingContigsOverGraph ) {
 //	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
