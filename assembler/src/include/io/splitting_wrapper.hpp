@@ -45,7 +45,7 @@ public:
 	/* virtual */
 	SplittingWrapper& operator>>(ReadType& read) {
 		Skip();
-		read = buffer_[buffer_position_ - 1];
+		read = buffer_[buffer_position_];
 		buffer_position_++;
 		return *this;
 	}
