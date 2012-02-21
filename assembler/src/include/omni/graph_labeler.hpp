@@ -100,6 +100,25 @@ public:
 };
 
 template<class Graph>
+class LengthIdGraphLabeler : public StrGraphLabeler<Graph> {
+	typedef StrGraphLabeler<Graph> base;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+public:
+	LengthIdGraphLabeler(const Graph& g) : base(g) {}
+
+	/*virtual*/ std::string label(EdgeId e) const {
+		stringstream ss;
+		ss << this->graph().length(e) << " (id: " << this->graph().int_id(e) << ")";
+		return ss.str();
+	}
+
+	/*virtual*/ ~LengthIdGraphLabeler() {
+
+	}
+};
+
+template<class Graph>
 class CoverageGraphLabeler : public AbstractGraphLabeler<Graph> {
 	typedef AbstractGraphLabeler<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;

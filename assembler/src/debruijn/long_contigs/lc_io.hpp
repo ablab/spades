@@ -233,7 +233,8 @@ Sequence load_genome() {
 void LoadFromFile(std::string fileName, Graph& g, IdTrackHandler<Graph>& intIds, KmerMapper<K+1, Graph>& mapper) {
 	string dataset = lc_cfg::get().dataset_name;
 	INFO("Reading graph");
-	debruijn_graph::ScanWithKmerMapper(fileName, g, intIds, mapper);
+	debruijn_graph::ScanBasicGraph(fileName, g, intIds);
+	debruijn_graph::LoadKmerMapper(fileName, mapper);
 	INFO("Graph read");
 }
 

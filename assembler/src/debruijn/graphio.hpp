@@ -27,6 +27,41 @@ namespace debruijn_graph {
 using namespace omnigraph;
 //todo think of inner namespace
 
+template<class KmerMapper>
+void SaveKmerMapper(const string& file_name,
+		const KmerMapper& mapper) {
+	std::ofstream file;
+	file.open((file_name + ".kmm").c_str(),
+			std::ios_base::binary | std::ios_base::out);
+	DEBUG("Saving kmer mapper, " << file_name <<" created");
+	VERIFY(file.is_open());
+
+	u_int32_t k_ = KmerMapper::k_value;
+	file.write((char *) &k_, sizeof(u_int32_t));
+	mapper.BinWrite(file);
+
+	file.close();
+}
+
+template<class KmerMapper>
+void LoadKmerMapper(const string& file_name,
+		KmerMapper& kmer_mapper) {
+	kmer_mapper.clear();
+	std::ifstream file;
+	file.open((file_name + ".kmm").c_str(),
+			std::ios_base::binary | std::ios_base::in);
+	DEBUG("Reading kmer mapper, " << file_name <<" started");
+	VERIFY(file.is_open());
+
+	u_int32_t k_;
+	file.read((char *) &k_, sizeof(u_int32_t));
+
+	VERIFY_MSG(k_ == KmerMapper::k_value, "Cannot read kmer mapper, different Ks");
+	kmer_mapper.BinRead(file);
+
+	file.close();
+}
+
 template<class Graph>
 class DataPrinter {
 	typedef typename Graph::EdgeId EdgeId;
@@ -40,8 +75,6 @@ public:
 	void savePositions(const string& file_name,
 			EdgesPositionHandler<Graph> const& ref_pos);
 
-	void saveKmerMapper(const string& file_name,
-			const KmerMapper<K + 1, Graph>& mapper);
 private:
 	void save(FILE* file, EdgeId eid);
 	void save(FILE* file, VertexId vid);
@@ -69,7 +102,7 @@ protected:
 //		}
 //	}
 
-	//todo optimize component copy
+//todo optimize component copy
 	DataPrinter(const GraphComponent<Graph>& component,
 			IdTrackHandler<Graph> const& int_ids) :
 			component_(component), int_ids_(int_ids) {
@@ -101,7 +134,8 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
 
 	FILE* file = fopen((file_name + ".grp").c_str(), "w");
 	DEBUG("Graph saving to " << file_name << " started");
-	VERIFY_MSG(file != NULL, "Couldn't open file " << (file_name + ".grp") << " on write");
+	VERIFY_MSG(file != NULL,
+	"Couldn't open file " << (file_name + ".grp") << " on write");
 	size_t vertex_count = component_.v_size();
 	size_t edge_count = component_.e_size();
 	fprintf(file, "%ld %ld \n", vertex_count, edge_count);
@@ -236,23 +270,6 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 }
 
 template<class Graph>
-void DataPrinter<Graph>::saveKmerMapper(const string& file_name,
-		KmerMapper<K + 1, Graph> const& mapper) {
-
-	std::ofstream file;
-	file.open((file_name + ".kmm").c_str(),
-			std::ios_base::binary | std::ios_base::out);
-	DEBUG("Saving kmer mapper, " << file_name <<" created");
-	VERIFY(file.is_open());
-
-	u_int32_t k_ = K;
-	file.write((char *) &k_, sizeof(u_int32_t));
-	mapper.BinWrite(file);
-
-	file.close();
-}
-
-template<class Graph>
 class ConjugateDataPrinter: public DataPrinter<Graph> {
 	typedef DataPrinter<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
@@ -349,17 +366,17 @@ public:
 	}
 };
 
-template <class Graph>
+template<class Graph>
 struct PrinterTraits {
 	typedef DataPrinter<Graph> Printer;
 };
 
-template <>
+template<>
 struct PrinterTraits<ConjugateDeBruijnGraph> {
 	typedef ConjugateDataPrinter<ConjugateDeBruijnGraph> Printer;
 };
 
-template <>
+template<>
 struct PrinterTraits<NonconjugateDeBruijnGraph> {
 	typedef NonconjugateDataPrinter<NonconjugateDeBruijnGraph> Printer;
 };
@@ -371,11 +388,11 @@ class DataScanner {
 public:
 	virtual void loadGraph(const string& file_name) = 0;
 	void loadCoverage(const string& file_name);
-	void loadPaired(const string& file_name, PairedInfoIndex<Graph>& paired_index);
+	void loadPaired(const string& file_name,
+			PairedInfoIndex<Graph>& paired_index);
 	void loadPositions(const string& file_name,
 			EdgesPositionHandler<Graph>& edge_pos);
-	void loadKmerMapper(const string& file_name,
-			KmerMapper<K + 1, Graph>& kmer_mapper);
+
 private:
 	Graph& g_;
 //	int edge_count_;
@@ -411,14 +428,16 @@ public:
 	/*virtual*/
 	void loadGraph(const string& file_name) {
 		int flag;
-		INFO("Trying to read conjugate de bruijn  graph from " << file_name << ".grp");
+		INFO(
+				"Trying to read conjugate de bruijn  graph from " << file_name << ".grp");
 		FILE* file = fopen((file_name + ".grp").c_str(), "r");
 		VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
 		FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
 		VERIFY(sequence_file != NULL);
 		set<int> vertex_set;
 		set<int> edge_set;
-		INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
+		INFO(
+				"Reading conjugate de bruijn  graph from " << file_name << " started");
 		size_t vertex_count;
 		size_t edge_count;
 		flag = fscanf(file, "%ld %ld \n", &vertex_count, &edge_count);
@@ -437,7 +456,8 @@ public:
 				this->id_handler().AddVertexIntId(vid, vertex_real_id);
 				this->id_handler().AddVertexIntId(conj_vid, conjugate_id);
 				vertex_set.insert(conjugate_id);
-				TRACE(vid<<" ( "<< this->id_handler().ReturnVertexId(vertex_real_id) <<" )   "<< conj_vid << "( "<<this->id_handler().ReturnVertexId(conjugate_id)<<" )  added");
+				TRACE(
+						vid<<" ( "<< this->id_handler().ReturnVertexId(vertex_real_id) <<" )   "<< conj_vid << "( "<<this->id_handler().ReturnVertexId(conjugate_id)<<" )  added");
 			}
 		}
 		size_t tmp_edge_count;
@@ -457,7 +477,8 @@ public:
 					"Edge "<<e_real_id<<" : "<<start_id<<" -> " << fin_id << " l = " << length << " ~ "<< conjugate_edge_id);
 			if (edge_set.find(e_real_id) == edge_set.end()) {
 				Sequence tmp(longstring);
-				TRACE(start_id<<" "<< fin_id <<" "<< this->id_handler().ReturnVertexId(start_id)<<" "<< this->id_handler().ReturnVertexId(fin_id));
+				TRACE(
+						start_id<<" "<< fin_id <<" "<< this->id_handler().ReturnVertexId(start_id)<<" "<< this->id_handler().ReturnVertexId(fin_id));
 				EdgeId eid = this->g().AddEdge(
 						this->id_handler().ReturnVertexId(start_id),
 						this->id_handler().ReturnVertexId(fin_id), tmp);
@@ -488,8 +509,9 @@ public:
 	void loadGraph(const string& file_name) {
 		int flag;
 		FILE* file = fopen((file_name + ".grp").c_str(), "r");
-		if (file == NULL)
-			WARN("File "<<(file_name + ".grp")<<" not found");
+		if (file == NULL
+)
+						WARN("File "<<(file_name + ".grp")<<" not found");
 		VERIFY(file != NULL);
 		FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
 		VERIFY(sequence_file != NULL);
@@ -525,8 +547,7 @@ public:
 			flag = fscanf(file, "Edge %d : %d -> %d, l = %d", &e_real_id,
 					&start_id, &fin_id, &length);
 			VERIFY(flag == 4);
-			flag = fscanf(sequence_file, "%d %s .", &e_real_id,
-					longstring);
+			flag = fscanf(sequence_file, "%d %s .", &e_real_id, longstring);
 			VERIFY(flag == 2);
 			//does'nt matter, whether it was conjugate or not.
 			char c = 'a';
@@ -537,8 +558,10 @@ public:
 			flag = fscanf(file, "\n");
 			VERIFY(flag == 0);
 			Sequence tmp(longstring);
-			TRACE(start_id<<" "<< fin_id <<" "<< this->id_handler().ReturnVertexId(start_id)<<" "<< this->id_handler().ReturnVertexId(fin_id));
-			EdgeId eid = this->g().AddEdge(this->id_handler().ReturnVertexId(start_id),
+			TRACE(
+					start_id<<" "<< fin_id <<" "<< this->id_handler().ReturnVertexId(start_id)<<" "<< this->id_handler().ReturnVertexId(fin_id));
+			EdgeId eid = this->g().AddEdge(
+					this->id_handler().ReturnVertexId(start_id),
 					this->id_handler().ReturnVertexId(fin_id), tmp);
 			this->id_handler().AddEdgeIntId(eid, e_real_id);
 
@@ -592,9 +615,12 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
 		read_count = fscanf(file, "%d %d %lf %lf %lf .\n", &first_real_id,
 				&second_real_id, &d, &w, &v);
 		VERIFY(read_count == 5);
-		TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
-		TRACE(id_handler_.ReturnEdgeId(first_real_id)<<" "<< id_handler_.ReturnEdgeId(second_real_id)<<" "<< d<<" "<< w);
-		PairInfo<typename Graph::EdgeId> p_info(id_handler_.ReturnEdgeId(first_real_id),
+		TRACE(
+				first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
+		TRACE(
+				id_handler_.ReturnEdgeId(first_real_id)<<" "<< id_handler_.ReturnEdgeId(second_real_id)<<" "<< d<<" "<< w);
+		PairInfo<typename Graph::EdgeId> p_info(
+				id_handler_.ReturnEdgeId(first_real_id),
 				id_handler_.ReturnEdgeId(second_real_id), d, w, v);
 		paired_index.AddPairInfo(p_info, false);
 	}DEBUG("PII SIZE " << paired_index.size());
@@ -613,52 +639,33 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 	read_count = fscanf(file, "%d\n", &pos_count);
 	VERIFY(read_count == 1);
 	for (int i = 0; i < pos_count; i++) {
-		int edge_real_id, pos_info_count, contigId;
+		int edge_real_id, pos_info_count;
+		char contigId[500];
 		read_count = fscanf(file, "%d %d\n", &edge_real_id, &pos_info_count);
 		VERIFY(read_count == 2);
 		for (int j = 0; j < pos_info_count; j++) {
 			int start_pos, end_pos;
-			read_count = fscanf(file, "%d: %d - %d \n", &contigId, &start_pos,
+			read_count = fscanf(file, "%s: %d - %d \n", contigId, &start_pos,
 					&end_pos);
 			VERIFY(read_count == 3);
 			EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
-			edge_pos.AddEdgePosition(eid, start_pos, end_pos, ToString(contigId));
+			edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId));
 		}
 	}
 	fclose(file);
 }
 
 template<class Graph>
-void DataScanner<Graph>::loadKmerMapper(const string& file_name,
-		KmerMapper<K + 1, Graph>& kmer_mapper) {
-
-	kmer_mapper.clear();
-	std::ifstream file;
-	file.open((file_name + ".kmm").c_str(),
-			std::ios_base::binary | std::ios_base::in);
-	DEBUG("Reading kmer mapper, " << file_name <<" started");
-	VERIFY(file.is_open());
-
-	u_int32_t k_;
-	file.read((char *) &k_, sizeof(u_int32_t));
-
-	VERIFY_MSG(k_ == K, "Cannot read kmer mapper, different Ks");
-	kmer_mapper.BinRead(file);
-
-	file.close();
-}
-
-template <class Graph>
 struct ScannerTraits {
 	typedef DataScanner<Graph> Scanner;
 };
 
-template <>
+template<>
 struct ScannerTraits<ConjugateDeBruijnGraph> {
 	typedef ConjugateDataScanner<ConjugateDeBruijnGraph> Scanner;
 };
 
-template <>
+template<>
 struct ScannerTraits<NonconjugateDeBruijnGraph> {
 	typedef NonconjugateDataScanner<NonconjugateDeBruijnGraph> Scanner;
 };
@@ -680,13 +687,13 @@ void PrintGraphPack(const string& file_name,
 	PrintBasicGraph(file_name, printer);
 	printer.savePaired(file_name + "_et", gp.etalon_paired_index);
 	printer.savePositions(file_name, gp.edge_pos);
-	printer.saveKmerMapper(file_name, gp.kmer_mapper);
+	SaveKmerMapper(file_name, gp.kmer_mapper);
 }
 
 template<class graph_pack>
-void PrintGraphPack(const string& file_name,
-		const graph_pack& gp) {
-	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g, gp.int_ids);
+void PrintGraphPack(const string& file_name, const graph_pack& gp) {
+	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
+			gp.int_ids);
 	PrintGraphPack(file_name, printer, gp);
 }
 
@@ -702,7 +709,7 @@ void PrintClusteredIndex(const string& file_name, DataPrinter<Graph>& printer,
 	PrintPairedIndex(file_name + "_cl", printer, clustered_index);
 }
 
-template <class graph_pack>
+template<class graph_pack>
 void PrintWithPairedIndex(const string& file_name,
 		DataPrinter<typename graph_pack::graph_t>& printer,
 		const graph_pack& gp,
@@ -716,7 +723,7 @@ void PrintWithPairedIndex(const string& file_name,
 	}
 }
 
-template <class graph_pack>
+template<class graph_pack>
 void PrintWithClusteredIndex(const string& file_name,
 		DataPrinter<typename graph_pack::graph_t>& printer,
 		const graph_pack& gp,
@@ -724,60 +731,63 @@ void PrintWithClusteredIndex(const string& file_name,
 	PrintWithPairedIndex(file_name, printer, gp, paired_index, true);
 }
 
-template <class graph_pack, class VertexIt>
-void PrintAll(const string& file_name,
-		const graph_pack& gp, VertexIt begin, VertexIt end,
+template<class graph_pack, class VertexIt>
+void PrintAll(const string& file_name, const graph_pack& gp, VertexIt begin,
+		VertexIt end,
 		const PairedInfoIndex<typename graph_pack::graph_t>& paired_index,
 		const PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
-	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g, begin, end, gp.int_ids);
+	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
+			begin, end, gp.int_ids);
 	PrintGraphPack(file_name, printer, gp);
 	PrintPairedIndex(file_name, printer, paired_index);
 	PrintClusteredIndex(file_name, printer, clustered_index);
 }
 
-template <class graph_pack>
-void PrintAll(const string& file_name,
-		const graph_pack& gp,
+template<class graph_pack>
+void PrintAll(const string& file_name, const graph_pack& gp,
 		const PairedInfoIndex<typename graph_pack::graph_t>& paired_index,
 		const PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
-	PrintAll(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index);
+	PrintAll(file_name, gp, gp.g.begin(), gp.g.end(), paired_index,
+			clustered_index);
 }
 
-template <class graph_pack, class VertexIt>
-void PrintWithPairedIndex(const string& file_name,
-		const graph_pack& gp, VertexIt begin, VertexIt end,
+template<class graph_pack, class VertexIt>
+void PrintWithPairedIndex(const string& file_name, const graph_pack& gp,
+		VertexIt begin, VertexIt end,
 		const PairedInfoIndex<typename graph_pack::graph_t>& paired_index,
 		bool clustered_index = false) {
-	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g, begin, end, gp.int_ids);
+	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
+			begin, end, gp.int_ids);
 	PrintWithPairedIndex(file_name, printer, gp, paired_index, clustered_index);
 }
 
-template <class graph_pack, class VertexIt>
-void PrintWithClusteredIndex(const string& file_name,
-		const graph_pack& gp, VertexIt begin, VertexIt end,
+template<class graph_pack, class VertexIt>
+void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
+		VertexIt begin, VertexIt end,
 		const PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
-	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g, begin, end, gp.int_ids);
+	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
+			begin, end, gp.int_ids);
 	PrintWithPairedIndex(file_name, printer, gp, clustered_index, true);
 }
 
-template <class graph_pack>
-void PrintWithPairedIndex(const string& file_name,
-		const graph_pack& gp,
+template<class graph_pack>
+void PrintWithPairedIndex(const string& file_name, const graph_pack& gp,
 		const PairedInfoIndex<typename graph_pack::graph_t>& paired_index,
 		bool clustered_index = false) {
-	PrintWithPairedIndex(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index);
+	PrintWithPairedIndex(file_name, gp, gp.g.begin(), gp.g.end(), paired_index,
+			clustered_index);
 }
 
-template <class graph_pack, class VertexIt>
-void PrinGraphPack(const string& file_name,
-		const graph_pack& gp, VertexIt begin, VertexIt end) {
-	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g, begin, end, gp.int_ids);
+template<class graph_pack, class VertexIt>
+void PrinGraphPack(const string& file_name, const graph_pack& gp,
+		VertexIt begin, VertexIt end) {
+	typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
+			begin, end, gp.int_ids);
 	PrintGraphPack(file_name, printer, gp);
 }
 
-template <class graph_pack>
-void PrintWithClusteredIndex(const string& file_name,
-		const graph_pack& gp,
+template<class graph_pack>
+void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
 		const PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
 	PrintWithPairedIndex(file_name, gp, clustered_index, true);
 }
@@ -790,12 +800,11 @@ void ScanBasicGraph(const string& file_name, DataScanner<Graph>& scanner) {
 
 template<class graph_pack>
 void ScanGraphPack(const string& file_name,
-		DataScanner<typename graph_pack::graph_t>& scanner,
-		graph_pack& gp) {
+		DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp) {
 	ScanBasicGraph(file_name, scanner);
 	scanner.loadPaired(file_name + "_et", gp.etalon_paired_index);
 	scanner.loadPositions(file_name, gp.edge_pos);
-	scanner.loadKmerMapper(file_name, gp.kmer_mapper);
+	LoadKmerMapper(file_name, gp.kmer_mapper);
 }
 
 template<class Graph>
@@ -810,10 +819,9 @@ void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
 	scanner.loadPaired(file_name + "_cl", clustered_index);
 }
 
-template <class graph_pack>
+template<class graph_pack>
 void ScanWithPairedIndex(const string& file_name,
-		DataScanner<typename graph_pack::graph_t>& scanner,
-		graph_pack& gp,
+		DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& paired_index,
 		bool clustered_index = false) {
 	ScanGraphPack(file_name, scanner, gp);
@@ -824,61 +832,51 @@ void ScanWithPairedIndex(const string& file_name,
 	}
 }
 
-template <class graph_pack>
+template<class graph_pack>
 void ScanWithClusteredIndex(const string& file_name,
-		DataScanner<typename graph_pack::graph_t>& scanner,
-		graph_pack& gp,
+		DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& paired_index) {
 	ScanWithPairedIndex(file_name, scanner, gp, paired_index, true);
 }
 
-template <class graph_pack>
-void ScanWithPairedIndex(const string& file_name,
-		graph_pack& gp,
+template<class graph_pack>
+void ScanWithPairedIndex(const string& file_name, graph_pack& gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& paired_index,
 		bool clustered_index = false) {
-	typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
+	typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
+			gp.int_ids);
 	ScanWithPairedIndex(file_name, scanner, gp, paired_index, clustered_index);
 }
 
-template <class Graph>
-void ScanBasicGraph(const string& file_name,
-		Graph& g, IdTrackHandler<Graph>& int_ids) {
+template<class Graph>
+void ScanBasicGraph(const string& file_name, Graph& g,
+		IdTrackHandler<Graph>& int_ids) {
 	typename ScannerTraits<Graph>::Scanner scanner(g, int_ids);
 	ScanBasicGraph(file_name, scanner);
 }
 
-template <class graph_pack>
-void ScanGraphPack(const string& file_name,
-		graph_pack& gp) {
-	typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
+template<class graph_pack>
+void ScanGraphPack(const string& file_name, graph_pack& gp) {
+	typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
+			gp.int_ids);
 	ScanGraphPack(file_name, scanner, gp);
 }
 
-template <class graph_pack>
-void ScanAll(const string& file_name,
-		graph_pack& gp,
+template<class graph_pack>
+void ScanAll(const string& file_name, graph_pack& gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& paired_index,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
-	typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
+	typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
+			gp.int_ids);
 	ScanGraphPack(file_name, scanner, gp);
 	ScanPairedIndex(file_name, scanner, paired_index);
 	ScanClusteredIndex(file_name, scanner, clustered_index);
 }
 
-template <class graph_pack>
-void ScanWithClusteredIndex(const string& file_name,
-		graph_pack& gp,
+template<class graph_pack>
+void ScanWithClusteredIndex(const string& file_name, graph_pack& gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
 	ScanWithPairedIndex(file_name, gp, clustered_index, true);
 }
-
-template<class Graph>
-void ScanWithKmerMapper(const string& file_name, Graph& g, IdTrackHandler<Graph>& intIds, KmerMapper<K + 1, Graph>& mapper) {
-	typename ScannerTraits<Graph>::Scanner scanner(g, intIds);
-	ScanBasicGraph(file_name, scanner);
-	scanner.loadKmerMapper(file_name, mapper);
-}
-
 
 }

@@ -9,8 +9,8 @@
 
 
 //headers with tests
-#include "debruijn_graph_test.hpp"
-#include "simplification_test.hpp"
+//#include "debruijn_graph_test.hpp"
+//#include "simplification_test.hpp"
 //#include "pair_info_test.hpp"
 
 DECL_PROJECT_LOGGER("dt")

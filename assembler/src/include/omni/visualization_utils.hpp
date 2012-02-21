@@ -135,7 +135,7 @@ public:
 template<class Graph, typename ElementId>
 class MapColorer : public AbstractColorer<Graph, ElementId> {
 private:
-	const map<ElementId, string> &color_map_;
+	map<ElementId, string> color_map_;
 public:
 	MapColorer(const map<ElementId, string> &color_map) : color_map_(color_map) {
 	}

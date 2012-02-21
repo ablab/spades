@@ -195,6 +195,10 @@ class KmerMapper: public omnigraph::GraphActionHandler<Graph> {
 	MapType mapping_;
 
 public:
+	enum {
+		k_value = k
+	};
+
 	KmerMapper(const Graph& g) :
 			base(g, "KmerMapper") {
 

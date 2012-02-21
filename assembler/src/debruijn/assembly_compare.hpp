@@ -748,19 +748,22 @@ public:
 
 	void CompareAssemblies(ContigStream& stream1, ContigStream& stream2,
 			const string& name1, const string& name2) {
+		make_dir("assembly_comparison");
+		make_dir("assembly_comparison/saves");
+		make_dir("assembly_comparison/initial_pics/");
 		gp_t gp;
 		CompositeContigStream stream(stream1, stream2);
 		INFO("Constructing graph");
 		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, stream);
 
-//		debruijn_config::simplification::bulge_remover br_config;
-//		br_config.max_bulge_length_coefficient = 4;
-//		br_config.max_coverage = 1000.;
-//		br_config.max_relative_coverage = 1.2;
-//		br_config.max_delta = 3;
-//		br_config.max_relative_delta = 0.1;
-//		INFO("Removing bulges");
-//		RemoveBulges(gp.g, br_config);
+		debruijn_config::simplification::bulge_remover br_config;
+		br_config.max_bulge_length_coefficient = 50;
+		br_config.max_coverage = 1000.;
+		br_config.max_relative_coverage = 1.2;
+		br_config.max_delta = 20;
+		br_config.max_relative_delta = 0.1;
+		INFO("Removing bulges");
+		RemoveBulges(gp.g, br_config);
 
 		INFO("Determining covered ranges");
 		CoveredRangesFinder<gp_t> crs_finder(gp);
@@ -775,6 +778,9 @@ public:
 		INFO("Splitting graph");
 		SplitGraph(bps, gp.g);
 
+		INFO("Saving graph");
+		PrintGraphPack("assembly_comparison/saves/graph", gp);
+
 		ColorHandler<Graph> coloring(gp.g);
 
 		INFO("Coloring graph");
@@ -787,19 +793,15 @@ public:
 		stream2.reset();
 		FillPos(gp, stream2, name2);
 
-		EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
-		StrGraphLabeler<Graph> str_labeler(gp.g);
-		CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
-
-//		WriteToDotFile(gp.g, labeler, "oppa.dot", "oppa");
+		LengthIdGraphLabeler<Graph> labeler(gp.g);
 
 		LongEdgesInclusiveSplitter<Graph> splitter(gp.g, 10000);
 		ComponentSizeFilter<Graph> filter(gp.g, 1000000000, 2);
-		make_dir("assembly_comparison");
-		make_dir("assembly_comparison/initial_pics/");
+		cout << "here " << coloring.VertexColorMap().size() << endl;
+		MapColorer<Graph, VertexId> vertex_colorer(coloring.VertexColorMap());
 		WriteComponents(gp.g, splitter, filter, "breakpoint_graph",
 				"assembly_comparison/initial_pics/breakpoint_graph.dot",
-				coloring.EdgeColorMap(), MapColorer<Graph, VertexId>(coloring.VertexColorMap()), labeler);
+				coloring.EdgeColorMap(), vertex_colorer, labeler);
 
 		INFO("Removing unnecessary edges");
 		DeleteVioletEdges(gp.g, coloring);
