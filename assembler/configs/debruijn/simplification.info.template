@@ -74,7 +74,7 @@ usual_simplification
 	; tip clipper:
 	tc
 	{
-		max_tip_length_coefficient	2.5	; max_tip_length = (read_length - k) * max_tip_length_coefficient
+		max_tip_length_coefficient	2.5	; max_tip_length = min(k, read_length - k) * max_tip_length_coefficient
 		max_coverage			1000
 		max_relative_coverage		2.0	; tip_cov < this * not_tip_cov
 	}
