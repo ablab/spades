@@ -403,12 +403,15 @@ void WriteKmerComponent(conj_graph_pack &gp,
 
 optional<Seq<K + 1>> FindCloseKP1mer(const conj_graph_pack &gp,
 		size_t genome_pos) {
-	static const size_t magic_const = 100;
-	for (size_t pos = genome_pos - magic_const; pos <= genome_pos + magic_const; pos++) {
-		Seq<K + 1> kp1mer = gp.kmer_mapper.Substitute(
-				Seq<K + 1>(gp.genome, pos));
-		if (gp.index.contains(kp1mer))
-			return optional<Seq<K + 1>>(kp1mer);
+	static const size_t magic_const = 200;
+	for(size_t diff = 0; diff < magic_const; diff++) {
+		for(int dir = -1; dir <= 1; dir += 2) {
+			size_t pos = genome_pos + dir * diff;
+			Seq<K + 1> kp1mer = gp.kmer_mapper.Substitute(
+					Seq<K + 1>(gp.genome, pos));
+			if (gp.index.contains(kp1mer))
+				return optional<Seq<K + 1>>(kp1mer);
+		}
 	}
 	return none;
 }
