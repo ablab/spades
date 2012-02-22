@@ -126,7 +126,7 @@ class ContigRefiner: public io::DelegatingReaderWrapper<io::SingleRead> {
 	}
 
 public:
-	ContigRefiner(IReader<io::SingleRead>& reader, const gpt& gp) :
+	ContigRefiner(io::IReader<io::SingleRead>& reader, const gpt& gp) :
 			base(reader), gp_(gp), mapper_(gp.g, gp.index, gp.kmer_mapper) {
 
 	}
