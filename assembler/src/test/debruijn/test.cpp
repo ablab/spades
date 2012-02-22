@@ -9,8 +9,8 @@
 
 
 //headers with tests
-#include "debruijn_graph_test.hpp"
-#include "simplification_test.hpp"
+//#include "debruijn_graph_test.hpp"
+//#include "simplification_test.hpp"
 //#include "pair_info_test.hpp"
 
 DECL_PROJECT_LOGGER("dt")
@@ -55,8 +55,8 @@ namespace debruijn_graph {
 ////	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
 ////	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_EVSC.fasta.gz");
 //
-//	io::Reader<io::SingleRead> raw_reader_1("/home/sergey/assembly_compare/PGINGIVALIS_LANE2_BH_split.fasta.gz");
-//	io::Reader<io::SingleRead> raw_reader_2("/home/sergey/assembly_compare/TDC60.fasta");
+//	io::Reader<io::SingleRead> raw_reader_1("/home/snurk/assembly_compare/PGINGIVALIS_LANE3_BH_split.fasta.gz");
+//	io::Reader<io::SingleRead> raw_reader_2("/home/snurk/assembly_compare/TDC60.fasta");
 //	io::SplittingWrapper filtered_reader_1(raw_reader_1);
 //	io::SplittingWrapper filtered_reader_2(raw_reader_2);
 //	io::RCReaderWrapper<io::SingleRead> rc_reader_1(filtered_reader_1);

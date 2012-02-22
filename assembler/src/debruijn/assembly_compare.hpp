@@ -582,6 +582,7 @@ template<class Graph>
 class BPGraphStatCounter {
 private:
 	typedef typename ComponentClassifier<Graph>::component_type component_type;
+	typedef typename Graph::VertexId VertexId;
 	const Graph &graph_;
 	const ColorHandler<Graph> &coloring_;
 public:
@@ -590,7 +591,7 @@ public:
 	}
 
 	void PrintComponents(size_t c_type,
-			const GraphLabeler<Graph>& labeler) const {
+			const GraphLabeler<Graph>& labeler, const AbstractColorer<Graph, VertexId> &v_colorer) const {
 		make_dir("assembly_comparison/");
 		string type_dir = "assembly_comparison/"
 				+ ComponentClassifier<Graph>::info_printer_pos_name(c_type)
@@ -602,7 +603,7 @@ public:
 		ComponentTypeFilter<Graph> stats(graph_, c_type, coloring_);
 		WriteComponents(this->graph_, splitter, stats, "breakpoint_graph",
 				picture_dir + "breakpoint_graph.dot", coloring_.EdgeColorMap(),
-				labeler);
+				v_colorer, labeler);
 	}
 
 	void PrintStats(const BreakPointGraphStatistics<Graph> &stats) const {
@@ -622,15 +623,16 @@ public:
 		}
 	}
 
-	void CountStats(const GraphLabeler<Graph>& labeler) const {
+	void CountStats(const GraphLabeler<Graph>& labeler,
+			const AbstractColorer<Graph, VertexId> &v_colorer) const {
 		make_dir("assembly_comparison/");
 		BreakPointGraphStatistics<Graph> stats(graph_, coloring_);
 		stats.CountStats();
 		PrintStats(stats);
-		PrintComponents(component_type::complex_misassembly, labeler);
-		PrintComponents(component_type::monochrome, labeler);
-		PrintComponents(component_type::tip, labeler);
-		PrintComponents(component_type::simple_misassembly, labeler);
+		PrintComponents(component_type::complex_misassembly, labeler, v_colorer);
+		PrintComponents(component_type::monochrome, labeler, v_colorer);
+		PrintComponents(component_type::tip, labeler, v_colorer);
+		PrintComponents(component_type::simple_misassembly, labeler, v_colorer);
 	}
 };
 
@@ -797,7 +799,6 @@ public:
 
 		LongEdgesInclusiveSplitter<Graph> splitter(gp.g, 10000);
 		ComponentSizeFilter<Graph> filter(gp.g, 1000000000, 2);
-		cout << "here " << coloring.VertexColorMap().size() << endl;
 		MapColorer<Graph, VertexId> vertex_colorer(coloring.VertexColorMap());
 		WriteComponents(gp.g, splitter, filter, "breakpoint_graph",
 				"assembly_comparison/initial_pics/breakpoint_graph.dot",
@@ -810,7 +811,7 @@ public:
 //		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
 		INFO("Counting stats, outputting pictures");
 		BPGraphStatCounter<Graph> counter(gp.g, coloring);
-		counter.CountStats(labeler);
+		counter.CountStats(labeler, MapColorer<Graph, VertexId>(coloring.VertexColorMap()));
 	}
 private:
 	DECL_LOGGER("AssemblyComparer")

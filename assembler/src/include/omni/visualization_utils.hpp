@@ -226,6 +226,7 @@ public:
 	virtual void Visualize(const vector<VertexId>& vertices) {
 		set<VertexId> vertex_set(vertices.begin(), vertices.end());
 		map<VertexId, string> vertex_colour_map = vertex_colours_.GetColours(vertex_set);
+
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			super::gp_.AddVertex(*v_it, gl_.label(*v_it), vertex_colour_map[*v_it]);
 		}
