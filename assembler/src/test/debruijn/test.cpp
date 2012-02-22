@@ -44,26 +44,56 @@ namespace debruijn_graph {
 		}
 	}
 
-BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
-	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, 55>> comparer;
-//    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
-//    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
-	//todo split N's
-//	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0002_allpaths.fasta.gz");
-//	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0002_spades.fasta.gz");
-
-//	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
-//	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
-// 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
-
+//BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
+////    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
+////    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
+//	//todo split N's
+////	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0002_allpaths.fasta.gz");
+////	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0002_spades.fasta.gz");
+//
+////	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
+////	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
+//// 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
+//
 //	io::Reader<io::SingleRead> raw_reader_1("/home/sergey/assembly_compare/PGINGIVALIS_LANE2_BH_split.fasta.gz");
 //	io::Reader<io::SingleRead> raw_reader_2("/home/sergey/assembly_compare/TDC60.fasta");
 //	io::SplittingWrapper filtered_reader_1(raw_reader_1);
 //	io::SplittingWrapper filtered_reader_2(raw_reader_2);
 //	io::RCReaderWrapper<io::SingleRead> rc_reader_1(filtered_reader_1);
 //	io::RCReaderWrapper<io::SingleRead> rc_reader_2(filtered_reader_2);
-//	comparer.CompareAssemblies(rc_reader_1, rc_reader_2, "spades_", "ref_");
-}
+//
+//	io::MultifileReader<io::SingleRead> composite_reader(rc_reader_1, rc_reader_2);
+//	typedef graph_pack<ConjugateDeBruijnGraph, 25> refining_gp_t;
+//	refining_gp_t refining_gp;
+//	ConstructGraph<refining_gp_t::k_value>(refining_gp.g, refining_gp.index, composite_reader);
+//
+//	//todo configure!!!
+//	debruijn_config::simplification::bulge_remover br_config;
+//	br_config.max_bulge_length_coefficient = 10;
+//	br_config.max_coverage = 1000.;
+//	br_config.max_relative_coverage = 1.2;
+//	br_config.max_delta = 5;
+//	br_config.max_relative_delta = 0.1;
+//	INFO("Removing bulges");
+//	RemoveBulges(refining_gp.g, br_config);
+//
+//	TipsProjector<refining_gp_t> tip_projector(refining_gp);
+//	boost::function<void(EdgeId)> projecting_callback =
+//			boost::bind(&TipsProjector<refining_gp_t>::ProjectTip, &tip_projector, _1);
+//	debruijn_config::simplification::tip_clipper tc_config;
+//	tc_config.max_coverage = 1000.;
+//	tc_config.max_relative_coverage = 1.1;
+//	tc_config.max_tip_length_coefficient = 2.;
+//
+//	ClipTips(refining_gp.g, tc_config, /*read_length*/100, projecting_callback);
+//
+//	rc_reader_1.reset();
+//	rc_reader_2.reset();
+//	ContigRefiner<refining_gp_t> final_stream_1(rc_reader_1, refining_gp);
+//	ContigRefiner<refining_gp_t> final_stream_2(rc_reader_2, refining_gp);
+//	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, 55>> comparer;
+//	comparer.CompareAssemblies(final_stream_1, final_stream_2, "spades_", "ref_");
+//}
 
 //BOOST_AUTO_TEST_CASE( ThreadingContigsOverGraph ) {
 //	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;

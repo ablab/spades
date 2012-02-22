@@ -8,8 +8,139 @@
 #include "simple_tools.hpp"
 #include "omni/omni_utils.hpp"
 #include "debruijn_stats.hpp"
+#include "io/delegating_reader_wrapper.hpp"
 
 namespace debruijn_graph {
+using namespace omnigraph;
+
+template<class Graph>
+Sequence MergeSequences(const Graph& g,
+		const vector<typename Graph::EdgeId>& edges) {
+	vector<const Sequence*> path_sequences;
+	for (auto it = edges.begin(); it != edges.end(); ++it) {
+		path_sequences.push_back(&g.EdgeNucls(*it));
+	}
+	return MergeOverlappingSequences(path_sequences, g.k());
+}
+
+template<class gpt>
+class TipsProjector {
+	typedef typename gpt::graph_t Graph;
+	typedef typename Graph::EdgeId EdgeId;
+
+	gpt& gp_;
+	const UniquePathFinder<Graph> unique_path_finder_;
+
+	optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
+		vector<EdgeId> edges;
+		if (outgoing_tip) {
+			edges = gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip));
+		} else {
+			edges = gp_.g.IncomingEdges(gp_.g.EdgeEnd(tip));
+		}
+		set<EdgeId> edges_set(edges.begin(), edges.end());
+		edges_set.erase(tip);
+		if (edges_set.size() == 1)
+			return optional<EdgeId>(*edges_set.begin());
+		else
+			return boost::none;
+	}
+
+	vector<EdgeId> UniqueAlternativePath(EdgeId tip, bool outgoing_tip) {
+		optional<EdgeId> alt_edge = UniqueAlternativeEdge(tip, outgoing_tip);
+		if (alt_edge) {
+			if (outgoing_tip) {
+				return unique_path_finder_.UniquePathForward(*alt_edge);
+			} else {
+				return unique_path_finder_.UniquePathBackward(*alt_edge);
+			}
+		}
+		return vector<EdgeId>();
+	}
+
+	void AlignAndProject(const Sequence& tip_seq,
+			const Sequence& alt_seq, bool outgoing_tip) {
+		//todo refactor
+		Sequence aligned_tip = tip_seq;
+		Sequence aligned_alt = alt_seq;
+		if (outgoing_tip) {
+			if (tip_seq.size() >= alt_seq.size()) {
+				aligned_tip = tip_seq.Subseq(0, alt_seq.size());
+			} else {
+				aligned_alt = alt_seq.Subseq(0, tip_seq.size());
+			}
+		} else {
+			if (tip_seq.size() >= alt_seq.size()) {
+				aligned_tip = tip_seq.Subseq(tip_seq.size() - alt_seq.size());
+			} else {
+				aligned_alt = alt_seq.Subseq(alt_seq.size() - tip_seq.size());
+			}
+		}
+		gp_.kmer_mapper.RemapKmers(aligned_tip, aligned_alt);
+	}
+
+public:
+	TipsProjector(gpt& gp) :
+			gp_(gp), unique_path_finder_(gp.g) {
+
+	}
+
+	void ProjectTip(EdgeId tip) {
+		bool outgoing_tip = gp_.g.IsDeadEnd(gp_.g.EdgeEnd(tip));
+		Sequence tip_seq = gp_.g.EdgeNucls(tip);
+		Sequence alt_seq = MergeSequences(gp_.g,
+				UniqueAlternativePath(tip, outgoing_tip));
+		if (tip_seq.size() > alt_seq.size()) {
+			WARN("Can't fully project tip " << gp_.g.int_id(tip));
+		}
+		AlignAndProject(tip_seq, alt_seq, outgoing_tip);
+	}
+private:
+	DECL_LOGGER("TipsProjector")
+	;
+};
+
+template<class gpt>
+class ContigRefiner: public io::DelegatingReaderWrapper<io::SingleRead> {
+	typedef io::DelegatingReaderWrapper<io::SingleRead> base;
+	typedef typename gpt::graph_t Graph;
+
+	const gpt& gp_;
+	NewExtendedSequenceMapper<gpt::k_value + 1, Graph> mapper_;
+
+	Path<EdgeId> FixPath(const Path<EdgeId>& path) {
+		for (size_t i = 1; i < path.size(); ++i) {
+			VERIFY(gp_.g.EdgeStart(path[i]) = gp_.g.EdgeEnd(path[i - 1]));
+		}
+		return path;
+	}
+
+	Sequence Refine(const Sequence& s) {
+		Path<EdgeId> path = FixPath(mapper_.MapSequence(s).simple_path());
+		vector<EdgeId> edges = path.sequence();
+		Sequence path_sequence = MergeSequences(gp_.g, edges);
+		size_t start = path.start_pos;
+		size_t end = path_sequence.size() - gp_.g.k()
+				- gp_.g.length(edges.back()) + path.end_pos;
+		return path_sequence.Subseq(start, end);
+	}
+
+public:
+	ContigRefiner(IReader<io::SingleRead>& reader, const gpt& gp) :
+			base(reader), gp_(gp), mapper_(gp.g, gp.index, gp.kmer_mapper) {
+
+	}
+
+	/* virtual */
+	ContigRefiner& operator>>(io::SingleRead& read) {
+		this->reader() >> read;
+		Sequence s = read.sequence();
+		read.SetSequence(s.str().c_str());
+		return *this;
+	}
+
+};
+
 typedef io::IReader<io::SingleRead> ContigStream;
 typedef io::MultifileReader<io::SingleRead> CompositeContigStream;
 
@@ -590,8 +721,8 @@ public:
 			graph_(g), coloring_(coloring) {
 	}
 
-	void PrintComponents(size_t c_type,
-			const GraphLabeler<Graph>& labeler, const AbstractColorer<Graph, VertexId> &v_colorer) const {
+	void PrintComponents(size_t c_type, const GraphLabeler<Graph>& labeler,
+			const AbstractColorer<Graph, VertexId> &v_colorer) const {
 		make_dir("assembly_comparison/");
 		string type_dir = "assembly_comparison/"
 				+ ComponentClassifier<Graph>::info_printer_pos_name(c_type)
@@ -629,7 +760,8 @@ public:
 		BreakPointGraphStatistics<Graph> stats(graph_, coloring_);
 		stats.CountStats();
 		PrintStats(stats);
-		PrintComponents(component_type::complex_misassembly, labeler, v_colorer);
+		PrintComponents(component_type::complex_misassembly, labeler,
+				v_colorer);
 		PrintComponents(component_type::monochrome, labeler, v_colorer);
 		PrintComponents(component_type::tip, labeler, v_colorer);
 		PrintComponents(component_type::simple_misassembly, labeler, v_colorer);
@@ -678,7 +810,7 @@ private:
 	}
 
 	void FindBreakPoints(const Graph& g, BreakPoints& bps, /*const */
-			CoveredRanges& crs1, /*const */CoveredRanges& crs2) {
+	CoveredRanges& crs1, /*const */CoveredRanges& crs2) {
 		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			EdgeId e = *it;
 			bps[e] = CombineCoveredRanges(crs1[e], crs2[e]);
@@ -724,8 +856,8 @@ private:
 		Cleaner<Graph>(g).Clean();
 	}
 
-	void ColorPath(const Graph& g, const Path<EdgeId>& path, ColorHandler<Graph>& coloring,
-			edge_type color) {
+	void ColorPath(const Graph& g, const Path<EdgeId>& path,
+			ColorHandler<Graph>& coloring, edge_type color) {
 		for (size_t i = 0; i < path.size(); ++i) {
 			coloring.Paint(path[i], color);
 			coloring.Paint(g.EdgeStart(path[i]), color);
@@ -817,7 +949,8 @@ public:
 //		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
 		INFO("Counting stats, outputting pictures");
 		BPGraphStatCounter<Graph> counter(gp.g, coloring);
-		counter.CountStats(labeler, MapColorer<Graph, VertexId>(coloring.VertexColorMap()));
+		counter.CountStats(labeler,
+				MapColorer<Graph, VertexId>(coloring.VertexColorMap()));
 	}
 private:
 	DECL_LOGGER("AssemblyComparer")

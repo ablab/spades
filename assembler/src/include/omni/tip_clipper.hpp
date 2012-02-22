@@ -12,6 +12,7 @@
 //#include "edge_graph.hpp"
 //#include "utils.hpp"
 #include "omni_utils.hpp"
+#include "xmath.h"
 //
 //#define DEFAULT_COVERAGE_BOUND 1000
 //#define DEFAULT_RELATIVE_COVERAGE_BOUND 2.0
@@ -194,8 +195,8 @@ private:
 		if (this->graph().coverage(tip) > max_coverage_)
 			return false;
 		double max_coverage = MaxCompetitorCoverage(tip);
-		return this->graph().coverage(tip)
-				<= max_relative_coverage_ * max_coverage;
+		return math::le(this->graph().coverage(tip),
+				max_relative_coverage_ * max_coverage);
 	}
 
 public:

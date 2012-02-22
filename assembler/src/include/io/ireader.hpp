@@ -18,10 +18,12 @@
 #ifndef COMMON_IO_IREADER_HPP_
 #define COMMON_IO_IREADER_HPP_
 
+#include <boost/noncopyable.hpp>
+
 namespace io {
 
 template<typename ReadType>
-class IReader {
+class IReader: boost::noncopyable {
  public:
   /* 
    * Default destructor.
