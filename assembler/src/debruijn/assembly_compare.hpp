@@ -268,7 +268,7 @@ public:
 	}
 
 	ComponentClassifier(const Graph &g, const ColorHandler<Graph> &coloring) :
-			g_(g), coloring_(coloring), bulge_length_(g_.k() * 5) {
+			g_(g), coloring_(coloring), bulge_length_(g_.k() * 1000000) {
 	}
 
 	edge_type GetColour(EdgeId edge) const {
@@ -407,13 +407,13 @@ public:
 			}
 			return component_type::complex_misassembly;
 		}
+		if (CheckMonochrome(component))
+			return component_type::monochrome;
 		if (CheckTip(component)) {
 			return component_type::tip;
 		}
 		if (CheckSimpleMisassembly(component))
 			return component_type::simple_misassembly;
-		if (CheckMonochrome(component))
-			return component_type::monochrome;
 		return component_type::complex_misassembly;
 	}
 };
@@ -767,6 +767,12 @@ public:
 		INFO("Removing bulges");
 		RemoveBulges(gp.g, br_config);
 
+//		debruijn_config::simplification::tip_clipper tc;
+//		tc.max_coverage = 1000;
+//		tc.max_relative_coverage = 1000;
+//		tc.max_tip_length_coefficient = 6;
+//		ClipTips(gp.g, tc, 10 * gp.g.k());
+
 		INFO("Determining covered ranges");
 		CoveredRangesFinder<gp_t> crs_finder(gp);
 		CoveredRanges crs1;
@@ -797,7 +803,7 @@ public:
 
 		LengthIdGraphLabeler<Graph> labeler(gp.g);
 
-		LongEdgesInclusiveSplitter<Graph> splitter(gp.g, 10000);
+		ReliableSplitter<Graph> splitter(gp.g, 30, 3000);
 		ComponentSizeFilter<Graph> filter(gp.g, 1000000000, 2);
 		MapColorer<Graph, VertexId> vertex_colorer(coloring.VertexColorMap());
 		WriteComponents(gp.g, splitter, filter, "breakpoint_graph",
