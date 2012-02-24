@@ -116,7 +116,7 @@ ECOLI_JGI
         RL      100
         IS      220
         single_cell     true
-        reference_genome  E.coli/DH10B-K12.fasta.gz; N/A ;E.coli/MG1655-K12.fasta.gz
+        reference_genome  E.coli/MG1655-K12.fasta.gz
 }
 
 
@@ -129,8 +129,7 @@ ECOLI_JGI_0005_BH
         RL      100
         IS      220
         single_cell     true
-        reference_genome E.coli/DH10B-K12.fasta.gz 
-	;E.coli/DH10B-K12.fasta.gz ;
+        reference_genome  E.coli/MG1655-K12.fasta.gz
 }
 
 
@@ -143,7 +142,7 @@ ECOLI_JGI_0011_BH
         RL      100
         IS      220
         single_cell     true
-        reference_genome E.coli/DH10B-K12.fasta.gz
+        reference_genome  E.coli/MG1655-K12.fasta.gz
 }
 
 
@@ -157,7 +156,7 @@ ECOLI_JGI_0012_BH
         RL      100
         IS      220
         single_cell     true
-	reference_genome E.coli/DH10B-K12.fasta.gz
+        reference_genome  E.coli/MG1655-K12.fasta.gz
 }
 
 ; ================================================

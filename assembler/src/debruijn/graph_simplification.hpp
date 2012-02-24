@@ -396,6 +396,10 @@ void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 	//INFO("ErroneousConnectionsRemoval stats");
 }
 
+double aaa(EdgeId){
+ return 0.;
+}
+
 void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
         detail_info_printer &printer, size_t iteration_count,
@@ -432,6 +436,12 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 	INFO("Final TipClipping");
 	
 	ClipTips(graph, removal_handler_f);
+	//vector<EdgeId> edges = ClipTips(graph, removal_handler_f);
+    //for (size_t i = 0; i < edges.size(); i++) {
+        //cout << "LEFT " << graph.int_id(edges[i]) << endl;
+        //if (graph.int_id(edges[i])) 
+            //removal_handler_f(edges[i]);       
+    //}
 	printer(ipp_final_tip_clipping);
 
 	INFO("Final BulgeRemoval");

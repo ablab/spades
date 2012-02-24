@@ -1196,7 +1196,7 @@ public:
             double total_weight = 0.;
             for (size_t i = 0; i<infos.size(); i++){
                 total_weight += infos[i].weight;
-                //cout << "Tip Info " << infos[i].first << " " << infos[i].second << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance << endl;
+                cout << "Tip Info " << infos[i].first << " " << infos[i].second << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance << endl;
             }
             return total_weight;
 	}
@@ -1229,21 +1229,23 @@ public:
 
 	void HandleDelete(EdgeId edge) {
         if (quality_handler_.IsPositiveQuality(edge)) {
-			cout << "Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge) << endl;
-			string folder = output_folder_ + "colored_edges_deleted/";
-			make_dir(folder);
-			//todo magic constant
+            cout << "Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge) << endl;
+            string folder = output_folder_ + "colored_edges_deleted/";
+            make_dir(folder);
+            //todo magic constant
             PairInfos infos = index_.GetEdgeInfo(edge);
-            for (size_t i = 0; i<infos.size(); i++){
-                cout << "Tip Info " << g_.int_id(infos[i].first) << " " << g_.int_id(infos[i].second) << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance << endl;
+            if (infos.size() > 0){
+                for (size_t i = 0; i<infos.size(); i++){
+                    cout << "Tip Info " << g_.int_id(infos[i].first) << " " << g_.int_id(infos[i].second) << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance << endl;
+                }
             }
-			map<EdgeId, string> empty_coloring;
-			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-					250);
+            map<EdgeId, string> empty_coloring;
+            EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
+                    250);
             
-			WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
-					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
-					, empty_coloring, labeler_);
+            WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+                    , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
+                    , empty_coloring, labeler_);
         }
 	}
 
@@ -1257,7 +1259,7 @@ class EdgeLocalityPrintingRH {
 	const Graph& g_;
 	const GraphLabeler<Graph>& labeler_;
 	const string& output_folder_;
-    boost::function<double (EdgeId)> quality_f_;
+    boost::function<double (EdgeId)>& quality_f_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
 public:
@@ -1271,19 +1273,19 @@ public:
 	}
 
 	void HandleDelete(EdgeId edge) {
-			TRACE("Deleting edge " << g_.str(edge));
+            TRACE("Deleting edge " << g_.str(edge));
             if (quality_f_ && math::gr(quality_f_(edge), 0.)) 
                 INFO("EdgeLocalityPrintRH handling the edge with positive quality : " << quality_f_(edge) << " " << g_.str(edge));
         
             string folder = output_folder_ + "edges_deleted/";
-			make_dir(folder);
-			//todo magic constant
-			map<EdgeId, string> empty_coloring;
-			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-					250);
+            make_dir(folder);
+            //todo magic constant
+            map<EdgeId, string> empty_coloring;
+            EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
+                    250);
 
             WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
-                    , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + (quality_f_ ? ToString(quality_f_(edge)) : "NoQ") + ".dot", empty_coloring, labeler_);
+                    , folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
 	}
 
 private:
