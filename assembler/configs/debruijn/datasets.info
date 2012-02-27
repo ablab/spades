@@ -691,3 +691,51 @@ HUMAN_CHR14_QUAKE_CROPPED_5M
         ;reference_genome  H.sapiens/chr14/chr14_GRCh37.fa    ; length about 100mbp, with Ns, from ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Eukaryotes/vertebrates_mammal$
 }
 
+
+; ================================================
+; ============== Datasets from YALE ==============
+; = contact: philipp.engel@yale.edu (Philipp Engel)
+; ================================================
+
+
+; Betaproteobacterium
+; expected genome size 2.5 Mb
+UNK_YALE_J21_BH4
+{
+        first               SAG_B_J21/04.reads.0.left.corrected.fastq
+        second              SAG_B_J21/04.reads.0.right.corrected.fastq
+        single_first        SAG_B_J21/04.reads.0.left.unpaired.fastq
+        single_second       SAG_B_J21/04.reads.0.right.unpaired.fastq
+        RL                  101     ; read length
+        single_cell         true
+        reference_genome    N/A
+}
+
+; Gammaproteobacterium
+; expected genome size 3.5 Mb
+UNK_YALE_P17_BH4
+{
+        first               SAG_G1_P17/04.reads.0.left.corrected.fastq
+        second              SAG_G1_P17/04.reads.0.right.corrected.fastq
+        single_first        SAG_G1_P17/04.reads.0.left.unpaired.fastq
+        single_second       SAG_G1_P17/04.reads.0.right.unpaired.fastq
+        RL                  101     ; read length
+        single_cell         true
+        reference_genome    N/A
+}
+
+; Gammaproteobacterium
+; expected genome size 3.5 Mb
+UNK_YALE_I22_BH4
+{
+        first               SAG_G2_I22/04.reads.0.left.corrected.fastq
+        second              SAG_G2_I22/04.reads.0.right.corrected.fastq
+        single_first        SAG_G2_I22/04.reads.0.left.unpaired.fastq
+        single_second       SAG_G2_I22/04.reads.0.right.unpaired.fastq
+        RL                  101     ; read length
+        single_cell         true
+        reference_genome    N/A
+}
+
+
+
