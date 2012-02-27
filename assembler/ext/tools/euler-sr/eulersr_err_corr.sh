@@ -101,7 +101,9 @@ fi
 
 # error correction itself
 echo "== error correction =="
-${EUSRC}/assembly/Assemble.pl ${input_reads} 55 -onlyFixErrors
+ln -s $input_reads
+${EUSRC}/assembly/Assemble.pl $input_reads_base 55 -onlyFixErrors
+rm $input_reads_base
 echo "== error correction finished =="
 
 # clearing
