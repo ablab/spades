@@ -1,0 +1,3 @@
+set terminal png         # gnuplot recommends setting terminal before output
+set output "output.png"  # The output filename; to be set after setting
+		 	 # terminal

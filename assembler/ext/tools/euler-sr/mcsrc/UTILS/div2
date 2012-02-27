@@ -1,0 +1,6 @@
+#!/usr/bin/env perl
+$num = <>;
+use POSIX;
+
+$num = POSIX::floor($num/2);
+print "$num\n";

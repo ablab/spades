@@ -1,0 +1,7 @@
+>ref seq 78527
+AGACGCGGACCCTCCCGTGAGCGATGAggtgtgcggtgtagacgccggccctcccgtgag
+ggatgaggcg
+>qry ssub seq:
+AGACGCGGACCCTCCCGTGAGCGATGAggtgtgcggtgtagacgcgggccctcccatgag
+gtgtgtggtgtagatgcgggccctcccgtgagggataaggcatatggtgtagacgcgggc
+cctcccgtgagtgatgaggca

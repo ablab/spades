@@ -1,0 +1,2 @@
+function dendo = CreateDendogram(distmatrix)
+  
