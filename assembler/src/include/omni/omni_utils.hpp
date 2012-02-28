@@ -1389,23 +1389,6 @@ private:
     bool backward;
 
         
-
-    ///// checking whether the next edge after tip is very long, then we'd rather remove it
-    //bool CheckUniqueExtension(EdgeId tip){
-        //static const size_t long_edge = 1500;
-        //if (backward){
-            //VertexId vertex = graph_.EdgeEnd(tip);
-            //if (graph_.IncomingEdgeCount(vertex) == 2 && graph_.OutgoingEdgeCount(vertex) == 1)
-                //return (graph_.length(graph_.OutgoingEdges(vertex)[0]) > long_edge);
-        //}else{
-            //VertexId vertex = graph_.EdgeStart(tip);
-            //if (graph_.OutgoingEdgeCount(vertex) == 2&& graph_.IncomingEdgeCount(vertex) == 1)
-                //return (graph_.length(graph_.IncomingEdges(vertex)[0]) > long_edge);
-        //}
-        //return false;
-    //}
-    
-
     // simple check whether the edge is tip
     bool IsTip(EdgeId edge){
         if (graph_.length(edge) > max_tip_length_) return false;

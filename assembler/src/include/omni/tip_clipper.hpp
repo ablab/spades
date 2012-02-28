@@ -126,6 +126,21 @@ protected:
         return true;
     }
 
+    /// checking whether the next edge after tip is very long, then we'd rather remove it
+    bool CheckUniqueExtension(EdgeId tip){
+        static const size_t long_edge = 1500;
+        if (backward){
+            VertexId vertex = graph_.EdgeEnd(tip);
+            if (graph_.IncomingEdgeCount(vertex) == 2 && graph_.OutgoingEdgeCount(vertex) == 1)
+                return (graph_.length(graph_.OutgoingEdges(vertex)[0]) > long_edge);
+        }else{
+            VertexId vertex = graph_.EdgeStart(tip);
+            if (graph_.OutgoingEdgeCount(vertex) == 2&& graph_.IncomingEdgeCount(vertex) == 1)
+                return (graph_.length(graph_.IncomingEdges(vertex)[0]) > long_edge);
+        }
+        return false;
+    }
+
     bool TipHasAVeryLowRelativeCoverage(EdgeId tip){
         double max_coverage = MaxCompetitorCoverage(tip);
         return math::ls(200.*graph_.coverage(tip), max_coverage);
@@ -274,6 +289,10 @@ public:
                         TRACE("Edge " << tip << " removed as a tip");
                     }else if (CheckAllAlternativesAreTips(tip)){
                         TRACE("Edge " << tip << " judged to be a meaningless tip");
+                        RemoveTip(tip);
+                        TRACE("Edge " << tip << " removed as a tip");
+                    }else if (CheckUniqueExtension(tip)){
+                        TRACE("Edge " << tip << " is believed to be a tip due to an extension");
                         RemoveTip(tip);
                         TRACE("Edge " << tip << " removed as a tip");
                     }else if (!cfg::get().simp.tc.advanced_checks || tipchecker.TipCanBeProjected(tip)){
