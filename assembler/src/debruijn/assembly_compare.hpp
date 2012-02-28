@@ -133,6 +133,8 @@ class ContigRefiner: public io::DelegatingReaderWrapper<io::SingleRead> {
 	}
 
 	Sequence Refine(const Sequence& s) {
+		if(s < !s)
+			return !Refine(!s);
 		Path<EdgeId> path = FixPath(mapper_.MapSequence(s).simple_path());
 		vector<EdgeId> edges = path.sequence();
 		Sequence path_sequence = MergeSequences(graph_, edges);
@@ -150,8 +152,10 @@ public:
 	/* virtual */
 	ContigRefiner& operator>>(io::SingleRead& read) {
 		this->reader() >> read;
-		Sequence s = read.sequence();
-		read.SetSequence(Refine(s).str().c_str());
+		Sequence s = Refine(read.sequence());
+		read.SetSequence(s.str().c_str());
+		string quality(s.size(), (char)33);
+		read.SetQuality(quality.c_str());
 		return *this;
 	}
 
@@ -895,7 +899,7 @@ private:
 		for(size_t i = 0; i < path.size(); i++) {
 			EdgeId next;
 			if(coloring.Color(path[i]) != edge_type::violet) {
-				size_t j = i + 1;
+				size_t j = i;
 				vector<EdgeId> to_glue;
 				while(j < path.size() && coloring.Color(path[j]) != edge_type::violet) {
 					to_glue.push_back(path[j]);
@@ -1107,6 +1111,9 @@ public:
 		make_dir("assembly_comparison/saves");
 		make_dir("assembly_comparison/initial_pics/");
 		gp_t gp;
+//		io::RCReaderWrapper<io::SingleRead> final_stream1(stream1_);
+//		io::RCReaderWrapper<io::SingleRead> final_stream2(stream2_);
+//		CompositeContigStream stream(final_stream1, final_stream2);
 		CompositeContigStream stream(stream1_, stream2_);
 		INFO("Constructing graph");
 		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, stream);
@@ -1119,9 +1126,7 @@ public:
 		ColorHandler<Graph> coloring(gp.g);
 		ColorGraph(gp, coloring);
 
-		cout << "oppa" << endl;
 		UntangledGraphConstructor<gp_t> ugp(gp, coloring, stream1_, stream2_);
-		cout << "oppa" << endl;
 
 //		INFO("Filling contig positions");
 //		stream1_.reset();
@@ -1129,15 +1134,13 @@ public:
 //		stream2_.reset();
 //		FillPos(gp, stream2_, name2);
 
+		SimplifyGraph(ugp.graph_);
+
 		LengthIdGraphLabeler<Graph> labeler(ugp.graph_);
-		cout << "oppa" << endl;
 
 		ReliableSplitter<Graph> splitter(ugp.graph_, 30, 3000);
-		cout << "oppa" << endl;
 		ComponentSizeFilter<Graph> filter(ugp.graph_, 1000000000, 2);
-		cout << "oppa" << endl;
 		MapColorer<Graph, VertexId> vertex_colorer(ugp.untangled_coloring_.VertexColorMap());
-		cout << "oppa" << endl;
 		WriteComponents(ugp.graph_, splitter, filter, "breakpoint_graph",
 				"assembly_comparison/initial_pics/breakpoint_graph.dot",
 				ugp.untangled_coloring_.EdgeColorMap(), vertex_colorer, labeler);
@@ -1151,6 +1154,11 @@ public:
 		BPGraphStatCounter<Graph> counter(ugp.graph_, ugp.untangled_coloring_);
 		counter.CountStats(labeler,
 				MapColorer<Graph, VertexId>(ugp.untangled_coloring_.VertexColorMap()));
+
+//		BPGraphStatCounter<Graph> counter(gp.g, coloring);
+//		LengthIdGraphLabeler<Graph> labeler(gp.g);
+//		counter.CountStats(labeler,
+//				MapColorer<Graph, VertexId>(coloring.VertexColorMap()));
 	}
 private:
 	DECL_LOGGER("AssemblyComparer")

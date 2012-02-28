@@ -46,10 +46,6 @@ private:
 //	typename Kmer::equal_to> map_type;
 	map_type nodes_;
 
-	bool contains(const Kmer &k) const {
-		return nodes_.find(k) != nodes_.end();
-	}
-
 	// DE BRUIJN:
 	//does it work for primitives???
 	void addEdge(const Kmer &k) {
@@ -180,6 +176,10 @@ public:
 		VERIFY_MSG(false, "Couldn't find requested edge!");
 		return Kmer();
 		// no next edges (we should request one here).
+	}
+
+	bool contains(const Kmer &k) const {
+		return nodes_.find(k) != nodes_.end();
 	}
 
 	// INDEX:

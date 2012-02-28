@@ -58,7 +58,7 @@ namespace debruijn_graph {
 ////	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
 //// 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
 //
-//	io::Reader<io::SingleRead> raw_reader_1("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/andrew_nurk.fasta");
+//	io::Reader<io::SingleRead> raw_reader_1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
 //	io::Reader<io::SingleRead> raw_reader_2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
 //
 //	RCSplittingStream stream1(raw_reader_1);
@@ -69,7 +69,8 @@ namespace debruijn_graph {
 //
 //	ContigRefiner<k, refining_gp_t::graph_t> refined_stream1(stream1, constructor.GetGP().g, constructor.ConstructMapper());
 //	ContigRefiner<k, refining_gp_t::graph_t> refined_stream2(stream2, constructor.GetGP().g, constructor.ConstructMapper());
-//	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, K>> comparer(refined_stream1, refined_stream2);
+////	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, K>> comparer(refined_stream1, refined_stream2);
+//	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, K>> comparer(stream1, stream2);
 //	comparer.CompareAssemblies("spades_", "ref_");
 //}
 
