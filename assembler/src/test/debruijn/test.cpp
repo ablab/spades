@@ -44,7 +44,10 @@ namespace debruijn_graph {
 		}
 	}
 
+
 //BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
+//	static const size_t k = 55;
+//	static const size_t K = 101;
 ////    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
 ////    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
 //	//todo split N's
@@ -55,44 +58,19 @@ namespace debruijn_graph {
 ////	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
 //// 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
 //
-//	io::Reader<io::SingleRead> raw_reader_1("/home/sergey/assembly_compare/PGINGIVALIS_LANE2_BH_split.fasta.gz");
-//	io::Reader<io::SingleRead> raw_reader_2("/home/sergey/assembly_compare/TDC60.fasta");
-//	io::SplittingWrapper filtered_reader_1(raw_reader_1);
-//	io::SplittingWrapper filtered_reader_2(raw_reader_2);
-//	io::RCReaderWrapper<io::SingleRead> rc_reader_1(filtered_reader_1);
-//	io::RCReaderWrapper<io::SingleRead> rc_reader_2(filtered_reader_2);
+//	io::Reader<io::SingleRead> raw_reader_1("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/andrew_nurk.fasta");
+//	io::Reader<io::SingleRead> raw_reader_2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
 //
-//	io::MultifileReader<io::SingleRead> composite_reader(rc_reader_1, rc_reader_2);
-//	typedef graph_pack<ConjugateDeBruijnGraph, 25> refining_gp_t;
-//	refining_gp_t refining_gp;
-//	ConstructGraph<refining_gp_t::k_value>(refining_gp.g, refining_gp.index, composite_reader);
+//	RCSplittingStream stream1(raw_reader_1);
+//	RCSplittingStream stream2(raw_reader_2);
 //
-//	//todo configure!!!
-//	debruijn_config::simplification::bulge_remover br_config;
-//	br_config.max_bulge_length_coefficient = 10;
-//	br_config.max_coverage = 1000.;
-//	br_config.max_relative_coverage = 1.2;
-//	br_config.max_delta = 5;
-//	br_config.max_relative_delta = 0.1;
-//	INFO("Removing bulges");
-//	RemoveBulges(refining_gp.g, br_config);
+//	typedef graph_pack<ConjugateDeBruijnGraph, k> refining_gp_t;
+//	RefineGPConstructor<refining_gp_t> constructor(stream1, stream2);
 //
-//	TipsProjector<refining_gp_t> tip_projector(refining_gp);
-//	boost::function<void(EdgeId)> projecting_callback =
-//			boost::bind(&TipsProjector<refining_gp_t>::ProjectTip, &tip_projector, _1);
-//	debruijn_config::simplification::tip_clipper tc_config;
-//	tc_config.max_coverage = 1000.;
-//	tc_config.max_relative_coverage = 1.1;
-//	tc_config.max_tip_length_coefficient = 2.;
-//
-//	ClipTips(refining_gp.g, tc_config, /*read_length*/100, projecting_callback);
-//
-//	rc_reader_1.reset();
-//	rc_reader_2.reset();
-//	ContigRefiner<refining_gp_t> final_stream_1(rc_reader_1, refining_gp);
-//	ContigRefiner<refining_gp_t> final_stream_2(rc_reader_2, refining_gp);
-//	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, 55>> comparer;
-//	comparer.CompareAssemblies(final_stream_1, final_stream_2, "spades_", "ref_");
+//	ContigRefiner<k, refining_gp_t::graph_t> refined_stream1(stream1, constructor.GetGP().g, constructor.ConstructMapper());
+//	ContigRefiner<k, refining_gp_t::graph_t> refined_stream2(stream2, constructor.GetGP().g, constructor.ConstructMapper());
+//	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, K>> comparer(refined_stream1, refined_stream2);
+//	comparer.CompareAssemblies("spades_", "ref_");
 //}
 
 //BOOST_AUTO_TEST_CASE( ThreadingContigsOverGraph ) {

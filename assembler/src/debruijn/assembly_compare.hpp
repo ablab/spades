@@ -9,6 +9,7 @@
 #include "omni/omni_utils.hpp"
 #include "debruijn_stats.hpp"
 #include "io/delegating_reader_wrapper.hpp"
+#include "io/splitting_wrapper.hpp"
 
 namespace debruijn_graph {
 using namespace omnigraph;
@@ -92,25 +93,41 @@ public:
 				UniqueAlternativePath(tip, outgoing_tip));
 		if (tip_seq.size() > alt_seq.size()) {
 			WARN("Can't fully project tip " << gp_.g.int_id(tip));
+		} else {
+			AlignAndProject(tip_seq, alt_seq, outgoing_tip);
 		}
-		AlignAndProject(tip_seq, alt_seq, outgoing_tip);
 	}
 private:
 	DECL_LOGGER("TipsProjector")
 	;
 };
 
-template<class gpt>
+
+class ModifyingWrapper : public io::DelegatingReaderWrapper<io::SingleRead> {
+public:
+	ModifyingWrapper(io::IReader<io::SingleRead>& reader) : io::DelegatingReaderWrapper<io::SingleRead>(reader) {
+	}
+
+	virtual Sequence Modify(Sequence read) = 0;
+
+	ModifyingWrapper& operator>>(io::SingleRead& read) {
+		this->reader() >> read;
+		Sequence s = read.sequence();
+		read.SetSequence(Modify(s).str().c_str());
+		return *this;
+	}
+};
+
+template<size_t k, class Graph>
 class ContigRefiner: public io::DelegatingReaderWrapper<io::SingleRead> {
 	typedef io::DelegatingReaderWrapper<io::SingleRead> base;
-	typedef typename gpt::graph_t Graph;
 
-	const gpt& gp_;
-	NewExtendedSequenceMapper<gpt::k_value + 1, Graph> mapper_;
+	const Graph& graph_;
+	NewExtendedSequenceMapper<k + 1, Graph> mapper_;
 
 	Path<EdgeId> FixPath(const Path<EdgeId>& path) {
 		for (size_t i = 1; i < path.size(); ++i) {
-			VERIFY(gp_.g.EdgeStart(path[i]) = gp_.g.EdgeEnd(path[i - 1]));
+			VERIFY(graph_.EdgeStart(path[i]) == graph_.EdgeEnd(path[i - 1]));
 		}
 		return path;
 	}
@@ -118,27 +135,70 @@ class ContigRefiner: public io::DelegatingReaderWrapper<io::SingleRead> {
 	Sequence Refine(const Sequence& s) {
 		Path<EdgeId> path = FixPath(mapper_.MapSequence(s).simple_path());
 		vector<EdgeId> edges = path.sequence();
-		Sequence path_sequence = MergeSequences(gp_.g, edges);
-		size_t start = path.start_pos;
-		size_t end = path_sequence.size() - gp_.g.k()
-				- gp_.g.length(edges.back()) + path.end_pos;
+		Sequence path_sequence = MergeSequences(graph_, edges);
+		size_t start = path.start_pos();
+		size_t end = path_sequence.size() - graph_.k()
+				- graph_.length(edges.back()) + path.end_pos();
 		return path_sequence.Subseq(start, end);
 	}
 
 public:
-	ContigRefiner(io::IReader<io::SingleRead>& reader, const gpt& gp) :
-			base(reader), gp_(gp), mapper_(gp.g, gp.index, gp.kmer_mapper) {
-
+	ContigRefiner(io::IReader<io::SingleRead>& reader, const Graph &graph, const NewExtendedSequenceMapper<k + 1, Graph> &mapper) :
+			base(reader), graph_(graph), mapper_(mapper) {
 	}
 
 	/* virtual */
 	ContigRefiner& operator>>(io::SingleRead& read) {
 		this->reader() >> read;
 		Sequence s = read.sequence();
-		read.SetSequence(s.str().c_str());
+		read.SetSequence(Refine(s).str().c_str());
 		return *this;
 	}
 
+};
+
+template<class gp_t>
+class RefineGPConstructor {
+private:
+	typedef typename gp_t::graph_t Graph;
+	typedef ContigRefiner<gp_t::k_value, Graph> Refiner;
+	gp_t gp_;
+public:
+	RefineGPConstructor(io::IReader<io::SingleRead>& reader1, io::IReader<io::SingleRead>& reader2) {
+		io::MultifileReader<io::SingleRead> composite_reader(reader1, reader2);
+		ConstructGraph<gp_t::k_value>(gp_.g, gp_.index, composite_reader);
+
+		//todo configure!!!
+		debruijn_config::simplification::bulge_remover br_config;
+		br_config.max_bulge_length_coefficient = 10;
+		br_config.max_coverage = 1000.;
+		br_config.max_relative_coverage = 1.2;
+		br_config.max_delta = 5;
+		br_config.max_relative_delta = 0.1;
+		INFO("Removing bulges");
+		RemoveBulges(gp_.g, br_config);
+
+		TipsProjector<gp_t> tip_projector(gp_);
+		boost::function<void(EdgeId)> projecting_callback =
+				boost::bind(&TipsProjector<gp_t>::ProjectTip, &tip_projector, _1);
+		debruijn_config::simplification::tip_clipper tc_config;
+		tc_config.max_coverage = 1000.;
+		tc_config.max_relative_coverage = 1.1;
+		tc_config.max_tip_length_coefficient = 2.;
+
+		ClipTips(gp_.g, tc_config, /*read_length*/100, projecting_callback);
+
+		reader1.reset();
+		reader2.reset();
+	}
+
+	const gp_t &GetGP() {
+		return gp_;
+	}
+
+	NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> ConstructMapper() {
+		return NewExtendedSequenceMapper<gp_t::k_value + 1, Graph>(gp_.g, gp_.index, gp_.kmer_mapper);
+	}
 };
 
 typedef io::IReader<io::SingleRead> ContigStream;
@@ -625,6 +685,7 @@ public:
 
 };
 
+
 template<class Stream, class Graph>
 Stream &operator<<(Stream &stream, const Component<Graph> &component) {
 	const vector<size_t> &lengths = component.edge_lengths();
@@ -777,6 +838,115 @@ void FillPos(gp_t& gp, ContigStream& stream, string stream_prefix) {
 	}
 }
 
+class RCSplittingStream : public io::DelegatingReaderWrapper<io::SingleRead> {
+private:
+	io::SplittingWrapper filtered_reader_;
+	io::RCReaderWrapper<io::SingleRead> stream_;
+public:
+	RCSplittingStream(ContigStream &base_stream) : filtered_reader_(base_stream), stream_(filtered_reader_){
+		Init(stream_);
+	}
+};
+
+template<class gp_t>
+class UntangledGraphConstructor {
+private:
+	typedef typename gp_t::graph_t Graph;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+public:
+	Graph graph_;
+	IdTrackHandler<Graph> int_ids_;
+	ColorHandler<Graph> untangled_coloring_;
+	map<Sequence, vector<EdgeId>> red_paths_;
+	map<Sequence, vector<EdgeId>> blue_paths_;
+	map<EdgeId, EdgeId> purple_map_;
+	map<VertexId, VertexId> vertex_map_;
+
+private:
+	VertexId GetStartVertex(const Graph &graph, const Path<EdgeId> &path, size_t i) {
+		if(i != 0 || path.start_pos() == 0)
+			return vertex_map_[graph.EdgeStart(path[i])];
+		else
+			return graph_.AddVertex();
+	}
+
+	VertexId GetEndVertex(const Graph &graph, const Path<EdgeId> &path, size_t i) {
+		if(i != path.size() - 1 || path.end_pos() == graph.length(path[i]))
+			return vertex_map_[graph.EdgeEnd(path[i])];
+		else
+			return graph_.AddVertex();
+	}
+
+	void Untangle(const gp_t& gp, const ColorHandler<Graph> &coloring, ContigStream& stream, edge_type color) {
+		io::SingleRead read;
+		stream.reset();
+		while (!stream.eof()) {
+			stream >> read;
+			Untangle(gp, coloring, read.sequence(), color);
+		}
+	}
+
+	void Untangle(const gp_t& gp, const ColorHandler<Graph> &coloring, Sequence contig, edge_type color) {
+		NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp.g, gp.index, gp.kmer_mapper);
+		Path<EdgeId> path = mapper.MapSequence(contig).simple_path();
+		vector<EdgeId> new_path;
+		for(size_t i = 0; i < path.size(); i++) {
+			EdgeId next;
+			if(coloring.Color(path[i]) != edge_type::violet) {
+				size_t j = i + 1;
+				vector<EdgeId> to_glue;
+				while(j < path.size() && coloring.Color(path[j]) != edge_type::violet) {
+					to_glue.push_back(path[j]);
+					j++;
+				}
+				Sequence new_edge_sequence = MergeSequences(gp.g, to_glue);
+				next = graph_.AddEdge(GetStartVertex(gp.g, path, i), GetEndVertex(gp.g, path, j - 1), new_edge_sequence);
+				i = j - 1;
+			} else {
+				next = purple_map_[path[i]];
+			}
+			new_path.push_back(next);
+			untangled_coloring_.Paint(next, color);
+			untangled_coloring_.Paint(graph_.EdgeStart(next), color);
+			untangled_coloring_.Paint(graph_.EdgeEnd(next), color);
+		}
+		if(color == edge_type::red)
+			red_paths_[contig] = new_path;
+		else
+			blue_paths_[contig] = new_path;
+	}
+
+public:
+	UntangledGraphConstructor(const gp_t &gp,
+			const ColorHandler<Graph> &coloring,
+			io::IReader<io::SingleRead> &stream1,
+			io::IReader<io::SingleRead> &stream2) :
+			graph_(gp_t::k_value), int_ids_(graph_),
+			untangled_coloring_(graph_) {
+		const Graph & old_graph = gp.g;
+		for (auto it = old_graph.begin(); it != old_graph.end(); ++it) {
+			vertex_map_[*it] = graph_.AddVertex();
+		}
+		for (auto it = old_graph.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (coloring.Color(*it) == edge_type::violet) {
+				EdgeId new_edge = graph_.AddEdge(
+						vertex_map_[old_graph.EdgeStart(*it)],
+						vertex_map_[old_graph.EdgeEnd(*it)],
+						old_graph.EdgeNucls(*it));
+				purple_map_[*it] = new_edge;
+				untangled_coloring_.Paint(new_edge, edge_type::violet);
+				untangled_coloring_.Paint(graph_.EdgeStart(new_edge), edge_type::violet);
+				untangled_coloring_.Paint(graph_.EdgeEnd(new_edge), edge_type::violet);
+			}
+		}
+		Untangle(gp, coloring, stream1, edge_type::red);
+		Untangle(gp, coloring, stream2, edge_type::blue);
+	}
+
+};
+
 template<class gp_t>
 class AssemblyComparer {
 private:
@@ -785,6 +955,9 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef map<EdgeId, vector<Range>> CoveredRanges;
 	typedef map<EdgeId, vector<size_t>> BreakPoints;
+
+	io::IReader<io::SingleRead> &stream1_;
+	io::IReader<io::SingleRead> &stream2_;
 
 	void AddBreaks(set<size_t>& breaks, const vector<Range>& ranges) {
 		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
@@ -833,6 +1006,21 @@ private:
 		}
 	}
 
+	void SplitGraph(gp_t& gp) {
+		INFO("Determining covered ranges");
+		CoveredRangesFinder<gp_t> crs_finder(gp);
+		CoveredRanges crs1;
+		crs_finder.FindCoveredRanges(crs1, stream1_);
+		CoveredRanges crs2;
+		crs_finder.FindCoveredRanges(crs2, stream2_);
+		BreakPoints bps;
+		INFO("Determining breakpoints");
+		FindBreakPoints(gp.g, bps, crs1, crs2);
+
+		INFO("Splitting graph");
+		SplitGraph(bps, gp.g);
+	}
+
 	void SplitGraph(/*const */BreakPoints& bps, Graph& g) {
 		set<EdgeId> initial_edges;
 		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
@@ -865,6 +1053,12 @@ private:
 		}
 	}
 
+	void ColorGraph(const gp_t& gp, ColorHandler<Graph>& coloring) {
+		INFO("Coloring graph");
+		ColorGraph(gp, coloring, stream1_, edge_type::red);
+		ColorGraph(gp, coloring, stream2_, edge_type::blue);
+	}
+
 	void ColorGraph(const gp_t& gp, ColorHandler<Graph>& coloring,
 			ContigStream& stream, edge_type color) {
 		io::SingleRead read;
@@ -878,18 +1072,7 @@ private:
 		}
 	}
 
-public:
-
-	void CompareAssemblies(ContigStream& stream1, ContigStream& stream2,
-			const string& name1, const string& name2) {
-		make_dir("assembly_comparison");
-		make_dir("assembly_comparison/saves");
-		make_dir("assembly_comparison/initial_pics/");
-		gp_t gp;
-		CompositeContigStream stream(stream1, stream2);
-		INFO("Constructing graph");
-		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, stream);
-
+	void SimplifyGraph(Graph & graph) {
 		debruijn_config::simplification::bulge_remover br_config;
 		br_config.max_bulge_length_coefficient = 50;
 		br_config.max_coverage = 1000.;
@@ -897,60 +1080,77 @@ public:
 		br_config.max_delta = 20;
 		br_config.max_relative_delta = 0.1;
 		INFO("Removing bulges");
-		RemoveBulges(gp.g, br_config);
+		RemoveBulges(graph, br_config);
 
 //		debruijn_config::simplification::tip_clipper tc;
 //		tc.max_coverage = 1000;
 //		tc.max_relative_coverage = 1000;
 //		tc.max_tip_length_coefficient = 6;
 //		ClipTips(gp.g, tc, 10 * gp.g.k());
+	}
 
-		INFO("Determining covered ranges");
-		CoveredRangesFinder<gp_t> crs_finder(gp);
-		CoveredRanges crs1;
-		crs_finder.FindCoveredRanges(crs1, stream1);
-		CoveredRanges crs2;
-		crs_finder.FindCoveredRanges(crs2, stream2);
-		BreakPoints bps;
-		INFO("Determining breakpoints");
-		FindBreakPoints(gp.g, bps, crs1, crs2);
-
-		INFO("Splitting graph");
-		SplitGraph(bps, gp.g);
-
+	void SaveGraph(string path, gp_t &gp) {
 		INFO("Saving graph");
 		PrintGraphPack("assembly_comparison/saves/graph", gp);
+	}
+
+public:
+
+	AssemblyComparer(io::IReader<io::SingleRead> &raw_reader_1,
+			io::IReader<io::SingleRead> &raw_reader_2) : stream1_(raw_reader_1), stream2_(raw_reader_2) {
+	}
+
+	void CompareAssemblies(const string& name1, const string& name2) {
+		stream1_.reset();
+		stream2_.reset();
+		make_dir("assembly_comparison");
+		make_dir("assembly_comparison/saves");
+		make_dir("assembly_comparison/initial_pics/");
+		gp_t gp;
+		CompositeContigStream stream(stream1_, stream2_);
+		INFO("Constructing graph");
+		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, stream);
+
+		cout << "oppa" << endl;
+		SimplifyGraph(gp.g);
+		SplitGraph(gp);
+		SaveGraph("assembly_comparison/saves/graph", gp);
 
 		ColorHandler<Graph> coloring(gp.g);
+		ColorGraph(gp, coloring);
 
-		INFO("Coloring graph");
-		ColorGraph(gp, coloring, stream1, edge_type::red);
-		ColorGraph(gp, coloring, stream2, edge_type::blue);
+		cout << "oppa" << endl;
+		UntangledGraphConstructor<gp_t> ugp(gp, coloring, stream1_, stream2_);
+		cout << "oppa" << endl;
 
-		INFO("Filling contig positions");
-		stream1.reset();
-		FillPos(gp, stream1, name1);
-		stream2.reset();
-		FillPos(gp, stream2, name2);
+//		INFO("Filling contig positions");
+//		stream1_.reset();
+//		FillPos(gp, stream1_, name1);
+//		stream2_.reset();
+//		FillPos(gp, stream2_, name2);
 
-		LengthIdGraphLabeler<Graph> labeler(gp.g);
+		LengthIdGraphLabeler<Graph> labeler(ugp.graph_);
+		cout << "oppa" << endl;
 
-		ReliableSplitter<Graph> splitter(gp.g, 30, 3000);
-		ComponentSizeFilter<Graph> filter(gp.g, 1000000000, 2);
-		MapColorer<Graph, VertexId> vertex_colorer(coloring.VertexColorMap());
-		WriteComponents(gp.g, splitter, filter, "breakpoint_graph",
+		ReliableSplitter<Graph> splitter(ugp.graph_, 30, 3000);
+		cout << "oppa" << endl;
+		ComponentSizeFilter<Graph> filter(ugp.graph_, 1000000000, 2);
+		cout << "oppa" << endl;
+		MapColorer<Graph, VertexId> vertex_colorer(ugp.untangled_coloring_.VertexColorMap());
+		cout << "oppa" << endl;
+		WriteComponents(ugp.graph_, splitter, filter, "breakpoint_graph",
 				"assembly_comparison/initial_pics/breakpoint_graph.dot",
-				coloring.EdgeColorMap(), vertex_colorer, labeler);
+				ugp.untangled_coloring_.EdgeColorMap(), vertex_colorer, labeler);
 
 		INFO("Removing unnecessary edges");
-		DeleteVioletEdges(gp.g, coloring);
+		DeleteVioletEdges(ugp.graph_, ugp.untangled_coloring_);
 
 //		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
 //		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
 		INFO("Counting stats, outputting pictures");
-		BPGraphStatCounter<Graph> counter(gp.g, coloring);
+		BPGraphStatCounter<Graph> counter(ugp.graph_, ugp.untangled_coloring_);
 		counter.CountStats(labeler,
-				MapColorer<Graph, VertexId>(coloring.VertexColorMap()));
+				MapColorer<Graph, VertexId>(ugp.untangled_coloring_.VertexColorMap()));
 	}
 private:
 	DECL_LOGGER("AssemblyComparer")
