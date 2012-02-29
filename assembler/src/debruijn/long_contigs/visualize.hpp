@@ -71,7 +71,7 @@ void WritePathLocalities(const conj_graph_pack& gp, const string& folder, const 
 			PathsGraphLabeler<Graph> path_labeler(gp.g, vector<BidirectionalPath>{*it});
 			EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
 
-			CompositeLabeler<Graph> composite_labeler = {&str_labeler, &path_labeler, &pos_labeler};
+			CompositeLabeler<Graph> composite_labeler(str_labeler, path_labeler, pos_labeler);
 			/////todo code duplication
 
 			string path_folder = folder + ToString(it->uid) + "/";
@@ -98,7 +98,7 @@ void WriteGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_nam
 	PathsGraphLabeler<Graph> path_labeler(gp.g, paths);
 	EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
 
-	CompositeLabeler<Graph> composite_labeler = {&str_labeler, &path_labeler, &pos_labeler};
+	CompositeLabeler<Graph> composite_labeler(str_labeler, path_labeler, pos_labeler);
 
 	BorderVertexColorer<Graph> v_colorer(gp.g);
 	ColoredGraphVisualizer<Graph> gv(gp.g, printer, composite_labeler, coloring, v_colorer);

@@ -161,9 +161,10 @@ public:
 	CompositeLabeler() {
 	}
 
-	CompositeLabeler(std::initializer_list<GraphLabeler<Graph>*> list)
-		: list_(list)
-	{
+	CompositeLabeler(GraphLabeler<Graph> &labeler1, GraphLabeler<Graph> &labeler2, GraphLabeler<Graph> &labeler3) {
+		AddLabeler(labeler1);
+		AddLabeler(labeler2);
+		AddLabeler(labeler3);
 	}
 
 	CompositeLabeler(GraphLabeler<Graph> &labeler1, GraphLabeler<Graph> &labeler2) {
