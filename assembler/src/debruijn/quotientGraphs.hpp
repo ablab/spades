@@ -16,7 +16,7 @@ class IQuotientGraphs{
         /*
          * Add a new quotient graph to the store
          */
-        virtual bool AddGraph(const Graph &graph, multimap<EdgeId, EdgeId>  &edgeMaps) =0;
+        virtual bool AddGraph(const Graph &graph, std::multimap<EdgeId, EdgeId>  &edgeMaps) =0;
         /* Check if two edges are \emph{adjacent} in 
          * all the quotient graphs. Note that edge here should belongs to the first 
          * quotient graph added. By Adjacent I mean edge2 follows edge1 
@@ -38,9 +38,9 @@ class SingleQuotientGraph: public IQuotientGraphs<Graph>{
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
-    SingleQuotientGraph(Graph& graph): graph_(graph),distanceTool_(graph){}
+    SingleQuotientGraph(Graph& graph): graph_(graph), distanceTool_(graph) {}
     //Not support for singleQuotientGraph
-    bool AddGraph(const Graph &graph, multimap<EdgeId,EdgeId> &edgeMap){return true;}
+    bool AddGraph(const Graph &graph, std::multimap<EdgeId,EdgeId> &edgeMap){return true;}
     bool IsAdjacent(const EdgeId& edge1, const EdgeId& edge2) const
     {
         if (graph_.EdgeEnd(edge1) == graph_.EdgeStart(edge2)) {

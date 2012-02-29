@@ -1,6 +1,7 @@
 #pragma once
 #include "boost/current_function.hpp"
 #include <sstream>
+#include <iostream>
 
 struct assertion_failed_exception : public std::exception {
 };

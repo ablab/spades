@@ -9,6 +9,8 @@
 #define RECTANGLE_RESOLVER_HPP_
 
 #include <string>
+#include <log4cxx/logger.h>
+#include "graph_pack.hpp"
 
 namespace debruijn_graph {
 

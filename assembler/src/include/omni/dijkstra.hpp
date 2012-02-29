@@ -2,6 +2,8 @@
 #define DIJKSTRA_HPP_
 
 #include <queue>
+#include <map>
+#include <set>
 
 namespace omnigraph {
 
@@ -18,14 +20,14 @@ class Dijkstra {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef map<VertexId, distance_t> distances_map;
+	typedef std::map<VertexId, distance_t> distances_map;
 	//	typedef map<VertexId, distance_t>::iterator distances_map_iterator;
 	typedef typename distances_map::const_iterator distances_map_ci;
 
 	const Graph &graph_;
 	bool finished_;
-	map<VertexId, distance_t> distances_;
-	set<VertexId> processed_vertices_;
+	std::map<VertexId, distance_t> distances_;
+	std::set<VertexId> processed_vertices_;
 
 protected:
 	const Graph& graph() {
@@ -57,7 +59,7 @@ public:
 		return distances_[vertex];
 	}
 
-	pair<distances_map_ci, distances_map_ci> GetDistances() {
+	std::pair<distances_map_ci, distances_map_ci> GetDistances() {
 		distances_map_ci begin = distances_.begin();
 		distances_map_ci end = distances_.end();
 		return make_pair(begin, end);
@@ -79,9 +81,9 @@ public:
 		return graph_.length(edge);
 	}
 
-	virtual vector<pair<VertexId, EdgeId>> Neighbours(VertexId vertex) {
-		vector<pair<VertexId, EdgeId>> result;
-		vector<EdgeId> edges = graph_.OutgoingEdges(vertex);
+	virtual std::vector<std::pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
+		std::vector<std::pair<VertexId, EdgeId> > result;
+		std::vector<EdgeId> edges = graph_.OutgoingEdges(vertex);
 		for (size_t i = 0; i < edges.size(); i++) {
 			result.push_back(make_pair(graph_.EdgeEnd(edges[i]), edges[i]));
 		}
@@ -95,8 +97,8 @@ public:
 		distances_.clear();
 		processed_vertices_.clear();
 		init(start);
-		priority_queue<pair<distance_t, VertexId> , vector<pair<distance_t,
-				VertexId>> , ReverseComparator<pair<distance_t, VertexId>> > q;
+		std::priority_queue<std::pair<distance_t, VertexId> , std::vector<std::pair<distance_t,
+				VertexId> > , ReverseComparator<std::pair<distance_t, VertexId>> > q;
 		q.push(make_pair(0, start));
 		TRACE("Priority queue initialized. Starting search");
 
@@ -155,15 +157,15 @@ public:
 		TRACE("Finished dijkstra run from vertex " << start);
 	}
 
-	vector<VertexId> ReachedVertices() {
-		vector<VertexId> result;
+	std::vector<VertexId> ReachedVertices() {
+		std::vector<VertexId> result;
 		for (auto it = distances_.begin(); it != distances_.end(); ++it) {
 			result.push_back(it->first);
 		}
 		return result;
 	}
 
-	const set<VertexId>& ProcessedVertices() {
+	const std::set<VertexId>& ProcessedVertices() {
 		return processed_vertices_;
 	}
 
@@ -220,10 +222,10 @@ public:
 	virtual ~UnorientedDijkstra() {
 	}
 
-	virtual vector<pair<VertexId, EdgeId>> Neighbours(VertexId vertex) {
-		vector < pair < VertexId, EdgeId >> result;
+	virtual std::vector<std::pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
+		std::vector <std::pair<VertexId, EdgeId> > result;
 		const Graph &g = this->graph();
-		vector < EdgeId > edges = g.OutgoingEdges(vertex);
+		std::vector <EdgeId> edges = g.OutgoingEdges(vertex);
 		for (size_t i = 0; i < edges.size(); i++) {
 			result.push_back(make_pair(g.EdgeEnd(edges[i]), edges[i]));
 		}
@@ -249,11 +251,11 @@ public:
 	virtual ~BackwardDijkstra() {
 	}
 
-	virtual vector<pair<VertexId, EdgeId>> Neighbours(VertexId vertex) {
+	virtual std::vector<std::pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
 		TRACE("Starting to collect incoming edges for vertex " << vertex);
-		vector < pair < VertexId, EdgeId >> result;
+		std::vector<std::pair<VertexId, EdgeId> > result;
 		const Graph &g = this->graph();
-		vector < EdgeId > edges = g.IncomingEdges(vertex);
+		std::vector<EdgeId> edges = g.IncomingEdges(vertex);
 		TRACE("Vector of incoming edges fetched from graph");
 		for (size_t i = 0; i < edges.size(); i++) {
 			result.push_back(make_pair(g.EdgeStart(edges[i]), edges[i]));

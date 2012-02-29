@@ -108,7 +108,7 @@ public:
 	LengthIdGraphLabeler(const Graph& g) : base(g) {}
 
 	/*virtual*/ std::string label(EdgeId e) const {
-		stringstream ss;
+		std::stringstream ss;
 		ss << this->graph().length(e) << " (id: " << this->graph().int_id(e) << ")";
 		return ss.str();
 	}
@@ -137,7 +137,7 @@ class CompositeLabeler : public GraphLabeler<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	vector<GraphLabeler<Graph>*> list_;
+	std::vector<GraphLabeler<Graph>*> list_;
 
 	template<typename ElementId>
 	string ConstructLabel(ElementId id) const {

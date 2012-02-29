@@ -6,6 +6,11 @@
  */
 #pragma once
 
+#include <vector>
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
+
 typedef std::vector<fs::path> files_t;
 
 files_t files_by_prefix(fs::path const& p)

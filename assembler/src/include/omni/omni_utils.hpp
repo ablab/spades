@@ -7,10 +7,16 @@
 #include "dijkstra.hpp"
 #include "xmath.h"
 #include <cmath>
+#include <ostream>
+#include <boost/function.hpp>
+#include <boost/filesystem.hpp>
 #include "elapsed_timer.h"
 
 namespace omnigraph {
 using std::vector;
+using std::string;
+using std::pair;
+using std::set;
 
 //DECL_LOGGER("omg.graph")
 
@@ -121,7 +127,7 @@ public:
 	 * @param newVertex - resulting vertex
 	 */
 	virtual void HandleVertexSplit(VertexId newVertex,
-			vector<pair<EdgeId, EdgeId>> newEdges,
+			vector<std::pair<EdgeId, EdgeId> > newEdges,
 			vector<double> &split_coefficients, VertexId oldVertex) {
 	}
 
@@ -594,7 +600,7 @@ struct Range {
 	}
 };
 
-ostream& operator<<(ostream& os, const Range& range) {
+std::ostream& operator<<(std::ostream& os, const Range& range) {
 	os << "[" << range.start_pos << ", " << range.end_pos << "]";
 	return os;
 }
@@ -608,7 +614,7 @@ struct MappingRange {
 	}
 };
 
-ostream& operator<<(ostream& os, const MappingRange& map_range) {
+std::ostream& operator<<(std::ostream& os, const MappingRange& map_range) {
 	os << map_range.initial_range << " --> " << map_range.mapped_range;
 	return os;
 }
@@ -757,7 +763,7 @@ private:
 template<class Graph>
 const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
 	string delim = "";
-	stringstream ss;
+	std::stringstream ss;
 	for (size_t i = 0; i < edges.size(); ++i) {
 		ss << delim << g.str(edges[i]) << " (" << g.length(edges[i]) << ")";
 		delim = " -> ";
@@ -917,7 +923,7 @@ class PathReceiverCallback: public PathProcessor<Graph>::Callback {
 
 	const Graph& g_;
 
-	set<vector<EdgeId> > paths_;
+	std::set<vector<EdgeId> > paths_;
 public:
 
 	PathReceiverCallback(const Graph& g) :
@@ -931,7 +937,7 @@ public:
 		return paths_.size();
 	}
 
-	set<vector<EdgeId> > paths() {
+	std::set<vector<EdgeId> > paths() {
 		return paths_;
 	}
 };
@@ -987,7 +993,7 @@ class VertexLablerCallback: public PathProcessor<Graph>::Callback {
 
 	Graph& g_;
 	size_t count_;
-	set<VertexId> vertices_;
+	std::set<VertexId> vertices_;
 public:
 
 	VertexLablerCallback(Graph& g) :
@@ -1004,7 +1010,7 @@ public:
 		}
 	}
 
-	const set<VertexId>& vertices() {
+	const std::set<VertexId>& vertices() {
 		return vertices_;
 	}
 

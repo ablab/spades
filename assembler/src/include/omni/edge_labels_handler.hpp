@@ -21,6 +21,7 @@
 using namespace omnigraph;
 
 namespace omnigraph {
+using std::map;
 
 //todo ask Shurik to remove new_graph_
 template<class Graph>
@@ -39,7 +40,7 @@ public:
 public:
 	//TODO: integrate this to resolver, remove "from_resolve" parameter
 	EdgeLabelHandler(Graph &new_graph, Graph &old_graph,
-			unordered_map<EdgeId, EdgeId>& from_resolve) :
+			std::unordered_map<EdgeId, EdgeId>& from_resolve) :
 			GraphActionHandler<Graph>(new_graph, "EdgePositionHandler"), new_graph_(
 					new_graph), old_graph_(old_graph) {
 		FillLabels(from_resolve);
@@ -61,7 +62,7 @@ public:
 			GraphActionHandler<Graph>(new_graph, "EdgePositionHandler"), new_graph_(
 					new_graph), old_graph_(old_graph) {
 	}
-	void FillLabels(unordered_map<EdgeId, EdgeId>& from_resolve) {
+	void FillLabels(std::unordered_map<EdgeId, EdgeId>& from_resolve) {
 		for (auto iter = from_resolve.begin(); iter != from_resolve.end();
 				++iter) {
 			if (edge_inclusions.find(iter->second) == edge_inclusions.end()) {
@@ -171,7 +172,7 @@ public:
 
 	std::string str(EdgeId edgeId, boost::function<string(EdgeId)> f =
 			boost::bind(ToString<EdgeId>, _1)) const {
-		stringstream ss;
+		std::stringstream ss;
 		auto it = edge_labels.find(edgeId);
 		if (it != edge_labels.end()) {
 			TRACE("Number of labels " << it->second.size());

@@ -91,10 +91,10 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef int realIdType;
 
-	map<EdgeId, vector<EdgePosition> > EdgesPositions;
+	std::map<EdgeId, vector<EdgePosition> > EdgesPositions;
 	int max_single_gap_;
 public:
-	const map<EdgeId, vector<EdgePosition> > &edges_positions() const {
+	const std::map<EdgeId, vector<EdgePosition> > &edges_positions() const {
 		return EdgesPositions;
 	}
 
@@ -166,7 +166,7 @@ public:
 	}
 
 	std::string str(EdgeId edgeId) const {
-		stringstream ss;
+		std::stringstream ss;
 		auto it = EdgesPositions.find(edgeId);
 		if (it != EdgesPositions.end()) {
 			TRACE("Number of labels " << it->second.size());
