@@ -11,6 +11,8 @@
 #include <string>
 #include <log4cxx/logger.h>
 #include "graph_pack.hpp"
+#include "debruijn_stats.hpp"
+#include "graphio.hpp"
 
 namespace debruijn_graph {
 

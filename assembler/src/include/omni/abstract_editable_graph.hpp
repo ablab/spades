@@ -9,6 +9,7 @@
 #include "sequence/nucl.hpp"
 #include "omni_utils.hpp"
 #include "observable_graph.hpp"
+#include "id_track_handler.hpp"
 
 namespace omnigraph {
 
