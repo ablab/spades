@@ -111,13 +111,8 @@ void ClipTipsForResolver(Graph &g) {
 	
     omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, max_tip_length,
 			max_coverage, max_relative_coverage);
-	vector<EdgeId> edges = tc.ClipTipsForResolver();
+	tc.ClipTipsForResolver();
     
-    //some stats
-    for (size_t i = 0; i < edges.size(); i++) {
-        DEBUG("LEFT " << g.int_id(edges[i]));
-    }
-	
     INFO("Clipping tips for Resolver finished");
 }
 
