@@ -8,7 +8,6 @@
 #ifndef QUAL_HPP_
 #define QUAL_HPP_
 
-#include <array>
 #include <string>
 using namespace std;
 
