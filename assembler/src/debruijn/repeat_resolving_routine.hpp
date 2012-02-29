@@ -21,6 +21,8 @@
 #include  "omni/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 #include "long_contigs/lc_launch.hpp"
+#include "rectangle_resolver.hpp"
+#include "internal_aligner.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -81,6 +83,7 @@ int ContigNumber(map<ConjugateDeBruijnGraph::EdgeId, int, ConjugateDeBruijnGraph
 		return -1;
 	}
 }
+
 
 template<size_t k, class graph_pack>
 void SelectReadsForConsensusBefore(graph_pack& etalon_gp,
@@ -201,6 +204,97 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 		}
 	}
 }
+
+
+
+void SAM_before_resolve(conj_graph_pack& conj_gp){
+	if (cfg::get().sw.produce_align_files && cfg::get().sw.align_before_RR)
+	{
+
+		if (cfg::get().ds.single_first && cfg::get().ds.single_second){
+			io::PairedPureEasyReader paired_reads(
+							make_pair(input_file(cfg::get().ds.first),
+									input_file(cfg::get().ds.second)),
+							0);
+			io::PureEasyReader single_1(input_file(*cfg::get().ds.single_first));
+			io::PureEasyReader single_2(input_file(*cfg::get().ds.single_second));
+
+			io::MultifileReader<io::SingleRead> single_reads(single_1, single_2);
+
+
+			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
+			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
+
+			SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
+			if (cfg::get().sw.align_only_paired)
+				Aligner.AlignPairedReads(paired_reads, cfg::get().output_dir+"align_before_RR.sam");
+			else
+				Aligner.AlignReads(paired_reads, single_reads, cfg::get().output_dir+"align_before_RR.sam");
+
+
+		} else {
+			io::PairedPureEasyReader paired_reads(
+							make_pair(input_file(cfg::get().ds.first),
+									input_file(cfg::get().ds.second)),
+							0);
+			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
+			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
+
+			SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
+			Aligner.AlignPairedReads(paired_reads, cfg::get().output_dir+"align_before_RR.sam");
+
+		}
+	}
+
+}
+
+
+
+void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
+	if (cfg::get().sw.produce_align_files && cfg::get().sw.align_after_RR)
+	{
+
+		if (cfg::get().ds.single_first && cfg::get().ds.single_second){
+			io::PairedPureEasyReader paired_reads(
+							make_pair(input_file(cfg::get().ds.first),
+									input_file(cfg::get().ds.second)),
+							0);
+			io::PureEasyReader single_1(input_file(*cfg::get().ds.single_first));
+			io::PureEasyReader single_2(input_file(*cfg::get().ds.single_second));
+
+			io::MultifileReader<io::SingleRead> single_reads(single_1, single_2);
+
+
+			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
+			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
+
+			ResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(resolved_gp.g, conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
+			if (cfg::get().sw.align_only_paired)
+				Aligner.AlignPairedReads(paired_reads, cfg::get().output_dir+"align_after_RR.sam");
+			else
+				Aligner.AlignReads(paired_reads, single_reads, cfg::get().output_dir+"align_after_RR.sam");
+
+
+		} else {
+			io::PairedPureEasyReader paired_reads(
+							make_pair(input_file(cfg::get().ds.first),
+									input_file(cfg::get().ds.second)),
+							0);
+			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
+			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
+
+			ResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(resolved_gp.g, conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
+			Aligner.AlignPairedReads(paired_reads, cfg::get().output_dir+"align_after_RR.sam");
+
+		}
+	}
+
+
+}
+
+
+
+
 
 template<class graph_pack>
 void CleanIsolated(graph_pack& gp) {
@@ -801,6 +895,7 @@ void prepare_jump_index(const Graph& g, const paired_info_index& raw_jump_index,
 	filter.Filter(normalized_jump_index, jump_index);
 }
 
+
 void resolve_repeats() {
 	Sequence genome = cfg::get().ds.reference_genome;
 
@@ -823,6 +918,9 @@ void resolve_repeats() {
 	}
 
 	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
+
+
+	SAM_before_resolve(conj_gp);
 
 	INFO("STAGE == Resolving Repeats");
 
@@ -856,8 +954,16 @@ void resolve_repeats() {
 				process_resolve_repeats(conj_gp, conj_gp.etalon_paired_index,
 						resolved_gp, "graph");
 			} else {
-				process_resolve_repeats(conj_gp, clustered_index, resolved_gp,
-						"graph");
+//				process_resolve_repeats(conj_gp, clustered_index, resolved_gp,
+//						"graph");
+				EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(resolved_gp.g,
+						conj_gp.g);
+
+				process_resolve_repeats(conj_gp, clustered_index, resolved_gp, "graph",
+						labels_after, "", true);
+
+				SAM_after_resolve(conj_gp, resolved_gp, labels_after);
+
 			}
 			if (cfg::get().componential_resolve) {
 				make_dir(cfg::get().output_dir + "resolve_components" + "/");

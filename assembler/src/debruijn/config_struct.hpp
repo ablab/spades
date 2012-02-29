@@ -346,6 +346,16 @@ struct debruijn_config {
 		double weight_threshold;
 	};
 
+	struct SAM_writer {
+		bool produce_align_files;
+		bool output_map_format;
+		bool align_before_RR;
+		bool align_after_RR;
+		bool adjust_align;
+		bool align_only_paired;
+		bool output_broken_pairs;
+	};
+
 	typedef map<info_printer_pos, info_printer> info_printers_t;
 
 public:
@@ -391,7 +401,7 @@ public:
 	position_handler pos;
 	gap_closer gc;
 	jump_cfg jump;
-
+	SAM_writer sw;
 	info_printers_t info_printers;
 };
 
@@ -541,6 +551,20 @@ inline void load(debruijn_config::gap_closer& gc,
 	load(gc.use_extended_mapper , pt, "use_extended_mapper" );
 	load(gc.weight_threshold    , pt, "weight_threshold"    );
 }
+
+
+inline void load(debruijn_config::SAM_writer& sw,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
+	load(sw.produce_align_files , pt, "produce_align_files" );
+	load(sw.output_map_format   , pt, "output_map_format"   );
+	load(sw.align_before_RR     , pt, "align_before_RR"     );
+	load(sw.align_after_RR      , pt, "align_after_RR"      );
+	load(sw.adjust_align        , pt, "adjust_align"        );
+	load(sw.align_only_paired   , pt, "align_only_paired"   );
+	load(sw.output_broken_pairs , pt, "output_broken_pairs" );
+}
+
 
 inline void load(debruijn_config::dataset& ds,
 		boost::property_tree::ptree const& pt, bool complete) {
@@ -717,6 +741,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	}
 
 	load(cfg.gc, pt, "gap_closer");
+	load(cfg.sw, pt, "SAM_writer");
 	load(cfg.need_consensus, pt, "need_consensus");
 	load(cfg.uncorrected_reads, pt, "uncorrected_reads");
 	load(cfg.path_set_graph, pt, "path_set_graph");

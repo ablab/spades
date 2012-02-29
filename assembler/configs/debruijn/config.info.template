@@ -113,6 +113,18 @@ gap_closer
     weight_threshold		2.0
 }
 
+SAM_writer
+{
+	produce_align_files	false
+	output_map_format	false
+	align_before_RR		true
+	align_after_RR		false
+	adjust_align		true
+	align_only_paired	true
+	output_broken_pairs	true
+}
+
+
 
 
 ; consensus

@@ -152,10 +152,12 @@ class SeparateReader : public IReader<PairedRead> {
    */
   explicit SeparateReader(const PairedRead::FilenamesType& filenames,
          size_t insert_size, bool change_order = false,
-         OffsetType offset_type = PhredOffset)
+         OffsetType offset_type = PhredOffset,
+         bool revert_second = true)
       : filenames_(filenames), insert_size_(insert_size),
         change_order_(change_order),
         offset_type_(offset_type),
+        revert_second_(revert_second),
         first_(new Reader(filenames_.first, offset_type_)),
         second_(new Reader(filenames_.second, offset_type_)) {}
 
@@ -198,8 +200,9 @@ class SeparateReader : public IReader<PairedRead> {
     SingleRead sr1, sr2;
     (*first_) >> sr1;
     (*second_) >> sr2;
+    if (revert_second_) sr2 = !sr2;
 
-    pairedread = change_order_ ? PairedRead(!sr2, sr1, insert_size_) : PairedRead(sr1, !sr2, insert_size_);
+    pairedread = change_order_ ? PairedRead(sr2, sr1, insert_size_) : PairedRead(sr1, sr2, insert_size_);
     return *this;
   }
 
@@ -233,6 +236,10 @@ class SeparateReader : public IReader<PairedRead> {
    * @variable Quality offset type.
    */
   OffsetType offset_type_;
+
+  bool revert_second_;
+
+
   /*
    * @variable The first stream (reads from first file).
    */
