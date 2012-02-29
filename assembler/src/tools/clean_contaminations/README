@@ -1,0 +1,9 @@
+To clean contaminations from reads:
+
+1. Run assembler, obtain contigs.
+2. Run "blast_contigs_and_process_output.sh" on those contigs. It will give you a file with blast results: index of genome/sequence, name of genome/sequence, how many contigs aligned to the genome/sequence. 
+3. Choose the genomes that you want to clean out of the reads, note their indexes (first column of the blast_results file).
+4. Run "clean_contam_by_index_id.sh" - you need to specify the path to the reads (either all-in-one file or four files for left, right, unpaired left and unpaired right reads) and the indexes of the genomes.
+5. The result is four files with cleaned reads (left, right, unpaired left, unpaired right) - all the reads that map (by bowtie) to the specified genomes are cleaned out.
+
+The scripts need megablast and bowtie installed, and also the blast database and the blast database index. By default the scripts use the database "/acestorage/blast/db/nt", but you can specify your own with the flag "-d". If you specify the database "/path/to/db/dbname", all of the following must exist: blast database "/path/to/db/dbname" (various files such as dbname.nin), fasta file of blast database "/path/to/db/dbname.fasta", index of fasta file "/path/to/db/dbname.index". The index can be build from the fasta using script "build_index_for_multifasta.py".
