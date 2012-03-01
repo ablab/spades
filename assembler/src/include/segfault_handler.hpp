@@ -39,7 +39,8 @@ private:
             std::cerr << "The program was terminated by segmentation fault" << std::endl;
             print_stacktrace();
 
-            callback()();
+            if (callback())
+            	callback()();
         }
 
         signal(signum, SIG_DFL);
