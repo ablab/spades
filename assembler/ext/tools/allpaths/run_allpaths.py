@@ -3,9 +3,8 @@
 import os
 import sys
 import subprocess
-import itertools
-import matplotlib
 import shutil
+import glob
 
 ########################################################################	
 ### CONFIG & CHECKS 
@@ -16,16 +15,51 @@ WORK_DIR = os.path.join(BUILD_PATH, 'temp')
 DATA_DIR = os.path.join(WORK_DIR, 'genome/data')
 
 ########################################################################
+
 def parse_config_line(config_file, line, value_name, value):
-    if line.startswith(value_name) and len(line.split()) > 1:
-        value=line.split()[1]
+    if line.startswith(value_name) and len(line.split(value_name)) > 1:
+        value = line.split(value_name)[1].split(";")[0].strip()                
         line = ""
         while line.strip() == "":
             line = config_file.readline()
             if not line:
                 print "incorrect config. Exitting.."
                 sys.exit(0)
-    return line, value    
+    return line, value  
+
+def get_quality_encoding(filename):
+    fastq_file = ""
+    if filename.endswith(".gz"):
+        import gzip
+        fastq_file = gzip.open(filename, 'r')    
+    else:
+        fastq_file = open(filename, 'r')
+    i = 0
+    for line in fastq_file:
+        if i == 3:
+            for c in line:
+                if ord(c) < 59:
+                    fastq_file.close()
+                    return "phred+33"
+                if ord(c) > 74:
+                    fastq_file.close()
+                    return "phred+64"
+        i = (i + 1) % 4
+    fastq_file.close()
+
+    return "not_defined"
+
+def convert_sim_lib(sim_lib_read1, sim_lib_read2):
+    print "== converting simulated library to Phred+64 =="
+    import fileinput
+    for lines in fileinput.input(sim_lib_read1, inplace = 1): ## edit file in place
+        lines = lines.replace("I","h")
+        print lines.strip()
+    for lines in fileinput.input(sim_lib_read2, inplace = 1): ## edit file in place
+        lines = lines.replace("I","h")
+        print lines.strip()
+    print "== converting finished =="
+    return
 
 ########################################################################
 
@@ -54,7 +88,7 @@ ploidy=1
 output_contigs=""
 
 line = config_file.readline()
-line, frag_lib  = parse_config_line(config_file, line, "frag_lib", frag_lib)
+line, frag_lib  = parse_config_line(config_file, line, "frag_lib", frag_lib)   
 line, frag_is   = parse_config_line(config_file, line, "insert_size", frag_is)
 frag_is=int(frag_is)
 line, frag_dev  = parse_config_line(config_file, line, "stddev", frag_dev)
@@ -78,16 +112,29 @@ jump_lib        = os.path.expanduser(jump_lib)
 output_contigs  = os.path.expanduser(output_contigs)
 contigs_for_sim = os.path.expanduser(contigs_for_sim)
 
+if ( frag_lib != "" and len(glob.glob(frag_lib)) == 0 ):
+    print "fragment library (" + frag_lib + ")not found. Exitting.."
+    sys.exit(0)
+if ( jump_lib != "" and len(glob.glob(jump_lib)) == 0 ):
+    print "jumping library (" + jump_lib + ") not found. Exitting.."
+    sys.exit(0)
+if ( contigs_for_sim != "" and not os.path.isfile(contigs_for_sim) ):
+    print "contigs for simulation (" + contigs_for_sim + ") not found. Exitting.."
+    sys.exit(0)
+
 if (output_contigs == "" or (frag_lib == "" and jump_lib == "") or ( (frag_lib == "" or jump_lib == "") and contigs_for_sim == "" ) ):
     print "incorrect config. Exitting.."
     sys.exit(0)
 
 ##############################
 # copy sources and make
-subprocess.call(['sh', 'run_allpaths_helper.sh', 'make']) 
+subprocess.call(['sh', 'helper_run_allpaths.sh', 'make']) 
 
 # check if simulation is needed
-jump_inward = False
+frag_simulated = False
+jump_simulated = False
+sim_lib_read1  = ""
+sim_lib_read2  = ""
 if (frag_lib == "" or jump_lib == ""):
     if not os.path.isfile(contigs_for_sim):
         print "contigs for simulation not found. Exitting.."
@@ -101,22 +148,25 @@ if (frag_lib == "" or jump_lib == ""):
         insert_size = jump_is
         stddev      = jump_dev          
 
-    print "== simulating reads (" + sim_lib_dir + "/out.read1.fq and out.read2.fq) =="
+    sim_lib_read1 = sim_lib_dir + "/out.read1.fq"
+    sim_lib_read2 = sim_lib_dir + "/out.read2.fq"
+    print "== simulating reads (" + sim_lib_read1 + " and " + sim_lib_read2 + ") =="
     sys.stdout.flush()
     sys.stderr.flush()
     logfile_out = open(os.path.dirname(wgsim_path) + '/log.txt', 'w')
     logfile_err = open(os.path.dirname(wgsim_path) + '/log.err', 'w')
-    subprocess.call([wgsim_path, contigs_for_sim, sim_lib_dir + '/out.read1.fq', sim_lib_dir + '/out.read2.fq', '-d', str(insert_size), '-s', str(stddev), 
+    subprocess.call([wgsim_path, contigs_for_sim, sim_lib_read1, sim_lib_read2, '-d', str(insert_size), '-s', str(stddev), 
         '-N', '1000000', '-1', '100', '-2', '100', '-e', '0', '-r', '0', '-R', '0', '-X', '0'], stdout=logfile_out, stderr=logfile_err)
     logfile_out.close()
     logfile_err.close()
     print "== simulating finished =="
 
     if (frag_lib == ""):
-        frag_lib = sim_lib_dir + "/out.read?.fq"       
+        frag_lib = sim_lib_dir + "/out.read?.fq"  
+        frag_simulated = True
     else:
         jump_lib = sim_lib_dir + "/out.read?.fq"    
-        jump_inward = True   
+        jump_simulated = True   
 
 ##############################
 # preparing data for allpaths
@@ -133,12 +183,47 @@ in_libs = open(WORK_DIR + '/in_libs.csv', 'w')
 in_libs.write("library_name, project_name, organism_name,     type, paired, frag_size, frag_stddev, insert_size, insert_stddev, read_orientation, genomic_start, genomic_end\n")
 in_libs.write("my_frag,           my_proj,      organism, fragment,      1, " + str(frag_is) + ", "  + str(frag_dev) + ",  ,  ,           inward,             0,           0\n")
 in_libs.write("my_jump,           my_proj,      organism,  jumping,      1,  ,  , " + str(jump_is) + ", "  + str(jump_dev) + ", ")
-if jump_inward:
+if jump_simulated:
     in_libs.write("inward")
 else:
     in_libs.write("outward")
 in_libs.write(",             0,           0")
 in_libs.close()
+
+##############################
+# checking quality encoding
+frag_quality = "phred+33"
+jump_quality = "phred+33"
+if not frag_simulated:
+    frag_1 = glob.glob(frag_lib)[0]
+    if not os.path.isfile(frag_1):
+        print "fragment library (" + frag_1 + ") not found. Exitting.."
+        sys.exit(0)
+    frag_quality = get_quality_encoding(frag_1)
+if not jump_simulated:
+    jump_1 = glob.glob(jump_lib)[0]
+    if not os.path.isfile(jump_1):
+        print "jumping library (" + jump_1 + ") not found. Exitting.."
+        sys.exit(0)
+    jump_quality = get_quality_encoding(jump_1)
+    
+if jump_quality == "not_defined" or frag_quality == "not_defined":
+    print "can't define quality score of one or more libraries. Exitting.."
+    sys.exit(0)
+
+PHRED_64 = 0
+if jump_quality != frag_quality:
+    if not jump_simulated and not frag_simulated:
+        print "different quality score in jumping and fragment library. Exitting.."
+        sys.exit(0)
+    else: # simulated library always in Phred+33 format, so we should convert it to Phred+64
+        convert_sim_lib(sim_lib_read1, sim_lib_read2)
+        PHRED_64 = 1
+else:
+    if frag_quality == "phred+33":
+        PHRED_64 = 0
+    else:   
+        PHRED_64 = 1           
 
 prepare = open(WORK_DIR + '/prepare.sh', 'w')
 prepare.write("#!/bin/sh\n")
@@ -153,10 +238,10 @@ prepare.write(" PLOIDY=" + str(ploidy) + "\\\n")
 prepare.write(" IN_GROUPS_CSV=" + WORK_DIR + '/in_groups.csv' + "\\\n")
 prepare.write(" IN_LIBS_CSV=" + WORK_DIR + '/in_libs.csv' + "\\\n")
 prepare.write(" OVERWRITE=True\\\n")
-prepare.write(" PHRED_64=0\n")
+prepare.write(" PHRED_64=" + str(PHRED_64) + "\n")
 prepare.close()
 
-subprocess.call(['sh', 'run_allpaths_helper.sh', 'prepare'])
+subprocess.call(['sh', 'helper_run_allpaths.sh', 'prepare'])
 
 ##############################
 # run assembler
@@ -176,7 +261,7 @@ assemble.write(" TARGETS=standard\\\n")
 assemble.write(" OVERWRITE=True\n")
 assemble.close()
 
-subprocess.call(['sh', 'run_allpaths_helper.sh', 'assemble'])
+subprocess.call(['sh', 'helper_run_allpaths.sh', 'assemble'])
 
 ##############################
 # moving contigs to final place

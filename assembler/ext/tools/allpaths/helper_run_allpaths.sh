@@ -20,14 +20,18 @@ then
     fi
     if [ ! -d ${APSRC} ]
     then
-        echo "copying allpaths"
-        cp -r ./allpaths_src ${APSRC}
-        ./${APSRC}/configure >${BUILD_DIR}/make.log 2>${BUILD_DIR}/make.err
+        echo "== copying allpaths =="
+        cp -r ./allpaths_src ${APSRC}        
         cp -r ./wgsim_src ${WGSIMSRC}
+        echo "== copying allpaths finished =="
     fi
 
     echo "== making ALLPATHS =="
     cd ${APSRC}      
+    if [ ! -f Makefile ]
+    then
+        ./configure >${BUILD_DIR}/make.log 2>${BUILD_DIR}/make.err
+    fi
     make >>${BUILD_DIR}/make.log 2>>${BUILD_DIR}/make.err
     cd ${APSRC}/src/allpaths_cache/
     chmod +x *.pl   
@@ -45,7 +49,7 @@ export PERL5LIB=$APSRC/src/allpaths_cache/
 if [ $1 = "prepare" ]
 then   
     echo "== preparing data =="
-    sh ${WORK_DIR}/prepare.sh >${WORK_DIR}/prepare.out 2>${WORK_DIR}/prepare.err
+    sh ${WORK_DIR}/prepare.sh >${WORK_DIR}/prepare.log 2>${WORK_DIR}/prepare.err
     echo "== preparing data finished =="
 
     exit
@@ -54,7 +58,7 @@ fi
 if [ $1 = "assemble" ]
 then   
     echo "== assembling data =="
-    sh ${WORK_DIR}/assemble.sh >${WORK_DIR}/assemble.out 2>${WORK_DIR}/assemble.err
+    sh ${WORK_DIR}/assemble.sh >${WORK_DIR}/assemble.log 2>${WORK_DIR}/assemble.err
     echo "== assembling data finished =="
 
     exit
