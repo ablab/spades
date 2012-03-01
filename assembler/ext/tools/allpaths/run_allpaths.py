@@ -113,7 +113,7 @@ output_contigs  = os.path.expanduser(output_contigs)
 contigs_for_sim = os.path.expanduser(contigs_for_sim)
 
 if ( frag_lib != "" and len(glob.glob(frag_lib)) == 0 ):
-    print "fragment library (" + frag_lib + ")not found. Exitting.."
+    print "fragment library (" + frag_lib + ") not found. Exitting.."
     sys.exit(0)
 if ( jump_lib != "" and len(glob.glob(jump_lib)) == 0 ):
     print "jumping library (" + jump_lib + ") not found. Exitting.."
@@ -142,6 +142,9 @@ if (frag_lib == "" or jump_lib == ""):
 
     wgsim_path = os.path.join(BUILD_PATH, 'wgsim_src/wgsim')  
     sim_lib_dir = os.path.dirname(output_contigs)
+    if not os.path.isdir(sim_lib_dir):
+        os.makedirs(sim_lib_dir)
+
     insert_size = frag_is
     stddev      = frag_dev
     if (jump_lib == ""):
@@ -153,8 +156,8 @@ if (frag_lib == "" or jump_lib == ""):
     print "== simulating reads (" + sim_lib_read1 + " and " + sim_lib_read2 + ") =="
     sys.stdout.flush()
     sys.stderr.flush()
-    logfile_out = open(os.path.dirname(wgsim_path) + '/log.txt', 'w')
-    logfile_err = open(os.path.dirname(wgsim_path) + '/log.err', 'w')
+    logfile_out = open(os.path.dirname(wgsim_path) + '/sim.log', 'w')
+    logfile_err = open(os.path.dirname(wgsim_path) + '/sim.err', 'w')
     subprocess.call([wgsim_path, contigs_for_sim, sim_lib_read1, sim_lib_read2, '-d', str(insert_size), '-s', str(stddev), 
         '-N', '1000000', '-1', '100', '-2', '100', '-e', '0', '-r', '0', '-R', '0', '-X', '0'], stdout=logfile_out, stderr=logfile_err)
     logfile_out.close()
@@ -171,7 +174,7 @@ if (frag_lib == "" or jump_lib == ""):
 ##############################
 # preparing data for allpaths
 if not os.path.isdir(WORK_DIR):
-    os.mkdir(WORK_DIR)
+    os.makedirs(WORK_DIR)
 
 in_groups = open(WORK_DIR + '/in_groups.csv', 'w')
 in_groups.write("library_name, group_name, file_name\n")

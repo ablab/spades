@@ -45,17 +45,22 @@ algorithmic-biology/assembler/build/ext/allpaths/make.log and make.err
 
 These files will be APPENDED with new information every time you you run the script
 
-2. ALLPATHS data preparation log:
+2. WGSim's simulation logs (if was simulation)
+algorithmic-biology/assembler/build/ext/allpaths/wgsim_src/sim.log and sim.err
+
+These files will be OVERWRITTEN every time you run the script
+
+3. ALLPATHS data preparation log:
 algorithmic-biology/assembler/build/ext/allpaths/temp/prepare.log and prepare.err
 
 These files will be OVERWRITTEN every time you run the script
 
-3. ALLPATHS assembling log:
+4. ALLPATHS assembling log:
 algorithmic-biology/assembler/build/ext/allpaths/temp/assemble.log and assemble.err
 
 These files will be OVERWRITTEN every time you run the script
 
-4. internal ALLPATHS' logs:
+5. internal ALLPATHS' logs:
 algorithmic-biology/assembler/build/ext/allpaths/temp/genome/make_log/data/run/test/*
 
 There are separate folders for every run (titled with date and time).
