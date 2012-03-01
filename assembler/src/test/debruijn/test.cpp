@@ -38,8 +38,9 @@ namespace debruijn_graph {
 		io::SingleRead read;
 		while (!assembly_to_thread.eof()) {
 			assembly_to_thread >> read;
-			WriteComponentsAlongPath(gp.g, labeler, output_dir + read.name() + ".dot"
-					, read.name(), /*split_edge_length*/400, mapper.MapSequence(read.sequence())
+			make_dir(output_dir + read.name());
+			WriteComponentsAlongPath(gp.g, labeler, output_dir + read.name() + "/.dot"
+					, "g", /*split_edge_length*/400, mapper.MapSequence(read.sequence())
 					, Path<typename Graph::EdgeId>(), Path<typename Graph::EdgeId>(), true);
 		}
 	}
