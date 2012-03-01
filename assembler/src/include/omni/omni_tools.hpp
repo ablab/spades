@@ -567,6 +567,7 @@ public:
 		vector<double> weights = CollectWeights();
 		vector < size_t > histogram = ConstructHistogram(weights);
 		double result = FindThreshold(histogram);
+		result = std::min(AvgCoverage(), result);
 		INFO("Threshold finding finished. Threshold is set to " << result);
 		return result;
 	}
