@@ -268,8 +268,8 @@ subprocess.call(['sh', 'helper_run_allpaths.sh', 'assemble'])
 
 ##############################
 # moving contigs to final place
-contigs = DATA_DIR + '/run/test/final.contigs.fasta'
-scaffold = DATA_DIR + '/run/test/final.assembly.fasta'
+contigs = DATA_DIR + '/run/ASSEMBLIES/test/final.contigs.fasta'
+scaffold = DATA_DIR + '/run/ASSEMBLIES/test/final.assembly.fasta'
 if os.path.isfile(contigs):
     shutil.move(contigs, output_contigs)
 else:
