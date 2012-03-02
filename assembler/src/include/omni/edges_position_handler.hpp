@@ -38,8 +38,8 @@ bool PosCompare(const EdgePosition &a, const EdgePosition &b){
 vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosition> v2, int max_single_gap = 0){
 	vector<EdgePosition> res;
 	if (v1.size() == 0 && v2.size() == 0) return res;
-	if (v1.size() == 0) {res = v2;}
-	if (v2.size() == 0) {res = v1;}
+//	if (v1.size() == 0) {res = v2;}
+//	if (v2.size() == 0) {res = v1;}
 
 	if (v1.size() == 0 || v2.size() == 0) {
 		DEBUG("GluePosition fist parameter size "<<v1.size()<<", second parameter size "<<v2.size());
