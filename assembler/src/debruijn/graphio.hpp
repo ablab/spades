@@ -642,10 +642,12 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 		char contigId[500];
 		read_count = fscanf(file, "%d %d\n", &edge_real_id, &pos_info_count);
 		VERIFY(read_count == 2);
+//		INFO(  edge_real_id);
 		for (int j = 0; j < pos_info_count; j++) {
 			int start_pos, end_pos;
-			read_count = fscanf(file, "%s: %d - %d \n", contigId, &start_pos,
+			read_count = fscanf(file, "%s %d - %d \n", contigId, &start_pos,
 					&end_pos);
+//			INFO (contigId<<" "<< start_pos<<" "<<end_pos);
 			VERIFY(read_count == 3);
 			EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
 			edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId));
