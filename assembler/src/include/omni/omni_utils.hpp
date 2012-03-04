@@ -1381,6 +1381,7 @@ private:
     size_t max_iterations_;
     size_t max_distance_;
     size_t max_tip_length_;
+    size_t max_ec_length_;
     size_t iteration;
       
     EdgeId tip;
@@ -1419,7 +1420,7 @@ private:
 
     // checking whether it is a potential erroneous connection situation. (H - situation)
     bool CheckAlternativeForEC(EdgeId tip, EdgeId alter){
-            if (graph_.length(alter) > graph_.k() + 4) 
+            if (graph_.length(alter) > max_ec_length_) 
                 return false; 
             if (graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)) <= 1 
                 || graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)) <= 1) 
@@ -1545,8 +1546,8 @@ private:
 
 public:
 
-    TipChecker(Graph& graph, size_t max_iterations_, size_t max_distance, size_t max_tip_length):
-    graph_(graph), max_iterations_(max_iterations_), max_distance_(max_distance), max_tip_length_(max_tip_length){
+    TipChecker(Graph& graph, size_t max_iterations_, size_t max_distance, size_t max_tip_length, size_t max_ec_length):
+    graph_(graph), max_iterations_(max_iterations_), max_distance_(max_distance), max_tip_length_(max_tip_length), max_ec_length_(max_ec_length){
     }
 
    

@@ -205,6 +205,7 @@ struct debruijn_config {
             size_t max_iterations;
             bool advanced_checks;
             size_t max_levenshtein;
+            size_t max_ec_length;
 		};
 
 		struct bulge_remover {
@@ -313,6 +314,7 @@ struct debruijn_config {
 	struct position_handler {
 		int max_single_gap;
 		std::string contigs_for_threading;
+		std::string contigs_to_analyze;
 		bool late_threading;
 	};
 
@@ -327,13 +329,14 @@ struct debruijn_config {
 	};
 
 	struct info_printer {
-		bool print_stats;
-		bool detailed_dot_write;
-		bool write_components;
-		string components_for_kmer;
-		string components_for_genome_pos;
-		bool write_components_along_genome;
-		bool save_full_graph;
+        bool print_stats;
+        bool detailed_dot_write;
+        bool write_components;
+        string components_for_kmer;
+        string components_for_genome_pos;
+        bool write_components_along_genome;
+        bool write_components_along_contigs;
+        bool save_full_graph;
 	};
 
 	struct jump_cfg {
@@ -396,6 +399,7 @@ inline void load(debruijn_config::simplification::tip_clipper& tc,
 	load(tc.max_iterations        		, pt, "max_iterations"       );
 	load(tc.advanced_checks     		, pt, "advanced_checks_enabled"      );
 	load(tc.max_levenshtein     		, pt, "max_levenshtein"      );
+	load(tc.max_ec_length   		    , pt, "max_ec_length"      );
 }
 
 inline void load(working_stage& entry_point,
@@ -514,10 +518,10 @@ inline void load(debruijn_config::repeat_resolver& rr,
 inline void load(debruijn_config::position_handler& pos,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
-
-	load(pos.max_single_gap, pt, "max_single_gap");
-	load(pos.contigs_for_threading, pt, "contigs_for_threading");
-	load(pos.late_threading, pt, "late_threading");
+	load(pos.max_single_gap         , pt, "max_single_gap"		 );
+	load(pos.contigs_for_threading  , pt, "contigs_for_threading");
+	load(pos.contigs_to_analyze  , pt, "contigs_to_analyze");
+	load(pos.late_threading         , pt, "late_threading"		 );
 }
 
 inline void load(debruijn_config::gap_closer& gc,
@@ -593,19 +597,18 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.removal_checks_enabled, pt, "removal_checks_enabled");
 }
 
-inline void load(debruijn_config::info_printer& printer,
-		boost::property_tree::ptree const& pt, bool complete) {
-	using config_common::load;
+inline void load(debruijn_config::info_printer& printer, boost::property_tree::ptree const& pt, bool complete)
+{
+    using config_common::load;
 
-	load(printer.print_stats, pt, "print_stats", complete);
-	load(printer.detailed_dot_write, pt, "detailed_dot_write", complete);
-	load(printer.write_components, pt, "write_components", complete);
-	load(printer.components_for_kmer, pt, "components_for_kmer", complete);
-	load(printer.components_for_genome_pos, pt, "components_for_genome_pos",
-			complete);
-	load(printer.write_components_along_genome, pt,
-			"write_components_along_genome", complete);
-	load(printer.save_full_graph, pt, "save_full_graph", complete);
+    load(printer.print_stats				  ,	pt, "print_stats"                   , complete);
+    load(printer.detailed_dot_write			  , pt, "detailed_dot_write"            , complete);
+    load(printer.write_components			  , pt, "write_components"              , complete);
+    load(printer.components_for_kmer		  , pt, "components_for_kmer"           , complete);
+    load(printer.components_for_genome_pos	  , pt, "components_for_genome_pos"     , complete);
+    load(printer.write_components_along_genome,	pt, "write_components_along_genome" , complete);
+    load(printer.write_components_along_contigs,	pt, "write_components_along_contigs" , complete);
+    load(printer.save_full_graph			  ,	pt, "save_full_graph"			  	, complete);
 }
 
 inline void load(debruijn_config::info_printers_t& printers,

@@ -9,6 +9,7 @@ info_printers
        components_for_genome_pos        "" ; (k+1)-mers starting on this positions will be investigated
 	   components_for_kmer              ""
        write_components_along_genome    false
+       write_components_along_contigs   false
        save_full_graph                  false
     }
 

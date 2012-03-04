@@ -390,6 +390,33 @@ void WriteGraphComponentsAlongGenome(const Graph& g,
 	INFO("Writing graph components along genome finished");
 }
 
+void WriteGraphComponentsAlongContigs(const Graph& g,
+		const EdgeIndex<K + 1, Graph>& index,
+		const KmerMapper<K + 1, Graph>& kmer_mapper,
+		const GraphLabeler<Graph>& labeler, 
+		const string& folder,
+		const string &graph_name, size_t split_edge_length) {
+
+	INFO("Writing graph components along contigs");
+
+	//typedef MappingPath<EdgeId> map_path_t;
+
+    //typedef graph_pack<ConjugateDeBruijnGraph, K> gp_t;
+    io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze);
+    contigs_to_thread.reset();
+
+    NewExtendedSequenceMapper<K + 1, Graph> mapper(g, index, kmer_mapper);
+
+    io::SingleRead read;
+    while (!contigs_to_thread.eof()) {
+        contigs_to_thread >> read;
+        make_dir(folder + read.name());
+        WriteComponentsAlongPath(g, labeler, folder + read.name() + "/" + "g.dot"
+                , graph_name, /*split_edge_length*/400, mapper.MapSequence(read.sequence())
+                , Path<Graph::EdgeId>(), Path<Graph::EdgeId>(), true);
+    }
+	INFO("Writing graph components along contigs finished");
+}
 void WriteKmerComponent(conj_graph_pack &gp,
 		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
 		const string& graph_name, Path<Graph::EdgeId> path1,
@@ -436,7 +463,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
 	if (config.detailed_dot_write || config.write_components
 			|| !config.components_for_kmer.empty()
-			|| config.write_components_along_genome || config.save_full_graph
+			|| config.write_components_along_genome || config.write_components_along_contigs || config.save_full_graph
 			|| !config.components_for_genome_pos.empty()) {
 		path1 = FindGenomeMappingPath<K>(gp.genome, gp.g, gp.index,
 				gp.kmer_mapper).simple_path();
@@ -472,6 +499,13 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		WriteGraphComponentsAlongGenome(gp.g, gp.int_ids, gp.index,
 				gp.kmer_mapper, labeler, gp.genome, folder + "along_genome/", file_name,
 				"components_along_genome", threshold);
+	}
+
+	if (config.write_components_along_contigs) {
+		make_dir(folder + "along_contigs/");
+		WriteGraphComponentsAlongContigs(gp.g, gp.index,
+				gp.kmer_mapper, labeler, folder + "along_contigs/",
+				"components_along_contigs", *cfg::get().ds.IS);
 	}
 
 	if (config.save_full_graph) {

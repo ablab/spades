@@ -130,7 +130,8 @@ void exec_construction(conj_graph_pack& gp) {
 	}
 	FillEdgesPos(gp, gp.genome, "0");
 	FillEdgesPos(gp, !gp.genome, "1");
-//	FillEdgesPos(gp, cfg::get().pos.contigs_for_threading, 1000);
+	FillEdgesPos(gp, cfg::get().pos.contigs_for_threading, 1000);
+    FillEdgesPos(gp, cfg::get().pos.contigs_to_analyze, 5000);
 }
 
 } //namespace debruijn_graph

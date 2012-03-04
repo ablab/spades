@@ -111,8 +111,8 @@ void ClipTipsForResolver(Graph &g) {
 	
     omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, max_tip_length,
 			max_coverage, max_relative_coverage);
-	tc.ClipTipsForResolver();
-    
+	//vector<EdgeId> edges = tc.ClipTipsForResolver();
+    tc.ClearTips();
     INFO("Clipping tips for Resolver finished");
 }
 
@@ -296,6 +296,25 @@ bool ChimericRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 	return changed;
 }
 
+template<class Graph> 
+void FinalTipClipping(Graph& g){
+	INFO("-----------------------------------------");
+	INFO("Clipping tips");
+	omnigraph::LengthComparator<Graph> comparator(g);
+    auto tc_config = cfg::get().simp.tc;
+	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(cfg::get().ds.RL, g.k(), cfg::get().simp.tc.max_tip_length_coefficient);
+	size_t max_coverage = tc_config.max_coverage;
+	double max_relative_coverage = tc_config.max_relative_coverage;
+
+    omnigraph::TipClipper<Graph, LengthComparator<Graph> > tc(
+			g,
+			comparator,
+			max_tip_length, max_coverage,
+			max_relative_coverage); //removal_handler
+    tc.ClearTips();
+	INFO("Clipping tips finished");
+}
+
 template<class Graph>
 bool MaxFlowRemoveErroneousEdges(Graph &g,
 		const debruijn_config::simplification::max_flow_ec_remover& mfec_config,
@@ -430,13 +449,13 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 
 	INFO("Final TipClipping");
 	
-	ClipTips(graph, removal_handler_f);
-	//vector<EdgeId> edges = ClipTips(graph, removal_handler_f);
+	//vector<EdgeId> edges = ClipTips(graph, removal_handler_f, quality_handler_f);
     //for (size_t i = 0; i < edges.size(); i++) {
         //cout << "LEFT " << graph.int_id(edges[i]) << endl;
         //if (graph.int_id(edges[i])) 
-            //removal_handler_f(edges[i]);       
+            //removal_handler_f1(edges[i]);       
     //}
+    FinalTipClipping(graph);
 	printer(ipp_final_tip_clipping);
 
 	INFO("Final BulgeRemoval");

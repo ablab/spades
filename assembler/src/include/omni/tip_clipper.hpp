@@ -204,7 +204,7 @@ public:
         size_t good_total = 0;
 		TRACE("Tip clipping started");
         
-        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_);
+        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_, cfg::get().simp.tc.max_ec_length);
 
 		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
 			EdgeId tip = *iterator;
@@ -214,7 +214,7 @@ public:
 				if (AdditionalCondition(tip)) {
                     TRACE("Additional sequence comparing");
                     removed++;
-                    if (false && TipHasAVeryLowRelativeCoverage(tip)){
+                    if (TipHasAVeryLowRelativeCoverage(tip)){
 					    TRACE("Edge " << tip << " judged to be a tip with a very low coverage");
                         removed_with_check++;
 
@@ -256,13 +256,14 @@ public:
         return ans;
 	}
 
-// -------------------------------------Clipping tips for Resolver-------------------------------------
 
-
+// Clipping tips for Resolver
 	void ClipTipsForResolver() {
 		TRACE("Tip clipping started");
-        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_);
-		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
+
+        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_, cfg::get().simp.tc.max_ec_length);
+		
+        for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
 			EdgeId tip = *iterator;
 			TRACE("Checking edge for being tip " << tip);
 			if (IsTip(tip)) {
@@ -303,6 +304,38 @@ public:
 		Compressor<Graph> compressor(graph_);
 		compressor.CompressAllVertices();
 	}
+
+    //maximal corruption
+	void ClearTips() {
+		TRACE("Tip clipping (maximal corruption mode) started");
+        size_t removed = 0;
+        for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
+			EdgeId tip = *iterator;
+			TRACE("Checking edge for being tip " << tip);
+			if (IsTip(tip)) {
+				TRACE("Edge " << tip << " judged to look like a tip topologically");
+				if (AdditionalCondition(tip)) {
+                    TRACE("Edge " << tip << " judged to be a tip");
+                    RemoveTip(tip);
+                    removed++;
+                    TRACE("Edge " << tip << " removed as a tip");
+				} else {
+					TRACE("Edge " << tip << " judged NOT to be tip");
+				}
+			} else {
+				TRACE("Edge " << tip << " judged NOT to look like tip topologically");
+			}
+			TRACE("Try to find next edge");
+			++iterator;
+			TRACE("Use next edge");
+		}
+		TRACE("Tip clipping finished");
+
+        DEBUG("REMOVED " << removed);
+		Compressor<Graph> compressor(graph_);
+		compressor.CompressAllVertices();
+	}
+
 };
 
 template<class Graph, typename Comparator>

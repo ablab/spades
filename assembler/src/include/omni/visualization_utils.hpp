@@ -545,7 +545,7 @@ void WriteComponents(const Graph& g,
 		const GraphLabeler<Graph>& labeler) {
 	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring, v_colorer);
 	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
-			graph_name, 4000);
+			graph_name, 24000);
 	gv.Visualize();
 }
 
