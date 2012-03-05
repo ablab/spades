@@ -9,8 +9,9 @@ all:$(EXEC)
 
 PG=#-pg
 CC=g++
-CFLAGS=-Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I./../include -I./../../ext/include -I./. $(MYCFLAGS) #-DNDEBUG
-LDFLAGS=-L/usr/local/lib -lz -llog4cxx -lapr-1 -laprutil-1 $(PG) $(MYLDFLAGS)
+
+CFLAGS=-c -O3 -g3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I./../include -I./../../ext/include -I./. $(MYCFLAGS) #-DNDEBUG
+LDFLAGS=-O3 -L/usr/local/lib -lz -llog4cxx -lapr-1 -laprutil-1 $(PG) $(MYLDFLAGS)
 DEPSFL=-MM -MG
 
 
@@ -40,7 +41,7 @@ $(builddir)/%.o: %.cpp $(builddir)/.d
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
 	@rm -f $(builddir)/$*.d.tmp
 
-   
+  
 $(builddir)/.d:
 	mkdir -p $(builddir)
 	touch $@        

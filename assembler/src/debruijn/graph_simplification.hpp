@@ -110,7 +110,7 @@ void ClipTipsForResolver(Graph &g) {
 	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
 	
     omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, max_tip_length,
-			max_coverage, max_relative_coverage);
+			max_coverage, max_relative_coverage * 0.5);
 	//vector<EdgeId> edges = tc.ClipTipsForResolver();
     tc.ClearTips();
     INFO("Clipping tips for Resolver finished");
@@ -410,9 +410,6 @@ void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 	//INFO("ErroneousConnectionsRemoval stats");
 }
 
-double aaa(EdgeId){
- return 0.;
-}
 
 void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,

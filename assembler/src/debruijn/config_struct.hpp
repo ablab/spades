@@ -591,6 +591,7 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.cec, pt, "cec"); // cheating erroneous connections remover:
 	load(simp.tec, pt, "tec"); // topology aware erroneous connections remover:
 	// need fix in config file
+    load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
 	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
 
 	load(simp.isolated_min_len, pt, "isolated_min_len");

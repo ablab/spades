@@ -148,9 +148,6 @@ protected:
     }
 
 
-//--------------------------------------------------------------------------------------------------
-
-
 	void CompressSplitVertex(VertexId splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
 			EdgeId edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
