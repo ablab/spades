@@ -6,7 +6,7 @@ import support
 def build_spades(cfg, K):
 
     support.sys_call("./gen_k " + str(K))
-    support.sys.call("make clean")
+    support.sys_call("make clean")
     support.sys_call("make")
 
 def build_spades_n_copy(cfg):
