@@ -48,6 +48,7 @@ enum resolving_mode
 
 enum info_printer_pos {
 	ipp_default = 0,
+    ipp_before_first_gap_closer,
 	ipp_before_simplification,
 	ipp_tip_clipping,
 	ipp_bulge_removal,
@@ -66,7 +67,7 @@ enum info_printer_pos {
 namespace details {
 
 inline const char* info_printer_pos_name(size_t pos) {
-	const char* names[] = { "default", "before_simplification", "tip_clipping",
+	const char* names[] = { "default", "before_first_gap_closer", "before_simplification", "tip_clipping",
 			"bulge_removal", "err_con_removal", "before_final_err_con_removal",
 			"final_err_con_removal", "final_tip_clipping",
 			"final_bulge_removal", "removing_isolated_edges",

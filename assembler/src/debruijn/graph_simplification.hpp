@@ -488,11 +488,9 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor, boost::fun
 }
 
 void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_handler_f,
-		omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
-		const string& output_folder) {
+		omnigraph::GraphLabeler<Graph>& labeler, detail_info_printer& printer, size_t iteration_count) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
-	detail_info_printer printer(gp, labeler, output_folder, "graph.dot");
 	printer(ipp_before_simplification);
 
 	EdgeRemover<Graph> edge_remover(gp.g,

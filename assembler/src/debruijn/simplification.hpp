@@ -49,10 +49,14 @@ void simplify_graph(conj_graph_pack& gp) {
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
 
-	if (cfg::get().gc.enable && cfg::get().gc.before_simplify)
+	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
+
+	detail_info_printer printer(gp, labeler, cfg::get().output_dir, "graph.dot");
+    printer(ipp_before_first_gap_closer);
+	
+    if (cfg::get().gc.enable && cfg::get().gc.before_simplify)
 		CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
 	
-	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
 //	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
 	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g,
@@ -66,8 +70,8 @@ void simplify_graph(conj_graph_pack& gp) {
 			boost::ref(qual_removal_handler), _1);
 
 
-	SimplifyGraph(gp, removal_handler_f, tot_lab, 10,
-			cfg::get().output_dir/*, etalon_paired_index*/);
+	SimplifyGraph(gp, removal_handler_f, labeler, printer, 10
+			/*, etalon_paired_index*/);
 
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
 	cfg::get_writable().ds.avg_coverage = cov_counter.Count();

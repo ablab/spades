@@ -394,6 +394,7 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
 		const EdgeIndex<K + 1, Graph>& index,
 		const KmerMapper<K + 1, Graph>& kmer_mapper,
 		const GraphLabeler<Graph>& labeler, 
+        const Sequence& genome,
 		const string& folder,
 		const string &graph_name, size_t split_edge_length) {
 
@@ -407,13 +408,19 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
 
     NewExtendedSequenceMapper<K + 1, Graph> mapper(g, index, kmer_mapper);
 
+	MappingPath<EdgeId> path1 = FindGenomeMappingPath<K>(genome, g, index, kmer_mapper);
+	MappingPath<EdgeId> path2 = FindGenomeMappingPath<K>(!genome, g, index, kmer_mapper);
+
+
     io::SingleRead read;
     while (!contigs_to_thread.eof()) {
         contigs_to_thread >> read;
         make_dir(folder + read.name());
-        WriteComponentsAlongPath(g, labeler, folder + read.name() + "/" + "g.dot"
-                , graph_name, /*split_edge_length*/400, mapper.MapSequence(read.sequence())
+        MappingPath<Graph::EdgeId> mapping_path = mapper.MapSequence(read.sequence());
+        WriteComponentsAlongPath(g, labeler, folder + read.name() + "/" + ".dot"
+                , graph_name, /*split_edge_length*/400, mapping_path
                 , Path<Graph::EdgeId>(), Path<Graph::EdgeId>(), true);
+                //, path1.simple_path(), path2.simple_path(), true);
     }
 	INFO("Writing graph components along contigs finished");
 }
@@ -504,7 +511,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 	if (config.write_components_along_contigs) {
 		make_dir(folder + "along_contigs/");
 		WriteGraphComponentsAlongContigs(gp.g, gp.index,
-				gp.kmer_mapper, labeler, folder + "along_contigs/",
+				gp.kmer_mapper, labeler, gp.genome, folder + "along_contigs/",
 				"components_along_contigs", *cfg::get().ds.IS);
 	}
 

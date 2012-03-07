@@ -282,6 +282,8 @@ public:
  		}
  	}
 
+private:
+    DECL_LOGGER("EdgesPositionHandler");
 };
 
 }
