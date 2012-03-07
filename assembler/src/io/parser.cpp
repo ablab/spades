@@ -22,9 +22,6 @@
 #include "logging.hpp"
 #include "io/parser.hpp"
 #include "io/fasta_fastq_gz_parser.hpp"
-#include "io/sam_bam_parser.hpp"
-#include "io/sff_parser.hpp"
-#include "io/scf_parser.hpp"
 
 
 namespace io {
@@ -68,20 +65,6 @@ Parser* SelectParser(const std::string& filename,
       (ext == "fq") || (ext == "fa.gz") ||
       (ext == "seq") || (ext == "seq.gz")) {
     return new FastaFastqGzParser(filename, offset_type);
-  }
-  if ((ext == "sam") || (ext == "bam") || 
-      (ext == "sam.gz")) {
-    return new SamBamParser(filename, offset_type);
-  }
-  if ((ext == "sff")) {
-    return new SffParser(filename, offset_type);
-  }
-  // Experimental parser!!! Be carefull using it!!!
-  if ((ext == "scf") || (ext == "abi") ||
-      (ext == "alf") || (ext == "pln") ||
-      (ext == "exp") || (ext == "ctf") ||
-      (ext == "str") || (ext == "bio")) {
-    return new ScfParser(filename, offset_type);
   }
   ERROR("Unknown file extention in input!"); 
   return NULL;

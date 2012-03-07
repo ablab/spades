@@ -5,7 +5,7 @@
  *      Author: alexeyka
  */
 
-#include <fftw3.h>
+//#include <fftw3.h>
 #include <iostream>
 #include <math.h>
 #include "verify.hpp"
