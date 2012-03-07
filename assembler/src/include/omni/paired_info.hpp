@@ -549,7 +549,7 @@ public:
 		this->RemoveEdgeInfo(e);
 	}
 
-	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
+	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
 		this->AddPairInfo(PairInfo<EdgeId>(new_edge, new_edge, 0, 0.0, 0.));
 		int shift = 0;
 		for (size_t i = 0; i < old_edges.size(); ++i) {

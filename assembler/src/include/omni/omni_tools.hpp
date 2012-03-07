@@ -89,6 +89,7 @@ public:
 		TRACE("Vertex compressing started");
 		//SmartVertexIterator<Graph> end = graph_.SmartVertexEnd();
 
+		//todo is it still true???
 		//in current implementation will work incorrectly if smart iterator won't give vertex and its conjugate
 		//(in case of self-conjugate edges)
 		for (auto it = graph_.SmartVertexBegin(); !it.IsEnd(); ++it) {

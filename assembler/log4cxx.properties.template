@@ -92,6 +92,17 @@ log4j.appender.dt_stdout.threshold=TRACE
 log4j.appender.dt_stdout.layout=org.apache.log4j.PatternLayout
 log4j.appender.dt_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
 
+########## Section for DTLS ##########
+
+log4j.category.dtls=INFO, dtls_stdout
+
+log4j.appender.dtls_stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.dtls_stdout.threshold=TRACE
+log4j.appender.dtls_stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.dtls_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+
+#log4j.category.dtls.AssemblyComparer=TRACE
+
 ########## Section for CT ##########
 
 log4j.category.ct=DEBUG, ct_file, ct_stdout

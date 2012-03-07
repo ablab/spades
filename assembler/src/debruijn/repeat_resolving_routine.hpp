@@ -481,7 +481,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 template<class graph_pack>
 set<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(const graph_pack& origin_gp, typename graph_pack::graph_t::EdgeId& first_edge, typename graph_pack::graph_t::EdgeId& second_edge) {
-	PathReceiverCallback <typename graph_pack::graph_t> callback(origin_gp.g);
+	PathStorageCallback <typename graph_pack::graph_t> callback(origin_gp.g);
 	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, 0, *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var),
 																origin_gp.g.EdgeEnd(first_edge),
 																origin_gp.g.EdgeStart(second_edge), callback);
@@ -493,7 +493,7 @@ set<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(const
 
 template<class graph_pack>
 size_t GetAllPathsQuantity (const graph_pack& origin_gp, typename graph_pack::graph_t::EdgeId& first_edge, typename graph_pack::graph_t::EdgeId& second_edge , double dist) {
-	PathReceiverCallback <typename graph_pack::graph_t> callback(origin_gp.g);
+	PathStorageCallback <typename graph_pack::graph_t> callback(origin_gp.g);
 	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, dist - origin_gp.g.length(first_edge) - size_t(*cfg::get().ds.is_var), dist - origin_gp.g.length(first_edge) + size_t(*cfg::get().ds.is_var),
 																	origin_gp.g.EdgeEnd(first_edge),
 																	origin_gp.g.EdgeStart(second_edge), callback);
@@ -805,9 +805,9 @@ void resolve_repeats() {
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
 
 	if (cfg::get().pos.late_threading) {
-		FillEdgesPos(conj_gp, conj_gp.genome, "10");
-		FillEdgesPos(conj_gp, !conj_gp.genome, "11");
-		FillEdgesPos(conj_gp, cfg::get().pos.contigs_for_threading, 10000);
+		FillPos(conj_gp, conj_gp.genome, "10");
+		FillPos(conj_gp, !conj_gp.genome, "11");
+		FillPos(conj_gp, cfg::get().pos.contigs_for_threading, 10000);
 	}
 
 	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);

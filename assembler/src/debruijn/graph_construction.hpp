@@ -142,6 +142,13 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	INFO("Graph condensed");
 }
 
+template<size_t k, class Graph>
+void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
+		io::IReader<io::SingleRead>& stream1, io::IReader<io::SingleRead>& stream2) {
+	io::MultifileReader<io::SingleRead> composite_reader(stream1, stream2);
+	ConstructGraph<k, Graph>(g, index, composite_reader);
+}
+
 template<size_t k>
 void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
 SingleReadStream& stream, SingleReadStream* contigs_stream = 0) {

@@ -119,7 +119,7 @@ public:
 };
 
 template<class Graph, typename ElementId>
-class AbstractColorer {
+class ElementColorer {
 public:
 	virtual string GetColour(ElementId element) const = 0;
 
@@ -130,26 +130,112 @@ public:
 		}
 		return result;
 	}
+
+	virtual ~ElementColorer() {
+	}
+};
+
+//template<class Graph>
+//class VertexColorer : public ElementColorer<Graph, typename Graph::VertexId> {
+//
+//};
+//
+//template<class Graph>
+//class EdgeColorer : public ElementColorer<Graph, typename Graph::EdgeId> {
+//
+//};
+//
+template<class Graph>
+class GraphColorer {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+public:
+
+	virtual string GetColour(VertexId v) const = 0;
+
+	virtual map<VertexId, string> GetColours(const set<VertexId> &vertices) const = 0;
+
+	virtual string GetColour(EdgeId e) const = 0;
+
+	virtual map<EdgeId, string> GetColours(const set<EdgeId> &edges) const = 0;
+
+	virtual ~GraphColorer() {
+	}
+};
+
+template<class Graph>
+class CompositeGraphColorer: public GraphColorer<Graph> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	const auto_ptr<ElementColorer<Graph, VertexId>> vertex_colorer_;
+	const auto_ptr<ElementColorer<Graph, EdgeId>> edge_colorer_;
+public:
+//	CompositeGraphColorer(auto_ptr<ElementColorer<Graph, VertexId>> vertex_colorer
+//			, auto_ptr<ElementColorer<Graph, EdgeId>> edge_colorer) :
+//				vertex_colorer_(vertex_colorer),
+//				edge_colorer_(edge_colorer) {
+//
+//	}
+
+	CompositeGraphColorer(ElementColorer<Graph, VertexId>* vertex_colorer
+			, ElementColorer<Graph, EdgeId>* edge_colorer) :
+				vertex_colorer_(vertex_colorer),
+				edge_colorer_(edge_colorer) {
+
+	}
+
+	/*virtual */string GetColour(VertexId v) const {
+		return vertex_colorer_->GetColour(v);
+	}
+
+	/*virtual */map<VertexId, string> GetColours(const set<VertexId> &vertices) const {
+		return vertex_colorer_->GetColours(vertices);
+	}
+
+	/*virtual */string GetColour(EdgeId e) const {
+		return edge_colorer_->GetColour(e);
+	}
+
+	/*virtual */map<EdgeId, string> GetColours(const set<EdgeId> &edges) const {
+		return edge_colorer_->GetColours(edges);
+	}
+
 };
 
 template<class Graph, typename ElementId>
-class MapColorer : public AbstractColorer<Graph, ElementId> {
+class MapColorer : public ElementColorer<Graph, ElementId> {
 private:
 	map<ElementId, string> color_map_;
+	optional<string> default_color_;
 public:
 	MapColorer(const map<ElementId, string> &color_map) : color_map_(color_map) {
 	}
 
+	MapColorer(const map<ElementId, string> &color_map, const string& default_color) :
+		color_map_(color_map),
+		default_color_(default_color) {
+	}
+
 	virtual string GetColour(ElementId element) const {
 		auto it = color_map_.find(element);
-		VERIFY(it != color_map_.end());
-		return it->second;
+		if (it != color_map_.end()) {
+			return it->second;
+		} else {
+			if (default_color_) {
+				return *default_color_;
+			} else {
+				VERIFY(false);
+			}
+		}
 	}
 
 };
 
 template<class Graph>
-class BorderVertexColorer : public AbstractColorer<Graph, typename Graph::VertexId> {
+class BorderVertexColorer : public ElementColorer<Graph, typename Graph::VertexId> {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
@@ -198,48 +284,32 @@ class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	const omnigraph::GraphLabeler<Graph>& gl_;
-	const map<EdgeId, string>& edge_colors_;
-	const AbstractColorer<Graph, VertexId> &vertex_colours_;
-	const string default_color_;
-	const string border_vertex_color_;
-
-	string EdgeColor(EdgeId e) {
-		string edge_color = default_color_;
-		auto edge_colors_it = edge_colors_.find(e);
-		if (edge_colors_it != edge_colors_.end()) {
-			edge_color = (*edge_colors_it).second;
-		}
-		return edge_color;
-	}
+	const GraphColorer<Graph> &colorer_;
 
 public:
 	ColoredGraphVisualizer(const Graph& g, gvis::GraphPrinter<VertexId>& gp,
 			const omnigraph::GraphLabeler<Graph>& gl,
-			const map<EdgeId, string>& edge_colors,
-			const AbstractColorer<Graph, VertexId> &vertex_colours,
-			const string& default_color = "",
-			const string& border_vertex_color = "yellow") :
-			super(g, gp), gl_(gl), edge_colors_(edge_colors), vertex_colours_(vertex_colours), default_color_(
-					default_color), border_vertex_color_(border_vertex_color) {
+			const GraphColorer<Graph> &colorer) :
+			super(g, gp), gl_(gl), colorer_(colorer) {
 	}
 
 	virtual void Visualize(const vector<VertexId>& vertices) {
 		set<VertexId> vertex_set(vertices.begin(), vertices.end());
-		map<VertexId, string> vertex_colour_map = vertex_colours_.GetColours(vertex_set);
+		map<VertexId, string> vertex_colour_map = colorer_.GetColours(vertex_set);
 
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			super::gp_.AddVertex(*v_it, gl_.label(*v_it), vertex_colour_map[*v_it]);
 		}
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			const vector<EdgeId> edges = super::g_.OutgoingEdges(*v_it);
-			TRACE("working with vertex " << *v_it);
+			TRACE("Working with vertex " << *v_it);
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
 				VertexId edge_end = super::g_.EdgeEnd(*e_it);
 				TRACE(
 						super::g_.coverage(*e_it) << " " << super::g_.length(*e_it));
 				if (vertex_set.count(edge_end) > 0) {
 					super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it),
-							EdgeColor(*e_it));
+							colorer_.GetColour(*e_it));
 					TRACE("Edge added");
 				}
 			}
@@ -309,10 +379,36 @@ public:
 	}
 };
 
+// edge_colorer management is passed here
+template <class Graph>
+auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
+		ElementColorer<Graph, typename Graph::EdgeId>* edge_colorer) {
+	return auto_ptr<GraphColorer<Graph>>(new CompositeGraphColorer<Graph>(new BorderVertexColorer<Graph>(g), edge_colorer));
+}
+
+template <class Graph>
+auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
+		const map<typename Graph::EdgeId, string>& edge_color_map,
+		const string& default_color = "") {
+	return DefaultColorer(g, new MapColorer<Graph, typename Graph::EdgeId>(edge_color_map, default_color));
+}
+
+template <class Graph>
+auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
+		const Path<typename Graph::EdgeId>& path1,
+		const Path<typename Graph::EdgeId>& path2) {
+	return DefaultColorer(g, PathColorer<Graph>(g, path1, path2).ColorPath());
+}
+
+template <class Graph>
+auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g) {
+	 map<typename Graph::EdgeId, string> empty_map;
+	return DefaultColorer(g, empty_map);
+}
+
 template<class Graph>
 void WriteToDotFile(const Graph& g, const GraphLabeler<Graph>& labeler,
-		const string& file_name, const string& graph_name /*=
-		 EmptyGraphLabeler<Graph>()*/) {
+		const string& file_name, const string& graph_name = "my_graph") {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
@@ -344,10 +440,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 	//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open(simple_file_name.c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
-	PathColorer<Graph> path_colorer(g, path1, path2);
-	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	BorderVertexColorer<Graph> v_colorer(g);
-	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, coloring, v_colorer);
+	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, *DefaultColorer(g, path1, path2));
 	AdapterGraphVisualizer<Graph> result_vis(g, gv);
 	result_vis.Visualize();
 	filestr.close();
@@ -361,70 +454,68 @@ void WritePaired(
 		const string& graph_name,
 		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
 		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
+	typedef typename Graph::EdgeId EdgeId;
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
-	PathColorer<Graph> path_colorer(g, path1, path2);
-	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	BorderVertexColorer<Graph> v_colorer(g);
-	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, coloring, v_colorer);
+	CompositeGraphColorer<Graph> colorer(/*create_auto_ptr(*/new BorderVertexColorer<Graph>(g)
+			, /*create_auto_ptr(*/new MapColorer<Graph, EdgeId>(PathColorer<Graph>(g, path1, path2).ColorPath(), ""));
+	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, colorer);
 	AdapterGraphVisualizer<Graph> result_vis(g, gv);
 	result_vis.Visualize();
 	filestr.close();
 }
 
 template<class Graph>
-class AbstractVisualizerFactory {
+class VisualizerFactory {
 public:
-	virtual PartialGraphVisualizer<Graph> *GetVisualizerInstance(
+	virtual auto_ptr<PartialGraphVisualizer<Graph>> GetVisualizerInstance(
 			gvis::GraphPrinter<typename Graph::VertexId> &gp) = 0;
-	virtual gvis::GraphPrinter<typename Graph::VertexId> *GetPrinterInstance(
+	virtual auto_ptr<gvis::GraphPrinter<typename Graph::VertexId>> GetPrinterInstance(
 			const string &graph_name, ostream &os) = 0;
-	virtual ~AbstractVisualizerFactory() {
+	virtual ~VisualizerFactory() {
 	}
 };
 
 template<class Graph>
-class ColoredVisualizerFactory: public AbstractVisualizerFactory<Graph> {
+class ColoredVisualizerFactory: public VisualizerFactory<Graph> {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph &graph_;
 	const GraphLabeler<Graph> &labeler_;
-	const map<EdgeId, string> &coloring_;
-	const AbstractColorer<Graph, VertexId> &v_colorer_;
+	const GraphColorer<Graph> &colorer_;
 
-	gvis::GraphPrinter<VertexId>* PrinterInstance(
+	auto_ptr<gvis::GraphPrinter<VertexId>> PrinterInstance(
 			const AbstractConjugateGraph<typename Graph::DataMaster>& graph, const string &graph_name,
 			ostream &os) {
-		return new gvis::DotPairedGraphPrinter<AbstractConjugateGraph<typename Graph::DataMaster>>(
-				graph, graph_name, os);
+		return auto_ptr<gvis::GraphPrinter<VertexId>>(new gvis::DotPairedGraphPrinter<AbstractConjugateGraph<typename Graph::DataMaster>>(
+				graph, graph_name, os));
 	}
 
-	gvis::GraphPrinter<VertexId>* PrinterInstance(
+	auto_ptr<gvis::GraphPrinter<VertexId>> PrinterInstance(
 			const AbstractNonconjugateGraph<typename Graph::DataMaster>& graph, const string &graph_name,
 			ostream &os) {
-		return new gvis::DotGraphPrinter<VertexId>(graph_name, os);
+		return auto_ptr<gvis::GraphPrinter<VertexId>>(new gvis::DotGraphPrinter<VertexId>(graph_name, os));
 	}
 
 public:
 	ColoredVisualizerFactory(const Graph& graph,
 			const GraphLabeler<Graph> &labeler,
-			const map<EdgeId, string> &coloring,
-			const AbstractColorer<Graph, VertexId> &v_colorer) :
-			graph_(graph), labeler_(labeler), coloring_(coloring), v_colorer_(v_colorer) {
+			const GraphColorer<Graph> &colorer) :
+			graph_(graph), labeler_(labeler), colorer_(colorer) {
 	}
 
-	virtual gvis::GraphPrinter<typename Graph::VertexId> *GetPrinterInstance(
+	virtual auto_ptr<gvis::GraphPrinter<typename Graph::VertexId>> GetPrinterInstance(
 			const string &graph_name, ostream &os) {
 		return PrinterInstance(graph_, graph_name, os);
 	}
 
-	virtual PartialGraphVisualizer<Graph> *GetVisualizerInstance(
+	virtual auto_ptr<PartialGraphVisualizer<Graph>> GetVisualizerInstance(
 			gvis::GraphPrinter<typename Graph::VertexId> &gp) {
-		return new ColoredGraphVisualizer<Graph>(graph_, gp, labeler_,
-				coloring_, v_colorer_);
+		return auto_ptr<PartialGraphVisualizer<Graph>>(new ColoredGraphVisualizer<Graph>(graph_, gp, labeler_,
+				colorer_));
 	}
 
 	virtual ~ColoredVisualizerFactory() {
@@ -434,7 +525,7 @@ public:
 template<class Graph>
 class ComponentGraphVisualizer: public GraphVisualizer<Graph> {
 private:
-	AbstractVisualizerFactory<Graph> &factory_;
+	VisualizerFactory<Graph> &factory_;
 	ComponentSplitter<typename Graph::VertexId> &splitter_;
 	const string &file_name_;
 	const string &graph_name_;
@@ -451,7 +542,7 @@ private:
 
 public:
 	ComponentGraphVisualizer(const Graph &graph,
-			AbstractVisualizerFactory<Graph> &factory,
+			VisualizerFactory<Graph> &factory,
 			ComponentSplitter<typename Graph::VertexId> &splitter,
 			const string &file_name, const string &graph_name,
 			size_t max_parts_number = 100) :
@@ -471,9 +562,9 @@ public:
 					splitter_.ComponentName());
 			ofstream os;
 			os.open(component_name.c_str());
-			gvis::GraphPrinter<typename Graph::VertexId> * gp =
+			auto_ptr<gvis::GraphPrinter<typename Graph::VertexId>> gp =
 					factory_.GetPrinterInstance(graph_name_, os);
-			auto visualizer = factory_.GetVisualizerInstance(*gp);
+			auto_ptr<PartialGraphVisualizer<Graph>> visualizer = factory_.GetVisualizerInstance(*gp);
 			visualizer->open();
 			if (component.size() < 1000)
 				visualizer->Visualize(component);
@@ -481,8 +572,6 @@ public:
 			WARN("Too large component " << component.size());
 			visualizer->close();
 			os.close();
-			delete visualizer;
-			delete gp;
 			cnt++;
 		}
 	}
@@ -509,7 +598,7 @@ void WriteErrors(
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 	ComponentSizeFilter<Graph> checker(g, 1500, 2);
 	string error_file_name = InsertComponentName<Graph>(file_name, "error");
-	WriteComponents(g, splitter, checker, graph_name, error_file_name, coloring, labeler);
+	WriteComponents(g, splitter, checker, error_file_name, *DefaultColorer(g, coloring), labeler);
 
 //	PathColorer<Graph> path_colorer(g, path1, path2);
 //	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
@@ -539,11 +628,11 @@ void WriteErrors(
 template<class Graph>
 void WriteComponents(const Graph& g,
 		ComponentSplitter<typename Graph::VertexId> &splitter,
-		const string& graph_name, const string& file_name,
-		const map<typename Graph::EdgeId, string> &coloring,
-		const AbstractColorer<Graph, typename Graph::VertexId> &v_colorer,
-		const GraphLabeler<Graph>& labeler) {
-	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring, v_colorer);
+		const string& file_name,
+		const GraphColorer<Graph> &colorer,
+		const GraphLabeler<Graph>& labeler,
+		const string& graph_name = "my_graph") {
+	ColoredVisualizerFactory<Graph> factory(g, labeler, colorer);
 	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
 			graph_name, 24000);
 	gv.Visualize();
@@ -551,66 +640,27 @@ void WriteComponents(const Graph& g,
 
 template<class Graph>
 void WriteComponents(const Graph& g,
-		ComponentSplitter<typename Graph::VertexId> &splitter,
-		const string& graph_name, const string& file_name,
-		const map<typename Graph::EdgeId, string> &coloring,
-		const GraphLabeler<Graph>& labeler) {
-	const BorderVertexColorer<Graph> v_colorer(g);
-	WriteComponents(g, splitter, graph_name, file_name, coloring, v_colorer, labeler);
-}
-
-template<class Graph>
-void WriteComponents(const Graph& g,
 		ComponentSplitter<typename Graph::VertexId> &inner_splitter,
 		const AbstractFilter<vector<typename Graph::VertexId>> &checker,
-		const string& graph_name, const string& file_name,
-		const map<typename Graph::EdgeId, string> &coloring,
-		const AbstractColorer<Graph, typename Graph::VertexId> &v_colorer,
-		const GraphLabeler<Graph>& labeler) {
+		const string& file_name,
+		const GraphColorer<Graph> &colorer,
+		const GraphLabeler<Graph>& labeler,
+		const string& graph_name = "my_graph") {
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
-	WriteComponents<Graph>(g, splitter, graph_name, file_name, coloring, v_colorer,
-			labeler);
+	WriteComponents<Graph>(g, splitter, file_name, colorer,
+			labeler, graph_name);
 }
 
 template<class Graph>
-void WriteComponents(const Graph& g,
-		ComponentSplitter<typename Graph::VertexId> &inner_splitter,
-		const AbstractFilter<vector<typename Graph::VertexId>> &checker,
-		const string& graph_name, const string& file_name,
-		const map<typename Graph::EdgeId, string> &coloring,
-		const GraphLabeler<Graph>& labeler) {
-	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
-	WriteComponents<Graph>(g, splitter, graph_name, file_name, coloring,
-			labeler);
-}
-
-template<class Graph>
-void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
-		const string& file_name, const string& graph_name,
-		size_t split_edge_length,
-		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId>(),
-		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId>()) {
-	PathColorer<Graph> path_colorer(g, path1, path2);
-	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
-	ReliableSplitter<Graph> inner_splitter(g, 60, split_edge_length);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
-	WriteComponents<Graph>(g, inner_splitter, checker, graph_name, file_name,
-			coloring, labeler);
-}
-
-template<class Graph>
-void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
-		const string& file_name, const string& graph_name,
-		size_t split_edge_length,
-		ComponentSplitter<typename Graph::VertexId> &splitter,
-		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId>(),
-		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId>()) {
-	PathColorer<Graph> path_colorer(g, path1, path2);
-	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	ComponentSizeFilter<Graph> checker(g, split_edge_length, 0);
-	WriteComponents<Graph>(g, splitter, checker, graph_name, file_name,
-			coloring, labeler);
+void WriteComponents(const Graph& g, size_t split_edge_length,
+		const string& file_name,
+		const GraphColorer<Graph>& colorer,
+		const GraphLabeler<Graph>& labeler,
+		const string& graph_name = "my_graph") {
+	ReliableSplitter<Graph> splitter(g, 60, split_edge_length);
+	ComponentSizeFilter<Graph> filter(g, split_edge_length, 2);
+	WriteComponents<Graph>(g, splitter, filter, file_name,
+			colorer, labeler, graph_name);
 }
 
 //todo alert!!! magic constants!!!
@@ -618,7 +668,7 @@ void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 template<class Graph>
 void WriteComponentsAlongPath(const Graph& g,
 		const GraphLabeler<Graph>& labeler, const string& file_name,
-		const string& graph_name, size_t split_edge_length,
+		size_t split_edge_length,
 		const MappingPath<typename Graph::EdgeId>& path,
 		Path<typename Graph::EdgeId> color1 = Path<typename Graph::EdgeId>(),
 		Path<typename Graph::EdgeId> color2 = Path<typename Graph::EdgeId>(), bool colour_path = false) {
@@ -634,11 +684,11 @@ void WriteComponentsAlongPath(const Graph& g,
 	}
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
-	ReliableSplitterAlongPath<Graph> inner_splitter(g, 60, split_edge_length,
+	ReliableSplitterAlongPath<Graph> splitter(g, 60, split_edge_length,
 			path);
-	ComponentSizeFilter<Graph> checker(g, 1000000, 0);
-	WriteComponents<Graph>(g, inner_splitter, checker, graph_name, file_name,
-			coloring, labeler);
+	ComponentSizeFilter<Graph> filter(g, 1000000, 0);
+	WriteComponents<Graph>(g, splitter, filter, file_name,
+			*DefaultColorer(g, coloring), labeler);
 }
 
 //todo alert!!! magic constants!!!
@@ -647,13 +697,12 @@ void WriteComponentsAlongGenome(
 		const Graph& g,
 		const GraphLabeler<Graph>& labeler,
 		const string& file_name,
-		const string& graph_name,
 		size_t split_edge_length,
 		MappingPath<typename Graph::EdgeId> color1 = MappingPath<
 				typename Graph::EdgeId>(),
 		MappingPath<typename Graph::EdgeId> color2 = MappingPath<
 				typename Graph::EdgeId>()) {
-	WriteComponentsAlongPath<Graph>(g, labeler, file_name, graph_name,
+	WriteComponentsAlongPath<Graph>(g, labeler, file_name,
 			split_edge_length, color1, color1.simple_path(),
 			color2.simple_path());
 }

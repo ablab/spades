@@ -84,7 +84,7 @@ private:
 						- insert_error_;
 				string read = genome_.substr(p + position_error, size_);
 				IntroduceErrors(read);
-				next_sr_[i] = io::SingleRead("", read, "");
+				next_sr_[i] = io::SingleRead("", read);
 				p += size_ + insertLength_;
 			}
 			current_read_number_++;

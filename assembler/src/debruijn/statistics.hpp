@@ -509,7 +509,7 @@ class MatePairTransformStat: public AbstractStatCounter {
 					EdgeId e1 = info.first;
 					EdgeId e2 = info.second;
 
-					PathReceiverCallback<Graph> counter(g_);
+					PathStorageCallback<Graph> counter(g_);
 
 					PathProcessor<Graph> path_processor(g_,
 							info.d - g_.length(e1), info.d - g_.length(e1),

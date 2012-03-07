@@ -86,7 +86,7 @@ void exec_construction(conj_graph_pack& gp) {
 		if (cfg::get().etalon_graph_mode) {
 			typedef io::VectorReader<io::SingleRead> GenomeStream;
 			GenomeStream genome_stream(
-					io::SingleRead("genome", gp.genome.str(), /*qual*/""));
+					io::SingleRead("genome", gp.genome.str()));
 			construct_graph(genome_stream, gp);
 		} else {
 			vector<ReadStream*> streams;
@@ -128,19 +128,19 @@ void exec_construction(conj_graph_pack& gp) {
 		load_construction(gp, &used_files);
 		copy_files_by_prefix(used_files, cfg::get().output_saves);
 	}
-	FillEdgesPos(gp, gp.genome, "0");
-	FillEdgesPos(gp, !gp.genome, "1");
+	FillPos(gp, gp.genome, "0");
+	FillPos(gp, !gp.genome, "1");
 
 	if (!cfg::get().pos.contigs_for_threading.empty() &&
 		fileExists(cfg::get().pos.contigs_for_threading))
 	{
-		FillEdgesPos(gp, cfg::get().pos.contigs_for_threading, 1000);
+		FillPos(gp, cfg::get().pos.contigs_for_threading, 1000);
 	}
 
 	if (!cfg::get().pos.contigs_to_analyze.empty() &&
 		fileExists(cfg::get().pos.contigs_to_analyze))
 	{
-		FillEdgesPos(gp, cfg::get().pos.contigs_to_analyze, 5000);
+		FillPos(gp, cfg::get().pos.contigs_to_analyze, 5000);
 	}
 }
 

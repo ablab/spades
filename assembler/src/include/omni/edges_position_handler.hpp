@@ -180,6 +180,7 @@ public:
 	EdgesPositionHandler(Graph &g, int max_single_gap = 0) :
 		GraphActionHandler<Graph> (g, "EdgePositionHandler"), max_single_gap_(max_single_gap) {
 	}
+
 	virtual ~EdgesPositionHandler() {
 		TRACE("~EdgePositionHandler ok");
 	}
@@ -226,7 +227,7 @@ public:
 		}
 	 }
 
- 	 virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
+ 	 virtual void HandleMerge(const vector<EdgeId>& oldEdges, EdgeId newEdge) {
 //		 DEBUG("HandleMerge by position handler");
  		 // we assume that all edge have good ordered position labels.
  		 size_t n = oldEdges.size();

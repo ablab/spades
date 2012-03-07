@@ -560,6 +560,12 @@ public:
 
 		return MappingPath<EdgeId>(passed_edges, range_mapping);
 	}
+
+	MappingPath<EdgeId> MapRead(const io::SingleRead &read) const {
+		VERIFY(read.IsValid());
+		return MapSequence(read.sequence());
+	}
+
 private:
 	DECL_LOGGER("NewExtendedSequenceMapper");
 };
@@ -1162,9 +1168,9 @@ public:
 			map<EdgeId, string> empty_coloring;
 			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
 					250);
-			WriteComponents(g_, splitter, "locality_of_edge_" + ToString(g_.int_id(edge))
+			WriteComponents(g_, splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
-					, empty_coloring, labeler_);
+					, *DefaultColorer(g_), labeler_);
 		} else {
 			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 		}

@@ -35,7 +35,7 @@ void Transform(PathSetIndexData<EdgeId> & pathset_index)
                 INFO(gp.g.length(iter->first)<<" : " << gp.g.length(iter->second));
                 if (iter->variance == 0) {
 
-                    PathReceiverCallback<Graph> call_back(gp.g);
+                    PathStorageCallback<Graph> call_back(gp.g);
                     EdgeId first_edge = iter->first;
                     EdgeId second_edge = iter->second;
                     PathProcessor<Graph> path_processor(

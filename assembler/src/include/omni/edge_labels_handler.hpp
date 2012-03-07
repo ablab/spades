@@ -112,7 +112,7 @@ public:
 		WARN("EdgesLabelHandler does not support splits");
 	}
 
-	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
+	virtual void HandleMerge(const vector<EdgeId>& oldEdges, EdgeId newEdge) {
 		TRACE("HandleMerge by edge labels handler");
 		size_t n = oldEdges.size();
 		vector<EdgeId> tmp;

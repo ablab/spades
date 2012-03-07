@@ -39,7 +39,6 @@ class RCReaderWrapper : public IReader<ReadType> {
    * Default destructor.
    */
   /* virtual */ ~RCReaderWrapper() {
-    close();
   }
 
   /* 

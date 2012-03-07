@@ -327,11 +327,12 @@ public:
 		return edge->conjugate();
 	}
 
+protected:
 	/*virtual*/ bool AdditionalCompressCondition(VertexId v) const {
 		return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v)
 				&& EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
 	}
-
+public:
 	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) const {
 		return v1 == v2 || v1 == conjugate(v2);
 	}

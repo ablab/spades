@@ -125,7 +125,11 @@ public:
 	const DataMaster& master() const {
 		return master_;
 	}
-
+protected:
+	virtual bool AdditionalCompressCondition(VertexId v) const {
+		return true;
+	}
+public:
 	virtual const EdgeData& data(EdgeId edge) const = 0;
 
 	virtual const VertexData& data(VertexId v) const = 0;
@@ -243,28 +247,30 @@ public:
 		return IncomingEdgeCount(v) == 0;
 	}
 
-	virtual bool AdditionalCompressCondition(VertexId v) const {
-		return true;
-	}
-
+	//todo refactor compression methods
 	bool CanCompressVertex(VertexId v) const {
 		return OutgoingEdgeCount(v) == 1 && IncomingEdgeCount(v) == 1 /*one-in one-out*/
-		&& GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v) /*not loop*/;
+		&& GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v) /*not loop*/
+		&& AdditionalCompressCondition(v);
 	}
 
 	void CompressVertex(VertexId v) {
 		TRACE("Trying to compress vertex " << v);
 		//VERIFY(CanCompressVertex(v));
-		if (CanCompressVertex(v) && AdditionalCompressCondition(v)) {
-			TRACE("Compressing vertex " << v);
-			vector<EdgeId> edges_to_merge;
-			edges_to_merge.push_back(GetUniqueIncomingEdge(v));
-			edges_to_merge.push_back(GetUniqueOutgoingEdge(v));
-			MergePath(edges_to_merge);
-			TRACE("Vertex compressed");
+		if (CanCompressVertex(v)) {
+			UnsafeCompressVertex(v);
 		} else {
 			TRACE("Vertex " << v << " can't be compressed");
 		}
+	}
+
+	EdgeId UnsafeCompressVertex(VertexId v) {
+		VERIFY(CanCompressVertex(v));
+		TRACE("Compressing vertex " << v);
+		vector<EdgeId> edges_to_merge;
+		edges_to_merge.push_back(GetUniqueIncomingEdge(v));
+		edges_to_merge.push_back(GetUniqueOutgoingEdge(v));
+		return MergePath(edges_to_merge);
 	}
 
 	virtual std::string str(const EdgeId e) const {

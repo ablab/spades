@@ -55,7 +55,7 @@ public:
          *
          * @param s ACGT or 0123-string
          */
-    Sequence(char* s) :
+    explicit Sequence(char* s) :
             from_(0), size_(strlen(s)), rtl_(false) {
         data_ = new SequenceData(s, size_);
         data_->Grab();
@@ -67,7 +67,7 @@ public:
          data_->Grab();
     }
 
-    Sequence(const char* s) :
+    explicit Sequence(const char* s) :
             from_(0), size_(strlen(s)), rtl_(false) {
         data_ = new SequenceData(s, size_);
         data_->Grab();

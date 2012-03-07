@@ -12,6 +12,12 @@ rdt:
 ddt:
 	make -C build/debug/test/debruijn
 
+rdtls:
+	make -C build/release/test/debruijn_tools
+
+ddtls:
+	make -C build/debug/test/debruijn_tools
+
 dit:
 	make -C build/debug/test/include_test
 

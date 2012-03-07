@@ -26,26 +26,6 @@ void ConstructGraphFromGenome(Graph& g, EdgeIndex<k + 1, Graph>& index/*, Covera
 			paired_index, read_stream);
 }
 
-//Prints only basic graph structure!!!
-void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
-		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids,
-		int int_edge_id) {
-	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
-
-	VERIFY_MSG(int_ids.ReturnEdgeId(int_edge_id) != NULL, "Couldn't find edge with id = " << int_edge_id);
-
-	AnyEdgeContainFilter<Graph> filter(g, int_ids.ReturnEdgeId(int_edge_id));
-	FilteringSplitterWrapper<Graph> splitter(inner_splitter, filter);
-	vector<vector<VertexId>> components;
-	while (!splitter.Finished()) {
-		components.push_back(splitter.NextComponent());
-	}
-	VERIFY(components.size() == 1);
-	ConjugateDataPrinter<Graph> printer(g, components.front().begin(),
-			components.front().end(), int_ids);
-	PrintBasicGraph<Graph>(file_name, printer);
-}
-
 using io::SingleRead;
 using io::PairedRead;
 

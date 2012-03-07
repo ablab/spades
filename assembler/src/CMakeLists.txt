@@ -89,3 +89,4 @@ add_subdirectory(debruijn/long_contigs/utils)
 #tests
 add_subdirectory(test/include_test)
 add_subdirectory(test/debruijn)
+add_subdirectory(test/debruijn_tools)

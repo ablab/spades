@@ -43,7 +43,12 @@ enum OffsetType {
 
 //todo extract code about offset from here
 class SingleRead {
+
  public:
+	static string EmptyQuality(const string& seq) {
+		return std::string(seq.size(), (char) 33);
+	}
+
   static const int UNKNOWN_OFFSET = 0;
   static const int PHRED_OFFSET = 33;
   static const int SOLEXA_OFFSET = 64;
@@ -71,6 +76,12 @@ class SingleRead {
              const std::string& seq,
              const std::string& qual)
       : name_(name), seq_(seq), qual_(qual) {
+    UpdateValid();
+  }
+
+  SingleRead(const std::string& name,
+             const std::string& seq)
+      : name_(name), seq_(seq), qual_(EmptyQuality(seq_)) {
     UpdateValid();
   }
 

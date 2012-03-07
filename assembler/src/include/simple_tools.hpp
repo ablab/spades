@@ -41,6 +41,11 @@ std::string ToString(std::vector<T>& t) {
 	return ss.str();
 }
 
+template<class T>
+std::auto_ptr<T> create_auto_ptr(T* t) {
+	return std::auto_ptr<T>(t);
+}
+
 /**
  * Checks if file exists.
  * Analogs: http://www.techbytes.ca/techbyte103.html , http://www.gamedev.net/topic/211918-determining-if-a-file-exists-c/

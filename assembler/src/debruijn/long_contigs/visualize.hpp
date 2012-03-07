@@ -54,10 +54,10 @@ public:
 void WritePathLocality(const conj_graph_pack& gp, const GraphLabeler<Graph>& labeler,
 		const string& folder, const BidirectionalPath& path, size_t edge_split_length
 		, const Path<EdgeId>& color1, const Path<EdgeId>& color2) {
-	WriteComponentsAlongPath(gp.g, labeler, folder + ToString(path.uid) + ".dot", "graph" + ToString(path.uid)
+	WriteComponentsAlongPath(gp.g, labeler, folder + ToString(path.uid) + ".dot"
 			, edge_split_length
 			, as_trivial_mapping_path(gp.g, as_simple_path(gp.g, path))
-			, color1, color2);
+			, color1, color2, true);
 }
 
 void WritePathLocalities(const conj_graph_pack& gp, const string& folder, const std::vector<BidirectionalPath>& paths) {
@@ -82,17 +82,10 @@ void WritePathLocalities(const conj_graph_pack& gp, const string& folder, const 
 }
 
 void WriteGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_name, const string& graph_name, const std::vector<BidirectionalPath>& paths) {
-
-	Path<Graph::EdgeId> path1 = FindGenomePath<K> (gp.genome, gp.g, gp.index);
-	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!gp.genome, gp.g, gp.index);
-
 	std::fstream filestr;
 	filestr.open(file_name.c_str(), std::fstream::out);
 
 	gvis::DotGraphPrinter<Graph::VertexId> printer(graph_name, filestr);
-	PathColorer<Graph> path_colorer(gp.g, path1, path2);
-
-	map<Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 
 	StrGraphLabeler<Graph> str_labeler(gp.g);
 	PathsGraphLabeler<Graph> path_labeler(gp.g, paths);
@@ -100,8 +93,9 @@ void WriteGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_nam
 
 	CompositeLabeler<Graph> composite_labeler(str_labeler, path_labeler, pos_labeler);
 
-	BorderVertexColorer<Graph> v_colorer(gp.g);
-	ColoredGraphVisualizer<Graph> gv(gp.g, printer, composite_labeler, coloring, v_colorer);
+	ColoredGraphVisualizer<Graph> gv(gp.g, printer, composite_labeler
+			, *DefaultColorer(gp.g, FindGenomePath<K> (gp.genome, gp.g, gp.index)
+					, FindGenomePath<K> (!gp.genome, gp.g, gp.index)));
 	AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
 	result_vis.Visualize();
 	filestr.close();

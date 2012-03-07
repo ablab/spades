@@ -1,6 +1,7 @@
 #ifndef OMNI_UTILS_HPP_
 #define OMNI_UTILS_HPP_
 
+#include "simple_tools.hpp"
 #include "queue_iterator.hpp"
 #include "logging.hpp"
 #include "simple_tools.hpp"
@@ -91,7 +92,7 @@ public:
 	 * @param old_edges path of edges to be replaced with single edge
 	 * @param new_edge new edge that was added to be a replacement of path
 	 */
-	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
+	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
 	}
 
 	/**
@@ -919,15 +920,15 @@ public:
 };
 
 template<class Graph>
-class PathReceiverCallback: public PathProcessor<Graph>::Callback {
+class PathStorageCallback: public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
 
-	std::set<vector<EdgeId> > paths_;
+	std::set<vector<EdgeId>> paths_;
 public:
 
-	PathReceiverCallback(const Graph& g) :
+	PathStorageCallback(const Graph& g) :
 			g_(g) {
 	}
 
@@ -938,7 +939,7 @@ public:
 		return paths_.size();
 	}
 
-	std::set<vector<EdgeId> > paths() {
+	std::set<vector<EdgeId>> paths() {
 		return paths_;
 	}
 };

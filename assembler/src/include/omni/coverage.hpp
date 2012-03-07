@@ -102,9 +102,9 @@ public:
 		storage_.erase(edge);
 	}
 
-	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
+	virtual void HandleMerge(const vector<EdgeId>& oldEdges, EdgeId newEdge) {
 		size_t coverage = 0;
-		for (typename vector<EdgeId>::iterator it = oldEdges.begin(); it
+		for (auto it = oldEdges.begin(); it
 				!= oldEdges.end(); ++it) {
 			coverage += KPlusOneMerCoverage(*it);
 		}
