@@ -35,14 +35,28 @@ def prepare_config(filename, cfg, prev_K, last_one):
     substitute_params(filename, subst_dict)
 
 def main():
-    if len(sys.argv) == 2:
-        config_file_name = sys.argv[1]
+    if len(sys.argv) == 2 and os.path.isfile(sys.argv[1]):
+        print("Using config file: " + sys.argv[1])
+        cfg = load_config_from_file(sys.argv[1])
     elif len(sys.argv) == 1:
-        config_file_name = "spades_config.info"
+        cfg = load_config_from_file("spades_config.info")
+        print("Using default config file: spades_config.info")
+        print("Other usages:")
+        print("   ./spades.py <config file>")
+        print("   ./spades.py DATASET input_dir output_dir K [Ks] [paired=true]")
     else:
-        print("Usage ./spades.py <config file>")
-
-    cfg = load_config_from_file(config_file_name)
+        config = {}
+        config['dataset'] = sys.argv[1]
+        config['input_dir'] = sys.argv[2]
+        config['output_dir'] = sys.argv[3]
+        if sys.argv[-1].isdigit():
+            config['iterative_K'] = ' '.join(sys.argv[4:])
+            config['paired_mode'] = 'true'
+        else:
+            config['iterative_K'] = ' '.join(sys.argv[4:-1])
+            config['paired_mode'] = sys.argv[-1]
+        config['output_to_console'] = 'true'
+        cfg = load_config_from_vars(vars_from_lines(['%s %s' % (k, v) for k, v in config.iteritems()]))
 
     def build_folder(cfg):
         import datetime
