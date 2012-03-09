@@ -43,7 +43,7 @@ def main():
         print("Using default config file: spades_config.info")
         print("Other usages:")
         print("   ./spades.py <config file>")
-        print("   ./spades.py DATASET input_dir output_dir K [Ks] [paired=true]")
+        print("   ./spades.py dataset input_dir output_dir K [Ks] [paired=true]")
     else:
         config = {}
         config['dataset'] = sys.argv[1]
