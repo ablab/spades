@@ -61,7 +61,7 @@ def main():
     def build_folder(cfg):
         import datetime
         suffix = datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
-        return cfg.output_dir + cfg.dataset + r"/build_" + suffix + r"/"
+        return cfg.output_dir + '/' + cfg.dataset + '/build_' + suffix + '/'
 
     cfg.__dict__["build_path"] = build_folder(cfg)
     os.makedirs(cfg.build_path)
