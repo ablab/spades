@@ -736,5 +736,95 @@ UNK_YALE_I22_BH4
         reference_genome    N/A
 }
 
+; Betaproteobacterium: estimated size 2.5 Mb
+; expected genome size 2.5 Mb
+UNK_YALE_O11_BH4
+{
+        first               SAG_B_O11/04.reads.0.left.corrected.fastq
+        second              SAG_B_O11/04.reads.0.right.corrected.fastq
+        single_first        SAG_B_O11/04.reads.0.left.unpaired.fastq
+        single_second       SAG_B_O11/04.reads.0.right.unpaired.fastq
+        RL                  101     ; read length
+        single_cell         true
+        reference_genome    N/A
+}
+
+; Betaproteobacterium: estimated size 2.5 Mb
+; expected genome size 2.5 Mb
+UNK_YALE_P14_BH4
+{
+        first               SAG_B_P14/04.reads.0.left.corrected.fastq
+        second              SAG_B_P14/04.reads.0.right.corrected.fastq
+        single_first        SAG_B_P14/04.reads.0.left.unpaired.fastq
+        single_second       SAG_B_P14/04.reads.0.right.unpaired.fastq
+        RL                  101     ; read length
+        single_cell         true
+        reference_genome    N/A
+}
+
+; Gammaproteobacterium
+; expected genome size 3.5 Mb
+UNK_YALE_B02_BH4
+{
+        first               SAG_G1_B02/04.reads.0.left.corrected.fastq
+        second              SAG_G1_B02/04.reads.0.right.corrected.fastq
+        single_first        SAG_G1_B02/04.reads.0.left.unpaired.fastq
+        single_second       SAG_G1_B02/04.reads.0.right.unpaired.fastq
+        RL                  101     ; read length
+        single_cell         true
+        reference_genome    N/A
+}
+
+; Gammaproteobacterium
+; expected genome size 3.5 Mb
+UNK_YALE_I20_BH4
+{
+        first               SAG_G1_I20/04.reads.0.left.corrected.fastq
+        second              SAG_G1_I20/04.reads.0.right.corrected.fastq
+        single_first        SAG_G1_I20/04.reads.0.left.unpaired.fastq
+        single_second       SAG_G1_I20/04.reads.0.right.unpaired.fastq
+        RL                  101     ; read length
+        single_cell         true
+        reference_genome    N/A
+}
+
+; Gammaproteobacterium
+; expected genome size 3.5 Mb
+UNK_YALE_L16_BH4
+{
+        first               SAG_G1_L16/04.reads.0.left.corrected.fastq
+        second              SAG_G1_L16/04.reads.0.right.corrected.fastq
+        single_first        SAG_G1_L16/04.reads.0.left.unpaired.fastq
+        single_second       SAG_G1_L16/04.reads.0.right.unpaired.fastq
+        RL                  101     ; read length
+        single_cell         true
+        reference_genome    N/A
+}
+
+; Gammaproteobacterium
+; expected genome size 3.5 Mb
+UNK_YALE_C04_BH4
+{
+        first               SAG_G2_C04/04.reads.0.left.corrected.fastq
+        second              SAG_G2_C04/04.reads.0.right.corrected.fastq
+        single_first        SAG_G2_C04/04.reads.0.left.unpaired.fastq
+        single_second       SAG_G2_C04/04.reads.0.right.unpaired.fastq
+        RL                  101     ; read length
+        single_cell         true
+        reference_genome    N/A
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
