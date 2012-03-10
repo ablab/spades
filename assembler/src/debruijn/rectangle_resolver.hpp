@@ -36,7 +36,7 @@ public:
 		const std::string sqn_filename = output_dir + "rectangle_before.sqn";
 		const std::string prd_filename = output_dir + "rectangle_before_et.prd";
 		const std::string out_filename = output_dir + "rectangle_after";
-		const std::string d = ToString(cfg::get().ds.IS.get() - K);
+		const std::string d = ToString(cfg::get().ds.IS.get() - cfg::get().ds.RL);
 
 		// Ugly argc / argv
 		int argc = 6;
