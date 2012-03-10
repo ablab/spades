@@ -13,6 +13,7 @@
 #include "graph_pack.hpp"
 #include "debruijn_stats.hpp"
 #include "graphio.hpp"
+#include <Python.h>
 
 namespace debruijn_graph {
 
@@ -26,9 +27,18 @@ public:
 		//conj_graph_pack resolved_gp(gp.genome);
 		conj_graph_pack* resolved_gp = &gp;
 
-		OutputContigs(resolved_gp->g, cfg::get().output_dir + "rectangle_contigs.fasta");
-		PrintGraphPack(cfg::get().output_dir + "/saves/rectangle", *resolved_gp);
-		// TODO: output
+		// Prepare input
+		OutputContigs(resolved_gp->g, output_dir + "before_rectangle_contigs.fasta");
+		PrintGraphPack(output_dir + "/saves/before_rectangle", *resolved_gp);
+
+		// Run RR in Python
+		Py_Initialize();
+		const std::string rr_filename = "src/debruijn/rr2.py";
+		FILE* fp = fopen(rr_filename.c_str(), "r");
+		PyRun_SimpleFile(fp, rr_filename.c_str());
+		Py_Finalize();
+
+		// Load RR output back
 
 		INFO("Rectangle resolving finished");
 	}

@@ -10,8 +10,8 @@ all:$(EXEC)
 PG=#-pg
 CC=g++
 
-CFLAGS=-c -O3 -g3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I./../include -I./../../ext/include -I./. $(MYCFLAGS) #-DNDEBUG
-LDFLAGS=-O3 -L/usr/local/lib -lz -llog4cxx -lapr-1 -laprutil-1 $(PG) $(MYLDFLAGS)
+CFLAGS=-c -O3 -g3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I/usr/include/python2.6 -I./../include -I./../../ext/include -I./. $(MYCFLAGS) #-DNDEBUG
+LDFLAGS=-O3 -L/usr/local/lib -lz -llog4cxx -lpython2.6 -lapr-1 -laprutil-1 $(PG) $(MYLDFLAGS)
 DEPSFL=-MM -MG
 
 

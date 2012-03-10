@@ -25,8 +25,9 @@ add_definitions(-g3)
 add_definitions(-std=c++0x)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 add_definitions(-lcrypto) 
+add_definitions(-lpython2.6) 
 add_definitions(-g -rdynamic)
-#add_definitions(-Wall -Wconversion -Wno-long-long -Wno-deprecated)
+#add_definitions(-Wconversion)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
@@ -44,7 +45,8 @@ endif()
 # common dependencies
 find_package(ZLIB)
 find_package(log4cxx)
-find_package(ssl)
+# find_package(ssl)
+find_package(python)
 
 set (Boost_USE_MULTITHREADED ON)
 find_package(Boost COMPONENTS signals system filesystem test_exec_monitor iostreams REQUIRED)
@@ -59,17 +61,18 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories(${ZLIB_INCLUDE_DIRS})
 include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${ssl_INCLUDE_DIRS})
+# include_directories(${ssl_INCLUDE_DIRS})
 include_directories(${fftw3_INCLUDE_DIRS})
 include_directories(${sparsehash_INCLUDE_DIRS})
-
+include_directories(${python_INCLUDE_DIRS})
 
 set(COMMON_LIBRARIES 
    ${ZLIB_LIBRARIES} 
    ${log4cxx_LIBRARIES} 
    ${Boost_LIBRARIES} 
-   ${ssl_LIBRARIES} 
+#   ${ssl_LIBRARIES} 
    ${fftw3_LIBRARIES}
+   ${python_LIBRARIES}
 #   ${sparsehash_LIBRARIES}
    )
 
