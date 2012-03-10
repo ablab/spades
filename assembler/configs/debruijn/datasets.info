@@ -766,10 +766,10 @@ UNK_YALE_P14_BH4
 ; expected genome size 3.5 Mb
 UNK_YALE_B02_BH4
 {
-        first               SAG_G1_B02/04.reads.0.left.corrected.fastq
-        second              SAG_G1_B02/04.reads.0.right.corrected.fastq
-        single_first        SAG_G1_B02/04.reads.0.left.unpaired.fastq
-        single_second       SAG_G1_B02/04.reads.0.right.unpaired.fastq
+        first               SAG_G1_B02/03.reads.0.left.corrected.fastq
+        second              SAG_G1_B02/03.reads.0.right.corrected.fastq
+        single_first        SAG_G1_B02/03.reads.0.left.unpaired.fastq
+        single_second       SAG_G1_B02/03.reads.0.right.unpaired.fastq
         RL                  101     ; read length
         single_cell         true
         reference_genome    N/A
