@@ -26,7 +26,7 @@
 #include "debruijn_stats.hpp"
 #include "graphio.hpp"
 #include "omni/distance_estimation.hpp"
-#include "omni/advanced_distance_estimation.hpp"
+//#include "omni/advanced_distance_estimation.hpp"
 #include "omni/loop_resolver.hpp"
 #include "check_tools.hpp"
 #include "copy_file.hpp"

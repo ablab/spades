@@ -51,8 +51,7 @@ find_package(python)
 set (Boost_USE_MULTITHREADED ON)
 find_package(Boost COMPONENTS signals system filesystem test_exec_monitor iostreams REQUIRED)
 
-find_package(fftw3)
-find_package(sparsehash)
+#find_package(sparsehash)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
@@ -61,8 +60,8 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories(${ZLIB_INCLUDE_DIRS})
 include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
+
 # include_directories(${ssl_INCLUDE_DIRS})
-include_directories(${fftw3_INCLUDE_DIRS})
 include_directories(${sparsehash_INCLUDE_DIRS})
 include_directories(${python_INCLUDE_DIRS})
 
@@ -71,7 +70,6 @@ set(COMMON_LIBRARIES
    ${log4cxx_LIBRARIES} 
    ${Boost_LIBRARIES} 
 #   ${ssl_LIBRARIES} 
-   ${fftw3_LIBRARIES}
    ${python_LIBRARIES}
 #   ${sparsehash_LIBRARIES}
    )

@@ -49,15 +49,16 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, cfg::get().ds.RL, delta);
 
 		if (cfg::get().advanced_estimator_mode) {
-			AdvancedDistanceEstimator<Graph> estimator(gp.g, paired_index,
-					dist_finder, linkage_distance,
-					cfg::get().ade.threshold, cfg::get().ade.range_coeff,
-					cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
-					cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density,
-					cfg::get().ade.percentage,
-					cfg::get().ade.derivative_threshold);
-
-			estimator.Estimate(clustered_index);
+			ERROR("Advanced estimator is temporary unavailable");
+			//			AdvancedDistanceEstimator<Graph> estimator(gp.g, paired_index,
+//					dist_finder, linkage_distance,
+//					cfg::get().ade.threshold, cfg::get().ade.range_coeff,
+//					cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
+//					cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density,
+//					cfg::get().ade.percentage,
+//					cfg::get().ade.derivative_threshold);
+//
+//			estimator.Estimate(clustered_index);
 		} else {
 			size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 			INFO("Estimating distances");

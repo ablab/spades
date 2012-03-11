@@ -36,7 +36,7 @@
 #include "../graph_simplification.hpp"
 
 #include "omni/distance_estimation.hpp"
-#include "omni/advanced_distance_estimation.hpp"
+//#include "omni/advanced_distance_estimation.hpp"
 
 namespace long_contigs {
 
