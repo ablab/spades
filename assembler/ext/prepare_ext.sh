@@ -29,4 +29,4 @@ function build_sparsehash
    make install
 }
 
-build_sparsehash
+#build_sparsehash

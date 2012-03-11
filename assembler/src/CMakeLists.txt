@@ -62,7 +62,7 @@ include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 
 # include_directories(${ssl_INCLUDE_DIRS})
-include_directories(${sparsehash_INCLUDE_DIRS})
+#include_directories(${sparsehash_INCLUDE_DIRS})
 include_directories(${python_INCLUDE_DIRS})
 
 set(COMMON_LIBRARIES 

@@ -14,7 +14,12 @@
 #include "sequence/seq.hpp"
 #include "cuckoo.hpp"
 #include <tr1/unordered_map>
-#include <google/sparse_hash_map>
+
+//#define USE_SPARSEHASH 1
+#ifdef USE_SPARSEHASH
+	#include <google/sparse_hash_map>
+#endif
+
 
 /*
  * act as DeBruijn graph and Index at the same time :)
@@ -26,7 +31,6 @@
  *
  */
 
-//#define USE_SPARSEHASH 1
 
 template<size_t size_, typename Value>
 class SeqMap {
