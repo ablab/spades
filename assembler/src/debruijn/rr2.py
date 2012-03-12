@@ -561,7 +561,7 @@ if __name__ == '__main__':
     ##########
 
     if len(sys.argv) < 5:
-        print >>logfile, 'Usage: python', sys.argv[0], 'graph.grp sequences.sqn pairedinfo.prd d [outprefix = out]'
+        print >>sys.stderr, 'Usage: python', sys.argv[0], 'graph.grp sequences.sqn pairedinfo.prd d [outprefix = out]'
         exit()
 
     grp_filename = sys.argv[1]
