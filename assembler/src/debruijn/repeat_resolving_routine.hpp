@@ -986,7 +986,7 @@ void resolve_repeats() {
 	}
 
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangle) {
-		debruijn_graph::RectangleResolver::resolve(conj_gp);
+		debruijn_graph::RectangleResolver::resolve(conj_gp, clustered_index);
 	}
 }
 

@@ -78,7 +78,7 @@ class Graph(object):
         return v
 
     def add_edge(self, eid, v1id, v2id, len, conj_id):
-        assert eid != conj_id, "Self-conjugate edges are not supported yet"
+        #assert eid != conj_id, "Self-conjugate edges are not supported yet"
         if eid > self.max_eid or conj_id > self.max_eid:
             self.max_eid = max(eid, conj_id)
         conj = self.es.get(conj_id, None)
@@ -88,6 +88,8 @@ class Graph(object):
         v1.out.append(e)
         v2.inn.append(e)
         self.es[eid] = e
+        if eid == conj_id:
+            conjugate(e, e)
         return e
 
     def add_N_edge(self, v1id, v2id, len, K, conj_id):
@@ -348,9 +350,12 @@ class BGraph(object):
             return
         assert (conj_key not in self.rectangles) and Rectangle.valid(*conj_key), "Bug"
         rect = Rectangle(*rect_key)
-        conj = Rectangle(*conj_key)
         self.rectangles[rect_key] = rect
-        self.rectangles[conj_key] = conj
+        if rect_key == conj_key:
+            conj = rect
+        else:
+            conj = Rectangle(*conj_key)
+            self.rectangles[conj_key] = conj
         conjugate(rect, conj)
         return rect, conj
 
@@ -358,7 +363,7 @@ class BGraph(object):
         for e1id, e2id, Ds, weight in parser.prd(prd_filename):
             e1 = self.graph.get_edge(e1id)
             e2 = self.graph.get_edge(e2id)
-            assert (e1 != e2.conj) and (e2 != e1.conj), "Self-conjugate rectangles aren't supported (even partly)"
+            #assert (e1 != e2.conj) and (e2 != e1.conj), "Self-conjugate rectangles aren't supported (even partly)"
             self.add_rectangle(e1, e2, Ds)
             # manually add all self-rectangles (e-to-e), just to be sure (if they are missing in prd file)
         for e in self.graph.es.itervalues():
@@ -593,9 +598,9 @@ if __name__ == '__main__':
     bgraph.check()
     bgraph.glue()
     bgraph.check()
-    bgraph.filter_diagonals() # optional
+    #bgraph.filter_diagonals() # optional
     bgraph.check()
-    bgraph.scaffold() # optional
+    #bgraph.scaffold() # optional
     ingraph.check()
     bgraph.check()
     bgraph.condense()
@@ -607,6 +612,6 @@ if __name__ == '__main__':
 
     outgraph = bgraph.project()
     outgraph.check()
-    outgraph.fasta(open(outprefix + '_contigs.fasta', 'w'))
+    outgraph.fasta(open(outprefix + '.fasta', 'w'))
     outgraph.stats(logfile)
     outgraph.save(outprefix)

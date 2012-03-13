@@ -13,28 +13,29 @@
 #include "graph_pack.hpp"
 #include "debruijn_stats.hpp"
 #include "graphio.hpp"
+#include "omni/visualization_utils.hpp"
+#include "omni/graph_labeler.hpp"
 #include <Python.h>
 
 namespace debruijn_graph {
 
 class RectangleResolver {
 public:
-	static void resolve(conj_graph_pack& gp) {
+	static void resolve(conj_graph_pack &gp, PairedInfoIndex<Graph>& paired_index) {
 		INFO("Rectangle resolving started");
 		const std::string output_dir = cfg::get().output_dir + "saves/";
 
-		//conj_graph_pack resolved_gp(gp.genome);
-		conj_graph_pack* resolved_gp = &gp;
+		omnigraph::WriteSimple(gp.g, omnigraph::LengthIdGraphLabeler<conj_graph_pack::graph_t>(gp.g), cfg::get().output_dir + "saves/rectangles_before.dot", "rectangles_before_graph");
 
 		// Prepare input
-		OutputContigs(resolved_gp->g, output_dir + "rectangle_before_contigs.fasta");
-		PrintGraphPack(output_dir + "rectangle_before", *resolved_gp);
+		OutputContigs(gp.g, output_dir + "rectangle_before.fasta");
+		PrintWithPairedIndex(output_dir + "rectangle_before", gp, paired_index, true);
 
 		// Init some parameters
 		const std::string rr_filename = "src/debruijn/rr2.py";
 		const std::string grp_filename = output_dir + "rectangle_before.grp";
 		const std::string sqn_filename = output_dir + "rectangle_before.sqn";
-		const std::string prd_filename = output_dir + "rectangle_before_et.prd";
+		const std::string prd_filename = output_dir + "rectangle_before_cl.prd";
 		const std::string out_filename = output_dir + "rectangle_after";
 		const std::string d = ToString(cfg::get().ds.IS.get() - cfg::get().ds.RL);
 
@@ -59,7 +60,7 @@ public:
 		FILE* fp = fopen(rr_filename.c_str(), "r");
 		PyRun_SimpleFile(fp, rr_filename.c_str());
 		Py_Finalize();
-		INFO("Saved to " + out_filename + ".grp .sqn _et.prd .fasta .log");
+		INFO("Saved to " + out_filename + ".grp .sqn .fasta .log");
 
 		// Free memory (somehow without this archaic things?)
 		for (int i = 0; i < 6; ++i) {
