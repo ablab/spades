@@ -4,6 +4,7 @@
 #include "statistics.hpp"
 #include "new_debruijn.hpp"
 #include "graphio.hpp"
+#include "io/easy_reader.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/distance_estimation.hpp"
 #include "omni/graph_component.hpp"
