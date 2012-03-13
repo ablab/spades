@@ -921,7 +921,7 @@ class IdSettingReaderWrapper: public io::DelegatingReaderWrapper<io::SingleRead>
 	typedef io::DelegatingReaderWrapper<io::SingleRead> base;
 	size_t next_id_;
 public:
-	IdSettingReaderWrapper(IReader<io::SingleRead>& reader, size_t start_id = 0) :
+	IdSettingReaderWrapper(io::IReader<io::SingleRead>& reader, size_t start_id = 0) :
 			base(reader), next_id_(start_id) {
 
 	}
@@ -938,7 +938,7 @@ class PrefixAddingReaderWrapper: public io::DelegatingReaderWrapper<io::SingleRe
 	typedef io::DelegatingReaderWrapper<io::SingleRead> base;
 	string prefix_;
 public:
-	PrefixAddingReaderWrapper(IReader<io::SingleRead>& reader,
+	PrefixAddingReaderWrapper(io::IReader<io::SingleRead>& reader,
 			const string& prefix) :
 			base(reader), prefix_(prefix) {
 
