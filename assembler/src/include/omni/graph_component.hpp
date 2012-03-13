@@ -5,9 +5,12 @@ template<class Graph>
 class GraphComponent {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::ReliableComparator Comparator;
+	typedef typename std::set<VertexId, Comparator>::const_iterator vertex_iterator;
+	typedef typename std::set<EdgeId, Comparator>::const_iterator edge_iterator;
 	const Graph& g_;
-	set<VertexId> vertices_;
-	set<EdgeId> edges_;
+	std::set<VertexId, typename Graph::ReliableComparator > vertices_;
+	std::set<EdgeId, typename Graph::ReliableComparator> edges_;
 
 
 	template<class VertexIt>
@@ -56,7 +59,8 @@ class GraphComponent {
 public:
 	template<class VertexIt>
 	GraphComponent(const Graph &g, VertexIt begin, VertexIt end) :
-			g_(g) {
+			g_(g), vertices_(g.ReliableComparatorInstance()), edges_(
+					g.ReliableComparatorInstance()) {
 		Fill(begin, end);
 	}
 
@@ -64,18 +68,22 @@ public:
 	template<class VertexIt>
 	GraphComponent(const Graph &g, VertexIt begin, VertexIt end,
 			bool add_conjugate) :
-			g_(g) {
+			g_(g), vertices_(g.ReliableComparatorInstance()), edges_(
+					g.ReliableComparatorInstance()) {
 		Fill(begin, end, add_conjugate);
 	}
 
 	//Full graph component
-	GraphComponent(const Graph &g) : g_(g) {
+	GraphComponent(const Graph &g) :
+			g_(g), vertices_(g.ReliableComparatorInstance()), edges_(
+					g.ReliableComparatorInstance()) {
 		Fill(g.begin(), g.end());
 	}
 
 	//may be used for conjugate closure
 	GraphComponent(const GraphComponent& component, bool add_conjugate) :
-		g_(component.g_)
+			g_(component.g_), vertices_(g.ReliableComparatorInstance()), edges_(
+					g.ReliableComparatorInstance())
 //		vertices_(component.vertices_.begin(), component.vertices_.end()),
 //		edges_(component.edges_.begin(), component.edges_.end())
 	{
@@ -106,16 +114,16 @@ public:
 		return false;
 	}
 
-	typename set<EdgeId>::const_iterator e_begin() const {
+	edge_iterator e_begin() const {
 		return edges_.begin();
 	}
-	typename set<EdgeId>::const_iterator e_end() const {
+	edge_iterator e_end() const {
 		return edges_.end();
 	}
-	typename set<VertexId>::const_iterator v_begin() const {
+	vertex_iterator v_begin() const {
 		return vertices_.begin();
 	}
-	typename set<VertexId>::const_iterator v_end() const {
+	vertex_iterator v_end() const {
 		return vertices_.end();
 	}
 

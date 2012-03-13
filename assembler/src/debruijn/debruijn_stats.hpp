@@ -9,6 +9,7 @@
 #include "omni/distance_estimation.hpp"
 #include "omni/graph_component.hpp"
 #include "omni/pair_info_filters.hpp"
+#include "io/easy_reader.hpp"
 #include "read/osequencestream.hpp"
 #include "k.hpp"
 #include <sys/types.h>

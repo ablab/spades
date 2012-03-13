@@ -6,28 +6,34 @@
 
 namespace omnigraph {
 
-template<typename ElementId, class Graph>
-class IntIdComparator {
-private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	const BaseIdTrackHandler<VertexId, EdgeId> &int_ids_;
-public:
-	IntIdComparator(const BaseIdTrackHandler<VertexId, EdgeId> &int_ids) : int_ids_(int_ids) {
-	}
-
-	bool operator()(ElementId a, ElementId b) {
-		return int_ids_.ReturnIntId(a) > int_ids_.ReturnIntId(b);
-	}
-};
-
 template<typename VertexIdT, typename EdgeIdT, typename VertexIterator/* = typename set<VertexIdT>::iterator*/>
 class ObservableGraph : private boost::noncopyable {
 public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
-	typedef SmartVertexIterator<ObservableGraph, IntIdComparator<VertexId, ObservableGraph>> SmartVertexIt;
-	typedef SmartEdgeIterator<ObservableGraph, IntIdComparator<EdgeId, ObservableGraph>> SmartEdgeIt;
+
+	class ReliableComparator {
+	private:
+		const BaseIdTrackHandler<VertexId, EdgeId> &int_ids_;
+	public:
+		ReliableComparator(const BaseIdTrackHandler<VertexId, EdgeId> &int_ids) : int_ids_(int_ids) {
+		}
+
+		bool operator()(VertexId a, VertexId b) const {
+			return int_ids_.ReturnIntId(a) < int_ids_.ReturnIntId(b);
+		}
+
+		bool operator()(EdgeId a, EdgeId b) const {
+			return int_ids_.ReturnIntId(a) < int_ids_.ReturnIntId(b);
+		}
+	};
+
+//	typedef ReliableComparator<VertexId> ReliableVertexComparator;
+//	typedef ReliableComparator<EdgeId> ReliableEdgeComparator;
+
+	typedef SmartVertexIterator<ObservableGraph, ObservableGraph::ReliableComparator> SmartVertexIt;
+	typedef SmartEdgeIterator<ObservableGraph, ObservableGraph::ReliableComparator> SmartEdgeIt;
+
 private:
 	typedef ActionHandler<VertexId, EdgeId> Handler;
 
@@ -149,10 +155,11 @@ public:
 				comparator);
 	}
 
-	SmartVertexIterator<ObservableGraph, IntIdComparator<VertexId, ObservableGraph>> SmartVertexBegin() const {
-		return SmartVertexIterator<ObservableGraph, IntIdComparator<VertexId, ObservableGraph>> (*this,
-				IntIdComparator<VertexId, ObservableGraph>(element_order_));
+	SmartVertexIterator<ObservableGraph, ObservableGraph::ReliableComparator> SmartVertexBegin() const {
+		return SmartVertexIterator<ObservableGraph, ObservableGraph::ReliableComparator> (*this,
+				ReliableComparator(element_order_));
 	}
+
 
 	template<typename Comparator>
 	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
@@ -161,10 +168,18 @@ public:
 				comparator);
 	}
 
-	SmartEdgeIterator<ObservableGraph, IntIdComparator<EdgeId, ObservableGraph>> SmartEdgeBegin() const {
-		return SmartEdgeIterator<ObservableGraph, IntIdComparator<EdgeId, ObservableGraph>> (*this,
-				IntIdComparator<EdgeId, ObservableGraph>(element_order_));
+	SmartEdgeIterator<ObservableGraph, ObservableGraph::ReliableComparator> SmartEdgeBegin() const {
+		return SmartEdgeIterator<ObservableGraph, ObservableGraph::ReliableComparator> (*this,
+				ReliableComparator(element_order_));
 	}
+
+	ReliableComparator ReliableComparatorInstance() const {
+		return ReliableComparator(element_order_);
+	}
+
+//	ReliableComparator<VertexId> ReliableComparatorInstance() {
+//		return ReliableComparator<VertexId>(element_order_);
+//	}
 
 
 private:
