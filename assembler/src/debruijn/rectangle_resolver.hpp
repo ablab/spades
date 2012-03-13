@@ -59,6 +59,7 @@ public:
 		PySys_SetArgvEx(argc, argv, updatepath);
 		FILE* fp = fopen(rr_filename.c_str(), "r");
 		PyRun_SimpleFile(fp, rr_filename.c_str());
+		fclose(fp);
 		Py_Finalize();
 		INFO("Saved to " + out_filename + ".grp .sqn .fasta .log");
 
