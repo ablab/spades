@@ -128,8 +128,11 @@ void exec_construction(conj_graph_pack& gp) {
 		load_construction(gp, &used_files);
 		copy_files_by_prefix(used_files, cfg::get().output_saves);
 	}
-	FillPos(gp, gp.genome, "0");
-	FillPos(gp, !gp.genome, "1");
+
+	if (gp.genome.size() > 0) {
+		FillPos(gp, gp.genome, "0");
+		FillPos(gp, !gp.genome, "1");
+	}
 
 	if (!cfg::get().pos.contigs_for_threading.empty() &&
 		fileExists(cfg::get().pos.contigs_for_threading))
