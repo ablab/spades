@@ -1155,7 +1155,7 @@ public:
 
 	void HandleDelete(EdgeId edge) {
         if (quality_handler_.IsPositiveQuality(edge)) {
-			INFO("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
+			DEBUG("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 			string folder = output_folder_ + "colored_edges_deleted/";
 			make_dir(folder);
 			//todo magic constant
@@ -1166,7 +1166,7 @@ public:
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
 					, empty_coloring, labeler_);
 		} else {
-			DEBUG("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
+			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 		}
 	}
 

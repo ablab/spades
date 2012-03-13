@@ -137,9 +137,9 @@ public:
 	 * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
 	 */
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
-		INFO("Before prepare");
+		INFO("Preparing shift maps");
 		PrepareShiftMaps();
-		INFO("after prepare");
+		INFO("Processing paired reads");
 		stream_.reset();
 		while (!stream_.eof()) {
 			io::PairedRead p_r;
@@ -153,7 +153,7 @@ public:
 
 template<class Graph, class SequenceMapper>
 void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, EdgesPositionHandler<Graph> edges_pos, int MimimalIntersection , const SequenceMapper& mapper){
-	INFO("Closing short gaps...");
+	INFO("Closing short gaps");
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef vector<PairInfo<EdgeId>> PairInfos;
@@ -210,7 +210,7 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
             }
     	}
     }
-    INFO("Closing short gaps complete. Total filled " << gaps_filled<<" gaps after checking "<<gaps_checked);
+    INFO("Closing short gaps complete: filled " << gaps_filled<< " gaps after checking " << gaps_checked << " candidates");
     omnigraph::Compressor<Graph> compressor(g);
     compressor.CompressAllVertices();
 }
@@ -230,7 +230,6 @@ void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
 		GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper,
 				stream);
 		paired_info_index gc_paired_info_index(gp.g);
-		INFO("Processing reads");
 		gcpif.FillIndex(gc_paired_info_index);
 		CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
 	}
@@ -241,7 +240,6 @@ void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
 		GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper,
 				stream);
 		paired_info_index gc_paired_info_index(gp.g);
-		INFO("Processing reads");
 		gcpif.FillIndex(gc_paired_info_index);
 		CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
 	}

@@ -72,8 +72,7 @@ vector<typename Graph::EdgeId> ClipTips(Graph &g,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t iteration_count = 1, size_t i = 0) {
 	VERIFY(i < iteration_count);
-	INFO("-----------------------------------------");
-	INFO("Clipping tips");
+	INFO("- Clipping tips -");
 	omnigraph::LengthComparator<Graph> comparator(g);
 	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(read_length, g.k(), tc_config.max_tip_length_coefficient);
 	size_t max_coverage = tc_config.max_coverage;
@@ -100,8 +99,7 @@ void ClipTips(Graph &g,
 
 template<class Graph>
 void ClipTipsForResolver(Graph &g) {
-	INFO("-----------------------------------------");
-	INFO("Clipping tips for Resolver");
+	INFO("- Clipping tips for Resolver -");
 
 	omnigraph::LengthComparator<Graph> comparator(g);
 	
@@ -160,8 +158,7 @@ template<class Graph>
 void RemoveBulges(Graph &g,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
-	INFO("-----------------------------------------");
-	INFO("Removing bulges");
+	INFO("- Removing bulges -");
 	RemoveBulges(g, cfg::get().simp.br, removal_handler,
 			additional_length_bound);
 	//	Cleaner<Graph> cleaner(g);
@@ -171,8 +168,7 @@ void RemoveBulges(Graph &g,
 
 template<class Graph>
 void RemoveBulges2(Graph &g) {
-	INFO("-----------------------------------------");
-	INFO("Removing bulges");
+	INFO("- Removing bulges -");
 	double max_coverage = cfg::get().simp.br.max_coverage;
 	double max_relative_coverage = cfg::get().simp.br.max_relative_coverage;
 	double max_delta = cfg::get().simp.br.max_delta;
@@ -223,8 +219,7 @@ size_t PrecountThreshold(Graph &g, double percentile){
 template<class Graph>
 void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 		size_t iteration_count, size_t i, double max_coverage) {
-	INFO("-----------------------------------------");
-	INFO("Removing low coverage edges");
+	INFO("- Removing low coverage edges -");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), cfg::get().simp.ec.max_ec_length_coefficient);
@@ -298,8 +293,7 @@ bool ChimericRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 
 template<class Graph> 
 void FinalTipClipping(Graph& g){
-	INFO("-----------------------------------------");
-	INFO("Clipping tips");
+	INFO("- Clipping tips -");
 	omnigraph::LengthComparator<Graph> comparator(g);
     auto tc_config = cfg::get().simp.tc;
 	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(cfg::get().ds.RL, g.k(), cfg::get().simp.tc.max_tip_length_coefficient);
@@ -381,8 +375,7 @@ void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
 //todo use another edge remover
 template<class Graph>
 void RemoveLowCoverageEdgesForResolver(Graph &g) {
-	INFO("-----------------------------------------");
-	INFO("Removing low coverage edges");
+	INFO("- Removing low coverage edges -");
 	double max_coverage = cfg::get().simp.ec.max_coverage * 0.6;
 	//	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
 	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
@@ -415,8 +408,7 @@ void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
         detail_info_printer &printer, size_t iteration_count,
 		size_t iteration, double max_coverage){
-	INFO("-----------------------------------------");
-	INFO("Iteration " << iteration);
+	INFO("Simplification cycle: iteration " << iteration);
 
 	INFO(iteration << " TipClipping");
 	ClipTips(graph, removal_handler_f, iteration_count, iteration);
@@ -489,8 +481,7 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor, boost::fun
 
 void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_handler_f,
 		omnigraph::GraphLabeler<Graph>& labeler, detail_info_printer& printer, size_t iteration_count) {
-	INFO("-----------------------------------------");
-	INFO("Graph simplification started");
+	INFO("- Graph simplification started -");
 	printer(ipp_before_simplification);
 
 	EdgeRemover<Graph> edge_remover(gp.g,
