@@ -820,10 +820,10 @@ UNK_YALE_C04_BH4
 
 TM6_1_BH
 {
-        first   TM6/BH1/02.reads.0.left.corrected.fastq
-        second  TM6/BH1/02.reads.0.right.corrected.fastq
-        single_first    TM6/BH1/02.reads.0.left.unpaired.fastq
-        single_second   TM6/BH1/02.reads.0.right.unpaired.fastq
+        first   TM6/BH1/09.reads.0.left.corrected.fastq
+        second  TM6/BH1/09.reads.0.right.corrected.fastq
+        single_first    TM6/BH1/09.reads.0.left.unpaired.fastq
+        single_second   TM6/BH1/09.reads.0.right.unpaired.fastq
         RL              100     ; read length
         IS              270     ; insert size ???
         single_cell     true
@@ -832,10 +832,10 @@ TM6_1_BH
 
 TM6_2_BH
 {
-        first   TM6/BH2/02.reads.0.left.corrected.fastq
-        second  TM6/BH2/02.reads.0.right.corrected.fastq
-        single_first    TM6/BH2/02.reads.0.left.unpaired.fastq
-        single_second   TM6/BH2/02.reads.0.right.unpaired.fastq
+        first   TM6/BH2/09.reads.0.left.corrected.fastq
+        second  TM6/BH2/09.reads.0.right.corrected.fastq
+        single_first    TM6/BH2/09.reads.0.left.unpaired.fastq
+        single_second   TM6/BH2/09.reads.0.right.unpaired.fastq
         RL              100     ; read length
         IS              270     ; insert size ???
         single_cell     true
@@ -844,25 +844,12 @@ TM6_2_BH
 
 TM6_3_BH
 {
-        first   TM6/BH3/02.reads.0.left.corrected.fastq
-        second  TM6/BH3/02.reads.0.right.corrected.fastq
-        single_first    TM6/BH3/02.reads.0.left.unpaired.fastq
-        single_second   TM6/BH3/02.reads.0.right.unpaired.fastq
+        first   TM6/BH3/09.reads.0.left.corrected.fastq
+        second  TM6/BH3/09.reads.0.right.corrected.fastq
+        single_first    TM6/BH3/09.reads.0.left.unpaired.fastq
+        single_second   TM6/BH3/09.reads.0.right.unpaired.fastq
         RL              100     ; read length
         IS              270     ; insert size ???
         single_cell     true
         reference_genome  N/A
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

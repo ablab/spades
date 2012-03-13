@@ -598,7 +598,11 @@ if __name__ == '__main__':
     bgraph.check()
     bgraph.glue()
     bgraph.check()
-    #bgraph.filter_diagonals() # optional
+    bgraph.filter_diagonals() # optional
+    bgraph.filter_diagonals() # optional
+    bgraph.filter_diagonals() # optional
+    bgraph.filter_diagonals() # optional
+    bgraph.filter_diagonals() # optional
     bgraph.check()
     #bgraph.scaffold() # optional
     ingraph.check()
@@ -612,6 +616,6 @@ if __name__ == '__main__':
 
     outgraph = bgraph.project()
     outgraph.check()
-    outgraph.fasta(open(outprefix + '.fasta', 'w'))
+    outgraph.fasta(open(outprefix + '_contigs.fasta', 'w'))
     outgraph.stats(logfile)
     outgraph.save(outprefix)
