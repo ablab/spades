@@ -164,36 +164,55 @@ public:
 };
 
 template<class Graph>
-class IdTrackHandler:
-	public BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId>,
-	private boost::noncopyable
+class GraphIdTrackHandler:
+	public BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId>
 {
+private:
 	typedef BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
 
 	const Graph& g_;
-//protected:
-//	const Graph& g() const {
-//		return g_;
-//	}
+protected:
+	const Graph &g() {
+		return g_;
+	}
 public:
-	IdTrackHandler(const Graph& g) :
+	GraphIdTrackHandler(const Graph& g) :
 		g_(g) {
 		TRACE("Adding new action handler: " << this->name());
 		g_.AddActionHandler(this);
-		g_.set_int_ids(this);
 	}
 
-	IdTrackHandler(const Graph& g, int vertex_start_index, int edge_start_index) :
+	GraphIdTrackHandler(const Graph& g, int vertex_start_index, int edge_start_index) :
 		base(vertex_start_index, edge_start_index), g_(g) {
 		TRACE("Adding new action handler: " << this->name());
 		g_.AddActionHandler(this);
-		g_.set_int_ids(this);
+	}
+
+	virtual ~GraphIdTrackHandler() {
+		TRACE("Removing action handler: " << this->name());
+		g_.RemoveActionHandler(this);
+	}
+};
+
+template<class Graph>
+class IdTrackHandler:
+	public GraphIdTrackHandler<Graph>,
+	private boost::noncopyable
+{
+	typedef GraphIdTrackHandler<Graph> base;
+
+public:
+	IdTrackHandler(const Graph& g) : base(g) {
+		this->g().set_int_ids(this);
+	}
+
+	IdTrackHandler(const Graph& g, int vertex_start_index, int edge_start_index) :
+		base(g, vertex_start_index, edge_start_index) {
+		this->g().set_int_ids(this);
 	}
 
 	virtual ~IdTrackHandler() {
-		TRACE("Removing action handler: " << this->name());
-		g_.set_int_ids((base*) 0);
-		g_.RemoveActionHandler(this);
+		this->g().set_int_ids((base*) 0);
 	}
 };
 

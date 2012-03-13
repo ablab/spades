@@ -2,21 +2,40 @@
 #define OBSERVABLE_GRAPH_HPP_
 
 #include "omni_utils.hpp"
+#include "id_track_handler.hpp"
 
 namespace omnigraph {
+
+template<typename ElementId, class Graph>
+class IntIdComparator {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	const BaseIdTrackHandler<VertexId, EdgeId> &int_ids_;
+public:
+	IntIdComparator(const BaseIdTrackHandler<VertexId, EdgeId> &int_ids) : int_ids_(int_ids) {
+	}
+
+	bool operator()(ElementId a, ElementId b) {
+		return int_ids_.ReturnIntId(a) > int_ids_.ReturnIntId(b);
+	}
+};
+
 template<typename VertexIdT, typename EdgeIdT, typename VertexIterator/* = typename set<VertexIdT>::iterator*/>
 class ObservableGraph : private boost::noncopyable {
 public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
-	typedef SmartVertexIterator<ObservableGraph> SmartVertexIt;
-	typedef SmartEdgeIterator<ObservableGraph> SmartEdgeIt;
+	typedef SmartVertexIterator<ObservableGraph, IntIdComparator<VertexId, ObservableGraph>> SmartVertexIt;
+	typedef SmartEdgeIterator<ObservableGraph, IntIdComparator<EdgeId, ObservableGraph>> SmartEdgeIt;
 private:
 	typedef ActionHandler<VertexId, EdgeId> Handler;
 
 	const HandlerApplier<VertexId, EdgeId> *applier_;
 
 	mutable vector<Handler*> action_handler_list_;
+
+	GraphIdTrackHandler<ObservableGraph> element_order_;
 
 protected:
 	void FireAddVertex(VertexId v) {
@@ -84,7 +103,7 @@ public:
 
 
 	ObservableGraph(HandlerApplier<VertexId, EdgeId> *applier) :
-		applier_(applier) {
+		applier_(applier), element_order_(*this) {
 	}
 
 	virtual ~ObservableGraph() {
@@ -123,18 +142,28 @@ public:
 	//todo think of moving to AbstractGraph
 	virtual const vector<EdgeId> OutgoingEdges(VertexId vertex) const = 0;
 
-	template<typename Comparator = std::less<VertexId> >
+	template<typename Comparator>
 	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
-			const Comparator& comparator = Comparator()) const {
+			const Comparator& comparator) const {
 		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
 				comparator);
 	}
 
-	template<typename Comparator = std::less<EdgeId> >
+	SmartVertexIterator<ObservableGraph, IntIdComparator<VertexId, ObservableGraph>> SmartVertexBegin() const {
+		return SmartVertexIterator<ObservableGraph, IntIdComparator<VertexId, ObservableGraph>> (*this,
+				IntIdComparator<VertexId, ObservableGraph>(element_order_));
+	}
+
+	template<typename Comparator>
 	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
-			const Comparator& comparator = Comparator()) const {
+			const Comparator& comparator) const {
 		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
 				comparator);
+	}
+
+	SmartEdgeIterator<ObservableGraph, IntIdComparator<EdgeId, ObservableGraph>> SmartEdgeBegin() const {
+		return SmartEdgeIterator<ObservableGraph, IntIdComparator<EdgeId, ObservableGraph>> (*this,
+				IntIdComparator<EdgeId, ObservableGraph>(element_order_));
 	}
 
 
