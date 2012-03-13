@@ -827,7 +827,7 @@ private:
 			}
 		}
 
-		if (++processed_count_ % 100000 == 0) {
+		if (++processed_count_ % 1000 == 0) {
 			TRACE("Processed " << processed_count_ << " reads");
 		}
 	}

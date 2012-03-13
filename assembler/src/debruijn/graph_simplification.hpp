@@ -21,6 +21,24 @@
 
 namespace debruijn_graph {
 
+void save_stage_simplification(conj_graph_pack& gp, size_t iteration) {
+    stringstream a;
+    a <<  iteration;
+    string i = a.str();
+	fs::path p = fs::path(cfg::get().output_saves) / ("simplified_graph_" + i);
+
+	PrintGraphPack(p.string(), gp);
+
+	//todo temporary solution!!!
+	OutputContigs(gp.g, cfg::get().additional_contigs);
+	OutputContigs(gp.g, cfg::get().output_dir + "final_contigs_" + i + ".fasta");
+    cfg::get_writable().final_contigs_file = cfg::get().output_dir + "final_contigs_" + i + ".fasta";
+
+// run script automatically takes simplified contigs from correct path
+
+//	OutputContigs(gp.g,
+//			cfg::get().output_root + "../" + cfg::get().additional_contigs);
+}
 template<class Graph>
 class EditDistanceTrackingCallback {
 	typedef typename Graph::EdgeId EdgeId;
@@ -291,7 +309,7 @@ bool ChimericRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 
 template<class Graph> 
 void FinalTipClipping(Graph& g){
-	INFO("SUBSTAGE == Clipping tips");
+	INFO("SUBSTAGE == Finally clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);
     auto tc_config = cfg::get().simp.tc;
 	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(*cfg::get().ds.RL, g.k(), cfg::get().simp.tc.max_tip_length_coefficient);
@@ -303,8 +321,9 @@ void FinalTipClipping(Graph& g){
 			comparator,
 			max_tip_length, max_coverage,
 			max_relative_coverage); //removal_handler
-    tc.ClearTips();
-	DEBUG("Clipping tips finished");
+    tc.ClipTips(true);
+    tc.ClipTips(true);
+	INFO("Clipping tips finished");
 }
 
 template<class Graph>
@@ -519,6 +538,7 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
 
 	PostSimplification(gp.g, edge_remover, removal_handler_f, printer);
 	DEBUG("Graph simplification finished");
+	PostSimplification(gp.g, edge_remover, removal_handler_f, printer);
 
 	INFO("Counting average coverage");
 	AvgCovereageCounter<Graph> cov_counter(gp.g);

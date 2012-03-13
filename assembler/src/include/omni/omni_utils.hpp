@@ -1454,7 +1454,7 @@ private:
                 if (CheckAlternativeForEC(tip, path.front())){
                     TRACE("Alter path looks like EC");
                     if (CheckTipTip(tip, path.front())){
-                        TRACE("Judjed to have an alternative TIP");
+                        TRACE("Judged to have an alternative TIP");
                         return true;
                     }
                 }
@@ -1495,7 +1495,7 @@ private:
                 if (CheckAlternativeForEC(tip, path.front())){
                     TRACE("Alter path looks like EC");
                     if (CheckTipTip(tip, path.front())){
-                        TRACE("Judjed to have an alternative TIP");
+                        TRACE("Judged to have an alternative TIP");
                         return true;
                     }
                 }
@@ -1549,6 +1549,7 @@ public:
 
     TipChecker(Graph& graph, size_t max_iterations_, size_t max_distance, size_t max_tip_length, size_t max_ec_length):
     graph_(graph), max_iterations_(max_iterations_), max_distance_(max_distance), max_tip_length_(max_tip_length), max_ec_length_(max_ec_length){
+        TRACE("Max levenstein " << max_distance_);
     }
 
    
