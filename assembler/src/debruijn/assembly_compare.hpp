@@ -102,6 +102,7 @@ private:
 	;
 };
 
+//beware!!! this class clears quality!!!
 class ModifyingWrapper: public io::DelegatingReaderWrapper<io::SingleRead> {
 protected:
 
@@ -116,8 +117,7 @@ public:
 		this->reader() >> read;
 		Sequence s = read.sequence();
 		string sequence = Modify(s).str();
-		read.SetSequence(sequence.c_str());
-		read.SetQuality(io::SingleRead::EmptyQuality(sequence).c_str());
+		read.ChangeName(read.name());
 		return *this;
 	}
 };
@@ -1364,7 +1364,6 @@ public:
 		FillPos<gp_t>(gp_, stream2_);
 
 		if (untangle_) {
-			VERIFY(false);
 			bp_graph_pack<typename gp_t::graph_t> untangled_gp(gp_t::k_value);
 			UntangledGraphConstructor<gp_t> ugp(gp_, coloring, untangled_gp,
 					stream1_, stream2_);

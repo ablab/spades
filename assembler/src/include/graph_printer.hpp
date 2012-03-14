@@ -142,19 +142,12 @@ string constructComplexNodeId(string pairId, tVertex v) {
 }
 
 template<typename tVertex>
-string vertexIdToString(tVertex v) {
-	stringstream ss;
-	ss << v;
-	return ss.str();
-}
-
-template<typename tVertex>
 string constructTableEntry(tVertex v, const string &label) {
 	stringstream ss;
 	ss << "<TR>";
-	ss << constructCell("", 0, vertexIdToString(v) + "_in");
+	ss << constructCell("", 0, ToString(v) + "_in");
 	ss << constructCell(label, 0, "");
-	ss << constructCell("", 0, vertexIdToString(v) + "out_");
+	ss << constructCell("", 0, ToString(v) + "out_");
 	ss << "</TR>\n";
 	return ss.str();
 }
@@ -163,9 +156,9 @@ template<typename tVertex>
 string constructReverceTableEntry(tVertex v, const string &label) {
 	stringstream ss;
 	ss << "<TR>";
-	ss << constructCell("", 0, vertexIdToString(v) + "out_");
+	ss << constructCell("", 0, ToString(v) + "out_");
 	ss << constructCell(label, 0, "");
-	ss << constructCell("", 0, vertexIdToString(v) + "_in");
+	ss << constructCell("", 0, ToString(v) + "_in");
 	ss << "</TR>\n";
 	return ss.str();
 }

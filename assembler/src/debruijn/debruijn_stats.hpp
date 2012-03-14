@@ -848,6 +848,7 @@ public:
 
 	void Process(const Sequence& s, string name) const {
 		//todo stupid conversion!
+
 		return Process(io::SingleRead(name, s.str()));
 	}
 
@@ -929,7 +930,7 @@ public:
 	/* virtual */
 	IdSettingReaderWrapper& operator>>(io::SingleRead& read) {
 		this->reader() >> read;
-		read.SetName(ToString(next_id_++).c_str());
+		read.ChangeName(ToString(next_id_++));
 		return *this;
 	}
 };
@@ -947,7 +948,7 @@ public:
 	/* virtual */
 	PrefixAddingReaderWrapper& operator>>(io::SingleRead& read) {
 		this->reader() >> read;
-		read.SetName((prefix_ + read.name()).c_str());
+		read.ChangeName(prefix_ + read.name());
 		return *this;
 	}
 };
@@ -962,7 +963,6 @@ void FillPos(gp_t& gp, const string& contig_file, int start_contig_id) {
 		io::SingleRead read;
 		irs >> read;
 		DEBUG("Contig #" << c << ", length: " << read.size());
-		read.ClearQuality();
 		if (!read.IsValid()) {
 			WARN("Attention: contig #" << c << " contains Ns");
 			continue;
