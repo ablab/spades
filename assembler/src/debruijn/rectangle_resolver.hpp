@@ -51,12 +51,11 @@ public:
 		strcpy(argv[3], prd_filename.c_str());
 		strcpy(argv[4], d.c_str());
 		strcpy(argv[5], out_filename.c_str());
-		int updatepath = 1;
 
 		// Run RR in Python
 		INFO("Running rr2 in Python");
 		Py_Initialize();
-		PySys_SetArgvEx(argc, argv, updatepath);
+		PySys_SetArgv(argc, argv);
 		FILE* fp = fopen(rr_filename.c_str(), "r");
 		PyRun_SimpleFile(fp, rr_filename.c_str());
 		fclose(fp);
