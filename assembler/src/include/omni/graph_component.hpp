@@ -5,12 +5,12 @@ template<class Graph>
 class GraphComponent {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::ReliableComparator Comparator;
+	typedef typename Graph::Comparator Comparator;
 	typedef typename std::set<VertexId, Comparator>::const_iterator vertex_iterator;
 	typedef typename std::set<EdgeId, Comparator>::const_iterator edge_iterator;
 	const Graph& g_;
-	std::set<VertexId, typename Graph::ReliableComparator > vertices_;
-	std::set<EdgeId, typename Graph::ReliableComparator> edges_;
+	std::set<VertexId, typename Graph::Comparator > vertices_;
+	std::set<EdgeId, typename Graph::Comparator> edges_;
 
 
 	template<class VertexIt>

@@ -10,11 +10,13 @@ namespace omnigraph {
 
 template<class VertexId, class EdgeId>
 class BaseIdTrackHandler: public ActionHandler<VertexId, EdgeId> {
+public:
 	typedef int realIdType;
-	std::unordered_map<VertexId, realIdType> VertexIntId;
-	std::unordered_map<EdgeId, realIdType> EdgeIntId;
-	map<realIdType, VertexId> VertexOriginalId;
-	map<realIdType, EdgeId> EdgeOriginalId;
+private:
+	restricted::map<VertexId, realIdType> VertexIntId;
+	restricted::map<EdgeId, realIdType> EdgeIntId;
+	std::tr1::unordered_map<realIdType, VertexId> VertexOriginalId;
+	std::tr1::unordered_map<realIdType, EdgeId> EdgeOriginalId;
 	int MaxVertexIntId;
 	int MaxEdgeIntId;
 
@@ -35,7 +37,7 @@ public:
 			VertexOriginalId.erase(PreviousId);
 		}
 		VertexId PreviousVertex = ReturnVertexId(NewIntId);
-		if (PreviousVertex != NULL) {
+		if (PreviousVertex != VertexId(NULL)) {
 			VertexIntId.erase(PreviousVertex);
 		}
 
@@ -64,7 +66,7 @@ public:
 			EdgeOriginalId.erase(PreviousId);
 		}
 		EdgeId PreviousEdge = ReturnEdgeId(NewIntId);
-		if (PreviousEdge != NULL) {
+		if (PreviousEdge != EdgeId(NULL)) {
 			EdgeIntId.erase(PreviousEdge);
 		}
 
@@ -93,6 +95,12 @@ public:
 		EdgeIntId.erase(OldEdgeId);
 	}
 	realIdType ReturnIntId(EdgeId e) const {
+		if (size_t(this) < 0x1000)
+		{
+			print_stacktrace();
+			exit(1);
+		}
+
 		auto it = EdgeIntId.find(e);
 		return it != EdgeIntId.end() ? it->second : 0;
 	}
@@ -102,29 +110,27 @@ public:
 	}
 
 	EdgeId ReturnEdgeId(realIdType id) const {
-		typename map<realIdType, EdgeId>::const_iterator it =
-				EdgeOriginalId.find(id);
+		auto it = EdgeOriginalId.find(id);
 		if (it != EdgeOriginalId.end())
 			return it->second;
 		else
-			return NULL;
+			return EdgeId(NULL);
 
 	}
 
 	VertexId ReturnVertexId(realIdType id) const {
-		typename map<realIdType, VertexId>::const_iterator it =
-				VertexOriginalId.find(id);
+		auto it = VertexOriginalId.find(id);
 		if (it != VertexOriginalId.end())
 			return it->second;
 		else
-			return NULL;
+			return VertexId(NULL);
 
 	}
 
 	BaseIdTrackHandler() :
 			ActionHandler<VertexId, EdgeId>("IdTrackHandler") {
-		MaxVertexIntId = 0;
-		MaxEdgeIntId = 0;
+		MaxVertexIntId = 1;
+		MaxEdgeIntId = 1;
 	}
 	BaseIdTrackHandler(int VertexStartIndex, int EdgeStartIndex) :
 			ActionHandler<VertexId, EdgeId>("IdTrackHandler") {
@@ -136,18 +142,20 @@ public:
 		TRACE("~IdTrackHandler ok");
 	}
 
-	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		realIdType RealEdgeId = ReturnIntId(edge1);
-		ClearEdgeId(edge1);
-		AddEdgeIntId(new_edge, RealEdgeId);
-	}
+//	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+//		realIdType RealEdgeId = ReturnIntId(edge1);
+//		ClearEdgeId(edge1);
+//		AddEdgeIntId(new_edge, RealEdgeId);
+//	}
 
-	virtual void HandleAdd(VertexId v) {
-		AddVertexIntId(v);
-	}
-	virtual void HandleAdd(EdgeId e) {
+	virtual void HandleAdding(EdgeId e) {
 		AddEdgeIntId(e);
 	}
+
+	virtual void HandleAdding(VertexId v) {
+		AddVertexIntId(v);
+	}
+
 	virtual void HandleDelete(VertexId v) {
 		ClearVertexId(v);
 	}

@@ -13,6 +13,7 @@
 #include <boost/filesystem.hpp>
 #include "elapsed_timer.h"
 #include <ctime>
+#include "order_and_law.hpp"
 
 namespace omnigraph {
 using std::vector;
@@ -54,6 +55,20 @@ public:
 	 */
 	const string& name() const {
 		return handler_name_;
+	}
+
+	/**
+	 * Event is triggered BEFORE either HandleMerge or HndleSplit or HandleMerge are triggered. Use really careful! It must not rely on any of the other graph handlers.
+	 * @param e new edge
+	 */
+	virtual void HandleAdding(EdgeId e) {
+	}
+
+	/**
+	 * Event is triggered BEFORE either HandleMerge or HndleSplit or HandleMerge are triggered. Use really careful! It must not rely on any of the other graph handlers.
+	 * @param e new edge
+	 */
+	virtual void HandleAdding(VertexId e) {
 	}
 
 	/**
@@ -177,6 +192,12 @@ class HandlerApplier {
 public:
 
 	virtual void
+	ApplyAdding(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
+
+	virtual void
+	ApplyAdding(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const = 0;
+
+	virtual void
 	ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
 
 	virtual void
@@ -214,6 +235,16 @@ class SimpleHandlerApplier: public HandlerApplier<typename Graph::VertexId,
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+
+	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler
+			, VertexId v) const {
+		handler->HandleAdding(v);
+	}
+
+	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler
+			, EdgeId e) const {
+		handler->HandleAdding(e);
+	}
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler
 			, VertexId v) const {
@@ -278,6 +309,38 @@ public:
 
 	PairedHandlerApplier(Graph &graph) :
 			graph_(graph) {
+	}
+
+	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler
+			, VertexId v) const {
+		VertexId rcv = graph_.conjugate(v);
+		TRACE(
+				"Triggering add event of handler " << handler->name() << " to vertex " << v);
+		handler->HandleAdding(v);
+		if (v != rcv) {
+			TRACE(
+					"Triggering add event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
+			handler->HandleAdding(rcv);
+		} else {
+			TRACE(
+					"Vertex " << v << "is self-conjugate thus handler is not applied the second time");
+		}
+	}
+
+	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler
+			, EdgeId e) const {
+		EdgeId rce = graph_.conjugate(e);
+		TRACE(
+				"Triggering add event of handler " << handler->name() << " to edge " << e << ". Event is Add");
+		handler->HandleAdding(e);
+		if (e != rce) {
+			TRACE(
+					"Triggering add event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
+			handler->HandleAdding(rce);
+		} else {
+			TRACE(
+					"Edge " << e << "is self-conjugate thus handler is not applied the second time");
+		}
 	}
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler
@@ -462,8 +525,7 @@ public:
  * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
  * way graph is changed. Also one can define order of iteration by specifying Comparator.
  */
-template<class Graph, typename ElementId, typename Comparator = std::less<
-		ElementId> >
+template<class Graph, typename ElementId, typename Comparator>
 class SmartSetIterator: public SmartIterator<Graph, ElementId, Comparator> {
 public:
 	typedef typename Graph::VertexId VertexId;
@@ -534,6 +596,58 @@ public:
 	virtual ~SmartEdgeIterator() {
 	}
 
+};
+
+template<class Graph, typename ElementId, typename Comparator = std::less<ElementId> >
+class SmartSet: public GraphActionHandler<Graph> {
+public:
+	typedef typename set<ElementId, Comparator>::iterator iterator;
+	typedef typename set<ElementId, Comparator>::const_iterator const_iterator;
+private:
+	set<ElementId, Comparator> inner_set_;
+	const bool add_new_;
+
+public:
+	SmartSet(const Graph &graph, const Comparator& comparator, bool add_new = true) :
+			GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(comparator), add_new_(add_new) {
+	}
+
+	template<class Iter>
+	SmartSet(Iter begin, Iter end, const Graph &graph, const Comparator& comparator, bool add_new) :
+			GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(begin, end, comparator), add_new_(add_new) {
+	}
+
+	virtual ~SmartSet() {
+	}
+
+	virtual void HandleAdding(ElementId v) {
+		if(add_new_)
+			inner_set_.insert(v);
+	}
+
+	virtual void HandleDelete(ElementId v) {
+		inner_set_.erase(v);
+	}
+
+	iterator begin() {
+		return inner_set_.begin();
+	}
+
+	iterator end() {
+		return inner_set_.end();
+	}
+
+	const_iterator begin() const {
+		return inner_set_.begin();
+	}
+
+	const_iterator end() const {
+		return inner_set_.end();
+	}
+
+	const set<ElementId, Comparator> &inner_set() {
+		return inner_set_;
+	}
 };
 
 /**
@@ -921,11 +1035,14 @@ public:
 
 template<class Graph>
 class PathStorageCallback: public PathProcessor<Graph>::Callback {
+public:
 	typedef typename Graph::EdgeId EdgeId;
+//	typedef ContainerComparator<vector<EdgeId>, typename Graph::Comparator> Comparator;
 
+private:
 	const Graph& g_;
 
-	std::set<vector<EdgeId>> paths_;
+	std::vector<vector<EdgeId>> paths_;
 public:
 
 	PathStorageCallback(const Graph& g) :
@@ -933,13 +1050,13 @@ public:
 	}
 
 	virtual void HandlePath(const vector<EdgeId>& path) {
-		paths_.insert(path);
+		paths_.push_back(path);
 	}
 	size_t count() {
 		return paths_.size();
 	}
 
-	std::set<vector<EdgeId>> paths() {
+	std::vector<vector<EdgeId>> paths() {
 		return paths_;
 	}
 };
@@ -995,7 +1112,7 @@ class VertexLablerCallback: public PathProcessor<Graph>::Callback {
 
 	Graph& g_;
 	size_t count_;
-	std::set<VertexId> vertices_;
+	restricted::set<VertexId> vertices_;
 public:
 
 	VertexLablerCallback(Graph& g) :
@@ -1012,7 +1129,7 @@ public:
 		}
 	}
 
-	const std::set<VertexId>& vertices() {
+	const restricted::set<VertexId>& vertices() {
 		return vertices_;
 	}
 
@@ -1058,17 +1175,24 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	const Graph& graph_;
+	typename Graph::Comparator comparator_;
 public:
 	CoverageComparator(const Graph &graph) :
-			graph_(graph) {
+			graph_(graph), comparator_(graph.ReliableComparatorInstance()) {
 	}
 
 	/**
 	 * Standard comparator function as used in collections.
 	 */
-	bool operator()(EdgeId edge1, EdgeId edge2) const {
+	bool operator()(EdgeId edge1, EdgeId edge2) const
+	{
+		if (size_t(edge1.get()) < 0x1000 || size_t(edge2.get()) < 0x1000 || size_t(&graph_) < 0x1000 || size_t(&comparator_) < 0x1000)
+		{
+			exit(1);
+		}
+
 		if (math::eq(graph_.coverage(edge1), graph_.coverage(edge2))) {
-			return edge1 < edge2;
+			return comparator_(edge1, edge2);
 		}
 		return math::ls(graph_.coverage(edge1), graph_.coverage(edge2));
 	}
@@ -1084,6 +1208,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	const Graph& graph_;
+	const typename Graph::Comparator comparator_;
 public:
 	/**
 	 * TipComparator should never be created with default constructor but it is necessary on order for
@@ -1097,7 +1222,7 @@ public:
 	 * @param graph graph for which comparator is created
 	 */
 	LengthComparator(const Graph &graph) :
-			graph_(graph) {
+			graph_(graph), comparator_(graph_.ReliableComparatorInstance()) {
 	}
 
 	/**
@@ -1105,7 +1230,7 @@ public:
 	 */
 	bool operator()(EdgeId edge1, EdgeId edge2) const {
 		if (graph_.length(edge1) == graph_.length(edge2)) {
-			return edge1 < edge2;
+			return comparator_(edge1, edge2);
 		}
 		return graph_.length(edge1) < graph_.length(edge2);
 	}
@@ -1215,7 +1340,7 @@ public:
 		vector<EdgeId> answer;
 		EdgeId curr = e;
 		answer.push_back(curr);
-		set<EdgeId> was;
+		restricted::set<EdgeId> was;
 		while (graph_.CheckUniqueOutgoingEdge(graph_.EdgeEnd(curr))) {
 			TRACE("current " << graph_.int_ids().ReturnIntId(curr));
 			curr = graph_.GetUniqueOutgoingEdge(graph_.EdgeEnd(curr));
@@ -1233,7 +1358,7 @@ public:
 		vector<EdgeId> answer;
 		EdgeId curr = e;
 		answer.push_back(curr);
-		set<EdgeId> was;
+		restricted::set<EdgeId> was;
 		while (graph_.CheckUniqueIncomingEdge(graph_.EdgeStart(curr))) {
 			TRACE("current " << curr);
 			curr = graph_.GetUniqueIncomingEdge(graph_.EdgeStart(curr));
@@ -1371,7 +1496,7 @@ public:
 
 template<class EdgeId> class TipLock{
     private:
-        static map<EdgeId, bool> lock;
+        static restricted::map<EdgeId, bool> lock;
     public:
         static void Lock(EdgeId tip){
             lock[tip] = true;   
@@ -1389,7 +1514,7 @@ template<class EdgeId> class TipLock{
         }        
 };
 
-template<class EdgeId> map<EdgeId, bool> TipLock<EdgeId>::lock;
+template<class EdgeId> restricted::map<EdgeId, bool> TipLock<EdgeId>::lock;
 template<class Graph>
 class TipChecker{
     typedef typename Graph::EdgeId EdgeId;
@@ -1634,7 +1759,7 @@ class PlausiblePathFinder {
 				vector<EdgeId> outgoing = direction_.OutgoingEdges(cross);
 				for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
 					auto candidate = find(*it, length);
-					if (candidate > result)
+					if (candidate.first > result.first)
 						result = candidate;
 				}
 			}

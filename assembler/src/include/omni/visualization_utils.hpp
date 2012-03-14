@@ -123,8 +123,8 @@ class ElementColorer {
 public:
 	virtual string GetColour(ElementId element) const = 0;
 
-	virtual map<ElementId, string> GetColours(const set<ElementId> &elements) const {
-		map<ElementId, string> result;
+	virtual restricted::map<ElementId, string> GetColours(const set<ElementId, typename Graph::Comparator> &elements) const {
+		restricted::map<ElementId, string> result;
 		for(auto it = elements.begin(); it != elements.end(); ++it) {
 			result[*it] = GetColour(*it);
 		}
@@ -154,11 +154,11 @@ public:
 
 	virtual string GetColour(VertexId v) const = 0;
 
-	virtual map<VertexId, string> GetColours(const set<VertexId> &vertices) const = 0;
+	virtual restricted::map<VertexId, string> GetColours(const set<VertexId, typename Graph::Comparator> &vertices) const = 0;
 
 	virtual string GetColour(EdgeId e) const = 0;
 
-	virtual map<EdgeId, string> GetColours(const set<EdgeId> &edges) const = 0;
+	virtual restricted::map<EdgeId, string> GetColours(const set<EdgeId, typename Graph::Comparator> &edges) const = 0;
 
 	virtual ~GraphColorer() {
 	}
@@ -191,7 +191,7 @@ public:
 		return vertex_colorer_->GetColour(v);
 	}
 
-	/*virtual */map<VertexId, string> GetColours(const set<VertexId> &vertices) const {
+	/*virtual */restricted::map<VertexId, string> GetColours(const set<VertexId, typename Graph::Comparator> &vertices) const {
 		return vertex_colorer_->GetColours(vertices);
 	}
 
@@ -199,7 +199,7 @@ public:
 		return edge_colorer_->GetColour(e);
 	}
 
-	/*virtual */map<EdgeId, string> GetColours(const set<EdgeId> &edges) const {
+	/*virtual */restricted::map<EdgeId, string> GetColours(const set<EdgeId, typename Graph::Comparator> &edges) const {
 		return edge_colorer_->GetColours(edges);
 	}
 
@@ -208,26 +208,30 @@ public:
 template<class Graph, typename ElementId>
 class MapColorer : public ElementColorer<Graph, ElementId> {
 private:
-	map<ElementId, string> color_map_;
+	restricted::map<ElementId, string> color_map_;
 	optional<string> default_color_;
 public:
-	MapColorer(const map<ElementId, string> &color_map) : color_map_(color_map) {
+	MapColorer(const restricted::map<ElementId, string> &color_map) : color_map_(color_map) {
 	}
 
-	MapColorer(const map<ElementId, string> &color_map, const string& default_color) :
+	virtual ~MapColorer() {
+	}
+
+	MapColorer(const restricted::map<ElementId, string> &color_map, const string& default_color) :
 		color_map_(color_map),
 		default_color_(default_color) {
 	}
 
 	virtual string GetColour(ElementId element) const {
-		auto it = color_map_.find(element);
-		if (it != color_map_.end()) {
-			return it->second;
+		if (color_map_.count(element) != 0) {
+			return color_map_.find(element)->second;
+//			return color_map_[element];
 		} else {
 			if (default_color_) {
 				return *default_color_;
 			} else {
 				VERIFY(false);
+				return "";
 			}
 		}
 	}
@@ -241,17 +245,16 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph &graph_;
 
-	bool IsBorder(VertexId v, const set<VertexId> &vs) const {
-		set<VertexId> vertices(vs.begin(), vs.end());
+	bool IsBorder(VertexId v, const set<VertexId, typename Graph::Comparator> &vs) const {
 		const vector<EdgeId> outgoing_edges = graph_.OutgoingEdges(v);
 		const vector<EdgeId> incoming_edges = graph_.IncomingEdges(v);
-		set<EdgeId> adjacent_edges;
+		set<EdgeId, typename Graph::Comparator> adjacent_edges(graph_.ReliableComparatorInstance());
 		adjacent_edges.insert(outgoing_edges.begin(), outgoing_edges.end());
 		adjacent_edges.insert(incoming_edges.begin(), incoming_edges.end());
 		for (auto e_it = adjacent_edges.begin(); e_it != adjacent_edges.end();
 				++e_it) {
-			if (vertices.count(graph_.EdgeStart(*e_it)) == 0
-					|| vertices.count(graph_.EdgeEnd(*e_it)) == 0) {
+			if (vs.count(graph_.EdgeStart(*e_it)) == 0
+					|| vs.count(graph_.EdgeEnd(*e_it)) == 0) {
 				return true;
 			}
 		}
@@ -269,10 +272,11 @@ public:
 		return "";
 	}
 
-	virtual map<VertexId, string> GetColours(const set<VertexId> &elements) const {
-		map<VertexId, string> result;
+	virtual restricted::map<VertexId, string> GetColours(const set<VertexId, typename Graph::Comparator> &elements) const {
+		restricted::map<VertexId, string> result;
 		for(auto it = elements.begin(); it != elements.end(); ++it) {
-			result[*it] = IsBorder(*it, elements) ? "yellow" : "white";
+			string value = IsBorder(*it, elements) ? "yellow" : "white";
+			result[*it] = value;
 		}
 		return result;
 	}
@@ -285,17 +289,18 @@ class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	const omnigraph::GraphLabeler<Graph>& gl_;
 	const GraphColorer<Graph> &colorer_;
+	typename Graph::Comparator comparator_;
 
 public:
 	ColoredGraphVisualizer(const Graph& g, gvis::GraphPrinter<VertexId>& gp,
 			const omnigraph::GraphLabeler<Graph>& gl,
 			const GraphColorer<Graph> &colorer) :
-			super(g, gp), gl_(gl), colorer_(colorer) {
+			super(g, gp), gl_(gl), colorer_(colorer), comparator_(g.ReliableComparatorInstance()) {
 	}
 
 	virtual void Visualize(const vector<VertexId>& vertices) {
-		set<VertexId> vertex_set(vertices.begin(), vertices.end());
-		map<VertexId, string> vertex_colour_map = colorer_.GetColours(vertex_set);
+		set<VertexId, typename Graph::Comparator> vertex_set(vertices.begin(), vertices.end(), comparator_);
+		restricted::map<VertexId, string> vertex_colour_map = colorer_.GetColours(vertex_set);
 
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			super::gp_.AddVertex(*v_it, gl_.label(*v_it), vertex_colour_map[*v_it]);
@@ -326,15 +331,14 @@ private:
 	const Path<EdgeId> &path1_;
 	const Path<EdgeId> &path2_;
 
-	void SetColor(map<EdgeId, string> &color, EdgeId edge, string col) const {
-		auto it = color.find(edge);
-		if (it != color.end() && it->second != col) {
+	void SetColor(restricted::map<EdgeId, string> &color, EdgeId edge, string col) const {
+		if (color.count(edge) != 0 && color[edge] != col) {
 			color[edge] = "purple";
 		} else
 			color[edge] = col;
 	}
 
-	void ConstructColorMap(map<EdgeId, string> &color) const {
+	void ConstructColorMap(restricted::map<EdgeId, string> &color) const {
 		for (auto it = path1_.sequence().begin(); it != path1_.sequence().end();
 				++it) {
 			SetColor(color, *it, "red");
@@ -345,7 +349,7 @@ private:
 		}
 	}
 
-	void ConstructBlackEdgesSet(set<EdgeId> &result) const {
+	void ConstructBlackEdgesSet(restricted::set<EdgeId> &result) const {
 		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
 				++iterator) {
 			result.insert(*iterator);
@@ -366,14 +370,14 @@ public:
 			graph_(graph), path1_(path1), path2_(path2) {
 	}
 
-	map<EdgeId, string> ColorPath() const {
-		map<EdgeId, string> colors;
+	restricted::map<EdgeId, string> ColorPath() const {
+		restricted::map<EdgeId, string> colors;
 		ConstructColorMap(colors);
 		return colors;
 	}
 
-	set<EdgeId> BlackEdges() const {
-		set<EdgeId> result;
+	restricted::set<EdgeId> BlackEdges() const {
+		restricted::set<EdgeId> result;
 		ConstructBlackEdgesSet(result);
 		return result;
 	}
@@ -388,7 +392,7 @@ auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
 
 template <class Graph>
 auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
-		const map<typename Graph::EdgeId, string>& edge_color_map,
+		const restricted::map<typename Graph::EdgeId, string>& edge_color_map,
 		const string& default_color = "") {
 	return DefaultColorer(g, new MapColorer<Graph, typename Graph::EdgeId>(edge_color_map, default_color));
 }
@@ -402,7 +406,7 @@ auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
 
 template <class Graph>
 auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g) {
-	 map<typename Graph::EdgeId, string> empty_map;
+	restricted::map<typename Graph::EdgeId, string> empty_map;
 	return DefaultColorer(g, empty_map);
 }
 
@@ -594,9 +598,9 @@ void WriteErrors(
 		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
 		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
 	PathColorer<Graph> path_colorer(g, path1, path2);
-	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
+	restricted::set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
 	ErrorComponentSplitter<Graph> splitter(g, black);
-	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+	restricted::map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 	ComponentSizeFilter<Graph> checker(g, 1500, 2);
 	string error_file_name = InsertComponentName<Graph>(file_name, "error");
 	WriteComponents(g, splitter, checker, error_file_name, *DefaultColorer(g, coloring), labeler);
@@ -677,10 +681,10 @@ void WriteComponentsAlongPath(const Graph& g,
 //	Path<typename Graph::EdgeId> simple_path2 = color2.simple_path();
 	PathColorer<Graph> path_colorer(g, /*simple_path1*/color1, /*simple_path2*/
 			color2);
-	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+	auto coloring = path_colorer.ColorPath();
 	if(colour_path) {
 		for(size_t i = 0; i < path.size(); i++) {
-			coloring[path[i].first] = "green";
+			coloring.insert(make_pair(path[i].first, "green"));
 		}
 	}
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);

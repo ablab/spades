@@ -35,8 +35,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	RepeatResolver<Graph> repeat_resolver(g, old_IDs, info, edges_pos,
 			new_graph, new_IDs, edges_pos_new, tmp_deleted_handler, LabelsAfter);
 	make_dir(output_folder);
-	unordered_map<typename Graph::EdgeId, typename Graph::EdgeId> edge_labels =
-			repeat_resolver.GetEdgeLabels();
+	auto edge_labels = repeat_resolver.GetEdgeLabels();
 	LabelsAfter.FillLabels(edge_labels);
 
 	repeat_resolver.ResolveRepeats(output_folder);

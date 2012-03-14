@@ -34,13 +34,13 @@ private:
 	Graph &old_graph_;
 	//From new edge to sequence of old
 public:
-	map<EdgeId, vector<EdgeId> > edge_labels;
+	restricted::map<EdgeId, vector<EdgeId> > edge_labels;
 	//From old edge to set of new ones, containing it.
-	map<EdgeId, set<EdgeId> > edge_inclusions;
+	restricted::map<EdgeId, restricted::set<EdgeId> > edge_inclusions;
 public:
 	//TODO: integrate this to resolver, remove "from_resolve" parameter
 	EdgeLabelHandler(Graph &new_graph, Graph &old_graph,
-			std::unordered_map<EdgeId, EdgeId>& from_resolve) :
+			const std::map<EdgeId, EdgeId, typename Graph::Comparator>&  from_resolve) :
 			GraphActionHandler<Graph>(new_graph, "EdgePositionHandler"), new_graph_(
 					new_graph), old_graph_(old_graph) {
 		FillLabels(from_resolve);
@@ -62,14 +62,14 @@ public:
 			GraphActionHandler<Graph>(new_graph, "EdgePositionHandler"), new_graph_(
 					new_graph), old_graph_(old_graph) {
 	}
-	void FillLabels(std::unordered_map<EdgeId, EdgeId>& from_resolve) {
+	void FillLabels(const map<EdgeId, EdgeId, MixedComparator<EdgeId, typename Graph::Comparator>>& from_resolve) {
 		for (auto iter = from_resolve.begin(); iter != from_resolve.end();
 				++iter) {
 			if (edge_inclusions.find(iter->second) == edge_inclusions.end()) {
-				set<EdgeId> tmp;
+				restricted::set<EdgeId> tmp;
 				edge_inclusions.insert(make_pair(iter->second, tmp));
 			}
-			edge_inclusions[iter->second].insert(iter->first);
+			edge_inclusions.find(iter->second)->second.insert(iter->first);
 
 			if (edge_labels.find(iter->first) == edge_labels.end()) {
 				vector<EdgeId> tmp;
@@ -90,15 +90,15 @@ public:
 				"gluing two different edges is not a good idea on this step! EdgeLabel Handler can fail on such operation");
 		vector<EdgeId> tmp;
 		for (size_t i = 0; i < edge_labels[edge1].size(); i++) {
-			edge_inclusions[edge_labels[edge1][i]].insert(new_edge);
-			edge_inclusions[edge_labels[edge1][i]].erase(edge1);
+			edge_inclusions.find(edge_labels[edge1][i])->second.insert(new_edge);
+			edge_inclusions.find(edge_labels[edge1][i])->second.erase(edge1);
 			tmp.push_back(edge_labels[edge1][i]);
 
 			edge_labels.erase(edge1);
 		}
 		for (size_t i = 0; i < edge_labels[edge2].size(); i++) {
-			edge_inclusions[edge_labels[edge2][i]].insert(new_edge);
-			edge_inclusions[edge_labels[edge2][i]].erase(edge2);
+			edge_inclusions.find(edge_labels[edge2][i])->second.insert(new_edge);
+			edge_inclusions.find(edge_labels[edge2][i])->second.erase(edge2);
 			edge_labels.erase(edge2);
 
 			//	tmp.push_back(edge_labels[edge1][i]);

@@ -24,13 +24,11 @@ class SingleEdge;
 template<class DataMaster>
 class SingleVertex {
 private:
-	typedef SingleVertex<DataMaster>* VertexId;
-	typedef SingleEdge<DataMaster>* EdgeId;
+	typedef restricted::pure_pointer<SingleVertex<DataMaster>> VertexId;
+	typedef restricted::pure_pointer<SingleEdge<DataMaster>> EdgeId;
 	typedef typename DataMaster::VertexData VertexData;
 
-	friend class AbstractGraph<SingleVertex<DataMaster>*,
-			SingleEdge<DataMaster>*, DataMaster,
-			typename set<SingleVertex<DataMaster>*>::const_iterator> ;
+	friend class AbstractGraph<restricted::pure_pointer<SingleVertex<DataMaster>>, restricted::pure_pointer<SingleEdge<DataMaster>>, DataMaster> ;
 	friend class AbstractNonconjugateGraph<DataMaster> ;
 
 	vector<EdgeId> outgoing_edges_;
@@ -126,13 +124,11 @@ private:
 template<class DataMaster>
 class SingleEdge {
 private:
-	typedef SingleVertex<DataMaster>* VertexId;
-	typedef SingleEdge<DataMaster>* EdgeId;
+	typedef restricted::pure_pointer<SingleVertex<DataMaster>> VertexId;
+	typedef restricted::pure_pointer<SingleEdge<DataMaster>> EdgeId;
 	typedef typename DataMaster::EdgeData EdgeData;
 
-	friend class AbstractGraph<SingleVertex<DataMaster>*,
-			SingleEdge<DataMaster>*, DataMaster,
-			typename set<SingleVertex<DataMaster>*>::const_iterator> ;
+	friend class AbstractGraph<restricted::pure_pointer<SingleVertex<DataMaster>>, restricted::pure_pointer<SingleEdge<DataMaster>>, DataMaster> ;
 	friend class AbstractNonconjugateGraph<DataMaster> ;
 	//todo unfriend
 	friend class SingleVertex<DataMaster> ;
@@ -167,11 +163,9 @@ private:
 };
 
 template<class DataMaster>
-class AbstractNonconjugateGraph: public AbstractGraph<SingleVertex<DataMaster>*,
-		SingleEdge<DataMaster>*, DataMaster,
-		typename set<SingleVertex<DataMaster>*>::const_iterator> {
-	typedef AbstractGraph<SingleVertex<DataMaster>*, SingleEdge<DataMaster>*,
-			DataMaster, typename set<SingleVertex<DataMaster>*>::const_iterator> base;
+class AbstractNonconjugateGraph: public AbstractGraph<restricted::pure_pointer<SingleVertex<DataMaster>>, restricted::pure_pointer<SingleEdge<DataMaster>>, DataMaster> {
+private:
+	typedef AbstractGraph<restricted::pure_pointer<SingleVertex<DataMaster>>, restricted::pure_pointer<SingleEdge<DataMaster>>, DataMaster> base;
 public:
 	typedef typename base::VertexId VertexId;
 	typedef typename base::EdgeId EdgeId;
@@ -182,21 +176,21 @@ public:
 private:
 
 	virtual VertexId HiddenAddVertex(const VertexData &data) {
-		VertexId v = new SingleVertex<DataMaster>(data);
-		this->vertices_.insert(v);
+		VertexId v(new SingleVertex<DataMaster>(data));
+//		this->vertices_.insert(v);
 		return v;
 	}
 
 	virtual void HiddenDeleteVertex(VertexId v) {
-		this->vertices_.erase(v);
-		delete v;
+//		this->vertices_.erase(v);
+		delete v.get();
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
 			const EdgeData &data) {
 		VERIFY(
 				this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
-		EdgeId newEdge = new SingleEdge<DataMaster>(v1, v2, data);
+		EdgeId newEdge(new SingleEdge<DataMaster>(v1, v2, data));
 		v1->AddOutgoingEdge(newEdge);
 		v2->AddIncomingEdge(newEdge);
 		return newEdge;
@@ -207,7 +201,7 @@ private:
 		VertexId end = edge->end();
 		start->RemoveOutgoingEdge(edge);
 		end->RemoveIncomingEdge(edge);
-		delete edge;
+		delete edge.get();
 	}
 
 	virtual vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path) {

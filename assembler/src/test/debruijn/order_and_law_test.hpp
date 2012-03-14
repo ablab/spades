@@ -127,7 +127,6 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 	IdTrackHandler<Graph> int_ids(graph);
 	omni_graph::RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
 	PrinterTraits<Graph>::Printer printer(graph, int_ids);
-	cout << graph.size() << endl;
 	printer.saveGraph(file_name);
 	printer.saveEdgeSequences(file_name);
 	Graph new_graph(55);

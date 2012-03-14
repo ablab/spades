@@ -69,7 +69,6 @@ void CheckRCSymmetry(const ConjugateDeBruijnGraph &graph, const paired_info_inde
 }
 
 BOOST_AUTO_TEST_CASE( CheckPairInfoSimmetry ) {
-	cout << "oppa" << endl;
 	INFO("CheckPairInfoSimmetry started");
 	string genome_str;
 	string genome_filename = "./data/input/E.Coli.K12.MG1655/MG1655-K12.fasta.gz";

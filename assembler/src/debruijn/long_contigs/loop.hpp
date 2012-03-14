@@ -17,19 +17,15 @@ struct LoopDetectorData {
 	size_t iteration;
 	double selfWeight;
 
-	std::map<EdgeId, double> weights;
+	map<EdgeId, double, Graph::Comparator> weights;
 
-	LoopDetectorData(size_t iter, double weight): iteration(iter), selfWeight(weight), weights()  {
+	LoopDetectorData(size_t iter, double weight, const Graph::Comparator &comparator): iteration(iter), selfWeight(weight), weights(comparator)  {
 	}
 
-	LoopDetectorData(const LoopDetectorData& d) {
-		iteration = d.iteration;
-		selfWeight = d.selfWeight;
-
-		weights.insert(d.weights.begin(), d.weights.end());
+	LoopDetectorData(const LoopDetectorData& d) : iteration(d.iteration), selfWeight(d.selfWeight), weights(d.weights){
 	}
 
-	LoopDetectorData(): weights()  {
+	LoopDetectorData(const Graph::Comparator &comparator) : weights(comparator) {
 	}
 
 	void SetSelectedEdge(size_t iter, double w) {
@@ -48,15 +44,12 @@ struct LoopDetectorData {
 	}
 
 	bool operator==(const LoopDetectorData& d) {
-		if (selfWeight != d.selfWeight || weights.size() != d.weights.size()) {
+		if (selfWeight != d.selfWeight) {
 			return false;
 		}
 
-		auto iter2 = d.weights.begin();
-		for (auto iter1 = weights.begin(); iter2 != d.weights.end() && iter1 != weights.end(); ++iter1, ++iter2) {
-			if (iter1->first != iter2->first || iter1->second != iter2->second) {
-				return false;
-			}
+		if(this->weights != d.weights) {
+			return false;
 		}
 
 		return true;
@@ -65,7 +58,10 @@ struct LoopDetectorData {
 
 struct LoopDetector {
 	LoopDetectorData temp;
-	std::multimap<EdgeId, LoopDetectorData> data;
+	std::multimap<EdgeId, LoopDetectorData, Graph::Comparator> data;
+
+	LoopDetector(const Graph &graph) : temp(graph.ReliableComparatorInstance()), data(graph.ReliableComparatorInstance()) {
+	}
 
 	void AddNewEdge(EdgeId e, size_t iter, double weight = 1) {
 		temp.SetSelectedEdge(iter, weight);
@@ -122,7 +118,7 @@ bool PathIsOnlyLoop(BidirectionalPath& path, LoopDetector& detector, bool forwar
 	int start = forward ? path.size() - 1 : loopSize - 1;
 	int end = forward ? path.size() - loopSize : 0;
 
-	std::set<EdgeId> loopEdges;
+	restricted::set<EdgeId> loopEdges;
 
 	for (int i = start; i >= end; --i) {
 		loopEdges.insert(path[i]);
@@ -233,13 +229,13 @@ EdgeId FindFirstFork(BidirectionalPath& path, EdgeId e, LoopDetector& detector, 
 			return path[i];
 		}
 	}
-	return 0;
+	return EdgeId(0);
 }
 
 EdgeId GetForwardFork(const Graph& g, EdgeId e) {
 	VertexId v = g.EdgeStart(e);
 	if (g.OutgoingEdgeCount(v) != 2) {
-		return 0;
+		return EdgeId(0);
 	}
 	std::vector<EdgeId> edges = g.OutgoingEdges(v);
 	if (edges[1] == e) {
@@ -252,7 +248,7 @@ EdgeId GetForwardFork(const Graph& g, EdgeId e) {
 EdgeId GetBackwardFork(const Graph& g, EdgeId e) {
 	VertexId v = g.EdgeEnd(e);
 	if (g.IncomingEdgeCount(v) != 2) {
-		return 0;
+		return EdgeId(0);
 	}
 	std::vector<EdgeId> edges = g.IncomingEdges(v);
 	if (edges[1] == e) {
@@ -269,7 +265,7 @@ bool EdgesMakeShortLoop(const Graph& g, EdgeId e1, EdgeId e2) {
 EdgeId IsEdgeInShortLoopForward(const Graph& g, EdgeId e) {
 	VertexId v = g.EdgeEnd(e);
 	auto edges = g.OutgoingEdges(v);
-	EdgeId result = 0;
+	EdgeId result(0);
 
 	for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
 		if (g.EdgeEnd(*edge) == g.EdgeStart(e)) {
@@ -277,7 +273,7 @@ EdgeId IsEdgeInShortLoopForward(const Graph& g, EdgeId e) {
 		}
 	}
 
-	if (g.OutgoingEdgeCount(v) == 1 && result != 0) {
+	if (g.OutgoingEdgeCount(v) == 1 && result != EdgeId(0)) {
 		DEBUG("Seems no fork backward: edge " << g.length(e) << ", loops with " << g.length(result) << ". " << g.OutgoingEdgeCount(v));
 	}
 
@@ -287,7 +283,7 @@ EdgeId IsEdgeInShortLoopForward(const Graph& g, EdgeId e) {
 EdgeId IsEdgeInShortLoopBackward(const Graph& g, EdgeId e) {
 	VertexId v = g.EdgeStart(e);
 	auto edges = g.IncomingEdges(v);
-	EdgeId result = 0;
+	EdgeId result(0);
 
 	for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
 		if (g.EdgeStart(*edge) == g.EdgeEnd(e)) {
@@ -295,7 +291,7 @@ EdgeId IsEdgeInShortLoopBackward(const Graph& g, EdgeId e) {
 		}
 	}
 
-	if (g.IncomingEdgeCount(v) == 1 && result != 0) {
+	if (g.IncomingEdgeCount(v) == 1 && result != EdgeId(0)) {
 		DEBUG("Seems no fork backward: edge " << g.length(e) << ", loops with " << g.length(result) << ". " << g.IncomingEdgeCount(v));
 	}
 

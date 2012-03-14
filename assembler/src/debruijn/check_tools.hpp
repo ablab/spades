@@ -28,18 +28,18 @@ namespace debruijn_graph {
 	}
 }*/
 
-void ToSet(PairedInfoIndex<Graph>& paired_index, set<PairInfo<EdgeId>>& as_set) {
-//	static size_t count = 0;
-	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
-		vector<PairInfo<EdgeId>> infos = *it;
-		for (auto it2 = infos.begin(); it2!=infos.end(); it2++) {
-//			count++;
-			as_set.insert(*it2);
-//			cout << "HERE1 " << *it2 << endl;
-		}
-	}
-//	cout << "Count was " << count << endl;
-}
+//void ToSet(PairedInfoIndex<Graph>& paired_index, set<PairInfo<EdgeId>>& as_set) {
+////	static size_t count = 0;
+//	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
+//		vector<PairInfo<EdgeId>> infos = *it;
+//		for (auto it2 = infos.begin(); it2!=infos.end(); it2++) {
+////			count++;
+//			as_set.insert(*it2);
+////			cout << "HERE1 " << *it2 << endl;
+//		}
+//	}
+////	cout << "Count was " << count << endl;
+//}
 
 void CheckPairInfo(const vector<PairInfo<EdgeId>>& infos1, const vector<PairInfo<EdgeId>>& infos2) {
   using omnigraph::operator<<;
@@ -139,7 +139,7 @@ double TotalPositiveWeight(const conj_graph_pack& gp, PairedInfoIndex<Graph> pai
 	double s = 0.;
 	for (auto it = infos.begin(); it != infos.end(); ++it) {
 		double weight = it->weight;
-        cout<<"Weight " << weight << endl;
+        TRACE("Weight " << weight);
 		//if (math::gr(weight, 0.)) {
 			s += weight;
 		//}

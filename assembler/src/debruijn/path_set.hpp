@@ -26,42 +26,74 @@ public:
         start(start), end(end), length(length), paths(paths), id(-1), weight(weight)
     {}
 
-    bool operator<(const PathSet& rhs) const {
-        const PathSet &lhs = *this;
-        
-        
-        
-        if(lhs.start == rhs.start)
+    template<class Comparator>
+    class PathSetComparator {
+    private:
+    	Comparator comparator_;
+    public:
+    	PathSetComparator(Comparator comparator) : comparator_(comparator) {
+    	}
+
+        bool PathLess(const set<Path> firstSet,const set<Path> secondSet) const
         {
-            if(lhs.length == rhs.length)
+            //TODO use the lexicography default comparision.
+            if(firstSet.size() < secondSet.size())
+                return true;
+            if(firstSet.size() > secondSet.size())
+                return false;
+
+            vector<Path> v1;
+            for(auto iter = firstSet.begin() ; iter != firstSet.end() ; ++iter)
             {
-                if(lhs.end== rhs.end)
-                {
-                    return PathLess(lhs.paths, rhs.paths);
-                }
-                else return lhs.end< rhs.end;
+                v1.push_back(*iter);
             }
-            else return lhs.length < rhs.length;
+            vector<Path> v2;
+            for(auto iter = firstSet.begin() ; iter != firstSet.end() ; ++iter)
+            {
+                v2.push_back(*iter);
+            }
+
+            for(size_t i = 0 ; i < v1.size()  ; ++i)
+            {
+                if(v1[i] < v2[i]) //lexicalgraphic comparison
+                    return true;
+            }
+            return false;
         }
-        else return lhs.start < rhs.start;
 
-
-
-
-        if(lhs.start == rhs.start)
-        {
-            if(lhs.end == rhs.end)
+    	bool operator()(const PathSet& lhs, const PathSet& rhs) {
+            if(lhs.start == rhs.start)
             {
                 if(lhs.length == rhs.length)
                 {
-                    return PathLess(lhs.paths, rhs.paths);
+                    if(lhs.end== rhs.end)
+                    {
+                        return PathLess(lhs.paths, rhs.paths);
+                    }
+                    else return comparator_(lhs.end, rhs.end);
                 }
-                else return lhs.length< rhs.length;
+                else return comparator_(lhs.length, rhs.length);
             }
-            else return lhs.end < rhs.end;
-        }
-        else return lhs.start < rhs.start;
-    }
+            else return comparator_(lhs.start, rhs.start);
+
+
+
+
+            if(lhs.start == rhs.start)
+            {
+                if(lhs.end == rhs.end)
+                {
+                    if(lhs.length == rhs.length)
+                    {
+                        return PathLess(lhs.paths, rhs.paths);
+                    }
+                    else return comparator_(lhs.length, rhs.length);
+                }
+                else return comparator_(lhs.end, rhs.end);
+            }
+            else return comparator_(lhs.start, rhs.start);
+    	}
+    };
 
     bool IsAbsolutePrefixOf(const PathSet<EdgeId> rhs)
     {
@@ -113,32 +145,6 @@ private:
     }
 
 
-    bool PathLess(const set<Path> firstSet,const set<Path> secondSet) const
-    {
-        //TODO use the lexicography default comparision.
-        if(firstSet.size() < secondSet.size())
-            return true;
-        if(firstSet.size() > secondSet.size())
-            return false;
-
-        vector<Path> v1;
-        for(auto iter = firstSet.begin() ; iter != firstSet.end() ; ++iter)
-        {
-            v1.push_back(*iter);
-        }
-        vector<Path> v2;
-        for(auto iter = firstSet.begin() ; iter != firstSet.end() ; ++iter)
-        {
-            v2.push_back(*iter);
-        }
-
-        for(size_t i = 0 ; i < v1.size()  ; ++i)
-        {
-            if(v1[i] < v2[i]) //lexicalgraphic comparison
-                return true;
-        }
-        return false;
-    }
 public:
 
     bool operator==(const PathSet& rhs) const {

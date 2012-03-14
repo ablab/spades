@@ -45,7 +45,7 @@ void ExtendTrivialForward(const Graph& g, BidirectionalPath& path, LoopDetector&
 			DETAILED_DEBUG("Forward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
 			DetailedPrintPath(g, path, *lengths);
 
-			if (ExtensionGoodEnough(nextEdge, weight, params.ps.ss.trusted_threshold) == 0) {
+			if (ExtensionGoodEnough(nextEdge, weight, params.ps.ss.trusted_threshold) == EdgeId(0)) {
 				break;
 			}
 		}
@@ -97,7 +97,7 @@ void ExtendTrivialBackward(const Graph& g, BidirectionalPath& path, LoopDetector
 			DETAILED_DEBUG("Backward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
 			DetailedPrintPath(g, path, *lengths);
 
-			if (ExtensionGoodEnough(nextEdge, weight, params.ps.ss.trusted_threshold) == 0) {
+			if (ExtensionGoodEnough(nextEdge, weight, params.ps.ss.trusted_threshold) == EdgeId(0)) {
 				break;
 			}
 		}
@@ -161,9 +161,9 @@ void SimpleRecountDetectorBackward(BidirectionalPath& path, LoopDetector& detect
 
 //Find all seeds as trivial paths
 void FindSeeds(const Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices * pairedInfo = 0) {
-	LoopDetector detector;
+	LoopDetector detector(g);
 	PathLengths lengths;
-	std::set<EdgeId> edges;
+	restricted::set<EdgeId> edges;
 	seeds.clear();
 
 	INFO("Finding seeds started");

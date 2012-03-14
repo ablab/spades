@@ -106,7 +106,7 @@ public:
 		int_ids_ = int_ids;
 	}
 
-	BaseIdTrackHandler<VertexIdT, EdgeIdT> &int_ids() const {
+	const BaseIdTrackHandler<VertexIdT, EdgeIdT> &int_ids() const {
 		VERIFY(int_ids_);
 		return *int_ids_;
 	}
@@ -179,6 +179,7 @@ public:
 	VertexId AddVertex(const VertexData& data) {
 		TRACE("Adding vertex");
 		VertexId v = HiddenAddVertex(data);
+		FireAddingVertex(v);
 		FireAddVertex(v);
 		TRACE("Vertex " << str(v) << " added");
 		return v;
@@ -186,7 +187,7 @@ public:
 
 	void DeleteVertex(VertexId v) {
 		VERIFY(IsDeadEnd(v) && IsDeadStart(v));
-		VERIFY(v != NULL);
+		VERIFY(v != VertexId(NULL));
 		TRACE("Deleting vertex " << str(v));
 		FireDeleteVertex(v);
 		HiddenDeleteVertex(v);
@@ -202,8 +203,9 @@ public:
 	}
 
 	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		TRACE("Adding edge connecting " << v1 << " and " << v2)
+		TRACE("Adding edge connecting " << v1 << " and " << v2);
 		EdgeId e = HiddenAddEdge(v1, v2, data);
+		FireAddingEdge(e);
 		FireAddEdge(e);
 		TRACE(
 				"Added edge " << str(e) << " connecting " << v1 << " and " << v2);
@@ -249,6 +251,19 @@ public:
 
 	//todo refactor compression methods
 	bool CanCompressVertex(VertexId v) const {
+//		TRACE("Compress vertex check: ");
+//		TRACE("Outgoing check: " << (OutgoingEdgeCount(v) == 1));
+//		TRACE("Outgoing check: " << (CheckUniqueOutgoingEdge(v)));
+//		TRACE("Incoming check: " << (IncomingEdgeCount(v) == 1));
+//		TRACE("Incoming check: " << (CheckUniqueIncomingEdge(v) == 1));
+//		cout << "oppa" << endl;
+//		if((OutgoingEdgeCount(v) == 1) && (IncomingEdgeCount(v) == 1)) {
+//			cout << "gopa " << endl;
+//			cout << GetUniqueOutgoingEdge(v) << endl;
+//			cout << GetUniqueIncomingEdge(v) << endl;
+//			TRACE("Loop check: " << (GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v)));
+//			TRACE("Additional check: " << AdditionalCompressCondition(v));
+//		}
 		return OutgoingEdgeCount(v) == 1 && IncomingEdgeCount(v) == 1 /*one-in one-out*/
 		&& GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v) /*not loop*/
 		&& AdditionalCompressCondition(v);
@@ -276,13 +291,19 @@ public:
 	virtual std::string str(const EdgeId e) const {
 //		return master_.str(data(edge));
 		stringstream ss;
-		ss << int_id(e) << " (" << length(e) << ")";
+		if(int_ids_)
+			ss << int_id(e) << " (" << length(e) << ")";
+		else
+			ss << e << " (" << length(e) << ")";
 		return ss.str();
 	}
 
 	virtual std::string str(const VertexId v) const {
 //		return master_.str(data(v));
-		return ToString(int_id(v));
+		if(int_ids_)
+			return ToString(int_id(v));
+		else
+			return ToString(v);
 	}
 
 	std::string detailed_str(const VertexId v) const {
@@ -344,6 +365,7 @@ public:
 			to_merge.push_back(&(data(*it)));
 		}
 		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge));
+		FireAddingEdge(new_edge);
 		FireMerge(corrected_path, new_edge);
 
 		//		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
@@ -369,10 +391,13 @@ public:
 		pair<VertexData, pair<EdgeData, EdgeData>> newData = master_.SplitData(
 				data(edge), position);
 		VertexId splitVertex = HiddenAddVertex(newData.first);
+		FireAddingVertex(splitVertex);
 		EdgeId new_edge1 = HiddenAddEdge(EdgeStart(edge), splitVertex,
 				newData.second.first);
+		FireAddingEdge(new_edge1);
 		EdgeId new_edge2 = HiddenAddEdge(splitVertex, EdgeEnd(edge),
 				newData.second.second);
+		FireAddingEdge(new_edge2);
 		FireSplit(edge, new_edge1, new_edge2);
 		FireDeleteEdge(edge);
 		FireAddVertex(splitVertex);
@@ -390,6 +415,7 @@ public:
 				"Gluing edges " << str(edge1) << " and " << str(edge2));
 		EdgeId new_edge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),
 				master_.GlueData(data(edge1), data(edge2)));
+		FireAddingEdge(new_edge);
 		FireGlue(new_edge, edge1, edge2);
 		FireDeleteEdge(edge1);
 		FireDeleteEdge(edge2);

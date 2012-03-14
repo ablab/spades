@@ -38,8 +38,8 @@ private:
 	const SequenceMapper& mapper_;
 	Stream& stream_;
 
-	unordered_map<EdgeId, pair<EdgeId, int> > OutTipMap;
-	unordered_map<EdgeId, pair<EdgeId, int> > InTipMap;
+	restricted::map<EdgeId, pair<EdgeId, int> > OutTipMap;
+	restricted::map<EdgeId, pair<EdgeId, int> > InTipMap;
 	set<int> InTipsIds;
 	set<int> OutTipsIds;
 
@@ -63,10 +63,10 @@ private:
 		Path<EdgeId> path1 = ConvertToPath(mapper_.MapSequence(read1));
 		Path<EdgeId> path2 = ConvertToPath(mapper_.MapSequence(read2));
 		for (size_t i = 0; i < path1.size(); ++i) {
-			typename unordered_map<EdgeId, pair<EdgeId, int> >::iterator OutTipIter = OutTipMap.find(path1[i]);
+			auto OutTipIter = OutTipMap.find(path1[i]);
 			if (OutTipIter != OutTipMap.end()){
 				for (size_t j = 0; j < path2.size(); ++j) {
-					typename unordered_map<EdgeId, pair<EdgeId, int> >::iterator InTipIter = InTipMap.find(path2[j]);
+					auto InTipIter = InTipMap.find(path2[j]);
 					if (InTipIter != InTipMap.end()) {
 						paired_index.AddPairInfo(PairInfo<EdgeId>(OutTipIter->second.first,	InTipIter->second.first, 100, 1 , 0.));
 					}

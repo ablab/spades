@@ -63,32 +63,33 @@ struct PairInfo {
 	 variance);
 	 }*/
 
-	bool operator<(const PairInfo& rhs) const {
-		const PairInfo &lhs = *this;
-		return lhs.first == rhs.first ?
-				lhs.second == rhs.second ?
-						math::ls(lhs.d, rhs.d) : lhs.second < rhs.second
-				: lhs.first < rhs.first;
-	}
-
 	/**
 	 * Two paired infos are considered equal if they coinside in all parameters except for the weight of
 	 * info.
 	 */
 	bool operator==(const PairInfo& rhs) const {
 		const PairInfo &lhs = *this;
-		return !(lhs < rhs || rhs < lhs);
-
-		// uncomment this for speed-up:
-
-		//    return lhs.first  == rhs.first      &&
-		//           lhs.second == rhs.second     &&
-		//           lhs.d      == rhs.d     /*   &&
-		//           lhs.weight == rhs.weight*/;
+		return lhs.first == rhs.first && lhs.second == rhs.second && math::eq(lhs.d, rhs.d);
 	}
 
 	bool operator!=(const PairInfo& rhs) const {
 		return !(*this == rhs);
+	}
+};
+
+template<typename EdgeId, class Comparator>
+class PairInfoComparator {
+private:
+	Comparator comparator_;
+public:
+	PairInfoComparator(Comparator comparator) : comparator_(comparator) {
+	}
+
+	bool operator()(const PairInfo<EdgeId>& lhs, const PairInfo<EdgeId>& rhs) const {
+		return lhs.first == rhs.first ?
+				lhs.second == rhs.second ?
+						math::ls(lhs.d, rhs.d) : comparator_(lhs.second, rhs.second)
+				: comparator_(lhs.first, rhs.first);
 	}
 };
 
@@ -103,13 +104,13 @@ ostream& operator<<(ostream& os, const PairInfo<Graph>& info) {
 
 template<typename EdgeId>
 const PairInfo<EdgeId> MinPairInfo(EdgeId id) {
-	return PairInfo<EdgeId>(id, (EdgeId) 0/*numeric_limits<EdgeId>::min()*/,
+	return PairInfo<EdgeId>(id, EdgeId(typename EdgeId::pointer_type(1)),
 			-100000000/*numeric_limits<double>::min()*/, 0., 0.);
 }
 
 template<typename EdgeId>
 const PairInfo<EdgeId> MaxPairInfo(EdgeId id) {
-	return PairInfo<EdgeId>(id, (EdgeId) (-1)/*numeric_limits<EdgeId>::max()*/,
+	return PairInfo<EdgeId>(id, EdgeId(typename EdgeId::pointer_type(-1)),
 			1000000000/*numeric_limits<double>::max()*/, 0., 0.);
 }
 
@@ -152,15 +153,16 @@ bool IsSymmetric(PairInfo<EdgeId> const& pi) {
 }
 
 //todo try storing set<PairInfo>
-template<typename EdgeId>
+template<typename EdgeId, class Comparator>
 class PairInfoIndexData {
 public:
-	typedef set<PairInfo<EdgeId>> Data;
+	typedef set<PairInfo<EdgeId>, PairInfoComparator<EdgeId, Comparator>> Data;
 	typedef typename Data::iterator data_iterator;
 	typedef typename Data::const_iterator data_const_iterator;
 	typedef vector<PairInfo<EdgeId>> PairInfos;
 
 	typedef std::pair<data_const_iterator, data_const_iterator> iterator_range;
+
 
 public:
 	void UpdateSingleInfo(const PairInfo<EdgeId>& info, double d,
@@ -180,6 +182,10 @@ public:
 						info.variance));
 	}
 public:
+
+	PairInfoIndexData(const Comparator &comparator) : comparator_(comparator), data_(PairInfoComparator<EdgeId, Comparator>(comparator_)){
+	}
+
 	data_iterator begin() const {
 		auto itp = data_.begin();
 		int cnt = 1;
@@ -216,7 +222,7 @@ public:
 	}
 
 	void DeleteEdgeInfo(EdgeId e) {
-		set<PairInfo<EdgeId>> paired_edges;
+		set<PairInfo<EdgeId>, PairInfoComparator<EdgeId, Comparator>> paired_edges(comparator_);
 
 		for (auto lower = LowerBound(e), upper = UpperBound(e); lower != upper;
 				++lower) {
@@ -279,6 +285,7 @@ public:
 	}
 
 private:
+	PairInfoComparator<EdgeId, Comparator> comparator_;
 	Data data_;
 };
 
@@ -303,11 +310,11 @@ public:
 	 * between them stored in PairedInfoIndex.
 	 */
 	class EdgePairIterator {
-		typename PairInfoIndexData<EdgeId>::data_iterator position_;
+		typename PairInfoIndexData<EdgeId, typename Graph::Comparator>::data_iterator position_;
 		const PairedInfoIndex<Graph> &index_;
 	public:
 		EdgePairIterator(
-				typename PairInfoIndexData<EdgeId>::data_iterator position,
+				typename PairInfoIndexData<EdgeId, typename Graph::Comparator>::data_iterator position,
 				const PairedInfoIndex<Graph> &index) :
 				position_(position), index_(index) {
 		}
@@ -341,7 +348,7 @@ public:
 	//begin-end insert size supposed
 	PairedInfoIndex(const Graph &g, double max_difference = 0.) :
 			GraphActionHandler<Graph>(g, "PairedInfoIndex"), max_difference_(
-					max_difference) {
+					max_difference), data_(g.ReliableComparatorInstance()) {
 	}
 
 	virtual ~PairedInfoIndex() {
@@ -364,7 +371,7 @@ public:
 
 private:
 
-	PairInfoIndexData<EdgeId> data_;
+	PairInfoIndexData<EdgeId, typename Graph::Comparator> data_;
 
 	size_t CorrectLength(const Path<EdgeId>& path, size_t index) {
 		size_t result = this->g().length(path[index]);
@@ -737,8 +744,6 @@ public:
 			size_t read_length, size_t k, double avg_coverage) :
 			g_(g), insert_size_(insert_size), is_var_(is_var), read_length_(read_length),
 			k_(k), avg_coverage_(avg_coverage) {
-		DEBUG("is " << insert_size_ << " is_var " << is_var_ << " rl "
-				<< read_length_ << " k " << k_ << " cov " << avg_coverage_);
 	}
 
 	const PairInfo<EdgeId> NormalizeWeight(const PairInfo<EdgeId>& pair_info) {

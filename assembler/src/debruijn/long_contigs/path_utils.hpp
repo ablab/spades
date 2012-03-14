@@ -413,7 +413,7 @@ void FilterPaths(const Graph& g, std::vector<BidirectionalPath>& paths, std::vec
 	}
 }
 
-void FilterComlementEdges(const Graph& g, std::set<EdgeId>& filtered, std::set<EdgeId>& rest) {
+void FilterComlementEdges(const Graph& g, std::set<EdgeId, Graph::Comparator>& filtered, restricted::set<EdgeId>& rest) {
 	size_t edges = 0;
 	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		++edges;
@@ -427,8 +427,8 @@ void FilterComlementEdges(const Graph& g, std::set<EdgeId>& filtered, std::set<E
 	DEBUG("Edges separated by " << filtered.size() << " and " << rest.size() << " from " << edges);
 }
 
-void FilterComlementEdges(const Graph& g, std::set<EdgeId>& filtered) {
-	std::set<EdgeId> rest;
+void FilterComlementEdges(const Graph& g, set<EdgeId, Graph::Comparator>& filtered) {
+	restricted::set<EdgeId> rest;
 	FilterComlementEdges(g, filtered, rest);
 }
 
@@ -538,7 +538,7 @@ void RemoveSubpaths(const Graph& g, std::vector<BidirectionalPath>& paths,
 	}
 }
 
-typedef std::multiset<EdgeId> EdgeStat;
+typedef std::multiset<EdgeId, Graph::Comparator> EdgeStat;
 
 void CountSimilarity(const Graph& g, EdgeStat& path1, EdgeStat& path2, int * similarEdges, int * similarLen) {
 	similarEdges = 0;
@@ -601,7 +601,7 @@ void RemoveSimilar(const Graph& g, std::vector<BidirectionalPath>& paths,
 
 	for (int i = 0; i < (int) temp.size(); i += 2) {
 		bool copy = true;
-		EdgeStat stat;
+		EdgeStat stat(g.ReliableComparatorInstance());
 		CountStat(temp[i], &stat);
 		size_t length = PathLength(g, temp[i]);
 
@@ -623,7 +623,7 @@ void RemoveSimilar(const Graph& g, std::vector<BidirectionalPath>& paths,
 			AddPathPairToContainer(temp[i], temp[i + 1], *output);
 
 			pathStat.push_back(stat);
-			EdgeStat conjStat;
+			EdgeStat conjStat(g.ReliableComparatorInstance());
 			CountStat(temp[i + 1], &conjStat);
 			pathStat.push_back(conjStat);
 
@@ -776,7 +776,7 @@ void RemoveSimilarConjugatePaths(const Graph& g, std::vector<BidirectionalPath>&
 
 
 	for (int i = 0; i < (int) paths.size(); ++i) {
-		EdgeStat stat;
+		EdgeStat stat(g.ReliableComparatorInstance());
 		CountStat(paths[i], &stat);
 		pathStat.push_back(stat);
 	}
@@ -1075,13 +1075,13 @@ void RemoveOverlaps(const Graph& g, std::vector<BidirectionalPath>& paths) {
 	DEBUG("Done");
 }
 
-void MakeBlackSet(const Graph& g, Path<Graph::EdgeId>& path1, Path<Graph::EdgeId>& path2, std::set<EdgeId> blackSet) {
-	for (auto edge1 = g.SmartEdgeBegin(); !edge1.IsEnd(); ++edge1) {
-		if (!ContainsPath(path1, *edge1) && !ContainsPath(path2, *edge1)) {
-			blackSet.insert(*edge1);
-		}
-	}
-}
+//void MakeBlackSet(const Graph& g, Path<Graph::EdgeId>& path1, Path<Graph::EdgeId>& path2, std::set<EdgeId> blackSet) {
+//	for (auto edge1 = g.SmartEdgeBegin(); !edge1.IsEnd(); ++edge1) {
+//		if (!ContainsPath(path1, *edge1) && !ContainsPath(path2, *edge1)) {
+//			blackSet.insert(*edge1);
+//		}
+//	}
+//}
 
 void MakeComplementPaths(const Graph& g, BidirectionalPath& path1, BidirectionalPath& path2, int start, bool cutEnds) {
 	if (cutEnds) {
@@ -1232,7 +1232,7 @@ void RemoveUnagreedPaths(const Graph& g, std::vector<BidirectionalPath>& paths, 
 
 
 void AddUncoveredEdges(const Graph& g, std::vector<BidirectionalPath>& paths) {
-    std::set<EdgeId> covered;
+	restricted::set<EdgeId> covered;
 
     for(auto path = paths.begin(); path != paths.end(); ++path) {
         for(auto iter = path->begin(); iter != path->end(); ++iter) {

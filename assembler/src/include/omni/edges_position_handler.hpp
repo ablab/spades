@@ -91,10 +91,10 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef int realIdType;
 
-	std::map<EdgeId, vector<EdgePosition> > EdgesPositions;
 	int max_single_gap_;
+	std::map<EdgeId, vector<EdgePosition>, typename Graph::Comparator > EdgesPositions;
 public:
-	const std::map<EdgeId, vector<EdgePosition> > &edges_positions() const {
+	const std::map<EdgeId, vector<EdgePosition>, typename Graph::Comparator > &edges_positions() const {
 		return EdgesPositions;
 	}
 
@@ -178,7 +178,7 @@ public:
 	}
 
 	EdgesPositionHandler(Graph &g, int max_single_gap = 0) :
-		GraphActionHandler<Graph> (g, "EdgePositionHandler"), max_single_gap_(max_single_gap) {
+		GraphActionHandler<Graph> (g, "EdgePositionHandler"), max_single_gap_(max_single_gap), EdgesPositions(g.ReliableComparatorInstance()) {
 	}
 
 	virtual ~EdgesPositionHandler() {

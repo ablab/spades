@@ -680,14 +680,14 @@ class EtalonPairedInfoCounter {
 	size_t gap_;
 	size_t delta_;
 
-	void AddEtalonInfo(set<PairInfo<EdgeId>>& paired_info, EdgeId e1, EdgeId e2,
+	void AddEtalonInfo(set<PairInfo<EdgeId>, omnigraph::PairInfoComparator<EdgeId, typename Graph::Comparator>>& paired_info, EdgeId e1, EdgeId e2,
 			double d) {
 		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0, 0.);
 		paired_info.insert(pair_info);
 	}
 
 	void ProcessSequence(const Sequence& sequence,
-			set<PairInfo<EdgeId>>& temporary_info) {
+			set<PairInfo<EdgeId>, omnigraph::PairInfoComparator<EdgeId, typename Graph::Comparator>>& temporary_info) {
 		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
 		Seq<k + 1> left(sequence);
 		left = left >> 0;
@@ -740,7 +740,10 @@ public:
 
 	void FillEtalonPairedInfo(const Sequence& genome,
 			omnigraph::PairedInfoIndex<Graph>& paired_info) {
-		set<PairInfo<EdgeId>> temporary_info;
+		set<PairInfo<EdgeId>,
+				omnigraph::PairInfoComparator<EdgeId, typename Graph::Comparator>> temporary_info(
+				omnigraph::PairInfoComparator<EdgeId, typename Graph::Comparator>(
+						g_.ReliableComparatorInstance()));
 		ProcessSequence(genome, temporary_info);
 		ProcessSequence(!genome, temporary_info);
 		for (auto it = temporary_info.begin(); it != temporary_info.end();
@@ -957,7 +960,7 @@ template<class Graph>
 class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	map<EdgeId, size_t> quality_;
+	restricted::map<EdgeId, size_t> quality_;
 
 public:
 	template<size_t l>
@@ -1100,6 +1103,49 @@ public:
 private:
 };
 
+template<class Graph>
+class EdgeNeighborhoodFinder: public omnigraph::GraphSplitter<Graph> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	EdgeId edge_;
+	size_t max_size_;
+	size_t edge_length_bound_;
+	bool finished_;
+public:
+	EdgeNeighborhoodFinder(const Graph &graph, EdgeId edge, size_t max_size
+			, size_t edge_length_bound) :
+			GraphSplitter<Graph>(graph), edge_(edge), max_size_(
+					max_size), edge_length_bound_(edge_length_bound), finished_(
+					false) {
+	}
+
+	/*virtual*/ vector<VertexId> NextComponent() {
+		CountingDijkstra<Graph> cf(this->graph(), max_size_,
+				edge_length_bound_);
+		set<VertexId, typename Graph::Comparator> result_set(this->graph().ReliableComparatorInstance());
+		cf.run(this->graph().EdgeStart(edge_));
+		vector<VertexId> result_start = cf.ReachedVertices();
+		result_set.insert(result_start.begin(), result_start.end());
+		cf.run(this->graph().EdgeEnd(edge_));
+		vector<VertexId> result_end = cf.ReachedVertices();
+		result_set.insert(result_end.begin(), result_end.end());
+
+		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
+		cc.CloseComponent(result_set);
+
+		finished_ = true;
+		vector<VertexId> result;
+		for (auto it = result_set.begin(); it != result_set.end(); ++it)
+			result.push_back(*it);
+		return result;
+	}
+
+	/*virtual*/ bool Finished() {
+		return finished_;
+	}
+};
+
 void EmptyHandleF(EdgeId edge) {
 
 }
@@ -1129,7 +1175,7 @@ public:
 			string folder = output_folder_ + "colored_edges_deleted/";
 			make_dir(folder);
 			//todo magic constant
-			map<EdgeId, string> empty_coloring;
+//			map<EdgeId, string> empty_coloring;
 			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
 					250);
 			WriteComponents(g_, splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
@@ -1166,7 +1212,7 @@ public:
             double total_weight = 0.;
             for (size_t i = 0; i<infos.size(); i++){
                 total_weight += infos[i].weight;
-                cout << "Tip Info " << infos[i].first << " " << infos[i].second << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance << endl;
+                INFO("Tip Info " << infos[i].first << " " << infos[i].second << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance);
             }
             return total_weight;
 	}

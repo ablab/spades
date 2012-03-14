@@ -25,12 +25,11 @@ class PairedEdge;
 template<class DataMaster>
 class PairedVertex {
 private:
-	typedef PairedVertex<DataMaster>* VertexId;
-	typedef PairedEdge<DataMaster>* EdgeId;
+	typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
+	typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
 	typedef typename DataMaster::VertexData VertexData;
 
-	friend class AbstractGraph<PairedVertex<DataMaster>*, PairedEdge<DataMaster>*
-	, DataMaster, typename set<PairedVertex<DataMaster>*>::const_iterator>;
+	friend class AbstractGraph<restricted::pure_pointer<PairedVertex<DataMaster>>, restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster>;
 	friend class AbstractConjugateGraph<DataMaster>;
 	friend class PairedEdge<DataMaster>;
 
@@ -124,11 +123,11 @@ private:
 template<class DataMaster>
 class PairedEdge {
 private:
-	typedef PairedVertex<DataMaster>* VertexId;
-	typedef PairedEdge<DataMaster>* EdgeId;
+	typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
+	typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
 	typedef typename DataMaster::EdgeData EdgeData;
-	friend class AbstractGraph<PairedVertex<DataMaster>*, PairedEdge<DataMaster>*
-	, DataMaster, typename set<PairedVertex<DataMaster>*>::const_iterator>;
+	friend class AbstractGraph<restricted::pure_pointer<PairedVertex<DataMaster>>, restricted::pure_pointer<PairedEdge<DataMaster>>
+	, DataMaster>;
 	friend class AbstractConjugateGraph<DataMaster>;
 	//todo unfriend
 	friend class PairedVertex<DataMaster> ;
@@ -172,11 +171,9 @@ public:
 };
 
 template<class DataMaster>
-class AbstractConjugateGraph:
-	public AbstractGraph<PairedVertex<DataMaster>*, PairedEdge<DataMaster>*
-	, DataMaster, typename set<PairedVertex<DataMaster>*>::const_iterator> {
-	typedef AbstractGraph<PairedVertex<DataMaster>*, PairedEdge<DataMaster>*
-			, DataMaster, typename set<PairedVertex<DataMaster>*>::const_iterator> base;
+class AbstractConjugateGraph: public AbstractGraph<restricted::pure_pointer<PairedVertex<DataMaster>>, restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster> {
+private:
+	typedef AbstractGraph<restricted::pure_pointer<PairedVertex<DataMaster>>, restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster> base;
 
 public:
 	//todo remove unused typedefs
@@ -192,15 +189,13 @@ public:
 private:
 
 	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
-		VertexId v1 =
-				new PairedVertex<DataMaster> (data1);
-		VertexId v2 =
-				new PairedVertex<DataMaster> (data2);
+		VertexId v1(new PairedVertex<DataMaster> (data1));
+		VertexId v2(new PairedVertex<DataMaster> (data2));
 		v1->set_conjugate(v2);
 		v2->set_conjugate(v1);
-		this->vertices_.insert(v1);
-		this->vertices_.insert(v2);
-		TRACE("Vettices " << v1 << "and " << v2 << " added");
+//		this->vertices_.insert(v1);
+//		this->vertices_.insert(v2);
+		TRACE("Vettices " << v1 << " and " << v2 << " added");
 		return v1;
 	}
 
@@ -213,18 +208,19 @@ private:
 		TRACE("ab_conj DeleteVertex "<<v);
 		VertexId conjugate = v->conjugate();
 		TRACE("ab_conj DeleteVertex "<<v<<" and conj "<<conjugate);
-		this->vertices_.erase(v);
+//		this->vertices_.erase(v);
 		TRACE("ab_conj delete "<<v);
-		delete v;
+		delete v.get();
 		TRACE("ab_conj erase "<<conjugate);
-		this->vertices_.erase(conjugate);
+//		this->vertices_.erase(conjugate);
 		TRACE("ab_conj delete "<<conjugate);
-		delete conjugate;
+		delete conjugate.get();
 		TRACE("ab_conj delete FINISHED");
 //		cout << "del v " << v << " " << conjugate << endl;
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+		TRACE("Adding edge between verteices " << v1 << " and " << v2);
 		VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
 		EdgeId result = AddSingleEdge(v1, v2, data);
 		if (this->master().isSelfConjugate(data)) {
@@ -248,9 +244,9 @@ private:
 		start->RemoveOutgoingEdge(edge);
 		rcStart->RemoveOutgoingEdge(rcEdge);
 		if (edge != rcEdge) {
-			delete rcEdge;
+			delete rcEdge.get();
 		}
-		delete edge;
+		delete edge.get();
 		TRACE("Edges " << edge << " and " << rcEdge << " deleted");
 //		cout << "del e" << edge << " " << rcEdge << endl;
 	}
@@ -277,7 +273,7 @@ private:
 	}
 
 	virtual vector<EdgeId> EdgesToDelete(const vector<EdgeId> &path) {
-		set<EdgeId> edgesToDelete;
+		set<EdgeId, typename AbstractConjugateGraph::Comparator> edgesToDelete(this->ReliableComparatorInstance());
 		edgesToDelete.insert(path[0]);
 		for (size_t i = 0; i + 1 < path.size(); i++) {
 			EdgeId e = path[i + 1];
@@ -288,7 +284,7 @@ private:
 	}
 
 	virtual vector<VertexId> VerticesToDelete(const vector<EdgeId> &path) {
-		set<VertexId> verticesToDelete;
+		set<VertexId, typename AbstractConjugateGraph::Comparator> verticesToDelete(this->ReliableComparatorInstance());
 		for (size_t i = 0; i + 1 < path.size(); i++) {
 			EdgeId e = path[i + 1];
 			VertexId v = EdgeStart(e);
@@ -299,8 +295,7 @@ private:
 	}
 
 	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		EdgeId newEdge = new PairedEdge<DataMaster> (v2,
-				data);
+		EdgeId newEdge(new PairedEdge<DataMaster>(v2, data));
 		v1->AddOutgoingEdge(newEdge);
 		return newEdge;
 	}
@@ -360,6 +355,7 @@ public:
 //		}
 //		cout << "Edges printed" << endl;
 		VertexId newVertex = HiddenAddVertex(vertex->data());
+		FireAddingVertex(newVertex);
 //		cout << "Added vertex " << newVertex << " conjugate " << conjugate(newVertex) << endl;
 		vector<pair<EdgeId, EdgeId>> edge_clones;
 		vector<pair<EdgeId, EdgeId>> rc_edge_clones;
@@ -372,6 +368,7 @@ public:
 			if (start_e == vertex)
 				start_e = newVertex;
 			EdgeId newEdge = HiddenAddEdge(start_v, start_e, splittingEdges[i]->data());
+			FireAddingEdge(newEdge);
 //			cout << "Added edge " << newEdge << " (start: " << EdgeStart(newEdge) << " end: " << EdgeEnd(newEdge) << " conjugate: " << conjugate(newEdge) << ") ; " << endl;
 			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
 			rc_edge_clones.push_back(make_pair((splittingEdges[i])->conjugate(), newEdge->conjugate()));

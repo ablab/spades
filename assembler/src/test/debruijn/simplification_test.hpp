@@ -78,6 +78,16 @@ debruijn_config::simplification::tip_clipper standard_tc_config() {
 	return tc_config;
 }
 
+void PrintGraph(const Graph & g) {
+	for(auto it = g.begin(); it != g.end(); ++it) {
+		auto v = g.OutgoingEdges(*it);
+		for(size_t i = 0; i < v.size(); i++) {
+			cout << g.int_id(v[i]) << ":" << g.int_id(g.EdgeStart(v[i])) << " " << g.int_id(g.EdgeEnd(v[i])) << endl;
+		}
+	}
+	cout << endl;
+}
+
 BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
@@ -92,10 +102,12 @@ BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
-
+//	PrintGraph(g);
 	RemoveBulges(g, standard_br_config());
+//	PrintGraph(g);
 
 	BOOST_CHECK_EQUAL(g.size(), 4);
+	exit(0);
 }
 
 BOOST_AUTO_TEST_CASE( TipobulgeTest ) {

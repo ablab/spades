@@ -77,7 +77,7 @@ private:
 				return graph.EdgeStart(index.get(edge).first);
 			}
 		}
-		return NULL;
+		return VertexId(NULL);
 	}
 
 	VertexId FindVertexByIncomingEdges(Graph &graph, Index &index, Kmer kmer) {
@@ -87,17 +87,17 @@ private:
 				return graph.EdgeEnd(index.get(edge).first);
 			}
 		}
-		return NULL;
+		return VertexId(NULL);
 	}
 
 	VertexId FindVertex(Graph &graph, Index &index, Kmer kmer) {
 		VertexId v = FindVertexByOutgoingEdges(graph, index, kmer);
-		return v == NULL ? FindVertexByIncomingEdges(graph, index, kmer) : v;
+		return v == VertexId(NULL) ? FindVertexByIncomingEdges(graph, index, kmer) : v;
 	}
 
 	VertexId FindVertexMaybeMissing(Graph &graph, Index &index, Kmer kmer) {
 		VertexId v = FindVertex(graph, index, kmer);
-		return v != NULL ? v : graph.AddVertex();
+		return v != VertexId(NULL) ? v : graph.AddVertex();
 	}
 
 	//todo discuss with Valera

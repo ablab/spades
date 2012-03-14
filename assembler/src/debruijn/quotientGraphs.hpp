@@ -1,6 +1,7 @@
 #ifndef QUOTIENTGRAPHS_H
 #define QUOTIENTGRAPHS_H
 #include "omni/dijkstra.hpp"
+#include "omni/omni_utils.hpp"
 
 
 namespace debruijn_graph {
@@ -99,7 +100,7 @@ class MultipleQuotientGraphs: public IQuotientGraphs<Graph>{
             typename std::multimap<EdgeId,EdgeId>::iterator it, itlow, itup;
             itlow = currentEdgeMap.lower_bound(edge1);
             itup = currentEdgeMap.upper_bound(edge1);
-            typename std::set<VertexId> firstEnds;
+            restricted::set<VertexId> firstEnds;
             for(it = itlow ; it != itup ; ++it)
             {
                 firstEnds.insert(currentGraph.EdgeEnd( it->second)); 

@@ -128,14 +128,23 @@ void outputGraph(ostream &out, const string &graphName,
 }
 
 template<typename tVertex>
+string IdToStr(tVertex u) {
+	stringstream ss;
+	ss << u;
+	return ss.str();
+}
+
+template<typename tVertex>
 string constructNodePairId(tVertex u, tVertex v) {
 	stringstream ss;
+	string u_str = IdToStr(u);
+	string v_str = IdToStr(v);
 	if (u == v)
 		ss << u;
-	else if (u > v)
-		ss << v << "_" << u;
+	else if (u_str > v_str)
+		ss << v_str << "_" << u_str;
 	else
-		ss << u << "_" << v;
+		ss << u_str << "_" << v_str;
 	return ss.str();
 }
 

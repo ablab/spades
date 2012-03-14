@@ -1071,10 +1071,10 @@ private:
 	const gp_t& old_gp_;
 	const ColorHandler<Graph>& old_coloring_;
 	bp_graph_pack<Graph>& new_gp_;
-	map<EdgeId, EdgeId> purple_edge_mapping_;
-	map<VertexId, VertexId> vertex_mapping_;
+	restricted::map<EdgeId, EdgeId> purple_edge_mapping_;
+	restricted::map<VertexId, VertexId> vertex_mapping_;
 	//todo draw in different color!
-	set<VertexId> artificial_vertices_;
+	restricted::set<VertexId> artificial_vertices_;
 	set<string> processed_contigs_;
 
 	//todo test that!!!
@@ -1349,8 +1349,8 @@ private:
 		for (auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			initial_edges.insert(*it);
 		}
-		for (auto it = SmartSetIterator<Graph, EdgeId>(gp_.g,
-				initial_edges.begin(), initial_edges.end()); !it.IsEnd();
+		for (auto it = SmartSetIterator<Graph, EdgeId, typename Graph::Comparator>(gp_.g,
+				initial_edges.begin(), initial_edges.end(), gp_.g.ReliableComparatorInstance()); !it.IsEnd();
 				++it) {
 			EdgeId e = *it;
 			VERIFY(bps.find(e) != bps.end());

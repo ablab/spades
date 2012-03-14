@@ -4,7 +4,7 @@
 #include "verify.hpp"
 #include <set>
 
-template<typename Key, typename Comparator = std::less<Key> >
+template<typename Key, typename Comparator>
 class erasable_priority_queue {
 private:
 	std::set<Key, Comparator> storage_;
@@ -38,7 +38,8 @@ public:
 	}
 
 	bool erase(const Key& key) {
-		return storage_.erase(key) > 0;
+		bool res = storage_.erase(key) > 0;
+		return res;
 	}
 
 	bool empty() const {

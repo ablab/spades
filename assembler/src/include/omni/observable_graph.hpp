@@ -3,8 +3,61 @@
 
 #include "omni_utils.hpp"
 #include "id_track_handler.hpp"
+//#include <limits>
 
 namespace omnigraph {
+
+template<typename VertexId, typename EdgeId>
+class ReliableComparator {
+private:
+	const BaseIdTrackHandler<VertexId, EdgeId> *int_ids_;
+
+	template<class Element>
+	int GetFakeIntId(Element a) const {
+		if (a.get() == typename Element::pointer_type(1))
+			return numeric_limits<
+					typename BaseIdTrackHandler<VertexId, EdgeId>::realIdType>::min();
+		if (a.get() == typename Element::pointer_type(-1))
+			return numeric_limits<
+					typename BaseIdTrackHandler<VertexId, EdgeId>::realIdType>::max();
+		return int_ids_->ReturnIntId(a);
+	}
+
+public:
+	ReliableComparator(const BaseIdTrackHandler<VertexId, EdgeId> *int_ids) :
+			int_ids_(int_ids) {
+	}
+
+	bool operator()(VertexId a, VertexId b) const {
+
+		return GetFakeIntId(a) < GetFakeIntId(b);
+	}
+
+	bool operator()(EdgeId a, EdgeId b) const {
+		VERIFY(GetFakeIntId(a) != 0 && GetFakeIntId(b) != 0);
+		return GetFakeIntId(a) < GetFakeIntId(b);
+	}
+
+	template<class Element>
+	bool IsValidId(Element a) const {
+		return int_ids_->ReturnIntId(a) != 0;
+	}
+
+	template<class Element>
+	bool IsAFAKEMin(Element a) const {
+		return a == Element(typename Element::pointer_type(1));
+	}
+
+	template<class Element>
+	bool IsAFAKEMax(Element a) const {
+		return a == Element(typename Element::pointer_type(-1));
+	}
+
+	template<class Element>
+	bool IsAFAKE(Element a) const {
+		return IsAFAKEMin(a) || IsAFAKEMax(a);
+	}
+};
 
 template<typename VertexIdT, typename EdgeIdT, typename VertexIterator/* = typename set<VertexIdT>::iterator*/>
 class ObservableGraph : private boost::noncopyable {
@@ -12,27 +65,13 @@ public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
 
-	class ReliableComparator {
-	private:
-		const BaseIdTrackHandler<VertexId, EdgeId> &int_ids_;
-	public:
-		ReliableComparator(const BaseIdTrackHandler<VertexId, EdgeId> &int_ids) : int_ids_(int_ids) {
-		}
-
-		bool operator()(VertexId a, VertexId b) const {
-			return int_ids_.ReturnIntId(a) < int_ids_.ReturnIntId(b);
-		}
-
-		bool operator()(EdgeId a, EdgeId b) const {
-			return int_ids_.ReturnIntId(a) < int_ids_.ReturnIntId(b);
-		}
-	};
+	typedef ReliableComparator<VertexId, EdgeId> Comparator;
 
 //	typedef ReliableComparator<VertexId> ReliableVertexComparator;
 //	typedef ReliableComparator<EdgeId> ReliableEdgeComparator;
 
-	typedef SmartVertexIterator<ObservableGraph, ObservableGraph::ReliableComparator> SmartVertexIt;
-	typedef SmartEdgeIterator<ObservableGraph, ObservableGraph::ReliableComparator> SmartEdgeIt;
+	typedef SmartVertexIterator<ObservableGraph, ObservableGraph::Comparator> SmartVertexIt;
+	typedef SmartEdgeIterator<ObservableGraph, ObservableGraph::Comparator> SmartEdgeIt;
 
 private:
 	typedef ActionHandler<VertexId, EdgeId> Handler;
@@ -41,9 +80,24 @@ private:
 
 	mutable vector<Handler*> action_handler_list_;
 
+public:
 	GraphIdTrackHandler<ObservableGraph> element_order_;
 
 protected:
+	void FireAddingVertex(VertexId v) {
+		for (auto it = action_handler_list_.begin(); it
+				!= action_handler_list_.end(); ++it) {
+			applier_->ApplyAdding(*it, v);
+		}
+	}
+
+	void FireAddingEdge(EdgeId edge) {
+		for (auto it = action_handler_list_.begin(); it
+				!= action_handler_list_.end(); ++it) {
+			applier_->ApplyAdding(*it, edge);
+		}
+	}
+
 	void FireAddVertex(VertexId v) {
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
@@ -69,7 +123,7 @@ protected:
 		TRACE("FireDeleteEdge for "<<action_handler_list_.size()<<" handlers");
 		for (auto it = action_handler_list_.rbegin(); it
 				!= action_handler_list_.rend(); ++it) {
-			TRACE("FireDeleteEdge to handler "<<*it);
+			TRACE("FireDeleteEdge to handler "<<(*it)->name());
 			applier_->ApplyDelete(*it, edge);
 		}
 		TRACE("FireDeleteEdge OK");
@@ -84,10 +138,13 @@ protected:
 	}
 
 	void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		TRACE("FireGlue for "<<action_handler_list_.size()<<" handlers");
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
+			TRACE("FireGlue to handler "<<(*it)->name());
 			applier_->ApplyGlue(*it, new_edge, edge1, edge2);
 		}
+		TRACE("FireGlue OK");
 	}
 
 	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
@@ -148,6 +205,10 @@ public:
 	//todo think of moving to AbstractGraph
 	virtual const vector<EdgeId> OutgoingEdges(VertexId vertex) const = 0;
 
+	Comparator ReliableComparatorInstance() const {
+		return Comparator(&element_order_);
+	}
+
 	template<typename Comparator>
 	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator) const {
@@ -155,9 +216,9 @@ public:
 				comparator);
 	}
 
-	SmartVertexIterator<ObservableGraph, ObservableGraph::ReliableComparator> SmartVertexBegin() const {
-		return SmartVertexIterator<ObservableGraph, ObservableGraph::ReliableComparator> (*this,
-				ReliableComparator(element_order_));
+	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin() const {
+		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
+				ReliableComparatorInstance());
 	}
 
 
@@ -168,13 +229,9 @@ public:
 				comparator);
 	}
 
-	SmartEdgeIterator<ObservableGraph, ObservableGraph::ReliableComparator> SmartEdgeBegin() const {
-		return SmartEdgeIterator<ObservableGraph, ObservableGraph::ReliableComparator> (*this,
-				ReliableComparator(element_order_));
-	}
-
-	ReliableComparator ReliableComparatorInstance() const {
-		return ReliableComparator(element_order_);
+	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin() const {
+		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
+				ReliableComparatorInstance());
 	}
 
 //	ReliableComparator<VertexId> ReliableComparatorInstance() {
@@ -185,6 +242,5 @@ public:
 private:
 	DECL_LOGGER("ObservableGraph")
 };
-
 }
 #endif /* OBSERVABLE_GRAPH_HPP_ */

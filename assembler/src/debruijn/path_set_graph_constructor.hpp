@@ -24,8 +24,8 @@ typedef vector<EdgeId > Path;
 graph_pack& gp;
 const PairedInfoIndex<Graph>& pair_info_;
 graph_pack& new_gp;
-unordered_map<EdgeId, EdgeId> new_to_old;
-unordered_map<EdgeId, EdgeId> old_to_new;
+RestrictedMap<EdgeId, EdgeId> new_to_old;
+RestrictedMap<EdgeId, EdgeId> old_to_new;
 
 public:
 	PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index, graph_pack& new_gp): gp(gp), pair_info_(clustered_index), new_gp(new_gp)
@@ -286,7 +286,7 @@ public:
 			for(size_t i = 0; i < extends.size(); i++) {
 				DEBUG("to pathset "<< extends[i].id << " and vertex "<<real_ids[extends[i].id] << " weight "<< extends[i].weight);
 				VertexId new_end = new_gp.int_ids.ReturnVertexId(real_ids[extends[i].id]);
-				VERIFY(new_end != NULL);
+				VERIFY(new_end != VertexId(NULL));
 				VERIFY(real_ids[extends[i].id] == new_gp.int_ids.ReturnIntId(new_end));
 //				DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge) <<" and coverage "<< gp.g.coverage(old_first_edge) << " * " << extends[i].weight / weight_sums[old_first_edge]);
 				bool flag = true;
@@ -393,7 +393,7 @@ public:
 	}
 
 
-	unordered_map<EdgeId, EdgeId> GetEdgeLabels(){
+	RestrictedMap<EdgeId, EdgeId> GetEdgeLabels(){
 		return new_to_old;
 	}
 

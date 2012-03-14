@@ -11,32 +11,32 @@ using std::queue;
 template<class Graph>
 class FlowGraph {
 public:
-	typedef size_t VertexId;
-	typedef pair<VertexId, VertexId> EdgeId;
+	typedef size_t FlowVertexId;
+	typedef pair<FlowVertexId, FlowVertexId> FlowEdgeId;
 
 private:
 	typedef typename Graph::VertexId OuterVertexId;
-	map<OuterVertexId, VertexId> vertex_mapping_;
-	map<VertexId, map<VertexId, int>> capacities_;
-	set<VertexId> vertices_;
+	restricted::map<OuterVertexId, FlowVertexId> vertex_mapping_;
+	map<FlowVertexId, map<FlowVertexId, int>> capacities_;
+	set<FlowVertexId> vertices_;
 	size_t vertex_number_;
-	VertexId source_;
-	VertexId sink_;
+	FlowVertexId source_;
+	FlowVertexId sink_;
 
-	VertexId AddVertex() {
+	FlowVertexId AddVertex() {
 		vertices_.insert(vertex_number_);
 		capacities_[vertex_number_];
 		vertex_number_++;
 		return vertex_number_ - 1;
 	}
 
-	void PushFlow(EdgeId edge, int capacity) {
+	void PushFlow(FlowEdgeId edge, int capacity) {
 		VERIFY(capacities_[EdgeStart(edge)][EdgeEnd(edge)] >= capacity);
 		capacities_[EdgeStart(edge)][EdgeEnd(edge)] -= capacity;
 		capacities_[EdgeEnd(edge)][EdgeStart(edge)] += capacity;
 	}
 
-	void AddEdge(VertexId first, VertexId second, int capacity = 10000) {
+	void AddEdge(FlowVertexId first, FlowVertexId second, int capacity = 10000) {
 		capacities_[first][second] += capacity; // operator [] creates entry with default values in case argument is not in keyset
 		capacities_[second][first] += 0;
 	}
@@ -46,7 +46,7 @@ public:
 			vertex_number_(0), source_(AddVertex()), sink_(AddVertex()) {
 	}
 
-	VertexId GetCorrespondingVertex(OuterVertexId v) const {
+	FlowVertexId GetCorrespondingVertex(OuterVertexId v) const {
 		return vertex_mapping_.find(v)->second;
 	}
 
@@ -54,8 +54,8 @@ public:
 		return vertex_mapping_.find(v) == vertex_mapping_.end();
 	}
 
-	VertexId AddVertex(OuterVertexId vertex) {
-		VertexId new_vertex = AddVertex();
+	FlowVertexId AddVertex(OuterVertexId vertex) {
+		FlowVertexId new_vertex = AddVertex();
 		vertex_mapping_[vertex] = new_vertex;
 		return new_vertex;
 	}
@@ -66,8 +66,8 @@ public:
 				vertex_mapping_.find(outer_first) != vertex_mapping_.end()
 						&& vertex_mapping_.find(outer_second)
 								!= vertex_mapping_.end());
-		VertexId first = vertex_mapping_[outer_first];
-		VertexId second = vertex_mapping_[outer_second];
+		FlowVertexId first = vertex_mapping_[outer_first];
+		FlowVertexId second = vertex_mapping_[outer_second];
 		AddEdge(first, second, capacity);
 	}
 
@@ -79,24 +79,24 @@ public:
 		AddEdge(GetCorrespondingVertex(vertex), sink_, capacity);
 	}
 
-	VertexId Source() const {
+	FlowVertexId Source() const {
 		return source_;
 	}
 
-	VertexId Sink() const {
+	FlowVertexId Sink() const {
 		return sink_;
 	}
 
-	bool Connected(VertexId start, VertexId end) const {
+	bool Connected(FlowVertexId start, FlowVertexId end) const {
 		return capacities_.find(start) != capacities_.end()
 				&& capacities_.find(start)->second.find(end)
 						!= capacities_.find(start)->second.end()
 				&& capacities_.find(start)->second.find(end)->second > 0;
 	}
 
-	vector<EdgeId> OutgoingEdges(VertexId v) const {
-		vector<EdgeId> result;
-		const map<VertexId, int> &outgoing = capacities_.find(v)->second;
+	vector<FlowEdgeId> OutgoingEdges(FlowVertexId v) const {
+		vector<FlowEdgeId> result;
+		const map<FlowVertexId, int> &outgoing = capacities_.find(v)->second;
 		for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
 			if (it->second > 0) {
 				result.push_back(make_pair(v, it->first));
@@ -105,9 +105,9 @@ public:
 		return result;
 	}
 
-	vector<EdgeId> IncomingEdges(VertexId v) const {
-		vector<EdgeId> result;
-		const map<VertexId, int> &outgoing = capacities_.find(v)->second;
+	vector<FlowEdgeId> IncomingEdges(FlowVertexId v) const {
+		vector<FlowEdgeId> result;
+		const map<FlowVertexId, int> &outgoing = capacities_.find(v)->second;
 		for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
 			if (Connected(it->first, v)) {
 				result.push_back(make_pair(it->first, v));
@@ -116,31 +116,31 @@ public:
 		return result;
 	}
 
-	size_t OutgoingEdgesCount(VertexId v) const {
+	size_t OutgoingEdgesCount(FlowVertexId v) const {
 		return OutgoingEdges(v).size();
 	}
 
-	size_t IncomingEdgesCount(VertexId v) const {
+	size_t IncomingEdgesCount(FlowVertexId v) const {
 		return IncomingEdges(v).size();
 	}
 
-	VertexId EdgeStart(EdgeId edge) const {
+	FlowVertexId EdgeStart(FlowEdgeId edge) const {
 		return edge.first;
 	}
 
-	VertexId EdgeEnd(EdgeId edge) const {
+	FlowVertexId EdgeEnd(FlowEdgeId edge) const {
 		return edge.second;
 	}
 
-	set<VertexId>::iterator begin() const {
+	set<FlowVertexId>::iterator begin() const {
 		return vertices_.begin();
 	}
 
-	set<VertexId>::iterator end() const {
+	set<FlowVertexId>::iterator end() const {
 		return vertices_.end();
 	}
 
-	int GetCapacity(VertexId first, VertexId second) const {
+	int GetCapacity(FlowVertexId first, FlowVertexId second) const {
 		auto it1 = capacities_.find(first);
 		if (it1 == capacities_.end())
 			return 0;
@@ -150,7 +150,7 @@ public:
 		return it2->second;
 	}
 
-	void PushFlow(vector<VertexId> path, int capacity) {
+	void PushFlow(vector<FlowVertexId> path, int capacity) {
 		size_t n = path.size();
 		VERIFY(path[0] == source_ && path[n - 1] == sink_);
 		for (size_t i = 0; i + 1 < n; i++) {
@@ -158,39 +158,39 @@ public:
 		}
 	}
 
-	void Print() const {
-		for(auto it = vertex_mapping_.begin(); it != vertex_mapping_.end(); ++it) {
-			TRACE(it->first << " " << it->second);
-		}
-		for(auto it = vertices_.begin(); it != vertices_.end();) {
-			auto out = OutgoingEdges(*it);
-			for(auto it1 = out.begin(); it1 != out.end(); ++it1) {
-				TRACE("edge " << (*it1) << " " << GetCapacity(*it, it1->second));
-			}
-			++it;
-			if(it == vertices_.end())
-				break;
-		}
-	}
+//	void Print() const {
+//		for(auto it = vertex_mapping_.begin(); it != vertex_mapping_.end(); ++it) {
+//			TRACE(it->first << " " << it->second);
+//		}
+//		for(auto it = vertices_.begin(); it != vertices_.end();) {
+//			auto out = OutgoingEdges(*it);
+//			for(auto it1 = out.begin(); it1 != out.end(); ++it1) {
+//				TRACE("edge " << (*it1) << " " << GetCapacity(*it, it1->second));
+//			}
+//			++it;
+//			if(it == vertices_.end())
+//				break;
+//		}
+//	}
 };
 
 template<class Graph>
 class BFS {
 private:
 	const Graph &graph_;
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::FlowVertexId FlowVertexId;
+	typedef typename Graph::FlowEdgeId FlowEdgeId;
 
-	vector<VertexId> RestoreAnswer(VertexId start, VertexId end,
-			const map<VertexId, VertexId> &prev) {
-		vector<VertexId> result;
+	vector<FlowVertexId> RestoreAnswer(FlowVertexId start, FlowVertexId end,
+			const map<FlowVertexId, FlowVertexId> &prev) {
+		vector<FlowVertexId> result;
 		result.push_back(end);
-		VertexId current = end;
+		FlowVertexId current = end;
 		while (current != start) {
 			current = prev.find(current)->second;
 			result.push_back(current);
 		}
-		return vector<VertexId>(result.rbegin(), result.rend());
+		return vector<FlowVertexId>(result.rbegin(), result.rend());
 	}
 
 public:
@@ -198,15 +198,15 @@ public:
 			graph_(graph) {
 	}
 
-	vector<VertexId> Go(VertexId start, VertexId finish) {
-		queue<VertexId> q;
+	vector<FlowVertexId> Go(FlowVertexId start, FlowVertexId finish) {
+		queue<FlowVertexId> q;
 		q.push(start);
-		map<VertexId, VertexId> prev;
+		map<FlowVertexId, FlowVertexId> prev;
 		prev[start] = start;
 		while (!q.empty()) {
-			VertexId current = q.front();
+			FlowVertexId current = q.front();
 			q.pop();
-			vector<EdgeId> outgoing = graph_.OutgoingEdges(current);
+			vector<FlowEdgeId> outgoing = graph_.OutgoingEdges(current);
 			for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
 				if (prev.find(it->second) == prev.end()) {
 					q.push(it->second);
@@ -217,7 +217,7 @@ public:
 				}
 			}
 		}
-		return vector<VertexId>();
+		return vector<FlowVertexId>();
 	}
 };
 
@@ -225,10 +225,10 @@ template<class Graph>
 class MaxFlowFinder {
 private:
 	FlowGraph<Graph> &graph_;
-	typedef typename FlowGraph<Graph>::VertexId VertexId;
-	typedef typename FlowGraph<Graph>::EdgeId EdgeId;
+	typedef typename FlowGraph<Graph>::FlowVertexId FlowVertexId;
+	typedef typename FlowGraph<Graph>::FlowEdgeId FlowEdgeId;
 
-	int MinCapacity(vector<VertexId> path) {
+	int MinCapacity(vector<FlowVertexId> path) {
 		VERIFY(path.size() >= 2);
 		int result = graph_.GetCapacity(path[0], path[1]);
 		for (size_t i = 1; i + 1 < path.size(); i++) {
@@ -245,13 +245,13 @@ public:
 	void Find() {
 		BFS<FlowGraph<Graph> > bfs(graph_);
 		while (true) {
-			vector<VertexId> path = bfs.Go(graph_.Source(), graph_.Sink());
+			vector<FlowVertexId> path = bfs.Go(graph_.Source(), graph_.Sink());
 			if (path.size() == 0)
 				break;
 			int capacity = MinCapacity(path);
 			VERIFY(capacity > 0);
 			graph_.PushFlow(path, capacity);
-			graph_.Print();
+//			graph_.Print();
 		}
 	}
 };
@@ -259,15 +259,15 @@ public:
 template<class Graph>
 class TopSorter {
 private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::FlowVertexId FlowVertexId;
+	typedef typename Graph::FlowEdgeId FlowEdgeId;
 	const Graph &graph_;
 
-	void Find(VertexId v, vector<VertexId> &result, set<VertexId> &visited) {
+	void Find(FlowVertexId v, vector<FlowVertexId> &result, set<FlowVertexId> &visited) {
 		visited.insert(v);
-		vector<EdgeId> outgoing = graph_.OutgoingEdges(v);
+		vector<FlowEdgeId> outgoing = graph_.OutgoingEdges(v);
 		for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
-			VertexId next = graph_.EdgeEnd(*it);
+			FlowVertexId next = graph_.EdgeEnd(*it);
 			if (visited.count(next) == 0) {
 				Find(next, result, visited);
 			}
@@ -280,9 +280,9 @@ public:
 			graph_(graph) {
 	}
 
-	vector<VertexId> Sort() {
-		vector<VertexId> result;
-		set<VertexId> visited;
+	vector<FlowVertexId> Sort() {
+		vector<FlowVertexId> result;
+		set<FlowVertexId> visited;
 		for (auto it = graph_.begin(); it != graph_.end(); ++it) {
 			if (visited.count(*it) == 0) {
 				Find(*it, result, visited);
@@ -295,16 +295,16 @@ public:
 template<class Graph>
 class ReverseDFSComponentFinder {
 private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::FlowVertexId FlowVertexId;
+	typedef typename Graph::FlowEdgeId FlowEdgeId;
 
 	const Graph &graph_;
 
-	void Find(VertexId v, map<VertexId, size_t> &result, size_t cc) {
+	void Find(FlowVertexId v, map<FlowVertexId, size_t> &result, size_t cc) {
 		result[v] = cc;
-		vector<EdgeId> incoming = graph_.IncomingEdges(v);
+		vector<FlowEdgeId> incoming = graph_.IncomingEdges(v);
 		for (auto it = incoming.begin(); it != incoming.end(); ++it) {
-			VertexId next = graph_.EdgeStart(*it);
+			FlowVertexId next = graph_.EdgeStart(*it);
 			if (result.count(next) == 0) {
 				Find(next, result, cc);
 			}
@@ -315,9 +315,9 @@ public:
 			graph_(graph) {
 	}
 
-	map<VertexId, size_t> Find(const vector<VertexId> &order) {
+	map<FlowVertexId, size_t> Find(const vector<FlowVertexId> &order) {
 		size_t cc = 0;
-		map<VertexId, size_t> result;
+		map<FlowVertexId, size_t> result;
 		for (auto it = order.rbegin(); it != order.rend(); ++it) {
 			if (result.count(*it) == 0) {
 				Find(*it, result, cc);
@@ -331,7 +331,7 @@ public:
 template<class Graph>
 class StroglyConnectedComponentFinder {
 private:
-	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::FlowVertexId FlowVertexId;
 	const Graph &graph_;
 	bool ready_;
 public:
@@ -339,9 +339,9 @@ public:
 			graph_(graph), ready_(false) {
 	}
 
-	map<VertexId, size_t> ColourComponents() {
-		map<VertexId, size_t> result;
-		vector<VertexId> order = TopSorter<Graph>(graph_).Sort();
+	map<FlowVertexId, size_t> ColourComponents() {
+		map<FlowVertexId, size_t> result;
+		vector<FlowVertexId> order = TopSorter<Graph>(graph_).Sort();
 		return ReverseDFSComponentFinder<Graph>(graph_).Find(order);
 	}
 };
@@ -373,9 +373,9 @@ private:
 		return graph_.length(edge) <= max_length_ && !IsTip(edge);
 	}
 
-	set<EdgeId> CollectUnusedEdges(set<VertexId> component, FlowGraph<Graph> fg,
-			const map<typename FlowGraph<Graph>::VertexId, size_t> &colouring) {
-		set<EdgeId> result;
+	set<EdgeId, typename Graph::Comparator> CollectUnusedEdges(set<VertexId, typename Graph::Comparator> component, FlowGraph<Graph> fg,
+			const map<typename FlowGraph<Graph>::FlowVertexId, size_t> &colouring) {
+		set<EdgeId, typename Graph::Comparator> result(graph_.ReliableComparatorInstance());
 		for (auto it_start = component.begin(); it_start != component.end();
 				++it_start) {
 			VertexId start = *it_start;
@@ -408,33 +408,33 @@ private:
 		return graph_.length(edge) >= uniqueness_length_;
 	}
 
-	bool IsInnerShortEdge(set<VertexId> component, EdgeId edge) {
+	bool IsInnerShortEdge(set<VertexId, typename Graph::Comparator> component, EdgeId edge) {
 		return !IsUnique(edge) && component.count(graph_.EdgeStart(edge)) == 1
 				&& component.count(graph_.EdgeEnd(edge)) == 1;
 	}
 
-	void ProcessShortEdge(FlowGraph<Graph> &fg, set<VertexId> component,
+	void ProcessShortEdge(FlowGraph<Graph> &fg, set<VertexId, typename Graph::Comparator> component,
 			EdgeId edge) {
 		if (IsInnerShortEdge(component, edge)) {
 			fg.AddEdge(graph_.EdgeStart(edge), graph_.EdgeEnd(edge));
 		}
 	}
 
-	void ProcessSource(FlowGraph<Graph> &fg, set<VertexId> component,
+	void ProcessSource(FlowGraph<Graph> &fg, set<VertexId, typename Graph::Comparator> component,
 			EdgeId edge) {
 		if (IsPlausible(edge) || IsUnique(edge)) {
 			fg.AddSource(graph_.EdgeEnd(edge), 1);
 		}
 	}
 
-	void ProcessSink(FlowGraph<Graph> &fg, set<VertexId> component,
+	void ProcessSink(FlowGraph<Graph> &fg, set<VertexId, typename Graph::Comparator> component,
 			EdgeId edge) {
 		if (IsPlausible(edge) || IsUnique(edge)) {
 			fg.AddSink(graph_.EdgeStart(edge), 1);
 		}
 	}
 
-	void ConstructFlowGraph(FlowGraph<Graph> &fg, set<VertexId> component) {
+	void ConstructFlowGraph(FlowGraph<Graph> &fg, set<VertexId, typename Graph::Comparator> component) {
 		for (auto it = component.begin(); it != component.end(); ++it) {
 			fg.AddVertex(*it);
 		}
@@ -471,11 +471,11 @@ public:
 		for (LongEdgesExclusiveSplitter<Graph> splitter(graph_,
 				uniqueness_length_); !splitter.Finished();) {
 			auto component_vector = splitter.NextComponent();
-			set<VertexId> component(component_vector.begin(),
-					component_vector.end());
+			set<VertexId, typename Graph::Comparator> component(component_vector.begin(),
+					component_vector.end(), graph_.ReliableComparatorInstance());
 			FlowGraph<Graph> fg;
 			ConstructFlowGraph(fg, component);
-			fg.Print();
+//			fg.Print();
 			MaxFlowFinder<Graph> mf_finder(fg);
 			mf_finder.Find();
 			if (!CheckCompleteFlow(fg)) {
@@ -484,12 +484,12 @@ public:
 			}
 			StroglyConnectedComponentFinder<FlowGraph<Graph> > component_finder(
 					fg);
-			map<typename FlowGraph<Graph>::VertexId, size_t> colouring =
+			map<typename FlowGraph<Graph>::FlowVertexId, size_t> colouring =
 					component_finder.ColourComponents();
-			set<EdgeId> to_remove = CollectUnusedEdges(component, fg,
+			set<EdgeId, typename Graph::Comparator> to_remove = CollectUnusedEdges(component, fg,
 					colouring);
-			for (SmartSetIterator<Graph, EdgeId> it(graph_, to_remove.begin(),
-					to_remove.end()); !it.IsEnd(); ++it) {
+			for (SmartSetIterator<Graph, EdgeId, typename Graph::Comparator> it(graph_, to_remove.begin(),
+					to_remove.end(), graph_.ReliableComparatorInstance()); !it.IsEnd(); ++it) {
 				TRACE("Removing Edge");
 				edge_remover_.DeleteEdge(*it);
 			}

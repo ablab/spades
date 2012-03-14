@@ -21,10 +21,10 @@ class PathsGraphLabeler : public AbstractGraphLabeler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 
 	const std::vector<BidirectionalPath>& paths_;
-	std::map<EdgeId, std::string> labels_;
+	map<EdgeId, std::string, typename Graph::Comparator> labels_;
 
 public:
-	PathsGraphLabeler(const Graph& g, const std::vector<BidirectionalPath>& paths) : base(g), paths_(paths){
+	PathsGraphLabeler(const Graph& g, const std::vector<BidirectionalPath>& paths) : base(g), paths_(paths), labels_(g.ReliableComparatorInstance()){
 //		for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 //			labels_[*iter] = "";
 //		}
@@ -46,8 +46,10 @@ public:
 	}
 
 	virtual std::string label(EdgeId edgeId) const {
-		auto label = labels_.find(edgeId);
-		return label == labels_.end() ? "" : label->second;
+		if(labels_.count(edgeId) == 0)
+			return "";
+		else
+			return labels_.find(edgeId)->second;
 	}
 };
 

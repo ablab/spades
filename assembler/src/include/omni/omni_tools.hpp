@@ -231,7 +231,7 @@ public:
 								new_graph.conjugate(new_vertex)));
 			}
 		}
-		set<EdgeId> was;
+		restricted::set<EdgeId> was;
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 			if (was.count(*iter) == 0) {
 				new_graph.AddEdge(copy[graph_.EdgeStart(*iter)],
@@ -275,7 +275,7 @@ public:
 	}
 
 	bool CheckForward(EdgeId edge1, EdgeId edge2) {
-		set<EdgeId> was;
+		restricted::set<EdgeId> was;
 		size_t length = 0;
 		do {
 			if (edge1 == edge2)
@@ -289,7 +289,7 @@ public:
 	}
 
 	bool CheckBackward(EdgeId edge1, EdgeId edge2) {
-		set<EdgeId> was;
+		restricted::set<EdgeId> was;
 		size_t length = 0;
 		do {
 			if (edge1 == edge2)

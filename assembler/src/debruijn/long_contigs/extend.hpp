@@ -31,7 +31,7 @@ class JumpingHero {
 	std::vector<EdgeId> edges_;
 	size_t length_from_long_;
 	double weight_threshold_;
-	std::set<VertexId> vertices_to_reach_dest_;
+	set<VertexId, typename Graph::Comparator> vertices_to_reach_dest_;
 
 	void ClearHistory() {
 		edges_.clear();
@@ -46,12 +46,16 @@ class JumpingHero {
 			omnigraph::BackwardReliableBoundedDijkstra<Graph> dijkstra(g_,
 					invalidation_length_, max_vertex_bound);
 			dijkstra.run(g_.EdgeStart(edges_[1]));
-			vertices_to_reach_dest_ = dijkstra.ProcessedVertices();
+			vertices_to_reach_dest_.clear();
+			auto pv = dijkstra.ProcessedVertices();
+			vertices_to_reach_dest_.insert(pv.begin(), pv.end()) ;
 		} else {
 			omnigraph::ReliableBoundedDijkstra<Graph> dijkstra(g_,
 					invalidation_length_, max_vertex_bound);
 			dijkstra.run(g_.EdgeEnd(edges_[1]));
-			vertices_to_reach_dest_ = dijkstra.ProcessedVertices();
+			auto pv = dijkstra.ProcessedVertices();
+			vertices_to_reach_dest_.clear();
+			vertices_to_reach_dest_.insert(pv.begin(), pv.end()) ;
 		}
 
 		//todo make it more natural
@@ -88,7 +92,7 @@ class JumpingHero {
 		TRACE("Trying to find long prolongation for edge " << g_.str(e));
 		boost::optional<EdgeId> answer;
 		vector<PairInfo<EdgeId>> infos = jump_index_.GetEdgeInfo(e);
-		set<EdgeId> paired_edges;
+		set<EdgeId, typename Graph::Comparator> paired_edges(g_.ReliableComparatorInstance());
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
 			paired_edges.insert(it->second);
 		}TRACE(
@@ -169,7 +173,7 @@ public:
 			double weight_threshold) :
 			g_(g), jump_index_(jump_index), length_bound_(length_bound), invalidation_length_(
 					invalidation_length), forward_direct_(forward_direct), length_from_long_(
-					0), weight_threshold_(weight_threshold) {
+					0), weight_threshold_(weight_threshold), vertices_to_reach_dest_(g.ReliableComparatorInstance()) {
 		TRACE(
 				"Creating jumping hero directed " << (forward_direct ? "forward" : "backward") << ". length_bound = " << length_bound_ << ". invalidation_length = " << invalidation_length << ". weight_threshold = " << weight_threshold_);
 		Init(path);
@@ -394,7 +398,7 @@ double ExtentionWeight(const Graph& g, BidirectionalPath& path,
 //Check whether selected extension is good enough
 EdgeId ExtensionGoodEnough(EdgeId edge, double weight, double threshold) {
 	//Condition of passing threshold is to be done
-	return weight > threshold ? edge : 0;
+	return weight > threshold ? edge : EdgeId(0);
 }
 
 //Check whether selected extension is good enough
@@ -406,7 +410,7 @@ EdgeId ExtensionGoodEnough(EdgeId edge, double weight, double threshold,
 		return edge;
 	} else {
 		handler.AddStop(&path, WEAK_EXTENSION, forward);
-		return 0;
+		return EdgeId(0);
 	}
 }
 
@@ -607,7 +611,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path,
 
 		handler.AddStop(&path, NO_EXTENSION, forward);
 		//TODO: scafolder mode here
-		return 0;
+		return EdgeId(0);
 	}
 //	cout << "here" << endl;
 	if (edges.size() == 1) {
@@ -620,9 +624,9 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path,
 					pairedInfo, 0, forward, false);
 
 			if (ExtensionGoodEnough(edges.back(), weight,
-					params.ps.ss.trusted_threshold) == 0) {
+					params.ps.ss.trusted_threshold) == EdgeId(0)) {
 				DETAILED_DEBUG("No");
-				return 0;
+				return EdgeId(0);
 			} else {
 				DETAILED_DEBUG("Yes");
 			}
@@ -633,7 +637,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path,
 	}
 //	cout << "here" << endl;
 
-	EdgeId toReturn = 0;
+	EdgeId toReturn(0);
 	if (params.rs.research_mode && params.rs.force_to_cycle) {
 		WARN("Strange mode launched");
 		for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
@@ -655,7 +659,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path,
 					pairedInfo, edgesToExclude, forward);
 
 			WARN("Shouldn't be here!!!");
-			return toReturn == 0 ?
+			return toReturn == EdgeId(0) ?
 					ExtensionGoodEnough(edges.back(), *maxWeight,
 							weightFunThreshold, g, path, handler, forward) :
 					toReturn;
@@ -673,7 +677,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path,
 		DETAILED_DEBUG(
 				"Checking if good enough with threshold " << weightThreshold);
 
-		return toReturn == 0 ?
+		return toReturn == EdgeId(0) ?
 				ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold,
 						g, path, handler, forward) :
 				toReturn;
@@ -682,7 +686,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path,
 				"Several extension passed filtering: " << g.str(edges) << " with best weight " << *maxWeight);
 
 		if (ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold)
-				== 0) {
+				== EdgeId(0)) {
 //			cout << "here2" << endl;
 			DETAILED_DEBUG(
 					"Best weight extension didn't pass threshold " << weightThreshold);
@@ -704,7 +708,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path,
 						pairedInfo, edgesToExclude, forward, detector, depth);
 
 				if (edges.size() == 1) {
-					return toReturn == 0 ?
+					return toReturn == EdgeId(0) ?
 							ExtensionGoodEnough(edges.back(), *maxWeight,
 									weightThreshold, g, path, handler,
 									forward) :
@@ -721,7 +725,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path,
 size_t EdgesToExcludeForward(const Graph& g, BidirectionalPath& path, int from =
 		-1) {
 	static bool maxCycles = params.ps.ss.max_cycles;
-	static LoopDetector detector;
+	static LoopDetector detector(g);
 	detector.clear();
 
 	if (path.empty()) {
@@ -753,7 +757,7 @@ size_t EdgesToExcludeForward(const Graph& g, BidirectionalPath& path, int from =
 size_t EdgesToExcludeBackward(const Graph& g, BidirectionalPath& path,
 		int from = -1) {
 	static bool maxCycles = params.ps.ss.max_cycles;
-	static LoopDetector detector;
+	static LoopDetector detector(g);
 	detector.clear();
 
 	if (path.empty()) {
@@ -861,7 +865,7 @@ EdgeId FindScafoldExtension(const Graph& g, BidirectionalPath& path,
 		PathLengths& lengths, PairedInfoIndices& pairedInfo, double * maxWeight,
 		bool forward) {
 
-	return 0;
+	return EdgeId(0);
 }
 
 } //namespace long_contigs
