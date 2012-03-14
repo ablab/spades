@@ -78,10 +78,15 @@ std::ostream& operator<< (std::ostream& os, std::pair<T1, T2> const& pair)
 namespace omnigraph
 {
 template<class T>
-std::ostream& operator<< (std::ostream& os, std::vector<T> const& v)
+std::ostream& operator<< (std::ostream& os, const std::vector<T>& v)
 {
  	os << "[";
- 	std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, ", "));
+ 	std::string delim = "";
+ 	for (auto it = v.begin(); it != v.end(); ++it) {
+ 		os << delim << *it;
+ 		delim = ", ";
+ 	}
+// 	std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, ", "));
  	os << "]";
  	return os;
 }

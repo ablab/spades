@@ -929,6 +929,22 @@ struct bp_graph_pack {
 	}
 };
 
+//todo finish later
+//template<class gp_t1, class gp_t2>
+//void ConvertToBPGraphPack(const gp_t1& gp
+//		, const ColorHandler<typename gp_t1::graph_t>& coloring
+//		, gp_t2& bp_gp) {
+//	string tmp_dir = "/home/snurk/tmp/";
+//	string filename = tmp_dir + "tmp";
+//	make_dir(tmp_dir);
+//	PrintGraphPack(filename, gp);
+//	typename ScannerTraits<typename gp_t2::graph_t>::Scanner scanner(bp_gp.g,
+//				bp_gp.int_ids);
+//	ScanBasicGraph(filename, scanner);
+//	scanner.loadPositions(filename, bp_gp.edge_pos);
+//	//
+//}
+
 template<class gp_t>
 class UntangledGraphContigMapper {
 	typedef typename gp_t::graph_t Graph;
@@ -985,7 +1001,26 @@ private:
 	bp_graph_pack<Graph>& new_gp_;
 	map<EdgeId, EdgeId> purple_edge_mapping_;
 	map<VertexId, VertexId> vertex_mapping_;
+	//todo draw in different color!
 	set<VertexId> artificial_vertices_;
+	//todo use contig names!
+	set<string> processed_contigs_;
+
+	//todo test that!!!
+	string ConjugateContigId(const string& contig_id) {
+		string answer;
+		if (contig_id.substr(contig_id.size() - 3, 3) == "_RC")
+			answer = contig_id.substr(0, contig_id.size() - 3);
+		else
+			answer = contig_id + "_RC";
+		DEBUG("Conjugate to " << contig_id << " is " << answer);
+		return answer;
+	}
+
+	void AddToProcessed(const string& contig_id) {
+		processed_contigs_.insert(contig_id);
+		processed_contigs_.insert(ConjugateContigId(contig_id));
+	}
 
 	VertexId GetStartVertex(const Path<EdgeId> &path, size_t i) {
 		if (i != 0 || path.start_pos() == 0)
@@ -993,6 +1028,8 @@ private:
 		else {
 			//todo discuss with Anton!!!
 			VertexId art_v = new_gp_.g.AddVertex();
+			WARN("Art vertex added")
+			VERIFY(false);
 			artificial_vertices_.insert(art_v);
 			return art_v;
 		}
@@ -1004,6 +1041,8 @@ private:
 		else {
 			//todo discuss with Anton!!!
 			VertexId art_v = new_gp_.g.AddVertex();
+			WARN("Art vertex added")
+			VERIFY(false);
 			artificial_vertices_.insert(art_v);
 			return art_v;
 		}
@@ -1012,21 +1051,31 @@ private:
 	void Untangle(ContigStream& stream, edge_type color) {
 		io::SingleRead read;
 		stream.reset();
+		set<string> processed;
 		while (!stream.eof()) {
 			stream >> read;
+			//todo can look at new_gp_.*_paths keys
+			if (processed.count(read.name()) > 0)
+				continue;
+			processed.insert(read.name());
+			processed.insert(ConjugateContigId(read.name()));
+
 			Untangle(read.sequence(), read.name(), color);
 		}
 	}
 
 	void Untangle(const Sequence& contig, const string& name, edge_type color) {
 		VERIFY(color == edge_type::red || color == edge_type::blue);
+		DEBUG("Untangling contig " << name);
 		NewExtendedSequenceMapper<k + 1, Graph> mapper(old_gp_.g, old_gp_.index,
 				old_gp_.kmer_mapper);
 		Path<EdgeId> path = mapper.MapSequence(contig).simple_path();
 		vector<EdgeId> new_path;
+		DEBUG("Mapped contig" << name);
 		for (size_t i = 0; i < path.size(); i++) {
 			EdgeId next;
 			if (old_coloring_.Color(path[i]) != edge_type::violet) {
+				DEBUG("Next edge is not purple");
 				size_t j = i;
 				vector<EdgeId> to_glue;
 				while (j < path.size()
@@ -1037,19 +1086,46 @@ private:
 				Sequence new_edge_sequence = MergeSequences(old_gp_.g, to_glue);
 				next = new_gp_.g.AddEdge(GetStartVertex(path, i),
 						GetEndVertex(path, j - 1), new_edge_sequence);
+				DEBUG("Added shortcut edge " << new_gp_.g.int_id(next) << " for path " << old_gp_.g.str(to_glue));
 				i = j - 1;
 			} else {
+				DEBUG("Next edge is purple");
 				next = purple_edge_mapping_[path[i]];
 			}
 			new_path.push_back(next);
-			new_gp_.coloring.Paint(next, color);
-			new_gp_.coloring.Paint(new_gp_.g.EdgeStart(next), color);
-			new_gp_.coloring.Paint(new_gp_.g.EdgeEnd(next), color);
+			DEBUG("Coloring new edge and complement");
+			PaintEdgeWithVertices(next, color);
 		}
-		if (color == edge_type::red)
+		if (color == edge_type::red) {
+			VERIFY(new_gp_.red_paths.find(name) == new_gp_.red_paths.end());
 			new_gp_.red_paths[name] = new_path;
-		else
+			new_gp_.red_paths[ConjugateContigId(name)] = ConjugatePath(new_gp_.g, new_path);
+		} else {
+			VERIFY(new_gp_.blue_paths.find(name) == new_gp_.blue_paths.end());
 			new_gp_.blue_paths[name] = new_path;
+			new_gp_.blue_paths[name] = ConjugatePath(new_gp_.g, new_path);
+		}
+	}
+
+	vector<EdgeId> ConjugatePath(const Graph& g, const vector<EdgeId> path) {
+		vector<EdgeId> answer;
+		for (int i = path.size() - 1; i >= 0; i--) {
+			answer.push_back(g.conjugate(path[i]));
+		}
+		return answer;
+	}
+
+	template <class T>
+	void ColorWithConjugate(T t, edge_type color) {
+		new_gp_.coloring.Paint(t, color);
+		new_gp_.coloring.Paint(new_gp_.g.conjugate(t), color);
+	}
+
+	void PaintEdgeWithVertices(EdgeId e, edge_type color) {
+		DEBUG("Coloring edges " << new_gp_.g.int_id(e) << " and " << new_gp_.g.int_id(new_gp_.g.conjugate(e)));
+		ColorWithConjugate(e, color);
+		ColorWithConjugate(new_gp_.g.EdgeStart(e), color);
+		ColorWithConjugate(new_gp_.g.EdgeEnd(e), color);
 	}
 
 public:
@@ -1058,27 +1134,41 @@ public:
 			bp_graph_pack<Graph>& new_gp, io::IReader<io::SingleRead> &stream1,
 			io::IReader<io::SingleRead> &stream2) :
 			old_gp_(old_gp), old_coloring_(old_coloring), new_gp_(new_gp) {
-		const Graph & old_graph = old_gp.g;
+		const Graph& old_graph = old_gp.g;
 		//adding vertices
+		set<VertexId> processed_purple_v;
 		for (auto it = old_graph.begin(); it != old_graph.end(); ++it) {
+			if (processed_purple_v.count(*it) > 0)
+				continue;
+			processed_purple_v.insert(*it);
+			processed_purple_v.insert(old_graph.conjugate(*it));
+			DEBUG("Adding purple vertex corresponding to " << old_graph.int_id(*it) << " and conjugate")
 			vertex_mapping_[*it] = new_gp_.g.AddVertex();
+			vertex_mapping_[old_graph.conjugate(*it)] = new_gp_.g.conjugate(vertex_mapping_[*it]);
 		}
 
+		set<EdgeId> processed_purple;
 		//propagating purple color to new graph
 		for (auto it = old_graph.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (processed_purple.count(*it) > 0)
+				continue;
+			processed_purple.insert(*it);
+			processed_purple.insert(old_graph.conjugate(*it));
+
 			if (old_coloring.Color(*it) == edge_type::violet) {
 				EdgeId new_edge = new_gp_.g.AddEdge(
 						vertex_mapping_[old_graph.EdgeStart(*it)],
 						vertex_mapping_[old_graph.EdgeEnd(*it)],
 						old_graph.EdgeNucls(*it));
+				DEBUG("Adding purple edge " << new_gp_.g.int_id(new_edge) << " corresponding to " << old_graph.int_id(*it) << " and conjugate")
 				purple_edge_mapping_[*it] = new_edge;
-				new_gp_.coloring.Paint(new_edge, edge_type::violet);
-				new_gp_.coloring.Paint(new_gp_.g.EdgeStart(new_edge),
-						edge_type::violet);
-				new_gp_.coloring.Paint(new_gp_.g.EdgeEnd(new_edge),
-						edge_type::violet);
+				purple_edge_mapping_[old_graph.conjugate(*it)] = new_gp_.g.conjugate(new_edge);
+				PaintEdgeWithVertices(new_edge, edge_type::violet);
 			}
 		}
+
+		VERIFY(new_gp_.red_paths.empty());
+		VERIFY(new_gp_.blue_paths.empty());
 
 		Untangle(stream1, edge_type::red);
 		Untangle(stream2, edge_type::blue);
@@ -1087,7 +1177,8 @@ public:
 		FillPos(new_gp_.g, contig_mapper, new_gp_.edge_pos, stream1);
 		FillPos(new_gp_.g, contig_mapper, new_gp_.edge_pos, stream2);
 	}
-
+private:
+	DECL_LOGGER("UntangledGraphConstructor");
 };
 
 template<class gp_t>
@@ -1269,6 +1360,19 @@ private:
 		WriteToDotFile(gp_.g, labeler, path + ".dot");
 	}
 
+	template <class gp_t2>
+	void UniversalSaveGP(gp_t2& gp, const string& filename) {
+		typename PrinterTraits<Graph>::Printer printer(gp.g,
+				gp.int_ids);
+		INFO("Saving graph to " << filename);
+		printer.saveGraph(filename);
+		printer.saveEdgeSequences(filename);
+		printer.savePositions(filename, gp.edge_pos);
+
+		LengthIdGraphLabeler<Graph> labeler(gp.g);
+		WriteToDotFile(gp.g, labeler, filename + ".dot");
+	}
+
 	void PrintColoredGraph(const Graph& g, const ColorHandler<Graph>& coloring,
 			const string& output_filename) {
 		ReliableSplitter<Graph> splitter(g, 30, 3000);
@@ -1284,22 +1388,23 @@ private:
 		VERIFY(false);
 	}
 
-	void ProduceResults(Graph& g, const ColorHandler<Graph>& coloring,
+	template <class gp_t2>
+	void ProduceResults(gp_t2& gp, const ColorHandler<Graph>& coloring,
 			const string& output_folder, bool detailed_output) {
-		//todo output contigs if asked
-		if (detailed_output) {
-			PrintColoredGraph(g, coloring,
-					output_folder + "initial_pics/untangled_graph.dot");
-		}
-
 		INFO("Removing unnecessary edges");
-		DeleteVioletEdges(g, coloring);
+		DeleteVioletEdges(gp.g, coloring);
+
+		if (detailed_output) {
+			PrintColoredGraph(gp.g, coloring,
+					output_folder + "initial_pics/purple_removed.dot");
+			UniversalSaveGP(gp, output_folder + "saves/purple_removed");
+		}
 
 //		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
 //		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
 		INFO("Counting stats, outputting pictures");
-		BPGraphStatCounter<Graph> counter(g, coloring, output_folder);
-		LengthIdGraphLabeler<Graph> labeler(g);
+		BPGraphStatCounter<Graph> counter(gp.g, coloring, output_folder);
+		LengthIdGraphLabeler<Graph> labeler(gp.g);
 		counter.CountStats(labeler, detailed_output);
 	}
 
@@ -1353,7 +1458,8 @@ public:
 
 		if (detailed_output) {
 			PrintColoredGraph(gp_.g, coloring,
-					output_folder + "saves/colored_split_graph.dot");
+					output_folder + "initial_pics/colored_split_graph.dot");
+			SaveOldGraph(output_folder + "saves/tangled_graph");
 		}
 
 		//todo return and propagate to new graph
@@ -1364,15 +1470,23 @@ public:
 		FillPos<gp_t>(gp_, stream2_);
 
 		if (untangle_) {
+			INFO("Untangling graph");
 			bp_graph_pack<typename gp_t::graph_t> untangled_gp(gp_t::k_value);
-			UntangledGraphConstructor<gp_t> ugp(gp_, coloring, untangled_gp,
+			UntangledGraphConstructor<gp_t> untangler(gp_, coloring, untangled_gp,
 					stream1_, stream2_);
 			//todo ???
 			//		SimplifyGraph(untangled_gp.g);
-			ProduceResults(untangled_gp.g, untangled_gp.coloring, output_folder,
+
+			if (detailed_output) {
+				PrintColoredGraph(untangled_gp.g, untangled_gp.coloring,
+						output_folder + "initial_pics/untangled_graph.dot");
+				UniversalSaveGP(untangled_gp, output_folder + "saves/untangled_graph");
+			}
+
+			ProduceResults(untangled_gp, untangled_gp.coloring, output_folder,
 					detailed_output);
 		} else {
-			ProduceResults(gp_.g, coloring, output_folder, detailed_output);
+			ProduceResults(gp_, coloring, output_folder, detailed_output);
 		}
 	}
 

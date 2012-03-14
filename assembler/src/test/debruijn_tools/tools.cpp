@@ -91,7 +91,7 @@ namespace debruijn_graph {
 			io::VectorReader<io::SingleRead> stream_2(genomes[1]);
 			RunBPComparison<k, K>(stream_1, stream_2
 					, "genome_0_", "genome_1_", /*untangle*/true
-					, output_dir + "example_" + n /*ToString(++example_cnt)*/ + "/", /*detailed_output*/false);
+					, output_dir + "example_" + n /*ToString(++example_cnt)*/ + "/", /*detailed_output*/true);
 		}
 	}
 
