@@ -33,9 +33,9 @@ public:
 	}
 
 	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
-		vector<const Sequence*> path_sequences;
+		vector<Sequence> path_sequences;
 		for (auto it = path.begin(); it != path.end(); ++it) {
-			path_sequences.push_back(&g_.EdgeNucls(*it));
+			path_sequences.push_back(g_.EdgeNucls(*it));
 		}
 		Sequence path_sequence(
 				MergeOverlappingSequences(path_sequences, g_.k()));
@@ -66,7 +66,7 @@ public:
 };
 
 template<class Graph>
-vector<typename Graph::EdgeId> ClipTips(Graph &g,
+void ClipTips(Graph &g,
 		const debruijn_config::simplification::tip_clipper& tc_config,
 		size_t read_length,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
@@ -85,9 +85,8 @@ vector<typename Graph::EdgeId> ClipTips(Graph &g,
 					(double) max_tip_length / 2
 							* (1 + (i + 1.) / iteration_count)), max_coverage,
 			max_relative_coverage, removal_handler); //removal_handler
+    tc.ClipTips();
 	INFO("Clipping tips finished");
-    //return tc.ClipTips(static_cast<double (*)(typename Graph::EdgeId)>(&foo));
-    return  tc.ClipTips();
 }
 
 template<class Graph>

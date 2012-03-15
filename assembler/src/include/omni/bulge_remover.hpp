@@ -292,10 +292,10 @@ void BulgeRemover<Graph>::RemoveBulges() {
 				TRACE("Projecting edge " << g_.int_id(edge));
 				ProcessBulge(edge, path);
 
-				TRACE("Compressing start of edge " << g_.int_id(edge))
+				TRACE("Compressing start vertex " << g_.int_id(start))
 				g_.CompressVertex(start);
 
-				TRACE("Compressing end of edge " << g_.int_id(edge))
+				TRACE("Compressing end vertex " << g_.int_id(end))
 				g_.CompressVertex(end);
 
 			} else {

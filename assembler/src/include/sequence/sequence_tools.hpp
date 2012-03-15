@@ -19,14 +19,14 @@ inline const std::string Complement(const std::string &s) {
 	return res;
 }
 
-inline const Sequence MergeOverlappingSequences(const vector<const Sequence*>& ss, size_t overlap) {
+inline const Sequence MergeOverlappingSequences(vector<Sequence>& ss, size_t overlap) {
 	if (ss.empty()) {
 		return Sequence(); 
 	}
 	SequenceBuilder sb;
-	sb.append(ss.front()->Subseq(0, overlap));
+	sb.append(ss.front().Subseq(0, overlap));
 	for (auto it = ss.begin(); it != ss.end(); ++it) {
-		sb.append((*it)->Subseq(overlap));
+		sb.append(it->Subseq(overlap));
 	}
 	return sb.BuildSequence();
 }

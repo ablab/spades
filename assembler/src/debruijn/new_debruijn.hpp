@@ -50,10 +50,10 @@ public:
 	}
 
 	const EdgeData MergeData(const vector<const EdgeData*>& to_merge) const {
-		vector<const Sequence*> ss;
+		vector<Sequence> ss;
 		ss.reserve(to_merge.size());
 		for (auto it = to_merge.begin(); it != to_merge.end(); ++it) {
-			ss.push_back(&((*it)->nucls()));
+			ss.push_back((*it)->nucls());
 		}
 		return EdgeData(MergeOverlappingSequences(ss, k_));
 	}

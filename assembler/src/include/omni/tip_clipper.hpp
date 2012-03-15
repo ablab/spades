@@ -193,8 +193,7 @@ public:
 	/**
 	 * Method clips tips of the graph.
 	 */
-	vector<EdgeId> ClipTips(boost::function<double(EdgeId)> get_total_weight = 0) {
-        vector<EdgeId> ans;
+	void ClipTips(boost::function<double(EdgeId)> get_total_weight = 0) {
         size_t removed = 0;
         size_t removed_with_check = 0;
         size_t good_removed = 0;
@@ -250,7 +249,6 @@ public:
 
 		Compressor<Graph> compressor(graph_);
 		compressor.CompressAllVertices();
-        return ans;
 	}
 
 
@@ -332,7 +330,8 @@ public:
 		Compressor<Graph> compressor(graph_);
 		compressor.CompressAllVertices();
 	}
-
+private:
+	DECL_LOGGER("AbstractTipClipper")
 };
 
 template<class Graph, typename Comparator>

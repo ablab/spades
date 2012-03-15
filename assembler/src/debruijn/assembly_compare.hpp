@@ -16,10 +16,13 @@ using namespace omnigraph;
 
 template<class Graph>
 Sequence MergeSequences(const Graph& g,
-		const vector<typename Graph::EdgeId>& edges) {
-	vector<const Sequence*> path_sequences;
-	for (auto it = edges.begin(); it != edges.end(); ++it) {
-		path_sequences.push_back(&g.EdgeNucls(*it));
+		const vector<typename Graph::EdgeId>& continuous_path) {
+	vector<Sequence> path_sequences;
+	VERIFY(continuous_path.size() > 0);
+	path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
+	for (size_t i = 1; i < continuous_path.size(); ++i) {
+		VERIFY(g.EdgeEnd(continuous_path[i-1]) == g.EdgeStart(continuous_path[i]));
+		path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
 	}
 	return MergeOverlappingSequences(path_sequences, g.k());
 }
@@ -77,7 +80,22 @@ class TipsProjector {
 				aligned_alt = alt_seq.Subseq(alt_seq.size() - tip_seq.size());
 			}
 		}
+
+		INFO("Remapping " << aligned_tip.size() << " kmers of aligned_tip to aligned_alt");
 		gp_.kmer_mapper.RemapKmers(aligned_tip, aligned_alt);
+	}
+
+	void AlignAndProject(const AbstractConjugateGraph<typename Graph::DataMaster>& graph
+			, const Sequence& tip_seq, const Sequence& alt_seq,
+			bool outgoing_tip) {
+		AlignAndProject(tip_seq, alt_seq, outgoing_tip);
+		AlignAndProject(!tip_seq, !alt_seq, !outgoing_tip);
+	}
+
+	void AlignAndProject(const AbstractNonconjugateGraph<typename Graph::DataMaster>& graph
+			, const Sequence& tip_seq, const Sequence& alt_seq,
+			bool outgoing_tip) {
+		AlignAndProject(tip_seq, alt_seq, outgoing_tip);
 	}
 
 public:
@@ -87,15 +105,17 @@ public:
 	}
 
 	void ProjectTip(EdgeId tip) {
+		INFO("Trying to project tip " << gp_.g.str(tip));
 		bool outgoing_tip = gp_.g.IsDeadEnd(gp_.g.EdgeEnd(tip));
 		Sequence tip_seq = gp_.g.EdgeNucls(tip);
 		Sequence alt_seq = MergeSequences(gp_.g,
 				UniqueAlternativePath(tip, outgoing_tip));
 		if (tip_seq.size() > alt_seq.size()) {
-			WARN("Can't fully project tip " << gp_.g.int_id(tip));
-		} else {
-			AlignAndProject(tip_seq, alt_seq, outgoing_tip);
+			WARN("Can't fully project tip " << gp_.g.str(tip)
+					<< "because alt path length is " << alt_seq.size() << " trying to project partially");
 		}
+		AlignAndProject(gp_.g, tip_seq, alt_seq, outgoing_tip);
+		INFO("Tip projected");
 	}
 private:
 	DECL_LOGGER("TipsProjector")
@@ -110,14 +130,12 @@ protected:
 			io::DelegatingReaderWrapper<io::SingleRead>(reader) {
 	}
 
-	virtual Sequence Modify(const Sequence& read) = 0;
+	virtual Sequence Modify(const Sequence& read) const = 0;
 
 public:
 	ModifyingWrapper& operator>>(io::SingleRead& read) {
 		this->reader() >> read;
-		Sequence s = read.sequence();
-		string sequence = Modify(s).str();
-		read.ChangeName(read.name());
+		read = io::SingleRead(read.name(), Modify(read.sequence()).str());
 		return *this;
 	}
 };
@@ -133,7 +151,7 @@ class ContigRefiner: public ModifyingWrapper {
 	const Graph& graph_;
 	NewExtendedSequenceMapper<k + 1, Graph> mapper_;
 
-	boost::optional<vector<EdgeId>> TryCloseGap(VertexId v1, VertexId v2) {
+	boost::optional<vector<EdgeId>> TryCloseGap(VertexId v1, VertexId v2) const {
 		PathStorageCallback<Graph> path_store(graph_);
 		PathProcessor<Graph> path_processor(graph_, 0, 10, v1, v2, path_store);
 		if (path_store.count() == 1) {
@@ -143,7 +161,7 @@ class ContigRefiner: public ModifyingWrapper {
 		}
 	}
 
-	vector<EdgeId> FixPath(const vector<EdgeId>& edges) {
+	vector<EdgeId> FixPath(const vector<EdgeId>& edges) const {
 		vector<EdgeId> answer;
 		VERIFY(edges.size() > 0);
 		answer.push_back(edges[0]);
@@ -167,30 +185,40 @@ class ContigRefiner: public ModifyingWrapper {
 							"Failed to close gap between v1="
 									<< graph_.int_id(v1) << " and v2="
 									<< graph_.int_id(v2));
+					VERIFY(false);
 				}
 			}
 //			VERIFY(graph_.EdgeStart(path[i]) == graph_.EdgeEnd(path[i - 1]));
 		}
-		return edges;
+		return answer;
 	}
 
-	Path<EdgeId> FixPath(const Path<EdgeId>& path) {
+	Path<EdgeId> FixPath(const Path<EdgeId>& path) const {
 		return Path<EdgeId>(FixPath(path.sequence()), path.start_pos(),
 				path.end_pos());
 	}
 
 protected:
 
-	Sequence Modify(const Sequence& s) {
+	Sequence Modify(const Sequence& s) const {
 //		if(s < !s)
 //			return !Refine(!s);
 		Path<EdgeId> path = FixPath(mapper_.MapSequence(s).simple_path());
+
+		DEBUG("Mapped sequence to path " << graph_.str(path.sequence()));
+
 		Sequence path_sequence = MergeSequences(graph_, path.sequence());
 		size_t start = path.start_pos();
-		size_t end = path_sequence.size() - k
+		size_t end = path_sequence.size()
 				- graph_.length(path[path.size() - 1]) + path.end_pos();
 		//todo output levenshtein somewhere there!!
-		return path_sequence.Subseq(start, end);
+		Sequence answer = path_sequence.Subseq(start, end);
+		if (answer != s) {
+			TRACE("Initial sequence modified, edit distance= " << EditDistance(answer, s));
+		} else {
+			TRACE("Initial sequence unmodified!");
+		}
+		return answer;
 	}
 
 public:
@@ -207,7 +235,8 @@ public:
 //		read.SetQuality(quality.c_str());
 //		return *this;
 //	}
-
+private:
+	DECL_LOGGER("ContigRefiner");
 };
 
 template<class gp_t>
@@ -215,6 +244,8 @@ void ConstructGPForRefinement(gp_t& gp,
 		io::IReader<io::SingleRead>& raw_stream_1,
 		io::IReader<io::SingleRead>& raw_stream_2) {
 	typedef typename gp_t::graph_t Graph;
+	INFO("Constructing graph pack for refinement");
+
 	io::RCReaderWrapper < io::SingleRead > stream_1(raw_stream_1);
 	io::RCReaderWrapper < io::SingleRead > stream_2(raw_stream_2);
 	stream_1.reset();
@@ -222,15 +253,22 @@ void ConstructGPForRefinement(gp_t& gp,
 
 	ConstructGraph<gp_t::k_value>(gp.g, gp.index, stream_1, stream_2);
 
+	make_dir("bp_graph_test/tmp/");
+	LengthIdGraphLabeler<Graph> labeler(gp.g);
+	WriteToDotFile(gp.g, labeler, "bp_graph_test/tmp/before_refine.dot");
+
 	//todo configure!!!
 	debruijn_config::simplification::bulge_remover br_config;
-	br_config.max_bulge_length_coefficient = 10;
+	br_config.max_bulge_length_coefficient = 3;
 	br_config.max_coverage = 1000.;
 	br_config.max_relative_coverage = 1.2;
 	br_config.max_delta = 5;
 	br_config.max_relative_delta = 0.1;
+
 	INFO("Removing bulges");
 	RemoveBulges(gp.g, br_config);
+
+	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 
 	TipsProjector<gp_t> tip_projector(gp);
 	boost::function<void(EdgeId)> projecting_callback = boost::bind(
@@ -240,7 +278,12 @@ void ConstructGPForRefinement(gp_t& gp,
 	tc_config.max_relative_coverage = 1.1;
 	tc_config.max_tip_length_coefficient = 2.;
 
+	INFO("Clipping tips with projection");
 	ClipTips(gp.g, tc_config, /*read_length*/100, projecting_callback);
+
+	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
+
+	WriteToDotFile(gp.g, labeler, "bp_graph_test/tmp/after_refine.dot");
 }
 
 typedef io::IReader<io::SingleRead> ContigStream;

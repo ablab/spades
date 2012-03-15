@@ -263,6 +263,10 @@ public:
 	void clear() {
 		mapping_.clear();
 	}
+
+	size_t size() const {
+		return mapping_.size();
+	}
 };
 
 /**
