@@ -15,7 +15,6 @@
 #include "graphio.hpp"
 #include "omni/visualization_utils.hpp"
 #include "omni/graph_labeler.hpp"
-#include <Python.h>
 
 namespace debruijn_graph {
 
@@ -27,12 +26,14 @@ public:
 
 		// Just output graph in .dot, so madness...
 		omnigraph::LengthIdGraphLabeler<conj_graph_pack::graph_t> id_labeler(gp.g);
+		omnigraph::CoverageGraphLabeler<conj_graph_pack::graph_t> cov_labeler(gp.g);
 		omnigraph::EdgePosGraphLabeler<conj_graph_pack::graph_t> pos_labeler(gp.g, gp.edge_pos);
-		omnigraph::CompositeLabeler<conj_graph_pack::graph_t> composite_labeler(id_labeler, pos_labeler);
+		omnigraph::CompositeLabeler<conj_graph_pack::graph_t> composite_labeler(id_labeler, cov_labeler, pos_labeler);
 		Path<conj_graph_pack::graph_t::EdgeId> path1 = FindGenomePath<K>(gp.genome, gp.g, gp.index);
 		Path<conj_graph_pack::graph_t::EdgeId> path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
 		ReliableSplitter<conj_graph_pack::graph_t> splitter(gp.g, 1 << 25, 1 << 25);
-		omnigraph::WriteComponents<conj_graph_pack::graph_t>(gp.g, splitter, output_dir + "rectangle_before.dot", *DefaultColorer(gp.g, path1, path2), composite_labeler, "rectangle_before_graph");
+		omnigraph::WriteComponents<conj_graph_pack::graph_t>(gp.g, splitter, output_dir + "rectangle_before.dot",
+				*DefaultColorer(gp.g, path1, path2), composite_labeler, "rectangle_before_graph");
 
 
 		// Prepare input
