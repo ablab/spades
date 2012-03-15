@@ -1,0 +1,8 @@
+iterative_K         21 33 55
+paired_mode         true
+dataset             ECOLI_IS220_QUAKE
+input_dir           ./data/input/
+output_dir          ./data/debruijn/
+output_to_console   true
+resolving_mode      rectangle
+
