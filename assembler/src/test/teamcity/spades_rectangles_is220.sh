@@ -7,7 +7,7 @@ rm -rf data/quality
 pushd data
 ./link_morality.sh
 popd
-sed -r 's/^resolving_mode[ \t]*split/resolving_mode rectangle/' configs/debruijn/config.info.template > configs/debruijn/config.info
+sed -r 's/^resolving_mode[ \t]*split/resolving_mode rectangle/' configs/debruijn/config.info > configs/debruijn/config.info
 make clean
 ./cpcfg
 ./spades.py src/test/teamcity/spades_config_rectangles_is220.info
