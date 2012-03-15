@@ -4,7 +4,7 @@ pushd ../../../
 rm -f data/debruijn/ECOLI_IS220_QUAKE/K55/latest
 rm -rf data/quality
 ./prepare_cfg
-if [ -e "./data/input" ]
+if [ ! -e "./data/input" ]
 then
   pushd data
   ./link_morality.sh
