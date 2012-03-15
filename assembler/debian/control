@@ -1,0 +1,14 @@
+Source: spades
+Maintainer: Yakov Sirotkin <yasha@telamon.ru>
+Section: misc
+Priority: optional
+Standards-Version: 3.8.4
+Build-Depends: debhelper (>= 7)
+Homepage: http://bioinf.spbau.ru/spades
+
+Package: spades
+Architecture: any
+Depends: cmake-curses-gui, g++-4.4, python2.6-dev, java-common, cmake, liblog4cxx10-dev, libboost1.42-all-dev, zlib1g-dev, python-matplotlib, python-numpy, bioperl, mummer, r-recommended, pdftk
+Description: Genome Assembler
+	SPAdes stands for St. Petersburg genome assembler. It is intended for both 
+	single cell and standard (multicell) assemblies. 
