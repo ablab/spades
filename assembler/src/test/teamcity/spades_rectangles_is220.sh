@@ -12,8 +12,8 @@ then
 fi
 make clean
 ./cpcfg
-sed -r 's/^resolving_mode[ \t]*split/resolving_mode rectangle/' configs/debruijn/config.info > configs/debruijn/config.info
-sed -r 's/ECOLI_IS220_QUAKE_1K/dataset ECOLI_IS220_QUAKE/' configs/debruijn/config.info > configs/debruijn/config.info
+sed -i -r 's/^resolving_mode[ \t]*split/resolving_mode rectangle/g' configs/debruijn/config.info
+sed -i -r 's/ECOLI_IS220_QUAKE_1K/ECOLI_IS220_QUAKE/g' configs/debruijn/config.info
 make rd
 ./run
 src/tools/quality/run_Ecoli.sh -o data/quality data/debruijn/ECOLI_IS220_QUAKE/K55/latest/saves/rectangle_after.fasta
