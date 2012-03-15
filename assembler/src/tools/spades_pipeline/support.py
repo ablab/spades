@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 # workaround on stdout & stderr redirecting
@@ -43,7 +42,7 @@ def error(err_str, prefix="== Error == ", code=1):
 #TODO: error log -> log
 #TODO: os.sytem gives error -> stop
 
-def sys_call(cmd):
+def sys_call(cmd, cwd = None):
 
     import shlex
     import time
@@ -51,7 +50,7 @@ def sys_call(cmd):
     import subprocess
 
     cmd_list = shlex.split(cmd)
-    proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd = cwd)
 
     while not proc.poll():
         sys.stdout.write(proc.stdout.readline())
