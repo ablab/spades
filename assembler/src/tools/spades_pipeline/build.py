@@ -18,7 +18,6 @@ def build_k(spades_folder, k):
     shutil.copytree("/usr/share/spades/src", build_folder_k + "src")
     shutil.copytree("/usr/share/spades/ext", build_folder_k + "ext")
     kFile = build_folder_k + "src/debruijn/k.hpp"
-    os.remove(kFile)
     fo = open(kFile, "w")
     fo.write("#pragma once\n\n")
     fo.write("namespace debruijn_graph {\n")
