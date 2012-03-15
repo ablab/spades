@@ -318,11 +318,12 @@ class DotPairedGraphPrinter: public GraphPrinter<VertexId> {
 private:
 	typedef GraphPrinter<VertexId> super;
 	const Graph& g_;
+	const GraphLabeler<Graph> &labeler_;
 	PairedGraphPrinter<VertexId> paired_printer_;
 public:
-	DotPairedGraphPrinter(const Graph& g, const string &name,
+	DotPairedGraphPrinter(const Graph& g, const string &name, const GraphLabeler<Graph> &labeler,
 			ostream &out = cout) :
-		super(name, out), g_(g), paired_printer_(name, out) {
+		super(name, out), g_(g), labeler_(labeler), paired_printer_(name, out) {
 	}
 
 	virtual ~DotPairedGraphPrinter() {
@@ -339,7 +340,8 @@ public:
 
 	virtual void AddVertex(VertexId v, const string &label,
 			const string fillColor) {
-		paired_printer_.AddVertex(v, label, g_.conjugate(v), label, fillColor);
+		string label_conjugate = labeler_.label(g_.conjugate(v));
+		paired_printer_.AddVertex(v, label, g_.conjugate(v), label_conjugate, fillColor);
 	}
 
 	virtual void AddEdge(VertexId v1, VertexId v2, const string &label,

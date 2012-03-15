@@ -458,7 +458,7 @@ void WritePaired(
 	typedef typename Graph::EdgeId EdgeId;
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
-	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
+	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, labeler, filestr);
 	CompositeGraphColorer<Graph> colorer(/*create_auto_ptr(*/new BorderVertexColorer<Graph>(g)
 			, /*create_auto_ptr(*/new MapColorer<Graph, EdgeId>(PathColorer<Graph>(g, path1, path2).ColorPath(), ""));
 	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, colorer);
@@ -489,15 +489,15 @@ private:
 	const GraphColorer<Graph> &colorer_;
 
 	auto_ptr<gvis::GraphPrinter<VertexId>> PrinterInstance(
-			const AbstractConjugateGraph<typename Graph::DataMaster>& graph, const string &graph_name,
+			const Graph& graph, const string &graph_name,
 			ostream &os) {
-		return auto_ptr<gvis::GraphPrinter<VertexId>>(new gvis::DotPairedGraphPrinter<AbstractConjugateGraph<typename Graph::DataMaster>>(
-				graph, graph_name, os));
+		return auto_ptr<gvis::GraphPrinter<VertexId>>(new gvis::DotPairedGraphPrinter<Graph>(
+				graph, graph_name, labeler_, os));
 	}
 
 	auto_ptr<gvis::GraphPrinter<VertexId>> PrinterInstance(
 			const AbstractNonconjugateGraph<typename Graph::DataMaster>& graph, const string &graph_name,
-			ostream &os) {
+			ostream &os, const GraphLabeler<Graph> &labeler) {
 		return auto_ptr<gvis::GraphPrinter<VertexId>>(new gvis::DotGraphPrinter<VertexId>(graph_name, os));
 	}
 
