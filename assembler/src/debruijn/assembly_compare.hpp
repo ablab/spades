@@ -18,7 +18,6 @@ template<class Graph>
 Sequence MergeSequences(const Graph& g,
 		const vector<typename Graph::EdgeId>& continuous_path) {
 	vector<Sequence> path_sequences;
-	VERIFY(continuous_path.size() > 0);
 	path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
 	for (size_t i = 1; i < continuous_path.size(); ++i) {
 		VERIFY(g.EdgeEnd(continuous_path[i-1]) == g.EdgeStart(continuous_path[i]));
@@ -108,14 +107,18 @@ public:
 		INFO("Trying to project tip " << gp_.g.str(tip));
 		bool outgoing_tip = gp_.g.IsDeadEnd(gp_.g.EdgeEnd(tip));
 		Sequence tip_seq = gp_.g.EdgeNucls(tip);
-		Sequence alt_seq = MergeSequences(gp_.g,
-				UniqueAlternativePath(tip, outgoing_tip));
-		if (tip_seq.size() > alt_seq.size()) {
-			WARN("Can't fully project tip " << gp_.g.str(tip)
-					<< "because alt path length is " << alt_seq.size() << " trying to project partially");
+		vector<EdgeId> alt_path = UniqueAlternativePath(tip, outgoing_tip);
+		if (alt_path.empty()) {
+			WARN("Failed to find unique alt path for tip " << gp_.g.str(tip) <<". Wasn't projected!!!");
+		} else {
+			Sequence alt_seq = MergeSequences(gp_.g, alt_path);
+			if (tip_seq.size() > alt_seq.size()) {
+				WARN("Can't fully project tip " << gp_.g.str(tip) << " with seq length " << tip_seq.size()
+						<< " because alt path length is " << alt_seq.size() << ". Trying to project partially");
+			}
+			AlignAndProject(gp_.g, tip_seq, alt_seq, outgoing_tip);
+			INFO("Tip projected");
 		}
-		AlignAndProject(gp_.g, tip_seq, alt_seq, outgoing_tip);
-		INFO("Tip projected");
 	}
 private:
 	DECL_LOGGER("TipsProjector")
@@ -205,7 +208,7 @@ protected:
 //			return !Refine(!s);
 		Path<EdgeId> path = FixPath(mapper_.MapSequence(s).simple_path());
 
-		DEBUG("Mapped sequence to path " << graph_.str(path.sequence()));
+//		DEBUG("Mapped sequence to path " << graph_.str(path.sequence()));
 
 		Sequence path_sequence = MergeSequences(graph_, path.sequence());
 		size_t start = path.start_pos();
@@ -215,9 +218,10 @@ protected:
 		Sequence answer = path_sequence.Subseq(start, end);
 		if (answer != s) {
 			TRACE("Initial sequence modified, edit distance= " << EditDistance(answer, s));
-		} else {
-			TRACE("Initial sequence unmodified!");
 		}
+//		else {
+//			TRACE("Initial sequence unmodified!");
+//		}
 		return answer;
 	}
 
@@ -1046,7 +1050,6 @@ private:
 	map<VertexId, VertexId> vertex_mapping_;
 	//todo draw in different color!
 	set<VertexId> artificial_vertices_;
-	//todo use contig names!
 	set<string> processed_contigs_;
 
 	//todo test that!!!
@@ -1072,7 +1075,7 @@ private:
 			//todo discuss with Anton!!!
 			VertexId art_v = new_gp_.g.AddVertex();
 			WARN("Art vertex added")
-			VERIFY(false);
+//			VERIFY(false);
 			artificial_vertices_.insert(art_v);
 			return art_v;
 		}
@@ -1085,7 +1088,7 @@ private:
 			//todo discuss with Anton!!!
 			VertexId art_v = new_gp_.g.AddVertex();
 			WARN("Art vertex added")
-			VERIFY(false);
+//			VERIFY(false);
 			artificial_vertices_.insert(art_v);
 			return art_v;
 		}

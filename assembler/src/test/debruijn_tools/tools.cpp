@@ -41,24 +41,32 @@ inline void RunBPComparison(ContigStream& raw_stream1,
 	}
 }
 
-//BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
-//	static const size_t k = 55;
-//	static const size_t K = 101;
-////    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
-////    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
-//	//todo split N's
-////	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0002_allpaths.fasta.gz");
-////	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0002_spades.fasta.gz");
-//
-////	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
-////	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
-//// 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
-//
-//	io::Reader<io::SingleRead> raw_reader_1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
-//	io::Reader<io::SingleRead> raw_reader_2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
-//
-//	RunBPComparison<k, K>(raw_reader_1, raw_reader_2, "spades_", "ref_", true, "assembly_comparison/");
-//}
+BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
+	static const size_t k = 25;
+	static const size_t K = 201;
+//    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
+//    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
+	//todo split N's
+//	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0002_allpaths.fasta.gz");
+//	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0002_spades.fasta.gz");
+
+//	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
+//	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
+// 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
+
+	io::Reader<io::SingleRead> stream_1("/home/snurk/assembly_compare/PGINGIVALIS_LANE3_BH_split.fasta.gz");
+	io::Reader<io::SingleRead> stream_2("/home/snurk/assembly_compare/TDC60.fasta");
+
+	RunBPComparison<k, K>(
+		stream_1,
+		stream_2,
+		"spades",
+		"ref",
+		false/*refine*/,
+		true/*untangle*/,
+		"assembly_compare",
+		true/*detailed_output*/);
+}
 
 template<size_t k, size_t K>
 inline void LoadAndRunBPG(const string& filename, const string& output_dir,
@@ -105,11 +113,10 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir,
 	}
 }
 
-BOOST_AUTO_TEST_CASE( BreakPointGraphTests ) {
-	//todo now disabled: !!!
-	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
-			"bp_graph_test/", "1_err");
-}
+//BOOST_AUTO_TEST_CASE( BreakPointGraphTests ) {
+//	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
+//			"bp_graph_test/", "1_err");
+//}
 
 template<class gp_t>
 inline void ThreadAssemblies(const string& base_saves,
