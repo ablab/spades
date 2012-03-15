@@ -5,7 +5,8 @@ rm -f data/debruijn/ECOLI_IS220_QUAKE/K55/latest
 rm -rf data/quality
 ./prepare_cfg
 pushd data
-./link_ace.sh
+rm input
+./link_morality.sh
 popd
 make clean
 ./cpcfg
