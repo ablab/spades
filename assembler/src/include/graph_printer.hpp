@@ -29,11 +29,13 @@ struct Edge {
 	tVertex to;
 	string label;
 	string color;
-	Edge(tVertex _from, tVertex _to, string _label, string _color) {
+	int len;
+	Edge(tVertex _from, tVertex _to, string _label, string _color, int _len) {
 		from = _from;
 		to = _to;
 		label = _label;
 		color = _color;
+		len = _len;
 	}
 };
 
@@ -76,6 +78,10 @@ void recordEdge(ostream &out, Edge<tVertex> &edge) {
 	out << "[";
 	recordParameterInQuotes(out, "label", edge.label);
 	out << ",";
+	recordParameter(out, "len", ToString(edge.len));
+	out << ",";
+	recordParameter(out, "K", ToString(edge.len));
+	out << ",";
 	recordParameter(out, "color", edge.color);
 	out << "]" << endl;
 }
@@ -87,6 +93,10 @@ void recordSimpleEdge(ostream &out, Edge<tVertex> &edge) {
 	recordVertexId(out, edge.to);
 	out << "[";
 	recordParameterInQuotes(out, "label", edge.label);
+	out << ",";
+	recordParameter(out, "len", ToString(edge.len));
+	out << ",";
+	recordParameter(out, "K", ToString(edge.len));
 	out << ",";
 	recordParameter(out, "color", edge.color);
 	out << "]" << endl;
@@ -203,7 +213,7 @@ public:
 			const string fillColor = "white") = 0;
 
 	virtual void AddEdge(VertexId fromId, VertexId toId,
-			const string &label = " ", const string color = "black") = 0;
+			const string &label = " ", const string color = "black", const int length = 0) = 0;
 
 };
 
@@ -228,8 +238,8 @@ public:
 	}
 
 	virtual void AddEdge(VertexId fromId, VertexId toId, const string &label,
-			const string color = "black") {
-		Edge<VertexId> e(fromId, toId, label, color);
+			const string color = "black", const int length = 0) {
+		Edge<VertexId> e(fromId, toId, label, color, length);
 		recordSimpleEdge<VertexId> (super::out_, e);
 	}
 
@@ -280,34 +290,34 @@ public:
 	}
 
 	void AddEdge(pair<VertexId, VertexId> v1, pair<VertexId, VertexId> v2,
-			const string label = " ", const string color = "black") {
+			const string label = " ", const string color = "black", const int length = 0) {
 		string v1Id = constructVertexInPairId(v1.first, v1.second);
 		string v2Id = constructVertexInPairId(v2.first, v2.second);
-		Edge<string> edge(v1Id, v2Id, label, color);
+		Edge<string> edge(v1Id, v2Id, label, color, length);
 		recordEdge(out_, edge);
 	}
 
 	void AddEdge(pair<VertexId, VertexId> v1, VertexId v2,
-			const string label = " ", const string color = "black") {
+			const string label = " ", const string color = "black", const int length = 0) {
 		string v1Id = constructVertexInPairId(v1.first, v1.second);
 		string v2Id = constructVertexInPairId(v2, v2);
-		Edge<string> edge(v1Id, v2Id, label, color);
+		Edge<string> edge(v1Id, v2Id, label, color, length);
 		recordEdge(out_, edge);
 	}
 
 	void AddEdge(VertexId v1, pair<VertexId, VertexId> v2,
-			const string label = " ", const string color = "black") {
+			const string label = " ", const string color = "black", const int length = 0) {
 		string v1Id = constructVertexInPairId(v1, v1);
 		string v2Id = constructVertexInPairId(v2.first, v2.second);
-		Edge<string> edge(v1Id, v2Id, label, color);
+		Edge<string> edge(v1Id, v2Id, label, color, length);
 		recordEdge(out_, edge);
 	}
 
 	void AddEdge(VertexId v1, VertexId v2, const string label = " ",
-			const string color = "black") {
+			const string color = "black", const int length = 0) {
 		string v1Id = constructVertexInPairId(v1, v1);
 		string v2Id = constructVertexInPairId(v2, v2);
-		Edge<string> edge(v1Id, v2Id, label, color);
+		Edge<string> edge(v1Id, v2Id, label, color, length);
 		recordEdge(out_, edge);
 	}
 
@@ -345,9 +355,9 @@ public:
 	}
 
 	virtual void AddEdge(VertexId v1, VertexId v2, const string &label,
-			const string color) {
+			const string color, const int length = 0) {
 		paired_printer_.AddEdge(make_pair(v1, g_.conjugate(v1)),
-				make_pair(v2, g_.conjugate(v2)), label, color);
+				make_pair(v2, g_.conjugate(v2)), label, color, length);
 	}
 
 };

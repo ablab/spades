@@ -89,7 +89,7 @@ public:
 		}TRACE("Vertices printed");
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it),
-					gl_.label(*it));
+					gl_.label(*it), "black", super::g_.length(*it));
 		}TRACE("Edges printed");
 		gp_.close();
 	}
@@ -309,7 +309,7 @@ public:
 						super::g_.coverage(*e_it) << " " << super::g_.length(*e_it));
 				if (vertex_set.count(edge_end) > 0) {
 					super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it),
-							colorer_.GetColour(*e_it));
+							colorer_.GetColour(*e_it), super::g_.length(*e_it));
 					TRACE("Edge added");
 				}
 			}
