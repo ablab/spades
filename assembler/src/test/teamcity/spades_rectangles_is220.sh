@@ -4,9 +4,12 @@ pushd ../../../
 rm -f data/debruijn/ECOLI_IS220_QUAKE/K55/latest
 rm -rf data/quality
 ./prepare_cfg
-pushd data
-./link_morality.sh
-popd
+if [ -e "./data/input" ]
+then
+  pushd data
+  ./link_morality.sh
+  popd
+fi
 make clean
 ./cpcfg
 sed -r 's/^resolving_mode[ \t]*split/resolving_mode rectangle/' configs/debruijn/config.info > configs/debruijn/config.info
