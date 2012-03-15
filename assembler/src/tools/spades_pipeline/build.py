@@ -3,29 +3,64 @@
 import os
 import support
 
-def build_spades(cfg, K):
+def build_spades(dir):
+    support.sys_call('cmake src', dir)
+    support.sys_call('make', dir)
 
-    support.sys_call("./gen_k " + str(K))
-    support.sys_call("make clean")
-    support.sys_call("make")
+def build_k(spades_folder, k):
+
+    import shutil
+
+    build_folder_k = spades_folder + "build" + k + "/"
+    if os.path.exists(build_folder_k) :
+        shutil.rmtree(build_folder_k)
+
+    shutil.copytree("/usr/share/spades/src", build_folder_k + "src")
+    shutil.copytree("/usr/share/spades/ext", build_folder_k + "ext")
+    kFile = build_folder_k + "src/debruijn/k.hpp"
+    os.remove(kFile)
+    fo = open(kFile, "w")
+    fo.write("#pragma once\n\n")
+    fo.write("namespace debruijn_graph {\n")
+    fo.write("	const size_t K = " + k + ";\n")
+    fo.write("}\n")
+    fo.close()
+
+    print("\n== Compiling with K=" + k + " ==\n")
+    build_spades(build_folder_k)
+
 
 def build_spades_n_copy(cfg):
 
-    import datetime
-    import shutil
+    import time
 
     print("\n== Compilation started. Don't start another instance of SPAdes before compilation ends ==\n")
 
-    cfg_folder = "configs/debruijn"
-
     for K in cfg.iterative_K:
-        build_folder_k = cfg.build_path + str(K) + r"/"
+        precompiled_folder = os.getenv('HOME') + '/.spades/precompiled/'
 
-        os.makedirs(build_folder_k + "configs", 0755)
-        shutil.copytree(cfg_folder, build_folder_k + cfg_folder)
+        if not os.path.exists(precompiled_folder) :
+            os.makedirs(precompiled_folder)
 
-        print("\n== Compiling with K=" + str(K) + " ==\n")
-        build_spades(cfg, K)
-        shutil.copy("build/release/debruijn/debruijn", build_folder_k)
+        k = str(K)
+
+        compiledFlag = precompiled_folder + "compiled" + k
+        lockFlag = precompiled_folder + "lock" + k
+
+        if not os.path.exists(compiledFlag) :
+            while os.path.exists(lockFlag) :
+                try:
+                    time.sleep(10)
+                    os.unlink(lockFile)
+                except:
+                    print("Failed to delete " + lockFlag)
+            if not os.path.exists(compiledFlag) :
+                open(lockFlag, "w")
+                try :
+                    build_k(precompiled_folder, k)
+                    compiledFile = open(compiledFlag, "w")
+                    compiledFile.close()
+                finally :
+                    os.unlink(lockFlag)
 
     print("\n== Compilation finished successfully. Feel free to start another instance of SPAdes ==\n")

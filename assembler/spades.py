@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 
 import os
+import shutil
 import sys
 
-sys.path.append("src/tools/spades_pipeline/") # is it OK to have relative path here? what if user runs it from other directory?
+SPADES_HOME = ""
+
+if os.path.realpath(__file__) == "/usr/bin/spades.py":
+    SPADES_HOME = "/usr/share/spades/"
+
+sys.path.append(SPADES_HOME + "src/tools/spades_pipeline/")
 
 import support
 from process_cfg import *
@@ -29,34 +35,35 @@ def prepare_config(filename, cfg, prev_K, last_one):
     else:
         subst_dict["use_additional_contigs"] = "false"
 
-#    if cfg.measure_quality:
-#        print("Quality measuring implementation is in progress")
+    #    if cfg.measure_quality:
+    #        print("Quality measuring implementation is in progress")
 
     substitute_params(filename, subst_dict)
 
 def main():
-    if len(sys.argv) == 2 and os.path.isfile(sys.argv[1]):
-        print("Using config file: " + sys.argv[1])
-        cfg = load_config_from_file(sys.argv[1])
-    elif len(sys.argv) == 1:
-        cfg = load_config_from_file("spades_config.info")
-        print("Using default config file: spades_config.info")
-        print("Other usages:")
-        print("   ./spades.py <config file>")
-        print("   ./spades.py dataset input_dir output_dir K [Ks] [paired=true]")
-    else:
-        config = {}
-        config['dataset'] = sys.argv[1]
-        config['input_dir'] = sys.argv[2]
-        config['output_dir'] = sys.argv[3]
-        if sys.argv[-1].isdigit():
-            config['iterative_K'] = ' '.join(sys.argv[4:])
-            config['paired_mode'] = 'true'
+
+    CONFIG_FILE = "/usr/share/spades/spades_config.info"
+
+    if os.path.isfile("spades_config.info") :
+        CONFIG_FILE = "spades_config.info"
+
+    if len(sys.argv) > 1 :
+        if os.path.isfile(sys.argv[1]):
+            CONFIG_FILE = sys.argv[1]
         else:
-            config['iterative_K'] = ' '.join(sys.argv[4:-1])
-            config['paired_mode'] = sys.argv[-1]
-        config['output_to_console'] = 'true'
-        cfg = load_config_from_vars(vars_from_lines(['%s %s' % (k, v) for k, v in config.iteritems()]))
+            print("Usage :")
+            print("   ./spades.py <config file>")
+            return
+
+    print("Using config file: " + CONFIG_FILE)
+    cfg = load_config_from_file(CONFIG_FILE)
+
+    precompiled_folder = os.getenv('HOME') + '/.spades/precompiled/'
+
+    if os.path.exists(precompiled_folder):
+        if os.path.getmtime(precompiled_folder) < os.path.getmtime(__file__):
+            shutil.rmtree(precompiled_folder)
+
 
     def build_folder(cfg):
         import datetime
@@ -100,6 +107,7 @@ def main():
 
 def run(cfg):
 
+    import shutil
 
     if type(cfg.iterative_K) is int:
         cfg.iterative_K = [cfg.iterative_K]
@@ -116,10 +124,20 @@ def run(cfg):
 
         path = cfg.build_path + "/" + str(K) + "/"
         cfg_file_name = path + "configs/debruijn/config.info"
+        os.makedirs(path + "configs/debruijn/long_contigs")
+        shutil.copy("/usr/share/spades/configs/config.info", cfg_file_name)
+        shutil.copy("/usr/share/spades/configs/datasets.info", path + "configs/debruijn/datasets.info")
+        shutil.copy("/usr/share/spades/configs/distance_estimation.info", path + "configs/debruijn/distance_estimation.info")
+        shutil.copy("/usr/share/spades/configs/simplification.info", path + "configs/debruijn/simplification.info")
+        shutil.copy("/usr/share/spades/configs/detail_info_printer.info", path + "configs/debruijn/detail_info_printer.info")
+        shutil.copy("/usr/share/spades/configs/long_contigs/lc_params.info", path + "configs/debruijn/long_contigs")
+        print(cfg_file_name)
         prepare_config(cfg_file_name, cfg, prev_K, count == len(cfg.iterative_K))
         prev_K = K
 
-        support.sys_call(os.path.join(path, "debruijn") + " " + cfg_file_name)
+        command = os.path.join(os.getenv('HOME') + '/.spades/precompiled/build' + str(K) + "/debruijn", "debruijn") + " " + cfg_file_name
+        print(command)
+        support.sys_call(command)
         latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), "latest")
         latest = os.readlink(latest)
         latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), latest)
@@ -130,13 +148,13 @@ def run(cfg):
     support.copy(result.contigs, cfg.build_path)
 
     print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
-    cmd = "python src/tools/quality/quality.py " + result.contigs
+    cmd = "python /usr/share/spades/src/tools/quality/quality.py " + result.contigs
     if result.reference:
         cmd += " -R " + result.reference
-#    if result.genes:
-#        cmd += " -G " + result.genes
-#    if result.operons:
-#        cmd += " -O " + result.operons
+    #    if result.genes:
+    #        cmd += " -G " + result.genes
+    #    if result.operons:
+    #        cmd += " -O " + result.operons
     qr = "quality_results"
     cmd += " -o " + os.path.join(cfg.build_path, qr)
     support.sys_call(cmd)
