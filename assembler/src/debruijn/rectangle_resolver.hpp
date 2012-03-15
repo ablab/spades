@@ -8,6 +8,7 @@
 #ifndef RECTANGLE_RESOLVER_HPP_
 #define RECTANGLE_RESOLVER_HPP_
 
+#include <Python.h>
 #include <string>
 #include <log4cxx/logger.h>
 #include "graph_pack.hpp"
