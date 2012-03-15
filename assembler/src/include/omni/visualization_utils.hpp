@@ -535,7 +535,7 @@ private:
 	string ConstructComponentName(const string &file_name, size_t cnt,
 			const string &component_name) {
 		stringstream ss;
-		ss << cnt << "_" << component_name;
+		ss << "_" << cnt << component_name;
 		string res = file_name;
 		res.insert(res.length() - 4, ss.str());
 		return res;
