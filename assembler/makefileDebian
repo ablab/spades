@@ -1,0 +1,29 @@
+SPADES_SHARE = $(DESTDIR)/usr/share/spades/
+SPADES_SRC = $(SPADES_SHARE)/src/
+SPADES_CONFIGS = $(SPADES_SHARE)/configs/
+
+install:
+	mkdir -p $(SPADES_SRC)
+	mkdir -p $(DESTDIR)/usr/share/spades/configs
+	mkdir -p $(DESTDIR)/usr/bin
+	cp -r src/debruijn $(SPADES_SRC)
+	cp -r src/io $(SPADES_SRC)
+	cp -r src/include $(SPADES_SRC)
+	cp -r src/tools $(SPADES_SRC)
+	cp -r src/cmake $(SPADES_SRC)
+	cp src/CMakeLists.txt $(SPADES_SRC)/CMakeLists.txt
+	touch $(SPADES_SRC)/CMakeListsInternal.txt
+	cp -r ext $(DESTDIR)/usr/share/spades/
+	cp -r test_dataset/* $(DESTDIR)/usr/share/spades/data
+	cp -r configs/debruijn/*.template $(DESTDIR)/usr/share/spades/configs
+	cp configs/debruijn/config.info $(DESTDIR)/usr/share/spades/configs
+	cp configs/debruijn/detail_info_printer.info $(DESTDIR)/usr/share/spades/configs
+	cp configs/debruijn/distance_estimation.info $(DESTDIR)/usr/share/spades/configs
+	cp configs/debruijn/simplification.info $(DESTDIR)/usr/share/spades/configs
+	cp configs/debruijn/datasetsDebian.info $(DESTDIR)/usr/share/spades/configs/datasets.info
+	cp -r configs/debruijn/long_contigs $(DESTDIR)/usr/share/spades/configs
+	cp spades.py $(DESTDIR)/usr/bin/
+	cp cpcfg $(DESTDIR)/usr/share/spades/
+	cp log4cxx.properties.template $(DESTDIR)/usr/share/spades/log4cxx.properties
+	cp log4cxx.properties.template $(DESTDIR)/usr/share/spades/
+	cp spades_configDebian.info $(DESTDIR)/usr/share/spades/spades_config.info
