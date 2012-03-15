@@ -60,18 +60,13 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories(${ZLIB_INCLUDE_DIRS})
 include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
-#include_directories(${sparsehash_INCLUDE_DIRS})
-include_directories(${fftw3_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIR})
 
 set(COMMON_LIBRARIES 
    ${ZLIB_LIBRARIES} 
    ${log4cxx_LIBRARIES} 
    ${Boost_LIBRARIES} 
-#  ${ssl_LIBRARIES} 
-   ${fftw3_LIBRARIES}
    ${PYTHON_LIBRARIES}
-#  ${sparsehash_LIBRARIES}
    )
 
 include_directories(${EXT_DIR}/include)
@@ -80,13 +75,5 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # sub projects
 add_subdirectory(io)
 add_subdirectory(debruijn)
-add_subdirectory(abruijn)
-add_subdirectory(bayes)
-add_subdirectory(hammer)
-add_subdirectory(debruijn/long_contigs)
-add_subdirectory(debruijn/long_contigs/utils)
 
-#tests
-add_subdirectory(test/include_test)
-add_subdirectory(test/debruijn)
-add_subdirectory(test/debruijn_tools)
+include(CMakeListsInternal.txt)
