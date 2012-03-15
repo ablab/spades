@@ -13,7 +13,8 @@ fi
 make clean
 ./cpcfg
 sed -r 's/^resolving_mode[ \t]*split/resolving_mode rectangle/' configs/debruijn/config.info > configs/debruijn/config.info
-./spades.py src/test/teamcity/spades_config_rectangles_is220.info
+sed -r 's/ECOLI_IS220_QUAKE_1K/ECOLI_IS220_QUAKE/' configs/debruijn/config.info > configs/debruijn/config.info
+./run
 src/tools/quality/run_Ecoli.sh -o data/quality data/debruijn/ECOLI_IS220_QUAKE/K55/latest/saves/rectangle_after.fasta
 python src/test/teamcity/assess.py data/quality/all.tsv 80000 3
 popd
