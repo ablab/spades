@@ -567,10 +567,10 @@ public:
 					factory_.GetPrinterInstance(graph_name_, os);
 			auto_ptr<PartialGraphVisualizer<Graph>> visualizer = factory_.GetVisualizerInstance(*gp);
 			visualizer->open();
-			if (component.size() < 1000)
-				visualizer->Visualize(component);
-			else
-			WARN("Too large component " << component.size());
+			if (component.size() >= 1000) { // what the magic constant???
+				WARN("Too large component " << component.size());
+			}
+			visualizer->Visualize(component);
 			visualizer->close();
 			os.close();
 			cnt++;
