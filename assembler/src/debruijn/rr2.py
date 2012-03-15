@@ -125,9 +125,9 @@ class Graph(object):
         for e in self.es.itervalues():
             assert self.K == len(e.seq) - e.len, "Inconsistent K"
 
-    def fasta(self, stream=sys.stdout):
+    def fasta(self, stream=sys.stdout, all=False):
         for edge in self.es.itervalues():
-            if edge.conj.eid <= edge.eid: # non-conjugate
+            if all or edge.conj.eid <= edge.eid: # non-conjugate
                 l = len(edge.seq)
                 print >> stream, '>contig_%d_%d_l=%06d' % (edge.eid, edge.conj.eid, l)
                 for l in xrange(0, l, 60):
@@ -141,6 +141,7 @@ class Graph(object):
         ls.sort()
         print >> stream, 'Ls  =', ls
         print >> stream, 'K   =', self.K
+        print >> stream, 'd   =', d
         print >> stream, 'Len =', sum(ls), 'bp'
         print >> stream, 'N50 =', N50.N50(ls), 'bp'
         print >> stream, 'Num =', len(ls), 'contigs'
@@ -555,6 +556,56 @@ class BGraph(object):
         after = sum(len(be.rectangles[0].diagonals) for be in self.es)
         print >>logfile, "Filtered %d diagonals (out of %d). %d diagonals left." % (before - after, before, after)
 
+    def sam(self, stream=sys.stdout):
+        K = self.graph.K
+        print >> stream, '@HD\tVN:1.3\tSO:coordinate'
+        lines = []
+        for e in self.graph.es.itervalues():
+            lines.append('@SQ\tSN:contig_%d_%d_l=%06d\tLN:%d' % (e.eid, e.conj.eid, e.len + K, e.len + K))
+        lines.sort()
+        for line in lines:
+            print >> stream, line
+        lines = []
+        for be in self.es:
+            assert len(be.rectangles) == 1, "Should be run before condensation"
+            r = be.rectangles[0]
+            e1 = r.e1
+            e2 = r.e2
+            for diag in r.diagonals:
+                # http://samtools.sourceforge.net/samtools.shtml#5
+                l = (K + diag.offsetc - diag.offseta);
+                col = []
+                col.append('r=%d_d=%d_e1=%d_e2=%d' % (r.rid, diag.D, e1.eid, e2.eid)) #1 Query template/pair NAME
+                col.append('163') #2 bitwise FLAG
+                col.append('contig_%d_%d_l=%06d' % (e1.eid, e1.conj.eid, e1.len + K)) #3 Reference sequence NAME
+                col.append('%d' % (diag.offseta + 1)) #4 1-based leftmost POSition/coordinate of clipped sequence
+                col.append('30') #5 MAPping Quality (Phred-scaled)
+                col.append('%d=' % l) #6 extended CIGAR string
+                col.append('contig_%d_%d_l=%06d' % (e2.eid, e2.conj.eid, e2.len + K)) #7 Mate Reference sequence NaMe ('=' if same as RNAME)
+                col.append('%d' % (diag.offsetb + 1)) #8 1-based Mate POSistion
+                col.append('%d' % (d + l)) #9 inferred Template LENgth (insert size)
+                col.append(e1.seq[diag.offseta : diag.offsetc + K]) #10 query SEQuence on the same strand as the reference
+                col.append('*') #11 query QUALity (ASCII-33 gives the Phred base quality)
+                #col.append('') #12 variable OPTional fields in the format TAG:VTYPE:VALUE
+                lines.append((col[2], col[3], '\t'.join(col)))
+                col = []
+                col.append('r=%d_d=%d_e1=%d_e2=%d' % (r.rid, diag.D, e1.eid, e2.eid)) #1 Query template/pair NAME
+                col.append('83') #2 bitwise FLAG
+                col.append('contig_%d_%d_l=%06d' % (e2.eid, e2.conj.eid, e2.len + K)) #3 Reference sequence NAME
+                col.append('%d' % (diag.offsetb + 1)) #4 1-based leftmost POSition/coordinate of clipped sequence
+                col.append('30') #5 MAPping Quality (Phred-scaled)
+                col.append('%d=' % l) #6 extended CIGAR string
+                col.append('contig_%d_%d_l=%06d' % (e1.eid, e1.conj.eid, e1.len + K)) #7 Mate Reference sequence NaMe ('=' if same as RNAME)
+                col.append('%d' % (diag.offseta + 1)) #8 1-based Mate POSistion
+                col.append('%d' % -(d + l)) #9 inferred Template LENgth (insert size)
+                col.append(e2.seq[diag.offsetb : diag.offsetd + K]) #10 query SEQuence on the same strand as the reference
+                col.append('*') #11 query QUALity (ASCII-33 gives the Phred base quality)
+                #col.append('') #12 variable OPTional fields in the format TAG:VTYPE:VALUE
+                lines.append((col[2], col[3], '\t'.join(col)))
+        lines.sort()
+        for line in lines:
+            print >> stream, line[2]
+
 ########
 # MAIN #
 ########
@@ -586,6 +637,7 @@ if __name__ == '__main__':
     ingraph = Graph()
     ingraph.load(grp_filename, sqn_filename)
     ingraph.check()
+    ingraph.fasta(open(outprefix + '_forsam_contigs.fasta', 'w'), all=True)
 
     #########
     # BUILD #
@@ -596,13 +648,15 @@ if __name__ == '__main__':
     bgraph.check()
     bgraph.build()
     bgraph.check()
+    bgraph.sam(open(outprefix + '.sam', 'w'))
+    bgraph.check()
     bgraph.glue()
     bgraph.check()
     bgraph.filter_diagonals() # optional
-    bgraph.filter_diagonals() # optional
-    bgraph.filter_diagonals() # optional
-    bgraph.filter_diagonals() # optional
-    bgraph.filter_diagonals() # optional
+    #bgraph.filter_diagonals() # optional
+    #bgraph.filter_diagonals() # optional
+    #bgraph.filter_diagonals() # optional
+    #bgraph.filter_diagonals() # optional
     bgraph.check()
     #bgraph.scaffold() # optional
     ingraph.check()
@@ -616,6 +670,6 @@ if __name__ == '__main__':
 
     outgraph = bgraph.project()
     outgraph.check()
-    outgraph.fasta(open(outprefix + '_contigs.fasta', 'w'))
+    outgraph.fasta(open(outprefix + '.fasta', 'w'))
     outgraph.stats(logfile)
     outgraph.save(outprefix)

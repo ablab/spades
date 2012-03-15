@@ -25,7 +25,13 @@ public:
 		INFO("Rectangle resolving started");
 		const std::string output_dir = cfg::get().output_dir + "saves/";
 
-		omnigraph::WriteSimple(gp.g, omnigraph::LengthIdGraphLabeler<conj_graph_pack::graph_t>(gp.g), cfg::get().output_dir + "saves/rectangles_before.dot", "rectangles_before_graph");
+		omnigraph::LengthIdGraphLabeler<conj_graph_pack::graph_t> id_labeler(gp.g);
+		//omnigraph::EdgePosGraphLabeler<conj_graph_pack::graph_t> pos_labeler(gp.g, gp.edge_pos);
+		//omnigraph::CompositeLabeler<conj_graph_pack::graph_t> composite_labeler(id_labeler, pos_labeler);
+		Path<conj_graph_pack::graph_t::EdgeId> path1 = FindGenomePath<K>(gp.genome, gp.g, gp.index);
+		Path<conj_graph_pack::graph_t::EdgeId> path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
+		omnigraph::WriteSimple(gp.g, id_labeler, output_dir + "rectangles_before.dot", "rectangles_before_graph", path1, path2);
+		// FindGenomePath<K> (gp.genome, gp.g, gp.index), FindGenomePath<K> (!gp.genome, gp.g, gp.index));
 
 		// Prepare input
 		OutputContigs(gp.g, output_dir + "rectangle_before.fasta");
