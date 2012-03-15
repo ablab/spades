@@ -86,7 +86,7 @@ void ClipTips(Graph &g,
 							* (1 + (i + 1.) / iteration_count)), max_coverage,
 			max_relative_coverage, removal_handler); //removal_handler
     tc.ClipTips();
-	INFO("Clipping tips finished");
+	DEBUG("Clipping tips finished");
 }
 
 template<class Graph>
@@ -110,7 +110,7 @@ void ClipTipsForResolver(Graph &g) {
 			max_coverage, max_relative_coverage * 0.5);
 	//vector<EdgeId> edges = tc.ClipTipsForResolver();
     tc.ClearTips();
-    INFO("Clipping tips for Resolver finished");
+    DEBUG("Clipping tips for Resolver finished");
 }
 
 template<class Graph>
@@ -162,7 +162,7 @@ void RemoveBulges(Graph &g,
 			additional_length_bound);
 	//	Cleaner<Graph> cleaner(g);
 	//	cleaner.Clean();
-	INFO("Bulges removed");
+	DEBUG("Bulges removed");
 }
 
 template<class Graph>
@@ -177,7 +177,7 @@ void RemoveBulges2(Graph &g) {
 			max_coverage, 0.5 * max_relative_coverage, max_delta,
 			max_relative_delta, &TrivialCondition<Graph>);
 	bulge_remover.RemoveBulges();
-	INFO("Bulges removed");
+	DEBUG("Bulges removed");
 }
 
 void BulgeRemoveWrap(Graph& g) {
@@ -233,7 +233,7 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 			cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
 
-	INFO("Low coverage edges removed");
+	DEBUG("Low coverage edges removed");
 }
 
 template<class Graph>
@@ -251,7 +251,7 @@ bool CheatingRemoveErroneousEdges(
 	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 	//			max_length_div_K * g.k(), max_coverage);
 	bool changed = erroneous_edge_remover.RemoveEdges();
-	INFO("Cheating removal of erroneous edges finished");
+	DEBUG("Cheating removal of erroneous edges finished");
 	return changed;
 }
 
@@ -276,7 +276,6 @@ bool TopologyRemoveErroneousEdges(
 //				g, tec_config.max_length, tec_config.uniqueness_length,
 //				tec_config.plausibility_length, edge_remover);
 		changed = erroneous_edge_remover.RemoveEdges();
-		INFO("Removal of erroneous edges based on topology started");
 	}
 	return changed;
 }
@@ -286,7 +285,7 @@ bool ChimericRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 	INFO("Simple removal of chimeric edges based only on length started");
 	ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
 	bool changed = remover.RemoveEdges();
-	INFO("Removal of chimeric edges finished");
+	DEBUG("Removal of chimeric edges finished");
 	return changed;
 }
 
@@ -305,7 +304,7 @@ void FinalTipClipping(Graph& g){
 			max_tip_length, max_coverage,
 			max_relative_coverage); //removal_handler
     tc.ClearTips();
-	INFO("Clipping tips finished");
+	DEBUG("Clipping tips finished");
 }
 
 template<class Graph>
@@ -368,7 +367,7 @@ void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
 			cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
 
-	INFO("Erroneous edges using paired info removed");
+	DEBUG("Erroneous edges using paired info removed");
 }
 
 //todo use another edge remover
@@ -380,7 +379,7 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
 			10000000 * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges();
-	INFO("Low coverage edges removed");
+	DEBUG("Low coverage edges removed");
 }
 
 void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
@@ -407,21 +406,21 @@ void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
         detail_info_printer &printer, size_t iteration_count,
 		size_t iteration, double max_coverage){
-	INFO("Simplification cycle: iteration " << iteration);
+	INFO("PROCEDURE == Simplification cycle, iteration " << iteration);
 
-	INFO(iteration << " TipClipping");
+	DEBUG(iteration << " TipClipping");
 	ClipTips(graph, removal_handler_f, iteration_count, iteration);
-	INFO(iteration << " TipClipping stats");
+	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
-	INFO(iteration << " BulgeRemoval");
+	DEBUG(iteration << " BulgeRemoval");
 	RemoveBulges(graph, removal_handler_f);
-	INFO(iteration << " BulgeRemoval stats");
+	DEBUG(iteration << " BulgeRemoval stats");
 	printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
-	INFO(iteration << " ErroneousConnectionsRemoval");
+	DEBUG(iteration << " ErroneousConnectionsRemoval");
 	RemoveLowCoverageEdges(graph, edge_remover, iteration_count, iteration, max_coverage);
-	INFO(iteration << " ErroneousConnectionsRemoval stats");
+	DEBUG(iteration << " ErroneousConnectionsRemoval stats");
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
 }
@@ -519,12 +518,12 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
             //boost::ref(removal_handler1), _1);
 
 	PostSimplification(gp.g, edge_remover, removal_handler_f, printer);
-	INFO("Graph simplification finished");
+	DEBUG("Graph simplification finished");
 
 	INFO("Counting average coverage");
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
 	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
-	INFO("Average coverage counted and equal to " << cfg::get().ds.avg_coverage);
+	INFO("Average coverage counted: " << cfg::get().ds.avg_coverage);
 }
 
 }

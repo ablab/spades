@@ -296,7 +296,7 @@ public:
 			}
 
 		}
-		INFO("vertices copied");
+		DEBUG("vertices copied");
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			if (rc_mode) {
 				if (rc_edges.find(*e_iter) == rc_edges.end())
@@ -333,7 +333,7 @@ public:
 		TRACE("Edge Adding finished");
 		old_to_new.clear();
 
-		INFO("edges copied");
+		DEBUG("edges copied");
 		DEBUG("Copying of paired info started");
 		for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 				p_iter != p_end_iter; ++p_iter) {
@@ -352,7 +352,7 @@ public:
 			}
 		}
 
-		INFO("pi copied");
+		DEBUG("pi copied");
 		int zero_paired_length = 0;
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			PairInfos pi = paired_di_data.GetEdgeInfos(old_to_new_edge[*e_iter]);
@@ -370,9 +370,9 @@ public:
 				TRACE("Global cheater add "<<old_to_new_edge[*e_iter]<<" id "<<new_graph.int_id(old_to_new_edge[*e_iter]));
 			}
 		}
-		INFO ("Length of edges with no paired info:: " << zero_paired_length);
+		INFO ("Total length of edges with no paired info: " << zero_paired_length);
 		DEBUG("May be size is " << ind.size());
-		INFO("paired info size: "<<paired_size);
+		INFO("Paired info size: " << paired_size);
 	}
 	void ResolveRepeats(const string& output_folder);
 
@@ -1106,7 +1106,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 template<class Graph>
 void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 
-	INFO("resolve_repeats started");
+	INFO("SUBSTAGE == Resolving non-primitive repeats");
 	sum_count = 0;
 
 	TotalLabelerGraphStruct<Graph> graph_struct_before(old_graph,
@@ -1117,7 +1117,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			&graph_struct_before);
 
 	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode; cheating_mode++) {
-		INFO(" cheating_mode = " << cheating_mode);
+		INFO("Trying \"cheating mode\" " << cheating_mode);
 		bool changed = true;
 		map<int, VertexId> vertices;
 		int GraphCnt = 0;
@@ -1129,8 +1129,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				vertices = fillVerticesComponentsInNonVariableOrder();
 			else
 				vertices = fillVerticesAuto();
-			INFO(
-					"Having "<< vertices.size() << " paired vertices, trying to split");
+			INFO("Got "<< vertices.size() << " paired vertices, trying to split");
 			RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
 
 //			omnigraph::WriteSimple(
@@ -1186,10 +1185,10 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				}
 			}
 		}
-	}INFO("total vert" << sum_count);
-	INFO("Converting position labels");
-
-/*	for (auto e_iter = new_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+	}
+	INFO(sum_count << " vertices processed while resolving non-primitive repeats");
+/*	INFO("Converting position labels");
+	for (auto e_iter = new_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		EdgeId old_edge = edge_labels[*e_iter];
 		for (size_t i = 0; i < old_pos.EdgesPositions[old_edge].size(); i++) {
 			new_pos.AddEdgePosition(*e_iter,

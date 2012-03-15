@@ -28,7 +28,7 @@ public:
 	void Filter(const PairedInfoIndex<Graph>& index,
 			PairedInfoIndex<Graph>& new_index) const
 	{
-	    INFO("index size: " << index.size());
+	    TRACE("index size: " << index.size());
 
 		for (auto it = index.begin(); it != index.end(); ++it) {
 			auto infos = *it;

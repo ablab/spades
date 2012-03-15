@@ -210,7 +210,7 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
             }
     	}
     }
-    INFO("Closing short gaps complete: filled " << gaps_filled<< " gaps after checking " << gaps_checked << " candidates");
+    INFO("Closing short gaps complete: filled " << gaps_filled << " gaps after checking " << gaps_checked << " candidates");
     omnigraph::Compressor<Graph> compressor(g);
     compressor.CompressAllVertices();
 }
@@ -223,7 +223,7 @@ void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
 					input_file(cfg::get().ds.second)),
 			0);
 	stream.reset();
-	INFO("Closing gaps");
+	INFO("SUBSTAGE == Closing gaps");
 	if (use_extended_mapper) {
 		typedef NewExtendedSequenceMapper<k + 1, Graph> SequenceMapper;
 		SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper);

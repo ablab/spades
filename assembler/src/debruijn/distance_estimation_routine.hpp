@@ -67,7 +67,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 			paired_info_index raw_clustered_index(gp.g);
 			estimator.Estimate(raw_clustered_index);
-			INFO("Distances estimated");
+			DEBUG("Distances estimated");
 
 			INFO("Normalizing weights");
 			PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
@@ -85,13 +85,13 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 					normalizing_f);
 			paired_info_index normalized_index(gp.g);
 			normalizer.FillNormalizedIndex(normalized_index);
-			INFO("Weights normalized");
+			DEBUG("Weights normalized");
 
 			INFO("Filtering info");
 			PairInfoWeightFilter<Graph> filter(gp.g,
 					cfg::get().de.filter_threshold);
 			filter.Filter(normalized_index, clustered_index);
-			INFO("Info filtered");
+			DEBUG("Info filtered");
 			//		PairInfoChecker<Graph> checker(gp.edge_pos, 5, 100);
 			//		checker.Check(raw_clustered_index);
 			//		checker.WriteResults(cfg::get().output_dir + "/paired_stats");

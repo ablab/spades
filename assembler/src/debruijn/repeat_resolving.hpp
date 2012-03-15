@@ -15,8 +15,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 		Graph &new_graph, IdTrackHandler<Graph> &new_IDs,
 		EdgesPositionHandler<Graph> &edges_pos_new, const string& output_folder,
 		EdgeLabelHandler<Graph> &LabelsAfter) {
-	INFO("-----------------------------------------");
-	INFO("Resolving primitive repeats");
+	INFO("SUBSTAGE == Resolving primitive repeats");
 	for (auto e_iter = g.SmartEdgeBegin(); !e_iter.IsEnd();
 			++e_iter) {
 		{
@@ -41,7 +40,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	LabelsAfter.FillLabels(edge_labels);
 
 	repeat_resolver.ResolveRepeats(output_folder);
-	INFO("Primitive repeats resolved");
+	DEBUG("Primitive repeats resolved");
 }
 
 //void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir,

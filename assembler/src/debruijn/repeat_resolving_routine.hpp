@@ -31,7 +31,7 @@ namespace debruijn_graph
 void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
 } // debruijn_graph
 
-// move impl to *.cpp
+// TODO move impl to *.cpp
 
 namespace debruijn_graph {
 
@@ -253,7 +253,7 @@ void ProduceResolvedPairedInfo(
 			origin_gp.g, clustered_index, resolved_gp.g, labels_after);
 	resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(
 			resolved_graph_paired_info);
-	INFO("Generating paired info for resolved graph");
+	DEBUG("Generating paired info for resolved graph complete");
 }
 
 template<class graph_pack>
@@ -261,12 +261,12 @@ void SaveResolvedPairedInfo(
 		graph_pack& resolved_gp,
 		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info,
 		const string& graph_name, const string& subfolder) {
-	INFO(subfolder);
+	DEBUG("Subfolder:" << subfolder);
 	std::string rr_filename = (cfg::get().output_dir + subfolder) + graph_name;
 	INFO("Saving graph and paired info to " << rr_filename);
 	PrintWithClusteredIndex(rr_filename, resolved_gp,
 			resolved_graph_paired_info);
-	INFO("Saved");
+	DEBUG("Saved");
 }
 
 template<class graph_pack>
@@ -294,7 +294,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	total_labeler_gs graph_struct_before(origin_gp.g, &origin_gp.int_ids,
 			&origin_gp.edge_pos, NULL);
 	total_labeler tot_labeler_before(&graph_struct_before);
-	INFO (cfg::get().path_set_graph);
 	if (cfg::get().path_set_graph) {
 		INFO("testing path-set graphs");
 		PathSetGraphConstructor<graph_pack> path_set_constructor(origin_gp,
@@ -333,7 +332,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 				cfg::get().output_dir + "after_rr_before_simplify" + postfix);
 		OutputContigs(origin_gp.g,
 				cfg::get().output_dir + "before_resolve" + postfix);
-	}INFO("Total labeler start");
+	}
+	INFO("Running total labeler");
 
 	total_labeler_gs graph_struct_after(resolved_gp.g, &resolved_gp.int_ids,
 			&resolved_gp.edge_pos, &labels_after);
@@ -342,7 +342,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			cfg::get().output_dir + subfolder + graph_name + "_3_resolved.dot",
 			"no_repeat_graph");
 
-	INFO("Total labeler finished");
+	DEBUG("Total labeler finished");
 
 
 	//Generating paired info for resolved graph
@@ -356,16 +356,16 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 
 
-	INFO("---Clearing resolved graph---");
+	INFO("SUBSTAGE == Clearing resolved graph");
 
 
 	 omnigraph::Compressor<typename graph_pack::graph_t> compressor(resolved_gp.g);
 	    compressor.CompressAllVertices();
 
-	EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g,
-			false);
-	for (int i = 0; i < 3; ++i) {
-		INFO("ClipTip "<<i);
+	EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g, false);
+	size_t iters = 3; // TODO Constant 3? Shouldn't it be taken from config?
+	for (size_t i = 0; i < iters; ++i) {
+		INFO("ClipTipping iteration " << i << " (0-indexed) out of " << iters << ":");
 
         ClipTipsForResolver(resolved_gp.g);
 
@@ -375,7 +375,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 					labels_after, resolved_cleared_graph_paired_info_before);
 		}
 
-		INFO("Erroneous remove "<<i);
+//		INFO("Erroneous remove "<<i);
 //        BulgeRemoveWrap      (resolved_gp.g);
 //		FinalRemoveErroneousEdges(resolved_gp.g, edge_remover);
 
@@ -392,7 +392,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //				"no_repeat_graph");
 	}
 
-	INFO("---Cleared---");
+	DEBUG("Clearing resolved graph complete");
 
 	//Generating paired info for resolved graph
 	PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
@@ -406,7 +406,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	}
 	//Paired info for resolved graph generated
 
-	INFO("---Output Contigs---");
+	DEBUG("Output Contigs");
 
 	if (output_contigs)
 	{
@@ -517,8 +517,9 @@ void GenerateMatePairStats(const graph_pack& origin_gp, PairedInfoIndex<typename
 			}
 		}
 	}
+	DEBUG("Mate pair stats:");
 	for(auto s_iter = sizes.begin(); s_iter != sizes.end(); s_iter ++) {
-		INFO("Size: " << s_iter->first << "pathsets " << s_iter ->second);
+		DEBUG("- size: " << s_iter->first << "; pathsets: " << s_iter->second);
 	}
 }
 
@@ -602,7 +603,7 @@ void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename gra
 	int extra_paired_info_count = 0;
 	int long_edges_count = 0;
 
-	INFO ("max path cutoff " << max_comparable_path);
+	DEBUG("Using max path cutoff = " << max_comparable_path);
 	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length)
 			long_edges_count ++;
@@ -620,7 +621,7 @@ void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename gra
 			}
 		}
 	}
-	INFO("missing: " << missing_paired_info_count << " contradictional " << extra_paired_info_count);
+	INFO("Paired info stats: missing = " << missing_paired_info_count << "; contradictional = " << extra_paired_info_count);
 }
 template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,

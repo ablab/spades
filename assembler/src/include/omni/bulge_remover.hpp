@@ -233,7 +233,7 @@ void BulgeRemover<Graph>::RemoveBulges() {
 
 	size_t it_count = 0;
 
-	INFO("RemoveBulges function started");
+	DEBUG("RemoveBulges function started");
 
 	CoverageComparator<Graph> comparator(g_);
 	for (auto iterator = g_.SmartEdgeBegin(comparator); !iterator.IsEnd();

@@ -28,7 +28,6 @@ void FillPairedIndexWithReadCountMetric(const Graph &g, const IdTrackHandler<Gra
 		const EdgeIndex<k + 1, Graph>& index
 		, const KmerMapper<k + 1, Graph>& kmer_mapper
 		, PairedInfoIndex<Graph>& paired_info_index , io::IReader<io::PairedRead>& stream) {
-	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting paired info with read count weight");
 	NewExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
@@ -36,7 +35,7 @@ void FillPairedIndexWithReadCountMetric(const Graph &g, const IdTrackHandler<Gra
 //	ExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
 //	LatePairedIndexFiller<k + 1, Graph, ExtendedSequenceMapper<k + 1, Graph>, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
 	pif.FillIndex(paired_info_index);
-	INFO("Paired info with read count weight counted");
+	DEBUG("Paired info with read count weight counted");
 }
 
 template<size_t k>
@@ -44,7 +43,6 @@ void FillPairedIndexWithProductMetric(const Graph &g
 		, const EdgeIndex<k + 1, Graph>& index
 		, const KmerMapper<k + 1, Graph>& kmer_mapper
 		, PairedInfoIndex<Graph>& paired_info_index , io::IReader<io::PairedRead>& stream) {
-	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting paired info with product weight");
 	//	ExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
@@ -52,7 +50,7 @@ void FillPairedIndexWithProductMetric(const Graph &g
 	NewExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
 	LatePairedIndexFiller<k + 1, Graph, NewExtendedSequenceMapper<k + 1, Graph>> pif(g, mapper, stream, KmerCountProductWeight);
 	pif.FillIndex(paired_info_index);
-	INFO("Paired info with product weight counted");
+	DEBUG("Paired info with product weight counted");
 }
 
 template<size_t k>
@@ -60,14 +58,13 @@ void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index
 		, PairedInfoIndex<Graph>& paired_info_index,
 		io::IReader<io::PairedRead>& stream) {
 	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
-	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting paired info");
 	SequenceMapper mapper(g, index);
 	PairedIndexFiller<k + 1, Graph, SequenceMapper> pif(g, mapper,
 			stream);
 	pif.FillIndex(paired_info_index);
-	INFO("Paired info counted");
+	DEBUG("Paired info counted");
 }
 
 template<size_t k>
@@ -78,14 +75,13 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		size_t is, size_t rs,
         size_t delta,
 		const Sequence& genome){
-	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index, kmer_mapper,
 			is, rs, delta);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
 			etalon_paired_index);
 
-	INFO("Etalon paired info counted");
+	DEBUG("Etalon paired info counted");
 }
 
 template<size_t k>
@@ -117,19 +113,17 @@ template<size_t k>
 void FillCoverage(Graph& g, SingleReadStream& stream,
 		EdgeIndex<k + 1, Graph>& index) {
 	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
-	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting coverage");
 	SequenceMapper read_threader(g, index);
 	g.coverage_index().FillIndex<SequenceMapper>(stream, read_threader);
-	INFO("Coverage counted");
+	DEBUG("Coverage counted");
 }
 
 template<size_t k, class Graph>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		io::IReader<io::SingleRead>& stream) {
 	typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
-	INFO("-----------------------------------------");
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
 	INFO("Filling DeBruijn graph");
@@ -144,7 +138,7 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	INFO("Condensing graph");
 	DeBruijnGraphConstructor<k, Graph> g_c(debruijn);
 	g_c.ConstructGraph(g, index);
-	INFO("Graph condensed");
+	DEBUG("Graph condensed");
 }
 
 template<size_t k, class Graph>

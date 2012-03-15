@@ -635,19 +635,17 @@ int PrintGraphComponents(const string& file_name, graph_pack& gp,
 
 void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
-	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
 	osequencestream_cov oss(contigs_output_filename);
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		oss << g.coverage(*it);
 		oss << g.EdgeNucls(*it);
 	}
-	INFO("Contigs written");
+	DEBUG("Contigs written");
 }
 
 void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
-	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
 	osequencestream_cov oss(contigs_output_filename);
 	set<ConjugateDeBruijnGraph::EdgeId> edges;
@@ -659,12 +657,11 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 		}
 		//		oss << g.EdgeNucls(*it);
 	}
-	INFO("Contigs written");
+	DEBUG("Contigs written");
 }
 
 void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_dir) {
-	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_dir);
 	int n = 0;
 	make_dir(contigs_output_dir);
@@ -678,12 +675,11 @@ void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
 		oss << g.EdgeNucls(*it);
 		n++;
 	}
-	INFO("SingleFileContigs written");
+	DEBUG("SingleFileContigs written");
 }
 
 void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_dir) {
-	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_dir);
 	int n = 0;
 	make_dir(contigs_output_dir);
@@ -698,7 +694,7 @@ void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 			n++;
 		}
 	}
-	INFO("SingleFileContigs(Conjugate) written");
+	DEBUG("SingleFileContigs(Conjugate) written");
 }
 
 void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
