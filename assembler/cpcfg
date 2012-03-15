@@ -16,8 +16,6 @@ for arg; do
     fi
 done
 
-echo "$cmd"
-
 for arg; do
 
 case $arg in
