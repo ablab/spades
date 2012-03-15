@@ -611,7 +611,7 @@ void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename gra
 			for(auto j_iter = i_iter + 1; j_iter != pi.end(); ++j_iter) {
 				PairInfo<typename graph_pack::graph_t::EdgeId> first_info = *i_iter;
 				PairInfo<typename graph_pack::graph_t::EdgeId> second_info = *j_iter;
-				if (origin_gp.g.length(*e_iter) >= cfg::get().ds.RL * 2) { //TODO: change to something reasonable.
+				if (origin_gp.g.length(*e_iter) >= *cfg::get().ds.RL * 2) { //TODO: change to something reasonable.
 					missing_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 1);
 				}
 				if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length) {
@@ -786,7 +786,7 @@ void prepare_jump_index(const Graph& g, const paired_info_index& raw_jump_index,
 	paired_info_index clustered_jump_index(g);
 	estimator.Estimate(clustered_jump_index);
 
-	JumpingNormilizerFunction<Graph> nf(g, cfg::get().ds.RL, 500);
+	JumpingNormilizerFunction<Graph> nf(g, *cfg::get().ds.RL, 500);
 	PairedInfoNormalizer<Graph> normalizer(clustered_jump_index, nf);
 	paired_info_index normalized_jump_index(g);
 	normalizer.FillNormalizedIndex(normalized_jump_index);

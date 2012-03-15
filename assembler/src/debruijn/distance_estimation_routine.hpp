@@ -46,7 +46,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 	    double is_var = *cfg::get().ds.is_var;
 	    size_t delta = size_t(is_var);
 	    size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
-		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, cfg::get().ds.RL, delta);
+		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, delta);
 
 		if (cfg::get().advanced_estimator_mode) {
 			ERROR("Advanced estimator is temporary unavailable");
@@ -76,7 +76,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 			} else {
 				//todo reduce number of constructor params
 				PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-						*cfg::get().ds.IS, *cfg::get().ds.is_var, cfg::get().ds.RL, conj_graph_pack::k_value, *cfg::get().ds.avg_coverage);
+						*cfg::get().ds.IS, *cfg::get().ds.is_var, *cfg::get().ds.RL, conj_graph_pack::k_value, *cfg::get().ds.avg_coverage);
 				normalizing_f = boost::bind(
 						&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
 						weight_normalizer, _1);

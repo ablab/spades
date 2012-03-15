@@ -94,7 +94,7 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		const EdgeIndex<k + 1, Graph>& index,
 		const KmerMapper<k+1, Graph>& kmer_mapper,
 		const Sequence& genome) {
-	FillEtalonPairedIndex<k>(etalon_paired_index, g, index, kmer_mapper, *cfg::get().ds.IS, cfg::get().ds.RL, size_t(*cfg::get().ds.is_var), genome);
+	FillEtalonPairedIndex<k>(etalon_paired_index, g, index, kmer_mapper, *cfg::get().ds.IS, *cfg::get().ds.RL, size_t(*cfg::get().ds.is_var), genome);
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
 	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
@@ -133,7 +133,12 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
 	INFO("Filling DeBruijn graph");
-	size_t reads = debruijn.Fill(stream);
+	pair<size_t, size_t> fill = debruijn.Fill(stream);
+	size_t reads = fill.first;
+	VERIFY_MSG(!cfg::get().ds.RL.is_initialized() || *cfg::get().ds.RL == fill.second,
+			"In datasets.info, wrong RL is specified: " + ToString(cfg::get().ds.RL) + ", not " + ToString(fill.second));
+	cfg::get_writable().ds.RL = fill.second;
+	INFO("Figured out: read length = " << fill.second);
 	INFO("DeBruijn graph constructed, " << reads << " reads used");
 
 	INFO("Condensing graph");

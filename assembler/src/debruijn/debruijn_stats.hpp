@@ -137,8 +137,7 @@ void CountPairedInfoStats(const Graph &g,
 	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-	UniquePathStat<Graph>(g, filtered_index, *cfg::get().ds.IS,
-			cfg::get().ds.RL, 0.1 * (*cfg::get().ds.IS)).Count();
+	UniquePathStat<Graph>(g, filtered_index, *cfg::get().ds.IS,	*cfg::get().ds.RL, 0.1 * (*cfg::get().ds.IS)).Count();
 	UniqueDistanceStat<Graph>(etalon_paired_index).Count();
 	INFO("Paired info stats counted");
 }
@@ -223,7 +222,7 @@ void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids,
 	GetAllDistances<Graph>(
 			paired_index,
 			all_paths,
-			GraphDistanceFinder<Graph>(g, *cfg::get().ds.IS, cfg::get().ds.RL,
+			GraphDistanceFinder<Graph>(g, *cfg::get().ds.IS, *cfg::get().ds.RL,
 					size_t(*cfg::get().ds.is_var)));
 
 	string dir_name = cfg::get().output_dir + "estimation_qual/";
@@ -262,7 +261,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 
 	paired_info_index etalon_paired_index(gp.g);
 	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
-			*cfg::get().ds.IS, cfg::get().ds.RL, *cfg::get().ds.is_var, true);
+			*cfg::get().ds.IS, *cfg::get().ds.RL, *cfg::get().ds.is_var, true);
 	INFO(
 			"Counting correlation between etalon and clustered paired infos statistics");
 	std::map<PairOfEdges<EdgeId>, vector<int> > my_index;
@@ -762,7 +761,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 	int PosInfo = 0;
 	int AllignedPI = 0;
 	int ExactDPI = 0;
-	int OurD = *cfg::get().ds.IS - cfg::get().ds.RL;
+	int OurD = *cfg::get().ds.IS - *cfg::get().ds.RL;
 	for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 			p_iter != p_end_iter; ++p_iter) {
 		vector<PairInfo> pi = *p_iter;

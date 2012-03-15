@@ -73,11 +73,11 @@ private:
 		}
 	}
 
-	void CountRead(const io::SingleRead &read) {
-		//cerr << read.getSequenceString() << endl;
-		Sequence s = read.sequence();
-		CountSequence(s);
-	}
+//	void CountRead(const io::SingleRead &read) {
+//		//cerr << read.getSequenceString() << endl;
+//		Sequence s = read.sequence();
+//		CountSequence(s);
+//	}
 
 	// INDEX:
 
@@ -116,15 +116,19 @@ public:
 		#endif
 	}
 
-	size_t Fill(io::IReader<io::SingleRead> &stream) {
+	pair<size_t, size_t> Fill(io::IReader<io::SingleRead> &stream) {
 		size_t counter = 0;
+		size_t rl = 0;
 		io::SingleRead r;
 		while (!stream.eof()) {
 			stream >> r;
 			counter++;
-			CountRead(r);
+			Sequence s = r.sequence();
+			CountSequence(s);
+//			CountRead(r);
+			rl = max(rl, s.size());
 		}
-		return counter;
+		return make_pair(counter, rl);
 	}
 
 	map_iterator begin() {

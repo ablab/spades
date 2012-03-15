@@ -1247,7 +1247,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 //		return make_pair(false, corrected_info);
 //	}
 	//todo check correctness. right_id belongs to original graph, not to new_graph.
-	if (corrected_info.d + old_graph.length(right_id) < (1/(1.3)) * (*cfg::get().ds.IS-cfg::get().ds.RL)) {
+	if (corrected_info.d + old_graph.length(right_id) < (1/(1.3)) * (*cfg::get().ds.IS-*cfg::get().ds.RL)) {
 		DEBUG("too close");
 		return make_pair(false, corrected_info);
 	}
@@ -1325,7 +1325,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 						EdgeInfo ei(correction_result.second, dir, right_id,
 								correction_result.second.d - dif_d);
-						int trusted_dist = *cfg::get().ds.IS - cfg::get().ds.RL;
+						int trusted_dist = *cfg::get().ds.IS - *cfg::get().ds.RL;
 						if (cheating_mode == 2 && ((correction_result.second.d - dif_d + old_graph.length(right_id) < trusted_dist - near_vertex) || (correction_result.second.d - dif_d > trusted_dist  + near_vertex))) {
 							local_cheating_edges.insert(make_pair(left_id, 0));
 							DEBUG("ignored paired_info between " << new_IDs.ReturnIntId(left_id) <<" and " <<old_IDs.ReturnIntId(right_id) <<" with distance " << correction_result.second.d - dif_d);

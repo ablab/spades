@@ -302,7 +302,7 @@ struct debruijn_config {
 		boost::optional<std::string> jumping_second;
 		boost::optional<size_t> jump_is;
 		boost::optional<size_t> jump_rl;
-		size_t RL;
+		boost::optional<size_t> RL;
 		boost::optional<size_t> IS;
 		boost::optional<double> is_var;
 		map<size_t, size_t> percentiles;
@@ -552,9 +552,8 @@ inline void load(debruijn_config::dataset& ds,
 	ds.jump_is = pt.get_optional<size_t>("jump_is");
 	ds.jump_rl = pt.get_optional<size_t>("jump_rl");
 
-	load(ds.RL, pt, "RL");
-        ds.is_var = pt.get_optional<size_t>("is_var");
-
+	ds.RL = pt.get_optional<size_t>("RL");
+	ds.is_var = pt.get_optional<size_t>("is_var");
 	ds.IS = pt.get_optional<size_t>("IS");
 	load(ds.single_cell, pt, "single_cell");
 

@@ -734,8 +734,8 @@ public:
 			size_t read_length, size_t k, double avg_coverage) :
 			g_(g), insert_size_(insert_size), is_var_(is_var), read_length_(read_length),
 			k_(k), avg_coverage_(avg_coverage) {
-		cout << "is " << insert_size_ << " is_var " << is_var_ << " rl "
-				<< read_length_ << " k " << k_ << " cov " << avg_coverage_ << endl;
+		DEBUG("is " << insert_size_ << " is_var " << is_var_ << " rl "
+				<< read_length_ << " k " << k_ << " cov " << avg_coverage_);
 	}
 
 	const PairInfo<EdgeId> NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
