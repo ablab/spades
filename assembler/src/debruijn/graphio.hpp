@@ -5,6 +5,7 @@
 #include <map>
 #include <algorithm>
 #include <fstream>
+#include <cstdio>
 
 #include "standard.hpp"
 #include "logging.hpp"
@@ -166,13 +167,13 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
 	FILE* file = fopen((file_name + ".sqn").c_str(), "w");
 	DEBUG("Saving sequences " << file_name <<" created");
 	VERIFY(file != NULL);
-	fprintf(file, "%ld\n", component_.e_size());
+	//fprintf(file, "%ld\n", component_.e_size());
 	for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
-		fprintf(file, "%d ", int_ids_.ReturnIntId(*iter));
+		fprintf(file, ">%d\n", int_ids_.ReturnIntId(*iter));
 		int len = component_.g().EdgeNucls(*iter).size();
 		for (int i = 0; i < len; i++)
 			fprintf(file, "%c", nucl(component_.g().EdgeNucls(*iter)[i]));
-		fprintf(file, " .\n");
+		fprintf(file, "\n");
 		//		fprintf(file, "%s .\n", graph_.EdgeNucls(*iter).str().c_str());
 	}
 	fclose(file);
@@ -459,18 +460,30 @@ public:
 						vid<<" ( "<< this->id_handler().ReturnVertexId(vertex_real_id) <<" )   "<< conj_vid << "( "<<this->id_handler().ReturnVertexId(conjugate_id)<<" )  added");
 			}
 		}
-		size_t tmp_edge_count;
-		flag = fscanf(sequence_file, "%ld", &tmp_edge_count);
-		VERIFY(flag == 1);
-		VERIFY(edge_count == tmp_edge_count);
-		char longstring[1000500];
+
+		char first_char = getc(sequence_file);
+		VERIFY(!ferror(sequence_file));
+		ungetc(first_char, sequence_file);
+		bool fasta = (first_char == '>'); // if it's not fasta, then it's old .sqn
+
+
+		if (!fasta) {
+			size_t tmp_edge_count;
+			flag = fscanf(sequence_file, "%ld", &tmp_edge_count);
+			VERIFY(flag == 1);
+			VERIFY(edge_count == tmp_edge_count);
+		}
+
+		const size_t longstring_size = 1000500; // TODO: O RLY magic constant? => Can't load edges >= 1Mbp
+		char longstring[longstring_size];
 		for (size_t i = 0; i < edge_count; i++) {
 			size_t e_real_id, start_id, fin_id, length, conjugate_edge_id;
 			flag = fscanf(file, "Edge %ld : %ld -> %ld, l = %ld ~ %ld .\n",
 					&e_real_id, &start_id, &fin_id, &length,
 					&conjugate_edge_id);
 			VERIFY(flag == 5);
-			flag = fscanf(sequence_file, "%ld %s .", &e_real_id, longstring);
+			VERIFY(length < longstring_size);
+			flag = fscanf(sequence_file, ">%ld\n%s\n", &e_real_id, longstring);
 			VERIFY(flag == 2);
 			TRACE(
 					"Edge "<<e_real_id<<" : "<<start_id<<" -> " << fin_id << " l = " << length << " ~ "<< conjugate_edge_id);
@@ -485,9 +498,7 @@ public:
 				this->id_handler().AddEdgeIntId(this->g().conjugate(eid),
 						conjugate_edge_id);
 				edge_set.insert(conjugate_edge_id);
-
 			}
-
 		}
 		fclose(file);
 		fclose(sequence_file);
