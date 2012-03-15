@@ -72,7 +72,7 @@ ECOLI_IS220_QUAKE_1K ; old QUAKE_CROPPED_1K
 	RL		100		; read length
 ;	IS	      220 	; insert size	
 	single_cell	false
-;	reference_genome  E.coli/MG1655-K12.first1K.fasta.gz
+	reference_genome  E.coli/MG1655-K12.first1K.fasta.gz
 }
 
 ECOLI_IS220_QUAKE_10K ; old QUAKE_CROPPED_10K

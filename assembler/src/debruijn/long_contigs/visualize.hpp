@@ -93,9 +93,10 @@ void WriteGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_nam
 
 	CompositeLabeler<Graph> composite_labeler(str_labeler, path_labeler, pos_labeler);
 
+	auto_ptr<GraphColorer<Graph>> colorer(DefaultColorer(gp.g, FindGenomePath<K> (gp.genome, gp.g, gp.index)
+			, FindGenomePath<K> (!gp.genome, gp.g, gp.index)));
 	ColoredGraphVisualizer<Graph> gv(gp.g, printer, composite_labeler
-			, *DefaultColorer(gp.g, FindGenomePath<K> (gp.genome, gp.g, gp.index)
-					, FindGenomePath<K> (!gp.genome, gp.g, gp.index)));
+			, *colorer);
 	AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
 	result_vis.Visualize();
 	filestr.close();

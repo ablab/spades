@@ -25,13 +25,15 @@ public:
 		INFO("Rectangle resolving started");
 		const std::string output_dir = cfg::get().output_dir + "saves/";
 
+		// Just output graph in .dot, so madness...
 		omnigraph::LengthIdGraphLabeler<conj_graph_pack::graph_t> id_labeler(gp.g);
-		//omnigraph::EdgePosGraphLabeler<conj_graph_pack::graph_t> pos_labeler(gp.g, gp.edge_pos);
-		//omnigraph::CompositeLabeler<conj_graph_pack::graph_t> composite_labeler(id_labeler, pos_labeler);
+		omnigraph::EdgePosGraphLabeler<conj_graph_pack::graph_t> pos_labeler(gp.g, gp.edge_pos);
+		omnigraph::CompositeLabeler<conj_graph_pack::graph_t> composite_labeler(id_labeler, pos_labeler);
 		Path<conj_graph_pack::graph_t::EdgeId> path1 = FindGenomePath<K>(gp.genome, gp.g, gp.index);
 		Path<conj_graph_pack::graph_t::EdgeId> path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
-		omnigraph::WriteSimple(gp.g, id_labeler, output_dir + "rectangles_before.dot", "rectangles_before_graph", path1, path2);
-		// FindGenomePath<K> (gp.genome, gp.g, gp.index), FindGenomePath<K> (!gp.genome, gp.g, gp.index));
+		ReliableSplitter<conj_graph_pack::graph_t> splitter(gp.g, 1 << 25, 1 << 25);
+		omnigraph::WriteComponents<conj_graph_pack::graph_t>(gp.g, splitter, output_dir + "rectangle_before.dot", *DefaultColorer(gp.g, path1, path2), composite_labeler, "rectangle_before_graph");
+
 
 		// Prepare input
 		OutputContigs(gp.g, output_dir + "rectangle_before.fasta");

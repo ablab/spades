@@ -440,7 +440,8 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 	//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open(simple_file_name.c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
-	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, *DefaultColorer(g, path1, path2));
+	auto_ptr<GraphColorer<Graph>> colorer(DefaultColorer(g, path1, path2));
+	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, *colorer);
 	AdapterGraphVisualizer<Graph> result_vis(g, gv);
 	result_vis.Visualize();
 	filestr.close();
