@@ -1,4 +1,4 @@
-iterative_K         21 33 55
+iterative_K         55
 paired_mode         true
 dataset             ECOLI_IS220_QUAKE
 input_dir           ./data/input/
