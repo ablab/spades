@@ -129,10 +129,12 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	INFO("Filling DeBruijn graph");
 	pair<size_t, size_t> fill = debruijn.Fill(stream);
 	size_t reads = fill.first;
-	VERIFY_MSG(!cfg::get().ds.RL.is_initialized() || *cfg::get().ds.RL == fill.second,
-			"In datasets.info, wrong RL is specified: " + ToString(cfg::get().ds.RL) + ", not " + ToString(fill.second));
-	cfg::get_writable().ds.RL = fill.second;
-	INFO("Figured out: read length = " << fill.second);
+//	VERIFY_MSG(!cfg::get().ds.RL.is_initialized() || *cfg::get().ds.RL == fill.second,
+//			"In datasets.info, wrong RL is specified: " + ToString(cfg::get().ds.RL) + ", not " + ToString(fill.second));
+	if (!cfg::get().ds.RL.is_initialized()) {
+		cfg::get_writable().ds.RL = fill.second;
+		INFO("Figured out: read length = " << fill.second);
+	}
 	INFO("DeBruijn graph constructed, " << reads << " reads used");
 
 	INFO("Condensing graph");
