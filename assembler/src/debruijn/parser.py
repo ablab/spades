@@ -88,11 +88,13 @@ def prd(filename):
 # yields: (eid, seq)
 def sqn(filename):
     sqn = open(filename)
-    S = int(sqn.readline())
-    for _ in xrange(S): #15 AGCTTTTCATTCTG .
-        eid, seq, dot = sqn.readline().split()
-        assert dot == '.', "sqn format violation"
-        eid = int(eid)
+    while True: #15 AGCTTTTCATTCTG .
+        eid = sqn.readline()
+        seq = sqn.readline().strip()
+        if (not eid):
+            break
+        assert eid[0] == '>', "sqn format violation (it's just FASTA!)"
+        eid = int(eid[1:])
         yield eid, seq
     sqn.close()
 
