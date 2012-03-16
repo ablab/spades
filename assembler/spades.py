@@ -3,13 +3,14 @@
 import os
 import shutil
 import sys
+from os import path
 
-SPADES_HOME = ""
+spades_home = "./"
 
 if os.path.realpath(__file__) == "/usr/bin/spades.py":
-    SPADES_HOME = "/usr/share/spades/"
+    spades_home = "/usr/share/spades/"
 
-sys.path.append(SPADES_HOME + "src/tools/spades_pipeline/")
+sys.path.append(spades_home + "src/tools/spades_pipeline/")
 
 import support
 from process_cfg import *
@@ -42,7 +43,7 @@ def prepare_config(filename, cfg, prev_K, last_one):
 
 def main():
 
-    CONFIG_FILE = SPADES_HOME + "spades_config.info"
+    CONFIG_FILE = spades_home + "spades_config.info"
 
     if os.path.isfile("spades_config.info") :
         CONFIG_FILE = "spades_config.info"
@@ -57,13 +58,6 @@ def main():
 
     print("Using config file: " + CONFIG_FILE)
     cfg = load_config_from_file(CONFIG_FILE)
-
-    precompiled_folder = os.getenv('HOME') + '/.spades/precompiled/'
-
-    if os.path.exists(precompiled_folder):
-        if os.path.getmtime(precompiled_folder) < os.path.getmtime(__file__):
-            shutil.rmtree(precompiled_folder)
-
 
     def build_folder(cfg):
         import datetime
@@ -107,14 +101,12 @@ def main():
 
 def run(cfg):
 
-    import shutil
-
     if type(cfg.iterative_K) is int:
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
 
     import build
-    build.build_spades_n_copy(cfg)
+    build.build_spades_n_copy(cfg, spades_home)
 
     count = 0
     prev_K = None
@@ -122,23 +114,18 @@ def run(cfg):
     for K in cfg.iterative_K:
         count += 1
 
-        path = cfg.build_path + "/" + str(K) + "/"
-        cfg_file_name = path + "configs/debruijn/config.info"
-        os.makedirs(path + "configs/debruijn/long_contigs")
-        shutil.copy(SPADES_HOME + "configs/config.info", cfg_file_name)
-        shutil.copy(SPADES_HOME + "configs/datasets.info", path + "configs/debruijn/datasets.info")
-        shutil.copy(SPADES_HOME + "configs/distance_estimation.info", path + "configs/debruijn/distance_estimation.info")
-        shutil.copy(SPADES_HOME + "configs/simplification.info", path + "configs/debruijn/simplification.info")
-        shutil.copy(SPADES_HOME + "configs/detail_info_printer.info", path + "configs/debruijn/detail_info_printer.info")
-        shutil.copy(SPADES_HOME + "configs/long_contigs/lc_params.info", path + "configs/debruijn/long_contigs")
-        print(cfg_file_name)
+        dst_configs = path.join(cfg.build_path, str(K), "configs")
+        shutil.copytree(path.join(spades_home, "configs"), dst_configs)
+        cfg_file_name = path.join(dst_configs, "debruijn/config.info")
+
         prepare_config(cfg_file_name, cfg, prev_K, count == len(cfg.iterative_K))
         prev_K = K
 
-        command = os.path.join(os.getenv('HOME') + '/.spades/precompiled/build' + str(K) + "/debruijn", "debruijn") + " " + cfg_file_name
-        print(command)
+        command = path.join(os.getenv('HOME'), '.spades/precompiled/build' + str(K), "debruijn", "debruijn") + " " + cfg_file_name
+
         support.sys_call(command)
-        latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), "latest")
+
+        latest = path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), "latest")
         latest = os.readlink(latest)
         latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, cfg.build_path), os.path.join(cfg.build_path, "link_K%d" % (K)))
@@ -148,7 +135,7 @@ def run(cfg):
     support.copy(result.contigs, cfg.build_path)
 
     print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
-    cmd = "python " + SPADES_HOME + "src/tools/quality/quality.py " + result.contigs
+    cmd = "python " + path.join(spades_home, "src/tools/quality/quality.py") + " " + result.contigs
     if result.reference:
         cmd += " -R " + result.reference
     #    if result.genes:

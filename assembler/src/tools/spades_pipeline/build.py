@@ -2,51 +2,50 @@
 
 import os
 import support
+import shutil
+import time
+from os import path
+
 
 def build_spades(dir):
     support.sys_call('cmake src', dir)
-    support.sys_call('make', dir)
+    print(dir)
+    support.sys_call('make debruijn', dir)
 
-def build_k(spades_folder, k):
+def build_k(spades_folder, str_k, spades_home):
 
-    import shutil
-
-    build_folder_k = spades_folder + "build" + k + "/"
+    build_folder_k = path.join(spades_folder, "build" + str_k)
     if os.path.exists(build_folder_k) :
         shutil.rmtree(build_folder_k)
-        
-    SPADES_HOME = os.path.dirname(__file__) + "/../../../"
 
-    shutil.copytree(SPADES_HOME + "src", build_folder_k + "src")
-    shutil.copytree(SPADES_HOME + "ext", build_folder_k + "ext")
-    kFile = build_folder_k + "src/debruijn/k.hpp"
-    fo = open(kFile, "w")
-    fo.write("#pragma once\n\n")
-    fo.write("namespace debruijn_graph {\n")
-    fo.write("	const size_t K = " + k + ";\n")
-    fo.write("}\n")
-    fo.close()
+    shutil.copytree(path.join(spades_home, "src"  ), path.join(build_folder_k, "src"  ))
+    shutil.copytree(path.join(spades_home, "ext"  ), path.join(build_folder_k, "ext"  ))
+    shutil.copy    (path.join(spades_home, "gen_k"), path.join(build_folder_k, "gen_k"))
 
-    print("\n== Compiling with K=" + k + " ==\n")
+    os.system(path.join(build_folder_k, "gen_k") + " " + str_k)
+
+    print("\n== Compiling with K=" + str_k + " ==\n")
     build_spades(build_folder_k)
 
+def build_spades_n_copy(cfg, spades_home):
 
-def build_spades_n_copy(cfg):
+    precompiled_folder = path.join(os.getenv('HOME'), '.spades/precompiled/')
 
-    import time
+    if path.exists(precompiled_folder):
+        if os.path.getmtime(precompiled_folder) < os.path.getmtime(__file__):
+            shutil.rmtree(precompiled_folder)
 
-    print("\n== Compilation started. Don't start another instance of SPAdes before compilation ends ==\n")
+    print("\n== Compilation started ==\n")
 
     for K in cfg.iterative_K:
-        precompiled_folder = os.getenv('HOME') + '/.spades/precompiled/'
 
         if not os.path.exists(precompiled_folder) :
             os.makedirs(precompiled_folder)
 
-        k = str(K)
+        str_k = str(K)
 
-        compiledFlag = precompiled_folder + "compiled" + k
-        lockFlag = precompiled_folder + "lock" + k
+        compiledFlag = path.join(precompiled_folder, "compiled") + str_k
+        lockFlag     = path.join(precompiled_folder, "lock")     + str_k
 
         if not os.path.exists(compiledFlag) :
             while os.path.exists(lockFlag) :
@@ -58,7 +57,7 @@ def build_spades_n_copy(cfg):
             if not os.path.exists(compiledFlag) :
                 open(lockFlag, "w")
                 try :
-                    build_k(precompiled_folder, k)
+                    build_k(precompiled_folder, str_k, spades_home)
                     compiledFile = open(compiledFlag, "w")
                     compiledFile.close()
                 finally :

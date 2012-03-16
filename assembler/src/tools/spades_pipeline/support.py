@@ -50,6 +50,7 @@ def sys_call(cmd, cwd = None):
     import subprocess
 
     cmd_list = shlex.split(cmd)
+
     proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd = cwd)
 
     while not proc.poll():
