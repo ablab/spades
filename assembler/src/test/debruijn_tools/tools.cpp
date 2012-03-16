@@ -62,9 +62,9 @@ BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
 		stream_2,
 		"spades",
 		"ref",
-		false/*refine*/,
+		true/*refine*/,
 		true/*untangle*/,
-		"assembly_compare",
+		"assembly_compare/",
 		true/*detailed_output*/);
 }
 
@@ -162,6 +162,7 @@ inline void ThreadAssemblies(const string& base_saves,
 //}
 
 //Prints only basic graph structure!!!
+//todo rewrite with normal splitter usage instead of filtering
 inline void PrintGraphComponentContainingEdge(const string& file_name,
 		const Graph& g, size_t split_edge_length,
 		const IdTrackHandler<Graph>& int_ids, int int_edge_id) {

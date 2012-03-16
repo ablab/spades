@@ -323,6 +323,7 @@ public:
 
 };
 
+//todo now it is even worse than ever!!!
 template<class Graph, typename VertexId = typename Graph::VertexId>
 class DotPairedGraphPrinter: public GraphPrinter<VertexId> {
 private:

@@ -154,13 +154,22 @@ class ContigRefiner: public ModifyingWrapper {
 	const Graph& graph_;
 	NewExtendedSequenceMapper<k + 1, Graph> mapper_;
 
+	//todo seems that we don't need optional here any more
 	boost::optional<vector<EdgeId>> TryCloseGap(VertexId v1, VertexId v2) const {
 		PathStorageCallback<Graph> path_store(graph_);
-		PathProcessor<Graph> path_processor(graph_, 0, 10, v1, v2, path_store);
-		if (path_store.count() == 1) {
+		//todo reduce value after investigation
+		PathProcessor<Graph> path_processor(graph_, 0, 50, v1, v2, path_store);
+		path_processor.Process();
+
+		if (path_store.count() == 0) {
+			VERIFY_MSG(false, "Failed to find closing path");
+//			return boost::none;
+		} else if (path_store.count() == 1) {
 			return boost::optional<vector<EdgeId>>(*path_store.paths().begin());
 		} else {
-			return boost::none;
+			VERIFY_MSG(false, "Several closing paths found");
+//			WARN("Several closing paths found");
+//			return boost::optional<vector<EdgeId>>(*path_store.paths().begin());
 		}
 	}
 
@@ -186,8 +195,20 @@ class ContigRefiner: public ModifyingWrapper {
 				} else {
 					WARN(
 							"Failed to close gap between v1="
-									<< graph_.int_id(v1) << " and v2="
-									<< graph_.int_id(v2));
+									<< graph_.int_id(v1) << " (conjugate "
+									<< graph_.int_id(graph_.conjugate(v1))
+									<< ") and v2="
+									<< graph_.int_id(v2) << " (conjugate "
+									<< graph_.int_id(graph_.conjugate(v2))
+									<< ")");
+					make_dir("assembly_compare/tmp");
+					WriteComponentsAroundEdge(graph_, graph_.IncomingEdges(v1).front()
+							, "assembly_compare/tmp/failed_close_gap_from.dot"
+							, *DefaultColorer(graph_), LengthIdGraphLabeler<Graph>(graph_));
+					WriteComponentsAroundEdge(graph_, graph_.OutgoingEdges(v2).front()
+							, "assembly_compare/tmp/failed_close_gap_to.dot"
+							, *DefaultColorer(graph_), LengthIdGraphLabeler<Graph>(graph_));
+
 					VERIFY(false);
 				}
 			}
@@ -217,7 +238,11 @@ protected:
 		//todo output levenshtein somewhere there!!
 		Sequence answer = path_sequence.Subseq(start, end);
 		if (answer != s) {
-			TRACE("Initial sequence modified, edit distance= " << EditDistance(answer, s));
+			if (answer.size() < 1000) {
+				TRACE("Initial sequence modified, edit distance= " << EditDistance(answer, s));
+			} else {
+				TRACE("Sequence too large, won't count edit distance");
+			}
 		}
 //		else {
 //			TRACE("Initial sequence unmodified!");
@@ -257,9 +282,9 @@ void ConstructGPForRefinement(gp_t& gp,
 
 	ConstructGraph<gp_t::k_value>(gp.g, gp.index, stream_1, stream_2);
 
-	make_dir("bp_graph_test/tmp/");
-	LengthIdGraphLabeler<Graph> labeler(gp.g);
-	WriteToDotFile(gp.g, labeler, "bp_graph_test/tmp/before_refine.dot");
+//	make_dir("bp_graph_test/tmp/");
+//	LengthIdGraphLabeler<Graph> labeler(gp.g);
+//	WriteToDotFile(gp.g, labeler, "bp_graph_test/tmp/before_refine.dot");
 
 	//todo configure!!!
 	debruijn_config::simplification::bulge_remover br_config;
@@ -287,7 +312,7 @@ void ConstructGPForRefinement(gp_t& gp,
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 
-	WriteToDotFile(gp.g, labeler, "bp_graph_test/tmp/after_refine.dot");
+//	WriteToDotFile(gp.g, labeler, "bp_graph_test/tmp/after_refine.dot");
 }
 
 typedef io::IReader<io::SingleRead> ContigStream;
@@ -850,10 +875,10 @@ public:
 
 	void CountStats() {
 		EmptyGraphLabeler<Graph> labeler;
-		make_dir("assembly_comparison");
+		make_dir("assembly_compare");
 		LongEdgesExclusiveSplitter<Graph> splitter(this->graph(), 1000000000);
 		WriteComponents(this->graph(), splitter, *this,
-				"assembly_comparison/breakpoint_graph.dot",
+				"assembly_compare/breakpoint_graph.dot",
 				*ConstructColorer(coloring_), labeler);
 		ready_ = true;
 		for (size_t i = 0; i < component_type::size; ++i) {
@@ -1401,7 +1426,7 @@ private:
 
 	void SaveOldGraph(const string& path) {
 		INFO("Saving graph to " << path);
-		PrintGraphPack(path/*"assembly_comparison/saves/graph"*/, gp_);
+		PrintGraphPack(path, gp_);
 		LengthIdGraphLabeler<Graph> labeler(gp_.g);
 		WriteToDotFile(gp_.g, labeler, path + ".dot");
 	}

@@ -760,4 +760,46 @@ private:
 	DECL_LOGGER("FilteringSplitterWrapper");
 };
 
+template<class Graph>
+class EdgeNeighborhoodFinder: public GraphSplitter<Graph> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	EdgeId edge_;
+	size_t max_size_;
+	size_t edge_length_bound_;
+	bool finished_;
+public:
+	EdgeNeighborhoodFinder(const Graph &graph, EdgeId edge, size_t max_size
+			, size_t edge_length_bound) :
+			GraphSplitter<Graph>(graph), edge_(edge), max_size_(
+					max_size), edge_length_bound_(edge_length_bound), finished_(
+					false) {
+	}
+
+	/*virtual*/ vector<VertexId> NextComponent() {
+		CountingDijkstra<Graph> cf(this->graph(), max_size_,
+				edge_length_bound_);
+		set<VertexId> result_set;
+		cf.run(this->graph().EdgeStart(edge_));
+		vector<VertexId> result_start = cf.ReachedVertices();
+		result_set.insert(result_start.begin(), result_start.end());
+		cf.run(this->graph().EdgeEnd(edge_));
+		vector<VertexId> result_end = cf.ReachedVertices();
+		result_set.insert(result_end.begin(), result_end.end());
+
+		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
+		cc.CloseComponent(result_set);
+
+		finished_ = true;
+		vector<VertexId> result;
+		for (auto it = result_set.begin(); it != result_set.end(); ++it)
+			result.push_back(*it);
+		return result;
+	}
+
+	/*virtual*/ bool Finished() {
+		return finished_;
+	}
+};
 }

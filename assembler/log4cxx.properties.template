@@ -102,6 +102,12 @@ log4j.appender.dtls_stdout.layout=org.apache.log4j.PatternLayout
 log4j.appender.dtls_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
 
 #log4j.category.dtls.AssemblyComparer=TRACE
+#log4j.category.dtls.UntangledGraphConstructor=TRACE
+#log4j.category.dtls.BulgeRemover=TRACE
+#log4j.category.dtls.TipsProjector=TRACE
+#log4j.category.dtls.AbstractTipClipper=TRACE
+#log4j.category.dtls.ContigRefiner=TRACE
+#log4j.category.dtls.PathProcessor=TRACE
 
 ########## Section for CT ##########
 

@@ -709,6 +709,18 @@ void WriteComponentsAlongGenome(
 }
 
 template<class Graph>
+void WriteComponentsAroundEdge(const Graph& g
+		, typename Graph::EdgeId e
+		, const string& file_name
+		, const GraphColorer<Graph>& colorer
+		, const GraphLabeler<Graph>& labeler) {
+	EdgeNeighborhoodFinder<Graph> splitter(g, e, 50, 500);
+	WriteComponents(g, splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
+			, file_name
+			, colorer, labeler);
+}
+
+template<class Graph>
 void WriteToFile(
 		const Graph& g,
 		const GraphLabeler<Graph>& labeler,
