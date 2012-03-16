@@ -14,9 +14,11 @@ def build_k(spades_folder, k):
     build_folder_k = spades_folder + "build" + k + "/"
     if os.path.exists(build_folder_k) :
         shutil.rmtree(build_folder_k)
+        
+    SPADES_HOME = os.path.dirname(__file__) + "/../../../"
 
-    shutil.copytree("/usr/share/spades/src", build_folder_k + "src")
-    shutil.copytree("/usr/share/spades/ext", build_folder_k + "ext")
+    shutil.copytree(SPADES_HOME + "src", build_folder_k + "src")
+    shutil.copytree(SPADES_HOME + "ext", build_folder_k + "ext")
     kFile = build_folder_k + "src/debruijn/k.hpp"
     fo = open(kFile, "w")
     fo.write("#pragma once\n\n")

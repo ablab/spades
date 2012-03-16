@@ -42,7 +42,7 @@ def prepare_config(filename, cfg, prev_K, last_one):
 
 def main():
 
-    CONFIG_FILE = "/usr/share/spades/spades_config.info"
+    CONFIG_FILE = SPADES_HOME + "spades_config.info"
 
     if os.path.isfile("spades_config.info") :
         CONFIG_FILE = "spades_config.info"
@@ -125,12 +125,12 @@ def run(cfg):
         path = cfg.build_path + "/" + str(K) + "/"
         cfg_file_name = path + "configs/debruijn/config.info"
         os.makedirs(path + "configs/debruijn/long_contigs")
-        shutil.copy("/usr/share/spades/configs/config.info", cfg_file_name)
-        shutil.copy("/usr/share/spades/configs/datasets.info", path + "configs/debruijn/datasets.info")
-        shutil.copy("/usr/share/spades/configs/distance_estimation.info", path + "configs/debruijn/distance_estimation.info")
-        shutil.copy("/usr/share/spades/configs/simplification.info", path + "configs/debruijn/simplification.info")
-        shutil.copy("/usr/share/spades/configs/detail_info_printer.info", path + "configs/debruijn/detail_info_printer.info")
-        shutil.copy("/usr/share/spades/configs/long_contigs/lc_params.info", path + "configs/debruijn/long_contigs")
+        shutil.copy(SPADES_HOME + "configs/config.info", cfg_file_name)
+        shutil.copy(SPADES_HOME + "configs/datasets.info", path + "configs/debruijn/datasets.info")
+        shutil.copy(SPADES_HOME + "configs/distance_estimation.info", path + "configs/debruijn/distance_estimation.info")
+        shutil.copy(SPADES_HOME + "configs/simplification.info", path + "configs/debruijn/simplification.info")
+        shutil.copy(SPADES_HOME + "configs/detail_info_printer.info", path + "configs/debruijn/detail_info_printer.info")
+        shutil.copy(SPADES_HOME + "configs/long_contigs/lc_params.info", path + "configs/debruijn/long_contigs")
         print(cfg_file_name)
         prepare_config(cfg_file_name, cfg, prev_K, count == len(cfg.iterative_K))
         prev_K = K
@@ -148,7 +148,7 @@ def run(cfg):
     support.copy(result.contigs, cfg.build_path)
 
     print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
-    cmd = "python /usr/share/spades/src/tools/quality/quality.py " + result.contigs
+    cmd = "python " + SPADES_HOME + "src/tools/quality/quality.py " + result.contigs
     if result.reference:
         cmd += " -R " + result.reference
     #    if result.genes:
