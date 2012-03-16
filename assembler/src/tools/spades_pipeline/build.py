@@ -63,4 +63,4 @@ def build_spades_n_copy(cfg, spades_home):
                 finally :
                     os.unlink(lockFlag)
 
-    print("\n== Compilation finished successfully. Feel free to start another instance of SPAdes ==\n")
+    print("\n== Compilation finished successfully ==\n")

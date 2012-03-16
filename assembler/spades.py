@@ -22,7 +22,7 @@ def prepare_config(filename, cfg, prev_K, last_one):
     subst_dict["dataset"]           = cfg.dataset
     subst_dict["input_dir"]         = cfg.input_dir
     subst_dict["output_base"]       = cfg.output_dir
-    subst_dict["additional_contigs"]= cfg.build_path + "simplified_contigs.fasta"
+    subst_dict["additional_contigs"]= path.join(cfg.build_path, "simplified_contigs.fasta")
     subst_dict["entry_point"]       = 'construction'
 
 
@@ -62,12 +62,12 @@ def main():
     def build_folder(cfg):
         import datetime
         suffix = datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
-        return cfg.output_dir + '/' + cfg.dataset + '/build_' + suffix + '/'
+        return path.join(cfg.output_dir, cfg.dataset, 'build_' + suffix)
 
     cfg.__dict__["build_path"] = build_folder(cfg)
     os.makedirs(cfg.build_path)
 
-    log_filename = cfg.build_path + "spades.log"
+    log_filename = path.join(cfg.build_path, "spades.log")
     cfg.__dict__["log_filename"] = log_filename
 
     print("\n== Log can be found here: " + cfg.log_filename + "\n")
