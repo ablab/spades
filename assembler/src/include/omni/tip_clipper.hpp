@@ -20,22 +20,6 @@
 
 namespace omnigraph {
 
-template<class EdgeId> class TipLock{
-    private:
-        static map<EdgeId, bool> lock;
-    public:
-        TipLock(){   
-        }
-        void Lock(EdgeId tip){
-            lock[tip] = true;   
-        }
-
-        void Unlock(EdgeId tip){
-            lock[tip] = false;   
-        }
-        
-};
-template<class EdgeId> map<EdgeId, bool> TipLock<EdgeId>::lock;
 /**
  * This class removes tips from given graph with the following algorithm: it iterates through all edges of
  * the graph(in order defined by certain comparator) and for each edge checks if this edge is likely to be
@@ -129,6 +113,7 @@ protected:
 			if (*it != tip)
 				result = min(result, this->graph().coverage(*it)/this->graph().length(*it));
 		}
+        //if (result == 1000000) WARN("INFINITY REACHED, WHILE SEEKING FOR MINIMUM");
 		return result;
 	}
 
@@ -189,14 +174,16 @@ protected:
         return false;
     }
 
-    bool TipHasAVeryLowRelativeCoverage(EdgeId tip){
+    bool TipHasVeryLowRelativeCoverage(EdgeId tip){
         double max_coverage = MaxCompetitorCoverage(tip);
         return math::ls(200.*graph_.coverage(tip), max_coverage);
     }
 
-    bool TipHasLowRelativeCoverage(EdgeId tip){
+    bool TipHasLowRelativeCoverage(EdgeId tip, bool final_stage = false){
         double min_covlen = MinCompetitorCoverage(tip);  
         //TRACE("MinCompetitorCoverage is " << min_covlen << ", while tips
+        if (final_stage && graph_.length(tip) < graph_.k() / 2) 
+            return true;
         return math::ls(graph_.coverage(tip)/graph_.length(tip), min_covlen);
     }
 
@@ -246,14 +233,14 @@ public:
 	/**
 	 * Method clips tips of the graph.
 	 */
-	void ClipTips(bool destruction = false, boost::function<double(EdgeId)> get_total_weight = 0) {
+	void ClipTips(bool final_stage = false, boost::function<double(EdgeId)> get_total_weight = 0) {
         size_t removed = 0;
         size_t removed_with_check = 0;
         size_t good_removed = 0;
         size_t good_total = 0;
 		TRACE("Tip clipping started");
         
-        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_, cfg::get().simp.tc.max_ec_length);
+        TipChecker<Graph> tipchecker(graph_, tip_lock, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_, cfg::get().simp.tc.max_ec_length);
 
 		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ++iterator) {
 			EdgeId tip = *iterator;
@@ -271,6 +258,10 @@ public:
                         //TRACE("Edge "  << tip << "was not removed as a tip");
                         //continue;
                     //}
+                    if (tip_lock.IsLocked(tip)){
+                        TRACE("Tip " << graph_.str(tip) << " was locked => can not remove it");
+                        continue;
+                    }
                     if (CheckUniqueExtension(tip)){
                         TRACE("Edge " << graph_.str(tip) << " has a unique extension");
 
@@ -279,11 +270,11 @@ public:
                         TRACE("Edge " << tip << " was removed"); 
                         continue;
                     }
-                    if (!destruction && !TipHasLowRelativeCoverage(tip)){
+                    if (!TipHasLowRelativeCoverage(tip, final_stage)){
                         TRACE("Tip is covered well too much => not removing");
                         continue;
                     }
-                    if (!destruction || TipHasAVeryLowRelativeCoverage(tip)){
+                    if (!final_stage || TipHasVeryLowRelativeCoverage(tip)){
 					    TRACE("Edge "  << graph_.str(tip) << " judged to be a tip with a very low coverage");
                         removed_with_check++;
 
@@ -292,6 +283,7 @@ public:
                         TRACE("Edge "  << tip << " removed as a tip");
                         continue;
                     }
+                    //final_stage = true
                     if (!cfg::get().simp.tc.advanced_checks || tipchecker.TipCanBeProjected(tip)){
 					    TRACE("Edge "  << graph_.str(tip) << " judged to be a tip");
     					removed_with_check++;
@@ -326,7 +318,7 @@ public:
 	void ClipTipsForResolver() {
 		TRACE("Tip clipping started");
 
-        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_, cfg::get().simp.tc.max_ec_length);
+        TipChecker<Graph> tipchecker(graph_, tip_lock, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, max_tip_length_, cfg::get().simp.tc.max_ec_length);
 		
         for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
 			EdgeId tip = *iterator;
@@ -337,7 +329,7 @@ public:
                     
                     TRACE("Additional sequence comparing");
 
-                    if (TipHasAVeryLowRelativeCoverage(tip)){
+                    if (TipHasVeryLowRelativeCoverage(tip)){
 					    TRACE("Edge "  << graph_.str(tip) << " judged to be a tip with a very low coverage");
                         RemoveTip(tip);
                         TRACE("Edge "  << tip << " removed as a tip");

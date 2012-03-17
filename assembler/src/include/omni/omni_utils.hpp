@@ -1369,12 +1369,34 @@ public:
 };
 
 
+template<class EdgeId> class TipLock{
+    private:
+        static map<EdgeId, bool> lock;
+    public:
+        void Lock(EdgeId tip){
+            lock[tip] = true;   
+        }
+
+        void Unlock(EdgeId tip){
+            lock[tip] = false;   
+        }
+
+        bool IsLocked(EdgeId tip){
+            if (lock.find(tip) != lock.end()){
+                return lock[tip];   
+            }
+            return false;
+        }        
+};
+
+template<class EdgeId> map<EdgeId, bool> TipLock<EdgeId>::lock;
 template<class Graph>
 class TipChecker{
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
     const Graph& graph_;
+    TipLock<typename Graph::EdgeId> & tip_lock_;
 
 private:
     size_t lower_bound;
@@ -1406,14 +1428,22 @@ private:
         if (backward){
             for (size_t i = 0; i<graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)); ++i){
                 EdgeId alter_tip = graph_.OutgoingEdges(graph_.EdgeStart(alter))[i];
-                if (IsTip(graph_.OutgoingEdges(graph_.EdgeStart(alter))[i])) 
-                    return math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip)); 
+                if (IsTip(graph_.OutgoingEdges(graph_.EdgeStart(alter))[i])){ 
+                    if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip))){
+                        tip_lock_.Lock(tip);
+                        return true;
+                    }
+                }
             }
         }else{
             for (size_t i = 0; i<graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)); ++i){
                 EdgeId alter_tip = graph_.IncomingEdges(graph_.EdgeEnd(alter))[i];
-                if (IsTip(graph_.IncomingEdges(graph_.EdgeEnd(alter))[i])) 
-                    return math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip));
+                if (IsTip(graph_.IncomingEdges(graph_.EdgeEnd(alter))[i])) {
+                    if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip))){
+                        tip_lock_.Lock(tip);
+                        return true;   
+                    }
+                }
             }
         }
         return false;
@@ -1547,8 +1577,8 @@ private:
 
 public:
 
-    TipChecker(Graph& graph, size_t max_iterations_, size_t max_distance, size_t max_tip_length, size_t max_ec_length):
-    graph_(graph), max_iterations_(max_iterations_), max_distance_(max_distance), max_tip_length_(max_tip_length), max_ec_length_(max_ec_length){
+    TipChecker(Graph& graph, TipLock<EdgeId>& tip_lock, size_t max_iterations_, size_t max_distance, size_t max_tip_length, size_t max_ec_length):
+    graph_(graph), tip_lock_(tip_lock), max_iterations_(max_iterations_), max_distance_(max_distance), max_tip_length_(max_tip_length), max_ec_length_(max_ec_length){
         TRACE("Max levenstein " << max_distance_);
     }
 
