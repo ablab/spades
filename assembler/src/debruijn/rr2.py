@@ -573,7 +573,7 @@ class BGraph(object):
             e2 = r.e2
             for diag in r.diagonals:
                 # http://samtools.sourceforge.net/samtools.shtml#5
-                l = (K + diag.offsetc - diag.offseta);
+                l = (diag.offsetc - diag.offseta);
                 col = []
                 col.append('r=%d_d=%d_e1=%d_e2=%d' % (r.rid, diag.D, e1.eid, e2.eid)) #1 Query template/pair NAME
                 col.append('163') #2 bitwise FLAG
@@ -584,7 +584,7 @@ class BGraph(object):
                 col.append('contig_%d_%d_l=%06d' % (e2.eid, e2.conj.eid, e2.len + K)) #7 Mate Reference sequence NaMe ('=' if same as RNAME)
                 col.append('%d' % (diag.offsetb + 1)) #8 1-based Mate POSistion
                 col.append('%d' % (d + l)) #9 inferred Template LENgth (insert size)
-                col.append(e1.seq[diag.offseta : diag.offsetc + K]) #10 query SEQuence on the same strand as the reference
+                col.append(e1.seq[diag.offseta : diag.offseta + l]) #10 query SEQuence on the same strand as the reference
                 col.append('*') #11 query QUALity (ASCII-33 gives the Phred base quality)
                 #col.append('') #12 variable OPTional fields in the format TAG:VTYPE:VALUE
                 lines.append((col[2], col[3], '\t'.join(col)))
@@ -598,7 +598,7 @@ class BGraph(object):
                 col.append('contig_%d_%d_l=%06d' % (e1.eid, e1.conj.eid, e1.len + K)) #7 Mate Reference sequence NaMe ('=' if same as RNAME)
                 col.append('%d' % (diag.offseta + 1)) #8 1-based Mate POSistion
                 col.append('%d' % -(d + l)) #9 inferred Template LENgth (insert size)
-                col.append(e2.seq[diag.offsetb : diag.offsetd + K]) #10 query SEQuence on the same strand as the reference
+                col.append(e2.seq[diag.offsetb : diag.offsetb + l]) #10 query SEQuence on the same strand as the reference
                 col.append('*') #11 query QUALity (ASCII-33 gives the Phred base quality)
                 #col.append('') #12 variable OPTional fields in the format TAG:VTYPE:VALUE
                 lines.append((col[2], col[3], '\t'.join(col)))
