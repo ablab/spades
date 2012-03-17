@@ -483,7 +483,12 @@ public:
 					&conjugate_edge_id);
 			VERIFY(flag == 5);
 			VERIFY(length < longstring_size);
-			flag = fscanf(sequence_file, ">%ld\n%s\n", &e_real_id, longstring);
+			if (fasta) {
+				flag = fscanf(sequence_file, ">%ld\n%s", &e_real_id, longstring);
+			}
+			else {
+				flag = fscanf(sequence_file, "%ld %s .", &e_real_id, longstring);
+			}
 			VERIFY(flag == 2);
 			TRACE(
 					"Edge "<<e_real_id<<" : "<<start_id<<" -> " << fin_id << " l = " << length << " ~ "<< conjugate_edge_id);
