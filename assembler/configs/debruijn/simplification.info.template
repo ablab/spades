@@ -8,7 +8,7 @@ sc_simplification
 	; tip clipper:
 	tc
 	{
-		max_tip_length_coefficient	3.5	; max_tip_length = (read_length - k) * max_tip_length_coefficient
+		max_tip_length_coefficient	2.5	; max_tip_length = (read_length - k) * max_tip_length_coefficient
 		max_coverage				100000
 		max_relative_coverage		10000   ; tip_cov < this * not_tip_cov
         max_iterations              400
@@ -30,7 +30,7 @@ sc_simplification
 	; erroneous connections remover:
 	ec
 	{
-		max_ec_length_coefficient	10	; max_ec_length = k + max_ec_length_coefficient
+		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
 		estimate_max_coverage		true
 		max_coverage			20.0
 	}

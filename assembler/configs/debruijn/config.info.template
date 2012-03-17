@@ -96,7 +96,7 @@ gap_closer
     in_simplify    		false
     after_simplify 		true
     use_extended_mapper		true
-    weight_threshold		0.0
+    weight_threshold		2.0
 
 }
 
