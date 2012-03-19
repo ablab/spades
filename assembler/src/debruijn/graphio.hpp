@@ -484,7 +484,7 @@ public:
 			VERIFY(flag == 5);
 			VERIFY(length < longstring_size);
 			if (fasta) {
-				flag = fscanf(sequence_file, ">%ld\n%s", &e_real_id, longstring);
+				flag = fscanf(sequence_file, ">%ld\n%s\n", &e_real_id, longstring);
 			}
 			else {
 				flag = fscanf(sequence_file, "%ld %s .", &e_real_id, longstring);
