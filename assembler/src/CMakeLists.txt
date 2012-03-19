@@ -45,13 +45,10 @@ endif()
 # common dependencies
 find_package(ZLIB)
 find_package(log4cxx)
-# find_package(ssl)
 find_package(PythonLibs)
 
 set (Boost_USE_MULTITHREADED ON)
-find_package(Boost COMPONENTS signals system filesystem test_exec_monitor iostreams REQUIRED)
-
-#find_package(sparsehash)
+find_package(Boost COMPONENTS signals system filesystem iostreams REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
