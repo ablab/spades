@@ -1577,7 +1577,7 @@ private:
 
 public:
 
-    TipChecker(Graph& graph, TipLock<EdgeId>& tip_lock, size_t max_iterations_, size_t max_distance, size_t max_tip_length, size_t max_ec_length):
+    TipChecker(const Graph& graph, TipLock<EdgeId>& tip_lock, size_t max_iterations_, size_t max_distance, size_t max_tip_length, size_t max_ec_length):
     graph_(graph), tip_lock_(tip_lock), max_iterations_(max_iterations_), max_distance_(max_distance), max_tip_length_(max_tip_length), max_ec_length_(max_ec_length){
         TRACE("Max levenstein " << max_distance_);
     }
