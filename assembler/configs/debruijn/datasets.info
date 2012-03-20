@@ -500,6 +500,20 @@ PGINGIVALIS_BH
 	reference_genome  P.gingivalis/TDC60.fasta.gz
 }
 
+PGINGIVALIS_LANE1_BH
+{
+       	first	P.gingivalis/lane_1/00.reads.left.corrected.fastq.gz
+       	second	P.gingivalis/lane_1/00.reads.right.corrected.fastq.gz
+       	single_first	P.gingivalis/lane_1/00.reads.left.unpaired.fastq.gz
+       	single_second	P.gingivalis/lane_1/00.reads.right.unpaired.fastq.gz
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+	reference_genome  P.gingivalis/TDC60.fasta.gz
+}
+
+
+
 PGINGIVALIS_LANE2_BH
 {
        	first	P.gingivalis/lane_2/02.reads.0.left.corrected.fastq.gz
