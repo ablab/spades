@@ -1,23 +1,5 @@
 log4j.rootCategory=ALL
 
-########## Section for A ##########
-
-log4j.category.a=ALL, a_file, a_stdout
-
-log4j.appender.a_file=org.apache.log4j.RollingFileAppender
-log4j.appender.a_file.threshold=ALL
-log4j.appender.a_file.file=logs/a.log
-log4j.appender.a_file.maxFileSize=50MB
-log4j.appender.a_file.maxBackupIndex=10
-log4j.appender.a_file.append=false 
-log4j.appender.a_file.layout=org.apache.log4j.PatternLayout
-log4j.appender.a_file.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
-
-log4j.appender.a_stdout=org.apache.log4j.ConsoleAppender
-log4j.appender.a_stdout.threshold=DEBUG
-log4j.appender.a_stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.a_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
-
 ########## Section for B ##########
 
 log4j.category.b=ALL, b_file, b_stdout
@@ -34,7 +16,8 @@ log4j.appender.b_file.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
 log4j.appender.b_stdout=org.apache.log4j.ConsoleAppender
 log4j.appender.b_stdout.threshold=DEBUG
 log4j.appender.b_stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.b_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+#log4j.appender.d_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+log4j.appender.d_stdout.layout.conversionPattern=%7r %5p  (%.41F:%L)	%m%n
 
 ########## Section for D ##########
 
@@ -91,7 +74,8 @@ log4j.appender.dt_file.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
 log4j.appender.dt_stdout=org.apache.log4j.ConsoleAppender
 log4j.appender.dt_stdout.threshold=TRACE
 log4j.appender.dt_stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.dt_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+#log4j.appender.dt_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+log4j.appender.dt_stdout.layout.conversionPattern=%7r %5p  (%.41F:%L)	%m%n
 
 ########## Section for DTLS ##########
 
@@ -100,7 +84,8 @@ log4j.category.dtls=INFO, dtls_stdout
 log4j.appender.dtls_stdout=org.apache.log4j.ConsoleAppender
 log4j.appender.dtls_stdout.threshold=TRACE
 log4j.appender.dtls_stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.dtls_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+#log4j.appender.dtls_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+log4j.appender.dtls_stdout.layout.conversionPattern=%7r %5p  (%.41F:%L)	%m%n
 
 #log4j.category.dtls.AssemblyComparer=TRACE
 #log4j.category.dtls.UntangledGraphConstructor=TRACE
@@ -126,7 +111,8 @@ log4j.appender.ct_file.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
 log4j.appender.ct_stdout=org.apache.log4j.ConsoleAppender
 log4j.appender.ct_stdout.threshold=INFO
 log4j.appender.ct_stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.ct_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+#log4j.appender.ct_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+log4j.appender.ct_stdout.layout.conversionPattern=%7r %5p  (%.41F:%L)	%m%n
 
 ########## Section for P ##########
 
@@ -147,7 +133,8 @@ log4j.appender.p_file.layout.ConversionPattern=%7r %5p %c (%F:%L) - %m%n
 log4j.appender.p_stdout=org.apache.log4j.ConsoleAppender
 #log4j.appender.p_stdout.threshold=INFO
 log4j.appender.p_stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.p_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+#log4j.appender.p_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
+log4j.appender.p_stdout.layout.conversionPattern=%7r %5p  (%.41F:%L)	%m%n
 
 # !-----------------------------------------------------------------------------!
 # !                          PATTERN FORMATS GLOSSARY                           !

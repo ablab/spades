@@ -623,13 +623,12 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		return res;
 	}
 
-
+	size_t nonpaired = 0;
 	for(auto iter = edgeCounts.begin(); iter != edgeCounts.end(); ++iter) {
-
 		if (iter->second == 0) {
-			WARN("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
+			DEBUG("Adding non-paired edge " << new_IDs.ReturnIntId(iter->first) << " (potential bug here)");
+			++nonpaired;
 			if ( cheating_mode == 2) {
-				DEBUG("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
 				PairInfos tmp = paired_di_data.GetEdgeInfos(iter->first);
 				int fl = 0;
 				for(size_t j = 0; j < tmp.size(); j ++ ){
@@ -666,6 +665,9 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 
 
 		}
+	}
+	if (nonpaired) {
+		WARN("Added " << nonpaired << " non-paired edges");
 	}
 	k++;
 	DEBUG("splitting to "<< k <<" parts");
@@ -748,6 +750,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	vector<EdgeId> LiveNewEdges;
 	vector<EdgeId> LiveProtoEdges;
 
+	size_t not_found = 0;
+	size_t low_coverage = 0;
 	for (int i = 0; i < k; i++) {
 		vector<EdgeId> split_edge;
 		vector<double> split_coeff;
@@ -784,7 +788,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				if (cheating_mode) {
 					if (local_cheating_edges.find(it->first) != local_cheating_edges.end()) {
 						if (local_cheating_edges[it->first] == 0 ) {
-							WARN(" 0 copy of edge "<< new_IDs.ReturnIntId(it->first) << " , something wrong");
+							DEBUG("0 copies of edge " << new_IDs.ReturnIntId(it->first) << " found");
+							++not_found;
 						} else {
 							if (local_cheating_edges[it->first] == 1 ) {
 								DEBUG( "cheating OK, no global cheaters needed(but actually added)");
@@ -799,6 +804,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					}
 				}
 			}
+
 			for (size_t j = 0; j < edge_infos.size(); j++){
 				if (edge_info_colors[j] == i){
 					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
@@ -806,10 +812,12 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 
 				}
 			}
+
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
 				if (new_graph.coverage(it->second) < cfg::get().simp.ec.max_coverage * cfg::get().rr.inresolve_cutoff_proportion) {
 					OldCopyCnt[it->first]--;
-					WARN("Deleting just created edge because low coverage " << new_IDs.ReturnIntId(it->first)<< " potential bug here.");
+					DEBUG("Deleting just created edge " << new_IDs.ReturnIntId(it->first) << " because of low coverage");
+					++low_coverage;
 
 					paired_di_data.DeleteEdgeInfo(it->second);
 					global_cheating_edges.erase(it->second);
@@ -863,6 +871,12 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 			}
 //			if (rc_mode)
 //				BanRCVertex(split_pair.first);
+		}
+		if (not_found) {
+			WARN("For " << not_found << " edges, no copies of them were found");
+		}
+		if (low_coverage) {
+			WARN("Deleted " << low_coverage << " just-created edges due to low coverage");
 		}
 	}
 

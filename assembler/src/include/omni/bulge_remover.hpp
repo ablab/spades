@@ -241,8 +241,7 @@ void BulgeRemover<Graph>::RemoveBulges() {
 
 		EdgeId edge = *iterator;
 
-		VERBOSE_T(it_count, 1000, "th iteration of bulge processing");
-		++it_count;
+		VERBOSE_POWER_T(++it_count, 1000, "th iteration of bulge processing");
 
 		TRACE(
 				"Considering edge " << g_.int_id(edge) << " of length " << g_.length(edge)

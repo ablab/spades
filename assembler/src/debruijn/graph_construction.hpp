@@ -126,16 +126,26 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
-	INFO("Filling DeBruijn graph");
-	pair<size_t, size_t> fill = debruijn.Fill(stream);
-	size_t reads = fill.first;
-//	VERIFY_MSG(!cfg::get().ds.RL.is_initialized() || *cfg::get().ds.RL == fill.second,
-//			"In datasets.info, wrong RL is specified: " + ToString(cfg::get().ds.RL) + ", not " + ToString(fill.second));
-	if (!cfg::get().ds.RL.is_initialized()) {
-		cfg::get_writable().ds.RL = fill.second;
-		INFO("Figured out: read length = " << fill.second);
+	INFO("Processing reads (takes a while)");
+
+	size_t counter = 0;
+	size_t rl = 0;
+	io::SingleRead r;
+	while (!stream.eof()) {
+		stream >> r;
+		Sequence s = r.sequence();
+		debruijn.CountSequence(s);
+		rl = max(rl, s.size());
+		VERBOSE_POWER(++counter, " reads processed");
 	}
-	INFO("DeBruijn graph constructed, " << reads << " reads used");
+
+//	VERIFY_MSG(!cfg::get().ds.RL.is_initialized() || *cfg::get().ds.RL == rl,
+//			"In datasets.info, wrong RL is specified: " + ToString(cfg::get().ds.RL) + ", not " + ToString(rl));
+	if (!cfg::get().ds.RL.is_initialized()) {
+		cfg::get_writable().ds.RL = rl;
+		INFO("Figured out: read length = " << rl);
+	}
+	INFO("DeBruijn graph constructed, " << counter << " reads used");
 
 	INFO("Condensing graph");
 	DeBruijnGraphConstructor<k, Graph> g_c(debruijn);

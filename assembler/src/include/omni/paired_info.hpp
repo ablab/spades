@@ -703,11 +703,14 @@ public:
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
 		}
+		INFO("Processing paired reads (takes a while)");
 		stream_.reset();
+		size_t n = 0;
 		while (!stream_.eof()) {
 			io::PairedRead p_r;
 			stream_ >> p_r;
 			ProcessPairedRead(paired_index, p_r);
+			VERBOSE_POWER(++n, " paired reads processed");
 		}
 	}
 

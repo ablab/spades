@@ -91,10 +91,13 @@ public:
 
 	template<class ReadThreader>
 	void FillIndex(io::IReader<io::SingleRead>& stream, const ReadThreader& threader) {
+		INFO("Processing reads (takes a while)");
+		size_t n = 0;
 		while (!stream.eof()) {
-                  io::SingleRead read;
+			io::SingleRead read;
 			stream >> read;
 			ProcessRead(threader, read);
+			VERBOSE_POWER(++n, " reads processed");
 		}
 	}
 

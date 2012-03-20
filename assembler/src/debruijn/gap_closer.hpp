@@ -139,12 +139,14 @@ public:
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		INFO("Preparing shift maps");
 		PrepareShiftMaps();
-		INFO("Processing paired reads");
+		INFO("Processing paired reads (takes a while)");
 		stream_.reset();
+		size_t n = 0;
 		while (!stream_.eof()) {
 			io::PairedRead p_r;
 			stream_ >> p_r;
 			ProcessPairedRead(paired_index, p_r);
+			VERBOSE_POWER(++n, " paired reads processed");
 		}
 	}
 

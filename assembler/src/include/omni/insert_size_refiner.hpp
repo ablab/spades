@@ -16,6 +16,7 @@ void refine_insert_size(pair<string, string> read_filenames, graph_pack& gp, siz
 	double sum2 = 0;
 	io::PairedEasyReader stream(read_filenames,	0);
 	size_t succesfully_processed = 0;
+	INFO("Processing paired reads (takes a while)");
 	while (!stream.eof()) {
 		io::PairedRead r;
 		stream >> r;
@@ -39,7 +40,7 @@ void refine_insert_size(pair<string, string> read_filenames, graph_pack& gp, siz
 		succesfully_processed++;
 		int is = pos_right.second - pos_left.second - k - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
 		hist[is] += 1;
-		n++;
+		VERBOSE_POWER(++n, " paired reads processed");
 		sum += is;
 		sum2 += is * 1.0 * is;
 	}

@@ -62,23 +62,6 @@ private:
 		nodes_.insert(make_pair(k, make_pair(Value(), -1)));
 	}
 
-	void CountSequence(const Sequence& s) {
-		if (s.size() < size_)
-			return;
-		Seq<size_> kmer = s.start<size_>();
-		addEdge(kmer);
-		for (size_t j = size_; j < s.size(); ++j) {
-			kmer = kmer << s[j];
-			addEdge(kmer);
-		}
-	}
-
-//	void CountRead(const io::SingleRead &read) {
-//		//cerr << read.getSequenceString() << endl;
-//		Sequence s = read.sequence();
-//		CountSequence(s);
-//	}
-
 	// INDEX:
 
 	void putInIndex(const Kmer &kmer, Value id, size_t offset) {
@@ -109,26 +92,38 @@ public:
 		#endif
 	}
 
-	SeqMap(io::IReader<io::SingleRead> &stream) {
-		Fill(stream);
-		#ifdef USE_SPARSEHASH
-			deleted_key_is_defined = false;
-		#endif
-	}
+//	Moved to graph_construction.hpp:
+//
+//	SeqMap(io::IReader<io::SingleRead> &stream) {
+//		Fill(stream);
+//		#ifdef USE_SPARSEHASH
+//			deleted_key_is_defined = false;
+//		#endif
+//	}
+//
+//	pair<size_t, size_t> Fill(io::IReader<io::SingleRead> &stream) {
+//		size_t counter = 0;
+//		size_t rl = 0;
+//		io::SingleRead r;
+//		while (!stream.eof()) {
+//			stream >> r;
+//			counter++;
+//			Sequence s = r.sequence();
+//			CountSequence(s);
+//			rl = max(rl, s.size());
+//		}
+//		return make_pair(counter, rl);
+//	}
 
-	pair<size_t, size_t> Fill(io::IReader<io::SingleRead> &stream) {
-		size_t counter = 0;
-		size_t rl = 0;
-		io::SingleRead r;
-		while (!stream.eof()) {
-			stream >> r;
-			counter++;
-			Sequence s = r.sequence();
-			CountSequence(s);
-//			CountRead(r);
-			rl = max(rl, s.size());
+	void CountSequence(const Sequence& s) {
+		if (s.size() < size_)
+			return;
+		Seq<size_> kmer = s.start<size_>();
+		addEdge(kmer);
+		for (size_t j = size_; j < s.size(); ++j) {
+			kmer = kmer << s[j];
+			addEdge(kmer);
 		}
-		return make_pair(counter, rl);
 	}
 
 	map_iterator begin() {

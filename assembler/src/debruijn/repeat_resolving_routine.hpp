@@ -534,7 +534,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 
 	auto second_edge = second_info.second;
 	auto second_weight = second_info.weight;
-	DEBUG("Threating edges" << origin_gp.int_ids.ReturnIntId(first_edge) <<" " << origin_gp.int_ids.ReturnIntId(first_edge));
+	DEBUG("Treating edges " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(first_edge));
 	auto paths = GetAllPathsFromSameEdge(origin_gp, first_edge, second_edge);
 	vector<size_t> distances;
 	for (auto paths_it = paths.begin(); paths_it != paths.end(); paths_it ++) {
@@ -562,10 +562,10 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 					clustered_index.RemovePairInfo(first_info);
 				else if (second_weight > first_weight * 2)
 					clustered_index.RemovePairInfo(second_info);
-				INFO("contradictional paired info from edge " <<origin_gp.int_ids.ReturnIntId(first_info.first) << " to edges "<<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "weights ratio " << ratio);
+				DEBUG("contradictional paired info from edge " << origin_gp.int_ids.ReturnIntId(first_info.first) << " to edges " <<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "; weights ratio " << ratio);
 				return 1;
 		} else {
-			DEBUG("no contras");
+			DEBUG("no contradictions");
 			return 0;
 		}
 	} else {
@@ -585,7 +585,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 			}
 			if (! nonzero_info) {
 				if (paths.begin()->size() != 0)
-					INFO("filled missing " << paths.begin()->size() << "edges");
+					DEBUG("filled missing " << paths.begin()->size() << "edges");
 				return paths.begin()->size();
 			}
 		}
