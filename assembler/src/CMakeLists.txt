@@ -21,6 +21,8 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug"          AND
   set(CMAKE_BUILD_TYPE "RelWithDebInfo") 
 endif()
 
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lrt")
+
 add_definitions(-g3)
 add_definitions(-std=c++0x)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
