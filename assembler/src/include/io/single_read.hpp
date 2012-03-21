@@ -198,7 +198,8 @@ public:
 	SingleRead SubstrStrict(size_t from, size_t to) const {
 		// !!! nobody use the names, so we can skip them! (Kolya)
 		//std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
-		return SingleRead(name_, seq_.substr(from, to), qual_.substr(from, to));
+		size_t len = to - from;
+		return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
 	}
 
 	SingleRead Substr(size_t from, size_t to) const {
