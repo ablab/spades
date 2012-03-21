@@ -167,15 +167,19 @@ class ContigRefiner: public ModifyingWrapper {
 		} else if (path_store.count() == 1) {
 			return boost::optional<vector<EdgeId>>(*path_store.paths().begin());
 		} else {
-			VERIFY_MSG(false, "Several closing paths found");
-//			WARN("Several closing paths found");
-//			return boost::optional<vector<EdgeId>>(*path_store.paths().begin());
+//			VERIFY_MSG(false, "Several closing paths found");
+			WARN("Several closing paths found");
+			return boost::optional<vector<EdgeId>>(*path_store.paths().begin());
 		}
 	}
 
 	vector<EdgeId> FixPath(const vector<EdgeId>& edges) const {
 		vector<EdgeId> answer;
-		VERIFY(edges.size() > 0);
+		if (edges.empty()) {
+			WARN("Mapping path was empty");
+			return vector<EdgeId>();
+		}
+//		VERIFY(edges.size() > 0);
 		answer.push_back(edges[0]);
 		for (size_t i = 1; i < edges.size(); ++i) {
 			VertexId v1 = graph_.EdgeEnd(edges[i - 1]);
@@ -229,6 +233,10 @@ protected:
 //			return !Refine(!s);
 		Path<EdgeId> path = FixPath(mapper_.MapSequence(s).simple_path());
 
+		if (path.size() == 0) {
+			WARN("Returning empty sequence");
+			return Sequence();
+		}
 //		DEBUG("Mapped sequence to path " << graph_.str(path.sequence()));
 
 		Sequence path_sequence = MergeSequences(graph_, path.sequence());
@@ -1355,6 +1363,9 @@ private:
 			EdgeId e = *it;
 			VERIFY(bps.find(e) != bps.end());
 			VERIFY(bps[e].empty() || bps[e].back() < gp_.g.length(e));
+			//todo temporary fix!!!
+			if (e == gp_.g.conjugate(e))
+				continue;
 			SplitEdge(bps[e], e);
 		}
 	}

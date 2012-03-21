@@ -2,6 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include "graphio.hpp"
+#include "xmath.h"
 #include <iostream>
 #include "logging.hpp"
 #include "assembly_compare.hpp"
@@ -9,10 +10,106 @@
 #include "io/vector_reader.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_01.hpp>
+#include <boost/random/uniform_int.hpp>
+#include <boost/random/variate_generator.hpp>
 
 DECL_PROJECT_LOGGER("dtls")
 
 namespace debruijn_graph {
+
+inline double uniform_01() {
+	static boost::mt19937 rng(43);
+	static boost::uniform_01<boost::mt19937> zeroone(rng);
+	return zeroone();
+}
+
+inline bool event_happened(double rate) {
+	return ls(uniform_01(), rate);
+}
+
+inline int rand_int(size_t min, size_t max) {
+	static boost::mt19937 rng(43);
+	boost::uniform_int<> un_int(min, max);
+	boost::variate_generator<boost::mt19937&, boost::uniform_int<> >
+	         die(rng, un_int);
+	return die();
+}
+
+inline char switch_nucl(char n) {
+	VERIFY(is_nucl(n));
+	return nucl((dignucl(n) + rand_int(1,3)) % 4);
+}
+
+inline Sequence IntroduceReversal(const Sequence& s, size_t min_len, size_t max_len) {
+	VERIFY(s.size() > min_len);
+	//inclusive
+	size_t start = rand_int(0, s.size() - min_len);
+	size_t len = rand_int(min_len, std::min(max_len, s.size() - start));
+	//exclusive
+	size_t end = start + len;
+	INFO("Reversing fragment of length " << len << " from " << start << " to " << end);
+	return s.Subseq(0, start) + !s.Subseq(start, end) + s.Subseq(end);
+}
+
+inline Sequence IntroduceReversals(const Sequence& s, size_t rev_count, size_t min_len, size_t max_len) {
+	Sequence res = s;
+	for (size_t i = 0; i < rev_count; ++i) {
+		res = IntroduceReversal(res, min_len, max_len);
+	}
+	return res;
+}
+
+template<class gp_t>
+inline void ConstructRepeatGraph(gp_t& gp) {
+	io::VectorReader<io::SingleRead> stream(
+			io::SingleRead("genome", gp.genome.str()));
+	io::RCReaderWrapper<io::SingleRead> rc_stream(stream);
+	ConstructGraph<gp_t::k_value, typename gp_t::graph_t>(gp.g, gp.index, rc_stream);
+}
+
+template<class Graph>
+inline vector<Sequence> EdgesSequences(const Graph& g) {
+	vector<Sequence> res;
+	set<EdgeId> edges;
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		if (edges.find(*it) == edges.end()) {
+			res.push_back(g.EdgeNucls(*it));
+			edges.insert(g.conjugate(*it));
+		}
+	}
+	return res;
+}
+
+template<class gp_t>
+inline vector<Sequence> RepeatGraphEdges(const Sequence& genome) {
+	typedef typename gp_t::graph_t Graph;
+	typedef typename Graph::EdgeId EdgeId;
+
+	gp_t gp(genome);
+	ConstructRepeatGraph(gp);
+	return EdgesSequences(gp.g);
+}
+
+inline Sequence ReadGenome(const string& filename) {
+	checkFileExistenceFATAL(filename);
+	io::Reader<io::SingleRead> genome_stream(filename);
+	io::SingleRead genome;
+	genome_stream >> genome;
+	return genome.sequence();
+}
+
+inline Sequence IntroduceMutations(const Sequence& s, double rate) {
+	VERIFY(ge(rate, 0.) && ls(rate, 1.0));
+	string as_str = s.str();
+	for (size_t i = 0; i < s.size(); ++i) {
+		if (event_happened(rate)) {
+			as_str[i] = switch_nucl(as_str[i]);
+		}
+	}
+	return Sequence(as_str);
+}
 
 template<size_t k, size_t K>
 inline void RunBPComparison(ContigStream& raw_stream1,
@@ -41,8 +138,51 @@ inline void RunBPComparison(ContigStream& raw_stream1,
 	}
 }
 
+template<size_t k, size_t K>
+inline void RunBPComparison(const Sequence& ref,
+		ContigStream& stream, const string& name1, const string& name2,
+		bool refine, bool untangle, const string& output_folder,
+		bool detailed_output = true) {
+	io::VectorReader<io::SingleRead> ref_stream(
+			io::SingleRead(name1, ref.str()));
+	RunBPComparison<k, K>(ref_stream, stream, name1, name2,
+			refine, untangle, output_folder,
+			detailed_output);
+}
+
+template<size_t k, size_t K>
+inline void RunBPComparison(const Sequence& s1,
+		const Sequence& s2, const string& name1, const string& name2,
+		bool refine, bool untangle, const string& output_folder,
+		bool detailed_output = true) {
+	io::VectorReader<io::SingleRead> stream(
+			io::SingleRead(name2, s2.str()));
+	RunBPComparison<k, K>(s1, stream, name1, name2,
+			refine, untangle, output_folder,
+			detailed_output);
+}
+
+const vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
+	vector<io::SingleRead> ans;
+	for (size_t i = 0; i < ss.size(); ++i) {
+		ans.push_back(io::SingleRead("read_" + ToString(i), ss[i].str()));
+	}
+	return ans;
+}
+
+template<size_t k, size_t K>
+inline void RunBPComparison(const Sequence& ref,
+		const vector<Sequence>& contigs, const string& name1, const string& name2,
+		bool refine, bool untangle, const string& output_folder,
+		bool detailed_output = true) {
+	io::VectorReader<io::SingleRead> stream(MakeReads(contigs));
+	RunBPComparison<k, K>(ref, stream, name1, name2,
+			refine, untangle, output_folder,
+			detailed_output);
+}
+
 BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
-	static const size_t k = 25;
+	static const size_t k = 19;
 	static const size_t K = 201;
 //    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
 //    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
@@ -54,14 +194,15 @@ BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
 //	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
 // 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
 
-	io::Reader<io::SingleRead> stream_1("/home/snurk/assembly_compare/PGINGIVALIS_LANE3_BH_split.fasta.gz");
-	io::Reader<io::SingleRead> stream_2("/home/snurk/assembly_compare/TDC60.fasta");
+	io::Reader<io::SingleRead> stream_1("/home/snurk/gingi/gingi_lane2_it.fasta");
+//	io::Reader<io::SingleRead> stream_2("/home/snurk/gingi/lane2_evsc.fasta");
+	io::Reader<io::SingleRead> stream_2("/home/snurk/gingi/MDA2_clc_new.fasta");
 
 	RunBPComparison<k, K>(
 		stream_1,
 		stream_2,
 		"spades",
-		"ref",
+		"evsc",
 		true/*refine*/,
 		true/*untangle*/,
 		"assembly_compare/",
@@ -109,13 +250,47 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir,
 			true, /*untangle*/
 			true,
 			output_dir + "example_" + n /*ToString(++example_cnt)*/
-					+ "/", /*detailed_output*/true);
+					+ "/", /*detailed_output*/false);
 	}
 }
 
 //BOOST_AUTO_TEST_CASE( BreakPointGraphTests ) {
+//	make_dir("bp_graph_test");
+//	INFO("Running simulated examples");
 //	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
-//			"bp_graph_test/", "1_err");
+//			"bp_graph_test/simulated_common/");
+//
+//	INFO("Running simulated examples with introduced errors");
+//	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
+//			"bp_graph_test/simulated_common_err/", "1_err");
+//	Sequence genome = ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz");
+
+//	INFO("Running comparison against mutated genome");
+//	RunBPComparison<17, 250>(genome, IntroduceMutations(genome, 0.01), "init", "mut"
+//			, /*refine*/true, /*untangle*/false, "bp_graph_test/mutated_ref/", /*detailed*/false);
+
+//	INFO("Running comparison against genome with reversals");
+
+//	RunBPComparison<25, 250>(genome, IntroduceReversals(genome, 10, 1000, 2000), "init", "rev"
+//			, /*refine*/false, /*untangle*/false, "bp_graph_test/reversaled_ref/", /*detailed*/false);
+
+//	INFO("Running comparison against mutated genome with reversals");
+//	RunBPComparison<25, 250>(genome, IntroduceMutations(IntroduceReversals(genome, 10, 1000, 2000), 0.01), "init", "mut_rev"
+//			, /*refine*/true, /*untangle*/true, "bp_graph_test/reversaled_mut_ref/", /*detailed*/false);
+
+//	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
+//	INFO("Running comparison against repeat graph contigs");
+//	RunBPComparison<25, 250>(genome, RepeatGraphEdges<gp_t>(genome), "init", "repeat_g_cont"
+//			, /*refine*/false, /*untangle*/false, "bp_graph_test/repeat_graph_edges_ref/", /*detailed*/false);
+//
+//	INFO("Running comparison against reversaled repeat graph contigs");
+//	RunBPComparison<25, 250>(genome, RepeatGraphEdges<gp_t>(IntroduceReversals(genome, 10, 1000, 10000)), "init", "rev_repeat_g_cont"
+//			, /*refine*/false, /*untangle*/false, "bp_graph_test/rev_repeat_graph_edges_ref/", /*detailed*/false);
+
+//
+//	INFO("Running comparison against other strain");
+//	RunBPComparison<21, 301>(genome, ReadGenome("data/input/E.coli/DH10B-K12.fasta"), "init", "other_strain"
+//			, /*refine*/true, /*untangle*/true, "bp_graph_test/other_strain_comp/", /*detailed*/false);
 //}
 
 template<class gp_t>
