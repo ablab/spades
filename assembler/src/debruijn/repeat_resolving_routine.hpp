@@ -811,6 +811,12 @@ void resolve_repeats() {
 		FillPos(conj_gp, cfg::get().pos.contigs_for_threading, 10000);
 	}
 
+	if (!cfg::get().paired_mode
+			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
+		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
+		return;
+	}
+
 	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
 
 	INFO("STAGE == Resolving Repeats");
@@ -826,12 +832,6 @@ void resolve_repeats() {
 	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir,
 			"graph.dot");
 	printer(ipp_before_repeat_resolution);
-
-	if (!cfg::get().paired_mode
-			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
-		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
-		return;
-	}
 
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
 		int number_of_components = 0;

@@ -12,8 +12,6 @@ void late_pair_info_count(conj_graph_pack& gp,
 		paired_info_index& paired_index) {
 	exec_simplification(gp);
 
-	INFO("STAGE == Late Pair Info Count");
-
 	if (cfg::get().paired_mode) {
 		INFO("Estimating dataset paired params");
 		const size_t edge_length_threshold = 500;
