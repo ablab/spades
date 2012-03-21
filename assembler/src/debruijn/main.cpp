@@ -43,9 +43,12 @@ void link_previous_run(std::string const& previous_link_name, std::string const&
        buf[count] = '\0';
        std::string previous_run("../");
        previous_run = previous_run + buf;
-       if (symlink(previous_run.c_str(), link.c_str()) != 0)
-           WARN( "Symlink to \"" << link << "\" launch failed : " << previous_run);
-   }else WARN( "Symlink to \"" << link << "\" launch failed");
+       if (symlink(previous_run.c_str(), link.c_str()) != 0) {
+           DEBUG( "Symlink to \"" << link << "\" launch failed : " << previous_run);
+       }
+   } else {
+	   DEBUG( "Symlink to \"" << link << "\" launch failed");
+   }
 }
 
 struct on_exit_output_linker

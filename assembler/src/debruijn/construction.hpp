@@ -111,10 +111,8 @@ void exec_construction(conj_graph_pack& gp) {
 			ReadStream* additional_contigs_stream = 0;
 			//adding file with additional contigs
 			if (cfg::get().use_additional_contigs) {
-				INFO("Additional contigs will be used");
+				INFO("Contigs from previous K will be used");
 				additional_contigs_stream = new EasyStream(cfg::get().additional_contigs);
-			} else {
-				INFO("Additional contigs won't be used");
 			}
 
 			construct_graph(concat_stream, gp, additional_contigs_stream);
