@@ -122,28 +122,36 @@ void FillCoverage(Graph& g, SingleReadStream& stream,
 
 template<size_t k, class Graph>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		io::IReader<io::SingleRead>& stream) {
+		SingleReadStream& reads_stream, SingleReadStream* contigs_stream = 0) {
 	typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
-	INFO("Processing reads (takes a while)");
 
+	INFO("Processing reads (takes a while)");
 	size_t counter = 0;
 	size_t rl = 0;
 	io::SingleRead r;
-	while (!stream.eof()) {
-		stream >> r;
+	while (!reads_stream.eof()) {
+		reads_stream >> r;
 		Sequence s = r.sequence();
 		debruijn.CountSequence(s);
 		rl = max(rl, s.size());
 		VERBOSE_POWER(++counter, " reads processed");
 	}
+	if (contigs_stream) {
+		INFO("Adding contigs from previous K");
+		while (!contigs_stream->eof()) {
+			*contigs_stream >> r;
+			Sequence s = r.sequence();
+			debruijn.CountSequence(s);
+		}
+	}
 
-//	VERIFY_MSG(!cfg::get().ds.RL.is_initialized() || *cfg::get().ds.RL == rl,
-//			"In datasets.info, wrong RL is specified: " + ToString(cfg::get().ds.RL) + ", not " + ToString(rl));
 	if (!cfg::get().ds.RL.is_initialized()) {
-		cfg::get_writable().ds.RL = rl;
 		INFO("Figured out: read length = " << rl);
+		cfg::get_writable().ds.RL = rl;
+	} else if (*cfg::get().ds.RL != rl) {
+		WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
 	}
 	INFO("DeBruijn graph constructed, " << counter << " reads used");
 
@@ -153,34 +161,19 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	DEBUG("Graph condensed");
 }
 
-template<size_t k, class Graph>
-void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		io::IReader<io::SingleRead>& stream1, io::IReader<io::SingleRead>& stream2) {
-	io::MultifileReader<io::SingleRead> composite_reader(stream1, stream2);
-	ConstructGraph<k, Graph>(g, index, composite_reader);
-}
-
 template<size_t k>
 void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
-SingleReadStream& stream, SingleReadStream* contigs_stream = 0) {
-	vector<SingleReadStream*> streams;
-	streams.push_back(&stream);
-	if (contigs_stream) {
-		INFO("Additional contigs stream added for construction");
-		streams.push_back(contigs_stream);
-	}
-	CompositeSingleReadStream composite_stream(streams);
-	ConstructGraph<k>(g, index, composite_stream);
-	//It is not a bug!!! Don't use composite_stream here!!!
-	FillCoverage<k>(g, stream, index);
+		SingleReadStream& reads_stream, SingleReadStream* contigs_stream = 0) {
+	ConstructGraph<k>(g, index, reads_stream, contigs_stream);
+	FillCoverage<k>(g, reads_stream, index);
 }
 
 template<size_t k>
 void ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
-		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream,
+		PairedInfoIndex<Graph>& paired_index, PairedReadStream& paired_stream,
 		SingleReadStream* single_stream = 0,
 		SingleReadStream* contigs_stream = 0) {
-	UnitedStream united_stream(stream);
+	UnitedStream united_stream(paired_stream);
 
 	typedef io::MultifileReader<io::SingleRead> MultiFileStream;
 	vector<SingleReadStream*> streams;
@@ -190,13 +183,13 @@ void ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 	if (single_stream) {
 		streams.push_back(single_stream);
 	}
-	MultiFileStream composite_stream(streams);
-	ConstructGraphWithCoverage<k>(gp.g, gp.index, composite_stream, contigs_stream);
+	MultiFileStream reads_stream(streams);
+	ConstructGraphWithCoverage<k>(gp.g, gp.index, reads_stream, contigs_stream);
 
 	if (cfg::get().etalon_info_mode || cfg::get().etalon_graph_mode)
 		FillEtalonPairedIndex<k>(paired_index, gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	else
-		FillPairedIndex<k>(gp.g, gp.index, paired_index, stream);
+		FillPairedIndex<k>(gp.g, gp.index, paired_index, paired_stream);
 }
 
 }
