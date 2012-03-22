@@ -25,7 +25,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 					g.SplitEdge(*e_iter, half_len);
 				}
 				else {
-					WARN("Loop of length 1 presented.");
+					WARN("Loop of length 1 detected");
 				}
 			}
 		}
