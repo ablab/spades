@@ -343,6 +343,30 @@ HMP_LANE_1_BH_20111203 ; old HMP_LANE_1
 ; =============== Delta Bacteria =================
 ; ================================================
 
+TRASH_DELTA_CORRECTED_1 ; old DELTA_CORRECTED_1
+{
+        first   Delta.Bacteria/lane1_reads_corrected_left.fastq
+        second  Delta.Bacteria/lane1_reads_corrected_right.fastq
+        single_first    Delta.Bacteria/lane1_reads_corrected_single_left.fastq
+        single_second  	Delta.Bacteria/lane1_reads_corrected_single_right.fastq
+        RL              100     ; read length
+        IS              250     ; insert size
+        single_cell     true
+        reference_genome	N/A	; length approx 4.5M
+}
+
+TRASH_DELTA_EULER_CORRECTED_1 ; old DELTA_EULER_CORRECTED_1
+{
+        first   Delta.Bacteria/delta_euler_sr_ec_left.fasta
+        second  Delta.Bacteria/delta_euler_sr_ec_right.fasta
+        single_first    Delta.Bacteria/delta_euler_sr_ec_single_left.fasta
+        single_second   Delta.Bacteria/delta_euler_sr_ec_single_right.fastq
+        RL              100     ; read length
+        IS              250     ; insert size
+        single_cell     true
+        reference_genome	N/A
+}
+
 ; ================================================
 ; ================== S. Aureus ===================
 ; ================================================

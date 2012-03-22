@@ -752,6 +752,18 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 
 	size_t not_found = 0;
 	size_t low_coverage = 0;
+
+	double cutting_coverage = 0;
+
+	if (cfg::get().ds.avg_coverage) {
+		cutting_coverage = *cfg::get().ds.avg_coverage *  cfg::get().rr.inresolve_cutoff_proportion / 2;
+	}
+	else {
+		cutting_coverage = cfg::get().simp.ec.max_coverage * cfg::get().rr.inresolve_cutoff_proportion;
+	}
+
+
+
 	for (int i = 0; i < k; i++) {
 		vector<EdgeId> split_edge;
 		vector<double> split_coeff;
@@ -812,9 +824,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 
 				}
 			}
-
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
-				if (new_graph.coverage(it->second) < cfg::get().simp.ec.max_coverage * cfg::get().rr.inresolve_cutoff_proportion) {
+				if (new_graph.coverage(it->second) < cutting_coverage) {
 					OldCopyCnt[it->first]--;
 					DEBUG("Deleting just created edge " << new_IDs.ReturnIntId(it->first) << " because of low coverage");
 					++low_coverage;

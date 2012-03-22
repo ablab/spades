@@ -185,11 +185,16 @@ public:
 	 */
 	SingleRead operator!() const {
 		std::string new_name;
-		if (name_ == "" || name_[0] != '!') {
-			new_name = '!' + name_;
+		if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
+			new_name = name_.substr(0, name_.length() - 3);
 		} else {
-			new_name = name_.substr(1, name_.length());
+			new_name = name_ + "_RC";
 		}
+//		if (name_ == "" || name_[0] != '!') {
+//			new_name = '!' + name_;
+//		} else {
+//			new_name = name_.substr(1, name_.length());
+//		}
 		return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_));
 	}
 
