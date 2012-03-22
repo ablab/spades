@@ -184,22 +184,19 @@ public:
 	 * @return Reversed complimentary SingleRead.
 	 */
 	SingleRead operator!() const {
-		// !!! nobody use the names, so we can skip them! (Kolya)
-		/*std::string new_name;
-		 if (name_ == "" || name_[0] != '!') {
-		 new_name = '!' + name_;
-		 } else {
-		 new_name = name_.substr(1, name_.length());
-		 }*/
-		return SingleRead(name_ + "_RC", ReverseComplement(seq_),
-				Reverse(qual_));
+		std::string new_name;
+		if (name_ == "" || name_[0] != '!') {
+			new_name = '!' + name_;
+		} else {
+			new_name = name_.substr(1, name_.length());
+		}
+		return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_));
 	}
 
 	SingleRead SubstrStrict(size_t from, size_t to) const {
-		// !!! nobody use the names, so we can skip them! (Kolya)
-		//std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
+		std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
 		size_t len = to - from;
-		return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
+		return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len));
 	}
 
 	SingleRead Substr(size_t from, size_t to) const {
