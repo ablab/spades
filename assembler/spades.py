@@ -114,9 +114,9 @@ def run(cfg):
     for K in cfg.iterative_K:
         count += 1
 
-        dst_configs = path.join(cfg.build_path, str(K), "configs/debruijn")
+        dst_configs = path.join(cfg.build_path, str(K), "configs")
         shutil.copytree(path.join(spades_home, "configs"), dst_configs)
-        cfg_file_name = path.join(dst_configs, "config.info")
+        cfg_file_name = path.join(dst_configs, "debruijn", "config.info")
 
         prepare_config(cfg_file_name, cfg, prev_K, count == len(cfg.iterative_K))
         prev_K = K
