@@ -29,10 +29,10 @@ ECOLI_IS220_IDEAL ; Emulated
 
 ECOLI_IS220_BH
 {
-        first   E.coli/is220_bh/05.reads.left.corrected.fastq
-        second  E.coli/is220_bh/05.reads.right.corrected.fastq
-        single_first    E.coli/is220_bh/05.reads.left.unpaired.fastq
-        single_second   E.coli/is220_bh/05.reads.right.unpaired.fastq
+        first   E.coli/is220_bh/05.reads.left.corrected.fastq.gz
+        second  E.coli/is220_bh/05.reads.right.corrected.fastq.gz
+        single_first    E.coli/is220_bh/05.reads.left.unpaired.fastq.gz
+        single_second   E.coli/is220_bh/05.reads.right.unpaired.fastq.gz
         RL              100     ; read length
         IS              270     ; insert size
         single_cell     true
@@ -337,7 +337,7 @@ LBOUILLONII_QUAKE ; old LB_QUAKE_FULL
 	single_second	L.bouillonii/gerwick-read2.cor_single.fastq.gz
 	RL		100	; read length
 	IS		370	; insert size
-	single_cell	false
+	single_cell	false1
 	reference_genome	N/A	; length approx	8.7M
 }
 
@@ -345,36 +345,12 @@ LBOUILLONII_QUAKE ; old LB_QUAKE_FULL
 ; =============== Delta Bacteria =================
 ; ================================================
 
-TRASH_DELTA_CORRECTED_1 ; old DELTA_CORRECTED_1
+DELTA_BH
 {
-        first   Delta.Bacteria/lane1_reads_corrected_left.fastq
-        second  Delta.Bacteria/lane1_reads_corrected_right.fastq
-        single_first    Delta.Bacteria/lane1_reads_corrected_single_left.fastq
-        single_second  	Delta.Bacteria/lane1_reads_corrected_single_right.fastq
-        RL              100     ; read length
-        IS              250     ; insert size
-        single_cell     true
-        reference_genome	N/A	; length approx 4.5M
-}
-
-TRASH_DELTA_EULER_CORRECTED_1 ; old DELTA_EULER_CORRECTED_1
-{
-        first   Delta.Bacteria/delta_euler_sr_ec_left.fasta
-        second  Delta.Bacteria/delta_euler_sr_ec_right.fasta
-        single_first    Delta.Bacteria/delta_euler_sr_ec_single_left.fasta
-        single_second   Delta.Bacteria/delta_euler_sr_ec_single_right.fastq
-        RL              100     ; read length
-        IS              250     ; insert size
-        single_cell     true
-        reference_genome	N/A
-}
-
-DELTA_BH ; new DeltaProteo
-{
-	first Delta.Bacteria/hammer/it4/04.reads_left.corrected.fastq
-	second Delta.Bacteria/hammer/it4/04.reads_right.corrected.fastq
-        single_first Delta.Bacteria/hammer/it4/04.reads_single_left.corrected.fastq
-        single_second Delta.Bacteria/hammer/it4/04.reads_single_right.corrected.fastq
+	first Delta.Bacteria/hammer/it4/04.reads_left.corrected.fastq.gz
+	second Delta.Bacteria/hammer/it4/04.reads_right.corrected.fastq.gz
+        single_first Delta.Bacteria/hammer/it4/04.reads_single_left.corrected.fastq.gz
+        single_second Delta.Bacteria/hammer/it4/04.reads_single_right.corrected.fastq.gz
 	RL		100	; read length
 	IS		250	; insert size
 	single_cell 	true
@@ -658,10 +634,10 @@ LGASSERI_QUAKE
 
 X5_A_QUAKE
 {
-	first	x5/left.cor.fastq
-	second	x5/right.cor.fastq
-	single_first	x5/left.cor_single.fastq
-	single_second	x5/right.cor_single.fastq
+	first	x5/a/left.cor.fastq.gz
+	second	x5/a/right.cor.fastq.gz
+	single_first	x5/a/left.cor_single.fastq.gz
+	single_second	x5/a/right.cor_single.fastq.gz
 	RL	100
 	IS	175     
 	single_cell	false
@@ -670,10 +646,10 @@ X5_A_QUAKE
 
 X5_B_QUAKE
 {
-	first	x5/left_l.cor.fastq
-	second	x5/right_l.cor.fastq
-	single_first	x5/left_l.cor_single.fastq
-	single_second	x5/right_l.cor_single.fastq
+	first	x5/b/left_l.cor.fastq.gz
+	second	x5/b/right_l.cor.fastq.gz
+	single_first	x5/b/left_l.cor_single.fastq.gz
+	single_second	x5/b/right_l.cor_single.fastq.gz
 	RL	100
 	IS 	280	
 	single_cell	false
