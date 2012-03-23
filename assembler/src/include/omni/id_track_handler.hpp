@@ -55,7 +55,7 @@ public:
 		MaxEdgeIntId++;
 		EdgeIntId[NewEdgeId] = MaxEdgeIntId;
 		EdgeOriginalId[MaxEdgeIntId] = NewEdgeId;
-		return MaxVertexIntId;
+		return MaxEdgeIntId;
 	}
 	realIdType AddEdgeIntId(EdgeId NewEdgeId, realIdType NewIntId) {
 		realIdType PreviousId = ReturnIntId(NewEdgeId);
