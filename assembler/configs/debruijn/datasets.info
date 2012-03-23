@@ -337,7 +337,7 @@ LBOUILLONII_QUAKE ; old LB_QUAKE_FULL
 	single_second	L.bouillonii/gerwick-read2.cor_single.fastq.gz
 	RL		100	; read length
 	IS		370	; insert size
-	single_cell	false1
+	single_cell	false
 	reference_genome	N/A	; length approx	8.7M
 }
 
