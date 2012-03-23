@@ -347,7 +347,7 @@ struct debruijn_config {
 
 public:
 
-	std::string dataset_name;
+	std::string dataset_file;
 	std::string input_dir;
 	std::string output_base;
 	std::string output_root;
@@ -638,7 +638,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 		bool complete) {
 	using config_common::load;
 	// input options:
-	load(cfg.dataset_name, pt, "dataset");
+	load(cfg.dataset_file, pt, "dataset");
 	load(cfg.input_dir, pt, "input_dir");
 	if (cfg.input_dir[cfg.input_dir.length() - 1] != '/') {
 		cfg.input_dir += '/';
@@ -649,7 +649,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 		cfg.output_base += '/';
 	}
 
-	cfg.output_root = cfg.output_base + cfg.dataset_name + "/K" + ToString(K)
+	cfg.output_root = cfg.output_base + "/K" + ToString(K)
 			+ "/";
 	cfg.output_suffix = MakeLaunchTimeDirName() + "/";
 	cfg.output_dir = cfg.output_root + cfg.output_suffix;
@@ -670,7 +670,11 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.etalon_info_mode, pt, "etalon_info_mode");
 	load(cfg.componential_resolve, pt, "componential_resolve");
 	load(cfg.advanced_estimator_mode, pt, "advanced_estimator_mode");
-	load(cfg.ds, pt, cfg.dataset_name);
+
+	checkFileExistenceFATAL(cfg.dataset_file);
+	boost::property_tree::ptree ds_pt;
+	boost::property_tree::read_info(cfg.dataset_file, ds_pt);
+	load(cfg.ds, ds_pt, true);
 
 	load(cfg.de, pt, (cfg.ds.single_cell ? "sc_de" : "usual_de"));
 
@@ -709,7 +713,9 @@ typedef config_common::config<debruijn_graph::debruijn_config> cfg;
 namespace debruijn_graph {
 
 inline string input_file(string filename) {
-	 return cfg::get().input_dir + filename;
+	if (filename[0] == '/')
+		return filename;
+	return cfg::get().input_dir + filename;
 }
 
 }

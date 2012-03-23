@@ -22,9 +22,9 @@ def prepare_config(filename, cfg, prev_K, last_one):
     cfg.input_dir = path.abspath(cfg.input_dir)
 
     subst_dict["dataset"]           = cfg.dataset
-    subst_dict["input_dir"]         = cfg.input_dir
-    subst_dict["output_base"]       = cfg.output_dir
-    subst_dict["additional_contigs"]= path.join(path.abspath(cfg.build_path), "simplified_contigs.fasta")
+    subst_dict["input_dir"]         = path.dirname(cfg.dataset)
+    subst_dict["output_base"]       = cfg.build_path
+    subst_dict["additional_contigs"]= path.join(cfg.build_path, "simplified_contigs.fasta")
     subst_dict["entry_point"]       = 'construction'
 
 
@@ -59,47 +59,55 @@ def main():
             return
 
     print("Using config file: " + CONFIG_FILE)
-    cfg = load_config_from_file(CONFIG_FILE)
 
-    def build_folder(cfg):
-        import datetime
-        suffix = datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
-        return path.join(cfg.output_dir, cfg.dataset, 'build_' + suffix)
+    cfg = load_config_from_info_file(CONFIG_FILE)
+    if cfg.has_key("bh"):    
+        #TODO
+        print "TODO: BayesHammer"
 
-    cfg.__dict__["build_path"] = build_folder(cfg)
-    os.makedirs(cfg.build_path)
+    if cfg.has_key("spades"):
+#        spades_cfg = load_config_from_file(CONFIG_FILE) ##
+        spades_cfg = cfg["spades"]
 
-    log_filename = path.join(cfg.build_path, "spades.log")
-    cfg.__dict__["log_filename"] = log_filename
+        def build_folder(cfg):
+            import datetime
+            suffix = datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
+            return path.join(cfg.output_dir, 'spades_' + suffix)
 
-    print("\n== Log can be found here: " + cfg.log_filename + "\n")
+        spades_cfg.__dict__["build_path"] = build_folder(cfg["common"])
+        os.makedirs(spades_cfg.build_path)
 
-    log_file = open(log_filename, "w")
+        log_filename = path.join(spades_cfg.build_path, "spades.log")
+        spades_cfg.__dict__["log_filename"] = log_filename
 
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
+        print("\n== Log can be found here: " + spades_cfg.log_filename + "\n")
 
-    if cfg.output_to_console:
-        sys.stderr = support.redirected_stream(log_file, sys.stderr)
-        sys.stdout = support.redirected_stream(log_file, sys.stdout)
-    else:
-        sys.stderr = support.redirected_stream(log_file, None)
-        sys.stdout = support.redirected_stream(log_file, None)
+        log_file = open(log_filename, "w")
 
-    # --
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
 
-    err_code = 0
-    try:
-        run(cfg)
-    except support.spades_error as err:
-        print err.err_str
-        err_code = err.code
+        if cfg["common"].output_to_console:
+            sys.stderr = support.redirected_stream(log_file, sys.stderr)
+            sys.stdout = support.redirected_stream(log_file, sys.stdout)
+        else:
+            sys.stderr = support.redirected_stream(log_file, None)
+            sys.stdout = support.redirected_stream(log_file, None)
 
-    sys.stdout = old_stdout
-    sys.stderr = old_stderr
+        err_code = 0
+        try:
+            run(spades_cfg)
+        except support.spades_error as err:
+            print err.err_str
+            err_code = err.code
 
-    print("\n== Assembling finished. Log can be found here: " + cfg.log_filename + "\n")
-    exit(err_code)
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+
+        print("\n== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")
+        exit(err_code)
+    
+    print("\n== SPAdes pipeline finished\n")
 
 def run(cfg):
 
@@ -130,9 +138,9 @@ def run(cfg):
 
         support.sys_call(command, execution_home)
 
-        latest = path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), "latest")
+        latest = path.join(cfg.build_path, "K%d" % (K), "latest")
         latest = os.readlink(latest)
-        latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), latest)
+        latest = os.path.join(cfg.build_path, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, cfg.build_path), os.path.join(cfg.build_path, "link_K%d" % (K)))
 
     support.copy(os.path.join(latest, "result.info"), cfg.build_path)

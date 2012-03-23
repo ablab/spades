@@ -12,6 +12,9 @@ def config_file_name():
 def file_lines(filename):
     return open(filename).readlines()
 
+def skip_info_comment(line):
+    return line.split(';')[0].strip()
+
 def vars_from_lines(lines):
 
     class var_metadata:
@@ -28,7 +31,7 @@ def vars_from_lines(lines):
             return True
 
     def var_from_line(line, line_num):
-        l = line.split()
+        l = skip_info_comment(line).split()
         if len(l) == 0 or not valid_var_name(l[0]):
             return None, None
 
@@ -95,3 +98,24 @@ def load_config_from_vars(cfg_vars):
 def load_config_from_file(filename):
     return load_config_from_vars(vars_from_lines(file_lines(filename)))
 
+def load_config_from_info_file(filename):
+    lines = file_lines(filename)
+    blocks = dict()
+
+    cur_block_name = "common"
+    blocks[cur_block_name] = []
+    for i in xrange(1, len(lines)):
+        if lines[i].startswith('{'):
+            cur_block_name = skip_info_comment(lines[i - 1])
+            blocks[cur_block_name] = []
+        elif lines[i].startswith('}'):
+            blocks[cur_block_name].append(lines[i - 1])
+            cur_block_name = "common"
+        elif not lines[i - 1].startswith('{') and not lines[i - 1].startswith('}') and not lines[i - 1].strip() == '':                 
+            blocks[cur_block_name].append(lines[i - 1])
+
+    cfg = dict()
+    for block_name in blocks.iterkeys():
+        cfg[block_name] = load_config_from_vars(vars_from_lines(blocks[block_name]))
+
+    return cfg

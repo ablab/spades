@@ -125,7 +125,7 @@ int main(int argc, char** argv)
             VERIFY_MSG(false, "K in config.hpp must be odd!\n");
 
         // read configuration file (dataset path etc.)
-        string dataset = cfg::get().dataset_name;
+        string dataset = cfg::get().dataset_file;
 
         // typedefs :)
 //        typedef io::EasyReader ReadStream;

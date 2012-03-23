@@ -1,0 +1,21 @@
+output_dir          ./data/debruijn/
+output_to_console   true
+
+spades
+{
+  iterative_K         21 33 55
+  paired_mode         true
+  dataset             ./test_dataset/input/test_dataset.info
+}
+
+bh
+{
+  input_reads         ./data/input/read_0.fastq.gz  ./data/input/read_1.fastq.gz
+  output_dir          ./data/output/ECOLI_ALEX       ; optional
+  max_iterations      4
+  max_threads         20
+  max_memory          50 ; in GB 
+  gzip_output         true 
+  single_cell         true
+  reference           ./data/ref/MG1655-K12.fasta.gz ; optional        
+}

@@ -1,13 +1,13 @@
 ; input options:
 
 #include "simplification.info"
-#include "datasets.info"
+; #include "datasets.info"
 #include "distance_estimation.info"
 #include "detail_info_printer.info"
 
-dataset	ECOLI_IS220_QUAKE_1K
+dataset     ./test_dataset/input/test_dataset.info
 
-input_dir	      ./data/input/
+input_dir	      ./test_dataset/input/
 output_base	      ./data/debruijn/
 
 additional_contigs	tmp_contigs.fasta
