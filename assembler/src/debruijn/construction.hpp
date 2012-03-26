@@ -133,13 +133,13 @@ void exec_construction(conj_graph_pack& gp) {
 	}
 
 	if (!cfg::get().pos.contigs_for_threading.empty() &&
-		fileExists(cfg::get().pos.contigs_for_threading))
+		fileExists(cfg::get().pos.contigs_for_threading) && cfg::get().info_printers.begin()->second.write_components_along_genome)
 	{
 		FillPos(gp, cfg::get().pos.contigs_for_threading, 1000);
 	}
 
 	if (!cfg::get().pos.contigs_to_analyze.empty() &&
-		fileExists(cfg::get().pos.contigs_to_analyze))
+		fileExists(cfg::get().pos.contigs_to_analyze) && cfg::get().info_printers.begin()->second.write_components_along_contigs)
 	{
 		FillPos(gp, cfg::get().pos.contigs_to_analyze, 5000);
 	}

@@ -1373,15 +1373,15 @@ template<class EdgeId> class TipLock{
     private:
         static map<EdgeId, bool> lock;
     public:
-        void Lock(EdgeId tip){
+        static void Lock(EdgeId tip){
             lock[tip] = true;   
         }
 
-        void Unlock(EdgeId tip){
+        static void Unlock(EdgeId tip){
             lock[tip] = false;   
         }
 
-        bool IsLocked(EdgeId tip){
+        static bool IsLocked(EdgeId tip){
             if (lock.find(tip) != lock.end()){
                 return lock[tip];   
             }
@@ -1430,7 +1430,7 @@ private:
                 EdgeId alter_tip = graph_.OutgoingEdges(graph_.EdgeStart(alter))[i];
                 if (IsTip(graph_.OutgoingEdges(graph_.EdgeStart(alter))[i])){ 
                     if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip))){
-                        tip_lock_.Lock(tip);
+                        tip_lock_.Lock(alter_tip);
                         return true;
                     }
                 }
@@ -1440,7 +1440,7 @@ private:
                 EdgeId alter_tip = graph_.IncomingEdges(graph_.EdgeEnd(alter))[i];
                 if (IsTip(graph_.IncomingEdges(graph_.EdgeEnd(alter))[i])) {
                     if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip))){
-                        tip_lock_.Lock(tip);
+                        tip_lock_.Lock(alter_tip);
                         return true;   
                     }
                 }

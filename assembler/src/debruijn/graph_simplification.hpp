@@ -315,7 +315,7 @@ bool ChimericRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 }
 
 template<class Graph> 
-void FinalTipClipping(Graph& g, bool destruction = cfg::get().simp.tc.advanced_checks){
+void FinalTipClipping(Graph& g, bool careful_removal = cfg::get().simp.tc.advanced_checks){
 	INFO("SUBSTAGE == Final tip clipping");
 	omnigraph::LengthComparator<Graph> comparator(g);
     auto tc_config = cfg::get().simp.tc;
@@ -329,9 +329,9 @@ void FinalTipClipping(Graph& g, bool destruction = cfg::get().simp.tc.advanced_c
 			max_tip_length, max_coverage,
 			max_relative_coverage); //removal_handler
     
-    if (cfg::get().simp.tc.advanced_checks){
-        tc.ClipTips(destruction);
-        tc.ClipTips(destruction);
+    if (careful_removal){
+        tc.ClipTips(careful_removal);
+        tc.ClipTips(careful_removal);
     }else
         tc.ClearTips();
 

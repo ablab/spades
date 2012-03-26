@@ -332,30 +332,49 @@ public:
 				if (AdditionalCondition(tip)) {
                     TRACE("Additional checking");
                     removed++;
+                    
+                    // if tip was locked, we should not delete it
                     if (tip_lock.IsLocked(tip)){
                         TRACE("Tip " << this->graph().str(tip) << " was locked => can not remove it");
                         locked++;
                         continue;
                     }
+                    
+                    // removing only if stage is final
                     if (final_stage && CheckUniqueExtension(tip)){
                         TRACE("Edge " << this->graph().str(tip) << " has a unique extension");
                         RemoveTip(tip);
                         TRACE("Edge " << tip << " was removed"); 
                         continue;
                     }
+
+                    // tricky condition -- not removing short edges with high coverage until the final stage
                     if (!TipHasLowRelativeCoverage(tip, final_stage)){
                         TRACE("Tip is covered well too much => not removing");
                         continue;
                     }
-                    if (!final_stage || TipHasVeryLowRelativeCoverage(tip)){
+                    
+                    // now we delete tip if we are not in the final stage
+                    if (!final_stage){
 					    TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
                         removed_with_check++;
                         RemoveTip(tip);
                         TRACE("Edge "  << tip << " removed as a tip");
                         continue;
                     }
-                    //final_stage = true
-                    if (!cfg::get().simp.tc.advanced_checks || tipchecker.TipCanBeProjected(tip)){
+                    
+                    // now we are in the final stage 
+                    // if the tip is covered very badly we delete it with no doubt
+                    if (TipHasVeryLowRelativeCoverage(tip)){
+					    TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
+                        removed_with_check++;
+                        RemoveTip(tip);
+                        TRACE("Edge "  << tip << " removed as a tip");
+                        continue;
+                    }
+
+                    // additional topology kind of check at the final stages
+                    if (tipchecker.TipCanBeProjected(tip)){
                         TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
                         removed_with_check++;
                         RemoveTip(tip);

@@ -477,7 +477,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 	auto it = cfg::get().info_printers.find(pos);
 	VERIFY(it != cfg::get().info_printers.end());
 
-	debruijn_config::info_printer const& config = it->second;
+	const debruijn_config::info_printer & config = it->second;
 
 	if (config.print_stats) {
 		INFO("Printing statistics for " << details::info_printer_pos_name(pos));
