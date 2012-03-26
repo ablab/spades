@@ -31,6 +31,19 @@ def syncFiles(src, dest):
         for file in os.listdir(src):
             syncFiles(path.join(src, file), path.join(dest, file))
 
+def kFile_required(kFile, str_k):
+    if not path.exists(kFile):
+        return True
+    input = open(kFile, "r")
+    try:
+        for line in input:
+            if line.startswith("  const size_t K = " + str_k + ";"):
+                return False
+    finally:
+        input.close()
+
+    return True
+
 def build_k(spades_folder, str_k, spades_home):
 
     build_folder_k = path.join(spades_folder, "build" + str_k)
@@ -39,7 +52,7 @@ def build_k(spades_folder, str_k, spades_home):
     syncFiles(path.join(spades_home, "ext"), path.join(build_folder_k, "ext"))
 
     kFile = path.join(build_folder_k, "src/debruijn/k.hpp")
-    if not path.exists(kFile):
+    if kFile_required(kFile, str_k):
         fo = open(kFile, "w")
         fo.write("#pragma once\n\n")
         fo.write("namespace debruijn_graph {\n")
