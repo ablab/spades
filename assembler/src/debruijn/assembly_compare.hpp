@@ -14,6 +14,13 @@
 namespace debruijn_graph {
 using namespace omnigraph;
 
+template<size_t k, class Graph>
+void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
+		io::IReader<io::SingleRead>& stream1, io::IReader<io::SingleRead>& stream2) {
+	io::MultifileReader<io::SingleRead> composite_reader(stream1, stream2);
+	ConstructGraph<k, Graph>(g, index, composite_reader);
+}
+
 template<class Graph>
 Sequence MergeSequences(const Graph& g,
 		const vector<typename Graph::EdgeId>& continuous_path) {
@@ -193,6 +200,7 @@ class ContigRefiner: public ModifyingWrapper {
 				boost::optional<vector<EdgeId>> closure = TryCloseGap(v1, v2);
 				if (closure) {
 					INFO("Gap closed");
+					INFO("Cumulative closure length is " << CummulativeLength(graph_, *closure));
 					answer.insert(answer.end(), closure->begin(),
 							closure->end());
 					answer.push_back(edges[i]);
@@ -234,7 +242,7 @@ protected:
 		Path<EdgeId> path = FixPath(mapper_.MapSequence(s).simple_path());
 
 		if (path.size() == 0) {
-			WARN("Returning empty sequence");
+			WARN("For sequence of length " << s.size() << " returning empty sequence");
 			return Sequence();
 		}
 //		DEBUG("Mapped sequence to path " << graph_.str(path.sequence()));
@@ -1221,10 +1229,12 @@ public:
 				continue;
 			processed_purple_v.insert(*it);
 			processed_purple_v.insert(old_graph.conjugate(*it));
-			DEBUG("Adding purple vertex corresponding to " << old_graph.int_id(*it) << " and conjugate")
 			vertex_mapping_[*it] = new_gp_.g.AddVertex();
 			vertex_mapping_[old_graph.conjugate(*it)] = new_gp_.g.conjugate(vertex_mapping_[*it]);
+			DEBUG("Adding purple vertex " << new_gp_.g.int_id(vertex_mapping_[*it])
+					<< " corresponding to " << old_graph.int_id(*it) << " and conjugates")
 		}
+
 
 		set<EdgeId> processed_purple;
 		//propagating purple color to new graph
@@ -1438,8 +1448,8 @@ private:
 	void SaveOldGraph(const string& path) {
 		INFO("Saving graph to " << path);
 		PrintGraphPack(path, gp_);
-		LengthIdGraphLabeler<Graph> labeler(gp_.g);
-		WriteToDotFile(gp_.g, labeler, path + ".dot");
+//		LengthIdGraphLabeler<Graph> labeler(gp_.g);
+//		WriteToDotFile(gp_.g, labeler, path + ".dot");
 	}
 
 	template <class gp_t2>
@@ -1459,15 +1469,9 @@ private:
 			const string& output_filename) {
 		ReliableSplitter<Graph> splitter(g, 30, 3000);
 		//todo do we need filter
-		//todo make more easy to use method
-		ComponentSizeFilter<Graph> filter(g, 1000000000, 2);
 		LengthIdGraphLabeler<Graph> labeler(g);
-		WriteComponents(g, splitter, filter, output_filename,
+		WriteComponents(g, splitter, output_filename,
 				*ConstructColorer(coloring), labeler);
-	}
-
-	void SaveNewGraph(const string& path) {
-		VERIFY(false);
 	}
 
 	template <class gp_t2>

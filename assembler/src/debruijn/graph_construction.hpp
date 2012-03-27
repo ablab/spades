@@ -124,6 +124,7 @@ template<size_t k, class Graph>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		SingleReadStream& reads_stream, SingleReadStream* contigs_stream = 0) {
 	typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
+	VERIFY(k % 2 == 1);
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
 

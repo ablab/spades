@@ -19,6 +19,127 @@ DECL_PROJECT_LOGGER("dtls")
 
 namespace debruijn_graph {
 
+template<size_t k>
+inline void FillBagForStrand(const Sequence& strand, map<Seq<k>, size_t, typename Seq<k>::less2>& bag) {
+	if (strand.size() < k)
+		return;
+	Seq<k> kmer(strand);
+	kmer >> 'A';
+	for (size_t i = k - 1; i < strand.size(); ++i) {
+		kmer = kmer << strand[i];
+		bag[kmer] += 1;
+	}
+}
+
+template<size_t k>
+inline void FillRepeats(const Sequence& genome, set<Seq<k>, typename Seq<k>::less2>& repeats) {
+	map<Seq<k>, size_t, typename Seq<k>::less2> bag;
+
+	FillBagForStrand(genome, bag);
+	FillBagForStrand(!genome, bag);
+
+	for (auto it = bag.begin(); it != bag.end(); ++it) {
+		if (it->second > 1)
+			repeats.insert(it->first);
+	}
+}
+
+template<size_t k>
+inline Sequence ClearGenome(const Sequence& genome, const set<Seq<k>, typename Seq<k>::less2>& repeats) {
+	INFO("Clearing genome");
+	VERIFY(genome.size() > k);
+	string answer;
+	for (size_t i = 0; i < k - 1; ++i) {
+		answer += nucl(genome[i]);
+	}
+	//intervals of kmers that should be resolved afterwards
+	vector<Range> repeat_intervals;
+	Seq<k> kmer(genome);
+	size_t curr_pos = 0;
+	//curr_pos + k - next nucl pos
+	bool changed = false;
+	while(curr_pos + k != genome.size()) {
+		size_t int_start = curr_pos;
+		while (repeats.count(kmer) > 0 && curr_pos + k < genome.size()) {
+			kmer = kmer << genome[curr_pos + k];
+			curr_pos++;
+			changed = true;
+		}
+
+		repeat_intervals.push_back(Range(int_start, curr_pos));
+
+		if (curr_pos + k == genome.size())
+			break;
+
+		while (repeats.count(kmer) == 0 && curr_pos + k < genome.size()) {
+			answer += nucl(kmer[k - 1]);
+			kmer = kmer << genome[curr_pos + k];
+			curr_pos++;
+		}
+	}
+	if (changed) {
+		INFO("Genome was changed during cleaning");
+	} else {
+		INFO("Genome wasn't changed during cleaning");
+	}
+	return Sequence(answer);
+}
+
+template<size_t k>
+inline Sequence ClearGenome(const Sequence& genome) {
+	INFO("Clearing genome of repeats");
+
+	set<Seq<k>, typename Seq<k>::less2> repeats;
+	INFO("Filling set of repeats");
+	FillRepeats<k>(genome, repeats);
+	INFO("Clearing genome");
+	return ClearGenome<k>(genome, repeats);
+}
+
+//todo bad strategy for assembly cleaning
+template<size_t k>
+inline pair<Sequence, vector<Sequence>> Clear(const Sequence& genome, const vector<Sequence>& assembly) {
+	INFO("Clearing genome of repeats");
+
+	set<Seq<k>, typename Seq<k>::less2> repeats;
+	INFO("Filling set of repeats");
+	FillRepeats<k>(genome, repeats);
+	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
+		FillRepeats(*it, repeats);
+	}
+	INFO("Clearing genome");
+	Sequence new_genome = ClearGenome<k>(genome, repeats);
+	INFO("Clearing assembly");
+	vector<Sequence> new_assembly;
+	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
+		new_assembly.push_back(ClearGenome<k>(*it, repeats));
+	}
+	return make_pair(new_genome, new_assembly);
+}
+
+template<size_t k>
+inline pair<Sequence, Sequence> ClearGenomes(const pair<Sequence, Sequence>& genomes) {
+	INFO("Clearing genomes from repeats");
+
+	set<Seq<k>, typename Seq<k>::less2> repeats;
+	INFO("Filling set of repeats");
+	FillRepeats<k>(genomes.first, repeats);
+	FillRepeats<k>(genomes.second, repeats);
+	INFO("Clearing genomes");
+	return make_pair(ClearGenome<k>(genomes.first, repeats), ClearGenome<k>(genomes.second, repeats));
+}
+
+template<size_t k>
+inline pair<Sequence, Sequence> TotallyClearGenomes(const pair<Sequence, Sequence>& genomes) {
+	static const size_t iter_count = 1;
+	pair<Sequence, Sequence> tmp = genomes;
+	for (size_t i = 0; i < iter_count; ++i) {
+		INFO("Cleaning iteration " << i);
+		tmp = ClearGenomes<k>(tmp);
+	}
+	return tmp;
+}
+
 inline double uniform_01() {
 	static boost::mt19937 rng(43);
 	static boost::uniform_01<boost::mt19937> zeroone(rng);
@@ -181,33 +302,33 @@ inline void RunBPComparison(const Sequence& ref,
 			detailed_output);
 }
 
-BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
-	static const size_t k = 19;
-	static const size_t K = 201;
-//    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
-//    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
-	//todo split N's
-//	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0002_allpaths.fasta.gz");
-//	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0002_spades.fasta.gz");
-
-//	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
-//	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
-// 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
-
-	io::Reader<io::SingleRead> stream_1("/home/snurk/gingi/gingi_lane2_it.fasta");
-//	io::Reader<io::SingleRead> stream_2("/home/snurk/gingi/lane2_evsc.fasta");
-	io::Reader<io::SingleRead> stream_2("/home/snurk/gingi/MDA2_clc_new.fasta");
-
-	RunBPComparison<k, K>(
-		stream_1,
-		stream_2,
-		"spades",
-		"evsc",
-		true/*refine*/,
-		true/*untangle*/,
-		"assembly_compare/",
-		true/*detailed_output*/);
-}
+//BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
+//	static const size_t k = 19;
+//	static const size_t K = 201;
+////    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
+////    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
+//	//todo split N's
+////	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0002_allpaths.fasta.gz");
+////	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0002_spades.fasta.gz");
+//
+////	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
+////	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
+//// 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
+//
+//	io::Reader<io::SingleRead> stream_1("/home/snurk/gingi/gingi_lane2_it.fasta");
+////	io::Reader<io::SingleRead> stream_2("/home/snurk/gingi/lane2_evsc.fasta");
+//	io::Reader<io::SingleRead> stream_2("/home/snurk/gingi/MDA2_clc_new.fasta");
+//
+//	RunBPComparison<k, K>(
+//		stream_1,
+//		stream_2,
+//		"spades",
+//		"evsc",
+//		true/*refine*/,
+//		true/*untangle*/,
+//		"assembly_compare/",
+//		true/*detailed_output*/);
+//}
 
 template<size_t k, size_t K>
 inline void LoadAndRunBPG(const string& filename, const string& output_dir,
@@ -254,7 +375,154 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir,
 	}
 }
 
-//BOOST_AUTO_TEST_CASE( BreakPointGraphTests ) {
+inline Sequence FirstSequence(io::IReader<io::SingleRead>& stream) {
+	stream.reset();
+	io::SingleRead r;
+	VERIFY(!stream.eof());
+	stream >> r;
+	return r.sequence();
+}
+
+inline vector<Sequence> AllSequences(io::IReader<io::SingleRead>& stream) {
+	vector<Sequence> answer;
+	stream.reset();
+	io::SingleRead r;
+	while (!stream.eof()) {
+		stream >> r;
+		answer.push_back(r.sequence());
+	}
+	return answer;
+}
+
+template<size_t k>
+inline pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1, const Sequence& genome2) {
+	io::VectorReader<io::SingleRead> stream1(
+			io::SingleRead("first", genome1.str()));
+	io::VectorReader<io::SingleRead> stream2(
+			io::SingleRead("second", genome2.str()));
+
+	typedef graph_pack<ConjugateDeBruijnGraph, k> refining_gp_t;
+	refining_gp_t refining_gp;
+	ConstructGPForRefinement(refining_gp, stream1, stream2);
+
+	ContigRefiner<refining_gp_t> refined_stream1(stream1, refining_gp);
+	ContigRefiner<refining_gp_t> refined_stream2(stream2, refining_gp);
+
+	pair<Sequence, Sequence> answer = make_pair(FirstSequence(refined_stream1), FirstSequence(refined_stream2));
+	return answer;
+}
+
+template<size_t k>
+inline bool CheckNoRepeats(const Sequence& genome) {
+	set<Seq<k>, typename Seq<k>::less2> repeats;
+	FillRepeats<k>(genome, repeats);
+	return repeats.empty();
+}
+
+//BOOST_AUTO_TEST_CASE( TwoStrainComparison ) {
+//	make_dir("bp_graph_test");
+//	INFO("Running comparison of two strains");
+//	pair<Sequence, Sequence> genomes = TotallyClearGenomes<55>(CorrectGenomes<21>(ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz")
+//			, ReadGenome("data/input/E.coli/DH10B-K12.fasta")));
+//	VERIFY(CheckNoRepeats<301>(genomes.first));
+//	VERIFY(CheckNoRepeats<301>(genomes.second));
+//	INFO("Genomes ready");
+//
+//	io::VectorReader<io::SingleRead> stream1(
+//			io::SingleRead("first", genomes.first.str()));
+//	io::VectorReader<io::SingleRead> stream2(
+//			io::SingleRead("second", genomes.second.str()));
+//	typedef graph_pack</*Nonc*/ConjugateDeBruijnGraph, 301> comparing_gp_t;
+//	INFO("Running assembly comparer");
+//	AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, "strain1", "strain2", /*untangle*/false);
+//	comparer.CompareAssemblies("bp_graph_test/two_strain_comp/", /*detailed_output*/true);
+//	INFO("Finished");
+//}
+
+template <size_t k>
+inline pair<Sequence, vector<Sequence>> RefineData(const pair<Sequence, vector<Sequence>>& data) {
+	io::VectorReader<io::SingleRead> stream1(
+			io::SingleRead("first", data.first.str()));
+	io::VectorReader<io::SingleRead> stream2(MakeReads(data.second));
+
+	typedef graph_pack<ConjugateDeBruijnGraph, k> refining_gp_t;
+	refining_gp_t refining_gp;
+	ConstructGPForRefinement(refining_gp, stream1, stream2);
+
+	ContigRefiner<refining_gp_t> refined_stream1(stream1, refining_gp);
+	ContigRefiner<refining_gp_t> refined_stream2(stream2, refining_gp);
+
+	return make_pair(FirstSequence(refined_stream1), AllSequences(refined_stream2));
+}
+
+BOOST_AUTO_TEST_CASE( StrainVSRepeatGraphComparison ) {
+	static const size_t repeat_clearing_k = 55;
+	static const size_t repeat_graph_k = 101;
+	static const size_t refining_k1 = 25;
+	static const size_t refining_k2 = 151;
+	static const size_t bp_k = 301;
+
+	make_dir("bp_graph_test");
+	INFO("Running comparison of strain vs repeat graph for other strain");
+	Sequence genome1 = ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz");
+	Sequence genome2 = ReadGenome("data/input/E.coli/DH10B-K12.fasta");
+
+	typedef graph_pack<ConjugateDeBruijnGraph, repeat_graph_k> repeat_gp_t;
+	vector<Sequence> repeat_graph_edges = RepeatGraphEdges<repeat_gp_t>(genome2);
+
+	pair<Sequence, vector<Sequence>> refined_data1 = RefineData<refining_k2>(RefineData<refining_k1>(
+			make_pair(genome1, repeat_graph_edges)));
+
+	pair<Sequence, vector<Sequence>> cleared = Clear<repeat_clearing_k>(refined_data1.first, refined_data1.second);
+
+	pair<Sequence, vector<Sequence>> refined_data2 = RefineData<bp_k>(RefineData<refining_k2>(RefineData<refining_k1>(cleared)));
+
+	io::VectorReader<io::SingleRead> final_stream1(
+			io::SingleRead("first", refined_data2.first.str()));
+	io::VectorReader<io::SingleRead> final_stream2(MakeReads(refined_data2.second));
+
+	typedef graph_pack<ConjugateDeBruijnGraph, bp_k> comparing_gp_t;
+	INFO("Running assembly comparer");
+	AssemblyComparer<comparing_gp_t> comparer(final_stream1, final_stream2, "strain1", "strain2", /*untangle*/false);
+	comparer.CompareAssemblies("bp_graph_test/strain_vs_repeat_graph_comp/", /*detailed_output*/true);
+	INFO("Finished");
+}
+
+BOOST_AUTO_TEST_CASE( StrainVSRepeatGraphComparison2 ) {
+	static const size_t repeat_clearing_k = 55;
+	static const size_t repeat_graph_k = 201;
+	static const size_t refining_k1 = 25;
+	static const size_t refining_k2 = 151;
+	static const size_t bp_k = 201;
+
+	make_dir("bp_graph_test");
+	INFO("Running comparison of strain vs repeat graph for other strain");
+	Sequence genome1 = ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz");
+	Sequence genome2 = ReadGenome("data/input/E.coli/DH10B-K12.fasta");
+
+	typedef graph_pack<ConjugateDeBruijnGraph, repeat_graph_k> repeat_gp_t;
+	vector<Sequence> repeat_graph_edges = RepeatGraphEdges<repeat_gp_t>(genome2);
+
+	pair<Sequence, vector<Sequence>> refined_data1 = RefineData<refining_k2>(RefineData<refining_k1>(
+			make_pair(genome1, repeat_graph_edges)));
+
+//	pair<Sequence, vector<Sequence>> cleared = Clear<repeat_clearing_k>(refined_data1.first, refined_data1.second);
+	Sequence cleared = ClearGenome<repeat_clearing_k>(refined_data1.first);
+
+	pair<Sequence, vector<Sequence>> refined_data2 = RefineData<bp_k>(RefineData<refining_k2>(RefineData<refining_k1>(make_pair(cleared, refined_data1.second))));
+
+	io::VectorReader<io::SingleRead> final_stream1(
+			io::SingleRead("first", refined_data2.first.str()));
+	io::VectorReader<io::SingleRead> final_stream2(MakeReads(refined_data2.second));
+
+	typedef graph_pack<ConjugateDeBruijnGraph, bp_k> comparing_gp_t;
+	INFO("Running assembly comparer");
+	AssemblyComparer<comparing_gp_t> comparer(final_stream1, final_stream2, "strain1", "strain2", /*untangle*/false);
+	comparer.CompareAssemblies("bp_graph_test/strain_vs_repeat_graph_comp2/", /*detailed_output*/true);
+	INFO("Finished");
+}
+
+BOOST_AUTO_TEST_CASE( BreakPointGraphTests ) {
 //	make_dir("bp_graph_test");
 //	INFO("Running simulated examples");
 //	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
@@ -287,11 +555,7 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir,
 //	RunBPComparison<25, 250>(genome, RepeatGraphEdges<gp_t>(IntroduceReversals(genome, 10, 1000, 10000)), "init", "rev_repeat_g_cont"
 //			, /*refine*/false, /*untangle*/false, "bp_graph_test/rev_repeat_graph_edges_ref/", /*detailed*/false);
 
-//
-//	INFO("Running comparison against other strain");
-//	RunBPComparison<21, 301>(genome, ReadGenome("data/input/E.coli/DH10B-K12.fasta"), "init", "other_strain"
-//			, /*refine*/true, /*untangle*/true, "bp_graph_test/other_strain_comp/", /*detailed*/false);
-//}
+}
 
 template<class gp_t>
 inline void ThreadAssemblies(const string& base_saves,
