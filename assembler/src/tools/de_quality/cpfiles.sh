@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 string="SC_HAMMER_1410_FILTERED";
 
