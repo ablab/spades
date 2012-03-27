@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 
 \usepackage{fullpage}
 
@@ -15,9 +16,28 @@
 \def\bh{BayesHammer}
 \def\ecoli{\it E.~coli}
 
+\usepackage{textcomp}
 \usepackage{listings}
 \definecolor{light-gray}{gray}{0.92}
-\lstset{basicstyle=\ttfamily,framerule=0pt,frame=single,backgroundcolor=\color{light-gray}}
+\lstset{
+  upquote=true,
+  columns=fullflexible,
+  basicstyle=\ttfamily,
+  framerule=0pt,
+  frame=single,
+  backgroundcolor=\color{light-gray},
+  literate={*}{{\char42}}1
+           {-}{{\char45}}1
+}
+
+%\usepackage[space=true]{accsupp}
+%% requires the latest version of package accsupp
+%\newcommand{\copyablespace}{
+%    \BeginAccSupp{method=hex,unicode,ActualText=00A0}
+%\ %
+%    \EndAccSupp{}
+%}
+
 
 %\newenvironment{mycode}
 %  {\begin{lstlisting}}
@@ -83,8 +103,8 @@ explained in the picture below.
 
 \subsection{Config files and commands}
 Config files and commands are given in gray boxes. 
-%Note that the text can be copy-pasted directly from this document.
-%Note also that all the links and all the colored text in the manual are clickable.
+Note that the text can be copy-pasted directly from this document.
+Note also that all the links and all the colored text in the manual are clickable.
 In config files, parts of lines starting with a semicolon are just comments.
 
 
