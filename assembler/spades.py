@@ -18,11 +18,12 @@ from process_cfg import *
 def prepare_config(filename, cfg, prev_K, last_one):
 
     subst_dict = dict()
+    cfg.output_dir = path.abspath(cfg.output_dir)
 
     subst_dict["dataset"]           = cfg.dataset
     subst_dict["input_dir"]         = cfg.input_dir
     subst_dict["output_base"]       = cfg.output_dir
-    subst_dict["additional_contigs"]= path.join(cfg.build_path, "simplified_contigs.fasta")
+    subst_dict["additional_contigs"]= path.join(path.abspath(cfg.build_path), "simplified_contigs.fasta")
     subst_dict["entry_point"]       = 'construction'
 
 
@@ -121,9 +122,12 @@ def run(cfg):
         prepare_config(cfg_file_name, cfg, prev_K, count == len(cfg.iterative_K))
         prev_K = K
 
-        command = path.join(os.getenv('HOME'), '.spades/precompiled/build' + str(K), "debruijn", "debruijn") + " " + cfg_file_name
+        execution_home = path.join(os.getenv('HOME'), '.spades/precompiled/build' + str(K))
+        command = path.join(execution_home, "debruijn", "debruijn") + " " + path.abspath(cfg_file_name)
 
-        support.sys_call(command)
+        print("\n== Running assembler: " + command + "\n")
+
+        support.sys_call(command, execution_home)
 
         latest = path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), "latest")
         latest = os.readlink(latest)
