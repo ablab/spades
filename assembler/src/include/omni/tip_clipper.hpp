@@ -179,6 +179,7 @@ private:
 
 template<class Graph, typename Comparator>
 class TipClipper: public AbstractTipClipper<Graph, Comparator> {
+
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -187,6 +188,9 @@ private:
 
     const size_t max_coverage_;
     const double max_relative_coverage_;
+    const size_t max_iterations_;
+    const size_t max_levenshtein_;
+    const size_t max_ec_length_;
 
 	//	void FindTips()  {
 	//		for (Graph::VertexIterator it = graph_.begin(); it
@@ -309,10 +313,11 @@ private:
 public:
 
 	TipClipper(Graph &graph, Comparator comparator, size_t max_tip_length,
-			size_t max_coverage, double max_relative_coverage,
+			size_t max_coverage, double max_relative_coverage, size_t max_iterations, size_t max_levenshtein, size_t max_ec_length,
 			boost::function<void(EdgeId)> removal_handler = 0) :
 			base(graph, comparator, max_tip_length, removal_handler), max_coverage_(
-					max_coverage), max_relative_coverage_(max_relative_coverage) {
+					max_coverage), max_relative_coverage_(max_relative_coverage), max_iterations_(max_iterations),
+                            max_levenshtein_(max_levenshtein), max_ec_length_(max_ec_length) {
 	}
 
 
@@ -322,7 +327,7 @@ public:
         size_t locked = 0;
 		TRACE("Tip clipping started");
         
-        TipChecker<Graph> tipchecker(this->graph(), tip_lock, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, this->max_tip_length_, cfg::get().simp.tc.max_ec_length);
+        TipChecker<Graph> tipchecker(this->graph(), tip_lock, max_iterations_, max_levenshtein_, this->max_tip_length_, max_ec_length_);
          
 		for (auto iterator = this->graph().SmartEdgeBegin(this->comparator()); !iterator.IsEnd(); ++iterator) {
 			EdgeId tip = *iterator;

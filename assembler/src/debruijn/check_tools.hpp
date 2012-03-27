@@ -70,7 +70,6 @@ void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Gr
 //	set<PairInfo<EdgeId>> set2;
 //	ToSet(paired_index1, set1);
 //	ToSet(paired_index2, set2);
-//	//todo remove assert
 //	if (set1.size() != set2.size()) {
 //		cerr << "HELP_1!!!" << endl;
 //	}

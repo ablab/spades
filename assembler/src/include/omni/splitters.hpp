@@ -521,6 +521,8 @@ public:
 		TRACE("Search finished");
 		set<VertexId> last_component = cf.ProcessedVertices();
 		last_component_.clear();
+        last_component_.insert(this->graph().EdgeStart(path_[current_index_].first));
+        last_component_.insert(this->graph().EdgeEnd(path_[current_index_].first));
 		last_component_.insert(last_component.begin(), last_component.end());
 
 		TRACE("Component vector filled");

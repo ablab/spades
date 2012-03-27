@@ -101,7 +101,7 @@ void ClipTips(Graph &g,
 			comparator,
 			(size_t) math::round(
 					(double) max_tip_length / 2
-							* (1 + (i + 1.) / iteration_count)), max_coverage,
+							* (1 + (i + 1.) / iteration_count)), cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, cfg::get().simp.tc.max_ec_length, max_coverage,
 			max_relative_coverage, removal_handler); //removal_handler
     //return tc.ClipTips(static_cast<double (*)(typename Graph::EdgeId)>(&foo));
     if (tc_config.advanced_checks) 
@@ -129,7 +129,7 @@ void ClipTipsForResolver(Graph &g) {
 	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
 	
     omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, max_tip_length,
-			max_coverage, max_relative_coverage * 0.5);
+			max_coverage, max_relative_coverage * 0.5, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, cfg::get().simp.tc.max_ec_length);
 	//vector<EdgeId> edges = tc.ClipTipsForResolver();
     if (cfg::get().simp.tc.advanced_checks) 
         tc.ClipTips(true);
@@ -327,7 +327,7 @@ void FinalTipClipping(Graph& g, bool careful_removal = cfg::get().simp.tc.advanc
 			g,
 			comparator,
 			max_tip_length, max_coverage,
-			max_relative_coverage); //removal_handler
+			max_relative_coverage, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein, cfg::get().simp.tc.max_ec_length); //removal_handler
     
     if (careful_removal){
         tc.ClipTips(careful_removal);
