@@ -50,6 +50,7 @@ def build_k(spades_folder, str_k, spades_home):
 
     syncFiles(path.join(spades_home, "src"), path.join(build_folder_k, "src"))
     syncFiles(path.join(spades_home, "ext"), path.join(build_folder_k, "ext"))
+    shutil.copy2(path.join(spades_home, "log4cxx.properties"), path.join(build_folder_k, "log4cxx.properties"))
 
     kFile = path.join(build_folder_k, "src/debruijn/k.hpp")
     if kFile_required(kFile, str_k):
