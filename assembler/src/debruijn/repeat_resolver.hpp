@@ -53,10 +53,39 @@ class RepeatResolver {
 	typedef omnigraph::PairInfo<EdgeId> PairInfo;
 	typedef vector<PairInfo> PairInfos;
 
-	typedef map<VertexId, set<EdgeId> > NewVertexMap;
-	typedef map<VertexId, set<VertexId> > VertexIdMap;
+	typedef unordered_map<VertexId, set<EdgeId> > NewVertexMap;
+	typedef unordered_map<VertexId, set<VertexId> > VertexIdMap;
 
 public:
+	class FastDistanceCounter {
+
+	private:
+		unordered_map<VertexId, unordered_map<VertexId, size_t> > distances;
+		Graph &graph_;
+		int depth_;
+		BoundedDijkstra<Graph, int> dij;
+	public:
+
+		FastDistanceCounter(Graph &graph, int depth): graph_(graph), depth_(depth), dij(graph_, depth_){
+			distances.clear();
+		}
+		int GetDistances(VertexId start, VertexId end){
+			if (distances.find(start) == distances.end()){
+				dij.run(start);
+				auto interval = dij.GetDistances();
+				unordered_map<VertexId, size_t> inserting_map;
+				for (auto ind = interval.first; ind != interval.second; ++ind) {
+					inserting_map.insert(make_pair(ind->first, ind->second));
+				}
+				distances.insert(make_pair(start, inserting_map));
+			}
+			if (distances[start].find(end) == distances[start].end())
+				return 1e9;
+			else
+				return distances[start][end];
+		}
+	};
+
 
 	class EdgeInfo {
 	public:
@@ -78,17 +107,12 @@ public:
 
 		bool IsEdgesOnDistanceAdjacent(EdgeId edge,       int d,
 									   EdgeId other_edge, int other_d,
-									   const Graph &old_graph, double max_diff, bool first_equal , const 	IdTrackHandler<Graph> &old_IDs){
+									   const Graph &old_graph, double max_diff, bool first_equal , const 	IdTrackHandler<Graph> &old_IDs,  FastDistanceCounter &distance_counter){
 
 			VertexId v_s = old_graph.EdgeStart(edge);
 			VertexId v_e = old_graph.EdgeEnd(edge);
-//			EdgeId other_edge = other_info.getEdge();
-			//			DEBUG("to " << other_edge);
 			int flag = 0;
-			if (old_IDs.ReturnIntId(edge) == 37418 || old_IDs.ReturnIntId(other_edge) == 37418 || old_IDs.ReturnIntId(edge) == 37417 || old_IDs.ReturnIntId(other_edge) == 37417) {
-				flag = 1;
-				DEBUG("comparing on adjacency edges "<< old_IDs.ReturnIntId(edge)  <<" and " << old_IDs.ReturnIntId(other_edge) <<"dists " <<d << " and " << other_d);
-			}
+
 
 			VertexId other_v_s = old_graph.EdgeStart(other_edge);
 			VertexId other_v_e = old_graph.EdgeEnd(other_edge);
@@ -101,19 +125,25 @@ public:
 
 
 //TODO:: SHURIK! UBERI ZA SOBOJ !!!
-			BoundedDijkstra<Graph, int> dij(old_graph, cfg::get().rr.max_distance);
-			dij.run(v_e);
-			if (dij.DistanceCounted(other_v_s))
-				if (isClose(d + len + dij.GetDistance(other_v_s), other_d,
+			int forward_distance = distance_counter.GetDistances(v_e, other_v_s);
+			int backward_distance = distance_counter.GetDistances(other_v_e, v_s);
+			//BoundedDijkstra<Graph, int> dij(old_graph, cfg::get().rr.max_distance);
+//			dij.run(v_e);
+//			if (dij.DistanceCounted(other_v_s))
+//				if (isClose(d + len + dij.GetDistance(other_v_s), other_d,
+				if (isClose(d + len + forward_distance, other_d,
+
 						max_diff))
 				{
 					if (flag){	DEBUG("first true");}
 					return true;
 				}
 
-			dij.run(other_v_e);
-			if (dij.DistanceCounted(v_s))
-				if (isClose(other_d + other_len + dij.GetDistance(v_s), d,
+//			dij.run(other_v_e);
+//			if (dij.DistanceCounted(v_s))
+//				if (isClose(other_d + other_len + dij.GetDistance(v_s), d,
+				if (isClose(other_d + other_len + backward_distance , d,
+
 						max_diff))
 				{
 					if (flag){	DEBUG("2nd true");}
@@ -156,7 +186,7 @@ public:
 
 
 		bool isAdjacent(EdgeInfo other_info, const Graph &old_graph,
-				const Graph &new_graph, EdgeLabelHandler<Graph> &labels_after, const TotalLabeler<Graph>& tot_lab, const 	IdTrackHandler<Graph> &old_IDs) {
+				const Graph &new_graph, EdgeLabelHandler<Graph> &labels_after, const TotalLabeler<Graph>& tot_lab, const 	IdTrackHandler<Graph> &old_IDs, FastDistanceCounter &distance_counter) {
 			//			DEBUG("comparation started: " << edge);
 
 //ToDo: Understand if it is very dirty hack.
@@ -180,37 +210,8 @@ public:
 					+ 1e-9;
 
 			bool old_res = IsEdgesOnDistanceAdjacent(this->edge, this->d, other_info.getEdge()
-					,other_info.getDistance(), old_graph, max_diff, lp.first == other_info.lp.first, old_IDs);
-
-
-			//new_version
-/*			set<EdgeId> edges_set = labels_after.edge_inclusions[this->edge];
-			set<EdgeId> other_edges_set = labels_after.edge_inclusions[other_info.getEdge()];
-
-			bool new_res = false;
-			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
-				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
-					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
-							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first, old_IDs))
-					new_res  = true;
-
-			if (old_res != new_res) {
-				vector<int> set1_ids;
-				for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it){
-					set1_ids.push_back(tot_lab.graph_struct->IDs->ReturnIntId(*this_edge_it));
-				}
-				vector<int> set2_ids;
-				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it){
-					set2_ids.push_back(tot_lab.graph_struct->IDs->ReturnIntId(*other_edge_it));
-				}
-
-//				INFO("difference in isAdjacent for ("<<tot_lab.proto_graph_struct->IDs->ReturnIntId(this->getEdge())<<", ("<<tot_lab.graph_struct->IDs->ReturnIntId(this->lp.first)<<", "<<tot_lab.proto_graph_struct->IDs->ReturnIntId(this->lp.second)<<", "<<this->lp.d<<"), "<<this->d<<")");
-//				INFO("                          VS ("<<tot_lab.proto_graph_struct->IDs->ReturnIntId(other_info.getEdge())<<", ("<<tot_lab.graph_struct->IDs->ReturnIntId(other_info.lp.first)<<", "<<tot_lab.proto_graph_struct->IDs->ReturnIntId(other_info.lp.second)<<", "<<other_info.lp.d<<"), "<<other_info.d<<")");
-//				INFO("   old is "<<old_res<<"    new is "<<new_res);
-//				INFO("   first  set: "<<ToString(set1_ids));
-//				INFO("   second set: "<<ToString(set2_ids));
-			}
-	*/		return old_res;
+					,other_info.getDistance(), old_graph, max_diff, lp.first == other_info.lp.first, old_IDs, distance_counter);
+			return old_res;
 		}
 
 
@@ -230,6 +231,7 @@ public:
 		return edge_labels;
 	}
 
+
 	RepeatResolver(Graph &old_graph_, IdTrackHandler<Graph> &old_IDs_,
 			PIIndex &ind, EdgesPositionHandler<Graph> &old_pos_,
 			Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_,
@@ -239,10 +241,11 @@ public:
 			) :
 			new_graph(new_graph_), old_graph(old_graph_), new_IDs(
 					new_IDs_), old_IDs(old_IDs_), new_pos(new_pos_), old_pos(
-					old_pos_), deleted_handler(deleted_handler_),  labels_after(LabelsAfter_){
+					old_pos_), deleted_handler(deleted_handler_),  labels_after(LabelsAfter_), distance_counter(old_graph_, cfg::get().rr.max_distance){
 		TRACE("Constructor started");
 		unordered_map<VertexId, VertexId> old_to_new;
 		unordered_map<EdgeId, EdgeId> old_to_new_edge;
+
 		cheating_mode = 0;
 		rc_mode = cfg::get().rr.symmetric_resolve;
 		global_cheating_edges.clear();
@@ -378,9 +381,9 @@ public:
 
 private:
 	int near_vertex;
-	map<int, VertexId> fillVerticesAuto();
-	map<int, VertexId> fillVerticesComponents();
-	map<int, VertexId> fillVerticesComponentsInNonVariableOrder();
+	unordered_map<int, VertexId> fillVerticesAuto();
+	unordered_map<int, VertexId> fillVerticesComponents();
+	unordered_map<int, VertexId> fillVerticesComponentsInNonVariableOrder();
 	size_t RectangleResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler);
 	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v );
@@ -561,13 +564,14 @@ private:
 	PairInfoIndexData<EdgeId> paired_di_data;
 	unordered_map<VertexId, VertexId> vertex_labels;
 	unordered_map<EdgeId, EdgeId> edge_labels;
-
+	unordered_map<VertexId, unordered_map<VertexId, int> > counted_distances;
 
 	int cheating_mode;
-	map<EdgeId, int> local_cheating_edges;
+	unordered_map<EdgeId, int> local_cheating_edges;
 	set<EdgeId> global_cheating_edges;
-	map<VertexId, int> resolving_vertices_degrees;
+	unordered_map<VertexId, int> resolving_vertices_degrees;
 	int sum_count;
+	FastDistanceCounter distance_counter;
 
 private:
 	DECL_LOGGER("RepeatResolver")
@@ -580,7 +584,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	//TODO: fix labels
 	edgeIds[0] = new_graph.OutgoingEdges(v);
 	edgeIds[1] = new_graph.IncomingEdges(v);
-	map<EdgeId, int> edgeCounts;
+	unordered_map<EdgeId, int> edgeCounts;
 	set<EdgeId> conj_edges;
 	for(int i = 0; i < 2; i++) {
 		for(size_t j = 0; j < edgeIds[i].size(); j++){
@@ -746,7 +750,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		colored_paired_coverage[color][le] += edge_infos[i].lp.weight;
 	}
 
-	map<EdgeId, int> OldCopyCnt;
+	unordered_map<EdgeId, int> OldCopyCnt;
 	vector<EdgeId> LiveNewEdges;
 	vector<EdgeId> LiveProtoEdges;
 
@@ -791,7 +795,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					WrappedSetCoverage(conj_wrap(new_graph, it->second), new_graph.coverage(it->second) * new_graph.length(it->second));
 				}
 			}
-			map<EdgeId, EdgeId> old_to_new_edgeId;
+			unordered_map<EdgeId, EdgeId> old_to_new_edgeId;
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
 				old_to_new_edgeId[it->first] = it->second;
 				OldCopyCnt[it->first]++;
@@ -1006,8 +1010,8 @@ void RepeatResolver<Graph>::WrappedSetCoverage(EdgeId e, int cov){
 
 
 template<class Graph>
-map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
-	map<int, typename Graph::VertexId> vertices;
+unordered_map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
+	unordered_map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
 	for (auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd();
 			++v_iter) {
@@ -1043,11 +1047,11 @@ namespace details
 }
 
 template<class Graph>
-map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponentsInNonVariableOrder(){
+unordered_map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponentsInNonVariableOrder(){
 
 	vector<details::VertexCompositId<Graph>> TemporaryOrderVect;
 
-	map<int, typename Graph::VertexId> vertices;
+	unordered_map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
 	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, *cfg::get().ds.IS);
 
@@ -1099,8 +1103,8 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 
 
 template<class Graph>
-map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents(){
-	map<int, typename Graph::VertexId> vertices;
+unordered_map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents(){
+	unordered_map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
 	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, *cfg::get().ds.IS);
 
@@ -1142,9 +1146,9 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			&graph_struct_before);
 
 	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode; cheating_mode++) {
-		INFO("Trying \"cheating mode\" " << cheating_mode);
+		INFO("Trying \"resolve mode\" " << cheating_mode);
 		bool changed = true;
-		map<int, VertexId> vertices;
+		unordered_map<int, VertexId> vertices;
 		int GraphCnt = 0;
 
 		while (changed) {
@@ -1161,11 +1165,12 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 //					new_graph, TotLabAfter,
 //					output_folder + "resolve_" + ToString(cheating_mode)+"_"+ ToString(GraphCnt) + ".dot",
 //					"no_repeat_graph");
-
+			long long counter = 0;
 			for (auto v_iter = vertices.begin(), v_end =
 					vertices.end(); v_iter != v_end; ++v_iter) {
 
 				DEBUG(" resolving vertex "<<new_IDs.ReturnIntId(v_iter->second));
+				VERBOSE_POWER(++counter, " vertices processed");
 				if (rc_mode && deleted_handler.live_vertex.find(v_iter->second) == deleted_handler.live_vertex.end()){
 					DEBUG("already deleted");
 					continue;
@@ -1453,12 +1458,12 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<
 			ERROR("fake edge");
 		}
 		for (int j = 0; j < size; j++) {
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler, old_IDs)
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler, old_IDs, distance_counter)
 					&& !edge_infos[j].isAdjacent(edge_infos[i], old_graph,
-							new_graph, labels_after, tot_labler, old_IDs))
+							new_graph, labels_after, tot_labler, old_IDs, distance_counter))
 				WARN(
 						"ASSYMETRIC: " << new_IDs.ReturnIntId(edge_infos[i].getEdge()) << " " << new_IDs.ReturnIntId(edge_infos[j].getEdge()));
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler, old_IDs)) {
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler, old_IDs, distance_counter)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
 				TRACE(
@@ -1496,7 +1501,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 	vector<EdgeId> edgeIds[2];
 	edgeIds[0] = new_graph.OutgoingEdges(vid);
 	edgeIds[1] = new_graph.IncomingEdges(vid);
-	map<EdgeId, int> EdgeIdMap[2];
+	unordered_map<EdgeId, int> EdgeIdMap[2];
 	size_t out_count = edgeIds[0].size();
 	size_t in_count = edgeIds[1].size();
 	size_t counts[2];
