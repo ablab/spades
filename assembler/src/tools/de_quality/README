@@ -12,8 +12,8 @@ There are some files about these two edges in this folder. In order to see a des
 gnuplot plot.conf
 in the corresponding folder.
 To generate a plot about fpr/fnr run :
-java PlotFPR [s]
-s - if you want to see current false positive/negative.
+java PlotFPR [-s]
+-s -- if you want to see current false positive/negative.
 --------------------------------------------------------------------------------------------
 
 Common using :
