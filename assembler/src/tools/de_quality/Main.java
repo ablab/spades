@@ -1,9 +1,7 @@
 import java.io.*;
 import java.util.*;
 import java.math.*;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.Graphics;
+import utils.*;
 
 
 public class Main implements Runnable{
@@ -195,7 +193,7 @@ public class Main implements Runnable{
 					if (filtering){
 
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
-						if (!set.contains(new Pair(a, b))) continue;
+						//if (!set.contains(new Pair(a, b))) continue;
                         String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
 						out = new PrintWriter(folder1 + "clustered.prd");
 					}
@@ -239,7 +237,7 @@ public class Main implements Runnable{
 					if (filtering){
 
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
-						if (!set.contains(new Pair(a, b))) continue;
+						//if (!set.contains(new Pair(a, b))) continue;
                         String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
 						out = new PrintWriter(folder1 + "paths.prd");
 					}
@@ -345,67 +343,5 @@ public class Main implements Runnable{
 		}
 	}
 
-}
-
-class MyScanner{
-	BufferedReader in;
-	StringTokenizer st;
-
-	MyScanner(String file){
-	        try{
-		in = new BufferedReader(new FileReader(new File(file)));
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-	}
-	MyScanner(InputStream inp){
-		try{                                   
-                	in = new BufferedReader(new InputStreamReader(inp));
-		}catch (Exception e){
-			e.printStackTrace();
-		}
-	}
-
-	boolean hasMoreTokens(){
-		String s = null;
-		try{
-			while ((st==null || !st.hasMoreTokens())&& (s=in.readLine()) != null) st = new StringTokenizer(s);
-			if ((st==null || !st.hasMoreTokens())&& s==null) return false;
-	        }catch(IOException e){
-	        	e.printStackTrace();
-	        }
-		return true;
-	}
-
-	String nextToken(){
-		if (hasMoreTokens()){
-			return st.nextToken();
-		}
-		return null;
-	}
-
-	int nextInt(){
-		return Integer.parseInt(nextToken());
-	}
-
-	long nextLong(){
-		return Long.parseLong(nextToken());
-	}
-
-	double nextDouble(){
-		return Double.parseDouble(nextToken());
-	}
-
-
-	String nextString(){
-		return nextToken();
-	}
-	void close(){
-		try{
-			in.close();
-		}catch(IOException e){
-			e.printStackTrace();
-		}
-	}
 
 }

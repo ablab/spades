@@ -1,3 +1,4 @@
+import utils.*;
 import java.io.*;
 import java.util.*;
 import java.math.*;
@@ -372,66 +373,5 @@ public class GetErrors implements Runnable{
 	}
 
 }
-
-class MyScanner{
-	BufferedReader in;
-	StringTokenizer st;
-
-	MyScanner(String file){
-	        try{
-		in = new BufferedReader(new FileReader(new File(file)));
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-	}
-	MyScanner(InputStream inp){
-		try{                                   
-                	in = new BufferedReader(new InputStreamReader(inp));
-		}catch (Exception e){
-			e.printStackTrace();
-		}
-	}
-
-	boolean hasMoreTokens(){
-		String s = null;
-		try{
-			while ((st==null || !st.hasMoreTokens())&& (s=in.readLine()) != null) st = new StringTokenizer(s);
-			if ((st==null || !st.hasMoreTokens())&& s==null) return false;
-	        }catch(IOException e){
-	        	e.printStackTrace();
-	        }
-		return true;
-	}
-
-	String nextToken(){
-		if (hasMoreTokens()){
-			return st.nextToken();
-		}
-		return null;
-	}
-
-	int nextInt(){
-		return Integer.parseInt(nextToken());
-	}
-
-	long nextLong(){
-		return Long.parseLong(nextToken());
-	}
-
-	double nextDouble(){
-		return Double.parseDouble(nextToken());
-	}
-
-
-	String nextString(){
-		return nextToken();
-	}
-	void close(){
-		try{
-			in.close();
-		}catch(IOException e){
-			e.printStackTrace();
-		}
-	}
 
 }
