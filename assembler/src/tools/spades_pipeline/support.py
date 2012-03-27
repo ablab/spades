@@ -72,3 +72,38 @@ def sys_call_output(cmd):
 
 def copy(source, dest):
     sys_call("cp " + source + " " + dest)
+
+def question_with_timer(question, seconds):
+    import time
+    import curses
+
+    # The timer class    
+    class Timer():
+        def __init__(self):
+            self.target = time.time() + seconds
+        def get_left(self):
+            return int(self.target-time.time())
+
+    t = Timer()
+    stdscr = curses.initscr()
+    stdscr.nodelay(True)
+    curses.noecho()
+    answer = 'y'
+    while True:
+        for id, line in enumerate(question):
+            stdscr.addstr(id, 0, line)
+        left = t.get_left()
+        if left <= 0:
+            break
+        stdscr.addstr(len(question), 0, 'Seconds left: %s ' % str(left).zfill(2) + ' [default is y]')
+        c = stdscr.getch()
+        if c == ord('y') :
+            break
+        elif c == ord('n') :
+            answer = 'n'
+            break
+    # Final operations start here
+    stdscr.keypad(0)
+    curses.echo()
+    curses.endwin()
+    return answer

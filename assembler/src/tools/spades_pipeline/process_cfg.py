@@ -15,6 +15,11 @@ def file_lines(filename):
 def skip_info_comment(line):
     return line.split(';')[0].strip()
 
+def bool_to_str(b):
+    if b:
+        return "true"
+    return "false"
+
 def vars_from_lines(lines):
 
     class var_metadata:

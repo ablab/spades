@@ -318,7 +318,6 @@ struct debruijn_config {
 	};
 
 	struct gap_closer {
-	    bool    enable;
 		int     minimal_intersection;
 		bool    before_simplify;
 		bool    in_simplify;
@@ -369,6 +368,7 @@ public:
 	bool etalon_info_mode;
 	bool advanced_estimator_mode;
 	bool componential_resolve;
+	bool gap_closer_enable;
 
 //	size_t is_infinity;
 
@@ -525,7 +525,6 @@ inline void load(debruijn_config::position_handler& pos,
 inline void load(debruijn_config::gap_closer& gc,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
-	load(gc.enable, pt, "enable");
 	load(gc.minimal_intersection, pt, "minimal_intersection");
 	load(gc.before_simplify     , pt, "before_simplify"     );
 	load(gc.in_simplify         , pt, "in_simplify"         );
@@ -568,7 +567,8 @@ inline void load_reference_genome(debruijn_config::dataset& ds,
 		ds.reference_genome = Sequence();
 		return;
 	}
-	ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
+	if (ds.reference_genome_filename[0] != '/')
+		ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
 	checkFileExistenceFATAL(ds.reference_genome_filename);
 	io::Reader<io::SingleRead> genome_stream(ds.reference_genome_filename);
 	io::SingleRead genome;
@@ -670,6 +670,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.etalon_info_mode, pt, "etalon_info_mode");
 	load(cfg.componential_resolve, pt, "componential_resolve");
 	load(cfg.advanced_estimator_mode, pt, "advanced_estimator_mode");
+	load(cfg.gap_closer_enable, pt, "gap_closer_enable");
 
 	checkFileExistenceFATAL(cfg.dataset_file);
 	boost::property_tree::ptree ds_pt;

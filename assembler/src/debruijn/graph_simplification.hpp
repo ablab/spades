@@ -603,7 +603,7 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
         PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
 
 	for (size_t i = 0; i < iteration_count; i++) {
-		if ((cfg::get().gc.enable)&&(cfg::get().gc.in_simplify)){
+		if ((cfg::get().gap_closer_enable)&&(cfg::get().gc.in_simplify)){
 			CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
 		}
 

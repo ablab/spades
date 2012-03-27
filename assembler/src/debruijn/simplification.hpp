@@ -54,7 +54,7 @@ void simplify_graph(conj_graph_pack& gp) {
 	detail_info_printer printer(gp, labeler, cfg::get().output_dir, "graph.dot");
     printer(ipp_before_first_gap_closer);
 	
-    if (cfg::get().gc.enable && cfg::get().gc.before_simplify)
+    if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
 		CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
 	
 
@@ -76,7 +76,7 @@ void simplify_graph(conj_graph_pack& gp) {
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
 	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
 
-	if (cfg::get().gc.enable && cfg::get().gc.after_simplify)
+	if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
 		CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
 	
 	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");

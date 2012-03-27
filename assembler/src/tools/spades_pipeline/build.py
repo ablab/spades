@@ -87,3 +87,31 @@ def build_spades_n_copy(cfg, spades_home):
             fcntl.lockf(fo, fcntl.LOCK_UN)
 
     print("\n== Compilation finished successfully ==\n")
+
+def build_hammer(cfg, spades_home):
+
+    precompiled_folder = path.join(os.getenv('HOME'), '.spades/precompiled/')
+
+    print("\n== BayesHammer compilation started ==\n")
+
+    if not path.exists(precompiled_folder):
+        os.makedirs(precompiled_folder)
+
+    lockFlag = path.join(precompiled_folder, "lock_hammer")
+
+    fo = open(lockFlag, "w")
+    fcntl.lockf(fo, fcntl.LOCK_EX)
+    try :
+        build_folder = path.join(precompiled_folder, "build_hammer")
+
+        syncFiles(path.join(spades_home, "src"), path.join(build_folder, "src"))
+        syncFiles(path.join(spades_home, "ext"), path.join(build_folder, "ext"))
+        
+        if not path.exists(path.join(build_folder, "Makefile")):
+            support.sys_call('cmake src', build_folder)
+
+        support.sys_call('make hammer', build_folder)
+    finally :
+        fcntl.lockf(fo, fcntl.LOCK_UN)
+
+    print("\n== BayesHammer compilation finished successfully ==\n")

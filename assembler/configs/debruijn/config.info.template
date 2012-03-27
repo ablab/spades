@@ -88,16 +88,16 @@ pos
 	late_threading false
 }
 
+gap_closer_enable	true
+
 gap_closer
 {
-    enable			true
     minimal_intersection	10
     before_simplify		true
     in_simplify    		false
     after_simplify 		true
     use_extended_mapper		true
     weight_threshold		2.0
-
 }
 
 
