@@ -39,8 +39,7 @@ else()
   message("Making Release Configuration...")
   add_definitions(-o2)
   
-  #temporarily turned off to run our assembler on large datasets
-  #add_definitions(-DNDEBUG)
+  add_definitions(-DNDEBUG)
 endif()
 
 

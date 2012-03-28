@@ -38,7 +38,11 @@ using std::ifstream;
 using std::ofstream;
 
 //==boost
+
+#ifndef NDEBUG
 #define BOOST_ENABLE_ASSERT_HANDLER
+#endif
+
 #include <boost/assert.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/bimap.hpp>
@@ -92,15 +96,17 @@ using boost::lexical_cast;
 // err handling
 #include "stacktrace.hpp"
 
+#ifndef NDEBUG
 namespace boost
 {
 inline void assertion_failed(char const * expr, char const * function, char const * file, long line)
 {
-    std::cerr << "Aborted by assert: " << std::endl;
-    print_stacktrace();
-    __assert_fail (expr, file, line, function);
+        std::cerr << "Aborted by assert: " << std::endl;
+        print_stacktrace();
+        __assert_fail (expr, file, line, function);
 }
 } // namespace boost
+#endif
 
 
 #include "simple_tools.hpp"
