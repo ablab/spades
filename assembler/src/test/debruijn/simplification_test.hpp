@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip", g, int_ids);
 
-	ClipTips(g, standard_tc_config(), standard_read_length());
+	DefaultClipTips(g, standard_tc_config(), standard_read_length());
 
 	BOOST_CHECK_EQUAL(g.size(), 4);
 }
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/tipobulge/tipobulge", g, int_ids);
 
-	ClipTips(g, standard_tc_config(), standard_read_length());
+	DefaultClipTips(g, standard_tc_config(), standard_read_length());
 
 	RemoveBulges(g, standard_br_config());
 

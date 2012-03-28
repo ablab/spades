@@ -153,8 +153,6 @@ void ClipTips(Graph &g,
         ClipTipsUsingAdvancedChecks(g, cfg::get().simp.tc, *cfg::get().ds.RL, removal_handler, iteration_count, i);
     else
         DefaultClipTips(g, cfg::get().simp.tc, *cfg::get().ds.RL, removal_handler, iteration_count, i);
-     
-        
 }
 
 template<class Graph>
