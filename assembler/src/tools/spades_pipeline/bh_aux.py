@@ -78,5 +78,10 @@ def generate_dataset(cfg, tmp_dir):
         str_it_count = "0" + str_it_count
     dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count)
     dataset_cfg["single_cell"] = bool_to_str(cfg.single_cell)
-    dataset_cfg["reference_genome"] = os.path.abspath(os.path.expandvars(cfg.reference))
+    if cfg.__dict__.has_key("reference"):    
+        dataset_cfg["reference_genome"] = os.path.abspath(os.path.expandvars(cfg.reference))
+    if cfg.__dict__.has_key("genes"):    
+        dataset_cfg["genes"]            = os.path.abspath(os.path.expandvars(cfg.genes))
+    if cfg.__dict__.has_key("operons"):        
+        dataset_cfg["operons"]          = os.path.abspath(os.path.expandvars(cfg.operons))
     return hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output)

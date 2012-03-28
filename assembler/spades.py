@@ -18,13 +18,12 @@ from process_cfg import *
 def prepare_config(filename, cfg, prev_K, last_one):
 
     subst_dict = dict()
-    cfg.output_dir = path.abspath(cfg.output_dir)
-    cfg.input_dir = path.abspath(cfg.input_dir)
+    cfg.working_dir = path.abspath(cfg.working_dir)
 
-    subst_dict["dataset"]            = path.expandvars(cfg.dataset)
+    subst_dict["dataset"]            = path.abspath(path.expandvars(cfg.dataset))
     subst_dict["input_dir"]          = path.dirname(subst_dict["dataset"])
-    subst_dict["output_base"]        = cfg.build_path
-    subst_dict["additional_contigs"] = path.join(cfg.build_path, "simplified_contigs.fasta")
+    subst_dict["output_base"]        = cfg.working_dir
+    subst_dict["additional_contigs"] = path.join(cfg.working_dir, "simplified_contigs.fasta")
     subst_dict["entry_point"]        = 'construction'
 
     if last_one:
@@ -40,10 +39,40 @@ def prepare_config(filename, cfg, prev_K, last_one):
     else:
         subst_dict["use_additional_contigs"] = "false"
 
-    #    if cfg.measure_quality:
-    #        print("Quality measuring implementation is in progress")
-
     substitute_params(filename, subst_dict)
+
+def prepare_config_bh(filename, cfg):
+
+    subst_dict = dict()
+    cfg.working_dir = path.abspath(cfg.working_dir)
+
+    import glob
+    input_reads = []
+    if not type(cfg.input_reads) is list:
+        cfg.input_reads = [cfg.input_reads]
+    for read in cfg.input_reads:
+        input_reads.extend(glob.glob(path.abspath(path.expandvars(read))))
+    cfg.input_reads = input_reads
+
+    subst_dict["input_numfiles"]           = len(cfg.input_reads)
+  
+    for i in xrange(len(cfg.input_reads)):
+        subst_dict["input_file_" + str(i)]  = cfg.input_reads[i]
+   
+    subst_dict["input_gzipped"]             = bool_to_str(cfg.input_reads[0].endswith(".gz"))       
+    subst_dict["input_working_dir"]         = cfg.working_dir
+    subst_dict["general_max_iterations"]    = cfg.max_iterations
+    subst_dict["general_max_nthreads"]      = cfg.max_threads 
+    subst_dict["count_merge_nthreads"]      = cfg.max_threads 
+    subst_dict["bayes_nthreads"]            = cfg.max_threads 
+    subst_dict["expand_nthreads"]           = cfg.max_threads 
+    subst_dict["correct_nthreads"]          = cfg.max_threads                
+    subst_dict["general_hard_memory_limit"] = cfg.max_memory
+    
+    if cfg.__dict__.has_key("qvoffset"):
+        subst_dict["input_qvoffset"]        = cfg.qvoffset
+
+    substitute_params(filename, subst_dict) 
 
 def main():
 
@@ -78,9 +107,9 @@ def main():
             question = ["WARNING! Folder with corrected reads (" + bh_cfg.output_dir + ") already exists!", 
                         "Do you want to overwrite this folder and start error correction again? (y/n)"]
             answer = support.question_with_timer(question, 10)
-            print 'answer is ', answer           
             if answer == 'n':
                 start_bh = False
+                print("\nError correction stage skipped\n")   
             else:
                 shutil.rmtree(bh_cfg.output_dir)
 
@@ -120,16 +149,18 @@ def main():
 
     if cfg.has_key("spades"):
         spades_cfg = cfg["spades"]
+        if not spades_cfg.__dict__.has_key("measure_quality"):
+            spades_cfg.__dict__["measure_quality"] = False
 
-        def build_folder(cfg):
+        def working_dir(cfg):
             import datetime
             suffix = datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
             return path.join(path.expandvars(cfg.output_dir), 'spades_' + suffix)
 
-        spades_cfg.__dict__["build_path"] = build_folder(cfg["common"])
-        os.makedirs(spades_cfg.build_path)
+        spades_cfg.__dict__["working_dir"] = working_dir(cfg["common"])
+        os.makedirs(spades_cfg.working_dir)
 
-        log_filename = path.join(spades_cfg.build_path, "spades.log")
+        log_filename = path.join(spades_cfg.working_dir, "spades.log")
         spades_cfg.__dict__["log_filename"] = log_filename
 
         print("\n== Assembling log can be found here: " + spades_cfg.log_filename + "\n")
@@ -160,25 +191,7 @@ def main():
         if err_code:
             exit(err_code)
     
-    print("\n== SPAdes pipeline finished\n")
-
-def prepare_config_bh(filename, cfg):
-
-    subst_dict = dict()
-
-    subst_dict["input_numfiles"]           = len(cfg.input_reads)
-  
-    for i in xrange(len(cfg.input_reads)):
-        subst_dict["input_file_" + str(i)]  = path.expandvars(cfg.input_reads[i])
-   
-    subst_dict["input_gzipped"]             = bool_to_str(cfg.input_reads[0].endswith(".gz"))       
-    subst_dict["input_working_dir"]         = cfg.working_dir
-    subst_dict["general_max_iterations"]    = cfg.max_iterations
-    subst_dict["general_max_nthreads"]      = cfg.max_threads  # TODO other nthreads values
-    subst_dict["general_hard_memory_limit"] = cfg.max_memory
-    # subst_dict["general_gzip"]              = bool_to_str(cfg.gzip_output)   # actually it is not for output (see hammer sources)
-
-    substitute_params(filename, subst_dict)    
+    print("\n== SPAdes pipeline finished\n") 
 
 def run_bh(cfg):
 
@@ -191,21 +204,24 @@ def run_bh(cfg):
         
     prepare_config_bh(cfg_file_name, cfg)
 
-    command = path.join(os.getenv('HOME'), '.spades/precompiled/build_hammer', "hammer", "hammer") + " " + cfg_file_name
-
-    support.sys_call(command)
-    # support.sys_call("cp -r /home/alex/biolab/TEST/tmp " + cfg.working_dir)
+    execution_home = path.join(os.getenv('HOME'), '.spades/precompiled/build_hammer')
+    command = path.join(execution_home, "hammer", "hammer") + " " + path.abspath(cfg_file_name)
+    
+    print("\n== Running BayesHammer: " + command + "\n")
+    #support.sys_call(command)
+    support.sys_call("cp -r /home/alex/biolab/TEST/tmp " + cfg.working_dir)
 
     import bh_aux
     dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir)
-    datasets_filename = path.abspath(path.join(cfg.output_dir, "dataset.info"))
-    datasets_file = open(datasets_filename, "w")
-    datasets_file.write(dataset_str)    
-    datasets_file.close()
-    
+    dataset_filename = path.abspath(path.join(cfg.output_dir, "dataset.info"))
+    dataset_file = open(dataset_filename, "w")
+    dataset_file.write(dataset_str)    
+    dataset_file.close()
+    print("\nDataset created: " + dataset_filename + "\n")    
+
     shutil.rmtree(cfg.working_dir)
 
-    return datasets_filename
+    return dataset_filename
 
 def run(cfg):
 
@@ -222,7 +238,7 @@ def run(cfg):
     for K in cfg.iterative_K:
         count += 1
 
-        dst_configs = path.join(cfg.build_path, str(K), "configs")
+        dst_configs = path.join(cfg.working_dir, str(K), "configs")
         shutil.copytree(path.join(spades_home, "configs"), dst_configs)
         cfg_file_name = path.join(dst_configs, "debruijn", "config.info")
 
@@ -231,13 +247,20 @@ def run(cfg):
 
         execution_home = path.join(os.getenv('HOME'), '.spades/precompiled/build' + str(K))
         command = path.join(execution_home, "debruijn", "debruijn") + " " + path.abspath(cfg_file_name)
+<<<<<<< HEAD
 
         print("\n== Running assembler: " + command + "\n")
 
         support.sys_call(command, execution_home)
+=======
+        
+        print("\n== Running assembler: " + command + "\n")
+        support.sys_call(command)
+>>>>>>> spades.py: New config format: genes and operons added, wild cards, good template configs and other
 
-        latest = path.join(cfg.build_path, "K%d" % (K), "latest")
+        latest = path.join(cfg.working_dir, "K%d" % (K), "latest")
         latest = os.readlink(latest)
+<<<<<<< HEAD
         latest = os.path.join(cfg.build_path, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, cfg.build_path), os.path.join(cfg.build_path, "link_K%d" % (K)))
 
@@ -256,11 +279,33 @@ def run(cfg):
     qr = "quality_results"
     cmd += " -o " + os.path.join(cfg.build_path, qr)
     support.sys_call(cmd)
+=======
+        latest = os.path.join(cfg.working_dir, "K%d" % (K), latest)
+        os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
+
+    support.copy(os.path.join(latest, "final_contigs.fasta"), cfg.working_dir)
+    result_contigs = os.path.join(cfg.working_dir, "final_contigs.fasta")
+
+    if cfg.measure_quality:
+        print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
+        cmd = "python " + path.join(spades_home, "src/tools/quality/quality.py") + " " + result_contigs
+        dataset = load_config_from_file(path.abspath(path.expandvars(cfg.dataset)))
+        if dataset.__dict__.has_key("reference_genome"):
+            cmd += " -R " + dataset.reference_genome
+        if dataset.__dict__.has_key("genes"):
+            cmd += " -G " + dataset.genes
+        if dataset.__dict__.has_key("operons"):
+            cmd += " -O " + dataset.operons
+        qr = "quality_results"
+        cmd += " -o " + os.path.join(cfg.working_dir, qr)
+        support.sys_call(cmd)
+>>>>>>> spades.py: New config format: genes and operons added, wild cards, good template configs and other
 
     print ""
-    print "All the resulting information can be found here: " + cfg.build_path
-    print " * Resulting contigs are called " + os.path.split(result.contigs)[1]
-    print " * Assessment of their quality is in " + qr + "/"
+    print "All the resulting information can be found here: " + cfg.working_dir
+    print " * Resulting contigs are called " + os.path.split(result_contigs)[1]
+    if cfg.measure_quality:
+        print " * Assessment of their quality is in " + qr + "/"
     print ""
     print "Thank you for using SPAdes!"
 

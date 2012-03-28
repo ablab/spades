@@ -1,6 +1,25 @@
-iterative_K         21 33 55
-paired_mode         true
-dataset             ECOLI_IS220_QUAKE_1K
-input_dir           ./data/input/
-output_dir          ./data/debruijn/
+output_dir          $cfg/test_dataset/
 output_to_console   true
+
+spades
+{
+  iterative_K         21 33 55
+  paired_mode         true
+  dataset             $cfg/test_dataset/input/test_dataset.info ; not used if run with bh
+  measure_quality     true ; optional
+}
+
+bh
+{
+  input_reads         $cfg/test_dataset/input/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
+  output_dir          $cfg/test_dataset/corrected    ; optional. Global output_dir is used if not specified
+  qvoffset            64                             ; optional. Either 33 or 64
+  max_iterations      4
+  max_threads         20
+  max_memory          50 ; in GB 
+  gzip_output         true 
+  single_cell         false
+  reference           $cfg/test_dataset/input/E.coli/MG1655-K12.first1K.fasta.gz ; optional       
+  genes               $cfg/test_dataset/input/E.coli/genes.first1K.txt           ; optional          
+  operons             $cfg/test_dataset/input/E.coli/operons.first1K.txt         ; optional       
+}

@@ -94,15 +94,6 @@ void load_config(string cfg_filename)
     copy_configs(cfg_filename, path_to_copy);
 }
 
-void save_info_file() {
-	ofstream file(cfg::get().output_dir + "result.info");
-	file << "first\t" << cfg::get().input_dir + cfg::get().ds.first << endl;
-	file << "second\t" << cfg::get().input_dir + cfg::get().ds.second << endl;
-	file << "reference\t" << cfg::get().ds.reference_genome_filename << endl;
-	file << "contigs\t" << cfg::get().final_contigs_file << endl;
-	file.close();
-}
-
 int main(int argc, char** argv)
 {
 	perf_counter pc;
@@ -137,8 +128,6 @@ int main(int argc, char** argv)
         debruijn_graph::assemble_genome();
 
         link_output("latest_success");
-
-        save_info_file();
 
         INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K << " finished");
 

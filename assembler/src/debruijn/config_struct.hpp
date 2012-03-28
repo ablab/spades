@@ -307,6 +307,8 @@ struct debruijn_config {
 		boost::optional<double> avg_coverage;
 		bool single_cell;
 		std::string reference_genome_filename;
+		boost::optional<std::string> genes_filename;
+		boost::optional<std::string> operons_filename;
 		Sequence reference_genome;
 	};
 
@@ -559,6 +561,9 @@ inline void load(debruijn_config::dataset& ds,
 	if (refgen && *refgen != "N/A") {
 		ds.reference_genome_filename = *refgen;
 	}
+
+	ds.genes_filename = pt.get_optional<std::string>("genes");
+	ds.operons_filename = pt.get_optional<std::string>("operons");
 }
 
 inline void load_reference_genome(debruijn_config::dataset& ds,

@@ -20,6 +20,7 @@ for arg; do
 
 case $arg in
   'c')   $cmd configs/debruijn/config.info.template configs/debruijn/config.info ;;
+  'h')   $cmd configs/hammer/config.info.template configs/hammer/config.info ;;  
   's')   $cmd configs/debruijn/simplification.info.template configs/debruijn/simplification.info ;;
   'de')  $cmd configs/debruijn/distance_estimation.info.template configs/debruijn/distance_estimation.info;;
   'dip') $cmd configs/debruijn/detail_info_printer.info.template configs/debruijn/detail_info_printer.info;;
@@ -31,6 +32,7 @@ case $arg in
         $cmd spades_config.info.template                          spades_config.info
         $cmd bh_config.info.template                              bh_config.info
         $cmd configs/debruijn/config.info.template                configs/debruijn/config.info
+        $cmd configs/hammer/config.info.template                  configs/hammer/config.info
         $cmd configs/debruijn/simplification.info.template        configs/debruijn/simplification.info
         $cmd configs/debruijn/distance_estimation.info.template   configs/debruijn/distance_estimation.info
         $cmd configs/debruijn/detail_info_printer.info.template   configs/debruijn/detail_info_printer.info
