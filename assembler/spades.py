@@ -114,7 +114,7 @@ def main():
                 shutil.rmtree(bh_cfg.output_dir)
 
         if start_bh:
-            os.makedirs(bh_cfg.output_dir)
+            os.makedirs(bh_cfg.working_dir)
                 
             log_filename = path.join(bh_cfg.output_dir, "bh.log")
             bh_cfg.__dict__["log_filename"] = log_filename
@@ -208,8 +208,7 @@ def run_bh(cfg):
     command = path.join(execution_home, "hammer", "hammer") + " " + path.abspath(cfg_file_name)
     
     print("\n== Running BayesHammer: " + command + "\n")
-    #support.sys_call(command)
-    support.sys_call("cp -r /home/alex/biolab/TEST/tmp " + cfg.working_dir)
+    support.sys_call(command)
 
     import bh_aux
     dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir)
@@ -219,7 +218,7 @@ def run_bh(cfg):
     dataset_file.close()
     print("\nDataset created: " + dataset_filename + "\n")    
 
-    shutil.rmtree(cfg.working_dir)
+    #shutil.rmtree(cfg.working_dir)
 
     return dataset_filename
 
@@ -247,39 +246,13 @@ def run(cfg):
 
         execution_home = path.join(os.getenv('HOME'), '.spades/precompiled/build' + str(K))
         command = path.join(execution_home, "debruijn", "debruijn") + " " + path.abspath(cfg_file_name)
-<<<<<<< HEAD
 
         print("\n== Running assembler: " + command + "\n")
 
         support.sys_call(command, execution_home)
-=======
-        
-        print("\n== Running assembler: " + command + "\n")
-        support.sys_call(command)
->>>>>>> spades.py: New config format: genes and operons added, wild cards, good template configs and other
 
         latest = path.join(cfg.working_dir, "K%d" % (K), "latest")
         latest = os.readlink(latest)
-<<<<<<< HEAD
-        latest = os.path.join(cfg.build_path, "K%d" % (K), latest)
-        os.symlink(os.path.relpath(latest, cfg.build_path), os.path.join(cfg.build_path, "link_K%d" % (K)))
-
-    support.copy(os.path.join(latest, "result.info"), cfg.build_path)
-    result = load_config_from_file(os.path.join(cfg.build_path, "result.info"))
-    support.copy(result.contigs, cfg.build_path)
-
-    print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
-    cmd = "python " + path.join(spades_home, "src/tools/quality/quality.py") + " " + result.contigs
-    if result.reference:
-        cmd += " -R " + result.reference
-        #    if result.genes:
-    #        cmd += " -G " + result.genes
-    #    if result.operons:
-    #        cmd += " -O " + result.operons
-    qr = "quality_results"
-    cmd += " -o " + os.path.join(cfg.build_path, qr)
-    support.sys_call(cmd)
-=======
         latest = os.path.join(cfg.working_dir, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
 
@@ -299,7 +272,6 @@ def run(cfg):
         qr = "quality_results"
         cmd += " -o " + os.path.join(cfg.working_dir, qr)
         support.sys_call(cmd)
->>>>>>> spades.py: New config format: genes and operons added, wild cards, good template configs and other
 
     print ""
     print "All the resulting information can be found here: " + cfg.working_dir
