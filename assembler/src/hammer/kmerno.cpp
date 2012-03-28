@@ -1,8 +1,13 @@
+#include "standard.hpp"
 #include "position_kmer.hpp"
 #include "kmerno.hpp"
 
 bool KMerNo::equal(const KMerNo & kmerno) const {
 	return ( (strncmp( Globals::blob + index, Globals::blob + kmerno.index, K) == 0) );
+}
+
+bool KMerNo::equal(const KMerCount & kmc) const {
+	return ( (strncmp( Globals::blob + index, Globals::blob + kmc.first.start(), K) == 0) );
 }
 
 string KMerNo::str() const {
@@ -65,3 +70,10 @@ bool KMerNo::are_equal::operator() (const KMerNo &l, const KMerNo &r) const {
 	return ( (strncmp( Globals::blob + l.index, Globals::blob + r.index, K) == 0) );
 }
 
+bool KMerNo::is_less::operator() (const KMerNo &l, const KMerNo &r) const {
+	return ( (strncmp( Globals::blob + l.index, Globals::blob + r.index, K) < 0) );
+}
+
+bool KMerNo::is_less_kmercount::operator() (const KMerCount &l, const KMerCount &r) const {
+	return ( (strncmp( Globals::blob + l.first.start(), Globals::blob + r.first.start(), K) < 0) );
+}

@@ -17,8 +17,8 @@ class unionFindClass;
 
 class KMerClustering {
 public:
-	KMerClustering(std::vector<KMerCount*> * kmers, int nthreads, int tau) : k_(kmers), v_(NULL), nthreads_(nthreads), tau_(tau) { hintVector = false; }
-	KMerClustering(std::vector<KMerCount*> * kmers_empty, std::vector<hint_t> * kmers, int nthreads, int tau) : k_(kmers_empty), v_(kmers), nthreads_(nthreads), tau_(tau) { hintVector = true; }
+	KMerClustering(std::vector<KMerCount> & kmers, int nthreads, int tau) : k_(kmers), v_(NULL), nthreads_(nthreads), tau_(tau) { hintVector = false; }
+	KMerClustering(std::vector<KMerCount> * kmers_empty, std::vector<hint_t> * kmers, int nthreads, int tau) : k_(*kmers_empty), v_(kmers), nthreads_(nthreads), tau_(tau) { hintVector = true; }
 
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
@@ -27,19 +27,19 @@ public:
 
 	/// free up memory
 	void clear() {
-		k_->clear();
+		k_.clear();
 	}
 	
 private:
-	std::vector<KMerCount*> * k_;
+	std::vector<KMerCount> & k_;
 	std::vector<hint_t> * v_;
 	int nthreads_;
 	int tau_;
 	bool hintVector;
 
 	/// @return total log-likelihood that x was made from center given x's quality values
-	double logLikelihoodKMer(const string & center, const KMerCount * x);
-	double logLikelihoodSingleton(const KMerCount * x);
+	double logLikelihoodKMer(const string & center, const KMerCount & x);
+	double logLikelihoodSingleton(const KMerCount & x);
 
 	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);

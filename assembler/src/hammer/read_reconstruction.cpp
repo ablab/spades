@@ -5,6 +5,7 @@
  *      Author: snikolenko
  */
 
+#include "standard.hpp"
 #include "read_reconstruction.hpp"
 #include "globals.hpp"
 #include "hammer_tools.hpp"
@@ -41,5 +42,6 @@ bool ReadReconstructor::makeOneReconstructionIteration() {
 }
 
 bool ReadReconstructor::correctOneRead(PositionRead & pr) {
-	return true;
+   assert(false);
+   return false;
 }

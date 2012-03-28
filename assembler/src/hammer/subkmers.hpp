@@ -28,11 +28,11 @@ struct SubKMerPQElement {
 	int n;
 	SubKMerPQElement( hint_t index, int no) : ind(index), n(no) { }
 
-	static bool compareSubKMerPQElements( const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2, const std::vector<KMerCount*> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+	static bool compareSubKMerPQElements( const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
 		return PositionKMer::compareSubKMersGreater( kmer1.ind, kmer2.ind, km, tau, start_offset, end_offset );
 	}
 
-	static bool compareSubKMerPQElementsCheq( const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2, const std::vector<KMerCount*> * km, const uint32_t tau, const uint32_t start) {
+	static bool compareSubKMerPQElementsCheq( const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start) {
 		return PositionKMer::compareSubKMersGreaterCheq( kmer1.ind, kmer2.ind, km, tau, start );
 	}
 
@@ -57,10 +57,8 @@ class SubKMerPQ {
 
 	SubKMerCompType sort_routine;
 	std::priority_queue< SubKMerPQElement, vector<SubKMerPQElement>, SubKMerCompType  > pq;
-	//vector< vector<hint_t>::iterator > it;
-	//vector< vector<hint_t>::iterator > it_end;
-	vector< size_t > ind;
-	vector< size_t > ind_end;
+	vector< vector<hint_t>::iterator > it;
+	vector< vector<hint_t>::iterator > it_end;
 
 	vector< string > fnames_;
 	vector< boost::shared_ptr<FIStream> > ifs_;
@@ -136,7 +134,7 @@ class SubKMerSorter {
 	/**
 	  * constructor for sorting a new kmers vector
 	  */
-	SubKMerSorter( size_t kmers_size, vector<KMerCount*> * k, int nthreads, int tau, SubKMerSorterType type );
+	SubKMerSorter( size_t kmers_size, vector<KMerCount> * k, int nthreads, int tau, SubKMerSorterType type );
 
 	/**
 	  * constructor for sorting a new kmers vector
@@ -149,7 +147,7 @@ class SubKMerSorter {
 	  * (this block results from the sorting of new kmers, so this block is automatically equal for all kmers in this block)
 	  * @param parent_type type of the sorter with which this block was produced
 	  */
-	SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount*> * k, int nthreads, int tau, int jj,
+	SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, int nthreads, int tau, int jj,
 		SubKMerSorterType type, SubKMerSorterType parent_type );
 
 	/**

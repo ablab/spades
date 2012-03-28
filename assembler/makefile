@@ -21,6 +21,9 @@ ddtls:
 dit:
 	make -C build/debug/test/include_test
 
+rh:
+	make -C build/release/hammer hammer
+
 dt:
 	make ddt
 	make dit

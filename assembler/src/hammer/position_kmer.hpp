@@ -17,27 +17,27 @@ class PositionKMer {
 
   public:
 
-	static bool compareSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount*> * km, const uint32_t tauplusone, const uint32_t start) {
+	static bool compareSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
 		for ( uint32_t i = start; i < K; i += tauplusone ) {
-			if ( Globals::blob[ km->at(kmer1)->first.start_ + i ] != Globals::blob [ km->at(kmer2)->first.start_ + i ] ) {
-				return ( Globals::blob[ km->at(kmer1)->first.start_ + i ] < Globals::blob [ km->at(kmer2)->first.start_ + i ] );
+			if ( Globals::blob[ km->at(kmer1).first.start_ + i ] != Globals::blob [ km->at(kmer2).first.start_ + i ] ) {
+				return ( Globals::blob[ km->at(kmer1).first.start_ + i ] < Globals::blob [ km->at(kmer2).first.start_ + i ] );
 			}
 		}
 		return false;
 	}
 
-	static bool compareSubKMersGreaterCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount*> * km, const uint32_t tauplusone, const uint32_t start) {
+	static bool compareSubKMersGreaterCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
 		for ( uint32_t i = start; i < K; i += tauplusone ) {
-			if ( Globals::blob[ km->at(kmer1)->first.start_ + i ] != Globals::blob [ km->at(kmer2)->first.start_ + i ] ) {
-				return ( Globals::blob[ km->at(kmer1)->first.start_ + i ] > Globals::blob [ km->at(kmer2)->first.start_ + i ] );
+			if ( Globals::blob[ km->at(kmer1).first.start_ + i ] != Globals::blob [ km->at(kmer2).first.start_ + i ] ) {
+				return ( Globals::blob[ km->at(kmer1).first.start_ + i ] > Globals::blob [ km->at(kmer2).first.start_ + i ] );
 			}
 		}
 		return false;
 	}
 
-	static bool equalSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount*> * km, const uint32_t tauplusone, const uint32_t start) {
+	static bool equalSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
 		for ( uint32_t i = start; i < K; i += tauplusone ) {
-			if ( Globals::blob[ km->at(kmer1)->first.start_ + i ] != Globals::blob [ km->at(kmer2)->first.start_ + i ] ) {
+			if ( Globals::blob[ km->at(kmer1).first.start_ + i ] != Globals::blob [ km->at(kmer2).first.start_ + i ] ) {
 				return false;
 			}
 		}
@@ -98,21 +98,21 @@ class PositionKMer {
 		return true;
 	}
 
-	static bool compareSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount*> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
-		return ( strncmp( Globals::blob + km->at(kmer1)->first.start_ + start_offset,
-			  	  Globals::blob + km->at(kmer2)->first.start_ + start_offset,
+	static bool compareSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( Globals::blob + km->at(kmer1).first.start_ + start_offset,
+			  	  Globals::blob + km->at(kmer2).first.start_ + start_offset,
 				  end_offset - start_offset ) < 0 );
 	}
 
-	static bool compareSubKMersGreater( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount*> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
-		return ( strncmp( Globals::blob + km->at(kmer1)->first.start_ + start_offset,
-			  	  Globals::blob + km->at(kmer2)->first.start_ + start_offset,
+	static bool compareSubKMersGreater( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( Globals::blob + km->at(kmer1).first.start_ + start_offset,
+			  	  Globals::blob + km->at(kmer2).first.start_ + start_offset,
 				  end_offset - start_offset ) > 0 );
 	}
 
-	static bool equalSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount*> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
-		return ( strncmp( Globals::blob + km->at(kmer1)->first.start_ + start_offset,
-			  	  Globals::blob + km->at(kmer2)->first.start_ + start_offset,
+	static bool equalSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( Globals::blob + km->at(kmer1).first.start_ + start_offset,
+			  	  Globals::blob + km->at(kmer2).first.start_ + start_offset,
 				  end_offset - start_offset ) == 0 );
 	}
 
@@ -172,12 +172,15 @@ class PositionKMer {
 	PositionKMer( hint_t startpos ) : start_(startpos) { }
 	PositionKMer() : start_(-1) { }
 
-
-	char at(uint32_t pos) const {
+	char operator [] (hint_t pos) const {
 		return Globals::blob[ start_ + pos ];
 	}
 
-	char operator [] (hint_t pos) const {
+	char at(hint_t pos ) const
+	{
+		if (pos >= Globals::blob_max_size)
+			throw std::out_of_range((boost::format("PositionKMer, max: %d, pos: %d") % Globals::blob_max_size % pos).str());
+
 		return Globals::blob[ start_ + pos ];
 	}
 
@@ -214,6 +217,17 @@ class PositionKMer {
 		}
 		return res;
 	}
+
+
+	friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & start_;
+    }
 
 };
 

@@ -49,7 +49,7 @@ find_package(log4cxx)
 find_package(PythonLibs)
 
 set (Boost_USE_MULTITHREADED ON)
-find_package(Boost COMPONENTS signals system filesystem iostreams REQUIRED)
+find_package(Boost COMPONENTS signals system filesystem iostreams serialization REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
@@ -73,5 +73,6 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # sub projects
 add_subdirectory(io)
 add_subdirectory(debruijn)
+add_subdirectory(hammer)
 
 include(CMakeListsInternal.txt)

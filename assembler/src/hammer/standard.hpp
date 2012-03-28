@@ -47,7 +47,6 @@ using std::ofstream;
 #include <boost/smart_ptr.hpp>
 #include <boost/make_shared.hpp>
 
-#define BOOST_FILESYSTEM_VERSION 2
 #include <boost/filesystem.hpp>
 
 #include <boost/optional.hpp>
@@ -74,9 +73,15 @@ using boost::in_place;
 
 using boost::format;
 
+using boost::lexical_cast;
+
+//==omp
+#include <omp.h>
+
 //==sys
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/syscall.h>
 
 //==our
 // utils
@@ -85,4 +90,3 @@ using boost::format;
 // io
 #include "io/ireader.hpp"
 #include "io/converting_reader_wrapper.hpp"
-

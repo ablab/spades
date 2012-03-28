@@ -5,7 +5,6 @@
  *      Author: snikolenko
  */
 
-#include "standard.hpp"
 #include "config_struct_hammer.hpp"
 
 void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
@@ -21,10 +20,14 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	load(cfg.general_max_iterations, pt, "general_max_iterations");
 	load(cfg.general_blob_margin, pt, "general_blob_margin");
 	load(cfg.general_gzip_margin, pt, "general_gzip_margin");
+	load(cfg.general_file_buffer_exp, pt, "general_file_buffer_exp");
+	load(cfg.common_quality, pt, "general_common_quality");
+	load(cfg.general_remove_temp_files, pt, "general_remove_temp_files");
 
 	load(cfg.count_do, pt, "count_do");
 	load(cfg.count_numfiles, pt, "count_numfiles");
 	load(cfg.count_merge_nthreads, pt, "count_merge_nthreads");
+	load(cfg.count_split_buffer, pt, "count_split_buffer");
 
 	load(cfg.sort_do, pt, "sort_do");
 
@@ -56,6 +59,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	load(cfg.correct_nthreads, pt, "correct_nthreads");
 	load(cfg.correct_threshold, pt, "correct_threshold");
 	load(cfg.correct_use_threshold, pt, "correct_use_threshold");
+	load(cfg.correct_readbuffer, pt, "correct_readbuffer");
 
 	load(cfg.input_numfiles, pt, "input_numfiles");
 	if (cfg.input_numfiles > 0) load(cfg.input_file_0, pt, "input_file_0");

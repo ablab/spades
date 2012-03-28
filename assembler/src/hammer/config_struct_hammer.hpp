@@ -8,6 +8,7 @@
 #ifndef CONFIG_STRUCT_HAMMER_HPP_
 #define CONFIG_STRUCT_HAMMER_HPP_
 
+#include "standard.hpp"
 #include "config_common.hpp"
 #include "boost/optional.hpp"
 
@@ -41,10 +42,13 @@ struct hammer_config
 	int general_max_iterations;
 	double general_blob_margin;
 	double general_gzip_margin;
+	int general_file_buffer_exp;
+	bool general_remove_temp_files;
 
 	bool count_do;
 	int count_numfiles;
 	int count_merge_nthreads;
+	int count_split_buffer;
 
 	bool sort_do;
 
@@ -75,7 +79,10 @@ struct hammer_config
 	bool correct_do;
 	bool correct_use_threshold;
 	double correct_threshold;
+	int correct_readbuffer;
 	int correct_nthreads;
+
+	int common_quality;
 };
 
 

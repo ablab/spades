@@ -30,6 +30,7 @@ struct KMerNo {
 	KMerNo( ) : index(-1), errprob(1) { }
 
 	bool equal(const KMerNo & kmerno) const;
+	bool equal(const KMerCount & kmc) const;
 	std::string str() const;
 	bool less(const KMerNo &r) const;
 	bool greater(const KMerNo &r) const;
@@ -49,6 +50,15 @@ struct KMerNo {
 	struct are_equal {
 		bool operator() (const KMerNo &l, const KMerNo &r) const;
 	};
+
+	struct is_less {
+		bool operator() (const KMerNo &l, const KMerNo &r) const;
+	};
+
+	struct is_less_kmercount {
+		bool operator() (const KMerCount &l, const KMerCount &r) const;
+	};
+
 };
 
 #ifdef GOOGLE_SPARSE_MAP

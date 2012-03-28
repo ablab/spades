@@ -1,5 +1,4 @@
 #include "standard.hpp"
-#include <omp.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -38,13 +37,13 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 
 	if (cfg::get().subvectors_do) {
 
-	TIMEDLN("Splitting " << inputFile << " into subvector files.");
+	/*TIMEDLN("Splitting " << inputFile << " into subvector files.");
 	vector< boost::shared_ptr<FOStream> > ostreams(tau_+1);
 	for (int i = 0; i < tau_+1; ++i) {
-		ostreams[i] = FOStream::init(fnames_[i]);
+		ostreams[i] = FOStream::init_buf(fnames_[i], 1 << cfg::get().general_file_buffer_exp);
 	}
 
-	boost::shared_ptr<FIStream> ifs = FIStream::init(inputFile);
+	boost::shared_ptr<FIStream> ifs = FIStream::init_buf(inputFile, 1 << cfg::get().general_file_buffer_exp);
 	string buf;
 	hint_t line_no = 0;
 	while (ifs->fs.good()) {
@@ -66,11 +65,11 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 		++line_no;
 	}
 	ifs.reset();
-	ostreams.clear();
+	ostreams.clear();*/
 
-	TIMEDLN("Sorting subvector files with child processes.");
+	/*TIMEDLN("Sorting subvector files with child processes.");
 	vector< pid_t > pids(tau_+1);
-	for (int j=0; j < tau_+1; ++j) {
+	for (int j=1; j < tau_+1; ++j) {
 		pids[j] = vfork();
 		if ( pids[j] == 0 ) {
 			TIMEDLN("  [" << getpid() << "] Child process " << j << " for sorting subkmers starting.");
@@ -93,14 +92,14 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 			exit(1);
 		}
 	}
-	for (int j = 0; j < tau_+1; ++j) {
+	for (int j = 1; j < tau_+1; ++j) {
 	    int status;
 	    while (-1 == waitpid(pids[j], &status, 0));
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 	        TIMEDLN("Process " << j << " (pid " << pids[j] << ") failed. Exiting.");
 	        exit(1);
 	    }
-	}
+	}*/
 
 	} else {
 		TIMEDLN("Skipping sorting subvectors, initializing priority queues from existing files.");
@@ -127,7 +126,7 @@ bool SubKMerSorter::getNextBlock( int i, vector<hint_t> & block ) {
 	return (block.size() > 0);
 }
 
-SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount*> * k, int nthreads, int tau, SubKMerSorterType type ) :
+SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount> * k, int nthreads, int tau, SubKMerSorterType type ) :
 		type_(type), nthreads_(nthreads), tau_(tau), kmers_size_(kmers_size), kmers_(NULL) {
 	// we set the sorting functions depending on the type
 	// here the sorting functions are regular sorting functions predefined in PositionKMer
@@ -209,9 +208,12 @@ SubKMerSorter::~SubKMerSorter() {
 	}
 }
 
-SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount*> * k, int nthreads, int tau, int jj,
+SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, int nthreads, int tau, int jj,
 	SubKMerSorterType type, SubKMerSorterType parent_type ) : nthreads_(nthreads), tau_(tau), kmers_size_(kmers->size()), kmers_(kmers) {
 
+	//cout << "    constructor nthreads=" << nthreads << " tau=" << tau << " kmerssize=" << kmers_size_ << " jj=" << jj << endl;
+	// we set the sorting functions depending on the type
+	// for sorting a specific block, we use sorting functions with specific exemptions depending on jj
 	if( type == SorterTypeStraight) {
 		assert(parent_type == SorterTypeStraight);
 
@@ -282,7 +284,7 @@ void SubKMerSorter::initVectors() {
 	}
 }
 
-SubKMerPQ::SubKMerPQ( vector<hint_t> * vec, int nthr, SubKMerCompType sort_routine ) : boundaries(nthr + 1), v(vec), nthreads(nthr), pq(sort_routine), ind(nthr), ind_end(nthr) {
+SubKMerPQ::SubKMerPQ( vector<hint_t> * vec, int nthr, SubKMerCompType sort_routine ) : boundaries(nthr + 1), v(vec), nthreads(nthr), pq(sort_routine), it(nthr), it_end(nthr) {
 	// find boundaries of the pieces
 	size_t sub_size = (size_t)(v->size() / nthreads);
 	for (int j=0; j<nthreads; ++j) {
@@ -291,7 +293,7 @@ SubKMerPQ::SubKMerPQ( vector<hint_t> * vec, int nthr, SubKMerCompType sort_routi
 	boundaries[nthreads] = v->size();
 }
 
-SubKMerPQ::SubKMerPQ( const vector<string> & fnames, int nthr, SubKMerCompType sort_routine ) : boundaries(nthr + 1), v(NULL), nthreads(nthr), pq(sort_routine), ind(nthr), ind_end(nthr) {
+SubKMerPQ::SubKMerPQ( const vector<string> & fnames, int nthr, SubKMerCompType sort_routine ) : boundaries(nthr + 1), v(NULL), nthreads(nthr), pq(sort_routine), it(nthr), it_end(nthr) {
 	for (size_t j=0; j<fnames.size(); ++j) {
 		fnames_.push_back(fnames[j]);
 	}
@@ -313,14 +315,15 @@ hint_t SubKMerPQ::getNextElementFromFile(size_t j) {
 void SubKMerPQ::initPQ() {
 	if (v != NULL) {
 		for (int j = 0; j < nthreads; ++j) {
-			ind[j] = boundaries[j];
-			ind_end[j] = boundaries[j + 1];
-			pq.push(SubKMerPQElement((*v)[j], j));
+			it[j] = v->begin() + boundaries[j];
+			it_end[j] = v->begin() + boundaries[j + 1];
+			pq.push(SubKMerPQElement(*(it[j]), j));
 		}
 	} else {
 		for (size_t j = 0; j < fnames_.size(); ++j) {
-			ifs_.push_back( FIStream::init(fnames_[j]));
+			ifs_.push_back( FIStream::init_buf(fnames_[j], 1 << cfg::get().general_file_buffer_exp));
 			if (ifs_[j]->fs.good()) {
+				if (cfg::get().general_remove_temp_files) ifs_[j]->remove_it = true;
 				hint_t nextel = getNextElementFromFile(j);
 				if (nextel != BLOBKMER_UNDEFINED) pq.push( SubKMerPQElement( nextel, j ) );
 			}
@@ -342,8 +345,8 @@ hint_t SubKMerPQ::nextPQ() {
 void SubKMerPQ::popPQ() {
 	SubKMerPQElement pqel = pq.top(); pq.pop();
 	if (v != NULL) {
-		++ind[pqel.n];
-		if ( ind[pqel.n] != ind_end[pqel.n] ) pq.push( SubKMerPQElement((*v)[pqel.n], pqel.n) );
+		++it[pqel.n];
+		if ( it[pqel.n] != it_end[pqel.n] ) pq.push( SubKMerPQElement(*(it[pqel.n]), pqel.n) );
 	} else {
 		if ( ifs_[pqel.n]->fs.good() ) {
 			hint_t nextel = getNextElementFromFile(pqel.n);

@@ -6,7 +6,6 @@
  */
  
 #include "standard.hpp"
-#include <omp.h>
 #include <cmath>
 #include <string>
 #include <iostream>
@@ -22,9 +21,12 @@
 #include <cassert>
 #include <unordered_set>
 #include <boost/bind.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
 
-#include "google/sparse_hash_map"
 
+#include "segfault_handler.hpp"
 #include "config_struct_hammer.hpp"
 #include "read/ireadstream.hpp"
 #include "hammer_tools.hpp"
@@ -50,28 +52,46 @@ using std::vector;
 using std::map;
 
 std::vector<std::string> Globals::input_filenames = std::vector<std::string>();
+std::vector<std::string> Globals::input_filename_bases = std::vector<std::string>();
 std::vector<hint_t> Globals::input_file_blob_positions = std::vector<hint_t>();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 std::vector<hint_t> * Globals::kmernos = NULL;
-std::vector<KMerCount *> * Globals::kmers = NULL;
+std::vector<KMerCount> * Globals::kmers = NULL;
 int Globals::iteration_no = 0;
 hint_t Globals::revNo = 0;
-hint_t Globals::revPos = 0;
 
 hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
-bool * Globals::blobrc = NULL;
+char Globals::char_offset = 0;
+
+bool Globals::use_common_quality = false;
+char Globals::common_quality = 0;
+double Globals::common_kmer_errprob = 0;
 
 std::vector<PositionRead> * Globals::pr = NULL;
 
 int main(int argc, char * argv[]) {
 
+	segfault_handler sh;
+
+	try
+	{
+
 	string config_file = CONFIG_FILENAME;
 	if (argc > 1) config_file = argv[1];
 	TIMEDLN("Loading config from " << config_file.c_str());
 	cfg::create_instance(config_file);
+
+	// general config parameters
+	Globals::char_offset = (char)cfg::get().input_qvoffset;
+	Globals::use_common_quality = cfg::get().common_quality > 0;
+	Globals::common_quality = (char)cfg::get().common_quality;
+	Globals::common_kmer_errprob = 1.0;
+	for (size_t i=0; i<K; ++i)
+		Globals::common_kmer_errprob *= 1 - pow(10.0, - Globals::common_quality / 10.0);
+	Globals::common_kmer_errprob = 1 - Globals::common_kmer_errprob;
 
 	// hard memory limit
     const size_t GB = 1 << 30;
@@ -86,6 +106,17 @@ int main(int argc, char * argv[]) {
     if (cfg::get().input_numfiles > 4) Globals::input_filenames.push_back(cfg::get().input_file_4);
 
     VERIFY(cfg::get().input_numfiles > 0);
+
+    for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
+    	Globals::input_filename_bases.push_back(
+    			Globals::input_filenames[iFile].substr(
+    					Globals::input_filenames[iFile].rfind('/')+1,
+    					Globals::input_filenames[iFile].rfind('.')
+    			)
+    	);
+    	cout << Globals::input_filename_bases[iFile] << endl;
+    }
+
     if (!cfg::get().input_qvoffset_opt) {
     	cout << "Trying to determine PHRED offset" << endl;
     	int determined_offset = determine_offset(Globals::input_filenames.front());
@@ -94,19 +125,19 @@ int main(int argc, char * argv[]) {
     		return 0;
     	} else {
     		cout << "Determined value is " << determined_offset << endl;
-    		cfg::get_writeable().input_qvoffset = determined_offset;
+    		cfg::get_writable().input_qvoffset = determined_offset;
     	}
     } else {
-    	cfg::get_writeable().input_qvoffset = *cfg::get().input_qvoffset_opt;
+    	cfg::get_writable().input_qvoffset = *cfg::get().input_qvoffset_opt;
     }
     // decompress input reads if they are gzipped
     HammerTools::DecompressIfNeeded();
 
     // if we need to change single Ns to As, this is the time
-    if (cfg::get().general_change_n_to_a) {
-    	if (cfg::get().count_do) TIMEDLN("Changing single Ns to As in input read files.");
+    if (cfg::get().general_change_n_to_a && cfg::get().count_do) {
+    	TIMEDLN("Changing single Ns to As in input read files.");
     	HammerTools::ChangeNtoAinReadFiles();
-    	if (cfg::get().count_do) TIMEDLN("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
+    	TIMEDLN("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
     }
 
     TIMEDLN(Globals::input_filenames[0]);
@@ -119,10 +150,8 @@ int main(int argc, char * argv[]) {
 	Globals::blob_size = totalReadSize + 1;
 	Globals::blob_max_size = (hint_t)(Globals::blob_size * ( 2 + cfg::get().general_blob_margin));
 	Globals::blob = new char[ Globals::blob_max_size ];
-	Globals::blobquality = new char[ Globals::blob_max_size ];
-	Globals::blobrc = new bool[ Globals::blob_max_size ];
+	if (!Globals::use_common_quality) Globals::blobquality = new char[ Globals::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << Globals::blob_max_size);
-
 
 	// initialize subkmer positions
 	HammerTools::InitializeSubKMerPositions();
@@ -132,60 +161,27 @@ int main(int argc, char * argv[]) {
 		cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << endl;
 		bool do_everything = cfg::get().general_do_everything_after_first_iteration && (Globals::iteration_no > 0);
 
+		// initialize k-mer structures
+		Globals::kmernos = new std::vector<hint_t>;
+		Globals::kmers = new std::vector<KMerCount>;
+
 		// read input reads into blob
 		Globals::pr = new vector<PositionRead>();
 		HammerTools::ReadAllFilesIntoBlob();
 
 		// count k-mers
-		if ( cfg::get().count_do || do_everything ) {
+		if ( cfg::get().count_do || cfg::get().sort_do || do_everything ) {
 			HammerTools::CountKMersBySplitAndMerge();
 		} else {
-			HammerTools::CountAndSplitKMers(false);
-		}
-
-		// sort k-mers
-		pid_t pIDsortKmerTotalsFile = 0;
-		if ( cfg::get().sort_do || do_everything) {
-			pIDsortKmerTotalsFile = vfork();
-			if (pIDsortKmerTotalsFile == 0) {
-				TIMEDLN("  [" << getpid() << "] Child process for sorting the kmers.total file starting.");
-				if (cfg::get().general_gzip) {
-					string systemcall = string("gunzip -c ") +
-							HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total").c_str() +
-							string(" | sort -k2 -T ") + cfg::get().input_working_dir.c_str() +
-							string(" | gzip -1 > ") +
-							HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted").c_str();
-					TIMEDLN("  [" << getpid() << "] " << systemcall);
-					if (std::system(systemcall.c_str())) {
-						TIMEDLN("  [" << getpid() << "] System error with sorting kmers.total!");
-					}
-				} else {
-					execlp("sort", "sort", "-k2",
-							"-o", HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted").c_str(),
-							"-T", cfg::get().input_working_dir.c_str(),
-							HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total").data(), (char *) 0 );
-				}
-				_exit(0);
+			{
+				ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.numbers.ser"), ios::binary);
+				boost::archive::binary_iarchive iar(is);
+				Globals::kmernos->clear();
+				TIMEDLN("Reading serialized kmernos.");
+				iar >> (*Globals::kmernos);
+				TIMEDLN("Read serialized kmernos.");
 			}
-		}
-
-		// initialize k-mer structures
-		if (Globals::kmernos) Globals::kmernos->clear(); else Globals::kmernos = new std::vector<hint_t>;
-		if (Globals::kmers) Globals::kmers->clear(); else Globals::kmers = new std::vector<KMerCount *>;
-
-//		cout << "   outputting blob of size " << Globals::blob_size << " max size " << Globals::blob_max_size << endl;
-//		cout << string(Globals::blob, Globals::revPos) << endl;
-//		cout << string(Globals::blob + Globals::revPos, Globals::blob_size - Globals::revPos) << endl;
-
-		// fill in sorted unclustered k-mers
-		if ( do_everything || cfg::get().subvectors_do || cfg::get().hamming_do || cfg::get().bayes_do ) {
-			if (pIDsortKmerTotalsFile != 0) {
-				int childExitStatus;
-				waitpid(pIDsortKmerTotalsFile, &childExitStatus, 0);
-			}
-			TIMEDLN("K-mer sorting done, reading k-mer info from the sorted file.");
-			HammerTools::ReadKmerNosFromFile( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted"), Globals::kmernos );
-			TIMEDLN("K-mer info read.");
+			HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.numbers.ser"));
 		}
 
 		// fill in already prepared k-mers
@@ -229,17 +225,6 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("Solid k-mers finalized.");
 		}
 
-		// write the final set of k-mers
-		if ((cfg::get().expand_write_kmers_result && !cfg::get().input_read_solid_kmers) || do_everything ) {
-			ofstream ofkmerstotal(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.result").data());
-			boost::iostreams::filtering_ostream kmer_res;
-			if (cfg::get().general_gzip)
-				kmer_res.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip_params(boost::iostreams::gzip::best_speed, boost::iostreams::gzip::deflated, 15, 9)));
-			kmer_res.push(ofkmerstotal);
-			HammerTools::PrintKMerResult( kmer_res, *Globals::kmers );
-			TIMEDLN("KMers with changetos written.");
-		}
-
 		hint_t totalReads = 0;
 		// reconstruct and output the reads
 		if ( cfg::get().correct_do || do_everything ) {
@@ -248,8 +233,8 @@ int main(int argc, char * argv[]) {
 
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps
-		for (size_t i=0; i < Globals::kmers->size(); ++i) delete Globals::kmers->at(i);
-		Globals::kmers->clear();
+		delete Globals::kmernos;
+		delete Globals::kmers;
 		delete Globals::pr;
 
 		if (totalReads < 1) {
@@ -265,6 +250,20 @@ int main(int argc, char * argv[]) {
 	delete [] Globals::blobquality;
 
 	TIMEDLN("All done. Exiting.");
+	}
+	catch (std::exception const& e)
+	{
+	    std::cerr << "Exception caught " << e.what() << std::endl;
+	    print_stacktrace();
+	    return EINTR;
+	}
+	catch (...)
+	{
+	    std::cerr << "Unknown exception caught " << std::endl;
+	    print_stacktrace();
+	    return EINTR;
+	}
+
 	return 0;
 }
 

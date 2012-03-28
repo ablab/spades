@@ -6,12 +6,17 @@
  */
 
 #include "standard.hpp"
-#include <omp.h>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/utility.hpp>
+
 #include "read/ireadstream.hpp"
 #include "defs.hpp"
 #include "mathfunctions.hpp"
@@ -22,24 +27,53 @@
 using std::max_element;
 using std::min_element;
 
-double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount * x) {
+struct entry_logger
+{
+	entry_logger(std::string const& name)
+		: name_(name)
+		, tid_ (syscall(SYS_gettid))
+	{
+		#pragma omp critical
+		{
+			std::cout << ">> entered " << name_ << "; thread " << tid_ << std::endl;
+		}
+	}
+
+	~entry_logger()
+	{
+		#pragma omp critical
+		{
+			std::cout << ">> finished " << name_ << "; thread " << tid_ << std::endl;
+		}
+	}
+
+private:
+	string name_;
+	pid_t  tid_;
+};
+
+double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount & x) {
+
 	double res = 0;
 	bool change = false;
 	for (uint32_t i = 0; i < K; ++i) {
-		if (center[i] != x->first[i]) {
+		if (center.at(i) != x.first.at(i)) {
 			change = true;
-			res += - log(10) * x->second.qual[i] / 10.0;
+			res += - log(10) * getQual(x, i) / 10.0;
 		} else {
-			res += log( 1 - pow( 10, -x->second.qual[i] / 10.0 ) );
+			double value = 1 - pow( 10, -getQual(x, i) / 10.0 );
+			if (value > 0)
+				res += log( value );
 		}
 	}
+
 	return res;
 }
 
-double KMerClustering::logLikelihoodSingleton(const KMerCount * x) {
+double KMerClustering::logLikelihoodSingleton(const KMerCount & x) {
 	double res = 0;
 	for (uint32_t i = 0; i < K; ++i) {
-		res += log( 1 - pow( 10, -x->second.qual[i] / 10.0 ) );
+		res += log( 1 - pow( 10, -getQual(x, i) / 10.0 ) );
 	}
 	return res;
 }
@@ -96,7 +130,7 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 			subsubsorter = new SubKMerSorter( &block, v_, nthreads_per_subkmer, tau_, cur_subkmer,
 					SubKMerSorter::SorterTypeChequeredDirect, SubKMerSorter::SorterTypeStraight );
 		} else {
-			subsubsorter = new SubKMerSorter( &block, k_, nthreads_per_subkmer, tau_, cur_subkmer,
+			subsubsorter = new SubKMerSorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
 					SubKMerSorter::SorterTypeChequered, SubKMerSorter::SorterTypeStraight );
 		}
 		subsubsorter->runSort();
@@ -120,7 +154,7 @@ void KMerClustering::processBlockQuadratic(unionFindClass * uf, vector<hint_t> &
 					uf->unionn(block[i], block[j]);
 				}
 			} else {
-				if (hamdistKMer((*k_)[block[i]]->first, (*k_)[block[j]]->first, tau_ ) <= tau_) {
+				if (hamdistKMer(k_[block[i]].first, k_[block[j]].first, tau_ ) <= tau_) {
 					uf->unionn(block[i], block[j]);
 				}
 			}
@@ -154,20 +188,24 @@ void KMerClustering::clusterMerge(vector<unionFindClass *>uf, unionFindClass * u
   * @param maskVal is the integer that we use
   */
 string KMerClustering::find_consensus_with_mask(const vector<int> & cl, const vector<int> & mask, int maskVal) {
+
+	//entry_logger el ("find_consensus_with_mask");
+
 	size_t blockSize = cl.size();
 
 	// consensus of a single string is trivial
-	if (blockSize == 1) return (*k_)[cl[0]]->first.str();
+	if (blockSize == 1) return k_[cl[0]].first.str();
 
 	string c(K, 'A');
 	for (uint32_t i = 0; i < K; i++) {
 		int scores[4] = {0,0,0,0};
 		for (uint32_t j = 0; j < blockSize; j++) {
 			if (mask[j] == maskVal)
-                          scores[static_cast<uint8_t>(dignucl((*k_)[cl[j]]->first[i]))] += (*k_)[cl[j]]->second.count;
+                          scores[static_cast<uint8_t>(dignucl(k_[cl[j]].first[i]))] += k_[cl[j]].second.count;
 		}
 		c[i] = num2nt(max_element(scores, scores + 4) - scores);
 	}
+
 	return c;
 }
 
@@ -176,13 +214,13 @@ string KMerClustering::find_consensus(const vector<int> & cl) {
 	size_t blockSize = cl.size();
 
 	// consensus of a single string is trivial
-	if (blockSize == 1) return (*k_)[cl[0]]->first.str();
+	if (blockSize == 1) return k_[cl[0]].first.str();
 
 	string c(K, 'A');
 	for (size_t i = 0; i < K; i++) {
 		int scores[4] = {0,0,0,0};
 		for (size_t j = 0; j < blockSize; j++) {
-                  scores[static_cast<uint8_t>(dignucl((*k_)[cl[j]]->first[i]))]+=(*k_)[cl[j]]->second.count;
+                  scores[static_cast<uint8_t>(dignucl(k_[cl[j]].first[i]))]+=k_[cl[j]].second.count;
 		}
 		c[i] = num2nt(max_element(scores, scores + 4) - scores);
 	}
@@ -202,24 +240,24 @@ double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const ve
 	if (centers.size() == 1) {
 		double logLikelihood = 0;
 		for (size_t i=0; i<blockSize; ++i) {
-			logLikelihood += logLikelihoodKMer(centers[indices[i]].first, (*k_)[cl[i]]);
+			logLikelihood += logLikelihoodKMer(centers[indices[i]].first, k_[cl[i]]);
 		}
-		return ( lMultinomial(cl, *k_) + logLikelihood );
+		return ( lMultinomial(cl, k_) + logLikelihood );
 	}
 
 	// compute sufficient statistics
 	vector<int> count(centers.size(), 0);		// how many kmers in cluster i
 	vector<double> totalLogLikelihood(centers.size(), 0);	// total distance from kmers of cluster i to its center
 	for (size_t i=0; i<blockSize; ++i) {
-		count[indices[i]]+=(*k_)[cl[i]]->second.count;
-		totalLogLikelihood[indices[i]] += logLikelihoodKMer(centers[indices[i]].first, (*k_)[cl[i]]);
+		count[indices[i]]+=k_[cl[i]].second.count;
+		totalLogLikelihood[indices[i]] += logLikelihoodKMer(centers[indices[i]].first, k_[cl[i]]);
 	}
 
 	// sum up the likelihood
 	double res = lBetaPlusOne(count);   // 1/B(count)
 	res += lMultinomial(centers); 		// {sum(centers.count) \choose centers.count}
 	for (size_t i=0; i<centers.size(); ++i) {
-		res += lMultinomialWithMask(cl, (*k_), indices, i) + totalLogLikelihood[i];
+		res += lMultinomialWithMask(cl, k_, indices, i) + totalLogLikelihood[i];
 	}
 	res -= logSimplexVolume(centers.size());
 	return res;
@@ -229,7 +267,7 @@ double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const ve
   * @return total log-likelihood of this particular clustering with real quality values
   */
 double KMerClustering::trueSingletonLogLikelihood(const hint_t & kmind) {
-	return logLikelihoodSingleton((*k_)[kmind]);
+	return logLikelihoodSingleton(k_[kmind]);
 }
 
 
@@ -264,12 +302,12 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 		for (uint32_t j=i+1; j<kmerinds.size(); ++j) {
 			if (distances[i][j] > distances[fp.first][fp.second] ||
 			  (distances[i][j] == distances[fp.first][fp.second] &&
-					( (*k_)[kmerinds[i]]->second.count + (*k_)[kmerinds[j]]->second.count >
-					  (*k_)[kmerinds[fp.first]]->second.count + (*k_)[kmerinds[fp.second]]->second.count ||
-					  ( (*k_)[kmerinds[i]]->second.count + (*k_)[kmerinds[j]]->second.count ==
-  					    (*k_)[kmerinds[fp.first]]->second.count + (*k_)[kmerinds[fp.second]]->second.count &&
-  					    (*k_)[kmerinds[i]]->second.totalQual + (*k_)[kmerinds[j]]->second.totalQual >
-  					    (*k_)[kmerinds[fp.first]]->second.totalQual + (*k_)[kmerinds[fp.second]]->second.totalQual)))) {
+					( k_[kmerinds[i]].second.count + k_[kmerinds[j]].second.count >
+					  k_[kmerinds[fp.first]].second.count + k_[kmerinds[fp.second]].second.count ||
+					  ( k_[kmerinds[i]].second.count + k_[kmerinds[j]].second.count ==
+  					    k_[kmerinds[fp.first]].second.count + k_[kmerinds[fp.second]].second.count &&
+  					    k_[kmerinds[i]].second.totalQual + k_[kmerinds[j]].second.totalQual >
+  					    k_[kmerinds[fp.first]].second.totalQual + k_[kmerinds[fp.second]].second.totalQual)))) {
 				fp.first = i; fp.second = j;
 			}
 		}
@@ -298,9 +336,9 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 	}
 
 	for (uint32_t j=0; j<l; ++j) {
-		centers[j].first = (*k_)[kmerinds[init[j]]]->first.str();
-		centers[j].second.first = (*k_)[kmerinds[init[j]]]->second.count;
-		centers[j].second.second = (*k_)[kmerinds[init[j]]]->second.totalQual;
+		centers[j].first = k_[kmerinds[init[j]]].first.str();
+		centers[j].second.first = k_[kmerinds[init[j]]].second.count;
+		centers[j].second.second = k_[kmerinds[init[j]]].second.totalQual;
 	}
 
 
@@ -316,9 +354,9 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 		vector<bool> good(kmerinds.size(), false);
 		for (size_t i=0; i < kmerinds.size(); ++i) {
 			for (uint32_t j=0; j < l; ++j) {
-				if ((*k_)[kmerinds[i]]->second.count >= centers[j].second.first ||
-						( (*k_)[kmerinds[i]]->second.count == centers[j].second.first &&
-						  (*k_)[kmerinds[i]]->second.totalQual > centers[j].second.second )) {
+				if (k_[kmerinds[i]].second.count >= centers[j].second.first ||
+						( k_[kmerinds[i]].second.count == centers[j].second.first &&
+						  k_[kmerinds[i]].second.totalQual > centers[j].second.second )) {
 					good[i] = true; break;
 				}
 			}
@@ -331,7 +369,7 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 				if (!good[i]) --newNo;
 				if (newNo < 0) { indexNew = i; good[indexNew] = true; break; }
 			}
-			centers[indexOld].first = (*k_)[kmerinds[indexNew]]->first.str();
+			centers[indexOld].first = k_[kmerinds[indexNew]].first.str();
 		}
 	}
 	
@@ -354,8 +392,8 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 		// E step: find which clusters we belong to
 		for (size_t i=0; i < kmerinds.size(); ++i) {
 			for (uint32_t j=0; j < l; ++j) {
-				dists[j] = hamdistKMer((*k_)[kmerinds[i]]->first, centers[j].first);
-				loglike[j] = logLikelihoodKMer(centers[j].first, (*k_)[kmerinds[i]]);
+				dists[j] = hamdistKMer(k_[kmerinds[i]].first, centers[j].first);
+				loglike[j] = logLikelihoodKMer(centers[j].first, k_[kmerinds[i]]);
 			}
 			if (cfg::get().bayes_debug_output) {
 				cout << "      likelihoods for " << i << ": ";
@@ -413,13 +451,13 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	if ( cfg::get().bayes_debug_output ) {
 		#pragma omp critical
 		{
-		cout << "process_SIN with block size=" << block.size() << " total kmers=" << k_->size() << endl << "block:";
+		cout << "process_SIN with block size=" << block.size() << " total kmers=" << k_.size() << endl << "block:";
 		for (size_t i = 0; i < block.size(); i++) {
 			cout << " " << i;
 		}
 		cout << endl << "  kmers:\n";
 		for (size_t i = 0; i < block.size(); i++) {
-			cout << (*k_)[i]->first.str() << endl;
+			cout << k_[i].first.str() << endl;
 		}
 		}
 	}
@@ -437,7 +475,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	for (size_t i = 0; i < block.size(); i++) {
 		distances[i][i] = 0;
 		for (size_t j = i + 1; j < block.size(); j++) {
-			distances[i][j] = hamdistKMer((*k_)[block[i]]->first, (*k_)[block[j]]->first);
+			distances[i][j] = hamdistKMer(k_[block[i]].first, k_[block[j]].first);
 			distances[j][i] = distances[i][j];
 		}
 	}
@@ -479,7 +517,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	// find if centers are in clusters
 	vector<int> centersInCluster(bestCenters.size(), -1);
 	for (uint32_t i = 0; i < origBlockSize; i++) {
-		int dist = hamdistKMer((*k_)[block[i]]->first, bestCenters[bestIndices[i]].first);
+		int dist = hamdistKMer(k_[block[i]].first, bestCenters[bestIndices[i]].first);
 		if (dist == 0) {
 			centersInCluster[bestIndices[i]] = i;
 		}
@@ -493,14 +531,14 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		cout << "Centers: \n";
 		for (size_t k=0; k<bestCenters.size(); ++k) {
 			cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
-			if ( centersInCluster[k] >= 0 ) cout << (*k_)[block[centersInCluster[k]]]->first.start();
+			if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
 			cout << "\n";
 		}
 		cout << "The entire block:\n";
 		for (uint32_t i = 0; i < origBlockSize; i++) {
-			cout << "  " << (*k_)[block[i]]->first.str().data() << " " << (*k_)[block[i]]->first.start() << "\n";
-			cout << "  " << (*k_)[block[i]]->first.strQual().data() << " " << (*k_)[block[i]]->second.totalQual << "\n";
-			cout << "  "; for (uint32_t j=0; j<K; ++j) cout << (*k_)[block[i]]->second.qual[j] << " "; cout << "\n";
+			cout << "  " << k_[block[i]].first.str().data() << " " << k_[block[i]].first.start() << "\n";
+			cout << "  " << k_[block[i]].first.strQual().data() << " " << k_[block[i]].second.totalQual << "\n";
+			cout << "  "; for (uint32_t j=0; j<K; ++j) cout << getQual(k_[block[i]], j) << " "; cout << "\n";
 		}
 		cout << endl;
 		}
@@ -540,7 +578,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 			cout << "\nAfter the check we got centers: \n";
 			for (size_t k=0; k<bestCenters.size(); ++k) {
 				cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
-				if ( centersInCluster[k] >= 0 ) cout << (*k_)[block[centersInCluster[k]]]->first.start();
+				if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
 				cout << "\n";
 			}
 			cout << "\n";
@@ -570,7 +608,6 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				}
 			}
 			if (centersInCluster[k] == -1) {
-				
 				#pragma omp critical
 				{
 					// change blob
@@ -584,11 +621,10 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					Globals::pr->push_back(rs);
 
 					PositionKMer pkm(Globals::pr->size()-1, 0);
-					KMerStat kms( 0, KMERSTAT_GOODITER, 1 );
-					k_->push_back( new KMerCount( pkm, kms ) );
+					KMerStat kms( Globals::use_common_quality, 0, KMERSTAT_GOODITER, 1 );
+					k_.push_back( KMerCount( pkm, kms ) );
 				}
-				v.insert(v.begin(), k_->size() - 1);
-
+				v.insert(v.begin(), k_.size() - 1);
 			}
 		}
 		vec.push_back(v);
@@ -601,15 +637,15 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 	vector<unionFindClass *> uf(tau_ + 1);
 	vector<vector<int> > classes;
 
-	bool useFilesystem = (k_->size() == 0);
+	bool useFilesystem = (k_.size() == 0);
 
 	if (doHamming) {
 
 	TIMEDLN("Split kmer processing in " << effective_threads << " threads.");
 	#pragma omp parallel for shared(uf, skmsorter) num_threads(effective_threads)
 	for (int i = 0; i < tau_ + 1; i++) {
-		if ( k_->size() == 0 ) uf[i] = new unionFindClass(v_->size());
-		else uf[i] = new unionFindClass(k_->size());
+		if ( k_.size() == 0 ) uf[i] = new unionFindClass(v_->size() + 1);
+		else uf[i] = new unionFindClass(k_.size());
 
 		vector<hint_t> block;
 		while ( skmsorter->getNextBlock(i, block) ) {
@@ -621,7 +657,7 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 	TIMEDLN("All split kmer threads finished. Starting merge.");
 	
 	unionFindClass * ufMaster;
-	ufMaster = (k_->size() == 0 ? new unionFindClass(v_->size()) : new unionFindClass(k_->size()) );
+	ufMaster = (k_.size() == 0 ? new unionFindClass(v_->size() + 1) : new unionFindClass(k_.size()) );
 	clusterMerge(uf, ufMaster);
 	hint_t num_classes;
 	ufMaster->get_classes(classes);
@@ -633,49 +669,38 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 
 	if ( useFilesystem ) {
 		TIMEDLN("Writing down clusters.");
-		ofstream ofs( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes").c_str() );
+		boost::shared_ptr<FOStream> ofs = FOStream::init_buf(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"), 1 << cfg::get().general_file_buffer_exp);
 		for ( size_t i=0; i < classes.size(); ++i ) {
-			ofs << "class " << i << " size=" << classes[i].size() << "\n";
+			ofs->fs << "class " << i << " size=" << classes[i].size() << "\n";
 			for ( size_t j=0; j < classes[i].size(); ++j ) {
-				ofs << classes[i][j] << "\n";
+				ofs->fs << classes[i][j] << "\n";
 			}
 			classes[i].clear();
 		}
 		classes.clear();
-		ofs.close();
 		TIMEDLN("Clusters written. Reading k-mer information.");
+	}
+
 	} else {
 		TIMEDLN("Skipping subvectors entirely. Reading k-mer information");
 	}
 
-	}
-
-
 	if ( useFilesystem ) {
-		boost::shared_ptr<FIStream> ifs = FIStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted"));
-		char seq[K+10];
-		hint_t kmer_num = 0;
-		while (ifs->fs.good()) {
-			hint_t pos;
-			KMerStat curstat;
-			curstat.changeto = KMERSTAT_GOODITER;
-			ifs->fs >> pos >> seq >> curstat.count >> curstat.totalQual;
-			unsigned short cur_qual;
-			for ( size_t i=0; i < K; ++i ) {
-				ifs->fs >> cur_qual;
-				curstat.qual.set(i, cur_qual);
-			}
-			k_->push_back(new KMerCount( PositionKMer(pos), curstat ) );
-			++kmer_num;
-			if ( kmer_num % 5000000 == 0 ) {
-				TIMEDLN("Read " << kmer_num << " k-mers.");
-			}
+		k_.clear();
+		Globals::kmers->clear();
+		{
+			ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"), ios::binary);
+			boost::archive::binary_iarchive iar(is);
+			iar >> (*Globals::kmers);
 		}
+		HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"));
+		k_ = *Globals::kmers;
 		TIMEDLN("K-mer information read. Starting subclustering in " << nthreads_ << " threads.");
-		TIMEDLN("Estimated: size=" << k_->size() << " mem=" << sizeof(KMerCount)*k_->size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
+		TIMEDLN("Estimated: size=" << k_.size() << " mem=" << sizeof(KMerCount)*k_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
 	}
 
-	boost::shared_ptr<FIStream> ifs = FIStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes"));
+	boost::shared_ptr<FIStream> ifs = FIStream::init_buf(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"), 1 << cfg::get().general_file_buffer_exp);
+	ifs->remove_it = true;
 
 	vector< vector< vector<int> > > blocks(nthreads_);
 
@@ -711,25 +736,25 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 
 			// processing singletons immediately
 			if ( cur_class.size() == 1 ) {
-				if ( (1-(*k_)[cur_class[0]]->second.totalQual) > cfg::get().bayes_singleton_threshold) {
-					(*k_)[cur_class[0]]->second.changeto = KMERSTAT_GOODITER;
+				if ( (1-k_[cur_class[0]].second.totalQual) > cfg::get().bayes_singleton_threshold) {
+					k_[cur_class[0]].second.changeto = KMERSTAT_GOODITER;
 					if (ofs.get()) {
-						(ofs->fs) << (*k_)[cur_class[0]]->first.str() << "\n>" << (*k_)[cur_class[0]]->first.start()
+						(ofs->fs) << k_[cur_class[0]].first.str() << "\n>" << k_[cur_class[0]].first.start()
 							<< " good singleton " << "  ind=" << cur_class[0]
-							<< "  cnt=" << (*k_)[cur_class[0]]->second.count
-							<< "  tql=" << (1-(*k_)[cur_class[0]]->second.totalQual) << "\n";
+							<< "  cnt=" << k_[cur_class[0]].second.count
+							<< "  tql=" << (1-k_[cur_class[0]].second.totalQual) << "\n";
 					}
 				} else {
-					if (cfg::get().correct_use_threshold && (1-(*k_)[cur_class[0]]->second.totalQual) > cfg::get().correct_threshold)
-						(*k_)[cur_class[0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+					if (cfg::get().correct_use_threshold && (1-k_[cur_class[0]].second.totalQual) > cfg::get().correct_threshold)
+						k_[cur_class[0]].second.changeto = KMERSTAT_GOODITER_BAD;
 					else
-						(*k_)[cur_class[0]]->second.changeto = KMERSTAT_BAD;
+						k_[cur_class[0]].second.changeto = KMERSTAT_BAD;
 					if (ofs_bad.get()) {
-						(ofs_bad->fs) << (*k_)[cur_class[0]]->first.str() << "\n>" << (*k_)[cur_class[0]]->first.start()
+						(ofs_bad->fs) << k_[cur_class[0]].first.str() << "\n>" << k_[cur_class[0]].first.start()
 							<< " bad singleton "
 							<< "  ind=" << cur_class[0]
-							<< "  cnt=" << (*k_)[cur_class[0]]->second.count
-							<< "  tql=" << (1-(*k_)[cur_class[0]]->second.totalQual) << "\n";
+							<< "  cnt=" << k_[cur_class[0]].second.count
+							<< "  tql=" << (1-k_[cur_class[0]].second.totalQual) << "\n";
 					}
 				}
 			} else {
@@ -739,6 +764,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 			}
 		}
 		TIMEDLN("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " in " << nthreads_ << " threads.");
+
+		VERIFY(blocksInPlace.size() >= i_nontriv && curClasses.size() >= i_nontriv);
 
 		#pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_)
 		for (size_t i=0; i < i_nontriv; ++i) {
@@ -750,65 +777,65 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 			for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
 				if (blocksInPlace[n][m].size() == 0) continue;
 				if (blocksInPlace[n][m].size() == 1) {
-					if ( (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) > cfg::get().bayes_singleton_threshold) {
-						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+					if ( (1-k_[blocksInPlace[n][m][0]].second.totalQual) > cfg::get().bayes_singleton_threshold) {
+						k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOODITER;
 						if (ofs.get()) {
-							(ofs->fs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+							(ofs->fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
 							   << " good singleton " << "  ind=" << blocksInPlace[n][m][0]
-							   << "  cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
-							   << "  tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+							   << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count
+							   << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 						}
 					} else {
-						if (cfg::get().correct_use_threshold && (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) > cfg::get().correct_threshold)
-							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+						if (cfg::get().correct_use_threshold && (1-k_[blocksInPlace[n][m][0]].second.totalQual) > cfg::get().correct_threshold)
+							k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOODITER_BAD;
 						else
-							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
+							k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_BAD;
 						if (ofs_bad.get()) {
-							(ofs_bad->fs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+							(ofs_bad->fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
 							   << " bad singleton " << "  ind=" << blocksInPlace[n][m][0]
-							   << "  cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
-							   << "  tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+							   << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count
+							   << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 						}
 					}
 				} else {
 					// we've got a nontrivial cluster; computing its overall quality
 					double cluster_quality = 1;
 					for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-						cluster_quality *= (*k_)[blocksInPlace[n][m][j]]->second.totalQual;
+						cluster_quality *= k_[blocksInPlace[n][m][j]].second.totalQual;
 					}
 					cluster_quality = 1-cluster_quality;
 
 					// in regular hammer mode, all nonsingletons are good
 					if ( cfg::get().bayes_hammer_mode || cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
-						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+						k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOODITER;
 						if (ofs.get()) {
-							(ofs->fs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+							(ofs->fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
 							   << " center clust=" << cluster_quality
 							   << " ind=" << blocksInPlace[n][m][0]
-							   << " cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
-							   << " tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+							   << " cnt=" << k_[blocksInPlace[n][m][0]].second.count
+							   << " tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 						}
 					} else {
-						if (cfg::get().correct_use_threshold && (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) > cfg::get().correct_threshold)
-							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+						if (cfg::get().correct_use_threshold && (1-k_[blocksInPlace[n][m][0]].second.totalQual) > cfg::get().correct_threshold)
+							k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOODITER_BAD;
 						else
-							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
+							k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_BAD;
 						if (ofs_bad.get()) {
-							(ofs_bad->fs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+							(ofs_bad->fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
 							   << " center of bad cluster clust=" << cluster_quality
 							   << " ind=" << blocksInPlace[n][m][0]
-							   << " cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
-							   << " tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+							   << " cnt=" << k_[blocksInPlace[n][m][0]].second.count
+							   << " tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 						}
 					}
 					for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-						(*k_)[blocksInPlace[n][m][j]]->second.changeto = blocksInPlace[n][m][0];
+						k_[blocksInPlace[n][m][j]].second.changeto = blocksInPlace[n][m][0];
 						if (ofs_bad.get()) {
-							(ofs_bad->fs) << (*k_)[blocksInPlace[n][m][j]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][j]]->first.start()
-							   << " part of cluster " << (*k_)[blocksInPlace[n][m][0]]->first.start() << " clust=" << cluster_quality
+							(ofs_bad->fs) << k_[blocksInPlace[n][m][j]].first.str() << "\n>" << k_[blocksInPlace[n][m][j]].first.start()
+							   << " part of cluster " << k_[blocksInPlace[n][m][0]].first.start() << " clust=" << cluster_quality
 								   << " ind=" << blocksInPlace[n][m][j]
-							   << " cnt=" << (*k_)[blocksInPlace[n][m][j]]->second.count
-							   << " tql=" << (1-(*k_)[blocksInPlace[n][m][j]]->second.totalQual) << "\n";
+							   << " cnt=" << k_[blocksInPlace[n][m][j]].second.count
+							   << " tql=" << (1-k_[blocksInPlace[n][m][j]].second.totalQual) << "\n";
 						}
 					}
 				}

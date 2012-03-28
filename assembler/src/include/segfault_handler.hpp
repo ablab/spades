@@ -43,6 +43,9 @@ private:
             	callback()();
         }
 
+        //TEST!!
+        exit(1);
+
         signal(signum, SIG_DFL);
         kill  (getpid(), signum);
     }
