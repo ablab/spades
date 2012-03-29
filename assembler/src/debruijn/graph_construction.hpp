@@ -22,6 +22,7 @@
 #include "graphio.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"
+#include "perfcounter.hpp"
 
 #include "read_converter.hpp"
 
@@ -141,15 +142,23 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	size_t counter = 0;
 	size_t rl = 0;
 	io::SingleRead r;
-	io::SingleReadSeq br;
-	auto bin_streams = single_binary_readers(true, true);
 
-	while (!reads_stream.eof()) {
-	    reads_stream  >> r;
-		Sequence s = r.sequence();
-        debruijn.CountSequence(s);
-        rl = max(rl, s.size());
-        VERBOSE_POWER(++counter, " reads processed");
+
+	{
+		perf_counter pc;
+
+		#pragma omp parallel num_threads(10)
+
+		while (!reads_stream.eof()) {
+
+			reads_stream >> r;
+			Sequence s = r.sequence();
+			debruijn.CountSequence(s);
+			rl = max(rl, s.size());
+			VERBOSE_POWER(++counter, " reads processed");
+		}
+
+		INFO("Elapsed time: " << pc.time_ms());
 	}
 
 	if (contigs_stream) {
@@ -159,10 +168,6 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 			Sequence s = r.sequence();
 			debruijn.CountSequence(s);
 		}
-	}
-
-	for (size_t i = 0; i < bin_streams.size(); ++i) {
-	    delete bin_streams[i];
 	}
 
 	if (!cfg::get().ds.RL.is_initialized()) {

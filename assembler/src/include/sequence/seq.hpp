@@ -369,7 +369,7 @@ public:
 
 	//	template<size_t HASH_SEED>
 	struct hash {
-		size_t operator()(const Seq<size_, T> seq) const {
+		size_t operator()(const Seq<size_, T>& seq) const {
 			size_t h = 239;
 			//size_t h = 0;
 			for (size_t i = 0; i < seq.data_size_; i++) {
@@ -392,9 +392,8 @@ public:
 	};
 
 	struct equal_to {
-		bool operator()(const Seq<size_, T> l, const Seq<size_, T> r) const {
-			return 0 == memcmp(l.data_.data(), r.data_.data(),
-					sizeof(T) * data_size_);
+		bool operator()(const Seq<size_, T>& l, const Seq<size_, T>& r) const {
+			return memcmp(l.data_.data(), r.data_.data(), sizeof(T) * data_size_) == 0;
 		}
 	};
 
