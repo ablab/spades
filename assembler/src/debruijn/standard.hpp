@@ -85,6 +85,7 @@ using boost::lexical_cast;
 //==sys
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 #include "k.hpp"
 

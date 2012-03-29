@@ -22,6 +22,7 @@
 #include "memory_limit.hpp"
 
 #include "assembly_compare.hpp"
+#include "perfcounter.hpp"
 
 DECL_PROJECT_LOGGER("d")
 
@@ -105,6 +106,9 @@ void save_info_file() {
 
 int main(int argc, char** argv)
 {
+	perf_counter pc;
+
+
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
 
@@ -152,6 +156,8 @@ int main(int argc, char** argv)
         print_stacktrace();
         return EINTR;
     }
+
+	INFO("Assembling time: " << pc.time_ms());
 
     // OK
     return 0;
