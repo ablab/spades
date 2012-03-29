@@ -32,7 +32,7 @@ class PairedRead {
    * Type of variables which will store file names for reading from
    * Reader stream.
    */ 
-  typedef std::pair<std::string, std::string> FilenameType;
+  typedef std::pair<std::string, std::string> FilenamesType;
 
   /*
    * Default constructor.

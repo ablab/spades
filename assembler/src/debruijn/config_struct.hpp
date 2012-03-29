@@ -570,7 +570,7 @@ inline void load_reference_genome(debruijn_config::dataset& ds,
 	if (ds.reference_genome_filename[0] != '/')
 		ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
 	checkFileExistenceFATAL(ds.reference_genome_filename);
-	io::Reader<io::SingleRead> genome_stream(ds.reference_genome_filename);
+	io::Reader genome_stream(ds.reference_genome_filename);
 	io::SingleRead genome;
 	genome_stream >> genome;
 	ds.reference_genome = genome.sequence();

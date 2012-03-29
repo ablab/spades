@@ -31,18 +31,7 @@
 
 namespace io {
 
-/*
- * This class only represents Reader. All the functionality
- * is implemented in specializations. Thus, it's impossible to use
- * Reader<int> or Reader<std::string>. The only possible variants are
- * Reader<SingleRead> and Reader<PairedRead>.
- */
-template<typename ReadType>
-class Reader : public IReader<ReadType> {
-};
-
-template<>
-class Reader<SingleRead> : public IReader<SingleRead> {
+class Reader : public IReader<SingleRead> {
  public:
   /*
    * Default constructor.
@@ -143,43 +132,43 @@ class Reader<SingleRead> : public IReader<SingleRead> {
   /*
    * Hidden copy constructor.
    */
-  explicit Reader(const Reader<SingleRead>& reader);
+  explicit Reader(const Reader& reader);
   /*
    * Hidden assign operator.
    */
-  void operator=(const Reader<SingleRead>& reader);
+  void operator=(const Reader& reader);
 };
 
-template<>
-class Reader<PairedRead> : public IReader<PairedRead> {
+
+class SeparateReader : public IReader<PairedRead> {
  public:
   /*
    * Default constructor.
-   * 
+   *
    * @param filename The pair that containes the names of two files to
    * be opened.
    * @param distance Distance between parts of PairedReads.
    * @param offset The offset of the read quality.
    */
-  explicit Reader(const PairedRead::FilenameType& filename,
+  explicit SeparateReader(const PairedRead::FilenamesType& filenames,
          size_t insert_size, bool change_order = false,
          OffsetType offset_type = PhredOffset)
-      : filename_(filename), insert_size_(insert_size),
+      : filenames_(filenames), insert_size_(insert_size),
         change_order_(change_order),
         offset_type_(offset_type),
-        first_(new Reader<SingleRead>(filename_.first, offset_type_)),
-        second_(new Reader<SingleRead>(filename_.second, offset_type_)) {}
+        first_(new Reader(filenames_.first, offset_type_)),
+        second_(new Reader(filenames_.second, offset_type_)) {}
 
-  /* 
+  /*
    * Default destructor.
    */
-  /* virtual */ ~Reader() {
+  /* virtual */ ~SeparateReader() {
     close();
     delete first_;
     delete second_;
   }
 
-  /* 
+  /*
    * Check whether the stream is opened.
    *
    * @return true of the stream is opened and false otherwise.
@@ -188,7 +177,7 @@ class Reader<PairedRead> : public IReader<PairedRead> {
     return first_->is_open() && second_->is_open();
   }
 
-  /* 
+  /*
    * Check whether we've reached the end of stream.
    *
    * @return true if the end of stream is reached and false
@@ -205,7 +194,7 @@ class Reader<PairedRead> : public IReader<PairedRead> {
    *
    * @return Reference to this stream.
    */
-  /* virtual */ Reader& operator>>(PairedRead& pairedread) {
+  /* virtual */ SeparateReader& operator>>(PairedRead& pairedread) {
     SingleRead sr1, sr2;
     (*first_) >> sr1;
     (*second_) >> sr2;
@@ -222,7 +211,7 @@ class Reader<PairedRead> : public IReader<PairedRead> {
     second_->close();
   }
 
-  /* 
+  /*
    * Close the stream and open it again.
    */
   /* virtual */ void reset() {
@@ -231,10 +220,10 @@ class Reader<PairedRead> : public IReader<PairedRead> {
   }
 
  private:
-  /* 
+  /*
    * @variable The names of the files which stream reads from.
    */
-  PairedRead::FilenameType filename_;
+  PairedRead::FilenamesType filenames_;
 
   size_t insert_size_;
 
@@ -247,21 +236,125 @@ class Reader<PairedRead> : public IReader<PairedRead> {
   /*
    * @variable The first stream (reads from first file).
    */
-  Reader<SingleRead>* first_;
+  Reader* first_;
   /*
    * @variable The second stream (reads from second file).
    */
-  Reader<SingleRead>* second_;
+  Reader* second_;
 
   /*
    * Hidden copy constructor.
    */
-  explicit Reader(const Reader<PairedRead>& reader);
+  explicit SeparateReader(const SeparateReader& reader);
   /*
    * Hidden assign operator.
    */
-  void operator=(const Reader<PairedRead>& reader);
+  void operator=(const SeparateReader& reader);
 };
+
+
+class MixedReader : public IReader<PairedRead> {
+ public:
+  /*
+   * Default constructor.
+   *
+   * @param filename Single file
+   * @param distance Distance between parts of PairedReads.
+   * @param offset The offset of the read quality.
+   */
+  explicit MixedReader(const std::string& filename, size_t insert_size, bool change_order = false,
+         OffsetType offset_type = PhredOffset)
+      : filename_(filename), insert_size_(insert_size),
+        change_order_(change_order),
+        offset_type_(offset_type),
+        single_(new Reader(filename_, offset_type_)) {}
+
+  /*
+   * Default destructor.
+   */
+  /* virtual */ ~MixedReader() {
+    close();
+    delete single_;
+  }
+
+  /*
+   * Check whether the stream is opened.
+   *
+   * @return true of the stream is opened and false otherwise.
+   */
+  /* virtual */ bool is_open() {
+    return single_->is_open();
+  }
+
+  /*
+   * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of stream is reached and false
+   * otherwise.
+   */
+  /* virtual */ bool eof() {
+    return single_->eof();
+  }
+
+  /*
+   * Read PairedRead from stream.
+   *
+   * @param pairedread The PairedRead that will store read data.
+   *
+   * @return Reference to this stream.
+   */
+  /* virtual */ MixedReader& operator>>(PairedRead& pairedread) {
+    SingleRead sr1, sr2;
+    (*single_) >> sr1;
+    (*single_) >> sr2;
+
+    pairedread = change_order_ ? PairedRead(!sr2, sr1, insert_size_) : PairedRead(sr1, !sr2, insert_size_);
+    return *this;
+  }
+
+  /*
+   * Close the stream.
+   */
+  /* virtual */ void close() {
+    single_->close();
+  }
+
+  /*
+   * Close the stream and open it again.
+   */
+  /* virtual */ void reset() {
+    single_->reset();
+  }
+
+ private:
+  /*
+   * @variable The names of the file which stream reads from.
+   */
+  std::string filename_;
+
+  size_t insert_size_;
+
+  bool change_order_;
+
+  /*
+   * @variable Quality offset type.
+   */
+  OffsetType offset_type_;
+  /*
+   * @variable The single read stream.
+   */
+  Reader* single_;
+
+  /*
+   * Hidden copy constructor.
+   */
+  explicit MixedReader(const MixedReader& reader);
+  /*
+   * Hidden assign operator.
+   */
+  void operator=(const MixedReader& reader);
+};
+
 
 }
 

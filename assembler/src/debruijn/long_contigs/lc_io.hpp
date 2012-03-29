@@ -222,7 +222,7 @@ Sequence load_genome() {
 	std::string genome;
 	if (genome_filename.length() > 0) {
 		checkFileExistenceFATAL(genome_filename);
-		io::Reader<io::SingleRead> genome_stream(genome_filename);
+		io::Reader genome_stream(genome_filename);
 		io::SingleRead full_genome;
 		genome_stream >> full_genome;
 		genome = full_genome.GetSequenceString().substr(0, lc_cfg::get().ds.LEN);

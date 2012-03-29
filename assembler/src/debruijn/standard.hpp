@@ -63,6 +63,7 @@ using std::ofstream;
 #include <boost/format.hpp>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/noncopyable.hpp>
 
 using boost::bind;
 using boost::function;
@@ -81,6 +82,7 @@ using boost::in_place;
 using boost::format;
 
 using boost::lexical_cast;
+using boost::noncopyable;
 
 //==sys
 #include <sys/stat.h>

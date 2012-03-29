@@ -953,7 +953,7 @@ template<class gp_t>
 void FillPos(gp_t& gp, const string& contig_file, int start_contig_id) {
 //	typedef typename gp_t::Graph::EdgeId EdgeId;
 	INFO("Threading large contigs");
-	io::Reader < io::SingleRead > irs(contig_file);
+	io::Reader irs(contig_file);
 	for (int c = start_contig_id; !irs.eof(); c++) {
 		io::SingleRead read;
 		irs >> read;
