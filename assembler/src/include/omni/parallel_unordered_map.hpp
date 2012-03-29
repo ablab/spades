@@ -3,7 +3,25 @@
 template<class T, class Value, class Hash>
 struct parallel_unordered_map
 {
-	struct bucket_hasher;
+private:
+	struct bucket_hasher
+	{
+		bucket_hasher(size_t bucket_size, Hash const& hash = Hash())
+			: bucket_size_	(bucket_size)
+			, hash_    		(hash)
+		{
+		}
+
+		size_t operator()(T const& t) const
+		{
+			return hash_(t) % bucket_size_;
+		}
+
+	private:
+		size_t 	bucket_size_;
+		Hash	hash_;
+	};
+	//struct bucket_hasher;
 
 	typedef	std::tr1::unordered_map<T, Value, Hash>				origin_map_t;
 	typedef	std::tr1::unordered_map<T, Value, bucket_hasher>	bucket_map_t;
@@ -23,9 +41,9 @@ struct parallel_unordered_map
 	{
 	}
 
-	bool insert(const value_type& value)
+	bool insert(const value_type& value, const size_t thread_num)
 	{
-		size_t bucket_num = omp_get_thread_num();
+		size_t bucket_num = thread_num;
 		size_t h = bucket_hashs_[bucket_num](value.first);
 		return buckets_[bucket_num].insert(value);
 	}
@@ -35,32 +53,14 @@ struct parallel_unordered_map
 
 	}
 
-private:
-	struct bucket_hasher
-	{
-		bucket_hasher(size_t bucket_size, Hash const& hash = Hash())
-			: bucket_size_	(bucket_size)
-			, hash_    		(hash)
-		{
-		}
-
-		size_t operator()(T const& t) const
-		{
-			return hash_(t) % bucket_size_;
-		}
-
-	private:
-		size_t 	bucket_size_;
-		Hash	hash_;
-	};
 
 private:
 	static size_t bucket_size(size_t nthreads)
 	{
 		return size_t(
 				std::ceil(
-					(1 << sizeof(size_t) /
-					double(nthreads))));
+					(1 << sizeof(size_t)) /
+					double(nthreads)));
 	}
 
 private:

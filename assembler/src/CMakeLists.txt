@@ -40,10 +40,11 @@ endif()
 
 add_definitions(-g3)
 add_definitions(-static)
+add_definitions(-fopenmp)
 add_definitions(-std=c++0x)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 #add_definitions(-Wconversion)
-add_definitions(-Wall -Wno-long-long -Wno-deprecated)
+#add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   message("Making Debug Configuration...")
@@ -83,4 +84,10 @@ add_subdirectory(debruijn)
 add_subdirectory(hammer)
 
 include(CMakeListsInternal.txt)
+<<<<<<< HEAD
 
+=======
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lrt ") #-lgomp
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+>>>>>>> compiles

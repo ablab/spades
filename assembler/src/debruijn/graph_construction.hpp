@@ -23,6 +23,7 @@
 #include "graph_pack.hpp"
 #include "utils.hpp"
 #include "perfcounter.hpp"
+#include "omni/parallel_unordered_map.hpp"
 
 #include "read_converter.hpp"
 
@@ -137,24 +138,39 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	VERIFY(k % 2 == 1);
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
+    //parallel_unordered_map<
+
 
 	INFO("Processing reads (takes a while)");
 	size_t counter = 0;
 	size_t rl = 0;
-	io::SingleRead r;
 
-
+    size_t nthreads = 10;
+	size_t buf_size = 100;
+    
+    io::SingleRead r;
 	{
 		perf_counter pc;
 
-		#pragma omp parallel num_threads(10)
 
 		while (!reads_stream.eof()) {
+            vector<vector<Sequence>> vector_seq(nthreads, vector<Sequence>());
+            for(size_t i = 0; i < nthreads*buf_size && !reads_stream.eof(); ++i){
+                reads_stream >> r;
+                //size_t thread_number = omp_get_thread_num(); 
+                Sequence seq = r.sequence();
+                vector_seq[i % nthreads].push_back(seq);
+                rl = max(rl, seq.size());
+            }
 
-			reads_stream >> r;
-			Sequence s = r.sequence();
-			debruijn.CountSequence(s);
-			rl = max(rl, s.size());
+		    #pragma omp parallel num_threads(nthreads)
+            {
+                #pragma omp for
+                for (size_t i = 0; i<vector_seq.size(); ++i)
+                    for (size_t j = 0; j<vector_seq[i].size(); ++j) {
+                        //debruijn.CountSequence(vector_seq[i][j]);
+                    }
+            }
 			VERBOSE_POWER(++counter, " reads processed");
 		}
 
