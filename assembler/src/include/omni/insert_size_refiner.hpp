@@ -5,7 +5,7 @@
 namespace omnigraph {
 
 template<class graph_pack>
-void refine_insert_size(pair<string, string> read_filenames, graph_pack& gp, size_t edge_length_threshold) {
+void refine_insert_size(io::PairedEasyReader& stream, graph_pack& gp, size_t edge_length_threshold) {
 	enum {
 		k = graph_pack::k_value
 	};
@@ -14,7 +14,6 @@ void refine_insert_size(pair<string, string> read_filenames, graph_pack& gp, siz
 	size_t n = 0;
 	double sum = 0;
 	double sum2 = 0;
-	io::PairedEasyReader stream(read_filenames,	0);
 	size_t succesfully_processed = 0;
 	INFO("Processing paired reads (takes a while)");
 	while (!stream.eof()) {

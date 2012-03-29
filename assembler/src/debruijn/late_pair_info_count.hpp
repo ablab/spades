@@ -5,6 +5,7 @@
 #include "simplification.hpp"
 #include "graph_construction.hpp"
 #include "omni/insert_size_refiner.hpp"
+#include "dataset_readers.hpp"
 
 namespace debruijn_graph {
 
@@ -13,24 +14,19 @@ void late_pair_info_count(conj_graph_pack& gp,
 	exec_simplification(gp);
 
 	if (cfg::get().paired_mode) {
-		INFO("Estimating dataset paired params");
 		const size_t edge_length_threshold = 500;
-		refine_insert_size(
-				make_pair(input_file(cfg::get().ds.first),
-						input_file(cfg::get().ds.second)), gp, edge_length_threshold);
+		auto_ptr<io::PairedEasyReader> stream = paired_easy_reader(0);
+		refine_insert_size(*stream, gp, edge_length_threshold);
 
 		INFO("STAGE == Counting Late Pair Info");
-		io::PairedEasyReader stream(
-				make_pair(input_file(cfg::get().ds.first),
-						input_file(cfg::get().ds.second)),
-				*cfg::get().ds.IS);
+		stream = paired_easy_reader(*cfg::get().ds.IS);
 
 		if (cfg::get().advanced_estimator_mode)
 			FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,
-					paired_index, stream);
+					paired_index, *stream);
 		else
 			FillPairedIndexWithReadCountMetric<K>(gp.g, gp.int_ids, gp.index,
-					gp.kmer_mapper, paired_index, stream);
+					gp.kmer_mapper, paired_index, *stream);
 	}
 }
 

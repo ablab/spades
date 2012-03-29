@@ -11,6 +11,7 @@
 #include "io/easy_reader.hpp"
 #include "io/vector_reader.hpp"
 #include "omni_labelers.hpp"
+#include "dataset_readers.hpp"
 
 namespace debruijn_graph {
 
@@ -22,9 +23,6 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 // todo: move impl to *.cpp
 
 namespace debruijn_graph {
-typedef io::IReader<io::SingleRead> ReadStream;
-typedef io::IReader<io::PairedRead> PairedReadStream;
-typedef io::MultifileReader<io::SingleRead> MultiFileStream;
 
 void construct_graph(ReadStream& stream, conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
 	INFO("STAGE == Constructing Graph");
@@ -80,8 +78,6 @@ void save_construction(conj_graph_pack& gp) {
 //}
 
 void exec_construction(conj_graph_pack& gp) {
-	typedef io::EasyReader EasyStream;
-
 	if (cfg::get().entry_point <= ws_construction) {
 		if (cfg::get().etalon_graph_mode) {
 			typedef io::VectorReader<io::SingleRead> GenomeStream;
@@ -89,30 +85,14 @@ void exec_construction(conj_graph_pack& gp) {
 					io::SingleRead("genome", gp.genome.str()));
 			construct_graph(genome_stream, gp);
 		} else {
-			vector<ReadStream*> streams;
-			//adding files with paired reads
-			streams.push_back(new EasyStream(input_file(cfg::get().ds.first)));
-			streams.push_back(new EasyStream(input_file(cfg::get().ds.second)));
-
-			//adding files with single reads
-			if (cfg::get().ds.single_first
-					&& cfg::get().ds.single_second) {
-				INFO("Files with single reads provided");
-				streams.push_back(new EasyStream(input_file(*cfg::get().ds.single_first)));
-				streams.push_back(new EasyStream(input_file(*cfg::get().ds.single_second)));
-			} else {
-				INFO("No files with single reads provided");
-			}
-
-			//will delete all the streams in destructor
-			MultiFileStream concat_stream(streams, true);
+			MultiFileStream concat_stream(single_streams(), true);
 
 			//has to be separate stream for not counting it in coverage
 			ReadStream* additional_contigs_stream = 0;
 			//adding file with additional contigs
 			if (cfg::get().use_additional_contigs) {
 				INFO("Contigs from previous K will be used");
-				additional_contigs_stream = new EasyStream(cfg::get().additional_contigs);
+				additional_contigs_stream = new io::EasyReader(cfg::get().additional_contigs);
 			}
 
 			construct_graph(concat_stream, gp, additional_contigs_stream);

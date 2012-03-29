@@ -34,6 +34,8 @@ def determine_it_count(tmp_dir):
 def determine_read_files(folder, str_it_count, input_files):
     id = 1    
     answer = dict()
+    answer["paired_reads"] = '"'
+    answer["single_reads"] = '"'
 
     for input_file in input_files:
         prefix = os.path.basename(input_file) + "." + str_it_count
@@ -41,22 +43,18 @@ def determine_read_files(folder, str_it_count, input_files):
         , shell=True).strip().split('\n')
         check_files(files, prefix)
 
-        if id == 1:
-            answer["first"] = folder + prefix + ".cor.fastq"    
-            answer["single_first"] = folder + prefix + ".unp.fastq"    
-            id += 1
-        else:
-            answer["second"] = folder + prefix + ".cor.fastq"    
-            answer["single_second"] = folder + prefix + ".unp.fastq"    
-            break
+        answer["paired_reads"] += folder + prefix + ".cor.fastq" + '  '
+        answer["single_reads"] += folder + prefix + ".unp.fastq" + '  '
+
+    answer["paired_reads"] += '"'
+    answer["single_reads"] += '"'
     
     return answer
 
 # based on hammer function in ./src/tools/datasets.py
 def hammer(given_props, output_dir, compress):
     def read_files():
-        read_files = ["first", "second"]
-        read_files += ["single_" + x for x in read_files]
+        read_files = ["paired_reads", "single_reads"]        
         return read_files
 
     cmd = []
@@ -64,12 +62,16 @@ def hammer(given_props, output_dir, compress):
     for prop in given_props.iterkeys():        
         val = given_props[prop]
         if prop in read_files():
-            newfile = output_dir + "/" + os.path.basename(val)
-            cmd += ["cp " + val + " " + output_dir + "/"]
-            if compress:
-                cmd += ["gzip -9 " + newfile]
-                newfile += ".gz"
-            val = os.path.relpath(newfile, output_dir) # re.sub(".*input/", "", newfile)
+            new_val = '"'
+            for oldfile in val[1:-1].strip().split("  "):
+                newfile = output_dir + "/" + os.path.basename(oldfile)
+                cmd += ["cp " + oldfile + " " + output_dir + "/"]
+                if compress:
+                    cmd += ["gzip -9 " + newfile]
+                    newfile += ".gz"
+                new_val += os.path.relpath(newfile, output_dir) + '  '
+            new_val += '"'
+            val = new_val
         dataset_entry += [(prop, val)]
     dataset_entry = map(lambda (a, b): a + "\t" + b, dataset_entry)
     dataset_entry = reduce(lambda x, y: x + "\n" + y, dataset_entry)

@@ -21,6 +21,8 @@
 #include  "omni/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 #include "long_contigs/lc_launch.hpp"
+#include "rectangle_resolver.hpp"
+#include "dataset_readers.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -86,8 +88,8 @@ template<size_t k, class graph_pack>
 void SelectReadsForConsensusBefore(graph_pack& etalon_gp,
 		typename graph_pack::graph_t& cur_graph,
 		EdgeLabelHandler<typename graph_pack::graph_t>& LabelsAfter,
-		const EdgeIndex<k + 1, typename graph_pack::graph_t>& index
-		,vector<ReadStream *>& reads , string& consensus_output_dir) {
+		const EdgeIndex<k + 1, typename graph_pack::graph_t>& index,
+		vector<ReadStream*> reads, string& consensus_output_dir) {
 	INFO("ReadMapping started");
 	map<typename graph_pack::graph_t::EdgeId, int> contigNumbers;
 	int cur_num = 0;
@@ -424,31 +426,14 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			string consensus_folder = cfg::get().output_dir
 					+ "consensus_after_resolve/";
 			OutputSingleFileContigs(resolved_gp.g, consensus_folder);
-			string input_dir = cfg::get().input_dir;
-			string reads_filename1 = input_dir + cfg::get().ds.first;
-			string reads_filename2 = input_dir + cfg::get().ds.second;
-
-			string real_reads = cfg::get().uncorrected_reads;
-			if (real_reads != "none") {
-				reads_filename1 = input_dir + cfg::get().ds.first;
-				reads_filename2 = input_dir + cfg::get().ds.second;
-			}
-
-			typedef io::EasyReader EasyStream;
-			EasyStream reads_1(reads_filename1);
-			EasyStream reads_2(reads_filename2);
-//			CarefulFilteringStream freads_1(reads_1);
-//			CarefulFilteringStream freads_2(reads_2);
-//			RCStream  frc_1(freads_1);
-//			RCStream  frc_2(freads_2);
-			vector<ReadStream*> reads = {/*&frc_1, &frc_2*/&reads_1, &reads_2 };
 
 //			SelectReadsForConsensus<K,  graph_pack>(origin_gp, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
 			consensus_folder = cfg::get().output_dir
 					+ "consensus_before_resolve/";
 			OutputSingleFileContigs(origin_gp.g, consensus_folder);
+			vector<ReadStream*> streams = single_streams();
 			SelectReadsForConsensusBefore<K, graph_pack>(origin_gp, origin_gp.g,
-					labels_after, origin_gp.index, reads, consensus_folder);
+					labels_after, origin_gp.index, streams, consensus_folder);
 
 		}
 

@@ -1,6 +1,5 @@
-first	            E.coli/is220/cropped/s_6.first1000_1.fastq.gz
-second	            E.coli/is220/cropped/s_6.first1000_2.fastq.gz
-single_cell	        false
+paired_reads        "E.coli/is220/cropped/s_6.first1000_1.fastq.gz E.coli/is220/cropped/s_6.first1000_2.fastq.gz"
+single_cell	    false
 reference_genome    E.coli/MG1655-K12.first1K.fasta.gz
 genes               E.coli/genes.first1K.txt
 operons             E.coli/operons.first1K.txt

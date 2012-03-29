@@ -265,11 +265,11 @@ def run_spades(cfg):
         dataset_filename = path.abspath(path.expandvars(cfg.dataset))
         dataset = load_config_from_file(dataset_filename)
         if dataset.__dict__.has_key("reference_genome"):
-            cmd += " -R " + path.join(dataset_filename, dataset.reference_genome)
+            cmd += " -R " + path.join(path.dirname(dataset_filename), dataset.reference_genome)
         if dataset.__dict__.has_key("genes"):
-            cmd += " -G " + path.join(dataset_filename, dataset.genes)
+            cmd += " -G " + path.join(path.dirname(dataset_filename), dataset.genes)
         if dataset.__dict__.has_key("operons"):
-            cmd += " -O " + path.join(dataset_filename, dataset.operons)
+            cmd += " -O " + path.join(path.dirname(dataset_filename), dataset.operons)
         qr = "quality_results"
         cmd += " -o " + os.path.join(cfg.working_dir, qr)
         support.sys_call(cmd)

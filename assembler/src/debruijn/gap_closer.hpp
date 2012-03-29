@@ -17,6 +17,7 @@
 #include "standard.hpp"
 #include "omni_labelers.hpp"
 #include "io/easy_reader.hpp"
+#include "dataset_readers.hpp"
 
 namespace debruijn_graph {
 
@@ -220,17 +221,12 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
 
 template<size_t k>
 void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
-	io::PairedEasyReader stream(
-			make_pair(input_file(cfg::get().ds.first),
-					input_file(cfg::get().ds.second)),
-			0);
-	stream.reset();
+	auto_ptr<io::PairedEasyReader> stream = paired_easy_reader(0);
 	INFO("SUBSTAGE == Closing gaps");
 	if (use_extended_mapper) {
 		typedef NewExtendedSequenceMapper<k + 1, Graph> SequenceMapper;
 		SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper);
-		GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper,
-				stream);
+		GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper, *stream);
 		paired_info_index gc_paired_info_index(gp.g);
 		gcpif.FillIndex(gc_paired_info_index);
 		CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
@@ -239,8 +235,7 @@ void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
 	{
 		typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 		SequenceMapper mapper(gp.g, gp.index);
-		GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper,
-				stream);
+		GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper, *stream);
 		paired_info_index gc_paired_info_index(gp.g);
 		gcpif.FillIndex(gc_paired_info_index);
 		CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);

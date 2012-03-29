@@ -14,6 +14,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <io/reader.hpp>
+#include <io/ireader.hpp>
+#include <io/easy_reader.hpp>
+#include <io/converting_reader_wrapper.hpp>
 
 namespace debruijn_graph {
 
@@ -292,10 +295,8 @@ struct debruijn_config {
 	};
 
 	struct dataset {
-		std::string first;
-		std::string second;
-		boost::optional<std::string> single_first;
-		boost::optional<std::string> single_second;
+		vector<std::string> paired_reads;
+		vector<std::string> single_reads;
 		boost::optional<std::string> jumping_first;
 		boost::optional<std::string> jumping_second;
 		boost::optional<size_t> jump_is;
@@ -307,8 +308,7 @@ struct debruijn_config {
 		boost::optional<double> avg_coverage;
 		bool single_cell;
 		std::string reference_genome_filename;
-		boost::optional<std::string> genes_filename;
-		boost::optional<std::string> operons_filename;
+
 		Sequence reference_genome;
 	};
 
@@ -538,12 +538,10 @@ inline void load(debruijn_config::gap_closer& gc,
 inline void load(debruijn_config::dataset& ds,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
+	using config_common::load_split;
 
-	load(ds.first, pt, "first");
-	load(ds.second, pt, "second");
-
-	ds.single_first = pt.get_optional<std::string>("single_first");
-	ds.single_second = pt.get_optional<std::string>("single_second");
+	load_split(ds.paired_reads, pt, "paired_reads");
+	load_split(ds.single_reads, pt, "single_reads");
 
 	ds.jumping_first = pt.get_optional<std::string>("jumping_first");
 	ds.jumping_second = pt.get_optional<std::string>("jumping_second");
@@ -561,9 +559,6 @@ inline void load(debruijn_config::dataset& ds,
 	if (refgen && *refgen != "N/A") {
 		ds.reference_genome_filename = *refgen;
 	}
-
-	ds.genes_filename = pt.get_optional<std::string>("genes");
-	ds.operons_filename = pt.get_optional<std::string>("operons");
 }
 
 inline void load_reference_genome(debruijn_config::dataset& ds,

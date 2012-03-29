@@ -115,6 +115,21 @@ void load(std::vector<T>& vec, boost::property_tree::ptree const& pt,
 	}
 }
 
+void inline load_split(vector<string>& vec, boost::property_tree::ptree const& pt, string const& key) {
+	boost::optional<string> values = pt.get_optional<string>(key);
+	if (values) {
+		std::istringstream iss(*values);
+		while (iss) {
+			std::string value;
+			iss >> value;
+			if (value.length()) {
+				vec.push_back(value);
+			}
+		}
+	}
+}
+
+
 template<class T>
 void load(T& value, boost::property_tree::ptree const& pt, string const& key) {
 	load(value, pt, key, true);
