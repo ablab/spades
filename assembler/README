@@ -1,71 +1,34 @@
-ASSEMBLER
-24 Aug 2011
+SPAdes
+Genome assembler for single-cell and multicell data
+Version: see VERSION
 
-De novo sequence assembler for short mate paired reads (70+ bp).
+Developed in Algorithmic Biology Lab of St. Petersburg Academic University of the Russian Academy of Sciences.
 
-=== Download ===
+Authors
 
-Our project is situated on: git@github.com:ablab/algorithmic-biology.git
-For more actual information please visit http://bioinf.spbau.ru/wiki/Main_Page
+    Anton Bankevich, 
+    Sergey Nurk, 
+    Dmitry Antipov, 
+    Alexey Gurevich, 
+    Mikhail Dvorkin, 
+    Alexander Kulikov, 
+    Valery Lesin, 
+    Sergey Nikolenko, 
+    Son Pham, 
+    Andrey Prjibelski, 
+    Alexey Pyshkin, 
+    Alexander Sirotkin, 
+    Nikolay Vyahhi, 
+    Glenn Tesler, 
+    Max Alekseyev and 
+    Pavel Pevzner
 
-=== Libraries ===
+Installation instructions and manual can be found are on the website: 
+http://bioinf.spbau.ru/spades
 
-We need the following programs and libraries (can be installed from repositories):
+Reference
 
-* gcc 4.4 or more
-* cmake 2.6 or more
-* log4cxx
-* zlib
-* cute
-* boost 1.42 (exactly!) 
+Anton Bankevich, Sergey Nurk, Dmitry Antipov, Alexey A. Gurevich, Mikhail Dvorkin, Alexander S. Kulikov, Valery M. Lesin, Sergey I. Nikolenko, Son Pham, Andrey D. Prjibelski, Alexey V. Pyshkin, Alexander V. Sirotkin, Nikolay Vyahhi, Glenn Tesler, Max A. Alekseyev, and Pavel A. Pevzner
+SPAdes: a New Genome Assembly Algorithm and its Applications to Single-Cell Sequencing
 
-=== Preparation ===
-
-1. Install all mentioned above.
-2. In assembler: run prepare_cfg.sh (this script will build and install libraries from ext to build/ext and prepare debug and release build files). 
-
-=== Project structure ===
-
-Our project structure is the following. In the algorithmic-biology/assembler/ there are directories:
-
-* src - contains all the code written inside laboratory:
-    o subprojects (e.g. debruijn, abruijn, etc);
-    o common code in directory include that is used by all subprojects (e.g. io, sequence, cuckoo.hpp, etc);
-    o tools (various utils). 
-* ext - contains all the external code that we use:
-    o src - code of some necessary libraries that are impossible to get from apt-get;
-    o include - headers (e.g. kseq);
-    o tools - any external tools that we use. 
-* doc - contains documentation.
-* data - contains links to data (which is not actually stored under git).
-* build - contains all executables. 
-
-=== CMake ===
-
-We use cmake as a build system.
-
-There are 2 types of executables: debug and release. Debug is not optimized and can easily be used for debug, and release is optimized and can't be debugged.
-
-If you work under Eclipse just prepare your system. For each project there are 2 build configurations (debug and release) and 2 run configurations.
-
-If you work under console you should also prepare you system. To build a project run make in appropriate directory:
-
-build/<debug|release>/<project name>
-
-To run: build/<debug|release>/<project name>/<project name>
-
-=== Coding conventions ===
-
-We're using Google C++ Style Guide http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml 
-
-=== Troubleshooting ===
-
-If you do not have sudo account you should install all the necessary libraries somewhere in your home directory. In this case CMake will not be able to find them. You should use ccmake to solve this problem (it can be found in cmake-curses-gui package).
-
-Run ccmake . in the directory where CMakeLists.txt are (e.g. build/debug/ or build/release/). Press t to see all the options. Now you can manually correct the paths to libraries and their headers. 
-
-Updated 26 Aug 2011
-
-== Mac OS X ==
-
-Anything except 64-bit Linux currently is not supported! We'll add it in future if there'll be any need.
+To appear in the Journal of Computational Biology, 2012
