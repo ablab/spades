@@ -17,20 +17,24 @@ input_solid_kmers
 ; == HAMMER GENERAL ==
 ; general options
 general_do_everything_after_first_iteration	1
-general_reconstruct_only	0
+general_reconstruct_only	1
 general_change_n_to_a		0
 general_hard_memory_limit	15
-general_max_nthreads		4
+general_max_nthreads		2
 general_tau					1
 general_gzip				0
-general_max_iterations		1
+general_max_iterations		5
 general_blob_margin			0.25
 general_gzip_margin			4.0
+general_file_buffer_exp		20
+general_common_quality		-1
+general_remove_temp_files	0
 
 ; count k-mers
 count_do					1
 count_numfiles				8
 count_merge_nthreads		4
+count_split_buffer			100000
 
 ; sort k-mers
 sort_do						1
@@ -41,13 +45,13 @@ subvectors_blocksize_quadratic_threshold	50
 
 ; hamming graph clustering
 hamming_do					1
-hamming_write_solid_kmers	1
+hamming_write_solid_kmers	0
 hamming_write_bad_kmers		0
 hamming_class_buffer		100000
 
 ; bayesian subclustering
 bayes_do						1
-bayes_nthreads					4
+bayes_nthreads					6
 bayes_quality_threshold			0.995
 bayes_singleton_threshold		0.995
 bayes_nonsingleton_threshold	0.5
@@ -59,7 +63,7 @@ bayes_hammer_mode				0
 ; iterative expansion step
 expand_do					1
 expand_max_iterations		5
-expand_nthreads				4
+expand_nthreads				6
 expand_write_each_iteration	0
 expand_write_kmers_result	1
 
@@ -68,6 +72,7 @@ correct_do					1
 correct_use_threshold		1
 correct_threshold			0.98
 correct_nthreads			4
+correct_readbuffer			100000
 
 
 

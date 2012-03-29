@@ -15,32 +15,6 @@ sys.path.append(os.path.join(spades_home, "src/tools/spades_pipeline/"))
 import support
 from process_cfg import *
 
-def prepare_config(filename, cfg, prev_K, last_one):
-
-    subst_dict = dict()
-    cfg.working_dir = path.abspath(cfg.working_dir)
-
-    subst_dict["dataset"]            = path.abspath(path.expandvars(cfg.dataset))
-    subst_dict["input_dir"]          = path.dirname(subst_dict["dataset"])
-    subst_dict["output_base"]        = cfg.working_dir
-    subst_dict["additional_contigs"] = path.join(cfg.working_dir, "simplified_contigs.fasta")
-    subst_dict["entry_point"]        = 'construction'
-
-    if last_one:
-        subst_dict["gap_closer_enable"] = "true"
-        if cfg.paired_mode:
-            subst_dict["paired_mode"] = "true"
-    else:
-        subst_dict["paired_mode"] = "false"
-        subst_dict["gap_closer_enable"] = "false"
-
-    if prev_K is not None:
-        subst_dict["use_additional_contigs"] = "true"
-    else:
-        subst_dict["use_additional_contigs"] = "false"
-
-    substitute_params(filename, subst_dict)
-
 def prepare_config_bh(filename, cfg):
 
     subst_dict = dict()
@@ -73,6 +47,32 @@ def prepare_config_bh(filename, cfg):
         subst_dict["input_qvoffset"]        = cfg.qvoffset
 
     substitute_params(filename, subst_dict) 
+
+def prepare_config_spades(filename, cfg, prev_K, last_one):
+
+    subst_dict = dict()
+    cfg.working_dir = path.abspath(cfg.working_dir)
+
+    subst_dict["dataset"]            = path.abspath(path.expandvars(cfg.dataset))
+    subst_dict["input_dir"]          = path.dirname(subst_dict["dataset"])
+    subst_dict["output_base"]        = cfg.working_dir
+    subst_dict["additional_contigs"] = path.join(cfg.working_dir, "simplified_contigs.fasta")
+    subst_dict["entry_point"]        = 'construction'
+
+    if last_one:
+        subst_dict["gap_closer_enable"] = "true"
+        if cfg.paired_mode:
+            subst_dict["paired_mode"] = "true"
+    else:
+        subst_dict["paired_mode"] = "false"
+        subst_dict["gap_closer_enable"] = "false"
+
+    if prev_K is not None:
+        subst_dict["use_additional_contigs"] = "true"
+    else:
+        subst_dict["use_additional_contigs"] = "false"
+
+    substitute_params(filename, subst_dict)
 
 def main():
 
@@ -119,7 +119,7 @@ def main():
             log_filename = path.join(bh_cfg.output_dir, "bh.log")
             bh_cfg.__dict__["log_filename"] = log_filename
 
-            print("\n== Error correction log can be found here: " + bh_cfg.log_filename + "\n")
+            print("\n== Error correction started. Log can be found here: " + bh_cfg.log_filename + "\n")
 
             log_file = open(log_filename, "w")
 
@@ -163,7 +163,7 @@ def main():
         log_filename = path.join(spades_cfg.working_dir, "spades.log")
         spades_cfg.__dict__["log_filename"] = log_filename
 
-        print("\n== Assembling log can be found here: " + spades_cfg.log_filename + "\n")
+        print("\n== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
 
         log_file = open(log_filename, "w")
 
@@ -179,7 +179,7 @@ def main():
 
         err_code = 0
         try:
-            run(spades_cfg)
+            run_spades(spades_cfg)
         except support.spades_error as err:
             print err.err_str
             err_code = err.code
@@ -211,18 +211,18 @@ def run_bh(cfg):
     support.sys_call(command)
 
     import bh_aux
-    dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir)
+    dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir, cfg.input_reads)
     dataset_filename = path.abspath(path.join(cfg.output_dir, "dataset.info"))
     dataset_file = open(dataset_filename, "w")
     dataset_file.write(dataset_str)    
     dataset_file.close()
     print("\nDataset created: " + dataset_filename + "\n")    
 
-    #shutil.rmtree(cfg.working_dir)
+    shutil.rmtree(cfg.working_dir)
 
     return dataset_filename
 
-def run(cfg):
+def run_spades(cfg):
 
     if type(cfg.iterative_K) is int:
         cfg.iterative_K = [cfg.iterative_K]
@@ -241,7 +241,7 @@ def run(cfg):
         shutil.copytree(path.join(spades_home, "configs"), dst_configs)
         cfg_file_name = path.join(dst_configs, "debruijn", "config.info")
 
-        prepare_config(cfg_file_name, cfg, prev_K, count == len(cfg.iterative_K))
+        prepare_config_spades(cfg_file_name, cfg, prev_K, count == len(cfg.iterative_K))
         prev_K = K
 
         execution_home = path.join(os.getenv('HOME'), '.spades/precompiled/build' + str(K))
@@ -262,13 +262,14 @@ def run(cfg):
     if cfg.measure_quality:
         print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
         cmd = "python " + path.join(spades_home, "src/tools/quality/quality.py") + " " + result_contigs
-        dataset = load_config_from_file(path.abspath(path.expandvars(cfg.dataset)))
+        dataset_filename = path.abspath(path.expandvars(cfg.dataset))
+        dataset = load_config_from_file(dataset_filename)
         if dataset.__dict__.has_key("reference_genome"):
-            cmd += " -R " + dataset.reference_genome
+            cmd += " -R " + path.join(dataset_filename, dataset.reference_genome)
         if dataset.__dict__.has_key("genes"):
-            cmd += " -G " + dataset.genes
+            cmd += " -G " + path.join(dataset_filename, dataset.genes)
         if dataset.__dict__.has_key("operons"):
-            cmd += " -O " + dataset.operons
+            cmd += " -O " + path.join(dataset_filename, dataset.operons)
         qr = "quality_results"
         cmd += " -o " + os.path.join(cfg.working_dir, qr)
         support.sys_call(cmd)

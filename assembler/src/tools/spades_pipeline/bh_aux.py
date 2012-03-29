@@ -12,15 +12,12 @@ def verify(expr, message):
         print "Assertion failed. Message: " + message
         exit(0)
 
-def check_files(files, str_it_count):
+def check_files(files, prefix):
     msg = "Failure! Check output files."
-    verify(len(files) == 6, msg + "1")
-    verify(str_it_count + ".reads.0.left.corrected.fastq" in files, msg + "2")
-    verify(str_it_count + ".reads.0.right.corrected.fastq" in files, msg + "3")
-    verify(str_it_count + ".reads.0.left.unpaired.fastq" in files, msg + "4")
-    verify(str_it_count + ".reads.0.right.unpaired.fastq" in files, msg + "5")
-    verify(str_it_count + ".reads.0.left.bad.fastq" in files, msg + "6")
-    verify(str_it_count + ".reads.0.right.bad.fastq" in files, msg + "7")
+    verify(len(files) == 3, msg + " prefix is " + prefix + " error 1")
+    verify(prefix + ".cor.fastq" in files, msg + " prefix is " + prefix + " error 2")
+    verify(prefix + ".unp.fastq" in files, msg + " prefix is " + prefix + " error 3")
+    verify(prefix + ".bad.fastq" in files, msg + " prefix is " + prefix + " error 4")
 
 def determine_it_count(tmp_dir):
     import re
@@ -34,16 +31,25 @@ def determine_it_count(tmp_dir):
                 answer = val
     return answer            
 
-def determine_read_files(folder, str_it_count):
-    files = subprocess.check_output('ls -1 ' + folder + r"/" + str_it_count + "*.reads.* | xargs -n1 basename"\
-    , shell=True).strip().split('\n')
-    check_files(files, str_it_count)
+def determine_read_files(folder, str_it_count, input_files):
+    id = 1    
+    answer = dict()
+
+    for input_file in input_files:
+        prefix = os.path.basename(input_file) + "." + str_it_count
+        files = subprocess.check_output('ls -1 ' + folder + prefix + ".*.fastq | xargs -n1 basename"\
+        , shell=True).strip().split('\n')
+        check_files(files, prefix)
+
+        if id == 1:
+            answer["first"] = folder + prefix + ".cor.fastq"    
+            answer["single_first"] = folder + prefix + ".unp.fastq"    
+            id += 1
+        else:
+            answer["second"] = folder + prefix + ".cor.fastq"    
+            answer["single_second"] = folder + prefix + ".unp.fastq"    
+            break
     
-    answer = dict()    
-    answer["first"] = folder + str_it_count + ".reads.0.left.corrected.fastq"    
-    answer["second"] = folder + str_it_count + ".reads.0.right.corrected.fastq"
-    answer["single_first"] = folder + str_it_count + ".reads.0.left.unpaired.fastq"    
-    answer["single_second"] = folder + str_it_count + ".reads.0.right.unpaired.fastq"
     return answer
 
 # based on hammer function in ./src/tools/datasets.py
@@ -71,12 +77,12 @@ def hammer(given_props, output_dir, compress):
         os.system(c)
     return dataset_entry
 
-def generate_dataset(cfg, tmp_dir):    
+def generate_dataset(cfg, tmp_dir, input_files):    
     str_it_count = str(determine_it_count(tmp_dir))
 
     if (cfg.max_iterations <= 10):
         str_it_count = "0" + str_it_count
-    dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count)
+    dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count, input_files)
     dataset_cfg["single_cell"] = bool_to_str(cfg.single_cell)
     if cfg.__dict__.has_key("reference"):    
         dataset_cfg["reference_genome"] = os.path.abspath(os.path.expandvars(cfg.reference))
