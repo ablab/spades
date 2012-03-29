@@ -29,6 +29,8 @@
 #include "omni/total_labeler.hpp"
 #include "omni/dijkstra.hpp"
 #include "new_debruijn.hpp"
+#include "perfcounter.hpp"
+
 
 
 namespace debruijn_graph {
@@ -56,7 +58,9 @@ class RepeatResolver {
 	typedef unordered_map<VertexId, set<EdgeId> > NewVertexMap;
 	typedef unordered_map<VertexId, set<VertexId> > VertexIdMap;
 
+
 public:
+
 	class FastDistanceCounter {
 
 	private:
@@ -380,6 +384,14 @@ public:
 	void ResolveRepeats(const string& output_folder);
 
 private:
+
+	avg_perf_counter adjacent_time;
+	avg_perf_counter rectangle_resolve_1_time;
+	avg_perf_counter rectangle_resolve_2_time;
+	avg_perf_counter rectangle_resolve_3_time;
+	avg_perf_counter produce_pair_info_time;
+	avg_perf_counter multisplit_time;
+	avg_perf_counter resolve_time;
 	int near_vertex;
 	unordered_map<int, VertexId> fillVerticesAuto();
 	unordered_map<int, VertexId> fillVerticesComponents();
@@ -579,6 +591,7 @@ private:
 
 template<class Graph>
 vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
+	multisplit_time.start();
 	int k = 0;
 	vector<EdgeId> edgeIds[2];
 	//TODO: fix labels
@@ -943,7 +956,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 
 	DEBUG("Res size "<<res.size());
 
-
+	multisplit_time.stop();
 	return res;
 
 }
@@ -1134,6 +1147,7 @@ unordered_map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVertices
 
 template<class Graph>
 void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
+	perf_counter RR_time;
 
 	INFO("SUBSTAGE == Resolving non-primitive repeats");
 	sum_count = 0;
@@ -1171,6 +1185,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 
 				DEBUG(" resolving vertex "<<new_IDs.ReturnIntId(v_iter->second));
 				VERBOSE_POWER(++counter, " vertices processed");
+
 				if (rc_mode && deleted_handler.live_vertex.find(v_iter->second) == deleted_handler.live_vertex.end()){
 					DEBUG("already deleted");
 					continue;
@@ -1199,10 +1214,14 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				DEBUG("paired info size: " << p_size);
 
 				int tcount;
+				resolve_time.start();
 				if (cheating_mode != 1)
 					tcount = RectangleResolveVertex(v_iter->second, TotLabAfter);
 				else
 					tcount = CheatingResolveVertex(v_iter->second);
+				resolve_time.stop();
+
+
 				DEBUG("Vertex "<< v_iter->first<< " resolved to "<< tcount);
 				sum_count += tcount;
 				if (tcount > 1) {
@@ -1215,8 +1234,18 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				}
 			}
 		}
+
 	}
 	INFO(sum_count << " vertices processed while resolving non-primitive repeats");
+	INFO("RR running time is "<< RR_time.time_ms()<< " ms");
+	DEBUG("Generate pair infos got "<< produce_pair_info_time.time_ms()<< " ms and runed "<<produce_pair_info_time.counts()<< " times.");
+	DEBUG("Resolve single vertex "<< resolve_time.time_ms()<< " ms and runed "<<resolve_time.counts()<< " times.");
+	DEBUG("MultiSplit got "<< multisplit_time.time_ms()<< " ms and runed "<<multisplit_time.counts()<< " times.");
+	DEBUG("Adjacency check got "<< adjacent_time.time_ms()<< " ms and runed "<<adjacent_time.counts()<< " times.");
+	DEBUG("DFS got "<< rectangle_resolve_1_time.time_ms()<< " ms and runed "<<rectangle_resolve_1_time.counts()<< " times.");
+	DEBUG("RR2 got "<< rectangle_resolve_2_time.time_ms()<< " ms and runed "<<rectangle_resolve_2_time.counts()<< " times.");
+	DEBUG("RR3 got "<< rectangle_resolve_3_time.time_ms()<< " ms and runed "<<rectangle_resolve_3_time.counts()<< " times.");
+
 /*	INFO("Converting position labels");
 	for (auto e_iter = new_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		EdgeId old_edge = edge_labels[*e_iter];
@@ -1264,8 +1293,8 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 	}
 //	return make_pair(true, pair_inf);
 
-	PairInfo corrected_info = StupidPairInfoCorrectorByOldGraph(new_graph,
-			pair_inf);
+	PairInfo corrected_info = pair_inf;//StupidPairInfoCorrectorByOldGraph(new_graph,
+//			pair_inf);
 	DEBUG("PairInfo "<<left_id<<"("<<edge_labels[left_id]<<") "<<right_id<<" "<<pair_inf.d<< " corrected into "<<corrected_info.d);
 	if (abs(corrected_info.d - pair_inf.d) > MAX_DISTANCE_CORRECTION) {
 		DEBUG("big correction");
@@ -1306,6 +1335,7 @@ namespace details
 template<class Graph>
 size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 		PairInfoIndexData<EdgeId> &paired_data, VertexId vid) {
+	produce_pair_info_time.start();
 
 	details::EdgeInfoCompare<Graph> EI_comparator;
 
@@ -1395,7 +1425,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 		DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(edge_labels[tmp.first]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d << " from vertex: "<<edge_infos[j].d<< " weigth "<<tmp.weight);
 	}
 
-
+	produce_pair_info_time.stop();
 	return right_edges.size();
 }
 
@@ -1403,6 +1433,8 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 template<class Graph>
 size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler) {
+
+	rectangle_resolve_2_time.start();
 	DEBUG("Rectangle resolve vertex started");
 	int size = edge_infos.size();
 	//No resolve for cheater-incident vertixes")'
@@ -1425,6 +1457,9 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<
 		}
 
 	}
+	rectangle_resolve_2_time.stop();
+	rectangle_resolve_3_time.start();
+
 	edge_info_colors.resize(size);
 	for (int i = 0; i < size; i++) {
 		edge_info_colors[i] = -1;
@@ -1433,30 +1468,33 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<
 	neighbours.resize(size);
 
 
-	TRACE("constructing edge-set");
-	set<EdgeId> edges;
-	edges.clear();
+//	TRACE("constructing edge-set");
+//	set<EdgeId> edges;
+//	edges.clear();
+//
+//	for (auto e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+//		{
+//			edges.insert(*e_iter);
+//		}
+//	}
 
-	for (auto e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-		{
-			edges.insert(*e_iter);
-		}
-	}
 
-
-	TRACE("checking edge-infos ");
-	for (int i = 0; i < size; i++) {
-		if (edges.find(edge_infos[i].getEdge()) == edges.end()) {
-			ERROR("fake edge: "<< edge_infos[i].getEdge());
-		}
-	}
+//	TRACE("checking edge-infos ");
+//	for (int i = 0; i < size; i++) {
+//		if (edges.find(edge_infos[i].getEdge()) == edges.end()) {
+//			ERROR("fake edge: "<< edge_infos[i].getEdge());
+//		}
+//	}
 	for (int i = 0; i < size; i++)
 		neighbours[i].resize(0);
+	rectangle_resolve_3_time.stop();
+
+	adjacent_time.start();
 	for (int i = 0; i < size; i++) {
 		//		DEBUG("Filling " << i << " element");
-		if (edges.find(edge_infos[i].getEdge()) == edges.end()) {
-			ERROR("fake edge");
-		}
+//		if (edges.find(edge_infos[i].getEdge()) == edges.end()) {
+//			ERROR("fake edge");
+//		}
 		for (int j = 0; j < size; j++) {
 			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler, old_IDs, distance_counter)
 					&& !edge_infos[j].isAdjacent(edge_infos[i], old_graph,
@@ -1472,6 +1510,9 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<
 			}
 		}
 	}
+	adjacent_time.stop();
+
+	rectangle_resolve_1_time.start();
 	int cur_color = 0;
 	DEBUG("dfs started");
 	for (int i = 0; i < size; i++) {
@@ -1480,6 +1521,8 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<
 			cur_color++;
 		}
 	}
+	rectangle_resolve_1_time.stop();
+
 	DEBUG("Edge color info " << omnigraph::operator<<(oss_, edge_info_colors));
 	if (cheating_mode) {
 		if (cur_color > 1) {
