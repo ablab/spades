@@ -15,14 +15,15 @@ typedef std::vector<fs::path> files_t;
 
 files_t files_by_prefix(fs::path const& p)
 {
+	//using namespace details;
 	files_t files;
 
 	fs::path folder(p.parent_path());
-	std::string prefix = p.filename();
+	std::string prefix = p.filename().c_str();
 
 	for (auto it = fs::directory_iterator(folder), end = fs::directory_iterator(); it != end; ++it)
 	{
-		if (is_regular_file(*it) && boost::starts_with(it->filename(), prefix))
+		if (is_regular_file(*it) && boost::starts_with(it->path().filename().c_str(), prefix))
 			files.push_back(*it);
 	}
 
@@ -53,6 +54,6 @@ void copy_files_by_ext(fs::path const& from_folder, fs::path const& to_folder, s
         }
 
 	    if (it->path().extension() == ext)
-			copy_file(*it, to_folder / it->filename());
+			copy_file(*it, to_folder / it->path().filename());
     }
 }
