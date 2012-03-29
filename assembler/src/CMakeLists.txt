@@ -1,3 +1,4 @@
+set (VERBOSE 1)
 cmake_minimum_required (VERSION 2.6)
  
 # allow more human readable "if then else" constructs
@@ -21,7 +22,9 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug"          AND
   set(CMAKE_BUILD_TYPE "RelWithDebInfo") 
 endif()
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lrt")
+#set(ENV{LDFLAGS} "$ENV{LDFLAGS} -lrt")
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lrt")
+
 
 add_definitions(-g3)
 add_definitions(-std=c++0x)
@@ -76,3 +79,5 @@ add_subdirectory(debruijn)
 add_subdirectory(hammer)
 
 include(CMakeListsInternal.txt)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lrt")
+

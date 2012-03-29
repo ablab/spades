@@ -1012,7 +1012,7 @@ void RemoveOverlaps(const Graph& g, std::vector<BidirectionalPath>& paths) {
             EdgeId lastEdge = path.back();
 
             int overlap = -1;
-            int overlaped = - 1;
+//            int overlaped = - 1;
             for (int l = 0; l < (int) paths.size(); ++l) {
 				if (k != l) {
 					BidirectionalPath& toCompare = paths[l];
@@ -1035,7 +1035,7 @@ void RemoveOverlaps(const Graph& g, std::vector<BidirectionalPath>& paths) {
 							}
 							if (found && overlap < i) {
 								overlap = i;
-								overlaped = l;
+//								overlaped = l;
 							}
 					   }
 					}

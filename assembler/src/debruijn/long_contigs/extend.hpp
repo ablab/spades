@@ -108,7 +108,7 @@ class JumpingHero {
 		}
 		if (answer) {
 			TRACE(
-					"Unique " << (forward_direct_ ? "forward" : "backward") << " prolongation for edge " << g_.str(e) << " found. It is edge " << g_.str(*answer));
+					"Unique " << (forward_direct_ ? "forward" : "backward") << " prolongation for edge " << g_.str(e) << " found. It is edge ");// << g_.str(*answer));
 		} else {
 			TRACE(
 					"Unique " << (forward_direct_ ? "forward" : "backward") << " prolongation for edge " << g_.str(e) << " wasn't found.");

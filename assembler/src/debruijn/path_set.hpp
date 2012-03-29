@@ -312,7 +312,7 @@ private:
         {
             int distance =0;
             PathSet<EdgeId> currentPathset = *iter;
-            auto forward_iter = iter ;  
+//            auto forward_iter = iter ;
             bool isPrefix = false ;
             while(true)
             {
@@ -487,7 +487,7 @@ public:
         {
             int distance =0;
             PathSet<EdgeId> currentPathset = *iter;
-            auto forward_iter = iter ;  
+//            auto forward_iter = iter ;
             bool isPrefix = false ;
             while(true)
             {

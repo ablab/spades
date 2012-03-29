@@ -1371,14 +1371,14 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 			DEBUG(" all info getted")
 			{
 				//incompateble with cheating mode
-				bool NotOnSelfExist = false;
+//				bool NotOnSelfExist = false;
 				for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
 					if ((tmp_edge_infos[j].lp.d != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
-						NotOnSelfExist = true;
+//						NotOnSelfExist = true;
 						break;
 					}
 				}
-				NotOnSelfExist = false;
+//				NotOnSelfExist = false;
 				for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
 					edge_infos.push_back(tmp_edge_infos[j]);
 				}
