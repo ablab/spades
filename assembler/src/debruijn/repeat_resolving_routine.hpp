@@ -351,6 +351,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 
 	//Generating paired info for resolved graph
+	{
 		PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 				resolved_gp.g);
 		if (cfg::get().path_set_graph == false) {
@@ -358,6 +359,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
 					labels_after, resolved_cleared_graph_paired_info_before);
 		}
+	}
 
 
 
@@ -375,6 +377,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
         ClipTipsForResolver(resolved_gp.g);
 
 		if (cfg::get().path_set_graph == false) {
+			PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
+					resolved_gp.g);
 
 			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
 					labels_after, resolved_cleared_graph_paired_info_before);
@@ -385,6 +389,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //		FinalRemoveErroneousEdges(resolved_gp.g, edge_remover);
 
 		if (cfg::get().path_set_graph == false) {
+			PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
+					resolved_gp.g);
 
 			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
 					labels_after, resolved_cleared_graph_paired_info_before);
@@ -400,9 +406,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	DEBUG("Clearing resolved graph complete");
 
 	//Generating paired info for resolved graph
-	PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
-			resolved_gp.g);
 	if (cfg::get().path_set_graph == false) {
+		PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
+			resolved_gp.g);
 
 		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
 				labels_after, resolved_cleared_graph_paired_info);
