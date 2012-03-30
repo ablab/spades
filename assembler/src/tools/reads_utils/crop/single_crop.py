@@ -67,11 +67,7 @@ print('Index built\n')
 # align reads using bowtie
 for line in flist:
 	fName, ext = os.path.splitext(line)
-<<<<<<< HEAD
-	os.system(bowtie + 'bowtie -p 8 -c ' + format + ' ' + outdir + 'index/ref' + file_suff + ' ' + line.strip() + ' --al ' + fName + file_suff + ext.strip() + ' > /dev/null 2> errlog_' + fName)
-=======
 	os.system(bowtie + 'bowtie -p 8 -c ' + format + ' ' + outdir + 'index/ref' + file_suff + ' ' + line.strip() + ' --al ' + outdir + fName + file_suff + ext.strip() + ' > /dev/null 2>  errlog' + fName)
->>>>>>> bd2bc9b8955f31b87a3398d43f26e84fe201eb78
 
 print('Alligned\n')
 # use -X for maxins length
