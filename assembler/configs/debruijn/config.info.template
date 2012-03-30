@@ -1,7 +1,6 @@
 ; input options:
 
 #include "simplification.info"
-; #include "datasets.info"
 #include "distance_estimation.info"
 #include "detail_info_printer.info"
 
