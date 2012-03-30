@@ -92,6 +92,11 @@ def main():
     os.environ["cfg"] = path.dirname(path.abspath(CONFIG_FILE))
 
     cfg = load_config_from_info_file(CONFIG_FILE)
+
+    if (not cfg.has_key("bh")) and (not cfg.has_key("spades")):
+        print ("\nError: Wrong config! You should specify either 'bh' section (for reads error correction) or 'spades' one (for assembling) or both!\n")
+        exit(1)
+
     if cfg.has_key("bh"):   
         bh_cfg = cfg["bh"]
         if not bh_cfg.__dict__.has_key("output_dir"):
@@ -211,7 +216,9 @@ def run_bh(cfg):
 
     import bh_aux
     dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir, cfg.input_reads)
-    dataset_filename = path.abspath(path.join(cfg.output_dir, "dataset.info"))
+    if not cfg.__dict__.has_key("dataset_name"):
+        cfg.__dict__["dataset_name"] = "dataset"
+    dataset_filename = path.abspath(path.join(cfg.output_dir, cfg.dataset_name + ".info"))
     dataset_file = open(dataset_filename, "w")
     dataset_file.write(dataset_str)    
     dataset_file.close()
@@ -250,9 +257,10 @@ def run_spades(cfg):
 
         support.sys_call(command, execution_home)
 
-        latest = path.join(cfg.working_dir, "K%d" % (K), "latest")
+        dataset_id = path.splitext(path.basename(cfg.dataset))[0]
+        latest = path.join(cfg.working_dir, dataset_id, "K%d" % (K), "latest")
         latest = os.readlink(latest)
-        latest = os.path.join(cfg.working_dir, "K%d" % (K), latest)
+        latest = path.join(cfg.working_dir, dataset_id, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
 
     support.copy(os.path.join(latest, "final_contigs.fasta"), cfg.working_dir)

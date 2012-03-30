@@ -116,20 +116,19 @@ int main(int argc, char** argv)
             VERIFY_MSG(false, "K in config.hpp must be odd!\n");
 
         // read configuration file (dataset path etc.)
-        string dataset = cfg::get().dataset_file;
 
         // typedefs :)
 //        typedef io::EasyReader ReadStream;
 //        typedef io::PairedEasyReader PairedReadStream;
 
         // assemble it!
-        INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K);
+        INFO("Assembling " << cfg::get().dataset_name << " (" << cfg::get().dataset_file << ") dataset with K=" << debruijn_graph::K);
 
         debruijn_graph::assemble_genome();
 
         link_output("latest_success");
 
-        INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K << " finished");
+        INFO("Assembling " << cfg::get().dataset_name << " dataset with K=" << debruijn_graph::K << " finished");
 
     }
     catch (std::exception const& e)

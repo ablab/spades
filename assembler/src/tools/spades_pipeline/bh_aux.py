@@ -84,7 +84,6 @@ def dataset_pretty_print(dataset):
     max_property_name_len = len(max(canonical_order, key=len))
     tabulation            = "    " 
     
-    print dataset
     pretty = ""
     dataset_dict = dict(dataset)
     for prop in canonical_order:
