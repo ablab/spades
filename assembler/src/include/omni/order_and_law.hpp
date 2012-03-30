@@ -178,14 +178,6 @@ public:
 
 	const_iterator 	find	(const Key &key) const
 	{
-		if (size_t(this) < 0x1000)
-		{
-			print_stacktrace();
-			exit(1);
-			auto res1 = base_map_.find(key);
-			auto res2 = const_iterator(res1);
-		}
-
 		return const_iterator(base_map_.find(key));
 	}
 	iterator 		find 	(const Key &key) 		{ return 		iterator(base_map_.find(key)); }
