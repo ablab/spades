@@ -1,0 +1,12 @@
+paired_reads             "../../../data/input/S.smaragdinae/std_right.cor.fastq.gz ../../../data/input/S.smaragdinae/std_left.cor.fastq.gz "
+single_reads             "../../../data/input/S.smaragdinae/std_left.cor_single.fastq.gz ../../../data/input/S.smaragdinae/std_right.cor_single.fastq.gz "
+jumping_first            ../../../data/input/S.smaragdinae/CLIP_6kb_left.cor.fastq.gz
+jumping_second           ../../../data/input/S.smaragdinae/CLIP_6kb_right.cor.fastq.gz
+jumping_single_first     ../../../data/input/S.smaragdinae/CLIP_6kb_left.cor_single.fastq.gz
+jumping_single_second    ../../../data/input/S.smaragdinae/CLIP_6kb_right.cor_single.fastq.gz
+RL                       150
+IS                       380
+jump_is                  6700
+jump_rl                  75
+single_cell              false
+reference_genome         ../../../data/input/S.smaragdinae/ref.fasta.gz

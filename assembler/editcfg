@@ -19,8 +19,8 @@ case $1 in
   'st') cfg="configs/debruijn/simplification.info.template" ;;
   'de') cfg="configs/debruijn/distance_estimation.info";;
   'det') cfg="configs/debruijn/distance_estimation.info.template";;
-  'd')  cfg="configs/debruijn/datasets.info" ;;
-  'da')  cfg="configs/debruijn/datasets_archive.info" ;;
+  'd')  cfg="configs/debruijn/deprecated_datasets.info" ;;
+  'da')  cfg="configs/debruijn/deprecated_datasets_archive.info" ;;
   'dip') cfg="configs/debruijn/detail_info_printer.info";;
   'dipt') cfg="configs/debruijn/detail_info_printer.info.template";;
   'log') cfg="log4cxx.properties";;

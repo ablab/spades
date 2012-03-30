@@ -7,7 +7,6 @@
 
 dataset     ./test_dataset/input/test_dataset.info
 
-input_dir	      ./test_dataset/input/
 output_base	      ./data/debruijn/
 
 additional_contigs	tmp_contigs.fasta

@@ -53,8 +53,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict = dict()
     cfg.working_dir = path.abspath(cfg.working_dir)
 
-    subst_dict["dataset"]            = path.abspath(path.expandvars(cfg.dataset))
-    subst_dict["input_dir"]          = path.dirname(subst_dict["dataset"])
+    subst_dict["dataset"]            = path.abspath(path.expandvars(cfg.dataset))    
     subst_dict["output_base"]        = cfg.working_dir
     subst_dict["additional_contigs"] = path.join(cfg.working_dir, "simplified_contigs.fasta")
     subst_dict["entry_point"]        = 'construction'
@@ -109,7 +108,7 @@ def main():
             answer = support.question_with_timer(question, 10)
             if answer == 'n':
                 start_bh = False
-                print("\nError correction stage skipped\n")   
+                print("\n== Error correction stage skipped\n")   
             else:
                 shutil.rmtree(bh_cfg.output_dir)
 
@@ -263,7 +262,8 @@ def run_spades(cfg):
         print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
         cmd = "python " + path.join(spades_home, "src/tools/quality/quality.py") + " " + result_contigs
         dataset_filename = path.abspath(path.expandvars(cfg.dataset))
-        dataset = load_config_from_file(dataset_filename)
+        dataset = load_config_from_info_file(dataset_filename)["common"]
+
         if dataset.__dict__.has_key("reference_genome"):
             cmd += " -R " + path.join(path.dirname(dataset_filename), dataset.reference_genome)
         if dataset.__dict__.has_key("genes"):

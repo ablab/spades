@@ -1,0 +1,6 @@
+paired_reads             "../../../data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_2.cor.fastq ../../../data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_1.cor.fastq "
+single_reads             "../../../data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_1.cor_single.fastq ../../../data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_2.cor_single.fastq "
+RL                       100
+IS                       180
+single_cell              false
+reference_genome         ../../../data/input/S.aureus/USA300_FPR3757.fasta.gz

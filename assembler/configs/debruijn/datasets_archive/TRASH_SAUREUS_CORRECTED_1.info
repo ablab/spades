@@ -1,0 +1,6 @@
+paired_reads             "../../../data/input/S.Aureus.USA300_FPR3757/saureus_cor_right.fasta ../../../data/input/S.Aureus.USA300_FPR3757/saureus_cor_left.fasta "
+single_reads             "../../../data/input/S.Aureus.USA300_FPR3757/saureus_cor_single_left.fasta ../../../data/input/S.Aureus.USA300_FPR3757/saureus_cor_single_right.fasta "
+RL                       100
+IS                       220
+single_cell              true
+reference_genome         ../../../data/input/S.aureus/USA300_FPR3757.fasta.gz

@@ -1,0 +1,6 @@
+paired_reads             "../../../data/input/E.coli/sc_lane_1/bh20111014/05.reads.right.corrected.fastq.gz ../../../data/input/E.coli/sc_lane_1/bh20111014/05.reads.left.corrected.fastq.gz "
+single_reads             "../../../data/input/E.coli/sc_lane_1/bh20111014/05.reads.left.unpaired.fastq.gz ../../../data/input/E.coli/sc_lane_1/bh20111014/05.reads.right.unpaired.fastq.gz "
+RL                       100
+IS                       270
+single_cell              true
+reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz

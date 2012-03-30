@@ -1,0 +1,5 @@
+paired_reads             "../../../data/input/L.bouillonii/gerwick-read2.cor.fastq.gz ../../../data/input/L.bouillonii/gerwick-read1.cor.fastq.gz "
+single_reads             "../../../data/input/L.bouillonii/gerwick-read1.cor_single.fastq.gz ../../../data/input/L.bouillonii/gerwick-read2.cor_single.fastq.gz "
+RL                       100
+IS                       370
+single_cell              false

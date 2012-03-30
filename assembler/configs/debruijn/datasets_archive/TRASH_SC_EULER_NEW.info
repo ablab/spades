@@ -1,0 +1,6 @@
+paired_reads             "../../../data/input/E.coli/SC_cor/right_6.10.cor.fasta ../../../data/input/E.coli/SC_cor/left_6.10.cor.fasta "
+single_reads             "../../../data/input/E.coli/SC_cor/left_6.10.cor.single.fasta ../../../data/input/E.coli/SC_cor/right_6.10.cor.single.fasta "
+RL                       100
+IS                       270
+single_cell              true
+reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz

@@ -1,0 +1,9 @@
+paired_reads             "../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.corrected.fastq.gz ../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.left.corrected.fastq.gz "
+single_reads             "../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.left.unpaired.fastq.gz ../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.unpaired.fastq.gz "
+jumping_first            ../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.shearjump.left.corrected.fastq.gz
+jumping_second           ../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.shearjump.right.corrected.fastq.gz
+RL                       100
+IS                       210
+jump_is                  3000
+single_cell              true
+reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz

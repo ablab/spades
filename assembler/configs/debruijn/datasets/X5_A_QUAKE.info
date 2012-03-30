@@ -1,0 +1,5 @@
+paired_reads             "../../../data/input/x5/a/right.cor.fastq.gz ../../../data/input/x5/a/left.cor.fastq.gz "
+single_reads             "../../../data/input/x5/a/left.cor_single.fastq.gz ../../../data/input/x5/a/right.cor_single.fastq.gz "
+RL                       100
+IS                       175
+single_cell              false

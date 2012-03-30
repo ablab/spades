@@ -639,7 +639,8 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	using config_common::load;
 	// input options:
 	load(cfg.dataset_file, pt, "dataset");
-	load(cfg.input_dir, pt, "input_dir");
+	// input dir is based on dataset file location (all pathes in datasets are relative to its location)
+	cfg.input_dir = boost::filesystem::path(cfg.dataset_file).branch_path().string();
 	if (cfg.input_dir[cfg.input_dir.length() - 1] != '/') {
 		cfg.input_dir += '/';
 	}

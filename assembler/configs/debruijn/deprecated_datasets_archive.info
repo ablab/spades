@@ -1,3 +1,7 @@
+;==== !!! DEPRECATED !!! ===
+;==== USE SEPARATE FILES PER EACH DATASETS ===
+;==== LOOK IN ./configs/debruijn/datasets and datasets_archive ===
+
 ;=============== AGREEMENT VIOLATION (Sorry, I need these 2 datasets badly, will delete them as soon as possible - Nurk) ==========
 JCVI_ECOLI
 {

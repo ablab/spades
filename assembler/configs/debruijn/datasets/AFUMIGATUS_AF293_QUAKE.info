@@ -1,0 +1,4 @@
+single_reads             "../../../data/input/A.fumigatus/AF293/SRR068952.cor.fastq.gz "
+RL                       100
+IS                       200
+single_cell              false

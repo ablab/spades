@@ -1,0 +1,5 @@
+paired_reads             "../../../data/input/Delta.Bacteria/delta_euler_sr_ec_right.fasta ../../../data/input/Delta.Bacteria/delta_euler_sr_ec_left.fasta "
+single_reads             "../../../data/input/Delta.Bacteria/delta_euler_sr_ec_single_left.fasta ../../../data/input/Delta.Bacteria/delta_euler_sr_ec_single_right.fastq "
+RL                       100
+IS                       250
+single_cell              true

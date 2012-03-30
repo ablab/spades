@@ -1,0 +1,6 @@
+paired_reads             "../../../data/input/P.gingivalis/bh20111209/00.reads.right.corrected.fastq.gz ../../../data/input/P.gingivalis/bh20111209/00.reads.left.corrected.fastq.gz "
+single_reads             "../../../data/input/P.gingivalis/bh20111209/00.reads.left.unpaired.fastq.gz ../../../data/input/P.gingivalis/bh20111209/00.reads.right.unpaired.fastq.gz "
+RL                       100
+IS                       270
+single_cell              true
+reference_genome         ../../../data/input/P.gingivalis/TDC60.fasta.gz

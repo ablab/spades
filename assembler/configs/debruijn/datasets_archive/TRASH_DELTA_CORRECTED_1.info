@@ -1,0 +1,5 @@
+paired_reads             "../../../data/input/Delta.Bacteria/lane1_reads_corrected_right.fastq ../../../data/input/Delta.Bacteria/lane1_reads_corrected_left.fastq "
+single_reads             "../../../data/input/Delta.Bacteria/lane1_reads_corrected_single_left.fastq ../../../data/input/Delta.Bacteria/lane1_reads_corrected_single_right.fastq "
+RL                       100
+IS                       250
+single_cell              true

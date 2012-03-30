@@ -1,0 +1,5 @@
+paired_reads             "../../../data/input/E.coli/EAS600_70/emulation/reads_2.fastq ../../../data/input/E.coli/EAS600_70/emulation/reads_1.fastq "
+RL                       100
+IS                       500
+single_cell              false
+reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz

@@ -73,11 +73,24 @@ def hammer(given_props, output_dir, compress):
             new_val += '"'
             val = new_val
         dataset_entry += [(prop, val)]
-    dataset_entry = map(lambda (a, b): a + "\t" + b, dataset_entry)
-    dataset_entry = reduce(lambda x, y: x + "\n" + y, dataset_entry)
+    #dataset_entry = map(lambda (a, b): a + "\t" + b, dataset_entry)
+    #dataset_entry = reduce(lambda x, y: x + "\n" + y, dataset_entry)
     for c in cmd:
         os.system(c)
     return dataset_entry
+
+def dataset_pretty_print(dataset):    
+    canonical_order       = ["paired_reads", "single_reads", "jumping_first", "jumping_second", "jumping_single_first", "jumping_single_second", "RL", "IS", "delta", "jump_is", "jump_rl", "single_cell", "is_var", "reference_genome", "genes", "operons"]
+    max_property_name_len = len(max(canonical_order, key=len))
+    tabulation            = "    " 
+    
+    print dataset
+    pretty = ""
+    dataset_dict = dict(dataset)
+    for prop in canonical_order:
+        if dataset_dict.has_key(prop):
+            pretty += prop.ljust(max_property_name_len) + tabulation + dataset_dict[prop] + "\n"
+    return pretty
 
 def generate_dataset(cfg, tmp_dir, input_files):    
     str_it_count = str(determine_it_count(tmp_dir))
@@ -92,4 +105,4 @@ def generate_dataset(cfg, tmp_dir, input_files):
         dataset_cfg["genes"]            = os.path.abspath(os.path.expandvars(cfg.genes))
     if cfg.__dict__.has_key("operons"):        
         dataset_cfg["operons"]          = os.path.abspath(os.path.expandvars(cfg.operons))
-    return hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output)
+    return dataset_pretty_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))

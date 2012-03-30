@@ -1,0 +1,9 @@
+paired_reads             "../../../data/input/E.coli/jcvi/big_jump/00.reads.right.reg.corrected.fastq ../../../data/input/E.coli/jcvi/big_jump/00.reads.left.reg.corrected.fastq "
+single_reads             "../../../data/input/E.coli/jcvi/big_jump/00.reads.left.reg.unpaired.fastq ../../../data/input/E.coli/jcvi/big_jump/00.reads.right.reg.unpaired.fastq "
+jumping_first            ../../../data/input/E.coli/jcvi/big_jump/00.reads.left.jump.corrected.fastq
+jumping_second           ../../../data/input/E.coli/jcvi/big_jump/00.reads.right.jump.corrected.fastq
+RL                       100
+IS                       210
+jump_is                  3000
+single_cell              true
+reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz

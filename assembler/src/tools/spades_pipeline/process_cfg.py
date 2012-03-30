@@ -15,6 +15,12 @@ def file_lines(filename):
 def skip_info_comment(line):
     return line.split(';')[0].strip()
 
+def check_property(prop_line):
+    if len(prop_line.split()) > 1: # property is set, i.e. has value
+        if prop_line.split()[1] != "N/A":
+            return True
+    return False
+
 def bool_to_str(b):
     if b:
         return "true"
@@ -109,15 +115,22 @@ def load_config_from_info_file(filename):
 
     cur_block_name = "common"
     blocks[cur_block_name] = []
-    for i in xrange(1, len(lines)):
-        if lines[i].startswith('{'):
-            cur_block_name = skip_info_comment(lines[i - 1])
+    for i in xrange(1, len(lines) + 1):
+        prev_line = skip_info_comment(lines[i - 1])
+        cur_line = ""
+        if i < len(lines):
+            cur_line = lines[i]
+
+        if cur_line.startswith('{'):
+            cur_block_name = prev_line
             blocks[cur_block_name] = []
-        elif lines[i].startswith('}'):
-            blocks[cur_block_name].append(lines[i - 1])
+        elif cur_line.startswith('}'):            
+            if check_property(prev_line):
+                blocks[cur_block_name].append(prev_line)
             cur_block_name = "common"
         elif not lines[i - 1].startswith('{') and not lines[i - 1].startswith('}') and not lines[i - 1].strip() == '':                 
-            blocks[cur_block_name].append(lines[i - 1])
+            if check_property(prev_line):
+                blocks[cur_block_name].append(prev_line)
 
     cfg = dict()
     for block_name in blocks.iterkeys():

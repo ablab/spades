@@ -1,3 +1,7 @@
+;==== !!! DEPRECATED !!! ===
+;==== USE SEPARATE FILES PER EACH DATASETS ===
+;==== LOOK IN ./configs/debruijn/datasets and datasets_archive ===
+
 #include "datasets_archive.info" 
 ; contains old, unused and broken datasets
 

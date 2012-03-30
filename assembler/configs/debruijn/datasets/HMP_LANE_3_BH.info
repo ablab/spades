@@ -1,0 +1,5 @@
+paired_reads             "../../../data/input/HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.corrected.fastq.gz ../../../data/input/HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.corrected.fastq.gz "
+single_reads             "../../../data/input/HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.unpaired.fastq.gz ../../../data/input/HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.unpaired.fastq.gz "
+RL                       100
+IS                       210
+single_cell              true

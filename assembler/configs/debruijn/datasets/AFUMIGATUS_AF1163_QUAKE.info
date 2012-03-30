@@ -1,0 +1,5 @@
+paired_reads             "../../../data/input/A.fumigatus/AF1163/SRR068950_2.cor.fastq.gz ../../../data/input/A.fumigatus/AF1163/SRR068950_1.cor.fastq.gz "
+single_reads             "../../../data/input/A.fumigatus/AF1163/SRR068950_1.cor_single.fastq.gz ../../../data/input/A.fumigatus/AF1163/SRR068950_2.cor_single.fastq.gz "
+RL                       100
+IS                       185
+single_cell              false

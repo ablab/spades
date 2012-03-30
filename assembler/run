@@ -11,9 +11,17 @@ function run_n_measure
 
 function change_config
 {
+    ds_folder='configs/debruijn/datasets/'
+    dsa_folder='configs/debruijn/datasets_archive/'
+    
+    ds_folder_prefix=${ds_folder//\//\\\/}
+    dsa_folder_prefix=${dsa_folder//\//\\\/}
 
-    awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets.info > temp
-    awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets_archive.info >> temp
+    ls $ds_folder | sed -e "s/^/$ds_folder_prefix/" > temp
+    ls $dsa_folder | sed -e "s/^/$dsa_folder_prefix/" >> temp
+    
+    #awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets.info > temp
+    #awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets_archive.info >> temp
 
 # firstly exact match
 
@@ -23,7 +31,7 @@ function change_config
     fi
     if [ "{$dataset" == "{" ]; then
         echo "No dataset for you!"
-        rm temp
+        #rm temp
         exit
     fi
     if [ ` echo "$dataset" | sed -n '$='` == 1 ]; then

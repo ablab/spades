@@ -1,0 +1,6 @@
+paired_reads             "../../../data/input/E.coli/is220/s_6_2.cor.fastq.gz ../../../data/input/E.coli/is220/s_6_1.cor.fastq.gz "
+single_reads             "../../../data/input/E.coli/is220/s_6_1.cor_single.fastq.gz ../../../data/input/E.coli/is220/s_6_2.cor_single.fastq.gz "
+RL                       100
+IS                       220
+single_cell              false
+reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
