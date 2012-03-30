@@ -21,7 +21,6 @@
 #include  "omni/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 #include "long_contigs/lc_launch.hpp"
-#include "rectangle_resolver.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -986,9 +985,6 @@ void resolve_repeats() {
 		INFO("Combined resolving finished");
 	}
 
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangle) {
-		debruijn_graph::RectangleResolver::resolve(conj_gp, clustered_index);
-	}
 }
 
 void exec_repeat_resolving() {

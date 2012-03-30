@@ -30,7 +30,6 @@ add_definitions(-g3)
 add_definitions(-std=c++0x)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 add_definitions(-lcrypto) 
-add_definitions(-lpython2.6) 
 add_definitions(-g -rdynamic)
 #add_definitions(-Wconversion)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
@@ -49,7 +48,6 @@ endif()
 # common dependencies
 find_package(ZLIB)
 find_package(log4cxx)
-find_package(PythonLibs)
 
 set (Boost_USE_MULTITHREADED ON)
 find_package(Boost COMPONENTS signals system filesystem iostreams serialization REQUIRED)
@@ -61,13 +59,11 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories(${ZLIB_INCLUDE_DIRS})
 include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${PYTHON_INCLUDE_DIR})
 
 set(COMMON_LIBRARIES 
    ${ZLIB_LIBRARIES} 
    ${log4cxx_LIBRARIES} 
    ${Boost_LIBRARIES} 
-   ${PYTHON_LIBRARIES}
    )
 
 include_directories(${EXT_DIR}/include)

@@ -42,8 +42,7 @@ enum resolving_mode
 	rm_split          ,
 	rm_path_extend    ,
 	rm_combined       ,
-	rm_jump           ,
-	rm_rectangle
+	rm_jump
 };
 
 enum info_printer_pos {
@@ -129,7 +128,6 @@ struct debruijn_config {
                 {"path_extend"      , rm_path_extend    },
                 {"combined"         , rm_combined       },
                 {"jump"             , rm_jump           },
-                {"rectangle"        , rm_rectangle      },
         };
 
 		return resolve_mode_id_mapping(info, utils::array_end(info));
@@ -368,7 +366,6 @@ public:
 
 	bool paired_mode;
 	bool paired_info_statistics;
-//	bool rectangle_mode;
 	bool etalon_info_mode;
 	bool advanced_estimator_mode;
 	bool componential_resolve;

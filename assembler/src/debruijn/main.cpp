@@ -2,7 +2,6 @@
  * Assembler Main
  */
 
-#include <Python.h>
 #include "standard.hpp"
 #include "segfault_handler.hpp"
 #include "stacktrace.hpp"
