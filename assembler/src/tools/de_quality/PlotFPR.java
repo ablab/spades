@@ -50,13 +50,14 @@ public class PlotFPR implements Runnable{
 
 	public void run(){
 		try{
-			MyScanner in_tp, in_fpr, in_fnr, in_et;
+			MyScanner in_tp, in_fpr, in_fnr, in_et, in_cl;
 			String folder0 = "";
 			Locale.setDefault(Locale.US);
 			in_tp = new MyScanner(folder0 + "tp.prd");
 			in_fpr = new MyScanner(folder0 + "fpr.prd");
 			in_fnr = new MyScanner(folder0 + "fn.prd");
-			in_et = new MyScanner("distance_estimation_cl.prd");
+			in_cl = new MyScanner("distance_estimation_cl.prd");
+			in_et = new MyScanner("distance_estimation_et.prd");
 			PrintWriter out = new PrintWriter(System.out);
             //debug(Threshold);
             int size_fnr = 0;
@@ -87,12 +88,26 @@ public class PlotFPR implements Runnable{
                 if (!(abs(x) < 1e-9 && abs(y) < 1e-9)) size_et++;
             }
             in_et.close();
+
+            int size_cl = 0;
+			in_cl.nextToken();
+			while (in_cl.hasMoreTokens()){
+				int a = in_cl.nextInt();
+				int b = in_cl.nextInt();
+
+				double x = in_cl.nextDouble();
+				double y = in_cl.nextDouble();
+				double z = in_cl.nextDouble();
+				in_cl.nextToken();
+                if (!(abs(x) < 1e-9 && abs(y) < 1e-9)) size_cl++;
+            }
+            in_cl.close();
 //          getting fpr info
             
             double maxfpr = -1;
 			int fpr = 0;
 			int tp = 0;
-            //int size_fpr = 0;
+            int size_fpr = 0;
             StringBuffer buf = new StringBuffer("");
             double weight = -1;
             double total = 0;
@@ -122,7 +137,7 @@ public class PlotFPR implements Runnable{
                     weight = y;
                 }
                 cur++;
-                //size_fpr++;
+                size_fpr++;
             }
             total += cur;
             fpr_total.put(0.0, total);
@@ -155,8 +170,9 @@ public class PlotFPR implements Runnable{
             }
             total += cur;
             fnr_total.put(0.0, total);
+
             if (!output){
-                System.out.println("False positive rate now is " + 1. * fpr_total.size()/ (fpr_total.size() + fnr_total.size()));   
+                System.out.println("False positive rate now is " + 1. * size_fpr / size_cl);  
                 System.out.println("False negative rate now is " +  size_fnr * 1./size_et);   
             }
             StringBuffer buf1 = new StringBuffer("");
@@ -164,11 +180,11 @@ public class PlotFPR implements Runnable{
 
             double lastKey = Math.max(maxfpr, maxfnr);
             for (double thr = 0.0; thr<lastKey + 1; thr+=Math.max(0.1, thr/50.)){
-                double size_fpr = fpr_total.ceilingEntry(thr).getValue();
+                double size_fpr_ = fpr_total.ceilingEntry(thr).getValue();
                 double size_fn = size_fnr + size_tp - fnr_total.ceilingEntry(thr).getValue();
                 //debug(fnr_total.ceilingEntry(thr).getValue() + " " + size_fpr);
-                if (size_fpr == 0) buf1.append(thr + " " + 0.0 + "\n");
-                else buf1.append(thr + " " + (size_fpr * 100.0)/ (size_fpr + fnr_total.ceilingEntry(thr).getValue()) + "\n");
+                if (size_fpr_ < 1e-9) buf1.append(thr + " " + 0.0 + "\n");
+                else buf1.append(thr + " " + (size_fpr_ * 100.0)/ (size_fpr_ + fnr_total.ceilingEntry(thr).getValue()) + "\n");
                 buf2.append(thr + " " + (size_fn * 100.0) / (size_et) + "\n");
             }
             PrintWriter out_tp = new PrintWriter("plot_fnr.out");
