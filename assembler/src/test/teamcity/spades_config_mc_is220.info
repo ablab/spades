@@ -1,6 +1,10 @@
-iterative_K         21 33 55
-paired_mode         true
-dataset             ECOLI_IS220_QUAKE
-input_dir           ./data/input/
 output_dir          ./data/debruijn/
 output_to_console   true
+
+spades
+{
+  iterative_K         21 33 55
+  paired_mode         true
+  dataset             $cfg/../../../configs/debruijn/datasets/ECOLI_IS220_QUAKE.info
+  measure_quality     true
+}
