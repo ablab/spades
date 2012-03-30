@@ -21,8 +21,6 @@
 #include  "omni/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 #include "long_contigs/lc_launch.hpp"
-#include "rectangle_resolver.hpp"
-#include "dataset_readers.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
