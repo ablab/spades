@@ -10,6 +10,7 @@ install:
 	cp -r src/io $(SPADES_SRC)
 	cp -r src/include $(SPADES_SRC)
 	cp -r src/tools $(SPADES_SRC)
+	cp -r src/hammer $(SPADES_SRC)
 	cp -r src/cmake $(SPADES_SRC)
 	cp src/CMakeLists.txt $(SPADES_SRC)/CMakeLists.txt
 	touch $(SPADES_SRC)/CMakeListsInternal.txt
