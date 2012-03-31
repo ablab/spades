@@ -1,6 +1,11 @@
 OLDEXT=dot
 NEWEXT=${1/#.}
 
+if [ $# -ge 2 ]
+then
+	cd $2	
+fi
+
 find . -iname "*.${OLDEXT}" |
 while read F
 do
