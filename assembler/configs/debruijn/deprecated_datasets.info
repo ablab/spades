@@ -56,9 +56,19 @@ ECOLI_IS480_QUAKE ; old EAS600_QUAKE_FULL
 
 ; ==================== SINGLE CELL ====================
 
+ECOLI_SC_REF
+{
+        first   E.coli/sc_ref/ecoli_ref_1.fastq.gz
+        second  E.coli/sc_ref/ecoli_ref_2.fastq.gz
+        RL              100     ; read length
+        IS              215     ; insert size
+        single_cell     true
+        reference_genome  E.coli/MG1655-K12.fasta.gz
+}
+
 ECOLI_SC_LANE_1_BH
 {
-        first   E.coli/sc_lane_1/bh20111014/05.reads.left.corrected.fastq.gz
+        first   E.coli/sc_lane_1/bh20111014/05.reads.left.corrected.fastq.gz  
         second  E.coli/sc_lane_1/bh20111014/05.reads.right.corrected.fastq.gz
         single_first    E.coli/sc_lane_1/bh20111014/05.reads.left.unpaired.fastq.gz
         single_second   E.coli/sc_lane_1/bh20111014/05.reads.right.unpaired.fastq.gz
