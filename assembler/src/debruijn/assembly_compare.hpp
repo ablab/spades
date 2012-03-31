@@ -287,7 +287,7 @@ private:
 template<class gp_t>
 void ConstructGPForRefinement(gp_t& gp,
 		io::IReader<io::SingleRead>& raw_stream_1,
-		io::IReader<io::SingleRead>& raw_stream_2, size_t delta) {
+		io::IReader<io::SingleRead>& raw_stream_2) {
 	typedef typename gp_t::graph_t Graph;
 	INFO("Constructing graph pack for refinement");
 
@@ -307,7 +307,7 @@ void ConstructGPForRefinement(gp_t& gp,
 	br_config.max_bulge_length_coefficient = 3;
 	br_config.max_coverage = 1000.;
 	br_config.max_relative_coverage = 1.2;
-	br_config.max_delta = delta;
+	br_config.max_delta = 5;
 	br_config.max_relative_delta = 0.1;
 
 	INFO("Removing bulges");
@@ -1466,13 +1466,10 @@ private:
 	}
 
 	void PrintColoredGraph(const Graph& g, const ColorHandler<Graph>& coloring,
-			const EdgesPositionHandler<Graph>& pos,
 			const string& output_filename) {
-		ReliableSplitter<Graph> splitter(g, 30, 1000000);
-		LengthIdGraphLabeler<Graph> basic_labeler(g);
-		EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
-
-		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+		ReliableSplitter<Graph> splitter(g, 30, 3000);
+		//todo do we need filter
+		LengthIdGraphLabeler<Graph> labeler(g);
 		WriteComponents(g, splitter, output_filename,
 				*ConstructColorer(coloring), labeler);
 	}
@@ -1484,7 +1481,7 @@ private:
 		DeleteVioletEdges(gp.g, coloring);
 
 		if (detailed_output) {
-			PrintColoredGraph(gp.g, coloring, gp.edge_pos,
+			PrintColoredGraph(gp.g, coloring,
 					output_folder + "initial_pics/purple_removed.dot");
 			UniversalSaveGP(gp, output_folder + "saves/purple_removed");
 		}
@@ -1545,17 +1542,18 @@ public:
 		//situation in example 6 =)
 		CompressGraph(gp_.g, coloring);
 
+		if (detailed_output) {
+			PrintColoredGraph(gp_.g, coloring,
+					output_folder + "initial_pics/colored_split_graph.dot");
+			SaveOldGraph(output_folder + "saves/tangled_graph");
+		}
+
+		//todo return and propagate to new graph
 		INFO("Filling contig positions");
 		stream1_.reset();
 		FillPos<gp_t>(gp_, stream1_);
 		stream2_.reset();
 		FillPos<gp_t>(gp_, stream2_);
-
-		if (detailed_output) {
-			PrintColoredGraph(gp_.g, coloring, gp_.edge_pos,
-					output_folder + "initial_pics/colored_split_graph.dot");
-			SaveOldGraph(output_folder + "saves/tangled_graph");
-		}
 
 		if (untangle_) {
 			INFO("Untangling graph");
@@ -1566,7 +1564,7 @@ public:
 			//		SimplifyGraph(untangled_gp.g);
 
 			if (detailed_output) {
-				PrintColoredGraph(untangled_gp.g, untangled_gp.coloring, untangled_gp.edge_pos,
+				PrintColoredGraph(untangled_gp.g, untangled_gp.coloring,
 						output_folder + "initial_pics/untangled_graph.dot");
 				UniversalSaveGP(untangled_gp, output_folder + "saves/untangled_graph");
 			}

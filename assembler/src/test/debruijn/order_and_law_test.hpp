@@ -121,8 +121,6 @@ public:
 
 namespace debruijn_graph {
 
-BOOST_AUTO_TEST_SUITE(robust_order_tests)
-
 BOOST_AUTO_TEST_CASE( OrderTest ) {
 	string file_name = "src/debruijn/test_save";
 	Graph graph(55);
@@ -141,5 +139,5 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 //	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
 //	BOOST_CHECK(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));
 }
-BOOST_AUTO_TEST_SUITE_END()
+
 }

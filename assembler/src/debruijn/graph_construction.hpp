@@ -75,8 +75,7 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		size_t is, size_t rs,
         size_t delta,
 		const Sequence& genome){
-	INFO((string)(FormattedString("Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i")
-			<< genome.size() << k << is << rs << delta));
+	INFO("Counting etalon paired info");
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index, kmer_mapper,
 			is, rs, delta);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,

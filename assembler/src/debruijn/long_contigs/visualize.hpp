@@ -87,7 +87,7 @@ void WriteGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_nam
 	std::fstream filestr;
 	filestr.open(file_name.c_str(), std::fstream::out);
 
-	DotGraphPrinter<Graph::VertexId> printer(graph_name, filestr);
+	gvis::DotGraphPrinter<Graph::VertexId> printer(graph_name, filestr);
 
 	StrGraphLabeler<Graph> str_labeler(gp.g);
 	PathsGraphLabeler<Graph> path_labeler(gp.g, paths);

@@ -60,7 +60,7 @@ case $1 in
 'rd' ) run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info ;;
 'dd' ) run_n_measure build/debug/debruijn/debruijn configs/debruijn/config.info ;;
 'ddt' ) run_n_measure build/debug/test/debruijn/debruijn_test ;;
-'rdt' ) ./build/release/test/debruijn/debruijn_test --log_level=test_suite ;;
+'rdt' ) run_n_measure build/release/test/debruijn/debruijn_test ;;
 'ddtls' ) run_n_measure build/debug/test/debruijn_tools/debruijn_tools ;;
 'rdtls' ) run_n_measure build/release/test/debruijn_tools/debruijn_tools ;;
 'dit' ) run_n_measure build/debug/test/include_test/include_test ;;

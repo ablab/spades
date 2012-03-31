@@ -668,7 +668,6 @@ public:
 	}
 };
 
-//todo rewrite with extended sequence mapper!
 template<size_t k, class Graph>
 class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;

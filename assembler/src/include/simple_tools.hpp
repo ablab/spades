@@ -18,7 +18,6 @@
 
 #define BOOST_FILESYSTEM_VERSION 2
 #include <boost/filesystem.hpp>
-#include <boost/format.hpp>
 
 #include <fstream>
 
@@ -46,23 +45,6 @@ template<class T>
 std::auto_ptr<T> create_auto_ptr(T* t) {
 	return std::auto_ptr<T>(t);
 }
-
-//taken from http://habrahabr.ru/post/131977/
-class FormattedString {
-public:
-	FormattedString(const char* fmt): m_fmt(fmt) {}
-
-    template<class T>
-    FormattedString& operator<< (const T& arg) {
-        m_fmt % arg;
-        return *this;
-    }
-    operator std::string() const {
-        return m_fmt.str();
-    }
-protected:
-    boost::format m_fmt;
-};
 
 /**
  * Checks if file exists.

@@ -47,9 +47,9 @@ class PartialGraphVisualizer {
 	typedef typename Graph::VertexId VertexId;
 protected:
 	const Graph& g_;
-	GraphPrinter<VertexId>& gp_;
+	gvis::GraphPrinter<VertexId>& gp_;
 public:
-	PartialGraphVisualizer(const Graph& g, GraphPrinter<VertexId>& gp) :
+	PartialGraphVisualizer(const Graph& g, gvis::GraphPrinter<VertexId>& gp) :
 			g_(g), gp_(gp) {
 	}
 
@@ -73,10 +73,10 @@ template<class Graph>
 class SimpleGraphVisualizer: public GraphVisualizer<Graph> {
 	typedef GraphVisualizer<Graph> super;
 	typedef typename Graph::VertexId VertexId;
-	GraphPrinter<VertexId>& gp_;
+	gvis::GraphPrinter<VertexId>& gp_;
 	const omnigraph::GraphLabeler<Graph>& gl_;
 public:
-	SimpleGraphVisualizer(const Graph& g, GraphPrinter<VertexId>& gp,
+	SimpleGraphVisualizer(const Graph& g, gvis::GraphPrinter<VertexId>& gp,
 			const omnigraph::GraphLabeler<Graph>& gl) :
 			super(g), gp_(gp), gl_(gl) {
 	}
@@ -292,7 +292,7 @@ class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 	typename Graph::Comparator comparator_;
 
 public:
-	ColoredGraphVisualizer(const Graph& g, GraphPrinter<VertexId>& gp,
+	ColoredGraphVisualizer(const Graph& g, gvis::GraphPrinter<VertexId>& gp,
 			const omnigraph::GraphLabeler<Graph>& gl,
 			const GraphColorer<Graph> &colorer) :
 			super(g, gp), gl_(gl), colorer_(colorer), comparator_(g.ReliableComparatorInstance()) {
@@ -415,7 +415,7 @@ void WriteToDotFile(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const string& file_name, const string& graph_name = "my_graph") {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
-	DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
+	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
 	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
 	sgv.Visualize();
 	filestr.close();
@@ -428,7 +428,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 	string simple_file_name(file_name);
 	//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open((simple_file_name).c_str(), fstream::out);
-	DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
+	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
 	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
 	sgv.Visualize();
 	filestr.close();
@@ -443,7 +443,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 	string simple_file_name(file_name);
 	//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open(simple_file_name.c_str(), fstream::out);
-	DotGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
+	gvis::DotGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
 	auto_ptr<GraphColorer<Graph>> colorer(DefaultColorer(g, path1, path2));
 	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, *colorer);
 	AdapterGraphVisualizer<Graph> result_vis(g, gv);
@@ -462,7 +462,7 @@ void WritePaired(
 	typedef typename Graph::EdgeId EdgeId;
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
-	DotPairedGraphPrinter<Graph> gp(g, graph_name, labeler, filestr);
+	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, labeler, filestr);
 	CompositeGraphColorer<Graph> colorer(/*create_auto_ptr(*/new BorderVertexColorer<Graph>(g)
 			, /*create_auto_ptr(*/new MapColorer<Graph, EdgeId>(PathColorer<Graph>(g, path1, path2).ColorPath(), ""));
 	ColoredGraphVisualizer<Graph> gv(g, gp, labeler, colorer);
@@ -475,8 +475,8 @@ template<class Graph>
 class VisualizerFactory {
 public:
 	virtual auto_ptr<PartialGraphVisualizer<Graph>> GetVisualizerInstance(
-			GraphPrinter<typename Graph::VertexId> &gp) = 0;
-	virtual auto_ptr<GraphPrinter<typename Graph::VertexId>> GetPrinterInstance(
+			gvis::GraphPrinter<typename Graph::VertexId> &gp) = 0;
+	virtual auto_ptr<gvis::GraphPrinter<typename Graph::VertexId>> GetPrinterInstance(
 			const string &graph_name, ostream &os) = 0;
 	virtual ~VisualizerFactory() {
 	}
@@ -492,17 +492,17 @@ private:
 	const GraphLabeler<Graph> &labeler_;
 	const GraphColorer<Graph> &colorer_;
 
-	auto_ptr<GraphPrinter<VertexId>> PrinterInstance(
+	auto_ptr<gvis::GraphPrinter<VertexId>> PrinterInstance(
 			const Graph& graph, const string &graph_name,
 			ostream &os) {
-		return auto_ptr<GraphPrinter<VertexId>>(new DotPairedGraphPrinter<Graph>(
+		return auto_ptr<gvis::GraphPrinter<VertexId>>(new gvis::DotPairedGraphPrinter<Graph>(
 				graph, graph_name, labeler_, os));
 	}
 
-	auto_ptr<GraphPrinter<VertexId>> PrinterInstance(
+	auto_ptr<gvis::GraphPrinter<VertexId>> PrinterInstance(
 			const AbstractNonconjugateGraph<typename Graph::DataMaster>& graph, const string &graph_name,
 			ostream &os, const GraphLabeler<Graph> &labeler) {
-		return auto_ptr<GraphPrinter<VertexId>>(new DotGraphPrinter<VertexId>(graph_name, os));
+		return auto_ptr<gvis::GraphPrinter<VertexId>>(new gvis::DotGraphPrinter<VertexId>(graph_name, os));
 	}
 
 public:
@@ -512,13 +512,13 @@ public:
 			graph_(graph), labeler_(labeler), colorer_(colorer) {
 	}
 
-	virtual auto_ptr<GraphPrinter<typename Graph::VertexId>> GetPrinterInstance(
+	virtual auto_ptr<gvis::GraphPrinter<typename Graph::VertexId>> GetPrinterInstance(
 			const string &graph_name, ostream &os) {
 		return PrinterInstance(graph_, graph_name, os);
 	}
 
 	virtual auto_ptr<PartialGraphVisualizer<Graph>> GetVisualizerInstance(
-			GraphPrinter<typename Graph::VertexId> &gp) {
+			gvis::GraphPrinter<typename Graph::VertexId> &gp) {
 		return auto_ptr<PartialGraphVisualizer<Graph>>(new ColoredGraphVisualizer<Graph>(graph_, gp, labeler_,
 				colorer_));
 	}
@@ -567,7 +567,7 @@ public:
 					splitter_.ComponentName());
 			ofstream os;
 			os.open(component_name.c_str());
-			auto_ptr<GraphPrinter<typename Graph::VertexId>> gp =
+			auto_ptr<gvis::GraphPrinter<typename Graph::VertexId>> gp =
 					factory_.GetPrinterInstance(graph_name_, os);
 			auto_ptr<PartialGraphVisualizer<Graph>> visualizer = factory_.GetVisualizerInstance(*gp);
 			visualizer->open();
