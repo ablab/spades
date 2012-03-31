@@ -48,6 +48,7 @@ private:
 
 	/**
 	 * @variable Number of nucleotides that can be stored in one type T (e.g. 4 for char)
+     * Tnucl MUST be a power of two
 	 * @example 4: 8/2 = 4 or 16/2 = 8
 	 */
 	const static size_t Tnucl = Tbits >> 1;
@@ -62,14 +63,24 @@ private:
 	 */
 	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
 
-	/**
+    
+    /* *
+     * @variable Just some prime number to count the hash function of the kmer
+     * */    
+    const static size_t prime_num = 239;
+	
+
+    /**
 	 * @variable Inner representation of sequence: array of Ts with length = data_size_.
 	 *
 	 * @invariant Invariant: all nucleotides >= size_ are 'A's (useful for comparison)
 	 */
 	std::array<T, data_size_> data_;
 
+    size_t seq_hash_;
+
 	friend class Seq<size_ - 1, T> ;
+
 	/**
 	 * Initialize data_ array of this object with C-string
 	 *
@@ -96,26 +107,39 @@ private:
 	}
 
 	/**
+	 * Initialize hash function for the Seq with the data_ given
+	 *
+	 */
+    void init_hash() {
+        //Assuming the data is okay and already filled
+        size_t seq_hash = prime_num;
+        for (size_t i = 0; i < data_size_; ++i) {
+            seq_hash = ((seq_hash << 5) - seq_hash) + data_[i];
+        }
+        seq_hash_ = seq_hash;
+    }
+
+	/**
 	 * Constructor from std::array
 	 */
-	Seq(std::array<T, data_size_> data) :
-		data_(data) {
-		;
-	}
+	Seq(std::array<T, data_size_> data) : data_(data) {
+	    init_hash();
+    }
+
 
 	/**
 	 * Sets i-th symbol of Seq with 0123-char
 	 */
 	inline void set(const size_t i, char c) {
-		data_[i >> Tnucl_bits] = (data_[i >> Tnucl_bits] & ~((T) 3 << ((i
-				% Tnucl) << 1))) | ((T) c << ((i % Tnucl) << 1));
+		data_[i >> Tnucl_bits] = (data_[i >> Tnucl_bits] & ~((T) 3 << ((i & (Tnucl - 1)) << 1))) | ((T) c << ((i & (Tnucl - 1)) << 1));
 	}
 
 public:
-        /**
-         *  Reads sequence from the file (in the same format as BinWrite writes it)
-         *  and returns false if error occured, true otherwise.
-         */
+
+    /**
+     *  Reads sequence from the file (in the same format as BinWrite writes it)
+     *  and returns false if error occured, true otherwise.
+     */
 	static bool BinRead(std::istream& file, Seq<size_> *seq) {
 	    //std::cerr << "SEQ: " << sizeof(T) << " " << data_size_ << " " << sizeof(T) * data_size_ << std::endl;
 		file.read((char *) seq->data_.data(), sizeof(T) * data_size_);
@@ -123,9 +147,9 @@ public:
 	}
 
 	/**
-         *  Writes sequence to the file (in the same format as BinRead reads it)
-         *  and returns false if error occured, true otherwise.
-         */
+     *  Writes sequence to the file (in the same format as BinRead reads it)
+     *  and returns false if error occured, true otherwise.
+     */
 	static bool BinWrite(std::ostream& file, const Seq<size_> &seq) {
 	    //std::cerr << "SEQ: " << sizeof(T) << " " << data_size_ << " " << sizeof(T) * data_size_ << std::endl;
 		file.write((const char *) seq.data_.data(), sizeof(T) * data_size_);
@@ -154,19 +178,21 @@ public:
 	Seq() {
 		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		std::fill(data_.begin(), data_.end(), 0);
+        init_hash();
 	}
 
 	/**
 	 * Copy constructor
 	 */
 	Seq(const Seq<size_, T> &seq) :
-		data_(seq.data_) {
+		data_(seq.data_), seq_hash_(seq.seq_hash_) {
 		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 	}
 
 	Seq(const char* s) {
 		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		init(s);
+        init_hash();
 	}
 
 	/**
@@ -176,14 +202,12 @@ public:
 	 * @param offset Offset when this sequence starts
 	 */
 	template<typename S>
-	explicit Seq(const S &s, size_t offset = 0) :
-		data_()
-	{
+	explicit Seq(const S &s, size_t offset = 0) : data_() {
 		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			char c = s[offset + i];
-			VERIFY(is_nucl(c) || is_dignucl(c));
+			//VERIFY(is_nucl(c) || is_dignucl(c));
 			if (is_dignucl(c)) {
 				c = nucl(c);
 			}
@@ -191,6 +215,7 @@ public:
 		}
 		a[size_] = 0;
 		init(a);
+        init_hash();
 	}
 
 	/**
@@ -222,7 +247,8 @@ public:
 			res.set(size_ >> 1, complement(res[size_ >> 1]));
 		}
 		// can be made without complement calls, but with xor on all bytes afterwards.
-		return res;
+		res.init_hash();
+        return res;
 	}
 
 	/**
@@ -236,22 +262,20 @@ public:
 			c = dignucl(c);
 		}
 		//VERIFY(is_dignucl(c));
-		Seq<size_, T> res(data_);
+		Seq<size_, T> res(*this);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
-			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2)
-					| ((T) c << lastnuclshift_);
+			T lastnuclshift_ = ((size_ + Tnucl - 1) & (Tnucl - 1)) << 1;
+			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T) c << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
-				size_t i = data_size_ - 1;
-				do {
-					--i;
+			    for (int i = data_size_ - 2; i >= 0; --i){
 					T new_rm = res.data_[i] & 3;
 					res.data_[i] = (res.data_[i] >> 2) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :(
 					rm = new_rm;
-				} while (i != 0);
+			    }
 			}
 		}
+        res.init_hash();
 		return res;
 	}
 
@@ -264,7 +288,10 @@ public:
 		copy(this->data_.begin(), this->data_.end(), s.data_.begin());
 		s.data_[s.data_size_ - 1] = s.data_[s.data_size_ - 1] | ((T) c
 				<< ((size_ & (Tnucl - 1)) << 1));
-		return s; //was: Seq<size_ + 1, T>(str() + nucl(c));
+		s.init_hash();
+
+        return s; //was: Seq<size_ + 1, T>(str() + nucl(c));
+
 	}
 
 	/**
@@ -275,7 +302,7 @@ public:
 			c = dignucl(c);
 		}
 		VERIFY(is_dignucl(c));
-		return Seq<size_ + 1, T> (nucl(c) + str());
+        return Seq<size_ + 1, T> (nucl(c) + str());
 	}
 
 	/**
@@ -289,33 +316,32 @@ public:
 			c = dignucl(c);
 		}
 		VERIFY(is_dignucl(c));
-		Seq<size_, T> res(data_);
+		Seq<size_, T> res(*this);
 		T rm = c;
 		for (size_t i = 0; i < data_size_; ++i) {
 			T new_rm = (res.data_[i] >> (Tbits - 2)) & 3;
 			res.data_[i] = (res.data_[i] << 2) | rm;
 			rm = new_rm;
 		}
-		if (size_ % Tnucl != 0) {
-			T lastnuclshift_ = (size_ % Tnucl) << 1;
+		if ((size_ & (Tnucl - 1)) != 0) {
+			T lastnuclshift_ = (size_ & (Tnucl - 1)) << 1;
 			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T) 1
 					<< lastnuclshift_) - 1);
 		}
-		return res;
+		res.init_hash();
+        return res;
 	}
 
-	bool operator==(const Seq<size_, T> s) const {
-		return 0
-				== memcmp(data_.data(), s.data_.data(), sizeof(T) * data_size_);
+	bool operator==(const Seq<size_, T>& s) const {
+		return 0 == memcmp(data_.data(), s.data_.data(), sizeof(T) * data_size_);
 	}
 
 	/**
 	 * @see operator ==()
 	 */
 
-	bool operator!=(const Seq<size_, T> s) const {
-		return 0
-				!= memcmp(data_.data(), s.data_.data(), sizeof(T) * data_size_);
+	bool operator!=(const Seq<size_, T>& s) const {
+		return 0 != memcmp(data_.data(), s.data_.data(), sizeof(T) * data_size_);
 	}
 
 	//	/*
@@ -367,22 +393,29 @@ public:
 		return operator[](0);
 	}
 
-	//	template<size_t HASH_SEED>
-	struct hash {
-		size_t operator()(const Seq<size_, T>& seq) const {
-			size_t h = 239;
-			//size_t h = 0;
-			for (size_t i = 0; i < seq.data_size_; i++) {
-				h = ((h << 5) - h) + seq.data_[i];
-				//h = h * 239 + seq.data_[i];
-			}
-			return h;
-		}
+    size_t GetHash() const {
+        return seq_hash_;
+    }
+    
+    struct hash {
+        size_t operator()(const Seq<size_, T>& seq) const {
+            return seq.seq_hash_; 
+        }
+        //const static size_t prime_num = 239;
+		//size_t operator()(const Seq<size_, T>& seq) const {
+			////size_t h = 0;
+			//for (size_t i = 0; i < seq.data_size_; i++) {
+				//prime_num = ((prime_num << 5) - prime_num) + seq.data_[i];
+				////prime_num = prime_num * 239 + seq.data_[i];
+			//}
+			//return prime_num;
+		//}
 	};
 
 	struct multiple_hash {
 		size_t operator()(const Seq<size_, T>& seq, size_t hash_num, 
 				size_t h) const {
+            WARN("using multiple hash");
 			++hash_num;
 			for (size_t i = 0; i < seq.data_size_; i++) {
 				h = (h << hash_num) + seq.data_[i];

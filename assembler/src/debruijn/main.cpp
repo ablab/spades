@@ -85,22 +85,25 @@ void copy_configs(fs::path cfg_filename, fs::path to)
 
 void load_config(string cfg_filename)
 {
+    
     checkFileExistenceFATAL(cfg_filename);
+
     fs::path tmp_folder = fs::path("/tmp") / debruijn_graph::MakeLaunchTimeDirName() / ("K" + lexical_cast<string>(debruijn_graph::K));
     copy_configs(cfg_filename, tmp_folder);
 
     cfg_filename = (tmp_folder / fs::path(cfg_filename).filename()).string();
-    cfg::create_instance(cfg_filename);
-
+        cfg::create_instance(cfg_filename);
+    
     make_dir(cfg::get().output_root);
+
     make_dir(cfg::get().output_dir);
     if (cfg::get().make_saves) {
         make_dir(cfg::get().output_saves);
     }
 
     fs::path path_to_copy = fs::path(cfg::get().output_dir) / "configs";
-    copy_configs(cfg_filename, path_to_copy);
-}
+        copy_configs(cfg_filename, path_to_copy);
+    }
 
 void create_console_logger(fs::path cfg_filename)
 {
@@ -119,12 +122,12 @@ int main(int argc, char** argv)
 	BOOST_STATIC_ASSERT(debruijn_graph::K % 2 != 0);
 
 	perf_counter pc;
-
+    
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
-
+    
     segfault_handler sh(bind(link_output, "latest"));
-
+    
     try
     {
         using namespace debruijn_graph;

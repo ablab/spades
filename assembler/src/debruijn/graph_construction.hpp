@@ -14,6 +14,7 @@
 #ifndef GRAPH_CONSTRUCTION_HPP_
 #define GRAPH_CONSTRUCTION_HPP_
 
+#include <omp.h>
 #include "io/multifile_reader.hpp"
 #include "debruijn_graph_constructor.hpp"
 #include "omni/edges_position_handler.hpp"
@@ -22,12 +23,14 @@
 #include "graphio.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"
+#include "parallel_seq_map.hpp"
 #include "perfcounter.hpp"
 #include "omni/parallel_unordered_map.hpp"
 
 #include "read_converter.hpp"
 
 namespace debruijn_graph {
+
 typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
@@ -134,70 +137,85 @@ void FillCoverage(Graph& g, SingleReadStream& stream,
 template<size_t k, class Graph>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		SingleReadStream& reads_stream, SingleReadStream* contigs_stream = 0) {
-	typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
-	VERIFY(k % 2 == 1);
-	INFO("Constructing DeBruijn graph");
-	DeBruijn& debruijn = index.inner_index();
-    //parallel_unordered_map<
 
+    size_t nthreads = 16;
+    size_t buf_size = 1000000;
 
-	INFO("Processing reads (takes a while)");
-	size_t counter = 0;
-	size_t rl = 0;
+    INFO("openmp " << omp_get_max_threads());
 
-    size_t nthreads = 10;
-	size_t buf_size = 100;
+    typedef ParallelSeqMap<k + 1, typename Graph::EdgeId> ParallelDeBruijn;
+    typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
+    typedef Seq<k + 1> Kmer;
+
+    INFO("Constructing DeBruijn graph");
+	
+    DeBruijn& debruijn = index.inner_index();
+    ParallelDeBruijn par_debruijn(nthreads);
+
+    INFO("Processing reads (takes a while)");
+    size_t counter = 0;
+    size_t rl = 0;
     
     io::SingleRead r;
-	{
-		perf_counter pc;
+    {
+        perf_counter pc;
 
-
-		while (!reads_stream.eof()) {
-            vector<vector<Sequence>> vector_seq(nthreads, vector<Sequence>());
-            for(size_t i = 0; i < nthreads*buf_size && !reads_stream.eof(); ++i){
-                reads_stream >> r;
-                //size_t thread_number = omp_get_thread_num(); 
-                Sequence seq = r.sequence();
-                vector_seq[i % nthreads].push_back(seq);
-                rl = max(rl, seq.size());
+        while (!reads_stream.eof()) {
+            vector<vector<Sequence> > vector_seq(nthreads, vector<Sequence>());
+            INFO("Filling Buffer");
+            for(size_t i = 0; i < nthreads && !reads_stream.eof(); ++i) {
+                for (size_t j = 0; j < buf_size && !reads_stream.eof(); ++j) {
+                    reads_stream >> r;
+                    const Sequence& seq = r.sequence();
+                    vector_seq[i].push_back(seq);
+                    rl = max(rl, seq.size());
+                    VERBOSE_POWER(++counter, " reads processed");
+                }
             }
+            INFO("Finished Filling");
 
-		    #pragma omp parallel num_threads(nthreads)
+            INFO("Threading Buffer");
+
+            #pragma omp parallel num_threads(nthreads)
             {
                 #pragma omp for
                 for (size_t i = 0; i<vector_seq.size(); ++i)
                     for (size_t j = 0; j<vector_seq[i].size(); ++j) {
-                        //debruijn.CountSequence(vector_seq[i][j]);
+                        par_debruijn.CountSequence(vector_seq[i][j], i);
                     }
             }
-			VERBOSE_POWER(++counter, " reads processed");
-		}
 
-		INFO("Elapsed time: " << pc.time_ms());
-	}
+            INFO("Finished Threading");
+        }
+        INFO("Started Merging");
 
-	if (contigs_stream) {
-		INFO("Adding contigs from previous K");
-		while (!contigs_stream->eof()) {
-			*contigs_stream >> r;
-			Sequence s = r.sequence();
-			debruijn.CountSequence(s);
-		}
-	}
+        par_debruijn.MergeMaps(debruijn.nodes());
 
-	if (!cfg::get().ds.RL.is_initialized()) {
-		INFO("Figured out: read length = " << rl);
-		cfg::get_writable().ds.RL = rl;
-	} else if (*cfg::get().ds.RL != rl) {
-		WARN("In this dataset's info file, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
-	}
-	INFO("DeBruijn graph constructed, " << counter << " reads used");
+        INFO("Finished Merging, size of map " << debruijn.nodes().size());
 
-	INFO("Condensing graph");
-	DeBruijnGraphConstructor<k, Graph> g_c(debruijn);
-	g_c.ConstructGraph(g, index);
-	DEBUG("Graph condensed");
+        INFO("Elapsed time: " << pc.time_ms());
+    }
+    if (contigs_stream) {
+        INFO("Adding contigs from previous K");
+        while (!contigs_stream->eof()) {
+            *contigs_stream >> r;
+            Sequence s = r.sequence();
+            debruijn.CountSequence(s);
+        }
+    }
+
+    if (!cfg::get().ds.RL.is_initialized()) {
+        INFO("Figured out: read length = " << rl);
+        cfg::get_writable().ds.RL = rl;
+    } else if (*cfg::get().ds.RL != rl) {
+        WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
+    }
+    INFO("DeBruijn graph constructed, " << counter << " reads used");
+
+    INFO("Condensing graph");
+    DeBruijnGraphConstructor<k, Graph> g_c(debruijn);
+    g_c.ConstructGraph(g, index);
+    DEBUG("Graph condensed");
 }
 
 template<size_t k>

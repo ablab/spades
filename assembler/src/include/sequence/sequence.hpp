@@ -147,6 +147,9 @@ public:
     inline bool BinWrite(std::ostream& file);
 
     inline Sequence(std::istream& file, bool dummy);
+
+    template<size_t size2_>
+    std::vector<Seq<size2_>> SplitInSeqs() const;
 };
 
 inline ostream& operator<<(ostream& os, const Sequence& s);
@@ -156,7 +159,7 @@ inline ostream& operator<<(ostream& os, const Sequence& s);
  */
 template<size_t size2_>
 Seq<size2_> Sequence::start() const {
-    VERIFY(size2_ <= size_);
+    //VERIFY(size2_ <= size_);
     return Seq<size2_> (*this);
 }
 
@@ -165,8 +168,22 @@ Seq<size2_> Sequence::start() const {
  */
 template<size_t size2_>
 Seq<size2_> Sequence::end() const {
-    VERIFY(size2_ <= size_);
+    //VERIFY(size2_ <= size_);
     return Seq<size2_> (*this, size_ - size2_);
+}
+
+
+template<size_t size2_> 
+vector<Seq<size2_> > Sequence::SplitInSeqs() const {
+    typedef Seq<size2_> Kmer;
+    vector<Kmer> ans;
+    Kmer kmer = this->start<size2_>();
+    for (size_t i = size2_; i<this->size(); ++i){
+        ans.push_back(kmer);
+        kmer = kmer << this[i];
+    }
+    ans.push_back(kmer);
+    return ans;
 }
 
 /**

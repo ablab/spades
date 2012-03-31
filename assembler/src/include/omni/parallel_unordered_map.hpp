@@ -1,71 +1,72 @@
 #pragma once 
+#include <tr1/unordered_map>
 
-template<class T, class Value, class Hash>
+template<class T, class Value, class Hash, class KeyEqual>
 struct parallel_unordered_map
 {
-private:
-	struct bucket_hasher
-	{
-		bucket_hasher(size_t bucket_size, Hash const& hash = Hash())
-			: bucket_size_	(bucket_size)
-			, hash_    		(hash)
-		{
-		}
+    private:
+        typedef	std::tr1::unordered_map<T, Value, Hash, KeyEqual>				origin_map_t;
+        typedef	std::vector<origin_map_t>							            map_arr_t;
+        typedef typename origin_map_t::value_type      value_type;
+    public:    
+        parallel_unordered_map(size_t nthreads)
+            : nthreads_		(nthreads)
+              , buckets_		(nthreads, origin_map_t(100000)) {
+        }
 
-		size_t operator()(T const& t) const
-		{
-			return hash_(t) % bucket_size_;
-		}
+        parallel_unordered_map(const parallel_unordered_map<T, Value, Hash, KeyEqual>& map)
+        {
+            nthreads_ = map.get_threads_num();
+            for (size_t i = 0; i < nthreads_; ++i) {
+                buckets_.push_back(map.get_buckets()[i]);
+            }
+        }
 
-	private:
-		size_t 	bucket_size_;
-		Hash	hash_;
-	};
-	//struct bucket_hasher;
+        parallel_unordered_map<T, Value, Hash, KeyEqual> & operator=(const parallel_unordered_map<T, Value, Hash, KeyEqual>& map)
+        { 
+            if (this == &map) return *this;
 
-	typedef	std::tr1::unordered_map<T, Value, Hash>				origin_map_t;
-	typedef	std::tr1::unordered_map<T, Value, bucket_hasher>	bucket_map_t;
-	typedef	std::vector<bucket_map_t>							map_arr_t;
-	typedef	std::vector<Hash>									hash_arr_t;
+            nthreads_ = map.get_threads_num();
+            for (size_t i = 0; i < nthreads_; ++i) {
+                buckets_.push_back(map.get_buckets()[i]);
+            }
+            return *this;                      
+        }
 
-    typedef typename origin_map_t::value_type      value_type;
-    typedef typename origin_map_t::size_type       size_type;
-    typedef typename origin_map_t::hasher          hasher;
-    typedef typename origin_map_t::key_equal       key_equal;
+        //bool operator== (const parallel_unordered_map<T, Value, Hash, KeyEqual>& map)
+        //{
+            //if (nthreads_ != map.get_threads_num) return false;
+            //for (size_t i = 0;
+        //}
 
-	parallel_unordered_map(size_t nthreads, Hash const& hash = Hash())
-		: nthreads_		(nthreads)
-		, bucket_size_	(bucket_size(nthreads))
-		, buckets_		(nthreads, origin_map_t(10, bucket_hasher(bucket_size(nthreads), hash)))
-    	, bucket_hashs_	(nthreads, hash)
-	{
-	}
+        void insert(const value_type& value, size_t bucket_num)
+        {
+            buckets_[bucket_num].insert(value);
+        }
 
-	bool insert(const value_type& value, const size_t thread_num)
-	{
-		size_t bucket_num = thread_num;
-		size_t h = bucket_hashs_[bucket_num](value.first);
-		return buckets_[bucket_num].insert(value);
-	}
+        void merge_buckets(origin_map_t& om)
+        {
+            for (size_t i = 0; i<nthreads_; ++i) {
+                om.insert(buckets_[i].begin(), buckets_[i].end());            
+            }
+        }
 
-	void merge_buckets(origin_map_t& om)
-	{
+        const origin_map_t & operator[](size_t i) const 
+        {
+            return buckets_[i];
+        }
 
-	}
+        size_t get_threads_num() const 
+        {
+            return nthreads_;
+        }
 
+        const map_arr_t & get_buckets() const
+        {
+            return buckets_;   
+        }
 
-private:
-	static size_t bucket_size(size_t nthreads)
-	{
-		return size_t(
-				std::ceil(
-					(1 << sizeof(size_t)) /
-					double(nthreads)));
-	}
-
-private:
-	size_t 		nthreads_;
-	size_t 		bucket_size_;
-	map_arr_t 	buckets_;
-	hash_arr_t	bucket_hashs_;
+    private:
+        size_t 		nthreads_;
+        map_arr_t 	buckets_;
 };

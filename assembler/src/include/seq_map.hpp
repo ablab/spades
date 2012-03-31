@@ -148,6 +148,10 @@ public:
 		return nodes_.end();
 	}
 
+    map_type & nodes(){
+        return nodes_;   
+    }
+
 	/**
 	 * Number of edges coming into param edge's end
 	 */
