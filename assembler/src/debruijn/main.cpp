@@ -20,7 +20,6 @@
 #include "omni/distance_estimation.hpp"
 #include "memory_limit.hpp"
 
-#include "assembly_compare.hpp"
 #include "perfcounter.hpp"
 
 DECL_PROJECT_LOGGER("d")
