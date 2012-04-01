@@ -62,7 +62,12 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		} else {
 			size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 			INFO("Estimating distances");
-			DistanceEstimator<Graph> estimator(gp.g, paired_index, dist_finder,
+
+			paired_info_index symmetric_index(gp.g);
+			PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
+			hack.FillSymmetricIndex(symmetric_index);
+
+			DistanceEstimator<Graph> estimator(gp.g, symmetric_index, dist_finder,
 					linkage_distance, max_distance);
 
 			paired_info_index raw_clustered_index(gp.g);

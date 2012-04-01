@@ -118,7 +118,7 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 	const size_t max_distance_;
 	const double MAGIC_DIST;
 
-	vector<pair<size_t, double> > EstimateEdgePairDistances(
+	vector<pair<size_t, double> > EstimateEdgePairDistances(size_t first_len, size_t second_len,
 			vector<PairInfo<EdgeId> > data,
 			vector<size_t> forward_/*, bool debug = false*/) {
 		vector<pair<size_t, double> > result;
@@ -135,7 +135,7 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 		size_t cur_dist = 0;
 		vector<double> weights(forward.size());
 		for (size_t i = 0; i < data.size(); i++) {
-			if (data[i].d < 0)
+			if (2 * data[i].d + second_len < first_len)
 				continue;
 			while (cur_dist + 1 < forward.size()
 					&& forward[cur_dist + 1] < data[i].d) {
@@ -201,7 +201,7 @@ public:
 			}
 			//			bool debug = (int_ids_.ReturnIntId(data[0].first) == 71456 && int_ids_.ReturnIntId(dyyata[0].second) == 71195);
 
-			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(
+			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(this->graph().length(first), this->graph().length(second),
 					data, forward/*, false*/);
 			//            if (debug) for (size_t i = 0; i< estimated.size(); i++)
 			//                INFO("Edges MY : " << estimated[i].first << " " << estimated[i].second);

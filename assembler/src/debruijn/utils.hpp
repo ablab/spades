@@ -177,8 +177,8 @@ class KmerMapper: public omnigraph::GraphActionHandler<Graph> {
 	typedef Seq<k> Kmer;
 	typedef typename std::tr1::unordered_map<Kmer, Kmer, typename Kmer::hash> MapType;
 
-	MapType mapping_;
 
+	MapType mapping_;
 public:
 	enum {
 		k_value = k
@@ -191,6 +191,14 @@ public:
 
 	virtual ~KmerMapper() {
 
+	}
+
+	typename MapType::const_iterator begin() const {
+		return mapping_.begin();
+	}
+
+	typename MapType::const_iterator end() const {
+		return mapping_.end();
 	}
 
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
