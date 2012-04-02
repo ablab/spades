@@ -14,12 +14,12 @@ namespace details
 {
 inline void copy_file(const fs::path& from_path, const fs::path& to_path)
 	{
-#if BOOST_FILESYSTEM_VERSION == 2
+#if not defined(BOOST_FILESYSTEM_VERSION) or (BOOST_FILESYSTEM_VERSION == 2)
 		fs::copy_file(from_path, to_path);
 #elif BOOST_FILESYSTEM_VERSION == 3
 		boost::filesystem3::copy(from_path, to_path);
 #else
-		BOOST_STATIC_ASSERT(false);
+		BOOST_STATIC_ASSERT(false && "BOOST_FILESYSTEM_VERSION defined, but has value different from 2 or 3");
 #endif
 	}
 }
