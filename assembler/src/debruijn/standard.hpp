@@ -15,22 +15,6 @@
 #include "cpp_utils.hpp"
 #include "fs_path_utils.hpp"
 
-// err handling
-#include "stacktrace.hpp"
-
-#ifndef NDEBUG
-namespace boost
-{
-inline void assertion_failed(char const * expr, char const * function, char const * file, long line)
-{
-        std::cerr << "Aborted by assert: " << std::endl;
-        print_stacktrace();
-        __assert_fail (expr, file, line, function);
-}
-} // namespace boost
-#endif
-
-
 #include "simple_tools.hpp"
 
 // io
