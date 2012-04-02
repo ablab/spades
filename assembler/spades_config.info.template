@@ -1,19 +1,20 @@
-output_dir          $cfg/test_dataset/
-output_to_console   true
+project_name        ECOLI_IS220_first1000           ; optional. Name of this config file is used if not specified
+output_dir          .
+output_to_console   true                            ; optional. Default is true
 
 spades
 {
   iterative_K         21 33 55
   paired_mode         true
   dataset             $cfg/test_dataset/input/ECOLI_1K.info ; not used if run with bh
-  measure_quality     true ; optional
+  measure_quality     true                          ; optional. Default is false
 }
 
 bh
 {
   input_reads         $cfg/test_dataset/input/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
-  output_dir          $cfg/test_dataset/corrected    ; optional. Global output_dir is used if not specified
-  qvoffset                                           ; optional. Either 33 or 64
+  output_dir                                        ; optional. Global output_dir is used if not specified
+  qvoffset                                          ; optional. Either 33 or 64
   max_iterations      4
   max_threads         20
   max_memory          50 ; in GB 

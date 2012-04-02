@@ -658,9 +658,10 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 		cfg.output_base += '/';
 	}
 
-	// instead of dataset_name. To be compatible with previous saves
+	// instead of dataset_name.
 	cfg.dataset_name = boost::filesystem::basename(boost::filesystem::path(cfg.dataset_file));
-	cfg.output_root = cfg.output_base + cfg.dataset_name + "/K" + ToString(K)
+	//cfg.output_root = cfg.output_base + cfg.dataset_name + "/K" + ToString(K)
+	cfg.output_root = cfg.output_base + "/K" + ToString(K)
 			+ "/";
 	cfg.output_suffix = MakeLaunchTimeDirName() + "/";
 	cfg.output_dir = cfg.output_root + cfg.output_suffix;

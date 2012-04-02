@@ -39,6 +39,9 @@ class spades_error:
 def error(err_str, prefix="== Error == ", code=1):
     raise spades_error(code, "\n\n" + prefix + " " + err_str + "\n\n")
 
+def warning(warn_str, prefix="== Warning == "):
+    print("\n\n" + prefix + " " + warn_str + "\n\n")
+
 #TODO: error log -> log
 #TODO: os.sytem gives error -> stop
 
@@ -73,7 +76,7 @@ def sys_call_output(cmd):
 def copy(source, dest):
     sys_call("cp " + source + " " + dest)
 
-def question_with_timer(question, seconds):
+def question_with_timer(question, seconds, default = 'y'):
     import time
     import curses
 
@@ -88,16 +91,17 @@ def question_with_timer(question, seconds):
     stdscr = curses.initscr()
     stdscr.nodelay(True)
     curses.noecho()
-    answer = 'y'
+    answer = default
     while True:
         for id, line in enumerate(question):
             stdscr.addstr(id, 0, line)
         left = t.get_left()
         if left <= 0:
             break
-        stdscr.addstr(len(question), 0, 'Seconds left: %s ' % str(left).zfill(2) + ' [default is y]')
+        stdscr.addstr(len(question), 0, "Seconds left: %s " % str(left).zfill(2) + " [default is " + default + "]")
         c = stdscr.getch()
         if c == ord('y') :
+            answer = 'y'            
             break
         elif c == ord('n') :
             answer = 'n'

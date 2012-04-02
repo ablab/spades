@@ -53,7 +53,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict = dict()
     cfg.working_dir = path.abspath(cfg.working_dir)
 
-    subst_dict["dataset"]            = path.abspath(path.expandvars(cfg.dataset))    
+    subst_dict["dataset"]            = cfg.dataset    
     subst_dict["output_base"]        = cfg.working_dir
     subst_dict["additional_contigs"] = path.join(cfg.working_dir, "simplified_contigs.fasta")
     subst_dict["entry_point"]        = 'construction'
@@ -72,6 +72,31 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
         subst_dict["use_additional_contigs"] = "false"
 
     substitute_params(filename, subst_dict)
+
+def check_config(cfg, config_filename):
+
+    # checking mandatory fields
+
+    if (not cfg.has_key("bh")) and (not cfg.has_key("spades")):
+        support.error("wrong config! You should specify either 'bh' section (for reads error correction) or 'spades' one (for assembling) or both!")
+        return False
+    
+    if not cfg["common"].__dict__.has_key("output_dir"):
+        support.error("wrong config! You should specify output_dir!")
+        return False
+
+    # setting default values
+
+    if not cfg["common"].__dict__.has_key("output_to_console"):
+        cfg["common"].__dict__["output_to_console"] = True        
+
+    if not cfg["common"].__dict__.has_key("project_name"):
+        cfg["common"].__dict__["project_name"] = path.splitext(path.basename(config_filename))[0]
+
+    # output naming convention
+    cfg["common"].output_dir = path.join(path.abspath(path.expandvars(cfg["common"].output_dir)), cfg["common"].project_name)
+
+    return True
 
 def main():
 
@@ -93,16 +118,17 @@ def main():
 
     cfg = load_config_from_info_file(CONFIG_FILE)
 
-    if (not cfg.has_key("bh")) and (not cfg.has_key("spades")):
-        print ("\nError: Wrong config! You should specify either 'bh' section (for reads error correction) or 'spades' one (for assembling) or both!\n")
-        exit(1)
+    if not check_config(cfg, CONFIG_FILE):
+        return     
 
+    created_dataset_filename = ""
     if cfg.has_key("bh"):   
         bh_cfg = cfg["bh"]
         if not bh_cfg.__dict__.has_key("output_dir"):
-            bh_cfg.__dict__["output_dir"] = path.join(path.expandvars(cfg["common"].output_dir), "corrected")
+            bh_cfg.__dict__["output_dir"] = path.join(cfg["common"].output_dir, "corrected")
         else:
             bh_cfg.__dict__["output_dir"] = path.expandvars(bh_cfg.output_dir)
+            support.warning("output_dir (" + bh_cfg.output_dir + ") will be used for error correction instead of the common one (" + cfg["common"].output_dir + ")")
         
         bh_cfg.__dict__["working_dir"] = path.join(bh_cfg.output_dir, "tmp")
 
@@ -110,10 +136,10 @@ def main():
         if path.exists(bh_cfg.output_dir):
             question = ["WARNING! Folder with corrected reads (" + bh_cfg.output_dir + ") already exists!", 
                         "Do you want to overwrite this folder and start error correction again? (y/n)"]
-            answer = support.question_with_timer(question, 10)
+            answer = support.question_with_timer(question, 10, 'n')
             if answer == 'n':
                 start_bh = False
-                print("\n== Error correction stage skipped\n")   
+                print("\n===== Error correction skipped\n")   
             else:
                 shutil.rmtree(bh_cfg.output_dir)
 
@@ -123,7 +149,9 @@ def main():
             log_filename = path.join(bh_cfg.output_dir, "bh.log")
             bh_cfg.__dict__["log_filename"] = log_filename
 
-            print("\n== Error correction started. Log can be found here: " + bh_cfg.log_filename + "\n")
+            shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
+
+            print("\n===== Error correction started. Log can be found here: " + bh_cfg.log_filename + "\n")
 
             log_file = open(log_filename, "w")
 
@@ -138,8 +166,8 @@ def main():
                 sys.stdout = support.redirected_stream(log_file, None)
 
             err_code = 0
-            try:            
-                cfg["spades"].__dict__["dataset"] = run_bh(bh_cfg)
+            try:
+                created_dataset_filename = run_bh(bh_cfg)                
             except support.spades_error as err:
                 print err.err_str
                 err_code = err.code
@@ -147,7 +175,7 @@ def main():
             sys.stdout = old_stdout
             sys.stderr = old_stderr
 
-            print("\n== Error correction finished. Log can be found here: " + bh_cfg.log_filename + "\n")
+            print("\n===== Error correction finished. Log can be found here: " + bh_cfg.log_filename + "\n")
             if err_code:
                exit(err_code) 
 
@@ -156,10 +184,16 @@ def main():
         if not spades_cfg.__dict__.has_key("measure_quality"):
             spades_cfg.__dict__["measure_quality"] = False
 
+        if created_dataset_filename != "":
+            if cfg["spades"].__dict__.has_key("dataset"):
+                support.warning("dataset created during error correction (" + created_dataset_filename + ") will be used instead of the one from config file (" + cfg["spades"].dataset + ")!")            
+            cfg["spades"].__dict__["dataset"] = created_dataset_filename 
+        spades_cfg.dataset = path.abspath(path.expandvars(spades_cfg.dataset))
+
         def make_working_dir(cfg):
             import datetime
             name = "spades_" + datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
-            output_dir = path.expandvars(cfg.output_dir)
+            output_dir  = cfg.output_dir
             working_dir = path.join(output_dir, name)
             os.makedirs(working_dir)
             latest = path.join(output_dir, "the_latest")
@@ -173,6 +207,8 @@ def main():
 
         log_filename = path.join(spades_cfg.working_dir, "spades.log")
         spades_cfg.__dict__["log_filename"] = log_filename
+
+        shutil.copy(CONFIG_FILE, spades_cfg.working_dir)
 
         print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
 
@@ -202,7 +238,7 @@ def main():
         if err_code:
             exit(err_code)
     
-    print("\n== SPAdes pipeline finished\n") 
+    print("\n===== SPAdes pipeline finished\n") 
 
 def run_bh(cfg):
 
@@ -229,7 +265,7 @@ def run_bh(cfg):
     dataset_file = open(dataset_filename, "w")
     dataset_file.write(dataset_str)    
     dataset_file.close()
-    print("\nDataset created: " + dataset_filename + "\n")    
+    print("\n== Dataset created: " + dataset_filename + "\n")    
 
     shutil.rmtree(cfg.working_dir)
 
@@ -250,7 +286,7 @@ def run_spades(cfg):
     for K in cfg.iterative_K:
         count += 1
 
-        dst_configs = path.join(cfg.working_dir, str(K), "configs")
+        dst_configs = path.join(cfg.working_dir, "config_K" + str(K), "configs")
         shutil.copytree(path.join(spades_home, "configs"), dst_configs)
         cfg_file_name = path.join(dst_configs, "debruijn", "config.info")
 
@@ -264,10 +300,10 @@ def run_spades(cfg):
 
         support.sys_call(command, execution_home)
 
-        dataset_id = path.splitext(path.basename(cfg.dataset))[0]
-        latest = path.join(cfg.working_dir, dataset_id, "K%d" % (K), "latest")
+        #dataset_id = path.splitext(path.basename(cfg.dataset))[0]
+        latest = path.join(cfg.working_dir, "K%d" % (K), "latest")
         latest = os.readlink(latest)
-        latest = path.join(cfg.working_dir, dataset_id, "K%d" % (K), latest)
+        latest = path.join(cfg.working_dir, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
 
     support.copy(os.path.join(latest, "final_contigs.fasta"), cfg.working_dir)
@@ -276,7 +312,7 @@ def run_spades(cfg):
     if cfg.measure_quality:
         print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
         cmd = "python " + path.join(spades_home, "src/tools/quality/quality.py") + " " + result_contigs
-        dataset_filename = path.abspath(path.expandvars(cfg.dataset))
+        dataset_filename = cfg.dataset
         dataset = load_config_from_info_file(dataset_filename)["common"]
 
         if dataset.__dict__.has_key("reference_genome"):
