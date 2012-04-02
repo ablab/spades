@@ -354,6 +354,9 @@ struct debruijn_config {
 		bool adjust_align;
 		bool align_only_paired;
 		bool output_broken_pairs;
+		bool align_original_reads;
+		boost::optional<std::string> original_first;
+		boost::optional<std::string> original_second;
 	};
 
 	typedef map<info_printer_pos, info_printer> info_printers_t;
@@ -563,6 +566,9 @@ inline void load(debruijn_config::SAM_writer& sw,
 	load(sw.adjust_align        , pt, "adjust_align"        );
 	load(sw.align_only_paired   , pt, "align_only_paired"   );
 	load(sw.output_broken_pairs , pt, "output_broken_pairs" );
+	load(sw.align_original_reads, pt, "align_original_reads");
+	sw.original_first = pt.get_optional<std::string>("original_first");
+	sw.original_second = pt.get_optional<std::string>("original_second");
 }
 
 

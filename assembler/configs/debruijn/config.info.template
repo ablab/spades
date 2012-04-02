@@ -118,13 +118,15 @@ SAM_writer
 	produce_align_files	false
 	output_map_format	false
 	align_before_RR		true
-	align_after_RR		false
+	align_after_RR		true
 	adjust_align		true
 	align_only_paired	true
-	output_broken_pairs	true
+	output_broken_pairs	false
+	align_original_reads	false
+	original_first	E.coli/jgi/0012/Ecoli_0012.1.fastq
+	original_second	E.coli/jgi/0012/Ecoli_0012.2.fastq
+
 }
-
-
 
 
 ; consensus
