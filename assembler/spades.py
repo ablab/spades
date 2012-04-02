@@ -156,18 +156,25 @@ def main():
         if not spades_cfg.__dict__.has_key("measure_quality"):
             spades_cfg.__dict__["measure_quality"] = False
 
-        def working_dir(cfg):
+        def make_working_dir(cfg):
             import datetime
-            suffix = datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
-            return path.join(path.expandvars(cfg.output_dir), 'spades_' + suffix)
+            name = "spades_" + datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
+            output_dir = path.expandvars(cfg.output_dir)
+            working_dir = path.join(output_dir, name)
+            os.makedirs(working_dir)
+            latest = path.join(output_dir, "the_latest")
+            if os.path.islink(latest):
+                os.remove(latest)
+            if not os.path.exists(latest):
+                os.symlink(name, latest)
+            return working_dir
 
-        spades_cfg.__dict__["working_dir"] = working_dir(cfg["common"])
-        os.makedirs(spades_cfg.working_dir)
+        spades_cfg.__dict__["working_dir"] = make_working_dir(cfg["common"])
 
         log_filename = path.join(spades_cfg.working_dir, "spades.log")
         spades_cfg.__dict__["log_filename"] = log_filename
 
-        print("\n== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
+        print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
 
         log_file = open(log_filename, "w")
 
@@ -191,7 +198,7 @@ def main():
         sys.stdout = old_stdout
         sys.stderr = old_stderr
 
-        print("\n== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")
+        print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")
         if err_code:
             exit(err_code)
     
