@@ -227,7 +227,13 @@ Sequence load_genome() {
 		genome_stream >> full_genome;
 		genome = full_genome.GetSequenceString().substr(0, lc_cfg::get().ds.LEN);
 	}
-	return Sequence(genome);
+	if (io::SingleRead::IsValid(genome)) {
+		return Sequence(genome);
+	}
+	else {
+		INFO("Reference genome (" + genome_filename + ") have non-ACGT characters. Skipping it.");
+		return Sequence();
+	}
 }
 
 void LoadFromFile(std::string fileName, Graph& g, IdTrackHandler<Graph>& intIds, KmerMapper<K+1, Graph>& mapper) {

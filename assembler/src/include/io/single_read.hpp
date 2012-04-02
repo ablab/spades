@@ -236,6 +236,15 @@ public:
 //		UpdateValid();
 //	}
 
+	static bool IsValid(const string& seq) {
+		for (size_t i = 0; i < seq.size(); ++i) {
+			if (!is_nucl(seq[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 private:
 	/*
 	 * @variable The name of SingleRead in input file.
@@ -292,13 +301,7 @@ private:
 
 	void Init() {
 		VERIFY(seq_.size() == qual_.size());
-
-		valid_ = true;
-		for (size_t i = 0; i < seq_.size(); ++i) {
-			if (!is_nucl(seq_[i])) {
-				valid_ = false;
-			}
-		}
+		valid_ = SingleRead::IsValid(seq_);
 	}
 };
 

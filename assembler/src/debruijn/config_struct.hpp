@@ -574,7 +574,14 @@ inline void load_reference_genome(debruijn_config::dataset& ds,
 	io::Reader genome_stream(ds.reference_genome_filename);
 	io::SingleRead genome;
 	genome_stream >> genome;
-	ds.reference_genome = genome.sequence();
+	if (genome.IsValid()) {
+		ds.reference_genome = genome.sequence();
+	}
+	else {
+		INFO("Reference genome (" + ds.reference_genome_filename + ") have non-ACGT characters. Skipping it.");
+		ds.reference_genome = Sequence();
+		ds.reference_genome_filename = "";
+	}
 }
 
 inline void load(debruijn_config::simplification& simp,
