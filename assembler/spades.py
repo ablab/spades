@@ -15,6 +15,13 @@ sys.path.append(os.path.join(spades_home, "src/tools/spades_pipeline/"))
 import support
 from process_cfg import *
 
+def error(err_str, prefix="== Error == "):
+    print("\n\n" + prefix + " " + err_str + "\n\n")
+    exit(1)
+
+def warning(warn_str, prefix="== Warning == "):
+    print("\n\n" + prefix + " " + warn_str + "\n\n")
+
 def prepare_config_bh(filename, cfg):
 
     subst_dict = dict()
@@ -27,6 +34,10 @@ def prepare_config_bh(filename, cfg):
     for read in cfg.input_reads:
         input_reads.extend(glob.glob(path.abspath(path.expandvars(read))))
     cfg.input_reads = input_reads
+
+    if len(cfg.input_reads) == 1:
+        import bh_aux
+        cfg.input_reads = bh_aux.split_paired_file(cfg)
 
     subst_dict["input_numfiles"]           = len(cfg.input_reads)
   
@@ -76,11 +87,11 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
 def check_config(cfg, config_filename):
 
     if (not cfg.has_key("bh")) and (not cfg.has_key("spades")):
-        support.error("wrong config! You should specify either 'bh' section (for reads error correction) or 'spades' one (for assembling) or both!")
+        error("wrong config! You should specify either 'bh' section (for reads error correction) or 'spades' one (for assembling) or both!")
         return False
     
     if not cfg["common"].__dict__.has_key("output_dir"):
-        support.error("wrong config! You should specify output_dir!")
+        error("wrong config! You should specify output_dir!")
         return False
 
     if not cfg["common"].__dict__.has_key("output_to_console"):
@@ -123,7 +134,7 @@ def main():
             bh_cfg.__dict__["output_dir"] = path.join(cfg["common"].output_dir, "corrected")
         else:
             bh_cfg.__dict__["output_dir"] = path.expandvars(bh_cfg.output_dir)
-            support.warning("output_dir (" + bh_cfg.output_dir + ") will be used for error correction instead of the common one (" + cfg["common"].output_dir + ")")
+            warning("output_dir (" + bh_cfg.output_dir + ") will be used for error correction instead of the common one (" + cfg["common"].output_dir + ")")
         
         bh_cfg.__dict__["working_dir"] = path.join(bh_cfg.output_dir, "tmp")
 
@@ -181,9 +192,15 @@ def main():
 
         if created_dataset_filename != "":
             if cfg["spades"].__dict__.has_key("dataset"):
-                support.warning("dataset created during error correction (" + created_dataset_filename + ") will be used instead of the one from config file (" + cfg["spades"].dataset + ")!")            
+                warning("dataset created during error correction (" + created_dataset_filename + ") will be used instead of the one from config file (" + cfg["spades"].dataset + ")!")            
             cfg["spades"].__dict__["dataset"] = created_dataset_filename 
-        spades_cfg.dataset = path.abspath(path.expandvars(spades_cfg.dataset))
+        spades_cfg.dataset = path.abspath(path.expandvars(spades_cfg.dataset)) 
+        if not path.isfile(spades_cfg.dataset):
+            error("dataset " + spades_cfg.dataset + " doesn't exist!")
+            exit(1)
+        if not check_dataset(spades_cfg.dataset):
+            error("" "incorrect dataset " + spades_cfg.dataset + ": list of files with reads should be arounded with double quotes!")
+            exit(1)
 
         def make_working_dir(cfg):
             import datetime
@@ -204,6 +221,9 @@ def main():
         spades_cfg.__dict__["log_filename"] = log_filename
 
         shutil.copy(CONFIG_FILE, spades_cfg.working_dir)
+        shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)
+        #spades_cfg.dataset = path.join(spades_cfg.working_dir, path.basename(spades_cfg.dataset))
+        #correct_dataset(spades_cfg.dataset)
 
         print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
 
@@ -235,16 +255,16 @@ def main():
     
     print("\n===== SPAdes pipeline finished\n") 
 
-def run_bh(cfg):
-
-    import build
-    build.build_hammer(cfg, spades_home)
+def run_bh(cfg):    
     
     dst_configs = path.join(cfg.output_dir, "configs")
     shutil.copytree(path.join(spades_home, "configs"), dst_configs)
     cfg_file_name = path.join(dst_configs, "hammer", "config.info")
         
     prepare_config_bh(cfg_file_name, cfg)
+
+    import build
+    build.build_hammer(cfg, spades_home)
 
     execution_home = path.join(os.getenv('HOME'), '.spades/precompiled/build_hammer')
     command = path.join(execution_home, "hammer", "hammer") + " " + path.abspath(cfg_file_name)

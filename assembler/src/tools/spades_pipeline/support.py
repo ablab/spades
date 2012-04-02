@@ -39,9 +39,6 @@ class spades_error:
 def error(err_str, prefix="== Error == ", code=1):
     raise spades_error(code, "\n\n" + prefix + " " + err_str + "\n\n")
 
-def warning(warn_str, prefix="== Warning == "):
-    print("\n\n" + prefix + " " + warn_str + "\n\n")
-
 #TODO: error log -> log
 #TODO: os.sytem gives error -> stop
 

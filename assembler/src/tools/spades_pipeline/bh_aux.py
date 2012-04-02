@@ -101,3 +101,39 @@ def generate_dataset(cfg, tmp_dir, input_files):
     if cfg.__dict__.has_key("operons"):        
         dataset_cfg["operons"]          = os.path.abspath(os.path.expandvars(cfg.operons))
     return dataset_pretty_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))
+
+def split_paired_file(cfg):
+    input_filename = cfg.input_reads[0]
+    ext = os.path.splitext(input_filename)[1]
+
+    input_file = file    
+    out_basename = ""
+    
+    if ext == '.gz':
+        import gzip
+        input_file   = gzip.open(input_filename, 'r')
+        ungzipped    = os.path.splitext(input_filename)[0]
+        out_basename = os.path.splitext(os.path.basename(ungzipped))[0]   
+    else:
+        input_file   = open(input_filename, 'r')
+        out_basename = os.path.splitext(os.path.basename(input_filename))[0]
+
+    out_left_filename  = os.path.join(cfg.working_dir, out_basename + "_left.fastq") 
+    out_right_filename = os.path.join(cfg.working_dir, out_basename + "_right.fastq")    
+    
+    print("== Splitting " + input_filename + " into left and right reads")
+
+    out_left_file = open(out_left_filename, 'w')
+    out_right_file = open(out_right_filename, 'w')
+    for id, line in enumerate(input_file):
+        if id % 8 < 4:
+            out_left_file.write(line)
+        else: 
+            out_right_file.write(line)
+    
+    out_left_file.close()
+    out_right_file.close()
+    input_file.close()
+
+    return [out_left_filename, out_right_filename]
+
