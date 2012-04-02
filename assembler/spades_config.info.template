@@ -1,6 +1,7 @@
 project_name        ECOLI_IS220_first1000           ; optional. Name of this config file is used if not specified
 output_dir          .
 output_to_console   true                            ; optional. Default is true
+developer_mode      false                           ; optional. Default is false
 
 spades
 {
@@ -22,7 +23,7 @@ bh
 
   dataset_name        ECOLI_IS220_1K                ; optional. Default is "dataset"
   single_cell         false
-  reference           $cfg/test_dataset/input/E.coli/MG1655-K12.first1K.fasta.gz ; optional       
-  genes               $cfg/test_dataset/input/E.coli/genes.first1K.txt           ; optional          
-  operons             $cfg/test_dataset/input/E.coli/operons.first1K.txt         ; optional       
+  reference           $cfg/test_dataset/input/E.coli/MG1655-K12.first1K.fasta.gz ; optional
+  genes               $cfg/test_dataset/input/E.coli/genes.first1K.txt           ; optional
+  operons             $cfg/test_dataset/input/E.coli/operons.first1K.txt         ; optional
 }
