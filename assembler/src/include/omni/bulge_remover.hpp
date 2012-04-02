@@ -13,7 +13,6 @@
 #include "omni_utils.hpp"
 #include "xmath.h"
 #include "sequence/sequence_tools.hpp"
-#include "elapsed_timer.h"
 
 namespace omnigraph {
 

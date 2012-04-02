@@ -11,7 +11,7 @@
 #include <ostream>
 #include <boost/function.hpp>
 #include <boost/filesystem.hpp>
-#include "elapsed_timer.h"
+#include "perfcounter.hpp"
 #include <ctime>
 #include "order_and_law.hpp"
 
@@ -985,10 +985,10 @@ public:
 		TRACE("Backward dijkstra created with bound " << max_length_);
 		TRACE("Backward dijkstra started");
 
-		elapsed_timer t;
+		perf_counter pc;
 		backward_dijkstra.run(end_);
 
-		double elapsed = t.elapsed();
+		double elapsed = pc.time();
 		if (elapsed > 1e-4)
 			DEBUG("Too much time for dijkstra: " << elapsed);
 
