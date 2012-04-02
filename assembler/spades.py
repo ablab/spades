@@ -75,8 +75,6 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
 
 def check_config(cfg, config_filename):
 
-    # checking mandatory fields
-
     if (not cfg.has_key("bh")) and (not cfg.has_key("spades")):
         support.error("wrong config! You should specify either 'bh' section (for reads error correction) or 'spades' one (for assembling) or both!")
         return False
@@ -85,15 +83,12 @@ def check_config(cfg, config_filename):
         support.error("wrong config! You should specify output_dir!")
         return False
 
-    # setting default values
-
     if not cfg["common"].__dict__.has_key("output_to_console"):
         cfg["common"].__dict__["output_to_console"] = True        
 
     if not cfg["common"].__dict__.has_key("project_name"):
         cfg["common"].__dict__["project_name"] = path.splitext(path.basename(config_filename))[0]
 
-    # output naming convention
     cfg["common"].output_dir = path.join(path.abspath(path.expandvars(cfg["common"].output_dir)), cfg["common"].project_name)
 
     return True
@@ -135,7 +130,7 @@ def main():
         start_bh = True
         if path.exists(bh_cfg.output_dir):
             question = ["WARNING! Folder with corrected reads (" + bh_cfg.output_dir + ") already exists!", 
-                        "Do you want to overwrite this folder and start error correction again? (y/n)"]
+                        "Do you want to overwrite this folder and start error correction again?"]
             answer = support.question_with_timer(question, 10, 'n')
             if answer == 'n':
                 start_bh = False

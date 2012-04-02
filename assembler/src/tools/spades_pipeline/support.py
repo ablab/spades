@@ -69,10 +69,6 @@ def sys_call(cmd, cwd = None):
     if proc.returncode != 0:
         error("system call for: \"" + cmd + "\" finished abnormally, err code:" + str(proc.returncode))
 
-def sys_call_output(cmd):
-    import subprocess
-    return subprocess.check_output(cmd, shell=True)
-
 def copy(source, dest):
     sys_call("cp " + source + " " + dest)
 
@@ -91,7 +87,13 @@ def question_with_timer(question, seconds, default = 'y'):
     stdscr = curses.initscr()
     stdscr.nodelay(True)
     curses.noecho()
-    answer = default
+    answer = default    
+
+    default_str = "[Y/n]"
+    if default == 'n':   
+        default_str = "[y/N]" 
+    question[-1] += " " + default_str 
+
     try:
         while True:
             for id, line in enumerate(question):
@@ -99,7 +101,7 @@ def question_with_timer(question, seconds, default = 'y'):
             left = t.get_left()
             if left <= 0:
                 break
-            stdscr.addstr(len(question), 0, "Seconds left: %s " % str(left).zfill(2) + " [default is " + default + "]")
+            stdscr.addstr(len(question), 0, "Seconds left: %s " % str(left).zfill(2))
             c = stdscr.getch()
             if c == ord('y') :
                 answer = 'y'            

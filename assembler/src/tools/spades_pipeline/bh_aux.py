@@ -2,7 +2,6 @@
 
 import os
 import sys
-import subprocess
 import re
 
 from process_cfg import bool_to_str
@@ -20,7 +19,7 @@ def check_files(prefix):
 
 def determine_it_count(tmp_dir):
     import re
-    files = subprocess.check_output('ls -1 ' + tmp_dir, shell=True).strip().split('\n')
+    files = os.listdir(tmp_dir)
     answer = 0;
     for f in files:
         m = re.match(r"^(\d+)\..*", f)
