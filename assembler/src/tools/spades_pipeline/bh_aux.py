@@ -12,12 +12,11 @@ def verify(expr, message):
         print "Assertion failed. Message: " + message
         exit(0)
 
-def check_files(files, prefix):
+def check_files(prefix):
     msg = "Failure! Check output files."
-    verify(len(files) == 3, msg + " prefix is " + prefix + " error 1")
-    verify(prefix + ".cor.fastq" in files, msg + " prefix is " + prefix + " error 2")
-    verify(prefix + ".unp.fastq" in files, msg + " prefix is " + prefix + " error 3")
-    verify(prefix + ".bad.fastq" in files, msg + " prefix is " + prefix + " error 4")
+    verify(os.path.isfile(prefix + ".cor.fastq"), msg + " prefix is " + prefix + " error 1")
+    verify(os.path.isfile(prefix + ".unp.fastq"), msg + " prefix is " + prefix + " error 2")
+    verify(os.path.isfile(prefix + ".bad.fastq"), msg + " prefix is " + prefix + " error 3")
 
 def determine_it_count(tmp_dir):
     import re
@@ -38,10 +37,8 @@ def determine_read_files(folder, str_it_count, input_files):
     answer["single_reads"] = '"'
 
     for input_file in input_files:
-        prefix = os.path.basename(input_file) + "." + str_it_count
-        files = subprocess.check_output('ls -1 ' + folder + prefix + ".*.fastq | xargs -n1 basename"\
-        , shell=True).strip().split('\n')
-        check_files(files, prefix)
+        prefix = os.path.basename(input_file) + "." + str_it_count        
+        check_files(folder + prefix)
 
         answer["paired_reads"] += folder + prefix + ".cor.fastq" + '  '
         answer["single_reads"] += folder + prefix + ".unp.fastq" + '  '

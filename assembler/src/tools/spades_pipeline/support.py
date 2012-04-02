@@ -92,22 +92,28 @@ def question_with_timer(question, seconds, default = 'y'):
     stdscr.nodelay(True)
     curses.noecho()
     answer = default
-    while True:
-        for id, line in enumerate(question):
-            stdscr.addstr(id, 0, line)
-        left = t.get_left()
-        if left <= 0:
-            break
-        stdscr.addstr(len(question), 0, "Seconds left: %s " % str(left).zfill(2) + " [default is " + default + "]")
-        c = stdscr.getch()
-        if c == ord('y') :
-            answer = 'y'            
-            break
-        elif c == ord('n') :
-            answer = 'n'
-            break
-    # Final operations start here
-    stdscr.keypad(0)
-    curses.echo()
-    curses.endwin()
+    try:
+        while True:
+            for id, line in enumerate(question):
+                stdscr.addstr(id, 0, line)
+            left = t.get_left()
+            if left <= 0:
+                break
+            stdscr.addstr(len(question), 0, "Seconds left: %s " % str(left).zfill(2) + " [default is " + default + "]")
+            c = stdscr.getch()
+            if c == ord('y') :
+                answer = 'y'            
+                break
+            elif c == ord('n') :
+                answer = 'n'
+                break
+            elif c == ord('\n') :   
+                break
+    except KeyboardInterrupt:
+        print "Default answer was choosen\n"        
+    finally:
+        # Final operations start here
+        stdscr.keypad(0)
+        curses.echo()
+        curses.endwin()
     return answer
