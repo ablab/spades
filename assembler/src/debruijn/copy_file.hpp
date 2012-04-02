@@ -10,6 +10,20 @@
 #include <boost/filesystem.hpp>
 
 namespace fs = boost::filesystem;
+namespace details
+{
+inline void copy_file(const fs::path& from_path, const fs::path& to_path)
+	{
+#if BOOST_FILESYSTEM_VERSION == 2
+		fs::copy_file(from_path, to_path);
+#elif BOOST_FILESYSTEM_VERSION == 3
+		boost::filesystem3::copy(from_path, to_path);
+#else
+		BOOST_STATIC_ASSERT(false);
+#endif
+	}
+}
+
 
 typedef std::vector<fs::path> files_t;
 
@@ -38,7 +52,7 @@ void copy_files_by_prefix(files_t const& files, fs::path const& to_folder)
 		files_t  files_to_copy = files_by_prefix(f);
 
 		for (auto it = files_to_copy.begin(); it != files_to_copy.end(); ++it)
-			copy_file(*it, to_folder / it->filename());
+			details::copy_file(*it, to_folder / it->filename());
 	}
 }
 
@@ -54,6 +68,6 @@ void copy_files_by_ext(fs::path const& from_folder, fs::path const& to_folder, s
         }
 
 	    if (it->path().extension() == ext)
-			copy_file(*it, to_folder / it->path().filename());
+	    	details::copy_file(*it, to_folder / it->path().filename());
     }
 }

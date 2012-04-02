@@ -18,7 +18,7 @@
  * according to extension.
  */
 
-#include <string>
+#include "standard_base.hpp"
 #include "logging.hpp"
 #include "io/parser.hpp"
 #include "io/fasta_fastq_gz_parser.hpp"

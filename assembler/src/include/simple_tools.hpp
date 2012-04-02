@@ -8,19 +8,9 @@
 #ifndef SIMPLE_TOOLS_HPP_
 #define SIMPLE_TOOLS_HPP_
 
-#include <string>
-#include <sstream>
-#include <iterator>
-#include <vector>
 #include "logging.hpp"
 #include "verify.hpp"
 #include "io/ireader.hpp"
-
-#define BOOST_FILESYSTEM_VERSION 2
-#include <boost/filesystem.hpp>
-#include <boost/format.hpp>
-
-#include <fstream>
 
 /**
  * Converts anything to string (using ostringstream).
