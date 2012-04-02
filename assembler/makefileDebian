@@ -32,4 +32,5 @@ install:
 	cp cpcfg $(DESTDIR)/usr/share/spades/
 	cp log4cxx.properties.template $(DESTDIR)/usr/share/spades/log4cxx.properties
 	cp log4cxx.properties.template $(DESTDIR)/usr/share/spades/
-	cp spades_configDebian.info $(DESTDIR)/usr/share/spades/spades_config.info
+	cp spades_config.info.template $(DESTDIR)/usr/share/spades/spades_config.info
+	cp spades_config.info.template $(DESTDIR)/usr/share/spades/spades_config.info.template

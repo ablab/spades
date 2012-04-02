@@ -7,13 +7,13 @@ spades
 {
   iterative_K         21 33 55
   paired_mode         true
-  dataset             $cfg/test_dataset/input/ECOLI_1K.info ; not used if run with bh
+  dataset             /usr/share/spades/data/ECOLI_1K.info ; not used if run with bh
   measure_quality     true                          ; optional. Default is false
 }
 
 bh
 {
-  input_reads         $cfg/test_dataset/input/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
+  input_reads         /usr/share/spades/data/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
   output_dir                                        ; optional. Global output_dir is used if not specified
   qvoffset                                          ; optional. Either 33 or 64
   max_iterations      4
@@ -23,7 +23,7 @@ bh
 
   dataset_name        ECOLI_IS220_1K                ; optional. Default is "dataset"
   single_cell         false
-  reference           $cfg/test_dataset/input/E.coli/MG1655-K12.first1K.fasta.gz ; optional
-  genes               $cfg/test_dataset/input/E.coli/genes.first1K.txt           ; optional
-  operons             $cfg/test_dataset/input/E.coli/operons.first1K.txt         ; optional
+  reference           /usr/share/spades/data/E.coli/MG1655-K12.first1K.fasta.gz ; optional
+  genes               /usr/share/spades/data/E.coli/genes.first1K.txt           ; optional
+  operons             /usr/share/spades/data/E.coli/operons.first1K.txt         ; optional
 }

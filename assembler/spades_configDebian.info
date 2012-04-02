@@ -1,7 +1,0 @@
-iterative_K         21 33 55
-paired_mode         true
-dataset             ECOLI_IS220_QUAKE_1K
-input_dir	        /usr/share/spades/data
-output_dir	        .
-measure_quality     true
-output_to_console   true
