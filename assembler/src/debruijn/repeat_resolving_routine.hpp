@@ -37,10 +37,20 @@ namespace debruijn_graph
 void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
 } // debruijn_graph
 
+
+
 // TODO move impl to *.cpp
 
 namespace debruijn_graph {
 
+void save_distance_filling(conj_graph_pack& gp,
+		paired_info_index& paired_index, paired_info_index& clustered_index) {
+	if (cfg::get().make_saves) {
+		fs::path p = fs::path(cfg::get().output_saves) / "distance_filling";
+		PrintAll(p.string(), gp, paired_index, clustered_index);
+		write_estimated_params(p.string());
+	}
+}
 void FillContigNumbers(map<ConjugateDeBruijnGraph::EdgeId, int>& contigNumbers
 		, ConjugateDeBruijnGraph& cur_graph) {
 	int cur_num = 0;
@@ -556,9 +566,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 }
 
 template<class graph_pack>
-vector<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(const graph_pack& origin_gp, typename graph_pack::graph_t::EdgeId& first_edge, typename graph_pack::graph_t::EdgeId& second_edge) {
+vector<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(const graph_pack& origin_gp, typename graph_pack::graph_t::EdgeId& first_edge, typename graph_pack::graph_t::EdgeId& second_edge, size_t min_dist, size_t max_dist) {
 	PathStorageCallback <typename graph_pack::graph_t> callback(origin_gp.g);
-	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, 0, *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var),
+	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, min_dist, max_dist,//0, *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var),
 																origin_gp.g.EdgeEnd(first_edge),
 																origin_gp.g.EdgeStart(second_edge), callback);
 	path_processor.Process();
@@ -605,14 +615,20 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 	size_t max_comparable_path = *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var);
 	auto first_edge = first_info.second;
 	auto first_weight = first_info.weight;
-	if (fill_missing && (first_info.d < 0.0001 || second_info.d < 0.0001 || first_info.d > second_info.d))
+	if (fill_missing && (first_info.d < -0.0001 || second_info.d < 0.0001 || first_info.d > second_info.d))
 		return 0;
 	if (! fill_missing && (first_info.d * second_info.d < 0.0001 || first_info.d > second_info.d) )
 		return 0;
 	auto second_edge = second_info.second;
 	auto second_weight = second_info.weight;
 	DEBUG("Treating edges " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge));
-	auto paths = GetAllPathsFromSameEdge(origin_gp, first_edge, second_edge);
+	vector<vector<typename graph_pack::graph_t::EdgeId> > paths;
+	if (fill_missing) {
+		paths = GetAllPathsFromSameEdge(origin_gp, first_edge, second_edge, llround(second_info.d - first_info.d) - origin_gp.g.length(first_edge) - 2, llround(second_info.d - first_info.d) - origin_gp.g.length(first_edge) + 2);
+	}
+	else {
+		paths = GetAllPathsFromSameEdge(origin_gp, first_edge, second_edge, 0, *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var));
+	}
 	vector<size_t> distances;
 	for (auto paths_it = paths.begin(); paths_it != paths.end(); paths_it ++) {
 		distances.push_back(CummulativeLength<typename graph_pack::graph_t>(origin_gp.g, *paths_it));
@@ -651,33 +667,41 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 		}
 	} else {
 		if (paths.size() == 1 && first_info.variance == 0 && second_info.variance == 0 && (abs(distances[0] - second_info.d + first_info.d + origin_gp.g.length(first_edge)) < 0.1)) {
-			int nonzero_info = 0;
+			int added_info = 0;
 			double tmpd = first_info.d + origin_gp.g.length(first_info.second);
 			double w = (first_info.weight + second_info.weight)/2;
 			for (auto path_iter = paths.begin()->begin(); path_iter != paths.begin()->end(); path_iter++) {
-
-				if (clustered_index.GetEdgePairInfo(first_info.first, *path_iter).size() > 0) {
-					nonzero_info ++;
-					break;
-				} else {
-					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 1));
-					DEBUG("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first_info.first) << " " << origin_gp.int_ids.ReturnIntId(*path_iter));
+				auto pi_vector = clustered_index.GetEdgePairInfo(first_info.first, *path_iter);
+				bool already_exist = false;
+				for (auto pi_iter = pi_vector.begin(); pi_iter != pi_vector.end(); ++pi_iter) {
+					if (abs(pi_iter->d - tmpd) < 0.01) {
+						already_exist = true;
+					}
+				}
+				if (!already_exist)
+				{
+					added_info++;
+					INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first_info.first) << " " << origin_gp.int_ids.ReturnIntId(*path_iter)<<" dist "<<tmpd);
+					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 0));
+					INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(origin_gp.g.conjugate(*path_iter)) << " " << origin_gp.int_ids.ReturnIntId( origin_gp.g.conjugate(first_info.first))<<" dist "<<tmpd - origin_gp.g.length(first_info.first) + origin_gp.g.length(*path_iter));
+					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(origin_gp.g.conjugate(*path_iter), origin_gp.g.conjugate(first_info.first), tmpd - origin_gp.g.length(first_info.first) + origin_gp.g.length(*path_iter), w, 0));
 				}
 				tmpd += origin_gp.g.length(*path_iter);
 			}
-			if (! nonzero_info) {
+			if (added_info) {
 
-				if (paths.begin()->size() != 0) {
-					DEBUG("filled missing " << paths.begin()->size() << " edges");
+//				if (paths.begin()->size() != 0) {
+					DEBUG("filled missing " << added_info << "edges");
 					DEBUG("while treating info from "<< origin_gp.int_ids.ReturnIntId(first_info.first) << " to " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge));
-				}
-				return paths.begin()->size();
+//				}
+				return added_info;
 			}
 		}
 		return 0;
 	}
-
 }
+
+
 
 template<class graph_pack>
 void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
@@ -698,7 +722,7 @@ void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename gra
 				if (i_iter != j_iter) {
 					PairInfo<typename graph_pack::graph_t::EdgeId> first_info = *i_iter;
 					PairInfo<typename graph_pack::graph_t::EdgeId> second_info = *j_iter;
-					if (origin_gp.g.length(*e_iter) >= *cfg::get().ds.RL * 2) { //TODO: change to something reasonable.
+					if (origin_gp.g.length(*e_iter) >= /* *cfg::get().ds.RL * */ 2) { //TODO: change to something reasonable.
 						missing_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 1);
 					}
 					if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length) {
@@ -708,8 +732,6 @@ void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename gra
 			}
 		}
 	}
-	PairedInfoSymmetryHack<typename graph_pack::graph_t> hack(origin_gp.g, clustered_index);
-	hack.FillSymmetricIndex(clustered_index);
 	INFO("Paired info stats: missing = " << missing_paired_info_count << "; contradictional = " << extra_paired_info_count);
 }
 template<class graph_pack>
@@ -840,27 +862,27 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 }
 
 void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
-	nonconj_graph_pack nonconj_gp(genome);
-	PairedInfoIndex<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
-
-	INFO("Resolve component "<<component_id);
-
-	string graph_name = ConstructComponentName("graph_", component_id).c_str();
-	string component_name = cfg::get().output_dir + "graph_components/"
-			+ graph_name;
-
-	ScanWithClusteredIndex(component_name, nonconj_gp, clustered_index);
-
-	component_statistics(nonconj_gp, component_id, clustered_index);
-
-	nonconj_graph_pack resolved_gp(genome);
-	string sub_dir = "resolve_components/";
-
-	string resolved_name = cfg::get().output_dir + "resolve_components"
-			+ "/resolve_" + graph_name + "/";
-	make_dir(resolved_name);
-	process_resolve_repeats(nonconj_gp, clustered_index, resolved_gp,
-			graph_name, sub_dir, false);
+//	nonconj_graph_pack nonconj_gp(genome);
+//	PairedInfoIndex<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
+//
+//	INFO("Resolve component "<<component_id);
+//
+//	string graph_name = ConstructComponentName("graph_", component_id).c_str();
+//	string component_name = cfg::get().output_dir + "graph_components/"
+//			+ graph_name;
+//
+//	ScanWithClusteredIndex(component_name, nonconj_gp, clustered_index);
+//
+//	component_statistics(nonconj_gp, component_id, clustered_index);
+//
+//	nonconj_graph_pack resolved_gp(genome);
+//	string sub_dir = "resolve_components/";
+//
+//	string resolved_name = cfg::get().output_dir + "resolve_components"
+//			+ "/resolve_" + graph_name + "/";
+//	make_dir(resolved_name);
+//	process_resolve_repeats(nonconj_gp, clustered_index, resolved_gp,
+//			graph_name, sub_dir, false);
 }
 
 void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndex<Graph>& index,
@@ -945,6 +967,8 @@ void resolve_repeats() {
 		if (cfg::get().rr.symmetric_resolve) {
 			CorrectPairedInfo( conj_gp,  clustered_index);
 			CorrectPairedInfo( conj_gp,  clustered_index);
+			save_distance_filling(conj_gp, clustered_index, clustered_index);
+
 
 			conj_graph_pack resolved_gp(genome);
 			if (cfg::get().etalon_info_mode) {
@@ -970,19 +994,19 @@ void resolve_repeats() {
 				}
 			}
 		} else {
-			nonconj_graph_pack origin_gp(conj_gp.genome);
-			PairedInfoIndex<nonconj_graph_pack::graph_t> orig_clustered_idx(
-					origin_gp.g);
-			Convert(conj_gp, clustered_index, origin_gp, orig_clustered_idx);
-			nonconj_graph_pack resolved_gp(conj_gp.genome);
-			process_resolve_repeats(origin_gp, orig_clustered_idx, resolved_gp,
-					"graph");
-			if (cfg::get().componential_resolve) {
-				make_dir(cfg::get().output_dir + "resolve_components" + "/");
-				for (int i = 0; i < number_of_components; i++) {
-					resolve_nonconjugate_component(i + 1, genome);
-				}
-			}
+//			nonconj_graph_pack origin_gp(conj_gp.genome);
+//			PairedInfoIndex<nonconj_graph_pack::graph_t> orig_clustered_idx(
+//					origin_gp.g);
+//			Convert(conj_gp, clustered_index, origin_gp, orig_clustered_idx);
+//			nonconj_graph_pack resolved_gp(conj_gp.genome);
+//			process_resolve_repeats(origin_gp, orig_clustered_idx, resolved_gp,
+//					"graph");
+//			if (cfg::get().componential_resolve) {
+//				make_dir(cfg::get().output_dir + "resolve_components" + "/");
+//				for (int i = 0; i < number_of_components; i++) {
+//					resolve_nonconjugate_component(i + 1, genome);
+//				}
+//			}
 		}
 	}
 
