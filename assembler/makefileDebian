@@ -5,6 +5,7 @@ SPADES_CONFIGS = $(SPADES_SHARE)/configs/
 install:
 	mkdir -p $(SPADES_SRC)
 	mkdir -p $(SPADES_CONFIGS)/debruijn
+	mkdir -p $(SPADES_CONFIGS)/hammer
 	mkdir -p $(DESTDIR)/usr/bin
 	cp -r src/debruijn $(SPADES_SRC)
 	cp -r src/io $(SPADES_SRC)
@@ -18,6 +19,8 @@ install:
 	cp -r test_dataset/* $(DESTDIR)/usr/share/spades/data
 	cp -r configs/debruijn/*.template $(SPADES_CONFIGS)/debruijn/
 	cp configs/debruijn/config.info.template $(SPADES_CONFIGS)/debruijn/config.info
+	cp configs/hammer/config.info.template $(SPADES_CONFIGS)/hammer/config.info
+	cp configs/hammer/config.info.template $(SPADES_CONFIGS)/hammer/config.info.template
 	cp configs/debruijn/detail_info_printer.info.template $(SPADES_CONFIGS)/debruijn/detail_info_printer.info
 	cp configs/debruijn/distance_estimation.info.template $(SPADES_CONFIGS)/debruijn/distance_estimation.info
 	cp configs/debruijn/simplification.info.template $(SPADES_CONFIGS)/debruijn/simplification.info
