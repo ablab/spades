@@ -851,7 +851,6 @@ public:
 				index.AddPairInfo(PairInfo<EdgeId>(it2->first, it2->second, it2->d, it2->weight * 0.5, it2->variance), 0);
 				index.AddPairInfo(PairInfo<EdgeId>(graph_.conjugate(it2->second), graph_.conjugate(it2->first),
 						it2->d + graph_.length(it2->second) - graph_.length(it2->first), it2->weight * 0.5, it2->variance), 0);
-				cout << it2->weight << endl;
 				auto info = index.GetEdgePairInfo(infos[0].first, infos[0].second);
 				auto symmetric_info = index.GetEdgePairInfo(graph_.conjugate(info[0].second), graph_.conjugate(info[0].first));
 			}
