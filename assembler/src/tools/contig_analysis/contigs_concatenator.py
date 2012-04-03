@@ -2,8 +2,6 @@
 
 import os
 import sys
-import itertools
-import matplotlib
 import shutil
 
 ########################################################################	
@@ -14,9 +12,7 @@ fasta_width = 60
 min_contig = 200
 padding_length = 2000
 
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
 import fastaparser
-from qutils import id_to_str
 
 ########################################################################
 
