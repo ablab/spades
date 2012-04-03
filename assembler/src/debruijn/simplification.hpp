@@ -109,10 +109,11 @@ void load_simplification(conj_graph_pack& gp, files_t* used_files) {
 }
 
 void save_simplification(conj_graph_pack& gp) {
-	fs::path p = fs::path(cfg::get().output_saves) / "simplified_graph";
-
-	PrintGraphPack(p.string(), gp);
-    write_estimated_params(p.string());
+	if (cfg::get().make_saves) {
+		fs::path p = fs::path(cfg::get().output_saves) / "simplified_graph";
+		PrintGraphPack(p.string(), gp);
+		write_estimated_params(p.string());
+	}
 
 	//todo temporary solution!!!
 	OutputContigs(gp.g, cfg::get().additional_contigs);

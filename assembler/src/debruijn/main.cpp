@@ -87,7 +87,9 @@ void load_config(string cfg_filename)
 
     make_dir(cfg::get().output_root);
     make_dir(cfg::get().output_dir);
-    make_dir(cfg::get().output_saves);
+    if (cfg::get().make_saves) {
+        make_dir(cfg::get().output_saves);
+    }
 
     fs::path path_to_copy = fs::path(cfg::get().output_dir) / "configs";
     copy_configs(cfg_filename, path_to_copy);

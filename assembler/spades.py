@@ -68,6 +68,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict["output_base"]        = cfg.working_dir
     subst_dict["additional_contigs"] = path.join(cfg.working_dir, "simplified_contigs.fasta")
     subst_dict["entry_point"]        = 'construction'
+    subst_dict["developer_mode"]     = str(cfg.developer_mode).lower()
 
     if last_one:
         subst_dict["gap_closer_enable"] = "true"
@@ -128,14 +129,14 @@ def main():
         return     
 
     created_dataset_filename = ""
-    if cfg.has_key("bh"):   
-        bh_cfg = cfg["bh"]
-        if not bh_cfg.__dict__.has_key("output_dir"):
-            bh_cfg.__dict__["output_dir"] = path.join(cfg["common"].output_dir, "corrected")
+    if cfg.has_key("bh"):
+        bh_cfg = merge_configs(cfg["bh"], cfg["common"])
+        if not cfg["bh"].__dict__.has_key("output_dir"): # it's taken from common, not from bh
+            bh_cfg.output_dir = path.join(bh_cfg.output_dir, "corrected")
         else:
-            bh_cfg.__dict__["output_dir"] = path.expandvars(bh_cfg.output_dir)
+            bh_cfg.output_dir = path.expandvars(bh_cfg.output_dir)
             warning("output_dir (" + bh_cfg.output_dir + ") will be used for error correction instead of the common one (" + cfg["common"].output_dir + ")")
-        
+
         bh_cfg.__dict__["working_dir"] = path.join(bh_cfg.output_dir, "tmp")
 
         start_bh = True
@@ -164,7 +165,7 @@ def main():
             old_stdout = sys.stdout
             old_stderr = sys.stderr
 
-            if cfg["common"].output_to_console:
+            if bh_cfg.output_to_console:
                 sys.stderr = support.redirected_stream(log_file, sys.stderr)
                 sys.stdout = support.redirected_stream(log_file, sys.stdout)
             else:
@@ -186,7 +187,7 @@ def main():
                exit(err_code) 
 
     if cfg.has_key("spades"):
-        spades_cfg = cfg["spades"]
+        spades_cfg = merge_configs(cfg["spades"], cfg["common"])
         if not spades_cfg.__dict__.has_key("measure_quality"):
             spades_cfg.__dict__["measure_quality"] = False
 
@@ -202,10 +203,9 @@ def main():
             error("" "incorrect dataset " + spades_cfg.dataset + ": list of files with reads should be arounded with double quotes!")
             exit(1)
 
-        def make_working_dir(cfg):
+        def make_working_dir(output_dir):
             import datetime
             name = "spades_" + datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
-            output_dir  = cfg.output_dir
             working_dir = path.join(output_dir, name)
             os.makedirs(working_dir)
             latest = path.join(output_dir, "the_latest")
@@ -215,7 +215,7 @@ def main():
                 os.symlink(name, latest)
             return working_dir
 
-        spades_cfg.__dict__["working_dir"] = make_working_dir(cfg["common"])
+        spades_cfg.__dict__["working_dir"] = make_working_dir(spades_cfg.output_dir)
 
         log_filename = path.join(spades_cfg.working_dir, "spades.log")
         spades_cfg.__dict__["log_filename"] = log_filename
@@ -232,7 +232,7 @@ def main():
         old_stdout = sys.stdout
         old_stderr = sys.stderr
 
-        if cfg["common"].output_to_console:
+        if spades_cfg.output_to_console:
             sys.stderr = support.redirected_stream(log_file, sys.stderr)
             sys.stdout = support.redirected_stream(log_file, sys.stdout)
         else:

@@ -3,6 +3,9 @@
 import sys
 import support
 
+class cfg_placeholder:
+    pass
+    
 def config_file_name():
     if len(sys.argv) != 2:
         support.error("Usage: <script_name>.py <config_file_name>", "")
@@ -75,10 +78,17 @@ def substitute_params(filename, var_dict):
     file = open(filename, "w")
     file.writelines(lines)
 
-def load_config_from_vars(cfg_vars):
+# configs with more priority should go first in parameters
+def merge_configs(*cfgs):
 
-    class cfg_placeholder:
-        pass
+    res = cfg_placeholder()
+
+    for cfg in reversed(cfgs):
+        res.__dict__.update(cfg.__dict__)
+
+    return res
+
+def load_config_from_vars(cfg_vars):
 
     cfg = cfg_placeholder()
 

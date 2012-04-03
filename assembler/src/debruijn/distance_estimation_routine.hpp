@@ -138,13 +138,11 @@ void load_distance_estimation(conj_graph_pack& gp,
 
 void save_distance_estimation(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
-	fs::path p = fs::path(cfg::get().output_saves) / "distance_estimation";
-
-	PrintAll(p.string(), gp, paired_index, clustered_index);
-	write_estimated_params(p.string());
-//
-//	write_param(cfg::get().estimated_params_file, "IS", *cfg::get().ds.IS);
-//	write_param(cfg::get().estimated_params_file, "is_var", *cfg::get().ds.is_var);
+	if (cfg::get().make_saves) {
+		fs::path p = fs::path(cfg::get().output_saves) / "distance_estimation";
+		PrintAll(p.string(), gp, paired_index, clustered_index);
+		write_estimated_params(p.string());
+	}
 }
 
 void preprocess_etalon_index(paired_info_index& raw_paired_index,

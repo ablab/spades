@@ -263,12 +263,19 @@ void SaveResolvedPairedInfo(
 		graph_pack& resolved_gp,
 		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info,
 		const string& graph_name, const string& subfolder) {
-	DEBUG("Subfolder:" << subfolder);
-	std::string rr_filename = (cfg::get().output_dir + subfolder) + graph_name;
-	INFO("Saving graph and paired info to " << rr_filename);
-	PrintWithClusteredIndex(rr_filename, resolved_gp,
-			resolved_graph_paired_info);
-	DEBUG("Saved");
+	if (cfg::get().make_saves) {
+		std::string rr_filename;
+		if (subfolder.size()) {
+			INFO("Saving graph and paired info to subfolder " << subfolder);
+			rr_filename = (cfg::get().output_dir + subfolder) + graph_name;
+		} else {
+			INFO("Saving graph and paired info");
+			fs::path p = fs::path(cfg::get().output_saves) / (graph_name);
+			rr_filename = p.string();
+		}
+		PrintWithClusteredIndex(rr_filename, resolved_gp, resolved_graph_paired_info);
+		DEBUG("Saved");
+	}
 }
 
 template<class graph_pack>
@@ -331,8 +338,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	}
 
-	if (output_contigs) {
-
+	if (cfg::get().output_nonfinal_contigs && output_contigs) {
 		OutputContigs(resolved_gp.g,
 				cfg::get().output_dir + "after_rr_before_simplify" + postfix);
 		OutputContigs(origin_gp.g,
@@ -343,9 +349,11 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	total_labeler_gs graph_struct_after(resolved_gp.g, &resolved_gp.int_ids,
 			&resolved_gp.edge_pos, &labels_after);
 	total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
-	omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-			cfg::get().output_dir + subfolder + graph_name + "_3_resolved.dot",
-			"no_repeat_graph");
+	if (cfg::get().output_pictures) {
+		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+				cfg::get().output_dir + subfolder + graph_name + "_3_resolved.dot",
+				"no_repeat_graph");
+	}
 
 	DEBUG("Total labeler finished");
 
@@ -421,15 +429,18 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	if (output_contigs)
 	{
-	    OutputContigs(resolved_gp.g, cfg::get().output_dir + "resolved_and_cleared" + postfix);
+		if (cfg::get().output_nonfinal_contigs) {
+		    OutputContigs(resolved_gp.g, cfg::get().output_dir + "resolved_and_cleared" + postfix);
+		}
 	    OutputContigs(resolved_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 	    cfg::get_writable().final_contigs_file = cfg::get().output_dir + "final_contigs.fasta";
 	}
 
-
-	omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-			cfg::get().output_dir + subfolder + graph_name + "_4_cleared.dot",
-			"no_repeat_graph");
+	if (cfg::get().output_pictures) {
+		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+				cfg::get().output_dir + subfolder + graph_name + "_4_cleared.dot",
+				"no_repeat_graph");
+	}
 
 	if (output_contigs) {
 		if (cfg::get().need_consensus) {

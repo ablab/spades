@@ -22,12 +22,12 @@
 namespace debruijn_graph {
 
 void save_stage_simplification(conj_graph_pack& gp, size_t iteration) {
-    stringstream a;
-    a <<  iteration;
-    string i = a.str();
-	fs::path p = fs::path(cfg::get().output_saves) / ("simplified_graph_" + i);
+    string i = ToString(iteration);
 
-	PrintGraphPack(p.string(), gp);
+    if (cfg::get().make_saves) {
+        fs::path p = fs::path(cfg::get().output_saves) / ("simplified_graph_" + i);
+    	PrintGraphPack(p.string(), gp);
+    }
 
 	//todo temporary solution!!!
 	OutputContigs(gp.g, cfg::get().additional_contigs);

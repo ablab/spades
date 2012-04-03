@@ -20,6 +20,21 @@ entry_point construction
 ;entry_point repeats_resolving
 ;entry_point n50_enlargement
 
+developer_mode true
+
+; The following parameters are used ONLY if developer_mode is true
+
+; whether to print save-files (which take space on disk) - ONLY in developer mode
+make_saves true
+
+; whether to output dot-files with pictures of graphs - ONLY in developer mode
+output_pictures true
+
+; whether to output resulting contigs after intermediate stages - ONLY in developer mode
+output_nonfinal_contigs true
+
+; End of developer_mode parameters
+
 ; etalon graph mode switcher. If true input reads are ignored and graph is constructed with reference as the only read
 etalon_graph_mode false
 

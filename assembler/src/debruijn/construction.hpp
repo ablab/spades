@@ -38,6 +38,7 @@ void load_estimated_params(const string& prefix) {
 	string filename = estimated_param_filename(prefix);
 	//todo think of better architecture
 	if (fileExists(filename)) {
+		load_param(filename, "RL", cfg::get_writable().ds.RL);
 		load_param(filename, "IS", cfg::get_writable().ds.IS);
 		load_param(filename, "is_var", cfg::get_writable().ds.is_var);
 		load_param_map(filename, "perc", cfg::get_writable().ds.percentiles);
@@ -47,6 +48,7 @@ void load_estimated_params(const string& prefix) {
 
 void write_estimated_params(const string& prefix) {
 	string filename = estimated_param_filename(prefix);
+	write_param(filename, "RL", cfg::get().ds.RL);
 	write_param(filename, "IS", cfg::get().ds.IS);
 	write_param(filename, "is_var", cfg::get().ds.is_var);
 	write_param_map(filename, "perc", cfg::get().ds.percentiles);
@@ -61,9 +63,11 @@ void load_construction(conj_graph_pack& gp, files_t* files) {
 }
 
 void save_construction(conj_graph_pack& gp) {
-	fs::path p = fs::path(cfg::get().output_saves) / "constructed_graph";
-	PrintGraphPack(p.string(), gp);
-	write_estimated_params(p.string());
+	if (cfg::get().make_saves) {
+		fs::path p = fs::path(cfg::get().output_saves) / "constructed_graph";
+		PrintGraphPack(p.string(), gp);
+		write_estimated_params(p.string());
+	}
 }
 
 //boost::optional<string> single_reads_filename(

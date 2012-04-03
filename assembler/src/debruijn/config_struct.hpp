@@ -99,6 +99,8 @@ struct debruijn_config {
 	typedef bimap<string, simplification_mode> simpl_mode_id_mapping;
 	typedef bimap<string, resolving_mode> resolve_mode_id_mapping;
 
+	bool developer_mode;
+
 	static const stage_name_id_mapping FillStageInfo() {
 		stage_name_id_mapping::value_type info[] = { { "construction",
 				ws_construction },
@@ -357,6 +359,10 @@ public:
 	std::string output_suffix;
 	std::string output_saves;
 	std::string final_contigs_file;
+
+	bool make_saves;
+	bool output_pictures;
+	bool output_nonfinal_contigs;
 
 	bool use_additional_contigs;
 	bool etalon_graph_mode;
@@ -666,6 +672,13 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	cfg.output_suffix = MakeLaunchTimeDirName() + "/";
 	cfg.output_dir = cfg.output_root + cfg.output_suffix;
 	cfg.output_saves = cfg.output_dir + "saves/";
+
+	load(cfg.developer_mode, pt, "developer_mode");
+	if (cfg.developer_mode) {
+		load(cfg.make_saves, pt, "make_saves");
+		load(cfg.output_pictures, pt, "output_pictures");
+		load(cfg.output_nonfinal_contigs, pt, "output_nonfinal_contigs");
+	}
 
 	load(cfg.load_from, pt, "load_from");
 	cfg.load_from = cfg.output_root + cfg.load_from;

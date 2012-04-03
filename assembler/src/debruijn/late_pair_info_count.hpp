@@ -41,9 +41,11 @@ void load_late_pair_info_count(conj_graph_pack& gp,
 
 void save_late_pair_info_count(conj_graph_pack& gp,
 		paired_info_index& paired_index) {
-	fs::path p = fs::path(cfg::get().output_saves) / "late_pair_info_counted";
-	PrintWithPairedIndex(p.string(), gp, paired_index);
-	write_estimated_params(p.string());
+	if (cfg::get().make_saves) {
+		fs::path p = fs::path(cfg::get().output_saves) / "late_pair_info_counted";
+		PrintWithPairedIndex(p.string(), gp, paired_index);
+		write_estimated_params(p.string());
+	}
 }
 
 void exec_late_pair_info_count(conj_graph_pack& gp,
