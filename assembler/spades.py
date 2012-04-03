@@ -222,8 +222,6 @@ def main():
 
         shutil.copy(CONFIG_FILE, spades_cfg.working_dir)
         shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)
-        #spades_cfg.dataset = path.join(spades_cfg.working_dir, path.basename(spades_cfg.dataset))
-        #correct_dataset(spades_cfg.dataset)
 
         print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
 
