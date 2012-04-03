@@ -96,7 +96,7 @@ public:
 	public:
 
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
-				const int d_) :
+				const double d_) :
 				lp(lp_), dir(dir_), edge(edge_), d(d_) {
 
 		}
@@ -104,14 +104,14 @@ public:
 			return edge;
 		}
 
-		bool isClose(int a, int b, double max_diff) {
+		bool isClose(double a, double b, double max_diff) {
 			return (abs(a - b) < max_diff);
 		}
 
 
 
-		bool IsEdgesOnDistanceAdjacent(EdgeId edge,       int d,
-									   EdgeId other_edge, int other_d,
+		bool IsEdgesOnDistanceAdjacent(EdgeId edge,       double d,
+									   EdgeId other_edge, double other_d,
 									   const Graph &old_graph, double max_diff, bool first_equal , const 	IdTrackHandler<Graph> &old_IDs,  FastDistanceCounter &distance_counter){
 
 			VertexId v_s = old_graph.EdgeStart(edge);
@@ -203,13 +203,17 @@ public:
 				if ((new_graph.EdgeStart(lp.first)
 						== new_graph.EdgeStart(other_info.lp.first))
 						|| (new_graph.EdgeEnd(lp.first)
-								== new_graph.EdgeEnd(other_info.lp.first)))
+								== new_graph.EdgeEnd(other_info.lp.first))){
+					TRACE("isAdjacent false on 1 condition");
 					return false;
+				}
 			}
 
 			if (lp.first == other_info.lp.first)
-				if (new_graph.length(lp.first) > cfg::get().rr.max_repeat_length)
+				if (new_graph.length(lp.first) > cfg::get().rr.max_repeat_length){
+					TRACE("isAdjacent true on 2 condition");
 					return true;
+				}
 
 			double max_diff = max(lp.variance, other_info.lp.variance) + 0.5
 					+ 1e-9;
@@ -221,14 +225,14 @@ public:
 
 
 
-		inline int getDistance() {
+		inline double getDistance() {
 			return d;
 		}
 	public:
 		PairInfo lp;
 		int dir;
 		EdgeId edge;
-		int d;
+		double d;
 
 	};
 
@@ -1518,6 +1522,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<
 			}
 		}
 	}
+
 	adjacent_time.stop();
 
 	rectangle_resolve_1_time.start();
