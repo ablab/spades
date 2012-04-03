@@ -1,1 +1,1 @@
-/home/alex/biolab/master_rep/algorithmic-biology/assembler/src/tools/quality/libs/fastaparser.py
+../../quality/libs/fastaparser.py
