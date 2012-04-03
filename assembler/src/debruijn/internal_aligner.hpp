@@ -96,7 +96,7 @@ protected:
 	bool adjust;
 	bool map_mode;
 	bool print_broken;
-	map<EdgeId, pair<string, bool>> SeqNames;
+	restricted::map<EdgeId, pair<string, bool>> SeqNames;
 	FILE* samOut;
 	size_t ProcessedReads;
 	size_t SplittedReads;
@@ -488,7 +488,11 @@ protected:
 		this->ProcessedReads++;
 		if (path1.size() > 0){
 			EdgeId proto_edge = path1[0].first;
-			for (auto iter = convertor_.edge_inclusions[proto_edge].begin(); iter != convertor_.edge_inclusions[proto_edge].end(); ++iter){
+
+//			restricted::set<VertexId> my_set;
+			set<EdgeId, typename Graph::Comparator> iterable_set(this->graph_.ReliableComparatorInstance());
+			convertor_.edge_inclusions[proto_edge].Copy(iterable_set);
+			for (auto iter = iterable_set.begin(); iter != iterable_set.end(); ++iter){
 				bool rc = false;
 				EdgeId edge = *iter;
 				Range i_r(path1[0].second.initial_range.start_pos, path1[path1.size()-1].second.initial_range.end_pos);
@@ -602,8 +606,8 @@ public:
 		ResolvedInternalAligner<Graph, SequenceMapper>(g, orig_g, m, EdgeConversionHandler, adjust_reads, output_map_format, print_broken_pairs)
 	{};
 
-	template<class Stream>
-	void AlignPairedReads(Stream& original_s, Stream& s, const string& sam_output_filename) {
+	template<class Stream, class OrigStream>
+	void AlignPairedReads(OrigStream& original_s, Stream& s, const string& sam_output_filename) {
 		this->InitializeSamFile(sam_output_filename);
 		while (!s.eof()){
 			io::PairedRead p_r;
@@ -692,8 +696,8 @@ public:
 		SimpleInternalAligner<Graph, SequenceMapper>(g, m, adjust_reads, output_map_format, print_broken_pairs)
 	{};
 
-	template<class Stream>
-	void AlignPairedReads(Stream& original_s, Stream& s, const string& sam_output_filename) {
+	template<class Stream, class OrigStream>
+	void AlignPairedReads(OrigStream& original_s, Stream& s, const string& sam_output_filename) {
 		this->InitializeSamFile(sam_output_filename);
 		while (!s.eof()){
 			io::PairedRead p_r;

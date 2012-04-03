@@ -66,23 +66,30 @@ public:
 };
 
 class PairedPureEasyReader : public DelegatingReaderWrapper<io::PairedRead> {
-	explicit PairedPureEasyReader(const PairedPureEasyReader& reader);
-	void operator=(const PairedPureEasyReader& reader);
+//	explicit PairedPureEasyReader(const PairedPureEasyReader& reader);
+//	void operator=(const PairedPureEasyReader& reader);
 
-	Reader<io::PairedRead> raw_reader_;
-//	FilteringReaderWrapper<ReadType> filtered_reader_;
+	scoped_ptr<IReader<io::PairedRead>>  raw_reader_;
 	CarefulFilteringReaderWrapper<io::PairedRead> filtered_reader_;
 
 public:
-  explicit PairedPureEasyReader(const io::PairedRead::FilenameType& filename,
+  explicit PairedPureEasyReader(const io::PairedRead::FilenamesType& filenames,
                   size_t insert_size,
                   bool change_read_order = false,
                   OffsetType offset_type = PhredOffset)
-      : raw_reader_(filename, insert_size, change_read_order, offset_type, false),
-        filtered_reader_(raw_reader_){
+      : raw_reader_(new SeparateReader(filenames, insert_size, change_read_order, offset_type, false)),
+        filtered_reader_(*raw_reader_){
 	  Init(filtered_reader_);
   }
 
+  explicit PairedPureEasyReader(const std::string& filename,
+                  size_t insert_size,
+                  bool change_read_order = false,
+                  OffsetType offset_type = PhredOffset)
+      : raw_reader_(new MixedReader(filename, insert_size, change_read_order, offset_type, false)),
+        filtered_reader_(*raw_reader_){
+	  Init(filtered_reader_);
+  }
   /*
    * Default destructor.
    */
@@ -95,7 +102,7 @@ class PureEasyReader : public DelegatingReaderWrapper<io::SingleRead> {
 	explicit PureEasyReader(const PureEasyReader& reader);
 	void operator=(const PureEasyReader& reader);
 
-	Reader<io::SingleRead> raw_reader_;
+	Reader raw_reader_;
 	CarefulFilteringReaderWrapper<io::SingleRead> filtered_reader_;
 
 public:

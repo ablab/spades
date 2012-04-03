@@ -270,10 +270,10 @@ class MixedReader : public IReader<PairedRead> {
    * @param offset The offset of the read quality.
    */
   explicit MixedReader(const std::string& filename, size_t insert_size, bool change_order = false,
-         OffsetType offset_type = PhredOffset)
+         OffsetType offset_type = PhredOffset, bool revert_second = true)
       : filename_(filename), insert_size_(insert_size),
         change_order_(change_order),
-        offset_type_(offset_type),
+        offset_type_(offset_type), revert_second_(revert_second),
         single_(new Reader(filename_, offset_type_)) {}
 
   /*
@@ -315,7 +315,10 @@ class MixedReader : public IReader<PairedRead> {
     (*single_) >> sr1;
     (*single_) >> sr2;
 
-    pairedread = change_order_ ? PairedRead(!sr2, sr1, insert_size_) : PairedRead(sr1, !sr2, insert_size_);
+    if (revert_second_) sr2 = !sr2;
+
+    pairedread = change_order_ ? PairedRead(sr2, sr1, insert_size_) : PairedRead(sr1, sr2, insert_size_);
+
     return *this;
   }
 
@@ -347,6 +350,9 @@ class MixedReader : public IReader<PairedRead> {
    * @variable Quality offset type.
    */
   OffsetType offset_type_;
+
+  bool revert_second_;
+
   /*
    * @variable The single read stream.
    */
