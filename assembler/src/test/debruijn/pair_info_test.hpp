@@ -9,7 +9,7 @@ namespace debruijn_graph {
 
 BOOST_AUTO_TEST_SUITE(pair_info_tests)
 
-todo get rid of magic constants
+//todo get rid of magic constants
 BOOST_AUTO_TEST_CASE( EstimationFunctionalTest ) {
 	string genome_str;
 	string genome_filename = "./data/input/E.coli/MG1655-K12.fasta.gz";
@@ -75,9 +75,9 @@ void CheckRCSymmetry(const ConjugateDeBruijnGraph &graph, const paired_info_inde
 	}
 }
 
-void CheckMapperSymmetry(KmerMapper<K + 1, Graph> mapper) {
+void CheckMapperSymmetry(const KmerMapper<K + 1, Graph> &mapper) {
 	for(auto it = mapper.begin(); it != mapper.end(); ++it) {
-		BOOST_CHECK_EQUAL(!(it->second), mapper[!(it->first)]);
+		BOOST_CHECK_EQUAL(mapper.Substitute(!(it->first)), !(mapper.Substitute(it->first)));
 	}
 }
 
@@ -94,8 +94,8 @@ BOOST_AUTO_TEST_CASE( CheckPairInfoSimmetry ) {
 	paired_info_index paired_index(gp.g);
 	paired_info_index clustered_index(gp.g);
 
-	ScanAll("./data/debruijn/ECOLI_IS220_QUAKE/K55/latest/saves/distance_estimation", gp, paired_index, clustered_index);
-	paired_info_index etalon_paired_index(gp.g);
+	ScanAll("./data/debruijn/K55/latest/saves/distance_estimation", gp, paired_index, clustered_index);
+	CheckMapperSymmetry(gp.kmer_mapper);
 //	CheckSymmetry(paired_index);
 //	CheckRCSymmetry(gp.g, paired_index);
 	CheckSymmetry(clustered_index);

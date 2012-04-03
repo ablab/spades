@@ -203,6 +203,8 @@ public:
 
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
 		//		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
+		size_t old_length = old_s.size() - k + 1;
+		size_t new_length = new_s.size() - k + 1;
 		UniformPositionAligner aligner(old_s.size() - k + 1,
 				new_s.size() - k + 1);
 		Kmer old_kmer = old_s.start<k>() >> 0;
@@ -210,9 +212,14 @@ public:
 			old_kmer = old_kmer << old_s[i];
 			size_t old_kmer_offset = i - k + 1;
 			size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
+			if(old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
+				Seq<k - 1> middle(new_s, new_length / 2);
+				if(typename Seq<k - 1>::less2()(middle, !middle)) {
+					new_kmer_offest = new_length - 1 - new_kmer_offest;
+				}
+			}
 			Kmer new_kmer(new_s, new_kmer_offest);
 			mapping_[old_kmer] = new_kmer;
-			//			cout << "Kmer " << old_kmer << " mapped to " << new_kmer << endl;
 		}
 	}
 
