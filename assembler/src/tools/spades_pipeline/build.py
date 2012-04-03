@@ -29,7 +29,8 @@ def syncFiles(src, dest):
                         os.unlink(destFile)
 
         for file in os.listdir(src):
-            syncFiles(path.join(src, file), path.join(dest, file))
+            if not file == "k.hpp":
+                syncFiles(path.join(src, file), path.join(dest, file))
 
 def kFile_required(kFile, str_k):
     if not path.exists(kFile):
