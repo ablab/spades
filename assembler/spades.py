@@ -323,8 +323,9 @@ def run_spades(cfg):
         latest = path.join(cfg.working_dir, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
 
-    support.copy(os.path.join(latest, "final_contigs.fasta"), cfg.working_dir)
-    result_contigs = os.path.join(cfg.working_dir, "final_contigs.fasta")
+    result_contigs = cfg.project_name + ".fasta"
+    result_contigs = os.path.join(cfg.working_dir, result_contigs)
+    shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), result_contigs)
 
     if cfg.measure_quality:
         print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
