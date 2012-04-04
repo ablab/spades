@@ -392,6 +392,7 @@ public:
 	bool advanced_estimator_mode;
 	bool componential_resolve;
 	bool gap_closer_enable;
+	bool SAM_writer_enable;
 
 //	size_t is_infinity;
 
@@ -560,7 +561,6 @@ inline void load(debruijn_config::gap_closer& gc,
 inline void load(debruijn_config::SAM_writer& sw,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
-	load(sw.produce_align_files , pt, "produce_align_files" );
 	load(sw.output_map_format   , pt, "output_map_format"   );
 	load(sw.align_before_RR     , pt, "align_before_RR"     );
 	load(sw.align_after_RR      , pt, "align_after_RR"      );
@@ -728,6 +728,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.componential_resolve, pt, "componential_resolve");
 	load(cfg.advanced_estimator_mode, pt, "advanced_estimator_mode");
 	load(cfg.gap_closer_enable, pt, "gap_closer_enable");
+	load(cfg.SAM_writer_enable, pt, "SAM_writer_enable");
 
 	checkFileExistenceFATAL(cfg.dataset_file);
 	boost::property_tree::ptree ds_pt;

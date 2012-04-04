@@ -67,7 +67,7 @@ def build_k(spades_folder, str_k, spades_home):
 
 def build_spades_n_copy(cfg, spades_home):
 
-    precompiled_folder = path.join(os.getenv('HOME'), '.spades/precompiled/')
+    precompiled_folder = cfg.compilation_dir
 
     print("\n== Compilation started ==\n")
 
@@ -91,7 +91,7 @@ def build_spades_n_copy(cfg, spades_home):
 
 def build_hammer(cfg, spades_home):
 
-    precompiled_folder = path.join(os.getenv('HOME'), '.spades/precompiled/')
+    precompiled_folder = cfg.compilation_dir
 
     print("\n== BayesHammer compilation started ==\n")
 

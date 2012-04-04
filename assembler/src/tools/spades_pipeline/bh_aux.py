@@ -63,7 +63,7 @@ def hammer(given_props, output_dir, compress):
                 newfile = output_dir + "/" + os.path.basename(oldfile)
                 cmd += ["cp " + oldfile + " " + output_dir + "/"]
                 if compress:
-                    cmd += ["gzip -9 " + newfile]
+                    cmd += ["gzip -9 -f " + newfile]
                     newfile += ".gz"
                 new_val += os.path.relpath(newfile, output_dir) + '  '
             new_val += '"'

@@ -207,7 +207,7 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 
 
 void SAM_before_resolve(conj_graph_pack& conj_gp){
-	if (cfg::get().sw.produce_align_files && cfg::get().sw.align_before_RR)
+	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_before_RR)
 	{
 		if (cfg::get().sw.align_original_reads){
 			if (cfg::get().sw.original_first && cfg::get().sw.original_second){
@@ -248,7 +248,7 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 
 
 void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
-	if (cfg::get().sw.produce_align_files && cfg::get().sw.align_after_RR)
+	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_after_RR)
 	{
 		if (cfg::get().sw.align_original_reads){
 			if (cfg::get().sw.original_first && cfg::get().sw.original_second){

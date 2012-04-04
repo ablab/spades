@@ -4,12 +4,14 @@ project_name        ECOLI_1K                          ; optional. Name of this c
 output_dir          .
 output_to_console   true                              ; optional. Default is true
 developer_mode      false                             ; optional. Default is false
+compilation_dir                                       ; optional. Default is ~/.spades/precompiled/
 
 spades
 {
     iterative_K         21 33 55
     paired_mode         true
     dataset             /usr/share/spades/data/ECOLI_1K.info ; not used if run with bh
+    generate_sam_files  true                          ; optional. Default is false  
     measure_quality     true                          ; optional. Default is false
 }
 
@@ -25,7 +27,7 @@ bh
     max_memory          50 ; in GB
     gzip_output         true
 
-    dataset_name        ECOLI_IS220_1K                ; optional. Default is "dataset"
+    dataset_name        ECOLI_1K                ; optional. Default is "dataset"
     single_cell         false
 ;    reference           /usr/share/spades/data/E.coli/MG1655-K12.first1K.fasta.gz ; optional
 ;    genes               /usr/share/spades/data/E.coli/genes.first1K.txt           ; optional

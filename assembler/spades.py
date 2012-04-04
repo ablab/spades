@@ -73,6 +73,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict["additional_contigs"] = cfg.additional_contigs
     subst_dict["entry_point"]        = 'construction'
     subst_dict["developer_mode"]     = str(cfg.developer_mode).lower()
+    subst_dict["SAM_writer_enable"]  = bool_to_str(cfg.generate_sam_files)
 
     if last_one:
         subst_dict["gap_closer_enable"] = "true"
@@ -108,6 +109,11 @@ def check_config(cfg, config_filename):
     if not cfg["common"].__dict__.has_key("project_name"):
         cfg["common"].__dict__["project_name"] = path.splitext(path.basename(config_filename))[0]
 
+    if not cfg["common"].__dict__.has_key("compilation_dir"):
+        cfg["common"].__dict__["compilation_dir"] = path.join(os.getenv('HOME'), '.spades/precompiled/')
+    else:
+        cfg["common"].compilation_dir = path.abspath(cfg["common"].compilation_dir)
+
     cfg["common"].output_dir = path.join(path.abspath(path.expandvars(cfg["common"].output_dir)), cfg["common"].project_name)
 
     return True
@@ -135,30 +141,42 @@ def main():
     if not check_config(cfg, CONFIG_FILE):
         return
 
-    created_dataset_filename = ""
+    bh_dataset_filename = ""
     if cfg.has_key("bh"):
-        bh_cfg = merge_configs(cfg["bh"], cfg["common"])
-        if not cfg["bh"].__dict__.has_key("output_dir"): # it's taken from common, not from bh
-            bh_cfg.output_dir = path.join(bh_cfg.output_dir, "corrected")
-        else:
-            bh_cfg.output_dir = path.expandvars(bh_cfg.output_dir)
-            warning("output_dir (" + bh_cfg.output_dir + ") will be used for error correction instead of the common one (" + cfg["common"].output_dir + ")")
+        bh_cfg = cfg["bh"]
 
+        if not bh_cfg.__dict__.has_key("output_dir"):
+            bh_cfg.__dict__["output_dir"] = path.join(path.expandvars(cfg["common"].output_dir), "corrected")
+        else:
+            bh_cfg.__dict__["output_dir"] = path.expandvars(bh_cfg.output_dir)
+            warning("output_dir (" + bh_cfg.output_dir + ") will be used for error correction instead of the common one (" + cfg["common"].output_dir + ")")
+        if not bh_cfg.__dict__.has_key("dataset_name"):
+            bh_cfg.__dict__["dataset_name"] = "dataset"
+        
+        bh_cfg = merge_configs(cfg["bh"], cfg["common"])
+        
         bh_cfg.__dict__["working_dir"] = path.join(bh_cfg.output_dir, "tmp")
 
         start_bh = True
         if path.exists(bh_cfg.output_dir):
-            question = ["WARNING! Folder with corrected reads (" + bh_cfg.output_dir + ") already exists!",
-                        "Do you want to overwrite this folder and start error correction again?"]
-            answer = support.question_with_timer(question, 10, 'n')
-            if answer == 'n':
-                start_bh = False
-                print("\n===== Error correction skipped\n")
+            bh_dataset_filename = path.abspath(path.join(bh_cfg.output_dir, bh_cfg.dataset_name + ".info"))            
+            if os.path.exists(bh_dataset_filename):
+                question = ["WARNING! It looks like error correction was already done!", 
+                            "Dataset " + bh_dataset_filename + " already exists!",
+                            "Do you want to overwrite this dataset and start error correction again?"]
+                answer = support.question_with_timer(question, 10, 'n')
+                if answer == 'n':
+                    start_bh = False
+                    print("\n===== Error correction skipped\n")
+                else:
+                    os.remove(bh_dataset_filename)
             else:
-                shutil.rmtree(bh_cfg.output_dir)
+                bh_dataset_filename = ""
+            #    shutil.rmtree(bh_cfg.output_dir)
 
         if start_bh:
-            os.makedirs(bh_cfg.working_dir)
+            if not os.path.exists(bh_cfg.working_dir):
+                os.makedirs(bh_cfg.working_dir)
 
             log_filename = path.join(bh_cfg.output_dir, "bh.log")
             bh_cfg.__dict__["log_filename"] = log_filename
@@ -181,7 +199,7 @@ def main():
 
             err_code = 0
             try:
-                created_dataset_filename = run_bh(bh_cfg)
+                bh_dataset_filename = run_bh(bh_cfg)
             except support.spades_error as err:
                 print err.err_str
                 err_code = err.code
@@ -197,11 +215,13 @@ def main():
         spades_cfg = merge_configs(cfg["spades"], cfg["common"])
         if not spades_cfg.__dict__.has_key("measure_quality"):
             spades_cfg.__dict__["measure_quality"] = False
+        if not spades_cfg.__dict__.has_key("generate_sam_files"):
+            spades_cfg.__dict__["generate_sam_files"] = False
 
-        if created_dataset_filename != "":
+        if bh_dataset_filename != "":
             if spades_cfg.__dict__.has_key("dataset"):
-                warning("dataset created during error correction (" + created_dataset_filename + ") will be used instead of the one from config file (" + spades_cfg.dataset + ")!")
-            spades_cfg.__dict__["dataset"] = created_dataset_filename
+                warning("dataset created during error correction (" + bh_dataset_filename + ") will be used instead of the one from config file (" + spades_cfg.dataset + ")!")
+            spades_cfg.__dict__["dataset"] = bh_dataset_filename
         spades_cfg.dataset = path.abspath(path.expandvars(spades_cfg.dataset))
         if not path.isfile(spades_cfg.dataset):
             error("dataset " + spades_cfg.dataset + " doesn't exist!")
@@ -264,6 +284,8 @@ def main():
 def run_bh(cfg):
 
     dst_configs = path.join(cfg.output_dir, "configs")
+    if os.path.exists(dst_configs):
+        shutil.rmtree(dst_configs)
     shutil.copytree(path.join(spades_home, "configs"), dst_configs)
     cfg_file_name = path.join(dst_configs, "hammer", "config.info")
 
@@ -272,16 +294,14 @@ def run_bh(cfg):
     import build
     build.build_hammer(cfg, spades_home)
 
-    execution_home = path.join(os.getenv('HOME'), '.spades/precompiled/build_hammer')
+    execution_home = path.join(cfg.compilation_dir, 'build_hammer')
     command = path.join(execution_home, "hammer", "hammer") + " " + path.abspath(cfg_file_name)
 
     print("\n== Running BayesHammer: " + command + "\n")
     support.sys_call(command)
 
     import bh_aux
-    dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir, cfg.input_reads)
-    if not cfg.__dict__.has_key("dataset_name"):
-        cfg.__dict__["dataset_name"] = "dataset"
+    dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir, cfg.input_reads)    
     dataset_filename = path.abspath(path.join(cfg.output_dir, cfg.dataset_name + ".info"))
     dataset_file = open(dataset_filename, "w")
     dataset_file.write(dataset_str)
@@ -314,7 +334,7 @@ def run_spades(cfg):
         prepare_config_spades(cfg_file_name, cfg, prev_K, count == len(cfg.iterative_K))
         prev_K = K
 
-        execution_home = path.join(os.getenv('HOME'), '.spades/precompiled/build' + str(K))
+        execution_home = path.join(cfg.compilation_dir, 'build' + str(K))
         command = path.join(execution_home, "debruijn", "debruijn") + " " + path.abspath(cfg_file_name)
 
         print("\n== Running assembler: " + command + "\n")
