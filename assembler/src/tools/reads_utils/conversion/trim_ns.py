@@ -4,6 +4,7 @@
 
 import sys
 import os
+import shutil
 
 def trim_read(infile):
 	id1 = infile.readline()
@@ -36,22 +37,36 @@ def trim_read(infile):
 
 	return id1 + seq[ltrim:length - 1 - rtrim] + "\n" + id2 + qual[ltrim:length - 1 - rtrim] + "\n"
 
+def trim_file(in_filename, out_filename):
+    if in_filename == out_filename:    
+        shutil.copy(in_filename, out_filename + "_temp")
+        in_filename = out_filename + "_temp"
 
-if len(sys.argv) < 2:
-	print("Usage: " + sys.argv[0] + " <source>")	
-	sys.exit()
+    inFile = open(in_filename, "r")
+    outFile = open(out_filename, "w") 
 
-inFileName = sys.argv[1]
-inFile = open(inFileName, "r")
+    tread = trim_read(inFile)
+    while tread is not None:
+	    outFile.write(tread)
+	    tread = trim_read(inFile)
 
-fName, ext = os.path.splitext(inFileName)
-outFile = open(fName + "_trimmed" + ext, "w") 
+    inFile.close()
+    outFile.close()   
+    
+    if in_filename == out_filename + "_temp":
+        os.remove(in_filename)
 
-tread = trim_read(inFile)
-while tread is not None:
-	outFile.write(tread)
-	tread = trim_read(inFile)
+def main():
+    if len(sys.argv) < 2:
+	    print("Usage: " + sys.argv[0] + " <source>")	
+	    sys.exit()
 
-inFile.close()
-outFile.close()
+    inFileName = sys.argv[1]
 
+    fName, ext = os.path.splitext(inFileName)
+    outFileName = fName + "_trimmed" + ext 
+
+    trim_file(inFileName, outFileName)
+
+if __name__ == '__main__':
+    main()
