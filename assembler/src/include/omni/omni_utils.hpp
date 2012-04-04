@@ -22,6 +22,7 @@
 #include "order_and_law.hpp"
 
 namespace omnigraph {
+using std::auto_ptr;
 using std::vector;
 using std::string;
 using std::pair;
@@ -137,7 +138,7 @@ public:
 	 * @param new_edges edges which are results of split
 	 */
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-			EdgeId new_edge2) {
+			EdgeId new_edge_2) {
 	}
 
 	/**

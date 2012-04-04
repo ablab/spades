@@ -1026,8 +1026,8 @@ public:
 	}
 
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		quality_[new_edge] += quality_[edge1];
 		quality_[new_edge] += quality_[edge2];
+		quality_[new_edge] += quality_[edge1];
 	}
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,

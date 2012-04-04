@@ -138,10 +138,9 @@ public:
 			if (!CheckProcessVertex(vertex, distance)) {
 				TRACE("Check for processing vertex failed. Proceeding to the next queue entry.");
 				continue;
-			} else {
-				processed_vertices_.insert(vertex);
 			}
 
+			processed_vertices_.insert(vertex);
 			auto neighbours = Neighbours(vertex);
 			TRACE(
 					"Neighbours of vertex " << vertex

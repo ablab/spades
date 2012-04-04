@@ -3,7 +3,13 @@ NEWEXT=${1/#.}
 
 if [ $# -ge 2 ]
 then
-	cd $2	
+	if [ -d "$2" ]
+	then
+		cd $2	
+	else
+		echo "Couldn't find folder $2. Exiting."
+		exit
+	fi
 fi
 
 find . -iname "*.${OLDEXT}" |

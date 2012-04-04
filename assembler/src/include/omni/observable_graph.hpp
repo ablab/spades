@@ -234,6 +234,11 @@ public:
 		return SmartEdgeIterator<ObservableGraph> (*this);
 	}
 
+	//Use very carefully!
+	void FireProject(EdgeId edge1, EdgeId edge2) {
+		FireGlue(edge2, edge1, edge2);
+	}
+
 //	ReliableComparator<VertexId> ReliableComparatorInstance() {
 //		return ReliableComparator<VertexId>(element_order_);
 //	}

@@ -121,8 +121,8 @@ public:
 	}
 
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		IncCoverage(new_edge, KPlusOneMerCoverage(edge1));
 		IncCoverage(new_edge, KPlusOneMerCoverage(edge2));
+		IncCoverage(new_edge, KPlusOneMerCoverage(edge1));
 	}
 
 	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {

@@ -14,31 +14,43 @@ DECL_PROJECT_LOGGER("dtls")
 
 namespace debruijn_graph {
 
-//BOOST_AUTO_TEST_CASE( BreakPointGraph ) {
+//BOOST_AUTO_TEST_CASE( RefVSAssemblyComparison ) {
+//	static const size_t k = 55;
+//	static const size_t K = 55;
+//	Sequence ref = ReadGenome("/home/snurk/MRSA/USA300_FPR3757.fasta");
+//	io::Reader contig_stream("/home/snurk/MRSA/MRSA_RCH_I56.fasta");
+//	string folder = "mrsa_comp/RCH_I56/";
+//	make_dir(folder);
+//	RunBPComparison<k, K>(
+//			ref,
+//			contig_stream,
+//			"ref",
+//			"assembly",
+//			true/*refine*/,
+//			false/*untangle*/,
+//			folder,
+//			true/*detailed_output*/,
+//			20);
+//}
+
+//BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 //	static const size_t k = 19;
-//	static const size_t K = 201;
-////    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
-////    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
-//	//todo split N's
-////	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0002_allpaths.fasta.gz");
-////	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0002_spades.fasta.gz");
+//	static const size_t K = 55;
 //
-////	io::EasyReader stream1("/home/anton/gitrep/algorithmic-biology/assembler/data/PGINGIVALIS_LANE2_BH_split.fasta.gz");
-////	io::EasyReader stream2("/home/anton/gitrep/algorithmic-biology/assembler/data/input/P.gingivalis/TDC60.fasta");
-//// 	comparer.CompareAssemblies(stream1, stream2, "spades_", "ref_");
+//	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+//	io::Reader stream_2("/home/snurk/gingi/3.fasta");
 //
-//	io::Reader<io::SingleRead> stream_1("/home/snurk/gingi/gingi_lane2_it.fasta");
-////	io::Reader<io::SingleRead> stream_2("/home/snurk/gingi/lane2_evsc.fasta");
-//	io::Reader<io::SingleRead> stream_2("/home/snurk/gingi/MDA2_clc_new.fasta");
+//	string folder = "assembly_comp/gingi_2_3/";
+//	make_dir(folder);
 //
 //	RunBPComparison<k, K>(
 //		stream_1,
 //		stream_2,
-//		"spades",
-//		"evsc",
+//		"2",
+//		"3",
 //		true/*refine*/,
-//		true/*untangle*/,
-//		"assembly_compare/",
+//		false/*untangle*/,
+//		folder,
 //		true/*detailed_output*/);
 //}
 
@@ -83,47 +95,69 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir,
 			true, /*untangle*/
 			true,
 			output_dir + "example_" + n /*ToString(++example_cnt)*/
-					+ "/", /*detailed_output*/false);
+					+ "/", /*detailed_output*/true);
 	}
 }
 
-BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
+//BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
+//	make_dir("bp_graph_test");
+//	INFO("Running comparison of two strains");
+//	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(CorrectGenomes<21>(ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz")
+//			, ReadGenome("data/input/E.coli/DH10B-K12.fasta")), 200);
+//	INFO("Genomes ready");
+//
+//	CompareGenomes<701>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp/");
+//	INFO("Finished");
+//}
+
+inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, const string& output_folder) {
 	make_dir("bp_graph_test");
 	INFO("Running comparison of two strains");
-	pair<Sequence, Sequence> genomes = CorrectGenomes<21>(ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz")
-			, ReadGenome("data/input/E.coli/DH10B-K12.fasta"));
-	INFO("Genomes ready");
-
-	io::VectorReader<io::SingleRead> stream1(
-			io::SingleRead("first", genomes.first.str()));
-	io::VectorReader<io::SingleRead> stream2(
-			io::SingleRead("second", genomes.second.str()));
-	typedef graph_pack</*Nonc*/ConjugateDeBruijnGraph, 301> comparing_gp_t;
-	INFO("Running assembly comparer");
-	AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, "strain1", "strain2", /*untangle*/false);
-	comparer.CompareAssemblies("bp_graph_test/two_strain_comp/", /*detailed_output*/true);
-	INFO("Finished");
-}
-
-BOOST_AUTO_TEST_CASE( TwoStrainComparisonWOR ) {
-	make_dir("bp_graph_test");
-	INFO("Running comparison of two strains");
-	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(TotallyClearGenomes<55>(CorrectGenomes<21>(ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz")
-			, ReadGenome("data/input/E.coli/DH10B-K12.fasta"))), 30);
+	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(TotallyClearGenomes<55>(CorrectGenomes<21>(ReadGenome(strain_1)
+			, ReadGenome(strain_2))), 30);
+//	genomes = TotallyClearGenomes<701>(genomes);
 	VERIFY(CheckNoRepeats<301>(genomes.first));
 	VERIFY(CheckNoRepeats<301>(genomes.second));
 	INFO("Genomes ready");
 
-	io::VectorReader<io::SingleRead> stream1(
-			io::SingleRead("first", genomes.first.str()));
-	io::VectorReader<io::SingleRead> stream2(
-			io::SingleRead("second", genomes.second.str()));
-	typedef graph_pack</*Nonc*/ConjugateDeBruijnGraph, 301> comparing_gp_t;
-	INFO("Running assembly comparer");
-	AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, "strain1", "strain2", /*untangle*/false);
-	comparer.CompareAssemblies("bp_graph_test/two_strain_comp_wo_repeats/", /*detailed_output*/true);
-	INFO("Finished");
+	CompareGenomes<701>(genomes.first, genomes.second, output_folder);
 }
+
+//BOOST_AUTO_TEST_CASE( TwoStrainComparisonWOR ) {
+//	StrainComparisonWOR("data/input/E.coli/MG1655-K12.fasta.gz"
+//, "data/input/E.coli/DH10B-K12.fasta", "bp_graph_test/two_strain_comp_wo_repeats/");
+//}
+
+//BOOST_AUTO_TEST_CASE( CompareAllMRSA ) {
+//	string mrsa_root = "/home/snurk/MRSA/more_strains/";
+//	ifstream stream;
+//	stream.open(mrsa_root + "list.txt");
+//	string s1;
+//	string s2;
+//	VERIFY(!stream.eof());
+//	stream >> s1;
+//	while (!stream.eof()) {
+//		stream >> s2;
+//		StrainComparisonWOR(mrsa_root + s1 + ".fasta", mrsa_root + s2 + ".fasta"
+//				, mrsa_root + "results/" +  s1 + "_vs_" + s2 + "/");
+//	}
+//	stream.close();
+//}
+
+//
+//BOOST_AUTO_TEST_CASE( TwoStrainComparisonFirstWOR ) {
+//	make_dir("bp_graph_test");
+//	INFO("Running comparison of two strains");
+//	pair<Sequence, Sequence> genomes = CorrectGenomes<21>(ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz")
+//			, ReadGenome("data/input/E.coli/DH10B-K12.fasta"));
+//	genomes = CorrectGenomes<55>(genomes, 200);
+//	genomes.first = ClearGenome<55>(genomes.first);
+//	genomes = CorrectGenomes<55>(genomes, 200);
+//	VERIFY(CheckNoRepeats<301>(genomes.first));
+//	INFO("Genomes ready");
+//
+//	CompareGenomes<701>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp_first_wo_repeats/");
+//}
 
 //BOOST_AUTO_TEST_CASE( StrainVSRepeatGraphComparison ) {
 //	static const size_t repeat_clearing_k = 55;
@@ -193,15 +227,15 @@ BOOST_AUTO_TEST_CASE( TwoStrainComparisonWOR ) {
 //}
 
 BOOST_AUTO_TEST_CASE( BreakPointGraphTests ) {
-//	make_dir("bp_graph_test");
-//	INFO("Running simulated examples");
-//	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
-//			"bp_graph_test/simulated_common/");
-//
-//	INFO("Running simulated examples with introduced errors");
-//	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
-//			"bp_graph_test/simulated_common_err/", "1_err");
-//	Sequence genome = ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz");
+	make_dir("bp_graph_test");
+	INFO("Running simulated examples");
+	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
+			"bp_graph_test/simulated_common/");
+
+	INFO("Running simulated examples with introduced errors");
+	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
+			"bp_graph_test/simulated_common_err/", "1_err");
+	Sequence genome = ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz");
 
 //	INFO("Running comparison against mutated genome");
 //	RunBPComparison<17, 250>(genome, IntroduceMutations(genome, 0.01), "init", "mut"

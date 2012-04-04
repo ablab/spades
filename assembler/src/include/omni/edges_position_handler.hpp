@@ -194,8 +194,8 @@ public:
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 //		DEBUG("Handle glue ");
 
-		AddEdgePosition(new_edge, (EdgesPositions[edge1]));
 		AddEdgePosition(new_edge, (EdgesPositions[edge2]));
+		AddEdgePosition(new_edge, (EdgesPositions[edge1]));
 
 		if (EdgesPositions[edge1].size() > 0 && EdgesPositions[edge2].size() > 0) {
 			DEBUG("Gluing two edges with not empty positions:");

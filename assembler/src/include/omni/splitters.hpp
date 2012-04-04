@@ -438,6 +438,7 @@ public:
 		//TODO Refactor this!!!!
 		vector < VertexId > result_vector = cf.ReachedVertices();
 		set<VertexId> result(result_vector.begin(), result_vector.end());
+//		set<VertexId, typename Graph::Comparator> result(cf.ProcessedVertices());
 		visited_.insert(result.begin(), result.end());
 		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
 		cc.CloseComponent(result);
@@ -786,7 +787,7 @@ public:
 	/*virtual*/ vector<VertexId> NextComponent() {
 		CountingDijkstra<Graph> cf(this->graph(), max_size_,
 				edge_length_bound_);
-		set<VertexId> result_set;
+		set<VertexId, typename Graph::Comparator> result_set(this->graph().ReliableComparatorInstance());
 		cf.run(this->graph().EdgeStart(edge_));
 		vector<VertexId> result_start = cf.ReachedVertices();
 		result_set.insert(result_start.begin(), result_start.end());

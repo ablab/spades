@@ -6,6 +6,8 @@
 
 #pragma once
 
+namespace omnigraph {
+
 //todo make handler!!!
 template<class Graph>
 class GraphComponent {
@@ -118,6 +120,15 @@ public:
 	edge_iterator e_end() const {
 		return edges_.end();
 	}
+
+	const std::set<EdgeId>& edges() {
+		return edges_;
+	}
+
+	const std::set<VertexId>& vertices() {
+		return vertices_;
+	}
+
 	vertex_iterator v_begin() const {
 		return vertices_.begin();
 	}
@@ -126,3 +137,4 @@ public:
 	}
 
 };
+}

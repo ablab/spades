@@ -219,7 +219,7 @@ vector<Sequence> RepeatGraphEdges(const Sequence& genome) {
 
 Sequence ReadGenome(const string& filename) {
 	checkFileExistenceFATAL(filename);
-	io::Reader<io::SingleRead> genome_stream(filename);
+	io::Reader genome_stream(filename);
 	io::SingleRead genome;
 	genome_stream >> genome;
 	return genome.sequence();
@@ -240,7 +240,7 @@ template<size_t k, size_t K>
 void RunBPComparison(ContigStream& raw_stream1,
 		ContigStream& raw_stream2, const string& name1, const string& name2,
 		bool refine, bool untangle, const string& output_folder,
-		bool detailed_output = true) {
+		bool detailed_output = true, size_t delta = 5) {
 	io::SplittingWrapper stream1(raw_stream1);
 	io::SplittingWrapper stream2(raw_stream2);
 
@@ -248,18 +248,18 @@ void RunBPComparison(ContigStream& raw_stream1,
 	if (refine) {
 		typedef graph_pack<ConjugateDeBruijnGraph, k> refining_gp_t;
 		refining_gp_t refining_gp;
-		ConstructGPForRefinement(refining_gp, stream1, stream2);
+		ConstructGPForRefinement(refining_gp, stream1, stream2, delta);
 
 		ContigRefiner<refining_gp_t> refined_stream1(stream1, refining_gp);
 		ContigRefiner<refining_gp_t> refined_stream2(stream2, refining_gp);
 
 		AssemblyComparer<comparing_gp_t> comparer(refined_stream1,
 				refined_stream2, name1, name2, untangle);
-		comparer.CompareAssemblies(output_folder, detailed_output);
+		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/false);
 	} else {
 		AssemblyComparer<comparing_gp_t> comparer(stream1,
 				stream2, name1, name2, untangle);
-		comparer.CompareAssemblies(output_folder, detailed_output);
+		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/false);
 	}
 }
 
@@ -267,12 +267,12 @@ template<size_t k, size_t K>
 void RunBPComparison(const Sequence& ref,
 		ContigStream& stream, const string& name1, const string& name2,
 		bool refine, bool untangle, const string& output_folder,
-		bool detailed_output = true) {
+		bool detailed_output = true, size_t delta = 5) {
 	io::VectorReader<io::SingleRead> ref_stream(
 			io::SingleRead(name1, ref.str()));
 	RunBPComparison<k, K>(ref_stream, stream, name1, name2,
 			refine, untangle, output_folder,
-			detailed_output);
+			detailed_output, delta);
 }
 
 template<size_t k, size_t K>
@@ -345,7 +345,7 @@ pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1, const Sequence&
 
 template<size_t k>
 pair<Sequence, Sequence> CorrectGenomes(const pair<Sequence, Sequence>& genomes, size_t delta = 5) {
-	return CorrectGenomes<k>(genomes.first, genomes.second);
+	return CorrectGenomes<k>(genomes.first, genomes.second, delta);
 }
 
 template<size_t k>
@@ -362,8 +362,8 @@ void PrintGraphComponentContainingEdge(const string& file_name,
 		const IdTrackHandler<Graph>& int_ids, int int_edge_id) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
 
-	VERIFY_MSG(int_ids.ReturnEdgeId(int_edge_id) != NULL,
-			"Couldn't find edge with id = " << int_edge_id);
+//	VERIFY_MSG(int_ids.ReturnEdgeId(int_edge_id) != NULL,
+//			"Couldn't find edge with id = " << int_edge_id);
 
 	AnyEdgeContainFilter<Graph> filter(g, int_ids.ReturnEdgeId(int_edge_id));
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, filter);
@@ -423,6 +423,20 @@ pair<Sequence, vector<Sequence>> RefineData(const pair<Sequence, vector<Sequence
 	ContigRefiner<refining_gp_t> refined_stream2(stream2, refining_gp);
 
 	return make_pair(FirstSequence(refined_stream1), AllSequences(refined_stream2));
+}
+
+template <size_t k>
+void CompareGenomes(const Sequence& genome_1, const Sequence& genome_2, const string& output_dir) {
+	INFO("Genome comparison started");
+	io::VectorReader<io::SingleRead> stream1(
+			io::SingleRead("", genome_1.str()));
+	io::VectorReader<io::SingleRead> stream2(
+			io::SingleRead("", genome_2.str()));
+	typedef graph_pack</*Nonc*/ConjugateDeBruijnGraph, k> comparing_gp_t;
+	INFO("Running assembly comparer");
+	AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, "strain1", "strain2", /*untangle*/false);
+	comparer.CompareAssemblies(output_dir, /*detailed_output*/true, /*on_many_resolve*/true);
+	INFO("Finished");
 }
 
 }

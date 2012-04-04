@@ -125,7 +125,7 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(size_t first_len, size_t second_len,
 			vector<PairInfo<EdgeId> > data,
-			vector<size_t> raw_forward/*, bool debug = false*/) {
+			vector<size_t> raw_forward) {
 		vector<pair<size_t, double> > result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());
@@ -151,17 +151,14 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
 					weights[cur_dist] += data[i].weight; //*data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
-				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight);
 			} else if (cur_dist + 1 < forward.size()
 					&& math::eq(forward[cur_dist + 1] - data[i].d,
 							data[i].d - forward[cur_dist])) {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
 					weights[cur_dist] += data[i].weight * 0.5; // * data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
-				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight * 0.5);
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
 					weights[cur_dist] += data[i].weight * 0.5; // * data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
-				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight * 0.5);
 			} else {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
 					weights[cur_dist] += data[i].weight; //*data[i].weight; //  * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
@@ -187,11 +184,6 @@ public:
 	virtual ~DistanceEstimator() {
 	}
 
-	bool debug(EdgeId first, EdgeId second) {
-		return (this->graph().int_ids().ReturnIntId(first) == 203513
-				&& this->graph().int_ids().ReturnIntId(second) == 404167);
-	}
-
 	virtual void Estimate(PairedInfoIndex<Graph> &result) {
 		for (auto iterator = this->histogram().begin();
 				iterator != this->histogram().end(); ++iterator) {
@@ -199,20 +191,11 @@ public:
 			EdgeId first = data[0].first;
 			EdgeId second = data[0].second;
 			vector<size_t> forward = this->GetGraphDistances(first, second);
-			if (debug(first, second)) {
-				//cout<<"i'm estimating"<<endl;
-				//for (size_t i = 0; i<forward.size(); i++) cout<<forward[i]<<endl;
-			}
-			//			bool debug = (int_ids_.ReturnIntId(data[0].first) == 71456 && int_ids_.ReturnIntId(dyyata[0].second) == 71195);
 
 			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(this->graph().length(first), this->graph().length(second),
 					data, forward/*, false*/);
-			//            if (debug) for (size_t i = 0; i< estimated.size(); i++)
-			//                INFO("Edges MY : " << estimated[i].first << " " << estimated[i].second);
 			vector<PairInfo<EdgeId> > clustered = ClusterResult(first, second,
 					estimated);
-			//            if (debug) for (size_t i = 0; i<clustered.size(); i++)
-			//                INFO("Edges MY clusterizing: " << clustered[i].d << " " << clustered[i].weight);
 			this->AddToResult(result, clustered);
 		}
 	}

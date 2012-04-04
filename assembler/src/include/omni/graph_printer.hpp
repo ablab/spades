@@ -7,109 +7,179 @@
 #pragma once
 
 #include "graph_print_utils.hpp"
+#include "graph_labeler.hpp"
+#include "graph_colorer.hpp"
 
 namespace omnigraph {
+//todo strange parameter length... is it obsollete???
+
 //todo ask Valera if it is ok
 using namespace gvis;
 
-template<typename VertexId>
-class GraphPrinter {
-protected:
+template<class VertexId, class EdgeId>
+class GraphElementPrinter {
 	const string name_;
 	ostream& out_;
+protected:
+	const string& name() {
+		return name_;
+	}
+
+	ostream& out() {
+		return out_;
+	}
+
 public:
-	GraphPrinter(const string &name, ostream &out = cout) :
+	GraphElementPrinter(const string &name, ostream &out = cout) :
 		name_(name), out_(out) {
 	}
 
-	virtual ~GraphPrinter() {
+	virtual ~GraphElementPrinter() {
 	}
 
 	virtual void open() = 0;
 
 	virtual void close() = 0;
 
-	virtual void AddVertex(VertexId vertexId, const string &label = " ",
-			const string fillColor = "white") = 0;
+	virtual void AddVertex(VertexId v) = 0;
 
-	virtual void AddEdge(VertexId fromId, VertexId toId,
-			const string &label = " ", const string color = "black", const int length = 0) = 0;
+	virtual void AddEdge(EdgeId e, const int length = 0) = 0;
 
 };
 
-template<typename VertexId>
-class DotGraphPrinter: public GraphPrinter<VertexId> {
-private:
-	typedef GraphPrinter<VertexId> super;
-public:
-	DotGraphPrinter(const string &name, ostream &out = cout) :
-		super(name, out) {
+template<class Graph>
+class GraphPrinter : public GraphElementPrinter<typename Graph::VertexId, typename Graph::EdgeId> {
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef GraphElementPrinter<VertexId, EdgeId> base;
 
-	}
-
-	virtual void open() {
-		startSimpleGraphRecord(super::out_, super::name_);
-	}
-
-	virtual void AddVertex(VertexId vertexId, const string &label,
-			const string fillColor = "white") {
-		Vertex<VertexId> v(vertexId, label, fillColor);
-		recordVertex<VertexId> (super::out_, v);
-	}
-
-	virtual void AddEdge(VertexId fromId, VertexId toId, const string &label,
-			const string color = "black", const int length = 0) {
-		Edge<VertexId> e(fromId, toId, label, color, length);
-		recordSimpleEdge<VertexId> (super::out_, e);
-	}
-
-	virtual void close() {
-		endGraphRecord(super::out_);
-	}
-
-	virtual ~DotGraphPrinter() {
-
-	}
-
-};
-
-//todo now it is even worse than ever!!!
-template<class Graph, typename VertexId = typename Graph::VertexId>
-class DotPairedGraphPrinter: public GraphPrinter<VertexId> {
-private:
-	typedef GraphPrinter<VertexId> super;
 	const Graph& g_;
-	const GraphLabeler<Graph> &labeler_;
+	const GraphLabeler<Graph>& labeler_;
+	const GraphColorer<Graph>& colorer_;
+protected:
+
+	const Graph& g() {
+		return g_;
+	}
+
+	const GraphLabeler<Graph>& labeler() {
+		return labeler_;
+	}
+
+	const GraphColorer<Graph>& colorer() {
+		return colorer_;
+	}
+
+public:
+	GraphPrinter(const Graph& g, const GraphLabeler<Graph>& labeler,
+			const GraphColorer<Graph>& colorer, const string &name, ostream &out = cout) :
+		base(name, out), g_(g), labeler_(labeler), colorer_(colorer) {
+	}
+
+};
+
+template<class Graph>
+class DotGraphPrinter: public GraphPrinter<Graph> {
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef GraphPrinter<Graph> base;
+public:
+	DotGraphPrinter(const Graph& g, const GraphLabeler<Graph>& labeler,
+			const GraphColorer<Graph>& colorer, const string &name, ostream &out = cout) :
+		base(g, labeler, colorer, name, out) {
+
+	}
+
+	void open() {
+		startSimpleGraphRecord(this->out(), this->name());
+	}
+
+	void AddVertex(VertexId v) {
+		Vertex<VertexId> vertex(v, this->labeler().label(v), this->colorer().GetColour(v));
+		recordVertex<VertexId>(this->out(), vertex);
+	}
+
+	void AddEdge(EdgeId e, const int length = 0) {
+		Edge<VertexId> edge(this->g().EdgeStart(e), this->g().EdgeEnd(e)
+				, this->labeler().label(e), this->colorer().GetColour(e), length);
+		recordSimpleEdge<VertexId> (this->out(), edge);
+	}
+
+	void close() {
+		endGraphRecord(this->out());
+	}
+
+};
+
+//todo add support of different colors for conjugate vertices
+template<class Graph>
+class DotPairedGraphPrinter: public GraphPrinter<Graph> {
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef GraphPrinter<Graph> base;
 	PairedGraphPrinter<VertexId> paired_printer_;
 public:
-	DotPairedGraphPrinter(const Graph& g, const string &name, const GraphLabeler<Graph> &labeler,
+	DotPairedGraphPrinter(const Graph& g, const GraphLabeler<Graph>& labeler,
+			const GraphColorer<Graph>& colorer, const string &name,
 			ostream &out = cout) :
-		super(name, out), g_(g), labeler_(labeler), paired_printer_(name, out) {
+		base(g, labeler, colorer, name, out), paired_printer_(name, out) {
 	}
 
-	virtual ~DotPairedGraphPrinter() {
-
-	}
-
-	virtual void open() {
+	void open() {
 		paired_printer_.open();
 	}
 
-	virtual void close() {
+	void close() {
 		paired_printer_.close();
 	}
 
-	virtual void AddVertex(VertexId v, const string &label,
-			const string fillColor) {
-		string label_conjugate = labeler_.label(g_.conjugate(v));
-		paired_printer_.AddVertex(v, label, g_.conjugate(v), label_conjugate, fillColor);
+	void AddVertex(VertexId v) {
+		VertexId conjugate = this->g().conjugate(v);
+		paired_printer_.AddVertex(v, this->labeler().label(v), conjugate
+				, this->labeler().label(conjugate), this->colorer().GetColour(v));
 	}
 
-	virtual void AddEdge(VertexId v1, VertexId v2, const string &label,
-			const string color, const int length = 0) {
-		paired_printer_.AddEdge(make_pair(v1, g_.conjugate(v1)),
-				make_pair(v2, g_.conjugate(v2)), label, color, length);
+	void AddEdge(EdgeId e, const int length = 0) {
+		VertexId v1 = this->g().EdgeStart(e);
+		VertexId v2 = this->g().EdgeEnd(e);
+		paired_printer_.AddEdge(make_pair(v1, this->g().conjugate(v1))
+				, make_pair(v2, this->g().conjugate(v2)), this->labeler().label(e)
+				, this->colorer().GetColour(e), length);
 	}
 };
+
+//template<class Graph>
+//class PrinterFactory {
+//public:
+//	virtual auto_ptr<GraphPrinter<Graph>> GetPrinterInstance(
+//			const Graph& g, const GraphLabeler<Graph>& labeler,
+//			const GraphColorer<Graph>& colorer,
+//			const string &graph_name, ostream &os) const = 0;
+//	virtual ~PrinterFactory() {
+//	}
+//};
+//
+//template<class Graph>
+//class DotPrinterFactory {
+//public:
+//	auto_ptr<GraphPrinter<Graph>> GetPrinterInstance(
+//			const Graph& g, const GraphLabeler<Graph>& labeler,
+//			const GraphColorer<Graph>& colorer,
+//			const string &graph_name, ostream &os) const {
+//		return auto_ptr<DotGraphPrinter<Graph>>(new DotGraphPrinter<Graph>(g, labeler, colorer, graph_name, os));
+//	}
+//};
+//
+//template<class Graph>
+//class PairedDotPrinterFactory {
+//public:
+//	auto_ptr<GraphPrinter<Graph>> GetPrinterInstance(
+//			const Graph& g, const GraphLabeler<Graph>& labeler,
+//			const GraphColorer<Graph>& colorer,
+//			const string &graph_name, ostream &os) const {
+//		return auto_ptr<DotPairedGraphPrinter<Graph>>(new DotPairedGraphPrinter<Graph>(g, labeler, colorer, graph_name, os));
+//	}
+//};
+
 
 }

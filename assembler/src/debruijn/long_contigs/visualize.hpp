@@ -93,7 +93,6 @@ void WriteGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_nam
 	std::fstream filestr;
 	filestr.open(file_name.c_str(), std::fstream::out);
 
-	DotGraphPrinter<Graph::VertexId> printer(graph_name, filestr);
 
 	StrGraphLabeler<Graph> str_labeler(gp.g);
 	PathsGraphLabeler<Graph> path_labeler(gp.g, paths);
@@ -103,8 +102,10 @@ void WriteGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_nam
 
 	auto_ptr<GraphColorer<Graph>> colorer(DefaultColorer(gp.g, FindGenomePath<K> (gp.genome, gp.g, gp.index)
 			, FindGenomePath<K> (!gp.genome, gp.g, gp.index)));
-	ColoredGraphVisualizer<Graph> gv(gp.g, printer, composite_labeler
-			, *colorer);
+
+	DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
+
+	ColoredGraphVisualizer<Graph> gv(gp.g, printer);
 	AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
 	result_vis.Visualize();
 	filestr.close();

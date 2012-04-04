@@ -100,7 +100,10 @@ public:
 			EdgeOriginalId.erase(PreviousId);
 		EdgeIntId.erase(OldEdgeId);
 	}
+
+	//todo why can't we put verifies here?
 	realIdType ReturnIntId(EdgeId e) const {
+		//todo what is this?
 		if (size_t(this) < 0x1000)
 		{
 			print_stacktrace();
@@ -121,7 +124,6 @@ public:
 			return it->second;
 		else
 			return EdgeId(NULL);
-
 	}
 
 	VertexId ReturnVertexId(realIdType id) const {
@@ -130,7 +132,6 @@ public:
 			return it->second;
 		else
 			return VertexId(NULL);
-
 	}
 
 	BaseIdTrackHandler() :

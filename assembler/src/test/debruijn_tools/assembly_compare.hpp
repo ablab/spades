@@ -22,7 +22,7 @@ using namespace omnigraph;
 
 template<size_t k, class Graph>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		io::IReader<io::SingleRead>& stream1, io::IReader<io::SingleRead>& stream2) {
+io::IReader<io::SingleRead>& stream1, io::IReader<io::SingleRead>& stream2) {
 	io::MultifileReader<io::SingleRead> composite_reader(stream1, stream2);
 	ConstructGraph<k, Graph>(g, index, composite_reader);
 }
@@ -33,7 +33,8 @@ Sequence MergeSequences(const Graph& g,
 	vector<Sequence> path_sequences;
 	path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
 	for (size_t i = 1; i < continuous_path.size(); ++i) {
-		VERIFY(g.EdgeEnd(continuous_path[i-1]) == g.EdgeStart(continuous_path[i]));
+		VERIFY(
+				g.EdgeEnd(continuous_path[i-1]) == g.EdgeStart(continuous_path[i]));
 		path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
 	}
 	return MergeOverlappingSequences(path_sequences, g.k());
@@ -54,7 +55,7 @@ class TipsProjector {
 		} else {
 			edges = gp_.g.IncomingEdges(gp_.g.EdgeEnd(tip));
 		}
-		set<EdgeId> edges_set(edges.begin(), edges.end());
+		restricted::set<EdgeId> edges_set(edges.begin(), edges.end());
 		edges_set.erase(tip);
 		if (edges_set.size() == 1)
 			return optional<EdgeId>(*edges_set.begin());
@@ -93,19 +94,22 @@ class TipsProjector {
 			}
 		}
 
-		INFO("Remapping " << aligned_tip.size() << " kmers of aligned_tip to aligned_alt");
+		INFO(
+				"Remapping " << aligned_tip.size() << " kmers of aligned_tip to aligned_alt");
 		gp_.kmer_mapper.RemapKmers(aligned_tip, aligned_alt);
 	}
 
-	void AlignAndProject(const AbstractConjugateGraph<typename Graph::DataMaster>& graph
-			, const Sequence& tip_seq, const Sequence& alt_seq,
+	void AlignAndProject(
+			const AbstractConjugateGraph<typename Graph::DataMaster>& graph,
+			const Sequence& tip_seq, const Sequence& alt_seq,
 			bool outgoing_tip) {
 		AlignAndProject(tip_seq, alt_seq, outgoing_tip);
 		AlignAndProject(!tip_seq, !alt_seq, !outgoing_tip);
 	}
 
-	void AlignAndProject(const AbstractNonconjugateGraph<typename Graph::DataMaster>& graph
-			, const Sequence& tip_seq, const Sequence& alt_seq,
+	void AlignAndProject(
+			const AbstractNonconjugateGraph<typename Graph::DataMaster>& graph,
+			const Sequence& tip_seq, const Sequence& alt_seq,
 			bool outgoing_tip) {
 		AlignAndProject(tip_seq, alt_seq, outgoing_tip);
 	}
@@ -122,12 +126,13 @@ public:
 		Sequence tip_seq = gp_.g.EdgeNucls(tip);
 		vector<EdgeId> alt_path = UniqueAlternativePath(tip, outgoing_tip);
 		if (alt_path.empty()) {
-			WARN("Failed to find unique alt path for tip " << gp_.g.str(tip) <<". Wasn't projected!!!");
+			WARN(
+					"Failed to find unique alt path for tip " << gp_.g.str(tip) <<". Wasn't projected!!!");
 		} else {
 			Sequence alt_seq = MergeSequences(gp_.g, alt_path);
 			if (tip_seq.size() > alt_seq.size()) {
-				WARN("Can't fully project tip " << gp_.g.str(tip) << " with seq length " << tip_seq.size()
-						<< " because alt path length is " << alt_seq.size() << ". Trying to project partially");
+				WARN(
+						"Can't fully project tip " << gp_.g.str(tip) << " with seq length " << tip_seq.size() << " because alt path length is " << alt_seq.size() << ". Trying to project partially");
 			}
 			AlignAndProject(gp_.g, tip_seq, alt_seq, outgoing_tip);
 			INFO("Tip projected");
@@ -168,7 +173,8 @@ class ContigRefiner: public ModifyingWrapper {
 	NewExtendedSequenceMapper<k + 1, Graph> mapper_;
 
 	//todo seems that we don't need optional here any more
-	boost::optional<vector<EdgeId>> TryCloseGap(VertexId v1, VertexId v2) const {
+	boost::optional<vector<EdgeId>> TryCloseGap(VertexId v1,
+			VertexId v2) const {
 		PathStorageCallback<Graph> path_store(graph_);
 		//todo reduce value after investigation
 		PathProcessor<Graph> path_processor(graph_, 0, 50, v1, v2, path_store);
@@ -201,31 +207,29 @@ class ContigRefiner: public ModifyingWrapper {
 				answer.push_back(edges[i]);
 			} else {
 				INFO(
-						"Trying to close gap between v1=" << graph_.int_id(v1)
-								<< " and v2=" << graph_.int_id(v2));
+						"Trying to close gap between v1=" << graph_.int_id(v1) << " and v2=" << graph_.int_id(v2));
 				boost::optional<vector<EdgeId>> closure = TryCloseGap(v1, v2);
 				if (closure) {
 					INFO("Gap closed");
-					INFO("Cumulative closure length is " << CummulativeLength(graph_, *closure));
+					INFO(
+							"Cumulative closure length is " << CummulativeLength(graph_, *closure));
 					answer.insert(answer.end(), closure->begin(),
 							closure->end());
 					answer.push_back(edges[i]);
 				} else {
 					WARN(
-							"Failed to close gap between v1="
-									<< graph_.int_id(v1) << " (conjugate "
-									<< graph_.int_id(graph_.conjugate(v1))
-									<< ") and v2="
-									<< graph_.int_id(v2) << " (conjugate "
-									<< graph_.int_id(graph_.conjugate(v2))
-									<< ")");
+							"Failed to close gap between v1=" << graph_.int_id(v1) << " (conjugate " << graph_.int_id(graph_.conjugate(v1)) << ") and v2=" << graph_.int_id(v2) << " (conjugate " << graph_.int_id(graph_.conjugate(v2)) << ")");
 					make_dir("assembly_compare/tmp");
-					WriteComponentsAroundEdge(graph_, graph_.IncomingEdges(v1).front()
-							, "assembly_compare/tmp/failed_close_gap_from.dot"
-							, *DefaultColorer(graph_), LengthIdGraphLabeler<Graph>(graph_));
-					WriteComponentsAroundEdge(graph_, graph_.OutgoingEdges(v2).front()
-							, "assembly_compare/tmp/failed_close_gap_to.dot"
-							, *DefaultColorer(graph_), LengthIdGraphLabeler<Graph>(graph_));
+					WriteComponentsAroundEdge(graph_,
+							graph_.IncomingEdges(v1).front(),
+							"assembly_compare/tmp/failed_close_gap_from.dot",
+							*DefaultColorer(graph_),
+							LengthIdGraphLabeler<Graph>(graph_));
+					WriteComponentsAroundEdge(graph_,
+							graph_.OutgoingEdges(v2).front(),
+							"assembly_compare/tmp/failed_close_gap_to.dot",
+							*DefaultColorer(graph_),
+							LengthIdGraphLabeler<Graph>(graph_));
 
 					VERIFY(false);
 				}
@@ -248,20 +252,22 @@ protected:
 		Path<EdgeId> path = FixPath(mapper_.MapSequence(s).simple_path());
 
 		if (path.size() == 0) {
-			WARN("For sequence of length " << s.size() << " returning empty sequence");
+			WARN(
+					"For sequence of length " << s.size() << " returning empty sequence");
 			return Sequence();
 		}
 //		DEBUG("Mapped sequence to path " << graph_.str(path.sequence()));
 
 		Sequence path_sequence = MergeSequences(graph_, path.sequence());
 		size_t start = path.start_pos();
-		size_t end = path_sequence.size()
-				- graph_.length(path[path.size() - 1]) + path.end_pos();
+		size_t end = path_sequence.size() - graph_.length(path[path.size() - 1])
+				+ path.end_pos();
 		//todo output levenshtein somewhere there!!
 		Sequence answer = path_sequence.Subseq(start, end);
 		if (answer != s) {
 			if (answer.size() < 1000) {
-				TRACE("Initial sequence modified, edit distance= " << EditDistance(answer, s));
+				TRACE(
+						"Initial sequence modified, edit distance= " << EditDistance(answer, s));
 			} else {
 				TRACE("Sequence too large, won't count edit distance");
 			}
@@ -287,7 +293,8 @@ public:
 //		return *this;
 //	}
 private:
-	DECL_LOGGER("ContigRefiner");
+	DECL_LOGGER("ContigRefiner")
+	;
 };
 
 template<class gp_t>
@@ -297,8 +304,8 @@ void ConstructGPForRefinement(gp_t& gp,
 	typedef typename gp_t::graph_t Graph;
 	INFO("Constructing graph pack for refinement");
 
-	io::RCReaderWrapper < io::SingleRead > stream_1(raw_stream_1);
-	io::RCReaderWrapper < io::SingleRead > stream_2(raw_stream_2);
+	io::RCReaderWrapper<io::SingleRead> stream_1(raw_stream_1);
+	io::RCReaderWrapper<io::SingleRead> stream_2(raw_stream_2);
 	stream_1.reset();
 	stream_2.reset();
 
@@ -308,7 +315,7 @@ void ConstructGPForRefinement(gp_t& gp,
 //	LengthIdGraphLabeler<Graph> labeler(gp.g);
 //	WriteToDotFile(gp.g, labeler, "bp_graph_test/tmp/before_refine.dot");
 
-	//todo configure!!!
+//todo configure!!!
 	debruijn_config::simplification::bulge_remover br_config;
 	br_config.max_bulge_length_coefficient = 3;
 	br_config.max_coverage = 1000.;
@@ -330,7 +337,7 @@ void ConstructGPForRefinement(gp_t& gp,
 	tc_config.max_tip_length_coefficient = 2.;
 
 	INFO("Clipping tips with projection");
-	ClipTips(gp.g, tc_config, /*read_length*/100, projecting_callback);
+	DefaultClipTips(gp.g, tc_config, /*read_length*/100, projecting_callback);
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 
@@ -352,7 +359,7 @@ template<class Graph, class Element>
 class ElementColorHandler: public GraphActionHandler<Graph> {
 	typedef GraphActionHandler<Graph> base;
 
-	map<Element, edge_type> data_;
+	restricted::map<Element, edge_type> data_;
 public:
 	static string color_str(edge_type color) {
 		static string colors[] = { "black", "red", "blue", "purple" };
@@ -418,23 +425,24 @@ public:
 		return vertex_color_.Color(v);
 	}
 
-	map<EdgeId, string> EdgeColorMap() const {
-		map<EdgeId, string> answer;
+	restricted::map<EdgeId, string> EdgeColorMap() const {
+		restricted::map < EdgeId, string > answer;
 		for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			answer[*it] = edge_color_.ColorStr(*it);
 		}
 		return answer;
 	}
 
-	map<VertexId, string> VertexColorMap() const {
-		map<VertexId, string> answer;
+	restricted::map<VertexId, string> VertexColorMap() const {
+		restricted::map < VertexId, string > answer;
 		for (auto it = this->g().begin(); it != this->g().end(); ++it) {
 			answer[*it] = vertex_color_.ColorStr(*it);
 		}
 		return answer;
 	}
 
-	/*virtual*/ void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
+	/*virtual*/
+	void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
 		VERIFY(old_edges.size() > 0);
 		auto color = Color(old_edges.front());
 		for (auto it = old_edges.begin(); it != old_edges.end(); ++it) {
@@ -443,17 +451,22 @@ public:
 		}
 		Paint(new_edge, color);
 	}
-	//
-	//	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-	//		PaintEdge(new_edge, Color(edge1));
-	//		PaintEdge(new_edge, Color(edge2));
-	//	}
-	//
-	//	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-	//			EdgeId new_edge2) {
-	//		PaintEdge(new_edge_1, Color(old_edge));
-	//		PaintEdge(new_edge2, Color(old_edge));
-	//	}
+
+	/*virtual*/
+	void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		//todo temporary verification
+		VERIFY(Color(edge2) == edge_type::black && new_edge == edge2);
+		Paint(new_edge, Color(edge2));
+		Paint(new_edge, Color(edge1));
+	}
+
+	/*virtual*/
+	void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
+			EdgeId new_edge_2) {
+		Paint(this->g().EdgeEnd(new_edge_1), Color(old_edge));
+		Paint(new_edge_1, Color(old_edge));
+		Paint(new_edge_2, Color(old_edge));
+	}
 };
 
 template<class gp_t>
@@ -462,7 +475,7 @@ class CoveredRangesFinder {
 
 	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef map<EdgeId, vector<Range>> CoveredRanges;
+	typedef restricted::map<EdgeId, vector<Range>> CoveredRanges;
 
 	vector<Range> ProcessRange(Range new_range,
 			const vector<Range>& curr_ranges) {
@@ -553,9 +566,8 @@ public:
 	/*virtual*/
 	//todo change to set or GraphComponent and add useful protected methods
 	bool Check(const vector<VertexId> &component_veritces) const {
-		GraphComponent < Graph
-				> component(this->graph(), component_veritces.begin(),
-						component_veritces.end());
+		GraphComponent<Graph> component(this->graph(),
+				component_veritces.begin(), component_veritces.end());
 		return component.v_size() > 2 && MultiColored(component);
 	}
 
@@ -839,13 +851,12 @@ Stream &operator<<(Stream &stream, const Component<Graph> &component) {
 template<class Graph>
 auto_ptr<GraphColorer<Graph>> ConstructColorer(
 		const ColorHandler<Graph>& coloring) {
-	return auto_ptr < GraphColorer
-			< Graph
-					>> (new CompositeGraphColorer<Graph>(
-							new MapColorer<Graph, typename Graph::VertexId>(
-									coloring.VertexColorMap())
-							, new MapColorer<Graph, typename Graph::EdgeId>(
-									coloring.EdgeColorMap())));
+	return auto_ptr<GraphColorer<Graph>>(
+			new CompositeGraphColorer<Graph>(
+					new MapColorer<typename Graph::VertexId>(
+							coloring.VertexColorMap()),
+					new MapColorer<typename Graph::EdgeId>(
+							coloring.EdgeColorMap())));
 }
 
 template<class Graph>
@@ -1074,8 +1085,7 @@ public:
 		it = bp_gp_.blue_paths.find(read.name());
 		if (it != bp_gp_.blue_paths.end()) {
 			return TrivialMappingPath(it->second);
-		}
-		VERIFY(false);
+		}VERIFY(false);
 		return MappingPath<EdgeId>();
 	}
 
@@ -1179,7 +1189,8 @@ private:
 				Sequence new_edge_sequence = MergeSequences(old_gp_.g, to_glue);
 				next = new_gp_.g.AddEdge(GetStartVertex(path, i),
 						GetEndVertex(path, j - 1), new_edge_sequence);
-				DEBUG("Added shortcut edge " << new_gp_.g.int_id(next) << " for path " << old_gp_.g.str(to_glue));
+				DEBUG(
+						"Added shortcut edge " << new_gp_.g.int_id(next) << " for path " << old_gp_.g.str(to_glue));
 				i = j - 1;
 			} else {
 				DEBUG("Next edge is purple");
@@ -1192,7 +1203,8 @@ private:
 		if (color == edge_type::red) {
 			VERIFY(new_gp_.red_paths.find(name) == new_gp_.red_paths.end());
 			new_gp_.red_paths[name] = new_path;
-			new_gp_.red_paths[ConjugateContigId(name)] = ConjugatePath(new_gp_.g, new_path);
+			new_gp_.red_paths[ConjugateContigId(name)] = ConjugatePath(
+					new_gp_.g, new_path);
 		} else {
 			VERIFY(new_gp_.blue_paths.find(name) == new_gp_.blue_paths.end());
 			new_gp_.blue_paths[name] = new_path;
@@ -1208,14 +1220,15 @@ private:
 		return answer;
 	}
 
-	template <class T>
+	template<class T>
 	void ColorWithConjugate(T t, edge_type color) {
 		new_gp_.coloring.Paint(t, color);
 		new_gp_.coloring.Paint(new_gp_.g.conjugate(t), color);
 	}
 
 	void PaintEdgeWithVertices(EdgeId e, edge_type color) {
-		DEBUG("Coloring edges " << new_gp_.g.int_id(e) << " and " << new_gp_.g.int_id(new_gp_.g.conjugate(e)));
+		DEBUG(
+				"Coloring edges " << new_gp_.g.int_id(e) << " and " << new_gp_.g.int_id(new_gp_.g.conjugate(e)));
 		ColorWithConjugate(e, color);
 		ColorWithConjugate(new_gp_.g.EdgeStart(e), color);
 		ColorWithConjugate(new_gp_.g.EdgeEnd(e), color);
@@ -1229,20 +1242,20 @@ public:
 			old_gp_(old_gp), old_coloring_(old_coloring), new_gp_(new_gp) {
 		const Graph& old_graph = old_gp.g;
 		//adding vertices
-		set<VertexId> processed_purple_v;
+		restricted::set<VertexId> processed_purple_v;
 		for (auto it = old_graph.begin(); it != old_graph.end(); ++it) {
 			if (processed_purple_v.count(*it) > 0)
 				continue;
 			processed_purple_v.insert(*it);
 			processed_purple_v.insert(old_graph.conjugate(*it));
 			vertex_mapping_[*it] = new_gp_.g.AddVertex();
-			vertex_mapping_[old_graph.conjugate(*it)] = new_gp_.g.conjugate(vertex_mapping_[*it]);
-			DEBUG("Adding purple vertex " << new_gp_.g.int_id(vertex_mapping_[*it])
-					<< " corresponding to " << old_graph.int_id(*it) << " and conjugates")
+			vertex_mapping_[old_graph.conjugate(*it)] = new_gp_.g.conjugate(
+					vertex_mapping_[*it]);
+			DEBUG(
+					"Adding purple vertex " << new_gp_.g.int_id(vertex_mapping_[*it]) << " corresponding to " << old_graph.int_id(*it) << " and conjugates")
 		}
 
-
-		set<EdgeId> processed_purple;
+		restricted::set<EdgeId> processed_purple;
 		//propagating purple color to new graph
 		for (auto it = old_graph.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			if (processed_purple.count(*it) > 0)
@@ -1255,9 +1268,11 @@ public:
 						vertex_mapping_[old_graph.EdgeStart(*it)],
 						vertex_mapping_[old_graph.EdgeEnd(*it)],
 						old_graph.EdgeNucls(*it));
-				DEBUG("Adding purple edge " << new_gp_.g.int_id(new_edge) << " corresponding to " << old_graph.int_id(*it) << " and conjugate")
+				DEBUG(
+						"Adding purple edge " << new_gp_.g.int_id(new_edge) << " corresponding to " << old_graph.int_id(*it) << " and conjugate")
 				purple_edge_mapping_[*it] = new_edge;
-				purple_edge_mapping_[old_graph.conjugate(*it)] = new_gp_.g.conjugate(new_edge);
+				purple_edge_mapping_[old_graph.conjugate(*it)] =
+						new_gp_.g.conjugate(new_edge);
 				PaintEdgeWithVertices(new_edge, edge_type::violet);
 			}
 		}
@@ -1273,7 +1288,96 @@ public:
 		FillPos(new_gp_.g, contig_mapper, new_gp_.edge_pos, stream2);
 	}
 private:
-	DECL_LOGGER("UntangledGraphConstructor");
+	DECL_LOGGER("UntangledGraphConstructor")
+	;
+};
+
+//Currently works for conjugate graphs only
+template<class Graph>
+class RestrictedOneManyResolver {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	Graph& g_;
+	const ColorHandler<Graph>& coloring_;
+	edge_type restricting_color_;
+
+	bool CheckColor(const vector<EdgeId>& edges) {
+		DEBUG("Checking color")
+		for (auto it = edges.begin(); it != edges.end(); ++it) {
+			if (coloring_.Color(*it) != restricting_color_) {
+				DEBUG("fail")
+				return false;
+			}
+		}
+		DEBUG("ok")
+		return true;
+	}
+
+	bool CheckColor(VertexId v) {
+		return CheckColor(g_.IncomingEdges(v)) && CheckColor(g_.OutgoingEdges(v));
+	}
+
+	bool CheckSimple(const vector<EdgeId>& edges) {
+		DEBUG("Checking simple")
+		for (auto it = edges.begin(); it != edges.end(); ++it) {
+			if (g_.EdgeStart(*it) == g_.EdgeEnd(*it)
+					|| g_.EdgeStart(*it) == g_.conjugate(g_.EdgeEnd(*it))) {
+				DEBUG("fail")
+				return false;
+			}
+		}
+		DEBUG("ok")
+		return true;
+	}
+
+	bool CheckSimple(VertexId v) {
+		return CheckSimple(g_.IncomingEdges(v)) && CheckSimple(g_.OutgoingEdges(v));
+	}
+
+	bool CheckVertex(VertexId v) {
+		return CheckSimple(v) && CheckColor(v);
+	}
+
+	void SplitVertex(VertexId v) {
+		DEBUG("Splitting vertex " << g_.str(v))
+		EdgeId incoming_edge = g_.GetUniqueIncomingEdge(v);
+		vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
+		DEBUG("Going to create " << outgoing_edges.size() << " new edges")
+		for (auto it = outgoing_edges.begin(); it != outgoing_edges.end(); ++it) {
+			VertexId copy_vertex = g_.AddVertex(g_.data(v));
+			EdgeId e1 = g_.AddEdge(g_.EdgeStart(incoming_edge), copy_vertex, g_.data(incoming_edge));
+			g_.FireProject(incoming_edge, e1);
+			EdgeId e2 = g_.AddEdge(copy_vertex, g_.EdgeEnd(*it), g_.data(*it));
+			//todo think of better way!!! now not stable and awful because of th order of information transfer!!!
+			g_.FireProject(*it, e2);
+			EdgeId e = g_.MergePath(vector<EdgeId>{e1, e2});
+			DEBUG("Created edge " << g_.str(e))
+		}
+		g_.ForceDeleteVertex(v);
+	}
+
+public:
+	RestrictedOneManyResolver(Graph& g, const ColorHandler<Graph>& coloring, edge_type restricting_color) :
+		g_(g), coloring_(coloring), restricting_color_(restricting_color) {
+
+	}
+
+	void Resolve() {
+		INFO("Running one-many resolve");
+		for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
+			DEBUG("Checking vertex " << g_.str(*it) << " for split.")
+			if (g_.IncomingEdgeCount(*it) == 1 && CheckVertex(*it)) {
+				DEBUG("Condition was satisfied.")
+				SplitVertex(*it);
+			} else {
+				DEBUG("Condition was not satisfied.")
+			}
+		}
+		INFO("Finished one-many resolve");
+	}
+private:
+	DECL_LOGGER("RestrictedOneManyResolver");
 };
 
 template<class gp_t>
@@ -1282,8 +1386,8 @@ private:
 	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef map<EdgeId, vector<Range>> CoveredRanges;
-	typedef map<EdgeId, vector<size_t>> BreakPoints;
+	typedef restricted::map<EdgeId, vector<Range>> CoveredRanges;
+	typedef restricted::map<EdgeId, vector<size_t>> BreakPoints;
 
 //	io::IReader<io::SingleRead> &stream1_;
 //	io::IReader<io::SingleRead> &stream2_;
@@ -1341,13 +1445,13 @@ private:
 		}
 	}
 
-	void PrintCRS(const map<EdgeId, vector<Range>>& crs) {
-		for (auto it = crs.begin(); it != crs.end(); ++it) {
-			DEBUG(
-					"For edge " << gp_.g.str(it->first) << " ranges "
-							<< it->second);
-		}
-	}
+//	void PrintCRS(const CoveredRanges& crs) {
+//		for (auto it = crs.begin(); it != crs.end(); ++it) {
+//			DEBUG(
+//					"For edge " << gp_.g.str(it->first) << " ranges "
+//							<< it->second);
+//		}
+//	}
 
 	void SplitGraph() {
 		INFO("Determining covered ranges");
@@ -1355,11 +1459,11 @@ private:
 		CoveredRanges crs1;
 		crs_finder.FindCoveredRanges(crs1, stream1_);
 		DEBUG("Printing covered ranges for stream 1");
-		PrintCRS(crs1);
+//		PrintCRS(crs1);
 		CoveredRanges crs2;
 		crs_finder.FindCoveredRanges(crs2, stream2_);
 		DEBUG("Printing covered ranges for stream 2");
-		PrintCRS(crs2);
+//		PrintCRS(crs2);
 		BreakPoints bps;
 		INFO("Determining breakpoints");
 		FindBreakPoints(bps, crs1, crs2);
@@ -1369,13 +1473,14 @@ private:
 	}
 
 	void SplitGraph(/*const */BreakPoints& bps) {
-		set<EdgeId> initial_edges;
+		vector<EdgeId> initial_edges;
 		for (auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			initial_edges.insert(*it);
+			initial_edges.push_back(*it);
 		}
-		for (auto it = SmartSetIterator<Graph, EdgeId, typename Graph::Comparator>(gp_.g,
-				initial_edges.begin(), initial_edges.end(), gp_.g.ReliableComparatorInstance()); !it.IsEnd();
-				++it) {
+		for (auto it = SmartSetIterator<Graph, EdgeId,
+				typename Graph::Comparator>(gp_.g, initial_edges.begin(),
+				initial_edges.end(), gp_.g.ReliableComparatorInstance());
+				!it.IsEnd(); ++it) {
 			EdgeId e = *it;
 			VERIFY(bps.find(e) != bps.end());
 			VERIFY(bps[e].empty() || bps[e].back() < gp_.g.length(e));
@@ -1458,17 +1563,16 @@ private:
 //		WriteToDotFile(gp_.g, labeler, path + ".dot");
 	}
 
-	template <class gp_t2>
+	template<class gp_t2>
 	void UniversalSaveGP(gp_t2& gp, const string& filename) {
-		typename PrinterTraits<Graph>::Printer printer(gp.g,
-				gp.int_ids);
+		typename PrinterTraits<Graph>::Printer printer(gp.g, gp.int_ids);
 		INFO("Saving graph to " << filename);
 		printer.saveGraph(filename);
 		printer.saveEdgeSequences(filename);
 		printer.savePositions(filename, gp.edge_pos);
 
 		LengthIdGraphLabeler<Graph> labeler(gp.g);
-		WriteToDotFile(gp.g, labeler, filename + ".dot");
+		WriteSimple(gp.g, labeler, filename + ".dot");
 	}
 
 	void PrintColoredGraph(const Graph& g, const ColorHandler<Graph>& coloring,
@@ -1483,7 +1587,7 @@ private:
 				*ConstructColorer(coloring), labeler);
 	}
 
-	template <class gp_t2>
+	template<class gp_t2>
 	void ProduceResults(gp_t2& gp, const ColorHandler<Graph>& coloring,
 			const string& output_folder, bool detailed_output) {
 		INFO("Removing unnecessary edges");
@@ -1513,7 +1617,7 @@ public:
 	}
 
 	void CompareAssemblies(const string& output_folder, bool detailed_output =
-			true) {
+			true, bool one_many_resolve = false) {
 		//todo ???
 		stream1_.reset();
 		stream2_.reset();
@@ -1563,18 +1667,32 @@ public:
 			SaveOldGraph(output_folder + "saves/tangled_graph");
 		}
 
+		if (one_many_resolve) {
+			VERIFY(!untangle_);
+			RestrictedOneManyResolver<Graph> resolver(gp_.g, coloring, edge_type::violet);
+			resolver.Resolve();
+		}
+
+		if (detailed_output) {
+			PrintColoredGraph(gp_.g, coloring, gp_.edge_pos,
+					output_folder + "initial_pics/colored_split_graph.dot");
+			SaveOldGraph(output_folder + "saves/tangled_graph");
+		}
+
 		if (untangle_) {
 			INFO("Untangling graph");
 			bp_graph_pack<typename gp_t::graph_t> untangled_gp(gp_t::k_value);
-			UntangledGraphConstructor<gp_t> untangler(gp_, coloring, untangled_gp,
-					stream1_, stream2_);
+			UntangledGraphConstructor<gp_t> untangler(gp_, coloring,
+					untangled_gp, stream1_, stream2_);
 			//todo ???
 			//		SimplifyGraph(untangled_gp.g);
 
 			if (detailed_output) {
-				PrintColoredGraph(untangled_gp.g, untangled_gp.coloring, untangled_gp.edge_pos,
+				PrintColoredGraph(untangled_gp.g, untangled_gp.coloring,
+						untangled_gp.edge_pos,
 						output_folder + "initial_pics/untangled_graph.dot");
-				UniversalSaveGP(untangled_gp, output_folder + "saves/untangled_graph");
+				UniversalSaveGP(untangled_gp,
+						output_folder + "saves/untangled_graph");
 			}
 
 			ProduceResults(untangled_gp, untangled_gp.coloring, output_folder,

@@ -77,7 +77,7 @@ void recordVertex(ostream &out, Vertex<tVertex> &vertex) {
 template<typename tVertex>
 void recordEdge(ostream &out, Edge<tVertex> &edge) {
 	recordVertexId(out, edge.from);
-	out << "out_";
+	out << "_out";
 	out << "->";
 	recordVertexId(out, edge.to);
 	out << "_in";
@@ -172,7 +172,7 @@ string constructTableEntry(tVertex v, const string &label) {
 	ss << "<TR>";
 	ss << constructCell("", 0, ToString(v) + "_in");
 	ss << constructCell(label, 0, "");
-	ss << constructCell("", 0, ToString(v) + "out_");
+	ss << constructCell("", 0, ToString(v) + "_out");
 	ss << "</TR>\n";
 	return ss.str();
 }
@@ -181,7 +181,7 @@ template<typename tVertex>
 string constructReverceTableEntry(tVertex v, const string &label) {
 	stringstream ss;
 	ss << "<TR>";
-	ss << constructCell("", 0, ToString(v) + "out_");
+	ss << constructCell("", 0, ToString(v) + "_out");
 	ss << constructCell(label, 0, "");
 	ss << constructCell("", 0, ToString(v) + "_in");
 	ss << "</TR>\n";
