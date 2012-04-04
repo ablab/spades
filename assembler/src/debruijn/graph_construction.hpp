@@ -153,7 +153,7 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		INFO("Figured out: read length = " << rl);
 		cfg::get_writable().ds.RL = rl;
 	} else if (*cfg::get().ds.RL != rl) {
-		WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
+		WARN("In this dataset's info file, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
 	}
 	INFO("DeBruijn graph constructed, " << counter << " reads used");
 
