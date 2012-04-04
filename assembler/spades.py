@@ -208,7 +208,7 @@ def main():
             name = "spades_" + datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
             working_dir = path.join(output_dir, name)
             os.makedirs(working_dir)
-            latest = path.join(output_dir, "the_latest")
+            latest = path.join(output_dir, "latest")
             if os.path.islink(latest):
                 os.remove(latest)
             if not os.path.exists(latest):

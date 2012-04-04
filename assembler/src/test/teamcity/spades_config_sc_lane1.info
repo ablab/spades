@@ -1,5 +1,7 @@
+project_name        ECOLI_SC_LANE_1_BH_woHUMAN
 output_dir          ./data/debruijn/
 output_to_console   true
+developer_mode      true
 
 spades
 {

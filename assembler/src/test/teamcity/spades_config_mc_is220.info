@@ -1,5 +1,7 @@
+project_name        ECOLI_IS220_QUAKE
 output_dir          ./data/debruijn/
 output_to_console   true
+developer_mode      true
 
 spades
 {
