@@ -364,7 +364,7 @@ public:
 							pi[j].second, pi[j].d, pi[j].weight, pi[j].variance);
 					paired_di_data.AddPairInfo(tmp, 0);
 				} else {
-					WARN("Paired Info with deleted edge! " << pi[j].first<<"  " <<pi[j].second);
+					DEBUG("Paired Info with deleted edge! " << pi[j].first<<"  " <<pi[j].second);
 				}
 			}
 		}

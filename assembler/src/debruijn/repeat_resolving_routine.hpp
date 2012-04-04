@@ -625,7 +625,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 
 	auto second_edge = second_info.second;
 	auto second_weight = second_info.weight;
-	DEBUG("Treating edges " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(first_edge));
+	DEBUG("Treating edges " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge));
 	auto paths = GetAllPathsFromSameEdge(origin_gp, first_edge, second_edge);
 	vector<size_t> distances;
 	for (auto paths_it = paths.begin(); paths_it != paths.end(); paths_it ++) {
@@ -667,16 +667,20 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 			for (auto path_iter = paths.begin()->begin(); path_iter != paths.begin()->end(); path_iter++) {
 
 				if (clustered_index.GetEdgePairInfo(first_info.first, *path_iter).size() > 0) {
-//					PairInfo* toAdd = new
 					nonzero_info ++;
+					break;
 				} else {
 					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 0));
+					DEBUG("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first_info.first) << " " << origin_gp.int_ids.ReturnIntId(*path_iter));
 				}
 				tmpd += origin_gp.g.length(*path_iter);
 			}
 			if (! nonzero_info) {
-				if (paths.begin()->size() != 0)
+
+				if (paths.begin()->size() != 0) {
 					DEBUG("filled missing " << paths.begin()->size() << "edges");
+					DEBUG("while treating info from "<< origin_gp.int_ids.ReturnIntId(first_info.first) << " to " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge));
+				}
 				return paths.begin()->size();
 			}
 		}
