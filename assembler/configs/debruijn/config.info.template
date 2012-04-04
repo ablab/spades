@@ -33,6 +33,9 @@ output_pictures true
 ; whether to output resulting contigs after intermediate stages - ONLY in developer mode
 output_nonfinal_contigs true
 
+; whether to compute number of paths statistics   - ONLY in developer mode
+compute_paths_number true
+
 ; End of developer_mode parameters
 
 ; etalon graph mode switcher. If true input reads are ignored and graph is constructed with reference as the only read

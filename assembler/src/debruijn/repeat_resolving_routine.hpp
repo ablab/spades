@@ -375,7 +375,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //	ProduceLongEdgesStat( origin_gp,  clustered_index);
 	CorrectPairedInfo( origin_gp,  clustered_index);
 	CorrectPairedInfo( origin_gp,  clustered_index);
-	GenerateMatePairStats(origin_gp,  clustered_index);
+	if (cfg::get().compute_paths_number)
+		GenerateMatePairStats(origin_gp,  clustered_index);
 	DEBUG("New index size: "<< clustered_index.size());
 	// todo: make printGraph const to its arguments
 
@@ -607,9 +608,9 @@ void GenerateMatePairStats(const graph_pack& origin_gp, PairedInfoIndex<typename
 			}
 		}
 	}
-	DEBUG("Mate pair stats:");
+	INFO("Mate pair stats:");
 	for(auto s_iter = sizes.begin(); s_iter != sizes.end(); s_iter ++) {
-		DEBUG("- size: " << s_iter->first << "; pathsets: " << s_iter->second);
+		INFO("- size: " << s_iter->first << "; pathsets: " << s_iter->second);
 	}
 }
 

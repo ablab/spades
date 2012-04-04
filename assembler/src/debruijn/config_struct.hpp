@@ -376,6 +376,7 @@ public:
 	bool make_saves;
 	bool output_pictures;
 	bool output_nonfinal_contigs;
+	bool compute_paths_number;
 
 	bool use_additional_contigs;
 	bool etalon_graph_mode;
@@ -708,6 +709,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 		load(cfg.make_saves, pt, "make_saves");
 		load(cfg.output_pictures, pt, "output_pictures");
 		load(cfg.output_nonfinal_contigs, pt, "output_nonfinal_contigs");
+		load(cfg.compute_paths_number, pt, "compute_paths_number");
 	}
 
 	load(cfg.load_from, pt, "load_from");
