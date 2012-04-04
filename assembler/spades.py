@@ -70,7 +70,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
 
     subst_dict["dataset"]            = cfg.dataset
     subst_dict["output_base"]        = cfg.working_dir
-    subst_dict["additional_contigs"] = path.join(cfg.working_dir, "simplified_contigs.fasta")
+    subst_dict["additional_contigs"] = cfg.additional_contigs
     subst_dict["entry_point"]        = 'construction'
     subst_dict["developer_mode"]     = str(cfg.developer_mode).lower()
 
@@ -221,15 +221,16 @@ def main():
 
         spades_cfg.__dict__["working_dir"] = make_working_dir(spades_cfg.output_dir)
 
-        log_filename = path.join(spades_cfg.working_dir, "spades.log")
-        spades_cfg.__dict__["log_filename"] = log_filename
+        spades_cfg.__dict__["log_filename"] = path.join(spades_cfg.working_dir, "spades.log")
+        spades_cfg.__dict__["result_contigs"] = path.join(spades_cfg.working_dir, spades_cfg.project_name + ".fasta")
+        spades_cfg.__dict__["additional_contigs"] = path.join(spades_cfg.working_dir, "simplified_contigs.fasta")
 
         shutil.copy(CONFIG_FILE, spades_cfg.working_dir)
         shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)
 
         print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
 
-        log_file = open(log_filename, "w")
+        log_file = open(spades_cfg.log_filename, "w")
 
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -323,13 +324,12 @@ def run_spades(cfg):
         latest = path.join(cfg.working_dir, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
 
-    result_contigs = cfg.project_name + ".fasta"
-    result_contigs = os.path.join(cfg.working_dir, result_contigs)
-    shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), result_contigs)
+    shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
+    os.remove(cfg.additional_contigs)
 
     if cfg.measure_quality:
         print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
-        cmd = "python " + path.join(spades_home, "src/tools/quality/quality.py") + " " + result_contigs
+        cmd = "python " + path.join(spades_home, "src/tools/quality/quality.py") + " " + cfg.result_contigs
         dataset_filename = cfg.dataset
         dataset = load_config_from_info_file(dataset_filename)["common"]
 
@@ -345,7 +345,7 @@ def run_spades(cfg):
 
     print ""
     print "All the resulting information can be found here: " + cfg.working_dir
-    print " * Resulting contigs are called " + os.path.split(result_contigs)[1]
+    print " * Resulting contigs are called " + os.path.basename(cfg.result_contigs)
     if cfg.measure_quality:
         print " * Assessment of their quality is in " + qr + "/"
     print ""
