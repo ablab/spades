@@ -135,7 +135,7 @@ void exec_simplification(conj_graph_pack& gp) {
 
 		files_t used_files;
 		load_simplification(gp, &used_files);
-		copy_files_by_prefix(used_files, cfg::get().output_saves);
+		link_files_by_prefix(used_files, cfg::get().output_saves);
 	}
 }
 

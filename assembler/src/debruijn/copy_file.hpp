@@ -12,6 +12,17 @@
 namespace fs = boost::filesystem;
 namespace details
 {
+inline void hard_link_file(const fs::path& from_path, const fs::path& to_path)
+	{
+#if not defined(BOOST_FILESYSTEM_VERSION) or (BOOST_FILESYSTEM_VERSION == 2)
+		fs::create_hard_link(from_path, to_path);
+#elif BOOST_FILESYSTEM_VERSION == 3
+		boost::filesystem3::create_hard_link(from_path, to_path);
+#else
+		BOOST_STATIC_ASSERT(false && "BOOST_FILESYSTEM_VERSION defined, but has value different from 2 or 3");
+#endif
+	}
+
 inline void copy_file(const fs::path& from_path, const fs::path& to_path)
 	{
 #if not defined(BOOST_FILESYSTEM_VERSION) or (BOOST_FILESYSTEM_VERSION == 2)
@@ -53,6 +64,18 @@ void copy_files_by_prefix(files_t const& files, fs::path const& to_folder)
 
 		for (auto it = files_to_copy.begin(); it != files_to_copy.end(); ++it)
 			details::copy_file(*it, to_folder / it->filename());
+	}
+}
+
+void link_files_by_prefix(files_t const& files, fs::path const& to_folder)
+{
+	for (size_t i = 0; i != files.size(); ++i)
+	{
+		fs::path f(files[i]);
+		files_t  files_to_copy = files_by_prefix(f);
+
+		for (auto it = files_to_copy.begin(); it != files_to_copy.end(); ++it)
+			details::hard_link_file(*it, to_folder / it->filename());
 	}
 }
 

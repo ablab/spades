@@ -57,7 +57,7 @@ void exec_late_pair_info_count(conj_graph_pack& gp,
 		INFO("Loading Late Pair Info Count");
 		files_t used_files;
 		load_late_pair_info_count(gp, paired_index, &used_files);
-		copy_files_by_prefix(used_files, cfg::get().output_saves);
+		link_files_by_prefix(used_files, cfg::get().output_saves);
 	}
 }
 

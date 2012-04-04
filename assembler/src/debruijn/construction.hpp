@@ -108,7 +108,7 @@ void exec_construction(conj_graph_pack& gp) {
 
 		files_t used_files;
 		load_construction(gp, &used_files);
-		copy_files_by_prefix(used_files, cfg::get().output_saves);
+		link_files_by_prefix(used_files, cfg::get().output_saves);
 	}
 
 	if (gp.genome.size() > 0) {

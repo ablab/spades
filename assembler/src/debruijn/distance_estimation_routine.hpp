@@ -170,7 +170,7 @@ void exec_distance_estimation(conj_graph_pack& gp,
 		files_t used_files;
 		load_distance_estimation(gp, paired_index, clustered_index,
 				&used_files);
-		copy_files_by_prefix(used_files, cfg::get().output_saves);
+		link_files_by_prefix(used_files, cfg::get().output_saves);
 	}
 }
 
