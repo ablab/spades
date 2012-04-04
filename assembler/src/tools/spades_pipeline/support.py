@@ -66,9 +66,6 @@ def sys_call(cmd, cwd = None):
     if proc.returncode != 0:
         error("system call for: \"" + cmd + "\" finished abnormally, err code:" + str(proc.returncode))
 
-def copy(source, dest):
-    sys_call("cp " + source + " " + dest)
-
 def question_with_timer(question, seconds, default = 'y'):
     import time
     import curses

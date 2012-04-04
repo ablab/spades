@@ -102,6 +102,9 @@ def check_config(cfg, config_filename):
     if not cfg["common"].__dict__.has_key("output_to_console"):
         cfg["common"].__dict__["output_to_console"] = True
 
+    if not cfg["common"].__dict__.has_key("developer_mode"):
+        cfg["common"].__dict__["developer_mode"] = False
+
     if not cfg["common"].__dict__.has_key("project_name"):
         cfg["common"].__dict__["project_name"] = path.splitext(path.basename(config_filename))[0]
 
