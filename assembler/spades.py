@@ -33,6 +33,10 @@ def prepare_config_bh(filename, cfg):
         cfg.input_reads = [cfg.input_reads]
     for read in cfg.input_reads:
         input_reads.extend(glob.glob(path.abspath(path.expandvars(read))))
+
+    if len(input_reads) == 0:
+        error("The given wildcards do not correspond to existing files: " + str(cfg.input_reads))
+
     cfg.input_reads = input_reads
 
     if len(cfg.input_reads) == 1:
@@ -40,20 +44,20 @@ def prepare_config_bh(filename, cfg):
         cfg.input_reads = bh_aux.split_paired_file(cfg)
 
     subst_dict["input_numfiles"]           = len(cfg.input_reads)
-  
+
     for i in xrange(len(cfg.input_reads)):
         subst_dict["input_file_" + str(i)]  = cfg.input_reads[i]
-   
-    subst_dict["input_gzipped"]             = bool_to_str(cfg.input_reads[0].endswith(".gz"))       
+
+    subst_dict["input_gzipped"]             = bool_to_str(cfg.input_reads[0].endswith(".gz"))
     subst_dict["input_working_dir"]         = cfg.working_dir
     subst_dict["general_max_iterations"]    = cfg.max_iterations
-    subst_dict["general_max_nthreads"]      = cfg.max_threads 
-    subst_dict["count_merge_nthreads"]      = cfg.max_threads 
-    subst_dict["bayes_nthreads"]            = cfg.max_threads 
-    subst_dict["expand_nthreads"]           = cfg.max_threads 
-    subst_dict["correct_nthreads"]          = cfg.max_threads                
+    subst_dict["general_max_nthreads"]      = cfg.max_threads
+    subst_dict["count_merge_nthreads"]      = cfg.max_threads
+    subst_dict["bayes_nthreads"]            = cfg.max_threads
+    subst_dict["expand_nthreads"]           = cfg.max_threads
+    subst_dict["correct_nthreads"]          = cfg.max_threads
     subst_dict["general_hard_memory_limit"] = cfg.max_memory
-    
+
     if cfg.__dict__.has_key("qvoffset"):
         subst_dict["input_qvoffset"]        = cfg.qvoffset
 
@@ -64,7 +68,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict = dict()
     cfg.working_dir = path.abspath(cfg.working_dir)
 
-    subst_dict["dataset"]            = cfg.dataset    
+    subst_dict["dataset"]            = cfg.dataset
     subst_dict["output_base"]        = cfg.working_dir
     subst_dict["additional_contigs"] = path.join(cfg.working_dir, "simplified_contigs.fasta")
     subst_dict["entry_point"]        = 'construction'
@@ -90,13 +94,13 @@ def check_config(cfg, config_filename):
     if (not cfg.has_key("bh")) and (not cfg.has_key("spades")):
         error("wrong config! You should specify either 'bh' section (for reads error correction) or 'spades' one (for assembling) or both!")
         return False
-    
+
     if not cfg["common"].__dict__.has_key("output_dir"):
         error("wrong config! You should specify output_dir!")
         return False
 
     if not cfg["common"].__dict__.has_key("output_to_console"):
-        cfg["common"].__dict__["output_to_console"] = True        
+        cfg["common"].__dict__["output_to_console"] = True
 
     if not cfg["common"].__dict__.has_key("project_name"):
         cfg["common"].__dict__["project_name"] = path.splitext(path.basename(config_filename))[0]
@@ -126,7 +130,7 @@ def main():
     cfg = load_config_from_info_file(CONFIG_FILE)
 
     if not check_config(cfg, CONFIG_FILE):
-        return     
+        return
 
     created_dataset_filename = ""
     if cfg.has_key("bh"):
@@ -141,18 +145,18 @@ def main():
 
         start_bh = True
         if path.exists(bh_cfg.output_dir):
-            question = ["WARNING! Folder with corrected reads (" + bh_cfg.output_dir + ") already exists!", 
+            question = ["WARNING! Folder with corrected reads (" + bh_cfg.output_dir + ") already exists!",
                         "Do you want to overwrite this folder and start error correction again?"]
             answer = support.question_with_timer(question, 10, 'n')
             if answer == 'n':
                 start_bh = False
-                print("\n===== Error correction skipped\n")   
+                print("\n===== Error correction skipped\n")
             else:
                 shutil.rmtree(bh_cfg.output_dir)
 
         if start_bh:
             os.makedirs(bh_cfg.working_dir)
-                
+
             log_filename = path.join(bh_cfg.output_dir, "bh.log")
             bh_cfg.__dict__["log_filename"] = log_filename
 
@@ -174,7 +178,7 @@ def main():
 
             err_code = 0
             try:
-                created_dataset_filename = run_bh(bh_cfg)                
+                created_dataset_filename = run_bh(bh_cfg)
             except support.spades_error as err:
                 print err.err_str
                 err_code = err.code
@@ -184,7 +188,7 @@ def main():
 
             print("\n===== Error correction finished. Log can be found here: " + bh_cfg.log_filename + "\n")
             if err_code:
-               exit(err_code) 
+               exit(err_code)
 
     if cfg.has_key("spades"):
         spades_cfg = merge_configs(cfg["spades"], cfg["common"])
@@ -192,10 +196,10 @@ def main():
             spades_cfg.__dict__["measure_quality"] = False
 
         if created_dataset_filename != "":
-            if cfg["spades"].__dict__.has_key("dataset"):
-                warning("dataset created during error correction (" + created_dataset_filename + ") will be used instead of the one from config file (" + cfg["spades"].dataset + ")!")            
-            cfg["spades"].__dict__["dataset"] = created_dataset_filename 
-        spades_cfg.dataset = path.abspath(path.expandvars(spades_cfg.dataset)) 
+            if spades_cfg.__dict__.has_key("dataset"):
+                warning("dataset created during error correction (" + created_dataset_filename + ") will be used instead of the one from config file (" + spades_cfg.dataset + ")!")
+            spades_cfg.__dict__["dataset"] = created_dataset_filename
+        spades_cfg.dataset = path.abspath(path.expandvars(spades_cfg.dataset))
         if not path.isfile(spades_cfg.dataset):
             error("dataset " + spades_cfg.dataset + " doesn't exist!")
             exit(1)
@@ -250,15 +254,15 @@ def main():
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")
         if err_code:
             exit(err_code)
-    
+
     print("\n===== SPAdes pipeline finished\n") 
 
-def run_bh(cfg):    
-    
+def run_bh(cfg):
+
     dst_configs = path.join(cfg.output_dir, "configs")
     shutil.copytree(path.join(spades_home, "configs"), dst_configs)
     cfg_file_name = path.join(dst_configs, "hammer", "config.info")
-        
+
     prepare_config_bh(cfg_file_name, cfg)
 
     import build
@@ -266,7 +270,7 @@ def run_bh(cfg):
 
     execution_home = path.join(os.getenv('HOME'), '.spades/precompiled/build_hammer')
     command = path.join(execution_home, "hammer", "hammer") + " " + path.abspath(cfg_file_name)
-    
+
     print("\n== Running BayesHammer: " + command + "\n")
     support.sys_call(command)
 
@@ -276,9 +280,9 @@ def run_bh(cfg):
         cfg.__dict__["dataset_name"] = "dataset"
     dataset_filename = path.abspath(path.join(cfg.output_dir, cfg.dataset_name + ".info"))
     dataset_file = open(dataset_filename, "w")
-    dataset_file.write(dataset_str)    
+    dataset_file.write(dataset_str)
     dataset_file.close()
-    print("\n== Dataset created: " + dataset_filename + "\n")    
+    print("\n== Dataset created: " + dataset_filename + "\n")
 
     shutil.rmtree(cfg.working_dir)
 
