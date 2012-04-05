@@ -12,7 +12,13 @@ spades
     paired_mode         true
     dataset             $cfg/test_dataset/ECOLI_1K.info ; not used if run with bh
     generate_sam_files  true                          ; optional. Default is false  
-    measure_quality     true                          ; optional. Default is false
+}
+
+quality   ; optional. If section exists than spades.py measures quality of final contigs 
+{
+    reference           $cfg/test_dataset/E.coli/MG1655-K12.first1K.fasta.gz ; optional
+    genes               $cfg/test_dataset/E.coli/genes.first1K.txt           ; optional
+    operons             $cfg/test_dataset/E.coli/operons.first1K.txt         ; optional
 }
 
 bh
@@ -26,8 +32,5 @@ bh
     gzip_output         true
 
     dataset_name        ECOLI_1K                ; optional. Default is "dataset"
-    single_cell         false
-    reference           $cfg/test_dataset/E.coli/MG1655-K12.first1K.fasta.gz ; optional
-    genes               $cfg/test_dataset/E.coli/genes.first1K.txt           ; optional
-    operons             $cfg/test_dataset/E.coli/operons.first1K.txt         ; optional
+    single_cell         false    
 }

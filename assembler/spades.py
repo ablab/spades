@@ -212,9 +212,7 @@ def main():
                exit(err_code)
 
     if cfg.has_key("spades"):
-        spades_cfg = merge_configs(cfg["spades"], cfg["common"])
-        if not spades_cfg.__dict__.has_key("measure_quality"):
-            spades_cfg.__dict__["measure_quality"] = False
+        spades_cfg = merge_configs(cfg["spades"], cfg["common"])        
         if not spades_cfg.__dict__.has_key("generate_sam_files"):
             spades_cfg.__dict__["generate_sam_files"] = False
 
@@ -267,7 +265,10 @@ def main():
 
         err_code = 0
         try:
-            run_spades(spades_cfg)
+            if cfg.has_key("quality"):
+                run_spades(spades_cfg, cfg["quality"])
+            else:
+                run_spades(spades_cfg)
         except support.spades_error as err:
             print err.err_str
             err_code = err.code
@@ -312,7 +313,7 @@ def run_bh(cfg):
 
     return dataset_filename
 
-def run_spades(cfg):
+def run_spades(cfg, quality_cfg = None):
 
     if type(cfg.iterative_K) is int:
         cfg.iterative_K = [cfg.iterative_K]
@@ -350,18 +351,18 @@ def run_spades(cfg):
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     os.remove(cfg.additional_contigs)
 
-    if cfg.measure_quality:
+    if quality_cfg != None:
         print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
         cmd = "python " + path.join(spades_home, "src/tools/quality/quality.py") + " " + cfg.result_contigs
-        dataset_filename = cfg.dataset
-        dataset = load_config_from_info_file(dataset_filename)["common"]
+        #dataset_filename = cfg.dataset
+        #dataset = load_config_from_info_file(dataset_filename)["common"]
 
-        if dataset.__dict__.has_key("reference_genome"):
-            cmd += " -R " + path.join(path.dirname(dataset_filename), dataset.reference_genome)
-        if dataset.__dict__.has_key("genes"):
-            cmd += " -G " + path.join(path.dirname(dataset_filename), dataset.genes)
-        if dataset.__dict__.has_key("operons"):
-            cmd += " -O " + path.join(path.dirname(dataset_filename), dataset.operons)
+        if quality_cfg.__dict__.has_key("reference"):
+            cmd += " -R " + path.abspath(path.expandvars(quality_cfg.reference)) 
+        if quality_cfg.__dict__.has_key("genes"):
+            cmd += " -G " + path.abspath(path.expandvars(quality_cfg.genes)) 
+        if quality_cfg.__dict__.has_key("operons"):
+            cmd += " -O " + path.abspath(path.expandvars(quality_cfg.operons)) 
         qr = "quality_results"
         cmd += " -o " + os.path.join(cfg.working_dir, qr)
         support.sys_call(cmd)
@@ -369,7 +370,7 @@ def run_spades(cfg):
     print ""
     print "All the resulting information can be found here: " + cfg.working_dir
     print " * Resulting contigs are called " + os.path.basename(cfg.result_contigs)
-    if cfg.measure_quality:
+    if quality_cfg != None:
         print " * Assessment of their quality is in " + qr + "/"
     print ""
     print "Thank you for using SPAdes!"
