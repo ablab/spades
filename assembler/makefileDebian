@@ -7,6 +7,7 @@ install:
 	mkdir -p $(SPADES_CONFIGS)/debruijn
 	mkdir -p $(SPADES_CONFIGS)/hammer
 	mkdir -p $(DESTDIR)/usr/bin
+	mkdir -p $(SPADES_SHARE)/test_dataset
 	cp -r src/debruijn $(SPADES_SRC)
 	cp -r src/io $(SPADES_SRC)
 	cp -r src/include $(SPADES_SRC)
@@ -16,7 +17,7 @@ install:
 	cp src/CMakeLists.txt $(SPADES_SRC)/CMakeLists.txt
 	touch $(SPADES_SRC)/CMakeListsInternal.txt
 	cp -r ext $(DESTDIR)/usr/share/spades/
-	cp -r test_dataset/* $(DESTDIR)/usr/share/spades/data
+	cp -r test_dataset/* $(SPADES_SHARE)/test_dataset
 	cp -r configs/debruijn/*.template $(SPADES_CONFIGS)/debruijn/
 	cp configs/debruijn/config.info.template $(SPADES_CONFIGS)/debruijn/config.info
 	cp configs/hammer/config.info.template $(SPADES_CONFIGS)/hammer/config.info
