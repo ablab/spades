@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include "omni/distance_estimation.hpp"
 #include "memory_limit.hpp"
+#include "boost/archive/tmpdir.hpp"
 
 #include "perfcounter.hpp"
 
@@ -71,15 +72,16 @@ void copy_configs(fs::path cfg_filename, fs::path to)
 {
     using namespace debruijn_graph;
 
-    make_dir(to);
+    if (!make_dir(to)) {
+    	WARN("Could not create files use in /tmp directory");
+    }
     copy_files_by_ext(cfg_filename.parent_path(), to, ".info", true);
 }
 
 void load_config(string cfg_filename)
 {
     checkFileExistenceFATAL(cfg_filename);
-
-    fs::path tmp_folder = fs::path(tmpnam (NULL)).parent_path() / debruijn_graph::MakeLaunchTimeDirName() / ("K" + lexical_cast<string>(debruijn_graph::K));
+    fs::path tmp_folder = fs::path("/tmp") / debruijn_graph::MakeLaunchTimeDirName() / ("K" + lexical_cast<string>(debruijn_graph::K));
     copy_configs(cfg_filename, tmp_folder);
 
     cfg_filename = (tmp_folder / fs::path(cfg_filename).filename()).string();
