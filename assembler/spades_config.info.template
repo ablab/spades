@@ -10,16 +10,14 @@ spades
 {
     iterative_K         21 33 55
     paired_mode         true
-    dataset             /usr/share/spades/data/ECOLI_1K.info ; not used if run with bh
+    dataset             $cfg/test_dataset/ECOLI_1K.info ; not used if run with bh
     generate_sam_files  true                          ; optional. Default is false  
     measure_quality     true                          ; optional. Default is false
 }
 
-bh
+-bh
 {                       ; wildcards can be used here:
     input_reads         $cfg/test_dataset/input/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
-;    for those who installed the package:
-;    input_reads         /usr/share/spades/data/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
     output_dir                                        ; optional. Global output_dir is used if not specified
     qvoffset                                          ; optional. Either 33 or 64
     max_iterations      4
@@ -29,7 +27,7 @@ bh
 
     dataset_name        ECOLI_1K                ; optional. Default is "dataset"
     single_cell         false
-;    reference           /usr/share/spades/data/E.coli/MG1655-K12.first1K.fasta.gz ; optional
-;    genes               /usr/share/spades/data/E.coli/genes.first1K.txt           ; optional
-;    operons             /usr/share/spades/data/E.coli/operons.first1K.txt         ; optional
+    reference           $cfg/test_dataset/E.coli/MG1655-K12.first1K.fasta.gz ; optional
+    genes               $cfg/test_dataset/E.coli/genes.first1K.txt           ; optional
+    operons             $cfg/test_dataset/E.coli/operons.first1K.txt         ; optional
 }
