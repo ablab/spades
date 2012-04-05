@@ -18,7 +18,7 @@
 #include "resolved_pair_info.hpp"
 #include "graph_construction.hpp"
 #include "debruijn_stats.hpp"
-#include  "omni/distance_estimation.hpp"
+#include "omni/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 #include "long_contigs/lc_launch.hpp"
 #include "internal_aligner.hpp"
@@ -211,10 +211,11 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 	{
 		if (cfg::get().sw.align_original_reads){
 			if (cfg::get().sw.original_first && cfg::get().sw.original_second){
-				auto_ptr<io::PairedPureEasyReader> paired_reads = paired_pure_easy_reader(0);
-				io::PairedPureEasyReader original_paired_reads(
+				auto_ptr<io::PairedEasyReader> paired_reads = paired_easy_reader(false, 0);
+				io::PairedEasyReader original_paired_reads(
 								make_pair(input_file(*cfg::get().sw.original_first),
 										input_file(*cfg::get().sw.original_second)),
+								false,
 								0);
 				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
@@ -226,9 +227,9 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 		}
 		else {
 
-			auto_ptr<io::PairedPureEasyReader> paired_reads = paired_pure_easy_reader(0);
+			auto_ptr<io::PairedEasyReader> paired_reads = paired_easy_reader(false, 0);
 
-			io::MultifileReader<io::SingleRead> single_reads(pure_single_streams());
+			io::MultifileReader<io::SingleRead> single_reads(single_streams(false, false));
 
 
 			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
@@ -252,10 +253,11 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 	{
 		if (cfg::get().sw.align_original_reads){
 			if (cfg::get().sw.original_first && cfg::get().sw.original_second){
-				auto_ptr<io::PairedPureEasyReader> paired_reads = paired_pure_easy_reader(0);
-				io::PairedPureEasyReader original_paired_reads(
+				auto_ptr<io::PairedEasyReader> paired_reads = paired_easy_reader(false, 0);
+				io::PairedEasyReader original_paired_reads(
 								make_pair(input_file(*cfg::get().sw.original_first),
 										input_file(*cfg::get().sw.original_second)),
+								false,
 								0);
 				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
@@ -265,8 +267,8 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 			}
 		}
 		else {
-			auto_ptr<io::PairedPureEasyReader> paired_reads = paired_pure_easy_reader(0);
-			io::MultifileReader<io::SingleRead> single_reads(pure_single_streams());
+			auto_ptr<io::PairedEasyReader> paired_reads = paired_easy_reader(false, 0);
+			io::MultifileReader<io::SingleRead> single_reads(single_streams(false, false));
 
 
 			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
@@ -538,7 +540,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			consensus_folder = cfg::get().output_dir
 					+ "consensus_before_resolve/";
 			OutputSingleFileContigs(origin_gp.g, consensus_folder);
-			vector<ReadStream*> streams = single_streams();
+			vector<ReadStream*> streams = single_streams(true, true);
 			SelectReadsForConsensusBefore<K, graph_pack>(origin_gp, origin_gp.g,
 					labels_after, origin_gp.index, streams, consensus_folder);
 

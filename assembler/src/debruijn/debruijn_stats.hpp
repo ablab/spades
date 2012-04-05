@@ -404,7 +404,7 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
 	//typedef MappingPath<EdgeId> map_path_t;
 
 	//typedef graph_pack<ConjugateDeBruijnGraph, K> gp_t;
-	io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze);
+	io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze, true);
 	contigs_to_thread.reset();
 
 	NewExtendedSequenceMapper<K + 1, Graph> mapper(g, index, kmer_mapper);

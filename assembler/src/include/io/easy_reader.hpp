@@ -18,13 +18,19 @@ class EasyReader : public DelegatingReaderWrapper<io::SingleRead> {
 	RCReaderWrapper<io::SingleRead> rc_reader_;
 
 public:
-  explicit EasyReader(const io::SingleRead::FilenameType& filename,
-                  OffsetType offset_type = PhredOffset)
-      : raw_reader_(filename, offset_type),
-        filtered_reader_(raw_reader_),
-        rc_reader_(filtered_reader_) {
-	  Init(rc_reader_);
-  }
+	explicit EasyReader(const io::SingleRead::FilenameType& filename,
+			bool rc,
+			OffsetType offset_type = PhredOffset)
+	: raw_reader_(filename, offset_type),
+	  filtered_reader_(raw_reader_),
+	  rc_reader_(filtered_reader_) {
+		if (rc) {
+			Init(rc_reader_);
+		} else {
+			Init(filtered_reader_);
+		}
+	}
+
 
   /*
    * Default destructor.
@@ -43,6 +49,7 @@ class PairedEasyReader
 
 public:
   PairedEasyReader(const io::PairedRead::FilenamesType& filenames,
+		  	  	  bool rc,
                   size_t insert_size,
                   bool change_read_order = false,
                   OffsetType offset_type = PhredOffset)
@@ -50,10 +57,15 @@ public:
   	  , filtered_reader_(*raw_reader_)
   	  , rc_reader_(filtered_reader_)
   {
-	  Init(rc_reader_);
+		if (rc) {
+			Init(rc_reader_);
+		} else {
+			Init(filtered_reader_);
+		}
   }
 
   PairedEasyReader(const std::string& filename,
+		  	  	  bool rc,
                   size_t insert_size,
                   bool change_read_order = false,
                   OffsetType offset_type = PhredOffset)
@@ -61,7 +73,11 @@ public:
   	  , filtered_reader_(*raw_reader_)
   	  , rc_reader_(filtered_reader_)
   {
-	  Init(rc_reader_);
+		if (rc) {
+			Init(rc_reader_);
+		} else {
+			Init(filtered_reader_);
+		}
   }
 };
 
@@ -98,25 +114,4 @@ public:
 
 };
 
-class PureEasyReader : public DelegatingReaderWrapper<io::SingleRead> {
-	explicit PureEasyReader(const PureEasyReader& reader);
-	void operator=(const PureEasyReader& reader);
-
-	Reader raw_reader_;
-	CarefulFilteringReaderWrapper<io::SingleRead> filtered_reader_;
-
-public:
-  explicit PureEasyReader(const io::SingleRead::FilenameType& filename,
-                  OffsetType offset_type = PhredOffset)
-      : raw_reader_(filename, offset_type),
-        filtered_reader_(raw_reader_){
-	  Init(filtered_reader_);
-  }
-
-  /*
-   * Default destructor.
-   */
-  /* virtual */ ~PureEasyReader() {
-  }
-};
 }

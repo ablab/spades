@@ -15,11 +15,11 @@ void late_pair_info_count(conj_graph_pack& gp,
 
 	if (cfg::get().paired_mode) {
 		const size_t edge_length_threshold = 500;
-		auto_ptr<io::PairedEasyReader> stream = paired_easy_reader(0);
+		auto_ptr<io::PairedEasyReader> stream = paired_easy_reader(true, 0);
 		refine_insert_size(*stream, gp, edge_length_threshold);
 
 		INFO("STAGE == Counting Late Pair Info");
-		stream = paired_easy_reader(*cfg::get().ds.IS);
+		stream = paired_easy_reader(true, *cfg::get().ds.IS);
 
 		if (cfg::get().advanced_estimator_mode)
 			FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,

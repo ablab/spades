@@ -89,14 +89,14 @@ void exec_construction(conj_graph_pack& gp) {
 					io::SingleRead("genome", gp.genome.str()));
 			construct_graph(genome_stream, gp);
 		} else {
-			MultiFileStream concat_stream(single_streams(), true);
+			MultiFileStream concat_stream(single_streams(true, true), true);
 
 			//has to be separate stream for not counting it in coverage
 			ReadStream* additional_contigs_stream = 0;
 			//adding file with additional contigs
 			if (cfg::get().use_additional_contigs) {
 				INFO("Contigs from previous K will be used");
-				additional_contigs_stream = new io::EasyReader(cfg::get().additional_contigs);
+				additional_contigs_stream = new io::EasyReader(cfg::get().additional_contigs, true);
 			}
 
 			construct_graph(concat_stream, gp, additional_contigs_stream);
