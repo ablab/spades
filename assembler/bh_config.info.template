@@ -1,9 +1,0 @@
-output_to_console			true
-output_dir					hammer_output
-working_dir					hammer_output/working
-left_reads					data/input/E.coli/is220/cropped/s_6.first1000_1.fastq.gz
-right_reads 				data/input/E.coli/is220/cropped/s_6.first1000_1.fastq.gz
-iteration_count				3
-qvoffset	    			;33 64 or blank for automatic selection (may fail)
-dataset_name				TEST
-read_length					100
