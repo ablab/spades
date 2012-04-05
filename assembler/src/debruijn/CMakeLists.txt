@@ -1,7 +1,7 @@
-project(debruijn CXX)
+project(spades CXX)
 
-add_executable(debruijn
+add_executable(spades
  main.cpp)
 
-target_link_libraries(debruijn ${COMMON_LIBRARIES} input)
+target_link_libraries(spades ${COMMON_LIBRARIES} input)
 

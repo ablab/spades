@@ -335,7 +335,7 @@ def run_spades(cfg):
         prev_K = K
 
         execution_home = path.join(cfg.compilation_dir, 'build' + str(K))
-        command = path.join(execution_home, "debruijn", "debruijn") + " " + path.abspath(cfg_file_name)
+        command = path.join(execution_home, "debruijn", "spades") + " " + path.abspath(cfg_file_name)
 
         print("\n== Running assembler: " + command + "\n")
 

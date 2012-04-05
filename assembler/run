@@ -53,12 +53,12 @@ function change_config
 
 if [ $# = 0 ]
 then
-    run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info 
+    run_n_measure build/release/debruijn/spades configs/debruijn/config.info 
 else 
 case $1 in
 
-'rd' ) run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info ;;
-'dd' ) run_n_measure build/debug/debruijn/debruijn configs/debruijn/config.info ;;
+'rd' ) run_n_measure build/release/debruijn/spades configs/debruijn/config.info ;;
+'dd' ) run_n_measure build/debug/debruijn/spades configs/debruijn/config.info ;;
 'ddt' ) run_n_measure build/debug/test/debruijn/debruijn_test ;;
 'rdt' ) ./build/release/test/debruijn/debruijn_test --log_level=test_suite ;;
 'ddtls' ) run_n_measure build/debug/test/debruijn_tools/debruijn_tools ;;
@@ -69,7 +69,7 @@ case $1 in
 * ) 
     change_config $1
 
-    run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info ;;
+    run_n_measure build/release/debruijn/spades configs/debruijn/config.info ;;
 #    run_n_measure $1 $2 $3 $4 $5 
 esac
 fi
