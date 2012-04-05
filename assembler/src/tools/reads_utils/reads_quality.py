@@ -7,7 +7,6 @@ import re
 import getopt
 import datetime
 import subprocess
-import glob
 
 ###################################################################
 
@@ -21,12 +20,15 @@ bowtie       = os.path.join(bowtie_path, "bowtie")
 tmp_folder = "tmp"
 output_dir = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 thread_num = 16
+bin_size = 1
 make_latest_symlink = True
+reference = ""
+forced_reference = False
 
 ###################################################################
 
-long_options = "output-dir= thread-num=".split()
-short_options = "o:t:"
+long_options = "output-dir= reference= thread-num= bin-size=".split()
+short_options = "o:r:t:b:"
 
 def usage():
     print 'Estimation reads quality'
@@ -34,7 +36,9 @@ def usage():
     print ""
     print "Options with parameters:"
     print "-o\t--output-dir\tDirectory to store all result files"
+    print "-r\t--reference\tFile with reference genome (used reference from the first dataset if not specified)"
     print "-t\t--thread-num\tMax number of threads (default is " + str(thread_num) + ")"
+    print "-b\t--bin-size\tSize of bins for counting coverage (default is " + str(bin_size) + ")"
     
 def check_file(f):
     if not os.path.isfile(f):
@@ -54,10 +58,17 @@ for opt, arg in options:
     if opt in ('-o', "--output-dir"):
         output_dir = arg
         make_latest_symlink = False  
+    elif opt in ('-r', "--reference"):
+        reference = arg
+        forced_reference = True
     elif opt in ('-t', "--thread-num"):
         thread_num = int(arg)
         if thread_num < 1:
-            thread_num = 1      
+            thread_num = 1 
+    elif opt in ('-b', "--bin-size"):
+        bin_size = int(arg)
+        if bin_size < 1:
+            bin_size = 1      
     else:
         raise ValueError
 
@@ -92,7 +103,14 @@ def ungzip_if_needed(filename, output_folder, force_copy = False):
 
 ###################################################################
 
-reference = ""
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+if make_latest_symlink:
+    latest_symlink = 'latest'
+    if os.path.islink(latest_symlink):
+        os.remove(latest_symlink)
+    os.symlink(output_dir, latest_symlink)
 
 datasets_dict = dict()
 
@@ -105,29 +123,29 @@ for dataset in datasets:
     while datasets_dict.has_key(cur_key):
         cur_key = basename + "_" + str(i)
 
-    skip_this = False
+    #skip_this = False
     cur_reads = []
-    cur_reference = ""
+    #cur_reference = ""
     for line in open(dataset, 'r'):
-        if line.startswith("reference_genome"):
+        if line.startswith("reference_genome") and not forced_reference:
             cur_reference = get_full_path(dataset, line.split()[1].strip())
             if not reference:
                 reference = cur_reference
-            elif reference != cur_reference:
-                skip_this = True
-                break
+            #elif reference != cur_reference:
+            #    skip_this = True
+            #    break
         elif line.startswith("paired_reads") or line.startswith("single_reads"):
             line = line.replace('"', '')
             reads = line.split()[1:]
             for read in reads:
                 cur_reads.append(get_full_path(dataset, read))            
     
-    if not cur_reference:
-        print("  " + dataset + " was skipped because it contains no reference")    
-        continue       
-    if skip_this:
-        print("  " + dataset + " was skipped because of different reference (comparison only between all datasets of one organism)")    
-        continue
+    #if not cur_reference:
+    #    print("  " + dataset + " was skipped because it contains no reference")    
+    #    continue       
+    #if skip_this:
+    #    print("  " + dataset + " was skipped because of different reference (comparison only between all datasets of one organism)")    
+    #    continue
     if len(cur_reads) == 0:
         print("  " + dataset + " was skipped because it contains no reads")    
         continue
@@ -139,7 +157,15 @@ if not reference:
     print("Can't continue estimation - no reference in all datasets")
     sys.exit(1)
 
+if len(datasets_dict.keys()) == 0:
+    print("Can't continue estimation - all datasets were skipped")
+    sys.exit(1)
+
 ###################################################################
+
+report_dict = {"header" : ["Dataset"]}
+for dataset in datasets_dict.iterkeys():
+    report_dict[dataset] = [dataset]
 
 tmp_folder = os.path.join(output_dir, tmp_folder)
 if not os.path.exists(tmp_folder):
@@ -176,6 +202,7 @@ index_err.close()
 
 # bowtie-ing
 print("Aligning")
+report_dict["header"] += ["Total reads", "Aligned reads", "Not aligned reads"]
 for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     align_log = open(os.path.join(output_dir, dataset + ".log"),'w')
@@ -183,14 +210,46 @@ for dataset in datasets_dict.iterkeys():
     reads_string = reduce(lambda x, y: x + ',' + y, datasets_dict[dataset])   
     subprocess.call([bowtie, '-c', '-q', '--suppress', '6,7,8', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
     align_log.close()
-    align_err.close()    
+    align_err.close() 
 
-# TODO other logic
-for k,v in datasets_dict.iteritems():
-    print "k=", k, "v=", v
-    
+    align_err = open(os.path.join(output_dir, dataset + ".err"),'r') 
+    for line in align_err:
+        if line.startswith("# reads processed") or line.startswith("# reads with at least one") or line.startswith("# reads that failed"):
+            report_dict[dataset].append( (line.split(':')[1]).strip() )
+    align_err.close()       
 
+# raw-single    
+print("Raw_single.py")
+import raw_single
+for dataset in datasets_dict.iterkeys():
+    print("  " + dataset + "...")
+    align_log = os.path.join(output_dir, dataset + ".log")
+    raw_file  = os.path.join(output_dir, dataset + ".raw")
+    raw_single.raw_single(align_log, raw_file)
 
+# get length of reference
+ref_len = 0
+for line in open(reference):
+    if line[0] != '>':       
+        ref_len += len(line.strip())
 
+# coverage # python reads_utils/stat/coverage.py ec.raw ec.cov 4639675 1000
+print("Coverage.py")
+report_dict["header"] += ["Genome mapped (%)"]
+import coverage
+for dataset in datasets_dict.iterkeys():
+    print("  " + dataset + "...")
+    raw_file  = os.path.join(output_dir, dataset + ".raw")
+    cov_file  = os.path.join(output_dir, dataset + ".cov")
+    cov = coverage.coverage(raw_file, cov_file, ref_len, bin_size)
+    report_dict[dataset].append( str(cov * 100) )
 
+# total report
+import report_maker
+report_maker.do(report_dict, os.path.join(output_dir, 'all.txt'), os.path.join(output_dir, 'all.tab'))
+
+# clearing temp folder
+shutil.rmtree(tmp_folder)
+
+print("Done.")
 

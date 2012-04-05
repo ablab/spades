@@ -4,39 +4,49 @@
 
 import sys
 
-if len(sys.argv) != 5:
-	print("Usage: <coverage file> <output> <genome length> <bar width>");
-	exit(0)
+def coverage(in_filename, out_filename, maxLen, bar):
+    
+    inFile = open(in_filename)
+    outFile = open(out_filename, 'w')
+    
+    hist = [0 for i in range(maxLen	+ 1)]
 
-inFile = open(sys.argv[1])
-outFile = open(sys.argv[2], 'w')
-maxLen = int(sys.argv[3])
-bar = int(sys.argv[4])
+    for line in inFile:
+	    stpos = int(line.split()[0])
+	    for i in range(0,int(line.split()[1])):
+		    cpos = stpos + i
+		    if cpos <= maxLen:
+			    hist[cpos] += 1
 
-hist = [0 for i in range(maxLen	+ 1)]
+    covered = 0.0
+    for i in range(0,maxLen + 1):
+	    if (hist[i] > 0):
+		    covered += 1.0
 
-for line in inFile:
-	stpos = int(line.split()[0])
-	for i in range(0,int(line.split()[1])):
-		cpos = stpos + i
-		if cpos <= maxLen:
-			hist[cpos] += 1
+    # print("Coverage: " + str(covered/maxLen) + "\n")
 
-covered = 0.0
-for i in range(0,maxLen + 1):
-	if (hist[i] > 0):
-		covered += 1.0
+    newHist = [0 for i in range((maxLen + 1) / bar + 2)]
 
-print("Coverage: " + str(covered/maxLen) + "\n")
+    for i in range(maxLen + 1):
+	    newHist[int(i/bar)] += hist[i]
 
-newHist = [0 for i in range((maxLen + 1) / bar + 2)]
+    for i in range((maxLen + 1) / bar + 1):
+	    outFile.write(str(i) + ' ' + str(newHist[i] / bar) + '\n')
 
-for i in range(maxLen + 1):
-	newHist[int(i/bar)] += hist[i]
+    inFile.close()
+    outFile.close()
 
-for i in range((maxLen + 1) / bar + 1):
-	outFile.write(str(i) + ' ' + str(newHist[i] / bar) + '\n')
+    return covered/(maxLen + 1)
 
+def main():
 
-inFile.close()
-outFile.close()
+    if len(sys.argv) != 5:
+	    print("Usage: <coverage file> <output> <genome length> <bar width>");
+	    exit(0)
+
+    cov = coverage(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]))
+
+    print("Coverage: " + str(cov) + "\n")
+
+if __name__ == '__main__':
+    main()
