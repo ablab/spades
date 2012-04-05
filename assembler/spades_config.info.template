@@ -15,9 +15,9 @@ spades
     measure_quality     true                          ; optional. Default is false
 }
 
--bh
+bh
 {                       ; wildcards can be used here:
-    input_reads         $cfg/test_dataset/input/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
+    input_reads         $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
     output_dir                                        ; optional. Global output_dir is used if not specified
     qvoffset                                          ; optional. Either 33 or 64
     max_iterations      4

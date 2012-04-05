@@ -10,7 +10,7 @@ def build_spades(dir):
     if not path.exists(path.join(dir, "Makefile")):
         support.sys_call('cmake src', dir)
 
-    support.sys_call('make debruijn', dir)
+    support.sys_call('make spades', dir)
 
 def syncFiles(src, dest):
     if path.isfile(src):
