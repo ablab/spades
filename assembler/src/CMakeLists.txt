@@ -50,7 +50,7 @@ find_package(ZLIB)
 find_package(log4cxx)
 
 set (Boost_USE_MULTITHREADED ON)
-find_package(Boost COMPONENTS signals system filesystem iostreams serialization REQUIRED)
+find_package(Boost COMPONENTS system filesystem iostreams serialization REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
