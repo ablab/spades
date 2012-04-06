@@ -52,13 +52,13 @@ def sys_call(cmd, cwd=None):
     proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd)
 
     while not proc.poll():
-        print proc.stdout.readline()
-        time.sleep(0)
-        if proc.returncode:
+        if proc.returncode is not None:
             break
+        sys.stdout.write(proc.stdout.readline())
+        time.sleep(0)
 
     for line in proc.stdout.readlines():
-        print line
+        print line,
     proc.communicate()
 
     if proc.returncode:
