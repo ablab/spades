@@ -84,10 +84,10 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
         subst_dict["paired_mode"] = "false"
         subst_dict["gap_closer_enable"] = "false"
 
-    if prev_K is not None:
-        subst_dict["use_additional_contigs"] = "true"
-    else:
+    if prev_K:
         subst_dict["use_additional_contigs"] = "false"
+    else:
+        subst_dict["use_additional_contigs"] = "true"
 
     substitute_params(filename, subst_dict)
 
@@ -327,7 +327,7 @@ def run_spades(cfg, quality_cfg = None):
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     os.remove(cfg.additional_contigs)
 
-    if quality_cfg != None:
+    if quality_cfg:
         print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
 
         args = [cfg.result_contigs]
@@ -352,7 +352,7 @@ def run_spades(cfg, quality_cfg = None):
     print ""
     print "All the resulting information can be found here: " + cfg.working_dir
     print " * Resulting contigs are called " + os.path.basename(cfg.result_contigs)
-    if quality_cfg != None:
+    if quality_cfg:
         print " * Assessment of their quality is in " + quality_output_dir + "/"
     print ""
     print "Thank you for using SPAdes!"
