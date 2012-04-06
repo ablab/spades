@@ -13,8 +13,8 @@ class BaseIdTrackHandler: public ActionHandler<VertexId, EdgeId> {
 public:
 	typedef int realIdType;
 private:
-	restricted::map<VertexId, realIdType> VertexIntId;
-	restricted::map<EdgeId, realIdType> EdgeIntId;
+	map<VertexId, realIdType> VertexIntId;
+	map<EdgeId, realIdType> EdgeIntId;
 	std::tr1::unordered_map<realIdType, VertexId> VertexOriginalId;
 	std::tr1::unordered_map<realIdType, EdgeId> EdgeOriginalId;
 	int MaxVertexIntId;

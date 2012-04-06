@@ -157,9 +157,7 @@ void FillAndCorrectEtalonPairedInfo(
 	INFO("Correction of etalon paired info has been started");
 
 	INFO("Collecting data to filter etalon info");
-	std::set<std::pair<Graph::EdgeId, Graph::EdgeId>
-			, PairComparator<Graph::EdgeId, conj_graph_pack::graph_t::Comparator> > setEdgePairs(
-			gp.g.ReliableComparatorInstance());
+	std::set<std::pair<Graph::EdgeId, Graph::EdgeId>> setEdgePairs;
 	for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter)
 		setEdgePairs.insert(
 				std::make_pair((*iter)[0].first, (*iter)[0].second));
@@ -244,10 +242,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 			*cfg::get().ds.IS, *cfg::get().ds.RL, *cfg::get().ds.is_var, true);
 	INFO(
 			"Counting correlation between etalon and clustered paired infos statistics");
-	std::map<std::pair<EdgeId, EdgeId>, vector<int>
-			, PairComparator<EdgeId, Graph::Comparator> > my_index(
-			PairComparator<EdgeId, Graph::Comparator>(
-					gp.g.ReliableComparatorInstance()));
+	std::map<std::pair<EdgeId, EdgeId>, vector<int>> my_index;
 	std::map<int, int> gr;
 	for (auto iter = etalon_paired_index.begin();
 			iter != etalon_paired_index.end(); ++iter) {
@@ -631,7 +626,7 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	osequencestream_cov oss(contigs_output_filename);
-	restricted::set<ConjugateDeBruijnGraph::EdgeId> edges;
+	set<ConjugateDeBruijnGraph::EdgeId> edges;
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		if (edges.count(*it) == 0) {
 			oss << g.coverage(*it);
@@ -667,7 +662,7 @@ void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 	int n = 0;
 	make_dir(contigs_output_dir);
 	char n_str[20];
-	restricted::set<ConjugateDeBruijnGraph::EdgeId> edges;
+	set<ConjugateDeBruijnGraph::EdgeId> edges;
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		if (edges.count(*it) == 0) {
 			sprintf(n_str, "%d.fa", n);
@@ -687,7 +682,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K>(contig, gp.g,
 			gp.index, gp.kmer_mapper);
 
-	map<Graph::EdgeId, vector<pair<int, int>>, Graph::Comparator> inGenomeWay(gp.g.ReliableComparatorInstance());
+	map<Graph::EdgeId, vector<pair<int, int>>> inGenomeWay;
 	int CurI = 0;
 	int gaps = 0;
 	for (size_t i = 0; i < m_path1.size(); i++) {
@@ -971,7 +966,7 @@ const Sequence& genome, size_t bound, const string &file_name) {
 	SimpleSequenceMapper<k + 1, Graph> sequence_mapper(g, index);
 	Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
 	Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
-	restricted::set<EdgeId> path_set;
+	set<EdgeId> path_set;
 	path_set.insert(path1.begin(), path1.end());
 	path_set.insert(path2.begin(), path2.end());
 	osequencestream os((cfg::get().output_dir + "/" + file_name).c_str());

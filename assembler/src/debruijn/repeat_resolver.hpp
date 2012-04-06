@@ -54,7 +54,7 @@ class RepeatResolver {
 	typedef omnigraph::PairedInfoIndex<Graph> PIIndex;
 	typedef omnigraph::PairInfo<EdgeId> PairInfo;
 	typedef vector<PairInfo> PairInfos;
-	typedef PairInfoIndexData<EdgeId, MixedComparator<EdgeId, typename Graph::Comparator> > MixedData;
+	typedef PairInfoIndexData<EdgeId> MixedData;
 
 //	typedef map<VertexId, set<EdgeId> > NewVertexMap;
 //	typedef map<VertexId, set<VertexId> > VertexIdMap;
@@ -65,7 +65,7 @@ public:
 	class FastDistanceCounter {
 
 	private:
-		restricted::map<VertexId, restricted::map<VertexId, size_t> > distances;
+		map<VertexId, map<VertexId, size_t> > distances;
 		Graph &graph_;
 		int depth_;
 		BoundedDijkstra<Graph, int> dij;
@@ -78,7 +78,7 @@ public:
 			if (distances.find(start) == distances.end()){
 				dij.run(start);
 				auto interval = dij.GetDistances();
-				restricted::map<VertexId, size_t> inserting_map;
+				map<VertexId, size_t> inserting_map;
 				for (auto ind = interval.first; ind != interval.second; ++ind) {
 					inserting_map.insert(make_pair(ind->first, ind->second));
 				}
@@ -236,7 +236,7 @@ public:
 
 	};
 
-	map<EdgeId, EdgeId, MixedComparator<EdgeId, typename Graph::Comparator>> GetEdgeLabels(){
+	map<EdgeId, EdgeId> GetEdgeLabels(){
 		return edge_labels;
 	}
 
@@ -249,26 +249,22 @@ public:
 			EdgeLabelHandler<Graph> &LabelsAfter_) :
 			new_graph(new_graph_), old_graph(old_graph_), new_IDs(new_IDs_), old_IDs(
 					old_IDs_), new_pos(new_pos_), old_pos(old_pos_), deleted_handler(
-					deleted_handler_), labels_after(LabelsAfter_), paired_di_data(
-					MixedComparator<EdgeId, typename Graph::Comparator>(old_graph_.ReliableComparatorInstance(),
-							new_graph_.ReliableComparatorInstance())),
-							vertex_labels(new_graph_.ReliableComparatorInstance()),
-							edge_labels(MixedComparator<EdgeId, typename Graph::Comparator>(new_graph_.ReliableComparatorInstance(), old_graph_.ReliableComparatorInstance())),
+					deleted_handler_), labels_after(LabelsAfter_),
 							distance_counter(old_graph_, cfg::get().rr.max_distance){
 
 
 		TRACE("Constructor started");
-		restricted::map<VertexId, VertexId> old_to_new;
-		restricted::map<EdgeId, EdgeId> old_to_new_edge;
+		map<VertexId, VertexId> old_to_new;
+		map<EdgeId, EdgeId> old_to_new_edge;
 		cheating_mode = 0;
 		rc_mode = cfg::get().rr.symmetric_resolve;
 		global_cheating_edges.clear();
 		size_t paired_size = 0;
-		set<VertexId, typename Graph::Comparator> vertices(old_graph_.ReliableComparatorInstance());
-		set<VertexId, typename Graph::Comparator> rc_vertices(old_graph_.ReliableComparatorInstance());
+		set<VertexId> vertices;
+		set<VertexId> rc_vertices;
 		vertices.clear();
-		set<EdgeId, typename Graph::Comparator> edges(old_graph_.ReliableComparatorInstance());
-		set<EdgeId, typename Graph::Comparator> rc_edges(old_graph_.ReliableComparatorInstance());
+		set<EdgeId> edges;
+		set<EdgeId> rc_edges;
 		edges.clear();
 		near_vertex = cfg::get().rr.near_vertex;
 		for (auto v_iter = old_graph.SmartVertexBegin(); !v_iter.IsEnd();
@@ -584,14 +580,14 @@ private:
 	vector<int> edge_info_colors;
 	vector<EdgeInfo> edge_infos;
 	MixedData paired_di_data;
-	map<VertexId, VertexId, typename Graph::Comparator> vertex_labels;
-	map<EdgeId, EdgeId, MixedComparator<EdgeId, typename Graph::Comparator>> edge_labels;
+	map<VertexId, VertexId> vertex_labels;
+	map<EdgeId, EdgeId> edge_labels;
 //	unordered_map<VertexId, unordered_map<VertexId, int> > counted_distances;
 
 
 	int cheating_mode;
-	restricted::map<EdgeId, int> local_cheating_edges;
-	restricted::set<EdgeId> global_cheating_edges;
+	map<EdgeId, int> local_cheating_edges;
+	set<EdgeId> global_cheating_edges;
 	map<VertexId, int> resolving_vertices_degrees;
 	int sum_count;
 	FastDistanceCounter distance_counter;
@@ -608,7 +604,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	//TODO: fix labels
 	edgeIds[0] = new_graph.OutgoingEdges(v);
 	edgeIds[1] = new_graph.IncomingEdges(v);
-	map<EdgeId, int, typename Graph::Comparator> edgeCounts(this->new_graph.ReliableComparatorInstance());
+	map<EdgeId, int> edgeCounts;
 //	set<EdgeId> conj_edges;
 	for(int i = 0; i < 2; i++) {
 		for(size_t j = 0; j < edgeIds[i].size(); j++){
@@ -754,11 +750,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 //	vector<unordered_map<EdgeId, EdgeId> > new_edges(k);
 	vector<vector<EdgeId> > edges_for_split(k);
 
-	restricted::map<EdgeId, double> old_paired_coverage;
-	vector<map<EdgeId, double, typename Graph::Comparator>> colored_paired_coverage(
-			k,
-			map<EdgeId, double, typename Graph::Comparator>(
-					new_graph.ReliableComparatorInstance()));
+	map<EdgeId, double> old_paired_coverage;
+	vector<map<EdgeId, double>> colored_paired_coverage(k);
 	//Remember-because of loops there can be same edges in edgeIds[0] and edgeIds[1]
 //TODO: fix loop problem by split loop into 2 eges.
 
@@ -777,7 +770,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		colored_paired_coverage[color][le] += edge_infos[i].lp.weight;
 	}
 
-	restricted::map<EdgeId, int> OldCopyCnt;
+	map<EdgeId, int> OldCopyCnt;
 	vector<EdgeId> LiveNewEdges;
 	vector<EdgeId> LiveProtoEdges;
 
@@ -822,7 +815,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					WrappedSetCoverage(conj_wrap(new_graph, it->second), new_graph.coverage(it->second) * new_graph.length(it->second));
 				}
 			}
-			restricted::map<EdgeId, EdgeId> old_to_new_edgeId;
+			map<EdgeId, EdgeId> old_to_new_edgeId;
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
 				old_to_new_edgeId[it->first] = it->second;
 				OldCopyCnt[it->first]++;
@@ -1365,7 +1358,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	DEBUG("out: " << edgeIds[0].size()<< "  in:" << edgeIds[1].size());
 
 	int mult = 1;
-	restricted::set<EdgeId> right_edges;
+	set<EdgeId> right_edges;
 	for (int dir = 0; dir < 2; dir++) {
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i++) {
 			PairInfos tmp = paired_di_data.GetEdgeInfos(edgeIds[dir][i]);
@@ -1557,7 +1550,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 	vector<EdgeId> edgeIds[2];
 	edgeIds[0] = new_graph.OutgoingEdges(vid);
 	edgeIds[1] = new_graph.IncomingEdges(vid);
-	restricted::map<EdgeId, int> EdgeIdMap[2];
+	map<EdgeId, int> EdgeIdMap[2];
 	size_t out_count = edgeIds[0].size();
 	size_t in_count = edgeIds[1].size();
 	size_t counts[2];

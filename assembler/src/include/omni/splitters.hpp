@@ -40,10 +40,10 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef UnorientedDijkstra<Graph, size_t> super;
-	restricted::set<EdgeId> &edges_;
+	set<EdgeId> &edges_;
 
 public:
-	ComponentFinder(const Graph &g, restricted::set<EdgeId> &edges) :
+	ComponentFinder(const Graph &g, set<EdgeId> &edges) :
 			super(g), edges_(edges) {
 	}
 
@@ -61,11 +61,11 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef UnorientedDijkstra<Graph, size_t> super;
-	restricted::set<EdgeId> &edges_;
+	set<EdgeId> &edges_;
 	const size_t bound_;
 
 public:
-	NeighbourhoodFinder(const Graph &g, restricted::set<EdgeId> &edges, size_t bound) :
+	NeighbourhoodFinder(const Graph &g, set<EdgeId> &edges, size_t bound) :
 			super(g), edges_(edges), bound_(bound) {
 	}
 
@@ -91,10 +91,10 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef UnorientedDijkstra<Graph, size_t> super;
-	const restricted::set<VertexId> &subgraph_;
+	const set<VertexId> &subgraph_;
 
 public:
-	SubgraphDijkstra(const Graph &g, const restricted::set<VertexId> &subgraph) :
+	SubgraphDijkstra(const Graph &g, const set<VertexId> &subgraph) :
 			super(g), subgraph_(subgraph) {
 	}
 
@@ -113,12 +113,12 @@ private:
 	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	restricted::set<EdgeId> black_edges_;
+	set<EdgeId> black_edges_;
 	typename Graph::SmartEdgeIt iterator_;
-	restricted::set<VertexId> visited_;
+	set<VertexId> visited_;
 
 public:
-	ErrorComponentSplitter(const Graph &graph, const restricted::set<EdgeId> &black_edges) :
+	ErrorComponentSplitter(const Graph &graph, const set<EdgeId> &black_edges) :
 			base(graph), black_edges_(black_edges), iterator_(
 					graph.SmartEdgeBegin()) {
 		TRACE("ErrorComponentSplitter created and SmartIterator initialized");
@@ -140,7 +140,7 @@ public:
 	}
 
 	size_t FindDiameter(const vector<VertexId> &component) {
-		restricted::set<VertexId> component_set(component.begin(), component.end());
+		set<VertexId> component_set(component.begin(), component.end());
 		size_t result = 0;
 		VertexId current = *(component.begin());
 		for (size_t i = 0; i < 4; i++) {
@@ -152,7 +152,7 @@ public:
 	}
 
 	pair<VertexId, size_t> GetFarthest(VertexId v,
-			const restricted::set<VertexId> &component) {
+			const set<VertexId> &component) {
 		SubgraphDijkstra<Graph> sd(this->graph(), component);
 		sd.run(v);
 		pair<VertexId, size_t> result(v, 0);
@@ -231,15 +231,15 @@ private:
 	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	erasable_priority_queue<VertexId, typename Graph::Comparator> queue_;
+	erasable_priority_queue<VertexId, std::less<VertexId>> queue_;
 	//	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
 	//			iterator_;
-	restricted::set<VertexId> visited_;
+	set<VertexId> visited_;
 	size_t bound_;
 
 public:
 	LongEdgesInclusiveSplitter(const Graph &graph, size_t bound) :
-			base(graph), queue_(graph.begin(), graph.end(), graph.ReliableComparatorInstance()), /*iterator_(graph.SmartVertexBegin()), */
+			base(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
 			bound_(bound) {
 	}
 
@@ -341,8 +341,8 @@ public:
 			set<VertexId> &additional_vertices) {
 	}
 
-	void CloseComponent(set<VertexId, typename Graph::Comparator> &component) {
-		set<VertexId, typename Graph::Comparator> additional_vertices(graph_.ReliableComparatorInstance());
+	void CloseComponent(set<VertexId> &component) {
+		set<VertexId> additional_vertices;
 		for (auto it = component.begin(); it != component.end(); ++it) {
 			{
 				vector<EdgeId> possible_long_edges = graph_.OutgoingEdges(*it);
@@ -396,7 +396,7 @@ private:
 	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	restricted::set<VertexId> visited_;
+	set<VertexId> visited_;
 	size_t max_size_;
 	size_t edge_length_bound_;
 	typename Graph::VertexIterator current_;
@@ -431,7 +431,7 @@ public:
 		TRACE("Search finished");
 		//TODO Refactor this!!!!
 		vector < VertexId > result_vector = cf.ReachedVertices();
-		set<VertexId, typename Graph::Comparator> result(result_vector.begin(), result_vector.end(), this->graph().ReliableComparatorInstance());
+		set<VertexId> result(result_vector.begin(), result_vector.end());
 		visited_.insert(result.begin(), result.end());
 		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
 		cc.CloseComponent(result);
@@ -453,7 +453,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	size_t max_size_;
 	size_t edge_length_bound_;
-	set<VertexId, typename Graph::Comparator> last_component_;
+	set<VertexId> last_component_;
 	size_t current_index_;
 	const MappingPath<EdgeId>& path_;
 	Range covered_range_;
@@ -494,7 +494,7 @@ public:
 	ReliableSplitterAlongPath(const Graph &graph, size_t max_size,
 			size_t edge_length_bound, const MappingPath<EdgeId>& path) :
 			base(graph), max_size_(max_size), edge_length_bound_(
-					edge_length_bound), last_component_(graph.ReliableComparatorInstance()), current_index_(0), path_(
+					edge_length_bound), current_index_(0), path_(
 					path), covered_range_(0, 0), start_processed_(false) {
 
 	}
@@ -517,7 +517,7 @@ public:
 			start_processed_ = true;
 		}
 		TRACE("Search finished");
-		set<VertexId, typename Graph::Comparator> last_component = cf.ProcessedVertices();
+		set<VertexId> last_component = cf.ProcessedVertices();
 		last_component_.clear();
         last_component_.insert(this->graph().EdgeStart(path_[current_index_].first));
         last_component_.insert(this->graph().EdgeEnd(path_[current_index_].first));
@@ -687,7 +687,7 @@ public:
 	bool Check(const vector<VertexId> &vertices) const {
 		if (vertices.size() <= vertex_number_)
 			return false;
-		restricted::set<VertexId> component(vertices.begin(), vertices.end());
+		set<VertexId> component(vertices.begin(), vertices.end());
 		for (auto iterator = vertices.begin(); iterator != vertices.end();
 				++iterator) {
 			vector < EdgeId > edges = this->graph().OutgoingEdges(*iterator);

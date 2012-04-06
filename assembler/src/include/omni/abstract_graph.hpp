@@ -5,8 +5,8 @@
 
 namespace omnigraph {
 template<typename VertexIdT, typename EdgeIdT, class DataMasterT>
-class AbstractGraph: public AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, typename set<VertexIdT, ReliableComparator<VertexIdT, EdgeIdT> >::const_iterator> {
-	typedef AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, typename set<VertexIdT, ReliableComparator<VertexIdT, EdgeIdT> >::const_iterator> base;
+class AbstractGraph: public AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, typename set<VertexIdT>::const_iterator> {
+	typedef AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, typename set<VertexIdT>::const_iterator> base;
 
 public:
 	typedef VertexIdT VertexId;
@@ -17,18 +17,18 @@ public:
 	typedef typename base::VertexIterator VertexIterator;
 
 private:
-	typedef SmartSet<AbstractGraph, VertexId, ReliableComparator<VertexId, EdgeId> > Vertices;
+	typedef SmartSet<AbstractGraph, VertexId> Vertices;
 
 	Vertices smart_vertices_;
 
 protected:
 
-	const set<VertexId, ReliableComparator<VertexId, EdgeId>> &vertices_;
+	const set<VertexId> &vertices_;
 
 public:
 	AbstractGraph(HandlerApplier<VertexId, EdgeId>* applier,
 			const DataMaster& master) :
-		base(applier, master), smart_vertices_(*this, this->ReliableComparatorInstance()), vertices_(smart_vertices_.inner_set()) {
+		base(applier, master), smart_vertices_(*this), vertices_(smart_vertices_.inner_set()) {
 	}
 
 	virtual ~AbstractGraph() {

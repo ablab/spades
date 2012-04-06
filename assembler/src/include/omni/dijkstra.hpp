@@ -7,19 +7,17 @@
 
 namespace omnigraph {
 
-template<typename distance_t, typename T, class Comparator>
+template<typename distance_t, typename T>
 class ReverseDistanceComparator {
-private:
-	Comparator comparator_;
 public:
-	ReverseDistanceComparator(Comparator comparator): comparator_(comparator) {
+	ReverseDistanceComparator() {
 	}
 
 	bool operator()(std::pair<distance_t, T> a, std::pair<distance_t, T> b) {
 		if(a.first != b.first)
 			return b.first < a.first;
 		else
-			return comparator_(b.second, a.second);
+			return b.second < a.second;
 	}
 };
 
@@ -28,14 +26,14 @@ class Dijkstra {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef std::map<VertexId, distance_t, typename Graph::Comparator> distances_map;
+	typedef std::map<VertexId, distance_t> distances_map;
 	//	typedef map<VertexId, distance_t>::iterator distances_map_iterator;
 	typedef typename distances_map::const_iterator distances_map_ci;
 
 	const Graph &graph_;
 	bool finished_;
 	distances_map distances_;
-	std::set<VertexId, typename Graph::Comparator> processed_vertices_;
+	std::set<VertexId> processed_vertices_;
 
 protected:
 	const Graph& graph() {
@@ -49,9 +47,7 @@ public:
 	}
 
 	Dijkstra(const Graph &graph) :
-			graph_(graph), finished_(false), distances_(
-					graph_.ReliableComparatorInstance()), processed_vertices_(
-					graph_.ReliableComparatorInstance()) {
+			graph_(graph), finished_(false) {
 	}
 
 	virtual ~Dijkstra() {
@@ -108,7 +104,7 @@ public:
 		processed_vertices_.clear();
 		init(start);
 		std::priority_queue<std::pair<distance_t, VertexId> , std::vector<std::pair<distance_t,
-				VertexId> > , ReverseDistanceComparator<distance_t, VertexId, typename Graph::Comparator> > q(graph_.ReliableComparatorInstance());
+				VertexId> > , ReverseDistanceComparator<distance_t, VertexId> > q;
 		q.push(make_pair(0, start));
 		TRACE("Priority queue initialized. Starting search");
 
@@ -175,7 +171,7 @@ public:
 		return result;
 	}
 
-	const std::set<VertexId, typename Graph::Comparator>& ProcessedVertices() {
+	const std::set<VertexId>& ProcessedVertices() {
 		return processed_vertices_;
 	}
 

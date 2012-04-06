@@ -19,7 +19,7 @@ template<class Graph>
 class CoverageIndex: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef restricted::map<EdgeId, int> map_type;
+	typedef map<EdgeId, int> map_type;
 
 private:
 

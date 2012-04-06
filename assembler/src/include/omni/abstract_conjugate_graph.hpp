@@ -273,7 +273,7 @@ private:
 	}
 
 	virtual vector<EdgeId> EdgesToDelete(const vector<EdgeId> &path) {
-		set<EdgeId, typename AbstractConjugateGraph::Comparator> edgesToDelete(this->ReliableComparatorInstance());
+		set<EdgeId> edgesToDelete;
 		edgesToDelete.insert(path[0]);
 		for (size_t i = 0; i + 1 < path.size(); i++) {
 			EdgeId e = path[i + 1];
@@ -284,7 +284,7 @@ private:
 	}
 
 	virtual vector<VertexId> VerticesToDelete(const vector<EdgeId> &path) {
-		set<VertexId, typename AbstractConjugateGraph::Comparator> verticesToDelete(this->ReliableComparatorInstance());
+		set<VertexId> verticesToDelete;
 		for (size_t i = 0; i + 1 < path.size(); i++) {
 			EdgeId e = path[i + 1];
 			VertexId v = EdgeStart(e);

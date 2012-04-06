@@ -16,7 +16,7 @@ public:
 
 private:
 	typedef typename Graph::VertexId OuterVertexId;
-	restricted::map<OuterVertexId, FlowVertexId> vertex_mapping_;
+	map<OuterVertexId, FlowVertexId> vertex_mapping_;
 	map<FlowVertexId, map<FlowVertexId, int>> capacities_;
 	set<FlowVertexId> vertices_;
 	size_t vertex_number_;
@@ -373,9 +373,9 @@ private:
 		return graph_.length(edge) <= max_length_ && !IsTip(edge);
 	}
 
-	set<EdgeId, typename Graph::Comparator> CollectUnusedEdges(set<VertexId, typename Graph::Comparator> component, FlowGraph<Graph> fg,
+	set<EdgeId> CollectUnusedEdges(set<VertexId> component, FlowGraph<Graph> fg,
 			const map<typename FlowGraph<Graph>::FlowVertexId, size_t> &colouring) {
-		set<EdgeId, typename Graph::Comparator> result(graph_.ReliableComparatorInstance());
+		set<EdgeId> result;
 		for (auto it_start = component.begin(); it_start != component.end();
 				++it_start) {
 			VertexId start = *it_start;
@@ -408,33 +408,33 @@ private:
 		return graph_.length(edge) >= uniqueness_length_;
 	}
 
-	bool IsInnerShortEdge(set<VertexId, typename Graph::Comparator> component, EdgeId edge) {
+	bool IsInnerShortEdge(set<VertexId> component, EdgeId edge) {
 		return !IsUnique(edge) && component.count(graph_.EdgeStart(edge)) == 1
 				&& component.count(graph_.EdgeEnd(edge)) == 1;
 	}
 
-	void ProcessShortEdge(FlowGraph<Graph> &fg, set<VertexId, typename Graph::Comparator> component,
+	void ProcessShortEdge(FlowGraph<Graph> &fg, set<VertexId> component,
 			EdgeId edge) {
 		if (IsInnerShortEdge(component, edge)) {
 			fg.AddEdge(graph_.EdgeStart(edge), graph_.EdgeEnd(edge));
 		}
 	}
 
-	void ProcessSource(FlowGraph<Graph> &fg, set<VertexId, typename Graph::Comparator> component,
+	void ProcessSource(FlowGraph<Graph> &fg, set<VertexId> component,
 			EdgeId edge) {
 		if (IsPlausible(edge) || IsUnique(edge)) {
 			fg.AddSource(graph_.EdgeEnd(edge), 1);
 		}
 	}
 
-	void ProcessSink(FlowGraph<Graph> &fg, set<VertexId, typename Graph::Comparator> component,
+	void ProcessSink(FlowGraph<Graph> &fg, set<VertexId> component,
 			EdgeId edge) {
 		if (IsPlausible(edge) || IsUnique(edge)) {
 			fg.AddSink(graph_.EdgeStart(edge), 1);
 		}
 	}
 
-	void ConstructFlowGraph(FlowGraph<Graph> &fg, set<VertexId, typename Graph::Comparator> component) {
+	void ConstructFlowGraph(FlowGraph<Graph> &fg, set<VertexId> component) {
 		for (auto it = component.begin(); it != component.end(); ++it) {
 			fg.AddVertex(*it);
 		}
@@ -471,8 +471,7 @@ public:
 		for (LongEdgesExclusiveSplitter<Graph> splitter(graph_,
 				uniqueness_length_); !splitter.Finished();) {
 			auto component_vector = splitter.NextComponent();
-			set<VertexId, typename Graph::Comparator> component(component_vector.begin(),
-					component_vector.end(), graph_.ReliableComparatorInstance());
+			set<VertexId> component(component_vector.begin(), component_vector.end());
 			FlowGraph<Graph> fg;
 			ConstructFlowGraph(fg, component);
 //			fg.Print();
@@ -486,10 +485,9 @@ public:
 					fg);
 			map<typename FlowGraph<Graph>::FlowVertexId, size_t> colouring =
 					component_finder.ColourComponents();
-			set<EdgeId, typename Graph::Comparator> to_remove = CollectUnusedEdges(component, fg,
+			set<EdgeId> to_remove = CollectUnusedEdges(component, fg,
 					colouring);
-			for (SmartSetIterator<Graph, EdgeId, typename Graph::Comparator> it(graph_, to_remove.begin(),
-					to_remove.end(), graph_.ReliableComparatorInstance()); !it.IsEnd(); ++it) {
+			for (SmartSetIterator<Graph, EdgeId> it(graph_, to_remove.begin(), to_remove.end()); !it.IsEnd(); ++it) {
 				TRACE("Removing Edge");
 				edge_remover_.DeleteEdge(*it);
 			}

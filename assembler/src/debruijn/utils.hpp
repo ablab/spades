@@ -696,14 +696,14 @@ class EtalonPairedInfoCounter {
 	size_t gap_;
 	size_t delta_;
 
-	void AddEtalonInfo(set<PairInfo<EdgeId>, omnigraph::PairInfoComparator<EdgeId, typename Graph::Comparator>>& paired_info, EdgeId e1, EdgeId e2,
+	void AddEtalonInfo(set<PairInfo<EdgeId>> & paired_info, EdgeId e1, EdgeId e2,
 			double d) {
 		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0, 0.);
 		paired_info.insert(pair_info);
 	}
 
 	void ProcessSequence(const Sequence& sequence,
-			set<PairInfo<EdgeId>, omnigraph::PairInfoComparator<EdgeId, typename Graph::Comparator>>& temporary_info) {
+			set<PairInfo<EdgeId>>& temporary_info) {
 		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
 		Seq<k + 1> left(sequence);
 		left = left >> 0;
@@ -756,10 +756,7 @@ public:
 
 	void FillEtalonPairedInfo(const Sequence& genome,
 			omnigraph::PairedInfoIndex<Graph>& paired_info) {
-		set<PairInfo<EdgeId>,
-				omnigraph::PairInfoComparator<EdgeId, typename Graph::Comparator>> temporary_info(
-				omnigraph::PairInfoComparator<EdgeId, typename Graph::Comparator>(
-						g_.ReliableComparatorInstance()));
+		set<PairInfo<EdgeId>> temporary_info;
 		ProcessSequence(genome, temporary_info);
 		ProcessSequence(!genome, temporary_info);
 		for (auto it = temporary_info.begin(); it != temporary_info.end();
@@ -976,7 +973,7 @@ template<class Graph>
 class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	restricted::map<EdgeId, size_t> quality_;
+	map<EdgeId, size_t> quality_;
 
 public:
 	template<size_t l>
@@ -1139,7 +1136,7 @@ public:
 	/*virtual*/ vector<VertexId> NextComponent() {
 		CountingDijkstra<Graph> cf(this->graph(), max_size_,
 				edge_length_bound_);
-		set<VertexId, typename Graph::Comparator> result_set(this->graph().ReliableComparatorInstance());
+		set<VertexId> result_set;
 		cf.run(this->graph().EdgeStart(edge_));
 		vector<VertexId> result_start = cf.ReachedVertices();
 		result_set.insert(result_start.begin(), result_start.end());

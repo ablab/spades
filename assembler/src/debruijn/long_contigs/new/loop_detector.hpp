@@ -133,7 +133,7 @@ bool PathIsOnlyLoop(BidirectionalPath& path, LoopDetector& detector, bool forwar
 	int start = forward ? path.size() - 1 : loopSize - 1;
 	int end = forward ? path.size() - loopSize : 0;
 
-	restricted::set<EdgeId> loopEdges;
+	set<EdgeId> loopEdges;
 
 	for (int i = start; i >= end; --i) {
 		loopEdges.insert(path[i]);

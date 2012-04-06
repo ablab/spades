@@ -259,7 +259,7 @@ public:
 //		cout << "oppa" << endl;
 //		if((OutgoingEdgeCount(v) == 1) && (IncomingEdgeCount(v) == 1)) {
 //			cout << "gopa " << endl;
-//			cout << GetUniqueOutgoingEdge(v) << endl;
+//			cout << GetUniqueOutgoingEdge(v) << graph_.length(it2->first)endl;
 //			cout << GetUniqueIncomingEdge(v) << endl;
 //			TRACE("Loop check: " << (GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v)));
 //			TRACE("Additional check: " << AdditionalCompressCondition(v));
