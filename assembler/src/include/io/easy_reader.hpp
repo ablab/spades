@@ -5,6 +5,7 @@
 #include "io/rc_reader_wrapper.hpp"
 #include "io/filtering_reader_wrapper.hpp"
 #include "io/careful_filtering_reader_wrapper.hpp"
+#include "io/single_read.hpp"
 
 namespace io {
 //todo refactor, and maybe merge them once again
@@ -79,39 +80,6 @@ public:
 			Init(filtered_reader_);
 		}
   }
-};
-
-class PairedPureEasyReader : public DelegatingReaderWrapper<io::PairedRead> {
-//	explicit PairedPureEasyReader(const PairedPureEasyReader& reader);
-//	void operator=(const PairedPureEasyReader& reader);
-
-	scoped_ptr<IReader<io::PairedRead>>  raw_reader_;
-	CarefulFilteringReaderWrapper<io::PairedRead> filtered_reader_;
-
-public:
-  explicit PairedPureEasyReader(const io::PairedRead::FilenamesType& filenames,
-                  size_t insert_size,
-                  bool change_read_order = false,
-                  OffsetType offset_type = PhredOffset)
-      : raw_reader_(new SeparateReader(filenames, insert_size, change_read_order, offset_type, false)),
-        filtered_reader_(*raw_reader_){
-	  Init(filtered_reader_);
-  }
-
-  explicit PairedPureEasyReader(const std::string& filename,
-                  size_t insert_size,
-                  bool change_read_order = false,
-                  OffsetType offset_type = PhredOffset)
-      : raw_reader_(new MixedReader(filename, insert_size, change_read_order, offset_type, false)),
-        filtered_reader_(*raw_reader_){
-	  Init(filtered_reader_);
-  }
-  /*
-   * Default destructor.
-   */
-  /* virtual */ ~PairedPureEasyReader() {
-  }
-
 };
 
 }

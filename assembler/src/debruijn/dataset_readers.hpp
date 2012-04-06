@@ -3,41 +3,49 @@
 #include <vector>
 #include <logging.hpp>
 #include <simple_tools.hpp>
+#include <io/easy_reader.hpp>
+#include <io/single_read.hpp>
 
 namespace debruijn_graph {
 
 typedef io::IReader<io::SingleRead> ReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
-typedef io::MultifileReader<io::SingleRead> MultiFileStream;
+typedef io::MultifileReader<io::PairedRead> MultiPairedStream;
+typedef io::MultifileReader<io::SingleRead> MultiSingleStream;
 
-
-auto_ptr<io::PairedEasyReader> paired_easy_reader(bool rc, size_t insert_size) {
-	size_t files_count = cfg::get().ds.paired_reads.size();\
-	if (files_count == 1) {
-		io::PairedEasyReader* reader = new io::PairedEasyReader(input_file(cfg::get().ds.paired_reads[0]), rc, insert_size);
-		return auto_ptr<io::PairedEasyReader>(reader);
+auto_ptr<PairedReadStream> paired_easy_reader(bool rc, size_t insert_size) {
+	vector<PairedReadStream*> streams;
+	for (auto it = cfg::get().ds.paired_reads.begin(); it != cfg::get().ds.paired_reads.end(); ++it) {
+		vector<string> filenames = *it;
+		io::PairedEasyReader* reader;
+		if (filenames.size() == 1) {
+			reader = new io::PairedEasyReader(input_file(filenames[0]), rc, insert_size);
+		} else if (filenames.size() == 2) {
+			auto files = make_pair(input_file((*it)[0]), input_file(filenames[1]));
+			reader = new io::PairedEasyReader(files, rc, insert_size);
+		} else {
+			VERIFY_MSG(false, "Can't handle the case with " << filenames.size() << " input files with paired reads");
+		}
+		streams.push_back(reader);
 	}
-	if (files_count == 2) {
-		auto files = make_pair(input_file(cfg::get().ds.paired_reads[0]), input_file(cfg::get().ds.paired_reads[1]));
-		io::PairedEasyReader* reader = new io::PairedEasyReader(files, rc, insert_size);
-		return auto_ptr<io::PairedEasyReader>(reader);
-	}
-	VERIFY_MSG(false, "Can't handle the case with " << ToString(cfg::get().ds.paired_reads.size()) << " input files with paired reads");
+	return auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
 }
 
-vector<ReadStream*> single_streams(bool rc, bool including_paired_reads) {
+auto_ptr<ReadStream> single_easy_reader(bool rc, bool including_paired_reads) {
 	vector<ReadStream*> streams;
 	if (including_paired_reads) {
 		for (auto it = cfg::get().ds.paired_reads.begin(); it != cfg::get().ds.paired_reads.end(); ++it) {
-			streams.push_back(new io::EasyReader(input_file(*it), rc));
-			DEBUG("Using input file: " << input_file(*it));
+			for (auto it2 = it->begin(); it2 != it->end(); ++it2) {
+				streams.push_back(new io::EasyReader(input_file(*it2), rc));
+				DEBUG("Using input file: " << input_file(*it2));
+			}
 		}
 	}
 	for (auto it = cfg::get().ds.single_reads.begin(); it != cfg::get().ds.single_reads.end(); ++it) {
 		streams.push_back(new io::EasyReader(input_file(*it), rc));
 		DEBUG("Using input file: " << input_file(*it));
 	}
-	return streams;
+	return auto_ptr<ReadStream>(new MultiSingleStream(streams));
 }
 
 }

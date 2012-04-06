@@ -177,7 +177,6 @@ void ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 		SingleReadStream* contigs_stream = 0) {
 	UnitedStream united_stream(paired_stream);
 
-	typedef io::MultifileReader<io::SingleRead> MultiFileStream;
 	vector<SingleReadStream*> streams;
 	if(!cfg::get().etalon_graph_mode) {
 		streams.push_back(&united_stream);
@@ -185,7 +184,7 @@ void ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 	if (single_stream) {
 		streams.push_back(single_stream);
 	}
-	MultiFileStream reads_stream(streams);
+	CompositeSingleReadStream reads_stream(streams);
 	ConstructGraphWithCoverage<k>(gp.g, gp.index, reads_stream, contigs_stream);
 
 	if (cfg::get().etalon_info_mode || cfg::get().etalon_graph_mode)

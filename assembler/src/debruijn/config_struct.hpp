@@ -297,7 +297,7 @@ struct debruijn_config {
 	};
 
 	struct dataset {
-		vector<std::string> paired_reads;
+		vector<vector<std::string> > paired_reads;
 		vector<std::string> single_reads;
 		boost::optional<std::string> jumping_first;
 		boost::optional<std::string> jumping_second;
@@ -578,8 +578,25 @@ inline void load(debruijn_config::dataset& ds,
 	using config_common::load;
 	using config_common::load_split;
 
-	load_split(ds.paired_reads, pt, "paired_reads");
-	load_split(ds.single_reads, pt, "single_reads");
+	//	load_split(ds.paired_reads, pt, "paired_reads");
+	//	load_split(ds.single_reads, pt, "single_reads");
+
+	vector<std::string> vec;
+	load(vec, pt, "paired_reads");
+	for (auto it = vec.begin(); it != vec.end(); ++it) {
+		vector<std::string> paired_library;
+		config_common::split(paired_library, *it);
+		if (paired_library.size() < 1 || paired_library.size() > 2) {
+			VERIFY_MSG(false, "Invalid library of " << paired_library.size() << " input files with paired reads: \"" << *it << "\"");
+		}
+		ds.paired_reads.push_back(paired_library);
+	}
+
+	vec.clear();
+	load(vec, pt, "single_reads");
+	for (auto it = vec.begin(); it != vec.end(); ++it) {
+		config_common::split(ds.single_reads, *it);
+	}
 
 	ds.jumping_first = pt.get_optional<std::string>("jumping_first");
 	ds.jumping_second = pt.get_optional<std::string>("jumping_second");
@@ -615,7 +632,7 @@ inline void load_reference_genome(debruijn_config::dataset& ds,
 		ds.reference_genome = genome.sequence();
 	}
 	else {
-		INFO("Reference genome (" + ds.reference_genome_filename + ") have non-ACGT characters. Skipping it.");
+		INFO("Reference genome (" + ds.reference_genome_filename + ") has non-ACGT characters. Skipping it");
 		ds.reference_genome = Sequence();
 		ds.reference_genome_filename = "";
 	}
