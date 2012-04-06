@@ -392,7 +392,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 					const_cast<char*>(arg2.c_str()),
 					const_cast<char*>(arg3.c_str()),
 					NULL };
-			execve("/usr/bin/sort", arg, NULL);
+			execvp("sort", arg);
 		} else if ( pids[j] < 0 ) {
 			TIMEDLN("Failed to fork. Exiting.");
 			exit(1);
