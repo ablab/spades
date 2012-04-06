@@ -92,8 +92,8 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
 
 def check_config(cfg, config_filename):
 
-    if (not cfg.has_key("error_correction")) and (not cfg.has_key("assembler")):
-        error("wrong config! You should specify either 'error_correction' section (for reads error correction) or 'assembler' one (for assembling) or both!")
+    if (not cfg.has_key("error_correction")) and (not cfg.has_key("assembly")):
+        error("wrong config! You should specify either 'error_correction' section (for reads error correction) or 'assembly' one (for assembling) or both!")
         return False
 
     if not cfg["common"].__dict__.has_key("output_dir"):
@@ -211,8 +211,8 @@ def main():
             if err_code:
                exit(err_code)
 
-    if cfg.has_key("assembler"):
-        spades_cfg = merge_configs(cfg["assembler"], cfg["common"])        
+    if cfg.has_key("assembly"):
+        spades_cfg = merge_configs(cfg["assembly"], cfg["common"])        
         if not spades_cfg.__dict__.has_key("generate_sam_files"):
             spades_cfg.__dict__["generate_sam_files"] = False
 
@@ -242,7 +242,7 @@ def main():
 
         spades_cfg.__dict__["working_dir"] = make_working_dir(spades_cfg.output_dir)
 
-        spades_cfg.__dict__["log_filename"] = path.join(spades_cfg.working_dir, "assembler.log")
+        spades_cfg.__dict__["log_filename"] = path.join(spades_cfg.working_dir, "assembly.log")
         spades_cfg.__dict__["result_contigs"] = path.join(spades_cfg.working_dir, spades_cfg.project_name + ".fasta")
         spades_cfg.__dict__["additional_contigs"] = path.join(spades_cfg.working_dir, "simplified_contigs.fasta")
 

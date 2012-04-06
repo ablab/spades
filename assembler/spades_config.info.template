@@ -20,7 +20,7 @@ error_correction
     single_cell         false    
 }
 
-assembler
+assembly
 {
     iterative_K         21 33 55
     paired_mode         true
