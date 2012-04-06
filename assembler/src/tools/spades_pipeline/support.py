@@ -2,7 +2,7 @@
 
 import sys
 
-# http://stackoverflow.com/a/616686/92396
+# Based on http://stackoverflow.com/a/616686/92396
 class Tee(object):
 
     def __init__(self, name, mode, console=True):
@@ -29,39 +29,8 @@ class Tee(object):
         self.stdout.flush()
 
 
-# # workaround on stdout & stderr redirecting
-# class redirected_stream:
-#     def __init__(self, file, stream=None):
-#         self.stream = stream
-#         self.file   = file
-
-#     def write(self, data):
-
-#         if self.stream is not None:
-#             self.stream.write(data)
-#             self.stream.flush()
-
-#         self.file.write(data)
-#         self.file.flush()
-
-#     def writelines(self, data):
-
-#         if self.stream is not None:
-#             self.stream.writelines(data)
-#             self.stream.flush()
-
-#         self.file.writelines(data)
-#         self.file.flush()
-
-
-#     def fileno(self):
-#         if self.stream is not None:
-#             return self.stream.fileno()
-
-#         return self.file.fileno()
-
 class spades_error:
-    def __init__(self, code, err_str = ""):
+    def __init__(self, code, err_str=""):
         self.code    = code
         self.err_str = err_str
 
@@ -71,7 +40,7 @@ def error(err_str, prefix="== Error == ", code=1):
 #TODO: error log -> log
 #TODO: os.sytem gives error -> stop
 
-def sys_call(cmd, cwd = None):
+def sys_call(cmd, cwd=None):
 
     import shlex
     import time
@@ -80,22 +49,22 @@ def sys_call(cmd, cwd = None):
 
     cmd_list = shlex.split(cmd)
 
-    proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd = cwd)
+    proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd)
 
     while not proc.poll():
-        sys.stdout.write(proc.stdout.readline())
+        print proc.stdout.readline()
         time.sleep(0)
-
-        if proc.returncode is not None:
+        if proc.returncode:
             break
 
-    print proc.stdout.readlines()
+    for line in proc.stdout.readlines():
+        print line
     proc.communicate()
 
-    if proc.returncode != 0:
-        error("system call for: \"" + cmd + "\" finished abnormally, err code:" + str(proc.returncode))
+    if proc.returncode:
+        error('system call for: "%s" finished abnormally, err code: %d' % (cmd, proc.returncode))
 
-def question_with_timer(question, seconds, default = 'y'):
+def question_with_timer(question, seconds, default='y'):
     import time
     import curses
 
@@ -110,11 +79,12 @@ def question_with_timer(question, seconds, default = 'y'):
     stdscr = curses.initscr()
     stdscr.nodelay(True)
     curses.noecho()
-    answer = default    
+    answer = default
 
-    default_str = "[Y/n]"
-    if default == 'n':   
-        default_str = "[y/N]" 
+    if default == 'n':
+        default_str = "[y/N]"
+    else:
+        default_str = "[Y/n]"
     question[-1] += " " + default_str 
 
     try:
@@ -124,7 +94,7 @@ def question_with_timer(question, seconds, default = 'y'):
             left = t.get_left()
             if left <= 0:
                 break
-            stdscr.addstr(len(question), 0, "Seconds left: %s " % str(left).zfill(2))
+            stdscr.addstr(len(question), 0, "Seconds left: %02d " % left)
             c = stdscr.getch()
             if c == ord('y') :
                 answer = 'y'            
