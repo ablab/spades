@@ -1,35 +1,64 @@
 #!/usr/bin/env python
 
-# workaround on stdout & stderr redirecting
-class redirected_stream:
-    def __init__(self, file, stream=None):
-        self.stream = stream
-        self.file   = file
+import sys
+
+# http://stackoverflow.com/a/616686/92396
+class Tee(object):
+
+    def __init__(self, name, mode, console=True):
+        self.file = open(name, mode)
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+        self.console = console
+        sys.stdout = self
+        sys.stderr = self
+
+    def free(self):
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+        self.file.close()
 
     def write(self, data):
-
-        if self.stream is not None:
-            self.stream.write(data)
-            self.stream.flush()
-
         self.file.write(data)
+        if self.console:
+            self.stdout.write(data)
+        self.flush()
+
+    def flush(self):
         self.file.flush()
-
-    def writelines(self, data):
-
-        if self.stream is not None:
-            self.stream.writelines(data)
-            self.stream.flush()
-
-        self.file.writelines(data)
-        self.file.flush()
+        self.stdout.flush()
 
 
-    def fileno(self):
-        if self.stream is not None:
-            return self.stream.fileno()
+# # workaround on stdout & stderr redirecting
+# class redirected_stream:
+#     def __init__(self, file, stream=None):
+#         self.stream = stream
+#         self.file   = file
 
-        return self.file.fileno()
+#     def write(self, data):
+
+#         if self.stream is not None:
+#             self.stream.write(data)
+#             self.stream.flush()
+
+#         self.file.write(data)
+#         self.file.flush()
+
+#     def writelines(self, data):
+
+#         if self.stream is not None:
+#             self.stream.writelines(data)
+#             self.stream.flush()
+
+#         self.file.writelines(data)
+#         self.file.flush()
+
+
+#     def fileno(self):
+#         if self.stream is not None:
+#             return self.stream.fileno()
+
+#         return self.file.fileno()
 
 class spades_error:
     def __init__(self, code, err_str = ""):
@@ -60,7 +89,7 @@ def sys_call(cmd, cwd = None):
         if proc.returncode is not None:
             break
 
-    sys.stdout.writelines(proc.stdout.readlines())
+    print proc.stdout.readlines()
     proc.communicate()
 
     if proc.returncode != 0:
