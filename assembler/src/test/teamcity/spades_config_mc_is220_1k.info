@@ -2,11 +2,19 @@ project_name        ECOLI_IS220_QUAKE_1K
 output_dir          ./data/debruijn/
 output_to_console   true
 developer_mode      false
+compilation_dir     ./precompiled/ECOLI_IS220_QUAKE_1K
 
-spades
+assembly
 {
-  iterative_K         21 55
-  paired_mode         true
-  dataset             $cfg/../../../configs/debruijn/datasets_archive/ECOLI_IS220_QUAKE_1K.info
-  measure_quality     true
+    iterative_K         21 55
+    paired_mode         true
+    dataset             $cfg/../../../configs/debruijn/datasets_archive/ECOLI_IS220_QUAKE_1K.info
+    generate_sam_files  true
+}
+
+quality_assessment      ; optional. If section exists than spades.py evaluates quality of the final contigs 
+{
+    reference           $cfg/../../../test_dataset/E.coli/MG1655-K12.first1K.fasta.gz
+    genes               $cfg/../../../test_dataset/E.coli/genes.first1K.txt
+    operons             $cfg/../../../test_dataset/E.coli/operons.first1K.txt
 }
