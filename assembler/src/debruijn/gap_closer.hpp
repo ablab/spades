@@ -221,7 +221,7 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
 
 template<size_t k>
 void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
-	auto_ptr<io::PairedEasyReader> stream = paired_easy_reader(true, 0);
+	auto stream = paired_easy_reader(true, 0);
 	INFO("SUBSTAGE == Closing gaps");
 	if (use_extended_mapper) {
 		typedef NewExtendedSequenceMapper<k + 1, Graph> SequenceMapper;

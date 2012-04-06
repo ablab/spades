@@ -100,7 +100,7 @@ typename boost::disable_if_c<
 }
 
 template<class T>
-void load(std::vector<T>& vec, boost::property_tree::ptree const& pt,
+void load_items(std::vector<T>& vec, boost::property_tree::ptree const& pt,
 		string const& key, bool complete) {
 	string vector_key = key + string(".count");
 	if (complete || pt.find(vector_key) != pt.not_found()) {
@@ -115,20 +115,40 @@ void load(std::vector<T>& vec, boost::property_tree::ptree const& pt,
 	}
 }
 
-void inline load_split(vector<string>& vec, boost::property_tree::ptree const& pt, string const& key) {
-	boost::optional<string> values = pt.get_optional<string>(key);
-	if (values) {
-		std::istringstream iss(*values);
-		while (iss) {
-			std::string value;
-			iss >> value;
-			if (value.length()) {
-				vec.push_back(value);
-			}
+void inline split(vector<string>& vec, string const& space_separated_list) {
+	std::istringstream iss(space_separated_list);
+	while (iss) {
+		std::string value;
+		iss >> value;
+		if (value.length()) {
+			vec.push_back(value);
 		}
 	}
 }
 
+void inline load_split(vector<string>& vec, boost::property_tree::ptree const& pt, string const& key) {
+	boost::optional<string> values = pt.get_optional<string>(key);
+	if (values) {
+		split(vec, *values);
+	}
+}
+
+template<class T>
+void inline load(vector<T>& vec, boost::property_tree::ptree const& pt, string const& key, bool complete) {
+	boost::optional<T> value = pt.get_optional<T>(key);
+	if (value) {
+		vec.push_back(*value);
+		return;
+	}
+	for (size_t i = 0;; i++) {
+		value = pt.get_optional<T>(key + "." + ToString(i));
+		if (value) {
+			vec.push_back(*value);
+		} else if (i > 0) {
+			return;
+		}
+	}
+}
 
 template<class T>
 void load(T& value, boost::property_tree::ptree const& pt, string const& key) {

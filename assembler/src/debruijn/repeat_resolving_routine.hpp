@@ -211,7 +211,7 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 	{
 		if (cfg::get().sw.align_original_reads){
 			if (cfg::get().sw.original_first && cfg::get().sw.original_second){
-				auto_ptr<io::PairedEasyReader> paired_reads = paired_easy_reader(false, 0);
+				auto paired_reads = paired_easy_reader(false, 0);
 				io::PairedEasyReader original_paired_reads(
 								make_pair(input_file(*cfg::get().sw.original_first),
 										input_file(*cfg::get().sw.original_second)),
@@ -227,10 +227,8 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 		}
 		else {
 
-			auto_ptr<io::PairedEasyReader> paired_reads = paired_easy_reader(false, 0);
-
-			io::MultifileReader<io::SingleRead> single_reads(single_streams(false, false));
-
+			auto paired_reads = paired_easy_reader(false, 0);
+			auto single_reads = single_easy_reader(false, false);
 
 			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
@@ -239,7 +237,7 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 			if (cfg::get().sw.align_only_paired)
 				Aligner.AlignPairedReads(*paired_reads, cfg::get().output_dir+"align_before_RR.sam");
 			else
-				Aligner.AlignReads(*paired_reads, single_reads, cfg::get().output_dir+"align_before_RR.sam");
+				Aligner.AlignReads(*paired_reads, *single_reads, cfg::get().output_dir+"align_before_RR.sam");
 
 		}
 	}
@@ -253,7 +251,7 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 	{
 		if (cfg::get().sw.align_original_reads){
 			if (cfg::get().sw.original_first && cfg::get().sw.original_second){
-				auto_ptr<io::PairedEasyReader> paired_reads = paired_easy_reader(false, 0);
+				auto paired_reads = paired_easy_reader(false, 0);
 				io::PairedEasyReader original_paired_reads(
 								make_pair(input_file(*cfg::get().sw.original_first),
 										input_file(*cfg::get().sw.original_second)),
@@ -267,9 +265,8 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 			}
 		}
 		else {
-			auto_ptr<io::PairedEasyReader> paired_reads = paired_easy_reader(false, 0);
-			io::MultifileReader<io::SingleRead> single_reads(single_streams(false, false));
-
+			auto paired_reads = paired_easy_reader(false, 0);
+			auto single_reads = single_easy_reader(false, false);
 
 			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
@@ -278,7 +275,7 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 			if (cfg::get().sw.align_only_paired)
 				Aligner.AlignPairedReads(*paired_reads, cfg::get().output_dir+"align_after_RR.sam");
 			else
-				Aligner.AlignReads(*paired_reads, single_reads, cfg::get().output_dir+"align_after_RR.sam");
+				Aligner.AlignReads(*paired_reads, *single_reads, cfg::get().output_dir+"align_after_RR.sam");
 
 
 		}
@@ -468,7 +465,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g, false);
 	size_t iters = 3; // TODO Constant 3? Shouldn't it be taken from config?
 	for (size_t i = 0; i < iters; ++i) {
-		INFO("ClipTipping iteration " << i << " (0-indexed) out of " << iters << ":");
+		INFO("Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
 
         ClipTipsForResolver(resolved_gp.g);
 
@@ -540,9 +537,10 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			consensus_folder = cfg::get().output_dir
 					+ "consensus_before_resolve/";
 			OutputSingleFileContigs(origin_gp.g, consensus_folder);
-			vector<ReadStream*> streams = single_streams(true, true);
-			SelectReadsForConsensusBefore<K, graph_pack>(origin_gp, origin_gp.g,
-					labels_after, origin_gp.index, streams, consensus_folder);
+			VERIFY_MSG(false, "Due to compilation reasons, need_consensus is deprecated.");
+//			vector<ReadStream*> streams = single_streams(true, true);
+//			SelectReadsForConsensusBefore<K, graph_pack>(origin_gp, origin_gp.g,
+//					labels_after, origin_gp.index, streams, consensus_folder);
 
 		}
 

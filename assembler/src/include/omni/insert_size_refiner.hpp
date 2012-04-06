@@ -5,7 +5,7 @@
 namespace omnigraph {
 
 template<class graph_pack>
-void refine_insert_size(io::PairedEasyReader& stream, graph_pack& gp, size_t edge_length_threshold) {
+void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, size_t edge_length_threshold) {
 	enum {
 		k = graph_pack::k_value
 	};

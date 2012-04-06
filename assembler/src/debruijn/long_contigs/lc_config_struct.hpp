@@ -58,8 +58,8 @@ struct lc_config
 
 	    std::string param_set;
 
-	    std::vector<paired_lib_t> paired_lib;
-	    std::vector<etalon_paired_lib_t> etalon_paired_lib;
+//	    std::vector<paired_lib_t> paired_lib;
+//	    std::vector<etalon_paired_lib_t> etalon_paired_lib;
 	};
 
 
@@ -292,8 +292,8 @@ inline void load(lc_config::dataset& ds, boost::property_tree::ptree const& pt, 
 
 	load(ds.graph_file, pt, "graph_file");
 	load(ds.param_set, pt, "param_set");
-	load(ds.paired_lib, pt, "real_libs");
-	load(ds.etalon_paired_lib, pt, "etalon_libs");
+//	load(ds.paired_lib, pt, "real_libs");
+//	load(ds.etalon_paired_lib, pt, "etalon_libs");
 }
 
 

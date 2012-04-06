@@ -244,77 +244,77 @@ void LoadFromFile(std::string fileName, Graph& g, IdTrackHandler<Graph>& intIds,
 	INFO("Graph read");
 }
 
-template<size_t k>
-void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1, Graph>& mapper, const Sequence& genome, PairedInfoIndices& pairedInfos) {
-	for (auto el = lc_cfg::get().ds.etalon_paired_lib.begin(); el != lc_cfg::get().ds.etalon_paired_lib.end(); ++el) {
-		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
+//template<size_t k>
+//void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1, Graph>& mapper, const Sequence& genome, PairedInfoIndices& pairedInfos) {
+//	for (auto el = lc_cfg::get().ds.etalon_paired_lib.begin(); el != lc_cfg::get().ds.etalon_paired_lib.end(); ++el) {
+//		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
+//
+//		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, el->is_delta, el->de_delta, params.ps.es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
+//		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, el->de_delta, genome);
+//	}
+//}
 
-		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, el->is_delta, el->de_delta, params.ps.es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
-		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, el->de_delta, genome);
-	}
-}
-
-template<size_t k>
-void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos, KmerMapper<k+1, Graph>& mapper,
-		bool useNewMetrics) {
-	//PairedInfoSimpleSymmertrizer sym(g);
-
-	for (auto rl = lc_cfg::get().ds.paired_lib.begin(); rl != lc_cfg::get().ds.paired_lib.end(); ++rl) {
-		size_t insertSize = rl->insert_size;
-		size_t readSize = rl->read_size;
-		size_t delta = rl->is_delta;
-		size_t de_delta = rl->de_delta;
-		size_t var = rl->var;
-		string dataset = lc_cfg::get().dataset_name;
-		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g)));
-
-		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
-
-		if (rl->precounted && !lc_cfg::get().paired_info_only) {
-			//Reading saved paired info
-		    typename ScannerTraits<Graph>::Scanner scanner(g, conj_IntIds);
-			ScanPairedIndex(rl->precounted_path, scanner, *pairedInfos.back().pairedInfoIndex);
-			CheckPairedInfo(g, *pairedInfos.back().pairedInfoIndex, insertSize - 2 * readSize + K);
-
-			pairedInfos.back().raw = new PairedInfoIndex<Graph>(g, 0);
-			if (!lc_cfg::get().paired_info_only) {
-				//dataScanner.loadPaired(rl->ds.raw, *pairedInfos.back().raw);
-		
-				pairedInfos.back().has_advanced = rl->has_advanced;
-				if (rl->has_advanced) {
-					pairedInfos.back().advanced = new PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g, 0));
-					ScanPairedIndex(rl->precounted_path, scanner, *pairedInfos.back().advanced->pairedInfoIndex);
-				}
-				else {
-					pairedInfos.back().advanced = 0;
-				}
-			}
-		}
-		else {
-			string reads_filename_1 = rl->first;
-			string reads_filename_2 = rl->second;
-
-			checkFileExistenceFATAL(reads_filename_1);
-			checkFileExistenceFATAL(reads_filename_2);
-
-			io::PairedEasyReader stream(
-					std::make_pair(reads_filename_1, reads_filename_2),
-					rl->insert_size);
-
-
-			if (useNewMetrics) {
-				FillPairedIndexWithReadCountMetric<k>(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
-			} else {
-				FillPairedIndexWithProductMetric<k>(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
-			}
-		}
-		INFO("Done");
-
-//		if (lc_cfg::get().syminfo) {
-//			sym.MakeSymmetricInfo(pairedInfos.back());
+//template<size_t k>
+//void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos, KmerMapper<k+1, Graph>& mapper,
+//		bool useNewMetrics) {
+//	//PairedInfoSimpleSymmertrizer sym(g);
+//
+//	for (auto rl = lc_cfg::get().ds.paired_lib.begin(); rl != lc_cfg::get().ds.paired_lib.end(); ++rl) {
+//		size_t insertSize = rl->insert_size;
+//		size_t readSize = rl->read_size;
+//		size_t delta = rl->is_delta;
+//		size_t de_delta = rl->de_delta;
+//		size_t var = rl->var;
+//		string dataset = lc_cfg::get().dataset_name;
+//		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g)));
+//
+//		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
+//
+//		if (rl->precounted && !lc_cfg::get().paired_info_only) {
+//			//Reading saved paired info
+//		    typename ScannerTraits<Graph>::Scanner scanner(g, conj_IntIds);
+//			ScanPairedIndex(rl->precounted_path, scanner, *pairedInfos.back().pairedInfoIndex);
+//			CheckPairedInfo(g, *pairedInfos.back().pairedInfoIndex, insertSize - 2 * readSize + K);
+//
+//			pairedInfos.back().raw = new PairedInfoIndex<Graph>(g, 0);
+//			if (!lc_cfg::get().paired_info_only) {
+//				//dataScanner.loadPaired(rl->ds.raw, *pairedInfos.back().raw);
+//
+//				pairedInfos.back().has_advanced = rl->has_advanced;
+//				if (rl->has_advanced) {
+//					pairedInfos.back().advanced = new PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g, 0));
+//					ScanPairedIndex(rl->precounted_path, scanner, *pairedInfos.back().advanced->pairedInfoIndex);
+//				}
+//				else {
+//					pairedInfos.back().advanced = 0;
+//				}
+//			}
 //		}
-	}
-}
+//		else {
+//			string reads_filename_1 = rl->first;
+//			string reads_filename_2 = rl->second;
+//
+//			checkFileExistenceFATAL(reads_filename_1);
+//			checkFileExistenceFATAL(reads_filename_2);
+//
+//			io::PairedEasyReader stream(
+//					std::make_pair(reads_filename_1, reads_filename_2),
+//					rl->insert_size);
+//
+//
+//			if (useNewMetrics) {
+//				FillPairedIndexWithReadCountMetric<k>(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
+//			} else {
+//				FillPairedIndexWithProductMetric<k>(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
+//			}
+//		}
+//		INFO("Done");
+//
+////		if (lc_cfg::get().syminfo) {
+////			sym.MakeSymmetricInfo(pairedInfos.back());
+////		}
+//	}
+//}
 
 //void SavePairedInfo(const Graph& g, IdTrackHandler<Graph>& intIds, PairedInfoIndices& pairedInfos, const std::string& fileNamePrefix,
 //		bool advEstimator = false) {
