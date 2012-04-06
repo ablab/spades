@@ -622,7 +622,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 	size_t max_comparable_path = *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var);
 	auto first_edge = first_info.second;
 	auto first_weight = first_info.weight;
-	if (first_info.d * second_info.d < 0.0001)
+	if (first_info.d < 0.0001 || second_info.d < 0.0001)
 		return 0;
 
 	auto second_edge = second_info.second;
