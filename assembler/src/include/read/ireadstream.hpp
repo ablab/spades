@@ -147,16 +147,13 @@ inline int determine_offset(const string& filename) {
 	Read r;
 	while (!stream.eof() && count++ < 10000) {
 		stream >> r;
-		Sequence s = r.getSequence();
 		std::string q_str = r.getQualityString();
 		for (size_t i = 0; i < q_str.size(); ++i) {
 			int q_val = q_str[i];
-			if (q_val - 64 < 0)
+			if (q_val < 59)
 				return 33;
-			if (s[i] == 'N') {
-				VERIFY(q_val - 2 == 33 || q_val - 2 == 64);
-				return q_val - 2;
-			}
+			if (q_val > 74)
+				return 64;
 		}
 	}
 	return -1;
