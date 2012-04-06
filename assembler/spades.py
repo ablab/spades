@@ -85,9 +85,9 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
         subst_dict["gap_closer_enable"] = "false"
 
     if prev_K:
-        subst_dict["use_additional_contigs"] = "false"
-    else:
         subst_dict["use_additional_contigs"] = "true"
+    else:
+        subst_dict["use_additional_contigs"] = "false"
 
     substitute_params(filename, subst_dict)
 
