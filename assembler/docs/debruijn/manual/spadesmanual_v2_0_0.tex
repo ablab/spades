@@ -50,12 +50,11 @@
 \maketitle
 
 {\spades} stands for St.~Petersburg genome assembler.
-It is intended for both single cell and standard (multicell) 
-assemblies. {\spades} comes with error correction tool called 
-BayesHammer. This manual will help you to install and run
-{\spades}.
-
-The latest version of the manual can be downloaded at \url{http://bioinf.spbau.ru/spades}.
+It is intended for both single cell MDA and standard (multicell) 
+assemblies. 
+%{\spades} comes with error correction tool called BayesHammer. 
+This manual will help you to install and run
+{\spades}. The latest version of the manual can be downloaded at \url{http://bioinf.spbau.ru/spades}.
 
 
 \renewcommand{\contentsname}{}
@@ -71,7 +70,7 @@ The latest version of the manual can be downloaded at \url{http://bioinf.spbau.r
 \subsection{Notation}
 {\spades} works with single and forward-reverse paired end reads.
 The following picture explains the notions of 
-read size, distance, gap, and insert length
+read length, distance, gap, and insert size
 for forward-reverse paired end reads.
 
 \begin{center}
@@ -88,16 +87,18 @@ for forward-reverse paired end reads.
 \foreach \x in {0, 3, 7, 10}
   \draw[dashed,gray] (\x,3) -- (\x,-1.5);
 
-\foreach \f/\s/\y/\t in {0/3/0.5/read length, 7/10/0.5/read length, 3/7/0/gap, 0/7/-0.5/distance, 0/10/-1/insert length}
+\foreach \f/\s/\y/\t in {0/3/0.5/read length, 7/10/0.5/read length, 3/7/0/gap, 0/7/-0.5/distance, 0/10/-1/insert size}
 \path[<->,draw] (\f,\y) -- node[fill=white,inner sep=1pt,rectangle] {\t} (\s,\y);
 \end{tikzpicture}
 \end{center}
 
 \subsection{Config files and commands}
 Config files and commands are given in gray boxes. 
-Note that the text can be copy-pasted directly from this document.
-Note also that all the links and all the colored text in the manual are clickable.
-In config files, parts of lines starting with a semicolon are just comments.
+In config files, the part of a line starting with a semicolon is a comment.
+
+Note that the text can be copy-pasted directly from this document
+and that all the links and all the colored text in the manual are clickable.
+
 
 \section{Requirements}
 \subsection{Operating System}
@@ -112,10 +113,8 @@ Correcting errors in these datasets requires about 70~Gb of RAM.
 These datasets can be found at \url{http://spades.bioinf.spbau.ru/spades_test_datasets}.
 
 \section{Installing {\spades}}
-\todo[inline]{are we going to support manual installation (with installprereqs and so on)?}
-
 \subsection{Installing Debian package (for Debian, Mint, Ubuntu, etc)}
-First add the repository containing {\spades} by inserting the following line
+First, add the repository containing {\spades} by inserting the following line
 to the file {\tt /etc/apt/sources.list}
 \begin{lstlisting}
 deb http://debian.bioinf.spbau.ru /
@@ -128,28 +127,21 @@ sudo apt-get install spades
 \subsection{Installing RPM package (for CentOS, Fedora, Mandriva, Red Hat, SUSE, etc)}
 \todo[inline]{to be written}
 
-\todo[inline]{what about other types of Linux?}
-
 \subsection{Testing your installation}
 To check your installation type
 \begin{lstlisting}
 spades.py
 \end{lstlisting}
-This runs {\spades} on a toy dataset (first 1,000 bp of {\ecoli}) that {\spades} comes with. If the installation was successfull you will see the following lines in the end of the run.\todo{Lyosha, vsyo verno?}
+This runs {\spades} on a toy dataset (first 1,000 bp of {\ecoli}) that {\spades} comes with. If the installation was successfull you will see the following lines in the end of the run.\todo{update box}
 \begin{lstlisting}
-blah
+blah blah blah
 \end{lstlisting}
 
 \section{Input format}
 {\spades} accepts single reads as well as forward-reverse paired end reads
 in FASTA{\todo{Lyosha, verno?}} and FASTQ format. The number of files with single reads may be arbitrary while paired end reads should be organized into one or two files. In a single file, each left read should be followed by its mate right read. In case of two files, the first file should contain all left reads while
 the second one should contain all the corresponding right reads in exactly the same order.
-
-All the files may be gzipped.
-
-\todo[inline]{Prjibel, skripti?}
-
-
+All the files may be compressed.
 
 \section{Running {\spades}}\label{sec:running}
 To run {\spades} type
@@ -157,13 +149,13 @@ To run {\spades} type
 ./spades.py <config.info>
 \end{lstlisting}
 Note that the script requires {\tt python} version~2.6.
-If your default {\tt python} version is lower  type
+If your default {\tt python} version is lower, type
 \begin{lstlisting}
 python26 ./spades.py <config.info>
 \end{lstlisting}
 By default (i.e., if no config file is given) {\spades} uses the file {\tt spades\_config.info}. 
 Below we first give an example of a config file
-and then explain its contents in detail.\todo{Lyosha, ya ubral developer mode flag. Nichego?}
+and then explain its contents in detail.
 
 \begin{lstlisting}													
 ; all paths are relative to the working directory but you can also 
