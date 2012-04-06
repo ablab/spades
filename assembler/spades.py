@@ -121,18 +121,16 @@ def check_config(cfg, config_filename):
 
 def main():
 
-    CONFIG_FILE = spades_home + "spades_config.info"
-
-    if os.path.isfile("spades_config.info") :
+    CONFIG_FILE = ""
+    if os.path.isfile("spades_config.info"):
         CONFIG_FILE = "spades_config.info"
-
-    if len(sys.argv) > 1 :
-        if os.path.isfile(sys.argv[1]):
-            CONFIG_FILE = sys.argv[1]
-        else:
-            print("Usage :")
-            print("   ./spades.py <config file>")
-            return
+    elif os.path.isfile(os.path.join(spades_home, "spades_config.info")):
+        CONFIG_FILE = os.path.join(spades_home, "spades_config.info")
+    if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
+       CONFIG_FILE = sys.argv[1]
+    if not CONFIG_FILE:
+        print >> sys.stderr, "Usage : python ", sys.argv[0], " <config file>"
+        return
 
     print("Using config file: " + CONFIG_FILE)
     os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))
