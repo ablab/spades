@@ -92,8 +92,8 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
 
 def check_config(cfg, config_filename):
 
-    if (not cfg.has_key("bh")) and (not cfg.has_key("spades")):
-        error("wrong config! You should specify either 'bh' section (for reads error correction) or 'spades' one (for assembling) or both!")
+    if (not cfg.has_key("error_correction")) and (not cfg.has_key("assembler")):
+        error("wrong config! You should specify either 'error_correction' section (for reads error correction) or 'assembler' one (for assembling) or both!")
         return False
 
     if not cfg["common"].__dict__.has_key("output_dir"):
@@ -142,8 +142,8 @@ def main():
         return
 
     bh_dataset_filename = ""
-    if cfg.has_key("bh"):
-        bh_cfg = cfg["bh"]
+    if cfg.has_key("error_correction"):
+        bh_cfg = cfg["error_correction"]
 
         if not bh_cfg.__dict__.has_key("output_dir"):
             bh_cfg.__dict__["output_dir"] = path.join(path.expandvars(cfg["common"].output_dir), "corrected")
@@ -153,7 +153,7 @@ def main():
         if not bh_cfg.__dict__.has_key("dataset_name"):
             bh_cfg.__dict__["dataset_name"] = "dataset"
         
-        bh_cfg = merge_configs(cfg["bh"], cfg["common"])
+        bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
         
         bh_cfg.__dict__["working_dir"] = path.join(bh_cfg.output_dir, "tmp")
 
@@ -178,7 +178,7 @@ def main():
             if not os.path.exists(bh_cfg.working_dir):
                 os.makedirs(bh_cfg.working_dir)
 
-            log_filename = path.join(bh_cfg.output_dir, "bh.log")
+            log_filename = path.join(bh_cfg.output_dir, "correction.log")
             bh_cfg.__dict__["log_filename"] = log_filename
 
             shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
@@ -211,8 +211,8 @@ def main():
             if err_code:
                exit(err_code)
 
-    if cfg.has_key("spades"):
-        spades_cfg = merge_configs(cfg["spades"], cfg["common"])        
+    if cfg.has_key("assembler"):
+        spades_cfg = merge_configs(cfg["assembler"], cfg["common"])        
         if not spades_cfg.__dict__.has_key("generate_sam_files"):
             spades_cfg.__dict__["generate_sam_files"] = False
 
@@ -242,7 +242,7 @@ def main():
 
         spades_cfg.__dict__["working_dir"] = make_working_dir(spades_cfg.output_dir)
 
-        spades_cfg.__dict__["log_filename"] = path.join(spades_cfg.working_dir, "spades.log")
+        spades_cfg.__dict__["log_filename"] = path.join(spades_cfg.working_dir, "assembler.log")
         spades_cfg.__dict__["result_contigs"] = path.join(spades_cfg.working_dir, spades_cfg.project_name + ".fasta")
         spades_cfg.__dict__["additional_contigs"] = path.join(spades_cfg.working_dir, "simplified_contigs.fasta")
 
@@ -265,8 +265,8 @@ def main():
 
         err_code = 0
         try:
-            if cfg.has_key("quality"):
-                run_spades(spades_cfg, cfg["quality"])
+            if cfg.has_key("quality_assessment"):
+                run_spades(spades_cfg, cfg["quality_assessment"])
             else:
                 run_spades(spades_cfg)
         except support.spades_error as err:
@@ -298,7 +298,7 @@ def run_bh(cfg):
     execution_home = path.join(cfg.compilation_dir, 'build_hammer')
     command = path.join(execution_home, "hammer", "hammer") + " " + path.abspath(cfg_file_name)
 
-    print("\n== Running BayesHammer: " + command + "\n")
+    print("\n== Running error correction tool: " + command + "\n")
     support.sys_call(command)
 
     import bh_aux
