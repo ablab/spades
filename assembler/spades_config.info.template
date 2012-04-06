@@ -6,22 +6,7 @@ output_to_console   true                              ; optional. Default is tru
 developer_mode      false                             ; optional. Default is false
 compilation_dir                                       ; optional. Default is ~/.spades/precompiled/
 
-spades
-{
-    iterative_K         21 33 55
-    paired_mode         true
-    dataset             $cfg/test_dataset/ECOLI_1K.info ; not used if run with bh
-    generate_sam_files  true                          ; optional. Default is false  
-}
-
-quality   ; optional. If section exists than spades.py measures quality of final contigs 
-{
-    reference           $cfg/test_dataset/E.coli/MG1655-K12.first1K.fasta.gz ; optional
-    genes               $cfg/test_dataset/E.coli/genes.first1K.txt           ; optional
-    operons             $cfg/test_dataset/E.coli/operons.first1K.txt         ; optional
-}
-
-bh
+error_correction
 {                       ; wildcards can be used here:
     input_reads         $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
     output_dir                                        ; optional. Global output_dir is used if not specified
@@ -33,4 +18,19 @@ bh
 
     dataset_name        ECOLI_1K                ; optional. Default is "dataset"
     single_cell         false    
+}
+
+assembler
+{
+    iterative_K         21 33 55
+    paired_mode         true
+    dataset             $cfg/test_dataset/ECOLI_1K.info ; not used if run with bh
+    generate_sam_files  true                          ; optional. Default is false  
+}
+
+quality_assessment      ; optional. If section exists than spades.py evaluates quality of the final contigs 
+{
+    reference           $cfg/test_dataset/E.coli/MG1655-K12.first1K.fasta.gz ; optional
+    genes               $cfg/test_dataset/E.coli/genes.first1K.txt           ; optional
+    operons             $cfg/test_dataset/E.coli/operons.first1K.txt         ; optional
 }

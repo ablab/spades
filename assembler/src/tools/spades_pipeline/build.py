@@ -93,7 +93,7 @@ def build_hammer(cfg, spades_home):
 
     precompiled_folder = cfg.compilation_dir
 
-    print("\n== BayesHammer compilation started ==\n")
+    print("\n== Compilation started ==\n")
 
     if not path.exists(precompiled_folder):
         os.makedirs(precompiled_folder)
@@ -115,4 +115,4 @@ def build_hammer(cfg, spades_home):
     finally :
         fcntl.lockf(fo, fcntl.LOCK_UN)
 
-    print("\n== BayesHammer compilation finished successfully ==\n")
+    print("\n== Compilation finished successfully ==\n")
