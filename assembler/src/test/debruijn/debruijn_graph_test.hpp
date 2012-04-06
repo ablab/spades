@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE( SmartIteratorTest ) {
 	IdTrackHandler<Graph> int_ids(g);
 	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 4);
 	size_t num = 0;
-	restricted::set<VertexId> visited;
+	set<VertexId> visited;
 //	std::less<VertexId> comp;
 //	auto it = g.SmartVertexBegin(comp);
 	for (auto it = g.SmartVertexBegin(); !it.IsEnd(); ++it) {

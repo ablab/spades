@@ -163,7 +163,7 @@ void SimpleRecountDetectorBackward(BidirectionalPath& path, LoopDetector& detect
 void FindSeeds(const Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices * pairedInfo = 0) {
 	LoopDetector detector(g);
 	PathLengths lengths;
-	restricted::set<EdgeId> edges;
+	set<EdgeId> edges;
 	seeds.clear();
 
 	INFO("Finding seeds started");

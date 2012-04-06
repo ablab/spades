@@ -28,7 +28,7 @@ class DeletedVertexHandler: public GraphActionHandler<Graph> {
 private:
 	Graph &graph_;
 public:
-	restricted::set<VertexId> live_vertex;
+	set<VertexId> live_vertex;
 public:
 	//TODO: integrate this to resolver, remove "from_resolve" parameter
 	DeletedVertexHandler(Graph &graph) :

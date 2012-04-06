@@ -38,8 +38,8 @@ private:
 	const SequenceMapper& mapper_;
 	Stream& stream_;
 
-	restricted::map<EdgeId, pair<EdgeId, int> > OutTipMap;
-	restricted::map<EdgeId, pair<EdgeId, int> > InTipMap;
+	map<EdgeId, pair<EdgeId, int> > OutTipMap;
+	map<EdgeId, pair<EdgeId, int> > InTipMap;
 	set<int> InTipsIds;
 	set<int> OutTipsIds;
 

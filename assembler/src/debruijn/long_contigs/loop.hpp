@@ -17,15 +17,15 @@ struct LoopDetectorData {
 	size_t iteration;
 	double selfWeight;
 
-	map<EdgeId, double, Graph::Comparator> weights;
+	map<EdgeId, double> weights;
 
-	LoopDetectorData(size_t iter, double weight, const Graph::Comparator &comparator): iteration(iter), selfWeight(weight), weights(comparator)  {
+	LoopDetectorData(size_t iter, double weight): iteration(iter), selfWeight(weight) {
 	}
 
 	LoopDetectorData(const LoopDetectorData& d) : iteration(d.iteration), selfWeight(d.selfWeight), weights(d.weights){
 	}
 
-	LoopDetectorData(const Graph::Comparator &comparator) : weights(comparator) {
+	LoopDetectorData() {
 	}
 
 	void SetSelectedEdge(size_t iter, double w) {
@@ -58,9 +58,9 @@ struct LoopDetectorData {
 
 struct LoopDetector {
 	LoopDetectorData temp;
-	std::multimap<EdgeId, LoopDetectorData, Graph::Comparator> data;
+	std::multimap<EdgeId, LoopDetectorData> data;
 
-	LoopDetector(const Graph &graph) : temp(graph.ReliableComparatorInstance()), data(graph.ReliableComparatorInstance()) {
+	LoopDetector(const Graph &graph) {
 	}
 
 	void AddNewEdge(EdgeId e, size_t iter, double weight = 1) {
@@ -118,7 +118,7 @@ bool PathIsOnlyLoop(BidirectionalPath& path, LoopDetector& detector, bool forwar
 	int start = forward ? path.size() - 1 : loopSize - 1;
 	int end = forward ? path.size() - loopSize : 0;
 
-	restricted::set<EdgeId> loopEdges;
+	set<EdgeId> loopEdges;
 
 	for (int i = start; i >= end; --i) {
 		loopEdges.insert(path[i]);

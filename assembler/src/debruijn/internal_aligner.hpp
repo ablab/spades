@@ -96,7 +96,7 @@ protected:
 	bool adjust;
 	bool map_mode;
 	bool print_broken;
-	restricted::map<EdgeId, pair<string, bool>> SeqNames;
+	map<EdgeId, pair<string, bool>> SeqNames;
 	FILE* samOut;
 	size_t ProcessedReads;
 	size_t SplittedReads;
@@ -489,10 +489,8 @@ protected:
 		if (path1.size() > 0){
 			EdgeId proto_edge = path1[0].first;
 
-//			restricted::set<VertexId> my_set;
-			set<EdgeId, typename Graph::Comparator> iterable_set(this->graph_.ReliableComparatorInstance());
-			convertor_.edge_inclusions[proto_edge].Copy(iterable_set);
-			for (auto iter = iterable_set.begin(); iter != iterable_set.end(); ++iter){
+//			set<VertexId> my_set;
+			for (auto iter = convertor_.edge_inclusions[proto_edge].begin(); iter != convertor_.edge_inclusions[proto_edge].end(); ++iter){
 				bool rc = false;
 				EdgeId edge = *iter;
 				Range i_r(path1[0].second.initial_range.start_pos, path1[path1.size()-1].second.initial_range.end_pos);

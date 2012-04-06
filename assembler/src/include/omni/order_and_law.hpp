@@ -15,7 +15,7 @@ template<class T>
 	typedef T* pointer_type;
 
 	explicit pure_pointer(T *ptr = 0)
-		: ptr_(ptr)
+		: ptr_(ptr), int_id_(generate_id(ptr))
 	{
 	}
 
@@ -23,22 +23,46 @@ template<class T>
 	T& operator*	() const	{ return *ptr_;	}
 	T* operator->	() const	{ return ptr_ ;	}
 
-	bool operator==(const pure_pointer &rhs) const { return ptr_ == rhs.ptr_; }
+	bool operator==(const pure_pointer &rhs) const { return ptr_ == rhs.ptr_ && int_id_ == rhs.int_id_; }
 	bool operator!=(const pure_pointer &rhs) const { return ptr_ != rhs.ptr_; }
 
-private:
-	T *ptr_;
-};
-
-template<class T>
-struct Comparator
-{
-	typedef pure_pointer<T> pointer_type_t;
-
-	bool operator()(pointer_type_t const& a, pointer_type_t const& b) const {
-		return a.get() < b.get();
+	bool operator<(const pure_pointer &rhs) const {
+		return this->int_id_ < rhs.int_id_;
 	}
+
+	size_t hash() const {
+		return this->int_id_;
+	}
+
+private:
+
+	static size_t generate_id(T *ptr) {
+		if(ptr == 0 || ptr == (T*)1 || ptr == (T*)(-1)) {
+			return size_t(ptr);
+		}
+		return get_new_int_id();
+	}
+
+	static size_t get_new_int_id() {
+		static size_t max_int_id = 1;
+		max_int_id++;
+		return max_int_id;
+	}
+
+	T *ptr_;
+
+	size_t int_id_;
 };
+
+//template<class T>
+//struct Comparator
+//{
+//	typedef pure_pointer<T> pointer_type_t;
+//
+//	bool operator()(pointer_type_t const& a, pointer_type_t const& b) const {
+//		return a.get() < b.get();
+//	}
+//};
 
 template<class T>
 struct Hash
@@ -230,7 +254,7 @@ private:
 };
 
 template<class T>
-ostream &operator<<(ostream &stream, const restricted::pure_pointer<T>& pointer)
+ostream &operator<<(ostream &stream, const pure_pointer<T>& pointer)
 {
 	stream << pointer.get();
 	return stream;
@@ -251,41 +275,41 @@ public:
 	}
 };
 
-
-template<typename T, class Comparator>
-class MixedComparator {
-private:
-	Comparator c1_;
-	Comparator c2_;
-public:
-	MixedComparator(const Comparator &c1, const Comparator &c2) : c1_(c1), c2_(c2) {
-	}
-
-	bool operator()(const T &a, const T &b) const {
-		if(c1_.IsAFAKE(a) || c1_.IsAFAKE(b)) {
-			if(c1_.IsAFAKEMin(a))
-				return !c1_.IsAFAKEMin(b);
-			if(c1_.IsAFAKEMax(b))
-				return c1_.IsAFAKEMax(a);
-			return false;
-		}
-		if(c1_.IsValidId(a) && c1_.IsValidId(b))
-			return c1_(a, b);
-		if(c1_.IsValidId(a))
-			return true;
-		if(c1_.IsValidId(b))
-			return false;
-		if(c2_.IsValidId(a) && c2_.IsValidId(b)) {
-			return c2_(a, b);
-		}
-		VERIFY(false);
-		return false;
-	}
-
-	bool IsValidId(T element) {
-		return c1_.IsValid(element) || c2_.IsValid(element);
-	}
-};
+//
+//template<typename T, class Comparator>
+//class MixedComparator {
+//private:
+//	Comparator c1_;
+//	Comparator c2_;
+//public:
+//	MixedComparator(const Comparator &c1, const Comparator &c2) : c1_(c1), c2_(c2) {
+//	}
+//
+//	bool operator()(const T &a, const T &b) const {
+//		if(c1_.IsAFAKE(a) || c1_.IsAFAKE(b)) {
+//			if(c1_.IsAFAKEMin(a))
+//				return !c1_.IsAFAKEMin(b);
+//			if(c1_.IsAFAKEMax(b))
+//				return c1_.IsAFAKEMax(a);
+//			return false;
+//		}
+//		if(c1_.IsValidId(a) && c1_.IsValidId(b))
+//			return c1_(a, b);
+//		if(c1_.IsValidId(a))
+//			return true;
+//		if(c1_.IsValidId(b))
+//			return false;
+//		if(c2_.IsValidId(a) && c2_.IsValidId(b)) {
+//			return c2_(a, b);
+//		}
+//		VERIFY(false);
+//		return false;
+//	}
+//
+//	bool IsValidId(T element) {
+//		return c1_.IsValid(element) || c2_.IsValid(element);
+//	}
+//};
 
 template<class Container, class Comparator>
 class ContainerComparator {

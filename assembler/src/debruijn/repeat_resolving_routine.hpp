@@ -35,10 +35,10 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
 
 namespace debruijn_graph {
 
-void FillContigNumbers(map<ConjugateDeBruijnGraph::EdgeId, int, ConjugateDeBruijnGraph::Comparator>& contigNumbers
+void FillContigNumbers(map<ConjugateDeBruijnGraph::EdgeId, int>& contigNumbers
 		, ConjugateDeBruijnGraph& cur_graph) {
 	int cur_num = 0;
-	restricted::set<EdgeId> edges;
+	set<EdgeId> edges;
 	for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		if (edges.find(*iter) == edges.end()) {
 			contigNumbers[*iter] = cur_num;
@@ -49,7 +49,7 @@ void FillContigNumbers(map<ConjugateDeBruijnGraph::EdgeId, int, ConjugateDeBruij
 }
 
 void FillContigNumbers(
-		map<NonconjugateDeBruijnGraph::EdgeId, int, NonconjugateDeBruijnGraph::Comparator>& contigNumbers
+		map<NonconjugateDeBruijnGraph::EdgeId, int>& contigNumbers
 		, NonconjugateDeBruijnGraph& cur_graph) {
 	int cur_num = 0;
 	for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -58,7 +58,7 @@ void FillContigNumbers(
 	}
 }
 
-int ContigNumber(map<NonconjugateDeBruijnGraph::EdgeId, int, NonconjugateDeBruijnGraph::Comparator>& contigNumbers
+int ContigNumber(map<NonconjugateDeBruijnGraph::EdgeId, int>& contigNumbers
 		, NonconjugateDeBruijnGraph::EdgeId eid
 		, NonconjugateDeBruijnGraph& cur_graph) {
 	if (contigNumbers.find(eid) != contigNumbers.end())
@@ -69,7 +69,7 @@ int ContigNumber(map<NonconjugateDeBruijnGraph::EdgeId, int, NonconjugateDeBruij
 	}
 }
 
-int ContigNumber(map<ConjugateDeBruijnGraph::EdgeId, int, ConjugateDeBruijnGraph::Comparator>& contigNumbers
+int ContigNumber(map<ConjugateDeBruijnGraph::EdgeId, int>& contigNumbers
 		, ConjugateDeBruijnGraph::EdgeId eid
 		, ConjugateDeBruijnGraph& cur_graph) {
 	if (contigNumbers.find(eid) != contigNumbers.end())
@@ -91,7 +91,7 @@ void SelectReadsForConsensusBefore(graph_pack& etalon_gp,
 		const EdgeIndex<k + 1, typename graph_pack::graph_t>& index,
 		vector<ReadStream*> reads, string& consensus_output_dir) {
 	INFO("ReadMapping started");
-	map<typename graph_pack::graph_t::EdgeId, int, typename graph_pack::graph_t::Comparator> contigNumbers(cur_graph.ReliableComparatorInstance());
+	map<typename graph_pack::graph_t::EdgeId, int> contigNumbers;
 	int cur_num = 0;
 	FillContigNumbers(contigNumbers, cur_graph);
 	for (auto iter = etalon_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -99,9 +99,7 @@ void SelectReadsForConsensusBefore(graph_pack& etalon_gp,
 				"Edge number:" << etalon_gp.int_ids.ReturnIntId(*iter) << " is contained in contigs");
 		auto images_it = LabelsAfter.edge_inclusions.find(*iter);
 		if(images_it != LabelsAfter.edge_inclusions.end()) {
-			set<typename graph_pack::graph_t::EdgeId, typename graph_pack::graph_t::Comparator> images(cur_graph.ReliableComparatorInstance());
-			images_it->second.Copy(images);
-			for (auto it = images.begin(); it != images.end(); ++it) {
+			for (auto it = images_it->second.begin(); it != images_it->second.end(); ++it) {
 				DEBUG(ContigNumber(contigNumbers, *it, cur_graph) << ", ");
 			}
 		}
@@ -151,7 +149,7 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 		const EdgeIndex<k + 1, typename graph_pack::graph_t>& index
 		,vector<ReadStream *>& reads , string& consensus_output_dir) {
 	INFO("ReadMapping started");
-	map<typename graph_pack::graph_t::EdgeId, int, typename graph_pack::graph_t::Comparator> contigNumbers(cur_graph.ReliableComparatorInstance());
+	map<typename graph_pack::graph_t::EdgeId, int> contigNumbers;
 	int cur_num = 0;
 	FillContigNumbers(contigNumbers, cur_graph);
 	for (auto iter = etalon_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -394,10 +392,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //		PathSetGraphConstructor<graph_pack> path_set_constructor(origin_gp,
 //				clustered_index, resolved_gp);
 //		path_set_constructor.Construct();
-//		typedef typename graph_pack::graph_t::Comparator GraphComparator;
 //		typedef typename graph_pack::graph_t::EdgeId EdgeId;
-//		map<EdgeId, EdgeId, GraphComparator> edge_labels(resolved_gp.g.ReliableComparatorInstance());
-//		restricted::map<EdgeId, EdgeId> rmap(path_set_constructor.GetEdgeLabels());
+//		map<EdgeId, EdgeId> edge_labels;
+//		map<EdgeId, EdgeId> rmap(path_set_constructor.GetEdgeLabels());
 //		rmap.Copy(edge_labels);
 //		labels_after.FillLabels(edge_labels);
 //		INFO("testing ended");
@@ -742,8 +739,8 @@ void component_statistics(graph_pack & conj_gp, int component_id,
 	string table_name = cfg::get().output_dir + "graph_components/tables/";
 	make_dir(table_name);
 	table_name += graph_name;
-	set<typename graph_pack::graph_t::EdgeId, typename graph_pack::graph_t::Comparator> incoming_edges(conj_gp.g.ReliableComparatorInstance());
-	set<typename graph_pack::graph_t::EdgeId, typename graph_pack::graph_t::Comparator> outgoing_edges(conj_gp.g.ReliableComparatorInstance());
+	set<typename graph_pack::graph_t::EdgeId> incoming_edges;
+	set<typename graph_pack::graph_t::EdgeId> outgoing_edges;
 	for (auto iter = conj_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		typename graph_pack::graph_t::VertexId start = conj_gp.g.EdgeStart(
 				*iter);

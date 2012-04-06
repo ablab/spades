@@ -100,7 +100,7 @@ class MultipleQuotientGraphs: public IQuotientGraphs<Graph>{
             typename std::multimap<EdgeId,EdgeId>::iterator it, itlow, itup;
             itlow = currentEdgeMap.lower_bound(edge1);
             itup = currentEdgeMap.upper_bound(edge1);
-            restricted::set<VertexId> firstEnds;
+            set<VertexId> firstEnds;
             for(it = itlow ; it != itup ; ++it)
             {
                 firstEnds.insert(currentGraph.EdgeEnd( it->second)); 

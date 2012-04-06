@@ -117,7 +117,7 @@ public:
 		size_t edge_count = 0;
 		const vector<EdgeId> path_edges1 = path1_.sequence();
 		const vector<EdgeId> path_edges2 = path2_.sequence();
-		restricted::set<EdgeId> colored_edges;
+		set<EdgeId> colored_edges;
 		colored_edges.insert(path_edges1.begin(), path_edges1.end());
 		colored_edges.insert(path_edges2.begin(), path_edges2.end());
 		size_t sum_length = 0;
@@ -179,7 +179,7 @@ class IsolatedEdgesStat: public AbstractStatCounter {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph &graph_;
-	restricted::set<EdgeId> black_edges_;
+	set<EdgeId> black_edges_;
 	vector<size_t> lengths;
 public:
 	IsolatedEdgesStat(const Graph &graph, Path<EdgeId> path1,
@@ -278,7 +278,7 @@ private:
 		return weights;
 	}
 
-	void GetPairInfo(map<pair<EdgeId, EdgeId> , double, PairComparator<EdgeId, typename Graph::Comparator>> &edge_pairs,
+	void GetPairInfo(map<pair<EdgeId, EdgeId> , double> &edge_pairs,
 	PairedInfoIndex<Graph> &index) {
 		for (auto iterator = index.begin(); iterator != index.end();
 				++iterator) {
@@ -291,7 +291,7 @@ private:
 		}
 	}
 
-	void RemoveTrivial(map<pair<EdgeId, EdgeId> , double, PairComparator<EdgeId, typename Graph::Comparator>> &edge_pairs) {
+	void RemoveTrivial(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
 		TrivialEdgePairChecker<Graph> checker(graph_);
 		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();
 				) {
@@ -368,7 +368,7 @@ public:
 		PairedInfoIndex<Graph> new_index(graph_);
 		PairInfoWeightFilter<Graph>(graph_, 40).Filter(pair_info_, new_index);
 		//		RemoveUntrustful(edge_pairs, 40);
-		map<pair<EdgeId, EdgeId> , double, PairComparator<EdgeId, typename Graph::Comparator>> edge_pairs(graph_.ReliableComparatorInstance());
+		map<pair<EdgeId, EdgeId> , double> edge_pairs;
 		TrivialEdgePairChecker<Graph> checker(graph_);
 		size_t nontrivial = 0;
 		size_t pair_number = 0;
@@ -732,7 +732,7 @@ private:
 //	}
 
 	void HandlePairsNotInEtalon(
-			const set<pair<EdgeId, EdgeId>, PairComparator<EdgeId, typename Graph::Comparator> >& pairs_in_etalon) {
+			const set<pair<EdgeId, EdgeId>>& pairs_in_etalon) {
 		for (auto it = estimated_pair_info_.begin();
 				it != estimated_pair_info_.end(); ++it) {
 			Infos estimated_infos = *it;
@@ -895,7 +895,7 @@ public:
 
 	virtual void Count() {
 		INFO("Counting distance estimation statistics");
-		set<pair<EdgeId, EdgeId>, PairComparator<EdgeId, typename Graph::Comparator> > pairs_in_etalon(graph_.ReliableComparatorInstance());
+		set<pair<EdgeId, EdgeId>> pairs_in_etalon;
 		//		DEBUG("Handling pairs present in etalon information");
 		for (auto it = etalon_pair_info_.begin(); it != etalon_pair_info_.end();
 				++it) {

@@ -31,7 +31,7 @@ class JumpingHero {
 	std::vector<EdgeId> edges_;
 	size_t length_from_long_;
 	double weight_threshold_;
-	set<VertexId, typename Graph::Comparator> vertices_to_reach_dest_;
+	set<VertexId> vertices_to_reach_dest_;
 
 	void ClearHistory() {
 		edges_.clear();
@@ -92,7 +92,7 @@ class JumpingHero {
 		TRACE("Trying to find long prolongation for edge " << g_.str(e));
 		boost::optional<EdgeId> answer;
 		vector<PairInfo<EdgeId>> infos = jump_index_.GetEdgeInfo(e);
-		set<EdgeId, typename Graph::Comparator> paired_edges(g_.ReliableComparatorInstance());
+		set<EdgeId> paired_edges;
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
 			paired_edges.insert(it->second);
 		}TRACE(
@@ -173,7 +173,7 @@ public:
 			double weight_threshold) :
 			g_(g), jump_index_(jump_index), length_bound_(length_bound), invalidation_length_(
 					invalidation_length), forward_direct_(forward_direct), length_from_long_(
-					0), weight_threshold_(weight_threshold), vertices_to_reach_dest_(g.ReliableComparatorInstance()) {
+					0), weight_threshold_(weight_threshold) {
 		TRACE(
 				"Creating jumping hero directed " << (forward_direct ? "forward" : "backward") << ". length_bound = " << length_bound_ << ". invalidation_length = " << invalidation_length << ". weight_threshold = " << weight_threshold_);
 		Init(path);

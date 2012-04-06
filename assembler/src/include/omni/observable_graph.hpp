@@ -7,57 +7,57 @@
 
 namespace omnigraph {
 
-template<typename VertexId, typename EdgeId>
-class ReliableComparator {
-private:
-	const BaseIdTrackHandler<VertexId, EdgeId> *int_ids_;
-
-	template<class Element>
-	int GetFakeIntId(Element a) const {
-		if (a.get() == typename Element::pointer_type(1))
-			return numeric_limits<
-					typename BaseIdTrackHandler<VertexId, EdgeId>::realIdType>::min();
-		if (a.get() == typename Element::pointer_type(-1))
-			return numeric_limits<
-					typename BaseIdTrackHandler<VertexId, EdgeId>::realIdType>::max();
-		return int_ids_->ReturnIntId(a);
-	}
-
-public:
-	ReliableComparator(const BaseIdTrackHandler<VertexId, EdgeId> *int_ids) :
-			int_ids_(int_ids) {
-	}
-
-	bool operator()(VertexId a, VertexId b) const {
-
-		return GetFakeIntId(a) < GetFakeIntId(b);
-	}
-
-	bool operator()(EdgeId a, EdgeId b) const {
-		VERIFY(GetFakeIntId(a) != 0 && GetFakeIntId(b) != 0);
-		return GetFakeIntId(a) < GetFakeIntId(b);
-	}
-
-	template<class Element>
-	bool IsValidId(Element a) const {
-		return int_ids_->ReturnIntId(a) != 0;
-	}
-
-	template<class Element>
-	bool IsAFAKEMin(Element a) const {
-		return a == Element(typename Element::pointer_type(1));
-	}
-
-	template<class Element>
-	bool IsAFAKEMax(Element a) const {
-		return a == Element(typename Element::pointer_type(-1));
-	}
-
-	template<class Element>
-	bool IsAFAKE(Element a) const {
-		return IsAFAKEMin(a) || IsAFAKEMax(a);
-	}
-};
+//template<typename VertexId, typename EdgeId>
+//class ReliableComparator {
+//private:
+//	const BaseIdTrackHandler<VertexId, EdgeId> *int_ids_;
+//
+//	template<class Element>
+//	int GetFakeIntId(Element a) const {
+//		if (a.get() == typename Element::pointer_type(1))
+//			return numeric_limits<
+//					typename BaseIdTrackHandler<VertexId, EdgeId>::realIdType>::min();
+//		if (a.get() == typename Element::pointer_type(-1))
+//			return numeric_limits<
+//					typename BaseIdTrackHandler<VertexId, EdgeId>::realIdType>::max();
+//		return int_ids_->ReturnIntId(a);
+//	}
+//
+//public:
+//	ReliableComparator(const BaseIdTrackHandler<VertexId, EdgeId> *int_ids) :
+//			int_ids_(int_ids) {
+//	}
+//
+//	bool operator()(VertexId a, VertexId b) const {
+//
+//		return GetFakeIntId(a) < GetFakeIntId(b);
+//	}
+//
+//	bool operator()(EdgeId a, EdgeId b) const {
+//		VERIFY(GetFakeIntId(a) != 0 && GetFakeIntId(b) != 0);
+//		return GetFakeIntId(a) < GetFakeIntId(b);
+//	}
+//
+//	template<class Element>
+//	bool IsValidId(Element a) const {
+//		return int_ids_->ReturnIntId(a) != 0;
+//	}
+//
+//	template<class Element>
+//	bool IsAFAKEMin(Element a) const {
+//		return a == Element(typename Element::pointer_type(1));
+//	}
+//
+//	template<class Element>
+//	bool IsAFAKEMax(Element a) const {
+//		return a == Element(typename Element::pointer_type(-1));
+//	}
+//
+//	template<class Element>
+//	bool IsAFAKE(Element a) const {
+//		return IsAFAKEMin(a) || IsAFAKEMax(a);
+//	}
+//};
 
 template<typename VertexIdT, typename EdgeIdT, typename VertexIterator/* = typename set<VertexIdT>::iterator*/>
 class ObservableGraph : private boost::noncopyable {
@@ -65,13 +65,13 @@ public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
 
-	typedef ReliableComparator<VertexId, EdgeId> Comparator;
+//	typedef ReliableComparator<VertexId, EdgeId> Comparator;
 
 //	typedef ReliableComparator<VertexId> ReliableVertexComparator;
 //	typedef ReliableComparator<EdgeId> ReliableEdgeComparator;
 
-	typedef SmartVertexIterator<ObservableGraph, ObservableGraph::Comparator> SmartVertexIt;
-	typedef SmartEdgeIterator<ObservableGraph, ObservableGraph::Comparator> SmartEdgeIt;
+	typedef SmartVertexIterator<ObservableGraph> SmartVertexIt;
+	typedef SmartEdgeIterator<ObservableGraph> SmartEdgeIt;
 
 private:
 	typedef ActionHandler<VertexId, EdgeId> Handler;
@@ -80,8 +80,8 @@ private:
 
 	mutable vector<Handler*> action_handler_list_;
 
-public:
-	GraphIdTrackHandler<ObservableGraph> element_order_;
+//public:
+//	GraphIdTrackHandler<ObservableGraph> element_order_;
 
 protected:
 	void FireAddingVertex(VertexId v) {
@@ -166,7 +166,7 @@ public:
 
 
 	ObservableGraph(HandlerApplier<VertexId, EdgeId> *applier) :
-		applier_(applier), element_order_(*this) {
+		applier_(applier)/*, element_order_(*this)*/ {
 	}
 
 	virtual ~ObservableGraph() {
@@ -205,10 +205,6 @@ public:
 	//todo think of moving to AbstractGraph
 	virtual const vector<EdgeId> OutgoingEdges(VertexId vertex) const = 0;
 
-	Comparator ReliableComparatorInstance() const {
-		return Comparator(&element_order_);
-	}
-
 	template<typename Comparator>
 	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator) const {
@@ -216,9 +212,8 @@ public:
 				comparator);
 	}
 
-	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin() const {
-		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
-				ReliableComparatorInstance());
+	SmartVertexIterator<ObservableGraph> SmartVertexBegin() const {
+		return SmartVertexIterator<ObservableGraph> (*this);
 	}
 
 
@@ -229,9 +224,8 @@ public:
 				comparator);
 	}
 
-	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin() const {
-		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
-				ReliableComparatorInstance());
+	SmartEdgeIterator<ObservableGraph> SmartEdgeBegin() const {
+		return SmartEdgeIterator<ObservableGraph> (*this);
 	}
 
 //	ReliableComparator<VertexId> ReliableComparatorInstance() {

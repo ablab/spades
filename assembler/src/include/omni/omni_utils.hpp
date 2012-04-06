@@ -525,7 +525,7 @@ public:
  * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
  * way graph is changed. Also one can define order of iteration by specifying Comparator.
  */
-template<class Graph, typename ElementId, typename Comparator>
+template<class Graph, typename ElementId, typename Comparator = std::less<ElementId>>
 class SmartSetIterator: public SmartIterator<Graph, ElementId, Comparator> {
 public:
 	typedef typename Graph::VertexId VertexId;
@@ -608,12 +608,12 @@ private:
 	const bool add_new_;
 
 public:
-	SmartSet(const Graph &graph, const Comparator& comparator, bool add_new = true) :
+	SmartSet(const Graph &graph, Comparator comparator = Comparator(), bool add_new = true) :
 			GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(comparator), add_new_(add_new) {
 	}
 
 	template<class Iter>
-	SmartSet(Iter begin, Iter end, const Graph &graph, const Comparator& comparator, bool add_new) :
+	SmartSet(Iter begin, Iter end, const Graph &graph, Comparator comparator = Comparator(), bool add_new = true) :
 			GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(begin, end, comparator), add_new_(add_new) {
 	}
 
@@ -1037,7 +1037,6 @@ template<class Graph>
 class PathStorageCallback: public PathProcessor<Graph>::Callback {
 public:
 	typedef typename Graph::EdgeId EdgeId;
-//	typedef ContainerComparator<vector<EdgeId>, typename Graph::Comparator> Comparator;
 
 private:
 	const Graph& g_;
@@ -1112,7 +1111,7 @@ class VertexLablerCallback: public PathProcessor<Graph>::Callback {
 
 	Graph& g_;
 	size_t count_;
-	restricted::set<VertexId> vertices_;
+	set<VertexId> vertices_;
 public:
 
 	VertexLablerCallback(Graph& g) :
@@ -1129,7 +1128,7 @@ public:
 		}
 	}
 
-	const restricted::set<VertexId>& vertices() {
+	const set<VertexId>& vertices() {
 		return vertices_;
 	}
 
@@ -1175,10 +1174,9 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	const Graph& graph_;
-	typename Graph::Comparator comparator_;
 public:
 	CoverageComparator(const Graph &graph) :
-			graph_(graph), comparator_(graph.ReliableComparatorInstance()) {
+			graph_(graph) {
 	}
 
 	/**
@@ -1186,13 +1184,8 @@ public:
 	 */
 	bool operator()(EdgeId edge1, EdgeId edge2) const
 	{
-		if (size_t(edge1.get()) < 0x1000 || size_t(edge2.get()) < 0x1000 || size_t(&graph_) < 0x1000 || size_t(&comparator_) < 0x1000)
-		{
-			exit(1);
-		}
-
 		if (math::eq(graph_.coverage(edge1), graph_.coverage(edge2))) {
-			return comparator_(edge1, edge2);
+			return edge1 < edge2;
 		}
 		return math::ls(graph_.coverage(edge1), graph_.coverage(edge2));
 	}
@@ -1208,7 +1201,6 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	const Graph& graph_;
-	const typename Graph::Comparator comparator_;
 public:
 	/**
 	 * TipComparator should never be created with default constructor but it is necessary on order for
@@ -1222,7 +1214,7 @@ public:
 	 * @param graph graph for which comparator is created
 	 */
 	LengthComparator(const Graph &graph) :
-			graph_(graph), comparator_(graph_.ReliableComparatorInstance()) {
+			graph_(graph) {
 	}
 
 	/**
@@ -1230,7 +1222,7 @@ public:
 	 */
 	bool operator()(EdgeId edge1, EdgeId edge2) const {
 		if (graph_.length(edge1) == graph_.length(edge2)) {
-			return comparator_(edge1, edge2);
+			return edge1 < edge2;
 		}
 		return graph_.length(edge1) < graph_.length(edge2);
 	}
@@ -1340,7 +1332,7 @@ public:
 		vector<EdgeId> answer;
 		EdgeId curr = e;
 		answer.push_back(curr);
-		restricted::set<EdgeId> was;
+		set<EdgeId> was;
 		while (graph_.CheckUniqueOutgoingEdge(graph_.EdgeEnd(curr))) {
 			TRACE("current " << graph_.int_ids().ReturnIntId(curr));
 			curr = graph_.GetUniqueOutgoingEdge(graph_.EdgeEnd(curr));
@@ -1358,7 +1350,7 @@ public:
 		vector<EdgeId> answer;
 		EdgeId curr = e;
 		answer.push_back(curr);
-		restricted::set<EdgeId> was;
+		set<EdgeId> was;
 		while (graph_.CheckUniqueIncomingEdge(graph_.EdgeStart(curr))) {
 			TRACE("current " << curr);
 			curr = graph_.GetUniqueIncomingEdge(graph_.EdgeStart(curr));
@@ -1496,7 +1488,7 @@ public:
 
 template<class EdgeId> class TipLock{
     private:
-        static restricted::map<EdgeId, bool> lock;
+        static map<EdgeId, bool> lock;
     public:
         static void Lock(EdgeId tip){
             lock[tip] = true;   
@@ -1514,7 +1506,7 @@ template<class EdgeId> class TipLock{
         }        
 };
 
-template<class EdgeId> restricted::map<EdgeId, bool> TipLock<EdgeId>::lock;
+template<class EdgeId> map<EdgeId, bool> TipLock<EdgeId>::lock;
 template<class Graph>
 class TipChecker{
     typedef typename Graph::EdgeId EdgeId;

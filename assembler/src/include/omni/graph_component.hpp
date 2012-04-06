@@ -5,12 +5,11 @@ template<class Graph>
 class GraphComponent {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::Comparator Comparator;
-	typedef typename std::set<VertexId, Comparator>::const_iterator vertex_iterator;
-	typedef typename std::set<EdgeId, Comparator>::const_iterator edge_iterator;
+	typedef typename std::set<VertexId>::const_iterator vertex_iterator;
+	typedef typename std::set<EdgeId>::const_iterator edge_iterator;
 	const Graph& g_;
-	std::set<VertexId, typename Graph::Comparator > vertices_;
-	std::set<EdgeId, typename Graph::Comparator> edges_;
+	std::set<VertexId> vertices_;
+	std::set<EdgeId> edges_;
 
 
 	template<class VertexIt>
@@ -59,31 +58,24 @@ class GraphComponent {
 public:
 	template<class VertexIt>
 	GraphComponent(const Graph &g, VertexIt begin, VertexIt end) :
-			g_(g), vertices_(g.ReliableComparatorInstance()), edges_(
-					g.ReliableComparatorInstance()) {
+			g_(g) {
 		Fill(begin, end);
 	}
 
 	//todo refactor and get rid of hack
 	template<class VertexIt>
 	GraphComponent(const Graph &g, VertexIt begin, VertexIt end,
-			bool add_conjugate) :
-			g_(g), vertices_(g.ReliableComparatorInstance()), edges_(
-					g.ReliableComparatorInstance()) {
+			bool add_conjugate) : g_(g) {
 		Fill(begin, end, add_conjugate);
 	}
 
 	//Full graph component
-	GraphComponent(const Graph &g) :
-			g_(g), vertices_(g.ReliableComparatorInstance()), edges_(
-					g.ReliableComparatorInstance()) {
+	GraphComponent(const Graph &g) : g_(g) {
 		Fill(g.begin(), g.end());
 	}
 
 	//may be used for conjugate closure
-	GraphComponent(const GraphComponent& component, bool add_conjugate) :
-			g_(component.g_), vertices_(g.ReliableComparatorInstance()), edges_(
-					g.ReliableComparatorInstance())
+	GraphComponent(const GraphComponent& component, bool add_conjugate) : g_(component.g_)
 //		vertices_(component.vertices_.begin(), component.vertices_.end()),
 //		edges_(component.edges_.begin(), component.edges_.end())
 	{

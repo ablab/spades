@@ -309,7 +309,7 @@ void PrintPathLengthStats(const Graph& g, std::vector<BidirectionalPath>& paths)
 
 //Prints coverage of all edges by given paths and total edge coverage
 double PrintPathCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) {
-	std::multiset<EdgeId, Graph::Comparator> covered(g.ReliableComparatorInstance());
+	std::multiset<EdgeId> covered;
 
 	for(auto path = paths.begin(); path != paths.end(); ++path) {
 		for(auto iter = path->begin(); iter != path->end(); ++iter) {
@@ -336,7 +336,7 @@ double PrintPathCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) 
 
 //Percentage of edges covered by paths
 double PathsCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) {
-	std::set<EdgeId, Graph::Comparator> covered(g.ReliableComparatorInstance());
+	std::set<EdgeId> covered;
 
 	for(auto path = paths.begin(); path != paths.end(); ++path) {
 		for(auto iter = path->begin(); iter != path->end(); ++iter) {
@@ -354,7 +354,7 @@ double PathsCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) {
 
 //Percentage of nucleotides covered by paths
 double PathsLengthCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) {
-	std::set<EdgeId, Graph::Comparator> covered(g.ReliableComparatorInstance());
+	std::set<EdgeId> covered;
 
 	for(auto path = paths.begin(); path != paths.end(); ++path) {
 		for(auto iter = path->begin(); iter != path->end(); ++iter) {

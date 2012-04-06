@@ -417,7 +417,7 @@ void OutputPathsAsContigs(const Graph& g, std::vector<BidirectionalPath> paths, 
 
 //Output only one half of edges
 void OutputContigsNoComplement(const Graph& g, const std::string& filename) {
-	std::set<EdgeId, Graph::Comparator> filtered(g.ReliableComparatorInstance());
+	std::set<EdgeId> filtered;
 	FilterComlementEdges(g, filtered);
 
 	INFO("Outputting contigs to " << filename);

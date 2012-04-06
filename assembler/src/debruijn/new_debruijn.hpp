@@ -82,7 +82,7 @@ public:
 		return VertexData();
 	}
 
-	const size_t length(EdgeData data) const {
+	const size_t length(const EdgeData &data) const {
 		return data.nucls().size() - k_;
 	}
 

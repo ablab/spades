@@ -75,23 +75,31 @@ struct PairInfo {
 	bool operator!=(const PairInfo& rhs) const {
 		return !(*this == rhs);
 	}
-};
 
-template<typename EdgeId, class Comparator>
-class PairInfoComparator {
-private:
-	Comparator comparator_;
-public:
-	PairInfoComparator(Comparator comparator) : comparator_(comparator) {
-	}
-
-	bool operator()(const PairInfo<EdgeId>& lhs, const PairInfo<EdgeId>& rhs) const {
+	bool operator<(const PairInfo<EdgeId>& rhs) const {
+		const PairInfo<EdgeId>& lhs = *this;
 		return lhs.first == rhs.first ?
 				lhs.second == rhs.second ?
-						math::ls(lhs.d, rhs.d) : comparator_(lhs.second, rhs.second)
-				: comparator_(lhs.first, rhs.first);
+						math::ls(lhs.d, rhs.d) : lhs.second < rhs.second
+				: lhs.first < rhs.first;
 	}
 };
+
+//template<typename EdgeId, class Comparator>
+//class PairInfoComparator {
+//private:
+//	Comparator comparator_;
+//public:
+//	PairInfoComparator(Comparator comparator) : comparator_(comparator) {
+//	}
+//
+//	bool operator()(const PairInfo<EdgeId>& lhs, const PairInfo<EdgeId>& rhs) const {
+//		return lhs.first == rhs.first ?
+//				lhs.second == rhs.second ?
+//						math::ls(lhs.d, rhs.d) : comparator_(lhs.second, rhs.second)
+//				: comparator_(lhs.first, rhs.first);
+//	}
+//};
 
 template<typename Graph>
 ostream& operator<<(ostream& os, const PairInfo<Graph>& info) {
@@ -153,10 +161,10 @@ bool IsSymmetric(PairInfo<EdgeId> const& pi) {
 }
 
 //todo try storing set<PairInfo>
-template<typename EdgeId, class Comparator>
+template<typename EdgeId>
 class PairInfoIndexData {
 public:
-	typedef set<PairInfo<EdgeId>, PairInfoComparator<EdgeId, Comparator>> Data;
+	typedef set<PairInfo<EdgeId>> Data;
 	typedef typename Data::iterator data_iterator;
 	typedef typename Data::const_iterator data_const_iterator;
 	typedef vector<PairInfo<EdgeId>> PairInfos;
@@ -183,7 +191,7 @@ public:
 	}
 public:
 
-	PairInfoIndexData(const Comparator &comparator) : comparator_(comparator), data_(PairInfoComparator<EdgeId, Comparator>(comparator_)){
+	PairInfoIndexData() : data_(){
 	}
 
 	data_iterator begin() const {
@@ -222,7 +230,7 @@ public:
 	}
 
 	void DeleteEdgeInfo(EdgeId e) {
-		set<PairInfo<EdgeId>, PairInfoComparator<EdgeId, Comparator>> paired_edges(comparator_);
+		set<PairInfo<EdgeId>> paired_edges;
 
 		for (auto lower = LowerBound(e), upper = UpperBound(e); lower != upper;
 				++lower) {
@@ -285,7 +293,6 @@ public:
 	}
 
 private:
-	PairInfoComparator<EdgeId, Comparator> comparator_;
 	Data data_;
 };
 
@@ -310,11 +317,11 @@ public:
 	 * between them stored in PairedInfoIndex.
 	 */
 	class EdgePairIterator {
-		typename PairInfoIndexData<EdgeId, typename Graph::Comparator>::data_iterator position_;
+		typename PairInfoIndexData<EdgeId>::data_iterator position_;
 		const PairedInfoIndex<Graph> &index_;
 	public:
 		EdgePairIterator(
-				typename PairInfoIndexData<EdgeId, typename Graph::Comparator>::data_iterator position,
+				typename PairInfoIndexData<EdgeId>::data_iterator position,
 				const PairedInfoIndex<Graph> &index) :
 				position_(position), index_(index) {
 		}
@@ -348,7 +355,7 @@ public:
 	//begin-end insert size supposed
 	PairedInfoIndex(const Graph &g, double max_difference = 0.) :
 			GraphActionHandler<Graph>(g, "PairedInfoIndex"), max_difference_(
-					max_difference), data_(g.ReliableComparatorInstance()) {
+					max_difference) {
 	}
 
 	virtual ~PairedInfoIndex() {
@@ -371,7 +378,7 @@ public:
 
 private:
 
-	PairInfoIndexData<EdgeId, typename Graph::Comparator> data_;
+	PairInfoIndexData<EdgeId> data_;
 
 	size_t CorrectLength(const Path<EdgeId>& path, size_t index) {
 		size_t result = this->g().length(path[index]);
