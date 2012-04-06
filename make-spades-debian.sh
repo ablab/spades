@@ -29,6 +29,7 @@ rm -r src/tools/copy_ungzip.sh
 rm -r src/tools/dot_conv.sh
 rm -r src/tools/run_velvet_unpaired.sh
 rm -r src/tools/run_velvet2.sh
+rm -r src/tools/quality/libs/mauve
 
 rm gen_k
 rm editcfg
