@@ -148,8 +148,8 @@ public:
 
     inline Sequence(std::istream& file, bool dummy);
 
-    template<size_t size2_>
-    std::vector<Seq<size2_>> SplitInSeqs() const;
+    //template<size_t size2_>
+    //std::vector<Seq<size2_>> SplitInSeqs() const;
 };
 
 inline ostream& operator<<(ostream& os, const Sequence& s);
@@ -173,18 +173,18 @@ Seq<size2_> Sequence::end() const {
 }
 
 
-template<size_t size2_> 
-vector<Seq<size2_> > Sequence::SplitInSeqs() const {
-    typedef Seq<size2_> Kmer;
-    vector<Kmer> ans;
-    Kmer kmer = this->start<size2_>();
-    for (size_t i = size2_; i<this->size(); ++i){
-        ans.push_back(kmer);
-        kmer = kmer << this[i];
-    }
-    ans.push_back(kmer);
-    return ans;
-}
+//template<size_t size2_> 
+//vector<Seq<size2_> > Sequence::SplitInSeqs() const {
+    //typedef Seq<size2_> Kmer;
+    //vector<Kmer> ans;
+    //Kmer kmer = this->start<size2_>();
+    //for (size_t i = size2_; i<this->size(); ++i){
+        //ans.push_back(kmer);
+        //kmer = kmer << this[i];
+    //}
+    //ans.push_back(kmer);
+    //return ans;
+//}
 
 /**
  * @class SequenceBuilder
@@ -311,9 +311,9 @@ Sequence Sequence::operator!() const {
 //safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
 //	cerr << endl<<"subseq:" <<   from <<" " << to << " " <<  this->str() << endl;
-	VERIFY(to >= from);
-	VERIFY(from >= 0);
-	VERIFY(to <= size_);
+    VERIFY(to >= from);
+    VERIFY(from >= 0);
+    VERIFY(to <= size_);
 	//VERIFY(to - from <= size_);
 	if (rtl_) {
 		return Sequence(*this, from_ + size_ - to, to - from, true);

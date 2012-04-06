@@ -98,6 +98,7 @@ public:
 	template<class ReadThreader>
 	void FillIndex(io::IReader<io::SingleRead>& stream, const ReadThreader& threader) {
 		INFO("Processing reads (takes a while)");
+        perf_counter pc;
 		size_t n = 0;
 		while (!stream.eof()) {
 			io::SingleRead read;
@@ -105,6 +106,7 @@ public:
 			ProcessRead(threader, read);
 			VERBOSE_POWER(++n, " reads processed");
 		}
+        INFO("Elapsed time: " << pc.time_ms());
 	}
 
 	virtual void HandleDelete(EdgeId edge) {

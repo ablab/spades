@@ -134,22 +134,14 @@ void FillCoverage(Graph& g, SingleReadStream& stream,
 	DEBUG("Coverage counted");
 }
 
-template<size_t k, class Graph>
-void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		SingleReadStream& reads_stream, SingleReadStream* contigs_stream = 0) {
-
-    size_t nthreads = 16;
-    size_t buf_size = 1000000;
-
+template<size_t k, class Graph> 
+size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, SingleReadStream& reads_stream, size_t nthreads, size_t buf_size) {
+        
     INFO("openmp " << omp_get_max_threads());
 
     typedef ParallelSeqMap<k + 1, typename Graph::EdgeId> ParallelDeBruijn;
-    typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
     typedef Seq<k + 1> Kmer;
 
-    INFO("Constructing DeBruijn graph");
-	
-    DeBruijn& debruijn = index.inner_index();
     ParallelDeBruijn par_debruijn(nthreads);
 
     INFO("Processing reads (takes a while)");
@@ -162,8 +154,10 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 
         while (!reads_stream.eof()) {
             vector<vector<Sequence> > vector_seq(nthreads, vector<Sequence>());
+            for (size_t i = 0; i < nthreads; ++i) 
+                vector_seq[i].reserve(buf_size);
             INFO("Filling Buffer");
-            for(size_t i = 0; i < nthreads && !reads_stream.eof(); ++i) {
+            for(size_t i = 0; i < nthreads; ++i) {
                 for (size_t j = 0; j < buf_size && !reads_stream.eof(); ++j) {
                     reads_stream >> r;
                     const Sequence& seq = r.sequence();
@@ -195,6 +189,35 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 
         INFO("Elapsed time: " << pc.time_ms());
     }
+
+    INFO("DeBruijn graph constructed, " << counter << " reads used");
+
+    return rl;
+}
+
+template<size_t k, class Graph>
+void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
+		SingleReadStream& reads_stream, SingleReadStream* contigs_stream = 0) {
+
+    typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
+    typedef Seq<k + 1> Kmer;
+
+    size_t nthreads = 4;
+    size_t buf_size = 10000000;
+    
+    cout << "# threads" << endl;
+    cin >>  nthreads;
+
+    cout << "buf size" << endl;
+    cin >> buf_size;
+
+    INFO("Constructing DeBruijn graph");
+	
+    DeBruijn& debruijn = index.inner_index();
+
+    size_t rl = FillParallelIndex<k, Graph>(debruijn, reads_stream, nthreads, buf_size);
+
+    io::SingleRead r;
     if (contigs_stream) {
         INFO("Adding contigs from previous K");
         while (!contigs_stream->eof()) {
@@ -210,7 +233,6 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
     } else if (*cfg::get().ds.RL != rl) {
         WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
     }
-    INFO("DeBruijn graph constructed, " << counter << " reads used");
 
     INFO("Condensing graph");
     DeBruijnGraphConstructor<k, Graph> g_c(debruijn);

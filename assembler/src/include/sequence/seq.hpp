@@ -37,7 +37,7 @@
 /**
  * @param T is max number of nucleotides, type for storage
  */
-template<size_t size_, typename T = u_int32_t>
+template<size_t size_, typename T = u_int64_t>
 class Seq {
 private:
 	/**
@@ -77,7 +77,7 @@ private:
 	 */
 	std::array<T, data_size_> data_;
 
-    size_t seq_hash_;
+    //size_t seq_hash_;
 
 	friend class Seq<size_ - 1, T> ;
 
@@ -87,6 +87,7 @@ private:
 	 * @param s C-string (ACGT chars only), strlen(s) = size_
 	 */
 	void init(const char* s) {
+        //seq_hash_ = prime_num;
 		T data = 0;
 		size_t cnt = 0;
 		int cur = 0;
@@ -95,13 +96,15 @@ private:
 			data = data | ((T) dignucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
-				this->data_[cur++] = data;
+				//seq_hash_ = ((seq_hash_ << 5) - seq_hash_) + data;
+                this->data_[cur++] = data;
 				cnt = 0;
 				data = 0;
 			}
 		}
 		if (cnt != 0) {
 			this->data_[cur++] = data;
+			//seq_hash_ = ((seq_hash_ << 5) - seq_hash_) + data;
 		}
 		VERIFY(*s == 0); // C-string always ends on 0
 	}
@@ -110,21 +113,22 @@ private:
 	 * Initialize hash function for the Seq with the data_ given
 	 *
 	 */
-    void init_hash() {
-        //Assuming the data is okay and already filled
-        size_t seq_hash = prime_num;
-        for (size_t i = 0; i < data_size_; ++i) {
-            seq_hash = ((seq_hash << 5) - seq_hash) + data_[i];
-        }
-        seq_hash_ = seq_hash;
-    }
+    //void init_hash() {
+        ////Assuming the data is okay and already filled
+        //size_t seq_hash = prime_num;
+        //for (size_t i = 0; i < data_size_; ++i) {
+            //seq_hash = ((seq_hash << 5) - seq_hash) + data_[i];
+        //}
+        //seq_hash_ = seq_hash;
+    //}
 
 	/**
 	 * Constructor from std::array
 	 */
-	Seq(std::array<T, data_size_> data) : data_(data) {
-	    init_hash();
-    }
+    //Seq(std::array<T, data_size_> data) : data_(data) {
+        //WARN("constructor from array");
+        //init_hash();
+    //}
 
 
 	/**
@@ -178,21 +182,12 @@ public:
 	Seq() {
 		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		std::fill(data_.begin(), data_.end(), 0);
-        init_hash();
-	}
-
-	/**
-	 * Copy constructor
-	 */
-	Seq(const Seq<size_, T> &seq) :
-		data_(seq.data_), seq_hash_(seq.seq_hash_) {
-		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
+        //init_hash();
 	}
 
 	Seq(const char* s) {
 		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		init(s);
-        init_hash();
 	}
 
 	/**
@@ -200,22 +195,64 @@ public:
 	 *
 	 * @param s Any object with operator[], which returns 0123 chars
 	 * @param offset Offset when this sequence starts
+     * @number_to_read A number of nucleotides, we want to fetch from this string
+     * @warning assuming that s is a correct string, filled with ACGT _OR_ 0123 
+     * no init method, filling right here
 	 */
 	template<typename S>
-	explicit Seq(const S &s, size_t offset = 0) : data_() {
-		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
-		char a[size_ + 1];
-		for (size_t i = 0; i < size_; ++i) {
-			char c = s[offset + i];
-			//VERIFY(is_nucl(c) || is_dignucl(c));
-			if (is_dignucl(c)) {
-				c = nucl(c);
-			}
-			a[i] = c;
-		}
-		a[size_] = 0;
-		init(a);
-        init_hash();
+	explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_) : data_() {
+		
+        TRACE("New Constructor for seq " << s[0] << " is first symbol");
+        VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
+
+        // which symbols does our string contain : 0123 or ACGT?
+        bool digit_str = is_dignucl(s[0]); 
+
+        // data -- one temporary variable corresponding to the i-th array element
+        // and some counters
+        T data = 0;
+		size_t cnt = 0;
+		size_t cur = 0;
+
+		for (size_t i = 0; i < number_to_read; ++i) {
+            VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
+            
+            // we fill everything with zeros (As) by default. 
+		    char c = digit_str ? s[offset + i] : dignucl(s[offset + i]);
+            
+	        data = data | (T(c) << cnt);
+            cnt += 2;
+
+            if (cnt == Tbits) {
+                this->data_[cur++] = data;
+                cnt = 0;
+                data = 0;
+            }
+        }
+        if (cnt != 0) {
+            this->data_[cur++] = data;
+        }
+
+        for (; cur < data_size_; ++cur)
+            this->data_[cur] = 0;
+
+        //init_hash();
+		
+        ////init
+		//for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
+			//data = data | ((T) dignucl(*s) << cnt);
+			//cnt += 2;
+			//if (cnt == Tbits) {
+				//this->data_[cur++] = data;
+				//cnt = 0;
+				//data = 0;
+			//}
+		//}
+		//if (cnt != 0) {
+			//this->data_[cur++] = data;
+		//}
+        
+        // init_hash
 	}
 
 	/**
@@ -236,7 +273,7 @@ public:
 	 * @return Reverse complement Seq.
 	 */
 	Seq<size_, T> operator!() const {
-		Seq<size_, T> res(data_);
+		Seq<size_, T> res(*this);
 		for (size_t i = 0; i < (size_ >> 1); ++i) {
 			T front = complement(res[i]);
 			T end = complement(res[size_ - 1 - i]);
@@ -247,7 +284,7 @@ public:
 			res.set(size_ >> 1, complement(res[size_ >> 1]));
 		}
 		// can be made without complement calls, but with xor on all bytes afterwards.
-		res.init_hash();
+		//res.init_hash();
         return res;
 	}
 
@@ -263,19 +300,20 @@ public:
 		}
 		//VERIFY(is_dignucl(c));
 		Seq<size_, T> res(*this);
+        std::array<T, data_size_>& data = res.data_;
 		if (data_size_ != 0) { // unless empty sequence
-			T rm = res.data_[data_size_ - 1] & 3;
+			T rm = data[data_size_ - 1] & 3;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) & (Tnucl - 1)) << 1;
-			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T) c << lastnuclshift_);
+			data[data_size_ - 1] = (data[data_size_ - 1] >> 2) | ((T) c << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 			    for (int i = data_size_ - 2; i >= 0; --i){
-					T new_rm = res.data_[i] & 3;
-					res.data_[i] = (res.data_[i] >> 2) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :(
+					T new_rm = data[i] & 3;
+					data[i] = (data[i] >> 2) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :(
 					rm = new_rm;
 			    }
 			}
 		}
-        res.init_hash();
+        //res.init_hash();
 		return res;
 	}
 
@@ -286,9 +324,8 @@ public:
 		//VERIFY(is_dignucl(c));
 		Seq<size_ + 1, T> s;
 		copy(this->data_.begin(), this->data_.end(), s.data_.begin());
-		s.data_[s.data_size_ - 1] = s.data_[s.data_size_ - 1] | ((T) c
-				<< ((size_ & (Tnucl - 1)) << 1));
-		s.init_hash();
+		s.data_[s.data_size_ - 1] = s.data_[s.data_size_ - 1] | ((T) c << ((size_ & (Tnucl - 1)) << 1));
+        //s.init_hash();
 
         return s; //was: Seq<size_ + 1, T>(str() + nucl(c));
 
@@ -328,7 +365,7 @@ public:
 			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T) 1
 					<< lastnuclshift_) - 1);
 		}
-		res.init_hash();
+		//res.init_hash();
         return res;
 	}
 
@@ -394,22 +431,24 @@ public:
 	}
 
     size_t GetHash() const {
-        return seq_hash_;
-    }
-    
-    struct hash {
-        size_t operator()(const Seq<size_, T>& seq) const {
-            return seq.seq_hash_; 
+        size_t hash = prime_num;
+        for (size_t i = 0; i < data_size_; i++) {
+            hash = ((hash << 5) - hash) + data_[i];
         }
-        //const static size_t prime_num = 239;
-		//size_t operator()(const Seq<size_, T>& seq) const {
-			////size_t h = 0;
-			//for (size_t i = 0; i < seq.data_size_; i++) {
-				//prime_num = ((prime_num << 5) - prime_num) + seq.data_[i];
-				////prime_num = prime_num * 239 + seq.data_[i];
-			//}
-			//return prime_num;
-		//}
+        return hash;
+    }
+
+    struct hash {
+        //size_t operator()(const Seq<size_, T>& seq) const {
+            //return seq.seq_hash_; 
+        //}
+        size_t operator()(const Seq<size_, T>& seq) const {
+            size_t hash = prime_num;
+            for (size_t i = 0; i < seq.data_size_; i++) {
+                hash = ((hash << 5) - hash) + seq.data_[i];
+            }
+            return hash;
+        }
 	};
 
 	struct multiple_hash {

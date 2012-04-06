@@ -134,15 +134,13 @@ public:
 	}
 
 	void ConstructGraph(Graph &graph, Index &index) {
-		for (typename DeBruijn::map_iterator it = origin_.begin();
-				it != origin_.end(); it++) {
+		for (typename DeBruijn::map_iterator it = origin_.begin(); it != origin_.end(); it++) {
 			KPlusOneMer edge = it->first;
 			if (!index.contains(edge)) {
 				Sequence edge_sequence = ConstructSequenceWithEdge(edge);
 				Kmer start_kmer = edge_sequence.start<kmer_size_>();
 				Kmer end_kmer = edge_sequence.end<kmer_size_>();
-				VertexId start = FindVertexMaybeMissing(graph, index,
-						start_kmer);
+				VertexId start = FindVertexMaybeMissing(graph, index, start_kmer);
 				VertexId end = FindEndMaybeMissing(graph, index, start, start_kmer, end_kmer);
 
 				graph.AddEdge(start, end, edge_sequence);
