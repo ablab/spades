@@ -69,16 +69,12 @@ def question_with_timer(question, seconds, default='y'):
     import curses
 
     # The timer class    
-    class Timer():
+    class Timer:
         def __init__(self):
             self.target = time.time() + seconds
         def get_left(self):
             return int(self.target-time.time())
 
-    t = Timer()
-    stdscr = curses.initscr()
-    stdscr.nodelay(True)
-    curses.noecho()
     answer = default
 
     if default == 'n':
@@ -87,31 +83,43 @@ def question_with_timer(question, seconds, default='y'):
         default_str = "[Y/n]"
     question[-1] += " " + default_str 
 
+    print("\n")
+    for line in question:
+        print(line)
+
+    t = Timer()
+    stdscr = curses.initscr()
+    stdscr.nodelay(True)
+    curses.noecho()
+    
     try:
-        while True:
-            for id, line in enumerate(question):
-                stdscr.addstr(id, 0, line)
-            left = t.get_left()
-            if left <= 0:
-                break
-            stdscr.addstr(len(question), 0, "Seconds left: %02d " % left)
-            c = stdscr.getch()
-            if c == ord('y') :
-                answer = 'y'            
-                break
-            elif c == ord('n') :
-                answer = 'n'
-                break
-            elif c == ord('\n') :   
-                break
-    except KeyboardInterrupt:
-        print "Default answer was choosen\n"        
-    finally:
-        # Final operations start here
-        stdscr.keypad(0)        
         try:
-            curses.echo()
-            curses.endwin()
-        except curses.error as err:
-            print "Curses error:", err, "(maybe you are redirecting script's output)"
+            while True:
+                for id, line in enumerate(question):
+                    stdscr.addstr(id, 0, line)
+                left = t.get_left()
+                if left <= 0:
+                    break
+                stdscr.addstr(len(question), 0, "Seconds left: %02d " % left)
+                c = stdscr.getch()
+                if c == ord('y') :
+                    answer = 'y'            
+                    break
+                elif c == ord('n') :
+                    answer = 'n'
+                    break
+                elif c == ord('\n') :   
+                    break
+        finally:
+            # Final operations start here
+            stdscr.keypad(0)        
+            try:
+                curses.echo()
+                curses.endwin()
+            except curses.error, err:
+                print("Curses error:", err, "(maybe you are redirecting script's output)")
+    except KeyboardInterrupt:
+        print("  Exception KeyboardInterrupt was raised: default answer was choosen")
+    
+    print("Answer '" + answer + "' was choosen")
     return answer
