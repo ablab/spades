@@ -109,7 +109,10 @@ def question_with_timer(question, seconds, default = 'y'):
         print "Default answer was choosen\n"        
     finally:
         # Final operations start here
-        stdscr.keypad(0)
-        curses.echo()
-        curses.endwin()
+        stdscr.keypad(0)        
+        try:
+            curses.echo()
+            curses.endwin()
+        except curses.error as err:
+            print "Curses error:", err, "(maybe you are redirecting script's output)"
     return answer
