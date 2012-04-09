@@ -1,12 +1,12 @@
 %define debug_package %{nil}
-Name:          SPAdes 
-Version:        1.0.0
+Name:           spades 
+Version:        2.0.0
 Release:        1%{?dist}
 License:        GPLv2
 Summary:        SPAdes genome assembler
 URL:            http://bioinf.spbau.ru/spades
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Source: 	spades_1.0.0.tar.gz
+Source: 	spades_2.0.0.tar.gz
 Requires:       cmake boost-devel python-devel log4cxx-devel zlib-devel python-matplotlib
 Autoreq:        0
 %description  
