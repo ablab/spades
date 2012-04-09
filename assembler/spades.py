@@ -189,7 +189,7 @@ def main():
             err_code = 0
             try:
                 bh_dataset_filename = run_bh(bh_cfg)
-            except support.spades_error as err:
+            except support.spades_error, err:
                 print err.err_str
                 err_code = err.code
 
@@ -246,7 +246,7 @@ def main():
                 run_spades(spades_cfg, cfg["quality_assessment"])
             else:
                 run_spades(spades_cfg)
-        except support.spades_error as err:
+        except support.spades_error, err:
             print err.err_str
             err_code = err.code
 
@@ -304,7 +304,9 @@ def run_spades(cfg, quality_cfg = None):
     for K in cfg.iterative_K:
         count += 1
 
-        dst_configs = os.path.join(cfg.working_dir, "config_K" + str(K), "configs")
+        dst_configs = os.path.join(cfg.working_dir, "config_K" + str(K))
+        os.mkdir(dst_configs)
+        dst_configs = os.path.join(dst_configs, "configs")
         shutil.copytree(os.path.join(spades_home, "configs"), dst_configs)
         cfg_file_name = os.path.join(dst_configs, "debruijn", "config.info")
 
@@ -318,11 +320,11 @@ def run_spades(cfg, quality_cfg = None):
 
         support.sys_call(command, execution_home)
 
-        #dataset_id = os.path.splitext(os.path.basename(cfg.dataset))[0]
         latest = os.path.join(cfg.working_dir, "K%d" % (K), "latest")
         latest = os.readlink(latest)
         latest = os.path.join(cfg.working_dir, "K%d" % (K), latest)
-        os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
+        #os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
+        os.symlink(latest, os.path.join(cfg.working_dir, "link_K%d" % (K)))  # python2.4 doesn't support os.path.relpath
 
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     os.remove(cfg.additional_contigs)
@@ -331,9 +333,7 @@ def run_spades(cfg, quality_cfg = None):
         print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
 
         args = [cfg.result_contigs]
-        #dataset_filename = cfg.dataset
-        #dataset = load_config_from_info_file(dataset_filename)["common"]
-
+        
         if quality_cfg.__dict__.has_key("reference"):
             args.append("-R")
             args.append(os.path.abspath(os.path.expandvars(quality_cfg.reference)) )

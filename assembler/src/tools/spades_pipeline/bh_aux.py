@@ -60,12 +60,14 @@ def hammer(given_props, output_dir, compress):
         if prop in read_files():
             new_val = '"'
             for oldfile in val[1:-1].strip().split("  "):
-                newfile = output_dir + "/" + os.path.basename(oldfile)
+                newfile_relpath = os.path.basename(oldfile)
+                newfile = output_dir + "/" + newfile_relpath
                 cmd += ["cp " + oldfile + " " + output_dir + "/"]
                 if compress:
                     cmd += ["gzip -9 -f " + newfile]
+                    newfile_relpath += ".gz"
                     newfile += ".gz"
-                new_val += os.path.relpath(newfile, output_dir) + '  '
+                new_val += newfile_relpath + '  '
             new_val += '"'
             val = new_val
         dataset_entry += [(prop, val)]
@@ -77,7 +79,7 @@ def hammer(given_props, output_dir, compress):
 
 def dataset_pretty_print(dataset):    
     canonical_order       = ["paired_reads", "single_reads", "jumping_first", "jumping_second", "jumping_single_first", "jumping_single_second", "RL", "IS", "delta", "jump_is", "jump_rl", "single_cell", "is_var", "reference_genome", "genes", "operons"]
-    max_property_name_len = len(max(canonical_order, key=len))
+    max_property_name_len = max([len(x) for x in canonical_order])
     tabulation            = "    " 
     
     pretty = ""
