@@ -147,16 +147,3 @@ def load_config_from_info_file(filename):
         cfg[block_name] = load_config_from_vars(vars_from_lines(blocks[block_name]))
 
     return cfg
-
-def check_dataset(dataset):
-    lines = file_lines(dataset)
-    reads_fields = ["paired_reads", "single_reads"]
-
-    for line in lines:
-        for reads_field in reads_fields:
-            if line.startswith(reads_field):
-                value = line.split(reads_field)[1].strip()
-                if not value.startswith('"') and len(value.split()) > 1:
-                    return False
-        
-    return True

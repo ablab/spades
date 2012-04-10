@@ -95,17 +95,10 @@ def generate_dataset(cfg, tmp_dir, input_files):
     if (cfg.max_iterations <= 10):
         str_it_count = "0" + str_it_count
     dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count, input_files)
-    dataset_cfg["single_cell"] = bool_to_str(cfg.single_cell)
-    if cfg.__dict__.has_key("reference"):    
-        dataset_cfg["reference_genome"] = os.path.abspath(os.path.expandvars(cfg.reference))
-    if cfg.__dict__.has_key("genes"):    
-        dataset_cfg["genes"]            = os.path.abspath(os.path.expandvars(cfg.genes))
-    if cfg.__dict__.has_key("operons"):        
-        dataset_cfg["operons"]          = os.path.abspath(os.path.expandvars(cfg.operons))
+    dataset_cfg["single_cell"] = bool_to_str(cfg.single_cell)    
     return dataset_pretty_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))
 
-def split_paired_file(cfg):
-    input_filename = cfg.input_reads[0]
+def split_paired_file(input_filename, output_folder):
     ext = os.path.splitext(input_filename)[1]
 
     input_file = file    
@@ -120,8 +113,8 @@ def split_paired_file(cfg):
         input_file   = open(input_filename, 'r')
         out_basename = os.path.splitext(os.path.basename(input_filename))[0]
 
-    out_left_filename  = os.path.join(cfg.working_dir, out_basename + "_left.fastq") 
-    out_right_filename = os.path.join(cfg.working_dir, out_basename + "_right.fastq")    
+    out_left_filename  = os.path.join(output_folder, out_basename + "_1.fastq") 
+    out_right_filename = os.path.join(output_folder, out_basename + "_2.fastq")    
     
     print("== Splitting " + input_filename + " into left and right reads")
 
@@ -138,4 +131,39 @@ def split_paired_file(cfg):
     input_file.close()
 
     return [out_left_filename, out_right_filename]
+
+def merge_paired_files(src_paired_reads, dst_paired_reads, output_folder):
+    merged = dst_paired_reads
+
+    for i in [0, 1]:
+        dst_filename = file
+        if dst_paired_reads[i].startswith(output_folder):
+            dst_filename = dst_paired_reads[i]
+        else:
+            import shutil
+            import os
+            shutil.copy(dst_paired_reads[i], output_folder)
+            dst_filename = os.path.join(output_folder, os.path.basename(dst_paired_reads[i]))
+            merged[i] = dst_filename
+        
+        src_file = open(src_paired_reads[i], 'r')
+        dst_file = open(dst_filename, "a")
+        dst_file.write(src_file.read())
+        dst_file.close()
+        src_file.close()
+
+    return merged
+
+def ungzip_if_needed(filename, output_folder):    
+    file_basename, file_extension = os.path.splitext(filename)
+    if file_extension == ".gz":
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+        ungzipped_filename = os.path.join(output_folder, os.path.basename(file_basename))
+        ungzipped_file = open(ungzipped_filename, 'w')
+        import subprocess
+        subprocess.call(['gunzip', filename, '-c'], stdout=ungzipped_file)
+        ungzipped_file.close()
+        filename = ungzipped_filename        
+    return filename
 

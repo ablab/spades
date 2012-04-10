@@ -6,29 +6,31 @@ output_to_console   true                              ; optional. Default is tru
 developer_mode      false                             ; optional. Default is false
 compilation_dir                                       ; optional. Default is ~/.spades/precompiled/
 
+dataset
+{
+    paired_reads        $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_1.fastq.gz $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_1.fastq.gz
+    single_reads                                      ; optional    
+    single_cell         false
+}
+
 error_correction
-{                       ; wildcards can be used here:
-    input_reads         $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
+{
     output_dir                                        ; optional. Global output_dir is used if not specified
     qvoffset                                          ; optional. Either 33 or 64
     max_iterations      4
     max_threads         20
     max_memory          50 ; in GB
-    gzip_output         true
-
-    dataset_name        ECOLI_1K                ; optional. Default is "dataset"
-    single_cell         false    
+    gzip_output         true    
 }
 
 assembly
 {
     iterative_K         21 33 55
     paired_mode         true
-    dataset             $cfg/test_dataset/ECOLI_1K.info ; not used if run with bh
     generate_sam_files  true                          ; optional. Default is false  
 }
 
-quality_assessment      ; optional. If section exists than spades.py evaluates quality of the final contigs 
+quality_assessment      ; optional. If section exists (even if it has no lines) than spades.py evaluates quality of the final contigs 
 {
     reference           $cfg/test_dataset/E.coli/MG1655-K12.first1K.fasta.gz ; optional
     genes               $cfg/test_dataset/E.coli/genes.first1K.txt           ; optional
