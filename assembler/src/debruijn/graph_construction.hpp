@@ -157,8 +157,8 @@ size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, Single
             for (size_t i = 0; i < nthreads; ++i) 
                 vector_seq[i].reserve(buf_size);
             INFO("Filling Buffer");
-            for(size_t i = 0; i < nthreads; ++i) {
-                for (size_t j = 0; j < buf_size && !reads_stream.eof(); ++j) {
+            for (size_t j = 0; j < buf_size; ++j) {
+                for(size_t i = 0; i < nthreads && !reads_stream.eof(); ++i) {
                     reads_stream >> r;
                     const Sequence& seq = r.sequence();
                     vector_seq[i].push_back(seq);

@@ -19,7 +19,7 @@ class MatePairTransformer{
 
 typedef typename graph_pack::graph_t Graph;
 typedef typename Graph::EdgeId EdgeId;
-typedef vector<EdgeId > Path;
+typedef vector<EdgeId> Path;
 const graph_pack& gp;
 const PairedInfoIndex<Graph>& pair_info_;
 

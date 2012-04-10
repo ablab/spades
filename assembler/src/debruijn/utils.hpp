@@ -368,16 +368,23 @@ public:
 
 	Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
+        TRACE("Mapping sequence");
 		if (read.size() <= k - 1) {
 			return Path<EdgeId>();
 		}
+
+        TRACE("init start kmer");
+
 		Kmer kmer = read.start<k>();
 		size_t startPosition = -1;
 		size_t endPosition = -1;
+        TRACE("process kmer");
 		bool valid = ProcessKmer(kmer, passed, startPosition, endPosition,
 				false);
 		for (size_t i = k; i < read.size(); ++i) {
+        TRACE("shift kmer");
 			kmer = kmer << read[i];
+        TRACE("process kmer");
 			valid = ProcessKmer(kmer, passed, startPosition, endPosition,
 					valid);
 		}

@@ -200,7 +200,7 @@ public:
      * no init method, filling right here
 	 */
 	template<typename S>
-	explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_) : data_() {
+	explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_) {
 		
         TRACE("New Constructor for seq " << s[0] << " is first symbol");
         VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));

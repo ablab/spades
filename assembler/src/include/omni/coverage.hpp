@@ -17,6 +17,7 @@
 #include <tr1/unordered_map>
 #include "logger/logger.hpp"
 #include "io/reader.hpp"
+#include "perfcounter.hpp"
 
 
 namespace omnigraph {
@@ -36,19 +37,30 @@ private:
 	}
 
 	template<class ReadThreader>
-	void ProcessRead(const ReadThreader& threader, io::SingleRead read) {
-		Path<EdgeId> path = threader.MapSequence(
-				Sequence(read.GetSequenceString()));
-		if (path.sequence().size() == 0)
-			return;
-		const vector<EdgeId> &sequence = path.sequence();
-		for (typename vector<EdgeId>::const_iterator it = sequence.begin(); it
-				!= path.sequence().end(); ++it) {
-			IncCoverage(*it, this->g().length(*it));
-		}
-		IncCoverage(sequence[0], -int(path.start_pos()));
-		EdgeId last = sequence[sequence.size() - 1];
-		IncCoverage(last, int(path.end_pos()) - int(this->g().length(last)));
+	Path<EdgeId> ProcessSequence(const ReadThreader& threader, const Sequence& sequence) const {
+        //TRACE("Processing sequence " << sequence.str());
+		//Path<EdgeId> path = threader.MapSequence(sequence);
+        //TRACE("Sequence threaded successfully");
+        return threader.MapSequence(sequence);
+    }
+
+    void AddPathsToGraph(const Path<EdgeId>& path) {
+
+        TRACE("adding path ");
+        if (path.sequence().size() == 0) 
+            return;
+
+        const vector<EdgeId>& edges_list = path.sequence();
+        TRACE("list of edges with size " << edges_list.size());
+
+        for (auto it = edges_list.cbegin(); it != edges_list.cend(); ++it) {
+            TRACE("Increase coverage of " << this->g().length(*it));
+            IncCoverage(*it, this->g().length(*it));
+        }
+        TRACE("Finished increasing coverage");
+        IncCoverage(edges_list[0], -int(path.start_pos()));
+        EdgeId last = edges_list[edges_list.size() - 1];
+        IncCoverage(last, int(path.end_pos()) - int(this->g().length(last)));
 	}
 
 public:
@@ -96,17 +108,74 @@ public:
 	}
 
 	template<class ReadThreader>
-	void FillIndex(io::IReader<io::SingleRead>& stream, const ReadThreader& threader) {
+	void FillIndex(io::IReader<io::SingleRead>& reads_stream, const ReadThreader& threader) {
 		INFO("Processing reads (takes a while)");
+        
         perf_counter pc;
-		size_t n = 0;
-		while (!stream.eof()) {
-			io::SingleRead read;
-			stream >> read;
-			ProcessRead(threader, read);
-			VERBOSE_POWER(++n, " reads processed");
+		
+        size_t counter = 0;
+
+        size_t buf_size = 4000000;
+        size_t nthreads = 4;
+
+		io::SingleRead read;
+     
+        while (!reads_stream.eof()) {
+            vector<vector<Sequence> > vector_seq(nthreads, vector<Sequence>());
+
+            //initialization
+            for (size_t i = 0; i < nthreads; ++i) 
+                vector_seq[i].reserve(buf_size);
+
+            INFO("Filling Sequence Buffer");
+
+            for (size_t j = 0; j < buf_size; ++j) {
+                for(size_t i = 0; i < nthreads && !reads_stream.eof(); ++i) {
+                    reads_stream >> read;
+                    vector_seq[i].push_back(read.sequence());
+                    VERBOSE_POWER(++counter, " reads processed");
+                }
+            }
+
+            INFO("Finished Filling Sequence Buffer");
+
+            INFO("Filling Path Buffer");
+
+            typedef Path<EdgeId> DataType;
+
+            vector<vector<DataType>> buffer(nthreads, vector<DataType>());
+            //buffer init.
+            for (size_t i = 0; i < nthreads; ++i) 
+                buffer[i].reserve(buf_size);
+
+            //#pragma omp parallel for num_threads(nthreads)
+            for (size_t i = 0; i < nthreads; ++i) {
+                for (size_t j = 0; j < vector_seq[i].size(); ++j) {
+                    TRACE("Pushing in buffer ");
+                    const Path<EdgeId>& path = ProcessSequence(threader, vector_seq[i][j]);
+                    for (size_t k = 0; k < path.sequence().size(); ++k) {
+                        VERIFY(this->g().length(path.sequence()[k]));
+                    }
+                    buffer[i].push_back(path); 
+                    
+                }
+            }
+
+            INFO("Finished Filling Path Buffer");
+
+            INFO("Threading Paths");
+
+            for (size_t i = 0; i < nthreads; ++i) {
+                for (size_t j = 0; j < buffer[i].size(); ++j) {
+                    AddPathsToGraph(buffer[i][j]); 
+                }
+            }
+
+            INFO("Finished Threading Paths");
 		}
+
         INFO("Elapsed time: " << pc.time_ms());
+        exit(0);
 	}
 
 	virtual void HandleDelete(EdgeId edge) {
