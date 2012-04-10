@@ -27,29 +27,15 @@ def prepare_config_bh(filename, cfg):
 
     subst_dict = dict()
     cfg.working_dir = os.path.abspath(cfg.working_dir)
+   
+    #TODO single reads!
 
-    import glob
-    input_reads = []
-    if not type(cfg.input_reads) is list:
-        cfg.input_reads = [cfg.input_reads]
-    for read in cfg.input_reads:
-        input_reads.extend(glob.glob(os.path.abspath(os.path.expandvars(read))))
+    subst_dict["input_numfiles"]           = len(cfg.paired_reads)
 
-    if len(input_reads) == 0:
-        error("The given wildcards do not correspond to existing files: " + str(cfg.input_reads))
-
-    cfg.input_reads = input_reads
-
-    if len(cfg.input_reads) == 1:
-        import bh_aux
-        cfg.input_reads = bh_aux.split_paired_file(cfg)
-
-    subst_dict["input_numfiles"]           = len(cfg.input_reads)
-
-    for i, input_read in enumerate(cfg.input_reads):
+    for i, input_read in enumerate(cfg.paired_reads):
         subst_dict["input_file_" + str(i)]  = input_read
 
-    subst_dict["input_gzipped"]             = bool_to_str(cfg.input_reads[0].endswith(".gz"))
+    subst_dict["input_gzipped"]             = bool_to_str(False)
     subst_dict["input_working_dir"]         = cfg.working_dir
     subst_dict["general_max_iterations"]    = cfg.max_iterations
     subst_dict["general_max_nthreads"]      = cfg.max_threads
@@ -72,7 +58,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict["dataset"]            = cfg.dataset
     subst_dict["output_base"]        = cfg.working_dir
     subst_dict["additional_contigs"] = cfg.additional_contigs
-    subst_dict["entry_point"]        = 'construction'
+    subst_dict["entry_point"]        = "construction"
     subst_dict["developer_mode"]     = str(cfg.developer_mode).lower()
     subst_dict["SAM_writer_enable"]  = bool_to_str(cfg.generate_sam_files)
     subst_dict["project_name"]       = ""
@@ -93,6 +79,10 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     substitute_params(filename, subst_dict)
 
 def check_config(cfg, config_filename):
+
+    if not cfg.has_key("dataset"):
+        error("wrong config! You should specify 'dataset' section!")
+        return False
 
     if (not cfg.has_key("error_correction")) and (not cfg.has_key("assembly")):
         error("wrong config! You should specify either 'error_correction' section (for reads error correction) or 'assembly' one (for assembling) or both!")
@@ -150,28 +140,27 @@ def main():
         else:
             bh_cfg.__dict__["output_dir"] = os.path.expandvars(bh_cfg.output_dir)
             warning("output_dir (" + bh_cfg.output_dir + ") will be used for error correction instead of the common one (" + cfg["common"].output_dir + ")")
-        if not bh_cfg.__dict__.has_key("dataset_name"):
-            bh_cfg.__dict__["dataset_name"] = "dataset"
         
         bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
         
         bh_cfg.__dict__["working_dir"] = os.path.join(bh_cfg.output_dir, "tmp")
 
+        bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir, cfg["common"].project_name + ".info")
+
         start_bh = True
         if os.path.exists(bh_cfg.output_dir):
-            bh_dataset_filename = os.path.abspath(os.path.join(bh_cfg.output_dir, bh_cfg.dataset_name + ".info"))            
-            if os.path.exists(bh_dataset_filename):
+            if os.path.exists(bh_cfg.dataset):
                 question = ["WARNING! It looks like error correction was already done!", 
-                            "Dataset " + bh_dataset_filename + " already exists!",
-                            "Do you want to overwrite this dataset and start error correction again?"]
+                            "Folder with corrected dataset " + bh_cfg.output_dir + " already exists!",
+                            "Do you want to overwrite this folder and start error correction again?"]
                 answer = support.question_with_timer(question, 10, 'n')
                 if answer == 'n':
                     start_bh = False
+                    bh_dataset_filename = bh_cfg.dataset
                     print("\n===== Error correction skipped\n")
                 else:
-                    os.remove(bh_dataset_filename)
-            else:
-                bh_dataset_filename = ""
+                    os.remove(bh_cfg.dataset)
+            #else:            
             #    shutil.rmtree(bh_cfg.output_dir)
 
         if start_bh:
@@ -182,6 +171,35 @@ def main():
             bh_cfg.__dict__["log_filename"] = log_filename
 
             shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
+
+            # parsing dataset section
+            bh_cfg.__dict__["single_cell"]  = cfg["dataset"].single_cell            
+            bh_cfg.__dict__["paired_reads"] = []
+            bh_cfg.__dict__["single_reads"] = []
+            import bh_aux
+            for key, value in cfg["dataset"].__dict__.iteritems():
+                if type(value) != list:
+                    value = [value]                
+                if key.startswith("single_reads"):  
+                    for item in value:
+                        item = os.path.abspath(os.path.expandvars(item))
+                        item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir)
+                        bh_cfg.single_reads.append(item)
+                elif key.startswith("paired_reads"):
+                    cur_paired_reads = []
+                    if len(value) == 1:
+                        item = os.path.abspath(os.path.expandvars(value[0]))
+                        cur_paired_reads = split_paired_file(item, output_folder)
+                    elif len(value) == 2:
+                        for item in value:
+                            item = os.path.abspath(os.path.expandvars(item))
+                            item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir)
+                            cur_paired_reads.append(item)
+
+                    if len(bh_cfg.paired_reads) == 0:
+                        bh_cfg.paired_reads = cur_paired_reads
+                    else:
+                        bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads, bh_cfg.paired_reads, bh_cfg.working_dir)                          
 
             print("\n===== Error correction started. Log can be found here: " + bh_cfg.log_filename + "\n")
 
@@ -203,19 +221,7 @@ def main():
     if cfg.has_key("assembly"):
         spades_cfg = merge_configs(cfg["assembly"], cfg["common"])        
         if not spades_cfg.__dict__.has_key("generate_sam_files"):
-            spades_cfg.__dict__["generate_sam_files"] = False
-
-        if bh_dataset_filename != "":
-            if spades_cfg.__dict__.has_key("dataset"):
-                warning("dataset created during error correction (" + bh_dataset_filename + ") will be used instead of the one from config file (" + spades_cfg.dataset + ")!")
-            spades_cfg.__dict__["dataset"] = bh_dataset_filename
-        spades_cfg.dataset = os.path.abspath(os.path.expandvars(spades_cfg.dataset))
-        if not os.path.isfile(spades_cfg.dataset):
-            error("dataset " + spades_cfg.dataset + " doesn't exist!")
-            exit(1)
-        if not check_dataset(spades_cfg.dataset):
-            error("" "incorrect dataset " + spades_cfg.dataset + ": list of files with reads should be arounded with double quotes!")
-            exit(1)
+            spades_cfg.__dict__["generate_sam_files"] = False        
 
         def make_working_dir(output_dir):
             import datetime
@@ -234,8 +240,36 @@ def main():
         spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.working_dir, spades_cfg.project_name + ".fasta")
         spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.working_dir, "simplified_contigs.fasta")
 
-        shutil.copy(CONFIG_FILE, spades_cfg.working_dir)
-        shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)
+        shutil.copy(CONFIG_FILE, spades_cfg.working_dir)      
+        
+        # dataset created during error correction
+        if bh_dataset_filename:
+            spades_cfg.__dict__["dataset"] = bh_dataset_filename
+                
+        if not spades_cfg.__dict__.has_key("dataset"):
+            # creating dataset
+            dataset_filename = os.path.join(spades_cfg.working_dir, cfg["common"].project_name + ".info")
+            dataset_file = open(dataset_filename, 'w')
+            for key, value in cfg["dataset"].__dict__.iteritems():
+                dataset_file.write(key + '\t')
+
+                if type(value) == bool:
+                    dataset_file.write(bool_to_str(value))
+                else:
+                    dataset_file.write('"')
+                    if type(value) != list:
+                        value = [value]
+                    for item in value:
+                        item = os.path.abspath(os.path.expandvars(item))
+                        dataset_file.write(str(item) + ' ')
+                    dataset_file.write('"')
+
+                dataset_file.write('\n')
+            dataset_file.close()
+            spades_cfg.__dict__["dataset"] = dataset_filename
+        else:
+            spades_cfg.dataset = os.path.abspath(os.path.expandvars(spades_cfg.dataset))
+            shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)
 
         print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
 
@@ -279,12 +313,12 @@ def run_bh(cfg):
     support.sys_call(command)
 
     import bh_aux
-    dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir, cfg.input_reads)    
-    dataset_filename = os.path.abspath(os.path.join(cfg.output_dir, cfg.dataset_name + ".info"))
+    dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir, cfg.paired_reads)        
+    dataset_filename = cfg.dataset
     dataset_file = open(dataset_filename, "w")
     dataset_file.write(dataset_str)
     dataset_file.close()
-    print("\n== Dataset created: " + dataset_filename + "\n")
+    print("\n== Dataset info-file created: " + dataset_filename + "\n")
 
     shutil.rmtree(cfg.working_dir)
 
