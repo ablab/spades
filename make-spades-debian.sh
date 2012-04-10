@@ -30,6 +30,9 @@ rm -r src/tools/dot_conv.sh
 rm -r src/tools/run_velvet_unpaired.sh
 rm -r src/tools/run_velvet2.sh
 rm -r src/tools/quality/libs/mauve
+rm -r src/tools/quality/libs/gage
+rm -r src/tools/quality/libs/genemark_suite_linux_64
+rm -r src/tools/quality/libs/report
 
 rm gen_k
 rm editcfg
