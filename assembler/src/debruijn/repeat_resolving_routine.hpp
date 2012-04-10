@@ -617,7 +617,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 	size_t max_comparable_path = *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var);
 	auto first_edge = first_info.second;
 	auto first_weight = first_info.weight;
-	if (first_info.d < 0.0001 || second_info.d < 0.0001)
+	if (first_info.d < 0.0001 || second_info.d < 0.0001 || first_info.d > second_info.d)
 		return 0;
 
 	auto second_edge = second_info.second;
@@ -629,10 +629,10 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 		distances.push_back(CummulativeLength<typename graph_pack::graph_t>(origin_gp.g, *paths_it));
 	}
 	//= callback.distances();
-	paths = GetAllPathsFromSameEdge(origin_gp, second_edge, first_edge);
-	for (auto paths_it = paths.begin(); paths_it != paths.end(); paths_it ++) {
-		distances.push_back(CummulativeLength<typename graph_pack::graph_t>(origin_gp.g, *paths_it));
-	}
+//	paths = GetAllPathsFromSameEdge(origin_gp, second_edge, first_edge);
+//	for (auto paths_it = paths.begin(); paths_it != paths.end(); paths_it ++) {
+//		distances.push_back(CummulativeLength<typename graph_pack::graph_t>(origin_gp.g, *paths_it));
+//	}
 	bool comparable = false;
 	for(size_t i = 0; i < distances.size(); i++) {
 		DEBUG(distances[i] );
@@ -657,7 +657,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 			return 0;
 		}
 	} else {
-		if (paths.size() == 1 && first_info.variance == 0 && second_info.variance == 0) {
+		if (paths.size() == 1 && first_info.variance == 0 && second_info.variance == 0 && (abs(distances[0] - second_info.d + first_info.d + origin_gp.g.length(first_edge)) < 0.1)) {
 			int nonzero_info = 0;
 			double tmpd = first_info.d + origin_gp.g.length(first_info.second);
 			double w = (first_info.weight + second_info.weight)/2;
@@ -668,15 +668,15 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 					break;
 				} else {
 					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 0));
-					DEBUG("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first_info.first) << " " << origin_gp.int_ids.ReturnIntId(*path_iter));
+					INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first_info.first) << " " << origin_gp.int_ids.ReturnIntId(*path_iter));
 				}
 				tmpd += origin_gp.g.length(*path_iter);
 			}
 			if (! nonzero_info) {
 
 				if (paths.begin()->size() != 0) {
-					DEBUG("filled missing " << paths.begin()->size() << "edges");
-					DEBUG("while treating info from "<< origin_gp.int_ids.ReturnIntId(first_info.first) << " to " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge));
+					INFO("filled missing " << paths.begin()->size() << "edges");
+					INFO("while treating info from "<< origin_gp.int_ids.ReturnIntId(first_info.first) << " to " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge));
 				}
 				return paths.begin()->size();
 			}
@@ -701,14 +701,16 @@ void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename gra
 			long_edges_count ++;
 		auto pi = clustered_index.GetEdgeInfo(*e_iter);
 		for (auto i_iter = pi.begin(); i_iter!= pi.end(); ++i_iter) {
-			for(auto j_iter = i_iter + 1; j_iter != pi.end(); ++j_iter) {
-				PairInfo<typename graph_pack::graph_t::EdgeId> first_info = *i_iter;
-				PairInfo<typename graph_pack::graph_t::EdgeId> second_info = *j_iter;
-				if (origin_gp.g.length(*e_iter) >= *cfg::get().ds.RL * 2) { //TODO: change to something reasonable.
-					missing_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 1);
-				}
-				if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length) {
-					extra_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 0);
+			for(auto j_iter = pi.begin(); j_iter != pi.end(); ++j_iter) {
+				if (i_iter != j_iter) {
+					PairInfo<typename graph_pack::graph_t::EdgeId> first_info = *i_iter;
+					PairInfo<typename graph_pack::graph_t::EdgeId> second_info = *j_iter;
+					if (origin_gp.g.length(*e_iter) >= *cfg::get().ds.RL * 2) { //TODO: change to something reasonable.
+						missing_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 1);
+					}
+					if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length) {
+						extra_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 0);
+					}
 				}
 			}
 		}
