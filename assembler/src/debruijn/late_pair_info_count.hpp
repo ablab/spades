@@ -8,13 +8,12 @@
 #include "dataset_readers.hpp"
 
 namespace debruijn_graph {
-
 void late_pair_info_count(conj_graph_pack& gp,
 		paired_info_index& paired_index) {
 	exec_simplification(gp);
 
 	if (cfg::get().paired_mode) {
-		const size_t edge_length_threshold = 500;
+		size_t edge_length_threshold = Nx(gp.g, 50);//500;
 		auto_ptr<PairedReadStream> stream = paired_easy_reader(false, 0);
 		refine_insert_size(*stream, gp, edge_length_threshold);
 
