@@ -75,6 +75,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict["entry_point"]        = 'construction'
     subst_dict["developer_mode"]     = str(cfg.developer_mode).lower()
     subst_dict["SAM_writer_enable"]  = bool_to_str(cfg.generate_sam_files)
+    subst_dict["project_name"]       = ""
 
     if last_one:
         subst_dict["gap_closer_enable"] = "true"
