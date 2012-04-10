@@ -43,10 +43,14 @@ void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, siz
 		sum += is;
 		sum2 += is * 1.0 * is;
 	}
+	const size_t magic_number = n/2;
 
-	const size_t magic_number = 100;
-	if (succesfully_processed < magic_number) {
-		throw std::runtime_error("Sorry! Failed to estimate paired parameters.");
+	if (succesfully_processed == 0) {
+		throw std::runtime_error("Sorry! Failed to estimate paired parameters. No one read pair successfully aligned to long edges.");
+	} else {
+		if (succesfully_processed < magic_number) {
+			WARN("Only "<< n <<" ("<<(double)(succesfully_processed * 100) / n<<"%) paired reads aligned to long edges while calculating insert size.");
+		}
 	}
 
 	double mean, delta;

@@ -1004,4 +1004,26 @@ const Sequence& genome, size_t bound, const string &file_name) {
  }
  */
 
+template<class Graph>
+size_t Nx(Graph &g, double percent){
+	size_t sum_edge_length = 0;
+	vector<size_t> lengths;
+	for (auto iterator = g.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
+		lengths.push_back(g.length(*iterator));
+		sum_edge_length += g.length(*iterator);
+	}
+	sort(lengths.begin(), lengths.end());
+	double len_perc = (1 - percent * 0.01) * (sum_edge_length);
+	for(size_t i = 0; i < lengths.size(); i++){
+		if (lengths[i] >= len_perc)
+			return lengths[i];
+		else
+			len_perc -= lengths[i];
+	}
+	return 0;
+}
+
+
+
+
 }
