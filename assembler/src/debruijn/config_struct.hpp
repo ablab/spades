@@ -365,6 +365,7 @@ public:
 
 	std::string dataset_file;
 	std::string dataset_name;
+	std::string project_name;
 	std::string input_dir;
 	std::string output_base;
 	std::string output_root;
@@ -714,9 +715,12 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
 	// instead of dataset_name.
 	cfg.dataset_name = boost::filesystem::basename(boost::filesystem::path(cfg.dataset_file));
-	//cfg.output_root = cfg.output_base + cfg.dataset_name + "/K" + ToString(K)
-	cfg.output_root = cfg.output_base + "/K" + ToString(K)
-			+ "/";
+
+	load(cfg.project_name, pt, "project_name");
+	cfg.output_root = cfg.project_name.empty()
+			? (cfg.output_base + "/K" + ToString(K) + "/")
+			: (cfg.output_base + cfg.project_name + "/K" + ToString(K) + "/");
+
 	cfg.output_suffix = MakeLaunchTimeDirName() + "/";
 	cfg.output_dir = cfg.output_root + cfg.output_suffix;
 	cfg.output_saves = cfg.output_dir + "saves/";

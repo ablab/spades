@@ -4,7 +4,8 @@
 #include "distance_estimation.info"
 #include "detail_info_printer.info"
 
-dataset     ./test_dataset/input/ECOLI_1K.info
+project_name ECOLI_1K
+dataset     ./test_dataset/ECOLI_1K.info
 
 output_base	      ./data/debruijn/
 
