@@ -116,19 +116,17 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const size_t max_distance_;
-	const double MAGIC_DIST;
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(size_t first_len, size_t second_len,
 			vector<PairInfo<EdgeId> > data,
-			vector<size_t> forward_/*, bool debug = false*/) {
+			vector<size_t> raw_forward/*, bool debug = false*/) {
 		vector<pair<size_t, double> > result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());
 		vector<size_t> forward;
-		for (size_t i = 0; i < forward_.size(); ++i)
-			if (math::le(minD - MAGIC_DIST, (double) forward_[i])
-					&& math::le((double) forward_[i], maxD + MAGIC_DIST))
-				forward.push_back(forward_[i]);
+		for (size_t i = 0; i < raw_forward.size(); ++i)
+			if (minD - max_distance_ <= raw_forward[i] && raw_forward[i] <= maxD + max_distance_)
+				forward.push_back(raw_forward[i]);
 		if (forward.size() == 0)
 			return result;
 		//        if (debug) for (size_t i = 0; i<forward.size(); i++) INFO("Distances " << forward[i]) 
@@ -177,7 +175,7 @@ public:
 			const GraphDistanceFinder<Graph>& distance_finder,
 			size_t linkage_distance, size_t max_distance) :
 			base(graph, histogram, distance_finder, linkage_distance), max_distance_(
-					max_distance), MAGIC_DIST(15.) {
+					max_distance) {
 	}
 
 	virtual ~DistanceEstimator() {
