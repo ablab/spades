@@ -1,14 +1,19 @@
 project_name        ECOLI_IS220_QUAKE_1K
-output_dir          ./data/debruijn/
+output_dir          ./spades_output
 output_to_console   true
 developer_mode      false
-compilation_dir     ./precompiled/ECOLI_IS220_QUAKE_1K
+compilation_dir     ./teamcity_precompiled/ECOLI_IS220_QUAKE_1K
+
+dataset
+{
+    paired_reads             $cfg/../../../data/input/E.coli/is220/cropped/s_6.first1000_1.fastq.gz $cfg/../../../data/input/E.coli/is220/cropped/s_6.first1000_2.fastq.gz
+    single_cell              false
+}
 
 assembly
 {
     iterative_K         21 55
     paired_mode         true
-    dataset             $cfg/../../../configs/debruijn/datasets_archive/ECOLI_IS220_QUAKE_1K.info
     generate_sam_files  true
 }
 
