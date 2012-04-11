@@ -8,7 +8,7 @@ compilation_dir                                       ; optional. Default is ~/.
 
 dataset
 {
-    paired_reads        $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_1.fastq.gz $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_2.fastq.gz
+    paired_reads        $cfg/test_dataset/ecoli_first1K_1.fq.gz $cfg/test_dataset/ecoli_first1K_2.fq.gz 
     single_reads                                      ; optional    
     single_cell         false
 }
@@ -32,7 +32,7 @@ assembly
 
 quality_assessment      ; optional. If section exists (even if it has no lines) than spades.py evaluates quality of the final contigs 
 {
-    reference           $cfg/test_dataset/E.coli/MG1655-K12.first1K.fasta.gz ; optional
-    genes               $cfg/test_dataset/E.coli/genes.first1K.txt           ; optional
-    operons             $cfg/test_dataset/E.coli/operons.first1K.txt         ; optional
+    reference           $cfg/test_dataset/MG1655-K12.first1K.fasta.gz ; optional
+    genes               $cfg/test_dataset/genes.first1K.txt           ; optional
+    operons             $cfg/test_dataset/operons.first1K.txt         ; optional
 }
