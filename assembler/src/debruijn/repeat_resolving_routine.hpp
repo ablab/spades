@@ -370,8 +370,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
 //			origin_gp.g);
 //	ProduceLongEdgesStat( origin_gp,  clustered_index);
-	CorrectPairedInfo( origin_gp,  clustered_index);
-	CorrectPairedInfo( origin_gp,  clustered_index);
 	if (cfg::get().compute_paths_number)
 		GenerateMatePairStats(origin_gp,  clustered_index);
 	DEBUG("New index size: "<< clustered_index.size());
@@ -847,7 +845,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 			sub_dir, false);
 }
 
-/*void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
+void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 	nonconj_graph_pack nonconj_gp(genome);
 	PairedInfoIndex<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
 
@@ -870,7 +868,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 	process_resolve_repeats(nonconj_gp, clustered_index, resolved_gp,
 			graph_name, sub_dir, false);
 }
-*/
+
 void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndex<Graph>& index,
 		const paired_info_index& jump_index) {
 	VERIFY(cfg::get().andrey_params.write_contigs);
@@ -946,6 +944,9 @@ void resolve_repeats() {
 		}
 
 		if (cfg::get().rr.symmetric_resolve) {
+			CorrectPairedInfo( conj_gp,  clustered_index);
+			CorrectPairedInfo( conj_gp,  clustered_index);
+
 			conj_graph_pack resolved_gp(genome);
 			if (cfg::get().etalon_info_mode) {
 				//temporary
@@ -970,19 +971,19 @@ void resolve_repeats() {
 				}
 			}
 		} else {
-//			nonconj_graph_pack origin_gp(conj_gp.genome);
-//			PairedInfoIndex<nonconj_graph_pack::graph_t> orig_clustered_idx(
-//					origin_gp.g);
-//			Convert(conj_gp, clustered_index, origin_gp, orig_clustered_idx);
-//			nonconj_graph_pack resolved_gp(conj_gp.genome);
-//			process_resolve_repeats(origin_gp, orig_clustered_idx, resolved_gp,
-//					"graph");
-//			if (cfg::get().componential_resolve) {
-//				make_dir(cfg::get().output_dir + "resolve_components" + "/");
-//				for (int i = 0; i < number_of_components; i++) {
-//					resolve_nonconjugate_component(i + 1, genome);
-//				}
-//			}
+			nonconj_graph_pack origin_gp(conj_gp.genome);
+			PairedInfoIndex<nonconj_graph_pack::graph_t> orig_clustered_idx(
+					origin_gp.g);
+			Convert(conj_gp, clustered_index, origin_gp, orig_clustered_idx);
+			nonconj_graph_pack resolved_gp(conj_gp.genome);
+			process_resolve_repeats(origin_gp, orig_clustered_idx, resolved_gp,
+					"graph");
+			if (cfg::get().componential_resolve) {
+				make_dir(cfg::get().output_dir + "resolve_components" + "/");
+				for (int i = 0; i < number_of_components; i++) {
+					resolve_nonconjugate_component(i + 1, genome);
+				}
+			}
 		}
 	}
 
