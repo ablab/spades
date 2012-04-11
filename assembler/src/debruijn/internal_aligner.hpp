@@ -144,8 +144,8 @@ protected:
 		}
 		INFO("SAM file generating finished");
 		INFO("Processed "<< ProcessedReads<< " reads, "<< SuccesfullReads<< " ( "<< ((double)SuccesfullReads*100)/ProcessedReads<<"%) of them aligned.");
-		INFO( SplittedReads<<  " ( "<< ((double)SplittedReads*100)/ProcessedReads<<"%)"<< " reads split on few edges.");
-		INFO( " SamRecordsCount "<< SamRecordsCount);
+//		INFO( SplittedReads<<  " ( "<< ((double)SplittedReads*100)/ProcessedReads<<"%)"<< " reads split on few edges.");
+//		INFO( " SamRecordsCount "<< SamRecordsCount);
 	}
 
 	MySamRecord CreateSingleSAMFromRange(string read_name, Sequence read, EdgeId edge, MappingRange range, bool rc){
@@ -251,10 +251,12 @@ public:
 	}
 	template<class Stream>
 	void AlignPairedReads(Stream& s, const string& sam_output_filename) {
+		size_t n = 0;
 		InitializeSamFile(sam_output_filename);
 		while (!s.eof()) {
 			io::PairedRead p_r;
 			s >> p_r;
+			VERBOSE_POWER(++n, " paired reads processed");
 			ProcessPairedRead(p_r);
 		}
 		FinalizeSamFile();
@@ -472,11 +474,11 @@ protected:
 		}
 		else {
 
-			ERROR("Can not convert range");
-					for(size_t j = 0; j<path.size();  j++){
-						INFO(" " << path[j].first<<" "<<path[j].second.mapped_range);
-					}
-					INFO("labs "<<labels);
+//			ERROR("Can not convert range");
+//			for(size_t j = 0; j<path.size();  j++){
+//				INFO(" " << path[j].first<<" "<<path[j].second.mapped_range);
+//			}
+//			INFO("labs "<<labels);
 			return Range(0,0);
 		}
 	}
@@ -607,6 +609,7 @@ public:
 	template<class Stream, class OrigStream>
 	void AlignPairedReads(OrigStream& original_s, Stream& s, const string& sam_output_filename) {
 		this->InitializeSamFile(sam_output_filename);
+		size_t n = 0;
 		while (!s.eof()){
 			io::PairedRead p_r;
 			s >> p_r;
@@ -614,6 +617,7 @@ public:
 				io::PairedRead orig_p_r;
 				original_s >> orig_p_r;
 				if (p_r.first().name() == orig_p_r.first().name()){
+					VERBOSE_POWER(++n, " paired reads processed");
 					ProcessPairedRead(p_r, orig_p_r);
 					break;
 				}
@@ -673,14 +677,42 @@ public:
 template<class Graph, class SequenceMapper>
 class OriginalReadsSimpleInternalAligner : public SimpleInternalAligner<Graph, SequenceMapper>{
 protected:
+	int CountDiference(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, int shift){
+		if (s_r.size() + shift > orig_s_r.size()){
+			return orig_s_r.size();
+		}
+		int diff = 0;
+		for (int i = 0; i < (int)s_r.size(); i++){
+			if (s_r[i] != orig_s_r[i + shift] ) diff++;
+		}
+		return diff;
+	}
+	pair<int, int> SubstitutionShifts(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, double threshhold ){
+		int difference = (int)orig_s_r.size() - (int)s_r.size();
+		int best_i = 0;
+		int best_diff = orig_s_r.size();
+		for (int i=0; i < difference; i++){
+			int cur_diff = CountDiference(s_r, orig_s_r, i);
+			if (s_r.size() - cur_diff > threshhold * s_r.size()) return (make_pair(i,difference - i));
+			else {
+				if (cur_diff < best_diff) {
+					best_diff = cur_diff;
+					best_i = i;
+				}
+			}
+		}
+		return (make_pair(best_i,difference - best_i));
+	}
 	void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, const io::SingleRead& orig_s_r ){
 		io::SingleRead orig = orig_s_r;
 		if (MySam.FLAG & 0x10) orig = !orig;
 		if (s_r.size() < orig.size()){
+			pair<int, int> shifts = SubstitutionShifts(s_r, orig_s_r, 0.9);
 			MySam.SEQ = orig.sequence().str();
 			MySam.QUAL = orig.GetPhredQualityString();
-			if (MySam.FLAG & 0x10) MySam.CIGAR = ToString((int)(orig_s_r.size() - s_r.size())) + "S"+MySam.CIGAR;
-			else MySam.CIGAR += ToString((int)(orig_s_r.size() - s_r.size())) + "S";
+
+			if (MySam.FLAG & 0x10) MySam.CIGAR = (shifts.second != 0 ? ToString(shifts.second) + "S": "") + ToString(shifts) +MySam.CIGAR + (shifts.first != 0 ? ToString(shifts.first) + "S": "");
+			else MySam.CIGAR = (shifts.first != 0 ? ToString(shifts.first) + "S": "") + ToString(shifts) +MySam.CIGAR + (shifts.second != 0 ? ToString(shifts.second) + "S": "");
 		}
 		else
 		{
@@ -697,13 +729,15 @@ public:
 	template<class Stream, class OrigStream>
 	void AlignPairedReads(OrigStream& original_s, Stream& s, const string& sam_output_filename) {
 		this->InitializeSamFile(sam_output_filename);
+		size_t n = 0;
 		while (!s.eof()){
 			io::PairedRead p_r;
 			s >> p_r;
 			while (!original_s.eof()) {
 				io::PairedRead orig_p_r;
 				original_s >> orig_p_r;
-				if (p_r.first().name() == orig_p_r.first().name()){
+				if (p_r.first().name() == orig_p_r.first().name().substr(0, p_r.first().name().size())){
+					VERBOSE_POWER(++n, " paired reads processed");
 					ProcessPairedRead(p_r, orig_p_r);
 					break;
 				}
