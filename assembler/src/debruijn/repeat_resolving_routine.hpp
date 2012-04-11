@@ -617,9 +617,10 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 	size_t max_comparable_path = *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var);
 	auto first_edge = first_info.second;
 	auto first_weight = first_info.weight;
-	if (first_info.d < 0.0001 || second_info.d < 0.0001 || first_info.d > second_info.d)
+	if (fill_missing && (first_info.d < 0.0001 || second_info.d < 0.0001 || first_info.d > second_info.d))
 		return 0;
-
+	if (! fill_missing && (first_info.d * second_info.d < 0.0001 || first_info.d > second_info.d) )
+		return 0;
 	auto second_edge = second_info.second;
 	auto second_weight = second_info.weight;
 	DEBUG("Treating edges " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge));
@@ -667,7 +668,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 					nonzero_info ++;
 					break;
 				} else {
-					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 0));
+					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 1));
 					INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first_info.first) << " " << origin_gp.int_ids.ReturnIntId(*path_iter));
 				}
 				tmpd += origin_gp.g.length(*path_iter);
@@ -715,6 +716,8 @@ void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename gra
 			}
 		}
 	}
+	PairedInfoSymmetryHack<typename graph_pack::graph_t> hack(origin_gp.g, clustered_index);
+	hack.FillSymmetricIndex(clustered_index);
 	INFO("Paired info stats: missing = " << missing_paired_info_count << "; contradictional = " << extra_paired_info_count);
 }
 template<class graph_pack>
@@ -844,7 +847,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 			sub_dir, false);
 }
 
-void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
+/*void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 	nonconj_graph_pack nonconj_gp(genome);
 	PairedInfoIndex<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
 
@@ -867,7 +870,7 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 	process_resolve_repeats(nonconj_gp, clustered_index, resolved_gp,
 			graph_name, sub_dir, false);
 }
-
+*/
 void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndex<Graph>& index,
 		const paired_info_index& jump_index) {
 	VERIFY(cfg::get().andrey_params.write_contigs);
@@ -967,19 +970,19 @@ void resolve_repeats() {
 				}
 			}
 		} else {
-			nonconj_graph_pack origin_gp(conj_gp.genome);
-			PairedInfoIndex<nonconj_graph_pack::graph_t> orig_clustered_idx(
-					origin_gp.g);
-			Convert(conj_gp, clustered_index, origin_gp, orig_clustered_idx);
-			nonconj_graph_pack resolved_gp(conj_gp.genome);
-			process_resolve_repeats(origin_gp, orig_clustered_idx, resolved_gp,
-					"graph");
-			if (cfg::get().componential_resolve) {
-				make_dir(cfg::get().output_dir + "resolve_components" + "/");
-				for (int i = 0; i < number_of_components; i++) {
-					resolve_nonconjugate_component(i + 1, genome);
-				}
-			}
+//			nonconj_graph_pack origin_gp(conj_gp.genome);
+//			PairedInfoIndex<nonconj_graph_pack::graph_t> orig_clustered_idx(
+//					origin_gp.g);
+//			Convert(conj_gp, clustered_index, origin_gp, orig_clustered_idx);
+//			nonconj_graph_pack resolved_gp(conj_gp.genome);
+//			process_resolve_repeats(origin_gp, orig_clustered_idx, resolved_gp,
+//					"graph");
+//			if (cfg::get().componential_resolve) {
+//				make_dir(cfg::get().output_dir + "resolve_components" + "/");
+//				for (int i = 0; i < number_of_components; i++) {
+//					resolve_nonconjugate_component(i + 1, genome);
+//				}
+//			}
 		}
 	}
 
