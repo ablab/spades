@@ -3,6 +3,8 @@ rm spades_*
 cp -r assembler spades-2.0.0
 
 cd spades-2.0.0
+rm src/CMakeListsInternal.txt
+touch src/CMakeListsInternal.txt
 rm -r src/abruijn
 rm -r src/bayes
 rm -r src/test
