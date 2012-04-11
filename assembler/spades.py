@@ -123,6 +123,8 @@ def main():
         print >> sys.stderr, "Usage : python ", sys.argv[0], " <config file>"
         return
 
+    print("\n======= SPAdes pipeline started\n")
+
     print("Using config file: " + CONFIG_FILE)
     os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))
 
@@ -221,6 +223,7 @@ def main():
             if err_code:
                exit(err_code)
 
+    result_contigs_filename = ""
     if cfg.has_key("assembly"):
         spades_cfg = merge_configs(cfg["assembly"], cfg["common"])        
         if not spades_cfg.__dict__.has_key("generate_sam_files"):
@@ -280,10 +283,7 @@ def main():
         
         err_code = 0
         try:
-            if cfg.has_key("quality_assessment"):
-                run_spades(spades_cfg, cfg["quality_assessment"])
-            else:
-                run_spades(spades_cfg)
+            result_contigs_filename = run_spades(spades_cfg)              
         except support.spades_error, err:
             print err.err_str
             err_code = err.code
@@ -294,7 +294,42 @@ def main():
         if err_code:
             exit(err_code)
 
-    print("\n===== SPAdes pipeline finished\n") 
+    quality_output_dir = ""
+    if cfg.has_key("quality_assessment") and result_contigs_filename:
+        quality_cfg = merge_configs(cfg["quality_assessment"], cfg["common"])
+
+        quality_cfg.__dict__["working_dir"] = os.path.dirname(result_contigs_filename)
+        quality_cfg.__dict__["log_filename"] = os.path.join(quality_cfg.working_dir, "quality.log")
+        quality_cfg.__dict__["result_contigs"] = result_contigs_filename
+
+        print("\n===== Quality assessment started. Log can be found here: " + quality_cfg.log_filename + "\n")
+        
+        tee = support.Tee(quality_cfg.log_filename, 'w', console=quality_cfg.output_to_console)
+        
+        err_code = 0
+        try:
+            quality_output_dir = run_quality(quality_cfg)            
+        except support.spades_error, err:
+            print err.err_str
+            err_code = err.code
+
+        tee.free()
+
+        print("\n===== Quality assessment finished. Log can be found here: " + quality_cfg.log_filename + "\n")
+        if err_code:
+            exit(err_code)
+
+    print ""
+    if bh_dataset_filename:
+        print " * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/"
+    if result_contigs_filename:       
+        print " * Assembled contigs are " + result_contigs_filename
+    if quality_output_dir:
+        print " * Assessment of their quality is in " + quality_output_dir + "/"
+    print ""
+    print "Thank you for using SPAdes!"
+
+    print("\n======= SPAdes pipeline finished\n") 
 
 def run_bh(cfg):
 
@@ -327,7 +362,7 @@ def run_bh(cfg):
 
     return dataset_filename
 
-def run_spades(cfg, quality_cfg = None):
+def run_spades(cfg):
 
     if type(cfg.iterative_K) is int:
         cfg.iterative_K = [cfg.iterative_K]
@@ -365,35 +400,30 @@ def run_spades(cfg, quality_cfg = None):
         os.symlink(latest, os.path.join(cfg.working_dir, "link_K%d" % (K)))  # python2.4 doesn't support os.path.relpath
 
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
-    os.remove(cfg.additional_contigs)
+    os.remove(cfg.additional_contigs) 
 
-    if quality_cfg:
-        print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
+    return cfg.result_contigs
 
-        args = [cfg.result_contigs]
-        
-        if quality_cfg.__dict__.has_key("reference"):
-            args.append("-R")
-            args.append(os.path.abspath(os.path.expandvars(quality_cfg.reference)) )
-        if quality_cfg.__dict__.has_key("genes"):
-            args.append("-G")
-            args.append(os.path.abspath(os.path.expandvars(quality_cfg.genes)) )
-        if quality_cfg.__dict__.has_key("operons"):
-            args.append("-O")
-            args.append(os.path.abspath(os.path.expandvars(quality_cfg.operons)) )
-        quality_output_dir = os.path.join(cfg.working_dir, "quality_results")
-        args.append("-o")
-        args.append(quality_output_dir)
-        import quality
-        quality.main(args, lib_dir=os.path.join(spades_home, "src/tools/quality/libs"))
+def run_quality(cfg):        
 
-    print ""
-    print "All the resulting information can be found here: " + cfg.working_dir
-    print " * Resulting contigs are called " + os.path.basename(cfg.result_contigs)
-    if quality_cfg:
-        print " * Assessment of their quality is in " + quality_output_dir + "/"
-    print ""
-    print "Thank you for using SPAdes!"
+    args = [cfg.result_contigs]
+    
+    if cfg.__dict__.has_key("reference"):
+        args.append("-R")
+        args.append(os.path.abspath(os.path.expandvars(cfg.reference)) )
+    if cfg.__dict__.has_key("genes"):
+        args.append("-G")
+        args.append(os.path.abspath(os.path.expandvars(cfg.genes)) )
+    if cfg.__dict__.has_key("operons"):
+        args.append("-O")
+        args.append(os.path.abspath(os.path.expandvars(cfg.operons)) )
+    quality_output_dir = os.path.join(cfg.working_dir, "quality_results")
+    args.append("-o")
+    args.append(quality_output_dir)
+    import quality
+    quality.main(args, lib_dir=os.path.join(spades_home, "src/tools/quality/libs"))
+    
+    return quality_output_dir
 
 if __name__ == '__main__':
     main()
