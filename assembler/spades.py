@@ -145,7 +145,7 @@ def main():
         
         bh_cfg.__dict__["working_dir"] = os.path.join(bh_cfg.output_dir, "tmp")
 
-        bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir, cfg["common"].project_name + ".info")
+        bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir, cfg["common"].project_name + ".dataset")
 
         start_bh = True
         if os.path.exists(bh_cfg.output_dir):
@@ -160,8 +160,6 @@ def main():
                     print("\n===== Error correction skipped\n")
                 else:
                     os.remove(bh_cfg.dataset)
-            #else:            
-            #    shutil.rmtree(bh_cfg.output_dir)
 
         if start_bh:
             if not os.path.exists(bh_cfg.working_dir):
@@ -248,7 +246,7 @@ def main():
                 
         if not spades_cfg.__dict__.has_key("dataset"):
             # creating dataset
-            dataset_filename = os.path.join(spades_cfg.working_dir, cfg["common"].project_name + ".info")
+            dataset_filename = os.path.join(spades_cfg.working_dir, cfg["common"].project_name + ".dataset")
             dataset_file = open(dataset_filename, 'w')
             for key, value in cfg["dataset"].__dict__.iteritems():
                 dataset_file.write(key + '\t')
