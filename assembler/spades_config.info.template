@@ -8,7 +8,7 @@ compilation_dir                                       ; optional. Default is ~/.
 
 dataset
 {
-    paired_reads        $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_1.fastq.gz $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_1.fastq.gz
+    paired_reads        $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_1.fastq.gz $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_2.fastq.gz
     single_reads                                      ; optional    
     single_cell         false
 }
