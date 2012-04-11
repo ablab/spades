@@ -59,22 +59,12 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict["output_base"]        = cfg.working_dir
     subst_dict["additional_contigs"] = cfg.additional_contigs
     subst_dict["entry_point"]        = "construction"
-    subst_dict["developer_mode"]     = str(cfg.developer_mode).lower()
+    subst_dict["developer_mode"]     = bool_to_str(cfg.developer_mode)
     subst_dict["SAM_writer_enable"]  = bool_to_str(cfg.generate_sam_files)
     subst_dict["project_name"]       = ""
-
-    if last_one:
-        subst_dict["gap_closer_enable"] = "true"
-        if cfg.paired_mode:
-            subst_dict["paired_mode"] = "true"
-    else:
-        subst_dict["paired_mode"] = "false"
-        subst_dict["gap_closer_enable"] = "false"
-
-    if prev_K:
-        subst_dict["use_additional_contigs"] = "true"
-    else:
-        subst_dict["use_additional_contigs"] = "false"
+    subst_dict["gap_closer_enable"] = bool_to_str(last_one)
+    subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
+    subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
 
     substitute_params(filename, subst_dict)
 
