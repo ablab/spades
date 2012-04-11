@@ -20,12 +20,12 @@ class EasyReader : public DelegatingReaderWrapper<io::SingleRead> {
 
 public:
 	explicit EasyReader(const io::SingleRead::FilenameType& filename,
-			bool rc,
+			bool followed_by_rc,
 			OffsetType offset_type = PhredOffset)
 	: raw_reader_(filename, offset_type),
 	  filtered_reader_(raw_reader_),
 	  rc_reader_(filtered_reader_) {
-		if (rc) {
+		if (followed_by_rc) {
 			Init(rc_reader_);
 		} else {
 			Init(filtered_reader_);
@@ -50,15 +50,16 @@ class PairedEasyReader
 
 public:
   PairedEasyReader(const io::PairedRead::FilenamesType& filenames,
-		  	  	  bool rc,
+		  	  	  bool followed_by_rc,
                   size_t insert_size,
                   bool change_read_order = false,
+                  bool revert_second = true,
                   OffsetType offset_type = PhredOffset)
-      : raw_reader_(new SeparateReader(filenames, insert_size, change_read_order, offset_type))
+      : raw_reader_(new SeparateReader(filenames, insert_size, change_read_order, revert_second, offset_type))
   	  , filtered_reader_(*raw_reader_)
   	  , rc_reader_(filtered_reader_)
   {
-		if (rc) {
+		if (followed_by_rc) {
 			Init(rc_reader_);
 		} else {
 			Init(filtered_reader_);
@@ -66,15 +67,16 @@ public:
   }
 
   PairedEasyReader(const std::string& filename,
-		  	  	  bool rc,
+		  	  	  bool followed_by_rc,
                   size_t insert_size,
                   bool change_read_order = false,
+                  bool revert_second = true,
                   OffsetType offset_type = PhredOffset)
-      : raw_reader_(new MixedReader(filename, insert_size, change_read_order, offset_type))
+      : raw_reader_(new MixedReader(filename, insert_size, change_read_order, revert_second, offset_type))
   	  , filtered_reader_(*raw_reader_)
   	  , rc_reader_(filtered_reader_)
   {
-		if (rc) {
+		if (followed_by_rc) {
 			Init(rc_reader_);
 		} else {
 			Init(filtered_reader_);

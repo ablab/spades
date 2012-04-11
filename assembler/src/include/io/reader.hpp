@@ -152,12 +152,12 @@ class SeparateReader : public IReader<PairedRead> {
    */
   explicit SeparateReader(const PairedRead::FilenamesType& filenames,
          size_t insert_size, bool change_order = false,
-         OffsetType offset_type = PhredOffset,
-         bool revert_second = true)
+         bool revert_second = true,
+         OffsetType offset_type = PhredOffset)
       : filenames_(filenames), insert_size_(insert_size),
         change_order_(change_order),
-        offset_type_(offset_type),
         revert_second_(revert_second),
+        offset_type_(offset_type),
         first_(new Reader(filenames_.first, offset_type_)),
         second_(new Reader(filenames_.second, offset_type_)) {}
 
@@ -232,13 +232,12 @@ class SeparateReader : public IReader<PairedRead> {
 
   bool change_order_;
 
+  bool revert_second_;
+
   /*
    * @variable Quality offset type.
    */
   OffsetType offset_type_;
-
-  bool revert_second_;
-
 
   /*
    * @variable The first stream (reads from first file).
@@ -270,10 +269,10 @@ class MixedReader : public IReader<PairedRead> {
    * @param offset The offset of the read quality.
    */
   explicit MixedReader(const std::string& filename, size_t insert_size, bool change_order = false,
-         OffsetType offset_type = PhredOffset, bool revert_second = true)
+		  bool revert_second = true, OffsetType offset_type = PhredOffset)
       : filename_(filename), insert_size_(insert_size),
         change_order_(change_order),
-        offset_type_(offset_type), revert_second_(revert_second),
+        revert_second_(revert_second), offset_type_(offset_type),
         single_(new Reader(filename_, offset_type_)) {}
 
   /*
@@ -346,12 +345,12 @@ class MixedReader : public IReader<PairedRead> {
 
   bool change_order_;
 
+  bool revert_second_;
+
   /*
    * @variable Quality offset type.
    */
   OffsetType offset_type_;
-
-  bool revert_second_;
 
   /*
    * @variable The single read stream.
