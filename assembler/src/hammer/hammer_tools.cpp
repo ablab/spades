@@ -981,14 +981,18 @@ hint_t HammerTools::CorrectAllReads() {
 			TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " corrected.");
 			// makes sense to change the input filenames for the next iteration immediately
 			Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");
+			// delete output files from previous iteration
+			if (Globals::iteration_no > 0) {
+				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "cor"));
+				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "bad"));
+			}
 		} else {
+			ofstream ofcorl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor").c_str());
 			ofstream ofbadl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "bad").c_str());
+			ofstream ofunpl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "unp").c_str());
 			ofstream ofcorr(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "cor").c_str());
 			ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "bad").c_str());
-			ofstream ofunpl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "unp").c_str());
 			ofstream ofunpr(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "unp").c_str());
-			ofstream ofcorl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor").c_str());
-
 
 			HammerTools::CorrectPairedReadFiles(Globals::input_filenames[iFile], Globals::input_filenames[iFile+1],
 					*Globals::kmers, changedReads, changedNucleotides,
@@ -998,6 +1002,15 @@ hint_t HammerTools::CorrectAllReads() {
 			// makes sense to change the input filenames for the next iteration immediately
 			Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");
 			Globals::input_filenames[iFile+1] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "cor");
+			// delete output files from previous iteration
+			if (Globals::iteration_no > 0) {
+				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "cor"));
+				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "bad"));
+				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "unp"));
+				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "cor"));
+				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "bad"));
+				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "unp"));
+			}
 			++iFile;
 		}
 	}

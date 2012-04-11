@@ -4,8 +4,6 @@ import os
 import sys
 import re
 
-from process_cfg import bool_to_str
-
 def verify(expr, message):
     if (not (expr)):
         print "Assertion failed. Message: " + message
@@ -17,17 +15,17 @@ def check_files(prefix):
     verify(os.path.isfile(prefix + ".unp.fastq"), msg + " prefix is " + prefix + " error 2")
     verify(os.path.isfile(prefix + ".bad.fastq"), msg + " prefix is " + prefix + " error 3")
 
-def determine_it_count(tmp_dir):
+def determine_it_count(tmp_dir, prefix):
     import re
     files = os.listdir(tmp_dir)
     answer = 0;
     for f in files:
-        m = re.match(r"^(\d+)\..*", f)
+        m = re.match(r"^" + prefix + "\.(\d{2})\..*", f)
         if m:
             val = int(m.group(1))
             if (val > answer):
                 answer = val
-    return answer            
+    return "%02d" % answer
 
 def determine_read_files(folder, str_it_count, input_files):
     id = 1    
@@ -47,7 +45,7 @@ def determine_read_files(folder, str_it_count, input_files):
     
     return answer
 
-# based on hammer function in ./src/tools/datasets.py
+# based on "hammer" function in ./src/tools/datasets.py
 def hammer(given_props, output_dir, compress):
     def read_files():
         read_files = ["paired_reads", "single_reads"]        
@@ -90,13 +88,18 @@ def dataset_pretty_print(dataset):
     return pretty
 
 def generate_dataset(cfg, tmp_dir, input_files):    
-    str_it_count = str(determine_it_count(tmp_dir))
 
-    if (cfg.max_iterations <= 10):
-        str_it_count = "0" + str_it_count
+    str_it_count = determine_it_count(tmp_dir, os.path.basename(input_files[0]))
+
     dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count, input_files)
-    dataset_cfg["single_cell"] = bool_to_str(cfg.single_cell)    
+
+    import process_cfg
+    dataset_cfg["single_cell"] = process_cfg.bool_to_str(cfg.single_cell)    
+
     return dataset_pretty_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))
+
+
+#### auxiliary function to manage input files 
 
 def split_paired_file(input_filename, output_folder):
     ext = os.path.splitext(input_filename)[1]
@@ -165,5 +168,7 @@ def ungzip_if_needed(filename, output_folder):
         subprocess.call(['gunzip', filename, '-c'], stdout=ungzipped_file)
         ungzipped_file.close()
         filename = ungzipped_filename        
+    
     return filename
 
+####
