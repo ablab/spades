@@ -1,6 +1,7 @@
 build/
 logs/
 output/
+spades_output/
 CMakeFiles/
 scripts/
 *.launch
