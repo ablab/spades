@@ -133,17 +133,13 @@ def main():
 
     bh_dataset_filename = ""
     if cfg.has_key("error_correction"):
-        bh_cfg = cfg["error_correction"]
-
-        if not bh_cfg.__dict__.has_key("output_dir"):
-            bh_cfg.__dict__["output_dir"] = os.path.join(os.path.expandvars(cfg["common"].output_dir), "corrected")
-        else:
-            bh_cfg.__dict__["output_dir"] = os.path.expandvars(bh_cfg.output_dir)
-            warning("output_dir (" + bh_cfg.output_dir + ") will be used for error correction instead of the common one (" + cfg["common"].output_dir + ")")
-        
         bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
+        bh_cfg.output_dir = os.path.join(os.path.expandvars(bh_cfg.output_dir), "corrected")
         
-        bh_cfg.__dict__["working_dir"] = os.path.join(bh_cfg.output_dir, "tmp")
+        if bh_cfg.__dict__.has_key("tmp_dir"):
+            bh_cfg.__dict__["working_dir"] = os.path.expandvars(bh_cfg.tmp_dir)
+        else:
+            bh_cfg.__dict__["working_dir"] = os.path.join(bh_cfg.output_dir, "tmp")
 
         bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir, cfg["common"].project_name + ".dataset")
 
@@ -316,7 +312,7 @@ def run_bh(cfg):
     dataset_file = open(dataset_filename, "w")
     dataset_file.write(dataset_str)
     dataset_file.close()
-    print("\n== Dataset info-file created: " + dataset_filename + "\n")
+    print("\n== Dataset description file created: " + dataset_filename + "\n")
 
     shutil.rmtree(cfg.working_dir)
 
