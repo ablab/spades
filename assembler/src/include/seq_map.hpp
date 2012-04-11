@@ -198,6 +198,7 @@ public:
 	// INDEX:
 
 	bool containsInIndex(const Kmer& kmer) const {
+        TRACE("containsInIndex");
 		map_const_iterator mci = nodes_.find(kmer);
 		return (mci != nodes_.end()) && (mci->second.second != (size_t) -1);
 	}

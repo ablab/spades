@@ -143,7 +143,8 @@ public:
 				VertexId start = FindVertexMaybeMissing(graph, index, start_kmer);
 				VertexId end = FindEndMaybeMissing(graph, index, start, start_kmer, end_kmer);
 
-				graph.AddEdge(start, end, edge_sequence);
+				auto e = graph.AddEdge(start, end, edge_sequence);
+                TRACE(graph.length(e));
 				VERIFY(index.contains(edge));
 			}
 		}

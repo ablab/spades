@@ -116,12 +116,11 @@ public:
     inline int rightSimilar(const Sequence &t, int k) const;
 
     /**
-         * @param from inclusive
-         * @param to exclusive;
-         * @return true if two sequences intersect
-         */
+     * @param from inclusive
+     * @param to exclusive;
+     * @return true if two sequences intersect
+     */
     inline bool intersects(const Sequence &t) const;
-    /////
 
     //	template<size_t size2_>
     //	Seq<size2_> start() const;
@@ -155,12 +154,12 @@ public:
 inline ostream& operator<<(ostream& os, const Sequence& s);
 
 /**
- * @todo optimize
+ * start of Sequence is Seq with preferred size
  */
 template<size_t size2_>
 Seq<size2_> Sequence::start() const {
     //VERIFY(size2_ <= size_);
-    return Seq<size2_> (*this);
+    return data_->GetStartSeq<size2_>();
 }
 
 /**
@@ -173,18 +172,6 @@ Seq<size2_> Sequence::end() const {
 }
 
 
-//template<size_t size2_> 
-//vector<Seq<size2_> > Sequence::SplitInSeqs() const {
-    //typedef Seq<size2_> Kmer;
-    //vector<Kmer> ans;
-    //Kmer kmer = this->start<size2_>();
-    //for (size_t i = size2_; i<this->size(); ++i){
-        //ans.push_back(kmer);
-        //kmer = kmer << this[i];
-    //}
-    //ans.push_back(kmer);
-    //return ans;
-//}
 
 /**
  * @class SequenceBuilder
@@ -346,7 +333,6 @@ int Sequence::find(const Sequence &t, int from) const {
  *
  */
 int Sequence::similar(const Sequence &t, int k, char directed) const {
-//	cerr << endl << t.str()<< "similar started" <<k << endl;
 	int result = 0;
 	if (directed != -1)
 		result |= rightSimilar(t, k);

@@ -400,4 +400,4 @@ private:
 };
 
 }
-#endif /* ABSTRUCT_CONJUGATE_GRAPH_HPP_ */
+#endif /* ABSTRACT_CONJUGATE_GRAPH_HPP_ */

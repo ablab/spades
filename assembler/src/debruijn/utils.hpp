@@ -17,6 +17,7 @@
 #include <iostream>
 #include "sequence/sequence_tools.hpp"
 #include "omni/splitters.hpp"
+#include <omp.h>
 
 #include "new_debruijn.hpp"
 //#include "common/io/paired_read.hpp"
@@ -305,37 +306,41 @@ private:
 	const Index &index_;
 
 	bool TryThread(Kmer &kmer, vector<EdgeId> &passed,
-			size_t &endPosition) const {
+			size_t& endPosition) const {
 		EdgeId last = passed[passed.size() - 1];
-		if (endPosition + 1 < g_.length(last)) {
-			if (g_.EdgeNucls(last)[endPosition + k] == kmer[k - 1]) {
-				endPosition++;
-				return true;
-			}
-		} else {
-			vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last));
-			for (size_t i = 0; i < edges.size(); i++) {
-				if (g_.EdgeNucls(edges[i])[k - 1] == kmer[k - 1]) {
-					passed.push_back(edges[i]);
-					endPosition = 0;
-					return true;
-				}
-			}
-		}
+        if (endPosition + 1 < g_.length(last)) {
+            if (g_.EdgeNucls(last)[endPosition + k] == kmer[k - 1]) {
+                endPosition++;
+                return true;
+            }
+        } else {
+            vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last));
+            for (size_t i = 0; i < edges.size(); i++) {
+                if (g_.EdgeNucls(edges[i])[k - 1] == kmer[k - 1]) {
+                    passed.push_back(edges[i]);
+                    endPosition = 0;
+                    return true;
+                }
+            }
+        }
 		return false;
 	}
 
-	bool FindKmer(Kmer kmer, vector<EdgeId> &passed, size_t &startPosition,
-			size_t &endPosition) const {
-		if (index_.contains(kmer)) {
-			pair<EdgeId, size_t> position = index_.get(kmer);
-			endPosition = position.second;
-			if (passed.empty()) {
-				startPosition = position.second;
-			}
-			if (passed.empty() || passed.back() != position.first) {
-				passed.push_back(position.first);
-			}
+	bool FindKmer(Kmer& kmer, vector<EdgeId> &passed, size_t& startPosition,
+			size_t& endPosition) const {
+        //TRACE("CONTAINS kmer " << " " << omp_get_thread_num() );
+        if (index_.contains(kmer)) {
+            //TRACE("YES CONTAINS " << omp_get_thread_num());
+            pair<EdgeId, size_t> position = index_.get(kmer);
+            //DEBUG("LENGTH " << g_.length(position.first));
+            endPosition = position.second;
+            if (passed.empty()) {
+                startPosition = position.second;
+            }
+            if (passed.empty() || passed.back() != position.first) {
+                passed.push_back(position.first);
+            }
+            
 			return true;
 		}
 		return false;
@@ -343,11 +348,14 @@ private:
 
 	bool ProcessKmer(Kmer &kmer, vector<EdgeId> &passed, size_t &startPosition,
 			size_t &endPosition, bool valid) const {
+		//DEBUG("process kmer started " << omp_get_thread_num() << " valid " << valid);
 		if (valid) {
 			return TryThread(kmer, passed, endPosition);
 		} else {
-			return FindKmer(kmer, passed, startPosition, endPosition);
+            return FindKmer(kmer, passed, startPosition, endPosition);
 		}
+        return false;
+        //DEBUG("process kmer finished " << omp_get_thread_num());
 	}
 
 public:
@@ -368,27 +376,26 @@ public:
 
 	Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
-        TRACE("Mapping sequence");
+        //TRACE("Mapping sequence");
 		if (read.size() <= k - 1) {
 			return Path<EdgeId>();
 		}
 
-        TRACE("init start kmer");
-
 		Kmer kmer = read.start<k>();
+        //DEBUG("started " << kmer.str() << omp_get_thread_num() );
 		size_t startPosition = -1;
 		size_t endPosition = -1;
-        TRACE("process kmer");
 		bool valid = ProcessKmer(kmer, passed, startPosition, endPosition,
 				false);
-		for (size_t i = k; i < read.size(); ++i) {
-        TRACE("shift kmer");
-			kmer = kmer << read[i];
-        TRACE("process kmer");
-			valid = ProcessKmer(kmer, passed, startPosition, endPosition,
-					valid);
-		}
-		return Path<EdgeId>(passed, startPosition, endPosition + 1);
+        for (size_t i = k; i < read.size(); ++i) {
+            kmer = kmer << read[i];
+            //DEBUG("shifted " << kmer.str() << omp_get_thread_num());
+            valid = ProcessKmer(kmer, passed, startPosition, endPosition,
+                    valid);
+        }
+        //DEBUG("Path got " << omp_get_thread_num());
+        Path<EdgeId> ans(passed, startPosition, endPosition + 1);
+		return ans;
 	}
 
 };

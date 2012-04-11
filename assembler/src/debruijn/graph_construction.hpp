@@ -148,15 +148,48 @@ size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, Single
     size_t counter = 0;
     size_t rl = 0;
     
-    Sequence** vector_seq = new Sequence*[nthreads];
-    for (size_t i = 0; i < nthreads; ++i)
-        vector_seq[i] = new Sequence[buf_size];
+    //Sequence** vector_seq = new Sequence*[nthreads];
+    //for (size_t i = 0; i < nthreads; ++i)
+        //vector_seq[i] = new Sequence[buf_size];
+    vector<vector<Sequence>> vector_seq(nthreads, vector<Sequence>());
+    for (size_t i = 0; i < nthreads; ++i) 
+        vector_seq[i].reserve(buf_size);
     std::vector<size_t> sizes(nthreads, 0);
-    for (size_t i = 0; i<nthreads; ++i) VERIFY(sizes[i] == 0);
 
     io::SingleRead r;
     {
         perf_counter pc;
+
+        if (!reads_stream.eof()) {
+
+            INFO("Filling Buffer");
+            for (size_t j = 0; j < buf_size; ++j) {
+                for(size_t i = 0; i < nthreads && !reads_stream.eof(); ++i) {
+                    reads_stream >> r;
+                    const Sequence& seq = r.sequence();
+                    vector_seq[i].push_back(seq);
+                    rl = max(rl, seq.size());
+                    sizes[i]++;
+                    VERBOSE_POWER(++counter, " reads processed");
+                }
+            }
+            INFO("Finished Filling");
+
+            INFO("Threading Buffer");
+
+            #pragma omp parallel num_threads(nthreads)
+            {
+                #pragma omp for
+                for (size_t i = 0; i < nthreads; ++i) {
+                    for (size_t j = 0; j < sizes[i]; ++j) {
+                        par_debruijn.CountSequence(vector_seq[i][j], i);
+                    }
+                }
+            }
+
+            INFO("Finished Threading");
+            std::fill(sizes.begin(), sizes.end(), 0);
+        }
 
         while (!reads_stream.eof()) {
 
@@ -192,9 +225,10 @@ size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, Single
         }
         INFO("Started Merging");
 
-        for (size_t i = 0; i < nthreads; ++i) 
-            delete[] vector_seq[i];
-        delete[] vector_seq;
+        //for (size_t i = 0; i < nthreads; ++i) 
+            //delete[] vector_seq[i];
+        //delete[] vector_seq;
+        //vector_seq.clear();
 
         par_debruijn.MergeMaps(debruijn.nodes());
 
