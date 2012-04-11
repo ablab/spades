@@ -21,6 +21,7 @@ void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, siz
 		stream >> r;
 		Sequence sequence_left = r.first().sequence();
 		Sequence sequence_right = r.second().sequence();
+		VERBOSE_POWER(++n, " paired reads processed");
 		if (sequence_left.size() <= k || sequence_right.size() <= k) {
 			continue;
 		}
@@ -39,7 +40,6 @@ void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, siz
 		succesfully_processed++;
 		int is = pos_right.second - pos_left.second - k - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
 		hist[is] += 1;
-		VERBOSE_POWER(++n, " paired reads processed");
 		sum += is;
 		sum2 += is * 1.0 * is;
 	}
