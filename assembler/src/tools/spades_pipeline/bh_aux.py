@@ -87,6 +87,13 @@ def dataset_pretty_print(dataset):
             pretty += prop.ljust(max_property_name_len) + tabulation + dataset_dict[prop] + "\n"
     return pretty
 
+def dataset_print(dataset):           
+    result = ""
+    dataset_dict = dict(dataset)
+    for key, value in dataset_dict.iteritems():
+        result += key + "\t" + value + "\n"
+    return result
+
 def generate_dataset(cfg, tmp_dir, input_files):    
 
     str_it_count = determine_it_count(tmp_dir, os.path.basename(input_files[0]))
@@ -95,8 +102,12 @@ def generate_dataset(cfg, tmp_dir, input_files):
 
     import process_cfg
     dataset_cfg["single_cell"] = process_cfg.bool_to_str(cfg.single_cell)    
+    for key, value in cfg.__dict__.iteritems():
+        if key.startswith("original_"):
+            dataset_cfg[key] = value
 
-    return dataset_pretty_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))
+    #return dataset_pretty_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))    
+    return dataset_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))    
 
 
 #### auxiliary function to manage input files 

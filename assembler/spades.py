@@ -174,6 +174,15 @@ def main():
             for key, value in cfg["dataset"].__dict__.iteritems():
                 if type(value) != list:
                     value = [value]                
+
+                # saving original reads to dataset
+                if key.find("_reads") != -1:
+                    quoted_value = '"'
+                    for item in value:
+                        quoted_value += os.path.abspath(os.path.expandvars(item)) + ' '
+                    quoted_value += '"'
+                    bh_cfg.__dict__["original_" + key] = quoted_value
+
                 if key.startswith("single_reads"):  
                     for item in value:
                         item = os.path.abspath(os.path.expandvars(item))
