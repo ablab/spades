@@ -573,31 +573,34 @@ inline void load(debruijn_config::SAM_writer& sw,
 	sw.original_second = pt.get_optional<std::string>("original_second");
 }
 
-
-inline void load(debruijn_config::dataset& ds,
-		boost::property_tree::ptree const& pt, bool complete) {
-	using config_common::load;
-	using config_common::load_split;
-
-	//	load_split(ds.paired_reads, pt, "paired_reads");
-	//	load_split(ds.single_reads, pt, "single_reads");
-
-	vector<std::string> vec;
-	load(vec, pt, "paired_reads");
-	for (auto it = vec.begin(); it != vec.end(); ++it) {
+inline void load_paired_reads(vector<vector<std::string> >& vec, boost::property_tree::ptree const& pt, string const& key) {
+	vector<std::string> strings;
+	config_common::load(strings, pt, key);
+	for (auto it = strings.begin(); it != strings.end(); ++it) {
 		vector<std::string> paired_library;
 		config_common::split(paired_library, *it);
 		if (paired_library.size() < 1 || paired_library.size() > 2) {
 			VERIFY_MSG(false, "Invalid library of " << paired_library.size() << " input files with paired reads: \"" << *it << "\"");
 		}
-		ds.paired_reads.push_back(paired_library);
+		vec.push_back(paired_library);
 	}
+}
 
-	vec.clear();
-	load(vec, pt, "single_reads");
-	for (auto it = vec.begin(); it != vec.end(); ++it) {
-		config_common::split(ds.single_reads, *it);
+inline void load_single_reads(vector<std::string>& vec, boost::property_tree::ptree const& pt, string const& key) {
+	vector<std::string> strings;
+	config_common::load(strings, pt, key);
+	for (auto it = strings.begin(); it != strings.end(); ++it) {
+		config_common::split(vec, *it);
 	}
+}
+
+inline void load(debruijn_config::dataset& ds,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
+
+	load_paired_reads(ds.paired_reads, pt, "paired_reads");
+	load_single_reads(ds.single_reads, pt, "single_reads");
+	load(ds.single_cell, pt, "single_cell");
 
 	ds.jumping_first = pt.get_optional<std::string>("jumping_first");
 	ds.jumping_second = pt.get_optional<std::string>("jumping_second");
@@ -607,7 +610,6 @@ inline void load(debruijn_config::dataset& ds,
 	ds.RL = pt.get_optional<size_t>("RL");
 	ds.is_var = pt.get_optional<size_t>("is_var");
 	ds.IS = pt.get_optional<size_t>("IS");
-	load(ds.single_cell, pt, "single_cell");
 
 	ds.reference_genome_filename = "";
 	boost::optional<std::string> refgen = pt.get_optional<std::string>(
