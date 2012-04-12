@@ -6,8 +6,8 @@ compilation_dir     ./teamcity_precompiled/ECOLI_IS220_QUAKE_1K
 
 dataset
 {
-    paired_reads             $cfg/../../../data/input/E.coli/is220/cropped/s_6.first1000_1.fastq.gz $cfg/../../../data/input/E.coli/is220/cropped/s_6.first1000_2.fastq.gz
-    single_cell              false
+    paired_reads        $cfg/../../../test_dataset/ecoli_first1K_1.fq.gz $cfg/../../../test_dataset/ecoli_first1K_2.fq.gz
+    single_cell         false
 }
 
 assembly
@@ -17,7 +17,7 @@ assembly
     generate_sam_files  true
 }
 
-quality_assessment      ; optional. If section exists than spades.py evaluates quality of the final contigs 
+quality_assessment
 {
     reference           $cfg/../../../test_dataset/E.coli/MG1655-K12.first1K.fasta.gz
     genes               $cfg/../../../test_dataset/E.coli/genes.first1K.txt
