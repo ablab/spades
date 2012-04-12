@@ -87,6 +87,57 @@ public:
 };
 
 
+
+
+int CountDiference(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, int shift){
+	if (s_r.size() + shift > orig_s_r.size()){
+		return orig_s_r.size();
+	}
+	int diff = 0;
+	for (int i = 0; i < (int)s_r.size(); i++){
+		if (s_r[i] != orig_s_r[i + shift] ) diff++;
+	}
+	return diff;
+}
+pair<int, int> SubstitutionShifts(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, double threshhold ){
+	int difference = (int)orig_s_r.size() - (int)s_r.size();
+	int best_i = 0;
+	int best_diff = orig_s_r.size();
+	for (int i=0; i < difference; i++){
+		int cur_diff = CountDiference(s_r, orig_s_r, i);
+		if (s_r.size() - cur_diff > threshhold * s_r.size()) return (make_pair(i,difference - i));
+		else {
+			if (cur_diff < best_diff) {
+				best_diff = cur_diff;
+				best_i = i;
+			}
+		}
+	}
+	return (make_pair(best_i,difference - best_i));
+}
+void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, const io::SingleRead& orig_s_r ){
+	io::SingleRead orig = orig_s_r;
+	if (MySam.FLAG & 0x10) orig = !orig;
+	if (s_r.size() < orig.size()){
+		pair<int, int> shifts = SubstitutionShifts(s_r, orig_s_r, 0.9);
+		MySam.SEQ = orig.sequence().str();
+		MySam.QUAL = orig.GetPhredQualityString();
+
+		if (MySam.FLAG & 0x10) MySam.CIGAR = (shifts.second != 0 ? ToString(shifts.second) + "S": "") + ToString(shifts) +MySam.CIGAR + (shifts.first != 0 ? ToString(shifts.first) + "S": "");
+		else MySam.CIGAR = (shifts.first != 0 ? ToString(shifts.first) + "S": "") + ToString(shifts) +MySam.CIGAR + (shifts.second != 0 ? ToString(shifts.second) + "S": "");
+	}
+	else
+	{
+		MySam.SEQ = orig.sequence().str();
+		MySam.QUAL = orig.GetPhredQualityString();
+	}
+}
+
+
+
+
+
+
 template<class Graph, class SequenceMapper>
 class BaseInternalAligner {
 protected:
@@ -585,21 +636,21 @@ public:
 template<class Graph, class SequenceMapper>
 class OriginalReadsResolvedInternalAligner : public ResolvedInternalAligner<Graph, SequenceMapper>{
 protected:
-	void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, const io::SingleRead& orig_s_r ){
-		io::SingleRead orig = orig_s_r;
-		if (MySam.FLAG & 0x10) orig = !orig;
-		if (s_r.size() < orig.size()){
-			MySam.SEQ = orig.sequence().str();
-			MySam.QUAL = orig.GetPhredQualityString();
-			if (MySam.FLAG & 0x10) MySam.CIGAR = ToString((int)(orig_s_r.size() - s_r.size())) + "S"+MySam.CIGAR;
-			else MySam.CIGAR += ToString((int)(orig_s_r.size() - s_r.size())) + "S";
-		}
-		else
-		{
-			MySam.SEQ = orig.sequence().str();
-			MySam.QUAL = orig.GetPhredQualityString();
-		}
-	}
+//	void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, const io::SingleRead& orig_s_r ){
+//		io::SingleRead orig = orig_s_r;
+//		if (MySam.FLAG & 0x10) orig = !orig;
+//		if (s_r.size() < orig.size()){
+//			MySam.SEQ = orig.sequence().str();
+//			MySam.QUAL = orig.GetPhredQualityString();
+//			if (MySam.FLAG & 0x10) MySam.CIGAR = ToString((int)(orig_s_r.size() - s_r.size())) + "S"+MySam.CIGAR;
+//			else MySam.CIGAR += ToString((int)(orig_s_r.size() - s_r.size())) + "S";
+//		}
+//		else
+//		{
+//			MySam.SEQ = orig.sequence().str();
+//			MySam.QUAL = orig.GetPhredQualityString();
+//		}
+//	}
 
 public:
 	OriginalReadsResolvedInternalAligner(Graph& g, Graph& orig_g, SequenceMapper& m, EdgeLabelHandler<Graph>& EdgeConversionHandler, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false):
@@ -677,50 +728,6 @@ public:
 template<class Graph, class SequenceMapper>
 class OriginalReadsSimpleInternalAligner : public SimpleInternalAligner<Graph, SequenceMapper>{
 protected:
-	int CountDiference(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, int shift){
-		if (s_r.size() + shift > orig_s_r.size()){
-			return orig_s_r.size();
-		}
-		int diff = 0;
-		for (int i = 0; i < (int)s_r.size(); i++){
-			if (s_r[i] != orig_s_r[i + shift] ) diff++;
-		}
-		return diff;
-	}
-	pair<int, int> SubstitutionShifts(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, double threshhold ){
-		int difference = (int)orig_s_r.size() - (int)s_r.size();
-		int best_i = 0;
-		int best_diff = orig_s_r.size();
-		for (int i=0; i < difference; i++){
-			int cur_diff = CountDiference(s_r, orig_s_r, i);
-			if (s_r.size() - cur_diff > threshhold * s_r.size()) return (make_pair(i,difference - i));
-			else {
-				if (cur_diff < best_diff) {
-					best_diff = cur_diff;
-					best_i = i;
-				}
-			}
-		}
-		return (make_pair(best_i,difference - best_i));
-	}
-	void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, const io::SingleRead& orig_s_r ){
-		io::SingleRead orig = orig_s_r;
-		if (MySam.FLAG & 0x10) orig = !orig;
-		if (s_r.size() < orig.size()){
-			pair<int, int> shifts = SubstitutionShifts(s_r, orig_s_r, 0.9);
-			MySam.SEQ = orig.sequence().str();
-			MySam.QUAL = orig.GetPhredQualityString();
-
-			if (MySam.FLAG & 0x10) MySam.CIGAR = (shifts.second != 0 ? ToString(shifts.second) + "S": "") + ToString(shifts) +MySam.CIGAR + (shifts.first != 0 ? ToString(shifts.first) + "S": "");
-			else MySam.CIGAR = (shifts.first != 0 ? ToString(shifts.first) + "S": "") + ToString(shifts) +MySam.CIGAR + (shifts.second != 0 ? ToString(shifts.second) + "S": "");
-		}
-		else
-		{
-			MySam.SEQ = orig.sequence().str();
-			MySam.QUAL = orig.GetPhredQualityString();
-		}
-	}
-
 public:
 	OriginalReadsSimpleInternalAligner(Graph& g, SequenceMapper& m, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false):
 		SimpleInternalAligner<Graph, SequenceMapper>(g, m, adjust_reads, output_map_format, print_broken_pairs)
