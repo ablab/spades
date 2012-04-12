@@ -6,7 +6,7 @@ compilation_dir     ./teamcity_precompiled/ECOLI_IS220_QUAKE_1K
 
 dataset
 {
-    paired_reads        $cfg/../../../test_dataset/ecoli_first1K_1.fq.gz $cfg/../../../test_dataset/ecoli_first1K_2.fq.gz
+    paired_reads        $cfg/../../../test_dataset/ecoli_1K_1.fq.gz $cfg/../../../test_dataset/ecoli_1K_2.fq.gz
     single_cell         false
 }
 
@@ -19,7 +19,7 @@ assembly
 
 quality_assessment
 {
-    reference           $cfg/../../../test_dataset/MG1655-K12.first1K.fasta.gz
-    genes               $cfg/../../../test_dataset/genes.first1K.txt
-    operons             $cfg/../../../test_dataset/operons.first1K.txt
+    reference           $cfg/../../../test_dataset/reference_1K.fa.gz
+    genes               $cfg/../../../test_dataset/genes_1K.txt
+    operons             $cfg/../../../test_dataset/operons_1K.txt
 }
