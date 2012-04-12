@@ -15,9 +15,17 @@ namespace details
 inline void hard_link_file(const fs::path& from_path, const fs::path& to_path)
 	{
 #if not defined(BOOST_FILESYSTEM_VERSION) or (BOOST_FILESYSTEM_VERSION == 2)
-		fs::create_hard_link(from_path, to_path);
+		try {
+			fs::create_hard_link(from_path, to_path);
+		} catch( ... ) {
+			copy_file(from_path, to_path);
+		}
 #elif BOOST_FILESYSTEM_VERSION == 3
-		boost::filesystem3::create_hard_link(from_path, to_path);
+		try {
+			boost::filesystem3::create_hard_link(from_path, to_path);
+		} catch( ... ) {
+			copy_file(from_path, to_path);
+		}
 #else
 		BOOST_STATIC_ASSERT(false && "BOOST_FILESYSTEM_VERSION defined, but has value different from 2 or 3");
 #endif
