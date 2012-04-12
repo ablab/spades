@@ -13,12 +13,15 @@ typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::PairedRead> MultiPairedStream;
 typedef io::MultifileReader<io::SingleRead> MultiSingleStream;
 
-auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc, size_t insert_size,
-        bool change_read_order = false,
-        bool revert_second = true,
-        io::OffsetType offset_type = io::PhredOffset) {
+auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc,
+		size_t insert_size,
+		bool change_read_order = false,
+		bool revert_second = true,
+		bool original = false,
+		io::OffsetType offset_type = io::PhredOffset) {
 	vector<PairedReadStream*> streams;
-	for (auto it = cfg::get().ds.paired_reads.begin(); it != cfg::get().ds.paired_reads.end(); ++it) {
+	auto& paired_reads = original ? cfg::get().ds.original_paired_reads : cfg::get().ds.paired_reads;
+	for (auto it = paired_reads.begin(); it != paired_reads.end(); ++it) {
 		vector<string> filenames = *it;
 		io::PairedEasyReader* reader;
 		if (filenames.size() == 1) {
@@ -34,17 +37,22 @@ auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc, size_t insert
 	return auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
 }
 
-auto_ptr<ReadStream> single_easy_reader(bool followed_by_rc, bool including_paired_reads, io::OffsetType offset_type = io::PhredOffset) {
+auto_ptr<ReadStream> single_easy_reader(bool followed_by_rc,
+		bool including_paired_reads,
+        bool original = false,
+		io::OffsetType offset_type = io::PhredOffset) {
 	vector<ReadStream*> streams;
+	auto& paired_reads = original ? cfg::get().ds.original_paired_reads : cfg::get().ds.paired_reads;
+	auto& single_reads = original ? cfg::get().ds.original_single_reads : cfg::get().ds.single_reads;
 	if (including_paired_reads) {
-		for (auto it = cfg::get().ds.paired_reads.begin(); it != cfg::get().ds.paired_reads.end(); ++it) {
+		for (auto it = paired_reads.begin(); it != paired_reads.end(); ++it) {
 			for (auto it2 = it->begin(); it2 != it->end(); ++it2) {
 				streams.push_back(new io::EasyReader(input_file(*it2), followed_by_rc, offset_type));
 				DEBUG("Using input file: " << input_file(*it2));
 			}
 		}
 	}
-	for (auto it = cfg::get().ds.single_reads.begin(); it != cfg::get().ds.single_reads.end(); ++it) {
+	for (auto it = single_reads.begin(); it != single_reads.end(); ++it) {
 		streams.push_back(new io::EasyReader(input_file(*it), followed_by_rc, offset_type));
 		DEBUG("Using input file: " << input_file(*it));
 	}
