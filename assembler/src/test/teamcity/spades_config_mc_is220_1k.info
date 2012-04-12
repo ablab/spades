@@ -19,7 +19,7 @@ assembly
 
 quality_assessment
 {
-    reference           $cfg/../../../test_dataset/E.coli/MG1655-K12.first1K.fasta.gz
-    genes               $cfg/../../../test_dataset/E.coli/genes.first1K.txt
-    operons             $cfg/../../../test_dataset/E.coli/operons.first1K.txt
+    reference           $cfg/../../../test_dataset/MG1655-K12.first1K.fasta.gz
+    genes               $cfg/../../../test_dataset/genes.first1K.txt
+    operons             $cfg/../../../test_dataset/operons.first1K.txt
 }
