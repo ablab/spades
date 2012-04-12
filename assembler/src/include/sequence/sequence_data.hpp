@@ -87,6 +87,29 @@ public:
         }
     }
 
+    SequenceData(size_t size_): count(0) {
+        size_t size = size_;
+        size_t bytes_size = (size + STN - 1) >> STNbits;
+        bytes_ = (Seq<STN, ST>*) malloc(bytes_size * sizeof(Seq<STN, ST> )); // it's a bit faster than new
+        for (size_t i = 0; i <= (size >> STNbits); ++i) {
+            bytes_[i] = Seq<STN, ST>();
+        }
+    }
+
+    bool BinRead(std::istream& file, size_t size) {
+        for (size_t i = 0; i <= (size >> STNbits); ++i) {
+            bytes_[i].BinRead(file);
+        }
+        return !file.fail();
+    }
+
+    bool BinWrite(std::ostream& file, size_t size) {
+        for (size_t i = 0; i <= (size >> STNbits); ++i) {
+            bytes_[i].BinWrite(file);
+        }
+        return !file.fail();
+    }
+
     ~SequenceData() {
         free(bytes_);
     }
@@ -94,7 +117,6 @@ public:
     char operator[](const size_t i) const {
         return bytes_[i >> STNbits][i & (STN - 1)];
     }
-
-};
+}
 
 #endif /* REFCOUNT_HPP_ */

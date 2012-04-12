@@ -36,6 +36,9 @@
 #include <cstring>
 
 class Sequence {
+
+    typedef uint16_t size_type;
+
 private:
     SequenceData* data_;
     size_t from_;
@@ -129,6 +132,17 @@ public:
     
     inline string str() const;
     inline size_t size() const;
+
+private:
+
+    inline bool ReadHeader(std::istream& file);
+    inline bool WriteHeader(std::ostream& file);
+
+public:
+    inline bool BinRead(std::istream& file);
+    inline bool BinWrite(std::ostream& file);
+
+    inline Sequence(std::istream& file);
 };
 
 inline ostream& operator<<(ostream& os, const Sequence& s);
@@ -375,6 +389,54 @@ ostream& operator<<(ostream& os, const Sequence& s) {
 
 size_t Sequence::size() const {
 	return size_;
+}
+
+bool Sequence::ReadHeader(std::istream& file) {
+    size_type s;
+    file.read((char *) &s, sizeof(s));
+    size_ = s;
+    file.read((char *) &s, sizeof(s));
+    from_ = s;
+    file.read((char *) &rtl_, sizeof(rtl_));
+    //rtl_ = false;
+    //from_ = 0;
+
+    return !file.fail();
+}
+
+bool Sequence::WriteHeader(std::ostream& file) {
+    size_type s = size_;
+    file.write((const char *) &s, sizeof(s));
+    s = from_;
+    file.write((const char *) &s, sizeof(s));
+    file.write((const char *) &rtl_, sizeof(rtl_));
+
+    return !file.fail();
+}
+
+
+bool Sequence::BinRead(std::istream& file) {
+    ReadHeader(file);
+
+    data_->Release();
+    data_ = new SequenceData(size_);
+    data_->Grab();
+
+    return data_->BinRead(file, size_);
+}
+
+Sequence::Sequence(std::istream& file) {
+    ReadHeader(file);
+
+    data_ = new SequenceData(size_);
+    data_->Grab();
+    data_->BinRead(file, size_);
+}
+
+bool Sequence::BinWrite(std::ostream& file) {
+    WriteHeader(file);
+
+    return data_->BinWrite(file, size_);
 }
 
 #endif /* SEQUENCE_HPP_ */

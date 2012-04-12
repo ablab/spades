@@ -296,6 +296,7 @@ public:
 		return true;
 	}
 
+
 private:
 	/*
 	 * @variable The name of SingleRead in input file.
@@ -354,6 +355,42 @@ private:
 		VERIFY(seq_.size() == qual_.size());
 		valid_ = SingleRead::IsValid(seq_);
 	}
+};
+
+class SingleReadSeq {
+
+public:
+    SingleReadSeq(const Sequence& s): seq_(s) {
+    }
+
+    SingleReadSeq() {
+    }
+
+    bool BinRead(std::ifstream& file) {
+        return seq_.BinRead(file);
+    }
+
+    SingleReadSeq(const std::ifstream& file): seq_(file) {
+    }
+
+    bool operator==(const SingleReadSeq& singleread) const {
+        return seq_ == singleread.seq_;
+    }
+
+    const Sequence& sequence() const {
+        return seq_;
+    }
+
+    size_t size() const {
+        return seq_.size();
+    }
+
+    SingleReadSeq operator!() const {
+        return SingleReadSeq(!seq_);
+    }
+
+private:
+    Sequence seq_;
 };
 
 }

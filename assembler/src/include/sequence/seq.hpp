@@ -130,6 +130,22 @@ public:
 		return !file.fail();
 	}
 
+    /**
+     *  Reads sequence from the file (in the same format as BinWrite writes it)
+     *  and returns false if error occured, true otherwise.
+     */
+    bool BinRead(std::istream& file) {
+        return BinRead(file, this);
+    }
+
+    /**
+     *  Writes sequence to the file (in the same format as BinRead reads it)
+     *  and returns false if error occured, true otherwise.
+     */
+    bool BinWrite(std::ostream& file) {
+        return BinWrite(file, this);
+    }
+
 	/**
 	 * Default constructor, fills Seq with A's
 	 */

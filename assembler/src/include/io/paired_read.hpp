@@ -168,6 +168,54 @@ class PairedRead {
   size_t insert_size_;
 };
 
+
+class PairedReadSeq {
+
+private:
+
+    SingleReadSeq first_;
+    SingleReadSeq second_;
+    size_t insert_size_;
+
+public:
+    PairedReadSeq() : first_(), second_(), insert_size_(0) {}
+
+    const SingleReadSeq& first() const {
+      return first_;
+    }
+
+    const SingleReadSeq& second() const {
+      return second_;
+    }
+
+    size_t insert_size() const {
+      return insert_size_;
+    }
+
+    size_t distance() const {
+      return insert_size_ - second_.size();
+    }
+
+    size_t gap() const {
+      return insert_size_ - first_.size() - second_.size();
+    }
+
+    PairedReadSeq(const SingleReadSeq& first,
+               const SingleReadSeq& second,
+               size_t insert_size)
+      : first_(first), second_(second), insert_size_(insert_size) {}
+
+    const SingleReadSeq& operator[] (size_t i) const {
+        if (i == 0) {
+            return first_;
+        } else if (i == 1) {
+            return second_;
+        }
+        VERIFY(false);
+        return first;
+    }
+};
+
 }
 
 #endif /* COMMON_IO_PAIREDREAD_HPP_ */
