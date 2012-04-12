@@ -210,16 +210,17 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 		if (cfg::get().sw.align_original_reads){
 			if (cfg::get().sw.original_first && cfg::get().sw.original_second){
 				auto paired_reads = paired_easy_reader(false, 0);
-				io::PairedEasyReader original_paired_reads(
-								make_pair(input_file(*cfg::get().sw.original_first),
-										input_file(*cfg::get().sw.original_second)),
-								false,
-								0);
+//				io::PairedEasyReader original_paired_reads(
+//								make_pair(input_file(*cfg::get().sw.original_first),
+//										input_file(*cfg::get().sw.original_second)),
+//								false,
+//								0);
+				auto original_paired_reads = paired_easy_reader(false, 0, false, false, true);
 				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
 
 				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
-				Aligner.AlignPairedReads(original_paired_reads, *paired_reads, cfg::get().output_dir+"align_before_RR.sam");
+				Aligner.AlignPairedReads(*original_paired_reads, *paired_reads, cfg::get().output_dir+"align_before_RR.sam");
 
 			}
 		}
@@ -248,18 +249,20 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_after_RR)
 	{
 		if (cfg::get().sw.align_original_reads){
-			if (cfg::get().sw.original_first && cfg::get().sw.original_second){
+//			if (cfg::get().sw.original_first && cfg::get().sw.original_second)
+			{
 				auto paired_reads = paired_easy_reader(false, 0);
-				io::PairedEasyReader original_paired_reads(
-								make_pair(input_file(*cfg::get().sw.original_first),
-										input_file(*cfg::get().sw.original_second)),
-								false,
-								0);
+				auto original_paired_reads = paired_easy_reader(false, 0, false, false, true);
+//				io::PairedEasyReader original_paired_reads(
+//								make_pair(input_file(*cfg::get().sw.original_first),
+//										input_file(*cfg::get().sw.original_second)),
+//								false,
+//								0);
 				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
 
 				OriginalReadsResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(resolved_gp.g, conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
-				Aligner.AlignPairedReads(original_paired_reads, *paired_reads, cfg::get().output_dir+"align_after_RR.sam");
+				Aligner.AlignPairedReads(*original_paired_reads, *paired_reads, cfg::get().output_dir+"align_after_RR.sam");
 			}
 		}
 		else {
