@@ -30,6 +30,10 @@ public:
   }
 };
 
+const float Read::trust_spread_t = .1;
+const float Read::correct_min_t = .000001;
+const float Read::learning_min_t = .00001;
+
 ////////////////////////////////////////////////////////////
 // Read (constructor)
 //
