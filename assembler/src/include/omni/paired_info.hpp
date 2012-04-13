@@ -832,7 +832,7 @@ public:
 		for (auto it = paired_index_.begin(); it != paired_index_.end(); ++it) {
 			vector<PairInfo<EdgeId>> infos = *it;
 			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
-				normalized_index.AddPairInfo(normalizing_function_(*it2));
+				normalized_index.AddPairInfo(normalizing_function_(*it2), false);
 			}
 		}
 	}
