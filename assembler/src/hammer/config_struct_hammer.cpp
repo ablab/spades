@@ -61,14 +61,10 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	load(cfg.correct_use_threshold, pt, "correct_use_threshold");
 	load(cfg.correct_readbuffer, pt, "correct_readbuffer");
 
-	load(cfg.input_numfiles, pt, "input_numfiles");
-	if (cfg.input_numfiles > 0) load(cfg.input_file_0, pt, "input_file_0");
-	if (cfg.input_numfiles > 1) load(cfg.input_file_1, pt, "input_file_1");
-	if (cfg.input_numfiles > 2) load(cfg.input_file_2, pt, "input_file_2");
-	if (cfg.input_numfiles > 3) load(cfg.input_file_3, pt, "input_file_3");
-	if (cfg.input_numfiles > 4) load(cfg.input_file_4, pt, "input_file_4");
-	load(cfg.input_paired, pt, "input_paired");
-	load(cfg.input_gzipped, pt, "input_gzipped");
+	load(cfg.input_paired_1, pt, "input_paired_1");
+	load(cfg.input_paired_2, pt, "input_paired_2");
+	load(cfg.input_single, pt, "input_single");
+
 	load(cfg.input_solid_kmers, pt, "input_solid_kmers");
 	load(cfg.input_working_dir, pt, "input_working_dir");
 	load(cfg.input_trim_quality, pt, "input_trim_quality");

@@ -24,6 +24,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/filesystem.hpp>
 
 
 #include "segfault_handler.hpp"
@@ -98,25 +99,26 @@ int main(int argc, char * argv[]) {
     limit_memory(cfg::get().general_hard_memory_limit * GB);
 
     // input files with reads
-    Globals::input_filenames.clear();
-    if (cfg::get().input_numfiles > 0) Globals::input_filenames.push_back(cfg::get().input_file_0);
-    if (cfg::get().input_numfiles > 1) Globals::input_filenames.push_back(cfg::get().input_file_1);
-    if (cfg::get().input_numfiles > 2) Globals::input_filenames.push_back(cfg::get().input_file_2);
-    if (cfg::get().input_numfiles > 3) Globals::input_filenames.push_back(cfg::get().input_file_3);
-    if (cfg::get().input_numfiles > 4) Globals::input_filenames.push_back(cfg::get().input_file_4);
+    if (cfg::get().input_paired_1 != "" && cfg::get().input_paired_2 != "") {
+    	Globals::input_filenames.push_back(cfg::get().input_paired_1);
+    	Globals::input_filenames.push_back(cfg::get().input_paired_2);
+    }
+    if (cfg::get().input_single != "") Globals::input_filenames.push_back(cfg::get().input_single);
 
-    VERIFY(cfg::get().input_numfiles > 0);
+    VERIFY(Globals::input_filenames.size() > 0);
 
     for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
     	Globals::input_filename_bases.push_back(
-    			Globals::input_filenames[iFile].substr(
-    					Globals::input_filenames[iFile].rfind('/')+1,
-    					Globals::input_filenames[iFile].rfind('.')
-    			)
+    				boost::filesystem::basename(boost::filesystem::path(Globals::input_filenames[iFile])) +
+    				boost::filesystem::extension(boost::filesystem::path(Globals::input_filenames[iFile]))
     	);
     	cout << Globals::input_filename_bases[iFile] << endl;
     }
 
+    // decompress input reads if they are gzipped
+	HammerTools::DecompressIfNeeded();
+
+	// determine quality offset if not specified
     if (!cfg::get().input_qvoffset_opt) {
     	cout << "Trying to determine PHRED offset" << endl;
     	int determined_offset = determine_offset(Globals::input_filenames.front());
@@ -130,8 +132,6 @@ int main(int argc, char * argv[]) {
     } else {
     	cfg::get_writable().input_qvoffset = *cfg::get().input_qvoffset_opt;
     }
-    // decompress input reads if they are gzipped
-    HammerTools::DecompressIfNeeded();
 
     // if we need to change single Ns to As, this is the time
     if (cfg::get().general_change_n_to_a && cfg::get().count_do) {
@@ -140,8 +140,6 @@ int main(int argc, char * argv[]) {
     	TIMEDLN("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
     }
 
-    TIMEDLN(Globals::input_filenames[0]);
-    TIMEDLN(Globals::input_filenames[1]);
     // estimate total read size
     hint_t totalReadSize = HammerTools::EstimateTotalReadSize();
 	TIMEDLN("Estimated total size of all reads is " << totalReadSize);

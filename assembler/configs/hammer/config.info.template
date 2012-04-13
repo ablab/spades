@@ -1,15 +1,11 @@
 ; = HAMMER =
 ; input options: working dir, input files, offset, and possibly kmers
 input_working_dir			./test_dataset/input/corrected
-input_numfiles				2
-input_paired				1
-input_file_0				./test_dataset/input/E.coli/is220/cropped/s_6.first1000_1.fastq.gz
-input_file_1				./test_dataset/input/E.coli/is220/cropped/s_6.first1000_2.fastq.gz
-input_file_2				
-input_file_3				
-input_file_4				
+input_paired_1
+input_paired_2
+input_single                				
 input_trim_quality			4
-input_gzipped				1
+input_gzipped				0
 input_qvoffset				
 input_read_solid_kmers		0
 input_solid_kmers			

@@ -28,14 +28,13 @@ def prepare_config_bh(filename, cfg):
     subst_dict = dict()
     cfg.working_dir = os.path.abspath(cfg.working_dir)
    
-    #TODO single reads!
+    if len(cfg.paired_reads) == 2:
+        subst_dict["input_paired_1"] = cfg.paired_reads[0]
+        subst_dict["input_paired_2"] = cfg.paired_reads[1]
+    if len(cfg.single_reads) == 1:  
+        subst_dict["input_single"] = cfg.single_reads[0]    
 
-    subst_dict["input_numfiles"]           = len(cfg.paired_reads)
-
-    for i, input_read in enumerate(cfg.paired_reads):
-        subst_dict["input_file_" + str(i)]  = input_read
-
-    subst_dict["input_gzipped"]             = bool_to_str(False)
+    #subst_dict["input_gzipped"]             = bool_to_str(False)
     subst_dict["input_working_dir"]         = cfg.working_dir
     subst_dict["general_max_iterations"]    = cfg.max_iterations
     subst_dict["general_max_nthreads"]      = cfg.max_threads
@@ -179,7 +178,11 @@ def main():
                     for item in value:
                         item = os.path.abspath(os.path.expandvars(item))
                         item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir)
-                        bh_cfg.single_reads.append(item)
+                        if len(bh_cfg.single_reads) == 0:
+                            bh_cfg.single_reads.append(item)
+                        else:
+                            bh_cfg.single_reads[0] = bh_aux.merge_single_files(item, bh_cfg.single_reads[0], bh_cfg.working_dir)
+
                 elif key.startswith("paired_reads"):
                     cur_paired_reads = []
                     if len(value) == 1:
@@ -341,7 +344,7 @@ def run_bh(cfg):
     support.sys_call(command)
 
     import bh_aux
-    dataset_str = bh_aux.generate_dataset(cfg, cfg.working_dir, cfg.paired_reads)        
+    dataset_str = bh_aux.generate_dataset(cfg)        
     dataset_filename = cfg.dataset
     dataset_file = open(dataset_filename, "w")
     dataset_file.write(dataset_str)

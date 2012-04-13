@@ -17,19 +17,16 @@
 // struct for debruijn project's configuration file
 struct hammer_config
 {
-	int input_numfiles;
-	bool input_paired;
-	string input_file_0;
-	string input_file_1;
-	string input_file_2;
-	string input_file_3;
-	string input_file_4;
+	bool input_gzipped;
+
+	string input_paired_1;
+	string input_paired_2;
+	string input_single;
 	string input_solid_kmers;
 	string input_working_dir;
 	int input_trim_quality;
 	boost::optional<int> input_qvoffset_opt;
 	int input_qvoffset;
-	bool input_gzipped;
 	bool input_read_solid_kmers;
 
 	bool general_do_everything_after_first_iteration;
