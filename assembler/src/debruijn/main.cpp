@@ -125,7 +125,8 @@ int main(int argc, char** argv)
 //        typedef io::PairedEasyReader PairedReadStream;
 
         // assemble it!
-        INFO("Assembling " << cfg::get().dataset_name << " (" << cfg::get().dataset_file << ") dataset with K=" << debruijn_graph::K);
+        INFO("Assembling " << cfg::get().dataset_name << " dataset (" << cfg::get().dataset_file << ")");
+        INFO("with K=" << debruijn_graph::K);
 
         debruijn_graph::assemble_genome();
 

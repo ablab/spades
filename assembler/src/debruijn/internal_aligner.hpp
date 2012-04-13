@@ -172,11 +172,12 @@ protected:
 				if (conj != *it)
 					SeqNames.insert(make_pair(conj, make_pair(s,false)));
 			}
-		}INFO("Seq names prepared");
+		}
+		DEBUG("Seq names prepared");
 	}
 
 	void InitializeSamFile(const string& sam_output_filename){
-		INFO("SAM file initialize");
+		INFO("STAGE == SAM file printing");
 		samOut = fopen(sam_output_filename.c_str(), "w");
  		if (samOut) {
 			if (! map_mode) fprintf(samOut, "@HD\tVN:1.4\tSO:unsorted\n");
@@ -193,8 +194,8 @@ protected:
 			fclose(samOut);
 			samOut = NULL;
 		}
-		INFO("SAM file generating finished");
-		INFO("Processed "<< ProcessedReads<< " reads, "<< SuccesfullReads<< " ( "<< ((double)SuccesfullReads*100)/ProcessedReads<<"%) of them aligned.");
+		DEBUG("SAM file generating finished");
+		INFO("Processed "<< ProcessedReads<< " reads, "<< SuccesfullReads<< " ("<< ((double)SuccesfullReads*100)/ProcessedReads<<"%) of them aligned");
 //		INFO( SplittedReads<<  " ( "<< ((double)SplittedReads*100)/ProcessedReads<<"%)"<< " reads split on few edges.");
 //		INFO( " SamRecordsCount "<< SamRecordsCount);
 	}

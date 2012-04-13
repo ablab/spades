@@ -50,7 +50,6 @@ PairedRead longestValid(const PairedRead& r) {
 	if (len1 == r.first().size() && len2 == r.second().size()) {
 		return r;
 	}
-	//size_t is = r.insert_size() - c1.first - c2.first;
 	size_t is = r.insert_size() - c1.first - r.second().size() + c2.second;
 	return PairedRead(r.first().Substr(c1.first, c1.second), r.second().Substr(c2.first, c2.second), is);
 }
