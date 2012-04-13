@@ -9,12 +9,6 @@ def verify(expr, message):
         print "Assertion failed. Message: " + message
         exit(0)
 
-def check_files(prefix):
-    msg = "Failure! Check output files."
-    verify(os.path.isfile(prefix + ".cor.fastq"), msg + " prefix is " + prefix + " error 1")
-    verify(os.path.isfile(prefix + ".unp.fastq"), msg + " prefix is " + prefix + " error 2")
-    verify(os.path.isfile(prefix + ".bad.fastq"), msg + " prefix is " + prefix + " error 3")
-
 def determine_it_count(tmp_dir, prefix):
     import re
     files = os.listdir(tmp_dir)
@@ -27,18 +21,20 @@ def determine_it_count(tmp_dir, prefix):
                 answer = val
     return "%02d" % answer
 
-def determine_read_files(folder, str_it_count, input_files):
-    id = 1    
+def determine_read_files(folder, str_it_count, input_files, num_paired):   
     answer = dict()
     answer["paired_reads"] = '"'
     answer["single_reads"] = '"'
 
-    for input_file in input_files:
+    # paired files
+    for id, input_file in enumerate(input_files):
         prefix = os.path.basename(input_file) + "." + str_it_count        
-        check_files(folder + prefix)
-
-        answer["paired_reads"] += folder + prefix + ".cor.fastq" + '  '
-        answer["single_reads"] += folder + prefix + ".unp.fastq" + '  '
+        full_name = folder + prefix + ".cor.fastq"
+        verify(os.path.isfile(full_name), "corrected file not found: " + full_name)
+        if id < num_paired:
+            answer["paired_reads"] += full_name + '  '
+        else: 
+            answer["single_reads"] += full_name + '  '
 
     answer["paired_reads"] += '"'
     answer["single_reads"] += '"'
@@ -75,18 +71,6 @@ def hammer(given_props, output_dir, compress):
         os.system(c)
     return dataset_entry
 
-def dataset_pretty_print(dataset):    
-    canonical_order       = ["paired_reads", "single_reads", "jumping_first", "jumping_second", "jumping_single_first", "jumping_single_second", "RL", "IS", "delta", "jump_is", "jump_rl", "single_cell", "is_var", "reference_genome", "genes", "operons"]
-    max_property_name_len = max([len(x) for x in canonical_order])
-    tabulation            = "    " 
-    
-    pretty = ""
-    dataset_dict = dict(dataset)
-    for prop in canonical_order:
-        if dataset_dict.has_key(prop):
-            pretty += prop.ljust(max_property_name_len) + tabulation + dataset_dict[prop] + "\n"
-    return pretty
-
 def dataset_print(dataset):           
     result = ""
     dataset_dict = dict(dataset)
@@ -94,11 +78,27 @@ def dataset_print(dataset):
         result += key + "\t" + value + "\n"
     return result
 
-def generate_dataset(cfg, tmp_dir, input_files):    
+def generate_unpaired_basename(filename1, filename2):
+    str1 = os.path.basename(filename1)
+    str2 = os.path.basename(filename2)
+    prefix = ""
+    for i in range( min(len(str1), len(str2)) ):
+        if str1[i] == str2[i]:
+            prefix += str1[i]
+        else:
+            break
+    return prefix + "unpaired"
+
+def generate_dataset(cfg):  
+
+    tmp_dir = cfg.working_dir
+    if len(cfg.single_reads) == 0:
+        cfg.single_reads = [ generate_unpaired_basename(cfg.paired_reads[0], cfg.paired_reads[1]) ]
+    input_files = cfg.paired_reads + cfg.single_reads
 
     str_it_count = determine_it_count(tmp_dir, os.path.basename(input_files[0]))
 
-    dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count, input_files)
+    dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count, input_files, len(cfg.paired_reads))
 
     import process_cfg
     dataset_cfg["single_cell"] = process_cfg.bool_to_str(cfg.single_cell)    
@@ -106,7 +106,6 @@ def generate_dataset(cfg, tmp_dir, input_files):
         if key.startswith("original_"):
             dataset_cfg[key] = value
 
-    #return dataset_pretty_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))    
     return dataset_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))    
 
 
@@ -167,6 +166,26 @@ def merge_paired_files(src_paired_reads, dst_paired_reads, output_folder):
         src_file.close()
 
     return merged
+
+def merge_single_files(src_single_read, dst_single_read, output_folder):
+    dst_filename = ""
+    if dst_single_read.startswith(output_folder):
+        dst_filename = dst_single_read
+    else:
+        import shutil
+        shutil.copy(dst_single_read, output_folder)
+        dst_filename = os.path.join(output_folder, os.path.basename(dst_single_read))
+    
+    src_file = open(src_single_read, 'r')
+    dst_file = open(dst_filename, "a")
+    dst_file.write(src_file.read())
+    dst_file.close()
+    src_file.close()
+
+    merged_filename = os.path.join(os.path.dirname(dst_filename), generate_unpaired_basename(src_single_read, dst_filename))
+    os.rename(dst_filename, merged_filename)
+
+    return merged_filename  
 
 def ungzip_if_needed(filename, output_folder):    
     file_basename, file_extension = os.path.splitext(filename)

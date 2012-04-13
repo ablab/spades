@@ -120,7 +120,7 @@ void print_full_stats() {
 void HammerTools::ChangeNtoAinReadFiles() {
 	std::vector<pid_t> pids;
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		string cur_filename = getFilename(cfg::get().input_working_dir, "reads.input", iFile);
+		string cur_filename = HammerTools::getFilename(cfg::get().input_working_dir, Globals::input_filename_bases[iFile]);
 		pid_t cur_pid = vfork();
 		if (cur_pid == 0) {
 			TIMEDLN("  [" << getpid() << "] Child process for substituting Ns in " << Globals::input_filenames[iFile] << " starting.");
@@ -145,14 +145,18 @@ void HammerTools::DecompressIfNeeded() {
 	char f_cont[2];
 	vector<pid_t> pIDs(Globals::input_filenames.size(), 0);
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
+		if (boost::filesystem::extension(boost::filesystem::path(Globals::input_filenames[iFile])) != ".gz")
+			continue;
+
 		stat(Globals::input_filenames[iFile].c_str(), &st);
 		std::ifstream ifs(Globals::input_filenames[iFile], std::ios::in | std::ios::binary );
 		ifs.read(f_cont, 2);
 		ifs.close();
 		if ( (f_cont[0] == (char)0x1f) && (f_cont[1] == (char)0x8b) ) {
-			string newFilename = HammerTools::getFilename(cfg::get().input_working_dir, "reads.input", iFile);
+			string newFilename = HammerTools::getFilename(cfg::get().input_working_dir, Globals::input_filename_bases[iFile]);
 			string oldFilename = Globals::input_filenames[iFile];
 			Globals::input_filenames[iFile] = newFilename;
+			Globals::input_filename_bases[iFile] = boost::filesystem::basename(boost::filesystem::path(Globals::input_filename_bases[iFile]));
 			pIDs[iFile] = vfork();
 			if (pIDs[iFile] == 0) {
 				string systemcall = string("gunzip -c ") + oldFilename + string(" > ") + newFilename;
@@ -657,7 +661,6 @@ string HammerTools::getFilename( const string & dirprefix, int iter_count, const
 	return tmp.str();
 }
 
-
 bool HammerTools::internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq, const vector<KMerCount> & km,
 		const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat, vector< vector<int> > & v,
 		int & left, int & right, bool & isGood, ofstream * ofs, bool revcomp, bool correct_threshold, bool discard_singletons ) {
@@ -835,7 +838,6 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount> & kmers, hint_t & chan
 	r.setSequence(seq.data());
 	r.trimLeftRight(left, right+K-1);
 	if ( left > 0 || right + K -1 < read_size ) changedRead = true;
-
 	changedNucleotides += res;
 	if (res > 0) ++changedReads;
 	return isGood;
@@ -843,7 +845,7 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount> & kmers, hint_t & chan
 
 
 void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KMerCount> & kmers,
-		hint_t & changedReads, hint_t & changedNucleotides, hint_t & readno, ofstream *outf_good, ofstream *outf_bad ) {
+		hint_t & changedReads, hint_t & changedNucleotides, hint_t readno, ofstream *outf_good, ofstream *outf_bad ) {
 	ireadstream irs(readsFilename, cfg::get().input_qvoffset);
 	VERIFY(irs.is_open());
 	bool correct_threshold = cfg::get().correct_use_threshold;
@@ -866,7 +868,7 @@ void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KM
 
 void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,
 		const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_left_start, hint_t readno_right_start,
-		ofstream * ofbadl, ofstream * ofcorl, ofstream * ofunpl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunpr ) {
+		ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp ) {
 	int qvoffset = cfg::get().input_qvoffset;
 	bool correct_threshold = cfg::get().correct_use_threshold;
 	bool discard_singletons = cfg::get().bayes_discard_only_singletons;
@@ -948,8 +950,8 @@ void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, cons
 		for( size_t i = 0; i < buf_size; ++i ) {
 			if (  !left_res[i] ) l[i].print(*ofbadl, qvoffset );
 			if ( !right_res[i] ) r[i].print(*ofbadr, qvoffset );
-			if (  left_res[i] && !right_res[i] ) l[i].print(*ofunpl, qvoffset );
-			if ( !left_res[i] &&  right_res[i] ) r[i].print(*ofunpr, qvoffset );
+			if (  left_res[i] && !right_res[i] ) l[i].print(*ofunp, qvoffset );
+			if ( !left_res[i] &&  right_res[i] ) r[i].print(*ofunp, qvoffset );
 			if (  left_res[i] &&  right_res[i] ) {
 				l[i].print(*ofcorl, qvoffset);
 				r[i].print(*ofcorr, qvoffset);
@@ -961,6 +963,16 @@ void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, cons
 	irsl.close(); irsr.close();
 }
 
+string getLargestPrefix(const string & str1, const string & str2) {
+	string substr = "";
+	for (size_t i = 0; i != str1.size() && i != str2.size(); ++i) {
+		if (str1[i] == str2[i])
+			substr += str1[i];
+		else
+			break;
+	}
+	return substr;
+}
 
 hint_t HammerTools::CorrectAllReads() {
 	// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
@@ -971,47 +983,61 @@ hint_t HammerTools::CorrectAllReads() {
 
 	// TODO: make threaded read correction!
 	TIMEDLN("Starting read correction in " << correct_nthreads << " threads.");
-	hint_t readno = 0;
 
-	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		if (!cfg::get().input_paired) {
-			ofstream ofgood(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor").c_str());
-			ofstream ofbad( HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "bad").c_str());
-			HammerTools::CorrectReadFile(Globals::input_filenames[iFile], *Globals::kmers, changedReads, changedNucleotides, readno, &ofgood, &ofbad );
-			TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " corrected.");
-			// makes sense to change the input filenames for the next iteration immediately
-			Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");
-			// delete output files from previous iteration
-			if (Globals::iteration_no > 0) {
-				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "cor"));
-				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "bad"));
-			}
-		} else {
-			ofstream ofcorl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor").c_str());
-			ofstream ofbadl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "bad").c_str());
-			ofstream ofunpl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "unp").c_str());
-			ofstream ofcorr(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "cor").c_str());
-			ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "bad").c_str());
-			ofstream ofunpr(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "unp").c_str());
+	// correcting paired files
+	bool single_created = false;
+	if (Globals::input_filenames.size() >= 2) {
+		int iFile = 0;
+		if (Globals::input_filename_bases.size() != 3) {
+			Globals::input_filename_bases.push_back(
+					getLargestPrefix(Globals::input_filename_bases[0], Globals::input_filename_bases[1]) + "unpaired");
+			single_created = true;
+		}
+		std::string input_single_filename_base = Globals::input_filename_bases[2];
 
-			HammerTools::CorrectPairedReadFiles(Globals::input_filenames[iFile], Globals::input_filenames[iFile+1],
-					*Globals::kmers, changedReads, changedNucleotides,
-					Globals::input_file_blob_positions[iFile], Globals::input_file_blob_positions[iFile+1],
-					&ofbadl, &ofcorl, &ofunpl, &ofbadr, &ofcorr, &ofunpr );
-			TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " and " << Globals::input_filenames[iFile+1].c_str() << " corrected as a pair.");
-			// makes sense to change the input filenames for the next iteration immediately
-			Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");
-			Globals::input_filenames[iFile+1] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "cor");
-			// delete output files from previous iteration
-			if (Globals::iteration_no > 0) {
-				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "cor"));
-				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "bad"));
-				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "unp"));
-				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "cor"));
-				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "bad"));
-				HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "unp"));
-			}
-			++iFile;
+		ofstream ofcorl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile,   Globals::iteration_no, "cor").c_str());
+		ofstream ofbadl(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile,   Globals::iteration_no, "bad").c_str());
+		ofstream ofcorr(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "cor").c_str());
+		ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "bad").c_str());
+		ofstream ofunp (HammerTools::getReadsFilename(cfg::get().input_working_dir, 2,       Globals::iteration_no, "cor").c_str());
+
+		HammerTools::CorrectPairedReadFiles(Globals::input_filenames[iFile], Globals::input_filenames[iFile+1],
+				*Globals::kmers, changedReads, changedNucleotides,
+				Globals::input_file_blob_positions[iFile], Globals::input_file_blob_positions[iFile+1],
+				&ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp );
+		TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " and " << Globals::input_filenames[iFile+1].c_str() << " corrected as a pair.");
+		// makes sense to change the input filenames for the next iteration immediately
+		Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");
+		Globals::input_filenames[iFile+1] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "cor");
+		// and single file
+		if (single_created) {
+			Globals::input_filenames.push_back(
+					HammerTools::getReadsFilename(cfg::get().input_working_dir, 2, Globals::iteration_no, "cor"));
+		}
+
+		// delete output files from previous iteration
+		if (Globals::iteration_no > 0) {
+			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile,   Globals::iteration_no - 1, "cor"));
+			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile,   Globals::iteration_no - 1, "bad"));
+			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "cor"));
+			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "bad"));
+		}
+		++iFile;
+	}
+
+	// correcting single file
+	if (!single_created && (Globals::input_filenames.size() == 3 || Globals::input_filenames.size() == 1)) {
+		int iFile = Globals::input_filenames.size() - 1;
+		ofstream ofgood(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor").c_str(), fstream::app);
+		ofstream ofbad( HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "bad").c_str());
+		HammerTools::CorrectReadFile(Globals::input_filenames[iFile], *Globals::kmers, changedReads, changedNucleotides, Globals::input_file_blob_positions[iFile], &ofgood, &ofbad );
+		TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " corrected.");
+		// makes sense to change the input filenames for the next iteration immediately
+		Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");
+		// delete output files from previous iteration
+		if (Globals::iteration_no > 0) {
+			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "cor"));
+			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "bad"));
 		}
 	}
 
@@ -1037,8 +1063,10 @@ void HammerTools::ReadKmerNosFromFile( const string & fname, vector<hint_t> *kme
 
 void HammerTools::RemoveFile(const string & fname) {
 	if (cfg::get().general_remove_temp_files) {
-		if(remove(fname.c_str()) != 0) {
-			TIMEDLN("Error deleting file " + fname);
+		if (boost::filesystem::exists(boost::filesystem::path(fname))) {
+			if(remove(fname.c_str()) != 0) {
+				TIMEDLN("Error deleting file " + fname);
+			}
 		}
 	}
 }

@@ -20,6 +20,7 @@
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/filesystem.hpp>
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "union.hpp"
@@ -124,11 +125,11 @@ public:
 	static bool CorrectOneRead( const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides,
 			hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons );
 	/// correct reads in a given file
-	static void CorrectReadFile( const string & readsFilename, const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t & readno_start, ofstream *outf_good, ofstream *outf_bad );
+	static void CorrectReadFile( const string & readsFilename, const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_start, ofstream *outf_good, ofstream *outf_bad );
 	/// correct reads in a given pair of files
 	static void CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,
 			const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_left_start, hint_t readno_right_start,
-			ofstream * ofbadl, ofstream * ofcorl, ofstream * ofunpl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunpr );
+			ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp );
 	/// correct all reads
 	static hint_t CorrectAllReads();
 
