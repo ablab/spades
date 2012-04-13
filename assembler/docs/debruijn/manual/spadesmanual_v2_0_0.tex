@@ -151,13 +151,13 @@ Thank you for using SPAdes!
 
 
 ===== SPAdes pipeline finished
-\end{lstlisting}
+\end{lstlisting}\todo{update}
 
-\section{Input format}
-{\spades} accepts single reads as well as forward-reverse paired end reads
-in FASTA and FASTQ format. The number of files with single reads may be arbitrary while paired end reads should be organized into one or two files. In a single file, each left read should be followed by its mate right read. In case of two files, the first file should contain all left reads while the second one should contain all the corresponding right reads in exactly the same order. All the files may be compressed.
+%\section{Input format}
+%{\spades} accepts single reads as well as forward-reverse paired end reads
+%in FASTA and FASTQ format. The number of files with single reads may be arbitrary while paired end %reads should be organized into one or two files. In a single file, each left read should be %followed by its mate right read. In case of two files, the first file should contain all left %reads while the second one should contain all the corresponding right reads in exactly the same %order. All the files may be compressed.
 
-Note that currently {\spades} works with only one library.
+%Note that currently {\spades} works with only one library.
 
 \section{Running {\spades}}\label{sec:running}
 To run {\spades} type
@@ -183,9 +183,8 @@ output_to_console   true                              ; optional. Default is tru
 
 dataset
 {
-    paired_reads $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_1.fastq.gz  
-                   $cfg/test_dataset/E.coli/is220/cropped/s_6.first1000_2.fastq.gz
-    single_reads                                      ; optional
+    paired_reads $cfg/test_dataset/ecoli_1K_1.fq.gz $cfg/test_dataset/ecoli_1K_2.fq.gz
+    single_reads ; optional
     single_cell         false
 }
 
@@ -233,11 +232,22 @@ To run only some of these three stages just remove (or comment) the unnecessary 
 \item[{\tt output\_to\_console}] flag controls outputting log messages to the console.
 \end{description}
 
+\subsection{Dataset settings}
+{\spades} accepts single reads as well as forward-reverse paired end reads
+in FASTA and FASTQ format. All the files may be compressed. Currently {\spades} works with only one library.
+
+\begin{description}
+\item[{\tt paired\_reads}] specifies input paired end reads organized into one or two files.
+In a single file, each left read should be followed by its mate right read. In case of two files, the first file should contain all left reads while the second one should contain all the corresponding right reads in exactly the same order (two files should be separated by a space).
+\item[{\tt single\_reads}] specifies reads without pairs. You can specify any number of
+files with single reads.
+\item[{\tt single\_cell}] flag is set if input data was obtained with mda (single cell) technology.
+\end{description}
 
 \subsection{Error correction settings}
 \todo[inline]{to be written}
 
-\subsection{Assembly settings}
+\subsection{Assembly settings}\label{subsec:assembly}
 \begin{description}
 \item[{\tt iterative\_K}] specifies one or more odd values for $k$-mer (vertex) sizes.  Informally, smaller values of $k$ make the graph more connected, but at the same time more tangled, while higher values of $k$ may defragment the graph, but allow to resolve short repeats. The typical value for this variable is {\tt 21 33 55}. See the paper (\cite{main}) for more details.  Note that in the configuration file, $K$ is the size of a vertex, while in the paper, $K$ is the size of an edge (one higher).
 
@@ -251,37 +261,29 @@ if the {\tt bh} section is present as in this case the dataset file is created a
 \end{description}
 
 \subsection{Quality assesment settings}
+If this section is present in the config file then
+{\spades} computes statistics on various metrics (like N50) of the resulting contigs.
 \todo[inline]{to be written}
 
 
 \section{Understanding the output}
 Results can be found in the folder specified by {\tt output\_dir}.
-The specific directory is given at the end of the log.
-If {\tt measure\_quality} flag is set to true, then 
-there is a folder containing statistics on various metrics (like N50) of the resulting contigs.
-\begin{lstlisting}
-All the resulting information can be found here: 
- ./data/debruijn/SAUREUS_JCVI_BH/build_02.07_19.05.56/
- * Resulting contigs are called final_contigs.fasta
- * Assessment of their quality is in quality_results/
-
-Thank you for using SPAdes!
-
-== Assembly finished. See the log file at: 
-  ./data/debruijn/SAUREUS_JCVI_BH/build_02.07_19.05.56/spades.log
-\end{lstlisting}\todo{obnovit'!}
+The specific directories containing corrected reads, assembly, and quality estimate are given
+at the end of the log.
 
 \section{Postprocessing}
 
 \subsection{Correcting errors in the resulting contigs}
 While {\spades} produces accurate assemblies, 
-we recommend running SEQuel~\cite{sequel}\todo{ssilka} after {\spades} to further reduce the number of small errors (single nucleotide substitutions and small indels). SEQuel is available at
-\url{http://bix.ucsd.edu/SEQuel/}.\todo{pro sam-files rassakazat'}
+we recommend running SEQuel~\cite{sequel} after {\spades} to further reduce the number of small errors (single nucleotide substitutions and small indels). SEQuel is available at
+\url{http://bix.ucsd.edu/SEQuel/}. Note that one can set the flag {\tt generate\_sam} to {\spades}
+(see subsection~\ref{subsec:assembly}) to generate a SAM-file showing how the 
 
 
 \subsection{Scaffolding}
 The current version of {\spades} does not have a scaffolding stage.
-One can use a separate scaffolder such as Opera: \url{http://sourceforge.net/projects/operasf/}.
+One can use a separate scaffolder such as Opera~\cite{opera}.
+It is available at \url{http://sourceforge.net/projects/operasf/}.
 
 \section{Bug reports}
 Bug reports should be sent to \url{spades.support@bioinf.spbau.ru}.
