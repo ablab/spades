@@ -61,8 +61,8 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict["developer_mode"]     = bool_to_str(cfg.developer_mode)
     subst_dict["SAM_writer_enable"]  = bool_to_str(cfg.generate_sam_files)
     subst_dict["project_name"]       = ""
-    subst_dict["gap_closer_enable"] = bool_to_str(last_one)
-    subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
+    subst_dict["gap_closer_enable"]      = bool_to_str(last_one and cfg.gap_closer)
+    subst_dict["paired_mode"]            = bool_to_str(last_one and cfg.paired_mode)
     subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
 
     substitute_params(filename, subst_dict)
@@ -221,6 +221,8 @@ def main():
         spades_cfg = merge_configs(cfg["assembly"], cfg["common"])        
         if not spades_cfg.__dict__.has_key("generate_sam_files"):
             spades_cfg.__dict__["generate_sam_files"] = False        
+        if not spades_cfg.__dict__.has_key("gap_closer"):
+            spades_cfg.__dict__["gap_closer"] = True
 
         def make_working_dir(output_dir):
             import datetime

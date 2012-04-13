@@ -28,6 +28,7 @@ assembly
     iterative_K         21 33 55
     paired_mode         true
     generate_sam_files  true                          ; optional. Default is false
+    gap_closer          true                          ; optional. Default is true
 }
 
 quality_assessment      ; optional. If section exists (even if it has no lines), spades.py evaluates quality of the final contigs
