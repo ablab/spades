@@ -2,9 +2,9 @@
 
 sc_de
 {
-    linkage_distance_coeff  .4
-    max_distance_coeff  	.3
-    filter_threshold        7. ;bigger than in non-single cell because normalization is disabled
+    linkage_distance_coeff  0.3
+    max_distance_coeff  	2.0
+    filter_threshold        4.0 ;bigger than in non-single cell because normalization is disabled
 }
 
 

@@ -125,7 +125,7 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 		int minD = rounded_d(data.front());
 		vector<size_t> forward;
 		for (size_t i = 0; i < raw_forward.size(); ++i)
-			if (minD - max_distance_ <= raw_forward[i] && raw_forward[i] <= maxD + max_distance_)
+			if (minD - (int)max_distance_ <= (int)raw_forward[i] && (int)raw_forward[i] <= maxD + (int)max_distance_)
 				forward.push_back(raw_forward[i]);
 		if (forward.size() == 0)
 			return result;
