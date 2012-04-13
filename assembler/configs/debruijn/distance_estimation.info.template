@@ -10,8 +10,8 @@ sc_de
 
 usual_de
 {
-    linkage_distance_coeff    1.
-    max_distance_coeff        1.
+    linkage_distance_coeff    0.3
+    max_distance_coeff        2.0
     filter_threshold          0.3
 }
 
