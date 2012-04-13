@@ -17,8 +17,8 @@ function change_config
     ds_folder_prefix=${ds_folder//\//\\\/}
     dsa_folder_prefix=${dsa_folder//\//\\\/}
 
-    ls $ds_folder | sed -e "s/^/$ds_folder_prefix/" > temp
-    ls $dsa_folder | sed -e "s/^/$dsa_folder_prefix/" >> temp
+    ls -t $ds_folder | sed -e "s/^/$ds_folder_prefix/" > temp
+    ls -t $dsa_folder | sed -e "s/^/$dsa_folder_prefix/" >> temp
     
     #awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets.info > temp
     #awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets_archive.info >> temp
@@ -35,17 +35,25 @@ function change_config
         exit
     fi
     if [ ` echo "$dataset" | sed -n '$='` == 1 ]; then
-        echo "$dataset dataset chosen"
-        awk -v ds=$dataset '{if ($1 == "dataset") print "dataset","\t",ds; else print $0}' configs/debruijn/config.info  > config.info
-        mv config.info configs/debruijn/config.info
+        filename=$(basename $dataset)
+        filename=${filename%.*}
+        echo "$filename dataset chosen"
+        awk -v ds=$filename '{if ($1 == "project_name") print "project_name","\t",ds; else print $0}' configs/debruijn/config.info  > config1.info
+        awk -v ds=$dataset '{if ($1 == "dataset") print "dataset","\t",ds; else print $0}' config1.info > config.info
+        mv config1.info configs/debruijn/config.info
+        rm config.info
     else
         echo "Dataset ambiguous :"
         echo "$dataset"
         echo "The first one will be chosen :"
         dataset=`echo $dataset | awk '{print $1}' `
-        echo "$dataset"
-        awk -v ds=$dataset '{if ($1 == "dataset") print "dataset","\t",ds; else print $0}' configs/debruijn/config.info  > config.info
-        mv config.info configs/debruijn/config.info
+        filename=$(basename $dataset)
+        filename=${filename%.*}
+        echo "$filename"
+        awk -v ds=$filename '{if ($1 == "project_name") print "project_name","\t",ds; else print $0}' configs/debruijn/config.info  > config1.info
+        awk -v ds=$dataset '{if ($1 == "dataset") print "dataset","\t",ds; else print $0}' config1.info  > config.info
+        mv config1.info configs/debruijn/config.info
+        rm config.info
     fi
 
     rm temp
