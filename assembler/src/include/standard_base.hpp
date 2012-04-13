@@ -8,6 +8,7 @@
 #pragma once
 
 //==crt and stl
+#include <memory>
 #include <cstdlib>
 #include <cstdio>
 #include <time.h>
