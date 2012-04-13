@@ -670,11 +670,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 					nonzero_info ++;
 					break;
 				} else {
-<<<<<<< HEAD
-					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 0));
-=======
 					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 1));
->>>>>>> 9a43d84... verbosity
 					DEBUG("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first_info.first) << " " << origin_gp.int_ids.ReturnIntId(*path_iter));
 				}
 				tmpd += origin_gp.g.length(*path_iter);
@@ -682,11 +678,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 			if (! nonzero_info) {
 
 				if (paths.begin()->size() != 0) {
-<<<<<<< HEAD
-					DEBUG("filled missing " << paths.begin()->size() << "edges");
-=======
 					DEBUG("filled missing " << paths.begin()->size() << " edges");
->>>>>>> 9a43d84... verbosity
 					DEBUG("while treating info from "<< origin_gp.int_ids.ReturnIntId(first_info.first) << " to " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge));
 				}
 				return paths.begin()->size();
