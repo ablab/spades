@@ -23,8 +23,8 @@ case $1 in
   'da')  cfg="configs/debruijn/deprecated_datasets_archive.info" ;;
   'dip') cfg="configs/debruijn/detail_info_printer.info";;
   'dipt') cfg="configs/debruijn/detail_info_printer.info.template";;
-  'log') cfg="log4cxx.properties";;
-  'logt') cfg="log4cxx.properties.template";;
+  'log') cfg="configs/debruijn/log.properties";;
+  'logt') cfg="configs/debruijn/log.properties.template";;
   'sp')   cfg="spades_config.info";;
   'spt')   cfg="spades_config.info.template";;
   

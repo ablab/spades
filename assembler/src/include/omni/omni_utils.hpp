@@ -3,7 +3,7 @@
 
 #include "simple_tools.hpp"
 #include "queue_iterator.hpp"
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "simple_tools.hpp"
 #include "dijkstra.hpp"
 #include "xmath.h"

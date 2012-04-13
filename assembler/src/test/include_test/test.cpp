@@ -1,10 +1,25 @@
-#define BOOST_TEST_MODULE include_test
-#include "logging.hpp"
+//#define BOOST_TEST_MODULE include_test
+#include "standard_base.hpp"
+
+#include "logger/log_writers.hpp"
 
 #include "seq_test.hpp"
 #include "sequence_test.hpp"
 #include "quality_test.hpp"
 #include "nucl_test.hpp"
+
+::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
+{
+	logging::create_logger();
+	logging::__logger()->add_writer(make_shared<logging::console_writer>());
+
+    using namespace ::boost::unit_test;
+    char module_name [] = "include_test";
+    assign_op( framework::master_test_suite().p_name.value, basic_cstring<char>(module_name), 0 );
+
+	return 0;
+}
+
 
 //todo add more tests
 ////#include "ireadstream_test.hpp"
@@ -26,4 +41,3 @@
 
 //using namespace std;
 
-DECL_PROJECT_LOGGER("ct");

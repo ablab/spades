@@ -132,9 +132,6 @@ public:
 };
 
 
-
-DECL_PROJECT_LOGGER("d")
-
 int main() {
 	cfg::create_instance(cfg_filename);
 	lc_cfg::create_instance(long_contigs::lc_cfg_filename);

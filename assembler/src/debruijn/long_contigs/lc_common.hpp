@@ -20,7 +20,7 @@
 #include "lc_config_struct.hpp"
 
 
-#include "logging.hpp"
+#include "logger/logger.hpp"
 
 #include "io/reader.hpp"
 #include "io/easy_reader.hpp"

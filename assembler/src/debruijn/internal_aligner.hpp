@@ -2,7 +2,7 @@
 
 
 #include "standard.hpp"
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "omni/paired_info.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/abstract_conjugate_graph.hpp"

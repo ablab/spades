@@ -375,6 +375,7 @@ public:
 	std::string output_suffix;
 	std::string output_saves;
 	std::string final_contigs_file;
+	std::string log_filename;
 
 	bool make_saves;
 	bool output_pictures;
@@ -703,8 +704,7 @@ inline void load(debruijn_config::jump_cfg& jump,
 }
 
 // main debruijn config load function
-inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
-		bool complete) {
+inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 	// input options:
 	load(cfg.dataset_file, pt, "dataset");
@@ -730,6 +730,8 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	cfg.output_suffix = MakeLaunchTimeDirName() + "/";
 	cfg.output_dir = cfg.output_root + cfg.output_suffix;
 	cfg.output_saves = cfg.output_dir + "saves/";
+
+	load(cfg.log_filename, pt, "log_filename");
 
 	load(cfg.developer_mode, pt, "developer_mode");
 	if (cfg.developer_mode) {

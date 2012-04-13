@@ -9,7 +9,7 @@
 
 #include "standard.hpp"
 
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation_routine.hpp"
 //#include "path_set_graph_constructor.hpp"

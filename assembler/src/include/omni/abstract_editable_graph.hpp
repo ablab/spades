@@ -5,7 +5,7 @@
 #include <cstring>
 #include "sequence/seq.hpp"
 #include "sequence/sequence.hpp"
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "sequence/nucl.hpp"
 #include "omni_utils.hpp"
 #include "observable_graph.hpp"

@@ -9,7 +9,7 @@
 #define COVERAGE_HPP_
 
 #include <tr1/unordered_map>
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "io/reader.hpp"
 
 

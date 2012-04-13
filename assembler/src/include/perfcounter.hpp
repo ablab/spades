@@ -45,17 +45,20 @@ struct avg_perf_counter
 
 	void stop()
 	{
-		counter_++;
+	    ++counter_;
 		whole_time_ += p_cnt_.time();
 	}
+
 	double time() const
 	{
 		return whole_time_;
 	}
-	size_t counts()
+
+	size_t counts() const
 	{
 		return counter_;
 	}
+
 	double time_ms() const
 	{
 		return time() * 1e3;
@@ -84,3 +87,17 @@ private:
 	size_t counter_;
 
 };
+
+
+inline string human_readable_time(double time_in_sec)
+{
+    assert(time_in_sec > 0);
+
+    size_t msec  = size_t(time_in_sec * 1000) % 1000;
+    size_t sec   = size_t(time_in_sec);
+    size_t hours = sec / 3600;
+    size_t mins  = (sec / 60) % 60;
+    sec         %= 60;
+
+    return str(format("%3d:%02d:%02d.%03d") % hours % mins % sec % msec);
+}

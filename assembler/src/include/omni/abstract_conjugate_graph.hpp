@@ -6,7 +6,7 @@
 #include <cstring>
 #include "sequence/seq.hpp"
 #include "sequence/sequence.hpp"
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "sequence/nucl.hpp"
 //#include "strobe_read.hpp"
 #include "io/paired_read.hpp"

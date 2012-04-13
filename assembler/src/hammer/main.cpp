@@ -6,6 +6,8 @@
  */
  
 #include "standard.hpp"
+#include "logger/logger.hpp"
+
 #include <cmath>
 #include <string>
 #include <iostream>

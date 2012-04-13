@@ -4,7 +4,7 @@
 #include "seq_map.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/id_track_handler.hpp"
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "omni/paired_info.hpp"
 #include "xmath.h"
 #include <boost/optional.hpp>

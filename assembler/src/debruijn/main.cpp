@@ -3,6 +3,7 @@
  */
 
 #include "standard.hpp"
+#include "logger/log_writers.hpp"
 #include "segfault_handler.hpp"
 #include "stacktrace.hpp"
 #include "config_struct.hpp"
@@ -12,7 +13,6 @@
 #include "io/multifile_reader.hpp"
 #include "io/careful_filtering_reader_wrapper.hpp"
 #include "launch.hpp"
-#include "logging.hpp"
 #include "simple_tools.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -22,8 +22,6 @@
 #include "boost/archive/tmpdir.hpp"
 
 #include "perfcounter.hpp"
-
-DECL_PROJECT_LOGGER("d")
 
 void link_output(std::string const& link_name)
 {
@@ -97,6 +95,18 @@ void load_config(string cfg_filename)
     copy_configs(cfg_filename, path_to_copy);
 }
 
+void create_console_logger(fs::path cfg_filename)
+{
+	using namespace logging;
+
+	fs::path log_props_file (cfg::get().log_filename);
+	if (!exists(log_props_file))
+		log_props_file = fs::path(cfg_filename).parent_path() / cfg::get().log_filename;
+
+	create_logger(exists(log_props_file) ? log_props_file.string() : "");
+	__logger()->add_writer(make_shared<console_writer>());
+}
+
 int main(int argc, char** argv)
 {
 	perf_counter pc;
@@ -110,7 +120,11 @@ int main(int argc, char** argv)
     try
     {
         using namespace debruijn_graph;
-        load_config(argv[1]);
+
+        string cfg_filename = argv[1];
+
+        load_config          (cfg_filename);
+        create_console_logger(cfg_filename);
 
         on_exit_output_linker try_linker("latest");
 
