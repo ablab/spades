@@ -21,24 +21,6 @@
 
 namespace debruijn_graph {
 
-void save_stage_simplification(conj_graph_pack& gp, size_t iteration) {
-    string i = ToString(iteration);
-
-    if (cfg::get().make_saves) {
-        fs::path p = fs::path(cfg::get().output_saves) / ("simplified_graph_" + i);
-    	PrintGraphPack(p.string(), gp);
-    }
-
-	//todo temporary solution!!!
-	OutputContigs(gp.g, cfg::get().additional_contigs);
-	OutputContigs(gp.g, cfg::get().output_dir + "final_contigs_" + i + ".fasta");
-    cfg::get_writable().final_contigs_file = cfg::get().output_dir + "final_contigs_" + i + ".fasta";
-
-// run script automatically takes simplified contigs from correct path
-
-//	OutputContigs(gp.g,
-//			cfg::get().output_root + "../" + cfg::get().additional_contigs);
-}
 template<class Graph>
 class EditDistanceTrackingCallback {
 	typedef typename Graph::EdgeId EdgeId;
@@ -397,7 +379,7 @@ void FinalTipClipping(Graph& g, boost::function<void(typename Graph::EdgeId)>& r
         tc.ClipTips();
     }
 
-	INFO("Final tip clipping is finished");
+	DEBUG("Final tip clipping is finished");
 }
 
 template<class Graph>
@@ -482,12 +464,11 @@ void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
     //RemoveLowCoverageEdges(graph, edge_remover, 1, 0, 1.5);
     //INFO("ErroneousConnectionsRemoval stats");
 
-	INFO("Early TipClipping");
+	INFO("Early tip clipping:");
 	ClipTips(graph, removal_handler_f);
 
-	INFO("Early BulgeRemoval");
+	INFO("Early bulge removal:");
 	RemoveBulges(graph, removal_handler_f, graph.k() + 1);
-	INFO("BulgeRemoval stats");
 
 	//INFO("Early ErroneousConnectionsRemoval");
 	//RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
@@ -521,14 +502,14 @@ void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
 void PrePostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f){
 
-	INFO("PreFinal ErroneousConnectionsRemoval");
+	INFO("PreFinal erroneous connections removal");
 	FinalRemoveErroneousEdges(graph, edge_remover, removal_handler_f);
 
-	INFO("PreFinal TipClipping");
+	INFO("PreFinal tip clipping");
 	
     FinalTipClipping(graph, removal_handler_f);
 
-	INFO("PreFinal BulgeRemoval");
+	INFO("PreFinal bulge removal");
 	RemoveBulges(graph, removal_handler_f);
 
 	INFO("PreFinal isolated edges removal");
@@ -543,21 +524,21 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
         detail_info_printer &printer){
 
-	INFO("Final ErroneousConnectionsRemoval");
+	INFO("Final erroneous connections removal:");
 	printer(ipp_before_final_err_con_removal);
 	FinalRemoveErroneousEdges(graph, edge_remover, removal_handler_f);
 	printer(ipp_final_err_con_removal);
 
-	INFO("Final TipClipping");
+	INFO("Final tip clipping:");
 	
     FinalTipClipping(graph, removal_handler_f);
 	printer(ipp_final_tip_clipping);
 
-	INFO("Final BulgeRemoval");
+	INFO("Final bulge removal:");
 	RemoveBulges(graph, removal_handler_f);
 	printer(ipp_final_bulge_removal);
 
-	INFO("Final isolated edges removal");
+	INFO("Final isolated edges removal:");
 	IsolatedEdgeRemover<Graph> isolated_edge_remover(graph,
 			cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
@@ -587,7 +568,7 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor, boost::fun
 
 void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_handler_f,
 		omnigraph::GraphLabeler<Graph>& labeler, detail_info_printer& printer, size_t iteration_count) {
-	INFO("SUBSTAGE == Graph simplification started");
+	DEBUG("Graph simplification started");
 	printer(ipp_before_simplification);
 
 	EdgeRemover<Graph> edge_remover(gp.g,
@@ -621,7 +602,7 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
 	INFO("Counting average coverage");
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
 	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
-	INFO("Average coverage counted: " << cfg::get().ds.avg_coverage);
+	INFO("Average coverage = " << cfg::get().ds.avg_coverage.get());
 }
 
 }

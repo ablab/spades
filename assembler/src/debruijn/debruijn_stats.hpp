@@ -622,7 +622,7 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 	DEBUG("Contigs written");
 }
 
-void OutputContigs(ConjugateDeBruijnGraph& g,
+void OutputContigs1(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	osequencestream_cov oss(contigs_output_filename);

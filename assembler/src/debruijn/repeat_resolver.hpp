@@ -1244,7 +1244,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 
 	}
 	INFO(sum_count << " vertices processed while resolving non-primitive repeats");
-	INFO("RR running time is "<< RR_time.time_ms()<< " ms");
+	INFO("Repeat resolver running time was "<< RR_time.time_ms()<< " ms");
 	DEBUG("Generate pair infos got "<< produce_pair_info_time.time_ms()<< " ms and runed "<<produce_pair_info_time.counts()<< " times.");
 	DEBUG("Resolve single vertex "<< resolve_time.time_ms()<< " ms and runed "<<resolve_time.counts()<< " times.");
 	DEBUG("MultiSplit got "<< multisplit_time.time_ms()<< " ms and runed "<<multisplit_time.counts()<< " times.");

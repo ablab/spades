@@ -105,7 +105,7 @@ void SelectReadsForConsensusBefore(graph_pack& etalon_gp,
 		}
 	}
 	cur_num = contigNumbers.size();
-	INFO(cur_num << "contigs");
+	DEBUG(cur_num << " contigs");
 	for (int i = 1; i < 3; i++) {
 		int read_num = 0;
 		osequencestream* mapped_reads[5000];
@@ -118,7 +118,7 @@ void SelectReadsForConsensusBefore(graph_pack& etalon_gp,
 		}
 		SingleReadMapper<k, typename graph_pack::graph_t> rm(etalon_gp.g,
 				index);
-		INFO("mapping reads from pair"<< i);
+		DEBUG("mapping reads from pair "<< i);
 		while (!reads[i - 1]->eof()) {
 			io::SingleRead cur_read;
 
@@ -162,7 +162,7 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 		}
 	}
 	cur_num = contigNumbers.size();
-	INFO(cur_num << "contigs");
+	DEBUG(cur_num << " contigs");
 	for (int i = 1; i < 3; i++) {
 		int read_num = 0;
 		osequencestream* mapped_reads[5000];
@@ -175,7 +175,7 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 		}
 		SingleReadMapper<k, typename graph_pack::graph_t> rm(etalon_gp.g,
 				index);
-		INFO("mapping reads from pair"<< i);
+		DEBUG("mapping reads from pair "<< i);
 		while (!reads[i - 1]->eof()) {
 			io::SingleRead cur_read;
 
@@ -608,7 +608,7 @@ void GenerateMatePairStats(const graph_pack& origin_gp, PairedInfoIndex<typename
 			}
 		}
 	}
-	INFO("Mate pair stats:");
+	INFO("Pathset mate pair statistics:");
 	for(auto s_iter = sizes.begin(); s_iter != sizes.end(); s_iter ++) {
 		INFO("- size: " << s_iter->first << "; pathsets: " << s_iter->second);
 	}
@@ -670,7 +670,11 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 					nonzero_info ++;
 					break;
 				} else {
+<<<<<<< HEAD
 					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 0));
+=======
+					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 1));
+>>>>>>> 9a43d84... verbosity
 					DEBUG("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first_info.first) << " " << origin_gp.int_ids.ReturnIntId(*path_iter));
 				}
 				tmpd += origin_gp.g.length(*path_iter);
@@ -678,7 +682,11 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 			if (! nonzero_info) {
 
 				if (paths.begin()->size() != 0) {
+<<<<<<< HEAD
 					DEBUG("filled missing " << paths.begin()->size() << "edges");
+=======
+					DEBUG("filled missing " << paths.begin()->size() << " edges");
+>>>>>>> 9a43d84... verbosity
 					DEBUG("while treating info from "<< origin_gp.int_ids.ReturnIntId(first_info.first) << " to " << origin_gp.int_ids.ReturnIntId(first_edge) << " " << origin_gp.int_ids.ReturnIntId(second_edge));
 				}
 				return paths.begin()->size();
