@@ -26,6 +26,7 @@
 #include <sstream>
 #include <utility>
 #include <fstream>
+#include <unordered_map>
 
 using std::cin;
 using std::cout;
@@ -66,6 +67,7 @@ using std::ofstream;
 
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/algorithm/string.hpp>
 
 using boost::bind;
 using boost::function;

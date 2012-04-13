@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <logging.hpp>
+#include "logger/logger.hpp"
 #include <simple_tools.hpp>
 #include <io/easy_reader.hpp>
 #include <io/single_read.hpp>

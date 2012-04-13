@@ -8,8 +8,6 @@
 using std::map;
 using std::string;
 
-DECL_PROJECT_LOGGER("q")
-
 namespace {
 
 DECL_LOGGER("count")

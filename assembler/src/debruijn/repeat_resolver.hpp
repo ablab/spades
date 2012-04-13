@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <algorithm>
 
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "simple_tools.hpp"
 #include "omni/paired_info.hpp"
 #include "deleted_vertex_handler.hpp"
@@ -1529,7 +1529,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<
 	}
 	rectangle_resolve_1_time.stop();
 
-	DEBUG("Edge color info " << omnigraph::operator<<(oss_, edge_info_colors));
+	DEBUG("Edge color info " << edge_info_colors);
 	if (cheating_mode) {
 		if (cur_color > 1) {
 			DEBUG("cheat_2 resolved vertex " << new_IDs.ReturnIntId(vid));
@@ -1614,7 +1614,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 			cur_color++;
 		}
 	}
-	DEBUG("Colours " << omnigraph::operator<<(oss_, cheater_colors));
+	DEBUG("Colours " << cheater_colors);
 
 	bool bad = true;
 	for (size_t i = 0; i < counts[0] + counts[1]; i++) {

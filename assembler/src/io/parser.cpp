@@ -19,7 +19,7 @@
  */
 
 #include "standard_base.hpp"
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "io/parser.hpp"
 #include "io/fasta_fastq_gz_parser.hpp"
 

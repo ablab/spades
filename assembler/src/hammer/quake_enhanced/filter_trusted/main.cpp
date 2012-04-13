@@ -4,8 +4,6 @@
 #include <string>
 #include "logging.hpp"
 
-DECL_PROJECT_LOGGER("q")
-
 using std::string;
 
 namespace {

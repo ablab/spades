@@ -8,8 +8,6 @@
 #ifndef SIMPLE_TOOLS_HPP_
 #define SIMPLE_TOOLS_HPP_
 
-#include "standard_base.hpp"
-#include "logging.hpp"
 #include "verify.hpp"
 #include "io/ireader.hpp"
 

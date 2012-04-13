@@ -32,7 +32,6 @@
 #include "copy_file.hpp"
 
 #include "graph_pack.hpp"
-#include "logging.hpp"
 #include "repeat_resolving_routine.hpp"
 
 #include "omni_labelers.hpp"

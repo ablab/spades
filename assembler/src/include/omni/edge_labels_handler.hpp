@@ -119,8 +119,7 @@ public:
 		for (size_t j = 0; j < n; j++) {
 			TRACE(
 					"Edge " << oldEdges[j] << " was labeled by "
-							<< omnigraph::operator<<(oss_,
-									edge_labels[oldEdges[j]]));
+							<< edge_labels[oldEdges[j]]);
 			for (size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++) {
 				edge_inclusions[edge_labels[oldEdges[j]][i]].insert(newEdge);
 				edge_inclusions[edge_labels[oldEdges[j]][i]].erase(oldEdges[j]);

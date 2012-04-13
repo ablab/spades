@@ -31,8 +31,6 @@
 #include "valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
 
-DECL_PROJECT_LOGGER("q")
-
 using std::string;
 using std::set;
 using std::vector;

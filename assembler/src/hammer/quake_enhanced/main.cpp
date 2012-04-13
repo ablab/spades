@@ -2,7 +2,7 @@
 #include "logging.hpp"
 #include "options.hpp"
 #include "quake.hpp"
-DECL_PROJECT_LOGGER("q")
+
 
 namespace quake_enhanced {
 

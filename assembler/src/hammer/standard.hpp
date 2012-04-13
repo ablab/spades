@@ -6,7 +6,6 @@
  */
 
 #pragma once
-
 #include "standard_base.hpp"
 
 //==omp
@@ -20,6 +19,7 @@
 //==our
 // utils
 #include "cpp_utils.hpp"
+#include "logger/logger.hpp"
 
 // io
 #include "io/ireader.hpp"

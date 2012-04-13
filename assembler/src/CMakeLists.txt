@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 2.6)
 # allow more human readable "if then else" constructs
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE) 
 
-# modules to find additional libraries (like log4cxx, apr and etc)
+# modules to find additional libraries (like zlib, boost and etc)
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 # configuration routine
@@ -47,7 +47,6 @@ endif()
 
 # common dependencies
 find_package(ZLIB)
-find_package(log4cxx)
 
 set (Boost_USE_MULTITHREADED ON)
 find_package(Boost COMPONENTS system filesystem iostreams serialization REQUIRED)
@@ -57,12 +56,10 @@ set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
 include_directories(${ZLIB_INCLUDE_DIRS})
-include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 
 set(COMMON_LIBRARIES 
    ${ZLIB_LIBRARIES} 
-   ${log4cxx_LIBRARIES} 
    ${Boost_LIBRARIES} 
    )
 

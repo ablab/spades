@@ -12,7 +12,6 @@
 using namespace long_contigs;
 using namespace debruijn_graph;
 
-DECL_PROJECT_LOGGER("d");
 
 int main() {
 //	cfg::create_instance(debruijn_graph::cfg_filename);
