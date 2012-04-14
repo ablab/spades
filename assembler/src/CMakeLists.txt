@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 2.6)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE) 
 
 # modules to find additional libraries (like zlib, boost and etc)
-set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 # configuration routine
 # 'cfg' is short alias for CMAKE_BUILD_TYPE
@@ -22,17 +22,17 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug"          AND
   set(CMAKE_BUILD_TYPE "RelWithDebInfo") 
 endif()
 
-#set(ENV{LDFLAGS} "$ENV{LDFLAGS} -lrt")
-#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lrt")
-
+# it'll make cmake to find libraries archives, not dynamic link
+SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 
 add_definitions(-g3)
+add_definitions(-static)
 add_definitions(-std=c++0x)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
-add_definitions(-lcrypto) 
-add_definitions(-g -rdynamic)
 #add_definitions(-Wconversion)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
+
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   message("Making Debug Configuration...")
@@ -48,7 +48,10 @@ endif()
 # common dependencies
 find_package(ZLIB)
 
-set (Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_LIBS        ON)
+set(Boost_USE_MULTITHREADED      ON)
+set(Boost_USE_STATIC_RUNTIME     ON)
+
 find_package(Boost COMPONENTS system filesystem iostreams serialization REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
@@ -72,5 +75,4 @@ add_subdirectory(debruijn)
 add_subdirectory(hammer)
 
 include(CMakeListsInternal.txt)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lrt")
 
