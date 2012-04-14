@@ -7,9 +7,6 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgomp")
 # bug, problem occured in Ubuntu 12.04
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-
 add_definitions(${OpenMP_CXX_FLAGS})
 add_definitions(-fPIC)
 
@@ -31,5 +28,7 @@ add_subdirectory(quake_count)
 #add_subdirectory(quake_enhanced)
 add_subdirectory(quake_correct)
 add_subdirectory(gen_test_data)
+
 target_link_libraries(hammer ${COMMON_LIBRARIES} input)
+set_target_properties(hammer PROPERTIES LINK_SEARCH_END_STATIC 1)
 
