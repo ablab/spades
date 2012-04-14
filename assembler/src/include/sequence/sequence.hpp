@@ -29,11 +29,15 @@
 #ifndef SEQUENCE_HPP_
 #define SEQUENCE_HPP_
 
-#include "sequence/seq.hpp"
-#include "sequence/sequence_data.hpp"
 #include <vector>
 #include <string>
 #include <cstring>
+
+#include "sequence/seq.hpp"
+#include "sequence/sequence_data.hpp"
+
+using namespace std;
+
 
 class Sequence {
 
@@ -142,7 +146,7 @@ public:
     inline bool BinRead(std::istream& file);
     inline bool BinWrite(std::ostream& file);
 
-    inline Sequence(std::istream& file);
+    inline Sequence(std::istream& file, bool dummy);
 };
 
 inline ostream& operator<<(ostream& os, const Sequence& s);
@@ -398,6 +402,7 @@ bool Sequence::ReadHeader(std::istream& file) {
     file.read((char *) &s, sizeof(s));
     from_ = s;
     file.read((char *) &rtl_, sizeof(rtl_));
+
     //rtl_ = false;
     //from_ = 0;
 
@@ -425,8 +430,10 @@ bool Sequence::BinRead(std::istream& file) {
     return data_->BinRead(file, size_);
 }
 
-Sequence::Sequence(std::istream& file) {
+Sequence::Sequence(std::istream& file, bool dummy) {
     ReadHeader(file);
+
+    data_->Release();
 
     data_ = new SequenceData(size_);
     data_->Grab();

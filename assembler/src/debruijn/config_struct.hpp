@@ -416,6 +416,16 @@ public:
 	bool gap_closer_enable;
 	bool SAM_writer_enable;
 
+	//Convertion options
+	bool convert_reads_to_binary;
+	bool read_binary_reads;
+	std::string temp_bin_reads_dir;
+	std::string paired_read_prefix;
+	std::string single_read_prefix;
+
+	size_t thread_number;
+	size_t buffer_reads;
+
 //	size_t is_infinity;
 
 	resolving_mode rm;
@@ -787,6 +797,18 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.gap_closer_enable, pt, "gap_closer_enable");
 	load(cfg.SAM_writer_enable, pt, "SAM_writer_enable");
 
+
+	load(cfg.convert_reads_to_binary, pt, "convert_reads_to_binary");
+	load(cfg.read_binary_reads, pt, "read_binary_reads");
+	load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
+
+	cfg.paired_read_prefix = cfg.output_base + "_paired";
+	cfg.single_read_prefix =cfg.output_base +  "_single";
+
+	load(cfg.thread_number, pt, "thread_number");
+	load(cfg.buffer_reads, pt, "buffer_reads");
+
+
 	checkFileExistenceFATAL(cfg.dataset_file);
 	boost::property_tree::ptree ds_pt;
 	boost::property_tree::read_info(cfg.dataset_file, ds_pt);
@@ -821,6 +843,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.jump, pt, "jump");
 
 	load_reference_genome(cfg.ds, cfg.input_dir);
+
 //	cfg.is_infinity = 100000000;
 }
 

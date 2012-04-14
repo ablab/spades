@@ -26,6 +26,7 @@
 #include "omni/distance_estimation.hpp"
 #include "memory_limit.hpp"
 #include "boost/archive/tmpdir.hpp"
+#include "read_converter.hpp"
 
 #include "perfcounter.hpp"
 
@@ -140,6 +141,10 @@ int main(int argc, char** argv)
         // typedefs :)
 //        typedef io::EasyReader ReadStream;
 //        typedef io::PairedEasyReader PairedReadStream;
+
+        if (cfg::get().convert_reads_to_binary) {
+            debruijn_graph::covert_reads_to_binary();
+        }
 
         // assemble it!
         INFO("Assembling " << cfg::get().dataset_name << " dataset (" << cfg::get().dataset_file << ")");

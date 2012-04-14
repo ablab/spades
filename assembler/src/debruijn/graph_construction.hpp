@@ -23,6 +23,8 @@
 #include "graph_pack.hpp"
 #include "utils.hpp"
 
+#include "read_converter.hpp"
+
 namespace debruijn_graph {
 typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
@@ -139,13 +141,17 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	size_t counter = 0;
 	size_t rl = 0;
 	io::SingleRead r;
+	io::SingleReadSeq br;
+	auto bin_streams = single_binary_readers(true, true);
+
 	while (!reads_stream.eof()) {
-		reads_stream >> r;
+	    reads_stream  >> r;
 		Sequence s = r.sequence();
-		debruijn.CountSequence(s);
-		rl = max(rl, s.size());
-		VERBOSE_POWER(++counter, " reads processed");
+        debruijn.CountSequence(s);
+        rl = max(rl, s.size());
+        VERBOSE_POWER(++counter, " reads processed");
 	}
+
 	if (contigs_stream) {
 		INFO("Adding contigs from previous K");
 		while (!contigs_stream->eof()) {
@@ -153,6 +159,10 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 			Sequence s = r.sequence();
 			debruijn.CountSequence(s);
 		}
+	}
+
+	for (size_t i = 0; i < bin_streams.size(); ++i) {
+	    delete bin_streams[i];
 	}
 
 	if (!cfg::get().ds.RL.is_initialized()) {

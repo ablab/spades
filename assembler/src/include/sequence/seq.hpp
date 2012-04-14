@@ -117,6 +117,7 @@ public:
          *  and returns false if error occured, true otherwise.
          */
 	static bool BinRead(std::istream& file, Seq<size_> *seq) {
+	    //std::cerr << "SEQ: " << sizeof(T) << " " << data_size_ << " " << sizeof(T) * data_size_ << std::endl;
 		file.read((char *) seq->data_.data(), sizeof(T) * data_size_);
 		return !file.fail();
 	}
@@ -126,6 +127,7 @@ public:
          *  and returns false if error occured, true otherwise.
          */
 	static bool BinWrite(std::ostream& file, const Seq<size_> &seq) {
+	    //std::cerr << "SEQ: " << sizeof(T) << " " << data_size_ << " " << sizeof(T) * data_size_ << std::endl;
 		file.write((const char *) seq.data_.data(), sizeof(T) * data_size_);
 		return !file.fail();
 	}
@@ -143,7 +145,7 @@ public:
      *  and returns false if error occured, true otherwise.
      */
     bool BinWrite(std::ostream& file) {
-        return BinWrite(file, this);
+        return BinWrite(file, *this);
     }
 
 	/**

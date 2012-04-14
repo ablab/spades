@@ -40,10 +40,13 @@ class PairedRead {
    */ 
   typedef std::pair<std::string, std::string> FilenamesType;
 
+
+  typedef uint16_t size_type;
+
   /*
    * Default constructor.
    */
-  PairedRead() : first_(), second_(), insert_size_(0) {}
+  PairedRead() : first_(), second_(), insert_size_(0), delta_insert_size_(true) {}
 
   /*
    * Conctructor from SingleReads.
@@ -55,7 +58,7 @@ class PairedRead {
   PairedRead(const SingleRead& first,
              const SingleRead& second,
              size_t insert_size)
-    : first_(first), second_(second), insert_size_(insert_size) {}
+    : first_(first), second_(second), insert_size_(insert_size), delta_insert_size_(false) {}
 
   /*
    * Return first SingleRead in the pair.
@@ -153,6 +156,29 @@ class PairedRead {
       insert_size_ == pairedread.insert_size_;
   }
 
+  bool BinWrite(std::ostream& file) const {
+      first_.BinWrite(file);
+      second_.BinWrite(file);
+
+
+      size_type is = insert_size_;
+      if (insert_size_ != 0) {
+          std::cerr << "is: " << insert_size_ << " " << is << std::endl;
+      }
+      file.write((const char *) &is, sizeof(is));
+
+      return !file.fail();
+  }
+  
+  bool IsDeltaInsteadOfIS()const {
+      return delta_insert_size_;
+  }
+  
+  void print_size() const {
+      first_.print_size();
+      second_.print_size();
+  }
+
  private:
   /*
    * @variable First SingleRead in the pair.
@@ -166,6 +192,8 @@ class PairedRead {
    * @variable Insert size between two SingleReads.
    */
   size_t insert_size_;
+
+  bool delta_insert_size_;
 };
 
 
@@ -179,6 +207,28 @@ private:
 
 public:
     PairedReadSeq() : first_(), second_(), insert_size_(0) {}
+
+    PairedReadSeq(std::istream& file, size_t is): first_(file), second_(file) {
+        PairedRead::size_type is_delta;
+        file.read((char *) &is_delta, sizeof(is_delta));
+
+        insert_size_ = is - is_delta;
+    }
+
+    bool BinRead(std::istream& file, size_t is) {
+        first_.BinRead(file);
+        second_.BinRead(file);
+
+        PairedRead::size_type is_delta;
+        file.read((char *) &is_delta, sizeof(is_delta));
+
+        if (is_delta != 0) {
+           std::cerr << "is: " << is_delta << std::endl;
+        }
+
+        insert_size_ = is - is_delta;
+        return !file.fail();
+    }
 
     const SingleReadSeq& first() const {
       return first_;
@@ -212,8 +262,13 @@ public:
             return second_;
         }
         VERIFY(false);
-        return first;
+        return first_;
     }
+
+    const PairedReadSeq operator!() const {
+      return PairedReadSeq(!second_, !first_, insert_size_);
+    }
+
 };
 
 }

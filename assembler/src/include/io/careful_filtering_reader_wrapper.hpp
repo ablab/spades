@@ -57,6 +57,14 @@ PairedRead longestValid(const PairedRead& r) {
 		return r;
 	}
 	size_t is = r.insert_size() - c1.first - r.second().size() + c2.second;
+
+	if (is != 0) {
+	    std::cerr << "ins: " << is << std::endl;
+	}
+
+	if (r.IsDeltaInsteadOfIS()) {
+	    is = -is;
+	}
 	return PairedRead(r.first().Substr(c1.first, c1.second), r.second().Substr(c2.first, c2.second), is);
 }
 

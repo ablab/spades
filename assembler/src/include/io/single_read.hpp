@@ -35,6 +35,18 @@
 
 namespace io {
 
+//class ISingleRead {
+//
+//public:
+//    virtual ~ISingleRead() = 0;
+//
+//    virtual bool operator==(const SingleReadSeq& singleread) const = 0;
+//
+//    virtual const Sequence& sequence() const = 0;
+//
+//    virtual size_t size() const = 0;
+//};
+
 /* 
  * This enumerate contains offset type.
  * UnknownOffset is equal to "offset = 0".
@@ -297,6 +309,16 @@ public:
 	}
 
 
+    bool BinWrite(std::ostream& file) const {
+        return sequence().BinWrite(file);
+    }
+
+
+    void print_size() const {
+        std::cerr << size() << std::endl;
+    }
+
+
 private:
 	/*
 	 * @variable The name of SingleRead in input file.
@@ -334,6 +356,8 @@ private:
 		return -1;
 	}
 
+
+
 //	/*
 //	 * Set quality of SingleRead.
 //	 *
@@ -355,7 +379,9 @@ private:
 		VERIFY(seq_.size() == qual_.size());
 		valid_ = SingleRead::IsValid(seq_);
 	}
+
 };
+
 
 class SingleReadSeq {
 
@@ -366,18 +392,18 @@ public:
     SingleReadSeq() {
     }
 
-    bool BinRead(std::ifstream& file) {
+    bool BinRead(std::istream& file) {
         return seq_.BinRead(file);
     }
 
-    SingleReadSeq(const std::ifstream& file): seq_(file) {
+    SingleReadSeq(std::istream& file): seq_(file, true) {
     }
 
     bool operator==(const SingleReadSeq& singleread) const {
         return seq_ == singleread.seq_;
     }
 
-    const Sequence& sequence() const {
+    const Sequence sequence() const {
         return seq_;
     }
 
