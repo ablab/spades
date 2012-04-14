@@ -237,8 +237,8 @@ Sequence::~Sequence() {
 }
 
 char Sequence::operator[](const size_t index) const {
-	VERIFY(index >= 0);
-	VERIFY(index < size_);
+	//VERIFY(index >= 0);
+	//VERIFY(index < size_);
 	if (rtl_) {
 		int i = from_ + size_ - 1 - index;
 		return complement(data_->operator[](i));
