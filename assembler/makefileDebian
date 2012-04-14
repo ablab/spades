@@ -35,7 +35,5 @@ install:
 	cp -r configs/debruijn/long_contigs/lc_params.info.template $(SPADES_CONFIGS)/debruijn/long_contigs/lc_params.info
 	cp spades.py $(DESTDIR)/usr/bin/
 	cp cpcfg $(DESTDIR)/usr/share/spades/
-	cp log4cxx.properties.template $(DESTDIR)/usr/share/spades/log4cxx.properties
-	cp log4cxx.properties.template $(DESTDIR)/usr/share/spades/
 	cp spades_config.info.template $(DESTDIR)/usr/share/spades/spades_config.info
 	cp spades_config.info.template $(DESTDIR)/usr/share/spades/spades_config.info.template
