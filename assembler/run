@@ -40,8 +40,8 @@ function change_config
         echo "$filename dataset chosen"
         awk -v ds=$filename '{if ($1 == "project_name") print "project_name","\t",ds; else print $0}' configs/debruijn/config.info  > config1.info
         awk -v ds=$dataset '{if ($1 == "dataset") print "dataset","\t",ds; else print $0}' config1.info > config.info
-        mv config1.info configs/debruijn/config.info
-        rm config.info
+        mv config.info configs/debruijn/config.info
+        rm config1.info
     else
         echo "Dataset ambiguous :"
         echo "$dataset"
@@ -52,8 +52,8 @@ function change_config
         echo "$filename"
         awk -v ds=$filename '{if ($1 == "project_name") print "project_name","\t",ds; else print $0}' configs/debruijn/config.info  > config1.info
         awk -v ds=$dataset '{if ($1 == "dataset") print "dataset","\t",ds; else print $0}' config1.info  > config.info
-        mv config1.info configs/debruijn/config.info
-        rm config.info
+        mv config.info configs/debruijn/config.info
+        rm config1.info
     fi
 
     rm temp
