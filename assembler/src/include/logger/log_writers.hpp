@@ -11,9 +11,10 @@ struct console_writer
     {
         fs::path filepath(file);
 
-        std::cout <<
-                str(boost::format("%14s %6s %-24.24s (%-26.26s:%4d)   %s\n")
-                        % human_readable_time(time) % logging::level_name(l) % source % filepath.filename().c_str() % int(line_num) % msg);
+        std::cout
+            << str(boost::format("%14s %6s %-24.24s (%-26.26s:%4d)   %s")
+                        % human_readable_time(time) % logging::level_name(l) % source % filepath.filename().c_str() % int(line_num) % msg)
+            << std::endl;
     }
 };
 
