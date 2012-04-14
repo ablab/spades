@@ -3,11 +3,7 @@
 #include <cstdio>
 #include <string>
 #include <unordered_map>
-#include "log4cxx/logger.h"
-#include "log4cxx/basicconfigurator.h"
-using log4cxx::LoggerPtr;
-using log4cxx::Logger;
-using log4cxx::BasicConfigurator;
+#include "logger/logger.hpp"
 
 using std::string;
 using std::unordered_map;
@@ -22,7 +18,7 @@ const uint32_t kMaxK = 100;
  */
 const int kStep = 1e5;
 
-LoggerPtr logger(Logger::getLogger("filter_trusted_enh"));
+DECL_LOGGER("filter_trusted_enh")
 
 struct Options {
   string ifile;
@@ -69,7 +65,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   BasicConfigurator::configure();
-  LOG4CXX_INFO(logger, "Starting filter_trusted: evaluating "
+  INFO(logger, "Starting filter_trusted: evaluating "
                << opts.ifile << ".");
   FILE *ifile = fopen(opts.ifile.c_str(), "r");
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
@@ -91,7 +87,7 @@ int main(int argc, char *argv[]) {
   while (fscanf(ifile, format, kmer, &count, &q_count, &freq) != EOF) {
     ++read_number;
     if (read_number % kStep == 0) {
-      LOG4CXX_INFO(logger, "Reading k-mer " << read_number << ".");
+      INFO(logger, "Reading k-mer " << read_number << ".");
     }
     if (q_count / count > limits[count]) {
       fprintf(ofile, "%s %d %f %f\n", kmer, count, q_count, freq);
