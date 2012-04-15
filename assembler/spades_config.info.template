@@ -20,14 +20,14 @@ error_correction
     max_iterations      2
     max_threads         16
     max_memory          250                           ; in GB
-    gzip_output         true
+    gzip_output         true                          ; optional. Default is true
 }
 
 assembly
 {
     iterative_K         21 33 55
     paired_mode         true
-    generate_sam_files  true                          ; optional. Default is false
+    generate_sam_files  false                         ; optional. Default is false
     gap_closer          true                          ; optional. Default is true
 }
 
