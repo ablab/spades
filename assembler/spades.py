@@ -34,7 +34,6 @@ def prepare_config_bh(filename, cfg):
     if len(cfg.single_reads) == 1:  
         subst_dict["input_single"] = cfg.single_reads[0]    
 
-    #subst_dict["input_gzipped"]             = bool_to_str(False)
     subst_dict["input_working_dir"]         = cfg.working_dir
     subst_dict["general_max_iterations"]    = cfg.max_iterations
     subst_dict["general_max_nthreads"]      = cfg.max_threads
@@ -125,6 +124,9 @@ def main():
     bh_dataset_filename = ""
     if cfg.has_key("error_correction"):
         bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
+        if not bh_cfg.__dict__.has_key("gzip_output"):
+            bh_cfg.__dict__["gzip_output"] = True
+      
         bh_cfg.output_dir = os.path.join(os.path.expandvars(bh_cfg.output_dir), "corrected")
         
         if bh_cfg.__dict__.has_key("tmp_dir"):
@@ -203,18 +205,11 @@ def main():
 
             tee = support.Tee(log_filename, 'w', console=bh_cfg.output_to_console)
 
-            err_code = 0
-            try:
-                bh_dataset_filename = run_bh(bh_cfg)
-            except support.spades_error, err:
-                print err.err_str
-                err_code = err.code
-
+            bh_dataset_filename = run_bh(bh_cfg)
+            
             tee.free()
 
-            print("\n===== Error correction finished. Log can be found here: " + bh_cfg.log_filename + "\n")
-            if err_code:
-               exit(err_code)
+            print("\n===== Error correction finished. Log can be found here: " + bh_cfg.log_filename + "\n")            
 
     result_contigs_filename = ""
     if cfg.has_key("assembly"):
@@ -276,18 +271,11 @@ def main():
 
         tee = support.Tee(spades_cfg.log_filename, 'w', console=spades_cfg.output_to_console)
         
-        err_code = 0
-        try:
-            result_contigs_filename = run_spades(spades_cfg)              
-        except support.spades_error, err:
-            print err.err_str
-            err_code = err.code
-
+        result_contigs_filename = run_spades(spades_cfg)              
+        
         tee.free()
 
-        print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")
-        if err_code:
-            exit(err_code)
+        print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")        
 
     quality_output_dir = ""
     if cfg.has_key("quality_assessment") and result_contigs_filename:
@@ -301,18 +289,11 @@ def main():
         
         tee = support.Tee(quality_cfg.log_filename, 'w', console=quality_cfg.output_to_console)
         
-        err_code = 0
-        try:
-            quality_output_dir = run_quality(quality_cfg)            
-        except support.spades_error, err:
-            print err.err_str
-            err_code = err.code
-
+        quality_output_dir = run_quality(quality_cfg)            
+        
         tee.free()
 
-        print("\n===== Quality assessment finished. Log can be found here: " + quality_cfg.log_filename + "\n")
-        if err_code:
-            exit(err_code)
+        print("\n===== Quality assessment finished. Log can be found here: " + quality_cfg.log_filename + "\n")        
 
     print ""
     if bh_dataset_filename:
