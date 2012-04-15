@@ -939,10 +939,9 @@ public:
 		return 1. * false_negatives_.size() / etalon_pair_info_.size();
 	}
 
-	void SaveStats() {
+	void SaveStats(const string& dir_name) {
 		//saving results
 		INFO("Saving estimation statistic");
-		string dir_name = cfg::get().output_dir + "estimation_qual/";
 		make_dir(dir_name);
 		typename PrinterTraits<Graph>::Printer printer(graph_, int_ids_);
 		printer.savePaired(dir_name + "fp", false_positives_);

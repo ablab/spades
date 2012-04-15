@@ -269,15 +269,12 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 
 	}
 
-//    for (auto iter = gr.begin(); iter != gr.end(); ++iter){
-//        cout << "Pavel " << (*iter).first / 100. << " "<< (*iter).second << endl;
-//    }
 	INFO("Counting clustered info stats");
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
 			paired_index, clustered_index, etalon_paired_index);
 	estimation_stat.Count();
-	estimation_stat.SaveStats();
+	estimation_stat.SaveStats(cfg::get().output_dir + "estimation_stats");
 
 	CountAndSaveAllPaths(gp.g, gp.int_ids, paired_index);
 
