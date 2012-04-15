@@ -23,7 +23,6 @@ thread_num = 16
 bin_size = 1
 make_latest_symlink = True
 reference = ""
-forced_reference = False
 
 ###################################################################
 
@@ -32,11 +31,11 @@ short_options = "o:r:t:b:"
 
 def usage():
     print 'Estimation reads quality'
-    print 'Usage:', sys.argv[0], ' [options described below] datasets info-file(s) (for the same reference!)'
+    print 'Usage:', sys.argv[0], ' [options described below] datasets description-file(s)'
     print ""
     print "Options with parameters:"
+    print "-r\t--reference\tFile with reference genome (Mandatory parameter)"
     print "-o\t--output-dir\tDirectory to store all result files"
-    print "-r\t--reference\tFile with reference genome (used reference from the first dataset if not specified)"
     print "-t\t--thread-num\tMax number of threads (default is " + str(thread_num) + ")"
     print "-b\t--bin-size\tSize of bins for counting coverage (default is " + str(bin_size) + ")"
     
@@ -60,7 +59,6 @@ for opt, arg in options:
         make_latest_symlink = False  
     elif opt in ('-r', "--reference"):
         reference = arg
-        forced_reference = True
     elif opt in ('-t', "--thread-num"):
         thread_num = int(arg)
         if thread_num < 1:
@@ -76,6 +74,10 @@ for d in datasets:
     check_file(d)    
 
 if not datasets:
+    usage()
+    sys.exit(1)   
+
+if not reference:
     usage()
     sys.exit(1)   
 
@@ -123,39 +125,20 @@ for dataset in datasets:
     while datasets_dict.has_key(cur_key):
         cur_key = basename + "_" + str(i)
 
-    #skip_this = False
     cur_reads = []
-    #cur_reference = ""
     for line in open(dataset, 'r'):
-        if line.startswith("reference_genome") and not forced_reference:
-            cur_reference = get_full_path(dataset, line.split()[1].strip())
-            if not reference:
-                reference = cur_reference
-            #elif reference != cur_reference:
-            #    skip_this = True
-            #    break
-        elif line.startswith("paired_reads") or line.startswith("single_reads"):
+        if line.startswith("paired_reads") or line.startswith("single_reads"):
             line = line.replace('"', '')
             reads = line.split()[1:]
             for read in reads:
                 cur_reads.append(get_full_path(dataset, read))            
     
-    #if not cur_reference:
-    #    print("  " + dataset + " was skipped because it contains no reference")    
-    #    continue       
-    #if skip_this:
-    #    print("  " + dataset + " was skipped because of different reference (comparison only between all datasets of one organism)")    
-    #    continue
     if len(cur_reads) == 0:
         print("  " + dataset + " was skipped because it contains no reads")    
         continue
         
     datasets_dict[cur_key] = cur_reads   
     print("  " + dataset + " ==> " + cur_key)
-
-if not reference:
-    print("Can't continue estimation - no reference in all datasets")
-    sys.exit(1)
 
 if len(datasets_dict.keys()) == 0:
     print("Can't continue estimation - all datasets were skipped")
