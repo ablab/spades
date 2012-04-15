@@ -41,14 +41,13 @@ public:
 	}
 
     void MergeMaps(map_t & map) {
-        size_t b;
-        cin >> b;
+
         map = map_t(nodes[0][0].bucket_count()*nthreads_);
+
         #pragma omp parallel for num_threads(nthreads_)
         for (size_t i = 0; i < nthreads_; ++i) {
             map_t temp_map;
-            if (b) 
-                temp_map = map_t(nodes[0][i].bucket_count()*nthreads_);
+            temp_map = map_t(nodes[0][i].bucket_count()*nthreads_);
             
             for (size_t j = 0; j < nthreads_; ++j) {
                 temp_map.insert(nodes[j][i].begin(), nodes[j][i].end());

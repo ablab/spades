@@ -124,7 +124,7 @@ public:
     bool BinRead(std::istream& file, size_t size) {
         size_t bytes_size = (size + STN - 1) >> STNBits;
         for (size_t i = 0; i < bytes_size; ++i) {
-            file.read((char *) bytes_[i], sizeof(ST));
+            file.read((char *) &bytes_[i], sizeof(ST));
         }
         return !file.fail();
     }
@@ -132,7 +132,7 @@ public:
     bool BinWrite(std::ostream& file, size_t size) {
         size_t bytes_size = (size + STN - 1) >> STNBits;
         for (size_t i = 0; i < bytes_size; ++i) {
-            file.write((const char *) bytes_[i], sizeof(ST));
+            file.write((const char *) &bytes_[i], sizeof(ST));
         }
         return !file.fail();
     }

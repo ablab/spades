@@ -30,10 +30,9 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 
 namespace debruijn_graph {
 
-void construct_graph(ReadStream& stream, conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
+void construct_graph(conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
 	INFO("STAGE == Constructing Graph");
-	ConstructGraphWithCoverage<K>(gp.g, gp.index, stream,
-			contigs_stream);
+	ConstructGraphWithCoverage<K>(gp.g, gp.index, contigs_stream);
 }
 
 string estimated_param_filename(const string& prefix) {
@@ -94,13 +93,11 @@ void save_construction(conj_graph_pack& gp) {
 void exec_construction(conj_graph_pack& gp) {
 	if (cfg::get().entry_point <= ws_construction) {
 		if (cfg::get().etalon_graph_mode) {
-			typedef io::VectorReader<io::SingleRead> GenomeStream;
-			GenomeStream genome_stream(
-					io::SingleRead("genome", gp.genome.str()));
-			construct_graph(genome_stream, gp);
+		    WARN("Etalon mode is temporary not available");
+//			typedef io::VectorReader<io::SingleRead> GenomeStream;
+//			GenomeStream genome_stream(io::SingleRead("genome", gp.genome.str()));
+//			construct_graph(genome_stream, gp);
 		} else {
-			auto single_stream = single_easy_reader(true, true);
-
 			//has to be separate stream for not counting it in coverage
 			ReadStream* additional_contigs_stream = 0;
 			//adding file with additional contigs
@@ -109,7 +106,7 @@ void exec_construction(conj_graph_pack& gp) {
 				additional_contigs_stream = new io::EasyReader(cfg::get().additional_contigs, true);
 			}
 
-			construct_graph(*single_stream, gp, additional_contigs_stream);
+			construct_graph(gp, additional_contigs_stream);
 		}
 
 		save_construction(gp);

@@ -124,145 +124,96 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 }
 
 template<size_t k>
-void FillCoverage(Graph& g, SingleReadStream& stream,
-		EdgeIndex<k + 1, Graph>& index) {
+void FillCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index) {
+
 	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
-	stream.reset();
+
 	INFO("Counting coverage");
 	SequenceMapper read_threader(g, index);
-	g.coverage_index().FillIndex<SequenceMapper>(stream, read_threader);
+
+	if (cfg::get().use_multithreading) {
+        SingleReadStream& stream = *single_easy_reader(true, true);
+        g.coverage_index().FillIndex<SequenceMapper>(read_threader, stream);
+	}
+	else {
+        auto streams = single_binary_readers(true, true);
+        //g.coverage_index().FillParallelIndex<SequenceMapper>(read_threader, streams);
+
+	}
 	DEBUG("Coverage counted");
 }
 
 template<size_t k, class Graph> 
-size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, SingleReadStream& reads_stream, size_t nthreads, size_t buf_size) {
-        
-    INFO("openmp " << omp_get_max_threads());
+size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, size_t nthreads) {
 
     typedef ParallelSeqMap<k + 1, typename Graph::EdgeId> ParallelDeBruijn;
     typedef Seq<k + 1> Kmer;
 
     ParallelDeBruijn par_debruijn(nthreads);
 
+    perf_counter pc;
+
     INFO("Processing reads (takes a while)");
+    auto bin_streams = single_binary_readers(true, true);
+    std::vector<size_t> rls(nthreads, 0);
     size_t counter = 0;
-    size_t rl = 0;
     
-    //Sequence** vector_seq = new Sequence*[nthreads];
-    //for (size_t i = 0; i < nthreads; ++i)
-        //vector_seq[i] = new Sequence[buf_size];
-    vector<vector<Sequence>> vector_seq(nthreads, vector<Sequence>());
-    for (size_t i = 0; i < nthreads; ++i) 
-        vector_seq[i].reserve(buf_size);
-    std::vector<size_t> sizes(nthreads, 0);
-
-    io::SingleRead r;
+    #pragma omp parallel num_threads(nthreads)
     {
-        perf_counter pc;
+        #pragma omp for reduction(+ : counter)
+        for (size_t i = 0; i < nthreads; ++i) {
 
-        if (!reads_stream.eof()) {
+            io::SingleReadSeq r;
+            io::IReader<io::SingleReadSeq>& stream = *bin_streams[i];
 
-            INFO("Filling Buffer");
-            for (size_t j = 0; j < buf_size; ++j) {
-                for(size_t i = 0; i < nthreads && !reads_stream.eof(); ++i) {
-                    reads_stream >> r;
-                    const Sequence& seq = r.sequence();
-                    vector_seq[i].push_back(seq);
-                    rl = max(rl, seq.size());
-                    sizes[i]++;
-                    VERBOSE_POWER(++counter, " reads processed");
+            while (!stream.eof()) {
+                stream >> r;
+                if (r.size() > rls[i]) {
+                    rls[i] = r.size();
                 }
+                ++counter;
+
+                par_debruijn.CountSequence(r.sequence(), i);
             }
-            INFO("Finished Filling");
-
-            INFO("Threading Buffer");
-
-            #pragma omp parallel num_threads(nthreads)
-            {
-                #pragma omp for
-                for (size_t i = 0; i < nthreads; ++i) {
-                    for (size_t j = 0; j < sizes[i]; ++j) {
-                        par_debruijn.CountSequence(vector_seq[i][j], i);
-                    }
-                }
-            }
-
-            INFO("Finished Threading");
-            std::fill(sizes.begin(), sizes.end(), 0);
         }
-
-        while (!reads_stream.eof()) {
-
-            //for (size_t i = 0; i < nthreads; ++i) 
-                //vector_seq[i].reserve(buf_size);
-            INFO("Filling Buffer");
-            for (size_t j = 0; j < buf_size; ++j) {
-                for(size_t i = 0; i < nthreads && !reads_stream.eof(); ++i) {
-                    reads_stream >> r;
-                    const Sequence& seq = r.sequence();
-                    vector_seq[i][j] = seq;
-                    rl = max(rl, seq.size());
-                    sizes[i]++;
-                    VERBOSE_POWER(++counter, " reads processed");
-                }
-            }
-            INFO("Finished Filling");
-
-            INFO("Threading Buffer");
-
-            #pragma omp parallel num_threads(nthreads)
-            {
-                #pragma omp for
-                for (size_t i = 0; i < nthreads; ++i) {
-                    for (size_t j = 0; j < sizes[i]; ++j) {
-                        par_debruijn.CountSequence(vector_seq[i][j], i);
-                    }
-                }
-            }
-
-            INFO("Finished Threading");
-            std::fill(sizes.begin(), sizes.end(), 0);
-        }
-        INFO("Started Merging");
-
-        //for (size_t i = 0; i < nthreads; ++i) 
-            //delete[] vector_seq[i];
-        //delete[] vector_seq;
-        //vector_seq.clear();
-
-        par_debruijn.MergeMaps(debruijn.nodes());
-
-        INFO("Finished Merging, size of map " << debruijn.nodes().size());
-
-        INFO("Elapsed time: " << pc.time_ms());
     }
 
-    INFO("DeBruijn graph constructed, " << counter << " reads used");
+    INFO("Started Merging");
+    par_debruijn.MergeMaps(debruijn.nodes());
+    INFO("Finished Merging, map size is " << debruijn.nodes().size());
+
+    INFO("Elapsed time: " << pc.time_ms());
+
+    INFO("DeBruijn graph constructed, reads used: " << counter);
+
+    size_t rl = 0;
+    for (size_t i = 0; i < nthreads; ++i) {
+        if (rl < rls[i]) {
+            rl = rls[i];
+        }
+    }
 
     return rl;
 }
 
 template<size_t k, class Graph>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		SingleReadStream& reads_stream, SingleReadStream* contigs_stream = 0) {
+		SingleReadStream* contigs_stream = 0) {
 
     typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
     typedef Seq<k + 1> Kmer;
-
-    size_t nthreads = 4;
-    size_t buf_size = 10000000;
-    
-    cout << "# threads" << endl;
-    cin >>  nthreads;
-
-    cout << "buf size" << endl;
-    cin >> buf_size;
 
     INFO("Constructing DeBruijn graph");
 	
     DeBruijn& debruijn = index.inner_index();
 
-    size_t rl = FillParallelIndex<k, Graph>(debruijn, reads_stream, nthreads, buf_size);
+    size_t rl = 0;
+    if (cfg::get().use_multithreading) {
+         rl = FillParallelIndex<k, Graph>(debruijn, cfg::get().thread_number);
+    }
+    else {
+
+    }
 
     io::SingleRead r;
     if (contigs_stream) {
@@ -289,9 +240,9 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 
 template<size_t k>
 void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		SingleReadStream& reads_stream, SingleReadStream* contigs_stream = 0) {
-	ConstructGraph<k>(g, index, reads_stream, contigs_stream);
-	FillCoverage<k>(g, reads_stream, index);
+		SingleReadStream* contigs_stream = 0) {
+	ConstructGraph<k>(g, index, contigs_stream);
+	FillCoverage<k>(g, index);
 }
 
 template<size_t k>

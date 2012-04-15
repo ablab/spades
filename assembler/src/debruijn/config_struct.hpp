@@ -418,14 +418,15 @@ public:
 
 	//Convertion options
 	bool convert_reads_to_binary;
-	bool read_binary_reads;
+	size_t buffer_reads;
 	std::string temp_bin_reads_dir;
 	std::string temp_bin_reads_path;
 	std::string paired_read_prefix;
 	std::string single_read_prefix;
 
+    bool use_multithreading;
 	size_t thread_number;
-	size_t buffer_reads;
+
 
 //	size_t is_infinity;
 
@@ -800,7 +801,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 
 	load(cfg.convert_reads_to_binary, pt, "convert_reads_to_binary");
-	load(cfg.read_binary_reads, pt, "read_binary_reads");
+    load(cfg.buffer_reads, pt, "buffer_reads");
 	load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
     if (cfg.temp_bin_reads_dir[cfg.temp_bin_reads_dir.length() - 1] != '/') {
         cfg.temp_bin_reads_dir += '/';
@@ -812,8 +813,9 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
 	cfg.single_read_prefix =cfg.temp_bin_reads_path +  "_single";
 
+	load(cfg.use_multithreading, pt, "use_multithreading");
 	load(cfg.thread_number, pt, "thread_number");
-	load(cfg.buffer_reads, pt, "buffer_reads");
+
 
 
 	checkFileExistenceFATAL(cfg.dataset_file);
