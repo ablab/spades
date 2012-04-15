@@ -57,19 +57,12 @@ private:
         while (!stream.eof()) {
             buf_index = read_count % file_num_;
 
-            std::cerr << buf_index << ": " << current_buf_sizes[buf_index] << ", " << buf_sizes[buf_index] << std::endl;
-
             stream >> buf[buf_index][current_buf_sizes[buf_index]++];
             ++buf_sizes[buf_index];
-
-            std::cerr << buf_index << ": " << current_buf_sizes[buf_index] << ", " << buf_sizes[buf_index] << std::endl;
-            std::cerr << "total " << read_count << std::endl;
 
             VERBOSE_POWER(++read_count, " reads processed");
 
             if (read_count == reads_to_flush) {
-                std::cerr << "flussshhh\n";
-
                 for (size_t i = 0; i < file_num_; ++i) {
                     FlushBuffer(buf[i], *file_ds_[i]);
                     current_buf_sizes[i] = 0;
