@@ -110,27 +110,29 @@ public:
             bytes_[cur] = 0;
     }
 
-    SequenceData(size_t size_): count(0) {
+    SequenceData(size_t size_): kCount(0) {
         size_t size = size_;
-        size_t bytes_size = (size + STN - 1) >> STNbits;
-        bytes_ = (Seq<STN, ST>*) malloc(bytes_size * sizeof(Seq<STN, ST> )); // it's a bit faster than new
+        size_t bytes_size = (size + STN - 1) >> STNBits;
+
+        bytes_ = (ST*) malloc(bytes_size * sizeof(ST));
+
         for (size_t i = 0; i < bytes_size; ++i) {
-            bytes_[i] = Seq<STN, ST>();
+            bytes_[i] = 0;
         }
     }
 
     bool BinRead(std::istream& file, size_t size) {
-        size_t bytes_size = (size + STN - 1) >> STNbits;
+        size_t bytes_size = (size + STN - 1) >> STNBits;
         for (size_t i = 0; i < bytes_size; ++i) {
-            bytes_[i].BinRead(file);
+            file.read((char *) bytes_[i], sizeof(ST));
         }
         return !file.fail();
     }
 
     bool BinWrite(std::ostream& file, size_t size) {
-        size_t bytes_size = (size + STN - 1) >> STNbits;
+        size_t bytes_size = (size + STN - 1) >> STNBits;
         for (size_t i = 0; i < bytes_size; ++i) {
-            bytes_[i].BinWrite(file);
+            file.write((const char *) bytes_[i], sizeof(ST));
         }
         return !file.fail();
     }
