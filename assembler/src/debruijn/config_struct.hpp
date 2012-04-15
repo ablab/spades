@@ -420,6 +420,7 @@ public:
 	bool convert_reads_to_binary;
 	bool read_binary_reads;
 	std::string temp_bin_reads_dir;
+	std::string temp_bin_reads_path;
 	std::string paired_read_prefix;
 	std::string single_read_prefix;
 
@@ -801,9 +802,15 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.convert_reads_to_binary, pt, "convert_reads_to_binary");
 	load(cfg.read_binary_reads, pt, "read_binary_reads");
 	load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
+    if (cfg.temp_bin_reads_dir[cfg.temp_bin_reads_dir.length() - 1] != '/') {
+        cfg.temp_bin_reads_dir += '/';
+    }
+    cfg.temp_bin_reads_path = cfg.project_name.empty()
+            ? (cfg.output_base + "/" + cfg.temp_bin_reads_dir)
+            : (cfg.output_base + cfg.project_name + "/" + cfg.temp_bin_reads_dir);
 
-	cfg.paired_read_prefix = cfg.output_base + "_paired";
-	cfg.single_read_prefix =cfg.output_base +  "_single";
+	cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
+	cfg.single_read_prefix =cfg.temp_bin_reads_path +  "_single";
 
 	load(cfg.thread_number, pt, "thread_number");
 	load(cfg.buffer_reads, pt, "buffer_reads");

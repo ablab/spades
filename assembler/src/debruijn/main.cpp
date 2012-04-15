@@ -101,6 +101,8 @@ void load_config(string cfg_filename)
         make_dir(cfg::get().output_saves);
     }
 
+    make_dir(cfg::get().temp_bin_reads_path);
+
     fs::path path_to_copy = fs::path(cfg::get().output_dir) / "configs";
         copy_configs(cfg_filename, path_to_copy);
     }
