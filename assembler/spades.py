@@ -189,7 +189,7 @@ def main():
                     cur_paired_reads = []
                     if len(value) == 1:
                         item = os.path.abspath(os.path.expandvars(value[0]))
-                        cur_paired_reads = bh_aux.split_paired_file(item, output_folder)
+                        cur_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir)
                     elif len(value) == 2:
                         for item in value:
                             item = os.path.abspath(os.path.expandvars(item))
