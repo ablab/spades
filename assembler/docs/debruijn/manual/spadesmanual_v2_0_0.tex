@@ -205,9 +205,9 @@ assembly
     generate_sam_files  true                          ; optional. Default is false
 }
 
-quality_assessment      
 ; optional. If section exists (even if it is empty), spades.py 
 ; evaluates quality of the final contigs
+quality_assessment      
 {
     reference           $cfg/test_dataset/reference_1K.fa.gz     ; optional
     genes               $cfg/test_dataset/genes_1K.txt           ; optional
@@ -237,7 +237,7 @@ To run only some of these three stages just remove (or comment) the unnecessary 
 
 \subsection{Dataset settings}
 {\spades} accepts single reads as well as forward-reverse paired end reads
-in FASTA and FASTQ format. All the files may be compressed. Currently {\spades} works with only one library.
+in FASTA and FASTQ format (however if error correction is needed reads should be in FASTQ format). All the files may be compressed. Currently {\spades} works with only one library.
 
 \begin{description}
 \item[{\tt paired\_reads}] specifies input paired end reads organized into one or two files.
