@@ -1,6 +1,6 @@
 project_name        $project                          ; optional. Name of this config file is used if not specified
 output_dir          ./spades_output
-output_to_console   true                             ; optional. Default is true
+output_to_console   false                             ; optional. Default is true
 developer_mode      true                              ; optional. Default is false
 compilation_dir                                       ; optional. Default is ~/.spades/precompiled/
 
