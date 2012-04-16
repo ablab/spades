@@ -150,15 +150,19 @@ def main():
                 else:
                     os.remove(bh_cfg.dataset)
 
-        if start_bh:
+        if start_bh:            
+
             if not os.path.exists(bh_cfg.working_dir):
                 os.makedirs(bh_cfg.working_dir)
 
             log_filename = os.path.join(bh_cfg.output_dir, "correction.log")
             bh_cfg.__dict__["log_filename"] = log_filename
 
-            shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
+            print("\n===== Error correction started. Log can be found here: " + bh_cfg.log_filename + "\n")
+            tee = support.Tee(log_filename, 'w', console=bh_cfg.output_to_console)
 
+            shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
+            
             # parsing dataset section
             bh_cfg.__dict__["single_cell"]  = cfg["dataset"].single_cell            
             bh_cfg.__dict__["paired_reads"] = []
@@ -199,20 +203,16 @@ def main():
                     if len(bh_cfg.paired_reads) == 0:
                         bh_cfg.paired_reads = cur_paired_reads
                     else:
-                        bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads, bh_cfg.paired_reads, bh_cfg.working_dir)                          
-
-            print("\n===== Error correction started. Log can be found here: " + bh_cfg.log_filename + "\n")
-
-            tee = support.Tee(log_filename, 'w', console=bh_cfg.output_to_console)
-
+                        bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads, bh_cfg.paired_reads, bh_cfg.working_dir)                                      
+            
             bh_dataset_filename = run_bh(bh_cfg)
             
             tee.free()
-
             print("\n===== Error correction finished. Log can be found here: " + bh_cfg.log_filename + "\n")            
 
     result_contigs_filename = ""
     if cfg.has_key("assembly"):
+        
         spades_cfg = merge_configs(cfg["assembly"], cfg["common"])        
         if not spades_cfg.__dict__.has_key("generate_sam_files"):
             spades_cfg.__dict__["generate_sam_files"] = False        
@@ -235,6 +235,9 @@ def main():
         spades_cfg.__dict__["log_filename"] = os.path.join(spades_cfg.working_dir, "assembly.log")
         spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.working_dir, spades_cfg.project_name + ".fasta")
         spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.working_dir, "simplified_contigs.fasta")
+
+        print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
+        tee = support.Tee(spades_cfg.log_filename, 'w', console=spades_cfg.output_to_console)
 
         shutil.copy(CONFIG_FILE, spades_cfg.working_dir)      
         
@@ -265,34 +268,29 @@ def main():
             spades_cfg.__dict__["dataset"] = dataset_filename
         else:
             spades_cfg.dataset = os.path.abspath(os.path.expandvars(spades_cfg.dataset))
-            shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)
-
-        print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
-
-        tee = support.Tee(spades_cfg.log_filename, 'w', console=spades_cfg.output_to_console)
+            shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)        
+        
         
         result_contigs_filename = run_spades(spades_cfg)              
         
         tee.free()
-
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")        
 
     quality_output_dir = ""
     if cfg.has_key("quality_assessment") and result_contigs_filename:
+        
         quality_cfg = merge_configs(cfg["quality_assessment"], cfg["common"])
 
         quality_cfg.__dict__["working_dir"] = os.path.dirname(result_contigs_filename)
         quality_cfg.__dict__["log_filename"] = os.path.join(quality_cfg.working_dir, "quality.log")
-        quality_cfg.__dict__["result_contigs"] = result_contigs_filename
+        quality_cfg.__dict__["result_contigs"] = result_contigs_filename        
 
-        print("\n===== Quality assessment started. Log can be found here: " + quality_cfg.log_filename + "\n")
-        
+        print("\n===== Quality assessment started. Log can be found here: " + quality_cfg.log_filename + "\n")        
         tee = support.Tee(quality_cfg.log_filename, 'w', console=quality_cfg.output_to_console)
         
         quality_output_dir = run_quality(quality_cfg)            
         
         tee.free()
-
         print("\n===== Quality assessment finished. Log can be found here: " + quality_cfg.log_filename + "\n")        
 
     print ""
