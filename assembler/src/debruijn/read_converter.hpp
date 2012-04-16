@@ -77,6 +77,14 @@ std::vector<SequencePairedReadStream*> paired_binary_readers(bool followed_by_rc
     }
 }
 
+auto_ptr<SequenceSingleReadStream> single_binary_multireader(bool followed_by_rc, bool including_paired_reads) {
+    return new MultiFileStream(single_binary_readers(followed_by_rc, including_paired_reads));
+}
+
+auto_ptr<SequenceSingleReadStream>paired_binary_multireader(bool followed_by_rc, size_t insert_size) {
+    return new MultiFileStream(paired_binary_readers(followed_by_rc, insert_size));
+}
+
 }
 
 
