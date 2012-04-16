@@ -4,7 +4,7 @@ echo "### PREPROCESSING ###"
 
 pushd ../../../
 ./prepare_cfg
-errlvl = $?
+errlvl=$?
 if [ "$errlvl" -ne 0 ]
 then
     echo "prepare_cfg finished with exit code $errlvl"
@@ -19,7 +19,7 @@ popd
 echo "### RUNNING ###"
 
 ./$1
-errlvl = $?
+errlvl=$?
 
 echo "### POSTPROCESSING ###"
 
