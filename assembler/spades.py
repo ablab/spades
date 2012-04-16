@@ -276,7 +276,7 @@ def main():
         tee.free()
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")        
 
-    quality_output_dir = ""
+    quality_final_report = ""
     if cfg.has_key("quality_assessment") and result_contigs_filename:
         
         quality_cfg = merge_configs(cfg["quality_assessment"], cfg["common"])
@@ -288,7 +288,7 @@ def main():
         print("\n===== Quality assessment started. Log can be found here: " + quality_cfg.log_filename + "\n")        
         tee = support.Tee(quality_cfg.log_filename, 'w', console=quality_cfg.output_to_console)
         
-        quality_output_dir = run_quality(quality_cfg)            
+        quality_final_report = run_quality(quality_cfg)            
         
         tee.free()
         print("\n===== Quality assessment finished. Log can be found here: " + quality_cfg.log_filename + "\n")        
@@ -298,8 +298,8 @@ def main():
         print " * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/"
     if result_contigs_filename:       
         print " * Assembled contigs are " + result_contigs_filename
-    if quality_output_dir:
-        print " * Assessment of their quality is in " + quality_output_dir + "/"
+    if quality_final_report:
+        print " * Assessment of their quality is in " + quality_final_report
     print ""
     print "Thank you for using SPAdes!"
 
@@ -397,7 +397,7 @@ def run_quality(cfg):
     import quality
     quality.main(args, lib_dir=os.path.join(spades_home, "src/tools/quality/libs"))
     
-    return quality_output_dir
+    return os.path.join(quality_output_dir, "quality.txt")
 
 if __name__ == '__main__':
     main()
