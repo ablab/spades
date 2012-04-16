@@ -24,17 +24,23 @@ if __name__ == "__main__":
         print('Usage prebuild_spades.py <from> <to>')
         exit(1)
 
+    safe_mkdir('build')
+    safe_mkdir('build/static')
+    
+    support.sys_call('cmake ../../src -Dstatic_build=\"\"', './build/static')
+
     prebuild_folder = './prebuild_spades'
     safe_mkdir(prebuild_folder)
-
-    for i in range(int(sys.argv[1]), int(sys.argv[2]), 2):
+    
+    for i in range(int(sys.argv[1]), int(sys.argv[2]) + 2, 2):
 
         print('\n=== Buiding SPAdes with K ' + str(i) + ' ===\n')
 
         write_k_file(i)
-        support.sys_call('make')
+        support.sys_call('make -C build/static/debruijn')
 
         new_folder = os.path.join(prebuild_folder, 'K') + str(i)
         safe_mkdir(new_folder)
 
-        shutil.copy2('build/release/debruijn/spades', new_folder)
+        shutil.copy2('build/static/debruijn/spades', new_folder)
+
