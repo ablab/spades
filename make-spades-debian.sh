@@ -46,6 +46,8 @@ rm cpcfg
 
 mv makefileDebian makefile
 
+make --directory=src/tools/quality/libs/MUMmer3.23
+
 cp configs/debruijn/config.info.template configs/debruijn/config.info
 cp configs/hammer/config.info.template configs/hammer/config.info
 cp configs/debruijn/detail_info_printer.info.template configs/debruijn/detail_info_printer.info

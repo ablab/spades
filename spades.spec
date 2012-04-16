@@ -15,7 +15,6 @@ Autoreq:        0
 %setup -q
 
 %build
-make
 
 %configure
 
