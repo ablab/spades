@@ -96,8 +96,8 @@ for forward-reverse paired end reads.
 Config files and commands are given in gray boxes. 
 In config files, the part of a line starting with a semicolon is a comment.
 
-Note that the text can be copy-pasted directly from this document
-and that all the links and all the colored text in the manual are clickable.
+Note that text can be copy-pasted directly from this document
+and that all links and all colored text in the manual are clickable.
 
 
 \section{Requirements}
@@ -136,7 +136,8 @@ To check your installation type
 \begin{lstlisting}
 spades.py
 \end{lstlisting}
-This runs {\spades} on a toy dataset (first 1,000 bp of {\ecoli}) that {\spades} comes with. If the installation was successfull you will see the following lines in the end of the run.
+This runs {\spades} on a toy dataset (first $1{,}000$ bp of {\ecoli}) that comes with {\spades} for testing purposes.
+If the installation is successful you will see the following lines in the end of the log.
 \begin{lstlisting}
 All the resulting information can be found here:
 /usr/share/spades/output/ECOLI_1K/spades_04.11_08.26.04
@@ -205,7 +206,7 @@ assembly
     generate_sam_files  true                          ; optional. Default is false
 }
 
-; optional. If section exists (even if it is empty), spades.py 
+; optional. If this section exists (even if it is empty), spades.py 
 ; evaluates quality of the final contigs
 quality_assessment      
 {
@@ -215,18 +216,13 @@ quality_assessment
 }
 \end{lstlisting}
 
-The first thing to notice is that besides of global variables and dataset settings 
-the config file contains three sections. The first one ({\tt error\_correction}) is responsibe for correcting errors in the input reads.
-Note that for an accurate assembly it is important to use this stage, especially
-for single-cell datasets.
-The second section ({\tt assembly}) 
-contains assembly settings.
-The last section ({\tt quality\_assessment})
-is needed for estimating the quality of the resulting assembly.
-To run only some of these three stages just remove (or comment) the unnecessary stages.
-
-%If both sections are present {\spades} first corrects errors in the reads specified by {\tt %input\_reads} and then assembles the resulting reads. Also, the dataset file
-%with the resulting reads is created in the folder specified by {\tt output\_dir}.
+The first thing to note here is that in addition to global variables and dataset settings,
+the config file contains three sections. The first one ({\tt error\_correction}) is responsible for correcting errors in the input reads;
+error correction in the {\spades} pipeline is done with {\bh}, a recently developed error correction tool that works well for the case of non-uniform coverage
+(e.g., on single-cell data); {\bh} is available separately at \url{http://bioinf.spbau.ru/hammer}.
+Note that for an accurate assembly it is important to use this stage, especially for single-cell datasets.
+The second section ({\tt assembly}) contains assembly settings. The last section ({\tt quality\_assessment})
+is needed to estimate the quality of the resulting assembly. To run only some of these three stages just remove (or comment) unnecessary stages.
 
 \subsection{Global settings}
 \begin{description}
@@ -237,51 +233,53 @@ To run only some of these three stages just remove (or comment) the unnecessary 
 
 \subsection{Dataset settings}
 {\spades} accepts single reads as well as forward-reverse paired end reads
-in FASTA and FASTQ format (however if error correction is needed reads should be in FASTQ format). All the files may be compressed. Currently {\spades} works with only one library.
+in FASTA and FASTQ format (however if error correction is needed reads should be in FASTQ format). All files may be compressed.
+At present, {\spades} can accept only one library as input.
 
 \begin{description}
 \item[{\tt paired\_reads}] specifies input paired end reads organized into one or two files.
 In a single file, each left read should be followed by its mate right read. In case of two files, the first file should contain all left reads while the second one should contain all the corresponding right reads in exactly the same order (two files should be separated by a space).
 \item[{\tt single\_reads}] specifies reads without pairs. You can specify any number of
-files with single reads. Files should be separated by spaces.
-\item[{\tt single\_cell}] flag is set if input data was obtained with mda (single cell) technology.
+files with single reads. File names should be separated by spaces.
+\item[{\tt single\_cell}] flag is set if input data was obtained with MDA (single cell) technology.
 \end{description}
 
 \subsection{Error correction settings}
 \begin{description}
-\item[{\tt tmp\_dir}] specifies the directory where temporary files are stored.
-\item[{\tt qvoffset}] sets PHRED quality offset in the input reads ($33$ or $64$). If not given {\spades} tries to find this value automatically.
+\item[{\tt tmp\_dir}] specifies the directory where temporary files are stored. Note that {\bh} uses a significant amount of disk space (even though it
+cleans up after itself) so you might want to consider setting {\tt tmp\_dir} to something other than {\tt /tmp}.
+\item[{\tt qvoffset}] sets PHRED quality offset in the input reads ($33$ or $64$). If not given {\bh} tries to find this value automatically.
 \item[{\tt max\_iterations}] sets the maximum number of iterations
-of error correction procedure. Usually, the second iteration does improve upon the first, but then there is almost no change.
+for the error correction procedure. Usually, the second iteration does improve upon the first, but then there is almost no change.
 \item[{\tt max\_threads}] sets the maximum number of threads.
-\item[{\tt max\_memory}] sets the maximum amount of available RAM (in Gb).
-\item[{\tt gzip\_output}] flag forces {\spades} to output compressed (by {\tt gzip})
-corrected reads.
+\item[{\tt max\_memory}] sets the maximum amount of available RAM (in Gb). {\bh} (and the entire {\spades} pipeline) will fail if it attempts
+to allocate more RAM than specified here.
+\item[{\tt gzip\_output}] flag forces {\bh} to output compressed corrected reads (with {\tt gzip}).
 \end{description}
 
 \subsection{Assembly settings}\label{subsec:assembly}
 \begin{description}
-\item[{\tt iterative\_K}] specifies one or more odd values for $k$-mer (vertex) sizes.  Informally, smaller values of $k$ make the graph more connected, but at the same time more tangled, while higher values of $k$ may defragment the graph, but allow to resolve short repeats. The typical value for this variable is {\tt 21 33 55}. See the paper~\cite{main} for more details.  Note that in the configuration file, $k$ is the size of a vertex, while in the paper, $k$ is the size of an edge (one higher).
+\item[{\tt iterative\_K}] specifies one or more odd values for $k$-mer (vertex) sizes.  Informally, smaller values of $k$ make the graph more connected, but at the same time more tangled, while higher values of $k$ may defragment the graph, but allow to resolve short repeats. The typical value for this variable is {\tt 21 33 55}. See the paper~\cite{main} for more details.  Note that in the configuration file, $k$ is the size of a vertex, while in the paper, $k$ is the size of an edge (i.e.,
+larger by one).
 
-\item[{\tt paired\_mode}] turns on/off the repeat resolver.
+\item[{\tt paired\_mode}] turns the repeat resolver on/off.
 
 \item[{\tt generate\_sam}] flag forces {\spades} to generate a SAM-file
 showing how the reads are aligned to resulting contigs. If {\spades}
-is run with error correction stage then the corrected reads are used,
-otherwise the input reads are used. Alignments from this SAM-file
-may be visualized, e.g., by Tablet~\cite{tablet}.
+is run with the error correction stage then corrected reads are used,
+otherwise input reads are used. Alignments from this SAM-file
+can be visualized, e.g., by Tablet~\cite{tablet}.
 \end{description}
 
 \subsection{Quality assessment settings}
 If this section is present in the config file then
-{\spades} estimates statistics on various metrics (like N50) of the resulting contigs.
+{\spades} evaluates assembly results by computing various metrics (e.g., N50, NG50, number of long ORFs etc.) on the resulting contigs.
 The variables {\tt reference}, {\tt genes}, and {\tt operons} are self-explaining.
 Note that the quality is estimated even if this section is empty.
 
 \subsection{Output}
 Results can be found in the folder specified by {\tt output\_dir}.
-The specific directories containing corrected reads, assembly, and quality estimate are given
-at the end of the log.
+Specific directories containing corrected reads, assembly, and quality estimate are shown at the end of the log.
 
 \section{Postprocessing}
 
@@ -290,8 +288,7 @@ While {\spades} produces accurate assemblies,
 we recommend running SEQuel~\cite{sequel} after {\spades} to further reduce the number of small errors (single nucleotide substitutions and small indels). SEQuel is available at
 \url{http://bix.ucsd.edu/SEQuel/}. Note that one can set the flag {\tt generate\_sam} to {\spades}
 (see subsection~\ref{subsec:assembly}) to generate a SAM-file showing how the 
-reads are aligned to the resulting contigs.
-This file can be used then as an input to SEQuel.
+reads are aligned to the resulting contigs. This file can then be given to SEQuel as input.
 
 
 \subsection{Scaffolding}
