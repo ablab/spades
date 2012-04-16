@@ -159,7 +159,7 @@ inline ostream& operator<<(ostream& os, const Sequence& s);
 template<size_t size2_>
 Seq<size2_> Sequence::start() const {
     //VERIFY(size2_ <= size_);
-    return data_->GetStartSeq<size2_>();
+    return Seq<size2_> (*this);
 }
 
 /**

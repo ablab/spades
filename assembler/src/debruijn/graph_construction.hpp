@@ -132,12 +132,11 @@ void FillCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index) {
 	SequenceMapper read_threader(g, index);
 
 	if (cfg::get().use_multithreading) {
-        SingleReadStream& stream = *single_easy_reader(true, true);
-        g.coverage_index().FillIndex<SequenceMapper>(read_threader, stream);
+        auto streams = single_binary_readers(true, true);
+        g.coverage_index().FillParallelIndex<SequenceMapper>(read_threader, streams);
 	}
 	else {
-        auto streams = single_binary_readers(true, true);
-        //g.coverage_index().FillParallelIndex<SequenceMapper>(read_threader, streams);
+
 
 	}
 	DEBUG("Coverage counted");
@@ -188,6 +187,8 @@ size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, size_t
 
     size_t rl = 0;
     for (size_t i = 0; i < nthreads; ++i) {
+        delete bin_streams[i];
+
         if (rl < rls[i]) {
             rl = rls[i];
         }
@@ -260,7 +261,7 @@ void ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 		streams.push_back(single_stream);
 	}
 	CompositeSingleReadStream reads_stream(streams);
-	ConstructGraphWithCoverage<k>(gp.g, gp.index, reads_stream, contigs_stream);
+	//ConstructGraphWithCoverage<k>(gp.g, gp.index, reads_stream, contigs_stream);
 
 	if (cfg::get().etalon_info_mode || cfg::get().etalon_graph_mode)
 		FillEtalonPairedIndex<k>(paired_index, gp.g, gp.index, gp.kmer_mapper, gp.genome);

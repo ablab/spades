@@ -99,8 +99,8 @@ public:
 		IncCoverage(edge, 1);
 	}
 
-    template<class ReadThreader>
-    void FillIndex(const ReadThreader& threader, io::IReader<io::SingleRead>& reads_stream) {
+	template<class ReadThreader>
+	void FillParallelIndex(const ReadThreader& threader, std::vector<io::IReader<io::SingleReadSeq>* >& bin_streams) {
 
         typedef Path<EdgeId> DataType;
 
@@ -109,149 +109,33 @@ public:
         size_t counter = 0;
 
         size_t nthreads = cfg::get().thread_number;
-        size_t buf_size = cfg::get().buffer_reads;
 
-        vector<vector<Sequence> > vector_seq(nthreads, vector<Sequence>());
+        #pragma omp parallel num_threads(nthreads)
+        {
+            #pragma omp for reduction(+ : counter)
+            for (size_t i = 0; i < nthreads; ++i) {
 
-        for (size_t i = 0; i < nthreads; ++i)
-            vector_seq[i].reserve(buf_size);
+                io::SingleReadSeq r;
+                io::IReader<io::SingleReadSeq>& stream = *bin_streams[i];
 
-        vector<vector<DataType>> buffer(nthreads, vector<DataType>());
+                while (!stream.eof()) {
+                    stream >> r;
+                    ++counter;
+                    Path<EdgeId> path = ProcessSequence(threader, r.sequence());
 
-        for (size_t i = 0; i < nthreads; ++i)
-            buffer[i].reserve(buf_size);
-
-        std::vector<size_t> sizes(nthreads, 0);
-
-        io::SingleRead read;
-
-
-        while (!reads_stream.eof()) {
-            INFO("Filling Sequence Buffer");
-
-            for (size_t j = 0; j < buf_size; ++j) {
-                for(size_t i = 0; i < nthreads && !reads_stream.eof(); ++i) {
-                    reads_stream >> read;
-                    vector_seq[i][j] = read.sequence();
-                    sizes[i]++;
-                    VERBOSE_POWER(++counter, " reads processed");
-                }
-            }
-
-            INFO("Finished Filling Sequence Buffer");
-
-            INFO("Filling Path Buffer");
-
-            #pragma omp parallel num_threads(nthreads)
-            {
-
-                #pragma omp for
-                for (size_t i = 0; i < nthreads; ++i) {
-                    for (size_t j = 0; j < sizes[i]; ++j) {
-                        Path<EdgeId> path = ProcessSequence(threader, vector_seq[i][j]);
-                        buffer[i][j] = path;
-
-//                        #pragma omp critical
-//                        {
-//                            AddPathsToGraph(path);
-//                        }
+                    #pragma omp critical
+                    {
+                        AddPathsToGraph(path);
                     }
                 }
-
-            }
-            INFO("Finished Filling Path Buffer");
-
-            INFO("Threading Paths");
-
-            for (size_t i = 0; i < nthreads; ++i) {
-                for (size_t j = 0; j < buffer[i].size(); ++j) {
-                    AddPathsToGraph(buffer[i][j]);
-                }
             }
 
-            INFO("Finished Threading Paths");
-            std::fill(sizes.begin(), sizes.end(), 0);
         }
 
-        INFO("Elapsed time: " << pc.time_ms());
-    }
+        INFO("DeBruijn graph coverage counted, reads used: " << counter);
 
-//	template<class ReadThreader>
-//	void FillParallelIndex(const ReadThreader& threader, std::vector<io::IReader<io::SingleReadSeq> >& streams) {
-//
-//        typedef Path<EdgeId> DataType;
-//
-//        INFO("Processing reads (takes a while)");
-//        perf_counter pc;
-//        size_t counter = 0;
-//
-//        size_t nthreads = cfg::get().thread_number;
-//        size_t buf_size = cfg::get().buffer_reads;
-//
-//        vector<vector<Sequence> > vector_seq(nthreads, vector<Sequence>());
-//
-//        for (size_t i = 0; i < nthreads; ++i)
-//            vector_seq[i].reserve(buf_size);
-//
-//        vector<vector<DataType>> buffer(nthreads, vector<DataType>());
-//
-//        for (size_t i = 0; i < nthreads; ++i)
-//            buffer[i].reserve(buf_size);
-//
-//        std::vector<size_t> sizes(nthreads, 0);
-//
-//		io::SingleReadSeq read;
-//
-//
-//        while (!streams[0]->eof()) {
-//            INFO("Filling Sequence Buffer");
-//
-//            for (size_t j = 0; j < buf_size; ++j) {
-//                for(size_t i = 0; i < nthreads && !reads_stream.eof(); ++i) {
-//                    streams >> read;
-//                    vector_seq[i][j] = read.sequence();
-//                    sizes[i]++;
-//                    VERBOSE_POWER(++counter, " reads processed");
-//                }
-//            }
-//
-//            INFO("Finished Filling Sequence Buffer");
-//
-//            INFO("Filling Path Buffer");
-//
-//            #pragma omp parallel num_threads(nthreads)
-//            {
-//
-//                #pragma omp for
-//                for (size_t i = 0; i < nthreads; ++i) {
-//                    for (size_t j = 0; j < sizes[i]; ++j) {
-//                        Path<EdgeId> path = ProcessSequence(threader, vector_seq[i][j]);
-//                        buffer[i][j] = path;
-//
-////                        #pragma omp critical
-////                        {
-////                            AddPathsToGraph(path);
-////                        }
-//                    }
-//                }
-//
-//            }
-//            INFO("Finished Filling Path Buffer");
-//
-//            INFO("Threading Paths");
-//
-//            for (size_t i = 0; i < nthreads; ++i) {
-//                for (size_t j = 0; j < buffer[i].size(); ++j) {
-//                    AddPathsToGraph(buffer[i][j]);
-//                }
-//            }
-//
-//            INFO("Finished Threading Paths");
-//            std::fill(sizes.begin(), sizes.end(), 0);
-//		}
-//
-//        INFO("Elapsed time: " << pc.time_ms());
-//	}
+        INFO("Elapsed time: " << pc.time_ms());
+	}
 
 	virtual void HandleDelete(EdgeId edge) {
 		storage_.erase(edge);

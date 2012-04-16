@@ -57,7 +57,8 @@ private:
         while (!stream.eof()) {
             buf_index = read_count % file_num_;
 
-            stream >> buf[buf_index][current_buf_sizes[buf_index]++];
+            stream >> buf[buf_index][current_buf_sizes[buf_index]];
+            ++current_buf_sizes[buf_index];
             ++buf_sizes[buf_index];
 
             VERBOSE_POWER(++read_count, " reads processed");
@@ -84,18 +85,20 @@ private:
 public:
 
     ReadsToBinaryConverter(const std::string& file_name_prefix, size_t file_num, size_t buf_size):
-            file_name_prefix_(file_name_prefix), file_num_(file_num), file_ds_(file_num, new std::ofstream()), buf_size_(buf_size) {
+            file_name_prefix_(file_name_prefix), file_num_(file_num), file_ds_(), buf_size_(buf_size) {
         std::string fname;
         for (size_t i = 0; i < file_num_; ++i) {
             fname = file_name_prefix_ + "_" + ToString(i) + ".seq";
-            file_ds_[i]->open(fname.c_str(), std::ios_base::binary | std::ios_base::out);
+            file_ds_.push_back(new std::ofstream());
+            file_ds_.back()->open(fname.c_str(), std::ios_base::binary | std::ios_base::out);
         }
     }
 
     ~ReadsToBinaryConverter() {
         for (size_t i = 0; i < file_num_; ++i) {
-            if (file_ds_[i]->is_open())
+            if (file_ds_[i]->is_open()) {
                 file_ds_[i]->close();
+            }
             delete file_ds_[i];
         }
     }
