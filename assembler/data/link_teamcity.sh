@@ -1,3 +1,6 @@
 #!/bin/bash
 set -e
-test -h input || ln -s ../../../../input input
+if [ ! -e input ];
+then
+    ln -s ../../../../input input
+fi
