@@ -190,6 +190,7 @@ public:
 		} else {
 			new_name = name_ + "_RC";
 		}
+//		TODO make naming nicer
 //		if (name_ == "" || name_[0] != '!') {
 //			new_name = '!' + name_;
 //		} else {
@@ -199,9 +200,11 @@ public:
 	}
 
 	SingleRead SubstrStrict(size_t from, size_t to) const {
-		std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
 		size_t len = to - from;
-		return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len));
+		return SingleRead(new_, seq_.substr(from, len), qual_.substr(from, len));
+//		TODO make naming nicer
+//		std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
+//		return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len));
 	}
 
 	SingleRead Substr(size_t from, size_t to) const {
