@@ -391,6 +391,7 @@ public:
 	working_stage entry_point;
 
 	bool paired_mode;
+	double online_clust_rad;
 	bool paired_info_statistics;
 	bool etalon_info_mode;
 	bool advanced_estimator_mode;
@@ -752,6 +753,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.additional_contigs, pt, "additional_contigs");
 
 	load(cfg.paired_mode, pt, "paired_mode");
+	load(cfg.online_clust_rad, pt, "online_clust_rad");
 	load(cfg.paired_info_statistics, pt, "paired_info_statistics");
 	load(cfg.etalon_info_mode, pt, "etalon_info_mode");
 	load(cfg.componential_resolve, pt, "componential_resolve");

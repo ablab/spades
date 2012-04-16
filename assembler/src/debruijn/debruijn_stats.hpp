@@ -266,7 +266,6 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 			}
 			gr[min]++;
 		}
-
 	}
 
 	INFO("Counting clustered info stats");

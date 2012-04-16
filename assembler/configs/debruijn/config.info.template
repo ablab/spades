@@ -50,6 +50,9 @@ use_additional_contigs false
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
 paired_mode true
 
+;radius for online pair info clusteing algorithm
+online_clust_rad 0.
+
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
 

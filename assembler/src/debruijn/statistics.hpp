@@ -912,6 +912,8 @@ public:
 		//		DEBUG("Handling pairs that are not in etalon information");
 		HandlePairsNotInEtalon(pairs_in_etalon);
 
+		INFO("FPR: " << fpr());
+		INFO("FNR: " << fnr());
 		INFO("Distance estimation statistics counted");
 	}
 
