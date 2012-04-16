@@ -152,24 +152,15 @@ Thank you for using SPAdes!
 
 
 ===== SPAdes pipeline finished
-\end{lstlisting}\todo{update}
+\end{lstlisting}\todo{to be updated}
 
-%\section{Input format}
-%{\spades} accepts single reads as well as forward-reverse paired end reads
-%in FASTA and FASTQ format. The number of files with single reads may be arbitrary while paired end %reads should be organized into one or two files. In a single file, each left read should be %followed by its mate right read. In case of two files, the first file should contain all left %reads while the second one should contain all the corresponding right reads in exactly the same %order. All the files may be compressed.
 
-%Note that currently {\spades} works with only one library.
 
 \section{Running {\spades}}\label{sec:running}
 To run {\spades} type
 \begin{lstlisting}
 ./spades.py <config.info>
 \end{lstlisting}
-%Note that the script requires {\tt python} version~2.6.
-%If your default {\tt python} version is lower, type
-%\begin{lstlisting}
-%python26 ./spades.py <config.info>
-%\end{lstlisting}
 By default (i.e., if no config file is given) {\spades} uses the file {\tt spades\_config.info}. 
 Below we first give an example of a config file
 and then explain its contents in detail.
@@ -180,7 +171,6 @@ and then explain its contents in detail.
 
 project_name        ECOLI_1K                          ; optional. Name of this config file is used if not specified
 output_dir          ./spades_output
-output_to_console   true                              ; optional. Default is true
 
 dataset
 {
@@ -196,7 +186,7 @@ error_correction
     max_iterations      2
     max_threads         16
     max_memory          250                           ; in GB
-    gzip_output         true
+    gzip_output         true ; optional
 }
 
 assembly
@@ -224,11 +214,12 @@ Note that for an accurate assembly it is important to use this stage, especially
 The second section ({\tt assembly}) contains assembly settings. The last section ({\tt quality\_assessment})
 is needed to estimate the quality of the resulting assembly. To run only some of these three stages just remove (or comment) unnecessary stages.
 
+If {\spades} is run with error correction stage for the same input reads it detects this and prompts a user not to correct the reads again. 
+
 \subsection{Global settings}
 \begin{description}
 \item[{\tt project\_name}] specifies the name of the project. It is recommended to set a meaningful name for each separate project. This makes it easier to find the results in the output folder.
 \item[{\tt output\_dir}] specifies the output folder.
-\item[{\tt output\_to\_console}] flag controls outputting log messages to the console.
 \end{description}
 
 \subsection{Dataset settings}
@@ -275,7 +266,80 @@ can be visualized, e.g., by Tablet~\cite{tablet}.
 If this section is present in the config file then
 {\spades} evaluates assembly results by computing various metrics (e.g., N50, NG50, number of long ORFs etc.) on the resulting contigs.
 The variables {\tt reference}, {\tt genes}, and {\tt operons} are self-explaining.
-Note that the quality is estimated even if this section is empty.
+Note that the quality is estimated even if this section is empty
+
+Below we describe all the computed metrics.
+
+\begin{description}
+\item[N50] is the contig length such that using longer or equal length contigs
+produces half (50\%) the bases of the assembly.  Usually there is no
+value that produces exactly 50\%, so the more technical definition is
+the minimal length $x$ such that using contigs of length at least $x$ accounts for at least 50\% of the total assembly length.
+
+\item[NG50] is the contig length such that using longer or equal length contigs
+produces half (50\%) the bases of the reference genome
+
+\item[N75 and NG75] are defined similarly with 75\% instead of 50\%.
+
+\item[Number of contigs] is the total number of contigs in the assembly.
+
+\item[Largest contig] is the length of the longest contig in the assembly.
+
+\item[Total length] is the total number of bases in the assembly.
+
+\item[Reference length] is the total number of bases in the reference
+(computed only if {\tt reference} is given).
+
+\item[Average \%IDY] is the average of alignment identity percent (quality) among all contigs.
+
+\item[Misassemblies] is the number of misassemblies in the alignment.
+Misassemblies are defined as a location on an assembled contig where the left
+flanking sequence aligns over 1kb away from the right flanking sequence on the
+reference.
+
+\item[Misassembled contigs] is the number of contigs that contain misassembly
+events.
+
+\item[Misassembled contig bases] is the number of total bases contained in all
+contigs that have one or more misassemblies.
+
+\item[Unaligned contigs] is the number of contigs that have no alignment to the
+reference sequence.  The value ``$X$ ($Y$ partial) ($Z$)'' means:
+$X$ totally unaligned contigs
+plus $Y$ partially unaligned contigs
+and the total number of unaligned bases is $Z$.
+
+\item[Ambiguous contigs] is the number of contigs that have reference alignments
+of equal quality in multiple locations on the reference.
+The value "$X$ ($Y$)" means $X$ ambiguous contigs with $Y$ bases in them.
+
+\item[NA50] (A stands for ``aligned'') is 
+defined similarly to N50 but only
+lengths of aligned blocks are counted.
+If a contig has a misassembly with respect to the reference, it is broken into smaller pieces.
+If a contig has bases that do not align to the reference, they are not counted
+in NA*, NGA*. NGA50, NA75, NGA75 are defined in the same way.
+
+\item[Mapped genome (\%)] is the ratio of the total number of aligned bp in the assembly
+to the genome size.  Short contigs (less than 500~bp) that map to multiple
+places may be counted many times in this quantity.  A base in the genome is
+counted as aligned one if there is at least one contig with at least one
+alignment with this base.
+
+\item[Genes] is the number of genes in the assembly (full and partial), based
+on the positions the contigs map to in the reference genome with an annotated
+list of genes. The value ``$X$ + $Y$ partial'' means $X$ full genes and $Y$ partial ones (at least 100 bases are aligned)  (computed only if {\tt genes} is specified).
+
+\item[Operons] is the number of operons in the assembly (full and partial), based on the positions the contigs map to in the reference genome with an annotated list of operons.
+The value ``$X$ + $Y$ partial'' means $X$ full operons and $Y$ partial ones (at least 100 bases are aligned) (computed only if {\tt operons} is specified).
+
+\item[Number of miscalled] is the number of miscalled bases (e.g. having ``C'' in the assembly and ``G'' in the genome)  (computed only if {\tt genome} is specified).
+
+\item[Number of uncalled] is the number of uncalled bases (``N'').
+
+\item[Bases missed] is the number of missed bases (which are presented in the genome and missed in the assembly) (computed only if {\tt genome} is specified).
+
+\end{description}
 
 \subsection{Output}
 Results can be found in the folder specified by {\tt output\_dir}.
@@ -290,14 +354,15 @@ we recommend running SEQuel~\cite{sequel} after {\spades} to further reduce the 
 (see subsection~\ref{subsec:assembly}) to generate a SAM-file showing how the 
 reads are aligned to the resulting contigs. This file can then be given to SEQuel as input.
 
-
 \subsection{Scaffolding}
 The current version of {\spades} does not have a scaffolding stage.
 One can use a separate scaffolder such as Opera~\cite{opera}.
 It is available at \url{http://sourceforge.net/projects/operasf/}.
 
-\section{Bug reports}
-Bug reports should be sent to \url{spades.support@bioinf.spbau.ru}.
+\section{Feedback and bug reports}
+We will be thankful if you help us making {\spades} better
+by sending your comments, bug reports, and suggestions to
+\url{spades.support@bioinf.spbau.ru}.
 
 
 \bibliographystyle{plain}
