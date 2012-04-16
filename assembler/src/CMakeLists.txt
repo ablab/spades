@@ -22,8 +22,15 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug"          AND
   set(CMAKE_BUILD_TYPE "RelWithDebInfo") 
 endif()
 
-# it'll make cmake to find libraries archives, not dynamic link
-SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+if (DEFINED static_build)
+  # it'll make cmake to find libraries archives, not dynamic link
+  set(CMAKE_FIND_LIBRARY_SUFFIXES .a) 
+  
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+
+  set(Boost_USE_STATIC_LIBS        ON)
+  set(Boost_USE_STATIC_RUNTIME     ON)
+endif()
 
 add_definitions(-g3)
 add_definitions(-static)
@@ -31,8 +38,6 @@ add_definitions(-std=c++0x)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 #add_definitions(-Wconversion)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
-
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   message("Making Debug Configuration...")
@@ -48,10 +53,7 @@ endif()
 # common dependencies
 find_package(ZLIB)
 
-set(Boost_USE_STATIC_LIBS        ON)
-set(Boost_USE_MULTITHREADED      ON)
-set(Boost_USE_STATIC_RUNTIME     ON)
-
+set(Boost_USE_MULTITHREADED ON)
 find_package(Boost COMPONENTS system filesystem iostreams serialization REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")

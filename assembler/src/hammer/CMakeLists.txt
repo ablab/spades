@@ -30,5 +30,8 @@ add_subdirectory(quake_correct)
 add_subdirectory(gen_test_data)
 
 target_link_libraries(hammer ${COMMON_LIBRARIES} input)
-set_target_properties(hammer PROPERTIES LINK_SEARCH_END_STATIC 1)
+
+if (DEFINED static_build)
+  set_target_properties(hammer PROPERTIES LINK_SEARCH_END_STATIC 1)
+endif()
 
