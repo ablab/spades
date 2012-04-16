@@ -279,7 +279,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
 			paired_index, clustered_index, etalon_paired_index);
 	estimation_stat.Count();
-	estimation_stat.SaveStats(cfg::get().output_dir + "estimation_stats/");
+	estimation_stat.SaveStats(cfg::get().output_dir + "estimation_qual/");
 
 	CountAndSaveAllPaths(gp.g, gp.int_ids, paired_index);
 
