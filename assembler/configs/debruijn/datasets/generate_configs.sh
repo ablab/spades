@@ -5,8 +5,8 @@ set -e
 cd _generic
 for f in *
 do
-    pushd ../../../../
-    echo ./spades.py src/debruijn/datasets/_generic/$f &
-    #./spades.py src/debruijn/datasets/_generic/$f &
-    popd
+    pushd ../../../../ > /dev/null
+    echo ./spades.py configs/debruijn/datasets/_generic/$f &
+    ./spades.py configs/debruijn/datasets/_generic/$f &
+    popd > /dev/null
 done
