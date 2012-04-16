@@ -69,7 +69,8 @@ struct PairInfo {
 	 */
 	bool operator==(const PairInfo& rhs) const {
 		const PairInfo &lhs = *this;
-		return lhs.first == rhs.first && lhs.second == rhs.second && math::eq(lhs.d, rhs.d);
+		return lhs.first == rhs.first && lhs.second == rhs.second
+				&& math::eq(lhs.d, rhs.d);
 	}
 
 	bool operator!=(const PairInfo& rhs) const {
@@ -171,15 +172,27 @@ public:
 
 	typedef std::pair<data_const_iterator, data_const_iterator> iterator_range;
 
-
 public:
 	void UpdateSingleInfo(const PairInfo<EdgeId>& info, double d,
 			double weight) {
-		size_t count = data_.erase(info);
-		VERIFY(count != 0);
-		data_.insert(
-				PairInfo<EdgeId>(info.first, info.second, d, weight,
-						info.variance));
+		//todo get rid of this find
+		auto const_it = data_.find(info);
+		VERIFY(const_it != data_.end());
+
+		const PairInfo<EdgeId>& to_upd_const = *const_it;
+
+		PairInfo<EdgeId>& to_upd = const_cast<PairInfo<EdgeId>&>(to_upd_const);
+
+		to_upd.d = d;
+		to_upd.weight = weight;
+
+//		VERIFY(data_.find(PairInfo<EdgeId>(to_upd.first, to_upd.second, d, weight, 0.)) != data_.end());
+
+//		size_t count = data_.erase(info);
+//		VERIFY(count != 0);
+//		data_.insert(
+//				PairInfo<EdgeId>(info.first, info.second, d, weight,
+//						info.variance));
 	}
 
 	void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
@@ -191,23 +204,25 @@ public:
 	}
 public:
 
-	PairInfoIndexData() : data_(){
+	PairInfoIndexData() :
+			data_() {
 	}
 
 	data_iterator begin() const {
-		auto itp = data_.begin();
-		int cnt = 1;
-		for (auto it = data_.begin(); it != data_.end(); ++it) {
-			if (it->first == itp->first && it->second == itp->second
-					&& it != data_.begin()) {
-				cnt++;
-			} else {
-				if (it != data_.begin()) {
-					cnt = 1;
-				}
-			}
-			itp = it;
-		}
+//		//todo what is this???
+//		auto itp = data_.begin();
+//		int cnt = 1;
+//		for (auto it = data_.begin(); it != data_.end(); ++it) {
+//			if (it->first == itp->first && it->second == itp->second
+//					&& it != data_.begin()) {
+//				cnt++;
+//			} else {
+//				if (it != data_.begin()) {
+//					cnt = 1;
+//				}
+//			}
+//			itp = it;
+//		}
 		return data_.begin();
 	}
 
@@ -220,9 +235,6 @@ public:
 	}
 
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool addSymmetric = 1) {
-//		INFO("REALLY ADD:" << pair_info.first << " " << pair_info.second << " " << pair_info.d << " " << 
-//        pair_info.weight);
-
 		data_.insert(pair_info);
 
 		if (!IsSymmetric(pair_info) && addSymmetric)
@@ -252,7 +264,7 @@ public:
 
 	void DeleteEdgePairInfo(EdgeId e1, EdgeId e2) {
 		data_.erase(LowerBound(e1, e2), UpperBound(e1, e2));
-		if(e1 != e2)
+		if (e1 != e2)
 			data_.erase(LowerBound(e2, e1), UpperBound(e2, e1));
 	}
 
@@ -266,14 +278,28 @@ public:
 
 	void UpdateInfo(const PairInfo<EdgeId>& info, const double d,
 			const double weight, bool add_reversed) {
-		UpdateSingleInfo(info, d, weight);
 
-		if (add_reversed && !IsSymmetric(info))
-			UpdateSingleInfo(BackwardInfo(info), -d, weight);
+		//todo remove after dirty hack is removed
+		PairInfo<EdgeId> info_cp = info;
+
+		UpdateSingleInfo(info_cp, d, weight);
+
+		if (add_reversed && !IsSymmetric(info_cp))
+			UpdateSingleInfo(BackwardInfo(info_cp), -d, weight);
 	}
 
 	void clear() {
 		data_.clear();
+	}
+
+	//todo discuss
+	data_iterator LowerBound(const PairInfo<EdgeId> pair_info) const {
+		return data_.lower_bound(pair_info);
+	}
+
+	//todo discuss
+	data_iterator UpperBound(const PairInfo<EdgeId> pair_info) const {
+		return data_.upper_bound(pair_info);
 	}
 
 	data_iterator LowerBound(EdgeId e) const {
@@ -307,6 +333,7 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef const vector<PairInfo<EdgeId>> PairInfos;
+	typedef typename PairInfoIndexData<EdgeId>::data_iterator data_iterator;
 
 private:
 	const double max_difference_;
@@ -408,35 +435,84 @@ private:
 		return false;
 	}
 
-	void MergeData(const PairInfo<EdgeId>& info1,
-			const PairInfo<EdgeId>& info2, bool add_reversed) {
+	void MergeData(const PairInfo<EdgeId>& info1, const PairInfo<EdgeId>& info2,
+			bool add_reversed) {
 		VERIFY(info1.first == info2.first && info1.second == info2.second);
 		double newWeight = info1.weight + info2.weight;
 		double newD = (info1.d * info1.weight + info2.d * info2.weight)
 				/ newWeight;
-		if (info1.first == info1.second && (info1.d == 0 || info2.d == 0)) {
+		if (info1.first == info1.second && (info1.d == 0/* || info2.d == 0*/)) {
 			newD = 0;
 		}
 		data_.UpdateInfo(info1, newD, newWeight, add_reversed);
 	}
 
-	int NearestClusterIndex(const vector<PairInfo<EdgeId>>& current_pair_infos,
-			const PairInfo<EdgeId>& new_info) {
-		double min_dist = max_difference_;
-		int answer = -1;
-		for (size_t i = 0; i < current_pair_infos.size(); ++i) {
-			if (math::le(std::abs(new_info.d - current_pair_infos[i].d),
-					min_dist))
-				if (math::ls(std::abs(new_info.d - current_pair_infos[i].d),
-						min_dist) || answer == -1
-						|| math::gr(std::abs(current_pair_infos[answer].d),
-								std::abs(current_pair_infos[i].d))) {
-					min_dist = std::abs(new_info.d - current_pair_infos[i].d);
-					answer = i;
-				}
+	data_iterator ProcessBound(data_iterator pos,
+			const PairInfo<EdgeId>& info) {
+		if (pos != data_.end() && pos->first == info.first
+				&& pos->second == info.second)
+			return pos;
+		return data_.end();
+	}
+
+	pair<data_iterator, data_iterator> ClosestCandidates(
+			data_iterator lower_bound,
+			const PairInfo<EdgeId>& info) {
+		pair<data_iterator, data_iterator> answer = make_pair(data_.end(),
+				data_.end());
+		answer.second = ProcessBound(lower_bound, info);
+		if (lower_bound != data_.begin()) {
+			answer.first = ProcessBound(--lower_bound, info);
 		}
 		return answer;
 	}
+
+	data_iterator ChooseBest(pair<data_iterator, data_iterator> candidates
+			, const PairInfo<EdgeId>& info) {
+		//todo check
+		data_iterator answer = data_.end();
+		double min_dist = max_difference_;
+		if (candidates.first != data_.end()) {
+			if (math::le(std::abs(info.d - candidates.first->d), min_dist)) {
+				min_dist = std::abs(info.d - candidates.first->d);
+				answer = candidates.first;
+			}
+		}
+		if (candidates.second != data_.end()) {
+			if (math::le(std::abs(info.d - candidates.second->d), min_dist)) {
+				if (math::ls(std::abs(info.d - candidates.second->d),
+						min_dist) || answer == data_.end()
+						|| math::gr(std::abs(answer->d),
+								std::abs(candidates.second->d))) {
+//					min_dist = std::abs(new_info.d - current_pair_infos[i].d);
+					answer = candidates.second;
+				}
+			}
+		}
+		return answer;
+	}
+
+	data_iterator FindCluster(const PairInfo<EdgeId>& info) {
+		return ChooseBest(ClosestCandidates(data_.LowerBound(info), info), info);
+	}
+
+//	int NearestClusterIndex(const vector<PairInfo<EdgeId>>& current_pair_infos,
+//			const PairInfo<EdgeId>& new_info) {
+//		double min_dist = max_difference_;
+//		int answer = -1;
+//		for (size_t i = 0; i < current_pair_infos.size(); ++i) {
+//			if (math::le(std::abs(new_info.d - current_pair_infos[i].d),
+//					min_dist))
+//				if (math::ls(std::abs(new_info.d - current_pair_infos[i].d),
+//						min_dist) || answer == -1
+//						|| math::gr(std::abs(current_pair_infos[answer].d),
+//								std::abs(current_pair_infos[i].d))) {
+//					min_dist = std::abs(new_info.d - current_pair_infos[i].d);
+//					answer = i;
+//				}
+//		}
+//		return answer;
+//	}
 
 public:
 	/**
@@ -445,11 +521,13 @@ public:
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
 		TRACE(
 				"IN ADD:" << pair_info.first << pair_info.second << " " << data_.size());
-		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first,
-				pair_info.second);
-		int cluster_index = NearestClusterIndex(pair_infos, pair_info);
-		if (cluster_index >= 0) {
-			MergeData(pair_infos[cluster_index], pair_info, add_reversed);
+//		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first,
+//				pair_info.second);
+//		int cluster_index = NearestClusterIndex(pair_infos, pair_info);
+		data_iterator cluster_it = FindCluster(pair_info);
+		if (cluster_it != data_.end()) {
+			//todo unfortunately now have to put * here, because of if (add_reversed && !IsSymmetric(info)) in UpdateInfo
+			MergeData(*cluster_it, pair_info, add_reversed);
 		} else {
 			data_.AddPairInfo(pair_info, add_reversed);
 		}
@@ -458,6 +536,7 @@ public:
 	void RemoveEdgeInfo(EdgeId edge) {
 		data_.DeleteEdgeInfo(edge);
 	}
+
 	void RemovePairInfo(const PairInfo<EdgeId>& pair_info) {
 		data_.DeletePairInfo(pair_info);
 	}
@@ -716,8 +795,7 @@ public:
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
-		}
-		INFO("Processing paired reads (takes a while)");
+		}INFO("Processing paired reads (takes a while)");
 		stream_.reset();
 		size_t n = 0;
 		while (!stream_.eof()) {
@@ -729,7 +807,8 @@ public:
 	}
 
 private:
-	DECL_LOGGER("PairedIndexFiller");
+	DECL_LOGGER("PairedIndexFiller")
+	;
 
 };
 
@@ -747,10 +826,10 @@ class PairedInfoWeightNormalizer {
 public:
 
 	//Delta better to be around 5-10% of insert size
-	PairedInfoWeightNormalizer(const Graph& g, size_t insert_size, double is_var,
-			size_t read_length, size_t k, double avg_coverage) :
-			g_(g), insert_size_(insert_size), is_var_(is_var), read_length_(read_length),
-			k_(k), avg_coverage_(avg_coverage) {
+	PairedInfoWeightNormalizer(const Graph& g, size_t insert_size,
+			double is_var, size_t read_length, size_t k, double avg_coverage) :
+			g_(g), insert_size_(insert_size), is_var_(is_var), read_length_(
+					read_length), k_(k), avg_coverage_(avg_coverage) {
 	}
 
 	const PairInfo<EdgeId> NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
@@ -759,23 +838,26 @@ public:
 			w = 0. + g_.length(pair_info.first) - insert_size_
 					+ 2 * read_length_ + 1 - k_;
 		} else {
-			EdgeId e1 =	(math::ge(pair_info.d, 0.)) ?
+			EdgeId e1 =
+					(math::ge(pair_info.d, 0.)) ?
 							pair_info.first : pair_info.second;
-			EdgeId e2 =	(math::ge(pair_info.d, 0.)) ?
+			EdgeId e2 =
+					(math::ge(pair_info.d, 0.)) ?
 							pair_info.second : pair_info.first;
 			int gap_len = std::abs(rounded_d(pair_info)) - g_.length(e1);
 			int right = std::min(insert_size_,
 					gap_len + g_.length(e2) + read_length_);
-			int left = std::max(gap_len, int(insert_size_) - int(read_length_) - int(g_.length(e1)));
+			int left = std::max(gap_len,
+					int(insert_size_) - int(read_length_) - int(g_.length(e1)));
 			w = 0. + right - left + 1 - k_;
 		}
 
 		double result_weight = pair_info.weight;
-        if (math::gr(w, /*-10.*/0.)) {
-			result_weight /= w;//(w + 10);
+		if (math::gr(w, /*-10.*/0.)) {
+			result_weight /= w; //(w + 10);
 		}
-        double cov_norm_coeff = avg_coverage_ / (2*(read_length_ - k_));
-        result_weight /= cov_norm_coeff;
+		double cov_norm_coeff = avg_coverage_ / (2 * (read_length_ - k_));
+		result_weight /= cov_norm_coeff;
 
 		PairInfo<EdgeId> result(pair_info);
 		result.weight = result_weight;
@@ -792,15 +874,20 @@ private:
 	size_t max_norm_;
 
 public:
-	JumpingNormilizerFunction(const Graph& graph, size_t read_length, size_t max_norm) : graph_(graph), read_length_(read_length), max_norm_(max_norm) {
+	JumpingNormilizerFunction(const Graph& graph, size_t read_length,
+			size_t max_norm) :
+			graph_(graph), read_length_(read_length), max_norm_(max_norm) {
 	}
 
 	size_t norm(EdgeId first, EdgeId second) const {
-		return std::min(std::min(graph_.length(first), graph_.length(second)), max_norm_) + read_length_ - graph_.k();
+		return std::min(std::min(graph_.length(first), graph_.length(second)),
+				max_norm_) + read_length_ - graph_.k();
 	}
 
 	const PairInfo<EdgeId> operator()(const PairInfo<EdgeId>& pair_info) const {
-		return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d, pair_info.weight / norm(pair_info.first, pair_info.second), pair_info.variance);
+		return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d,
+				pair_info.weight / norm(pair_info.first, pair_info.second),
+				pair_info.variance);
 	}
 };
 
@@ -832,7 +919,8 @@ public:
 		for (auto it = paired_index_.begin(); it != paired_index_.end(); ++it) {
 			vector<PairInfo<EdgeId>> infos = *it;
 			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
-				normalized_index.AddPairInfo(normalizing_function_(*it2), false);
+				normalized_index.AddPairInfo(normalizing_function_(*it2),
+						false);
 			}
 		}
 	}
@@ -847,23 +935,33 @@ private:
 	const PairedInfoIndex<Graph>& paired_index_;
 public:
 
-	PairedInfoSymmetryHack(const Graph& graph, const PairedInfoIndex<Graph>& paired_index) :
-				graph_(graph), paired_index_(paired_index) {
+	PairedInfoSymmetryHack(const Graph& graph,
+			const PairedInfoIndex<Graph>& paired_index) :
+			graph_(graph), paired_index_(paired_index) {
 	}
 
 	void FillSymmetricIndex(PairedInfoIndex<Graph>& index) {
 		for (auto it = paired_index_.begin(); it != paired_index_.end(); ++it) {
 			vector<PairInfo<EdgeId>> infos = *it;
 			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
-				index.AddPairInfo(PairInfo<EdgeId>(it2->first, it2->second, it2->d, it2->weight * 0.5, it2->variance), 0);
-				index.AddPairInfo(PairInfo<EdgeId>(graph_.conjugate(it2->second), graph_.conjugate(it2->first),
-						it2->d + graph_.length(it2->second) - graph_.length(it2->first), it2->weight * 0.5, it2->variance), 0);
-				auto info = index.GetEdgePairInfo(infos[0].first, infos[0].second);
-				auto symmetric_info = index.GetEdgePairInfo(graph_.conjugate(info[0].second), graph_.conjugate(info[0].first));
+				index.AddPairInfo(
+						PairInfo<EdgeId>(it2->first, it2->second, it2->d,
+								it2->weight * 0.5, it2->variance), 0);
+				index.AddPairInfo(
+						PairInfo<EdgeId>(
+								graph_.conjugate(it2->second),
+								graph_.conjugate(it2->first),
+								it2->d + graph_.length(it2->second)
+										- graph_.length(it2->first),
+								it2->weight * 0.5, it2->variance), 0);
+				auto info = index.GetEdgePairInfo(infos[0].first,
+						infos[0].second);
+				auto symmetric_info = index.GetEdgePairInfo(
+						graph_.conjugate(info[0].second),
+						graph_.conjugate(info[0].first));
 			}
 		}
 	}
 };
-
 
 }
