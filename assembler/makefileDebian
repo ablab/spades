@@ -3,37 +3,20 @@ SPADES_SRC = $(SPADES_SHARE)/src/
 SPADES_CONFIGS = $(SPADES_SHARE)/configs/
 
 build:
-	cd src/tools/quality/libs/MUMmer3.23 ; make
-
+	make --directory=src/tools/quality/libs/MUMmer3.23
 
 install:
-	mkdir -p $(SPADES_SRC)
-	mkdir -p $(SPADES_CONFIGS)/debruijn
-	mkdir -p $(SPADES_CONFIGS)/hammer
+	mkdir -p $(SPADES_SHARE)
 	mkdir -p $(DESTDIR)/usr/bin
-	mkdir -p $(SPADES_SHARE)/test_dataset
-	cp -r src/debruijn $(SPADES_SRC)
-	cp -r src/io $(SPADES_SRC)
-	cp -r src/include $(SPADES_SRC)
-	cp -r src/tools $(SPADES_SRC)
-	cp -r src/hammer $(SPADES_SRC)
-	cp -r src/cmake $(SPADES_SRC)
-	cp src/CMakeLists.txt $(SPADES_SRC)/CMakeLists.txt
-	touch $(SPADES_SRC)/CMakeListsInternal.txt
-	cp -r ext $(DESTDIR)/usr/share/spades/
-	cp -r test_dataset/* $(SPADES_SHARE)/test_dataset
-	cp -r configs/debruijn/*.template $(SPADES_CONFIGS)/debruijn/
-	cp configs/debruijn/config.info.template $(SPADES_CONFIGS)/debruijn/config.info
-	cp configs/hammer/config.info.template $(SPADES_CONFIGS)/hammer/config.info
-	cp configs/hammer/config.info.template $(SPADES_CONFIGS)/hammer/config.info.template
-	cp configs/debruijn/detail_info_printer.info.template $(SPADES_CONFIGS)/debruijn/detail_info_printer.info
-	cp configs/debruijn/distance_estimation.info.template $(SPADES_CONFIGS)/debruijn/distance_estimation.info
-	cp configs/debruijn/simplification.info.template $(SPADES_CONFIGS)/debruijn/simplification.info
-	cp configs/debruijn/datasetsDebian.info $(SPADES_CONFIGS)/debruijn/datasets.info
-	cp -r configs/debruijn/long_contigs $(SPADES_CONFIGS)/debruijn/
-	cp -r configs/debruijn/long_contigs/lc_config.info.template $(SPADES_CONFIGS)/debruijn/long_contigs/lc_config.info
-	cp -r configs/debruijn/long_contigs/lc_params.info.template $(SPADES_CONFIGS)/debruijn/long_contigs/lc_params.info
 	cp spades.py $(DESTDIR)/usr/bin/
-	cp cpcfg $(DESTDIR)/usr/share/spades/
-	cp spades_config.info.template $(DESTDIR)/usr/share/spades/spades_config.info
-	cp spades_config.info.template $(DESTDIR)/usr/share/spades/spades_config.info.template
+	cp makefile $(SPADES_SHARE)
+	cp README $(SPADES_SHARE)
+	cp VERSION $(SPADES_SHARE)
+	cp LICENSE $(SPADES_SHARE)
+	cp spades_config.info.template $(SPADES_SHARE)
+	cp spades_config.info $(SPADES_SHARE)
+	cp -r configs $(SPADES_SHARE)
+	cp -r ext $(SPADES_SHARE)
+	cp -r src $(SPADES_SHARE)
+	cp -r test_dataset $(SPADES_SHARE)
+
