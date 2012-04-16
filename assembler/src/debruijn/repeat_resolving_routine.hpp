@@ -899,6 +899,7 @@ void resolve_repeats() {
 	Sequence genome = cfg::get().ds.reference_genome;
 
 	conj_graph_pack conj_gp(genome);
+	INFO("Online clusterization rad = " << cfg::get().online_clust_rad);
 	paired_info_index paired_index(conj_gp.g, cfg::get().online_clust_rad);
 	paired_info_index clustered_index(conj_gp.g);
 
