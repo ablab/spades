@@ -65,5 +65,5 @@ cp spades_config.info.template spades_config.info
 debuild -us -uc
 
 cd ..
-scp spades_2.0.0* 192.168.222.223:spades2/
+scp spades_2.0.0* builder@192.168.222.254:~/spades2.0.0/
 
