@@ -12,7 +12,7 @@ import subprocess
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'conversion'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'stat'))
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../quality/libs/report_maker.py'))
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../quality/libs'))
 
 bowtie_path  = os.path.join(os.path.abspath(sys.path[0]), '../../../ext/tools/bowtie-0.12.7')
 bowtie_build = os.path.join(bowtie_path, "bowtie-build")
