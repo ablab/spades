@@ -219,22 +219,25 @@ def main():
         if not spades_cfg.__dict__.has_key("gap_closer"):
             spades_cfg.__dict__["gap_closer"] = True
 
+        def make_link(where, link):
+            if os.path.islink(link):
+                os.remove(link)
+            if not os.path.exists(link):
+                os.symlink(where, link)
+
         def make_working_dir(output_dir):
             import datetime
             name = "spades_" + datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
             working_dir = os.path.join(output_dir, name)
             os.makedirs(working_dir)
-            latest = os.path.join(output_dir, "latest")
-            if os.path.islink(latest):
-                os.remove(latest)
-            if not os.path.exists(latest):
-                os.symlink(name, latest)
             return working_dir
 
         spades_cfg.__dict__["working_dir"] = make_working_dir(spades_cfg.output_dir)
         spades_cfg.__dict__["log_filename"] = os.path.join(spades_cfg.working_dir, "assembly.log")
         spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.working_dir, spades_cfg.project_name + ".fasta")
         spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.working_dir, "simplified_contigs.fasta")
+
+        make_link(os.path.basename(spades_cfg.working_dir), os.path.join(spades_cfg.output_dir, "latest"))
 
         print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
         tee = support.Tee(spades_cfg.log_filename, 'w', console=spades_cfg.output_to_console)
@@ -275,6 +278,8 @@ def main():
         
         tee.free()
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")        
+
+        make_link(os.path.basename(spades_cfg.working_dir), os.path.join(spades_cfg.output_dir, "latest_success"))
 
     quality_final_report = ""
     if cfg.has_key("quality_assessment") and result_contigs_filename:
