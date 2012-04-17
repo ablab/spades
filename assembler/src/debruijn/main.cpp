@@ -109,6 +109,8 @@ void create_console_logger(fs::path cfg_filename)
 
 int main(int argc, char** argv)
 {
+	BOOST_STATIC_ASSERT(debruijn_graph::K % 2 != 0);
+
 	perf_counter pc;
 
     const size_t GB = 1 << 30;
@@ -126,10 +128,6 @@ int main(int argc, char** argv)
         create_console_logger(cfg_filename);
 
         on_exit_output_linker try_linker("latest");
-
-        // check config_struct.hpp parameters
-        if (K % 2 == 0)
-            VERIFY_MSG(false, "K in config.hpp must be odd!\n");
 
         // read configuration file (dataset path etc.)
 
