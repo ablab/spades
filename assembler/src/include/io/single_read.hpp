@@ -201,10 +201,15 @@ public:
 
 	SingleRead SubstrStrict(size_t from, size_t to) const {
 		size_t len = to - from;
-		return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
+//		return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
 //		TODO make naming nicer
-//		std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
-//		return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len));
+		std::string new_name;
+		if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
+			new_name = name_.substr(0, name_.length() - 3) + "_SUBSTR(" + ToString(size() - to) + "," + ToString(size() - from) + ")" + "_RC";
+		} else {
+			new_name = name_ + "_SUBSTR(" + ToString(from) + "," + ToString(to) + ")";
+		}
+		return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len));
 	}
 
 	SingleRead Substr(size_t from, size_t to) const {
@@ -216,6 +221,33 @@ public:
 			return SingleRead();
 		}
 		return SubstrStrict(from, to);
+	}
+
+	std::string original_name() const {
+		size_t len = name_.length();
+		for (size_t i = 0; i < len; ++i) {
+			if (name_[i] != '_') {
+				continue;
+			}
+			if (name_.substr(i, 3) == "_RC" || name_.substr(i, 8) == "_SUBSTR(") {
+				return name_.substr(0, i);
+			}
+		}
+		return name_;
+	}
+
+	pair<size_t, size_t> position_in_original() const {
+		for (int i = name_.length() - 1; i >= 0; --i) {
+			if (name_[i] != '_') {
+				continue;
+			}
+			if (name_.substr(i, 8) == "_SUBSTR(") {
+				int from, to;
+				sscanf(name_.substr(i + 8).c_str(), "%d,%d)", &from, &to);
+				return make_pair((size_t) from, (size_t) to);
+			}
+		}
+		return make_pair(0, size());
 	}
 
 	/*
