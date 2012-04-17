@@ -111,7 +111,6 @@ int main(int argc, char** argv)
 {
 	perf_counter pc;
 
-
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
 
@@ -149,16 +148,19 @@ int main(int argc, char** argv)
         INFO("Assembling " << cfg::get().dataset_name << " dataset with K=" << debruijn_graph::K << " finished");
 
     }
+    catch (std::bad_alloc const& e)
+    {
+    	std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;
+    	return EINTR;
+    }
     catch (std::exception const& e)
     {
         std::cerr << "Exception caught " << e.what() << std::endl;
-        print_stacktrace();
         return EINTR;
     }
     catch (...)
     {
         std::cerr << "Unknown exception caught " << std::endl;
-        print_stacktrace();
         return EINTR;
     }
 
