@@ -45,6 +45,14 @@ def kFile_required(kFile, str_k):
 
     return True
 
+def write_k_file(kFile, k):
+    fo = open(kFile, "w")
+    fo.write("#pragma once\n\n")
+    fo.write("namespace debruijn_graph {\n")
+    fo.write("  const size_t K = " + str(k) + ";\n")
+    fo.write("}\n")
+    fo.close()
+
 def build_k(spades_folder, str_k, spades_home):
 
     build_folder_k = os.path.join(spades_folder, "build" + str_k)
@@ -54,12 +62,7 @@ def build_k(spades_folder, str_k, spades_home):
 
     kFile = os.path.join(build_folder_k, "src/debruijn/k.hpp")
     if kFile_required(kFile, str_k):
-        fo = open(kFile, "w")
-        fo.write("#pragma once\n\n")
-        fo.write("namespace debruijn_graph {\n")
-        fo.write("  const size_t K = " + str_k + ";\n")
-        fo.write("}\n")
-        fo.close()
+        write_k_file(kFile, str_k)
 
     print("\n== Compiling with K=" + str_k + " ==\n")
     build_spades(build_folder_k)
