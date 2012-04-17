@@ -12,5 +12,4 @@ abruijn.sh
 tags
 spades_config.info
 bh_config.info
-src/tools/quality/libs/MUMmer3.23/*
 *.class
