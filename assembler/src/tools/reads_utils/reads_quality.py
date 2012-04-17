@@ -12,6 +12,7 @@ import subprocess
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'conversion'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'stat'))
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../quality/libs/report_maker.py'))
 
 bowtie_path  = os.path.join(os.path.abspath(sys.path[0]), '../../../ext/tools/bowtie-0.12.7')
 bowtie_build = os.path.join(bowtie_path, "bowtie-build")
@@ -229,7 +230,7 @@ for dataset in datasets_dict.iterkeys():
 
 # total report
 import report_maker
-report_maker.do(report_dict, os.path.join(output_dir, 'all.txt'), os.path.join(output_dir, 'all.tab'))
+report_maker.do(report_dict, os.path.join(output_dir, 'all'), os.path.join(output_dir, 'all.transposed'))
 
 # clearing temp folder
 shutil.rmtree(tmp_folder)
