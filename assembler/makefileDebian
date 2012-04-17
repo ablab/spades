@@ -1,6 +1,4 @@
 SPADES_SHARE = $(DESTDIR)/usr/share/spades/
-SPADES_SRC = $(SPADES_SHARE)/src/
-SPADES_CONFIGS = $(SPADES_SHARE)/configs/
 
 build:
 	make --directory=src/tools/quality/libs/MUMmer3.23
@@ -9,7 +7,9 @@ install:
 	mkdir -p $(SPADES_SHARE)
 	mkdir -p $(DESTDIR)/usr/bin
 	cp spades.py $(DESTDIR)/usr/bin/
-	cp makefile $(SPADES_SHARE)
+	cp spades_init.py $(DESTDIR)/usr/bin/
+	cp spades_download_binary.py $(DESTDIR)/usr/bin/
+	cp spades_download_bayeshammer.py $(DESTDIR)/usr/bin/
 	cp README $(SPADES_SHARE)
 	cp VERSION $(SPADES_SHARE)
 	cp LICENSE $(SPADES_SHARE)

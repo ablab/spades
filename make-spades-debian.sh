@@ -12,7 +12,9 @@ cp assembler/VERSION spades-2.0.0
 cp assembler/makefileDebian spades-2.0.0/makefile
 cp assembler/spades.py spades-2.0.0
 cp assembler/spades_config.info.template spades-2.0.0
-cp assembler/download_binary.sh spades-2.0.0
+cp assembler/spades_download_binary.py spades-2.0.0
+cp assembler/spades_download_bayeshammer.py spades-2.0.0
+cp assembler/spades_init.py spades-2.0.0
 
 cd spades-2.0.0
 rm src/CMakeListsInternal.txt

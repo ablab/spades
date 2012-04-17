@@ -3,7 +3,9 @@ import os
 import support
 import shutil
 import fcntl
+import spades_init
 
+spades_version = spades_init.spades_version
 
 def build_spades(dir):
     if not os.path.exists(os.path.join(dir, "Makefile")):
@@ -80,6 +82,15 @@ def build_spades_n_copy(cfg, spades_home):
 
         str_k = str(K)
 
+        binary_file = os.path.join(os.getenv('HOME'), '.spades', 'release' + spades_version, 'bin', 'K' + str_k, 'spades')
+
+        if os.path.isfile(binary_file):
+            dest = os.path.join(precompiled_folder, 'build' + str_k,  'debruijn')
+            if not os.path.exists(dest):
+                os.makedirs(dest)
+            shutil.copy2(binary_file, dest)
+            continue
+
         lockFlag = os.path.join(precompiled_folder, "lock") + str_k
 
         fo = open(lockFlag, "w")
@@ -99,6 +110,14 @@ def build_hammer(cfg, spades_home):
 
     if not os.path.exists(precompiled_folder):
         os.makedirs(precompiled_folder)
+
+    binary_file = os.path.join(os.getenv('HOME'), '.spades', 'release' + spades_version, 'bayeshammer', 'hammer')
+    if os.path.isfile(binary_file):
+        dest = os.path.join(precompiled_folder, 'build_hammer', 'hammer')
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        shutil.copy2(binary_file, dest)
+        return
 
     lockFlag = os.path.join(precompiled_folder, "lock_hammer")
 
