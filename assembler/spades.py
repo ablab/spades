@@ -3,15 +3,10 @@
 import os
 import shutil
 import sys
+import spades_init
 
-spades_home = os.path.abspath(sys.path[0])
-
-if os.path.realpath(__file__) == "/usr/bin/spades.py":
-    spades_home = "/usr/share/spades/"
-
-sys.path.append(os.path.join(spades_home, "src/tools/spades_pipeline/"))
-sys.path.append(os.path.join(spades_home, "src/tools/quality/"))
-sys.path.append(os.path.join(spades_home, "src/tools/quality/libs"))
+spades_init.init()
+spades_home = spades_init.spades_home
 
 import support
 from process_cfg import *

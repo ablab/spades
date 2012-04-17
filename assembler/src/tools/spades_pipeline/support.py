@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import os
+import stat
 import sys
 
 # Based on http://stackoverflow.com/a/616686/92396
@@ -123,3 +125,9 @@ def question_with_timer(question, seconds, default='y'):
     
     print("Answer '" + answer + "' was choosen")
     return answer
+
+def save_data_to_file(data, file):
+    output = open(file,'wb')
+    output.write(data.read())
+    output.close()
+    os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP |stat.S_IXOTH)
