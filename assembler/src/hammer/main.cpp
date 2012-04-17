@@ -251,16 +251,19 @@ int main(int argc, char * argv[]) {
 
 	TIMEDLN("All done. Exiting.");
 	}
+	catch (std::bad_alloc const& e)
+	{
+		std::cerr << "Not enough memory to run BayesHammer. " << e.what() << std::endl;
+	    return EINTR;
+	}
 	catch (std::exception const& e)
 	{
 	    std::cerr << "Exception caught " << e.what() << std::endl;
-	    print_stacktrace();
 	    return EINTR;
 	}
 	catch (...)
 	{
 	    std::cerr << "Unknown exception caught " << std::endl;
-	    print_stacktrace();
 	    return EINTR;
 	}
 
