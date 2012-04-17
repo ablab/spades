@@ -8,7 +8,7 @@ Homepage: http://bioinf.spbau.ru/spades
 
 Package: spades
 Architecture: any
-Depends: cmake-curses-gui, g++-4.4, python2.6-dev, cmake, libboost-system-dev(>=1.42) | libboost-system1.42-dev, libboost-filesystem-dev(>=1.42) | libboost-filesystem1.42-dev, libboost-iostreams-dev(>=1.42) | libboost-iostreams1.42-dev,libboost-serialization-dev(>=1.42) | libboost-serialization1.42-dev, zlib1g-dev, python-matplotlib
+Depends: cmake-curses-gui, g++-4.4, g++, python2.6-dev, cmake, libboost-system-dev(>=1.42) | libboost-system1.42-dev, libboost-filesystem-dev(>=1.42) | libboost-filesystem1.42-dev, libboost-iostreams-dev(>=1.42) | libboost-iostreams1.42-dev,libboost-serialization-dev(>=1.42) | libboost-serialization1.42-dev, zlib1g-dev
 Description: Genome Assembler
 	SPAdes stands for St. Petersburg genome assembler. It is intended for both 
 	single cell and standard (multicell) assemblies. 

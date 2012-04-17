@@ -7,7 +7,7 @@ Summary:        SPAdes genome assembler
 URL:            http://bioinf.spbau.ru/spades
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Source: 	spades_2.0.0.tar.gz
-Requires:       cmake boost-devel python-devel zlib-devel python-matplotlib
+Requires:       cmake boost-devel python-devel zlib-devel
 Autoreq:        0
 %description  
 
