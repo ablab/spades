@@ -1,0 +1,18 @@
+project_name        ECOLI_MDA_LANE1_TEAMCITY_BH
+output_dir          ./spades_output
+output_to_console   true
+developer_mode      true
+compilation_dir     ./teamcity_precompiled/ECOLI_MDA_LANE1_TEAMCITY_BH
+
+dataset
+{
+    paired_reads        $cfg/../../../data/input/E.coli/_raw_reads/ecoli_mda_lane1.fastq.gz
+    single_cell         true
+}
+
+error_correction
+{
+    max_iterations      2
+    max_threads         16
+    max_memory          250
+}
