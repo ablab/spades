@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2012 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 #ifndef PAIR_INFO_FILTERS_HPP_
 #define PAIR_INFO_FILTERS_HPP_
 

@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2012 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 #ifndef PAIREDGRAPHTEST_HPP_
 #define PAIREDGRAPHTEST_HPP_
 #include "cute.h"

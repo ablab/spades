@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011-2012 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 apt-get --yes install cmake-curses-gui
 apt-get --yes install g++-4.4
 apt-get --yes install java-common

@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2012 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 #include "cute/cute.h"
 #include "cute/cute_runner.h"
 #include "cute/ide_listener.h"

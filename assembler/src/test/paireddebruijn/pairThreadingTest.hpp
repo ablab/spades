@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2012 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 #ifndef PAIRTHREADINGTEST_HPP_
 #define PAIRTHREADINGTEST_HPP_
 #include "graphSimplification.hpp"

@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011-2012 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 project(debruijn_tools CXX)
 
 include_directories("${CMAKE_SOURCE_DIR}/debruijn")

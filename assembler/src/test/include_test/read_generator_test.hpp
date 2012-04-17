@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2012 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 #ifndef READGENERATORTEST_HPP_
 #define READGENERATORTEST_HPP_
 #include "read/read_generator.hpp"

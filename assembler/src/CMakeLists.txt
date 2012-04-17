@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011-2012 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 set (VERBOSE 1)
 cmake_minimum_required (VERSION 2.6)
  
