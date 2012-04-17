@@ -12,16 +12,16 @@ void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, siz
 	INFO("SUBSTAGE == Refining insert size and its distribution");
 	map<int, size_t> hist;
 	size_t n = 0;
+	size_t total = 0;
 	double sum = 0;
 	double sum2 = 0;
-	size_t succesfully_processed = 0;
 	INFO("Processing paired reads (takes a while)");
 	while (!stream.eof()) {
 		io::PairedRead r;
 		stream >> r;
 		Sequence sequence_left = r.first().sequence();
 		Sequence sequence_right = r.second().sequence();
-		VERBOSE_POWER(++n, " paired reads processed");
+		VERBOSE_POWER(++total, " paired reads processed");
 		if (sequence_left.size() <= k || sequence_right.size() <= k) {
 			continue;
 		}
@@ -37,21 +37,17 @@ void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, siz
 		if (pos_left.first != pos_right.first || gp.g.length(pos_left.first) < edge_length_threshold) {
 			continue;
 		}
-		succesfully_processed++;
 		int is = pos_right.second - pos_left.second - k - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
 		hist[is] += 1;
+		++n;
 		sum += is;
 		sum2 += is * 1.0 * is;
 	}
-	const size_t magic_number = n/2;
 
-	if (succesfully_processed == 0) {
-		throw std::runtime_error("Failed to estimate insert size of paired reads, because none of the reads aligned to long edges.");
-	} else {
-		if (succesfully_processed < magic_number) {
-			WARN("Only "<< n <<" ("<<(double)(succesfully_processed * 100) / n<<"%) paired reads aligned to long edges while calculating insert size.");
-		}
+	if (n == 0) {
+		throw std::runtime_error("Failed to estimate insert size of paired reads, because none of the paired reads aligned to long edges");
 	}
+	INFO(n << " paired reads (" << (n * 100.0 / total) << "% of all) aligned to long edges");
 
 	double mean, delta;
 	mean = sum / n;
