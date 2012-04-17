@@ -48,13 +48,14 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict = dict()
     cfg.working_dir = os.path.abspath(cfg.working_dir)
 
-    subst_dict["dataset"]            = cfg.dataset
-    subst_dict["output_base"]        = cfg.working_dir
-    subst_dict["additional_contigs"] = cfg.additional_contigs
-    subst_dict["entry_point"]        = "construction"
-    subst_dict["developer_mode"]     = bool_to_str(cfg.developer_mode)
-    subst_dict["SAM_writer_enable"]  = bool_to_str(cfg.generate_sam_files)
-    subst_dict["project_name"]       = ""
+    subst_dict["dataset"]                = cfg.dataset
+    subst_dict["output_base"]            = cfg.working_dir
+    subst_dict["additional_contigs"]     = cfg.additional_contigs
+    subst_dict["entry_point"]            = "construction"
+    subst_dict["developer_mode"]         = bool_to_str(cfg.developer_mode)
+    subst_dict["SAM_writer_enable"]      = bool_to_str(cfg.generate_sam_files)
+    subst_dict["align_original_reads"]   = bool_to_str(cfg.align_original_reads)
+    subst_dict["project_name"]           = ""
     subst_dict["gap_closer_enable"]      = bool_to_str(last_one and cfg.gap_closer)
     subst_dict["paired_mode"]            = bool_to_str(last_one and cfg.paired_mode)
     subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
@@ -213,6 +214,10 @@ def main():
             spades_cfg.__dict__["generate_sam_files"] = False        
         if not spades_cfg.__dict__.has_key("gap_closer"):
             spades_cfg.__dict__["gap_closer"] = True
+        if cfg.has_key("error_correction"):
+            spades_cfg.__dict__["align_original_reads"] = True
+        else:
+            spades_cfg.__dict__["align_original_reads"] = False
 
         def make_link(where, link):
             if os.path.islink(link):
