@@ -243,7 +243,6 @@ protected:
 //		MySamRecord SamRec(read_name, read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+debruijn_graph::K).str());
 		MySamRecord SamRec(read_name, read.str());
 		SamRec.FLAG = 0;
-		this->SuccesfullReads++;
 		SamRec.POS = ref_start; //path1[0].second.mapped_range.start_pos+1;
 		SamRec.RNAME = this->SeqNames[edge].first;
 		SamRec.CIGAR = "";
@@ -372,6 +371,7 @@ protected:
 				edge = path1[0].first;
 				rc = true;
 			}
+			this->SuccesfullReads++;
 			return CreateSingleSAMFromRange(s_r.name(), read, edge, path1[0].second, rc);
 
 		} else {
@@ -586,6 +586,9 @@ protected:
 			if (result.size()==0) {
 				result.push_back(MySamRecord(s_r.name(), s_r.GetSequenceString()));
 				this->SamRecordsCount++;
+			}
+			else {
+				this->SuccesfullReads++;
 			}
 
 
