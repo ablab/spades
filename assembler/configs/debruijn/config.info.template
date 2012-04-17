@@ -127,7 +127,7 @@ SAM_writer_enable   false
 SAM_writer
 {
 	output_map_format	false
-	align_before_RR		true
+	align_before_RR		false
 	align_after_RR		true
 	adjust_align		true
 	align_only_paired	true

@@ -87,7 +87,17 @@ public:
 };
 
 
-
+template<class ComparingObject>
+int CountDiference(ComparingObject const& s_r, ComparingObject const& orig_s_r, int shift){
+	if (s_r.size() + shift > orig_s_r.size()){
+		return orig_s_r.size();
+	}
+	int diff = 0;
+	for (int i = 0; i < (int)s_r.size(); i++){
+		if (s_r[i] != orig_s_r[i + shift] ) diff++;
+	}
+	return diff;
+}
 
 int CountDiference(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, int shift){
 	if (s_r.size() + shift > orig_s_r.size()){
@@ -119,12 +129,14 @@ void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, con
 	io::SingleRead orig = orig_s_r;
 	if (MySam.FLAG & 0x10) orig = !orig;
 	if (s_r.size() < orig.size()){
-		pair<int, int> shifts = SubstitutionShifts(s_r, orig_s_r, 0.9);
+//		pair<int, int> shifts = SubstitutionShifts(s_r, orig_s_r, 0.9);
+		pair<int, int> shifts = s_r.position_in_original();
+		shifts.second = orig_s_r.size() - shifts.second;
 		MySam.SEQ = orig.sequence().str();
 		MySam.QUAL = orig.GetPhredQualityString();
 
-		if (MySam.FLAG & 0x10) MySam.CIGAR = (shifts.second != 0 ? ToString(shifts.second) + "S": "") + ToString(shifts) +MySam.CIGAR + (shifts.first != 0 ? ToString(shifts.first) + "S": "");
-		else MySam.CIGAR = (shifts.first != 0 ? ToString(shifts.first) + "S": "") + ToString(shifts) +MySam.CIGAR + (shifts.second != 0 ? ToString(shifts.second) + "S": "");
+		if (MySam.FLAG & 0x10) MySam.CIGAR = (shifts.second != 0 ? ToString(shifts.second) + "S": "") + MySam.CIGAR + (shifts.first != 0 ? ToString(shifts.first) + "S": "");
+		else 				   MySam.CIGAR = (shifts.first != 0 ? ToString(shifts.first) + "S": "") + MySam.CIGAR + (shifts.second != 0 ? ToString(shifts.second) + "S": "");
 	}
 	else
 	{
@@ -204,19 +216,25 @@ protected:
 		Sequence ref_seq = this->graph_.EdgeNucls(edge);
 		size_t ref_start = range.mapped_range.start_pos;
 		size_t ref_end = range.mapped_range.end_pos+debruijn_graph::K;
-		if (ref_start > 10) ref_start -= 10;
-		else ref_start = 0;
-
-		if (ref_end + 10 < ref_seq.size()) ref_end += 10;
-		else ref_end = ref_seq.size();
 
 		pair<pair<int, int>, string> cigar_pair;
 		if (this->adjust) {
-//			INFO(" init "<<range.initial_range<<" map "<< range.mapped_range);
-			cigar_pair = best_edit_distance_cigar(read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+debruijn_graph::K).str()
-																			, ref_seq.Subseq(ref_start, ref_end).str());
-//			INFO(" init "<<cigar_pair);
-			ref_start = cigar_pair.first.first + ref_start+1;
+			if (CountDiference<Sequence>(read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+debruijn_graph::K), ref_seq.Subseq(ref_start, ref_end), 0) > 0) {
+				if (ref_start > 10) ref_start -= 10;
+				else ref_start = 0;
+
+				if (ref_end + 10 < ref_seq.size()) ref_end += 10;
+				else ref_end = ref_seq.size();
+
+				cigar_pair = best_edit_distance_cigar(read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+debruijn_graph::K).str()
+																				, ref_seq.Subseq(ref_start, ref_end).str());
+				ref_start = cigar_pair.first.first + ref_start+1;
+			}
+			else {
+				cigar_pair = make_pair(make_pair(0, 0), ToString((int)(range.initial_range.end_pos+debruijn_graph::K - range.initial_range.start_pos))+"M");
+				ref_start = range.mapped_range.start_pos;
+
+			}
 		} else
 		{
 			cigar_pair = make_pair(make_pair(0, 0), ToString((int)(range.initial_range.end_pos+debruijn_graph::K - range.initial_range.start_pos))+"M");
@@ -668,7 +686,7 @@ public:
 			while (!original_s.eof()) {
 				io::PairedRead orig_p_r;
 				original_s >> orig_p_r;
-				if (p_r.first().name() == orig_p_r.first().name()){
+				if (p_r.first().original_name() == orig_p_r.first().name().substr(0, p_r.first().original_name().size())){
 					VERBOSE_POWER(++n, " paired reads processed");
 					ProcessPairedRead(p_r, orig_p_r);
 					break;
@@ -744,7 +762,7 @@ public:
 			while (!original_s.eof()) {
 				io::PairedRead orig_p_r;
 				original_s >> orig_p_r;
-				if (p_r.first().name() == orig_p_r.first().name().substr(0, p_r.first().name().size())){
+				if (p_r.first().original_name() == orig_p_r.first().name().substr(0, p_r.first().original_name().size())){
 					VERBOSE_POWER(++n, " paired reads processed");
 					ProcessPairedRead(p_r, orig_p_r);
 					break;
