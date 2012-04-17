@@ -1,5 +1,10 @@
+############################################################################
+# Copyright (c) 2011-2012 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 add_subdirectory(abruijn)
-add_subdirectory(bayes)
 add_subdirectory(debruijn/long_contigs)
 add_subdirectory(debruijn/long_contigs/utils)
 

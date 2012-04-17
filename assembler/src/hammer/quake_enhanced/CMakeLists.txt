@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011-2012 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 #add_subdirectory(count)
 add_subdirectory(prepare_graph)
 add_subdirectory(filter_trusted)

@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2012 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 #ifndef ABSTRACT_CONJUGATE_GRAPH_HPP_
 #define ABSTRACT_CONJUGATE_GRAPH_HPP_
 
