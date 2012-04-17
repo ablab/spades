@@ -1,6 +1,18 @@
 rm -r spades-*
 rm spades_*
-cp -r assembler spades-2.0.0
+mkdir spades-2.0.0
+cp -r assembler/src spades-2.0.0/src
+cp -r assembler/configs spades-2.0.0/configs
+cp -r assembler/debian spades-2.0.0/debian
+cp -r assembler/ext spades-2.0.0/ext
+cp -r assembler/test_dataset spades-2.0.0/test_dataset
+cp assembler/LICENSE spades-2.0.0
+cp assembler/README spades-2.0.0
+cp assembler/VERSION spades-2.0.0
+cp assembler/makefileDebian spades-2.0.0/makefile
+cp assembler/spades.py spades-2.0.0
+cp assembler/spades_config.info.template spades-2.0.0
+cp assembler/download_binary.sh spades-2.0.0
 
 cd spades-2.0.0
 rm src/CMakeListsInternal.txt
@@ -36,15 +48,6 @@ rm -r src/tools/quality/libs/gage
 rm -r src/tools/quality/libs/genemark_suite_linux_64
 rm -r src/tools/quality/libs/report
 
-rm gen_k
-rm editcfg
-rm install_prerequirements.sh
-rm prepare_cfg
-rm prepare_cfg_eclipse
-rm run
-rm cpcfg
-
-mv makefileDebian makefile
 
 make --directory=src/tools/quality/libs/MUMmer3.23
 
