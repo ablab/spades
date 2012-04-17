@@ -129,7 +129,34 @@ sudo apt-get install spades
 \end{lstlisting}
 
 \subsection{Installing RPM package (for CentOS, Fedora, Mandriva, Red Hat, SUSE, etc)}
-\todo[inline]{to be written; waiting for Yasha}
+
+{\spades} If your Linux system can install RPM packages you can use {\tt spades.rpm}
+at \url{http://spades.bioinf.spbau.ru/release_2.0.0/spades.rpm}.
+
+\subsection{Running {\spades} without installation (building from source)}
+
+If you're unable to install a package (e.~g. you don't have root permissions),
+you can download {\spades} as an archive (\url{http://spades.bioinf.spbau.ru/release_2.0.0/spades_2.0.0.tar.gz}) and just extract it.
+In this case, you will have to take care of some dependencies beforehand:
+\begin{itemize}
+\item {\tt g++} (version 4.4 or higher)
+\item {\tt python} (version 2.4 or higher)
+\item {\tt cmake} (version 2.6 or higher)
+\item {\tt boost} (version 1.42 or higher)
+\item {\tt zlib}
+\end{itemize}
+
+\subsection{Running {\spades} without installation (even without building)}
+
+If you don't have possibility to install any of packages described above,
+we've prepared the {\spades} binaries for multiple values of $k$ (see section \ref{subsec:assembly}),
+in the range from 11 to 149.
+To use this binaries, you need to download {\spades} as an archive (\url{http://spades.bioinf.spbau.ru/release_2.0.0/spades_2.0.0.tar.gz}),
+extract it and use the following scripts to download the binaries:
+\begin{lstlisting}
+./spades_download_binary.py <space-separated values of $k$>
+./spades_download_bayeshammer.py
+\end{lstlisting}
 
 \subsection{Testing your installation}
 To check your installation type
@@ -161,7 +188,7 @@ To run {\spades} type
 \begin{lstlisting}
 ./spades.py <config.info>
 \end{lstlisting}
-By default (i.e., if no config file is given) {\spades} uses the file {\tt spades\_config.info}. 
+By default (i.~e. if no config file is given) {\spades} uses the file {\tt spades\_config.info}. 
 Below we first give an example of a config file
 and then explain its contents in detail.
 
@@ -194,6 +221,7 @@ assembly
     iterative_K         21 33 55
     paired_mode         true
     generate_sam_files  true                          ; optional. Default is false
+    gap_closer          true                          ; optional. Default is true
 }
 
 ; optional. If this section exists (even if it is empty), spades.py 
@@ -212,24 +240,27 @@ error correction in the {\spades} pipeline is done with {\bh}, a recently develo
 (e.g., on single-cell data); {\bh} is available separately at \url{http://bioinf.spbau.ru/hammer}.
 Note that for an accurate assembly it is important to use this stage, especially for single-cell datasets.
 The second section ({\tt assembly}) contains assembly settings. The last section ({\tt quality\_assessment})
-is needed to estimate the quality of the resulting assembly. To run only some of these three stages just remove (or comment) unnecessary stages.
+is needed to estimate the quality of the resulting assembly. To run only some of these three stages just remove (or comment or rename) unnecessary stages.
 
 If {\spades} is run with error correction stage for the same input reads it detects this and prompts a user not to correct the reads again. 
 
 \subsection{Global settings}
 \begin{description}
-\item[{\tt project\_name}] specifies the name of the project. It is recommended to set a meaningful name for each separate project. This makes it easier to find the results in the output folder.
+\item[{\tt project\_name}] specifies the name of the project. It is recommended to set a meaningful name for each separate project.
+This makes it easier to find the results in the output folder.
 \item[{\tt output\_dir}] specifies the output folder.
 \end{description}
 
 \subsection{Dataset settings}
 {\spades} accepts single reads as well as forward-reverse paired end reads
-in FASTA and FASTQ format (however if error correction is needed reads should be in FASTQ format). All files may be compressed.
-At present, {\spades} can accept only one library as input.
+in FASTA and FASTQ format (however in order to run error correction, reads should be in FASTQ format). All files may be compressed with gzip.
+At present, {\spades} can accept only one paired-end library as input.
 
 \begin{description}
 \item[{\tt paired\_reads}] specifies input paired end reads organized into one or two files.
-In a single file, each left read should be followed by its mate right read. In case of two files, the first file should contain all left reads while the second one should contain all the corresponding right reads in exactly the same order (two files should be separated by a space).
+In a single file, each left read should be followed by its mate right read.
+In case of two files, the first file should contain all left reads while the second one should contain
+all the corresponding right reads in exactly the same order (two file names should be separated by a space).
 \item[{\tt single\_reads}] specifies reads without pairs. You can specify any number of
 files with single reads. File names should be separated by spaces.
 \item[{\tt single\_cell}] flag is set if input data was obtained with MDA (single cell) technology.
@@ -238,7 +269,7 @@ files with single reads. File names should be separated by spaces.
 \subsection{Error correction settings}
 \begin{description}
 \item[{\tt tmp\_dir}] specifies the directory where temporary files are stored. Note that {\bh} uses a significant amount of disk space (even though it
-cleans up after itself) so you might want to consider setting {\tt tmp\_dir} to something other than {\tt /tmp}.
+cleans up after itself) so you might want to consider setting {\tt tmp\_dir} to something other than {\tt /tmp} (e.~g. external drive).
 \item[{\tt qvoffset}] sets PHRED quality offset in the input reads ($33$ or $64$). If not given {\bh} tries to find this value automatically.
 \item[{\tt max\_iterations}] sets the maximum number of iterations
 for the error correction procedure. Usually, the second iteration does improve upon the first, but then there is almost no change.
@@ -250,16 +281,23 @@ to allocate more RAM than specified here.
 
 \subsection{Assembly settings}\label{subsec:assembly}
 \begin{description}
-\item[{\tt iterative\_K}] specifies one or more odd values for $k$-mer (vertex) sizes.  Informally, smaller values of $k$ make the graph more connected, but at the same time more tangled, while higher values of $k$ may defragment the graph, but allow to resolve short repeats. The typical value for this variable is {\tt 21 33 55}. See the paper~\cite{main} for more details.  Note that in the configuration file, $k$ is the size of a vertex, while in the paper, $k$ is the size of an edge (i.e.,
-larger by one).
+\item[{\tt iterative\_K}] specifies one or more odd values for $k$-mer (vertex) sizes.  Informally, smaller values of $k$ make the graph more connected,
+but at the same time more tangled, while higher values of $k$ may defragment the graph, but allow to resolve short repeats.
+The typical value for this variable is {\tt 21 33 55}. See the paper~\cite{main} for more details.
+Note that in the configuration file, $k$ is the size of a vertex, while in the paper, $k$ is the size of an edge (i.e., larger by one).
 
 \item[{\tt paired\_mode}] turns the repeat resolver on/off.
 
-\item[{\tt generate\_sam}] flag forces {\spades} to generate a SAM-file
+\item[{\tt generate\_sam\_files}] flag forces {\spades} to generate a SAM-file
 showing how the reads are aligned to resulting contigs. If {\spades}
 is run with the error correction stage then corrected reads are used,
 otherwise input reads are used. Alignments from this SAM-file
 can be visualized, e.g., by Tablet~\cite{tablet}.
+
+\item[{\tt gap\_closer}] turns the gap closer on/off. This module allows to restore $k$-mers that are not covered by whole reads
+but are covered by overlapping parts of two reads. This is effective when a library has a small insert size (up to 3x read length).
+Note: you can speed up {\spades} run by setting just one value of $k$ (say, 55) and turning the gap closer on
+(since gap closer can lead to quite the same results as running with several smaller values of $k$).
 \end{description}
 
 \subsection{Quality assessment settings}
@@ -328,16 +366,18 @@ alignment with this base.
 
 \item[Genes] is the number of genes in the assembly (full and partial), based
 on the positions the contigs map to in the reference genome with an annotated
-list of genes. The value ``$X$ + $Y$ partial'' means $X$ full genes and $Y$ partial ones (at least 100 bases are aligned)  (computed only if {\tt genes} is specified).
+list of genes. The value ``$X$ + $Y$ partial'' means $X$ full genes and $Y$ partial ones
+(at least 100 bases are aligned)  (computed only if {\tt genes} is specified).
 
-\item[Operons] is the number of operons in the assembly (full and partial), based on the positions the contigs map to in the reference genome with an annotated list of operons.
+\item[Operons] is the number of operons in the assembly (full and partial),
+based on the positions the contigs map to in the reference genome with an annotated list of operons.
 The value ``$X$ + $Y$ partial'' means $X$ full operons and $Y$ partial ones (at least 100 bases are aligned) (computed only if {\tt operons} is specified).
 
-\item[Number of miscalled] is the number of miscalled bases (e.g. having ``C'' in the assembly and ``G'' in the genome)  (computed only if {\tt genome} is specified).
+\item[Number of miscalled] is the number of miscalled bases (e.g. having ``C'' in the assembly and ``G'' in the genome)  (computed only if {\tt reference} is specified).
 
 \item[Number of uncalled] is the number of uncalled bases (``N'').
 
-\item[Bases missed] is the number of missed bases (which are presented in the genome and missed in the assembly) (computed only if {\tt genome} is specified).
+\item[Bases missed] is the number of missed bases (which are presented in the genome and missed in the assembly) (computed only if {\tt reference} is specified).
 
 \end{description}
 
@@ -349,7 +389,8 @@ Specific directories containing corrected reads, assembly, and quality estimate 
 
 \subsection{Correcting errors in the resulting contigs}
 While {\spades} produces accurate assemblies, 
-we recommend running SEQuel~\cite{sequel} after {\spades} to further reduce the number of small errors (single nucleotide substitutions and small indels). SEQuel is available at
+we recommend running SEQuel~\cite{sequel} after {\spades} to further reduce the number of small errors
+(single nucleotide substitutions and small indels). SEQuel is available at
 \url{http://bix.ucsd.edu/SEQuel/}. Note that one can set the flag {\tt generate\_sam} to {\spades}
 (see subsection~\ref{subsec:assembly}) to generate a SAM-file showing how the 
 reads are aligned to the resulting contigs. This file can then be given to SEQuel as input.
