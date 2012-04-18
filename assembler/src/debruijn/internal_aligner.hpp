@@ -64,8 +64,8 @@ public:
 		PNEXT = 0;
 		TLEN = 0;
 		SEQ = SEQ_;
-//		QUAL = "*";
-		for (size_t i = 0; i<SEQ.size(); i++) QUAL = QUAL+"I";
+		QUAL = "*";
+//		for (size_t i = 0; i<SEQ.size(); i++) QUAL = QUAL+"I";
 	}
 	string str(){
 		return QNAME+"\t"+ToString(FLAG)+"\t"+RNAME + "\t"+ ToString(POS)+ "\t"+ToString(MAPQ) +"\t"
@@ -139,7 +139,7 @@ void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, con
 //		pair<int, int> shifts = s_r.position_in_original();
 //		shifts.second = orig_s_r.size() - shifts.second;
 		MySam.SEQ = orig.sequence().str();
-		MySam.QUAL = orig.GetPhredQualityString();
+//		MySam.QUAL = orig.GetPhredQualityString();
 
 		if (MySam.FLAG & 0x10) MySam.CIGAR = (shifts.second != 0 ? ToString(shifts.second) + "S": "") + MySam.CIGAR + (shifts.first != 0 ? ToString(shifts.first) + "S": "");
 		else 				   MySam.CIGAR = (shifts.first != 0 ? ToString(shifts.first) + "S": "") + MySam.CIGAR + (shifts.second != 0 ? ToString(shifts.second) + "S": "");
@@ -147,7 +147,7 @@ void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, con
 	else
 	{
 		MySam.SEQ = orig.sequence().str();
-		MySam.QUAL = orig.GetPhredQualityString();
+//		MySam.QUAL = orig.GetPhredQualityString();
 	}
 }
 
