@@ -28,7 +28,7 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 /usr/share/spades
-/usr/bin/spades.py
+/usr/bin/spades*.py
 %doc
 
 %changelog
