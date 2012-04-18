@@ -215,7 +215,7 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 	{
 		if (cfg::get().sw.align_original_reads){
 			if (cfg::get().sw.original_first && cfg::get().sw.original_second){
-				auto paired_reads = paired_easy_reader(false, 0);
+				auto paired_reads = paired_easy_reader(false, 0, false, false);
 //				io::PairedEasyReader original_paired_reads(
 //								make_pair(input_file(*cfg::get().sw.original_first),
 //										input_file(*cfg::get().sw.original_second)),
@@ -232,7 +232,7 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 		}
 		else {
 
-			auto paired_reads = paired_easy_reader(false, 0);
+			auto paired_reads = paired_easy_reader(false, 0, false, false);
 			auto single_reads = single_easy_reader(false, false);
 
 			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
@@ -257,7 +257,7 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 		if (cfg::get().sw.align_original_reads){
 //			if (cfg::get().sw.original_first && cfg::get().sw.original_second)
 			{
-				auto paired_reads = paired_easy_reader(false, 0);
+				auto paired_reads = paired_easy_reader(false, 0, false, false);
 				auto original_paired_reads = paired_easy_reader(false, 0, false, false, true);
 //				io::PairedEasyReader original_paired_reads(
 //								make_pair(input_file(*cfg::get().sw.original_first),
@@ -272,7 +272,7 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 			}
 		}
 		else {
-			auto paired_reads = paired_easy_reader(false, 0);
+			auto paired_reads = paired_easy_reader(false, 0, false);
 			auto single_reads = single_easy_reader(false, false);
 
 			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
