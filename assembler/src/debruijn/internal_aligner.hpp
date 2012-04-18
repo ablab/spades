@@ -119,7 +119,7 @@ pair<int, int> SubstitutionShifts(const io::SingleRead& s_r, const io::SingleRea
 	int difference = (int)orig_s_r.size() - (int)s_r.size();
 	int best_i = 0;
 	int best_diff = orig_s_r.size();
-	for (int i=0; i < difference; i++){
+	for (int i=0; i <= difference; i++){
 		int cur_diff = CountDiference(s_r, orig_s_r, i);
 		if (s_r.size() - cur_diff > threshhold * s_r.size()) return (make_pair(i,difference - i));
 		else {
@@ -135,9 +135,9 @@ void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, con
 	io::SingleRead orig = orig_s_r;
 	if (MySam.FLAG & 0x10) orig = !orig;
 	if (s_r.size() < orig.size()){
-//		pair<int, int> shifts = SubstitutionShifts(s_r, orig_s_r, 0.9);
-		pair<int, int> shifts = s_r.position_in_original();
-		shifts.second = orig_s_r.size() - shifts.second;
+		pair<int, int> shifts = SubstitutionShifts(s_r, orig_s_r, 0.9);
+//		pair<int, int> shifts = s_r.position_in_original();
+//		shifts.second = orig_s_r.size() - shifts.second;
 		MySam.SEQ = orig.sequence().str();
 		MySam.QUAL = orig.GetPhredQualityString();
 
@@ -225,7 +225,8 @@ protected:
 
 		pair<pair<int, int>, string> cigar_pair;
 		if (this->adjust) {
-			if (CountDiference<Sequence>(read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+debruijn_graph::K), ref_seq.Subseq(ref_start, ref_end), 0) > 0) {
+			if (CountDiference<Sequence>(read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+debruijn_graph::K), ref_seq.Subseq(ref_start, ref_end), 0) != 0)
+			{
 				if (ref_start > 10) ref_start -= 10;
 				else ref_start = 0;
 
@@ -238,13 +239,13 @@ protected:
 			}
 			else {
 				cigar_pair = make_pair(make_pair(0, 0), ToString((int)(range.initial_range.end_pos+debruijn_graph::K - range.initial_range.start_pos))+"M");
-				ref_start = range.mapped_range.start_pos;
+				ref_start = range.mapped_range.start_pos+1;
 
 			}
 		} else
 		{
 			cigar_pair = make_pair(make_pair(0, 0), ToString((int)(range.initial_range.end_pos+debruijn_graph::K - range.initial_range.start_pos))+"M");
-			ref_start = range.mapped_range.start_pos;
+			ref_start = range.mapped_range.start_pos + 1;
 		}
 //		MySamRecord SamRec(read_name, read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+debruijn_graph::K).str());
 		MySamRecord SamRec(read_name, read.str());
@@ -378,11 +379,11 @@ protected:
 				rc = true;
 			}
 			this->SuccesfullReads++;
-			return CreateSingleSAMFromRange(s_r.name(), read, edge, path1[0].second, rc);
+			return CreateSingleSAMFromRange(s_r.original_name(), read, edge, path1[0].second, rc);
 
 		} else {
 			if (path1.size() > 1) this->SplittedReads++;
-			MySamRecord SamRec(s_r.name(), s_r.GetSequenceString());
+			MySamRecord SamRec(s_r.original_name(), s_r.GetSequenceString());
 			return SamRec;
 		}
 	}
@@ -585,12 +586,12 @@ protected:
 				MappingRange new_range(i_r, m_r);
 				if (rc) edge = this->graph_.conjugate(edge);
 				if (m_r.end_pos!=0) {
-					result.push_back(CreateSingleSAMFromRange(s_r.name(), read, edge, new_range, rc));
+					result.push_back(CreateSingleSAMFromRange(s_r.original_name(), read, edge, new_range, rc));
 					this->SamRecordsCount++;
 				}
 			}
 			if (result.size()==0) {
-				result.push_back(MySamRecord(s_r.name(), s_r.GetSequenceString()));
+				result.push_back(MySamRecord(s_r.original_name(), s_r.GetSequenceString()));
 				this->SamRecordsCount++;
 			}
 			else {
@@ -602,7 +603,7 @@ protected:
 //			if (path1.size() > 1) {
 //				this->SplittedReads++;
 //			}
-			MySamRecord SamRec(s_r.name(), s_r.GetSequenceString());
+			MySamRecord SamRec(s_r.original_name(), s_r.GetSequenceString());
 			this->SamRecordsCount++;
 			result.push_back(SamRec);
 		}
@@ -695,7 +696,7 @@ public:
 			while (!original_s.eof()) {
 				io::PairedRead orig_p_r;
 				original_s >> orig_p_r;
-				if (p_r.first().original_name() == orig_p_r.first().name().substr(0, p_r.first().original_name().size())){
+				if (p_r.first().original_name() == orig_p_r.first().original_name().substr(0, p_r.first().original_name().size())){
 					VERBOSE_POWER(++n, " paired reads processed");
 					ProcessPairedRead(p_r, orig_p_r);
 					break;
@@ -706,6 +707,8 @@ public:
 	}
 
 	void ProcessPairedRead(const io::PairedRead& p_r, const io::PairedRead& orig_p_r ) {
+		if (p_r.first().size()>orig_p_r.first().size()) return;
+		if (p_r.second().size()>orig_p_r.second().size()) return;
 		if (this->map_mode) {
 			ProcessSingleRead(p_r.first(), orig_p_r.first());
 			ProcessSingleRead(p_r.second(), orig_p_r.second());
@@ -734,6 +737,7 @@ public:
 
 
 	void ProcessSingleRead(const io::SingleRead& s_r, const io::SingleRead& orig_s_r) {
+		if (s_r.size()>orig_s_r.size()) return;
 		vector<MySamRecord> SamRecs = this->CreateMultipleSAMFromSingleRead(s_r);
 		if (this->map_mode){
 			for(size_t i = 0; i < SamRecs.size(); i++){
@@ -771,7 +775,7 @@ public:
 			while (!original_s.eof()) {
 				io::PairedRead orig_p_r;
 				original_s >> orig_p_r;
-				if (p_r.first().original_name() == orig_p_r.first().name().substr(0, p_r.first().original_name().size())){
+				if (p_r.first().original_name() == orig_p_r.first().original_name().substr(0, p_r.first().original_name().size())){
 					VERBOSE_POWER(++n, " paired reads processed");
 					ProcessPairedRead(p_r, orig_p_r);
 					break;
@@ -782,6 +786,9 @@ public:
 	}
 
 	void ProcessPairedRead(const io::PairedRead& p_r, const io::PairedRead& orig_p_r ) {
+		if (p_r.first().size()>orig_p_r.first().size()) return;
+		if (p_r.second().size()>orig_p_r.second().size()) return;
+
 		MySamRecord SamRec1 = this->CreateSingleSAMFromSingleRead(p_r.first());
 		MySamRecord SamRec2 = this->CreateSingleSAMFromSingleRead(p_r.second());
 		if (this->map_mode) {
@@ -815,6 +822,7 @@ public:
 
 
 	void ProcessSingleRead(const io::SingleRead& s_r, const io::SingleRead& orig_s_r) {
+		if (s_r.size()>orig_s_r.size()) return;
 		if (this->map_mode){
 			MySamRecord SamRec = this->CreateSingleSAMFromSingleRead(s_r);
 			if (SamRec.is_aligned()){
