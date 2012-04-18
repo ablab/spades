@@ -50,12 +50,11 @@
 \maketitle
 
 {\spades} stands for St.~Petersburg genome assembler.
-It is intended for both single cell and standard (multicell) 
-assemblies. {\spades} comes with error correction tool called 
-BayesHammer. This manual will help you to install and run
-{\spades}.
-
-The latest version of the manual can be downloaded at \url{http://bioinf.spbau.ru/spades}.
+It is intended for both single cell MDA and standard (multicell) 
+assemblies. 
+%{\spades} comes with error correction tool called BayesHammer. 
+This manual will help you to install and run
+{\spades}. The latest version of the manual can be downloaded at \url{http://bioinf.spbau.ru/spades}.
 
 
 \renewcommand{\contentsname}{}
@@ -71,7 +70,7 @@ The latest version of the manual can be downloaded at \url{http://bioinf.spbau.r
 \subsection{Notation}
 {\spades} works with single and forward-reverse paired end reads.
 The following picture explains the notions of 
-read size, distance, gap, and insert length
+read length, distance, gap, and insert size
 for forward-reverse paired end reads.
 
 \begin{center}
@@ -88,21 +87,23 @@ for forward-reverse paired end reads.
 \foreach \x in {0, 3, 7, 10}
   \draw[dashed,gray] (\x,3) -- (\x,-1.5);
 
-\foreach \f/\s/\y/\t in {0/3/0.5/read length, 7/10/0.5/read length, 3/7/0/gap, 0/7/-0.5/distance, 0/10/-1/insert length}
+\foreach \f/\s/\y/\t in {0/3/0.5/read length, 7/10/0.5/read length, 3/7/0/gap, 0/7/-0.5/distance, 0/10/-1/insert size}
 \path[<->,draw] (\f,\y) -- node[fill=white,inner sep=1pt,rectangle] {\t} (\s,\y);
 \end{tikzpicture}
 \end{center}
 
 \subsection{Config files and commands}
 Config files and commands are given in gray boxes. 
-Note that the text can be copy-pasted directly from this document.
-Note also that all the links and all the colored text in the manual are clickable.
-In config files, parts of lines starting with a semicolon are just comments.
+In config files, the part of a line starting with a semicolon is a comment.
+
+Note: text can be copy-pasted directly from this document
+and all links and all colored text in the manual are clickable.
+
 
 \section{Requirements}
-\subsection{Operating System}
+\subsection{Operating system}
 {\spades} requires a 64-bit Linux system.
-You need to have root privileges in order to install {\spades}.
+%You need to have root privileges in order to install {\spades}.
 
 \subsection{RAM}
 Assembling our test multi-cell {\ecoli} dataset 
@@ -112,159 +113,301 @@ Correcting errors in these datasets requires about 70~Gb of RAM.
 These datasets can be found at \url{http://spades.bioinf.spbau.ru/spades_test_datasets}.
 
 \section{Installing {\spades}}
-\todo[inline]{are we going to support manual installation (with installprereqs and so on)?}
-
-\subsection{Installing Debian package (for Debian, Mint, Ubuntu, etc)}
-First add the repository containing {\spades} by inserting the following line
-to the file {\tt /etc/apt/sources.list}
+\subsection{Installing Debian package (for Debian, Mint, Ubuntu, etc)}\label{subsec:deb_package}
+First, add the repository containing {\spades} by inserting the following line
+to the end of the file {\tt /etc/apt/sources.list}
 \begin{lstlisting}
 deb http://debian.bioinf.spbau.ru /
+\end{lstlisting}
+Note that the space before the last slash is required. 
+Update the package list by typing
+\begin{lstlisting}
+sudo apt-get update
 \end{lstlisting}
 After that, {\spades} can be installed just by typing
 \begin{lstlisting}
 sudo apt-get install spades
 \end{lstlisting}
 
-\subsection{Installing RPM package (for CentOS, Fedora, Mandriva, Red Hat, SUSE, etc)}
-\todo[inline]{to be written}
+\subsection{Installing RPM package (for CentOS, Fedora, Mandriva, Red Hat, SUSE, etc)}\label{subsec:rpm_package}
 
-\todo[inline]{what about other types of Linux?}
+If your Linux system can install RPM packages you can use {\tt spades.rpm}
+at \url{http://spades.bioinf.spbau.ru/release2.0.0/spades.rpm}.
+
+\subsection{Running {\spades} without installation (building from source)}\label{subsec:archive}
+
+If you're unable to install a package (e.~g. you don't have root privileges),
+you can download {\spades} as an archive (\url{http://spades.bioinf.spbau.ru/release2.0.0/spades_2.0.0.tar.gz}) and just extract it.
+In this case, you will have to take care of some dependencies beforehand:
+\begin{itemize}
+\item {\tt g++} (version 4.4 or higher)
+\item {\tt python} (version 2.4 or higher)
+\item {\tt cmake} (version 2.6 or higher)
+\item {\tt boost} (version 1.42 or higher)
+\item {\tt zlib}
+\end{itemize}
+
+\subsection{Running {\spades} without installation (even without building)}\label{subsec:binaries}
+
+If you don't have possibility to install some of the packages described above,
+we've prepared the {\spades} binaries for multiple values of $k$ (see section \ref{subsec:assembly}),
+in the range from 11 to 149.
+To use these binaries, you need to download {\spades} as an archive (\url{http://spades.bioinf.spbau.ru/release2.0.0/spades_2.0.0.tar.gz}),
+extract it and use the following scripts to download the binaries:
+\begin{lstlisting}
+./spades_download_binary.py <space-separated values of k>
+./spades_download_bayeshammer.py
+\end{lstlisting}
 
 \subsection{Testing your installation}
 To check your installation type
 \begin{lstlisting}
 spades.py
 \end{lstlisting}
-This runs {\spades} on a toy dataset (first 1,000 bp of {\ecoli}) that {\spades} comes with. If the installation was successfull you will see the following lines in the end of the run.\todo{Lyosha, vsyo verno?}
+if you intalled {\spades} from package (see \ref{subsec:deb_package} and \ref{subsec:rpm_package}), or 
 \begin{lstlisting}
-blah
+./spades.py
 \end{lstlisting}
+from folder you extracted the archive (see \ref{subsec:archive} and \ref{subsec:binaries}).
+It runs {\spades} on a toy dataset (first $1{,}000$ bp of {\ecoli}) that comes with {\spades} for testing purposes.
+If the installation is successful you will see lines like the following lines in the end of the log.
+\begin{lstlisting}
 
-\section{Input format}
-{\spades} accepts single reads as well as forward-reverse paired end reads
-in FASTA{\todo{Lyosha, verno?}} and FASTQ format. The number of files with single reads may be arbitrary while paired end reads should be organized into one or two files. In a single file, each left read should be followed by its mate right read. In case of two files, the first file should contain all left reads while
-the second one should contain all the corresponding right reads in exactly the same order.
+ * Corrected reads are in .../spades_output/ECOLI_1K/corrected/
+ * Assembled contigs are .../spades_output/ECOLI_1K/spades_04.18_17.59.30/ECOLI_1K.fasta
+ * Assessment of their quality is in 
+.../spades_output/ECOLI_1K/spades_04.18_17.59.30/quality_results/quality.txt
 
-All the files may be gzipped.
+Thank you for using SPAdes!
 
-\todo[inline]{Prjibel, skripti?}
+======= SPAdes pipeline finished
+\end{lstlisting}%\todo{to be updated}
 
 
 
 \section{Running {\spades}}\label{sec:running}
-To run {\spades} type
+\begin{lstlisting}
+spades.py <config.info>
+\end{lstlisting}
+if you intalled {\spades} from package (see \ref{subsec:deb_package} and \ref{subsec:rpm_package}), or 
 \begin{lstlisting}
 ./spades.py <config.info>
 \end{lstlisting}
-Note that the script requires {\tt python} version~2.6.
-If your default {\tt python} version is lower  type
-\begin{lstlisting}
-python26 ./spades.py <config.info>
-\end{lstlisting}
-By default (i.e., if no config file is given) {\spades} uses the file {\tt spades\_config.info}. 
+from folder you extracted the archive (see \ref{subsec:archive} and \ref{subsec:binaries}).
+By default (i.~e. if no config file is given) {\spades} uses the file {\tt spades\_config.info}. 
 Below we first give an example of a config file
-and then explain its contents in detail.\todo{Lyosha, ya ubral developer mode flag. Nichego?}
+and then explain its contents in detail. If you install {\spades} from Debian or RPM package you can find the default config file here: {\tt  /usr/share/spades/spades\_config.info}.% (do not forget to change relative pathes in it). 
 
 \begin{lstlisting}													
-; all paths are relative to the working directory but you can also 
-; use $cfg variable to set paths relative to this contig
+; all paths are relative to the working directory but you can also use $cfg variable 
+; to set paths relative to this config
 
-project_name       ECOLI_IS220_first1000  ; optional. Name of this config file 
-                                       ; is used if not specified
-output_dir         .
-output_to_console  true                      ; optional. Default is true
+project_name        ECOLI_1K                          ; optional. Name of this config file is used if not specified
+output_dir          ./spades_output
 
-spades
+dataset
 {
-  iterative_K         21 33 55
-  paired_mode         true
-  dataset             /usr/share/spades/data/ECOLI_1K.info ; not used if run with bh
-  measure_quality     true                                 ; optional. Default is false
+    paired_reads        $cfg/test_dataset/ecoli_1K_1.fq.gz $cfg/test_dataset/ecoli_1K_2.fq.gz
+    single_reads                                      ; optional
+    single_cell         false
 }
 
-bh
+error_correction
 {
-  input_reads         /usr/share/spades/data/E.coli/is220/cropped/s_6.first1000_?.fastq.gz
-  output_dir                                        ; optional. Global output_dir is used if not specified
-  qvoffset                                          ; optional. Either 33 or 64
-  max_iterations      4
-  max_threads         20
-  max_memory          50 ; in Gb
-  gzip_output         true
+    tmp_dir                                           ; optional. <output_dir>/corrected/tmp is used if not specified
+    qvoffset                                          ; optional. Either 33 or 64
+    max_iterations      2
+    max_threads         16
+    max_memory          250                           ; in GB
+    gzip_output         true ; optional
+}
 
-  dataset_name        ECOLI_IS220                ; optional. Default is "dataset"
-  single_cell         false
-  reference           /usr/share/spades/data/E.coli/MG1655-K12.first1K.fasta.gz ; optional
-  genes               /usr/share/spades/data/E.coli/genes.first1K.txt           ; optional
-  operons             /usr/share/spades/data/E.coli/operons.first1K.txt         ; optional
+assembly
+{
+    iterative_K         21 33 55
+    paired_mode         true
+    generate_sam_files  true                          ; optional. Default is false
+    gap_closer          true                          ; optional. Default is true
+}
+
+; optional. If this section exists (even if it is empty), spades.py 
+; evaluates quality of the final contigs
+quality_assessment      
+{
+    reference           $cfg/test_dataset/reference_1K.fa.gz     ; optional
+    genes               $cfg/test_dataset/genes_1K.txt           ; optional
+    operons             $cfg/test_dataset/operons_1K.txt         ; optional
 }
 \end{lstlisting}
 
-The first thing to notice is that besides of global variables the config file contains two sections. The section {\tt spades} is responsible for assembling
-while the section {\tt bh} is reponsible for correcting errors in input reads.
-To run only one of these two stages just remove (or comment) the other section.
+The first thing to note here is that in addition to global variables and dataset settings,
+the config file contains three sections. The first one ({\tt error\_correction}) is responsible for correcting errors in the input reads;
+error correction in the {\spades} pipeline is done with {\bh}, a recently developed error correction tool that works well for the case of non-uniform coverage
+(e.g., on single-cell data); you can find more information about {\bh} at \url{http://bioinf.spbau.ru/en/spades/bayeshammer}.
+Note that for an accurate assembly it is important to use this stage, especially for single-cell datasets.
+The second section ({\tt assembly}) contains assembly settings. The last section ({\tt quality\_assessment})
+is needed to estimate the quality of the resulting assembly. To run only some of these three stages just remove (or comment or rename) unnecessary stages.
 
-If both sections are present {\spades} first corrects errors in the reads specified by {\tt input\_reads} and then assembles the resulting reads. Also, the dataset file
-with the resulting reads is created in the folder specified by {\tt output\_dir}.
+If {\spades} runs with error correction stage for the same input reads it detects this and prompts a user not to correct the reads again. 
 
 \subsection{Global settings}
-
 \begin{description}
-\item[{\tt project\_name}] specifies the name of the project. It is recommended to set a meaningful name for each separate project. This makes easier to find the results in the output folder.
+\item[{\tt project\_name}] specifies the name of the project. It is recommended to set a meaningful name for each separate project.
+It makes easier to find the results in the output folder.
 \item[{\tt output\_dir}] specifies the output folder.
-\item[{\tt output\_to\_console}] flag controls outputting log messages to the console.
 \end{description}
 
-\subsection{Assembly settings}
+\subsection{Dataset settings}
+{\spades} accepts single reads as well as forward-reverse paired end reads
+in FASTA and FASTQ format (however, in order to run error correction, reads should be in FASTQ format). All files may be compressed with gzip.
+At present, {\spades} can accept only one paired-end library as input.
+
 \begin{description}
-\item[{\tt iterative\_K}] specifies one or more $k$-mer (vertex) sizes.  Informally, smaller values of $k$ make the graph more connected, but at the same time more tangled, while higher values of $k$ may defragment the graph, but allow to resolving short repeats. See the paper (\cite{main}) for more details.  Note that in the configuration file, $K$ 
-is the size of a vertex, while in the paper, $K$ is the size of an edge (one higher).
-
-\item[{\tt paired\_mode}] turns on/off the repeat resolver.
-
-\item[{\tt dataset}] is the name of the file specifying the dataset to be assembled
-(see section~\ref{sec:datasets}). Note that this field is not needed (and not used)
-if the {\tt bh} section is present as in this case the dataset file is created automatically.
-
-\item[{\tt measure\_quality}] flag: if set to true, the quality estimation tool will be called after the assembly is performed.  The tool computes metrics such as N50, genome coverage, number of misassemblies, etc.
+\item[{\tt paired\_reads}] specifies input paired end reads organized into one or two files.
+In a single file, each left read should be followed by its mate right read.
+In case of two files, the first file should contain all left reads while the second one should contain
+all the corresponding right reads in exactly the same order (two file names should be separated by a space).
+\item[{\tt single\_reads}] specifies reads without pairs. You can specify any number of
+files with single reads. File names should be separated by spaces.
+\item[{\tt single\_cell}] flag is set if input data was obtained with MDA (single cell) technology.
 \end{description}
 
 \subsection{Error correction settings}
-\todo[inline]{to be written}
+\begin{description}
+\item[{\tt tmp\_dir}] specifies the directory where temporary files are stored. Note that {\bh} uses a significant amount of disk space (even though it
+cleans up after itself) so you might want to consider setting {\tt tmp\_dir} to something other than {\tt /tmp} (e.~g. external drive).
+\item[{\tt qvoffset}] sets PHRED quality offset in the input reads ($33$ or $64$). If not given {\bh} tries to find this value automatically.
+\item[{\tt max\_iterations}] sets the maximum number of iterations
+for the error correction procedure. Usually, the second iteration does improve upon the first, but then there is almost no change.
+\item[{\tt max\_threads}] sets the maximum number of threads.
+\item[{\tt max\_memory}] sets the maximum amount of available RAM (in Gb). {\bh} (and the entire {\spades} pipeline) will fail if it attempts
+to allocate more RAM than specified here.
+\item[{\tt gzip\_output}] flag forces {\bh} to output compressed corrected reads (with {\tt gzip}).
+\end{description}
 
+\subsection{Assembly settings}\label{subsec:assembly}
+\begin{description}
+\item[{\tt iterative\_K}] specifies one or more odd values for $k$-mer (vertex) sizes.  Informally, smaller values of $k$ make the graph more connected,
+but at the same time more tangled, while higher values of $k$ may defragment the graph, but allow to resolve short repeats.
+The typical value for this variable is {\tt 21 33 55}. See the paper~\cite{main} for more details.
+Note that in the configuration file, $k$ is the size of a vertex, while in the paper, $k$ is the size of an edge (i.e., larger by one).
 
-\section{Understanding the output}
+\item[{\tt paired\_mode}] turns the repeat resolver on/off.
+
+\item[{\tt generate\_sam\_files}] flag forces {\spades} to generate a SAM-file
+showing how the paired reads specified in dataset section of config file are aligned to resulting contigs.  Alignments from this SAM-file
+can be visualized, e.g., by Tablet~\cite{tablet}.
+
+\item[{\tt gap\_closer}] turns the gap closer on/off. This module allows to restore $k$-mers that are not covered by whole reads
+but are covered by overlapping parts of two reads and supported by paired reads. This is effective when a library has a small insert size (up to 3x read length). In a case of large insert size you can turn it off to slightly decrease SPAdes runing time.
+Note: you can speed up {\spades} run by setting just one value of $k$ (say, 55) and turning the gap closer on
+(since gap closer can lead to quite the same results as running with several smaller values of $k$).
+\end{description}
+
+\subsection{Quality assessment settings}
+If this section is present in the config file then
+{\spades} evaluates assembly results by computing various metrics (e.g., N50, NG50, number of long ORFs etc.) on the resulting contigs.
+The variables {\tt reference}, {\tt genes}, and {\tt operons} are self-explaining.
+Note that the quality is estimated even if this section is empty
+
+Below we describe all the computed metrics.
+
+\begin{description}
+\item[N50] is the contig length such that using longer or equal length contigs
+produces half (50\%) the bases of the assembly.  Usually there is no
+value that produces exactly 50\%, so the more technical definition is
+the minimal length $x$ such that using contigs of length at least $x$ accounts for at least 50\% of the total assembly length.
+
+\item[NG50] is the contig length such that using longer or equal length contigs
+produces half (50\%) the bases of the reference genome
+
+\item[N75 and NG75] are defined similarly with 75\% instead of 50\%.
+
+\item[Number of contigs] is the total number of contigs in the assembly.
+
+\item[Largest contig] is the length of the longest contig in the assembly.
+
+\item[Total length] is the total number of bases in the assembly.
+
+\item[Reference length] is the total number of bases in the reference
+(computed only if {\tt reference} is given).
+
+\item[Average \%IDY] is the average of alignment identity percent (quality) among all contigs.
+
+\item[Misassemblies] is the number of misassemblies in the alignment.
+Misassemblies are defined as a location on an assembled contig where the left
+flanking sequence aligns over 1kb away from the right flanking sequence on the
+reference.
+
+\item[Misassembled contigs] is the number of contigs that contain misassembly
+events.
+
+\item[Misassembled contig bases] is the number of total bases contained in all
+contigs that have one or more misassemblies.
+
+\item[Unaligned contigs] is the number of contigs that have no alignment to the
+reference sequence.  The value ``$X$ ($Y$ partial) ($Z$)'' means:
+$X$ totally unaligned contigs
+plus $Y$ partially unaligned contigs
+and the total number of unaligned bases is $Z$.
+
+\item[Ambiguous contigs] is the number of contigs that have reference alignments
+of equal quality in multiple locations on the reference.
+The value "$X$ ($Y$)" means $X$ ambiguous contigs with $Y$ bases in them.
+
+\item[NA50] (A stands for ``aligned'') is 
+defined similarly to N50 but only
+lengths of aligned blocks are counted.
+If a contig has a misassembly with respect to the reference, it is broken into smaller pieces.
+If a contig has bases that do not align to the reference, they are not counted
+in NA*, NGA*. NGA50, NA75, NGA75 are defined in the same way.
+
+\item[Mapped genome (\%)] is the ratio of the total number of aligned bp in the assembly
+to the genome size.  Short contigs (less than 500~bp) that map to multiple
+places may be counted many times in this quantity.  A base in the genome is
+counted as aligned one if there is at least one contig with at least one
+alignment with this base.
+
+\item[Genes] is the number of genes in the assembly (full and partial), based
+on the positions the contigs map to in the reference genome with an annotated
+list of genes. The value ``$X$ + $Y$ partial'' means $X$ full genes and $Y$ partial ones
+(at least 100 bases are aligned)  (computed only if {\tt genes} is specified).
+
+\item[Operons] is the number of operons in the assembly (full and partial),
+based on the positions the contigs map to in the reference genome with an annotated list of operons.
+The value ``$X$ + $Y$ partial'' means $X$ full operons and $Y$ partial ones (at least 100 bases are aligned) (computed only if {\tt operons} is specified).
+
+\item[Number of miscalled] is the number of miscalled bases (e.g. having ``C'' in the assembly and ``G'' in the genome)  (computed only if {\tt reference} is specified).
+
+\item[Number of uncalled] is the number of uncalled bases (``N'').
+
+\item[Bases missed] is the number of missed bases (which are presented in the genome and missed in the assembly) (computed only if {\tt reference} is specified).
+
+\end{description}
+
+\subsection{Output}
 Results can be found in the folder specified by {\tt output\_dir}.
-The specific directory is given at the end of the log.
-If {\tt measure\_quality} flag is set to true, then 
-there is a folder containing statistics on various metrics (like N50) of the resulting contigs.\todo{perepisat' nignii box}
-\begin{lstlisting}
-All the resulting information can be found here: 
- ./data/debruijn/SAUREUS_JCVI_BH/build_02.07_19.05.56/
- * Resulting contigs are called final_contigs.fasta
- * Assessment of their quality is in quality_results/
-
-Thank you for using SPAdes!
-
-== Assembly finished. See the log file at: 
-  ./data/debruijn/SAUREUS_JCVI_BH/build_02.07_19.05.56/spades.log
-\end{lstlisting}\todo{obnovit'!}
+Specific directories containing corrected reads, assembly, and quality estimate are shown at the end of the log.
 
 \section{Postprocessing}
 
 \subsection{Correcting errors in the resulting contigs}
 While {\spades} produces accurate assemblies, 
-we recommend running SEQuel after {\spades} to further reduce the number of 
-small errors (single nucleotide substitutions and small indels). SEQuel is available at
-\url{http://bix.ucsd.edu/SEQuel/}.
-
+we recommend running SEQuel~\cite{sequel} after {\spades} for further number of small errors reducing 
+(single nucleotide substitutions and small indels). SEQuel is available at
+\url{http://bix.ucsd.edu/SEQuel/}. Note that one can set the flag {\tt generate\_sam} to {\spades}
+(see subsection~\ref{subsec:assembly}) to generate a SAM-file showing how the 
+reads are aligned to the resulting contigs. This file can then be given to SEQuel as input.
 
 \subsection{Scaffolding}
 The current version of {\spades} does not have a scaffolding stage.
-One can use a separate scaffolder such as Opera: \url{http://sourceforge.net/projects/operasf/}.
+One can use a separate scaffolder such as Opera~\cite{opera}.
+It is available at \url{http://sourceforge.net/projects/operasf/}.
 
-\section{Bug reports}
-Bug reports should be sent to \url{spades.support@bioinf.spbau.ru}.
+\section{Feedback and bug reports}
+We will be thankful if you help us making {\spades} better
+by sending your comments, bug reports, and suggestions to
+\url{spades.support@bioinf.spbau.ru}.
 
 
 \bibliographystyle{plain}
