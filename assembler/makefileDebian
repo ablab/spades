@@ -1,8 +1,5 @@
 SPADES_SHARE = $(DESTDIR)/usr/share/spades/
 
-build:
-	make --directory=src/tools/quality/libs/MUMmer3.23
-
 install:
 	mkdir -p $(SPADES_SHARE)
 	mkdir -p $(DESTDIR)/usr/bin
