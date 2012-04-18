@@ -96,14 +96,14 @@ for forward-reverse paired end reads.
 Config files and commands are given in gray boxes. 
 In config files, the part of a line starting with a semicolon is a comment.
 
-Note that text can be copy-pasted directly from this document
-and that all links and all colored text in the manual are clickable.
+Note: text can be copy-pasted directly from this document
+and all links and all colored text in the manual are clickable.
 
 
 \section{Requirements}
 \subsection{Operating system}
 {\spades} requires a 64-bit Linux system.
-You need to have root privileges in order to install {\spades}.
+%You need to have root privileges in order to install {\spades}.
 
 \subsection{RAM}
 Assembling our test multi-cell {\ecoli} dataset 
@@ -113,13 +113,14 @@ Correcting errors in these datasets requires about 70~Gb of RAM.
 These datasets can be found at \url{http://spades.bioinf.spbau.ru/spades_test_datasets}.
 
 \section{Installing {\spades}}
-\subsection{Installing Debian package (for Debian, Mint, Ubuntu, etc)}
+\subsection{Installing Debian package (for Debian, Mint, Ubuntu, etc)}\label{subsec:deb_package}
 First, add the repository containing {\spades} by inserting the following line
-to the file {\tt /etc/apt/sources.list}
+to the end of the file {\tt /etc/apt/sources.list}
 \begin{lstlisting}
 deb http://debian.bioinf.spbau.ru /
 \end{lstlisting}
-and update the package list by typing
+Note that the space before the last slash is required. 
+Update the package list by typing
 \begin{lstlisting}
 sudo apt-get update
 \end{lstlisting}
@@ -128,15 +129,15 @@ After that, {\spades} can be installed just by typing
 sudo apt-get install spades
 \end{lstlisting}
 
-\subsection{Installing RPM package (for CentOS, Fedora, Mandriva, Red Hat, SUSE, etc)}
+\subsection{Installing RPM package (for CentOS, Fedora, Mandriva, Red Hat, SUSE, etc)}\label{subsec:rpm_package}
 
-{\spades} If your Linux system can install RPM packages you can use {\tt spades.rpm}
-at \url{http://spades.bioinf.spbau.ru/release_2.0.0/spades.rpm}.
+If your Linux system can install RPM packages you can use {\tt spades.rpm}
+at \url{http://spades.bioinf.spbau.ru/release2.0.0/spades.rpm}.
 
-\subsection{Running {\spades} without installation (building from source)}
+\subsection{Running {\spades} without installation (building from source)}\label{subsec:archive}
 
-If you're unable to install a package (e.~g. you don't have root permissions),
-you can download {\spades} as an archive (\url{http://spades.bioinf.spbau.ru/release_2.0.0/spades_2.0.0.tar.gz}) and just extract it.
+If you're unable to install a package (e.~g. you don't have root privileges),
+you can download {\spades} as an archive (\url{http://spades.bioinf.spbau.ru/release2.0.0/spades_2.0.0.tar.gz}) and just extract it.
 In this case, you will have to take care of some dependencies beforehand:
 \begin{itemize}
 \item {\tt g++} (version 4.4 or higher)
@@ -146,15 +147,15 @@ In this case, you will have to take care of some dependencies beforehand:
 \item {\tt zlib}
 \end{itemize}
 
-\subsection{Running {\spades} without installation (even without building)}
+\subsection{Running {\spades} without installation (even without building)}\label{subsec:binaries}
 
-If you don't have possibility to install any of packages described above,
+If you don't have possibility to install some of the packages described above,
 we've prepared the {\spades} binaries for multiple values of $k$ (see section \ref{subsec:assembly}),
 in the range from 11 to 149.
-To use this binaries, you need to download {\spades} as an archive (\url{http://spades.bioinf.spbau.ru/release_2.0.0/spades_2.0.0.tar.gz}),
+To use these binaries, you need to download {\spades} as an archive (\url{http://spades.bioinf.spbau.ru/release2.0.0/spades_2.0.0.tar.gz}),
 extract it and use the following scripts to download the binaries:
 \begin{lstlisting}
-./spades_download_binary.py <space-separated values of $k$>
+./spades_download_binary.py <space-separated values of k>
 ./spades_download_bayeshammer.py
 \end{lstlisting}
 
@@ -163,34 +164,39 @@ To check your installation type
 \begin{lstlisting}
 spades.py
 \end{lstlisting}
-This runs {\spades} on a toy dataset (first $1{,}000$ bp of {\ecoli}) that comes with {\spades} for testing purposes.
-If the installation is successful you will see the following lines in the end of the log.
+if you intalled {\spades} from package (see \ref{subsec:deb_package} and \ref{subsec:rpm_package}), or 
 \begin{lstlisting}
-All the resulting information can be found here:
-/usr/share/spades/output/ECOLI_1K/spades_04.11_08.26.04
- * Resulting contigs are called ECOLI_1K.fasta
- * Assessment of their quality is in
-  /usr/share/spades/output/ECOLI_1K/spades_04.11_08.26.04/quality_results/
+./spades.py
+\end{lstlisting}
+from folder you extracted the archive (see \ref{subsec:archive} and \ref{subsec:binaries}).
+It runs {\spades} on a toy dataset (first $1{,}000$ bp of {\ecoli}) that comes with {\spades} for testing purposes.
+If the installation is successful you will see lines like the following lines in the end of the log.
+\begin{lstlisting}
+
+ * Corrected reads are in .../spades_output/ECOLI_1K/corrected/
+ * Assembled contigs are .../spades_output/ECOLI_1K/spades_04.18_17.59.30/ECOLI_1K.fasta
+ * Assessment of their quality is in 
+.../spades_output/ECOLI_1K/spades_04.18_17.59.30/quality_results/quality.txt
 
 Thank you for using SPAdes!
 
-===== Assembling finished. Log can be found here:
-/usr/share/spades/output/ECOLI_1K/spades_04.11_08.26.04/assembly.log
-
-
-===== SPAdes pipeline finished
-\end{lstlisting}\todo{to be updated}
+======= SPAdes pipeline finished
+\end{lstlisting}%\todo{to be updated}
 
 
 
 \section{Running {\spades}}\label{sec:running}
-To run {\spades} type
+\begin{lstlisting}
+spades.py <config.info>
+\end{lstlisting}
+if you intalled {\spades} from package (see \ref{subsec:deb_package} and \ref{subsec:rpm_package}), or 
 \begin{lstlisting}
 ./spades.py <config.info>
 \end{lstlisting}
+from folder you extracted the archive (see \ref{subsec:archive} and \ref{subsec:binaries}).
 By default (i.~e. if no config file is given) {\spades} uses the file {\tt spades\_config.info}. 
 Below we first give an example of a config file
-and then explain its contents in detail.
+and then explain its contents in detail. If you install {\spades} from Debian or RPM package you can find the default config file here: {\tt  /usr/share/spades/spades\_config.info}.% (do not forget to change relative pathes in it). 
 
 \begin{lstlisting}													
 ; all paths are relative to the working directory but you can also use $cfg variable 
@@ -237,23 +243,23 @@ quality_assessment
 The first thing to note here is that in addition to global variables and dataset settings,
 the config file contains three sections. The first one ({\tt error\_correction}) is responsible for correcting errors in the input reads;
 error correction in the {\spades} pipeline is done with {\bh}, a recently developed error correction tool that works well for the case of non-uniform coverage
-(e.g., on single-cell data); {\bh} is available separately at \url{http://bioinf.spbau.ru/hammer}.
+(e.g., on single-cell data); you can find more information about {\bh} at \url{http://bioinf.spbau.ru/en/spades/bayeshammer}.
 Note that for an accurate assembly it is important to use this stage, especially for single-cell datasets.
 The second section ({\tt assembly}) contains assembly settings. The last section ({\tt quality\_assessment})
 is needed to estimate the quality of the resulting assembly. To run only some of these three stages just remove (or comment or rename) unnecessary stages.
 
-If {\spades} is run with error correction stage for the same input reads it detects this and prompts a user not to correct the reads again. 
+If {\spades} runs with error correction stage for the same input reads it detects this and prompts a user not to correct the reads again. 
 
 \subsection{Global settings}
 \begin{description}
 \item[{\tt project\_name}] specifies the name of the project. It is recommended to set a meaningful name for each separate project.
-This makes it easier to find the results in the output folder.
+It makes easier to find the results in the output folder.
 \item[{\tt output\_dir}] specifies the output folder.
 \end{description}
 
 \subsection{Dataset settings}
 {\spades} accepts single reads as well as forward-reverse paired end reads
-in FASTA and FASTQ format (however in order to run error correction, reads should be in FASTQ format). All files may be compressed with gzip.
+in FASTA and FASTQ format (however, in order to run error correction, reads should be in FASTQ format). All files may be compressed with gzip.
 At present, {\spades} can accept only one paired-end library as input.
 
 \begin{description}
@@ -289,13 +295,11 @@ Note that in the configuration file, $k$ is the size of a vertex, while in the p
 \item[{\tt paired\_mode}] turns the repeat resolver on/off.
 
 \item[{\tt generate\_sam\_files}] flag forces {\spades} to generate a SAM-file
-showing how the reads are aligned to resulting contigs. If {\spades}
-is run with the error correction stage then corrected reads are used,
-otherwise input reads are used. Alignments from this SAM-file
+showing how the paired reads specified in dataset section of config file are aligned to resulting contigs.  Alignments from this SAM-file
 can be visualized, e.g., by Tablet~\cite{tablet}.
 
 \item[{\tt gap\_closer}] turns the gap closer on/off. This module allows to restore $k$-mers that are not covered by whole reads
-but are covered by overlapping parts of two reads. This is effective when a library has a small insert size (up to 3x read length).
+but are covered by overlapping parts of two reads and supported by paired reads. This is effective when a library has a small insert size (up to 3x read length). In a case of large insert size you can turn it off to slightly decrease SPAdes runing time.
 Note: you can speed up {\spades} run by setting just one value of $k$ (say, 55) and turning the gap closer on
 (since gap closer can lead to quite the same results as running with several smaller values of $k$).
 \end{description}
@@ -389,7 +393,7 @@ Specific directories containing corrected reads, assembly, and quality estimate 
 
 \subsection{Correcting errors in the resulting contigs}
 While {\spades} produces accurate assemblies, 
-we recommend running SEQuel~\cite{sequel} after {\spades} to further reduce the number of small errors
+we recommend running SEQuel~\cite{sequel} after {\spades} for further number of small errors reducing 
 (single nucleotide substitutions and small indels). SEQuel is available at
 \url{http://bix.ucsd.edu/SEQuel/}. Note that one can set the flag {\tt generate\_sam} to {\spades}
 (see subsection~\ref{subsec:assembly}) to generate a SAM-file showing how the 
