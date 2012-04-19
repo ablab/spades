@@ -5,7 +5,14 @@ import sys
 import shutil
 
 import support
-import build
+
+def write_k_file(kFile, k):
+    fo = open(kFile, "w")
+    fo.write("#pragma once\n\n")
+    fo.write("namespace debruijn_graph {\n")
+    fo.write("  const size_t K = " + str(k) + ";\n")
+    fo.write("}\n")
+    fo.close()
 
 def safe_mkdir(path):
     if not os.path.exists(path):
@@ -31,7 +38,7 @@ if __name__ == "__main__":
 
         print('\n=== Buiding SPAdes with K ' + str(i) + ' ===\n')
 
-        build.write_k_file(os.path.join(os.getcwd(), "src/debruijn/k.hpp"), i)
+        write_k_file(os.path.join(os.getcwd(), "src/debruijn/k.hpp"), i)
         support.sys_call('make -C build/static/debruijn')
 
         new_folder = os.path.join(prebuild_folder, 'K') + str(i)
