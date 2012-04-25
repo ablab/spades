@@ -225,7 +225,8 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
 
-				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
+				bool print_quality = (cfg::get().sw.print_quality ? *cfg::get().sw.print_quality : false);
+				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs, print_quality);
 				Aligner.AlignPairedReads(*original_paired_reads, *paired_reads, cfg::get().output_dir+"align_before_RR.sam");
 
 			}
@@ -238,7 +239,8 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
 
-			SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
+			bool print_quality = (cfg::get().sw.print_quality ? *cfg::get().sw.print_quality : false);
+			SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs, print_quality);
 			if (cfg::get().sw.align_only_paired)
 				Aligner.AlignPairedReads(*paired_reads, cfg::get().output_dir+"align_before_RR.sam");
 			else
@@ -267,7 +269,8 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
 
-				OriginalReadsResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(resolved_gp.g, conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
+				bool print_quality = (cfg::get().sw.print_quality ? *cfg::get().sw.print_quality : false);
+				OriginalReadsResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(resolved_gp.g, conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs, print_quality);
 				Aligner.AlignPairedReads(*original_paired_reads, *paired_reads, cfg::get().output_dir+"align_after_RR.sam");
 			}
 		}
@@ -278,7 +281,8 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
 
-			ResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(resolved_gp.g, conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs);
+			bool print_quality = (cfg::get().sw.print_quality ? *cfg::get().sw.print_quality : false);
+			ResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(resolved_gp.g, conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs, print_quality);
 			if (cfg::get().sw.align_only_paired)
 				Aligner.AlignPairedReads(*paired_reads, cfg::get().output_dir+"align_after_RR.sam");
 			else

@@ -52,7 +52,7 @@ public:
 		QUAL = "*";
 	}
 
-	MySamRecord(string QNAME_, string SEQ_){
+	MySamRecord(string QNAME_, string SEQ_, string QUAL_ = "*"){
 		//Default constructor produce unalign record
 		QNAME = QNAME_;
 		FLAG = 4;
@@ -64,8 +64,8 @@ public:
 		PNEXT = 0;
 		TLEN = 0;
 		SEQ = SEQ_;
-//		QUAL = "*";
-		for (size_t i = 0; i<SEQ.size(); i++) QUAL = QUAL+"I";
+		QUAL = QUAL_;
+//		for (size_t i = 0; i<SEQ.size(); i++) QUAL = QUAL+"I";
 	}
 	string str(){
 		return QNAME+"\t"+ToString(FLAG)+"\t"+RNAME + "\t"+ ToString(POS)+ "\t"+ToString(MAPQ) +"\t"
@@ -131,7 +131,7 @@ pair<int, int> SubstitutionShifts(const io::SingleRead& s_r, const io::SingleRea
 	}
 	return (make_pair(best_i,difference - best_i));
 }
-void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, const io::SingleRead& orig_s_r ){
+void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, const io::SingleRead& orig_s_r, bool print_quality = false){
 	io::SingleRead orig = orig_s_r;
 	if (MySam.FLAG & 0x10) orig = !orig;
 	if (s_r.size() < orig.size()){
@@ -139,7 +139,9 @@ void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, con
 //		pair<int, int> shifts = s_r.position_in_original();
 //		shifts.second = orig_s_r.size() - shifts.second;
 		MySam.SEQ = orig.sequence().str();
-		MySam.QUAL = orig.GetPhredQualityString();
+		if (print_quality)
+			MySam.QUAL = orig.GetQualityString();
+		else MySam.QUAL = "*";
 
 		if (MySam.FLAG & 0x10) MySam.CIGAR = (shifts.second != 0 ? ToString(shifts.second) + "S": "") + MySam.CIGAR + (shifts.first != 0 ? ToString(shifts.first) + "S": "");
 		else 				   MySam.CIGAR = (shifts.first != 0 ? ToString(shifts.first) + "S": "") + MySam.CIGAR + (shifts.second != 0 ? ToString(shifts.second) + "S": "");
@@ -147,7 +149,9 @@ void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, con
 	else
 	{
 		MySam.SEQ = orig.sequence().str();
-		MySam.QUAL = orig.GetPhredQualityString();
+		if (print_quality)
+			MySam.QUAL = orig.GetQualityString();
+		else MySam.QUAL = "*";
 	}
 }
 
@@ -165,6 +169,7 @@ protected:
 	bool adjust;
 	bool map_mode;
 	bool print_broken;
+	bool print_quality;
 	map<EdgeId, pair<string, bool>> SeqNames;
 	FILE* samOut;
 	size_t ProcessedReads;
@@ -218,7 +223,7 @@ protected:
 //		INFO( " SamRecordsCount "<< SamRecordsCount);
 	}
 
-	MySamRecord CreateSingleSAMFromRange(string read_name, Sequence read, EdgeId edge, MappingRange range, bool rc){
+	MySamRecord CreateSingleSAMFromRange(string read_name, Sequence read, EdgeId edge, MappingRange range, bool rc, string qual = "*"){
 		Sequence ref_seq = this->graph_.EdgeNucls(edge);
 		size_t ref_start = range.mapped_range.start_pos;
 		size_t ref_end = range.mapped_range.end_pos+debruijn_graph::K;
@@ -248,7 +253,7 @@ protected:
 			ref_start = range.mapped_range.start_pos + 1;
 		}
 //		MySamRecord SamRec(read_name, read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+debruijn_graph::K).str());
-		MySamRecord SamRec(read_name, read.str());
+		MySamRecord SamRec(read_name, read.str(), qual);
 		SamRec.FLAG = 0;
 		SamRec.POS = ref_start; //path1[0].second.mapped_range.start_pos+1;
 		SamRec.RNAME = this->SeqNames[edge].first;
@@ -309,8 +314,8 @@ protected:
 
 
 public:
-	BaseInternalAligner(Graph& g, SequenceMapper& m, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false):
-		graph_(g), mapper_(m), adjust(adjust_reads), map_mode(output_map_format), print_broken(print_broken_pairs)
+	BaseInternalAligner(Graph& g, SequenceMapper& m, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false, bool print_quality_ = false):
+		graph_(g), mapper_(m), adjust(adjust_reads), map_mode(output_map_format), print_broken(print_broken_pairs), print_quality(print_quality_)
 	{};
 
 	template<class Stream>
@@ -369,6 +374,7 @@ protected:
 		Sequence read = s_r.sequence();
 		MappingPath<EdgeId> path1 = this->mapper_.MapSequence(read);
 		this->ProcessedReads++;
+		string qual = "*";
 		if (path1.size() == 1){
 			EdgeId edge = path1[0].first;
 			bool rc = false;
@@ -377,13 +383,24 @@ protected:
 				path1 = this->mapper_.MapSequence(read);
 				edge = path1[0].first;
 				rc = true;
+				if (this->print_quality) {
+					qual = (!s_r).GetQualityString();
+				}
+			}
+			else {
+				if (this->print_quality) {
+					qual = s_r.GetQualityString();
+				}
 			}
 			this->SuccesfullReads++;
-			return CreateSingleSAMFromRange(s_r.original_name(), read, edge, path1[0].second, rc);
+			return CreateSingleSAMFromRange(s_r.original_name(), read, edge, path1[0].second, rc, qual);
 
 		} else {
+			if (this->print_quality) {
+				qual = s_r.GetQualityString();
+			}
 			if (path1.size() > 1) this->SplittedReads++;
-			MySamRecord SamRec(s_r.original_name(), s_r.GetSequenceString());
+			MySamRecord SamRec(s_r.original_name(), s_r.GetSequenceString(), qual);
 			return SamRec;
 		}
 	}
@@ -427,8 +444,8 @@ protected:
 	void PrepareHeader();
 
 public:
-	SimpleInternalAligner(Graph& g, SequenceMapper& m, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false):
-		BaseInternalAligner<Graph, SequenceMapper>(g, m, adjust_reads, output_map_format, print_broken_pairs)
+	SimpleInternalAligner(Graph& g, SequenceMapper& m, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false, bool print_quality = false):
+		BaseInternalAligner<Graph, SequenceMapper>(g, m, adjust_reads, output_map_format, print_broken_pairs, print_quality)
 //		graph_(g), mapper_(m), adjust(adjust_reads), map_mode(output_map_format), print_broken(print_broken_pairs)
 	{};
 };
@@ -574,24 +591,32 @@ protected:
 				EdgeId edge = *iter;
 				Range i_r(path1[0].second.initial_range.start_pos, path1[path1.size()-1].second.initial_range.end_pos);
 				Sequence read;
+				string qual = "*";
 				if (!this->SeqNames[edge].second){
 					read = !proto_read;
 					rc = true;
 					i_r = ReverceRanges(i_r, read.size() - debruijn_graph::K);
+					if (this->print_quality) {
+						qual = (!s_r).GetQualityString();
+					}
+
 				} else {
 					read = proto_read;
+					if (this->print_quality) {
+						qual = s_r.GetQualityString();
+					}
 				}
 //				Range m_r = ConvertRanges(path1[0].second.mapped_range, proto_edge, convertor_.edge_labels[edge], rc);
 				Range m_r = ConvertRanges(path1, convertor_.edge_labels[edge], rc);
 				MappingRange new_range(i_r, m_r);
 				if (rc) edge = this->graph_.conjugate(edge);
 				if (m_r.end_pos!=0) {
-					result.push_back(CreateSingleSAMFromRange(s_r.original_name(), read, edge, new_range, rc));
+					result.push_back(CreateSingleSAMFromRange(s_r.original_name(), read, edge, new_range, rc, qual));
 					this->SamRecordsCount++;
 				}
 			}
 			if (result.size()==0) {
-				result.push_back(MySamRecord(s_r.original_name(), s_r.GetSequenceString()));
+				result.push_back(MySamRecord(s_r.original_name(), s_r.GetSequenceString(), (this->print_quality ? s_r.GetQualityString():"*")));
 				this->SamRecordsCount++;
 			}
 			else {
@@ -612,8 +637,8 @@ protected:
 
 
 public:
-	ResolvedInternalAligner(Graph& g, Graph& orig_g, SequenceMapper& m, EdgeLabelHandler<Graph>& EdgeConversionHandler, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false):
-		BaseInternalAligner<Graph, SequenceMapper>(g, m, adjust_reads, output_map_format, print_broken_pairs), original_graph_(orig_g), convertor_(EdgeConversionHandler)
+	ResolvedInternalAligner(Graph& g, Graph& orig_g, SequenceMapper& m, EdgeLabelHandler<Graph>& EdgeConversionHandler, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false, bool print_quality = false):
+		BaseInternalAligner<Graph, SequenceMapper>(g, m, adjust_reads, output_map_format, print_broken_pairs, print_quality), original_graph_(orig_g), convertor_(EdgeConversionHandler)
 //		graph_(g), mapper_(m), adjust(adjust_reads), map_mode(output_map_format), print_broken(print_broken_pairs)
 	{};
 
@@ -682,8 +707,8 @@ protected:
 //	}
 
 public:
-	OriginalReadsResolvedInternalAligner(Graph& g, Graph& orig_g, SequenceMapper& m, EdgeLabelHandler<Graph>& EdgeConversionHandler, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false):
-		ResolvedInternalAligner<Graph, SequenceMapper>(g, orig_g, m, EdgeConversionHandler, adjust_reads, output_map_format, print_broken_pairs)
+	OriginalReadsResolvedInternalAligner(Graph& g, Graph& orig_g, SequenceMapper& m, EdgeLabelHandler<Graph>& EdgeConversionHandler, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false, bool print_quality = false):
+		ResolvedInternalAligner<Graph, SequenceMapper>(g, orig_g, m, EdgeConversionHandler, adjust_reads, output_map_format, print_broken_pairs, print_quality)
 	{};
 
 	template<class Stream, class OrigStream>
@@ -718,8 +743,8 @@ public:
 			vector<MySamRecord> SamRecs2 = this->CreateMultipleSAMFromSingleRead(p_r.second());
 //			INFO( " SamRecordsCount "<< this->SamRecordsCount);
 			if ((SamRecs1.size() == 1)&&((SamRecs1.size() == 1))){
-				SubstituteByOriginalRead(SamRecs1[0], p_r.first(), orig_p_r.first());
-				SubstituteByOriginalRead(SamRecs2[0], p_r.second(), orig_p_r.second());
+				SubstituteByOriginalRead(SamRecs1[0], p_r.first(), orig_p_r.first(), this->print_quality);
+				SubstituteByOriginalRead(SamRecs2[0], p_r.second(), orig_p_r.second(), this->print_quality);
 				if (SamRecs1[0].is_aligned()&&SamRecs2[0].is_aligned()){
 					this->UpdateAlignedPair(SamRecs1[0], SamRecs2[0]);
 					if (!this->print_broken) {
@@ -742,7 +767,7 @@ public:
 		if (this->map_mode){
 			for(size_t i = 0; i < SamRecs.size(); i++){
 				if (SamRecs[i].is_aligned()){
-					SubstituteByOriginalRead(SamRecs[i], s_r, orig_s_r);
+					SubstituteByOriginalRead(SamRecs[i], s_r, orig_s_r, this->print_quality);
 					fprintf(this->samOut, "%s\n", SamRecs[i].map_str().c_str());
 				}
 			}
@@ -761,8 +786,8 @@ template<class Graph, class SequenceMapper>
 class OriginalReadsSimpleInternalAligner : public SimpleInternalAligner<Graph, SequenceMapper>{
 protected:
 public:
-	OriginalReadsSimpleInternalAligner(Graph& g, SequenceMapper& m, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false):
-		SimpleInternalAligner<Graph, SequenceMapper>(g, m, adjust_reads, output_map_format, print_broken_pairs)
+	OriginalReadsSimpleInternalAligner(Graph& g, SequenceMapper& m, bool adjust_reads = false, bool output_map_format = false, bool print_broken_pairs = false, bool print_quality = false):
+		SimpleInternalAligner<Graph, SequenceMapper>(g, m, adjust_reads, output_map_format, print_broken_pairs, print_quality)
 	{};
 
 	template<class Stream, class OrigStream>
