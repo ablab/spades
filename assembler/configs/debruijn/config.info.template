@@ -133,6 +133,7 @@ SAM_writer
 	align_only_paired	true
 	output_broken_pairs	false
 	align_original_reads	false
+	print_quality		false
 	original_first	E.coli/jgi/0012/Ecoli_0012.1.fastq
 	original_second	E.coli/jgi/0012/Ecoli_0012.2.fastq
 

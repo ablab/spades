@@ -214,7 +214,7 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_before_RR)
 	{
 		if (cfg::get().sw.align_original_reads){
-			if (cfg::get().sw.original_first && cfg::get().sw.original_second){
+			{
 				auto paired_reads = paired_easy_reader(false, 0, false, false);
 //				io::PairedEasyReader original_paired_reads(
 //								make_pair(input_file(*cfg::get().sw.original_first),

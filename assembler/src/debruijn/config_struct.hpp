@@ -364,8 +364,6 @@ struct debruijn_config {
 		bool output_broken_pairs;
 		bool align_original_reads;
 		boost::optional<bool> print_quality;
-		boost::optional<std::string> original_first;
-		boost::optional<std::string> original_second;
 	};
 
 	typedef map<info_printer_pos, info_printer> info_printers_t;
@@ -581,8 +579,6 @@ inline void load(debruijn_config::SAM_writer& sw,
 	load(sw.output_broken_pairs , pt, "output_broken_pairs" );
 	load(sw.align_original_reads, pt, "align_original_reads");
 	sw.print_quality = pt.get_optional<bool>("print_quality");
-	sw.original_first = pt.get_optional<std::string>("original_first");
-	sw.original_second = pt.get_optional<std::string>("original_second");
 }
 
 inline void load_paired_reads(vector<vector<std::string> >& vec, boost::property_tree::ptree const& pt, string const& key) {

@@ -295,6 +295,26 @@ protected:
 			SamRec2.FLAG |= 0x80;
 		}
 	}
+	void UpdatePair(MySamRecord& SamRec1, MySamRecord& SamRec2){
+		if (SamRec1.is_aligned() && SamRec2.is_aligned()) {
+			UpdateAlignedPair(SamRec1, SamRec2);
+		}
+		else {
+			size_t found;
+			found = SamRec1.QNAME.rfind("/");
+			if (found!=string::npos)
+				SamRec1.QNAME.replace (found,2,"");
+			SamRec2.QNAME = SamRec1.QNAME;
+			SamRec1.FLAG |= 0x01;// | 0x40;
+			SamRec2.FLAG |= 0x01;// | 0x80;
+			SamRec1.updateInfoFromNextSegment(SamRec2);
+			SamRec2.updateInfoFromNextSegment(SamRec1);
+			if (!SamRec1.is_aligned()) SamRec2.FLAG |= 0x08;
+			if (!SamRec2.is_aligned()) SamRec1.FLAG |= 0x08;
+			SamRec1.FLAG |= 0x40;
+			SamRec2.FLAG |= 0x80;
+		}
+	}
 
 
 
@@ -428,13 +448,14 @@ protected:
 		}
 		else {
 			if (SamRec1.is_aligned()&&SamRec2.is_aligned()){
-				this->UpdateAlignedPair(SamRec1, SamRec2);
 				if (!this->print_broken) {
+					this->UpdateAlignedPair(SamRec1, SamRec2);
 					fprintf(this->samOut, "%s\n", SamRec1.str().c_str());
 					fprintf(this->samOut, "%s\n", SamRec2.str().c_str());
 				}
 			}
 			if (this->print_broken) {
+				this->UpdatePair(SamRec1, SamRec2);
 				fprintf(this->samOut, "%s\n", SamRec1.str().c_str());
 				fprintf(this->samOut, "%s\n", SamRec2.str().c_str());
 			}
@@ -628,7 +649,7 @@ protected:
 //			if (path1.size() > 1) {
 //				this->SplittedReads++;
 //			}
-			MySamRecord SamRec(s_r.original_name(), s_r.GetSequenceString());
+			MySamRecord SamRec(s_r.original_name(), s_r.GetSequenceString(), (this->print_quality ? s_r.GetQualityString():"*"));
 			this->SamRecordsCount++;
 			result.push_back(SamRec);
 		}
@@ -669,13 +690,14 @@ public:
 //			INFO( " SamRecordsCount "<< this->SamRecordsCount);
 			if ((SamRecs1.size() == 1)&&((SamRecs1.size() == 1))){
 				if (SamRecs1[0].is_aligned()&&SamRecs2[0].is_aligned()){
-					this->UpdateAlignedPair(SamRecs1[0], SamRecs2[0]);
 					if (!this->print_broken) {
+						this->UpdateAlignedPair(SamRecs1[0], SamRecs2[0]);
 						fprintf(this->samOut, "%s\n", SamRecs1[0].str().c_str());
 						fprintf(this->samOut, "%s\n", SamRecs2[0].str().c_str());
 					}
 				}
 				if (this->print_broken) {
+					this->UpdatePair(SamRecs1[0], SamRecs2[0]);
 					fprintf(this->samOut, "%s\n", SamRecs1[0].str().c_str());
 					fprintf(this->samOut, "%s\n", SamRecs2[0].str().c_str());
 				}
@@ -746,13 +768,14 @@ public:
 				SubstituteByOriginalRead(SamRecs1[0], p_r.first(), orig_p_r.first(), this->print_quality);
 				SubstituteByOriginalRead(SamRecs2[0], p_r.second(), orig_p_r.second(), this->print_quality);
 				if (SamRecs1[0].is_aligned()&&SamRecs2[0].is_aligned()){
-					this->UpdateAlignedPair(SamRecs1[0], SamRecs2[0]);
 					if (!this->print_broken) {
+						this->UpdateAlignedPair(SamRecs1[0], SamRecs2[0]);
 						fprintf(this->samOut, "%s\n", SamRecs1[0].str().c_str());
 						fprintf(this->samOut, "%s\n", SamRecs2[0].str().c_str());
 					}
 				}
 				if (this->print_broken) {
+					this->UpdatePair(SamRecs1[0], SamRecs2[0]);
 					fprintf(this->samOut, "%s\n", SamRecs1[0].str().c_str());
 					fprintf(this->samOut, "%s\n", SamRecs2[0].str().c_str());
 				}
@@ -774,7 +797,7 @@ public:
 		}
 		else {
 			for(size_t i = 0; i < SamRecs.size(); i++){
-				SubstituteByOriginalRead(SamRecs[i], s_r, orig_s_r);
+				SubstituteByOriginalRead(SamRecs[i], s_r, orig_s_r, this->print_quality);
 				fprintf(this->samOut, "%s\n", SamRecs[i].str().c_str());
 			}
 		}
@@ -817,25 +840,26 @@ public:
 		MySamRecord SamRec1 = this->CreateSingleSAMFromSingleRead(p_r.first());
 		MySamRecord SamRec2 = this->CreateSingleSAMFromSingleRead(p_r.second());
 		if (this->map_mode) {
-			SubstituteByOriginalRead(SamRec1, p_r.first(), orig_p_r.first());
-			SubstituteByOriginalRead(SamRec2, p_r.second(), orig_p_r.second());
+			SubstituteByOriginalRead(SamRec1, p_r.first(), orig_p_r.first(), this->print_quality);
+			SubstituteByOriginalRead(SamRec2, p_r.second(), orig_p_r.second(), this->print_quality);
 			if (SamRec1.is_aligned())
 				fprintf(this->samOut, "%s\n", SamRec1.map_str().c_str());
 			if (SamRec2.is_aligned())
 				fprintf(this->samOut, "%s\n", SamRec2.map_str().c_str());
 		}
 		else {
-			SubstituteByOriginalRead(SamRec1, p_r.first(), orig_p_r.first());
-			SubstituteByOriginalRead(SamRec2, p_r.second(), orig_p_r.second());
+			SubstituteByOriginalRead(SamRec1, p_r.first(), orig_p_r.first(), this->print_quality);
+			SubstituteByOriginalRead(SamRec2, p_r.second(), orig_p_r.second(), this->print_quality);
 
 			if (SamRec1.is_aligned()&&SamRec2.is_aligned()){
-				this->UpdateAlignedPair(SamRec1, SamRec2);
 				if (!this->print_broken) {
+					this->UpdateAlignedPair(SamRec1, SamRec2);
 					fprintf(this->samOut, "%s\n", SamRec1.str().c_str());
 					fprintf(this->samOut, "%s\n", SamRec2.str().c_str());
 				}
 			}
 			if (this->print_broken) {
+				this->UpdatePair(SamRec1, SamRec2);
 				fprintf(this->samOut, "%s\n", SamRec1.str().c_str());
 				fprintf(this->samOut, "%s\n", SamRec2.str().c_str());
 			}
@@ -851,13 +875,13 @@ public:
 		if (this->map_mode){
 			MySamRecord SamRec = this->CreateSingleSAMFromSingleRead(s_r);
 			if (SamRec.is_aligned()){
-				SubstituteByOriginalRead(SamRec, s_r, orig_s_r);
+				SubstituteByOriginalRead(SamRec, s_r, orig_s_r, this->print_quality);
 				fprintf(this->samOut, "%s\n", SamRec.map_str().c_str());
 			}
 		}
 		else {
 			MySamRecord SamRec = this->CreateSingleSAMFromSingleRead(s_r);
-			SubstituteByOriginalRead(SamRec, s_r, orig_s_r);
+			SubstituteByOriginalRead(SamRec, s_r, orig_s_r, this->print_quality);
 			fprintf(this->samOut, "%s\n", SamRec.str().c_str());
 		}
 	}
