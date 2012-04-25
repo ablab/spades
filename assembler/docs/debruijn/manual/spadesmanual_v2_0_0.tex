@@ -249,7 +249,7 @@ The second section ({\tt assembly}) contains assembly settings. The last section
 is needed to estimate the quality of the resulting assembly. To run only some of these three stages just remove (or comment or rename) unnecessary stages.
 
 %If {\spades} runs the error correction stage on the same input reads it has already corrected, it detects this and prompts the user not to correct the reads again.
-If you run {\spades} with same {\tt output\_dir} and {\tt project\_name} as in one of previous run of {\spades}, it detects if you already run the error correction stage and prompts the user not to correct the reads again.
+If you run {\spades} with the same {\tt output\_dir} and {\tt project\_name} as one of previous runs, it detects if you have already made the error correction stage and prompts if you want to correct the reads again.
 
 \subsection{Global settings}
 \begin{description}
@@ -310,7 +310,7 @@ Note: you can speed up run time of{\spades} by setting just one value of $k$ (sa
 If this section is present in the config file then
 {\spades} evaluates assembly results by computing various metrics (e.g., N50, NG50, number of long ORFs etc.) on the resulting contigs.
 The variables {\tt reference}, {\tt genes}, and {\tt operons} are self-explanatory.
-Note that the quality is estimated even if this section is empty. Our qauality tool uses Plantagora (\url{http://www.plantagora.org/}) and MUMmer (\url{http://mummer.sourceforge.net/}).
+Note that the quality is estimated even if this section is empty. Our quality tool uses Plantagora (\url{http://www.plantagora.org/}) and MUMmer (\url{http://mummer.sourceforge.net/}).
 
 Below we describe all the computed metrics.
 
