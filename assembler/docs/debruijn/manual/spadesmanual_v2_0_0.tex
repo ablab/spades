@@ -76,12 +76,12 @@ for forward-reverse paired end reads.
 \begin{center}
 \begin{tikzpicture}
 %\draw[help lines] (0,-3) grid (10,3);
-\draw[line width=2pt] (0,2) -- (10,2);
+\draw[line width=2pt] (-1,2) -- (11,2);
 \draw[line width=2pt,->] (0,2.5) -- (3,2.5);
 \draw[line width=2pt,->] (10,1.5) -- (7,1.5);
 
 \node[rectangle,anchor=east] at (0,2.5) {left read};
-\node[rectangle,anchor=west] at (10,2) {genome};
+\node[rectangle,anchor=west] at (11,2) {genome};
 \node[rectangle,anchor=west] at (10,1.5) {right read};
 
 \foreach \x in {0, 3, 7, 10}
@@ -151,7 +151,7 @@ In this case, you will have to take care of some dependencies beforehand:
 
 If you don't have possibility to install some of the packages described above,
 we've prepared the {\spades} binaries for multiple values of $k$ (see section \ref{subsec:assembly}),
-in the range from 11 to 149.
+in the range from 11 to 149. For our test datasets, we recommend $k = 21, 33, 55$.
 To use these binaries, you need to download {\spades} as an archive (\url{http://spades.bioinf.spbau.ru/release2.0.0/spades_2.0.0.tar.gz}),
 extract it and use the following scripts to download the binaries:
 \begin{lstlisting}
@@ -248,25 +248,27 @@ Note that for an accurate assembly it is important to use this stage, especially
 The second section ({\tt assembly}) contains assembly settings. The last section ({\tt quality\_assessment})
 is needed to estimate the quality of the resulting assembly. To run only some of these three stages just remove (or comment or rename) unnecessary stages.
 
-If {\spades} runs with error correction stage for the same input reads it detects this and prompts a user not to correct the reads again. 
+%If {\spades} runs the error correction stage on the same input reads it has already corrected, it detects this and prompts the user not to correct the reads again.
+If you run {\spades} with same {\tt output\_dir} and {\tt project\_name} as in one of previous run of {\spades}, it detects if you already run the error correction stage and prompts the user not to correct the reads again.
 
 \subsection{Global settings}
 \begin{description}
 \item[{\tt project\_name}] specifies the name of the project. It is recommended to set a meaningful name for each separate project.
-It makes easier to find the results in the output folder.
+It makes it easier to find the results in the output folder.
 \item[{\tt output\_dir}] specifies the output folder.
 \end{description}
 
 \subsection{Dataset settings}
 {\spades} accepts single reads as well as forward-reverse paired end reads
-in FASTA and FASTQ format (however, in order to run error correction, reads should be in FASTQ format). All files may be compressed with gzip.
+in FASTA and FASTQ format; however, in order to run error correction, reads should be in FASTQ format. All files may be compressed with gzip.
 At present, {\spades} can accept only one paired-end library as input.
 
 \begin{description}
 \item[{\tt paired\_reads}] specifies input paired end reads organized into one or two files.
-In a single file, each left read should be followed by its mate right read.
-In case of two files, the first file should contain all left reads while the second one should contain
-all the corresponding right reads in exactly the same order (two file names should be separated by a space).
+\begin{itemize}
+\item If using a single file, interlace the corresponding mated "1" and "2" reads. Put the read from the Illumina file {\tt s\_n\_1\_export.txt} first, followed by the read from the Illumina file {\tt s\_n\_2\_export.txt}.
+\item If using a pair of files, the first file should have the Illumina "1" subreads and the second file should have the Illumina "2" subreads, with corresponding reads in the exact same order.  The two filenames should be separated by a space.
+\end{itemize}
 \item[{\tt single\_reads}] specifies reads without pairs. You can specify any number of
 files with single reads. File names should be separated by spaces.
 \item[{\tt single\_cell}] flag is set if input data was obtained with MDA (single cell) technology.
@@ -276,7 +278,7 @@ files with single reads. File names should be separated by spaces.
 \begin{description}
 \item[{\tt tmp\_dir}] specifies the directory where temporary files are stored. Note that {\bh} uses a significant amount of disk space (even though it
 cleans up after itself) so you might want to consider setting {\tt tmp\_dir} to something other than {\tt /tmp} (e.~g. external drive).
-\item[{\tt qvoffset}] sets PHRED quality offset in the input reads ($33$ or $64$). If not given {\bh} tries to find this value automatically.
+\item[{\tt qvoffset}] sets PHRED quality offset in the input reads ($33$ or $64$). If not given, {\bh} tries to find this value automatically.
 \item[{\tt max\_iterations}] sets the maximum number of iterations
 for the error correction procedure. Usually, the second iteration does improve upon the first, but then there is almost no change.
 \item[{\tt max\_threads}] sets the maximum number of threads.
@@ -292,23 +294,23 @@ but at the same time more tangled, while higher values of $k$ may defragment the
 The typical value for this variable is {\tt 21 33 55}. See the paper~\cite{main} for more details.
 Note that in the configuration file, $k$ is the size of a vertex, while in the paper, $k$ is the size of an edge (i.e., larger by one).
 
-\item[{\tt paired\_mode}] turns the repeat resolver on/off.
+\item[{\tt paired\_mode}] turns the repeat resolver on/off if parameter set to true/false.
 
 \item[{\tt generate\_sam\_files}] flag forces {\spades} to generate a SAM-file
 showing how the paired reads specified in dataset section of config file are aligned to resulting contigs.  Alignments from this SAM-file
 can be visualized, e.g., by Tablet~\cite{tablet}.
 
-\item[{\tt gap\_closer}] turns the gap closer on/off. This module allows to restore $k$-mers that are not covered by whole reads
-but are covered by overlapping parts of two reads and supported by paired reads. This is effective when a library has a small insert size (up to 3x read length). In a case of large insert size you can turn it off to slightly decrease SPAdes runing time.
-Note: you can speed up {\spades} run by setting just one value of $k$ (say, 55) and turning the gap closer on
-(since gap closer can lead to quite the same results as running with several smaller values of $k$).
+\item[{\tt gap\_closer}] turns the gap closer on/off. This module restores $k$-mers that are not covered by whole reads
+but are covered by overlapping parts of two reads and supported by paired reads. This is effective when a library has a small insert size (up to 3x read length). If insert size is large, you can turn it off to slightly decrease the runing time of {\spades}.
+Note: you can speed up run time of{\spades} by setting just one value of $k$ (say, 55) and turning the gap closer on
+(since the gap closer usually gives similar results as running with several smaller values of $k$).
 \end{description}
 
 \subsection{Quality assessment settings}
 If this section is present in the config file then
 {\spades} evaluates assembly results by computing various metrics (e.g., N50, NG50, number of long ORFs etc.) on the resulting contigs.
-The variables {\tt reference}, {\tt genes}, and {\tt operons} are self-explaining.
-Note that the quality is estimated even if this section is empty
+The variables {\tt reference}, {\tt genes}, and {\tt operons} are self-explanatory.
+Note that the quality is estimated even if this section is empty. Our qauality tool uses Plantagora (\url{http://www.plantagora.org/}) and MUMmer (\url{http://mummer.sourceforge.net/}).
 
 Below we describe all the computed metrics.
 
@@ -319,7 +321,7 @@ value that produces exactly 50\%, so the more technical definition is
 the minimal length $x$ such that using contigs of length at least $x$ accounts for at least 50\% of the total assembly length.
 
 \item[NG50] is the contig length such that using longer or equal length contigs
-produces half (50\%) the bases of the reference genome
+produces half (50\%) the bases of the reference genome.
 
 \item[N75 and NG75] are defined similarly with 75\% instead of 50\%.
 
@@ -393,7 +395,7 @@ Specific directories containing corrected reads, assembly, and quality estimate 
 
 \subsection{Correcting errors in the resulting contigs}
 While {\spades} produces accurate assemblies, 
-we recommend running SEQuel~\cite{sequel} after {\spades} for further number of small errors reducing 
+we recommend running SEQuel~\cite{sequel} after {\spades} to further reduce the number of small errors
 (single nucleotide substitutions and small indels). SEQuel is available at
 \url{http://bix.ucsd.edu/SEQuel/}. Note that one can set the flag {\tt generate\_sam} to {\spades}
 (see subsection~\ref{subsec:assembly}) to generate a SAM-file showing how the 
@@ -405,7 +407,7 @@ One can use a separate scaffolder such as Opera~\cite{opera}.
 It is available at \url{http://sourceforge.net/projects/operasf/}.
 
 \section{Feedback and bug reports}
-We will be thankful if you help us making {\spades} better
+We will be thankful if you help us make {\spades} better
 by sending your comments, bug reports, and suggestions to
 \url{spades.support@bioinf.spbau.ru}.
 
