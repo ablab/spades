@@ -1,5 +1,6 @@
 rm -r rpmbuild
 rpmdev-setuptree
+scp builder@192.168.222.254:spades2.0.1/spades.spec .
 cp spades.spec rpmbuild/SPECS
 cd rpmbuild/SOURCES   
 scp builder@192.168.222.254:spades2.0.1/spades_2.0.1.tar.gz .
