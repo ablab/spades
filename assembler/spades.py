@@ -175,6 +175,11 @@ def main():
                         quoted_value += os.path.abspath(os.path.expandvars(item)) + ' '
                     quoted_value += '"'
                     bh_cfg.__dict__["original_" + key] = quoted_value
+            
+                # saving reference to dataset in developer_mode
+                if bh_cfg.developer_mode:
+                    if cfg.has_key("quality_assessment") and cfg["quality_assessment"].__dict__.has_key("reference"):
+                        bh_cfg.__dict__["reference_genome"] = os.path.abspath(os.path.expandvars(cfg["quality_assessment"].reference)) 
 
                 if key.startswith("single_reads"):  
                     for item in value:
@@ -267,6 +272,12 @@ def main():
                     dataset_file.write('"')
 
                 dataset_file.write('\n')
+            # saving reference to dataset in developer_mode
+            if spades_cfg.developer_mode:
+                if cfg.has_key("quality_assessment") and cfg["quality_assessment"].__dict__.has_key("reference"):
+                    dataset_file.write("reference_genome" + '\t')
+                    dataset_file.write(os.path.abspath(os.path.expandvars(cfg["quality_assessment"].reference)) + '\n')
+
             dataset_file.close()
             spades_cfg.__dict__["dataset"] = dataset_filename
         else:

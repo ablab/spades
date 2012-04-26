@@ -105,6 +105,8 @@ def generate_dataset(cfg):
     for key, value in cfg.__dict__.iteritems():
         if key.startswith("original_"):
             dataset_cfg[key] = value
+        elif key == "reference_genome":
+            dataset_cfg[key] = value
 
     return dataset_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))    
 
