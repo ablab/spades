@@ -1,22 +1,22 @@
 rm -r spades-*
 rm spades_*
-mkdir spades-2.0.0
-cp -r assembler/src spades-2.0.0/src
-cp -r assembler/configs spades-2.0.0/configs
-cp -r assembler/debian spades-2.0.0/debian
-cp -r assembler/ext spades-2.0.0/ext
-cp -r assembler/test_dataset spades-2.0.0/test_dataset
-cp assembler/LICENSE spades-2.0.0
-cp assembler/README spades-2.0.0
-cp assembler/VERSION spades-2.0.0
-cp assembler/makefileDebian spades-2.0.0/makefile
-cp assembler/spades.py spades-2.0.0
-cp assembler/spades_config.info.template spades-2.0.0
-cp assembler/spades_download_binary.py spades-2.0.0
-cp assembler/spades_download_bayeshammer.py spades-2.0.0
-cp assembler/spades_init.py spades-2.0.0
+mkdir spades-2.0.1
+cp -r assembler/src spades-2.0.1/src
+cp -r assembler/configs spades-2.0.1/configs
+cp -r assembler/debian spades-2.0.1/debian
+cp -r assembler/ext spades-2.0.1/ext
+cp -r assembler/test_dataset spades-2.0.1/test_dataset
+cp assembler/LICENSE spades-2.0.1
+cp assembler/README spades-2.0.1
+cp assembler/VERSION spades-2.0.1
+cp assembler/makefileDebian spades-2.0.1/makefile
+cp assembler/spades.py spades-2.0.1
+cp assembler/spades_config.info.template spades-2.0.1
+cp assembler/spades_download_binary.py spades-2.0.1
+cp assembler/spades_download_bayeshammer.py spades-2.0.1
+cp assembler/spades_init.py spades-2.0.1
 
-cd spades-2.0.0
+cd spades-2.0.1
 rm src/CMakeListsInternal.txt
 touch src/CMakeListsInternal.txt
 rm -r src/abruijn
@@ -63,5 +63,5 @@ cp spades_config.info.template spades_config.info
 debuild -us -uc
 
 cd ..
-scp spades_2.0.0* builder@192.168.222.254:~/spades2.0.0/
+scp spades_2.0.1* builder@192.168.222.254:~/spades2.0.1/
 
