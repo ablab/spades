@@ -49,6 +49,7 @@ rm -r src/tools/quality/libs/mauve
 rm -r src/tools/quality/libs/gage
 rm -r src/tools/quality/libs/genemark_suite_linux_64
 rm -r src/tools/quality/libs/report
+rm -r src/tools/spades_build/
 
 cp configs/debruijn/config.info.template configs/debruijn/config.info
 cp configs/hammer/config.info.template configs/hammer/config.info
