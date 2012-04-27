@@ -34,6 +34,6 @@ assembly
 quality_assessment      ; optional. If section exists (even if it has no lines), spades.py evaluates quality of the final contigs
 {
     reference           $cfg/test_dataset/reference_1K.fa.gz     ; optional
-    genes               $cfg/test_dataset/genes_1K.txt           ; optional
-    operons             $cfg/test_dataset/operons_1K.txt         ; optional
+    genes               $cfg/test_dataset/genes_1K.gff           ; optional
+    operons             $cfg/test_dataset/operons_1K.gff         ; optional
 }
