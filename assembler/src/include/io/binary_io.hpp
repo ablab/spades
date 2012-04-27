@@ -140,16 +140,18 @@ public:
         }
     }
 
-    virtual bool is_open() {
+    virtual bool is_open() const {
         return stream_.is_open();
     }
 
-    virtual bool eof() {
-        return current_ >= read_num_;
+    virtual bool eof() const {
+        return current_ == read_num_;
     }
 
     virtual SeqSingleReadStream& operator>>(io::SingleReadSeq& read) {
         read.BinRead(stream_);
+        VERIFY(current_ < read_num_);
+
         ++current_;
         return *this;
     }

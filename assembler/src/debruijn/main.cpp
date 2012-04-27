@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 //        typedef io::PairedEasyReader PairedReadStream;
 
         if (cfg::get().convert_reads_to_binary) {
-            debruijn_graph::covert_reads_to_binary();
+            debruijn_graph::convert_reads_to_binary();
         }
 
         // assemble it!

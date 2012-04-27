@@ -17,7 +17,7 @@ namespace debruijn_graph {
 typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
 typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-void covert_reads_to_binary() {
+void convert_reads_to_binary() {
     INFO("Converting paired reads to binary format (takes a while)");
     auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(false, 0);
     io::ReadsToBinaryConverter paired_converter(cfg::get().paired_read_prefix, cfg::get().thread_number, cfg::get().buffer_reads);
