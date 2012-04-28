@@ -1,31 +1,30 @@
 rm -r spades-*
 rm spades_*
-mkdir spades-2.0.0
-cp -r assembler/src spades-2.0.0/src
-cp -r assembler/configs spades-2.0.0/configs
-cp -r assembler/debian spades-2.0.0/debian
-cp -r assembler/ext spades-2.0.0/ext
-cp -r assembler/test_dataset spades-2.0.0/test_dataset
-cp assembler/LICENSE spades-2.0.0
-cp assembler/README spades-2.0.0
-cp assembler/VERSION spades-2.0.0
-cp assembler/makefileDebian spades-2.0.0/makefile
-cp assembler/spades.py spades-2.0.0
-cp assembler/spades_config.info.template spades-2.0.0
-cp assembler/spades_download_binary.py spades-2.0.0
-cp assembler/spades_download_bayeshammer.py spades-2.0.0
-cp assembler/spades_init.py spades-2.0.0
 
-cd spades-2.0.0
+VERSION="$(cat assembler/VERSION)"
+mkdir spades-$VERSION
+cp -r assembler/src spades-$VERSION/src
+cp -r assembler/configs spades-$VERSION/configs
+cp -r assembler/debian spades-$VERSION/debian
+cp -r assembler/ext spades-$VERSION/ext
+cp -r assembler/test_dataset spades-$VERSION/test_dataset
+cp assembler/LICENSE spades-$VERSION
+cp assembler/README spades-$VERSION
+cp assembler/VERSION spades-$VERSION
+cp assembler/makefileDebian spades-$VERSION/makefile
+cp assembler/spades.py spades-$VERSION
+cp assembler/spades_config.info.template spades-$VERSION
+cp assembler/spades_download_binary.py spades-$VERSION
+cp assembler/spades_download_bayeshammer.py spades-$VERSION
+cp assembler/spades_init.py spades-$VERSION
+
+cd spades-$VERSION
 rm src/CMakeListsInternal.txt
 touch src/CMakeListsInternal.txt
 rm -r src/abruijn
-rm -r src/bayes
 rm -r src/test
-rm -r data
 rm -r configs/debruijn/datasets_archive
 rm -r configs/debruijn/datasets
-rm -r docs
 find . -name ".?*" | xargs rm -r
 rm -r src/tools/blast-fasta
 rm -r src/tools/clean_contaminations
@@ -63,5 +62,3 @@ cp spades_config.info.template spades_config.info
 debuild -us -uc
 
 cd ..
-scp spades_2.0.0* 192.168.222.223:spades2/
-
