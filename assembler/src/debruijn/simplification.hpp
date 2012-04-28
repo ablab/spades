@@ -18,6 +18,7 @@
 #include "gap_closer.hpp"
 #include "omni_labelers.hpp"
 #include "omni/omni_tools.hpp"
+#include "internal_aligner.hpp"
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
@@ -26,6 +27,44 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 
 // move impl to *.cpp
 namespace debruijn_graph {
+
+
+void SAM_before_resolve(conj_graph_pack& conj_gp){
+	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_before_RR)
+	{
+		if (cfg::get().sw.align_original_reads){
+			{
+				auto paired_reads = paired_easy_reader(false, 0, false, false);
+				auto original_paired_reads = paired_easy_reader(false, 0, false, false, true);
+				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
+				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
+
+				bool print_quality = (cfg::get().sw.print_quality ? *cfg::get().sw.print_quality : false);
+				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs, print_quality);
+				Aligner.AlignPairedReads(*original_paired_reads, *paired_reads, cfg::get().output_dir+"align_before_RR.sam");
+
+			}
+		}
+		else {
+
+			auto paired_reads = paired_easy_reader(false, 0, false, false);
+			auto single_reads = single_easy_reader(false, false);
+
+			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
+			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
+
+			bool print_quality = (cfg::get().sw.print_quality ? *cfg::get().sw.print_quality : false);
+			SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs, print_quality);
+			if (cfg::get().sw.align_only_paired)
+				Aligner.AlignPairedReads(*paired_reads, cfg::get().output_dir+"align_before_RR.sam");
+			else
+				Aligner.AlignReads(*paired_reads, *single_reads, cfg::get().output_dir+"align_before_RR.sam");
+
+		}
+	}
+
+}
+
 
 template<size_t k>
 void PrintWeightDistribution(Graph &g, const string &file_name) {
@@ -141,6 +180,7 @@ void save_simplification(conj_graph_pack& gp) {
 void exec_simplification(conj_graph_pack& gp) {
 	if (cfg::get().entry_point <= ws_simplification) {
 		simplify_graph(gp);
+		SAM_before_resolve(gp);
 		save_simplification(gp);
 	} else {
 		INFO("Loading Simplification");

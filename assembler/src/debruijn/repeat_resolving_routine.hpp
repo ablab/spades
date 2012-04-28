@@ -208,51 +208,6 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 	}
 }
 
-
-
-void SAM_before_resolve(conj_graph_pack& conj_gp){
-	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_before_RR)
-	{
-		if (cfg::get().sw.align_original_reads){
-			{
-				auto paired_reads = paired_easy_reader(false, 0, false, false);
-//				io::PairedEasyReader original_paired_reads(
-//								make_pair(input_file(*cfg::get().sw.original_first),
-//										input_file(*cfg::get().sw.original_second)),
-//								false,
-//								0);
-				auto original_paired_reads = paired_easy_reader(false, 0, false, false, true);
-				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
-				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
-
-				bool print_quality = (cfg::get().sw.print_quality ? *cfg::get().sw.print_quality : false);
-				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs, print_quality);
-				Aligner.AlignPairedReads(*original_paired_reads, *paired_reads, cfg::get().output_dir+"align_before_RR.sam");
-
-			}
-		}
-		else {
-
-			auto paired_reads = paired_easy_reader(false, 0, false, false);
-			auto single_reads = single_easy_reader(false, false);
-
-			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
-			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
-
-			bool print_quality = (cfg::get().sw.print_quality ? *cfg::get().sw.print_quality : false);
-			SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.g, mapper, cfg::get().sw.adjust_align, cfg::get().sw.output_map_format, cfg::get().sw.output_broken_pairs, print_quality);
-			if (cfg::get().sw.align_only_paired)
-				Aligner.AlignPairedReads(*paired_reads, cfg::get().output_dir+"align_before_RR.sam");
-			else
-				Aligner.AlignReads(*paired_reads, *single_reads, cfg::get().output_dir+"align_before_RR.sam");
-
-		}
-	}
-
-}
-
-
-
 void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
 	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_after_RR)
 	{
@@ -434,8 +389,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	if (cfg::get().output_nonfinal_contigs && output_contigs) {
 		OutputContigs(resolved_gp.g,
 				cfg::get().output_dir + "after_rr_before_simplify" + postfix);
-		OutputContigs(origin_gp.g,
-				cfg::get().output_dir + "before_resolve" + postfix);
+//		OutputContigs(origin_gp.g,
+//				cfg::get().output_dir + "before_resolve" + postfix);
 	}
 	INFO("Running total labeler");
 
@@ -522,9 +477,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	if (output_contigs)
 	{
-		if (cfg::get().output_nonfinal_contigs) {
-		    OutputContigs(resolved_gp.g, cfg::get().output_dir + "resolved_and_cleared" + postfix);
-		}
+//		if (cfg::get().output_nonfinal_contigs) {
+//		    OutputContigs(resolved_gp.g, cfg::get().output_dir + "resolved_and_cleared" + postfix);
+//		}
 	    OutputContigs(resolved_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 	    cfg::get_writable().final_contigs_file = cfg::get().output_dir + "final_contigs.fasta";
 	}
