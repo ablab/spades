@@ -1,26 +1,51 @@
 #!/bin/bash
-set -e
+set -e -x
 
-#eval "git pull --rebase"
+VERSION="$(cat assembler/VERSION)"
+BRANCH=${VERSION%.*}
+
+eval "git checkout spades_$BRANCH"
+
+echo "BRANCH set to " $BRANCH
+
+eval "git pull --rebase"
+eval "git stash"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 FILE=$DIR/bug-fix.version
 
 if [ -z "$1" ];
-then 
-    read bug_fix_version < $FILE
-else 
-    $bug_fix_version=$1
+then
+    read FIX < $FILE
+else
+    $FIX=$1
 fi
 
-bug_fix_version=$(($bug_fix_version+1))
-echo "Bug fixed number is set to " $bug_fix_version
-echo $bug_fix_version > $FILE
+FIX=$(($FIX+1))
+
+cd assembler
+dch -v $BRANCH.$FIX
+cd ..
+
+# echo $FIX > $FILE
+echo $BRANCH.$FIX > assembler/VERSION
+
+
+git diff assembler/VERSION $FILE assembler/debian/changelog | less
+
+git commit assembler/VERSION $FILE assembler/debian/changelog
+
+cat assembler/VERSION
+
+eval "git push"
+
+eval "git tag spades_$BRANCH.$FIX"
+
+eval "git push --tag"
+
+eval "git stash pop"
 
 
 
-eval "git stash"
-eval "git add "$FILE
-eval "git ci -m'"
 
 
