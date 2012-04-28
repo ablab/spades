@@ -918,7 +918,11 @@ void resolve_repeats() {
 	if (cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
-		FillPos(conj_gp, cfg::get().pos.contigs_for_threading, 10000);
+		if (!cfg::get().pos.contigs_for_threading.empty() &&
+			fileExists(cfg::get().pos.contigs_for_threading))
+		{
+			FillPos(conj_gp, cfg::get().pos.contigs_for_threading, 10000);
+		}
 	}
 
 	if (!cfg::get().paired_mode
