@@ -533,16 +533,32 @@ private:
 
 	bool ProcessKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed_edges,
 			RangeMappings& range_mapping, bool try_thread) const {
-		if (!Substitute(kmer)) {
-			if (try_thread) {
-				return TryThread(kmer, kmer_pos, passed_edges, range_mapping);
+		if (try_thread) {
+			if(!TryThread(kmer, kmer_pos, passed_edges, range_mapping)) {
+				Substitute(kmer);
+				FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+				return false;
 			} else {
-				return FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+				return true;
 			}
 		} else {
-			FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
-			return false;
+			if(!Substitute(kmer)) {
+				return FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+			} else {
+				FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+				return false;
+			}
 		}
+//		if (!Substitute(kmer)) {
+//			if (try_thread) {
+//				return TryThread(kmer, kmer_pos, passed_edges, range_mapping);
+//			} else {
+//				return FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+//			}
+//		} else {
+//			FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+//			return false;
+//		}
 	}
 
 public:
