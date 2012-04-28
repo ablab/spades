@@ -27,7 +27,7 @@ cd assembler
 dch -v $BRANCH.$FIX
 cd ..
 
-# echo $FIX > $FILE
+echo $FIX > $FILE
 echo $BRANCH.$FIX > assembler/VERSION
 
 
