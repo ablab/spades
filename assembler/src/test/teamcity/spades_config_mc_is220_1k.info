@@ -20,6 +20,6 @@ assembly
 quality_assessment
 {
     reference           $cfg/../../../test_dataset/reference_1K.fa.gz
-    genes               $cfg/../../../test_dataset/genes_1K.txt
-    operons             $cfg/../../../test_dataset/operons_1K.txt
+    genes               $cfg/../../../test_dataset/genes_1K.gff
+    operons             $cfg/../../../test_dataset/operons_1K.gff
 }

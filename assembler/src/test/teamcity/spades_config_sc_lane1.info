@@ -20,6 +20,6 @@ assembly
 quality_assessment
 {
     reference           $cfg/../../../data/input/E.coli/MG1655-K12.fasta.gz
-    genes               $cfg/../../../data/input/E.coli/genes/genes.txt
-    operons             $cfg/../../../data/input/E.coli/genes/operons.txt
+    genes               $cfg/../../../data/input/E.coli/genes/genes.gff
+    operons             $cfg/../../../data/input/E.coli/genes/operons.gff
 }
