@@ -1,3 +1,9 @@
+spades (2.0.1) UNRELEASED; urgency=low
+
+  * BUGFIX: Quality tool fixed. 
+
+ -- Yakov Sirotkin <yasha@telamon.ru>  Thu, 26 Apr 2012 02:07:08 -0800
+
 spades (2.0.0) UNRELEASED; urgency=low
 
   * Initial release. 
