@@ -190,7 +190,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 	string simple_file_name(file_name);
 	//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open(simple_file_name.c_str(), fstream::out);
-	CompositeGraphColorer<Graph> colorer(new FixedColorer<typename Graph::VertexId>("")
+	CompositeGraphColorer<Graph> colorer(new FixedColorer<typename Graph::VertexId>("white")
 			, new MapColorer<typename Graph::EdgeId>(PathColorer<Graph>(g, path1, path2).ColorPath(), ""));
 	DotGraphPrinter<Graph> gp(g, labeler, colorer, graph_name, filestr);
 	SimpleGraphVisualizer<Graph> gv(g, gp);
@@ -327,6 +327,7 @@ public:
 			os.open(component_name.c_str());
 
 			GraphComponent<Graph> component(this->g(), vertices.begin(), vertices.end());
+
 			CompositeGraphColorer<Graph> local_colorer(
 					new MapColorer<VertexId>(
 							colorer_.GetColours(component.vertices())),
@@ -438,7 +439,7 @@ void WriteComponents(const Graph& g, size_t split_edge_length,
 template<class Graph>
 void WriteComponentsAlongPath(const Graph& g,
 		const GraphLabeler<Graph>& labeler, const string& file_name,
-		size_t split_edge_length,
+		size_t split_edge_length, size_t component_vertex_number,
 		const MappingPath<typename Graph::EdgeId>& path,
 		Path<typename Graph::EdgeId> color1 = Path<typename Graph::EdgeId>(),
 		Path<typename Graph::EdgeId> color2 = Path<typename Graph::EdgeId>(),
@@ -455,7 +456,7 @@ void WriteComponentsAlongPath(const Graph& g,
 	}
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
-	ReliableSplitterAlongPath<Graph> splitter(g, 60, split_edge_length, path);
+	ReliableSplitterAlongPath<Graph> splitter(g, component_vertex_number/*100*//*60*/, split_edge_length, path);
 	ComponentSizeFilter<Graph> filter(g, 1000000, 0);
 	WriteComponents<Graph>(g, splitter, filter, file_name,
 			*DefaultColorer(g, coloring), labeler);
@@ -472,7 +473,7 @@ void WriteComponentsAlongGenome(
 				typename Graph::EdgeId>(),
 		MappingPath<typename Graph::EdgeId> color2 = MappingPath<
 				typename Graph::EdgeId>()) {
-	WriteComponentsAlongPath<Graph>(g, labeler, file_name, split_edge_length,
+	WriteComponentsAlongPath<Graph>(g, labeler, file_name, split_edge_length, 60,
 			color1, color1.simple_path(), color2.simple_path());
 }
 

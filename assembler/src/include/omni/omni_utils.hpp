@@ -770,7 +770,7 @@ public:
 		return range_mappings_.back().mapped_range.end_pos;
 	}
 
-	Path<ElementId> simple_path() {
+	Path<ElementId> simple_path() const {
 		if (edges_.size() != 0)
 			return Path<ElementId>(
 					edges_,

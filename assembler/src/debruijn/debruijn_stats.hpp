@@ -401,7 +401,7 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
 	//typedef MappingPath<EdgeId> map_path_t;
 
 	//typedef graph_pack<ConjugateDeBruijnGraph, K> gp_t;
-	io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze, true);
+	io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze, false/*true*/);
 	contigs_to_thread.reset();
 
 	NewExtendedSequenceMapper<K + 1, Graph> mapper(g, index, kmer_mapper);
@@ -414,10 +414,20 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
     while (!contigs_to_thread.eof()) {
         contigs_to_thread >> read;
         make_dir(folder + read.name());
+        size_t component_vertex_number = 30;
         WriteComponentsAlongPath(g, labeler, folder + read.name() + "/" + "g.dot"
-                , /*split_edge_length*/400, mapper.MapSequence(read.sequence())
-                , Path<Graph::EdgeId>(), Path<Graph::EdgeId>(), true);
-                //, path1.simple_path(), path2.simple_path(), true);
+                , split_edge_length, component_vertex_number, mapper.MapSequence(read.sequence())
+//                , Path<Graph::EdgeId>(), Path<Graph::EdgeId>(), true);
+                , path1.simple_path(), path2.simple_path(), true);
+
+        //todo delete
+//    	ReliableSplitterAlongPath<Graph> splitter(g, component_vertex_number, split_edge_length, mapper.MapSequence(read.sequence()));
+//    	vector<VertexId> comp_vert = splitter.NextComponent();
+//    	GraphComponent<Graph> component(g, comp_vert.begin(), comp_vert.end());
+//    	ConjugateDataPrinter<Graph> printer(component, g.int_ids());
+//    	PrintBasicGraph<Graph>(folder + read.name() + "/" + "g", printer);
+    	//todo end of delete
+
     }
 	INFO("Writing graph components along contigs finished");
 }
@@ -511,9 +521,10 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
 	if (config.write_components_along_contigs) {
 		make_dir(folder + "along_contigs/");
+		size_t threshold = 500; //cfg::get().ds.IS ? *cfg::get().ds.IS : 250;
 		WriteGraphComponentsAlongContigs(gp.g, gp.index,
 				gp.kmer_mapper, labeler, gp.genome, folder + "along_contigs/",
-				*cfg::get().ds.IS);
+				threshold);
 	}
 
 	if (config.save_full_graph) {

@@ -327,6 +327,38 @@ public:
 };
 
 template<class Graph, typename distance_t = size_t>
+class CountingDijkstraForPaths: public CountingDijkstra<Graph, distance_t> {
+	typedef CountingDijkstra<Graph, distance_t> base;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	set<VertexId> path_vertices_;
+
+	set<VertexId> CollectVertices(const vector<EdgeId>& path) {
+		set<VertexId> answer;
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			answer.insert(this->graph().EdgeStart(*it));
+			answer.insert(this->graph().EdgeEnd(*it));
+		}
+		return answer;
+	}
+
+public:
+	CountingDijkstraForPaths(const Graph &graph, size_t max_size,
+			size_t edge_length_bound, const vector<EdgeId>& path)
+		: base(graph, max_size, edge_length_bound)
+	, path_vertices_(CollectVertices(path)) {
+	}
+
+	virtual size_t GetLength(EdgeId edge) {
+		if (path_vertices_.count(this->graph().EdgeStart(edge))
+				&& path_vertices_.count(this->graph().EdgeEnd(edge)))
+				return 0;
+		return base::GetLength(edge);
+	}
+
+};
+
+template<class Graph, typename distance_t = size_t>
 class ComponentCloser {
 private:
 	typedef typename Graph::VertexId VertexId;
@@ -462,7 +494,7 @@ private:
 	size_t edge_length_bound_;
 	set<VertexId> last_component_;
 	size_t current_index_;
-	const MappingPath<EdgeId>& path_;
+	MappingPath<EdgeId> path_;
 	Range covered_range_;
 	bool start_processed_;
 
@@ -515,8 +547,8 @@ public:
 			return vector<VertexId>();
 		}
 		TRACE("Search started");
-		CountingDijkstra<Graph> cf(this->graph(), max_size_,
-				edge_length_bound_);
+		CountingDijkstra/*ForPaths*/<Graph> cf(this->graph(), max_size_,
+				edge_length_bound_/*, path_.simple_path().sequence()*/);
 		if (start_processed_)
 			cf.run(this->graph().EdgeEnd(path_[current_index_].first));
 		else {
@@ -532,7 +564,7 @@ public:
 
 		TRACE("Component vector filled");
 		size_t prev_index = current_index_;
-		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
+		ComponentCloser<Graph> cc(this->graph(), /*1*/edge_length_bound_);
 		cc.CloseComponent(last_component_);
 		SkipVisited();
 		//todo ask Anton what is this...

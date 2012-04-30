@@ -425,6 +425,12 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	 omnigraph::Compressor<typename graph_pack::graph_t> compressor(resolved_gp.g);
 	    compressor.CompressAllVertices();
 
+//	    omnigraph::StrGraphLabeler<typename graph_pack::graph_t> str_labeler(resolved_gp.g);
+//	omnigraph::WriteSimple(resolved_gp.g, str_labeler,
+//				cfg::get().output_dir + subfolder + graph_name + "_resolved.dot",
+//				"no_repeat_graph");
+
+
 	EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g, false);
 	size_t iters = 3; // TODO Constant 3? Shouldn't it be taken from config?
 	for (size_t i = 0; i < iters; ++i) {
@@ -880,6 +886,18 @@ void resolve_repeats() {
 		}
 	}
 
+	//todo refactor labeler creation
+	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
+			&conj_gp.edge_pos);
+	total_labeler tot_lab(&graph_struct);
+	EdgeQuality<Graph> quality_labeler(conj_gp.g, conj_gp.index,
+			conj_gp.kmer_mapper, conj_gp.genome);
+//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
+	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
+	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir,
+			"graph.dot");
+	printer(ipp_before_repeat_resolution);
+
 	if (!cfg::get().paired_mode
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
@@ -892,18 +910,6 @@ void resolve_repeats() {
 	SAM_before_resolve(conj_gp);
 
 	INFO("STAGE == Resolving Repeats");
-
-	//todo refactor labeler creation
-	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
-			&conj_gp.edge_pos);
-	total_labeler tot_lab(&graph_struct);
-	EdgeQuality<Graph> quality_labeler(conj_gp.g, conj_gp.index,
-			conj_gp.kmer_mapper, conj_gp.genome);
-//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
-	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
-	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir,
-			"graph.dot");
-	printer(ipp_before_repeat_resolution);
 
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
 		int number_of_components = 0;

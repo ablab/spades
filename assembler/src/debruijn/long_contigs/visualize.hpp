@@ -63,7 +63,7 @@ void WritePathLocality(const conj_graph_pack& gp, const GraphLabeler<Graph>& lab
 		const string& folder, const BidirectionalPath& path, size_t edge_split_length
 		, const Path<EdgeId>& color1, const Path<EdgeId>& color2) {
 	WriteComponentsAlongPath(gp.g, labeler, folder + ToString(path.uid) + ".dot"
-			, edge_split_length
+			, edge_split_length, 60
 			, as_trivial_mapping_path(gp.g, as_simple_path(gp.g, path))
 			, color1, color2, true);
 }

@@ -11,10 +11,10 @@ public:
 
 	template<class It>
 	map<ElementId, string> GetColours(It begin, It end) const {
-		return GetColours(vector<ElementId>(begin, end));
+		return GetColours(set<ElementId>(begin, end));
 	}
 
-	virtual map<ElementId, string> GetColours(const vector<ElementId> &elements) const {
+	virtual map<ElementId, string> GetColours(const set<ElementId> &elements) const {
 		map<ElementId, string> result;
 		for(auto it = elements.begin(); it != elements.end(); ++it) {
 			result[*it] = GetColour(*it);

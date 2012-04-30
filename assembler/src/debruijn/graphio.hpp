@@ -85,7 +85,7 @@ private:
 	void save(FILE* file, VertexId vid);
 
 	const GraphComponent<Graph> component_;
-	const IdTrackHandler<Graph>& int_ids_;
+	const BaseIdTrackHandler<VertexId, EdgeId>& int_ids_;
 
 	virtual std::string toPrint(VertexId v) const = 0;
 	virtual std::string toPrint(EdgeId e) const = 0;
@@ -109,7 +109,7 @@ protected:
 
 //todo optimize component copy
 	DataPrinter(const GraphComponent<Graph>& component,
-			IdTrackHandler<Graph> const& int_ids) :
+			BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
 			component_(component), int_ids_(int_ids) {
 	}
 
@@ -123,7 +123,7 @@ protected:
 		return component_;
 	}
 
-	const IdTrackHandler<Graph>& id_handler() const {
+	const BaseIdTrackHandler<VertexId, EdgeId>& id_handler() const {
 		return int_ids_;
 	}
 
@@ -280,18 +280,18 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 public:
-	ConjugateDataPrinter(Graph const& g, IdTrackHandler<Graph> const& int_ids) :
+	ConjugateDataPrinter(Graph const& g, BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
 			base(g, int_ids) {
 	}
 
 	ConjugateDataPrinter(const GraphComponent<Graph>& graph_component,
-			IdTrackHandler<Graph> const& int_ids) :
+			BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
 			base(GraphComponent<Graph>(graph_component, true), int_ids) {
 	}
 
 	template<class VertexIt>
 	ConjugateDataPrinter(const Graph& g, VertexIt begin, VertexIt end,
-			IdTrackHandler<Graph> const& int_ids) :
+			BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
 			base(GraphComponent<Graph>(g, begin, end, true), int_ids) {
 	}
 
@@ -334,18 +334,18 @@ class NonconjugateDataPrinter: public DataPrinter<Graph> {
 	typedef typename Graph::VertexId VertexId;
 public:
 	NonconjugateDataPrinter(Graph const& g,
-			IdTrackHandler<Graph> const& int_ids) :
+			BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
 			base(g, int_ids) {
 	}
 
 	NonconjugateDataPrinter(const GraphComponent<Graph>& graph_component,
-			IdTrackHandler<Graph> const& int_ids) :
+			BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
 			base(graph_component, int_ids) {
 	}
 
 	template<class VertexIt>
 	NonconjugateDataPrinter(const Graph& g, VertexIt begin, VertexIt end,
-			IdTrackHandler<Graph> const& int_ids) :
+			BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
 			base(GraphComponent<Graph>(g, begin, end), int_ids) {
 	}
 
@@ -401,10 +401,10 @@ public:
 private:
 	Graph& g_;
 //	int edge_count_;
-	IdTrackHandler<Graph>& id_handler_;
+	BaseIdTrackHandler<VertexId, EdgeId>& id_handler_;
 
 protected:
-	DataScanner(Graph &g, IdTrackHandler<Graph>& id_handler) :
+	DataScanner(Graph &g, BaseIdTrackHandler<VertexId, EdgeId>& id_handler) :
 			g_(g), id_handler_(id_handler) {
 		INFO("Creating of scanner started");
 //		edge_count_ = 0;
@@ -414,7 +414,7 @@ protected:
 		return g_;
 	}
 
-	IdTrackHandler<Graph>& id_handler() {
+	BaseIdTrackHandler<VertexId, EdgeId>& id_handler() {
 		return id_handler_;
 	}
 
@@ -514,7 +514,7 @@ public:
 		fclose(sequence_file);
 	}
 public:
-	ConjugateDataScanner(Graph& g, IdTrackHandler<Graph>& id_handler) :
+	ConjugateDataScanner(Graph& g, BaseIdTrackHandler<VertexId, EdgeId>& id_handler) :
 			base(g, id_handler) {
 	}
 };
@@ -590,7 +590,7 @@ public:
 		fclose(sequence_file);
 	}
 
-	NonconjugateDataScanner(Graph &g, IdTrackHandler<Graph>& id_handler) :
+	NonconjugateDataScanner(Graph &g, BaseIdTrackHandler<VertexId, EdgeId>& id_handler) :
 			base(g, id_handler) {
 	}
 };
@@ -621,6 +621,7 @@ void DataScanner<Graph>::loadCoverage(const string& file_name) {
 template<class Graph>
 void DataScanner<Graph>::loadPaired(const string& file_name,
 		PairedInfoIndex<Graph>& paired_index) {
+	typedef typename Graph::EdgeId EdgeId;
 	int read_count;
 	FILE* file = fopen((file_name + ".prd").c_str(), "r");
 	DEBUG((file_name + ".prd"));
@@ -637,6 +638,8 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
 		VERIFY(read_count == 5);
 		TRACE(
 				first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
+		if (id_handler_.ReturnEdgeId(first_real_id) == EdgeId(NULL) || id_handler_.ReturnEdgeId(second_real_id) == EdgeId(NULL))
+			continue;
 		TRACE(
 				id_handler_.ReturnEdgeId(first_real_id)<<" "<< id_handler_.ReturnEdgeId(second_real_id)<<" "<< d<<" "<< w);
 		PairInfo<typename Graph::EdgeId> p_info(
@@ -872,7 +875,7 @@ void ScanWithPairedIndex(const string& file_name, graph_pack& gp,
 
 template<class Graph>
 void ScanBasicGraph(const string& file_name, Graph& g,
-		IdTrackHandler<Graph>& int_ids) {
+		BaseIdTrackHandler<VertexId, EdgeId>& int_ids) {
 	typename ScannerTraits<Graph>::Scanner scanner(g, int_ids);
 	ScanBasicGraph(file_name, scanner);
 }
