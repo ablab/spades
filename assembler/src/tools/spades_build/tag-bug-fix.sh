@@ -44,8 +44,3 @@ eval "git tag spades_$BRANCH.$FIX"
 eval "git push --tag"
 
 eval "git stash pop"
-
-
-
-
-
