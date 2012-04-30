@@ -1,6 +1,6 @@
 %define debug_package %{nil}
 Name:           spades 
-Version:        2.0.0
+Version:        %version
 Release:        1%{?dist}
 License:        GPLv2
 Summary:        SPAdes genome assembler
