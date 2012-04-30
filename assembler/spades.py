@@ -53,7 +53,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict["additional_contigs"]     = cfg.additional_contigs
     subst_dict["entry_point"]            = "construction"
     subst_dict["developer_mode"]         = bool_to_str(cfg.developer_mode)
-    subst_dict["SAM_writer_enable"]      = bool_to_str(cfg.generate_sam_files)
+    subst_dict["SAM_writer_enable"]      = bool_to_str(cfg.generate_sam_files and last_one)
     subst_dict["align_original_reads"]   = bool_to_str(cfg.align_original_reads)
     subst_dict["project_name"]           = ""
     subst_dict["gap_closer_enable"]      = bool_to_str(last_one and cfg.gap_closer)
@@ -390,6 +390,9 @@ def run_spades(cfg):
         os.symlink(latest, os.path.join(cfg.working_dir, "link_K%d" % (K)))  # python2.4 doesn't support os.path.relpath
 
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
+    if cfg.developer_mode:
+        before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "contigs_before_RR.fasta")
+        shutil.copyfile(os.path.join(latest, "contigs_before_RR.fasta"), before_RR_contigs)
     os.remove(cfg.additional_contigs) 
 
     return cfg.result_contigs
@@ -397,6 +400,10 @@ def run_spades(cfg):
 def run_quality(cfg):        
 
     args = [cfg.result_contigs]
+
+    if cfg.developer_mode:
+        before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "contigs_before_RR.fasta")
+        args.append(before_RR_contigs)
     
     if cfg.__dict__.has_key("reference"):
         args.append("-R")
