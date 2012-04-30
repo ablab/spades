@@ -19,6 +19,8 @@
 #include "omni_labelers.hpp"
 #include "omni/omni_tools.hpp"
 #include "internal_aligner.hpp"
+#include <io/single_read.hpp>
+#include <read/ireadstream.hpp>
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
@@ -32,10 +34,25 @@ namespace debruijn_graph {
 void SAM_before_resolve(conj_graph_pack& conj_gp){
 	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_before_RR)
 	{
+		//assume same quality offset for all files!!!
+		int offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
+		io::OffsetType offset_type;
+		if (offset == 33) {
+			INFO("Using offset +33");
+			offset_type = io::PhredOffset;
+		}
+		else if (offset == 64) {
+			INFO("Using offset +64");
+			offset_type = io::SolexaOffset;
+		}
+		else {
+			WARN("Unable to define offset type, assume +33");
+			offset_type = io::PhredOffset;
+		}
 		if (cfg::get().sw.align_original_reads){
 			{
-				auto paired_reads = paired_easy_reader(false, 0, false, false);
-				auto original_paired_reads = paired_easy_reader(false, 0, false, false, true);
+				auto paired_reads = paired_easy_reader(false, 0, false, false, false, offset_type);
+				auto original_paired_reads = paired_easy_reader(false, 0, false, false, true, offset_type);
 				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);
 
@@ -47,8 +64,8 @@ void SAM_before_resolve(conj_graph_pack& conj_gp){
 		}
 		else {
 
-			auto paired_reads = paired_easy_reader(false, 0, false, false);
-			auto single_reads = single_easy_reader(false, false);
+			auto paired_reads = paired_easy_reader(false, 0, false, false, false, offset_type);
+			auto single_reads = single_easy_reader(false, false, false, offset_type);
 
 			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
 			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper);

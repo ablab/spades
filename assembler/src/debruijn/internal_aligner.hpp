@@ -140,7 +140,7 @@ void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, con
 //		shifts.second = orig_s_r.size() - shifts.second;
 		MySam.SEQ = orig.sequence().str();
 		if (print_quality)
-			MySam.QUAL = orig.GetQualityString();
+			MySam.QUAL = orig.GetPhredQualityString(); //orig.GetPhredQualityString()
 		else MySam.QUAL = "*";
 
 		if (MySam.FLAG & 0x10) MySam.CIGAR = (shifts.second != 0 ? ToString(shifts.second) + "S": "") + MySam.CIGAR + (shifts.first != 0 ? ToString(shifts.first) + "S": "");
@@ -150,7 +150,7 @@ void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, con
 	{
 		MySam.SEQ = orig.sequence().str();
 		if (print_quality)
-			MySam.QUAL = orig.GetQualityString();
+			MySam.QUAL = orig.GetPhredQualityString();
 		else MySam.QUAL = "*";
 	}
 }
@@ -404,12 +404,12 @@ protected:
 				edge = path1[0].first;
 				rc = true;
 				if (this->print_quality) {
-					qual = (!s_r).GetQualityString();
+					qual = (!s_r).GetPhredQualityString();
 				}
 			}
 			else {
 				if (this->print_quality) {
-					qual = s_r.GetQualityString();
+					qual = s_r.GetPhredQualityString();
 				}
 			}
 			this->SuccesfullReads++;
@@ -417,7 +417,7 @@ protected:
 
 		} else {
 			if (this->print_quality) {
-				qual = s_r.GetQualityString();
+				qual = s_r.GetPhredQualityString();
 			}
 			if (path1.size() > 1) this->SplittedReads++;
 			MySamRecord SamRec(s_r.original_name(), s_r.GetSequenceString(), qual);
@@ -618,13 +618,13 @@ protected:
 					rc = true;
 					i_r = ReverceRanges(i_r, read.size() - debruijn_graph::K);
 					if (this->print_quality) {
-						qual = (!s_r).GetQualityString();
+						qual = (!s_r).GetPhredQualityString();
 					}
 
 				} else {
 					read = proto_read;
 					if (this->print_quality) {
-						qual = s_r.GetQualityString();
+						qual = s_r.GetPhredQualityString();
 					}
 				}
 //				Range m_r = ConvertRanges(path1[0].second.mapped_range, proto_edge, convertor_.edge_labels[edge], rc);
@@ -637,7 +637,7 @@ protected:
 				}
 			}
 			if (result.size()==0) {
-				result.push_back(MySamRecord(s_r.original_name(), s_r.GetSequenceString(), (this->print_quality ? s_r.GetQualityString():"*")));
+				result.push_back(MySamRecord(s_r.original_name(), s_r.GetSequenceString(), (this->print_quality ? s_r.GetPhredQualityString():"*")));
 				this->SamRecordsCount++;
 			}
 			else {
@@ -649,7 +649,7 @@ protected:
 //			if (path1.size() > 1) {
 //				this->SplittedReads++;
 //			}
-			MySamRecord SamRec(s_r.original_name(), s_r.GetSequenceString(), (this->print_quality ? s_r.GetQualityString():"*"));
+			MySamRecord SamRec(s_r.original_name(), s_r.GetSequenceString(), (this->print_quality ? s_r.GetPhredQualityString():"*"));
 			this->SamRecordsCount++;
 			result.push_back(SamRec);
 		}
