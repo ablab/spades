@@ -573,11 +573,17 @@ public:
 		INFO("Finding threshold started");
 		vector<double> weights = CollectWeights();
 		vector < size_t > histogram = ConstructHistogram(weights);
+		for(size_t i = 0; i < histogram.size(); i++) {
+			TRACE(i << " " << histogram[i]);
+		}
 		double result = FindThreshold(histogram);
+		TRACE("Average coverage: " << AvgCoverage());
 		result = std::min(AvgCoverage(), result);
 		INFO("Threshold finding finished. Threshold is set to " << result);
 		return result;
 	}
+private:
+	DECL_LOGGER("ThresholdFinder");
 };
 
 }
