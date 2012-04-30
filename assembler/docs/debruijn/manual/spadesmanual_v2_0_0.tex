@@ -381,6 +381,12 @@ quality_assessment
 If this section is present in the config file then
 {\spades} evaluates assembly results by computing various metrics (e.g., N50, NG50, number of long ORFs, etc.) on the resulting contigs.
 The variables {\tt reference}, {\tt genes}, and {\tt operons} are self-explanatory.
+
+{\tt genes} and {\tt operons} should be either in GFF format (versions 2 
+(\url{http://www.sanger.ac.uk/resources/software/gff/spec.html} and 3 (\url{http://www.sequenceontology.org/gff3.shtml}) are supported) or in plain TXT format 
+with 4 tab-separated columns: {\bf the chromosome name} (it should match the exact string in the reference file), {\bf gene or operon id}, {\bf start position} and
+{\bf end postion} (the coordinates are 1-based and if {\bf start postion} < {\bf end postion} than that gene or operon is on the positive strand and it is on the negative strand otherwise).
+
 Note that the quality is estimated even if this section is empty. Our quality tool uses Plantagora (\url{http://www.plantagora.org/}) and MUMmer (\url{http://mummer.sourceforge.net/}).
 
 The computed metrics are described in detail in \cref{section:metrics}.
@@ -428,7 +434,7 @@ produces half (50\%) the bases of the reference genome.
 
 \item[Misassemblies] gives the number of positions at the assembled contigs where the left
 flanking sequence aligns over 1kb away from the right flanking sequence on the
-reference.
+reference or they overlap on more than 1 kb or flanking sequences align on different strands.
 
 \item[Misassembled contigs] is the number of contigs that contain misassembly
 events.
