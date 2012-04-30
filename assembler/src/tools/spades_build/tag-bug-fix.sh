@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e -x
+set -e
 
 VERSION="$(cat assembler/VERSION)"
 BRANCH=${VERSION%.*}
@@ -9,27 +9,26 @@ eval "git checkout spades_$BRANCH"
 echo "BRANCH set to " $BRANCH
 
 eval "git pull --rebase"
-eval "git stash"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 FILE=$DIR/bug-fix.version
 
+
 if [ -z "$1" ];
 then
-    read FIX < $FILE
+    FIX=`cat $FILE`
 else
-    $FIX=$1
+	$FIX=$1
 fi
 
-FIX=$(($FIX+1))
-
+echo  $FIX 
 cd assembler
 dch -v $BRANCH.$FIX
 cd ..
 
-echo $FIX > $FILE
 echo $BRANCH.$FIX > assembler/VERSION
-
+FIX_NEXT=$(($FIX+1))
+echo $FIX_NEXT > $FILE
 
 git diff assembler/VERSION $FILE assembler/debian/changelog | less
 
@@ -42,5 +41,3 @@ eval "git push"
 eval "git tag spades_$BRANCH.$FIX"
 
 eval "git push --tag"
-
-eval "git stash pop"
