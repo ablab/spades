@@ -77,7 +77,7 @@ public:
 		}
 		//todo offset_type_ should be used in future
 		if (seq_->qual.s) {
-			read = SingleRead(seq_->name.s, seq_->seq.s, seq_->qual.s);
+			read = SingleRead(seq_->name.s, seq_->seq.s, seq_->qual.s, offset_type_);
 		} else {
 			read = SingleRead(seq_->name.s, seq_->seq.s);
 //			size_t len = strlen(seq_->seq.s);

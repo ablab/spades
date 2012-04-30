@@ -79,6 +79,16 @@ public:
 	 * @param qual The quality of the SingleRead sequence.
 	 */
 	SingleRead(const std::string& name, const std::string& seq,
+			const std::string& qual, OffsetType offset_type) :
+			name_(name), seq_(seq), qual_(qual) {
+		Init();
+		int offset = GetOffset(offset_type);
+		for (size_t i = 0; i < qual_.size(); ++i) {
+			qual_[i] -= offset;
+		}
+	}
+
+	SingleRead(const std::string& name, const std::string& seq,
 			const std::string& qual) :
 			name_(name), seq_(seq), qual_(qual) {
 		Init();
