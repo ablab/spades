@@ -46,7 +46,7 @@ struct graph_pack : private boost::noncopyable {
 	g(k),
 	index(g)
 	, int_ids (g)
-	, edge_pos(g, cfg::get().pos.max_single_gap), etalon_paired_index(g, 0), kmer_mapper(g),
+	, edge_pos(g, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling ), etalon_paired_index(g, 0), kmer_mapper(g),
 	genome(genome) {
 	}
 
@@ -54,7 +54,7 @@ struct graph_pack : private boost::noncopyable {
 	g(k),
 	index(g)
 	, int_ids (g)
-	, edge_pos(g, cfg::get().pos.max_single_gap), etalon_paired_index(g, 0), kmer_mapper(g),
+	, edge_pos(g, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling), etalon_paired_index(g, 0), kmer_mapper(g),
 	genome(Sequence()) {
 	}
 };

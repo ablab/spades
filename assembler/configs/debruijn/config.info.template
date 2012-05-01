@@ -108,6 +108,8 @@ pos
 	contigs_for_threading ./data/debruijn/contigs.fasta
     contigs_to_analyze ./data/debruijn/contigs.fasta
 	late_threading false
+	careful_labeling false
+
 }
 
 gap_closer_enable	true

@@ -327,6 +327,8 @@ struct debruijn_config {
 		std::string contigs_for_threading;
 		std::string contigs_to_analyze;
 		bool late_threading;
+		bool careful_labeling;
+
 	};
 
 	struct gap_closer {
@@ -552,8 +554,9 @@ inline void load(debruijn_config::position_handler& pos,
 	using config_common::load;
 	load(pos.max_single_gap         , pt, "max_single_gap"		 );
 	load(pos.contigs_for_threading  , pt, "contigs_for_threading");
-	load(pos.contigs_to_analyze  , pt, "contigs_to_analyze");
+	load(pos.contigs_to_analyze     , pt, "contigs_to_analyze"	 );
 	load(pos.late_threading         , pt, "late_threading"		 );
+	load(pos.careful_labeling       , pt, "careful_labeling"	 );
 }
 
 inline void load(debruijn_config::gap_closer& gc,

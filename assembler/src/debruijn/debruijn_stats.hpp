@@ -865,7 +865,7 @@ public:
 										<< "--" << mr.initial_range.end_pos);
 					}
 			edge_pos_.AddEdgePosition(ei, mr.initial_range.start_pos + 1,
-					mr.initial_range.end_pos, name);
+					mr.initial_range.end_pos, name, mr.mapped_range.start_pos + 1, mr.mapped_range.end_pos);
 			cur_pos += len;
 		}
 	}

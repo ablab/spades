@@ -266,6 +266,8 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, E
 
 
 
+
+
 template<class graph_pack>
 void CleanIsolated(graph_pack& gp) {
 	for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
