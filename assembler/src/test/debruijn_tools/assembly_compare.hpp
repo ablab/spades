@@ -425,16 +425,16 @@ public:
 		return vertex_color_.Color(v);
 	}
 
-	restricted::map<EdgeId, string> EdgeColorMap() const {
-		restricted::map < EdgeId, string > answer;
+	map<EdgeId, string> EdgeColorMap() const {
+		map<EdgeId, string> answer;
 		for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			answer[*it] = edge_color_.ColorStr(*it);
 		}
 		return answer;
 	}
 
-	restricted::map<VertexId, string> VertexColorMap() const {
-		restricted::map < VertexId, string > answer;
+	map<VertexId, string> VertexColorMap() const {
+		map<VertexId, string> answer;
 		for (auto it = this->g().begin(); it != this->g().end(); ++it) {
 			answer[*it] = vertex_color_.ColorStr(*it);
 		}
@@ -1477,9 +1477,8 @@ private:
 		for (auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			initial_edges.push_back(*it);
 		}
-		for (auto it = SmartSetIterator<Graph, EdgeId,
-				typename Graph::Comparator>(gp_.g, initial_edges.begin(),
-				initial_edges.end(), gp_.g.ReliableComparatorInstance());
+		for (auto it = SmartSetIterator<Graph, EdgeId>(gp_.g, initial_edges.begin(),
+				initial_edges.end());
 				!it.IsEnd(); ++it) {
 			EdgeId e = *it;
 			VERIFY(bps.find(e) != bps.end());

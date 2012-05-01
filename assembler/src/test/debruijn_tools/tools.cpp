@@ -4,13 +4,26 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#define BOOST_TEST_MODULE debruijn_tools
-
+#include "standard_base.hpp"
+#include "logger/log_writers.hpp"
+#include "graphio.hpp"
 #include <boost/test/unit_test.hpp>
+
 #include "assembly_compare.hpp"
 #include "comparison_utils.hpp"
 
-DECL_PROJECT_LOGGER("dtls")
+::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
+{
+	logging::create_logger();
+	logging::__logger()->add_writer(make_shared<logging::console_writer>());
+
+    using namespace ::boost::unit_test;
+	char module_name [] = "debruijn_tools";
+
+    assign_op( framework::master_test_suite().p_name.value, basic_cstring<char>(module_name), 0 );
+
+	return 0;
+}
 
 namespace debruijn_graph {
 
@@ -33,26 +46,28 @@ namespace debruijn_graph {
 //			20);
 //}
 
-//BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
-//	static const size_t k = 19;
-//	static const size_t K = 55;
-//
+BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
+	static const size_t k = 19;
+	static const size_t K = 55;
+
 //	io::Reader stream_1("/home/snurk/gingi/2.fasta");
 //	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-//
-//	string folder = "assembly_comp/gingi_2_3/";
-//	make_dir(folder);
-//
-//	RunBPComparison<k, K>(
-//		stream_1,
-//		stream_2,
-//		"2",
-//		"3",
-//		true/*refine*/,
-//		false/*untangle*/,
-//		folder,
-//		true/*detailed_output*/);
-//}
+	io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE2_BH.fasta");
+	io::Reader stream_2("/home/snurk/gingi/jeff.fasta");
+
+	string folder = "assembly_comp/gingi_2_new_vs_jeff/";
+	make_dir(folder);
+
+	RunBPComparison<k, K>(
+		stream_1,
+		stream_2,
+		"2",
+		"jeff",
+		true/*refine*/,
+		false/*untangle*/,
+		folder,
+		true/*detailed_output*/);
+}
 
 template<size_t k, size_t K>
 inline void LoadAndRunBPG(const string& filename, const string& output_dir,

@@ -819,7 +819,7 @@ public:
 	/*virtual*/ vector<VertexId> NextComponent() {
 		CountingDijkstra<Graph> cf(this->graph(), max_size_,
 				edge_length_bound_);
-		set<VertexId, typename Graph::Comparator> result_set(this->graph().ReliableComparatorInstance());
+		set<VertexId> result_set;
 		cf.run(this->graph().EdgeStart(edge_));
 		vector<VertexId> result_start = cf.ReachedVertices();
 		result_set.insert(result_start.begin(), result_start.end());

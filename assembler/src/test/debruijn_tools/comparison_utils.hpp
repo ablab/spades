@@ -9,7 +9,7 @@
 #include "graphio.hpp"
 #include "xmath.h"
 #include <iostream>
-#include "logging.hpp"
+#include "logger/logger.hpp"
 #include "io/splitting_wrapper.hpp"
 #include "io/vector_reader.hpp"
 #include <boost/property_tree/ptree.hpp>
