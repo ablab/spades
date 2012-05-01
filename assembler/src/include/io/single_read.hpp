@@ -79,9 +79,8 @@ public:
 	 * @param qual The quality of the SingleRead sequence.
 	 */
 	SingleRead(const std::string& name, const std::string& seq,
-			const std::string& qual, OffsetType offset_type) :
-			name_(name), seq_(seq), qual_(qual) {
-		Init();
+			const std::string& qual, OffsetType offset_type) {
+		Init(name, seq, qual);
 		int offset = GetOffset(offset_type);
 		for (size_t i = 0; i < qual_.size(); ++i) {
 			qual_[i] -= offset;
@@ -89,14 +88,12 @@ public:
 	}
 
 	SingleRead(const std::string& name, const std::string& seq,
-			const std::string& qual) :
-			name_(name), seq_(seq), qual_(qual) {
-		Init();
+			const std::string& qual) {
+		Init(name, seq, qual);
 	}
 
-	SingleRead(const std::string& name, const std::string& seq) :
-			name_(name), seq_(seq), qual_(EmptyQuality(seq_)) {
-		Init();
+	SingleRead(const std::string& name, const std::string& seq) {
+		Init(name, seq, EmptyQuality(seq));
 	}
 
 	/*
@@ -350,9 +347,38 @@ private:
 //		cout << "Set quality" << endl;
 //	}
 
-	void Init() {
+
+	// calculated largest substring without Ns, returns (start, len)
+	pair<int, int> validInterval(const std::string &seq) {
+		int maxl = 0; // max len
+		int start = 0;
+		int curs = -1; // current start
+		int curl = 0; // current len
+		for (size_t i = 0; i <= seq.size(); ++i) {
+			if (i == seq.size() || !is_nucl(seq[i])) {
+				if (maxl < curl) {
+					start = curs + 1;
+					maxl = curl;
+				}
+				curs = i;
+				curl = 0;
+			}
+			else {
+				curl += 1;
+			}
+		}
+		return make_pair(start, maxl);
+	}
+
+	void Init(const std::string& name, const std::string& seq,
+			const std::string& qual) {
+		name_ = name;
+		pair<int, int> p = validInterval(seq);
+		seq_ = seq.substr(p.first, p.second);
+		qual_ = qual.substr(p.first, p.second);
 		VERIFY(seq_.size() == qual_.size());
 		valid_ = SingleRead::IsValid(seq_);
+		assert(valid_); // since we took interval without Ns
 	}
 };
 
