@@ -78,7 +78,7 @@ def dataset_print(dataset):
         result += key + "\t" + value + "\n"
     return result
 
-def generate_unpaired_basename(filename1, filename2):
+def get_max_prefix(filename1, filename2):
     str1 = os.path.basename(filename1)
     str2 = os.path.basename(filename2)
     prefix = ""
@@ -87,7 +87,15 @@ def generate_unpaired_basename(filename1, filename2):
             prefix += str1[i]
         else:
             break
+    return prefix
+
+def generate_unpaired_basename(filename1, filename2):
+    prefix = get_max_prefix(filename1, filename2)    
     return prefix + "unpaired"
+
+def generate_paired_basename(filename1, filename2, i):
+    prefix = get_max_prefix(filename1, filename2)    
+    return prefix + "_paired_" + str(i + 1)
 
 def generate_dataset(cfg):  
 
@@ -148,19 +156,23 @@ def split_paired_file(input_filename, output_folder):
     return [out_left_filename, out_right_filename]
 
 def merge_paired_files(src_paired_reads, dst_paired_reads, output_folder):
-    merged = dst_paired_reads
+    merged = []
 
     for i in [0, 1]:
-        dst_filename = file
+        dst_basename = generate_paired_basename(dst_paired_reads[i], src_paired_reads[i], i)
+        dst_filename = ""
         if dst_paired_reads[i].startswith(output_folder):
-            dst_filename = dst_paired_reads[i]
+            dst_filename = os.path.join(os.path.dirname(dst_paired_reads[i]), dst_basename)
+            os.rename(dst_paired_reads[i], dst_filename)            
         else:
             import shutil
-            import os
-            shutil.copy(dst_paired_reads[i], output_folder)
-            dst_filename = os.path.join(output_folder, os.path.basename(dst_paired_reads[i]))
-            merged[i] = dst_filename
-        
+            dst_filename = os.path.join(output_folder, dst_basename)
+            shutil.copy(dst_paired_reads[i], dst_filename)
+            
+        merged.append(dst_filename)
+
+        print("== Merging " + src_paired_reads[i] + " and " + dst_paired_reads[i] + " into one file with paired reads: " + dst_filename)
+
         src_file = open(src_paired_reads[i], 'r')
         dst_file = open(dst_filename, "a")
         dst_file.write(src_file.read())
@@ -177,14 +189,15 @@ def merge_single_files(src_single_read, dst_single_read, output_folder):
         import shutil
         shutil.copy(dst_single_read, output_folder)
         dst_filename = os.path.join(output_folder, os.path.basename(dst_single_read))
+    merged_filename = os.path.join(os.path.dirname(dst_filename), generate_unpaired_basename(src_single_read, dst_filename))
     
+    print("== Merging " + src_single_read + " and " + dst_single_read + " into one file with unpaired reads: " + merged_filename)
+
     src_file = open(src_single_read, 'r')
     dst_file = open(dst_filename, "a")
     dst_file.write(src_file.read())
     dst_file.close()
-    src_file.close()
-
-    merged_filename = os.path.join(os.path.dirname(dst_filename), generate_unpaired_basename(src_single_read, dst_filename))
+    src_file.close()    
     os.rename(dst_filename, merged_filename)
 
     return merged_filename  
@@ -196,6 +209,9 @@ def ungzip_if_needed(filename, output_folder):
             os.makedirs(output_folder)
         ungzipped_filename = os.path.join(output_folder, os.path.basename(file_basename))
         ungzipped_file = open(ungzipped_filename, 'w')
+
+        print("== Ungzipping " + filename + " into " + ungzipped_filename)
+
         import subprocess
         subprocess.call(['gunzip', filename, '-c'], stdout=ungzipped_file)
         ungzipped_file.close()
