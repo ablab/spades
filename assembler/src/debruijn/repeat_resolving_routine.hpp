@@ -635,12 +635,16 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 			double ratio = (1.0 * second_weight)/first_weight;
 			if (ratio > 1)
 				ratio = 1/ratio;
-				if (first_weight > second_weight * 2)
-					clustered_index.RemovePairInfo(first_info);
-				else if (second_weight > first_weight * 2)
-					clustered_index.RemovePairInfo(second_info);
-				DEBUG("contradictional paired info from edge " << origin_gp.int_ids.ReturnIntId(first_info.first) << " to edges " <<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "; weights ratio " << ratio);
-				return 1;
+			if (first_weight > second_weight * 2){
+				clustered_index.RemovePairInfo(second_info);
+				clustered_index.RemovePairInfo(BackwardInfo(second_info));
+			}
+			else if (second_weight > first_weight * 2){
+				clustered_index.RemovePairInfo(first_info);
+				clustered_index.RemovePairInfo(BackwardInfo(first_info));
+			}
+			DEBUG("contradictional paired info from edge " << origin_gp.int_ids.ReturnIntId(first_info.first) << " to edges " <<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "; weights ratio " << ratio);
+			return 1;
 		} else {
 			DEBUG("no contradictions");
 			return 0;
