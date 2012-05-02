@@ -64,6 +64,8 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
 
 def check_config(cfg, config_filename):
 
+    ## checking mandatory sections
+
     if not cfg.has_key("dataset"):
         error("wrong config! You should specify 'dataset' section!")
         return False
@@ -76,6 +78,19 @@ def check_config(cfg, config_filename):
         error("wrong config! You should specify output_dir!")
         return False
 
+    ## checking existence of all files in dataset section
+
+    for k, v in cfg["dataset"].__dict__.iteritems():
+        if k.find("reads") != -1:
+            if type(v) != list:
+                v = [v]
+            for reads_file in v:
+                if not os.path.isfile(os.path.expandvars(reads_file)):
+                    error("file with reads doesn't exist! " + os.path.expandvars(reads_file))
+                    return False
+
+    ## setting default values if needed
+    
     if not cfg["common"].__dict__.has_key("output_to_console"):
         cfg["common"].__dict__["output_to_console"] = True
 
