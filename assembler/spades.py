@@ -80,14 +80,45 @@ def check_config(cfg, config_filename):
 
     ## checking existence of all files in dataset section
 
+    no_files_with_reads = True
     for k, v in cfg["dataset"].__dict__.iteritems():
         if k.find("reads") != -1:
+            no_files_with_reads = False
             if type(v) != list:
                 v = [v]
             for reads_file in v:
                 if not os.path.isfile(os.path.expandvars(reads_file)):
                     error("file with reads doesn't exist! " + os.path.expandvars(reads_file))
                     return False
+    
+    if no_files_with_reads:
+        error("wrong config! You should specify at least one file with reads!")
+        return False
+
+    ## checking mandatory parameters in sections
+    
+    # dataset
+    if not cfg["dataset"].__dict__.has_key("single_cell"):
+        error("wrong config! Parameter 'single_cell' in 'dataset' section is mandatory!")
+        return False
+
+    # error_correction
+    if cfg.has_key("error_correction"):
+        if not cfg["error_correction"].__dict__.has_key("max_iterations"):
+            error("wrong config! Parameter 'max_iterations' in 'error_correction' section is mandatory!")
+            return False
+        if not cfg["error_correction"].__dict__.has_key("max_threads"):
+            error("wrong config! Parameter 'max_threads' in 'error_correction' section is mandatory!")
+            return False
+        if not cfg["error_correction"].__dict__.has_key("max_memory"):
+            error("wrong config! Parameter 'max_memory' in 'error_correction' section is mandatory!")
+            return False 
+
+    # assembly
+    if cfg.has_key("assembly"):
+        if not cfg["assembly"].__dict__.has_key("iterative_K"):
+            error("wrong config! Parameter 'iterative_K' in 'assembly' section is mandatory!")
+            return False
 
     ## setting default values if needed
     
