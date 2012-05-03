@@ -39,6 +39,11 @@ def determine_read_files(folder, str_it_count, input_files, num_paired):
     answer["paired_reads"] += '"'
     answer["single_reads"] += '"'
     
+    if answer["paired_reads"] == '""':
+        del answer["paired_reads"]
+    if answer["single_reads"] == '""':
+        del answer["single_reads"]
+
     return answer
 
 # based on "hammer" function in ./src/tools/datasets.py

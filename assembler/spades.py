@@ -238,6 +238,10 @@ def main():
             spades_cfg.__dict__["align_original_reads"] = True
         else:
             spades_cfg.__dict__["align_original_reads"] = False
+        if cfg["dataset"].__dict__.has_key("paired_reads") or cfg["dataset"].__dict__.has_key("paired_reads.1"):
+            spades_cfg.__dict__["paired_mode"] = True
+        else:
+            spades_cfg.__dict__["paired_mode"] = False            
 
         def make_link(where, link):
             if os.path.islink(link):
