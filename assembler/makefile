@@ -24,6 +24,9 @@ dit:
 rh:
 	make -C build/release/hammer hammer
 
+dh:
+	make -C build/debug/hammer hammer
+
 dt:
 	make ddt
 	make dit
