@@ -396,6 +396,10 @@ public:
         return seq_.BinRead(file);
     }
 
+    bool BinWrite(std::ostream& file) const {
+        return seq_.BinWrite(file);
+    }
+
     SingleReadSeq(std::istream& file): seq_(file, true) {
     }
 

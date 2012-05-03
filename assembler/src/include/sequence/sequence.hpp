@@ -139,11 +139,11 @@ public:
 private:
 
     inline bool ReadHeader(std::istream& file);
-    inline bool WriteHeader(std::ostream& file);
+    inline bool WriteHeader(std::ostream& file) const;
 
 public:
     inline bool BinRead(std::istream& file);
-    inline bool BinWrite(std::ostream& file);
+    inline bool BinWrite(std::ostream& file) const;
 
     inline Sequence(std::istream& file, bool dummy);
 
@@ -412,7 +412,7 @@ bool Sequence::ReadHeader(std::istream& file) {
     return !file.fail();
 }
 
-bool Sequence::WriteHeader(std::ostream& file) {
+bool Sequence::WriteHeader(std::ostream& file) const {
     size_type s = size_;
     file.write((const char *) &s, sizeof(s));
     s = from_;
@@ -443,7 +443,7 @@ Sequence::Sequence(std::istream& file, bool dummy) {
     data_->BinRead(file, size_);
 }
 
-bool Sequence::BinWrite(std::ostream& file) {
+bool Sequence::BinWrite(std::ostream& file) const {
     WriteHeader(file);
 
     return data_->BinWrite(file, size_);

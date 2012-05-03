@@ -230,6 +230,19 @@ public:
         return !file.fail();
     }
 
+    bool BinWrite(std::ostream& file) const {
+        first_.BinWrite(file);
+        second_.BinWrite(file);
+
+        PairedRead::size_type is = insert_size_;
+        if (insert_size_ != 0) {
+            std::cerr << "is: " << insert_size_ << " " << is << std::endl;
+        }
+        file.write((const char *) &is, sizeof(is));
+
+        return !file.fail();
+    }
+
     const SingleReadSeq& first() const {
       return first_;
     }

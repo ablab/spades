@@ -20,12 +20,12 @@ typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 void convert_reads_to_binary() {
     INFO("Converting paired reads to binary format (takes a while)");
     auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(false, 0);
-    io::ReadsToBinaryConverter paired_converter(cfg::get().paired_read_prefix, cfg::get().thread_number, cfg::get().buffer_reads);
+    io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().thread_number, cfg::get().buffer_reads);
     paired_converter.ToBinary(*paired_reader);
 
     INFO("Converting single reads to binary format (takes a while)");
     auto_ptr<SingleReadStream> single_reader = single_easy_reader(false, false);
-    io::ReadsToBinaryConverter single_converter(cfg::get().single_read_prefix, cfg::get().thread_number, cfg::get().buffer_reads);
+    io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().thread_number, cfg::get().buffer_reads);
     single_converter.ToBinary(*paired_reader);
 }
 
@@ -78,11 +78,11 @@ std::vector<SequencePairedReadStream*> paired_binary_readers(bool followed_by_rc
 }
 
 auto_ptr<SequenceSingleReadStream> single_binary_multireader(bool followed_by_rc, bool including_paired_reads) {
-    return new MultiFileStream(single_binary_readers(followed_by_rc, including_paired_reads));
+    return auto_ptr<SequenceSingleReadStream>(new io::MultifileReader<io::SingleReadSeq>(single_binary_readers(followed_by_rc, including_paired_reads)));
 }
 
-auto_ptr<SequenceSingleReadStream>paired_binary_multireader(bool followed_by_rc, size_t insert_size) {
-    return new MultiFileStream(paired_binary_readers(followed_by_rc, insert_size));
+auto_ptr<SequencePairedReadStream> paired_binary_multireader(bool followed_by_rc, size_t insert_size) {
+    return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(paired_binary_readers(followed_by_rc, insert_size)));
 }
 
 }
