@@ -1380,6 +1380,60 @@ private:
 	DECL_LOGGER("RestrictedOneManyResolver");
 };
 
+//investigates if red edges can close gaps in blue assembly
+template<class Graph>
+class GapComparativeAnalyzer {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	const Graph& g_;
+	const ColorHandler<Graph>& coloring_;
+	const EdgesPositionHandler<Graph>& pos_;
+
+	bool PurpleOrRed(EdgeId e) {
+		return coloring_.Color(e) == edge_type::red
+				|| coloring_.Color(e) == edge_type::violet;
+	}
+
+	bool CheckVertexCondition(VertexId v) {
+		return g_.CheckUniqueOutgoingEdge(v) && g_.CheckUniqueIncomingEdge(v)
+				&& PurpleOrRed(g_.GetUniqueOutgoingEdge(v))
+				&& PurpleOrRed(g_.GetUniqueIncomingEdge(v));
+	}
+
+	void ReportEdge(EdgeId e, const string& folder) {
+		INFO("Can close gap between edges "
+				<< g_.str(g_.GetUniqueIncomingEdge(g_.EdgeStart(e)))
+				<< " and "
+				<< g_.str(g_.GetUniqueOutgoingEdge(g_.EdgeEnd(e)))
+				<< " with edge " << g_.str(e));
+		LengthIdGraphLabeler<Graph> basic_labeler(g_);
+		EdgePosGraphLabeler<Graph> pos_labeler(g_, pos_);
+
+		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+		WriteComponentsAroundEdge(g_, e,
+				folder + ToString(g_.int_id(e)) + "_loc.dot",
+				*ConstructColorer(coloring_), labeler);
+	}
+
+public:
+	GapComparativeAnalyzer(const Graph& g, const ColorHandler<Graph>& coloring,
+			const EdgesPositionHandler<Graph>& pos) :
+			g_(g), coloring_(coloring), pos_(pos) {
+	}
+
+	void ReportPotentialGapsCloses(const string& folder) {
+		make_dir(folder);
+		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (coloring_.Color(*it) == edge_type::red
+					&& CheckVertexCondition(g_.EdgeStart(*it))
+					&& CheckVertexCondition(g_.EdgeEnd(*it))) {
+				ReportEdge(*it, folder);
+			}
+		}
+	}
+};
+
 template<class gp_t>
 class AssemblyComparer {
 private:
@@ -1697,6 +1751,10 @@ public:
 			ProduceResults(untangled_gp, untangled_gp.coloring, output_folder,
 					detailed_output);
 		} else {
+			INFO("Analyzing gaps");
+			GapComparativeAnalyzer<Graph> gap_analyzer(gp_.g, coloring,
+					gp_.edge_pos);
+			gap_analyzer.ReportPotentialGapsCloses(output_folder + "gap_closing_edges/");
 			ProduceResults(gp_, coloring, output_folder, detailed_output);
 		}
 	}
