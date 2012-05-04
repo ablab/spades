@@ -12,6 +12,7 @@ struct parallel_unordered_map
         parallel_unordered_map(size_t nthreads)
             : nthreads_		(nthreads)
               , buckets_		(nthreads, origin_map_t(100000)) {
+
         }
 
         parallel_unordered_map(const parallel_unordered_map<T, Value, Hash, KeyEqual>& map)
@@ -64,6 +65,12 @@ struct parallel_unordered_map
         const map_arr_t & get_buckets() const
         {
             return buckets_;   
+        }
+
+        void clear() {
+            for (size_t i = 0; i < nthreads_; ++i) {
+                buckets_[i].clear();
+            }
         }
 
     private:

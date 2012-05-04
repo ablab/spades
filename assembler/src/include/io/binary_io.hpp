@@ -316,6 +316,16 @@ public:
 
 };
 
+template <class Read>
+bool ParllelStreamEOF(std::vector<io::IReader<Read>* >& streams) {
+    for (size_t i = 0; i < streams.size(); ++i) {
+        if (!streams[i]->eof()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 }
 
 
