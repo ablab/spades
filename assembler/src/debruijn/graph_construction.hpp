@@ -141,7 +141,6 @@ void FillCoverage(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeIndex
 	DEBUG("Coverage counted");
 }
 
-
 template<size_t k, class Graph, class Read>
 size_t FillUsusalIndex(io::IReader<Read>& stream, SeqMap<k + 1, typename Graph::EdgeId>& debruijn) {
 
@@ -164,7 +163,6 @@ size_t FillUsusalIndex(io::IReader<Read>& stream, SeqMap<k + 1, typename Graph::
 
     return rl;
 }
-
 
 template<size_t k, class Graph, class Read>
 size_t FillParallelIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k + 1, typename Graph::EdgeId>& debruijn) {
