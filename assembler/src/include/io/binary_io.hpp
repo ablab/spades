@@ -178,8 +178,7 @@ public:
         fname = file_name_prefix + "_" + ToString(file_num) + ".seq";
         stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
 
-        stream_.read((char *) &read_num_, sizeof(read_num_));
-        current_ = 0;
+        reset();
     }
 
     virtual ~SeqSingleReadStream() {
@@ -210,8 +209,9 @@ public:
     }
 
     virtual void reset() {
-        current_ = 0;
         stream_.seekg(0);
+        stream_.read((char *) &read_num_, sizeof(read_num_));
+        current_ = 0;
     }
 };
 
@@ -235,8 +235,7 @@ public:
         fname = file_name_prefix + "_" + ToString(file_num) + ".seq";
         stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
 
-        stream_.read((char *) &read_num_, sizeof(read_num_));
-        current_ = 0;
+        reset();
     }
 
     virtual ~SeqPairedReadStream() {
@@ -265,8 +264,9 @@ public:
     }
 
     virtual void reset() {
-        current_ = 0;
         stream_.seekg(0);
+        stream_.read((char *) &read_num_, sizeof(read_num_));
+        current_ = 0;
     }
 };
 

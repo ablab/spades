@@ -123,37 +123,61 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 //	INFO("Etalon paired info counted");
 }
 
-template<size_t k>
-void FillCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index) {
+template<size_t k, class Read>
+void FillCoverage(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeIndex<k + 1, Graph>& index) {
 
 	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 
 	INFO("Counting coverage");
 	SequenceMapper read_threader(g, index);
 
-	if (cfg::get().use_multithreading) {
-        auto streams = single_binary_readers(true, true);
-        g.coverage_index().FillParallelIndex<SequenceMapper>(read_threader, streams);
+	if (streams.size() > 1) {
+        g.coverage_index().FillParallelIndex<SequenceMapper, Read>(streams, read_threader);
 	}
-	else {
-
-
+	else if (streams.size() == 1) {
+	    g.coverage_index().FillIndex<SequenceMapper, Read>(*streams.back(), read_threader);
 	}
+
 	DEBUG("Coverage counted");
 }
 
-template<size_t k, class Graph> 
-size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, size_t nthreads) {
+
+template<size_t k, class Graph, class Read>
+size_t FillUsusalIndex(io::IReader<Read>& stream, SeqMap<k + 1, typename Graph::EdgeId>& debruijn) {
+
+    INFO("Processing reads (takes a while)");
+
+    size_t counter = 0;
+    size_t rl = 0;
+    stream.reset();
+
+    Read r;
+    while (!stream.eof()) {
+        stream >> r;
+        Sequence s = r.sequence();
+        debruijn.CountSequence(s);
+        rl = max(rl, s.size());
+        VERBOSE_POWER(++counter, " reads processed");
+    }
+
+    INFO("DeBruijn graph constructed, " << counter << " reads used");
+
+    return rl;
+}
+
+
+template<size_t k, class Graph, class Read>
+size_t FillParallelIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k + 1, typename Graph::EdgeId>& debruijn) {
 
     typedef ParallelSeqMap<k + 1, typename Graph::EdgeId> ParallelDeBruijn;
     typedef Seq<k + 1> Kmer;
 
+    size_t nthreads = streams.size();
     ParallelDeBruijn par_debruijn(nthreads);
 
     perf_counter pc;
 
     INFO("Processing reads (takes a while)");
-    auto bin_streams = single_binary_readers(true, true);
     std::vector<size_t> rls(nthreads, 0);
     size_t counter = 0;
     
@@ -162,8 +186,9 @@ size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, size_t
         #pragma omp for reduction(+ : counter)
         for (size_t i = 0; i < nthreads; ++i) {
 
-            io::SingleReadSeq r;
-            io::IReader<io::SingleReadSeq>& stream = *bin_streams[i];
+            Read r;
+            io::IReader<Read>& stream = *streams[i];
+            stream.reset();
 
             while (!stream.eof()) {
                 stream >> r;
@@ -187,8 +212,6 @@ size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, size_t
 
     size_t rl = 0;
     for (size_t i = 0; i < nthreads; ++i) {
-        delete bin_streams[i];
-
         if (rl < rls[i]) {
             rl = rls[i];
         }
@@ -197,8 +220,9 @@ size_t FillParallelIndex(SeqMap<k + 1, typename Graph::EdgeId>& debruijn, size_t
     return rl;
 }
 
-template<size_t k, class Graph>
-void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
+
+template<size_t k, class Graph, class Read>
+void ConstructGraph(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeIndex<k + 1, Graph>& index,
 		SingleReadStream* contigs_stream = 0) {
 
     typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
@@ -209,11 +233,11 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
     DeBruijn& debruijn = index.inner_index();
 
     size_t rl = 0;
-    if (cfg::get().use_multithreading) {
-         rl = FillParallelIndex<k, Graph>(debruijn, cfg::get().thread_number);
+    if (streams.size() > 1) {
+        rl = FillParallelIndex<k, Graph, Read>(streams, debruijn);
     }
-    else {
-
+    else if (streams.size() == 1) {
+        rl = FillUsusalIndex<k, Graph, Read>(*streams.back(), debruijn);
     }
 
     io::SingleRead r;
@@ -239,11 +263,11 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
     DEBUG("Graph condensed");
 }
 
-template<size_t k>
-void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
+template<size_t k, class Read>
+void ConstructGraphWithCoverage(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeIndex<k + 1, Graph>& index,
 		SingleReadStream* contigs_stream = 0) {
-	ConstructGraph<k>(g, index, contigs_stream);
-	FillCoverage<k>(g, index);
+	ConstructGraph<k>(streams, g, index, contigs_stream);
+	FillCoverage<k, Read>(streams, g, index);
 }
 
 template<size_t k>
@@ -261,7 +285,9 @@ void ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 		streams.push_back(single_stream);
 	}
 	CompositeSingleReadStream reads_stream(streams);
-	//ConstructGraphWithCoverage<k>(gp.g, gp.index, reads_stream, contigs_stream);
+	vector<SingleReadStream*> strs;
+	strs.push_back(&reads_stream);
+	ConstructGraphWithCoverage<k, io::SingleRead>(strs, gp.g, gp.index, reads_stream, contigs_stream);
 
 	if (cfg::get().etalon_info_mode || cfg::get().etalon_graph_mode)
 		FillEtalonPairedIndex<k>(paired_index, gp.g, gp.index, gp.kmer_mapper, gp.genome);

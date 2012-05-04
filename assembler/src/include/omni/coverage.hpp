@@ -35,6 +35,7 @@ private:
 		return (size_t) (coverage(edge) * this->g().length(edge));
 	}
 
+
 	template<class ReadThreader>
 	Path<EdgeId> ProcessSequence(const ReadThreader& threader, const Sequence& sequence) const {
         return threader.MapSequence(sequence);
@@ -99,24 +100,42 @@ public:
 		IncCoverage(edge, 1);
 	}
 
-	template<class ReadThreader>
-	void FillParallelIndex(const ReadThreader& threader, std::vector<io::IReader<io::SingleReadSeq>* >& bin_streams) {
+    template<class ReadThreader, class Read>
+    void FillIndex(io::IReader<Read>& stream, const ReadThreader& threader) {
 
-        typedef Path<EdgeId> DataType;
+        INFO("Processing reads (takes a while)");
+        size_t counter = 0;
+        stream.reset();
+
+        while (!stream.eof()) {
+            Read r;
+            stream >> r;
+            Path<EdgeId> path = ProcessSequence(threader, r.sequence());
+            AddPathsToGraph(path);
+
+            VERBOSE_POWER(++counter, " reads processed");
+        }
+
+        INFO("DeBruijn graph coverage counted, reads used: " << counter);
+    }
+
+	template<class ReadThreader, class Read>
+	void FillParallelIndex(std::vector<io::IReader<Read>* >& streams, const ReadThreader& threader) {
 
         INFO("Processing reads (takes a while)");
         perf_counter pc;
         size_t counter = 0;
 
-        size_t nthreads = cfg::get().thread_number;
+        size_t nthreads = streams.size();
 
         #pragma omp parallel num_threads(nthreads)
         {
             #pragma omp for reduction(+ : counter)
             for (size_t i = 0; i < nthreads; ++i) {
 
-                io::SingleReadSeq r;
-                io::IReader<io::SingleReadSeq>& stream = *bin_streams[i];
+                Read r;
+                io::IReader<Read>& stream = *streams[i];
+                stream.reset();
 
                 while (!stream.eof()) {
                     stream >> r;

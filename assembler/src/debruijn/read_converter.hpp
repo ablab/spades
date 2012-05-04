@@ -30,7 +30,7 @@ void convert_reads_to_binary() {
 }
 
 
-std::vector<SequenceSingleReadStream*> single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
+std::vector< SequenceSingleReadStream* > single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
     std::vector<SequenceSingleReadStream*> raw_readers(cfg::get().thread_number);
 
     if (including_paired_reads) {
@@ -59,7 +59,7 @@ std::vector<SequenceSingleReadStream*> single_binary_readers(bool followed_by_rc
     }
 }
 
-std::vector<SequencePairedReadStream*> paired_binary_readers(bool followed_by_rc, size_t insert_size) {
+std::vector< SequencePairedReadStream* > paired_binary_readers(bool followed_by_rc, size_t insert_size) {
     std::vector<SequencePairedReadStream*> raw_readers(cfg::get().thread_number);
 
     for (size_t i = 0; i < cfg::get().thread_number; ++i) {
