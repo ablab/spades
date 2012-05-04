@@ -7,6 +7,7 @@
 #pragma once
 
 #include "graphio.hpp"
+#include "simple_tools.hpp"
 #include "xmath.h"
 #include <iostream>
 #include "logger/logger.hpp"
@@ -22,7 +23,8 @@
 namespace debruijn_graph {
 
 template<size_t k>
-void FillBagForStrand(const Sequence& strand, map<Seq<k>, size_t, typename Seq<k>::less2>& bag) {
+void FillBagForStrand(const Sequence& strand,
+		map<Seq<k>, size_t, typename Seq<k>::less2>& bag) {
 	if (strand.size() < k)
 		return;
 	Seq<k> kmer(strand);
@@ -34,7 +36,8 @@ void FillBagForStrand(const Sequence& strand, map<Seq<k>, size_t, typename Seq<k
 }
 
 template<size_t k>
-void FillRepeats(const Sequence& genome, set<Seq<k>, typename Seq<k>::less2>& repeats) {
+void FillRepeats(const Sequence& genome,
+		set<Seq<k>, typename Seq<k>::less2>& repeats) {
 	map<Seq<k>, size_t, typename Seq<k>::less2> bag;
 
 	FillBagForStrand(genome, bag);
@@ -47,7 +50,8 @@ void FillRepeats(const Sequence& genome, set<Seq<k>, typename Seq<k>::less2>& re
 }
 
 template<size_t k>
-Sequence ClearGenome(const Sequence& genome, const set<Seq<k>, typename Seq<k>::less2>& repeats) {
+Sequence ClearGenome(const Sequence& genome,
+		const set<Seq<k>, typename Seq<k>::less2>& repeats) {
 	INFO("Clearing genome");
 	if (genome.size() < k)
 		return genome;
@@ -62,7 +66,7 @@ Sequence ClearGenome(const Sequence& genome, const set<Seq<k>, typename Seq<k>::
 	size_t curr_pos = 0;
 	//curr_pos + k - next nucl pos
 	bool changed = false;
-	while(curr_pos + k != genome.size()) {
+	while (curr_pos + k != genome.size()) {
 		size_t int_start = curr_pos;
 		while (repeats.count(kmer) > 0 && curr_pos + k < genome.size()) {
 			kmer = kmer << genome[curr_pos + k];
@@ -102,7 +106,8 @@ Sequence ClearGenome(const Sequence& genome) {
 
 //todo bad strategy for assembly cleaning
 template<size_t k>
-pair<Sequence, vector<Sequence>> Clear(const Sequence& genome, const vector<Sequence>& assembly) {
+pair<Sequence, vector<Sequence>> Clear(const Sequence& genome,
+		const vector<Sequence>& assembly) {
 	INFO("Clearing genome of repeats");
 
 	set<Seq<k>, typename Seq<k>::less2> repeats;
@@ -110,8 +115,7 @@ pair<Sequence, vector<Sequence>> Clear(const Sequence& genome, const vector<Sequ
 	FillRepeats<k>(genome, repeats);
 	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
 		FillRepeats(*it, repeats);
-	}
-	INFO("Clearing genome");
+	}INFO("Clearing genome");
 	Sequence new_genome = ClearGenome<k>(genome, repeats);
 	INFO("Clearing assembly");
 	vector<Sequence> new_assembly;
@@ -130,11 +134,13 @@ pair<Sequence, Sequence> ClearGenomes(const pair<Sequence, Sequence>& genomes) {
 	FillRepeats<k>(genomes.first, repeats);
 	FillRepeats<k>(genomes.second, repeats);
 	INFO("Clearing genomes");
-	return make_pair(ClearGenome<k>(genomes.first, repeats), ClearGenome<k>(genomes.second, repeats));
+	return make_pair(ClearGenome<k>(genomes.first, repeats),
+			ClearGenome<k>(genomes.second, repeats));
 }
 
 template<size_t k>
-pair<Sequence, Sequence> TotallyClearGenomes(const pair<Sequence, Sequence>& genomes) {
+pair<Sequence, Sequence> TotallyClearGenomes(
+		const pair<Sequence, Sequence>& genomes) {
 	static const size_t iter_count = 1;
 	pair<Sequence, Sequence> tmp = genomes;
 	for (size_t i = 0; i < iter_count; ++i) {
@@ -157,14 +163,14 @@ bool event_happened(double rate) {
 int rand_int(size_t min, size_t max) {
 	static boost::mt19937 rng(43);
 	boost::uniform_int<> un_int(min, max);
-	boost::variate_generator<boost::mt19937&, boost::uniform_int<> >
-	         die(rng, un_int);
+	boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die(rng,
+			un_int);
 	return die();
 }
 
 char switch_nucl(char n) {
 	VERIFY(is_nucl(n));
-	return nucl((dignucl(n) + rand_int(1,3)) % 4);
+	return nucl((dignucl(n) + rand_int(1, 3)) % 4);
 }
 
 Sequence IntroduceReversal(const Sequence& s, size_t min_len, size_t max_len) {
@@ -174,11 +180,13 @@ Sequence IntroduceReversal(const Sequence& s, size_t min_len, size_t max_len) {
 	size_t len = rand_int(min_len, std::min(max_len, s.size() - start));
 	//exclusive
 	size_t end = start + len;
-	INFO("Reversing fragment of length " << len << " from " << start << " to " << end);
+	INFO(
+			"Reversing fragment of length " << len << " from " << start << " to " << end);
 	return s.Subseq(0, start) + !s.Subseq(start, end) + s.Subseq(end);
 }
 
-Sequence IntroduceReversals(const Sequence& s, size_t rev_count, size_t min_len, size_t max_len) {
+Sequence IntroduceReversals(const Sequence& s, size_t rev_count, size_t min_len,
+		size_t max_len) {
 	Sequence res = s;
 	for (size_t i = 0; i < rev_count; ++i) {
 		res = IntroduceReversal(res, min_len, max_len);
@@ -191,7 +199,8 @@ void ConstructRepeatGraph(gp_t& gp) {
 	io::VectorReader<io::SingleRead> stream(
 			io::SingleRead("genome", gp.genome.str()));
 	io::RCReaderWrapper<io::SingleRead> rc_stream(stream);
-	ConstructGraph<gp_t::k_value, typename gp_t::graph_t>(gp.g, gp.index, rc_stream);
+	ConstructGraph<gp_t::k_value, typename gp_t::graph_t>(gp.g, gp.index,
+			rc_stream);
 }
 
 template<class Graph>
@@ -237,10 +246,10 @@ Sequence IntroduceMutations(const Sequence& s, double rate) {
 }
 
 template<size_t k, size_t K>
-void RunBPComparison(ContigStream& raw_stream1,
-		ContigStream& raw_stream2, const string& name1, const string& name2,
-		bool refine, bool untangle, const string& output_folder,
-		bool detailed_output = true, size_t delta = 5) {
+void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
+		const string& name1, const string& name2, bool refine, bool untangle,
+		const string& output_folder, bool detailed_output = true, size_t delta =
+				5) {
 	io::SplittingWrapper stream1(raw_stream1);
 	io::SplittingWrapper stream2(raw_stream2);
 
@@ -255,36 +264,34 @@ void RunBPComparison(ContigStream& raw_stream1,
 
 		AssemblyComparer<comparing_gp_t> comparer(refined_stream1,
 				refined_stream2, name1, name2, untangle);
-		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/false);
+		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
+				false);
 	} else {
-		AssemblyComparer<comparing_gp_t> comparer(stream1,
-				stream2, name1, name2, untangle);
-		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/false);
+		AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, name1,
+				name2, untangle);
+		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
+				false);
 	}
 }
 
 template<size_t k, size_t K>
-void RunBPComparison(const Sequence& ref,
-		ContigStream& stream, const string& name1, const string& name2,
-		bool refine, bool untangle, const string& output_folder,
-		bool detailed_output = true, size_t delta = 5) {
+void RunBPComparison(const Sequence& ref, ContigStream& stream,
+		const string& name1, const string& name2, bool refine, bool untangle,
+		const string& output_folder, bool detailed_output = true, size_t delta =
+				5) {
 	io::VectorReader<io::SingleRead> ref_stream(
 			io::SingleRead(name1, ref.str()));
-	RunBPComparison<k, K>(ref_stream, stream, name1, name2,
-			refine, untangle, output_folder,
-			detailed_output, delta);
+	RunBPComparison<k, K>(ref_stream, stream, name1, name2, refine, untangle,
+			output_folder, detailed_output, delta);
 }
 
 template<size_t k, size_t K>
-void RunBPComparison(const Sequence& s1,
-		const Sequence& s2, const string& name1, const string& name2,
-		bool refine, bool untangle, const string& output_folder,
-		bool detailed_output = true) {
-	io::VectorReader<io::SingleRead> stream(
-			io::SingleRead(name2, s2.str()));
-	RunBPComparison<k, K>(s1, stream, name1, name2,
-			refine, untangle, output_folder,
-			detailed_output);
+void RunBPComparison(const Sequence& s1, const Sequence& s2,
+		const string& name1, const string& name2, bool refine, bool untangle,
+		const string& output_folder, bool detailed_output = true) {
+	io::VectorReader<io::SingleRead> stream(io::SingleRead(name2, s2.str()));
+	RunBPComparison<k, K>(s1, stream, name1, name2, refine, untangle,
+			output_folder, detailed_output);
 }
 
 const vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
@@ -296,14 +303,12 @@ const vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
 }
 
 template<size_t k, size_t K>
-void RunBPComparison(const Sequence& ref,
-		const vector<Sequence>& contigs, const string& name1, const string& name2,
-		bool refine, bool untangle, const string& output_folder,
-		bool detailed_output = true) {
+void RunBPComparison(const Sequence& ref, const vector<Sequence>& contigs,
+		const string& name1, const string& name2, bool refine, bool untangle,
+		const string& output_folder, bool detailed_output = true) {
 	io::VectorReader<io::SingleRead> stream(MakeReads(contigs));
-	RunBPComparison<k, K>(ref, stream, name1, name2,
-			refine, untangle, output_folder,
-			detailed_output);
+	RunBPComparison<k, K>(ref, stream, name1, name2, refine, untangle,
+			output_folder, detailed_output);
 }
 
 Sequence FirstSequence(io::IReader<io::SingleRead>& stream) {
@@ -326,7 +331,8 @@ vector<Sequence> AllSequences(io::IReader<io::SingleRead>& stream) {
 }
 
 template<size_t k>
-pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1, const Sequence& genome2, size_t delta = 5) {
+pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1,
+		const Sequence& genome2, size_t delta = 5) {
 	io::VectorReader<io::SingleRead> stream1(
 			io::SingleRead("first", genome1.str()));
 	io::VectorReader<io::SingleRead> stream2(
@@ -339,12 +345,14 @@ pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1, const Sequence&
 	ContigRefiner<refining_gp_t> refined_stream1(stream1, refining_gp);
 	ContigRefiner<refining_gp_t> refined_stream2(stream2, refining_gp);
 
-	pair<Sequence, Sequence> answer = make_pair(FirstSequence(refined_stream1), FirstSequence(refined_stream2));
+	pair<Sequence, Sequence> answer = make_pair(FirstSequence(refined_stream1),
+			FirstSequence(refined_stream2));
 	return answer;
 }
 
 template<size_t k>
-pair<Sequence, Sequence> CorrectGenomes(const pair<Sequence, Sequence>& genomes, size_t delta = 5) {
+pair<Sequence, Sequence> CorrectGenomes(const pair<Sequence, Sequence>& genomes
+		, size_t delta = 5) {
 	return CorrectGenomes<k>(genomes.first, genomes.second, delta);
 }
 
@@ -357,9 +365,9 @@ bool CheckNoRepeats(const Sequence& genome) {
 
 //Prints only basic graph structure!!!
 //todo rewrite with normal splitter usage instead of filtering
-void PrintGraphComponentContainingEdge(const string& file_name,
-		const Graph& g, size_t split_edge_length,
-		const IdTrackHandler<Graph>& int_ids, int int_edge_id) {
+void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
+		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids,
+		int int_edge_id) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
 
 //	VERIFY_MSG(int_ids.ReturnEdgeId(int_edge_id) != NULL,
@@ -377,10 +385,9 @@ void PrintGraphComponentContainingEdge(const string& file_name,
 }
 
 template<class gp_t>
-void ThreadAssemblies(const string& base_saves,
-		ContigStream& base_assembly, const string& base_prefix,
-		ContigStream& assembly_to_thread, const string& to_thread_prefix,
-		const string& output_dir) {
+void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
+		const string& base_prefix, ContigStream& assembly_to_thread,
+		const string& to_thread_prefix, const string& output_dir) {
 	typedef typename gp_t::graph_t Graph;
 	gp_t gp;
 //		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, base_assembly);
@@ -409,8 +416,9 @@ void ThreadAssemblies(const string& base_saves,
 	}
 }
 
-template <size_t k>
-pair<Sequence, vector<Sequence>> RefineData(const pair<Sequence, vector<Sequence>>& data) {
+template<size_t k>
+pair<Sequence, vector<Sequence>> RefineData(
+		const pair<Sequence, vector<Sequence>>& data) {
 	io::VectorReader<io::SingleRead> stream1(
 			io::SingleRead("first", data.first.str()));
 	io::VectorReader<io::SingleRead> stream2(MakeReads(data.second));
@@ -422,11 +430,13 @@ pair<Sequence, vector<Sequence>> RefineData(const pair<Sequence, vector<Sequence
 	ContigRefiner<refining_gp_t> refined_stream1(stream1, refining_gp);
 	ContigRefiner<refining_gp_t> refined_stream2(stream2, refining_gp);
 
-	return make_pair(FirstSequence(refined_stream1), AllSequences(refined_stream2));
+	return make_pair(FirstSequence(refined_stream1),
+			AllSequences(refined_stream2));
 }
 
-template <size_t k>
-void CompareGenomes(const Sequence& genome_1, const Sequence& genome_2, const string& output_dir) {
+template<size_t k>
+void CompareGenomes(const Sequence& genome_1, const Sequence& genome_2,
+		const string& output_dir) {
 	INFO("Genome comparison started");
 	io::VectorReader<io::SingleRead> stream1(
 			io::SingleRead("", genome_1.str()));
@@ -434,8 +444,10 @@ void CompareGenomes(const Sequence& genome_1, const Sequence& genome_2, const st
 			io::SingleRead("", genome_2.str()));
 	typedef graph_pack</*Nonc*/ConjugateDeBruijnGraph, k> comparing_gp_t;
 	INFO("Running assembly comparer");
-	AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, "strain1", "strain2", /*untangle*/false);
-	comparer.CompareAssemblies(output_dir, /*detailed_output*/true, /*on_many_resolve*/true);
+	AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, "strain1",
+			"strain2", /*untangle*/false);
+	comparer.CompareAssemblies(output_dir, /*detailed_output*/true, /*on_many_resolve*/
+			true);
 	INFO("Finished");
 }
 

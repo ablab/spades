@@ -79,6 +79,14 @@ inline void checkFileExistenceFATAL(std::string filename) {
 	}
 }
 
+
+template <class map_t>
+const typename map_t::_Tp& get(const map_t& from, const typename map_t::_Key& key) {
+	auto it = from.find(key);
+	VERIFY(it != from.end());
+	return it->second;
+}
+
 namespace std
 {
 template<class T1, class T2>

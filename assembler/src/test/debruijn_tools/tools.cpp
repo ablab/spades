@@ -49,20 +49,33 @@ namespace debruijn_graph {
 BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 	static const size_t k = 19;
 	static const size_t K = 55;
+//	static const size_t K = 57;
+//	static const size_t K = 53;
 
 //	io::Reader stream_1("/home/snurk/gingi/2.fasta");
 //	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-	io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE2_BH.fasta");
+
+//		io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE2_BH.fasta");
+//	io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE3_BH.fasta");
 	io::Reader stream_2("/home/snurk/gingi/jeff.fasta");
 
-	string folder = "assembly_comp/gingi_2_new_vs_jeff/";
+//	io::Reader stream_2("/home/snurk/gingi/PGINGIVALIS_LANE2_BH.fasta");
+
+	io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE3_BH.fasta");
+//	io::Reader stream_2("/home/snurk/gingi/lane2_evsc.fasta");
+
+//	string folder = "assembly_comp/gingi_new_3_vs_new_2/";
+	string folder = "assembly_comp/gingi_new_3_vs_jeff/";
 	make_dir(folder);
 
 	RunBPComparison<k, K>(
 		stream_1,
 		stream_2,
-		"2",
-		"jeff",
+//		"2",
+//		"jeff",
+		"3_new_",
+//		"2_new_",
+		"jeff_",
 		true/*refine*/,
 		false/*untangle*/,
 		folder,
@@ -241,40 +254,40 @@ inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, 
 //	INFO("Finished");
 //}
 
-BOOST_AUTO_TEST_CASE( BreakPointGraphTests ) {
-	make_dir("bp_graph_test");
-	INFO("Running simulated examples");
-	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
-			"bp_graph_test/simulated_common/");
-
-	INFO("Running simulated examples with introduced errors");
-	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
-			"bp_graph_test/simulated_common_err/", "1_err");
-	Sequence genome = ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz");
-
-//	INFO("Running comparison against mutated genome");
-//	RunBPComparison<17, 250>(genome, IntroduceMutations(genome, 0.01), "init", "mut"
-//			, /*refine*/true, /*untangle*/false, "bp_graph_test/mutated_ref/", /*detailed*/false);
-
-//	INFO("Running comparison against genome with reversals");
-
-//	RunBPComparison<25, 250>(genome, IntroduceReversals(genome, 10, 1000, 2000), "init", "rev"
-//			, /*refine*/false, /*untangle*/false, "bp_graph_test/reversaled_ref/", /*detailed*/false);
-
-//	INFO("Running comparison against mutated genome with reversals");
-//	RunBPComparison<25, 250>(genome, IntroduceMutations(IntroduceReversals(genome, 10, 1000, 2000), 0.01), "init", "mut_rev"
-//			, /*refine*/true, /*untangle*/true, "bp_graph_test/reversaled_mut_ref/", /*detailed*/false);
-
-//	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
-//	INFO("Running comparison against repeat graph contigs");
-//	RunBPComparison<25, 250>(genome, RepeatGraphEdges<gp_t>(genome), "init", "repeat_g_cont"
-//			, /*refine*/false, /*untangle*/false, "bp_graph_test/repeat_graph_edges_ref/", /*detailed*/false);
+//BOOST_AUTO_TEST_CASE( BreakPointGraphTests ) {
+//	make_dir("bp_graph_test");
+//	INFO("Running simulated examples");
+//	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
+//			"bp_graph_test/simulated_common/");
 //
-//	INFO("Running comparison against reversaled repeat graph contigs");
-//	RunBPComparison<25, 250>(genome, RepeatGraphEdges<gp_t>(IntroduceReversals(genome, 10, 1000, 10000)), "init", "rev_repeat_g_cont"
-//			, /*refine*/false, /*untangle*/false, "bp_graph_test/rev_repeat_graph_edges_ref/", /*detailed*/false);
-
-}
+//	INFO("Running simulated examples with introduced errors");
+//	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
+//			"bp_graph_test/simulated_common_err/", "1_err");
+//	Sequence genome = ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz");
+//
+////	INFO("Running comparison against mutated genome");
+////	RunBPComparison<17, 250>(genome, IntroduceMutations(genome, 0.01), "init", "mut"
+////			, /*refine*/true, /*untangle*/false, "bp_graph_test/mutated_ref/", /*detailed*/false);
+//
+////	INFO("Running comparison against genome with reversals");
+//
+////	RunBPComparison<25, 250>(genome, IntroduceReversals(genome, 10, 1000, 2000), "init", "rev"
+////			, /*refine*/false, /*untangle*/false, "bp_graph_test/reversaled_ref/", /*detailed*/false);
+//
+////	INFO("Running comparison against mutated genome with reversals");
+////	RunBPComparison<25, 250>(genome, IntroduceMutations(IntroduceReversals(genome, 10, 1000, 2000), 0.01), "init", "mut_rev"
+////			, /*refine*/true, /*untangle*/true, "bp_graph_test/reversaled_mut_ref/", /*detailed*/false);
+//
+////	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
+////	INFO("Running comparison against repeat graph contigs");
+////	RunBPComparison<25, 250>(genome, RepeatGraphEdges<gp_t>(genome), "init", "repeat_g_cont"
+////			, /*refine*/false, /*untangle*/false, "bp_graph_test/repeat_graph_edges_ref/", /*detailed*/false);
+////
+////	INFO("Running comparison against reversaled repeat graph contigs");
+////	RunBPComparison<25, 250>(genome, RepeatGraphEdges<gp_t>(IntroduceReversals(genome, 10, 1000, 10000)), "init", "rev_repeat_g_cont"
+////			, /*refine*/false, /*untangle*/false, "bp_graph_test/rev_repeat_graph_edges_ref/", /*detailed*/false);
+//
+//}
 
 //BOOST_AUTO_TEST_CASE( ThreadingContigsOverGraph ) {
 //	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
