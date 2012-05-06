@@ -875,8 +875,9 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 
 				}
 			}
+
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
-				if ((new_graph.coverage(it->second) < cutting_coverage) && (new_graph.IsDeadStart(split_pair.first) || new_graph.IsDeadEnd(split_pair.first))) {
+				if ((new_graph.coverage(it->second) < cutting_coverage) && ((new_graph.IsDeadStart(split_pair.first)&& !(new_graph.IsDeadStart(v))) || (new_graph.IsDeadEnd(split_pair.first)&& !(new_graph.IsDeadEnd(v))))&&(edgeCounts[it->first] > 1)) {
 					OldCopyCnt[it->first]--;
 					DEBUG("Deleting just created copy of edge " << new_IDs.ReturnIntId(it->first) << " because of low coverage");
 					++low_coverage;
@@ -1198,7 +1199,10 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 		bool changed = true;
 		unordered_map<int, VertexId> vertices;
 		int GraphCnt = 0;
-
+		set<VertexId> available_verices;
+		for (auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
+			available_verices.insert(*v_iter);
+		}
 		while (changed) {
 			changed = false;
 			if (rc_mode)
@@ -1229,13 +1233,27 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 
 				vector<EdgeId> edgeIds[2];
 				int flag = 1;
+
+				if (available_verices.find(v_iter->second) == available_verices.end()) {
+					continue;
+				}
+
 				edgeIds[0] = new_graph.OutgoingEdges(v_iter->second);
 				edgeIds[1] = new_graph.IncomingEdges(v_iter->second);
+
+				set<VertexId> neighbours;
+				for(size_t j = 0; j < edgeIds[0].size(); j++){
+					neighbours.insert(new_graph.EdgeEnd(edgeIds[0][j]));
+				}
+				for(size_t j = 0; j < edgeIds[1].size(); j++){
+					neighbours.insert(new_graph.EdgeStart(edgeIds[1][j]));
+				}
+
+
 				for(int i = 0; i < 2; i++) {
 					for(size_t j = 0; j < edgeIds[i].size(); j++)
 						if (global_cheating_edges.find(edgeIds[i][j]) != global_cheating_edges.end()) {
 							TRACE("Global cheater found "<<edgeIds[i][j]<<" id "<<new_graph.int_id(edgeIds[i][j]));
-
 							flag = 0;
 							break;
 						}
@@ -1254,11 +1272,15 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				else
 					tcount = CheatingResolveVertex(v_iter->second);
 				resolve_time.stop();
+				available_verices.erase(v_iter->second);
 
 
 				DEBUG("Vertex "<< v_iter->first<< " resolved to "<< tcount);
 				sum_count += tcount;
 				if (tcount > 1) {
+					for (auto it = neighbours.begin(); it != neighbours.end(); ++it){
+						available_verices.insert(*it);
+					}
 					changed = true;
 					GraphCnt++;
 //					omnigraph::WriteSimple(

@@ -23,7 +23,6 @@ protected:
 		return true;
 	}
 
-private:
 	const Graph& graph_;
 
 public:
@@ -107,6 +106,24 @@ public:
 protected:
 	virtual bool Check(PairInfo<EdgeId> info) const {
 		return math::ge(info.weight, weight_threshold_);
+	}
+};
+
+
+template<class Graph>
+class PairInfoWeightFilterWithCoverage: public AbstractPairInfoFilter<Graph> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	double weight_threshold_;
+
+public:
+	PairInfoWeightFilterWithCoverage(const Graph &graph, double weight_threshold) :
+		AbstractPairInfoFilter<Graph>(graph), weight_threshold_(weight_threshold) {
+	}
+
+protected:
+	virtual bool Check(PairInfo<EdgeId> info) const {
+		return math::ge(info.weight, weight_threshold_)||(math::ge(info.weight, 0.1 * this->graph_.coverage(info.first)))||(math::ge(info.weight, 0.1 * this->graph_.coverage(info.second)));
 	}
 };
 

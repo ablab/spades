@@ -102,6 +102,9 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 			INFO("Filtering info");
 			PairInfoWeightFilter<Graph> filter(gp.g,
 					cfg::get().de.filter_threshold);
+//			PairInfoWeightFilterWithCoverage<Graph> filter(gp.g,
+//					cfg::get().de.filter_threshold);
+
 			filter.Filter(normalized_index, clustered_index);
 			DEBUG("Info filtered");
 			//		PairInfoChecker<Graph> checker(gp.edge_pos, 5, 100);

@@ -609,8 +609,31 @@ void GenerateMatePairStats(const graph_pack& origin_gp, PairedInfoIndex<typename
 	}
 }
 
+
 template<class graph_pack>
-int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, PairInfo<typename graph_pack::graph_t::EdgeId>& first_info, PairInfo<typename graph_pack::graph_t::EdgeId>& second_info, bool fill_missing) {
+bool TryToAddPairInfo(graph_pack &origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, typename graph_pack::graph_t::EdgeId first, typename graph_pack::graph_t::EdgeId second, double tmpd, double w){
+	auto pi_vector = clustered_index.GetEdgePairInfo(first, second);
+	bool already_exist = false;
+	for (auto pi_iter = pi_vector.begin(); pi_iter != pi_vector.end(); ++pi_iter) {
+		if (abs(pi_iter->d - tmpd) < 0.01) {
+			already_exist = true;
+		}
+	}
+	if (!already_exist)
+	{
+//		added_info++;
+		INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first) << " " << origin_gp.int_ids.ReturnIntId(second)<<" dist "<<tmpd);
+		clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first, second, tmpd, w, 0));
+		INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(origin_gp.g.conjugate(second)) << " " << origin_gp.int_ids.ReturnIntId( origin_gp.g.conjugate(first))<<" dist "<<tmpd - origin_gp.g.length(first) + origin_gp.g.length(second));
+		clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(origin_gp.g.conjugate(second), origin_gp.g.conjugate(first), tmpd - origin_gp.g.length(first) + origin_gp.g.length(second), w, 0));
+		return true;
+	}
+	return false;
+}
+
+
+template<class graph_pack>
+int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, PairInfo<typename graph_pack::graph_t::EdgeId>& first_info, PairInfo<typename graph_pack::graph_t::EdgeId>& second_info, bool fill_missing, bool extensive_add = true) {
 
 	size_t max_comparable_path = *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var);
 	auto first_edge = first_info.second;
@@ -671,23 +694,14 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 			double tmpd = first_info.d + origin_gp.g.length(first_info.second);
 			double w = (first_info.weight + second_info.weight)/2;
 			for (auto path_iter = paths.begin()->begin(); path_iter != paths.begin()->end(); path_iter++) {
-				auto pi_vector = clustered_index.GetEdgePairInfo(first_info.first, *path_iter);
-				bool already_exist = false;
-				for (auto pi_iter = pi_vector.begin(); pi_iter != pi_vector.end(); ++pi_iter) {
-					if (abs(pi_iter->d - tmpd) < 0.01) {
-						already_exist = true;
-					}
-				}
-				if (!already_exist)
-				{
-					added_info++;
-					INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first_info.first) << " " << origin_gp.int_ids.ReturnIntId(*path_iter)<<" dist "<<tmpd);
-					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first_info.first, *path_iter, tmpd, w, 0));
-					INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(origin_gp.g.conjugate(*path_iter)) << " " << origin_gp.int_ids.ReturnIntId( origin_gp.g.conjugate(first_info.first))<<" dist "<<tmpd - origin_gp.g.length(first_info.first) + origin_gp.g.length(*path_iter));
-					clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(origin_gp.g.conjugate(*path_iter), origin_gp.g.conjugate(first_info.first), tmpd - origin_gp.g.length(first_info.first) + origin_gp.g.length(*path_iter), w, 0));
+				if (TryToAddPairInfo(origin_gp, clustered_index, first_info.first, *path_iter, tmpd, w)) added_info++;
+				if (extensive_add) {
+					if (TryToAddPairInfo(origin_gp, clustered_index, first_info.second, *path_iter, tmpd - first_info.d, w)) added_info++;
+					if (TryToAddPairInfo(origin_gp, clustered_index, *path_iter, second_info.second, second_info.d - tmpd, w)) added_info++;
 				}
 				tmpd += origin_gp.g.length(*path_iter);
 			}
+
 			if (added_info) {
 
 //				if (paths.begin()->size() != 0) {
@@ -704,7 +718,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 
 
 template<class graph_pack>
-void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
+void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, bool clean = true, bool add = true) {
 	size_t k = graph_pack::k_value;
 	size_t delta = size_t(*cfg::get().ds.is_var);
 	size_t max_comparable_path = *cfg::get().ds.IS + delta - k;
@@ -722,10 +736,10 @@ void CorrectPairedInfo(const graph_pack& origin_gp, PairedInfoIndex<typename gra
 				if (i_iter != j_iter) {
 					PairInfo<typename graph_pack::graph_t::EdgeId> first_info = *i_iter;
 					PairInfo<typename graph_pack::graph_t::EdgeId> second_info = *j_iter;
-					if (origin_gp.g.length(*e_iter) >= /* *cfg::get().ds.RL * */ 2) { //TODO: change to something reasonable.
+					if (origin_gp.g.length(*e_iter) >= /* *cfg::get().ds.RL * */ 2 && add) { //TODO: change to something reasonable.
 						missing_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 1);
 					}
-					if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length) {
+					if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length && clean) {
 						extra_paired_info_count += TreatPairPairInfo<graph_pack>(origin_gp, clustered_index, first_info,  second_info, 0);
 					}
 				}
@@ -965,6 +979,11 @@ void resolve_repeats() {
 		}
 
 		if (cfg::get().rr.symmetric_resolve) {
+			CorrectPairedInfo( conj_gp,  clustered_index, true, false);
+			CorrectPairedInfo( conj_gp,  clustered_index, true, false);
+			CorrectPairedInfo( conj_gp,  clustered_index, true, false);
+			CorrectPairedInfo( conj_gp,  clustered_index);
+			CorrectPairedInfo( conj_gp,  clustered_index);
 			CorrectPairedInfo( conj_gp,  clustered_index);
 			CorrectPairedInfo( conj_gp,  clustered_index);
 			save_distance_filling(conj_gp, clustered_index, clustered_index);
