@@ -80,6 +80,7 @@ struct hammer_config
 	bool expand_write_kmers_result;
 
 	bool correct_do;
+	bool correct_discard_bad;
 	bool correct_use_threshold;
 	double correct_threshold;
 	int correct_readbuffer;

@@ -129,7 +129,7 @@ public:
 
 	/// correct one read
 	static bool CorrectOneRead( const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides,
-			hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons );
+			hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons, bool discard_bad );
 	/// correct reads in a given file
 	static void CorrectReadFile( const string & readsFilename, const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_start, ofstream *outf_good, ofstream *outf_bad );
 	/// correct reads in a given pair of files

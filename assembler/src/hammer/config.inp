@@ -1,10 +1,11 @@
 ; = HAMMER =
 ; input options: working dir, input files, offset, and possibly kmers
-input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/bug
+input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/test_dir2
 input_numfiles				2
 input_paired				1
-input_file_0				/home/snikolenko/data/reads.input.0.head.gz
-input_file_1				/home/snikolenko/data/reads.input.1.head.gz
+input_paired_1				/home/snikolenko/data/reads.input.0.tinyhead
+input_paired_2				/home/snikolenko/data/reads.input.1.tinyhead
+input_single				
 input_trim_quality			4
 input_gzipped				1
 input_qvoffset				64
@@ -25,7 +26,7 @@ general_blob_margin			0.25
 general_gzip_margin			4.0
 general_file_buffer_exp		20
 general_common_quality		-1
-general_remove_temp_files	0
+general_remove_temp_files	1
 
 ; count k-mers
 count_do					1
@@ -66,58 +67,11 @@ expand_write_kmers_result	1
 
 ; read correction
 correct_do					1
+correct_discard_bad			1
 correct_use_threshold		1
 correct_threshold			0.98
 correct_nthreads			4
 correct_readbuffer			100000
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

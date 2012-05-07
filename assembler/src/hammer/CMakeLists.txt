@@ -30,7 +30,7 @@ add_executable(hammer
    config_struct_hammer.cpp
    read_reconstruction.cpp )
    
-add_subdirectory(quake_count)
+#add_subdirectory(quake_count)
 #add_subdirectory(quake_enhanced)
 add_subdirectory(quake_correct)
 add_subdirectory(gen_test_data)

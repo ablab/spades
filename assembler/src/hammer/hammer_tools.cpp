@@ -787,13 +787,10 @@ void HammerTools::PrintKMerResult( boost::iostreams::filtering_ostream & outf, c
 	}
 }
 
-
-
 bool HammerTools::CorrectOneRead( const vector<KMerCount> & kmers, hint_t & changedReads,
-		hint_t & changedNucleotides, hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons ) {
+		hint_t & changedNucleotides, hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons, bool discard_bad ) {
 	bool isGood = false;
 	string seq (Globals::blob        + Globals::pr->at(readno).start(), Globals::pr->at(readno).size());
-	// string qual(Globals::blobquality + Globals::pr->at(readno).start(), Globals::pr->at(readno).size());
 	const uint32_t read_size = Globals::pr->at(readno).size();
 	PositionRead & pr = Globals::pr->at(readno);
 
@@ -814,7 +811,6 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount> & kmers, hint_t & chan
 		changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, kmers, kmer, pos, stat, v,
 				left, right, isGood, NULL, false, correct_threshold, discard_singletons );
 	}
-
 
 	int left_rev = 0; int right_rev = read_size-(int)K;
 
@@ -842,8 +838,13 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount> & kmers, hint_t & chan
 	}
 
 	r.setSequence(seq.data());
-	r.trimLeftRight(left, right+K-1);
-	if ( left > 0 || right + K -1 < read_size ) changedRead = true;
+
+	// if discard_bad=false, we retain original sequences when needed
+	if (discard_bad) {
+		r.trimLeftRight(left, right+K-1);
+		if ( left > 0 || right + K -1 < read_size ) changedRead = true;
+	}
+
 	changedNucleotides += res;
 	if (res > 0) ++changedReads;
 	return isGood;
@@ -855,6 +856,7 @@ void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KM
 	ireadstream irs(readsFilename, cfg::get().input_qvoffset);
 	VERIFY(irs.is_open());
 	bool correct_threshold = cfg::get().correct_use_threshold;
+	bool discard_bad = cfg::get().correct_discard_bad;
 	bool discard_singletons = cfg::get().bayes_discard_only_singletons;
 
 	while (irs.is_open() && !irs.eof()) {
@@ -862,7 +864,7 @@ void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KM
 		irs >> r;
 		size_t read_size = r.trimNsAndBadQuality(cfg::get().input_trim_quality);
 		if (read_size < K) continue;
-		if ( HammerTools::CorrectOneRead(kmers, changedReads, changedNucleotides, readno, r, 0, correct_threshold, discard_singletons) ) {
+		if ( HammerTools::CorrectOneRead(kmers, changedReads, changedNucleotides, readno, r, 0, correct_threshold, discard_singletons, discard_bad) ) {
 			r.print(*outf_good, cfg::get().input_qvoffset);
 		} else {
 			r.print(*outf_bad, cfg::get().input_qvoffset);
@@ -876,6 +878,7 @@ void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, cons
 		const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_left_start, hint_t readno_right_start,
 		ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp ) {
 	int qvoffset = cfg::get().input_qvoffset;
+	bool discard_bad = cfg::get().correct_discard_bad;
 	bool correct_threshold = cfg::get().correct_use_threshold;
 	bool discard_singletons = cfg::get().bayes_discard_only_singletons;
 
@@ -932,13 +935,13 @@ void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, cons
 			}
 			if (read_size_left[i] >= K) {
 				left_res[i] = HammerTools::CorrectOneRead(kmers, changedReadBuf[omp_get_thread_num()],
-						changedNuclBuf[omp_get_thread_num()], readno_left[i], l[i], 0, correct_threshold, discard_singletons );
+						changedNuclBuf[omp_get_thread_num()], readno_left[i], l[i], 0, correct_threshold, discard_singletons, discard_bad );
 			} else {
 				left_res[i] = false;
 			}
 			if (read_size_right[i] >= K) {
 				right_res[i] = HammerTools::CorrectOneRead(kmers, changedReadBuf[omp_get_thread_num()],
-						changedNuclBuf[omp_get_thread_num()], readno_right[i], r[i], 0, correct_threshold, discard_singletons );
+						changedNuclBuf[omp_get_thread_num()], readno_right[i], r[i], 0, correct_threshold, discard_singletons, discard_bad );
 			} else {
 				right_res[i] = false;
 			}
@@ -1022,12 +1025,12 @@ hint_t HammerTools::CorrectAllReads() {
 		}
 
 		// delete output files from previous iteration
-		if (Globals::iteration_no > 0) {
+		/*if (Globals::iteration_no > 0) {
 			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile,   Globals::iteration_no - 1, "cor"));
 			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile,   Globals::iteration_no - 1, "bad"));
 			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "cor"));
 			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no - 1, "bad"));
-		}
+		}*/
 		++iFile;
 	}
 
