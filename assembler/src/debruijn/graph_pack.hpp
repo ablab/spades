@@ -40,7 +40,7 @@ struct graph_pack : private boost::noncopyable {
 //	PairedInfoIndex<graph_t> etalon_paired_index;
 	KmerMapper<k + 1, graph_t> kmer_mapper;
 
-	Sequence const& genome;
+	Sequence genome;
 
 	explicit graph_pack(Sequence const& genome = Sequence(), size_t single_gap = 0, bool careful_labeling = false) :
 	g(k),

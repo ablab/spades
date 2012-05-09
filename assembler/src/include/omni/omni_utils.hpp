@@ -1005,16 +1005,16 @@ public:
 
 		double elapsed = pc.time();
 		if (elapsed > 1e-4)
-			DEBUG("Too much time for dijkstra: " << elapsed);
+			TRACE("Too much time for dijkstra: " << elapsed);
 
 		if (backward_dijkstra.VertexLimitExceeded())
-			DEBUG("backward_dijkstra : vertex limit exceeded");
+			TRACE("backward_dijkstra : vertex limit exceeded");
 
 		TRACE("Backward dijkstra finished");
 		TRACE("Starting recursive traversal");
 		Go(start_, 0, backward_dijkstra);
 		if (call_cnt_ > 10)
-			DEBUG("number of calls: " << call_cnt_);
+			TRACE("number of calls: " << call_cnt_);
 		TRACE("Recursive traversal finished");
 	}
 

@@ -9,12 +9,16 @@
 #include "graphio.hpp"
 #include <boost/test/unit_test.hpp>
 
-#include "assembly_compare.hpp"
 #include "comparison_utils.hpp"
+#include "assembly_compare.hpp"
+#include "diff_masking.hpp"
+#include "repeat_masking.hpp"
+
+#include "tests.hpp"
 
 ::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
 {
-	logging::create_logger();
+	logging::create_logger("", logging::L_DEBUG);
 	logging::__logger()->add_writer(make_shared<logging::console_writer>());
 
     using namespace ::boost::unit_test;
@@ -25,7 +29,7 @@
 	return 0;
 }
 
-namespace debruijn_graph {
+namespace compare {
 
 //BOOST_AUTO_TEST_CASE( RefVSAssemblyComparison ) {
 //	static const size_t k = 55;
@@ -46,86 +50,129 @@ namespace debruijn_graph {
 //			20);
 //}
 
-BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
-	static const size_t k = 19;
-	static const size_t K = 55;
-//	static const size_t K = 57;
-//	static const size_t K = 53;
+//BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
+//	static const size_t k = 19;
+//	static const size_t K = 55;
+////	static const size_t K = 57;
+////	static const size_t K = 53;
+//
+////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+//
+//	io::Reader stream_1("/home/anton/idba_compare/idba.fasta");
+//	io::Reader stream_2("/home/anton/idba_compare/hammer21_dis_tuned_simpl_try_improve.fasta");
+//	string ref = "/home/anton/idba_compare/MG1655-K12.fasta";
+//	string folder = "/home/anton/idba_compare/hammer21_dis_tuned_simpl_vs_idba/";
+////	string folder = "assembly_comp/gingi_new_3_vs_jeff/";
+//	make_dir(folder);
+//
+//	RunBPComparison<k, K>(
+//		stream_1,
+//		stream_2,
+//		"idba_",
+//		"k21ts_",
+//		true/*refine*/,
+//		false/*untangle*/,
+//		folder,
+//		true/*detailed_output*/,
+//		5/*delta*/,
+//		ReadGenome(ref));
+//}
 
-//	io::Reader stream_1("/home/snurk/gingi/2.fasta");
-//	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-
-//		io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE2_BH.fasta");
+//BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
+//	static const size_t k = 19;
+//	static const size_t K = 55;
+////	static const size_t K = 57;
+////	static const size_t K = 53;
+//
+////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+//
+////		io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE2_BH.fasta");
+////	io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE3_BH.fasta");
+//	io::Reader stream_2("/home/snurk/gingi/jeff.fasta");
+//
+////	io::Reader stream_2("/home/snurk/gingi/PGINGIVALIS_LANE2_BH.fasta");
+//
 //	io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE3_BH.fasta");
-	io::Reader stream_2("/home/snurk/gingi/jeff.fasta");
+////	io::Reader stream_2("/home/snurk/gingi/lane2_evsc.fasta");
+//
+////	string folder = "assembly_comp/gingi_new_3_vs_new_2/";
+//	string folder = "assembly_comp/gingi_new_3_vs_jeff/";
+//	make_dir(folder);
+//
+//	RunBPComparison<k, K>(
+//		stream_1,
+//		stream_2,
+////		"2",
+////		"jeff",
+//		"3_new_",
+////		"2_new_",
+//		"jeff_",
+//		true/*refine*/,
+//		false/*untangle*/,
+//		folder,
+//		true/*detailed_output*/);
+//}
 
-//	io::Reader stream_2("/home/snurk/gingi/PGINGIVALIS_LANE2_BH.fasta");
+//BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
+//	static const size_t k = 21;
+//	static const size_t K = 201/*55*//*201*/;
+////	static const size_t K = 57;
+////	static const size_t K = 53;
+//
+////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+//
+//	io::Reader stream_1("/home/snurk/Dropbox/gingi/jeff.fasta");
+//	io::Reader stream_2("/home/snurk/Dropbox/gingi/TDC60.fasta");
+//	string ref = "/home/snurk/Dropbox/gingi/TDC60.fasta";
+//
+////	string folder = "assembly_comp/gingi_jeff_vs_tdc60_55/";
+//	string folder = "assembly_comp/gingi_jeff_vs_tdc60_201/";
+//	make_dir(folder);
+//
+//	RunBPComparison<k, K>(
+//		stream_1,
+//		stream_2,
+//		"jeff_",
+//		"tdc_",
+//		true/*refine*/,
+//		false/*untangle*/,
+//		folder,
+//		true/*detailed_output*/,
+//		5/*delta*/,
+//		ReadGenome(ref));
+//}
 
-	io::Reader stream_1("/home/snurk/gingi/PGINGIVALIS_LANE3_BH.fasta");
-//	io::Reader stream_2("/home/snurk/gingi/lane2_evsc.fasta");
-
-//	string folder = "assembly_comp/gingi_new_3_vs_new_2/";
-	string folder = "assembly_comp/gingi_new_3_vs_jeff/";
-	make_dir(folder);
-
-	RunBPComparison<k, K>(
-		stream_1,
-		stream_2,
-//		"2",
-//		"jeff",
-		"3_new_",
-//		"2_new_",
-		"jeff_",
-		true/*refine*/,
-		false/*untangle*/,
-		folder,
-		true/*detailed_output*/);
-}
-
-template<size_t k, size_t K>
-inline void LoadAndRunBPG(const string& filename, const string& output_dir,
-		const string& example_id = "") {
-	using boost::property_tree::ptree;
-	ptree pt;
-	read_xml(filename, pt);
-//		size_t example_cnt = 0;
-	BOOST_FOREACH (const ptree::value_type& example, pt.get_child("examples")) {
-		const ptree& genomes_node = example.second;
-		//todo change name
-		string n = genomes_node.get<string>("<xmlattr>.n");
-		if (example_id != "" && example_id != n) {
-			INFO("Ignoring example " << n);
-			continue;
-		}
-
-		vector<vector<io::SingleRead>> genomes;
-		BOOST_FOREACH (const ptree::value_type& genome,	genomes_node) {
-			if (genome.first == "genome") {
-				const ptree& contigs_node = genome.second;
-				vector<io::SingleRead> contigs;
-				size_t contig_cnt = 0;
-				BOOST_FOREACH (const ptree::value_type& contig,	contigs_node) {
-					contigs.push_back(io::SingleRead("contig_" + ToString(contig_cnt++), contig.second.data()));
-				}
-				genomes.push_back(contigs);
-			}
-		}
-		INFO("--------------------------------------------");
-		INFO("Processing example " << n);
-		VERIFY(genomes.size() == 2);
-		io::VectorReader<io::SingleRead> stream_1(genomes[0]);
-		io::VectorReader<io::SingleRead> stream_2(genomes[1]);
-		RunBPComparison<k, K>(
-			stream_1,
-			stream_2,
-			"genome_0_",
-			"genome_1_", /*refine*/
-			true, /*untangle*/
-			true,
-			output_dir + "example_" + n /*ToString(++example_cnt)*/
-					+ "/", /*detailed_output*/true);
-	}
-}
+//BOOST_AUTO_TEST_CASE( IDBA_vs_SPADES ) {
+//	static const size_t k = 19;
+//	static const size_t K = 55;
+////	static const size_t K = 57;
+////	static const size_t K = 53;
+//
+////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+//
+//	io::Reader stream_1("/home/snurk/idba_comp/idba-contig-100.fa");
+//	io::Reader stream_2("/home/snurk/idba_comp/k21nodiscard.fasta");
+//	string ref = "/home/snurk/idba_comp/MG1655-K12.fasta";
+//
+//	string folder = "/home/snurk/idba_comp/results/";
+//	make_dir(folder);
+//
+//	RunBPComparison<k, K>(
+//		stream_1,
+//		stream_2,
+//		"idba_",
+//		"bh21_",
+//		true/*refine*/,
+//		false/*untangle*/,
+//		folder,
+//		true/*detailed_output*/,
+//		5/*delta*/,
+//		ReadGenome(ref));
+//}
 
 //BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 //	make_dir("bp_graph_test");
@@ -134,22 +181,22 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir,
 //			, ReadGenome("data/input/E.coli/DH10B-K12.fasta")), 200);
 //	INFO("Genomes ready");
 //
-//	CompareGenomes<701>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp/");
+//	CompareGenomes<701>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp_wr/");
 //	INFO("Finished");
 //}
 
-inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, const string& output_folder) {
-	make_dir("bp_graph_test");
-	INFO("Running comparison of two strains");
-	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(TotallyClearGenomes<55>(CorrectGenomes<21>(ReadGenome(strain_1)
-			, ReadGenome(strain_2))), 30);
-//	genomes = TotallyClearGenomes<701>(genomes);
-	VERIFY(CheckNoRepeats<301>(genomes.first));
-	VERIFY(CheckNoRepeats<301>(genomes.second));
-	INFO("Genomes ready");
-
-	CompareGenomes<701>(genomes.first, genomes.second, output_folder);
-}
+//inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, const string& output_folder) {
+//	make_dir("bp_graph_test");
+//	INFO("Running comparison of two strains");
+//	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(TotallyClearGenomes<55>(CorrectGenomes<21>(ReadGenome(strain_1)
+//			, ReadGenome(strain_2))), 30);
+////	genomes = TotallyClearGenomes<701>(genomes);
+//	VERIFY(CheckNoRepeats<301>(genomes.first));
+//	VERIFY(CheckNoRepeats<301>(genomes.second));
+//	INFO("Genomes ready");
+//
+//	CompareGenomes<701>(genomes.first, genomes.second, output_folder);
+//}
 
 //BOOST_AUTO_TEST_CASE( TwoStrainComparisonWOR ) {
 //	StrainComparisonWOR("data/input/E.coli/MG1655-K12.fasta.gz"
@@ -254,41 +301,6 @@ inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, 
 //	INFO("Finished");
 //}
 
-//BOOST_AUTO_TEST_CASE( BreakPointGraphTests ) {
-//	make_dir("bp_graph_test");
-//	INFO("Running simulated examples");
-//	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
-//			"bp_graph_test/simulated_common/");
-//
-//	INFO("Running simulated examples with introduced errors");
-//	LoadAndRunBPG<7, 25>("/home/snurk/assembly_compare/tests2.xml",
-//			"bp_graph_test/simulated_common_err/", "1_err");
-//	Sequence genome = ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz");
-//
-////	INFO("Running comparison against mutated genome");
-////	RunBPComparison<17, 250>(genome, IntroduceMutations(genome, 0.01), "init", "mut"
-////			, /*refine*/true, /*untangle*/false, "bp_graph_test/mutated_ref/", /*detailed*/false);
-//
-////	INFO("Running comparison against genome with reversals");
-//
-////	RunBPComparison<25, 250>(genome, IntroduceReversals(genome, 10, 1000, 2000), "init", "rev"
-////			, /*refine*/false, /*untangle*/false, "bp_graph_test/reversaled_ref/", /*detailed*/false);
-//
-////	INFO("Running comparison against mutated genome with reversals");
-////	RunBPComparison<25, 250>(genome, IntroduceMutations(IntroduceReversals(genome, 10, 1000, 2000), 0.01), "init", "mut_rev"
-////			, /*refine*/true, /*untangle*/true, "bp_graph_test/reversaled_mut_ref/", /*detailed*/false);
-//
-////	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
-////	INFO("Running comparison against repeat graph contigs");
-////	RunBPComparison<25, 250>(genome, RepeatGraphEdges<gp_t>(genome), "init", "repeat_g_cont"
-////			, /*refine*/false, /*untangle*/false, "bp_graph_test/repeat_graph_edges_ref/", /*detailed*/false);
-////
-////	INFO("Running comparison against reversaled repeat graph contigs");
-////	RunBPComparison<25, 250>(genome, RepeatGraphEdges<gp_t>(IntroduceReversals(genome, 10, 1000, 10000)), "init", "rev_repeat_g_cont"
-////			, /*refine*/false, /*untangle*/false, "bp_graph_test/rev_repeat_graph_edges_ref/", /*detailed*/false);
-//
-//}
-
 //BOOST_AUTO_TEST_CASE( ThreadingContigsOverGraph ) {
 //	typedef graph_pack<ConjugateDeBruijnGraph, 55> gp_t;
 //	io::EasyReader base_contigs("/home/anton/gitrep/algorithmic-biology/assembler/data/tmp/andrew_nurk.fasta");
@@ -322,4 +334,3 @@ inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, 
 //}
 
 }
-

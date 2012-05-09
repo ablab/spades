@@ -9,6 +9,7 @@
 #include "omni/visualization_utils.hpp"
 #include "statistics.hpp"
 #include "new_debruijn.hpp"
+#include "graph_construction.hpp"
 #include "graphio.hpp"
 #include "graph_read_correction.hpp"
 #include "io/easy_reader.hpp"
@@ -156,7 +157,7 @@ void FillAndCorrectEtalonPairedInfo(
 		bool save_etalon_info_history = false) {
 	INFO("Filling etalon paired index");
 	paired_info_index etalon_paired_index(gp.g);
-	FillEtalonPairedIndex<debruijn_graph::K>(etalon_paired_index, gp.g,
+	FillEtalonPairedIndex<conj_graph_pack::k_value>(etalon_paired_index, gp.g,
 			gp.index, gp.kmer_mapper, insert_size, read_length, delta,
 			gp.genome);
 	INFO("Etalon paired index filled");
@@ -901,7 +902,7 @@ public:
 		MappingPath<EdgeId> path = mapper_.MapRead(read);
 		const string& name = read.name();
 		int cur_pos = 0;
-		DEBUG(
+		TRACE(
 				"Contig " << name << " mapped on " << path.size()
 						<< " fragments.");
 		for (size_t i = 0; i < path.size(); i++) {
@@ -911,7 +912,7 @@ public:
 			if (i > 0)
 				if (path[i - 1].first != ei)
 					if (g_.EdgeStart(ei) != g_.EdgeEnd(path[i - 1].first)) {
-						DEBUG(
+						TRACE(
 								"Contig " << name
 										<< " mapped on not adjacent edge. Position in contig is "
 										<< path[i - 1].second.initial_range.start_pos

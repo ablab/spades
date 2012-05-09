@@ -179,7 +179,7 @@ public:
     //  !!!Constructor of start sequence (length = size) from already compressed array
     //  We assume the size of data_array is greater than size
     //  TODO find another way of constructing from a substring of a sequence
-    Seq(T* data_array) {
+    explicit Seq(T* data_array) {
         
         for (size_t i = 0; i < DataSize - 1; ++i) 
             data_[i] = data_array[i];
@@ -202,6 +202,7 @@ public:
 		
         //TRACE("New Constructor for seq " << s[0] << " is first symbol");
         VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
+        VERIFY(offset + number_to_read <= s.size());
 
         // which symbols does our string contain : 0123 or ACGT?
         bool digit_str = is_dignucl(s[0]); 

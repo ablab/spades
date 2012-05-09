@@ -19,18 +19,43 @@ namespace omnigraph {
  */
 template<class Graph>
 class GraphLabeler {
-protected:
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
 	virtual ~GraphLabeler() {
-
 	}
 
-	virtual std::string label(VertexId v) const = 0;
+	virtual string label(VertexId v) const = 0;
 
-	virtual std::string label(EdgeId e) const = 0;
+	virtual string label(EdgeId e) const = 0;
+
+};
+
+template<class Graph>
+class MapGraphLabeler {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	map<EdgeId, string> edge_map_;
+	map<VertexId, string> vertex_map_;
+
+public:
+
+	virtual string label(VertexId v) const {
+		auto it = vertex_map_.find(v);
+		if (it == vertex_map_.end())
+			return "";
+		else
+			return it->second;
+	}
+
+	virtual string label(EdgeId e) const {
+		auto it = edge_map_.find(e);
+		if (it == edge_map_.end())
+			return "";
+		else
+			return it->second;
+	}
 
 };
 

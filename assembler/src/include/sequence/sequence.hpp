@@ -36,7 +36,6 @@
 #include "sequence/seq.hpp"
 #include "sequence/sequence_data.hpp"
 
-
 class Sequence {
 
     typedef uint16_t size_type;

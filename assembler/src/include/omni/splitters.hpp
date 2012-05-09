@@ -287,9 +287,9 @@ private:
 
 	static const distance_t inf = 100000000;
 
-	size_t max_size_;
+	const size_t max_size_;
 
-	size_t edge_length_bound_;
+	const size_t edge_length_bound_;
 
 	size_t current_;
 
@@ -318,9 +318,15 @@ public:
 		return current_ < max_size_;
 	}
 
+	virtual void init(VertexId start) {
+		current_ = 0;
+	}
+
 	virtual size_t GetLength(EdgeId edge) {
 		if (this->graph().length(edge) <= edge_length_bound_)
-			return this->graph().length(edge);
+			//todo change back
+			return 1;
+//			return this->graph().length(edge);
 		else
 			return inf;
 	}
@@ -352,8 +358,10 @@ public:
 	virtual size_t GetLength(EdgeId edge) {
 		if (path_vertices_.count(this->graph().EdgeStart(edge))
 				&& path_vertices_.count(this->graph().EdgeEnd(edge)))
-				return 0;
-		return base::GetLength(edge);
+//				return min(int(base::GetLength(edge)), 200);
+				return 1;
+//		return base::GetLength(edge);
+		return 2;
 	}
 
 };
@@ -547,8 +555,8 @@ public:
 			return vector<VertexId>();
 		}
 		TRACE("Search started");
-		CountingDijkstra/*ForPaths*/<Graph> cf(this->graph(), max_size_,
-				edge_length_bound_/*, path_.simple_path().sequence()*/);
+		CountingDijkstraForPaths<Graph> cf(this->graph(), max_size_,
+				edge_length_bound_, path_.simple_path().sequence());
 		if (start_processed_)
 			cf.run(this->graph().EdgeEnd(path_[current_index_].first));
 		else {
@@ -564,7 +572,7 @@ public:
 
 		TRACE("Component vector filled");
 		size_t prev_index = current_index_;
-		ComponentCloser<Graph> cc(this->graph(), /*1*/edge_length_bound_);
+		ComponentCloser<Graph> cc(this->graph(), 1/*edge_length_bound_*/);
 		cc.CloseComponent(last_component_);
 		SkipVisited();
 		//todo ask Anton what is this...

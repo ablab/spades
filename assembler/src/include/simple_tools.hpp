@@ -51,6 +51,16 @@ std::string ToString(std::set<T>& t) {
 	return ss.str();
 }
 
+//template <typename T>
+//std::string str(const T& t) {
+//	return ToString(t);
+//}
+//
+//template <typename T>
+//std::string str(std::vector<T>& t) {
+//	return ToString(t);
+//}
+
 template<class T>
 std::auto_ptr<T> make_ptr(T* t) {
 	return std::auto_ptr<T>(t);
@@ -98,6 +108,10 @@ inline void checkFileExistenceFATAL(std::string filename) {
 	}
 }
 
+template <class ContainerT1, class ContainerT2>
+void insert_all(ContainerT1& target, const ContainerT2& to_insert) {
+	target.insert(target.end(), to_insert.begin(), to_insert.end());
+}
 
 template <class map_t>
 const typename map_t::_Tp& get(const map_t& from, const typename map_t::_Key& key) {

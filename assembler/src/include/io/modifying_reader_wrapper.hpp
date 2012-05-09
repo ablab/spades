@@ -2,6 +2,8 @@
 
 #include "io/delegating_reader_wrapper.hpp"
 
+namespace io {
+
 class SequenceModifier {
 public:
 	virtual ~SequenceModifier() {}
@@ -91,3 +93,4 @@ public:
 //		return *this;
 //	}
 //};
+}

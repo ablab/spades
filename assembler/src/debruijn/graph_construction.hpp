@@ -274,17 +274,17 @@ size_t ConstructGraph(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeI
 	
     DeBruijn& debruijn = index.inner_index();
 
-    DEBUG("Filling indices");
+    TRACE("Filling indices");
     size_t rl = 0;
     if (streams.size() > 1) {
-        DEBUG("... in parallel");
+    	TRACE("... in parallel");
         rl = FillIterativeParallelIndex<k, Graph, Read>(streams, debruijn);
     } else if (streams.size() == 1) {
         rl = FillUsusalIndex<k, Graph, Read>(*streams.back(), debruijn);
     } else {
     	VERIFY_MSG(false, "No input streams specified");
     }
-    DEBUG("Filled indices");
+    TRACE("Filled indices");
 
     io::SingleRead r;
     if (contigs_stream) {
@@ -294,13 +294,13 @@ size_t ConstructGraph(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeI
             Sequence s = r.sequence();
             debruijn.CountSequence(s);
         }
-        DEBUG("Added contigs from previous K");
+        TRACE("Added contigs from previous K");
     }
 
     INFO("Condensing graph");
     DeBruijnGraphConstructor<k, Graph> g_c(debruijn);
     g_c.ConstructGraph(g, index);
-    DEBUG("Graph condensed");
+    TRACE("Graph condensed");
 
     return rl;
 }

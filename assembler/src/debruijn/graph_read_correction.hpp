@@ -60,7 +60,8 @@ class TipsProjector {
 			}
 		}
 
-		DEBUG("Remapping " << aligned_tip.size()
+		TRACE(
+				"Remapping " << aligned_tip.size()
 						<< " kmers of aligned_tip to aligned_alt");
 		gp_.kmer_mapper.RemapKmers(aligned_tip, aligned_alt);
 	}
@@ -87,24 +88,26 @@ public:
 	}
 
 	void ProjectTip(EdgeId tip) {
-		DEBUG("Trying to project tip " << gp_.g.str(tip));
+		TRACE("Trying to project tip " << gp_.g.str(tip));
 		bool outgoing_tip = gp_.g.IsDeadEnd(gp_.g.EdgeEnd(tip));
 		Sequence tip_seq = gp_.g.EdgeNucls(tip);
 		vector<EdgeId> alt_path = UniqueAlternativePath(tip, outgoing_tip);
 		if (alt_path.empty()) {
-			DEBUG("Failed to find unique alt path for tip " << gp_.g.str(tip)
+			TRACE(
+					"Failed to find unique alt path for tip " << gp_.g.str(tip)
 							<< ". Wasn't projected!!!");
 		} else {
 			Sequence alt_seq = MergeSequences(gp_.g, alt_path);
 			if (tip_seq.size() > alt_seq.size()) {
-				DEBUG("Can't fully project tip " << gp_.g.str(tip)
+				TRACE(
+						"Can't fully project tip " << gp_.g.str(tip)
 								<< " with seq length " << tip_seq.size()
 								<< " because alt path length is "
 								<< alt_seq.size()
 								<< ". Trying to project partially");
 			}
 			AlignAndProject(gp_.g, tip_seq, alt_seq, outgoing_tip);
-			DEBUG("Tip projected");
+			TRACE("Tip projected");
 		}
 	}
 private:
@@ -145,8 +148,17 @@ Sequence MergeSequences(const Graph& g,
 	return MergeOverlappingSequences(path_sequences, g.k());
 }
 
+template<class Graph>
+bool CheckContiguous(const Graph& g, const vector<typename Graph::EdgeId>& path) {
+	for (size_t i = 1; i < path.size(); ++i) {
+		if (g.EdgeEnd(path[i - 1]) != g.EdgeStart(path[i]))
+			return false;
+	}
+	return true;
+}
+
 template<class Graph, class Mapper>
-class GraphReadCorrector: public SequenceModifier {
+class GraphReadCorrector: public io::SequenceModifier {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
@@ -157,7 +169,7 @@ class GraphReadCorrector: public SequenceModifier {
 	vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2) const {
 		if (v1 == v2)
 			return vector<EdgeId>();
-		DEBUG(
+		TRACE(
 				"Trying to close gap between v1=" << graph_.int_id(v1)
 						<< " and v2=" << graph_.int_id(v2));
 		PathStorageCallback<Graph> path_store(graph_);
@@ -166,8 +178,8 @@ class GraphReadCorrector: public SequenceModifier {
 		path_processor.Process();
 
 		if (path_store.size() == 0) {
-			DEBUG("Failed to find closing path");
-//			DEBUG("Failed to close gap between v1=" << graph_.int_id(v1)
+			TRACE("Failed to find closing path");
+//			TRACE("Failed to close gap between v1=" << graph_.int_id(v1)
 //							<< " (conjugate "
 //							<< graph_.int_id(graph_.conjugate(v1))
 //							<< ") and v2=" << graph_.int_id(v2)
@@ -176,13 +188,13 @@ class GraphReadCorrector: public SequenceModifier {
 //			return boost::none;
 			return vector<EdgeId>();
 		} else if (path_store.size() == 1) {
-			DEBUG("Unique closing path found");
+			TRACE("Unique closing path found");
 		} else {
-			DEBUG("Several closing paths found, first chosen");
+			TRACE("Several closing paths found, first chosen");
 		}
 		vector<EdgeId> answer = path_store.paths().front();
-		DEBUG("Gap closed");
-		DEBUG(
+		TRACE("Gap closed");
+		TRACE(
 				"Cumulative closure length is "
 						<< CummulativeLength(graph_, answer));
 		return answer;
@@ -217,14 +229,6 @@ class GraphReadCorrector: public SequenceModifier {
 		return answer;
 	}
 
-	bool CheckContiguous(const vector<EdgeId>& path) const {
-		for (size_t i = 1; i < path.size(); ++i) {
-			if (graph_.EdgeEnd(path[i - 1]) != graph_.EdgeStart(path[i]))
-				return false;
-		}
-		return true;
-	}
-
 	Path<EdgeId> TryFixPath(const Path<EdgeId>& path) const {
 		return Path < EdgeId
 				> (TryFixPath(path.sequence()), path.start_pos(), path.end_pos());
@@ -239,11 +243,12 @@ public:
 
 		if (mapping_path.size() == 0 || s.size() < graph_.k() + 1
 				|| mapping_path.front().second.initial_range.start_pos != 0
-				|| mapping_path.back().second.initial_range.end_pos != s.size() - graph_.k()) {
+				|| mapping_path.back().second.initial_range.end_pos
+						!= s.size() - graph_.k()) {
 			//todo reduce concat unmapped beginning and end in future???
-			DEBUG(
+			TRACE(
 					"Won't fix because wasn't mapped or start/end fell on unprojected tip/erroneous connection");
-//			DEBUG(
+//			TRACE(
 //					"For sequence of length " << s.size()
 //							<< " returning empty sequence");
 			return s;
@@ -251,20 +256,19 @@ public:
 		}
 
 		Path<EdgeId> path = TryFixPath(mapping_path.simple_path());
-//		DEBUG("Mapped sequence to path " << graph_.str(path.sequence()));
+//		TRACE("Mapped sequence to path " << graph_.str(path.sequence()));
 
-		if (!CheckContiguous(path.sequence())) {
-			DEBUG("Even fixed path wasn't contiguous");
+		if (!CheckContiguous(graph_, path.sequence())) {
+			TRACE("Even fixed path wasn't contiguous");
 			return s;
 		} else {
-			DEBUG("Fixed path is contiguous");
+			TRACE("Fixed path is contiguous");
 			Sequence path_sequence = MergeSequences(graph_, path.sequence());
 			size_t start = path.start_pos();
 			size_t end = path_sequence.size()
 					- graph_.length(path[path.size() - 1]) + path.end_pos();
 			//todo we can do it more accurately with usage of mapping_path
 			Sequence answer = path_sequence.Subseq(start, end);
-
 //			if (answer != s) {
 //				if (answer.size() < 1000) {
 //					TRACE(
@@ -294,7 +298,7 @@ private:
 template<class Graph, class Mapper>
 shared_ptr<const GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
 		const Graph& graph, const Mapper& mapper) {
-	return boost::make_shared < GraphReadCorrector < Graph, Mapper >> (graph, mapper);
+	return boost::make_shared<GraphReadCorrector<Graph, Mapper>>(graph, mapper);
 }
 
 }

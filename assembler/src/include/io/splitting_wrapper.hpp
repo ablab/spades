@@ -4,15 +4,12 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#ifndef N_REMOVING_WRAPPER_HPP_
-#define N_REMOVING_WRAPPER_HPP_
-
-#include "io/ireader.hpp"
+#pragma once
+#include "delegating_reader_wrapper.hpp"
 
 namespace io {
 
 class SplittingWrapper: public DelegatingReaderWrapper<SingleRead> {
-public:
 	typedef SingleRead ReadType;
 private:
 	std::vector<ReadType> buffer_;
@@ -56,10 +53,10 @@ public:
 		return *this;
 	}
 
+	//todo fix needed!!! seems that eof can't be called multiple times in a row!!!
 	/* virtual */ bool eof() {
 		return !Skip();
 	}
 };
 
 }
-#endif /* N_REMOVING_WRAPPER_HPP_ */

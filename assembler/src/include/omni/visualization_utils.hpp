@@ -291,7 +291,7 @@ class ComponentGraphVisualizer: public GraphVisualizer<Graph> {
 	string ConstructComponentName(const string &file_name, size_t cnt,
 			const string &component_name) {
 		stringstream ss;
-		ss << "_" << cnt << component_name;
+		ss << "_" << cnt << "_" << component_name;
 		string res = file_name;
 		res.insert(res.length() - 4, ss.str());
 		return res;
@@ -433,6 +433,32 @@ void WriteComponents(const Graph& g, size_t split_edge_length,
 //todo alert!!! magic constants!!!
 //todo refactoring of params needed
 template<class Graph>
+void WriteComponentsAlongPath(const Graph& g, const AbstractFilter<vector<typename Graph::VertexId>> &checker,
+		const GraphLabeler<Graph>& labeler, const string& file_name,
+		size_t split_edge_length, size_t component_vertex_number,
+		const MappingPath<typename Graph::EdgeId>& path,
+		const GraphColorer<Graph>& colorer) {
+	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
+	ReliableSplitterAlongPath<Graph> splitter(g, component_vertex_number/*100*//*60*/, split_edge_length, path);
+	WriteComponents<Graph>(g, splitter, checker, file_name,
+			colorer, labeler);
+}
+
+template<class Graph>
+void WriteComponentsAlongPath(const Graph& g,
+		const GraphLabeler<Graph>& labeler, const string& file_name,
+		size_t split_edge_length, size_t component_vertex_number,
+		const MappingPath<typename Graph::EdgeId>& path,
+		const GraphColorer<Graph>& colorer) {
+	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
+	ReliableSplitterAlongPath<Graph> splitter(g, component_vertex_number/*100*//*60*/, split_edge_length, path);
+	WriteComponents<Graph>(g, splitter, file_name,
+			colorer, labeler);
+}
+
+template<class Graph>
 void WriteComponentsAlongPath(const Graph& g,
 		const GraphLabeler<Graph>& labeler, const string& file_name,
 		size_t split_edge_length, size_t component_vertex_number,
@@ -452,10 +478,8 @@ void WriteComponentsAlongPath(const Graph& g,
 	}
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
-	ReliableSplitterAlongPath<Graph> splitter(g, component_vertex_number/*100*//*60*/, split_edge_length, path);
-	ComponentSizeFilter<Graph> filter(g, 1000000, 0);
-	WriteComponents<Graph>(g, splitter, filter, file_name,
-			*DefaultColorer(g, coloring), labeler);
+	auto_ptr<GraphColorer<Graph>> colorer = DefaultColorer(g, coloring);
+	WriteComponentsAlongPath(g, labeler, file_name, split_edge_length, component_vertex_number, path, *colorer);
 }
 
 //todo alert!!! magic constants!!!
@@ -477,8 +501,18 @@ template<class Graph>
 void WriteComponentsAroundEdge(const Graph& g, typename Graph::EdgeId e,
 		const string& file_name, const GraphColorer<Graph>& colorer,
 		const GraphLabeler<Graph>& labeler) {
-	EdgeNeighborhoodFinder<Graph> splitter(g, e, 50, 500);
+	EdgeNeighborhoodFinder<Graph> splitter(g, e, 30, 40000);
 	WriteComponents(g, splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
+	, file_name, colorer, labeler);
+}
+
+template<class Graph>
+void WriteComponentsAroundEdge(const Graph& g, const AbstractFilter<vector<typename Graph::VertexId>> &filter, typename Graph::EdgeId e,
+		const string& file_name, const GraphColorer<Graph>& colorer,
+		const GraphLabeler<Graph>& labeler) {
+	EdgeNeighborhoodFinder<Graph> splitter(g, e, 30, 40000);
+	FilteringSplitterWrapper<Graph> filtering_splitter(splitter, filter);
+	WriteComponents(g, filtering_splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
 	, file_name, colorer, labeler);
 }
 

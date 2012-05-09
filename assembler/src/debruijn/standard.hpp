@@ -53,3 +53,12 @@ inline bool make_dir(fs::path p)
 	WARN("Can't create directory " << p);
 	return false;
 }
+
+inline bool rm_dir(fs::path p) {
+	namespace fs = boost::filesystem;
+	if (fs::is_directory(p) && fs::remove_all(p))
+		return true;
+	WARN("Can't remove directory " << p);
+	return false;
+}
+

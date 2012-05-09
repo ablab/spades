@@ -80,18 +80,18 @@ bool PosCompare(const EdgePosition &a, const EdgePosition &b){
 }
 
 vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1, vector<EdgePosition> v2, int max_single_gap = 0, int shift = 0){
-	DEBUG("RangeGluePositionsLists: v1.size = "<<v1.size()<<" v2.size = "<< v2.size());
+	TRACE("RangeGluePositionsLists: v1.size = "<<v1.size()<<" v2.size = "<< v2.size());
 	vector<EdgePosition> res;
 	if (v1.size() == 0 && v2.size() == 0) return res;
 //	if (v1.size() == 0) {res = v2;}
 //	if (v2.size() == 0) {res = v1;}
 
 	if (v1.size() == 0 || v2.size() == 0) {
-		DEBUG("GluePosition fist parameter size "<<v1.size()<<", second parameter size "<<v2.size());
+		TRACE("GluePosition fist parameter size "<<v1.size()<<", second parameter size "<<v2.size());
 		set<std::string> contigs_num;
 		for (auto iter = res.begin(); iter != res.end(); ++iter){
 			if (contigs_num.find(iter->contigId_)==contigs_num.end()){
-				DEBUG("Contig "<<iter->contigId_<< " glued with empty edge");
+				TRACE("Contig "<<iter->contigId_<< " glued with empty edge");
 				contigs_num.insert(iter->contigId_);
 			}
 		}
@@ -130,7 +130,7 @@ vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1, vector<Edg
 			res.push_back(EdgePosition(v1[i].start(), v2[best_fit_j].end(), v1[i].contigId_, v1[i].m_start(), v2[best_fit_j].m_end() + shift));
 			used_seconds.insert(best_fit_j);
 			if (v2[best_fit_j].start() - v1[i].end() > 1){
-				DEBUG("Contig "<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start()<<"-"<<v1[i].end()<<" and "<<v2[best_fit_j].start()<<"-"<<v2[best_fit_j].end());
+				TRACE("Contig "<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start()<<"-"<<v1[i].end()<<" and "<<v2[best_fit_j].start()<<"-"<<v2[best_fit_j].end());
 			}
 		} else {
 			//INFO("Possible misassemble happened");
@@ -152,11 +152,11 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 //	if (v2.size() == 0) {res = v1;}
 
 	if (v1.size() == 0 || v2.size() == 0) {
-		DEBUG("GluePosition fist parameter size "<<v1.size()<<", second parameter size "<<v2.size());
+		TRACE("GluePosition fist parameter size "<<v1.size()<<", second parameter size "<<v2.size());
 		set<std::string> contigs_num;
 		for (auto iter = res.begin(); iter != res.end(); ++iter){
 			if (contigs_num.find(iter->contigId_)==contigs_num.end()){
-				DEBUG("Contig "<<iter->contigId_<< " glued with empty edge");
+				TRACE("Contig "<<iter->contigId_<< " glued with empty edge");
 				contigs_num.insert(iter->contigId_);
 			}
 		}
@@ -185,7 +185,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 		if (best_fit_j != -1) {
 			res.push_back(EdgePosition(v1[i].start(), v2[best_fit_j].end(), v1[i].contigId_));
 			if (v2[best_fit_j].start() - v1[i].end() > 1){
-				DEBUG("Contig "<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start()<<"-"<<v1[i].end()<<" and "<<v2[best_fit_j].start()<<"-"<<v2[best_fit_j].end());
+				TRACE("Contig "<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start()<<"-"<<v1[i].end()<<" and "<<v2[best_fit_j].start()<<"-"<<v2[best_fit_j].end());
 			}
 		} else {
 			//INFO("Possible misassemble happened");
@@ -247,7 +247,7 @@ public:
 		}
 		EdgePosition NewPos(start, end, contigId, m_start, m_end);
 		(EdgesPositions[NewEdgeId]).push_back(NewPos);
-//		DEBUG("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
+//		TRACE("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
 		if (EdgesPositions[NewEdgeId].size()>1){
 			std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
 		}
@@ -261,7 +261,7 @@ public:
 			EdgesPositions[NewEdgeId] = NewVec;
 		}
 		(EdgesPositions[NewEdgeId]).push_back(NewPos);
-	//	DEBUG("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
+	//	TRACE("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
 
 		if (EdgesPositions[NewEdgeId].size()>1){
 			std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
@@ -306,7 +306,7 @@ public:
 			}
 			for (auto iter = NewPositions.begin(); iter != NewPositions.end(); ++iter)
 				(EdgesPositions[NewEdgeId]).push_back(*iter);
-		//	DEBUG("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
+		//	TRACE("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
 
 			if (EdgesPositions[NewEdgeId].size()>1){
 				std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
@@ -357,21 +357,21 @@ public:
 	}
 
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-//		DEBUG("Handle glue ");
+//		TRACE("Handle glue ");
 
 		AddEdgePosition(new_edge, (EdgesPositions[edge1]));
 		AddEdgePosition(new_edge, (EdgesPositions[edge2]));
 
 		if (EdgesPositions[edge1].size() > 0 && EdgesPositions[edge2].size() > 0) {
-			DEBUG("Gluing two edges with not empty positions:");
-			DEBUG("First: "<<str(edge1));
-			DEBUG("Second: "<<str(edge2));
+			TRACE("Gluing two edges with not empty positions:");
+			TRACE("First: "<<str(edge1));
+			TRACE("Second: "<<str(edge2));
 		}
 
 /*		 for( size_t i = 0; i< EdgesPositions[edge1].size(); i++){
 			 for( size_t j = 0; j< EdgesPositions[edge2].size(); j++){
-//				 DEBUG(" "<<EdgesPositions[edge1])[i].start_<<" "<<EdgesPositions[edge1])[i].end_);
-//				 DEBUG(" "<<EdgesPositions[edge2])[j].start_<<" "<<EdgesPositions[edge2])[j].end_);
+//				 TRACE(" "<<EdgesPositions[edge1])[i].start_<<" "<<EdgesPositions[edge1])[i].end_);
+//				 TRACE(" "<<EdgesPositions[edge2])[j].start_<<" "<<EdgesPositions[edge2])[j].end_);
 				 if ((EdgesPositions[edge1])[i].end_ + 1 == (EdgesPositions[edge2])[j].start_) {
 					 AddEdgePosition(new_edge, (EdgesPositions[edge1])[i].start_, (EdgesPositions[edge2])[j].end_);
 				 }
@@ -405,7 +405,7 @@ public:
 //						AddEdgePosition(newEdge1, iter->start_, end1, iter->contigId_);
 //						if(iter->end_ >= end1 + 1)
 //							AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
-//						DEBUG("Contig "<<iter->contigId_<<" Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
+//						TRACE("Contig "<<iter->contigId_<<" Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
 					}
 				}
 				else {
@@ -416,16 +416,16 @@ public:
 						AddEdgePosition(newEdge1, iter->start_, end1, iter->contigId_);
 						if(iter->end_ >= end1 + 1)
 							AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
-						DEBUG("Contig "<<iter->contigId_<<" Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
+						TRACE("Contig "<<iter->contigId_<<" Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
 					}
-//				 DEBUG("EdgesPositionHandler not handled Split yet");
+//				 TRACE("EdgesPositionHandler not handled Split yet");
 				}
 			}
 		}
 	 }
 
  	 virtual void HandleMerge(const vector<EdgeId>& oldEdges, EdgeId newEdge) {
-//		 DEBUG("HandleMerge by position handler");
+//		 TRACE("HandleMerge by position handler");
  		 // we assume that all edge have good ordered position labels.
  		 size_t n = oldEdges.size();
  		 vector<EdgePosition> res = (EdgesPositions[oldEdges[0]]);
@@ -444,13 +444,13 @@ public:
  		 }
 
  		 if (positive_size && (res.size() == 0)){
- 			 DEBUG("Merge operation broke some positions:");
+ 			 TRACE("Merge operation broke some positions:");
  	 		 for (size_t i = 0; i < n; i++) {
- 	 			 DEBUG("Size "<<EdgesPositions[oldEdges[i]].size()<<" "<<str(oldEdges[i]));
+ 	 			 TRACE("Size "<<EdgesPositions[oldEdges[i]].size()<<" "<<str(oldEdges[i]));
  	 	 		 positive_size = positive_size || (EdgesPositions[oldEdges[i]].size() > 0);
  	 		 }
  		 }
- 		 DEBUG("NEW res.size = "<< res.size());
+ 		 TRACE("NEW res.size = "<< res.size());
  		 AddEdgePosition(newEdge, res);
 	 }
 

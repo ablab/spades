@@ -8,7 +8,6 @@ apt-get --yes install cmake-curses-gui
 apt-get --yes install g++-4.4
 apt-get --yes install java-common
 apt-get --yes install cmake
-apt-get --yes install liblog4cxx10-dev
 apt-get --yes install libboost1.42-all-dev
 apt-get --yes install zlib1g-dev
 apt-get --yes install python-matplotlib

@@ -33,8 +33,9 @@ public:
        }
 
        VectorReader<T>& operator>>(T& t) {
-               t = data_[pos_++];
-               return *this;
+    	   VERIFY(!eof());
+           t = data_[pos_++];
+           return *this;
        }
 
        void close() {
