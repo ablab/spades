@@ -293,7 +293,6 @@ void HammerTools::SplitKMers() {
 			while (gen.HasMore()) {
 				tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back(
 						make_pair(Globals::pr->at(i).start() + gen.pos() - 1, 1 - gen.correct_probability()));
-				// cout << 1-gen.correct_probability() << "\t" << Globals::common_kmer_errprob << endl;
 				gen.Next();
 			}
 		}
@@ -1044,10 +1043,10 @@ hint_t HammerTools::CorrectAllReads() {
 		// makes sense to change the input filenames for the next iteration immediately
 		Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");
 		// delete output files from previous iteration
-		if (Globals::iteration_no > 0) {
-			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "cor"));
-			HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "bad"));
-		}
+		//if (Globals::iteration_no > 0) {
+		//	HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "cor"));
+		//	HammerTools::RemoveFile(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no - 1, "bad"));
+		//}
 	}
 
 	TIMEDLN("Correction done. Changed " << changedNucleotides << " bases in " << changedReads << " reads.");
