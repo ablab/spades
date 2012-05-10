@@ -65,6 +65,8 @@ expand_write_kmers_result	1
 
 ; read correction
 correct_do					1
+correct_discard_bad			1
+correct_use_threshold		1
 correct_use_threshold		1
 correct_threshold			0.98
 correct_nthreads			4
