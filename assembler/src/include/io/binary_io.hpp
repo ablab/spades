@@ -68,7 +68,7 @@ private:
 
             VERBOSE_POWER(++read_count, " reads processed");
 
-            if (read_count == reads_to_flush) {
+            if (read_count % reads_to_flush == 0) {
                 for (size_t i = 0; i < file_num_; ++i) {
                     FlushBuffer(buf[i], *file_ds_[i]);
                     current_buf_sizes[i] = 0;
