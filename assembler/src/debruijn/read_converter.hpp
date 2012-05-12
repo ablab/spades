@@ -26,7 +26,7 @@ void convert_reads_to_binary() {
     INFO("Converting single reads to binary format (takes a while)");
     auto_ptr<SingleReadStream> single_reader = single_easy_reader(false, false);
     io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().thread_number, cfg::get().buffer_reads);
-    single_converter.ToBinary(*paired_reader);
+    single_converter.ToBinary(*single_reader);
 }
 
 
@@ -84,6 +84,100 @@ auto_ptr<SequenceSingleReadStream> single_binary_multireader(bool followed_by_rc
 auto_ptr<SequencePairedReadStream> paired_binary_multireader(bool followed_by_rc, size_t insert_size) {
     return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(paired_binary_readers(followed_by_rc, insert_size)));
 }
+
+
+class BufferedReadersStorage {
+
+private:
+
+    std::vector< SequenceSingleReadStream* > * single_streams_;
+
+    std::vector< SequencePairedReadStream* > * paired_streams_;
+
+    BufferedReadersStorage() {
+        single_streams_ = new std::vector< SequenceSingleReadStream* >(cfg::get().thread_number);
+        for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+            io::PredictableIReader<io::SingleReadSeq> * s_stream = new io::SeqSingleReadStream(cfg::get().single_read_prefix, i);
+            single_streams_->at(i) = new io::ReadBufferedStream<io::SingleReadSeq> (*s_stream);
+        }
+
+        paired_streams_ = new std::vector< SequencePairedReadStream* >(cfg::get().thread_number);
+        for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+            io::PredictableIReader<io::PairedReadSeq> * p_stream = new io::SeqPairedReadStream(cfg::get().paired_read_prefix, i, 0);
+            paired_streams_->at(i) = new io::ReadBufferedStream<io::PairedReadSeq> (*p_stream);
+        }
+    }
+
+    BufferedReadersStorage(const BufferedReadersStorage&);
+
+    BufferedReadersStorage& operator=(const BufferedReadersStorage&);
+
+public:
+
+    static BufferedReadersStorage& GetInstance() {
+        static BufferedReadersStorage instance;
+        return instance;
+    }
+
+    /*std::vector< SequenceSingleReadStream* > single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
+        std::vector<SequenceSingleReadStream*> raw_readers(cfg::get().thread_number);
+
+        if (including_paired_reads) {
+            for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+                io::SeqSingleReadStream * single_stream = new io::SeqSingleReadStream(cfg::get().single_read_prefix, i);
+                io::SeqPairedReadStream * paired_stream = new io::SeqPairedReadStream(cfg::get().paired_read_prefix, i, 0);
+                io::SeqSingleReadStreamWrapper * single_wrapper = new io::SeqSingleReadStreamWrapper(*paired_stream);
+
+                raw_readers[i] = new io::MultifileReader<io::SingleReadSeq>(*single_wrapper, *single_stream);
+            }
+        }
+        else {
+           for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+               raw_readers[i] = new io::SeqSingleReadStream(cfg::get().single_read_prefix, i);
+           }
+        }
+
+        if (followed_by_rc) {
+            std::vector<SequenceSingleReadStream*> rc_readers(cfg::get().thread_number);
+            for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+                rc_readers[i] = new io::RCReaderWrapper<io::SingleReadSeq>(*raw_readers[i]);
+            }
+            return rc_readers;
+        } else {
+            return raw_readers;
+        }
+    }
+
+    std::vector< SequencePairedReadStream* > paired_binary_readers(bool followed_by_rc, size_t insert_size) {
+        std::vector<SequencePairedReadStream*> raw_readers(cfg::get().thread_number);
+
+        for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+            raw_readers[i] = new io::SeqPairedReadStream(cfg::get().paired_read_prefix, i, insert_size);
+        }
+
+        if (followed_by_rc) {
+            std::vector<SequencePairedReadStream*> rc_readers(cfg::get().thread_number);
+            for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+                rc_readers[i] = new io::RCReaderWrapper<io::PairedReadSeq>(*raw_readers[i]);
+            }
+            return rc_readers;
+        } else {
+            return raw_readers;
+        }
+    }
+
+    auto_ptr<SequenceSingleReadStream> single_binary_multireader(bool followed_by_rc, bool including_paired_reads) {
+        return auto_ptr<SequenceSingleReadStream>(new io::MultifileReader<io::SingleReadSeq>(single_binary_readers(followed_by_rc, including_paired_reads)));
+    }
+
+    auto_ptr<SequencePairedReadStream> paired_binary_multireader(bool followed_by_rc, size_t insert_size) {
+        return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(paired_binary_readers(followed_by_rc, insert_size)));
+    }   */
+
+
+
+};
+
 
 }
 

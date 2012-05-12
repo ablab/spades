@@ -162,7 +162,16 @@ public:
 };
 
 
-class SeqSingleReadStream: public io::IReader<io::SingleReadSeq> {
+template<class Read>
+class PredictableIReader: public io::IReader<Read> {
+
+public:
+    virtual size_t size() const = 0;
+
+};
+
+
+class SeqSingleReadStream: public io::PredictableIReader<io::SingleReadSeq> {
 
 private:
     std::ifstream stream_;
@@ -213,10 +222,14 @@ public:
         stream_.read((char *) &read_num_, sizeof(read_num_));
         current_ = 0;
     }
+
+    virtual size_t size() const {
+        return read_num_;
+    }
 };
 
 
-class SeqPairedReadStream: public io::IReader<io::PairedReadSeq> {
+class SeqPairedReadStream: public io::PredictableIReader<io::PairedReadSeq> {
 
 private:
     std::ifstream stream_;
@@ -268,12 +281,17 @@ public:
         stream_.read((char *) &read_num_, sizeof(read_num_));
         current_ = 0;
     }
+
+    virtual size_t size() const {
+        return read_num_;
+    }
 };
 
-class SeqSingleReadStreamWrapper: public io::IReader<io::SingleReadSeq> {
+
+class SeqSingleReadStreamWrapper: public io::PredictableIReader<io::SingleReadSeq> {
 
 private:
-    SeqPairedReadStream& stream_;
+    io::PredictableIReader<io::PairedReadSeq>& stream_;
 
     PairedReadSeq current_read_;
 
@@ -281,7 +299,7 @@ private:
 
 public:
 
-    SeqSingleReadStreamWrapper(SeqPairedReadStream& stream): stream_(stream), current_read_(), is_read_(false)  {
+    SeqSingleReadStreamWrapper(io::PredictableIReader<io::PairedReadSeq>& stream): stream_(stream), current_read_(), is_read_(false)  {
     }
 
     virtual ~SeqSingleReadStreamWrapper() {}
@@ -314,7 +332,108 @@ public:
         is_read_ = false;
     }
 
+    virtual size_t size() const {
+        return stream_.size() * 2;
+    }
 };
+
+
+template <class Read>
+class ReadBufferedStream: public io::PredictableIReader<Read> {
+
+private:
+    std::vector<Read> * data_;
+
+    size_t read_num_;
+
+    size_t current_;
+
+public:
+
+    ReadBufferedStream(io::PredictableIReader<Read>& stream) {
+        read_num_ = stream.size();
+        data_ = new std::vector<Read>(read_num_);
+
+        size_t i = 0;
+        while (!stream.eof()) {
+            stream >> (*data_)[i++];
+        }
+
+        reset();
+    }
+
+    virtual ~ReadBufferedStream() {
+        delete data_;
+    }
+
+    virtual bool is_open() {
+        return true;
+    }
+
+    virtual bool eof() {
+        return current_ == read_num_;
+    }
+
+    virtual ReadBufferedStream& operator>>(Read& read) {
+        read = (*data_)[current_];
+        VERIFY(current_ < read_num_);
+
+        ++current_;
+        return *this;
+    }
+
+    virtual void close() {
+        current_ = 0;
+    }
+
+    virtual void reset() {
+        current_ = 0;
+    }
+
+    virtual size_t size() const {
+        return read_num_;
+    }
+};
+
+template <class PairedRead>
+class InsertSizeModifyingWrapper: public io::IReader<PairedRead> {
+
+private:
+    size_t insert_size_;
+
+    io::IReader<PairedRead>& stream_;
+
+public:
+
+    InsertSizeModifyingWrapper(io::IReader<PairedRead>& stream, size_t insert_szie): stream_(stream), insert_size_ (insert_szie) {
+    }
+
+    virtual ~InsertSizeModifyingWrapper() {
+    }
+
+    virtual bool is_open() {
+        return stream_.is_open();
+    }
+
+    virtual bool eof() {
+        return stream_.eof();
+    }
+
+    virtual InsertSizeModifyingWrapper& operator>>(PairedRead& read) {
+        stream_ >> read;
+        read.inc_insert_size(insert_size_);
+        return *this;
+    }
+
+    virtual void close() {
+        stream_.close();
+    }
+
+    virtual void reset() {
+        stream_.reset();
+    }
+};
+
 
 template <class Read>
 bool ParllelStreamEOF(std::vector<io::IReader<Read>* >& streams) {
@@ -325,6 +444,7 @@ bool ParllelStreamEOF(std::vector<io::IReader<Read>* >& streams) {
     }
     return true;
 }
+
 
 }
 

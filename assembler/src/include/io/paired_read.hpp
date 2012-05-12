@@ -282,6 +282,10 @@ public:
       return PairedReadSeq(!second_, !first_, insert_size_);
     }
 
+    void inc_insert_size(size_t val) {
+        insert_size_ += val;
+    }
+
 };
 
 }
