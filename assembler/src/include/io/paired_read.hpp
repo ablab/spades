@@ -215,7 +215,7 @@ public:
         insert_size_ = is - is_delta;
     }
 
-    bool BinRead(std::istream& file, size_t is) {
+    bool BinRead(std::istream& file, size_t is = 0) {
         first_.BinRead(file);
         second_.BinRead(file);
 

@@ -170,6 +170,8 @@ public:
 
 };
 
+// == Deprecated classes ==
+// Use FileReadStream and InsertSizeModyfing instead
 
 class SeqSingleReadStream: public io::PredictableIReader<io::SingleReadSeq> {
 
@@ -288,52 +290,61 @@ public:
 };
 
 
-class SeqSingleReadStreamWrapper: public io::PredictableIReader<io::SingleReadSeq> {
+template <class Read>
+class FileReadStream: public io::PredictableIReader<Read> {
 
 private:
-    io::PredictableIReader<io::PairedReadSeq>& stream_;
+    std::ifstream stream_;
 
-    PairedReadSeq current_read_;
+    size_t read_num_;
 
-    bool is_read_;
+    size_t current_;
 
 public:
 
-    SeqSingleReadStreamWrapper(io::PredictableIReader<io::PairedReadSeq>& stream): stream_(stream), current_read_(), is_read_(false)  {
+    FileReadStream(const std::string& file_name_prefix, size_t file_num) {
+        std::string fname;
+        fname = file_name_prefix + "_" + ToString(file_num) + ".seq";
+        stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
+
+        reset();
     }
 
-    virtual ~SeqSingleReadStreamWrapper() {}
+    virtual ~FileReadStream() {
+        if (stream_.is_open()) {
+            stream_.close();
+        }
+    }
 
     virtual bool is_open() {
         return stream_.is_open();
     }
 
     virtual bool eof() {
-        return stream_.eof() && !is_read_;
+        return current_ == read_num_;
     }
 
-    virtual SeqSingleReadStreamWrapper& operator>>(io::SingleReadSeq& read) {
-        if (!is_read_) {
-            stream_ >> current_read_;
-            read = current_read_.first();
-        } else {
-            read = current_read_.second();
-        }
-        is_read_ = !is_read_;
+    virtual SeqSingleReadStream& operator>>(Read& read) {
+        read.BinRead(stream_);
+        VERIFY(current_ < read_num_);
+
+        ++current_;
         return *this;
     }
 
     virtual void close() {
+        current_ = 0;
         stream_.close();
     }
 
     virtual void reset() {
-        stream_.reset();
-        is_read_ = false;
+        stream_.seekg(0);
+        stream_.read((char *) &read_num_, sizeof(read_num_));
+        current_ = 0;
     }
 
     virtual size_t size() const {
-        return stream_.size() * 2;
+        return read_num_;
     }
 };
 
@@ -395,17 +406,63 @@ public:
     }
 };
 
-template <class PairedRead>
-class InsertSizeModifyingWrapper: public io::IReader<PairedRead> {
+
+class SeqSingleReadStreamWrapper: public io::IReader<io::SingleReadSeq> {
 
 private:
-    size_t insert_size_;
+    io::IReader<io::PairedReadSeq>& stream_;
 
-    io::IReader<PairedRead>& stream_;
+    PairedReadSeq current_read_;
+
+    bool is_read_;
 
 public:
 
-    InsertSizeModifyingWrapper(io::IReader<PairedRead>& stream, size_t insert_szie): stream_(stream), insert_size_ (insert_szie) {
+    SeqSingleReadStreamWrapper(io::IReader<io::PairedReadSeq>& stream): stream_(stream), current_read_(), is_read_(false)  {
+    }
+
+    virtual ~SeqSingleReadStreamWrapper() {}
+
+    virtual bool is_open() {
+        return stream_.is_open();
+    }
+
+    virtual bool eof() {
+        return stream_.eof() && !is_read_;
+    }
+
+    virtual SeqSingleReadStreamWrapper& operator>>(io::SingleReadSeq& read) {
+        if (!is_read_) {
+            stream_ >> current_read_;
+            read = current_read_.first();
+        } else {
+            read = current_read_.second();
+        }
+        is_read_ = !is_read_;
+        return *this;
+    }
+
+    virtual void close() {
+        stream_.close();
+    }
+
+    virtual void reset() {
+        stream_.reset();
+        is_read_ = false;
+    }
+};
+
+
+class InsertSizeModifyingWrapper: public io::IReader<io::PairedReadSeq> {
+
+private:
+    io::IReader<io::PairedReadSeq>& stream_;
+
+    size_t insert_size_;
+
+public:
+
+    InsertSizeModifyingWrapper(io::IReader<io::PairedReadSeq>& stream, size_t insert_szie): stream_(stream), insert_size_ (insert_szie) {
     }
 
     virtual ~InsertSizeModifyingWrapper() {
@@ -419,7 +476,7 @@ public:
         return stream_.eof();
     }
 
-    virtual InsertSizeModifyingWrapper& operator>>(PairedRead& read) {
+    virtual InsertSizeModifyingWrapper& operator>>(io::PairedReadSeq& read) {
         stream_ >> read;
         read.inc_insert_size(insert_size_);
         return *this;

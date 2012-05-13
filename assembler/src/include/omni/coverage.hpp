@@ -137,14 +137,31 @@ public:
                 io::IReader<Read>& stream = *streams[i];
                 stream.reset();
 
+                size_t buf_size = cfg::get().buffer_reads / nthreads;
+                std::vector< Path<EdgeId> > buffer(buf_size);
+
+                size_t i = 0;
                 while (!stream.eof()) {
                     stream >> r;
                     ++counter;
-                    Path<EdgeId> path = ProcessSequence(threader, r.sequence());
+                    buffer[i++] = ProcessSequence(threader, r.sequence());
 
-                    #pragma omp critical
-                    {
-                        AddPathsToGraph(path);
+                    if (i == buf_size) {
+                        i = 0;
+
+                        #pragma omp critical
+                        {
+                            for (size_t j = 0; j < buf_size; ++j) {
+                                AddPathsToGraph(buffer[j]);
+                            }
+                        }
+                    }
+                }
+
+                #pragma omp critical
+                {
+                    for (size_t j = 0; j < i; ++j) {
+                        AddPathsToGraph(buffer[j]);
                     }
                 }
             }
