@@ -1,0 +1,35 @@
+\begin{thebibliography}{1}
+
+\bibitem{best}
+T.~Aardenne-Ehrenfest and N.G. Bruijn.
+\newblock Circuits and trees in oriented linear graphs.
+\newblock {\em Classic papers in combinatorics}, pages 149--163, 1987.
+
+\bibitem{abrham80}
+J.~Abrham and A.~Kotzig.
+\newblock Transformations of euler tours.
+\newblock {\em Annals of Discrete Mathematics}, 8:65--69, 1980.
+
+\bibitem{Bandeira07}
+N.~Bandeira, K.R. Clauser, and P.A. Pevzner.
+\newblock {Shotgun Protein Sequencing}.
+\newblock {\em Molecular \& Cellular Proteomics}, 6(7):1123, 2007.
+
+\bibitem{Pevzner01}
+P.A. Pevzner, H.~Tang, and M.S. Waterman.
+\newblock {An Eulerian path approach to DNA fragment assembly}.
+\newblock {\em PNAS}, 98(17):9748, 2001.
+
+\bibitem{Pham10}
+S.K. Pham and P.A. Pevzner.
+\newblock {DRIMM-Synteny: decomposing genomes into evolutionary conserved
+  segments}.
+\newblock {\em Bioinformatics}, 26(20):2509, 2010.
+
+\bibitem{Raphael04}
+B.~Raphael, D.~Zhi, H.~Tang, and P.~Pevzner.
+\newblock A novel method for multiple alignment of sequences with repeated and
+  shuffled elements.
+\newblock {\em Genome Research}, 14(11):2336, 2004.
+
+\end{thebibliography}
