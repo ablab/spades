@@ -50,7 +50,7 @@ neighboring pieces must share an identical boundary as well as having similar co
 texture near the boundary.
 Concrete applications of jigsaw puzzle solving are the assembly and repair of broken objects, 
 or the restoration of archeological findings. Here we show
-that the assembly problem from paired-end reads can also be formulated as a simple jigsaw problem.
+that the assembly problem from paired-end reads can also be formulated as a simple jigsaw problem. % is paired-end the same as mate-pair?
 In particular, in section 2, we describe a simple jigsaw puzzles and define rectangle graph to solve this 
 problem, in section 3 we show the relation of the jigsaw puzzle to the 
 problem of genome assembly using mate-pairs. In section 4, we describe how to adapt our approach 
@@ -105,7 +105,9 @@ Below we define the rectangle graph which directly leads to solutions to this pr
 \textbf{Rectangle Graph:}
 \begin{itemize}
 \item  Define an initial graph $G_0$ on $2n$ vertices. For each rectangle $R$, introduce two new vertices $u$, $v$ and form an edge $u \rightarrow v$.
-Label $u$ by the incomming surface and the position of the incoming point in the surface. Label $v$ by the outgoing surface and the position of the outgoing point
+Label $u$ by the incomming surface and the position of the incoming point in the surface.
+% If this position == 0 or == end_of_edge, then we label with vertex. So label can be only: (vertex, (edge, position)) or ((edge, position), vertex) or (vertex, vertex). This three correspond to tree type of gluing from Figure 1.
+Label $v$ by the outgoing surface and the position of the outgoing point
 in the surface.
 \item Glue vertices of $G_0$ together if they have the same label.
 \end{itemize}
@@ -168,10 +170,11 @@ by a list of all of its points.
 \noindent
 \textbf{Mate-pairs and Diagonal Grid Graph}
 
-Given a parameter $d$, a pair of $(k-1)$-mers $x$, $y$ forms a $(k,d)$-mer $(x|y)$  
+Given a parameter $d$, a pair of $(k-1)$-mers $x$, $y$ forms a $(k,d)$-mer $(x|y)$  % here you say that two (k-1)-mers form (k,d)-mer (without -1), but the lext line uses (k-1,d)-mer.
 of the genome $S = a_1\ldots a_n$ if there exists position $i$ such that $x=a_i$ and 
-$y = a_{i+d}$ in $S$. The set of all $(k-1,d)$-mers of $S$ corresponds to a line $(d): y = x+d$. The 
-line $(d)$ defines the \emph{diagonal grid graph} by retaining only the rectangles that 
+$y = a_{i+d}$ in $S$. The set of all $(k-1,d)$-mers of $S$ corresponds to a line $(d): y = x+d$.
+% no! corresponds to a main diagonal $y = x$, not +d. Diagonal $y = x + d$ is for (x|x) (always happens in rectangles with equal sides, i.e. with distance zero between sides)
+The line $(d)$ defines the \emph{diagonal grid graph} by retaining only the rectangles that 
 are intersected by $(d)$. 
 
 Below, we characterize the properties of the rectangles that are intersected by $(d)$. 
@@ -183,9 +186,9 @@ $a$ \emph{belongs} to $\alpha$ and $b$ \emph{belongs} to $\beta$.  A pair
 of non-branching substrings $\alpha$ and $\beta$ is called $d$-bounded if it corresponds to 
 a rectangle intersected by $(d)$. The position where the (d) enters the rectangle is $(x^*,x^*+d)$ where 
 $x^*$ is the minimum value  of $x$ such that condition (1) satisfies, and is labeled by 
-a pair of $(k-1)$-mers $(a_x^*, a_{x^*+d})$.  The position where (d) exists 
-the rectangle is $(\hat{x}, \hat{x+d})$ where $\hat{x}$ is the maximum value of $x$ such that the condition
-(1) satisfies, and this position is labeled by a pair of $(k-1)$-mers $(a_{\hat{x}}, a_{\hat{x} +d})$
+a pair of $(k-1)$-mers $(a_{x^*}, a_{x^*+d})$.  The position where (d) exists 
+the rectangle is $(\hat{x}, \hat{x}+d)$ where $\hat{x}$ is the maximum value of $x$ such that the condition
+(1) satisfies, and this position is labeled by a pair of $(k-1)$-mers $(a_{\hat{x}}, a_{\hat{x} +d})$.
 
 
 \noindent
@@ -196,7 +199,7 @@ In the fragment assembly problem from a from a set of all $(k,d)$-mers of the ge
 the diagonal grid graph is unknown, but each separated rectangle as well 
 as the line segment on it can also be generated
 from the set of $(k,d)$-mers. The task of assemblying the genome from mate-paired reads can be 
-reduced to the problem of solving the simplified jig-saw problem from separated rectangles.
+reduced to the problem of solving the simplified jigsaw problem from separated rectangles.
 Below, we formally describe how separated rectangles can be constructed from mate-pair reads. 
 
 \noindent
