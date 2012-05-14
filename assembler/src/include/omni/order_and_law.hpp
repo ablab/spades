@@ -270,9 +270,9 @@ ostream &operator<<(ostream &stream, const pure_pointer<T>& pointer)
 
 namespace std
 {
-template<>
-struct hash<restricted::pure_pointer> {
-	size_t operator()(const restricted::pure_pointer& pointer) const {
+template<class T>
+struct hash<restricted::pure_pointer<T>> {
+	size_t operator()(const restricted::pure_pointer<T>& pointer) const {
 		return pointer.hash();
 	}
 };
