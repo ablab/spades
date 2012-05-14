@@ -50,9 +50,38 @@ using omnigraph::PairedInfoIndex;
 using omnigraph::PairInfoIndexData;
 using debruijn_graph::DeletedVertexHandler;
 
+
+template<class Graph>
+class PathInfoClass {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef omnigraph::PairInfo<EdgeId> PairInfo;
+
+	EdgeId base_edge;
+	vector<PairInfo> path;
+	PathInfoClass(): base_edge(NULL) {};
+	PathInfoClass(const EdgeId Edge): base_edge(Edge) {};
+	pair<EdgeId, double> operator[](const size_t i) const {
+		if (i == 0) {
+			return(make_pair(base_edge, 0.0));
+		}
+		return (make_pair(path[i-1].second, path[i-1].d));
+	}
+	size_t size() {
+		return path.size() + 1;
+	}
+	void push_back(const PairInfo& pi) {
+		path.push_back(pi);
+	}
+};
+
+
+
+
+
 template<class Graph>
 class RepeatResolver {
-	typedef typename Graph::EdgeId EdgeId;
+	typedef PathInfoClass<Graph> PathInfo;
 	typedef typename Graph::VertexId VertexId;
 
 	//	typedef SmartVertexIterator<Graph> VertexIter;
@@ -246,6 +275,7 @@ public:
 
 	};
 
+
 	map<EdgeId, EdgeId> GetEdgeLabels(){
 		return edge_labels;
 	}
@@ -412,7 +442,7 @@ private:
 	unordered_map<int, VertexId> fillVerticesAuto();
 	unordered_map<int, VertexId> fillVerticesComponents();
 	unordered_map<int, VertexId> fillVerticesComponentsInNonVariableOrder();
-	size_t RectangleResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler);
+	size_t SplitResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler);
 	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v );
 	ConjugateDeBruijnGraph::VertexId conj_wrap(const ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::VertexId v);
@@ -427,15 +457,15 @@ private:
 	vector<typename Graph::VertexId> MultiSplit(VertexId v);
 	int ColoringEdgesInfos(int &size, TotalLabeler<Graph>& tot_labler);
 	int ColoringEdgesInfosByPathes(int &size, TotalLabeler<Graph>& tot_labler, VertexId V_Id);
-	vector<vector<pair<typename Graph::EdgeId,double>>> ConvertEdgeInfosToPathes();
-	vector<int> ColoringPathes(vector<vector<pair<typename Graph::EdgeId,double>>> &pathes, VertexId V_Id);
-	bool pathesAdjacent(vector<pair<typename Graph::EdgeId,double>>& path1, vector<pair<typename Graph::EdgeId,double>> & path2, VertexId V_Id);
-	int prefix_or_included(vector<pair<typename Graph::EdgeId,double>>&path1, vector<pair<typename Graph::EdgeId,double>>&path2, int shift1, int shift2);
+	vector<PathInfo> ConvertEdgeInfosToPathes();
+	vector<int> ColoringPathes(vector<PathInfo> &pathes, VertexId V_Id);
+	bool pathesAdjacent(PathInfo& path1, PathInfo & path2, VertexId V_Id);
+	int prefix_or_included(PathInfo&path1, PathInfo&path2, int shift1, int shift2);
 
 	int original_id(typename Graph::EdgeId e){
 		return old_graph.int_id(labels_after.edge_labels[e][0]);
 	}
-	std::string PrintPath(vector<pair<typename Graph::EdgeId,double>> &path) {
+	std::string PrintPath(PathInfo &path) {
 		std::ostringstream ss;
 		ss<<" "<<new_graph.int_id(path[0].first)<<"("<<original_id(path[0].first)<<"): ";
 		for (size_t j=1; j < path.size(); j++){
@@ -510,7 +540,7 @@ private:
 				}
 			}
 		}
-		return pair_info.set_distance(best);
+		return pair_info;
 	}
 
 	const PairInfo StupidPairInfoCorrectorByOldGraph(Graph &new_graph,
@@ -588,8 +618,7 @@ private:
 		return answer;
 	}
 
-	pair<bool, PairInfo> CorrectedAndNotFiltered(Graph &new_graph,
-			const PairInfo &pair_inf);
+//	pair<bool, PairInfo> CorrectedAndNotFiltered(Graph &new_graph, const PairInfo &pair_inf);
 
 	void ResolveEdge(EdgeId eid);
 	void dfs(vector<vector<int> > &edge_list, vector<int> &colors, int cur_vert,
@@ -1268,7 +1297,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				int tcount;
 				resolve_time.start();
 				if (cheating_mode != 1)
-					tcount = RectangleResolveVertex(v_iter->second, TotLabAfter);
+					tcount = SplitResolveVertex(v_iter->second, TotLabAfter);
 				else
 					tcount = CheatingResolveVertex(v_iter->second);
 				resolve_time.stop();
@@ -1333,44 +1362,44 @@ void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list,
 	}
 }
 
-template<class Graph>
-pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAndNotFiltered(
-		Graph &new_graph, const PairInfo &pair_inf) {
-
-	return make_pair(true, pair_inf);
-
-
-	EdgeId right_id = pair_inf.second;
-	EdgeId left_id = pair_inf.first;
-
-	if (pair_inf.d - new_graph.length(left_id) > 1.3 * *cfg::get().ds.IS ) {
-//		DEBUG(
-//				"PairInfo "<<labels_after.edge_labels[left_id][0]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d);
-//				DEBUG("too far to correct");
-		return make_pair(false, pair_inf);
-	}
+//template<class Graph>
+//pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAndNotFiltered(
+//		Graph &new_graph, const PairInfo &pair_inf) {
+//
 //	return make_pair(true, pair_inf);
-
-	PairInfo corrected_info = pair_inf;//StupidPairInfoCorrectorByOldGraph(new_graph,
-//			pair_inf);
-//	DEBUG("PairInfo "<<left_id<<"("<<edge_labels[left_id]<<") "<<right_id<<" "<<pair_inf.d<< " corrected into "<<corrected_info.d);
-	if (abs(corrected_info.d - pair_inf.d) > MAX_DISTANCE_CORRECTION) {
-		DEBUG("big correction");
-		return make_pair(false, corrected_info);
-	}
-//	if (corrected_info.d - new_graph.length(left_id) > 130) {
-//		DEBUG("too far");
+//
+//
+//	EdgeId right_id = pair_inf.second;
+//	EdgeId left_id = pair_inf.first;
+//
+//	if (pair_inf.d - new_graph.length(left_id) > 1.3 * *cfg::get().ds.IS ) {
+////		DEBUG(
+////				"PairInfo "<<labels_after.edge_labels[left_id][0]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d);
+////				DEBUG("too far to correct");
+//		return make_pair(false, pair_inf);
+//	}
+////	return make_pair(true, pair_inf);
+//
+//	PairInfo corrected_info = pair_inf;//StupidPairInfoCorrectorByOldGraph(new_graph,
+////			pair_inf);
+////	DEBUG("PairInfo "<<left_id<<"("<<edge_labels[left_id]<<") "<<right_id<<" "<<pair_inf.d<< " corrected into "<<corrected_info.d);
+//	if (abs(corrected_info.d - pair_inf.d) > MAX_DISTANCE_CORRECTION) {
+//		DEBUG("big correction");
 //		return make_pair(false, corrected_info);
 //	}
-	//todo check correctness. right_id belongs to original graph, not to new_graph.
-	if (corrected_info.d + old_graph.length(right_id) < (1/(1.3)) * (*cfg::get().ds.IS-*cfg::get().ds.RL)) {
-		DEBUG("too close");
-		return make_pair(false, corrected_info);
-	}
-	DEBUG("good");
-	return make_pair(true, corrected_info);
-//	return make_pair(true, pair_inf);
-}
+////	if (corrected_info.d - new_graph.length(left_id) > 130) {
+////		DEBUG("too far");
+////		return make_pair(false, corrected_info);
+////	}
+//	//todo check correctness. right_id belongs to original graph, not to new_graph.
+//	if (corrected_info.d + old_graph.length(right_id) < (1/(1.3)) * (*cfg::get().ds.IS-*cfg::get().ds.RL)) {
+//		DEBUG("too close");
+//		return make_pair(false, corrected_info);
+//	}
+//	DEBUG("good");
+//	return make_pair(true, corrected_info);
+////	return make_pair(true, pair_inf);
+//}
 
 namespace details
 {
@@ -1431,22 +1460,22 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 						TRACE("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(labels_after.edge_labels[tmp[j].first][0]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 						TRACE("try to correct")
 
-						pair<bool, PairInfo> correction_result =
-								CorrectedAndNotFiltered(new_graph, tmp[j]);
-						TRACE("ok")
-						if (!correction_result.first)
-							continue;
-						TRACE(
-								"PairInfo from new "<<left_id<<" (old  "<< labels_after.edge_labels[left_id][0]<<") to old"<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
-						TRACE(
-								"PairInfo: " << old_IDs.ReturnIntId(labels_after.edge_labels[tmp[j].first][0]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
+//						pair<bool, PairInfo> correction_result =
+////								CorrectedAndNotFiltered(new_graph, tmp[j]);
+//						TRACE("ok")
+//						if (!correction_result.first)
+//							continue;
+//						TRACE(
+//								"PairInfo from new "<<left_id<<" (old  "<< labels_after.edge_labels[left_id][0]<<") to old"<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
+//						TRACE(
+//								"PairInfo: " << old_IDs.ReturnIntId(labels_after.edge_labels[tmp[j].first][0]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 
-						EdgeInfo ei(correction_result.second, dir, right_id, correction_result.second.d - dif_d);
+						EdgeInfo ei(tmp[j], dir, right_id, tmp[j].d - dif_d);
 
 						int trusted_dist = *cfg::get().ds.IS - *cfg::get().ds.RL;
-						if (cheating_mode == 2 && ((correction_result.second.d - dif_d + old_graph.length(right_id) < trusted_dist - near_vertex) || (correction_result.second.d - dif_d > trusted_dist  + near_vertex))) {
+						if (cheating_mode == 2 && ((tmp[j].d - dif_d + old_graph.length(right_id) < trusted_dist - near_vertex) || (tmp[j].d - dif_d > trusted_dist  + near_vertex))) {
 							local_cheating_edges.insert(make_pair(left_id, 0));
-							TRACE("ignored paired_info between " << new_IDs.ReturnIntId(left_id) <<" and " <<old_IDs.ReturnIntId(right_id) <<" with distance " << correction_result.second.d - dif_d);
+							TRACE("ignored paired_info between " << new_IDs.ReturnIntId(left_id) <<" and " <<old_IDs.ReturnIntId(right_id) <<" with distance " << tmp[j].d - dif_d);
 						} else {
 							tmp_edge_infos.push_back(ei);
 							TRACE(right_id);
@@ -1487,8 +1516,6 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	produce_pair_info_time.stop();
 	return right_edges.size();
 }
-
-
 
 
 template<class Graph>
@@ -1536,12 +1563,10 @@ int RepeatResolver<Graph>::ColoringEdgesInfos(int &size, TotalLabeler<Graph>& to
 	return cur_color;
 }
 
-
-
 template<class Graph>
-vector<vector<pair<typename Graph::EdgeId,double>>> RepeatResolver<Graph>::ConvertEdgeInfosToPathes(){
+vector<typename RepeatResolver<Graph>::PathInfo> RepeatResolver<Graph>::ConvertEdgeInfosToPathes(){
 	DEBUG("ConvertEdgeInfosToPathes start");
-	vector<vector<pair<typename Graph::EdgeId,double>>> ret;
+	vector<PathInfo> ret;
 
 	restricted::set<EdgeId> used_edges;
 	details::EdgeInfoCompare<Graph> EI_comparator;
@@ -1560,7 +1585,7 @@ vector<vector<pair<typename Graph::EdgeId,double>>> RepeatResolver<Graph>::Conve
 			}
 			sort(cur_edge_infos.begin(), cur_edge_infos.end(), EI_comparator);
 			set<size_t> used_indexes;
-			vector<vector<pair<typename Graph::EdgeId,double>>> edge_pathes;
+			vector<PathInfo> edge_pathes;
 			DEBUG("Generating pathes for edge "<<new_IDs.ReturnIntId(cur_edge));
 			for (int j = 0; j < (int)cur_edge_infos.size(); j++) {
 				PairInfo tmp = cur_edge_infos[j].lp;
@@ -1614,14 +1639,15 @@ vector<vector<pair<typename Graph::EdgeId,double>>> RepeatResolver<Graph>::Conve
 						} else break;
 					}
 
-					vector<pair<typename Graph::EdgeId,double>> cur_path;
-					cur_path.push_back(make_pair(cur_edge, 0));
+					PathInfo cur_path(cur_edge);
 					for (size_t j = backwards.size(); j>0; j--){
-						cur_path.push_back(make_pair(cur_edge_infos[backwards[j-1]].lp.second, cur_edge_infos[backwards[j-1]].lp.d));
+//						cur_path.push_back(make_pair(cur_edge_infos[backwards[j-1]].lp.second, cur_edge_infos[backwards[j-1]].lp.d));
+						cur_path.push_back(cur_edge_infos[backwards[j-1]].lp);
 					}
-					cur_path.push_back(make_pair(cur_edge_infos[ext_edge_num].lp.second, cur_edge_infos[ext_edge_num].lp.d));
+					cur_path.push_back(cur_edge_infos[ext_edge_num].lp);
 					for (size_t j = 0; j < forwards.size(); j++){
-						cur_path.push_back(make_pair(cur_edge_infos[forwards[j]].lp.second, cur_edge_infos[forwards[j]].lp.d));
+//						cur_path.push_back(make_pair(cur_edge_infos[forwards[j]].lp.second, cur_edge_infos[forwards[j]].lp.d));
+						cur_path.push_back(cur_edge_infos[forwards[j]].lp);
 					}
 
 					bool new_path = true;
@@ -1659,7 +1685,7 @@ vector<vector<pair<typename Graph::EdgeId,double>>> RepeatResolver<Graph>::Conve
 		}
 	}
 
-//	vector<vector<pair<typename Graph::EdgeId,double>>> ret;
+//	vector<PathInfo> ret;
 //	set<size_t> info_getted;
 //	for (size_t i = 0; i< edge_infos.size(); i++){
 //		for (size_t j = 0; j< edge_infos.size(); j++){
@@ -1667,7 +1693,7 @@ vector<vector<pair<typename Graph::EdgeId,double>>> RepeatResolver<Graph>::Conve
 //				if (edge_infos[i].lp.first == edge_infos[j].lp.first)
 //					if (old_graph.EdgeEnd(edge_infos[i].lp.second) == old_graph.EdgeStart(edge_infos[j].lp.second))
 //						if (abs(edge_infos[i].lp.d + old_graph.length(edge_infos[i].lp.second) - edge_infos[j].lp.d) < 2){
-//							vector<pair<typename Graph::EdgeId,double>> tmp;
+//							PathInfo tmp;
 //							tmp.push_back(make_pair(edge_infos[i].lp.first, 0));
 //							tmp.push_back(make_pair(edge_infos[i].lp.second, edge_infos[i].lp.d));
 //							tmp.push_back(make_pair(edge_infos[j].lp.second, edge_infos[j].lp.d));
@@ -1680,7 +1706,7 @@ vector<vector<pair<typename Graph::EdgeId,double>>> RepeatResolver<Graph>::Conve
 //	}
 //	for (size_t i = 0; i<edge_infos.size(); i++){
 //		if (info_getted.find(i) == info_getted.end()){
-//			vector<pair<typename Graph::EdgeId,double>> tmp;
+//			PathInfo tmp;
 //			tmp.push_back(make_pair(edge_infos[i].lp.first, 0));
 //			tmp.push_back(make_pair(edge_infos[i].lp.second, edge_infos[i].lp.d));
 //			ret.push_back(tmp);
@@ -1693,7 +1719,7 @@ vector<vector<pair<typename Graph::EdgeId,double>>> RepeatResolver<Graph>::Conve
 
 
 template<class Graph>
-int RepeatResolver<Graph>::prefix_or_included(vector<pair<typename Graph::EdgeId,double>>&path1, vector<pair<typename Graph::EdgeId,double>>&path2, int shift1, int shift2){
+int RepeatResolver<Graph>::prefix_or_included(PathInfo&path1, PathInfo&path2, int shift1, int shift2){
 	size_t j = 1;
 	size_t i = 1;
 	while ( ( (path2[j].first != path1[i].first)||(abs(path1[i].second - shift1 - path2[j].second + shift2) > 0.5)) &&(j<path2.size())){
@@ -1722,7 +1748,7 @@ int RepeatResolver<Graph>::prefix_or_included(vector<pair<typename Graph::EdgeId
 }
 
 template<class Graph>
-bool RepeatResolver<Graph>::pathesAdjacent(vector<pair<typename Graph::EdgeId,double>>& path1, vector<pair<typename Graph::EdgeId,double>> & path2, VertexId V_Id){
+bool RepeatResolver<Graph>::pathesAdjacent(PathInfo& path1, PathInfo & path2, VertexId V_Id){
 	if ((path1[0].first == path2[0].first)&&(new_graph.length(path1[0].first) > cfg::get().rr.max_repeat_length)) {
 	return true;
 	}
@@ -1763,7 +1789,7 @@ bool RepeatResolver<Graph>::pathesAdjacent(vector<pair<typename Graph::EdgeId,do
 
 
 template<class Graph>
-vector<int> RepeatResolver<Graph>::ColoringPathes(vector<vector<pair<typename Graph::EdgeId,double>>> &pathes, VertexId V_Id){
+vector<int> RepeatResolver<Graph>::ColoringPathes(vector<PathInfo> &pathes, VertexId V_Id){
 	DEBUG("ColoringPathes start");
 
 	int size = (int)pathes.size();
@@ -1819,7 +1845,7 @@ int RepeatResolver<Graph>::ColoringEdgesInfosByPathes(int &size, TotalLabeler<Gr
 		edge_info_colors[i] = -1;
 	}
 
-	vector<vector<pair<EdgeId,double>>> split_pathes = ConvertEdgeInfosToPathes();
+	vector<PathInfo> split_pathes = ConvertEdgeInfosToPathes();
 	vector<int> path_colors = ColoringPathes(split_pathes, V_Id);
 
 
@@ -1865,7 +1891,7 @@ int RepeatResolver<Graph>::ColoringEdgesInfosByPathes(int &size, TotalLabeler<Gr
 
 
 template<class Graph>
-size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler) {
+size_t RepeatResolver<Graph>::SplitResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler) {
 
 	rectangle_resolve_2_time.start();
 	DEBUG("Rectangle resolve vertex started");
