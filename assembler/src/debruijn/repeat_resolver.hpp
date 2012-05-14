@@ -1440,8 +1440,9 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 								"PairInfo from new "<<left_id<<" (old  "<< labels_after.edge_labels[left_id][0]<<") to old"<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
 						TRACE(
 								"PairInfo: " << old_IDs.ReturnIntId(labels_after.edge_labels[tmp[j].first][0]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
-						EdgeInfo ei(correction_result.second, dir, right_id,
-								correction_result.second.d - dif_d);
+
+						EdgeInfo ei(correction_result.second, dir, right_id, correction_result.second.d - dif_d);
+
 						int trusted_dist = *cfg::get().ds.IS - *cfg::get().ds.RL;
 						if (cheating_mode == 2 && ((correction_result.second.d - dif_d + old_graph.length(right_id) < trusted_dist - near_vertex) || (correction_result.second.d - dif_d > trusted_dist  + near_vertex))) {
 							local_cheating_edges.insert(make_pair(left_id, 0));
@@ -1563,7 +1564,7 @@ vector<vector<pair<typename Graph::EdgeId,double>>> RepeatResolver<Graph>::Conve
 			DEBUG("Generating pathes for edge "<<new_IDs.ReturnIntId(cur_edge));
 			for (int j = 0; j < (int)cur_edge_infos.size(); j++) {
 				PairInfo tmp = cur_edge_infos[j].lp;
-				DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(labels_after.edge_labels[tmp.first][0]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d << " from vertex: "<<edge_infos[j].d<< " weigth "<<tmp.weight);
+				DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(labels_after.edge_labels[tmp.first][0]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d << " from vertex: "<<cur_edge_infos[j].d<< " weigth "<<tmp.weight);
 			}
 
 			for (size_t ext_edge_num = 0; ext_edge_num < cur_edge_infos.size(); ext_edge_num++){

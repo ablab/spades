@@ -633,7 +633,7 @@ bool TryToAddPairInfo(graph_pack &origin_gp, PairedInfoIndex<typename graph_pack
 
 
 template<class graph_pack>
-int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, PairInfo<typename graph_pack::graph_t::EdgeId>& first_info, PairInfo<typename graph_pack::graph_t::EdgeId>& second_info, bool fill_missing, bool extensive_add = true) {
+int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, PairInfo<typename graph_pack::graph_t::EdgeId>& first_info, PairInfo<typename graph_pack::graph_t::EdgeId>& second_info, bool fill_missing, bool extensive_add = false) {
 
 	size_t max_comparable_path = *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var);
 	auto first_edge = first_info.second;
