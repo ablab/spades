@@ -268,6 +268,16 @@ ostream &operator<<(ostream &stream, const pure_pointer<T>& pointer)
 
 } // namespace restricted
 
+namespace std
+{
+template<>
+struct hash<restricted::pure_pointer> {
+	size_t operator()(const restricted::pure_pointer& pointer) const {
+		return pointer.hash();
+	}
+};
+}
+
 template<class T, class Comparator>
 class PairComparator {
 private:
