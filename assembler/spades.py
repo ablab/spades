@@ -332,7 +332,18 @@ def main():
             spades_cfg.__dict__["dataset"] = dataset_filename
         else:
             spades_cfg.dataset = os.path.abspath(os.path.expandvars(spades_cfg.dataset))
-            shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)        
+            shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)      
+            # cheat for developers: if dataset was set in 'assembly' section we should use reference from it
+            if cfg.has_key("quality_assessment") and not bh_dataset_filename:
+                for key_to_del in ["reference", "genes", "operons"]:
+                    if cfg["quality_assessment"].__dict__.has_key(key_to_del):
+                        del cfg["quality_assessment"].__dict__[key_to_del]
+
+                dataset_cfg = load_config_from_file(spades_cfg.dataset)
+                for k,v in dataset_cfg.__dict__.iteritems():
+                    if k == "reference_genome":
+                        cfg["quality_assessment"].__dict__["reference"] = os.path.join(os.path.dirname(spades_cfg.dataset), v)
+                
         
         
         result_contigs_filename = run_spades(spades_cfg)              
