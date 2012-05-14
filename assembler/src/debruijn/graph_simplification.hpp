@@ -59,7 +59,7 @@ private:
 class LengthThresholdFinder {
 public:
 	static size_t MaxTipLength(size_t read_length, size_t k, double coefficient) {
-		return (size_t)(std::min(k, read_length - k) * coefficient);
+		return (size_t)(std::min(k, read_length / 2) * coefficient);
 	}
 
 	static size_t MaxBulgeLength(size_t k, double coefficient) {
