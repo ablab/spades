@@ -66,16 +66,12 @@ def check_config(cfg, config_filename):
 
     ## checking mandatory sections
 
-    if not cfg.has_key("dataset"):
+    if not cfg.has_key("dataset") and not (cfg.has_key("assembly") and cfg["assembly"].__dict__.has_key("dataset")):
         error("wrong config! You should specify 'dataset' section!")
         return False
 
     if (not cfg.has_key("error_correction")) and (not cfg.has_key("assembly")):
         error("wrong config! You should specify either 'error_correction' section (for reads error correction) or 'assembly' one (for assembling) or both!")
-        return False
-
-    if not cfg["common"].__dict__.has_key("output_dir"):
-        error("wrong config! You should specify output_dir!")
         return False
 
     ## checking existence of all files in dataset section
@@ -98,30 +94,17 @@ def check_config(cfg, config_filename):
     ## checking mandatory parameters in sections
     
     # dataset
-    if not cfg["dataset"].__dict__.has_key("single_cell"):
-        error("wrong config! Parameter 'single_cell' in 'dataset' section is mandatory!")
-        return False
-
-    # error_correction
-    if cfg.has_key("error_correction"):
-        if not cfg["error_correction"].__dict__.has_key("max_iterations"):
-            error("wrong config! Parameter 'max_iterations' in 'error_correction' section is mandatory!")
-            return False
-        if not cfg["error_correction"].__dict__.has_key("max_threads"):
-            error("wrong config! Parameter 'max_threads' in 'error_correction' section is mandatory!")
-            return False
-        if not cfg["error_correction"].__dict__.has_key("max_memory"):
-            error("wrong config! Parameter 'max_memory' in 'error_correction' section is mandatory!")
-            return False 
-
-    # assembly
-    if cfg.has_key("assembly"):
-        if not cfg["assembly"].__dict__.has_key("iterative_K"):
-            error("wrong config! Parameter 'iterative_K' in 'assembly' section is mandatory!")
-            return False
-
-    ## setting default values if needed
+    if not (cfg.has_key("assembly") and cfg["assembly"].__dict__.has_key("dataset")):
+        if not cfg["dataset"].__dict__.has_key("single_cell"):
+            error("wrong config! Parameter 'single_cell' in 'dataset' section is mandatory!")
+            return False    
     
+    ## setting default values if needed
+   
+    # common 
+    if not cfg["common"].__dict__.has_key("output_dir"):
+        cfg["common"].__dict__["output_dir"] = './spades_output'
+
     if not cfg["common"].__dict__.has_key("output_to_console"):
         cfg["common"].__dict__["output_to_console"] = True
 
@@ -138,6 +121,20 @@ def check_config(cfg, config_filename):
 
     cfg["common"].output_dir = os.path.join(os.path.abspath(os.path.expandvars(cfg["common"].output_dir)), cfg["common"].project_name)
 
+    # error_correction
+    if cfg.has_key("error_correction"):
+        if not cfg["error_correction"].__dict__.has_key("max_iterations"):
+            cfg["error_correction"].__dict__["max_iterations"] = 2
+        if not cfg["error_correction"].__dict__.has_key("max_threads"):
+            cfg["error_correction"].__dict__["max_threads"]    = 16
+        if not cfg["error_correction"].__dict__.has_key("max_memory"):
+            cfg["error_correction"].__dict__["max_memory"]     = 250
+
+    # assembly
+    if cfg.has_key("assembly"):
+        if not cfg["assembly"].__dict__.has_key("iterative_K"):
+            cfg["assembly"].__dict__["iterative_K"] = [21, 33, 55]
+            
     return True
 
 def main():

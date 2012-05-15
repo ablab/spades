@@ -2,6 +2,8 @@
 
 project_name        ECOLI_1K                          ; optional. Name of this config file is used if not specified
 output_dir          ./spades_output                   ; optional. Default is ./spades_output
+output_to_console   true                              ; optional. Default is true
+developer_mode      false                             ; optional. Default is false
 compilation_dir                                       ; optional. Default is ~/.spades/precompiled/
 
 dataset
@@ -27,4 +29,11 @@ assembly
     iterative_K         21 33 55                      ; optional. Default is 21 33 55
     generate_sam_files  false                         ; optional. Default is false
     gap_closer          true                          ; optional. Default is true
+}
+
+quality_assessment      ; optional. If section exists (even if it has no lines), spades.py evaluates quality of the final contigs
+{
+    reference           $cfg/test_dataset/reference_1K.fa.gz     ; optional
+    genes               $cfg/test_dataset/genes_1K.gff           ; optional
+    operons             $cfg/test_dataset/operons_1K.gff         ; optional
 }
