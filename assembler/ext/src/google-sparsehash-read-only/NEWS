@@ -1,4 +1,76 @@
-== 23 June 2011 ==
+== 23 Ferbruary 2012 ==
+
+A backwards incompatibility arose from flattening the include headers
+structure for the <google> folder. 
+
+This is now fixed in 2.0.2. You only need to upgrade if you had previously
+included files from the <google/sparsehash> folder.
+
+== 1 February 2012 ==
+
+A minor bug related to the namespace switch from google to sparsehash
+stopped the build from working when perftools is also installed.
+
+This is now fixed in 2.0.1. You only need to upgrade if you have perftools
+installed.  
+
+== 31 January 2012 ==
+
+I've just released sparsehash 2.0.
+
+The `google-sparsehash` project has been renamed to `sparsehash`.  I
+(csilvers) am stepping down as maintainer, to be replaced by the team
+of Donovan Hide and Geoff Pike.  Welcome to the team, Donovan and
+Geoff!  Donovan has been an active contributor to sparsehash bug
+reports and discussions in the past, and Geoff has been closely
+involved with sparsehash inside Google (in addition to writing the
+[http://code.google.com/p/cityhash CityHash hash function]).  The two
+of them together should be a formidable force.  For good.
+
+I bumped the major version number up to 2 to reflect the new community
+ownership of the project.  All the
+[http://sparsehash.googlecode.com/svn/tags/sparsehash-2.0/ChangeLog changes]
+are related to the renaming.
+
+The only functional change from sparsehash 1.12 is that I've renamed
+the `google/` include-directory to be `sparsehash/` instead.  New code
+should `#include <sparsehash/sparse_hash_map>`/etc.  I've kept the old
+names around as forwarding headers to the new, so `#include
+<google/sparse_hash_map>` will continue to work.
+
+Note that the classes and functions remain in the `google` C++
+namespace (I didn't change that to `sparsehash` as well); I think
+that's a trickier transition, and can happen in a future release.
+
+
+=== 18 January 2011 ===
+
+The `google-sparsehash` Google Code page has been renamed to
+`sparsehash`, in preparation for the project being renamed to
+`sparsehash`.  In the coming weeks, I'll be stepping down as
+maintainer for the sparsehash project, and as part of that Google is
+relinquishing ownership of the project; it will now be entirely
+community run.  The name change reflects that shift.
+
+
+=== 20 December 2011 ===
+
+I've just released sparsehash 1.12.  This release features improved
+I/O (serialization) support.  Support is finally added to serialize
+and unserialize `dense_hash_map`/`set`, paralleling the existing code
+for `sparse_hash_map`/`set`.  In addition, the serialization API has
+gotten simpler, with a single `serialize()` method to write to disk,
+and an `unserialize()` method to read from disk.  Finally, support has
+gotten more generic, with built-in support for both C `FILE*`s and C++
+streams, and an extension mechanism to support arbitrary sources and
+sinks.
+
+There are also more minor changes, including minor bugfixes, an
+improved deleted-key test, and a minor addition to the `sparsetable`
+API.  See the [http://google-sparsehash.googlecode.com/svn/tags/sparsehash-1.12/ChangeLog ChangeLog]
+for full details.
+
+=== 23 June 2011 ===
 
 I've just released sparsehash 1.11.  The major user-visible change is
 that the default behavior is improved -- using the hash_map/set is
@@ -20,7 +92,6 @@ entries being much more verbose (for better or for worse).
 
 A full list of changes is described in 
 [http://google-sparsehash.googlecode.com/svn/tags/sparsehash-1.11/ChangeLog ChangeLog].
-
 
 === 21 January 2011 ===
 

@@ -1,3 +1,36 @@
+Thu Feb 23 23:47:18 2012 Google Inc. <google-sparsehash@googlegroups.com>
+
+	* sparsehash: version 2.0.2
+	* BUGFIX: Fix backwards compatibility for <google> include folders
+
+Wed Feb 01 02:57:48 2012 Google Inc. <google-sparsehash@googlegroups.com>
+
+	* sparsehash: version 2.0.1
+	* BUGFIX: Fix path to malloc_extension.h in time_hash_map.cc
+
+Tue Jan 31 11:33:04 2012  Google Inc. <google-sparsehash@googlegroups.com>
+
+	* sparsehash: version 2.0
+	* Renamed include directory from google/ to sparsehash/ (csilvers)
+	* Changed the 'official' sparsehash email in setup.py/etc
+	* Renamed google-sparsehash.sln to sparsehash.sln
+	* Changed copyright text to reflect Google's relinquished ownership
+
+Tue Dec 20 21:04:04 2011  Google Inc. <opensource@google.com>
+
+	* sparsehash: version 1.12 release
+	* Add support for serializing/unserializing dense_hash_map/set to disk
+	* New simpler and more flexible serialization API
+	* Be more consistent about clearing on unserialize() even if it fails
+	* Quiet some compiler warnings about unused variables
+	* Add a timing test for iterating (suggested by google code issue 77)
+	* Add offset_to_pos, the opposite of pos_to_offset, to sparsetable
+	* PORTING: Add some missing #includes, needed on some systems
+	* Die at configure-time when g++ isn't installed
+	* Successfully make rpm's even when dpkg is missing
+	* Improve deleted key test in util/gtl/{dense,sparse}hashtable
+	* Update automake to 1.10.1, and autoconf to 2.62
+
 Thu Jun 23 21:12:58 2011  Google Inc. <opensource@google.com>
 
 	* sparsehash: version 1.11 release

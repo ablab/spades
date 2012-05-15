@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/106/trunk/experimental
+END
+libchash.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/106/trunk/experimental/libchash.h
+END
+example.c
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/106/trunk/experimental/example.c
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/8/trunk/experimental/README
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/8/trunk/experimental/Makefile
+END
+libchash.c
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/106/trunk/experimental/libchash.c
+END

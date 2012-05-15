@@ -1,0 +1,12 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: sparsehash
+Version: 2.0.2
+Description: hash_map and hash_set classes with minimal space overhead
+URL: http://code.google.com/p/sparsehash
+Requires:
+Libs:
+Cflags: -I${includedir}

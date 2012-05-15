@@ -83,6 +83,7 @@ set(COMMON_LIBRARIES
    )
 
 include_directories(${EXT_DIR}/include)
+include_directories(${EXT_DIR}/include/google/)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # sub projects
