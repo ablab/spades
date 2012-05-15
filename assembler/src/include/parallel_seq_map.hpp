@@ -22,7 +22,7 @@ public:
 	
     void AddEdge(const Kmer &k, size_t i) {
         //TRACE("Adding ''edge'' to map");
-		nodes[i].insert(make_pair(k, make_pair(Value(), -1)), k.GetHash() & (nthreads_ - 1));
+		nodes[i].insert(make_pair(k, make_pair(Value(), -1)), k.GetHash() % (nthreads_ - 1));
     }
 
 	void CountSequence(const Sequence& s, size_t thread_number) {
