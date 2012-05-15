@@ -21,6 +21,7 @@ class ResolvedGraphPairInfoCounter {
 	const EdgeLabelHandler<Graph>& labels_;
 
 	size_t no_current_copies;
+	set<int> no_current_copies_ids;
 
 public:
 	ResolvedGraphPairInfoCounter(Graph& old_graph,
@@ -35,6 +36,7 @@ public:
 //		VERIFY(labels_.edge_inclusions.find(old_edge)->second.size() > 0);
 		if (!(labels_.edge_inclusions.find(old_edge)->second.size() > 0)){
 			DEBUG("There are no current copy for old graph edge " << old_edge << " " << old_graph_.str(old_edge));
+			no_current_copies_ids.insert(old_graph_.int_id(old_edge));
 			no_current_copies++;
 		}
 		return labels_.edge_inclusions.find(old_edge)->second.size() == 1;
@@ -77,11 +79,12 @@ public:
 
 	void FillResolvedGraphPairedInfo(PairedInfoIndex<Graph>& new_pair_info) {
 		no_current_copies = 0;
+		no_current_copies_ids.clear();
 		for (auto it = old_pair_info_.begin(); it != old_pair_info_.end(); ++it) {
 			ProcessInfos(new_pair_info, *it);
 		}
 		if (no_current_copies) {
-			WARN("There were no current copies for " << no_current_copies << " old graph edges");
+			WARN("There were no current copies for " << no_current_copies_ids.size() << " old graph edges: "<<ToString(no_current_copies_ids));
 		}
 	}
 private:

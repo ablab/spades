@@ -37,6 +37,16 @@ std::string ToString(std::vector<T>& t) {
 	return ss.str();
 }
 
+template <typename T>
+std::string ToString(std::set<T>& t) {
+	std::ostringstream ss;
+	ss << "Size "<<t.size()<<": [";
+	for (auto it = t.begin(); it != t.end(); ++it)
+		ss<<*it<<", ";
+	ss<<"]";
+	return ss.str();
+}
+
 template<class T>
 std::auto_ptr<T> create_auto_ptr(T* t) {
 	return std::auto_ptr<T>(t);
