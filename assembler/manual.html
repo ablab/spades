@@ -1,4 +1,4 @@
-<html xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+<html>
 <head>
     <title>SPAdes 2.1.0 Manual</title>
     <style type="text/css">
@@ -11,36 +11,73 @@
 <h1>SPAdes 2.1.0 Manual</h1>
 
 <p>SPAdes stands for St. Petersburg genome assembler. It is intended for both single cell MDA and standard
-(multicell) assemblies. This manual will help you to install and run SPAdes. You can find the latest version
-at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>.
+(multi-cell) assemblies. This manual will help you to install and run SPAdes. You can find the latest SPAdes release
+at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. The latest version of this manual can be found <a href="http://spades.bioinf.spbau.ru/release2.1.0/manual.html">here</a>.
 </p>
 
 
-<h2>1. System Requirements</h2>
+<h2>1. Installation</h2>
 
 <p>
     SPAdes requires a 64-bit Linux system. Correcting errors in our E. coli datasets requires about 70 Gb of RAM.
-    Assembling our test the <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/E.coli/reads/ECOLI_SC/">single cell  E. coli dataset</a> SPAdes requies 6 Gb of RAM.
-    For the <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/E.coli/reads/ECOLI_MC/">multi-cell E. coli dataset</a> it will be about 700 Mb of RAM.
+    Assembling our test the <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/E.coli/reads/ECOLI_SC/">single cell  E. coli dataset</a> with SPAdes requires 6 Gb of RAM.
+    For the <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/E.coli/reads/ECOLI_MC/">multi-cell E. coli dataset</a> it will be about 700 Mb of RAM. Also SPAdes requires
+    Python 2.4 or higher installed.
 </p>
 
-<h2>2. Installation</h2>
+<p>If you have root privileges and you want to install SPAdes for all users you can install Debian package as described in section 1.3 or RPM package as described in section 1.4. It will allow users
+to run <code>spades.py</code> from any directory without <code>./</code> prefix.</p>
 
-Each of the following subsections describes a way of installing SPAdes. If you have root priveleges then
-proceed to either section 2.1 or section 2.2 to install a Debian or RPM package. Section 2.3 provides a way
-to build SPAdes from the source code. This does not require root priveleges, but you will have to install also
-some libraries that SPAdes depends on. Finally, in section 2.4 it is described how one can just download the
-binaries.
+<h3>1.1 SPAdes tar.gz file</h3>
 
-<h3>2.1 Installing Debian package</h3>
+<p>You can download <a href="http://spades.bioinf.spbau.ru/release2.1.0/spades_2.1.0.tar.gz">SPAdes tar.gz</a> and extract it:
+</p>
+
+<pre  class="code">
+<code>
+    wget http://spades.bioinf.spbau.ru/release2.1.0/spades_2.1.0.tar.gz
+    tar -xzf spades_2.1.0.tar.gz
+    cd spades_2.1.0
+</code>
+</pre>
+
+<p>
+    SPAdes depends on the following libraries for compiling its code:
+</p>
+
+    <ul>
+        <li>g++ (version 4.4 or higher)</li>
+        <li>cmake (version 2.6 or higher)</li>
+        <li>boost (version 1.42 or higher)</li>
+        <li>zlib</li>
+    </ul>
+
+<p>If you are not able to match these requirements please use downloaded binaries as described in the next section.</p>
+
+<h3>1.2 Downloading binaries</h3>
+
+<p>If you want to run SPAdes with default parameters you need to run the following scripts: </p>
+
+<pre class="code">
+<code>
+    ./spades_download_binary.py 21 33 55
+    ./spades_download_bayeshammer.py
+</code>
+</pre>
+
+<p>It will download binaries to <code>.spades/release2.1.0</code> directory in your user home.
+SPAdes uses binaries optimized for each k value (see section  2.3) and you can download binaries
+for the required k values with <code>./spades_download_binary.py</code> script using space-separated values of k as an argument.</p>
+
+<h3>1.3 Installing Debian package</h3>
 
 <p>First, add the repository containing SPAdes by inserting the following line to the end of the file
-<code>/etc/apt/sources.list</code>:
+    <code>/etc/apt/sources.list</code>:
 </p>
 
 <pre class="code">
 <code>
-deb http://debian.bioinf.spbau.ru /
+    deb http://debian.bioinf.spbau.ru /
 </code>
 </pre>
 
@@ -48,7 +85,7 @@ deb http://debian.bioinf.spbau.ru /
 
 <pre class="code">
 <code>
-sudo apt-get update
+    sudo apt-get update
 </code>
 </pre>
 
@@ -57,91 +94,37 @@ sudo apt-get update
 
 <pre class="code">
 <code>
-sudo apt-get install spades
+    sudo apt-get install spades
 </code>
 </pre>
 
-<h3>2.2 Installing RPM package</h3>
+<h3>1.4 Installing RPM package</h3>
 
-<p>Your can download the RPM package at <a href="http://spades.bioinf.spbau.
-ru/release2.1.0/spades-2.1.0.rpm">http://spades.bioinf.spbau.ru/release2.1.0/spades-2.1.0.rpm</a>. The RPM installation procedure varies on different systems, but on
-<a href="http://fedoraproject.org/">Fedora</a> we recommend
+<p>Your can download the RPM package <a href="http://spades.bioinf.spbau.ru/release2.1.0/spades-2.1.0.rpm">here</a>. The RPM installation procedure varies on different systems, but on
+    <a href="http://fedoraproject.org/">Fedora</a> we recommend
 </p>
 
 <pre class="code">
 <code>
-sudo yum install spades-2.1.0.rpm
-</code>
-</pre>
-
-<h3>2.3 Building from source</h3>
-<p>If you're unable to install a package (e.g., you don't have root privileges), you can download
-<a href="http://spades.bioinf.spbau.ru/release2.1.0/spades_2.1.0.tar.gz">http://spades.bioinf.spbau.ru/release2.1.0/spades_2.1.0.tar.gz</a> and just extract it:
-</p>
-
-<pre  class="code">
-<code>
-wget http://spades.bioinf.spbau.ru/release2.1.0/spades_2.1.0.tar.gz
-tar -xzf spades_2.1.0.tar.gz
-cd spades_2.1.0
+    sudo yum install spades-2.1.0.rpm
 </code>
 </pre>
 
 <p>
-In this case, you will have to take care of some dependencies beforehand:
-<ul>
-    <li>g++ (version 4.4 or higher)</li>
-    <li>python (version 2.4 or higher)</li>
-    <li>cmake (version 2.6 or higher)</li>
-    <li>boost (version 1.42 or higher)</li>
-    <li>zlib</li>
-</ul>
+    Please note, that some package managers will not install dependencies described in section 1.1 automatically. Anyway you can download binaries as described in section 1.2.
 </p>
 
-
-<h3>2.4 Running binary distribution</h3>
-
-If you don't have possibility to install some dependencies we've prepared the SPAdes
-binaries for multiple values of k (see section 5.3), in the range from 11 to 149. For our test datasets, we
-recommend k = 21, 33, 55. To use these binaries you need to run the instructions from Section 2.3 and run
-the following commands after that:
-
-<pre class="code">
-<code>
-./spades_download_binary.py 21 33 55
-./spades_download_bayeshammer.py
-</code>
-</pre>
-
-<p>If you need to run SPAdes with other k values you need to download them using <code>./spades_download_binary.py</code> using space-separated values of k as an argument.</p>
-
-<h2>3 Testing your installation</h2>
-
-For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of E. coli). If you installed SPAdes
-from package type
-
-<code class="code">
-spades.py
-</code>
-
-Otherwise, <code>cd</code> to the folder where you extracted <a href="http://spades.bioinf.spbau.ru/release2.1.0/spades_2.1.0.tar.gz">spades_2.1.0.tar.gz</a> to and type
-
-<pre class="code">
-<code>
-./spades.py
-</code>
-</pre>
+<h3>1.5 Testing your installation</h3>
 
 <p>
-It runs SPAdes on this toy dataset. If the installation is successful you will see lines like the following lines
-in the end of the log:
+For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of E. coli). If you <code>spades.py</code> without parameters it will process this dataset
+and if the installation is successful you will see something like this at the end of the log:
 </p>
 
 <pre class="code">
 <code>
  * Corrected reads are in spades_output/ECOLI_1K/corrected/
  * Assembled contigs are spades_output/ECOLI_1K/spades_04.18_17.59.30/ECOLI_1K.fasta
- * Assessment of their quality is spades_output/ECOLI_1K/spades_04.18_17.59.30/quality_results/quality.txt
 
 Thank you for using SPAdes!
 
@@ -149,33 +132,20 @@ Thank you for using SPAdes!
 </code>
 </pre>
 
-<h2>4 Running SPAdes</h2>
+<h2>2 Running SPAdes</h2>
 
 <p>
-To run SPAdes type
+There are two ways to run SPAdes for you data set you can provide the configuration file with <code>.info</code> extension
+as the only <code>spades.py</code> parameter or specify the parameters from the command line.
 </p>
 
-<pre class="code">
-<code>
-spades.py &lt;config.info file>
-</code>
-</pre>
+<h3>2.2 Preparing configuration files</h3>
 
 <p>
-if you installed SPAdes from package (see sections 2.1 and 2.2), or
-</p>
-
-<pre class="code">
-<code>
-./spades.py &lt;config.info file>
-</code>
-</pre>
-
-<p>
-from the directory you extracted the archive (see sections 2.3 and 2.4). By default (i.e., if no config file is given)
-SPAdes uses the file <code>spades_config.info</code>. If SPAdes was installed from package the default config file is
-located at <code>/usr/share/spades/spades_config.info</code>, otherwise it can be found in the directory where SPAdes
-was extracted to. Below we first give an example of a config file and then explain its contents in detail. In config files,
+You can find the configuration file <code>spades_config.info</code> for the toy dataset from section 1.5 in the directory you extracted the archive (see sections 2.1 and 2.2),
+if SPAdes was installed from package this file located at <code>/usr/share/spades/spades_config.info</code>.
+You can use this file as the template for you datasets.
+Below we list the content n example of a config file and then explain its contents in detail. In config files,
 the part of a line starting with a semicolon is a comment.
 </p>
 
@@ -210,14 +180,6 @@ assembly
     gap_closer true ; optional. Default is true
 }
 
-; If this section exists (even if it is empty), spades.py
-; evaluates quality of the final contigs
-quality_assessment
-{
-    reference $cfg/test_dataset/reference_1K.fa.gz ; optional
-    genes $cfg/test_dataset/genes_1K.txt ; optional
-    operons $cfg/test_dataset/operons_1K.txt ; optional
-}
 </code>
 </pre>
 
@@ -236,7 +198,7 @@ as one of previous runs, it checks if you have already made the error correction
 to correct the reads again.
 </p>
 
-<h3>4.1 Dataset settings</h3>
+<h3>2.2.1 Dataset settings</h3>
 <p>
 SPAdes accepts single reads as well as forward-reverse paired end reads in FASTA and FASTQ format;
 however, in order to run error correction, reads should be in FASTQ format. All files may be compressed
@@ -263,7 +225,7 @@ names should be separated by spaces.
 <code>single_cell</code> flag is set if input data was obtained with MDA (single cell) technology.
 </p>
 
-<h3>4.2 Error correction settings</h3>
+<h3>2.2.2 Error correction settings</h3>
 <p>
 The <code>error_correction</code> section is responsible for correcting errors in the input reads; error correction in the
 SPAdes pipeline is done with <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a>,
@@ -299,7 +261,7 @@ to use this stage, especially for single-cell datasets.
     <code>gzip_output</code> flag forces BayesHammer to output corrected reads compressed with gzip.
 </p>
 
-<h3>4.3 Assembly settings</h3>
+<h3>2.2.3 Assembly settings</h3>
 
 <p>
     The <code>assembly</code> section controls the assembly process.
@@ -320,7 +282,7 @@ to use this stage, especially for single-cell datasets.
 <p>
     <code>generate_sam_files</code> flag forces SPAdes to generate a SAM-file showing how the paired reads specified in
     dataset section of config file are aligned to resulting contigs. Alignments from this SAM-file can be
-    visualized, e.g., by Tablet [3].
+    visualized, e.g., by <a href="http://bioinf.scri.ac.uk/tablet/">Tablet</a> [3].
 </p>
 
 <p>
@@ -333,182 +295,44 @@ to use this stage, especially for single-cell datasets.
 </p>
 
 
+<h2>3 SPAdes Output</h2>
+    Results can be found in the directory specified by <code>output_dir</code> parameter, the default value is
+    <code>spades_output</code>. For each dataset SPAdes creates separate directory, the name of this folder can be set using
+    <code>project_name</code> parameter. Corrected reads are stored in <code>corrected</code> subdirectory in <code>*.fastq.qz</code> files.
+    The resulting contigs are stored in <code>contigs</code> subdirectory in <code>*.fasta</code> file.
 
-<h3>4.4 Quality assessment settings</h3>
+
+
+<h2>4 Postprocessing</h2>
 <p>
-    The <code>quality_assessment</code> section is needed to estimate the quality of the resulting assembly.
-    If this section is present in the config file then SPAdes evaluates assembly results by computing various
-    metrics (e.g., N50, NG50, number of long ORFs, etc.) on the resulting contigs.
-</p>
-
-<p>
-    <code>reference</code>,  <code>genes</code> and <code>operons</code> variables specify files with
-    reference, genes and operons.
-</p>
-<p>
-    <code>genes</code> and <code>operons</code> should be either in GFF format <a href="http://www.sanger.ac.uk/resources/
-    software/gff/spec.html">version 2</a>  or <a href="http://www.sequenceontology.org/gff3.shtml">version 3</a> or in
-    plain text format with 4 tab-separated columns: <strong>the chromosome name</strong>(it should match the exact string
-    in the reference file), <strong>gene or operon id</strong>, <strong>start position</strong> and <strong>end postion</strong> (the coordinates are 1-based
-    and if start postion less than end postion than that gene or operon is on the positive strand and it is on the
-    negative strand otherwise).
-</p>
-
-<p>
-    Note that the quality is estimated even if this section is empty. Our quality tool uses <a href="http://www.plantagora.org/">Plantagora</a>
-    and <a href="http://mummer.sourceforge.net/">MUMmer</a>. The computed metrics are described in detail in section 5.
-</p>
-
-<h3>4.5 Creating a config file for your dataset</h3>
-<p>
-    To create a config file for your dataset <code>cd</code> to the SPAdes directory and copy the default config file to a new file:
-</p>
-
-<pre class="code">
-<code>
-    cp spades_config.info &lt;your_project_name.info file>
-</code>
-</pre>
-
-<p>
-    Then edit this new file according to your dataset.
-</p>
-
-<h2>5 Assembly quality metrics</h2>
-
-<p>
-    In this section, we describe various metrics computed by the quality tool of SPAdes pipeline (see section 4.4).
-    Note that the metrics based on the reference are computed only if the reference is given in the config file.
-    N50 is the contig length such that using longer or equal length contigs produces half (50%) the bases of
-    the assembly. Usually there is no value that produces exactly 50%, so the more technical definition is
-    the minimal length x such that using contigs of length at least x accounts for at least 50% of the total
-    assembly length.
-</p>
-
-<p>
-    <strong>NG50</strong> is the contig length such that using longer or equal length contigs produces half (50%) the bases of
-    the reference genome.
-</p>
-
-<p>
-    <strong>N75</strong> and </strong>NG75</strong> are defined similarly with 75% instead of 50%.
-</p>
-
-<p>
-    <strong>Number of contigs</strong> is the total number of contigs in the assembly.
-</p>
-
-<p>
-    <strong>Largest contig</strong> is the length of the longest contig in the assembly.
-</p>
-
-<p>
-    <strong>Total length</strong> is the total number of bases in the assembly.
-</p>
-
-<p>
-    <strong>Reference length</strong> is the total number of bases in the reference.
-</p>
-
-<p>
-    <strong>Average %IDY</strong> is the average of alignment identity percent (quality) among all contigs.
-</p>
-
-<p>
-    <strong>Misassemblies</strong> gives the number of positions at the assembled contigs where the left flanking sequence
-    aligns over 1kb away from the right flanking sequence on the reference or they overlap on more than
-    1 kb or flanking sequences align on different strands.
-</p>
-
-<p>
-    <strong>Misassembled contigs</strong> is the number of contigs that contain misassembly events.
-</p>
-
-<p>
-    <strong>Misassembled contig bases</strong> is the number of total bases contained in all contigs that have one or more
-    misassemblies.
-</p>
-
-<p>
-    <strong>Unaligned contigs</strong> is the number of contigs that have no alignment to the reference sequence. The value
-    "X (Y partial) (Z)" means: X totally unaligned contigs plus Y partially unaligned contigs and the
-    total number of unaligned bases is Z.
-</p>
-
-<p>
-    <strong>Ambiguous contigs</strong> is the number of contigs that have reference alignments of equal quality in multiple
-    locations on the reference. The value "X (Y)" means X ambiguous contigs with Y bases in them.
-</p>
-
-<p>
-    <strong>NA50 (A stands for "aligned")</strong> is defined similarly to N50 but only lengths of aligned blocks are counted.
-    If a contig has a misassembly with respect to the reference, it is broken into smaller pieces. If a contig
-    has bases that do not align to the reference, they are not counted in NA*, NGA*. NGA50, NA75, NGA75 are defined in the same way.
-</p>
-
-<p>
-    <strong>Mapped genome (%)</strong> is the ratio of the total number of aligned bp in the assembly to the genome size.
-    Short contigs (less than 500 bp) that map to multiple places may be counted many times in this
-    quantity. A base in the genome is counted as aligned one if there is at least one contig with at least
-    one alignment with this base.
-</p>
-
-<p>
-    <strong>Genes</strong> is the number of genes in the assembly (full and partial), based on the positions the contigs map
-    to in the reference genome with an annotated list of genes. The value "X + Y partial" means X full
-    genes and Y partial ones (at least 100 bases are aligned).
-</p>
-
-<p>
-    <strong>Operons</strong> is the number of operons in the assembly (full and partial), based on the positions the contigs
-    map to in the reference genome with an annotated list of operons. The value "X + Y partial" means
-    X full operons and Y partial ones (at least 100 bases are aligned).
-</p>
-
-<p>
-    <strong>Number of miscalled</strong> is the number of miscalled bases (e.g. having "C" in the assembly and "G" in the
-    genome).
-</p>
-
-<p>
-    <strong>Number of uncalled</strong> is the number of uncalled bases ("N").
-    Bases missed is the number of missed bases (which are presented in the genome and missed in the assembly).
-</p>
-
-<h2>6 Output</h2>
-    Results can be found in the directory specified by <code>output_dir</code>. Specific directories containing corrected reads,
-    assembly, and quality estimate are shown at the end of the log.
-
-<h2>7 Postprocessing</h2>
-
-    <h3>7.1 Correcting errors in the resulting contigs</h3>
     While SPAdes produces accurate assemblies, we recommend running <a href="http://bix.ucsd.edu/SEQuel/">SEQuel</a> [4]
     after SPAdes to further  reduce the number of small errors (single nucleotide substitutions and small indels).
-    Note that one can set the flag generate_sam to SPAdes (see section 4.3)
+    Note that one can set the flag generate_sam to SPAdes (see section 2.2.3)
     to generate a SAM-file showing how the reads are aligned to the resulting contigs. This file can then be
     given to SEQuel as input.
-
-    <h3>7.2 Scaffolding</h3>
+</p>
+<p>
     The current version of SPAdes does not have a scaffolding stage. One can use a separate scaffolder such as
     <a href="http://sourceforge.net/projects/operasf/">Opera</a> [2].
+</p>
 
-<h2>8 Feedback and bug reports</h2>
+<h2>5 Feedback and bug reports</h2>
     We will be thankful if you help us make SPAdes better by sending your comments, bug reports, and suggestions
     to <a href="mailto:spades.support@bioinf.spbau.ru">spades.support@bioinf.spbau.ru</a>.
 
 
 <h2>References</h2>
 <p>
-    [1] A. Bankevich, S. Nurk, et al. SPAdes: a New Genome Assembly Algorithm and its Applications to
-    Single-Cell Sequencing. Journal of Computational Biology, 2012. To appear.
+    [1] A. Bankevich, S. Nurk, et al. <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021">SPAdes: A New Genome Assembly Algorithm and Its Applications to Single-Cell Sequencing.</a>
+    Journal of Computational Biology. May 2012, 19(5): 455-477. doi:10.1089/cmb.2012.0021.
 </p>
 <p>
-    [2] S. Gao, WK. Sung, and N. Nagarajan. Opera: reconstructing optimal genomic scaffolds with highthroughput
-    paired-end sequences. Journal of Computational Biology, 18(11):1681–1691, 2011.
+    [2] Song Gao, Wing-Kin Sung, and Niranjan Nagarajan. <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2011.0170">Opera: reconstructing optimal genomic scaffolds with high-throughput paired-end sequences.</a>
+    Journal of Computational Biology. November 2011, 18(11): 1681-1691. doi:10.1089/cmb.2011.0170.
 </p>
 <p>
-    [3] I. Milne, M. Bayer, L. Cardle, P. Shaw, G. Stephen, F.Wright, and D. Marshall. Tablet—next generation
-    sequence assembly visualization. Bioinformatics, 26(3):401–402, 2010.
+    [3] I. Milne, M. Bayer, L. Cardle, P. Shaw, G. Stephen, F.Wright, and D. Marshall. <a href="http://bioinformatics.oxfordjournals.org/content/26/3/401.abstract">Tablet—next generation
+    sequence assembly visualization.</a> Bioinformatics (2010) 26 (3): 401-402.   doi: 10.1093/bioinformatics/btp666
 </p>
 <p>
     [4] R. Ronen, C. Boucher, H. Chitsaz, and P. Pevzner. SEQuel: Improving the accuracy of genome assemblies.
