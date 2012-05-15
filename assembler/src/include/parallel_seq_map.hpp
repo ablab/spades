@@ -7,7 +7,7 @@ class ParallelSeqMap {
 public:
     typedef Seq<size_> Kmer;
     typedef parallel_unordered_map<Kmer, pair<Value, size_t>, typename Kmer::hash, typename Kmer::equal_to> par_map_t;
-    typedef std::tr1::unordered_map<Kmer, pair<Value, size_t>, typename Kmer::hash, typename Kmer::equal_to> map_t; // size_t is offset
+    typedef google::dense_hash_map<Kmer, pair<Value, size_t>, typename Kmer::hash, typename Kmer::equal_to> map_t; // size_t is offset
 
 private:
 	

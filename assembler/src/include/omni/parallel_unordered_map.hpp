@@ -1,19 +1,25 @@
 #pragma once 
-#include <tr1/unordered_map>
+//#include <tr1/unordered_map>
+#include "google/dense_hash_map"
 
 template<class T, class Value, class Hash, class KeyEqual>
 struct parallel_unordered_map
 {
     private:
-        typedef	std::tr1::unordered_map<T, Value, Hash, KeyEqual>				origin_map_t;
+        typedef	google::dense_hash_map<T, Value, Hash, KeyEqual>				origin_map_t;
         typedef	std::vector<origin_map_t>							            map_arr_t;
-        typedef typename origin_map_t::value_type      value_type;
+        typedef typename origin_map_t::value_type                               value_type;
 
     public:    
         parallel_unordered_map(size_t nthreads)
             : nthreads_		(nthreads)
             , buckets_		(nthreads, origin_map_t(100000)) {
 
+#ifdef _DENSE_HASH_MAP_H_
+            for (size_t i = 0; i < nthreads_; ++i) {
+                buckets_[i].set_empty_key(T::GetZero());
+            }
+#endif
         }
 
         void insert(const value_type& value, size_t bucket_num)

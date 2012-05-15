@@ -166,6 +166,16 @@ public:
 		init(s);
 	}
 
+	void SetZero() {
+	    std::fill(data_.begin(), data_.end(), -1);
+	}
+
+	static Seq<size_, T> GetZero() {
+	    Seq<size_, T> res;
+	    res.SetZero();
+	    return res;
+	}
+
     //  !!!Constructor of start sequence (length = size) from already compressed array
     //  We assume the size of data_array is greater than size
     //  TODO find another way of constructing from a substring of a sequence

@@ -21,9 +21,9 @@
 #include "cuckoo.hpp"
 #include <tr1/unordered_map>
 
-//#define USE_SPARSEHASH 1
+#define USE_SPARSEHASH 1
 #ifdef USE_SPARSEHASH
-	#include <google/sparse_hash_map>
+	#include "google/dense_hash_map"
 #endif
 
 
@@ -44,10 +44,10 @@ private:
 	friend class SeqMapBuilder;
 	typedef Seq<size_> Kmer;
 	#ifdef USE_SPARSEHASH
-		typedef google::sparse_hash_map<Kmer, pair<Value, size_t> ,
+		typedef google::dense_hash_map<Kmer, pair<Value, size_t> ,
 			typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
-		Kmer deleted_key; // see http://google-sparsehash.googlecode.com/svn/trunk/doc/sparse_hash_map.html#6
-		bool deleted_key_is_defined;
+//		Kmer deleted_key; // see http://google-sparsehash.googlecode.com/svn/trunk/doc/sparse_hash_map.html#6
+//		bool deleted_key_is_defined;
 	#else
 		typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
 			typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
@@ -59,12 +59,12 @@ private:
 	// DE BRUIJN:
 	//does it work for primitives???
 	void addEdge(const Kmer &k) {
-		#ifdef USE_SPARSEHASH
-			if (deleted_key_is_defined && k == deleted_key) {
-				nodes_.clear_deleted_key();
-				deleted_key_is_defined = false;
-			}
-		#endif
+//		#ifdef USE_SPARSEHASH
+//			if (deleted_key_is_defined && k == deleted_key) {
+//				nodes_.clear_deleted_key();
+//				deleted_key_is_defined = false;
+//			}
+//		#endif
 		nodes_.insert(make_pair(k, make_pair(Value(), -1)));
 	}
 
@@ -73,12 +73,12 @@ private:
 	void putInIndex(const Kmer &kmer, Value id, size_t offset) {
 		map_iterator mi = nodes_.find(kmer);
 		if (mi == nodes_.end()) {
-			#ifdef USE_SPARSEHASH
-				if (deleted_key_is_defined && kmer == deleted_key) {
-					nodes_.clear_deleted_key();
-					deleted_key_is_defined = false;
-				}
-			#endif
+//			#ifdef USE_SPARSEHASH
+//				if (deleted_key_is_defined && kmer == deleted_key) {
+//					nodes_.clear_deleted_key();
+//					deleted_key_is_defined = false;
+//				}
+//			#endif
 			nodes_.insert(make_pair(kmer, make_pair(id, offset)));
 		} else {
 			mi->second.first = id;
@@ -94,7 +94,7 @@ public:
 
 	SeqMap() {
 		#ifdef USE_SPARSEHASH
-			deleted_key_is_defined = false;
+	        nodes_.set_empty_key(Kmer::GetZero());
 		#endif
 	}
 
@@ -213,13 +213,13 @@ public:
 	bool deleteIfEqual(const Kmer& kmer, Value id) {
 		map_iterator mi = nodes_.find(kmer);
 		if (mi != nodes_.end() && mi->second.first == id) {
-			#ifdef USE_SPARSEHASH
-				if (!deleted_key_is_defined) {
-					nodes_.set_deleted_key(kmer);
-					deleted_key = kmer;
-					deleted_key_is_defined = true;
-				}
-			#endif
+//			#ifdef USE_SPARSEHASH
+//				if (!deleted_key_is_defined) {
+//					nodes_.set_deleted_key(kmer);
+//					deleted_key = kmer;
+//					deleted_key_is_defined = true;
+//				}
+//			#endif
 			nodes_.erase(mi);
 			return true;
 		}

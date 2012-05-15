@@ -178,6 +178,12 @@ size_t FillParallelIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k + 1
 
     std::vector<typename ParallelDeBruijn::map_t> temp_maps(nthreads);
 
+//#ifdef _DENSE_HASH_MAP_H_
+    for (size_t i = 0; i < nthreads; ++i) {
+        temp_maps[i].set_empty_key(Kmer::GetZero());
+    }
+//#endif
+
     perf_counter pc;
 
     INFO("Processing reads (takes a while)");
