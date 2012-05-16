@@ -110,7 +110,7 @@ void exec_construction(conj_graph_pack& gp) {
 			}
 
 			if (cfg::get().use_multithreading) {
-                auto streams = single_buffered_binary_readers(true, true);
+                auto streams = single_binary_readers(true, true);
                 construct_graph<io::SingleReadSeq>(streams, gp, additional_contigs_stream);
                 for (size_t i = 0; i < streams.size(); ++i) {
                     delete streams[i];
