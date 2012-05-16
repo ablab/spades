@@ -1,0 +1,130 @@
+               ABOUT MISCELLANEOUS CONTAINER TEMPLATES
+
+Miscellaneous Container Templates (MCT for short) is an umbrella
+project for various standard library-like containers with specific
+properties.  Currently it contains six closely related hash table
+containers: closed_hash_set, closed_hash_map, linked_hash_set,
+linked_hash_map, forward_hash_set and forward_hash_map.  The first two
+are very similar to TR1 unordered_set and unordered_map.  The linked
+ones provide additional functionality, while forward hash tables are
+more efficient than linked, but have restricted interface.
+
+closed_hash_* containers were written mostly to a) avoid memory
+allocation on each insert operation (unlike TR1 unordered_*); and b)
+still allow any values/keys (unlike Google Sparsehash library).
+Additionally, they seem to have about the same speed as dense_hash_*
+from the latter library.
+
+The following comparison concerns the closed_hash_* containers.
+
+
+Comparison With TR1 unordered_* Containers
+------------------------------------------
+
+Advantages:
+
+    - significantly faster for sufficiently small elements;
+    - do not allocate memory often.
+
+Disadvantages:
+
+    - can move data in memory, i.e. invalidate pointers and
+      references;
+    - can become slow if elements have expensive copy constructors,
+      unless special care is taken to avoid rehashing;
+    - usually use more memory, especially with large-sized values.
+
+Boost Unordered library provides containers that are very similar to
+those present in TR1 implementations, so this comparison applies to
+that as well.
+
+
+Comparison With Google Sparsehash library
+-----------------------------------------
+
+Advantages:
+
+    - no restriction on contained values/keys;
+    - exception safety;
+    - support for C++0x features;
+    - optional intrusiveness gives better performance for certain
+      types.
+
+Disadvantages:
+
+    - MCT seems to be somewhat slower on average (results vary with
+      different benchmarks, compilers and CPU architectures);
+    - no analogue for sparse_hash_* containers.
+
+
+
+                             PROJECT HOME
+
+You may check if you have the latest version, report bugs or ask
+question on the project homepage at
+
+                    https://launchpad.net/libmct/
+
+
+
+                            DOCUMENTATION
+
+MCT comes with an extensive documentation.  In distributions it can be
+found in file 'doc/mct.html'.  If you have a Bazaar branch clone, you
+can run
+
+    scons doc
+
+to build documentation HTML from its source 'doc/mct.txt'.  This
+requires Docutils.
+
+
+
+                             TESTING MCT
+
+Testing requires Boost Test, and Boost MPL libraries; and either TR1
+unordered_* containers or Boost Unordered library.  Simply type
+
+    scons test
+
+to build and run all currently available tests.
+
+It is expected that the tests are very slow to compile: there's a
+large amount of tested parameter combinations.  Tests are also
+moderately slow to run, because they essentially validate internal
+structure integrity after each modification.
+
+
+
+                             INSTALLATION
+
+Simple 'scons install' or 'make install' should be enough if your
+machine meets the few requirements.  See file INSTALL for details,
+including optional installation with neither SCons nor Make.
+
+
+
+                    BOOST.INTERPROCESS ALLOCATORS
+
+Library containers can be used with allocators that provide custom
+pointer types, most importantly allocators from Boost.Interprocess.
+However, there seems to be a certain bug in GCC 4.6 and/or Boost
+pre-1.48 that breaks MCT tests.  The bug is _not_ specific to MCT, you
+can see for yourself in file 'misc/interprocess-test.cpp'.  However,
+because of this issue, testing with Boost.Interprocess is disabled if
+Boost is not 1.48 or later.  You are also advised against using
+Boost.Interprocess allocators (with MCT or, apparently, at all) with
+those earlier Boost versions.
+
+
+
+                             BENCHMARKING
+
+MCT comes with some benchmarking programs that allow to measure
+implementation speed as well as compare to other libraries.  To build
+all available benchmarking programs type
+
+    scons benchmark
+
+This won't run benchmarks by itself.  Run the programs (currently just
+one program) from 'benchmark' directory manually.

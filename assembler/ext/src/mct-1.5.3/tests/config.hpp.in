@@ -1,0 +1,28 @@
+#ifndef MCT_TESTS_CONFIG_HPP
+#define MCT_TESTS_CONFIG_HPP
+
+#define HAVE_UNORDERED_SET                      @{have_unordered_set}
+#define HAVE_TR1_UNORDERED_SET                  @{have_tr1_unordered_set}
+#define HAVE_BOOST_UNORDERED_SET                @{have_boost_unordered_set}
+
+#define HAVE_UNORDERED_MAP                      @{have_unordered_map}
+#define HAVE_TR1_UNORDERED_MAP                  @{have_tr1_unordered_map}
+#define HAVE_BOOST_UNORDERED_MAP                @{have_boost_unordered_map}
+
+#define MCT_HASH_NAMESPACE_ENTER                @{hash_namespace_enter}
+#define MCT_HASH_NAMESPACE_LEAVE                @{hash_namespace_leave}
+
+#define HAVE_LONG_LONG_HASH_SPECIALIZATION      @{have_long_long_hash_specialization}
+
+#define HAVE_BOOST_INTERPROCESS                 @{have_boost_interprocess}
+#define HAVE_BOOST_SERIALIZATION                @{have_boost_serialization}
+
+#endif  // Multi-inclusion guard.
+
+
+// Local variables:
+// mode: c++
+// c-basic-offset: 2
+// indent-tabs-mode: nil
+// fill-column: 90
+// End:

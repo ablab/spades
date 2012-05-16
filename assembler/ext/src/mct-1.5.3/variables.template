@@ -1,0 +1,31 @@
+# Copy to 'variables' and edit as needed.  These variables control build process.
+
+# Installation prefix.  Defaults to '/usr/local'.
+prefix = '/usr/local'
+
+# Controls which hash function MCT will use by default.  Can be 'std' (for 'std::hash',
+# C++0x compilers), 'tr1' (for 'std::tr1::hash'), 'boost' (for 'boost::hash') or 'auto',
+# to pick one at configuration time.  Default is 'auto'.
+#
+# This setting can be overridden at compilation time by defining both MCT_HASH_HEADER and
+# MCT_HASH_NAMESPACE prior to including any MCT headers.
+hash_provider = 'auto'
+
+# Controls which implementation of type traits MCT will use by default.  Allowed values
+# are just as for 'hash_provider' above.  Unlike 'hash_provider' type traits are optional.
+#
+# This setting can be overridden at compilation time by defining both
+# MCT_TYPE_TRAITS_HEADER and MCT_TYPE_TRAITS_NAMESPACE prior to including any MCT headers.
+type_traits_provider = 'auto'
+
+# Whether to enable debugging statistics for MCT implementation in benchmarks.  It doesn't
+# slow benchmarks, by the way.
+benchmark_debugging = True
+
+
+# Local variables:
+# mode: python
+# python-indent: 4
+# indent-tabs-mode: nil
+# fill-column: 90
+# End:

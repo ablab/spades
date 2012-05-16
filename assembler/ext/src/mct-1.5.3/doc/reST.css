@@ -1,0 +1,246 @@
+body
+{
+    margin-left: 1.5em;
+    margin-right: 1.5em;
+}
+
+div.document
+{
+    width: 90ex;
+}
+
+h1.title
+{
+    margin-bottom: 1.5em;
+    font-weight: bold;
+    font-size: 180%;
+    text-align: center;
+}
+
+div.section h1
+{
+    margin-top: 2.2em;
+    border-bottom: 1px solid #ccc;
+    font-weight: bold;
+    font-size: 150%;
+    text-align: left;
+}
+
+div.section h2
+{
+    margin-top: 2.0em;
+    font-weight: bold;
+    font-size: 130%;
+    text-align: left;
+}
+
+div.section h3
+{
+    margin-top: 1.8em;
+    font-weight: bold;
+    font-size: 115%;
+    text-align: left;
+}
+
+div.section h4
+{
+    margin-top: 1.7em;
+    font-weight: bold;
+    font-size: 105%;
+    text-align: left;
+}
+
+
+div.section div.section div.section div.section
+{
+    padding-left: 3em;
+}
+
+div.section div.section div.section div.section h4
+{
+    margin-left: -1.5em;
+}
+
+
+a
+{
+    color: #539bc0;
+    text-decoration: underline;
+}
+
+a:visited
+{
+    color: #3b6e88;
+    text-decoration: underline;
+}
+
+a:hover
+{
+    color: #65bdea;
+    text-decoration: underline;
+}
+
+div.topic
+{
+    margin: 1.5em 2em;
+}
+
+p.topic-title
+{
+    font-weight: bold;
+    font-size: 110%;
+    text-align: left;
+    margin: 0 0 0.5em 0;
+}
+
+div.topic ul
+{
+    list-style-type: none;
+    margin: 0 0 0 0;
+    padding: 0 0 0 1.5em;
+}
+
+div.topic ul ul
+{
+    padding-left: 1.5em;
+}
+
+div.contents > ul > li
+{
+    padding-bottom: 0.4em;
+}
+
+div.contents > ul > li > a
+{
+    font-weight: bold;
+}
+
+div.topic a, div.topic a:visited
+{
+    text-decoration: none;
+}
+
+div.topic a:hover
+{
+    text-decoration: underline;
+}
+
+div.local
+{
+    font-size: 85%;
+}
+
+a.toc-backref
+{
+    text-decoration: none;
+}
+
+a.toc-backref:hover
+{
+    color: #65bdea;
+    text-decoration: underline;
+}
+
+th.docinfo-name
+{
+    padding-right: 1em;
+    text-align: left;
+}
+
+th.field-name
+{
+    padding-right: 1em;
+    text-align: left;
+}
+
+th.field-name tt
+{
+    font-weight: normal;
+}
+
+pre.literal-block
+{
+    margin-left: 3em;
+    margin-right: 3em;
+    font-family: monospace;
+    font-size: 90%;
+    text-align: left;
+}
+
+div.warning
+{
+    margin-left: 0.3em;
+    border-left: 2px solid #a00;
+    padding-left: 0.5em;
+}
+
+p.admonition-title
+{
+    font-weight: bold;
+}
+
+div.admonition-special-note
+{
+    margin-left: 2em;
+    margin-right: 2em;
+}
+
+div.admonition-compiler-specific
+{
+    margin: 1em 0 0 3em;
+    border-left: 1px dashed #666;
+    padding-left: 0.5em;
+}
+
+div.admonition-compiler-specific p.admonition-title
+{
+    display: none;
+    speak: none;
+}
+
+div.admonition-versioned
+{
+    float: right;
+    margin: 0 0 1em 2em;
+    border-bottom: 1px dashed #666;
+    padding: 0 0.5em 0.1em 0.5em;
+    color: #666;
+}
+
+div.admonition-versioned p
+{
+    margin: 0;
+}
+
+div.admonition-versioned p.admonition-title
+{
+    display: none;
+    speak: none;
+}
+
+div.admonition-deprecated
+{
+    margin-left: 3em;
+    border-left: 1px dotted #ccc;
+    padding-left: 0.5em;
+    font-size: 95%;
+    color: #333;
+}
+
+div.admonition-deprecation-description
+{
+    border-left: 2px solid #a00;
+    padding-left: 0.5em;
+    font-size: 105%;
+}
+
+div.admonition-deprecated p.admonition-title, div.admonition-deprecation-description p.admonition-title
+{
+    display: none;
+    speak: none;
+}
+
+ul.simple > li
+{
+    padding-bottom: 0.5em;
+}

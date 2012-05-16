@@ -1,0 +1,41 @@
+#ifndef MCT_CONFIG_HPP
+#define MCT_CONFIG_HPP
+
+// MCT version.
+#define MCT_MAJOR_VERSION               @{major_version}
+#define MCT_MINOR_VERSION               @{minor_version}
+#define MCT_PATCH_VERSION               @{patch_version}
+#define MCT_VERSION_STRING              "@{version_string}"
+
+// Library support, including stdlib.
+#if !defined (MCT_HASH_HEADER) || !defined (MCT_HASH_NAMESPACE)
+#  define MCT_HASH_HEADER               <@{hash_header}>
+#  define MCT_HASH_NAMESPACE            @{hash_namespace}
+#endif
+
+#if !defined (MCT_TYPE_TRAITS_HEADER) || !defined (MCT_TYPE_TRAITS_NAMESPACE)
+#  define MCT_HAVE_TYPE_TRAITS          @{have_type_traits}
+#  define MCT_TYPE_TRAITS_HEADER        <@{type_traits_header}>
+#  define MCT_TYPE_TRAITS_NAMESPACE     @{type_traits_namespace}
+#else
+#  define MCT_HAVE_TYPE_TRAITS          1
+#endif
+
+// Compiler capabilities.
+#if !defined (MCT_CXX0X_SUPPORTED)
+#  define MCT_CXX0X_SUPPORTED           @{cxx0x_supported}
+#endif
+
+#if !defined (MCT_HAVE_LONG_LONG)
+#  define MCT_HAVE_LONG_LONG            @{have_long_long}
+#endif
+
+#endif  // Multi-inclusion guard.
+
+
+// Local variables:
+// mode: c++
+// c-basic-offset: 2
+// indent-tabs-mode: nil
+// fill-column: 90
+// End:

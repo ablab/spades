@@ -1,0 +1,17 @@
+#ifndef MCT_BENCHMARK_CONFIG_HPP
+#define MCT_BENCHMARK_CONFIG_HPP
+
+#define HAVE_UNORDERED_SET              @{have_unordered_set}
+#define HAVE_TR1_UNORDERED_SET          @{have_tr1_unordered_set}
+#define HAVE_BOOST_UNORDERED_SET        @{have_boost_unordered_set}
+#define HAVE_GOOGLE_DENSE_HASH_SET      @{have_google_dense_hash_set}
+
+#endif  // Multi-inclusion guard.
+
+
+// Local variables:
+// mode: c++
+// c-basic-offset: 2
+// indent-tabs-mode: nil
+// fill-column: 90
+// End:
