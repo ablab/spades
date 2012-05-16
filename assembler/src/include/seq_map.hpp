@@ -30,6 +30,8 @@
     #include <tr1/unordered_map>
 #endif
 
+#include "mct/hash-map.hpp"
+
 
 /*
  * act as DeBruijn graph and Index at the same time :)
@@ -53,7 +55,7 @@ private:
 		Kmer deleted_key; // see http://google-sparsehash.googlecode.com/svn/trunk/doc/sparse_hash_map.html#6
 		bool deleted_key_is_defined;
 	#else
-		typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
+		typedef mct::closed_hash_map<Kmer, pair<Value, size_t> ,
 			typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
 	#endif
 //	typedef cuckoo<Kmer, pair<Value, size_t> , typename Kmer::multiple_hash,

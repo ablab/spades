@@ -134,7 +134,12 @@ public:
 	}
 
 	void ConstructGraph(Graph &graph, Index &index) {
-		for (typename DeBruijn::map_iterator it = origin_.begin(); it != origin_.end(); it++) {
+
+	    typename DeBruijn::map_iterator it (origin_.begin());
+	    typename DeBruijn::map_iterator end(origin_.end()  );
+
+	    for ( ; it != end; ++it) {
+
 			KPlusOneMer edge = it->first;
 			if (!index.contains(edge)) {
 				Sequence edge_sequence = ConstructSequenceWithEdge(edge);
