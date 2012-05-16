@@ -17,6 +17,7 @@ cp assembler/spades_config.info.template spades-$VERSION
 cp assembler/spades_download_binary.py spades-$VERSION
 cp assembler/spades_download_bayeshammer.py spades-$VERSION
 cp assembler/spades_init.py spades-$VERSION
+cp assembler/manual.html manual.html
 
 cd spades-$VERSION
 rm src/CMakeListsInternal.txt
