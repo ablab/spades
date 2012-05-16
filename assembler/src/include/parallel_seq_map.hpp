@@ -234,15 +234,14 @@ public:
         return nodes_[i].is_full();
     }
 
+    void Clear(size_t i) {
+        nodes_[i].clear();
+    }
+
     void Clear() {
         for (size_t i = 0; i < nthreads_; ++i) {
             nodes_[i].clear();
         }
-    }
-
-    void Dump(destination_container_t & temp_map, size_t i) {
-        MergeMaps(temp_map, i);
-        nodes_[i].clear();
     }
 
 };

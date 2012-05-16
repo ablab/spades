@@ -356,7 +356,7 @@ size_t FillParallelVecIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k 
     for (size_t i = 0; i < nthreads; ++i) {
         streams[i]->reset();
     }
-    ParallelDeBruijn par_debruijn(nthreads, 1000000);
+    ParallelDeBruijn par_debruijn(nthreads, 100000);
 
     std::vector<typename ParallelDeBruijn::destination_container_t> temp_maps(nthreads);
 
@@ -367,6 +367,7 @@ size_t FillParallelVecIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k 
     size_t counter = 0;
 
     while (!ParllelStreamEOF(streams)) {
+
         #pragma omp parallel num_threads(nthreads)
         {
 
@@ -402,8 +403,16 @@ size_t FillParallelVecIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k 
             //Merge maps
             #pragma omp for
             for (size_t i = 0; i < nthreads; ++i) {
-                par_debruijn.Dump(temp_maps[i], i);
+                par_debruijn.MergeMaps(temp_maps[i], i);
             }
+
+            #pragma omp barrier
+
+            #pragma omp for
+            for (size_t i = 0; i < nthreads; ++i) {
+                par_debruijn.Clear(i);
+            }
+
         }
 
     }
