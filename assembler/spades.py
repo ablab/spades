@@ -90,50 +90,52 @@ def check_config(cfg, config_filename):
     if no_files_with_reads:
         error("wrong config! You should specify at least one file with reads!")
         return False
-
-    ## checking mandatory parameters in sections
-    
-    # dataset
-    if not (cfg.has_key("assembly") and cfg["assembly"].__dict__.has_key("dataset")):
-        if not cfg["dataset"].__dict__.has_key("single_cell"):
-            error("wrong config! Parameter 'single_cell' in 'dataset' section is mandatory!")
-            return False    
-    
+   
     ## setting default values if needed
    
     # common 
     if not cfg["common"].__dict__.has_key("output_dir"):
-        cfg["common"].__dict__["output_dir"] = './spades_output'
+        cfg["common"].__dict__["output_dir"]     = 'spades_output'
+
+    if not cfg["common"].__dict__.has_key("max_threads"):
+        cfg["common"].__dict__["max_threads"]    = 16
+
+    if not cfg["common"].__dict__.has_key("max_memory"):
+        cfg["common"].__dict__["max_memory"]     = 250
 
     if not cfg["common"].__dict__.has_key("output_to_console"):
         cfg["common"].__dict__["output_to_console"] = True
 
     if not cfg["common"].__dict__.has_key("developer_mode"):
-        cfg["common"].__dict__["developer_mode"] = False
+        cfg["common"].__dict__["developer_mode"]    = False
 
     if not cfg["common"].__dict__.has_key("project_name"):
-        cfg["common"].__dict__["project_name"] = os.path.splitext(os.path.basename(config_filename))[0]
+        cfg["common"].__dict__["project_name"]      = os.path.splitext(os.path.basename(config_filename))[0]
 
-    if not cfg["common"].__dict__.has_key("compilation_dir"):
-        cfg["common"].__dict__["compilation_dir"] = os.path.join(os.getenv('HOME'), '.spades/precompiled/')
-    else:
-        cfg["common"].compilation_dir = os.path.abspath(cfg["common"].compilation_dir)
+    cfg["common"].__dict__["compilation_dir"] = os.path.join(os.getenv('HOME'), '.spades/precompiled/')    
 
     cfg["common"].output_dir = os.path.join(os.path.abspath(os.path.expandvars(cfg["common"].output_dir)), cfg["common"].project_name)
+
+    # dataset
+    if cfg.has_key("dataset"):
+        if not cfg["dataset"].__dict__.has_key("single_cell"):
+            cfg["dataset"].__dict__["single_cell"] = False            
 
     # error_correction
     if cfg.has_key("error_correction"):
         if not cfg["error_correction"].__dict__.has_key("max_iterations"):
-            cfg["error_correction"].__dict__["max_iterations"] = 2
-        if not cfg["error_correction"].__dict__.has_key("max_threads"):
-            cfg["error_correction"].__dict__["max_threads"]    = 16
-        if not cfg["error_correction"].__dict__.has_key("max_memory"):
-            cfg["error_correction"].__dict__["max_memory"]     = 250
+            cfg["error_correction"].__dict__["max_iterations"] = 2    
+        if not cfg["error_correction"].__dict__.has_key("gzip_output"):
+            cfg["error_correction"].__dict__["gzip_output"] = True    
 
     # assembly
     if cfg.has_key("assembly"):
         if not cfg["assembly"].__dict__.has_key("iterative_K"):
             cfg["assembly"].__dict__["iterative_K"] = [21, 33, 55]
+        if not cfg["assembly"].__dict__.has_key("generate_sam_files"):
+            cfg["assembly"].__dict__["generate_sam_files"] = False        
+        if not cfg["assembly"].__dict__.has_key("gap_closer"):
+            cfg["assembly"].__dict__["gap_closer"] = True
             
     return True
 
@@ -163,8 +165,6 @@ def main():
     bh_dataset_filename = ""
     if cfg.has_key("error_correction"):
         bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
-        if not bh_cfg.__dict__.has_key("gzip_output"):
-            bh_cfg.__dict__["gzip_output"] = True
       
         bh_cfg.output_dir = os.path.join(os.path.expandvars(bh_cfg.output_dir), "corrected")
         
@@ -255,13 +255,9 @@ def main():
             print("\n===== Error correction finished. Log can be found here: " + bh_cfg.log_filename + "\n")            
 
     result_contigs_filename = ""
-    if cfg.has_key("assembly"):
-        
+    if cfg.has_key("assembly"):        
         spades_cfg = merge_configs(cfg["assembly"], cfg["common"])        
-        if not spades_cfg.__dict__.has_key("generate_sam_files"):
-            spades_cfg.__dict__["generate_sam_files"] = False        
-        if not spades_cfg.__dict__.has_key("gap_closer"):
-            spades_cfg.__dict__["gap_closer"] = True
+        
         if cfg.has_key("error_correction"):
             spades_cfg.__dict__["align_original_reads"] = True
         else:
