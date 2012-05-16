@@ -61,6 +61,7 @@ private:
 
 	// DE BRUIJN:
 	//does it work for primitives???
+public:
 	void addEdge(const Kmer &k) {
 		#ifdef USE_SPARSEHASH
 			if (deleted_key_is_defined && k == deleted_key) {
@@ -70,7 +71,7 @@ private:
 		#endif
 		nodes_.insert(make_pair(k, make_pair(Value(), -1)));
 	}
-
+private:
 	// INDEX:
 
 	void putInIndex(const Kmer &kmer, Value id, size_t offset) {
