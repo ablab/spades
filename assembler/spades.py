@@ -188,6 +188,7 @@ def main():
                     print("\n===== Error correction skipped\n")
                 else:
                     os.remove(bh_cfg.dataset)
+                    shutil.rmtree(bh_cfg.output_dir)
 
         if start_bh:            
 
@@ -284,8 +285,11 @@ def main():
         spades_cfg.__dict__["log_filename"] = os.path.join(spades_cfg.working_dir, "assembly.log")
         spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.working_dir, spades_cfg.project_name + ".fasta")
         spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.working_dir, "simplified_contigs.fasta")
+        final_contigs_folder = os.path.join(spades_cfg.output_dir, "contigs")
 
         make_link(os.path.basename(spades_cfg.working_dir), os.path.join(spades_cfg.output_dir, "latest"))
+        if os.path.exists(final_contigs_folder):
+            shutil.rmtree(final_contigs_folder)
 
         print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
         tee = support.Tee(spades_cfg.log_filename, 'w', console=spades_cfg.output_to_console)
@@ -345,6 +349,9 @@ def main():
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")        
 
         make_link(os.path.basename(spades_cfg.working_dir), os.path.join(spades_cfg.output_dir, "latest_success"))
+        os.makedirs(final_contigs_folder)
+        shutil.copy(result_contigs_filename, final_contigs_folder)
+        shutil.copy(spades_cfg.log_filename, final_contigs_folder)
 
     quality_final_report = ""
     if cfg.has_key("quality_assessment") and result_contigs_filename:
