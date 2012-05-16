@@ -23,6 +23,7 @@
 
 
 //#define USE_SPARSEHASH 1
+
 #ifdef USE_SPARSEHASH
 	#include "google/dense_hash_map"
 #else

@@ -86,7 +86,7 @@ public:
 
     typedef parallel_unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> par_container_t;
 
-    typedef std::tr1::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t; // size_t is offset
+    typedef mct::closed_hash_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t; // size_t is offset
 
 private:
 
@@ -186,10 +186,6 @@ public:
     }
 
     void MergeMaps(destination_container_t & temp_map, size_t i) {
-        if (temp_map.bucket_count() < nodes_[0][i].bucket_count()) {
-            temp_map.rehash(nodes_[0][i].bucket_count() * nthreads_);
-        }
-
         for (size_t j = 0; j < nthreads_; ++j) {
             temp_map.insert(nodes_[j][i].begin(), nodes_[j][i].end());
         }
