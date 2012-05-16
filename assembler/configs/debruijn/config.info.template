@@ -81,7 +81,7 @@ componential_resolve false
 sc_rr
 {
 	symmetric_resolve true
-	mode		2 ; Additional resolve cheats, don't change if you are not sure
+	mode		1 ; Additional resolve cheats, don't change if you are not sure
 	inresolve_cutoff_proportion 0.1
 	near_vertex  30
 	max_distance 50
@@ -92,7 +92,7 @@ sc_rr
 usual_rr
 {
 	symmetric_resolve true
-	mode		3 ; Additional resolve cheats, don't change if you are not sure
+	mode		1; Additional resolve cheats, don't change if you are not sure
 	inresolve_cutoff_proportion 0.5
 	near_vertex  30
 	max_distance 50

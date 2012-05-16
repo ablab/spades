@@ -622,9 +622,9 @@ bool TryToAddPairInfo(graph_pack &origin_gp, PairedInfoIndex<typename graph_pack
 	if (!already_exist)
 	{
 //		added_info++;
-		INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first) << " " << origin_gp.int_ids.ReturnIntId(second)<<" dist "<<tmpd);
+		DEBUG("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first) << " " << origin_gp.int_ids.ReturnIntId(second)<<" dist "<<tmpd);
 		clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(first, second, tmpd, w, 0));
-		INFO("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(origin_gp.g.conjugate(second)) << " " << origin_gp.int_ids.ReturnIntId( origin_gp.g.conjugate(first))<<" dist "<<tmpd - origin_gp.g.length(first) + origin_gp.g.length(second));
+		DEBUG("adding paired info between edges " << origin_gp.int_ids.ReturnIntId(origin_gp.g.conjugate(second)) << " " << origin_gp.int_ids.ReturnIntId( origin_gp.g.conjugate(first))<<" dist "<<tmpd - origin_gp.g.length(first) + origin_gp.g.length(second));
 		clustered_index.AddPairInfo(PairInfo<typename graph_pack::graph_t::EdgeId>(origin_gp.g.conjugate(second), origin_gp.g.conjugate(first), tmpd - origin_gp.g.length(first) + origin_gp.g.length(second), w, 0));
 		return true;
 	}

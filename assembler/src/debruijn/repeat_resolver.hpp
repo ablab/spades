@@ -65,6 +65,7 @@ public:
 		if (i == 0) {
 			return(make_pair(base_edge, 0.0));
 		}
+		VERIFY(i < path.size() + 1);
 		return (make_pair(path[i-1].second, path[i-1].d));
 	}
 	size_t size() {
@@ -138,7 +139,7 @@ public:
 		}
 
 		bool follow(EdgeInfo &other_info, const Graph &old_graph){
-			bool res = (old_graph.EdgeEnd(other_info.lp.second) == old_graph.EdgeStart(lp.second)) && (isClose(old_graph.length(other_info.lp.second) + other_info.lp.d, lp.d, 0.5));
+			bool res = (old_graph.EdgeEnd(other_info.lp.second) == old_graph.EdgeStart(lp.second)) && (isClose(old_graph.length(other_info.lp.second) + other_info.lp.d, lp.d, 0.1 + lp.variance + other_info.lp.variance));
 			return (res);
 		}
 
@@ -1261,7 +1262,7 @@ vector<typename RepeatResolver<Graph>::PathInfo> RepeatResolver<Graph>::ConvertE
 	DEBUG("ConvertEdgeInfosToPathes start");
 	vector<PathInfo> ret;
 
-	restricted::set<EdgeId> used_edges;
+	set<EdgeId> used_edges;
 	details::EdgeInfoCompare<Graph> EI_comparator;
 
 	EI_comparator.new_graph = &new_graph;
@@ -1331,7 +1332,6 @@ vector<typename RepeatResolver<Graph>::PathInfo> RepeatResolver<Graph>::ConvertE
 							used_indexes.insert(forward_index);
 						} else break;
 					}
-
 					PathInfo cur_path(cur_edge);
 					for (size_t j = backwards.size(); j>0; j--){
 						cur_path.push_back(cur_edge_infos[backwards[j-1]].lp);
@@ -1340,7 +1340,6 @@ vector<typename RepeatResolver<Graph>::PathInfo> RepeatResolver<Graph>::ConvertE
 					for (size_t j = 0; j < forwards.size(); j++){
 						cur_path.push_back(cur_edge_infos[forwards[j]].lp);
 					}
-
 					bool new_path = true;
 					for (size_t j = 0; j < edge_pathes.size(); j++)
 					{
@@ -1381,13 +1380,14 @@ template<class Graph>
 int RepeatResolver<Graph>::prefix_or_included(PathInfo&path1, PathInfo&path2, int shift1, int shift2){
 	size_t j = 1;
 	size_t i = 1;
-	while ( ( (path2[j].first != path1[i].first)||(abs(path1[i].second - shift1 - path2[j].second + shift2) > 0.5)) &&(j<path2.size())){
+	while ( ( (path2[j].first != path1[i].first)||(abs(path1[i].second - shift1 - path2[j].second + shift2) > path1.path[i-1].variance + path1.path[j-1].variance + 0.1))){
 		j++;
+		if (j == path2.size()) break;
 	}
 	if (j<path2.size()) {
 		while (j<path2.size() && i<path1.size()){
 			if ((path2[j].first != path1[i].first)||
-			    (abs(path1[i].second - shift1 - path2[j].second + shift2) > 0.5)) {
+			    (abs(path1[i].second - shift1 - path2[j].second + shift2) > path1.path[i-1].variance + path2.path[j-1].variance + 0.1)) {
 				return 0;
 			}
 			i++;
@@ -1397,16 +1397,18 @@ int RepeatResolver<Graph>::prefix_or_included(PathInfo&path1, PathInfo&path2, in
 		else return 2;
 	} else {
 		int dist = distance_counter.GetDistances(old_graph.EdgeEnd(path2[j-1].first), old_graph.EdgeStart(path1[1].first));
-		if (abs(path1[1].second - shift1 - path2[j-1].second + shift2 - old_graph.length(path2[j-1].first) - dist) < 1)
+		TRACE("variances " <<path1.path[0].variance << " "<< path2.path[j-2].variance);
+		if (abs(path1[1].second - shift1 - path2[j-1].second + shift2 - old_graph.length(path2[j-1].first) - dist) < 0.1 + path1.path[0].variance + path2.path[j-2].variance){
 			return 1;
+		}
 	}
-	return false;
+	return 0;
 }
 
 template<class Graph>
 bool RepeatResolver<Graph>::pathesAdjacent(PathInfo& path1, PathInfo & path2, VertexId V_Id){
 	if ((path1[0].first == path2[0].first)&&(new_graph.length(path1[0].first) > cfg::get().rr.max_repeat_length)) {
-	return true;
+		return true;
 	}
 	int shift1 = 0;
 	int shift2 = 0;
