@@ -219,6 +219,13 @@ public:
         }
     }
 
+    void Dump(destination_container_t & temp_map, size_t i) {
+        for (size_t j = 0; j < nthreads_; ++j) {
+            temp_map.insert(nodes_[j][i].begin(), nodes_[j][i].end());
+            nodes_[j][i].clear();
+        }
+    }
+
     bool Contains(const Sequence& s) {
         for (size_t i = 0; i < nthreads_; ++i)
             if (nodes_[i].find(s) != nodes_[i].end()) return true;

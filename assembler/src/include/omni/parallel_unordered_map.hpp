@@ -174,6 +174,10 @@ struct parallel_vector
             return buckets_[i];
         }
 
+        origin_container_t & operator[](size_t i)  {
+            return buckets_[i];
+        }
+
         size_t get_threads_num() const
         {
             return nthreads_;
@@ -201,6 +205,7 @@ struct parallel_vector
                 buckets_[i].clear();
             }
         }
+
 
     private:
         parallel_vector& operator=(const parallel_vector&);
