@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 import spades_init
+import getopt
 
 spades_init.init()
 spades_home = spades_init.spades_home
@@ -12,7 +13,7 @@ import support
 from process_cfg import *
 
 def error(err_str, prefix="== Error == "):
-    print("\n\n" + prefix + " " + err_str + "\n\n")
+    print >>sys.stderr, "\n\n" + prefix + " " + err_str + "\n\n"
     exit(1)
 
 def warning(warn_str, prefix="== Warning == "):
@@ -62,7 +63,7 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
 
     substitute_params(filename, subst_dict)
 
-def check_config(cfg, config_filename):
+def check_config(cfg, default_project_name=""):
 
     ## checking mandatory sections
 
@@ -110,7 +111,7 @@ def check_config(cfg, config_filename):
         cfg["common"].__dict__["developer_mode"]    = False
 
     if not cfg["common"].__dict__.has_key("project_name"):
-        cfg["common"].__dict__["project_name"]      = os.path.splitext(os.path.basename(config_filename))[0]
+        cfg["common"].__dict__["project_name"]      = default_project_name
 
     cfg["common"].__dict__["compilation_dir"] = os.path.join(os.getenv('HOME'), '.spades/precompiled/')    
 
@@ -139,28 +140,144 @@ def check_config(cfg, config_filename):
             
     return True
 
+long_options = "project-name= paired= paired1= paired2= single= k-mers= sc help".split()
+short_options = "n:p:1:2:s:k:Sh"
+
+def check_file(f, message=''):
+    if not os.path.isfile(f):
+        error("file not found (%s): %s" % (message, f))
+    return f
+
+def usage():
+    print >>sys.stderr, 'SPAdes genome assembler'
+    print >>sys.stderr, 'Usage:'
+    print >>sys.stderr, sys.argv[0], ' <config file>'
+    print >>sys.stderr, 'or'
+    print >>sys.stderr, sys.argv[0], ' [options described below] -n <project name>'
+    print >>sys.stderr, ""
+    print >>sys.stderr, "Options with parameters:"
+    print >>sys.stderr, "-n\t--project-name\tName of the project [Mandatory parameter]"
+    print >>sys.stderr, "-p\t--paired\tFile with interlaced left and right paired end reads"
+    print >>sys.stderr, "-1\t--paired1\tFile with left paired end reads"
+    print >>sys.stderr, "-2\t--paired2\tFile with right paired end reads"
+    print >>sys.stderr, "-s\t--single\tFile with unpaired reads"
+    print >>sys.stderr, "-k\t--k-mers\tComma-separated list of odd values for k-mer (vertex) sizes. Default is 21,33,55"    
+    print >>sys.stderr, ""
+    print >>sys.stderr, "Options without parameters:"
+    print >>sys.stderr, "-S\t--sc\tShould be set if input data was obtained with MDA (single-cell) technology"
+    print >>sys.stderr, "-h\t--help\tPrint this usage message"    
+
 def main():
 
     CONFIG_FILE = ""
-    if os.path.isfile("spades_config.info"):
-        CONFIG_FILE = "spades_config.info"
-    elif os.path.isfile(os.path.join(spades_home, "spades_config.info")):
-        CONFIG_FILE = os.path.join(spades_home, "spades_config.info")
-    if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
-       CONFIG_FILE = sys.argv[1]
-    if not CONFIG_FILE:
-        print >> sys.stderr, "Usage : python ", sys.argv[0], " <config file>"
-        return
+    options = None
+
+    if len(sys.argv) == 1:
+        if os.path.isfile("spades_config.info"):
+            CONFIG_FILE = "spades_config.info"
+        elif os.path.isfile(os.path.join(spades_home, "spades_config.info")):
+            CONFIG_FILE = os.path.join(spades_home, "spades_config.info")
+    elif len(sys.argv) == 2:
+        if os.path.isfile(sys.argv[1]):
+            CONFIG_FILE = sys.argv[1]   
+    else:
+        try:
+            options, not_options = getopt.gnu_getopt(sys.argv, short_options, long_options)
+        except getopt.GetoptError, err:
+            print >>sys.stderr, err
+            print >>sys.stderr
+            usage()
+            sys.exit(1)
+
+    if not CONFIG_FILE and not options:
+        usage()
+        sys.exit(1)
+
+    # all parameters are stored here
+    cfg = dict()
+
+    if CONFIG_FILE:
+        cfg = load_config_from_info_file(CONFIG_FILE)
+
+        if not check_config(cfg, os.path.splitext(os.path.basename(CONFIG_FILE))[0] ):
+            return
+    
+    elif options:
+        project_name = ""
+        paired  = []
+        paired1 = []
+        paired2 = []
+        single  = []
+        k_mers  = []
+        single_cell = False
+
+        for opt, arg in options:        
+            if opt in ('-n', "--project-name"):
+                project_name = arg
+            elif opt in ('-p', "--paired"):
+                paired.append(check_file(arg, 'paired'))
+            elif opt in ('-1', "--paired1"):
+                paired1.append(check_file(arg, 'left paired'))
+            elif opt in ('-2', "--paired2"):
+                paired2.append(check_file(arg, 'right paired'))
+            elif opt in ('-s', "--single"):
+                single.append(check_file(arg, 'single'))
+            elif opt in ('-k', "--k-mers"):
+                k_mers = map(int, arg.split(","))
+            elif opt in ('-S', "--sc"):
+                single_cell = True
+            elif opt in ('-h', "--help"):
+                usage()
+                sys.exit(0)
+            else:
+                raise ValueError    
+
+        if not project_name:
+            error("the project name is not set! It is a mandatory parameter.")
+
+        if len(paired1) != len(paired2):
+            error("the number of files with left paired reads is not equal to the number of files with right paired reads!")           
+
+        if not paired and not paired1 and not single:
+            error("you should specify either paired reads or single reads or both!")
+        
+        # filling cfg
+        cfg["common"]           = load_config_from_vars(dict())
+        cfg["dataset"]          = load_config_from_vars(dict()) 
+        cfg["error_correction"] = load_config_from_vars(dict())      
+        cfg["assembly"]         = load_config_from_vars(dict())
+
+        # filling reads
+        paired_counter = 0
+        if paired:
+            for read in paired:
+                paired_counter += 1
+                cfg["dataset"].__dict__["paired_reads" + str(paired_counter)] = read
+    
+        if paired1:
+            for i in range(len(paired1)):
+                paired_counter += 1
+                cfg["dataset"].__dict__["paired_reads" + str(paired_counter)] = [paired1[i], paired2[i]]
+
+        if single:
+            cfg["dataset"].__dict__["single_reads"] = single
+
+        # filling other parameters
+        if k_mers:
+            cfg["assembly"].__dict__["iterative_K"] = k_mers
+
+        if single_cell:
+            cfg["dataset"].__dict__["single_cell"] = True
+
+        if not check_config(cfg, project_name):
+            return
+
 
     print("\n======= SPAdes pipeline started\n")
 
-    print("Using config file: " + CONFIG_FILE)
-    os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))
-
-    cfg = load_config_from_info_file(CONFIG_FILE)
-
-    if not check_config(cfg, CONFIG_FILE):
-        return
+    if CONFIG_FILE:
+        print("Using config file: " + CONFIG_FILE)
+        os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))   
 
     bh_dataset_filename = ""
     if cfg.has_key("error_correction"):
@@ -201,7 +318,8 @@ def main():
             print("\n===== Error correction started. Log can be found here: " + bh_cfg.log_filename + "\n")
             tee = support.Tee(log_filename, 'w', console=bh_cfg.output_to_console)
 
-            shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
+            if CONFIG_FILE:
+                shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
             
             # parsing dataset section
             bh_cfg.__dict__["single_cell"]  = cfg["dataset"].single_cell            
@@ -294,7 +412,8 @@ def main():
         print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename + "\n")
         tee = support.Tee(spades_cfg.log_filename, 'w', console=spades_cfg.output_to_console)
 
-        shutil.copy(CONFIG_FILE, spades_cfg.working_dir)      
+        if CONFIG_FILE:
+            shutil.copy(CONFIG_FILE, spades_cfg.working_dir)      
         
         # dataset created during error correction
         if bh_dataset_filename:
