@@ -356,17 +356,9 @@ size_t FillParallelVecIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k 
     for (size_t i = 0; i < nthreads; ++i) {
         streams[i]->reset();
     }
-    ParallelDeBruijn par_debruijn(nthreads);
+    ParallelDeBruijn par_debruijn(nthreads, 1000000);
 
     std::vector<typename ParallelDeBruijn::destination_container_t> temp_maps(nthreads);
-    //size_t cell_size
-
-
-//#ifdef USE_DENSE_MAP
-//    for (size_t i = 0; i < nthreads; ++i) {
-//        temp_maps[i].set_empty_key(Kmer::GetZero());
-//    }
-//#endif
 
     perf_counter pc;
 
@@ -378,19 +370,18 @@ size_t FillParallelVecIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k 
         #pragma omp parallel num_threads(nthreads)
         {
 
-            #pragma omp single
-            {
-                INFO("Filling index");
-            }
+//            #pragma omp single
+//            {
+//                INFO("Filling index");
+//            }
 
             #pragma omp for reduction(+ : counter)
             for (size_t i = 0; i < nthreads; ++i) {
 
                 Read r;
                 io::IReader<Read>& stream = *streams[i];
-                size_t buf_count = 0;
 
-                while (i++ < cfg::get().buffer_reads / nthreads && !stream.eof()) {
+                while (!par_debruijn.IsFull(i) && !stream.eof()) {
                     stream >> r;
                     if (r.size() > rls[i]) {
                         rls[i] = r.size();
@@ -403,24 +394,25 @@ size_t FillParallelVecIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k 
 
             #pragma omp barrier
 
-            #pragma omp single
-            {
-                INFO("Merging same kmer maps");
-            }
+//            #pragma omp single
+//            {
+//                INFO("Merging same kmer maps");
+//            }
 
             //Merge maps
             #pragma omp for
             for (size_t i = 0; i < nthreads; ++i) {
-                par_debruijn.MergeMaps(temp_maps[i], i);
+                par_debruijn.Dump(temp_maps[i], i);
             }
         }
 
-        //Merging into final map
-        INFO("Merging final maps");
-        debruijn.nodes().rehash(par_debruijn.SingleBucketCount() * nthreads);
-        for (size_t i = 0; i < nthreads; ++i) {
-            InsertIntoDebruijn<k, Graph, typename ParallelDeBruijn::destination_container_t>(debruijn, temp_maps[i]);
-        }
+    }
+
+    //Merging into final map
+    INFO("Merging final maps");
+    debruijn.nodes().rehash(par_debruijn.SingleBucketCount() * nthreads);
+    for (size_t i = 0; i < nthreads; ++i) {
+        InsertIntoDebruijn<k, Graph, typename ParallelDeBruijn::destination_container_t>(debruijn, temp_maps[i]);
     }
 
     INFO("Elapsed time: " << pc.time_ms());
@@ -452,7 +444,7 @@ void ConstructGraph(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeInd
 
     size_t rl = 0;
     if (streams.size() > 0) {
-        rl = FillParallelSetIndex<k, Graph, Read>(streams, debruijn);
+        rl = FillParallelVecIndex<k, Graph, Read>(streams, debruijn);
     }
     else if (streams.size() == 1) {
         rl = FillUsusalIndex<k, Graph, Read>(*streams.back(), debruijn);

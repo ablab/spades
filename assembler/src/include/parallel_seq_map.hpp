@@ -2,6 +2,20 @@
 #include "omni/parallel_unordered_map.hpp"
 #include <omp.h>
 
+#define DESTINATION_MAP 2
+
+//0 -- std::tr1::unordered_map
+//2 -- mct::closed_hash_map
+
+#if DESTINATION_MAP == 0
+    #include <tr1/unordered_map>
+    #include <tr1/unordered_set>
+#elif DESTINATION_MAP == 2
+    #include "mct/hash-set.hpp"
+    #include "mct/hash-map.hpp"
+#endif
+
+
 
 using std::make_pair;
 using std::pair;
@@ -14,7 +28,11 @@ public:
 
     typedef parallel_unordered_map<Kmer, pair<Value, size_t>, typename Kmer::hash, typename Kmer::equal_to> par_container_t;
 
+#if DESTINATION_MAP == 0
     typedef std::tr1::unordered_map<Kmer, pair<Value, size_t>, typename Kmer::hash, typename Kmer::equal_to> destination_container_t; // size_t is offset
+#elif DESTINATION_MAP == 2
+    typedef mct::closed_hash_map<Kmer, pair<Value, size_t>, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
+#endif
 
 private:
 	
@@ -86,7 +104,12 @@ public:
 
     typedef parallel_unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> par_container_t;
 
-    typedef mct::closed_hash_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t; // size_t is offset
+#if DESTINATION_MAP == 0
+    typedef std::tr1::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
+#elif DESTINATION_MAP == 2
+    typedef mct::closed_hash_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
+#endif
+
 
 private:
 
@@ -154,7 +177,12 @@ public:
 
     typedef parallel_vector<Kmer> par_container_t;
 
-    typedef std::tr1::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t; // size_t is offset
+#if DESTINATION_MAP == 0
+    typedef std::tr1::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
+#elif DESTINATION_MAP == 2
+    typedef mct::closed_hash_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
+#endif
+
 
 private:
 
@@ -199,12 +227,22 @@ public:
 
 
     size_t SingleBucketCount() const {
-        return nodes_[0][0].bucket_count();
+        return nodes_[0][0].capacity();
     }
 
-    void clear() {
+    bool IsFull(size_t i) const {
+        return nodes_[i].is_full();
+    }
+
+    void Clear() {
         for (size_t i = 0; i < nthreads_; ++i) {
             nodes_[i].clear();
         }
     }
+
+    void Dump(destination_container_t & temp_map, size_t i) {
+        MergeMaps(temp_map, i);
+        nodes_[i].clear();
+    }
+
 };

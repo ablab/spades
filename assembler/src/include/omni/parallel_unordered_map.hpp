@@ -4,7 +4,7 @@
 //0 -- std::tr1::unordered_map
 //1 -- google::dense_hash_map
 //2 -- mct::closed_hash_map
-#define MAP_IN_USE 2
+#define MAP_IN_USE 0
 
 #if MAP_IN_USE == 0
     #include <tr1/unordered_map>
@@ -147,6 +147,8 @@ template<class T>
 struct parallel_vector
 {
     private:
+        static const size_t LOAD_OVERHEAD = 1000;
+
         typedef std::vector<T>                                                  origin_container_t;
         typedef std::vector<origin_container_t>                                 container_arr_t;
         typedef typename origin_container_t::value_type                         value_type;
@@ -154,10 +156,11 @@ struct parallel_vector
     public:
         parallel_vector(size_t nthreads, size_t cell_size = 100000)
             : nthreads_     (nthreads)
+            , cell_size_    (cell_size)
             , buckets_      (nthreads) {
 
             for (size_t i = 0; i < nthreads_; ++i) {
-                buckets_[i].reserve(cell_size);
+                buckets_[i].reserve(cell_size + LOAD_OVERHEAD);
             }
         }
 
@@ -181,6 +184,18 @@ struct parallel_vector
             return buckets_;
         }
 
+        bool is_full() const {
+            return buckets_[0].size() >= cell_size_;
+        }
+
+        bool is_presisely_full() const {
+            for (size_t i = 0; i < nthreads_; ++i) {
+                if (buckets_[i].size() >= cell_size_)
+                    return true;
+            }
+            return false;
+        }
+
         void clear() {
             for (size_t i = 0; i < nthreads_; ++i) {
                 buckets_[i].clear();
@@ -192,6 +207,7 @@ struct parallel_vector
 
     private:
         size_t      nthreads_;
+        size_t      cell_size_;
         container_arr_t     buckets_;
 };
 
