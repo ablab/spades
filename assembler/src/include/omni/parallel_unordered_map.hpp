@@ -1,21 +1,33 @@
 #pragma once 
-//#include <tr1/unordered_map>
-#include "google/dense_hash_map"
+
+#define USE_DENSE_MAP
+
+#ifndef USE_DENSE_MAP
+    #include <tr1/unordered_map>
+    #include <tr1/unordered_set>
+#else
+    #include "google/dense_hash_map"
+    #include "google/dense_hash_set"
+#endif
 
 template<class T, class Value, class Hash, class KeyEqual>
 struct parallel_unordered_map
 {
     private:
-        typedef	google::dense_hash_map<T, Value, Hash, KeyEqual>				origin_map_t;
-        typedef	std::vector<origin_map_t>							            map_arr_t;
-        typedef typename origin_map_t::value_type                               value_type;
+#ifdef USE_DENSE_MAP
+        typedef	google::dense_hash_map<T, Value, Hash, KeyEqual>				origin_container_t;
+#else
+        typedef std::tr1::unordered_map<T, Value, Hash, KeyEqual>               origin_container_t;
+#endif
+        typedef	std::vector<origin_container_t>							        container_arr_t;
+        typedef typename origin_container_t::value_type                         value_type;
 
     public:    
-        parallel_unordered_map(size_t nthreads)
+        parallel_unordered_map(size_t nthreads, size_t cell_size = 100000)
             : nthreads_		(nthreads)
-            , buckets_		(nthreads, origin_map_t(100000)) {
+            , buckets_		(nthreads, origin_container_t(cell_size)) {
 
-#ifdef _DENSE_HASH_MAP_H_
+#ifdef USE_DENSE_MAP
             for (size_t i = 0; i < nthreads_; ++i) {
                 buckets_[i].set_empty_key(T::GetZero());
             }
@@ -27,14 +39,7 @@ struct parallel_unordered_map
             buckets_[bucket_num].insert(value);
         }
 
-        void merge_buckets(origin_map_t& om)
-        {
-            for (size_t i = 0; i<nthreads_; ++i) {
-                om.insert(buckets_[i].begin(), buckets_[i].end());            
-            }
-        }
-
-        const origin_map_t & operator[](size_t i) const 
+        const origin_container_t & operator[](size_t i) const
         {
             return buckets_[i];
         }
@@ -44,7 +49,7 @@ struct parallel_unordered_map
             return nthreads_;
         }
 
-        const map_arr_t & get_buckets() const
+        const container_arr_t & get_buckets() const
         {
             return buckets_;   
         }
@@ -56,9 +61,124 @@ struct parallel_unordered_map
         }
 
     private:
-        parallel_unordered_map& operator=(const parallel_unordered_map& map);
+        parallel_unordered_map& operator=(const parallel_unordered_map&);
 
     private:
         size_t 		nthreads_;
-        map_arr_t 	buckets_;
+        container_arr_t 	buckets_;
 };
+
+
+
+template<class T, class Hash, class KeyEqual>
+struct parallel_unordered_set
+{
+    private:
+#ifdef USE_DENSE_MAP
+        typedef google::dense_hash_set<T, Hash, KeyEqual>                       origin_container_t;
+#else
+        typedef std::tr1::unordered_set<T, Hash, KeyEqual>                      origin_container_t;
+#endif
+        typedef std::vector<origin_container_t>                                 container_arr_t;
+        typedef typename origin_container_t::value_type                         value_type;
+
+    public:
+        parallel_unordered_set(size_t nthreads, size_t cell_size = 100000)
+            : nthreads_     (nthreads)
+            , buckets_      (nthreads, origin_container_t(cell_size)) {
+
+#ifdef USE_DENSE_MAP
+            for (size_t i = 0; i < nthreads_; ++i) {
+                buckets_[i].set_empty_key(T::GetZero());
+            }
+#endif
+        }
+
+        void insert(const value_type& value, size_t bucket_num)
+        {
+            buckets_[bucket_num].insert(value);
+        }
+
+        const origin_container_t & operator[](size_t i) const
+        {
+            return buckets_[i];
+        }
+
+        size_t get_threads_num() const
+        {
+            return nthreads_;
+        }
+
+        const container_arr_t & get_buckets() const
+        {
+            return buckets_;
+        }
+
+        void clear() {
+            for (size_t i = 0; i < nthreads_; ++i) {
+                buckets_[i].clear();
+            }
+        }
+
+    private:
+        parallel_unordered_set& operator=(const parallel_unordered_set&);
+
+    private:
+        size_t      nthreads_;
+        container_arr_t     buckets_;
+};
+
+
+
+template<class T>
+struct parallel_vector
+{
+    private:
+        typedef std::vector<T>                                                  origin_container_t;
+        typedef std::vector<origin_container_t>                                 container_arr_t;
+        typedef typename origin_container_t::value_type                         value_type;
+
+    public:
+        parallel_vector(size_t nthreads, size_t cell_size = 100000)
+            : nthreads_     (nthreads)
+            , buckets_      (nthreads) {
+
+            for (size_t i = 0; i < nthreads_; ++i) {
+                buckets_[i].reserve(cell_size);
+            }
+        }
+
+        void insert(const value_type& value, size_t bucket_num)
+        {
+            buckets_[bucket_num].push_back(value);
+        }
+
+        const origin_container_t & operator[](size_t i) const
+        {
+            return buckets_[i];
+        }
+
+        size_t get_threads_num() const
+        {
+            return nthreads_;
+        }
+
+        const container_arr_t & get_buckets() const
+        {
+            return buckets_;
+        }
+
+        void clear() {
+            for (size_t i = 0; i < nthreads_; ++i) {
+                buckets_[i].clear();
+            }
+        }
+
+    private:
+        parallel_vector& operator=(const parallel_vector&);
+
+    private:
+        size_t      nthreads_;
+        container_arr_t     buckets_;
+};
+

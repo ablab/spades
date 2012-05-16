@@ -176,12 +176,12 @@ size_t FillParallelIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k + 1
     }
     ParallelDeBruijn par_debruijn(nthreads);
 
-    std::vector<typename ParallelDeBruijn::map_t> temp_maps(nthreads);
+    std::vector<typename ParallelDeBruijn::destination_container_t> temp_maps(nthreads);
 
-//#ifdef _DENSE_HASH_MAP_H_
-    for (size_t i = 0; i < nthreads; ++i) {
-        temp_maps[i].set_empty_key(Kmer::GetZero());
-    }
+//#ifdef USE_DENSE_MAP
+//    for (size_t i = 0; i < nthreads; ++i) {
+//        temp_maps[i].set_empty_key(Kmer::GetZero());
+//    }
 //#endif
 
     perf_counter pc;
@@ -192,6 +192,12 @@ size_t FillParallelIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k + 1
     
     #pragma omp parallel num_threads(nthreads)
     {
+
+        #pragma omp single
+        {
+            INFO("Filling index");
+        }
+
         #pragma omp for reduction(+ : counter)
         for (size_t i = 0; i < nthreads; ++i) {
 
@@ -207,9 +213,23 @@ size_t FillParallelIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k + 1
 
                 par_debruijn.CountSequence(r.sequence(), i);
             }
+
+            #pragma omp critical
+            {
+                INFO("Thread " << i);
+                for (size_t j = 0; j < nthreads; ++j) {
+                    INFO("Bucket " << j << " has " << par_debruijn.GetSize(i, j) << "elts");
+                }
+            }
+
         }
 
         #pragma omp barrier
+
+        #pragma omp single
+        {
+            INFO("Merging same kmer maps");
+        }
 
         //Merge maps
         #pragma omp for
@@ -219,7 +239,7 @@ size_t FillParallelIndex(std::vector<io::IReader<Read>* >& streams, SeqMap<k + 1
     }
 
     //Merging into final map
-    INFO("Merging maps");
+    INFO("Merging final maps");
     debruijn.nodes().rehash(par_debruijn.SingleBucketCount() * nthreads);
     for (size_t i = 0; i < nthreads; ++i) {
         debruijn.nodes().insert(temp_maps[i].begin(), temp_maps[i].end());
