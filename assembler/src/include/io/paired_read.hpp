@@ -160,6 +160,7 @@ class PairedRead {
       first_.BinWrite(file);
       second_.BinWrite(file);
 
+
       size_type is = insert_size_;
       file.write((const char *) &is, sizeof(is));
 
