@@ -136,9 +136,8 @@ Thank you for using SPAdes!
 
 <p>
     SPAdes has two stages: error correction by <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> and genome assembly. By default all the
-    results are stored <code>spades_output</code> that can be changed by <code>output_dir</code> parameter. For each dataset SPAdes creates separate directory in <code>spades_output</code>,
-    the name of this directory can be set using
-    <code>project_name</code> parameter or SPAdes tries to guess it. Corrected reads are stored in <code>corrected</code> subdirectory in <code>*.fastq.qz</code> files.
+    results are stored in <code>spades_output</code> directory that can be changed by <code>output_dir</code> parameter. For each dataset SPAdes creates separate directory in <code>spades_output</code>,
+    the name of this directory specified by <code>project_name</code> parameter. Corrected reads are stored in <code>corrected</code> subdirectory in <code>*.fastq.qz</code> files.
     The resulting contigs are stored in <code>contigs</code> subdirectory in <code>*.fasta</code> file.
 </p>
 
@@ -155,61 +154,22 @@ Thank you for using SPAdes!
 <h3>2.2 Preparing configuration files</h3>
 
 <p>
-You can find the configuration file <code>spades_config.info</code> for the toy dataset from section 1.5 in the directory you extracted the archive (see section 2.1) or at
+You can find the configuration file <code>spades_config.info</code> for the toy dataset from section 1.5 in the directory you extracted the archive (see section 1.1) or at
 <code>/usr/share/spades/spades_config.info</code> if SPAdes was installed from package.
-You can use this file as the template for you datasets.
-Below we list the config file and then explain its contents in detail. In config files,
-the part of a line starting with a semicolon is a comment.
-</p>
-
-<pre class="code">
-<code>
-; all paths are relative to the working directory but you can also use $cfg variable
-; to set paths relative to this config
-project_name ECOLI_1K ; optional. Name of this config file is used if not specified
-output_dir ./spades_output
-
-dataset
-{
-    paired_reads $cfg/test_dataset/ecoli_1K_1.fq.gz $cfg/test_dataset/ecoli_1K_2.fq.gz
-    single_reads ; optional
-    single_cell false
-}
-
-error_correction
-{
-    tmp_dir ; optional. &lt;output_dir>/corrected/tmp is used if not specified
-    qvoffset ; optional. Either 33 or 64
-    max_iterations 2
-    max_threads 16
-    max_memory 250 ; in GB
-    gzip_output true ; optional
-}
-
-assembly
-{
-    iterative_K 21 33 55
-    generate_sam_files true ; optional. Default is false
-    gap_closer true ; optional. Default is true
-}
-
-</code>
-</pre>
-
-<p>
-There are two global variables: <code>project_name</code> specifies the name of the project and <code>output_dir</code>
-specifies the output directory. It is recommended to set a meaningful name for each
-separate project.
+You can use this file as the template for your datasets. In  this file in each line all text after the first semicolon is a comment.
 </p>
 
 <p>
-The first section in the config file is the required <code>dataset</code> section that describes the dataset.
-The other sections <code>error_correction</code>, <code>assembly</code>, and <code>quality_assessment</code> correspond
-to three stages of SPAdes pipeline. To run only some of these three stages just remove (or
-comment or rename) unnecessary stages. If you run SPAdes with the same output_dir and project_name
-as one of previous runs, it checks if you have already made the error correction stage and asks if you want
-to correct the reads again.
+    The configuration file starts with the common parameters for the SPAdes run. We do recommend to set the <code>project_name</code> parameter that specifies the directory
+    and names for output files. After that there is a dataset section that contains the information about input reads. This section is required and you need to specify
+    either <code>paired_reads</code> or <code>single_reads</code> or both
 </p>
+
+<p>
+    The next two sections are <code>error_correction</code> and <code>assembly</code>. If you want to skip one of these stages you can
+    remove or rename or comment it.
+</p>
+
 
 <h3>2.2.1 Dataset settings</h3>
 <p>
