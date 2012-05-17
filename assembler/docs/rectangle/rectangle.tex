@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage{subfigure}
 \setlength{\parindent}{0cm}
+\usepackage[left=1.0in, right=1.0in, vmargin=1in]{geometry}
 
 \begin{document}
 \title{Rectangle Graphs\\ for Genome Assembly}
@@ -12,7 +13,6 @@
 \date{\today}
 \maketitle
 
-a
 \abstract{The jigsaw puzzles were originally created by painting a picture on a 
 flat rectangular piece of wood, and further, cutting that picture into
 small pieces with a jigsaw.
@@ -192,6 +192,14 @@ the rectangle is $(\hat{x}, \hat{x}+d)$ where $\hat{x}$ is the maximum value of 
 (1) satisfies, and this position is labeled by a pair of $(k-1)$-mers $(a_{\hat{x}}, a_{\hat{x} +d})$.
 
 
+Given a $d$-bounded rectangle $R$ formed by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t1}$
+and $\beta = a_i^*\ldots a_{i^*i+ t2}$, let $D_R= i^* - i$ be the genomic distance between $\alpha$ and $\beta$. The integer 
+coordinate of the start $S(R)$ of the rectangle is $(i, i + D_R)$. By translating the origin from  $O$ to $S(R)$ for the line
+$(d): y = x + d$, we obtain $(d'): Y = X + d - D_R$: the function of the line in a new coordinate: rectangle $R$. Given a fixed
+value of $d$, the position of the line in each rectangle depends on $D_R$. In other words, the line on each rectangle $R$ 
+uniquely defines the genomic distance between $\alpha$ and $\beta$. 
+
+
 \noindent
 \textbf{From mate-pair assembly with exact distance to the rectangle Graph}
 While the line $(d)$ represents the 
@@ -200,8 +208,17 @@ In the fragment assembly problem from a from a set of all $(k,d)$-mers of the ge
 the diagonal grid graph is unknown, but each separated rectangle as well 
 as the line segment on it can also be generated
 from the set of $(k,d)$-mers. The task of assemblying the genome from mate-paired reads can be 
-reduced to the problem of solving the simplified jigsaw problem from separated rectangles.
-Below, we formally describe how separated rectangles can be constructed from mate-pair reads. 
+reduced to the problem of solving the simplified jigsaw problem from separated rectangles. Below we describe how
+to generate rectangles and line segments on each rectangle from a set of all $(k,d)$-mers of an unknown genome.  
+
+
+
+Let $G$ be the de Bruijn graph constructed from a set of all $k$-mers of the unknown genome $S$. Since the genome is 
+an edge-covering walk in the graph, each  
+
+
+
+
 
 \noindent
 \textbf{Rectangle Graphs for inexact distance mate-pairs}
