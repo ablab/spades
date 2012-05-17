@@ -47,9 +47,13 @@ private:
     template<class Read>
     void ToBinary(io::IReader<Read>& stream, size_t buf_size) {
         size_t read_count = 0;
-        size_t reads_to_flush = buf_size * file_num_;
+        size_t buffer_reads = buf_size / (sizeof (Read) * 4);
+        INFO("Buffer reads: " << buffer_reads);
+        INFO("reads: " << sizeof (Read));
 
-        std::vector< std::vector<Read> > buf(file_num_, std::vector<Read>(buf_size) );
+        size_t reads_to_flush = buffer_reads * file_num_;
+
+        std::vector< std::vector<Read> > buf(file_num_, std::vector<Read>(buffer_reads) );
         std::vector< size_t > buf_sizes(file_num_, 0);
         std::vector< size_t > current_buf_sizes(file_num_, 0);
 
@@ -77,6 +81,8 @@ private:
         }
 
         for (size_t i = 0; i < file_num_; ++i) {
+            INFO(buf[i].size());
+
             buf[i].resize(current_buf_sizes[i]);
             FlushBuffer(buf[i], *file_ds_[i]);
 
@@ -110,21 +116,23 @@ public:
         }
     }
 
-    void ToBinary(SingleReadStream& stream) {
+
+    void ToBinary(io::IReader<io::SingleReadSeq>& stream) {
         ToBinary(stream, buf_size_ / file_num_);
     }
 
-    void ToBinary(PairedReadStream& stream) {
-        ToBinary(stream, (buf_size_ / file_num_ * 2));
-    }
-
-    void WriteBinReads(io::IReader<io::SingleReadSeq>& stream) {
+    void ToBinary(io::IReader<io::SingleRead>& stream) {
         ToBinary(stream, buf_size_ / file_num_);
     }
 
-    void WriteBinReads(io::IReader<io::PairedReadSeq>& stream) {
-        ToBinary(stream, (buf_size_ / file_num_ * 2));
+    void ToBinary(io::IReader<io::PairedReadSeq>& stream) {
+        ToBinary(stream, buf_size_ / (2 * file_num_));
     }
+
+    void ToBinary(io::IReader<io::PairedRead>& stream) {
+        ToBinary(stream, buf_size_ / (2 * file_num_));
+    }
+
 
     template<class Read>
     void WriteReads(std::vector<Read>& data) {

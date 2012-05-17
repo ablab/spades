@@ -417,10 +417,10 @@ public:
 	bool SAM_writer_enable;
 
 	//Convertion options
-	bool convert_reads_to_binary;
-	size_t buffer_reads;
+	size_t buffer_size;
 	std::string temp_bin_reads_dir;
 	std::string temp_bin_reads_path;
+	std::string temp_bin_reads_info;
 	std::string paired_read_prefix;
 	std::string single_read_prefix;
 
@@ -800,8 +800,9 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.SAM_writer_enable, pt, "SAM_writer_enable");
 
 
-	load(cfg.convert_reads_to_binary, pt, "convert_reads_to_binary");
-    load(cfg.buffer_reads, pt, "buffer_reads");
+    load(cfg.buffer_size, pt, "buffer_size");
+    cfg.buffer_size <<= 20; //turn MB to bytes
+
 	load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
     if (cfg.temp_bin_reads_dir[cfg.temp_bin_reads_dir.length() - 1] != '/') {
         cfg.temp_bin_reads_dir += '/';
@@ -809,6 +810,8 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
     cfg.temp_bin_reads_path = cfg.project_name.empty()
             ? (cfg.output_base + "/" + cfg.temp_bin_reads_dir)
             : (cfg.output_base + cfg.project_name + "/" + cfg.temp_bin_reads_dir);
+
+    cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
 
 	cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
 	cfg.single_read_prefix =cfg.temp_bin_reads_path +  "_single";

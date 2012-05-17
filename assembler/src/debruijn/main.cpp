@@ -146,7 +146,7 @@ int main(int argc, char** argv)
 //        typedef io::EasyReader ReadStream;
 //        typedef io::PairedEasyReader PairedReadStream;
 
-        if (cfg::get().convert_reads_to_binary) {
+        if (cfg::get().use_multithreading) {
             debruijn_graph::convert_reads_to_binary();
         }
 

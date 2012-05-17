@@ -8,9 +8,12 @@
 #ifndef READ_CONVERTER_HPP_
 #define READ_CONVERTER_HPP_
 
+#include <fstream>
+
 #include "io/binary_io.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "dataset_readers.hpp"
+#include "simple_tools.hpp"
 
 namespace debruijn_graph {
 
@@ -18,15 +21,34 @@ typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
 typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
 void convert_reads_to_binary() {
+
+    if (fileExists(cfg::get().temp_bin_reads_info)) {
+        std::ifstream info;
+        info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::in);
+        size_t thread_num;
+        info >> thread_num;
+        info.close();
+
+        if (thread_num == cfg::get().thread_number) {
+            INFO("Binary reads detected");
+            return;
+        }
+    }
+
     INFO("Converting paired reads to binary format (takes a while)");
     auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(false, 0);
-    io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().thread_number, cfg::get().buffer_reads);
+    io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().thread_number, cfg::get().buffer_size);
     paired_converter.ToBinary(*paired_reader);
 
     INFO("Converting single reads to binary format (takes a while)");
     auto_ptr<SingleReadStream> single_reader = single_easy_reader(false, false);
-    io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().thread_number, cfg::get().buffer_reads);
+    io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().thread_number, cfg::get().buffer_size);
     single_converter.ToBinary(*single_reader);
+
+    std::ofstream info;
+    info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
+    info << cfg::get().thread_number;
+    info.close();
 }
 
 
@@ -200,9 +222,6 @@ auto_ptr<SequencePairedReadStream> paired_buffered_binary_multireader(bool follo
     return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(paired_buffered_binary_readers(followed_by_rc, insert_size)));
 }
 
-
 }
-
-
 
 #endif /* READ_CONVERTER_HPP_ */

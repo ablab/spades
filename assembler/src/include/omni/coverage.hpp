@@ -127,6 +127,10 @@ public:
         size_t counter = 0;
 
         size_t nthreads = streams.size();
+        size_t buf_size = cfg::get().buffer_size / (nthreads * (sizeof(Path<EdgeId>) + 32) );
+        INFO("Path size " << sizeof(Path<EdgeId>));
+        INFO("Path buffer size " << buf_size);
+
 
         #pragma omp parallel num_threads(nthreads)
         {
@@ -136,8 +140,6 @@ public:
                 Read r;
                 io::IReader<Read>& stream = *streams[i];
                 stream.reset();
-
-                size_t buf_size = cfg::get().buffer_reads / nthreads;
                 std::vector< Path<EdgeId> > buffer(buf_size);
 
                 size_t i = 0;

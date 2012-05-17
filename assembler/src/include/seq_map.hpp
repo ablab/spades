@@ -21,16 +21,19 @@
 
 //#include "cuckoo.hpp"
 
+#define TR1_UNORDERED 0
+#define GOOGLE_DENSE 1
+#define MCT_CLOSED_HASH 2
 
-//#define USE_SPARSEHASH 1
+#define MAP_IN_USE MCT_CLOSED_HASH
 
-#ifdef USE_SPARSEHASH
-	#include "google/dense_hash_map"
-#else
+#if MAP_IN_USE == TR1_UNORDERED
     #include <tr1/unordered_map>
+#elif MAP_IN_USE == GOOGLE_DENSE
+    #include "google/dense_hash_map"
+#elif MAP_IN_USE == MCT_CLOSED_HASH
+    #include "mct/hash-map.hpp"
 #endif
-
-#include "mct/hash-map.hpp"
 
 
 /*
@@ -48,25 +51,32 @@ template<size_t size_, typename Value>
 class SeqMap {
 private:
 	friend class SeqMapBuilder;
+
 	typedef Seq<size_> Kmer;
-	#ifdef USE_SPARSEHASH
+
+    #if MAP_IN_USE == TR1_UNORDERED
+        typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
+            typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
+	#elif MAP_IN_USE == GOOGLE_DENSE
 		typedef google::dense_hash_map<Kmer, pair<Value, size_t> ,
 			typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
 		Kmer deleted_key; // see http://google-sparsehash.googlecode.com/svn/trunk/doc/sparse_hash_map.html#6
 		bool deleted_key_is_defined;
-	#else
+	#elif MAP_IN_USE == MCT_CLOSED_HASH
 		typedef mct::closed_hash_map<Kmer, pair<Value, size_t> ,
 			typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
 	#endif
+
 //	typedef cuckoo<Kmer, pair<Value, size_t> , typename Kmer::multiple_hash,
 //	typename Kmer::equal_to> map_type;
+
 	map_type nodes_;
 
 	// DE BRUIJN:
 	//does it work for primitives???
 public:
 	void addEdge(const Kmer &k) {
-		#ifdef USE_SPARSEHASH
+		#if MAP_IN_USE == GOOGLE_DENSE
 			if (deleted_key_is_defined && k == deleted_key) {
 				nodes_.clear_deleted_key();
 				deleted_key_is_defined = false;
@@ -80,7 +90,7 @@ private:
 	void putInIndex(const Kmer &kmer, Value id, size_t offset) {
 		map_iterator mi = nodes_.find(kmer);
 		if (mi == nodes_.end()) {
-			#ifdef USE_SPARSEHASH
+            #if MAP_IN_USE == GOOGLE_DENSE
 				if (deleted_key_is_defined && kmer == deleted_key) {
 					nodes_.clear_deleted_key();
 					deleted_key_is_defined = false;
@@ -100,7 +110,7 @@ public:
 	// DE BRUIJN:
 
 	SeqMap() {
-		#ifdef USE_SPARSEHASH
+        #if MAP_IN_USE == GOOGLE_DENSE
 	        nodes_.set_empty_key(Kmer::GetZero());
 	        deleted_key_is_defined = false;
 		#endif
@@ -221,7 +231,7 @@ public:
 	bool deleteIfEqual(const Kmer& kmer, Value id) {
 		map_iterator mi = nodes_.find(kmer);
 		if (mi != nodes_.end() && mi->second.first == id) {
-			#ifdef USE_SPARSEHASH
+            #if MAP_IN_USE == GOOGLE_DENSE
 				if (!deleted_key_is_defined) {
 					nodes_.set_deleted_key(kmer);
 					deleted_key = kmer;
