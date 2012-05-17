@@ -4,8 +4,11 @@
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{subfigure}
+\usepackage{algorithmic}
 \setlength{\parindent}{0cm}
 \usepackage[left=1.0in, right=1.0in, vmargin=1in]{geometry}
+
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
 
 \begin{document}
 \title{Rectangle Graphs\\ for Genome Assembly}
@@ -171,7 +174,7 @@ by a list of all of its points.
 \noindent
 \textbf{Mate-pairs and Diagonal Grid Graph}
 
-Given a parameter $d$, a pair of $(k-1)$-mers $x$, $y$ forms a $(k,d)$-mer $(x|y)$  % here you say that two (k-1)-mers form (k,d)-mer (without -1), but the lext line uses (k-1,d)-mer.
+Given a parameter $d$, a pair of $k$-mers $x$, $y$ forms a $(k,d)$-mer $(x|y)$  % here you say that two (k-1)-mers form (k,d)-mer (without -1), but the lext line uses (k-1,d)-mer.
 of the genome $S = a_1\ldots a_n$ if there exists position $i$ such that $x=a_i$ and 
 $y = a_{i+d}$ in $S$. The set of all $(k-1,d)$-mers of $S$ corresponds to a line $(d): y = x+d$.
 % no! corresponds to a main diagonal $y = x$, not +d. Diagonal $y = x + d$ is for (x|x) (always happens in rectangles with equal sides, i.e. with distance zero between sides)
@@ -209,19 +212,45 @@ the diagonal grid graph is unknown, but each separated rectangle as well
 as the line segment on it can also be generated
 from the set of $(k,d)$-mers. The task of assemblying the genome from mate-paired reads can be 
 reduced to the problem of solving the simplified jigsaw problem from separated rectangles. Below we describe how
-to generate rectangles and line segments on each rectangle from a set of all $(k,d)$-mers of an unknown genome.  
+to generate rectangles and line segments on these rectangles from a set of all $(k,d)$-mers of an unknown genome. We now 
+show that all d-bounded rectangles as well as the position of the line fragment on each of these rectangles can be constructed from 
+the set of $(k,d)$-mers. 
+
+
+%    We now show that every d-bounded rectangle formed
+%    by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t1}$ and $\beta = a_j\ldots a_{j+t2}$, 
+%    we can construct a rectangle having the same labels of the edges as well as the position of the line fragment on it from only 
+%    a set $A$ of all $(k,d)$-mers of the genome. 
 
 
 
-Let $G$ be the de Bruijn graph constructed from a set of all $k$-mers of the unknown genome $S$. Since the genome is 
-an edge-covering walk in the graph, each  
-
-
-
+Let $G$ be the de Bruijn graph constructed from a set of 
+$k$-mers in $A$. A pair of non-branching paths $p_1$, $p_2$ is called $d$-bounded if there is a $(k,d)$-mer $(a,b)$ such that 
+$a$ maps to $p_1$ at position $i_1$ and $b$ maps to $p_2$ at position $i_2$. The genomic distance between the starts 
+of $p_1$ and $p_2$ is $D = d + i_1 - i_2$. A trible $(p_1, p_2, D)$ corresponds to a set of pairs of non-branching substrings 
+$\{\alpha, \beta\}$ in the genomes where $\alpha$ ($\beta$) has same label as $p_1$ ($p_2$)  and their genomic distance between them 
+is $D$. Thus, as mentioned above, it uniquely defines a rectangle as well as the line fragment on it. Thus, from a set of $(k,d)$-mers, 
+ we can construct a set of all d-bounded rectangle as well as the position of the line fragments on it. 
+The questions of reconstructing the line ( and thus, reconstruct the sequence) is now to the jigsaw problem described above. We simply construct the 
+rectangle graphs based on the described procedure. Moreover, the property that in the de Bruijn graph there is a single vertices for each $k$-mers simplifies
+the presentation of the rectangle graph. Thus a single pair of $k$-mers can uniquely identify the edge of a rectangle. Below we describe 
+the \textbf{rectangle algorithm} for genome assembly from a set of $(k,d)$-mers of the genome.   
 
 
 \noindent
-\textbf{Rectangle Graphs for inexact distance mate-pairs}
+\textbf{Rectangle Graphs for a set of $(k,d)$-mers}
+\bigskip
+\begin{algorithmic}[1]
+\REQUIRE Set of $(k,d)$-mers 
+\STATE Construct the  de Bruijn graph from individual  $k$-mers
+%\STATE Construct the   de Bruijn graph
+\STATE Transform the set of $(k,d)$-mers into the set of rectangle triples. 
+\STATE Represent each rectangle triple as a rectangle with a line segment.
+\STATE Represent the rectangle as an edge: $u\rightarrow v$
+\STATE \hspace*{0.5cm} $u$ is labeled by a pair of $k$-mers corresponding to the begin of the line
+\STATE \hspace*{0.5cm} $v$ is labeled by a pair of $k$-mers corresponding to the end of the line
+\STATE glue vertices having the same label together.
+\end{algorithmic}
 
 
 
