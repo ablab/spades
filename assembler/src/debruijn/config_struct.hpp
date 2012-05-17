@@ -817,7 +817,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	cfg.single_read_prefix =cfg.temp_bin_reads_path +  "_single";
 
 	load(cfg.use_multithreading, pt, "use_multithreading");
-	load(cfg.max_threads, pt, "thread_number");
+	load(cfg.max_threads, pt, "max_threads");
 
 
 

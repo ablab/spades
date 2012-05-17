@@ -49,6 +49,7 @@ struct avg_perf_counter
         p_cnt_.reset();
     }
 
+    void stop()
     {
         counter_++;
         whole_time_ += p_cnt_.time();

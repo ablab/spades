@@ -43,11 +43,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgomp")
 
 add_definitions(${OpenMP_CXX_FLAGS})
 add_definitions(-g3)
-<<<<<<< HEAD
 add_definitions(-static)
 add_definitions(-fopenmp)
-=======
->>>>>>> works a little
 add_definitions(-std=c++0x)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 #add_definitions(-Wconversion)
@@ -92,14 +89,6 @@ add_subdirectory(debruijn)
 add_subdirectory(hammer)
 
 include(CMakeListsInternal.txt)
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lrt ") #-lgomp
-=======
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lrt")
->>>>>>> works a little
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
->>>>>>> compiles
