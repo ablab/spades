@@ -93,7 +93,7 @@ def check_config(cfg, default_project_name=""):
         return False
    
     ## setting default values if needed
-   
+
     # common 
     if not cfg["common"].__dict__.has_key("output_dir"):
         cfg["common"].__dict__["output_dir"]     = 'spades_output'
@@ -607,4 +607,7 @@ def run_quality(cfg):
     return os.path.join(quality_output_dir, "quality.txt")
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except support.spades_error, e:
+        print(e.what())

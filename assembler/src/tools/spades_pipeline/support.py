@@ -36,6 +36,9 @@ class spades_error:
         self.code    = code
         self.err_str = err_str
 
+    def what(self):
+        return "Code: " + str(self.code) + " Description: " + self.err_str
+
 def error(err_str, prefix="== Error == ", code=1):
     raise spades_error(code, "\n\n" + prefix + " " + err_str + "\n\n")
 
