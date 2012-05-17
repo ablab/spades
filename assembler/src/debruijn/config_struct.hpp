@@ -425,7 +425,7 @@ public:
 	std::string single_read_prefix;
 
     bool use_multithreading;
-	size_t thread_number;
+	size_t max_threads;
 
 
 //	size_t is_infinity;
@@ -817,7 +817,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	cfg.single_read_prefix =cfg.temp_bin_reads_path +  "_single";
 
 	load(cfg.use_multithreading, pt, "use_multithreading");
-	load(cfg.thread_number, pt, "thread_number");
+	load(cfg.max_threads, pt, "thread_number");
 
 
 

@@ -29,7 +29,7 @@ void convert_reads_to_binary() {
         info >> thread_num;
         info.close();
 
-        if (thread_num == cfg::get().thread_number) {
+        if (thread_num == cfg::get().max_threads) {
             INFO("Binary reads detected");
             return;
         }
@@ -37,17 +37,17 @@ void convert_reads_to_binary() {
 
     INFO("Converting paired reads to binary format (takes a while)");
     auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(false, 0);
-    io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().thread_number, cfg::get().buffer_size);
+    io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
     paired_converter.ToBinary(*paired_reader);
 
     INFO("Converting single reads to binary format (takes a while)");
     auto_ptr<SingleReadStream> single_reader = single_easy_reader(false, false);
-    io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().thread_number, cfg::get().buffer_size);
+    io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
     single_converter.ToBinary(*single_reader);
 
     std::ofstream info;
     info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
-    info << cfg::get().thread_number;
+    info << cfg::get().max_threads;
     info.close();
 }
 
@@ -109,14 +109,14 @@ std::vector< SequencePairedReadStream* > apply_paired_wrappers(bool followed_by_
 
 std::vector< SequenceSingleReadStream* > single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
 
-    std::vector<SequenceSingleReadStream*> single_streams(cfg::get().thread_number);
-    for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+    std::vector<SequenceSingleReadStream*> single_streams(cfg::get().max_threads);
+    for (size_t i = 0; i < cfg::get().max_threads; ++i) {
         single_streams[i] = new io::SeqSingleReadStream(cfg::get().single_read_prefix, i);
     }
 
     if (including_paired_reads) {
-        std::vector<SequencePairedReadStream*> paired_streams(cfg::get().thread_number);
-        for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+        std::vector<SequencePairedReadStream*> paired_streams(cfg::get().max_threads);
+        for (size_t i = 0; i < cfg::get().max_threads; ++i) {
             paired_streams[i] = new io::SeqPairedReadStream(cfg::get().paired_read_prefix, i, 0);
         }
         return apply_single_wrappers(followed_by_rc, single_streams, &paired_streams);
@@ -128,8 +128,8 @@ std::vector< SequenceSingleReadStream* > single_binary_readers(bool followed_by_
 
 
 std::vector< SequencePairedReadStream* > paired_binary_readers(bool followed_by_rc, size_t insert_size) {
-    std::vector<SequencePairedReadStream*> paired_streams(cfg::get().thread_number);
-    for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+    std::vector<SequencePairedReadStream*> paired_streams(cfg::get().max_threads);
+    for (size_t i = 0; i < cfg::get().max_threads; ++i) {
         paired_streams[i] = new io::SeqPairedReadStream(cfg::get().paired_read_prefix, i, insert_size);
     }
     return apply_paired_wrappers(followed_by_rc, paired_streams);
@@ -156,15 +156,15 @@ private:
         INFO("Creating buffered read storage");
 
         INFO("Buffering single reads... (takes a while)");
-        single_streams_ = new std::vector< SequenceSingleReadStream* >(cfg::get().thread_number);
-        for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+        single_streams_ = new std::vector< SequenceSingleReadStream* >(cfg::get().max_threads);
+        for (size_t i = 0; i < cfg::get().max_threads; ++i) {
             io::PredictableIReader<io::SingleReadSeq> * s_stream = new io::SeqSingleReadStream(cfg::get().single_read_prefix, i);
             single_streams_->at(i) = new io::ReadBufferedStream<io::SingleReadSeq> (*s_stream);
         }
 
         INFO("Buffering paired reads... (takes a while)");
-        paired_streams_ = new std::vector< SequencePairedReadStream* >(cfg::get().thread_number);
-        for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+        paired_streams_ = new std::vector< SequencePairedReadStream* >(cfg::get().max_threads);
+        for (size_t i = 0; i < cfg::get().max_threads; ++i) {
             io::PredictableIReader<io::PairedReadSeq> * p_stream = new io::SeqPairedReadStream(cfg::get().paired_read_prefix, i, 0);
             paired_streams_->at(i) = new io::ReadBufferedStream<io::PairedReadSeq> (*p_stream);
         }
@@ -207,8 +207,8 @@ std::vector< SequenceSingleReadStream* > single_buffered_binary_readers(bool fol
 std::vector< SequencePairedReadStream* > paired_buffered_binary_readers(bool followed_by_rc, size_t insert_size) {
     BufferedReadersStorage * storage = BufferedReadersStorage::GetInstance();
 
-    std::vector<SequencePairedReadStream*> paired_streams(cfg::get().thread_number);
-    for (size_t i = 0; i < cfg::get().thread_number; ++i) {
+    std::vector<SequencePairedReadStream*> paired_streams(cfg::get().max_threads);
+    for (size_t i = 0; i < cfg::get().max_threads; ++i) {
         paired_streams[i] = new io::InsertSizeModifyingWrapper(*(storage->GetPairedReaders()->at(i)), insert_size);
     }
     return apply_paired_wrappers(followed_by_rc, paired_streams);
