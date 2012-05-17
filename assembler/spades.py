@@ -199,6 +199,8 @@ def main():
     if CONFIG_FILE:
         cfg = load_config_from_info_file(CONFIG_FILE)
 
+        os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))  
+
         if not check_config(cfg, os.path.splitext(os.path.basename(CONFIG_FILE))[0] ):
             return
     
@@ -276,8 +278,7 @@ def main():
     print("\n======= SPAdes pipeline started\n")
 
     if CONFIG_FILE:
-        print("Using config file: " + CONFIG_FILE)
-        os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))   
+        print("Using config file: " + CONFIG_FILE)         
 
     bh_dataset_filename = ""
     if cfg.has_key("error_correction"):
