@@ -219,22 +219,23 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 }
 
 void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp, EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
-	int offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
-	io::OffsetType offset_type;
-	if (offset == 33) {
-		INFO("Using offset +33");
-		offset_type = io::PhredOffset;
-	}
-	else if (offset == 64) {
-		INFO("Using offset +64");
-		offset_type = io::SolexaOffset;
-	}
-	else {
-		WARN("Unable to define offset type, assume +33");
-		offset_type = io::PhredOffset;
-	}
 	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_after_RR)
 	{
+		int offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
+		io::OffsetType offset_type;
+		if (offset == 33) {
+			INFO("Using offset +33");
+			offset_type = io::PhredOffset;
+		}
+		else if (offset == 64) {
+			INFO("Using offset +64");
+			offset_type = io::SolexaOffset;
+		}
+		else {
+			WARN("Unable to define offset type, assume +33");
+			offset_type = io::PhredOffset;
+		}
+
 		if (cfg::get().sw.align_original_reads){
 //			if (cfg::get().sw.original_first && cfg::get().sw.original_second)
 			{
@@ -614,8 +615,11 @@ template<class graph_pack>
 bool TryToAddPairInfo(graph_pack &origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, typename graph_pack::graph_t::EdgeId first, typename graph_pack::graph_t::EdgeId second, double tmpd, double w){
 	auto pi_vector = clustered_index.GetEdgePairInfo(first, second);
 	bool already_exist = false;
+	DEBUG("TRY TO adding paired info between edges " << origin_gp.int_ids.ReturnIntId(first) << " " << origin_gp.int_ids.ReturnIntId(second)<<" dist "<<tmpd<< " Size of possible conflicts "<<pi_vector.size());
+
 	for (auto pi_iter = pi_vector.begin(); pi_iter != pi_vector.end(); ++pi_iter) {
-		if (abs(pi_iter->d - tmpd) < 0.01) {
+		DEBUG("dist "<< tmpd << " versus "<<pi_iter->d<<" var "<<pi_iter->variance);
+		if (abs(pi_iter->d - tmpd) < 0.01 + pi_iter->variance) {
 			already_exist = true;
 		}
 	}
@@ -631,6 +635,20 @@ bool TryToAddPairInfo(graph_pack &origin_gp, PairedInfoIndex<typename graph_pack
 	return false;
 }
 
+
+template<class graph_pack>
+void DeleteConjugatePairInfo(graph_pack &origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, PairInfo<typename graph_pack::graph_t::EdgeId>& p_info){
+	auto pi_vector = clustered_index.GetEdgePairInfo(origin_gp.g.conjugate(p_info.second), origin_gp.g.conjugate(p_info.first));
+	double tmpd = p_info.d + origin_gp.g.length(p_info.second) - origin_gp.g.length(p_info.first);
+	for (auto pi_iter = pi_vector.begin(); pi_iter != pi_vector.end(); ++pi_iter) {
+//					INFO("dist "<< tmpd << " versus "<<pi_iter->d<<" var "<<pi_iter->variance);
+		if (abs(pi_iter->d - tmpd) < 0.01) {
+			clustered_index.RemovePairInfo(*pi_iter);
+			clustered_index.RemovePairInfo(BackwardInfo(*pi_iter));
+		}
+	}
+
+}
 
 template<class graph_pack>
 int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, PairInfo<typename graph_pack::graph_t::EdgeId>& first_info, PairInfo<typename graph_pack::graph_t::EdgeId>& second_info, bool fill_missing, bool extensive_add = false) {
@@ -677,10 +695,12 @@ int TreatPairPairInfo(const graph_pack& origin_gp, PairedInfoIndex<typename grap
 			if (first_weight > second_weight * 2){
 				clustered_index.RemovePairInfo(second_info);
 				clustered_index.RemovePairInfo(BackwardInfo(second_info));
+				DeleteConjugatePairInfo(origin_gp, clustered_index, second_info);
 			}
 			else if (second_weight > first_weight * 2){
 				clustered_index.RemovePairInfo(first_info);
 				clustered_index.RemovePairInfo(BackwardInfo(first_info));
+				DeleteConjugatePairInfo(origin_gp, clustered_index, first_info);
 			}
 			DEBUG("contradictional paired info from edge " << origin_gp.int_ids.ReturnIntId(first_info.first) << " to edges " <<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "; weights ratio " << ratio);
 			return 1;

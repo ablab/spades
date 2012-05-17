@@ -1380,7 +1380,7 @@ template<class Graph>
 int RepeatResolver<Graph>::prefix_or_included(PathInfo&path1, PathInfo&path2, int shift1, int shift2){
 	size_t j = 1;
 	size_t i = 1;
-	while ( ( (path2[j].first != path1[i].first)||(abs(path1[i].second - shift1 - path2[j].second + shift2) > path1.path[i-1].variance + path1.path[j-1].variance + 0.1))){
+	while ( ( (path2[j].first != path1[i].first)||(abs(path1[i].second - shift1 - path2[j].second + shift2) > path1.path[i-1].variance + path2.path[j-1].variance + 0.1))){
 		j++;
 		if (j == path2.size()) break;
 	}
@@ -1530,7 +1530,7 @@ int RepeatResolver<Graph>::ColoringEdgesInfosByPathes(int &size, TotalLabeler<Gr
 			}
 		} else
 		if (info_color_set.size() < 1) {
-			WARN("Info not included in any path");
+			WARN("Info "<<new_graph.int_id(edge_infos[i].lp.first)<<"("<<original_id(edge_infos[i].lp.first)<< ") "<<old_graph.int_id(edge_infos[i].lp.second) <<" "<<edge_infos[i].lp.d <<" " << edge_infos[i].lp.variance<<" not included in any path");
 		}
 	}
 	DEBUG("ColoringEdgesInfosByPathes end");
