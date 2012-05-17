@@ -160,11 +160,7 @@ class PairedRead {
       first_.BinWrite(file);
       second_.BinWrite(file);
 
-
       size_type is = insert_size_;
-      if (insert_size_ != 0) {
-          std::cerr << "is: " << insert_size_ << " " << is << std::endl;
-      }
       file.write((const char *) &is, sizeof(is));
 
       return !file.fail();
@@ -222,10 +218,6 @@ public:
         PairedRead::size_type is_delta;
         file.read((char *) &is_delta, sizeof(is_delta));
 
-        if (is_delta != 0) {
-           std::cerr << "is: " << is_delta << std::endl;
-        }
-
         insert_size_ = is - is_delta;
         return !file.fail();
     }
@@ -235,9 +227,6 @@ public:
         second_.BinWrite(file);
 
         PairedRead::size_type is = insert_size_;
-        if (insert_size_ != 0) {
-            std::cerr << "is: " << insert_size_ << " " << is << std::endl;
-        }
         file.write((const char *) &is, sizeof(is));
 
         return !file.fail();
