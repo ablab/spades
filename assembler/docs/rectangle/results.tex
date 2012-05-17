@@ -1,1 +1,56 @@
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.5]{fig/rectangle.eps}
+\caption{Example of rectangle with three diagonals. Rightmost diagonal isn't well supported my mate pairs, while other two are well supported. The point which is observed in the lower right corner could appear because of chimeric mate pairs or sequencing errors.}
+\end{center}
+\end{figure}
+
+
 \section{Results}
+
+\textbf{Assembly datasets}
+%
+We used three datasets from \cite{Chitsaz2011}.
+A single {\ecoli} cell
+and a single marine cell ({\em Deltaproteobacterum} SAR324)
+were isolated by micromanipulation as described in \cite{Ishoey2008}.
+Paired-end libraries were generated on an Illumina Genome Analyzer IIx from MDA-amplified single-cell DNA
+and
+from standard (multicell) genomic DNA prepared from cultured {\ecoli}.
+
+We call these datasets SAR324, ECOLI-SC, and ECOLI-MC.
+ECOLI-SC and ECOLI-MC are called ``{\ecoli} lane 1'' and ``{\ecoli} lane normal'' in \cite{Chitsaz2011}.
+They consist of 100 bp paired-end reads
+with average insert sizes 266 bp for ECOLI-SC, 215 bp for ECOLI-MC,
+and 240 bp for SAR324.
+Both datasets have $600\times$ coverage.
+
+\textbf{Benchmarking}
+
+We benchmarked seven assemblers
+(EULER-SR \cite{Chaisson08}, IDBA \cite{Peng10}, SOAPdenovo \cite{Li10}, Velvet \cite{Zerbino08}, Velvet-SC \cite{Chitsaz2011}, E+V-SC \cite{Chitsaz2011} and {\spades}) on three datasets
+(ECOLI-SC, ECOLI-MC, and SAR324). To provide unbiased
+benchmarking, we used the assembly evaluation tool Plantagora (http://www.plantagora.org). See Table \ref{Table1}.
+
+{\spades}-rectangle shows improvement over previous SPAdes algorithms. In ECOLI-MC dataset {\spades}-rectangle produce larger N50, almost the same largest contig and the same number of misasseblies.
+
+Improvement is even more significant for single-cell dataset which can be explained by the fact that {\spades}-rectangle better determine and utilize correct distance between edges in the de Bruin graph given datasets with highly uneven coverage. {\spades}-rectangle procudes higher N50 (56,842 bp vs 49,623 by {\spades}), higher largest contig (209,690 bp vs 177,944 by {\spades}), no misassemblies and also captures 64 additional genes (3975 vs 3911 by {\spades}). All other assemblers except of {\spades} and {\spades}-rectangle produced below average results on the single-cell dataset.
+
+Most important that on all datasets {\spades}-rectangle was able to capture more genes than any previous assemblers including {\spades}. New genes are most important in study of new species that cannot be sequenced by classical multi-cell approach.
+
+We further compared E+V-SC, {\spades} and {\spades}-rectangle on the SAR324 dataset.
+{\spades}-rectangle assembled contigs totaling ????? bp
+(vs. 5,129,304 bp for {\spades} and 4,255,983 bp for E+V-SC) and an N50 of ????? bp (as compared to 75,366 bp for {\spades} and 30,293 bp for E+V-SC).
+Since the complete genome of \emph{Deltaproteobacterium} SAR324 is unknown,
+we used {\em long ORFs} to estimate the number of genes longer than 600 bp, as a proxy for assembly quality (see \cite{Chitsaz2011}).
+There are ???? long ORFs in the {\spades}-rectangle assembly
+vs. 2603 for {\spades} and 2377 for E+V-SC.
+% I forgot to run on SAR324, doing it now.
+
+\input{table}
+
+\textbf{Running time and memory requirements}
+
+SPAdes memory and time complexity were analysed in \cite{SPAdes}. Most time and memory consuming stages in genome assembly are, usually, de Bruijn graph construction and mapping reads to edges. After this stages are done, repeat resolution routine can work relatively fast and within small memory.
+
+For both {\ecoli} datasets and SAR324, our rectangle approach works for less then 10 seconds given (1) unresolved de Bruijn graph from SPAdes-single and (2) mapping positions of all mate-pair reads to the graph. All datasets where analysed using less than 100 MB RAM.

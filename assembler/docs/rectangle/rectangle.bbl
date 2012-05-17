@@ -1,4 +1,4 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
 
 \bibitem{best}
 T.~Aardenne-Ehrenfest and N.G. Bruijn.
@@ -14,6 +14,46 @@ J.~Abrham and A.~Kotzig.
 N.~Bandeira, K.R. Clauser, and P.A. Pevzner.
 \newblock {Shotgun Protein Sequencing}.
 \newblock {\em Molecular \& Cellular Proteomics}, 6(7):1123, 2007.
+
+\bibitem{SPAdes}
+A.~Bankevich, S.~Nurk, D.~Antipov, A.~Gurevich, M.~Dvorkin, A.~Kulikov,
+  V.~Lesin, S.~Nikolenko, S.~Pham, A.~Prjibelski, A.~Pyshkin, A.~Sirotkin,
+  N.~Vyahhi, G.~Tesler, M.~Alekseyev, and P.~Pevzner.
+\newblock {SPAdes: a New Genome Assembler and its Applications to Single Cell
+  Sequencing}, 2012.
+\newblock Submitted.
+
+\bibitem{Chaisson08}
+M.J. Chaisson and P.A. Pevzner.
+\newblock Short read fragment assembly of bacterial genomes.
+\newblock {\em Genome Research}, 18(2):324, 2008.
+
+\bibitem{Chitsaz2011}
+H.~Chitsaz, J.L. Yee-Greenbaum, G.~Tesler, et~al.
+\newblock Efficient de novo assembly of single-cell bacterial genomes from
+  short-read data sets.
+\newblock {\em Nat Biotechnol}, 29(10):915--921, 2011.
+
+\bibitem{Ishoey2008}
+T.~Ishoey, T.~Woyke, R.~Stepanauskas, et~al.
+\newblock Genomic sequencing of single microbial cells from environmental
+  samples.
+\newblock {\em Curr Opin Microbiol}, 11(3):198--204, Jun 2008.
+
+\bibitem{Li10}
+R.~Li, H.~Zhu, J.~Ruan, W.~Qian, X.~Fang, Z.~Shi, Y.~Li, S.~Li, G.~Shan,
+  K.~Kristiansen, et~al.
+\newblock De novo assembly of human genomes with massively parallel short read
+  sequencing.
+\newblock {\em Genome Research}, 20(2):265, 2010.
+
+\bibitem{Peng10}
+Y.~Peng, H.C.M. Leung, S.-M. Yiu, and F.Y.L. Chin.
+\newblock {IDBA --- A Practical Iterative de Bruijn Graph De Novo Assembler}.
+\newblock In Bonnie Berger, editor, {\em Research in Computational Molecular
+  Biology, 14th Annual International Conference, RECOMB 2010, Lisbon, Portugal,
+  April 25-28, 2010. Proceedings}, volume 6044 of {\em Lecture Notes in
+  Computer Science}, pages 426--440. Springer, 2010.
 
 \bibitem{Pevzner01}
 P.A. Pevzner, H.~Tang, and M.S. Waterman.
@@ -31,5 +71,11 @@ B.~Raphael, D.~Zhi, H.~Tang, and P.~Pevzner.
 \newblock A novel method for multiple alignment of sequences with repeated and
   shuffled elements.
 \newblock {\em Genome Research}, 14(11):2336, 2004.
+
+\bibitem{Zerbino08}
+D.R. Zerbino and E.~Birney.
+\newblock Velvet: algorithms for de novo short read assembly using de {Bruijn}
+  graphs.
+\newblock {\em Genome Research}, 18(5):821, 2008.
 
 \end{thebibliography}
