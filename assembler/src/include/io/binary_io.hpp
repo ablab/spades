@@ -48,9 +48,6 @@ private:
     void ToBinary(io::IReader<Read>& stream, size_t buf_size) {
         size_t read_count = 0;
         size_t buffer_reads = buf_size / (sizeof (Read) * 4);
-        INFO("Buffer reads: " << buffer_reads);
-        INFO("reads: " << sizeof (Read));
-
         size_t reads_to_flush = buffer_reads * file_num_;
 
         std::vector< std::vector<Read> > buf(file_num_, std::vector<Read>(buffer_reads) );
@@ -81,8 +78,6 @@ private:
         }
 
         for (size_t i = 0; i < file_num_; ++i) {
-            INFO(buf[i].size());
-
             buf[i].resize(current_buf_sizes[i]);
             FlushBuffer(buf[i], *file_ds_[i]);
 

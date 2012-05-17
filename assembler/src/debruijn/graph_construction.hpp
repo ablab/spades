@@ -194,8 +194,7 @@ size_t FillIterativeParallelIndex(std::vector<io::IReader<Read>* >& streams, Seq
 
     {
         size_t cell_size = cfg::get().buffer_size / (nthreads * nthreads * sizeof(Kmer) * 2);
-        INFO("Kmer cell size " << cell_size);
-        INFO("Kmer size " << sizeof(Kmer));
+
         ParallelDeBruijn par_debruijn(nthreads, cell_size);
         while (!ParllelStreamEOF(streams)) {
 

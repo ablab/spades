@@ -128,9 +128,6 @@ public:
 
         size_t nthreads = streams.size();
         size_t buf_size = cfg::get().buffer_size / (nthreads * (sizeof(Path<EdgeId>) + 32) );
-        INFO("Path size " << sizeof(Path<EdgeId>));
-        INFO("Path buffer size " << buf_size);
-
 
         #pragma omp parallel num_threads(nthreads)
         {
