@@ -13,7 +13,7 @@
 \def\spades{SPAdes}
 
 \begin{document}
-\title{Rectangle Graphs\\ for Genome Assembly}
+\title{Rectangle Graphs --- A Different Perspective on the Genome Assembly Problem}
 \author{Nikolay Vyahhi, SP. and Pavel Pevzner}
 \date{\today}
 \maketitle
@@ -259,7 +259,19 @@ the \textbf{rectangle algorithm} for genome assembly from a set of $(k,d)$-mers 
 \textbf{From mate-pair assembly with inexact distance to the rectangle Graph}
 
 We now extending the rectangle graphs to model genome assembly problem from mate pairs when the distance 
-between two reads in each pair is known to lie within some range $d\pm \Delta$. 
+between two reads in each pair is not exact. Given parameters $d$ and $\Delta$, 
+a pair of $k$-mers $(a|b)$ is called a $(k,d,\Delta)$-mer of $S$
+if it is a $(k,d_0)$-mer of $S$ for some $d_0 \in [d-\Delta, d+ \Delta]$. While the set of all $(k,d)$-mer 
+of $S$ forms a line $(d) y = x + d$ in the 2D genome coordinate, a set of $(k,d,\Delta)$-mers forms 
+separated points perturbed around $(d)$. And thus, in each rectangle, the line fragment now becomes a collection of points 
+perturbed around its original position. The task of assemblying the diagonal grid graph from in-exact mate pairs is analogous to 
+the solving the old jigzaw problems where the pictures on each pieces are faded out, some pieces from other puzzles got mixed into 
+the collection, or even some of the pieces are missing.  
+
+
+
+
+
 
 \section{Basics}
 
