@@ -4,7 +4,7 @@ project_name        ECOLI_1K                          ; optional. Name of this c
 output_dir          ./spades_output                   ; optional. Default is ./spades_output
 output_to_console   true                              ; optional. Default is true
 developer_mode      false                             ; optional. Default is false
-compilation_dir                                       ; optional. Default is ~/.spades/precompiled/
+compilation_dir                                       ; optional. Default is /home/<username>/.spades/precompiled/
 
 dataset
 {

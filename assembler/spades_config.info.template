@@ -4,14 +4,14 @@
 project_name        ECOLI_1K                         
 
 ; SPAdes output directory. Default is spades_output.
-; output_dir         spades_output                   
+output_dir         spades_output                   
 
 ; Maximum number of threads. Default is 16.
-; max_threads       16                            
+max_threads       16                            
 
 ; Maximum amount of RAM that SPAdes can use(in Gb). SPAdes crashes if it exceeds this limit.
 ; Default is 250.
-; max_memory        250                           
+max_memory        250                           
 
 ; This section describes the input dataset.
 dataset
@@ -22,36 +22,36 @@ dataset
     paired_reads        $cfg/test_dataset/ecoli_1K_1.fq.gz $cfg/test_dataset/ecoli_1K_2.fq.gz
 
     ; Reads without pairs.
-    ; single_reads
+    single_reads
 
     ; Flag should be set to true if input data was obtained with MDA (single-cell) technology. Default is false.
-    ; single_cell         false
+    single_cell         false
 }
 
 error_correction
 {
     ; Directory where temporary files are stored. It can be a lot of data but it cleaned up automatically.
     ; Default is <output_dir>/corrected/tmp
-    ; tmp_dir  spades_output/corrected/tmp
+    tmp_dir  spades_output/corrected/tmp
 
     ; PHRED quality offset in the input reads (33 or 64). If not given, error correction tool tries to find this value automatically.
-    ; qvoffset                                          
+    qvoffset                                          
 
     ; Maximum number of iterations for the error correction procedure. Default is 2.
-    ; max_iterations      2     
+    max_iterations      2     
 
     ; Force error correction tool to output compressed corrected reads (with gzip). Default is true.
-    ; gzip_output         true                          
+    gzip_output         true                          
 }
 
 assembly
 {
     ; One or more odd values for k-mer (vertex) sizes. Default is 21 33 55.
-    ; iterative_K         21 33 55                    
+    iterative_K         21 33 55                    
 
     ; Forces SPAdes to generate a SAM-file showing how the paired reads are aligned to resulting contigs. Default is false.
-    ; generate_sam_files  false                         
+    generate_sam_files  false                         
 
     ; Flag should be set to true if we want to run the gap closer. Default is true.
-    ; gap_closer          true                        
+    gap_closer          true                        
 }

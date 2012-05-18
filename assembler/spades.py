@@ -79,7 +79,7 @@ def check_config(cfg, default_project_name=""):
 
     no_files_with_reads = True
     for k, v in cfg["dataset"].__dict__.iteritems():
-        if k.find("reads") != -1:
+        if k.startswith("single_reads") or k.startswith("paired_reads"):
             no_files_with_reads = False
             if type(v) != list:
                 v = [v]
@@ -113,7 +113,10 @@ def check_config(cfg, default_project_name=""):
     if not cfg["common"].__dict__.has_key("project_name"):
         cfg["common"].__dict__["project_name"]      = default_project_name
 
-    cfg["common"].__dict__["compilation_dir"] = os.path.join(os.getenv('HOME'), '.spades/precompiled/')    
+    if not cfg["common"].__dict__.has_key("compilation_dir"):
+        cfg["common"].__dict__["compilation_dir"] = os.path.join(os.getenv('HOME'), '.spades/precompiled/')
+    else:
+        cfg["common"].compilation_dir = os.path.abspath(cfg["common"].compilation_dir)  
 
     cfg["common"].output_dir = os.path.join(os.path.abspath(os.path.expandvars(cfg["common"].output_dir)), cfg["common"].project_name)
 
