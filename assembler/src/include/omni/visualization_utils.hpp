@@ -186,10 +186,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const string& file_name, const string& graph_name = "my_graph",
 		const Path<typename Graph::EdgeId> &path1 = Path<typename Graph::EdgeId>(),
 		const Path<typename Graph::EdgeId> &path2 = Path<typename Graph::EdgeId>()) {
-	fstream filestr;
-	string simple_file_name(file_name);
-	//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
-	filestr.open(simple_file_name.c_str(), fstream::out);
+	ofstream filestr(file_name);
 	CompositeGraphColorer<Graph> colorer(new FixedColorer<typename Graph::VertexId>("white")
 			, new MapColorer<typename Graph::EdgeId>(PathColorer<Graph>(g, path1, path2).ColorPath(), ""));
 	DotGraphPrinter<Graph> gp(g, labeler, colorer, graph_name, filestr);
@@ -207,8 +204,7 @@ void WritePaired(
 		const Path<typename Graph::EdgeId> &path1 = Path<typename Graph::EdgeId>(),
 		const Path<typename Graph::EdgeId> &path2 = Path<typename Graph::EdgeId>()) {
 	typedef typename Graph::EdgeId EdgeId;
-	fstream filestr;
-	filestr.open(file_name.c_str(), fstream::out);
+	ofstream filestr(file_name);
 	CompositeGraphColorer<Graph> colorer(new FixedColorer<typename Graph::VertexId>("")
 			, new MapColorer<typename Graph::EdgeId>(PathColorer<Graph>(g, path1, path2).ColorPath(), ""));
 	DotPairedGraphPrinter<Graph> gp(g, labeler, colorer, graph_name, filestr);

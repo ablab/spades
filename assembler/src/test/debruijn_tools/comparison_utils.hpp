@@ -13,6 +13,7 @@
 #include "logger/logger.hpp"
 #include "io/splitting_wrapper.hpp"
 #include "io/vector_reader.hpp"
+#include "graph_read_correction.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/random/mersenne_twister.hpp>
@@ -259,8 +260,10 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 		refining_gp_t refining_gp;
 		ConstructGPForRefinement(refining_gp, stream1, stream2, delta);
 
-		ContigRefiner<refining_gp_t> refined_stream1(stream1, refining_gp);
-		ContigRefiner<refining_gp_t> refined_stream2(stream2, refining_gp);
+		ModifyingWrapper<io::SingleRead> refined_stream1(stream1
+				, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
+		ModifyingWrapper<io::SingleRead> refined_stream2(stream2
+				, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
 
 		AssemblyComparer<comparing_gp_t> comparer(refined_stream1,
 				refined_stream2, name1, name2, untangle);
@@ -342,8 +345,10 @@ pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1,
 	refining_gp_t refining_gp;
 	ConstructGPForRefinement(refining_gp, stream1, stream2, delta);
 
-	ContigRefiner<refining_gp_t> refined_stream1(stream1, refining_gp);
-	ContigRefiner<refining_gp_t> refined_stream2(stream2, refining_gp);
+	ModifyingWrapper<io::SingleRead> refined_stream1(stream1
+			, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
+	ModifyingWrapper<io::SingleRead> refined_stream2(stream2
+			, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
 
 	pair<Sequence, Sequence> answer = make_pair(FirstSequence(refined_stream1),
 			FirstSequence(refined_stream2));
@@ -427,8 +432,10 @@ pair<Sequence, vector<Sequence>> RefineData(
 	refining_gp_t refining_gp;
 	ConstructGPForRefinement(refining_gp, stream1, stream2);
 
-	ContigRefiner<refining_gp_t> refined_stream1(stream1, refining_gp);
-	ContigRefiner<refining_gp_t> refined_stream2(stream2, refining_gp);
+	ModifyingWrapper<io::SingleRead> refined_stream1(stream1
+			, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
+	ModifyingWrapper<io::SingleRead> refined_stream2(stream2
+			, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
 
 	return make_pair(FirstSequence(refined_stream1),
 			AllSequences(refined_stream2));

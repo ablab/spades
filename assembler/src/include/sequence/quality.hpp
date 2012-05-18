@@ -15,8 +15,6 @@
 #define QUAL_HPP_
 
 #include <string>
-using namespace std;
-
 //todo really strange class
 class Quality {
 public:

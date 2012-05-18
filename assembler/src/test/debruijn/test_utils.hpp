@@ -41,7 +41,7 @@ typedef string MyEdge;
 typedef pair<MyEdge, MyEdge> MyEdgePair;
 typedef multimap<MyEdgePair, pair<int, double>> EdgePairInfo;
 typedef map<MyEdge, double> CoverageInfo;
-typedef tr1::unordered_set<MyEdge> Edges;
+typedef unordered_set<MyEdge> Edges;
 
 string print(const Edges& es) {
 	string s = "Edge set : {";

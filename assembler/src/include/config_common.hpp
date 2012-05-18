@@ -221,10 +221,9 @@ inline void load_param(const string& filename, const string& key,
 
 template<class T>
 inline void write_param(const string& filename, const string& key,
-		const boost::optional<T>& value) {
+		const optional<T>& value) {
 	if (value) {
-		std::fstream params_stream;
-		params_stream.open(filename, fstream::out | fstream::app);
+		ofstream params_stream(filename, std::ios_base::app);
 		params_stream << key << "\t" << value << std::endl;
 	}
 }
@@ -253,10 +252,9 @@ template<class K, class V>
 inline void write_param_map(const string& filename, const string& key,
 		const map<K, V>& value) {
 	if (value.size() > 0) {
-		std::fstream params_stream;
-		params_stream.open(filename, fstream::out | fstream::app);
+		ofstream params_stream(filename, std::ios_base::app);
 		params_stream << key << "\t\"";
-		std::string delim = "";
+		string delim = "";
 		for (auto it = value.begin(); it != value.end(); ++it) {
 			params_stream << delim << it->first << " " << it->second;
 			delim = ";";

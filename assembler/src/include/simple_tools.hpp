@@ -48,8 +48,13 @@ std::string ToString(std::set<T>& t) {
 }
 
 template<class T>
-std::auto_ptr<T> create_auto_ptr(T* t) {
+std::auto_ptr<T> make_ptr(T* t) {
 	return std::auto_ptr<T>(t);
+}
+
+template<class T>
+std::auto_ptr<T> make_shared_ptr(T* t) {
+	return boost::shared_ptr<T>(t);
 }
 
 //taken from http://habrahabr.ru/post/131977/

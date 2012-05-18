@@ -20,7 +20,6 @@
 
 namespace read_generator {
 #define MAX_PROBABILITY 10000
-using namespace std;
 
 class SmoothPositionChooser {
 public:

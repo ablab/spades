@@ -47,9 +47,9 @@ auto_ptr<ReadStream> single_easy_reader(bool followed_by_rc,
 		bool original = false,
 		io::OffsetType offset_type = io::PhredOffset) {
 	vector<ReadStream*> streams;
-	auto& paired_reads = original ? cfg::get().ds.original_paired_reads : cfg::get().ds.paired_reads;
 	auto& single_reads = original ? cfg::get().ds.original_single_reads : cfg::get().ds.single_reads;
 	if (including_paired_reads) {
+		auto& paired_reads = original ? cfg::get().ds.original_paired_reads : cfg::get().ds.paired_reads;
 		for (auto it = paired_reads.begin(); it != paired_reads.end(); ++it) {
 			for (auto it2 = it->begin(); it2 != it->end(); ++it2) {
 				streams.push_back(new io::EasyReader(input_file(*it2), followed_by_rc, offset_type));

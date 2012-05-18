@@ -34,9 +34,6 @@
 #include <cstring>
 #include <iostream>
 
-
-using namespace std;
-
 /**
  * @param T is max number of nucleotides, type for storage
  */

@@ -18,8 +18,6 @@
 #include "read/read.hpp"
 #include "read/paired_read.hpp"
 
-using namespace std;
-
 /*
  * Use single_read<size,T>::type for single read
  * Use mate_read<size,T>::type for mate read

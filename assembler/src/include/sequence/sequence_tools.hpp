@@ -30,9 +30,12 @@ inline const Sequence MergeOverlappingSequences(vector<Sequence>& ss, size_t ove
 		return Sequence(); 
 	}
 	SequenceBuilder sb;
-	sb.append(ss.front().Subseq(0, overlap));
+	Sequence prev_end = ss.front().Subseq(0, overlap);
+	sb.append(prev_end);
 	for (auto it = ss.begin(); it != ss.end(); ++it) {
+		VERIFY(prev_end == it->Subseq(0, overlap));
 		sb.append(it->Subseq(overlap));
+		prev_end = it->Subseq(it->size() - overlap);
 	}
 	return sb.BuildSequence();
 }

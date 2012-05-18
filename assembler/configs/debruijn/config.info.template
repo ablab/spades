@@ -154,3 +154,9 @@ jump
 	    weight_threshold    0.05
 }
 
+graph_read_corr
+{
+	enable false
+	output_dir corrected_contigs/
+	binary true
+}

@@ -24,6 +24,7 @@
 #include "omni/erroneous_connection_remover.hpp"
 #include "omni/mf_ec_remover.hpp"
 #include "gap_closer.hpp"
+#include "graph_read_correction.hpp"
 
 namespace debruijn_graph {
 
@@ -133,14 +134,29 @@ void ClipTipsUsingAdvancedChecks(Graph &g,
 	DEBUG("Clipping tips finished");
 }
 
-template<class Graph>
-void ClipTips(Graph &g,
-		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+void Composition(EdgeId e, boost::function<void(EdgeId)> f1, boost::function<void(EdgeId)> f2) {
+	if (f1)
+		f1(e);
+	if (f2)
+		f2(e);
+}
+
+template<class gp_t>
+void ClipTips(gp_t& gp,
+		boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0,
 		size_t iteration_count = 1, size_t i = 0) {
+	boost::function<void(typename Graph::EdgeId)> removal_handler = raw_removal_handler;
+	if (cfg::get().graph_read_corr.enable) {
+		//enableing tip projection
+		TipsProjector<gp_t> tip_projector(gp);
+		boost::function<void(EdgeId)> projecting_callback = boost::bind(
+			&TipsProjector<gp_t>::ProjectTip, tip_projector, _1);
+		removal_handler = boost::bind(Composition, _1, raw_removal_handler, projecting_callback);
+	}
     if (cfg::get().simp.tc.advanced_checks)
-        ClipTipsUsingAdvancedChecks(g, cfg::get().simp.tc, *cfg::get().ds.RL, removal_handler, iteration_count, i);
+        ClipTipsUsingAdvancedChecks(gp.g, cfg::get().simp.tc, *cfg::get().ds.RL, removal_handler, iteration_count, i);
     else
-        DefaultClipTips(g, cfg::get().simp.tc, *cfg::get().ds.RL, removal_handler, iteration_count, i);
+        DefaultClipTips(gp.g, cfg::get().simp.tc, *cfg::get().ds.RL, removal_handler, iteration_count, i);
 }
 
 template<class Graph>
@@ -162,8 +178,7 @@ void ClipTipsForResolver(Graph &g) {
 			max_coverage, max_relative_coverage * 0.5, max_iterations, max_levenshtein, max_ec_length);
 
         tc.ClipTips(true);
-    }
-    else {
+    } else {
         omnigraph::DefaultTipClipper<Graph, LengthComparator<Graph> > tc(
                 g,
                 comparator,
@@ -352,38 +367,41 @@ bool ChimericRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 	return changed;
 }
 
-template<class Graph> 
-void FinalTipClipping(Graph& g, boost::function<void(typename Graph::EdgeId)>& removal_handler_f) {
+template<class gp_t>
+void FinalTipClipping(gp_t& gp, boost::function<void(typename Graph::EdgeId)>& removal_handler_f = 0) {
 	INFO("SUBSTAGE == Final tip clipping");
-	omnigraph::LengthComparator<Graph> comparator(g);
-    auto tc_config = cfg::get().simp.tc;
-	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(*cfg::get().ds.RL, g.k(), cfg::get().simp.tc.max_tip_length_coefficient);
-	size_t max_coverage = tc_config.max_coverage;
-	double max_relative_coverage = tc_config.max_relative_coverage;
 
-    if (tc_config.advanced_checks) {
-        // aggressive removal is on
-
-        size_t max_iterations = tc_config.max_iterations;
-        size_t max_levenshtein = tc_config.max_levenshtein;
-        size_t max_ec_length = tc_config.max_ec_length;
-        omnigraph::AdvancedTipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, max_tip_length,
-			max_coverage, max_relative_coverage, max_iterations, max_levenshtein, max_ec_length, removal_handler_f);
-
-        INFO("First iteration of final tip clipping");
-        tc.ClipTips(true);
-        INFO("Second iteration of final tip clipping");
-        tc.ClipTips(true);
-    }
-    else {
-        omnigraph::DefaultTipClipper<Graph, LengthComparator<Graph> > tc(
-                g,
-                comparator,
-                max_tip_length, max_coverage,
-                max_relative_coverage, removal_handler_f);
-
-        tc.ClipTips();
-    }
+	//todo what is the difference between default and commented code
+//	omnigraph::LengthComparator<Graph> comparator(g);
+//    auto tc_config = cfg::get().simp.tc;
+//	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(*cfg::get().ds.RL, g.k(), tc_config.max_tip_length_coefficient);
+//	size_t max_coverage = tc_config.max_coverage;
+//	double max_relative_coverage = tc_config.max_relative_coverage;
+//
+//    if (tc_config.advanced_checks) {
+//        // aggressive removal is on
+//
+//        size_t max_iterations = tc_config.max_iterations;
+//        size_t max_levenshtein = tc_config.max_levenshtein;
+//        size_t max_ec_length = tc_config.max_ec_length;
+//        omnigraph::AdvancedTipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, max_tip_length,
+//			max_coverage, max_relative_coverage, max_iterations, max_levenshtein, max_ec_length, removal_handler_f);
+//
+//        INFO("First iteration of final tip clipping");
+//        tc.ClipTips(true);
+//        INFO("Second iteration of final tip clipping");
+//        tc.ClipTips(true);
+//    }
+//    else {
+//        omnigraph::DefaultTipClipper<Graph, LengthComparator<Graph> > tc(
+//                g,
+//                comparator,
+//                max_tip_length, max_coverage,
+//                max_relative_coverage, removal_handler_f);
+//
+//        tc.ClipTips();
+//    }
+	ClipTips(gp, removal_handler_f);
 
 	DEBUG("Final tip clipping is finished");
 }
@@ -463,7 +481,7 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 	DEBUG("Low coverage edges removed");
 }
 
-void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
+void PreSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void (EdgeId)> &removal_handler_f,
         detail_info_printer &printer, size_t iteration_count){
     //INFO("Early ErroneousConnectionsRemoval");
@@ -471,81 +489,80 @@ void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
     //INFO("ErroneousConnectionsRemoval stats");
 
 	INFO("Early tip clipping:");
-	ClipTips(graph, removal_handler_f);
+	ClipTips(gp, removal_handler_f);
 
 	INFO("Early bulge removal:");
-	RemoveBulges(graph, removal_handler_f, graph.k() + 1);
+	RemoveBulges(gp.g, removal_handler_f, gp.g.k() + 1);
 
 	//INFO("Early ErroneousConnectionsRemoval");
 	//RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
 	//INFO("ErroneousConnectionsRemoval stats");
 }
 
-
-void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
+void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
         detail_info_printer &printer, size_t iteration_count,
 		size_t iteration, double max_coverage){
 	INFO("PROCEDURE == Simplification cycle, iteration " << iteration << " (0-indexed)");
 
 	DEBUG(iteration << " TipClipping");
-	ClipTips(graph, removal_handler_f, iteration_count, iteration);
+	ClipTips(gp, removal_handler_f, iteration_count, iteration);
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
 	DEBUG(iteration << " BulgeRemoval");
-	RemoveBulges(graph, removal_handler_f);
+	RemoveBulges(gp.g, removal_handler_f);
 	DEBUG(iteration << " BulgeRemoval stats");
 	printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
 	DEBUG(iteration << " ErroneousConnectionsRemoval");
-	RemoveLowCoverageEdges(graph, edge_remover, iteration_count, iteration, max_coverage);
+	RemoveLowCoverageEdges(gp.g, edge_remover, iteration_count, iteration, max_coverage);
 	DEBUG(iteration << " ErroneousConnectionsRemoval stats");
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
 }
 
-void PrePostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
-		boost::function<void(EdgeId)> &removal_handler_f){
+//void PrePostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
+//		boost::function<void(EdgeId)> &removal_handler_f){
+//
+//	INFO("PreFinal erroneous connections removal");
+//	FinalRemoveErroneousEdges(gp.g, edge_remover, removal_handler_f);
+//
+//	INFO("PreFinal tip clipping");
+//
+//    FinalTipClipping(gp.g, removal_handler_f);
+//
+//	INFO("PreFinal bulge removal");
+//	RemoveBulges(gp.g, removal_handler_f);
+//
+//	INFO("PreFinal isolated edges removal");
+//
+//    IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g,
+//			cfg::get().simp.isolated_min_len);
+//	isolated_edge_remover.RemoveIsolatedEdges();
+//
+//}
 
-	INFO("PreFinal erroneous connections removal");
-	FinalRemoveErroneousEdges(graph, edge_remover, removal_handler_f);
-
-	INFO("PreFinal tip clipping");
-	
-    FinalTipClipping(graph, removal_handler_f);
-
-	INFO("PreFinal bulge removal");
-	RemoveBulges(graph, removal_handler_f);
-
-	INFO("PreFinal isolated edges removal");
-
-    IsolatedEdgeRemover<Graph> isolated_edge_remover(graph,
-			cfg::get().simp.isolated_min_len);
-	isolated_edge_remover.RemoveIsolatedEdges();
-
-}
-
-void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
+void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
         detail_info_printer &printer){
 
 	INFO("Final erroneous connections removal:");
 	printer(ipp_before_final_err_con_removal);
-	FinalRemoveErroneousEdges(graph, edge_remover, removal_handler_f);
+	FinalRemoveErroneousEdges(gp.g, edge_remover, removal_handler_f);
 	printer(ipp_final_err_con_removal);
 
 	INFO("Final tip clipping:");
 	
-    FinalTipClipping(graph, removal_handler_f);
+    FinalTipClipping(gp, removal_handler_f);
 	printer(ipp_final_tip_clipping);
 
 	INFO("Final bulge removal:");
-	RemoveBulges(graph, removal_handler_f);
+	RemoveBulges(gp.g, removal_handler_f);
 	printer(ipp_final_bulge_removal);
 
 	INFO("Final isolated edges removal:");
-	IsolatedEdgeRemover<Graph> isolated_edge_remover(graph,
+	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g,
 			cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
 	printer(ipp_removing_isolated_edges);
@@ -587,23 +604,23 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
     Compressor<Graph> compressor(gp.g);
 
     if (cfg::get().ds.single_cell) 
-        PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
+        PreSimplification(gp, edge_remover, removal_handler_f, printer, iteration_count);
 
 	for (size_t i = 0; i < iteration_count; i++) {
 		if ((cfg::get().gap_closer_enable)&&(cfg::get().gc.in_simplify)){
 			CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
 		}
 
-        SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,
+        SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
                 iteration_count, i, max_coverage);
     }
 
-    if (cfg::get().simp.tc.advanced_checks)
-        PrePostSimplification(gp.g, edge_remover, removal_handler_f);
+//    //todo wtf
+//    if (cfg::get().simp.tc.advanced_checks)
+//        PrePostSimplification(gp, edge_remover, removal_handler_f);
 
-	PostSimplification(gp.g, edge_remover, removal_handler_f, printer);
+	PostSimplification(gp, edge_remover, removal_handler_f, printer);
 	DEBUG("Graph simplification finished");
-	PostSimplification(gp.g, edge_remover, removal_handler_f, printer);
 
 	INFO("Counting average coverage");
 	AvgCovereageCounter<Graph> cov_counter(gp.g);

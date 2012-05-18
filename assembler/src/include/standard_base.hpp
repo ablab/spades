@@ -31,21 +31,42 @@
 #include <string>
 #include <sstream>
 #include <utility>
+#include <array>
 #include <fstream>
 #include <unordered_map>
+#include <unordered_set>
+#include <deque>
+#include <stack>
+#include <cmath>
 
 using std::cin;
 using std::cout;
+using std::cerr;
 using std::endl;
 using std::list;
 using std::map;
+using std::multimap;
+using std::unordered_map;
+using std::unordered_set;
 using std::vector;
+using std::array;
 using std::set;
 using std::string;
 using std::pair;
 using std::make_pair;
 using std::ifstream;
+using std::istream;
 using std::ofstream;
+using std::ostream;
+using std::min;
+using std::max;
+using std::abs;
+using std::stringstream;
+using std::numeric_limits;
+using std::deque;
+using std::ostream_iterator;
+using std::stack;
+using std::copy;
 
 //==boost
 
@@ -76,6 +97,8 @@ using std::ofstream;
 #include <boost/algorithm/string.hpp>
 
 using boost::bind;
+using boost::ref;
+using boost::cref;
 using boost::function;
 
 using boost::bimap;
@@ -114,3 +137,6 @@ inline void assertion_failed(char const * expr, char const * function, char cons
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
+
+//our
+#include "xmath.h"

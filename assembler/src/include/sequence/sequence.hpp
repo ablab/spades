@@ -34,7 +34,6 @@
 #include <vector>
 #include <string>
 #include <cstring>
-using namespace std;
 
 class Sequence {
 private:

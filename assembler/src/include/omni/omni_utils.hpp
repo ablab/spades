@@ -762,6 +762,14 @@ public:
 		return make_pair(edges_[idx], range_mappings_[idx]);
 	}
 
+	pair<const ElementId, const MappingRange> front() const {
+		return make_pair(edges_.front(), range_mappings_.front());
+	}
+
+	pair<const ElementId, const MappingRange> back() const {
+		return make_pair(edges_.back(), range_mappings_.back());
+	}
+
 	size_t start_pos() const {
 		return range_mappings_.front().mapped_range.start_pos;
 	}
@@ -1058,7 +1066,8 @@ public:
 	virtual void HandlePath(const vector<EdgeId>& path) {
 		paths_.push_back(path);
 	}
-	size_t count() {
+
+	size_t size() {
 		return paths_.size();
 	}
 

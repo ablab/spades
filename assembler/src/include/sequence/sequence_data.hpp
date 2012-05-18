@@ -27,7 +27,6 @@
 #include <vector>
 #include <string>
 #include "log.hpp"
-using namespace std;
 
 class SequenceData {
 private:

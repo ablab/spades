@@ -523,12 +523,12 @@ class MatePairTransformStat: public AbstractStatCounter {
 					path_processor.Process();
 					TRACE(
 							"Edges"<< e1 <<" : " << e2 << ": " << info.weight << " : " << info.d);
-					TRACE("Path Numbs" << counter.count());
+					TRACE("Path Numbs" << counter.size());
 
-					if (counter.count() == 1) {
+					if (counter.size() == 1) {
 						unique_distance_cnt_++;
 					}
-					if (counter.count() > 1) {
+					if (counter.size() > 1) {
 						non_unique_distance_cnt_++;
 					}
 				} else {

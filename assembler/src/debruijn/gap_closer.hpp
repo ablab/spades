@@ -224,7 +224,6 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
     compressor.CompressAllVertices();
 }
 
-
 template<size_t k>
 void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
 	auto stream = paired_easy_reader(true, 0);
@@ -236,9 +235,7 @@ void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
 		paired_info_index gc_paired_info_index(gp.g);
 		gcpif.FillIndex(gc_paired_info_index);
 		CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
-	}
-	else
-	{
+	} else {
 		typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 		SequenceMapper mapper(gp.g, gp.index);
 		GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper, *stream);

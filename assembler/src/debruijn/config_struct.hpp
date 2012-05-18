@@ -317,8 +317,9 @@ struct debruijn_config {
 		boost::optional<double> median;
 		boost::optional<double> mad;
 		map<int, size_t> hist;
+
 		map<size_t, size_t> percentiles;
-		boost::optional<double> avg_coverage;
+		optional<double> avg_coverage;
 		bool single_cell;
 		std::string reference_genome_filename;
 
@@ -368,7 +369,13 @@ struct debruijn_config {
 		bool align_only_paired;
 		bool output_broken_pairs;
 		bool align_original_reads;
-		boost::optional<bool> print_quality;
+		optional<bool> print_quality;
+	};
+
+	struct graph_read_corr_cfg {
+		bool enable;
+		string output_dir;
+		bool binary;
 	};
 
 	typedef map<info_printer_pos, info_printer> info_printers_t;
@@ -422,6 +429,7 @@ public:
 	gap_closer gc;
 	jump_cfg jump;
 	SAM_writer sw;
+	graph_read_corr_cfg graph_read_corr;
 	info_printers_t info_printers;
 };
 
@@ -587,6 +595,14 @@ inline void load(debruijn_config::SAM_writer& sw,
 	sw.print_quality = pt.get_optional<bool>("print_quality");
 }
 
+inline void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
+	load(graph_read_corr.enable    , pt, "enable"    );
+	load(graph_read_corr.output_dir, pt, "output_dir");
+	load(graph_read_corr.binary    , pt, "binary"    );
+}
+
 inline void load_paired_reads(vector<vector<std::string> >& vec, boost::property_tree::ptree const& pt, string const& key) {
 	vector<std::string> strings;
 	config_common::load(strings, pt, key);
@@ -628,7 +644,7 @@ inline void load(debruijn_config::dataset& ds,
 	ds.IS = pt.get_optional<size_t>("IS");
 
 	ds.reference_genome_filename = "";
-	boost::optional<std::string> refgen = pt.get_optional<std::string>(
+	optional<std::string> refgen = pt.get_optional<std::string>(
 			"reference_genome");
 	if (refgen && *refgen != "N/A") {
 		ds.reference_genome_filename = *refgen;
@@ -792,6 +808,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.gc, pt, "gap_closer");
 	load(cfg.sw, pt, "SAM_writer");
+	load(cfg.graph_read_corr, pt, "graph_read_corr");
 	load(cfg.need_consensus, pt, "need_consensus");
 	load(cfg.uncorrected_reads, pt, "uncorrected_reads");
 	load(cfg.path_set_graph, pt, "path_set_graph");
