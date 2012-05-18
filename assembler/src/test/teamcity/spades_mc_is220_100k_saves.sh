@@ -8,12 +8,12 @@
 
 set -e
 pushd ../../../
-#rm -f spades_output/ECOLI_IS220_QUAKE_100K_SAVES/latest
+rm -f spades_output/ECOLI_IS220_QUAKE_100K_SAVES/latest
 if [ ! -d spades_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon ]; then
     echo "Error: no etalong saves"
     exit 9
 fi
-#./spades.py src/test/teamcity/spades_config_mc_is220_100k_saves.info
+./spades.py src/test/teamcity/spades_config_mc_is220_100k_saves.info
 
 pushd spades_output/ECOLI_IS220_QUAKE_100K_SAVES/latest
 diffs=0
