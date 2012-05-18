@@ -9,8 +9,10 @@
 set -e
 pushd ../../../
 rm -f spades_output/ECOLI_IS220_QUAKE_100K_SAVES/latest
-if [ ! -d spades_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon ]; then
-    echo "Error: no etalong saves"
+#etalon=spades_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
+etalon=../../../etalon_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
+if [ ! -d $etalon ]; then
+    echo "Error: no etalon saves at $etalon"
     exit 9
 fi
 ./spades.py src/test/teamcity/spades_config_mc_is220_100k_saves.info
@@ -23,7 +25,7 @@ do
     for f in $i/saves/*
     do
         set +e
-        diff $f ../etalon/$f >> diff_with_etalon.txt
+        diff $f $etalon/$f >> diff_with_etalon.txt
         if [ $? -eq 1 ]; then
             echo "^^^^^^^ it was $f" >> diff_with_etalon.txt
             (( diffs += 1 ))
