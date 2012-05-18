@@ -1,0 +1,19 @@
+project_name        ECOLI_IS220_QUAKE_100K_SAVES
+output_dir          ./spades_output
+max_threads         4
+developer_mode      true
+compilation_dir     ./teamcity_precompiled/ECOLI_IS220_QUAKE_100K_SAVES
+
+; This section describes the input dataset.
+dataset
+{
+    paired_reads             $cfg/../../../data/input/E.coli/is220/cropped/s_6.first100000_1.fastq.gz $cfg/../../../data/input/E.coli/is220/cropped/s_6.first100000_2.fastq.gz
+    ; single_reads             $cfg/../../../data/input/E.coli/is220/s_6_1.cor_single.fastq.gz $cfg/../../../data/input/E.coli/is220/s_6_2.cor_single.fastq.gz
+    single_cell              false
+}
+
+assembly
+{
+    iterative_K         21 33 55
+    gap_closer          true
+}
