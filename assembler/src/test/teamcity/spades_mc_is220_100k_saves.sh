@@ -25,7 +25,7 @@ do
     for f in $i/saves/*
     do
         set +e
-        diff $f $etalon/$f >> diff_with_etalon.txt
+        diff $f ../../../$etalon/$f >> diff_with_etalon.txt
         if [ $? -eq 1 ]; then
             echo "^^^^^^^ it was $f" >> diff_with_etalon.txt
             (( diffs += 1 ))
