@@ -312,8 +312,11 @@ struct debruijn_config {
 		boost::optional<size_t> jump_is;
 		boost::optional<size_t> jump_rl;
 		boost::optional<size_t> RL;
-		boost::optional<size_t> IS;
+		boost::optional<double> IS;
 		boost::optional<double> is_var;
+		boost::optional<double> median;
+		boost::optional<double> mad;
+		map<int, size_t> hist;
 		map<size_t, size_t> percentiles;
 		boost::optional<double> avg_coverage;
 		bool single_cell;

@@ -10,6 +10,39 @@
 
 namespace omnigraph {
 
+double get_median(const map<int, size_t> &hist) {
+	double S = 0;
+	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+		S += iter->second;
+	}
+	double sum = S;
+	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+		sum -= iter->second;
+		if (sum <= S / 2) {
+			return iter->first;
+		}
+	}
+	assert(false);
+	return -1;
+}
+
+double get_mad(const map<int, size_t> &hist, double median) { // median absolute deviation
+	map<int, size_t> hist2;
+	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+		double x = fabs(iter->first - median);
+		hist2[x] = iter->second;
+	}
+	return get_median(hist2);
+}
+
+void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, size_t> *res) {
+	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+		if (iter->first >= low && iter->first <= high) {
+			res->insert(*iter);
+		}
+	}
+}
+
 template<class graph_pack>
 void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, size_t edge_length_threshold) {
 	enum {
@@ -46,29 +79,26 @@ void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, siz
 		int is = pos_right.second - pos_left.second - k - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
 		hist[is] += 1;
 		++n;
-		sum += is;
-		sum2 += is * 1.0 * is;
 	}
 
-	if (n == 0) {
+		if (n == 0) {
 		throw std::runtime_error("Failed to estimate insert size of paired reads, because none of the paired reads aligned to long edges");
 	}
 	INFO(n << " paired reads (" << (n * 100.0 / total) << "% of all) aligned to long edges");
 
-	double mean, delta;
-	mean = sum / n;
-	delta = sqrt(sum2 / n - mean * mean);
+	// Misha's approach
+
 	size_t often = 0;
-	size_t median = -1;
+	size_t mode = -1;
 	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
 		if (iter->second > often) {
 			often = iter->second;
-			median = iter->first;
+			mode = iter->first;
 		}
 	}
 
-	int low = -median;
-	int high = 3 * median;
+	int low = -mode;
+	int high = 3 * mode;
 
 	n = 0;
 	sum = 0;
@@ -81,6 +111,7 @@ void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, siz
 		sum += iter->second * 1.0 * iter->first;
 		sum2 += iter->second * 1.0 * iter->first * iter->first;
 	}
+	double mean, delta;
 	mean = sum / n;
 	delta = sqrt(sum2 / n - mean * mean);
 
@@ -127,8 +158,24 @@ void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, siz
 	cfg::get_writable().ds.IS = mean;
 	cfg::get_writable().ds.is_var = delta;
 
+	// Kolya's approach
+	// Now we calculate median, MAD and cropped histogram
+	{
+		double median = 0;
+		double mad = 0;
+		median = get_median(hist);
+		mad = get_mad(hist, median);
+		double low = median - 2 * 1.4826 * mad;
+		double high = median + 2 * 1.4826 * mad;
+		hist_crop(hist, low, high, &cfg::get_writable().ds.hist);
+		median = get_median(cfg::get().ds.hist);
+		mad = get_mad(cfg::get().ds.hist, median);
+		cfg::get_writable().ds.median = median;
+		cfg::get_writable().ds.mad = mad;
+	}
+
 	INFO("Insert size refined:");
-	INFO("IS = " << mean);
+	INFO("IS = " << cfg::get_writable().ds.IS);
 	INFO("delta = " << delta);
 }
 

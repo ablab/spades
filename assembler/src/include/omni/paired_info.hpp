@@ -693,8 +693,7 @@ public:
 	//		return true;
 	//	}
 
-}
-;
+};
 
 /**
  * This class performs the most simple offline clustering of paired information.
