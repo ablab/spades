@@ -6,7 +6,7 @@
 
 #include <sys/stat.h>
 #include <fstream>
-#include <omp.h>
+#include "omp_wrapper.h"
 #include <iostream>
 #include <sstream>
 #include <cstring>

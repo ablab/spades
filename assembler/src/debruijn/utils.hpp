@@ -17,7 +17,7 @@
 #include <iostream>
 #include "sequence/sequence_tools.hpp"
 #include "omni/splitters.hpp"
-#include <omp.h>
+#include "omp_wrapper.h"
 
 #include "new_debruijn.hpp"
 //#include "common/io/paired_read.hpp"

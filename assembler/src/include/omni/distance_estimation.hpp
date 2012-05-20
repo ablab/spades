@@ -11,6 +11,8 @@
 #include "paired_info.hpp"
 #include "omni_utils.hpp"
 
+#include "omp_wrapper.h"
+
 namespace omnigraph {
 
 template<class Graph>
