@@ -8,12 +8,13 @@ project(hammer CXX C)
 
 find_package(OpenMP)
 
-# bug in cmake, fixed in 2.6.4 (patch 8)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgomp")
-# bug, problem occured in Ubuntu 12.04
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+if(OPENMP_FOUND)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
-add_definitions(${OpenMP_CXX_FLAGS})
+# What for?
 add_definitions(-fPIC)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
