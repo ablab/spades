@@ -3,7 +3,7 @@
 #include "omni/parallel_unordered_map.hpp"
 #include <omp.h>
 
-#define DESTINATION_MAP MCT_CLOSED_HASH
+#define DESTINATION_MAP TR1_UNORDERED
 
 #if DESTINATION_MAP == TR1_UNORDERED
     #include <tr1/unordered_set>

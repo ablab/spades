@@ -25,7 +25,7 @@
 #define GOOGLE_DENSE 1
 #define MCT_CLOSED_HASH 2
 
-#define MAP_IN_USE MCT_CLOSED_HASH
+#define MAP_IN_USE TR1_UNORDERED
 
 #if MAP_IN_USE == TR1_UNORDERED
     #include <tr1/unordered_map>
