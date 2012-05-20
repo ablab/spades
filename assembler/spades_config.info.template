@@ -40,7 +40,7 @@ error_correction
     ; Maximum number of iterations for the error correction procedure. Default is 2.
     max_iterations      2     
 
-    ; Force error correction tool to output compressed corrected reads (with gzip). Default is true.
+    ; Forces error correction tool to output compressed corrected reads (with gzip). Default is true.
     gzip_output         true                          
 }
 

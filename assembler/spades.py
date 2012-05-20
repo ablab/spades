@@ -148,8 +148,8 @@ def check_config(cfg, default_project_name=""):
             
     return True
 
-long_options = "project-name= paired= paired1= paired2= single= k-mers= sc help".split()
-short_options = "n:p:1:2:s:k:Sh"
+long_options = "project-name= paired= paired1= paired2= single= k-mers= output-dir= threads= memory= tmp-dir= qvoffset= iterations= sc help gzip-output sam-files gap-closer test".split()
+short_options = "n:p:1:2:s:k:o:t:m:d:q:i:Shzag"
 
 def check_file(f, message=''):
     if not os.path.isfile(f):
@@ -159,21 +159,42 @@ def check_file(f, message=''):
 def usage():
     print >>sys.stderr, 'SPAdes genome assembler'
     print >>sys.stderr, 'Usage:'
+    print >>sys.stderr, sys.argv[0], ' --test'
+    print >>sys.stderr, 'or'
     print >>sys.stderr, sys.argv[0], ' <config file>'
     print >>sys.stderr, 'or'
     print >>sys.stderr, sys.argv[0], ' [options described below] -n <project name>'
     print >>sys.stderr, ""
-    print >>sys.stderr, "Options with parameters:"
+    print >>sys.stderr, "Common options"
+    print >>sys.stderr, "\tOptions with parameters:"
     print >>sys.stderr, "-n\t--project-name\tName of the project [Mandatory parameter]"
+    print >>sys.stderr, "-o\t--output-dir\tDirectory to store all result files"
     print >>sys.stderr, "-p\t--paired\tFile with interlaced left and right paired end reads"
     print >>sys.stderr, "-1\t--paired1\tFile with left paired end reads"
     print >>sys.stderr, "-2\t--paired2\tFile with right paired end reads"
     print >>sys.stderr, "-s\t--single\tFile with unpaired reads"
-    print >>sys.stderr, "-k\t--k-mers\tComma-separated list of odd values for k-mer (vertex) sizes. Default is 21,33,55"    
+    print >>sys.stderr, "-k\t--k-mers\tComma-separated list of odd values for k-mer (vertex) sizes. Default is 21,33,55" 
+
     print >>sys.stderr, ""
-    print >>sys.stderr, "Options without parameters:"
+    print >>sys.stderr, "\tOptions without parameters:"
     print >>sys.stderr, "-S\t--sc\tShould be set if input data was obtained with MDA (single-cell) technology"
     print >>sys.stderr, "-h\t--help\tPrint this usage message"    
+
+    print >>sys.stderr, ""
+    print >>sys.stderr, ""
+    print >>sys.stderr, "Special options (for advanced users)"
+    print >>sys.stderr, "\tOptions with parameters:"
+    print >>sys.stderr, "-t\t --threads\tMaximum number of threads"
+    print >>sys.stderr, "-m\t --memory\tMaximum amount of RAM that SPAdes can use(in Gb)"
+    print >>sys.stderr, "-d\t --tmp-dir\tDirectory where temporary files for error correction tool are stored"
+    print >>sys.stderr, "-q\t --qvoffset\tPHRED quality offset in the input reads (33 or 64)"
+    print >>sys.stderr, "-i\t --iterations\tMaximum number of iterations for the error correction procedure"
+
+    print >>sys.stderr, ""
+    print >>sys.stderr, "\tOptions without parameters:"
+    print >>sys.stderr, "-z\t--not-gzip-output\tForces error correction tool not to compress output corrected reads (by default it compress them with gzip)"
+    print >>sys.stderr, "-a\t--sam-files\tForces SPAdes to generate a SAM-file showing how the paired reads are aligned to resulting contigs"
+    print >>sys.stderr, "-g\t--disable-gap-closer\tForces SPAdes not to use the gap closer (by default it is enabled)"
 
 def main():
 
@@ -181,14 +202,12 @@ def main():
     options = None
 
     if len(sys.argv) == 1:
-        if os.path.isfile("spades_config.info"):
-            CONFIG_FILE = "spades_config.info"
-        elif os.path.isfile(os.path.join(spades_home, "spades_config.info")):
-            CONFIG_FILE = os.path.join(spades_home, "spades_config.info")
+        usage()
+        sys.exit(0)
     elif len(sys.argv) == 2:
         if os.path.isfile(sys.argv[1]):
-            CONFIG_FILE = sys.argv[1]   
-    else:
+            CONFIG_FILE = sys.argv[1]           
+    if not CONFIG_FILE:
         try:
             options, not_options = getopt.gnu_getopt(sys.argv, short_options, long_options)
         except getopt.GetoptError, err:
@@ -203,27 +222,36 @@ def main():
 
     # all parameters are stored here
     cfg = dict()
-
-    if CONFIG_FILE:
-        cfg = load_config_from_info_file(CONFIG_FILE)
-
-        os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))  
-
-        if not check_config(cfg, os.path.splitext(os.path.basename(CONFIG_FILE))[0] ):
-            return
     
-    elif options:
+    if options:
         project_name = ""
+        output_dir   = ""
+        tmp_dir      = ""
+        
         paired  = []
         paired1 = []
         paired2 = []
         single  = []
         k_mers  = []
-        single_cell = False
+        
+        single_cell        = False
+        not_gzip_output    = False
+        sam_files          = False
+        disable_gap_closer = False
 
+        threads     = None
+        memory      = None
+        qvoffset    = None
+        iterations  = None
+      
         for opt, arg in options:        
             if opt in ('-n', "--project-name"):
                 project_name = arg
+            elif opt in ('-o', "--output-dir"):
+                output_dir = arg
+            elif opt in ('-d', "--tmp-dir"):
+                tmp_dir = arg
+
             elif opt in ('-p', "--paired"):
                 paired.append(check_file(arg, 'paired'))
             elif opt in ('-1', "--paired1"):
@@ -234,59 +262,117 @@ def main():
                 single.append(check_file(arg, 'single'))
             elif opt in ('-k', "--k-mers"):
                 k_mers = map(int, arg.split(","))
+
             elif opt in ('-S', "--sc"):
-                single_cell = True
+                single_cell         = True
+            elif opt in ('-z', "--not-gzip-output"):
+                gzip_output         = True
+            elif opt in ('-a', "--sam-files"):
+                sam_files           = True
+            elif opt in ('-g', "--disable-gap-closer"):
+                disable_gap_closer  = True
+
+            elif opt in ('-t', "--threads"):
+                threads     = int(arg)
+            elif opt in ('-m', "--memory"):
+                memory      = int(arg)
+            elif opt in ('-q', "--qvoffset"):
+                qvoffset    = int(arg)
+            elif opt in ('-i', "--iterations"):
+                iterations  = int(arg)
+
             elif opt in ('-h', "--help"):
                 usage()
                 sys.exit(0)
+
+            elif opt in ("--test"): # running test
+                if os.path.isfile("spades_config.info"):
+                    CONFIG_FILE = "spades_config.info"
+                elif os.path.isfile(os.path.join(spades_home, "spades_config.info")):
+                    CONFIG_FILE = os.path.join(spades_home, "spades_config.info")   
+                break     
             else:
                 raise ValueError    
 
-        if not project_name:
-            error("the project name is not set! It is a mandatory parameter.")
+        if not CONFIG_FILE:
+            if not project_name:
+                error("the project name is not set! It is a mandatory parameter.")
 
-        if len(paired1) != len(paired2):
-            error("the number of files with left paired reads is not equal to the number of files with right paired reads!")           
+            if len(paired1) != len(paired2):
+                error("the number of files with left paired reads is not equal to the number of files with right paired reads!")           
 
-        if not paired and not paired1 and not single:
-            error("you should specify either paired reads or single reads or both!")
+            if not paired and not paired1 and not single:
+                error("you should specify either paired reads or single reads or both!")
+            
+            # filling cfg
+            cfg["common"]           = load_config_from_vars(dict())
+            cfg["dataset"]          = load_config_from_vars(dict()) 
+            cfg["error_correction"] = load_config_from_vars(dict())      
+            cfg["assembly"]         = load_config_from_vars(dict())
+
+            # filling reads
+            paired_counter = 0
+            if paired:
+                for read in paired:
+                    paired_counter += 1
+                    cfg["dataset"].__dict__["paired_reads" + str(paired_counter)] = read
         
-        # filling cfg
-        cfg["common"]           = load_config_from_vars(dict())
-        cfg["dataset"]          = load_config_from_vars(dict()) 
-        cfg["error_correction"] = load_config_from_vars(dict())      
-        cfg["assembly"]         = load_config_from_vars(dict())
+            if paired1:
+                for i in range(len(paired1)):
+                    paired_counter += 1
+                    cfg["dataset"].__dict__["paired_reads" + str(paired_counter)] = [paired1[i], paired2[i]]
 
-        # filling reads
-        paired_counter = 0
-        if paired:
-            for read in paired:
-                paired_counter += 1
-                cfg["dataset"].__dict__["paired_reads" + str(paired_counter)] = read
-    
-        if paired1:
-            for i in range(len(paired1)):
-                paired_counter += 1
-                cfg["dataset"].__dict__["paired_reads" + str(paired_counter)] = [paired1[i], paired2[i]]
+            if single:
+                cfg["dataset"].__dict__["single_reads"] = single
 
-        if single:
-            cfg["dataset"].__dict__["single_reads"] = single
+            # filling other parameters
 
-        # filling other parameters
-        if k_mers:
-            cfg["assembly"].__dict__["iterative_K"] = k_mers
+            # common
+            if output_dir:
+                cfg["common"].__dict__["output_dir"] = output_dir
+            if threads:
+                cfg["common"].__dict__["max_threads"] = threads
+            if memory:
+                cfg["common"].__dict__["max_memory"] = memory
 
-        if single_cell:
-            cfg["dataset"].__dict__["single_cell"] = True
+            # dataset
+            cfg["dataset"].__dict__["single_cell"] = single_cell
+        
+            # error correction
+            if tmp_dir:
+                cfg["error_correction"].__dict__["tmp_dir"] = tmp_dir
+            if qvoffset:
+                cfg["error_correction"].__dict__["qvoffset"] = qvoffset
+            if iterations:
+                cfg["error_correction"].__dict__["max_iterations"] = iterations
+            cfg["error_correction"].__dict__["gzip_output"] = not not_gzip_output
 
-        if not check_config(cfg, project_name):
+            # assembly
+            if k_mers:
+                cfg["assembly"].__dict__["iterative_K"] = k_mers
+            cfg["assembly"].__dict__["generate_sam_files"] = sam_files
+            cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
+
+            if not check_config(cfg, project_name):
+                return
+
+    if CONFIG_FILE:
+        cfg = load_config_from_info_file(CONFIG_FILE)
+
+        os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))  
+
+        if not check_config(cfg, os.path.splitext(os.path.basename(CONFIG_FILE))[0] ):
             return
-
 
     print("\n======= SPAdes pipeline started\n")
 
     if CONFIG_FILE:
         print("Using config file: " + CONFIG_FILE)         
+    else:
+        print "Started with command line: ",
+        for v in sys.argv:
+            print v,
+        print ""
 
     bh_dataset_filename = ""
     if cfg.has_key("error_correction"):
@@ -318,6 +404,8 @@ def main():
 
         if start_bh:            
 
+            if not os.path.exists(bh_cfg.output_dir):
+                os.makedirs(bh_cfg.output_dir)
             if not os.path.exists(bh_cfg.working_dir):
                 os.makedirs(bh_cfg.working_dir)
 
