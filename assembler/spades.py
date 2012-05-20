@@ -87,6 +87,11 @@ def check_config(cfg, default_project_name=""):
                 if not os.path.isfile(os.path.expandvars(reads_file)):
                     error("file with reads doesn't exist! " + os.path.expandvars(reads_file))
                     return False
+                else:
+                    ext = os.path.splitext(os.path.expandvars(reads_file))[1]
+                    if ext not in ['.fa', '.fasta', '.fq', '.fastq', '.gz']:
+                        error("file with reads has unsupported format (only .fa, .fasta, .fq, .fastq, .gz are supported)! " + os.path.expandvars(reads_file))
+                        return False
     
     if no_files_with_reads:
         error("wrong config! You should specify at least one file with reads!")
