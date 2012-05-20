@@ -6,11 +6,20 @@
 /* Namespace for Google classes */
 #define GOOGLE_NAMESPACE ::google
 
+#if defined (__GLIBCXX__) || defined (__GLIBCPP__)
 /* the location of the header defining hash functions */
 #define HASH_FUN_H <tr1/functional>
-
 /* the namespace of the hash<> function */
 #define HASH_NAMESPACE std::tr1
+#elif defined (_LIBCPP_VERSION)
+/* the location of the header defining hash functions */
+#define HASH_FUN_H <functional>
+/* the namespace of the hash<> function */
+#define HASH_NAMESPACE std
+#else
+#error "Unknown C++ standard library"
+#endif
+
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
