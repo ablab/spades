@@ -269,7 +269,7 @@ void ConstructGraph(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeInd
     DeBruijn& debruijn = index.inner_index();
 
     size_t rl = 0;
-    if (streams.size() > 0) {
+    if (streams.size() > 1) {
         rl = FillIterativeParallelIndex<k, Graph, Read>(streams, debruijn);
     }
     else if (streams.size() == 1) {
