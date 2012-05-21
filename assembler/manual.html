@@ -134,10 +134,28 @@ Thank you for using SPAdes!
 
 <h2>2 Running SPAdes</h2>
 
+<h3>2.1 Input data</h3>
+<p>
+    SPAdes accepts single reads as well as forward-reverse paired end reads in FASTA and FASTQ format;
+    however, in order to run error correction, reads should be in FASTQ format. All files may be compressed
+    with gzip. At present, SPAdes can accept only one paired-end library as input.
+</p>
+
+<p>
+    SPAdes supports paired end reads organized into one or two files.
+
+<ul>
+    <li>If using a single file, interlace the corresponding mated "1" and "2" reads. Put the read from the Illumina
+        file <code>s_n_1_export.txt</code> first, followed by the read from the Illumina file <code>s_n_2_export.txt</code>.</li>
+    <li>If using a pair of files, the first file should have the Illumina "1" subreads and the second file
+        should have the Illumina "2" subreads, with corresponding reads in the exact same order. </li>
+</ul>
+
+<h3>2.2 SPAdes pipeline</h3>
 <p>
     SPAdes has two stages: error correction by <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> and genome assembly. By default all the
-    results are stored in <code>spades_output</code> directory that can be changed by <code>output_dir</code> parameter. For each dataset SPAdes creates separate directory in <code>spades_output</code>,
-    the name of this directory specified by <code>project_name</code> parameter. Corrected reads are stored in <code>corrected</code> subdirectory in <code>*.fastq.qz</code> files.
+    results are stored in <code>spades_output</code> directory. For each dataset SPAdes creates separate directory <code>&lt;project_name></code> in <code>spades_output</code>,
+    the name of the directory . Corrected reads are stored in <code>corrected</code> subdirectory in <code>*.fastq.qz</code> files.
     The resulting contigs are stored in <code>contigs</code> subdirectory in <code>*.fasta</code> file.
 </p>
 
@@ -148,10 +166,20 @@ Thank you for using SPAdes!
 
 <p>
     There are two ways to run SPAdes for you dataset you can specify the parameters from the command line or provide the configuration file with <code>.info</code> extension
-    as the only <code>spades.py</code> parameter.
+    as the only <code>./spades.py</code> parameter.
 </p>
 
-<h3>2.2 Preparing configuration files</h3>
+
+
+<h3>2.3 SPAdes command line options </h3>
+<p>
+
+
+</p>
+
+
+
+<h3>2.4 Preparing configuration files</h3>
 
 <p>
 You can find the configuration file <code>spades_config.info</code> for the toy dataset from section 1.5 in the directory you extracted the archive (see section 1.1) or at
@@ -171,103 +199,8 @@ You can use this file as the template for your datasets. In  this file in each l
 </p>
 
 
-<h3>2.2.1 Dataset settings</h3>
-<p>
-SPAdes accepts single reads as well as forward-reverse paired end reads in FASTA and FASTQ format;
-however, in order to run error correction, reads should be in FASTQ format. All files may be compressed
-with gzip. At present, SPAdes can accept only one paired-end library as input.
-</p>
 
-<p>
-<code>paired_reads</code> specifies input paired end reads organized into one or two files.
-    <ul>
-        <li>If using a single file, interlace the corresponding mated "1" and "2" reads. Put the read from the Illumina
-            file <code>s_n_1_export.txt</code> first, followed by the read from the Illumina file <code>s_n_2_export.txt</code>.</li>
-        <li>If using a pair of files, the first file should have the Illumina "1" subreads and the second file
-            should have the Illumina "2" subreads, with corresponding reads in the exact same order. The
-            two filenames should be separated by a space.</li>
-    </ul>
-</p>
-
-<p>
-<code>single_reads</code> specifies reads without pairs. You can specify any number of files with single reads. File
-names should be separated by spaces.
-</p>
-
-<p>
-<code>single_cell</code> flag is set if input data was obtained with MDA (single cell) technology.
-</p>
-
-<h3>2.2.2 Error correction settings</h3>
-<p>
-The <code>error_correction</code> section is responsible for correcting errors in the input reads; error correction in the
-SPAdes pipeline is done with <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a>,
-a recently developed error correction tool that works well for the case of non-uniform coverage (e.g., on single-cell data). Note that for an accurate assembly it is important
-to use this stage, especially for single-cell datasets.
-</p>
-
-<p>
-<code>tmp_dir</code> specifies the directory where temporary files are stored. Note that BayesHammer uses a significant
-    amount of disk space (even though it cleans up after itself).
-</p>
-
-<p>
-    <code>qvoffset</code> sets PHRED quality offset in the input reads (33 or 64). If not given, BayesHammer tries to find
-    this value automatically.
-</p>
-
-<p>
-    <code>max_iterations</code> sets the maximum number of iterations for the error correction procedure. Usually, the
-    second iteration does improve upon the first, but then there is almost no change.
-</p>
-
-<p>
-    <code>max_threads</code> sets the maximum number of threads.
-</p>
-
-<p>
-<code>max_memory</code> sets the maximum amount of available RAM (in Gb). BayesHammer (and the entire SPAdes
-    pipeline) will fail if it attempts to allocate more RAM than specified here.
-</p>
-
-<p>
-    <code>gzip_output</code> flag forces BayesHammer to output corrected reads compressed with gzip.
-</p>
-
-<h3>2.2.3 Assembly settings</h3>
-
-<p>
-    The <code>assembly</code> section controls the assembly process.
-</p>
-
-<p>
-    <code>iterative_K</code> specifies one or more odd values for k-mer (vertex) sizes. Informally, smaller values of k make
-    the graph more connected, but at the same time more tangled, while higher values of k may defragment
-    the graph, but allow to resolve short repeats. The typical value for this variable is <code>21 33 55</code>. See the
-    paper [1] for more details. Note that in the configuration file, k is the size of a vertex, while in the
-    paper, k is the size of an edge (i.e., larger by one).
-</p>
-
-<p>
-<code>paired_mode</code> turns the repeat resolver on/off if parameter set to true/false.
-</p>
-
-<p>
-    <code>generate_sam_files</code> flag forces SPAdes to generate a SAM-file showing how the paired reads specified in
-    dataset section of config file are aligned to resulting contigs. Alignments from this SAM-file can be
-    visualized, e.g., by <a href="http://bioinf.scri.ac.uk/tablet/">Tablet</a> [3].
-</p>
-
-<p>
-    gap_closer turns the gap closer on/off. This module restores k-mers that are not covered not by whole
-    reads but by overlapping parts of two reads and are supported by paired reads. This is efficient when
-    a library has a small insert size (up to 3x read length). If insert size is large, you can turn it off to
-    slightly decrease the runing time of SPAdes. Note: you can decrease the running time of SPAdes by
-    setting just one value of k (say, 55) and turning the gap closer on (since the gap closer usually gives
-    similar results as running with several smaller values of k).
-</p>
-
-<h3>2.3 Supporting files and directories</h3>
+<h3>2.5 Supporting files and directories</h3>
 
 <p>
     SPAdes uses <code>~/.spades</code> directory to store compiled binaries and reuse them. If you want to save disk space or just want to be sure that
