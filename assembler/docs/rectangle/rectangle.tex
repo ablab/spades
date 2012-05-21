@@ -138,11 +138,7 @@ The diagonal grid graph (consists of blue rectangles --- rectangles intersected 
 \end{figure}
 
 
-
 \subsection{From Genome Assembly Using Mate-Pairs to Rectangle Graph}
-
-
-
 
 We represent presented genomes as circular strings over the alphabet of nucleotides: $\{A,T,C,G\}$. 
 A $k$-mer is a string of length $k$.
@@ -264,12 +260,39 @@ a pair of $k$-mers $(a|b)$ is called a $(k,d,\Delta)$-mer of $S$
 if it is a $(k,d_0)$-mer of $S$ for some $d_0 \in [d-\Delta, d+ \Delta]$. While the set of all $(k,d)$-mer 
 of $S$ forms a line $(d) y = x + d$ in the 2D genome coordinate, a set of $(k,d,\Delta)$-mers forms 
 separated points perturbed around $(d)$. And thus, in each rectangle, the line fragment now becomes a collection of points 
-perturbed around its original position. The task of assemblying the diagonal grid graph from in-exact mate pairs is analogous to 
+perturbed around its original position.
+The task of assemblying the diagonal grid graph from in-exact mate pairs is analogous to 
 the solving the old jigzaw problems where the pictures on each pieces are faded out, some pieces from other puzzles got mixed into 
-the collection, or even some of the pieces are missing.  
+the collection, or even some of the pieces are missing. Bellow we address these complications.
+
+\noindent 
+\textbf{Line Fragments Reconstruction} 
+We now describe how to reconstruct the line fragment on each rectangles from a collection of perturbed points corresponding to the 
+inexact $(k,d,\Delta)$ mers. A pair of condensed path $p_1$ and $p_2$ in the graph is called a d-bound suspected if there exists 
+a pair of $k$-mers $(a,b)$ such that $a \in p_1$ and $b\in p_2$. For each d-bounded suspected pair of condensed edge, we draw a rectangle with
+vertical edges $p_1$ and horizontal edges $p_2$. The set of  $(k-1, d, \Delta)$-mers forms points on each rectangles.  To better \emph{resharp}
+the line segment, it is beneficial to characterize the variation of insert size. 
+
+
+While it is commonly accepted that insert size distribution is unimodal, there are few data that show the insert size distributions do not usually follow 
+the gaussian distribution, especially for single cell data. Fig.~\ref{fig:distri} shows the insert size distribution on multiple cells as well as 
+single cell datasets.  The insert size distribution for multiple cell can be approximately fit in a gaussian distribution, the insert size distributions for
+single cell data are heavily skewed.
 
 
 
+\begin{figure}
+\begin{center}
+	\begin{tabular}{l@{\extracolsep{13pt}}l}
+		(a) & (b) \\
+		\vtop{\vskip0pt\hbox to.45\textwidth{\includegraphics[width=.45\textwidth] {fig/ecolilane1.eps}}}
+		&
+		\vtop{\vskip0pt\hbox to.45\textwidth{\includegraphics[width=.45\textwidth] {fig/saureuslane7.eps}}}
+	\end{tabular}
+    \caption{Distribution of insert size for Single Cell Datasets of \emph{E.coli} and \emph{S. aureus}}
+    \label{fig:distri}
+\end{center}
+\end{figure}
 
 
 
