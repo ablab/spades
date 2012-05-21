@@ -254,7 +254,7 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 	ofstream file((file_name + ".pos").c_str());
 
 	DEBUG("Saving edges positions, " << file_name << " created");
-	VERIFY(file != NULL);
+	VERIFY(file.is_open());
 
 	file << component_.e_size() << endl;
 
