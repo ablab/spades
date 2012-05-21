@@ -51,6 +51,7 @@ void startSimpleGraphRecord(ostream &out, const string &name);
 void endGraphRecord(ostream &out);
 
 void recordParameter(ostream &out, const string &name, const string &value);
+void recordParameterInQuotes(ostream &out, const string &name, const string &value); 
 
 string constructCell(const string &label, int border, const string &port);
 
