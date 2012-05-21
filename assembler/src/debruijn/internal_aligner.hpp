@@ -413,7 +413,7 @@ protected:
 				}
 			}
 			this->SuccesfullReads++;
-			return CreateSingleSAMFromRange(s_r.original_name(), read, edge, path1[0].second, rc, qual);
+			return this->CreateSingleSAMFromRange(s_r.original_name(), read, edge, path1[0].second, rc, qual);
 
 		} else {
 			if (this->print_quality) {
@@ -632,7 +632,7 @@ protected:
 				MappingRange new_range(i_r, m_r);
 				if (rc) edge = this->graph_.conjugate(edge);
 				if (m_r.end_pos!=0) {
-					result.push_back(CreateSingleSAMFromRange(s_r.original_name(), read, edge, new_range, rc, qual));
+					result.push_back(this->CreateSingleSAMFromRange(s_r.original_name(), read, edge, new_range, rc, qual));
 					this->SamRecordsCount++;
 				}
 			}

@@ -293,7 +293,7 @@ private:
 		set<VertexId> verticesToDelete;
 		for (size_t i = 0; i + 1 < path.size(); i++) {
 			EdgeId e = path[i + 1];
-			VertexId v = EdgeStart(e);
+			VertexId v = this->EdgeStart(e);
 			if (verticesToDelete.find(conjugate(v)) == verticesToDelete.end())
 				verticesToDelete.insert(v);
 		}
@@ -315,7 +315,7 @@ public:
 	virtual ~AbstractConjugateGraph() {
 		TRACE("~AbstractConjugateGraph")
 		for (auto it = this->SmartVertexBegin(); !it.IsEnd(); ++it) {
-			ForceDeleteVertex(*it);
+			this->ForceDeleteVertex(*it);
 		}
 		TRACE("~AbstractConjugateGraph ok")
 	}
@@ -330,8 +330,8 @@ public:
 
 protected:
 	/*virtual*/ bool AdditionalCompressCondition(VertexId v) const {
-		return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v)
-				&& EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
+		return !(this->EdgeEnd(this->GetUniqueOutgoingEdge(v)) == conjugate(v)
+				&& this->EdgeStart(this->GetUniqueIncomingEdge(v)) == conjugate(v));
 	}
 public:
 	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) const {
@@ -345,7 +345,7 @@ public:
 
 	bool SplitCondition(VertexId vertex, const vector<EdgeId> &splittingEdges) {
 		for (auto it = splittingEdges.begin(); it != splittingEdges.end(); ++it) {
-			if (EdgeStart(*it) == conjugate(EdgeEnd(*it)))
+			if (this->EdgeStart(*it) == conjugate(this->EdgeEnd(*it)))
 				return false;
 		}
 		return true;
@@ -361,7 +361,7 @@ public:
 //		}
 //		cout << "Edges printed" << endl;
 		VertexId newVertex = HiddenAddVertex(vertex->data());
-		FireAddingVertex(newVertex);
+		this->FireAddingVertex(newVertex);
 //		cout << "Added vertex " << newVertex << " conjugate " << conjugate(newVertex) << endl;
 		vector<pair<EdgeId, EdgeId>> edge_clones;
 		vector<pair<EdgeId, EdgeId>> rc_edge_clones;
@@ -374,21 +374,21 @@ public:
 			if (start_e == vertex)
 				start_e = newVertex;
 			EdgeId newEdge = HiddenAddEdge(start_v, start_e, splittingEdges[i]->data());
-			FireAddingEdge(newEdge);
+			this->FireAddingEdge(newEdge);
 //			cout << "Added edge " << newEdge << " (start: " << EdgeStart(newEdge) << " end: " << EdgeEnd(newEdge) << " conjugate: " << conjugate(newEdge) << ") ; " << endl;
 			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
 			rc_edge_clones.push_back(make_pair((splittingEdges[i])->conjugate(), newEdge->conjugate()));
 		}
 //FIRE
-		FireVertexSplit(newVertex, edge_clones, split_coefficients, vertex);
-		FireAddVertex(newVertex);
+		this->FireVertexSplit(newVertex, edge_clones, split_coefficients, vertex);
+		this->FireAddVertex(newVertex);
 		for(size_t i = 0; i < splittingEdges.size(); i ++)
-			FireAddEdge(edge_clones[i].second);
+			this->FireAddEdge(edge_clones[i].second);
 
-		FireVertexSplit(newVertex->conjugate(), rc_edge_clones, split_coefficients, vertex->conjugate());
-		FireAddVertex(newVertex->conjugate());
+		this->FireVertexSplit(newVertex->conjugate(), rc_edge_clones, split_coefficients, vertex->conjugate());
+		this->FireAddVertex(newVertex->conjugate());
 		for(size_t i = 0; i < splittingEdges.size(); i ++)
-			FireAddEdge(rc_edge_clones[i].second);
+			this->FireAddEdge(rc_edge_clones[i].second);
 
 
 //		cout << "------------------------------" << endl;

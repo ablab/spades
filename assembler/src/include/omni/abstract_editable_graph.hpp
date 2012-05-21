@@ -75,10 +75,10 @@ private:
 	void FireDeletePath(const vector<EdgeId> &edgesToDelete,
 			const vector<VertexId> &verticesToDelete) {
 		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
-			FireDeleteEdge(*it);
+			this->FireDeleteEdge(*it);
 		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end();
 				++it)
-			FireDeleteVertex(*it);
+			this->FireDeleteVertex(*it);
 	}
 
 	void HiddenDeletePath(const vector<EdgeId> &edgesToDelete,
@@ -185,8 +185,8 @@ public:
 	VertexId AddVertex(const VertexData& data) {
 		TRACE("Adding vertex");
 		VertexId v = HiddenAddVertex(data);
-		FireAddingVertex(v);
-		FireAddVertex(v);
+		this->FireAddingVertex(v);
+		this->FireAddVertex(v);
 		TRACE("Vertex " << str(v) << " added");
 		return v;
 	}
@@ -195,7 +195,7 @@ public:
 		VERIFY(IsDeadEnd(v) && IsDeadStart(v));
 		VERIFY(v != VertexId(NULL));
 		TRACE("Deleting vertex " << str(v));
-		FireDeleteVertex(v);
+		this->FireDeleteVertex(v);
 		HiddenDeleteVertex(v);
 		TRACE("Vertex " << v << " deleted");
 	}
@@ -211,8 +211,8 @@ public:
 	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
 		TRACE("Adding edge connecting " << v1 << " and " << v2);
 		EdgeId e = HiddenAddEdge(v1, v2, data);
-		FireAddingEdge(e);
-		FireAddEdge(e);
+		this->FireAddingEdge(e);
+		this->FireAddEdge(e);
 		TRACE(
 				"Added edge " << str(e) << " connecting " << v1 << " and " << v2);
 		return e;
@@ -242,7 +242,7 @@ public:
 
 	void DeleteEdge(EdgeId e) {
 		TRACE("Deleting edge " << str(e));
-		FireDeleteEdge(e);
+		this->FireDeleteEdge(e);
 		HiddenDeleteEdge(e);
 		TRACE("Edge " << e << " deleted");
 	}
@@ -371,8 +371,8 @@ public:
 			to_merge.push_back(&(data(*it)));
 		}
 		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge));
-		FireAddingEdge(new_edge);
-		FireMerge(corrected_path, new_edge);
+		this->FireAddingEdge(new_edge);
+		this->FireMerge(corrected_path, new_edge);
 
 		//		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
 		//		cerr << "Corrected conjugate " << PrintConjugatePath(corrected_path) << endl;
@@ -381,8 +381,8 @@ public:
 		vector<VertexId> vertices_to_delete = VerticesToDelete(corrected_path);
 		//		cerr << "To delete " << PrintVertices(vertices_to_delete) << endl;
 
-		FireDeletePath(edges_to_delete, vertices_to_delete);
-		FireAddEdge(new_edge);
+		this->FireDeletePath(edges_to_delete, vertices_to_delete);
+		this->FireAddEdge(new_edge);
 		HiddenDeletePath(edges_to_delete, vertices_to_delete);
 		TRACE(
 				"Path merged. Corrected path merged into " << str(new_edge));
@@ -397,19 +397,19 @@ public:
 		pair<VertexData, pair<EdgeData, EdgeData>> newData = master_.SplitData(
 				data(edge), position);
 		VertexId splitVertex = HiddenAddVertex(newData.first);
-		FireAddingVertex(splitVertex);
+		this->FireAddingVertex(splitVertex);
 		EdgeId new_edge1 = HiddenAddEdge(EdgeStart(edge), splitVertex,
 				newData.second.first);
-		FireAddingEdge(new_edge1);
+		this->FireAddingEdge(new_edge1);
 		EdgeId new_edge2 = HiddenAddEdge(splitVertex, EdgeEnd(edge),
 				newData.second.second);
-		FireAddingEdge(new_edge2);
-		FireSplit(edge, new_edge1, new_edge2);
-		FireDeleteEdge(edge);
-		FireAddVertex(splitVertex);
-		FireAddEdge(new_edge1);
+		this->FireAddingEdge(new_edge2);
+		this->FireSplit(edge, new_edge1, new_edge2);
+		this->FireDeleteEdge(edge);
+		this->FireAddVertex(splitVertex);
+		this->FireAddEdge(new_edge1);
 
-		FireAddEdge(new_edge2);
+		this->FireAddEdge(new_edge2);
 		HiddenDeleteEdge(edge);
 		TRACE(
 				"Edge split into edges " << str(new_edge1) << " and " << str(new_edge2));
@@ -421,11 +421,11 @@ public:
 				"Gluing edges " << str(edge1) << " and " << str(edge2));
 		EdgeId new_edge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),
 				master_.GlueData(data(edge1), data(edge2)));
-		FireAddingEdge(new_edge);
-		FireGlue(new_edge, edge1, edge2);
-		FireDeleteEdge(edge1);
-		FireDeleteEdge(edge2);
-		FireAddEdge(new_edge);
+		this->FireAddingEdge(new_edge);
+		this->FireGlue(new_edge, edge1, edge2);
+		this->FireDeleteEdge(edge1);
+		this->FireDeleteEdge(edge2);
+		this->FireAddEdge(new_edge);
 		VertexId start = EdgeStart(edge1);
 		VertexId end = EdgeEnd(edge1);
 		HiddenDeleteEdge(edge1);

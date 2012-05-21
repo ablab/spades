@@ -206,11 +206,11 @@ public:
         for (auto iterator = this->graph().SmartEdgeBegin(this->comparator()); !iterator.IsEnd(); ) {
 			EdgeId tip = *iterator;
 			TRACE("Checking edge for being tip "  << this->graph().str(tip));
-			if (IsTip(tip)) {
+			if (this->IsTip(tip)) {
 				TRACE("Edge "  << this->graph().str(tip) << " judged to look like a tip topologically");
 				if (AdditionalCondition(tip)) {
                     TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
-                    RemoveTip(tip);
+                    this->RemoveTip(tip);
                     removed++;
                     TRACE("Edge "  << tip << " removed as a tip");
 				} else {
@@ -320,7 +320,7 @@ private:
     bool CheckUniqueExtension(EdgeId tip) const {
         static const size_t mid_edge = 200;
         static const size_t long_edge = 1500;
-        bool backward = IsTip(this->graph().EdgeStart(tip));
+        bool backward = this->IsTip(this->graph().EdgeStart(tip));
         if (backward){
             VertexId vertex = this->graph().EdgeEnd(tip);
             for (size_t i = 0; i<this->graph().IncomingEdgeCount(vertex); ++i) 
@@ -382,7 +382,7 @@ public:
 		for (auto iterator = this->graph().SmartEdgeBegin(this->comparator()); !iterator.IsEnd(); ++iterator) {
 			EdgeId tip = *iterator;
 			TRACE("Checking edge for being a tip "  << this->graph().str(tip));
-			if (IsTip(tip)) {
+			if (this->IsTip(tip)) {
 				TRACE("Edge "  << this->graph().str(tip) << " judged to look like tip topologically");
 				if (AdditionalCondition(tip)) {
                     TRACE("Additional checking");
@@ -398,7 +398,7 @@ public:
                     // removing only if stage is final
                     if (final_stage && CheckUniqueExtension(tip)){
                         TRACE("Edge " << this->graph().str(tip) << " has a unique extension");
-                        RemoveTip(tip);
+                        this->RemoveTip(tip);
                         TRACE("Edge " << tip << " was removed"); 
                         continue;
                     }
@@ -413,7 +413,7 @@ public:
                     if (!final_stage){
 					    TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
                         removed_with_check++;
-                        RemoveTip(tip);
+                        this->RemoveTip(tip);
                         TRACE("Edge "  << tip << " removed as a tip");
                         continue;
                     }
@@ -423,7 +423,7 @@ public:
                     if (TipHasVeryLowRelativeCoverage(tip)){
 					    TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
                         removed_with_check++;
-                        RemoveTip(tip);
+                        this->RemoveTip(tip);
                         TRACE("Edge "  << tip << " removed as a tip");
                         continue;
                     }
@@ -432,7 +432,7 @@ public:
                     if (tipchecker.TipCanBeProjected(tip)){
                         TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
                         removed_with_check++;
-                        RemoveTip(tip);
+                        this->RemoveTip(tip);
                         TRACE("Edge "  << tip << " removed as a tip");
                         continue;
                     }

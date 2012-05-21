@@ -143,14 +143,14 @@ public:
 	 * Method returns Sequence stored in the edge
 	 */
 	const Sequence& EdgeNucls(EdgeId edge) const {
-		return data(edge).nucls();
+		return this->data(edge).nucls();
 	}
 
 	const Sequence VertexNucls(VertexId v) const {
-		if (OutgoingEdges(v).size() > 0) {
-			return EdgeNucls(OutgoingEdges(v)[0]).Subseq(0, k_);
-		} else if (IncomingEdges(v).size() > 0) {
-			EdgeId inc = IncomingEdges(v)[0];
+		if (this->OutgoingEdges(v).size() > 0) {
+			return EdgeNucls(this->OutgoingEdges(v)[0]).Subseq(0, k_);
+		} else if (this->IncomingEdges(v).size() > 0) {
+			EdgeId inc = this->IncomingEdges(v)[0];
 			size_t length = EdgeNucls(inc).size();
 			return EdgeNucls(inc).Subseq(length - k_, length);
 		}
