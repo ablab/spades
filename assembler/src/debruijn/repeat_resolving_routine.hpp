@@ -1078,10 +1078,12 @@ void resolve_repeats() {
 //			cout << "END HERE" << endl;
 
 			io::ISCorruptingWrapper wrapped_jump_stream(jump_stream, 1e6);
+			std::vector<io::IReader<io::PairedRead>* > stream;
+			stream.push_back(&wrapped_jump_stream);
 
 			FillPairedIndexWithReadCountMetric<K>(conj_gp.g, conj_gp.int_ids,
 					conj_gp.index, conj_gp.kmer_mapper, raw_jump_index,
-					wrapped_jump_stream);
+					stream);
 //			FillPairedIndex<K>(conj_gp.g,
 //					conj_gp.index, raw_jump_index,
 //					wrapped_jump_stream);

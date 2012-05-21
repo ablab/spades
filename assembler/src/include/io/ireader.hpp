@@ -31,6 +31,11 @@ namespace io {
 template<typename ReadType>
 class IReader: boost::noncopyable {
  public:
+
+
+  typedef ReadType read_type;
+
+
   /* 
    * Default destructor.
    */

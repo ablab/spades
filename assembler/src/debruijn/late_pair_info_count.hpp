@@ -20,18 +20,43 @@ void late_pair_info_count(conj_graph_pack& gp,
 
 	if (cfg::get().paired_mode) {
 		size_t edge_length_threshold = Nx(gp.g, 50);//500;
-		auto_ptr<PairedReadStream> stream = paired_easy_reader(false, 0);
-		refine_insert_size(*stream, gp, edge_length_threshold);
-
 		INFO("STAGE == Counting Late Pair Info");
-		stream = paired_easy_reader(true, *cfg::get().ds.IS);
 
-		if (cfg::get().advanced_estimator_mode)
-			FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,
-					paired_index, *stream);
-		else
-			FillPairedIndexWithReadCountMetric<K>(gp.g, gp.int_ids, gp.index,
-					gp.kmer_mapper, paired_index, *stream);
+        if (cfg::get().use_multithreading) {
+            auto streams = paired_binary_readers(false, 0);
+            refine_insert_size(streams, gp, edge_length_threshold);
+
+            auto paired_streams = paired_binary_readers(true,  *cfg::get().ds.IS);
+
+            if (cfg::get().advanced_estimator_mode)
+                FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,
+                        paired_index, paired_streams);
+            else
+                FillPairedIndexWithReadCountMetric<K>(gp.g, gp.int_ids, gp.index,
+                        gp.kmer_mapper, paired_index, paired_streams);
+
+
+            for (size_t i = 0; i < streams.size(); ++i) {
+                delete streams[i];
+                delete paired_streams[i];
+            }
+        } else {
+            auto_ptr<PairedReadStream> stream = paired_easy_reader(false, 0);
+            std::vector <PairedReadStream*> streams(1, stream.get());
+            refine_insert_size(streams, gp, edge_length_threshold);
+
+            auto paired_stream = paired_easy_reader(true,  *cfg::get().ds.IS);
+            std::vector <PairedReadStream*> paired_streams(1, paired_stream.get());
+
+            if (cfg::get().advanced_estimator_mode)
+                FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,
+                        paired_index, paired_streams);
+            else
+                FillPairedIndexWithReadCountMetric<K>(gp.g, gp.int_ids, gp.index,
+                        gp.kmer_mapper, paired_index, paired_streams);
+        }
+
+
 	}
 }
 

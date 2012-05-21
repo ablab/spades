@@ -36,32 +36,38 @@ typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
 typedef io::ConvertingReaderWrapper UnitedStream;
 
-template<size_t k>
+template<size_t k, class PairedRead>
 void FillPairedIndexWithReadCountMetric(const Graph &g, const IdTrackHandler<Graph>& int_ids,
 		const EdgeIndex<k + 1, Graph>& index
 		, const KmerMapper<k + 1, Graph>& kmer_mapper
-		, PairedInfoIndex<Graph>& paired_info_index , io::IReader<io::PairedRead>& stream) {
-	stream.reset();
+		, PairedInfoIndex<Graph>& paired_info_index ,
+		std::vector <io::IReader<PairedRead>*>& streams) {
+
 	INFO("Counting paired info with read count weight");
 	NewExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
-	LatePairedIndexFiller<k + 1, Graph, NewExtendedSequenceMapper<k + 1, Graph>> pif(g, mapper, stream, PairedReadCountWeight);
+	LatePairedIndexFiller<k + 1, Graph, NewExtendedSequenceMapper<k + 1, Graph>, io::IReader<PairedRead> > pif(g, mapper, streams, PairedReadCountWeight);
+
 //	ExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
 //	LatePairedIndexFiller<k + 1, Graph, ExtendedSequenceMapper<k + 1, Graph>, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
+
 	pif.FillIndex(paired_info_index);
 	DEBUG("Paired info with read count weight counted");
 }
 
-template<size_t k>
+template<size_t k, class PairedRead>
 void FillPairedIndexWithProductMetric(const Graph &g
 		, const EdgeIndex<k + 1, Graph>& index
 		, const KmerMapper<k + 1, Graph>& kmer_mapper
-		, PairedInfoIndex<Graph>& paired_info_index , io::IReader<io::PairedRead>& stream) {
-	stream.reset();
-	INFO("Counting paired info with product weight");
+		, PairedInfoIndex<Graph>& paired_info_index ,
+		std::vector <io::IReader<PairedRead>*>& streams) {
+
+    INFO("Counting paired info with product weight");
+
 	//	ExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
 	//	LatePairedIndexFiller<k + 1, Graph, ExtendedSequenceMapper<k + 1, Graph>, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
+
 	NewExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
-	LatePairedIndexFiller<k + 1, Graph, NewExtendedSequenceMapper<k + 1, Graph>> pif(g, mapper, stream, KmerCountProductWeight);
+	LatePairedIndexFiller<k + 1, Graph, NewExtendedSequenceMapper<k + 1, Graph>, io::IReader<PairedRead> > pif(g, mapper, streams, KmerCountProductWeight);
 	pif.FillIndex(paired_info_index);
 	DEBUG("Paired info with product weight counted");
 }
@@ -74,7 +80,7 @@ void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index
 	stream.reset();
 	INFO("Counting paired info");
 	SequenceMapper mapper(g, index);
-	PairedIndexFiller<k + 1, Graph, SequenceMapper> pif(g, mapper,
+	PairedIndexFiller<k + 1, Graph, SequenceMapper, io::IReader<io::PairedRead> > pif(g, mapper,
 			stream);
 	pif.FillIndex(paired_info_index);
 	DEBUG("Paired info counted");
@@ -132,7 +138,7 @@ void FillCoverage(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeIndex
 	SequenceMapper read_threader(g, index);
 
 	if (streams.size() > 1) {
-        g.coverage_index().FillParallelIndex<SequenceMapper, Read>(streams, read_threader);
+        g.coverage_index().FillFastParallelIndex<SequenceMapper, Read>(streams, read_threader);
 	}
 	else if (streams.size() == 1) {
 	    g.coverage_index().FillIndex<SequenceMapper, Read>(*streams.back(), read_threader);

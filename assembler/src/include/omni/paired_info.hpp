@@ -385,6 +385,10 @@ public:
 		return EdgePairIterator(data_.end(), *this);
 	}
 
+	double GetMaxDifference() const {
+	    return max_difference_;
+	}
+
 	//begin-end insert size supposed
 	PairedInfoIndex(const Graph &g, double max_difference = 0.) :
 			GraphActionHandler<Graph>(g, "PairedInfoIndex"), max_difference_(
@@ -525,8 +529,7 @@ public:
 	 * Method allows to add pair info to index directly instead of filling it from stream.
 	 */
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
-		TRACE(
-				"IN ADD:" << pair_info.first << pair_info.second << " " << data_.size());
+		TRACE("IN ADD:" << pair_info.first << pair_info.second << " " << data_.size());
 //		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first,
 //				pair_info.second);
 //		int cluster_index = NearestClusterIndex(pair_infos, pair_info);
@@ -538,6 +541,15 @@ public:
 			data_.AddPairInfo(pair_info, add_reversed);
 		}
 	}
+
+    void AddAll(const PairedInfoIndex<Graph>& paired_index) {
+        for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
+            auto infos = *iter;
+            for (auto pi_iter = infos.begin(); pi_iter != infos.end(); ++pi_iter) {
+                this->AddPairInfo(*pi_iter, false);
+            }
+        }
+    }
 
 	void RemoveEdgeInfo(EdgeId edge) {
 		data_.DeleteEdgeInfo(edge);
@@ -740,16 +752,17 @@ public:
 	}
 };
 
-template<size_t k, class Graph, class SequenceMapper>
+template<size_t k, class Graph, class SequenceMapper, class PairedStream>
 class PairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
 
 	const Graph &graph_;
+
 	const SequenceMapper& mapper_;
-	io::IReader<io::PairedRead>& stream_;
-	size_t processed_count_;
+
+	std::vector< PairedStream* > streams_;
 
 	size_t CorrectLength(Path<EdgeId> path, size_t idx) {
 		size_t answer = graph_.length(path[idx]);
@@ -760,8 +773,9 @@ private:
 		return answer;
 	}
 
+	template<class PairedRead>
 	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph> &paired_index,
-			const io::PairedRead& p_r) {
+			const PairedRead& p_r) {
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
 		Path<EdgeId> path1 = mapper_.MapSequence(read1);
@@ -781,35 +795,94 @@ private:
 			}
 			current_distance1 -= graph_.length(path1[i]);
 		}
-		if (++processed_count_ % 100000 == 0) {
-			TRACE("Processed " << processed_count_ << " reads");
-		}
 	}
+
+    /**
+     * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
+     */
+    void FillUsualIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+            paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
+        }
+
+        INFO("Processing paired reads (takes a while)");
+
+        PairedStream& stream = *(streams_.front());
+        stream.reset();
+        size_t n = 0;
+        while (!stream.eof()) {
+            typename PairedStream::read_type p_r;
+            stream >> p_r;
+            ProcessPairedRead(paired_index, p_r);
+            VERBOSE_POWER(++n, " paired reads processed");
+        }
+    }
+
+
+    void FillParallelIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+            paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
+        }
+
+        INFO("Processing paired reads (takes a while)");
+
+        size_t nthreads = streams_.size();
+        std::vector< omnigraph::PairedInfoIndex<Graph>* > buffer_pi(nthreads);
+        buffer_pi[0] = &paired_index;
+
+        for (size_t i = 1; i < nthreads; ++i) {
+            buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_, paired_index.GetMaxDifference());
+        }
+
+        size_t counter = 0;
+        #pragma omp parallel num_threads(nthreads)
+        {
+            #pragma omp for reduction(+ : counter)
+            for (size_t i = 0; i < nthreads; ++i) {
+
+                typename PairedStream::read_type r;
+                PairedStream& stream = *streams_[i];
+                stream.reset();
+
+                while (!stream.eof()) {
+                    stream >> r;
+                    ++counter;
+
+                    ProcessPairedRead(*buffer_pi[i], r);
+                }
+            }
+        }
+
+        INFO("Merging paired indices");
+        for (size_t i = 1; i < nthreads; ++i) {
+            buffer_pi[0]->AddAll(*(buffer_pi[i]));
+            delete buffer_pi[i];
+        }
+
+    }
 
 public:
 
 	PairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
-			io::IReader<io::PairedRead>& stream) :
-			graph_(graph), mapper_(mapper), stream_(stream), processed_count_(0) {
+	        PairedStream& stream) :
+			graph_(graph), mapper_(mapper), streams_() {
 
+	    streams_.push_back(&stream);
 	}
 
-	/**
-	 * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
-	 */
-	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
-		}INFO("Processing paired reads (takes a while)");
-		stream_.reset();
-		size_t n = 0;
-		while (!stream_.eof()) {
-			io::PairedRead p_r;
-			stream_ >> p_r;
-			ProcessPairedRead(paired_index, p_r);
-			VERBOSE_POWER(++n, " paired reads processed");
-		}
-	}
+    PairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
+            std::vector<PairedStream*>& streams) :
+            graph_(graph), mapper_(mapper), streams_(streams.begin(), streams.end()) {
+    }
+
+    void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+        if (streams_.size() == 1) {
+            FillUsualIndex(paired_index);
+        } else {
+            FillParallelIndex(paired_index);
+        }
+    }
+
 
 private:
 	DECL_LOGGER("PairedIndexFiller")

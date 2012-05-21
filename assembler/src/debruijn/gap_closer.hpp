@@ -60,9 +60,9 @@ private:
 	}
 
 
-
+	template<typename PairedRead>
 	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph> &paired_index,
-			const io::PairedRead& p_r) {
+	        PairedRead& p_r) {
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
 
@@ -143,6 +143,7 @@ public:
 	/**
 	 * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
 	 */
+
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		INFO("Preparing shift maps");
 		PrepareShiftMaps();
@@ -156,6 +157,8 @@ public:
 			VERBOSE_POWER(++n, " paired reads processed");
 		}
 	}
+
+
 
 };
 

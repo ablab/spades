@@ -46,7 +46,7 @@ class PairedRead {
   /*
    * Default constructor.
    */
-  PairedRead() : first_(), second_(), insert_size_(0), delta_insert_size_(true) {}
+  PairedRead() : first_(), second_(), insert_size_(0) {}
 
   /*
    * Conctructor from SingleReads.
@@ -58,7 +58,7 @@ class PairedRead {
   PairedRead(const SingleRead& first,
              const SingleRead& second,
              size_t insert_size)
-    : first_(first), second_(second), insert_size_(insert_size), delta_insert_size_(false) {}
+    : first_(first), second_(second), insert_size_(insert_size) {}
 
   /*
    * Return first SingleRead in the pair.
@@ -167,10 +167,6 @@ class PairedRead {
       return !file.fail();
   }
   
-  bool IsDeltaInsteadOfIS()const {
-      return delta_insert_size_;
-  }
-  
   void print_size() const {
       first_.print_size();
       second_.print_size();
@@ -190,7 +186,6 @@ class PairedRead {
    */
   size_t insert_size_;
 
-  bool delta_insert_size_;
 };
 
 
@@ -209,7 +204,7 @@ public:
         PairedRead::size_type is_delta;
         file.read((char *) &is_delta, sizeof(is_delta));
 
-        insert_size_ = is - is_delta;
+        insert_size_ = is + is_delta;
     }
 
     bool BinRead(std::istream& file, size_t is = 0) {
@@ -219,7 +214,7 @@ public:
         PairedRead::size_type is_delta;
         file.read((char *) &is_delta, sizeof(is_delta));
 
-        insert_size_ = is - is_delta;
+        insert_size_ = is + is_delta;
         return !file.fail();
     }
 

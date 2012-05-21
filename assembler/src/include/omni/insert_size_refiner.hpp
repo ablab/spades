@@ -44,44 +44,166 @@ void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, s
 }
 
 template<class graph_pack>
-void refine_insert_size(io::IReader<io::PairedRead>& stream, graph_pack& gp, size_t edge_length_threshold) {
+class InsertSizeHistogramCounter {
+
+public:
+    typedef std::map<int, size_t> hist_type;
+
+private:
+
+    graph_pack& gp_;
+
+    hist_type hist_;
+
+    size_t edge_length_threshold_;
+
+    size_t total_;
+
+    size_t counted_;
+
+    enum {
+        k = graph_pack::k_value
+    };
+
+    template<class PairedRead>
+    size_t ProcessPairedRead(PairedRead& r, hist_type& hist) {
+        Sequence sequence_left = r.first().sequence();
+        Sequence sequence_right = r.second().sequence();
+
+        if (sequence_left.size() <= k || sequence_right.size() <= k) {
+            return 0;
+        }
+        Seq<k + 1> left = sequence_left.end<k + 1>();
+        Seq<k + 1> right = sequence_right.start<k + 1>();
+        left = gp_.kmer_mapper.Substitute(left);
+        right = gp_.kmer_mapper.Substitute(right);
+        if (!gp_.index.contains(left) || !gp_.index.contains(right)) {
+            return 0; // TODO rather use binary search.
+        }
+        auto pos_left = gp_.index.get(left);
+        auto pos_right = gp_.index.get(right);
+        if (pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
+            return 0;
+        }
+        int is = pos_right.second - pos_left.second - k - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
+        hist[is] += 1;
+
+        return 1;
+    }
+
+
+public:
+
+    InsertSizeHistogramCounter(graph_pack& gp, size_t edge_length_threshold): gp_(gp), hist_(),
+        edge_length_threshold_(edge_length_threshold), total_(0), counted_(0)
+    {
+    }
+
+    hist_type& GetHist() {
+        return hist_;
+    }
+
+    size_t GetTotal() const {
+        return total_;
+    }
+
+    size_t GetCounted() const {
+        return counted_;
+    }
+
+    template<class PairedRead>
+    void CountHistogram(io::IReader<PairedRead>& stream) {
+        stream.reset();
+        hist_.clear();
+        counted_ = 0;
+        total_ = 0;
+
+        INFO("Processing paired reads (takes a while)");
+        while (!stream.eof()) {
+            PairedRead r;
+            stream >> r;
+            counted_ += ProcessPairedRead(r, hist_);
+            ++total_;
+        }
+    }
+
+    template<class PairedRead>
+    void CountHistogramParallel(std::vector <io::IReader<PairedRead>*>& streams) {
+        hist_.clear();
+
+        enum {
+            k = graph_pack::k_value
+        };
+
+        size_t nthreads = streams.size();
+        std::vector< hist_type *> hists(nthreads);
+        hists[0] = &hist_;
+        for (size_t i = 1; i < nthreads; ++i) {
+            hists[i] = new hist_type();
+        }
+
+        INFO("Processing paired reads (takes a while)");
+        size_t counted = 0;
+        size_t total = 0;
+        #pragma omp parallel num_threads(nthreads)
+        {
+            #pragma omp for reduction(+ : counted, total)
+            for (size_t i = 0; i < nthreads; ++i) {
+
+                PairedRead r;
+                io::IReader<PairedRead>& stream = *streams[i];
+                stream.reset();
+
+                while (!stream.eof()) {
+                    stream >> r;
+                    counted += ProcessPairedRead(r, *hists[i]);
+                    ++total;
+                }
+            }
+        }
+
+        total_ = total;
+        counted_ = counted;
+
+        INFO("Merging insert size histogram");
+        for (size_t i = 1; i < nthreads; ++i) {
+            for (auto it = hists[i]->begin(); it != hists[i]->end(); ++it) {
+                (*hists[0])[it->first] += it->second;
+            }
+            delete hists[i];
+        }
+
+    }
+
+};
+
+//template<class graph_pack, class PairedRead>
+//void
+
+
+template<class graph_pack, class PairedRead>
+void refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_pack& gp, size_t edge_length_threshold) {
 	enum {
 		k = graph_pack::k_value
 	};
 	INFO("SUBSTAGE == Refining insert size and its distribution");
-	map<int, size_t> hist;
-	size_t n = 0;
-	size_t total = 0;
-	double sum = 0;
-	double sum2 = 0;
-	INFO("Processing paired reads (takes a while)");
-	while (!stream.eof()) {
-		io::PairedRead r;
-		stream >> r;
-		Sequence sequence_left = r.first().sequence();
-		Sequence sequence_right = r.second().sequence();
-		VERBOSE_POWER(++total, " paired reads processed");
-		if (sequence_left.size() <= k || sequence_right.size() <= k) {
-			continue;
-		}
-		Seq<k + 1> left = sequence_left.end<k + 1>();
-		Seq<k + 1> right = sequence_right.start<k + 1>();
-		left = gp.kmer_mapper.Substitute(left);
-		right = gp.kmer_mapper.Substitute(right);
-		if (!gp.index.contains(left) || !gp.index.contains(right)) {
-			continue; // TODO rather use binary search.
-		}
-		auto pos_left = gp.index.get(left);
-		auto pos_right = gp.index.get(right);
-		if (pos_left.first != pos_right.first || gp.g.length(pos_left.first) < edge_length_threshold) {
-			continue;
-		}
-		int is = pos_right.second - pos_left.second - k - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
-		hist[is] += 1;
-		++n;
+
+	InsertSizeHistogramCounter<graph_pack> hist_counter(gp,edge_length_threshold);
+
+	if (streams.size() == 1) {
+	    hist_counter.CountHistogram(*streams.front());
+	} else {
+	    hist_counter.CountHistogramParallel(streams);
 	}
 
-		if (n == 0) {
+	typename InsertSizeHistogramCounter<graph_pack>::hist_type& hist = hist_counter.GetHist();
+	size_t n = hist_counter.GetCounted();
+	size_t total = hist_counter.GetTotal();
+
+	double sum = 0;
+	double sum2 = 0;
+
+	if (n == 0) {
 		throw std::runtime_error("Failed to estimate insert size of paired reads, because none of the paired reads aligned to long edges");
 	}
 	INFO(n << " paired reads (" << (n * 100.0 / total) << "% of all) aligned to long edges");
