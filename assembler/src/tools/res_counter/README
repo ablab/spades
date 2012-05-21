@@ -1,0 +1,15 @@
+This scripts are for time and memory measurement.
+
+Usage:
+./run.pl <your command>
+
+For example: if you start your tool with command "./my_run_script param1 param2 param3" you should type:
+./run.pl ./my_run_script param1 param2 param3
+
+=== Results are in rc_stats.txt ===
+Error of run.pl script are in rc_stats.txt
+Log files of <your command> are rc_stdout.txt and rc_stderr.txt
+
+Notes:
+1. Script _appends_ to all four "rc_" files
+2. You can simply save you results in res_counter_DATE_TIME folder by typing ./result_saver.sh
