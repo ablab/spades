@@ -142,6 +142,9 @@ class cuckoo {
   bool is_rehashed_;
 
  public:
+  class iterator;
+  class const_iterator;
+
   friend class iterator;
   friend class const_iterator;
 
