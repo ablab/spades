@@ -14,37 +14,69 @@
 
 \begin{document}
 \title{Rectangle Graphs --- A Different Perspective on the Genome Assembly Problem}
-\author{Nikolay Vyahhi, SP. and Pavel Pevzner}
+\author{Nikolay Vyahhi, Son Pham and Pavel Pevzner}
 \date{\today}
 \maketitle
 
 \abstract{The jigsaw puzzles were originally created by painting a picture on a 
-flat rectangular piece of wood, and further, cutting that picture into
+flat rectangular piece of wood, and further cutting that picture into
 small pieces with a jigsaw.
-The objective of any jigsaw puzzle is the rearragement of these pieces into a single structure with no gaps left between adjacent pieces. Additionally,
-neighboring pieces must share an identical boundary as well as having similar color
-and texture near the boundary.
+The objective of any jigsaw puzzle is the rearragement of these pieces into a single structure such that 
+neighboring pieces share identical boundaries as well as having similar color
+and texture near the boundaries.
 While a general jigsaw puzzle is NP-complete, we introduce a simpler version of the jigsaw problem and
 propose rectangle graphs for solving this problem in polynomial time. 
-Interestingly, while usual applications of jigsaw problems are often limited to 
+While usual applications of jigsaw problems are often limited to 
 the assembly and repair of broken objects or 
-the restoration of archeological findings, here we show that our simplified jigsaw puzzle
+the restoration of archeological findings, in this paper, we show that our simplified jigsaw puzzle
 directly relates to the problem of assemblying genomes from mate-pairs. 
-We implemented the rectangle graphs in  SPADES assembler and 
-show that it out-performs other methods in both 
+We implemented the rectangle graphs as a separate module of  SPADES assembler and 
+demonstrate that it out-performs other methods in both 
 single-cell and multi-cell data. 
 }
 
 \newpage
 \section{Introduction}
 
-De Bruijn graphs have been used in many areas of bioinformatics, including genome assembly~\cite{Pevzner01},
-repeats classification~\cite{Raphael04}, protein sequencing~\cite{Bandeira07},
-and synteny blocks identification~\cite{Pham10}. In these applications, de Bruijn graphs are either constructed from a string or from a set of sub-strings of an
-unknown string via gluing rules~\cite{Pham10,Raphael04}. 
-In this work, we show that the idea of gluing rules for strings in de Bruijn graph can be
-also adopted for multiple non-string objects, which can be used for the reconstruction of an object from
-its broken pieces --- a general abstraction of the jigsaw puzzles. 
+The recent proliferation of next generation sequencing with short reads has enabled 
+new experimental opportunities, such as the 10K genomes project, which
+aims to sequence and assemble the genomes of approximately one species in every
+vertebrate genus~\cite{Haussler09}, or Human Microbiome Project with  
+the mission of generating resources enabling comprehensive characterization of the human microbiota. 
+At the same time, the short read length has raised formidable computational challenges. 
+When the length of a repeat is longer than the read length, it becomes difficult to
+correctly match its upstream and downstream regions. In order to alleviate this
+problem, sequencing technologies were extended to produce mate pairs —
+pairs of reads between which the genomic distance (called the insert size) is well
+estimated. Because insert sizes could be much longer than the read length, mate
+pairs were able to span long repeats and could potentially match up the regions
+surrounding a repeat.
+
+The challenge of algorithmically incorporating mate pair information into genome
+assemblers was first addressed by \cite{Pevzner01b}, by first constructing the de Bruijn
+graph and latter looking for a path between the two reads of a mate pair with a length of the
+insert size. If exactly one such path was found, then a mate pair transformation
+could be applied to ``unwind'' this path in the graph. Essentially, this amounted
+to transforming two mated reads into one long read where the gap between the
+mates was filled in with the nucleotide sequence representing the found path,
+thus potentially connecting the surrounding regions of a repeat.  
+
+While such method had a great impact on genome assembly, allowing the construction of much longer contigs; 
+however, it still fail in complex repeat-rich
+regions, where there are multiple paths between the read pairs. Recently, ~\cite{Medvedev11} introduced
+paired de Bruijn graph that directly incorporates mate-pair into the graph structure and bypasses the problem of multiple
+paths in the previous approach. However, paired de Bruijn graph were introduced as a theoretical framework and mainly aimed 
+at the unrealistic case when distances between reads are fixed. Paired de Bruijn graph faces difficulty in real dataset where 
+distance between reads varies. To address this bottleneck, we now introduce rectangle graph --- by  generalizing the problem of a string 
+reconstruction from its substrings to an object reconstruction from its broken pieces --- a general abstraction of the jigsaw puzzles. 
+
+%    De Bruijn graphs have been used in many areas of bioinformatics, including genome assembly~\cite{Pevzner01},
+%    repeats classification~\cite{Raphael04}, protein sequencing~\cite{Bandeira07},
+%    and synteny blocks identification~\cite{Pham10}. In these applications, de Bruijn graphs are either constructed from a string or from a set of sub-strings of an
+%    unknown string via gluing rules~\cite{Pham10,Raphael04}. 
+%    In this work, we show that the idea of gluing rules for strings in de Bruijn graph can be
+%    also adopted for multiple non-string objects, which can be used for the reconstruction of an object from
+%    its broken pieces --- a general abstraction of the jigsaw puzzles. 
 
 
 The jigsaw puzzles were originally created by painting a picture on a flat rectangular piece of wood, 
@@ -57,11 +89,11 @@ texture near the boundary.
 Concrete applications of jigsaw puzzle solving are the assembly and repair of broken objects, 
 or the restoration of archeological findings. Here we show
 that the assembly problem from paired-end reads can also be formulated as a simple jigsaw problem. % is paired-end the same as mate-pair?
-In particular, in section 2, we describe a simple jigsaw puzzles and define rectangle graph to solve this 
+In particular, in section 2, we describe a simple jigsaw puzzle and define rectangle graph to solve this 
 problem, in section 3 we show the relation of the jigsaw puzzle to the 
 problem of genome assembly using mate-pairs. In section 4, we describe how to adapt our approach 
 to work with inexact insert size. Section 5 we apply our rectangle graph approach to 
-assemble single cells as well as multiple cell datasets and demonstrate that it out-performs
+assemble single cells as well as multiple cells datasets and demonstrate that it outperforms
 other methods.
 
 \section{A Simple Jigsaw Problem}
@@ -70,34 +102,37 @@ other methods.
 
 We consider a two-dimensional rectangular jigsaw puzzle created by the following procedure:
 In stead of a complicated picture as it is usually the case for jigsaw puzzles, we simply draw a line $(d): y = x + D$ on a 2-$d$ coordinate Oxy.
-On the vertical axis, define $n$ points: $A_1$, $A_2$, \ldots, $A_n$. On horizontal axis, define $m$ points
+On the vertical axis, define $n$ points: $A_1$, $A_2$, \ldots, $A_n$; on the horizontal axis, define $m$ points
 $B_1, B_2, \ldots, B_m$. The $m\times n$ combinations of these points defines a grid with $m\times n$ rectangles.  We further assign a label for each edge (there are
-$m\times n$ edges) of the grid. The labeling of these edges is not unique, i.e., there may be different edges with the same label. We limit our attention to the
-part of the grid that is intersected by the line and ignore all other parts (rectangles) that are not.
-Given a value $D$,  the line $(d): y = x + D$ defines the \emph{diagonal grid graph} by retaining only the rectangles that are intersected by $(d)$.
-In the classical sequence assembly problem, a fragment of the sequence is a substring. In this context, a \emph{fragment} is a
-rectangle in the grid graph with a fragment of the line $(d)$ on it. For simplicity, we define the direction of each rectangle so that its orientation
-is uniquely define in 2D space. Similar to the assembly problem where one attempts to reconstruct the genome from its
+$m\times n$ edges) of the grid. The labeling of these edges is not unique, i.e., there may be different edges with the same label. 
+%We limit our attention to the
+%part of the grid that is intersected by the line and ignore all other parts (rectangles) that are not.
+Given a fixed value $D$,  the line $(d): y = x + D$ defines the \emph{diagonal grid graph} by retaining only the rectangles that are intersected by $(d)$.
+Similar to the assembly problem where one attempts to reconstruct the genome from its
 substrings, here we want to reconstruct the diagonal grid graph from individual rectangles.
-An intuitive approach is to put the rectangles together such that their boundaries and diagonal lines match. Below, we formally define what constitutes
+In the classical sequence assembly problem, a fragment of the sequence is a substring. In this context, a \emph{fragment} is a
+rectangle in the grid graph with a fragment of the line $(d)$ on it. 
+An intuitive approach is to put the rectangles together such that their boundaries and diagonal lines match~\footnote{
+For simplicity, we define the direction of each rectangle so that its orientation
+is uniquely define in 2D space}. Below, we formally define what constitutes
 a valid solution for our simplified jigsaw version.
 
-Given $n$ rectangles, each with a directed fragment of the line (d). We denote In(R): 
+Given $n$ rectangles, each with a directed fragment of the line (d). For a rectangle $R$, we denote In(R): 
     the starting point of the fragment and Out(R): the ending point of
-the fragment. The edges containing In(R) and Out(R) are called incoming surface and outgoing surface correspondingly. When In(R)/Out(R) coinsides with the
-angle points of the rectangle, the surface becomes a single point.
+the fragment. The edges containing In(R) and Out(R) are called incoming face and outgoing face correspondingly. When In(R)/Out(R) coinsides with the
+angle points of the rectangle, the face becomes a single point.
 Rectangle $R_1$ and $R_2$ are called neighbours if they share at least one vertex. Given two neighbouring rectangles $A$ and $B$, $A$ is
-called extendable by $B$ ( or $B$ extends $A$) if the incoming surface of $B$ and the outgoing surface of $A$ as well as the locations of
+called extendable by $B$ ( or $B$ extends $A$) if the incoming face of $B$ and the outgoing face of $A$ as well as the locations of
 the incoming and outgoing points are exactly aligned. Fig.~\ref{fig:basic} lists all 3 possible extensions of a given rectangle.
 A figure is a valid solution to the jigsaw problem if every rectangle has one neighbor that extends it.
-It is clear from the definition of the extension of pieces that a single line will be assembled from its multiple fragments on separated rectangles.
+It is clear from the definition of the extension of pieces that a single line will be assembled from its fragments on separated rectangles.
 We are interested in the following problem.
 \begin{figure}
 \begin{center}
 \includegraphics[scale=0.3]{fig/basic.eps}
 \end{center}
 \label{fig:basic}
-\caption{Three possible extensions of rectangle $A$ based on its outgoing surface.}
+\caption{Three possible extensions of rectangle $A$ based on its outgoing face.}
 \end{figure}
 
 \textbf{Line Assemblying Puzzle}: \emph{Given $n$ rectangles generated by the described jigsaw generation procedure}
@@ -106,15 +141,15 @@ We are interested in the following problem.
 \item \emph{Enumerate all possible valid solutions.}
 \end{itemize}
 
-Below we define the rectangle graph which directly leads to solutions to this problem.
+Below we define the rectangle graph which directly leads to the solution of this problem.
 
 \textbf{Rectangle Graph:}
 \begin{itemize}
 \item  Define an initial graph $G_0$ on $2n$ vertices. For each rectangle $R$, introduce two new vertices $u$, $v$ and form an edge $u \rightarrow v$.
-Label $u$ by the incomming surface and the position of the incoming point in the surface.
+Label $u$ by the incomming face and the position of IN(R) in the face.
 % If this position == 0 or == end_of_edge, then we label with vertex. So label can be only: (vertex, (edge, position)) or ((edge, position), vertex) or (vertex, vertex). This three correspond to tree type of gluing from Figure 1.
-Label $v$ by the outgoing surface and the position of the outgoing point
-in the surface.
+Label $v$ by the outgoing face and the position of OUT(R) 
+in the face.
 \item Glue vertices of $G_0$ together if they have the same label.
 \end{itemize}
 
@@ -133,7 +168,7 @@ Note that the original figure also corresponds to an Eulerian tour in this graph
 
 \begin{figure}
 \includegraphics[scale=0.3]{fig/gridGraph.eps}
-\caption{A sequence of $9$ points on horizontal axis and 9 points on horizontal axis forms a grid with $(9-1) \times (9-1)$ rectangles.
+\caption{A sequence of $9$ points on the vertical axis and 9 points on the horizontal axis forms a grid with $(9-1) \times (9-1)$ rectangles.
 The diagonal grid graph (consists of blue rectangles --- rectangles intersected by the blue line). }
 \end{figure}
 
@@ -145,26 +180,27 @@ A $k$-mer is a string of length $k$.
 Given a $k$-mer $s = s_1\ldots s_k$,
 we define $prefix(s)= s_1\ldots s_{k-1}$ and $suffix(s) = s_2\ldots s_k$. Given a multi-set $A$ of $k$-mers generated from a genome, 
 the standard de Bruijn graph has directed edge $(prefix(s) \rightarrow suffix(s))$
-for each $k$-mer $s\in A$.  A vertex $v$  precedes (follows) vertex $w$ if there exists an edge from $v$ to $w$ (from $w$ to $v$). The in degree ( out degree)  of a vertex 
-$v$ is the number of vertices preceding (following) it.  A vertex $v$ is called a branching vertex if either its in degree or out degree is larger than 1. A path a $G$ is called a non-branching path if all of its vertices (except possibly the first and last) have indegree and outdegree
-both equal to 1. These non-branching path represents contigs in the fragment assembly problem.
+for each $k$-mer $s\in A$.  A vertex $v$  precedes (follows) vertex $w$ if there exists an edge from $v$ to $w$ (from $w$ to $v$). The in degree (out degree)  of a vertex 
+$v$ is the number of vertices preceding (following) it.  A vertex $v$ is called a branching vertex if either its in degree or out degree is larger than 1. A path a $G$ is called a non-branching path if all of its vertices (but not the first and last) have indegree and outdegree
+both equal to 1. %These non-branching path represents contigs in the fragment assembly problem.
 
 
 \noindent
 \textbf{A 2D coordinate of the genome}
-Alternatively, the genome can also be represented as a sequence of $(k-1)$-mers $a_1\ldots a_n$ where 
+Alternatively, the genome $S$ can also be represented as a sequence of $(k-1)$-mers $a_1\ldots a_n$ where 
 $a_i$ corresponds to a $k-1$-mer starting at position $i$ on the genome. 
 Each element of $S$ also corresponds to a vertex in the de Bruijn graph $G$. 
-Let $t$ be the number of $(k-1)$-mers in the genome that corresponds to the branching vertices in the
-de Bruijn graph. The substring $a_i, \ldots a_j$ of $S$ connecting two consecutive branching 
-vertices $a_i$ and $a_j$ corresponds to a non-branching path in the de Bruijn graph; we call 
+Let $t$ be the number of elements in $S$ that correspond to the branching vertices in the
+de Bruijn graph. Element of $S$ that correspond to branching vertices in $G$ are called branching element. 
+The substring $a_i, \ldots a_j$ of $S$ limitted by two consecutive branching 
+elements $a_i$ and $a_j$ corresponds to a non-branching path in the de Bruijn graph; we call 
 $a_i\ldots a_j$ a non-branching substring of $S$.
 
 We now form a 2D coordinate of the genome by representing the genome $S=a1\ldots a_n$ on
-both vertical and horizontal axis. $t$ $(k-1)$-mers that correspond to the branching vertices 
-in $G$ are colored in red in each axis. These points on both axis defines a grid, 
-comprising of $t\times t$ rectangle. Each rectangle in this grid is defined by two adjacient branching 
-vertices in vertical and two adjacient branching vertices in horizontal axis. 
+both vertical and horizontal axis. $t$ branching elements 
+in $S$ are colored in red in each axis. These points on both axis defines a grid, 
+comprising of $t\times t$ rectangles. Each rectangle in this grid is defined by two adjacient branching 
+elements in vertical and two adjacient branching elements in horizontal axis. 
 Or equivalently, it is defined by a pair of (directed) non-branching substrings of $S$.    
 In this coordinate, each point is labeled by a pair of $(k-1)$-mers. An edge of a rectangle is labeled 
 by a list of all of its points.  
@@ -180,9 +216,9 @@ The line $(d)$ defines the \emph{diagonal grid graph} by retaining only the rect
 are intersected by $(d)$. 
 
 Below, we characterize the properties of the rectangles that are intersected by $(d)$. 
-Since each rectangle $R$ is formed by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t_1}$
-and $\beta = a_i^*\ldots a_{i^*i+ t_2}$, it is intersected by the line $(d)$ if and only if 
-there exists $x$ such that $i\leq x \leq i+t_1$ and $ i^* \leq x + d \leq i^* + t_2$ (1). This condition
+Since each rectangle $R$ is formed by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t1}$
+and $\beta = a_i^*\ldots a_{i^*i+ t2}$, it is intersected by the line $(d)$ if and only if 
+there exists $x$ such that $i\leq x \leq i+t1$ and $ i^* \leq x + d \leq i^* + t2$ (1). This condition
 immediately leads to a property that there exists a $(k-1,d)$-mer $(a|b)$ of $S$ such that 
 $a$ \emph{belongs} to $\alpha$ and $b$ \emph{belongs} to $\beta$.  A pair 
 of non-branching substrings $\alpha$ and $\beta$ is called $d$-bounded if it corresponds to 
@@ -193,12 +229,12 @@ the rectangle is $(\hat{x}, \hat{x}+d)$ where $\hat{x}$ is the maximum value of 
 (1) satisfies, and this position is labeled by a pair of $(k-1)$-mers $(a_{\hat{x}}, a_{\hat{x} +d})$.
 
 
-Given a $d$-bounded rectangle $R$ formed by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t_1}$
-and $\beta = a_i^*\ldots a_{i^*i+ t_2}$, let $D_R= i^* - i$ be the genomic distance between $\alpha$ and $\beta$. The integer 
+Given a $d$-bounded rectangle $R$ formed by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t1}$
+and $\beta = a_i^*\ldots a_{i^*i+ t2}$, let $D_R= i^* - i$ be the genomic distance between $\alpha$ and $\beta$. The integer 
 coordinate of the start $S(R)$ of the rectangle is $(i, i + D_R)$. By translating the origin from  $O$ to $S(R)$ for the line
 $(d): y = x + d$, we obtain $(d'): Y = X + d - D_R$: the function of the line in a new coordinate: rectangle $R$. Given a fixed
 value of $d$, the position of the line in each rectangle depends on $D_R$. In other words, the line on each rectangle $R$ 
-uniquely defines the genomic distance between $\alpha$ and $\beta$. 
+uniquely defines the genomic distance between $\alpha$ and $\beta$ and vise versa. 
 
 
 \noindent
@@ -209,7 +245,7 @@ In the fragment assembly problem from a from a set of all $(k,d)$-mers of the ge
 the diagonal grid graph is unknown, but each separated rectangle as well 
 as the line segment on it can also be generated
 from the set of $(k,d)$-mers. The task of assemblying the genome from mate-paired reads can be 
-reduced to the problem of solving the simplified jigsaw problem from separated rectangles. Below we describe how
+reduced to the problem of reconstructing the diagonal line --- which implies solving the simplified jigsaw problem from separated rectangles. Below we describe how
 to generate rectangles and line segments on these rectangles from a set of all $(k,d)$-mers of an unknown genome. We now 
 show that all d-bounded rectangles as well as the position of the line fragment on each of these rectangles can be constructed from 
 the set of $(k,d)$-mers. 
@@ -229,9 +265,9 @@ of $p_1$ and $p_2$ is $D = d + i_1 - i_2$. A trible $(p_1, p_2, D)$ corresponds 
 $\{\alpha, \beta\}$ in the genomes where $\alpha$ ($\beta$) has same label as $p_1$ ($p_2$)  and their genomic distance between them 
 is $D$. Thus, as mentioned above, it uniquely defines a rectangle as well as the line fragment on it. Thus, from a set of $(k,d)$-mers, 
  we can construct a set of all d-bounded rectangle as well as the position of the line fragments on it. 
-The questions of reconstructing the line ( and thus, reconstruct the sequence) is now to the jigsaw problem described above. We simply construct the 
-rectangle graphs based on the described procedure. Moreover, the property that in the de Bruijn graph there is a single vertices for each $k$-mers simplifies
-the presentation of the rectangle graph. Thus a single pair of $k$-mers can uniquely identify the edge of a rectangle. Below we describe 
+The questions of reconstructing the line ( and thus, reconstruct the sequence) is now reduced to the jigsaw puzzle. We simply construct the 
+rectangle graph based on the described procedure. Moreover, the property that in the de Bruijn graph there is a single vertices for each $k$-mers simplifies
+the presentation of the rectangle graph. In fact, a single pair of $k$-mers can uniquely identify the edge of a rectangle. Below we describe 
 the \textbf{rectangle algorithm} for genome assembly from a set of $(k,d)$-mers of the genome.   
 
 
@@ -240,14 +276,14 @@ the \textbf{rectangle algorithm} for genome assembly from a set of $(k,d)$-mers 
 \bigskip
 \begin{algorithmic}[1]
 \REQUIRE Set of $(k,d)$-mers 
-\STATE Construct the  de Bruijn graph from individual  $k$-mers
+\STATE Construct the  de Bruijn graph from individual  $k$-mers.
 %\STATE Construct the   de Bruijn graph
 \STATE Transform the set of $(k,d)$-mers into the set of rectangle triples. 
 \STATE Represent each rectangle triple as a rectangle with a line segment.
-\STATE Represent the rectangle as an edge: $u\rightarrow v$
-\STATE \hspace*{0.5cm} $u$ is labeled by a pair of $k$-mers corresponding to the begin of the line
-\STATE \hspace*{0.5cm} $v$ is labeled by a pair of $k$-mers corresponding to the end of the line
-\STATE Construct the rectangle graph by gluing vertices having the same label togethes
+\STATE Represent the rectangle as an edge: $u\rightarrow v$.
+\STATE \hspace*{0.5cm} $u$ is labeled by a pair of $k$-mers corresponding to the begin of the line.
+\STATE \hspace*{0.5cm} $v$ is labeled by a pair of $k$-mers corresponding to the end of the line.
+\STATE Construct the rectangle graph by gluing vertices having the same label together.
 \STATE Output contigs from non-branching paths in the rectangle graph.
 \end{algorithmic}
 
@@ -261,7 +297,7 @@ if it is a $(k,d_0)$-mer of $S$ for some $d_0 \in [d-\Delta, d+ \Delta]$. While 
 of $S$ forms a line $(d) y = x + d$ in the 2D genome coordinate, a set of $(k,d,\Delta)$-mers forms 
 separated points perturbed around $(d)$. And thus, in each rectangle, the line fragment now becomes a collection of points 
 perturbed around its original position.
-The task of assemblying the diagonal grid graph from in-exact mate pairs is analogous to 
+The task of assemblying the diagonal grid graph from inexact mate pairs is analogous to 
 the solving the old jigzaw problems where the pictures on each pieces are faded out, some pieces from other puzzles got mixed into 
 the collection, or even some of the pieces are missing. Bellow we address these complications.
 
@@ -275,10 +311,10 @@ inexact $(k,d,\Delta)$ mers.
 the line segment, it is beneficial to first characterize the variation of insert size. 
 
 While it is commonly accepted that insert size distribution for multiple cell data follows a Gaussian distribution,
-it is often the case in single cell dataset that the insert size distribution is often skewed. Fortunately, it is often the case 
+in single cell dataset the insert size distributions are often skewed. Fortunately, it is often the case 
 that the distribution is unimodal and we exploit this property to make our line fragments reconstruction procedure work well for
 both single cell and multiple cell dataset. We initially obtain the empirical distribution of the insert size 
-by mapping read pairs to long edges in the graph. We set $d$ equal to the median of the distribution.  
+by mapping read pairs to long edges in the graph. We set $d$ equal to the mode of the distribution.  
 
 
 
@@ -317,7 +353,7 @@ to have a single line on each rectangle but instead, can results in multiple (pa
 one of them are the correct line fragment of the original line. Thus, the extending condition for rectangles should be revised so that the original line can be
 reconstructed by extending the rectangles.  
 
-We represent the incoming/outgoing face of a rectangle as a set of pairs of $k$-mers, corresponding to the starts/ends of the lines in the rectangle. 
+We represent the incoming/ outgoing face of a rectangle as  a set of pairs of $k$-mers, corresponding to the starts/ends of the lines in the rectangle. 
 Rectangle $R_1$ can extends rectangle $R_2$ ($R_2$ is extendable by $R_1$) if the outgoing face of $R_2$ shares at least 
 one pair of $k$-mers with the incoming face of $R_1$.  The lines in $R2$ corresponding to the shared pair of $k$-mers are called extendable lines with respect to
 $R_1$. If a line is not extendable by any other rectangle, we remove it from the rectangle.  Additionally, if a rectangle $R_2$ have $r$ lines and each line 
@@ -352,7 +388,60 @@ face to its out-going face; (2) Glue two node if they share at least one pair of
 \end{center}
 \end{figure}
 
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.5]{fig/rectangle.eps}
+\caption{Example of rectangle with three diagonals. Rightmost diagonal isn't well supported my mate pairs, while other two are well supported. The point which is observed in the lower right corner could appear because of chimeric mate pairs or sequencing errors.}
+\end{center}
+\end{figure}
 
+
+\section{Results}
+
+\textbf{Assembly Datasets}
+We used three datasets from \cite{Chitsaz2011}.
+A single {\ecoli} cell
+and a single marine cell ({\em Deltaproteobacterum} SAR324)
+were isolated by micromanipulation as described in \cite{Ishoey2008}.
+Paired-end libraries were generated on an Illumina Genome Analyzer IIx from MDA-amplified single-cell DNA
+and from standard (multicell) genomic DNA prepared from cultured {\ecoli}.
+
+We call these datasets SAR324, ECOLI-SC, and ECOLI-MC.
+ECOLI-SC and ECOLI-MC are called ``{\ecoli} lane 1'' and ``{\ecoli} lane normal'' in \cite{Chitsaz2011}.
+They consist of 100 bp paired-end reads
+with average insert sizes 266 bp for ECOLI-SC, 215 bp for ECOLI-MC,
+and 240 bp for SAR324.
+All datasets have $600\times$ coverage.
+
+\textbf{Benchmarking}
+
+We benchmarked seven assemblers
+(EULER-SR \cite{Chaisson08}, IDBA \cite{Peng10}, SOAPdenovo \cite{Li10}, Velvet \cite{Zerbino08}, Velvet-SC \cite{Chitsaz2011}, E+V-SC \cite{Chitsaz2011} and {\spades}) on three datasets
+(ECOLI-SC, ECOLI-MC, and SAR324). To provide unbiased
+benchmarking, we used the assembly evaluation tool Plantagora \cite{Barthelson2011}. See Table \ref{Table1}.
+
+{\spades}-rectangle shows improvement over previous SPAdes algorithms. In ECOLI-MC dataset {\spades}-rectangle produce larger N50, almost the same largest contig and the same number of misasseblies.
+
+Improvement is even more significant for single-cell dataset which can be explained by the fact that {\spades}-rectangle better determine and utilize correct distance between edges in the de Bruin graph given datasets with highly uneven coverage. {\spades}-rectangle procudes higher N50 (56,842 bp vs 49,623 by {\spades}), higher largest contig (209,690 bp vs 177,944 by {\spades}), no misassemblies and also captures 64 additional genes (3975 vs 3911 by {\spades}). All other assemblers except of {\spades} and {\spades}-rectangle produced below average results on the single-cell dataset.
+
+Most important that on all datasets {\spades}-rectangle was able to capture more genes than any previous assemblers including {\spades}. New genes are most important in study of new species that cannot be sequenced by classical multi-cell approach.
+
+We further compared E+V-SC, {\spades} and {\spades}-rectangle on the SAR324 dataset.
+{\spades}-rectangle assembled contigs totaling ????? bp
+(vs. 5,129,304 bp for {\spades} and 4,255,983 bp for E+V-SC) and an N50 of ????? bp (as compared to 75,366 bp for {\spades} and 30,293 bp for E+V-SC).
+Since the complete genome of \emph{Deltaproteobacterium} SAR324 is unknown,
+we used {\em long ORFs} to estimate the number of genes longer than 600 bp, as a proxy for assembly quality (see \cite{Chitsaz2011}).
+There are ???? long ORFs in the {\spades}-rectangle assembly
+vs. 2603 for {\spades} and 2377 for E+V-SC.
+% I forgot to run on SAR324, doing it now.
+
+\input{table}
+
+\textbf{Running time and memory requirements}
+
+SPAdes memory and time complexity were analysed in \cite{SPAdes}. Most time and memory consuming stages in genome assembly are, usually, de Bruijn graph construction and mapping reads to edges. After this stages are done, repeat resolution routine can work relatively fast and within small memory.
+
+For both {\ecoli} datasets and SAR324, our rectangle approach works for less then 10 seconds given (1) unresolved de Bruijn graph from SPAdes-single and (2) mapping positions of all mate-pair reads to the graph. All datasets where analysed using less than 100 MB RAM.
 
 %\section{Basics}
 %%
@@ -432,7 +521,6 @@ face to its out-going face; (2) Glue two node if they share at least one pair of
 %\item TODO: more.
 %\end{enumerate}
 %
-\input{results}
 
 \bibliographystyle{plain}
 \bibliography{mybib}
