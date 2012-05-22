@@ -65,6 +65,52 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
 
     substitute_params(filename, subst_dict)
 
+def print_used_values(cfg):
+    
+    def print_value(cfg, section, param, pretty_param=""):
+        if cfg[section].__dict__.has_key(param):
+            if not pretty_param:
+                pretty_param = param.replace('_', ' ')
+            print "    " + pretty_param + " = " + str(cfg[section].__dict__[param])
+
+    print ""
+    print "Used values:"
+
+    # common
+    if cfg.has_key("common"):
+        print "  common:"
+        print_value(cfg, "common", "project_name")
+        print_value(cfg, "common", "output_dir")
+        print_value(cfg, "common", "max_threads", "threads number")
+        print_value(cfg, "common", "max_memory", "memory limit")
+
+    # dataset
+    if cfg.has_key("dataset"):
+        print "  dataset:"
+        print_value(cfg, "dataset", "single_cell")
+        print_value(cfg, "dataset", "paired_reads")
+        for i in range(10):
+            print_value(cfg, "dataset", "paired_reads." + str(i), "paired reads")
+        print_value(cfg, "dataset", "single_reads")
+                
+    # error correction
+    if cfg.has_key("error_correction"):
+        print "  error correction:"
+        print_value(cfg, "error_correction", "tmp_dir")
+        print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
+        print_value(cfg, "error_correction", "max_iterations", "iterations")
+        print_value(cfg, "error_correction", "gzip_output")
+
+    # assembly
+    if cfg.has_key("assembly"):
+        print "  assembly:"
+        print_value(cfg, "assembly", "iterative_K", "K-mers")
+        print_value(cfg, "assembly", "generate_sam_files")
+        print_value(cfg, "assembly", "gap_closer", "use the gap closer")
+
+    print ""
+            
+
 def check_config(cfg, default_project_name=""):
 
     ## checking mandatory sections
@@ -138,6 +184,9 @@ def check_config(cfg, default_project_name=""):
             cfg["error_correction"].__dict__["max_iterations"] = 2    
         if not cfg["error_correction"].__dict__.has_key("gzip_output"):
             cfg["error_correction"].__dict__["gzip_output"] = True    
+        if not cfg["error_correction"].__dict__.has_key("tmp_dir"):
+            cfg["error_correction"].__dict__["tmp_dir"] = os.path.join(cfg["common"].output_dir, os.path.join('corrected', 'tmp'))
+        cfg["error_correction"].tmp_dir = os.path.abspath(os.path.expandvars(cfg["error_correction"].tmp_dir))
 
     # assembly
     if cfg.has_key("assembly"):
@@ -150,8 +199,8 @@ def check_config(cfg, default_project_name=""):
             
     return True
 
-long_options = "project-name= paired= paired1= paired2= single= k-mers= output-dir= threads= memory= tmp-dir= qvoffset= iterations= sc help gzip-output sam-files gap-closer test".split()
-short_options = "n:p:1:2:s:k:o:t:m:d:q:i:Shzag"
+long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc generate-sam-files only-error-correction only-assembler disable-gap-closer disable-gzip-output help test".split()
+short_options = "n:o:1:2:s:k:t:m:i:h"
 
 def check_file(f, message=''):
     if not os.path.isfile(f):
@@ -159,44 +208,41 @@ def check_file(f, message=''):
     return f
 
 def usage():
-    print >>sys.stderr, 'SPAdes genome assembler'
-    print >>sys.stderr, 'Usage:'
-    print >>sys.stderr, sys.argv[0], ' --test'
-    print >>sys.stderr, 'or'
-    print >>sys.stderr, sys.argv[0], ' <config file>'
-    print >>sys.stderr, 'or'
-    print >>sys.stderr, sys.argv[0], ' [options described below] -n <project name>'
+
+    print >>sys.stderr, "SPAdes genome assembler"
+    print >>sys.stderr, "Usage:", sys.argv[0], "[options] -n <project name>"
     print >>sys.stderr, ""
-    print >>sys.stderr, "Common options"
-    print >>sys.stderr, "\tOptions with parameters:"
-    print >>sys.stderr, "-n\t--project-name\tName of the project [Mandatory parameter]"
-    print >>sys.stderr, "-o\t--output-dir\tDirectory to store all result files"
-    print >>sys.stderr, "-p\t--paired\tFile with interlaced left and right paired end reads"
-    print >>sys.stderr, "-1\t--paired1\tFile with left paired end reads"
-    print >>sys.stderr, "-2\t--paired2\tFile with right paired end reads"
-    print >>sys.stderr, "-s\t--single\tFile with unpaired reads"
-    print >>sys.stderr, "-k\t--k-mers\tComma-separated list of odd values for k-mer (vertex) sizes. Default is 21,33,55" 
+    print >>sys.stderr, "Options"
+    print >>sys.stderr, "-n\t<project name>\tname of the project"
+    print >>sys.stderr, "-o\t<output dir>\tdirectory to store all result files [default: spades_output]"
+    print >>sys.stderr, "--sc\t\t\tshould be set if input data was obtained with MDA (single-cell) technology"
+    print >>sys.stderr, "--12\t<filename>\tfile with interlaced left and right paired end reads"
+    print >>sys.stderr, "-1\t<filename>\tfile with left paired end reads"
+    print >>sys.stderr, "-2\t<filename>\tfile with right paired end reads"
+    print >>sys.stderr, "-s\t<filename>\tfile with unpaired reads"
+    print >>sys.stderr, "--generate-sam-files\tforces SPAdes to generate SAM-files"
+    
+    print >>sys.stderr, ""
+    print >>sys.stderr, "Advanced options:"
+    print >>sys.stderr, "-t/--threads\t<int>\t\tnumber of threads [default: 16]"
+    print >>sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb (terminates if exceeded) [default: 250]"
+    print >>sys.stderr, "--tmp-dir\t<dirname>\tdirectory for error correction's temp files [default: <output dir>/corrected/tmp]"
+    print >>sys.stderr, "-k\t<int,int,...>\t\tcomma-separated list of k-mer sizes (must be odd) [default: 21,33,55]"
+    print >>sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for error correction"
+    print >>sys.stderr, "--phred-offset\t<int>\t\tPH./sRED quality offset in the input reads (33 or 64) [default: auto-detect]"
+    print >>sys.stderr, "--only-error-correction\t\trun only error correction (without assembler)"
+    print >>sys.stderr, "--only-assembler\t\trun only assembler (without error correction)"
+    print >>sys.stderr, "--disable-gap-closer\t\tforces SPAdes not to use the gap closer"
+    print >>sys.stderr, "--disable-gzip-output\t\tforces error correction not to compress corrected reads"
 
     print >>sys.stderr, ""
-    print >>sys.stderr, "\tOptions without parameters:"
-    print >>sys.stderr, "-S\t--sc\tShould be set if input data was obtained with MDA (single-cell) technology"
-    print >>sys.stderr, "-h\t--help\tPrint this usage message"    
+    print >>sys.stderr, "--test\t\trun SPAdes on toy dataset"
+    print >>sys.stderr, "-h/--help\tprint this usage message"
 
     print >>sys.stderr, ""
-    print >>sys.stderr, ""
-    print >>sys.stderr, "Special options (for advanced users)"
-    print >>sys.stderr, "\tOptions with parameters:"
-    print >>sys.stderr, "-t\t --threads\tMaximum number of threads"
-    print >>sys.stderr, "-m\t --memory\tMaximum amount of RAM that SPAdes can use(in Gb)"
-    print >>sys.stderr, "-d\t --tmp-dir\tDirectory where temporary files for error correction tool are stored"
-    print >>sys.stderr, "-q\t --qvoffset\tPHRED quality offset in the input reads (33 or 64)"
-    print >>sys.stderr, "-i\t --iterations\tMaximum number of iterations for the error correction procedure"
+    print >>sys.stderr, "or you can run SPAdes with config file:", sys.argv[0], "<config file>"
+    print >>sys.stderr, "sample config is spades_config.info"
 
-    print >>sys.stderr, ""
-    print >>sys.stderr, "\tOptions without parameters:"
-    print >>sys.stderr, "-z\t--not-gzip-output\tForces error correction tool not to compress output corrected reads (by default it compress them with gzip)"
-    print >>sys.stderr, "-a\t--sam-files\tForces SPAdes to generate a SAM-file showing how the paired reads are aligned to resulting contigs"
-    print >>sys.stderr, "-g\t--disable-gap-closer\tForces SPAdes not to use the gap closer (by default it is enabled)"
 
 def main():
 
@@ -236,58 +282,67 @@ def main():
         single  = []
         k_mers  = []
         
-        single_cell        = False
-        not_gzip_output    = False
-        sam_files          = False
-        disable_gap_closer = False
+        single_cell         = False
+        disable_gzip_output = False
+        generate_sam_files  = False
+        disable_gap_closer  = False
+
+        only_error_correction = False
+        only_assembler        = False
 
         threads     = None
         memory      = None
         qvoffset    = None
         iterations  = None
       
-        for opt, arg in options:        
-            if opt in ('-n', "--project-name"):
+        for opt, arg in options: 
+       
+            if opt == '-n':
                 project_name = arg
-            elif opt in ('-o', "--output-dir"):
+            elif opt == '-o':
                 output_dir = arg
-            elif opt in ('-d', "--tmp-dir"):
+            elif opt == "--tmp-dir":
                 tmp_dir = arg
 
-            elif opt in ('-p', "--paired"):
+            elif opt == "--12":
                 paired.append(check_file(arg, 'paired'))
-            elif opt in ('-1', "--paired1"):
+            elif opt == '-1':
                 paired1.append(check_file(arg, 'left paired'))
-            elif opt in ('-2', "--paired2"):
+            elif opt == '-2':
                 paired2.append(check_file(arg, 'right paired'))
-            elif opt in ('-s', "--single"):
+            elif opt == '-s':
                 single.append(check_file(arg, 'single'))
-            elif opt in ('-k', "--k-mers"):
+            elif opt == '-k':
                 k_mers = map(int, arg.split(","))
 
-            elif opt in ('-S', "--sc"):
+            elif opt == "--sc":
                 single_cell         = True
-            elif opt in ('-z', "--not-gzip-output"):
-                gzip_output         = True
-            elif opt in ('-a', "--sam-files"):
-                sam_files           = True
-            elif opt in ('-g', "--disable-gap-closer"):
+            elif opt == "--disable-gzip-output":
+                disable_gzip_output = True
+            elif opt == "--generate-sam-files":
+                generate_sam_files  = True
+            elif opt == "--disable-gap-closer":
                 disable_gap_closer  = True
 
-            elif opt in ('-t', "--threads"):
+            elif opt == "--only-error-correction":
+                only_error_correction = True
+            elif opt == "--only-assembler":
+                only_assembler = True
+
+            elif opt == '-t' or opt == "--threads":
                 threads     = int(arg)
-            elif opt in ('-m', "--memory"):
+            elif opt == '-m' or opt == "--memory":
                 memory      = int(arg)
-            elif opt in ('-q', "--qvoffset"):
+            elif opt == "--phred-offset":
                 qvoffset    = int(arg)
-            elif opt in ('-i', "--iterations"):
+            elif opt == '-i' or opt == "--iterations":
                 iterations  = int(arg)
 
-            elif opt in ('-h', "--help"):
+            elif opt == '-h' or opt == "--help":
                 usage()
                 sys.exit(0)
 
-            elif opt in ("--test"): # running test
+            elif opt == "--test": # running test
                 if os.path.isfile("spades_config.info"):
                     CONFIG_FILE = "spades_config.info"
                 elif os.path.isfile(os.path.join(spades_home, "spades_config.info")):
@@ -300,6 +355,9 @@ def main():
             if not project_name:
                 error("the project name is not set! It is a mandatory parameter.")
 
+            ##
+            print "paired1", paired1
+            print "paired2", paired2
             if len(paired1) != len(paired2):
                 error("the number of files with left paired reads is not equal to the number of files with right paired reads!")           
 
@@ -309,8 +367,10 @@ def main():
             # filling cfg
             cfg["common"]           = load_config_from_vars(dict())
             cfg["dataset"]          = load_config_from_vars(dict()) 
-            cfg["error_correction"] = load_config_from_vars(dict())      
-            cfg["assembly"]         = load_config_from_vars(dict())
+            if not only_assembler:
+                cfg["error_correction"] = load_config_from_vars(dict())      
+            if not only_error_correction:            
+                cfg["assembly"]         = load_config_from_vars(dict())
 
             # filling reads
             paired_counter = 0
@@ -341,19 +401,21 @@ def main():
             cfg["dataset"].__dict__["single_cell"] = single_cell
         
             # error correction
-            if tmp_dir:
-                cfg["error_correction"].__dict__["tmp_dir"] = tmp_dir
-            if qvoffset:
-                cfg["error_correction"].__dict__["qvoffset"] = qvoffset
-            if iterations:
-                cfg["error_correction"].__dict__["max_iterations"] = iterations
-            cfg["error_correction"].__dict__["gzip_output"] = not not_gzip_output
+            if not only_assembler:
+                if tmp_dir:
+                    cfg["error_correction"].__dict__["tmp_dir"] = tmp_dir
+                if qvoffset:
+                    cfg["error_correction"].__dict__["qvoffset"] = qvoffset
+                if iterations:
+                    cfg["error_correction"].__dict__["max_iterations"] = iterations
+                cfg["error_correction"].__dict__["gzip_output"] = not disable_gzip_output
 
             # assembly
-            if k_mers:
-                cfg["assembly"].__dict__["iterative_K"] = k_mers
-            cfg["assembly"].__dict__["generate_sam_files"] = sam_files
-            cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
+            if not only_error_correction:            
+                if k_mers:
+                    cfg["assembly"].__dict__["iterative_K"] = k_mers
+                cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files
+                cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
 
             if not check_config(cfg, project_name):
                 return
@@ -376,16 +438,15 @@ def main():
             print v,
         print ""
 
+    print_used_values(cfg)
+
     bh_dataset_filename = ""
     if cfg.has_key("error_correction"):
         bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
       
         bh_cfg.output_dir = os.path.join(os.path.expandvars(bh_cfg.output_dir), "corrected")
-        
-        if bh_cfg.__dict__.has_key("tmp_dir"):
-            bh_cfg.__dict__["working_dir"] = os.path.expandvars(bh_cfg.tmp_dir)
-        else:
-            bh_cfg.__dict__["working_dir"] = os.path.join(bh_cfg.output_dir, "tmp")
+
+        bh_cfg.__dict__["working_dir"] = bh_cfg.tmp_dir
 
         bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir, cfg["common"].project_name + ".dataset")
 
