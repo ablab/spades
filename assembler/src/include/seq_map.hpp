@@ -21,19 +21,7 @@
 
 //#include "cuckoo.hpp"
 
-#define TR1_UNORDERED 0
-#define GOOGLE_DENSE 1
-#define MCT_CLOSED_HASH 2
-
-#define MAP_IN_USE TR1_UNORDERED
-
-#if MAP_IN_USE == TR1_UNORDERED
-    #include <tr1/unordered_map>
-#elif MAP_IN_USE == GOOGLE_DENSE
-    #include "google/dense_hash_map"
-#elif MAP_IN_USE == MCT_CLOSED_HASH
-    #include "mct/hash-map.hpp"
-#endif
+#include <tr1/unordered_map>
 
 
 /*
@@ -54,18 +42,8 @@ private:
 
 	typedef Seq<size_> Kmer;
 
-    #if MAP_IN_USE == TR1_UNORDERED
-        typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
-            typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
-	#elif MAP_IN_USE == GOOGLE_DENSE
-		typedef google::dense_hash_map<Kmer, pair<Value, size_t> ,
-			typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
-		Kmer deleted_key; // see http://google-sparsehash.googlecode.com/svn/trunk/doc/sparse_hash_map.html#6
-		bool deleted_key_is_defined;
-	#elif MAP_IN_USE == MCT_CLOSED_HASH
-		typedef mct::closed_hash_map<Kmer, pair<Value, size_t> ,
-			typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
-	#endif
+    typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
+         typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
 
 //	typedef cuckoo<Kmer, pair<Value, size_t> , typename Kmer::multiple_hash,
 //	typename Kmer::equal_to> map_type;
@@ -76,12 +54,6 @@ private:
 	//does it work for primitives???
 public:
 	void addEdge(const Kmer &k) {
-		#if MAP_IN_USE == GOOGLE_DENSE
-			if (deleted_key_is_defined && k == deleted_key) {
-				nodes_.clear_deleted_key();
-				deleted_key_is_defined = false;
-			}
-		#endif
 		nodes_.insert(make_pair(k, make_pair(Value(), -1)));
 	}
 private:
@@ -90,12 +62,6 @@ private:
 	void putInIndex(const Kmer &kmer, Value id, size_t offset) {
 		map_iterator mi = nodes_.find(kmer);
 		if (mi == nodes_.end()) {
-            #if MAP_IN_USE == GOOGLE_DENSE
-				if (deleted_key_is_defined && kmer == deleted_key) {
-					nodes_.clear_deleted_key();
-					deleted_key_is_defined = false;
-				}
-			#endif
 			nodes_.insert(make_pair(kmer, make_pair(id, offset)));
 		} else {
 			mi->second.first = id;
@@ -110,10 +76,6 @@ public:
 	// DE BRUIJN:
 
 	SeqMap() {
-        #if MAP_IN_USE == GOOGLE_DENSE
-	        nodes_.set_empty_key(Kmer::GetZero());
-	        deleted_key_is_defined = false;
-		#endif
 	}
 
 //	Moved to graph_construction.hpp:
@@ -231,13 +193,6 @@ public:
 	bool deleteIfEqual(const Kmer& kmer, Value id) {
 		map_iterator mi = nodes_.find(kmer);
 		if (mi != nodes_.end() && mi->second.first == id) {
-            #if MAP_IN_USE == GOOGLE_DENSE
-				if (!deleted_key_is_defined) {
-					nodes_.set_deleted_key(kmer);
-					deleted_key = kmer;
-					deleted_key_is_defined = true;
-				}
-			#endif
 			nodes_.erase(mi);
 			return true;
 		}

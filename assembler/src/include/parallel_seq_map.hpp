@@ -3,14 +3,7 @@
 #include "omni/parallel_unordered_map.hpp"
 #include <omp.h>
 
-#define DESTINATION_MAP TR1_UNORDERED
-
-#if DESTINATION_MAP == TR1_UNORDERED
-    #include <tr1/unordered_set>
-#elif DESTINATION_MAP == MCT_CLOSED_HASH
-    #include "mct/hash-set.hpp"
-#endif
-
+#include <tr1/unordered_set>
 
 template <size_t size_>
 class ParallelSeqSet {
@@ -20,11 +13,7 @@ public:
 
     typedef parallel_unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> par_container_t;
 
-#if DESTINATION_MAP == TR1_UNORDERED
     typedef std::tr1::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
-#elif DESTINATION_MAP == MCT_CLOSED_HASH
-    typedef mct::closed_hash_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
-#endif
 
 
 private:
@@ -93,11 +82,7 @@ public:
 
     typedef parallel_vector<Kmer> par_container_t;
 
-#if DESTINATION_MAP == TR1_UNORDERED
     typedef std::tr1::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
-#elif DESTINATION_MAP == MCT_CLOSED_HASH
-    typedef mct::closed_hash_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
-#endif
 
 private:
 

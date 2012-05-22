@@ -1,44 +1,23 @@
 #pragma once 
 
-#define TR1_UNORDERED 0
-#define GOOGLE_DENSE 1
-#define MCT_CLOSED_HASH 2
-
-#define PARALLEL_MAP_IN_USE TR1_UNORDERED
-
-#if PARALLEL_MAP_IN_USE == TR1_UNORDERED
-    #include <tr1/unordered_set>
-#elif PARALLEL_MAP_IN_USE == GOOGLE_DENSE
-    #include "google/dense_hash_set"
-#elif PARALLEL_MAP_IN_USE == MCT_CLOSED_HASH
-    #include "mct/hash-set.hpp"
-#endif
-
+#include <tr1/unordered_set>
 
 template<class T, class Hash, class KeyEqual>
 struct parallel_unordered_set
 {
-    private:
-#if PARALLEL_MAP_IN_USE == TR1_UNORDERED
-    typedef std::tr1::unordered_set<T, Hash, KeyEqual>               origin_container_t;
-#elif PARALLEL_MAP_IN_USE == GOOGLE_DENSE
-    typedef google::dense_hash_set<T, Hash, KeyEqual>                origin_container_t;
-#elif PARALLEL_MAP_IN_USE == MCT_CLOSED_HASH
-    typedef mct::closed_hash_set<T, Hash, KeyEqual>                  origin_container_t;
-#endif
-        typedef std::vector<origin_container_t>                                 container_arr_t;
-        typedef typename origin_container_t::value_type                         value_type;
+private:
+
+    typedef std::tr1::unordered_set<T, Hash, KeyEqual>                      origin_container_t;
+
+    typedef std::vector<origin_container_t>                                 container_arr_t;
+
+    typedef typename origin_container_t::value_type                         value_type;
 
     public:
         parallel_unordered_set(size_t nthreads, size_t cell_size = 100000)
             : nthreads_     (nthreads)
             , buckets_      (nthreads, origin_container_t(cell_size)) {
 
-#if PARALLEL_MAP_IN_USE == GOOGLE_DENSE
-            for (size_t i = 0; i < nthreads_; ++i) {
-                buckets_[i].set_empty_key(T::GetZero());
-            }
-#endif
         }
 
         void insert(const value_type& value, size_t bucket_num)
