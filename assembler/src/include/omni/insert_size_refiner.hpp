@@ -287,8 +287,8 @@ void refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_p
 		double mad = 0;
 		median = get_median(hist);
 		mad = get_mad(hist, median);
-		double low = median - 2 * 1.4826 * mad;
-		double high = median + 2 * 1.4826 * mad;
+		double low = median - 5 * 1.4826 * mad;
+		double high = median + 5 * 1.4826 * mad;
 		hist_crop(hist, low, high, &cfg::get_writable().ds.hist);
 		median = get_median(cfg::get().ds.hist);
 		mad = get_mad(cfg::get().ds.hist, median);
