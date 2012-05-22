@@ -36,8 +36,6 @@
 #include "sequence/seq.hpp"
 #include "sequence/sequence_data.hpp"
 
-using namespace std;
-
 
 class Sequence {
 

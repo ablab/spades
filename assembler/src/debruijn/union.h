@@ -14,7 +14,6 @@
 #include <cstdarg>
 #include <algorithm>
 
-using namespace std;
 bool pred1(const vector<int> & v) {return v.size() == 0;}
 //TODO this class seriously needs to be refactored . 
 class UnionFindClass {
