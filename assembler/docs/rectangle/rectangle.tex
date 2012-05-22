@@ -268,16 +268,74 @@ the collection, or even some of the pieces are missing. Bellow we address these 
 \noindent 
 \textbf{Line Fragments Reconstruction} 
 We now describe how to reconstruct the line fragment on each rectangles from a collection of perturbed points corresponding to the 
-inexact $(k,d,\Delta)$ mers. A pair of condensed path $p_1$ and $p_2$ in the graph is called a d-bound suspected if there exists 
+inexact $(k,d,\Delta)$ mers.  
+
+
+ To better \emph{resharp}
+the line segment, it is beneficial to first characterize the variation of insert size. 
+
+While it is commonly accepted that insert size distribution for multiple cell data follows a Gaussian distribution,
+it is often the case in single cell dataset that the insert size distribution is often skewed. Fortunately, it is often the case 
+that the distribution is unimodal and we exploit this property to make our line fragments reconstruction procedure work well for
+both single cell and multiple cell dataset. We initially obtain the empirical distribution of the insert size 
+by mapping read pairs to long edges in the graph. We set $d$ equal to the mode of the distribution.  
+
+
+
+A pair of condensed path $p_1$ and $p_2$ in the graph is called a d-bound suspected if there exists 
 a pair of $k$-mers $(a,b)$ such that $a \in p_1$ and $b\in p_2$. For each d-bounded suspected pair of condensed edge, we draw a rectangle with
-vertical edges $p_1$ and horizontal edges $p_2$. The set of  $(k-1, d, \Delta)$-mers forms points on each rectangles.  To better \emph{resharp}
-the line segment, it is beneficial to characterize the variation of insert size. 
+vertical edges $p_1$ and horizontal edges $p_2$. For each pair of $k$-mers $(a,b)$, we draw a point $(x,y)$  on the rectangle 
+where $x$ is the position on the horizontal edge corresponding to $k$-mer $a$ and $y$ is the position on the vertical edge 
+corresponding to $k$-mer $b$. The position of these points on the rectangle approximate the genomic  distances between $p_1$ 
+and $p_2$. Since the genome is an edge-covering tour in the de Bruijn graph,  the genomic distances between $p_1$ and $p_2$ corresponds to
+the lengths of some paths connecting $p_1$ and $p_2$. Let ${\ell_1, \ldots \ell_t}$~\footnote{ If $t = 0$ (there is no path
+connecting $p_1$ and $p_2$ within the distance constraint, we remove this rectangle from further analysis}. be a set of all graph distance between 
+$p_1$ and $p_2$ that are in the range of $[]$.  We draw $t$ lines  $(d_i): y = x +  \ell_i - d$ where $ 1 \leq i \leq t$.  Among 
+ these $t$ lines, only $t' \leq t$ represent the fragment of the original line on the diagonal grid graph. In other words, 
+    they corresponds to the genomic distances between $p_1$ and $p_2$. 
+ Our goal is to identify 
+these $t_1$ lines among $t$ possible lines, which are now represented as perturbed points on the rectangle.
 
 
-While it is commonly accepted that insert size distribution is unimodal, there are few data that show the insert size distributions do not usually follow 
-the gaussian distribution, especially for single cell data. Fig.~\ref{fig:distri} shows the insert size distribution on multiple cells as well as 
-single cell datasets.  The insert size distribution for multiple cell can be approximately fit in a gaussian distribution, the insert size distributions for
-single cell data are heavily skewed.
+    Since $d$ was chosen at the mode of the distribution, the points corresponding to a line $(d_i)$ will be more probable 
+to perturbate closer to the line than farther from the line. For each line we define a supporting value, which is the density of 
+points in the $\epsilon$ distance around it. In other words, it is the number of points lie in the region defined by
+$y = x+  \ell_i - d - \epsilon$ and $y = x + \ell_i -d + \epsilon$ and normalized by the length of $(d_i)$.  We empirically choose 
+a threshold and ignore all lines that have the supporing values smaller than the threshold. The weakness of this approach is that 
+if two lines $(d_i)$ and $(d_j)$ are closed, a majority of points that supports line $d_i$ will also supports line $d_j$ and vise versa.  
+This leads to the problem of selecting the incorrect line fragments around the correct ones. To overcome this problem, for a pair of 
+lines $(d_i)$, $(d_j)$, we define a separating value equal to the minimum supporting value of any line drawing between $(d_i)$ and $(d_j)$.
+Note that the separation values usually use smaller $\epsilon$ than  the supporting values.  The separating values further divide the 
+list of remaining lines into partitions, each partition represents single lines or consecutive lines that can not be separated. We 
+represent each partition on each rectangle. 
+
+\noindent
+\textbf{Rectangle Graph for Approximate Distance}
+As mentioned above, the variation of the distance of insert size transform the line fragment on each rectangle into a set of
+perturbed points around it. While the \emph{Line Fragments Reconstruction} procedure described above attemps to reconstruct the line, it can not guarantee 
+to have a single line on each rectangle but instead, can results in multiple (parallel) lines closed to each other, where we can guarantee that at least 
+one of them are the correct line fragment of the original line. Thus, the extending condition for rectangles should be revised so that the original line can be
+reconstructed by extending the rectangles.  
+
+We represent the incoming/ outgoing face of a rectangle as  a set of pairs of $k$-mers, corresponding to the starts/ends of the lines in the rectangle. 
+Rectangle $R_1$ can extends rectangle $R_2$ ($R_2$ is extendable by $R_1$) if the outgoing face of $R_2$ shares at least 
+one pair of $k$-mers with the incoming face of $R_1$.  The lines in $R2$ corresponding to the shared pair of $k$-mers are called extendable lines with respect to
+$R_1$. If a line is not extendable by any other rectangle, we remove it from the rectangle.  Additionally, if a rectangle $R_2$ have $r$ lines and each line 
+is extendable by $r$ different rectangles that can not extend any other rectangle except for $R_2$, we replace $R_2$ by $r$ different rectangles, each with 
+a single line. 
+ 
+Finally, the rectangle graph is constructed by: (1) Represent each rectangle as an edge from its in-coming 
+face to its out-going face; (2) Glue two node if they share at least one pair of $k$-mer. We output contigs from non-branching path in the rectangle graph. 
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -296,93 +354,84 @@ single cell data are heavily skewed.
 
 
 
-\section{Basics}
-
-%    Given condensed de Bruijn Graph $G = <V,E>$ with $K$-mer vertices.
-%    Length of edge $a$ is defined as number of $(K+1)$-mers in the edge. $\forall a: |a| \geq 1$.
-%    Let $a_i$ be $i$-th $K$-mer in the edge $a$. $\forall a: 0 \leq i \leq |a|$
-%    Let $d = insert\_size - reads\_length$ (called separation).
-%    \section{Initial Set of Rectangles}
-%    Define \textbf{rectangle} as ordered pair of edges $r = (a|b), \forall a, b \in E$.
-%    Initially, we construct set of rectanges $R$ for all pairs of edges s.t. they contain at least one pair of $K$-mers within distance $d$ in graph $G$:
-%    $$ R = \{ r | r = (a|b), \forall a, b \in E : \exists p = path(end(a), start(b)) : 0 \leq d - |p| \leq |a| + |b| \} $$
+%\section{Basics}
+%%
+%\section{What is Diagonal}
 %
-\section{What is Diagonal}
-
-Define \textbf{point} in rectangle $(a|b)$ as ordered pair of $K$-mers in this edges $(a_i|b_j)$.
-
-Define \textbf{d-point} as point $(a_i|b_j)$ s.t. distance between $a_i$ and $b_j$ in genome is $d$. The goal is to use all d-points and only, but we don't know the truth...
-
-Two points are equal if their pairs of $K$-mers are equal.
-
-Define \textbf{diagonal} $(a|b, D)$ in rectangle $(a|b)$ with offset $D$ s.t. $-|b| \leq D \leq |a|$ as list of points $(a_i, b_{i-D})$ for $i = max(D, 0) ... min(|a|, |b|+D)$.
-
-Define \textbf{d-diagonal} as diagonal of only \textbf{d-points}. 
-
-Length of diagonal is number of points in this diagonal. E.g. diagonal $(a|a, d)$ have length of $|a| - d + 1$.
-
-Rectangles can contain multiple diagonals.
-
-\section{Diagonal Support}
-
-\textbf{Support} is our confidence that diagonal $(a|b, D)$ is actually d-diagonal.
-
-Diagonal $(a|a, d)$ for long enough edge $a: |a| \geq d$ is always d-diagonal and doesn't require any other support.
-
-Diagonal can be supported:
-\begin{enumerate}
-\item By points known to be d-points from the graph $G$, i.e. exists path of length $d$ (this initial support exists in all rectangles).
-\item By points known to be d-points from paired reads. TODO: use insert size variation. TODO: use PHRED-quality of particular K-mers.
-\item By points known to be d-points from single reads. E.g. if single read covers $a \rightarrow ... \rightarrow b$ connection and there exists rectangle $(a|b)$.
-\item TODO: PathSets?
-\item TODO: Neighbouring rectangles (diagonals) while gluing.
-\item TODO: Other diagonals in the same rectangle (how? see section Gluing).
-\end{enumerate}
-
-Support of diagonal should scale by the length of diagonal.
-
-\section{Rectangle Split}
-
-The main goal is to filter and split rectangles, so that each rectangle contain d-diagonal and it is the only diagonal in this rectangle.
-
-If one rectangle have multiple well-supported diagonals, we need to split it to multiple rectangles (one diagonal to each). Same applies for number of average-supported diagonals within variation (e.g. insert size variation), so their join is well-supported.
-
-\section{Do we need rectangles?}
-
-We can define everything only with diagonals, but it's simpler to draw them within rectangles.
-
-Rectangle is equal to set (cluster) of diagonals. Rectangles splitting is somewhat similar to the current distance estimation.
-
-\section{Diagonals Ranking}
-
-We sort diagonals by their support. Better supported goes first.
-
-\section{Diagonals Gluing}
-
-We glue diagonals by their end-points only if this end-points are equal.
-
-We glue diagonals in the order of their support:
-\begin{itemize}
-\item First we glue all well-supported diagonals (because they are d-diagonals).
-\item We iterate over average-supported diagonals in the order of their support:
-\begin{itemize}
-\item If diagonal can connect two hanging end-points of already used diagonals, we glue it (preferable).
-\item If diagonal can be glued to one hanging end-point of already used diagonal, we glue it.
-\end{itemize}
-\item We don't use poorly-supported diagonals.
-\end{itemize}
-
-\section{Gluing Support}
-
-Original gluing support (rule) is equality of glued end-points of diagonals.
-
-We can think about more gluing supports, e.g.:
-\begin{enumerate}
-\item Glue diagonals $(a|b, \cdot)$ and $(a|c, \cdot)$ only if there exists single read with $(K+2)$-mer which covers $b \rightarrow c$ path in graph. It's more powerful then single-read support for diagonals. TODO: $K+10$? $K+x$?
-\item PathSets were supposed to be one of gluing supports --- glue two diagonals only if first's pathset is a prefix of second's pathset. We can somehow use PathSets also in the diagonal support, but I don't know how :)
-\item TODO: more.
-\end{enumerate}
-
+%Define \textbf{point} in rectangle $(a|b)$ as ordered pair of $K$-mers in this edges $(a_i|b_j)$.
+%
+%Define \textbf{d-point} as point $(a_i|b_j)$ s.t. distance between $a_i$ and $b_j$ in genome is $d$. The goal is to use all d-points and only, but we don't know the truth...
+%
+%Two points are equal if their pairs of $K$-mers are equal.
+%
+%Define \textbf{diagonal} $(a|b, D)$ in rectangle $(a|b)$ with offset $D$ s.t. $-|b| \leq D \leq |a|$ as list of points $(a_i, b_{i-D})$ for $i = max(D, 0) ... min(|a|, |b|+D)$.
+%
+%Define \textbf{d-diagonal} as diagonal of only \textbf{d-points}. 
+%
+%Length of diagonal is number of points in this diagonal. E.g. diagonal $(a|a, d)$ have length of $|a| - d + 1$.
+%
+%Rectangles can contain multiple diagonals.
+%
+%\section{Diagonal Support}
+%
+%\textbf{Support} is our confidence that diagonal $(a|b, D)$ is actually d-diagonal.
+%
+%Diagonal $(a|a, d)$ for long enough edge $a: |a| \geq d$ is always d-diagonal and doesn't require any other support.
+%
+%Diagonal can be supported:
+%\begin{enumerate}
+%\item By points known to be d-points from the graph $G$, i.e. exists path of length $d$ (this initial support exists in all rectangles).
+%\item By points known to be d-points from paired reads. TODO: use insert size variation. TODO: use PHRED-quality of particular K-mers.
+%\item By points known to be d-points from single reads. E.g. if single read covers $a \rightarrow ... \rightarrow b$ connection and there exists rectangle $(a|b)$.
+%\item TODO: PathSets?
+%\item TODO: Neighbouring rectangles (diagonals) while gluing.
+%\item TODO: Other diagonals in the same rectangle (how? see section Gluing).
+%\end{enumerate}
+%
+%Support of diagonal should scale by the length of diagonal.
+%
+%\section{Rectangle Split}
+%
+%The main goal is to filter and split rectangles, so that each rectangle contain d-diagonal and it is the only diagonal in this rectangle.
+%
+%If one rectangle have multiple well-supported diagonals, we need to split it to multiple rectangles (one diagonal to each). Same applies for number of average-supported diagonals within variation (e.g. insert size variation), so their join is well-supported.
+%
+%\section{Do we need rectangles?}
+%
+%We can define everything only with diagonals, but it's simpler to draw them within rectangles.
+%
+%Rectangle is equal to set (cluster) of diagonals. Rectangles splitting is somewhat similar to the current distance estimation.
+%
+%\section{Diagonals Ranking}
+%
+%We sort diagonals by their support. Better supported goes first.
+%
+%\section{Diagonals Gluing}
+%
+%We glue diagonals by their end-points only if this end-points are equal.
+%
+%We glue diagonals in the order of their support:
+%\begin{itemize}
+%\item First we glue all well-supported diagonals (because they are d-diagonals).
+%\item We iterate over average-supported diagonals in the order of their support:
+%\begin{itemize}
+%\item If diagonal can connect two hanging end-points of already used diagonals, we glue it (preferable).
+%\item If diagonal can be glued to one hanging end-point of already used diagonal, we glue it.
+%\end{itemize}
+%\item We don't use poorly-supported diagonals.
+%\end{itemize}
+%
+%\section{Gluing Support}
+%
+%Original gluing support (rule) is equality of glued end-points of diagonals.
+%
+%We can think about more gluing supports, e.g.:
+%\begin{enumerate}
+%\item Glue diagonals $(a|b, \cdot)$ and $(a|c, \cdot)$ only if there exists single read with $(K+2)$-mer which covers $b \rightarrow c$ path in graph. It's more powerful then single-read support for diagonals. TODO: $K+10$? $K+x$?
+%\item PathSets were supposed to be one of gluing supports --- glue two diagonals only if first's pathset is a prefix of second's pathset. We can somehow use PathSets also in the diagonal support, but I don't know how :)
+%\item TODO: more.
+%\end{enumerate}
+%
 \input{results}
 
 \bibliographystyle{plain}
