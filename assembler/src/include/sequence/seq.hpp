@@ -469,7 +469,7 @@ public:
 };
 
 template<size_t size_, typename T = int>
-ostream& operator<<(ostream& os, Seq<size_, T> seq) {
+std::ostream& operator<<(std::ostream& os, Seq<size_, T> seq) {
 	os << seq.str();
 	return os;
 }
