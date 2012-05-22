@@ -60,6 +60,8 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict["gap_closer_enable"]      = bool_to_str(last_one and cfg.gap_closer)
     subst_dict["paired_mode"]            = bool_to_str(last_one and cfg.paired_mode)
     subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
+    subst_dict["max_threads"]            = cfg.max_threads
+    subst_dict["max_memory"]             = cfg.max_memory
 
     substitute_params(filename, subst_dict)
 
@@ -671,6 +673,10 @@ def run_spades(cfg):
         before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "contigs_before_RR.fasta")
         shutil.copyfile(os.path.join(latest, "contigs_before_RR.fasta"), before_RR_contigs)
     os.remove(cfg.additional_contigs) 
+
+    bin_reads_dir = os.path.join(cfg.working_dir, ".bin_reads")
+    if os.path.isdir(bin_reads_dir):
+        shutil.rmtree(bin_reads_dir)
 
     return cfg.result_contigs
 

@@ -125,7 +125,6 @@ int main(int argc, char** argv)
 	perf_counter pc;
     
     const size_t GB = 1 << 30;
-    limit_memory(120 * GB);
     
     segfault_handler sh(bind(link_output, "latest"));
     
@@ -145,6 +144,8 @@ int main(int argc, char** argv)
         // typedefs :)
 //        typedef io::EasyReader ReadStream;
 //        typedef io::PairedEasyReader PairedReadStream;
+
+        limit_memory(cfg::get().max_memory * GB);
 
         if (cfg::get().use_multithreading) {
             debruijn_graph::convert_reads_to_binary();

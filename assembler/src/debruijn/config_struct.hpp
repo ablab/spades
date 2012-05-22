@@ -426,7 +426,7 @@ public:
 
     bool use_multithreading;
 	size_t max_threads;
-
+	size_t max_memory;
 
 //	size_t is_infinity;
 
@@ -819,7 +819,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.use_multithreading, pt, "use_multithreading");
 	load(cfg.max_threads, pt, "max_threads");
 
-
+    load(cfg.max_memory, pt, "max_memory");
 
 	checkFileExistenceFATAL(cfg.dataset_file);
 	boost::property_tree::ptree ds_pt;
