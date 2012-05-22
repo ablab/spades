@@ -25,9 +25,6 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
     Python 2.4 or higher installed.
 </p>
 
-<p>If you have root privileges and you want to install SPAdes for all users you can install Debian package as described in section 1.3 or RPM package as described in section 1.4. It will allow users
-to run <code>spades.py</code> from any directory without <code>./</code> prefix.</p>
-
 <h3>1.1 SPAdes tar.gz file</h3>
 
 <p>You can download <a href="http://spades.bioinf.spbau.ru/release2.1.0/spades_2.1.0.tar.gz">SPAdes tar.gz</a> and extract it:
@@ -66,58 +63,24 @@ to run <code>spades.py</code> from any directory without <code>./</code> prefix.
 </pre>
 
 <p>It will download binaries to <code>.spades/release2.1.0</code> directory in your user home.
-SPAdes uses binaries optimized for each k value (see section  2.3) and you can download binaries
+SPAdes uses binaries optimized for each k value and you can download binaries
 for the required k values with <code>./spades_download_binary.py</code> script using space-separated values of k as an argument.</p>
 
-<h3>1.3 Installing Debian package</h3>
 
-<p>First, add the repository containing SPAdes by inserting the following line to the end of the file
-    <code>/etc/apt/sources.list</code>:
+<h3>1.3 Testing your installation</h3>
+
+<p>
+For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of E. coli). If you run <code>spades.py</code> with parameter <code>--test</code>
 </p>
 
 <pre class="code">
 <code>
-    deb http://debian.bioinf.spbau.ru /
-</code>
-</pre>
-
-<p>Note that the space before the last slash is required. Update the package list by typing</p>
-
-<pre class="code">
-<code>
-    sudo apt-get update
-</code>
-</pre>
-
-<p>After that, SPAdes can be installed just by typing</p>
-
-
-<pre class="code">
-<code>
-    sudo apt-get install spades
-</code>
-</pre>
-
-<h3>1.4 Installing RPM package</h3>
-
-<p>Your can download the RPM package <a href="http://spades.bioinf.spbau.ru/release2.1.0/spades-2.1.0.rpm">here</a>. The RPM installation procedure varies on different systems, but on
-    <a href="http://fedoraproject.org/">Fedora</a> we recommend
-</p>
-
-<pre class="code">
-<code>
-    sudo yum install spades-2.1.0.rpm
+    ./spades.py --test
 </code>
 </pre>
 
 <p>
-    Please note, that some package managers will not install dependencies described in section 1.1 automatically. Anyway you can download binaries as described in section 1.2.
-</p>
-
-<h3>1.5 Testing your installation</h3>
-
-<p>
-For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of E. coli). If you <code>spades.py</code> without parameters it will process this dataset
+it will process this dataset
 and if the installation is successful you will see something like this at the end of the log:
 </p>
 
@@ -154,8 +117,8 @@ Thank you for using SPAdes!
 <h3>2.2 SPAdes pipeline</h3>
 <p>
     SPAdes has two stages: error correction by <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> and genome assembly. By default all the
-    results are stored in <code>spades_output</code> directory. For each dataset SPAdes creates separate directory <code>&lt;project_name></code> in <code>spades_output</code>,
-    the name of the directory . Corrected reads are stored in <code>corrected</code> subdirectory in <code>*.fastq.qz</code> files.
+    results are stored in <code>spades_output</code> directory. For each dataset SPAdes creates separate directory <code>&lt;project_name></code> in <code>spades_output</code>.
+    Corrected reads are stored in <code>corrected</code> subdirectory in <code>*.fastq.qz</code> files.
     The resulting contigs are stored in <code>contigs</code> subdirectory in <code>*.fasta</code> file.
 </p>
 
@@ -182,8 +145,7 @@ Thank you for using SPAdes!
 <h3>2.4 Preparing configuration files</h3>
 
 <p>
-You can find the configuration file <code>spades_config.info</code> for the toy dataset from section 1.5 in the directory you extracted the archive (see section 1.1) or at
-<code>/usr/share/spades/spades_config.info</code> if SPAdes was installed from package.
+You can find the configuration file <code>spades_config.info</code> for the toy dataset from section 1.3 in the directory you extracted the archive (see section 1.1).
 You can use this file as the template for your datasets. In  this file in each line all text after the first semicolon is a comment.
 </p>
 
@@ -219,7 +181,7 @@ You can use this file as the template for your datasets. In  this file in each l
 <p>
     While SPAdes produces accurate assemblies, we recommend running <a href="http://bix.ucsd.edu/SEQuel/">SEQuel</a> [4]
     after SPAdes to further  reduce the number of small errors (single nucleotide substitutions and small indels).
-    Note that one can set the flag generate_sam to SPAdes (see section 2.2.3)
+    Note that one can set the <code>--generate_sam_file</code> to SPAdes (see section 2.3)
     to generate a SAM-file showing how the reads are aligned to the resulting contigs. This file can then be
     given to SEQuel as input.
 </p>
@@ -229,6 +191,10 @@ You can use this file as the template for your datasets. In  this file in each l
 </p>
 
 <h2>5 Feedback and bug reports</h2>
+<p>
+    After running SPAdes you can evaluate different quality metrics using our pipeline. Please see <a href="quality.html">quality.html</a> for details.
+</p>
+
 <p>
     We will be thankful if you help us make SPAdes better by sending your comments, bug reports, and suggestions
     to <a href="mailto:spades.support@bioinf.spbau.ru">spades.support@bioinf.spbau.ru</a>.
