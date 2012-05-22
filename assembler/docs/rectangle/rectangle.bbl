@@ -23,6 +23,12 @@ A.~Bankevich, S.~Nurk, D.~Antipov, A.~Gurevich, M.~Dvorkin, A.~Kulikov,
   Sequencing}, 2012.
 \newblock Submitted.
 
+\bibitem{Barthelson2011}
+Roger Barthelson, Adam~J. McFarlin, Steven~D. Rounsley, and Sarah Young.
+\newblock Plantagora: Modeling whole genome sequencing and assembly of plant
+  genomes.
+\newblock {\em PLoS ONE}, 6(12):e28436, 12 2011.
+
 \bibitem{Chaisson08}
 M.J. Chaisson and P.A. Pevzner.
 \newblock Short read fragment assembly of bacterial genomes.
