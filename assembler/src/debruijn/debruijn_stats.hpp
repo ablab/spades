@@ -565,7 +565,7 @@ struct detail_info_printer {
 
 	:
 			folder_(folder), func_(
-					bind(&ProduceDetailedInfo, ref(gp), ref(labeler), _3,
+					bind(&ProduceDetailedInfo, boost::ref(gp), boost::ref(labeler), _3,
 							file_name, _2, _1)) {
 	}
 

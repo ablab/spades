@@ -627,7 +627,7 @@ private:
 
 template<class gp_t>
 shared_ptr<const NewExtendedSequenceMapper<gp_t::k_value + 1, typename gp_t::graph_t>> MapperInstance(const gp_t& gp) {
-	return make_shared<NewExtendedSequenceMapper<gp_t::k_value + 1, typename gp_t::graph_t>>(gp.g, gp.index, gp.kmer_mapper);
+	return boost::make_shared<NewExtendedSequenceMapper<gp_t::k_value + 1, typename gp_t::graph_t>>(gp.g, gp.index, gp.kmer_mapper);
 }
 
 template<size_t k, class Graph>

@@ -293,7 +293,7 @@ private:
 template<class Graph, class Mapper>
 shared_ptr<const GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
 		const Graph& graph, const Mapper& mapper) {
-	return make_shared < GraphReadCorrector < Graph, Mapper >> (graph, mapper);
+	return boost::make_shared < GraphReadCorrector < Graph, Mapper >> (graph, mapper);
 }
 
 }
