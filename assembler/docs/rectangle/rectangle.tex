@@ -180,9 +180,9 @@ The line $(d)$ defines the \emph{diagonal grid graph} by retaining only the rect
 are intersected by $(d)$. 
 
 Below, we characterize the properties of the rectangles that are intersected by $(d)$. 
-Since each rectangle $R$ is formed by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t1}$
-and $\beta = a_i^*\ldots a_{i^*i+ t2}$, it is intersected by the line $(d)$ if and only if 
-there exists $x$ such that $i\leq x \leq i+t1$ and $ i^* \leq x + d \leq i^* + t2$ (1). This condition
+Since each rectangle $R$ is formed by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t_1}$
+and $\beta = a_i^*\ldots a_{i^*i+ t_2}$, it is intersected by the line $(d)$ if and only if 
+there exists $x$ such that $i\leq x \leq i+t_1$ and $ i^* \leq x + d \leq i^* + t_2$ (1). This condition
 immediately leads to a property that there exists a $(k-1,d)$-mer $(a|b)$ of $S$ such that 
 $a$ \emph{belongs} to $\alpha$ and $b$ \emph{belongs} to $\beta$.  A pair 
 of non-branching substrings $\alpha$ and $\beta$ is called $d$-bounded if it corresponds to 
@@ -193,8 +193,8 @@ the rectangle is $(\hat{x}, \hat{x}+d)$ where $\hat{x}$ is the maximum value of 
 (1) satisfies, and this position is labeled by a pair of $(k-1)$-mers $(a_{\hat{x}}, a_{\hat{x} +d})$.
 
 
-Given a $d$-bounded rectangle $R$ formed by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t1}$
-and $\beta = a_i^*\ldots a_{i^*i+ t2}$, let $D_R= i^* - i$ be the genomic distance between $\alpha$ and $\beta$. The integer 
+Given a $d$-bounded rectangle $R$ formed by a pair of non-branching substrings $\alpha = a_i\ldots a_{i+t_1}$
+and $\beta = a_i^*\ldots a_{i^*i+ t_2}$, let $D_R= i^* - i$ be the genomic distance between $\alpha$ and $\beta$. The integer 
 coordinate of the start $S(R)$ of the rectangle is $(i, i + D_R)$. By translating the origin from  $O$ to $S(R)$ for the line
 $(d): y = x + d$, we obtain $(d'): Y = X + d - D_R$: the function of the line in a new coordinate: rectangle $R$. Given a fixed
 value of $d$, the position of the line in each rectangle depends on $D_R$. In other words, the line on each rectangle $R$ 
@@ -278,31 +278,31 @@ While it is commonly accepted that insert size distribution for multiple cell da
 it is often the case in single cell dataset that the insert size distribution is often skewed. Fortunately, it is often the case 
 that the distribution is unimodal and we exploit this property to make our line fragments reconstruction procedure work well for
 both single cell and multiple cell dataset. We initially obtain the empirical distribution of the insert size 
-by mapping read pairs to long edges in the graph. We set $d$ equal to the mode of the distribution.  
+by mapping read pairs to long edges in the graph. We set $d$ equal to the median of the distribution.  
 
 
 
 A pair of condensed path $p_1$ and $p_2$ in the graph is called a d-bound suspected if there exists 
-a pair of $k$-mers $(a,b)$ such that $a \in p_1$ and $b\in p_2$. For each d-bounded suspected pair of condensed edge, we draw a rectangle with
+a pair of $(k,d)$-mers $(a,b)$ such that $a \in p_1$ and $b\in p_2$. For each d-bounded suspected pair of condensed paths, we draw a rectangle with
 vertical edges $p_1$ and horizontal edges $p_2$. For each pair of $k$-mers $(a,b)$, we draw a point $(x,y)$  on the rectangle 
 where $x$ is the position on the horizontal edge corresponding to $k$-mer $a$ and $y$ is the position on the vertical edge 
 corresponding to $k$-mer $b$. The position of these points on the rectangle approximate the genomic  distances between $p_1$ 
 and $p_2$. Since the genome is an edge-covering tour in the de Bruijn graph,  the genomic distances between $p_1$ and $p_2$ corresponds to
 the lengths of some paths connecting $p_1$ and $p_2$. Let ${\ell_1, \ldots \ell_t}$~\footnote{ If $t = 0$ (there is no path
-connecting $p_1$ and $p_2$ within the distance constraint, we remove this rectangle from further analysis}. be a set of all graph distance between 
-$p_1$ and $p_2$ that are in the range of $[]$.  We draw $t$ lines  $(d_i): y = x +  \ell_i - d$ where $ 1 \leq i \leq t$.  Among 
+connecting $p_1$ and $p_2$ within the distance constraint), we remove this rectangle from further analysis} be a set of all graph distance between 
+$p_1$ and $p_2$ that are in the range of $[d - |p_1|, d]$.  We draw $t$ lines  $(d_i): y = x + d - \ell_i$ where $ 1 \leq i \leq t$.  Among 
  these $t$ lines, only $t' \leq t$ represent the fragment of the original line on the diagonal grid graph. In other words, 
     they corresponds to the genomic distances between $p_1$ and $p_2$. 
  Our goal is to identify 
 these $t_1$ lines among $t$ possible lines, which are now represented as perturbed points on the rectangle.
 
 
-    Since $d$ was chosen at the mode of the distribution, the points corresponding to a line $(d_i)$ will be more probable 
+    Since $d$ was chosen at the median of the distribution, the points corresponding to a line $(d_i)$ will be more probable 
 to perturbate closer to the line than farther from the line. For each line we define a supporting value, which is the density of 
 points in the $\epsilon$ distance around it. In other words, it is the number of points lie in the region defined by
-$y = x+  \ell_i - d - \epsilon$ and $y = x + \ell_i -d + \epsilon$ and normalized by the length of $(d_i)$.  We empirically choose 
+$y = x + d - \ell_i - \epsilon$ and $y = x + d - \ell_i + \epsilon$ and normalized by the length of $(d_i)$.  We empirically choose 
 a threshold and ignore all lines that have the supporing values smaller than the threshold. The weakness of this approach is that 
-if two lines $(d_i)$ and $(d_j)$ are closed, a majority of points that supports line $d_i$ will also supports line $d_j$ and vise versa.  
+if two lines $(d_i)$ and $(d_j)$ are close, a majority of points that supports line $d_i$ will also supports line $d_j$ and vise versa.  
 This leads to the problem of selecting the incorrect line fragments around the correct ones. To overcome this problem, for a pair of 
 lines $(d_i)$, $(d_j)$, we define a separating value equal to the minimum supporting value of any line drawing between $(d_i)$ and $(d_j)$.
 Note that the separation values usually use smaller $\epsilon$ than  the supporting values.  The separating values further divide the 
@@ -317,7 +317,7 @@ to have a single line on each rectangle but instead, can results in multiple (pa
 one of them are the correct line fragment of the original line. Thus, the extending condition for rectangles should be revised so that the original line can be
 reconstructed by extending the rectangles.  
 
-We represent the incoming/ outgoing face of a rectangle as  a set of pairs of $k$-mers, corresponding to the starts/ends of the lines in the rectangle. 
+We represent the incoming/outgoing face of a rectangle as a set of pairs of $k$-mers, corresponding to the starts/ends of the lines in the rectangle. 
 Rectangle $R_1$ can extends rectangle $R_2$ ($R_2$ is extendable by $R_1$) if the outgoing face of $R_2$ shares at least 
 one pair of $k$-mers with the incoming face of $R_1$.  The lines in $R2$ corresponding to the shared pair of $k$-mers are called extendable lines with respect to
 $R_1$. If a line is not extendable by any other rectangle, we remove it from the rectangle.  Additionally, if a rectangle $R_2$ have $r$ lines and each line 
