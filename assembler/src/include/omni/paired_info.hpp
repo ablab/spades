@@ -853,6 +853,8 @@ private:
             }
         }
 
+        INFO("Used " << counter << " paired reads");
+
         INFO("Merging paired indices");
         for (size_t i = 1; i < nthreads; ++i) {
             buffer_pi[0]->AddAll(*(buffer_pi[i]));

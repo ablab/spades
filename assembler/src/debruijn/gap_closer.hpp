@@ -36,13 +36,13 @@ Path<EdgeId> ConvertToPath(Path<EdgeId> mp){
 	return mp;
 }
 
-template<size_t k, class Graph, class SequenceMapper, class Stream>
+template<size_t k, class Graph, class SequenceMapper, class PairedStream>
 class GapCloserPairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph &graph_;
 	const SequenceMapper& mapper_;
-	Stream& stream_;
+    std::vector< PairedStream* > streams_;
 
 	map<EdgeId, pair<EdgeId, int> > OutTipMap;
 	map<EdgeId, pair<EdgeId, int> > InTipMap;
@@ -132,11 +132,63 @@ private:
 	}
 
 
+    void FillUsualIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+        INFO("Processing paired reads (takes a while)");
+
+        PairedStream& stream = *(streams_.front());
+        stream.reset();
+        size_t n = 0;
+        while (!stream.eof()) {
+            typename PairedStream::read_type p_r;
+            stream >> p_r;
+            ProcessPairedRead(paired_index, p_r);
+            VERBOSE_POWER(++n, " paired reads processed");
+        }
+    }
+
+    void FillParallelIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+        INFO("Processing paired reads (takes a while)");
+
+        size_t nthreads = streams_.size();
+        std::vector< omnigraph::PairedInfoIndex<Graph>* > buffer_pi(nthreads);
+        buffer_pi[0] = &paired_index;
+
+        for (size_t i = 1; i < nthreads; ++i) {
+            buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_, paired_index.GetMaxDifference());
+        }
+
+        size_t counter = 0;
+        #pragma omp parallel num_threads(nthreads)
+        {
+            #pragma omp for reduction(+ : counter)
+            for (size_t i = 0; i < nthreads; ++i) {
+
+                typename PairedStream::read_type r;
+                PairedStream& stream = *streams_[i];
+                stream.reset();
+
+                while (!stream.eof()) {
+                    stream >> r;
+                    ++counter;
+
+                    ProcessPairedRead(*buffer_pi[i], r);
+                }
+            }
+        }
+        INFO("Used " << counter << " paired reads");
+
+        INFO("Merging paired indices");
+        for (size_t i = 1; i < nthreads; ++i) {
+            buffer_pi[0]->AddAll(*(buffer_pi[i]));
+            delete buffer_pi[i];
+        }
+    }
+
 public:
 
 	GapCloserPairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
-			Stream& stream) :
-			graph_(graph), mapper_(mapper), stream_(stream) {
+	        std::vector<PairedStream*>& streams) :
+			graph_(graph), mapper_(mapper), streams_(streams.begin(), streams.end()) {
 
 	}
 
@@ -147,18 +199,13 @@ public:
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		INFO("Preparing shift maps");
 		PrepareShiftMaps();
-		INFO("Processing paired reads (takes a while)");
-		stream_.reset();
-		size_t n = 0;
-		while (!stream_.eof()) {
-			io::PairedRead p_r;
-			stream_ >> p_r;
-			ProcessPairedRead(paired_index, p_r);
-			VERBOSE_POWER(++n, " paired reads processed");
-		}
+
+		if (streams_.size() == 1) {
+            FillUsualIndex(paired_index);
+        } else {
+            FillParallelIndex(paired_index);
+        }
 	}
-
-
 
 };
 
@@ -229,23 +276,58 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
 
 template<size_t k>
 void CloseGap(conj_graph_pack& gp, bool use_extended_mapper = true){
-	auto stream = paired_easy_reader(true, 0);
-	INFO("SUBSTAGE == Closing gaps");
-	if (use_extended_mapper) {
-		typedef NewExtendedSequenceMapper<k + 1, Graph> SequenceMapper;
-		SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper);
-		GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper, *stream);
-		paired_info_index gc_paired_info_index(gp.g);
-		gcpif.FillIndex(gc_paired_info_index);
-		CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
-	} else {
-		typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
-		SequenceMapper mapper(gp.g, gp.index);
-		GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper, *stream);
-		paired_info_index gc_paired_info_index(gp.g);
-		gcpif.FillIndex(gc_paired_info_index);
-		CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
-	}
+
+    INFO("SUBSTAGE == Closing gaps");
+
+    if (cfg::get().use_multithreading) {
+        auto paired_streams = paired_binary_readers(true, 0);
+
+        if (use_extended_mapper) {
+            typedef NewExtendedSequenceMapper<k + 1, Graph> SequenceMapper;
+            SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper);
+            GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, io::IReader<io::PairedReadSeq> > gcpif(gp.g, mapper, paired_streams);
+            paired_info_index gc_paired_info_index(gp.g);
+            gcpif.FillIndex(gc_paired_info_index);
+            CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
+        }
+        else
+        {
+            typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
+            SequenceMapper mapper(gp.g, gp.index);
+            GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, io::IReader<io::PairedReadSeq>> gcpif(gp.g, mapper, paired_streams);
+            paired_info_index gc_paired_info_index(gp.g);
+            gcpif.FillIndex(gc_paired_info_index);
+            CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
+        }
+
+
+        for (size_t i = 0; i < paired_streams.size(); ++i) {
+            delete paired_streams[i];
+        }
+    }
+    else {
+        auto stream = paired_easy_reader(true, 0);
+        std::vector <PairedReadStream*> streams(1, stream.get());
+
+        if (use_extended_mapper) {
+            typedef NewExtendedSequenceMapper<k + 1, Graph> SequenceMapper;
+            SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper);
+            GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper, streams);
+            paired_info_index gc_paired_info_index(gp.g);
+            gcpif.FillIndex(gc_paired_info_index);
+            CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
+        }
+        else
+        {
+            typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
+            SequenceMapper mapper(gp.g, gp.index);
+            GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedReadStream> gcpif(gp.g, mapper, streams);
+            paired_info_index gc_paired_info_index(gp.g);
+            gcpif.FillIndex(gc_paired_info_index);
+            CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos, cfg::get().gc.minimal_intersection, mapper);
+        }
+    }
+
 }
 
 
