@@ -65,7 +65,7 @@ def write_fasta(data, filename):
     outFile.close()
 
 
-def analyze_gaps(in_filename, out_filename, reference, out_ref, kmer)
+def analyze_gaps(in_filename, out_filename, reference, out_ref, kmer):
     inFile = open(in_filename)
     outFile = open(out_filename, 'w')
 
