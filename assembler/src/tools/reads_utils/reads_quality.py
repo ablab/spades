@@ -232,6 +232,11 @@ for dataset in datasets_dict.iterkeys():
     raw_file  = os.path.join(output_dir, dataset + ".raw")
     cov_file  = os.path.join(output_dir, dataset + ".cov")
     cov = coverage.coverage(raw_file, cov_file, ref_len, bin_size, kmer)
+    
+    gaps_file  = os.path.join(output_dir, dataset + ".gaps")
+    chunks_file  = os.path.join(output_dir, os.path.splitext(os.path.basename(reference))[0] + "gaps_" + dataset + ".fasta")
+    coverage.analyze_gaps(cov_file, gaps_file, reference, chunks_file, kmer)
+
     report_dict[dataset].append( str(cov * 100) )
 
 # total report

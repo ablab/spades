@@ -39,14 +39,38 @@ def coverage(in_filename, out_filename, maxLen, bar, k):
     return covered/(maxLen + 1)
 
 
+def read_genome(filename):
+    res_seq = []
+
+    seq = ''
+    for line in open(filename):
+            if line[0] == '>':
+    	    	    pass
+            else:
+    	    	    seq += line.strip()
+
+    return seq
+
+
+def write_fasta(data, filename):
+    outFile = open(filename, 'w')
+
+    for seq in data:
+            outFile.write('>' + seq[0] + '\n');
+            i = 0
+            while i < len(seq[1]):
+                    outFile.write(seq[1][i, i+60] + '\n')
+                    i += 60
+
+    outFile.close()
+
+
 def analyze_gaps(in_filename, out_filename, reference, out_ref, k)
     inFile = open(in_filename)
     outFile = open(out_filename, 'w')
 
-    gaps100 = 0
-    gaps500 = 0
-    gaps1000 = 0
-
+    gaps_stat = {101:0, 501:0, 1001:0}
+    chunks_stat = {101:0, 501:0, 1001:0}
     current = 0
 
     #[start,end)
@@ -66,6 +90,10 @@ def analyze_gaps(in_filename, out_filename, reference, out_ref, k)
 
             if end != current:
                    gaps.append((current, end));
+                   length = end - current
+                   for key in gaps_stat:
+                          if length < key:
+                                 gaps_stat[key] += 1
 
             current = end
             while cov > 0 and line:
@@ -76,8 +104,35 @@ def analyze_gaps(in_filename, out_filename, reference, out_ref, k)
 
             if end != current:
                    chunks.append((current, end + k - 1));
+                   length = end - current
+                   for key in chunks_stat:
+                          if length < key:
+                                 chunks_stat[key] += 1
 
             current = end
+
+
+    outFile.write("Total chunks: " + str(len(chunks)) + "\n")
+    for key in chunks_stat:
+            outFile.write("Chunks < " + str(key) + ": " + str(chunks_stat[key])+ "\n"
+
+    outFile.write("Total gaps: " + str(len(gaps)) + "\n")
+    for key in gaps_stat:
+            outFile.write("Gaps < " + str(key) + ": " + str(gaps_stat[key])+ "\n"
+
+    outFile.write("Gaps:\n")
+    for gap in gaps:
+            outFile.write(str(gap[0]) + ' ' + str(gap[1]) + "\n")
+    
+    outFile.close()    
+
+    genome = read_genome(reference)
+    ref_chunks = []
+    i = 0
+    for chunk in chunks:
+            ref_chunks.append(("PART_" + str(i) + "_from_" + str(chunk[0]) + "_to_" + str(chunk[1]), genome[chunk[0], chunk[1]]))
+            i += 1
+    write_fasta(ref_chunks)
 
 def main():
 
