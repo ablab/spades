@@ -479,7 +479,10 @@ def main():
             print v,
         print ""
 
+    log_filename = os.path.join(cfg["common"].output_dir, "params.txt")
+    tee = support.Tee(log_filename, 'w', console=cfg["common"].output_to_console)
     print_used_values(cfg)
+    tee.free()
 
     bh_dataset_filename = ""
     if cfg.has_key("error_correction"):
