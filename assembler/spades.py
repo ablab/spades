@@ -67,47 +67,90 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
 
 def print_used_values(cfg):
     
-    def print_value(cfg, section, param, pretty_param=""):
+    def print_value(cfg, section, param, pretty_param="", margin="  "):
+        if not pretty_param:
+            pretty_param = param.capitalize().replace('_', ' ')
+        sys.stdout.write(margin + pretty_param)
         if cfg[section].__dict__.has_key(param):
-            if not pretty_param:
-                pretty_param = param.replace('_', ' ')
-            print "    " + pretty_param + " = " + str(cfg[section].__dict__[param])
+            print ": " + str(cfg[section].__dict__[param])
+        else:
+            if param.find("offset") != -1:
+                print " will be auto-detected"
 
     print ""
-    print "Used values:"
 
-    # common
-    if cfg.has_key("common"):
-        print "  common:"
-        print_value(cfg, "common", "project_name")
-        print_value(cfg, "common", "output_dir")
-        print_value(cfg, "common", "max_threads", "threads number")
-        print_value(cfg, "common", "max_memory", "memory limit")
+    # main
+    print_value(cfg, "common", "project_name", "", "")
+    print_value(cfg, "common", "output_dir", "", "")
+    print "Mode:",
+    if cfg.has_key("error_correction") and not cfg.has_key("assembly"):
+        print "ONLY error correction (without assembler)"
+    elif not cfg.has_key("error_correction") and cfg.has_key("assembly"):
+        print "ONLY assembler (without error correction)"
+    else:
+        print "error correction and assembler"
+    print ""
 
     # dataset
     if cfg.has_key("dataset"):
-        print "  dataset:"
-        print_value(cfg, "dataset", "single_cell")
-        print_value(cfg, "dataset", "paired_reads")
-        for i in range(10):
-            print_value(cfg, "dataset", "paired_reads." + str(i), "paired reads")
-        print_value(cfg, "dataset", "single_reads")
+        print "Dataset parameters:"
+
+        if cfg["dataset"].single_cell:
+            print "  Single-cell mode"
+        else:
+            print "  Multi-cell mode (you should set '--sc' flag if input data was obtained with MDA (single-cell) technology"
+
+        no_single = True
+        no_paired = True
+        for k, v in cfg["dataset"].__dict__.iteritems():
+            if k.startswith("single_reads") or k.startswith("paired_reads"):
+                if k.startswith("paired_reads"):
+                    no_paired = False
+                    if type(v) != list:
+                        print "  Paired reads (file with interlaced reads):"
+                    else:
+                        print "  Paired reads (files with left and right reads):"
+                else:
+                    no_single = False
+                    print "  Single reads:"
+                if type(v) != list:
+                    v = [v]
+                for reads_file in v:
+                    print "    ", os.path.abspath(os.path.expandvars(reads_file))                            
+
+        if no_paired:
+            print "  Paired reads was not specified"
+        if no_single:
+            print "  Single reads was not specified"
                 
     # error correction
     if cfg.has_key("error_correction"):
-        print "  error correction:"
-        print_value(cfg, "error_correction", "tmp_dir")
+        print "Error correction parameters:"
+        print_value(cfg, "error_correction", "tmp_dir", "Dir for temp files")
+        print_value(cfg, "error_correction", "max_iterations", "Iterations")
         print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
-        print_value(cfg, "error_correction", "max_iterations", "iterations")
-        print_value(cfg, "error_correction", "gzip_output")
-
+        print "  Corrected reads will",
+        if not cfg["error_correction"].gzip_output:
+            print "NOT",
+        print "be compressed (with gzip)"
+        
     # assembly
     if cfg.has_key("assembly"):
-        print "  assembly:"
-        print_value(cfg, "assembly", "iterative_K", "K-mers")
-        print_value(cfg, "assembly", "generate_sam_files")
-        print_value(cfg, "assembly", "gap_closer", "use the gap closer")
+        print "Assembly parameters:"
+        print_value(cfg, "assembly", "iterative_K", "k")
+        print "  SAM files will",
+        if not cfg["assembly"].generate_sam_files:
+            print "NOT be generated (WARNING: SAM files are required for some of postprocessing tools)"        
+        else:
+            print "be generated"
+        print "  The gap closer will",       
+        if not cfg["assembly"].gap_closer:
+            print "NOT",
+        print "be used"        
 
+    print "Other parameters:"
+    print_value(cfg, "common", "max_threads", "Threads")
+    print_value(cfg, "common", "max_memory", "Memory limit (in Gb)", "  ")
     print ""
             
 
@@ -167,7 +210,7 @@ def check_config(cfg, default_project_name=""):
         cfg["common"].__dict__["project_name"]      = default_project_name
 
     if not cfg["common"].__dict__.has_key("compilation_dir"):
-        cfg["common"].__dict__["compilation_dir"] = os.path.join(os.getenv('HOME'), '.spades/precompiled/')
+        cfg["common"].__dict__["compilation_dir"] = spades_init.spades_build_dir
     else:
         cfg["common"].compilation_dir = os.path.abspath(cfg["common"].compilation_dir)  
 
@@ -213,9 +256,9 @@ def usage():
     print >>sys.stderr, "Usage:", sys.argv[0], "[options] -n <project name>"
     print >>sys.stderr, ""
     print >>sys.stderr, "Options"
-    print >>sys.stderr, "-n\t<project name>\tname of the project"
-    print >>sys.stderr, "-o\t<output dir>\tdirectory to store all result files [default: spades_output]"
-    print >>sys.stderr, "--sc\t\t\tshould be set if input data was obtained with MDA (single-cell) technology"
+    print >>sys.stderr, "-n\t<project_name>\tname of the project"
+    print >>sys.stderr, "-o\t<output_dir>\tdirectory to store all result files [default: spades_output]"
+    print >>sys.stderr, "--sc\t\t\tthis flag is required for MDA (single-cell) data"
     print >>sys.stderr, "--12\t<filename>\tfile with interlaced left and right paired end reads"
     print >>sys.stderr, "-1\t<filename>\tfile with left paired end reads"
     print >>sys.stderr, "-2\t<filename>\tfile with right paired end reads"
@@ -226,14 +269,15 @@ def usage():
     print >>sys.stderr, "Advanced options:"
     print >>sys.stderr, "-t/--threads\t<int>\t\tnumber of threads [default: 16]"
     print >>sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb (terminates if exceeded) [default: 250]"
-    print >>sys.stderr, "--tmp-dir\t<dirname>\tdirectory for error correction's temp files [default: <output dir>/corrected/tmp]"
+    print >>sys.stderr, "--tmp-dir\t<dirname>\tdirectory for error correction's temp files"
+    print >>sys.stderr, "\t\t\t\t[default: <output_dir>/<project_name>/corrected/tmp]"
     print >>sys.stderr, "-k\t<int,int,...>\t\tcomma-separated list of k-mer sizes (must be odd) [default: 21,33,55]"
     print >>sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for error correction"
-    print >>sys.stderr, "--phred-offset\t<int>\t\tPH./sRED quality offset in the input reads (33 or 64) [default: auto-detect]"
+    print >>sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the input reads (33 or 64) [default: auto-detect]"
     print >>sys.stderr, "--only-error-correction\t\trun only error correction (without assembler)"
     print >>sys.stderr, "--only-assembler\t\trun only assembler (without error correction)"
     print >>sys.stderr, "--disable-gap-closer\t\tforces SPAdes not to use the gap closer"
-    print >>sys.stderr, "--disable-gzip-output\t\tforces error correction not to compress corrected reads"
+    print >>sys.stderr, "--disable-gzip-output\t\tforces error correction not to compress the corrected reads"
 
     print >>sys.stderr, ""
     print >>sys.stderr, "--test\t\trun SPAdes on toy dataset"
@@ -355,9 +399,6 @@ def main():
             if not project_name:
                 error("the project name is not set! It is a mandatory parameter.")
 
-            ##
-            print "paired1", paired1
-            print "paired2", paired2
             if len(paired1) != len(paired2):
                 error("the number of files with left paired reads is not equal to the number of files with right paired reads!")           
 
@@ -433,7 +474,7 @@ def main():
     if CONFIG_FILE:
         print("Using config file: " + CONFIG_FILE)         
     else:
-        print "Started with command line: ",
+        print "Command line: ",
         for v in sys.argv:
             print v,
         print ""
