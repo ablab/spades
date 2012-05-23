@@ -28,8 +28,8 @@ reference = ""
 
 ###################################################################
 
-long_options = "output-dir= reference= thread-num= bin-size=".split()
-short_options = "o:r:t:b:"
+long_options = "output-dir= reference= thread-num= bin-size= kmer-size=".split()
+short_options = "o:r:t:b:k:"
 
 def usage():
     print 'Estimation reads quality'
@@ -66,11 +66,11 @@ for opt, arg in options:
         thread_num = int(arg)
         if thread_num < 1:
             thread_num = 1 
-    elif opt in ('-k', "--bin-size"):
+    elif opt in ('-b', "--bin-size"):
         bin_size = int(arg)
         if bin_size < 1:
             bin_size = 1   
-    elif opt in ('-b', "--kmer-size"):
+    elif opt in ('-k', "--kmer-size"):
         kmer = int(arg)
         if kmer < 1:
             kmer = 1      

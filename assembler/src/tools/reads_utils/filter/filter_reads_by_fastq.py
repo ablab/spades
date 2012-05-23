@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-#Filter read files by bowtie log
-#Leave only those that do not align
+#Filter read files by fastq
+#Leave only those that do not appear in fastq file
 
 import sys
 import os
@@ -12,9 +12,9 @@ def read_read(infile):
 	if not read:
 		return None, None
 
-	id1 = (read.split('/', 1)[0])[1:]
+	id1 = read[1:]
 
-	delim = (read.split('/', 1)[0])[0]
+	delim = read[0]
 
 	line = infile.readline()
 	i = 0

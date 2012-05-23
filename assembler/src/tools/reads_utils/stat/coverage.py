@@ -4,7 +4,7 @@
 
 import sys
 
-def coverage(in_filename, out_filename, maxLen, bar, k):
+def coverage(in_filename, out_filename, maxLen, bar, kmer):
     
     inFile = open(in_filename)
     outFile = open(out_filename, 'w')
@@ -13,7 +13,7 @@ def coverage(in_filename, out_filename, maxLen, bar, k):
 
     for line in inFile:
 	    stpos = int(line.split()[0])
-	    for i in range(0, int(line.split()[1]) - k + 1):
+	    for i in range(0, int(line.split()[1]) - kmer + 1):
 		    cpos = stpos + i
 		    if cpos <= maxLen:
 			    hist[cpos] += 1
@@ -65,7 +65,7 @@ def write_fasta(data, filename):
     outFile.close()
 
 
-def analyze_gaps(in_filename, out_filename, reference, out_ref, k)
+def analyze_gaps(in_filename, out_filename, reference, out_ref, kmer)
     inFile = open(in_filename)
     outFile = open(out_filename, 'w')
 
@@ -103,7 +103,7 @@ def analyze_gaps(in_filename, out_filename, reference, out_ref, k)
                           cov = int(line.split()[1])
 
             if end != current:
-                   chunks.append((current, end + k - 1));
+                   chunks.append((current, end + kmer - 1));
                    length = end - current
                    for key in chunks_stat:
                           if length < key:
@@ -140,11 +140,11 @@ def main():
 	    print("Usage: <coverage file> <output> <genome length> <bar width> [k = 1]");
 	    exit(0)
 
-    k = 1
+    kmer = 1
     if len(sys.argv) > 5:
-	k = int(sys.argv[5])
+	kmer = int(sys.argv[5])
 
-    cov = coverage(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), k)
+    cov = coverage(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), kmer)
 
     print("Coverage: " + str(cov) + "\n")
 
