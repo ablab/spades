@@ -231,7 +231,7 @@ template<class T>
 inline void write_param(const string& filename, const string& key,
 		const optional<T>& value) {
 	if (value) {
-		ofstream params_stream(filename, std::ios_base::app);
+		std::ofstream params_stream(filename.c_str(), std::ios_base::app);
 		params_stream << key << "\t" << value << std::endl;
 	}
 }
@@ -260,7 +260,7 @@ template<class K, class V>
 inline void write_param_map(const string& filename, const string& key,
 		const map<K, V>& value) {
 	if (value.size() > 0) {
-		ofstream params_stream(filename, std::ios_base::app);
+		ofstream params_stream(filename.c_str(), std::ios_base::app);
 		params_stream << key << "\t\"";
 		string delim = "";
 		for (auto it = value.begin(); it != value.end(); ++it) {
