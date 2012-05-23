@@ -286,7 +286,8 @@ public:
 			data[DataSize - 1] = (data[DataSize - 1] >> 2) | ((T) c << lastnuclshift_);
 
 			if (DataSize >= 2) { // if we have at least 2 elements in data
-			    for (int i = DataSize - 2; i >= 0; --i){
+				int data_size = DataSize;
+			    for (int i = data_size - 2; i >= 0; --i){
 					T new_rm = data[i] & 3;
 					data[i] = (data[i] >> 2) | (rm << (TBits - 2)); // we need & here because if we shift negative, it fill with ones :(
 					rm = new_rm;
