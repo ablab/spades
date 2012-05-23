@@ -14,13 +14,14 @@ import spades_init
 
 spades_init.init()
 spades_version = spades_init.spades_version
+spades_build_dir = spades_init.spades_build_dir
 
 import support
 
 for k in sys.argv[1:]:
     print("\n======= Binary download for " + k +  " started.\n")
     data = urllib2.urlopen('http://spades.bioinf.spbau.ru/release' + spades_version + '/bin/K' + k + '/spades')
-    dir = os.path.join(os.getenv('HOME'), '.spades', 'release' + spades_version, 'bin', 'K' + k)
+    dir = os.path.join(spades_build_dir, 'release' + spades_version, 'bin', 'K' + k)
     if not os.path.exists(dir):
         os.makedirs(dir)
     file = os.path.join(dir, 'spades')
