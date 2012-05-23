@@ -89,6 +89,41 @@ private:
     }
 
 
+    template<class Read>
+    void ToBinary(io::IReader<Read>& stream, size_t buf_size, size_t thread_num) {
+        size_t buffer_reads = buf_size / (sizeof (Read) * 4);
+
+        std::vector<Read> buf(buffer_reads);
+
+        size_t count = 0;
+        size_t current = 0;
+
+        size_t read_num = 0;
+        file_ds_[thread_num]->write((const char *) &read_num, sizeof(read_num));
+
+        size_t buf_index;
+
+        while (!stream.eof()) {
+            stream >> buf[current];
+            ++current;
+            ++count;
+
+            if (count % buffer_reads == 0) {
+                FlushBuffer(buf, *file_ds_[thread_num]);
+                current = 0;
+            }
+        }
+
+        buf.resize(current);
+        FlushBuffer(buf, *file_ds_[thread_num]);
+
+        file_ds_[thread_num]->seekp(0);
+        file_ds_[thread_num]->write((const char *) &count, sizeof(count));
+
+        INFO(count << " reads converted");
+    }
+
+
 public:
 
     BinaryWriter(const std::string& file_name_prefix, size_t file_num, size_t buf_size):

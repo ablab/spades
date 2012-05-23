@@ -212,6 +212,8 @@ void corrected_and_save_reads(const conj_graph_pack& gp) {
 	//saving corrected reads
 	//todo read input files, correct, save and use on the next iteration
 
+    INFO("Correcting reads");
+
 	ModifyingWrapper<io::PairedReadSeq> refined_paired_stream(*paired_binary_multireader(false, /*insert_size*/0)
 			, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
 
@@ -229,6 +231,8 @@ void corrected_and_save_reads(const conj_graph_pack& gp) {
 		//save in fasta
 		VERIFY(false);
 	}
+
+	INFO("Error correction done");
 }
 
 void exec_simplification(conj_graph_pack& gp) {
