@@ -66,7 +66,7 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 SPAdes uses binaries optimized for each k value and you can download binaries
 for the required k values with <code>./spades_download_binary.py</code> script using space-separated values of k as an argument.</p>
 
-
+<a name="sec1.3"></a>
 <h3>1.3 Testing your installation</h3>
 
 <p>
@@ -135,24 +135,99 @@ Thank you for using SPAdes!
 
 
 <h3>2.3 SPAdes command line options </h3>
+
 <p>
-
-
+    SPAdes can be run using command line with the following format:
 </p>
 
+<pre class="code">
+<code>
+    spades.py [options] -n &lt;project name>
+</code>
+</pre>
+
+    <p>Here is the description of options:</p>
+
+<p>
+    <code>-n &lt;project name></code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;The required option that sets the name of the project.</p>
+
+<p>
+    <code>-o &lt;output dir> </code></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Allows to change the output directory from <code>spades_output</code>
+    to the desired destination.
+</p>
+
+<p><code>--sc</code> </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data.</p>
+
+<p><code>--12 &lt;filename></code></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;File with interlaced left and right paired end reads</p>
+
+<p><code>-1  &lt;filename</code></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;File with left paired end reads</p>
+
+<p><code>-2  &lt;filename</code></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;File with right paired end reads</p>
+
+<p><code>-s  &lt;filename</code></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads</p>
+
+<p><code>--generate-sam-files</code></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Forces SPAdes to generate SAM-files. See more details in <a href="#sec3">section 3</a>.</p>
+
+<p><code>-t &lt;int></code> (or <code>--threads &lt;int></code>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 16.</p>
+
+<p><code>-m &lt;int></code> (or <code>--memory &lt;int></code>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Sets the memory limit in Gb. SPAdes crashes immediately if it reaches this limit. The default value is 250 Gb.</p>
+
+<p><code>--tmp-dir &lt;dirname></code></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Set the directory for error correction's temporary files.  The default value is <code>&lt;output dir>/corrected/tmp</code>.</p>
+
+
+<p><code>-k &lt;int,int,...> </code></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of k-mer sizes (all values must be odd). Default is 21,33,55.</p>
+
+<p><code>-i &lt;int></code> (or <code>--iterations &lt;int></code>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for the error correction. The default value is 2.</p>
+
+<p><code>--phred-offset  &lt;33 or 64> </code> </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;PHRED quality offset for the input reads, can be either 33 or 64. BayesHammer auto-detects it if not specified.</p>
+
+<p><code>--only-error-correction</code> </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;With this option we run only error correction, without assembler.</p>
+
+<p><code>--only-assembler</code> </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;With this option we run only assembler, without error correction.</p>
+
+<p><code>--disable-gap-closer</code> </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Forces SPAdes not to use the gap closer.</p>
+
+<p><code>--disable-gzip-output</code> </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Forces error correction not to compress the corrected reads.</p>
+
+
+<p><code>--test</code> </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the toy dataset, see <a href="#sec1.3">section 1.3</a> .</p>
+
+
+<p><code>-h</code> (or <code>--help</code>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Print help.</p>
 
 
 <h3>2.4 Preparing configuration files</h3>
 
 <p>
-You can find the configuration file <code>spades_config.info</code> for the toy dataset from section 1.3 in the directory you extracted the archive (see section 1.1).
+You can find the configuration file <code>spades_config.info</code> for the toy dataset from <a href="#sec1.3">section 1.3</a> in the directory you extracted the archive (see section 1.1).
 You can use this file as the template for your datasets. In  this file in each line all text after the first semicolon is a comment.
 </p>
 
 <p>
     The configuration file starts with the common parameters for the SPAdes run. We do recommend to set the <code>project_name</code> parameter that specifies the directory
     and names for output files. After that there is a dataset section that contains the information about input reads. This section is required and you need to specify
-    either <code>paired_reads</code> or <code>single_reads</code> or both
+    either <code>paired_reads</code> or <code>single_reads</code> or both.
 </p>
 
 <p>
@@ -177,23 +252,30 @@ You can use this file as the template for your datasets. In  this file in each l
 
 
 
+<a name="sec3"></a>
 <h2>3 Postprocessing</h2>
+
 <p>
-    While SPAdes produces accurate assemblies, we recommend running <a href="http://bix.ucsd.edu/SEQuel/">SEQuel</a> [4]
-    after SPAdes to further  reduce the number of small errors (single nucleotide substitutions and small indels).
-    Note that one can set the <code>--generate_sam_file</code> to SPAdes (see section 2.3)
-    to generate a SAM-file showing how the reads are aligned to the resulting contigs. This file can then be
-    given to SEQuel as input.
+    After running SPAdes you can evaluate different quality metrics using our pipeline. Please see <a href="quality.html">quality.html</a> for details.
+</p>
+
+<p>
+    SPAdes can generate SAM-files for further processing, but you need to set the <code>--generate-sam-files</code> option in the command line,
+    because of  SAM-files are really big. SAM-files contains information about the alignment of the original reads to the resulting
+    contigs and we use <a href="http://bioinf.scri.ac.uk/tablet/">Tablet</a> [3] to visualize it.
+</p>
+
+<p>
+    Also we recommend to use  <a href="http://bix.ucsd.edu/SEQuel/">SEQuel</a> [4]
+    after SPAdes to further  reduce the number of small errors (single nucleotide substitutions and small indels). It also requires the SAM-file
+    as input.
 </p>
 <p>
     The current version of SPAdes does not have a scaffolding stage. One can use a separate scaffolder such as
     <a href="http://sourceforge.net/projects/operasf/">Opera</a> [2].
 </p>
 
-<h2>5 Feedback and bug reports</h2>
-<p>
-    After running SPAdes you can evaluate different quality metrics using our pipeline. Please see <a href="quality.html">quality.html</a> for details.
-</p>
+<h2>4 Feedback and bug reports</h2>
 
 <p>
     We will be thankful if you help us make SPAdes better by sending your comments, bug reports, and suggestions
@@ -215,7 +297,7 @@ You can use this file as the template for your datasets. In  this file in each l
     Journal of Computational Biology. November 2011, 18(11): 1681-1691. doi:10.1089/cmb.2011.0170.
 </p>
 <p>
-    [3] I. Milne, M. Bayer, L. Cardle, P. Shaw, G. Stephen, F.Wright, and D. Marshall. <a href="http://bioinformatics.oxfordjournals.org/content/26/3/401.abstract">Tablet—next generation
+    [3] I. Milne, M. Bayer, L. Cardle, P. Shaw, G. Stephen, F.Wright, and D. Marshall. <a href="http://bioinformatics.oxfordjournals.org/content/26/3/401.abstract">Tablet &mdash; next generation
     sequence assembly visualization.</a> Bioinformatics (2010) 26 (3): 401-402.   doi: 10.1093/bioinformatics/btp666
 </p>
 <p>
@@ -223,7 +305,7 @@ You can use this file as the template for your datasets. In  this file in each l
     Bioinformatics, 2012. To appear.
 </p>
 
-
+<br/><br/><br/><br/><br/>
 
 </body>
 </html>
