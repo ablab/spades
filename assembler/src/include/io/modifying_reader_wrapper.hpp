@@ -45,6 +45,37 @@ public:
 	}
 };
 
+template<>
+class ModifyingWrapper<io::SingleReadSeq>: public io::DelegatingReaderWrapper<io::SingleReadSeq> {
+    shared_ptr<const SequenceModifier> modifier_;
+
+public:
+    ModifyingWrapper(io::IReader<io::SingleReadSeq>& reader, shared_ptr<const SequenceModifier> modifier) :
+            io::DelegatingReaderWrapper<io::SingleReadSeq>(reader), modifier_(modifier) {}
+
+    ModifyingWrapper& operator>>(io::SingleReadSeq& read) {
+        this->reader() >> read;
+        read = io::SingleReadSeq(modifier_->Modify(read.sequence()));
+        return *this;
+    }
+};
+
+template<>
+class ModifyingWrapper<io::PairedReadSeq>: public io::DelegatingReaderWrapper<io::PairedReadSeq> {
+    shared_ptr<const SequenceModifier> modifier_;
+
+public:
+    ModifyingWrapper(io::IReader<io::PairedReadSeq>& reader, shared_ptr<const SequenceModifier> modifier) :
+            io::DelegatingReaderWrapper<io::PairedReadSeq>(reader), modifier_(modifier) {}
+
+    ModifyingWrapper& operator>>(io::PairedReadSeq& read) {
+        this->reader() >> read;
+        read = io::PairedReadSeq(io::SingleReadSeq(modifier_->Modify(read.first().sequence()))
+            , io::SingleReadSeq(modifier_->Modify(read.second().sequence())), read.insert_size());
+        return *this;
+    }
+};
+
 //
 //class ModifyingWrapper: public io::DelegatingReaderWrapper<io::SingleRead> {
 //	SequenceModifier modifier_;

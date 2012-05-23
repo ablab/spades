@@ -211,12 +211,20 @@ void save_simplification(conj_graph_pack& gp) {
 void corrected_and_save_reads(const conj_graph_pack& gp) {
 	//saving corrected reads
 	//todo read input files, correct, save and use on the next iteration
-	ModifyingWrapper<io::PairedRead> refined_paired_stream(*paired_easy_reader(false, /*insert_size*/0)
+
+	ModifyingWrapper<io::PairedReadSeq> refined_paired_stream(*paired_binary_multireader(false, /*insert_size*/0)
 			, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
-	ModifyingWrapper<io::SingleRead> refined_single_stream(*single_easy_reader(false, /*include_paired_reads*/false)
+
+	ModifyingWrapper<io::SingleReadSeq> refined_single_stream(*single_binary_multireader(false, /*include_paired_reads*/false)
 			, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
+
 	if (cfg::get().graph_read_corr.binary) {
-		//save in binary
+
+	    io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
+	    paired_converter.ToBinary(refined_paired_stream);
+
+	    io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
+	    single_converter.ToBinary(refined_single_stream);
 	} else {
 		//save in fasta
 		VERIFY(false);

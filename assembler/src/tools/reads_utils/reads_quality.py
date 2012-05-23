@@ -22,6 +22,7 @@ tmp_folder = "tmp"
 output_dir = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 thread_num = 16
 bin_size = 1
+kmer = 1
 make_latest_symlink = True
 reference = ""
 
@@ -38,6 +39,7 @@ def usage():
     print "-r\t--reference\tFile with reference genome (Mandatory parameter)"
     print "-o\t--output-dir\tDirectory to store all result files"
     print "-t\t--thread-num\tMax number of threads (default is " + str(thread_num) + ")"
+    print "-k\t--kmer-size\tK-mer size for which coverage is counted (default is " + str(kmer) + ")"
     print "-b\t--bin-size\tSize of bins for counting coverage (default is " + str(bin_size) + ")"
     
 def check_file(f):
@@ -64,10 +66,14 @@ for opt, arg in options:
         thread_num = int(arg)
         if thread_num < 1:
             thread_num = 1 
-    elif opt in ('-b', "--bin-size"):
+    elif opt in ('-k', "--bin-size"):
         bin_size = int(arg)
         if bin_size < 1:
-            bin_size = 1      
+            bin_size = 1   
+    elif opt in ('-b', "--kmer-size"):
+        kmer = int(arg)
+        if kmer < 1:
+            kmer = 1      
     else:
         raise ValueError
 
@@ -225,7 +231,7 @@ for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     raw_file  = os.path.join(output_dir, dataset + ".raw")
     cov_file  = os.path.join(output_dir, dataset + ".cov")
-    cov = coverage.coverage(raw_file, cov_file, ref_len, bin_size)
+    cov = coverage.coverage(raw_file, cov_file, ref_len, bin_size, kmer)
     report_dict[dataset].append( str(cov * 100) )
 
 # total report

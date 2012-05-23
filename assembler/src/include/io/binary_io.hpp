@@ -97,8 +97,7 @@ public:
         std::string fname;
         for (size_t i = 0; i < file_num_; ++i) {
             fname = file_name_prefix_ + "_" + ToString(i) + ".seq";
-            file_ds_.push_back(new std::ofstream());
-            file_ds_.back()->open(fname.c_str(), std::ios_base::binary | std::ios_base::out);
+            file_ds_.push_back(new std::ofstream(fname, std::ios_base::binary));
         }
     }
 
