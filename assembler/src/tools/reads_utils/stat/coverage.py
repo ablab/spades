@@ -59,7 +59,7 @@ def write_fasta(data, filename):
             outFile.write('>' + seq[0] + '\n');
             i = 0
             while i < len(seq[1]):
-                    outFile.write(seq[1][i, i+60] + '\n')
+                    outFile.write(seq[1][i:i+60] + '\n')
                     i += 60
 
     outFile.close()
@@ -114,11 +114,11 @@ def analyze_gaps(in_filename, out_filename, reference, out_ref, kmer):
 
     outFile.write("Total chunks: " + str(len(chunks)) + "\n")
     for key in chunks_stat:
-            outFile.write("Chunks < " + str(key) + ": " + str(chunks_stat[key])+ "\n"
+            outFile.write("Chunks < " + str(key) + ": " + str(chunks_stat[key])+ "\n")
 
     outFile.write("Total gaps: " + str(len(gaps)) + "\n")
     for key in gaps_stat:
-            outFile.write("Gaps < " + str(key) + ": " + str(gaps_stat[key])+ "\n"
+            outFile.write("Gaps < " + str(key) + ": " + str(gaps_stat[key])+ "\n")
 
     outFile.write("Gaps:\n")
     for gap in gaps:
@@ -126,11 +126,11 @@ def analyze_gaps(in_filename, out_filename, reference, out_ref, kmer):
     
     outFile.close()    
 
-    genome = read_genome(reference)
+    genome = read_genome(reference, out_ref)
     ref_chunks = []
     i = 0
     for chunk in chunks:
-            ref_chunks.append(("PART_" + str(i) + "_from_" + str(chunk[0]) + "_to_" + str(chunk[1]), genome[chunk[0], chunk[1]]))
+            ref_chunks.append( ("PART_" + str(i) + "_from_" + str(chunk[0]) + "_to_" + str(chunk[1]), genome[chunk[0]:chunk[1]]) )
             i += 1
     write_fasta(ref_chunks)
 

@@ -90,7 +90,7 @@ private:
 
 
     template<class Read>
-    size_t ToBinary(io::IReader<Read>& stream, size_t buf_size, size_t thread_num) {
+    size_t ToBinaryForThread(io::IReader<Read>& stream, size_t buf_size, size_t thread_num) {
         size_t buffer_reads = buf_size / (sizeof (Read) * 4);
         std::vector<Read> buf(buffer_reads);
 
@@ -159,20 +159,20 @@ public:
         ToBinary(stream, buf_size_ / (2 * file_num_));
     }
 
-    size_t ToBinary(io::IReader<io::SingleReadSeq>& stream, size_t thread_num) {
-        return ToBinary(stream, buf_size_ / file_num_, thread_num);
+    size_t ToBinaryForThread(io::IReader<io::SingleReadSeq>& stream, size_t thread_num) {
+        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num);
     }
 
-    size_t ToBinary(io::IReader<io::SingleRead>& stream, size_t thread_num) {
-        return ToBinary(stream, buf_size_ / file_num_, thread_num);
+    size_t ToBinaryForThread(io::IReader<io::SingleRead>& stream, size_t thread_num) {
+        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num);
     }
 
-    size_t ToBinary(io::IReader<io::PairedReadSeq>& stream, size_t thread_num) {
-        return ToBinary(stream, buf_size_ / (2 * file_num_), thread_num);
+    size_t ToBinaryForThread(io::IReader<io::PairedReadSeq>& stream, size_t thread_num) {
+        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num);
     }
 
-    size_t ToBinary(io::IReader<io::PairedRead>& stream, size_t thread_num) {
-        return ToBinary(stream, buf_size_ / (2 * file_num_), thread_num);
+    size_t ToBinaryForThread(io::IReader<io::PairedRead>& stream, size_t thread_num) {
+        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num);
     }
 
     template<class Read>
