@@ -329,7 +329,7 @@ void ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 	CompositeSingleReadStream reads_stream(streams);
 	vector<SingleReadStream*> strs;
 	strs.push_back(&reads_stream);
-	ConstructGraphWithCoverage<k, io::SingleRead>(strs, gp.g, gp.index, reads_stream, contigs_stream);
+	ConstructGraphWithCoverage<k, io::SingleRead>(strs, gp.g, gp.index, contigs_stream);
 
 	if (cfg::get().etalon_info_mode || cfg::get().etalon_graph_mode)
 		FillEtalonPairedIndex<k>(paired_index, gp.g, gp.index, gp.kmer_mapper, gp.genome);

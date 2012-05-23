@@ -134,7 +134,8 @@ void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges
 	Graph g(kmer_size_);
 	EdgeIndex<kmer_size_ + 1, Graph> index(g);
 
-	ConstructGraph<kmer_size_>(g, index, read_stream);
+	std::vector<io::IReader<SingleRead>* > streams = {&read_stream};
+	ConstructGraph<kmer_size_>(streams, g, index);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }

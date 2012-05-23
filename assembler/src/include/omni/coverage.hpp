@@ -141,14 +141,14 @@ public:
     }
 
 	template<class ReadThreader, class Read>
-	void FillParallelIndex(std::vector<io::IReader<Read>* >& streams, const ReadThreader& threader) {
+	void FillParallelIndex(std::vector<io::IReader<Read>* >& streams, const ReadThreader& threader, size_t buffer_size) {
 
         INFO("Processing reads (takes a while)");
         perf_counter pc;
         size_t counter = 0;
 
         size_t nthreads = streams.size();
-        size_t buf_size = cfg::get().buffer_size / (nthreads * (sizeof(Path<EdgeId>) + 32) );
+        size_t buf_size = buffer_size / (nthreads * (sizeof(Path<EdgeId>) + 32) );
 
         #pragma omp parallel num_threads(nthreads)
         {
