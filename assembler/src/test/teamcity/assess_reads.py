@@ -25,10 +25,12 @@ aligned = float(aligned)
 mapped = float(values[columns.index("Genome mapped (%)")])
 print 'Aligned =', aligned, '%'
 print 'Genome mapped =', mapped, '%'
+lvl = 0
 if aligned < aligned_limit:
     print 'Not enough reads aligned, less than', aligned_limit
-    sys.exit(1)
+    lvl += 1
 if mapped < mapped_limit:
     print 'Not enough genome mapped, less than', mapped_limit
-    sys.exit(1)
+    lvl += 2
 f.close()
+sys.exit(lvl)

@@ -23,10 +23,12 @@ n50 = int(values[columns.index("N50")])
 mis = int(values[columns.index("Misassemblies")])
 print 'N50 =', n50
 print 'Misasembled contigs =', mis
+lvl = 0
 if n50 < n50_limit:
     print 'N50 is too small: less than', n50_limit
-    sys.exit(1)
+    lvl += 1
 if mis > mis_limit:
     print 'Too many misassemblies: more than', mis_limit
-    sys.exit(1)
+    lvl += 2
 f.close()
+sys.exit(lvl)
