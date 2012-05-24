@@ -110,10 +110,12 @@ const vector<io::SingleRead> MakeReads(const vector<MyRead>& reads) {
 }
 
 const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_reads, size_t insert_size) {
+	DEBUG("Making paired reads");
 	vector<PairedRead> ans;
 	for (size_t i = 0; i < paired_reads.size(); ++i) {
 		ans.push_back(PairedRead(MakeRead(paired_reads[i].first), MakeRead(paired_reads[i].second), insert_size));
 	}
+	DEBUG("Made paired reads");
 	return ans;
 }
 
@@ -147,6 +149,7 @@ bool EqualDouble(double d1, double d2) {
 }
 
 void AssertCoverage(Graph& g, const CoverageInfo& etalon_coverage) {
+	DEBUG("Asserting coverage");
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		auto etalon_cov_it = etalon_coverage.find(g.EdgeNucls(*it).str());
 		BOOST_CHECK_MESSAGE(etalon_cov_it != etalon_coverage.end(), "Etalon didn't contain edge '" << g.EdgeNucls(*it) << "'");
@@ -195,10 +198,15 @@ void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, c
 	typedef io::VectorReader<PairedRead> RawStream;
 	typedef io::RCReaderWrapper<PairedRead> Stream;
 
+	DEBUG("Asserting graph with etalon data");
+
 	RawStream raw_stream(MakePairedReads(paired_reads, insert_size));
 	Stream paired_read_stream(raw_stream);
+	DEBUG("Streams initialized");
 
 	graph_pack<Graph, k> gp((Sequence()));
+	DEBUG("Graph pack created");
+
 	PairedInfoIndex<Graph> paired_index(gp.g);
 
 	ConstructGraphWithPairedInfo<k>(gp, paired_index, paired_read_stream);

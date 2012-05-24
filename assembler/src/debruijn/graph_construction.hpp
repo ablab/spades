@@ -318,7 +318,9 @@ size_t ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& paired_stream,
 		SingleReadStream* single_stream = 0,
 		SingleReadStream* contigs_stream = 0) {
-	UnitedStream united_stream(paired_stream);
+    DEBUG("Constructing DeBruijn graph with paired info");
+
+    UnitedStream united_stream(paired_stream);
 
 	vector<SingleReadStream*> streams;
 //	if(!cfg::get().etalon_graph_mode) {
