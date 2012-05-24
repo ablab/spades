@@ -5,6 +5,7 @@ import shutil
 import sys
 import spades_init
 import getopt
+import glob
 
 spades_init.init()
 spades_home = spades_init.spades_home
@@ -56,6 +57,8 @@ def prepare_config_spades(filename, cfg, prev_K, last_one):
     subst_dict["developer_mode"]         = bool_to_str(cfg.developer_mode)
     subst_dict["SAM_writer_enable"]      = bool_to_str(cfg.generate_sam_files and last_one)
     subst_dict["align_original_reads"]   = bool_to_str(cfg.align_original_reads)
+    subst_dict["align_before_RR"]        = bool_to_str(not cfg.paired_mode)
+    subst_dict["align_after_RR"]         = bool_to_str(cfg.paired_mode)
     subst_dict["project_name"]           = ""
     subst_dict["gap_closer_enable"]      = bool_to_str(last_one and cfg.gap_closer)
     subst_dict["paired_mode"]            = bool_to_str(last_one and cfg.paired_mode)
@@ -138,9 +141,9 @@ def print_used_values(cfg):
     if cfg.has_key("assembly"):
         print "Assembly parameters:"
         print_value(cfg, "assembly", "iterative_K", "k")
-        print "  SAM files will",
+        print "  SAM file will",
         if not cfg["assembly"].generate_sam_files:
-            print "NOT be generated (WARNING: SAM files are required for some of postprocessing tools)"        
+            print "NOT be generated (WARNING: SAM file are required for some of postprocessing tools)"        
         else:
             print "be generated"
         print "  The gap closer will",       
@@ -242,7 +245,7 @@ def check_config(cfg, default_project_name=""):
             
     return True
 
-long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc generate-sam-files only-error-correction only-assembler disable-gap-closer disable-gzip-output help test".split()
+long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc generate-sam-file only-error-correction only-assembler disable-gap-closer disable-gzip-output help test".split()
 short_options = "n:o:1:2:s:k:t:m:i:h"
 
 def check_file(f, message=''):
@@ -263,7 +266,7 @@ def usage():
     print >>sys.stderr, "-1\t<filename>\tfile with left paired end reads"
     print >>sys.stderr, "-2\t<filename>\tfile with right paired end reads"
     print >>sys.stderr, "-s\t<filename>\tfile with unpaired reads"
-    print >>sys.stderr, "--generate-sam-files\tforces SPAdes to generate SAM-files"
+    print >>sys.stderr, "--generate-sam-file\tforces SPAdes to generate SAM-file"
     
     print >>sys.stderr, ""
     print >>sys.stderr, "Advanced options:"
@@ -363,7 +366,7 @@ def main():
                 single_cell         = True
             elif opt == "--disable-gzip-output":
                 disable_gzip_output = True
-            elif opt == "--generate-sam-files":
+            elif opt == "--generate-sam-file":
                 generate_sam_files  = True
             elif opt == "--disable-gap-closer":
                 disable_gap_closer  = True
@@ -678,6 +681,9 @@ def main():
         os.makedirs(final_contigs_folder)
         shutil.copy(result_contigs_filename, final_contigs_folder)
         shutil.copy(spades_cfg.log_filename, final_contigs_folder)
+        sam_file_linkname = os.path.splitext(result_contigs_filename)[0] + ".sam"
+        if os.path.exists(sam_file_linkname):
+            os.symlink(sam_file_linkname, os.path.join(final_contigs_folder, os.path.basename(sam_file_linkname)))
 
     quality_final_report = ""
     if cfg.has_key("quality_assessment") and result_contigs_filename:
@@ -781,6 +787,10 @@ def run_spades(cfg):
         before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "contigs_before_RR.fasta")
         shutil.copyfile(os.path.join(latest, "contigs_before_RR.fasta"), before_RR_contigs)
     os.remove(cfg.additional_contigs) 
+
+    if glob.glob(os.path.join(latest, "*.sam")):
+        sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs), cfg.project_name + ".sam")
+        os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
 
     bin_reads_dir = os.path.join(cfg.working_dir, ".bin_reads")
     if os.path.isdir(bin_reads_dir):
