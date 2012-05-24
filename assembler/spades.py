@@ -471,6 +471,11 @@ def main():
 
     print("\n======= SPAdes pipeline started\n")
 
+    if not os.path.isdir(cfg["common"].output_dir):
+        os.makedirs(cfg["common"].output_dir)
+    log_filename = os.path.join(cfg["common"].output_dir, "params.txt")
+    tee = support.Tee(log_filename, 'w', console=cfg["common"].output_to_console)    
+
     if CONFIG_FILE:
         print("Using config file: " + CONFIG_FILE)         
     else:
@@ -479,10 +484,6 @@ def main():
             print v,
         print ""
 
-    if not os.path.isdir(cfg["common"].output_dir):
-        os.makedirs(cfg["common"].output_dir)
-    log_filename = os.path.join(cfg["common"].output_dir, "params.txt")
-    tee = support.Tee(log_filename, 'w', console=cfg["common"].output_to_console)
     print_used_values(cfg)
     tee.free()
 
