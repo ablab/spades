@@ -119,7 +119,8 @@ Thank you for using SPAdes!
     SPAdes has two stages: error correction by <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> and genome assembly. By default all the
     results are stored in <code>spades_output</code> directory. For each dataset SPAdes creates separate directory <code>&lt;project_name></code> in <code>spades_output</code>.
     Corrected reads are stored in <code>corrected</code> subdirectory in <code>*.fastq.qz</code> files.
-    The resulting contigs are stored in <code>contigs</code> subdirectory in <code>*.fasta</code> file.
+    The resulting contigs are stored in <code>contigs</code> subdirectory in <code>&lt;project_name>.fasta</code> file. If the
+    <code>--generate-sam-file</code> option was set the symlink to the <code>&lt;project_name>.sam</code> file also created in the same directory.
 </p>
 
 <p>
@@ -174,8 +175,8 @@ Thank you for using SPAdes!
 <p><code>-s  &lt;filename></code></p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads</p>
 
-<p><code>--generate-sam-files</code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Forces SPAdes to generate SAM-files. See more details in <a href="#sec3">section 3</a>.</p>
+<p><code>--generate-sam-file</code></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Forces SPAdes to generate SAM-file. See more details in <a href="#sec3">section 3</a>.</p>
 
 <p><code>-t &lt;int></code> (or <code>--threads &lt;int></code>)</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 16.</p>
@@ -260,8 +261,8 @@ You can use this file as the template for your datasets. In  this file in each l
 </p>
 
 <p>
-    SPAdes can generate SAM-files for further processing, but you need to set the <code>--generate-sam-files</code> option in the command line,
-    because of  SAM-files are really big. SAM-files contains information about the alignment of the original reads to the resulting
+    SPAdes can generate SAM-file for further processing, but you need to set the <code>--generate-sam-file</code> option in the command line,
+    because of  SAM-files are really big. SAM-file contains information about the alignment of the original reads to the resulting
     contigs and we use <a href="http://bioinf.scri.ac.uk/tablet/">Tablet</a> [3] to visualize it.
 </p>
 
@@ -283,7 +284,9 @@ You can use this file as the template for your datasets. In  this file in each l
 </p>
 
 <p>
-    We kindly ask you to attach file with run parameters <code>params.txt</code> and logs <code>corrected/correction.log</code> and <code>contigs/assembly.log</code> if you have troubles running SPAdes.
+    We kindly ask you to attach file <code>params.txt</code>
+    and logs <code>corrected/correction.log</code> and <code>contigs/assembly.log</code> if you have troubles running SPAdes.
+    These files are placed at <code>&lt;output_dir>/&lt;project_name></code> directory.
 </p>
 
 
