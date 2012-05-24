@@ -64,8 +64,8 @@ struct properties
 	 *
 	 */
 
-	properties(string filename = "");
-	properties();
+	properties(string filename = "", level default_level = L_INFO);
+	properties(level default_level = L_INFO);
 
 	std::unordered_map<string, level>   levels;
 	level								def_level;
@@ -90,7 +90,7 @@ private:
 };
 
 inline optional<logger>& __logger();
-inline void              create_logger(string filename);
+inline void              create_logger(string filename = "", level default_level = L_INFO);
 
 } // logging
 

@@ -9,13 +9,13 @@
 namespace logging
 {
 
-inline properties::properties()
-    : def_level(L_INFO)
+inline properties::properties(level default_level)
+    : def_level(default_level)
 {
 }
 
-inline properties::properties(string filename)
-    : def_level(L_INFO)
+inline properties::properties(string filename, level default_level)
+    : def_level(default_level)
 {
     if (filename.empty())
         return;
@@ -106,9 +106,9 @@ inline optional<logger>& __logger()
     return l;
 }
 
-inline void create_logger(string filename = "")
+inline void create_logger(string filename, level default_level)
 {
-    properties props(filename);
+    properties props(filename, default_level);
     __logger() = in_place(props);
 }
 
