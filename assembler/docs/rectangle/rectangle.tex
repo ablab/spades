@@ -583,13 +583,17 @@ All datasets have $600\times$ coverage.
 We benchmarked seven assemblers
 (EULER-SR \cite{Chaisson08}, IDBA \cite{Peng10}, SOAPdenovo \cite{Li10}, Velvet \cite{Zerbino08}, Velvet-SC \cite{Chitsaz2011}, E+V-SC \cite{Chitsaz2011} and {\spades}) on three datasets
 (ECOLI-SC, ECOLI-MC, and SAR324). To provide unbiased
-benchmarking, we used the assembly evaluation tool Plantagora \cite{Barthelson2011}. See Table \ref{Table1}.
+benchmarking, we used the assembly evaluation tool Plantagora \cite{Barthelson2011} modified to handle circular genomes. See Table \ref{Table1}.
 
 {\spades}-rectangle shows improvement over previous SPAdes algorithms. In ECOLI-MC dataset {\spades}-rectangle produce larger N50, almost the same largest contig and the same number of misasseblies.
 
 Improvement is even more significant for single-cell dataset which can be explained by the fact that {\spades}-rectangle better determine and utilize correct distance between edges in the de Bruin graph given datasets with highly uneven coverage. {\spades}-rectangle procudes higher N50 (56,842 bp vs 49,623 by {\spades}), higher largest contig (209,690 bp vs 177,944 by {\spades}), no misassemblies and also captures 64 additional genes (3975 vs 3911 by {\spades}). All other assemblers except of {\spades} and {\spades}-rectangle produced below average results on the single-cell dataset.
 
 Most important that on all datasets {\spades}-rectangle was able to capture more genes than any previous assemblers including {\spades}. New genes are most important in study of new species that cannot be sequenced by classical multi-cell approach.
+
+{\spades} have slightly better genome coverage than {\spades}-rectangle because of more fragmented assembly. If assembly contains small unresolved repeat which maps to multiple places in the reference genome, it will contribute to more genome coverage than if it was resolved to only one place in the genome.
+
+{\spades}-rectangle also have slighly smaller assembly length compared to previous {\spades} because we remove partly undefined contigs from assembly. Partly undefined contig can occur from small rectangle $(e_1|e_2$ which cannot be glued to any other rectangles and contains diagonal smaller than distance $d$. In this case, such contig consists of two separated sequences --- first from $e_1$ and second from $e_2$. We can output this two sequences as two separate contigs or as one scaffold (since we know the exact distance between them). It will lead to (1) slightly larger assembly length, (2) slighly larger genome coverage, (3) significantly larger number of small contigs. Spelling of such rectangle as scaffold can also lead to misassembly if this diagonal was incorrectly identified as correct.
 
 We further compared E+V-SC, {\spades} and {\spades}-rectangle on the SAR324 dataset.
 {\spades}-rectangle assembled contigs totaling ????? bp
@@ -598,7 +602,7 @@ Since the complete genome of \emph{Deltaproteobacterium} SAR324 is unknown,
 we used {\em long ORFs} to estimate the number of genes longer than 600 bp, as a proxy for assembly quality (see \cite{Chitsaz2011}).
 There are ???? long ORFs in the {\spades}-rectangle assembly
 vs. 2603 for {\spades} and 2377 for E+V-SC.
-% I forgot to run on SAR324, doing it now.
+% I'm trying to run SPAdes-single for SAR324, but it consistently fails... Hoping to handle it before the deadline.
 
 \input{table}
 

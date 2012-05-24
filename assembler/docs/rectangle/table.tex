@@ -74,6 +74,7 @@
         %were from http://www.ecogene.org/\;.
          Statistics in this table differ slightly from statistics presented in~\cite{Chitsaz2011}
          due to the specific criteria used in Plantagora.
+         Velvet-IDEAL is given for comparison. Velvet-IDEAL is the Velvet assembly of single reads of length 220, with repeat resolution by single reads (Velvet's option \texttt{long}).
        %  \glenn{Alexey et al: It's not just the number of misassemblies that changed.  Also substitution error rate changed (why?) and number of complete and partial genes changed.  Are you using the same set of annotated genes that I gave you that were used in the Chitsaz et al paper, or a different set?  Do you show all contigs, or do you filter out contigs below a certain size (110 bp was used in Chitsaz et al, 200 bp is used in HMP consortium).  Please at least explain it by email; we need to be prepared to explain this discrepancy if a referee asks.}
   %       since Plantagora has a strict criteria for misassemblies.
         % \glenn{There are differences in substitution error rate and numbers of complete and partial genes as well.  Is the SP lab using a different set of annotated genes?  Different small contig size cutoff?  Etc.  We have to change this explanation.}
@@ -154,7 +155,7 @@
    & {\spades}-single                         &       445 &           59666 &            166117 &    4578486 & \mrk{99.9} &       \mrk{0} &                     \mrk{0.7} &                  4246 \\%&   \mrk{4317} \\
    & {\spades}                             &       195 &           86590 &            \mrk{222950} &    4608505  &   \mrk{99.9}  &             2 &                      3.7 &             4268 \\%&    \mrk{4318} \\
    & {\spades}-rectangle                   &      192 &     91893 &                 221829 &    4593658 &         \mrk{99.9} &       2 &                      3.5 &             \mrk{4274} \\ %&         
-   & Velvet-IDEAL                   &      296 &     95398 &                 269661 &    4566339 &         \mrk{99.85} &       0 &                      ??? &             \mrk{4267} \\ %&         
+   & Velvet-IDEAL                   &      296 &     95398 &                 269661 &    4566339 &         99.8 &       \mrk{0} &                      ??? &             4267 \\ %&         
    \hline
   %\bottomrule
   \end{tabular}
