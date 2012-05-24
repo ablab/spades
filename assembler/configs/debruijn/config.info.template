@@ -47,7 +47,7 @@ output_pictures true
 output_nonfinal_contigs true
 
 ; whether to compute number of paths statistics   - ONLY in developer mode
-compute_paths_number true
+compute_paths_number false
 
 ; End of developer_mode parameters
 
