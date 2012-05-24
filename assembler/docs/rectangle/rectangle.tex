@@ -163,6 +163,19 @@ The traversing curve in the grid is shown in red. (b) Picture is removed.{\tt De
 \label{fig:curve}
 \end{center}
 \end{figure}
+ 
+\begin{figure}
+\begin{center}
+	\begin{tabular}{l@{\extracolsep{13pt}}l}
+		(a) & (b) \\
+		\vtop{\vskip0pt\hbox to.45\textwidth{\includegraphics[width=.45\textwidth] {fig/gridGraphLine.eps}}}
+		&
+		\vtop{\vskip0pt\hbox to.45\textwidth{\includegraphics[width=.45\textwidth] {fig/gridGraphLineSimple.eps}}}
+	\end{tabular}
+\caption{TODO: Describe (a), (b) and refer it}
+\label{fig:line}
+\end{center}
+\end{figure}
 
 %:{\tt Decide on the color. In the text the curve is called red but in the figure it is blue.} 
 
@@ -532,12 +545,22 @@ Given two rectangles $R_1$ and $R_2$: $R_1$  with sink $(a_1|b_1)$  and $R_2$ wi
 that sink/source of a rectangle is labeled by a pair of $k$-mers corresponding to the start/end point of the line segment in the rectangle).  
 $R_1$ and $R_2$ are \emph{linkable} if there exist two paths of equal length $p(a_1, a_2): a_1 \leadsto a_2$ and $p(b_1, b_2): b_1 \leadsto b_2$
 in the de Bruijn graph, and the minimum length of such paths is called the distance between $R_1$ and $R_2$. 
+Given the rectangle graph constructed from a set of rectangles,  a rectangle is called a sink~\footnote{The sink of the rectangle graph is a rectangle, the sink of 
+a rectangle is the the side that the line segment enters the rectangle (represented as a pair of $k$-mers).} if its source is not connected 
+to any other rectangle. Similarly, a rectangle is called a source if its sink is not connected to any other rectangle. Below we describe a 
+procedure that heuristially recovering missing rectangles. 
 
+Let $SOURCE$ be a set of sources rectangles and $SINK$ be a set of sinks rectangles in the rectangle graph. 
+For a rectangle $R_i \in SINK$, we choose a rectangle $R_j \in SOURCE$ such that the distance from $R_i$ to $R_j$ is minimum.
+ We form a new rectangle $R_{i+1}$ 
+such that: (i) the source of $R_{i}$ can only be connected to the sink of $R_{i+1}$, (ii)  distance from $(R_{i+1})$ to $R_{j}$ is smaller than
+the distance from $R_i$ to $R_j$, (iii) $R_{i+1}$ either connects to $R_j$ or becomes a sink nodes in the new rectangle graphs. If $R_{i+1}$ is not
+connected to $R_j$, we continue to extend $R_{i+1}$ in the same way.  The procedure is succefull if at each step, only a unique rectangle  $R_{i+1}$ 
+can be constructed and the total length of all line segments in the added rectangles does not exceed a certain threshold. 
+If the procedure is not succesful, we backtrack and undo all the changes that attempt to connect $R_i$ to $R_j$.
 
-We first construct the rectangle graphs. A rectangle is called a sink~\footnote{The sink of the rectangle graph is a rectangle, the sink of 
-a rectangle is the the side that the line segment enters the rectangle (represented as a pair of $k$-mers.} if its source is not connected 
-to any other rectangle. Similarly, a rectangle is called a source if its sink is not connected to any other rectangle.  
-
+We now show how to construct a new rectangle that can connect to a rectangle...
+NOT YET FINISHED.
 \section{Results}
 
 \textbf{Assembly Datasets}
