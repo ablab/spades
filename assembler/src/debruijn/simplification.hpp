@@ -213,12 +213,12 @@ void corrected_and_save_reads(const conj_graph_pack& gp) {
 	//todo read input files, correct, save and use on the next iteration
 
     INFO("Correcting reads");
-
-	ModifyingWrapper<io::PairedReadSeq> refined_paired_stream(*paired_binary_multireader(false, /*insert_size*/0)
+	auto_ptr<io::IReader<io::PairedReadSeq>> paired_stream = paired_binary_multireader(false, /*insert_size*/0);
+	ModifyingWrapper<io::PairedReadSeq> refined_paired_stream(*paired_stream
 			, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
 
-	ModifyingWrapper<io::SingleReadSeq> refined_single_stream(*single_binary_multireader(false, /*include_paired_reads*/false)
-			, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
+	auto_ptr<io::IReader<io::SingleReadSeq>> single_stream = single_binary_multireader(false, /*include_paired_reads*/false);
+	ModifyingWrapper<io::SingleReadSeq> refined_single_stream(*single_stream, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
 
 	if (cfg::get().graph_read_corr.binary) {
 
