@@ -33,7 +33,13 @@ namespace debruijn_graph {
 template <class Read>
 void construct_graph(std::vector<io::IReader<Read>* >& streams, conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
 	INFO("STAGE == Constructing Graph");
-	ConstructGraphWithCoverage<K, Read>(streams, gp.g, gp.index, contigs_stream);
+	size_t rl = ConstructGraphWithCoverage<K, Read>(streams, gp.g, gp.index, contigs_stream);
+    if (!cfg::get().ds.RL.is_initialized()) {
+        INFO("Figured out: read length = " << rl);
+        cfg::get_writable().ds.RL = rl;
+    } else if (*cfg::get().ds.RL != rl) {
+        WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
+    }
 }
 
 string estimated_param_filename(const string& prefix) {
@@ -94,32 +100,30 @@ void save_construction(conj_graph_pack& gp) {
 void exec_construction(conj_graph_pack& gp) {
 	if (cfg::get().entry_point <= ws_construction) {
 
-		if (cfg::get().etalon_graph_mode) {
-			typedef io::VectorReader<io::SingleRead> GenomeStream;
-			GenomeStream genome_stream(io::SingleRead("genome", gp.genome.str()));
-			std::vector <ReadStream*> streams(1, &genome_stream);
-			construct_graph(streams, gp);
-		}
-		else {
-			//has to be separate stream for not counting it in coverage
-			ReadStream* additional_contigs_stream = 0;
-			//adding file with additional contigs
-			if (cfg::get().use_additional_contigs) {
-				INFO("Contigs from previous K will be used");
-				additional_contigs_stream = new io::EasyReader(cfg::get().additional_contigs, true);
-			}
+//		if (cfg::get().etalon_graph_mode) {
+//			typedef io::VectorReader<io::SingleRead> GenomeStream;
+//			GenomeStream genome_stream(io::SingleRead("genome", gp.genome.str()));
+//			std::vector <ReadStream*> streams(1, &genome_stream);
+//			construct_graph(streams, gp);
+//		} else
 
-			if (cfg::get().use_multithreading) {
-                auto streams = single_binary_readers(true, true);
-                construct_graph<io::SingleReadSeq>(streams, gp, additional_contigs_stream);
-                for (size_t i = 0; i < streams.size(); ++i) {
-                    delete streams[i];
-                }
-			} else {
-			    auto single_stream = single_easy_reader(true, true);
-			    std::vector <ReadStream*> streams(1, single_stream.get());
-			    construct_graph<io::SingleRead>(streams, gp, additional_contigs_stream);
+		//has to be separate stream for not counting it in coverage
+		ReadStream* additional_contigs_stream = 0;
+		if (cfg::get().use_additional_contigs) {
+			INFO("Contigs from previous K will be used");
+			additional_contigs_stream = new io::EasyReader(cfg::get().additional_contigs, true);
+		}
+
+		if (cfg::get().use_multithreading) {
+			auto streams = single_binary_readers(true, true);
+			construct_graph<io::SingleReadSeq>(streams, gp, additional_contigs_stream);
+			for (size_t i = 0; i < streams.size(); ++i) {
+				delete streams[i];
 			}
+		} else {
+			auto single_stream = single_easy_reader(true, true);
+			std::vector <ReadStream*> streams(1, single_stream.get());
+			construct_graph<io::SingleRead>(streams, gp, additional_contigs_stream);
 		}
 
 		save_construction(gp);

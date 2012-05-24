@@ -400,7 +400,7 @@ public:
 	bool compute_paths_number;
 
 	bool use_additional_contigs;
-	bool etalon_graph_mode;
+//	bool etalon_graph_mode;
 	std::string additional_contigs;
 
 	std::string load_from;
@@ -785,7 +785,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.entry_point, pt, "entry_point");
 
-	load(cfg.etalon_graph_mode, pt, "etalon_graph_mode");
+//	load(cfg.etalon_graph_mode, pt, "etalon_graph_mode");
 	load(cfg.use_additional_contigs, pt, "use_additional_contigs");
 
 	load(cfg.additional_contigs, pt, "additional_contigs");

@@ -264,7 +264,7 @@ size_t FillIterativeParallelIndex(std::vector<io::IReader<Read>* >& streams, Seq
 
 
 template<size_t k, class Graph, class Read>
-void ConstructGraph(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeIndex<k + 1, Graph>& index,
+size_t ConstructGraph(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeIndex<k + 1, Graph>& index,
 		SingleReadStream* contigs_stream = 0) {
 
     typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
@@ -274,13 +274,17 @@ void ConstructGraph(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeInd
 	
     DeBruijn& debruijn = index.inner_index();
 
+    DEBUG("Filling indices");
     size_t rl = 0;
     if (streams.size() > 1) {
+        DEBUG("... in parallel");
         rl = FillIterativeParallelIndex<k, Graph, Read>(streams, debruijn);
-    }
-    else if (streams.size() == 1) {
+    } else if (streams.size() == 1) {
         rl = FillUsusalIndex<k, Graph, Read>(*streams.back(), debruijn);
+    } else {
+    	VERIFY_MSG(false, "No input streams specified");
     }
+    DEBUG("Filled indices");
 
     io::SingleRead r;
     if (contigs_stream) {
@@ -290,51 +294,52 @@ void ConstructGraph(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeInd
             Sequence s = r.sequence();
             debruijn.CountSequence(s);
         }
-    }
-
-    if (!cfg::get().ds.RL.is_initialized()) {
-        INFO("Figured out: read length = " << rl);
-        cfg::get_writable().ds.RL = rl;
-    } else if (*cfg::get().ds.RL != rl) {
-        WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
+        DEBUG("Added contigs from previous K");
     }
 
     INFO("Condensing graph");
     DeBruijnGraphConstructor<k, Graph> g_c(debruijn);
     g_c.ConstructGraph(g, index);
     DEBUG("Graph condensed");
+
+    return rl;
 }
 
 template<size_t k, class Read>
-void ConstructGraphWithCoverage(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeIndex<k + 1, Graph>& index,
+size_t ConstructGraphWithCoverage(std::vector<io::IReader<Read>* >& streams, Graph& g, EdgeIndex<k + 1, Graph>& index,
 		SingleReadStream* contigs_stream = 0) {
-	ConstructGraph<k>(streams, g, index, contigs_stream);
+	size_t rl = ConstructGraph<k>(streams, g, index, contigs_stream);
 	FillCoverage<k, Read>(streams, g, index);
+	return rl;
 }
 
 template<size_t k>
-void ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
+size_t ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& paired_stream,
 		SingleReadStream* single_stream = 0,
 		SingleReadStream* contigs_stream = 0) {
 	UnitedStream united_stream(paired_stream);
 
 	vector<SingleReadStream*> streams;
-	if(!cfg::get().etalon_graph_mode) {
-		streams.push_back(&united_stream);
-	}
+//	if(!cfg::get().etalon_graph_mode) {
+//		streams.push_back(&united_stream);
+//	}
+	streams.push_back(&united_stream);
 	if (single_stream) {
 		streams.push_back(single_stream);
 	}
 	CompositeSingleReadStream reads_stream(streams);
 	vector<SingleReadStream*> strs;
 	strs.push_back(&reads_stream);
-	ConstructGraphWithCoverage<k, io::SingleRead>(strs, gp.g, gp.index, contigs_stream);
+	size_t rl = ConstructGraphWithCoverage<k, io::SingleRead>(strs, gp.g, gp.index, contigs_stream);
 
-	if (cfg::get().etalon_info_mode || cfg::get().etalon_graph_mode)
-		FillEtalonPairedIndex<k>(paired_index, gp.g, gp.index, gp.kmer_mapper, gp.genome);
-	else
-		FillPairedIndex<k>(gp.g, gp.index, paired_index, paired_stream);
+//	if (cfg::get().etalon_info_mode || cfg::get().etalon_graph_mode)
+//		FillEtalonPairedIndex<k>(paired_index, gp.g, gp.index, gp.kmer_mapper, gp.genome);
+//	else
+//		FillPairedIndex<k>(gp.g, gp.index, paired_index, paired_stream);
+	FillPairedIndex<k>(gp.g, gp.index, paired_index, paired_stream);
+
+	return rl;
 }
 
 }

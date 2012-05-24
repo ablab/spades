@@ -118,6 +118,7 @@ const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_read
 }
 
 void AssertEdges(Graph& g, const Edges& etalon_edges) {
+	DEBUG("Asserting edges");
 	Edges edges;
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		edges.insert(g.EdgeNucls(*it).str());
@@ -127,6 +128,7 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
 
 template<size_t kmer_size_>
 void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges) {
+	DEBUG("Asserting graph");
 	typedef io::VectorReader<SingleRead> RawStream;
 	typedef io::RCReaderWrapper<SingleRead> Stream;
 	RawStream raw_stream(MakeReads(reads));
