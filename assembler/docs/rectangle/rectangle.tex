@@ -13,62 +13,98 @@
 \def\spades{SPAdes}
 
 \begin{document}
-\title{Rectangle Graphs --- A Different Perspective on the Genome Assembly Problem}
-\author{Nikolay Vyahhi, Son Pham and Pavel Pevzner}
+\title{From de Bruijn Graphs to Rectangle Graphs for Genome Assembly}
+\footnotetext[1]{Algorithmic Biology Laboratory, St. Petersburg Academic University, St. Petersburg, Russia}
+\footnotetext[2]{Dept.\ of Computer Science and Engineering, University of California, San Diego, La Jolla, CA, USA}
+\footnotetext[2]{Corresponding authors}
+%\footnotetext[3]{These authors contributed equally to this work}
+%\footnotetext[5]{St. Petersburg Institute of Informatics of the RAS, St. Petersburg, Russia}
+%\footnotetext[5]{Dept.\ of Mathematics, University of California, San Diego, La Jolla, CA, USA}
+%\footnotetext[6]{Dept.\ of Computer Science and Engineering, University of South Carolina, Columbia, SC, USA}
+\footnotetext[4]{This work was supported by grants from the National Institutes of Health, USA (NIH grant 3P41RR024851-02S1)
+and the Government of the Russian Federation (grant 11.G34.31.0018).}
+
+%\author[Pham et al.]{Son K. Pham\textsuperscript{1,3}
+%	\and Dmitry Antipov\textsuperscript{4,3}
+%	\and Alexander Sirotkin\textsuperscript{4}
+%	\and Glenn Tesler\textsuperscript{5}
+%	\and Pavel A. Pevzner\textsuperscript{4,1}
+%	\and Max A. Alekseyev\textsuperscript{2,4,6,7}
+%}
+
+
+\author{Nikolay Vyahhi\textsuperscript{1}, Son Pham\textsuperscript{2} and Pavel Pevzner\textsuperscript{2}}
 \date{\today}
 \maketitle
 
 \abstract{The jigsaw puzzles were originally created by painting a picture on a 
-flat rectangular piece of wood, and further cutting that picture into
-small pieces with a jigsaw.
-The objective of any jigsaw puzzle is the rearragement of these pieces into a single structure such that 
-neighboring pieces share identical boundaries as well as having similar color
-and texture near the boundaries.
-While a general jigsaw puzzle is NP-complete, we introduce a simpler version of the jigsaw problem and
-propose rectangle graphs for solving this problem in polynomial time. 
-While usual applications of jigsaw problems are often limited to 
+rectangular piece of wood, and further cutting it  into
+smaller pieces with a jigsaw.
+The objective of the Jigsaw Puzzle Problem  is to find an arragement of these pieces  that (i) fills up the rectangle, and (ii) 
+neighboring pieces have ``matching'' boundaries with respect to color
+and texture.
+While a general Jigsaw Puzzle Problem is NP-complete~\cite{Demaine07}, we introduce its simpler version  (called {\em Rectangular Puzzle Problem}) and
+study the {\em  rectangle graphs}  for assembling such puzzles.  
+While previous  applications of the jigsaw puzzle problem were  limited to 
 the assembly and repair of broken objects or 
-the restoration of archeological findings, in this paper, we show that our simplified jigsaw puzzle
-directly relates to the problem of assemblying genomes from mate-pairs. 
-We implemented the rectangle graphs as a separate module of  SPADES assembler and 
-demonstrate that it out-performs other methods in both 
-single-cell and multi-cell data. 
+the archeological restoration, Bankevich et al, 2012~\cite{Bankevich12} recently demonstrated  that the Rectangular Puzzle Problem 
+models the problem of assemblying genomes from paired reads.  This model differs from the traditional model for genome assembly (assembling 1-dimensional overlapping puzzle) and presents some new algorithmic challenges that haven't been addressed in \cite{Bankevich12}. 
+We demonstrate that addressing these challenges improves on results in \cite{Bankevich12} and  other existing assembly algorithms in the case of bacterial genomes (including particularly dfficult case of genome  assemblies from single cells). 
 }
 
 \newpage
 \section{Introduction}
 
-The recent proliferation of next generation sequencing with short reads has enabled 
-new experimental opportunities, such as the 10K genomes project, which
-aims to sequence and assemble the genomes of approximately one species in every
-vertebrate genus~\cite{Haussler09}, or Human Microbiome Project with  
-the mission of generating resources enabling comprehensive characterization of the human microbiota. 
-At the same time, the short read length has raised formidable computational challenges. 
-When the length of a repeat is longer than the read length, it becomes difficult to
-correctly match its upstream and downstream regions. In order to alleviate this
-problem, sequencing technologies were extended to produce mate pairs —
-pairs of reads between which the genomic distance (called the insert size) is well
-estimated. Because insert sizes could be much longer than the read length, mate
-pairs were able to span long repeats and could potentially match up the regions
-surrounding a repeat.
+%{\tt Add affiliations} 
 
-The challenge of algorithmically incorporating mate pair information into genome
-assemblers was first addressed by \cite{Pevzner01b}, by first constructing the de Bruijn
-graph and latter looking for a path between the two reads of a mate pair with a length of the
-insert size. If exactly one such path was found, then a mate pair transformation
-could be applied to ``unwind'' this path in the graph. Essentially, this amounted
-to transforming two mated reads into one long read where the gap between the
-mates was filled in with the nucleotide sequence representing the found path,
-thus potentially connecting the surrounding regions of a repeat.  
+%{\tt The paper requires A LOT of work - it is nowhere close to submission. I believe my revision significantly simplifies and shortens the presentation. 
 
-While such method had a great impact on genome assembly, allowing the construction of much longer contigs; 
-however, it still fail in complex repeat-rich
-regions, where there are multiple paths between the read pairs. Recently, ~\cite{Medvedev11} introduced
+%The current version makes an emphasis on "explaining" the Bankevich et al., 2012 in a new language and makes it easier to digest using an analogy.
+% However, it talks very little about the challenges addressed by Kolya that we discussed.
+% If we have only 2 paragraphs describing these challenges, what has been done to implement rectngles
+% and why it could not have been done in a week? I believe there were challenges but they are not adequately addressed in the paper.
+
+%Kolya, can you address why the coverage was dropped as compared to the standard version of SPAdes and reflect it in the paper? 
+
+%WHAT IS THE PLAN FOR THE REMAINING 2.5 DAYS? 
+
+
+
+The recent proliferation of next generation sequencing has enabled 
+new experimental opportunities and, at the same time, 
+raised formidable computational challenges. 
+When the length of a repeat in the genome exceeds the read length, it becomes difficult to
+ ``match'' the flanking regions of this repeat in the assembly.  To alleviate this
+problem, sequencing technologies were extended to produce {\em read-pairs},  
+pairs of reads separated by an estimated insert length. 
+ Because insert sizes are longer than the read length, read
+pairs span longer repeats and could potentially match the regions
+flanking a repeat as long as it is longer than the insert length. Chaisson et al., 2009~\cite{Chaisson09} even 
+argued that ``read length does not matter'', i.e., that assembling genome from read-pairs  
+is nearly equivalent to assembling genome from long virtual reads (with length equal to the insert length).
+However, implementing this idea in practice faces some algorithmic challenges since until recently there were 
+no elegant algorithmic models for effective utilization of {\em all information} provided by read-pairs.  
+
+While assembling single reads can be elegantly modelled by 
+{\em de Bruijn graphs}~\cite{Idury95 ,Pevzner01}, applications of 
+the de Bruijn graphs to assembling read-pairs remains a challenge. 
+This  challenge  was first addressed by \cite{Pevzner01b} and similar ideas were incorporated to other assemblies.  Pevzner and Tang, 2001~\cite{Pevzner01b} first constructed the de Bruijn
+graph and further checked for a path between the two reads within a read-pair consistent with the constraints imposed by the
+insert size. If only one such path exists, a {\em read-pair transformation}
+could be applied to  transform a read-pair into a long {\em virtual} path.  Essentially, this amounted
+to transforming a read-pair into  a virtual  read where the gap between the
+reads is filled in with the nucleotide sequence representing the found path. %(potentially matching the surrounding regions of a repeat).  
+
+While this and similar methods~\cite{Zerbino09, Butler08, Boisvert10, SOAP,Simpson09,Peng10} 
+had a large impact on genome assembly,  they fail in complex repeat-rich
+regions, where there are multiple paths between the reads within read-pairs. Recently,~\cite{Medvedev11} introduced
 paired de Bruijn graph that directly incorporates mate-pair into the graph structure and bypasses the problem of multiple
-paths in the previous approach. However, paired de Bruijn graph were introduced as a theoretical framework and mainly aimed 
-at the unrealistic case when distances between reads are fixed. Paired de Bruijn graph faces difficulty in real dataset where 
-distance between reads varies. To address this bottleneck, we now introduce rectangle graph --- by  generalizing the problem of a string 
-reconstruction from its substrings to an object reconstruction from its broken pieces --- a general abstraction of the jigsaw puzzles. 
+paths in the previous approaches. However, paired de Bruijn graph were introduced as a theoretical framework and mainly aimed 
+at the unrealistic case when {\em precise and fixed} distances between reads are known. 
+%Paired de Bruijn Graph faces difficulty on real dataset where 
+%the distances between reads within read-pairs varies. 
+ To address this bottleneck,  Bankevich et al., 2012 recently  introduced the  {\em rectangle graph} by  generalizing the problem of a string 
+reconstruction from its paired substrings to a variation of the jigsaw puzzle problem. 
 
 %    De Bruijn graphs have been used in many areas of bioinformatics, including genome assembly~\cite{Pevzner01},
 %    repeats classification~\cite{Raphael04}, protein sequencing~\cite{Bandeira07},
@@ -79,26 +115,116 @@ reconstruction from its substrings to an object reconstruction from its broken p
 %    its broken pieces --- a general abstraction of the jigsaw puzzles. 
 
 
-The jigsaw puzzles were originally created by painting a picture on a flat rectangular piece of wood, 
-and further, cutting that picture into
-small pieces with a jigsaw. The task of jigsaw puzzles requires the assembly of these small pieces into a valid picture with no gap or overlap between
-them. Formally, the jigsaw problem can be defined as follow. Given a set $SP = \{ P_0, P_1,\ldots, P_n\}$ where $P_i$ represents the $i^{th}$ piece.
-The objective of any jigsaw puzzles is the rearragement of these pieces into a single structure with no gaps left between adjacent pieces. Additionally,
-neighboring pieces must share an identical boundary as well as having similar color and 
-texture near the boundary.
-Concrete applications of jigsaw puzzle solving are the assembly and repair of broken objects, 
-or the restoration of archeological findings. Here we show
-that the assembly problem from paired-end reads can also be formulated as a simple jigsaw problem. % is paired-end the same as mate-pair?
-In particular, in section 2, we describe a simple jigsaw puzzle and define rectangle graph to solve this 
-problem, in section 3 we show the relation of the jigsaw puzzle to the 
-problem of genome assembly using mate-pairs. In section 4, we describe how to adapt our approach 
-to work with inexact insert size. Section 5 we apply our rectangle graph approach to 
-assemble single cells as well as multiple cells datasets and demonstrate that it outperforms
-other methods.
+The jigsaw puzzles were originally created by painting a picture on a rectangular piece of wood
+and cutting it into
+small pieces with a jigsaw. The jigsaw puzzles assembly amounts to  arranging these small pieces into a ``valid'' picture with no gap or overlap between
+them. 
+%Formally, the jigsaw problem can be defined as follow. Given a set $SP = \{ P_0, P_1,\ldots, P_n\}$ where $P_i$ %represents the $i^{th}$ piece.
+%The objective of any jigsaw puzzles is the rearragement of these pieces into a single structure with no gaps left %between adjacent pieces. Additionally,
+%neighboring pieces must share an identical boundary as well as having similar color and 
+%texture near the boundary.
+Previous  algorithmic studies of the jigsaw puzzle problem considered the problems of  assembly and repair of broken objects~\cite{Uccoluk99} 
+or the restoration of archaeological findings~\cite{Kampel04}. Here we show
+that the assembly problem from paired reads can also be formulated as a simple version of the jigsaw puzzle problem. 
+In particular, in section 2, we describe a simple version of jigsaw puzzle problem (called rectangle puzzle problem) and define the rectangle graphs to solve this 
+problem. In section 3 we show the relation between the rectangle puzzle problem and  genome assembly from read-pairs. In section 4, we describe how to adapt our approach 
+to work with inexact insert size. In Section 5 we apply the rectangle graphs to bacterial genome assembly.  
+
+We empasize that previous assembly approaches modeled the  problem as a 1-dimensional  
+jigsaw puzzle with {\em overlapping} pieces~\cite{Jones04}.  
+In contrast, the rectangle graph model assembly as traditional jigsaw puzzle with non-overlapping pieces. Our analysis extends the analysis in Bankevich et al., 2012~\cite{Bankevich12} to real challenges encountered in applications of rectangle graphs and presents the rectangle graph concept in a more intuitive way.
+
+\section{Rectangle Puzzle Problem} 
+
+Consider $n+1$ points $x_0=0 < x_1 <  \ldots < x_n$ on $x$-axis and $m+1$ points $y_0=0 < y_1 <  \ldots < y_m$ on $y$-axis. Points $(x_i,y_j)$ form a 2-dimensional grid consisting of $n \cdot m$ small rectangles filling up the grid with corners $(0,0), (0,y_m), (x_n,0)$ and $(x_n,y_m)$. By analogy with the puzzle assembly we assume that the grid is ``painted'' and the goal is to assemble small rectangles into the painted grid in such a way that rectangles fully fill up the grid and that the colors at the sides of of neighboring  rectangles match. 
+
+Consider a continuous non-self-intersecting curve from $(0,0)$ to $(x_n,y_m)$ in the grid that crosses  
+the sides of the rectangles at points $p_0=(0,0), p_1, \ldots , p_N=(x_n,y_m)$ (in their order along the curve). The curve is called {\em traversing} if $p_i$ and $p_{i+1}$ belong to different sides of a rectangle (for $0 \leq i \leq N-1)$ and if there are exactly two red points on the sides of each rectangle. For simplicity we assume that the direction of the traversing curve (from $(0,0)$ to $(x_n,y_m)$) within each rectangle is known and that the curve does not pass through the corners of the rectangles except for points $p_0=(0,0)$ and $p_N=(x_n,y_m)$.  
+
+
+In the {\em rectangle puzzle}  problem we assume that red points in the grid form a traversing curve and the goal is to assemble the grid from (painted) rectangles. 
+More precisely, we want to generate all possible assemblies of the rectangles into the grid that respect the painting (See Fig.~\ref{fig:curve}a). 
+It appears to be a trivial problem in the case of Fig.~\ref{fig:curve}a where the painting has enough details to unambiguously reveal all rectangles that share sides. 
+However, it becomes less trivial in the case of Fig.~\ref{fig:curve}b with only white and red colors. 
+{\tt It would be great to design Fig.2b in such a way that there exist ambiguities and illustrate them further in the construction of the rectangle graph.} 
+
+ 
+\begin{figure}
+\begin{center}
+	\begin{tabular}{l@{\extracolsep{13pt}}l}
+		(a) & (b) \\
+		\vtop{\vskip0pt\hbox to.45\textwidth{\includegraphics[width=.45\textwidth] {fig/gridGraphCurvePicture.eps}}}
+		&
+		\vtop{\vskip0pt\hbox to.45\textwidth{\includegraphics[width=.45\textwidth] {fig/gridGraphCurve.eps}}}
+	\end{tabular}
+\caption{Rectangular Puzzle Problem. (a) Points $x_0, \ldots ,x_4$ and $y_0, \ldots ,y_5$  (red points) form a 
+rectangular grid consisting of $4\times 5$ rectangles. 
+The traversing curve in the grid is shown in red. (b) Picture is removed.{\tt Describe (a) and (b)}}
+\label{fig:curve}
+\end{center}
+\end{figure}
+
+%:{\tt Decide on the color. In the text the curve is called red but in the figure it is blue.} 
+
+The red curve enters and leaves each rectangle $R$ through sides that we call $source(R)$  and $sink(R)$ correspondingly.  Since points $p_0=(0,0)$ and $p_N=(x_n,y_m)$ belong to two sides of the bottom-left and upper-right rectangles, correspondingly, we will arbitrarily assign them to the horizontal sides of these rectangles to avoid ambiguities. 
+We assume that every side $S$ of a rectangle is assigned a label $label(S)$ (that encodes the painting of this side) and that differently painted sides are assigned different labels.  We represent a rectangle $R$ by a directed edge $edge(R)$ from vertex $label(source(R))$ to vertex $label(sink(R))$.  For convinience, we assign identical and unique labels to the sides of rectangles containing the first and the last points ($(0,0)$ and $(x_n,y_m)$ on the red curve. 
+
+Below we describe the rectangle graph that allows one to generate all solutions of the rectangle puzzle problem. 
+
+\textbf{Rectangle Graph:}
+\begin{itemize}
+\item  Define a graph $G$ with $n \cdot m$ edges and $2 \cdot n \cdot m$ vertices by introducing an edge $edge(R)$ for each rectangle $R$. 
+\item The rectangle graph is formed by gluing identically labelled vertices of $G$.
+\end{itemize}
+One can notice that the rectangle graph is simply the de Bruijn graph on strings of length 2 in the alphabet of all labels. Each rectangle assembly corresponds to an Eulerian  cycle in this graph (we remind the reader that starting and ending points in the traversing curve were glued into the same vertex in the rectangle graph.) 
+All 
+Eulerian cycles  can be efficiently generated using the BEST \cite{best} theorem thus reducing the rectangle puzzle
+assembly to enumerating Eulerian cycles in the rectangle graph, a well studied problem \cite{abrham80}. 
+However, not every Eulerian cycle corresponds to a valid solution of the rectangle puzzle since some solution may force rectangles to overlap or may correspond to assemblies that do not form a rectangular grid. However, it is easy to check if a given Eulerian cycle corresponds to a valid rectangle assembly in linear time. 
+
+Below we limit attention to traversing {\em lines} (rather than {\em curves})   and  relax the condition for the traversing curve (line) to visit  {\em all} rectangles: 
+\begin{itemize} 
+\item We relax the condition for the traversing curve to visit {\em all} rectangles.  In this case we are only interested in assembling  rectangles into a {\em subgrid}  formed by rectangles with red points (rather than assembly of all rectangles into the full grid). 
+\item The traversing curve is a line $y=x+D$ that does not necessarily starts at $(0,0)$ and ends at $(x_n,y_m)$. In this case, every Eulerian cycle corresponds to a valid subgrid assembly and thus no additional checks are needed to verify that the assembly (given by an Eulerain cycle) is valid. 
+\end{itemize}
+
+Below we continue using the term the ``rectangle puzzle'' while referring to the case of \emph{traversing lines} that do not visit all rectangles. 
+
+\section{Generating Rectangle Puzzle from Genome}
+
+
+We represent a genome $a_1 \ldots a_N$ as a circular string over the alphabet of nucleotides $\{A,T,C,G\}$. 
+Below we fix $k$ and use an alternative representation of the genome in the alphabet of all $(k-1)$-mers (a $k$-mer is a string of length $k$). In this representation,  $Genome=g_1 \ldots g_N$, where $g_i$ is a $(k-1)$-mer $a_i \ldots a_{i+k-2}$ starting at the $i$-th positon of the genome.  
+
+
+Given a $k$-mer $s = s_1\ldots s_k$,
+we define $prefix(s)= s_1\ldots s_{k-1}$ and $suffix(s) = s_2\ldots s_k$. Given a multiset of all $k$-mers  from $Genome$, 
+the (standard) de Bruijn graph $DB(Genome,k)$ has directed edge $(prefix(s),suffix(s))$
+for each $k$-mer $s$ in $Genome$.  The genome defines an Eulerian cycle in its de Bruijn graph. 
+
+A vertex $v$  in a graph precedes (follows) vertex $w$ if there exists an edge from $v$ to $w$ (from $w$ to $v$). The indegree (outdegree)  of a vertex 
+is the number of vertices preceding (following) it.  A vertex is called a branching vertex if either its indegree or its outdegree is larger than 1. A path in a graph is called a {\em non-branching path}  if all vertices in this path (with exception of the the first and the last ones) have indegree and outdegree
+both equal to 1. 
+
+The de Bruijn graph $DB(Genome,k)$ partitions $(k-1)$-mers from the $Genome$ into branching (if they correspond to branching vertex in $DB(Genome,k)$ and non-branching. Similarly, all 
+positions of $Genome$ are partitioned into branching (if a $(k-1)$-mer  starting at this position is branching) and non-branching. For simplicity, we assume that the circular genome ``starts'' at a branching position 0 and ends at the branching position $N$ (since the genome is circular, these two positions represent the same site in the genome and the same vertex in the de Bruijn graph).  
+
+We denote the branching positions in $Genome$ as $x_0=0 < x_1 < \ldots x_n=N$.  
+Given an integer $d$, we define the rectange puzzle $Puzzle(Genome,k,d)$ as follows. The grid consisting of $n \cdot n$ rectangles is defined by points $x_0=0 < x_1 < \ldots <x_n=N$ on $x$ axis and the same list of points on $y$-axis. The red line is defined by the equation $y=x+d$.  The ``paint'' (label) at position $(x,y)$ of the grid is defined as $(label(x),label(y),color)$ where $label(x)$ and  $label(y)$ are 
+$(k-1)$-mers starting at position $x$ and $y$ in $Genome$, and $color$  
+is ``red'' or ``white'' depending on whether $(x,y)$ is located on red line or not. 
+The label of the side of a rectangle is defined as an ordered list of all labels of (integer) points located on this side. 
+
+\section{Generating Rectangle Puzzle from Read-Pairs (Exact Distance Between Reads)}
+
+While in the real assembly problem, the genome is unknown and only read-pairs are available, we show below how to generate an instance of the rectangle puzzle problem from read-pairs. 
+
+ Given a set of read-pairs, one can construct the de Bruijn graph from reads and thus generate a list of branching vertices in this graph. Every pair of non-branching paths in the de Bruijn graph define a rectangle and labeling of all its (integer) points.  
+
+When the distance between reads within read-pairs {\em equal} to $d$ (for all read-pairs), one can find $(k-1)$-mers in $Genome$ separated by distance exactly $d$ and thus reconstruct how the the red line crosses the rectangles in the rectangle puzzle (see Bankevich et al., 2012 for details).  Some complications are possible when two non-branching paths  in the de Bruijn graph give rise to multiple rectangles (repeats in genome), e.g., some of them crossed by the red line while others are not. In this case, two non-branching paths give rise to multiple {\em types} of equally-sized rectangles that vary in whether and how the red line crosses them.  For the sake of simplicity, we will assume that we are able to derive the multiplicity of  each type of such rectangles.\footnote{Coverage of the pair of non-branching paths by paired reads allows one to estimate the multiplicity of each type, at least for standard (multicell) a
+ssembly.}  See below on how to address this and other complications that were not covered in \cite{Bankevich12}. 
 
 \section{A Simple Jigsaw Problem}
-
-
 
 We consider a two-dimensional rectangular jigsaw puzzle created by the following procedure:
 In stead of a complicated picture as it is usually the case for jigsaw puzzles, we simply draw a line $(d): y = x + D$ on a 2-$d$ coordinate Oxy.
@@ -307,7 +433,7 @@ We now describe how to reconstruct the line fragment on each rectangles from a c
 inexact $(k,d,\Delta)$ mers.  
 
 
- To better \emph{resharp}
+ To better \emph{repaint}
 the line segment, it is beneficial to first characterize the variation of insert size. 
 
 While it is commonly accepted that insert size distribution for multiple cell data follows a Gaussian distribution,
@@ -333,11 +459,15 @@ $p_1$ and $p_2$ that are in the range of $[d - |p_1|, d]$.  We draw $t$ lines  $
 these $t_1$ lines among $t$ possible lines, which are now represented as perturbed points on the rectangle.
 
 
-    Since $d$ was chosen at the median of the distribution, the points corresponding to a line $(d_i)$ will be more probable 
-to perturbate closer to the line than farther from the line. For each line we define a supporting value, which is the density of 
-points in the $\epsilon$ distance around it. In other words, it is the number of points lie in the region defined by
-$y = x + d - \ell_i - \epsilon$ and $y = x + d - \ell_i + \epsilon$ and normalized by the length of $(d_i)$.  We empirically choose 
-a threshold and ignore all lines that have the supporing values smaller than the threshold. The weakness of this approach is that 
+Since $d$ was chosen at the median of the distribution, the points corresponding to a line $(d_i)$ will be more probable 
+to perturbate closer to the line than farther from it. For each line we define a supporting value $v_{sp}$, which is the weighted density of 
+points in the $\epsilon$ distance around it: $v_{sp} = \sum_{(x_j,y_j)}\frac{ \mathbf{f}(y_j - (x + d - \ell_i) ) I((x,y), \epsilon) }{length(d_i)}$, where
+$\mathbf{f}$ is the empirical probability densitry function of the insert size; $I((x_j,y_j), \epsilon)$ 
+is the identicator function that indicates whether a point $(x_j,y_j)$
+lies in the region defined by $d - \ell_i - \epsilon$ and $y = x + d - \ell_i + \epsilon$
+
+
+We empirically choose a threshold and ignore all lines that have the supporing values smaller than the threshold. The weakness of this approach is that 
 if two lines $(d_i)$ and $(d_j)$ are close, a majority of points that supports line $d_i$ will also supports line $d_j$ and vise versa.  
 This leads to the problem of selecting the incorrect line fragments around the correct ones. To overcome this problem, for a pair of 
 lines $(d_i)$, $(d_j)$, we define a separating value equal to the minimum supporting value of any line drawing between $(d_i)$ and $(d_j)$.
@@ -349,8 +479,8 @@ represent each partition on each rectangle.
 \textbf{Rectangle Graph for Approximate Distance}
 As mentioned above, the variation of the distance of insert size transform the line fragment on each rectangle into a set of
 perturbed points around it. While the \emph{Line Fragments Reconstruction} procedure described above attemps to reconstruct the line, it can not guarantee 
-to have a single line on each rectangle but instead, can results in multiple (parallel) lines closed to each other, where we can guarantee that at least 
-one of them are the correct line fragment of the original line. Thus, the extending condition for rectangles should be revised so that the original line can be
+to have a single line on each rectangle but instead, can result in multiple (parallel) lines closed to each other, where we can guarantee that at least 
+one of them is the correct line fragment of the original line. Thus, the extending condition for rectangles should be revised so that the original line can be
 reconstructed by extending the rectangles.  
 
 We represent the incoming/ outgoing face of a rectangle as  a set of pairs of $k$-mers, corresponding to the starts/ends of the lines in the rectangle. 
@@ -362,17 +492,6 @@ a single line.
  
 Finally, the rectangle graph is constructed by: (1) Represent each rectangle as an edge from its in-coming 
 face to its out-going face; (2) Glue two node if they share at least one pair of $k$-mer. We output contigs from non-branching path in the rectangle graph. 
-
-
-
-
-
-
-
-
-
-
-
 
 
 \begin{figure}
@@ -391,10 +510,33 @@ face to its out-going face; (2) Glue two node if they share at least one pair of
 \begin{figure}
 \begin{center}
 \includegraphics[scale=0.5]{fig/rectangle.eps}
-\caption{Example of rectangle with three diagonals. Rightmost diagonal isn't well supported my mate pairs, while other two are well supported. The point which is observed in the lower right corner could appear because of chimeric mate pairs or sequencing errors.}
+\caption{Example of rectangle with three diagonals. Rightmost diagonal isn't well supported mate pairs, 
+while other two are well supported. The point which is observed in the lower right corner 
+could appear because of chimeric mate pairs or sequencing errors.}
 \end{center}
 \end{figure}
 
+\noindent
+\textbf{Recovering Missing Rectangles}
+
+Because of the variation in the insert size, some d-bounded pair of paths $(p_i,p_j)$ may have no mapping pair 
+of reads~\footnote{Especially when these paths are short} (pair of reads that connect these two paths). 
+This leads to the problem of missing some rectangles in the rectangular
+puzzle. Fortunately, similar cases also happen in the ordinary jigsaw puzzle.
+Old jigsaw puzzles sometimes also lose some pieces. A common approach is assembling with the remaining pieces first and later, verifying  
+the solution by checking if the holes in the resulting figure can actually be fit by any common jigsaw pieces. A more miticulous 
+player after assemblying the figure, may make new pieces that match the holes and try to draw on the new parts to make a complete picture. 
+We borrow this approach for recovering missing rectangles. Before describing the algorithm, we first define some notions.
+
+Given two rectangles $R_1$ and $R_2$: $R_1$  with sink $(a_1|b_1)$  and $R_2$ with source  $(a_2|b_2)$ (we remind 
+that sink/source of a rectangle is labeled by a pair of $k$-mers corresponding to the start/end point of the line segment in the rectangle).  
+$R_1$ and $R_2$ are \emph{linkable} if there exist two paths of equal length $p(a_1, a_2): a_1 \leadsto a_2$ and $p(b_1, b_2): b_1 \leadsto b_2$
+in the de Bruijn graph, and the minimum length of such paths is called the distance between $R_1$ and $R_2$. 
+
+
+We first construct the rectangle graphs. A rectangle is called a sink~\footnote{The sink of the rectangle graph is a rectangle, the sink of 
+a rectangle is the the side that the line segment enters the rectangle (represented as a pair of $k$-mers.} if its source is not connected 
+to any other rectangle. Similarly, a rectangle is called a source if its sink is not connected to any other rectangle.  
 
 \section{Results}
 

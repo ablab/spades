@@ -10,11 +10,6 @@ J.~Abrham and A.~Kotzig.
 \newblock Transformations of euler tours.
 \newblock {\em Annals of Discrete Mathematics}, 8:65--69, 1980.
 
-\bibitem{Bandeira07}
-N.~Bandeira, K.R. Clauser, and P.A. Pevzner.
-\newblock {Shotgun Protein Sequencing}.
-\newblock {\em Molecular \& Cellular Proteomics}, 6(7):1123, 2007.
-
 \bibitem{SPAdes}
 A.~Bankevich, S.~Nurk, D.~Antipov, A.~Gurevich, M.~Dvorkin, A.~Kulikov,
   V.~Lesin, S.~Nikolenko, S.~Pham, A.~Prjibelski, A.~Pyshkin, A.~Sirotkin,
@@ -23,11 +18,36 @@ A.~Bankevich, S.~Nurk, D.~Antipov, A.~Gurevich, M.~Dvorkin, A.~Kulikov,
   Sequencing}, 2012.
 \newblock Submitted.
 
+\bibitem{Bankevich12}
+A.~Bankevich, S.~Nurk, D.~Antipov, A.A. Gurevich, M.~Dvorkin, A.S. Kulikov,
+  V.M. Lesin, S.I. Nikolenko, S.~Pham, A.D. Prjibelski, et~al.
+\newblock Spades: A new genome assembly algorithm and its applications to
+  single-cell sequencing.
+\newblock {\em Journal of Computational Biology}, 19(5):455--477, 2012.
+
 \bibitem{Barthelson2011}
 Roger Barthelson, Adam~J. McFarlin, Steven~D. Rounsley, and Sarah Young.
 \newblock Plantagora: Modeling whole genome sequencing and assembly of plant
   genomes.
 \newblock {\em PLoS ONE}, 6(12):e28436, 12 2011.
+
+\bibitem{Boisvert10}
+S.~Boisvert, F.~Laviolette, and J.~Corbeil.
+\newblock Ray: Simultaneous assembly of reads from a mix of high-throughput
+  sequencing technologies.
+\newblock {\em Journal of Computational Biology}, 17(11):1519--1533, 2010.
+
+\bibitem{Butler08}
+J.~Butler, I.~MacCallum, M.~Kleber, I.A. Shlyakhter, M.K. Belmonte, E.S.
+  Lander, C.~Nusbaum, and D.B. Jaffe.
+\newblock {ALLPATHS: de novo assembly of whole-genome shotgun microreads}.
+\newblock {\em Genome Research}, 18(5):810, 2008.
+
+\bibitem{Chaisson09}
+M.J. Chaisson, D.~Brinza, and P.A. Pevzner.
+\newblock {De novo fragment assembly with short mate-paired reads: Does the
+  read length matter?}
+\newblock {\em Genome Research}, 19(2):336, 2009.
 
 \bibitem{Chaisson08}
 M.J. Chaisson and P.A. Pevzner.
@@ -40,11 +60,38 @@ H.~Chitsaz, J.L. Yee-Greenbaum, G.~Tesler, et~al.
   short-read data sets.
 \newblock {\em Nat Biotechnol}, 29(10):915--921, 2011.
 
+\bibitem{Demaine07}
+E.D. Demaine and M.L. Demaine.
+\newblock Jigsaw puzzles, edge matching, and polyomino packing: Connections and
+  complexity.
+\newblock {\em Graphs and Combinatorics}, 23:195--208, 2007.
+
+\bibitem{Idury95}
+R.M. Idury and M.S. Waterman.
+\newblock {A new algorithm for DNA sequence assembly}.
+\newblock {\em Journal of Computational Biology}, 2(2):291--306, 1995.
+
 \bibitem{Ishoey2008}
 T.~Ishoey, T.~Woyke, R.~Stepanauskas, et~al.
 \newblock Genomic sequencing of single microbial cells from environmental
   samples.
 \newblock {\em Curr Opin Microbiol}, 11(3):198--204, Jun 2008.
+
+\bibitem{Jones04}
+N.C. Jones and P.~Pevzner.
+\newblock {\em An introduction to bioinformatics algorithms}.
+\newblock the MIT Press, 2004.
+
+\bibitem{Kampel04}
+M.~Kampel and R.~Sablatnig.
+\newblock 3d puzzling of archeological fragments.
+\newblock In {\em Proc. of 9th Computer Vision Winter Workshop}, volume~2.
+  Slovenian Pattern Recognition Society, 2004.
+
+\bibitem{SOAP}
+R.~Li, Y.~Li, K.~Kristiansen, and J.~Wang.
+\newblock {SOAP: short oligonucleotide alignment program}.
+\newblock {\em Bioinformatics}, 24(5):713, 2008.
 
 \bibitem{Li10}
 R.~Li, H.~Zhu, J.~Ruan, W.~Qian, X.~Fang, Z.~Shi, Y.~Li, S.~Li, G.~Shan,
@@ -52,6 +99,13 @@ R.~Li, H.~Zhu, J.~Ruan, W.~Qian, X.~Fang, Z.~Shi, Y.~Li, S.~Li, G.~Shan,
 \newblock De novo assembly of human genomes with massively parallel short read
   sequencing.
 \newblock {\em Genome Research}, 20(2):265, 2010.
+
+\bibitem{Medvedev11}
+P.~Medvedev, S.~Pham, M.~Chaisson, G.~Tesler, and P.~Pevzner.
+\newblock {Paired de Bruijn Graphs: A Novel Approach for Incorporating Mate
+  Pair Information into Genome Assemblers}.
+\newblock In {\em Research in Computational Molecular Biology}, pages 238--251.
+  Springer, 2011.
 
 \bibitem{Peng10}
 Y.~Peng, H.C.M. Leung, S.-M. Yiu, and F.Y.L. Chin.
@@ -61,27 +115,37 @@ Y.~Peng, H.C.M. Leung, S.-M. Yiu, and F.Y.L. Chin.
   April 25-28, 2010. Proceedings}, volume 6044 of {\em Lecture Notes in
   Computer Science}, pages 426--440. Springer, 2010.
 
+\bibitem{Pevzner01b}
+P.A. Pevzner and H.~Tang.
+\newblock Fragment assembly with double-barreled data.
+\newblock {\em Bioinformatics}, 17(suppl 1):S225, 2001.
+
 \bibitem{Pevzner01}
 P.A. Pevzner, H.~Tang, and M.S. Waterman.
 \newblock {An Eulerian path approach to DNA fragment assembly}.
 \newblock {\em PNAS}, 98(17):9748, 2001.
 
-\bibitem{Pham10}
-S.K. Pham and P.A. Pevzner.
-\newblock {DRIMM-Synteny: decomposing genomes into evolutionary conserved
-  segments}.
-\newblock {\em Bioinformatics}, 26(20):2509, 2010.
+\bibitem{Simpson09}
+J.T. Simpson, K.~Wong, S.D. Jackman, J.E. Schein, S.J.M. Jones, and
+  {\.I}.~Birol.
+\newblock {ABySS: a parallel assembler for short read sequence data}.
+\newblock {\em Genome Research}, 19(6):1117, 2009.
 
-\bibitem{Raphael04}
-B.~Raphael, D.~Zhi, H.~Tang, and P.~Pevzner.
-\newblock A novel method for multiple alignment of sequences with repeated and
-  shuffled elements.
-\newblock {\em Genome Research}, 14(11):2336, 2004.
+\bibitem{Uccoluk99}
+G.~{\"U}{\c{c}}oluk and I.~HakkI~Toroslu.
+\newblock Automatic reconstruction of broken 3-d surface objects.
+\newblock {\em Computers \& Graphics}, 23(4):573--582, 1999.
 
 \bibitem{Zerbino08}
 D.R. Zerbino and E.~Birney.
 \newblock Velvet: algorithms for de novo short read assembly using de {Bruijn}
   graphs.
 \newblock {\em Genome Research}, 18(5):821, 2008.
+
+\bibitem{Zerbino09}
+D.R. Zerbino, G.K. McEwen, E.H. Margulies, and E.~Birney.
+\newblock Pebble and rock band: heuristic resolution of repeats and scaffolding
+  in the velvet short-read de novo assembler.
+\newblock {\em PloS one}, 4(12):e8407, 2009.
 
 \end{thebibliography}
