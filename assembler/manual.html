@@ -62,7 +62,7 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 </code>
 </pre>
 
-<p>It will download binaries to <code>.spades/release2.1.0</code> directory in your user home.
+<p>It will download binaries to <code>build/release2.1.0</code> directory.
 SPAdes uses binaries optimized for each k value and you can download binaries
 for the required k values with <code>./spades_download_binary.py</code> script using space-separated values of k as an argument.</p>
 
@@ -128,8 +128,8 @@ Thank you for using SPAdes!
 </p>
 
 <p>
-    There are two ways to run SPAdes for you dataset you can specify the parameters from the command line or provide the configuration file with <code>.info</code> extension
-    as the only <code>./spades.py</code> parameter.
+    There are two ways to run SPAdes for you dataset you can specify the parameters from the command line or provide the configuration
+    file as the only <code>./spades.py</code> parameter.
 </p>
 
 
@@ -163,13 +163,13 @@ Thank you for using SPAdes!
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data.</p>
 
 <p><code>--12 &lt;filename></code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;File with interlaced left and right paired end reads</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;File with interlaced left and right paired end reads.</p>
 
 <p><code>-1  &lt;filename></code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;File with left paired end reads</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;File with left paired end reads.</p>
 
 <p><code>-2  &lt;filename></code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;File with right paired end reads</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;File with right paired end reads.</p>
 
 <p><code>-s  &lt;filename></code></p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads</p>
@@ -181,10 +181,10 @@ Thank you for using SPAdes!
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 16.</p>
 
 <p><code>-m &lt;int></code> (or <code>--memory &lt;int></code>)</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Sets the memory limit in Gb. SPAdes crashes immediately if it reaches this limit. The default value is 250 Gb.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Sets the memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb.</p>
 
 <p><code>--tmp-dir &lt;dirname></code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Set the directory for error correction's temporary files.  The default value is <code>&lt;output_dir>/corrected/tmp</code>.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Set the directory for error correction's temporary files.  The default value is <code>&lt;output_dir>/&lt;project_name>/corrected/tmp</code>.</p>
 
 
 <p><code>-k &lt;int,int,...> </code></p>
@@ -194,7 +194,7 @@ Thank you for using SPAdes!
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for the error correction. The default value is 2.</p>
 
 <p><code>--phred-offset  &lt;33 or 64> </code> </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;PHRED quality offset for the input reads, can be either 33 or 64. BayesHammer auto-detects it if not specified.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.</p>
 
 <p><code>--only-error-correction</code> </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;With this option we run only error correction, without assembler.</p>
@@ -240,7 +240,7 @@ You can use this file as the template for your datasets. In  this file in each l
 <h3>2.5 Supporting files and directories</h3>
 
 <p>
-    SPAdes uses <code>~/.spades</code> directory to store compiled binaries and reuse them. If you want to save disk space or just want to be sure that
+    SPAdes stores compiled binaries in <code>build</code> directory and reuses them. If you want to save disk space or just want to be sure that
     you use recently compiled binaries you can just delete this directory. But we suppose that you don't care about it.
 </p>
 
