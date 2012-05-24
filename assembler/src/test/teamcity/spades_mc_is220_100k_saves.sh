@@ -28,6 +28,7 @@ do
         diff $f ../../../$etalon/$f >> diff_with_etalon.txt
         if [ $? -eq 1 ]; then
             echo "^^^^^^^ it was $f" >> diff_with_etalon.txt
+            echo "BAD: difference found in $f"
             (( diffs += 1 ))
         fi
         set -e
