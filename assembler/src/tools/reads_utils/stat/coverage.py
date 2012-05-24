@@ -133,7 +133,7 @@ def analyze_gaps(in_filename, out_filename, reference, chunks, kmer):
     for chunk in chunks:
             ref_chunks.append( ("PART_" + str(i) + "_from_" + str(chunk[0]) + "_to_" + str(chunk[1]), genome[chunk[0]:chunk[1]]) )
             i += 1
-    write_fasta(ref_chunks)
+    write_fasta(ref_chunks, "chunks.txt")
 
 def main():
 
