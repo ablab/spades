@@ -21,7 +21,7 @@
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/bitset.hpp>
 
-const uint32_t K = 55;
+const uint32_t K = 21;
 typedef uint64_t hint_t;
 
 #define BLOBKMER_UNDEFINED		2e12
