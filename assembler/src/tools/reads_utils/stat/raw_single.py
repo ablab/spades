@@ -23,7 +23,7 @@ def raw_single(in_filename, out_filename, chrsm_file = None):
     for line in inFile:
         chr1 = line.split('\t',5)[2]
         pos1 = int(line.split('\t', 5)[3])
-        len1 = len(line.split('\t', 5)[4])
+        len1 = len(line.split('\t', 5)[4].strip())
 
         addPos = 0
         if wChrs:

@@ -65,7 +65,7 @@ def write_fasta(data, filename):
     outFile.close()
 
 
-def analyze_gaps(in_filename, out_filename, reference, chunks, kmer):
+def analyze_gaps(in_filename, out_filename, reference, out_ref, kmer):
     inFile = open(in_filename)
     outFile = open(out_filename, 'w')
 
@@ -131,9 +131,9 @@ def analyze_gaps(in_filename, out_filename, reference, chunks, kmer):
     ref_chunks = []
     i = 0
     for chunk in chunks:
-            ref_chunks.append( ("PART_" + str(i) + "_from_" + str(chunk[0]) + "_to_" + str(chunk[1]), genome[chunk[0]:chunk[1]]) )
+            ref_chunks.append(("PART_" + str(i) + "_from_" + str(chunk[0]) + "_to_" + str(chunk[1]), genome[chunk[0]:chunk[1]]))
             i += 1
-    write_fasta(ref_chunks, "chunks.txt")
+    write_fasta(ref_chunks, out_ref)
 
 def main():
 

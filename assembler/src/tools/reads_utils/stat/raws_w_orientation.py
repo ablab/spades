@@ -50,8 +50,8 @@ for line in inFile:
 		chr1 = l2[2]
 		pos2 = int(l1[3])
 		pos1 = int(l2[3])
-               	len2 = len(l1[4])
-               	len1 = len(l2[4])
+               	len2 = len(l1[4].strip())
+               	len1 = len(l2[4].strip())
 
 		if chr1 == chr2:
 			addPos = 0

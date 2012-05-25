@@ -36,7 +36,7 @@ maxLen += 10
 
 t = 0
 while line:
-	contigId = line.split()[2]
+	contigId = line.split()[1]
 	hist[contigId] += 1
 	line = inFile.readline()
 	t += 1

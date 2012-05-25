@@ -67,7 +67,10 @@ outFile = open(fName2 + ".fastq", "w")
 id1, read1 = read_readf(rFile2)
 while id1 is not None:
 	if id1 in ids:
-		outFile.write("@" + id1 + "\n" + read1 + "\n" + "+" + id1 + "\n" + ids[id1][0:len(read1)])
+		outFile.write("@" + id1 + read1 + "+" + id1 + ids[id1].strip()[0:len(read1) - 1])
+		for i in range(len(ids[id1].strip()), len(read1) - 1):
+			outFile.write("B") 
+		outFile.write("\n")
 
 	id1, read1 = read_readf(rFile2)
 
