@@ -314,7 +314,7 @@ size_t ConstructGraphWithCoverage(std::vector<io::IReader<Read>* >& streams, Gra
 }
 
 template<size_t k>
-size_t ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
+size_t ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& paired_stream,
 		SingleReadStream* single_stream = 0,
 		SingleReadStream* contigs_stream = 0) {
@@ -323,9 +323,6 @@ size_t ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
     UnitedStream united_stream(paired_stream);
 
 	vector<SingleReadStream*> streams;
-//	if(!cfg::get().etalon_graph_mode) {
-//		streams.push_back(&united_stream);
-//	}
 	streams.push_back(&united_stream);
 	if (single_stream) {
 		streams.push_back(single_stream);
@@ -333,14 +330,9 @@ size_t ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 	CompositeSingleReadStream reads_stream(streams);
 	vector<SingleReadStream*> strs;
 	strs.push_back(&reads_stream);
-	size_t rl = ConstructGraphWithCoverage<k, io::SingleRead>(strs, gp.g, gp.index, contigs_stream);
 
-//	if (cfg::get().etalon_info_mode || cfg::get().etalon_graph_mode)
-//		FillEtalonPairedIndex<k>(paired_index, gp.g, gp.index, gp.kmer_mapper, gp.genome);
-//	else
-//		FillPairedIndex<k>(gp.g, gp.index, paired_index, paired_stream);
-	FillPairedIndex<k>(gp.g, gp.index, paired_index, paired_stream);
-
+	size_t rl = ConstructGraphWithCoverage<k, io::SingleRead>(strs, g, index, contigs_stream);
+	FillPairedIndex<k>(g, index, paired_index, paired_stream);
 	return rl;
 }
 

@@ -209,7 +209,7 @@ void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, c
 
 	PairedInfoIndex<Graph> paired_index(gp.g);
 
-	ConstructGraphWithPairedInfo<k>(gp, paired_index, paired_read_stream);
+	ConstructGraphWithPairedInfo<k>(gp.g, gp.index, paired_index, paired_read_stream);
 
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
