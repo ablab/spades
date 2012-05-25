@@ -57,6 +57,20 @@ public:
 			m_range_.mapped_range.end_pos += shift;
 		}
 	}
+
+	bool followed_by(EdgePosition& ep, int max_dist = 1) {
+		if (contigId_ != ep.contigId_) return false;
+		if (end() > ep.start()) return false;
+		if (end() + max_dist < ep.start()) return false;
+		if (m_end() > ep.m_start()) return false;
+		if (m_end() + max_dist < ep.m_start()) return false;
+		return true;
+	}
+	void extend_by(EdgePosition& ep) {
+		VERIFY(contigId_ == ep.contigId_);
+		m_range_.mapped_range.end_pos = ep.m_end();
+		m_range_.initial_range.end_pos = ep.end();
+	}
 };
 
 bool PosCompare(const EdgePosition &a, const EdgePosition &b){
@@ -203,6 +217,24 @@ public:
 		return it->second;
 	}
 
+	void FillPositionGaps(EdgeId NewEdgeId){
+		vector<EdgePosition> new_vec;
+		if (EdgesPositions[NewEdgeId].size() > 0){
+			EdgePosition activePosition =  EdgesPositions[NewEdgeId][0];
+			for (size_t i = 1; i < EdgesPositions[NewEdgeId].size(); i++){
+				if (activePosition.followed_by(EdgesPositions[NewEdgeId][i], max_single_gap_)) {
+					activePosition.extend_by(EdgesPositions[NewEdgeId][i]);
+				}
+				else {
+					new_vec.push_back(activePosition);
+					activePosition = EdgesPositions[NewEdgeId][i];
+				}
+			}
+			new_vec.push_back(activePosition);
+			EdgesPositions[NewEdgeId] = new_vec;
+		}
+	}
+
 	void AddEdgePosition (EdgeId NewEdgeId, int start, int end, std::string contigId = "0", int m_start = 0, int m_end = 0) {
 		if (EdgesPositions.find(NewEdgeId) == EdgesPositions.end()) {
 			vector<EdgePosition> NewVec;
@@ -218,6 +250,7 @@ public:
 		if (EdgesPositions[NewEdgeId].size()>1){
 			std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
 		}
+		FillPositionGaps(NewEdgeId);
 	}
 
 
@@ -232,6 +265,7 @@ public:
 		if (EdgesPositions[NewEdgeId].size()>1){
 			std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
 		}
+		FillPositionGaps(NewEdgeId);
 
 	}
 
@@ -264,7 +298,7 @@ public:
 			if (EdgesPositions[NewEdgeId].size()>1){
 				std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
 			}
-
+			FillPositionGaps(NewEdgeId);
 	}
 
 	std::string str(EdgeId edgeId) const {
