@@ -9,6 +9,6 @@
 set -e
 pushd ../../../
 ./gen_k 55
-make rdt
-./run rdt
+make dt
+./run dt
 popd
