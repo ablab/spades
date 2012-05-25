@@ -690,7 +690,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 			}
 
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
-				if ((new_graph.coverage(it->second) < cutting_coverage) && ((new_graph.IsDeadStart(split_pair.first)&& !(new_graph.IsDeadStart(v))) || (new_graph.IsDeadEnd(split_pair.first)&& !(new_graph.IsDeadEnd(v))))&&(edgeCounts[it->first] > 1)) {
+				if ((OldCopyCnt[it->first] > 1 )&&(new_graph.coverage(it->second) < cutting_coverage) && ((new_graph.IsDeadStart(split_pair.first)&& !(new_graph.IsDeadStart(v))) || (new_graph.IsDeadEnd(split_pair.first)&& !(new_graph.IsDeadEnd(v))))&&(edgeCounts[it->first] > 1)) {
 					OldCopyCnt[it->first]--;
 					DEBUG("Deleting just created copy of edge " << new_IDs.ReturnIntId(it->first) << " because of low coverage");
 					++low_coverage;
