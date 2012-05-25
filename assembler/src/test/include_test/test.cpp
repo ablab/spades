@@ -16,7 +16,7 @@
 
 ::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
 {
-	logging::create_logger();
+	logging::create_logger("", logging::L_DEBUG);
 	logging::__logger()->add_writer(make_shared<logging::console_writer>());
 
     using namespace ::boost::unit_test;
