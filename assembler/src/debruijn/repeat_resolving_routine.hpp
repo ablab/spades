@@ -871,7 +871,7 @@ void component_statistics(graph_pack & conj_gp, int component_id,
 }
 
 void resolve_conjugate_component(int component_id, const Sequence& genome) {
-	conj_graph_pack conj_gp(genome);
+	conj_graph_pack conj_gp(genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
 	paired_info_index paired_index(conj_gp.g/*, 5.*/);
 	paired_info_index clustered_index(conj_gp.g);
 
@@ -885,7 +885,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 
 	component_statistics(conj_gp, component_id, clustered_index);
 
-	conj_graph_pack resolved_gp(genome);
+	conj_graph_pack resolved_gp(genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
 	string sub_dir = "resolve_components/";
 
 	string resolved_name = cfg::get().output_dir + "resolve_components"
@@ -945,7 +945,7 @@ void prepare_jump_index(const Graph& g, const paired_info_index& raw_jump_index,
 void resolve_repeats() {
 	Sequence genome = cfg::get().ds.reference_genome;
 
-	conj_graph_pack conj_gp(genome);
+	conj_graph_pack conj_gp(genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
 	INFO("Online clusterization rad = " << cfg::get().online_clust_rad);
 	paired_info_index paired_index(conj_gp.g, cfg::get().online_clust_rad);
 	paired_info_index clustered_index(conj_gp.g);
@@ -1009,7 +1009,7 @@ void resolve_repeats() {
 			save_distance_filling(conj_gp, clustered_index, clustered_index);
 
 
-			conj_graph_pack resolved_gp(genome);
+			conj_graph_pack resolved_gp(genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
 			if (cfg::get().etalon_info_mode) {
 				//temporary
 				process_resolve_repeats(conj_gp, conj_gp.etalon_paired_index,
@@ -1132,7 +1132,7 @@ void resolve_repeats() {
 
 		std::string graph_name = "resolved_graph";
 
-		conj_graph_pack resolved_gp(genome);
+		conj_graph_pack resolved_gp(genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
 
 		EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(resolved_gp.g,
 				conj_gp.g);

@@ -42,20 +42,12 @@ struct graph_pack : private boost::noncopyable {
 
 	Sequence const& genome;
 
-	explicit graph_pack(Sequence const& genome) :
+	explicit graph_pack(Sequence const& genome = Sequence(), size_t single_gap = 0, bool careful_labeling = false) :
 	g(k),
 	index(g)
 	, int_ids (g)
-	, edge_pos(g, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling ), etalon_paired_index(g, 0), kmer_mapper(g),
+	, edge_pos(g, single_gap, careful_labeling), etalon_paired_index(g, 0), kmer_mapper(g),
 	genome(genome) {
-	}
-
-	graph_pack() :
-	g(k),
-	index(g)
-	, int_ids (g)
-	, edge_pos(g, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling), etalon_paired_index(g, 0), kmer_mapper(g),
-	genome(Sequence()) {
 	}
 };
 
