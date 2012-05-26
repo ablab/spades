@@ -222,10 +222,10 @@ void corrected_and_save_reads(const conj_graph_pack& gp) {
 
 	if (cfg::get().graph_read_corr.binary) {
 
-	    io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
+	    io::BinaryWriter paired_converter(cfg::get().paired_read_prefix + "_cor", cfg::get().max_threads, cfg::get().buffer_size);
 	    paired_converter.ToBinary(refined_paired_stream);
 
-	    io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
+	    io::BinaryWriter single_converter(cfg::get().single_read_prefix + "_cor", cfg::get().max_threads, cfg::get().buffer_size);
 	    single_converter.ToBinary(refined_single_stream);
 	} else {
 		//save in fasta

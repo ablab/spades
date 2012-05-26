@@ -20,6 +20,8 @@ namespace debruijn_graph {
 typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
 typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
+const static size_t current_bianry_format_verstion = 3;
+
 void convert_reads_to_binary() {
 
     if (fileExists(cfg::get().temp_bin_reads_info)) {
@@ -27,13 +29,23 @@ void convert_reads_to_binary() {
         info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::in);
         size_t thread_num;
         info >> thread_num;
+
+        size_t format = 0;
+
+        if (!info.eof()) {
+            info >> format;
+        }
+
         info.close();
 
-        if (thread_num == cfg::get().max_threads) {
+        if (thread_num == cfg::get().max_threads && format == current_bianry_format_verstion) {
             INFO("Binary reads detected");
             return;
         }
     }
+
+    std::ofstream info;
+    info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
 
     INFO("Converting paired reads to binary format (takes a while)");
     auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(false, 0);
@@ -45,9 +57,7 @@ void convert_reads_to_binary() {
     io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
     single_converter.ToBinary(*single_reader);
 
-    std::ofstream info;
-    info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
-    info << cfg::get().max_threads;
+    info << cfg::get().max_threads << " " << current_bianry_format_verstion;
     info.close();
 }
 

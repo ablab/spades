@@ -400,8 +400,8 @@ public:
         return seq_.BinWrite(file);
     }
 
-    SingleReadSeq(std::istream& file): seq_(file, true) {
-    }
+//    SingleReadSeq(std::istream& file): seq_(file, true) {
+//    }
 
     bool operator==(const SingleReadSeq& singleread) const {
         return seq_ == singleread.seq_;

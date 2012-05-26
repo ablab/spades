@@ -200,12 +200,12 @@ private:
 public:
     PairedReadSeq() : first_(), second_(), insert_size_(0) {}
 
-    PairedReadSeq(std::istream& file, size_t is): first_(file), second_(file) {
-        PairedRead::size_type is_delta;
-        file.read((char *) &is_delta, sizeof(is_delta));
-
-        insert_size_ = is + is_delta;
-    }
+//    PairedReadSeq(std::istream& file, size_t is): first_(file), second_(file) {
+//        PairedRead::size_type is_delta;
+//        file.read((char *) &is_delta, sizeof(is_delta));
+//
+//        insert_size_ = is + is_delta;
+//    }
 
     bool BinRead(std::istream& file, size_t is = 0) {
         first_.BinRead(file);

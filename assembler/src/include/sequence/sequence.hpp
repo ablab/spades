@@ -136,14 +136,14 @@ public:
 
 private:
 
+    inline Sequence CreatePureCopy() const;
+
     inline bool ReadHeader(std::istream& file);
     inline bool WriteHeader(std::ostream& file) const;
 
 public:
     inline bool BinRead(std::istream& file);
     inline bool BinWrite(std::ostream& file) const;
-
-    inline Sequence(std::istream& file, bool dummy);
 
     //template<size_t size2_>
     //std::vector<Seq<size2_>> SplitInSeqs() const;
@@ -396,26 +396,25 @@ size_t Sequence::size() const {
 	return size_;
 }
 
-bool Sequence::ReadHeader(std::istream& file) {
-    size_type s;
-    file.read((char *) &s, sizeof(s));
-    size_ = s;
-    file.read((char *) &s, sizeof(s));
-    from_ = s;
-    file.read((char *) &rtl_, sizeof(rtl_));
+inline Sequence Sequence::CreatePureCopy() const {
+    VERIFY(false);
+    return *this;
+}
 
-    //rtl_ = false;
-    //from_ = 0;
+bool Sequence::ReadHeader(std::istream& file) {
+    file.read((char *) &size_, sizeof(size_));
+
+    from_ = 0;
+    rtl_ = false;
 
     return !file.fail();
 }
 
 bool Sequence::WriteHeader(std::ostream& file) const {
-    size_type s = size_;
-    file.write((const char *) &s, sizeof(s));
-    s = from_;
-    file.write((const char *) &s, sizeof(s));
-    file.write((const char *) &rtl_, sizeof(rtl_));
+    VERIFY(from_ == 0);
+    VERIFY(!rtl_);
+
+    file.write((const char *) &size_, sizeof(size_));
 
     return !file.fail();
 }
@@ -431,19 +430,14 @@ bool Sequence::BinRead(std::istream& file) {
     return data_->BinRead(file, size_);
 }
 
-Sequence::Sequence(std::istream& file, bool dummy) {
-    ReadHeader(file);
-
-    data_->Release();
-
-    data_ = new SequenceData(size_);
-    data_->Grab();
-    data_->BinRead(file, size_);
-}
 
 bool Sequence::BinWrite(std::ostream& file) const {
-    WriteHeader(file);
+    if (from_ != 0 || rtl_) {
+        Sequence clear(this->str());
+        return clear.BinWrite(file);
+    }
 
+    WriteHeader(file);
     return data_->BinWrite(file, size_);
 }
 
