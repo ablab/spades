@@ -382,6 +382,10 @@ private:
 
 };
 
+inline ostream& operator<<(ostream& os, const SingleRead& read) {
+	os << "Single read name=" << read.name() << " sequence=" << read.GetSequenceString() << endl;
+	return os;
+}
 
 class SingleReadSeq {
 
@@ -422,6 +426,11 @@ public:
 private:
     Sequence seq_;
 };
+
+inline ostream& operator<<(ostream& os, const SingleReadSeq& read) {
+	os << "Single read sequence=" << read.sequence() << endl;
+	return os;
+}
 
 }
 

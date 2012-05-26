@@ -151,7 +151,7 @@ void ClipTips(gp_t& gp,
 		TipsProjector<gp_t> tip_projector(gp);
 		boost::function<void(EdgeId)> projecting_callback = boost::bind(
 			&TipsProjector<gp_t>::ProjectTip, tip_projector, _1);
-		removal_handler = boost::bind(Composition, _1, raw_removal_handler, projecting_callback);
+		removal_handler = boost::bind(Composition, _1, boost::ref(raw_removal_handler), projecting_callback);
 	}
     if (cfg::get().simp.tc.advanced_checks)
         ClipTipsUsingAdvancedChecks(gp.g, cfg::get().simp.tc, *cfg::get().ds.RL, removal_handler, iteration_count, i);

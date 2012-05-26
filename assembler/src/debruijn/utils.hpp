@@ -962,8 +962,6 @@ public:
     {
     }
 
-
-
     void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
         if (streams_.size() == 1) {
             FillUsualIndex(paired_index);

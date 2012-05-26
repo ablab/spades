@@ -237,12 +237,12 @@ public:
 //			return !Refine(!s);
 		MappingPath<EdgeId> mapping_path = mapper_.MapSequence(s);
 
-		if (mapping_path.size() == 0
+		if (mapping_path.size() == 0 || s.size() < graph_.k() + 1
 				|| mapping_path.front().second.initial_range.start_pos != 0
-				|| mapping_path.back().second.initial_range.end_pos != s.size()) {
+				|| mapping_path.back().second.initial_range.end_pos != s.size() - graph_.k()) {
 			//todo reduce concat unmapped beginning and end in future???
 			DEBUG(
-					"Won't fix because wasn't mapped or start/end on unprojected tip/erroneous connection");
+					"Won't fix because wasn't mapped or start/end fell on unprojected tip/erroneous connection");
 //			DEBUG(
 //					"For sequence of length " << s.size()
 //							<< " returning empty sequence");
@@ -264,6 +264,7 @@ public:
 					- graph_.length(path[path.size() - 1]) + path.end_pos();
 			//todo we can do it more accurately with usage of mapping_path
 			Sequence answer = path_sequence.Subseq(start, end);
+
 //			if (answer != s) {
 //				if (answer.size() < 1000) {
 //					TRACE(
