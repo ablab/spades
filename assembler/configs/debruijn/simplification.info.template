@@ -32,7 +32,7 @@ sc_simplification
 	{
 		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
 		estimate_max_coverage		true
-;		max_coverage			20.0
+		max_coverage			20.0
 	}
 	
 	; cheating erroneous connections remover
@@ -102,7 +102,7 @@ usual_simplification
 	{
 		max_ec_length_coefficient	10	; max_ec_length = k + max_ec_length_coefficient
         estimate_max_coverage		true
-;		max_coverage			40.0	; erroneous_connection < this * not_erroneous_connection_cov
+		max_coverage			40.0	; erroneous_connection < this * not_erroneous_connection_cov
 	}
 	
 	; cheating erroneous connections remover
