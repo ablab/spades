@@ -188,7 +188,7 @@ class PairedRead {
 
 };
 
-ostream& operator<<(ostream& os, const PairedRead& read) {
+inline ostream& operator<<(ostream& os, const PairedRead& read) {
 	os << "Single read first=" << read.first() << " second=" << read.second() << endl;
 	return os;
 }
@@ -277,7 +277,7 @@ public:
 
 };
 
-ostream& operator<<(ostream& os, const PairedReadSeq& read) {
+inline ostream& operator<<(ostream& os, const PairedReadSeq& read) {
 	os << "Paired read first=" << read.first() << " second=" << read.second() << endl;
 	return os;
 }
