@@ -13,11 +13,13 @@ cp assembler/README spades-$VERSION
 cp assembler/VERSION spades-$VERSION
 cp assembler/makefileDebian spades-$VERSION/makefile
 cp assembler/spades.py spades-$VERSION
+cp assembler/quast.py spades-$VERSION
 cp assembler/spades_config.info.template spades-$VERSION
 cp assembler/spades_download_binary.py spades-$VERSION
 cp assembler/spades_download_bayeshammer.py spades-$VERSION
 cp assembler/spades_init.py spades-$VERSION
-cp assembler/manual.html manual.html
+cp assembler/manual.html spades-$VERSION
+cp assembler/quality.html spades-$VERSION
 
 cd spades-$VERSION
 rm src/CMakeListsInternal.txt
