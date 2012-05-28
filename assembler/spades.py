@@ -757,6 +757,8 @@ def run_spades(cfg):
     count = 0
     prev_K = None
 
+    bin_reads_dir = os.path.join(cfg.working_dir, ".bin_reads")
+
     for K in cfg.iterative_K:
         count += 1
 
@@ -771,6 +773,13 @@ def run_spades(cfg):
 
         execution_home = os.path.join(cfg.compilation_dir, 'build' + str(K))
         command = os.path.join(execution_home, "debruijn", "spades") + " " + os.path.abspath(cfg_file_name)
+
+        if os.path.isdir(bin_reads_dir):
+            if glob.glob(os.path.join(bin_reads_dir, "*_cor*")):
+                for cor_filename in glob.glob(os.path.join(bin_reads_dir, "*_cor*")):
+                    cor_index = cor_filename.rfind("_cor")
+                    new_bin_filename = cor_filename[:cor_index] + cor_filename[cor_index + 4:]
+                    shutil.move(cor_filename, new_bin_filename)
 
         print("\n== Running assembler: " + command + "\n")
 
@@ -791,8 +800,7 @@ def run_spades(cfg):
     if glob.glob(os.path.join(latest, "*.sam")):
         sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs), cfg.project_name + ".sam")
         os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
-
-    bin_reads_dir = os.path.join(cfg.working_dir, ".bin_reads")
+    
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)
 
@@ -821,7 +829,7 @@ def run_quality(cfg):
     import quality
     quality.main(args, lib_dir=os.path.join(spades_home, "src/tools/quality/libs"))
     
-    return os.path.join(quality_output_dir, "quality.txt")
+    return os.path.join(quality_output_dir, "report.txt")
 
 if __name__ == '__main__':
     try:
