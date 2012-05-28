@@ -39,7 +39,7 @@ if (DEFINED static_build)
 endif()
 
 find_package(OpenMP)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgomp")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
 
 add_definitions(${OpenMP_CXX_FLAGS})
 add_definitions(-g3)
