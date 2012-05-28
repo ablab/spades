@@ -16,7 +16,7 @@ QUAST was tested on single-chromosomal reference genomes and may not work well o
 This manual will help you to run the tool and understand its output. QUAST is distributed within SPAdes release. 
 See <a href="manual.html">SPAdes manual</a> for downloading and installation details.
 <br>
-Our quality assessment tool uses <a href="http://www.plantagora.org/">Plantagora</a> and <a href="http://mummer.sourceforge.net/">MUMmer</a>.
+QUAST uses <a href="http://www.plantagora.org/">Plantagora</a> and <a href="http://mummer.sourceforge.net/">MUMmer</a>.
 </p>
 
 <a name="sec1"></a>
@@ -25,18 +25,19 @@ Our quality assessment tool uses <a href="http://www.plantagora.org/">Plantagora
 <a name="sec1.1"></a>
 <h3>1.1 Input data</h3>
 <p>
-    QUAST accepts assemblies and references in FASTA format. Files may be compressed with gzip.    
+    QUAST can work with assemblies and references in FASTA format. Files may be compressed with gzip.    
 <br><br>
-    You can specify files with genes and operons annotations. This files should be either in GFF format (versions 2 (http://www.sanger.ac.uk/resources/
-software/gff/spec.html and 3 (http://www.sequenceontology.org/gff3.shtml) are supported) or in plain TXT format with 4 tab-separated columns: 
+    You can specify files with genes and operons annotations. This files should be either in GFF format 
+(<a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">version 2</a> and <a href="http://www.sequenceontology.org/gff3.shtml">version 3</a> 
+are supported) or in plain TXT format with 4 tab-separated columns: 
 <ul>
     <li>the chromosome name (it should match the exact string in the reference file), </li>
     <li>gene or operon id, </li>
     <li>start position,</li> 
     <li>end postion.</li>
 </ul>
-The positions' coordinates are 1-based and if <code>start postion &lt; end postion</code> than that gene or operon is on the positive strand and it is on the
-negative strand otherwise.
+The positions' coordinates are 1-based and if <i>start postion</i> less than <i>end postion</i> than that gene or operon is on the positive strand, 
+otherwise it is on the negative strand.
 <br><br>
 You can find example of reference file, genes and operons (both in TXT and GFF ver.2 formats) annotations in your SPAdes installation directory in <code>test_dataset</code> subfolder. 
 These files are correspond to the SPAdes' toy dataset (first 1000 bp of E. coli).
@@ -55,7 +56,7 @@ These files are correspond to the SPAdes' toy dataset (first 1000 bp of E. coli)
 </code>
 </pre>
 
-    <p>Here is the description of options:</p>
+    <p>Here is available options:</p>
 
 <p>
     <code>-o &lt;output_dir&gt; </code></p>
@@ -109,16 +110,16 @@ These files are correspond to the SPAdes' toy dataset (first 1000 bp of E. coli)
 
 <p>QUAST computes various metrics and this section is intendend to describe them. 
 <br>
-Values of main metrics are presented in <code>&lt;QUAST_output_dir&gt;/quality.txt</code> file. 
-There are also tab-separated (<code>quality.tsv</code>, suitable for Google-docs) and transposed (all.txt, suitable for large monitors) versions of this file.
+Values of main metrics are presented in <code>&lt;QUAST_output_dir&gt;/report.txt</code> file. 
+There is also tab-separated version of this file in <code>&lt;QUAST_output_dir&gt;/report.tsv</code> (suitable for Google-docs).
 <br>
 Plots are presented in <code>&lt;QUAST_output_dir&gt;/plots.pdf</code> file.
 <br><br>
 Note:
 <ul>
-    <li>plots will be created only if you have <b>matplotlib</b> python library installed</li>
+    <li>plots will be created only if you have <a href="http://matplotlib.sourceforge.net/">matplotlib</a> python library installed,</li>
     <li>metrics based on the reference are computed only if the reference is given (see  <a href="#sec1.2">section 1.2</a>), </li>
-    <li>metrics concerned genes and operons are computed only if proper annotations files are given (see <a href="#sec1.2">section 1.2</a>), </li>
+    <li>metrics based on genes and operons are computed only if proper annotations files are given (see <a href="#sec1.2">section 1.2</a>), </li>
     <li>if <code>&lt;QUAST_output_dir&gt;</code> is not specified manually it is created automatically and symbolik link <code>latest</code> to that directory is created.</li> 
 </ul>
 </p> 
@@ -183,7 +184,7 @@ of equal quality in multiple locations on the reference. The value "X (Y)" means
 <p><b><i>NA50, NGA50, NA75, NGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp; like the same
 metrics without A but in this case we count lengths of aligned blocks instead of contigs lengths. 
 I.e. if a contig has a misassembly with respect to the reference, we break the contig into smaller pieces.
-Also, if a contig has bases that don't align to the reference, they are not counted in NA*, NGA*. </p>
+Also, if a contig has bases that don't align to the reference, they are not counted in NAx, NGAx. </p>
 
 <p><b><i>Mapped genome (%)</i></b>&nbsp;&nbsp; the ratio of total number of aligned bp in the assembly
 to the genome size. Short contigs (less than 500 bp) that map to multiple
@@ -244,13 +245,13 @@ This plot could be created only if the reference and genes annotations file are 
 
 <p>
     We will be thankful if you help us make QUAST better by sending your comments, bug reports, and suggestions
-    to <a href="mailto:spades.support@bioinf.spbau.ru">spades.support@bioinf.spbau.ru</a>.
+    to <a href="mailto:spades.support@bioinf.spbau.ru">quast.support@bioinf.spbau.ru</a>.
 </p>
 
 <p>
-    We kindly ask you to attach log <code>&lt;QUAST_output_dir&gt;/quality.log</code> or even archive of <code>&lt;QUAST_output_dir&gt;</code> directory if you have troubles running QUAST.
+    We kindly ask you to attach log <code>&lt;QUAST_output_dir&gt;/quality.log</code> or even archive of <code>&lt;QUAST_output_dir&gt;</code> if you have troubles running QUAST.
 <br>
-    Note that if you didn't specify <code>&lt;QUAST_output_dir&gt;</code> manually it was created with <code>results_&lt;datetime&gt;</code> name and symbolik link <code>latest</code> to that directory was created
+    Note that if you didn't specify <code>&lt;QUAST_output_dir&gt;</code> manually it was created with <code>results_&lt;datetime&gt;</code> name and symbolik link <code>latest</code> to that directory was created.
 </p>
 
 </body>
