@@ -19,7 +19,7 @@ error_correction
     tmp_dir                                           ; optional. <output_dir>/corrected/tmp is used if not specified
     qvoffset                                          ; optional. Either 33 or 64
     max_iterations      2                             ; optional. Default is 2
-    max_threads         16                            ; optional. Default is 16
+    max_threads         4                             ; optional. Default is 16
     max_memory          250                           ; optional. Default is 250 (in GB)
     gzip_output         true                          ; optional. Default is true
 }
