@@ -1,10 +1,20 @@
-spades (2.0.1) UNRELEASED; urgency=low
+spades (2.1.0) unstable; urgency=low
+
+  * New: Support multi-threading. 
+  * New: Improved algorithms.
+  * New: Command-line interface.
+  * Change: Quality assesment separated from the core pipeline.
+  * Removed: No support for debian and RPM packages.
+
+ -- Yakov Sirotkin <yasha@telamon.ru>  Mon, 28 May 2012 02:07:08 -0800
+
+spades (2.0.1) unstable; urgency=low
 
   * BUGFIX: Quality tool fixed. 
 
  -- Yakov Sirotkin <yasha@telamon.ru>  Thu, 26 Apr 2012 02:07:08 -0800
 
-spades (2.0.0) UNRELEASED; urgency=low
+spades (2.0.0) unstable; urgency=low
 
   * Initial release. 
 
