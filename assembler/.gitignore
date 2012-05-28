@@ -2,6 +2,7 @@ build/
 logs/
 output/
 spades_output/
+teamcity_precompiled/
 CMakeFiles/
 scripts/
 *.launch
