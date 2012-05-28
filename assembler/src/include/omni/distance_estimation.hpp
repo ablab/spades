@@ -74,7 +74,7 @@ protected:
 		return graph_;
 	}
 
-	const PairedInfoIndex<Graph>& histogram() {
+	const PairedInfoIndex<Graph>& histogram() const {
 		return histogram_;
 	}
 
@@ -83,7 +83,8 @@ protected:
 	}
 
 	vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2,
-			vector<pair<size_t, double> > estimated) {
+			const vector<pair<size_t, double> >& estimated) const {
+
 		vector<PairInfo<EdgeId>> result;
 		for (size_t i = 0; i < estimated.size(); i++) {
 			size_t left = i;
@@ -103,7 +104,7 @@ protected:
 	}
 
 	void AddToResult(PairedInfoIndex<Graph> &result,
-			vector<PairInfo<EdgeId> > clustered) {
+			const vector<PairInfo<EdgeId> >& clustered) const {
 		for (auto it = clustered.begin(); it != clustered.end(); ++it) {
 			result.AddPairInfo(*it);
 		}
@@ -199,6 +200,50 @@ public:
 			this->AddToResult(result, clustered);
 		}
 	}
+
+    virtual void EstimateParallel(PairedInfoIndex<Graph> &result, size_t nthreads) {
+        std::vector< std::pair<EdgeId, EdgeId> > edge_pairs;
+
+        INFO("Collecting edge pairs");
+
+        for (auto iterator = this->histogram().begin();
+                iterator != this->histogram().end(); ++iterator) {
+
+            edge_pairs.push_back(std::make_pair(iterator.first(), iterator.second()));
+        }
+
+        std::vector< PairedInfoIndex<Graph>* > buffer(nthreads);
+        buffer[0] = &result;
+        for (size_t i = 1; i < nthreads; ++i) {
+            buffer[i] = new PairedInfoIndex<Graph>(this->graph(), result.GetMaxDifference());
+        }
+
+        INFO("Processing");
+        #pragma omp parallel num_threads(nthreads)
+        {
+            #pragma omp for
+            for (size_t i = 0; i < edge_pairs.size(); ++i)
+            {
+                EdgeId first = edge_pairs[i].first;
+                EdgeId second = edge_pairs[i].second;
+
+                vector<PairInfo<EdgeId> > data = this->histogram().GetEdgePairInfo(first, second);
+                vector<size_t> forward = GetGraphDistances(first, second);
+
+                vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(this->graph().length(first), this->graph().length(second),
+                        data, forward/*, false*/);
+                vector<PairInfo<EdgeId> > clustered = ClusterResult(first, second,  estimated);
+
+                AddToResult(*buffer[omp_get_thread_num()], clustered);
+            }
+        }
+
+        INFO("Merging maps");
+        for (size_t i = 1; i < nthreads; ++i) {
+            buffer[0]->AddAll(*(buffer[i]));
+            delete buffer[i];
+        }
+    }
 };
 
 template<class Graph>

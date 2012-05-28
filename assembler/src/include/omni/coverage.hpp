@@ -14,7 +14,7 @@
 #ifndef COVERAGE_HPP_
 #define COVERAGE_HPP_
 
-#include <tr1/unordered_map>
+//#include <tr1/unordered_map>
 #include "logger/logger.hpp"
 #include "io/reader.hpp"
 #include "perfcounter.hpp"
@@ -25,7 +25,7 @@ template<class Graph>
 class CoverageIndex: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef map<EdgeId, int> map_type;
+	typedef unordered_map<EdgeId, int> map_type;
 
 private:
 

@@ -78,7 +78,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 					linkage_distance, max_distance);
 
 			paired_info_index raw_clustered_index(gp.g);
-			estimator.Estimate(raw_clustered_index);
+			estimator.EstimateParallel(raw_clustered_index, cfg::get().max_threads);
 			DEBUG("Distances estimated");
 
 			INFO("Normalizing weights");

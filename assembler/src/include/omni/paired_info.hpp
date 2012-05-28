@@ -375,6 +375,14 @@ public:
 			position_ = index_.data_.UpperBound(position_->first,
 					position_->second);
 		}
+
+		EdgeId first() const {
+		    return position_->first;
+		}
+
+		EdgeId second() const {
+            return position_->second;
+        }
 	};
 
 	EdgePairIterator begin() const {
@@ -388,6 +396,10 @@ public:
 	double GetMaxDifference() const {
 	    return max_difference_;
 	}
+
+//	const Graph& GetGraph() const {
+//	    return this->g();
+//	}
 
 	//begin-end insert size supposed
 	PairedInfoIndex(const Graph &g, double max_difference = 0.) :
