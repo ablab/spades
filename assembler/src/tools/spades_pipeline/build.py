@@ -82,13 +82,14 @@ def build_spades_n_copy(cfg, spades_home):
 
         str_k = str(K)
 
-        binary_file = os.path.join(os.getenv('HOME'), '.spades', 'release' + spades_version, 'bin', 'K' + str_k, 'spades')
+        binary_file = os.path.join(precompiled_folder, 'release' + spades_version, 'bin', 'K' + str_k, 'spades')
 
         if os.path.isfile(binary_file):
             dest = os.path.join(precompiled_folder, 'build' + str_k,  'debruijn')
             if not os.path.exists(dest):
                 os.makedirs(dest)
             shutil.copy2(binary_file, dest)
+            print("Downloaded SPAdes binary for k=" + str_k + " used instead of compilation.\n")
             continue
 
         lockFlag = os.path.join(precompiled_folder, "lock") + str_k
@@ -111,12 +112,13 @@ def build_hammer(cfg, spades_home):
     if not os.path.exists(precompiled_folder):
         os.makedirs(precompiled_folder)
 
-    binary_file = os.path.join(os.getenv('HOME'), '.spades', 'release' + spades_version, 'bayeshammer', 'hammer')
+    binary_file = os.path.join(precompiled_folder, 'release' + spades_version, 'bayeshammer', 'hammer')
     if os.path.isfile(binary_file):
         dest = os.path.join(precompiled_folder, 'build_hammer', 'hammer')
         if not os.path.exists(dest):
             os.makedirs(dest)
         shutil.copy2(binary_file, dest)
+        print("BayesHammer downloaded binary used instead of compilation.\n")
         return
 
     lockFlag = os.path.join(precompiled_folder, "lock_hammer")
