@@ -44,7 +44,7 @@
 
 char getQual(const KMerCount & kmc, int i) {
 	if (Globals::use_common_quality) return Globals::common_quality * kmc.second.count;
-	if (!kmc.second.qual.q.size()) {
+	if (kmc.second.count == 1) {
 		// if (Globals::blobquality[kmc.first.start() + i] < Globals::char_offset + 2) cout << "Zero! " << kmc.first.str() << endl;
 		return Globals::blobquality[kmc.first.start() + i] - Globals::char_offset;
 	}

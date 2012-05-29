@@ -88,13 +88,14 @@ int main(int argc, char * argv[]) {
 	try
 	{
 
+	TIMEDLN("Hey there");
 	string config_file = CONFIG_FILENAME;
 	if (argc > 1) config_file = argv[1];
 	TIMEDLN("Loading config from " << config_file.c_str());
 	cfg::create_instance(config_file);
 
+
 	// general config parameters
-	Globals::char_offset = (char)cfg::get().input_qvoffset;
 	Globals::use_common_quality = cfg::get().common_quality > 0;
 	Globals::common_quality = (char)cfg::get().common_quality;
 	Globals::common_kmer_errprob = 1.0;
@@ -140,6 +141,7 @@ int main(int argc, char * argv[]) {
     } else {
     	cfg::get_writable().input_qvoffset = *cfg::get().input_qvoffset_opt;
     }
+    Globals::char_offset = (char)cfg::get().input_qvoffset;
 
     // if we need to change single Ns to As, this is the time
     if (cfg::get().general_change_n_to_a && cfg::get().count_do) {

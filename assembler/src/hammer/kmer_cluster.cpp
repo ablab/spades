@@ -318,8 +318,12 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 			}
 		}
 	}
-	if (cfg::get().bayes_debug_output)
+	if (cfg::get().bayes_debug_output) {
+		#pragma omp critical
+		{
 		cout << "    fp.first=" << fp.first << "  fp.second=" << fp.second << "\n";
+		}
+	}
 	init[0] = fp.first; init[1] = fp.second;
 	for (uint32_t j=2; j<l; ++j) {
 		// to find each next center candidate, maximize total distance to previous centers
@@ -349,9 +353,12 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 
 
 	if (cfg::get().bayes_debug_output) {
+		#pragma omp critical
+		{
 		cout << "    centers:\n";
 		for (size_t i=0; i < centers.size(); ++i) {
 			cout << "    " << centers[i].first << "\n";
+		}
 		}
 	}
 
@@ -402,11 +409,14 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 				loglike[j] = logLikelihoodKMer(centers[j].first, k_[kmerinds[i]]);
 			}
 			if (cfg::get().bayes_debug_output) {
+				#pragma omp critical
+				{
 				cout << "      likelihoods for " << i << ": ";
 				for (size_t j=0; j < l; ++j) {
 					cout << loglike[j] << " ";
 				}
-				cout << "\n";
+				cout << endl;
+				}
 			}
 			int newInd = cfg::get().bayes_use_hamming_dist ?
 				 (min_element(dists.begin(), dists.end()) - dists.begin()) :
@@ -421,7 +431,10 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 			++centers[indices[i]].second.first;
 		}
 		if (cfg::get().bayes_debug_output) {
-			cout << "      total likelihood=" << cur_total << " as compared to previous " << total_likelihood << "\n";
+			#pragma omp critical
+			{
+			cout << "      total likelihood=" << cur_total << " as compared to previous " << total_likelihood << endl;
+			}
 		}
 		likelihood_improved = (cur_total > total_likelihood);
 		if ( likelihood_improved ) total_likelihood = cur_total;
@@ -459,11 +472,11 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		{
 		cout << "process_SIN with block size=" << block.size() << " total kmers=" << k_.size() << endl << "block:";
 		for (size_t i = 0; i < block.size(); i++) {
-			cout << " " << i;
+			cout << " " << block[i];
 		}
 		cout << endl << "  kmers:\n";
 		for (size_t i = 0; i < block.size(); i++) {
-			cout << k_[i].first.str() << endl;
+			cout << k_[block[i]].first.str() << endl;
 		}
 		}
 	}
@@ -489,7 +502,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	if (cfg::get().bayes_debug_output) {
 		#pragma omp critical
 		{
-			cout << "\nClustering an interesting block.\n";
+			cout << "\nClustering an interesting block." << endl;
 		}
 	}
 
@@ -509,7 +522,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				cout << "    indices: ";
 				for (uint32_t i = 0; i < origBlockSize; i++) cout << indices[i] << " ";
 				cout << "\n";
-				cout << "  likelihood with " << l << " clusters is " << curLikelihood << "\n";
+				cout << "  likelihood with " << l << " clusters is " << curLikelihood << endl;
 			}
 		}
 		if (curLikelihood <= bestLikelihood && curLikelihood > -std::numeric_limits<double>::infinity()) {
@@ -540,11 +553,11 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 			if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
 			cout << "\n";
 		}
-		cout << "The entire block:\n";
+		cout << "The entire block:" << endl;
 		for (uint32_t i = 0; i < origBlockSize; i++) {
 			cout << "  " << k_[block[i]].first.str().data() << " " << k_[block[i]].first.start() << "\n";
 			cout << "  " << k_[block[i]].first.strQual().data() << " " << k_[block[i]].second.totalQual << "\n";
-			cout << "  "; for (uint32_t j=0; j<K; ++j) cout << getQual(k_[block[i]], j) << " "; cout << "\n";
+			cout << "  "; for (uint32_t j=0; j<K; ++j) cout << (int)getQual(k_[block[i]], j) << " "; cout << "\n";
 		}
 		cout << endl;
 		}
@@ -587,7 +600,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
 				cout << "\n";
 			}
-			cout << "\n";
+			cout << endl;
 		}
 	}
 
