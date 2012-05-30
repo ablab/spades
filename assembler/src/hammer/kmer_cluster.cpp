@@ -782,11 +782,13 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 				cur_total_size += cur_class.size();
 			}
 		}
-		TIMEDLN("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " in " << nthreads_ << " threads.");
+		int bayes_nthreads = nthreads_;
+		bayes_nthreads = 1; // FOR RELEASE V2.1 ONLY
+		TIMEDLN("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " in " << bayes_nthreads << " threads.");
 
 		VERIFY(blocksInPlace.size() >= i_nontriv && curClasses.size() >= i_nontriv);
 
-		#pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_)
+		#pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(bayes_nthreads)
 		for (size_t i=0; i < i_nontriv; ++i) {
 			blocksInPlace[i].clear();
 			process_block_SIN(curClasses[i], blocksInPlace[i]);
