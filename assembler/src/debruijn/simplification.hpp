@@ -191,8 +191,9 @@ void save_simplification(conj_graph_pack& gp) {
 		write_estimated_params(p.string());
 	}
 
-	//todo temporary solution!!!
-	OutputContigs(gp.g, cfg::get().additional_contigs);
+	OutputContigs(gp.g, cfg::get().additional_contigs
+			, cfg::get().use_unipaths, cfg::get().simp.tec.plausibility_length
+			/*conj_graph_pack::k_value * 3*/);
 
 	if (!cfg::get().paired_mode) {
 		OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");

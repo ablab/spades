@@ -49,7 +49,7 @@ private:
 	int id_;
 	double coverage_;
 public:
-	osequencestream_cov(const string& filename): id_(0) {
+	osequencestream_cov(const string& filename): id_(0), coverage_(0.) {
 		ofstream_.open(filename.c_str());
 	}
 

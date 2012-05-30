@@ -400,6 +400,7 @@ public:
 	bool compute_paths_number;
 
 	bool use_additional_contigs;
+	bool use_unipaths;
 //	bool etalon_graph_mode;
 	std::string additional_contigs;
 
@@ -592,7 +593,6 @@ inline void load(debruijn_config::gap_closer& gc,
 	load(gc.use_extended_mapper , pt, "use_extended_mapper" );
 	load(gc.weight_threshold    , pt, "weight_threshold"    );
 }
-
 
 inline void load(debruijn_config::SAM_writer& sw,
 		boost::property_tree::ptree const& pt, bool complete) {
@@ -787,6 +787,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 //	load(cfg.etalon_graph_mode, pt, "etalon_graph_mode");
 	load(cfg.use_additional_contigs, pt, "use_additional_contigs");
+	load(cfg.use_unipaths, pt, "use_unipaths");
 
 	load(cfg.additional_contigs, pt, "additional_contigs");
 

@@ -56,6 +56,9 @@ etalon_graph_mode false
 ; iterative mode switcher, activates additional contigs usage
 use_additional_contigs false
 
+; use unipaths as additional contigs instead of just graph edges
+use_unipaths false
+
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
 paired_mode true
 
@@ -169,3 +172,4 @@ graph_read_corr
 	output_dir corrected_contigs/
 	binary true
 }
+

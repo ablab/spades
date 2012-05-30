@@ -10,6 +10,7 @@
 #include "statistics.hpp"
 #include "new_debruijn.hpp"
 #include "graphio.hpp"
+#include "graph_read_correction.hpp"
 #include "io/easy_reader.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/distance_estimation.hpp"
@@ -624,26 +625,75 @@ int PrintGraphComponents(const string& file_name, graph_pack& gp,
 	return (cnt - 1);
 }
 
+template<class Graph>
+vector<typename Graph::EdgeId> Unipath(const Graph& g, typename Graph::EdgeId e) {
+	typedef typename Graph::EdgeId EdgeId;
+	UniquePathFinder<Graph> unipath_finder(g);
+	vector<EdgeId> answer = unipath_finder.UniquePathBackward(e);
+	vector<EdgeId> forward = unipath_finder.UniquePathForward(e);
+	for (size_t i = 1; i < forward.size(); ++i) {
+		answer.push_back(forward[i]);
+	}
+	return answer;
+}
+
+template<class Graph>
+double AvgCoverage(const Graph& g,
+		const vector<typename Graph::EdgeId>& edges) {
+	double total_cov = 0.;
+	size_t total_length = 0;
+	for (auto it = edges.begin(); it != edges.end(); ++it) {
+		total_cov += g.coverage(*it) * g.length(*it);
+		total_length += g.length(*it);
+	}
+	return total_cov / total_length;
+}
+
+template<class Graph>
+bool PossibleECSimpleCheck(const Graph& g
+		, typename Graph::EdgeId e) {
+	return g.OutgoingEdgeCount(g.EdgeStart(e)) > 1 && g.IncomingEdgeCount(g.EdgeEnd(e)) > 1;
+}
+
+template<class Graph>
+void ReportEdge(osequencestream_cov& oss
+		, const Graph& g
+		, typename Graph::EdgeId e
+		, bool output_unipath = false
+		, size_t solid_edge_length_bound = 0) {
+	typedef typename Graph::EdgeId EdgeId;
+	if (!output_unipath || (PossibleECSimpleCheck(g, e) && g.length(e) <= solid_edge_length_bound)) {
+		oss << g.coverage(e);
+		oss << g.EdgeNucls(e);
+	} else {
+		vector<EdgeId> unipath = Unipath(g, e);
+		oss << AvgCoverage(g, unipath);
+		oss << MergeSequences(g, unipath);
+	}
+}
+
 void OutputContigs(NonconjugateDeBruijnGraph& g,
-		const string& contigs_output_filename) {
+		const string& contigs_output_filename,
+		bool output_unipath = false,
+		size_t solid_edge_length_bound = 0) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	osequencestream_cov oss(contigs_output_filename);
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		oss << g.coverage(*it);
-		oss << g.EdgeNucls(*it);
+		ReportEdge(oss, g, *it, output_unipath, solid_edge_length_bound);
 	}
 	DEBUG("Contigs written");
 }
 
 void OutputContigs(ConjugateDeBruijnGraph& g,
-		const string& contigs_output_filename) {
+		const string& contigs_output_filename,
+		bool output_unipath = false,
+		size_t solid_edge_length_bound = 0) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	osequencestream_cov oss(contigs_output_filename);
 	set<ConjugateDeBruijnGraph::EdgeId> edges;
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		if (edges.count(*it) == 0) {
-			oss << g.coverage(*it);
-			oss << g.EdgeNucls(*it);
+			ReportEdge(oss, g, *it, output_unipath, solid_edge_length_bound);
 			edges.insert(g.conjugate(*it));
 		}
 		//		oss << g.EdgeNucls(*it);
