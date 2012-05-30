@@ -35,7 +35,7 @@ def prepare_config_bh(filename, cfg):
     subst_dict["general_max_iterations"]    = cfg.max_iterations
     subst_dict["general_max_nthreads"]      = cfg.max_threads
     subst_dict["count_merge_nthreads"]      = cfg.max_threads
-    subst_dict["bayes_nthreads"]            = cfg.max_threads
+    subst_dict["bayes_nthreads"]            = 1
     subst_dict["expand_nthreads"]           = cfg.max_threads
     subst_dict["correct_nthreads"]          = cfg.max_threads
     subst_dict["general_hard_memory_limit"] = cfg.max_memory
