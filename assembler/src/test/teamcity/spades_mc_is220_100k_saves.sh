@@ -31,7 +31,7 @@ do
             if [ $errlvl -eq 1 ]; then
                 echo "^^^^^^^ it was $f" >> diff_with_etalon.txt
                 echo "BAD: difference found in $f"
-            elif
+            else
                 echo "BAD: unable to compare with $f"
             fi
             (( diffs += 1 ))
