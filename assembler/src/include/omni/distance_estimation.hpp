@@ -124,10 +124,10 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 
 	const size_t max_distance_;
 
-	vector<pair<size_t, double> > EstimateEdgePairDistances(size_t first_len, size_t second_len,
-			vector<PairInfo<EdgeId> > data,
+	vector<pair<size_t, double>> EstimateEdgePairDistances(size_t first_len, size_t second_len,
+			vector<PairInfo<EdgeId>> data,
 			vector<size_t> raw_forward) {
-		vector<pair<size_t, double> > result;
+		vector<pair<size_t, double>> result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());
 		vector<size_t> forward;
@@ -173,6 +173,38 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 		return result;
 	}
 
+	pair<EdgeId, EdgeId> ConjugatePair(EdgeId first, EdgeId second) {
+		return make_pair(this->graph().conjugate(second), this->graph().conjugate(first));
+	}
+
+	PairInfo<EdgeId> ConjugateInfo(const PairInfo<EdgeId>& pair_info) {
+		return PairInfo<EdgeId>(
+				this->graph().conjugate(pair_info.second),
+				this->graph().conjugate(pair_info.first),
+				pair_info.d + this->graph().length(pair_info.second)
+						- this->graph().length(pair_info.first),
+				pair_info.weight, pair_info.variance);
+	}
+
+	vector<PairInfo<EdgeId>> ConjugateInfos(const vector<PairInfo<EdgeId>>& data) {
+		vector<PairInfo<EdgeId>> answer;
+		for (auto it = data.begin(); it != data.end(); ++it) {
+			answer.push_back(ConjugateInfo(*it));
+		}
+		return answer;
+	}
+
+	void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) {
+		if (make_pair(first, second) <= ConjugatePair(first, second)) {
+			vector<size_t> forward = this->GetGraphDistances(first, second);
+			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(this->graph().length(first), this->graph().length(second),
+				data, forward/*, false*/);
+			vector<PairInfo<EdgeId>> res = ClusterResult(first, second, estimated);
+			this->AddToResult(result, res);
+			this->AddToResult(result, ConjugateInfos(res));
+		}
+	}
+
 public:
 	DistanceEstimator(const Graph &graph,
 			const PairedInfoIndex<Graph>& histogram,
@@ -186,18 +218,9 @@ public:
 	}
 
 	virtual void Estimate(PairedInfoIndex<Graph> &result) {
-		for (auto iterator = this->histogram().begin();
-				iterator != this->histogram().end(); ++iterator) {
-			vector<PairInfo<EdgeId> > data = *iterator;
-			EdgeId first = data[0].first;
-			EdgeId second = data[0].second;
-			vector<size_t> forward = this->GetGraphDistances(first, second);
-
-			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(this->graph().length(first), this->graph().length(second),
-					data, forward/*, false*/);
-			vector<PairInfo<EdgeId> > clustered = ClusterResult(first, second,
-					estimated);
-			this->AddToResult(result, clustered);
+		for (auto it = this->histogram().begin();
+				it != this->histogram().end(); ++it) {
+			ProcessEdgePair(it.first(), it.second(), *it, result);
 		}
 	}
 
@@ -226,15 +249,7 @@ public:
             {
                 EdgeId first = edge_pairs[i].first;
                 EdgeId second = edge_pairs[i].second;
-
-                vector<PairInfo<EdgeId> > data = this->histogram().GetEdgePairInfo(first, second);
-                vector<size_t> forward = GetGraphDistances(first, second);
-
-                vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(this->graph().length(first), this->graph().length(second),
-                        data, forward/*, false*/);
-                vector<PairInfo<EdgeId> > clustered = ClusterResult(first, second,  estimated);
-
-                AddToResult(*buffer[omp_get_thread_num()], clustered);
+                ProcessEdgePair(first, second, this->histogram().GetEdgePairInfo(first, second), *buffer[omp_get_thread_num()]);
             }
         }
 
