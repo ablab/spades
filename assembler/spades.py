@@ -787,9 +787,11 @@ def run_spades(cfg):
 
         latest = os.path.join(cfg.working_dir, "K%d" % (K), "latest")
         latest = os.readlink(latest)
-        latest = os.path.join(cfg.working_dir, "K%d" % (K), latest)
-        #os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
-        os.symlink(latest, os.path.join(cfg.working_dir, "link_K%d" % (K)))  # python2.4 doesn't support os.path.relpath
+        latest = os.path.join("K%d" % (K), latest)
+        os.symlink(latest, os.path.join(cfg.working_dir, "link_K%d" % (K)))
+        latest = os.path.join(cfg.working_dir, latest)
+        # python2.4 doesn't support os.path.relpath
+        # os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
 
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.developer_mode:
