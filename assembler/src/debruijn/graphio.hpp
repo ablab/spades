@@ -238,6 +238,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 	fprintf(file, "%ld\n", to_save.size());
 
 	for (auto it = to_save.begin(); it != to_save.end(); ++it) {
+		if (it->d < 0) { continue; }
 		fprintf(file, "%d %d %.2f %.2f %.2f .\n",
 				int_ids_.ReturnIntId(it->first),
 				int_ids_.ReturnIntId(it->second), it->d, it->weight,
@@ -645,6 +646,10 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
 		PairInfo<typename Graph::EdgeId> p_info(
 				id_handler_.ReturnEdgeId(first_real_id),
 				id_handler_.ReturnEdgeId(second_real_id), d, w, v);
+		paired_index.AddPairInfo(p_info, false);
+		PairInfo<typename Graph::EdgeId> p_info(
+				id_handler_.ReturnEdgeId(second_real_id),
+				id_handler_.ReturnEdgeId(first_real_id), -d, w, v);
 		paired_index.AddPairInfo(p_info, false);
 	}DEBUG("PII SIZE " << paired_index.size());
 	fclose(file);
