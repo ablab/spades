@@ -643,14 +643,18 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
 			continue;
 		TRACE(
 				id_handler_.ReturnEdgeId(first_real_id)<<" "<< id_handler_.ReturnEdgeId(second_real_id)<<" "<< d<<" "<< w);
-		PairInfo<typename Graph::EdgeId> p_info(
+		{ 
+			PairInfo<typename Graph::EdgeId> p_info(
 				id_handler_.ReturnEdgeId(first_real_id),
 				id_handler_.ReturnEdgeId(second_real_id), d, w, v);
-		paired_index.AddPairInfo(p_info, false);
-		PairInfo<typename Graph::EdgeId> p_info(
+			paired_index.AddPairInfo(p_info, false);
+		}
+		{
+			PairInfo<typename Graph::EdgeId> p_info(
 				id_handler_.ReturnEdgeId(second_real_id),
 				id_handler_.ReturnEdgeId(first_real_id), -d, w, v);
-		paired_index.AddPairInfo(p_info, false);
+			paired_index.AddPairInfo(p_info, false);
+		}
 	}DEBUG("PII SIZE " << paired_index.size());
 	fclose(file);
 }
