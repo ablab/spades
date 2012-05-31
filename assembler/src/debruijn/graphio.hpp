@@ -229,6 +229,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 	for (auto it = component_.e_begin(); it != component_.e_end(); ++it) {
 		Infos infos = paired_index.GetEdgeInfo(*it);
 		for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
+			if (info_it->d < 0) { continue; }
 			if (component_.contains(info_it->second)) {
 				to_save.push_back(*info_it);
 			}
@@ -238,7 +239,6 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 	fprintf(file, "%ld\n", to_save.size());
 
 	for (auto it = to_save.begin(); it != to_save.end(); ++it) {
-		if (it->d < 0) { continue; }
 		fprintf(file, "%d %d %.2f %.2f %.2f .\n",
 				int_ids_.ReturnIntId(it->first),
 				int_ids_.ReturnIntId(it->second), it->d, it->weight,
