@@ -23,7 +23,7 @@ pushd ../../../data
 ./link_teamcity.sh
 popd
 
-echo "### PRINTING CODE TO BE EXECUTED ###"
+echo "### PRINTING CODE TO BE EXECUTED: $1 ###"
 
 cat $1
 
