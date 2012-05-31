@@ -26,9 +26,14 @@ do
     do
         set +e
         diff $f ../../../$etalon/$f >> diff_with_etalon.txt
-        if [ $? -eq 1 ]; then
-            echo "^^^^^^^ it was $f" >> diff_with_etalon.txt
-            echo "BAD: difference found in $f"
+        errlvl=$?
+        if [ $errlvl -ne 0 ]; then
+            if [ $errlvl -eq 1 ]; then
+                echo "^^^^^^^ it was $f" >> diff_with_etalon.txt
+                echo "BAD: difference found in $f"
+            elif
+                echo "BAD: unable to compare with $f"
+            fi
             (( diffs += 1 ))
         fi
         set -e
