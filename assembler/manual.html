@@ -27,7 +27,7 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 
 <h3>1.1 SPAdes tar.gz file</h3>
 
-<p>You can download <a href="http://spades.bioinf.spbau.ru/release2.1.0/spades_2.1.0.tar.gz">SPAdes tar.gz</a> and extract it:
+<p>To download <a href="http://spades.bioinf.spbau.ru/release2.1.0/spades_2.1.0.tar.gz">SPAdes tar.gz</a> and extract it:
 </p>
 
 <pre  class="code">
@@ -53,7 +53,8 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 
 <h3>1.2 Downloading binaries</h3>
 
-<p>If you want to run SPAdes with default parameters you download the required binaries with the following scripts: </p>
+<p>Precompiled SPAdes binaries for the default parameters may be downloaded with the following
+    scripts: </p>
 
 <pre class="code">
 <code>
@@ -62,15 +63,25 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 </code>
 </pre>
 
-<p>It will download binaries to <code>build/release2.1.0</code> directory.
-SPAdes uses binaries optimized for each k value and you can download binaries
-for the required k values with <code>./spades_download_binary.py</code> script using space-separated values of k as an argument.</p>
+<p>This will download binaries to <code>build/release2.1.0</code> directory.
+    SPAdes  uses binaries optimized for each value of k.  You may download binaries
+    for the required values of k with the script
+</p>
+
+<pre class="code">
+<code>
+    ./spades_download_binary.py k1 k2
+</code>
+</pre>
+
+<p>
+ using space-separated values of k as an argument.</p>
 
 <a name="sec1.3"></a>
 <h3>1.3 Testing your installation</h3>
 
 <p>
-For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of E. coli). If you run <code>spades.py</code> with parameter <code>--test</code>
+For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of E. coli). If you run <code>spades.py</code> with the parameter <code>--test</code>
 </p>
 
 <pre class="code">
@@ -116,20 +127,20 @@ Thank you for using SPAdes!
 
 <h3>2.2 SPAdes pipeline</h3>
 <p>
-    SPAdes has two stages: error correction by <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> and genome assembly. By default all the
-    results are stored in <code>spades_output</code> directory. For each dataset SPAdes creates separate directory <code>&lt;project_name></code> in <code>spades_output</code>.
-    Corrected reads are stored in <code>corrected</code> subdirectory in <code>*.fastq.qz</code> files.
-    The resulting contigs are stored in <code>contigs</code> subdirectory in <code>&lt;project_name>.fasta</code> file. If the
+    SPAdes has two stages: error correction by <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> and genome assembly. By default, all the
+    results are stored in the directory <code>spades_output</code>. For each dataset, SPAdes creates a separate directory <code>&lt;project_name></code> in <code>spades_output</code>.
+    Corrected reads are stored in the subdirectory <code>corrected</code> in <code>*.fastq.qz</code> files.
+    The resulting contigs are stored in the subdirectory <code>contigs</code>  in <code>&lt;project_name>.fasta</code> file. If the
     <code>--generate-sam-file</code> option was set the symlink to the <code>&lt;project_name>.sam</code> file also created in the same directory.
 </p>
 
 <p>
-    If SPAdes finds the corrected reads it asks user whether it should start error correction again. By default we do not re-run error correction and we start the assembly in 10 seconds
+    If SPAdes finds the corrected reads, it asks the user whether it should start error correction again. By default, we do not re-run error correction and we start the assembly in 10 seconds
     unless user says otherwise.
 </p>
 
 <p>
-    There are two ways to run SPAdes for you dataset you can specify the parameters from the command line or provide the configuration
+    There are two ways to run SPAdes for you dataset: you can specify the parameters from the command line or provide the configuration
     file as the only <code>./spades.py</code> parameter.
 </p>
 
@@ -138,7 +149,7 @@ Thank you for using SPAdes!
 <h3>2.3 SPAdes command line options </h3>
 
 <p>
-    SPAdes can be run using command line with the following format:
+    SPAdes is run from the command line as follows:
 </p>
 
 <pre class="code">
@@ -152,12 +163,11 @@ Thank you for using SPAdes!
 <p>
     <code>-n &lt;project_name></code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;The required option that sets the name of the project.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;A required option that sets the name of the project.</p>
 
 <p>
     <code>-o &lt;output_dir> </code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Allows to change the output directory from <code>spades_output</code>
-    to the desired destination.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Specify the output directory. Default: <code>spades_output</code>.
 </p>
 
 <p><code>--sc</code> </p>
@@ -176,30 +186,30 @@ Thank you for using SPAdes!
 <p>&nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads</p>
 
 <p><code>--generate-sam-file</code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Forces SPAdes to generate SAM-file. See more details in <a href="#sec3">section 3</a>.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Generate a SAM file. See more details in <a href="#sec3">section 3</a>.</p>
 
 <p><code>-t &lt;int></code> (or <code>--threads &lt;int></code>)</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 16.</p>
 
 <p><code>-m &lt;int></code> (or <code>--memory &lt;int></code>)</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Sets the memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb.
-    Due to technical reasons the actual physical memory consumed will be smaller than this limit.</p>
+    Due to technical reasons, the actual physical memory consumed will be smaller than this limit.</p>
 
 <p><code>--tmp-dir &lt;dirname></code></p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Set the directory for error correction's temporary files.  The default value is <code>&lt;output_dir>/&lt;project_name>/corrected/tmp</code>.</p>
 
 
 <p><code>-k &lt;int,int,...> </code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of k-mer sizes (all values must be odd). Default is 21,33,55.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of increasing k-mer sizes (all values must be odd). Default is 21,33,55.</p>
 
 <p><code>-i &lt;int></code> (or <code>--iterations &lt;int></code>)</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for the error correction. The default value is 2.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for error correction. The default value is 2.</p>
 
 <p><code>--phred-offset  &lt;33 or 64> </code> </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.</p>
 
 <p><code>--only-error-correction</code> </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;With this option we run only error correction, without assembler.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;With this option we run only error correction, without the assembler.</p>
 
 <p><code>--only-assembler</code> </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;With this option we run only assembler, without error correction.</p>
@@ -222,18 +232,18 @@ Thank you for using SPAdes!
 <h3>2.4 Preparing configuration files</h3>
 
 <p>
-You can find the configuration file <code>spades_config.info</code> for the toy dataset from <a href="#sec1.3">section 1.3</a> in the directory you extracted the archive (see section 1.1).
-You can use this file as the template for your datasets. In  this file in each line all text after the first semicolon is a comment.
+You can find the configuration file <code>spades_config.info</code> for the toy dataset from <a href="#sec1.3">section 1.3</a> in the directory where you extracted the archive (see section 1.1).
+You can use this file as the template for your datasets. In  this file, on  each line, all text after the first semicolon is a comment.
 </p>
 
 <p>
-    The configuration file starts with the common parameters for the SPAdes run. We do recommend to set the <code>project_name</code> parameter that specifies the directory
+    The configuration file starts with the common parameters for the SPAdes run. We recommend setting the <code>project_name</code> parameter that specifies the directory
     and names for output files. After that there is a dataset section that contains the information about input reads. This section is required and you need to specify
     either <code>paired_reads</code> or <code>single_reads</code> or both.
 </p>
 
 <p>
-    The next two sections are <code>error_correction</code> and <code>assembly</code>. If you want to skip one of these stages you can
+    The next two sections are <code>error_correction</code> and <code>assembly</code>. If you want to skip one of these stages, you can
     remove or rename or comment it.
 </p>
 
@@ -242,16 +252,15 @@ You can use this file as the template for your datasets. In  this file in each l
 <h3>2.5 Supporting files and directories</h3>
 
 <p>
-    SPAdes stores compiled binaries in <code>build</code> directory and reuses them. If you want to save disk space or just want to be sure that
-    you use recently compiled binaries you can just delete this directory. But we suppose that you don't care about it.
+    SPAdes stores compiled binaries in the directory <code>build</code> and reuses them. To save disk space, or to force SPAdes to recompile the binaries, just
+    delete this directory.  Most users will not need to do this.
 </p>
 
 <p>
-    For each SPAdes run we create directory <code>spades_&lt;date_time></code> in <code>spades_output/&lt;project_name></code>. It contains internal configs,
-    logs and intermediate results for different k values. Also we have symbolic links <code>latest</code> and <code>latest_success</code> to the directories
-    for latest and latest successful runs.
+    For each SPAdes run, we create the directory <code>spades_&lt;date_time></code> in <code>spades_output/&lt;project_name></code>. It contains internal configs,
+    logs and intermediate results for different values of k. We also have symbolic links <code>latest</code> and <code>latest_success</code> to the directories
+    for the latest and the latest successful runs.
 </p>
-
 
 
 <a name="sec3"></a>
@@ -262,9 +271,10 @@ You can use this file as the template for your datasets. In  this file in each l
 </p>
 
 <p>
-    SPAdes can generate SAM-file for further processing, but you need to set the <code>--generate-sam-file</code> option in the command line,
-    because of  SAM-files are really big. SAM-file contains information about the alignment of the original reads to the resulting
-    contigs and we use <a href="http://bioinf.scri.ac.uk/tablet/">Tablet</a> [3] to visualize it.
+    SPAdes can generate a SAM file for further processing, but SAM files are
+    very large, so you need to set the <code>--generate-sam-file</code> option in the command line.
+    SAM file contains information about the alignment of the original reads to the resulting
+    contigs.  We recommend using <a href="http://bioinf.scri.ac.uk/tablet/">Tablet</a> [3] to visualize  these alignments.
 </p>
 
 <p>
@@ -287,7 +297,7 @@ You can use this file as the template for your datasets. In  this file in each l
 <p>
     We kindly ask you to attach file <code>params.txt</code>
     and logs <code>corrected/correction.log</code> and <code>contigs/assembly.log</code> if you have troubles running SPAdes.
-    These files are placed at <code>&lt;output_dir>/&lt;project_name></code> directory.
+    These files are placed in the directory <code>&lt;output_dir>/&lt;project_name></code>.
 </p>
 
 
