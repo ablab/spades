@@ -14,7 +14,7 @@
 QUAST was tested on single-chromosomal reference genomes and may not work well on the multi-chromosomal ones. 
 <br>
 This manual will help you to run the tool and understand its output. QUAST is distributed within SPAdes release. 
-See <a href="manual.html">SPAdes manual</a> for downloading and installation details.
+See <a href="manual.html">SPAdes manual</a> for download and installation details.
 <br>
 QUAST uses <a href="http://www.plantagora.org/">Plantagora</a> and <a href="http://mummer.sourceforge.net/">MUMmer</a>.
 </p>
@@ -36,18 +36,18 @@ are supported) or in plain TXT format with 4 tab-separated columns:
     <li>start position,</li> 
     <li>end postion.</li>
 </ul>
-The positions' coordinates are 1-based and if <i>start postion</i> less than <i>end postion</i> than that gene or operon is on the positive strand, 
+The coordinates are 1-based and if <i>start postion</i> less than <i>end postion</i> than that gene or operon is on the positive strand, 
 otherwise it is on the negative strand.
 <br><br>
-You can find example of reference file, genes and operons (both in TXT and GFF ver.2 formats) annotations in your SPAdes installation directory in <code>test_dataset</code> subfolder. 
-These files are correspond to the SPAdes' toy dataset (first 1000 bp of E. coli).
+You can find example of reference file, genes and operons annotations (both in TXT and GFF ver.2 formats) in your SPAdes installation directory in the subdirectory <code>test_dataset</code>. 
+These files are correspond to the toy dataset distributed with SPAdes (first 1000 bp of E. coli).
 </p>
 
 <a name="sec1.2"></a>
 <h3>1.2 Command line options</h3>
 
 <p>
-    QUAST can be run using command line with the following format:
+    QUAST is run from the command line as follows:
 </p>
 
 <pre class="code">
@@ -60,8 +60,7 @@ These files are correspond to the SPAdes' toy dataset (first 1000 bp of E. coli)
 
 <p>
     <code>-o &lt;output_dir&gt; </code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Allows to change the output directory from default <code>results_&lt;datetime&gt;</code>
-    to the desired destination.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Specify the output directory. The default value is <code>results_&lt;date_time&gt;</code>.
 </p>
 
 <p>
@@ -110,17 +109,17 @@ These files are correspond to the SPAdes' toy dataset (first 1000 bp of E. coli)
 
 <p>QUAST computes various metrics and this section is intendend to describe them. 
 <br>
-Values of main metrics are presented in <code>&lt;QUAST_output_dir&gt;/report.txt</code> file. 
+Values of main metrics are presented in the file <code>&lt;QUAST_output_dir&gt;/report.txt</code>. 
 There is also tab-separated version of this file in <code>&lt;QUAST_output_dir&gt;/report.tsv</code> (suitable for Google-docs).
 <br>
-Plots are presented in <code>&lt;QUAST_output_dir&gt;/plots.pdf</code> file.
+Plots are presented in the file <code>&lt;QUAST_output_dir&gt;/plots.pdf</code>.
 <br><br>
 Note:
 <ul>
     <li>plots will be created only if you have <a href="http://matplotlib.sourceforge.net/">matplotlib</a> python library installed,</li>
-    <li>metrics based on the reference are computed only if the reference is given (see  <a href="#sec1.2">section 1.2</a>), </li>
+    <li>metrics based on reference genome are computed only if reference is given (see  <a href="#sec1.2">section 1.2</a>), </li>
     <li>metrics based on genes and operons are computed only if proper annotations files are given (see <a href="#sec1.2">section 1.2</a>), </li>
-    <li>if <code>&lt;QUAST_output_dir&gt;</code> is not specified manually it is created automatically and symbolik link <code>latest</code> to that directory is created.</li> 
+    <li>if the output directory is not specified manually it is created automatically and symbolik link <code>latest</code> to that directory is created.</li> 
 </ul>
 </p> 
 
@@ -251,7 +250,7 @@ This plot could be created only if the reference and genes annotations file are 
 <p>
     We kindly ask you to attach log <code>&lt;QUAST_output_dir&gt;/quast.log</code> or even archive of <code>&lt;QUAST_output_dir&gt;</code> if you have troubles running QUAST.
 <br>
-    Note that if you didn't specify <code>&lt;QUAST_output_dir&gt;</code> manually it was created with <code>results_&lt;datetime&gt;</code> name and symbolik link <code>latest</code> to that directory was created.
+    Note that if you didn't specify <code>&lt;QUAST_output_dir&gt;</code> manually it was created with <code>results_&lt;date_time&gt;</code> name and symbolik link <code>latest</code> to that directory was created.
 </p>
 
 </body>
