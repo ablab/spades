@@ -201,7 +201,7 @@ void RemoveBulges(Graph &g,
 	if (additional_length_bound != 0 && additional_length_bound < max_length) {
 		max_length = additional_length_bound;
 	}
-	EditDistanceTrackingCallback<Graph> callback(g);
+//	EditDistanceTrackingCallback<Graph> callback(g);
 	omnigraph::BulgeRemover<Graph> bulge_remover(
 			g,
 			max_length,
@@ -210,8 +210,8 @@ void RemoveBulges(Graph &g,
 			br_config.max_delta,
 			br_config.max_relative_delta,
 			bulge_cond,
-			boost::bind(&EditDistanceTrackingCallback<Graph>::operator(),
-					&callback, _1, _2), removal_handler);
+			/*boost::bind(&EditDistanceTrackingCallback<Graph>::operator(),
+					&callback, _1, _2)*/0, removal_handler);
 	bulge_remover.RemoveBulges();
 }
 
@@ -608,7 +608,7 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
 
 	for (size_t i = 0; i < iteration_count; i++) {
 		if ((cfg::get().gap_closer_enable)&&(cfg::get().gc.in_simplify)){
-			CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
+			CloseGaps(gp);
 		}
 
         SimplificationCycle(gp, edge_remover, removal_handler_f, printer,

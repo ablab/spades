@@ -136,25 +136,25 @@ void simplify_graph(conj_graph_pack& gp) {
 	printer(ipp_before_first_gap_closer);
 
 	if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
-		CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
+		CloseGaps(gp);
 
 //	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
-	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, edge_qual,
-			labeler, cfg::get().output_dir);
+//	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, edge_qual,
+//			labeler, cfg::get().output_dir);
+//
+//	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+////			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
+//			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
+//			boost::ref(qual_removal_handler), _1);
 
-	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
-//			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
-			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
-			boost::ref(qual_removal_handler), _1);
-
-	SimplifyGraph(gp, removal_handler_f, labeler, printer, 10
+	SimplifyGraph(gp, 0/*removal_handler_f*/, labeler, printer, 10
 	/*, etalon_paired_index*/);
 
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
 	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
 
 	if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
-		CloseGap<K>(gp, cfg::get().gc.use_extended_mapper);
+		CloseGaps(gp);
 
 	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
 

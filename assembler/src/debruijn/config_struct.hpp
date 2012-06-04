@@ -340,7 +340,6 @@ struct debruijn_config {
 		bool    before_simplify;
 		bool    in_simplify;
 		bool    after_simplify;
-		bool    use_extended_mapper;
 		double  weight_threshold;
 	};
 
@@ -590,7 +589,6 @@ inline void load(debruijn_config::gap_closer& gc,
 	load(gc.before_simplify     , pt, "before_simplify"     );
 	load(gc.in_simplify         , pt, "in_simplify"         );
 	load(gc.after_simplify      , pt, "after_simplify"      );
-	load(gc.use_extended_mapper , pt, "use_extended_mapper" );
 	load(gc.weight_threshold    , pt, "weight_threshold"    );
 }
 
