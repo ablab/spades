@@ -567,12 +567,15 @@ struct detail_info_printer {
 	:
 			folder_(folder), func_(
 					bind(&ProduceDetailedInfo, boost::ref(gp), boost::ref(labeler), _3,
-							file_name, _2, _1)) {
+							file_name, _2, _1)),
+							graph_(gp.g){
 	}
 
 	void operator()(info_printer_pos pos,
 			string const& folder_suffix = "") const {
 		string pos_name = details::info_printer_pos_name(pos);
+		VertexEdgeStat<conj_graph_pack::graph_t> stats(graph_);
+		TRACE("Number of vertices : " << stats.vertices() << ", number of edges : " << stats.edges() << ", sum length of edges : " << stats.edge_length());
 		func_(
 				pos,
 				pos_name,
@@ -583,6 +586,7 @@ struct detail_info_printer {
 private:
 	string folder_;
 	boost::function<void(info_printer_pos, string const&, string const&)> func_;
+	const conj_graph_pack::graph_t &graph_;
 };
 
 template<size_t k>

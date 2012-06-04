@@ -87,19 +87,39 @@ public:
 	virtual ~VertexEdgeStat() {
 	}
 
-	virtual void Count() {
+	size_t vertices() {
+		return graph_.size();
+	}
+
+	size_t edges() {
 		size_t edgeNumber = 0;
 		size_t sum_edge_length = 0;
 		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
 				++iterator) {
 			edgeNumber++;
+//			if (graph_.coverage(*iterator) > 30) {
+				sum_edge_length += graph_.length(*iterator);
+//			}
+		}
+		return edgeNumber;
+	}
+
+	size_t edge_length() {
+		size_t sum_edge_length = 0;
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+				++iterator) {
 			if (graph_.coverage(*iterator) > 30) {
 				sum_edge_length += graph_.length(*iterator);
 			}
-		}INFO(
-				"Vertex count=" << graph_.size() << "; Edge count=" << edgeNumber);
+		}
+		return sum_edge_length;
+	}
+
+	virtual void Count() {
 		INFO(
-				"sum length of edges(coverage > 30, both strands)" << sum_edge_length);
+				"Vertex count=" << vertices() << "; Edge count=" << edges());
+		INFO(
+				"sum length of edges " << edge_length());
 	}
 };
 
