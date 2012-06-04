@@ -9,6 +9,8 @@
 
 #include "verify.hpp"
 #include <set>
+#include <queue>
+#include "standard_base.hpp"
 
 template<typename Key, typename Comparator>
 class erasable_priority_queue {
@@ -63,13 +65,99 @@ public:
 
 };
 
+/*
+ * This map works only if
+ * 1. an element that was deleted once never appears again
+ * 2. Element is still valid for operations like hash and == even after it was deleted
+ */
+template<typename Key, typename Comparator>
+class fast_erasable_priority_queue {
+private:
+	std::priority_queue<Key, std::vector<Key>, Comparator> storage_;
+	unordered_set<Key> deleted_;
+
+	void update() {
+		while(!storage_.empty()) {
+			Key top = storage_.top();
+			if(deleted_.count(top) > 0) {
+				storage_.pop();
+			} else {
+				return;
+			}
+		}
+	}
+
+public:
+	/*
+	 * Be careful! This constructor requires Comparator to have default constructor even if you call it with
+	 * specified comparator. In this case just create default constructor with VERIFY(false) inside it.
+	 */
+	fast_erasable_priority_queue(const Comparator& comparator = Comparator()) :
+		storage_(comparator) {
+	}
+
+	template<typename InputIterator>
+	fast_erasable_priority_queue(InputIterator begin, InputIterator end,
+			const Comparator& comparator = Comparator()) :
+		storage_(begin, end, comparator) {
+	}
+
+	void pop() {
+		VERIFY(!empty());
+		Key top_element = top();
+		storage_.pop();
+		update();
+	}
+
+	const Key& top() const {
+		VERIFY(!empty());
+		return storage_.top();
+	}
+
+	void push(const Key& key) {
+		VERIFY(deleted_.count(key) == 0);
+		storage_.push(key);
+	}
+
+	void erase(const Key& key) {
+		deleted_.insert(key);
+		update();
+	}
+
+	bool empty() const {
+		return storage_.empty();
+	}
+
+	size_t size() const {
+		VERIFY(false);
+		return storage_.size();
+	}
+
+	template <class InputIterator>
+	void insert ( InputIterator first, InputIterator last ) {
+		for(; first != last; ++first) {
+			storage_.push(*first);
+		}
+	}
+};
+
 template<typename ElementId, typename Comparator = std::less<ElementId> >
 class QueueIterator {
 private:
+
+	struct ReverseComparator {
+		Comparator comparator_;
+		ReverseComparator(Comparator comparator) : comparator_(comparator) {
+		}
+		bool operator()(ElementId a, ElementId b) const {
+			return comparator_(b, a);
+		}
+	};
+
 	bool current_actual_;
 	bool current_deleted_;
 	ElementId current_;
-	erasable_priority_queue<ElementId, Comparator> queue_;
+	fast_erasable_priority_queue<ElementId, ReverseComparator> queue_;
 protected:
 
 	template<typename InputIterator>
@@ -78,7 +166,7 @@ protected:
 	}
 
 	QueueIterator(const Comparator& comparator = Comparator()) :
-		current_actual_(false), current_deleted_(false), queue_(comparator) {
+		current_actual_(false), current_deleted_(false), queue_(ReverseComparator(comparator)) {
 	}
 
 	void push(const ElementId& toAdd) {
