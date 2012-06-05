@@ -106,6 +106,7 @@ public:
 private:
 	const size_t k_;
 	CoverageIndex<DeBruijnGraph> coverage_index_;
+
 public:
 	DeBruijnGraph(size_t k) :
 			base(DeBruijnMaster(k)), k_(k), coverage_index_(*this) {
@@ -130,6 +131,7 @@ public:
 	}
 
 	EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
+		VERIFY(nucls.size() > k_);
 		return AddEdge(from, to, EdgeData(nucls));
 	}
 

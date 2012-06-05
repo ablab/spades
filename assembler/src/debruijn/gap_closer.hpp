@@ -75,7 +75,7 @@ private:
 					if (InTipIter != InTipMap.end()) {
 						paired_index.AddPairInfo(
 								PairInfo < EdgeId
-										> (OutTipIter->second.first, InTipIter->second.first, 100, 1, 0.));
+										> (OutTipIter->second.first, InTipIter->second.first, 1000000, 1, 0.));
 					}
 				}
 			}
@@ -239,98 +239,6 @@ public:
 
 };
 
-//template<class Graph, class SequenceMapper>
-//void CloseShortGaps_old(Graph& g,
-//		const omnigraph::PairedInfoIndex<Graph>& paired_info,
-//		const EdgesPositionHandler<Graph>& edges_pos, int mimimal_intersection,
-//		const SequenceMapper& mapper) {
-//	INFO("Closing short gaps");
-//	typedef typename Graph::EdgeId EdgeId;
-//	typedef typename Graph::VertexId VertexId;
-//	typedef vector<PairInfo<EdgeId>> PairInfos;
-//	DistanceCounter<Graph> distanceTool(g);
-//	int gaps_filled = 0;
-//	int gaps_checked = 0;
-//	for (auto pi_iter = paired_info.begin(); pi_iter != paired_info.end();
-//			++pi_iter) {
-//		PairInfos cur_infos = *pi_iter;
-//		if (cur_infos.size() > 0) {
-//			VertexId endOfFirstEdge = g.EdgeEnd(cur_infos[0].first);
-//			VertexId startOfSecondEdge = g.EdgeStart(cur_infos[0].second);
-//			if (cur_infos[0].first != cur_infos[0].second) {
-//				bool possible_distance = false;
-//				size_t k = g.k();
-//				int cur_gap;
-//				for (size_t i = 0; i < cur_infos.size(); ++i) {
-//					cur_gap = cur_infos[i].d - g.length(cur_infos[0].first);
-//					if ((cur_infos[i].d == 100)
-//							&& (cur_infos[i].weight
-//									> cfg::get().gc.weight_threshold))
-//						possible_distance = true;
-//
-//				}
-//				if (possible_distance) {
-//					gaps_checked++;
-//					Sequence seq1 = g.EdgeNucls(cur_infos[0].first);
-//					Sequence seq2 = g.EdgeNucls(cur_infos[0].second);
-////           			int best_lev = 100;
-//					for (cur_gap = 0; cur_gap <= int(k - mimimal_intersection);
-//							cur_gap++) {
-//						if (seq1.Subseq(seq1.size() - k + cur_gap)
-//								== seq2.Subseq(0, k - cur_gap)) {
-////            				best_lev = 0;
-//							DEBUG(
-//									"possible short gap between "
-//											<< g.int_id(cur_infos[0].first)
-//											<< " and "
-//											<< g.int_id(cur_infos[0].second));
-//							DEBUG(
-//									"with positions "
-//											<< edges_pos.str(cur_infos[0].first)
-//											<< "       "
-//											<< edges_pos.str(
-//													cur_infos[0].second));
-//							DEBUG(
-//									"and sequences "
-//											<< seq1.Subseq(seq1.size() - k).str()
-//											<< "  " << seq2.Subseq(0, k).str());
-//							Sequence edge_sequence = seq1.Subseq(
-//									seq1.size() - k)
-//									+ seq2.Subseq(k - cur_gap, k);
-//							DEBUG(
-//									"Gap filled: Gap size = " << cur_gap
-//											<< "  Result seq "
-//											<< edge_sequence.str());
-//							Path<EdgeId> path1 = ConvertToPath(
-//									mapper.MapSequence(edge_sequence));
-//							if (path1.size() > 0) {
-//								DEBUG("Filled k-mer already present in graph");
-//							} else {
-//								g.AddEdge(endOfFirstEdge, startOfSecondEdge,
-//										edge_sequence);
-//								gaps_filled++;
-//							}
-//							break;
-//						}
-////            			else {
-////            				int lev = (int)EditDistance(seq1.Subseq(seq1.size()- k_ +  cur_gap), seq2.Subseq(0, k_ -  cur_gap));
-////            				if (best_lev > lev) best_lev = lev;
-////            			}
-//
-//					}
-////           			DEBUG("Best edit distance is "<<best_lev);
-//				}
-//			}
-//		}
-//	}
-//	INFO(
-//			"Closing short gaps complete: filled " << gaps_filled
-//					<< " gaps after checking " << gaps_checked
-//					<< " candidates");
-//	omnigraph::Compressor<Graph> compressor(g);
-//	compressor.CompressAllVertices();
-//}
-
 template<class Graph, class SequenceMapper>
 class GapCloser {
 	typedef typename Graph::EdgeId EdgeId;
@@ -338,51 +246,204 @@ class GapCloser {
 	typedef vector<PairInfo<EdgeId>> PairInfos;
 
 	Graph& g_;
+	int k_;
 	const PairedInfoIndex<Graph>& tips_paired_idx_;
 	const size_t min_intersection_;
+	const size_t hamming_dist_bound_;
+	const int init_gap_val_;
 	const double weight_threshold_;
 	const SequenceMapper mapper_;
 
 	bool WeightCondition(const PairInfos& infos) const {
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
-			if (it->d == 100 && math::ge(it->weight, weight_threshold_))
+			DEBUG("Trace info d=" << it->d << " weight=" << it->weight);
+//			VERIFY(math::eq(it->d, 100.));
+			if (math::ge(it->weight, weight_threshold_))
 				return true;
 		}
 		return false;
 	}
 
+	vector<size_t> DiffPos(const Sequence& s1, const Sequence& s2) const {
+		VERIFY(s1.size() == s2.size());
+		vector < size_t > answer;
+		for (size_t i = 0; i < s1.size(); ++i)
+			if (s1[i] != s2[i])
+				answer.push_back(i);
+		return answer;
+	}
+
+	size_t HammingDistance(const Sequence& s1, const Sequence& s2) const {
+		VERIFY(s1.size() == s2.size());
+		size_t dist = 0;
+		for (size_t i = 0; i < s1.size(); ++i)
+			if (s1[i] != s2[i])
+				dist++;
+		return dist;
+	}
+
+//	size_t HammingDistance(const Sequence& s1, const Sequence& s2) const {
+//		return DiffPos(s1, s2).size();
+//	}
+
+	vector<size_t> PosThatCanCorrect(size_t overlap_length/*in nucls*/,
+			const vector<size_t>& mismatch_pos, size_t edge_length/*in nucls*/,
+			bool left_edge) const {
+		TRACE("Try correct left edge " << left_edge);
+		TRACE("Overlap length " << overlap_length);
+		TRACE("Edge length " << edge_length);
+		TRACE("Mismatches " << mismatch_pos);
+
+		vector < size_t > answer;
+		for (size_t i = 0; i < mismatch_pos.size(); ++i) {
+			size_t relative_mm_pos =
+					left_edge ?
+							mismatch_pos[i] :
+							overlap_length - 1 - mismatch_pos[i];
+			if (overlap_length - relative_mm_pos + g_.k() < edge_length)
+				//can correct mismatch
+				answer.push_back(mismatch_pos[i]);
+		}
+		TRACE("Can correct mismatches: " << answer);
+		return answer;
+	}
+
+	//todo write easier
+	bool CanCorrectLeft(EdgeId e, int overlap, const vector<size_t>& mismatch_pos) const {
+		return PosThatCanCorrect(overlap, mismatch_pos,
+				g_.length(e) + g_.k(), true).size() == mismatch_pos.size();
+	}
+
+	//todo write easier
+	bool CanCorrectRight(EdgeId e, int overlap,
+			const vector<size_t>& mismatch_pos) const {
+		return PosThatCanCorrect(overlap, mismatch_pos,
+				g_.length(e) + g_.k(), false).size() == mismatch_pos.size();
+	}
+
+	bool CheckSequence(const Sequence& s) const {
+		vector<EdgeId> path = mapper_.MapSequence(s).simple_path().sequence();
+		return path.empty();
+	}
+
+	bool MatchesEnd(const Sequence& long_seq, const Sequence& short_seq, bool from_begin) const {
+		return from_begin ? long_seq.Subseq(0, short_seq.size()) == short_seq
+				: long_seq.Subseq(long_seq.size() - short_seq.size()) == short_seq;
+	}
+
+	bool CorrectLeft(EdgeId first, EdgeId second, int overlap, const vector<size_t>& diff_pos) const {
+		DEBUG("Can correct first with sequence from second.");
+		Sequence new_sequence = g_.EdgeNucls(first).Subseq(g_.length(first) - overlap + diff_pos.front(), g_.length(first) + k_ - overlap)
+				+ g_.EdgeNucls(second).First(k_);
+		DEBUG("Checking new k+1-mers.");
+		if (CheckSequence(new_sequence)) {
+			DEBUG("Check ok.");
+			DEBUG("Splitting first edge.");
+			first = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front()).first;
+
+//							g_.DeleteEdge(first);
+			DEBUG("Adding new edge.");
+			VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
+			VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
+			g_.AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
+					new_sequence);
+			return true;
+		} else {
+			DEBUG("Check fail.");
+			DEBUG("Filled k-mer already present in graph");
+			return false;
+		}
+		return false;
+	}
+
+	bool CorrectRight(EdgeId first, EdgeId second, int overlap, const vector<size_t>& diff_pos) const {
+		DEBUG("Can correct second with sequence from first.");
+		Sequence new_sequence = g_.EdgeNucls(first).Last(k_) + g_.EdgeNucls(second).Subseq(overlap, diff_pos.back() + 1 + k_);
+		DEBUG("Checking new k+1-mers.");
+		if (CheckSequence(new_sequence)) {
+			DEBUG("Check ok.");
+			DEBUG("Splitting second edge.");
+			second = g_.SplitEdge(second, diff_pos.back() + 1).second;
+//							g_.DeleteEdge(second);
+			DEBUG("Adding new edge.");
+			VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
+			VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
+
+			g_.AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
+					new_sequence);
+			return true;
+		} else {
+			DEBUG("Check fail.");
+			DEBUG("Filled k-mer already present in graph");
+			return false;
+		}
+		return false;
+	}
+
+	bool HandlePositiveHammingDistanceCase(EdgeId first, EdgeId second, int overlap) const {
+		DEBUG("Match was imperfect. Trying to correct one of the tips");
+		vector<size_t> diff_pos = DiffPos(g_.EdgeNucls(first).Last(overlap),
+				g_.EdgeNucls(second).First(overlap));
+		if (CanCorrectLeft(first, overlap, diff_pos)) {
+			return CorrectLeft(first, second, overlap, diff_pos);
+		} else if (CanCorrectRight(second, overlap, diff_pos)) {
+			return CorrectRight(first, second, overlap, diff_pos);
+		} else {
+			DEBUG("Can't correct tips due to the graph structure");
+			return false;
+		}
+	}
+
+	bool HandleSimpleCase(EdgeId first, EdgeId second, int overlap) const {
+		DEBUG("Match was perfect. No correction needed");
+		//strange info guard
+		VERIFY(overlap <= k_);
+		if (overlap == k_) {
+			DEBUG("Tried to close zero gap");
+			return false;
+		}
+		//old code
+		Sequence edge_sequence = g_.EdgeNucls(first).Last(k_)
+				+ g_.EdgeNucls(second).Subseq(overlap, k_);
+		if (CheckSequence(edge_sequence)) {
+			DEBUG(
+				"Gap filled: Gap size = " << k_ - overlap << "  Result seq "
+						<< edge_sequence.str());
+			g_.AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second), edge_sequence);
+			return true;
+		} else {
+			DEBUG("Filled k-mer already present in graph");
+			return false;
+		}
+	}
+
+
 	bool ProcessPair(EdgeId first, EdgeId second) const {
-		VertexId first_e_end = g_.EdgeEnd(first);
-		VertexId second_e_start = g_.EdgeStart(second);
-		size_t k = g_.k();
+		TRACE("Processing edges " << g_.str(first) << " and " << g_.str(second));
+		TRACE("first " << g_.EdgeNucls(first) << " second " << g_.EdgeNucls(second));
+
+		//may be negative!
+		int gap = max(init_gap_val_,
+				-1 * (int)(min(g_.length(first), g_.length(second)) - 1));
 
 		Sequence seq1 = g_.EdgeNucls(first);
 		Sequence seq2 = g_.EdgeNucls(second);
-		//           			int best_lev = 100;
-		for (int gap = 0; gap <= int(k - min_intersection_); ++gap) {
-			if (seq1.Subseq(seq1.size() - k + gap) == seq2.Subseq(0, k - gap)) {
-				//            				best_lev = 0;
-				DEBUG("possible short gap between " << g_.int_id(first)
-								<< " and " << g_.int_id(second));
-//				DEBUG(
-//						"with positions "
-//								<< edges_pos.str(first)
-//								<< "       "
-//								<< edges_pos.str(second));
-				DEBUG("and sequences " << seq1.Subseq(seq1.size() - k).str()
-								<< "  " << seq2.Subseq(0, k).str());
-				Sequence edge_sequence = seq1.Subseq(seq1.size() - k)
-						+ seq2.Subseq(k - gap, k);
-				DEBUG("Gap filled: Gap size = " << gap << "  Result seq "
-								<< edge_sequence.str());
-				Path<EdgeId> path1 = ConvertToPath(
-						mapper_.MapSequence(edge_sequence));
-				if (path1.size() > 0) {
-					DEBUG("Filled k-mer already present in graph");
-					return false;
+		TRACE("Checking possible gaps from " << gap << " to " << k_ - min_intersection_);
+		for (; gap <= k_ - (int)min_intersection_; ++gap) {
+			int overlap = k_ - gap;
+			size_t hamming_distance = HammingDistance(g_.EdgeNucls(first).Last(overlap)
+					, g_.EdgeNucls(second).First(overlap));
+			if (hamming_distance <= hamming_dist_bound_) {
+				DEBUG("For edges " << g_.str(first) << " and " << g_.str(second)
+						<< ". For gap value " << gap << " (overlap " << overlap << "bp) hamming distance was " << hamming_distance);
+//				DEBUG("Sequences of distance " << tip_distance << " :"
+//								<< seq1.Subseq(seq1.size() - k).str() << "  "
+//								<< seq2.Subseq(0, k).str());
+
+				if (hamming_distance > 0) {
+					return HandlePositiveHammingDistanceCase(first, second, overlap);
 				} else {
-					g_.AddEdge(first_e_end, second_e_start, edge_sequence);
-					return true;
+					return HandleSimpleCase(first, second, overlap);
 				}
 			}
 		}
@@ -395,17 +456,25 @@ public:
 		INFO("Closing short gaps");
 		int gaps_filled = 0;
 		int gaps_checked = 0;
-		for (auto pi_iter = tips_paired_idx_.begin();
-				pi_iter != tips_paired_idx_.end(); ++pi_iter) {
-			if (pi_iter.first() != pi_iter.second()
-					&& WeightCondition(*pi_iter)) {
-				gaps_checked++;
-				if (ProcessPair(pi_iter.first(), pi_iter.second()))
-					gaps_filled++;
+		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			PairInfos infos = tips_paired_idx_.GetEdgeInfo(*it);
+			for (auto pi_it = infos.begin(); pi_it != infos.end(); ++pi_it) {
+				if (pi_it->first != pi_it->second
+						&& math::ge(pi_it->weight, weight_threshold_)) {
+					if (!g_.IsDeadEnd(g_.EdgeEnd(pi_it->first)) || !g_.IsDeadStart(g_.EdgeStart(pi_it->second))) {
+						WARN("Topologycally wrong tips");
+						continue;
+					}
+					gaps_checked++;
+					if (ProcessPair(pi_it->first, pi_it->second)) {
+						gaps_filled++;
+						break;
+					}
+				}
 			}
 		}
-		INFO(
-				"Closing short gaps complete: filled " << gaps_filled
+
+		INFO("Closing short gaps complete: filled " << gaps_filled
 						<< " gaps after checking " << gaps_checked
 						<< " candidates");
 		omnigraph::Compressor<Graph> compressor(g_);
@@ -414,76 +483,20 @@ public:
 
 	GapCloser(Graph& g, const PairedInfoIndex<Graph>& tips_paired_idx,
 			size_t min_intersection, double weight_threshold,
-			const SequenceMapper& mapper) :
-			g_(g), tips_paired_idx_(tips_paired_idx), min_intersection_(
-					min_intersection), weight_threshold_(weight_threshold), mapper_(
-					mapper) {
-
+			const SequenceMapper& mapper, size_t hamming_dist_bound = 0/*min_intersection_ / 5*/) :
+			g_(g), k_(g_.k()), tips_paired_idx_(tips_paired_idx), min_intersection_(
+					min_intersection), hamming_dist_bound_(
+					hamming_dist_bound), init_gap_val_(-10), weight_threshold_(
+					weight_threshold), mapper_(mapper) {
+		VERIFY(min_intersection_ < g_.k());
+		DEBUG("weight_threshold=" << weight_threshold_);
+		DEBUG("min_intersect=" << min_intersection_);
+		DEBUG("paired_index size=" << tips_paired_idx_.size());
 	}
 
 private:
 	DECL_LOGGER("GapCloser");
 };
-
-//template<size_t k>
-//void CloseGap_old(conj_graph_pack& gp, bool use_extended_mapper = true) {
-//
-//	INFO("SUBSTAGE == Closing gaps");
-//
-//	if (cfg::get().use_multithreading) {
-//		auto paired_streams = paired_binary_readers(true, 0);
-//
-//		if (use_extended_mapper) {
-//			typedef NewExtendedSequenceMapper<k + 1, Graph> SequenceMapper;
-//			SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper);
-//			GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper,
-//					io::IReader<io::PairedReadSeq> > gcpif(gp.g, mapper,
-//					paired_streams);
-//			paired_info_index gc_paired_info_index(gp.g);
-//			gcpif.FillIndex(gc_paired_info_index);
-//			CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos,
-//					cfg::get().gc.minimal_intersection, mapper);
-//		} else {
-//			typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
-//			SequenceMapper mapper(gp.g, gp.index);
-//			GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper,
-//					io::IReader<io::PairedReadSeq>> gcpif(gp.g, mapper,
-//					paired_streams);
-//			paired_info_index gc_paired_info_index(gp.g);
-//			gcpif.FillIndex(gc_paired_info_index);
-//			CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos,
-//					cfg::get().gc.minimal_intersection, mapper);
-//		}
-//
-//		for (size_t i = 0; i < paired_streams.size(); ++i) {
-//			delete paired_streams[i];
-//		}
-//	} else {
-//		auto stream = paired_easy_reader(true, 0);
-//		std::vector<PairedReadStream*> streams(1, stream.get());
-//
-//		if (use_extended_mapper) {
-//			typedef NewExtendedSequenceMapper<k + 1, Graph> SequenceMapper;
-//			SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper);
-//			GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper,
-//					PairedReadStream> gcpif(gp.g, mapper, streams);
-//			paired_info_index gc_paired_info_index(gp.g);
-//			gcpif.FillIndex(gc_paired_info_index);
-//			CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos,
-//					cfg::get().gc.minimal_intersection, mapper);
-//		} else {
-//			typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
-//			SequenceMapper mapper(gp.g, gp.index);
-//			GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper,
-//					PairedReadStream> gcpif(gp.g, mapper, streams);
-//			paired_info_index gc_paired_info_index(gp.g);
-//			gcpif.FillIndex(gc_paired_info_index);
-//			CloseShortGaps(gp.g, gc_paired_info_index, gp.edge_pos,
-//					cfg::get().gc.minimal_intersection, mapper);
-//		}
-//	}
-//
-//}
 
 template<class PairedStream>
 void CloseGaps(conj_graph_pack& gp, const vector<PairedStream*>& streams) {
@@ -493,7 +506,14 @@ void CloseGaps(conj_graph_pack& gp, const vector<PairedStream*>& streams) {
 	GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedStream> gcpif(
 			gp.g, mapper, streams);
 	paired_info_index tips_paired_idx(gp.g);
-	gcpif.FillIndex(tips_paired_idx);
+	if (fileExists("tip_info.prd")) {
+		ConjugateDataScanner<Graph> scanner(gp.g, gp.int_ids);
+		scanner.loadPaired("tip_info", tips_paired_idx);
+	} else {
+		gcpif.FillIndex(tips_paired_idx);
+		ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
+		printer.savePaired("tip_info", tips_paired_idx);
+	}
 	GapCloser<Graph, SequenceMapper> gap_closer(gp.g, tips_paired_idx,
 			cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold,
 			mapper);

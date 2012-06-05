@@ -104,6 +104,8 @@ public:
 	 */
     inline Sequence Subseq(size_t from, size_t to) const;
     inline Sequence Subseq(size_t from) const; // up to size_ by default
+    inline Sequence First(size_t count) const;
+    inline Sequence Last(size_t count) const;
     inline Sequence operator+(const Sequence &s) const;
 
     /////todo what are these methods???
@@ -168,7 +170,13 @@ Seq<size2_> Sequence::end() const {
     return Seq<size2_> (*this, size_ - size2_);
 }
 
+Sequence Sequence::First(size_t count) const {
+	return Subseq(0, count);
+}
 
+Sequence Sequence::Last(size_t count) const {
+	return Subseq(size_ - count);
+}
 
 /**
  * @class SequenceBuilder
