@@ -113,7 +113,6 @@ BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 //	PrintGraph(g);
 
 	BOOST_CHECK_EQUAL(g.size(), 4);
-	exit(0);
 }
 
 BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
