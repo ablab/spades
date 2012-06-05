@@ -351,8 +351,8 @@ double ExtentionWeight(const Graph& g, BidirectionalPath& path,
 	size_t end = forward ? path.size() - edgesToExclude : path.size();
 
 	static int DISTANCE_DEV =
-			cfg::get().etalon_info_mode ?
-					params.ps.es.etalon_distance_dev : pairedInfoLibrary.var;
+			/*cfg::get().etalon_info_mode ?
+					params.ps.es.etalon_distance_dev : */pairedInfoLibrary.var;
 
 	for (size_t i = start; i < end; ++i) {
 		EdgeId edge = path[i];

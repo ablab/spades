@@ -710,7 +710,7 @@ void PrintGraphPack(const string& file_name,
 		DataPrinter<typename graph_pack::graph_t>& printer,
 		const graph_pack& gp) {
 	PrintBasicGraph(file_name, printer);
-	printer.savePaired(file_name + "_et", gp.etalon_paired_index);
+//	printer.savePaired(file_name + "_et", gp.etalon_paired_index);
 	printer.savePositions(file_name, gp.edge_pos);
 	SaveKmerMapper(file_name, gp.kmer_mapper);
 }
@@ -827,7 +827,7 @@ template<class graph_pack>
 void ScanGraphPack(const string& file_name,
 		DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp) {
 	ScanBasicGraph(file_name, scanner);
-	scanner.loadPaired(file_name + "_et", gp.etalon_paired_index);
+//	scanner.loadPaired(file_name + "_et", gp.etalon_paired_index);
 	scanner.loadPositions(file_name, gp.edge_pos);
 	LoadKmerMapper(file_name, gp.kmer_mapper);
 }

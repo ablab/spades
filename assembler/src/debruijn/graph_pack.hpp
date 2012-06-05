@@ -37,7 +37,7 @@ struct graph_pack : private boost::noncopyable {
 	EdgeIndex<k + 1, graph_t> index;
 	IdTrackHandler<graph_t> int_ids;
 	EdgesPositionHandler<graph_t> edge_pos;
-	PairedInfoIndex<graph_t> etalon_paired_index;
+//	PairedInfoIndex<graph_t> etalon_paired_index;
 	KmerMapper<k + 1, graph_t> kmer_mapper;
 
 	Sequence const& genome;
@@ -46,7 +46,7 @@ struct graph_pack : private boost::noncopyable {
 	g(k),
 	index(g)
 	, int_ids (g)
-	, edge_pos(g, single_gap, careful_labeling), etalon_paired_index(g, 0), kmer_mapper(g),
+	, edge_pos(g, single_gap, careful_labeling), kmer_mapper(g),
 	genome(genome) {
 	}
 };

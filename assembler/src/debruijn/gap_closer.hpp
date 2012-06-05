@@ -362,21 +362,18 @@ class GapCloser {
 		for (int gap = 0; gap <= int(k - min_intersection_); ++gap) {
 			if (seq1.Subseq(seq1.size() - k + gap) == seq2.Subseq(0, k - gap)) {
 				//            				best_lev = 0;
-				DEBUG(
-						"possible short gap between " << g_.int_id(first)
+				DEBUG("possible short gap between " << g_.int_id(first)
 								<< " and " << g_.int_id(second));
 //				DEBUG(
 //						"with positions "
 //								<< edges_pos.str(first)
 //								<< "       "
 //								<< edges_pos.str(second));
-				DEBUG(
-						"and sequences " << seq1.Subseq(seq1.size() - k).str()
+				DEBUG("and sequences " << seq1.Subseq(seq1.size() - k).str()
 								<< "  " << seq2.Subseq(0, k).str());
 				Sequence edge_sequence = seq1.Subseq(seq1.size() - k)
 						+ seq2.Subseq(k - gap, k);
-				DEBUG(
-						"Gap filled: Gap size = " << gap << "  Result seq "
+				DEBUG("Gap filled: Gap size = " << gap << "  Result seq "
 								<< edge_sequence.str());
 				Path<EdgeId> path1 = ConvertToPath(
 						mapper_.MapSequence(edge_sequence));
