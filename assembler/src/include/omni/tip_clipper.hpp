@@ -187,7 +187,7 @@ private:
 	bool AdditionalCondition(EdgeId tip) const {
 		if (this->graph().coverage(tip) > max_coverage_)
 			return false;
-		double max_coverage = MaxCompetitorCoverage(tip);
+		double max_coverage = MaxCompetitorCoverage(tip) + 1;
 		return math::le(this->graph().coverage(tip),
 				max_relative_coverage_ * max_coverage);
 	}
