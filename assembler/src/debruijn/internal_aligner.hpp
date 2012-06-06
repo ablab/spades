@@ -291,9 +291,9 @@ protected:
 		if (SamRec1.RNEXT == "=") {
 			SamRec1.TLEN = (int)SamRec1.PNEXT + (int)SamRec2.SEQ.size() - (int)SamRec1.POS;
 			SamRec2.TLEN = -SamRec1.TLEN;
-			SamRec1.FLAG |= 0x40;
-			SamRec2.FLAG |= 0x80;
 		}
+		SamRec1.FLAG |= 0x40;
+		SamRec2.FLAG |= 0x80;
 	}
 	void UpdatePair(MySamRecord& SamRec1, MySamRecord& SamRec2){
 		if (SamRec1.is_aligned() && SamRec2.is_aligned()) {
