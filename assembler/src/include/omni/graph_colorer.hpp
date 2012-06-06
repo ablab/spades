@@ -253,6 +253,68 @@ public:
 	}
 };
 
+template<class Graph>
+class NewPathColorer {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph &graph_;
+
+	void SetColor(map<EdgeId, string> &color, EdgeId edge, string col) const {
+		if (color.count(edge) != 0 && color[edge] != col) {
+			color[edge] = "purple";
+		} else
+			color[edge] = col;
+	}
+
+	void ConstructColorMap(map<EdgeId, string> &color, const Path<EdgeId> &path1,
+			const Path<EdgeId> &path2) const {
+		for (auto it = path1.sequence().begin(); it != path1.sequence().end();
+				++it) {
+			SetColor(color, *it, "red");
+		}
+		for (auto it = path2.sequence().begin(); it != path2.sequence().end();
+				++it) {
+			SetColor(color, *it, "blue");
+		}
+	}
+
+	void ConstructBlackEdgesSet(set<EdgeId> &result, const Path<EdgeId> &path1,
+			const Path<EdgeId> &path2) const {
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+				++iterator) {
+			result.insert(*iterator);
+		}
+		for (auto iterator = path1.sequence().begin();
+				iterator != path1.sequence().end(); ++iterator) {
+			result.erase(*iterator);
+		}
+		for (auto iterator = path2.sequence().begin();
+				iterator != path2.sequence().end(); ++iterator) {
+			result.erase(*iterator);
+		}
+	}
+
+public:
+	NewPathColorer(const Graph &graph) :
+			graph_(graph) {
+	}
+
+	map<EdgeId, string> ColorPath(const Path<EdgeId> &path1,
+			const Path<EdgeId> &path2) const {
+		map<EdgeId, string> colors;
+		ConstructColorMap(colors, path1, path2);
+		return colors;
+	}
+
+	set<EdgeId> BlackEdges(const Path<EdgeId> &path1,
+			const Path<EdgeId> &path2) const {
+		set<EdgeId> result;
+		ConstructBlackEdgesSet(result, path1, path2);
+		return result;
+	}
+};
+
 // edge_colorer management is passed here
 template <class Graph>
 auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,

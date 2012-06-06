@@ -88,6 +88,8 @@ void exec_late_pair_info_count(conj_graph_pack& gp,
 		files_t used_files;
 		load_late_pair_info_count(gp, paired_index, &used_files);
 		link_files_by_prefix(used_files, cfg::get().output_saves);
+//		OnlineVisualizer online(gp);
+//		online.run();
 	}
 }
 

@@ -205,6 +205,7 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	int max_single_gap_;
 	std::map<EdgeId, vector<EdgePosition>> EdgesPositions;
 	bool careful_ranges_;
+	size_t max_labels_;
 public:
 	bool is_careful(){return careful_ranges_;};
 	const std::map<EdgeId, vector<EdgePosition>> &edges_positions() const {
@@ -318,21 +319,37 @@ public:
 		auto it = EdgesPositions.find(edgeId);
 		if (it != EdgesPositions.end()) {
 			TRACE("Number of labels " << it->second.size());
-			for (auto pos_it = it->second.begin(), end = it->second.end(); pos_it != end; ++pos_it) {
-				if (careful_ranges_){
-					ss << "(" << pos_it->contigId_ << ": " << pos_it->start() << "-" << pos_it->end() << ": "<< pos_it->m_start() << "-" << pos_it->m_end() << ")\\n";
+			if(it->second.size() > max_labels_) {
+				set<string> s;
+				for (auto pos_it = it->second.begin(), end = it->second.end(); pos_it != end; ++pos_it) {
+					if(pos_it->contigId_.size() >= 3)
+						s.insert(pos_it->contigId_.substr(0, 3));
 				}
-				else {
-					ss << "(" << pos_it->contigId_ << ": " << pos_it->start_ << "-" << pos_it->end_ << ")\\n";
+				ss << it->second.size() << " alignments";
+				if(s.size() < 5) {
+					ss << " of types: ";
+					for(auto sit = s.begin(); sit != s.end(); ++sit) {
+						ss << *sit << "; ";
+					}
 				}
+				ss << "\\n";
+			} else {
+				for (auto pos_it = it->second.begin(), end = it->second.end(); pos_it != end; ++pos_it) {
+					if (careful_ranges_){
+						ss << "(" << pos_it->contigId_ << ": " << pos_it->start() << "-" << pos_it->end() << ": "<< pos_it->m_start() << "-" << pos_it->m_end() << ")\\n";
+					}
+					else {
+						ss << "(" << pos_it->contigId_ << ": " << pos_it->start_ << "-" << pos_it->end_ << ")\\n";
+					}
 
+				}
 			}
 		}
 		return ss.str();
 	}
 
-	EdgesPositionHandler(Graph &g, int max_single_gap = 0, bool careful_ranges = false) :
-		GraphActionHandler<Graph> (g, "EdgePositionHandler"), max_single_gap_(max_single_gap), careful_ranges_(careful_ranges) {
+	EdgesPositionHandler(const Graph &g, int max_single_gap = 0, bool careful_ranges = false, size_t max_labels = 100) :
+		GraphActionHandler<Graph> (g, "EdgePositionHandler"), max_single_gap_(max_single_gap), careful_ranges_(careful_ranges), max_labels_(max_labels) {
 	}
 
 	virtual ~EdgesPositionHandler() {
@@ -454,6 +471,10 @@ public:
  			AddEdgePosition(cur_edges_pair->second, EdgesPositions[cur_edges_pair->first]);
  		}
  	}
+
+	void clear() {
+		EdgesPositions.clear();
+	}
 
 private:
     DECL_LOGGER("EdgesPositionHandler");

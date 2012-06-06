@@ -18,6 +18,7 @@
 #include "io/vector_reader.hpp"
 #include "omni_labelers.hpp"
 #include "dataset_readers.hpp"
+#include "online_pictures.hpp"
 
 namespace debruijn_graph {
 
@@ -133,6 +134,8 @@ void exec_construction(conj_graph_pack& gp) {
 		files_t used_files;
 		load_construction(gp, &used_files);
 		link_files_by_prefix(used_files, cfg::get().output_saves);
+//		OnlineVisualizer online(gp);
+//		online.run();
 	}
 
 	if (gp.genome.size() > 0) {
@@ -151,6 +154,7 @@ void exec_construction(conj_graph_pack& gp) {
 	{
 		FillPos(gp, cfg::get().pos.contigs_to_analyze, 5000);
 	}
+
 }
 
 } //namespace debruijn_graph
