@@ -92,6 +92,11 @@ def print_used_values(cfg):
         print "ONLY assembler (without error correction)"
     else:
         print "error correction and assembler"
+    if cfg.has_key("common") and cfg["common"].__dict__.has_key("developer_mode"):
+        if cfg["common"].developer_mode:
+            print "Developer mode turned ON"
+        else:
+            print "Developer mode turned OFF"
     print ""
 
     # dataset
@@ -245,8 +250,8 @@ def check_config(cfg, default_project_name=""):
             
     return True
 
-long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc generate-sam-file only-error-correction only-assembler disable-gap-closer disable-gzip-output help test".split()
-short_options = "n:o:1:2:s:k:t:m:i:h"
+long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc generate-sam-file only-error-correction only-assembler disable-gap-closer disable-gzip-output help test developer-mode".split()
+short_options = "n:o:1:2:s:k:t:m:i:hd"
 
 def check_file(f, message=''):
     if not os.path.isfile(f):
@@ -337,6 +342,8 @@ def main():
         only_error_correction = False
         only_assembler        = False
 
+        developer_mode = False
+
         threads     = None
         memory      = None
         qvoffset    = None
@@ -385,9 +392,12 @@ def main():
             elif opt == '-i' or opt == "--iterations":
                 iterations  = int(arg)
 
+            elif opt == '-d' or opt == "--developer-mode":
+                developer_mode = True
+
             elif opt == '-h' or opt == "--help":
                 usage()
-                sys.exit(0)
+                sys.exit(0)            
 
             elif opt == "--test": # running test
                 if os.path.isfile("spades_config.info"):
@@ -440,6 +450,8 @@ def main():
                 cfg["common"].__dict__["max_threads"] = threads
             if memory:
                 cfg["common"].__dict__["max_memory"] = memory
+            if developer_mode:
+                cfg["common"].__dict__["developer_mode"] = developer_mode
 
             # dataset
             cfg["dataset"].__dict__["single_cell"] = single_cell
