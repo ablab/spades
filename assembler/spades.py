@@ -94,9 +94,9 @@ def print_used_values(cfg):
         print "error correction and assembler"
     if cfg.has_key("common") and cfg["common"].__dict__.has_key("developer_mode"):
         if cfg["common"].developer_mode:
-            print "Developer mode turned ON"
+            print "Debug mode turned ON"
         else:
-            print "Developer mode turned OFF"
+            print "Debug mode turned OFF"
     print ""
 
     # dataset
@@ -250,8 +250,8 @@ def check_config(cfg, default_project_name=""):
             
     return True
 
-long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc generate-sam-file only-error-correction only-assembler disable-gap-closer disable-gzip-output help test developer-mode".split()
-short_options = "n:o:1:2:s:k:t:m:i:hd"
+long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc generate-sam-file only-error-correction only-assembler disable-gap-closer disable-gzip-output help test debug".split()
+short_options = "n:o:1:2:s:k:t:m:i:h"
 
 def check_file(f, message=''):
     if not os.path.isfile(f):
@@ -289,6 +289,7 @@ def usage():
 
     print >>sys.stderr, ""
     print >>sys.stderr, "--test\t\trun SPAdes on toy dataset"
+    print >>sys.stderr, "--debug\t\trun SPAdes in debug mode"
     print >>sys.stderr, "-h/--help\tprint this usage message"
 
     print >>sys.stderr, ""
@@ -392,7 +393,7 @@ def main():
             elif opt == '-i' or opt == "--iterations":
                 iterations  = int(arg)
 
-            elif opt == '-d' or opt == "--developer-mode":
+            elif opt == "--debug":
                 developer_mode = True
 
             elif opt == '-h' or opt == "--help":
