@@ -53,10 +53,10 @@ class ErroneousEdgeRemover {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	Graph& g_;
-	EdgeRemover<Graph>& edge_remover_;
+	AbstractEdgeRemover<Graph>& edge_remover_;
 	bool graph_changed_;
 public:
-	ErroneousEdgeRemover(Graph& g, EdgeRemover<Graph>& edge_remover) :
+	ErroneousEdgeRemover(Graph& g, AbstractEdgeRemover<Graph>& edge_remover) :
 			g_(g), edge_remover_(edge_remover), graph_changed_(false) {
 
 	}
@@ -100,7 +100,7 @@ private:
 
 public:
 	ChimericEdgesRemover(Graph &graph, size_t max_overlap,
-			EdgeRemover<Graph>& edge_remover) :
+			AbstractEdgeRemover<Graph>& edge_remover) :
 			base(graph, edge_remover), max_overlap_(max_overlap) {
 	}
 
@@ -143,7 +143,7 @@ class IterativeLowCoverageEdgeRemover: public ErroneousEdgeRemover<Graph> {
 
 public:
 	IterativeLowCoverageEdgeRemover(Graph& g, size_t max_length,
-			double max_coverage, EdgeRemover<Graph>& edge_remover) :
+			double max_coverage, AbstractEdgeRemover<Graph>& edge_remover) :
 			base(g, edge_remover), max_length_(max_length), max_coverage_(
 					max_coverage) {
 
@@ -311,7 +311,7 @@ class NewTopologyBasedChimericEdgeRemover: public ErroneousEdgeRemover<Graph> {
 public:
 	NewTopologyBasedChimericEdgeRemover(Graph& g, size_t max_length,
 			size_t uniqueness_length, size_t plausibility_length,
-			EdgeRemover<Graph>& edge_remover) :
+			AbstractEdgeRemover<Graph>& edge_remover) :
 			base(g, edge_remover), max_length_(max_length), uniqueness_length_(
 					uniqueness_length), plausibility_length_(
 					plausibility_length) {
@@ -373,7 +373,7 @@ class AdvancedTopologyChimericEdgeRemover: public NewTopologyBasedChimericEdgeRe
 public:
 	AdvancedTopologyChimericEdgeRemover(Graph& g, size_t max_length,
 			size_t uniqueness_length, size_t plausibility_length,
-			EdgeRemover<Graph>& edge_remover) :
+			AbstractEdgeRemover<Graph>& edge_remover) :
 			base(g, max_length, uniqueness_length, plausibility_length,
 					edge_remover), unique_path_finder_(g), plausible_path_finder_(
 					g, plausibility_length * 2) {
@@ -427,7 +427,7 @@ public:
 	PairInfoAwareErroneousEdgeRemover(Graph& g,
 			const PairedInfoIndex<Graph>& paired_index, size_t max_length,
 			size_t min_neighbour_length, size_t insert_size, size_t read_length,
-			EdgeRemover<Graph>& edge_remover) :
+			AbstractEdgeRemover<Graph>& edge_remover) :
 			base(g, edge_remover), paired_index_(paired_index), max_length_(
 					max_length), min_neighbour_length_(min_neighbour_length), insert_size_(
 					insert_size), read_length_(read_length), gap_(
