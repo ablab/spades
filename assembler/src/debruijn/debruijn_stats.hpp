@@ -667,11 +667,15 @@ void ReportEdge(osequencestream_cov& oss
 		, size_t solid_edge_length_bound = 0) {
 	typedef typename Graph::EdgeId EdgeId;
 	if (!output_unipath || (PossibleECSimpleCheck(g, e) && g.length(e) <= solid_edge_length_bound)) {
+		TRACE("Outputting edge " << g.str(e) << " as single edge");
 		oss << g.coverage(e);
 		oss << g.EdgeNucls(e);
 	} else {
+		TRACE("Outputting edge " << g.str(e) << " as part of unipath");
 		vector<EdgeId> unipath = Unipath(g, e);
+		TRACE("Unipath is " << g.str(unipath));
 		oss << AvgCoverage(g, unipath);
+		TRACE("Merged sequence is of length " << MergeSequences(g, unipath).size());
 		oss << MergeSequences(g, unipath);
 	}
 }
