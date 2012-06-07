@@ -421,12 +421,14 @@ def main():
             if paired:
                 for read in paired:
                     paired_counter += 1
-                    cfg["dataset"].__dict__["paired_reads." + str(paired_counter)] = read
-        
+                    cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = read   #FIXME: to be discussed! Should we support paired_reads.1, paired_reads.2 .. or not?
+                    #cfg["dataset"].__dict__["paired_reads"] = read
+
             if paired1:
                 for i in range(len(paired1)):
                     paired_counter += 1
-                    cfg["dataset"].__dict__["paired_reads." + str(paired_counter)] = [paired1[i], paired2[i]]
+                    cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = [paired1[i], paired2[i]]
+                    #cfg["dataset"].__dict__["paired_reads"] = [paired1[i], paired2[i]]  #FIXME: see above.
 
             if single:
                 cfg["dataset"].__dict__["single_reads"] = single
