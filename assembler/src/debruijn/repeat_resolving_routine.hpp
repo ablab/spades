@@ -1089,12 +1089,12 @@ void resolve_repeats() {
 
 	conj_graph_pack conj_gp(genome, cfg::get().pos.max_single_gap,
 			cfg::get().pos.careful_labeling);
-	INFO("Online clusterization rad = " << cfg::get().online_clust_rad);
 	paired_info_index paired_index(conj_gp.g, cfg::get().online_clust_rad);
 	paired_info_index clustered_index(conj_gp.g);
 
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
 
+	DEBUG("Online clusterization rad = " << cfg::get().online_clust_rad);
 	if (cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
