@@ -146,11 +146,18 @@ void inline load(vector<T>& vec, boost::property_tree::ptree const& pt, string c
 		vec.push_back(*value);
 		return;
 	}
-	for (size_t i = 0;; i++) {
-		value = pt.get_optional<T>(key + "." + ToString(i));
+	for (size_t i = 1;; i++) {
+		value = pt.get_optional<string>(key + "#" + ToString(i));
 		if (value) {
 			vec.push_back(*value);
-		} else if (i > 0) {
+			continue;
+		}
+		value = pt.get_optional<string>(key + "." + ToString(i));
+		if (value) {
+			vec.push_back(*value);
+			continue;
+		}
+		if (i > 0) {
 			return;
 		}
 	}
