@@ -34,6 +34,9 @@ entry_point construction
 
 developer_mode true
 
+; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
+paired_mode true
+
 ; The following parameters are used ONLY if developer_mode is true
 
 ; whether to print save-files (which take space on disk) - ONLY in developer mode
@@ -50,32 +53,17 @@ compute_paths_number false
 
 ; End of developer_mode parameters
 
-; etalon graph mode switcher. If true input reads are ignored and graph is constructed with reference as the only read
-etalon_graph_mode false
-
 ; iterative mode switcher, activates additional contigs usage
 use_additional_contigs false
 
 ; use unipaths as additional contigs instead of just graph edges
 use_unipaths false
 
-; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
-paired_mode true
-
 ;radius for online pair info clusteing algorithm
 online_clust_rad 0.
 
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
-
-; use advanced distance estimation or not
-advanced_estimator_mode false
-
-; set to true to obtain paired info from genome mapping rather than from paired reads
-etalon_info_mode  false
-
-; Collect paired information before or after graph simplification
-late_paired_info true
 
 ; repeat resolving mode (none split path_extend jump combined)
 resolving_mode split
