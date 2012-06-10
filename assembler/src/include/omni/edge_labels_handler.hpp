@@ -175,9 +175,10 @@ public:
 		edge_labels.erase(e);
 	}
 
-	std::string str(EdgeId edgeId, boost::function<string(EdgeId)> f =
-			boost::bind(ToString<EdgeId>, _1)) const {
+	std::string str(EdgeId edgeId,
+                  boost::function<string(const EdgeId&)> f = boost::bind(static_cast<string (*)(const EdgeId&)>(ToString<EdgeId>), _1)) const {
 		std::stringstream ss;
+
 		auto it = edge_labels.find(edgeId);
 		if (it != edge_labels.end()) {
 			TRACE("Number of labels " << it->second.size());
