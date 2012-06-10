@@ -54,67 +54,67 @@ enum estimation_mode {
     em_simple,
     em_weighted,
     em_extensive,
-    em_advanced
+    em_smoothing
 };
 
 enum resolving_mode
 {
-	rm_none           ,
-	rm_split          ,
-	rm_path_extend    ,
-	rm_combined       ,
-	rm_jump
+    rm_none           ,
+    rm_split          ,
+    rm_path_extend    ,
+    rm_combined       ,
+    rm_jump
 };
 
 enum info_printer_pos {
-	ipp_default = 0,
+    ipp_default = 0,
     ipp_before_first_gap_closer,
-	ipp_before_simplification,
-	ipp_tip_clipping,
-	ipp_bulge_removal,
-	ipp_err_con_removal,
-	ipp_before_final_err_con_removal,
-	ipp_final_err_con_removal,
-	ipp_final_tip_clipping,
-	ipp_final_bulge_removal,
-	ipp_removing_isolated_edges,
-	ipp_final_simplified,
-	ipp_before_repeat_resolution,
+    ipp_before_simplification,
+    ipp_tip_clipping,
+    ipp_bulge_removal,
+    ipp_err_con_removal,
+    ipp_before_final_err_con_removal,
+    ipp_final_err_con_removal,
+    ipp_final_tip_clipping,
+    ipp_final_bulge_removal,
+    ipp_removing_isolated_edges,
+    ipp_final_simplified,
+    ipp_before_repeat_resolution,
 
-	ipp_total
+    ipp_total
 };
 
 namespace details {
 
 inline const char* info_printer_pos_name(size_t pos) {
-	const char* names[] = { "default", "before_first_gap_closer", "before_simplification", "tip_clipping",
-			"bulge_removal", "err_con_removal", "before_final_err_con_removal",
-			"final_err_con_removal", "final_tip_clipping",
-			"final_bulge_removal", "removing_isolated_edges",
-			"final_simplified", "before_repeat_resolution" };
+    const char* names[] = { "default", "before_first_gap_closer", "before_simplification", "tip_clipping",
+        "bulge_removal", "err_con_removal", "before_final_err_con_removal",
+        "final_err_con_removal", "final_tip_clipping",
+        "final_bulge_removal", "removing_isolated_edges",
+        "final_simplified", "before_repeat_resolution" };
 
-	utils::check_array_size<ipp_total>(names);
-	return names[pos];
+    utils::check_array_size<ipp_total>(names);
+    return names[pos];
 }
 
 } // namespace details
 
 inline std::string MakeLaunchTimeDirName() {
-	time_t rawtime;
-	struct tm * timeinfo;
-	char buffer[80];
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
 
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
 
-	strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
-	return std::string(buffer);
+    strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
+    return std::string(buffer);
 }
 
 // struct for debruijn project's configuration file
 struct debruijn_config {
-	typedef bimap<string, working_stage> stage_name_id_mapping;
-	typedef bimap<string, simplification_mode> simpl_mode_id_mapping;
+    typedef bimap<string, working_stage> stage_name_id_mapping;
+    typedef bimap<string, simplification_mode> simpl_mode_id_mapping;
     typedef bimap<string, estimation_mode> estimation_mode_id_mapping;
     typedef bimap<string, paired_metrics> paired_metrics_id_mapping;
 	typedef bimap<string, resolving_mode> resolve_mode_id_mapping;
@@ -155,7 +155,7 @@ struct debruijn_config {
           estimation_mode_id_mapping::value_type("simple",      em_simple      ),
           estimation_mode_id_mapping::value_type("weighted",    em_weighted    ),
           estimation_mode_id_mapping::value_type("extensive",   em_extensive   ),
-          estimation_mode_id_mapping::value_type("advanced",    em_advanced    ),
+          estimation_mode_id_mapping::value_type("smoothing",    em_smoothing  ),
         };
         return estimation_mode_id_mapping(info, utils::array_end(info));
     }
@@ -172,11 +172,11 @@ struct debruijn_config {
 	static const resolve_mode_id_mapping FillResolveModeInfo()
 	{
 		resolve_mode_id_mapping::value_type info [] = {
-      resolve_mode_id_mapping::value_type("none"             , rm_none           ),
-      resolve_mode_id_mapping::value_type("split"  			, rm_split			),
-      resolve_mode_id_mapping::value_type("path_extend"      , rm_path_extend    ),
-      resolve_mode_id_mapping::value_type("combined"         , rm_combined       ),
-      resolve_mode_id_mapping::value_type("jump"             , rm_jump           ),
+        resolve_mode_id_mapping::value_type("none"             , rm_none           ),
+        resolve_mode_id_mapping::value_type("split"  			, rm_split			),
+        resolve_mode_id_mapping::value_type("path_extend"      , rm_path_extend    ),
+        resolve_mode_id_mapping::value_type("combined"         , rm_combined       ),
+        resolve_mode_id_mapping::value_type("jump"             , rm_jump           ),
     };
 
 		return resolve_mode_id_mapping(info, utils::array_end(info));
@@ -378,13 +378,13 @@ struct debruijn_config {
 		double filter_threshold;
 	};
 
-	struct advanced_distance_estimator {
+	struct smoothing_distance_estimator {
 		size_t threshold;
 		double range_coeff;
 		double delta_coeff;
 		double percentage;
 		size_t cutoff;
-		size_t minpeakpoints;
+		size_t min_peak_points;
 		double inv_density;
 		double derivative_threshold;
 
@@ -500,7 +500,6 @@ public:
 	bool additional_ec_removing;
 	bool paired_info_statistics;
 //	bool etalon_info_mode;
-	//bool advanced_estimator_mode;
 	bool componential_resolve;
 	bool gap_closer_enable;
 	bool SAM_writer_enable;
@@ -529,7 +528,7 @@ public:
 	long_contigs::lc_config::lc_params andrey_params;
 
 	distance_estimator de;
-	advanced_distance_estimator ade;
+	smoothing_distance_estimator ade;
 	repeat_resolver rr;
 	dataset ds;
 	position_handler pos;
@@ -663,7 +662,7 @@ inline void load(debruijn_config::distance_estimator& de,
 	load(de.filter_threshold, pt, "filter_threshold");
 }
 
-inline void load(debruijn_config::advanced_distance_estimator& ade,
+inline void load(debruijn_config::smoothing_distance_estimator& ade,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
@@ -672,7 +671,7 @@ inline void load(debruijn_config::advanced_distance_estimator& ade,
 	load(ade.delta_coeff, pt, "delta_coeff");
 	load(ade.percentage, pt, "percentage");
 	load(ade.cutoff, pt, "cutoff");
-	load(ade.minpeakpoints, pt, "minpeakpoints");
+	load(ade.min_peak_points, pt, "min_peak_points");
 	load(ade.inv_density, pt, "inv_density");
 	load(ade.derivative_threshold, pt, "derivative_threshold");
 }
@@ -918,8 +917,6 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.paired_info_statistics, pt, "paired_info_statistics");
 //	load(cfg.etalon_info_mode, pt, "etalon_info_mode");
 	load(cfg.componential_resolve, pt, "componential_resolve");
-    //load(cfg.advanced_estimator_mode, pt, "advanced_estimator_mode");
-	//cfg.advanced_estimator_mode = false;
 	load(cfg.gap_closer_enable, pt, "gap_closer_enable");
 	load(cfg.SAM_writer_enable, pt, "SAM_writer_enable");
 

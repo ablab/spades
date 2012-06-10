@@ -31,7 +31,7 @@ ade
         cutoff              3 ;the number of the lowest freqs in fourier decomp being taken
 
     ;other
-        minpeakpoints       3 ;the minimal number of points in cluster to be considered
+        min_peak_points       3 ;the minimal number of points in cluster to be considered
         inv_density         5.0 ;maximal inverse density of points in cluster to be considered
 
     ;hard_mode arguments

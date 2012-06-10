@@ -14,7 +14,6 @@
 #ifndef PEAKFINDER_HPP_
 #define PEAKFINDER_HPP_
 
-#include <fftw3.h>
 #include "verify.hpp"
 #include "data_divider.hpp"
 #include "paired_info.hpp"
@@ -22,20 +21,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <complex>
+#include <cmath>
 
 
 namespace  omnigraph{
 
-
-typedef fftw_complex complex;
+//typedef double[2] complex;
 
 template <class EdgeId>
 class PeakFinder {
+
 private:
 
 	double x1, x2, y1, y2;
 
-    size_t range_;
+    size_t default_range;
     
     size_t delta_;
 	
@@ -45,64 +46,99 @@ private:
 
     double weight;
 
-	std::vector<int> x_;
-    std::vector<double> y_;
+	vector<int> x_;
+    vector<double> y_;
 
-	std::vector<int> peaks;
+	vector<int> peaks;
 
 	int data_size, data_length, min, max;
 
 
-	complex *in, *out, *outf;
+    typedef std::complex<double> complex_t;
 
-	fftw_plan p, p1;
+    vector<complex_t> in, out;
+	//complex_t *in, *out, *outf;
 
-	inline void ExtendLinear(complex* f) {
+    int Rev(int num, int lg_n) {
+        int res = 0;
+        for (int i = 0; i < lg_n; ++i)
+            if (num & (1 << i))
+                res |= 1 << (lg_n - 1 - i);
+                return res;
+    }
+ 
+    void FFT(vector<complex_t>& vect, bool invert) {
+        int n = (int) vect.size();
+        int lg_n = 0;
+        while ((1 << lg_n) < n)  
+            ++lg_n;
+
+        for (int i = 0; i < n; ++i)
+            if (i < Rev(i, lg_n))
+                swap(vect[i], vect[Rev(i, lg_n)]);
+
+        for (size_t len = 2; len < 1 + n; len <<= 1) {
+            double ang = 2 * M_PI / len * (invert ? -1 : 1);
+            complex_t wlen(cos(ang), sin(ang));
+            for (size_t i = 0; i < n; i += len) {
+                complex_t w(1);
+                for (size_t j = 0; j < len >> 1; ++j) {
+                    complex_t u = vect[i + j];
+                    complex_t v = vect[i + j + len >> 1] * w;
+                    vect[i + j] = u + v;
+                    vect[i + j + len >> 1] = u - v;
+                    w *= wlen;
+                }
+            }
+        }
+
+        if (invert)
+            for (size_t i = 0; i < n; ++i)
+                vect[i] /= n;
+    }
+
+
+    void FFTForward(vector<complex_t>& vect) {
+       FFT(vect, false);
+    }
+
+    void FFTBackward(vector<complex_t>& vect) {
+       FFT(vect, true);
+    }
+
+    void ExtendLinear(vector<complex_t>& in) {
 		int ind = 0;
         weight = 0;
-		for (int i = 0; i < data_length; i++) {
+		for (int i = 0; i < data_length; ++i) {
 			if (ind == data_size - 1)
-				f[i][0] = max;
+				in[i] = max;
 			else {
                 VERIFY(x_[ind + 1] > x_[ind]);
-				f[i][0] = ((i + min - x_[ind]) * y_[ind + 1] + y_[ind] * (x_[ind + 1] - i - min)) / (1.0f * (x_[ind + 1] - x_[ind]));
+				in[i] = ((i + min - x_[ind]) * y_[ind + 1] + y_[ind] * (x_[ind + 1] - i - min)) / (1. * (x_[ind + 1] - x_[ind]));
 			}
-            weight += f[i][0]; //   filling the array on the fly
-			f[i][1] = 0;
-//			cout<<f[i][0]<<endl;
+            weight += in[i].real();     // filling the array on the fly
 
-			if (ind < data_size && i == x_[ind + 1] - min) ind++;
+			if (ind < data_size && i == x_[ind + 1] - min) 
+                ind++;
 		}
 	}
 
-	inline void ExtendNaive(complex* f) {
-		int min = x_.front();
-		int data_size = x_.size();
-		for (int i = 0; i < data_size; i++) {
-			f[-min + x_[i]][0] = y_[i];
-			f[-min + x_[i]][1] = 0;
-			if (i < data_size - 1) for (int j = x_[i] - min + 1; j < x_[i + 1] - min; j++)
-				f[j][0] = f[j][1] = 0;
-		}
-//		for (int i = 0; i < data_length; i++)
-//			std::cout << f[i][0] << std::endl;
-	}
 
 	void InitBaseline() {
 		int Np = (int) (data_length * percentage_);
 		if (Np == 0) Np++; // Np <> 0 !!!!
 
-		double mean_beg = 0.0;
-		double mean_end = 0.0;
+		double mean_beg = 0.;
+		double mean_end = 0.;
 		for (int i = 0; i < Np; i++) {
-			mean_beg += in[i][0];
-			mean_end += in[data_length - i - 1][0];
+			mean_beg += in[i].real();
+			mean_end += in[data_length - i - 1].real();
 		}
-		mean_beg /= 1.0f * Np;
-		mean_end /= 1.0f * Np;
+		mean_beg /= 1. * Np;
+		mean_end /= 1. * Np;
 		//	two points defining the line
-		x1 = Np / 2.0f;
-		x2 = data_length - Np / 2.0f;
+		x1 = Np / 2.;
+		x2 = data_length - Np / 2.;
 		y1 = mean_beg;
 		y2 = mean_end;
 	}
@@ -112,14 +148,14 @@ private:
 		//	it's being constructed like this: the first point is (Np/2; mean of the first percentage of data),
 		//	the second point is (data_length - Np/2; mean of the last $percentage of data)
 		for (int i = 0; i < data_length; i++) {
-			in[i][0] -= (y1 + (y2 - y1) * (i - x1) / (x2 - x1));
+			in[i] -= (y1 + (y2 - y1) * (i - x1) / (x2 - x1));
 		}
 	}
 
 	void AddBaseline() {
 		for (int i = 0; i < data_length; i++) {
-			outf[i][0] /= data_length;
-			outf[i][0] += (y1 + (y2 - y1) * (i - x1) / (x2 - x1));
+			in[i] /= data_length;
+			in[i] += (y1 + (y2 - y1) * (i - x1) / (x2 - x1));
 		}
 	}
 
@@ -128,31 +164,30 @@ private:
 		min = x_[0];
 		max = x_[data_size - 1];
 		data_length = max - min + 1;
-//		std::cout << data_size << " " << data_length << std::endl;
 		//fast Fourier transform
-		out = (fftw_complex*) (((fftw_malloc(sizeof(fftw_complex) * data_length))));
-		in = (fftw_complex*) (((fftw_malloc(sizeof(fftw_complex) * data_length))));
-		outf = (fftw_complex*) (((fftw_malloc(sizeof(fftw_complex) * data_length))));
-		p = fftw_plan_dft_1d(data_length, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+		//out = (complex_t*) malloc(sizeof(complex_t) * data_length);
+		//in = (complex_t*) malloc(sizeof(complex_t) * data_length);
+		//outf = (complex_t*) malloc(sizeof(complex_t) * data_length);
+		//p = fftw_plan_dft_1d(data_length, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
 	}
 
-	bool isInrange(int peak) {
+	bool isInRange(int peak) {
 		return peak <= max && peak >= min;
 	}
 
 	double LeftDerivative(int dist) {
-		VERIFY(dist>min);
-		return outf[dist - min][0] - outf[dist - min - 1][0];
+		VERIFY(dist > min);
+		return in[dist - min].real() - in[dist - min - 1].real();
 	}
 
 	double RightDerivative(int dist) {
-		VERIFY(dist<max);
-		return outf[dist - min + 1][0] - outf[dist - min][0];
+		VERIFY(dist < max);
+		return in[dist - min + 1].real() - in[dist - min].real();
 	}
 
 	double MiddleDerivative(int dist) {
-		VERIFY(dist>min && dist<max);
-		return 0.5f * (outf[dist - min + 1][0] - outf[dist - min - 1][0]);
+		VERIFY(dist > min && dist < max);
+		return 0.5f * (in[dist - min + 1].real() - in[dist - min - 1].real());
 	}
 
 	double Derivative(int dist) {
@@ -160,7 +195,8 @@ private:
 			return LeftDerivative(dist);
 		else if (dist == min)
 			return RightDerivative(dist);
-		else return MiddleDerivative(dist);
+		else 
+            return MiddleDerivative(dist);
     }
 
 	bool isLocalMaximum(int peak, int range, int left_bound, int right_bound, int delta) {
@@ -168,9 +204,9 @@ private:
 		for (int i = left_bound + range; i <= right_bound - range; i++) {
 			int index_max = i - range;
 			for (int j = i - range; j <= i + range; j++)
-				if (math::ls(outf[index_max - min][0], outf[j - min][0])) {
+				if (math::ls(in[index_max - min].real(), in[j - min].real())) {
 					index_max = j;
-				}// else if (j < i && outf[index_max - min][0] == outf[j - min][0] ) index_max = j;
+				}// else if (j < i && in[index_max - min][0] == in[j - min][0] ) index_max = j;
 			
 
             if (!((index_max > i - (range >> 1)) && (index_max < i + (range >> 1)))) continue;
@@ -184,21 +220,18 @@ private:
     }
 
 public:
-	PeakFinder(std::vector<PairInfo<EdgeId> > data, int begin, int end, size_t range, size_t delta, double percentage, double derivative_threshold): 
-    range_(range), delta_(delta), percentage_(percentage), derivative_threshold_(derivative_threshold){
+	PeakFinder(vector<PairInfo<EdgeId> > data, int begin, int end, size_t range, size_t delta, double percentage, double derivative_threshold) : 
+            default_range(range), 
+            delta_(delta), 
+            percentage_(percentage), 
+            derivative_threshold_(derivative_threshold)
+    {
         for (int i = begin; i < end; i++) {
             x_.push_back(rounded_d(data[i]));
             y_.push_back(data[i].weight);
         }
         Init();
     }
-	~PeakFinder() {
-		fftw_destroy_plan(p);
-		fftw_destroy_plan(p1);
-		fftw_free(in);
-		fftw_free(out);
-		fftw_free(outf);
-	}
 
     double getWeight(){
         return weight;
@@ -208,102 +241,101 @@ public:
         return weight / data_length;
     }
 
-	void printstat() {
+	void PrintStats() {
 		for (int i = 0; i < data_length; i++)
-			std::cout << in[i][0] << " " << in[i][1] << "*I" << std::endl;
+			cout << in[i] << endl;
 
-		std::cout << std::endl;
+		cout << endl;
 	}
+
 	void FFTSmoothing(double cutoff) {
-		VERIFY(data_length>0);
-        if (data_length == 1){
-			in[0][0] = x_[0];
-			outf[0][0] = y_[0];
+		VERIFY(data_length > 0);
+        if (data_length == 1) {
+			in[0] = x_[0];
+			in[0] = y_[0];
 		}
 		ExtendLinear(in);
 		InitBaseline();
 		SubtractBaseline();
-		fftw_execute(p);
-		p1 = fftw_plan_dft_1d(data_length, out, outf, FFTW_BACKWARD, FFTW_ESTIMATE);
+        FFTForward(in);
+		//fftw_execute(p);
+		//p1 = fftw_plan_dft_1d(data_length, out, outf, FFTW_BACKWARD, FFTW_ESTIMATE);
 
 		int Ncrit = (int) (cutoff);
-//        cutting off - standard parabolic filter
-        for (int i = 0; i < std::min(data_length, Ncrit); i++) {
-			out[i][0] *= 1 - (i * i * 1.0f) / (Ncrit * Ncrit);
-			out[i][1] *= 1 - (i * i * 1.0f) / (Ncrit * Ncrit);
+
+//      cutting off - standard parabolic filter
+        for (int i = 0; i < min(data_length, Ncrit); i++) {
+			in[i] *= 1. - (i * i * 1.) / (Ncrit * Ncrit);
 		}
 		for (int i = Ncrit; i < data_length; i++) {
-			out[i][0] = out[i][1] = 0;
+			in[i] = 0.;
 		}
 
+        FFTBackward(in);
 
-		fftw_execute(p1);
+
+		//fftw_execute(p1);
 		AddBaseline();
 	}
 
 	bool isPeak(int dist, int range) {
-        return isLocalMaximum(dist, range);
+        return isLocalMaximum(dist, range = default_range);
 	}
 
-	bool isPeak(int dist) {
-        return isLocalMaximum(dist, range_);
-	}
 
 //  not tested at all
-    std::vector<std::pair<int, double> > ListPeaks(int delta = 5) {
-        std::vector<std::pair<int, double> > peaks;
+    vector<pair<int, double> > ListPeaks(int delta = 5) {
+        vector<pair<int, double> > peaks;
         //another data_length
         int data_length = max - min + 1;
         bool* was;
         srand(time(NULL));    
         std::fill(was, was + data_length, false);
-        for (int l = 0; l<data_length; l++){
+        for (int l = 0; l < data_length; l++) {
             int v = std::rand() % data_length;
             if (was[v]) continue;
             was[v] = true;
             int index = v + min;
             while (index < max && index > min){
                 // if @index is local maximum, then leave it
-                double right = RightDerivative(index);
-                double left = LeftDerivative(index);
+                double right_derivative = RightDerivative(index);
+                double left_derivative = LeftDerivative(index);
 
-                if (right > 0 && right >= left){
+                if (right_derivative > 0 && right_derivative >= left_derivative){
                     index++;
-                }else if (left > 0){
+                }else if (left_derivative > 0){
                     index--;
                 }
             }
-            double right = RightDerivative(index);
-            double left = LeftDerivative(index);
-            if (index >= max - delta || index <= min + delta) continue;
-            if ((right < -derivative_threshold_) && (left > derivative_threshold_))
-                    if (isLocalMaximum(index, delta, index - delta - 1, index + delta - 1, delta >> 1)){
-                        double weight = 0;
-                        for (int i = std::max(min, index - (delta << 1)); i<std::min(max, index + (delta << 1)); i++){
-                            double right = RightDerivative(i);
-                            weight+=right*right;
-                        }
-                        peaks.push_back(std::make_pair(index, weight));
-                    }
-            
-        }
 
+            double right_derivative = RightDerivative(index);
+            double left_derivative = LeftDerivative(index);
+
+            if (index >= max - delta || index <= min + delta) 
+                continue;
+
+            if ((right_derivative < -derivative_threshold_) && (left_derivative > derivative_threshold_))
+                    if (isLocalMaximum(index, delta, index - delta - 1, index + delta - 1, delta >> 1)) {
+                        double weight = 0;
+                        for (int i = max(min, index - (delta << 1)); i < min(max, index + (delta << 1)); ++i) {
+                            double right_derivative = RightDerivative(i);
+                            weight += right_derivative*right_derivative;
+                        }
+                        peaks.push_back(make_pair(index, weight));
+                    }
+        }
 		return peaks;
 	}
 
-	complex *getIn() const {
+	vector<complex_t> getIn() const {
 		return in;
 	}
 
-	void setIn(complex *in) {
-		this->in = in;
+	vector<complex_t> getOut() const {
+		return in;
 	}
 
-	complex *getOut() const {
-		return outf;
-	}
-
-	std::vector<int> getPeaks() const {
+	vector<int> getPeaks() const {
 		return peaks;
 	}
 
