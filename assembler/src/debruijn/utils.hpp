@@ -182,7 +182,7 @@ class KmerMapper: public omnigraph::GraphActionHandler<Graph> {
 	typedef omnigraph::GraphActionHandler<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
-	typedef typename std::tr1::unordered_map<Kmer, Kmer, typename Kmer::hash> MapType;
+	typedef typename std::unordered_map<Kmer, Kmer, typename Kmer::hash> MapType;
 
 
 	MapType mapping_;

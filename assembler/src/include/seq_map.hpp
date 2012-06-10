@@ -21,7 +21,7 @@
 
 //#include "cuckoo.hpp"
 
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 
 /*
@@ -42,7 +42,7 @@ private:
 
 	typedef Seq<size_> Kmer;
 
-    typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
+    typedef std::unordered_map<Kmer, pair<Value, size_t> ,
          typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
 
 //	typedef cuckoo<Kmer, pair<Value, size_t> , typename Kmer::multiple_hash,

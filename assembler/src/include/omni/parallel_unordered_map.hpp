@@ -1,13 +1,13 @@
 #pragma once 
 
-#include <tr1/unordered_set>
+#include <unordered_set>
 
 template<class T, class Hash, class KeyEqual>
 struct parallel_unordered_set
 {
 private:
 
-    typedef std::tr1::unordered_set<T, Hash, KeyEqual>                      origin_container_t;
+    typedef std::unordered_set<T, Hash, KeyEqual>                      origin_container_t;
 
     typedef std::vector<origin_container_t>                                 container_arr_t;
 

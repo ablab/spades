@@ -3,7 +3,7 @@
 #include "omni/parallel_unordered_map.hpp"
 #include <omp.h>
 
-#include <tr1/unordered_set>
+#include <unordered_set>
 
 template <size_t size_>
 class ParallelSeqSet {
@@ -13,7 +13,7 @@ public:
 
     typedef parallel_unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> par_container_t;
 
-    typedef std::tr1::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
+    typedef std::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
 
 
 private:
@@ -82,7 +82,7 @@ public:
 
     typedef parallel_vector<Kmer> par_container_t;
 
-    typedef std::tr1::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
+    typedef std::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
 
 private:
 

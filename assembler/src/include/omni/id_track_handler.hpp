@@ -21,8 +21,8 @@ public:
 private:
 	unordered_map<VertexId, realIdType> VertexIntId;
 	unordered_map<EdgeId, realIdType> EdgeIntId;
-	std::tr1::unordered_map<realIdType, VertexId> VertexOriginalId;
-	std::tr1::unordered_map<realIdType, EdgeId> EdgeOriginalId;
+	std::unordered_map<realIdType, VertexId> VertexOriginalId;
+	std::unordered_map<realIdType, EdgeId> EdgeOriginalId;
 	int MaxVertexIntId;
 	int MaxEdgeIntId;
 

@@ -14,7 +14,7 @@
 #ifndef COVERAGE_HPP_
 #define COVERAGE_HPP_
 
-//#include <tr1/unordered_map>
+#include <unordered_map>
 #include "logger/logger.hpp"
 #include "io/reader.hpp"
 #include "perfcounter.hpp"

@@ -7,8 +7,8 @@
 #pragma once
 
 #include <ostream>
-#include <tr1/unordered_set>
-#include <tr1/unordered_map>
+#include <unordered_set>
+#include <unordered_map>
 #include <stacktrace.hpp>
 
 namespace restricted
@@ -74,7 +74,7 @@ template<class T>
 struct Hash
 {
 	typedef pure_pointer<T> pointer_type_t;
-	std::tr1::hash<T*> inner_hash_;
+	std::hash<T*> inner_hash_;
 
 	size_t operator()(pointer_type_t const& a) const {
 		return inner_hash_(a.get());
@@ -105,7 +105,7 @@ template<class T>
 struct set
 {
 	typedef Hash<typename T::type> hash_t;
-	typedef std::tr1::unordered_set<T, hash_t> base_set_t;
+	typedef std::unordered_set<T, hash_t> base_set_t;
 	typedef typename base_set_t::value_type value_type;
 
 	typedef iterator_wrapper<typename base_set_t::iterator			>	iterator;
@@ -182,7 +182,7 @@ template<class Key, class Value>
 struct map
 {
 	typedef Hash<typename Key::type> hash_t;
-	typedef std::tr1::unordered_map<Key, Value, hash_t> base_map_t;
+	typedef std::unordered_map<Key, Value, hash_t> base_map_t;
 	typedef typename base_map_t::value_type value_type;
 
 	typedef iterator_wrapper<typename base_map_t::iterator		>	iterator;
