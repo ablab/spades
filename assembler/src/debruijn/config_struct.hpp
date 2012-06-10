@@ -108,38 +108,42 @@ struct debruijn_config {
 	bool developer_mode;
 
 	static const stage_name_id_mapping FillStageInfo() {
-		stage_name_id_mapping::value_type info[] = { { "construction",
-				ws_construction },
-				{ "paired_info_count", ws_paired_info_count }, {
-						"simplification", ws_simplification }, {
-						"late_pair_info_count", ws_late_pair_info_count }, {
-						"distance_estimation", ws_distance_estimation }, {
-						"repeats_resolving", ws_repeats_resolving }, {
-						"repeats_resolving", ws_repeats_resolving }, {
-						"n50_enlargement", ws_n50_enlargement } };
+		stage_name_id_mapping::value_type info[] = {
+      stage_name_id_mapping::value_type("construction", ws_construction),
+      stage_name_id_mapping::value_type("paired_info_count", ws_paired_info_count),
+      stage_name_id_mapping::value_type("simplification", ws_simplification),
+      stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count),
+      stage_name_id_mapping::value_type("distance_estimation", ws_distance_estimation),
+      stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving),
+      stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving),
+      stage_name_id_mapping::value_type("n50_enlargement", ws_n50_enlargement)
+    };
 
 		return stage_name_id_mapping(info, utils::array_end(info));
 	}
 
 	static const simpl_mode_id_mapping FillSimplifModeInfo() {
-		simpl_mode_id_mapping::value_type info[] = { { "normal", sm_normal }, {
-				"pair_info_aware", sm_pair_info_aware }, { "cheating",
-				sm_cheating }, { "topology", sm_topology }, { "chimeric",
-				sm_chimeric }, { "max_flow", sm_max_flow } };
+		simpl_mode_id_mapping::value_type info[] = {
+      simpl_mode_id_mapping::value_type("normal", sm_normal),
+      simpl_mode_id_mapping::value_type("pair_info_aware", sm_pair_info_aware),
+      simpl_mode_id_mapping::value_type("cheating", sm_cheating),
+      simpl_mode_id_mapping::value_type("topology", sm_topology),
+      simpl_mode_id_mapping::value_type("chimeric", sm_chimeric ),
+      simpl_mode_id_mapping::value_type("max_flow", sm_max_flow)
+    };
 
 		return simpl_mode_id_mapping(info, utils::array_end(info));
 	}
 
 	static const resolve_mode_id_mapping FillResolveModeInfo()
 	{
-		resolve_mode_id_mapping::value_type info [] =
-        {
-                {"none"             , rm_none           },
-                {"split"  			, rm_split			},
-                {"path_extend"      , rm_path_extend    },
-                {"combined"         , rm_combined       },
-                {"jump"             , rm_jump           },
-        };
+		resolve_mode_id_mapping::value_type info [] = {
+      resolve_mode_id_mapping::value_type("none"             , rm_none           ),
+      resolve_mode_id_mapping::value_type("split"  			, rm_split			),
+      resolve_mode_id_mapping::value_type("path_extend"      , rm_path_extend    ),
+      resolve_mode_id_mapping::value_type("combined"         , rm_combined       ),
+      resolve_mode_id_mapping::value_type("jump"             , rm_jump           ),
+    };
 
 		return resolve_mode_id_mapping(info, utils::array_end(info));
 	}
