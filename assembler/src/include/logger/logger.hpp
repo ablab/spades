@@ -7,6 +7,9 @@
 #pragma once
 #include "perfcounter.hpp"
 
+#include <unordered_map>
+#include <string>
+
 namespace logging
 {
 
