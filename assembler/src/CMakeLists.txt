@@ -49,7 +49,12 @@ else ()
   endif()
 endif()
 
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug"          OR
+    ${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
 add_definitions(-g3)
+else()
+add_definitions(-g0)
+endif()
 add_definitions(-static)
 add_definitions(-std=c++0x)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
