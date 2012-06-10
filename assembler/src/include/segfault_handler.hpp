@@ -7,7 +7,7 @@
 
 #pragma once
 #include "stacktrace.hpp"
-#include "bits/signum.h"
+#include "signal.h"
 
 
 struct segfault_handler
