@@ -368,7 +368,7 @@ bool ChimericRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 }
 
 template<class gp_t>
-void FinalTipClipping(gp_t& gp, boost::function<void(typename Graph::EdgeId)>& removal_handler_f = 0) {
+void FinalTipClipping(gp_t& gp, boost::function<void(typename Graph::EdgeId)> removal_handler_f = 0) {
 	INFO("SUBSTAGE == Final tip clipping");
 
 	//todo what is the difference between default and commented code
