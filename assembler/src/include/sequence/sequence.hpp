@@ -131,7 +131,7 @@ public:
     template<size_t size2_>
     Seq<size2_> end() const;
     
-    inline string str() const;
+    inline std::string str() const;
     inline size_t size() const;
 
 private:
@@ -149,7 +149,7 @@ public:
     //std::vector<Seq<size2_>> SplitInSeqs() const;
 };
 
-inline ostream& operator<<(ostream& os, const Sequence& s);
+inline std::ostream& operator<<(std::ostream& os, const Sequence& s);
 
 /**
  * start of Sequence is Seq with preferred size
@@ -180,7 +180,7 @@ Seq<size2_> Sequence::end() const {
 
 
 class SequenceBuilder {
-    vector<char> buf_;
+	std::vector<char> buf_;
 public:
     template<typename S>
     SequenceBuilder& append(const S &s) {
@@ -208,8 +208,8 @@ public:
         return buf_[index];
 	}
 
-	string str() const {
-		string s(buf_.size(), '-');
+    std::string str() const {
+    	std::string s(buf_.size(), '-');
 		for (size_t i = 0; i < s.size(); ++i) {
 			s[i] = nucl(buf_[i]);
 		}
@@ -266,7 +266,7 @@ bool Sequence::operator!=(const Sequence &that) const {
 }
 
 bool Sequence::intersects(const Sequence &t) const {
-	for (size_t i = 0; i < min(size_, t.size_); ++i) {
+	for (size_t i = 0; i < std::min(size_, t.size_); ++i) {
 		if (this->operator[](i) == t[i]) {
 			return true;
 		}
@@ -278,7 +278,7 @@ bool Sequence::intersects(const Sequence &t) const {
   * @todo Might be optimized via int comparison (not so easy)
   */
 bool Sequence::operator<(const Sequence &that) const {
-	size_t s = min(size_, that.size_);
+	size_t s = std::min(size_, that.size_);
 	for (size_t i = 0; i < s; ++i) {
 		if (this->operator[](i) != that[i]) {
 			return (this->operator[](i) < that[i]);
@@ -387,7 +387,7 @@ std::string Sequence::str() const {
 	return res;
 }
 
-ostream& operator<<(ostream& os, const Sequence& s) {
+std::ostream& operator<<(std::ostream& os, const Sequence& s) {
 	os << s.str();
 	return os;
 }

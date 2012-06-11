@@ -57,7 +57,7 @@ class ValidKMerGenerator {
    * nucleotides with quality lower the threshold from the ends of the
    * read.
    */
-  explicit ValidKMerGenerator(const string & seq, const string & qual,
+  explicit ValidKMerGenerator(const std::string & seq, const std::string & qual,
                               uint32_t bad_quality_threshold = 2) :
       bad_quality_threshold_(bad_quality_threshold),
       pos_(-1),

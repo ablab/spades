@@ -16,6 +16,10 @@
 
 #include "verify.hpp"
 #include "io/ireader.hpp"
+#include <memory>
+#include <boost/format.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/filesystem.hpp>
 
 /**
  * Converts anything to string (using ostringstream).

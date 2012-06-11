@@ -25,7 +25,7 @@ inline const std::string Complement(const std::string &s) {
 	return res;
 }
 
-inline const Sequence MergeOverlappingSequences(vector<Sequence>& ss, size_t overlap) {
+inline const Sequence MergeOverlappingSequences(std::vector<Sequence>& ss, size_t overlap) {
 	if (ss.empty()) {
 		return Sequence(); 
 	}

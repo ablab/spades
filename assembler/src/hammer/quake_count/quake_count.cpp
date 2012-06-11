@@ -30,6 +30,8 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
+#include <iomanip>
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
 #include "read/ireadstream.hpp"
@@ -44,6 +46,8 @@ using std::set;
 using std::vector;
 using std::unordered_map;
 using std::map;
+using std::ofstream;
+using std::ifstream;
 using log4cxx::LoggerPtr;
 using log4cxx::Logger;
 using log4cxx::BasicConfigurator;
@@ -54,7 +58,17 @@ const uint32_t kK = 55;
 typedef Seq<kK> KMer;
 typedef unordered_map<KMer, KMerFreqInfo, KMer::hash> UnorderedMap;
 
-LoggerPtr logger(Logger::getLogger("preproc"));
+void print_time() {
+	time_t rawtime;
+	tm * ptm;
+	time ( &rawtime );
+	ptm = gmtime( &rawtime );
+	std::cout << std::setfill('0') << "[ " << std::setw(2) << ptm->tm_hour << ":" << std::setw(2) << ptm->tm_min
+			<< ":" << std::setw(2) << ptm->tm_sec << " ] ";
+}
+
+#define LOG(a) print_time(); std::cout << a << std::endl
+
 /**
  * @variable Every kStep k-mer will appear in the log.
  */
@@ -135,7 +149,7 @@ void SplitToFiles(ireadstream ifs, vector<ofstream *> &ofiles,
   while (!ifs.eof()) {
     ++read_number;
     if (read_number % kStep == 0) {
-      LOG4CXX_INFO(logger, "Reading read " << read_number << ".");
+      LOG("Reading read " << read_number << ".");
     }
     Read r;
     ifs >> r;
@@ -197,9 +211,8 @@ int main(int argc, char *argv[]) {
     PrintHelp(argv[0]);
     return 1;
   }
-  BasicConfigurator::configure();
-  LOG4CXX_INFO(logger, "Starting preproc: evaluating "
-               << opts.ifile << ".");
+  // BasicConfigurator::configure();
+  LOG("Starting preproc: evaluating " << opts.ifile << ".");
   vector<ofstream*> ofiles(opts.file_number);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char filename[50];
@@ -218,13 +231,11 @@ int main(int argc, char *argv[]) {
     char ifile_name[50];
     snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
     ifstream ifile(ifile_name);
-    LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
+    LOG("Processing " << ifile_name << ".");
     EvalFile<UnorderedMap>(ifile, ofile, opts.q_mers);
-    LOG4CXX_INFO(logger, "Processed " << ifile_name << ".");
+    LOG("Processed " << ifile_name << ".");
   }
   fclose(ofile);
-  LOG4CXX_INFO(logger,
-               "Preprocessing done. You can find results in " <<
-               opts.ofile << ".");
+  LOG("Preprocessing done. You can find results in " << opts.ofile << ".");
   return 0;
 }

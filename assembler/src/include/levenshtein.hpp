@@ -74,7 +74,7 @@ inline size_t edit_distance(const std::string& source, const std::string& target
       const size_t above = matrix[i-1][j];
       const size_t left = matrix[i][j-1];
       const size_t diag = matrix[i-1][j-1];
-      size_t cell = min( above + 1, min(left + 1, diag + cost));
+      size_t cell = std::min( above + 1, std::min(left + 1, diag + cost));
 
       // Step 6A: Cover transposition, in addition to deletion,
       // insertion and substitution. This step is taken from:
@@ -98,7 +98,7 @@ inline size_t edit_distance(const std::string& source, const std::string& target
   return matrix[n][m];
 }
 
-inline pair<pair<int, int>, string> best_edit_distance_cigar(const std::string& source, const std::string& target) {
+inline std::pair<std::pair<int, int>, std::string> best_edit_distance_cigar(const std::string& source, const std::string& target) {
 
   // Step 1
 
@@ -161,7 +161,7 @@ inline pair<pair<int, int>, string> best_edit_distance_cigar(const std::string& 
       const int above = matrix[i-1][j];
       const int left = matrix[i][j-1];
       const int diag = matrix[i-1][j-1];
-      int cell = min( above + 1, min(left + 1, diag + cost));
+      int cell = std::min( above + 1, std::min(left + 1, diag + cost));
 
       // Step 6A: Cover transposition, in addition to deletion,
       // insertion and substitution. This step is taken from:
@@ -192,7 +192,7 @@ inline pair<pair<int, int>, string> best_edit_distance_cigar(const std::string& 
   }
 
 //  INFO("min = "<<min<< " min_m = "<< min_m);
-  string res ="";
+  std::string res ="";
   char last_operation = 0;
   int cnt_last_operation = 0;
   int cur_pos_i = n;
@@ -233,5 +233,5 @@ inline pair<pair<int, int>, string> best_edit_distance_cigar(const std::string& 
 	 }
   }
   res = ToString(cnt_last_operation)+last_operation+res;
-  return make_pair(make_pair(cur_pos_j, min_m), res);
+  return std::make_pair(std::make_pair(cur_pos_j, min_m), res);
 }

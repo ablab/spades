@@ -18,7 +18,6 @@
 #include <zlib.h>
 #include "verify.hpp"
 #include "read/read.hpp"
-#include "sequence/quality.hpp"
 #include "sequence/nucl.hpp"
 #include "boost/lexical_cast.hpp"
 
@@ -31,12 +30,12 @@ KSEQ_INIT(gzFile, gzread)
 class ireadstream {
 
 public:
-	ireadstream(const string& filename) : offset_(Read::PHRED_OFFSET) {
+	ireadstream(const std::string& filename) : offset_(Read::PHRED_OFFSET) {
 		filename_ = filename;
 		is_open_ = open(filename);
 	}
 
-	ireadstream(const string& filename, int offset) : offset_(offset) {
+	ireadstream(const std::string& filename, int offset) : offset_(offset) {
 		filename_ = filename;
 		is_open_ = open(filename);
 	}
@@ -53,10 +52,10 @@ public:
 		return eof_;
 	}
 
-	static vector<Read>* readAll(string filename, int cnt = -1) {
+	static std::vector<Read>* readAll(std::string filename, int cnt = -1) {
 		ireadstream irs(filename);
 		VERIFY(irs.is_open());
-		vector<Read>* res = new vector<Read>();
+		std::vector<Read>* res = new std::vector<Read>();
 		Read r;
 		while (cnt-- && irs.is_open() && !irs.eof()) {
 			irs >> r;
@@ -70,7 +69,7 @@ public:
 		return res;
 	}
 
-	static void readAllNoValidation(vector<Read>* res, string filename, uint64_t * totalsize, int qvoffset = Read::PHRED_OFFSET, int trim_quality = -1, int cnt = -1) {
+	static void readAllNoValidation(std::vector<Read>* res, std::string filename, uint64_t * totalsize, int qvoffset = Read::PHRED_OFFSET, int trim_quality = -1, int cnt = -1) {
 		ireadstream irs(filename, qvoffset);
 		VERIFY(irs.is_open());
 		*totalsize = 0;
@@ -125,7 +124,7 @@ private:
 	 * open i's file with FASTQ reads,
 	 * return true if it opened file, false otherwise
 	 */
-	bool open(string filename) {
+	bool open(std::string filename) {
 		fp_ = gzopen(filename.c_str(), "r"); // STEP 2: open the file handler
 		if (!fp_) {
 			return false;
@@ -147,7 +146,7 @@ private:
 };
 
 //return -1 if failed to determine offset
-inline int determine_offset(const string& filename) {
+inline int determine_offset(const std::string& filename) {
 	ireadstream stream(filename, 0);
 	size_t count = 0;
 	Read r;

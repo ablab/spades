@@ -16,6 +16,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include "verify.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/sequence.hpp"
@@ -95,8 +96,8 @@ public:
     }
     if (rtrim-ltrim+1 < (int)seq_.size() && rtrim < (int)seq_.size()-ltrim-1) {
       rtrim_ -= ((int)seq_.size()-(rtrim-ltrim+1));
-      seq_.erase(rtrim-ltrim+1, string::npos);
-      qual_.erase(rtrim-ltrim+1, string::npos);
+      seq_.erase(rtrim-ltrim+1, std::string::npos);
+      qual_.erase(rtrim-ltrim+1, std::string::npos);
       donesomething = true;
     }
     if (donesomething) valid_ = updateValid();
@@ -198,7 +199,7 @@ public:
     return Read(newName, ReverseComplement(seq_), Reverse(qual_));
   }
 
-  void print(ofstream & outf, int offset) const {
+  void print(std::ofstream & outf, int offset) const {
   	outf << "@" << name_.c_str() << "\n";
   	for (int i=0; i < ltrim_; ++i) outf << "N";
   	outf << seq_.c_str();

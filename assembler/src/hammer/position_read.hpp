@@ -32,7 +32,7 @@ class PositionRead {
 	bool isDone() { return done_; }
 	void done() { done_ = true; }
 
-	pair<int, hint_t> nextKMerNo( int begin ) const;
+	std::pair<int, hint_t> nextKMerNo( int begin ) const;
 
 	const std::string & getQualityString() const;
 
