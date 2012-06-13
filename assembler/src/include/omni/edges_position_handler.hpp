@@ -271,20 +271,26 @@ public:
 
 	bool IsConsistentWithGenome(vector<EdgeId> Path){
 		if (Path.size() > 0) {
+
 	 		 vector<EdgePosition> res = (EdgesPositions[Path[0]]);
+	 		 int len = this->g().length(Path[0]);
 	 		 for (size_t i = 1; i<Path.size(); i++){
-	 			 res = GluePositionsLists(res, EdgesPositions[Path[i]], max_single_gap_);
+	 			 if (is_careful())
+	 				 res = RangeGluePositionsLists(res, EdgesPositions[Path[i]], max_single_gap_, len);
+	 			 else
+	 				 res = GluePositionsLists(res, EdgesPositions[Path[i]], max_single_gap_);
+	 			 len += this->g().length(Path[i]);
 	 		 }
 			if (res.size()>0 ){
 				if (is_careful()) {
-					int len = 0;
-					for(size_t j = 0; j < Path.size(); j++)
-						len += this->g().length(Path[j]);
 					for(size_t i = 0; i < res.size(); i++) {
-						if (abs(res[i].m_end() - res[i].m_start() - len) < max_single_gap_)
+//						INFO(res[i].contigId_);
+						if (abs(res[i].m_end() - res[i].m_start() - len + 1) < max_single_gap_)
 					//todo what was it???
 //					if (res[i].contigId_ < 15)
 							return true; //ToDo: Curent pipeline trace genome as contigsId 0, 1, 10 and 11 but in future it can be not true.
+//						else
+//							INFO("that was the fail" << res[i].m_end() << " "<<  res[i].m_start() << " " << len );
 					}
 				} else return true;
 			}
