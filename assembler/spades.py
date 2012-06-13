@@ -693,7 +693,8 @@ def main():
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename + "\n")        
 
         make_link(os.path.basename(spades_cfg.working_dir), os.path.join(spades_cfg.output_dir, "latest_success"))
-        os.makedirs(final_contigs_folder)
+        if not os.path.exists(final_contigs_folder):        
+            os.makedirs(final_contigs_folder)
         shutil.copy(result_contigs_filename, final_contigs_folder)
         shutil.copy(spades_cfg.log_filename, final_contigs_folder)
         sam_file_linkname = os.path.splitext(result_contigs_filename)[0] + ".sam"
