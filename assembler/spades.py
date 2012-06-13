@@ -421,14 +421,14 @@ def main():
             if paired:
                 for read in paired:
                     paired_counter += 1
-                    cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = read   #FIXME: to be discussed! Should we support paired_reads.1, paired_reads.2 .. or not?
+                    cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = read   
                     #cfg["dataset"].__dict__["paired_reads"] = read
 
             if paired1:
                 for i in range(len(paired1)):
                     paired_counter += 1
                     cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = [paired1[i], paired2[i]]
-                    #cfg["dataset"].__dict__["paired_reads"] = [paired1[i], paired2[i]]  #FIXME: see above.
+                    #cfg["dataset"].__dict__["paired_reads"] = [paired1[i], paired2[i]]  
 
             if single:
                 cfg["dataset"].__dict__["single_reads"] = single
@@ -593,7 +593,7 @@ def main():
             spades_cfg.__dict__["align_original_reads"] = True
         else:
             spades_cfg.__dict__["align_original_reads"] = False
-        if cfg["dataset"].__dict__.has_key("paired_reads") or cfg["dataset"].__dict__.has_key("paired_reads.1"):
+        if cfg["dataset"].__dict__.has_key("paired_reads") or cfg["dataset"].__dict__.has_key("paired_reads#1"):
             spades_cfg.__dict__["paired_mode"] = True
         else:
             spades_cfg.__dict__["paired_mode"] = False            
