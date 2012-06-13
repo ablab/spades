@@ -275,12 +275,18 @@ public:
 	 		 for (size_t i = 1; i<Path.size(); i++){
 	 			 res = GluePositionsLists(res, EdgesPositions[Path[i]], max_single_gap_);
 	 		 }
-			if (res.size()>0){
-				for(size_t i = 0; i<Path.size(); i++) {
+			if (res.size()>0 ){
+				if (is_careful()) {
+					int len = 0;
+					for(size_t j = 0; j < Path.size(); j++)
+						len += this->g().length(Path[j]);
+					for(size_t i = 0; i < res.size(); i++) {
+						if (abs(res[i].m_end() - res[i].m_start() - len) < max_single_gap_)
 					//todo what was it???
 //					if (res[i].contigId_ < 15)
-						return true; //ToDo: Curent pipeline trace genome as contigsId 0, 1, 10 and 11 but in future it can be not true.
-				}
+							return true; //ToDo: Curent pipeline trace genome as contigsId 0, 1, 10 and 11 but in future it can be not true.
+					}
+				} else return true;
 			}
 		}
 		return false;
