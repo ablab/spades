@@ -164,6 +164,12 @@ def print_used_values(cfg):
 
 def check_config(cfg, default_project_name=""):
 
+    ## special case: 0 iterations for the error correction means "No error correction!"
+    
+    if cfg.has_key("error_correction") and cfg["error_correction"].__dict__.has_key("max_iterations"):
+        if cfg["error_correction"].max_iterations == 0:
+            del cfg["error_correction"]
+
     ## checking mandatory sections
 
     if not cfg.has_key("dataset") and not (cfg.has_key("assembly") and cfg["assembly"].__dict__.has_key("dataset")):
@@ -465,7 +471,7 @@ def main():
                     cfg["error_correction"].__dict__["tmp_dir"] = tmp_dir
                 if qvoffset:
                     cfg["error_correction"].__dict__["qvoffset"] = qvoffset
-                if iterations:
+                if iterations != None:
                     cfg["error_correction"].__dict__["max_iterations"] = iterations
                 cfg["error_correction"].__dict__["gzip_output"] = not disable_gzip_output
 
