@@ -1,10 +1,9 @@
 ; = HAMMER =
 ; input options: working dir, input files, offset, and possibly kmers
 input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/test_dir2
-input_numfiles				2
 input_paired				1
-input_paired_1				/home/snikolenko/data/reads.input.0.tinyhead
-input_paired_2				/home/snikolenko/data/reads.input.1.tinyhead
+input_paired_1				/home/snikolenko/data/head250.0.fastq
+input_paired_2				/home/snikolenko/data/head250.1.fastq
 input_single				
 input_trim_quality			4
 input_gzipped				1
@@ -18,7 +17,7 @@ general_do_everything_after_first_iteration	1
 general_reconstruct_only	1
 general_change_n_to_a		0
 general_hard_memory_limit	15
-general_max_nthreads		2
+general_max_nthreads		1
 general_tau					1
 general_gzip				0
 general_max_iterations		5
@@ -67,11 +66,28 @@ expand_write_kmers_result	1
 
 ; read correction
 correct_do					1
-correct_discard_bad			1
+correct_discard_bad			0
 correct_use_threshold		1
 correct_threshold			0.98
 correct_nthreads			4
 correct_readbuffer			100000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

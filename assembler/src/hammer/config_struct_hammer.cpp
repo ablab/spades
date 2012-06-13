@@ -67,6 +67,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	load(cfg.correct_use_threshold, pt, "correct_use_threshold");
 	load(cfg.correct_readbuffer, pt, "correct_readbuffer");
 	load(cfg.correct_discard_bad, pt, "correct_discard_bad");
+	cfg.correct_notrim = pt.get_optional<bool>("correct_notrim");
 
 	load(cfg.input_paired_1, pt, "input_paired_1");
 	load(cfg.input_paired_2, pt, "input_paired_2");

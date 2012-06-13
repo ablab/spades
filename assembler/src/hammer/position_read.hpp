@@ -34,8 +34,6 @@ class PositionRead {
 
 	std::pair<int, hint_t> nextKMerNo( int begin ) const;
 
-	const std::string & getQualityString() const;
-
 };
 
 #endif

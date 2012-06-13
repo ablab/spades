@@ -85,6 +85,7 @@ struct hammer_config
 	double correct_threshold;
 	int correct_readbuffer;
 	int correct_nthreads;
+	bool correct_notrim;
 
 	int common_quality;
 };

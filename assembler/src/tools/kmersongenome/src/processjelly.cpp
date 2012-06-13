@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 	int nthreads = 1;
 	string pref = "";
 	string outpref = "res";
-	string genomefname = "MG1655-K12.fasta";
+	string genomefname = "../MG1655-K12.fasta";
 	for(int i = 0; i < argc; i++) {
 		if (!strcmp(argv[i], "-kmin")) {
 			k_min = atoi(argv[i+1]);
@@ -126,6 +126,10 @@ int main(int argc, char* argv[]) {
 	string g;
 	read_genome( genomefname.c_str(), g );
 	cout << "  ...genome size: " << g.size() << endl;
+
+	size_t i = 1603380;
+	cout << g.substr(1603380, 29) << endl << ReverseComplement(g.substr(1603380, 29)) << endl;
+	return 0;
 
 	#pragma omp parallel for shared(g) num_threads(nthreads)
 	for ( size_t j = 0; j <= k_num; ++j ) {
