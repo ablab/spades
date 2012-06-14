@@ -1,0 +1,170 @@
+#pragma once
+
+#include "splitters.hpp"
+namespace omnigraph {
+
+template<class Graph>
+class AbstractLoopKiller {
+public:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+private:
+	Graph &graph_;
+
+	VertexId FindStart(set<VertexId> component_set) {
+		VertexId result;
+		for(auto it = component_set.begin(); it != component_set.end(); ++it) {
+			vector<EdgeId> incoming = graph_.Incomingedges(*it);
+			for(auto eit = incoming.begin(); eit != incoming.end(); ++eit) {
+				if(component_set.count(graph_.EdgeStart(*eit)) == 0) {
+					if(result != VertexId()) {
+						return VertexId();
+					}
+					result = *it;
+				}
+			}
+		}
+		return result;
+	}
+
+	VertexId FindFinish(set<VertexId> component_set) {
+		VertexId result;
+		for(auto it = component_set.begin(); it != component_set.end(); ++it) {
+			vector<EdgeId> outgoing = graph_.OutgoingEdges(*it);
+			for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
+				if(component_set.count(graph_.EdgeEnd(*eit)) == 0) {
+					if(result != VertexId()) {
+						return VertexId();
+					}
+					result = *it;
+				}
+			}
+		}
+		return result;
+	}
+
+protected:
+	const size_t splitting_edge_length_;
+	const size_t max_component_size_;
+
+	Graph &g() {
+		return graph_;
+	}
+
+public:
+
+	AbstractLoopKiller(Graph &graph, size_t splitting_edge_length,
+			size_t max_component_size) :
+			graph_(graph), splitting_edge_length_(splitting_edge_length), max_component_size_(
+					max_component_size) {
+	}
+
+	virtual ~AbstractLoopKiller() {
+	}
+
+
+
+	void KillAllLoops() {
+		LongEdgesExclusiveSplitter<Graph> splitter(graph_, splitting_edge_length_);
+		while(!splitter.Finished()) {
+			vector<VertexId> component = splitter.NextComponent();
+			if(component.size() > max_component_size_)
+				continue;
+			set<VertexId> component_set(component.begin(), component.end());
+			VertexId start = FindStart(component_set);
+			VertexId finish = FindFinish(component_set);
+			if(start == VertexId() || finish == VertexId()) {
+				continue;
+			}
+			KillLoop(start, finish, component);
+		}
+	}
+
+	virtual void KillLoop(VertexId start, VertexId finish, set<VertexId> component) = 0;
+};
+
+template<class Graph>
+class SimpleLoopKiller : public AbstractLoopKiller<Graph> {
+	vector<VertexId> FindPath(VertexId start, VertexId finish) {
+		set<VertexId> was;
+		return FindPath(start, finish, was);
+	}
+
+	vector<EdgeId> FindPath(VertexId start, VertexId finish, set<VertexId> &was) {
+		was.insert(start);
+		vector<EdgeId> outgoing = this->g().OutgoingEdges(start);
+		for(auto it = outgoing.begin(); it != outgoing.end(); ++it) {
+			VertexId next = this->g().EdgeEnd(*it);
+			if(next == finish) {
+				return {*it};
+			}
+			if(was.count(next) == 0) {
+				vector<vertexId> result = FindPath(next, finish, was);
+				if(result.size() > 0) {
+					result.push_front(*it);
+					return result;
+				}
+			}
+		}
+		return {};
+	}
+
+	bool CheckNotMuchRemoved(set<EdgeId> edges, set<VertexId> component) {
+		size_t sum = 0;
+		for(auto it = component.begin(); it != component.end(); ++it) {
+			vector<EdgeId> outgoing = this->g().OutgoingEdges(*it);
+			for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
+				if(component.count(graph_.EdgeEnd(*eit)) == 1 && edges.count(*eit) == 0 ) {
+					sum += this->g().length(*eit);
+				}
+			}
+		}
+		return sum > this->splitting_edge_length_;
+	}
+
+	void RemoveExtraEdges(set<EdgeId> edges, set<VertexId> component) {
+		vector<VertexId> comp(component.begin(), component.end());
+		size_t sum = 0;
+		vector<EdgeId> to_delete;
+		for(auto it = comp.begin(); it != comp.end(); ++it) {
+			vector<EdgeId> outgoing = this->g().OutgoingEdges(*it);
+			for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
+				if(component.count(graph_.EdgeEnd(*eit)) == 1 && edges.count(*eit) == 0 ) {
+					to_delete.push_back(*eit);
+				}
+			}
+		}
+		SmartSetIterator<Graph, VertexId> s(this->g(), to_delete.begin(), to_delete.end());
+		while(!s.IsEnd()) {
+			this->g().RemoveEdge(*s);
+		}
+	}
+
+	void RemoveIsolatedVertices(set<VertexId> component) {
+		SmartSetIterator<Graph, EdgeId> s(this->g(), component.begin(), component.end());
+		while(!s.IsEnd()) {
+			if(this->g().IsStart(*s) && this->g().IsEnd(*s)) {
+				this->g().DeleteVertex(*s);
+			}
+		}
+	}
+
+public:
+	SimpleLoopKiller(size_t splitting_edge_length, size_t max_component_size) :
+			AbstractLoopKiller<Graph>(splitting_edge_length, max_component_size) {
+	}
+
+	virtual void KillLoop(VertexId start, VertexId finish, set<VertexId> component) {
+		vector<EdgeId> path = FindPath(start, finish);
+		set<EdgeId> edges(path.begin(), path.end());
+		if(path.size() > 0) {
+			if(!CheckNotMuchRemoved(edges, component)) {
+				return;
+			}
+			RemoveExtraEdges(edges, component);
+			RemoveIsolatedVertices(component);
+		}
+	}
+
+};
+}
