@@ -996,23 +996,19 @@ public:
 	typedef boost::function<const PairInfo<EdgeId>(const PairInfo<EdgeId>&)> WeightNormalizer;
 private:
 
-	const PairedInfoIndex<Graph>& paired_index_;
 	WeightNormalizer normalizing_function_;
 public:
 
-	PairedInfoNormalizer(const PairedInfoIndex<Graph>& paired_index,
-			WeightNormalizer normalizing_function) :
-			paired_index_(paired_index), normalizing_function_(
-					normalizing_function) {
+	PairedInfoNormalizer(WeightNormalizer normalizing_function) :
+			normalizing_function_(normalizing_function) {
 
 	}
 
-	void FillNormalizedIndex(PairedInfoIndex<Graph>& normalized_index) {
-		for (auto it = paired_index_.begin(); it != paired_index_.end(); ++it) {
+	void FillNormalizedIndex(const PairedInfoIndex<Graph>& paired_index, PairedInfoIndex<Graph>& normalized_index) const {
+		for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
 			vector<PairInfo<EdgeId>> infos = *it;
 			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
-				normalized_index.AddPairInfo(normalizing_function_(*it2),
-						false);
+				normalized_index.AddPairInfo(normalizing_function_(*it2), false);
 			}
 		}
 	}

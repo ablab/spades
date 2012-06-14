@@ -84,6 +84,7 @@ public class GenStartStats implements Runnable {
 
     public void run() {
         try {
+            Locale.setDefault(Locale.US);
             MyScanner etalon;
             MyScanner clustered;
             etalon = new MyScanner("etalon.prd");

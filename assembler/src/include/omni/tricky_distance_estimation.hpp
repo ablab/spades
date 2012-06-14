@@ -15,17 +15,21 @@
 namespace omnigraph {
 
 template<class Graph>
-class TrickyDistanceEstimator: AbstractDistanceEstimator<Graph> {
+class TrickyDistanceEstimator: public AbstractDistanceEstimator<Graph> {
 	typedef AbstractDistanceEstimator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 
+protected:
 	const size_t max_distance_;
 
-    boost::function<size_t(int)> weight_f_;
+    boost::function<double(int)> weight_f_;
 
-	vector<pair<size_t, double>> EstimateEdgePairDistances(size_t first_len, size_t second_len,
+	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
 			vector<PairInfo<EdgeId>> data,
-			vector<size_t> raw_forward) {
+			const vector<size_t> raw_forward) const {
+
+        size_t first_len = this->graph().length(first);
+        size_t second_len = this->graph().length(second);
 		vector<pair<size_t, double>> result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());
@@ -39,44 +43,48 @@ class TrickyDistanceEstimator: AbstractDistanceEstimator<Graph> {
         size_t cur_dist = 0;
 		vector<double> weights(forward.size());
 		for (size_t i = 0; i < data.size(); i++) {
-			if (2 * data[i].d + second_len < first_len)
-				continue;
+            if (math::ls(2 * data[i].d + second_len, (double) first_len))
+                continue;
 			while (cur_dist + 1 < forward.size()
 					&& forward[cur_dist + 1] < data[i].d) {
 				cur_dist++;
 			}
 			if (cur_dist + 1 < forward.size()
 					&& math::ls(forward[cur_dist + 1] - data[i].d,
-							data[i].d - forward[cur_dist])) {
+							data[i].d - (int) forward[cur_dist])) {
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * weight_f_(forward[cur_dist] - data[i].d);
+					weights[cur_dist] += data[i].weight * weight_f_((int) forward[cur_dist] - data[i].d);
 			} else if (cur_dist + 1 < forward.size()
 					&& math::eq(forward[cur_dist + 1] - data[i].d,
-							data[i].d - forward[cur_dist])) {
+							data[i].d - (int) forward[cur_dist])) {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * 0.5 * weight_f_(forward[cur_dist] - data[i].d); 
+					weights[cur_dist] += data[i].weight * 0.5 * weight_f_((int) forward[cur_dist] - data[i].d); 
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * 0.5 * weight_f_(forward[cur_dist] - data[i].d);
+					weights[cur_dist] += data[i].weight * 0.5 * weight_f_((int) forward[cur_dist] - data[i].d);
 			} else {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * weight_f_(forward[cur_dist] - data[i].d);
+					weights[cur_dist] += data[i].weight * weight_f_((int) forward[cur_dist] - data[i].d);
 			}
 		}
+        
+        //double coeff = (first_len + this->graph().k() - 1) * (second_len + this->graph().k() - 1) * 1./ (this->graph().coverage(first) * this->graph().coverage(second));
+        //double coeff = 1. / (this->graph().k()*this->graph().k());
+        double coeff = 1.;
 		for (size_t i = 0; i < forward.size(); i++) {
-			if (weights[i] != 0) {
-				result.push_back(make_pair(forward[i], weights[i]));
+			if (math::gr(weights[i], 0.)) {
+				result.push_back(make_pair(forward[i], weights[i] * coeff));
 			}
 		}
 		return result;
 	}
 
-	pair<EdgeId, EdgeId> ConjugatePair(EdgeId first, EdgeId second) {
+	pair<EdgeId, EdgeId> ConjugatePair(EdgeId first, EdgeId second) const {
 		return make_pair(this->graph().conjugate(second), this->graph().conjugate(first));
 	}
 
-	PairInfo<EdgeId> ConjugateInfo(const PairInfo<EdgeId>& pair_info) {
+	PairInfo<EdgeId> ConjugateInfo(const PairInfo<EdgeId>& pair_info) const {
 		return PairInfo<EdgeId>(
 				this->graph().conjugate(pair_info.second),
 				this->graph().conjugate(pair_info.first),
@@ -85,7 +93,7 @@ class TrickyDistanceEstimator: AbstractDistanceEstimator<Graph> {
 				pair_info.weight, pair_info.variance);
 	}
 
-	vector<PairInfo<EdgeId>> ConjugateInfos(const vector<PairInfo<EdgeId>>& data) {
+	vector<PairInfo<EdgeId>> ConjugateInfos(const vector<PairInfo<EdgeId>>& data) const {
 		vector<PairInfo<EdgeId>> answer;
 		for (auto it = data.begin(); it != data.end(); ++it) {
 			answer.push_back(ConjugateInfo(*it));
@@ -93,11 +101,11 @@ class TrickyDistanceEstimator: AbstractDistanceEstimator<Graph> {
 		return answer;
 	}
 
-	void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) {
+	void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
 		if (make_pair(first, second) <= ConjugatePair(first, second)) {
 			vector<size_t> forward = this->GetGraphDistances(first, second);
-			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(this->graph().length(first), this->graph().length(second),
-				data, forward/*, false*/);
+			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(first, second,
+				data, forward);
 			vector<PairInfo<EdgeId>> res = ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
 			this->AddToResult(result, ConjugateInfos(res));
@@ -107,7 +115,7 @@ class TrickyDistanceEstimator: AbstractDistanceEstimator<Graph> {
 public:
 	TrickyDistanceEstimator(const Graph &graph,
 			const PairedInfoIndex<Graph>& histogram,
-			const GraphDistanceFinder<Graph>& distance_finder, boost::function<size_t(int)> weight_f, 
+			const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
 			size_t linkage_distance, size_t max_distance) :
 			base(graph, histogram, distance_finder, linkage_distance), max_distance_(
 					max_distance), weight_f_(weight_f) {
@@ -116,14 +124,14 @@ public:
 	virtual ~TrickyDistanceEstimator() {
 	}
 
-	virtual void Estimate(PairedInfoIndex<Graph> &result) {
+	virtual void Estimate(PairedInfoIndex<Graph> &result) const {
 		for (auto it = this->histogram().begin();
 				it != this->histogram().end(); ++it) {
 			ProcessEdgePair(it.first(), it.second(), *it, result);
 		}
 	}
 
-    virtual void EstimateParallel(PairedInfoIndex<Graph> &result, size_t nthreads) {
+    virtual void EstimateParallel(PairedInfoIndex<Graph> &result, size_t nthreads) const {
         std::vector< std::pair<EdgeId, EdgeId> > edge_pairs;
 
         INFO("Collecting edge pairs");

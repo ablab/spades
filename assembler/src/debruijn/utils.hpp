@@ -17,7 +17,8 @@
 #include <iostream>
 #include "sequence/sequence_tools.hpp"
 #include "omni/splitters.hpp"
-#include "omp_wrapper.h"
+#include <omp.h>
+#include "omni/insert_size_refiner.hpp"
 
 #include "new_debruijn.hpp"
 //#include "common/io/paired_read.hpp"
@@ -1378,6 +1379,7 @@ public:
 private:
 };
 
+
 template<class Graph>
 class EdgeLocalityPrintingRH {
 	typedef typename Graph::EdgeId EdgeId;
@@ -1417,6 +1419,76 @@ public:
 private:
 	DECL_LOGGER("QualityEdgeLocalityPrintingRH")
 	;
+};
+
+class TrivialWeightDEWrapper {
+private:
+public:
+    TrivialWeightDEWrapper() {
+        
+    }
+
+    ~TrivialWeightDEWrapper() {
+        
+    }
+
+    double CountWeight(int x) const {
+        return 1.;
+    }
+};
+
+class TrickyWeightDEWrapper {
+private:
+
+    std::vector<double> new_hist;
+    int left_x;
+    size_t insert_size;
+
+	void ExtendLinear(const std::map<int, size_t> & hist) {
+        size_t max_weight = 0;
+
+        for (auto iter = hist.begin(); iter != hist.end(); ++iter)
+            max_weight = max(max_weight, iter->second);
+
+        auto iter = hist.begin();
+
+        left_x = iter->first;
+
+        int prev = iter->first;
+        int prev_val = iter->second;
+
+        new_hist.push_back(prev_val * 1./ max_weight);
+        ++iter;
+
+        for (; iter != hist.end(); ++iter) {
+            int x = iter->first;
+            int y = iter->second;
+            double tan = 1. * (y - prev_val) / (x - prev);
+
+            for (int i = prev + 1; i <= x; ++i) {
+                new_hist.push_back((prev_val + tan * (i - prev)) * 1. / max_weight);
+            }
+            prev = x;
+            prev_val = y;
+        }
+	}
+
+public:
+    TrickyWeightDEWrapper(const std::map<int, size_t>& hist, double IS) {
+        insert_size = (size_t) IS;
+        cout << " IS " << insert_size << endl;
+        ExtendLinear(hist);
+    }
+
+    ~TrickyWeightDEWrapper() {
+    }
+
+
+    double CountWeight(int x) const {
+        size_t xx = insert_size - left_x + x - 1;
+        if (!(xx >= 0 && xx < new_hist.size())) return 0.;
+        return new_hist[xx];
+    }
 };
 
 }

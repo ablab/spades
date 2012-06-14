@@ -182,13 +182,13 @@ public:
 
 
 template<class graph_pack, class PairedRead>
-void refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_pack& gp, size_t edge_length_threshold) {
+typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_pack& gp, size_t edge_length_threshold) {
 	enum {
 		k = graph_pack::k_value
 	};
 	INFO("SUBSTAGE == Refining insert size and its distribution");
 
-	InsertSizeHistogramCounter<graph_pack> hist_counter(gp,edge_length_threshold);
+	InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
 
 	if (streams.size() == 1) {
 	    hist_counter.CountHistogram(*streams.front());
@@ -296,11 +296,19 @@ void refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_p
 		cfg::get_writable().ds.mad = mad;
 	}
 
+	cfg::get_writable().ds.IS = median;
+
 	INFO("Insert size refined:");
 	INFO("IS = " << cfg::get_writable().ds.IS);
 	INFO("delta = " << delta);
     INFO("median = " << median);
     INFO("delta_mad = " << 1.4826 * mad);
+
+	//cfg::get_writable().ds.IS = median;
+	//cfg::get_writable().ds.is_var = 1.4826 * mad;
+
+    return hist;
+
 }
 
 }

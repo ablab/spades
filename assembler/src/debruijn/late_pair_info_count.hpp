@@ -28,7 +28,8 @@ void late_pair_info_count(conj_graph_pack& gp,
 
             auto paired_streams = paired_binary_readers(true,  *cfg::get().ds.IS);
 
-            if (cfg::get().advanced_estimator_mode)
+
+            if (cfg::get().paired_metr == debruijn_graph::paired_metrics::pm_product)
                 FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,
                         paired_index, paired_streams);
             else
@@ -48,7 +49,7 @@ void late_pair_info_count(conj_graph_pack& gp,
             auto paired_stream = paired_easy_reader(true,  *cfg::get().ds.IS);
             std::vector <PairedReadStream*> paired_streams(1, paired_stream.get());
 
-            if (cfg::get().advanced_estimator_mode)
+            if (cfg::get().paired_metr == debruijn_graph::paired_metrics::pm_product)
                 FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,
                         paired_index, paired_streams);
             else

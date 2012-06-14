@@ -901,7 +901,8 @@ def run_spades(cfg):
     return cfg.result_contigs
 
 
-def run_quality(cfg):
+def run_quality(cfg):        
+
     args = [cfg.result_contigs]
 
     if cfg.developer_mode:

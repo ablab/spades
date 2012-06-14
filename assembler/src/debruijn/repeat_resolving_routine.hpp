@@ -1257,9 +1257,9 @@ void prepare_jump_index(const Graph& g, const paired_info_index& raw_jump_index,
 	estimator.Estimate(clustered_jump_index);
 
 	JumpingNormilizerFunction<Graph> nf(g, *cfg::get().ds.RL, 500);
-	PairedInfoNormalizer<Graph> normalizer(clustered_jump_index, nf);
+	PairedInfoNormalizer<Graph> normalizer(nf);
 	paired_info_index normalized_jump_index(g);
-	normalizer.FillNormalizedIndex(normalized_jump_index);
+	normalizer.FillNormalizedIndex(clustered_jump_index, normalized_jump_index);
 
 	JumpingPairInfoChecker<Graph> filter(g, 300, 100, 100);
 	filter.Filter(normalized_jump_index, jump_index);

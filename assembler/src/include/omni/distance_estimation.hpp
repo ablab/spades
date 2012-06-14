@@ -72,7 +72,7 @@ protected:
 					distance_finder), linkage_distance_(linkage_distance) {
 	}
 
-	const Graph& graph() {
+	const Graph& graph() const {
 		return graph_;
 	}
 
@@ -116,70 +116,73 @@ public:
 	virtual ~AbstractDistanceEstimator() {
 	}
 
-	virtual void Estimate(PairedInfoIndex<Graph> &result) = 0;
+	virtual void Estimate(PairedInfoIndex<Graph> &result) const = 0;
+
+    virtual void EstimateParallel(PairedInfoIndex<Graph> &result, size_t nthreads) const = 0;
 };
 
+
 template<class Graph>
-class DistanceEstimator: AbstractDistanceEstimator<Graph> {
+class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 	typedef AbstractDistanceEstimator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 
+protected:
 	const size_t max_distance_;
 
-	vector<pair<size_t, double>> EstimateEdgePairDistances(size_t first_len, size_t second_len,
+	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(size_t first_len, size_t second_len,
 			vector<PairInfo<EdgeId>> data,
-			vector<size_t> raw_forward) {
+			vector<size_t> raw_forward) const {
 		vector<pair<size_t, double>> result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());
 		vector<size_t> forward;
 		for (size_t i = 0; i < raw_forward.size(); ++i)
-			if (minD - (int)max_distance_ <= (int)raw_forward[i] && (int)raw_forward[i] <= maxD + (int)max_distance_)
+			if (minD - (int) max_distance_ <= (int) raw_forward[i] && (int) raw_forward[i] <= maxD + (int) max_distance_)
 				forward.push_back(raw_forward[i]);
 		if (forward.size() == 0)
 			return result;
-		//        if (debug) for (size_t i = 0; i<forward.size(); i++) INFO("Distances " << forward[i]) 
 		size_t cur_dist = 0;
 		vector<double> weights(forward.size());
 		for (size_t i = 0; i < data.size(); i++) {
-			if (2 * data[i].d + second_len < first_len)
-				continue;
+            if (math::ls(2. * data[i].d + second_len, (double) first_len))
+                continue;
 			while (cur_dist + 1 < forward.size()
 					&& forward[cur_dist + 1] < data[i].d) {
 				cur_dist++;
 			}
 			if (cur_dist + 1 < forward.size()
 					&& math::ls(forward[cur_dist + 1] - data[i].d,
-							data[i].d - forward[cur_dist])) {
+							data[i].d - (int) forward[cur_dist])) {
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight; //*data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
+					weights[cur_dist] += data[i].weight;
 			} else if (cur_dist + 1 < forward.size()
 					&& math::eq(forward[cur_dist + 1] - data[i].d,
-							data[i].d - forward[cur_dist])) {
+							data[i].d - (int) forward[cur_dist])) {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * 0.5; // * data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
+					weights[cur_dist] += data[i].weight * 0.5;
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * 0.5; // * data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
+					weights[cur_dist] += data[i].weight * 0.5;
 			} else {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight; //*data[i].weight; //  * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
+					weights[cur_dist] += data[i].weight;
 			}
 		}
 		for (size_t i = 0; i < forward.size(); i++) {
-			if (weights[i] != 0) {
+			if (math::gr(weights[i], 0.)) {
 				result.push_back(make_pair(forward[i], weights[i]));
 			}
 		}
 		return result;
 	}
 
-	pair<EdgeId, EdgeId> ConjugatePair(EdgeId first, EdgeId second) {
+	pair<EdgeId, EdgeId> ConjugatePair(EdgeId first, EdgeId second) const {
 		return make_pair(this->graph().conjugate(second), this->graph().conjugate(first));
 	}
 
-	PairInfo<EdgeId> ConjugateInfo(const PairInfo<EdgeId>& pair_info) {
+	PairInfo<EdgeId> ConjugateInfo(const PairInfo<EdgeId>& pair_info) const {
 		return PairInfo<EdgeId>(
 				this->graph().conjugate(pair_info.second),
 				this->graph().conjugate(pair_info.first),
@@ -188,7 +191,7 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 				pair_info.weight, pair_info.variance);
 	}
 
-	vector<PairInfo<EdgeId>> ConjugateInfos(const vector<PairInfo<EdgeId>>& data) {
+	vector<PairInfo<EdgeId>> ConjugateInfos(const vector<PairInfo<EdgeId>>& data) const {
 		vector<PairInfo<EdgeId>> answer;
 		for (auto it = data.begin(); it != data.end(); ++it) {
 			answer.push_back(ConjugateInfo(*it));
@@ -196,11 +199,11 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 		return answer;
 	}
 
-	void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) {
+	void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
 		if (make_pair(first, second) <= ConjugatePair(first, second)) {
 			vector<size_t> forward = this->GetGraphDistances(first, second);
 			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(this->graph().length(first), this->graph().length(second),
-				data, forward/*, false*/);
+				data, forward);
 			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
 			this->AddToResult(result, ConjugateInfos(res));
@@ -210,7 +213,7 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 public:
 	DistanceEstimator(const Graph &graph,
 			const PairedInfoIndex<Graph>& histogram,
-			const GraphDistanceFinder<Graph>& distance_finder,
+			const GraphDistanceFinder<Graph>& distance_finder, 
 			size_t linkage_distance, size_t max_distance) :
 			base(graph, histogram, distance_finder, linkage_distance), max_distance_(
 					max_distance) {
@@ -219,14 +222,14 @@ public:
 	virtual ~DistanceEstimator() {
 	}
 
-	virtual void Estimate(PairedInfoIndex<Graph> &result) {
+	virtual void Estimate(PairedInfoIndex<Graph> &result) const {
 		for (auto it = this->histogram().begin();
 				it != this->histogram().end(); ++it) {
 			ProcessEdgePair(it.first(), it.second(), *it, result);
 		}
 	}
 
-    virtual void EstimateParallel(PairedInfoIndex<Graph> &result, size_t nthreads) {
+    virtual void EstimateParallel(PairedInfoIndex<Graph> &result, size_t nthreads) const {
         std::vector< std::pair<EdgeId, EdgeId> > edge_pairs;
 
         INFO("Collecting edge pairs");

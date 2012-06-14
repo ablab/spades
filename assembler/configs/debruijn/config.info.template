@@ -71,6 +71,10 @@ paired_info_statistics false
 ; set it true to use advanced estimator
 advanced_estimator_mode false
 
+estimation_mode simple
+
+paired_metrics product
+
 ; repeat resolving mode (none split path_extend jump combined)
 resolving_mode split
 

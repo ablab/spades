@@ -45,6 +45,19 @@ enum simplification_mode {
 	sm_pair_info_aware
 };
 
+enum paired_metrics {
+    pm_read_count,
+    pm_product
+};
+
+enum estimation_mode {
+    em_naive,
+    em_simple,
+    em_tricky,
+    em_extensive,
+    em_advanced
+};
+
 enum resolving_mode
 {
 	rm_none           ,
@@ -103,6 +116,8 @@ inline std::string MakeLaunchTimeDirName() {
 struct debruijn_config {
 	typedef bimap<string, working_stage> stage_name_id_mapping;
 	typedef bimap<string, simplification_mode> simpl_mode_id_mapping;
+    typedef bimap<string, estimation_mode> estimation_mode_id_mapping;
+    typedef bimap<string, paired_metrics> paired_metrics_id_mapping;
 	typedef bimap<string, resolving_mode> resolve_mode_id_mapping;
 
 	bool developer_mode;
@@ -135,6 +150,26 @@ struct debruijn_config {
 		return simpl_mode_id_mapping(info, utils::array_end(info));
 	}
 
+    static const estimation_mode_id_mapping FillEstimationModeInfo() {
+        estimation_mode_id_mapping::value_type info[] = {
+            {   "naive",       em_naive       },
+            {   "simple",      em_simple      },
+            {   "tricky",      em_tricky      },
+            {   "extensive",   em_extensive   },
+            {   "advanced",    em_advanced    },
+        };
+        return estimation_mode_id_mapping(info, utils::array_end(info));
+    }
+
+    static const paired_metrics_id_mapping FillPairedMetricsInfo() {
+        paired_metrics_id_mapping::value_type info[] = { 
+                { "read_count" ,      pm_read_count  },
+                { "product"    ,      pm_product    }
+        };
+
+        return paired_metrics_id_mapping(info, utils::array_end(info));
+    }
+
 	static const resolve_mode_id_mapping FillResolveModeInfo()
 	{
 		resolve_mode_id_mapping::value_type info [] = {
@@ -148,15 +183,26 @@ struct debruijn_config {
 		return resolve_mode_id_mapping(info, utils::array_end(info));
 	}
 
-	static const simpl_mode_id_mapping& simpl_mode_info() {
-		static simpl_mode_id_mapping simpl_mode_info = FillSimplifModeInfo();
-		return simpl_mode_info;
-	}
 
 	static const stage_name_id_mapping& working_stages_info() {
 		static stage_name_id_mapping working_stages_info = FillStageInfo();
 		return working_stages_info;
 	}
+
+	static const simpl_mode_id_mapping& simpl_mode_info() {
+		static simpl_mode_id_mapping simpl_mode_info = FillSimplifModeInfo();
+		return simpl_mode_info;
+	}
+
+    static const estimation_mode_id_mapping& estimation_mode_info() {
+        static estimation_mode_id_mapping est_mode_info = FillEstimationModeInfo();
+        return est_mode_info;
+    }
+
+    static const paired_metrics_id_mapping& paired_metrics_info() {
+        static paired_metrics_id_mapping paired_metrics_info = FillPairedMetricsInfo();
+        return paired_metrics_info;
+    }
 
 	static const resolve_mode_id_mapping& resolve_mode_info() {
 		static resolve_mode_id_mapping info = FillResolveModeInfo();
@@ -194,6 +240,37 @@ struct debruijn_config {
 
 		return it->second;
 	}
+
+	static const std::string& paired_metrics_name(paired_metrics metrics_id) {
+		auto it = paired_metrics_info().right.find(metrics_id);
+		VERIFY_MSG(it != paired_metrics_info().right.end(),
+				"No name for paired metrics id = " << metrics_id);
+
+		return it->second;
+	}
+
+	static paired_metrics paired_metrics_id(std::string name) {
+		auto it = paired_metrics_info().left.find(name);
+		VERIFY_MSG(it != paired_metrics_info().left.end(),
+				"There is no paired metrics with name = " << name);
+
+		return it->second;
+	}
+
+    static const std::string& estimation_mode_name(estimation_mode est_id) {
+        auto it = estimation_mode_info().right.find(est_id);
+        VERIFY_MSG(it != estimation_mode_info().right.end(),
+                "No name for estimation mode id = " << est_id);
+        return it->second;
+    }
+
+    static estimation_mode estimation_mode_id(std::string name) { 
+        auto it = estimation_mode_info().left.find(name);
+        VERIFY_MSG(it != estimation_mode_info().left.end(),
+                "There is no estimation mode with name = " << name);
+
+        return it->second;
+    }
 
 	static const std::string& resolving_mode_name(resolving_mode mode_id) {
 		auto it = resolve_mode_info().right.find(mode_id);
@@ -443,6 +520,10 @@ public:
 
 //	size_t is_infinity;
 
+    paired_metrics paired_metr;
+
+    estimation_mode est_mode;
+
 	resolving_mode rm;
 	long_contigs::lc_config::lc_params andrey_params;
 
@@ -490,6 +571,20 @@ inline void load(simplification_mode& simp_mode,
 		bool complete) {
 	std::string ep = pt.get<std::string>(key);
 	simp_mode = debruijn_config::simpl_mode_id(ep);
+}
+
+inline void load(estimation_mode& est_mode,
+        boost::property_tree::ptree const& pt, std::string const& key,
+        bool complete) {
+    std::string ep = pt.get<std::string>(key);
+    est_mode = debruijn_config::estimation_mode_id(ep);
+}
+
+inline void load(paired_metrics& paired_metr,
+        boost::property_tree::ptree const& pt, std::string const& key,
+        bool complete) {
+    std::string ep = pt.get<std::string>(key);
+    paired_metr = debruijn_config::paired_metrics_id(ep);
 }
 
 inline void load(debruijn_config::simplification::bulge_remover& br,
@@ -856,6 +951,9 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.rr, pt, (cfg.ds.single_cell ? "sc_rr" : "usual_rr")); // repeat resolver:
 	load(cfg.pos, pt, "pos"); // position handler:
 
+    load(cfg.paired_metr, pt, "paired_metrics");
+
+    load(cfg.est_mode, pt, "estimation_mode");
 	load(cfg.rm, pt, "resolving_mode");
 	if (cfg.rm == rm_path_extend || cfg.rm == rm_combined
 			|| cfg.rm == rm_jump) {
