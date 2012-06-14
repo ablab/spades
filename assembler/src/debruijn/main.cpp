@@ -87,12 +87,13 @@ void load_config(string cfg_filename)
     
     checkFileExistenceFATAL(cfg_filename);
 
-    fs::path tmp_folder = fs::path("/tmp") / debruijn_graph::MakeLaunchTimeDirName() / ("K" + lexical_cast<string>(debruijn_graph::K));
-    copy_configs(cfg_filename, tmp_folder);
-
-    cfg_filename = (tmp_folder / fs::path(cfg_filename).filename()).string();
-        cfg::create_instance(cfg_filename);
+    // deprecated: precopy of config in /tmp (!!!) just to read the values of output_root and output_dir!
+    //fs::path tmp_folder = fs::path("/tmp") / debruijn_graph::MakeLaunchTimeDirName() / ("K" + lexical_cast<string>(debruijn_graph::K));
+    //copy_configs(cfg_filename, tmp_folder);
+    //cfg_filename = (tmp_folder / fs::path(cfg_filename).filename()).string();
     
+    cfg::create_instance(cfg_filename);
+
     make_dir(cfg::get().output_root);
 
     make_dir(cfg::get().output_dir);
