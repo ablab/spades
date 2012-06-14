@@ -8,25 +8,59 @@ if len(sys.argv) != 2:
 	sys.exit()
 
 inFileName = sys.argv[1]
-inFile = open(inFileName)
 
 outFileName, ext = os.path.splitext(inFileName)
 outFileName += ".txt"
-
-print (outFileName)
-
 outFile = open(outFileName, "w")
 
+misFileName, ext = os.path.splitext(inFileName)
+misFileName += ".txt.mis"
+misFile = open(misFileName, "w")
+
+
+inFile = open(inFileName)
+mis_contigs_ids = []
+
+#skipping prologue
+for line in inFile:
+	if line.startswith("Analyzing contigs..."):
+		break
+
+# main part of plantagora output
+cur_contig_id = ""
+for line in inFile:
+	if line.startswith("	CONTIG:"):
+		cur_contig_id = line.split("	CONTIG:")[1].strip()
+	if (line.find("Extensive misassembly") != -1) and (cur_contig_id != ""):
+		mis_contigs_ids.append(cur_contig_id.split()[0])
+		cur_contig_id = ""
+	if line.startswith("Analyzing coverage..."):
+		break
+
+mis_contigs = {}
+
+inFile = open(inFileName)
 for line in inFile:
 	parse = line.strip().split(' ')
 	if parse[0] == "Align":
 		forward = " +"
-#		print(parse[2] + " " + parse[3] + " " + parse[4])
 		if (int(parse[2]) - int(parse[3]))*(int(parse[5]) - int(parse[6])) < 0:
 			forward = " -"
-		outFile.write(parse[2] + " " + parse[3] + " " + parse[4] + forward + " " + str(min(int(parse[5]),int(parse[6]))) + "\n")
+		cid = parse[4]
+		outFile.write(parse[2] + " " + parse[3] + " " + cid + forward + " " + str(min(int(parse[5]),int(parse[6]))) + "\n")
+
+		if cid in mis_contigs_ids:
+			if cid not in mis_contigs:
+				mis_contigs[cid] = ""
+			mis_contigs[cid] += cid + " " + parse[2] + " " + parse[3] + " " + forward + " " + str(min(int(parse[5]),int(parse[6]))) + "\n"
+
+for key in mis_contigs:
+	misFile.write(mis_contigs[key])
+
+print(outFileName)
 
 outFile.close()
 inFile.close()
+misFile.close()
 		
 	
