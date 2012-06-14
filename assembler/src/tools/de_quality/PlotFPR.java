@@ -54,14 +54,13 @@ public class PlotFPR implements Runnable{
 			String folder0 = "";
 			Locale.setDefault(Locale.US);
 			in_tp = new MyScanner(folder0 + "tp.prd");
-			in_fpr = new MyScanner(folder0 + "fpr.prd");
+			in_fpr = new MyScanner(folder0 + "fp.prd");
 			in_fnr = new MyScanner(folder0 + "fn.prd");
 			in_cl = new MyScanner("distance_estimation_cl.prd");
 			in_et = new MyScanner("distance_estimation_et.prd");
 			PrintWriter out = new PrintWriter(System.out);
             //debug(Threshold);
             int size_fnr = 0;
-			in_fnr.nextToken();
             double maxfnr = -1;
 			while (in_fnr.hasMoreTokens()){
 				int a = in_fnr.nextInt();

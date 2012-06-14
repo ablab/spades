@@ -100,8 +100,8 @@ public class GetErrors implements Runnable{
 				in2 = new MyScanner(filename + ".grp");
                 incl = new MyScanner(filename + "_cl.prd");
                 inpaths = new MyScanner("paths.prd");
-                fnrin = new MyScanner(filename + "_fnr.prd");
-                fprin = new MyScanner(filename + "_fpr.prd");
+                fnrin = new MyScanner("fn.prd");
+                fprin = new MyScanner("fp.prd");
 			}
 			else throw new IOException("no input data");
 			debug(filename);
@@ -374,4 +374,4 @@ public class GetErrors implements Runnable{
 
 }
 
-}
+

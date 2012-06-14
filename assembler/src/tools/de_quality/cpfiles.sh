@@ -1,6 +1,6 @@
 #!/bin/sh
 
-string="SC_HAMMER_1410_FILTERED";
+string="ECOLI_SC_LANE_1_BH_woHUMAN";
 
 if [ "$1" != "" ] 
 then
@@ -8,17 +8,19 @@ then
 fi
 echo $string
     cp ../../../data/debruijn/"$string"/K55/latest/saves/distance_estimation* .
-    cp ../../../data/debruijn/"$string"/K55/latest/estimation_qual/* .
+    #cp ../../../data/debruijn/"$string"/K55/latest/estimation_qual/* .
     cp ../../../data/debruijn/"$string"/K55/latest/etalon_paired_corrected.prd distance_estimation_et.prd 
 
-cp fp.prd distance_estimation_fpr.prd
-cp fn.prd distance_estimation_fnr.prd
+sed '1d' distance_estimation_et.prd > etalon.prd
+sed '1d' distance_estimation_cl.prd > clustered.prd
 
-sed '1d' fp.prd > temp.prd
-mv temp.prd fp.prd
-sed '1d' pm.prd > temp.prd
-mv temp.prd pm.prd
+./genStats.sh
+
 sort -rnk 4,4 fp.prd > fpr.prd
-sort -rnk 4,4 pm.prd > tp.prd
-sort -rnk 3,4 distance_estimation_et.prd > etalon.prd
-sort -rnk 3,4 distance_estimation_cl.prd > clustered.prd
+mv fpr.prd fp.prd
+sort -rnk 4,4 tp.prd > tpr.prd
+mv tpr.prd tp.prd
+sort -rnk 3,4 etalon.prd > temp.prd
+mv temp.prd etalon.prd
+sort -rnk 3,4 clustered.prd > temp.prd
+mv temp.prd clustered.prd

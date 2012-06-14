@@ -97,8 +97,8 @@ public class GetData implements Runnable{
 				in2 = new MyScanner(filename + ".grp");
                 incl = new MyScanner(filename + "_cl.prd");
                 inpaths = new MyScanner("paths.prd");
-                fnrin = new MyScanner(filename + "_fnr.prd");
-                fprin = new MyScanner(filename + "_fpr.prd");
+                fnrin = new MyScanner("fn.prd");
+                fprin = new MyScanner("fp.prd");
                 filein = new MyScanner(System.in);
 			}
 			else throw new IOException("no input data");
@@ -399,4 +399,4 @@ public class GetData implements Runnable{
 
 }
 
-}
+

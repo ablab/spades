@@ -1,2 +1,2 @@
-#!/bin/bash
+#!/bin/sh
 java Main -f distance_estimation
