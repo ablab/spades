@@ -612,7 +612,13 @@ def main():
             spades_cfg.__dict__["align_original_reads"] = True
         else:
             spades_cfg.__dict__["align_original_reads"] = False
-        if cfg["dataset"].__dict__.has_key("paired_reads") or cfg["dataset"].__dict__.has_key("paired_reads#1"):
+
+        has_paired = False
+        for k in cfg["dataset"].__dict__.iterkeys():
+            if k.startswith("paired_reads"):
+                has_paired = True
+                break
+        if has_paired:
             spades_cfg.__dict__["paired_mode"] = True
         else:
             spades_cfg.__dict__["paired_mode"] = False            
