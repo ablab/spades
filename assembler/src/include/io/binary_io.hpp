@@ -269,7 +269,9 @@ public:
     }
 
     virtual void reset() {
+        stream_.clear();
         stream_.seekg(0);
+        VERIFY(stream_.good());
         stream_.read((char *) &read_num_, sizeof(read_num_));
         current_ = 0;
     }
@@ -328,7 +330,9 @@ public:
     }
 
     virtual void reset() {
+        stream_.clear();
         stream_.seekg(0);
+        VERIFY(stream_.good());
         stream_.read((char *) &read_num_, sizeof(read_num_));
         current_ = 0;
     }
@@ -387,7 +391,9 @@ public:
     }
 
     virtual void reset() {
+        stream_.clear();
         stream_.seekg(0);
+        VERIFY(stream_.good());
         stream_.read((char *) &read_num_, sizeof(read_num_));
         current_ = 0;
     }
