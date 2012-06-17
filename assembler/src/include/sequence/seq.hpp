@@ -117,6 +117,18 @@ private:
 		data_[i >> TNuclBits] = (data_[i >> TNuclBits] & ~((T) 3 << ((i & (TNucl - 1)) << 1))) | ((T) c << ((i & (TNucl - 1)) << 1));
 	}
 
+  // Template voodoo to calculate the length of the string regardless whether it is std::string or const char*
+  template<class S>
+  size_t size(const S& t,
+              typename std::enable_if<std::is_class<S>::value, T>::type* = 0) {
+    return t.size();
+  }
+  template<class S>
+  size_t size(const S& t,
+              typename std::enable_if<std::is_same<S, const char*>::value, T>::type* = 0) {
+    return strlen(t);
+  }
+
 public:
 
     /**
@@ -202,7 +214,7 @@ public:
 		
         //TRACE("New Constructor for seq " << s[0] << " is first symbol");
         VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
-        VERIFY(offset + number_to_read <= s.size());
+        VERIFY(offset + number_to_read <= this->size(s));
 
         // which symbols does our string contain : 0123 or ACGT?
         bool digit_str = is_dignucl(s[0]); 
@@ -223,7 +235,7 @@ public:
             cnt += 2;
 
             if (cnt == TBits) {
-                this->data_[cur++] = data;
+              this->data_[cur++] = data;
                 cnt = 0;
                 data = 0;
             }
