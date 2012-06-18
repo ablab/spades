@@ -56,7 +56,9 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, delta);
 
 		if (cfg::get().advanced_estimator_mode) {
-			ERROR("Advanced estimator is temporary unavailable");
+			WARN("Process can't be continued, there is no advanced estimator now");
+            ERROR("Breaking");
+            VERIFY(cfg::get().advanced_estimator_mode == false);
 			//			AdvancedDistanceEstimator<Graph> estimator(gp.g, paired_index,
 //					dist_finder, linkage_distance,
 //					cfg::get().ade.threshold, cfg::get().ade.range_coeff,

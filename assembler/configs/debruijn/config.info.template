@@ -68,6 +68,9 @@ additional_ec_removing    true
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
 
+; set it true to use advanced estimator
+advanced_estimator_mode false
+
 ; repeat resolving mode (none split path_extend jump combined)
 resolving_mode split
 
