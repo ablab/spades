@@ -14,7 +14,7 @@ private:
 	VertexId FindStart(set<VertexId> component_set) {
 		VertexId result;
 		for(auto it = component_set.begin(); it != component_set.end(); ++it) {
-			vector<EdgeId> incoming = graph_.Incomingedges(*it);
+			vector<EdgeId> incoming = graph_.IncomingEdges(*it);
 			for(auto eit = incoming.begin(); eit != incoming.end(); ++eit) {
 				if(component_set.count(graph_.EdgeStart(*eit)) == 0) {
 					if(result != VertexId()) {
@@ -76,18 +76,27 @@ public:
 			if(start == VertexId() || finish == VertexId()) {
 				continue;
 			}
-			KillLoop(start, finish, component);
+			KillLoop(start, finish, component_set);
 		}
+		Compressor<Graph> compressor(graph_);
+		compressor.CompressAllVertices();
 	}
 
-	virtual void KillLoop(VertexId start, VertexId finish, set<VertexId> component) = 0;
+	virtual void KillLoop(VertexId start, VertexId finish, const set<VertexId> &component) = 0;
 };
 
 template<class Graph>
 class SimpleLoopKiller : public AbstractLoopKiller<Graph> {
-	vector<VertexId> FindPath(VertexId start, VertexId finish) {
+
+public:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+private:
+	vector<EdgeId> FindPath(VertexId start, VertexId finish) {
 		set<VertexId> was;
-		return FindPath(start, finish, was);
+		vector<EdgeId> rr = FindPath(start, finish, was);
+		return vector<EdgeId>(rr.rbegin(), rr.rend());
 	}
 
 	vector<EdgeId> FindPath(VertexId start, VertexId finish, set<VertexId> &was) {
@@ -99,9 +108,9 @@ class SimpleLoopKiller : public AbstractLoopKiller<Graph> {
 				return {*it};
 			}
 			if(was.count(next) == 0) {
-				vector<vertexId> result = FindPath(next, finish, was);
+				vector<EdgeId> result = FindPath(next, finish, was);
 				if(result.size() > 0) {
-					result.push_front(*it);
+					result.push_back(*it);
 					return result;
 				}
 			}
@@ -114,7 +123,7 @@ class SimpleLoopKiller : public AbstractLoopKiller<Graph> {
 		for(auto it = component.begin(); it != component.end(); ++it) {
 			vector<EdgeId> outgoing = this->g().OutgoingEdges(*it);
 			for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
-				if(component.count(graph_.EdgeEnd(*eit)) == 1 && edges.count(*eit) == 0 ) {
+				if(component.count(this->g().EdgeEnd(*eit)) == 1 && edges.count(*eit) == 0 ) {
 					sum += this->g().length(*eit);
 				}
 			}
@@ -124,37 +133,36 @@ class SimpleLoopKiller : public AbstractLoopKiller<Graph> {
 
 	void RemoveExtraEdges(set<EdgeId> edges, set<VertexId> component) {
 		vector<VertexId> comp(component.begin(), component.end());
-		size_t sum = 0;
 		vector<EdgeId> to_delete;
 		for(auto it = comp.begin(); it != comp.end(); ++it) {
 			vector<EdgeId> outgoing = this->g().OutgoingEdges(*it);
 			for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
-				if(component.count(graph_.EdgeEnd(*eit)) == 1 && edges.count(*eit) == 0 ) {
+				if(component.count(this->g().EdgeEnd(*eit)) == 1 && edges.count(*eit) == 0 ) {
 					to_delete.push_back(*eit);
 				}
 			}
 		}
-		SmartSetIterator<Graph, VertexId> s(this->g(), to_delete.begin(), to_delete.end());
+		SmartSetIterator<Graph, EdgeId> s(this->g(), to_delete.begin(), to_delete.end());
 		while(!s.IsEnd()) {
-			this->g().RemoveEdge(*s);
+			this->g().DeleteEdge(*s);
 		}
 	}
 
 	void RemoveIsolatedVertices(set<VertexId> component) {
-		SmartSetIterator<Graph, EdgeId> s(this->g(), component.begin(), component.end());
+		SmartSetIterator<Graph, VertexId> s(this->g(), component.begin(), component.end());
 		while(!s.IsEnd()) {
-			if(this->g().IsStart(*s) && this->g().IsEnd(*s)) {
+			if(this->g().IsDeadStart(*s) && this->g().IsDeadEnd(*s)) {
 				this->g().DeleteVertex(*s);
 			}
 		}
 	}
 
 public:
-	SimpleLoopKiller(size_t splitting_edge_length, size_t max_component_size) :
-			AbstractLoopKiller<Graph>(splitting_edge_length, max_component_size) {
+	SimpleLoopKiller(Graph &graph, size_t splitting_edge_length, size_t max_component_size) :
+			AbstractLoopKiller<Graph>(graph, splitting_edge_length, max_component_size) {
 	}
 
-	virtual void KillLoop(VertexId start, VertexId finish, set<VertexId> component) {
+	virtual void KillLoop(VertexId start, VertexId finish, const set<VertexId> &component) {
 		vector<EdgeId> path = FindPath(start, finish);
 		set<EdgeId> edges(path.begin(), path.end());
 		if(path.size() > 0) {

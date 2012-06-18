@@ -28,6 +28,7 @@
 #include "omni/omni_utils.hpp"
 #include "long_contigs/lc_launch.hpp"
 #include "internal_aligner.hpp"
+#include "omni/loop_killer.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -511,6 +512,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //		cfg::get().output_dir + subfolder + ToString(i) + "b_4_cleared.dot",
 //				"no_repeat_graph");
 	}
+
+//	SimpleLoopKiller<typename graph_pack::graph_t> lk(resolved_gp.g, 3000, 6);
+//	lk.KillAllLoops();
 
 	DEBUG("Clearing resolved graph complete");
 
