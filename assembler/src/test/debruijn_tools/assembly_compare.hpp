@@ -24,9 +24,6 @@
 
 namespace compare {
 
-typedef io::RCReaderWrapper<io::SingleRead> RCWrapper;
-typedef io::MultifileReader<io::SingleRead> CompositeContigStream;
-
 //class RCSplittingStream: public io::DelegatingReaderWrapper<io::SingleRead> {
 //private:
 //	io::SplittingWrapper filtered_reader_;
@@ -107,7 +104,7 @@ private:
 		br_config.max_bulge_length_coefficient = 2;
 		br_config.max_coverage = 1000.;
 		br_config.max_relative_coverage = 1.2;
-		br_config.max_delta = 10;
+		br_config.max_delta = 10;//1000;
 		br_config.max_relative_delta = 0.1;
 		INFO("Removing bulges");
 		RemoveBulges(g, br_config);
@@ -179,9 +176,8 @@ public:
 				stream2_);
 
 		//TODO do we still need it?
-//		SimplifyGraph(gp_.g);
+		SimplifyGraph(gp_.g);
 
-//blahblahblah
 		ColorHandler<Graph> coloring(gp_.g);
 		ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp_.g,
 				coloring, *MapperInstance<gp_t>(gp_));

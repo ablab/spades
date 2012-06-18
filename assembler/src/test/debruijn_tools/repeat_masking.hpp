@@ -28,6 +28,22 @@ void FillRepeats(const Sequence& genome,
 	}
 }
 
+template<size_t k>
+void FillRepeats(const vector<Sequence>& assembly,
+		set<Seq<k>, typename Seq<k>::less2>& repeats) {
+	map<Seq<k>, size_t, typename Seq<k>::less2> bag;
+
+	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
+		FillBagForStrand(*it, bag);
+		FillBagForStrand(!(*it), bag);
+	}
+
+	for (auto it = bag.begin(); it != bag.end(); ++it) {
+		if (it->second > 1)
+			repeats.insert(it->first);
+	}
+}
+
 //todo
 struct ClearedGenome {
 	typedef vector<MappingRange> Ranges;
@@ -130,9 +146,10 @@ pair<Sequence, vector<Sequence>> Clear(const Sequence& genome,
 	set<Seq<k>, typename Seq<k>::less2> repeats;
 	INFO("Filling set of repeats");
 	FillRepeats<k>(genome, repeats);
-	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
-		FillRepeats(*it, repeats);
-	}INFO("Clearing genome");
+//	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
+//		FillRepeats(*it, repeats);
+//	}
+	INFO("Clearing genome");
 	Sequence new_genome = ClearGenome<k>(genome, repeats);
 	INFO("Clearing assembly");
 	vector<Sequence> new_assembly;
@@ -140,6 +157,31 @@ pair<Sequence, vector<Sequence>> Clear(const Sequence& genome,
 		new_assembly.push_back(ClearGenome<k>(*it, repeats));
 	}
 	return make_pair(new_genome, new_assembly);
+}
+
+//template<size_t k>
+//void Clear(const string& genome_in, const string& genome_out
+//		, const string& assembly_in, const string& assembly_out) {
+//	INFO("Clearing genome of repeats");
+//	pair<Sequence, vector<Sequence>> cleared
+//		= Clear<k>(ReadGenome(genome_in), ReadContigs(assembly_in));
+//	io::ofastastream genome_out
+//
+//}
+
+template<size_t k>
+void Clear(const string& in, const string& out) {
+	io::Reader in_stream(in);
+	set<Seq<k>, typename Seq<k>::less2> repeats;
+	FillRepeats<k>(AllSequences(in_stream), repeats);
+	in_stream.reset();
+	io::ofastastream out_stream(out);
+	io::SingleRead contig;
+	while (!in_stream.eof()) {
+		in_stream >> contig;
+		Sequence cleared = ClearGenome<k>(contig.sequence(), repeats);
+		out_stream << io::SingleRead(contig.name(), cleared.str());
+	}
 }
 
 template<size_t k>

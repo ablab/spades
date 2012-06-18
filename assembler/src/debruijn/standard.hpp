@@ -44,21 +44,3 @@ namespace debruijn_graph
     typedef io::ConvertingReaderWrapper UnitedStream;
 } // namespace debruijn_graph
 
-inline bool make_dir(fs::path p)
-{
-	namespace fs = boost::filesystem;
-	if (fs::is_directory(p) || fs::create_directories(p))
-		return true;
-
-	WARN("Can't create directory " << p);
-	return false;
-}
-
-inline bool rm_dir(fs::path p) {
-	namespace fs = boost::filesystem;
-	if (fs::is_directory(p) && fs::remove_all(p))
-		return true;
-	WARN("Can't remove directory " << p);
-	return false;
-}
-

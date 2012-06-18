@@ -109,6 +109,21 @@ using boost::make_shared;
 
 namespace fs = boost::filesystem;
 
+inline bool make_dir(fs::path p)
+{
+	namespace fs = boost::filesystem;
+	if (fs::is_directory(p) || fs::create_directories(p))
+		return true;
+	return false;
+}
+
+inline bool rm_dir(fs::path p) {
+	namespace fs = boost::filesystem;
+	if (fs::is_directory(p) && fs::remove_all(p))
+		return true;
+	return false;
+}
+
 using boost::optional;
 using boost::none;
 using boost::in_place;

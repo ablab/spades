@@ -24,10 +24,7 @@
 #include <boost/random/variate_generator.hpp>
 
 namespace compare {
-using namespace omnigraph;
 using namespace debruijn_graph;
-
-typedef io::IReader<io::SingleRead> ContigStream;
 
 inline Sequence ReadSequence(io::IReader<io::SingleRead>& reader) {
 	VERIFY(!reader.eof());
@@ -54,12 +51,10 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 inline Sequence ReadGenome(const string& filename) {
 	checkFileExistenceFATAL(filename);
 	io::Reader genome_stream(filename);
-	io::SingleRead genome;
-	genome_stream >> genome;
-	return genome.sequence();
+	return ReadSequence(genome_stream);
 }
 
-const vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
+inline vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
 	vector<io::SingleRead> ans;
 	for (size_t i = 0; i < ss.size(); ++i) {
 		ans.push_back(io::SingleRead("read_" + ToString(i), ss[i].str()));
@@ -67,7 +62,7 @@ const vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
 	return ans;
 }
 
-Sequence FirstSequence(io::IReader<io::SingleRead>& stream) {
+inline Sequence FirstSequence(io::IReader<io::SingleRead>& stream) {
 	stream.reset();
 	io::SingleRead r;
 	VERIFY(!stream.eof());
@@ -75,7 +70,7 @@ Sequence FirstSequence(io::IReader<io::SingleRead>& stream) {
 	return r.sequence();
 }
 
-vector<Sequence> AllSequences(io::IReader<io::SingleRead>& stream) {
+inline vector<Sequence> AllSequences(io::IReader<io::SingleRead>& stream) {
 	vector<Sequence> answer;
 	stream.reset();
 	io::SingleRead r;
@@ -86,9 +81,15 @@ vector<Sequence> AllSequences(io::IReader<io::SingleRead>& stream) {
 	return answer;
 }
 
+inline vector<Sequence> ReadContigs(const string& filename) {
+	checkFileExistenceFATAL(filename);
+	io::Reader genome_stream(filename);
+	return AllSequences(genome_stream);
+}
+
 //Prints only basic graph structure!!!
 //todo rewrite with normal splitter usage instead of filtering
-void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
+inline void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
 		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids,
 		int int_edge_id) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
