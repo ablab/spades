@@ -282,9 +282,9 @@ void refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_p
 
 	// Kolya's approach
 	// Now we calculate median, MAD and cropped histogram
-	{
 		double median = 0;
 		double mad = 0;
+	{
 		median = get_median(hist);
 		mad = get_mad(hist, median);
 		double low = median - 5 * 1.4826 * mad;
@@ -299,6 +299,8 @@ void refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_p
 	INFO("Insert size refined:");
 	INFO("IS = " << cfg::get_writable().ds.IS);
 	INFO("delta = " << delta);
+    INFO("median = " << median);
+    INFO("delta_mad = " << 1.4826 * mad);
 }
 
 }
