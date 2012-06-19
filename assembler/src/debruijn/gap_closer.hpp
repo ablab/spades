@@ -339,8 +339,9 @@ class GapCloser {
 		if (CheckSequence(new_sequence)) {
 			DEBUG("Check ok.");
 			DEBUG("Splitting first edge.");
-			first = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front()).first;
-
+			pair<EdgeId, EdgeId> split_res = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front());
+			first = split_res.first;
+			tips_paired_idx_.RemoveEdgeInfo(split_res.second);
 //							g_.DeleteEdge(first);
 			DEBUG("Adding new edge.");
 			VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
@@ -363,7 +364,9 @@ class GapCloser {
 		if (CheckSequence(new_sequence)) {
 			DEBUG("Check ok.");
 			DEBUG("Splitting second edge.");
-			second = g_.SplitEdge(second, diff_pos.back() + 1).second;
+			pair<EdgeId, EdgeId> split_res = g_.SplitEdge(second, diff_pos.back() + 1);
+			second = split_res.second;
+			tips_paired_idx_.RemoveEdgeInfo(split_res.first);
 //							g_.DeleteEdge(second);
 			DEBUG("Adding new edge.");
 			VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
