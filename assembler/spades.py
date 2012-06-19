@@ -819,12 +819,16 @@ def run_spades(cfg):
         os.symlink(latest, os.path.join(cfg.working_dir, "link_K%d" % (K)))
         latest = os.path.join(cfg.working_dir, latest)
         # python2.4 doesn't support os.path.relpath
-        # os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))
+        # os.symlink(os.path.relpath(latest, cfg.working_dir), os.path.join(cfg.working_dir, "link_K%d" % (K)))   
 
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.developer_mode:
+        # before repeat resolver contigs
         before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "contigs_before_RR.fasta")
         shutil.copyfile(os.path.join(latest, "contigs_before_RR.fasta"), before_RR_contigs)
+        # saves
+        os.symlink(os.path.join(latest, "saves"), os.path.join(os.path.dirname(cfg.result_contigs), "saves"))
+
     os.remove(cfg.additional_contigs) 
 
     if glob.glob(os.path.join(latest, "*.sam")):
