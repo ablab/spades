@@ -99,18 +99,18 @@ public:
 	/*virtual*/
 	void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
 		VERIFY(old_edges.size() > 0);
-		auto color = Color(old_edges.front());
+//		auto color = Color(old_edges.front());
 		for (auto it = old_edges.begin(); it != old_edges.end(); ++it) {
-			VERIFY(color == Color(*it));
-//			PaintEdge(new_edge, Color(*it));
+//			VERIFY(color == Color(*it));
+			Paint(new_edge, Color(*it));
 		}
-		Paint(new_edge, color);
+//		Paint(new_edge, color);
 	}
 
 	/*virtual*/
 	void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 		//todo temporary verification
-		VERIFY(Color(edge2) == edge_type::black && new_edge == edge2);
+//		VERIFY(Color(edge2) == edge_type::black && new_edge == edge2);
 		Paint(new_edge, Color(edge2));
 		Paint(new_edge, Color(edge1));
 	}

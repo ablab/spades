@@ -51,6 +51,62 @@ namespace compare {
 //	//
 //}
 
+template<class Graph>
+class GapsRemover {
+	typedef typename Graph::VertexId VertexId;
+	Graph& g_;
+	const ColorHandler<Graph>& coloring_;
+	const edge_type gap_color_;
+	const size_t length_bound_;
+public:
+	GapsRemover(Graph& g, const ColorHandler<Graph>& coloring, edge_type gap_color, size_t length_bound)
+	: g_(g), coloring_(coloring), gap_color_(gap_color), length_bound_(length_bound) {
+
+	}
+
+	void RemoveGaps() {
+		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (coloring_.Color(*it) == gap_color_
+					&& g_.length(*it) <= length_bound_
+					&& g_.CanCompressVertex(g_.EdgeStart(*it))
+					&& g_.CanCompressVertex(g_.EdgeEnd(*it))) {
+				VertexId start = g_.EdgeStart(*it);
+				VertexId end = g_.EdgeEnd(*it);
+				if (!g_.RelatedVertices(start, end)) {
+					g_.CompressVertex(end);
+				}
+				g_.CompressVertex(start);
+			}
+		}
+	}
+};
+
+template<class gp_t>
+void ConstructColoredGraph(gp_t& gp, ColorHandler<typename gp_t::graph_t> coloring
+		, const vector<ContigStream*>& streams) {
+	typedef typename gp_t::graph_t Graph;
+	const size_t k = gp_t::k_value;
+	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
+
+	INFO("Constructing de Bruijn graph for k=" << k);
+	ConstructGraph<k, Graph>(streams, gp.g, gp.index);
+
+	//TODO do we still need it?
+//	SimplifyGraph(gp_.g, br_delta);
+
+	ColorHandler<Graph> coloring(gp.g);
+	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
+			coloring, *MapperInstance<gp_t>(gp));
+	colored_graph_constructor.ConstructGraph(streams);
+
+	INFO("Filling contig positions");
+	for (auto it = streams.begin(); it != streams.end(); ++it) {
+		ContigStream& stream = **it;
+		stream.reset();
+		FillPos(gp, stream);
+	}
+}
+
 template<class gp_t>
 class AssemblyComparer {
 private:
@@ -58,8 +114,6 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> Mapper;
-	typedef restricted::map<EdgeId, vector<Range>> CoveredRanges;
-	typedef restricted::map<EdgeId, vector<size_t>> BreakPoints;
 
 //	io::IReader<io::SingleRead> &stream1_;
 //	io::IReader<io::SingleRead> &stream2_;
@@ -194,6 +248,11 @@ public:
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
 		}
+
+		INFO("Removing gaps");
+		GapsRemover<Graph> gaps_remover(gp_.g, coloring, edge_type::blue, 700);
+		gaps_remover.RemoveGaps();
+		INFO("Gaps removed");
 
 		if (boost::starts_with(name1_, "idba")) {
 			IDBADiffAnalyzer<gp_t> diff_analyzer(gp_, coloring, name1_, name2_,

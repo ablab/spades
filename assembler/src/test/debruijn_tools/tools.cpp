@@ -31,6 +31,49 @@
 
 namespace compare {
 
+//Gingi block
+
+//BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
+//	MaskDifferencesAndSave(vector<string>{
+//		"/home/snurk/Dropbox/gingi/jeff.fasta",
+//		"/home/snurk/Dropbox/gingi/TDC60.fasta"},
+//		vector<string>{"jeff", "tdc60"},
+//		"assembly_comp/gingi_diff_mask/",
+//		k<15>(), k<21>(), k<55>(), k<101>(), k<201>());
+//}
+
+BOOST_AUTO_TEST_CASE( ClearGingiGenome ) {
+	Clear<201>("assembly_comp/gingi_diff_mask/tdc60.fasta",
+		"assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
+}
+
+BOOST_AUTO_TEST_CASE( ClearJeffAssembly ) {
+	Clear<201>("assembly_comp/gingi_diff_mask/jeff.fasta",
+		"assembly_comp/gingi_diff_mask/jeff_cl.fasta");
+}
+
+BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
+	static const size_t K = 501;
+	typedef debruijn_graph::graph_pack</*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> comparing_gp_t;
+
+//	io::Reader stream_1("/home/snurk/Dropbox/gingi/jeff.fasta");
+//	io::Reader stream_2("/home/snurk/Dropbox/gingi/TDC60.fasta");
+//	string ref = "/home/snurk/Dropbox/gingi/TDC60.fasta";
+	io::Reader stream_1("assembly_comp/gingi_diff_mask/jeff_cl.fasta");
+	io::Reader stream_2("assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
+	string ref = "assembly_comp/gingi_diff_mask/tdc60_cl.fasta";
+
+	string folder = "assembly_comp/gingi_jeff_vs_tdc60_" + ToString(K) + "/";
+	//todo add splitting wrapper
+
+	AssemblyComparer<comparing_gp_t> comparer(stream_1, stream_2, "jeff_",
+			"tdc_", /*untangle*/false, ReadGenome(ref));
+	comparer.CompareAssemblies(folder, /*detailed_output*/true, /*one_many_resolve*/false,
+			/*br_delta*/10000);
+}
+
+//End of gingi block
+
 //BOOST_AUTO_TEST_CASE( RefVSAssemblyComparison ) {
 //	static const size_t k = 55;
 //	static const size_t K = 55;
@@ -114,45 +157,6 @@ namespace compare {
 //		folder,
 //		true/*detailed_output*/);
 //}
-
-//BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
-//	MaskDifferencesAndSave(vector<string>{
-//		"/home/snurk/Dropbox/gingi/jeff.fasta",
-//		"/home/snurk/Dropbox/gingi/TDC60.fasta"},
-//		vector<string>{"jeff", "tdc60"},
-//		"assembly_comp/gingi_diff_mask/",
-//		k<15>(), k<21>(), k<55>(), k<101>(), k<201>());
-//}
-
-//BOOST_AUTO_TEST_CASE( ClearGingiGenome ) {
-//	Clear<201>("assembly_comp/gingi_diff_mask/tdc60.fasta",
-//		"assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
-//}
-
-//BOOST_AUTO_TEST_CASE( ClearJeffAssembly ) {
-//	Clear<201>("assembly_comp/gingi_diff_mask/jeff.fasta",
-//		"assembly_comp/gingi_diff_mask/jeff_cl.fasta");
-//}
-
-BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
-	static const size_t K = 501;
-	typedef debruijn_graph::graph_pack</*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> comparing_gp_t;
-
-//	io::Reader stream_1("/home/snurk/Dropbox/gingi/jeff.fasta");
-//	io::Reader stream_2("/home/snurk/Dropbox/gingi/TDC60.fasta");
-//	string ref = "/home/snurk/Dropbox/gingi/TDC60.fasta";
-	io::Reader stream_1("assembly_comp/gingi_diff_mask/jeff_cl.fasta");
-	io::Reader stream_2("assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
-	string ref = "assembly_comp/gingi_diff_mask/tdc60_cl.fasta";
-
-	string folder = "assembly_comp/gingi_jeff_vs_tdc60_501_new/";
-	//todo add splitting wrapper
-
-	AssemblyComparer<comparing_gp_t> comparer(stream_1, stream_2, "jeff_",
-			"tdc_", /*untangle*/false, ReadGenome(ref));
-	comparer.CompareAssemblies(folder, /*detailed_output*/true, /*one_many_resolve*/false,
-			/*br_delta*/1000);
-}
 
 //BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //	static const size_t k = 21;

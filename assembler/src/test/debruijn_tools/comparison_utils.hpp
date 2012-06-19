@@ -26,7 +26,7 @@
 namespace compare {
 using namespace debruijn_graph;
 
-inline Sequence ReadSequence(io::IReader<io::SingleRead>& reader) {
+inline Sequence ReadSequence(ContigStream& reader) {
 	VERIFY(!reader.eof());
 	io::SingleRead read;
 	reader >> read;
@@ -35,15 +35,15 @@ inline Sequence ReadSequence(io::IReader<io::SingleRead>& reader) {
 
 template<size_t k, class Graph>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		io::IReader<io::SingleRead>& stream) {
-	vector<io::IReader<io::SingleRead>*> streams = { &stream };
+		ContigStream& stream) {
+	vector<ContigStream*> streams = { &stream };
 	ConstructGraph<k, Graph>(streams, g, index);
 }
 
 template<size_t k, class Graph>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		io::IReader<io::SingleRead>& stream1,
-		io::IReader<io::SingleRead>& stream2) {
+		ContigStream& stream1,
+		ContigStream& stream2) {
 	io::MultifileReader<io::SingleRead> composite_reader(stream1, stream2);
 	ConstructGraph<k, Graph>(g, index, composite_reader);
 }
@@ -62,7 +62,7 @@ inline vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
 	return ans;
 }
 
-inline Sequence FirstSequence(io::IReader<io::SingleRead>& stream) {
+inline Sequence FirstSequence(ContigStream& stream) {
 	stream.reset();
 	io::SingleRead r;
 	VERIFY(!stream.eof());
@@ -70,7 +70,7 @@ inline Sequence FirstSequence(io::IReader<io::SingleRead>& stream) {
 	return r.sequence();
 }
 
-inline vector<Sequence> AllSequences(io::IReader<io::SingleRead>& stream) {
+inline vector<Sequence> AllSequences(ContigStream& stream) {
 	vector<Sequence> answer;
 	stream.reset();
 	io::SingleRead r;

@@ -65,7 +65,7 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 	tc_config.max_tip_length_coefficient = 2.;
 
 	INFO("Clipping tips with projection");
-	DefaultClipTips(gp.g, tc_config, /*read_length*/100, projecting_callback);
+	DefaultClipTips(gp.g, tc_config, /*read_length*/10000, projecting_callback);
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 
@@ -233,6 +233,7 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams, const vect
 template<typename ... Ks>
 void MaskDifferencesAndSave(const vector<string>& in_files, const vector<string>& suffixes
 		, const string& out_root, Ks... ks) {
+	rm_dir(out_root);
 	make_dir(out_root);
 	vector<ContigStream*> streams = OpenStreams(in_files);
 	MaskDifferencesAndSave(streams, suffixes, out_root, ks...);
