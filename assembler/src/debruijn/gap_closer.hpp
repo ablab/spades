@@ -247,7 +247,7 @@ class GapCloser {
 
 	Graph& g_;
 	int k_;
-	const PairedInfoIndex<Graph>& tips_paired_idx_;
+	PairedInfoIndex<Graph>& tips_paired_idx_;
 	const size_t min_intersection_;
 	const size_t hamming_dist_bound_;
 	const int init_gap_val_;
@@ -331,7 +331,7 @@ class GapCloser {
 				: long_seq.Subseq(long_seq.size() - short_seq.size()) == short_seq;
 	}
 
-	bool CorrectLeft(EdgeId first, EdgeId second, int overlap, const vector<size_t>& diff_pos) const {
+	bool CorrectLeft(EdgeId first, EdgeId second, int overlap, const vector<size_t>& diff_pos) {
 		DEBUG("Can correct first with sequence from second.");
 		Sequence new_sequence = g_.EdgeNucls(first).Subseq(g_.length(first) - overlap + diff_pos.front(), g_.length(first) + k_ - overlap)
 				+ g_.EdgeNucls(second).First(k_);
@@ -357,7 +357,7 @@ class GapCloser {
 		return false;
 	}
 
-	bool CorrectRight(EdgeId first, EdgeId second, int overlap, const vector<size_t>& diff_pos) const {
+	bool CorrectRight(EdgeId first, EdgeId second, int overlap, const vector<size_t>& diff_pos) {
 		DEBUG("Can correct second with sequence from first.");
 		Sequence new_sequence = g_.EdgeNucls(first).Last(k_) + g_.EdgeNucls(second).Subseq(overlap, diff_pos.back() + 1 + k_);
 		DEBUG("Checking new k+1-mers.");
@@ -383,7 +383,7 @@ class GapCloser {
 		return false;
 	}
 
-	bool HandlePositiveHammingDistanceCase(EdgeId first, EdgeId second, int overlap) const {
+	bool HandlePositiveHammingDistanceCase(EdgeId first, EdgeId second, int overlap) {
 		DEBUG("Match was imperfect. Trying to correct one of the tips");
 		vector<size_t> diff_pos = DiffPos(g_.EdgeNucls(first).Last(overlap),
 				g_.EdgeNucls(second).First(overlap));
@@ -397,7 +397,7 @@ class GapCloser {
 		}
 	}
 
-	bool HandleSimpleCase(EdgeId first, EdgeId second, int overlap) const {
+	bool HandleSimpleCase(EdgeId first, EdgeId second, int overlap) {
 		DEBUG("Match was perfect. No correction needed");
 		//strange info guard
 		VERIFY(overlap <= k_);
@@ -421,7 +421,7 @@ class GapCloser {
 	}
 
 
-	bool ProcessPair(EdgeId first, EdgeId second) const {
+	bool ProcessPair(EdgeId first, EdgeId second) {
 		TRACE("Processing edges " << g_.str(first) << " and " << g_.str(second));
 		TRACE("first " << g_.EdgeNucls(first) << " second " << g_.EdgeNucls(second));
 
@@ -455,7 +455,7 @@ class GapCloser {
 
 public:
 
-	void CloseShortGaps() const {
+	void CloseShortGaps() {
 		INFO("Closing short gaps");
 		int gaps_filled = 0;
 		int gaps_checked = 0;
@@ -484,7 +484,7 @@ public:
 		compressor.CompressAllVertices();
 	}
 
-	GapCloser(Graph& g, const PairedInfoIndex<Graph>& tips_paired_idx,
+	GapCloser(Graph& g, PairedInfoIndex<Graph>& tips_paired_idx,
 			size_t min_intersection, double weight_threshold,
 			const SequenceMapper& mapper, size_t hamming_dist_bound = 0/*min_intersection_ / 5*/) :
 			g_(g), k_(g_.k()), tips_paired_idx_(tips_paired_idx), min_intersection_(
