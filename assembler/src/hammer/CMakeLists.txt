@@ -32,7 +32,7 @@ add_executable(hammer
    
 add_subdirectory(quake_count)
 #add_subdirectory(quake_enhanced)
-add_subdirectory(quake_correct)
+#add_subdirectory(quake_correct)
 add_subdirectory(gen_test_data)
 
 target_link_libraries(hammer ${COMMON_LIBRARIES} input)
