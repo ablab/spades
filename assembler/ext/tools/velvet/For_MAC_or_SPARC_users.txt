@@ -1,0 +1,11 @@
+If you have any trouble with running Velvet on a Mac or Sparc/Solaris, take a look within the Makefile.
+
+You will find towards the top some indications to adjust the compilations to your needs.
+
+For Solaris users, you may find it necessary to:
+- replace src/recycleBin.c file with the one in contrib/solaris
+- replace line 113 of utility.c from
+	timersub(&tvNow, &tvstart, &tvDiff);
+to:
+	tvDiff.tv_sec = tvNow.tv_sec - tvStart.tv_sec;
+	tvDiff.tv_usec = 0;

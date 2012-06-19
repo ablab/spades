@@ -1,0 +1,162 @@
+velvet1.2.02 (1.2.02-1) unstable; urgency=low
+
+  * New upstream release.
+  * Branched from the github repo, and all additional files in the 1.2.02 release tarball are part of this package.
+
+ -- Scott Smith <ssmith@genome.wustl.edu>  Sat, 28 Jan 2012 17:37:06 +0900
+
+velvet0.7.56 (0.7.56-1) unstable; urgency=low
+
+  * New upstream version.
+  * Repackaged the upstream directory to remove the convenience copy
+    of the zlib. Documented this in ‘debian/README.source’.
+    Closes: #561433.
+  * Updated debian/copyright.
+  * Added ‘include_debians_zlib.patch’ to enforce the use of
+    /usr/include/zlib.h. This patch is applied using CDBS, see
+    ‘debian/rules’ and ‘debian/README.source’.
+  * Renamed ‘debian/reference’ ‘debian/upstream-metadata.yaml’ and
+    centralised upstream-specific information there.
+
+ -- Charles Plessy <plessy@debian.org>  Mon, 25 Jan 2010 13:03:06 +0900
+
+velvet0.7.55-1 (0.7.55-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Andreas Tille <tille@debian.org>  Fri, 25 Sep 2009 14:52:41 +0200
+
+velvet0.7.53-1 (0.7.53-1) unstable; urgency=low
+
+  * New upstream release:
+    - Ignored reads in Pebble corrected
+    - Added automatic measure of median coverage and median insert length
+    - Updated manual to cover the above
+
+ -- Charles Plessy <plessy@debian.org>  Fri, 04 Sep 2009 13:42:22 +0900
+
+velvet0.7.52-1 (0.7.52-1) unstable; urgency=low
+
+  * New upstream release:
+    V 0.7.51
+    - Small parsing bug
+    - Correction to the observed-insert-length script
+    - Verified strncpy calls
+    - NCBI friendly 10bp N-gaps
+    V 0.7.52
+    - Crashing bug when parsing fa.gz files
+    - Crashing bug with tiny Graph files
+    - Bug when loading FASTA files with short lines
+    - Corrected snp_view.pl script to write reverse strand reads in
+      snp_view_reads file
+    - Corrected snp_view.pl script to behave better near the edges of contigs
+    - Updated observed_insert_length to compute the standard deviation of
+      the set
+    - Corrected observed_insert_length script so that it does not crash on
+      empty libraries
+    - Crashing bug when providing an odd number of paired reads
+    - Mapping bug of reads during tour bus correction
+  * Replaced the UNRELEASED tag by ‘unstable’ in debian/changelog as
+    0.7.50-1 was really uploaded and accepted by the archive.
+
+ -- Charles Plessy <plessy@debian.org>  Thu, 03 Sep 2009 20:00:54 +0900
+
+velvet0.7.50-1 (0.7.50-1) unstable; urgency=low
+
+  * New upstream release:
+    V 0.7.49
+    - Added the optional output of unused reads
+    - Added David Studholme's FastA -> AGP script
+    V 0.7.50
+    - Added the extractContigReads script
+    - Updated the FastA -> AGP script
+    - Added the observed-insert-length script
+    - Small parsing bug in simplified read import
+  * Incremented Standards-Version in debian/control to reflect conformance
+      with Policy 3.8.3 (no changes needed).
+
+ -- Charles Plessy <plessy@debian.org>  Wed, 19 Aug 2009 21:58:49 +0900
+
+velvet0.7.48-1 (0.7.48-1) unstable; urgency=low
+
+  * New upstream release:
+    - Accelerated concatenation (pre-graph and graph)
+    - Unlimited contig size
+    - Bug in parsing FASTA files with very long lines
+    - Parsing bug in snp_view.pl script
+
+ -- Charles Plessy <plessy@debian.org>  Tue, 11 Aug 2009 19:54:03 +0900
+
+velvet0.7.47-1 (0.7.47-1) unstable; urgency=low
+
+  * New upstream release correcting bugs and enhancing documentation.
+  * Multi-Arch support (‘foreign’) in debian/control.
+  * Corrected debian/install to avoid ugly ‘contrib/contrib’ location.
+
+ -- Charles Plessy <plessy@debian.org>  Thu, 30 Jul 2009 13:43:13 +0900
+
+velvet0.7.44-1 (0.7.44-1) unstable; urgency=low
+
+  * New upstream release.
+  * Added bibliographic information in BibTeX format in debian/references.
+  * debian/rules: touch zlib to avoid third-party zlib to be built.
+  * Removed ‘debian/patches/20_external_zlib.patch’. Passing apropriate
+    variables in debian/rules is enough to build dynamically on Debian's
+    zlib.
+  * Removed the quilt patch system (debian/control, debian/README.source
+    debian/rules).
+  * Incremented Standards-Version in debian/control to reflect conformance
+    with Policy 3.8.2 (no changes needed).
+  * Corrected the installation of files that were moved from the
+    ‘third-party’ directory to the ‘contrib’ directory.
+  * Experimentation on debian/copyright.
+
+ -- Charles Plessy <plessy@debian.org>  Sun, 12 Jul 2009 00:24:56 +0900
+
+velvet0.7.37-1 (0.7.37-1) unstable; urgency=low
+
+  * New upstream release. 
+    - Small formatting change to error messages
+    - K > 31 now possible
+    - --help option corrected for velvetg
+    - Acceleration of k-mer operations (comparable to 64bit int performance)
+    - Fixed variable lengths
+    - Reordered struct declaration for more efficent memory alignment
+  * debian/rules:
+    - Restored manpage generation for velvetg*.
+    - Added forgotten CFLAGS for the colorspace building.
+
+ -- Charles Plessy <plessy@debian.org>  Sat, 27 Jun 2009 12:27:27 +0900
+
+velvet0.7.34-1 (0.7.34-1) unstable; urgency=low
+
+  * New upstream release correcting multiple bugs, changing the stats output,
+    allowing optional scaffolding and multiple rounds of Pebble.
+  * Added the programs velveth_de and velvetg_de to the package in /usr/bin,
+    and the scripts shuffleSequences_fasta.pl and shuffleSequences_fastq.pl in
+    /usr/share/velvet (debian/rules, debian/install).
+  * Refreshed debian/copyright. 
+  * Temporarly disabled the manpage generation of velvetg* because the --help
+    option is not available (debian/rules).
+
+ -- Charles Plessy <plessy@debian.org>  Tue, 09 Jun 2009 21:28:03 +0900
+
+velvet0.7.31-1 (0.7.31-1) unstable; urgency=low
+
+  * New upstream version
+  * Standards-Version: 3.8.1 (no changes needed)
+  * Create manpages using help2man
+  * Move third-party/layout and third-party/afg_handling to examples
+    because these scripts are actually not to run velvet but for
+    the convenience of users - in /urs/share/velvet these scripts
+    seem to be perfectly hidden and in /usr/share/doc/velvet might
+    create users attendance
+  * Added missing quilt entry in debian/rules
+
+ -- Andreas Tille <tille@debian.org>  Fri, 27 Mar 2009 13:23:32 +0100
+
+velvet0.7.24-1 (0.7.24-1) unstable; urgency=low
+
+  * Initial release (Closes: #487026)
+
+ -- Charles Plessy <plessy@debian.org>  Wed, 09 Jul 2008 14:06:55 +0900

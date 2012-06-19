@@ -1,0 +1,1599 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+ADENINE	binarySequences.c	335;"	d	file:
+ADENINE	graph.c	33;"	d	file:
+ADENINE	graphReConstruction.c	43;"	d	file:
+ADENINE	preGraph.c	38;"	d	file:
+ADENINE	preGraphConstruction.c	40;"	d	file:
+ATTRIBUTE	utility.h	25;"	d
+ATTRIBUTE	utility.h	27;"	d
+ATTRIBUTE_PACKED	correctedGraph.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:tkt_st
+ATTRIBUTE_PACKED	dfibpriv.h	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:dfibheap
+ATTRIBUTE_PACKED	dfibpriv.h	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:dfibheap_el
+ATTRIBUTE_PACKED	globals.h	34;"	d
+ATTRIBUTE_PACKED	globals.h	36;"	d
+ATTRIBUTE_PACKED	graph.c	/^}  ATTRIBUTE_PACKED;	\/\/ 352 Total$/;"	v	typeref:struct:arc_st
+ATTRIBUTE_PACKED	graph.c	/^} ATTRIBUTE_PACKED;	\/\/ 418 Total$/;"	v	typeref:struct:node_st
+ATTRIBUTE_PACKED	graph.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:gapMarker_st
+ATTRIBUTE_PACKED	graph.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:shortReadMarker_st
+ATTRIBUTE_PACKED	graphReConstruction.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:nodeMask_st
+ATTRIBUTE_PACKED	graphReConstruction.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:referenceMapping_st
+ATTRIBUTE_PACKED	graphReConstruction.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:smallNodeList_st
+ATTRIBUTE_PACKED	graphStats.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:referenceCoord_st
+ATTRIBUTE_PACKED	kmer.h	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:kmer_st
+ATTRIBUTE_PACKED	kmerOccurenceTable.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:kmerOccurence_st
+ATTRIBUTE_PACKED	locallyCorrectedGraph.h	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:nodeList_st
+ATTRIBUTE_PACKED	passageMarker.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:passage_st
+ATTRIBUTE_PACKED	passageMarker.h	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:passageList_st
+ATTRIBUTE_PACKED	preGraph.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:preNode_st
+ATTRIBUTE_PACKED	preGraph.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:preArc_st
+ATTRIBUTE_PACKED	preGraph.c	/^} ATTRIBUTE_PACKED;$/;"	v	typeref:struct:preMarker_st
+ATTRIBUTE_PACKED	preGraphConstruction.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:insertionMarker_st
+ATTRIBUTE_PACKED	readCoherentGraph.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:rb_connection_st
+ATTRIBUTE_PACKED	readSet.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:referenceCoordinateTable_st
+ATTRIBUTE_PACKED	readSet.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:referenceCoordinate_st
+ATTRIBUTE_PACKED	roadMap.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:annotation_st
+ATTRIBUTE_PACKED	roadMap.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:roadmap_st
+ATTRIBUTE_PACKED	roadMap.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:union:positionPtr
+ATTRIBUTE_PACKED	scaffold.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:connection_st
+ATTRIBUTE_PACKED	scaffold.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:readOccurence_st
+ATTRIBUTE_PACKED	shortReadPairs.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:miniConnection_st
+ATTRIBUTE_PACKED	splay.c	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:splayNode_st
+ATTRIBUTE_PACKED	tightString.h	/^}  ATTRIBUTE_PACKED;$/;"	v	typeref:struct:tString_st
+Adenine	tightString.c	/^static const Nucleotide Adenine = 0;$/;"	v	file:
+AllocArray	allocArray.h	/^typedef struct AllocArray_st AllocArray;$/;"	t	typeref:struct:AllocArray_st
+AllocArrayFreeElement	allocArray.h	/^typedef struct AllocArrayFreeElement_st AllocArrayFreeElement;$/;"	t	typeref:struct:AllocArrayFreeElement_st
+AllocArrayFreeElement_st	allocArray.c	/^struct AllocArrayFreeElement_st$/;"	s	file:
+AllocArray_st	allocArray.h	/^struct AllocArray_st$/;"	s
+Annotation	globals.h	/^typedef struct annotation_st Annotation;$/;"	t	typeref:struct:annotation_st
+AnnotationList	globals.h	/^typedef struct annotationList_st AnnotationList;$/;"	t	typeref:struct:annotationList_st
+Arc	globals.h	/^typedef struct arc_st Arc;$/;"	t	typeref:struct:arc_st
+Arc	run.c	26;"	d	file:
+ArrayIdx	globals.h	/^typedef uint32_t ArrayIdx;$/;"	t
+ArrayIdx	globals.h	/^typedef uint64_t ArrayIdx;$/;"	t
+BACKTRACK_CUTOFF	shortReadPairs.c	38;"	d	file:
+BAM	readSet.c	1418;"	d	file:
+BLOCKSIZE	dfib.c	57;"	d	file:
+BLOCKSIZE	fib.c	57;"	d	file:
+BLOCKSIZE	graph.c	95;"	d	file:
+BLOCKSIZE	graphReConstruction.c	149;"	d	file:
+BLOCKSIZE	readCoherentGraph.c	61;"	d	file:
+BLOCKS_ALLOC_SHIFT	allocArray.c	186;"	d	file:
+BLOCKS_ALLOC_SIZE	allocArray.c	34;"	d	file:
+BLOCKS_ALLOC_SIZE	allocArray.c	37;"	d	file:
+BLOCK_SIZE	scaffold.c	41;"	d	file:
+BLOCK_SIZE	shortReadPairs.c	36;"	d	file:
+BUFFER_SIZE	splayTable.c	181;"	d	file:
+BUFFER_SIZE	splayTable.c	68;"	d	file:
+CHARS	kmer.c	41;"	d	file:
+CHUNKSIZE	splay.c	33;"	d	file:
+CYTOSINE	binarySequences.c	336;"	d	file:
+CYTOSINE	graph.c	34;"	d	file:
+CYTOSINE	graphReConstruction.c	44;"	d	file:
+CYTOSINE	preGraph.c	39;"	d	file:
+CYTOSINE	preGraphConstruction.c	41;"	d	file:
+Category	globals.h	/^typedef int8_t Category;$/;"	t
+Chunk	recycleBin.c	/^} Chunk;$/;"	t	typeref:struct:chunk_st	file:
+CnyUnifiedSeqFileHeader	binarySequences.h	/^} CnyUnifiedSeqFileHeader;$/;"	t	typeref:struct:__anon1
+Codon	tightString.h	/^typedef unsigned char Codon;$/;"	t
+Connection	scaffold.h	/^typedef struct connection_st Connection;$/;"	t	typeref:struct:connection_st
+ConnectionStack	scaffold.c	/^typedef struct ConnectionStack_st ConnectionStack;$/;"	t	typeref:struct:ConnectionStack_st	file:
+ConnectionStack_st	scaffold.c	/^struct ConnectionStack_st$/;"	s	file:
+Coordinate	globals.h	/^typedef int64_t Coordinate;$/;"	t
+Cytosine	tightString.c	/^static const Nucleotide Cytosine = 1;$/;"	v	file:
+DECLARE_FAST_ACCESSORS	allocArray.h	59;"	d
+DECLARE_FAST_ACCESSORS	preGraph.c	/^DECLARE_FAST_ACCESSORS(PREARC, PreArc, preArcMemory)$/;"	f
+DFibHeap	globals.h	/^typedef struct dfibheap DFibHeap;$/;"	t	typeref:struct:dfibheap
+DFibHeapNode	globals.h	/^typedef struct dfibheap_el DFibHeapNode;$/;"	t	typeref:struct:dfibheap_el
+DOTNode	graph.c	/^void DOTNode(Node * node, FILE * outfile)$/;"	f
+Descriptor	globals.h	/^typedef uint8_t Descriptor;$/;"	t
+FASTA	readSet.c	1414;"	d	file:
+FASTA_GZ	readSet.c	1415;"	d	file:
+FASTQ	readSet.c	1413;"	d	file:
+FASTQ_GZ	readSet.c	1416;"	d	file:
+FAST_TO_SLOW	correctedGraph.c	2085;"	d	file:
+FILTER0	tightString.c	/^static const Codon FILTER0 = ~((Codon) 3);$/;"	v	file:
+FILTER1	tightString.c	/^static const Codon FILTER1 = ~(((Codon) 3) << 2);$/;"	v	file:
+FILTER2	tightString.c	/^static const Codon FILTER2 = ~(((Codon) 3) << 4);$/;"	v	file:
+FILTER3	tightString.c	/^static const Codon FILTER3 = (Codon) ~ ((Codon) 3 << 6);$/;"	v	file:
+FibHeap	globals.h	/^typedef struct fibheap FibHeap;$/;"	t	typeref:struct:fibheap
+FibHeapNode	globals.h	/^typedef struct fibheap_el FibHeapNode;$/;"	t	typeref:struct:fibheap_el
+Fmatrix	correctedGraph.c	/^static double **Fmatrix;$/;"	v	file:
+Fmatrix	locallyCorrectedGraph.c	/^static double **Fmatrix;$/;"	v	file:
+FormattedWriter	utility.h	/^} FormattedWriter;$/;"	t	typeref:struct:formattedWriter_st
+GAPBLOCKSIZE	graph.c	96;"	d	file:
+GUANINE	binarySequences.c	337;"	d	file:
+GUANINE	graph.c	35;"	d	file:
+GUANINE	graphReConstruction.c	45;"	d	file:
+GUANINE	preGraph.c	40;"	d	file:
+GUANINE	preGraphConstruction.c	42;"	d	file:
+GapMarker	globals.h	/^typedef struct gapMarker_st GapMarker;$/;"	t	typeref:struct:gapMarker_st
+Graph	globals.h	/^typedef struct graph_st Graph;$/;"	t	typeref:struct:graph_st
+Guanine	tightString.c	/^static const Nucleotide Guanine = 2;$/;"	v	file:
+HASH_BUCKETS_NB	splayTable.c	63;"	d	file:
+ID	graph.c	/^	IDnum ID;		\/\/ 32$/;"	m	struct:node_st	file:
+IDnum	globals.h	/^typedef int32_t IDnum;$/;"	t
+IDnum	globals.h	/^typedef int64_t IDnum;$/;"	t
+INCLUDED_RECYCLEBIN_H	recycleBin.h	37;"	d
+INDEL	correctedGraph.c	/^static const Time INDEL = 0;$/;"	v	file:
+INDEL	locallyCorrectedGraph.c	/^static const Time INDEL = 0;$/;"	v	file:
+INDEX_LENGTH	allocArray.c	41;"	d	file:
+INDEX_LENGTH	allocArray.c	43;"	d	file:
+INTS	kmer.c	42;"	d	file:
+INT_BITS	dfib.c	81;"	d	file:
+INT_BITS	fib.c	77;"	d	file:
+INVALID	binarySequences.c	339;"	d	file:
+InsertionMarker	globals.h	/^typedef struct insertionMarker_st InsertionMarker;$/;"	t	typeref:struct:insertionMarker_st
+KMER_BYTE_SIZE	kmer.h	49;"	d
+KMER_BYTE_SIZE	kmer.h	51;"	d
+KMER_CHARS	kmer.h	56;"	d
+KMER_INTS	kmer.h	55;"	d
+KMER_LONGLONGS	kmer.h	53;"	d
+KMER_LONGS	kmer.h	54;"	d
+KMER_QUOTIENT	kmer.h	46;"	d
+KMER_REMAINDER	kmer.h	47;"	d
+Kmer	globals.h	/^typedef struct kmer_st Kmer;$/;"	t	typeref:struct:kmer_st
+KmerKey	globals.h	/^typedef uint64_t KmerKey;$/;"	t
+KmerOccurence	globals.h	/^typedef struct kmerOccurence_st KmerOccurence;$/;"	t	typeref:struct:kmerOccurence_st
+KmerOccurenceTable	globals.h	/^typedef struct kmerOccurenceTable_st KmerOccurenceTable;$/;"	t	typeref:struct:kmerOccurenceTable_st
+LISTBLOCKSIZE	passageMarker.c	/^static const int LISTBLOCKSIZE = 10000;$/;"	v	file:
+LN2	readCoherentGraph.c	34;"	d	file:
+LN2	scaffold.c	42;"	d	file:
+LN2	shortReadPairs.c	37;"	d	file:
+LONG	globals.h	45;"	d
+LONGLONGS	kmer.c	44;"	d	file:
+LONGS	kmer.c	43;"	d	file:
+LONG_NODE_CUTOFF	readCoherentGraph.c	33;"	d	file:
+LONG_PAIRED	globals.h	46;"	d
+MAXDIVERGENCE	correctedGraph.c	/^static double MAXDIVERGENCE = 0.2;$/;"	v	file:
+MAXDIVERGENCE	locallyCorrectedGraph.c	/^static double MAXDIVERGENCE = 0.2;$/;"	v	file:
+MAXGAPS	correctedGraph.c	/^static int MAXGAPS = 3;$/;"	v	file:
+MAXGAPS	locallyCorrectedGraph.c	/^static int MAXGAPS = 3;$/;"	v	file:
+MAXLINE	globals.h	43;"	d
+MAXNODELENGTH	correctedGraph.c	/^static int MAXNODELENGTH = 200;$/;"	v	file:
+MAXNODELENGTH	locallyCorrectedGraph.c	/^static int MAXNODELENGTH = 200;$/;"	v	file:
+MAXREADLENGTH	correctedGraph.c	/^static int MAXREADLENGTH = 100;$/;"	v	file:
+MAXREADLENGTH	locallyCorrectedGraph.c	/^static int MAXREADLENGTH = 100;$/;"	v	file:
+MAX_READ_COUNT	readCoherentGraph.c	36;"	d	file:
+MAX_READ_LENGTH	readCoherentGraph.c	37;"	d	file:
+MULTIPLICITY_CUTOFF	readCoherentGraph.c	/^static int MULTIPLICITY_CUTOFF = 2;$/;"	v	file:
+Mask	globals.h	/^typedef struct mask_st Mask;$/;"	t	typeref:struct:mask_st
+MiniConnection	shortReadPairs.c	/^typedef struct miniConnection_st MiniConnection;$/;"	t	typeref:struct:miniConnection_st	file:
+NB_PAGES_ALLOC	allocArray.c	33;"	d	file:
+NB_PAGES_ALLOC	allocArray.c	36;"	d	file:
+NB_PUSH	splayTable.c	67;"	d	file:
+NULL	globals.h	25;"	d
+NULL	roadMap.c	34;"	d	file:
+NULL_IDX	globals.h	50;"	d
+Node	globals.h	/^typedef struct node_st Node;$/;"	t	typeref:struct:node_st
+NodeList	globals.h	/^typedef struct nodeList_st NodeList;$/;"	t	typeref:struct:nodeList_st
+NodeMask	graphReConstruction.c	/^typedef struct nodeMask_st NodeMask;$/;"	t	typeref:struct:nodeMask_st	file:
+Nucleotide	globals.h	/^typedef int8_t Nucleotide;$/;"	t
+PEBBLE_ROUND_NUM	scaffold.c	/^static int PEBBLE_ROUND_NUM = 0;$/;"	v	file:
+PROBABILITY_CUTOFF	readCoherentGraph.c	35;"	d	file:
+PassageMarker	passageMarker.c	/^typedef struct passage_st PassageMarker;$/;"	t	typeref:struct:passage_st	file:
+PassageMarkerI	globals.h	/^typedef ArrayIdx PassageMarkerI;$/;"	t
+PassageMarkerList	globals.h	/^typedef struct passageList_st PassageMarkerList;$/;"	t	typeref:struct:passageList_st
+PreArc	preGraph.c	/^typedef struct preArc_st PreArc;$/;"	t	typeref:struct:preArc_st	file:
+PreArcI	globals.h	/^typedef ArrayIdx PreArcI;$/;"	t
+PreGraph	globals.h	/^typedef struct preGraph_st PreGraph;$/;"	t	typeref:struct:preGraph_st
+PreMarker	globals.h	/^typedef struct preMarker_st PreMarker;$/;"	t	typeref:struct:preMarker_st
+PreNode	globals.h	/^typedef struct preNode_st PreNode;$/;"	t	typeref:struct:preNode_st
+Probability	globals.h	/^typedef double Probability;$/;"	t
+Quality	globals.h	/^typedef uint8_t Quality;$/;"	t
+RAW	readSet.c	1419;"	d	file:
+RAW_GZ	readSet.c	1420;"	d	file:
+RBConnection	readCoherentGraph.c	/^typedef struct rb_connection_st RBConnection;$/;"	t	typeref:struct:rb_connection_st	file:
+READS_PER_LOCK	scaffold.c	78;"	d	file:
+REFERENCE	globals.h	47;"	d
+RELEASE_NUMBER	globals.h	40;"	d
+ReadOccurence	scaffold.c	/^typedef struct readOccurence_st ReadOccurence;$/;"	t	typeref:struct:readOccurence_st	file:
+ReadSet	globals.h	/^typedef struct readSet_st ReadSet;$/;"	t	typeref:struct:readSet_st
+ReadStart	globals.h	/^typedef struct readStart_st ReadStart;$/;"	t	typeref:struct:readStart_st
+RecycleBin	recycleBin.h	/^typedef struct recycleBin_st RecycleBin;$/;"	t	typeref:struct:recycleBin_st
+RecycleBin_Node	recycleBin.c	/^typedef struct RecycleBin_Node {$/;"	s	file:
+RecycleBin_Node	recycleBin.c	/^} RecycleBin_Node;$/;"	t	typeref:struct:RecycleBin_Node	file:
+RefInfo	binarySequences.h	/^typedef struct refInfo_st RefInfo;$/;"	t	typeref:struct:refInfo_st
+RefInfoList	binarySequences.h	/^typedef struct refInfoList_st RefInfoList;$/;"	t	typeref:struct:refInfoList_st
+ReferenceCoord	graphStats.c	/^typedef struct referenceCoord_st ReferenceCoord;$/;"	t	typeref:struct:referenceCoord_st	file:
+ReferenceCoordinate	readSet.c	/^typedef struct referenceCoordinate_st ReferenceCoordinate;$/;"	t	typeref:struct:referenceCoordinate_st	file:
+ReferenceCoordinateTable	readSet.c	/^typedef struct referenceCoordinateTable_st ReferenceCoordinateTable;$/;"	t	typeref:struct:referenceCoordinateTable_st	file:
+ReferenceMapping	graphReConstruction.c	/^typedef struct referenceMapping_st ReferenceMapping;$/;"	t	typeref:struct:referenceMapping_st	file:
+ReferenceMapping	graphStats.c	/^} ATTRIBUTE_PACKED ReferenceMapping; $/;"	t	typeref:struct:refMap_st	file:
+RoadMap	globals.h	/^typedef struct roadmap_st RoadMap;$/;"	t	typeref:struct:roadmap_st
+RoadMapArray	globals.h	/^typedef struct roadMapArray_st RoadMapArray;$/;"	t	typeref:struct:roadMapArray_st
+SAM	readSet.c	1417;"	d	file:
+SET_BINARY_MODE	binarySequences.c	43;"	d	file:
+SET_BINARY_MODE	binarySequences.c	45;"	d	file:
+SET_BINARY_MODE	readSet.c	46;"	d	file:
+SET_BINARY_MODE	readSet.c	48;"	d	file:
+SHORT_NUCL_LENGTH	binarySequences.c	52;"	d	file:
+SIM	correctedGraph.c	/^static const Time SIM[4][4] = {$/;"	v	file:
+SIM	locallyCorrectedGraph.c	/^static const Time SIM[4][4] = {$/;"	v	file:
+SLOW_TO_FAST	correctedGraph.c	2084;"	d	file:
+SequenceReader	globals.h	/^typedef struct sequenceReader_st SequenceReader;$/;"	t	typeref:struct:sequenceReader_st
+SequencesReader	globals.h	/^typedef struct sequencesReader_st SequencesReader;$/;"	t	typeref:struct:sequencesReader_st
+SequencesWriter	binarySequences.h	/^typedef struct sequencesWriter_st SequencesWriter;$/;"	t	typeref:struct:sequencesWriter_st
+ShortLength	globals.h	/^typedef int16_t ShortLength;$/;"	t
+ShortLength	globals.h	/^typedef int32_t ShortLength;$/;"	t
+ShortReadMarker	globals.h	/^typedef struct shortReadMarker_st ShortReadMarker;$/;"	t	typeref:struct:shortReadMarker_st
+SingleRotateWithLeft	splay.c	/^static SplayNode *SingleRotateWithLeft(SplayNode * K2)$/;"	f	file:
+SingleRotateWithRight	splay.c	/^static SplayNode *SingleRotateWithRight(SplayNode * K1)$/;"	f	file:
+SmallNodeList	graphReConstruction.c	/^typedef struct smallNodeList_st SmallNodeList;$/;"	t	typeref:struct:smallNodeList_st	file:
+Splay	splay.c	/^static SplayTree *Splay(Kmer * kmer, SplayTree * T)$/;"	f	file:
+SplayNode	splay.c	/^typedef struct splayNode_st SplayNode;$/;"	t	typeref:struct:splayNode_st	file:
+SplayTable	globals.h	/^typedef struct splayTable_st SplayTable;$/;"	t	typeref:struct:splayTable_st
+SplayTree	splay.c	/^typedef struct splayNode_st SplayTree;$/;"	t	typeref:struct:splayNode_st	file:
+SplayTree	splay.h	/^typedef struct splayNode_st SplayTree;$/;"	t	typeref:struct:splayNode_st
+StringBuffer	utility.h	/^StringBuffer;$/;"	t	typeref:struct:__anon2
+THYMINE	binarySequences.c	338;"	d	file:
+THYMINE	graph.c	36;"	d	file:
+THYMINE	graphReConstruction.c	46;"	d	file:
+THYMINE	preGraph.c	41;"	d	file:
+THYMINE	preGraphConstruction.c	43;"	d	file:
+TICKET_BLOCK_SIZE	correctedGraph.c	36;"	d	file:
+Thymine	tightString.c	/^static const Nucleotide Thymine = 3;$/;"	v	file:
+Ticket	correctedGraph.c	/^typedef struct tkt_st Ticket;$/;"	t	typeref:struct:tkt_st	file:
+TightString	globals.h	/^typedef struct tString_st TightString;$/;"	t	typeref:struct:tString_st
+Time	globals.h	/^typedef double Time;$/;"	t
+UNDEFINED	kmer.c	40;"	d	file:
+UNRELIABLE_CONNECTION_CUTOFF	scaffold.c	/^static IDnum UNRELIABLE_CONNECTION_CUTOFF = 5;$/;"	v	file:
+UPDATE_NUMBER	globals.h	41;"	d
+USF_READ_BUF_SIZE	binarySequences.h	72;"	d
+UTILITY_H_	utility.h	22;"	d
+VERSION_NUMBER	globals.h	39;"	d
+Variant	graphStats.c	/^} Variant;$/;"	t	typeref:struct:variant_st	file:
+WORDLENGTH	correctedGraph.c	/^static int WORDLENGTH;$/;"	v	file:
+WORDLENGTH	locallyCorrectedGraph.c	/^static int WORDLENGTH;$/;"	v	file:
+WORDLENGTH	roadMap.h	/^	int WORDLENGTH;$/;"	m	struct:roadMapArray_st
+WORDLENGTH	splayTable.c	/^	int WORDLENGTH;$/;"	m	struct:splayTable_st	file:
+WRITE_BUF_MASK	binarySequences.c	51;"	d	file:
+WRITE_BUF_SHFT	binarySequences.c	49;"	d	file:
+WRITE_BUF_SIZE	binarySequences.c	50;"	d	file:
+_ALLOC_ARRAY_H_	allocArray.h	23;"	d
+_BINARYSEQUENCES_H_	binarySequences.h	22;"	d
+_CONCATENATEDGRAPH_H_	concatenatedGraph.h	22;"	d
+_CONCATENATEDPREGRAPH_H_	concatenatedPreGraph.h	22;"	d
+_CORRECTEDGRAPH_H_	correctedGraph.h	22;"	d
+_DFIBHEAP_H_	dfibHeap.h	22;"	d
+_DFIBPRIV_H_	dfibpriv.h	51;"	d
+_DFIB_H_	dfib.h	51;"	d
+_FIBHEAP_H_	fibHeap.h	22;"	d
+_FIBPRIV_H_	fibpriv.h	51;"	d
+_FIB_H_	fib.h	51;"	d
+_GLOBALS_H_	globals.h	22;"	d
+_GRAPHRECONSTRUCTION_H_	graphReConstruction.h	22;"	d
+_GRAPHSTATS_H_	graphStats.h	22;"	d
+_GRAPH_H_	graph.h	22;"	d
+_KMEROCCURENCETABLE_H_	kmerOccurenceTable.h	22;"	d
+_KMER_H_	kmer.h	22;"	d
+_LOCALLYCORRECTEDGRAPH_H_	locallyCorrectedGraph.h	22;"	d
+_PASSAGEMARKER_H_	passageMarker.h	22;"	d
+_PREGRAPHCONSTRUCTION_H_	preGraphConstruction.h	22;"	d
+_PREGRAPH_H_	preGraph.h	22;"	d
+_READCOHERENTGRAPH_H_	readCoherentGraph.h	22;"	d
+_READSET_H_	readSet.h	22;"	d
+_ROADMAP_H_	roadMap.h	22;"	d
+_SCAFFOLD_H_	scaffold.h	22;"	d
+_SHORTREADPAIRS_H_	shortReadPairs.h	22;"	d
+_SPLAYTABLE_H_	splayTable.h	22;"	d
+_Splay_H	splay.h	22;"	d
+_TIGHTSTRING_H_	tightString.h	22;"	d
+abs_ID	shortReadPairs.c	/^static IDnum abs_ID(IDnum val)$/;"	f	file:
+abs_bool	shortReadPairs.c	/^static boolean abs_bool(boolean val)$/;"	f	file:
+absorbExtension	shortReadPairs.c	/^static void absorbExtension(Node * node, Node * extension)$/;"	f	file:
+absorbExtensionInScaffold	shortReadPairs.c	/^static void absorbExtensionInScaffold(Node * node, Node * source)$/;"	f	file:
+accelerationBits	kmerOccurenceTable.c	/^	short int accelerationBits;$/;"	m	struct:kmerOccurenceTable_st	file:
+accelerationShift	kmerOccurenceTable.c	/^	short int accelerationShift;$/;"	m	struct:kmerOccurenceTable_st	file:
+accelerationTable	kmerOccurenceTable.c	/^	IDnum *accelerationTable;$/;"	m	struct:kmerOccurenceTable_st	file:
+activateArcLookupTable	graph.c	/^void activateArcLookupTable(Graph * graph)$/;"	f
+activateGapMarkers	graph.c	/^void activateGapMarkers(Graph * graph)$/;"	f
+activateReadStarts	graph.c	/^void activateReadStarts(Graph * graph)$/;"	f
+activeNode	correctedGraph.c	/^static Node *activeNode;$/;"	v	file:
+addBufferToDescriptor	graph.c	/^static void addBufferToDescriptor(Node * node, Coordinate length)$/;"	f	file:
+addEmptyNodeToGraph	graph.c	/^Node *addEmptyNodeToGraph(Graph * graph, IDnum ID)$/;"	f
+addMapping	readSet.c	/^static void addMapping(boolean orientation, Coordinate pos, char * seq, ReferenceCoordinate * refCoord, char * buffer, SequencesWriter * seqWriteInfo, RefInfoList ** refTail, size_t * buffer_size) {$/;"	f	file:
+addPassageMarker	passageMarker.c	/^PassageMarkerI addPassageMarker(IDnum sequenceID, Coordinate start,$/;"	f
+addPreArcToPreNode_pg	preGraph.c	/^static void addPreArcToPreNode_pg(PreArcI preArc, IDnum preNodeID,$/;"	f	file:
+addPreMarker_pg	preGraph.c	/^PreMarker * addPreMarker_pg(PreGraph * preGraph, IDnum nodeID, IDnum seqID, Coordinate * start, PreMarker * previous) {$/;"	f
+addPreNodeToPreGraph_pg	preGraph.c	/^void addPreNodeToPreGraph_pg(PreGraph * preGraph, Coordinate start,$/;"	f
+addReadStart	graph.c	/^void addReadStart(Node * node, IDnum seqID, Coordinate position,$/;"	f
+addReadsToGraph	graphReConstruction.c	/^static void addReadsToGraph(TightString * tString,$/;"	f	file:
+addReferenceCoordinate	readSet.c	/^static void addReferenceCoordinate(ReferenceCoordinateTable * table, char * name, Coordinate start, Coordinate finish, boolean positive_strand) {$/;"	f	file:
+addUncertainPassageMarker	passageMarker.c	/^PassageMarkerI addUncertainPassageMarker(IDnum sequenceID, Node * node)$/;"	f
+adjustLongReads	shortReadPairs.c	/^static void adjustLongReads(Node * target, Coordinate nodeLength)$/;"	f	file:
+adjustShortReads	readCoherentGraph.c	/^static void adjustShortReads(Node * target, PassageMarkerI pathMarker)$/;"	f	file:
+adjustShortReads	shortReadPairs.c	/^static void adjustShortReads(Node * target, Node * source)$/;"	f	file:
+adjustShortReadsByLength	shortReadPairs.c	/^static void adjustShortReadsByLength(Node * target, Coordinate nodeLength)$/;"	f	file:
+admitGroupies	readCoherentGraph.c	/^static void admitGroupies(Node * source, Node * bypass)$/;"	f	file:
+advanceCnySeqCurrentRead	binarySequences.c	/^boolean advanceCnySeqCurrentRead(SequencesReader *seqReadInfo)$/;"	f
+alignCnySeqToNextByteBoundary	binarySequences.c	/^static void alignCnySeqToNextByteBoundary(SequencesWriter *seqWriteInfo)$/;"	f	file:
+allocArrayAllocate	allocArray.c	/^allocArrayAllocate (AllocArray *array)$/;"	f
+allocArrayArrayAllocate	allocArray.c	/^ArrayIdx allocArrayArrayAllocate(AllocArray *array)$/;"	f
+allocArrayArrayFree	allocArray.c	/^allocArrayArrayFree(AllocArray *array, ArrayIdx idx)$/;"	f
+allocArrayFree	allocArray.c	/^allocArrayFree (AllocArray *array, ArrayIdx idx)$/;"	f
+allocArrayGetElement	allocArray.c	/^allocArrayGetElement (AllocArray *array, ArrayIdx idx)$/;"	f	file:
+allocExitError	utility.c	/^static void allocExitError(const char *function, unsigned long long count,$/;"	f	file:
+allocateArc	graph.c	/^Arc *allocateArc()$/;"	f
+allocateConnection	scaffold.c	/^static Connection *allocateConnection()$/;"	f	file:
+allocateConnectionStack	scaffold.c	/^static ConnectionStack *allocateConnectionStack(void)$/;"	f	file:
+allocateDFibHeapNode	dfib.c	/^static DFibHeapNode *allocateDFibHeapNode(DFibHeap * heap)$/;"	f	file:
+allocateFibHeapEl	fib.c	/^static FibHeapNode *allocateFibHeapEl(FibHeap * heap)$/;"	f	file:
+allocateGapMarker	graph.c	/^static GapMarker *allocateGapMarker()$/;"	f	file:
+allocateKmerOccurences	kmerOccurenceTable.c	/^void allocateKmerOccurences(IDnum kmerCount, KmerOccurenceTable * table) {$/;"	f
+allocateMask	graphStats.c	/^static Mask *allocateMask()$/;"	f	file:
+allocateMask	readSet.c	/^static Mask *allocateMask(SequencesWriter *seqWriteInfo)$/;"	f	file:
+allocateMask	splayTable.c	/^static Mask *allocateMask()$/;"	f	file:
+allocateNode	graph.c	/^Node *allocateNode()$/;"	f
+allocateNodeList	shortReadPairs.c	/^static NodeList *allocateNodeList()$/;"	f	file:
+allocateNodeSpace	graph.c	/^void allocateNodeSpace(Graph * graph, IDnum nodeCount)$/;"	f
+allocatePassageMarker	passageMarker.c	/^PassageMarkerI allocatePassageMarker()$/;"	f
+allocatePassageMarkerList	passageMarker.c	/^PassageMarkerList *allocatePassageMarkerList()$/;"	f
+allocatePointer	recycleBin.c	/^void *allocatePointer(RecycleBin * recycle_bin)$/;"	f
+allocatePreMarkerCountSpace_pg	preGraph.c	/^void allocatePreMarkerCountSpace_pg(PreGraph * preGraph)$/;"	f
+allocatePreMarkerSpace_pg	preGraph.c	/^void allocatePreMarkerSpace_pg(PreGraph * preGraph) {$/;"	f
+allocatePreNodeSpace_pg	preGraph.c	/^void allocatePreNodeSpace_pg(PreGraph * preGraph, IDnum preNodeCount)$/;"	f
+allocateRBConnection	readCoherentGraph.c	/^static RBConnection *allocateRBConnection()$/;"	f	file:
+allocateReadToNodeTables	scaffold.c	/^static ReadOccurence **allocateReadToNodeTables(IDnum * readNodeCounts,$/;"	f	file:
+allocateSmallNodeList	graphReConstruction.c	/^static SmallNodeList *allocateSmallNodeList()$/;"	f	file:
+allocateSplayNode	splay.c	/^static SplayNode *allocateSplayNode()$/;"	f	file:
+allocated	utility.h	/^	size_t allocated;$/;"	m	struct:__anon2
+annot	preGraphConstruction.c	/^	Annotation *annot;$/;"	m	struct:insertionMarker_st	file:
+annotationBuffer	splayTable.c	/^StringBuffer *annotationBuffer = NULL;$/;"	v
+annotationBuffer	splayTable.c	/^static StringBuffer **annotationBuffer = NULL;$/;"	v	file:
+annotationBufferW	splayTable.c	/^static StringBuffer **annotationBufferW = NULL;$/;"	v	file:
+annotationCount	roadMap.c	/^	ShortLength annotationCount;$/;"	m	struct:roadmap_st	file:
+annotationOffset	preGraphConstruction.c	/^Coordinate *annotationOffset = NULL;$/;"	v
+annotation_st	roadMap.c	/^struct annotation_st {$/;"	s	file:
+annotations	roadMap.h	/^	Annotation *annotations;$/;"	m	struct:roadMapArray_st
+appendDescriptors	graph.c	/^void appendDescriptors(Node * destination, Node * source)$/;"	f
+appendDescriptors_pg	preGraph.c	/^void appendDescriptors_pg(Descriptor ** start, int * writeOffset, IDnum preNodeID, PreGraph* preGraph, boolean initial) {$/;"	f
+appendGap	graph.c	/^void appendGap(Node * node, Coordinate length, Graph * graph)$/;"	f
+appendLine	splayTable.c	/^static void appendLine(char *line, int thread)$/;"	f	file:
+appendNegativeDescriptor_pg	preGraph.c	/^static void appendNegativeDescriptor_pg(Descriptor ** writePtr, int * writeOffset, IDnum preNodeID, PreGraph * preGraph, boolean initial) {$/;"	f	file:
+appendNodeGaps	graph.c	/^void appendNodeGaps(Node * destination, Node * source, Graph * graph)$/;"	f
+appendNodeSequence	graph.c	/^void appendNodeSequence(Node * node, TightString * sequence,$/;"	f
+appendPositiveDescriptor_pg	preGraph.c	/^static void appendPositiveDescriptor_pg(Descriptor ** writePtr, int * writeOffset, IDnum preNodeID, PreGraph * preGraph, boolean initial) {$/;"	f	file:
+appendSequence	graph.c	/^void appendSequence(Node * node, TightString * reads,$/;"	f
+appendSequenceToDescriptor	graph.c	/^static Descriptor *appendSequenceToDescriptor(Descriptor * descr,$/;"	f	file:
+appendStringBuffer	utility.c	/^void appendStringBuffer(StringBuffer *buffer, char *str)$/;"	f
+arc	graph.c	/^	Arc *arc;		\/\/ 64$/;"	m	struct:node_st	file:
+arcCount	graph.c	/^	IDnum arcCount;		\/\/ 32$/;"	m	struct:node_st	file:
+arcCount	graph.c	/^int arcCount(Node * node)$/;"	f
+arcLookupTable	graph.c	/^	Arc **arcLookupTable;$/;"	m	struct:graph_st	file:
+arcMemory	graph.c	/^static RecycleBin *arcMemory = NULL;$/;"	v	file:
+arcMergeSort	graph.c	/^static void arcMergeSort(Arc ** arcPtr, IDnum count)$/;"	f	file:
+arc_st	graph.c	/^struct arc_st {$/;"	s	file:
+array	readSet.c	/^	ReferenceCoordinate * array;$/;"	m	struct:referenceCoordinateTable_st	file:
+array	roadMap.h	/^	RoadMap *array;$/;"	m	struct:roadMapArray_st
+arrayLength	readSet.c	/^	IDnum arrayLength;$/;"	m	struct:referenceCoordinateTable_st	file:
+backReference	shortReadPairs.c	/^	Connection *backReference;$/;"	m	struct:miniConnection_st	file:
+blockSize	allocArray.h	/^	size_t blockSize;$/;"	m	struct:AllocArray_st
+blocks	allocArray.h	/^	void **blocks;$/;"	m	struct:AllocArray_st
+blurLastShortReadMarker	graph.c	/^void blurLastShortReadMarker(Node * node, Graph * graph)$/;"	f
+boolean	globals.h	/^typedef int8_t boolean;$/;"	t
+buffer	utility.h	/^	char * buffer;$/;"	m	struct:formattedWriter_st
+bufferWritter	splayTable.c	/^static void bufferWritter(FILE *outFile)$/;"	f	file:
+buffer_size	utility.h	/^	size_t buffer_size;$/;"	m	struct:formattedWriter_st
+buildScaffold	scaffold.c	/^void buildScaffold(Graph * argGraph,$/;"	f
+bypass	readCoherentGraph.c	/^static Node *bypass()$/;"	f	file:
+callocOrExit	utility.h	39;"	d
+callocOrExit3	utility.c	/^void *callocOrExit3(size_t count, size_t size, const char *name)$/;"	f
+callocOrExitWithoutCast	utility.h	49;"	d
+catDescriptors	graph.c	/^static void catDescriptors(Descriptor * descr, Coordinate destinationLength, Descriptor * copy, Coordinate sourceLength) $/;"	f	file:
+categories	readSet.h	/^	Category *categories;$/;"	m	struct:readSet_st
+ceillog2	dfib.c	/^static inline IDnum ceillog2(IDnum a)$/;"	f	file:
+ceillog2	fib.c	/^static inline IDnum ceillog2(IDnum a)$/;"	f	file:
+charLeftFilter	kmer.c	/^static const uint8_t charLeftFilter = (uint8_t) 3 << 6; $/;"	v	file:
+charWordFilter	kmer.c	/^static uint8_t charWordFilter = (uint8_t) ((int8_t) -1); $/;"	v	file:
+chars	kmer.h	/^	uint8_t chars;$/;"	m	struct:kmer_st
+checkNode	shortReadPairs.c	/^void checkNode(Node* node) {$/;"	f
+chooseDestination	graphStats.c	/^static Node *chooseDestination(PassageMarkerList * list)$/;"	f	file:
+chooseNextInternalPreNode	preGraphConstruction.c	/^static IDnum chooseNextInternalPreNode(IDnum currentPreNodeID,$/;"	f	file:
+chunk_list	recycleBin.c	/^	Chunk *chunk_list;$/;"	m	struct:recycleBin_st	file:
+chunk_pos	recycleBin.c	/^	int chunk_pos;$/;"	m	struct:recycleBin_st	file:
+chunk_st	recycleBin.c	/^typedef struct chunk_st {$/;"	s	file:
+clean	scaffold.c	/^	unsigned char clean;$/;"	m	struct:connection_st	file:
+cleanMemory	shortReadPairs.c	/^static void cleanMemory()$/;"	f	file:
+cleanScaffoldMemory	scaffold.c	/^void cleanScaffoldMemory() {$/;"	f
+cleanUpMemory	preGraphConstruction.c	/^cleanUpMemory(PreGraph * preGraph, RoadMapArray * rdmaps, IDnum * chains)$/;"	f	file:
+cleanUpRedundancy	correctedGraph.c	/^static void cleanUpRedundancy()$/;"	f	file:
+cleanUpRedundancy_local	locallyCorrectedGraph.c	/^static void cleanUpRedundancy_local()$/;"	f	file:
+clearKmer	kmer.c	/^void clearKmer(Kmer * kmer) {$/;"	f
+clipTipsHard	correctedGraph.c	/^void clipTipsHard(Graph * graph, boolean conserveLong)$/;"	f
+clipTipsVeryHardLocally	locallyCorrectedGraph.c	/^static void clipTipsVeryHardLocally()$/;"	f	file:
+clipTips_pg	concatenatedPreGraph.c	/^void clipTips_pg(PreGraph * preGraph)$/;"	f
+closeCnySeqForWrite	binarySequences.c	/^void closeCnySeqForWrite(SequencesWriter *seqWriteInfo)$/;"	f
+cnySeqHostBufferFull	binarySequences.c	/^static void cnySeqHostBufferFull(SequencesWriter *seqWriteInfo)$/;"	f	file:
+cnySeqInsertEnd	binarySequences.c	/^void cnySeqInsertEnd(SequencesWriter *seqWriteInfo)$/;"	f
+cnySeqInsertNucleotideString	binarySequences.c	/^void cnySeqInsertNucleotideString(const char *pReadBuf, SequencesWriter *seqWriteInfo) {$/;"	f
+cnySeqInsertReferenceMask	binarySequences.c	/^void cnySeqInsertReferenceMask(SequencesWriter *seqWriteInfo, Mask *referenceMask) {$/;"	f
+cnySeqInsertSequenceName	binarySequences.c	/^void cnySeqInsertSequenceName(const char *name, IDnum readID, SequencesWriter *seqWriteInfo, Category cat) {$/;"	f
+cnySeqInsertStart	binarySequences.c	/^void cnySeqInsertStart(SequencesWriter *seqWriteInfo)$/;"	f
+collectReferenceCoords	graphStats.c	/^static ReferenceCoord * collectReferenceCoords(SequencesReader *seqReadInfo, IDnum referenceCount) {$/;"	f	file:
+column	utility.h	/^	size_t column;$/;"	m	struct:formattedWriter_st
+comesFromNode	shortReadPairs.c	/^static boolean comesFromNode(PassageMarkerI marker, Node * node)$/;"	f	file:
+commonLength	graphStats.c	/^Coordinate commonLength(Node * node, IDnum firstStrain)$/;"	f
+commonNodeReads	graph.c	/^ShortReadMarker *commonNodeReads(Node * nodeA, Node * nodeB, Graph * graph,$/;"	f
+compareCoords	graphStats.c	/^static int compareCoords(const void * A, const void * B) {$/;"	f	file:
+compareIDnums	graph.c	/^static inline int compareIDnums(const void *A, const void *B)$/;"	f	file:
+compareInsertionMarkers	preGraphConstruction.c	/^int compareInsertionMarkers(const void *A, const void *B)$/;"	f
+compareKmerOccurences	kmerOccurenceTable.c	/^int compareKmerOccurences(void const *A, void const *B)$/;"	f
+compareKmers	kmer.c	/^int compareKmers(Kmer* k1, Kmer* k2) {$/;"	f
+compareNodeCovs	graphStats.c	/^int compareNodeCovs(const void * A, const void * B) {$/;"	f
+compareNodeMasks	graphReConstruction.c	/^static int compareNodeMasks(const void * ptrA, const void * ptrB) {$/;"	f	file:
+comparePaths	correctedGraph.c	/^static void comparePaths(Node * destination, Node * origin)$/;"	f	file:
+comparePaths_local	locallyCorrectedGraph.c	/^static void comparePaths_local(Node * destination, Node * origin)$/;"	f	file:
+compareReadOccurences	scaffold.c	/^int compareReadOccurences(const void *A, const void * B) {$/;"	f
+compareRefCoords	readSet.c	/^static int compareRefCoords(const void * ptrA, const void * ptrB) {$/;"	f	file:
+compareRefMaps	graphReConstruction.c	/^static int compareRefMaps(const void * ptrA, const void * ptrB) {$/;"	f	file:
+compareReferenceMappings	graphStats.c	/^static int compareReferenceMappings(const void * A, const void * B) {$/;"	f	file:
+compareSequences	correctedGraph.c	/^compareSequences(TightString * sequence1, TightString * sequence2)$/;"	f	file:
+compareSequences	locallyCorrectedGraph.c	/^compareSequences(TightString * sequence1, TightString * sequence2)$/;"	f	file:
+compareShortReadMarkers	graph.c	/^static inline int compareShortReadMarkers(const void *A, const void *B)$/;"	f	file:
+compareVariants	graphStats.c	/^static int compareVariants(const void * pA, const void * pB) {$/;"	f	file:
+computeClearHSPs	splayTable.c	/^static void computeClearHSPs(TightString * array, boolean second_in_pair, SplayTable * table, IDnum ** sequenceIDs, Coordinate ** coords, IDnum * mapReferenceIDs, Coordinate * mapCoords, Coordinate mapCount, IDnum seqID) {$/;"	f	file:
+computeNodeMasks	graphReConstruction.c	/^static NodeMask * computeNodeMasks(ReferenceMapping * referenceMappings, Coordinate arrayLength, Graph * graph) {$/;"	f	file:
+computeNodeToNodeMappings	scaffold.c	/^static Connection **computeNodeToNodeMappings(ReadOccurence ** readNodes,$/;"	f	file:
+computePartialReadToNodeMappingLong	scaffold.c	/^static void computePartialReadToNodeMappingLong(IDnum nodeID,$/;"	f	file:
+computePartialReadToNodeMappingShort	scaffold.c	/^static void computePartialReadToNodeMappingShort(IDnum nodeID,$/;"	f	file:
+computeReadToNodeCounts	scaffold.c	/^static IDnum *computeReadToNodeCounts(Coordinate *totalCount)$/;"	f	file:
+computeReadToNodeMappings	scaffold.c	/^static ReadOccurence **computeReadToNodeMappings(IDnum * readNodeCounts,$/;"	f	file:
+computeReferenceMappings	graphReConstruction.c	/^static ReferenceMapping * computeReferenceMappings(char * preGraphFilename, ReadSet * reads, Coordinate * referenceMappingLength, IDnum * referenceCount) {$/;"	f	file:
+computeSecondInPair	readSet.c	/^void computeSecondInPair(ReadSet * reads)$/;"	f
+computeSubsequentNodesLength	graphStats.c	/^Coordinate computeSubsequentNodesLength(Node * node)$/;"	f
+computeVirtualNodeLength	graphStats.c	/^Coordinate computeVirtualNodeLength(Node * node)$/;"	f
+concatenateCommonTodoLists	correctedGraph.c	/^static void concatenateCommonTodoLists(Node * nodeA, Node * nodeB)$/;"	f	file:
+concatenateGraph	concatenatedGraph.c	/^void concatenateGraph(Graph * graph)$/;"	f
+concatenateLongReads	shortReadPairs.c	/^static void concatenateLongReads(Node * node, Node * candidate,$/;"	f	file:
+concatenateNodesAndVaccinate	correctedGraph.c	/^static void concatenateNodesAndVaccinate(Node * nodeA, Node * nodeB,$/;"	f	file:
+concatenatePassageMarkers	passageMarker.c	/^void concatenatePassageMarkers(PassageMarkerI marker,$/;"	f
+concatenatePathNodes	correctedGraph.c	/^static void concatenatePathNodes(PassageMarkerI pathStart)$/;"	f	file:
+concatenatePreGraph_pg	concatenatedPreGraph.c	/^void concatenatePreGraph_pg(PreGraph * preGraph)$/;"	f
+concatenatePreNodes	concatenatedPreGraph.c	/^static void concatenatePreNodes(IDnum preNodeAID, PreArcI oldPreArc,$/;"	f	file:
+concatenateReadStarts	concatenatedGraph.c	/^void concatenateReadStarts(Node * target, Node * source, Graph * graph)$/;"	f
+concatenateReferenceMarkers_H2H_pg	preGraph.c	/^static void concatenateReferenceMarkers_H2H_pg(IDnum preNodeAID, IDnum preNodeBID, PreGraph * preGraph, Coordinate totalOffset) {$/;"	f	file:
+concatenateReferenceMarkers_H2T_pg	preGraph.c	/^static void concatenateReferenceMarkers_H2T_pg(IDnum preNodeAID, IDnum preNodeBID, PreGraph * preGraph, Coordinate totalOffset) {$/;"	f	file:
+concatenateReferenceMarkers_T2H_pg	preGraph.c	/^static void concatenateReferenceMarkers_T2H_pg(IDnum preNodeAID, IDnum preNodeBID, PreGraph * preGraph, Coordinate totalOffset) {$/;"	f	file:
+concatenateReferenceMarkers_T2T_pg	preGraph.c	/^static void concatenateReferenceMarkers_T2T_pg(IDnum preNodeAID, IDnum preNodeBID, PreGraph * preGraph, Coordinate totalOffset) {$/;"	f	file:
+concatenateReferenceMarkers_pg	preGraph.c	/^void concatenateReferenceMarkers_pg(IDnum preNodeAID, IDnum preNodeBID, PreGraph * preGraph, Coordinate totalOffset) {$/;"	f
+concatenateStringOfNodes	concatenatedGraph.c	/^void concatenateStringOfNodes(Node * nodeA, Graph * graph)$/;"	f
+concatenateTodoListIntoActive	correctedGraph.c	/^static void concatenateTodoListIntoActive(Node * nodeB)$/;"	f	file:
+concatenateTodoLists	correctedGraph.c	/^static void concatenateTodoLists(Node * nodeA, Node * nodeB)$/;"	f	file:
+confidenceScores	readSet.h	/^	Quality **confidenceScores;$/;"	m	struct:readSet_st
+connectAnnotation	preGraphConstruction.c	/^static void connectAnnotation(IDnum * currentPreNodeID, Annotation * annot,$/;"	f	file:
+connectPassageMarkers	passageMarker.c	/^connectPassageMarkers(PassageMarkerI previous, PassageMarkerI next,$/;"	f
+connectPreNodeToTheNext	preGraphConstruction.c	/^static void connectPreNodeToTheNext(IDnum * currentPreNodeID,$/;"	f	file:
+connectPreNodes	preGraphConstruction.c	/^static void connectPreNodes(RoadMapArray * rdmaps, PreGraph * preGraph,$/;"	f	file:
+connection	scaffold.c	/^	Connection *connection;$/;"	m	struct:ConnectionStack_st	file:
+connectionMemory	scaffold.c	/^static RecycleBin *connectionMemory = NULL;$/;"	v	file:
+connectionSingleRotateWithLeft	scaffold.c	/^static Connection *connectionSingleRotateWithLeft(Connection * K2)$/;"	f	file:
+connectionSingleRotateWithRight	scaffold.c	/^static Connection *connectionSingleRotateWithRight(Connection * K1)$/;"	f	file:
+connectionStackMemory	scaffold.c	/^RecycleBin *connectionStackMemory = NULL;$/;"	v
+connection_st	scaffold.c	/^struct connection_st {$/;"	s	file:
+conserveVariant	correctedGraph.c	/^static boolean conserveVariant = false;$/;"	v	file:
+convertInsertionMarkers	preGraphConstruction.c	/^static void convertInsertionMarkers(InsertionMarker * insertionMarkers,$/;"	f	file:
+convertMarker	preGraphConstruction.c	/^static void convertMarker(InsertionMarker * marker, IDnum nodeID)$/;"	f	file:
+convertSequences	readSet.c	/^void convertSequences(ReadSet * rs)$/;"	f
+coord	roadMap.c	/^	ShortLength coord;$/;"	m	union:positionPtr	file:
+copyDownDescriptor	graph.c	/^static void copyDownDescriptor(Descriptor ** writePtr, int *writeOffset,$/;"	f	file:
+copyDownSequence	graph.c	/^static void copyDownSequence(Descriptor ** writePtr, int *writeOffset,$/;"	f	file:
+copyKmers	kmer.c	/^void copyKmers(Kmer* k1, Kmer* k2) {$/;"	f
+copyMarkers	graphStats.c	/^static PassageMarkerList *copyMarkers(Node * node)$/;"	f	file:
+copyPassageMarkerList	passageMarker.c	/^PassageMarkerList *copyPassageMarkerList(PassageMarkerList * list)$/;"	f
+copyPreMarker	preGraph.c	/^static void copyPreMarker(PreMarker * dest, PreMarker * source, IDnum preNodeAID, PreGraph * preGraph) {$/;"	f	file:
+correctGraph	correctedGraph.c	/^void correctGraph(Graph * argGraph, ShortLength * argSequenceLengths, Category * argSequenceCategories, boolean conserveLong, FILE * variantsF, double cov_cutoff_arg)$/;"	f
+correctGraphLocally	locallyCorrectedGraph.c	/^void correctGraphLocally(Node * argStart)$/;"	f
+countCoOccurences	scaffold.c	/^static unsigned char * countCoOccurences(IDnum * coOccurencesCount,$/;"	f	file:
+countLocalBreakpoints	graphStats.c	/^int countLocalBreakpoints(PassageMarkerI marker, IDnum firstStrain)$/;"	f
+countMappings	graphReConstruction.c	/^static IDnum countMappings(char * preGraphFilename) {$/;"	f	file:
+countPreNodes	preGraphConstruction.c	/^countPreNodes(RoadMapArray * rdmaps, PreGraph * preGraph,$/;"	f	file:
+countReferenceKmers	splayTable.c	/^static Coordinate countReferenceKmers(ReadSet * reads, int wordLength) {$/;"	f	file:
+countShortReads	scaffold.c	/^static IDnum **countShortReads(Graph * graph, ReadSet * reads)$/;"	f	file:
+countVariantMarkers	graphStats.c	/^static IDnum countVariantMarkers(Node * node, IDnum sequenceCount) {$/;"	f	file:
+counter	readSet.c	/^	IDnum counter;$/;"	m	struct:referenceCoordinate_st	file:
+cov_cutoff	correctedGraph.c	/^static double cov_cutoff = -1;$/;"	v	file:
+createAnalogousArc	graph.c	/^void createAnalogousArc(Node * originNode, Node * destinationNode,$/;"	f
+createAnalogousPreArc_pg	preGraph.c	/^void createAnalogousPreArc_pg(IDnum originPreNodeID,$/;"	f
+createArc	graph.c	/^Arc *createArc(Node * originNode, Node * destinationNode, Graph * graph)$/;"	f
+createBinary	readSet.c	/^boolean createBinary = false;$/;"	v
+createConnection	scaffold.c	/^static void createConnection(IDnum nodeID,$/;"	f	file:
+createNewConnection	scaffold.c	/^Connection *createNewConnection(IDnum nodeID, IDnum node2ID,$/;"	f
+createNodeLocks	graphReConstruction.c	/^createNodeLocks(Graph *graph)$/;"	f	file:
+createNodeLocks	preGraphConstruction.c	/^static void createNodeLocks(PreGraph *preGraph)$/;"	f	file:
+createNodeLocks	scaffold.c	/^createNodeLocks(Graph *graph)$/;"	f	file:
+createNodeReadStartArrays	graph.c	/^void createNodeReadStartArrays(Graph * graph)$/;"	f
+createPreArc_pg	preGraph.c	/^PreArcI createPreArc_pg(IDnum originPreNodeID, IDnum destinationPreNodeID,$/;"	f
+createPreMarkers	preGraphConstruction.c	/^static void createPreMarkers(RoadMapArray * rdmaps, PreGraph * preGraph,$/;"	f	file:
+createPreNodes	preGraphConstruction.c	/^createPreNodes(RoadMapArray * rdmaps, PreGraph * preGraph,$/;"	f	file:
+createReadPairingArray	readSet.c	/^void createReadPairingArray(ReadSet* reads)$/;"	f
+createReadsLocks	scaffold.c	/^createReadsLocks()$/;"	f	file:
+createTwinConnection	scaffold.c	/^static void createTwinConnection(IDnum nodeID, IDnum node2ID,$/;"	f	file:
+createTwinConnectionInTree	scaffold.c	/^static void createTwinConnectionInTree(IDnum nodeID,$/;"	f	file:
+createVariantList	graphStats.c	/^static Variant * createVariantList(Node * node, Graph * graph) {$/;"	f	file:
+currentBlocks	allocArray.h	/^	size_t currentBlocks;$/;"	m	struct:AllocArray_st
+currentElements	allocArray.h	/^	size_t currentElements;$/;"	m	struct:AllocArray_st
+dbgCounter	correctedGraph.c	/^static IDnum dbgCounter;$/;"	v	file:
+dbgCounter	readCoherentGraph.c	/^static IDnum dbgCounter = 0;$/;"	v	file:
+deactivateArcLookupTable	graph.c	/^void deactivateArcLookupTable(Graph * graph)$/;"	f
+deactivateGapMarkers	graph.c	/^void deactivateGapMarkers(Graph * graph)$/;"	f
+deactivateLocalCorrectionSettings	locallyCorrectedGraph.c	/^void deactivateLocalCorrectionSettings()$/;"	f
+deactivateReadStarts	graph.c	/^void deactivateReadStarts(Graph * graph)$/;"	f
+deallocateArc	graph.c	/^void deallocateArc(Arc * arc)$/;"	f
+deallocateConnection	scaffold.c	/^static void deallocateConnection(Connection * connect)$/;"	f	file:
+deallocateConnectionStack	scaffold.c	/^static void deallocateConnectionStack(ConnectionStack *stack)$/;"	f	file:
+deallocateDFibHeapNode	dfib.c	/^static void deallocateDFibHeapNode(DFibHeapNode * a, DFibHeap * heap)$/;"	f	file:
+deallocateFibHeapEl	fib.c	/^static void deallocateFibHeapEl(FibHeapNode * a, FibHeap * heap)$/;"	f	file:
+deallocateMask	graphStats.c	/^static void deallocateMask(Mask * mask)$/;"	f	file:
+deallocateNode	graph.c	/^void deallocateNode(Node * node)$/;"	f
+deallocateNodeList	shortReadPairs.c	/^static void deallocateNodeList(NodeList * nodeList)$/;"	f	file:
+deallocatePassageMarker	passageMarker.c	/^static void deallocatePassageMarker(PassageMarkerI marker)$/;"	f	file:
+deallocatePassageMarkerList	passageMarker.c	/^void deallocatePassageMarkerList(PassageMarkerList * marker)$/;"	f
+deallocatePointer	recycleBin.c	/^void deallocatePointer(RecycleBin * recycle_bin, void *data)$/;"	f
+deallocatePreArc_pg	preGraph.c	/^void deallocatePreArc_pg(PreArcI preArc)$/;"	f
+deallocateRBConnection	readCoherentGraph.c	/^static void deallocateRBConnection(RBConnection * nodeList)$/;"	f	file:
+deallocateSmallNodeList	graphReConstruction.c	/^static void deallocateSmallNodeList(SmallNodeList * smallNodeList)$/;"	f	file:
+debug	splayTable.c	/^boolean debug = false;$/;"	v
+deleteNextPassageMarker	passageMarker.c	/^void deleteNextPassageMarker(PassageMarkerI marker, Graph * graph)$/;"	f
+descriptor	graph.c	/^	Descriptor *descriptor;	\/\/ 64$/;"	m	struct:node_st	file:
+descriptor	preGraph.c	/^	Descriptor *descriptor;$/;"	m	struct:preNode_st	file:
+destination	graph.c	/^	Node *destination;	\/\/ 64$/;"	m	struct:arc_st	file:
+destination	scaffold.c	/^	Node *destination;$/;"	m	struct:connection_st	file:
+destroyAllPassageMarkers	passageMarker.c	/^void destroyAllPassageMarkers()$/;"	f
+destroyAllSplayTrees	splay.c	/^void destroyAllSplayTrees()$/;"	f
+destroyAllocArray	allocArray.c	/^destroyAllocArray (AllocArray *array)$/;"	f
+destroyAllocArrayArray	allocArray.c	/^void destroyAllocArrayArray(AllocArray *allocArray)$/;"	f
+destroyAllocArrayChunks	allocArray.c	/^destroyAllocArrayChunks (AllocArray *array)$/;"	f
+destroyAnnotationBuffers	splayTable.c	/^static void destroyAnnotationBuffers(void)$/;"	f	file:
+destroyArc	graph.c	/^void destroyArc(Arc * arc, Graph * graph)$/;"	f
+destroyConnection	scaffold.c	/^void destroyConnection(Connection * connect, IDnum nodeID)$/;"	f
+destroyConnectionStackMemory	scaffold.c	/^static void destroyConnectionStackMemory(void)$/;"	f	file:
+destroyDHeap	dfibHeap.c	/^void destroyDHeap(DFibHeap * heap)$/;"	f
+destroyFormattedWriter	utility.c	/^void destroyFormattedWriter(FormattedWriter * writer) {$/;"	f
+destroyGraph	graph.c	/^void destroyGraph(Graph * graph)$/;"	f
+destroyHeap	fibHeap.c	/^void destroyHeap(FibHeap * heap)$/;"	f
+destroyKmerOccurenceTable	kmerOccurenceTable.c	/^void destroyKmerOccurenceTable(KmerOccurenceTable * kmerTable) {$/;"	f
+destroyNode	graph.c	/^void destroyNode(Node * node, Graph * graph)$/;"	f
+destroyNodeInDHeap	dfibHeap.c	/^void destroyNodeInDHeap(DFibHeapNode * node, DFibHeap * heap)$/;"	f
+destroyNodeInHeap	fibHeap.c	/^void destroyNodeInHeap(FibHeapNode * node, FibHeap * heap)$/;"	f
+destroyNodeList	shortReadPairs.c	/^static void destroyNodeList(NodeList * nodeList)$/;"	f	file:
+destroyNodePassageMarkers	graphStats.c	/^destroyNodePassageMarkers(Graph *graph,$/;"	f	file:
+destroyPassageMarker	passageMarker.c	/^void destroyPassageMarker(PassageMarkerI marker)$/;"	f
+destroyPassageMarkerList	correctedGraph.c	/^static void destroyPassageMarkerList(PassageMarkerList ** list)$/;"	f	file:
+destroyPassageMarkerList	graphStats.c	/^static void destroyPassageMarkerList(PassageMarkerList ** list)$/;"	f	file:
+destroyPaths	correctedGraph.c	/^static void destroyPaths()$/;"	f	file:
+destroyPaths	locallyCorrectedGraph.c	/^static void destroyPaths()$/;"	f	file:
+destroyPreArc_pg	preGraph.c	/^void destroyPreArc_pg(PreArcI preArc, PreGraph * preGraph)$/;"	f
+destroyPreGraph_pg	preGraph.c	/^void destroyPreGraph_pg(PreGraph * preGraph)$/;"	f
+destroyPreNode_pg	preGraph.c	/^void destroyPreNode_pg(IDnum preNodeID, PreGraph * preGraph)$/;"	f
+destroyReadSet	readSet.c	/^void destroyReadSet(ReadSet * reads)$/;"	f
+destroyRecycleBin	recycleBin.c	/^void destroyRecycleBin(RecycleBin * recycleBin)$/;"	f
+destroyRecycleBinArray	recycleBin.c	/^void destroyRecycleBinArray(RecycleBin * recycleBin)$/;"	f
+destroyRecycleBinChunks	recycleBin.c	/^static void destroyRecycleBinChunks(RecycleBin * recycleBin)$/;"	f	file:
+destroyReferenceCoordinateTable	readSet.c	/^static void destroyReferenceCoordinateTable(ReferenceCoordinateTable * table) {$/;"	f	file:
+destroyRoadMapArray	roadMap.c	/^void destroyRoadMapArray(RoadMapArray * rdmaps) {$/;"	f
+destroySmallNodeListMemmory	graphReConstruction.c	/^static void destroySmallNodeListMemmory(void)$/;"	f	file:
+destroySplayTable	splayTable.c	/^void destroySplayTable(SplayTable * splayTable)$/;"	f
+destroyStringBuffer	utility.c	/^void destroyStringBuffer(StringBuffer *buffer, boolean freeString)$/;"	f
+destroyTightString	tightString.c	/^void destroyTightString(TightString * tString)$/;"	f
+detachDubiousReads	readSet.c	/^void detachDubiousReads(ReadSet * reads, boolean * dubiousReads)$/;"	f
+determineEligibleStartingPoints	correctedGraph.c	/^static void determineEligibleStartingPoints()$/;"	f	file:
+dfh_Dl	dfibpriv.h	/^	IDnum dfh_Dl;$/;"	m	struct:dfibheap
+dfh_cascading_cut	dfib.c	/^static void dfh_cascading_cut(DFibHeap * h, DFibHeapNode * y)$/;"	f	file:
+dfh_checkcons	dfib.c	/^static void dfh_checkcons(DFibHeap * h)$/;"	f	file:
+dfh_compare	dfib.c	/^static int dfh_compare(DFibHeap * h, DFibHeapNode * a, DFibHeapNode * b)$/;"	f	file:
+dfh_comparedata	dfib.c	/^dfh_comparedata(DFibHeap * h, Time key, void *data, DFibHeapNode * b)$/;"	f	file:
+dfh_cons	dfibpriv.h	/^	DFibHeapNode **dfh_cons;$/;"	m	struct:dfibheap
+dfh_consolidate	dfib.c	/^static void dfh_consolidate(DFibHeap * h)$/;"	f	file:
+dfh_cut	dfib.c	/^static void dfh_cut(DFibHeap * h, DFibHeapNode * x, DFibHeapNode * y)$/;"	f	file:
+dfh_delete	dfib.c	/^void *dfh_delete(DFibHeap * h, DFibHeapNode * x)$/;"	f
+dfh_deleteheap	dfib.c	/^void dfh_deleteheap(DFibHeap * h)$/;"	f
+dfh_extractmin	dfib.c	/^void *dfh_extractmin(DFibHeap * h)$/;"	f
+dfh_extractminel	dfib.c	/^static DFibHeapNode *dfh_extractminel(DFibHeap * h)$/;"	f	file:
+dfh_heaplink	dfib.c	/^static void dfh_heaplink(DFibHeap * h, DFibHeapNode * y, DFibHeapNode * x)$/;"	f	file:
+dfh_insertel	dfib.c	/^static void dfh_insertel(DFibHeap * h, DFibHeapNode * x)$/;"	f	file:
+dfh_insertkey	dfib.c	/^DFibHeapNode *dfh_insertkey(DFibHeap * h, Time key, void *data)$/;"	f
+dfh_insertrootlist	dfib.c	/^static void dfh_insertrootlist(DFibHeap * h, DFibHeapNode * x)$/;"	f	file:
+dfh_makekeyheap	dfib.c	/^DFibHeap *dfh_makekeyheap()$/;"	f
+dfh_min	dfibpriv.h	/^	DFibHeapNode *dfh_min;$/;"	m	struct:dfibheap
+dfh_n	dfibpriv.h	/^	IDnum dfh_n;$/;"	m	struct:dfibheap
+dfh_removerootlist	dfib.c	/^static void dfh_removerootlist(DFibHeap * h, DFibHeapNode * x)$/;"	f	file:
+dfh_replacedata	dfib.c	/^void *dfh_replacedata(DFibHeapNode * x, void *data)$/;"	f
+dfh_replacekey	dfib.c	/^Time dfh_replacekey(DFibHeap * h, DFibHeapNode * x, Time key)$/;"	f
+dfh_replacekeydata	dfib.c	/^void *dfh_replacekeydata(DFibHeap * h, DFibHeapNode * x,$/;"	f
+dfh_root	dfibpriv.h	/^	DFibHeapNode *dfh_root;$/;"	m	struct:dfibheap
+dfhe_child	dfibpriv.h	/^	DFibHeapNode *dfhe_child;$/;"	m	struct:dfibheap_el
+dfhe_data	dfibpriv.h	/^	void *dfhe_data;$/;"	m	struct:dfibheap_el
+dfhe_degree	dfibpriv.h	/^	int dfhe_degree;$/;"	m	struct:dfibheap_el
+dfhe_insertafter	dfib.c	/^static void dfhe_insertafter(DFibHeapNode * a, DFibHeapNode * b)$/;"	f	file:
+dfhe_insertbefore	dfib.c	/^static inline void dfhe_insertbefore(DFibHeapNode * a, DFibHeapNode * b)$/;"	f	file:
+dfhe_key	dfibpriv.h	/^	Time dfhe_key;$/;"	m	struct:dfibheap_el
+dfhe_left	dfibpriv.h	/^	DFibHeapNode *dfhe_left;$/;"	m	struct:dfibheap_el
+dfhe_mark	dfibpriv.h	/^	boolean dfhe_mark;$/;"	m	struct:dfibheap_el
+dfhe_newelem	dfib.c	/^static DFibHeapNode *dfhe_newelem(DFibHeap * h)$/;"	f	file:
+dfhe_p	dfibpriv.h	/^	DFibHeapNode *dfhe_p;$/;"	m	struct:dfibheap_el
+dfhe_remove	dfib.c	/^static DFibHeapNode *dfhe_remove(DFibHeapNode * x)$/;"	f	file:
+dfhe_right	dfibpriv.h	/^	DFibHeapNode *dfhe_right;$/;"	m	struct:dfibheap_el
+dfibheap	dfibpriv.h	/^struct dfibheap {$/;"	s
+dfibheap_el	dfibpriv.h	/^struct dfibheap_el {$/;"	s
+dfibheap_el_getKey	dfib.c	/^Time dfibheap_el_getKey(DFibHeapNode * node)$/;"	f
+dfibheap_getSize	dfib.c	/^IDnum dfibheap_getSize(DFibHeap * heap)$/;"	f
+dheap	correctedGraph.c	/^static DFibHeap *dheap;$/;"	v	file:
+dheap	locallyCorrectedGraph.c	/^static DFibHeap *dheap;$/;"	v	file:
+dheapNodes	correctedGraph.c	/^static DFibHeapNode **dheapNodes;$/;"	v	file:
+dheapNodes	locallyCorrectedGraph.c	/^static DFibHeapNode **dheapNodes;$/;"	v	file:
+directVariantSequence	graphStats.c	/^static char * directVariantSequence(TightString * tString, Variant * variant, Graph * graph) {$/;"	f	file:
+direct_count	scaffold.c	/^	IDnum direct_count;$/;"	m	struct:connection_st	file:
+directlyAppendDescriptors	graph.c	/^void directlyAppendDescriptors(Node * destination, Node * source, Coordinate totalLength)$/;"	f
+disconnectNextPassageMarker	passageMarker.c	/^void disconnectNextPassageMarker(PassageMarkerI marker, Graph * graph)$/;"	f
+displayGeneralStatistics	graphStats.c	/^void displayGeneralStatistics(Graph * graph, char *filename, ReadSet * reads)$/;"	f
+displayLocalBreakpoint	graphStats.c	/^void displayLocalBreakpoint(PassageMarkerI strainMarker,$/;"	f
+distance	scaffold.c	/^	float distance;$/;"	m	struct:connection_st	file:
+distance	shortReadPairs.c	/^	IDnum distance;$/;"	m	struct:miniConnection_st	file:
+doFindOrInsertOccurenceInSplayTree	splayTable.c	/^doFindOrInsertOccurenceInSplayTree(Kmer * kmer, IDnum * seqID,$/;"	f	file:
+done	correctedGraph.c	/^static Ticket *done;$/;"	v	file:
+doubleStrandedGraph	graph.c	/^boolean doubleStrandedGraph(Graph * graph) {$/;"	f
+double_strand	preGraph.c	/^	boolean double_strand;$/;"	m	struct:preGraph_st	file:
+double_strand	roadMap.h	/^	boolean double_strand;$/;"	m	struct:roadMapArray_st
+double_strand	splayTable.c	/^	boolean double_strand;$/;"	m	struct:splayTable_st	file:
+double_stranded	graph.c	/^	boolean double_stranded;$/;"	m	struct:graph_st	file:
+elementSize	allocArray.h	/^	size_t elementSize;$/;"	m	struct:AllocArray_st
+elementsAllocated	allocArray.h	/^	size_t elementsAllocated;$/;"	m	struct:AllocArray_st
+elementsRecycled	allocArray.h	/^	size_t elementsRecycled;$/;"	m	struct:AllocArray_st
+eligibleStartingPoints	correctedGraph.c	/^static IDnum *eligibleStartingPoints;$/;"	v	file:
+emptyGraph	graph.c	/^Graph *emptyGraph(IDnum sequenceCount, int wordLength)$/;"	f
+emptyNode	graph.c	/^Node *emptyNode()$/;"	f
+emptyPreGraph_pg	preGraph.c	/^PreGraph *emptyPreGraph_pg(IDnum sequenceCount, IDnum referenceCount, int wordLength, boolean double_strand)$/;"	f
+estimateLibraryInsertLength	scaffold.c	/^static void estimateLibraryInsertLength(IDnum * coOccurences, IDnum coOccurencesCount, Category libID) {$/;"	f	file:
+estimateLibraryInsertLengths	scaffold.c	/^static void estimateLibraryInsertLengths(IDnum ** coOccurences, IDnum * coOccurencesCounts) {$/;"	f	file:
+estimateMissingInsertLengths	scaffold.c	/^static void estimateMissingInsertLengths(ReadOccurence ** readNodes, IDnum * readNodeCounts, IDnum * readPairs, Category * cats) {$/;"	f	file:
+estimated	scaffold.c	/^static boolean estimated[CATEGORIES + 1];$/;"	v	file:
+estimated_cov	graphStats.c	/^double estimated_cov(Graph * graph, char * directory)$/;"	f
+exitErrorf	utility.c	/^void exitErrorf(int exitStatus, boolean showErrno, const char *format, ...)$/;"	f
+expandLongNode	shortReadPairs.c	/^static boolean expandLongNode(Node * node, boolean force_jumps)$/;"	f	file:
+expandLongNodes	shortReadPairs.c	/^static boolean expandLongNodes(boolean force_jumps)$/;"	f	file:
+expandNode	graph.c	/^TightString *expandNode(Node * node, int WORDLENGTH)$/;"	f
+expandNodeFragment	graph.c	/^char *expandNodeFragment(Node * node, Coordinate contigStart,$/;"	f
+expectedNumberOfConnections	scaffold.c	/^static IDnum expectedNumberOfConnections(IDnum IDA, Connection * connect,$/;"	f	file:
+expected_coverage	readCoherentGraph.c	/^static double expected_coverage = 1;$/;"	v	file:
+exploitShortReadPairs	shortReadPairs.c	/^void exploitShortReadPairs(Graph * argGraph,$/;"	f
+exportAMOSContig	graphStats.c	/^static void exportAMOSContig(FILE * outfile, ReadSet * reads, Node * node,$/;"	f	file:
+exportAMOSContigs	graphStats.c	/^void exportAMOSContigs(char *filename, Graph * graph,$/;"	f
+exportAMOSLib	graphStats.c	/^static void exportAMOSLib(FILE * outfile, Graph * graph, Category cat)$/;"	f	file:
+exportAMOSMarker	graphStats.c	/^static void exportAMOSMarker(FILE * outfile, PassageMarkerI marker,$/;"	f	file:
+exportAMOSNode	graphStats.c	/^static void exportAMOSNode(FILE * outfile, ReadSet * reads, Node * node,$/;"	f	file:
+exportAMOSRead	graphStats.c	/^static void exportAMOSRead(FILE * outfile, TightString * tString,$/;"	f	file:
+exportAMOSReverseShortMarker	graphStats.c	/^static void exportAMOSReverseShortMarker(FILE * outfile,$/;"	f	file:
+exportAMOSShortMarker	graphStats.c	/^static void exportAMOSShortMarker(FILE * outfile, ShortReadMarker * marker,$/;"	f	file:
+exportArc	graph.c	/^static void exportArc(FILE * outfile, Arc * arc)$/;"	f	file:
+exportArcSequence	graphStats.c	/^void exportArcSequence(Arc * arc, FILE * outfile, int WORDLENGTH,$/;"	f
+exportGraph	graph.c	/^void exportGraph(char *filename, Graph * graph, TightString * sequences)$/;"	f
+exportLongNodeMapping	graphStats.c	/^static void exportLongNodeMapping(FILE * outfile, Node * node, ReadSet * reads, ReferenceCoord * refCoords, int wordLength) {$/;"	f	file:
+exportLongNodeMappings	graphStats.c	/^void exportLongNodeMappings(char *filename, Graph * graph, ReadSet * reads,$/;"	f
+exportLongNodeSequence	graphStats.c	/^static void exportLongNodeSequence(FormattedWriter * writer, Node * node, Graph * graph, ReadSet * reads, ShortLength * readLengths, IDnum cutoff, ReadSet * variantSequences) {$/;"	f	file:
+exportLongNodeSequences	graphStats.c	/^void exportLongNodeSequences(char *filename, char * variantsFilename, Graph * graph,$/;"	f
+exportMarker	passageMarker.c	/^void exportMarker(FILE * outfile, PassageMarkerI marker,$/;"	f
+exportNode	graph.c	/^static void exportNode(FILE * outfile, Node * node, void *withSequence)$/;"	f	file:
+exportPreGraph_pg	preGraph.c	/^void exportPreGraph_pg(char *filename, PreGraph * preGraph)$/;"	f
+exportPreMarker	preGraph.c	/^static void exportPreMarker(FILE * outfile, PreMarker* preMarker) {$/;"	f	file:
+exportPreNode_pg	preGraph.c	/^static void exportPreNode_pg(FILE * outfile, PreNode * preNode, IDnum ID,$/;"	f	file:
+exportPreReference_pg	preGraph.c	/^static void exportPreReference_pg(FILE * outfile, IDnum refIndex, PreGraph * preGraph) {$/;"	f	file:
+exportTightString	tightString.c	/^void exportTightString(FILE * outfile, TightString * sequence, IDnum index)$/;"	f
+exportUnusedReads	graphStats.c	/^void exportUnusedReads(Graph* graph, ReadSet * reads, Coordinate minContigKmerLength, char* directory) {$/;"	f
+extractBackOfNodeReads	graph.c	/^ShortReadMarker *extractBackOfNodeReads(Node * node, Coordinate breakpoint,$/;"	f
+extractFrontOfNodeReads	graph.c	/^ShortReadMarker *extractFrontOfNodeReads(Node * node,$/;"	f
+extractPassageMarker	passageMarker.c	/^void extractPassageMarker(PassageMarkerI marker)$/;"	f
+extractSequence	correctedGraph.c	/^extractSequence(PassageMarkerI path, TightString * sequence)$/;"	f	file:
+extractSequence	locallyCorrectedGraph.c	/^extractSequence(PassageMarkerI path, TightString * sequence)$/;"	f	file:
+extractVariantMarkers	graphStats.c	/^static void extractVariantMarkers(Variant * variants, Node * node, IDnum sequenceCount, int wordLength) {$/;"	f	file:
+false	globals.h	30;"	d
+fastPath	correctedGraph.c	/^static PassageMarkerI fastPath;$/;"	v	file:
+fastPath	locallyCorrectedGraph.c	/^static PassageMarkerI fastPath;$/;"	v	file:
+fastSequence	correctedGraph.c	/^static TightString *fastSequence;$/;"	v	file:
+fastSequence	locallyCorrectedGraph.c	/^static TightString *fastSequence;$/;"	v	file:
+fastToSlowMapping	correctedGraph.c	/^static Coordinate *fastToSlowMapping;$/;"	v	file:
+fh_Dl	fibpriv.h	/^	IDnum fh_Dl;$/;"	m	struct:fibheap
+fh_cascading_cut	fib.c	/^static void fh_cascading_cut(FibHeap * h, FibHeapNode * y)$/;"	f	file:
+fh_checkcons	fib.c	/^static void fh_checkcons(FibHeap * h)$/;"	f	file:
+fh_cmp_fnct	fibpriv.h	/^	Coordinate(*fh_cmp_fnct) (void *, void *);$/;"	m	struct:fibheap
+fh_compare	fib.c	/^static int fh_compare(FibHeap * h, FibHeapNode * a, FibHeapNode * b)$/;"	f	file:
+fh_comparedata	fib.c	/^fh_comparedata(FibHeap * h, Coordinate key, void *data, FibHeapNode * b)$/;"	f	file:
+fh_cons	fibpriv.h	/^	FibHeapNode **fh_cons;$/;"	m	struct:fibheap
+fh_consolidate	fib.c	/^static void fh_consolidate(FibHeap * h)$/;"	f	file:
+fh_cut	fib.c	/^static void fh_cut(FibHeap * h, FibHeapNode * x, FibHeapNode * y)$/;"	f	file:
+fh_delete	fib.c	/^void *fh_delete(FibHeap * h, FibHeapNode * x)$/;"	f
+fh_deleteheap	fib.c	/^void fh_deleteheap(FibHeap * h)$/;"	f
+fh_destroyheap	fib.c	/^static void fh_destroyheap(FibHeap * h)$/;"	f	file:
+fh_extractmin	fib.c	/^void *fh_extractmin(FibHeap * h)$/;"	f
+fh_extractminel	fib.c	/^static FibHeapNode *fh_extractminel(FibHeap * h)$/;"	f	file:
+fh_heaplink	fib.c	/^static void fh_heaplink(FibHeap * h, FibHeapNode * y, FibHeapNode * x)$/;"	f	file:
+fh_initheap	fib.c	/^static void fh_initheap(FibHeap * new)$/;"	f	file:
+fh_insert	fib.c	/^FibHeapNode *fh_insert(FibHeap * h, void *data)$/;"	f
+fh_insertel	fib.c	/^static void fh_insertel(FibHeap * h, FibHeapNode * x)$/;"	f	file:
+fh_insertkey	fib.c	/^FibHeapNode *fh_insertkey(FibHeap * h, Coordinate key, void *data)$/;"	f
+fh_insertrootlist	fib.c	/^static void fh_insertrootlist(FibHeap * h, FibHeapNode * x)$/;"	f	file:
+fh_keys	fibpriv.h	/^	boolean fh_keys;$/;"	m	struct:fibheap
+fh_makeheap	fib.c	/^FibHeap *fh_makeheap()$/;"	f
+fh_makekeyheap	fib.c	/^FibHeap *fh_makekeyheap()$/;"	f
+fh_min	fib.c	/^void *fh_min(FibHeap * h)$/;"	f
+fh_min	fibpriv.h	/^	FibHeapNode *fh_min;$/;"	m	struct:fibheap
+fh_minkey	fib.c	/^Coordinate fh_minkey(FibHeap * h)$/;"	f
+fh_n	fibpriv.h	/^	IDnum fh_n;$/;"	m	struct:fibheap
+fh_neginf	fibpriv.h	/^	void *fh_neginf;$/;"	m	struct:fibheap
+fh_removerootlist	fib.c	/^static void fh_removerootlist(FibHeap * h, FibHeapNode * x)$/;"	f	file:
+fh_replacedata	fib.c	/^void *fh_replacedata(FibHeapNode * x, void *data)$/;"	f
+fh_replacekey	fib.c	/^Coordinate fh_replacekey(FibHeap * h, FibHeapNode * x, Coordinate key)$/;"	f
+fh_replacekeydata	fib.c	/^void *fh_replacekeydata(FibHeap * h, FibHeapNode * x,$/;"	f
+fh_root	fibpriv.h	/^	FibHeapNode *fh_root;$/;"	m	struct:fibheap
+fh_setcmp	fib.c	/^voidcmp fh_setcmp(FibHeap * h, voidcmp fnct)$/;"	f
+fh_setneginf	fib.c	/^void *fh_setneginf(FibHeap * h, void *data)$/;"	f
+fh_union	fib.c	/^FibHeap *fh_union(FibHeap * ha, FibHeap * hb)$/;"	f
+fhe_child	fibpriv.h	/^	FibHeapNode *fhe_child;$/;"	m	struct:fibheap_el
+fhe_data	fibpriv.h	/^	void *fhe_data;$/;"	m	struct:fibheap_el
+fhe_degree	fibpriv.h	/^	int fhe_degree;$/;"	m	struct:fibheap_el
+fhe_initelem	fib.c	/^static void fhe_initelem(FibHeapNode * e)$/;"	f	file:
+fhe_insertafter	fib.c	/^static void fhe_insertafter(FibHeapNode * a, FibHeapNode * b)$/;"	f	file:
+fhe_insertbefore	fib.c	/^static inline void fhe_insertbefore(FibHeapNode * a, FibHeapNode * b)$/;"	f	file:
+fhe_key	fibpriv.h	/^	Coordinate fhe_key;$/;"	m	struct:fibheap_el
+fhe_left	fibpriv.h	/^	FibHeapNode *fhe_left;$/;"	m	struct:fibheap_el
+fhe_mark	fibpriv.h	/^	boolean fhe_mark;$/;"	m	struct:fibheap_el
+fhe_newelem	fib.c	/^static FibHeapNode *fhe_newelem(FibHeap * h)$/;"	f	file:
+fhe_p	fibpriv.h	/^	FibHeapNode *fhe_p;$/;"	m	struct:fibheap_el
+fhe_remove	fib.c	/^static FibHeapNode *fhe_remove(FibHeapNode * x)$/;"	f	file:
+fhe_right	fibpriv.h	/^	FibHeapNode *fhe_right;$/;"	m	struct:fibheap_el
+fibheap	fibpriv.h	/^struct fibheap {$/;"	s
+fibheap_el	fibpriv.h	/^struct fibheap_el {$/;"	s
+fillNewConnectionInTree	scaffold.c	/^static void fillNewConnectionInTree(Connection *connect,$/;"	f	file:
+fillReferenceCoordinateTable	readSet.c	/^static void fillReferenceCoordinateTable(char *filename, ReferenceCoordinateTable * refCoords, IDnum counter)$/;"	f	file:
+fillTightStringWithString	tightString.c	/^static void fillTightStringWithString(TightString * tString,$/;"	f	file:
+fillUpConnectedGraph	graphReConstruction.c	/^static void fillUpConnectedGraph(ReadSet * reads,$/;"	f	file:
+fillUpGraph	graphReConstruction.c	/^static void fillUpGraph(ReadSet * reads,$/;"	f	file:
+findConnection	scaffold.c	/^static Connection* findConnection(IDnum nodeID,$/;"	f	file:
+findIDnumInArray	graph.c	/^boolean findIDnumInArray(IDnum query, IDnum * array, IDnum arrayLength)$/;"	f
+findInTree	splay.c	/^Kmer * findInTree(Kmer * X, SplayTree ** T)$/;"	f
+findKmerInKmerOccurenceTable	kmerOccurenceTable.c	/^KmerOccurence *findKmerInKmerOccurenceTable(Kmer * kmer,$/;"	f
+findLowCoverageRegions	graphStats.c	/^static Mask * findLowCoverageRegions(Node * node, Graph * graph, IDnum cutoff, ReadSet * reads, ShortLength * readLengths) {$/;"	f	file:
+findOppositeNode	shortReadPairs.c	/^static void findOppositeNode(Node * node, Node ** oppositeNode,$/;"	f	file:
+findOrCreateConnection	scaffold.c	/^static Connection* findOrCreateConnection(IDnum nodeID,$/;"	f	file:
+findOrInsertOccurenceInSplayTable	splayTable.c	/^static boolean findOrInsertOccurenceInSplayTable(Kmer * kmer, IDnum * seqID,$/;"	f	file:
+findOrInsertOccurenceInSplayTree	splay.c	/^findOrInsertOccurenceInSplayTree(Kmer * kmer, IDnum * seqID,$/;"	f
+findReferenceCoordinate	readSet.c	/^static ReferenceCoordinate * findReferenceCoordinate(ReferenceCoordinateTable * table, char * name, Coordinate start, Coordinate finish, boolean positive_strand) {$/;"	f	file:
+findReferenceMapping	graphReConstruction.c	/^static ReferenceMapping * findReferenceMapping(IDnum seqID, Coordinate refCoord, ReferenceMapping * referenceMappings, Coordinate referenceMappingCount) {$/;"	f	file:
+finish	graphReConstruction.c	/^	IDnum finish;$/;"	m	struct:nodeMask_st	file:
+finish	graphStats.c	/^	Coordinate finish;$/;"	m	struct:variant_st	file:
+finish	graphStats.c	/^	IDnum finish;$/;"	m	struct:refMap_st	file:
+finish	graphStats.c	/^	IDnum finish;$/;"	m	struct:referenceCoord_st	file:
+finish	readSet.c	/^	Coordinate finish;$/;"	m	struct:referenceCoordinate_st	file:
+finish	readSet.h	/^	Coordinate finish;$/;"	m	struct:mask_st
+finish	roadMap.c	/^	union positionPtr finish;	\/\/ 32$/;"	m	struct:annotation_st	typeref:union:annotation_st::positionPtr	file:
+finishOffset	passageMarker.c	/^	IDnum finishOffset;$/;"	m	struct:passage_st	file:
+flushFormattedWriter	utility.c	/^static void flushFormattedWriter(FormattedWriter * writer) {$/;"	f	file:
+foldSymmetricalNode	correctedGraph.c	/^static void foldSymmetricalNode(Node * node)$/;"	f	file:
+foldSymmetricalNodeReads	graph.c	/^void foldSymmetricalNodeReads(Node * node, Graph * graph)$/;"	f
+formattedWriter_st	utility.h	/^typedef struct formattedWriter_st {$/;"	s
+freeDoneTickets	correctedGraph.c	/^static void freeDoneTickets()$/;"	f	file:
+freeElements	allocArray.h	/^	AllocArrayFreeElement *freeElements;$/;"	m	struct:AllocArray_st
+frontReference	shortReadPairs.c	/^	Connection *frontReference;$/;"	m	struct:miniConnection_st	file:
+gapMarkerMemory	graph.c	/^static RecycleBin *gapMarkerMemory = NULL;$/;"	v	file:
+gapMarker_st	graph.c	/^struct gapMarker_st {$/;"	s	file:
+gapMarkers	graph.c	/^	GapMarker **gapMarkers;$/;"	m	struct:graph_st	file:
+gapMergeSort	graph.c	/^static void gapMergeSort(GapMarker ** gapPtr, IDnum count)$/;"	f	file:
+genomeMarker	graphStats.c	/^PassageMarkerI genomeMarker(Node * node, IDnum firstStrain)$/;"	f
+genomeMarkerCount	graphStats.c	/^IDnum genomeMarkerCount(Node * node, IDnum firstStrain)$/;"	f
+getAbsolutePassMarkerSeqID	passageMarker.c	/^IDnum getAbsolutePassMarkerSeqID(PassageMarkerI marker)$/;"	f
+getAnchors	correctedGraph.c	/^static PassageMarkerList *getAnchors(PassageMarkerI marker, Node * nodeA,$/;"	f	file:
+getAnnotSequenceID	roadMap.c	/^IDnum getAnnotSequenceID(Annotation * annot)$/;"	f
+getAnnotationCount	roadMap.c	/^IDnum getAnnotationCount(RoadMap * rdmap)$/;"	f
+getAnnotationInArray	roadMap.c	/^Annotation *getAnnotationInArray(Annotation * annot, Coordinate index)$/;"	f
+getAnnotationLength	roadMap.c	/^Coordinate getAnnotationLength(Annotation * annot)$/;"	f
+getArc	graph.c	/^Arc *getArc(Node * node)$/;"	f
+getArcBetweenNodes	graph.c	/^Arc *getArcBetweenNodes(Node * originNode, Node * destinationNode,$/;"	f
+getCnySeqNucl	binarySequences.c	/^void getCnySeqNucl(SequencesReader *seqReadInfo, uint8_t *sequence) {$/;"	f
+getConnection	scaffold.c	/^Connection * getConnection(Node * node) {$/;"	f
+getConnectionDestination	scaffold.c	/^Node * getConnectionDestination(Connection * connect) {$/;"	f
+getConnectionDirectCount	scaffold.c	/^IDnum getConnectionDirectCount(Connection * connect) {$/;"	f
+getConnectionDistance	scaffold.c	/^Coordinate getConnectionDistance(Connection * connect) {$/;"	f
+getConnectionPairedCount	scaffold.c	/^IDnum getConnectionPairedCount(Connection * connect) {$/;"	f
+getConnectionVariance	scaffold.c	/^double getConnectionVariance(Connection * connect) {$/;"	f
+getDestination	graph.c	/^Node *getDestination(Arc * arc)$/;"	f
+getDestination_pg	preGraph.c	/^IDnum getDestination_pg(PreArcI preArc, IDnum preNodeID)$/;"	f
+getFinish	roadMap.c	/^Coordinate getFinish(Annotation * annot)$/;"	f
+getFinishID	roadMap.c	/^IDnum getFinishID(Annotation * annot)$/;"	f
+getFinishOffset	passageMarker.c	/^Coordinate getFinishOffset(PassageMarkerI marker)$/;"	f
+getGap	graph.c	/^GapMarker *getGap(Node * node, Graph * graph)$/;"	f
+getGapFinish	graph.c	/^Coordinate getGapFinish(GapMarker * marker)$/;"	f
+getGapStart	graph.c	/^Coordinate getGapStart(GapMarker * marker)$/;"	f
+getInsertLength	graph.c	/^Coordinate getInsertLength(Graph * graph, Category cat)$/;"	f
+getInsertLength_var	graph.c	/^double getInsertLength_var(Graph * graph, Category cat)$/;"	f
+getInsertionMarkerPosition	preGraphConstruction.c	/^Coordinate getInsertionMarkerPosition(InsertionMarker * marker)$/;"	f
+getKey	dfibHeap.c	/^Time getKey(DFibHeapNode * node)$/;"	f
+getKmerKey	kmer.c	/^KmerKey getKmerKey(Kmer * kmer) {$/;"	f
+getKmerOccurenceNodeID	kmerOccurenceTable.c	/^IDnum getKmerOccurenceNodeID(KmerOccurence * occurence) {$/;"	f
+getKmerOccurencePosition	kmerOccurenceTable.c	/^Coordinate getKmerOccurencePosition(KmerOccurence * occurence) {$/;"	f
+getLength	tightString.c	/^IDnum getLength(TightString * tString)$/;"	f
+getLongCoverage	graphStats.c	/^static Coordinate getLongCoverage(Node * node) {$/;"	f	file:
+getLongReadCoords	graphStats.c	/^static void getLongReadCoords(Coordinate * starts, Coordinate * stops, Node * node, Graph * graph, ReadSet * reads, IDnum offset) {$/;"	f	file:
+getMarkedNodeList	shortReadPairs.c	/^NodeList *getMarkedNodeList()$/;"	f
+getMarker	graph.c	/^PassageMarkerI getMarker(Node * node)$/;"	f
+getMostAppropriateHit	splayTable.c	/^static KmerOccurence * getMostAppropriateHit(Coordinate readCoord, Coordinate readLength, boolean direct, KmerOccurence * kmerOccurence, IDnum mapCount, IDnum * mapSequenceID, Coordinate * mapCoord, int wordLength) {$/;"	f	file:
+getMultiplicity	graph.c	/^IDnum getMultiplicity(Arc * arc)$/;"	f
+getMultiplicity_pg	preGraph.c	/^IDnum getMultiplicity_pg(PreArcI preArc)$/;"	f
+getNearestHSPIndex	splayTable.c	/^static Coordinate getNearestHSPIndex(Coordinate position, IDnum * sequenceIDs, Coordinate sequenceLength) {$/;"	f	file:
+getNextAnnotation	roadMap.c	/^Annotation *getNextAnnotation(Annotation * annot)$/;"	f
+getNextArc	graph.c	/^Arc *getNextArc(Arc * arc)$/;"	f
+getNextConnection	scaffold.c	/^Connection * getNextConnection(Connection * connect) {$/;"	f
+getNextGap	graph.c	/^GapMarker *getNextGap(GapMarker * marker)$/;"	f
+getNextInNode	passageMarker.c	/^PassageMarkerI getNextInNode(PassageMarkerI marker)$/;"	f
+getNextInSequence	passageMarker.c	/^PassageMarkerI getNextInSequence(PassageMarkerI marker)$/;"	f
+getNextKmerOccurence	kmerOccurenceTable.c	/^KmerOccurence * getNextKmerOccurence(KmerOccurence * current) {$/;"	f
+getNextPreArc_pg	preGraph.c	/^PreArcI getNextPreArc_pg(PreArcI preArc, IDnum preNodeID)$/;"	f
+getNode	passageMarker.c	/^Node *getNode(PassageMarkerI marker)$/;"	f
+getNodeDHeapNode	correctedGraph.c	/^static DFibHeapNode *getNodeDHeapNode(Node * node)$/;"	f	file:
+getNodeID	graph.c	/^IDnum getNodeID(Node * node)$/;"	f
+getNodeInGraph	graph.c	/^Node *getNodeInGraph(Graph * graph, IDnum nodeID)$/;"	f
+getNodeLength	graph.c	/^Coordinate getNodeLength(Node * node)$/;"	f
+getNodePrevious	correctedGraph.c	/^static Node *getNodePrevious(Node * node)$/;"	f	file:
+getNodePrevious	locallyCorrectedGraph.c	/^static Node *getNodePrevious(Node * node)$/;"	f	file:
+getNodeReadCount	graph.c	/^IDnum getNodeReadCount(Node * node, Graph * graph)$/;"	f
+getNodeReadCounts	graph.c	/^IDnum *getNodeReadCounts(Graph * graph)$/;"	f
+getNodeReads	graph.c	/^ShortReadMarker *getNodeReads(Node * node, Graph * graph)$/;"	f
+getNodeStatus	graph.c	/^boolean getNodeStatus(Node * node)$/;"	f
+getNodeTime	correctedGraph.c	/^static Time getNodeTime(Node * node)$/;"	f	file:
+getNodeTime	locallyCorrectedGraph.c	/^static Time getNodeTime(Node * node)$/;"	f	file:
+getNodeToReadMappings	graph.c	/^ShortReadMarker **getNodeToReadMappings(Graph * graph)$/;"	f
+getNucleotide	tightString.c	/^Nucleotide getNucleotide(Coordinate nucleotideIndex, TightString * tString)$/;"	f
+getNucleotideChar	tightString.c	/^char getNucleotideChar(Coordinate nucleotideIndex, TightString * tString)$/;"	f
+getNucleotideInDescriptor	graph.c	/^static Nucleotide getNucleotideInDescriptor(Descriptor * descriptor,$/;"	f	file:
+getNucleotideInDescriptor_pg	preGraph.c	/^static Nucleotide getNucleotideInDescriptor_pg(Descriptor * descriptor,$/;"	f	file:
+getNucleotideInNode	graph.c	/^Nucleotide getNucleotideInNode(Node * node, Coordinate index) {$/;"	f
+getOrigin	graph.c	/^Node *getOrigin(Arc * arc)$/;"	f
+getOriginalVirtualCoverage	graph.c	/^Coordinate getOriginalVirtualCoverage(Node * node, Category category)$/;"	f
+getOtherEnd_pg	preGraph.c	/^IDnum getOtherEnd_pg(PreArcI preArc, IDnum preNodeID)$/;"	f
+getPassageMarkerFinish	passageMarker.c	/^Coordinate getPassageMarkerFinish(PassageMarkerI marker)$/;"	f
+getPassageMarkerLength	passageMarker.c	/^Coordinate getPassageMarkerLength(PassageMarkerI marker)$/;"	f
+getPassageMarkerSequenceID	passageMarker.c	/^IDnum getPassageMarkerSequenceID(PassageMarkerI marker)$/;"	f
+getPassageMarkerStart	passageMarker.c	/^Coordinate getPassageMarkerStart(PassageMarkerI marker)$/;"	f
+getPassageMarkerStatus	passageMarker.c	/^boolean getPassageMarkerStatus(PassageMarkerI marker)$/;"	f
+getPosition	roadMap.c	/^Coordinate getPosition(Annotation * annot)$/;"	f
+getPreArcBetweenPreNodes_pg	preGraph.c	/^PreArcI getPreArcBetweenPreNodes_pg(IDnum originPreNodeID,$/;"	f
+getPreArc_pg	preGraph.c	/^PreArcI getPreArc_pg(IDnum preNodeID, PreGraph * preGraph)$/;"	f
+getPreNodeInPreGraph_pg	preGraph.c	/^PreNode *getPreNodeInPreGraph_pg(PreGraph * preGraph, IDnum preNodeID)$/;"	f
+getPreNodeLength_pg	preGraph.c	/^Coordinate getPreNodeLength_pg(IDnum preNodeID, PreGraph * preGraph)$/;"	f
+getPreviousInSequence	passageMarker.c	/^PassageMarkerI getPreviousInSequence(PassageMarkerI marker)$/;"	f
+getRecycleBinInArray	recycleBin.c	/^RecycleBin *getRecycleBinInArray(RecycleBin *recycleBin,$/;"	f
+getReferenceCount	graphStats.c	/^static IDnum getReferenceCount(ReadSet * reads) {$/;"	f	file:
+getRoadMapInArray	roadMap.c	/^RoadMap *getRoadMapInArray(RoadMapArray * array, IDnum index)$/;"	f
+getSequenceLengths	readSet.c	/^ShortLength *getSequenceLengths(ReadSet * reads, int wordLength)$/;"	f
+getShortReadCoords	graphStats.c	/^static void getShortReadCoords(Coordinate * starts, Coordinate * stops, Node * node, Graph * graph, ShortLength * readLengths) {$/;"	f	file:
+getShortReadMarkerAtIndex	graph.c	/^ShortReadMarker *getShortReadMarkerAtIndex(ShortReadMarker * array,$/;"	f
+getShortReadMarkerID	graph.c	/^IDnum getShortReadMarkerID(ShortReadMarker * marker)$/;"	f
+getShortReadMarkerOffset	graph.c	/^inline ShortLength getShortReadMarkerOffset(ShortReadMarker * marker)$/;"	f
+getShortReadMarkerPosition	graph.c	/^inline Coordinate getShortReadMarkerPosition(ShortReadMarker * marker)$/;"	f
+getShortReadTwinCoords	graphStats.c	/^static void getShortReadTwinCoords(Coordinate * starts, Coordinate * stops, Node * node, Graph * graph, ShortLength * readLengths, IDnum offset) {$/;"	f	file:
+getStart	roadMap.c	/^Coordinate getStart(Annotation * annot)$/;"	f
+getStartID	roadMap.c	/^IDnum getStartID(Annotation * annot)$/;"	f
+getStartOffset	passageMarker.c	/^Coordinate getStartOffset(PassageMarkerI marker)$/;"	f
+getTail	correctedGraph.c	/^static PassageMarkerI getTail(PassageMarkerI marker) {$/;"	f	file:
+getTightStringInArray	tightString.c	/^TightString *getTightStringInArray(TightString * tString,$/;"	f
+getTipLength	correctedGraph.c	/^static Coordinate getTipLength(Node * node)$/;"	f	file:
+getTotalCoverage	graph.c	/^Coordinate getTotalCoverage(Node * node)$/;"	f
+getTwinConnection	scaffold.c	/^Connection * getTwinConnection(Connection * connect) {$/;"	f
+getTwinMarker	passageMarker.c	/^PassageMarkerI getTwinMarker(PassageMarkerI marker)$/;"	f
+getTwinNode	graph.c	/^Node *getTwinNode(Node * node)$/;"	f
+getUniqueness	graph.c	/^boolean getUniqueness(Node * node)$/;"	f
+getVirtualCoverage	graph.c	/^Coordinate getVirtualCoverage(Node * node)$/;"	f
+getVirtualCoverage	graph.c	/^Coordinate getVirtualCoverage(Node * node, Category category)$/;"	f
+getWordLength	graph.c	/^int getWordLength(Graph * graph)$/;"	f
+getWordLength_pg	preGraph.c	/^int getWordLength_pg(PreGraph * preGraph)$/;"	f
+ghostThreadSequenceThroughGraph	graphReConstruction.c	/^static void ghostThreadSequenceThroughGraph(TightString * tString,$/;"	f	file:
+goToEndOfLine	readSet.c	/^void goToEndOfLine(char *line, FILE * file)$/;"	f
+goesToNode	readCoherentGraph.c	/^static boolean goesToNode(PassageMarkerI marker, Node * node)$/;"	f	file:
+goesToNode	shortReadPairs.c	/^static boolean goesToNode(PassageMarkerI marker, Node * node)$/;"	f	file:
+graph	correctedGraph.c	/^static Graph *graph;$/;"	v	file:
+graph	locallyCorrectedGraph.c	/^static Graph *graph;$/;"	v	file:
+graph	readCoherentGraph.c	/^static Graph *graph = NULL;$/;"	v	file:
+graph	scaffold.c	/^static Graph *graph;$/;"	v	file:
+graph	shortReadPairs.c	/^static Graph *graph;$/;"	v	file:
+graph_st	graph.c	/^struct graph_st {$/;"	s	file:
+handicapNode	shortReadPairs.c	/^void handicapNode(Node * node)$/;"	f
+hasPreMarkers	preGraph.c	/^boolean hasPreMarkers(IDnum nodeID, PreGraph * preGraph) {$/;"	f
+hasReferenceMarker	graphStats.c	/^static boolean hasReferenceMarker(Node * node, ReadSet * reads) {$/;"	f	file:
+hasSingleArc	graph.c	/^boolean hasSingleArc(Node * node)$/;"	f
+hasSinglePreArc_pg	preGraph.c	/^boolean hasSinglePreArc_pg(IDnum preNodeID, PreGraph * preGraph)$/;"	f
+hash_kmer	splayTable.c	/^static KmerKey hash_kmer(Kmer * kmer)$/;"	f	file:
+id_a	correctedGraph.c	/^	IDnum id_a;$/;"	m	struct:tkt_st	file:
+identifyUniqueNodes	readCoherentGraph.c	/^static void identifyUniqueNodes(boolean(*isUniqueFunction) (Node *))$/;"	f	file:
+idx	allocArray.c	/^	ArrayIdx idx;$/;"	m	struct:AllocArrayFreeElement_st	file:
+importCnyReadSet	binarySequences.c	/^ReadSet *importCnyReadSet(char *filename)$/;"	f
+importConnectedGraph	graphReConstruction.c	/^Graph *importConnectedGraph(char *connectedGraphFilename, ReadSet * reads, char * roadmapFilename,$/;"	f
+importGraph	graph.c	/^Graph *importGraph(char *filename)$/;"	f
+importPreGraph	graphReConstruction.c	/^Graph *importPreGraph(char *preGraphFilename, ReadSet * reads, char * roadmapFilename, $/;"	f
+importReadSet	readSet.c	/^ReadSet *importReadSet(char *filename)$/;"	f
+importReferenceRoadMapArray	roadMap.c	/^RoadMapArray *importReferenceRoadMapArray(char *filename)$/;"	f
+importRoadMapArray	roadMap.c	/^RoadMapArray *importRoadMapArray(char *filename)$/;"	f
+importSequences	readSet.c	/^ReadSet *importSequences(char *filename)$/;"	f
+incrementAnnotationCoordinates	roadMap.c	/^void incrementAnnotationCoordinates(Annotation * annot)$/;"	f
+incrementConnectionDistance	scaffold.c	/^void incrementConnectionDistance(Connection * connect, Coordinate increment) {$/;"	f
+incrementFinishOffset	passageMarker.c	/^void incrementFinishOffset(PassageMarkerI marker, Coordinate offset)$/;"	f
+incrementNodeReferenceMarkerCount_pg	preGraph.c	/^void incrementNodeReferenceMarkerCount_pg(PreGraph * preGraph, IDnum preNodeID) {$/;"	f
+incrementOriginalVirtualCoverage	graph.c	/^void incrementOriginalVirtualCoverage(Node * node, Category category,$/;"	f
+incrementReadStartCount	graph.c	/^void incrementReadStartCount(Node * node, Graph * graph)$/;"	f
+incrementStartOffset	passageMarker.c	/^void incrementStartOffset(PassageMarkerI marker, Coordinate offset)$/;"	f
+incrementVirtualCoverage	graph.c	/^void incrementVirtualCoverage(Node * node, Category category,$/;"	f
+incrementVirtualCoverage	graph.c	/^void incrementVirtualCoverage(Node * node,$/;"	f
+indirectVariantSequence	graphStats.c	/^static char * indirectVariantSequence(TightString * tString, Variant * variant, Graph * graph) {$/;"	f	file:
+initAllocArray	allocArray.c	/^static void initAllocArray(AllocArray * array, size_t elementSize, char * name) $/;"	f	file:
+initAllocArrayArray	allocArray.c	/^static void initAllocArrayArray(AllocArray *array,$/;"	f	file:
+initAnnotationBuffers	splayTable.c	/^static void initAnnotationBuffers(void)$/;"	f	file:
+initConnectionStackMemory	scaffold.c	/^static void initConnectionStackMemory(void)$/;"	f	file:
+initRecycleBin	recycleBin.c	/^static void initRecycleBin(RecycleBin *recycleBin,$/;"	f	file:
+initSmallNodeListMemory	graphReConstruction.c	/^static void initSmallNodeListMemory(void)$/;"	f	file:
+initSplayTreeMemory	splay.c	/^void initSplayTreeMemory(void)$/;"	f
+initializeReferenceMapping	graphStats.c	/^static void initializeReferenceMapping(ReferenceMapping * refMap, PassageMarkerI marker, Node * node) {$/;"	f	file:
+initializeTodoLists	correctedGraph.c	/^static void initializeTodoLists()$/;"	f	file:
+injectShortReads	graph.c	/^void injectShortReads(ShortReadMarker * sourceArray, IDnum sourceLength,$/;"	f
+inline	globals.h	53;"	d
+input	utility.h	/^	FILE * input;$/;"	m	struct:formattedWriter_st
+inputCnySeqFileStart	binarySequences.c	/^void inputCnySeqFileStart(Category category, SequencesWriter *seqWriteInfo)$/;"	f
+inputReferenceIntoSplayTable	splayTable.c	/^void inputReferenceIntoSplayTable(TightString * tString,$/;"	f
+inputSequenceArrayIntoSplayTableAndArchive	splayTable.c	/^void inputSequenceArrayIntoSplayTableAndArchive(ReadSet * reads,$/;"	f
+inputSequenceIntoSplayTable	splayTable.c	/^void inputSequenceIntoSplayTable(TightString * array,$/;"	f
+insertIntoTree	splay.c	/^void insertIntoTree(Kmer * kmer, SplayTree ** T)$/;"	f
+insertLengths	graph.c	/^	Coordinate insertLengths[CATEGORIES + 1];$/;"	m	struct:graph_st	file:
+insertLengths_var	graph.c	/^	double insertLengths_var[CATEGORIES + 1];$/;"	m	struct:graph_st	file:
+insertNodeIntoDHeap	dfibHeap.c	/^DFibHeapNode *insertNodeIntoDHeap(DFibHeap * heap, Time key,$/;"	f
+insertNodeIntoHeap	fibHeap.c	/^FibHeapNode *insertNodeIntoHeap(FibHeap * heap, Coordinate key,$/;"	f
+insertPassageMarker	graph.c	/^void insertPassageMarker(PassageMarkerI marker, Node * destination)$/;"	f
+insertionMarker_st	preGraphConstruction.c	/^struct insertionMarker_st {$/;"	s	file:
+int32	readSet.c	/^static int int32(const unsigned char * ptr)$/;"	f	file:
+intLeftFilter	kmer.c	/^static const uint16_t intLeftFilter = (uint16_t) 3 << 14; $/;"	v	file:
+intWordFilter	kmer.c	/^static uint16_t intWordFilter = (uint16_t) ((int16_t) -1); $/;"	v	file:
+integrateDerivativeDistances	shortReadPairs.c	/^static void integrateDerivativeDistances(Connection * connect,$/;"	f	file:
+ints	kmer.h	/^	uint16_t ints;$/;"	m	struct:kmer_st
+isCreateBinary	readSet.c	/^inline boolean isCreateBinary()$/;"	f
+isDestinationToMarker	passageMarker.c	/^boolean isDestinationToMarker(PassageMarkerI marker, Node * node)$/;"	f
+isEligibleTip	concatenatedPreGraph.c	/^static boolean isEligibleTip(IDnum index, PreGraph * preGraph, Coordinate$/;"	f	file:
+isInitial	passageMarker.c	/^boolean isInitial(PassageMarkerI marker)$/;"	f
+isLocalDeadEnd	locallyCorrectedGraph.c	/^static boolean isLocalDeadEnd(Node * node)$/;"	f	file:
+isLocalTwinDeadEnd	locallyCorrectedGraph.c	/^static boolean isLocalTwinDeadEnd(Node * node)$/;"	f	file:
+isLocallyInitial	concatenatedGraph.c	/^static boolean isLocallyInitial(PassageMarkerI marker) {$/;"	f	file:
+isLoop_pg	preGraph.c	/^boolean isLoop_pg(PreArcI preArc)$/;"	f
+isMixed	graphStats.c	/^boolean isMixed(Node * node, IDnum firstStrain)$/;"	f
+isNodeMemorized	graphReConstruction.c	/^static inline boolean isNodeMemorized(Node * node, SmallNodeList * nodePile)$/;"	f	file:
+isOnlyGenome	graphStats.c	/^boolean isOnlyGenome(Node * node, IDnum firstStrain)$/;"	f
+isOnlyStrain	graphStats.c	/^boolean isOnlyStrain(Node * node, IDnum firstStrain)$/;"	f
+isPreviousToNode	correctedGraph.c	/^static boolean isPreviousToNode(Node * previous, Node * target)$/;"	f	file:
+isPreviousToNode	locallyCorrectedGraph.c	/^static boolean isPreviousToNode(Node * previous, Node * target)$/;"	f	file:
+isSNP	graphStats.c	/^boolean isSNP(Node * node, IDnum firstStrain, int WORDLENGTH)$/;"	f
+isSecondInPair	readSet.c	/^boolean isSecondInPair(ReadSet * reads, IDnum index)$/;"	f
+isStart	preGraphConstruction.c	/^	boolean isStart;$/;"	m	struct:insertionMarker_st	file:
+isTerminal	passageMarker.c	/^boolean isTerminal(PassageMarkerI marker)$/;"	f
+isUniqueSolexa	readCoherentGraph.c	/^boolean isUniqueSolexa(Node * node)$/;"	f
+isVariantMarker	graphStats.c	/^static boolean isVariantMarker(PassageMarkerI marker, IDnum sequenceCount) {$/;"	f	file:
+keyFilter	kmer.c	/^static uint64_t keyFilter = 0;$/;"	v	file:
+keyFilterIndex	kmer.c	/^static int keyFilterIndex = UNDEFINED;$/;"	v	file:
+keyFilterLength	kmer.c	/^static int keyFilterLength = 0;$/;"	v	file:
+keyFilterOffset	kmer.c	/^static int keyFilterOffset = 0;$/;"	v	file:
+keyInAccelerationTable	kmerOccurenceTable.c	/^static inline KmerKey keyInAccelerationTable(Kmer * kmer,$/;"	f	file:
+kmer	kmerOccurenceTable.c	/^	Kmer kmer;$/;"	m	struct:kmerOccurence_st	file:
+kmer	splay.c	/^	Kmer kmer;$/;"	m	struct:splayNode_st	file:
+kmerFilterIndex	kmer.c	/^static int kmerFilterIndex = UNDEFINED;$/;"	v	file:
+kmerFilterLength	kmer.c	/^static int kmerFilterLength = 0;$/;"	v	file:
+kmerFilterOffset	kmer.c	/^static int kmerFilterOffset = 0;$/;"	v	file:
+kmerOccurenceIndex	kmerOccurenceTable.c	/^	IDnum kmerOccurenceIndex;$/;"	m	struct:kmerOccurenceTable_st	file:
+kmerOccurencePtr	kmerOccurenceTable.c	/^	KmerOccurence * kmerOccurencePtr;$/;"	m	struct:kmerOccurenceTable_st	file:
+kmerOccurenceTable	splayTable.c	/^	KmerOccurenceTable *kmerOccurenceTable;$/;"	m	struct:splayTable_st	file:
+kmerOccurenceTable_st	kmerOccurenceTable.c	/^struct kmerOccurenceTable_st {$/;"	s	file:
+kmerOccurence_st	kmerOccurenceTable.c	/^struct kmerOccurence_st {$/;"	s	file:
+kmerProbabilities	readSet.h	/^	Probability **kmerProbabilities;$/;"	m	struct:readSet_st
+kmerTable	kmerOccurenceTable.c	/^	KmerOccurence *kmerTable;$/;"	m	struct:kmerOccurenceTable_st	file:
+kmerTableSize	kmerOccurenceTable.c	/^	IDnum kmerTableSize;$/;"	m	struct:kmerOccurenceTable_st	file:
+kmer_st	kmer.h	/^struct kmer_st {$/;"	s
+labels	readSet.h	/^	char **labels;$/;"	m	struct:readSet_st
+left	scaffold.c	/^	Connection *left;$/;"	m	struct:connection_st	file:
+left	splay.c	/^	struct splayNode_st *left;$/;"	m	struct:splayNode_st	typeref:struct:splayNode_st::splayNode_st	file:
+length	graph.c	/^	IDnum length;	\/\/ 32$/;"	m	struct:node_st	file:
+length	graph.c	/^	IDnum length;$/;"	m	struct:gapMarker_st	file:
+length	graphReConstruction.c	/^	IDnum length;$/;"	m	struct:referenceMapping_st	file:
+length	preGraph.c	/^	IDnum length;$/;"	m	struct:preMarker_st	file:
+length	preGraph.c	/^	IDnum length;$/;"	m	struct:preNode_st	file:
+length	roadMap.c	/^	ShortLength length;	\/\/ 32$/;"	m	struct:annotation_st	file:
+length	roadMap.h	/^	IDnum length;$/;"	m	struct:roadMapArray_st
+length	tightString.h	/^	IDnum length;$/;"	m	struct:tString_st
+length	utility.h	/^	size_t length;$/;"	m	struct:__anon2
+lineLength	utility.h	/^	size_t lineLength;$/;"	m	struct:formattedWriter_st
+listMemory	passageMarker.c	/^static RecycleBin *listMemory = NULL;$/;"	v	file:
+listMemory	readCoherentGraph.c	/^static RecycleBin *listMemory = NULL;$/;"	v	file:
+localScaffold	shortReadPairs.c	/^static MiniConnection *localScaffold = NULL;$/;"	v	file:
+lockNode	graphReConstruction.c	/^static inline void lockNode(Node *node)$/;"	f	file:
+lockNode	preGraphConstruction.c	/^static void lockNode(IDnum preNodeID)$/;"	f	file:
+lockRead	scaffold.c	/^static inline void lockRead(IDnum readID)$/;"	f	file:
+lockTwoNodes	graphReConstruction.c	/^static inline void lockTwoNodes(Node *node, Node *node2)$/;"	f	file:
+lockTwoNodes	preGraphConstruction.c	/^static void lockTwoNodes(IDnum preNodeID, IDnum preNode2ID)$/;"	f	file:
+lockTwoNodes	scaffold.c	/^static inline void lockTwoNodes(IDnum nodeID, IDnum node2ID)$/;"	f	file:
+logFinalStats	graphStats.c	/^void logFinalStats(Graph * graph, Coordinate minContigKmerLength, char *directory)$/;"	f
+logInstructions	readSet.c	/^void logInstructions(int argc, char **argv, char *directory)$/;"	f
+longLeftFilter	kmer.c	/^static const uint32_t longLeftFilter = (uint32_t) 3 << 30; $/;"	v	file:
+longLongKeyFilterIndex	kmer.c	/^static int longLongKeyFilterIndex = KMER_LONGLONGS - 1;$/;"	v	file:
+longLongKmerFilter	kmer.c	/^static uint64_t longLongKmerFilter = (uint64_t) ((int64_t) -1); $/;"	v	file:
+longLongKmerFilterIndex	kmer.c	/^static int longLongKmerFilterIndex = KMER_LONGLONGS - 1;$/;"	v	file:
+longLongLeftFilter	kmer.c	/^static const uint64_t longLongLeftFilter = (uint64_t) 3 << 62; $/;"	v	file:
+longLongWordFilter	kmer.c	/^static uint64_t longLongWordFilter = (uint64_t) ((int64_t) -1); $/;"	v	file:
+longWordFilter	kmer.c	/^static uint32_t longWordFilter = (uint32_t) ((int32_t) -1); $/;"	v	file:
+longlongs	kmer.h	/^	uint64_t longlongs[KMER_LONGLONGS];$/;"	m	struct:kmer_st
+longs	kmer.h	/^	uint32_t longs;$/;"	m	struct:kmer_st
+lowCoverageRegions	graphStats.c	/^static Mask * lowCoverageRegions(Coordinate * starts, Coordinate * stops, size_t length, IDnum cutoff, Coordinate nodeLength) {$/;"	f	file:
+m_bColor	binarySequences.h	/^	boolean		m_bColor;$/;"	m	struct:__anon1
+m_bDoubleStrand	binarySequences.h	/^	boolean		m_bDoubleStrand;$/;"	m	struct:__anon1
+m_bFileWriteCompleted	binarySequences.h	/^	boolean		m_bFileWriteCompleted;$/;"	m	struct:__anon1
+m_bIsBinary	binarySequences.h	/^	boolean		m_bIsBinary;$/;"	m	struct:sequencesReader_st
+m_bIsRef	binarySequences.h	/^	boolean         m_bIsRef;$/;"	m	struct:sequencesReader_st
+m_bIsRef	binarySequences.h	/^	boolean         m_bIsRef;$/;"	m	struct:sequencesWriter_st
+m_currCategory	binarySequences.h	/^	Category	m_currCategory;$/;"	m	struct:sequencesReader_st
+m_current	binarySequences.h	/^	Mask *          m_current;$/;"	m	struct:sequencesWriter_st
+m_currentNuclReadIdx	binarySequences.h	/^	uint64_t	m_currentNuclReadIdx;$/;"	m	struct:sequencesReader_st
+m_currentReadLength	binarySequences.h	/^	uint64_t	m_currentReadLength;$/;"	m	struct:sequencesReader_st
+m_elem	binarySequences.h	/^	RefInfo		m_elem;$/;"	m	struct:refInfoList_st
+m_fileSegmentWriteIdx	binarySequences.h	/^	uint32_t	m_fileSegmentWriteIdx;$/;"	m	struct:sequencesWriter_st
+m_hostBufferFilePos	binarySequences.h	/^	int64_t		m_hostBufferFilePos[3];$/;"	m	struct:sequencesWriter_st
+m_hostBuffersInUse	binarySequences.h	/^	uint32_t	m_hostBuffersInUse;$/;"	m	struct:sequencesWriter_st
+m_insertCurrentIndex	binarySequences.h	/^	uint64_t	m_insertCurrentIndex;$/;"	m	struct:sequencesWriter_st
+m_insertLength	binarySequences.h	/^	uint64_t	m_insertLength;$/;"	m	struct:sequencesWriter_st
+m_insertLengthIndex	binarySequences.h	/^	uint64_t	m_insertLengthIndex;$/;"	m	struct:sequencesWriter_st
+m_insertStartIndex	binarySequences.h	/^	uint64_t	m_insertStartIndex;$/;"	m	struct:sequencesWriter_st
+m_magic	binarySequences.h	/^	uint32_t	m_magic;$/;"	m	struct:__anon1
+m_maskMemory	binarySequences.h	/^	RecycleBin *    m_maskMemory;$/;"	m	struct:sequencesWriter_st
+m_maxSeqLen	binarySequences.h	/^	uint64_t	m_maxSeqLen;$/;"	m	struct:__anon1
+m_maxSeqLen	binarySequences.h	/^	uint64_t	m_maxSeqLen;$/;"	m	struct:sequencesReader_st
+m_minSeqLen	binarySequences.h	/^	uint64_t	m_minSeqLen;$/;"	m	struct:__anon1
+m_minSeqLen	binarySequences.h	/^	uint64_t	m_minSeqLen;$/;"	m	struct:sequencesReader_st
+m_nameFile	binarySequences.h	/^	FILE *          m_nameFile;$/;"	m	struct:sequencesWriter_st
+m_namesFilename	binarySequences.h	/^	char *		m_namesFilename;$/;"	m	struct:sequencesReader_st
+m_numCategories	binarySequences.h	/^	Category	m_numCategories;$/;"	m	struct:__anon1
+m_numCategories	binarySequences.h	/^	Category	m_numCategories;$/;"	m	struct:sequencesReader_st
+m_openMask	binarySequences.h	/^	boolean         m_openMask;$/;"	m	struct:sequencesWriter_st
+m_pCurrentReadPtr	binarySequences.h	/^	uint8_t *	m_pCurrentReadPtr;$/;"	m	struct:sequencesReader_st
+m_pFile	binarySequences.h	/^        FILE *		m_pFile;$/;"	m	struct:sequencesReader_st
+m_pFile	binarySequences.h	/^        FILE *		m_pFile;$/;"	m	struct:sequencesWriter_st
+m_pHostBufPtr	binarySequences.h	/^	uint8_t *	m_pHostBufPtr;$/;"	m	struct:sequencesWriter_st
+m_pHostBufPtrMax	binarySequences.h	/^	uint8_t *	m_pHostBufPtrMax;$/;"	m	struct:sequencesWriter_st
+m_pHostLengthBufPtr	binarySequences.h	/^	uint8_t *	m_pHostLengthBufPtr;$/;"	m	struct:sequencesWriter_st
+m_pHostLengthBufPtrMax	binarySequences.h	/^	uint8_t *	m_pHostLengthBufPtrMax;$/;"	m	struct:sequencesWriter_st
+m_pNextReadPtr	binarySequences.h	/^	uint8_t *	m_pNextReadPtr;$/;"	m	struct:sequencesReader_st
+m_pReadBufEnd	binarySequences.h	/^	uint8_t *	m_pReadBufEnd;$/;"	m	struct:sequencesReader_st
+m_pReadBuffer	binarySequences.h	/^	uint8_t *	m_pReadBuffer;$/;"	m	struct:sequencesReader_st
+m_pWriteBuffer	binarySequences.h	/^	uint8_t	*	m_pWriteBuffer[3];$/;"	m	struct:sequencesWriter_st
+m_pos	binarySequences.h	/^	int32_t         m_pos;$/;"	m	struct:refInfo_st
+m_position	binarySequences.h	/^	Coordinate      m_position;$/;"	m	struct:sequencesWriter_st
+m_ppCurrString	binarySequences.h	/^	char **		m_ppCurrString;$/;"	m	struct:sequencesReader_st
+m_readBufPos	binarySequences.h	/^	uint64_t	m_readBufPos;$/;"	m	struct:sequencesReader_st
+m_refCnt	binarySequences.h	/^	uint32_t        m_refCnt;$/;"	m	struct:sequencesReader_st
+m_refCnt	binarySequences.h	/^	uint32_t        m_refCnt;$/;"	m	struct:sequencesWriter_st
+m_refInfoHead	binarySequences.h	/^	RefInfoList *	m_refInfoHead;$/;"	m	struct:sequencesWriter_st
+m_referenceID	binarySequences.h	/^	int32_t         m_referenceID;$/;"	m	struct:refInfo_st
+m_referenceMask	binarySequences.h	/^	Mask **         m_referenceMask;$/;"	m	struct:sequencesWriter_st
+m_seqFilename	binarySequences.h	/^	char *		m_seqFilename;$/;"	m	struct:sequencesReader_st
+m_seqNuclStoreSize	binarySequences.h	/^	uint64_t	m_seqNuclStoreSize;$/;"	m	struct:__anon1
+m_sequenceCnt	binarySequences.h	/^	uint64_t	m_sequenceCnt;$/;"	m	struct:__anon1
+m_sequences	binarySequences.h	/^	ReadSet *       m_sequences;$/;"	m	struct:sequencesReader_st
+m_timeStamp	binarySequences.h	/^	uint64_t	m_timeStamp;$/;"	m	struct:__anon1
+m_totalSeqLen	binarySequences.h	/^	uint64_t	m_totalSeqLen;$/;"	m	struct:__anon1
+m_unifiedSeqFileHeader	binarySequences.h	/^        CnyUnifiedSeqFileHeader m_unifiedSeqFileHeader;$/;"	m	struct:sequencesReader_st
+m_unifiedSeqFileHeader	binarySequences.h	/^        CnyUnifiedSeqFileHeader m_unifiedSeqFileHeader;$/;"	m	struct:sequencesWriter_st
+main	run.c	/^int main(int argc, char **argv)$/;"	f
+main	run2.c	/^int main(int argc, char **argv)$/;"	f
+mallocOrExit	utility.h	37;"	d
+mallocOrExit3	utility.c	/^void *mallocOrExit3(size_t count, size_t size, const char *name)$/;"	f
+mallocOrExitWithoutCast	utility.h	47;"	d
+mapDistancesOntoPaths	correctedGraph.c	/^static Coordinate mapDistancesOntoPaths()$/;"	f	file:
+mapSlowOntoFast	correctedGraph.c	/^static void mapSlowOntoFast()$/;"	f	file:
+markInterestingNodes	shortReadPairs.c	/^static void markInterestingNodes(Node * node)$/;"	f	file:
+markedNodes	shortReadPairs.c	/^static NodeList *markedNodes;$/;"	v	file:
+marker	graph.c	/^	PassageMarkerI marker;	\/\/ 32$/;"	m	struct:node_st	file:
+marker	graphStats.c	/^	PassageMarkerI marker;$/;"	m	struct:variant_st	file:
+marker	passageMarker.h	/^	PassageMarkerI marker;$/;"	m	struct:passageList_st
+marker	readCoherentGraph.c	/^	PassageMarkerI marker;$/;"	m	struct:rb_connection_st	file:
+markerCount	graph.c	/^IDnum markerCount(Node * node)$/;"	f
+markerFollowsPath	correctedGraph.c	/^static boolean markerFollowsPath(PassageMarkerI marker,$/;"	f	file:
+markerLeadsToArc	correctedGraph.c	/^static boolean markerLeadsToArc(PassageMarkerI marker, Node * nodeA,$/;"	f	file:
+markerLeadsToNode	correctedGraph.c	/^static boolean markerLeadsToNode(PassageMarkerI marker, Node * node)$/;"	f	file:
+markerMemory	passageMarker.c	/^static AllocArray *markerMemory = NULL;$/;"	v	file:
+maskMemory	graphStats.c	/^static RecycleBin * maskMemory = NULL;$/;"	v	file:
+maskMemory	splayTable.c	/^static RecycleBin * maskMemory = NULL;$/;"	v	file:
+mask_st	readSet.h	/^struct mask_st {$/;"	s
+mateReads	readSet.h	/^	IDnum *mateReads;$/;"	m	struct:readSet_st
+max	correctedGraph.c	/^static Time max(Time A, Time B, Time C)$/;"	f	file:
+max	locallyCorrectedGraph.c	/^static Time max(Time A, Time B, Time C)$/;"	f	file:
+maxBlocks	allocArray.h	/^	size_t maxBlocks;$/;"	m	struct:AllocArray_st
+maxElements	allocArray.h	/^	size_t maxElements;$/;"	m	struct:AllocArray_st
+maxLength	graphStats.c	/^Coordinate maxLength(Graph * graph)$/;"	f
+measureCoOccurences	scaffold.c	/^static void measureCoOccurences(IDnum ** coOccurences,$/;"	f	file:
+memorizeNode	graphReConstruction.c	/^static inline void memorizeNode(Node * node, SmallNodeList ** nodePile)$/;"	f	file:
+mergeArcLists	graph.c	/^static Arc *mergeArcLists(Arc * left, Arc * right)$/;"	f	file:
+mergeDescriptors	graph.c	/^static inline Descriptor *mergeDescriptors(Descriptor * descr,$/;"	f	file:
+mergeDescriptorsF2F_pg	preGraph.c	/^static inline Descriptor *mergeDescriptorsF2F_pg(Descriptor * descr,$/;"	f	file:
+mergeDescriptorsH2H_pg	preGraph.c	/^static inline Descriptor *mergeDescriptorsH2H_pg(Descriptor * descr,$/;"	f	file:
+mergeDescriptors_pg	preGraph.c	/^static inline Descriptor *mergeDescriptors_pg(Descriptor * descr,$/;"	f	file:
+mergeGapMarkerLists	graph.c	/^static GapMarker *mergeGapMarkerLists(GapMarker * left, GapMarker * right)$/;"	f	file:
+mergeNodeReads	graph.c	/^void mergeNodeReads(Node * target, Node * source, Graph * graph)$/;"	f
+min	graph.c	/^static inline Coordinate min(Coordinate A, Coordinate B)$/;"	f	file:
+minKeyOfHeap	fibHeap.c	/^Coordinate minKeyOfHeap(FibHeap * heap)$/;"	f
+min_short	graph.c	/^static inline ShortLength min_short(ShortLength A, ShortLength B)$/;"	f	file:
+miniConnection_st	shortReadPairs.c	/^struct miniConnection_st {$/;"	s	file:
+moveCnySeqNucleotides	binarySequences.c	/^static void moveCnySeqNucleotides(SequencesWriter *seqWriteInfo)$/;"	f	file:
+multCounter	readCoherentGraph.c	/^static IDnum multCounter = 0;$/;"	v	file:
+multiplicity	graph.c	/^	IDnum multiplicity;	\/\/ 32$/;"	m	struct:arc_st	file:
+multiplicity	preGraph.c	/^	IDnum multiplicity;$/;"	m	struct:preArc_st	file:
+multiplicity	readCoherentGraph.c	/^	IDnum multiplicity;$/;"	m	struct:rb_connection_st	file:
+n50	graphStats.c	/^Coordinate n50(Graph * graph)$/;"	f
+name	allocArray.h	/^	char *name;$/;"	m	struct:AllocArray_st
+name	graphStats.c	/^	char * name;$/;"	m	struct:referenceCoord_st	file:
+name	readSet.c	/^	char * name;$/;"	m	struct:referenceCoordinate_st	file:
+nbPush	splayTable.c	/^static int *nbPush = NULL;$/;"	v	file:
+nbThreads	allocArray.h	/^	int nbThreads;$/;"	m	struct:AllocArray_st
+newAllocArray	allocArray.c	/^newAllocArray (size_t elementSize, char *name)$/;"	f
+newAllocArrayArray	allocArray.c	/^AllocArray *newAllocArrayArray(unsigned int n,$/;"	f
+newDFibHeap	dfibHeap.c	/^DFibHeap *newDFibHeap()$/;"	f
+newDescriptor	graph.c	/^static Descriptor *newDescriptor(IDnum sequenceID, Coordinate start,$/;"	f	file:
+newDescriptor_pg	preGraph.c	/^static Descriptor *newDescriptor_pg(Coordinate length, SequencesReader *seqReadInfo,$/;"	f	file:
+newFibHeap	fibHeap.c	/^FibHeap *newFibHeap()$/;"	f
+newFormattedWriter	utility.c	/^FormattedWriter * newFormattedWriter(FILE * file, size_t lineLength) {$/;"	f
+newKmerOccurenceTable	kmerOccurenceTable.c	/^KmerOccurenceTable * newKmerOccurenceTable(short int accelerationBits, int wordLength) {$/;"	f
+newMask	graphStats.c	/^static Mask * newMask(Coordinate position)$/;"	f	file:
+newMask	readSet.c	/^static Mask * newMask(SequencesWriter *seqWriteInfo, Coordinate position)$/;"	f	file:
+newMask	splayTable.c	/^static Mask * newMask(Coordinate position)$/;"	f	file:
+newNegativeDescriptor	graph.c	/^static Descriptor *newNegativeDescriptor(IDnum sequenceID,$/;"	f	file:
+newNode	graph.c	/^Node *newNode(IDnum sequenceID, Coordinate start, Coordinate finish,$/;"	f
+newPassageMarker	passageMarker.c	/^PassageMarkerI newPassageMarker(IDnum seqID, Coordinate start,$/;"	f
+newPassageMarkerList	passageMarker.c	/^PassageMarkerList *newPassageMarkerList(PassageMarkerI marker,$/;"	f
+newPositiveDescriptor	graph.c	/^static Descriptor *newPositiveDescriptor(IDnum sequenceID,$/;"	f	file:
+newPreGraph_pg	preGraphConstruction.c	/^PreGraph *newPreGraph_pg(RoadMapArray * rdmapArray, SequencesReader *seqReadInfo)$/;"	f
+newReadCoverage	graphStats.c	/^Coordinate newReadCoverage(Node * node, IDnum firstStrain)$/;"	f
+newReadSet	readSet.c	/^ReadSet *newReadSet()$/;"	f
+newRecycleBin	recycleBin.c	/^RecycleBin *newRecycleBin(size_t node_size, int nodes_per_chunk)$/;"	f
+newRecycleBinArray	recycleBin.c	/^RecycleBin *newRecycleBinArray(unsigned int n,$/;"	f
+newReferenceCoordinateTable	readSet.c	/^static ReferenceCoordinateTable * newReferenceCoordinateTable() {$/;"	f	file:
+newSplayTable	splayTable.c	/^SplayTable *newSplayTable(int WORDLENGTH, boolean double_strand)$/;"	f
+newStringBuffer	utility.c	/^StringBuffer *newStringBuffer(size_t size)$/;"	f
+newTicket	correctedGraph.c	/^static Ticket *newTicket()$/;"	f	file:
+newTightString	tightString.c	/^TightString *newTightString(Coordinate length)$/;"	f
+newTightStringArrayFromStringArray	tightString.c	/^TightString *newTightStringArrayFromStringArray(char **sequences,$/;"	f
+next	allocArray.c	/^	AllocArrayFreeElement *next;$/;"	m	struct:AllocArrayFreeElement_st	file:
+next	binarySequences.h	/^	struct refInfoList_st *next;$/;"	m	struct:refInfoList_st	typeref:struct:refInfoList_st::refInfoList_st
+next	correctedGraph.c	/^	Ticket *next;$/;"	m	struct:tkt_st	file:
+next	graph.c	/^	Arc *next;		\/\/ 64$/;"	m	struct:arc_st	file:
+next	graph.c	/^	GapMarker *next;$/;"	m	struct:gapMarker_st	file:
+next	graphReConstruction.c	/^	SmallNodeList *next;$/;"	m	struct:smallNodeList_st	file:
+next	locallyCorrectedGraph.h	/^	NodeList *next;$/;"	m	struct:nodeList_st
+next	passageMarker.h	/^	PassageMarkerList *next;$/;"	m	struct:passageList_st
+next	preGraph.c	/^	PreMarker * next;$/;"	m	struct:preMarker_st	file:
+next	readCoherentGraph.c	/^	RBConnection *next;$/;"	m	struct:rb_connection_st	file:
+next	readSet.h	/^	Mask* next;$/;"	m	struct:mask_st
+next	recycleBin.c	/^	struct RecycleBin_Node *next;$/;"	m	struct:RecycleBin_Node	typeref:struct:RecycleBin_Node::RecycleBin_Node	file:
+next	recycleBin.c	/^	struct chunk_st *next;$/;"	m	struct:chunk_st	typeref:struct:chunk_st::chunk_st	file:
+next	scaffold.c	/^	ConnectionStack *next;$/;"	m	struct:ConnectionStack_st	file:
+nextInLookupTable	graph.c	/^	Arc *nextInLookupTable;	\/\/ 64$/;"	m	struct:arc_st	file:
+nextInNode	passageMarker.c	/^	PassageMarkerI nextInNode;$/;"	m	struct:passage_st	file:
+nextInSequence	passageMarker.c	/^	PassageMarkerI nextInSequence;$/;"	m	struct:passage_st	file:
+nextLeft	preGraph.c	/^	PreArcI nextLeft; \/* Index of the previous PreArc *\/$/;"	m	struct:preArc_st	file:
+nextRight	preGraph.c	/^	PreArcI nextRight; \/* Index of the next PreArc *\/$/;"	m	struct:preArc_st	file:
+nextStartingPoint	correctedGraph.c	/^static Node *nextStartingPoint()$/;"	f	file:
+nextTodoTicket	correctedGraph.c	/^static IDnum nextTodoTicket()$/;"	f	file:
+node	graphReConstruction.c	/^	Node *node;$/;"	m	struct:smallNodeList_st	file:
+node	locallyCorrectedGraph.h	/^	Node *node;$/;"	m	struct:nodeList_st
+node	passageMarker.c	/^	struct node_st *node;$/;"	m	struct:passage_st	typeref:struct:passage_st::node_st	file:
+node	readCoherentGraph.c	/^	Node *node;$/;"	m	struct:rb_connection_st	file:
+nodeCount	graph.c	/^	IDnum nodeCount;$/;"	m	struct:graph_st	file:
+nodeCount	graph.c	/^IDnum nodeCount(Graph * graph)$/;"	f
+nodeGenomicMultiplicity	graphStats.c	/^int nodeGenomicMultiplicity(Node * node, IDnum firstStrain)$/;"	f
+nodeID	graphReConstruction.c	/^	IDnum nodeID;$/;"	m	struct:nodeMask_st	file:
+nodeID	graphReConstruction.c	/^	IDnum nodeID;$/;"	m	struct:referenceMapping_st	file:
+nodeID	kmerOccurenceTable.c	/^	IDnum nodeID;$/;"	m	struct:kmerOccurence_st	file:
+nodeID	roadMap.c	/^	IDnum nodeID;$/;"	m	union:positionPtr	file:
+nodeID	scaffold.c	/^	IDnum nodeID;$/;"	m	struct:readOccurence_st	file:
+nodeList	shortReadPairs.c	/^	NodeList *nodeList;$/;"	m	struct:miniConnection_st	file:
+nodeListMemory	readCoherentGraph.c	/^static RecycleBin *nodeListMemory = NULL;$/;"	v	file:
+nodeListMemory	shortReadPairs.c	/^static RecycleBin *nodeListMemory = NULL;$/;"	v	file:
+nodeList_st	locallyCorrectedGraph.h	/^struct nodeList_st {$/;"	s
+nodeLocks	graphReConstruction.c	/^static omp_lock_t *nodeLocks = NULL;$/;"	v	file:
+nodeLocks	preGraphConstruction.c	/^static omp_lock_t *nodeLocks = NULL;$/;"	v	file:
+nodeLocks	scaffold.c	/^static omp_lock_t *nodeLocks = NULL;$/;"	v	file:
+nodeMask_st	graphReConstruction.c	/^struct nodeMask_st {$/;"	s	file:
+nodeMemory	dfibpriv.h	/^	RecycleBin *nodeMemory;$/;"	m	struct:dfibheap
+nodeMemory	fibpriv.h	/^	RecycleBin *nodeMemory;$/;"	m	struct:fibheap
+nodeMemory	graph.c	/^static RecycleBin *nodeMemory = NULL;$/;"	v	file:
+nodeReadCounts	graph.c	/^	IDnum *nodeReadCounts;$/;"	m	struct:graph_st	file:
+nodeReads	graph.c	/^	ShortReadMarker **nodeReads;$/;"	m	struct:graph_st	file:
+nodeReferenceMarkerCounts	preGraph.c	/^	IDnum * nodeReferenceMarkerCounts;$/;"	m	struct:preGraph_st	file:
+nodeReferenceMarkers	preGraph.c	/^	PreMarker ** nodeReferenceMarkers;$/;"	m	struct:preGraph_st	file:
+nodeStart	graphReConstruction.c	/^	IDnum nodeStart;$/;"	m	struct:referenceMapping_st	file:
+node_size	recycleBin.c	/^	size_t node_size;$/;"	m	struct:recycleBin_st	file:
+node_st	graph.c	/^struct node_st {$/;"	s	file:
+nodes	graph.c	/^	Node **nodes;$/;"	m	struct:graph_st	file:
+nodes_per_chunk	recycleBin.c	/^	int nodes_per_chunk;$/;"	m	struct:recycleBin_st	file:
+norm	scaffold.c	/^static double norm(double X)$/;"	f	file:
+normInt	scaffold.c	/^static double normInt(double X, double Y)$/;"	f	file:
+nullCounter	readCoherentGraph.c	/^static IDnum nullCounter = 0;$/;"	v	file:
+offset	graph.c	/^	ShortLength offset;$/;"	m	struct:shortReadMarker_st	file:
+offset	kmerOccurenceTable.c	/^	IDnum offset;$/;"	m	struct:kmerOccurence_st	file:
+offset	scaffold.c	/^	IDnum offset;$/;"	m	struct:readOccurence_st	file:
+openCnySeqForRead	binarySequences.c	/^FILE *openCnySeqForRead(const char *fileName, CnyUnifiedSeqFileHeader *seqFileHeader)$/;"	f
+openCnySeqForWrite	binarySequences.c	/^SequencesWriter * openCnySeqForWrite(const char *unifiedSeqFileName)$/;"	f
+orderInsertionMarkers	preGraphConstruction.c	/^orderInsertionMarkers(InsertionMarker ** insMarkers,$/;"	f	file:
+orderNodeReadStartArrays	graph.c	/^void orderNodeReadStartArrays(Graph * graph)$/;"	f
+originalVirtualCoverage	graph.c	/^	IDnum originalVirtualCoverage[CATEGORIES];	\/\/ 32 * 2$/;"	m	struct:node_st	file:
+outDegree	graph.c	/^int outDegree(Node * node)$/;"	f
+output	utility.h	/^	FILE * output;$/;"	m	struct:formattedWriter_st
+pairedCategories	readSet.c	/^int pairedCategories(ReadSet * reads)$/;"	f
+paired_count	scaffold.c	/^	IDnum paired_count;$/;"	m	struct:connection_st	file:
+paired_exp_fraction	scaffold.c	/^static double paired_exp_fraction = 0.1;$/;"	v	file:
+parseDataAndReadFiles	readSet.c	/^void parseDataAndReadFiles(char * filename, int argc, char **argv, boolean * double_strand, boolean * noHash)$/;"	f
+passageList_st	passageMarker.h	/^struct passageList_st {$/;"	s
+passageMarkerDirection	passageMarker.c	/^int passageMarkerDirection(PassageMarkerI marker)$/;"	f
+passage_st	passageMarker.c	/^struct passage_st {$/;"	s	file:
+path	readCoherentGraph.c	/^static PassageMarkerI path = NULL_IDX;$/;"	v	file:
+pathContainsReference	correctedGraph.c	/^static boolean pathContainsReference(PassageMarkerI path) {$/;"	f	file:
+pathIsClear	shortReadPairs.c	/^static NodeList *pathIsClear(Node * node, Node * oppositeNode,$/;"	f	file:
+popConnectionStack	scaffold.c	/^static Connection *popConnectionStack(ConnectionStack **stack)$/;"	f	file:
+popNodeRecord	shortReadPairs.c	/^static Node *popNodeRecord()$/;"	f	file:
+popNucleotide	kmer.c	/^Nucleotide popNucleotide(Kmer * kmer) {$/;"	f
+position	graph.c	/^	IDnum position;$/;"	m	struct:gapMarker_st	file:
+position	graph.c	/^	IDnum position;$/;"	m	struct:shortReadMarker_st	file:
+position	kmerOccurenceTable.c	/^	IDnum position;$/;"	m	struct:kmerOccurence_st	file:
+position	roadMap.c	/^	ShortLength position;	\/\/ 32$/;"	m	struct:annotation_st	file:
+position	scaffold.c	/^	IDnum position;$/;"	m	struct:readOccurence_st	file:
+position	splay.c	/^	Coordinate position;$/;"	m	struct:splayNode_st	file:
+positionPtr	roadMap.c	/^union positionPtr {$/;"	u	file:
+positive_strand	graphStats.c	/^	boolean positive_strand;$/;"	m	struct:referenceCoord_st	file:
+positive_strand	readSet.c	/^	boolean positive_strand;$/;"	m	struct:referenceCoordinate_st	file:
+preArcLeft	preGraph.c	/^	PreArcI preArcLeft;$/;"	m	struct:preNode_st	file:
+preArcMemory	preGraph.c	/^static AllocArray *preArcMemory = NULL;$/;"	v	file:
+preArcRight	preGraph.c	/^	PreArcI preArcRight;$/;"	m	struct:preNode_st	file:
+preArc_st	preGraph.c	/^struct preArc_st {$/;"	s	file:
+preGraph_st	preGraph.c	/^struct preGraph_st {$/;"	s	file:
+preMarker_st	preGraph.c	/^struct preMarker_st {$/;"	s	file:
+preNodeCount	preGraph.c	/^	IDnum preNodeCount;$/;"	m	struct:preGraph_st	file:
+preNodeCount_pg	preGraph.c	/^IDnum preNodeCount_pg(PreGraph * preGraph)$/;"	f
+preNodeID	preGraph.c	/^	IDnum preNodeID; \/* SF TODO only the sign seems to matter. Could replace with char or bit field *\/$/;"	m	struct:preMarker_st	file:
+preNodeIDLeft	preGraph.c	/^	IDnum preNodeIDLeft;$/;"	m	struct:preArc_st	file:
+preNodeIDRight	preGraph.c	/^	IDnum preNodeIDRight;$/;"	m	struct:preArc_st	file:
+preNodeStart	preGraph.c	/^	IDnum preNodeStart;$/;"	m	struct:preMarker_st	file:
+preNode_st	preGraph.c	/^struct preNode_st {$/;"	s	file:
+preNodes	preGraph.c	/^	PreNode *preNodes;$/;"	m	struct:preGraph_st	file:
+prepareGraphForLocalCorrections	locallyCorrectedGraph.c	/^void prepareGraphForLocalCorrections(Graph * argGraph)$/;"	f
+previous	correctedGraph.c	/^static Node **previous;$/;"	v	file:
+previous	graph.c	/^	Arc *previous;		\/\/ 64$/;"	m	struct:arc_st	file:
+previous	locallyCorrectedGraph.c	/^static Node **previous;$/;"	v	file:
+previous	locallyCorrectedGraph.h	/^	NodeList *previous;$/;"	m	struct:nodeList_st
+previous	preGraph.c	/^	PreMarker * previous;$/;"	m	struct:preMarker_st	file:
+previousInNode	passageMarker.c	/^	PassageMarkerI previousInNode;$/;"	m	struct:passage_st	file:
+printAnnotations	splayTable.c	/^static void printAnnotations(IDnum *sequenceIDs, Coordinate * coords,$/;"	f	file:
+printConnections	scaffold.c	/^void printConnections(ReadSet * reads, boolean * shadows)$/;"	f
+printKmer	kmer.c	/^void printKmer(Kmer * kmer) {$/;"	f
+printReferenceCoordinateTableStats	readSet.c	/^static void printReferenceCoordinateTableStats(ReferenceCoordinateTable * table) {$/;"	f	file:
+printScaffold	scaffold.c	/^void printScaffold(Graph * argGraph,$/;"	f
+printShortCounts	graphStats.c	/^static void printShortCounts(FILE * outfile, Node * node, Graph * graph, ReadSet * reads)$/;"	f	file:
+printUsage	readSet.c	/^static void printUsage()$/;"	f	file:
+printUsage	run.c	/^static void printUsage()$/;"	f	file:
+printUsage	run2.c	/^static void printUsage()$/;"	f	file:
+producing	splayTable.c	/^static boolean producing = 1;$/;"	v	file:
+programName	utility.c	/^static const char *programName = NULL;$/;"	v	file:
+progressStatus	correctedGraph.c	/^static boolean *progressStatus;$/;"	v	file:
+projectFromLongRead	scaffold.c	/^static void projectFromLongRead(Node * node, PassageMarkerI marker,$/;"	f	file:
+projectFromNode	scaffold.c	/^static void projectFromNode(IDnum nodeID,$/;"	f	file:
+projectFromReadPair	scaffold.c	/^static void projectFromReadPair(Node * node, ReadOccurence * readOccurence,$/;"	f	file:
+projectFromShortRead	scaffold.c	/^static void projectFromShortRead(Node * node,$/;"	f	file:
+projectFromSingleRead	scaffold.c	/^static void projectFromSingleRead(Node * node,$/;"	f	file:
+projectGraphToFile	graphStats.c	/^void projectGraphToFile(Graph * graph, char *filename, int WORDLENGTH,$/;"	f
+pushBuffer	splayTable.c	/^static void pushBuffer(int thread)$/;"	f	file:
+pushBufferCommit	splayTable.c	/^static void pushBufferCommit(int thread)$/;"	f	file:
+pushConnectionStack	scaffold.c	/^static void pushConnectionStack(ConnectionStack **stack, Connection *connection)$/;"	f	file:
+pushNeighbours	shortReadPairs.c	/^static boolean pushNeighbours(Node * node, Node * oppositeNode,$/;"	f	file:
+pushNucleotide	kmer.c	/^void pushNucleotide(Kmer * kmer, Nucleotide nucleotide) {$/;"	f
+rb_connection_st	readCoherentGraph.c	/^struct rb_connection_st {$/;"	s	file:
+reConnectAnnotation	preGraphConstruction.c	/^static void reConnectAnnotation(IDnum * currentPreNodeID, Annotation * annot,$/;"	f	file:
+readBAMFile	readSet.c	/^static void readBAMFile(SequencesWriter *seqWriteInfo, char *filename, Category cat, IDnum *sequenceIndex, ReferenceCoordinateTable * refCoords)$/;"	f	file:
+readBAMint32	readSet.c	/^static int readBAMint32(gzFile file)$/;"	f	file:
+readCigar	readSet.c	/^static void readCigar(char * cigar, boolean orientation, Coordinate pos, char * seq, ReferenceCoordinate * refCoord, char * buffer, SequencesWriter * seqWriteInfo, RefInfoList ** refTail, size_t * buffer_size) {$/;"	f	file:
+readCnySeqUint32	binarySequences.c	/^uint32_t readCnySeqUint32(SequencesReader *seqReadInfo) $/;"	f
+readCnySeqUint8	binarySequences.c	/^static int32_t readCnySeqUint8(SequencesReader *seqReadInfo)$/;"	f	file:
+readCoherentGraph	readCoherentGraph.c	/^void readCoherentGraph(Graph * inGraph, boolean(*isUnique) (Node * node),$/;"	f
+readConnectedGraphFile	graph.c	/^Graph *readConnectedGraphFile(char *connectedGraphFilename, boolean * double_strand)$/;"	f
+readCount	readSet.h	/^	IDnum readCount;$/;"	m	struct:readSet_st
+readCoverage	graphStats.c	/^Coordinate readCoverage(Node * node)$/;"	f
+readFastAFile	readSet.c	/^static void readFastAFile(SequencesWriter *seqWriteInfo, char *filename, Category cat, IDnum * sequenceIndex, ReferenceCoordinateTable * refCoords)$/;"	f	file:
+readFastAGZFile	readSet.c	/^static void readFastAGZFile(SequencesWriter *seqWriteInfo, char *filename, Category cat, IDnum * sequenceIndex)$/;"	f	file:
+readFastQFile	readSet.c	/^static void readFastQFile(SequencesWriter *seqWriteInfo, char *filename, Category cat, IDnum * sequenceIndex)$/;"	f	file:
+readFastQGZFile	readSet.c	/^static void readFastQGZFile(SequencesWriter *seqWriteInfo, char *filename, Category cat, IDnum *sequenceIndex)$/;"	f	file:
+readID	graph.c	/^	IDnum readID;$/;"	m	struct:shortReadMarker_st	file:
+readNucleotide	tightString.c	/^char readNucleotide(Nucleotide nucleotide)$/;"	f
+readOccurence_st	scaffold.c	/^struct readOccurence_st {$/;"	s	file:
+readPassageMarker	passageMarker.c	/^char *readPassageMarker(PassageMarkerI marker)$/;"	f
+readPreGraphFile	graph.c	/^Graph *readPreGraphFile(char *preGraphFilename, boolean * double_strand)$/;"	f
+readRawFile	readSet.c	/^static void readRawFile(SequencesWriter *seqWriteInfo, char *filename, Category cat, IDnum * sequenceIndex)$/;"	f	file:
+readRawGZFile	readSet.c	/^static void readRawGZFile(SequencesWriter *seqWriteInfo, char *filename, Category cat, IDnum *sequenceIndex)$/;"	f	file:
+readSAMFile	readSet.c	/^static void readSAMFile(SequencesWriter *seqWriteInfo, char *filename, Category cat, IDnum *sequenceIndex, ReferenceCoordinateTable * refCoords)$/;"	f	file:
+readSet_st	readSet.h	/^struct readSet_st {$/;"	s
+readStartsAreActivated	graph.c	/^boolean readStartsAreActivated(Graph * graph)$/;"	f
+readTightString	tightString.c	/^char *readTightString(TightString * tString)$/;"	f
+readTightStringFragment	tightString.c	/^void readTightStringFragment(TightString * tString, Coordinate start,$/;"	f
+readjustConnection	scaffold.c	/^void readjustConnection(Connection * connect, Coordinate distance,$/;"	f
+readjustConnectionInTree	scaffold.c	/^static void readjustConnectionInTree(Connection *connect,$/;"	f	file:
+readjustMiniConnection	shortReadPairs.c	/^static void readjustMiniConnection(Node * node,$/;"	f	file:
+readsLocks	scaffold.c	/^static omp_lock_t *readsLocks = NULL;$/;"	v	file:
+reallocOrExit	utility.h	41;"	d
+reallocOrExit4	utility.c	/^void *reallocOrExit4(void *ptr, size_t count, size_t size, const char *name)$/;"	f
+reallocOrExitReferenceMarkers	preGraph.c	/^static PreMarker * reallocOrExitReferenceMarkers(PreGraph * preGraph, IDnum preNodeID, IDnum length) {$/;"	f	file:
+reallocOrExitWithoutCast	utility.h	51;"	d
+reallocateNodeDescriptor	graph.c	/^void reallocateNodeDescriptor(Node * node, Coordinate length) {$/;"	f
+recenterLocalScaffold	shortReadPairs.c	/^static void recenterLocalScaffold(Node * node, Coordinate oldLength)$/;"	f	file:
+recenterNode	shortReadPairs.c	/^static void recenterNode(Node * node, Coordinate oldLength)$/;"	f	file:
+reconnectPassageMarker	shortReadPairs.c	/^static void reconnectPassageMarker(PassageMarkerI marker, Node * node,$/;"	f	file:
+recordKmerOccurence	kmerOccurenceTable.c	/^void recordKmerOccurence(Kmer * kmer, IDnum nodeID, Coordinate position, KmerOccurenceTable * table) {$/;"	f
+recordNode	shortReadPairs.c	/^static NodeList *recordNode(Node * node)$/;"	f	file:
+recordReferenceMappings	graphReConstruction.c	/^static ReferenceMapping * recordReferenceMappings(char * preGraphFilename, IDnum arrayLength) {$/;"	f	file:
+recycle	recycleBin.c	/^	RecycleBin_Node *recycle;$/;"	m	struct:recycleBin_st	file:
+recycleBin_st	recycleBin.c	/^struct recycleBin_st {$/;"	s	file:
+reduceNode	graph.c	/^void reduceNode(Node * node)$/;"	f
+reduceSlowNodes	correctedGraph.c	/^static void reduceSlowNodes(PassageMarkerI slowMarker, Node * finish)$/;"	f	file:
+refFinish	graphStats.c	/^	IDnum refFinish;$/;"	m	struct:refMap_st	file:
+refID	graphStats.c	/^	IDnum refID;$/;"	m	struct:refMap_st	file:
+refInfoList_st	binarySequences.h	/^struct refInfoList_st {$/;"	s
+refInfo_st	binarySequences.h	/^struct refInfo_st {$/;"	s
+refMap_st	graphStats.c	/^typedef struct refMap_st {$/;"	s	file:
+refReadCoverage	graphStats.c	/^Coordinate refReadCoverage(Node * node, IDnum firstStrain)$/;"	f
+refStart	graphStats.c	/^	IDnum refStart;$/;"	m	struct:refMap_st	file:
+referenceCoord_st	graphStats.c	/^struct referenceCoord_st {$/;"	s	file:
+referenceCoordinateTable_st	readSet.c	/^struct referenceCoordinateTable_st {$/;"	s	file:
+referenceCoordinate_st	readSet.c	/^struct referenceCoordinate_st {$/;"	s	file:
+referenceCount	preGraph.c	/^	IDnum referenceCount;$/;"	m	struct:preGraph_st	file:
+referenceCount	roadMap.h	/^	IDnum referenceCount;$/;"	m	struct:roadMapArray_st
+referenceGraphKmers	graphReConstruction.c	/^static KmerOccurenceTable *referenceGraphKmers(char *preGraphFilename,$/;"	f	file:
+referenceID	graphReConstruction.c	/^	IDnum referenceID;$/;"	m	struct:referenceMapping_st	file:
+referenceID	preGraph.c	/^	IDnum referenceID;$/;"	m	struct:preMarker_st	file:
+referenceID	readSet.c	/^	IDnum referenceID;$/;"	m	struct:referenceCoordinate_st	file:
+referenceMapping_st	graphReConstruction.c	/^struct referenceMapping_st {$/;"	s	file:
+referenceMarkersAreActivated_pg	preGraph.c	/^boolean referenceMarkersAreActivated_pg(PreGraph * preGraph) {$/;"	f
+referenceSequence	graphStats.c	/^static char * referenceSequence(TightString * nodeSequence, Variant * variant, Graph * graph) {$/;"	f	file:
+referenceStart	graphReConstruction.c	/^	IDnum referenceStart;$/;"	m	struct:referenceMapping_st	file:
+referenceStart	preGraph.c	/^	IDnum referenceStart;$/;"	m	struct:preMarker_st	file:
+reference_coordinate_double_strand	readSet.c	/^static Coordinate reference_coordinate_double_strand = true;$/;"	v	file:
+refillCnySeqReadBuffer	binarySequences.c	/^static boolean refillCnySeqReadBuffer(SequencesReader *seqReadInfo) $/;"	f	file:
+remapBackOfNodeArcsOntoNeighbour	correctedGraph.c	/^static void remapBackOfNodeArcsOntoNeighbour(Node * source, Node * target)$/;"	f	file:
+remapBackOfNodeDescriptorOntoNeighbour	correctedGraph.c	/^static void remapBackOfNodeDescriptorOntoNeighbour(Node * source,$/;"	f	file:
+remapBackOfNodeMarkersOntoNeighbour	correctedGraph.c	/^remapBackOfNodeMarkersOntoNeighbour(Node * source,$/;"	f	file:
+remapBackOfNodeOntoNeighbour	correctedGraph.c	/^remapBackOfNodeOntoNeighbour(Node * source, PassageMarkerI sourceMarker,$/;"	f	file:
+remapBackOfNodeTimesOntoNeighbour	correctedGraph.c	/^static void remapBackOfNodeTimesOntoNeighbour(Node * source, Node * target)$/;"	f	file:
+remapEmptyPathArcsOntoMiddlePathSimple	correctedGraph.c	/^static void remapEmptyPathArcsOntoMiddlePathSimple(PassageMarkerI emptyPath,$/;"	f	file:
+remapEmptyPathMarkersOntoMiddlePathDevious	correctedGraph.c	/^static void remapEmptyPathMarkersOntoMiddlePathDevious(PassageMarkerI emptyPath,$/;"	f	file:
+remapEmptyPathMarkersOntoMiddlePathSimple	correctedGraph.c	/^static void remapEmptyPathMarkersOntoMiddlePathSimple(PassageMarkerI emptyPath,$/;"	f	file:
+remapEmptyPathOntoMiddlePath	correctedGraph.c	/^remapEmptyPathOntoMiddlePath(PassageMarkerI emptyPath,$/;"	f	file:
+remapNodeArcsOntoNeighbour	correctedGraph.c	/^static void remapNodeArcsOntoNeighbour(Node * source, Node * target)$/;"	f	file:
+remapNodeArcsOntoTarget	correctedGraph.c	/^static void remapNodeArcsOntoTarget(Node * source, Node * target)$/;"	f	file:
+remapNodeFibHeapReferencesOntoNode	correctedGraph.c	/^remapNodeFibHeapReferencesOntoNode(Node * source, Node * target)$/;"	f	file:
+remapNodeInwardReferencesOntoNode	correctedGraph.c	/^static void remapNodeInwardReferencesOntoNode(Node * source, Node * target)$/;"	f	file:
+remapNodeMarkersOntoNeighbour	correctedGraph.c	/^static void remapNodeMarkersOntoNeighbour(Node * source,$/;"	f	file:
+remapNodeOntoNeighbour	correctedGraph.c	/^static void remapNodeOntoNeighbour(Node * source,$/;"	f	file:
+remapNodeTimesOntoForwardMiddlePath	correctedGraph.c	/^static void remapNodeTimesOntoForwardMiddlePath(Node * source,$/;"	f	file:
+remapNodeTimesOntoNeighbour	correctedGraph.c	/^static void remapNodeTimesOntoNeighbour(Node * source, Node * target)$/;"	f	file:
+remapNodeTimesOntoTargetNode	correctedGraph.c	/^static void remapNodeTimesOntoTargetNode(Node * source, Node * target)$/;"	f	file:
+remapNodeTimesOntoTwinMiddlePath	correctedGraph.c	/^static void remapNodeTimesOntoTwinMiddlePath(Node * source,$/;"	f	file:
+removeDead	graphStats.c	/^static boolean removeDead(PassageMarkerList ** list)$/;"	f	file:
+removeHighCoverageNodes	graphStats.c	/^void removeHighCoverageNodes(Graph * graph, double maxCov, boolean export, Coordinate minLength, char *filename)$/;"	f
+removeLowArcs	graphStats.c	/^void removeLowArcs(Graph * graph, double cutoff) {$/;"	f
+removeLowArcsFromNode	graphStats.c	/^static void removeLowArcsFromNode(Node* node, Graph * graph, double cutoff) {$/;"	f	file:
+removeLowCoverageNodesAndDenounceDubiousReads	graphStats.c	/^boolean *removeLowCoverageNodesAndDenounceDubiousReads(Graph * graph,$/;"	f
+removeLowCoverageReferenceNodes	graphStats.c	/^void removeLowCoverageReferenceNodes(Graph * graph, double minCov, double minLongCov, ReadSet * reads)$/;"	f
+removeLowLongCoverageNodesAndDenounceDubiousReads	graphStats.c	/^void removeLowLongCoverageNodesAndDenounceDubiousReads(Graph * graph,$/;"	f
+removeNextNodeFromDHeap	dfibHeap.c	/^Node *removeNextNodeFromDHeap(DFibHeap * heap)$/;"	f
+removeNextNodeFromHeap	fibHeap.c	/^struct node_st *removeNextNodeFromHeap(FibHeap * heap)$/;"	f
+removeNodeAndDenounceDubiousReads	graphStats.c	/^removeNodeAndDenounceDubiousReads(Graph *graph,$/;"	f	file:
+removePreArcFromList_pg	preGraph.c	/^void removePreArcFromList_pg(PreArcI preArc, IDnum preNodeID,$/;"	f
+removeStrainMarkers	graphStats.c	/^void removeStrainMarkers(Node * node, IDnum firstStrain)$/;"	f
+removeUnreliableConnections	scaffold.c	/^static void removeUnreliableConnections(ReadSet * reads, boolean *shadows)$/;"	f	file:
+renumberNodes	graph.c	/^void renumberNodes(Graph * graph)$/;"	f
+renumberPreNodes_pg	preGraph.c	/^void renumberPreNodes_pg(PreGraph * preGraph)$/;"	f
+replaceKeyInDHeap	dfibHeap.c	/^Time replaceKeyInDHeap(DFibHeap * heap, DFibHeapNode * node, Time newKey)$/;"	f
+replaceKeyInHeap	fibHeap.c	/^Coordinate replaceKeyInHeap(FibHeap * heap, FibHeapNode * node,$/;"	f
+replaceValueInDHeap	dfibHeap.c	/^void replaceValueInDHeap(DFibHeapNode * node, Node * newValue)$/;"	f
+replaceValueInHeap	fibHeap.c	/^void replaceValueInHeap(FibHeapNode * node, Node * newValue)$/;"	f
+resetCnySeqCurrentRead	binarySequences.c	/^void resetCnySeqCurrentRead(SequencesReader *seqReadInfo) $/;"	f
+resetKeyFilter	kmer.c	/^void resetKeyFilter(int keyLength) {$/;"	f
+resetMiniConnection	shortReadPairs.c	/^static void resetMiniConnection(Node * node, MiniConnection * localConnect,$/;"	f	file:
+resetNodeStatus	graph.c	/^void resetNodeStatus(Graph * graph)$/;"	f
+resetStringBuffer	utility.c	/^void resetStringBuffer(StringBuffer *buffer)$/;"	f
+resetWordFilter	kmer.c	/^void resetWordFilter(int wordLength) {$/;"	f
+resizeReferenceCoordinateTable	readSet.c	/^static void resizeReferenceCoordinateTable(ReferenceCoordinateTable * table, IDnum extraLength) {$/;"	f	file:
+reverseCatDescriptors	graph.c	/^static void reverseCatDescriptors(Descriptor * descr, Coordinate destinationLength, Descriptor * copy, Coordinate sourceLength, Coordinate totalLength) $/;"	f	file:
+reverseComplementSequence	readSet.c	/^static void reverseComplementSequence(char * str)$/;"	f	file:
+reversePushNucleotide	kmer.c	/^void reversePushNucleotide(Kmer * kmer, Nucleotide nucleotide) {$/;"	f
+right	scaffold.c	/^	Connection *right;$/;"	m	struct:connection_st	file:
+right	splay.c	/^	struct splayNode_st *right;$/;"	m	struct:splayNode_st	typeref:struct:splayNode_st::splayNode_st	file:
+roadMapArray_st	roadMap.h	/^struct roadMapArray_st {$/;"	s
+roadmap_st	roadMap.c	/^struct roadmap_st {$/;"	s	file:
+scaffold	scaffold.c	/^static Connection **scaffold = NULL;$/;"	v	file:
+scanBinaryReferenceSequences	splayTable.c	/^Mask ** scanBinaryReferenceSequences(SequencesReader *seqReadInfo, IDnum referenceSequenceCount) {$/;"	f
+scanReferenceSequences	splayTable.c	/^Mask ** scanReferenceSequences(FILE * file, IDnum referenceSequenceCount) {$/;"	f
+secondInPair	readSet.h	/^	unsigned char *secondInPair;$/;"	m	struct:readSet_st
+seqID	splay.c	/^	IDnum seqID;$/;"	m	struct:splayNode_st	file:
+sequence	tightString.h	/^	Codon *sequence;$/;"	m	struct:tString_st
+sequenceCategories	correctedGraph.c	/^static Category *sequenceCategories;$/;"	v	file:
+sequenceCount	graph.c	/^	IDnum sequenceCount;$/;"	m	struct:graph_st	file:
+sequenceCount	graph.c	/^IDnum sequenceCount(Graph * graph)$/;"	f
+sequenceCount	preGraph.c	/^	IDnum sequenceCount;$/;"	m	struct:preGraph_st	file:
+sequenceCount_pg	preGraph.c	/^IDnum sequenceCount_pg(PreGraph * preGraph)$/;"	f
+sequenceID	passageMarker.c	/^	IDnum sequenceID;$/;"	m	struct:passage_st	file:
+sequenceID	roadMap.c	/^	IDnum sequenceID;	\/\/ 32$/;"	m	struct:annotation_st	file:
+sequenceLengths	correctedGraph.c	/^static ShortLength *sequenceLengths;$/;"	v	file:
+sequences	readCoherentGraph.c	/^static TightString *sequences = NULL;$/;"	v	file:
+sequences	readSet.h	/^	char **sequences;$/;"	m	struct:readSet_st
+sequencesReader_st	binarySequences.h	/^struct sequencesReader_st {$/;"	s
+sequencesWriter_st	binarySequences.h	/^struct sequencesWriter_st {$/;"	s
+setAllConnectionsClean	scaffold.c	/^static void setAllConnectionsClean(void)$/;"	f	file:
+setCreateBinary	readSet.c	/^void setCreateBinary(boolean val)$/;"	f
+setEmptyMiniConnection	shortReadPairs.c	/^static void setEmptyMiniConnection(Node * node)$/;"	f	file:
+setFinishID	roadMap.c	/^void setFinishID(Annotation * annot, IDnum nodeID)$/;"	f
+setFinishOffset	passageMarker.c	/^void setFinishOffset(PassageMarkerI marker, Coordinate offset)$/;"	f
+setInsertLengths	graph.c	/^void setInsertLengths(Graph * graph, Category cat, Coordinate insertLength,$/;"	f
+setInsertionMarkers	preGraphConstruction.c	/^setInsertionMarkers(RoadMapArray * rdmaps,$/;"	f	file:
+setLocalMaxDivergence	locallyCorrectedGraph.c	/^void setLocalMaxDivergence(double value)$/;"	f
+setLocalMaxGaps	locallyCorrectedGraph.c	/^void setLocalMaxGaps(int value)$/;"	f
+setLocalMaxReadLength	locallyCorrectedGraph.c	/^void setLocalMaxReadLength(int value)$/;"	f
+setMarker	graph.c	/^void setMarker(Node * node, PassageMarkerI marker)$/;"	f
+setMaxDivergence	correctedGraph.c	/^void setMaxDivergence(double value)$/;"	f
+setMaxGaps	correctedGraph.c	/^void setMaxGaps(int value)$/;"	f
+setMaxReadLength	correctedGraph.c	/^void setMaxReadLength(int value)$/;"	f
+setMultiplicity	graph.c	/^void setMultiplicity(Arc * arc, IDnum mult)$/;"	f
+setMultiplicityCutoff	readCoherentGraph.c	/^void setMultiplicityCutoff(int value)$/;"	f
+setMultiplicity_pg	preGraph.c	/^void setMultiplicity_pg(PreArcI preArc, IDnum mult)$/;"	f
+setNextInNode	passageMarker.c	/^void setNextInNode(PassageMarkerI marker, PassageMarkerI next)$/;"	f
+setNextInSequence	passageMarker.c	/^void setNextInSequence(PassageMarkerI previous, PassageMarkerI next)$/;"	f
+setNextPreArc_pg	preGraph.c	/^static void setNextPreArc_pg(PreArcI preArc, IDnum preNodeID,$/;"	f	file:
+setNodeDHeapNode	correctedGraph.c	/^static void setNodeDHeapNode(Node * node, DFibHeapNode * dheapNode)$/;"	f	file:
+setNodePrevious	correctedGraph.c	/^static void setNodePrevious(Node * previousNode, Node * node)$/;"	f	file:
+setNodeStatus	graph.c	/^void setNodeStatus(Node * node, boolean status)$/;"	f
+setNodeTime	correctedGraph.c	/^static void setNodeTime(Node * node, Time time)$/;"	f	file:
+setNodeTime	locallyCorrectedGraph.c	/^static void setNodeTime(Node * node, Time time)$/;"	f	file:
+setOriginalVirtualCoverage	graph.c	/^void setOriginalVirtualCoverage(Node * node, Category category,$/;"	f
+setPairedExpFraction	scaffold.c	/^void setPairedExpFraction(double x) {$/;"	f
+setPassageMarkerFinish	passageMarker.c	/^void setPassageMarkerFinish(PassageMarkerI marker, Coordinate finish)$/;"	f
+setPassageMarkerStart	passageMarker.c	/^void setPassageMarkerStart(PassageMarkerI marker, Coordinate start)$/;"	f
+setPassageMarkerStatus	passageMarker.c	/^void setPassageMarkerStatus(PassageMarkerI marker, boolean status)$/;"	f
+setPreNodeDescriptor_pg	preGraph.c	/^void setPreNodeDescriptor_pg(Descriptor * descr, Coordinate length, IDnum preNodeID, PreGraph * preGraph) {$/;"	f
+setPreviousInSequence	passageMarker.c	/^void setPreviousInSequence(PassageMarkerI previous, PassageMarkerI next)$/;"	f
+setProgramName	utility.c	/^void setProgramName(const char *name)$/;"	f
+setShortReadMarkerOffset	graph.c	/^inline void setShortReadMarkerOffset(ShortReadMarker * marker,$/;"	f
+setShortReadMarkerPosition	graph.c	/^inline void setShortReadMarkerPosition(ShortReadMarker * marker,$/;"	f
+setSingleNodeStatus	graph.c	/^void setSingleNodeStatus(Node * node, boolean status)$/;"	f
+setStartID	roadMap.c	/^void setStartID(Annotation * annot, IDnum nodeID)$/;"	f
+setStartOffset	passageMarker.c	/^void setStartOffset(PassageMarkerI marker, Coordinate offset)$/;"	f
+setTightStringLength	tightString.c	/^void setTightStringLength(TightString * tString, Coordinate length)$/;"	f
+setTopOfTheNode	passageMarker.c	/^void setTopOfTheNode(PassageMarkerI marker)$/;"	f
+setUniqueness	graph.c	/^void setUniqueness(Node * node, boolean value)$/;"	f
+setUnreliableConnectionCutoff	scaffold.c	/^void setUnreliableConnectionCutoff(int val)$/;"	f
+setVirtualCoverage	graph.c	/^void setVirtualCoverage(Node * node, Category category,$/;"	f
+setVirtualCoverage	graph.c	/^void setVirtualCoverage(Node * node,$/;"	f
+shareReadStarts	graph.c	/^void shareReadStarts(Node * target, Node * source, Graph * graph)$/;"	f
+shiftRight	kmer.c	/^static void shiftRight(Kmer * kmer) {$/;"	f	file:
+shortReadMarker_st	graph.c	/^struct shortReadMarker_st {$/;"	s	file:
+simpleArcCount	graph.c	/^int simpleArcCount(Node * node)$/;"	f
+simplePreArcCount_pg	preGraph.c	/^char simplePreArcCount_pg(IDnum preNodeID, PreGraph * preGraph)$/;"	f
+simplifyNode	correctedGraph.c	/^static void simplifyNode(Node * node)$/;"	f	file:
+slowPath	correctedGraph.c	/^static PassageMarkerI slowPath;$/;"	v	file:
+slowPath	locallyCorrectedGraph.c	/^static PassageMarkerI slowPath;$/;"	v	file:
+slowSequence	correctedGraph.c	/^static TightString *slowSequence;$/;"	v	file:
+slowSequence	locallyCorrectedGraph.c	/^static TightString *slowSequence;$/;"	v	file:
+slowToFastMapping	correctedGraph.c	/^static Coordinate *slowToFastMapping;$/;"	v	file:
+smallNodeListMemory	graphReConstruction.c	/^static RecycleBin *smallNodeListMemory = NULL;$/;"	v	file:
+smallNodeList_st	graphReConstruction.c	/^struct smallNodeList_st {$/;"	s	file:
+sortCoords	graphStats.c	/^static void sortCoords(Coordinate * array, IDnum length) {$/;"	f	file:
+sortGapMarkers	graph.c	/^void sortGapMarkers(Graph * graph)$/;"	f
+sortKmerOccurenceTable	kmerOccurenceTable.c	/^void sortKmerOccurenceTable(KmerOccurenceTable * table) {$/;"	f
+sortNodeArcs	graph.c	/^static void sortNodeArcs(Node * node)$/;"	f	file:
+sortNodeGapMarkers	graph.c	/^static void sortNodeGapMarkers(Node * node, Graph * graph)$/;"	f	file:
+sortReferenceCoordinateTable	readSet.c	/^static void sortReferenceCoordinateTable(ReferenceCoordinateTable * table) {$/;"	f	file:
+splayConnection	scaffold.c	/^static Connection *splayConnection(Connection * T, IDnum nodeID)$/;"	f	file:
+splayNode_st	splay.c	/^struct splayNode_st {$/;"	s	file:
+splayTable_st	splayTable.c	/^struct splayTable_st {$/;"	s	file:
+splayToList	scaffold.c	/^static void splayToList(Connection **connection)$/;"	f	file:
+splitNodeDescriptor	graph.c	/^void splitNodeDescriptor(Node * source, Node * target, Coordinate offset)$/;"	f
+spreadReadIDs	graph.c	/^void spreadReadIDs(ShortReadMarker * reads, IDnum readCount, Node * node,$/;"	f
+start	graphReConstruction.c	/^	IDnum start;$/;"	m	struct:nodeMask_st	file:
+start	graphStats.c	/^	Coordinate start;$/;"	m	struct:variant_st	file:
+start	graphStats.c	/^	IDnum start;$/;"	m	struct:refMap_st	file:
+start	graphStats.c	/^	IDnum start;$/;"	m	struct:referenceCoord_st	file:
+start	locallyCorrectedGraph.c	/^static Node *start;$/;"	v	file:
+start	passageMarker.c	/^	IDnum start;$/;"	m	struct:passage_st	file:
+start	readSet.c	/^	Coordinate start;$/;"	m	struct:referenceCoordinate_st	file:
+start	readSet.h	/^	Coordinate start;$/;"	m	struct:mask_st
+start	roadMap.c	/^	union positionPtr start;	\/\/ 32$/;"	m	struct:annotation_st	typeref:union:annotation_st::positionPtr	file:
+startingNode	correctedGraph.c	/^static Node *startingNode;$/;"	v	file:
+status	graph.c	/^	boolean status;		\/\/ 1$/;"	m	struct:node_st	file:
+status	passageMarker.c	/^	boolean status;$/;"	m	struct:passage_st	file:
+str	utility.h	/^	char *str;$/;"	m	struct:__anon2
+sufficientVariantCoverage	correctedGraph.c	/^static boolean sufficientVariantCoverage() {$/;"	f	file:
+swap	dfib.c	73;"	d	file:
+swap	fib.c	69;"	d	file:
+tSeqMem	readSet.h	/^	char *tSeqMem;$/;"	m	struct:readSet_st
+tSequences	readSet.h	/^	TightString *tSequences;$/;"	m	struct:readSet_st
+tString_st	tightString.h	/^struct tString_st {$/;"	s
+table	splayTable.c	/^	SplayTree **table;$/;"	m	struct:splayTable_st	file:
+tableLocks	splayTable.c	/^	omp_lock_t *tableLocks;$/;"	m	struct:splayTable_st	file:
+terminalReferenceMarker	graphStats.c	/^static boolean terminalReferenceMarker(Node * node, ReadSet * reads) {$/;"	f	file:
+testConnection	scaffold.c	/^static boolean testConnection(IDnum IDA,$/;"	f	file:
+threadSequenceThroughGraph	graphReConstruction.c	/^static void threadSequenceThroughGraph(TightString * tString,$/;"	f	file:
+ticketMemory	correctedGraph.c	/^static RecycleBin *ticketMemory;$/;"	v	file:
+timersub	utility.h	107;"	d
+times	correctedGraph.c	/^static Time *times;$/;"	v	file:
+times	locallyCorrectedGraph.c	/^static Time *times;$/;"	v	file:
+tkt_st	correctedGraph.c	/^struct tkt_st {$/;"	s	file:
+todo	correctedGraph.c	/^static Ticket **todo;$/;"	v	file:
+todoLists	correctedGraph.c	/^static Ticket **todoLists;$/;"	v	file:
+totalAssemblyLength	graphStats.c	/^Coordinate totalAssemblyLength(Graph * graph)$/;"	f
+tourBus	correctedGraph.c	/^static void tourBus(Node * startingPoint)$/;"	f	file:
+tourBusArc	correctedGraph.c	/^static void tourBusArc(Node * origin, Arc * arc, Time originTime)$/;"	f	file:
+tourBusArc_local	locallyCorrectedGraph.c	/^static void tourBusArc_local(Node * origin, Arc * arc, Time originTime)$/;"	f	file:
+tourBusNode	correctedGraph.c	/^static void tourBusNode(Node * node)$/;"	f	file:
+tourBusNode_local	locallyCorrectedGraph.c	/^static void tourBusNode_local(Node * node)$/;"	f	file:
+tourBus_local	locallyCorrectedGraph.c	/^static void tourBus_local(Node * startingPoint)$/;"	f	file:
+transferNodeData	correctedGraph.c	/^static void transferNodeData(Node * source, Node * target)$/;"	f	file:
+transposePassageMarker	passageMarker.c	/^void transposePassageMarker(PassageMarkerI marker, Node * node)$/;"	f
+treeMemory	splay.c	/^static RecycleBin *treeMemory = NULL;$/;"	v	file:
+trim3primeSlowPath	correctedGraph.c	/^static void trim3primeSlowPath(Coordinate seqLength) {$/;"	f	file:
+trim5primeSlowPath	correctedGraph.c	/^static void trim5primeSlowPath() {$/;"	f	file:
+trimLongReadTips	readCoherentGraph.c	/^static void trimLongReadTips()$/;"	f	file:
+trimSlowPath	correctedGraph.c	/^static void trimSlowPath(Coordinate seqLength) {$/;"	f	file:
+true	globals.h	29;"	d
+twin	scaffold.c	/^	Connection *twin;$/;"	m	struct:connection_st	file:
+twinArc	graph.c	/^	Arc *twinArc;		\/\/ 64$/;"	m	struct:arc_st	file:
+twinMarker	passageMarker.c	/^	PassageMarkerI twinMarker;$/;"	m	struct:passage_st	file:
+twinNode	graph.c	/^	Node *twinNode;		\/\/ 64$/;"	m	struct:node_st	file:
+unLockNode	graphReConstruction.c	/^static inline void unLockNode(Node *node)$/;"	f	file:
+unLockNode	preGraphConstruction.c	/^static void unLockNode(IDnum preNodeID)$/;"	f	file:
+unLockRead	scaffold.c	/^static inline void unLockRead(IDnum readID)$/;"	f	file:
+unLockTwoNodes	graphReConstruction.c	/^static inline void unLockTwoNodes(Node *node, Node *node2)$/;"	f	file:
+unLockTwoNodes	preGraphConstruction.c	/^static void unLockTwoNodes(IDnum preNodeID, IDnum preNode2ID)$/;"	f	file:
+unLockTwoNodes	scaffold.c	/^static inline void unLockTwoNodes(IDnum nodeID, IDnum node2ID)$/;"	f	file:
+unMemorizeNodes	graphReConstruction.c	/^static void unMemorizeNodes(SmallNodeList ** nodePile)$/;"	f	file:
+uniqueNodesConnect	readCoherentGraph.c	/^static boolean uniqueNodesConnect(Node * startingNode)$/;"	f	file:
+uniqueness	graph.c	/^	boolean uniqueness;	\/\/ 1$/;"	m	struct:node_st	file:
+unmarkInterestingNodes	shortReadPairs.c	/^static void unmarkInterestingNodes()$/;"	f	file:
+unmarkNode	shortReadPairs.c	/^void unmarkNode(Node * node, MiniConnection * localConnect)$/;"	f
+updateMarkers	graphStats.c	/^static void updateMarkers(PassageMarkerList * list)$/;"	f	file:
+updateMembers	readCoherentGraph.c	/^static void updateMembers(Node * bypass, Node * nextNode)$/;"	f	file:
+updateNodeStatus	correctedGraph.c	/^static void updateNodeStatus(Node * node)$/;"	f	file:
+updatePreArcData_pg	preGraph.c	/^static void updatePreArcData_pg(PreArcI preArc, IDnum oldPreNodeID,$/;"	f	file:
+usedReads	graphStats.c	/^IDnum usedReads(Graph * graph, Coordinate minContigLength) $/;"	f
+variance	scaffold.c	/^	float variance;$/;"	m	struct:connection_st	file:
+variance	shortReadPairs.c	/^	float variance;$/;"	m	struct:miniConnection_st	file:
+variantCount	correctedGraph.c	/^static IDnum variantCount = 1;$/;"	v	file:
+variantLength	graphStats.c	/^static Coordinate variantLength(Variant * variant) {$/;"	f	file:
+variantSequence	graphStats.c	/^static char * variantSequence(ReadSet * variantSequences, Variant * variant, Graph * graph) {$/;"	f	file:
+variant_st	graphStats.c	/^typedef struct variant_st {$/;"	s	file:
+variantsFile	correctedGraph.c	/^static FILE * variantsFile = NULL;$/;"	v	file:
+velvetFprintf	utility.c	/^void velvetFprintf(FILE * file, const char * format, ...) $/;"	f
+velvetFprintfReferenceMapping	graphStats.c	/^static void velvetFprintfReferenceMapping(FILE * file, ReferenceMapping * mapping, ReferenceCoord * refCoords, int wordLength) {$/;"	f	file:
+velvetLog	utility.c	/^void velvetLog(const char *format, ...)$/;"	f
+velvetifySequence	readSet.c	/^static void velvetifySequence(char * str, SequencesWriter *seqWriteInfo) {$/;"	f	file:
+virtualCoverage	graph.c	/^	IDnum virtualCoverage;	\/\/ 32 * 2$/;"	m	struct:node_st	file:
+virtualCoverage	graph.c	/^	IDnum virtualCoverage[CATEGORIES];	\/\/ 32 * 2$/;"	m	struct:node_st	file:
+voidcmp	fib.h	/^typedef Coordinate(*voidcmp) (void *, void *);$/;"	t
+wordLength	graph.c	/^	int wordLength;$/;"	m	struct:graph_st	file:
+wordLength	preGraph.c	/^	int wordLength;$/;"	m	struct:preGraph_st	file:
+writeBuffers	splayTable.c	/^static void writeBuffers(FILE *outFile, int nbThreads)$/;"	f	file:
+writeCharToFormattedWriter	utility.c	/^static void writeCharToFormattedWriter(FormattedWriter * writer, char c) {$/;"	f	file:
+writeCnySeqNucleotide	binarySequences.c	/^static void writeCnySeqNucleotide(uint8_t nucleotide, SequencesWriter *seqWriteInfo)$/;"	f	file:
+writeCnySeqUint32	binarySequences.c	/^static void writeCnySeqUint32(uint32_t uint32, SequencesWriter *seqWriteInfo)$/;"	f	file:
+writeCnySeqUint8	binarySequences.c	/^static void writeCnySeqUint8(uint8_t uint8, SequencesWriter *seqWriteInfo)$/;"	f	file:
+writeFastaSequence	readSet.c	/^static void writeFastaSequence(FILE * outfile, const char * str)$/;"	f	file:
+writeMappedSequence	readSet.c	/^static void writeMappedSequence(IDnum * sequenceIndex, Category cat, Category prev_cat, char * previous_seq, char * previous_qname, char * previous_qname_pairing, char * buffer, SequencesWriter * seqWriteInfo) {$/;"	f	file:
+writeNucleotide	tightString.c	/^void writeNucleotide(Nucleotide nucleotide, Codon * codonPtr, int position)$/;"	f
+writeNucleotideAtPosition	tightString.c	/^writeNucleotideAtPosition(Nucleotide nucleotide, Coordinate position,$/;"	f
+writeNucleotideInDescriptor	graph.c	/^static void writeNucleotideInDescriptor(Nucleotide nucleotide,$/;"	f	file:
+writeNucleotideInDescriptor_pg	preGraph.c	/^static void writeNucleotideInDescriptor_pg(Nucleotide nucleotide,$/;"	f	file:
+writeNucleotideNumber	tightString.c	/^writeNucleotideNumber(Nucleotide nucleotide, Codon * codonPtr,$/;"	f
+writeToFormattedWriter	utility.c	/^void writeToFormattedWriter(FormattedWriter * writer, char * format, ...) {$/;"	f

@@ -1,0 +1,3 @@
+If you have any trouble with running Velvet on a Mac or Sparc/Solaris, take a look within the Makefile.
+
+You will find towards the top some indications to adjust the compilations to your needs.

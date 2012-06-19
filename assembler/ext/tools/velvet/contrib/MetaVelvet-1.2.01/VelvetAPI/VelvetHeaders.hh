@@ -1,0 +1,33 @@
+#ifndef _VELVET_HEADERS_HH_
+#define _VELVET_HEADERS_HH_
+
+#include "../Velvet-1.1.06/allocArray.h"
+#include "../Velvet-1.1.06/concatenatedGraph.h"
+#include "../Velvet-1.1.06/concatenatedPreGraph.h"
+#include "../Velvet-1.1.06/correctedGraph.h"
+#include "../Velvet-1.1.06/dfib.h"
+#include "../Velvet-1.1.06/dfibHeap.h"
+#include "../Velvet-1.1.06/fib.h"
+#include "../Velvet-1.1.06/fibHeap.h"
+#include "../Velvet-1.1.06/globals.h"
+#include "../Velvet-1.1.06/graph.h"
+#include "../Velvet-1.1.06/graphReConstruction.h"
+#include "../Velvet-1.1.06/graphStats.h"
+#include "../Velvet-1.1.06/kmer.h"
+#include "../Velvet-1.1.06/kmerOccurenceTable.h"
+#include "../Velvet-1.1.06/locallyCorrectedGraph.h"
+#include "../Velvet-1.1.06/passageMarker.h"
+#include "../Velvet-1.1.06/preGraphConstruction.h"
+#include "../Velvet-1.1.06/preGraph.h"
+#include "../Velvet-1.1.06/readCoherentGraph.h"
+#include "../Velvet-1.1.06/readSet.h"
+#include "../Velvet-1.1.06/recycleBin.h"
+#include "../Velvet-1.1.06/roadMap.h"
+#include "../Velvet-1.1.06/scaffold.h"
+#include "../Velvet-1.1.06/shortReadPairs.h"
+#include "../Velvet-1.1.06/splay.h"
+#include "../Velvet-1.1.06/splayTable.h"
+#include "../Velvet-1.1.06/tightString.h"
+#include "../Velvet-1.1.06/utility.h"
+
+#endif // _VELVET_HEADERS_HH_
