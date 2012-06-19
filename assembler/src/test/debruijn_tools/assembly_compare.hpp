@@ -99,12 +99,12 @@ private:
 		Cleaner<Graph>(g).Clean();
 	}
 
-	void SimplifyGraph(Graph& g) {
+	void SimplifyGraph(Graph& g, size_t br_delta) {
 		debruijn_config::simplification::bulge_remover br_config;
 		br_config.max_bulge_length_coefficient = 2;
 		br_config.max_coverage = 1000.;
 		br_config.max_relative_coverage = 1.2;
-		br_config.max_delta = 10;//1000;
+		br_config.max_delta = br_delta;
 		br_config.max_relative_delta = 0.1;
 		INFO("Removing bulges");
 		RemoveBulges(g, br_config);
@@ -155,7 +155,7 @@ public:
 	}
 
 	void CompareAssemblies(const string& output_folder, bool detailed_output =
-			true, bool one_many_resolve = false, const string& add_saves_path =
+			true, bool one_many_resolve = false, size_t br_delta = 10, const string& add_saves_path =
 			"") {
 //		VERIFY(gp_.genome.size() > 0);
 		//todo ???
@@ -176,7 +176,7 @@ public:
 				stream2_);
 
 		//TODO do we still need it?
-		SimplifyGraph(gp_.g);
+		SimplifyGraph(gp_.g, br_delta);
 
 		ColorHandler<Graph> coloring(gp_.g);
 		ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp_.g,
@@ -312,12 +312,12 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 				refined_stream2, name1, name2, untangle,
 				ReadSequence(reference_stream));
 		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
-		false, add_saves_path);
+		false, 10, add_saves_path);
 	} else {
 		AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, name1,
 				name2, untangle, reference);
 		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
-		false, add_saves_path);
+		false, 10, add_saves_path);
 	}
 }
 

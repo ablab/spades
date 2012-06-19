@@ -150,7 +150,8 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 
 	AssemblyComparer<comparing_gp_t> comparer(stream_1, stream_2, "jeff_",
 			"tdc_", /*untangle*/false, ReadGenome(ref));
-	comparer.CompareAssemblies(folder, /*detailed_output*/true, /*one_many_resolve*/false);
+	comparer.CompareAssemblies(folder, /*detailed_output*/true, /*one_many_resolve*/false,
+			/*br_delta*/1000);
 }
 
 //BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
