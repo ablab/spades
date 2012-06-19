@@ -14,7 +14,7 @@ def process(config, dataset):
     subst["reference"] = ""
     subst["genes"] = ""
     subst["operons"] = ""
-    if ds.__dict__.has_key("reference_genome"):
+    if "reference_genome" in ds.__dict__:
         subst["reference"] = ds.reference_genome
     if "E.coli" in subst["reference"]:
         subst["genes"] = "./data/input/E.coli/genes/genes.txt"
@@ -29,6 +29,7 @@ def process(config, dataset):
             line = line.replace("$" + key, value)
         f.write(line)
     f.close()
+
 
 def main():
     for ds in sys.argv[2:]:

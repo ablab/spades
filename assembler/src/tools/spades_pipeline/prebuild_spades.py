@@ -14,6 +14,7 @@ def write_k_file(kFile, k):
     fo.write("}\n")
     fo.close()
 
+
 def safe_mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
@@ -32,10 +33,9 @@ if __name__ == "__main__":
     #building SPAdes
 
     from_k = int(sys.argv[1])
-    to_k   = int(sys.argv[2]) + 1
+    to_k = int(sys.argv[2]) + 1
 
     for i in range(from_k, to_k, 2):
-
         print('\n=== Buiding SPAdes with K ' + str(i) + ' ===\n')
 
         write_k_file(os.path.join(os.getcwd(), "src/debruijn/k.hpp"), i)

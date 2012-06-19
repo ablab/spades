@@ -5,18 +5,22 @@ import support
 
 class cfg_placeholder:
     pass
-    
+
+
 def config_file_name():
     if len(sys.argv) != 2:
         support.error("Usage: <script_name>.py <config_file_name>", "")
 
     return sys.argv[1]
 
+
 def file_lines(filename):
     return open(filename).readlines()
 
+
 def skip_info_comment(line):
     return line.split(';')[0].strip()
+
 
 def check_property(prop_line):
     if len(prop_line.split()) > 1: # property is set, i.e. has value
@@ -24,18 +28,19 @@ def check_property(prop_line):
             return True
     return False
 
+
 def bool_to_str(b):
     if b:
         return "true"
     return "false"
 
-def vars_from_lines(lines):
 
+def vars_from_lines(lines):
     class var_metadata:
         def __init__(self, value, line_num, indent):
-            self.value    = value
+            self.value = value
             self.line_num = line_num
-            self.indent   = indent
+            self.indent = indent
 
     def valid_var_name(name):
         for sym in name:
@@ -50,7 +55,7 @@ def vars_from_lines(lines):
             return None, None
 
         def indent(s):
-            return s[ : len(s) - len(s.lstrip())]
+            return s[: len(s) - len(s.lstrip())]
 
         return l[0], var_metadata(l[1:], line_num, indent(line))
 
@@ -63,8 +68,8 @@ def vars_from_lines(lines):
 
     return vars
 
-def substitute_params(filename, var_dict):
 
+def substitute_params(filename, var_dict):
     lines = file_lines(filename)
     vars_in_file = vars_from_lines(lines)
 
@@ -80,7 +85,6 @@ def substitute_params(filename, var_dict):
 
 # configs with more priority should go first in parameters
 def merge_configs(*cfgs):
-
     res = cfg_placeholder()
 
     for cfg in reversed(cfgs):
@@ -88,8 +92,8 @@ def merge_configs(*cfgs):
 
     return res
 
-def load_config_from_vars(cfg_vars):
 
+def load_config_from_vars(cfg_vars):
     cfg = cfg_placeholder()
 
     def load_value(value):
@@ -116,8 +120,10 @@ def load_config_from_vars(cfg_vars):
 
     return cfg
 
+
 def load_config_from_file(filename):
     return load_config_from_vars(vars_from_lines(file_lines(filename)))
+
 
 def load_config_from_info_file(filename):
     lines = file_lines(filename)
@@ -134,11 +140,11 @@ def load_config_from_info_file(filename):
         if cur_line.startswith('{'):
             cur_block_name = prev_line
             blocks[cur_block_name] = []
-        elif cur_line.startswith('}'):            
+        elif cur_line.startswith('}'):
             if check_property(prev_line):
                 blocks[cur_block_name].append(prev_line)
             cur_block_name = "common"
-        elif not lines[i - 1].startswith('{') and not lines[i - 1].startswith('}') and not lines[i - 1].strip() == '':                 
+        elif not lines[i - 1].startswith('{') and not lines[i - 1].startswith('}') and not lines[i - 1].strip() == '':
             if check_property(prev_line):
                 blocks[cur_block_name].append(prev_line)
 

@@ -6,7 +6,6 @@ import sys
 
 # Based on http://stackoverflow.com/a/616686/92396
 class Tee(object):
-
     def __init__(self, name, mode, console=True):
         self.file = open(name, mode)
         self.stdout = sys.stdout
@@ -33,11 +32,12 @@ class Tee(object):
 
 class spades_error:
     def __init__(self, code, err_str=""):
-        self.code    = code
+        self.code = code
         self.err_str = err_str
 
     def what(self):
         return "Code: " + str(self.code) + " Description: " + self.err_str
+
 
 def error(err_str, prefix="== Error == ", code=1):
     raise spades_error(code, "\n\n" + prefix + " " + err_str + "\n\n")
@@ -46,7 +46,6 @@ def error(err_str, prefix="== Error == ", code=1):
 #TODO: os.sytem gives error -> stop
 
 def sys_call(cmd, cwd=None):
-
     import shlex
     import time
     import sys
@@ -69,6 +68,7 @@ def sys_call(cmd, cwd=None):
     if proc.returncode:
         error('system call for: "%s" finished abnormally, err code: %d' % (cmd, proc.returncode))
 
+
 def question_with_timer(question, seconds, default='y'):
     import time
     import curses
@@ -77,8 +77,9 @@ def question_with_timer(question, seconds, default='y'):
     class Timer:
         def __init__(self):
             self.target = time.time() + seconds
+
         def get_left(self):
-            return int(self.target-time.time())
+            return int(self.target - time.time())
 
     answer = default
 
@@ -86,7 +87,7 @@ def question_with_timer(question, seconds, default='y'):
         default_str = "[y/N]"
     else:
         default_str = "[Y/n]"
-    question[-1] += " " + default_str 
+    question[-1] += " " + default_str
 
     print("\n")
     for line in question:
@@ -96,7 +97,7 @@ def question_with_timer(question, seconds, default='y'):
     stdscr = curses.initscr()
     stdscr.nodelay(True)
     curses.noecho()
-    
+
     try:
         try:
             while True:
@@ -107,17 +108,17 @@ def question_with_timer(question, seconds, default='y'):
                     break
                 stdscr.addstr(len(question), 0, "Seconds left: %02d " % left)
                 c = stdscr.getch()
-                if c == ord('y') :
-                    answer = 'y'            
+                if c == ord('y'):
+                    answer = 'y'
                     break
-                elif c == ord('n') :
+                elif c == ord('n'):
                     answer = 'n'
                     break
-                elif c == ord('\n') :   
+                elif c == ord('\n'):
                     break
         finally:
             # Final operations start here
-            stdscr.keypad(0)        
+            stdscr.keypad(0)
             try:
                 curses.echo()
                 curses.endwin()
@@ -125,12 +126,13 @@ def question_with_timer(question, seconds, default='y'):
                 print("Curses error:", err, "(maybe you are redirecting script's output)")
     except KeyboardInterrupt:
         print("  Exception KeyboardInterrupt was raised: default answer was choosen")
-    
+
     print("Answer '" + answer + "' was choosen")
     return answer
 
+
 def save_data_to_file(data, file):
-    output = open(file,'wb')
+    output = open(file, 'wb')
     output.write(data.read())
     output.close()
-    os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP |stat.S_IXOTH)
+    os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)

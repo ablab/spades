@@ -13,6 +13,7 @@ def build_spades(dir):
 
     support.sys_call('make spades', dir)
 
+
 def syncFiles(src, dest):
     if os.path.isfile(src):
         if not os.path.exists(dest):
@@ -34,6 +35,7 @@ def syncFiles(src, dest):
                 if file != "k.hpp":
                     syncFiles(os.path.join(src, file), os.path.join(dest, file))
 
+
 def kFile_required(kFile, str_k):
     if not os.path.exists(kFile):
         return True
@@ -47,6 +49,7 @@ def kFile_required(kFile, str_k):
 
     return True
 
+
 def write_k_file(kFile, k):
     fo = open(kFile, "w")
     fo.write("#pragma once\n\n")
@@ -55,8 +58,8 @@ def write_k_file(kFile, k):
     fo.write("}\n")
     fo.close()
 
-def build_k(spades_folder, str_k, spades_home):
 
+def build_k(spades_folder, str_k, spades_home):
     build_folder_k = os.path.join(spades_folder, "build" + str_k)
 
     syncFiles(os.path.join(spades_home, "src"), os.path.join(build_folder_k, "src"))
@@ -69,15 +72,14 @@ def build_k(spades_folder, str_k, spades_home):
     print("\n== Compiling with K=" + str_k + " ==\n")
     build_spades(build_folder_k)
 
-def build_spades_n_copy(cfg, spades_home):
 
+def build_spades_n_copy(cfg, spades_home):
     precompiled_folder = cfg.compilation_dir
 
     print("\n== Compilation started ==\n")
 
     for K in cfg.iterative_K:
-
-        if not os.path.exists(precompiled_folder) :
+        if not os.path.exists(precompiled_folder):
             os.makedirs(precompiled_folder)
 
         str_k = str(K)
@@ -85,7 +87,7 @@ def build_spades_n_copy(cfg, spades_home):
         binary_file = os.path.join(precompiled_folder, 'release' + spades_version, 'bin', 'K' + str_k, 'spades')
 
         if os.path.isfile(binary_file):
-            dest = os.path.join(precompiled_folder, 'build' + str_k,  'debruijn')
+            dest = os.path.join(precompiled_folder, 'build' + str_k, 'debruijn')
             if not os.path.exists(dest):
                 os.makedirs(dest)
             shutil.copy2(binary_file, dest)
@@ -96,15 +98,15 @@ def build_spades_n_copy(cfg, spades_home):
 
         fo = open(lockFlag, "w")
         fcntl.lockf(fo, fcntl.LOCK_EX)
-        try :
+        try:
             build_k(precompiled_folder, str_k, spades_home)
-        finally :
+        finally:
             fcntl.lockf(fo, fcntl.LOCK_UN)
 
     print("\n== Compilation finished successfully ==\n")
 
-def build_hammer(cfg, spades_home):
 
+def build_hammer(cfg, spades_home):
     precompiled_folder = cfg.compilation_dir
 
     print("\n== Compilation started ==\n")
@@ -125,17 +127,17 @@ def build_hammer(cfg, spades_home):
 
     fo = open(lockFlag, "w")
     fcntl.lockf(fo, fcntl.LOCK_EX)
-    try :
+    try:
         build_folder = os.path.join(precompiled_folder, "build_hammer")
 
         syncFiles(os.path.join(spades_home, "src"), os.path.join(build_folder, "src"))
         syncFiles(os.path.join(spades_home, "ext"), os.path.join(build_folder, "ext"))
-        
+
         if not os.path.exists(os.path.join(build_folder, "Makefile")):
             support.sys_call('cmake src', build_folder)
 
         support.sys_call('make hammer', build_folder)
-    finally :
+    finally:
         fcntl.lockf(fo, fcntl.LOCK_UN)
 
     print("\n== Compilation finished successfully ==\n")
