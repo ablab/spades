@@ -329,6 +329,8 @@ def usage():
 
 
 def main():
+    os.environ["LC_ALL"] = "C"
+    
     CONFIG_FILE = ""
     options = None
 
