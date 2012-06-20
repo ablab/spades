@@ -399,7 +399,8 @@ public:
 			graph_(g), coloring_(coloring), output_folder_(output_folder) {
 	}
 
-	void PrintComponents(component_type c_type, const GraphLabeler<Graph>& labeler,
+	void PrintComponents(component_type c_type,
+			const GraphLabeler<Graph>& labeler,
 			bool create_subdir = true) const {
 		string filename;
 		if (create_subdir) {
@@ -491,7 +492,8 @@ class TrivialBreakpointFinder: public AbstractFilter<
 						max_length = g_.length(*it);
 					}
 				}
-			}VERIFY(max_length > 0);
+			}
+			VERIFY(max_length > 0);
 			return max_length;
 		}
 	};
@@ -573,9 +575,9 @@ public:
 		GraphComponent<Graph> component(g_, vertices.begin(), vertices.end());
 		for (auto it = component.e_begin(); it != component.e_end(); ++it) {
 			if (coloring_.Color(*it) == edge_type::red) {
-				 if (CheckEdges(g_.OutgoingEdges(g_.EdgeStart(*it)))
+				if (CheckEdges(g_.OutgoingEdges(g_.EdgeStart(*it)))
 						|| CheckEdges(g_.IncomingEdges(g_.EdgeEnd(*it))))
-					 return true;
+					return true;
 			}
 		}
 		return false;
@@ -585,6 +587,81 @@ private:
 	DECL_LOGGER("TrivialBreakpointFinder");
 };
 
+template<class Graph>
+class SimpleInDelAnalyzer {
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph& g_;
+	const ColorHandler<Graph>& coloring_;
+	const vector<EdgeId> genome_path_;
+	const edge_type shortcut_color_;
+
+	vector<EdgeId> TryFindPath(size_t pos, VertexId end, size_t edge_count_bound) {
+		vector<EdgeId> answer;
+		for(size_t i = 0; i + pos < genome_path_.size() && i < edge_count_bound; ++i) {
+			answer.push_back(genome_path_[pos + i]);
+			if (g_.EdgeEnd(genome_path_[pos + i]) == end) {
+				return answer;
+			}
+		}
+		return vector<EdgeId>();
+	}
+
+	vector<EdgeId> FindGenomePath(VertexId start, VertexId end, size_t edge_count_bound) {
+		for (size_t i = 0; i < genome_path_.size(); ++i) {
+			if (g_.EdgeStart(genome_path_[i]) == start) {
+				vector<EdgeId> path = TryFindPath(i, end, edge_count_bound);
+				if (!path.empty())
+					return path;
+			}
+		}
+		return vector<EdgeId>();
+	}
+
+	void Process(EdgeId e, const vector<EdgeId>& genome_path) {
+		DEBUG("Processing edge and genome path");
+		const size_t lengths_bound = 10000;
+		size_t edge_length = g_.length(e);
+		size_t path_length = CummulativeLength(g_, genome_path);
+		DEBUG("Diff length " << abs((int)edge_length - (int)path_length)
+				<< "; genome path length " << path_length << "; edge length " << edge_length);
+		Sequence edge_nucls = g_.EdgeNucls(e);
+		Sequence path_nucls = MergeSequences(g_, genome_path);
+		if (edge_length <= lengths_bound && path_length <= lengths_bound) {
+			size_t edit_dist = EditDistance(edge_nucls, path_nucls);
+			DEBUG("Edit distance " << edit_dist
+					<< ". That is " << double(edit_dist) / max(edge_length, path_length));
+		}
+	}
+
+	void AnalyzeShortcutEdge(EdgeId e) {
+		DEBUG("Analysing edge " << g_.str(e));
+		vector<EdgeId> genome_path = FindGenomePath(g_.EdgeStart(e), g_.EdgeEnd(e), /*edge count bound*/ 100);
+		if (!genome_path.empty()) {
+			DEBUG("Non empty genome path of edge count " << genome_path.size());
+			DEBUG("Path " << g_.str(genome_path));
+			Process(e, genome_path);
+		} else {
+			DEBUG("Empty genome path");
+		}
+	}
+
+public:
+	SimpleInDelAnalyzer(const Graph& g, const ColorHandler<Graph>& coloring,
+			const vector<EdgeId> genome_path, edge_type shortcut_color)
+	: g_(g), coloring_(coloring), genome_path_(genome_path), shortcut_color_(shortcut_color) {
+	}
+
+	void Analyze() {
+		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (coloring_.Color(*it) == shortcut_color_) {
+				AnalyzeShortcutEdge(*it);
+			}
+		}
+	}
+private:
+	DECL_LOGGER("SimpleInDelAnalyzer");
+};
 
 template<class gp_t>
 class SimpleRearrangementDetector {
@@ -598,18 +675,23 @@ private:
 	const string folder_;
 	mutable size_t count_;
 
-	void ReportPossibleRearrangementConnection(EdgeId e, int start_ref_pos, int end_ref_pos, const string& folder) const {
-		INFO("Edge " << gp_.g.str(e) << " identified as rearrangement connection");
+	void ReportPossibleRearrangementConnection(EdgeId e, int start_ref_pos,
+			int end_ref_pos, const string& folder) const {
+		INFO(
+				"Edge " << gp_.g.str(e)
+						<< " identified as rearrangement connection");
 		LengthIdGraphLabeler<Graph> basic_labeler(gp_.g);
 		EdgePosGraphLabeler<Graph> pos_labeler(gp_.g, gp_.edge_pos);
 
 		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 
-		INFO(count_ << " example start_ref_pos: " << start_ref_pos <<" end_ref_pos: " << end_ref_pos);
-		string filename = str(boost::format("%s%d_%d_%d_%d.dot") % folder
-				% count_ % gp_.g.int_id(e) % start_ref_pos % end_ref_pos);
-		WriteComponentsAroundEdge(gp_.g, e,
-				filename,
+		INFO(
+				count_ << " example start_ref_pos: " << start_ref_pos
+						<< " end_ref_pos: " << end_ref_pos);
+		string filename = str(
+				boost::format("%s%d_%d_%d_%d.dot") % folder % count_
+						% gp_.g.int_id(e) % start_ref_pos % end_ref_pos);
+		WriteComponentsAroundEdge(gp_.g, e, filename,
 				*ConstructBorderColorer(gp_.g, coloring_), labeler);
 		count_++;
 	}
@@ -632,10 +714,11 @@ private:
 	}
 
 	int GetRefPosition(EdgeId e, bool start_position) const {
-		EdgePosition pos = RefPositions(gp_.edge_pos.GetEdgePositions(e)).front();
+		EdgePosition pos =
+				RefPositions(gp_.edge_pos.GetEdgePositions(e)).front();
 		int coeff = boost::ends_with(pos.contigId_, "_RC") ? -1 : 1;
 		Range range = pos.m_range_.initial_range;
-		return coeff * (start_position? range.start_pos : range.end_pos);
+		return coeff * (start_position ? range.start_pos : range.end_pos);
 	}
 
 	bool IsSingleRefPosition(EdgeId e) const {
@@ -643,7 +726,7 @@ private:
 	}
 
 	vector<EdgePosition> RefPositions(const vector<EdgePosition>& poss) const {
-		vector<EdgePosition> answer;
+		vector < EdgePosition > answer;
 		for (auto it = poss.begin(); it != poss.end(); ++it) {
 			if (boost::starts_with(it->contigId_, ref_prefix_)) {
 				answer.push_back(*it);
@@ -653,8 +736,11 @@ private:
 	}
 
 public:
-	SimpleRearrangementDetector(const gp_t& gp, const ColorHandler<Graph>& coloring, const string& ref_prefix, const string& folder)
-	: gp_(gp), coloring_(coloring), ref_prefix_(ref_prefix), folder_(folder), count_(0) {
+	SimpleRearrangementDetector(const gp_t& gp,
+			const ColorHandler<Graph>& coloring, const string& ref_prefix,
+			const string& folder) :
+			gp_(gp), coloring_(coloring), ref_prefix_(ref_prefix), folder_(
+					folder), count_(0) {
 	}
 
 	void Detect() const {
@@ -662,22 +748,30 @@ public:
 			if (coloring_.Color(*it) == edge_type::red) {
 				INFO("Processing red edge " << gp_.g.str(*it));
 				if (gp_.g.OutgoingEdgeCount(gp_.g.EdgeStart(*it)) == 2
-						&& ContainsBlueEdge(gp_.g.OutgoingEdges(gp_.g.EdgeStart(*it)))) {
-					EdgeId first_edge = GetBlueEdge(gp_.g.OutgoingEdges(gp_.g.EdgeStart(*it)));
+						&& ContainsBlueEdge(
+								gp_.g.OutgoingEdges(gp_.g.EdgeStart(*it)))) {
+					EdgeId first_edge = GetBlueEdge(
+							gp_.g.OutgoingEdges(gp_.g.EdgeStart(*it)));
 					if (gp_.g.IncomingEdgeCount(gp_.g.EdgeEnd(*it)) == 2
-							&& ContainsBlueEdge(gp_.g.IncomingEdges(gp_.g.EdgeEnd(*it)))) {
-						EdgeId second_edge = GetBlueEdge(gp_.g.IncomingEdges(gp_.g.EdgeEnd(*it)));
+							&& ContainsBlueEdge(
+									gp_.g.IncomingEdges(gp_.g.EdgeEnd(*it)))) {
+						EdgeId second_edge = GetBlueEdge(
+								gp_.g.IncomingEdges(gp_.g.EdgeEnd(*it)));
 						if (first_edge != second_edge) {
 							INFO("Edges passed topology checks");
 							if (IsSingleRefPosition(first_edge)
 									&& IsSingleRefPosition(second_edge)) {
-								int start_ref_pos = GetRefPosition(first_edge, true);
-								int end_ref_pos = GetRefPosition(second_edge, false);
+								int start_ref_pos = GetRefPosition(first_edge,
+										true);
+								int end_ref_pos = GetRefPosition(second_edge,
+										false);
 								INFO("Edges had multiplicity one in reference");
-								ReportPossibleRearrangementConnection(*it, start_ref_pos, end_ref_pos, folder_);
+								ReportPossibleRearrangementConnection(*it,
+										start_ref_pos, end_ref_pos, folder_);
 							} else {
 								INFO("Ooops");
-								INFO("Edges had multiplicity more than one in reference");
+								INFO(
+										"Edges had multiplicity more than one in reference");
 							}
 						}
 					}
@@ -719,7 +813,7 @@ public:
 
 	/*virtual */
 	map<EdgeId, string> Enumerate() const {
-		map<EdgeId, string> answer;
+		map < EdgeId, string > answer;
 		//numerating genome path
 		int curr = 0;
 		for (auto it = genome_path_.begin(); it != genome_path_.end(); ++it) {

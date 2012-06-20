@@ -81,31 +81,30 @@ public:
 	}
 };
 
-template<class gp_t>
-void ConstructColoredGraph(gp_t& gp, ColorHandler<typename gp_t::graph_t> coloring
-		, const vector<ContigStream*>& streams) {
-	typedef typename gp_t::graph_t Graph;
-	const size_t k = gp_t::k_value;
-	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
-
-	INFO("Constructing de Bruijn graph for k=" << k);
-	ConstructGraph<k, Graph>(streams, gp.g, gp.index);
-
-	//TODO do we still need it?
-//	SimplifyGraph(gp_.g, br_delta);
-
-	ColorHandler<Graph> coloring(gp.g);
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
-			coloring, *MapperInstance<gp_t>(gp));
-	colored_graph_constructor.ConstructGraph(streams);
-
-	INFO("Filling contig positions");
-	for (auto it = streams.begin(); it != streams.end(); ++it) {
-		ContigStream& stream = **it;
-		stream.reset();
-		FillPos(gp, stream);
-	}
-}
+//template<class gp_t>
+//void ConstructColoredGraph(gp_t& gp, ColorHandler<typename gp_t::graph_t> coloring
+//		, const vector<ContigStream*>& streams) {
+//	typedef typename gp_t::graph_t Graph;
+//	const size_t k = gp_t::k_value;
+//	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
+//
+//	INFO("Constructing de Bruijn graph for k=" << k);
+//	ConstructGraph<k, Graph>(streams, gp.g, gp.index);
+//
+//	//TODO do we still need it?
+////	SimplifyGraph(gp_.g, br_delta);
+//
+//	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
+//			coloring, *MapperInstance<gp_t>(gp));
+//	colored_graph_constructor.ConstructGraph(streams);
+//
+//	INFO("Filling contig positions");
+//	for (auto it = streams.begin(); it != streams.end(); ++it) {
+//		ContigStream& stream = **it;
+//		stream.reset();
+//		FillPos(gp, stream);
+//	}
+//}
 
 template<class gp_t>
 class AssemblyComparer {
@@ -209,7 +208,7 @@ public:
 	}
 
 	void CompareAssemblies(const string& output_folder, bool detailed_output =
-			true, bool one_many_resolve = false, size_t br_delta = 10, const string& add_saves_path =
+			true, bool one_many_resolve = false, int br_delta = -1, const string& add_saves_path =
 			"") {
 //		VERIFY(gp_.genome.size() > 0);
 		//todo ???
@@ -230,7 +229,8 @@ public:
 				stream2_);
 
 		//TODO do we still need it?
-		SimplifyGraph(gp_.g, br_delta);
+		if (br_delta > 0)
+			SimplifyGraph(gp_.g, (size_t)br_delta);
 
 		ColorHandler<Graph> coloring(gp_.g);
 		ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp_.g,
@@ -247,12 +247,15 @@ public:
 			INFO("Filling ref pos " << gp_.genome.size());
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
+			SimpleInDelAnalyzer<Graph> del_analyzer(gp_.g, coloring
+					, (*MapperInstance<gp_t>(gp_)).MapSequence(gp_.genome).simple_path().sequence(), edge_type::red);
+			del_analyzer.Analyze();
 		}
 
-		INFO("Removing gaps");
-		GapsRemover<Graph> gaps_remover(gp_.g, coloring, edge_type::blue, 700);
-		gaps_remover.RemoveGaps();
-		INFO("Gaps removed");
+//		INFO("Removing gaps");
+//		GapsRemover<Graph> gaps_remover(gp_.g, coloring, edge_type::blue, 700);
+//		gaps_remover.RemoveGaps();
+//		INFO("Gaps removed");
 
 		if (boost::starts_with(name1_, "idba")) {
 			IDBADiffAnalyzer<gp_t> diff_analyzer(gp_, coloring, name1_, name2_,
