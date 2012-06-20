@@ -128,7 +128,7 @@ private:
 				}
 			}
 		}
-		return sum > this->splitting_edge_length_;
+		return sum <= this->splitting_edge_length_;
 	}
 
 	void RemoveExtraEdges(set<EdgeId> edges, set<VertexId> component) {
@@ -145,6 +145,7 @@ private:
 		SmartSetIterator<Graph, EdgeId> s(this->g(), to_delete.begin(), to_delete.end());
 		while(!s.IsEnd()) {
 			this->g().DeleteEdge(*s);
+			++s;
 		}
 	}
 
@@ -154,6 +155,7 @@ private:
 			if(this->g().IsDeadStart(*s) && this->g().IsDeadEnd(*s)) {
 				this->g().DeleteVertex(*s);
 			}
+			++s;
 		}
 	}
 
