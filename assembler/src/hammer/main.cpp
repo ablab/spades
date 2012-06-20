@@ -221,8 +221,8 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("Finished clustering.");
 		}
 
-		// expand the set of solid k-mers
-		if ( cfg::get().expand_do || do_everything ) {
+		// expand the set of solid k-mers (with minimizer iterations, we don't need it)
+		if ( (cfg::get().expand_do || do_everything) && !HammerTools::doingMinimizers() ) {
 			int expand_nthreads = min( cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
 			TIMEDLN("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
 			for ( int expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no ) {

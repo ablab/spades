@@ -265,9 +265,9 @@ void HammerTools::SplitKMers() {
 	if (cfg::get().general_num_minimizers) {
 		num_minimizers = *cfg::get().general_num_minimizers;
 	}
-	bool use_minimizers = cfg::get().general_minimizers;
+	bool use_minimizers = HammerTools::doingMinimizers();
 	bool t_first = (Globals::iteration_no % 2 == 1);
-	if (Globals::iteration_no > 1) use_minimizers = false;
+
 	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads.");
 
 	vector<boost::shared_ptr<FOStream> > ostreams(numfiles);
@@ -904,12 +904,16 @@ void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KM
 	irs.close();
 }
 
+bool HammerTools::doingMinimizers() {
+	return ( cfg::get().general_minimizers && (Globals::iteration_no < 2) );
+}
+
 void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,
 		const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_left_start, hint_t readno_right_start,
 		ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp ) {
 	int qvoffset = cfg::get().input_qvoffset;
 	bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
-	if ( cfg::get().general_minimizers && (Globals::iteration_no < 2) ) discard_bad = false;
+	if ( HammerTools::doingMinimizers() ) discard_bad = false;
 	bool correct_threshold = cfg::get().correct_use_threshold;
 	bool discard_singletons = cfg::get().bayes_discard_only_singletons;
 
