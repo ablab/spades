@@ -124,6 +124,36 @@ class PositionKMer {
 		return ( strncmp( Globals::blob + kmer1.first, Globals::blob + kmer2.first, K ) < 0 );
 	}
 
+	static bool compareSubKMersGFirst( const pair<hint_t, double> & kmer1, const pair<hint_t, double> & kmer2) {
+		for ( uint32_t i = 0; i < K; ++i ) {
+			if ( Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ] ) {
+				switch ( Globals::blob[ kmer1.first + i ] ) {
+				case 'G': return true;
+				case 'T': return ( Globals::blob [ kmer2.first + i ] != 'G' );
+				case 'A': return ( Globals::blob [ kmer2.first + i ] == 'C' );
+				case 'C': return false;
+				default: return false;
+				}
+			}
+		}
+		return false;
+	}
+
+	static bool compareSubKMersCFirst( const pair<hint_t, double> & kmer1, const pair<hint_t, double> & kmer2) {
+		for ( uint32_t i = 0; i < K; ++i ) {
+			if ( Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ] ) {
+				switch ( Globals::blob[ kmer1.first + i ] ) {
+				case 'C': return true;
+				case 'A': return ( Globals::blob [ kmer2.first + i ] != 'C' );
+				case 'T': return ( Globals::blob [ kmer2.first + i ] == 'G' );
+				case 'G': return false;
+				default: return false;
+				}
+			}
+		}
+		return false;
+	}
+
 	static bool equalSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
 		return ( strncmp( Globals::blob + km->at(kmer1).first.start_ + start_offset,
 			  	  Globals::blob + km->at(kmer2).first.start_ + start_offset,

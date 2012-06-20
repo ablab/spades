@@ -249,11 +249,15 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	}
 }
 
-void HammerTools::findMinimizers( vector< pair<hint_t, double> > & v, int num_minimizers, bool t_first ) {
-	if (t_first) {
+void HammerTools::findMinimizers( vector< pair<hint_t, double> > & v, int num_minimizers, int which_first ) {
+	if (which_first == 0) {
 		sort(v.begin(), v.end(), PositionKMer::compareSubKMersGreaterSimple);
-	} else {
+	} else if (which_first == 1) {
 		sort(v.begin(), v.end(), PositionKMer::compareSubKMersLessSimple);
+	} else if (which_first == 2) {
+		sort(v.begin(), v.end(), PositionKMer::compareSubKMersGFirst);
+	} else {
+		sort(v.begin(), v.end(), PositionKMer::compareSubKMersCFirst);
 	}
 	v.erase(v.begin() + min( num_minimizers, (int)v.size() ), v.end());
 }
@@ -266,7 +270,7 @@ void HammerTools::SplitKMers() {
 		num_minimizers = *cfg::get().general_num_minimizers;
 	}
 	bool use_minimizers = HammerTools::doingMinimizers();
-	bool t_first = (Globals::iteration_no % 2 == 1);
+	int which_first = Globals::iteration_no;
 
 	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads.");
 
@@ -311,7 +315,7 @@ void HammerTools::SplitKMers() {
 					kmers.push_back( make_pair(Globals::pr->at(i).start() + gen.pos() - 1, 1 - gen.correct_probability()));
 					gen.Next();
 				}
-				HammerTools::findMinimizers( kmers, num_minimizers, t_first );
+				HammerTools::findMinimizers( kmers, num_minimizers, which_first );
 				//cout << s << "\n";
 				for ( vector< pair<hint_t, double> >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
 					//cout << "  " << string(Globals::blob + it->first, K) << "\n";
@@ -905,7 +909,7 @@ void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KM
 }
 
 bool HammerTools::doingMinimizers() {
-	return ( cfg::get().general_minimizers && (Globals::iteration_no < 2) );
+	return ( cfg::get().general_minimizers && (Globals::iteration_no < 4) );
 }
 
 void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,

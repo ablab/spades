@@ -116,7 +116,7 @@ public:
 	static void SplitKMers();
 
 	/// leave only minimizers
-	static void findMinimizers( vector< pair<hint_t, double> > & v, int num_minimizers, bool t_first = false );
+	static void findMinimizers( vector< pair<hint_t, double> > & v, int num_minimizers, int which_first = 0 );
 	/// check whether this is a minimizer iteration
 	static bool doingMinimizers();
 
