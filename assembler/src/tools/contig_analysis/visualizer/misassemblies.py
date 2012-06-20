@@ -8,51 +8,106 @@ import matplotlib.pyplot
 import matplotlib.lines
 import math
 
-DELTA = 1200
-ENOUGH_FOR_SIMILARITY = 0
-MIN_CONTIG = 2000.0
-
-
 
 def similarThreshold(total):
+	if total <= 2:
+		return 2;
 	return total  / 2 + total % 2 
 
 
-class Visualizer:
-	def __init__(self, assemblies, covHist):
-		self.assemblies = assemblies[0]
-		self.covHist = covHist[0]
 
+class Settings:
+	def __init__(self, maxPos, maxCovPos, maxCov, assembliesNum):
+		self.maxPos = maxPos
+		self.maxCovPos = maxCovPos
+		self.maxCov = maxCov
+
+		#colors
+		self.colorMisasembled = [ "#e41a1c" , "#b82525" ]
+		self.colorMisasembledSimilar = [ "#ff7500" , "#e09110" ]
+		self.colorCorrect = [ "#4daf4a" , "#40cf40" ]
+		self.colorCorrectSimilar = [ "#377eb8" , "#576e88" ]
+
+		#width		
 		self.assemblyWidth = 800.0
-		self.scale = self.assemblyWidth / assemblies[1] 
-		self.plotXScale = self.assemblyWidth / (covHist[1] + 1)
 		self.lastMargin = 20.0
+		
+		#scales
+		self.scale = self.assemblyWidth / self.maxPos
+		self.plotXScale = self.assemblyWidth / (self.maxCovPos + 1)
 
+		#coverage plot 
 		self.plotHeight = 80.0
 		self.plotMargin = 20.0
 		self.dotLength = self.plotXScale
 		
-		self.maxCov = math.floor(math.log10(covHist[2]))
-		self.plotYScale = self.plotHeight / self.maxCov
+		self.maxLogCov = math.ceil(math.log10(self.maxCov))
+		self.plotYScale = self.plotHeight / self.maxLogCov
 
-		self.xTics = 1000000
-		self.yTics = 2.0
-		self.genomeLength = assemblies[1]
-		self.genomeAnnotationScale = 1000000.0
+		ticNum = 5
+		rawTicStep = self.maxPos / ticNum
+		ticStepLog = math.pow(10, math.floor(math.log10(rawTicStep)))
+		xStep = math.floor(rawTicStep / ticStepLog)
+		if xStep >= 7:
+			xStep = 10
+		elif xStep >= 3:
+			xStep = 5
+		else:
+			xStep = 1
 
+		self.xTics = xStep * ticStepLog
+		self.genomeAnnotation = "Genome, "
+		
+		ticStepLog = int(math.pow(10, math.floor(math.log10(self.xTics))))
+		if xStep == 5:
+			ticStepLog *= 10
+			
+
+		if ticStepLog == 1:
+			self.genomeAnnotation += "bp"
+		elif ticStepLog < 1000:
+			self.genomeAnnotation += "x" + str(ticStepLog) + " bp"
+		elif ticStepLog == 1000:
+			self.genomeAnnotation += "Kbp"
+		elif ticStepLog < 1000000:
+			self.genomeAnnotation += "x" + str(ticStepLog / 1000) + " Kbp"
+		elif ticStepLog == 1000000:
+			self.genomeAnnotation += "Mbp"
+		elif ticStepLog < 1000000000:
+			self.genomeAnnotation += "x" + str(ticStepLog / 1000000) + " Mbp"
+		elif ticStepLog == 1000000000:
+			self.genomeAnnotation += "Gbp"
+
+		if self.maxLogCov <= 3.0:
+			self.yTics = 1.0
+		else:
+			self.yTics = 2.0
+
+		self.genomeLength = self.maxPos
+		self.genomeAnnotationScale = math.pow(10, math.ceil(math.log10(self.xTics)))
+
+		self.zeroCovStep = -0.2
+		self.dotWeight = 0.7
+
+		self.zeroCoverageColor = "blue"
+		self.coverageColor = "red"
+
+		#dashed lines
 		self.dashLines = True
 		self.dashLineWeight = 0.2
 		self.ticLength = 6
 		self.axisWeight = 0.5
 
+		#assembly display parameters
 		self.assemblyStep = 70
 		self.similarStep = 7
 		self.goodStep = 7
-		self.oddStep = 4
+		self.oddStep = [0, 4]
 		self.contigHeight = 30
 		self.simHeight = 6
 		self.xOffset = 85.0
 
+		#names parameters
 		self.nameAnnotationXStep = 15
 		self.nameAnnotationYStep = 15
 		self.xticsStep = 3
@@ -60,11 +115,198 @@ class Visualizer:
 		self.xLabelStep = self.xticsStep + 13
 		self.yLabelStep = self.yticsStep + 60
 
-		self.totalHeight = self.plotHeight + self.plotMargin + len(self.assemblies.keys()) * self.assemblyStep + self.lastMargin
+		self.totalHeight = self.plotHeight + self.plotMargin + assembliesNum * self.assemblyStep + self.lastMargin
 		self.totalWidth = self.xOffset + self.assemblyWidth
 
-		self.similarOdd = 0
-		self.differentOdd = 0
+
+		self.contigEdgeDelta = 1000
+		self.minSimilarContig = 5000
+
+		self.minConnectedBlock = 2000
+		self.maxBlockGap = 10000
+			
+		self.drawArcs = False
+		self.analyzeSimilar = False
+
+
+
+class Alignment:
+	def __init__(self, name, start, end, contigStart, rc):
+		self.name = name
+		self.start = start
+		self.end = end
+		self.contigPos = contigStart
+		self.rc = rc
+		
+		self.order = 0
+		self.similar = False
+		self.misasembled = False
+		self.color = "#000000"
+		self.vPositionDelta = 0
+
+
+	def Length(self):
+		return self.end - self.start
+
+	def Annotation(self):
+		return self.name + "\n" +str(self.start) + "-" + str(self.end)
+
+
+	def Center(self):
+		return (self.end + self.start) / 2
+
+
+
+class Arc:
+	def __init__(self, c1, c2):
+		self.c1 = c1
+		self.c2 = c2
+
+
+
+class Contig:
+	def __init__(self, name):
+		self.name = name
+		self.alignments = []
+		self.arcs = []
+
+
+
+class Assembly:
+	def __init__(self, file_name, minVisualizedLength = 0):
+		self.name, ext = os.path.splitext(file_name)
+
+		self.blocks = []
+		self.contigs = {}
+
+		self.misassembled = set()
+
+		mf = open(file_name + ".mis", 'r')
+		for line in mf:
+			self.misassembled.add(line.strip().split(' ', 1)[0])
+
+		inf = open(file_name, 'r')
+		i = 0
+
+		for line in inf:
+			l = line.strip().split(' ')
+			
+			if  int(l[1]) - int(l[0]) < minVisualizedLength:
+				continue
+
+			cid = l[2]
+			rc = False
+			if l[3] == "-":
+				rc = True
+			al = Alignment(cid, int(l[0]), int(l[1]), int(l[4]), rc)
+
+			al.order = i % 2
+			i += 1
+			if cid in self.misassembled:
+				al.misasembled = True
+			
+			self.blocks.append(al)
+
+			if cid not in self.contigs:
+				self.contigs[cid] = Contig(cid)
+
+			self.contigs[cid].alignments.append(len(self.blocks) - 1)
+
+
+	def ApplyColor(self, settings):
+		for al in self.blocks:
+			al.vPositionDelta += settings.oddStep[al.order]
+			if al.misasembled:
+				if not al.similar:
+					al.color = settings.colorMisasembled[al.order]
+			else:
+				al.vPositionDelta + settings.goodStep
+				if not al.similar:
+					al.color = settings.colorCorrect[al.order]
+
+
+	def DrawArcs(self, settings):
+#		print (self.misassembled)
+#		print (self.contigs.keys())
+		for cid in self.misassembled:
+			if cid not in self.contigs:
+				continue
+
+			contig = self.contigs[cid]
+			sortedBlocks = sorted(contig.alignments, key=lambda x: self.blocks[x].contigPos)
+
+			joinedAlignments = []
+			currentStart = 0
+			currentCStart = 0
+			
+			i = 0
+			while i < len(sortedBlocks):
+				block = sortedBlocks[i]
+				
+				currentStart = self.blocks[block].start
+				currentCStart = self.blocks[block].contigPos
+
+				while i < len(sortedBlocks) - 1 and abs(self.blocks[sortedBlocks[i]].end - self.blocks[sortedBlocks[i + 1]].start) < settings.maxBlockGap and self.blocks[sortedBlocks[i]].rc == self.blocks[sortedBlocks[i + 1]].rc:
+					i += 1
+
+				if (self.blocks[sortedBlocks[i]].end - currentStart < settings.minConnectedBlock ):
+					i += 1
+					continue
+
+				joinedAlignments.append(Alignment("", currentStart, self.blocks[sortedBlocks[i]].end, self.blocks[sortedBlocks[i]].rc, currentCStart))
+				i += 1
+
+			i = 0
+			while i < len(joinedAlignments) - 1:
+				contig.arcs.append(Arc(joinedAlignments[i].Center(), joinedAlignments[i + 1].Center()))
+				i += 1
+
+
+
+class Assemblies:
+	def __init__(self, file_list, max_pos, minVisualizedLength = 0):
+		self.assemblies = []
+		self.max_pos =  max_pos
+
+		inf = open(file_list, 'r')
+		
+		for line in inf:
+			if not inf == "":
+				self.assemblies.append(Assembly(line.strip(), minVisualizedLength))
+
+		inf.close()
+
+
+	def FindSimilar(self, settings):
+		pass
+
+
+	def DrawArcs(self, settings):
+		for a in self.assemblies:
+			a.DrawArcs(settings)
+
+
+	def ApplyColors(self, settings):
+		for a in self.assemblies:
+			a.ApplyColor(settings)
+
+
+	def FindMaxPos(self):
+		max_pos = 0
+		for asm in self.assemblies:
+			asm_max_pos = asm.blocks[len(asm.blocks) - 1].end
+			if max_pos < asm_max_pos:
+				max_pos = asm_max_pos
+		self.max_pos = max_pos
+		return max_pos			
+
+
+
+class Visualizer:
+	def __init__(self, assemblies, covHist, settings):
+		self.assemblies = assemblies
+		self.covHist = covHist
+		self.settings = settings
 
 		self.figure = matplotlib.pyplot.figure()
 		self.subplot = self.figure.add_subplot(111)
@@ -83,234 +325,104 @@ class Visualizer:
 		self.figure.savefig(fileName + ".svg", format='svg')
 
 
-	def plot_coverage(self, covHist, offset):
-		self.subplot.add_line(matplotlib.lines.Line2D((offset[0], offset[0] + self.assemblyWidth), (offset[1], offset[1]), c="black", lw=self.axisWeight))
-		self.subplot.add_line(matplotlib.lines.Line2D((offset[0], offset[0]), (offset[1], offset[1] + self.plotHeight), c="black", lw=self.axisWeight))
 
-		for i in range(0, self.genomeLength, self.xTics):
-			x = offset[0] + self.assemblyWidth * float(i) / float(self.genomeLength)
-			if self.dashLines:
-				self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1] + self.plotHeight , self.lastMargin), c="grey", ls=':', lw=self.dashLineWeight))
-			self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.ticLength), c="black", lw=self.axisWeight))
+	def plot_genome_axis(self, offset):
+		self.subplot.add_line(matplotlib.lines.Line2D((offset[0], offset[0] + self.settings.assemblyWidth), (offset[1], offset[1]), c="black", lw=self.settings.axisWeight))
 
-			self.subplot.annotate(str(round(float(i) / self.genomeAnnotationScale ,1)), (x + self.xticsStep, offset[1] - self.xticsStep), fontsize=6, horizontalalignment='left', verticalalignment='top')
+		i = 0.0
+		while i < self.settings.genomeLength - self.settings.xTics / 5.0:
+			x = offset[0] + self.settings.assemblyWidth * float(i) / float(self.settings.genomeLength)
+
+			if self.settings.dashLines:
+				self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1] + self.settings.plotHeight , self.settings.lastMargin), c="grey", ls=':', lw=self.settings.dashLineWeight))
+
+			self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.settings.ticLength), c="black", lw=self.settings.axisWeight))
+
+			self.subplot.annotate(str(round(float(i) / self.settings.genomeAnnotationScale ,1)), (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=6, horizontalalignment='left', verticalalignment='top')
+
+			i += self.settings.xTics
+
 		
-		x = offset[0] + self.assemblyWidth	
-		if self.dashLines:
-			self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1] + self.plotHeight , self.lastMargin), c="grey", ls=':', lw=self.dashLineWeight))
-		self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.ticLength), c="black", lw=self.axisWeight))
+		x = offset[0] + self.settings.assemblyWidth	
+		if self.settings.dashLines:
+			self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1] + self.settings.plotHeight , self.settings.lastMargin), c="grey", ls=':', lw=self.settings.dashLineWeight))
+		self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.settings.ticLength), c="black", lw=self.settings.axisWeight))
 
-		self.subplot.annotate(str(round(float(self.genomeLength) / self.genomeAnnotationScale ,2)), (x + self.xticsStep, offset[1] - self.xticsStep), fontsize=6, horizontalalignment='left', verticalalignment='top')
+		self.subplot.annotate(str(round(float(self.settings.genomeLength) / self.settings.genomeAnnotationScale ,2)), (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=6, horizontalalignment='left', verticalalignment='top')
 
-		self.subplot.annotate("Genome, Mbp", (offset[0] + self.assemblyWidth / 2.0, offset[1] - self.xLabelStep), fontsize=8, horizontalalignment='center', verticalalignment='top')
+		self.subplot.annotate(self.settings.genomeAnnotation, (offset[0] + self.settings.assemblyWidth / 2.0, offset[1] - self.settings.xLabelStep), fontsize=8, horizontalalignment='center', verticalalignment='top')
 
+
+
+	def plot_coverage(self, covHist, offset):
+		self.subplot.add_line(matplotlib.lines.Line2D((offset[0], offset[0]), (offset[1], offset[1] + self.settings.plotHeight), c="black", lw=self.settings.axisWeight))
 
 		cov = 0.0
-		while (cov <= self.maxCov):
-			y = offset[1] + cov * self.plotYScale
-			self.subplot.add_line(matplotlib.lines.Line2D((offset[0] - self.ticLength, offset[0]), (y, y), c="black", lw=self.axisWeight))
-			self.subplot.annotate(str(int(round(math.pow(10,cov)))), (offset[0] - self.yticsStep, y), fontsize=6, horizontalalignment='right', verticalalignment='center')
-			cov += self.yTics
+		while (cov <= self.settings.maxLogCov):
+			y = offset[1] + cov * self.settings.plotYScale
+			self.subplot.add_line(matplotlib.lines.Line2D((offset[0] - self.settings.ticLength, offset[0]), (y, y), c="black", lw=self.settings.axisWeight))
+			self.subplot.annotate(str(int(round(math.pow(10, cov)))), (offset[0] - self.settings.yticsStep, y), fontsize=6, horizontalalignment='right', verticalalignment='center')
+			cov += self.settings.yTics
 
-		self.subplot.annotate("Coverage", (offset[0] - self.yLabelStep, offset[1] + self.plotYScale * self.maxCov / 2.0), fontsize=8, horizontalalignment='center', verticalalignment='center', rotation = "vertical")
+		self.subplot.annotate("Coverage", (offset[0] - self.settings.yLabelStep, offset[1] + self.settings.plotYScale * self.settings.maxCov / 2.0), fontsize=8, horizontalalignment='center', verticalalignment='center', rotation = "vertical")
 
 		for pos in covHist:
-			x = offset[0] + pos * self.plotXScale
-			y = offset[1] + -0.2 * self.plotYScale
-			color = "blue"
+			x = offset[0] + pos * self.settings.plotXScale
 			if covHist[pos] != 0:
-				color = "red"
-				y = offset[1] + math.log10(covHist[pos]) * self.plotYScale
-		        self.subplot.add_line(matplotlib.lines.Line2D((x, x + self.dotLength), (y, y), c=color, lw=0.7))
+				y = offset[1] + math.log10(covHist[pos]) * self.settings.plotYScale
+				color = self.settings.coverageColor
+			else:
+				y = offset[1] + self.settings.zeroCovStep * self.settings.plotYScale
+				color = self.settings.zeroCoverageColor
+
+		        self.subplot.add_line(matplotlib.lines.Line2D((x, x + self.settings.dotLength), (y, y), c=color, lw=self.settings.dotWeight))
+
 
 
 	def plot_assembly(self, assembly, offset):
-		for coord in assembly:
-
-			width = coord[1] - coord[0]
-
-			x = offset[0] + coord[0] * self.scale
-			y = offset[1] 
-
-			fillColor = ""		
-			height = self.contigHeight
-			if coord[3] != None:
-				fillColor = "#" + coord[3].split('x')[1]
-
-				if self.differentOdd == 0:
-					y += self.oddStep
-									
+		for name in assembly.contigs:
+			for arc in assembly.contigs[name].arcs:
+				x = offset[0] + (arc.c1 + arc.c2) * self.settings.scale / 2
+				y = offset[1]
+				width = abs(arc.c1 - arc.c2) * self.settings.scale
+				height = 0.1 * width
+				if height < 20:
+					height = 20
+				if height > 90:
+					height = 90
 				
+				self.subplot.add_patch(matplotlib.patches.Arc((x, y), width, height, angle=180.0, theta1=0.0, theta2=180.0,  ec="black", color="black", lw=0.2))
+			
 
-				if coord[2] == 0:
-					if self.differentOdd == 0:
-						fillColor = "#e41a1c"
-					else:
-						fillColor = "#b82525"
-				else: 
-					if  coord[2] == 1:
-						fillColor = "#ff7500"
-						#fillColor = "#000000"
-					else:
-						fillColor = "#e09110"
-						#fillColor = "#000000"
+		for block in assembly.blocks:
+			x = offset[0] + block.start * self.settings.scale 
+			y = offset[1] + block.vPositionDelta
+			height = self.settings.contigHeight
+			width = block.Length() * self.settings.scale
 
-				self.differentOdd = (self.differentOdd + 1) % 2
-					
+			self.subplot.add_patch(matplotlib.patches.Rectangle((x,y), width, height,  ec="black", color=block.color, fill=True, lw=0.0))
 
-			else:
-				y += self.goodStep
 
-				if coord[2] != 0:
-					if self.similarOdd == 0:
-						y += self.oddStep
-
-					self.similarOdd = (self.similarOdd + 1) % 2
-
-					if  coord[2] == 1:
-						fillColor = "#377eb8"
-					else:
-						fillColor = "#576e88"
-
-				else:
-					if self.similarOdd == 0:
-						fillColor = "#4daf4a"
-						y += self.oddStep
-					else:
-						fillColor = "#40cf40"
-										
-					self.similarOdd = (self.similarOdd + 1) % 2
-
-				
-			width *=  self.scale
-			self.subplot.add_patch(matplotlib.patches.Rectangle((x,y), width, height,  ec="black", color=fillColor, fill=True, lw=0.0))
 
 	def visualize(self):
-		self.subplot.add_patch(matplotlib.patches.Rectangle((0,0), self.totalWidth + self.lastMargin, self.totalHeight, color="white", fill=True, lw=0))
+		self.subplot.add_patch(matplotlib.patches.Rectangle((0,0), self.settings.totalWidth + self.settings.lastMargin, self.settings.totalHeight, color="white", fill=True, lw=0))
 
-		self.plot_coverage(self.covHist, (self.xOffset, self.totalHeight - self.plotHeight) )
-		
-		offset = self.plotHeight + self.plotMargin + self.assemblyStep
-		names = self.assemblies.keys()
-		names.sort()
-		print (names)
-		for name in names:
-			self.similarOdd = 0
-			self.differentOdd = 0
-			self.subplot.annotate(name, (self.xOffset - self.nameAnnotationXStep, self.totalHeight - offset + self.nameAnnotationYStep), fontsize=12, horizontalalignment='right', verticalalignment='bottom')
-			self.plot_assembly(self.assemblies[name], (self.xOffset, self.totalHeight - offset))
-			offset += self.assemblyStep
+		self.plot_genome_axis( (self.settings.xOffset, self.settings.totalHeight - self.settings.plotHeight) )
 
+		if self.covHist is not None:
+			self.plot_coverage(self.covHist, (self.settings.xOffset, self.settings.totalHeight - self.settings.plotHeight) )
 
+		if self.assemblies is not None:
+			offset = self.settings.plotHeight + self.settings.plotMargin + self.settings.assemblyStep
 
+			for assembly in self.assemblies.assemblies:
+				self.subplot.annotate(assembly.name, (self.settings.xOffset - self.settings.nameAnnotationXStep, self.settings.totalHeight - offset + self.settings.nameAnnotationYStep), fontsize=12, horizontalalignment='right', verticalalignment='bottom')
 
-def readAssemblies(fileName):
-	inFile = open(fileName, 'r')
-
-	assemblies = {}
-	maxPos = 0
-
-	for line in inFile:
-		fName, ext = os.path.splitext(line)
-	
-		assFile = open(line.strip() + ".mis")
-		misassembled = []
-		for contig in assFile:
-			misassembled.append(contig.strip())
-
-		misMap = {}
-		r = 0xFF
-		g = 0x0
-		rdelta = 0
-		gdelta = 0
-		if len(misassembled) > 1:
-			rdelta = (r - 0x80) / (len(misassembled) - 1)
-			gdelta = (0x50 - g) / (len(misassembled) - 1)		
-		for mis in misassembled:
-			misMap[mis] = hex(r * 0x10000 + g * 0x100)
-			r -= rdelta
-			g += gdelta
-		
-		assemblies[fName] = []
-		assFile = open(line.strip())
-		for coord in assFile:
-			pos = coord.strip().split(' ')
-			color = None
-			if pos[2] in misMap:
-				color = misMap[pos[2]]
-			assemblies[fName].append((int(pos[0]),int(pos[1]), 0, color))
-
-			if maxPos < int(pos[1]):
-				maxPos = int(pos[1])
-
-		assFile.close()
-
-
-	
-	inFile.close()
-	return assemblies, maxPos
+				self.plot_assembly(assembly, (self.settings.xOffset, self.settings.totalHeight - offset))
+				offset += self.settings.assemblyStep
 
 
 
-def findSimilar(assemblies):
-	global COORD_DELTA
-	global ENOUGH_FOR_SIMILARITY
-
-	contigs = {}
-	total = 0
-	
-	color = 0
-	for name in assemblies:
-		total += 1
-		for coord in assemblies[name]:
-			width = coord[1] - coord[0]
-			found = False
-			if (width >= MIN_CONTIG):
-				for i in range(-DELTA, DELTA + 1):
-					start = coord[0] + i
-					if start in contigs:
-						for i in range(0, len(contigs[start])):
-							end = contigs[start][i][0]
-							count = contigs[start][i][1]
-							curColor = contigs[start][i][2]
-							misColor = contigs[start][i][3]
-							if end >= coord[1] - DELTA and end <= coord[1] + DELTA:
-								contigs[start][i] = (end, count + 1, curColor, misColor)
-								found = True
-								break
-						if found:
-							break
-
-			if not found:
-				if coord[0] in contigs:
-					contigs[coord[0]].append((coord[1], 1, color, coord[3]))
-				else:
-					contigs[coord[0]] = [(coord[1], 1, color, coord[3])]
-				color = (color + 1) % 2
-
-	for name in assemblies:
-		for k in range(0, len(assemblies[name])):
-			coord = assemblies[name][k]
-			found = False
-			for i in range(-DELTA, DELTA + 1):
-				start = coord[0] + i
-				if start in contigs:
-					for i in range(0, len(contigs[start])):
-						end = contigs[start][i][0]
-						count = contigs[start][i][1]
-						curColor = contigs[start][i][2]
-						misColor = contigs[start][i][3]
-						if end >= coord[1] - DELTA and end <= coord[1] + DELTA:
-							found = True
-							if (count >= similarThreshold(total)):
-								assemblies[name][k] = (coord[0], coord[1], curColor + 1, misColor)
-								break
-					if found:
-						break
-
-
-			if not found:
-				print("Contig not found")
 
 def readCoverage(fileName):
 	inFile = open(fileName, 'r')
@@ -332,26 +444,82 @@ def readCoverage(fileName):
 
 
 
-if len(sys.argv) < 3:
-	print("Usage: " + sys.argv[0] + " <files with assemblies files> <file with coverage histogram> [genome length]")	
+if len(sys.argv) < 2:
+	print("Usage: \n -a <file with list of assemblies files> \n --cov <file with coverage histogram> \n -g <genome length> \n -o <output file name> \n --arcs \n --similar")
 	sys.exit()
 
-inFileName = sys.argv[1]
-covFileName = sys.argv[2]
+inFileName = None
+covFileName = None
+genomeLength = 0
+outputName = None
+arcs = False
+similar = False
 
-assemblies, maxPos = readAssemblies(inFileName)
+i = 1
+while i < len(sys.argv):
+	if sys.argv[i] == "-a":
+		inFileName = sys.argv[i + 1]
+		i += 2	
+	elif sys.argv[i] == "--cov":
+		covFileName = sys.argv[i + 1]
+		i += 2	
+	elif sys.argv[i] == "-g":
+		genomeLength =  int(sys.argv[i + 1])
+		i += 2	
+	elif sys.argv[i] == "-o":
+		outputName = sys.argv[i + 1]
+		i += 2	
+	elif sys.argv[i] == "--arcs":
+		arcs = True
+		i += 1
+	elif sys.argv[i] == "--similar":
+		similar = True
+		i += 1
+	else:
+		print("Unknown argument " + sys.argv[i])
+		i += 1
 
-if len(sys.argv) == 4:
-	maxPos = int(sys.argv[3])
+minVisualizedLength = 200
 
-findSimilar(assemblies)
-covHist = readCoverage(covFileName)
+hist, maxPos, maxCov = None, 10, 10
+if covFileName is not None:
+	hist, maxPos, maxCov = readCoverage(covFileName)
 
-v = Visualizer((assemblies, maxPos), covHist)
+assemblies = None
+if inFileName is not None:
+	assemblies = Assemblies(inFileName, genomeLength, minVisualizedLength)
+	asmNumber = len(assemblies.assemblies)
+
+	if genomeLength == 0:
+		genomeLength = assemblies.FindMaxPos()
+else:
+	asmNumber = 0
+
+if genomeLength == 0:
+	print("Set genome length")
+	sys.exit()
+
+settings = Settings(genomeLength, maxPos, maxCov, asmNumber)
+
+if assemblies is not None:
+	assemblies.ApplyColors(settings)
+
+	if arcs and assemblies is not None:
+		settings.assemblyStep += 40
+		assemblies.DrawArcs(settings)
+
+	if similar and assemblies is not None:
+		assemblies.FindSimilar(settings)
+
+v = Visualizer(assemblies, hist, settings)
 v.visualize()
-#v.show()
-outFileName, ext = os.path.splitext(inFileName)
-v.save(outFileName)
+
+if outputName is None:
+	outputName = inFileName
+if outputName is None:
+	outputName = "coverage"
+
+v.save(outputName)
 
 
 
