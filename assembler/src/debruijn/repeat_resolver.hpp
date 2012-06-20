@@ -778,7 +778,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				if (tmp_ei_new != LiveNewEdges[i]) {
 					PairInfos conj_tmp = paired_di_data.GetEdgeInfos(tmp_ei);
 					for(size_t info_cj = 0; info_cj < conj_tmp.size(); info_cj ++ ){
-						DEBUG("Pi fi "<<new_IDs.str(conj_tmp[i].first)<<" to "<< new_IDs.str(tmp_ei_new));
+						DEBUG("Pi fi "<<new_IDs.str(conj_tmp[info_cj].first)<<" to "<< new_IDs.str(tmp_ei_new));
 						paired_di_data.ReplaceFirstEdge(conj_tmp[info_cj], tmp_ei_new);
 					}
 				}
