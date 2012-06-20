@@ -116,6 +116,14 @@ class PositionKMer {
 				  end_offset - start_offset ) > 0 );
 	}
 
+	static bool compareSubKMersGreaterSimple( const pair<hint_t, double> & kmer1, const pair<hint_t, double> & kmer2) {
+		return ( strncmp( Globals::blob + kmer1.first, Globals::blob + kmer2.first, K ) > 0 );
+	}
+
+	static bool compareSubKMersLessSimple( const pair<hint_t, double> & kmer1, const pair<hint_t, double> & kmer2) {
+		return ( strncmp( Globals::blob + kmer1.first, Globals::blob + kmer2.first, K ) < 0 );
+	}
+
 	static bool equalSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
 		return ( strncmp( Globals::blob + km->at(kmer1).first.start_ + start_offset,
 			  	  Globals::blob + km->at(kmer2).first.start_ + start_offset,

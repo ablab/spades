@@ -249,11 +249,26 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	}
 }
 
+void HammerTools::findMinimizers( vector< pair<hint_t, double> > & v, int num_minimizers, bool t_first ) {
+	if (t_first) {
+		sort(v.begin(), v.end(), PositionKMer::compareSubKMersGreaterSimple);
+	} else {
+		sort(v.begin(), v.end(), PositionKMer::compareSubKMersLessSimple);
+	}
+	v.erase(v.begin() + min( num_minimizers, (int)v.size() ), v.end());
+}
+
 void HammerTools::SplitKMers() {
 	int numfiles = cfg::get().count_numfiles;
 	int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
+	int num_minimizers = 0;
+	if (cfg::get().general_num_minimizers) {
+		num_minimizers = *cfg::get().general_num_minimizers;
+	}
+	bool use_minimizers = cfg::get().general_minimizers;
+	bool t_first = (Globals::iteration_no % 2 == 1);
+	if (Globals::iteration_no > 1) use_minimizers = false;
 	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads.");
-
 
 	vector<boost::shared_ptr<FOStream> > ostreams(numfiles);
 	for (int i = 0; i < numfiles; ++i) {
@@ -290,10 +305,25 @@ void HammerTools::SplitKMers() {
 				for ( size_t j=0; j < Globals::pr->at(i).size(); ++j) q[j] = (char)(q[j] - char_offset);
 			}
 			ValidKMerGenerator<K> gen(s, q);
-			while (gen.HasMore()) {
-				tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back(
+			if ( use_minimizers ) {
+				vector< pair<hint_t, double> > kmers;
+				while (gen.HasMore()) {
+					kmers.push_back( make_pair(Globals::pr->at(i).start() + gen.pos() - 1, 1 - gen.correct_probability()));
+					gen.Next();
+				}
+				HammerTools::findMinimizers( kmers, num_minimizers, t_first );
+				//cout << s << "\n";
+				for ( vector< pair<hint_t, double> >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
+					//cout << "  " << string(Globals::blob + it->first, K) << "\n";
+					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back( *it );
+				}
+				//cout << "\n";
+			} else {
+				while (gen.HasMore()) {
+					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back(
 						make_pair(Globals::pr->at(i).start() + gen.pos() - 1, 1 - gen.correct_probability()));
-				gen.Next();
+					gen.Next();
+				}
 			}
 		}
 		cur_i = cur_limit;
@@ -856,6 +886,7 @@ void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KM
 	VERIFY(irs.is_open());
 	bool correct_threshold = cfg::get().correct_use_threshold;
 	bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
+	if ( cfg::get().general_minimizers && (Globals::iteration_no < 2) ) discard_bad = false;
 	bool discard_singletons = cfg::get().bayes_discard_only_singletons;
 
 	while (irs.is_open() && !irs.eof()) {
@@ -878,6 +909,7 @@ void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, cons
 		ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp ) {
 	int qvoffset = cfg::get().input_qvoffset;
 	bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
+	if ( cfg::get().general_minimizers && (Globals::iteration_no < 2) ) discard_bad = false;
 	bool correct_threshold = cfg::get().correct_use_threshold;
 	bool discard_singletons = cfg::get().bayes_discard_only_singletons;
 

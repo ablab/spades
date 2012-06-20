@@ -114,6 +114,8 @@ public:
 	static void CountKMersBySplitAndMerge();
 	/// split kmers into files
 	static void SplitKMers();
+	/// leave only minimizers
+	static void findMinimizers( vector< pair<hint_t, double> > & v, int num_minimizers, bool t_first = false );
 
 	/// do one step of iterative expansion, return the number of new solid k-mers
 	static hint_t IterativeExpansionStep(int expand_iter_no, int nthreads, vector<KMerCount> & kmers);

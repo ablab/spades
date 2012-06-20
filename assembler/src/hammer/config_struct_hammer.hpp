@@ -47,6 +47,8 @@ struct hammer_config
 	double general_gzip_margin;
 	int general_file_buffer_exp;
 	bool general_remove_temp_files;
+	bool general_minimizers;
+	boost::optional<int> general_num_minimizers;
 
 	bool count_do;
 	int count_numfiles;
