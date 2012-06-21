@@ -599,6 +599,8 @@ class SimpleInDelAnalyzer {
 	vector<EdgeId> TryFindPath(size_t pos, VertexId end, size_t edge_count_bound) {
 		vector<EdgeId> answer;
 		for(size_t i = 0; i + pos < genome_path_.size() && i < edge_count_bound; ++i) {
+			if ((coloring_.Color(genome_path_[pos + i]) & shortcut_color_) > 0)
+				return vector<EdgeId>();
 			answer.push_back(genome_path_[pos + i]);
 			if (g_.EdgeEnd(genome_path_[pos + i]) == end) {
 				return answer;
@@ -620,17 +622,34 @@ class SimpleInDelAnalyzer {
 
 	void Process(EdgeId e, const vector<EdgeId>& genome_path) {
 		DEBUG("Processing edge and genome path");
-		const size_t lengths_bound = 10000;
+		const size_t mem_lim = 2 << 26;
+		Sequence edge_nucls = g_.EdgeNucls(e);
+		Sequence path_nucls = MergeSequences(g_, genome_path);
 		size_t edge_length = g_.length(e);
 		size_t path_length = CummulativeLength(g_, genome_path);
 		DEBUG("Diff length " << abs((int)edge_length - (int)path_length)
 				<< "; genome path length " << path_length << "; edge length " << edge_length);
-		Sequence edge_nucls = g_.EdgeNucls(e);
-		Sequence path_nucls = MergeSequences(g_, genome_path);
-		if (edge_length <= lengths_bound && path_length <= lengths_bound) {
+		if (edge_length * path_length <= mem_lim) {
 			size_t edit_dist = EditDistance(edge_nucls, path_nucls);
 			DEBUG("Edit distance " << edit_dist
 					<< ". That is " << double(edit_dist) / max(edge_length, path_length));
+			pair<size_t, size_t> local_sim = LocalSimilarity(edge_nucls, path_nucls);
+			DEBUG("Local sim " << local_sim.first << " interval length " << local_sim.second << " relative " << ((double)local_sim.first/local_sim.second));
+//			assembly_length-genome_length relative_local_sim genome_path_length assembly_length genome_length min max local_sim sim_interval edit_dist edit_dist/max
+			cerr << str(format("%d %f %d %d %d %d %d %d %d %d %f")
+					% ((int)edge_length - (int)path_length)
+					% ((double)local_sim.first/local_sim.second)
+					% genome_path.size()
+					% edge_length
+					% path_length
+					% min(edge_length, path_length)
+					% max(edge_length, path_length)
+					% local_sim.first
+					% local_sim.second
+					% edit_dist
+					% (double(edit_dist) / max(edge_length, path_length))) << endl;
+		} else {
+			WARN("Edges were too long");
 		}
 	}
 

@@ -59,8 +59,10 @@ class GapsRemover {
 	const edge_type gap_color_;
 	const size_t length_bound_;
 public:
-	GapsRemover(Graph& g, const ColorHandler<Graph>& coloring, edge_type gap_color, size_t length_bound)
-	: g_(g), coloring_(coloring), gap_color_(gap_color), length_bound_(length_bound) {
+	GapsRemover(Graph& g, const ColorHandler<Graph>& coloring,
+			edge_type gap_color, size_t length_bound) :
+			g_(g), coloring_(coloring), gap_color_(gap_color), length_bound_(
+					length_bound) {
 
 	}
 
@@ -105,6 +107,135 @@ public:
 //		FillPos(gp, stream);
 //	}
 //}
+
+template<class Graph>
+class AlternatingPathsCounter {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	const Graph& g_;
+	const ColorHandler<Graph>& coloring_;
+
+	edge_type InvertColor(edge_type color) const {
+		if (color == edge_type::red) {
+			return edge_type::blue;
+		} else if (color == edge_type::blue) {
+			return edge_type::red;
+		}VERIFY(false);
+		return edge_type::blue;
+	}
+
+	vector<EdgeId> FilterEdges(vector<EdgeId> edges, edge_type color) const {
+		vector<EdgeId> answer;
+		for (size_t i = 0; i < edges.size(); ++i) {
+			if (coloring_.Color(edges[i]) == color) {
+				answer.push_back(edges[i]);
+			}
+		}
+		return answer;
+	}
+
+	vector<EdgeId> OutgoingEdges(VertexId v, edge_type color) const {
+		DEBUG(
+				"Looking for outgoing edges for vertex " << g_.str(v) << " of color " << color);
+		return FilterEdges(g_.OutgoingEdges(v), color);
+	}
+
+	vector<EdgeId> IncomingEdges(VertexId v, edge_type color) const {
+		DEBUG(
+				"Looking for incoming edges for vertex " << g_.str(v) << " of color " << color);
+		return FilterEdges(g_.IncomingEdges(v), color);
+	}
+
+	bool CheckNotContains(vector<EdgeId>& path, EdgeId e) const {
+		return std::find(path.begin(), path.end(), e) == path.end();
+	}
+
+	VertexId OtherVertex(EdgeId e, VertexId v) const {
+		VERIFY(
+				g_.EdgeStart(e) != g_.EdgeEnd(e) && (g_.EdgeStart(e) == v || g_.EdgeEnd(e) == v));
+		if (g_.EdgeStart(e) == v) {
+			DEBUG("Next vertex " << g_.EdgeEnd(e));
+			return g_.EdgeEnd(e);
+		}DEBUG("Next vertex " << g_.EdgeStart(e));
+		return g_.EdgeStart(e);
+	}
+
+	bool Grow(vector<EdgeId>& path, VertexId last_vertex) const {
+		DEBUG("Growing path for vertex " << g_.str(last_vertex));
+		EdgeId last_edge = path.back();
+		DEBUG("Last edge " << last_edge);
+		edge_type next_color = InvertColor(coloring_.Color(last_edge));
+		vector<EdgeId> next_candidates =
+				(g_.EdgeEnd(last_edge) == last_vertex) ?
+						IncomingEdges(last_vertex, next_color) :
+						OutgoingEdges(last_vertex, next_color);
+		if (next_candidates.empty()) {
+			DEBUG("No candidates");
+			return true;
+		}
+		if (next_candidates.size() > 1) {
+			DEBUG("Several candidates");
+			return false;
+		}
+		EdgeId next_edge = next_candidates.front();
+		DEBUG(
+				"Adding edge " << g_.str(next_edge) << " of color " << coloring_.Color(next_edge));
+		if (!CheckNotContains(path, next_edge)) {
+			WARN("PROBLEM");
+			return false;
+		}
+
+		path.push_back(next_edge);
+		return Grow(path, OtherVertex(next_edge, last_vertex));
+	}
+
+	vector<EdgeId> AlternatingPathContainingEdge(EdgeId e) const {
+		vector<EdgeId> answer;
+		vector<EdgeId> tmp_path;
+		DEBUG("Growing backward");
+		tmp_path.push_back(e);
+		if (Grow(tmp_path, g_.EdgeStart(e))) {
+			answer.insert(answer.end(), tmp_path.rbegin(), tmp_path.rend());
+			tmp_path.clear();
+			DEBUG("Growing forward");
+			tmp_path.push_back(e);
+			if (Grow(tmp_path, g_.EdgeEnd(e))) {
+				answer.insert(answer.end(), (++tmp_path.begin()), tmp_path.end());
+				return answer;
+			}
+		}
+		return vector<EdgeId>();
+	}
+
+	void ProcessAltPath(const vector<EdgeId>& path) const {
+		DEBUG("Processing path of length " << path.size());
+		cerr << path.size() << endl;
+	}
+
+public:
+	AlternatingPathsCounter(const Graph& g, const ColorHandler<Graph>& coloring) :
+			g_(g), coloring_(coloring) {
+	}
+
+	void CountPaths() const {
+		set<EdgeId> visited_edges;
+		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (visited_edges.count(*it) > 0)
+				continue;
+			if (coloring_.Color(*it) == edge_type::red) {
+				DEBUG("Looking for alt path for edge " << g_.str(*it));
+				vector<EdgeId> alt_path = AlternatingPathContainingEdge(*it);
+				if (!alt_path.empty()) {
+					ProcessAltPath(alt_path);
+					visited_edges.insert(alt_path.begin(), alt_path.end());
+				}
+			}
+		}
+	}
+private:
+	DECL_LOGGER("AlternatingPathsCounter")
+	;
+};
 
 template<class gp_t>
 class AssemblyComparer {
@@ -208,8 +339,8 @@ public:
 	}
 
 	void CompareAssemblies(const string& output_folder, bool detailed_output =
-			true, bool one_many_resolve = false, int br_delta = -1, const string& add_saves_path =
-			"") {
+			true, bool one_many_resolve = false, int br_delta = -1,
+			const string& add_saves_path = "") {
 //		VERIFY(gp_.genome.size() > 0);
 		//todo ???
 		stream1_.reset();
@@ -230,12 +361,13 @@ public:
 
 		//TODO do we still need it?
 		if (br_delta > 0)
-			SimplifyGraph(gp_.g, (size_t)br_delta);
+			SimplifyGraph(gp_.g, (size_t) br_delta);
 
 		ColorHandler<Graph> coloring(gp_.g);
 		ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp_.g,
-				coloring, *MapperInstance<gp_t>(gp_));
-		colored_graph_constructor.ConstructGraph(vector<ContigStream*>{&stream1_, &stream2_});
+				coloring, *MapperInstance < gp_t > (gp_));
+		colored_graph_constructor.ConstructGraph(vector<ContigStream*> {
+				&stream1_, &stream2_ });
 
 		INFO("Filling contig positions");
 		stream1_.reset();
@@ -247,9 +379,15 @@ public:
 			INFO("Filling ref pos " << gp_.genome.size());
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
-			SimpleInDelAnalyzer<Graph> del_analyzer(gp_.g, coloring
-					, (*MapperInstance<gp_t>(gp_)).MapSequence(gp_.genome).simple_path().sequence(), edge_type::red);
-			del_analyzer.Analyze();
+
+//			SimpleInDelAnalyzer<Graph> del_analyzer(
+//					gp_.g,
+//					coloring,
+//					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
+//					edge_type::red);
+//			del_analyzer.Analyze();
+			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
+			alt_count.CountPaths();
 		}
 
 //		INFO("Removing gaps");
@@ -347,7 +485,8 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 	io::SplittingWrapper stream1(raw_stream1);
 	io::SplittingWrapper stream2(raw_stream2);
 
-	typedef debruijn_graph::graph_pack</*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> comparing_gp_t;
+	typedef debruijn_graph::graph_pack<
+	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> comparing_gp_t;
 
 	if (refine) {
 		typedef graph_pack<ConjugateDeBruijnGraph, k> refining_gp_t;
@@ -359,13 +498,16 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 
 		ConstructGPForRefinement(refining_gp, comp_stream, delta);
 
-		io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1,
+		io::ModifyingWrapper<io::SingleRead> refined_stream1(
+				stream1,
 				GraphReadCorrectorInstance(refining_gp.g,
 						*MapperInstance(refining_gp)));
-		io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2,
+		io::ModifyingWrapper<io::SingleRead> refined_stream2(
+				stream2,
 				GraphReadCorrectorInstance(refining_gp.g,
 						*MapperInstance(refining_gp)));
-		io::ModifyingWrapper<io::SingleRead> reference_stream(genome_stream,
+		io::ModifyingWrapper<io::SingleRead> reference_stream(
+				genome_stream,
 				GraphReadCorrectorInstance(refining_gp.g,
 						*MapperInstance(refining_gp)));
 
