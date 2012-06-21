@@ -116,15 +116,15 @@ class PositionKMer {
 				  end_offset - start_offset ) > 0 );
 	}
 
-	static bool compareSubKMersGreaterSimple( const pair<hint_t, double> & kmer1, const pair<hint_t, double> & kmer2) {
+	static bool compareSubKMersGreaterSimple( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
 		return ( strncmp( Globals::blob + kmer1.first, Globals::blob + kmer2.first, K ) > 0 );
 	}
 
-	static bool compareSubKMersLessSimple( const pair<hint_t, double> & kmer1, const pair<hint_t, double> & kmer2) {
+	static bool compareSubKMersLessSimple( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
 		return ( strncmp( Globals::blob + kmer1.first, Globals::blob + kmer2.first, K ) < 0 );
 	}
 
-	static bool compareSubKMersGFirst( const pair<hint_t, double> & kmer1, const pair<hint_t, double> & kmer2) {
+	static bool compareSubKMersGFirst( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
 		for ( uint32_t i = 0; i < K; ++i ) {
 			if ( Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ] ) {
 				switch ( Globals::blob[ kmer1.first + i ] ) {
@@ -139,7 +139,7 @@ class PositionKMer {
 		return false;
 	}
 
-	static bool compareSubKMersCFirst( const pair<hint_t, double> & kmer1, const pair<hint_t, double> & kmer2) {
+	static bool compareSubKMersCFirst( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
 		for ( uint32_t i = 0; i < K; ++i ) {
 			if ( Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ] ) {
 				switch ( Globals::blob[ kmer1.first + i ] ) {

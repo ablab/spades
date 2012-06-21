@@ -249,7 +249,7 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	}
 }
 
-void HammerTools::findMinimizers( vector< pair<hint_t, double> > & v, int num_minimizers, int which_first ) {
+void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers, int which_first ) {
 	if (which_first == 0) {
 		sort(v.begin(), v.end(), PositionKMer::compareSubKMersGreaterSimple);
 	} else if (which_first == 1) {
@@ -260,7 +260,7 @@ void HammerTools::findMinimizers( vector< pair<hint_t, double> > & v, int num_mi
 		sort(v.begin(), v.end(), PositionKMer::compareSubKMersCFirst);
 	}
 	int m_num = 0;
-	vector< pair<hint_t, double> >::iterator it = v.begin();
+	vector< pair<hint_t, pair< double, size_t > > >::iterator it = v.begin();
 	for ( ; it != v.end(); ) {
 //		cout << string(Globals::blob + it->first, K);
 		char c = Globals::blob[ it->first ];
@@ -269,7 +269,7 @@ void HammerTools::findMinimizers( vector< pair<hint_t, double> > & v, int num_mi
 		if ( (which_first == 2) && ( (c == 'C') || (c == 'T') ) ) break;
 		if ( (which_first == 3) && ( (c == 'A') || (c == 'G') ) ) break;
 		bool erase = false;
-		for (vector< pair<hint_t, double> >::const_iterator it2 = v.begin(); it2 != it; ++it2 ) {
+		for (vector< pair<hint_t, pair< double, size_t > > >::const_iterator it2 = v.begin(); it2 != it; ++it2 ) {
 			if ( it->first - it2->first < 5 ) {
 				erase = true;
 //				cout << "\terase\t" << it->first << "\t" << it->first - it2->first <<  "\n";
@@ -285,6 +285,14 @@ void HammerTools::findMinimizers( vector< pair<hint_t, double> > & v, int num_mi
 		if (m_num >= num_minimizers) break;
 	}
 	v.erase(it, v.end());
+}
+
+size_t my_hash(hint_t pos) {
+	size_t hash = 877;
+	for (size_t i = 0; i < K; i++) {
+		hash = ((hash << 5) - hash) + ((int)Globals::blob[pos + i]) * 13;
+	}
+	return hash;
 }
 
 void HammerTools::SplitKMers() {
@@ -335,16 +343,16 @@ void HammerTools::SplitKMers() {
 			}
 			ValidKMerGenerator<K> gen(s, q);
 			if ( use_minimizers ) {
-				vector< pair<hint_t, double> > kmers;
+				vector< pair<hint_t, pair< double, size_t > > > kmers;
 				while (gen.HasMore()) {
-					kmers.push_back( make_pair(Globals::pr->at(i).start() + gen.pos() - 1, 1 - gen.correct_probability()));
+					kmers.push_back( make_pair(Globals::pr->at(i).start() + gen.pos() - 1, make_pair( 1 - gen.correct_probability(), my_hash(Globals::pr->at(i).start() + gen.pos() - 1) ) ));
 					gen.Next();
 				}
 				HammerTools::findMinimizers( kmers, num_minimizers, which_first );
 				//cout << s << "\n";
-				for ( vector< pair<hint_t, double> >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
-					//cout << "  " << string(Globals::blob + it->first, K) << "\n";
-					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back( *it );
+				for ( vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
+					//cout << "  " << string(Globals::blob + it->first, K) << "\t" << it->second.second << "\t" << (it->second.second % numfiles) << "\n";
+					tmp_entries[omp_get_thread_num()][it->second.second % numfiles].push_back( make_pair( it->first, it->second.first ) );
 				}
 				//cout << "\n";
 			} else {
@@ -732,6 +740,7 @@ bool HammerTools::internalCorrectReadProcedure( const Read & r, const hint_t rea
 	if (  stat.isGoodForIterative() || ( correct_threshold && stat.isGood() ) ) {
 		isGood = true;
 		if (ofs != NULL) *ofs << "\t\t\tsolid";
+		//cout << "\t\t\tsolid";
 		for (size_t j = 0; j < K; ++j) {
 			if (!revcomp)
 				v[dignucl(kmer[j])][pos + j]++;
@@ -748,7 +757,7 @@ bool HammerTools::internalCorrectReadProcedure( const Read & r, const hint_t rea
 				|| km[stat.changeto].second.isGoodForIterative()
 				|| ( correct_threshold && stat.isGood() ))) {
 			if (ofs != NULL) *ofs << "\tchange to\n";
-			//cout << "  kmer " << kmer.str() << " wants to change to " << km[stat.changeto]->first.str() << endl;
+			//cout << "  kmer " << kmer.start() << " " << kmer.str() << " wants to change to " << stat.changeto << " " << km[stat.changeto].first.str() << endl;
 			isGood = true;
 			if ((int) pos < left)
 				left = pos;
@@ -766,6 +775,7 @@ bool HammerTools::internalCorrectReadProcedure( const Read & r, const hint_t rea
 					*ofs << " ";
 				*ofs << newkmer.str().data();
 			}
+			//for (size_t j = 0; j < pos; ++j) cout << " "; cout << newkmer.str().data();
 		}
 	}
 	return res;
@@ -881,6 +891,13 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount> & kmers, hint_t & chan
 	}
 
 	// at this point the array v contains votes for consensus
+	/*cout << "\n" << seq << "\n";
+	for (size_t k=0; k<4; ++k) {
+		for (size_t j=0; j<read_size; ++j) {
+			cout << v[k][j];
+		}
+		cout << "\n";
+	}*/
 
 	size_t res = 0; // how many nucleotides have really changed?
 	// find max consensus element
@@ -896,6 +913,7 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount> & kmers, hint_t & chan
 	}
 
 	r.setSequence(seq.data());
+	//cout << seq << "\n";
 
 	// if discard_bad=false, we retain original sequences when needed
 	if (discard_bad) {

@@ -17,17 +17,15 @@ general_do_everything_after_first_iteration	1
 general_reconstruct_only	1
 general_change_n_to_a		0
 general_hard_memory_limit	15
-general_max_nthreads		1
+general_max_nthreads		6
 general_tau					1
 general_gzip				0
-general_max_iterations		5
+general_max_iterations		10
 general_blob_margin			0.25
 general_gzip_margin			4.0
 general_file_buffer_exp		20
 general_common_quality		-1
-general_remove_temp_files	1
-general_minimizers			1
-general_num_minimizers		5
+general_remove_temp_files	0
 
 ; count k-mers
 count_do					1
@@ -50,7 +48,7 @@ hamming_class_buffer		100000
 
 ; bayesian subclustering
 bayes_do						1
-bayes_nthreads					6
+bayes_nthreads					1
 bayes_quality_threshold			0.995
 bayes_singleton_threshold		0.995
 bayes_nonsingleton_threshold	0.5
@@ -71,8 +69,11 @@ correct_do					1
 correct_discard_bad			0
 correct_use_threshold		1
 correct_threshold			0.98
-correct_nthreads			4
+correct_nthreads			8
 correct_readbuffer			100000
+
+
+
 
 
 
