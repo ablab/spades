@@ -2,8 +2,8 @@
 ; input options: working dir, input files, offset, and possibly kmers
 input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/test_dir2
 input_paired				1
-input_paired_1				/home/snikolenko/data/head250.0.fastq
-input_paired_2				/home/snikolenko/data/head250.1.fastq
+input_paired_1				/home/snikolenko/data/reads.input.0.head.gz
+input_paired_2				/home/snikolenko/data/reads.input.1.head.gz
 input_single				
 input_trim_quality			4
 input_gzipped				1
@@ -27,7 +27,7 @@ general_file_buffer_exp		20
 general_common_quality		-1
 general_remove_temp_files	1
 general_minimizers			1
-general_num_minimizers		3
+general_num_minimizers		5
 
 ; count k-mers
 count_do					1
@@ -73,6 +73,16 @@ correct_use_threshold		1
 correct_threshold			0.98
 correct_nthreads			4
 correct_readbuffer			100000
+
+
+
+
+
+
+
+
+
+
 
 
 

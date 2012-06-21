@@ -129,8 +129,8 @@ class PositionKMer {
 			if ( Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ] ) {
 				switch ( Globals::blob[ kmer1.first + i ] ) {
 				case 'G': return true;
-				case 'T': return ( Globals::blob [ kmer2.first + i ] != 'G' );
-				case 'A': return ( Globals::blob [ kmer2.first + i ] == 'C' );
+				case 'A': return ( Globals::blob [ kmer2.first + i ] != 'G' );
+				case 'T': return ( Globals::blob [ kmer2.first + i ] == 'C' );
 				case 'C': return false;
 				default: return false;
 				}
@@ -144,8 +144,8 @@ class PositionKMer {
 			if ( Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ] ) {
 				switch ( Globals::blob[ kmer1.first + i ] ) {
 				case 'C': return true;
-				case 'A': return ( Globals::blob [ kmer2.first + i ] != 'C' );
-				case 'T': return ( Globals::blob [ kmer2.first + i ] == 'G' );
+				case 'T': return ( Globals::blob [ kmer2.first + i ] != 'C' );
+				case 'A': return ( Globals::blob [ kmer2.first + i ] == 'G' );
 				case 'G': return false;
 				default: return false;
 				}

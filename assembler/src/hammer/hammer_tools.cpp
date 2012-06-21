@@ -259,7 +259,32 @@ void HammerTools::findMinimizers( vector< pair<hint_t, double> > & v, int num_mi
 	} else {
 		sort(v.begin(), v.end(), PositionKMer::compareSubKMersCFirst);
 	}
-	v.erase(v.begin() + min( num_minimizers, (int)v.size() ), v.end());
+	int m_num = 0;
+	vector< pair<hint_t, double> >::iterator it = v.begin();
+	for ( ; it != v.end(); ) {
+//		cout << string(Globals::blob + it->first, K);
+		char c = Globals::blob[ it->first ];
+		if ( (which_first == 0) && ( (c == 'A') || (c == 'C') ) ) break;
+		if ( (which_first == 1) && ( (c == 'G') || (c == 'T') ) ) break;
+		if ( (which_first == 2) && ( (c == 'C') || (c == 'T') ) ) break;
+		if ( (which_first == 3) && ( (c == 'A') || (c == 'G') ) ) break;
+		bool erase = false;
+		for (vector< pair<hint_t, double> >::const_iterator it2 = v.begin(); it2 != it; ++it2 ) {
+			if ( it->first - it2->first < 5 ) {
+				erase = true;
+//				cout << "\terase\t" << it->first << "\t" << it->first - it2->first <<  "\n";
+				break;
+			}
+		}
+		if ( erase ) it = v.erase(it);
+		else {
+//			cout << "\t" << m_num << "\t" << it->first << "\n";
+			++it;
+			++m_num;
+		}
+		if (m_num >= num_minimizers) break;
+	}
+	v.erase(it, v.end());
 }
 
 void HammerTools::SplitKMers() {
@@ -270,7 +295,7 @@ void HammerTools::SplitKMers() {
 		num_minimizers = *cfg::get().general_num_minimizers;
 	}
 	bool use_minimizers = HammerTools::doingMinimizers();
-	int which_first = Globals::iteration_no;
+	int which_first = Globals::iteration_no % 4;
 
 	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads.");
 
@@ -909,7 +934,7 @@ void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KM
 }
 
 bool HammerTools::doingMinimizers() {
-	return ( cfg::get().general_minimizers && (Globals::iteration_no < 4) );
+	return ( cfg::get().general_minimizers && (Globals::iteration_no < 8) );
 }
 
 void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,
