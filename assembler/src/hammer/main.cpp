@@ -192,6 +192,11 @@ int main(int argc, char * argv[]) {
 			HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.numbers.ser"));
 		}
 
+		/*TIMEDLN("Before filling map.");
+		KMerMap m;
+		HammerTools::FillMapWithMinimizers( m );
+		TIMEDLN("After filling map.");*/
+
 		// fill in already prepared k-mers
 		if ( !do_everything && cfg::get().input_read_solid_kmers ) {
 			TIMEDLN("Loading k-mers from " << cfg::get().input_solid_kmers );

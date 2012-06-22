@@ -14,8 +14,7 @@
 #ifndef HAMMER_TOOLS_HPP
 #define HAMMER_TOOLS_HPP
 
-#include <unordered_map>
-#include <unordered_set>
+#include <tr1/unordered_map>
 #include <algorithm>
 #include <stdexcept>
 #include <iomanip>
@@ -40,6 +39,9 @@ using namespace std;
 #define MAX_INT_64 1000000000000000000
 
 #define TIMEDLN(a) print_full_stats(); cout << a << endl
+
+typedef Seq<K> Kmer;
+typedef std::tr1::unordered_map<Kmer, KMerCount, typename Kmer::hash, typename Kmer::equal_to> KMerMap;
 
 double oct2phred(string qoct, int qvoffset);
 string encode3toabyte (const string & s);
@@ -119,6 +121,8 @@ public:
 	static void findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers, int which_first = 0 );
 	/// check whether this is a minimizer iteration
 	static bool doingMinimizers();
+	/// fill map
+	static void FillMapWithMinimizers( KMerMap & map );
 
 	/// do one step of iterative expansion, return the number of new solid k-mers
 	static hint_t IterativeExpansionStep(int expand_iter_no, int nthreads, vector<KMerCount> & kmers);

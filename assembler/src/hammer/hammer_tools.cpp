@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
+#include <tr1/unordered_map>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/format.hpp>
@@ -387,6 +388,45 @@ void HammerTools::SplitKMers() {
 	}
 
 	ostreams.clear();
+}
+
+void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
+	char char_offset = (char)cfg::get().input_qvoffset;
+	int num_minimizers = 0;
+	if (cfg::get().general_num_minimizers) {
+		num_minimizers = *cfg::get().general_num_minimizers;
+	}
+	int which_first = Globals::iteration_no % 4;
+	for (int i = 0; i < (int)Globals::pr->size(); ++i ) {
+		string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
+		string q;
+
+		if (Globals::use_common_quality) {
+			q = string(Globals::pr->at(i).size(), (char)Globals::common_quality);
+		} else {
+			q = string(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
+			for ( size_t j=0; j < Globals::pr->at(i).size(); ++j) q[j] = (char)(q[j] - char_offset);
+		}
+		ValidKMerGenerator<K> gen(s, q);
+		vector< pair<hint_t, pair< double, size_t > > > kmers;
+		tr1::unordered_map<hint_t, Seq<K> > seqs;
+		while (gen.HasMore()) {
+			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
+			kmers.push_back( make_pair(cur_pos, make_pair( 1 - gen.correct_probability(), my_hash(cur_pos) ) ));
+			seqs[ cur_pos ] = gen.kmer();
+			gen.Next();
+		}
+		HammerTools::findMinimizers( kmers, num_minimizers, which_first );
+		for ( vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
+			Seq<K> km = seqs[it->first];
+			if (m.find(km) == m.end()) {
+				m[km] = make_pair(PositionKMer(it->first), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, it->second.first));
+			} else {
+				m[km].second.count++;
+			}
+			// if ( map. )
+		}
+	}
 }
 
 void HammerTools::CountKMersBySplitAndMerge() {
