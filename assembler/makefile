@@ -27,6 +27,18 @@ rh:
 dh:
 	make -C build/debug/hammer hammer
 
+rv:
+	make -C build/release/online_vis
+
+dv:
+	make -C build/debug/online_vis
+
+rc:
+	make -C build/release/cap
+
+dc:
+	make -C build/debug/cap
+
 dt:
 	make ddt
 	make dit
