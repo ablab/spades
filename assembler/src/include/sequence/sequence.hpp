@@ -34,6 +34,7 @@
 #include <cstring>
 
 #include "sequence/seq.hpp"
+#include "sequence/rtseq.hpp"
 #include "sequence/sequence_data.hpp"
 
 class Sequence {
@@ -46,6 +47,7 @@ private:
     size_t size_;
     bool rtl_; // Right to left + complimentary (?)
     inline Sequence(const Sequence &seq, size_t from, size_t size, bool rtl);
+
 public:
     const Sequence& operator=(const Sequence &rhs) {
         from_ = rhs.from_;
@@ -89,6 +91,22 @@ public:
         data_->Grab();
     }
 
+    template<size_t size2_>
+    explicit Sequence(const Seq<size2_> &kmer, size_t) :
+            from_(0), size_(kmer.size()), rtl_(false) {
+
+        data_ = new SequenceData(kmer);
+        data_->Grab();
+    }
+
+    template<size_t size2_>
+    explicit Sequence(const RuntimeSeq<size2_> &kmer, size_t) :
+            from_(0), size_(kmer.size()), rtl_(false) {
+
+        data_ = new SequenceData(kmer);
+        data_->Grab();
+    }
+
     inline Sequence(const Sequence &s);
     inline ~Sequence();
 
@@ -98,6 +116,7 @@ public:
     inline bool operator<(const Sequence &that) const;
     inline Sequence operator!() const;
 
+    inline Sequence operator<<(char c) const;
     /**
 	 * @param from inclusive
 	 * @param to exclusive;
@@ -129,16 +148,24 @@ public:
 
     template<size_t size2_>
     Seq<size2_> start() const;
+
+    template<size_t size2_>
+    Seq<size2_> fast_start() const;
+
     template<size_t size2_>
     Seq<size2_> end() const;
     
+
+    template<size_t size2_>
+    RuntimeSeq<size2_> start(size_t k) const;
+
+    template<size_t size2_>
+    RuntimeSeq<size2_> end(size_t k) const;
+
     inline std::string str() const;
     inline size_t size() const;
 
 private:
-
-    inline Sequence CreatePureCopy() const;
-
     inline bool ReadHeader(std::istream& file);
     inline bool WriteHeader(std::ostream& file) const;
 
@@ -161,6 +188,17 @@ Seq<size2_> Sequence::start() const {
     return Seq<size2_> (*this);
 }
 
+template<size_t size2_>
+Seq<size2_> Sequence::fast_start() const {
+    if (rtl_) {
+        return !(data_->FastStartSeq<size2_>(from_));
+    }
+    else {
+        return data_->FastStartSeq<size2_>(from_);
+    }
+
+}
+
 /**
  * @todo optimize
  */
@@ -169,6 +207,18 @@ Seq<size2_> Sequence::end() const {
     //VERIFY(size2_ <= size_);
     return Seq<size2_> (*this, size_ - size2_);
 }
+
+
+template<size_t size2_>
+RuntimeSeq<size2_> Sequence::start(size_t k) const {
+    return RuntimeSeq<size2_>(k, *this);
+}
+
+template<size_t size2_>
+RuntimeSeq<size2_> Sequence::end(size_t k) const {
+    return RuntimeSeq<size2_>(k, *this, size_ - k);
+}
+
 
 Sequence Sequence::First(size_t count) const {
 	return Subseq(0, count);
@@ -403,10 +453,6 @@ size_t Sequence::size() const {
 	return size_;
 }
 
-inline Sequence Sequence::CreatePureCopy() const {
-    VERIFY(false);
-    return *this;
-}
 
 bool Sequence::ReadHeader(std::istream& file) {
     file.read((char *) &size_, sizeof(size_));

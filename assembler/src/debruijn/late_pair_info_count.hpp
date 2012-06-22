@@ -28,13 +28,12 @@ void late_pair_info_count(conj_graph_pack& gp,
 
             auto paired_streams = paired_binary_readers(true,  *cfg::get().ds.IS);
 
-
             if (cfg::get().paired_metr == debruijn_graph::paired_metrics::pm_product)
-                FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,
-                        paired_index, paired_streams);
+                FillPairedIndexWithProductMetric(gp.g, gp.index, gp.kmer_mapper,
+                        paired_index, paired_streams, gp.k_value);
             else
-                FillPairedIndexWithReadCountMetric<K>(gp.g, gp.int_ids, gp.index,
-                        gp.kmer_mapper, paired_index, paired_streams);
+                FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
+                        gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
 
 
             for (size_t i = 0; i < streams.size(); ++i) {
@@ -50,11 +49,11 @@ void late_pair_info_count(conj_graph_pack& gp,
             std::vector <PairedReadStream*> paired_streams(1, paired_stream.get());
 
             if (cfg::get().paired_metr == debruijn_graph::paired_metrics::pm_product)
-                FillPairedIndexWithProductMetric<K>(gp.g, gp.index, gp.kmer_mapper,
-                        paired_index, paired_streams);
+                FillPairedIndexWithProductMetric(gp.g, gp.index, gp.kmer_mapper,
+                        paired_index, paired_streams, gp.k_value);
             else
-                FillPairedIndexWithReadCountMetric<K>(gp.g, gp.int_ids, gp.index,
-                        gp.kmer_mapper, paired_index, paired_streams);
+                FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
+                        gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
         }
 
 

@@ -37,7 +37,7 @@ Path<EdgeId> ConvertToPath(Path<EdgeId> mp) {
 	return mp;
 }
 
-template<size_t k, class Graph, class SequenceMapper, class PairedStream>
+template<class Graph, class SequenceMapper, class PairedStream>
 class GapCloserPairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
@@ -503,10 +503,10 @@ private:
 
 template<class PairedStream>
 void CloseGaps(conj_graph_pack& gp, const vector<PairedStream*>& streams) {
-	const size_t k = conj_graph_pack::k_value;
-	typedef NewExtendedSequenceMapper<k + 1, Graph> SequenceMapper;
-	SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper);
-	GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedStream> gcpif(
+	const size_t k = gp.k_value;
+	typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
+	SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper, k + 1);
+	GapCloserPairedIndexFiller< Graph, SequenceMapper, PairedStream> gcpif(
 			gp.g, mapper, streams);
 	paired_info_index tips_paired_idx(gp.g);
 //	if (fileExists("tip_info.prd")) {

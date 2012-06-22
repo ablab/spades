@@ -16,7 +16,6 @@
 
 #include "config_common.hpp"
 #include "long_contigs/lc_config_struct.hpp"
-#include "k.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <io/reader.hpp>
@@ -514,6 +513,8 @@ public:
 	std::string paired_read_prefix;
 	std::string single_read_prefix;
 
+	size_t K;
+
     bool use_multithreading;
 	size_t max_threads;
 	size_t max_memory;
@@ -861,6 +862,10 @@ inline void load(debruijn_config::jump_cfg& jump,
 // main debruijn config load function
 inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
+
+
+    load(cfg.K, pt, "K");
+
 	// input options:
 	load(cfg.dataset_file, pt, "dataset");
 	// input dir is based on dataset file location (all pathes in datasets are relative to its location)
@@ -879,8 +884,8 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.project_name, pt, "project_name");
 	cfg.output_root = cfg.project_name.empty()
-			? (cfg.output_base + "/K" + ToString(K) + "/")
-			: (cfg.output_base + cfg.project_name + "/K" + ToString(K) + "/");
+			? (cfg.output_base + "/K" + ToString(cfg.K) + "/")
+			: (cfg.output_base + cfg.project_name + "/K" + ToString(cfg.K) + "/");
 
 	cfg.output_suffix = MakeLaunchTimeDirName() + "/";
 	cfg.output_dir = cfg.output_root + cfg.output_suffix;
@@ -934,6 +939,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
 	cfg.single_read_prefix =cfg.temp_bin_reads_path +  "_single";
+
 
 	load(cfg.use_multithreading, pt, "use_multithreading");
 	load(cfg.max_threads, pt, "max_threads");

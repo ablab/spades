@@ -34,7 +34,7 @@ namespace debruijn_graph {
 template <class Read>
 void construct_graph(std::vector<io::IReader<Read>* >& streams, conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
 	INFO("STAGE == Constructing Graph");
-	size_t rl = ConstructGraphWithCoverage<K, Read>(streams, gp.g, gp.index, contigs_stream);
+	size_t rl = ConstructGraphWithCoverage<Read>(cfg::get().K, streams, gp.g, gp.index, contigs_stream);
     if (!cfg::get().ds.RL.is_initialized()) {
         INFO("Figured out: read length = " << rl);
         cfg::get_writable().ds.RL = rl;

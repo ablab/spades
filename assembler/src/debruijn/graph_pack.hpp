@@ -25,34 +25,33 @@ namespace debruijn_graph {
 
 typedef PairedInfoIndex<ConjugateDeBruijnGraph> paired_info_index;
 
-template<class Graph, size_t k>
+template<class Graph>
 struct graph_pack : private boost::noncopyable {
 	typedef Graph graph_t;
 
-	enum {
-		k_value = k
-	};
+	size_t k_value;
 
 	graph_t g;
-	EdgeIndex<k + 1, graph_t> index;
+	EdgeIndex<graph_t> index;
 	IdTrackHandler<graph_t> int_ids;
 	EdgesPositionHandler<graph_t> edge_pos;
 //	PairedInfoIndex<graph_t> etalon_paired_index;
-	KmerMapper<k + 1, graph_t> kmer_mapper;
+	KmerMapper<graph_t> kmer_mapper;
 
 	Sequence genome;
 
-	explicit graph_pack(Sequence const& genome = Sequence(), size_t single_gap = 0, bool careful_labeling = false) :
+	explicit graph_pack(size_t k, Sequence const& genome = Sequence(), size_t single_gap = 0, bool careful_labeling = false) :
+    k_value(k),
 	g(k),
-	index(g)
+	index(g, k + 1)
 	, int_ids (g)
-	, edge_pos(g, single_gap, careful_labeling), kmer_mapper(g),
+	, edge_pos(g, single_gap, careful_labeling), kmer_mapper(g, k + 1),
 	genome(genome) {
 	}
 };
 
-typedef graph_pack<ConjugateDeBruijnGraph, K> conj_graph_pack;
-typedef graph_pack<NonconjugateDeBruijnGraph, K> nonconj_graph_pack;
+typedef graph_pack<ConjugateDeBruijnGraph> conj_graph_pack;
+typedef graph_pack<NonconjugateDeBruijnGraph> nonconj_graph_pack;
 
 inline void Convert(const conj_graph_pack& gp1, const PairedInfoIndex<conj_graph_pack::graph_t>& clustered_index1,
 		nonconj_graph_pack& gp2, PairedInfoIndex<nonconj_graph_pack::graph_t>& clustered_index2) {

@@ -48,10 +48,11 @@ def prepare_config_bh(filename, cfg):
     substitute_params(filename, subst_dict)
 
 
-def prepare_config_spades(filename, cfg, prev_K, last_one):
+def prepare_config_spades(filename, cfg, prev_K, K, last_one):
     subst_dict = dict()
     cfg.working_dir = os.path.abspath(cfg.working_dir)
 
+    subst_dict["K"] = str(K)
     subst_dict["dataset"] = cfg.dataset
     subst_dict["output_base"] = cfg.working_dir
     subst_dict["additional_contigs"] = cfg.additional_contigs
@@ -833,8 +834,7 @@ def run_spades(cfg):
     cfg.iterative_K = sorted(cfg.iterative_K)
 
     import build
-
-    build.build_spades_n_copy(cfg, spades_home)
+    build.build_spades_runtime_k(cfg, spades_home)
 
     count = 0
     prev_K = None
@@ -850,11 +850,11 @@ def run_spades(cfg):
         shutil.copytree(os.path.join(spades_home, "configs"), dst_configs)
         cfg_file_name = os.path.join(dst_configs, "debruijn", "config.info")
 
-        prepare_config_spades(cfg_file_name, cfg, prev_K,
+        prepare_config_spades(cfg_file_name, cfg, prev_K, K,
             count == len(cfg.iterative_K))
         prev_K = K
 
-        execution_home = os.path.join(cfg.compilation_dir, 'build' + str(K))
+        execution_home = os.path.join(cfg.compilation_dir, 'build')
         command = os.path.join(execution_home, "debruijn", "spades") + " " +\
                   os.path.abspath(cfg_file_name)
 

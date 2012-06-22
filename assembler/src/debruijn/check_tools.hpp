@@ -86,27 +86,29 @@ void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Gr
 //	}
 }
 
-template <size_t k>
-bool CheckContains(Seq<k> pattern, const Sequence& s) {
+bool CheckContains(const runtime_k::RtSeq& pattern, const Sequence& s, size_t k) {
 	if (s.size() < k)
 		return false;
-	Seq<k> kmer = s.start<k>() >> 0;
+
+	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq::max_size>(k);
+	kmer >>= 0;
 	for (size_t i = k - 1; i < s.size(); ++i) {
-		kmer = kmer << s[i];
+		kmer <<= s[i];
 		if (pattern == kmer)
 			return true;
 	}
 	return false;
 }
 
-template <size_t k>
-bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s) {
+bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s, size_t k) {
 	if (pattern.size() < k || s.size() < k)
 		return false;
-	Seq<k> kmer = pattern.start<k>() >> 0;
+
+	runtime_k::RtSeq kmer = pattern.start<runtime_k::RtSeq::max_size>(k);
+	kmer >>= 0;
 	for (size_t i = k - 1; i < pattern.size(); ++i) {
-		kmer = kmer << pattern[i];
-		if (CheckContains(kmer, s)){
+		kmer <<= pattern[i];
+		if (CheckContains(kmer, s, k)){
 			//cout << "Kmer " << kmer << endl;
             return true;
         }
@@ -114,16 +116,15 @@ bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s) {
 	return false;
 }
 
-template <size_t k>
-size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IReader<io::PairedRead>& stream) {
+size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IReader<io::PairedRead>& stream, size_t k) {
 	size_t count = 0;
 	io::PairedRead paired_read;
 	while (!stream.eof()) {
 		stream >> paired_read;
 		Sequence read_s1 = paired_read.first().sequence();
 		Sequence read_s2 = paired_read.second().sequence();
-		if ((CheckContainsSubKmer<k>(read_s1, s1) && CheckContainsSubKmer<k>(read_s2, s2))
-           || (CheckContainsSubKmer<k>(read_s1, s2) && CheckContainsSubKmer<k>(read_s2, s1))
+		if ((CheckContainsSubKmer(read_s1, s1, k) && CheckContainsSubKmer(read_s2, s2, k))
+           || (CheckContainsSubKmer(read_s1, s2, k) && CheckContainsSubKmer(read_s2, s1, k))
             ) {
 			count++;
             //cout << "Read first " << read_s1 << endl 
@@ -135,9 +136,8 @@ size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IRead
 	return count;
 }
 
-template <size_t k>
-size_t ThreadedPairedReadCount(const conj_graph_pack& gp, int e1, int e2, io::IReader<io::PairedRead>& stream) {
-	return ThreadedPairedReadCount<k>(gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e2)), stream);
+size_t ThreadedPairedReadCount(const conj_graph_pack& gp, int e1, int e2, io::IReader<io::PairedRead>& stream, size_t k) {
+	return ThreadedPairedReadCount(gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e2)), stream, k);
 }
 
 double TotalPositiveWeight(const conj_graph_pack& gp, PairedInfoIndex<Graph> paired_index, int e1, int e2) {

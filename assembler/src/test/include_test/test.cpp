@@ -10,6 +10,7 @@
 #include "logger/log_writers.hpp"
 
 #include "seq_test.hpp"
+#include "rtseq_test.hpp"
 #include "sequence_test.hpp"
 #include "quality_test.hpp"
 #include "nucl_test.hpp"

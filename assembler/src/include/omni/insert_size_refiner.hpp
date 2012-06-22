@@ -61,20 +61,18 @@ private:
 
     size_t counted_;
 
-    enum {
-        k = graph_pack::k_value
-    };
+    size_t k_;
 
     template<class PairedRead>
     size_t ProcessPairedRead(PairedRead& r, hist_type& hist) {
         Sequence sequence_left = r.first().sequence();
         Sequence sequence_right = r.second().sequence();
 
-        if (sequence_left.size() <= k || sequence_right.size() <= k) {
+        if (sequence_left.size() <= k_ || sequence_right.size() <= k_) {
             return 0;
         }
-        Seq<k + 1> left = sequence_left.end<k + 1>();
-        Seq<k + 1> right = sequence_right.start<k + 1>();
+        runtime_k::RtSeq left = sequence_left.end<runtime_k::RtSeq::max_size>(k_ + 1);
+        runtime_k::RtSeq right = sequence_right.start<runtime_k::RtSeq::max_size>(k_ + 1);
         left = gp_.kmer_mapper.Substitute(left);
         right = gp_.kmer_mapper.Substitute(right);
         if (!gp_.index.contains(left) || !gp_.index.contains(right)) {
@@ -85,7 +83,7 @@ private:
         if (pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
             return 0;
         }
-        int is = pos_right.second - pos_left.second - k - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
+        int is = pos_right.second - pos_left.second - k_ - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
         hist[is] += 1;
 
         return 1;
@@ -95,7 +93,7 @@ private:
 public:
 
     InsertSizeHistogramCounter(graph_pack& gp, size_t edge_length_threshold): gp_(gp), hist_(),
-        edge_length_threshold_(edge_length_threshold), total_(0), counted_(0)
+        edge_length_threshold_(edge_length_threshold), total_(0), counted_(0), k_(gp.k_value)
     {
     }
 
@@ -130,10 +128,6 @@ public:
     template<class PairedRead>
     void CountHistogramParallel(std::vector <io::IReader<PairedRead>*>& streams) {
         hist_.clear();
-
-        enum {
-            k = graph_pack::k_value
-        };
 
         size_t nthreads = streams.size();
         std::vector< hist_type *> hists(nthreads);
@@ -184,9 +178,6 @@ public:
 
 template<class graph_pack, class PairedRead>
 typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_pack& gp, size_t edge_length_threshold) {
-	enum {
-		k = graph_pack::k_value
-	};
 	INFO("SUBSTAGE == Refining insert size and its distribution");
 
 	InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);

@@ -764,11 +764,10 @@ public:
 	}
 };
 
-template<size_t k, class Graph, class SequenceMapper, class PairedStream>
+template<class Graph, class SequenceMapper, class PairedStream>
 class PairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef Seq<k> Kmer;
 
 	const Graph &graph_;
 

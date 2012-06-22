@@ -26,18 +26,19 @@
 #define SEQ_HPP_
 
 #include <string>
-#include "verify.hpp"
 #include <array>
 #include <algorithm>
-#include "sequence/nucl.hpp"
-#include "log.hpp"
 #include <cstring>
 #include <iostream>
 
+#include "verify.hpp"
+#include "sequence/nucl.hpp"
+#include "log.hpp"
+#include "seq_common.hpp"
 /**
  * @param T is max number of nucleotides, type for storage
  */
-template<size_t size_, typename T = u_int64_t>
+template<size_t size_, typename T = seq_element_type>
 class Seq {
 private:
 	/**
@@ -62,6 +63,11 @@ private:
 	 * @variable Number of Ts which required to store all sequence.
 	 */
 	const static size_t DataSize = (size_ + TNucl - 1) >> TNuclBits;
+
+    /**
+     * @variable Number of meaningful bytes in whick seq is stored
+     */
+	const static size_t TotalBytes = sizeof(T) * DataSize;
 
     
     /* *
@@ -130,41 +136,6 @@ private:
   }
 
 public:
-
-    /**
-     *  Reads sequence from the file (in the same format as BinWrite writes it)
-     *  and returns false if error occured, true otherwise.
-     */
-	static bool BinRead(std::istream& file, Seq<size_> *seq) {
-		file.read((char *) seq->data_.data(), sizeof(T) * DataSize);
-		return !file.fail();
-	}
-
-	/**
-     *  Writes sequence to the file (in the same format as BinRead reads it)
-     *  and returns false if error occured, true otherwise.
-     */
-	static bool BinWrite(std::ostream& file, const Seq<size_> &seq) {
-		file.write((const char *) seq.data_.data(), sizeof(T) * DataSize);
-		return !file.fail();
-	}
-
-    /**
-     *  Reads sequence from the file (in the same format as BinWrite writes it)
-     *  and returns false if error occured, true otherwise.
-     */
-    bool BinRead(std::istream& file) {
-        return BinRead(file, this);
-    }
-
-    /**
-     *  Writes sequence to the file (in the same format as BinRead reads it)
-     *  and returns false if error occured, true otherwise.
-     */
-    bool BinWrite(std::ostream& file) {
-        return BinWrite(file, *this);
-    }
-
 	/**
 	 * Default constructor, fills Seq with A's
 	 */
@@ -178,28 +149,11 @@ public:
 		init(s);
 	}
 
-	void SetZero() {
-	    std::fill(data_.begin(), data_.end(), -1);
-	}
-
-	static Seq<size_, T> GetZero() {
-	    Seq<size_, T> res;
-	    res.SetZero();
-	    return res;
-	}
-
-    //  !!!Constructor of start sequence (length = size) from already compressed array
-    //  We assume the size of data_array is greater than size
-    //  TODO find another way of constructing from a substring of a sequence
-    explicit Seq(T* data_array) {
-        
-        for (size_t i = 0; i < DataSize - 1; ++i) 
-            data_[i] = data_array[i];
-        
-        if (NuclsRemain) {
-            data_[DataSize - 1] = data_array[DataSize - 1] & MaskForLastBucket;
-        }
+    explicit Seq(T * data_array) {
+        memcpy(data_.data(), data_array, TotalBytes);
     }
+
+
 	/**
 	 * Ultimate constructor from ACGT0123-string.
 	 *
@@ -248,6 +202,7 @@ public:
         for (; cur < DataSize; ++cur)
             this->data_[cur] = 0;
 	}
+
 
 	/**
 	 * Get i-th symbol of Seq.
@@ -323,15 +278,37 @@ public:
 
 	}
 
-	/**
-	 * @todo optimize!!!
-	 */
+//	/**
+//	 * @todo optimize!!!
+//	 */
+//    Seq<size_ + 1, T> pushFront(char c) const {
+//        if (is_nucl(c)) {
+//            c = dignucl(c);
+//        }
+//        VERIFY(is_dignucl(c));
+//        return Seq<size_ + 1, T> (nucl(c) + str());
+//    }
+
 	Seq<size_ + 1, T> pushFront(char c) const {
-		if (is_nucl(c)) {
-			c = dignucl(c);
-		}
-		VERIFY(is_dignucl(c));
-        return Seq<size_ + 1, T> (nucl(c) + str());
+        if (is_nucl(c)) {
+            c = dignucl(c);
+        }
+        VERIFY(is_dignucl(c));
+        Seq<size_ + 1, T> res;
+
+        //if new kmer has more Ts
+        if (Seq<size_ + 1, T>::DataSize > DataSize) {
+            res.data_[DataSize] = (data_[DataSize - 1] >> (TBits - 2)) & 3;
+        }
+
+        T rm = c;
+        for (size_t i = 0; i < DataSize; ++i) {
+            T new_rm = (data_[i] >> (TBits - 2)) & 3;
+            res.data_[i] = (data_[i] << 2) | rm;
+            rm = new_rm;
+        }
+
+        return res;
 	}
 
 	/**
@@ -372,14 +349,6 @@ public:
 		return 0 != memcmp(data_.data(), s.data_.data(), sizeof(T) * DataSize);
 	}
 
-	//	/*
-	//	 * now usual order, but some linear order on Seq which works fast
-	//	 */
-	//	bool operator<(const Seq<size_, T> that) const {
-	//		return 0 > memcmp(data_.data(), that.data_.data(), sizeof(T) * DataSize);
-	//	}
-
-
 	/**
 	 * String representation of this Seq
 	 *
@@ -397,6 +366,45 @@ public:
 	static size_t size() {
 		return size_;
 	}
+
+
+	void copy_data(void * dst) const {
+	    memcpy(dst, (const void *) data_.data(), TotalBytes);
+	}
+
+    /**
+     *  Reads sequence from the file (in the same format as BinWrite writes it)
+     *  and returns false if error occured, true otherwise.
+     */
+    static bool BinRead(std::istream& file, Seq<size_> *seq) {
+        file.read((char *) seq->data_.data(), sizeof(T) * DataSize);
+        return !file.fail();
+    }
+
+    /**
+     *  Writes sequence to the file (in the same format as BinRead reads it)
+     *  and returns false if error occured, true otherwise.
+     */
+    static bool BinWrite(std::ostream& file, const Seq<size_> &seq) {
+        file.write((const char *) seq.data_.data(), sizeof(T) * DataSize);
+        return !file.fail();
+    }
+
+    /**
+     *  Reads sequence from the file (in the same format as BinWrite writes it)
+     *  and returns false if error occured, true otherwise.
+     */
+    bool BinRead(std::istream& file) {
+        return BinRead(file, this);
+    }
+
+    /**
+     *  Writes sequence to the file (in the same format as BinRead reads it)
+     *  and returns false if error occured, true otherwise.
+     */
+    bool BinWrite(std::ostream& file) {
+        return BinWrite(file, *this);
+    }
 
 	/**
 	 * @see Seq
@@ -482,10 +490,12 @@ public:
 
 };
 
-template<size_t size_, typename T = int>
+template<size_t size_, typename T>
 std::ostream& operator<<(std::ostream& os, Seq<size_, T> seq) {
 	os << seq.str();
 	return os;
 }
+
+
 
 #endif /* SEQ_HPP_ */

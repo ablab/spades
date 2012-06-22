@@ -19,6 +19,8 @@
 #include "omni/splitters.hpp"
 #include <omp.h>
 
+#include "runtime_k.hpp"
+
 #include "new_debruijn.hpp"
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
@@ -31,7 +33,7 @@ using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
 //using io::PairedRead;
 
-template<size_t kmer_size_, typename Graph>
+template<typename Graph>
 class ReadThreaderResult {
 	typedef typename Graph::EdgeId EdgeId;
 
@@ -75,11 +77,11 @@ public:
  * can be used both with vertices and edges of graph.
  * todo EdgeNucls are hardcoded!
  */
-template<size_t kmer_size_, typename Graph, typename ElementId>
+template<typename Graph, typename ElementId>
 class DataHashRenewer {
 
-	typedef Seq<kmer_size_> Kmer;
-	typedef SeqMap<kmer_size_, ElementId> Index;
+	typedef runtime_k::RtSeq Kmer;
+	typedef SeqMap<ElementId> Index;
 	const Graph &g_;
 
 	Index &index_;
@@ -133,18 +135,18 @@ private:
  * @see SeqMap
  * @see DataHashRenewer
  */
-template<size_t k, class Graph>
+template<class Graph>
 class EdgeIndex: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef SeqMap<k, EdgeId> InnerIndex;
-	typedef Seq<k> Kmer;
+	typedef SeqMap<EdgeId> InnerIndex;
+    typedef runtime_k::RtSeq Kmer;
 	InnerIndex inner_index_;
-	DataHashRenewer<k, Graph, EdgeId> renewer_;
+	DataHashRenewer<Graph, EdgeId> renewer_;
 	bool delete_index_;
 public:
 
-	EdgeIndex(const Graph& g) :
-			GraphActionHandler<Graph>(g, "EdgeIndex"), inner_index_(), renewer_(
+	EdgeIndex(const Graph& g, size_t k) :
+			GraphActionHandler<Graph>(g, "EdgeIndex"), inner_index_(k), renewer_(
 					g, inner_index_), delete_index_(true) {
 	}
 
@@ -177,27 +179,28 @@ public:
 
 };
 
-template<size_t k, class Graph>
+template<class Graph>
 class KmerMapper: public omnigraph::GraphActionHandler<Graph> {
 	typedef omnigraph::GraphActionHandler<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef Seq<k> Kmer;
-	typedef typename std::unordered_map<Kmer, Kmer, typename Kmer::hash> MapType;
-
+	typedef runtime_k::RtSeq Kmer;
+	typedef typename runtime_k::KmerMap<Kmer> MapType;
 
 	MapType mapping_;
+
+	size_t k_;
+
 public:
-	enum {
-		k_value = k
-	};
 
-	KmerMapper(const Graph& g) :
-			base(g, "KmerMapper") {
-
+	KmerMapper(const Graph& g, size_t k): base(g, "KmerMapper"), mapping_(k), k_(k) {
 	}
 
 	virtual ~KmerMapper() {
 
+	}
+
+	size_t get_k() const {
+	    return k_;
 	}
 
 	typename MapType::const_iterator begin() const {
@@ -210,22 +213,24 @@ public:
 
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
 		//		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
-		size_t old_length = old_s.size() - k + 1;
-		size_t new_length = new_s.size() - k + 1;
-		UniformPositionAligner aligner(old_s.size() - k + 1,
-				new_s.size() - k + 1);
-		Kmer old_kmer = old_s.start<k>() >> 0;
-		for (size_t i = k - 1; i < old_s.size(); ++i) {
-			old_kmer = old_kmer << old_s[i];
-			size_t old_kmer_offset = i - k + 1;
+		size_t old_length = old_s.size() - k_ + 1;
+		size_t new_length = new_s.size() - k_ + 1;
+		UniformPositionAligner aligner(old_s.size() - k_ + 1,
+				new_s.size() - k_ + 1);
+		Kmer old_kmer = old_s.start<Kmer::max_size>(k_);
+		old_kmer >>= 0;
+
+		for (size_t i = k_ - 1; i < old_s.size(); ++i) {
+			old_kmer <<= old_s[i];
+			size_t old_kmer_offset = i - k_ + 1;
 			size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
 			if(old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
-				Seq<k - 1> middle(new_s, new_length / 2);
-				if(typename Seq<k - 1>::less2()(middle, !middle)) {
+				Kmer middle(k_ - 1, new_s, new_length / 2);
+				if(typename Kmer::less2()(middle, !middle)) {
 					new_kmer_offest = new_length - 1 - new_kmer_offest;
 				}
 			}
-			Kmer new_kmer(new_s, new_kmer_offest);
+			Kmer new_kmer(k_, new_s, new_kmer_offest);
 			mapping_[old_kmer] = new_kmer;
 		}
 	}
@@ -239,8 +244,8 @@ public:
 		Kmer answer = kmer;
 		auto it = mapping_.find(answer);
 		while (it != mapping_.end()) {
-			VERIFY(it->first != it->second);
-			answer = (*it).second;
+			VERIFY(it.first() != it.second());
+			answer = it.second();
 			it = mapping_.find(answer);
 		}
 		return answer;
@@ -250,8 +255,8 @@ public:
 		u_int32_t size = mapping_.size();
 		file.write((const char *) &size, sizeof(u_int32_t));
 		for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
-			Kmer::BinWrite(file, iter->first);
-			Kmer::BinWrite(file, iter->second);
+			Kmer::BinWrite(file, iter.first());
+			Kmer::BinWrite(file, iter.second());
 		}
 	}
 
@@ -261,21 +266,21 @@ public:
 
 		file.read((char *) &size, sizeof(u_int32_t));
 		for (u_int32_t i = 0; i < size; ++i) {
-			Kmer key;
-			Kmer value;
+			Kmer key(k_);
+			Kmer value(k_);
 			Kmer::BinRead(file, &key);
 			Kmer::BinRead(file, &value);
 			mapping_[key] = value;
 		}
 	}
 
-	bool CompareTo(KmerMapper<k, Graph> const& m) {
+	bool CompareTo(KmerMapper<Graph> const& m) {
 		if (mapping_.size() != m.mapping_.size()) {
 			INFO("Unequal sizes");
 		}
 		for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
-			auto cmp = m.mapping_.find(iter->first);
-			if (cmp == m.mapping_.end() || cmp->second != iter->second) {
+			auto cmp = m.mapping_.find(iter.first());
+			if (cmp == m.mapping_.end() || cmp.second() != iter.second()) {
 				return false;
 			}
 		}
@@ -295,28 +300,30 @@ public:
  * This class finds how certain sequence is mapped to genome. As it is now it works correct only if sequence
  * is mapped to graph ideally and in unique way.
  */
-template<size_t k, class Graph>
+template<class Graph>
 class SimpleSequenceMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef Seq<k> Kmer;
-	typedef EdgeIndex<k, Graph> Index;
+	typedef runtime_k::RtSeq Kmer;
+	typedef EdgeIndex<Graph> Index;
+
 private:
 	const Graph& g_;
 	const Index &index_;
+	size_t k_;
 
 	bool TryThread(Kmer &kmer, vector<EdgeId> &passed,
 			size_t& endPosition) const {
 		EdgeId last = passed[passed.size() - 1];
         if (endPosition + 1 < g_.length(last)) {
-            if (g_.EdgeNucls(last)[endPosition + k] == kmer[k - 1]) {
+            if (g_.EdgeNucls(last)[endPosition + k_] == kmer[k_ - 1]) {
                 endPosition++;
                 return true;
             }
         } else {
             vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last));
             for (size_t i = 0; i < edges.size(); i++) {
-                if (g_.EdgeNucls(edges[i])[k - 1] == kmer[k - 1]) {
+                if (g_.EdgeNucls(edges[i])[k_ - 1] == kmer[k_ - 1]) {
                     passed.push_back(edges[i]);
                     endPosition = 0;
                     return true;
@@ -365,8 +372,8 @@ public:
 	 * @param g graph sequences should be mapped to
 	 * @param index index synchronized with graph
 	 */
-	SimpleSequenceMapper(const Graph& g, const Index& index) :
-			g_(g), index_(index) {
+	SimpleSequenceMapper(const Graph& g, const Index& index, size_t k) :
+			g_(g), index_(index), k_(k) {
 	}
 
 	/**
@@ -377,18 +384,18 @@ public:
 	Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
         //TRACE("Mapping sequence");
-		if (read.size() <= k - 1) {
+		if (read.size() <= k_ - 1) {
 			return Path<EdgeId>();
 		}
 
-		Kmer kmer = read.start<k>();
+		Kmer kmer = read.start<Kmer::max_size>(k_);
         //DEBUG("started " << kmer.str() << omp_get_thread_num() );
 		size_t startPosition = -1;
 		size_t endPosition = -1;
 		bool valid = ProcessKmer(kmer, passed, startPosition, endPosition,
 				false);
-        for (size_t i = k; i < read.size(); ++i) {
-            kmer = kmer << read[i];
+        for (size_t i = k_; i < read.size(); ++i) {
+            kmer <<= read[i];
             //DEBUG("shifted " << kmer.str() << omp_get_thread_num());
             valid = ProcessKmer(kmer, passed, startPosition, endPosition,
                     valid);
@@ -400,19 +407,20 @@ public:
 
 };
 
-template<size_t k, class Graph>
+template<class Graph>
 class ExtendedSequenceMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef vector<MappingRange> RangeMappings;
-	typedef Seq<k> Kmer;
-	typedef EdgeIndex<k, Graph> Index;
-	typedef KmerMapper<k, Graph> KmerSubs;
+	typedef runtime_k::RtSeq Kmer;
+	typedef EdgeIndex<Graph> Index;
+	typedef KmerMapper<Graph> KmerSubs;
 
 private:
 	const Graph& g_;
 	const Index& index_;
 	const KmerSubs& kmer_mapper_;
+	size_t k_;
 
 	void FindKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed,
 			RangeMappings& range_mappings) const {
@@ -444,21 +452,23 @@ private:
 public:
 	ExtendedSequenceMapper(const Graph& g,
 			const Index& index,
-			const KmerSubs& kmer_mapper) :
-			g_(g), index_(index), kmer_mapper_(kmer_mapper) {
+			const KmerSubs& kmer_mapper,
+			size_t k) :
+			g_(g), index_(index), kmer_mapper_(kmer_mapper), k_(k) {
 	}
 
 	MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
 		vector<EdgeId> passed_edges;
 		RangeMappings range_mapping;
 
-		if (sequence.size() < k) {
+		if (sequence.size() < k_) {
 			return MappingPath<EdgeId>();
 		}
-		Kmer kmer = sequence.start<k>() >> 0;
-		for (size_t i = k - 1; i < sequence.size(); ++i) {
-			kmer = kmer << sequence[i];
-			ProcessKmer(kmer, i - k + 1, passed_edges, range_mapping);
+		Kmer kmer = sequence.start<Kmer::max_size>(k_);
+		kmer >>= 0;
+		for (size_t i = k_ - 1; i < sequence.size(); ++i) {
+			kmer <<= sequence[i];
+			ProcessKmer(kmer, i - k_ + 1, passed_edges, range_mapping);
 		}
 
 		//DEBUG
@@ -473,19 +483,20 @@ public:
 };
 
 //todo compare performance
-template<size_t k, class Graph>
+template<class Graph>
 class NewExtendedSequenceMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef vector<MappingRange> RangeMappings;
-	typedef Seq<k> Kmer;
-	typedef EdgeIndex<k, Graph> Index;
-	typedef KmerMapper<k, Graph> KmerSubs;
+	typedef runtime_k::RtSeq Kmer;
+	typedef EdgeIndex<Graph> Index;
+	typedef KmerMapper<Graph> KmerSubs;
 
 private:
 	const Graph& g_;
 	const Index& index_;
 	const KmerSubs& kmer_mapper_;
+	size_t k_;
 //	mutable size_t mapped_;
 //	mutable size_t unmapped_;
 
@@ -516,7 +527,7 @@ private:
 		EdgeId last_edge = passed.back();
 		size_t end_pos = range_mappings.back().mapped_range.end_pos;
 		if (end_pos < g_.length(last_edge)) {
-			if (g_.EdgeNucls(last_edge)[end_pos + k - 1] == kmer[k - 1]) {
+			if (g_.EdgeNucls(last_edge)[end_pos + k_ - 1] == kmer[k_ - 1]) {
 				range_mappings.back().initial_range.end_pos++;
 				range_mappings.back().mapped_range.end_pos++;
 				return true;
@@ -524,7 +535,7 @@ private:
 		} else {
 			vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last_edge));
 			for (size_t i = 0; i < edges.size(); i++) {
-				if (g_.EdgeNucls(edges[i])[k - 1] == kmer[k - 1]) {
+				if (g_.EdgeNucls(edges[i])[k_ - 1] == kmer[k_ - 1]) {
 					passed.push_back(edges[i]);
 					range_mappings.push_back(
 							MappingRange(Range(kmer_pos, kmer_pos + 1),
@@ -578,9 +589,10 @@ private:
 public:
 	NewExtendedSequenceMapper(const Graph& g,
 			const Index& index,
-			const KmerSubs& kmer_mapper) :
+			const KmerSubs& kmer_mapper,
+			size_t k) :
 			g_(g), index_(index),
-			kmer_mapper_(kmer_mapper) {
+			kmer_mapper_(kmer_mapper), k_(k) {
 	}
 
 	~NewExtendedSequenceMapper() {
@@ -593,15 +605,16 @@ public:
 		vector<EdgeId> passed_edges;
 		RangeMappings range_mapping;
 
-		if (sequence.size() < k) {
+		if (sequence.size() < k_) {
 			return MappingPath<EdgeId>();
 		}
 
-		Kmer kmer = sequence.start<k>() >> 0;
+		Kmer kmer = sequence.start<Kmer::max_size>(k_);
+		kmer >>= 0;
 		bool try_thread = false;
-		for (size_t i = k - 1; i < sequence.size(); ++i) {
-			kmer = kmer << sequence[i];
-			try_thread = ProcessKmer(kmer, i - k + 1, passed_edges,
+		for (size_t i = k_ - 1; i < sequence.size(); ++i) {
+			kmer <<= sequence[i];
+			try_thread = ProcessKmer(kmer, i - k_ + 1, passed_edges,
 					range_mapping, try_thread);
 		}
 
@@ -626,16 +639,19 @@ private:
 };
 
 template<class gp_t>
-shared_ptr<const NewExtendedSequenceMapper<gp_t::k_value + 1, typename gp_t::graph_t>> MapperInstance(const gp_t& gp) {
-	return boost::make_shared<NewExtendedSequenceMapper<gp_t::k_value + 1, typename gp_t::graph_t>>(gp.g, gp.index, gp.kmer_mapper);
+shared_ptr<const NewExtendedSequenceMapper<typename gp_t::graph_t> > MapperInstance(const gp_t& gp) {
+    size_t k_plus_1 = gp.k_value + 1;
+	return boost::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t> >(gp.g, gp.index, gp.kmer_mapper, k_plus_1);
 }
 
-template<size_t k, class Graph>
+template<class Graph>
 class OldEtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
-	const EdgeIndex<k + 1, Graph>& index_;
+	const EdgeIndex<Graph>& index_;
+	size_t k_;
+
 	size_t insert_size_;
 	size_t read_length_;
 	size_t gap_;
@@ -649,12 +665,12 @@ class OldEtalonPairedInfoCounter {
 
 	void ProcessSequence(const Sequence& sequence,
 			omnigraph::PairedInfoIndex<Graph>& paired_info) {
-		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(g_, index_);
+		SimpleSequenceMapper<Graph> sequence_mapper(g_, index_, k_ + 1);
 		Path<EdgeId> path = sequence_mapper.MapSequence(sequence);
 
 		for (size_t i = 0; i < path.size(); ++i) {
 			EdgeId e = path[i];
-			if (g_.length(e) + delta_ > gap_ + k + 1) {
+			if (g_.length(e) + delta_ > gap_ + k_ + 1) {
 				AddEtalonInfo(paired_info, e, e, 0);
 			}
 			size_t j = i + 1;
@@ -662,10 +678,10 @@ class OldEtalonPairedInfoCounter {
 
 			while (j < path.size()
 					&& length
-							<= omnigraph::PairInfoPathLengthUpperBound(k,
+							<= omnigraph::PairInfoPathLengthUpperBound(k_,
 									insert_size_, delta_)) {
 				if (length
-						>= omnigraph::PairInfoPathLengthLowerBound(k,
+						>= omnigraph::PairInfoPathLengthLowerBound(k_,
 								g_.length(e), g_.length(path[j]), gap_, delta_)) {
 					AddEtalonInfo(paired_info, e, path[j],
 							g_.length(e) + length);
@@ -707,9 +723,9 @@ class OldEtalonPairedInfoCounter {
 public:
 
 	OldEtalonPairedInfoCounter(const Graph& g,
-			const EdgeIndex<k + 1, Graph>& index, size_t insert_size,
-			size_t read_length, size_t delta) :
-			g_(g), index_(index), insert_size_(insert_size), read_length_(
+			const EdgeIndex<Graph>& index, size_t insert_size,
+			size_t read_length, size_t delta, size_t k) :
+			g_(g), index_(index), k_(k), insert_size_(insert_size), read_length_(
 					read_length), gap_(insert_size_ - 2 * read_length_), delta_(
 					delta) {
 		VERIFY(insert_size_ >= 2 * read_length_);
@@ -725,13 +741,15 @@ public:
 };
 
 //todo rewrite with extended sequence mapper!
-template<size_t k, class Graph>
+template<class Graph>
 class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
-	const EdgeIndex<k + 1, Graph>& index_;
-	const KmerMapper<k + 1, Graph>& kmer_mapper_;
+	const EdgeIndex<Graph>& index_;
+	const KmerMapper<Graph>& kmer_mapper_;
+	size_t k_;
+
 	size_t insert_size_;
 	size_t read_length_;
 	size_t gap_;
@@ -746,27 +764,27 @@ class EtalonPairedInfoCounter {
 	void ProcessSequence(const Sequence& sequence,
 			set<PairInfo<EdgeId>>& temporary_info) {
 		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
-		Seq<k + 1> left(sequence);
-		left = left >> 0;
+		runtime_k::RtSeq left(k_ +1, sequence);
+		left >>= 0;
 		for (size_t left_idx = 0;
-				left_idx + 2 * (k + 1) + mod_gap <= sequence.size();
+				left_idx + 2 * (k_ + 1) + mod_gap <= sequence.size();
 				++left_idx) {
-			left = left << sequence[left_idx + k];
-			Seq<k + 1> left_upd = kmer_mapper_.Substitute(left);
+			left <<= sequence[left_idx + k_];
+			runtime_k::RtSeq left_upd = kmer_mapper_.Substitute(left);
 			if (!index_.contains(left_upd)) {
 				continue;
 			}
 			pair<EdgeId, size_t> left_pos = index_.get(left_upd);
 
-			size_t right_idx = left_idx + k + 1 + mod_gap;
-			Seq<k + 1> right(sequence, right_idx);
-			right = right >> 0;
+			size_t right_idx = left_idx + k_ + 1 + mod_gap;
+			runtime_k::RtSeq right(k_ + 1, sequence, right_idx);
+			right >>= 0;
 			for (;
-					right_idx + k + 1 <= left_idx + insert_size_ + delta_
-							&& right_idx + k + 1 <= sequence.size();
+					right_idx + k_ + 1 <= left_idx + insert_size_ + delta_
+							&& right_idx + k_ + 1 <= sequence.size();
 					++right_idx) {
-				right = right << sequence[right_idx + k];
-				Seq<k + 1> right_upd = kmer_mapper_.Substitute(right);
+				right <<= sequence[right_idx + k_];
+				runtime_k::RtSeq right_upd = kmer_mapper_.Substitute(right);
 				if (!index_.contains(right_upd)) {
 					continue;
 				}
@@ -784,12 +802,12 @@ class EtalonPairedInfoCounter {
 
 public:
 
-	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
+	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<Graph>& index
 			,
-			const KmerMapper<k + 1, Graph>& kmer_mapper,
+			const KmerMapper<Graph>& kmer_mapper,
 			size_t insert_size,
-			size_t read_length, size_t delta) :
-			g_(g), index_(index), kmer_mapper_(kmer_mapper), insert_size_(
+			size_t read_length, size_t delta, size_t k) :
+			g_(g), index_(index), kmer_mapper_(kmer_mapper), k_(k), insert_size_(
 					insert_size), read_length_(read_length), gap_(
 					insert_size_ - 2 * read_length_), delta_(delta) {
 		VERIFY(insert_size_ >= 2 * read_length_);
@@ -844,11 +862,11 @@ void WrappedSetCoverage(NonconjugateDeBruijnGraph& g,
  *
  * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
-template<size_t k, class Graph, class SequenceMapper, class PairedStream>
+template<class Graph, class SequenceMapper, class PairedStream>
 class LatePairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef Seq<k> Kmer;
+	typedef runtime_k::RtSeq Kmer;
 	typedef boost::function<double(MappingRange, MappingRange)> WeightF;
 	const Graph& graph_;
 	const SequenceMapper& mapper_;
@@ -978,14 +996,15 @@ private:
  * This class finds how certain _paired_ read is mapped to genome. As it is now it is hoped to work correctly only if read
  * is mapped to graph ideally and in unique way.
  */
-template<size_t k, class Graph>
+template<class Graph>
 class TemplateReadMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef EdgeIndex<k + 1, Graph> Index;
+	typedef EdgeIndex<Graph> Index;
 private:
-	SimpleSequenceMapper<k, Graph> read_seq_mapper;
+	SimpleSequenceMapper<Graph> read_seq_mapper;
 	io::IReader<io::SingleRead>& stream_;
+	size_t k_;
 public:
 	/**
 	 * Creates TemplateReadMapper for given graph. Also requires index_ which should be synchronized
@@ -993,8 +1012,8 @@ public:
 	 * @param g graph sequences should be mapped to
 	 * @param index index syncronized with graph
 	 */
-	TemplateReadMapper(const Graph& g, const Index& index, io::IReader<io::SingleRead>& stream) :
-			read_seq_mapper(g, index), stream_(stream) {
+	TemplateReadMapper(const Graph& g, const Index& index, io::IReader<io::SingleRead>& stream, size_t k) :
+			read_seq_mapper(g, index, k), stream_(stream), k_(k) {
 		stream_.reset();
 	}
 
@@ -1018,15 +1037,16 @@ public:
 	 */
 };
 
-template<size_t k, class Graph>
+template<class Graph>
 class SingleReadMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef EdgeIndex<k + 1, Graph> Index;
+	typedef EdgeIndex<Graph> Index;
 private:
-	SimpleSequenceMapper<k + 1, Graph> read_seq_mapper;
+	SimpleSequenceMapper<Graph> read_seq_mapper;
 	const Graph& g_;
 	const Index& index_;
+	size_t k_;
 public:
 	/**
 	 * Creates SingleReadMapper for given graph. Also requires index_ which should be synchronized
@@ -1034,18 +1054,18 @@ public:
 	 * @param g graph sequences should be mapped to
 	 * @param index index syncronized with graph
 	 */
-	SingleReadMapper(const Graph& g, const Index& index) :
-			read_seq_mapper(g, index), g_(g), index_(index) {
+	SingleReadMapper(const Graph& g, const Index& index, size_t k) :
+			read_seq_mapper(g, index, k), g_(g), index_(index), k_(k) {
 	}
 
 	vector<EdgeId> GetContainingEdges(io::SingleRead& p_r) {
 		vector<EdgeId> res;
 
 		Sequence read = p_r.sequence();
-		if (k + 1 <= read.size()) {
-			Seq<k + 1> kmer = read.start<k + 1>();
+		if (k_ + 1 <= read.size()) {
+			runtime_k::RtSeq kmer = read.start<runtime_k::RtSeq::max_size>(k_ + 1);
 			bool found;
-			for (size_t i = k + 1; i <= read.size(); ++i) {
+			for (size_t i = k_ + 1; i <= read.size(); ++i) {
 				if (index_.contains(kmer)) {
 					pair<EdgeId, size_t> position = index_.get(kmer);
 					found = false;
@@ -1058,7 +1078,7 @@ public:
 						res.push_back(position.first);
 				}
 				if (i != read.size())
-					kmer = kmer << read[i];
+					kmer <<= read[i];
 			}
 		}
 
@@ -1071,17 +1091,18 @@ class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> 
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	map<EdgeId, size_t> quality_;
+	size_t k_;
 
 public:
-	template<size_t l>
-	void FillQuality(const EdgeIndex<l, Graph> &index
-			, const KmerMapper<l, Graph>& kmer_mapper, const Sequence &genome) {
-		if (genome.size() < l)
+
+	void FillQuality(const EdgeIndex<Graph> &index
+			, const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
+		if (genome.size() < k_)
 			return;
-		auto cur = genome.start<l>();
-		cur = cur >> 0;
-		for (size_t i = 0; i + l - 1 < genome.size(); i++) {
-			cur = cur << genome[i + l - 1];
+		runtime_k::RtSeq cur = genome.start<runtime_k::RtSeq::max_size>(k_);
+		cur >>= 0;
+		for (size_t i = 0; i + k_ - 1 < genome.size(); i++) {
+			cur <<= genome[i + k_ - 1];
 			auto corr_cur = kmer_mapper.Substitute(cur);
 			if (index.contains(corr_cur)) {
 				quality_[index.get(corr_cur).first]++;
@@ -1089,11 +1110,12 @@ public:
 		}
 	}
 
-	template<size_t l>
-	EdgeQuality(const Graph &graph, const EdgeIndex<l, Graph> &index,
-	const KmerMapper<l, Graph>& kmer_mapper,
+	EdgeQuality(const Graph &graph, const EdgeIndex<Graph> &index,
+	const KmerMapper<Graph>& kmer_mapper,
 	const Sequence &genome) :
-			GraphActionHandler<Graph>(graph, "EdgeQualityLabeler") {
+
+			GraphActionHandler<Graph>(graph, "EdgeQualityLabeler"),
+			k_(kmer_mapper.get_k()) {
 		FillQuality(index, kmer_mapper, genome);
 		FillQuality(index, kmer_mapper, !genome);
 	}

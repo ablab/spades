@@ -27,12 +27,13 @@
 #include <vector>
 #include <string>
 #include "log.hpp"
+#include "seq_common.hpp"
 
 class SequenceData {
 private:
     friend class Sequence;
     // type to store Seq in Sequences
-    typedef u_int64_t ST;
+    typedef seq_element_type ST;
     // number of bits in ST
 	const static size_t STBits = sizeof(ST) << 3;
     // number of nucleotides in ST
@@ -62,6 +63,24 @@ private:
     }
 
 public:
+
+    template<size_t size_>
+    SequenceData(const Seq<size_> &kmer): kCount(0) {
+        size_t size = (size_ + STN - 1) >> STNBits;
+
+        bytes_ = (ST*) malloc(size * sizeof(ST));
+
+        kmer.copy_data((void *) bytes_);
+    }
+
+    template<size_t size_>
+    SequenceData(const RuntimeSeq<size_> &kmer): kCount(0) {
+        size_t size = (kmer.size() + STN - 1) >> STNBits;
+
+        bytes_ = (ST*) malloc(size * sizeof(ST));
+
+        kmer.copy_data((void *) bytes_);
+    }
     /**
 	 * Sequence initialization (arbitrary size string)
      * copypaste from the seq constructor
@@ -110,6 +129,7 @@ public:
             bytes_[cur] = 0;
     }
 
+
     SequenceData(size_t size_): kCount(0) {
         size_t size = size_;
         size_t bytes_size = (size + STN - 1) >> STNBits;
@@ -145,6 +165,36 @@ public:
     template<size_t size>
     Seq<size> GetStartSeq() {
         return Seq<size>(bytes_);
+    }
+
+    void print(ST * s, size_t size) const {
+        for (size_t i = 0; i < size; ++i) {
+            std::cerr << nucl_map[ (s[i >> STNBits] >> ((i & (STN - 1)) << 1)) & 3 ];
+        }
+        std::cerr << std::endl;
+    }
+
+    template<size_t size>
+    Seq<size> FastStartSeq(size_t from) const {
+        ST result[(size + STN - 1) >> STNBits] = {0};
+
+        size_t start = from >> STNBits;
+        size_t end = (from + size - 1) >> STNBits;
+        size_t shift = (from & (STN - 1)) << 1;
+
+        for (size_t i = start; i <= end; ++i) {
+            result[i - start] = bytes_[i] >> shift;
+        }
+
+        if (shift != 0) {
+            shift = STBits - shift;
+
+            for (size_t i = start + 1; i <= end; ++i) {
+                result[i - start - 1] |= bytes_[i] << shift;
+            }
+        }
+
+        return Seq<size>(result);
     }
 
     char operator[](const size_t i) const {

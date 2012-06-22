@@ -3,138 +3,77 @@
 #include "omni/parallel_unordered_map.hpp"
 #include "openmp_wrapper.h"
 
-#include <unordered_set>
+#include "runtime_k.hpp"
 
-template <size_t size_>
-class ParallelSeqSet {
-
-public:
-    typedef Seq<size_> Kmer;
-
-    typedef parallel_unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> par_container_t;
-
-    typedef std::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
-
-
-private:
-
-    size_t nthreads_;
-    std::vector<par_container_t> nodes_;
-
-public:
-
-    ParallelSeqSet(size_t nthreads, size_t cell_size = 100000) :
-        nthreads_(nthreads),
-        nodes_(nthreads, par_container_t(nthreads, cell_size))
-    {
-    }
-
-    void AddEdge(const Kmer &k, size_t i) {
-        nodes_[i].insert(k, k.GetHash() % nthreads_);
-    }
-
-    void CountSequence(const Sequence& s, size_t thread_number) {
-        if (s.size() < size_)
-            return;
-
-        Kmer kmer = s.start<size_>();
-        AddEdge(kmer, thread_number);
-        for (size_t j = size_; j < s.size(); ++j) {
-            kmer = kmer << s[j];
-            AddEdge(kmer, thread_number);
-        }
-    }
-
-    void MergeMaps(destination_container_t & temp_map, size_t i) {
-        if (temp_map.bucket_count() < nodes_[0][i].bucket_count()) {
-            temp_map.rehash(nodes_[0][i].bucket_count() * nthreads_);
-        }
-
-        for (size_t j = 0; j < nthreads_; ++j) {
-            temp_map.insert(nodes_[j][i].begin(), nodes_[j][i].end());
-        }
-    }
-
-    bool Contains(const Sequence& s) {
-        for (size_t i = 0; i < nthreads_; ++i)
-            if (nodes_[i].find(s) != nodes_[i].end()) return true;
-        return false;
-    }
-
-
-    size_t SingleBucketCount() const {
-        return nodes_[0][0].bucket_count();
-    }
-
-    void clear() {
-        for (size_t i = 0; i < nthreads_; ++i) {
-            nodes_[i].clear();
-        }
-    }
-};
-
-
-template <size_t size_>
 class ParallelSeqVector {
 
 public:
-    typedef Seq<size_> Kmer;
+    typedef runtime_k::KmerHashVector par_container_t;
 
-    typedef parallel_vector<Kmer> par_container_t;
+    typedef runtime_k::KmerSet destination_container_t;
 
-    typedef std::unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> destination_container_t;
+    typedef runtime_k::RtSeq Kmer;
 
 private:
 
+    size_t k_;
+
     size_t nthreads_;
+
     std::vector<par_container_t> nodes_;
 
 public:
 
-    ParallelSeqVector(size_t nthreads, size_t cell_size = 100000) :
+    ParallelSeqVector(size_t k, size_t nthreads, size_t cell_size) :
+        k_(k),
         nthreads_(nthreads),
-        nodes_(nthreads, par_container_t(nthreads, cell_size))
+        nodes_()
+
     {
+        for (size_t i = 0; i < nthreads_; ++i) {
+            nodes_.push_back(runtime_k::GetHashVector(k_, nthreads_));
+        }
+
+        for (size_t i = 0; i < nthreads_; ++i) {
+            nodes_[i].reserve(cell_size);
+        }
     }
 
-    void AddEdge(const Kmer &k, size_t i) {
-        nodes_[i].insert(k, k.GetHash() % nthreads_);
+
+    void AddEdge(const Kmer &kmer, size_t thread_number) {
+        nodes_[thread_number].insert(kmer);
     }
 
     void CountSequence(const Sequence& s, size_t thread_number) {
-        if (s.size() < size_)
+        if (s.size() < k_)
             return;
 
-        Kmer kmer = s.start<size_>();
+        Kmer kmer = s.start<Kmer::max_size>(k_);
+
         AddEdge(kmer, thread_number);
-        for (size_t j = size_; j < s.size(); ++j) {
-            kmer = kmer << s[j];
+        for (size_t j = k_; j < s.size(); ++j) {
+            kmer <<= s[j];
             AddEdge(kmer, thread_number);
         }
+
     }
 
-    void MergeMaps(destination_container_t & temp_map, size_t i) {
+    void MergeMaps(destination_container_t & dest_container, size_t i) {
         for (size_t j = 0; j < nthreads_; ++j) {
-            temp_map.insert(nodes_[j][i].begin(), nodes_[j][i].end());
+            dest_container.transfer(nodes_[j], i);
         }
     }
 
-    void Dump(destination_container_t & temp_map, size_t i) {
+    void Dump(destination_container_t & dest_container, size_t i) {
         for (size_t j = 0; j < nthreads_; ++j) {
-            temp_map.insert(nodes_[j][i].begin(), nodes_[j][i].end());
-            nodes_[j][i].clear();
+            dest_container.transfer(nodes_[j], i);
+            nodes_[j].clear(i);
         }
-    }
-
-    bool Contains(const Sequence& s) {
-        for (size_t i = 0; i < nthreads_; ++i)
-            if (nodes_[i].find(s) != nodes_[i].end()) return true;
-        return false;
     }
 
 
     size_t SingleBucketCount() const {
-        return nodes_[0][0].capacity();
+        return nodes_[0].capacity(0);
     }
 
     bool IsFull(size_t i) const {
@@ -150,5 +89,13 @@ public:
             nodes_[i].clear();
         }
     }
+
+    void print_sizes() {
+        for (size_t i = 0; i < nodes_.size(); ++i) {
+            INFO("Size " << i << "::: ");
+            nodes_[i].print_sizes();
+        }
+    }
+
 
 };

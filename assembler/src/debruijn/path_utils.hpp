@@ -7,8 +7,6 @@
 
 namespace debruijn_graph {
 
-
-
 template<class Graph>
 vector<typename Graph::EdgeId> GetCommonPathsEnd(
 		const Graph& g,
@@ -44,11 +42,6 @@ vector<typename Graph::EdgeId> GetCommonPathsEnd(
 	return paths[0];
 
 }
-
-
-
-
-
 
 
 

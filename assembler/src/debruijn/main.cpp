@@ -29,6 +29,8 @@
 
 #include "perfcounter.hpp"
 
+#include "runtime_k.hpp"
+
 void link_output(std::string const& link_name)
 {
     std::string link = cfg::get().output_root + link_name;
@@ -88,9 +90,9 @@ void load_config(string cfg_filename)
     checkFileExistenceFATAL(cfg_filename);
 
     // deprecated: precopy of config in /tmp (!!!) just to read the values of output_root and output_dir!
-    //fs::path tmp_folder = fs::path("/tmp") / debruijn_graph::MakeLaunchTimeDirName() / ("K" + lexical_cast<string>(debruijn_graph::K));
-    //copy_configs(cfg_filename, tmp_folder);
-    //cfg_filename = (tmp_folder / fs::path(cfg_filename).filename()).string();
+//    fs::path tmp_folder = fs::path("/tmp") / debruijn_graph::MakeLaunchTimeDirName() / ("K");
+//    copy_configs(cfg_filename, tmp_folder);
+//    cfg_filename = (tmp_folder / fs::path(cfg_filename).filename()).string();
     
     cfg::create_instance(cfg_filename);
 
@@ -121,7 +123,7 @@ void create_console_logger(fs::path cfg_filename)
 
 int main(int argc, char** argv)
 {
-	BOOST_STATIC_ASSERT(debruijn_graph::K % 2 != 0);
+	//BOOST_STATIC_ASSERT(debruijn_graph::K % 2 != 0);
 
 	perf_counter pc;
     
@@ -140,6 +142,9 @@ int main(int argc, char** argv)
 
         on_exit_output_linker try_linker("latest");
 
+        VERIFY(cfg::get().K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K);
+        VERIFY(cfg::get().K % 2 != 0);
+
         // read configuration file (dataset path etc.)
 
         // typedefs :)
@@ -154,13 +159,13 @@ int main(int argc, char** argv)
 
         // assemble it!
         INFO("Assembling " << cfg::get().dataset_name << " dataset (" << cfg::get().dataset_file << ")");
-        INFO("with K=" << debruijn_graph::K);
+        INFO("with K=" << cfg::get().K);
 
         debruijn_graph::assemble_genome();
 
         link_output("latest_success");
 
-        INFO("Assembling " << cfg::get().dataset_name << " dataset with K=" << debruijn_graph::K << " finished");
+        INFO("Assembling " << cfg::get().dataset_name << " dataset with K=" << cfg::get().K << " finished");
 
     }
     catch (std::bad_alloc const& e)

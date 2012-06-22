@@ -52,15 +52,15 @@ void SAM_before_resolve(conj_graph_pack& conj_gp) {
 						false, offset_type);
 				auto original_paired_reads = paired_easy_reader(false, 0, false,
 						false, true, offset_type);
-				typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
+				typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
 				SequenceMapper mapper(conj_gp.g, conj_gp.index,
-						conj_gp.kmer_mapper);
+						conj_gp.kmer_mapper, conj_gp.k_value);
 
 				bool print_quality = (
 						cfg::get().sw.print_quality ?
 								*cfg::get().sw.print_quality : false);
 				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph,
-						SequenceMapper> Aligner(conj_gp.g, mapper,
+						SequenceMapper> Aligner(conj_gp.k_value, conj_gp.g, mapper,
 						cfg::get().sw.adjust_align,
 						cfg::get().sw.output_map_format,
 						cfg::get().sw.output_broken_pairs, print_quality);
@@ -75,14 +75,14 @@ void SAM_before_resolve(conj_graph_pack& conj_gp) {
 			auto single_reads = single_easy_reader(false, false, false,
 					offset_type);
 
-			typedef NewExtendedSequenceMapper<K + 1, Graph> SequenceMapper;
+			typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
 			SequenceMapper mapper(conj_gp.g, conj_gp.index,
-					conj_gp.kmer_mapper);
+					conj_gp.kmer_mapper, conj_gp.k_value);
 
 			bool print_quality = (
 					cfg::get().sw.print_quality ?
 							*cfg::get().sw.print_quality : false);
-			SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(
+			SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(conj_gp.k_value,
 					conj_gp.g, mapper, cfg::get().sw.adjust_align,
 					cfg::get().sw.output_map_format,
 					cfg::get().sw.output_broken_pairs, print_quality);
@@ -98,8 +98,7 @@ void SAM_before_resolve(conj_graph_pack& conj_gp) {
 
 }
 
-template<size_t k>
-void PrintWeightDistribution(Graph &g, const string &file_name) {
+void PrintWeightDistribution(Graph &g, const string &file_name, size_t k) {
 	ofstream os(file_name.c_str());
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		vector<EdgeId> v1 = g.OutgoingEdges(g.EdgeStart(*it));
@@ -212,8 +211,7 @@ void corrected_and_save_reads(const conj_graph_pack& gp) {
 	//todo read input files, correct, save and use on the next iteration
 
 	auto_ptr<io::IReader<io::PairedReadSeq>> paired_stream = paired_binary_multireader(false, /*insert_size*/0);
-	io::ModifyingWrapper<io::PairedReadSeq> refined_paired_stream(*paired_stream
-			, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
+	io::ModifyingWrapper<io::PairedReadSeq> refined_paired_stream(*paired_stream, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
 
 	auto_ptr<io::IReader<io::SingleReadSeq>> single_stream = single_binary_multireader(false, /*include_paired_reads*/false);
 	io::ModifyingWrapper<io::SingleReadSeq> refined_single_stream(*single_stream, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));

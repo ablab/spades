@@ -45,11 +45,11 @@ public:
 	OnlineVisualizer(const conj_graph_pack &gp) : gp_(gp), picture_counter_(0), folder_("pictures"), file_name_base_("picture"),
 		max_vertices_(40), edge_length_bound_(1000), positions_(gp.g, 0, true, 15), graph_struct_(gp.g, &gp.int_ids, &positions_), tot_lab_(&graph_struct_) {
 		NewPathColorer<Graph> colorer(gp.g);
-		NewExtendedSequenceMapper<K + 1, Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper);
+		NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value);
 		MappingPath<EdgeId> path1 = mapper.MapSequence(gp.genome);
 		MappingPath<EdgeId> path2 = mapper.MapSequence(!gp.genome);
 		coloring_ = colorer.ColorPath(path1.simple_path(), path2.simple_path());
-		PosFiller<Graph, NewExtendedSequenceMapper<K + 1, Graph>> filler(gp.g, mapper, positions_);
+		PosFiller<Graph, NewExtendedSequenceMapper<Graph> > filler(gp.g, mapper, positions_);
 		filler.Process(gp.genome, "ref0");
 		filler.Process(!gp.genome, "ref1");
 	}
@@ -116,8 +116,8 @@ public:
 			cout << "file " << file << " does not exist" << endl;
 			return;
 		}
-		NewExtendedSequenceMapper<K + 1, Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper);
-		PosFiller<Graph, NewExtendedSequenceMapper<K + 1, Graph>> filler(gp_.g, mapper, positions_);
+		NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value);
+		PosFiller<Graph, NewExtendedSequenceMapper<Graph>> filler(gp_.g, mapper, positions_);
 		io::Reader irs(file);
 		while(!irs.eof()){
 			io::SingleRead read;
@@ -132,8 +132,8 @@ public:
 
 	void ClearPos(stringstream & ss) {
 		positions_.clear();
-		NewExtendedSequenceMapper<K + 1, Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper);
-		PosFiller<Graph, NewExtendedSequenceMapper<K + 1, Graph>> filler(gp_.g, mapper, positions_);
+		NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value);
+		PosFiller<Graph, NewExtendedSequenceMapper<Graph>> filler(gp_.g, mapper, positions_);
 		filler.Process(gp_.genome, "ref0");
 		filler.Process(!gp_.genome, "ref1");
 	}
@@ -169,13 +169,13 @@ public:
 				all = !all;
 			}
 		}
-		if(position + K + 1 > all.size())
+		if(position + gp_.k_value + 1 > all.size())
 			cout << "Ignoring request. Position is out of range : required position is " << position << " while length of the sequence is " << all.size() << endl;
 		else
-			DrawPicture(all.Subseq(position).start<K + 1>());
+			DrawPicture(all.Subseq(position).start<runtime_k::RtSeq::max_size>(gp_.k_value + 1));
 	}
 
-	void DrawPicture(Seq<K + 1> kmer) {
+	void DrawPicture(runtime_k::RtSeq kmer) {
 		kmer = gp_.kmer_mapper.Substitute(kmer);
 		if(!gp_.index.contains(kmer)) {
 			cout << "No corresponding graph location " << endl;

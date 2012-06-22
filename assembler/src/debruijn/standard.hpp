@@ -14,7 +14,6 @@
 #pragma once
 
 #include "standard_base.hpp"
-#include "k.hpp"
 
 //==our
 // log
@@ -34,6 +33,7 @@
 #include "omni/paired_info.hpp"
 #include "omni/total_labeler.hpp"
 
+#include "runtime_k.hpp"
 // common typedefs
 
 namespace debruijn_graph

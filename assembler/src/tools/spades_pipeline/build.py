@@ -24,84 +24,53 @@ def syncFiles(src, dest):
         if not os.path.exists(dest):
             os.makedirs(dest)
         for file in os.listdir(dest):
-            if file != "k.hpp":
-                destFile = os.path.join(dest, file)
-                if os.path.isfile(destFile):
-                    if not os.path.exists(os.path.join(src, file)):
-                        os.unlink(destFile)
+            destFile = os.path.join(dest, file)
+            if os.path.isfile(destFile):
+                if not os.path.exists(os.path.join(src, file)):
+                    os.unlink(destFile)
 
         if os.path.exists(src): # False if src is broken link
             for file in os.listdir(src):
-                if file != "k.hpp":
-                    syncFiles(os.path.join(src, file), os.path.join(dest, file))
+                syncFiles(os.path.join(src, file), os.path.join(dest, file))
 
 
-def kFile_required(kFile, str_k):
-    if not os.path.exists(kFile):
-        return True
-    input = open(kFile, "r")
-    try:
-        for line in input:
-            if line.startswith("  const size_t K = " + str_k + ";"):
-                return False
-    finally:
-        input.close()
+def build_runtime_k(spades_folder, spades_home):
+    build_folder = os.path.join(spades_folder, "build")
 
-    return True
+    syncFiles(os.path.join(spades_home, "src"), os.path.join(build_folder, "src"))
+    syncFiles(os.path.join(spades_home, "ext"), os.path.join(build_folder, "ext"))
+
+    print("\n== Compiling ==\n")
+    build_spades(build_folder)
 
 
-def write_k_file(kFile, k):
-    fo = open(kFile, "w")
-    fo.write("#pragma once\n\n")
-    fo.write("namespace debruijn_graph {\n")
-    fo.write("  const size_t K = " + str(k) + ";\n")
-    fo.write("}\n")
-    fo.close()
-
-
-def build_k(spades_folder, str_k, spades_home):
-    build_folder_k = os.path.join(spades_folder, "build" + str_k)
-
-    syncFiles(os.path.join(spades_home, "src"), os.path.join(build_folder_k, "src"))
-    syncFiles(os.path.join(spades_home, "ext"), os.path.join(build_folder_k, "ext"))
-
-    kFile = os.path.join(build_folder_k, "src/debruijn/k.hpp")
-    if kFile_required(kFile, str_k):
-        write_k_file(kFile, str_k)
-
-    print("\n== Compiling with K=" + str_k + " ==\n")
-    build_spades(build_folder_k)
-
-
-def build_spades_n_copy(cfg, spades_home):
+def build_spades_runtime_k(cfg, spades_home):
     precompiled_folder = cfg.compilation_dir
 
     print("\n== Compilation started ==\n")
 
-    for K in cfg.iterative_K:
-        if not os.path.exists(precompiled_folder):
-            os.makedirs(precompiled_folder)
+    if not os.path.exists(precompiled_folder):
+        os.makedirs(precompiled_folder)
 
-        str_k = str(K)
+    binary_file = os.path.join(precompiled_folder, 'release' + spades_version, 'bin', 'spades')
 
-        binary_file = os.path.join(precompiled_folder, 'release' + spades_version, 'bin', 'K' + str_k, 'spades')
+    if os.path.isfile(binary_file):
+        dest = os.path.join(precompiled_folder, 'build', 'debruijn')
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        shutil.copy2(binary_file, dest)
+        print("Downloaded SPAdes binary is used instead of compilation.\n")
+        print("\n== Compilation finished successfully ==\n")
+        return
 
-        if os.path.isfile(binary_file):
-            dest = os.path.join(precompiled_folder, 'build' + str_k, 'debruijn')
-            if not os.path.exists(dest):
-                os.makedirs(dest)
-            shutil.copy2(binary_file, dest)
-            print("Downloaded SPAdes binary for k=" + str_k + " used instead of compilation.\n")
-            continue
+    lockFlag = os.path.join(precompiled_folder, "lock")
 
-        lockFlag = os.path.join(precompiled_folder, "lock") + str_k
-
-        fo = open(lockFlag, "w")
-        fcntl.lockf(fo, fcntl.LOCK_EX)
-        try:
-            build_k(precompiled_folder, str_k, spades_home)
-        finally:
-            fcntl.lockf(fo, fcntl.LOCK_UN)
+    fo = open(lockFlag, "w")
+    fcntl.lockf(fo, fcntl.LOCK_EX)
+    try:
+        build_runtime_k(precompiled_folder, spades_home)
+    finally:
+        fcntl.lockf(fo, fcntl.LOCK_UN)
 
     print("\n== Compilation finished successfully ==\n")
 
