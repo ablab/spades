@@ -7,6 +7,8 @@
 add_subdirectory(abruijn)
 add_subdirectory(debruijn/long_contigs)
 add_subdirectory(debruijn/long_contigs/utils)
+add_subdirectory(online_vis)
+add_subdirectory(cap)
 
 #tests
 add_subdirectory(test/include_test)
