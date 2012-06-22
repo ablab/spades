@@ -42,7 +42,7 @@ using namespace std;
 
 typedef Seq<K> Kmer;
 //typedef std::tr1::unordered_map<Kmer, KMerCount, typename Kmer::hash, typename Kmer::equal_to> KMerMap;
-typedef std::map<Kmer, KMerCount, typename Kmer::less2 > KMerMap;
+typedef std::map<Kmer, KMerCount, Kmer::less2 > KMerMap;
 
 double oct2phred(string qoct, int qvoffset);
 string encode3toabyte (const string & s);
