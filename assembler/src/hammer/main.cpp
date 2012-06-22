@@ -71,6 +71,7 @@ hint_t Globals::revNo = 0;
 
 hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
+hint_t Globals::number_of_kmers = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
 char Globals::char_offset = 0;
@@ -192,11 +193,6 @@ int main(int argc, char * argv[]) {
 			HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.numbers.ser"));
 		}
 
-		/*TIMEDLN("Before filling map.");
-		KMerMap m;
-		HammerTools::FillMapWithMinimizers( m );
-		TIMEDLN("After filling map.");*/
-
 		// fill in already prepared k-mers
 		if ( !do_everything && cfg::get().input_read_solid_kmers ) {
 			TIMEDLN("Loading k-mers from " << cfg::get().input_solid_kmers );
@@ -254,6 +250,7 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("Too few reads have changed in this iteration. Exiting.");
 			break;
 		}
+		// break;
 	}
 
 	// clean up

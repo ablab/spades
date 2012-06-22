@@ -707,10 +707,15 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 	if ( useFilesystem ) {
 		k_.clear();
 		Globals::kmers->clear();
+		Globals::kmers->reserve(Globals::number_of_kmers);
 		{
 			ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"), ios::binary);
 			boost::archive::binary_iarchive iar(is);
-			iar >> (*Globals::kmers);
+			KMerCount kmc;
+			for ( size_t i=0; i< Globals::number_of_kmers; ++i ) {
+				iar >> kmc;
+				Globals::kmers->push_back(kmc);
+			}
 		}
 		HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"));
 		k_ = *Globals::kmers;

@@ -419,18 +419,39 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 		HammerTools::findMinimizers( kmers, num_minimizers, which_first );
 		for ( vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
 			Seq<K> km = seqs[it->first];
-			if (m.find(km) == m.end()) {
+			KMerMap::iterator mit = m.find(km);
+			if (mit == m.end()) {
 				m[km] = make_pair(PositionKMer(it->first), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, it->second.first));
 			} else {
-				m[km].second.count++;
+				if (mit->second.second.count == 1) {
+					QualBitSet qbs(K);
+					for (uint32_t j=0; j<K; ++j) {
+						qbs.set(j, Globals::blobquality[mit->second.first.start() + j] - char_offset);
+					}
+					mit->second.second.qual = qbs;
+				}
+				mit->second.second.count++;
+				mit->second.second.totalQual *= it->second.first;
+				for (uint32_t j=0; j<K; ++j) {
+					mit->second.second.qual.set(j,
+							min( MAX_SHORT, mit->second.second.qual[j] + Globals::blobquality[it->first + j] - char_offset) );
+				}
 			}
-			// if ( map. )
 		}
 	}
 }
 
 void HammerTools::CountKMersBySplitAndMerge() {
+	vector<KMerCount> vec;
+	KMerMap m;
+
 	// split
+	if ( HammerTools::doingMinimizers() ) {
+		TIMEDLN("Filling map");
+		FillMapWithMinimizers( m );
+		Globals::number_of_kmers = m.size();
+		TIMEDLN("Map filled, " << Globals::number_of_kmers << " kmers in total");
+	} else {
 	if (cfg::get().count_do) {
 		HammerTools::SplitKMers( );
 	}
@@ -452,7 +473,6 @@ void HammerTools::CountKMersBySplitAndMerge() {
 		TIMEDLN("Processed file " << iFile << " with thread " << omp_get_thread_num());
 	}
 	TIMEDLN("Concat vectors");
-	vector<KMerCount> vec;
 	size_t totalsize = 0; for ( int iFile=0; iFile < numfiles; ++iFile ) totalsize += kmcvec[iFile].size();
 	vec.reserve(totalsize);
 	vector< size_t > enditers;
@@ -466,12 +486,19 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	for ( int iFile=1; iFile < numfiles; ++iFile ) {
 		std::inplace_merge(vec.begin(), vec.begin() + enditers[iFile-1], vec.begin() + enditers[iFile], fun_ilk );
 	}
+	}
 
 	TIMEDLN("Extracting kmernos");
 	Globals::kmernos->clear();
 	Globals::kmernos->reserve(vec.size());
+	if (HammerTools::doingMinimizers()) {
+	for ( KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
+		Globals::kmernos->push_back(mit->second.first.start());
+	}
+	} else {
 	for (size_t i=0; i < vec.size(); ++i) {
 		Globals::kmernos->push_back(vec[i].first.start());
+	}
 	}
 
 	TIMEDLN("Writing subvectors");
@@ -485,12 +512,24 @@ void HammerTools::CountKMersBySplitAndMerge() {
 				HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j),
 				1 << cfg::get().general_file_buffer_exp);
 	}
+	if (HammerTools::doingMinimizers()) {
+		size_t num_kmer = 0;
+		for ( KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
+			const hint_t & pos = mit->second.first.start();
+			for (int j=0; j < tau_+1; ++j) {
+				(ostreams[j]->fs) << string(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j))
+						<< "\t" << num_kmer << "\n";
+			}
+			++num_kmer;
+		}
+	} else {
 	for (size_t i=0; i < vec.size(); ++i) {
 		const hint_t & pos = vec[i].first.start();
 		for (int j=0; j < tau_+1; ++j) {
 			(ostreams[j]->fs) << string(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j))
 					<< "\t" << i << "\n";
 		}
+	}
 	}
 	ostreams.clear();
 
@@ -515,11 +554,26 @@ void HammerTools::CountKMersBySplitAndMerge() {
 		}
 	}
 
+	if (HammerTools::doingMinimizers()) {
 	TIMEDLN("Serializing sorted kmers.");
 	{
 		ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
 		boost::archive::binary_oarchive oar(os);
-		oar << vec;
+		for ( KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
+		oar << mit->second;
+		}
+		m.clear();
+	}
+	} else {
+	TIMEDLN("Serializing sorted kmers.");
+	{
+		ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
+		boost::archive::binary_oarchive oar(os);
+		for ( size_t i = 0; i < vec.size(); ++i ) {
+			oar << vec[i];
+		}
+		vec.clear();
+	}
 	}
 	if (!cfg::get().general_remove_temp_files) {
 		TIMEDLN("Serializing kmernos.");
