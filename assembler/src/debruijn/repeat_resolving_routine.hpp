@@ -29,6 +29,7 @@
 #include "long_contigs/lc_launch.hpp"
 #include "internal_aligner.hpp"
 #include "omni/loop_killer.hpp"
+#include "path_utils.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -595,77 +596,21 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	}
 }
 
-template<class graph_pack>
-vector<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsFromSameEdge(
-		const graph_pack& origin_gp,
-		typename graph_pack::graph_t::EdgeId& first_edge,
-		typename graph_pack::graph_t::EdgeId& second_edge, size_t min_dist,
-		size_t max_dist) {
-	PathStorageCallback<typename graph_pack::graph_t> callback(origin_gp.g);
-	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g,
-			min_dist,
-			max_dist, //0, *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var),
-			origin_gp.g.EdgeEnd(first_edge), origin_gp.g.EdgeStart(second_edge),
-			callback);
-	path_processor.Process();
-	auto paths = callback.paths();
-	TRACE(
-			origin_gp.int_ids.ReturnIntId(first_edge) << " "
-					<< origin_gp.int_ids.ReturnIntId(second_edge) << " "
-					<< paths.size());
-	return paths;
-}
 
 template<class graph_pack>
-size_t GetAllPathsQuantity(const graph_pack& origin_gp,
-		typename graph_pack::graph_t::EdgeId& first_edge,
-		typename graph_pack::graph_t::EdgeId& second_edge, double dist) {
-	PathStorageCallback<typename graph_pack::graph_t> callback(origin_gp.g);
-	PathProcessor<typename graph_pack::graph_t> path_processor(
-			origin_gp.g,
-			dist - origin_gp.g.length(first_edge)
-					- size_t(*cfg::get().ds.is_var),
-			dist - origin_gp.g.length(first_edge)
-					+ size_t(*cfg::get().ds.is_var),
-			origin_gp.g.EdgeEnd(first_edge), origin_gp.g.EdgeStart(second_edge),
-			callback);
-	path_processor.Process();
-	auto paths = callback.paths();
-	TRACE(
-			origin_gp.int_ids.ReturnIntId(first_edge) << " "
-					<< origin_gp.int_ids.ReturnIntId(second_edge) << " "
-					<< paths.size());
-	return paths.size();
+bool TryToAddPairInfo(const graph_pack &origin_gp,
+		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
+		const PairInfo<typename graph_pack::graph_t::EdgeId>& p_i) {
+		return TryToAddPairInfo(origin_gp, clustered_index, p_i.first, p_i.second, p_i.d, p_i.weight, p_i.variance);
 }
 
-template<class graph_pack>
-void GenerateMatePairStats(const graph_pack& origin_gp,
-		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
-	map < size_t, size_t > sizes;
-	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd();
-			++e_iter) {
-		auto pi = clustered_index.GetEdgeInfo(*e_iter);
-		for (auto i_iter = pi.begin(); i_iter != pi.end(); ++i_iter) {
-			if (i_iter->d >= origin_gp.g.length(i_iter->first)) {
-				size_t tmp = GetAllPathsQuantity(origin_gp, i_iter->first,
-						i_iter->second, i_iter->d);
-				if (sizes.find(tmp) == sizes.end())
-					sizes.insert(make_pair(tmp, 0));
-				sizes[tmp]++;
-			}
-		}
-	}
-	INFO("Pathset mate pair statistics:");
-	for (auto s_iter = sizes.begin(); s_iter != sizes.end(); s_iter++) {
-		INFO("- size: " << s_iter->first << "; pathsets: " << s_iter->second);
-	}
-}
+
 
 template<class graph_pack>
-bool TryToAddPairInfo(graph_pack &origin_gp,
+bool TryToAddPairInfo(const graph_pack &origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
 		typename graph_pack::graph_t::EdgeId first,
-		typename graph_pack::graph_t::EdgeId second, double tmpd, double w) {
+		typename graph_pack::graph_t::EdgeId second, double tmpd, double w, double var = 0) {
 	auto pi_vector = clustered_index.GetEdgePairInfo(first, second);
 	bool already_exist = false;
 	DEBUG(
@@ -679,13 +624,13 @@ bool TryToAddPairInfo(graph_pack &origin_gp,
 		DEBUG(
 				"dist " << tmpd << " versus " << pi_iter->d << " var "
 						<< pi_iter->variance);
-		if (abs(pi_iter->d - tmpd) < 0.01 + pi_iter->variance) {
+		if (abs(pi_iter->d - tmpd) < 0.01 + pi_iter->variance + var) {
 			already_exist = true;
 		}
 	}
 	if (!already_exist) {
 //		added_info++;
-		DEBUG(
+		INFO(
 				"adding paired info between edges "
 						<< origin_gp.int_ids.ReturnIntId(first) << " "
 						<< origin_gp.int_ids.ReturnIntId(second) << " dist "
@@ -693,7 +638,7 @@ bool TryToAddPairInfo(graph_pack &origin_gp,
 		clustered_index.AddPairInfo(
 				PairInfo<typename graph_pack::graph_t::EdgeId>(first, second,
 						tmpd, w, 0));
-		DEBUG(
+		INFO(
 				"adding paired info between edges "
 						<< origin_gp.int_ids.ReturnIntId(
 								origin_gp.g.conjugate(second))
@@ -714,10 +659,34 @@ bool TryToAddPairInfo(graph_pack &origin_gp,
 	return false;
 }
 
+
+
 template<class graph_pack>
-void DeleteConjugatePairInfo(graph_pack &origin_gp,
+int DeleteIfExist(const graph_pack &origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
-		PairInfo<typename graph_pack::graph_t::EdgeId>& p_info) {
+		const PairInfo<typename graph_pack::graph_t::EdgeId>& p_info) {
+	int cnt = 0;
+	auto pi_vector = clustered_index.GetEdgePairInfo(p_info.first, p_info.second);
+	for (auto pi_iter = pi_vector.begin(); pi_iter != pi_vector.end();
+			++pi_iter) {
+		if (abs(pi_iter->d - p_info.d) < 0.01) {
+			clustered_index.RemovePairInfo(*pi_iter);
+			clustered_index.RemovePairInfo(BackwardInfo(*pi_iter));
+			cnt += 2;
+			INFO("Removed pi "<< origin_gp.g.int_id(pi_iter->first) << " "<< origin_gp.g.int_id(pi_iter->second)<<" d "<<pi_iter->d<<" var "<<pi_iter->variance);
+		}
+	}
+	INFO("cnt += "<<cnt);
+	return cnt;
+}
+
+
+
+template<class graph_pack>
+int DeleteConjugatePairInfo(const graph_pack &origin_gp,
+		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
+		const PairInfo<typename graph_pack::graph_t::EdgeId>& p_info) {
+	int cnt = 0;
 	auto pi_vector = clustered_index.GetEdgePairInfo(
 			origin_gp.g.conjugate(p_info.second),
 			origin_gp.g.conjugate(p_info.first));
@@ -729,9 +698,12 @@ void DeleteConjugatePairInfo(graph_pack &origin_gp,
 		if (abs(pi_iter->d - tmpd) < 0.01) {
 			clustered_index.RemovePairInfo(*pi_iter);
 			clustered_index.RemovePairInfo(BackwardInfo(*pi_iter));
+			cnt += 2;
+			INFO("Removed pi "<< origin_gp.g.int_id(pi_iter->first) << " "<< origin_gp.g.int_id(pi_iter->second)<<" d "<<pi_iter->d<<" var "<<pi_iter->variance);
 		}
 	}
-
+	INFO("cnt += "<<cnt);
+	return cnt;
 }
 
 template<class graph_pack>
@@ -749,18 +721,18 @@ int TreatPairPairInfo(const graph_pack& origin_gp,
 			&& (first_info.d < -0.0001 || second_info.d < 0.0001
 					|| first_info.d > second_info.d))
 		return 0;
+	auto second_edge = second_info.second;
 	if (!fill_missing
 			&& (first_info.d * second_info.d < 0.0001
 					|| first_info.d > second_info.d))
 		return 0;
-	auto second_edge = second_info.second;
 	auto second_weight = second_info.weight;
 	DEBUG(
 			"Treating edges " << origin_gp.int_ids.ReturnIntId(first_edge)
 					<< " " << origin_gp.int_ids.ReturnIntId(second_edge));
 	vector < vector<typename graph_pack::graph_t::EdgeId> > paths;
 	if (fill_missing) {
-		paths = GetAllPathsFromSameEdge(
+		paths = GetAllPathsBetweenEdges(
 				origin_gp,
 				first_edge,
 				second_edge,
@@ -769,7 +741,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp,
 				llround(second_info.d - first_info.d)
 						- origin_gp.g.length(first_edge) + 2);
 	} else {
-		paths = GetAllPathsFromSameEdge(origin_gp, first_edge, second_edge, 0,
+		paths = GetAllPathsBetweenEdges(origin_gp, first_edge, second_edge, 0,
 				*cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var));
 	}
 	vector < size_t > distances;
@@ -779,7 +751,7 @@ int TreatPairPairInfo(const graph_pack& origin_gp,
 						*paths_it));
 	}
 	//= callback.distances();
-//	paths = GetAllPathsFromSameEdge(origin_gp, second_edge, first_edge);
+//	paths = GetAllPathsBetweenEdges(origin_gp, second_edge, first_edge);
 //	for (auto paths_it = paths.begin(); paths_it != paths.end(); paths_it ++) {
 //		distances.push_back(CummulativeLength<typename graph_pack::graph_t>(origin_gp.g, *paths_it));
 //	}
@@ -863,6 +835,207 @@ int TreatPairPairInfo(const graph_pack& origin_gp,
 		return 0;
 	}
 }
+
+
+
+template<class graph_pack>
+bool isConsistent(const graph_pack& origin_gp, PairInfo<typename graph_pack::graph_t::EdgeId>& first_info,
+		PairInfo<typename graph_pack::graph_t::EdgeId>& second_info) {
+	if ((first_info.d < 0.0001 || second_info.d < 0.0001)
+					|| (first_info.d > second_info.d)) return true;
+//	size_t max_comparable_path = *cfg::get().ds.IS - K
+//			+ size_t(*cfg::get().ds.is_var);
+	int pi_distance = second_info.d - first_info.d;
+	int first_length = origin_gp.g.length(first_info.second);
+	double variance = first_info.variance + second_info.variance;
+
+	auto first_edge = first_info.second;
+	auto second_edge = second_info.second;
+	INFO("   PI "<< origin_gp.g.int_id(first_info.first)<<" "<<origin_gp.g.int_id(first_info.second)<<" d "<<first_info.d<<"var "<<first_info.variance<<" tr "<< omp_get_thread_num());
+	INFO("vs PI "<< origin_gp.g.int_id(second_info.first)<<" "<<origin_gp.g.int_id(second_info.second)<<" d "<<second_info.d<<"var "<<second_info.variance<<" tr "<< omp_get_thread_num());
+
+
+	if (abs(pi_distance - first_length)<=variance){
+		if (origin_gp.g.EdgeEnd(first_edge) == origin_gp.g.EdgeStart(second_edge)) return true;
+		else {
+			auto paths = GetAllPathsBetweenEdges(origin_gp, first_edge, second_edge, 0,
+					pi_distance - first_length + variance);
+			return (paths.size() > 0);
+		}
+	}
+	else {
+		if ((int)pi_distance > first_length){
+			auto paths = GetAllPathsBetweenEdges(origin_gp, first_edge, second_edge, pi_distance - first_length - variance,
+					pi_distance - first_length + variance);
+			return (paths.size() > 0);
+		}
+		return false;
+	}
+
+
+
+//		vector < size_t > distances;
+//	for (auto paths_it = paths.begin(); paths_it != paths.end(); paths_it++) {
+//		distances.push_back(
+//				CummulativeLength<typename graph_pack::graph_t>(origin_gp.g,
+//						*paths_it));
+//	}
+//
+//	TRACE("dist "<<distances<<"  tr"<< omp_get_thread_num());
+//
+//	bool comparable = false;
+//	for (size_t i = 0; i < distances.size(); i++) {
+//		TRACE(distances[i]);
+//		if (distances[i] < pi_distance) {
+//			comparable = true;
+//			break;
+//		}
+//	}
+//
+//	return comparable;
+//
+}
+
+
+
+template<class graph_pack>
+void FindInconsistent(const graph_pack& origin_gp,
+		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, std::vector<PairInfo<typename graph_pack::graph_t::EdgeId>>& edge_infos, PairInfoIndexData<typename graph_pack::graph_t::EdgeId>* pi) {
+
+	for(size_t i = 0; i < edge_infos.size(); i++) {
+		for(size_t j = 0; j < edge_infos.size(); j++) {
+			if (i!=j){
+				if (!isConsistent(origin_gp, edge_infos[i], edge_infos[j])){
+					INFO("Inconsistent!!!")
+					if (edge_infos[i].weight > edge_infos[j].weight) {
+						pi->AddPairInfo(edge_infos[j]);
+					} else  {
+						pi->AddPairInfo(edge_infos[i]);
+					}
+				}
+			}
+		}
+	}
+}
+
+
+template<class graph_pack>
+int ParalelFillMissing(const graph_pack& origin_gp,
+		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, size_t nthreads = 4){
+	typedef typename graph_pack::graph_t Graph;
+	int cnt = 0;
+	INFO("Put infos to vector");
+	std::vector<std::vector<PairInfo<typename graph_pack::graph_t::EdgeId>>> infos;
+	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd();
+			++e_iter) {
+//		if (origin_gp.g.length(*e_iter)	>= cfg::get().rr.max_repeat_length)
+			infos.push_back(clustered_index.GetEdgeInfo(*e_iter));
+	}
+
+	std::vector< PairedInfoIndex<Graph>* > to_add(nthreads);
+    for (size_t i = 0; i < nthreads; ++i) {
+        to_add[i] = new PairedInfoIndex<Graph>(origin_gp.g);
+    }
+    SplitPathConstructor<Graph> spc(origin_gp.g);
+    INFO("Start threads");
+	size_t n = 0;
+	#pragma omp parallel num_threads(nthreads)
+	{
+		#pragma omp for
+		for (size_t i = 0; i < infos.size(); ++i)
+		{
+//			FindInconsistent<graph_pack>(origin_gp, clustered_index, infos[i], to_add[omp_get_thread_num()]);
+			vector<PathInfoClass<Graph>> paths = spc.ConvertEdgePairInfoToSplitPathes(infos[i]);
+			for (auto iter = paths.begin(); iter != paths.end(); iter ++) {
+				INFO("Path "<<iter->PrintPath(origin_gp.g));
+				for (auto pi_iter = iter->begin(); pi_iter != iter->end(); pi_iter ++) {
+					TryToAddPairInfo(origin_gp, *to_add[omp_get_thread_num()], *pi_iter);
+				}
+			}
+			VERBOSE_POWER_T(++n, 100, " edge pairs processed. Cur thread "<<omp_get_thread_num());
+
+		}
+	}
+
+	INFO("Threads finished");
+
+	for (size_t i = 0; i < nthreads; ++i) {
+		for (auto add_iter = (*to_add[i]).begin(); add_iter != (*to_add[i]).end(); ++add_iter) {
+			auto pinfos = *add_iter;
+			for (auto add_pi_iter = pinfos.begin(); add_pi_iter != pinfos.end(); ++add_pi_iter) {
+				if (TryToAddPairInfo(origin_gp, clustered_index, *add_pi_iter))
+				{
+					INFO("PI added "<<cnt);
+					cnt++;
+				}
+			}
+		}
+        delete to_add[i];
+	}
+	INFO("Clean finished");
+	return cnt;
+}
+
+
+template<class graph_pack>
+int ParalelRemoveContraditional(const graph_pack& origin_gp,
+		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, size_t nthreads = 4){
+
+	int cnt = 0;
+	INFO("Put infos to vector");
+	std::vector<std::vector<PairInfo<typename graph_pack::graph_t::EdgeId>>> infos;
+	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd();
+			++e_iter) {
+		if (origin_gp.g.length(*e_iter)	>= cfg::get().rr.max_repeat_length)
+			infos.push_back(clustered_index.GetEdgeInfo(*e_iter));
+	}
+
+	std::vector< PairInfoIndexData<typename graph_pack::graph_t::EdgeId>* > to_remove(nthreads);
+    for (size_t i = 0; i < nthreads; ++i) {
+        to_remove[i] = new PairInfoIndexData<typename graph_pack::graph_t::EdgeId>();
+    }
+	INFO("Start threads");
+	size_t n = 0;
+	#pragma omp parallel num_threads(nthreads)
+	{
+		#pragma omp for
+		for (size_t i = 0; i < infos.size(); ++i)
+		{
+			FindInconsistent<graph_pack>(origin_gp, clustered_index, infos[i], to_remove[omp_get_thread_num()]);
+            VERBOSE_POWER_T(++n, 100, " edge pairs processed. Cur thread "<<omp_get_thread_num());
+
+		}
+	}
+
+	INFO("Threads finished");
+
+	for (size_t i = 0; i < nthreads; ++i) {
+		for (auto remove_iter = (*to_remove[i]).begin(); remove_iter != (*to_remove[i]).end(); ++remove_iter) {
+			cnt += DeleteIfExist<graph_pack>(origin_gp, clustered_index, *remove_iter);
+			cnt += DeleteConjugatePairInfo<graph_pack>(origin_gp, clustered_index, *remove_iter);
+		}
+        delete to_remove[i];
+	}
+	INFO("Clean finished");
+	return cnt;
+}
+
+
+template<class graph_pack>
+void ParalelCorrectPairedInfo(const graph_pack& origin_gp,
+		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, size_t nthreads = 4) {
+	int missing_paired_info_count = 0;
+	int extra_paired_info_count = 0;
+
+	extra_paired_info_count = ParalelRemoveContraditional(origin_gp, clustered_index, nthreads);
+	missing_paired_info_count = ParalelFillMissing(origin_gp, clustered_index, nthreads);
+
+	INFO(
+			"Paired info stats: missing = " << missing_paired_info_count
+					<< "; contradictional = " << extra_paired_info_count);
+}
+
+
 
 template<class graph_pack>
 void CorrectPairedInfo(const graph_pack& origin_gp,
@@ -1144,13 +1317,19 @@ void resolve_repeats() {
 		}
 
 		if (cfg::get().rr.symmetric_resolve) {
-			CorrectPairedInfo(conj_gp, clustered_index, true, false);
-			CorrectPairedInfo(conj_gp, clustered_index, true, false);
-			CorrectPairedInfo(conj_gp, clustered_index, true, false);
-			CorrectPairedInfo(conj_gp, clustered_index);
-			CorrectPairedInfo(conj_gp, clustered_index);
-			CorrectPairedInfo(conj_gp, clustered_index);
-			CorrectPairedInfo(conj_gp, clustered_index);
+			if (cfg::get().use_multithreading) {
+				ParalelCorrectPairedInfo(conj_gp, clustered_index, cfg::get().max_threads);
+				ParalelCorrectPairedInfo(conj_gp, clustered_index, cfg::get().max_threads);
+			} else {
+				CorrectPairedInfo(conj_gp, clustered_index, true, false);
+//				CorrectPairedInfo(conj_gp, clustered_index, true, false);
+//				CorrectPairedInfo(conj_gp, clustered_index, true, false);
+//				CorrectPairedInfo(conj_gp, clustered_index);
+//				CorrectPairedInfo(conj_gp, clustered_index);
+//				CorrectPairedInfo(conj_gp, clustered_index);
+//				CorrectPairedInfo(conj_gp, clustered_index);
+			}
+
 			save_distance_filling(conj_gp, clustered_index, clustered_index);
 
 			conj_graph_pack resolved_gp(genome, cfg::get().pos.max_single_gap,

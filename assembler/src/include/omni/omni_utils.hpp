@@ -929,7 +929,7 @@ private:
 
 	size_t call_cnt_;
 
-	static const size_t MAX_CALL_CNT = 2000;
+	static const size_t MAX_CALL_CNT = 3000;
 	static const size_t MAX_DIJKSTRA_VERTICES = 3000;
 
 	//todo rewrite without recursion

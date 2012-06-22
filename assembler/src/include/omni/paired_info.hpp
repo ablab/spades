@@ -947,7 +947,7 @@ public:
 		double result_weight = pair_info.weight;
 		if (math::gr(w, /*-10.*/0.)) {
 			result_weight /= w; //(w + 10);
-		}
+		} else result_weight = 0;
 		double cov_norm_coeff = avg_coverage_ / (2 * (read_length_ - k_));
 		result_weight /= cov_norm_coeff;
 

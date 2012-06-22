@@ -36,6 +36,7 @@
 #include "omni/dijkstra.hpp"
 #include "new_debruijn.hpp"
 #include "perfcounter.hpp"
+#include "split_path_constructor.hpp"
 
 
 
@@ -49,32 +50,6 @@ using omnigraph::Compressor;
 using omnigraph::PairedInfoIndex;
 using omnigraph::PairInfoIndexData;
 using debruijn_graph::DeletedVertexHandler;
-
-
-template<class Graph>
-class PathInfoClass {
-public:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef omnigraph::PairInfo<EdgeId> PairInfo;
-
-	EdgeId base_edge;
-	vector<PairInfo> path;
-	PathInfoClass(): base_edge(NULL) {};
-	PathInfoClass(const EdgeId Edge): base_edge(Edge) {};
-	pair<EdgeId, double> operator[](const size_t i) const {
-		if (i == 0) {
-			return(make_pair(base_edge, 0.0));
-		}
-		VERIFY(i < path.size() + 1);
-		return (make_pair(path[i-1].second, path[i-1].d));
-	}
-	size_t size() {
-		return path.size() + 1;
-	}
-	void push_back(const PairInfo& pi) {
-		path.push_back(pi);
-	}
-};
 
 
 
