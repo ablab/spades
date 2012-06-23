@@ -569,10 +569,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	{
 		ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
 		boost::archive::binary_oarchive oar(os);
-		for ( size_t i = 0; i < vec.size(); ++i ) {
-			oar << vec[i];
-		}
-		vec.clear();
+		oar << vec;
 	}
 	}
 	if (!cfg::get().general_remove_temp_files) {
