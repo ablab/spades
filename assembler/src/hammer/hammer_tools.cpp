@@ -15,7 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/format.hpp>
@@ -409,7 +409,7 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 		}
 		ValidKMerGenerator<K> gen(s, q);
 		vector< pair<hint_t, pair< double, size_t > > > kmers;
-		tr1::unordered_map<hint_t, Seq<K> > seqs;
+		unordered_map<hint_t, Seq<K> > seqs;
 		while (gen.HasMore()) {
 			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
 			kmers.push_back( make_pair(cur_pos, make_pair( 1 - gen.correct_probability(), my_hash(cur_pos) ) ));

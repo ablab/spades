@@ -14,7 +14,7 @@
 #ifndef HAMMER_TOOLS_HPP
 #define HAMMER_TOOLS_HPP
 
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include <algorithm>
 #include <stdexcept>
 #include <iomanip>
