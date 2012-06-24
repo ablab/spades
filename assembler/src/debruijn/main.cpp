@@ -178,9 +178,11 @@ int main(int argc, char** argv)
         std::cerr << "Unknown exception caught " << std::endl;
         return EINTR;
     }
-
-	INFO("Assembling time: " << pc.time_ms());
-
+    int ms = int(pc.time_ms());
+    int secs = (ms / 1000) % 60;
+    int mins = (ms / 1000 / 60) % 60;
+    int hours = (ms / 1000 / 60 / 60);
+    INFO("Assembling time: " << hours << " hours " << mins << " minutes " << secs << " seconds");
     // OK
     return 0;
 }

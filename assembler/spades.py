@@ -442,14 +442,14 @@ def main():
 
         if not CONFIG_FILE:
             if not project_name:
-                error("the project name is not set! It is a mandatory parameter.")
+                error("the project name is not set! It is a mandatory parameter (-n PROJECT_NAME).")
 
             if len(paired1) != len(paired2):
                 error("the number of files with left paired reads is not equal to the"
                       " number of files with right paired reads!")
 
             if not paired and not paired1 and not single:
-                error("you should specify either paired reads or single reads or both!")
+                error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!")
 
             # filling cfg
             cfg["common"] = load_config_from_vars(dict())
