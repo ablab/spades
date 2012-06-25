@@ -9,7 +9,7 @@ spades_version = spades_init.spades_version
 
 def build_spades(dir):
     if not os.path.exists(os.path.join(dir, "Makefile")):
-        support.sys_call('cmake src', dir)
+        support.sys_call('cmake -G "Unix Makefiles" src', dir)
 
     support.sys_call('make spades', dir)
 
@@ -134,7 +134,7 @@ def build_hammer(cfg, spades_home):
         syncFiles(os.path.join(spades_home, "ext"), os.path.join(build_folder, "ext"))
 
         if not os.path.exists(os.path.join(build_folder, "Makefile")):
-            support.sys_call('cmake src', build_folder)
+            support.sys_call('cmake -G "Unix Makefiles" src', build_folder)
 
         support.sys_call('make hammer', build_folder)
     finally:
