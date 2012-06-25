@@ -56,6 +56,11 @@ add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 #add_definitions(-Wconversion)
 #add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 
+# Use libc++ with clang due to C++11 mode
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+endif()
+
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   message("Making Debug Configuration...")
   add_definitions(-D_GLIBCXX_DEBUG)
