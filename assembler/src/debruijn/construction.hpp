@@ -18,7 +18,7 @@
 #include "io/vector_reader.hpp"
 #include "omni_labelers.hpp"
 #include "dataset_readers.hpp"
-#include "online_pictures.hpp"
+//#include "online_pictures.hpp"
 
 namespace debruijn_graph {
 

@@ -43,7 +43,7 @@ using std::set;
  * consistent. Now high level events are merge, glue and split. This list can be extended in near future.
  */
 template<typename VertexId, typename EdgeId>
-class ActionHandler : private boost::noncopyable {
+class ActionHandler: boost::noncopyable {
 	const string handler_name_;
 public:
 	/**
@@ -1094,6 +1094,25 @@ public:
 
 	std::vector<vector<EdgeId>> paths() {
 		return paths_;
+	}
+};
+
+template<class Graph>
+class CountingCallback: public PathProcessor<Graph>::Callback {
+private:
+    typedef typename Graph::EdgeId EdgeId;
+	size_t cnt_;
+public:
+	CountingCallback() :
+			cnt_(0) {
+	}
+
+	virtual void HandlePath(const vector<EdgeId>& path) {
+		cnt_++;
+	}
+
+	size_t cnt() const {
+		return cnt_;
 	}
 };
 

@@ -19,6 +19,8 @@
 #include "boost/archive/tmpdir.hpp"
 #include "read_converter.hpp"
 
+#include "online_pictures.hpp"
+
 int main() {
     std::cout << "Hello world!" << std::endl;
     return 0;

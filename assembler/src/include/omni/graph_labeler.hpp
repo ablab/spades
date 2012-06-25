@@ -168,7 +168,7 @@ class CompositeLabeler : public GraphLabeler<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	std::vector<GraphLabeler<Graph>*> list_;
+	vector<GraphLabeler<Graph>* > list_;
 
 	template<typename ElementId>
 	string ConstructLabel(ElementId id) const {
@@ -210,11 +210,11 @@ public:
 		list_.push_back(&labeler);
 	}
 
-	virtual std::string label(VertexId vertexId) const {
+	virtual string label(VertexId vertexId) const {
 		return ConstructLabel<VertexId>(vertexId);
 	}
 
-	virtual std::string label(EdgeId edgeId) const {
+	virtual string label(EdgeId edgeId) const {
 		return ConstructLabel<EdgeId>(edgeId);
 	}
 };
