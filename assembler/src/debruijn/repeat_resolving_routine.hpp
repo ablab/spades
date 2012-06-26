@@ -514,8 +514,12 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //				"no_repeat_graph");
 	}
 
-//	SimpleLoopKiller<typename graph_pack::graph_t> lk(resolved_gp.g, 3000, 6);
-//	lk.KillAllLoops();
+//	OnlineVisualizer online(resolved_gp);
+//	online.run();
+	if(cfg::get().rr.kill_loops) {
+		SimpleLoopKiller<typename graph_pack::graph_t> lk(resolved_gp.g, cfg::get().rr.max_repeat_length, 6);
+		lk.KillAllLoops();
+	}
 
 	DEBUG("Clearing resolved graph complete");
 

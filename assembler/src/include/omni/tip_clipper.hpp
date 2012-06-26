@@ -123,7 +123,7 @@ protected:
 		}
 	}
 
-	void RemoveTip(EdgeId tip) {
+	virtual void RemoveTip(EdgeId tip) {
 		VertexId start = graph_.EdgeStart(tip);
 		VertexId end = graph_.EdgeEnd(tip);
 		if (removal_handler_) {
@@ -145,8 +145,35 @@ public:
 	/**
 	 * Method clips tips of the graph.
 	 */
-    virtual void ClipTips() = 0;   
+    virtual void ClipTips() {
+		TRACE("Tip clipping (maximal corruption mode) started");
+        size_t removed = 0;
+        for (auto iterator = this->graph().SmartEdgeBegin(this->comparator()); !iterator.IsEnd(); ) {
+			EdgeId tip = *iterator;
+			TRACE("Checking edge for being tip "  << this->graph().str(tip));
+			if (this->IsTip(tip)) {
+				TRACE("Edge "  << this->graph().str(tip) << " judged to look like a tip topologically");
+				if (AdditionalCondition(tip)) {
+                    TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
+                    this->RemoveTip(tip);
+                    removed++;
+                    TRACE("Edge "  << tip << " removed as a tip");
+				} else {
+					TRACE("Edge "  << this->graph().str(tip) << " judged NOT to be tip");
+				}
+			} else {
+				TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like tip topologically");
+			}
+			TRACE("Try to find next edge");
+			++iterator;
+			TRACE("Use next edge");
+		}
+		TRACE("Tip clipping finished");
 
+        DEBUG("REMOVED " << removed);
+		Compressor<Graph> compressor(this->graph());
+		compressor.CompressAllVertices();
+    }
 
 private:
 	DECL_LOGGER("AbstractTipClipper")
@@ -199,36 +226,6 @@ public:
 			base(graph, comparator, max_tip_length, removal_handler, qual_f), max_coverage_(
 					max_coverage), max_relative_coverage_(max_relative_coverage) {
 	}
-
-    void ClipTips(){
-		TRACE("Tip clipping (maximal corruption mode) started");
-        size_t removed = 0;
-        for (auto iterator = this->graph().SmartEdgeBegin(this->comparator()); !iterator.IsEnd(); ) {
-			EdgeId tip = *iterator;
-			TRACE("Checking edge for being tip "  << this->graph().str(tip));
-			if (this->IsTip(tip)) {
-				TRACE("Edge "  << this->graph().str(tip) << " judged to look like a tip topologically");
-				if (AdditionalCondition(tip)) {
-                    TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
-                    this->RemoveTip(tip);
-                    removed++;
-                    TRACE("Edge "  << tip << " removed as a tip");
-				} else {
-					TRACE("Edge "  << this->graph().str(tip) << " judged NOT to be tip");
-				}
-			} else {
-				TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like tip topologically");
-			}
-			TRACE("Try to find next edge");
-			++iterator;
-			TRACE("Use next edge");
-		}
-		TRACE("Tip clipping finished");
-
-        DEBUG("REMOVED " << removed);
-		Compressor<Graph> compressor(this->graph());
-		compressor.CompressAllVertices();
-    }
 
 private:
     DECL_LOGGER("DefaultTipClipper")
@@ -474,6 +471,7 @@ private:
 	typedef AbstractTipClipper<Graph, Comparator> base;
 
 	size_t uniqueness_length_;
+	size_t plausibility_length_;
 	UniquePathFinder<Graph> unique_path_finder_;
 
 	boost::optional<EdgeId> PathStart(EdgeId tip, bool outgoing_tip) const {
@@ -489,29 +487,42 @@ private:
 			return boost::none;
 		}
 	}
+
+	bool CheckPlausibleAlternative(const vector<EdgeId> &rivals) const {
+		for(auto it = rivals.begin(); it != rivals.end(); ++it) {
+			if(this->graph().length(*it) >= plausibility_length_)
+				return true;
+		}
+		return false;
+	}
+
 protected:
 
 	/*virtual*/
 	bool AdditionalCondition(EdgeId tip) const {
 		vector<EdgeId> unique_path;
+		vector<EdgeId> rivals;
 		if (this->graph().IsDeadEnd(this->graph().EdgeEnd(tip))
 				&& this->graph().CheckUniqueIncomingEdge(this->graph().EdgeStart(tip))) {
 			unique_path = unique_path_finder_.UniquePathBackward(
 					this->graph().GetUniqueIncomingEdge(this->graph().EdgeStart(tip)));
+			rivals = this->graph().OutgoingEdges(this->graph().EdgeStart(tip));
 		} else if (this->graph().IsDeadStart(this->graph().EdgeStart(tip))
 				&& this->graph().CheckUniqueOutgoingEdge(this->graph().EdgeEnd(tip))) {
 			unique_path = unique_path_finder_.UniquePathForward(
 					this->graph().GetUniqueOutgoingEdge(this->graph().EdgeEnd(tip)));
+			rivals = this->graph().IncomingEdges(this->graph().EdgeEnd(tip));
 		}
-		return CummulativeLength(this->graph(), unique_path) >= uniqueness_length_;
+		return CummulativeLength(this->graph(), unique_path) >= uniqueness_length_ && CheckPlausibleAlternative(rivals);
 	}
 
 public:
 	TopologyTipClipper(Graph &graph, Comparator comparator,
 			size_t max_tip_length, size_t uniqueness_length,
+			size_t plausibility_length,
 			boost::function<void(EdgeId)> removal_handler = 0) :
 			base(graph, comparator, max_tip_length, removal_handler), uniqueness_length_(
-					uniqueness_length), unique_path_finder_(graph) {
+					uniqueness_length), plausibility_length_(plausibility_length), unique_path_finder_(graph) {
 	}
 
 private:

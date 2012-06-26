@@ -355,7 +355,28 @@ bool TopologyRemoveErroneousEdges(
 //				tec_config.plausibility_length, edge_remover);
 		changed = erroneous_edge_remover.RemoveEdges();
 	}
+//	omnigraph::TopologyTipClipper<Graph, omnigraph::LengthComparator<Graph>>(g, LengthComparator<Graph>(g), 300, 2000, 1000).ClipTips();
+//	if(cfg::get().simp.trec_on) {
+//		size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), trec_config.max_ec_length_coefficient);
+//		TopologyAndReliablityBasedChimericEdgeRemover<Graph>(g, 150,
+//				tec_config.uniqueness_length,
+//				2.5,
+//				edge_remover).RemoveEdges();
+//	}
 	return changed;
+}
+
+template<class Graph>
+bool TopologyReliabilityRemoveErroneousEdges(
+		Graph &g,
+		const debruijn_config::simplification::tr_based_ec_remover& trec_config,
+		EdgeRemover<Graph>& edge_remover) {
+	INFO("Removal of erroneous edges based on topology and reliability started");
+	size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), trec_config.max_ec_length_coefficient);
+	return TopologyAndReliablityBasedChimericEdgeRemover<Graph>(g, max_unr_length,
+				trec_config.uniqueness_length,
+				trec_config.unreliable_coverage,
+				edge_remover).RemoveEdges() && ThornRemover<Graph>(g, max_unr_length, trec_config.uniqueness_length, edge_remover).RemoveEdges();
 }
 
 template<class Graph>
@@ -428,8 +449,13 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover, boost
 	}
 		break;
 	case sm_topology: {
-		return TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
+		bool res = TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
 				edge_remover);
+		if(cfg::get().additional_ec_removing) {
+			res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
+					edge_remover);
+		}
+		return res;
 	}
 		break;
 	case sm_chimeric: {

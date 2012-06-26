@@ -248,6 +248,12 @@ struct debruijn_config {
 			size_t plausibility_length;
 		};
 
+		struct tr_based_ec_remover {
+			size_t max_ec_length_coefficient;
+			size_t uniqueness_length;
+			double unreliable_coverage;
+		};
+
 		struct max_flow_ec_remover {
 			double max_ec_length_coefficient;
 			size_t uniqueness_length;
@@ -265,6 +271,7 @@ struct debruijn_config {
 		erroneous_connections_remover ec;
 		cheating_erroneous_connections_remover cec;
 		topology_based_ec_remover tec;
+		tr_based_ec_remover trec;
 		max_flow_ec_remover mfec;
 		pair_info_ec_remover piec;
 
@@ -286,6 +293,7 @@ struct debruijn_config {
 		int near_vertex;
 		int max_distance;
 		size_t max_repeat_length;
+		bool kill_loops;
 	};
 
 	struct distance_estimator {
@@ -413,6 +421,7 @@ public:
 
 	bool paired_mode;
 	double online_clust_rad;
+	bool additional_ec_removing;
 	bool paired_info_statistics;
 //	bool etalon_info_mode;
 	bool advanced_estimator_mode;
@@ -532,6 +541,14 @@ inline void load(
 	load(tec.uniqueness_length			, pt, "uniqueness_length"			);
 }
 
+inline void load(debruijn_config::simplification::tr_based_ec_remover &trec,
+		boost::property_tree::ptree const &pt, bool complaete) {
+	using config_common::load;
+	load(trec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
+	load(trec.unreliable_coverage		, pt, "unreliable_coverage"			);
+	load(trec.uniqueness_length			, pt, "uniqueness_length"			);
+}
+
 inline void load(debruijn_config::simplification::max_flow_ec_remover& mfec,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
@@ -574,6 +591,7 @@ inline void load(debruijn_config::repeat_resolver& rr,
 	load(rr.near_vertex, pt, "near_vertex");
 	load(rr.max_distance, pt, "max_distance");
 	load(rr.max_repeat_length, pt, "max_repeat_length");
+	load(rr.kill_loops, pt, "kill_loops");
 }
 
 inline void load(debruijn_config::position_handler& pos,
@@ -698,6 +716,7 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.ec, pt, "ec"); // erroneous connections remover:
 	load(simp.cec, pt, "cec"); // cheating erroneous connections remover:
 	load(simp.tec, pt, "tec"); // topology aware erroneous connections remover:
+	load(simp.trec, pt, "trec"); // topology and reliability based erroneous connections remover:
 	// need fix in config file
     load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
 	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
@@ -795,6 +814,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.paired_mode, pt, "paired_mode");
 	load(cfg.online_clust_rad, pt, "online_clust_rad");
+	load(cfg.additional_ec_removing, pt, "additional_ec_removing");
 	load(cfg.paired_info_statistics, pt, "paired_info_statistics");
 //	load(cfg.etalon_info_mode, pt, "etalon_info_mode");
 	load(cfg.componential_resolve, pt, "componential_resolve");

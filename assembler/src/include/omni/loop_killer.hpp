@@ -93,22 +93,24 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 
 private:
-	vector<EdgeId> FindPath(VertexId start, VertexId finish) {
+	vector<EdgeId> FindPath(VertexId start, VertexId finish, const set<VertexId> &component) {
 		set<VertexId> was;
-		vector<EdgeId> rr = FindPath(start, finish, was);
+		vector<EdgeId> rr = FindPath(start, finish, was, component);
 		return vector<EdgeId>(rr.rbegin(), rr.rend());
 	}
 
-	vector<EdgeId> FindPath(VertexId start, VertexId finish, set<VertexId> &was) {
+	vector<EdgeId> FindPath(VertexId start, VertexId finish, set<VertexId> &was, const set<VertexId> &component) {
 		was.insert(start);
+		if(start == finish)
+			return {};
 		vector<EdgeId> outgoing = this->g().OutgoingEdges(start);
 		for(auto it = outgoing.begin(); it != outgoing.end(); ++it) {
 			VertexId next = this->g().EdgeEnd(*it);
 			if(next == finish) {
 				return {*it};
 			}
-			if(was.count(next) == 0) {
-				vector<EdgeId> result = FindPath(next, finish, was);
+			if(was.count(next) == 0 && component.count(next) != 0) {
+				vector<EdgeId> result = FindPath(next, finish, was, component);
 				if(result.size() > 0) {
 					result.push_back(*it);
 					return result;
@@ -118,20 +120,26 @@ private:
 		return {};
 	}
 
-	bool CheckNotMuchRemoved(set<EdgeId> edges, set<VertexId> component) {
+	bool CheckNotMuchRemoved(const set<EdgeId> &edges, const set<VertexId> &component) {
 		size_t sum = 0;
 		for(auto it = component.begin(); it != component.end(); ++it) {
 			vector<EdgeId> outgoing = this->g().OutgoingEdges(*it);
 			for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
 				if(component.count(this->g().EdgeEnd(*eit)) == 1 && edges.count(*eit) == 0 ) {
+					if(this->g().length(*eit) > 500) {
+						return false;
+					}
 					sum += this->g().length(*eit);
 				}
 			}
 		}
-		return sum <= this->splitting_edge_length_;
+//		if(sum <= 3000) {
+//			cout << sum << endl;
+//		}
+		return sum <= 3000;
 	}
 
-	void RemoveExtraEdges(set<EdgeId> edges, set<VertexId> component) {
+	void RemoveExtraEdges(const set<EdgeId> &edges, const set<VertexId> &component) {
 		vector<VertexId> comp(component.begin(), component.end());
 		vector<EdgeId> to_delete;
 		for(auto it = comp.begin(); it != comp.end(); ++it) {
@@ -159,18 +167,42 @@ private:
 		}
 	}
 
+	bool CheckStrong(const set<VertexId> &component) {
+		VertexId v = *(component.begin());
+		for(auto it = component.begin(); it != component.end(); ++it) {
+			if(v != *it && (FindPath(v, *it, component).size() == 0 || FindPath(*it, v, component).size() == 0)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 public:
 	SimpleLoopKiller(Graph &graph, size_t splitting_edge_length, size_t max_component_size) :
 			AbstractLoopKiller<Graph>(graph, splitting_edge_length, max_component_size) {
 	}
 
 	virtual void KillLoop(VertexId start, VertexId finish, const set<VertexId> &component) {
-		vector<EdgeId> path = FindPath(start, finish);
+		vector<EdgeId> path = FindPath(start, finish, component);
 		set<EdgeId> edges(path.begin(), path.end());
-		if(path.size() > 0) {
-			if(!CheckNotMuchRemoved(edges, component)) {
-				return;
+		if(path.size() > 0 || start == finish) {
+			if(start != finish || component.size() > 2)
+				if(/*!CheckStrong(component) || */!CheckNotMuchRemoved(edges, component)) {
+					return;
+				}
+/*
+			cout << this->g().int_id(start) << " " << this->g().int_id(finish) << endl;
+			cout << this->g().VertexNucls(start) << endl;
+
+			for(auto it = component.begin(); it != component.end(); ++it) {
+				vector<EdgeId> outgoing = this->g().OutgoingEdges(*it);
+				for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
+					if(component.count(this->g().EdgeEnd(*eit)) == 1) {
+						cout << this->g().int_id(*it) << " -> " << this->g().int_id(this->g().EdgeEnd(*eit)) << " : " << this->g().length(*eit) << " : " << edges.count(*eit) << " : " << this->g().int_id(*eit) << endl;
+					}
+				}
 			}
+*/
 			RemoveExtraEdges(edges, component);
 			RemoveIsolatedVertices(component);
 		}

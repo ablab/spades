@@ -62,6 +62,9 @@ use_unipaths false
 ;radius for online pair info clusteing algorithm
 online_clust_rad 0.
 
+;if true long ec are removed based on topology and coverage
+additional_ec_removing    true
+
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
 
@@ -86,7 +89,7 @@ sc_rr
 	near_vertex  30
 	max_distance 50
 	max_repeat_length 8000
-
+    kill_loops true
 }
 
 usual_rr
@@ -97,6 +100,7 @@ usual_rr
 	near_vertex  30
 	max_distance 50
 	max_repeat_length 4000
+	kill_loops true
 }
 
 

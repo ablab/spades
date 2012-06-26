@@ -360,6 +360,159 @@ private:
 };
 
 template<class Graph>
+class TopologyAndReliablityBasedChimericEdgeRemover: public ErroneousEdgeRemover<Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ErroneousEdgeRemover<Graph> base;
+
+	size_t max_length_;
+	size_t uniqueness_length_;
+	double max_coverage_;
+
+	bool Unique(const vector<EdgeId>& edges, bool forward) const {
+		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
+	}
+
+	bool CheckUnique(EdgeId e) const {
+		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)), false) ||
+				Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)), true);
+	}
+
+	bool CheckExtremelyUnreliable(EdgeId e) {
+		return this->graph().coverage(e) < max_coverage_;
+	}
+
+public:
+	TopologyAndReliablityBasedChimericEdgeRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length,
+			double max_coverage,
+			AbstractEdgeRemover<Graph>& edge_remover) :
+			base(g, edge_remover), max_length_(max_length), uniqueness_length_(
+					uniqueness_length), max_coverage_(max_coverage) {
+		VERIFY(max_length < uniqueness_length);
+	}
+
+protected:
+
+	size_t uniqueness_length() const {
+		return uniqueness_length_;
+	}
+
+	virtual bool CheckUniqueness(EdgeId e, bool forward) const {
+		return this->graph().length(e) >= uniqueness_length_;
+	}
+
+	void InnerRemoveEdges() {
+		LengthComparator<Graph> comparator(this->graph());
+		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
+				++it) {
+			typename Graph::EdgeId e = *it;
+			if (this->graph().length(e) > max_length_) {
+				return;
+			}
+			TRACE("Checking edge " << this->graph().length(e));
+			if (CheckUnique(e) && CheckExtremelyUnreliable(e)) {
+				TRACE("Deleting edge " << this->graph().length(e));
+				this->DeleteEdge(e);
+				TRACE("Edge was deleted");
+			} else {
+				TRACE("Edge " << this->graph().length(e) << " was not deleted");
+			}
+		}
+	}
+private:
+	DECL_LOGGER("NewTopologyBasedChimericEdgeRemover");
+};
+
+template<class Graph>
+class ThornRemover: public ErroneousEdgeRemover<Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ErroneousEdgeRemover<Graph> base;
+
+	size_t max_length_;
+	size_t uniqueness_length_;
+
+	bool Unique(const vector<EdgeId>& edges, bool forward) const {
+		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
+	}
+
+	bool CheckUnique(EdgeId e) const {
+		TRACE("Checking conditions for edge start");
+		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)), false) ||
+				Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)), true);
+	}
+
+	bool CheckThorn(EdgeId e) {
+		if(this->graph().EdgeStart(e) == this->graph().EdgeEnd(e))
+			return false;
+		if(this->graph().RelatedVertices(this->graph().EdgeStart(e), this->graph().EdgeEnd(e))) {
+			return true;
+		}
+		vector<EdgeId> edges = this->graph().OutgoingEdges(this->graph().EdgeStart(e));
+		if(this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e)) != 2)
+			return false;
+		if(this->graph().IncomingEdgeCount(this->graph().EdgeStart(e)) != 1)
+			return false;
+		if(this->graph().OutgoingEdgeCount(this->graph().EdgeEnd(e)) != 1)
+			return false;
+		if(this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e)) != 2)
+			return false;
+
+		BoundedDijkstra<Graph> dij(this->graph(), 500);
+		dij.run(this->graph().EdgeStart(e));
+		vector<VertexId> reached = dij.ReachedVertices();
+		for(auto it = reached.begin(); it != reached.end(); ++it) {
+			if(*it != this->graph().EdgeEnd(e) && this->graph().RelatedVertices(*it, this->graph().EdgeEnd(e))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+public:
+	ThornRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length,
+			AbstractEdgeRemover<Graph>& edge_remover) :
+			base(g, edge_remover), max_length_(max_length), uniqueness_length_(
+					uniqueness_length) {
+		VERIFY(max_length < uniqueness_length);
+	}
+
+protected:
+
+	size_t uniqueness_length() const {
+		return uniqueness_length_;
+	}
+
+	virtual bool CheckUniqueness(EdgeId e, bool forward) const {
+		return this->graph().length(e) >= uniqueness_length_;
+	}
+
+	void InnerRemoveEdges() {
+		LengthComparator<Graph> comparator(this->graph());
+		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
+				++it) {
+			typename Graph::EdgeId e = *it;
+			if (this->graph().length(e) > max_length_) {
+				return;
+			}
+			TRACE("Checking edge " << this->graph().length(e));
+			if (CheckUnique(e) && CheckThorn(e)) {
+				TRACE("Deleting edge " << this->graph().length(e));
+				this->DeleteEdge(e);
+				TRACE("Edge was deleted");
+			} else {
+				TRACE("Edge " << this->graph().length(e) << " was not deleted");
+			}
+		}
+	}
+private:
+	DECL_LOGGER("NewTopologyBasedChimericEdgeRemover");
+};
+
+
+template<class Graph>
 class AdvancedTopologyChimericEdgeRemover: public NewTopologyBasedChimericEdgeRemover<
 		Graph> {
 	typedef typename Graph::EdgeId EdgeId;
