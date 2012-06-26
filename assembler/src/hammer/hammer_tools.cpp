@@ -263,7 +263,6 @@ void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > 
 	int m_num = 0;
 	vector< pair<hint_t, pair< double, size_t > > >::iterator it = v.begin();
 	for ( ; it != v.end(); ) {
-//		cout << string(Globals::blob + it->first, K);
 		char c = Globals::blob[ it->first ];
 		if ( (which_first == 0) && ( (c == 'A') || (c == 'C') ) ) break;
 		if ( (which_first == 1) && ( (c == 'G') || (c == 'T') ) ) break;
@@ -273,13 +272,11 @@ void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > 
 		for (vector< pair<hint_t, pair< double, size_t > > >::const_iterator it2 = v.begin(); it2 != it; ++it2 ) {
 			if ( it->first - it2->first < 5 ) {
 				erase = true;
-//				cout << "\terase\t" << it->first << "\t" << it->first - it2->first <<  "\n";
 				break;
 			}
 		}
 		if ( erase ) it = v.erase(it);
 		else {
-//			cout << "\t" << m_num << "\t" << it->first << "\n";
 			++it;
 			++m_num;
 		}
