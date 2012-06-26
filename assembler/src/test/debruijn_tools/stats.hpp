@@ -562,7 +562,9 @@ public:
 		bp_comp comp(g_, coloring_);
 		sort(breakpoints.begin(), breakpoints.end(), comp);
 		for (size_t i = 0; i < breakpoints.size(); ++i) {
-			ReportBreakpoint(breakpoints[i], folder,
+			ReportBreakpoint(
+					breakpoints[i],
+					folder,
 					ToString(i) + "_"
 							+ ToString(comp.MaxRedBlueIncLength(breakpoints[i]))
 							+ "_");
@@ -591,15 +593,12 @@ class SimpleInDelAnalyzer {
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& g_;
 	const ColorHandler<Graph>& coloring_;
-	const EdgesPositionHandler<Graph>& edge_pos_;
 	const vector<EdgeId> genome_path_;
 	const edge_type shortcut_color_;
 
-	vector<EdgeId> TryFindPath(size_t pos, VertexId end,
-			size_t edge_count_bound) {
+	vector<EdgeId> TryFindPath(size_t pos, VertexId end, size_t edge_count_bound) {
 		vector<EdgeId> answer;
-		for (size_t i = 0;
-				i + pos < genome_path_.size() && i < edge_count_bound; ++i) {
+		for(size_t i = 0; i + pos < genome_path_.size() && i < edge_count_bound; ++i) {
 			if ((coloring_.Color(genome_path_[pos + i]) & shortcut_color_) > 0)
 				return vector<EdgeId>();
 			answer.push_back(genome_path_[pos + i]);
@@ -610,86 +609,45 @@ class SimpleInDelAnalyzer {
 		return vector<EdgeId>();
 	}
 
-	//genome pos exclusive
-	size_t CumulativeGenomeLengthToPos(size_t pos) {
-		size_t answer = 0;
-		for (size_t i = 0; i < pos; ++i) {
-			answer += g_.length(genome_path_[i]);
-		}
-		return answer;
-	}
-
-	pair<vector<EdgeId>, pair<size_t, size_t>> FindGenomePath(VertexId start,
-			VertexId end, size_t edge_count_bound) {
+	vector<EdgeId> FindGenomePath(VertexId start, VertexId end, size_t edge_count_bound) {
 		for (size_t i = 0; i < genome_path_.size(); ++i) {
 			if (g_.EdgeStart(genome_path_[i]) == start) {
 				vector<EdgeId> path = TryFindPath(i, end, edge_count_bound);
 				if (!path.empty())
-					return make_pair(path,
-							make_pair(CumulativeGenomeLengthToPos(i),
-									CumulativeGenomeLengthToPos(
-											i + path.size())));
+					return path;
 			}
 		}
-		return make_pair(vector<EdgeId>(), make_pair(0, 0));
+		return vector<EdgeId>();
 	}
 
-	pair<string, pair<size_t, size_t>> ContigIdAndPositions(EdgeId e) {
-		vector < EdgePosition > poss = edge_pos_.GetEdgePositions(e);
-		if (poss.size() > 1 || poss.empty()) {
-			WARN("Something strange with assembly positions");
-			return make_pair("", make_pair(0, 0));
-		}
-		EdgePosition pos = poss.front();
-		return make_pair(pos.contigId_, make_pair(pos.start(), pos.end()));
-	}
-
-	void Process(EdgeId e, const vector<EdgeId>& genome_path,
-			size_t genome_start, size_t genome_end) {
+	void Process(EdgeId e, const vector<EdgeId>& genome_path) {
 		DEBUG("Processing edge and genome path");
 		const size_t mem_lim = 2 << 26;
 		Sequence edge_nucls = g_.EdgeNucls(e);
 		Sequence path_nucls = MergeSequences(g_, genome_path);
 		size_t edge_length = g_.length(e);
 		size_t path_length = CummulativeLength(g_, genome_path);
-		DEBUG(
-				"Diff length " << abs((int) edge_length - (int) path_length)
-						<< "; genome path length " << path_length
-						<< "; edge length " << edge_length);
-		pair<string, pair<size_t, size_t>> c_id_and_pos = ContigIdAndPositions(
-				e);
+		DEBUG("Diff length " << abs((int)edge_length - (int)path_length)
+				<< "; genome path length " << path_length << "; edge length " << edge_length);
 		if (edge_length * path_length <= mem_lim) {
 			size_t edit_dist = EditDistance(edge_nucls, path_nucls);
-			DEBUG(
-					"Edit distance " << edit_dist << ". That is "
-							<< double(edit_dist)
-									/ max(edge_length, path_length));
-			pair<size_t, size_t> local_sim = LocalSimilarity(edge_nucls,
-					path_nucls);
-			DEBUG(
-					"Local sim " << local_sim.first << " interval length "
-							<< local_sim.second << " relative "
-							<< ((double) local_sim.first / local_sim.second));
-//			assembly_length-genome_length relative_local_sim genome_path_length assembly_length genome_length
-//			contig_id contig_start contig_end genome_start genome_end min max local_sim sim_interval edit_dist edit_dist/max
-			cerr
-					<< str(
-							format(
-									"%d %f %d %d %d %s %d %d %d %d %d %d %d %d %d %f")
-									% ((int) edge_length - (int) path_length)
-									% ((double) local_sim.first
-											/ local_sim.second)
-									% genome_path.size() % edge_length
-									% path_length % c_id_and_pos.first
-									% c_id_and_pos.second.first
-									% c_id_and_pos.second.second % genome_start
-									% genome_end % min(edge_length, path_length)
-									% max(edge_length, path_length)
-									% local_sim.first % local_sim.second
-									% edit_dist
-									% (double(edit_dist)
-											/ max(edge_length, path_length)))
-					<< endl;
+			DEBUG("Edit distance " << edit_dist
+					<< ". That is " << double(edit_dist) / max(edge_length, path_length));
+			pair<size_t, size_t> local_sim = LocalSimilarity(edge_nucls, path_nucls);
+			DEBUG("Local sim " << local_sim.first << " interval length " << local_sim.second << " relative " << ((double)local_sim.first/local_sim.second));
+//			assembly_length-genome_length relative_local_sim genome_path_length assembly_length genome_length min max local_sim sim_interval edit_dist edit_dist/max
+			cerr << str(format("%d %f %d %d %d %d %d %d %d %d %f")
+					% ((int)edge_length - (int)path_length)
+					% ((double)local_sim.first/local_sim.second)
+					% genome_path.size()
+					% edge_length
+					% path_length
+					% min(edge_length, path_length)
+					% max(edge_length, path_length)
+					% local_sim.first
+					% local_sim.second
+					% edit_dist
+					% (double(edit_dist) / max(edge_length, path_length))) << endl;
 		} else {
 			WARN("Edges were too long");
 		}
@@ -697,15 +655,11 @@ class SimpleInDelAnalyzer {
 
 	void AnalyzeShortcutEdge(EdgeId e) {
 		DEBUG("Analysing edge " << g_.str(e));
-		pair<vector<EdgeId>, pair<size_t, size_t>> genome_path = FindGenomePath(
-				g_.EdgeStart(e), g_.EdgeEnd(e), /*edge count bound*/100);
-		if (!genome_path.first.empty()) {
-			DEBUG(
-					"Non empty genome path of edge count "
-							<< genome_path.first.size());
-			DEBUG("Path " << g_.str(genome_path.first));
-			Process(e, genome_path.first, genome_path.second.first,
-					genome_path.second.second);
+		vector<EdgeId> genome_path = FindGenomePath(g_.EdgeStart(e), g_.EdgeEnd(e), /*edge count bound*/ 100);
+		if (!genome_path.empty()) {
+			DEBUG("Non empty genome path of edge count " << genome_path.size());
+			DEBUG("Path " << g_.str(genome_path));
+			Process(e, genome_path);
 		} else {
 			DEBUG("Empty genome path");
 		}
@@ -713,10 +667,8 @@ class SimpleInDelAnalyzer {
 
 public:
 	SimpleInDelAnalyzer(const Graph& g, const ColorHandler<Graph>& coloring,
-			const EdgesPositionHandler<Graph>& edge_pos,
-			const vector<EdgeId> genome_path, edge_type shortcut_color) :
-			g_(g), coloring_(coloring), edge_pos_(edge_pos), genome_path_(
-					genome_path), shortcut_color_(shortcut_color) {
+			const vector<EdgeId> genome_path, edge_type shortcut_color)
+	: g_(g), coloring_(coloring), genome_path_(genome_path), shortcut_color_(shortcut_color) {
 	}
 
 	void Analyze() {
@@ -872,7 +824,7 @@ template<class Graph>
 class ThreadedGenomeEnumerator: public GraphEdgeEnumerator<Graph> {
 	typedef GraphEdgeEnumerator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
-	const vector<EdgeId> genome_path_;
+	vector<EdgeId> genome_path_;
 public:
 	ThreadedGenomeEnumerator(const Graph& g, const vector<EdgeId>& genome_path) :
 			base(g), genome_path_(genome_path) {
@@ -900,202 +852,6 @@ public:
 		}
 		return answer;
 	}
-};
-
-template<class Graph, class Mapper>
-class ContigBlockStats {
-	typedef ThreadedGenomeEnumerator<Graph> Enumerator;
-	const Graph& g_;
-	const EdgesPositionHandler<Graph>& edge_pos_;
-	Sequence genome_;
-	ContigStream& contigs_;
-
-	void ReportGenomeBlocks(const map<EdgeId, string>& labels) const {
-		set<EdgeId> visited;
-		cerr << "Genome blocks started" << endl;
-		for (auto it = genome_path_.begin(); it != genome_path_.end(); ++it) {
-			if (visited.count(*it) > 0)
-				continue;
-			cerr << "Block " << get(labels, *it) << " length: "
-					<< g_.length(*it) << " positions: " << edge_pos_.GetEdgePositions(*it) << endl;
-			visited.insert(*it);
-			visited.insert(g_.conjugate(*it));
-		}
-		cerr << "Genome blocks ended" << endl;
-	}
-
-	void ReportOtherBlocks(const map<EdgeId, string>& labels) const {
-		cerr << "Other blocks started" << endl;
-		for (auto it = labels.begin(); it != labels.end(); ++it) {
-			if (boost::lexical_cast<size_t>(it->second) > 1000000) {
-				cerr << "Block " << get(labels, it->first) << " length: "
-						<< g_.length(it->first) << " positions: " << edge_pos_.GetEdgePositions(it->first) << endl;
-			}
-		}
-		cerr << "Other blocks ended" << endl;
-	}
-
-	void ReportContigs(const map<EdgeId, string>& labels) const {
-		contigs_.reset();
-		Contig contig;
-		while (!contigs_.eof()) {
-			contigs_ >> contig;
-
-		}
-	}
-
-public:
-	ContigBlockStats(const Graph& g,
-			const EdgesPositionHandler<Graph>& edge_pos,
-			const Sequence& genome,
-			ContigStream& contigs) :
-			g_(g), edge_pos_(edge_pos),
-			genome_(genome),
-			contigs_(contigs) {
-	}
-
-	void Count() const {
-		map < EdgeId, string > labels = Enumerator(g_, genome_path_).Enumerate();
-		ReportGenomeBlocks(labels);
-		ReportOtherBlocks(labels);
-		ReportContigs(labels);
-	}
-};
-
-template<class Graph>
-class AlternatingPathsCounter {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	const Graph& g_;
-	const ColorHandler<Graph>& coloring_;
-
-	edge_type InvertColor(edge_type color) const {
-		if (color == edge_type::red) {
-			return edge_type::blue;
-		} else if (color == edge_type::blue) {
-			return edge_type::red;
-		}
-		VERIFY(false);
-		return edge_type::blue;
-	}
-
-	vector<EdgeId> FilterEdges(vector<EdgeId> edges, edge_type color) const {
-		vector<EdgeId> answer;
-		for (size_t i = 0; i < edges.size(); ++i) {
-			if (coloring_.Color(edges[i]) == color) {
-				answer.push_back(edges[i]);
-			}
-		}
-		return answer;
-	}
-
-	vector<EdgeId> OutgoingEdges(VertexId v, edge_type color) const {
-		DEBUG(
-				"Looking for outgoing edges for vertex " << g_.str(v)
-						<< " of color " << color);
-		return FilterEdges(g_.OutgoingEdges(v), color);
-	}
-
-	vector<EdgeId> IncomingEdges(VertexId v, edge_type color) const {
-		DEBUG(
-				"Looking for incoming edges for vertex " << g_.str(v)
-						<< " of color " << color);
-		return FilterEdges(g_.IncomingEdges(v), color);
-	}
-
-	bool CheckNotContains(vector<EdgeId>& path, EdgeId e) const {
-		return std::find(path.begin(), path.end(), e) == path.end();
-	}
-
-	VertexId OtherVertex(EdgeId e, VertexId v) const {
-		VERIFY(
-				g_.EdgeStart(e) != g_.EdgeEnd(e)
-						&& (g_.EdgeStart(e) == v || g_.EdgeEnd(e) == v));
-		if (g_.EdgeStart(e) == v) {
-			DEBUG("Next vertex " << g_.EdgeEnd(e));
-			return g_.EdgeEnd(e);
-		}
-		DEBUG("Next vertex " << g_.EdgeStart(e));
-		return g_.EdgeStart(e);
-	}
-
-	bool Grow(vector<EdgeId>& path, VertexId last_vertex) const {
-		DEBUG("Growing path for vertex " << g_.str(last_vertex));
-		EdgeId last_edge = path.back();
-		DEBUG("Last edge " << last_edge);
-		edge_type next_color = InvertColor(coloring_.Color(last_edge));
-		vector<EdgeId> next_candidates =
-				(g_.EdgeEnd(last_edge) == last_vertex) ?
-						IncomingEdges(last_vertex, next_color) :
-						OutgoingEdges(last_vertex, next_color);
-		if (next_candidates.empty()) {
-			DEBUG("No candidates");
-			return true;
-		}
-		if (next_candidates.size() > 1) {
-			DEBUG("Several candidates");
-			return false;
-		}
-		EdgeId next_edge = next_candidates.front();
-		DEBUG(
-				"Adding edge " << g_.str(next_edge) << " of color "
-						<< coloring_.Color(next_edge));
-		if (!CheckNotContains(path, next_edge)) {
-			WARN("PROBLEM");
-			return false;
-		}
-
-		path.push_back(next_edge);
-		return Grow(path, OtherVertex(next_edge, last_vertex));
-	}
-
-	vector<EdgeId> AlternatingPathContainingEdge(EdgeId e) const {
-		vector<EdgeId> answer;
-		vector<EdgeId> tmp_path;
-		DEBUG("Growing backward");
-		tmp_path.push_back(e);
-		if (Grow(tmp_path, g_.EdgeStart(e))) {
-			answer.insert(answer.end(), tmp_path.rbegin(), tmp_path.rend());
-			tmp_path.clear();
-			DEBUG("Growing forward");
-			tmp_path.push_back(e);
-			if (Grow(tmp_path, g_.EdgeEnd(e))) {
-				answer.insert(answer.end(), (++tmp_path.begin()),
-						tmp_path.end());
-				return answer;
-			}
-		}
-		return vector<EdgeId>();
-	}
-
-	void ProcessAltPath(const vector<EdgeId>& path) const {
-		DEBUG("Processing path of length " << path.size());
-		cerr << path.size() << endl;
-	}
-
-public:
-	AlternatingPathsCounter(const Graph& g, const ColorHandler<Graph>& coloring) :
-			g_(g), coloring_(coloring) {
-	}
-
-	void CountPaths() const {
-		set<EdgeId> visited_edges;
-		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (visited_edges.count(*it) > 0)
-				continue;
-			if (coloring_.Color(*it) == edge_type::red) {
-				DEBUG("Looking for alt path for edge " << g_.str(*it));
-				vector<EdgeId> alt_path = AlternatingPathContainingEdge(*it);
-				if (!alt_path.empty()) {
-					ProcessAltPath(alt_path);
-					visited_edges.insert(alt_path.begin(), alt_path.end());
-				}
-			}
-		}
-	}
-private:
-	DECL_LOGGER("AlternatingPathsCounter")
-	;
 };
 
 }

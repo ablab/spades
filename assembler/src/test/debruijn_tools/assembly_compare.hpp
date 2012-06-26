@@ -13,7 +13,6 @@
 #include "omni/omni_utils.hpp"
 #include "debruijn_stats.hpp"
 #include "io/splitting_wrapper.hpp"
-#include "io/multifile_reader.hpp"
 #include <boost/algorithm/string/predicate.hpp>
 
 #include "coloring.hpp"
@@ -84,52 +83,159 @@ public:
 	}
 };
 
+//template<class gp_t>
+//void ConstructColoredGraph(gp_t& gp, ColorHandler<typename gp_t::graph_t> coloring
+//		, const vector<ContigStream*>& streams) {
+//	typedef typename gp_t::graph_t Graph;
+//	const size_t k = gp_t::k_value;
+//	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
+//
+//	INFO("Constructing de Bruijn graph for k=" << k);
+//	ConstructGraph<k, Graph>(streams, gp.g, gp.index);
+//
+//	//TODO do we still need it?
+////	SimplifyGraph(gp_.g, br_delta);
+//
+//	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
+//			coloring, *MapperInstance<gp_t>(gp));
+//	colored_graph_constructor.ConstructGraph(streams);
+//
+//	INFO("Filling contig positions");
+//	for (auto it = streams.begin(); it != streams.end(); ++it) {
+//		ContigStream& stream = **it;
+//		stream.reset();
+//		FillPos(gp, stream);
+//	}
+//}
+
 template<class Graph>
-void SimplifyGraph(Graph& g, size_t br_delta) {
-	debruijn_config::simplification::bulge_remover br_config;
-	br_config.max_bulge_length_coefficient = 2;
-	br_config.max_coverage = 1000.;
-	br_config.max_relative_coverage = 1.2;
-	br_config.max_delta = br_delta;
-	br_config.max_relative_delta = 0.1;
-	INFO("Removing bulges");
-	RemoveBulges(g, br_config);
+class AlternatingPathsCounter {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	const Graph& g_;
+	const ColorHandler<Graph>& coloring_;
 
-//		debruijn_config::simplification::tip_clipper tc;
-//		tc.max_coverage = 1000;
-//		tc.max_relative_coverage = 1000;
-//		tc.max_tip_length_coefficient = 6;
-//		ClipTips(gp.g, tc, 10 * gp.g.k());
-}
-
-template<class gp_t>
-void ConstructColoredGraph(gp_t& gp, ColorHandler<typename gp_t::graph_t>& coloring
-		, vector<ContigStream*>& streams, int br_delta = -1) {
-	typedef typename gp_t::graph_t Graph;
-	const size_t k = gp_t::k_value;
-	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
-
-	INFO("Constructing de Bruijn graph for k=" << k);
-
-	//dirty hack because parallel construction uses cfg::get!!!
-	io::MultifileReader<Contig> stream(streams);
-	ConstructGraph<k, Graph>(gp.g, gp.index, stream);
-
-	//TODO do we still need it?
-	if (br_delta > 0)
-		SimplifyGraph(gp.g, br_delta);
-
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
-			coloring, *MapperInstance<gp_t>(gp));
-	colored_graph_constructor.ConstructGraph(streams);
-
-	INFO("Filling contig positions");
-	for (auto it = streams.begin(); it != streams.end(); ++it) {
-		ContigStream& stream = **it;
-		stream.reset();
-		FillPos(gp, stream);
+	edge_type InvertColor(edge_type color) const {
+		if (color == edge_type::red) {
+			return edge_type::blue;
+		} else if (color == edge_type::blue) {
+			return edge_type::red;
+		}VERIFY(false);
+		return edge_type::blue;
 	}
-}
+
+	vector<EdgeId> FilterEdges(vector<EdgeId> edges, edge_type color) const {
+		vector<EdgeId> answer;
+		for (size_t i = 0; i < edges.size(); ++i) {
+			if (coloring_.Color(edges[i]) == color) {
+				answer.push_back(edges[i]);
+			}
+		}
+		return answer;
+	}
+
+	vector<EdgeId> OutgoingEdges(VertexId v, edge_type color) const {
+		DEBUG(
+				"Looking for outgoing edges for vertex " << g_.str(v) << " of color " << color);
+		return FilterEdges(g_.OutgoingEdges(v), color);
+	}
+
+	vector<EdgeId> IncomingEdges(VertexId v, edge_type color) const {
+		DEBUG(
+				"Looking for incoming edges for vertex " << g_.str(v) << " of color " << color);
+		return FilterEdges(g_.IncomingEdges(v), color);
+	}
+
+	bool CheckNotContains(vector<EdgeId>& path, EdgeId e) const {
+		return std::find(path.begin(), path.end(), e) == path.end();
+	}
+
+	VertexId OtherVertex(EdgeId e, VertexId v) const {
+		VERIFY(
+				g_.EdgeStart(e) != g_.EdgeEnd(e) && (g_.EdgeStart(e) == v || g_.EdgeEnd(e) == v));
+		if (g_.EdgeStart(e) == v) {
+			DEBUG("Next vertex " << g_.EdgeEnd(e));
+			return g_.EdgeEnd(e);
+		}DEBUG("Next vertex " << g_.EdgeStart(e));
+		return g_.EdgeStart(e);
+	}
+
+	bool Grow(vector<EdgeId>& path, VertexId last_vertex) const {
+		DEBUG("Growing path for vertex " << g_.str(last_vertex));
+		EdgeId last_edge = path.back();
+		DEBUG("Last edge " << last_edge);
+		edge_type next_color = InvertColor(coloring_.Color(last_edge));
+		vector<EdgeId> next_candidates =
+				(g_.EdgeEnd(last_edge) == last_vertex) ?
+						IncomingEdges(last_vertex, next_color) :
+						OutgoingEdges(last_vertex, next_color);
+		if (next_candidates.empty()) {
+			DEBUG("No candidates");
+			return true;
+		}
+		if (next_candidates.size() > 1) {
+			DEBUG("Several candidates");
+			return false;
+		}
+		EdgeId next_edge = next_candidates.front();
+		DEBUG(
+				"Adding edge " << g_.str(next_edge) << " of color " << coloring_.Color(next_edge));
+		if (!CheckNotContains(path, next_edge)) {
+			WARN("PROBLEM");
+			return false;
+		}
+
+		path.push_back(next_edge);
+		return Grow(path, OtherVertex(next_edge, last_vertex));
+	}
+
+	vector<EdgeId> AlternatingPathContainingEdge(EdgeId e) const {
+		vector<EdgeId> answer;
+		vector<EdgeId> tmp_path;
+		DEBUG("Growing backward");
+		tmp_path.push_back(e);
+		if (Grow(tmp_path, g_.EdgeStart(e))) {
+			answer.insert(answer.end(), tmp_path.rbegin(), tmp_path.rend());
+			tmp_path.clear();
+			DEBUG("Growing forward");
+			tmp_path.push_back(e);
+			if (Grow(tmp_path, g_.EdgeEnd(e))) {
+				answer.insert(answer.end(), (++tmp_path.begin()), tmp_path.end());
+				return answer;
+			}
+		}
+		return vector<EdgeId>();
+	}
+
+	void ProcessAltPath(const vector<EdgeId>& path) const {
+		DEBUG("Processing path of length " << path.size());
+		cerr << path.size() << endl;
+	}
+
+public:
+	AlternatingPathsCounter(const Graph& g, const ColorHandler<Graph>& coloring) :
+			g_(g), coloring_(coloring) {
+	}
+
+	void CountPaths() const {
+		set<EdgeId> visited_edges;
+		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (visited_edges.count(*it) > 0)
+				continue;
+			if (coloring_.Color(*it) == edge_type::red) {
+				DEBUG("Looking for alt path for edge " << g_.str(*it));
+				vector<EdgeId> alt_path = AlternatingPathContainingEdge(*it);
+				if (!alt_path.empty()) {
+					ProcessAltPath(alt_path);
+					visited_edges.insert(alt_path.begin(), alt_path.end());
+				}
+			}
+		}
+	}
+private:
+	DECL_LOGGER("AlternatingPathsCounter")
+	;
+};
 
 template<class gp_t>
 class AssemblyComparer {
@@ -142,7 +248,6 @@ private:
 //	io::IReader<io::SingleRead> &stream1_;
 //	io::IReader<io::SingleRead> &stream2_;
 	gp_t gp_;
-	ColorHandler<Graph> coloring_;
 	io::RCReaderWrapper<io::SingleRead> rc_stream1_;
 	io::RCReaderWrapper<io::SingleRead> rc_stream2_;
 	string name1_;
@@ -178,6 +283,23 @@ private:
 		Cleaner<Graph>(g).Clean();
 	}
 
+	void SimplifyGraph(Graph& g, size_t br_delta) {
+		debruijn_config::simplification::bulge_remover br_config;
+		br_config.max_bulge_length_coefficient = 2;
+		br_config.max_coverage = 1000.;
+		br_config.max_relative_coverage = 1.2;
+		br_config.max_delta = br_delta;
+		br_config.max_relative_delta = 0.1;
+		INFO("Removing bulges");
+		RemoveBulges(g, br_config);
+
+//		debruijn_config::simplification::tip_clipper tc;
+//		tc.max_coverage = 1000;
+//		tc.max_relative_coverage = 1000;
+//		tc.max_tip_length_coefficient = 6;
+//		ClipTips(gp.g, tc, 10 * gp.g.k());
+	}
+
 	void SaveOldGraph(const string& path) {
 		INFO("Saving graph to " << path);
 		PrintGraphPack(path, gp_);
@@ -205,23 +327,13 @@ private:
 		counter.CountStats(labeler, detailed_output);
 	}
 
-	void PrepareDirs(const string& output_folder, bool detailed_output) {
-		rm_dir(output_folder);
-		make_dir(output_folder);
-		if (detailed_output) {
-			make_dir(output_folder + "initial_pics/");
-			make_dir(output_folder + "saves/");
-			make_dir(output_folder + "purple_edges_pics/");
-		}
-	}
-
 public:
 
 	AssemblyComparer(io::IReader<io::SingleRead> &stream1,
 			io::IReader<io::SingleRead> &stream2, const string& name1,
-			const string& name2, bool untangle = false,
+			const string& name2, bool untangle = true,
 			const Sequence& reference = Sequence()) :
-			gp_(reference, 200, true), coloring_(gp_.g), rc_stream1_(stream1), rc_stream2_(
+			gp_(reference, 200, true), rc_stream1_(stream1), rc_stream2_(
 					stream2), name1_(name1), stream1_(rc_stream1_, name1), name2_(
 					name2), stream2_(rc_stream2_, name2), untangle_(untangle) {
 	}
@@ -234,32 +346,34 @@ public:
 		stream1_.reset();
 		stream2_.reset();
 
-		PrepareDirs(output_folder, detailed_output);
+		rm_dir(output_folder);
+		make_dir(output_folder);
+		if (detailed_output) {
+			make_dir(output_folder + "initial_pics/");
+			make_dir(output_folder + "saves/");
+			make_dir(output_folder + "purple_edges_pics/");
+		}
 
-//		INFO("Constructing graph");
-//		INFO("K = " << gp_t::k_value);
-//		ConstructGraph<gp_t::k_value, Graph>(gp_.g, gp_.index, stream1_,
-//				stream2_);
-//
-//		//TODO do we still need it?
-//		if (br_delta > 0)
-//			SimplifyGraph(gp_.g, (size_t) br_delta);
-//
-//		ColorHandler<Graph> coloring(gp_.g);
-//		ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp_.g,
-//				coloring, *MapperInstance < gp_t > (gp_));
-//		colored_graph_constructor.ConstructGraph(vector<ContigStream*> {
-//				&stream1_, &stream2_ });
-//
-//		INFO("Filling contig positions");
-//		stream1_.reset();
-//		FillPos(gp_, stream1_);
-//		stream2_.reset();
-//		FillPos(gp_, stream2_);
+		INFO("Constructing graph");
+		INFO("K = " << gp_t::k_value);
+		ConstructGraph<gp_t::k_value, Graph>(gp_.g, gp_.index, stream1_,
+				stream2_);
 
-		vector<ContigStream*> streams = {&stream1_, &stream2_};
-		ConstructColoredGraph(gp_, coloring_
-				, streams, br_delta);
+		//TODO do we still need it?
+		if (br_delta > 0)
+			SimplifyGraph(gp_.g, (size_t) br_delta);
+
+		ColorHandler<Graph> coloring(gp_.g);
+		ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp_.g,
+				coloring, *MapperInstance < gp_t > (gp_));
+		colored_graph_constructor.ConstructGraph(vector<ContigStream*> {
+				&stream1_, &stream2_ });
+
+		INFO("Filling contig positions");
+		stream1_.reset();
+		FillPos(gp_, stream1_);
+		stream2_.reset();
+		FillPos(gp_, stream2_);
 
 		if (gp_.genome.size() > 0) {
 			INFO("Filling ref pos " << gp_.genome.size());
@@ -268,13 +382,12 @@ public:
 
 //			SimpleInDelAnalyzer<Graph> del_analyzer(
 //					gp_.g,
-//					coloring_,
-//					gp_.edge_pos,
+//					coloring,
 //					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
 //					edge_type::red);
 //			del_analyzer.Analyze();
-//			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
-//			alt_count.CountPaths();
+			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
+			alt_count.CountPaths();
 		}
 
 //		INFO("Removing gaps");
@@ -283,83 +396,78 @@ public:
 //		INFO("Gaps removed");
 
 		if (boost::starts_with(name1_, "idba")) {
-			IDBADiffAnalyzer<gp_t> diff_analyzer(gp_, coloring_, name1_, name2_,
+			IDBADiffAnalyzer<gp_t> diff_analyzer(gp_, coloring, name1_, name2_,
 					output_folder + "/idba_analysis/");
 			diff_analyzer.Analyze(stream1_, stream2_);
 		}
 
 		if (one_many_resolve) {
 			VERIFY(!untangle_);
-			RestrictedOneManyResolver<Graph> resolver(gp_.g, coloring_,
+			RestrictedOneManyResolver<Graph> resolver(gp_.g, coloring,
 					edge_type::violet);
 			resolver.Resolve();
 		}
 
 		if (detailed_output) {
 			if (gp_.genome.size() > 0) {
-				PrintColoredGraphAlongRef(gp_, coloring_, gp_.edge_pos,
+				PrintColoredGraphAlongRef(gp_, coloring, gp_.edge_pos,
 						gp_.genome,
 						output_folder + "initial_pics/colored_split_graph.dot");
 			} else {
-				PrintColoredGraph(gp_.g, coloring_, gp_.edge_pos,
+				PrintColoredGraph(gp_.g, coloring, gp_.edge_pos,
 						output_folder + "initial_pics/colored_split_graph.dot");
 			}
-//			if (add_saves_path != "") {
-//				UniversalSaveGP(gp_, //coloring,
-//						add_saves_path);
-//				SaveColoring(gp_.g, gp_.int_ids, coloring, add_saves_path);
-//				PrintColoredGraph(gp_.g, coloring, gp_.edge_pos,
-//						add_saves_path + ".dot");
-//			}
+			if (add_saves_path != "") {
+				UniversalSaveGP(gp_, //coloring,
+						add_saves_path);
+				SaveColoring(gp_.g, gp_.int_ids, coloring, add_saves_path);
+				PrintColoredGraph(gp_.g, coloring, gp_.edge_pos,
+						add_saves_path + ".dot");
+			}
 			UniversalSaveGP(gp_, //coloring,
 					output_folder + "saves/colored_split_graph");
-			SaveColoring(gp_.g, gp_.int_ids, coloring_,
+			SaveColoring(gp_.g, gp_.int_ids, coloring,
 					output_folder + "saves/colored_split_graph");
-			PrintColoredGraph(gp_.g, coloring_, gp_.edge_pos,
+			PrintColoredGraph(gp_.g, coloring, gp_.edge_pos,
 					output_folder + "saves/colored_split_graph.dot");
 		}
 
 		if (untangle_) {
-			VERIFY(false);
-//			INFO("Untangling graph");
-//			bp_graph_pack<typename gp_t::graph_t> untangled_gp(gp_t::k_value);
-//			UntangledGraphConstructor<gp_t> untangler(gp_, coloring,
-//					untangled_gp, stream1_, stream2_);
-//			//todo ???
-//			//		SimplifyGraph(untangled_gp.g);
-//
-//			if (detailed_output) {
-//				PrintColoredGraph(untangled_gp.g, untangled_gp.coloring,
-//						untangled_gp.edge_pos,
-//						output_folder + "initial_pics/untangled_graph.dot");
-//				UniversalSaveGP(untangled_gp, //untangled_gp.coloring,
-//						output_folder + "saves/untangled_graph");
-//			}
-//
-//			ProduceResults(untangled_gp, untangled_gp.coloring, output_folder,
-//					detailed_output);
+			INFO("Untangling graph");
+			bp_graph_pack<typename gp_t::graph_t> untangled_gp(gp_t::k_value);
+			UntangledGraphConstructor<gp_t> untangler(gp_, coloring,
+					untangled_gp, stream1_, stream2_);
+			//todo ???
+			//		SimplifyGraph(untangled_gp.g);
+
+			if (detailed_output) {
+				PrintColoredGraph(untangled_gp.g, untangled_gp.coloring,
+						untangled_gp.edge_pos,
+						output_folder + "initial_pics/untangled_graph.dot");
+				UniversalSaveGP(untangled_gp, //untangled_gp.coloring,
+						output_folder + "saves/untangled_graph");
+			}
+
+			ProduceResults(untangled_gp, untangled_gp.coloring, output_folder,
+					detailed_output);
 		} else {
 //			INFO("Analyzing gaps");
 //			GapComparativeAnalyzer<Graph> gap_analyzer(gp_.g, coloring,
 //					gp_.edge_pos);
 //			gap_analyzer.ReportPotentialGapsCloses(
 //					output_folder + "gap_closing_edges/");
-
-			//trivial breakpoints
 			string bp_folder = output_folder + "breakpoints/";
 			make_dir(bp_folder);
-			TrivialBreakpointFinder<Graph> bp_finder(gp_.g, coloring_,
+			TrivialBreakpointFinder<Graph> bp_finder(gp_.g, coloring,
 					gp_.edge_pos);
 			bp_finder.FindBreakPoints(bp_folder);
 
-			//possible rearrangements
 			string rearr_folder = output_folder + "rearrangements/";
 			make_dir(rearr_folder);
-			SimpleRearrangementDetector<gp_t> rearr_det(gp_, coloring_, "tdc_",
+			SimpleRearrangementDetector<gp_t> rearr_det(gp_, coloring, "tdc_",
 					rearr_folder);
 			rearr_det.Detect();
-
-			ProduceResults(gp_, coloring_, output_folder, detailed_output);
+			ProduceResults(gp_, coloring, output_folder, detailed_output);
 		}
 	}
 
