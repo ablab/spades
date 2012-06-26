@@ -4,8 +4,8 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#ifndef TRICKY_DISTANCE_ESTIMATION_HPP_
-#define TRICKY_DISTANCE_ESTIMATION_HPP_
+#ifndef WEIGHTED_DISTANCE_ESTIMATION_HPP_
+#define WEIGHTED_DISTANCE_ESTIMATION_HPP_
 
 #include "xmath.h"
 #include "paired_info.hpp"
@@ -15,7 +15,7 @@
 namespace omnigraph {
 
 template<class Graph>
-class TrickyDistanceEstimator: public AbstractDistanceEstimator<Graph> {
+class WeightedDistanceEstimator: public AbstractDistanceEstimator<Graph> {
 	typedef AbstractDistanceEstimator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 
@@ -113,7 +113,7 @@ protected:
 	}
 
 public:
-	TrickyDistanceEstimator(const Graph &graph,
+	WeightedDistanceEstimator(const Graph &graph,
 			const PairedInfoIndex<Graph>& histogram,
 			const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
 			size_t linkage_distance, size_t max_distance) :
@@ -121,7 +121,7 @@ public:
 					max_distance), weight_f_(weight_f) {
 	}
 
-	virtual ~TrickyDistanceEstimator() {
+	virtual ~WeightedDistanceEstimator() {
 	}
 
 	virtual void Estimate(PairedInfoIndex<Graph> &result) const {

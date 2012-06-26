@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "read_converter.hpp"
 #include "io/paired_read.hpp"
 #include "seq_map.hpp"
 #include "omni/omni_utils.hpp"
@@ -1421,23 +1422,7 @@ private:
 	;
 };
 
-class TrivialWeightDEWrapper {
-private:
-public:
-    TrivialWeightDEWrapper() {
-        
-    }
-
-    ~TrivialWeightDEWrapper() {
-        
-    }
-
-    double CountWeight(int x) const {
-        return 1.;
-    }
-};
-
-class TrickyWeightDEWrapper {
+class WeightDEWrapper {
 private:
 
     std::vector<double> new_hist;
@@ -1474,13 +1459,12 @@ private:
 	}
 
 public:
-    TrickyWeightDEWrapper(const std::map<int, size_t>& hist, double IS) {
+    WeightDEWrapper(const std::map<int, size_t>& hist, double IS) {
         insert_size = (size_t) IS;
-        cout << " IS " << insert_size << endl;
         ExtendLinear(hist);
     }
 
-    ~TrickyWeightDEWrapper() {
+    ~WeightDEWrapper() {
     }
 
 
@@ -1490,5 +1474,39 @@ public:
         return new_hist[xx];
     }
 };
+
+template<class graph_pack> 
+typename InsertSizeHistogramCounter<graph_pack>::hist_type GetInsertSizeHistogram(graph_pack& gp, double insert_size, double delta) {
+
+    typedef typename InsertSizeHistogramCounter<graph_pack>::hist_type hist_t;
+    
+    size_t edge_length_threshold = Nx(gp.g, 50);//500;
+
+    auto streams = paired_binary_readers(false, 0);
+
+    InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
+
+    if (streams.size() == 1) {
+        hist_counter.CountHistogram(*streams.front());
+    } else {
+        hist_counter.CountHistogramParallel(streams);
+    }
+
+    //size_t n = hist_counter.GetCounted();
+    //size_t total = hist_counter.GetTotal();
+    
+    double low = max(0., insert_size - 3*delta);
+    double high = insert_size + 3*delta;
+    
+    hist_t histogram_cropped;
+
+    hist_crop(hist_counter.GetHist(), low, high, &histogram_cropped);
+    return histogram_cropped;
+}
+
+
+double UnityFunction(int x) {
+    return 1.;   
+}
 
 }

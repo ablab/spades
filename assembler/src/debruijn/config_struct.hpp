@@ -53,7 +53,7 @@ enum paired_metrics {
 enum estimation_mode {
     em_naive,
     em_simple,
-    em_tricky,
+    em_weighted,
     em_extensive,
     em_advanced
 };
@@ -154,7 +154,7 @@ struct debruijn_config {
         estimation_mode_id_mapping::value_type info[] = {
             {   "naive",       em_naive       },
             {   "simple",      em_simple      },
-            {   "tricky",      em_tricky      },
+            {   "weighted",    em_weighted    },
             {   "extensive",   em_extensive   },
             {   "advanced",    em_advanced    },
         };

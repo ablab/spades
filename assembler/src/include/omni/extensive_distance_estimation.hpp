@@ -18,8 +18,8 @@
 namespace omnigraph {
 
 template<class Graph>
-class ExtensiveDistanceEstimator: public TrickyDistanceEstimator<Graph> {
-	typedef TrickyDistanceEstimator<Graph> base;
+class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
+	typedef WeightedDistanceEstimator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
@@ -124,7 +124,7 @@ class ExtensiveDistanceEstimator: public TrickyDistanceEstimator<Graph> {
             
             const vector<PairInfo<EdgeId>>& infos = this->histogram().GetEdgePairInfo(first, next);
 
-            if (shift < 100)
+            if (shift < 1000)
                 ExtendLeftDFS(first, next, data, length + this->graph().length(next), second_len);
  
             const vector<PairInfo<EdgeId>>& filtered_infos = FilterPositive(infos, this->graph().length(first), this->graph().length(next));
@@ -152,7 +152,7 @@ class ExtensiveDistanceEstimator: public TrickyDistanceEstimator<Graph> {
 
             const vector<PairInfo<EdgeId>>& infos = this->histogram().GetEdgePairInfo(first, next);
 
-            if ( (-shift) < 100)
+            if ( (-shift) < 1000)
                 ExtendRightDFS(first, next, data, length + this->graph().length(next), second_len);
 
             const vector<PairInfo<EdgeId>>& filtered_infos = FilterPositive(infos, this->graph().length(first), this->graph().length(next));
@@ -177,11 +177,11 @@ class ExtensiveDistanceEstimator: public TrickyDistanceEstimator<Graph> {
 		if (make_pair(first, second) <= ConjugatePair(first, second)) {
 			vector<size_t> forward = this->GetGraphDistances(first, second);
             vector<PairInfo<EdgeId>> data = raw_data;
-            INFO("Extending paired information");
+            DEBUG("Extending paired information");
             double weight_0 = WeightSum(data);
-            INFO("Extend left");
+            DEBUG("Extend left");
             ExtendInfoLeft(first, second, data);
-            INFO("Extend right");
+            DEBUG("Extend right");
             ExtendInfoRight(first, second, data);
             
             //INFO("Then negative");
@@ -207,7 +207,7 @@ class ExtensiveDistanceEstimator: public TrickyDistanceEstimator<Graph> {
 
             //MergeInto(reflected_data, data, 0);
 
-            INFO("Weight increased " << (WeightSum(data) - weight_0));
+            DEBUG("Weight increased " << (WeightSum(data) - weight_0));
 
 			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(first, second,
 				data, forward);
@@ -223,15 +223,14 @@ public:
 			const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
             size_t linkage_distance, size_t max_distance) :
 			base(graph, histogram, distance_finder, weight_f, linkage_distance, max_distance) {
-                        for (int i = -30; i <= 30;++i)
-                            cout << "SUPER WEIGHT " << i << " " <<  weight_f(i) << endl;;
+                        //for (int i = -30; i <= 30;++i)
+                            //cout << "SUPER WEIGHT " << i << " " <<  weight_f(i) << endl;;
 	}
 
 	virtual ~ExtensiveDistanceEstimator() {
 	}
 
 	virtual void Estimate(PairedInfoIndex<Graph> &result) const {
-        INFO("Extensive DE started");
 		for (auto it = this->histogram().begin();
 				it != this->histogram().end(); ++it) {
 			ProcessEdgePair(it.first(), it.second(), *it, result);
@@ -239,8 +238,39 @@ public:
 	}
 
     virtual void EstimateParallel(PairedInfoIndex<Graph> &result, size_t nthreads) const {
-        WARN("No multithreading mode for this estimator");
-        Estimate(result);
+        std::vector< std::pair<EdgeId, EdgeId> > edge_pairs;
+
+        INFO("Collecting edge pairs");
+
+        for (auto iterator = this->histogram().begin();
+                iterator != this->histogram().end(); ++iterator) {
+
+            edge_pairs.push_back(std::make_pair(iterator.first(), iterator.second()));
+        }
+
+        std::vector< PairedInfoIndex<Graph>* > buffer(nthreads);
+        buffer[0] = &result;
+        for (size_t i = 1; i < nthreads; ++i) {
+            buffer[i] = new PairedInfoIndex<Graph>(this->graph(), result.GetMaxDifference());
+        }
+
+        INFO("Processing");
+        #pragma omp parallel num_threads(nthreads)
+        {
+            #pragma omp for
+            for (size_t i = 0; i < edge_pairs.size(); ++i)
+            {
+                EdgeId first = edge_pairs[i].first;
+                EdgeId second = edge_pairs[i].second;
+                ProcessEdgePair(first, second, this->histogram().GetEdgePairInfo(first, second), *buffer[omp_get_thread_num()]);
+            }
+        }
+
+        INFO("Merging maps");
+        for (size_t i = 1; i < nthreads; ++i) {
+            buffer[0]->AddAll(*(buffer[i]));
+            delete buffer[i];
+        }
     }
 
 };

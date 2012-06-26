@@ -72,8 +72,10 @@ paired_info_statistics false
 advanced_estimator_mode false
 
 estimation_mode simple
+; naive, simple, weighted, extensive, advanced
 
-paired_metrics product
+paired_metrics read_count
+; read_count, product
 
 ; repeat resolving mode (none split path_extend jump combined)
 resolving_mode split
