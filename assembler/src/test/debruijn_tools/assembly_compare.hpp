@@ -103,8 +103,9 @@ void SimplifyGraph(Graph& g, size_t br_delta) {
 }
 
 template<class gp_t>
-void ConstructColoredGraph(gp_t& gp, ColorHandler<typename gp_t::graph_t>& coloring
-		, vector<ContigStream*>& streams, int br_delta = -1) {
+void ConstructColoredGraph(gp_t& gp,
+		ColorHandler<typename gp_t::graph_t>& coloring,
+		vector<ContigStream*>& streams, int br_delta = -1) {
 	typedef typename gp_t::graph_t Graph;
 	const size_t k = gp_t::k_value;
 	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
@@ -120,7 +121,7 @@ void ConstructColoredGraph(gp_t& gp, ColorHandler<typename gp_t::graph_t>& color
 		SimplifyGraph(gp.g, br_delta);
 
 	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
-			coloring, *MapperInstance<gp_t>(gp));
+			coloring, *MapperInstance < gp_t > (gp));
 	colored_graph_constructor.ConstructGraph(streams);
 
 	INFO("Filling contig positions");
@@ -257,9 +258,8 @@ public:
 //		stream2_.reset();
 //		FillPos(gp_, stream2_);
 
-		vector<ContigStream*> streams = {&stream1_, &stream2_};
-		ConstructColoredGraph(gp_, coloring_
-				, streams, br_delta);
+		vector<ContigStream*> streams = { &stream1_, &stream2_ };
+		ConstructColoredGraph(gp_, coloring_, streams, br_delta);
 
 		if (gp_.genome.size() > 0) {
 			INFO("Filling ref pos " << gp_.genome.size());
@@ -276,13 +276,30 @@ public:
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
 //			alt_count.CountPaths();
 
-			ContigBlockStats<Graph, Mapper> block_stats(gp_.g,
-					gp_.edge_pos,
-					*MapperInstance(gp_),
-					gp_.genome,
-					stream1_);
-			block_stats.Count();
-		}
+//			ContigBlockStats<Graph, Mapper> block_stats(gp_.g, gp_.edge_pos,
+//					*MapperInstance(gp_), gp_.genome, stream1_);
+//			block_stats.Count();
+
+			MissingGenesAnalyser<Graph, Mapper> missed_genes(gp_.g, coloring_,
+					gp_.edge_pos, gp_.genome, *MapperInstance(gp_),
+					vector<pair<bool, pair<size_t, size_t>>> {
+					{true, {260354, 260644}},
+					{true, {300641, 300904}},
+					{true, {300904, 301920}},
+					{true, {301917, 302348}},
+					{true, {260354, 260644}},
+					{true, {300641, 300904}},
+					{true, {300904, 301920}},
+					{true, {301917, 302348}},
+					{true, {302449, 304752}},
+					{true, {263821, 264594}},
+					{true, {265025, 265726}},
+					{true, {265740, 266951}}
+				}
+				, output_folder + "missed_genes/");
+
+			missed_genes.Analyze();
+			}
 
 //		INFO("Removing gaps");
 //		GapsRemover<Graph> gaps_remover(gp_.g, coloring, edge_type::blue, 700);

@@ -53,7 +53,7 @@ namespace compare {
 //}
 
 BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
-	static const size_t K = 55/*201*/;
+	static const size_t K = 201;
 	typedef debruijn_graph::graph_pack</*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> comparing_gp_t;
 
 //	io::Reader stream_1("/home/snurk/Dropbox/gingi/jeff.fasta");
@@ -67,8 +67,8 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 	string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
 
 	string folder = "assembly_comp/gingi_jeff_vs_tdc60_" + ToString(K) + "/";
-	//todo add splitting wrapper
 
+	//todo add splitting wrapper
 	AssemblyComparer<comparing_gp_t> comparer(stream_1, stream_2, "jeff_",
 			"tdc_", /*untangle*/false, ReadGenome(ref));
 	comparer.CompareAssemblies(folder, /*detailed_output*/true, /*one_many_resolve*/false
