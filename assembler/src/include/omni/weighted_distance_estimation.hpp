@@ -30,6 +30,7 @@ protected:
 
         size_t first_len = this->graph().length(first);
         size_t second_len = this->graph().length(second);
+        
 		vector<pair<size_t, double>> result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());
@@ -59,7 +60,7 @@ protected:
 					&& math::eq(forward[cur_dist + 1] - data[i].d,
 							data[i].d - (int) forward[cur_dist])) {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * 0.5 * weight_f_((int) forward[cur_dist] - data[i].d); 
+					weights[cur_dist] += data[i].weight * 0.5 * weight_f_((int) forward[cur_dist] - data[i].d);
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
 					weights[cur_dist] += data[i].weight * 0.5 * weight_f_((int) forward[cur_dist] - data[i].d);
@@ -71,10 +72,9 @@ protected:
         
         //double coeff = (first_len + this->graph().k() - 1) * (second_len + this->graph().k() - 1) * 1./ (this->graph().coverage(first) * this->graph().coverage(second));
         //double coeff = 1. / (this->graph().k()*this->graph().k());
-        double coeff = 1.;
 		for (size_t i = 0; i < forward.size(); i++) {
 			if (math::gr(weights[i], 0.)) {
-				result.push_back(make_pair(forward[i], weights[i] * coeff));
+				result.push_back(make_pair(forward[i], weights[i]));
 			}
 		}
 		return result;

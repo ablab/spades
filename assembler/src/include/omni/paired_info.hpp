@@ -924,6 +924,12 @@ public:
 					read_length), k_(k), avg_coverage_(avg_coverage) {
 	}
 
+    const PairInfo<EdgeId> NormalizeWeightWithCoverage(const PairInfo<EdgeId> & pair_info) {
+        PairInfo<EdgeId> new_info = pair_info;
+        new_info.weight *= g_.length(pair_info.first) * g_.length(pair_info.second) * 1. / (g_.coverage(pair_info.first) * g_.coverage(pair_info.second)); 
+        return new_info;
+    }
+
 	const PairInfo<EdgeId> NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
 		double w = 0.;
 		if (math::eq(pair_info.d, 0.) && pair_info.first == pair_info.second) {

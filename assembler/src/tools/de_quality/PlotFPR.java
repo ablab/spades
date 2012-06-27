@@ -14,8 +14,6 @@ public class PlotFPR implements Runnable{
 
 	private static double Threshold;
 
-    private int N = 10000000;
-
     private static boolean output = true;
 
     private class Pair implements Comparable<Pair>{
@@ -117,8 +115,8 @@ public class PlotFPR implements Runnable{
             int ind = 0;
             TreeMap<Double, Double> fpr_total = new TreeMap<Double, Double>();
             TreeMap<Double, Double> fnr_total = new TreeMap<Double, Double>();
-            fpr_total.put(100000000., 0.);
-            fnr_total.put(100000000., 0.);
+            fpr_total.put(Double.MAX_VALUE, 0.);
+            fnr_total.put(Double.MAX_VALUE, 0.);
 			while (in_fpr.hasMoreTokens()){
 				int a = in_fpr.nextInt();
 				int b = in_fpr.nextInt();
@@ -142,7 +140,6 @@ public class PlotFPR implements Runnable{
             }
             total += cur;
             fpr_total.put(0.0, total);
-            N = ind;
             
             weight = -1;
             cur = 0;

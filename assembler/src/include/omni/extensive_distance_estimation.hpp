@@ -111,8 +111,8 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
         int shift = ((int) length - (int) second_len);
 
 
-        //if (current == first) 
-            //return;
+        if (current == first) 
+            return;
 
         if (this->graph().OutgoingEdgeCount(start) > 1) 
             return; 
@@ -140,8 +140,8 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
         
         int shift = -((int) length - (int) second_len);
 
-        //if (current == first)
-            //return;
+        if (current == first)
+            return;
 
         if (this->graph().IncomingEdgeCount(end) > 1) 
             return;
@@ -174,7 +174,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     }
 
 	void ProcessEdgePair(const EdgeId first, const EdgeId second, const vector<PairInfo<EdgeId>>& raw_data, PairedInfoIndex<Graph> &result) const {
-		if (make_pair(first, second) <= ConjugatePair(first, second)) {
+		//if (make_pair(first, second) <= ConjugatePair(first, second)) {
 			vector<size_t> forward = this->GetGraphDistances(first, second);
             vector<PairInfo<EdgeId>> data = raw_data;
             DEBUG("Extending paired information");
@@ -214,7 +214,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 			vector<PairInfo<EdgeId>> res = ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
 			this->AddToResult(result, ConjugateInfos(res));
-		}
+		//}
 	}
 
 public:
@@ -223,8 +223,6 @@ public:
 			const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
             size_t linkage_distance, size_t max_distance) :
 			base(graph, histogram, distance_finder, weight_f, linkage_distance, max_distance) {
-                        //for (int i = -30; i <= 30;++i)
-                            //cout << "SUPER WEIGHT " << i << " " <<  weight_f(i) << endl;;
 	}
 
 	virtual ~ExtensiveDistanceEstimator() {

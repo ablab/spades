@@ -501,7 +501,7 @@ public:
 	bool additional_ec_removing;
 	bool paired_info_statistics;
 //	bool etalon_info_mode;
-	bool advanced_estimator_mode;
+	//bool advanced_estimator_mode;
 	bool componential_resolve;
 	bool gap_closer_enable;
 	bool SAM_writer_enable;
@@ -913,7 +913,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.paired_info_statistics, pt, "paired_info_statistics");
 //	load(cfg.etalon_info_mode, pt, "etalon_info_mode");
 	load(cfg.componential_resolve, pt, "componential_resolve");
-    load(cfg.advanced_estimator_mode, pt, "advanced_estimator_mode");
+    //load(cfg.advanced_estimator_mode, pt, "advanced_estimator_mode");
 	//cfg.advanced_estimator_mode = false;
 	load(cfg.gap_closer_enable, pt, "gap_closer_enable");
 	load(cfg.SAM_writer_enable, pt, "SAM_writer_enable");

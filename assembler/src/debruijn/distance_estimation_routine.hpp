@@ -84,6 +84,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
         }
 
         size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
+        INFO("Symmetry trick");
         paired_info_index symmetric_index(gp.g);
         PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
         hack.FillSymmetricIndex(symmetric_index);
@@ -95,10 +96,11 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
             InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist = GetInsertSizeHistogram(gp, *cfg::get().ds.IS, *cfg::get().ds.is_var);
             WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
             INFO("Weight Wrapper Done");
-            weight_function = boost::bind(&WeightDEWrapper::CountWeight, boost::ref(wrapper), _1); 
+            weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1); 
         }
         else 
             weight_function = UnityFunction;
+
 
         PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
         if (cfg::get().ds.single_cell) {

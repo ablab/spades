@@ -1470,7 +1470,10 @@ public:
 
     double CountWeight(int x) const {
         size_t xx = insert_size - left_x + x - 1;
+        
         if (!(xx >= 0 && xx < new_hist.size())) return 0.;
+        //cout << x << " " << xx << " " << new_hist[xx] << endl;
+        VERIFY(math::le(new_hist[xx], 1.));
         return new_hist[xx];
     }
 };
@@ -1495,8 +1498,8 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type GetInsertSizeHistogra
     //size_t n = hist_counter.GetCounted();
     //size_t total = hist_counter.GetTotal();
     
-    double low = max(0., insert_size - 3*delta);
-    double high = insert_size + 3*delta;
+    double low = max(0., insert_size - 5 * delta);
+    double high = insert_size + 5 * delta;
     
     hist_t histogram_cropped;
 

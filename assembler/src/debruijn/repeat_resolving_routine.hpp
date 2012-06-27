@@ -320,10 +320,7 @@ string GeneratePostfix() {
 	else
 		s += "nonsym_";
 
-	if (cfg::get().advanced_estimator_mode)
-		s += "advanced_est_";
-	else
-		s += "usual_est_";
+	s += debruijn_config::estimation_mode_name(cfg::get().est_mode) + "_est_";
 
 	s += "k";
 	s += ToString(K);
