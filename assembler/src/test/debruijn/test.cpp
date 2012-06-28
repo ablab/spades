@@ -29,9 +29,3 @@
 
 	return 0;
 }
-
-
-namespace debruijn_graph {
-
-}
-

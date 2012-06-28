@@ -14,19 +14,6 @@
 #include "repeat_masking.hpp"
 #include "assembly_compare.hpp"
 
-::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
-{
-	logging::create_logger("", logging::L_DEBUG);
-	logging::__logger()->add_writer(make_shared<logging::console_writer>());
-
-    using namespace ::boost::unit_test;
-	char module_name [] = "cap";
-
-    assign_op( framework::master_test_suite().p_name.value, basic_cstring<char>(module_name), 0 );
-
-	return 0;
-}
-
 namespace cap {
 
 //Gingi block
@@ -377,4 +364,17 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //			"mygraph", Path<EdgeId>(), Path<EdgeId>());
 //}
 
+}
+
+::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
+{
+	logging::create_logger("", logging::L_DEBUG);
+	logging::__logger()->add_writer(make_shared<logging::console_writer>());
+
+    using namespace ::boost::unit_test;
+	char module_name [] = "cap";
+
+    assign_op( framework::master_test_suite().p_name.value, basic_cstring<char>(module_name), 0 );
+
+	return 0;
 }
