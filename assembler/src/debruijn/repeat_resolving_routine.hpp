@@ -630,7 +630,7 @@ bool TryToAddPairInfo(const graph_pack &origin_gp,
 	}
 	if (!already_exist) {
 //		added_info++;
-		INFO(
+		DEBUG(
 				"adding paired info between edges "
 						<< origin_gp.int_ids.ReturnIntId(first) << " "
 						<< origin_gp.int_ids.ReturnIntId(second) << " dist "
@@ -638,7 +638,7 @@ bool TryToAddPairInfo(const graph_pack &origin_gp,
 		clustered_index.AddPairInfo(
 				PairInfo<typename graph_pack::graph_t::EdgeId>(first, second,
 						tmpd, w, 0));
-		INFO(
+		DEBUG(
 				"adding paired info between edges "
 						<< origin_gp.int_ids.ReturnIntId(
 								origin_gp.g.conjugate(second))
@@ -673,10 +673,10 @@ int DeleteIfExist(const graph_pack &origin_gp,
 			clustered_index.RemovePairInfo(*pi_iter);
 			clustered_index.RemovePairInfo(BackwardInfo(*pi_iter));
 			cnt += 2;
-			INFO("Removed pi "<< origin_gp.g.int_id(pi_iter->first) << " "<< origin_gp.g.int_id(pi_iter->second)<<" d "<<pi_iter->d<<" var "<<pi_iter->variance);
+			DEBUG("Removed pi "<< origin_gp.g.int_id(pi_iter->first) << " "<< origin_gp.g.int_id(pi_iter->second)<<" d "<<pi_iter->d<<" var "<<pi_iter->variance);
 		}
 	}
-	INFO("cnt += "<<cnt);
+	TRACE("cnt += "<<cnt);
 	return cnt;
 }
 
@@ -699,10 +699,10 @@ int DeleteConjugatePairInfo(const graph_pack &origin_gp,
 			clustered_index.RemovePairInfo(*pi_iter);
 			clustered_index.RemovePairInfo(BackwardInfo(*pi_iter));
 			cnt += 2;
-			INFO("Removed pi "<< origin_gp.g.int_id(pi_iter->first) << " "<< origin_gp.g.int_id(pi_iter->second)<<" d "<<pi_iter->d<<" var "<<pi_iter->variance);
+			DEBUG("Removed pi "<< origin_gp.g.int_id(pi_iter->first) << " "<< origin_gp.g.int_id(pi_iter->second)<<" d "<<pi_iter->d<<" var "<<pi_iter->variance);
 		}
 	}
-	INFO("cnt += "<<cnt);
+	TRACE("cnt += "<<cnt);
 	return cnt;
 }
 
@@ -851,8 +851,8 @@ bool isConsistent(const graph_pack& origin_gp, PairInfo<typename graph_pack::gra
 
 	auto first_edge = first_info.second;
 	auto second_edge = second_info.second;
-	INFO("   PI "<< origin_gp.g.int_id(first_info.first)<<" "<<origin_gp.g.int_id(first_info.second)<<" d "<<first_info.d<<"var "<<first_info.variance<<" tr "<< omp_get_thread_num());
-	INFO("vs PI "<< origin_gp.g.int_id(second_info.first)<<" "<<origin_gp.g.int_id(second_info.second)<<" d "<<second_info.d<<"var "<<second_info.variance<<" tr "<< omp_get_thread_num());
+	TRACE("   PI "<< origin_gp.g.int_id(first_info.first)<<" "<<origin_gp.g.int_id(first_info.second)<<" d "<<first_info.d<<"var "<<first_info.variance<<" tr "<< omp_get_thread_num());
+	TRACE("vs PI "<< origin_gp.g.int_id(second_info.first)<<" "<<origin_gp.g.int_id(second_info.second)<<" d "<<second_info.d<<"var "<<second_info.variance<<" tr "<< omp_get_thread_num());
 
 
 	if (abs(pi_distance - first_length)<=variance){
@@ -906,7 +906,7 @@ void FindInconsistent(const graph_pack& origin_gp,
 		for(size_t j = 0; j < edge_infos.size(); j++) {
 			if (i!=j){
 				if (!isConsistent(origin_gp, edge_infos[i], edge_infos[j])){
-					INFO("Inconsistent!!!")
+					DEBUG("Inconsistent!!!")
 					if (edge_infos[i].weight > edge_infos[j].weight) {
 						pi->AddPairInfo(edge_infos[j]);
 					} else  {
@@ -924,7 +924,7 @@ int ParalelFillMissing(const graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, size_t nthreads = 4){
 	typedef typename graph_pack::graph_t Graph;
 	int cnt = 0;
-	INFO("Put infos to vector");
+	DEBUG("Fill missing: Put infos to vector");
 	std::vector<std::vector<PairInfo<typename graph_pack::graph_t::EdgeId>>> infos;
 	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd();
 			++e_iter) {
@@ -937,8 +937,8 @@ int ParalelFillMissing(const graph_pack& origin_gp,
         to_add[i] = new PairedInfoIndex<Graph>(origin_gp.g);
     }
     SplitPathConstructor<Graph> spc(origin_gp.g);
-    INFO("Start threads");
-	size_t n = 0;
+    DEBUG("Fill missing: Start threads");
+//	size_t n = 0;
 	#pragma omp parallel num_threads(nthreads)
 	{
 		#pragma omp for
@@ -947,17 +947,17 @@ int ParalelFillMissing(const graph_pack& origin_gp,
 //			FindInconsistent<graph_pack>(origin_gp, clustered_index, infos[i], to_add[omp_get_thread_num()]);
 			vector<PathInfoClass<Graph>> paths = spc.ConvertEdgePairInfoToSplitPathes(infos[i]);
 			for (auto iter = paths.begin(); iter != paths.end(); iter ++) {
-				INFO("Path "<<iter->PrintPath(origin_gp.g));
+				DEBUG("Path "<<iter->PrintPath(origin_gp.g));
 				for (auto pi_iter = iter->begin(); pi_iter != iter->end(); pi_iter ++) {
 					TryToAddPairInfo(origin_gp, *to_add[omp_get_thread_num()], *pi_iter);
 				}
 			}
-			VERBOSE_POWER_T(++n, 100, " edge pairs processed. Cur thread "<<omp_get_thread_num());
+//			VERBOSE_POWER_T(++n, 100, " edge pairs processed. Cur thread "<<omp_get_thread_num());
 
 		}
 	}
 
-	INFO("Threads finished");
+	DEBUG("Fill missing: Threads finished");
 
 	for (size_t i = 0; i < nthreads; ++i) {
 		for (auto add_iter = (*to_add[i]).begin(); add_iter != (*to_add[i]).end(); ++add_iter) {
@@ -965,14 +965,14 @@ int ParalelFillMissing(const graph_pack& origin_gp,
 			for (auto add_pi_iter = pinfos.begin(); add_pi_iter != pinfos.end(); ++add_pi_iter) {
 				if (TryToAddPairInfo(origin_gp, clustered_index, *add_pi_iter))
 				{
-					INFO("PI added "<<cnt);
+					DEBUG("Fill missing: PI added "<<cnt);
 					cnt++;
 				}
 			}
 		}
         delete to_add[i];
 	}
-	INFO("Clean finished");
+	DEBUG("Fill missing: Clean finished");
 	return cnt;
 }
 
@@ -982,7 +982,7 @@ int ParalelRemoveContraditional(const graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index, size_t nthreads = 4){
 
 	int cnt = 0;
-	INFO("Put infos to vector");
+	DEBUG("ParalelRemoveContraditional: Put infos to vector");
 	std::vector<std::vector<PairInfo<typename graph_pack::graph_t::EdgeId>>> infos;
 	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd();
 			++e_iter) {
@@ -994,20 +994,20 @@ int ParalelRemoveContraditional(const graph_pack& origin_gp,
     for (size_t i = 0; i < nthreads; ++i) {
         to_remove[i] = new PairInfoIndexData<typename graph_pack::graph_t::EdgeId>();
     }
-	INFO("Start threads");
-	size_t n = 0;
+    DEBUG("ParalelRemoveContraditional: Start threads");
+//	size_t n = 0;
 	#pragma omp parallel num_threads(nthreads)
 	{
 		#pragma omp for
 		for (size_t i = 0; i < infos.size(); ++i)
 		{
 			FindInconsistent<graph_pack>(origin_gp, clustered_index, infos[i], to_remove[omp_get_thread_num()]);
-            VERBOSE_POWER_T(++n, 100, " edge pairs processed. Cur thread "<<omp_get_thread_num());
+//            VERBOSE_POWER_T(++n, 100, " edge pairs processed. Cur thread "<<omp_get_thread_num());
 
 		}
 	}
 
-	INFO("Threads finished");
+	DEBUG("ParalelRemoveContraditional: Threads finished");
 
 	for (size_t i = 0; i < nthreads; ++i) {
 		for (auto remove_iter = (*to_remove[i]).begin(); remove_iter != (*to_remove[i]).end(); ++remove_iter) {
@@ -1016,7 +1016,7 @@ int ParalelRemoveContraditional(const graph_pack& origin_gp,
 		}
         delete to_remove[i];
 	}
-	INFO("Clean finished");
+	DEBUG("ParalelRemoveContraditional: Clean finished");
 	return cnt;
 }
 
