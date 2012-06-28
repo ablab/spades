@@ -153,8 +153,6 @@ void simplify_graph(conj_graph_pack& gp) {
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
 	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
 
-	if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
-		CloseGaps(gp);
 
 	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
 

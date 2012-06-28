@@ -561,6 +561,9 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	RemoveBulges(gp.g, removal_handler_f);
 	printer(ipp_final_bulge_removal);
 
+	if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
+		CloseGaps(gp);
+
 	INFO("Final isolated edges removal:");
 	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g,
 			cfg::get().simp.isolated_min_len);
