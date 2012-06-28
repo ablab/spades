@@ -7,7 +7,7 @@
 project(cap CXX)
 
 add_executable(cap
- main.cpp)
+ tools.cpp)
 
 target_link_libraries(cap ${COMMON_LIBRARIES} input)
 

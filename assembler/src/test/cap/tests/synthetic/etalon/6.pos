@@ -1,0 +1,21 @@
+8
+8 1
+    genome_1_contig_0_RC: 76 - 100
+9 1
+    genome_1_contig_0: 76 - 100
+12 2
+    genome_0_contig_0_RC: 1 - 75
+    genome_1_contig_0_RC: 101 - 175
+13 2
+    genome_0_contig_0: 101 - 175
+    genome_1_contig_0: 1 - 75
+16 1
+    genome_0_contig_0_RC: 76 - 100
+17 1
+    genome_0_contig_0: 76 - 100
+20 2
+    genome_0_contig_0_RC: 101 - 175
+    genome_1_contig_0_RC: 1 - 75
+21 2
+    genome_0_contig_0: 1 - 75
+    genome_1_contig_0: 101 - 175

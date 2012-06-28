@@ -1,0 +1,49 @@
+20
+2 1
+    genome_0_contig_0_RC: 276 - 300
+3 1
+    genome_0_contig_0: 76 - 100
+4 1
+    genome_1_contig_0_RC: 276 - 300
+5 1
+    genome_1_contig_0: 76 - 100
+6 2
+    genome_0_contig_0_RC: 1 - 75
+    genome_1_contig_0_RC: 1 - 75
+7 2
+    genome_0_contig_0: 301 - 375
+    genome_1_contig_0: 301 - 375
+8 2
+    genome_0_contig_0_RC: 301 - 375
+    genome_1_contig_0_RC: 301 - 375
+9 2
+    genome_0_contig_0: 1 - 75
+    genome_1_contig_0: 1 - 75
+10 1
+    genome_1_contig_0: 176 - 200
+11 1
+    genome_1_contig_0_RC: 176 - 200
+12 1
+    genome_0_contig_0: 177 - 200
+13 1
+    genome_0_contig_0_RC: 176 - 199
+14 2
+    genome_0_contig_0: 201 - 275
+    genome_1_contig_0_RC: 201 - 275
+15 2
+    genome_0_contig_0_RC: 101 - 175
+    genome_1_contig_0: 101 - 175
+16 2
+    genome_0_contig_0: 101 - 176
+    genome_1_contig_0: 201 - 276
+17 2
+    genome_0_contig_0_RC: 200 - 275
+    genome_1_contig_0_RC: 100 - 175
+18 1
+    genome_1_contig_0_RC: 76 - 99
+19 1
+    genome_1_contig_0: 277 - 300
+20 1
+    genome_0_contig_0: 276 - 300
+21 1
+    genome_0_contig_0_RC: 76 - 100
