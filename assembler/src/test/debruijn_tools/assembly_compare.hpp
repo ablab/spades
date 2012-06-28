@@ -273,34 +273,35 @@ public:
 //					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
 //					edge_type::red);
 //			del_analyzer.Analyze();
+
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
 //			alt_count.CountPaths();
 
-//			ContigBlockStats<Graph, Mapper> block_stats(gp_.g, gp_.edge_pos,
-//					*MapperInstance(gp_), gp_.genome, stream1_);
-//			block_stats.Count();
+			ContigBlockStats<Graph, Mapper> block_stats(gp_.g, gp_.edge_pos,
+					*MapperInstance(gp_), gp_.genome, stream1_);
+			block_stats.Count();
 
 			MissingGenesAnalyser<Graph, Mapper> missed_genes(gp_.g, coloring_,
 					gp_.edge_pos, gp_.genome, *MapperInstance(gp_),
 					vector<pair<bool, pair<size_t, size_t>>> {
-					{true, {260354, 260644}},
-					{true, {300641, 300904}},
-					{true, {300904, 301920}},
-					{true, {301917, 302348}},
-					{true, {260354, 260644}},
-					{true, {300641, 300904}},
-					{true, {300904, 301920}},
-					{true, {301917, 302348}},
-					{true, {302449, 304752}},
-					{true, {263821, 264594}},
-					{true, {265025, 265726}},
-					{true, {265740, 266951}}
+					make_pair(true, make_pair(260354, 260644)),
+					make_pair(true, make_pair(300641, 300904)),
+					make_pair(true, make_pair(300904, 301920)),
+					make_pair(true, make_pair(301917, 302348)),
+					make_pair(true, make_pair(260354, 260644)),
+					make_pair(true, make_pair(300641, 300904)),
+					make_pair(true, make_pair(300904, 301920)),
+					make_pair(true, make_pair(301917, 302348)),
+					make_pair(true, make_pair(302449, 304752)),
+					make_pair(true, make_pair(263821, 264594)),
+					make_pair(true, make_pair(265025, 265726)),
+					make_pair(true, make_pair(265740, 266951))
 				}
 				, output_folder + "missed_genes/");
 
 			missed_genes.Analyze();
 			}
-
+//		2339834
 //		INFO("Removing gaps");
 //		GapsRemover<Graph> gaps_remover(gp_.g, coloring, edge_type::blue, 700);
 //		gaps_remover.RemoveGaps();

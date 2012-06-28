@@ -604,13 +604,16 @@ class SimpleInDelAnalyzer {
 		vector<EdgeId> answer;
 		for (size_t i = 0;
 				i + pos < genome_path_.size() && i < edge_count_bound; ++i) {
-			if ((coloring_.Color(genome_path_[pos + i]) & shortcut_color_) > 0)
+			if ((coloring_.Color(genome_path_[pos + i]) & shortcut_color_) > 0) {
+				DEBUG("Came into edge of wrong color");
 				return vector<EdgeId>();
+			}
 			answer.push_back(genome_path_[pos + i]);
 			if (g_.EdgeEnd(genome_path_[pos + i]) == end) {
 				return answer;
 			}
 		}
+		DEBUG("Edge bound reached");
 		return vector<EdgeId>();
 	}
 
@@ -698,7 +701,7 @@ class SimpleInDelAnalyzer {
 	void AnalyzeShortcutEdge(EdgeId e) {
 		DEBUG("Analysing edge " << g_.str(e));
 		pair<vector<EdgeId>, pair<size_t, size_t>> genome_path = FindGenomePath(
-				g_.EdgeStart(e), g_.EdgeEnd(e), /*edge count bound*/100);
+				g_.EdgeStart(e), g_.EdgeEnd(e), /*edge count bound*//*100*/300);
 		if (!genome_path.first.empty()) {
 			DEBUG(
 					"Non empty genome path of edge count " << genome_path.first.size());
@@ -923,7 +926,7 @@ class ContigBlockStats {
 		for (auto it = genome_path_.begin(); it != genome_path_.end(); ++it) {
 			if (visited.count(*it) > 0)
 				continue;
-			cerr << "Block " << get(labels_, *it) << " edge: " << g_.str(*it)
+			cerr << get(labels_, *it) << " " << g_.int_id(*it) << " " << g_.length(*it)
 			/*<< " positions: " << edge_pos_.GetEdgePositions(*it) */<< endl;
 			visited.insert(*it);
 			visited.insert(g_.conjugate(*it));
@@ -935,8 +938,8 @@ class ContigBlockStats {
 		cerr << "Other blocks started" << endl;
 		for (auto it = labels_.begin(); it != labels_.end(); ++it) {
 			if (boost::lexical_cast<int>(it->second) > (int) 1000000) {
-				cerr << "Block " << get(labels_, it->first) << " edge: "
-						<< g_.str(it->first)
+				cerr << get(labels_, it->first) << " "
+						<< g_.int_id(it->first) << " " << g_.length(it->first)
 						/*<< " positions: " << edge_pos_.GetEdgePositions(it->first) */<< endl;
 			}
 		}
@@ -951,9 +954,11 @@ class ContigBlockStats {
 			contigs_ >> contig;
 			vector < EdgeId > path =
 					mapper_.MapSequence(contig.sequence()).simple_path().sequence();
-			cerr << "Contig " << contig.name() << " labels: ";
+			cerr << contig.name() << " ";
+			string delim = "";
 			for (auto it = path.begin(); it != path.end(); ++it) {
-				cerr << get(labels_, *it) << " ";
+				cerr << delim << get(labels_, *it);
+				delim = ";";
 			}
 			cerr << endl;
 		}
@@ -1143,7 +1148,6 @@ public:
 		make_dir(output_dir_);
 		for (size_t i = 0; i < locations_.size(); ++i) {
 			pair<bool, pair<size_t, size_t>> location = locations_[i];
-			cout << "here " << location.second.first << " " << location.second.second << endl;
 			Sequence locality = genome_.Subseq(location.second.first - g_.k(), location.second.second + g_.k());
 			if (location.first)
 				locality = !locality;
