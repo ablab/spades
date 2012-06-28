@@ -1,5 +1,5 @@
-paired_reads             "../../../data/input/E.coli/sc_lane_1/bh20111014/05.reads.right.corrected.fastq.gz ../../../data/input/E.coli/sc_lane_1/bh20111014/05.reads.left.corrected.fastq.gz "
-single_reads             "../../../data/input/E.coli/sc_lane_1/bh20111014/05.reads.left.unpaired.fastq.gz ../../../data/input/E.coli/sc_lane_1/bh20111014/05.reads.right.unpaired.fastq.gz "
+paired_reads             "../../../data/input/E.coli/sc_lane_1/bh20120615/ecoli_mda_lane1_left.fastq.01.cor.fastq.gz ../../../data/input/E.coli/sc_lane_1/bh20120615/ecoli_mda_lane1_right.fastq.01.cor.fastq.gz "
+single_reads             "../../../data/input/E.coli/sc_lane_1/bh20120615/ecoli_mda_lane1_unpaired.01.cor.fastq.gz "
 RL                       100
 IS                       270
 single_cell              true
