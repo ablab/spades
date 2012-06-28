@@ -39,6 +39,12 @@ rc:
 dc:
 	make -C build/debug/cap
 
+rct:
+	make -C build/release/test/cap
+
+dct:
+	make -C build/debug/test/cap
+
 dt:
 	make ddt
 	make dit

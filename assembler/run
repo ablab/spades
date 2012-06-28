@@ -89,6 +89,8 @@ case $1 in
 'dv' ) run_n_measure build/debug/online_vis/online_vis ;;
 'rc' ) run_n_measure build/release/cap/cap ;;
 'dc' ) run_n_measure build/debug/cap/cap ;;
+'rct' ) run_n_measure build/release/test/cap/cap_test ;;
+'dct' ) run_n_measure build/debug/test/cap/cap_test ;;
 
 * ) 
     change_config $1
