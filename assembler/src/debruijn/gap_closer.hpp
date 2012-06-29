@@ -509,14 +509,14 @@ void CloseGaps(conj_graph_pack& gp, const vector<PairedStream*>& streams) {
 	GapCloserPairedIndexFiller<k + 1, Graph, SequenceMapper, PairedStream> gcpif(
 			gp.g, mapper, streams);
 	paired_info_index tips_paired_idx(gp.g);
-	if (fileExists("tip_info.prd")) {
-		ConjugateDataScanner<Graph> scanner(gp.g, gp.int_ids);
-		scanner.loadPaired("tip_info", tips_paired_idx);
-	} else {
-		gcpif.FillIndex(tips_paired_idx);
-		ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
-		printer.savePaired("tip_info", tips_paired_idx);
-	}
+//	if (fileExists("tip_info.prd")) {
+//		ConjugateDataScanner<Graph> scanner(gp.g, gp.int_ids);
+//		scanner.loadPaired("tip_info", tips_paired_idx);
+//	} else {
+	gcpif.FillIndex(tips_paired_idx);
+	ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
+//		printer.savePaired("tip_info", tips_paired_idx);
+//	}
 	GapCloser<Graph, SequenceMapper> gap_closer(gp.g, tips_paired_idx,
 			cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold,
 			mapper);
