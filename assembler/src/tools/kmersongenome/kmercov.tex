@@ -1,0 +1,135 @@
+\documentclass[letter,11pt]{amsart}
+
+\usepackage{amsthm,amsmath,amsfonts,amssymb}
+\usepackage[left=0.25in, right=0.25in, vmargin=1in]{geometry}
+\usepackage{pgfplots}
+\usepackage{setspace}
+\usepackage{fullpage}
+\usepackage[normalem]{ulem}
+\usepackage{graphicx}
+\usepackage{soul}
+\usepackage{cite}
+\usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{plotmarks,shapes,snakes}
+\usepackage{pgfplots}
+\usepackage{icomma}
+
+
+\renewcommand{\ttdefault}{txtt}
+
+\definecolor{lightblue}{RGB}{140,140,255}
+\definecolor{lightred}{RGB}{255,100,100}
+\definecolor{lightgreen}{RGB}{200,255,200}
+\definecolor{darkgreen}{RGB}{100,155,100}
+
+\tikzstyle{every node}=[font=\footnotesize]
+
+\tikzstyle{gate}            = [circle,fill=white,draw=black,minimum size=8pt,minimum height=8pt,inner sep=2pt,font=\small]
+\tikzstyle{block}           = [rectangle,fill=white,draw=black,minimum size=15pt,text width=280pt,inner sep=2pt,rounded corners,font=\small]
+\tikzstyle{smallblock}      = [rectangle,fill=white,draw=black,minimum size=15pt,text width=80pt,inner sep=2pt,rounded corners,font=\small]
+\tikzstyle{datablock}       = [rectangle,fill=lightblue,draw=black,minimum size=15pt,minimum width=200pt,inner sep=2pt,rounded corners,font=\small]
+\tikzstyle{ifelse}          = [rectangle,fill=lightgreen,draw=black,minimum height=10pt,minimum width=200pt,inner sep=2pt,rounded corners,font=\small]
+\tikzstyle{wire}            = [draw,thick,->]
+\tikzstyle{ewire}           = [draw,thick]
+\tikzstyle{edgelabel}       = [draw=white,fill=white,circle,inner sep=0pt]
+\tikzstyle{enode}           = [rectangle,inner sep=2pt,rounded corners]
+
+\newcommand\dbg[1]{\texttt{#1}}
+
+
+\def\ra#1{\rotatebox{90}{\parbox{1.5in}{#1}}}
+\def\mrk#1{{\bf #1}}
+
+\usepackage{mdwlist}
+
+\newtheorem{alg}{Algorithm}
+
+\def\amax{\mathrm{arg\,max}}
+\def\amin{\mathrm{arg\,min}}
+\newcommand\bm[1]{\boldsymbol{#1}}
+
+\def\ham{\mathrm{d}}
+\def\HG{\textsc{HG}}
+\def\cal{\mathcal}
+\def\file{\mathrm{File}}
+\def\true{\textsc{true}}
+\def\false{\textsc{false}}
+
+\newcommand{\greyc}[1]{{\color{black!30!white}{#1}}}
+\newcommand{\redc}[1]{{\color{red!80!white}{#1}}}
+\newcommand{\bluec}[1]{{\color{blue!80!white}{#1}}}
+\newcommand{\greenc}[1]{{\color{green!50!black}{#1}}}
+
+\newcommand{\kmercovgraphthousand}[2]{
+\begin{tikzpicture}[scale=0.85]
+\begin{axis}[xlabel={Genome, kb},ylabel={Longest $k$-mer at position, avg over $1000$},height=9cm,width=24cm, scaled x ticks=true, scaled y ticks=true,
+legend style={legend columns=1,at={(1,1)},anchor=north west,font=\tiny,draw=none}, xmin=#1, xmax=#2,
+x tick label style={font=\tiny}, y tick label style={font=\tiny} ]
+\input{graph.s.1000.tex}
+\input{graph.0.1000.tex}
+\input{graph.1.1000.tex}
+\input{graph.2.1000.tex}
+\legend{ {Original}, {BH 0}, {BH 1}, {BH 2} }
+\end{axis}
+\end{tikzpicture}
+}
+
+
+\newcommand{\kmercovgraph}[5]{
+\begin{tikzpicture}[scale=1]
+\begin{axis}[xlabel={Genome},ylabel={#5},height=9cm,width=\textwidth, scaled x ticks=false, scaled y ticks=false,
+legend style={legend columns=1,at={(0,1)},anchor=north west,font=\tiny,draw=none}, xmin={#2}, xmax={#3}, xtick={#4},
+x tick label style={font=\scriptsize, 
+	/pgf/number format/.cd,
+        fixed,
+        fixed zerofill,
+        precision=0,
+        /tikz/.cd
+    }, y tick label style={font=\scriptsize}, ymax=15 ]
+\input{#1.tex}
+\legend{ $k=15$, $k=17$, $k=19$, $k=21$, $k=25$, $k=29$ }
+\end{axis}
+\end{tikzpicture}
+}
+
+
+\begin{document}
+
+\section{$1883050$ -- $1883100$}
+
+\kmercovgraph{uncorr.1883050.1883100}{1883050}{1883100}{1883050, 1883060, 1883070, 1883080, 1883090, 1883100}{Coverage, uncorrected}
+
+\kmercovgraph{h21.1883050.1883100}{1883050}{1883100}{1883050, 1883060, 1883070, 1883080, 1883090, 1883100}{Coverage, BH with $k=21$, discard\_bad=true}
+
+\kmercovgraph{h21.0.jun13.1883050.1883100}{1883050}{1883100}{1883050, 1883060, 1883070, 1883080, 1883090, 1883100}{Coverage, BH$0$ with $k=21$, discard\_bad=false}
+
+\kmercovgraph{h21.1.jun13.1883050.1883100}{1883050}{1883100}{1883050, 1883060, 1883070, 1883080, 1883090, 1883100}{Coverage, BH$1$ with $k=21$, discard\_bad=false}
+
+\newpage
+
+\section{$1603350$ -- $1603450$}
+
+\kmercovgraph{uncorr.1603350.1603450}{1603350}{1603450}{1603350, 1603370, 1603390, 1603410, 1603430, 1603450}{Coverage, uncorrected}
+
+\kmercovgraph{h21.1603350.1603450}{1603350}{1603450}{1603350, 1603370, 1603390, 1603410, 1603430, 1603450}{Coverage, BH with $k=21$, discard\_bad=true}
+
+\kmercovgraph{h21.0.jun13.1603350.1603450}{1603350}{1603450}{1603350, 1603370, 1603390, 1603410, 1603430, 1603450}{Coverage, BH$0$ with $k=21$, discard\_bad=false}
+
+\kmercovgraph{h21.1.jun13.1603350.1603450}{1603350}{1603450}{1603350, 1603370, 1603390, 1603410, 1603430, 1603450}{Coverage, BH$1$ with $k=21$, discard\_bad=false}
+
+\newpage
+
+\section{$1698440$ -- $1698510$}
+
+\kmercovgraph{uncorr.1698440.1698510}{1698440}{1698510}{1698440, 1698460, 1698480, 1698500, 1698510}{Coverage, uncorrected}
+
+\kmercovgraph{h21.1698440.1698510}{1698440}{1698510}{1698440, 1698460, 1698480, 1698500, 1698510}{Coverage, BH with $k=21$, discard\_bad=true}
+
+\kmercovgraph{h21.0.jun13.1698440.1698510}{1698440}{1698510}{1698440, 1698460, 1698480, 1698500, 1698510}{Coverage, BH$0$ with $k=21$, discard\_bad=false}
+
+\kmercovgraph{h21.1.jun13.1698440.1698510}{1698440}{1698510}{1698440, 1698460, 1698480, 1698500, 1698510}{Coverage, BH$1$ with $k=21$, discard\_bad=false}
+
+\end{document}
+
+
