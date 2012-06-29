@@ -14,7 +14,7 @@
 #ifndef GRAPH_CONSTRUCTION_HPP_
 #define GRAPH_CONSTRUCTION_HPP_
 
-#include "omp_wrapper.h"
+#include "openmp_wrapper.h"
 
 #include "io/multifile_reader.hpp"
 #include "debruijn_graph_constructor.hpp"

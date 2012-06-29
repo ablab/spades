@@ -1,7 +1,7 @@
 #pragma once
 
 #include "omni/parallel_unordered_map.hpp"
-#include "omp_wrapper.h"
+#include "openmp_wrapper.h"
 
 #include <unordered_set>
 
