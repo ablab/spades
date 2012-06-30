@@ -15,7 +15,7 @@
 #include "standard_base.hpp"
 
 //==omp
-#include "omp_wrapper.h"
+#include "openmp_wrapper.h"
 
 //==sys
 #include <sys/stat.h>

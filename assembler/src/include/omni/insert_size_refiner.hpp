@@ -297,8 +297,6 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
 		cfg::get_writable().ds.mad = mad;
 	}
 
-	cfg::get_writable().ds.IS = median;
-
 	INFO("Insert size refined:");
 	INFO("IS = " << cfg::get_writable().ds.IS);
 	INFO("delta = " << delta);
