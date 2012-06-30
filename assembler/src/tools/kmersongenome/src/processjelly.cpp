@@ -127,9 +127,9 @@ int main(int argc, char* argv[]) {
 	read_genome( genomefname.c_str(), g );
 	cout << "  ...genome size: " << g.size() << endl;
 
-	size_t i = 1603380;
-	cout << g.substr(1603380, 29) << endl << ReverseComplement(g.substr(1603380, 29)) << endl;
-	return 0;
+	//size_t i = 1603380;
+	//cout << g.substr(1603380, 29) << endl << ReverseComplement(g.substr(1603380, 29)) << endl;
+	//return 0;
 
 	#pragma omp parallel for shared(g) num_threads(nthreads)
 	for ( size_t j = 0; j <= k_num; ++j ) {

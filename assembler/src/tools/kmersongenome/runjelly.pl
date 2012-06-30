@@ -28,7 +28,7 @@ my $result = GetOptions ("-s=s" => \$mem,
 sub my_exec {
 	my $cmd = shift;
 	print $cmd . "\n";
-	#system $cmd;
+	system $cmd;
 }
 
 for (my $k = $min_k; $k <= $max_k; $k += 2) {
