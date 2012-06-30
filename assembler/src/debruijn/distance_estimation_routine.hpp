@@ -14,6 +14,7 @@
 #pragma once
 
 #include "standard.hpp"
+#include "dataset_readers.hpp"
 #include "omni/paired_info.hpp"
 #include "late_pair_info_count.hpp"
 #include <set>
@@ -22,7 +23,6 @@
 #include "omni/weighted_distance_estimation.hpp"
 #include "omni/extensive_distance_estimation.hpp"
 #include "omni/naive_distance_estimation.hpp"
-#include "utils.hpp"
 
 namespace debruijn_graph {
 
@@ -93,7 +93,8 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
         if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_weighted) {
             INFO("Retaining insert size distribution for it");
-            InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist = GetInsertSizeHistogram(gp, *cfg::get().ds.IS, *cfg::get().ds.is_var);
+            auto streams = paired_binary_readers(false, 0);
+            InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist = GetInsertSizeHistogram(streams, gp, *cfg::get().ds.IS, *cfg::get().ds.is_var);
             WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
             INFO("Weight Wrapper Done");
             weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1); 

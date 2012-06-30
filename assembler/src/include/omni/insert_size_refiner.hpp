@@ -181,6 +181,7 @@ public:
 //void
 
 
+
 template<class graph_pack, class PairedRead>
 typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_pack& gp, size_t edge_length_threshold) {
 	enum {
@@ -309,6 +310,30 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
 
     return hist;
 
+}
+
+template<class graph_pack, class PairedRead> 
+typename InsertSizeHistogramCounter<graph_pack>::hist_type GetInsertSizeHistogram(std::vector <io::IReader<PairedRead>*>& streams, graph_pack& gp, double insert_size, double delta) {
+
+    typedef typename InsertSizeHistogramCounter<graph_pack>::hist_type hist_t;
+    
+    size_t edge_length_threshold = Nx(gp.g, 50);//500;
+
+    InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
+
+    if (streams.size() == 1) {
+        hist_counter.CountHistogram(*streams.front());
+    } else {
+        hist_counter.CountHistogramParallel(streams);
+    }
+
+    double low = max(0., insert_size - 5 * delta);
+    double high = insert_size + 5 * delta;
+    
+    hist_t histogram_cropped;
+
+    hist_crop(hist_counter.GetHist(), low, high, &histogram_cropped);
+    return histogram_cropped;
 }
 
 }
