@@ -26,6 +26,24 @@
 namespace cap {
 using namespace debruijn_graph;
 
+template <class Graph>
+MappingRange TrivialRange(const Graph& g, typename Graph::EdgeId e, size_t& offset) {
+	size_t l = g.length(e);
+	offset += l;
+	return MappingRange(Range(offset - l, offset), Range(0, l));
+}
+
+template <class Graph>
+MappingPath<EdgeId> TrivialMappingPath(const Graph& g
+		, const vector<typename Graph::EdgeId>& edges) {
+	vector<MappingRange> ranges;
+	size_t offset = 0;
+	for (auto it = edges.begin(); it != edges.end(); ++it) {
+		ranges.push_back(TrivialRange(g, *it, offset));
+	}
+	return MappingPath<EdgeId>(edges, ranges);
+}
+
 inline Sequence ReadSequence(ContigStream& reader) {
 	VERIFY(!reader.eof());
 	io::SingleRead read;

@@ -19,6 +19,7 @@
 #include "io/delegating_reader_wrapper.hpp"
 #include "omni/pair_info_filters.hpp"
 #include "io/easy_reader.hpp"
+#include "io/wrapper_collection.hpp"
 #include "read/osequencestream.hpp"
 #include "io/easy_reader.hpp"
 #include "k.hpp"
@@ -961,42 +962,6 @@ void FillPos(gp_t& gp, const Sequence& s, const string& name) {
 	Mapper mapper(gp.g, gp.index, gp.kmer_mapper);
 	PosFiller<Graph, Mapper>(gp.g, mapper, gp.edge_pos).Process(s, name);
 }
-
-//todo refactor!!!
-class IdSettingReaderWrapper: public io::DelegatingReaderWrapper<io::SingleRead> {
-	typedef io::DelegatingReaderWrapper<io::SingleRead> base;
-	size_t next_id_;
-public:
-	IdSettingReaderWrapper(io::IReader<io::SingleRead>& reader, size_t start_id = 0) :
-			base(reader), next_id_(start_id) {
-
-	}
-
-	/* virtual */
-	IdSettingReaderWrapper& operator>>(io::SingleRead& read) {
-		this->reader() >> read;
-		read.ChangeName(ToString(next_id_++));
-		return *this;
-	}
-};
-
-class PrefixAddingReaderWrapper: public io::DelegatingReaderWrapper<io::SingleRead> {
-	typedef io::DelegatingReaderWrapper<io::SingleRead> base;
-	string prefix_;
-public:
-	PrefixAddingReaderWrapper(io::IReader<io::SingleRead>& reader,
-			const string& prefix) :
-			base(reader), prefix_(prefix) {
-
-	}
-
-	/* virtual */
-	PrefixAddingReaderWrapper& operator>>(io::SingleRead& read) {
-		this->reader() >> read;
-		read.ChangeName(prefix_ + read.name());
-		return *this;
-	}
-};
 
 //deprecated, todo remove usages!!!
 template<class gp_t>

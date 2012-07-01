@@ -246,4 +246,53 @@ public:
 	}
 };
 
+
+template<class Graph>
+void SimplifyGraph(Graph& g, size_t br_delta) {
+	debruijn_config::simplification::bulge_remover br_config;
+	br_config.max_bulge_length_coefficient = 2;
+	br_config.max_coverage = 1000.;
+	br_config.max_relative_coverage = 1.2;
+	br_config.max_delta = br_delta;
+	br_config.max_relative_delta = 0.1;
+	INFO("Removing bulges");
+	RemoveBulges(g, br_config);
+
+//		debruijn_config::simplification::tip_clipper tc;
+//		tc.max_coverage = 1000;
+//		tc.max_relative_coverage = 1000;
+//		tc.max_tip_length_coefficient = 6;
+//		ClipTips(gp.g, tc, 10 * gp.g.k());
+}
+
+template<class gp_t>
+void ConstructColoredGraph(gp_t& gp,
+		ColorHandler<typename gp_t::graph_t>& coloring,
+		vector<ContigStream*>& streams, int br_delta = -1) {
+	typedef typename gp_t::graph_t Graph;
+	const size_t k = gp_t::k_value;
+	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
+
+	INFO("Constructing de Bruijn graph for k=" << k);
+
+	//dirty hack because parallel construction uses cfg::get!!!
+	io::MultifileReader<Contig> stream(streams);
+	ConstructGraph<k, Graph>(gp.g, gp.index, stream);
+
+	//TODO do we still need it?
+	if (br_delta > 0)
+		SimplifyGraph(gp.g, br_delta);
+
+	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
+			coloring, *MapperInstance < gp_t > (gp));
+	colored_graph_constructor.ConstructGraph(streams);
+
+	INFO("Filling contig positions");
+	for (auto it = streams.begin(); it != streams.end(); ++it) {
+		ContigStream& stream = **it;
+		stream.reset();
+		FillPos(gp, stream);
+	}
+}
+
 }

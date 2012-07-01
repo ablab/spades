@@ -10,6 +10,8 @@ enum edge_type {
 	violet
 };
 
+typedef size_t color_t;
+
 template<class Graph, class Element>
 class ElementColorHandler: public GraphActionHandler<Graph> {
 	typedef GraphActionHandler<Graph> base;

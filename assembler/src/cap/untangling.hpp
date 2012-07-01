@@ -26,21 +26,6 @@ class UntangledGraphContigMapper {
 	typedef typename Graph::EdgeId EdgeId;
 	const bp_graph_pack<Graph>& bp_gp_;
 
-	MappingRange TrivialRange(EdgeId e, size_t& offset) const {
-		size_t l = bp_gp_.g.length(e);
-		offset += l;
-		return MappingRange(Range(offset - l, offset), Range(0, 1));
-	}
-
-	MappingPath<EdgeId> TrivialMappingPath(const vector<EdgeId>& edges) const {
-		vector<MappingRange> ranges;
-		size_t offset = 0;
-		for (auto it = edges.begin(); it != edges.end(); ++it) {
-			ranges.push_back(TrivialRange(*it, offset));
-		}
-		return MappingPath<EdgeId>(edges, ranges);
-	}
-
 public:
 	UntangledGraphContigMapper(const bp_graph_pack<Graph>& bp_gp) :
 			bp_gp_(bp_gp) {

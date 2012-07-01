@@ -39,25 +39,99 @@ namespace cap {
 
 BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 	static const size_t K = 201;
-	typedef debruijn_graph::graph_pack</*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> comparing_gp_t;
+	typedef debruijn_graph::graph_pack<
+	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> gp_t;
+	typedef typename gp_t::graph_t Graph;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> Mapper;
 
-//	io::Reader stream_1("/home/snurk/Dropbox/gingi/jeff.fasta");
-//	io::Reader stream_2("/home/snurk/Dropbox/gingi/TDC60.fasta");
+//	EasyContigStream stream_1("/home/snurk/Dropbox/gingi/jeff.fasta");
+//	EasyContigStream stream_2("/home/snurk/Dropbox/gingi/TDC60.fasta");
 //	string ref = "/home/snurk/Dropbox/gingi/TDC60.fasta";
-//	io::Reader stream_1("assembly_comp/gingi_diff_mask/jeff_cl.fasta");
-//	io::Reader stream_2("assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
+//	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff_cl.fasta");
+//	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
 //	string ref = "assembly_comp/gingi_diff_mask/tdc60_cl.fasta";
-	io::Reader stream_1("assembly_comp/gingi_diff_mask/jeff.fasta");
-	io::Reader stream_2("assembly_comp/gingi_diff_mask/tdc60.fasta");
+	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff.fasta", "jeff_");
+	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60.fasta", "tdc_");
 	string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
+	string output_folder = "assembly_comp/gingi_jeff_vs_tdc60_" + ToString(K) + "/";
+	rm_dir(output_folder);
+	make_dir(output_folder);
 
-	string folder = "assembly_comp/gingi_jeff_vs_tdc60_" + ToString(K) + "/";
+	int br_delta = -1;
+	gp_t gp(ReadGenome(ref), 200, true);
+	ColorHandler<Graph> coloring(gp.g);
 
-	//todo add splitting wrapper
-	AssemblyComparer<comparing_gp_t> comparer(stream_1, stream_2, "jeff_",
-			"tdc_", /*untangle*/false, ReadGenome(ref));
-	comparer.CompareAssemblies(folder, /*detailed_output*/true, /*one_many_resolve*/false
-			/*br_delta*//*10000*/);
+	vector<ContigStream*> streams = { &stream_1, &stream_2 };
+	ConstructColoredGraph(gp, coloring, streams, br_delta);
+
+	INFO("Filling ref pos " << gp.genome.size());
+//			FillPos(gp_, gp_.genome, "ref_0");
+//			FillPos(gp_, !gp_.genome, "ref_1");
+
+	//Indels
+	make_dir(output_folder + "indels/");
+	SimpleInDelAnalyzer<Graph> del_analyzer(
+			gp.g,
+			coloring,
+			gp.edge_pos,
+			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(),
+			edge_type::red, output_folder + "indels/");
+	del_analyzer.Analyze();
+
+	//Alternating paths
+//			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
+//			alt_count.CountPaths();
+
+	//Block stats
+//			ContigBlockStats<Graph, Mapper> block_stats(gp_.g, gp_.edge_pos,
+//					*MapperInstance(gp_), gp_.genome, stream1_);
+//			block_stats.Count();
+
+	//	Missing genes
+	MissingGenesAnalyser<Graph, Mapper> missed_genes(gp.g, coloring,
+			gp.edge_pos, gp.genome, *MapperInstance(gp),
+			vector<pair<bool, pair<size_t, size_t>>> {
+			make_pair(/*true*/false, make_pair(260354, 260644)),
+			make_pair(/*true*/false, make_pair(300641, 300904)),
+			make_pair(/*true*/false, make_pair(300904, 301920)),
+			make_pair(/*true*/false, make_pair(301917, 302348)),
+			make_pair(/*true*/false, make_pair(260354, 260644)),
+			make_pair(/*true*/false, make_pair(300641, 300904)),
+			make_pair(/*true*/false, make_pair(300904, 301920)),
+			make_pair(/*true*/false, make_pair(301917, 302348)),
+			make_pair(/*true*/false, make_pair(302449, 304752)),
+			make_pair(/*true*/false, make_pair(263821, 264594)),
+			make_pair(/*true*/false, make_pair(265025, 265726)),
+			make_pair(/*true*/false, make_pair(265740, 266951))
+		}
+		, output_folder + "missed_genes/");
+	missed_genes.Analyze();
+
+//		2339834
+////////////
+//	WriteMagicLocality();
+////////////
+
+	//trivial breakpoints
+//		string bp_folder = output_folder + "breakpoints/";
+//		make_dir(bp_folder);
+//		TrivialBreakpointFinder<Graph> bp_finder(gp_.g, coloring_,
+//				gp_.edge_pos);
+//		bp_finder.FindBreakPoints(bp_folder);
+
+	//possible rearrangements
+//		string rearr_folder = output_folder + "rearrangements/";
+//		make_dir(rearr_folder);
+//		SimpleRearrangementDetector<gp_t> rearr_det(gp_, coloring_, "tdc_",
+//				rearr_folder);
+//		rearr_det.Detect();
+
+	//print graph
+	make_dir(output_folder + "initial_pics");
+	PrintColoredGraphAlongRef(gp, coloring,
+			output_folder + "initial_pics/colored_split_graph.dot");
 }
 
 //End of gingi block
@@ -366,15 +440,15 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 
 }
 
-::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
-{
+::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {
 	logging::create_logger("", logging::L_DEBUG);
 	logging::__logger()->add_writer(make_shared<logging::console_writer>());
 
-    using namespace ::boost::unit_test;
-	char module_name [] = "cap";
+	using namespace ::boost::unit_test;
+	char module_name[] = "cap";
 
-    assign_op( framework::master_test_suite().p_name.value, basic_cstring<char>(module_name), 0 );
+	assign_op(framework::master_test_suite().p_name.value,
+			basic_cstring<char>(module_name), 0);
 
 	return 0;
 }
