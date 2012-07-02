@@ -619,10 +619,21 @@ class SimpleInDelAnalyzer {
 		return vector<EdgeId>();
 	}
 
-	map<edge_type, size_t> ColorLengths(const vector<EdgeId> edges) {
+	map<edge_type, size_t> ColorLengths(const vector<EdgeId>& edges) {
 		map<edge_type, size_t> answer;
 		for (size_t i = 0; i < edges.size(); ++i) {
 			answer[coloring_.Color(edges[i])] += g_.length(edges[i]);
+		}
+		return answer;
+	}
+
+	size_t VioletLengthOfGenomeUnique(const vector<EdgeId>& edges) {
+		size_t answer = 0;
+		for (size_t i = 0; i < edges.size(); ++i) {
+			if (coloring_.Color(edges[i]) == edge_type::violet
+					&& std::count(genome_path_.begin(), genome_path_.end(), edges[i]) == 1) {
+				answer += g_.length(edges[i]);
+			}
 		}
 		return answer;
 	}
@@ -654,8 +665,9 @@ class SimpleInDelAnalyzer {
 	}
 
 	pair<string, pair<size_t, size_t>> ContigIdAndPositions(EdgeId e) {
-		vector < EdgePosition > poss = edge_pos_.GetEdgePositions(e);
-		if (poss.size() > 1 || poss.empty()) {
+		vector<EdgePosition> poss = edge_pos_.GetEdgePositions(e);
+		VERIFY(!poss.empty());
+		if (poss.size() > 1) {
 			WARN("Something strange with assembly positions");
 			return make_pair("", make_pair(0, 0));
 		}
@@ -691,7 +703,11 @@ class SimpleInDelAnalyzer {
 		pair<string, pair<size_t, size_t>> c_id_and_pos = ContigIdAndPositions(
 				e);
 
+		if (c_id_and_pos.first == "")
+			return;
+
 		WriteAltPath(e, genome_path);
+		size_t unique_violet = VioletLengthOfGenomeUnique(genome_path);
 		map<edge_type, size_t> color_cumm_lengths = ColorLengths(genome_path);
 		if (color_cumm_lengths[edge_type::violet] * 10
 				> color_cumm_lengths[edge_type::blue]) {
@@ -707,6 +723,7 @@ class SimpleInDelAnalyzer {
 
 		DEBUG("Total blue " << color_cumm_lengths[edge_type::blue]);
 		DEBUG("Total violet " << color_cumm_lengths[edge_type::violet]);
+		DEBUG("Total unique violet " << unique_violet);
 
 		if (edge_length * path_length <= mem_lim) {
 			size_t edit_dist = EditDistance(edge_nucls, path_nucls);
@@ -721,11 +738,11 @@ class SimpleInDelAnalyzer {
 							<< ((double) local_sim.first / local_sim.second));
 //			assembly_length-genome_length relative_local_sim genome_path_length assembly_length genome_length
 //			contig_id contig_start contig_end genome_start genome_end min max local_sim sim_interval edit_dist edit_dist/max tot_blue
-//			tot_violet edge_id
+//			tot_violet unique_violet edge_id
 			cerr
 					<< str(
 							format(
-									"%d %f %d %d %d %s %d %d %d %d %d %d %d %d %d %d %d %f %d")
+									"%d %f %d %d %d %s %d %d %d %d %d %d %d %d %d %f %d %d %d %d")
 									% ((int) edge_length - (int) path_length)
 									% ((double) local_sim.first
 											/ local_sim.second)
@@ -741,6 +758,7 @@ class SimpleInDelAnalyzer {
 											/ max(edge_length, path_length))
 									% color_cumm_lengths[edge_type::blue]
 									% color_cumm_lengths[edge_type::violet]
+									% unique_violet
 									% g_.int_id(e)) << endl;
 		} else {
 			WARN("Edges were too long");
@@ -777,7 +795,7 @@ public:
 		cerr
 				<< "assembly_length-genome_length relative_local_sim genome_path_length assembly_length genome_length "
 				<< "contig_id contig_start contig_end genome_start genome_end min max local_sim sim_interval edit_dist "
-				<< "edit_dist/max tot_blue tot_violet edge_id" << endl;
+				<< "edit_dist/max tot_blue tot_violet unique_violet edge_id" << endl;
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			if (coloring_.Color(*it) == shortcut_color_) {
 				AnalyzeShortcutEdge(*it);
