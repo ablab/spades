@@ -1914,6 +1914,82 @@ public:
 
 };
 
+template<class Graph>
+class MultiplicityCounter {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph &graph_;
+	size_t uniqueness_length_;
+
+
+	bool search(VertexId a, VertexId start, EdgeId e, size_t depth, set<VertexId> &was, pair<size_t, size_t> &result) {
+		if(depth > uniqueness_length_)
+			return false;
+		if(was.count(a) == 1)
+			return true;
+		was.insert(a);
+		if(graph_.OutgoingEdgeCount(a) == 0 || graph_.IncomingEdgeCount(a) == 0)
+			return false;
+		vector<EdgeId> out = graph_.OutgoingEdges(a);
+		for(auto it = out.begin(); it != out.end(); ++it) {
+			if(*it == e) {
+				if(a != start) {
+					return false;
+				}
+			} else {
+				if(graph_.length(*it) >= uniqueness_length_) {
+					result.second++;
+				} else {
+					if(!search(graph_.EdgeEnd(*it), start, e, depth + graph_.length(*it), was, result))
+						return false;
+				}
+			}
+		}
+		vector<EdgeId> in = graph_.OutgoingEdges(a);
+		for(auto it = in.begin(); it != in.end(); ++it) {
+			if(*it == e) {
+				if(a != start) {
+					return false;
+				}
+			} else {
+				if(graph_.length(*it) >= uniqueness_length_) {
+					result.first++;
+				} else {
+					if(!search(graph_.EdgeStart(*it), start, e, depth + graph_.length(*it), was, result))
+						return false;
+				}
+			}
+		}
+		return true;
+	}
+
+public:
+	MultiplicityCounter(const Graph &graph, size_t uniqueness_length) :
+			graph_(graph), uniqueness_length_(uniqueness_length) {
+	}
+
+	size_t count(EdgeId e, VertexId start) {
+		pair<size_t, size_t> result;
+		set<VertexId> was;
+		bool valid = search(start, start, 0, e, was, result);
+		if(!valid) {
+			return (size_t)(-1);
+		}
+		if(graph_.EdgeStart(e) == start) {
+			if(result.first < result.second) {
+				return (size_t)(-1);
+			}
+			return result.first - result.second;
+		} else {
+			if(result.first > result.second) {
+				return (size_t)(-1);
+			}
+			return -result.first + result.second;
+		}
+	}
+};
+
 inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size,
 		double delta) {
 	double answer = 0. + insert_size + delta - k - 2;

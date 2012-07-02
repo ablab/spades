@@ -564,6 +564,53 @@ private:
 };
 
 template<class Graph>
+class SimpleMultiplicityCountingChimericEdgeRemover: public NewTopologyBasedChimericEdgeRemover<
+		Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef NewTopologyBasedChimericEdgeRemover<Graph> base;
+
+	MultiplicityCounter<Graph>  multiplicity_counter_;
+
+	PlausiblePathFinder<Graph> plausible_path_finder_;
+
+public:
+	SimpleMultiplicityCountingChimericEdgeRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length, size_t plausibility_length,
+			AbstractEdgeRemover<Graph>& edge_remover) :
+			base(g, max_length, uniqueness_length, plausibility_length,
+					edge_remover), multiplicity_counter_(g, uniqueness_length), plausible_path_finder_(
+					g, plausibility_length * 2) {
+	}
+
+protected:
+
+	bool CheckUniqueness(EdgeId e, bool forward) const {
+		TRACE("Checking " << this->graph().length(e) << " for uniqueness in " << (forward ? "forward" : "backward") << " direction");
+		VertexId start = forward ? this->graph().EdgeEnd(e) : this->graph().EdgeStart(e);
+		bool result = multiplicity_counter_.count(e, start) <= 1;
+		TRACE("Edge " << this->graph().length(e) << " is" << (result ? "" : " not") << " unique");
+		return result;
+	}
+
+	bool CheckPlausibility(EdgeId e, bool forward) const {
+		TRACE("Checking " << this->graph().length(e) << " for plausibility in " << (forward ? "forward" : "backward") << " direction");
+		bool result = CummulativeLength(
+				this->graph(),
+				forward ?
+						plausible_path_finder_.PlausiblePath(e,
+								ForwardDirection<Graph>(this->graph())) :
+						plausible_path_finder_.PlausiblePath(e,
+								BackwardDirection<Graph>(this->graph())))
+				>= this->plausibility_length();
+		TRACE("Edge " << this->graph().length(e) << " is" << (result ? "" : " not") << " plausible");
+		return result;
+	}
+private:
+	DECL_LOGGER("AdvancedTopologyChimericEdgeRemover");
+};
+
+template<class Graph>
 class PairInfoAwareErroneousEdgeRemover: public ErroneousEdgeRemover<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
