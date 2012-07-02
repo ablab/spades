@@ -61,6 +61,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
         if (math::le(where.back().d,  what.front().d + shift)) {
             for (auto iter = what.begin(); iter != what.end(); ++iter) {
                 PairInfo<EdgeId> to_be_added = *iter;
+                to_be_added.first = where[0].first;
                 to_be_added.second = where[0].second;
                 to_be_added.d += shift;
                 where.push_back(to_be_added);
@@ -70,19 +71,17 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
             for (auto iter = what.begin(); iter != what.end(); ++iter) {
                 //INFO("Something is going to be added!");
                 PairInfo<EdgeId> to_be_added = *iter;
-                double dist_to_be_added = to_be_added.d + shift;
-
+                to_be_added.first = where[0].first;
                 to_be_added.second = where[0].second;
-                to_be_added.d = dist_to_be_added;
+                to_be_added.d += shift;
 
 
                 auto low_bound = lower_bound(where.begin(), where.end(), to_be_added);
                 
-                if (dist_to_be_added == low_bound->d) {
+                if (math::eq(to_be_added.d, low_bound->d)) {
                     low_bound->weight += to_be_added.weight;
                 } 
                 else {
-                    //INFO("INSERTING " << to_be_added);
                     where.insert(low_bound, to_be_added);
                 }
 
@@ -104,14 +103,11 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
         return answer;
     }
 
-    // right edge being extended to the left
-    void ExtendLeftDFS(const EdgeId first, EdgeId current, vector<PairInfo<EdgeId>>& data, size_t length, const size_t second_len) const {
+    // left edge being extended to the left, shift is negative always
+    void ExtendLeftDFS(EdgeId current, const EdgeId last, vector<PairInfo<EdgeId>>& data, int shift) const {
         VertexId start = this->graph().EdgeStart(current);
         
-        int shift = ((int) length - (int) second_len);
-
-
-        if (current == first) 
+        if (current == last) 
             return;
 
         if (this->graph().OutgoingEdgeCount(start) > 1) 
@@ -122,23 +118,21 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
         for (auto iterator = InEdges.begin(); iterator != InEdges.end(); ++iterator) {
             EdgeId next = *iterator;
             
-            const vector<PairInfo<EdgeId>>& infos = this->histogram().GetEdgePairInfo(first, next);
+            const vector<PairInfo<EdgeId>>& infos = this->histogram().GetEdgePairInfo(next, last);
 
-            if (shift < 1000)
-                ExtendLeftDFS(first, next, data, length + this->graph().length(next), second_len);
+            if (-shift < 10000)
+                ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next));
  
-            const vector<PairInfo<EdgeId>>& filtered_infos = FilterPositive(infos, this->graph().length(first), this->graph().length(next));
+            const vector<PairInfo<EdgeId>>& filtered_infos = FilterPositive(infos, this->graph().length(next), this->graph().length(last));
 
             if (filtered_infos.size() > 0) 
-                MergeInto(filtered_infos, data, shift + this->graph().length(next));
+                MergeInto(filtered_infos, data, shift - (int) this->graph().length(next));
         }
     }
 
-    // right edge being extended to the right
-    void ExtendRightDFS(const EdgeId first, EdgeId current, vector<PairInfo<EdgeId>>& data, size_t length, const size_t second_len) const {
+    // right edge being extended to the right, shift is negative always
+    void ExtendRightDFS(const EdgeId first, EdgeId current, vector<PairInfo<EdgeId>>& data, int shift) const {
         VertexId end = this->graph().EdgeEnd(current);
-        
-        int shift = -((int) length - (int) second_len);
 
         if (current == first)
             return;
@@ -152,29 +146,27 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 
             const vector<PairInfo<EdgeId>>& infos = this->histogram().GetEdgePairInfo(first, next);
 
-            if ( (-shift) < 1000)
-                ExtendRightDFS(first, next, data, length + this->graph().length(next), second_len);
+            if (-shift < 10000)
+                ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current));
 
             const vector<PairInfo<EdgeId>>& filtered_infos = FilterPositive(infos, this->graph().length(first), this->graph().length(next));
 
             if (filtered_infos.size() > 0)
-                MergeInto(filtered_infos, data, shift - this->graph().length(next));
+                MergeInto(filtered_infos, data, shift - (int) this->graph().length(current));
         }
     }
 
 
     void ExtendInfoLeft(const EdgeId first, const EdgeId second, vector<PairInfo<EdgeId>>& data) const {
-        size_t second_len = this->graph().length(second);
-        ExtendLeftDFS(first, second, data, second_len, second_len);
+        ExtendLeftDFS(first, second, data, 0);
     }
 
     void ExtendInfoRight(const EdgeId first, const EdgeId second, vector<PairInfo<EdgeId>>& data) const {
-        size_t second_len = this->graph().length(second);
-        ExtendRightDFS(first, second, data, second_len, second_len);
+        ExtendRightDFS(first, second, data, 0);
     }
 
 	void ProcessEdgePair(const EdgeId first, const EdgeId second, const vector<PairInfo<EdgeId>>& raw_data, PairedInfoIndex<Graph> &result) const {
-		//if (make_pair(first, second) <= ConjugatePair(first, second)) {
+		if (make_pair(first, second) <= ConjugatePair(first, second)) {
 			vector<size_t> forward = this->GetGraphDistances(first, second);
             vector<PairInfo<EdgeId>> data = raw_data;
             DEBUG("Extending paired information");
@@ -214,7 +206,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 			vector<PairInfo<EdgeId>> res = ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
 			this->AddToResult(result, ConjugateInfos(res));
-		//}
+		}
 	}
 
 public:
