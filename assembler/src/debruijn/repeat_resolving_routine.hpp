@@ -638,7 +638,7 @@ bool TryToAddPairInfo(const graph_pack &origin_gp,
 						<< tmpd);
 		clustered_index.AddPairInfo(
 				PairInfo<typename graph_pack::graph_t::EdgeId>(first, second,
-						tmpd, w, 0));
+						tmpd, w, var));
 		DEBUG(
 				"adding paired info between edges "
 						<< origin_gp.int_ids.ReturnIntId(
@@ -654,7 +654,7 @@ bool TryToAddPairInfo(const graph_pack &origin_gp,
 						origin_gp.g.conjugate(second),
 						origin_gp.g.conjugate(first),
 						tmpd - origin_gp.g.length(first)
-								+ origin_gp.g.length(second), w, 0));
+								+ origin_gp.g.length(second), w, var));
 		return true;
 	}
 	return false;
