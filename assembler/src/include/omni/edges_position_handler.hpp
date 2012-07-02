@@ -207,7 +207,7 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	bool careful_ranges_;
 	size_t max_labels_;
 public:
-	bool is_careful(){return careful_ranges_;};
+	bool is_careful() const{return careful_ranges_;};
 	const std::map<EdgeId, vector<EdgePosition>> &edges_positions() const {
 		return EdgesPositions;
 	}

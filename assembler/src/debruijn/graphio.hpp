@@ -257,6 +257,7 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 	VERIFY(file.is_open());
 
 	file << component_.e_size() << endl;
+	bool careful = ref_pos.is_careful();
 
 	for (auto it = component_.e_begin(); it != component_.e_end(); ++it) {
 
@@ -268,8 +269,14 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 
 		for (size_t i = 0; i < pos_it->second.size(); i++) {
 			file << "    " << pos_it->second[i].contigId_ << ": "
-					<< pos_it->second[i].start_ << " - "
-					<< pos_it->second[i].end_ << endl;
+					<< pos_it->second[i].start() << " - "
+					<< pos_it->second[i].end();
+			if (careful) {
+				file<<" "<<pos_it->second[i].m_start()<<" "<<pos_it->second[i].m_end()<<endl;
+			}
+			else {
+				file<<endl;
+			}
 		}
 	}
 }
@@ -664,17 +671,24 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 	for (int i = 0; i < pos_count; i++) {
 		int edge_real_id, pos_info_count;
 		char contigId[500];
+		char cur_str[500];
 		read_count = fscanf(file, "%d %d\n", &edge_real_id, &pos_info_count);
 		VERIFY(read_count == 2);
 //		INFO(  edge_real_id);
 		for (int j = 0; j < pos_info_count; j++) {
 			int start_pos, end_pos;
-			read_count = fscanf(file, "%s %d - %d \n", contigId, &start_pos,
-					&end_pos);
+			int m_start_pos, m_end_pos;
+			read_count = fscanf(file, "%[^\n]s", cur_str);
+			read_count = fscanf(file, "\n");
+			read_count = sscanf(cur_str, "%s %d - %d %d %d", contigId, &start_pos,
+					&end_pos, &m_start_pos, &m_end_pos);
+//			INFO(cur_str);
 //			INFO (contigId<<" "<< start_pos<<" "<<end_pos);
-			VERIFY(read_count == 3);
+//			VERIFY(read_count == 3);
+			VERIFY(read_count == 3 || read_count == 5 );
 			EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
-			edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId));
+			if (read_count == 3) {edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId));}
+			else  {edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId), m_start_pos, m_end_pos);}
 		}
 	}
 	fclose(file);
