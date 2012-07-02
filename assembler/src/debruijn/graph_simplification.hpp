@@ -367,6 +367,39 @@ bool TopologyRemoveErroneousEdges(
 }
 
 template<class Graph>
+bool MultiplicityCountingRemoveErroneousEdges(Graph &g,
+		const debruijn_config::simplification::topology_based_ec_remover& tec_config,
+		EdgeRemover<Graph>& edge_remover)  {
+	INFO("Removal of erroneous edges based on multiplicity counting started");
+	bool changed = true;
+	size_t iteration_count = 0;
+	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), tec_config.max_ec_length_coefficient);
+	while (changed) {
+		changed = false;
+		INFO("Iteration " << iteration_count++);
+		omnigraph::SimpleMultiplicityCountingChimericEdgeRemover<Graph> erroneous_edge_remover(
+			g, max_length,
+			tec_config.uniqueness_length,
+			tec_config.plausibility_length,
+			edge_remover);
+//		omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
+//				g, tec_config.max_length, tec_config.uniqueness_length,
+//				tec_config.plausibility_length, edge_remover);
+		changed = erroneous_edge_remover.RemoveEdges();
+	}
+//	omnigraph::TopologyTipClipper<Graph, omnigraph::LengthComparator<Graph>>(g, LengthComparator<Graph>(g), 300, 2000, 1000).ClipTips();
+//	if(cfg::get().simp.trec_on) {
+//		size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), trec_config.max_ec_length_coefficient);
+//		TopologyAndReliablityBasedChimericEdgeRemover<Graph>(g, 150,
+//				tec_config.uniqueness_length,
+//				2.5,
+//				edge_remover).RemoveEdges();
+//	}
+	return changed;
+}
+
+
+template<class Graph>
 bool TopologyReliabilityRemoveErroneousEdges(
 		Graph &g,
 		const debruijn_config::simplification::tr_based_ec_remover& trec_config,
@@ -454,6 +487,8 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover, boost
 		if(cfg::get().additional_ec_removing) {
 			res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
 					edge_remover);
+//			res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
+//					edge_remover);
 		}
 		return res;
 	}

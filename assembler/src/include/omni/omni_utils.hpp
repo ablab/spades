@@ -1923,7 +1923,7 @@ private:
 	size_t uniqueness_length_;
 
 
-	bool search(VertexId a, VertexId start, EdgeId e, size_t depth, set<VertexId> &was, pair<size_t, size_t> &result) {
+	bool search(VertexId a, VertexId start, EdgeId e, size_t depth, set<VertexId> &was, pair<size_t, size_t> &result) const {
 		if(depth > uniqueness_length_)
 			return false;
 		if(was.count(a) == 1)
@@ -1969,10 +1969,10 @@ public:
 			graph_(graph), uniqueness_length_(uniqueness_length) {
 	}
 
-	size_t count(EdgeId e, VertexId start) {
+	size_t count(EdgeId e, VertexId start) const {
 		pair<size_t, size_t> result;
 		set<VertexId> was;
-		bool valid = search(start, start, 0, e, was, result);
+		bool valid = search(start, start, e, 0, was, result);
 		if(!valid) {
 			return (size_t)(-1);
 		}
