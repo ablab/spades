@@ -143,6 +143,7 @@ int main(int argc, char* argv[]) {
 		vector< size_t > cov(g.size(), 0);
 		ostringstream dfname; dfname << pref << "/" << k << "/dump.tsv";
 		cout << "Reading jelly dump for k=" << k << "..."; flush(cout);
+		cout << dfname.str() << endl;
 		read_jelly_dump( dfname.str().c_str(), k, trie, cov );
 		cout << " OK!" << endl;
 

@@ -4,7 +4,7 @@ use warnings;
 use Math::Random qw(:all);
 use Getopt::Long;
 
-my $pref1 = "res";
+my $pref1 = "output";
 my $pref2 = "res2";
 my $pref3 = "res3";
 my $pref4 = "res4";
