@@ -282,7 +282,7 @@ def usage():
     print >> sys.stderr, "SPAdes genome assembler"
     print >> sys.stderr, "Usage:", sys.argv[0], "[options] -n <project name>"
     print >> sys.stderr, ""
-    print >> sys.stderr, "Options"
+    print >> sys.stderr, "Options:"
     print >> sys.stderr, "-n\t<project_name>\tname of the project"
     print >> sys.stderr, "-o\t<output_dir>\tdirectory to store all result files"\
                          " [default: spades_output]"
