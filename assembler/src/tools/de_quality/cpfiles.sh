@@ -14,7 +14,7 @@ fi
 
 #echo $path
     cp $path/saves/distance_estimation* .
-    #cp $path/estimation_qual/* .
+    cp $path/estimation_qual/* .
     cp $path/etalon_paired_corrected.prd distance_estimation_et.prd 
 
 sed '1d' distance_estimation_et.prd > etalon.prd

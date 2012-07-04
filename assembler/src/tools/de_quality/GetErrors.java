@@ -33,7 +33,7 @@ public class GetErrors implements Runnable{
 	//
     //
 
-    private class Pair implements Comparable<Pair>{
+    private class Pair implements Comparable<Pair> {
         int a;
         int b;
 
@@ -54,7 +54,7 @@ public class GetErrors implements Runnable{
 
     }
 
-	public static void main(String[] args){
+	public static void main(String[] args) {
 		if (args != null){
 			for (int i = 0; i<args.length; i++) if (args[i].equals("-s")) mask |= 1<<0;
 			for (int i = 0; i<args.length; i++) if (args[i].equals("-ns")) mask |= 1<<1;
@@ -71,11 +71,11 @@ public class GetErrors implements Runnable{
 		new Thread(new GetErrors()).start();
 	}
 
-	private void debug(Object obj){
+	private void debug(Object obj) {
 		System.out.println(obj);
 	}
 
-	private boolean isAcceptable(int len1, int len2){
+	private boolean isAcceptable(int len1, int len2) {
 		int b = 0;
         if (len1 == len2) b |= 1;
         if (len1 != len2) b |= 2;
@@ -87,8 +87,8 @@ public class GetErrors implements Runnable{
 
 
 	
-	public void run(){
-		try{
+	public void run() {
+		try {
 			MyScanner in, in2, incl, fnrin, fprin, inpaths;
 			
 			Locale.setDefault(Locale.US);
@@ -135,7 +135,6 @@ public class GetErrors implements Runnable{
             
             debug("Fpr info");
             buf = new StringBuffer("");
-			fprin.nextInt();
 			len1 = 0;
 		    len2 = 0;
 			e1 = 0;
@@ -178,7 +177,6 @@ public class GetErrors implements Runnable{
 //          getting fnr info
             debug("Fnr info");
             buf = new StringBuffer("");
-			fnrin.nextInt();
 			len1 = 0;
 			len2 = 0;
 			e1 = 0;
