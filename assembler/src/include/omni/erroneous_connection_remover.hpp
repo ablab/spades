@@ -461,7 +461,7 @@ class ThornRemover: public ErroneousEdgeRemover<Graph> {
 		if(this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e)) != 2)
 			return false;
 
-		BoundedDijkstra<Graph> dij(this->graph(), 500);
+		BoundedDijkstra<Graph> dij(this->graph(), 1000);
 		dij.run(this->graph().EdgeStart(e));
 		vector<VertexId> reached = dij.ReachedVertices();
 		for(auto it = reached.begin(); it != reached.end(); ++it) {
@@ -472,6 +472,26 @@ class ThornRemover: public ErroneousEdgeRemover<Graph> {
 		return false;
 	}
 
+	bool CheckAlternativeCoverage(vector<EdgeId> edges, EdgeId e = EdgeId(0)) {
+		for(auto it = edges.begin(); it != edges.end(); ++it) {
+			if(*it != e && this->graph().length(*it) < 400 && this->graph().coverage(*it) < 15 * this->graph().coverage(e)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool CheckCoverageAround(EdgeId e) {
+		return CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeStart(e))) &&
+				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeStart(e))) &&
+				CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeEnd(e))) &&
+				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)));
+	}
+
+	bool Check(EdgeId e) {
+		return CheckThorn(e) && (CheckUnique(e) || CheckCoverageAround(e));
+	}
+
 public:
 	ThornRemover(Graph& g, size_t max_length,
 			size_t uniqueness_length,
@@ -480,6 +500,7 @@ public:
 					uniqueness_length) {
 		VERIFY(max_length < uniqueness_length);
 	}
+
 
 protected:
 
@@ -500,7 +521,7 @@ protected:
 				return;
 			}
 			TRACE("Checking edge " << this->graph().length(e));
-			if (CheckUnique(e) && CheckThorn(e)) {
+			if (Check(e)) {
 				TRACE("Deleting edge " << this->graph().length(e));
 				this->DeleteEdge(e);
 				TRACE("Edge was deleted");
