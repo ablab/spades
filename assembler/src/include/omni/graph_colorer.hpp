@@ -1,6 +1,7 @@
 #pragma once
 
 #include "omni_utils.hpp"
+#include "edges_position_handler.hpp"
 
 namespace omnigraph {
 
@@ -341,5 +342,30 @@ auto_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g) {
 	map<typename Graph::EdgeId, string> empty_map;
 	return DefaultColorer(g, empty_map);
 }
+
+
+
+
+
+
+template<class Graph>
+class PositionsEdgeColorer: public ElementColorer<typename Graph::EdgeId> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph &graph_;
+	EdgesPositionHandler<Graph> &positions_;
+public:
+	PositionsEdgeColorer(const Graph &graph, EdgesPositionHandler<Graph> &positions):
+			graph_(graph), positions_(positions)  {
+	}
+	virtual string GetColour(EdgeId element) const {
+		std::vector<EdgeId> path;
+		path.push_back(element);
+		if (positions_.IsConsistentWithGenome(path)) return "green";
+		else return "orange";
+	}
+
+};
 
 }

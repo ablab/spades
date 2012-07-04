@@ -50,179 +50,7 @@ void save_distance_filling(conj_graph_pack& gp, paired_info_index& paired_index,
 		write_estimated_params(p.string());
 	}
 }
-void FillContigNumbers(map<ConjugateDeBruijnGraph::EdgeId, int>& contigNumbers
-		, ConjugateDeBruijnGraph& cur_graph) {
-	int cur_num = 0;
-	set<EdgeId> edges;
-	for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		if (edges.find(*iter) == edges.end()) {
-			contigNumbers[*iter] = cur_num;
-			cur_num++;
-			edges.insert(cur_graph.conjugate(*iter));
-		}
-	}
-}
 
-void FillContigNumbers(
-		map<NonconjugateDeBruijnGraph::EdgeId, int>& contigNumbers
-		, NonconjugateDeBruijnGraph& cur_graph) {
-	int cur_num = 0;
-	for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		contigNumbers[*iter] = cur_num;
-		cur_num++;
-	}
-}
-
-int ContigNumber(map<NonconjugateDeBruijnGraph::EdgeId, int>& contigNumbers
-		, NonconjugateDeBruijnGraph::EdgeId eid
-		, NonconjugateDeBruijnGraph& cur_graph) {
-	if (contigNumbers.find(eid) != contigNumbers.end())
-		return (contigNumbers[eid]);
-	else {
-		WARN("Deleted edge");
-		return -1;
-	}
-}
-
-int ContigNumber(map<ConjugateDeBruijnGraph::EdgeId, int>& contigNumbers
-		, ConjugateDeBruijnGraph::EdgeId eid
-		, ConjugateDeBruijnGraph& cur_graph) {
-	if (contigNumbers.find(eid) != contigNumbers.end())
-		return (contigNumbers[eid]);
-	else if (contigNumbers.find(cur_graph.conjugate(eid))
-			!= contigNumbers.end())
-		return (contigNumbers[cur_graph.conjugate(eid)]);
-	else {
-		WARN("Deleted edge");
-		return -1;
-	}
-}
-
-template<size_t k, class graph_pack>
-void SelectReadsForConsensusBefore(graph_pack& etalon_gp,
-		typename graph_pack::graph_t& cur_graph,
-		EdgeLabelHandler<typename graph_pack::graph_t>& LabelsAfter,
-		const EdgeIndex<k + 1, typename graph_pack::graph_t>& index,
-		vector<ReadStream*> reads, string& consensus_output_dir) {
-	INFO("ReadMapping started");
-	map<typename graph_pack::graph_t::EdgeId, int> contigNumbers;
-	int cur_num = 0;
-	FillContigNumbers(contigNumbers, cur_graph);
-	for (auto iter = etalon_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		DEBUG(
-				"Edge number:" << etalon_gp.int_ids.ReturnIntId(*iter)
-						<< " is contained in contigs");
-		auto images_it = LabelsAfter.edge_inclusions.find(*iter);
-		if (images_it != LabelsAfter.edge_inclusions.end()) {
-			for (auto it = images_it->second.begin();
-					it != images_it->second.end(); ++it) {
-				DEBUG(ContigNumber(contigNumbers, *it, cur_graph) << ", ");
-			}
-		}
-	}
-	cur_num = contigNumbers.size();
-	DEBUG(cur_num << " contigs");
-	for (int i = 1; i < 3; i++) {
-		int read_num = 0;
-		osequencestream* mapped_reads[5000];
-		for (int j = 0; j < cur_num; j++) {
-			string output_filename = consensus_output_dir + ToString(j)
-					+ "_reads" + ToString(i) + ".fa";
-			osequencestream* tmp = new osequencestream(output_filename);
-//          mapped_reads.push_back(tmp);
-			mapped_reads[j] = tmp;
-		}
-		SingleReadMapper<k, typename graph_pack::graph_t> rm(etalon_gp.g,
-				index);
-		DEBUG("mapping reads from pair " << i);
-		while (!reads[i - 1]->eof()) {
-			io::SingleRead cur_read;
-
-			(*reads[i - 1]) >> cur_read;
-			vector<typename graph_pack::graph_t::EdgeId> res =
-					rm.GetContainingEdges(cur_read);
-			read_num++;
-			TRACE(
-					read_num << " mapped to" << res.size() << " contigs :, read"
-							<< cur_read.sequence());
-//          map_quantity += res.size();
-			for (size_t ii = 0; ii < res.size(); ii++) {
-				TRACE("counting number " << contigNumbers[res[ii]]);
-				if (ContigNumber(contigNumbers, res[ii], cur_graph) != -1)
-					(*mapped_reads[ContigNumber(contigNumbers, res[ii],
-							cur_graph)]) << cur_read.sequence();
-				else
-					WARN(
-							"No edges containing"
-									<< etalon_gp.int_ids.ReturnIntId(res[ii]));
-			}
-		}
-	}
-}
-
-template<size_t k, class graph_pack>
-void SelectReadsForConsensus(graph_pack& etalon_gp,
-		typename graph_pack::graph_t& cur_graph,
-		EdgeLabelHandler<typename graph_pack::graph_t>& LabelsAfter,
-		const EdgeIndex<k + 1, typename graph_pack::graph_t>& index
-		,vector<ReadStream *>& reads , string& consensus_output_dir) {
-	INFO("ReadMapping started");
-	map<typename graph_pack::graph_t::EdgeId, int> contigNumbers;
-	int cur_num = 0;
-	FillContigNumbers(contigNumbers, cur_graph);
-	for (auto iter = etalon_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		DEBUG(
-				"Edge number:" << etalon_gp.int_ids.ReturnIntId(*iter)
-						<< " is contained in contigs");
-		set<typename graph_pack::graph_t::EdgeId> images =
-				LabelsAfter.edge_inclusions[*iter];
-		for (auto it = images.begin(); it != images.end(); ++it) {
-			DEBUG(ContigNumber(contigNumbers, *it, cur_graph) << ", ");
-		}
-	}
-	cur_num = contigNumbers.size();
-	DEBUG(cur_num << " contigs");
-	for (int i = 1; i < 3; i++) {
-		int read_num = 0;
-		osequencestream* mapped_reads[5000];
-		for (int j = 0; j < cur_num; j++) {
-			string output_filename = consensus_output_dir + ToString(j)
-					+ "_reads" + ToString(i) + ".fa";
-			osequencestream* tmp = new osequencestream(output_filename);
-//          mapped_reads.push_back(tmp);
-			mapped_reads[j] = tmp;
-		}
-		SingleReadMapper<k, typename graph_pack::graph_t> rm(etalon_gp.g,
-				index);
-		DEBUG("mapping reads from pair " << i);
-		while (!reads[i - 1]->eof()) {
-			io::SingleRead cur_read;
-
-			(*reads[i - 1]) >> cur_read;
-			vector<typename graph_pack::graph_t::EdgeId> res =
-					rm.GetContainingEdges(cur_read);
-			read_num++;
-			TRACE(
-					read_num << " mapped to" << res.size() << " contigs :, read"
-							<< cur_read.sequence());
-//          map_quantity += res.size();
-			for (size_t ii = 0; ii < res.size(); ii++) {
-				TRACE("counting number " << contigNumbers[res[ii]]);
-				set<typename graph_pack::graph_t::EdgeId> images =
-						LabelsAfter.edge_inclusions[res[ii]];
-				for (auto iter = images.begin(); iter != images.end(); ++iter)
-					if (ContigNumber(contigNumbers, *iter, cur_graph) != -1)
-						(*mapped_reads[ContigNumber(contigNumbers, *iter,
-								cur_graph)]) << cur_read.sequence();
-					else
-						WARN(
-								"No edges containing"
-										<< etalon_gp.int_ids.ReturnIntId(
-												res[ii]));
-			}
-		}
-	}
-}
 
 void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 		EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
@@ -434,8 +262,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	if (cfg::get().output_nonfinal_contigs && output_contigs) {
 		OutputContigs(resolved_gp.g,
 				cfg::get().output_dir + "after_rr_before_simplify" + postfix);
-//		OutputContigs(origin_gp.g,
-//				cfg::get().output_dir + "before_resolve" + postfix);
 	}
 	INFO("Running total labeler");
 
@@ -535,9 +361,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	DEBUG("Output Contigs");
 
 	if (output_contigs) {
-//		if (cfg::get().output_nonfinal_contigs) {
-//		    OutputContigs(resolved_gp.g, cfg::get().output_dir + "resolved_and_cleared" + postfix);
-//		}
 		OutputContigs(resolved_gp.g,
 				cfg::get().output_dir + "final_contigs.fasta");
 		cfg::get_writable().final_contigs_file = cfg::get().output_dir
@@ -550,50 +373,15 @@ void process_resolve_repeats(graph_pack& origin_gp,
 				tot_labeler_after,
 				cfg::get().output_dir + subfolder + graph_name
 						+ "_4_cleared.dot", "no_repeat_graph");
-	}
+		ofstream filestr(cfg::get().output_dir + subfolder + graph_name
+				+ "_4_cleared_colored.dot");
+		CompositeGraphColorer<typename graph_pack::graph_t> colorer(new FixedColorer<typename graph_pack::graph_t::VertexId>("white")
+				, new PositionsEdgeColorer<typename graph_pack::graph_t>(resolved_gp.g, resolved_gp.edge_pos));
+		DotGraphPrinter<typename graph_pack::graph_t> gp(resolved_gp.g, tot_labeler_after, colorer, " ", filestr);
+		SimpleGraphVisualizer<typename graph_pack::graph_t> gv(resolved_gp.g, gp);
+		gv.Visualize();
+		filestr.close();
 
-	if (output_contigs) {
-		if (cfg::get().need_consensus) {
-			string consensus_folder = cfg::get().output_dir
-					+ "consensus_after_resolve/";
-			OutputSingleFileContigs(resolved_gp.g, consensus_folder);
-
-//			SelectReadsForConsensus<K,  graph_pack>(origin_gp, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
-			consensus_folder = cfg::get().output_dir
-					+ "consensus_before_resolve/";
-			OutputSingleFileContigs(origin_gp.g, consensus_folder);
-			VERIFY_MSG(
-					false,
-					"Due to compilation reasons, need_consensus is deprecated.");
-//			vector<ReadStream*> streams = single_streams(true, true);
-//			SelectReadsForConsensusBefore<K, graph_pack>(origin_gp, origin_gp.g,
-//					labels_after, origin_gp.index, streams, consensus_folder);
-
-		}
-
-		/*		one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(
-		 resolved_gp.g, cfg::get().ds.IS);
-		 N50enlarger.Loops_resolve();
-
-		 omnigraph::WriteSimple(
-		 resolved_gp.g,
-		 tot_labeler_after,
-		 cfg::get().output_dir + subfolder + graph_name
-		 + "_5_unlooped.dot", "no_repeat_graph");
-
-		 OutputContigs(resolved_gp.g,
-		 cfg::get().output_dir + "unlooped" + postfix);
-		 */
-//		N50enlarger.one_many_resolve_with_vertex_split();
-//
-//		omnigraph::WriteSimple(
-//				resolved_gp.g,
-//				tot_labeler_after,
-//				cfg::get().output_dir + subfolder + graph_name
-//						+ "_6_finished.dot", "no_repeat_graph");
-//
-//		OutputContigs(resolved_gp.g,
-//				cfg::get().output_dir + "contigs_final.fasta");
 	}
 }
 
@@ -852,8 +640,8 @@ bool isConsistent(const graph_pack& origin_gp, PairInfo<typename graph_pack::gra
 
 	auto first_edge = first_info.second;
 	auto second_edge = second_info.second;
-	TRACE("   PI "<< origin_gp.g.int_id(first_info.first)<<" "<<origin_gp.g.int_id(first_info.second)<<" d "<<first_info.d<<"var "<<first_info.variance<<" tr "<< omp_get_thread_num());
-	TRACE("vs PI "<< origin_gp.g.int_id(second_info.first)<<" "<<origin_gp.g.int_id(second_info.second)<<" d "<<second_info.d<<"var "<<second_info.variance<<" tr "<< omp_get_thread_num());
+	INFO("   PI "<< origin_gp.g.int_id(first_info.first)<<" "<<origin_gp.g.int_id(first_info.second)<<" d "<<first_info.d<<"var "<<first_info.variance<<" tr "<< omp_get_thread_num());
+	INFO("vs PI "<< origin_gp.g.int_id(second_info.first)<<" "<<origin_gp.g.int_id(second_info.second)<<" d "<<second_info.d<<"var "<<second_info.variance<<" tr "<< omp_get_thread_num());
 
 
 	if (abs(pi_distance - first_length)<=variance){
@@ -907,7 +695,7 @@ void FindInconsistent(const graph_pack& origin_gp,
 		for(size_t j = 0; j < edge_infos.size(); j++) {
 			if (i!=j){
 				if (!isConsistent(origin_gp, edge_infos[i], edge_infos[j])){
-					DEBUG("Inconsistent!!!")
+					INFO("Inconsistent!!!")
 					if (edge_infos[i].weight > edge_infos[j].weight) {
 						pi->AddPairInfo(edge_infos[j]);
 					} else  {
@@ -1211,6 +999,14 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 	string resolved_name = cfg::get().output_dir + "resolve_components"
 			+ "/resolve_" + graph_name + "/";
 	make_dir(resolved_name);
+	if (cfg::get().rr.symmetric_resolve) {
+		if (cfg::get().use_multithreading) {
+			ParalelCorrectPairedInfo(conj_gp, clustered_index, cfg::get().max_threads);
+			ParalelCorrectPairedInfo(conj_gp, clustered_index, cfg::get().max_threads);
+		}
+	}
+	//save_distance_filling(conj_gp, clustered_index, clustered_index);
+
 	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name,
 			sub_dir, false);
 }
