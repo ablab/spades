@@ -41,7 +41,7 @@ string getKmer(const string & g, size_t i, size_t k) {
 
 const size_t k_num = 11;
 //const size_t kfilter[k_num] = {17, 19, 21, 25, 29, 33, 37, 45, 55, 65, 75};
-const size_t kfilter[k_num] = {15, 17, 19, 21, 25, 29, 33};
+const size_t kfilter[k_num] = {13, 15, 17, 19, 21, 25, 29, 33};
 
 void read_jelly_dump( const char * fname, size_t k, const TTrie & t, vector< size_t > & v ) {
 	FILE * pFile;
