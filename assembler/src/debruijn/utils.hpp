@@ -17,7 +17,7 @@
 #include <iostream>
 #include "sequence/sequence_tools.hpp"
 #include "omni/splitters.hpp"
-#include <omp.h>
+#include "openmp_wrapper.h"
 
 #include "runtime_k.hpp"
 
