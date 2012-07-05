@@ -52,24 +52,20 @@ vector<typename Graph::EdgeId> GetCommonPathsEnd(
 
 
 
-template<class graph_pack>
-vector<vector<typename graph_pack::graph_t::EdgeId> > GetAllPathsBetweenEdges(
-		const graph_pack& origin_gp,
-		typename graph_pack::graph_t::EdgeId& first_edge,
-		typename graph_pack::graph_t::EdgeId& second_edge, size_t min_dist,
+template<class Graph>
+vector<vector<typename Graph::EdgeId> > GetAllPathsBetweenEdges(
+		const Graph& g,
+		typename Graph::EdgeId& first_edge,
+		typename Graph::EdgeId& second_edge, size_t min_dist,
 		size_t max_dist) {
-	PathStorageCallback<typename graph_pack::graph_t> callback(origin_gp.g);
-	PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g,
+	PathStorageCallback<Graph> callback(g);
+	PathProcessor<Graph> path_processor(g,
 			min_dist,
 			max_dist, //0, *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var),
-			origin_gp.g.EdgeEnd(first_edge), origin_gp.g.EdgeStart(second_edge),
+			g.EdgeEnd(first_edge), g.EdgeStart(second_edge),
 			callback);
 	path_processor.Process();
 	auto paths = callback.paths();
-	TRACE(
-			origin_gp.int_ids.ReturnIntId(first_edge) << " "
-					<< origin_gp.int_ids.ReturnIntId(second_edge) << " "
-					<< paths.size());
 	return paths;
 }
 

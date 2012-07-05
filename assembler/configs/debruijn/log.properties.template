@@ -8,6 +8,7 @@ default=INFO
 #MatePairTransformStat=TRACE
 #EditDistanceTrackingCallback=TRACE
 #RepeatResolver=TRACE
+#PairInfoImprover=TRACE
 #BulgeRemover=TRACE
 #AbstractConjugateGraph=TRACE
 #PathProcessor=TRACE
