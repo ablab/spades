@@ -338,6 +338,7 @@ protected:
 	}
 
 	void InnerRemoveEdges() {
+		TRACE("Removing erroneous connections");
 		LengthComparator<Graph> comparator(this->graph());
 		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
 				++it) {
@@ -345,15 +346,16 @@ protected:
 			if (this->graph().length(e) > max_length_) {
 				return;
 			}
-			TRACE("Checking edge " << this->graph().length(e));
+			TRACE("Checking edge " << this->graph().int_id(e));
 			if (CheckStart(e) || CheckEnd(e)) {
 				TRACE("Deleting edge " << this->graph().length(e));
 				this->DeleteEdge(e);
 				TRACE("Edge was deleted");
 			} else {
-				TRACE("Edge " << this->graph().length(e) << " was not deleted");
+				TRACE("Edge " << this->graph().int_id(e) << " was not deleted");
 			}
 		}
+		TRACE("Removing erroneous connections finished");
 	}
 private:
 	DECL_LOGGER("NewTopologyBasedChimericEdgeRemover");
@@ -581,6 +583,7 @@ public:
 			base(g, max_length, uniqueness_length, plausibility_length,
 					edge_remover), multiplicity_counter_(g, uniqueness_length), plausible_path_finder_(
 					g, plausibility_length * 2) {
+		
 	}
 
 protected:

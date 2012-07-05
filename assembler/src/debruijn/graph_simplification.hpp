@@ -487,8 +487,8 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover, boost
 		if(cfg::get().additional_ec_removing) {
 			res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
 					edge_remover);
-//			res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
-//					edge_remover);
+			res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
+					edge_remover);
 		}
 		return res;
 	}

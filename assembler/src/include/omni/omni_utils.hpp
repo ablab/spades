@@ -1946,7 +1946,7 @@ private:
 				}
 			}
 		}
-		vector<EdgeId> in = graph_.OutgoingEdges(a);
+		vector<EdgeId> in = graph_.IncomingEdges(a);
 		for(auto it = in.begin(); it != in.end(); ++it) {
 			if(*it == e) {
 				if(a != start) {
