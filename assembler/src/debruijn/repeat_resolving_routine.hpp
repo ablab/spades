@@ -148,7 +148,7 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 //								0);
 				typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
 				SequenceMapper mapper(conj_gp.g, conj_gp.index,
-						conj_gp.kmer_mapper, conj_gp.k_value);
+						conj_gp.kmer_mapper, conj_gp.k_value + 1);
 
 				bool print_quality = (
 						cfg::get().sw.print_quality ?
@@ -169,7 +169,7 @@ void SAM_after_resolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 
 			typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
 			SequenceMapper mapper(conj_gp.g, conj_gp.index,
-					conj_gp.kmer_mapper, conj_gp.k_value);
+					conj_gp.kmer_mapper, conj_gp.k_value + 1);
 
 			bool print_quality = (
 					cfg::get().sw.print_quality ?

@@ -18,19 +18,18 @@
 
 namespace debruijn_graph {
 
-template<size_t k>
-void ConstructGraphFromGenome(Graph& g, EdgeIndex<k + 1, Graph>& index/*, CoverageHandler<DeBruijnGraph>& coverage_handler*/
-, PairedInfoIndex<Graph>& paired_index, const string& genome
-		, size_t read_size) {
-	typedef read_generator::ReadGenerator<read_generator::SmoothPositionChooser> Stream;
-	size_t coverage = 2 * read_size;
-	size_t gap = 0;
-	Stream raw_stream(2, read_size, genome, coverage, gap);
-	typedef io::RCReaderWrapper<io::PairedRead> RCStream;
-	RCStream read_stream(raw_stream);
-	ConstructGraphWithPairedInfo<k, RCStream>(g, index/*, coverage_handler*/,
-			paired_index, read_stream);
-}
+//void ConstructGraphFromGenome(size_t k, Graph& g, EdgeIndex<Graph>& index/*, CoverageHandler<DeBruijnGraph>& coverage_handler*/
+//, PairedInfoIndex<Graph>& paired_index, const string& genome
+//		, size_t read_size) {
+//	typedef read_generator::ReadGenerator<read_generator::SmoothPositionChooser> Stream;
+//	size_t coverage = 2 * read_size;
+//	size_t gap = 0;
+//	Stream raw_stream(2, read_size, genome, coverage, gap);
+//	typedef io::RCReaderWrapper<io::PairedRead> RCStream;
+//	RCStream read_stream(raw_stream);
+//	ConstructGraphWithPairedInfo (k, g, index/*, coverage_handler*/,
+//			paired_index, read_stream);
+//}
 
 using io::SingleRead;
 using io::PairedRead;
@@ -128,18 +127,17 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
 	EdgesEqual(edges, etalon_edges);
 }
 
-template<size_t kmer_size_>
-void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges) {
+void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& etalon_edges) {
 	DEBUG("Asserting graph");
 	typedef io::VectorReader<SingleRead> RawStream;
 	typedef io::RCReaderWrapper<SingleRead> Stream;
 	RawStream raw_stream(MakeReads(reads));
 	Stream read_stream(raw_stream);
-	Graph g(kmer_size_);
-	EdgeIndex<kmer_size_ + 1, Graph> index(g);
+	Graph g(k);
+	EdgeIndex<Graph> index(g, k + 1);
 
 	std::vector<io::IReader<SingleRead>* > streams = {&read_stream};
-	ConstructGraph<kmer_size_>(streams, g, index);
+	ConstructGraph(k, streams, g, index);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -192,8 +190,7 @@ void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, co
 	}
 }
 
-template<size_t k>
-void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, const vector<MyEdge>& etalon_edges
+void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t insert_size, const vector<MyEdge>& etalon_edges
 		, const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
 	typedef io::VectorReader<PairedRead> RawStream;
 	typedef io::RCReaderWrapper<PairedRead> Stream;
@@ -204,12 +201,12 @@ void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, c
 	Stream paired_read_stream(raw_stream);
 	DEBUG("Streams initialized");
 
-	graph_pack<Graph, k> gp((Sequence()));
+	graph_pack<Graph> gp(k, (Sequence()));
 	DEBUG("Graph pack created");
 
 	PairedInfoIndex<Graph> paired_index(gp.g);
 
-	ConstructGraphWithPairedInfo<k>(gp.g, gp.index, paired_index, paired_read_stream);
+	ConstructGraphWithPairedInfo(k, gp.g, gp.index, paired_index, paired_read_stream);
 
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 

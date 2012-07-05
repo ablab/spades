@@ -20,12 +20,12 @@ namespace runtime_k {
 
 
 
-// K range
-const size_t MIN_K = 21;
+// K in [MIN_K, MAX_K)
+const size_t MIN_K = 1;
 
 const size_t MAX_K = 64;
 
-const size_t UPPER_BOUND = (MAX_K / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
+const size_t UPPER_BOUND = ((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
 
 
 typedef RuntimeSeq<UPPER_BOUND> RtSeq;

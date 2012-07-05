@@ -132,37 +132,37 @@ BOOST_AUTO_TEST_CASE( SmartIteratorTest ) {
 BOOST_AUTO_TEST_CASE( TestSimpleThread ) {
 	vector<string> reads = { "ACAAACCACCA" };
 //	vector<string> edges = { "ACAAACCACCA" };
-	AssertGraph<5> (reads, reads);
+	AssertGraph (5, reads, reads);
 }
 
 BOOST_AUTO_TEST_CASE( TestSimpleThread2 ) {
 	vector<string> reads = { "ACAAACCACCC", "AAACCACCCAC" };
 	vector<string> edges = { "ACAAACCACCCAC" };
-	AssertGraph<5> (reads, edges);
+	AssertGraph (5, reads, edges);
 }
 
 BOOST_AUTO_TEST_CASE( TestSplitThread ) {
 	vector<string> reads = { "ACAAACCACCA", "ACAAACAACCC" };
 	vector<string> edges = { "ACAAAC", "CAAACCACCA", "CAAACAACCC" };
-	AssertGraph<5> (reads, edges);
+	AssertGraph (5, reads, edges);
 }
 
 BOOST_AUTO_TEST_CASE( TestSplitThread2 ) {
 	vector<string> reads = { "ACAAACCACCA", "ACAAACAACCA" };
 	vector<string> edges = { "AACCACCA", "ACAAAC", "CAAACCA", "CAAACAACCA" };
-	AssertGraph<5> (reads, edges);
+	AssertGraph (5, reads, edges);
 }
 
 BOOST_AUTO_TEST_CASE( TestBuldge ) {
 	vector<string> reads = { "ACAAAACACCA", "ACAAACCACCA" };
 //	vector<string> edges = { "ACAAAACACCA", "ACAAACCACCA" };
-	AssertGraph<5> (reads, reads);
+	AssertGraph (5, reads, reads);
 }
 
 BOOST_AUTO_TEST_CASE( TestCondenseSimple ) {
 	vector<string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
 	vector<string> edges = { "CGAAAACACAC", "CACACC", "CGAAACCACAC" };
-	AssertGraph<5> (reads, edges);
+	AssertGraph (5, reads, edges);
 }
 
 //BOOST_AUTO_TEST_CASE( TestStrange ) {
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE( SimpleTestEarlyPairedInfo ) {
 		, {{"CCCA", "CCAC"}, {1, 1.0}}, {{"ACCA", "CCAC"}, {1, 1.0}}
 		, {{"CCAC", "CACG"}, {1, 1.0}}, {{"CCAC", "CACA"}, {1, 1.0}}};
 
-	AssertGraph<3> (paired_reads, 6, edges, coverage_info, edge_pair_info);
+	AssertGraph (3, paired_reads, 6, edges, coverage_info, edge_pair_info);
 }
 
 BOOST_AUTO_TEST_CASE( TestSelfRCEdgeMerge ) {
