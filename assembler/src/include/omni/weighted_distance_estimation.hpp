@@ -106,7 +106,7 @@ protected:
 			vector<size_t> forward = this->GetGraphDistances(first, second);
 			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(first, second,
 				data, forward);
-			vector<PairInfo<EdgeId>> res = ClusterResult(first, second, estimated);
+			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
 			this->AddToResult(result, ConjugateInfos(res));
 		}

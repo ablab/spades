@@ -166,7 +166,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     }
 
 	void ProcessEdgePair(const EdgeId first, const EdgeId second, const vector<PairInfo<EdgeId>>& raw_data, PairedInfoIndex<Graph> &result) const {
-		if (make_pair(first, second) <= ConjugatePair(first, second)) {
+		if (make_pair(first, second) <= this->ConjugatePair(first, second)) {
 			vector<size_t> forward = this->GetGraphDistances(first, second);
             vector<PairInfo<EdgeId>> data = raw_data;
             DEBUG("Extending paired information");
@@ -201,11 +201,11 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 
             DEBUG("Weight increased " << (WeightSum(data) - weight_0));
 
-			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(first, second,
+			vector<pair<size_t, double> > estimated = this->EstimateEdgePairDistances(first, second,
 				data, forward);
-			vector<PairInfo<EdgeId>> res = ClusterResult(first, second, estimated);
+			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
-			this->AddToResult(result, ConjugateInfos(res));
+			this->AddToResult(result, this->ConjugateInfos(res));
 		}
 	}
 
