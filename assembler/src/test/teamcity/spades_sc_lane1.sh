@@ -10,5 +10,5 @@ set -e
 pushd ../../../
 rm -f spades_output/ECOLI_SC_LANE_1_BH_woHUMAN/latest
 ./spades.py src/test/teamcity/spades_config_sc_lane1.info
-python src/test/teamcity/assess.py spades_output/ECOLI_SC_LANE_1_BH_woHUMAN/latest/quality_results/transposed_report.tsv 80000 4
+python src/test/teamcity/assess.py spades_output/ECOLI_SC_LANE_1_BH_woHUMAN/latest/quality_results/transposed_report.tsv 85000 6
 popd
