@@ -23,7 +23,7 @@ namespace runtime_k {
 // K in [MIN_K, MAX_K)
 const size_t MIN_K = 1;
 
-const size_t MAX_K = 21;
+const size_t MAX_K = 64;
 
 const size_t UPPER_BOUND = ((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
 
@@ -238,10 +238,6 @@ public:
 
     }
 
-    virtual ~KmerHashVectorImpl() {
-
-    }
-
     virtual base_type * copy() const {
         return new KmerHashVectorImpl<size_>(*this);
     }
@@ -306,6 +302,10 @@ class SingleKmerHashVectorFactory {
 public:
 
     virtual IKmerHashVector * GetHashVector(size_t nthreads) const = 0;
+
+    virtual ~SingleKmerHashVectorFactory() {
+
+    }
 };
 
 
@@ -524,11 +524,6 @@ public:
     KmerSetImpl(): data_() {
     }
 
-    virtual ~KmerSetImpl() {
-
-    }
-
-
     virtual base_type * copy() const {
         return new KmerSetImpl<size_>(*this);
     }
@@ -597,6 +592,11 @@ public:
     virtual IKmerSet * GetSet(size_t capacity) const = 0;
 
     virtual IKmerSet * GetSet() const = 0;
+
+    virtual ~SingleKmerSetFactory() {
+
+    }
+
 };
 
 
@@ -1171,10 +1171,6 @@ public:
     KmerMapIteratorImpl(const map_iterator& iter): iter_(iter) {
     }
 
-    virtual ~KmerMapIteratorImpl() {
-
-    }
-
     virtual base_type * operator++() {
         return new iterator_impl(++iter_);
     }
@@ -1243,10 +1239,6 @@ private:
 public:
 
     KmerConstMapIteratorImpl(const map_iterator& iter): iter_(iter) {
-    }
-
-    virtual ~KmerConstMapIteratorImpl() {
-
     }
 
     virtual base_type * operator++() {
@@ -1329,10 +1321,6 @@ public:
     }
 
     KmerMapImpl(): data_() {
-    }
-
-    virtual ~KmerMapImpl() {
-
     }
 
     virtual void transfer(IKmerSet * set, const Value& val) {
@@ -1476,6 +1464,11 @@ public:
     virtual IKmerMap<Value> * GetMap(size_t capacity) const = 0;
 
     virtual IKmerMap<Value> * GetMap() const = 0;
+
+    virtual ~SingleKmerMapFactory() {
+
+    }
+
 };
 
 
@@ -1492,7 +1485,6 @@ public:
     virtual IKmerMap<Value> * GetMap() const {
         return new KmerMapImpl<size_, Value>();
     }
-
 
 };
 
