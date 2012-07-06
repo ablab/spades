@@ -45,7 +45,7 @@ public:
 	OnlineVisualizer(const conj_graph_pack &gp) : gp_(gp), picture_counter_(0), folder_("pictures"), file_name_base_("picture"),
 		max_vertices_(40), edge_length_bound_(1000), positions_(gp.g, 0, true, 15), graph_struct_(gp.g, &gp.int_ids, &positions_), tot_lab_(&graph_struct_) {
 		NewPathColorer<Graph> colorer(gp.g);
-		NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value);
+		NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value + 1);
 		MappingPath<EdgeId> path1 = mapper.MapSequence(gp.genome);
 		MappingPath<EdgeId> path2 = mapper.MapSequence(!gp.genome);
 		coloring_ = colorer.ColorPath(path1.simple_path(), path2.simple_path());
