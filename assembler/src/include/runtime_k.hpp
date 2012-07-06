@@ -16,14 +16,10 @@
 #include <unordered_set>
 #include <vector>
 
+#include "k_range.hpp"
+
 namespace runtime_k {
 
-
-
-// K in [MIN_K, MAX_K)
-const size_t MIN_K = 1;
-
-const size_t MAX_K = 64;
 
 const size_t UPPER_BOUND = ((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
 
