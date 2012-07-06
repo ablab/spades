@@ -348,7 +348,7 @@ private:
 public:
 	vector<pair<int, double>> ComulativeHistogram(vector<double> weights) {
 		vector<pair<int, double>> result;
-		size_t cur = weights.size() - 1;
+		int cur = weights.size() - 1;
 		size_t max = 1000;
 		vector<double> res(max);
 		for (int i = max - 1; i >= 0; i--) {
