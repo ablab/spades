@@ -18,14 +18,13 @@ namespace cap {
 
 //Gingi block
 
-//BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
-//	MaskDifferencesAndSave(vector<string>{
-//		"/home/snurk/Dropbox/gingi/jeff.fasta",
-//		"/home/snurk/Dropbox/gingi/TDC60.fasta"},
-//		vector<string>{"jeff", "tdc60"},
-//		"assembly_comp/gingi_diff_mask/",
-//		k<15>(), k<21>(), k<55>()/*, k<101>(), k<201>()*/);
-//}
+BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
+	MaskDifferencesAndSave(vector<string> {
+			"/home/snurk/Dropbox/gingi/jeff.fasta",
+			"/home/snurk/Dropbox/gingi/TDC60.fasta" }, vector<string> { "jeff",
+			"tdc60" }, "assembly_comp/gingi_diff_mask/", k<15>(), k<21>(),
+			k<55>()/*, k<101>(), k<201>()*/);
+}
 
 //BOOST_AUTO_TEST_CASE( ClearGingiGenome ) {
 //	Clear<201>("assembly_comp/gingi_diff_mask/tdc60.fasta",
@@ -38,12 +37,12 @@ namespace cap {
 //}
 
 BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
-	static const size_t K = 201;
+	static const size_t K = /*55*/201;
 	typedef debruijn_graph::graph_pack<
 	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> gp_t;
-	typedef typename gp_t::graph_t Graph;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
+	typedef gp_t::graph_t Graph;
+	typedef Graph::EdgeId EdgeId;
+	typedef Graph::VertexId VertexId;
 	typedef NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> Mapper;
 
 //	EasyContigStream stream_1("/home/snurk/Dropbox/gingi/jeff.fasta");
@@ -52,10 +51,13 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff_cl.fasta");
 //	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
 //	string ref = "assembly_comp/gingi_diff_mask/tdc60_cl.fasta";
-	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff.fasta", "jeff_");
-	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60.fasta", "tdc_");
+	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff.fasta",
+			"jeff_");
+	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60.fasta",
+			"tdc_");
 	string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
-	string output_folder = "assembly_comp/gingi_jeff_vs_tdc60_" + ToString(K) + "/";
+	string output_folder = "assembly_comp/gingi_jeff_vs_tdc60_" + ToString(K)
+			+ "/";
 	rm_dir(output_folder);
 	make_dir(output_folder);
 
@@ -70,12 +72,9 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
 
-	//Indels
+//Indels
 	make_dir(output_folder + "indels/");
-	SimpleInDelAnalyzer<Graph> del_analyzer(
-			gp.g,
-			coloring,
-			gp.edge_pos,
+	SimpleInDelAnalyzer<Graph> del_analyzer(gp.g, coloring, gp.edge_pos,
 			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(),
 			edge_type::red, output_folder + "indels/");
 	del_analyzer.Analyze();
@@ -84,15 +83,17 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
 //			alt_count.CountPaths();
 
-	//Block stats
+//Block stats
 //			ContigBlockStats<Graph, Mapper> block_stats(gp_.g, gp_.edge_pos,
 //					*MapperInstance(gp_), gp_.genome, stream1_);
 //			block_stats.Count();
 
-	//	Missing genes
+//	Missing genes
 	MissingGenesAnalyser<Graph, Mapper> missed_genes(gp.g, coloring,
 			gp.edge_pos, gp.genome, *MapperInstance(gp),
 			vector<pair<bool, pair<size_t, size_t>>> {
+			make_pair(/*true*/false, make_pair(416000, 430000)),
+			make_pair(/*true*/false, make_pair(1513000, 1518000)),
 			make_pair(/*true*/false, make_pair(260354, 260644)),
 			make_pair(/*true*/false, make_pair(300641, 300904)),
 			make_pair(/*true*/false, make_pair(300904, 301920)),
@@ -114,24 +115,34 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //	WriteMagicLocality();
 ////////////
 
-	//trivial breakpoints
+//trivial breakpoints
 //		string bp_folder = output_folder + "breakpoints/";
 //		make_dir(bp_folder);
 //		TrivialBreakpointFinder<Graph> bp_finder(gp_.g, coloring_,
 //				gp_.edge_pos);
 //		bp_finder.FindBreakPoints(bp_folder);
 
-	//possible rearrangements
+//possible rearrangements
 //		string rearr_folder = output_folder + "rearrangements/";
 //		make_dir(rearr_folder);
 //		SimpleRearrangementDetector<gp_t> rearr_det(gp_, coloring_, "tdc_",
 //				rearr_folder);
 //		rearr_det.Detect();
 
-	//print graph
+//print graph
 	make_dir(output_folder + "initial_pics");
 	PrintColoredGraphAlongRef(gp, coloring,
 			output_folder + "initial_pics/colored_split_graph.dot");
+
+	//make saves
+	make_dir(output_folder + "saves");
+	string filename = output_folder + "saves/graph";
+	PrinterTraits<Graph>::Printer printer(gp.g, gp.int_ids);
+	INFO("Saving graph to " << filename);
+	printer.saveGraph(filename);
+	printer.saveEdgeSequences(filename);
+	printer.savePositions(filename, gp.edge_pos);
+	SaveColoring(gp.g, gp.int_ids, coloring, filename);
 }
 
 //End of gingi block
