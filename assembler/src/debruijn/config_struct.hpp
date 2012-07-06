@@ -151,19 +151,19 @@ struct debruijn_config {
 
     static const estimation_mode_id_mapping FillEstimationModeInfo() {
         estimation_mode_id_mapping::value_type info[] = {
-            {   "naive",       em_naive       },
-            {   "simple",      em_simple      },
-            {   "weighted",    em_weighted    },
-            {   "extensive",   em_extensive   },
-            {   "advanced",    em_advanced    },
+          estimation_mode_id_mapping::value_type("naive",       em_naive       ),
+          estimation_mode_id_mapping::value_type("simple",      em_simple      ),
+          estimation_mode_id_mapping::value_type("weighted",    em_weighted    ),
+          estimation_mode_id_mapping::value_type("extensive",   em_extensive   ),
+          estimation_mode_id_mapping::value_type("advanced",    em_advanced    ),
         };
         return estimation_mode_id_mapping(info, utils::array_end(info));
     }
 
     static const paired_metrics_id_mapping FillPairedMetricsInfo() {
         paired_metrics_id_mapping::value_type info[] = { 
-                { "read_count" ,      pm_read_count  },
-                { "product"    ,      pm_product    }
+          paired_metrics_id_mapping::value_type("read_count" ,      pm_read_count),
+          paired_metrics_id_mapping::value_type("product"    ,      pm_product)
         };
 
         return paired_metrics_id_mapping(info, utils::array_end(info));
