@@ -16,7 +16,7 @@
 #include <sys/resource.h>
 #include <map>
 #include <ext/hash_map>
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include "cuckoo.hpp"
 #include "memory.hpp"
 
@@ -73,11 +73,11 @@ void TestAllStructures() {
   __gnu_cxx::hash_map<int, int> s2;
   TestStructure<__gnu_cxx::hash_map<int, int> >(s2, tim, vm, rss);
 
-  std::cout << "Testing tr1/unordered_map: \n";
+  std::cout << "Testing unordered_map: \n";
   gettimeofday(&tim, NULL);
   process_mem_usage(vm, rss);
-  std::tr1::unordered_map<int, int> s3;
-  TestStructure<std::tr1::unordered_map<int, int> >(s3, tim, vm, rss);
+  std::unordered_map<int, int> s3;
+  TestStructure<std::unordered_map<int, int> >(s3, tim, vm, rss);
 
   std::cout << "Testing cuckoo: \n";
   gettimeofday(&tim, NULL);
