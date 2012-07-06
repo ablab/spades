@@ -143,7 +143,13 @@ inline void assertion_failed(char const * expr, char const * function, char cons
 {
         std::cerr << "Aborted by assert: " << std::endl;
         print_stacktrace();
+#if __DARWIN_UNIX03
+        __assert_rtn (expr, file, line, function);
+#elif __DARWIN
+        __assert (expr, file, line, function);
+#else
         __assert_fail (expr, file, line, function);
+#endif
 }
 } // namespace boost
 
