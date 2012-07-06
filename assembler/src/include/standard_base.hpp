@@ -137,23 +137,37 @@ using boost::noncopyable;
 #include "stacktrace.hpp"
 
 #ifndef NDEBUG
-namespace boost
-{
-inline void assertion_failed(char const * expr, char const * function, char const * file, long line)
-{
-        std::cerr << "Aborted by assert: " << std::endl;
-        print_stacktrace();
+namespace boost {
+inline void assertion_failed(char const * expr, char const * function,
+                             char const * file, long line) {
+  std::cerr << "Aborted by assert: " << std::endl;
+  print_stacktrace();
 #if __DARWIN_UNIX03
-        __assert_rtn (expr, file, line, function);
+  __assert_rtn (expr, file, line, function);
 #elif __DARWIN
-        __assert (expr, file, line, function);
+  __assert (expr, file, line, function);
 #else
-        __assert_fail (expr, file, line, function);
+  __assert_fail (expr, file, line, function);
 #endif
 }
+
+inline void assertion_failed_msg(char const * expr, char const * msg,
+                                 char const * function, char const * file,
+                                 long line) {
+  std::cerr << "Aborted by assert: " << msg << std::endl;
+  print_stacktrace();
+#if __DARWIN_UNIX03
+  __assert_rtn (expr, file, line, function);
+#elif __DARWIN
+  __assert (expr, file, line, function);
+#else
+  __assert_fail (expr, file, line, function);
+#endif
+}
+
 } // namespace boost
 
-#endif
+#endif // NDEBUG
 
 //==sys
 #include <sys/stat.h>
