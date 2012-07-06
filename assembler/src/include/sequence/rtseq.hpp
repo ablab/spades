@@ -530,7 +530,7 @@ public:
 
     size_t GetHash() const {
         size_t hash = PrimeNum;
-        for (size_t i = 0; i < DataSize; i++) {
+        for (size_t i = 0; i < GetDataSize(size_); i++) {
             hash = ((hash << 5) - hash) + data_[i];
         }
         return hash;

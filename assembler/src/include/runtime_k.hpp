@@ -23,7 +23,7 @@ namespace runtime_k {
 // K in [MIN_K, MAX_K)
 const size_t MIN_K = 1;
 
-const size_t MAX_K = 64;
+const size_t MAX_K = 21;
 
 const size_t UPPER_BOUND = ((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
 
@@ -84,6 +84,10 @@ public:
     IKmerHashVector(size_t nthreads)
         : nthreads_     (nthreads)
         , cell_size_    (LOAD_OVERHEAD) {
+    }
+
+    virtual ~IKmerHashVector() {
+
     }
 
     virtual IKmerHashVector * copy() const = 0;
@@ -234,6 +238,10 @@ public:
 
     }
 
+    virtual ~KmerHashVectorImpl() {
+
+    }
+
     virtual base_type * copy() const {
         return new KmerHashVectorImpl<size_>(*this);
     }
@@ -381,6 +389,10 @@ public:
 
     typedef RtSeq input_value_type;
 
+    virtual ~IKmerSet() {
+
+    }
+
     virtual IKmerSet * copy() const = 0;
 
     virtual bool empty() const = 0;
@@ -510,6 +522,10 @@ public:
     }
 
     KmerSetImpl(): data_() {
+    }
+
+    virtual ~KmerSetImpl() {
+
     }
 
 
@@ -681,6 +697,9 @@ template <typename Value>
 class IKmerMapIterator {
 
 public:
+    virtual ~IKmerMapIterator() {
+
+    }
 
     typedef pair<const RtSeq, const Value&> value_type;
 
@@ -794,6 +813,9 @@ public:
 
     typedef IKmerConstMapIterator<Value> iterator_type;
 
+    virtual ~IKmerConstMapIterator() {
+
+    }
 
     virtual iterator_type * operator++() = 0;
 
@@ -905,6 +927,9 @@ public:
 
     typedef IKmerConstMapIterator<Value> const_iterator_type;
 
+    virtual ~IKmerMap() {
+
+    }
 
     virtual IKmerMap<Value> * copy() const = 0;
 
@@ -1146,6 +1171,10 @@ public:
     KmerMapIteratorImpl(const map_iterator& iter): iter_(iter) {
     }
 
+    virtual ~KmerMapIteratorImpl() {
+
+    }
+
     virtual base_type * operator++() {
         return new iterator_impl(++iter_);
     }
@@ -1214,6 +1243,10 @@ private:
 public:
 
     KmerConstMapIteratorImpl(const map_iterator& iter): iter_(iter) {
+    }
+
+    virtual ~KmerConstMapIteratorImpl() {
+
     }
 
     virtual base_type * operator++() {
@@ -1296,6 +1329,10 @@ public:
     }
 
     KmerMapImpl(): data_() {
+    }
+
+    virtual ~KmerMapImpl() {
+
     }
 
     virtual void transfer(IKmerSet * set, const Value& val) {
