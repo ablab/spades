@@ -19,7 +19,6 @@ if (!(expr)) {																									\
 	"'. In file '" << __FILE__ << " on line " << __LINE__ << "'." << std::endl;									\
 	std::cout << ss.str();																						\
 	std::cerr << ss.str();																						\
-	print_stacktrace();                                                                                         \
 	throw((assertion_failed_exception()));																		\
 }
 
@@ -30,6 +29,5 @@ if (!(expr)) {																									\
 	"'. In file '" << __FILE__ << "' on line " << __LINE__ << ". Message '" << msg << "'." << std::endl;		\
 	std::cout << ss.str();																						\
 	std::cerr << ss.str();																						\
-	print_stacktrace();                                                                                         \
 	throw ((assertion_failed_exception()));																		\
 }
