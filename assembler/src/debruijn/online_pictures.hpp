@@ -116,7 +116,7 @@ public:
 			cout << "file " << file << " does not exist" << endl;
 			return;
 		}
-		NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value);
+		NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value + 1);
 		PosFiller<Graph, NewExtendedSequenceMapper<Graph>> filler(gp_.g, mapper, positions_);
 		io::Reader irs(file);
 		while(!irs.eof()){
