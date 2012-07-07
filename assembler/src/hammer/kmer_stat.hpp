@@ -37,7 +37,7 @@ typedef uint64_t hint_t;
 class Read;
 class PositionRead;
 class PositionKMer;
-class KMerStat;
+struct KMerStat;
 
 typedef std::map<PositionKMer, KMerStat> KMerStatMap;
 typedef std::pair<PositionKMer, KMerStat> KMerCount;
