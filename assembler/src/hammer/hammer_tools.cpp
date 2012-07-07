@@ -394,68 +394,70 @@ void HammerTools::CountKMersBySplitAndMerge() {
 		Globals::number_of_kmers = m.size();
 		TIMEDLN("Map filled, " << Globals::number_of_kmers << " kmers in total");
 	} else {
-	if (cfg::get().count_do) {
-		HammerTools::SplitKMers( );
-	}
+    if (cfg::get().count_do) {
+      HammerTools::SplitKMers( );
+    }
 
-	int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
-	int numfiles = cfg::get().count_numfiles;
+    int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
+    int numfiles = cfg::get().count_numfiles;
 
-	TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
-	int merge_nthreads = min( cfg::get().general_max_nthreads, cfg::get().count_merge_nthreads);
+    TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
+    int merge_nthreads = min( cfg::get().general_max_nthreads, cfg::get().count_merge_nthreads);
 
-	std::vector< std::vector<KMerCount> > kmcvec(numfiles);
+    std::vector< std::vector<KMerCount> > kmcvec(numfiles);
 
-	#pragma omp parallel for shared(kmcvec) num_threads(merge_nthreads)
-	for (int iFile=0; iFile < numfiles; ++iFile ) {
-		KMerNoHashMap khashmap;
-    std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
-    std::ifstream inStream = std::ifstream(fname, std::ios::in | std::ios::binary);
-		ProcessKmerHashFile(inStream, khashmap, kmcvec[iFile]);
-    inStream.close();
-    // FIXME: This should be abstracted out
-    remove(fname.c_str());
-		TIMEDLN("Processed file " << iFile << " with thread " << omp_get_thread_num());
-	}
-	TIMEDLN("Concat vectors");
-	size_t totalsize = 0; for ( int iFile=0; iFile < numfiles; ++iFile ) totalsize += kmcvec[iFile].size();
-	vec.reserve(totalsize);
-	vector< size_t > enditers;
-	for ( int iFile=0; iFile < numfiles; ++iFile ) {
-		vec.insert(vec.end(), kmcvec[iFile].begin(), kmcvec[iFile].end());
-		enditers.push_back(vec.size());
-		kmcvec[iFile].clear();
-	}
-	TIMEDLN("Merge in place");
-	KMerNo::is_less_kmercount fun_ilk;
-	for ( int iFile=1; iFile < numfiles; ++iFile ) {
-		std::inplace_merge(vec.begin(), vec.begin() + enditers[iFile-1], vec.begin() + enditers[iFile], fun_ilk );
-	}
+	  #pragma omp parallel for shared(kmcvec) num_threads(merge_nthreads)
+    for (int iFile=0; iFile < numfiles; ++iFile) {
+      KMerNoHashMap khashmap;
+      std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
+      std::ifstream inStream = std::ifstream(fname, std::ios::in | std::ios::binary);
+      ProcessKmerHashFile(inStream, khashmap, kmcvec[iFile]);
+      inStream.close();
+      // FIXME: This should be abstracted out
+      remove(fname.c_str());
+      TIMEDLN("Processed file " << iFile << " with thread " << omp_get_thread_num());
+    }
+
+    TIMEDLN("Concat vectors");
+    size_t totalsize = 0; for ( int iFile=0; iFile < numfiles; ++iFile ) totalsize += kmcvec[iFile].size();
+    vec.reserve(totalsize);
+    vector< size_t > enditers;
+    for (int iFile=0; iFile < numfiles; ++iFile ) {
+      vec.insert(vec.end(), kmcvec[iFile].begin(), kmcvec[iFile].end());
+      enditers.push_back(vec.size());
+      kmcvec[iFile].clear();
+    }
+
+    TIMEDLN("Merge in place");
+    KMerNo::is_less_kmercount fun_ilk;
+    for (int iFile=1; iFile < numfiles; ++iFile ) {
+      std::inplace_merge(vec.begin(), vec.begin() + enditers[iFile-1], vec.begin() + enditers[iFile], fun_ilk );
+    }
 	}
 
 	TIMEDLN("Extracting kmernos");
 	Globals::kmernos->clear();
 	Globals::kmernos->reserve(vec.size());
 	if (HammerTools::doingMinimizers()) {
-	for ( KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
-		Globals::kmernos->push_back(mit->second.first.start());
-	}
+    for (KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
+      Globals::kmernos->push_back(mit->second.first.start());
+    }
 	} else {
-	for (size_t i=0; i < vec.size(); ++i) {
-		Globals::kmernos->push_back(vec[i].first.start());
-	}
+    for (size_t i=0; i < vec.size(); ++i) {
+      Globals::kmernos->push_back(vec[i].first.start());
+    }
 	}
 
 	TIMEDLN("Writing subvectors");
 	int tau_ = cfg::get().general_tau;
 	vector< boost::shared_ptr<FOStream> > ostreams(tau_+1);
-	ostreams[0] = FOStream::init_buf(
-		HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers.sorted", 0),
-		1 << cfg::get().general_file_buffer_exp);
+	ostreams[0] =
+      FOStream::init_buf(getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers.sorted", 0),
+                         1 << cfg::get().general_file_buffer_exp);
 	for (int j = 1; j < tau_+1; ++j) {
-		ostreams[j] = FOStream::init_buf(
-				HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j),
-				1 << cfg::get().general_file_buffer_exp);
+		ostreams[j] =
+        FOStream::init_buf(getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j),
+                           1 << cfg::get().general_file_buffer_exp);
 	}
 	if (HammerTools::doingMinimizers()) {
 		size_t num_kmer = 0;
@@ -468,13 +470,13 @@ void HammerTools::CountKMersBySplitAndMerge() {
 			++num_kmer;
 		}
 	} else {
-	for (size_t i=0; i < vec.size(); ++i) {
-		const hint_t & pos = vec[i].first.start();
-		for (int j=0; j < tau_+1; ++j) {
-			(ostreams[j]->fs) << string(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j))
-					<< "\t" << i << "\n";
-		}
-	}
+    for (size_t i=0; i < vec.size(); ++i) {
+      const hint_t & pos = vec[i].first.start();
+      for (int j=0; j < tau_+1; ++j) {
+        (ostreams[j]->fs) << string(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j))
+                          << "\t" << i << "\n";
+      }
+    }
 	}
 	ostreams.clear();
 
@@ -500,22 +502,22 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	}
 
 	if (HammerTools::doingMinimizers()) {
-	TIMEDLN("Serializing sorted kmers.");
-	{
-		ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
-		boost::archive::binary_oarchive oar(os);
-		for ( KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
-		oar << mit->second;
-		}
-		m.clear();
-	}
+    TIMEDLN("Serializing sorted kmers.");
+    {
+      ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
+      boost::archive::binary_oarchive oar(os);
+      for ( KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
+        oar << mit->second;
+      }
+      m.clear();
+    }
 	} else {
-	TIMEDLN("Serializing sorted kmers.");
-	{
-		ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
-		boost::archive::binary_oarchive oar(os);
-		oar << vec;
-	}
+    TIMEDLN("Serializing sorted kmers.");
+    {
+      ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
+      boost::archive::binary_oarchive oar(os);
+      oar << vec;
+    }
 	}
 	if (!cfg::get().general_remove_temp_files) {
 		TIMEDLN("Serializing kmernos.");
@@ -537,7 +539,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	TIMEDLN("Merge done. There are " << vec.size() << " kmers in total.");
 }
 
-void fillQVec( vector<int> & qvec, hint_t index, const char & char_offset ) {
+static void fillQVec( vector<int> & qvec, hint_t index, const char & char_offset ) {
 	if (!Globals::use_common_quality) {
 		for (uint32_t j=0; j<K; ++j) {
 			qvec[j] = Globals::blobquality[index + j] - char_offset;
@@ -556,7 +558,7 @@ void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KM
 	vkmc.push_back(kmc);
 	for (size_t i=1; i < vec.size(); ++i) {
 		KMerCount & curkmc = vkmc[vkmc.size() - 1];
-		if ( vec[i].equal(curkmc) ) {
+		if (vec[i].equal(curkmc)) {
 			first_occ = false;
 			curkmc.second.count++;
 			curkmc.second.totalQual *= vec[i].errprob;
