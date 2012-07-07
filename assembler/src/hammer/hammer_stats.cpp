@@ -12,6 +12,8 @@
 #include <boost/format.hpp>
 #include "hammer_stats.hpp"
 
+namespace hammer {
+
 void print_time() {
   time_t rawtime;
   tm *ptm;
@@ -68,3 +70,5 @@ void print_full_stats() {
   }
   std::cout << "] ";
 }
+
+};
