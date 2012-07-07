@@ -27,49 +27,55 @@ const uint64_t KMERNO_HASH_Q = 3712758430079221;
 const uint64_t KMERNO_HASH_Q_INV = 2250585152990002931;
 const uint64_t KMERNO_HASH_Q_POW_K_MINUS_ONE = 412252044596125152;
 
-struct KMerNo {
-	hint_t index;
-	double errprob;
+class KMerNo {
+public:
+  explicit KMerNo(hint_t no = -1, double qual = 1.0) {
+    index = no;
+    errprob = qual;
+  }
 
-	KMerNo( hint_t no, double qual ) : index(no), errprob(qual) { }
-	explicit KMerNo( hint_t no ) : index(no), errprob(1) { }
-	KMerNo( ) : index(-1), errprob(1) { }
+  bool equal(const KMerNo & kmerno) const;
+  bool equal(const KMerCount & kmc) const;
+  std::string str() const;
+  bool less(const KMerNo &r) const;
+  bool greater(const KMerNo &r) const;
 
-	bool equal(const KMerNo & kmerno) const;
-	bool equal(const KMerCount & kmc) const;
-	std::string str() const;
-	bool less(const KMerNo &r) const;
-	bool greater(const KMerNo &r) const;
+  static uint64_t new_hash(hint_t index);
+  static uint64_t next_hash(uint64_t old_hash, hint_t new_index);
 
-	static uint64_t new_hash( hint_t index );
-	static uint64_t next_hash( uint64_t old_hash, hint_t new_index );
-	//static void precomputeHashes();
+  struct hash {
+    uint64_t operator() (const KMerNo &kn) const;
+  };
 
-	struct hash {
-		uint64_t operator() (const KMerNo &kn) const;
-	};
+  struct string_hash {
+    uint64_t operator() (const std::string &kn) const;
+  };
 
-	struct string_hash {
-		uint64_t operator() (const std::string &kn) const;
-	};
+  struct are_equal {
+    bool operator() (const KMerNo &l, const KMerNo &r) const;
+  };
 
-	struct are_equal {
-		bool operator() (const KMerNo &l, const KMerNo &r) const;
-	};
+  struct is_less {
+    bool operator() (const KMerNo &l, const KMerNo &r) const;
+  };
 
-	struct is_less {
-		bool operator() (const KMerNo &l, const KMerNo &r) const;
-	};
+  struct is_less_kmercount {
+    bool operator() (const KMerCount &l, const KMerCount &r) const;
+  };
 
-	struct is_less_kmercount {
-		bool operator() (const KMerCount &l, const KMerCount &r) const;
-	};
+  hint_t getIndex() const { return index; }
+  void setIndex(hint_t no) { index = no; }
+  double getQual() const { return errprob; }
+  void setQual(double q) { errprob = q; }
 
+private:
+  hint_t index;
+  double errprob;
 };
 
 // FIXME: Eventually KMerNo should become POD-like class and thus can be possed by value
 inline std::ostream& operator<<(std::ostream &os, const KMerNo &k) {
-  os << k.index << '\t' << k.errprob << '\n';
+  os << k.getIndex() << '\t' << k.getQual() << '\n';
   return os;
 }
 
@@ -79,7 +85,7 @@ inline std::istream& operator>>(std::istream &is, KMerNo &k) {
 
   std::getline(is, buf);
   sscanf(buf.c_str(), "%llu\t%lf", &pos, &prob);
-  k.index = pos; k.errprob = prob;
+  k.setIndex(pos); k.setQual(prob);
 
   return is;
 }
@@ -93,15 +99,14 @@ inline void binary_write(std::ostream &os, const KMerNo &k) {
 }
 
 #ifdef GOOGLE_SPARSE_MAP
-	typedef google::sparse_hash_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
+  typedef google::sparse_hash_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
 #endif
 #ifdef BOOST_UNORDERED_MAP
-	typedef boost::unordered_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
+  typedef boost::unordered_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
 #endif
 #ifdef GOOGLE_DENSE_MAP
-	typedef google::dense_hash_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
+  typedef google::dense_hash_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
 #endif
 
 
 #endif
-

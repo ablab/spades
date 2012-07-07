@@ -294,12 +294,13 @@ void HammerTools::SplitKMers() {
 				//cout << s << "\n";
 				for ( vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
 					//cout << "  " << string(Globals::blob + it->first, K) << "\t" << it->second.second << "\t" << (it->second.second % numfiles) << "\n";
-					tmp_entries[omp_get_thread_num()][it->second.second % numfiles].push_back({ it->first, it->second.first });
+					tmp_entries[omp_get_thread_num()][it->second.second % numfiles].push_back(KMerNo(it->first, it->second.first));
 				}
 				//cout << "\n";
 			} else {
 				while (gen.HasMore()) {
-					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back({ Globals::pr->at(i).start() + gen.pos() - 1, 1 - gen.correct_probability() });
+					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back(KMerNo(Globals::pr->at(i).start() + gen.pos() - 1,
+                                                                                                   1 - gen.correct_probability()));
 					gen.Next();
 				}
 			}
@@ -549,10 +550,10 @@ static void fillQVec( vector<int> & qvec, hint_t index, const char & char_offset
 
 void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KMerCount> & vkmc) {
 	char char_offset = (char)cfg::get().input_qvoffset;
-	KMerCount kmc(PositionKMer(vec[0].index), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, vec[0].errprob));
+	KMerCount kmc(PositionKMer(vec[0].getIndex()), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, vec[0].getQual()));
 
 	vector<int> qvec(K);
-	fillQVec(qvec, vec[0].index, char_offset);
+	fillQVec(qvec, vec[0].getIndex(), char_offset);
 
 	bool first_occ = true;
 	vkmc.push_back(kmc);
@@ -561,8 +562,8 @@ void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KM
 		if (vec[i].equal(curkmc)) {
 			first_occ = false;
 			curkmc.second.count++;
-			curkmc.second.totalQual *= vec[i].errprob;
-			fillQVec(qvec, vec[i].index, char_offset);
+			curkmc.second.totalQual *= vec[i].getQual();
+			fillQVec(qvec, vec[i].getIndex(), char_offset);
 		} else {
 			if (!first_occ && !Globals::use_common_quality) {
 				curkmc.second.qual = QualBitSet();
@@ -570,8 +571,8 @@ void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KM
 					curkmc.second.qual.set(j, min(MAX_SHORT, qvec[j]));
 				}
 			}
-			KMerCount kmc(PositionKMer(vec[i].index), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, vec[i].errprob));
-			fillQVec(qvec, vec[i].index, char_offset);
+			KMerCount kmc(PositionKMer(vec[i].getIndex()), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, vec[i].getQual()));
+			fillQVec(qvec, vec[i].getIndex(), char_offset);
 			vkmc.push_back(kmc);
 			first_occ = true;
 		}
@@ -592,7 +593,7 @@ void HammerTools::ProcessKmerHashFile(std::istream & inf, KMerNoHashMap & km, st
     vec.push_back(k);
 	}
 	KMerNo::is_less kmerno_cmp;
-	std::sort(vec.begin(), vec.end(), kmerno_cmp );
+	std::sort(vec.begin(), vec.end(), kmerno_cmp);
 	if (!vec.size()) return;
 
 	HammerTools::KmerHashUnique(vec, vkmc);
