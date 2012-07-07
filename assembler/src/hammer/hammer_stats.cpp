@@ -14,6 +14,32 @@
 
 namespace hammer {
 
+#if __DARWIN || __DARWIN_UNIX03
+#include <mach/task.h>
+#include <mach/mach.h>
+
+unsigned get_max_rss() {
+  struct task_basic_info t_info;
+  mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
+
+  if (KERN_SUCCESS !=
+      task_info(mach_task_self(),
+                TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count))
+    return -1U;
+
+  return t_info.resident_size / 1024;
+}
+#else
+#include <sys/resource.h>
+
+unsigned get_max_rss() {
+  rusage ru;
+  getrusage(RUSAGE_SELF, &ru);
+
+  return ru.ru_maxrss;
+}
+#endif
+
 void print_time() {
   time_t rawtime;
   tm *ptm;
@@ -41,11 +67,12 @@ void print_stats() {
   rusage ru;
   getrusage(RUSAGE_SELF, &ru);
   tm * ptm = gmtime(&ru.ru_utime.tv_sec);
+  unsigned max_rss = get_max_rss();
   std::cout << " " << std::setw(2) << std::setfill('0')  << ptm->tm_hour << ":" << std::setw(2) << std::setfill('0') << ptm->tm_min << ":" << std::setw(2) << std::setfill('0') << ptm->tm_sec;
-  if (ru.ru_maxrss < 1024 * 1024) {
-    std::cout << std::setw(5) << std::setfill(' ') << (ru.ru_maxrss / 1024) << "M ";
+  if (max_rss < 1024 * 1024) {
+    std::cout << std::setw(5) << std::setfill(' ') << (max_rss / 1024) << "M ";
   } else {
-    std::cout << std::setw(6) << std::setprecision(1) << std::fixed << std::setfill(' ') << (ru.ru_maxrss / (1024.0 * 1024.0) ) << "G ";
+    std::cout << std::setw(6) << std::setprecision(1) << std::fixed << std::setfill(' ') << (max_rss / (1024.0 * 1024.0) ) << "G ";
   }
   std::cout << "] ";
 }
@@ -62,11 +89,12 @@ void print_full_stats() {
   rusage ru;
   getrusage(RUSAGE_SELF, &ru);
   tm * ptm = gmtime(&ru.ru_utime.tv_sec);
+  unsigned max_rss = get_max_rss();
   std::cout << " " << std::setw(2) << std::setfill('0')  << ptm->tm_hour << ":" << std::setw(2) << std::setfill('0') << ptm->tm_min << ":" << std::setw(2) << std::setfill('0') << ptm->tm_sec;
-  if (ru.ru_maxrss < 1024 * 1024) {
-    std::cout << std::setw(5) << std::setfill(' ') << (ru.ru_maxrss / 1024) << "M ";
+  if (max_rss < 1024 * 1024) {
+    std::cout << std::setw(5) << std::setfill(' ') << (max_rss / 1024) << "M ";
   } else {
-    std::cout << std::setw(6) << std::setprecision(1) << std::fixed << std::setfill(' ') << (ru.ru_maxrss / (1024.0 * 1024.0) ) << "G ";
+    std::cout << std::setw(6) << std::setprecision(1) << std::fixed << std::setfill(' ') << (max_rss / (1024.0 * 1024.0) ) << "G ";
   }
   std::cout << "] ";
 }
