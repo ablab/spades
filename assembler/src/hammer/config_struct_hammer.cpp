@@ -12,6 +12,7 @@
  */
 
 #include "config_struct_hammer.hpp"
+#include "openmp_wrapper.h"
 
 void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 {
@@ -81,4 +82,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	cfg.input_qvoffset_opt = pt.get_optional<int>("input_qvoffset");
 	load(cfg.input_read_solid_kmers, pt, "input_read_solid_kmers");
 	load(cfg.input_solid_kmers, pt, "input_solid_kmers");
+
+  // Fix number of threads according to OMP capabilities.
+  cfg.general_max_nthreads = min(cfg.general_max_nthreads, omp_get_max_threads());
 }
