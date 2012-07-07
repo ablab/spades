@@ -19,9 +19,12 @@ class MMappedReader {
   int StreamFile;
   bool Unlink;
   std::string FileName;
+  MMappedReader(const MMappedReader &) = delete;
+
  protected:
   uint8_t* MappedRegion;
   size_t FileSize, BytesRead;
+
  public:
   MMappedReader(const std::string &filename, bool unlink = false) {
     struct stat buf;
