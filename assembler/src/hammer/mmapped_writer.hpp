@@ -29,7 +29,7 @@ class MMappedWriter {
 
   void open(const std::string &FileName) {
     StreamFile = ::open(FileName.c_str(), O_RDWR | O_CREAT | O_TRUNC, (mode_t)0660);
-    assert(StreamFile != -1 && "Cannot open the file");
+    VERIFY(StreamFile != -1);
     
     FileOffset = BytesWritten = 0;
     MappedRegion = NULL;
@@ -57,9 +57,9 @@ class MMappedWriter {
     }
     
     int res = lseek(StreamFile, amount-1, SEEK_CUR);
-    assert(res != -1 && "Cannot seek in the file");
+    VERIFY(res != -1);
     res = ::write(StreamFile, "", 1);
-    assert(res != -1 && "Cannot write at the end of file");
+    VERIFY(res != -1);
     
     // FileOffset here should be aligned to page boundary. Tune the stuff due to this fact.
     int PageSize = getpagesize();
@@ -72,6 +72,7 @@ class MMappedWriter {
         (uint8_t*)mmap(NULL, BytesReserved,
                        PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED,
                        StreamFile, FileOffsetAligned);
+    VERIFY((intptr_t)MappedRegion != -1L);
   }
   
   size_t size() const { return BytesReserved; }

@@ -33,11 +33,13 @@ class MMappedReader {
     FileSize = (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size);    
 
     StreamFile = open(FileName.c_str(), O_RDONLY);
-    assert(StreamFile != -1 && "Cannot open the file");
+    VERIFY(StreamFile != -1);
     
     MappedRegion =
         (uint8_t*)mmap(NULL, FileSize, PROT_READ, MAP_FILE | MAP_PRIVATE,
                        StreamFile, 0);
+    VERIFY((intptr_t)MappedRegion != -1L);
+
     BytesRead = 0;
     Unlink = unlink;
   }
@@ -67,7 +69,7 @@ class MMappedRecordReader : public MMappedReader {
  public:
   MMappedRecordReader(const std::string &FileName, bool unlink = true):
       MMappedReader(FileName, unlink) {
-    assert(FileSize % sizeof(T) == 0 && "File size is not a multiple of record length");
+    VERIFY(FileSize % sizeof(T) == 0);
   }
   
   void read(T* el, size_t amount) {
