@@ -256,9 +256,9 @@ void HammerTools::SplitKMers() {
 	char char_offset = (char)cfg::get().input_qvoffset;
 	int readbuffer = cfg::get().count_split_buffer;
 
-	vector< vector< vector< pair<hint_t, double> > > > tmp_entries(count_num_threads);
+	vector< vector< vector< KMerNo > > > tmp_entries(count_num_threads);
 	for (int i=0; i < count_num_threads; ++i) {
-		tmp_entries[i].resize(numfiles, vector< pair<hint_t, double> >() );
+		tmp_entries[i].resize(numfiles);
 		for (int j=0; j < numfiles; ++j) {
 			tmp_entries[i][j].reserve((int)( 1.25 * readbuffer / count_num_threads));
 		}
@@ -293,13 +293,12 @@ void HammerTools::SplitKMers() {
 				//cout << s << "\n";
 				for ( vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
 					//cout << "  " << string(Globals::blob + it->first, K) << "\t" << it->second.second << "\t" << (it->second.second % numfiles) << "\n";
-					tmp_entries[omp_get_thread_num()][it->second.second % numfiles].push_back( make_pair( it->first, it->second.first ) );
+					tmp_entries[omp_get_thread_num()][it->second.second % numfiles].push_back({ it->first, it->second.first });
 				}
 				//cout << "\n";
 			} else {
 				while (gen.HasMore()) {
-					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back(
-						make_pair(Globals::pr->at(i).start() + gen.pos() - 1, 1 - gen.correct_probability()));
+					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back({ Globals::pr->at(i).start() + gen.pos() - 1, 1 - gen.correct_probability() });
 					gen.Next();
 				}
 			}
@@ -313,14 +312,14 @@ void HammerTools::SplitKMers() {
 		for (int k=0; k < numfiles; ++k) {
 			for (size_t i=0; i < (size_t)count_num_threads; ++i) {
 				for (size_t l=0; l < tmp_entries[i][k].size(); ++l) {
-					ostreams[k]->fs << tmp_entries[i][k][l].first << "\t" << tmp_entries[i][k][l].second << "\n";
+					ostreams[k]->fs << tmp_entries[i][k][l].index << "\t" << tmp_entries[i][k][l].errprob << "\n";
 				}
 			}
 		}
 
 		for (int i=0; i < count_num_threads; ++i) {
 			tmp_entries[i].clear();
-			tmp_entries[i].resize(numfiles, vector< pair<hint_t, double> >() );
+			tmp_entries[i].resize(numfiles);
 			for (int j=0; j < numfiles; ++j) {
 				tmp_entries[i][j].reserve((int)( 1.25 * readbuffer / count_num_threads));
 			}
