@@ -257,7 +257,7 @@ void HammerTools::SplitKMers() {
 	}
 	Seq<K>::hash hash_function;
 	char char_offset = (char)cfg::get().input_qvoffset;
-	int readbuffer = cfg::get().count_split_buffer;
+	size_t readbuffer = cfg::get().count_split_buffer;
 
 	vector< vector< vector< KMerNo > > > tmp_entries(count_num_threads);
 	for (int i=0; i < count_num_threads; ++i) {
@@ -267,41 +267,39 @@ void HammerTools::SplitKMers() {
 		}
 	}
 
-	int cur_i = 0;
-	int cur_limit = 0;
+	size_t cur_i = 0, cur_limit = 0;
 	int cur_fileindex = 0;
 
-	while (cur_i < (int)Globals::pr->size()) {
-		cur_limit = min( cur_limit + readbuffer, (int)Globals::pr->size() );
+	while (cur_i < Globals::pr->size()) {
+		cur_limit = min(cur_limit + readbuffer, Globals::pr->size());
 		TIMEDLN("i=" << cur_i << "\tcurlim=" << cur_limit);
 
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
-		for (int i=cur_i ; i < cur_limit; ++i) {
-			string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
+		for (size_t i = cur_i; i < cur_limit; ++i) {
+      size_t cpos = Globals::pr->at(i).start(), csize = Globals::pr->at(i).size();
+			string s(Globals::blob + cpos, csize);
 			string q;
 			if (Globals::use_common_quality) {
-				q = string(Globals::pr->at(i).size(), (char)Globals::common_quality);
+				q = string(csize, (char)Globals::common_quality);
 			} else {
-				q = string(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
-				for ( size_t j=0; j < Globals::pr->at(i).size(); ++j) q[j] = (char)(q[j] - char_offset);
+				q = string(Globals::blobquality + cpos, csize);
+				for (size_t j=0; j < csize; ++j) q[j] = (char)(q[j] - char_offset);
 			}
 			ValidKMerGenerator<K> gen(s, q);
-			if ( use_minimizers ) {
+			if (use_minimizers ) {
 				vector< pair<hint_t, pair< double, size_t > > > kmers;
 				while (gen.HasMore()) {
-					kmers.push_back( make_pair(Globals::pr->at(i).start() + gen.pos() - 1, make_pair( 1 - gen.correct_probability(), my_hash(Globals::pr->at(i).start() + gen.pos() - 1) ) ));
+					kmers.push_back( make_pair(cpos + gen.pos() - 1,
+                                     make_pair(1 - gen.correct_probability(), my_hash(cpos + gen.pos() - 1) ) ));
 					gen.Next();
 				}
 				HammerTools::findMinimizers( kmers, num_minimizers, which_first );
-				//cout << s << "\n";
-				for ( vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
-					//cout << "  " << string(Globals::blob + it->first, K) << "\t" << it->second.second << "\t" << (it->second.second % numfiles) << "\n";
+				for (vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
 					tmp_entries[omp_get_thread_num()][it->second.second % numfiles].push_back(KMerNo(it->first, it->second.first));
 				}
-				//cout << "\n";
 			} else {
 				while (gen.HasMore()) {
-					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back(KMerNo(Globals::pr->at(i).start() + gen.pos() - 1,
+					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back(KMerNo(cpos + gen.pos() - 1,
                                                                                                    1 - gen.correct_probability()));
 					gen.Next();
 				}
