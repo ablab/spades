@@ -32,7 +32,7 @@ struct KMerNo {
 	double errprob;
 
 	KMerNo( hint_t no, double qual ) : index(no), errprob(qual) { }
-	KMerNo( hint_t no ) : index(no), errprob(1) { }
+	explicit KMerNo( hint_t no ) : index(no), errprob(1) { }
 	KMerNo( ) : index(-1), errprob(1) { }
 
 	bool equal(const KMerNo & kmerno) const;
@@ -66,6 +66,31 @@ struct KMerNo {
 	};
 
 };
+
+// FIXME: Eventually KMerNo should become POD-like class and thus can be possed by value
+inline std::ostream& operator<<(std::ostream &os, const KMerNo &k) {
+  os << k.index << '\t' << k.errprob << '\n';
+  return os;
+}
+
+inline std::istream& operator>>(std::istream &is, KMerNo &k) {
+  std::string buf;
+  hint_t pos; double prob;
+
+  std::getline(is, buf);
+  sscanf(buf.c_str(), "%llu\t%lf", &pos, &prob);
+  k.index = pos; k.errprob = prob;
+
+  return is;
+}
+
+inline void binary_read(std::istream &is, KMerNo &k) {
+  is.read((char*)&k, sizeof(k));
+}
+
+inline void binary_write(std::ostream &os, const KMerNo &k) {
+  os.write((char*)&k, sizeof(k));
+}
 
 #ifdef GOOGLE_SPARSE_MAP
 	typedef google::sparse_hash_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;

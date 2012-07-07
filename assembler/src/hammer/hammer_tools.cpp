@@ -238,7 +238,7 @@ size_t my_hash(hint_t pos) {
 
 void HammerTools::SplitKMers() {
 	int numfiles = cfg::get().count_numfiles;
-	int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
+	int count_num_threads = min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
 	int num_minimizers = 0;
 	if (cfg::get().general_num_minimizers) {
 		num_minimizers = *cfg::get().general_num_minimizers;
@@ -248,9 +248,10 @@ void HammerTools::SplitKMers() {
 
 	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads.");
 
-	vector<boost::shared_ptr<FOStream> > ostreams(numfiles);
-	for (int i = 0; i < numfiles; ++i) {
-		ostreams[i] = FOStream::init_buf(getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ), 1 << cfg::get().general_file_buffer_exp);
+	vector<std::ofstream> ostreams(numfiles);
+	for (unsigned i = 0; i < numfiles; ++i) {
+    std::string filename = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i);
+		ostreams[i].open(filename, std::ios::out | std::ios::trunc);
 	}
 	Seq<K>::hash hash_function;
 	char char_offset = (char)cfg::get().input_qvoffset;
@@ -273,7 +274,7 @@ void HammerTools::SplitKMers() {
 		TIMEDLN("i=" << cur_i << "\tcurlim=" << cur_limit);
 
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
-		for( int i=cur_i ; i < cur_limit; ++i) {
+		for (int i=cur_i ; i < cur_limit; ++i) {
 			string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 			string q;
 			if (Globals::use_common_quality) {
@@ -310,9 +311,9 @@ void HammerTools::SplitKMers() {
 		TIMEDLN("Writing to files " << cur_fileindex);
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
 		for (int k=0; k < numfiles; ++k) {
-			for (size_t i=0; i < (size_t)count_num_threads; ++i) {
-				for (size_t l=0; l < tmp_entries[i][k].size(); ++l) {
-					ostreams[k]->fs << tmp_entries[i][k][l].index << "\t" << tmp_entries[i][k][l].errprob << "\n";
+			for (size_t i = 0; i < (size_t)count_num_threads; ++i) {
+				for (size_t l = 0; l < tmp_entries[i][k].size(); ++l) {
+					binary_write(ostreams[k], tmp_entries[i][k][l]);
 				}
 			}
 		}
@@ -326,7 +327,9 @@ void HammerTools::SplitKMers() {
 		}
 	}
 
-	ostreams.clear();
+  for (unsigned k = 0; k < numfiles; ++k) {
+    ostreams[k].close();
+  }
 }
 
 void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
@@ -404,11 +407,14 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	std::vector< std::vector<KMerCount> > kmcvec(numfiles);
 
 	#pragma omp parallel for shared(kmcvec) num_threads(merge_nthreads)
-	for ( int iFile=0; iFile < numfiles; ++iFile ) {
+	for (int iFile=0; iFile < numfiles; ++iFile ) {
 		KMerNoHashMap khashmap;
-		boost::shared_ptr<FIStream> inStream = FIStream::init_buf(getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile ), 1 << cfg::get().general_file_buffer_exp);
-		inStream->remove_it = true;
-		ProcessKmerHashFile( inStream->fs, khashmap, kmcvec[iFile] );
+    std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
+    std::ifstream inStream = std::ifstream(fname, std::ios::in | std::ios::binary);
+		ProcessKmerHashFile(inStream, khashmap, kmcvec[iFile]);
+    inStream.close();
+    // FIXME: This should be abstracted out
+    remove(fname.c_str());
 		TIMEDLN("Processed file " << iFile << " with thread " << omp_get_thread_num());
 	}
 	TIMEDLN("Concat vectors");
@@ -576,15 +582,12 @@ void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KM
 	}
 }
 
-void HammerTools::ProcessKmerHashFile( boost::iostreams::filtering_istream & inf, KMerNoHashMap & km, std::vector<KMerCount> & vkmc ) {
-	string buf;
-	uint64_t pos; double prob;
-
+void HammerTools::ProcessKmerHashFile(std::istream & inf, KMerNoHashMap & km, std::vector<KMerCount> & vkmc) {
 	std::vector<KMerNo> vec;
 	while (inf.good()) {
-		std::getline(inf, buf);
-		sscanf(buf.c_str(), "%lu\t%lf", &pos, &prob);
-		vec.push_back(KMerNo(pos, prob));
+    KMerNo k;
+    binary_read(inf, k);
+    vec.push_back(k);
 	}
 	KMerNo::is_less kmerno_cmp;
 	std::sort(vec.begin(), vec.end(), kmerno_cmp );
