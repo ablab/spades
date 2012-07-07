@@ -411,11 +411,8 @@ void HammerTools::CountKMersBySplitAndMerge() {
     for (int iFile=0; iFile < numfiles; ++iFile) {
       KMerNoHashMap khashmap;
       std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
-      std::ifstream inStream = std::ifstream(fname, std::ios::in | std::ios::binary);
+      MMappedRecordReader<KMerNo> inStream(fname, /* unlink */ true);;
       ProcessKmerHashFile(inStream, khashmap, kmcvec[iFile]);
-      inStream.close();
-      // FIXME: This should be abstracted out
-      remove(fname.c_str());
       TIMEDLN("Processed file " << iFile << " with thread " << omp_get_thread_num());
     }
 
@@ -585,14 +582,13 @@ void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KM
 	}
 }
 
-void HammerTools::ProcessKmerHashFile(std::istream & inf, KMerNoHashMap & km, std::vector<KMerCount> & vkmc) {
+void HammerTools::ProcessKmerHashFile(MMappedRecordReader<KMerNo> & inf, KMerNoHashMap & km, std::vector<KMerCount> & vkmc) {
 	std::vector<KMerNo> vec;
-	while (inf.good()) {
-    KMerNo k;
-    binary_read(inf, k);
-    vec.push_back(k);
-	}
-	KMerNo::is_less kmerno_cmp;
+  vec.resize(inf.size());
+  inf.read(&vec[0], vec.size());
+  VERIFY(!inf.good());
+
+  KMerNo::is_less kmerno_cmp;
 	std::sort(vec.begin(), vec.end(), kmerno_cmp);
 	if (!vec.size()) return;
 

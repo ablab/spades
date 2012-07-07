@@ -734,7 +734,7 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 	}
 
   std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
-  std::ifstream ifs = std::ifstream(fname, std::ios::in | std::ios::binary);
+  MMappedReader ifs(fname, /* unlink */ true);
 
 	vector< vector< vector<int> > > blocks(nthreads_);
 
@@ -756,13 +756,10 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 			cur_class.clear();
 			if (useFilesystem) {
         size_t classNum, sizeClass;
-        ifs.read((char*)&classNum, sizeof(classNum));
-        ifs.read((char*)&sizeClass, sizeof(sizeClass));
-				for (size_t j = 0; j < sizeClass; ++j) {
-					int elem;
-          ifs.read((char*)&elem, sizeof(elem));
-					cur_class.push_back(elem);
-				}
+        ifs.read(&classNum, sizeof(classNum));
+        ifs.read(&sizeClass, sizeof(sizeClass));
+        cur_class.resize(sizeClass);
+        ifs.read(&cur_class[0], sizeClass * sizeof(cur_class[0]));
 			} else
         cur_class = classes[cur_class_num];
 			++cur_class_num;
@@ -875,8 +872,6 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 			}
 		}
 	}
-  // FIXME: This should be abstracted out.
-  remove(fname.c_str());
 
 	TIMEDLN("Centering finished.");
 }
