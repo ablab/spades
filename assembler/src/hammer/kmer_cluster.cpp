@@ -686,17 +686,24 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 
 	delete ufMaster; // no longer needed
 
-	if ( useFilesystem ) {
+	if (useFilesystem) {
 		TIMEDLN("Writing down clusters.");
-		boost::shared_ptr<FOStream> ofs = FOStream::init_buf(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"), 1 << cfg::get().general_file_buffer_exp);
-		for ( size_t i=0; i < classes.size(); ++i ) {
-			ofs->fs << "class " << i << " size=" << classes[i].size() << "\n";
-			for ( size_t j=0; j < classes[i].size(); ++j ) {
-				ofs->fs << classes[i][j] << "\n";
+    std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
+    std::ofstream ofs(fname, std::ios::binary | std::ios::out);
+
+		for (size_t i=0; i < classes.size(); ++i ) {
+      size_t sz = classes[i].size();
+      ofs.write((char*)&i, sizeof(i));
+      ofs.write((char*)&sz, sizeof(sz));
+
+			for (size_t j=0; j < classes[i].size(); ++j) {
+        int cls = classes[i][j];
+        ofs.write((char*)&cls, sizeof(cls));
 			}
 			classes[i].clear();
 		}
 		classes.clear();
+    ofs.close();
 		TIMEDLN("Clusters written. Reading k-mer information.");
 	}
 
@@ -726,8 +733,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 		TIMEDLN("Estimated: size=" << k_.size() << " mem=" << sizeof(KMerCount)*k_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
 	}
 
-	boost::shared_ptr<FIStream> ifs = FIStream::init_buf(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"), 1 << cfg::get().general_file_buffer_exp);
-	ifs->remove_it = true;
+  std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
+  std::ifstream ifs = std::ifstream(fname, std::ios::in | std::ios::binary);
 
 	vector< vector< vector<int> > > blocks(nthreads_);
 
@@ -739,26 +746,25 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 
 	vector< vector< vector<int> > > blocksInPlace(cfg::get().hamming_class_buffer);
 
-	while (ifs->fs.good()) {
-
+	while (ifs.good()) {
 		curClasses.clear();
 
 		size_t i_nontriv = 0;
 		size_t cur_total_size = 0;
 		size_t orig_class_num = cur_class_num;
-		while (cur_total_size < (size_t)cfg::get().hamming_class_buffer && ifs->fs.good()) {
+		while (cur_total_size < (size_t)cfg::get().hamming_class_buffer && ifs.good()) {
 			cur_class.clear();
 			if (useFilesystem) {
-				std::getline(ifs->fs, buf);
-				size_t sizeClass; size_t classNum;
-				sscanf(buf.c_str(), "class %lu size=%lu", &classNum, &sizeClass);
+        size_t classNum, sizeClass;
+        ifs.read((char*)&classNum, sizeof(classNum));
+        ifs.read((char*)&sizeClass, sizeof(sizeClass));
 				for (size_t j = 0; j < sizeClass; ++j) {
 					int elem;
-					std::getline(ifs->fs, buf);
-					sscanf(buf.c_str(), "%i", &elem);
+          ifs.read((char*)&elem, sizeof(elem));
 					cur_class.push_back(elem);
 				}
-			} else cur_class = classes[cur_class_num];
+			} else
+        cur_class = classes[cur_class_num];
 			++cur_class_num;
 
 			// processing singletons immediately
@@ -869,6 +875,9 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 			}
 		}
 	}
+  // FIXME: This should be abstracted out.
+  remove(fname.c_str());
+
 	TIMEDLN("Centering finished.");
 }
 
