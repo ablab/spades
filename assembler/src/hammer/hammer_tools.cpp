@@ -39,6 +39,7 @@
 #include "config_struct_hammer.hpp"
 #include "subkmers.hpp"
 #include "hammer_tools.hpp"
+#include "mmapped_writer.hpp"
 
 // forking
 #include <sys/types.h>
@@ -248,10 +249,11 @@ void HammerTools::SplitKMers() {
 
 	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads.");
 
-	vector<std::ofstream> ostreams(numfiles);
-	for (unsigned i = 0; i < numfiles; ++i) {
+	//vector<std::ofstream> ostreams(numfiles);
+  vector<MMappedWriter> ostreams(numfiles);
+  for (unsigned i = 0; i < numfiles; ++i) {
     std::string filename = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i);
-		ostreams[i].open(filename, std::ios::out | std::ios::trunc);
+    ostreams[i].open(filename);
 	}
 	Seq<K>::hash hash_function;
 	char char_offset = (char)cfg::get().input_qvoffset;
@@ -312,10 +314,13 @@ void HammerTools::SplitKMers() {
 		TIMEDLN("Writing to files " << cur_fileindex);
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
 		for (int k=0; k < numfiles; ++k) {
+      size_t sz = 0;
+      for (size_t i = 0; i < (size_t)count_num_threads; ++i)
+        sz += tmp_entries[i][k].size() * sizeof(tmp_entries[i][k][0]);
+
+      ostreams[k].reserve(sz);
 			for (size_t i = 0; i < (size_t)count_num_threads; ++i) {
-				for (size_t l = 0; l < tmp_entries[i][k].size(); ++l) {
-					binary_write(ostreams[k], tmp_entries[i][k][l]);
-				}
+        ostreams[k].write(&tmp_entries[i][k][0], tmp_entries[i][k].size() * sizeof(tmp_entries[i][k][0]));
 			}
 		}
 
@@ -327,10 +332,6 @@ void HammerTools::SplitKMers() {
 			}
 		}
 	}
-
-  for (unsigned k = 0; k < numfiles; ++k) {
-    ostreams[k].close();
-  }
 }
 
 void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
