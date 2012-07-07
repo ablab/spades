@@ -22,6 +22,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(hammer
    main.cpp
    hammer_tools.cpp
+   hammer_io.cpp
+   hammer_stats.cpp
    kmer_cluster.cpp
    position_read.cpp
    globals.cpp

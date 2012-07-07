@@ -20,12 +20,8 @@
 #include <iomanip>
 #include <fstream>
 #include <zlib.h>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/device/file.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
-#include <boost/iostreams/filter/bzip2.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "union.hpp"
@@ -33,12 +29,13 @@
 #include "globals.hpp"
 #include "kmer_stat.hpp"
 #include "position_kmer.hpp"
+#include "hammer_io.hpp"
+#include "hammer_stats.hpp"
 
 using namespace std;
 
 #define MAX_INT_64 1000000000000000000
 
-#define TIMEDLN(a) print_full_stats(); cout << a << endl
 
 typedef Seq<K> Kmer;
 //typedef std::tr1::unordered_map<Kmer, KMerCount, typename Kmer::hash, typename Kmer::equal_to> KMerMap;
@@ -46,42 +43,6 @@ typedef std::map<Kmer, KMerCount, Kmer::less2 > KMerMap;
 
 double oct2phred(string qoct, int qvoffset);
 string encode3toabyte (const string & s);
-void print_time();
-void print_mem_usage();
-void print_stats();
-void print_full_stats();
-
-/// structure for boost istreams
-struct FIStream {
-	std::string fn;
-	boost::iostreams::filtering_istream fs;
-	std::ifstream stdstream;
-	std::vector<char> buffer;
-	bool remove_it;
-	FIStream(const string & fname);
-	FIStream(const string & fname, bool input_output);
-	FIStream(const string & fname, bool input_output, uint64_t bufsize);
-	~FIStream();
-
-	static boost::shared_ptr<FIStream> init(const string & fname, bool input_output = false);
-	static boost::shared_ptr<FIStream> init_buf(const string & fname, uint64_t bufsize);
-};
-
-/// structure for boost ostreams
-struct FOStream {
-	std::string fn;
-	boost::iostreams::filtering_ostream fs;
-	std::ofstream stdstream;
-	std::vector<char> buffer;
-	bool remove_it;
-	FOStream(const string & fname);
-	FOStream(const string & fname, bool input_output);
-	FOStream(const string & fname, bool input_output, uint64_t bufsize);
-	~FOStream();
-
-	static boost::shared_ptr<FOStream> init(const string & fname, bool input_output = false);
-	static boost::shared_ptr<FOStream> init_buf(const string & fname, uint64_t bufsize);
-};
 
 /**
  * a container class for all general procedures in BayesHammer
