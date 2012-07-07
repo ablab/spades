@@ -7,7 +7,10 @@
 #ifndef HAMMER_STATS_HPP
 #define HAMMER_STATS_HPP
 
-#define TIMEDLN(a) print_full_stats(); cout << a << endl
+#define TIMEDLN(a)                                    \
+  do {                                                \
+    print_full_stats(); std::cout << a << std::endl;  \
+  } while (0)
 
 void print_time();
 void print_mem_usage();
