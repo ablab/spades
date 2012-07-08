@@ -37,19 +37,40 @@ typedef std::pair<PositionKMer, KMerStat> KMerCount;
 typedef std::pair<std::string, std::pair<uint32_t, double> > StringCount;
 
 struct QualBitSet {
-  std::vector<unsigned char> q;
-  QualBitSet() : q(K) {
-    // q.reset();
+  unsigned char* q;
+  size_t len;
+
+  QualBitSet(size_t n = K):len(n) {
+    q = new unsigned char[len];
   }
-  QualBitSet(size_t n) : q(n) {
-    // q.reset();
+  ~QualBitSet() {
+    delete[] q;
   }
+
+  // Disallow copies
+  QualBitSet(const QualBitSet &qbs) {
+    len = qbs.len;
+    q = new unsigned char[len];
+    memcpy(q, qbs.q, len * sizeof(q[0]));
+  }
+  QualBitSet& operator=(const QualBitSet &qbs) {
+    if (&qbs != this) {
+      delete[] q;
+      len = qbs.len;
+      q = new unsigned char[len];
+      memcpy(q, qbs.q, len * sizeof(q[0]));
+    }
+
+    return *this;
+  }
+
   unsigned short operator[](size_t n) const {
     return (unsigned short)q[n];
   }
 
   unsigned short at(size_t n) const {
-    return (unsigned short)q.at(n);
+    // FIXME: Bound checking
+    return (unsigned short)q[n];
   }
 
   void set(size_t n, unsigned short value) {
@@ -76,7 +97,7 @@ struct KMerStat {
 };
 
 inline std::ostream& binary_write(std::ostream &os, const QualBitSet &qbs) {
-  size_t sz = qbs.q.size();
+  size_t sz = qbs.len;
 
   os.write((char*)&sz, sizeof(sz));
   os.write((char*)&qbs.q[0], sz*sizeof(qbs.q[0]));
@@ -88,7 +109,9 @@ inline void binary_read(std::istream &is, QualBitSet &qbs) {
   size_t sz;
 
   is.read((char*)&sz, sizeof(sz));
-  qbs.q.resize(sz);
+  delete[] qbs.q;
+  qbs.q = new unsigned char[sz];
+  qbs.len = sz;
   is.read((char*)&qbs.q[0], sz*sizeof(qbs.q[0]));
 }
 
