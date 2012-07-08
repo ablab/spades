@@ -18,11 +18,6 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/format.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/utility.hpp>
 
 #include <time.h>
 #include <sys/resource.h>

@@ -19,11 +19,6 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/format.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/utility.hpp>
 
 #include <time.h>
 #include <sys/resource.h>
@@ -498,29 +493,28 @@ void HammerTools::CountKMersBySplitAndMerge() {
 		}
 	}
 
+  TIMEDLN("Serializing sorted kmers.");
 	if (HammerTools::doingMinimizers()) {
-    TIMEDLN("Serializing sorted kmers.");
-    {
-      ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
-      boost::archive::binary_oarchive oar(os);
-      for ( KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
-        oar << mit->second;
-      }
-      m.clear();
-    }
+    ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
+    for (KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit)
+      os.write((char*)&mit->second, sizeof(mit->second));
+    m.clear();
+    os.close();
 	} else {
-    TIMEDLN("Serializing sorted kmers.");
-    {
-      ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
-      boost::archive::binary_oarchive oar(os);
-      oar << vec;
-    }
+    ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
+    size_t sz = vec.size();
+    os.write((char*)&sz, sizeof(sz));
+    for (auto I = vec.begin(), E = vec.end(); I != E; ++I)
+      binary_write(os, *I);
+    os.close();
 	}
 	if (!cfg::get().general_remove_temp_files) {
 		TIMEDLN("Serializing kmernos.");
 		ofstream os(HammerTools::getFilename(cfg::get().input_working_dir.c_str(), Globals::iteration_no, "kmers.numbers.ser").c_str(), ios::binary);
-		boost::archive::binary_oarchive oar(os);
-		oar << (*Globals::kmernos);
+    size_t sz = Globals::kmernos->size();
+    os.write((char*)&sz, sizeof(sz));
+    os.write((char*)&(*Globals::kmernos)[0], sz*sizeof((*Globals::kmernos)[0]));
+    os.close();
 	}
 
 	TIMEDLN("Waiting for subvectors to sort.");

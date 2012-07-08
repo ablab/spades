@@ -17,11 +17,6 @@
 #include <algorithm>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/utility.hpp>
 
 #include "read/ireadstream.hpp"
 #include "defs.hpp"
@@ -717,15 +712,19 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 		Globals::kmers->reserve(Globals::number_of_kmers);
 		{
 			ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"), ios::binary);
-			boost::archive::binary_iarchive iar(is);
 			if ( HammerTools::doingMinimizers() ) {
 				KMerCount kmc;
-				for ( size_t i=0; i< Globals::number_of_kmers; ++i ) {
-					iar >> kmc;
+				for (size_t i=0; i< Globals::number_of_kmers; ++i ) {
+          binary_read(is, kmc);
 					Globals::kmers->push_back(kmc);
 				}
-			} else
-				iar >> (*Globals::kmers);
+			} else {
+        size_t sz;
+        is.read((char*)&sz, sizeof(sz));
+        Globals::kmers->resize(sz);
+        for (size_t i = 0; i < sz; ++i)
+          binary_read(is, (*Globals::kmers)[i]);
+      }
 		}
 		HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"));
 		k_ = *Globals::kmers;

@@ -210,8 +210,6 @@ class PositionKMer {
 		return readNoFromBlobPosInternal ( blobpos, 0, Globals::pr->size() );
 	}
 
-
-
 	PositionKMer( hint_t readno, uint32_t startpos ) : start_(Globals::pr->at(readno).start() + startpos) { }
 	PositionKMer( hint_t startpos ) : start_(startpos) { }
 	PositionKMer() : start_(-1) { }
@@ -262,23 +260,32 @@ class PositionKMer {
 		return res;
 	}
 
-
-	friend class boost::serialization::access;
-    // When the class Archive corresponds to an output archive, the
-    // & operator is defined similar to <<.  Likewise, when the class Archive
-    // is a type of input archive the & operator is defined similar to >>.
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        ar & start_;
-    }
-
+  friend std::ostream& binary_write(std::ostream &os, const PositionKMer &pos);
+  friend void binary_read(std::istream &is, PositionKMer &pos);
 };
 
 inline bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 	return l.first < r.first;
 }
 
+inline std::ostream& binary_write(std::ostream &os, const PositionKMer &pos) {
+  os.write((char*)&pos.start_, sizeof(pos.start_));
+
+  return os;
+}
+
+inline void binary_read(std::istream &is, PositionKMer &pos) {
+  is.read((char*)&pos.start_, sizeof(pos.start_));
+}
+
+inline std::ostream& binary_write(std::ostream &os, const KMerCount &k) {
+  return binary_write(binary_write(os, k.first), k.second);
+}
+
+inline void binary_read(std::istream &is, KMerCount &k) {
+  binary_read(is, k.first);
+  binary_read(is, k.second);
+}
 
 #endif
 

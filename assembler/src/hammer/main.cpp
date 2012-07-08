@@ -29,9 +29,6 @@
 #include <cassert>
 #include <unordered_set>
 #include <boost/bind.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
 #include <boost/filesystem.hpp>
 
 
@@ -184,10 +181,12 @@ int main(int argc, char * argv[]) {
 		} else {
 			{
 				ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.numbers.ser"), ios::binary);
-				boost::archive::binary_iarchive iar(is);
 				Globals::kmernos->clear();
 				TIMEDLN("Reading serialized kmernos.");
-				iar >> (*Globals::kmernos);
+        size_t sz;
+        is.read((char*)&sz, sizeof(sz));
+        Globals::kmernos->resize(sz);
+        is.read((char*)&(*Globals::kmernos)[0], sz*sizeof((*Globals::kmernos)[0]));
 				TIMEDLN("Read serialized kmernos.");
 			}
 			HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.numbers.ser"));
@@ -266,7 +265,7 @@ int main(int argc, char * argv[]) {
 		std::cerr << "Not enough memory to run BayesHammer. " << e.what() << std::endl;
 	    return EINTR;
 	}
-	catch (std::exception const& e)
+	/*catch (std::exception const& e)
 	{
 	    std::cerr << "Exception caught " << e.what() << std::endl;
 	    return EINTR;
@@ -275,7 +274,7 @@ int main(int argc, char * argv[]) {
 	{
 	    std::cerr << "Unknown exception caught " << std::endl;
 	    return EINTR;
-	}
+      }*/
 
 	return 0;
 }
