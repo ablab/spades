@@ -21,31 +21,56 @@ class MMappedReader {
   std::string FileName;
   MMappedReader(const MMappedReader &) = delete;
 
+  void remap() {
+    VERIFY(BlockSize != FileSize);
+
+    if (MappedRegion)
+      munmap(MappedRegion, BlockSize);
+
+    BlockOffset += BlockSize;
+    MappedRegion =
+        (uint8_t*)mmap(NULL, BlockSize, PROT_READ, MAP_FILE | MAP_PRIVATE,
+                       StreamFile, BlockOffset);
+    VERIFY((intptr_t)MappedRegion != -1L);
+  }
+
+  void read_internal(void *buf, size_t amount) {
+    memcpy(buf, MappedRegion + BytesRead - BlockOffset, amount);
+    BytesRead += amount;
+  }
+
+
  protected:
   uint8_t* MappedRegion;
-  size_t FileSize, BytesRead;
+  size_t FileSize, BlockOffset, BytesRead, BlockSize;
 
  public:
-  MMappedReader(const std::string &filename, bool unlink = false) {
+  MMappedReader(const std::string &filename, bool unlink = false,
+                size_t blocksize = 64*1024*1024)
+      : Unlink(unlink), FileName(filename), BlockSize(blocksize) {
     struct stat buf;
-    FileName = filename;
 
-    FileSize = (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size);    
+    FileSize = (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size);
 
     StreamFile = open(FileName.c_str(), O_RDONLY);
     VERIFY(StreamFile != -1);
-    
+
+    if (BlockSize != -1ULL) {
+      size_t PageSize = getpagesize();
+      BlockSize = BlockSize / PageSize * PageSize;
+    } else
+      BlockSize = FileSize;
+
     MappedRegion =
-        (uint8_t*)mmap(NULL, FileSize, PROT_READ, MAP_FILE | MAP_PRIVATE,
+        (uint8_t*)mmap(NULL, BlockSize, PROT_READ, MAP_FILE | MAP_PRIVATE,
                        StreamFile, 0);
     VERIFY((intptr_t)MappedRegion != -1L);
 
-    BytesRead = 0;
-    Unlink = unlink;
+    BlockOffset = BytesRead = 0;
   }
-  
+
   virtual ~MMappedReader() {
-    munmap(MappedRegion, FileSize);
+    munmap(MappedRegion, BlockSize);
     close(StreamFile);
 
     if (Unlink)
@@ -53,8 +78,29 @@ class MMappedReader {
   }
 
   void read(void* buf, size_t amount) {
-    memcpy(buf, MappedRegion + BytesRead, amount);
-    BytesRead += amount;
+    if (BytesRead + amount < BlockOffset + BlockSize) {
+      // Easy case, no remap is necessary
+      read_internal(buf, amount);
+      return;
+    }
+
+    // Hard case - remapping is necessary. First - finish the current block.
+    size_t ToRead = BlockSize - (BytesRead - BlockOffset);
+    uint8_t *cbuf = (uint8_t*)buf;
+
+    read_internal(cbuf, ToRead);
+    amount -= ToRead; cbuf += ToRead;
+
+    // Next, read as much BlockSize blocks as possible.
+    while (amount >= BlockSize) {
+      remap();
+      read_internal(cbuf, BlockSize);
+      amount -= BlockSize; cbuf += BlockSize;
+    }
+
+    // Finally, remap and read remaining.
+    remap();
+    read_internal(cbuf, amount);
   }
 
   bool good() const {
@@ -62,6 +108,8 @@ class MMappedReader {
   }
 
   size_t size() const { return FileSize; }
+
+  void* data() const { return MappedRegion; }
 };
 
 template<typename T>
@@ -71,10 +119,9 @@ class MMappedRecordReader : public MMappedReader {
       MMappedReader(FileName, unlink) {
     VERIFY(FileSize % sizeof(T) == 0);
   }
-  
+
   void read(T* el, size_t amount) {
-    memcpy(el, MappedRegion + BytesRead, amount * sizeof(T));
-    BytesRead += amount*sizeof(T);
+    MMappedReader::read(el, amount * sizeof(T));
   }
 
   size_t size() const { return FileSize / sizeof(T); }
