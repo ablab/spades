@@ -21,6 +21,7 @@
 //#define GOOGLE_DENSE_MAP
 
 #include "kmer_stat.hpp"
+#include "half.hpp"
 
 const uint64_t KMERNO_HASH_MODULUS = 2305843009213693951;
 const uint64_t KMERNO_HASH_Q = 3712758430079221;
@@ -29,9 +30,9 @@ const uint64_t KMERNO_HASH_Q_POW_K_MINUS_ONE = 412252044596125152;
 
 class KMerNo {
 public:
-  explicit KMerNo(hint_t no = -1, double qual = 1.0) {
+  explicit KMerNo(hint_t no = -1, float qual = 1.0) {
     index = no;
-    errprob = qual;
+    errprob = prob_half::convert(qual);
   }
 
   bool equal(const KMerNo & kmerno) const;
@@ -65,12 +66,12 @@ public:
 
   hint_t getIndex() const { return index; }
   void setIndex(hint_t no) { index = no; }
-  double getQual() const { return errprob; }
-  void setQual(double q) { errprob = q; }
+  prob_half getQual() const { prob_half q; q.setBits(errprob); return q; }
+  void setQual(float q) { errprob = prob_half::convert(q); }
 
 private:
-  hint_t index;
-  double errprob;
+  hint_t index     : 48;
+  uint16_t errprob : 16;
 };
 
 // FIXME: Eventually KMerNo should become POD-like class and thus can be possed by value
