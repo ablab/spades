@@ -21,7 +21,33 @@
 
 #include "online_pictures.hpp"
 
-int main() {
-    std::cout << "Hello world!" << std::endl;
+
+int main(int argc, char** argv) {
+	BOOST_STATIC_ASSERT(debruijn_graph::K % 2 != 0);
+    
+    const size_t GB = 1 << 30;
+
+    try {
+        
+        using namespace online_visualization;
+        string cfg_filename = argv[1];
+        checkFileExistenceFATAL(cfg_filename);
+        
+        cfg::create_instance(cfg_filename);
+        std::cout << "Hello user!" << std::endl;
+        limit_memory(cfg::get().max_memory * GB);
+        OnlineVisualizer online_vis;
+        online_vis.run();
+    }
+    catch (std::exception const& e)
+    {
+        std::cerr << "Exception caught " << e.what() << std::endl;
+        return EINTR;
+    }
+    catch (...)
+    {
+        std::cerr << "Unknown exception caught " << std::endl;
+        return EINTR;
+    }
     return 0;
 }

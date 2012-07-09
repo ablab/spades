@@ -17,21 +17,23 @@ namespace online_visualization {
         shared_ptr<Environment> current_environment_;
 
     public:
-        OnlineVisualizer() :
+        OnlineVisualizer()
         {
-            const Command& LoadCommand = GetCommand(CommandId("load"));
-            LoadCommand.Execute();
+	        fs::path p = fs::path(cfg::get().load_from) / "constructed_graph";
+            string str = "default " + p.string();
+            Command& LoadCommand = GetCommand(CommandId("load"));
+            LoadCommand.Execute(loaded_environments_, current_environment_, str);
         }
 
         void run() {
             while (true) {
                 cout << "> ";
+                string command_with_args;
+                getline(cin, command_with_args);
+                stringstream ss(command_with_args);
                 string command;
-                getline(cin, command);
-                stringstream ss(command);
-                string com;
-                ss >> com;
-
+                ss >> command;
+                
 
                 //if (com == "exit")
                     //break;
@@ -54,7 +56,7 @@ namespace online_visualization {
                 //} else if (com == "paths") {
                     //FindPaths(ss);
                 //} else {
-                    //cout << "ignoring command " << command << endl;
+                    //cout << "ignoring command " << command_with_args << endl;
                 //}
             }
         }
