@@ -75,29 +75,33 @@ if [ $# = 0 ]
 then
     run_n_measure build/release/online_vis/online_vis $cfg_debruijn/config.info 
 else 
-case $1 in
+    if [ $# = 2 ]
+    then
+        change_config $2
+    fi
+    case $1 in
 
-'rd' ) run_n_measure build/release/debruijn/spades $cfg_debruijn/config.info ;;
-'dd' ) run_n_measure build/debug/debruijn/spades $cfg_debruijn/config.info ;;
-'ddt' ) run_n_measure build/debug/test/debruijn/debruijn_test ;;
-'rdt' ) ./build/release/test/debruijn/debruijn_test --log_level=test_suite ;;
-'ddtls' ) run_n_measure build/debug/test/debruijn_tools/debruijn_tools ;;
-'rdtls' ) run_n_measure build/release/test/debruijn_tools/debruijn_tools ;;
-'dit' ) run_n_measure build/debug/test/include_test/include_test ;;
-'dt') run_n_measure build/debug/test/debruijn/debruijn_test && run_n_measure build/debug/test/include_test/include_test ;;
-'rv' ) run_n_measure build/release/online_vis/online_vis $cfg_debruijn/config.info ;;
-'dv' ) run_n_measure build/debug/online_vis/online_vis $cfg_debruijn/config.info ;;
-'rc' ) run_n_measure build/release/cap/cap ;;
-'dc' ) run_n_measure build/debug/cap/cap ;;
-'rct' ) run_n_measure build/release/test/cap/cap_test ;;
-'dct' ) run_n_measure build/debug/test/cap/cap_test ;;
+    'rd' ) run_n_measure build/release/debruijn/spades $cfg_debruijn/config.info ;;
+    'dd' ) run_n_measure build/debug/debruijn/spades $cfg_debruijn/config.info ;;
+    'ddt' ) run_n_measure build/debug/test/debruijn/debruijn_test ;;
+    'rdt' ) ./build/release/test/debruijn/debruijn_test --log_level=test_suite ;;
+    'ddtls' ) run_n_measure build/debug/test/debruijn_tools/debruijn_tools ;;
+    'rdtls' ) run_n_measure build/release/test/debruijn_tools/debruijn_tools ;;
+    'dit' ) run_n_measure build/debug/test/include_test/include_test ;;
+    'dt') run_n_measure build/debug/test/debruijn/debruijn_test && run_n_measure build/debug/test/include_test/include_test ;;
+    'rv' ) build/release/online_vis/online_vis $cfg_debruijn/config.info ;;
+    'dv' ) build/debug/online_vis/online_vis $cfg_debruijn/config.info ;;
+    'rc' ) run_n_measure build/release/cap/cap ;;
+    'dc' ) run_n_measure build/debug/cap/cap ;;
+    'rct' ) run_n_measure build/release/test/cap/cap_test ;;
+    'dct' ) run_n_measure build/debug/test/cap/cap_test ;;
 
-* ) 
-    change_config $1
+    * ) 
+        change_config $1
 
-    run_n_measure build/release/online_vis/online_vis $cfg_debruijn/config.info ;;
-#    run_n_measure $1 $2 $3 $4 $5 
-esac
+        run_n_measure build/release/debruijn/spades $cfg_debruijn/config.info ;;
+        #run_n_measure $1 $2 $3 $4 $5 
+    esac
 fi
 
 
