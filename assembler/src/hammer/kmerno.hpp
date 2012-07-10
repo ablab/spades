@@ -74,6 +74,8 @@ private:
   uint16_t errprob : 16;
 };
 
+static_assert(sizeof(KMerNo) == 8, "Invalid size of KMerNo");
+
 // FIXME: Eventually KMerNo should become POD-like class and thus can be possed by value
 inline std::ostream& operator<<(std::ostream &os, const KMerNo &k) {
   os << k.getIndex() << '\t' << k.getQual() << '\n';
