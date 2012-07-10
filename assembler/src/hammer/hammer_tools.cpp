@@ -147,30 +147,33 @@ void HammerTools::InitializeSubKMerPositions() {
 }
 
 void HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement) {
-	TIMEDLN("Reading input file " << readsFilename);
-	char char_offset = (char)cfg::get().input_qvoffset;
-	int trim_quality = cfg::get().input_trim_quality;
-	ireadstream irs(readsFilename, cfg::get().input_qvoffset);
-	Read r;
-	while (irs.is_open() && !irs.eof()) {
-		irs >> r;
-		size_t read_size = r.trimNsAndBadQuality(trim_quality);
-		if (read_size < K) continue;
-		if ( reverse_complement ) r = !r;
-		PositionRead pread(curpos, read_size, cur_read, false);
-		Globals::pr->push_back(pread);
-		for (uint32_t j = 0; j < read_size; ++j) {
-			Globals::blob[curpos + j] = r.getSequenceString()[j];
-		}
-		if (!Globals::use_common_quality) {
-			for (uint32_t j = 0; j < read_size; ++j) {
-				Globals::blobquality[curpos + j] = (char) (char_offset + r.getQualityString()[j]);
-			}
-		}
-		curpos += read_size;
-		++cur_read;
-	}
-	irs.close();
+  TIMEDLN("Reading input file " << readsFilename);
+  char char_offset = (char)cfg::get().input_qvoffset;
+  int trim_quality = cfg::get().input_trim_quality;
+  ireadstream irs(readsFilename, cfg::get().input_qvoffset);
+  Read r;
+  while (irs.is_open() && !irs.eof()) {
+    irs >> r;
+    size_t read_size = r.trimNsAndBadQuality(trim_quality);
+    if (read_size < K) continue;
+
+    if (reverse_complement) r = !r;
+    PositionRead pread(curpos, read_size, cur_read, false);
+    Globals::pr->push_back(pread);
+
+    const std::string &s = r.getSequenceString();
+    memcpy(Globals::blob + curpos, s.data(), read_size);
+
+    if (!Globals::use_common_quality) {
+      const std::string &q = r.getQualityString();
+      for (uint32_t j = 0; j < read_size; ++j) {
+        Globals::blobquality[curpos + j] = (char) (char_offset + q[j]);
+      }
+    }
+    curpos += read_size;
+    ++cur_read;
+  }
+  irs.close();
 }
 
 void HammerTools::ReadAllFilesIntoBlob() {
