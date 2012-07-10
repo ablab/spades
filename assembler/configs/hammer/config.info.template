@@ -15,8 +15,8 @@ input_solid_kmers
 general_do_everything_after_first_iteration	1
 general_reconstruct_only	1
 general_change_n_to_a		0
-general_hard_memory_limit	15
-general_max_nthreads		2
+general_hard_memory_limit	150
+general_max_nthreads		16
 general_tau					1
 general_gzip				0
 general_max_iterations		5
@@ -61,11 +61,11 @@ expand_do					1
 expand_max_iterations		5
 expand_nthreads				6
 expand_write_each_iteration	0
-expand_write_kmers_result	1
+expand_write_kmers_result	0
 
 ; read correction
 correct_do					1
-correct_discard_bad			1
+correct_discard_bad			0
 correct_use_threshold		1
 correct_use_threshold		1
 correct_threshold			0.98
