@@ -148,7 +148,6 @@ void HammerTools::InitializeSubKMerPositions() {
 
 void HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement) {
   TIMEDLN("Reading input file " << readsFilename);
-  char char_offset = (char)cfg::get().input_qvoffset;
   int trim_quality = cfg::get().input_trim_quality;
   ireadstream irs(readsFilename, cfg::get().input_qvoffset);
   Read r;
@@ -166,9 +165,7 @@ void HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos
 
     if (!Globals::use_common_quality) {
       const std::string &q = r.getQualityString();
-      for (uint32_t j = 0; j < read_size; ++j) {
-        Globals::blobquality[curpos + j] = (char) (char_offset + q[j]);
-      }
+      memcpy(Globals::blobquality + curpos, q.data(), read_size);
     }
     curpos += read_size;
     ++cur_read;
@@ -255,7 +252,6 @@ void HammerTools::SplitKMers() {
     ostreams[i].open(filename);
 	}
 	Seq<K>::hash hash_function;
-	char char_offset = (char)cfg::get().input_qvoffset;
 	size_t readbuffer = cfg::get().count_split_buffer;
 
 	vector< vector< vector< KMerNo > > > tmp_entries(count_num_threads);
@@ -282,7 +278,6 @@ void HammerTools::SplitKMers() {
 				q = string(csize, (char)Globals::common_quality);
 			} else {
 				q = string(Globals::blobquality + cpos, csize);
-				for (size_t j=0; j < csize; ++j) q[j] = (char)(q[j] - char_offset);
 			}
 			ValidKMerGenerator<K> gen(s, q);
 			if (use_minimizers ) {
@@ -332,7 +327,6 @@ void HammerTools::SplitKMers() {
 }
 
 void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
-	char char_offset = (char)cfg::get().input_qvoffset;
 	int num_minimizers = 0;
 	if (cfg::get().general_num_minimizers) {
 		num_minimizers = *cfg::get().general_num_minimizers;
@@ -346,7 +340,6 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 			q = string(Globals::pr->at(i).size(), (char)Globals::common_quality);
 		} else {
 			q = string(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
-			for ( size_t j=0; j < Globals::pr->at(i).size(); ++j) q[j] = (char)(q[j] - char_offset);
 		}
 		ValidKMerGenerator<K> gen(s, q);
 		vector< pair<hint_t, pair< double, size_t > > > kmers;
@@ -367,7 +360,7 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 				if (mit->second.second.count == 1) {
 					QualBitSet qbs(K);
 					for (uint32_t j=0; j<K; ++j) {
-						qbs.set(j, Globals::blobquality[mit->second.first.start() + j] - char_offset);
+						qbs.set(j, Globals::blobquality[mit->second.first.start() + j]);
 					}
 					mit->second.second.qual = qbs;
 				}
@@ -375,7 +368,7 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 				mit->second.second.totalQual *= it->second.first;
 				for (uint32_t j=0; j<K; ++j) {
 					mit->second.second.qual.set(j,
-							min( MAX_SHORT, mit->second.second.qual[j] + Globals::blobquality[it->first + j] - char_offset) );
+							min( MAX_SHORT, mit->second.second.qual[j] + Globals::blobquality[it->first + j]) );
 				}
 			}
 		}
@@ -534,20 +527,19 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	TIMEDLN("Merge done. There are " << vec.size() << " kmers in total.");
 }
 
-static void fillQVec( vector<int> & qvec, hint_t index, const char & char_offset ) {
+static void fillQVec(vector<int> & qvec, hint_t index) {
 	if (!Globals::use_common_quality) {
 		for (uint32_t j=0; j<K; ++j) {
-			qvec[j] = Globals::blobquality[index + j] - char_offset;
+			qvec[j] = Globals::blobquality[index + j];
 		}
 	}
 }
 
 void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KMerCount> & vkmc) {
-	char char_offset = (char)cfg::get().input_qvoffset;
 	KMerCount kmc(PositionKMer(vec[0].getIndex()), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, vec[0].getQual()));
 
 	vector<int> qvec(K);
-	fillQVec(qvec, vec[0].getIndex(), char_offset);
+	fillQVec(qvec, vec[0].getIndex());
 
 	bool first_occ = true;
 	vkmc.push_back(kmc);
@@ -557,7 +549,7 @@ void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KM
 			first_occ = false;
 			curkmc.second.count++;
 			curkmc.second.totalQual *= vec[i].getQual();
-			fillQVec(qvec, vec[i].getIndex(), char_offset);
+			fillQVec(qvec, vec[i].getIndex());
 		} else {
 			if (!first_occ && !Globals::use_common_quality) {
 				curkmc.second.qual = QualBitSet();
@@ -566,7 +558,7 @@ void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KM
 				}
 			}
 			KMerCount kmc(PositionKMer(vec[i].getIndex()), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, vec[i].getQual()));
-			fillQVec(qvec, vec[i].getIndex(), char_offset);
+			fillQVec(qvec, vec[i].getIndex());
 			vkmc.push_back(kmc);
 			first_occ = true;
 		}

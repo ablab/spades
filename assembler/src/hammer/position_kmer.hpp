@@ -17,6 +17,7 @@
 #include "read/read.hpp"
 #include "kmer_stat.hpp"
 #include "position_read.hpp"
+#include "config_struct_hammer.hpp"
 
 class PositionKMer {
 	hint_t start_;
@@ -244,13 +245,15 @@ class PositionKMer {
 		return res;
 	}
 
-	std::string strQual() const {
-		std::string res = "";
-		for (uint32_t i = 0; i < K; ++i) {
-			res += Globals::blobquality[ start_ + i ];
-		}
-		return res;
-	}
+  std::string strQual() const {
+    std::string res(Globals::blobquality + start_, K);
+    char qv_offset = cfg::get().input_qvoffset;
+
+    for (uint32_t i = 0; i < K; ++i)
+      res[i] += qv_offset;
+
+    return res;
+  }
 
 	std::string strSub(uint32_t tau, uint32_t offset) const {
 		std::string res = "";
