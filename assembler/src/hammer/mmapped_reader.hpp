@@ -73,8 +73,10 @@ class MMappedReader {
     munmap(MappedRegion, BlockSize);
     close(StreamFile);
 
-    if (Unlink)
-      unlink(FileName.c_str());
+    if (Unlink) {
+      int res = unlink(FileName.c_str());
+      VERIFY(res == 0);
+    }
   }
 
   void read(void* buf, size_t amount) {
