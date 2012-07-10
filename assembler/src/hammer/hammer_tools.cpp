@@ -733,11 +733,10 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
 
 		const PositionRead & pr = Globals::pr->at(readno);
 		const uint32_t read_size = pr.size();
-		string seq = string(Globals::blob + pr.start(), read_size);
-		vector< bool > covered_by_solid( read_size, false );
-		vector< hint_t > kmer_indices( read_size, -1 );
+		vector<unsigned> covered_by_solid(read_size, false);
+		vector<hint_t> kmer_indices(read_size, -1);
 
-		pair<int, hint_t > it = make_pair( -1, BLOBKMER_UNDEFINED );
+		pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );
 		while ( (it = pr.nextKMerNo(it.first)).first > -1 ) {
 			kmer_indices[it.first] = it.second;
 			if ( kmers[it.second].second.isGoodForIterative() ) {
@@ -747,8 +746,8 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
 		}
 
 		bool isGood = true;
-		for ( size_t j = 0; j < read_size; ++j ) {
-			if ( !covered_by_solid[j] ) { isGood = false; break; }
+		for (size_t j = 0; j < read_size; ++j) {
+			if (!covered_by_solid[j] ) { isGood = false; break; }
 		}
 		if ( !isGood ) continue;
 
@@ -760,7 +759,7 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
 		for (size_t j = 0; j < read_size; ++j) {
 			if ( kmer_indices[j] == (hint_t)-1 ) continue;
 			if ( !kmers[kmer_indices[j]].second.isGoodForIterative() &&
-				 !kmers[kmer_indices[j]].second.isMarkedGoodForIterative() ) {
+           !kmers[kmer_indices[j]].second.isMarkedGoodForIterative() ) {
 				#pragma omp critical
 				{
 				++res;
