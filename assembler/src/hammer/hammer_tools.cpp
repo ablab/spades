@@ -190,6 +190,7 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
 		ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read, true);
 	}
+  TIMEDLN("All files were read. Used " << curpos << " bytes out of " << Globals::blob_max_size << " allocated.");
 }
 
 void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers, int which_first ) {
