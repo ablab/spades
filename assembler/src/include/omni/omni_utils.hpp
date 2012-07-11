@@ -1921,10 +1921,11 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph &graph_;
 	size_t uniqueness_length_;
+	size_t max_depth_;
 
 
 	bool search(VertexId a, VertexId start, EdgeId e, size_t depth, set<VertexId> &was, pair<size_t, size_t> &result) const {
-		if(depth > uniqueness_length_)
+		if(depth > max_depth_) 
 			return false;
 		if(was.count(a) == 1)
 			return true;
@@ -1956,7 +1957,7 @@ private:
 				if(graph_.length(*it) >= uniqueness_length_) {
 					result.first++;
 				} else {
-					if(!search(graph_.EdgeStart(*it), start, e, depth + graph_.length(*it), was, result))
+					if(!search(graph_.EdgeStart(*it), start, e, depth + 1 /*graph_.length(*it)*/, was, result))
 						return false;
 				}
 			}
@@ -1965,8 +1966,8 @@ private:
 	}
 
 public:
-	MultiplicityCounter(const Graph &graph, size_t uniqueness_length) :
-			graph_(graph), uniqueness_length_(uniqueness_length) {
+	MultiplicityCounter(const Graph &graph, size_t uniqueness_length, size_t max_depth) :
+			graph_(graph), uniqueness_length_(uniqueness_length), max_depth_(max_depth) {
 	}
 
 	size_t count(EdgeId e, VertexId start) const {

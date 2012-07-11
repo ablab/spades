@@ -581,7 +581,7 @@ public:
 			size_t uniqueness_length, size_t plausibility_length,
 			AbstractEdgeRemover<Graph>& edge_remover) :
 			base(g, max_length, uniqueness_length, plausibility_length,
-					edge_remover), multiplicity_counter_(g, uniqueness_length), plausible_path_finder_(
+					edge_remover), multiplicity_counter_(g, uniqueness_length, 8), plausible_path_finder_(
 					g, plausibility_length * 2) {
 		
 	}
