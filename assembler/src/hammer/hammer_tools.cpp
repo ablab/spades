@@ -535,7 +535,7 @@ static void fillQVec(vector<int> & qvec, hint_t index) {
 }
 
 void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KMerCount> & vkmc) {
-	KMerCount kmc(PositionKMer(vec[0].getIndex()), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, vec[0].getQual()));
+	KMerCount kmc(PositionKMer(vec[0].getIndex()), KMerStat(true, 1, KMERSTAT_GOODITER, vec[0].getQual()));
 
 	vector<int> qvec(K);
 	fillQVec(qvec, vec[0].getIndex());
@@ -556,7 +556,7 @@ void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KM
 					curkmc.second.qual.set(j, min(MAX_SHORT, qvec[j]));
 				}
 			}
-			KMerCount kmc(PositionKMer(vec[i].getIndex()), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, vec[i].getQual()));
+			KMerCount kmc(PositionKMer(vec[i].getIndex()), KMerStat(true, 1, KMERSTAT_GOODITER, vec[i].getQual()));
 			fillQVec(qvec, vec[i].getIndex());
 			vkmc.push_back(kmc);
 			first_occ = true;

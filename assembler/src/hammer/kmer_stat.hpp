@@ -38,27 +38,36 @@ typedef std::pair<std::string, std::pair<uint32_t, double> > StringCount;
 
 struct QualBitSet {
   unsigned char* q;
-  size_t len;
 
-  QualBitSet(size_t n = K):len(n) {
-    q = new unsigned char[len];
-    memset(q, 0, len);
+  QualBitSet(bool empty = false):q(NULL) {
+    if (!empty) {
+      q = new unsigned char[K];
+      memset(q, 0, K);
+    }
   }
   ~QualBitSet() {
     delete[] q;
   }
 
   QualBitSet(const QualBitSet &qbs) {
-    len = qbs.len;
-    q = new unsigned char[len];
-    memcpy(q, qbs.q, len * sizeof(q[0]));
+    q = NULL;
+
+    // Fill, if necessary.
+    if (qbs.q) {
+      q = new unsigned char[K];
+      memcpy(q, qbs.q, K * sizeof(q[0]));
+    }
   }
   QualBitSet& operator=(const QualBitSet &qbs) {
     if (&qbs != this) {
       delete[] q;
-      len = qbs.len;
-      q = new unsigned char[len];
-      memcpy(q, qbs.q, len * sizeof(q[0]));
+      q = NULL;
+
+      // Fill, if necessary.
+      if (qbs.q) {
+        q = new unsigned char[K];
+        memcpy(q, qbs.q, K * sizeof(q[0]));
+      }
     }
 
     return *this;
@@ -74,14 +83,15 @@ struct QualBitSet {
   }
 
   void set(size_t n, unsigned short value) {
+    VERIFY(q != NULL);
     q[n] = (unsigned char)value;
   }
 };
 
 struct KMerStat {
-  KMerStat (bool first, uint32_t cnt, hint_t cng, double quality) : count(cnt), changeto(cng), totalQual(quality), qual(first ? 0 : K) { }
+  KMerStat (bool first, uint32_t cnt, hint_t cng, double quality) : count(cnt), changeto(cng), totalQual(quality), qual(first /* empty */) { }
   // KMerStat (uint32_t cnt, hint_t cng, double quality) : count(cnt), changeto(cng), totalQual(quality), qual() { }
-  KMerStat () : count(0), changeto(KMERSTAT_BAD), totalQual(1), qual(0) { }
+  KMerStat () : count(0), changeto(KMERSTAT_BAD), totalQual(1), qual() { }
 
   uint32_t count;
   hint_t changeto;
@@ -97,10 +107,11 @@ struct KMerStat {
 };
 
 inline std::ostream& binary_write(std::ostream &os, const QualBitSet &qbs) {
-  size_t sz = qbs.len;
+  size_t sz = (qbs.q ? K : 0);
 
   os.write((char*)&sz, sizeof(sz));
-  os.write((char*)&qbs.q[0], sz*sizeof(qbs.q[0]));
+  if (sz)
+    os.write((char*)&qbs.q[0], sz*sizeof(qbs.q[0]));
 
   return os;
 }
@@ -110,9 +121,13 @@ inline void binary_read(std::istream &is, QualBitSet &qbs) {
 
   is.read((char*)&sz, sizeof(sz));
   delete[] qbs.q;
-  qbs.q = new unsigned char[sz];
-  qbs.len = sz;
-  is.read((char*)&qbs.q[0], sz*sizeof(qbs.q[0]));
+  qbs.q = NULL;
+  
+  if (sz) {
+    VERIFY(sz == K);
+    qbs.q = new unsigned char[sz];
+    is.read((char*)&qbs.q[0], sz*sizeof(qbs.q[0]));
+  }
 }
 
 inline std::ostream& binary_write(std::ostream &os, const KMerStat &k) {
