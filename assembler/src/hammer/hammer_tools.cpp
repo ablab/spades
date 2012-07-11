@@ -245,7 +245,7 @@ void HammerTools::SplitKMers() {
 
 	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads. This takes a while");
 
-  vector<MMappedWriter> ostreams(numfiles);
+  MMappedWriter* ostreams = new MMappedWriter[numfiles];
   for (unsigned i = 0; i < numfiles; ++i) {
     std::string filename = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i);
     ostreams[i].open(filename);
@@ -321,6 +321,8 @@ void HammerTools::SplitKMers() {
 			}
 		}
 	}
+
+  delete[] ostreams;
 }
 
 void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
