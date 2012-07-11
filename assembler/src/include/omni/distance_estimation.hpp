@@ -21,13 +21,13 @@ class GraphDistanceFinder {
 
 	const Graph &graph_;
 	const size_t insert_size_;
-	const size_t gap_;
+	const int gap_;
 	const size_t delta_;
 public:
 	GraphDistanceFinder(const Graph &graph, size_t insert_size,
 			size_t read_length, size_t delta) :
 			graph_(graph), insert_size_(insert_size), gap_(
-					insert_size - 2 * read_length), delta_(delta) {
+					(int) insert_size - 2 * read_length), delta_(delta) {
 	}
 
 	const vector<size_t> GetGraphDistances(EdgeId first, EdgeId second) const {
