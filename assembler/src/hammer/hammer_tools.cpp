@@ -243,9 +243,8 @@ void HammerTools::SplitKMers() {
 	bool use_minimizers = HammerTools::doingMinimizers();
 	int which_first = Globals::iteration_no % 4;
 
-	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads.");
+	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads. This takes a while");
 
-	//vector<std::ofstream> ostreams(numfiles);
   vector<MMappedWriter> ostreams(numfiles);
   for (unsigned i = 0; i < numfiles; ++i) {
     std::string filename = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i);
@@ -267,7 +266,6 @@ void HammerTools::SplitKMers() {
 
 	while (cur_i < Globals::pr->size()) {
 		cur_limit = min(cur_limit + readbuffer, Globals::pr->size());
-		TIMEDLN("i=" << cur_i << "\tcurlim=" << cur_limit);
 
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
 		for (size_t i = cur_i; i < cur_limit; ++i) {
@@ -303,7 +301,6 @@ void HammerTools::SplitKMers() {
 
 		++cur_fileindex;
 
-		TIMEDLN("Writing to files " << cur_fileindex);
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
 		for (int k=0; k < numfiles; ++k) {
       size_t sz = 0;
@@ -578,8 +575,9 @@ void HammerTools::ProcessKmerHashFile(MMappedRecordReader<KMerNo> & inf, KMerNoH
   VERIFY(!inf.good());
 
   KMerNo::is_less kmerno_cmp;
-	std::sort(vec.begin(), vec.end(), kmerno_cmp);
-	if (!vec.size()) return;
+  std::sort(vec.begin(), vec.end(), kmerno_cmp);
+  TIMEDLN("Sorting done, starting uniqueing");
+  if (!vec.size()) return;
 
 	HammerTools::KmerHashUnique(vec, vkmc);
 }
