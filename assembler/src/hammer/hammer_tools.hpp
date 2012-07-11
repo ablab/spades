@@ -69,7 +69,7 @@ public:
 	static void ReadAllFilesIntoBlob();
 
 	/// process a k-mer hash file
-	static void ProcessKmerHashFile(MMappedRecordReader<KMerNo> &reader, KMerNoHashMap & km, std::vector<KMerCount> & kmcvec );
+	static void ProcessKmerHashFile(const std::string &fname, std::vector<KMerCount> & kmcvec );
 	static void ProcessKmerHashVector( const vector< pair<hint_t, double> > & sv, KMerNoHashMap & km, std::vector<KMerCount> & vkmc );
 	/// print a processed k-mer hash file
 	static void PrintProcessedKmerHashFile( boost::iostreams::filtering_ostream & outStream, hint_t & kmer_num, KMerNoHashMap & km );

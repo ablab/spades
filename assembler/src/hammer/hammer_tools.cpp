@@ -24,6 +24,9 @@
 #include <sys/resource.h>
 #include <iomanip>
 #include <algorithm>
+#ifdef USE_GLIBCXX_PARALLEL
+#include <parallel/algorithm>
+#endif
 
 #include "read/ireadstream.hpp"
 #include "defs.hpp"
@@ -386,7 +389,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 		TIMEDLN("Map filled, " << Globals::number_of_kmers << " kmers in total");
 	} else {
     if (cfg::get().count_do) {
-      HammerTools::SplitKMers( );
+      HammerTools::SplitKMers();
     }
 
     int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
@@ -397,13 +400,10 @@ void HammerTools::CountKMersBySplitAndMerge() {
 
     std::vector< std::vector<KMerCount> > kmcvec(numfiles);
 
-	  #pragma omp parallel for shared(kmcvec) num_threads(merge_nthreads)
     for (int iFile=0; iFile < numfiles; ++iFile) {
-      KMerNoHashMap khashmap;
       std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
-      MMappedRecordReader<KMerNo> inStream(fname, /* unlink */ true);;
-      ProcessKmerHashFile(inStream, khashmap, kmcvec[iFile]);
-      TIMEDLN("Processed file " << iFile << " with thread " << omp_get_thread_num());
+      ProcessKmerHashFile(fname, kmcvec[iFile]);
+      TIMEDLN("Processed file " << iFile);
     }
 
     TIMEDLN("Concat vectors");
@@ -570,18 +570,29 @@ void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KM
 	}
 }
 
-void HammerTools::ProcessKmerHashFile(MMappedRecordReader<KMerNo> & inf, KMerNoHashMap & km, std::vector<KMerCount> & vkmc) {
-	std::vector<KMerNo> vec;
-  vec.resize(inf.size());
-  inf.read(&vec[0], vec.size());
-  VERIFY(!inf.good());
+void HammerTools::ProcessKmerHashFile(const std::string &fname, std::vector<KMerCount> & vkmc) {
+  std::vector<KMerNo> vec;
 
-  KMerNo::is_less kmerno_cmp;
-  std::sort(vec.begin(), vec.end(), kmerno_cmp);
-  TIMEDLN("Sorting done, starting uniqueing");
+  // Make sure memory mapping is released as soon as possible
+  {
+    MMappedRecordReader<KMerNo> ins(fname, /* unlink */ true);;
+
+    vec.resize(ins.size());
+    ins.read(&vec[0], vec.size());
+    VERIFY(!ins.good());
+  }
+
+#ifdef USE_GLIBCXX_PARALLEL
+  // Explicitly force a call to parallel sort routine.
+  __gnu_parallel::sort(vec.begin(), vec.end(), KMerNo::is_less());
+#else
+  std::sort(vec.begin(), vec.end(), KMerNo::is_less());
+#endif
+  TIMEDLN("Sorting done, starting unification.");
   if (!vec.size()) return;
 
-	HammerTools::KmerHashUnique(vec, vkmc);
+  // FIXME: This needs to be parallel as well.
+  HammerTools::KmerHashUnique(vec, vkmc);
 }
 
 void HammerTools::ProcessKmerHashVector( const vector< pair<hint_t, double> > & sv, KMerNoHashMap & km, std::vector<KMerCount> & vkmc ) {
