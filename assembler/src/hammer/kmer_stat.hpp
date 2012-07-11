@@ -42,12 +42,12 @@ struct QualBitSet {
 
   QualBitSet(size_t n = K):len(n) {
     q = new unsigned char[len];
+    memset(q, 0, len);
   }
   ~QualBitSet() {
     delete[] q;
   }
 
-  // Disallow copies
   QualBitSet(const QualBitSet &qbs) {
     len = qbs.len;
     q = new unsigned char[len];
