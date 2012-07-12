@@ -90,14 +90,13 @@ struct QualBitSet {
 };
 
 struct KMerStat {
-  KMerStat (bool first, uint32_t cnt, hint_t cng, double quality) : count(cnt), changeto(cng), totalQual(quality), qual(first /* empty */) { }
-  // KMerStat (uint32_t cnt, hint_t cng, double quality) : count(cnt), changeto(cng), totalQual(quality), qual() { }
-  KMerStat () : count(0), changeto(KMERSTAT_BAD), totalQual(1), qual() { }
+  KMerStat (bool first, uint32_t cnt, hint_t cng, float quality) : changeto(cng), qual(first /* empty */), totalQual(quality), count(cnt) { }
+  KMerStat () : changeto(KMERSTAT_BAD), qual(), totalQual(1.0), count(0) { }
 
-  uint32_t count;
   hint_t changeto;
-  double totalQual;
   QualBitSet qual;
+  float totalQual;
+  uint32_t count;
 
   bool isGood() const { return changeto >= KMERSTAT_GOOD; }
   bool isGoodForIterative() const { return (changeto == KMERSTAT_GOODITER); }
