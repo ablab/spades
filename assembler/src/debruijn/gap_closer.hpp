@@ -465,7 +465,7 @@ public:
 				if (pi_it->first != pi_it->second
 						&& math::ge(pi_it->weight, weight_threshold_)) {
 					if (!g_.IsDeadEnd(g_.EdgeEnd(pi_it->first)) || !g_.IsDeadStart(g_.EdgeStart(pi_it->second))) {
-						WARN("Topologycally wrong tips");
+//						WARN("Topologycally wrong tips");
 						continue;
 					}
 					gaps_checked++;
