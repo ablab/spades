@@ -142,6 +142,13 @@ public:
     seq_ = s;
     valid_ = updateValid();
   }
+  void setQuality(const char* s, int offset = PHRED_OFFSET) {
+    qual_ = s;
+    for (size_t i = 0; i < qual_.size(); ++i) {
+      qual_[i] -= offset;
+    }
+  }
+
 
   Read() :
     valid_(false) {
@@ -169,12 +176,6 @@ private:
   friend uint32_t TrimBadQuality(Read*, int);
   void setName(const char* s) {
     name_ = s;
-  }
-  void setQuality(const char* s, int offset = PHRED_OFFSET) {
-    qual_ = s;
-    for (size_t i = 0; i < qual_.size(); ++i) {
-      qual_[i] -= offset;
-    }
   }
   const bool updateValid() const {
     if (seq_.size() == 0) {
