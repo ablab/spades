@@ -290,5 +290,20 @@ inline void binary_read(std::istream &is, KMerCount &k) {
   binary_read(is, k.second);
 }
 
+inline char getQual(const KMerCount & kmc, size_t i) {
+  if (Globals::use_common_quality)
+    return Globals::common_quality * kmc.second.count;
+  if (kmc.second.count == 1)
+    return Globals::blobquality[kmc.first.start() + i];
+  else
+    return kmc.second.qual[i];
+}
+
+inline double getProb(const KMerCount &kmc, size_t i, bool log) {
+  uint8_t qual = getQual(kmc, i);
+
+  return (log ? Globals::quality_lprobs[qual] : Globals::quality_probs[qual]);
+}
+
 #endif
 

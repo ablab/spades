@@ -54,17 +54,14 @@ private:
 };
 
 double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount & x) {
-
 	double res = 0;
 	for (unsigned i = 0; i < K; ++i) {
 		if (center.at(i) != x.first.at(i)) {
 			res += - log(10) * getQual(x, i) / 10.0;
 		} else {
-			double value = getProb(x, i);
-			if (value > 0)
-				res += log(value);
-		}
-	}
+      res += getProb(x, i, /* log */ true);
+    }
+  }
 
 	return res;
 }
@@ -72,7 +69,7 @@ double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount 
 double KMerClustering::logLikelihoodSingleton(const KMerCount & x) {
 	double res = 0;
 	for (unsigned i = 0; i < K; ++i) {
-		res += log(getProb(x, i));
+		res += getProb(x, i, /* log */ true);
 	}
 	return res;
 }
