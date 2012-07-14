@@ -76,6 +76,7 @@ char Globals::char_offset = 0;
 bool Globals::use_common_quality = false;
 char Globals::common_quality = 0;
 double Globals::common_kmer_errprob = 0;
+double Globals::quality_probs[256] = { 0 };
 
 std::vector<PositionRead> * Globals::pr = NULL;
 
@@ -140,6 +141,11 @@ int main(int argc, char * argv[]) {
     	cfg::get_writable().input_qvoffset = *cfg::get().input_qvoffset_opt;
     }
     Globals::char_offset = (char)cfg::get().input_qvoffset;
+
+    // Pre-cache quality probabilities
+    for (unsigned qual = 0; qual < sizeof(Globals::quality_probs) / sizeof(Globals::quality_probs[0]); ++qual) {
+      Globals::quality_probs[qual] = (qual < 3 ? 0.25 : 1 - pow(10.0, -(int)qual / 10.0));
+    }
 
     // if we need to change single Ns to As, this is the time
     if (cfg::get().general_change_n_to_a && cfg::get().count_do) {

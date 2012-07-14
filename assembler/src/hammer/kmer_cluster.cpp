@@ -56,15 +56,13 @@ private:
 double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount & x) {
 
 	double res = 0;
-	bool change = false;
-	for (uint32_t i = 0; i < K; ++i) {
+	for (unsigned i = 0; i < K; ++i) {
 		if (center.at(i) != x.first.at(i)) {
-			change = true;
 			res += - log(10) * getQual(x, i) / 10.0;
 		} else {
-			double value = 1 - pow( 10, -getQual(x, i) / 10.0 );
+			double value = getProb(x, i);
 			if (value > 0)
-				res += log( value );
+				res += log(value);
 		}
 	}
 
@@ -73,8 +71,8 @@ double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount 
 
 double KMerClustering::logLikelihoodSingleton(const KMerCount & x) {
 	double res = 0;
-	for (uint32_t i = 0; i < K; ++i) {
-		res += log( 1 - pow( 10, -getQual(x, i) / 10.0 ) );
+	for (unsigned i = 0; i < K; ++i) {
+		res += log(getProb(x, i));
 	}
 	return res;
 }

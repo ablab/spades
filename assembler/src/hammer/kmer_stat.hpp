@@ -144,6 +144,7 @@ inline void binary_read(std::istream &is, KMerStat &k) {
   binary_read(is, k.qual);
 }
 
-char getQual(const KMerCount & kmc, int i);
+char getQual(const KMerCount & kmc, size_t i);
+double getProb(const KMerCount & kmc, size_t i);
 
 #endif //  HAMMER_KMERSTAT_HPP_

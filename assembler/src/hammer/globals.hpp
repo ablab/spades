@@ -30,6 +30,7 @@ struct Globals {
 	static bool use_common_quality;
 	static char common_quality;
 	static double common_kmer_errprob;
+  static double quality_probs[256];
 
 	static void writeBlob( const char * fname );
 	static void readBlob( const char * fname );
