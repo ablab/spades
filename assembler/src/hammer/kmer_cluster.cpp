@@ -56,7 +56,7 @@ private:
 double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount & x) {
 	double res = 0;
 	for (unsigned i = 0; i < K; ++i) {
-		if (center.at(i) != x.first.at(i)) {
+		if (center[i] != x.first[i]) {
 			res += - log(10) * getQual(x, i) / 10.0;
 		} else {
       res += getProb(x, i, /* log */ true);

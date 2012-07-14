@@ -59,7 +59,7 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 		switch(type_) {
 			case SorterTypeFileBasedStraight:
 				for (int j=0; j < tau_+1; ++j) {
-					(ostreams[j]->fs) << string(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j))
+					(ostreams[j]->fs) << string(Globals::blob + pos + Globals::subKMerPositions->at(j), (*Globals::subKMerPositions)[j+1] - Globals::subKMerPositions->at(j))
 							  << "\t" << line_no << "\n";
 				}
 				break;
@@ -140,11 +140,11 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount> * k, int nthr
 		case SorterTypeStraight:
 			for (int j=0; j < tau+1; ++j) {
 				sub_less.push_back(    boost::bind(PositionKMer::compareSubKMers,        _1, _2, k, tau, 
-					Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+					(*Globals::subKMerPositions)[j], (*Globals::subKMerPositions)[j+1] ) );
 				sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreater, _1, _2, k, tau, 
-					Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+					(*Globals::subKMerPositions)[j], (*Globals::subKMerPositions)[j+1] ) );
 				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMers,          _1, _2, k, tau, 
-					Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+					(*Globals::subKMerPositions)[j], (*Globals::subKMerPositions)[j+1] ) );
 			}
 			break;
 		case SorterTypeChequered:
@@ -164,11 +164,11 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount> * k, int nthr
 		case SorterTypeFileBasedStraight:
 			for (int j=0; j < tau+1; ++j) {
 				sub_less.push_back(    boost::bind(PositionKMer::compareSubKMersDirect,        _1, _2, tau,
-						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+						(*Globals::subKMerPositions)[j], (*Globals::subKMerPositions)[j+1] ) );
 				sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreaterDirect, _1, _2, tau,
-						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+						(*Globals::subKMerPositions)[j], (*Globals::subKMerPositions)[j+1] ) );
 				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersDirect,          _1, _2, tau,
-						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+						(*Globals::subKMerPositions)[j], (*Globals::subKMerPositions)[j+1] ) );
 				fnames_.push_back( HammerTools::getFilename( cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j) );
 				sorted_fnames_.push_back( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers.sorted", j) );
 			}
@@ -187,11 +187,11 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<hint_t> * k, int nthread
 		case SorterTypeFileBasedStraight:
 			for (int j=0; j < tau+1; ++j) {
 				sub_less.push_back(    boost::bind(PositionKMer::compareSubKMersHInt,        _1, _2, k, tau,
-						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+						(*Globals::subKMerPositions)[j], (*Globals::subKMerPositions)[j+1] ) );
 				sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreaterHInt, _1, _2, k, tau,
-						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+						(*Globals::subKMerPositions)[j], (*Globals::subKMerPositions)[j+1] ) );
 				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersHInt,          _1, _2, k, tau,
-						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+						(*Globals::subKMerPositions)[j], (*Globals::subKMerPositions)[j+1] ) );
 				fnames_.push_back( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j) );
 				sorted_fnames_.push_back( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers.sorted", j) );
 			}
@@ -224,17 +224,17 @@ SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, i
 		assert(parent_type == SorterTypeStraight);
 
 		vector< pair<uint32_t, uint32_t> > my_positions(tau+1);
-		uint32_t left_size = Globals::subKMerPositions->at(jj);
-		uint32_t right_size = K - Globals::subKMerPositions->at(jj+1);
+		uint32_t left_size = (*Globals::subKMerPositions)[jj];
+		uint32_t right_size = K - (*Globals::subKMerPositions)[jj+1];
 		uint32_t total_size = left_size + right_size;
 		uint32_t left_end = ( (tau + 1) * left_size ) / ( total_size );
 		uint32_t increment = total_size / (tau+1);
 
 		for (uint32_t i=0; i < left_end; ++i) my_positions[i] = make_pair( i * increment, (i+1) * increment );
 		if (left_end > 0) my_positions[left_end-1].second = left_size;
-		for (uint32_t i=left_end; i < (uint32_t)tau+1; ++i) my_positions[i] = make_pair(
-			Globals::subKMerPositions->at(jj+1) + (i  -left_end) * increment,
-			Globals::subKMerPositions->at(jj+1) + (i+1-left_end) * increment );
+		for (uint32_t i=left_end; i < (uint32_t)tau+1; ++i)
+      my_positions[i] = make_pair((*Globals::subKMerPositions)[jj+1] + (i  -left_end) * increment,
+                                  (*Globals::subKMerPositions)[jj+1] + (i+1-left_end) * increment );
 		if (jj < tau) my_positions[tau].second = K;
 
 		for (int j=0; j < tau+1; ++j) {
