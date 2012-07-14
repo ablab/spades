@@ -31,7 +31,7 @@ add_executable(hammer
    kmerno.cpp
    kmer_stat.cpp
    config_struct_hammer.cpp
-   read_reconstruction.cpp )
+   )
    
 #add_subdirectory(quake_count)
 #add_subdirectory(quake_enhanced)
