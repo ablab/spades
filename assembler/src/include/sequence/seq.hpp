@@ -402,7 +402,7 @@ public:
      *  Writes sequence to the file (in the same format as BinRead reads it)
      *  and returns false if error occured, true otherwise.
      */
-    bool BinWrite(std::ostream& file) {
+    bool BinWrite(std::ostream& file) const {
         return BinWrite(file, *this);
     }
 
