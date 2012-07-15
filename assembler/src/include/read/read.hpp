@@ -138,9 +138,12 @@ public:
     return -1;
   }
 
-  void setSequence(const char* s) {
+  void setSequence(const char* s, bool preserve_trimming = false) {
     seq_ = s;
-    ltrim_ = 0; initial_size_ = rtrim_ = seq_.size();
+    initial_size_ = seq_.size();
+    if (!preserve_trimming) {
+      ltrim_ = 0; rtrim_ = initial_size_;
+    }
     valid_ = updateValid();
   }
   void setQuality(const char* s, int offset = PHRED_OFFSET) {
