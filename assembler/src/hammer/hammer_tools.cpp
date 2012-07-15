@@ -1076,7 +1076,7 @@ void HammerTools::CorrectPairedReadFiles(const vector<KMerCount> & kmers,
         r[i].print(*ofcorr, qvoffset);
       } else {
         l[i].print(*(left_res[i] ? ofunp : ofbadl), qvoffset);
-        r[i].print(*(right_res[i] ? ofunp : ofbadl), qvoffset);
+        r[i].print(*(right_res[i] ? ofunp : ofbadr), qvoffset);
       }
     }
     TIMEDLN("Written batch " << buffer_no);
