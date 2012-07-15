@@ -53,10 +53,10 @@ inline bool Relax(int& val, int new_val) {
 	return false;
 }
 
-inline pair<size_t, size_t> LocalSimilarity(const Sequence& s1, const Sequence& s2) {
+inline std::pair<size_t, size_t> LocalSimilarity(const Sequence& s1, const Sequence& s2) {
 	size_t m = s1.size();
 	size_t n = s2.size();
-	vector<vector<int>> a(m + 1);
+  std::vector<std::vector<int>> a(m + 1);
 	for (size_t i = 0; i <= m; ++i) {
 		a[i].resize(n + 1);
 	}
@@ -108,7 +108,7 @@ inline pair<size_t, size_t> LocalSimilarity(const Sequence& s1, const Sequence& 
 			j--;
 		}
 	}
-	return make_pair(size_t(answer), min(i_m - i, j_m - j));
+	return std::make_pair(size_t(answer), std::min(i_m - i, j_m - j));
 }
 
 inline const std::string ReverseComplement(const std::string &s) {
