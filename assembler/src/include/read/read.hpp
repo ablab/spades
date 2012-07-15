@@ -160,10 +160,11 @@ public:
     valid_ = updateValid();
   }
 
-  const int ltrim() { return ltrim_; }
-  const int rtrim() { return rtrim_; }
-  const int initial_size() { return initial_size_; }
-
+  const int ltrim() const { return ltrim_; }
+  void set_ltrim(unsigned val) { ltrim_ = val; };
+  const int rtrim() const { return rtrim_; }
+  const int initial_size() const { return initial_size_; }
+  
 private:
   std::string name_;
   std::string seq_;
