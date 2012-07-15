@@ -992,12 +992,14 @@ void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, cons
 			if (read_size_left[i] >= K) {
 				left_res[i] = HammerTools::CorrectOneRead(kmers, changedReadBuf[omp_get_thread_num()],
 						changedNuclBuf[omp_get_thread_num()], readno_left[i], l[i], 0, correct_threshold, discard_singletons, discard_bad );
+				if (HammerTools::doingMinimizers()) left_res[i] = true; //no discarding with minimizers
 			} else {
 				left_res[i] = false;
 			}
 			if (read_size_right[i] >= K) {
 				right_res[i] = HammerTools::CorrectOneRead(kmers, changedReadBuf[omp_get_thread_num()],
 						changedNuclBuf[omp_get_thread_num()], readno_right[i], r[i], 0, correct_threshold, discard_singletons, discard_bad );
+				if (HammerTools::doingMinimizers()) right_res[i] = true; //no discarding with minimizers
 			} else {
 				right_res[i] = false;
 			}
