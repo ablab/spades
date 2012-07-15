@@ -193,7 +193,7 @@ void HammerTools::ReadAllFilesIntoBlob() {
   TIMEDLN("All files were read. Used " << curpos << " bytes out of " << Globals::blob_max_size << " allocated.");
 }
 
-void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers, int which_first ) {
+void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers, vector< hint_t > & mmers, int which_first ) {
 	if (which_first == 0) {
 		sort(v.begin(), v.end(), PositionKMer::compareSubKMersGreaterSimple);
 	} else if (which_first == 1) {
@@ -203,29 +203,24 @@ void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > 
 	} else {
 		sort(v.begin(), v.end(), PositionKMer::compareSubKMersCFirst);
 	}
-	int m_num = 0;
 	vector< pair<hint_t, pair< double, size_t > > >::iterator it = v.begin();
+	vector< int > kmers_in_mmer(mmers.size(), 0); // count kmers in mmers
+
 	for ( ; it != v.end(); ) {
-		char c = Globals::blob[ it->first ];
+/*		char c = Globals::blob[ it->first ];
 		if ( (which_first == 0) && ( (c == 'A') || (c == 'C') ) ) break;
 		if ( (which_first == 1) && ( (c == 'G') || (c == 'T') ) ) break;
 		if ( (which_first == 2) && ( (c == 'C') || (c == 'T') ) ) break;
-		if ( (which_first == 3) && ( (c == 'A') || (c == 'G') ) ) break;
-		bool erase = false;
-		for (vector< pair<hint_t, pair< double, size_t > > >::const_iterator it2 = v.begin(); it2 != it; ++it2 ) {
-			if ( it->first - it2->first < 5 ) {
-				erase = true;
-				break;
+		if ( (which_first == 3) && ( (c == 'A') || (c == 'G') ) ) break;*/
+		bool erase = true;
+		for (size_t j=0; j < mmers.size(); ++j ) {
+			if ( (it->first >= mmers[j]) && (it->first <= mmers[j] + M - K) && (kmers_in_mmer[j] < num_minimizers) ) {
+				erase = false;
+				++kmers_in_mmer[j];
 			}
 		}
-		if ( erase ) it = v.erase(it);
-		else {
-			++it;
-			++m_num;
-		}
-		if (m_num >= num_minimizers) break;
+		if ( erase ) it = v.erase(it); else ++it;
 	}
-	v.erase(it, v.end());
 }
 
 size_t my_hash(hint_t pos) {
@@ -249,7 +244,7 @@ void HammerTools::SplitKMers() {
 	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads. This takes a while");
 
   MMappedWriter* ostreams = new MMappedWriter[numfiles];
-  for (unsigned i = 0; i < numfiles; ++i) {
+  for (unsigned i = 0; i < (unsigned int)numfiles; ++i) {
     std::string filename = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i);
     ostreams[i].open(filename);
 	}
@@ -272,7 +267,7 @@ void HammerTools::SplitKMers() {
 
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
 		for (size_t i = cur_i; i < cur_limit; ++i) {
-      size_t cpos = Globals::pr->at(i).start(), csize = Globals::pr->at(i).size();
+			size_t cpos = Globals::pr->at(i).start(), csize = Globals::pr->at(i).size();
 			string s(Globals::blob + cpos, csize);
 			string q;
 			if (Globals::use_common_quality) {
@@ -282,18 +277,38 @@ void HammerTools::SplitKMers() {
 			}
 			ValidKMerGenerator<K> gen(s, q);
 			if (use_minimizers ) {
+
+				// M is the larger k-mer size -- every m-mer should have several minimizer k-mers inside
+				ValidKMerGenerator<M> gen_m(s, q);
+				vector< hint_t > mmers;
+				//cout << s << endl;
+				while (gen_m.HasMore()) {
+					//for (size_t j=0; j<gen_m.pos(); ++j) cout << " ";
+					//cout << string(Globals::blob + cpos + gen_m.pos() - 1, M) << endl;
+					mmers.push_back( cpos + gen_m.pos() - 1 );
+					gen_m.Next();
+				}
+
 				vector< pair<hint_t, pair< double, size_t > > > kmers;
 				while (gen.HasMore()) {
 					kmers.push_back( make_pair(cpos + gen.pos() - 1,
                                      make_pair(1 - gen.correct_probability(), my_hash(cpos + gen.pos() - 1) ) ));
 					gen.Next();
 				}
-				HammerTools::findMinimizers( kmers, num_minimizers, which_first );
+				HammerTools::findMinimizers( kmers, num_minimizers, mmers, which_first );
+
+				/*for (size_t i=0; i<kmers.size(); ++i) {
+					for (size_t j=0; j<kmers[i].first - cpos; ++j) cout << " ";
+					cout << string(Globals::blob + kmers[i].first, K) << endl;
+				}
+				cout << endl;*/
 				for (vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
 					tmp_entries[omp_get_thread_num()][it->second.second % numfiles].push_back(KMerNo(it->first, it->second.first));
 				}
 			} else {
+				//cout << s << endl;
 				while (gen.HasMore()) {
+					//cout << gen.kmer().str() << endl;
 					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back(KMerNo(cpos + gen.pos() - 1,
                                                                                                    1 - gen.correct_probability()));
 					gen.Next();
@@ -324,7 +339,6 @@ void HammerTools::SplitKMers() {
 			}
 		}
 	}
-
   delete[] ostreams;
 }
 
@@ -352,7 +366,14 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 			seqs[ cur_pos ] = gen.kmer();
 			gen.Next();
 		}
-		HammerTools::findMinimizers( kmers, num_minimizers, which_first );
+		ValidKMerGenerator<M> gen_m(s, q);
+		vector< hint_t > mmers;
+		while (gen_m.HasMore()) {
+			mmers.push_back( Globals::pr->at(i).start() + gen_m.pos() - 1 );
+			gen_m.Next();
+		}
+
+		HammerTools::findMinimizers( kmers, num_minimizers, mmers, which_first );
 		for ( vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
 			Seq<K> km = seqs[it->first];
 			KMerMap::iterator mit = m.find(km);
@@ -382,12 +403,12 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	KMerMap m;
 
 	// split
-	if ( HammerTools::doingMinimizers() ) {
+	/*if ( HammerTools::doingMinimizers() ) {
 		TIMEDLN("Filling map");
 		FillMapWithMinimizers( m );
 		Globals::number_of_kmers = m.size();
 		TIMEDLN("Map filled, " << Globals::number_of_kmers << " kmers in total");
-	} else {
+	} else {*/
     if (cfg::get().count_do) {
       HammerTools::SplitKMers();
     }
@@ -396,7 +417,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
     int numfiles = cfg::get().count_numfiles;
 
     TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
-    int merge_nthreads = min( cfg::get().general_max_nthreads, cfg::get().count_merge_nthreads);
+//   int merge_nthreads = min( cfg::get().general_max_nthreads, cfg::get().count_merge_nthreads);
 
     std::vector< std::vector<KMerCount> > kmcvec(numfiles);
 
@@ -421,20 +442,20 @@ void HammerTools::CountKMersBySplitAndMerge() {
     for (int iFile=1; iFile < numfiles; ++iFile ) {
       std::inplace_merge(vec.begin(), vec.begin() + enditers[iFile-1], vec.begin() + enditers[iFile], fun_ilk );
     }
-	}
+	//}
 
 	TIMEDLN("Extracting kmernos");
 	Globals::kmernos->clear();
 	Globals::kmernos->reserve(vec.size());
-	if (HammerTools::doingMinimizers()) {
+	/*if (HammerTools::doingMinimizers()) {
     for (KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
       Globals::kmernos->push_back(mit->second.first.start());
     }
-	} else {
+	} else {*/
     for (size_t i=0; i < vec.size(); ++i) {
       Globals::kmernos->push_back(vec[i].first.start());
     }
-	}
+	//}
 
 	TIMEDLN("Writing subvectors");
 	int tau_ = cfg::get().general_tau;
@@ -447,7 +468,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
         FOStream::init_buf(getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j),
                            1 << cfg::get().general_file_buffer_exp);
 	}
-	if (HammerTools::doingMinimizers()) {
+	/*if (HammerTools::doingMinimizers()) {
 		size_t num_kmer = 0;
 		for ( KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
 			const hint_t & pos = mit->second.first.start();
@@ -457,7 +478,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 			}
 			++num_kmer;
 		}
-	} else {
+	} else {*/
     for (size_t i=0; i < vec.size(); ++i) {
       const hint_t & pos = vec[i].first.start();
       for (int j=0; j < tau_+1; ++j) {
@@ -465,15 +486,17 @@ void HammerTools::CountKMersBySplitAndMerge() {
                           << "\t" << i << "\n";
       }
     }
-	}
+	//}
 	ostreams.clear();
 
+	int sort_nthreads = cfg::get().general_max_nthreads;
 	TIMEDLN("Starting child processes for sorting subvector files.");
 	vector< pid_t > pids(tau_+1);
 	for (int j=1; j < tau_+1; ++j) {
 		pids[j] = vfork();
 		if ( pids[j] == 0 ) {
 			TIMEDLN("  [" << getpid() << "] Child process " << j << " for sorting subkmers starting.");
+			ostringstream arg4; arg4 << "--parallel=" << sort_nthreads;
 			string arg2 = string("-T") + cfg::get().input_working_dir;
 			string arg1 = string("-o" + HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers.sorted", j));
 			string arg3 = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j);
@@ -481,6 +504,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 					const_cast<char*>(arg1.c_str()),
 					const_cast<char*>(arg2.c_str()),
 					const_cast<char*>(arg3.c_str()),
+					//const_cast<char*>(arg4.str().c_str()),
 					NULL };
 			execvp("sort", arg);
 		} else if ( pids[j] < 0 ) {
@@ -490,27 +514,27 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	}
 
   TIMEDLN("Serializing sorted kmers.");
-	if (HammerTools::doingMinimizers()) {
+	/*if (HammerTools::doingMinimizers()) {
     ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
     for (KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit)
       os.write((char*)&mit->second, sizeof(mit->second));
     m.clear();
     os.close();
-	} else {
+	} else {*/
     ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
     size_t sz = vec.size();
     os.write((char*)&sz, sizeof(sz));
     for (auto I = vec.begin(), E = vec.end(); I != E; ++I)
       binary_write(os, *I);
     os.close();
-	}
+	//}
 	if (!cfg::get().general_remove_temp_files) {
 		TIMEDLN("Serializing kmernos.");
 		ofstream os(HammerTools::getFilename(cfg::get().input_working_dir.c_str(), Globals::iteration_no, "kmers.numbers.ser").c_str(), ios::binary);
-    size_t sz = Globals::kmernos->size();
-    os.write((char*)&sz, sizeof(sz));
-    os.write((char*)&(*Globals::kmernos)[0], sz*sizeof((*Globals::kmernos)[0]));
-    os.close();
+		size_t sz = Globals::kmernos->size();
+		os.write((char*)&sz, sizeof(sz));
+		os.write((char*)&(*Globals::kmernos)[0], sz*sizeof((*Globals::kmernos)[0]));
+		os.close();
 	}
 
 	TIMEDLN("Waiting for subvectors to sort.");
@@ -902,7 +926,7 @@ void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KM
 }
 
 bool HammerTools::doingMinimizers() {
-	return ( cfg::get().general_minimizers && (Globals::iteration_no < 8) );
+	return ( (cfg::get().general_minimizers) && (Globals::iteration_no < 8) );
 }
 
 void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,

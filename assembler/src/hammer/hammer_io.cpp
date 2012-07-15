@@ -50,7 +50,9 @@ FIStream::~FIStream() {
   fs.reset();
   if (remove_it && cfg::get().general_remove_temp_files) {
     if (remove( fn.c_str() ) != 0) {
-      TIMEDLN("Error deleting file " + fn);
+      TIMEDLN("Error deleting file " + fn + ". Something wrong with IO, exiting.");
+      // in this case there's probably something wrong with disk access, so we cannot proceed
+      exit(1);
     }
   }
 }

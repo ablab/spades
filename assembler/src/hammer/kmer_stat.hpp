@@ -15,6 +15,7 @@
 #include <bitset>
 
 const uint32_t K = 21;
+const uint32_t M = 55;
 typedef uint64_t hint_t;
 
 #define BLOBKMER_UNDEFINED            2e12

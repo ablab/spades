@@ -81,7 +81,8 @@ public:
 	static void SplitKMers();
 
 	/// leave only minimizers
-	static void findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers, int which_first = 0 );
+	static void findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers,
+			vector< hint_t > & mmers, int which_first = 0 );
 	/// check whether this is a minimizer iteration
 	static bool doingMinimizers();
 	/// fill map

@@ -162,8 +162,11 @@ int main(int argc, char * argv[]) {
 	// initialize subkmer positions
 	HammerTools::InitializeSubKMerPositions();
 
+	int max_iterations = cfg::get().general_max_iterations;
+	if (HammerTools::doingMinimizers()) max_iterations = max_iterations+7;
+
 	// now we can begin the iterations
-	for (Globals::iteration_no = 0; Globals::iteration_no < cfg::get().general_max_iterations; ++Globals::iteration_no) {
+	for (Globals::iteration_no = 0; Globals::iteration_no < max_iterations; ++Globals::iteration_no) {
 		cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << endl;
 		bool do_everything = cfg::get().general_do_everything_after_first_iteration && (Globals::iteration_no > 0);
 
@@ -183,10 +186,10 @@ int main(int argc, char * argv[]) {
 				ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.numbers.ser"), ios::binary);
 				Globals::kmernos->clear();
 				TIMEDLN("Reading serialized kmernos.");
-        size_t sz;
-        is.read((char*)&sz, sizeof(sz));
-        Globals::kmernos->resize(sz);
-        is.read((char*)&(*Globals::kmernos)[0], sz*sizeof((*Globals::kmernos)[0]));
+				size_t sz;
+				is.read((char*)&sz, sizeof(sz));
+				Globals::kmernos->resize(sz);
+				is.read((char*)&(*Globals::kmernos)[0], sz*sizeof((*Globals::kmernos)[0]));
 				TIMEDLN("Read serialized kmernos.");
 			}
 			HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.numbers.ser"));
@@ -245,7 +248,7 @@ int main(int argc, char * argv[]) {
 		delete Globals::kmers;
 		delete Globals::pr;
 
-		if (totalReads < 1) {
+		if (totalReads < 1 && !HammerTools::doingMinimizers() ) {
 			TIMEDLN("Too few reads have changed in this iteration. Exiting.");
 			break;
 		}
