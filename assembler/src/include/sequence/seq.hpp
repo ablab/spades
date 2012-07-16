@@ -40,8 +40,8 @@
  */
 template<size_t size_, typename T = seq_element_type>
 class Seq {
-private:
-	/**
+public:  
+  /**
 	 * @variable Number of bits in type T (e.g. 8 for char)
 	 * @example 8: 2^8 = 256 or 16
 	 */
@@ -64,12 +64,14 @@ private:
 	 */
 	const static size_t DataSize = (size_ + TNucl - 1) >> TNuclBits;
 
+  typedef T DataType;
+
     /**
      * @variable Number of meaningful bytes in whick seq is stored
      */
 	const static size_t TotalBytes = sizeof(T) * DataSize;
 
-    
+private:
     /* *
      * @variable Just some prime number to count the hash function of the kmer
      * */    
