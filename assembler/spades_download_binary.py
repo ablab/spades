@@ -8,7 +8,6 @@
 
 
 import os
-import sys
 import urllib2
 import spades_init
 
@@ -18,12 +17,20 @@ spades_build_dir = spades_init.spades_build_dir
 
 import support
 
-for k in sys.argv[1:]:
-    print("\n======= Binary download for " + k +  " started.\n")
-    data = urllib2.urlopen('http://spades.bioinf.spbau.ru/release' + spades_version + '/bin/K' + k + '/spades')
-    dir = os.path.join(spades_build_dir, 'release' + spades_version, 'bin', 'K' + k)
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    file = os.path.join(dir, 'spades')
-    support.save_data_to_file(data, file)
-    print("\n======= Binary download for " + k +  " finished.\n")
+print("\n======= Binaries download started.\n")
+dir = os.path.join(spades_build_dir, 'release' + spades_version)
+if not os.path.exists(dir):
+    os.makedirs(dir)
+
+print("\n======= BayesHammer download started.\n")
+data = urllib2.urlopen('http://spades.bioinf.spbau.ru/release' + spades_version + '/hammer')
+file = os.path.join(dir, 'hammer')
+support.save_data_to_file(data, file)
+print("\n======= BayesHammer download finished.\n")
+
+print("\n======= SPAdes download started.\n")
+data = urllib2.urlopen('http://spades.bioinf.spbau.ru/release' + spades_version + '/spades')
+file = os.path.join(dir, 'spades')
+support.save_data_to_file(data, file)
+print("\n======= BayesHammer download finished.\n")
+print("\n======= Binaries download finished.\n")
