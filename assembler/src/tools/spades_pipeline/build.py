@@ -52,7 +52,7 @@ def build_spades_runtime_k(cfg, spades_home):
     if not os.path.exists(precompiled_folder):
         os.makedirs(precompiled_folder)
 
-    binary_file = os.path.join(precompiled_folder, 'release' + spades_version, 'bin', 'spades')
+    binary_file = os.path.join(precompiled_folder, 'release' + spades_version, 'spades')
 
     if os.path.isfile(binary_file):
         dest = os.path.join(precompiled_folder, 'build', 'debruijn')
@@ -83,7 +83,7 @@ def build_hammer(cfg, spades_home):
     if not os.path.exists(precompiled_folder):
         os.makedirs(precompiled_folder)
 
-    binary_file = os.path.join(precompiled_folder, 'release' + spades_version, 'bayeshammer', 'hammer')
+    binary_file = os.path.join(precompiled_folder, 'release' + spades_version, 'hammer')
     if os.path.isfile(binary_file):
         dest = os.path.join(precompiled_folder, 'build_hammer', 'hammer')
         if not os.path.exists(dest):
