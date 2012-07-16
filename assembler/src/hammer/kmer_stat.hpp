@@ -14,7 +14,7 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <bitset>
+#include <string.h>
 
 const uint32_t K = 21;
 const uint32_t M = 55;

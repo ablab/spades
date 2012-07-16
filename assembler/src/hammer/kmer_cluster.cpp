@@ -15,8 +15,6 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
 
 #include "read/ireadstream.hpp"
 #include "defs.hpp"

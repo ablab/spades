@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <cassert>
 #include <unordered_set>
-#include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 
 

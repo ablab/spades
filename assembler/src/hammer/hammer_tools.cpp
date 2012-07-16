@@ -14,10 +14,7 @@
 #include "standard.hpp"
 #include <iostream>
 #include <fstream>
-#include <queue>
 #include <unordered_map>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
 #include <boost/format.hpp>
 
 #include <time.h>
@@ -38,12 +35,8 @@
 #include "hammer_tools.hpp"
 #include "mmapped_writer.hpp"
 
-// forking
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 using namespace std;
 
@@ -260,9 +253,9 @@ void HammerTools::SplitKMers() {
 	size_t readbuffer = cfg::get().count_split_buffer;
 
 	vector< vector< vector< KMerNo > > > tmp_entries(count_num_threads);
-	for (int i=0; i < count_num_threads; ++i) {
+	for (unsigned i=0; i < count_num_threads; ++i) {
 		tmp_entries[i].resize(numfiles);
-		for (int j=0; j < numfiles; ++j) {
+		for (unsigned j=0; j < numfiles; ++j) {
 			tmp_entries[i][j].reserve((int)( 1.25 * readbuffer / count_num_threads));
 		}
 	}

@@ -9,10 +9,6 @@
 
 #include <math.h>
 #include <vector>
-#include <queue>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
-#include <boost/unordered_map.hpp>
 #include "sequence/seq.hpp"
 #include "read/read.hpp"
 #include "kmer_stat.hpp"
