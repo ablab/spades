@@ -235,7 +235,7 @@ public:
 		}
 	}
 private:
-	bool CheckAlternativeCoverage(vector<EdgeId> edges, EdgeId e = EdgeId(0)) {
+	bool CheckAlternativeCoverage(vector<EdgeId> edges, EdgeId e) {
 		for(auto it = edges.begin(); it != edges.end(); ++it) {
 			if(*it != e && this->graph().length(*it) < 400 && this->graph().coverage(*it) < max_relative_coverage_ * this->graph().coverage(e)) {
 				return false;
