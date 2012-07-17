@@ -330,7 +330,29 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 }
 
 template<class Graph>
-bool CheatingRemoveErroneousEdges(Graph &g,
+void IterativeRemoveRelativelyLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
+		size_t iteration_count, size_t i, double max_coverage) {
+	INFO("SUBSTAGE == Removing low coverage edges");
+	//double max_coverage = cfg::get().simp.ec.max_coverage;
+
+	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), cfg::get().simp.ec.max_ec_length_coefficient);
+	omnigraph::IterativeRelativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
+			max_length, max_coverage * 10 / iteration_count * (i + 1), 50,
+			edge_remover);
+	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+	//			max_length_div_K * g.k(), max_coverage);
+	erroneous_edge_remover.RemoveEdges();
+
+	IsolatedEdgeRemover<Graph> isolated_edge_remover(g,
+			cfg::get().simp.isolated_min_len);
+	isolated_edge_remover.RemoveIsolatedEdges();
+
+	DEBUG("Low coverage edges removed");
+}
+
+template<class Graph>
+bool CheatingRemoveErroneousEdges(
+		Graph &g,
 		const debruijn_config::simplification::cheating_erroneous_connections_remover& cec_config,
 		EdgeRemover<Graph>& edge_remover) {
 	INFO("Cheating removal of erroneous edges started");
@@ -706,9 +728,18 @@ void SimplifyGraph(conj_graph_pack &gp,
 			CloseGaps(gp);
 		}
 
-		SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
-				iteration_count, i, max_coverage);
-	}
+        SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
+                iteration_count, i, max_coverage);
+    }
+	for (size_t i = 0; i < iteration_count; i++) {
+        IterativeRemoveRelativelyLowCoverageEdges( gp.g, edge_remover,
+        		iteration_count, i, max_coverage);
+    	printer(ipp_err_con_removal, str(format("_%d") % (i + iteration_count)));
+
+    }
+//    //todo wtf
+//    if (cfg::get().simp.tc.advanced_checks)
+//        PrePostSimplification(gp, edge_remover, removal_handler_f);
 
 	PostSimplification(gp, edge_remover, removal_handler_f, printer);
 

@@ -190,6 +190,71 @@ private:
 	;
 };
 
+
+template<class Graph>
+class IterativeRelativeLowCoverageEdgeRemover: public ErroneousEdgeRemover<Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ErroneousEdgeRemover<Graph> base;
+	size_t max_length_;
+	double max_coverage_;
+	double max_relative_coverage_;
+
+public:
+	IterativeRelativeLowCoverageEdgeRemover(Graph& g, size_t max_length,
+			double max_coverage, double max_relative_coverage, AbstractEdgeRemover<Graph>& edge_remover) :
+			base(g, edge_remover), max_length_(max_length), max_coverage_(
+					max_coverage), max_relative_coverage_(max_relative_coverage) {
+
+	}
+
+	void InnerRemoveEdges() {
+		TRACE("Removing edges")
+		CoverageComparator<Graph> comparator(this->graph());
+		int total_len = 0;
+		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
+				++it) {
+			typename Graph::EdgeId e = *it;
+			TRACE("Considering edge " << e);
+
+			if (math::gr(this->graph().coverage(e), max_coverage_)) {
+				TRACE("Max coverage " << max_coverage_ << " achieved");
+				return;
+			}TRACE("Checking length");
+			if (this->graph().length(e) < max_length_) {
+				TRACE("Condition ok");
+				if (CheckCoverageAround(e)) {
+					INFO("relative recoverage condition ok");
+					total_len += this->graph().length(e);
+					this->DeleteEdge(e);
+				}
+			} else {
+				TRACE("Condition failed");
+			}TRACE("Edge " << e << " processed");
+			INFO("Total length iteratively removed low covered edges: " <<total_len);
+		}
+	}
+private:
+	DECL_LOGGER("IterativeRelativeLowCoverageEdgeRemover");
+	bool CheckAlternativeCoverage(vector<EdgeId> edges, EdgeId e = EdgeId(0)) {
+		for(auto it = edges.begin(); it != edges.end(); ++it) {
+			if(*it != e && this->graph().length(*it) < 400 && this->graph().coverage(*it) < max_relative_coverage_ * this->graph().coverage(e)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool CheckCoverageAround(EdgeId e) {
+		return CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeStart(e))) &&
+				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeStart(e))) &&
+				CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeEnd(e))) &&
+				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)));
+	}
+};
+
+
+
 template<class T>
 void Append(vector<T>& current, const vector<T>& to_append) {
 	current.insert(current.end(), to_append.begin(), to_append.end());
