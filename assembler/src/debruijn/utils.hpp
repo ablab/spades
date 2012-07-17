@@ -827,7 +827,7 @@ public:
 			g_(g), index_(index), kmer_mapper_(kmer_mapper), k_(k), insert_size_(
 					insert_size), read_length_(read_length), gap_(
 					insert_size_ - 2 * read_length_), delta_(delta) {
-		VERIFY(insert_size_ >= 2 * read_length_);
+//		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
 	void FillEtalonPairedInfo(const Sequence& genome,
