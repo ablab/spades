@@ -224,33 +224,40 @@ public:
 			if (this->graph().length(e) < max_length_) {
 				TRACE("Condition ok");
 				if (CheckCoverageAround(e)) {
-					INFO("relative recoverage condition ok");
+					TRACE("relative recoverage condition ok");
 					total_len += this->graph().length(e);
 					this->DeleteEdge(e);
 				}
 			} else {
 				TRACE("Condition failed");
 			}TRACE("Edge " << e << " processed");
-			INFO("Total length iteratively removed low covered edges: " <<total_len);
+			TRACE("Total length iteratively removed low covered edges: " <<total_len);
 		}
 	}
 private:
-	DECL_LOGGER("IterativeRelativeLowCoverageEdgeRemover");
 	bool CheckAlternativeCoverage(vector<EdgeId> edges, EdgeId e = EdgeId(0)) {
 		for(auto it = edges.begin(); it != edges.end(); ++it) {
 			if(*it != e && this->graph().length(*it) < 400 && this->graph().coverage(*it) < max_relative_coverage_ * this->graph().coverage(e)) {
 				return false;
+			} else if ( this->graph().coverage(*it) > max_relative_coverage_ * this->graph().coverage(e)) {
+				TRACE("max relatiove coverage was" << max_relative_coverage_);
+				TRACE("and edges" << this->graph().coverage(*it) <<" "<< this->graph().coverage(e));
+
 			}
+
 		}
+
 		return true;
 	}
 
 	bool CheckCoverageAround(EdgeId e) {
-		return CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeStart(e))) &&
-				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeStart(e))) &&
-				CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeEnd(e))) &&
-				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)));
+		return CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeStart(e)), e) &&
+				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeStart(e)), e) &&
+				CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeEnd(e)), e) &&
+				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)), e);
 	}
+
+	DECL_LOGGER("IterativeRelativeLowCoverageEdgeRemover");
 };
 
 
