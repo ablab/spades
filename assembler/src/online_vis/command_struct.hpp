@@ -2,6 +2,7 @@
 
 #include "all_commands.hpp"
 #include "drawing_commands.hpp"
+#include "position_commands.hpp"
 #include "setting_commands.hpp"
 #include "command_type.hpp"
 
@@ -20,15 +21,15 @@ namespace online_visualization {
                 { "exit",               _exit_           }, 
                 { "load",               load             },
                 { "list",               list             },
-                //{ "set_folder",         set_folder       }, 
-                //{ "set_filename",       set_filename     }, 
+                { "set_folder",         set_folder       }, 
+                { "set_file_name",      set_file_name    }, 
                 { "set_max_vertices",   set_max_vertices }, 
                 { "fill_pos",           fill_pos         }, 
                 { "clear_pos",          clear_pos        },
                 { "vertex",             draw_vertex      }, 
                 { "edge",               draw_edge        }, 
-                { "position",           draw_position    } 
-                //{ "paths",              paths            }
+                { "position",           draw_position    }, 
+                { "paths",              print_paths      }
             };
             
             //VERIFY(info.size() == CommandType::total)
@@ -50,9 +51,20 @@ namespace online_visualization {
             AddMapping(mapping, new LoadCommand);
             AddMapping(mapping, new ExitCommand);
             AddMapping(mapping, new ListCommand);
+
             AddMapping(mapping, new SetMaxVertCommand);
+            AddMapping(mapping, new SetFolderCommand);
+            AddMapping(mapping, new SetFileNameCommand);
+
             AddMapping(mapping, new FillPositionCommand);
-            AddMapping(mapping, new ListCommand);
+            AddMapping(mapping, new ClearPositionCommand);
+
+            AddMapping(mapping, new DrawVertexCommand);
+            AddMapping(mapping, new DrawEdgeCommand);
+            AddMapping(mapping, new DrawPositionCommand);
+
+            AddMapping(mapping, new PrintPathsCommand);
+
             return mapping;
         }
     }
@@ -69,6 +81,7 @@ namespace online_visualization {
     static CommandType CommandId(string name) {
         auto it = command_impl::CommandNameInfo().left.find(name);
         if (it == command_impl::CommandNameInfo().left.end()) {
+            cout << "No such command, try again" << endl;
             it = command_impl::CommandNameInfo().left.find("null");
         }
         return it->second;
@@ -77,10 +90,6 @@ namespace online_visualization {
     Command& GetCommand(CommandType command_id) {
         static CommandMapping mapping = command_impl::FillCommandMapping();
         auto it = mapping.find(command_id);
-        if (it == mapping.end()) {
-            cerr << "No such command, try again" << endl;
-            it = mapping.find(CommandType::_null_);
-        }
         return *(it->second);
     }
 

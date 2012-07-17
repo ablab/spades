@@ -41,42 +41,11 @@ namespace online_visualization {
                 command.Execute(current_environment_, ss);
                 
 
-                //else if (com == "set_folder") {
-                    //SetFolder(ss);
-                //} else if (com == "set_file_name") {
-                    //SetFileName(ss);
-                //} else if (com == "set_max_vertices") {
-                    //SetMaxVertices(ss);
-                //} else if (com == "clear_pos") {
-                    //ClearPos(ss);
-                //} else if (com == "vertex") {
-                    //DrawVertex(ss);
-                //} else if (com == "edge") {
-                    //DrawEdge(ss);
-                //} else if (com == "position") {
-                    //DrawGenomePosition(ss);
                 //} else if (com == "paths") {
                     //FindPaths(ss);
-                //} else {
-                    //cout << "ignoring command " << command_with_args << endl;
-                //}
             }
         }
 
-        //void FindPaths(stringstream & ss) {
-            //size_t from;
-            //size_t to;
-            //size_t max_length;
-            //ss >> from;
-            //ss >> to;
-            //ss >> max_length;
-            //CountingCallback callback;
-            //PathProcessor<Graph> pp(gp_.g, 0, max_length,
-                    //gp_.g.int_ids().ReturnVertexId(from),
-                    //gp_.g.int_ids().ReturnVertexId(to), callback);
-            //pp.Process();
-            //cout << callback.get_cnt() << " paths found" << endl;
-        //}
 
         //void SetMaxVertices(stringstream & ss) {
             //size_t max;

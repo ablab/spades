@@ -7,13 +7,18 @@
 
 namespace online_visualization {
 
+
     typedef debruijn_graph::NewExtendedSequenceMapper<debruijn_graph::K + 1, Graph> MapperClass;
 
     typedef debruijn_graph::PosFiller<Graph, MapperClass> FillerClass;
 
+    typedef debruijn_graph::KmerMapper<debruijn_graph::K + 1, Graph> KmerMapperClass;
+
     typedef map<EdgeId, string> ColoringClass;
 
+
     struct Environment {
+        friend class DrawingCommand;
         private :
             const string name;
             const string path;
@@ -43,7 +48,7 @@ namespace online_visualization {
                 gp_(cfg::get().ds.reference_genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling),
                 mapper_(gp_.g, gp_.index, gp_.kmer_mapper),
                 filler_(gp_.g, mapper_, gp_.edge_pos),
-                graph_struct_(gp_.g, &gp_.int_ids, &gp.edge_pos), 
+                graph_struct_(gp_.g, &gp_.int_ids, &gp_.edge_pos), 
                 tot_lab_(&graph_struct_)
             {
                 ScanGraphPack(path, gp_);
@@ -60,20 +65,49 @@ namespace online_visualization {
             }
 
             void ResetPositions() {
-                mapper_(gp_.g, gp_.index, gp_.kmer_mapper);
-                filler_(gp_.g, mapper_, gp_.edge_pos);
+                gp_.edge_pos.clear();
+                MapperClass mapper_(gp_.g, gp_.index, gp_.kmer_mapper);
+                FillerClass filler_(gp_.g, mapper_, gp_.edge_pos);
                 filler_.Process(gp_.genome, "ref0");
                 filler_.Process(!gp_.genome, "ref1");
             }
 
-            string str() {
+            string str() const {
                 stringstream ss;
                 ss << name + " " + path;
                 return ss.str();   
             }
 
+            const Graph& graph() const {
+                return gp_.g;
+            }
+
+            const Sequence& genome() const {
+                return gp_.genome;   
+            }
+
+            const debruijn_graph::EdgeIndex<debruijn_graph::K + 1, Graph>& index() const {
+                return gp_.index;   
+            }
+
+            const KmerMapperClass& kmer_mapper() const {
+                return gp_.kmer_mapper;
+            }
+
+            const IdTrackHandler<Graph>& int_ids() const {
+                return gp_.int_ids;
+            }
+
             void set_max_vertices(size_t max_vertices) {
                 max_vertices_ = max_vertices;
+            }
+
+            void set_folder(string folder) {
+                folder_ = folder;
+            }
+
+            void set_file_name(string file_name) {
+                file_name_base_ = file_name;
             }
 
             FillerClass& filler() {
