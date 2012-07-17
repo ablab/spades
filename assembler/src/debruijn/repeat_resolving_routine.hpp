@@ -655,7 +655,7 @@ void resolve_repeats() {
 		FillPos(conj_gp, !conj_gp.genome, "11");
 		if (!cfg::get().pos.contigs_for_threading.empty()
 				&& fileExists(cfg::get().pos.contigs_for_threading)) {
-			FillPos(conj_gp, cfg::get().pos.contigs_for_threading, 10000);
+			FillPos(conj_gp, cfg::get().pos.contigs_for_threading, "thr_");
 		}
 	}
 

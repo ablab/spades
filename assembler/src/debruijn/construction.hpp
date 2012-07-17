@@ -146,13 +146,13 @@ void exec_construction(conj_graph_pack& gp) {
 	if (!cfg::get().pos.contigs_for_threading.empty() &&
 		fileExists(cfg::get().pos.contigs_for_threading))
 	{
-		FillPos(gp, cfg::get().pos.contigs_for_threading, 1000);
+		FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_");
 	}
 
 	if (!cfg::get().pos.contigs_to_analyze.empty() &&
 		fileExists(cfg::get().pos.contigs_to_analyze))
 	{
-		FillPos(gp, cfg::get().pos.contigs_to_analyze, 5000);
+		FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
 	}
 
 }
