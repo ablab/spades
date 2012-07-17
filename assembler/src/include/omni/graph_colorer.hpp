@@ -362,8 +362,11 @@ public:
 	virtual string GetColour(EdgeId element) const {
 		std::vector<EdgeId> path;
 		path.push_back(element);
-		if (positions_.IsConsistentWithGenome(path)) return "green";
-		else return "orange";
+		if (positions_.GetEdgePositions(element).size() == 0) return "black";
+		else {
+			if (positions_.IsConsistentWithGenome(path)) return "green";
+			else return "orange";
+		}
 	}
 
 };
