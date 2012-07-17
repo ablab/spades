@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+		<title>Create new task</title>
+        {% load static %}
+        {% get_static_prefix as STATIC_URL %}
+		<link type="text/css" href="{{ STATIC_URL }}css/smoothness/jquery-ui-1.8.21.custom.css" rel="stylesheet" />
+		<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.2.min.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.21.custom.min.js"></script>
+		<script type="text/javascript">
+            $(function(){              
+              // Accordion
+              $(".accordion").accordion({ 
+                                        header: "h3",
+                                        collapsible: true
+                                        })
+              });
+        </script>
+		<style type="text/css">
+			body{ font: 62.5% "Trebuchet MS", sans-serif; margin: 50px;}
+			.demoHeaders { margin-top: 2em; }
+			#dialog_link {padding: .4em 1em .4em 20px;text-decoration: none;position: relative;}
+			#dialog_link span.ui-icon {margin: 0 5px 0 0;position: absolute;left: .2em;top: 50%;margin-top: -8px;}
+			ul#icons {margin: 0; padding: 0;}
+			ul#icons li {margin: 2px; position: relative; padding: 4px 0; cursor: pointer; float: left;  list-style: none;}
+			ul#icons span.ui-icon {float: left; margin: 0 4px;}
+            .brd {
+                border: 1px solid gray; /* Параметры границы */
+                background: #fff; /* Цвет фона */
+                padding: 10px; /* Поля вокруг текста */                
+                border-radius: 8px;
+            }
+            .styled-select select {
+                border: 1px solid #ccc; /* Параметры границы */
+                width: 80px;
+                height: 24px;
+                overflow: hidden;
+                background: #eee;
+            }
+            </style>
+        
+	</head>
+	<body>
+        <h3><a href="/tasks">&lt;&lt;Back to the tasks queue</a><h3>
+        <table>
+            <tr valign="top">
+                <td width="80%" class="brd">
+                    <div style="float: left;">
+                        <div>
+                            <h3>{{task.name}}</h3>
+                        </div>
+                        <div>
+                            <table>
+                                <tr valign="top">
+                                    <td class="brd" style="text-align:top" >
+                                        <h3>Requered parameters</h3>
+                                        <table>
+                                            <tr>
+                                                <td><label for="property1" title="information about Property1">Property1</label></td>
+                                                <td><input type="text" disabled="true" value="{{task.property1}}"/></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label for="property2" title="information about Property2">Property2</label></td>
+                                                <td><input type="text" disabled="true" value="{{task.property2}}"/></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td class="brd" style="text-align:top">
+                                        <h3>Optional parameters</h3>
+                                        <table>
+                                            <tr>
+                                                <td><label for="property3" title="information about Property3">Property3</label></td>
+                                                <td><input type="text" disabled="true" value="{{task.property3}}"/></td>
+                                            </tr>
+                                        </table>                        
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>        
+                </td>
+                <td width="20%">
+                    <h3>History</h3>
+                    {% if task_logs %}
+                    <div class="accordion">            
+                        {% for log in task_logs %}                        
+                        <h3><a href="#">{{log.changed_property}}</a></h3>
+                        <div>
+                            {{log.changed_date}}
+                        </div>                    
+                        {% endfor %}
+                    {% else %}
+                        <div class="accordion">            
+                            <h3><a href="#">Task has not been changed</a></h3>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+
+

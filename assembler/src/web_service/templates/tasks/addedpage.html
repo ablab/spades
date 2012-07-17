@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+		<title>Successfully added</title>
+        {% load static %}
+        {% get_static_prefix as STATIC_URL %}
+		<link type="text/css" href="{{ STATIC_URL }}css/smoothness/jquery-ui-1.8.21.custom.css" rel="stylesheet" />
+		<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.2.min.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.21.custom.min.js"></script>
+		<script type="text/javascript">
+			$(function(){              
+              $( "a", ".create-task" ).button({                                                         
+                                              icons: {
+                                              primary: "ui-icon-plus"
+                                              }
+                                              }); 
+              $( "a", ".back-to-queue" ).button({                                                         
+                                              icons: {
+                                              primary: "ui-icon-arrow-1-w"
+                                              }
+                                              }); 
+              });
+            </script>
+		<style type="text/css">
+			/*demo page css*/
+			body{ font: 62.5% "Trebuchet MS", sans-serif; margin: 50px;}
+			.demoHeaders { margin-top: 2em; }
+			#dialog_link {padding: .4em 1em .4em 20px;text-decoration: none;position: relative;}
+			#dialog_link span.ui-icon {margin: 0 5px 0 0;position: absolute;left: .2em;top: 50%;margin-top: -8px;}
+			ul#icons {margin: 0; padding: 0;}
+			ul#icons li {margin: 2px; position: relative; padding: 4px 0; cursor: pointer; float: left;  list-style: none;}
+			ul#icons span.ui-icon {float: left; margin: 0 4px;}
+        </style>
+	</head>
+	<body>
+        <h2>Task "{{name}}" has been successfully added</h2>        
+        <table>
+            <tr>
+                <td>
+                    <div class="back-to-queue">
+                        <a href="/tasks">Back to tasks queue</a>        
+                    </div>        
+                </td>
+                <td>
+                    <div class="create-task">
+                        <a href="/tasks/newtask">Create new task</a>        
+                    </div>        
+                </td>
+            </tr>
+        </table>
+	</body>
+</html>
+
+
