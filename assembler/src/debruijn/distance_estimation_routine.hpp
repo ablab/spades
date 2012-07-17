@@ -149,7 +149,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
         else if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing) { 
             PairInfoWeightFilter<Graph> filter(gp.g, 0.);
             const AbstractDistanceEstimator<Graph>& estimator =
-                    SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder, linkage_distance, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,cfg::get().ade.min_peak_points, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
+                    SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder, linkage_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,cfg::get().ade.min_peak_points, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
             INFO("Starting SMOOTHING distance estimator");
             estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
         }

@@ -130,9 +130,12 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 protected:
 	const size_t max_distance_;
 
-	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(size_t first_len, size_t second_len,
+	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
 			vector<PairInfo<EdgeId>> data,
 			vector<size_t> raw_forward) const {
+
+        size_t first_len = this->graph().length(first);
+        size_t second_len = this->graph().length(second);
 		vector<pair<size_t, double>> result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());
@@ -199,10 +202,10 @@ protected:
 		return answer;
 	}
 
-	void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
+	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
 		if (make_pair(first, second) <= ConjugatePair(first, second)) {
 			vector<size_t> forward = this->GetGraphDistances(first, second);
-			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(this->graph().length(first), this->graph().length(second),
+			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(first, second,
 				data, forward);
 			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
@@ -230,17 +233,17 @@ public:
 	}
 
     virtual void EstimateParallel(PairedInfoIndex<Graph> &result, size_t nthreads) const {
-        std::vector< std::pair<EdgeId, EdgeId> > edge_pairs;
+        vector< pair<EdgeId, EdgeId> > edge_pairs;
 
         INFO("Collecting edge pairs");
 
         for (auto iterator = this->histogram().begin();
                 iterator != this->histogram().end(); ++iterator) {
 
-            edge_pairs.push_back(std::make_pair(iterator.first(), iterator.second()));
+            edge_pairs.push_back(make_pair(iterator.first(), iterator.second()));
         }
 
-        std::vector< PairedInfoIndex<Graph>* > buffer(nthreads);
+        vector< PairedInfoIndex<Graph>* > buffer(nthreads);
         buffer[0] = &result;
         for (size_t i = 1; i < nthreads; ++i) {
             buffer[i] = new PairedInfoIndex<Graph>(this->graph(), result.GetMaxDifference());
