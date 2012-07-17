@@ -752,7 +752,7 @@ class EtalonPairedInfoCounter {
 
 	size_t insert_size_;
 	size_t read_length_;
-	size_t gap_;
+	int gap_;
 	size_t delta_;
 
 	void AddEtalonInfo(set<PairInfo<EdgeId>> & paired_info, EdgeId e1, EdgeId e2,
@@ -763,7 +763,7 @@ class EtalonPairedInfoCounter {
 
 	void ProcessSequence(const Sequence& sequence,
 			set<PairInfo<EdgeId>>& temporary_info) {
-		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
+		int mod_gap = (gap_ > delta_ - k_) ? gap_ - delta_ : -k_;
 		runtime_k::RtSeq left(k_ +1, sequence);
 		left >>= 0;
 		for (size_t left_idx = 0;
