@@ -231,7 +231,7 @@ public:
 			} else {
 				TRACE("Condition failed");
 			}TRACE("Edge " << e << " processed");
-			TRACE("Total length iteratively removed low covered edges: " <<total_len);
+			INFO("Total length iteratively removed low covered edges: " <<total_len);
 		}
 	}
 private:
