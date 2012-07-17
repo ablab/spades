@@ -1,0 +1,6 @@
+single_cell	true
+paired_reads	"//smallnas/jgi_new/spades_output/ECOLI3/corrected/Eco_no3_1.fastq.01.cor.fastq.gz  //smallnas/jgi_new/spades_output/ECOLI3/corrected/Eco_no3_2.fastq.01.cor.fastq.gz  "
+original_paired_reads	"//smallnas/jgi_new/input/Eco_no3.fastq "
+single_reads	"//smallnas/jgi_new/spades_output/ECOLI3/corrected/Eco_no3_unpaired.01.cor.fastq.gz  "
+reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
+
