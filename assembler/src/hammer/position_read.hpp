@@ -18,14 +18,15 @@
 
 class PositionRead {
   hint_t start_  : 48;
-  uint16_t size_ : 16;
-  hint_t readno_ : 48;
+  unsigned size_ : 16;
+  hint_t readno_ : 40;
+  unsigned ltrim_: 16;
   bool done_     : 1;
-  unsigned res   : 15;
+  unsigned res   : 7;
 
-  public:
+ public:
   PositionRead(hint_t start, unsigned size, hint_t readno, bool bad = false)
-      : start_(start), size_(size), readno_(readno), done_(bad)  {
+      : start_(start), size_(size), readno_(readno), ltrim_(0), done_(bad)  {
     VERIFY(size_ < 65536);
   }
   hint_t start() const { return start_; }
@@ -35,7 +36,12 @@ class PositionRead {
   bool isDone() const { return done_; }
   void set_done(bool val = true) { done_ = val; }
   bool valid() const { return size_ >= K; }
-
+  unsigned ltrim() const { return ltrim_; }
+  void set_ltrim(unsigned val) {
+    VERIFY(val < 65536);
+    ltrim_ = val;
+  }
+  
   std::pair<int, hint_t> nextKMerNo(int begin) const;
 };
 

@@ -161,6 +161,9 @@ size_t HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curp
     size_t read_size = r.trimNsAndBadQuality(trim_quality);
 
     PositionRead pread(curpos, read_size, cur_read, false);
+    if (read_size >= K) {
+      pread.set_ltrim(r.ltrim());
+    }
     Globals::pr->push_back(pread);
 
     const std::string &s = r.getSequenceString();
@@ -908,7 +911,7 @@ bool HammerTools::CorrectOneRead(const vector<KMerCount> & kmers,
 		seq[j] = cmax;
 	}
 
-	r.setSequence(seq.data());
+	r.setSequence(seq.data(), /* preserve_trimming */ true);
 	//cout << seq << "\n";
 
 	// if discard_bad=false, we retain original sequences when needed
@@ -971,6 +974,7 @@ static void ConstructRead(Read &r, const PositionRead &pr) {
   
   r.setSequence(s.c_str());
   r.setQuality(q.c_str(), 0);
+  r.set_ltrim(pr.ltrim());
 }
  
 void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
