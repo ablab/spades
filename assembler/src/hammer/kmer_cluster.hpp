@@ -16,7 +16,7 @@
 
 #include <string>
 #include <vector>
-#include "subkmers.hpp"
+#include "hamcluster.hpp"
 #include "position_kmer.hpp"
 
 class unionFindClass;
@@ -29,7 +29,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(bool doHamming, std::string dirprefix, SubKMerSorter * skmsorter, boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad);
+	void process(bool doHamming, std::string dirprefix, boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad);
 
 	/// free up memory
 	void clear() {
@@ -86,11 +86,6 @@ private:
 	  * @return new value of newBlockNum
 	  */
 	void process_block_SIN(const std::vector<int> & block, std::vector< std::vector<int> > & vec);
-
-	void processBlock(unionFindClass * uf, vector<hint_t> & block, int cur_subkmer, bool fileBased);
-	void processBlockQuadratic(unionFindClass * uf, vector<hint_t> & block, bool direct);
-	void clusterMerge(std::vector<unionFindClass *> uf, unionFindClass * ufMaster);
-
 };
 
 

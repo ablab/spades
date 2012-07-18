@@ -7,6 +7,8 @@
 #ifndef HAMMER_KMERSTAT_HPP_
 #define HAMMER_KMERSTAT_HPP_
 
+#include "verify.hpp"
+
 #include <stdint.h>
 #include <vector>
 #include <iostream>

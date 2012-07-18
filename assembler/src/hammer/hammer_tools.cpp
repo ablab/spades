@@ -35,7 +35,6 @@
 #include "position_kmer.hpp"
 #include "globals.hpp"
 #include "config_struct_hammer.hpp"
-#include "subkmers.hpp"
 #include "hammer_tools.hpp"
 #include "mmapped_writer.hpp"
 
@@ -241,9 +240,9 @@ size_t my_hash(hint_t pos) {
 }
 
 void HammerTools::SplitKMers() {
-	int numfiles = cfg::get().count_numfiles;
-	int count_num_threads = min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
-	int num_minimizers = 0;
+	unsigned numfiles = cfg::get().count_numfiles;
+	unsigned count_num_threads = min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
+	unsigned num_minimizers = 0;
 	if (cfg::get().general_num_minimizers) {
 		num_minimizers = *cfg::get().general_num_minimizers;
 	}
@@ -421,133 +420,54 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	vector<KMerCount> vec;
 	KMerMap m;
 
-	// split
-	/*if ( HammerTools::doingMinimizers() ) {
-		TIMEDLN("Filling map");
-		FillMapWithMinimizers( m );
-		Globals::number_of_kmers = m.size();
-		TIMEDLN("Map filled, " << Globals::number_of_kmers << " kmers in total");
-	} else {*/
-    if (cfg::get().count_do) {
-      HammerTools::SplitKMers();
-    }
+  if (cfg::get().count_do) {
+    HammerTools::SplitKMers();
+  }
 
-    int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
-    int numfiles = cfg::get().count_numfiles;
+  int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
+  int numfiles = cfg::get().count_numfiles;
 
-    TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
-//   int merge_nthreads = min( cfg::get().general_max_nthreads, cfg::get().count_merge_nthreads);
+  TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
+  std::vector< std::vector<KMerCount> > kmcvec(numfiles);
 
-    std::vector< std::vector<KMerCount> > kmcvec(numfiles);
+  for (int iFile=0; iFile < numfiles; ++iFile) {
+    std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
+    ProcessKmerHashFile(fname, kmcvec[iFile]);
+    TIMEDLN("Processed file " << iFile);
+  }
 
-    for (int iFile=0; iFile < numfiles; ++iFile) {
-      std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
-      ProcessKmerHashFile(fname, kmcvec[iFile]);
-      TIMEDLN("Processed file " << iFile);
-    }
+  TIMEDLN("Concat vectors");
+  size_t totalsize = 0; for ( int iFile=0; iFile < numfiles; ++iFile ) totalsize += kmcvec[iFile].size();
+  vec.reserve(totalsize);
+  vector< size_t > enditers;
+  for (int iFile=0; iFile < numfiles; ++iFile ) {
+    vec.insert(vec.end(), kmcvec[iFile].begin(), kmcvec[iFile].end());
+    enditers.push_back(vec.size());
+    kmcvec[iFile].clear();
+  }
 
-    TIMEDLN("Concat vectors");
-    size_t totalsize = 0; for ( int iFile=0; iFile < numfiles; ++iFile ) totalsize += kmcvec[iFile].size();
-    vec.reserve(totalsize);
-    vector< size_t > enditers;
-    for (int iFile=0; iFile < numfiles; ++iFile ) {
-      vec.insert(vec.end(), kmcvec[iFile].begin(), kmcvec[iFile].end());
-      enditers.push_back(vec.size());
-      kmcvec[iFile].clear();
-    }
-
-    TIMEDLN("Merge in place");
-    KMerNo::is_less_kmercount fun_ilk;
-    for (int iFile=1; iFile < numfiles; ++iFile ) {
-      std::inplace_merge(vec.begin(), vec.begin() + enditers[iFile-1], vec.begin() + enditers[iFile], fun_ilk );
-    }
-	//}
+  TIMEDLN("Merge in place");
+  KMerNo::is_less_kmercount fun_ilk;
+  for (int iFile=1; iFile < numfiles; ++iFile ) {
+    std::inplace_merge(vec.begin(), vec.begin() + enditers[iFile-1], vec.begin() + enditers[iFile], fun_ilk );
+  }
 
 	TIMEDLN("Extracting kmernos");
 	Globals::kmernos->clear();
 	Globals::kmernos->reserve(vec.size());
-	/*if (HammerTools::doingMinimizers()) {
-    for (KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
-      Globals::kmernos->push_back(mit->second.first.start());
-    }
-	} else {*/
-    for (size_t i=0; i < vec.size(); ++i) {
-      Globals::kmernos->push_back(vec[i].first.start());
-    }
-	//}
-
-	TIMEDLN("Writing subvectors");
-	int tau_ = cfg::get().general_tau;
-	vector< boost::shared_ptr<FOStream> > ostreams(tau_+1);
-	ostreams[0] =
-      FOStream::init_buf(getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers.sorted", 0),
-                         1 << cfg::get().general_file_buffer_exp);
-	for (int j = 1; j < tau_+1; ++j) {
-		ostreams[j] =
-        FOStream::init_buf(getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j),
-                           1 << cfg::get().general_file_buffer_exp);
-	}
-	/*if (HammerTools::doingMinimizers()) {
-		size_t num_kmer = 0;
-		for ( KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit ) {
-			const hint_t & pos = mit->second.first.start();
-			for (int j=0; j < tau_+1; ++j) {
-				(ostreams[j]->fs) << string(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j))
-						<< "\t" << num_kmer << "\n";
-			}
-			++num_kmer;
-		}
-	} else {*/
-    for (size_t i=0; i < vec.size(); ++i) {
-      const hint_t & pos = vec[i].first.start();
-      for (int j=0; j < tau_+1; ++j) {
-        (ostreams[j]->fs) << string(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j))
-                          << "\t" << i << "\n";
-      }
-    }
-	//}
-	ostreams.clear();
-
-	int sort_nthreads = cfg::get().general_max_nthreads;
-	TIMEDLN("Starting child processes for sorting subvector files.");
-	vector< pid_t > pids(tau_+1);
-	for (int j=1; j < tau_+1; ++j) {
-		pids[j] = vfork();
-		if ( pids[j] == 0 ) {
-			TIMEDLN("  [" << getpid() << "] Child process " << j << " for sorting subkmers starting.");
-			ostringstream arg4; arg4 << "--parallel=" << sort_nthreads;
-			string arg2 = string("-T") + cfg::get().input_working_dir;
-			string arg1 = string("-o" + HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers.sorted", j));
-			string arg3 = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j);
-			char *const arg[5] = {const_cast<char*>("-k1"),
-					const_cast<char*>(arg1.c_str()),
-					const_cast<char*>(arg2.c_str()),
-					const_cast<char*>(arg3.c_str()),
-					//const_cast<char*>(arg4.str().c_str()),
-					NULL };
-			execvp("sort", arg);
-		} else if ( pids[j] < 0 ) {
-			TIMEDLN("Failed to fork. Exiting.");
-			exit(1);
-		}
-	}
+  for (size_t i=0; i < vec.size(); ++i) {
+    Globals::kmernos->push_back(vec[i].first.start());
+  }
 
   TIMEDLN("Serializing sorted kmers.");
-	/*if (HammerTools::doingMinimizers()) {
-    ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
-    for (KMerMap::const_iterator mit = m.begin(); mit != m.end(); ++mit)
-      os.write((char*)&mit->second, sizeof(mit->second));
-    m.clear();
-    os.close();
-	} else {*/
-    ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
-    size_t sz = vec.size();
-    os.write((char*)&sz, sizeof(sz));
-    for (auto I = vec.begin(), E = vec.end(); I != E; ++I)
-      binary_write(os, *I);
-    os.close();
-	//}
-	if (!cfg::get().general_remove_temp_files) {
+  ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
+  size_t sz = vec.size();
+  os.write((char*)&sz, sizeof(sz));
+  for (auto I = vec.begin(), E = vec.end(); I != E; ++I)
+    binary_write(os, *I);
+  os.close();
+
+  if (!cfg::get().general_remove_temp_files) {
 		TIMEDLN("Serializing kmernos.");
 		ofstream os(HammerTools::getFilename(cfg::get().input_working_dir.c_str(), Globals::iteration_no, "kmers.numbers.ser").c_str(), ios::binary);
 		size_t sz = Globals::kmernos->size();
@@ -556,16 +476,6 @@ void HammerTools::CountKMersBySplitAndMerge() {
 		os.close();
 	}
 
-	TIMEDLN("Waiting for subvectors to sort.");
-	for (int j = 1; j < tau_+1; ++j) {
-	    int status;
-	    while (-1 == waitpid(pids[j], &status, 0));
-	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-	        TIMEDLN("Process " << j << " (pid " << pids[j] << ") failed. Exiting.");
-	        exit(1);
-	    }
-	    HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j));
-	}
 	TIMEDLN("Merge done. There are " << vec.size() << " kmers in total.");
 }
 

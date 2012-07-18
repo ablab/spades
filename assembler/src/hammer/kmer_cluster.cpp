@@ -22,6 +22,7 @@
 #include "defs.hpp"
 #include "mathfunctions.hpp"
 #include "hammer_tools.hpp"
+#include "hamcluster.hpp"
 #include "kmer_cluster.hpp"
 #include "config_struct_hammer.hpp"
 
@@ -112,69 +113,6 @@ int KMerClustering::hamdistKMer(const PositionKMer & x, const string & y, int ta
 		}
 	}
 	return dist;
-}
-
-void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, int cur_subkmer, bool fileBased) {
-	uint32_t blockSize = block.size();
-
-	if (blockSize < (uint32_t)cfg::get().subvectors_blocksize_quadratic_threshold) {
-		processBlockQuadratic(uf, block, fileBased);
-	} else {
-		int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
-		SubKMerSorter * subsubsorter;
-		if (fileBased) {
-			subsubsorter = new SubKMerSorter( &block, v_, nthreads_per_subkmer, tau_, cur_subkmer,
-					SubKMerSorter::SorterTypeChequeredDirect, SubKMerSorter::SorterTypeStraight );
-		} else {
-			subsubsorter = new SubKMerSorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
-					SubKMerSorter::SorterTypeChequered, SubKMerSorter::SorterTypeStraight );
-		}
-		subsubsorter->runSort();
-		for (int sub_i = 0; sub_i < tau_+1; ++sub_i) {
-			vector<hint_t> subblock;
-			while ( subsubsorter->getNextBlock(sub_i, subblock) ) {
-				processBlockQuadratic(uf, subblock, fileBased);
-			}
-		}
-		delete subsubsorter;
-	}
-}
-
-void KMerClustering::processBlockQuadratic(unionFindClass * uf, vector<hint_t> & block, bool direct) {
-	uint32_t blockSize = block.size();
-	for (uint32_t i = 0; i < blockSize; ++i) {
-		uf->find_set(block[i]);
-		for (uint32_t j = i + 1; j < blockSize; j++) {
-			if (direct) {
-				if (hamdistKMer((*v_)[block[i]], (*v_)[block[j]], tau_ ) <= tau_) {
-					uf->unionn(block[i], block[j]);
-				}
-			} else {
-				if (hamdistKMer(k_[block[i]].first, k_[block[j]].first, tau_ ) <= tau_) {
-					uf->unionn(block[i], block[j]);
-				}
-			}
-		}
-	}
-	return;
-}
-
-
-void KMerClustering::clusterMerge(vector<unionFindClass *>uf, unionFindClass * ufMaster) {
-	vector<string> row;
-	vector<vector<int> > classes;
-	for (uint32_t i = 0; i < uf.size(); i++) {
-		classes.clear();
-		uf[i]->get_classes(classes);
-		delete uf[i];
-		for (uint32_t j = 0; j < classes.size(); j++) {
-			uint32_t first = classes[j][0];
-			ufMaster->find_set(first);
-			for (uint32_t k = 0; k < classes[j].size(); k++) {
-				ufMaster->unionn(first, classes[j][k]);
-			}
-		}
-	}
 }
 
 /**
@@ -640,39 +578,38 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * skmsorter, boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad) {
-	
-	int effective_threads = min(nthreads_, tau_+1);
-	vector<unionFindClass *> uf(tau_ + 1);
-	vector<vector<int> > classes;
+struct UfCmp {
+  bool operator()(const std::vector<int> &lhs, const std::vector<int> &rhs) {
+    return lhs[0] < rhs[0];
+  }
+};
 
-	bool useFilesystem = (k_.size() == 0);
+void KMerClustering::process(bool doHamming, string dirprefix, boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad) {
+  vector<vector<int> > classes;
 
-	if (doHamming) {
+  bool useFilesystem = (k_.size() == 0);
 
-	TIMEDLN("Split kmer processing in " << effective_threads << " threads.");
-	#pragma omp parallel for shared(uf, skmsorter) num_threads(effective_threads)
-	for (int i = 0; i < tau_ + 1; i++) {
-		if ( k_.size() == 0 ) uf[i] = new unionFindClass(v_->size() + 1);
-		else uf[i] = new unionFindClass(k_.size());
+  if (doHamming) {
+    unionFindClass * ufMaster;
+    ufMaster = (k_.size() == 0 ? new unionFindClass(v_->size() + 1) : new unionFindClass(k_.size()) );
+    KMerHamClusterer clusterer(tau_);
+    clusterer.cluster(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
+                      *v_, *ufMaster);
+    ufMaster->get_classes(classes);
+    hint_t num_classes;
+    num_classes = classes.size();
 
-		vector<hint_t> block;
-		while ( skmsorter->getNextBlock(i, block) ) {
-			processBlock(uf[i], block, i, skmsorter->isFileBased());
-		}
+#if 0
+    std::sort(classes.begin(), classes.end(),  UfCmp());
+    for (size_t i = 0; i < classes.size(); ++i) {
+      std::cerr << i << ": { ";
+      for (size_t j = 0; j < classes[i].size(); ++j)
+        std::cerr << classes[i][j] << ", ";
+      std::cerr << "}" << std::endl;
+    }
+#endif
 
-	}
-	delete skmsorter;
-	TIMEDLN("All split kmer threads finished. Starting merge.");
-	
-	unionFindClass * ufMaster;
-	ufMaster = (k_.size() == 0 ? new unionFindClass(v_->size() + 1) : new unionFindClass(k_.size()) );
-	clusterMerge(uf, ufMaster);
-	hint_t num_classes;
-	ufMaster->get_classes(classes);
-	num_classes = classes.size();
-
-	TIMEDLN("Merging finished. Centering begins.");
+	TIMEDLN("Merging finished. Centering begins. Total clusters: " << num_classes);
 
 	delete ufMaster; // no longer needed
 

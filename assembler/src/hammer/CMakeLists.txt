@@ -24,10 +24,10 @@ add_executable(hammer
    hammer_tools.cpp
    hammer_io.cpp
    hammer_stats.cpp
+   hamcluster.cpp
    kmer_cluster.cpp
    position_read.cpp
    globals.cpp
-   subkmers.cpp
    kmerno.cpp
    kmer_stat.cpp
    config_struct_hammer.cpp
