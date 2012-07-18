@@ -473,6 +473,19 @@ bool MaxFlowRemoveErroneousEdges(Graph &g,
 }
 
 template<class Graph>
+bool AllTopology(Graph &g, EdgeRemover<Graph>& edge_remover, boost::function<void(EdgeId)> &removal_handler_f) {
+	bool res = TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
+		edge_remover);
+	if(cfg::get().additional_ec_removing) {
+		res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
+				edge_remover);
+		res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
+				edge_remover);
+	}
+	return res;
+}
+
+template<class Graph>
 bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover, boost::function<void(EdgeId)> &removal_handler_f) {
 	using debruijn_graph::simplification_mode;
 	switch (cfg::get().simp.simpl_mode) {
@@ -482,13 +495,9 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover, boost
 	}
 		break;
 	case sm_topology: {
-		bool res = TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
-				edge_remover);
-		if(cfg::get().additional_ec_removing) {
-			res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
-					edge_remover);
-			res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
-					edge_remover);
+		bool res = false;
+		while(AllTopology(g, edge_remover, removal_handler_f)) {
+			res = true;
 		}
 		return res;
 	}
