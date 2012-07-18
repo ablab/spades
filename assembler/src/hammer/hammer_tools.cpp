@@ -156,10 +156,9 @@ void HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos
   Read r;
   while (irs.is_open() && !irs.eof()) {
     irs >> r;
-    size_t read_size = r.trimNsAndBadQuality(trim_quality);
-    if (read_size < K) continue;
-
     if (reverse_complement) r = !r;
+    size_t read_size = r.trimNsAndBadQuality(trim_quality);
+
     PositionRead pread(curpos, read_size, cur_read, false);
     Globals::pr->push_back(pread);
 
@@ -170,6 +169,7 @@ void HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos
       const std::string &q = r.getQualityString();
       memcpy(Globals::blobquality + curpos, q.data(), read_size);
     }
+
     curpos += read_size;
     ++cur_read;
   }
@@ -267,8 +267,13 @@ void HammerTools::SplitKMers() {
 
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
 		for (size_t i = cur_i; i < cur_limit; ++i) {
-			size_t cpos = Globals::pr->at(i).start(), csize = Globals::pr->at(i).size();
-			string s(Globals::blob + cpos, csize);
+      const PositionRead &pr = Globals::pr->at(i);
+      // Skip opaque reads
+      if (!pr.valid())
+        continue;
+
+      size_t cpos = pr.start(), csize = pr.size();
+      string s(Globals::blob + cpos, csize);
 			string q;
 			if (Globals::use_common_quality) {
 				q = string(csize, (char)Globals::common_quality);
@@ -349,19 +354,24 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 	}
 	int which_first = Globals::iteration_no % 4;
 	for (int i = 0; i < (int)Globals::pr->size(); ++i ) {
-		string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
+    const PositionRead &pr = Globals::pr->at(i);
+    // Skip opaque reads
+    if (!pr.valid())
+      continue;
+
+    string s(Globals::blob        + pr.start() , pr.size());
 		string q;
 
 		if (Globals::use_common_quality) {
-			q = string(Globals::pr->at(i).size(), (char)Globals::common_quality);
+			q = string(pr.size(), (char)Globals::common_quality);
 		} else {
-			q = string(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
+			q = string(Globals::blobquality + pr.start(), pr.size());
 		}
 		ValidKMerGenerator<K> gen(s, q);
 		vector< pair<hint_t, pair< double, size_t > > > kmers;
 		unordered_map<hint_t, Seq<K> > seqs;
 		while (gen.HasMore()) {
-			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
+			hint_t cur_pos = pr.start() + gen.pos() - 1;
 			kmers.push_back( make_pair(cur_pos, make_pair( 1 - gen.correct_probability(), my_hash(cur_pos) ) ));
 			seqs[ cur_pos ] = gen.kmer();
 			gen.Next();
@@ -763,10 +773,13 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
 	// and adding new solid k-mers on the fly
 	#pragma omp parallel for shared(res) num_threads(nthreads)
 	for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
-		// maybe this read has already been covered by solid k-mers
-		if (Globals::pr->at(readno).isDone()) continue;
+		PositionRead &pr = Globals::pr->at(readno);
 
-		const PositionRead & pr = Globals::pr->at(readno);
+    // skip opaque reads w/o kmers
+    if (!pr.valid()) continue;
+    // maybe this read has already been covered by solid k-mers
+		if (pr.isDone()) continue;
+
 		const uint32_t read_size = pr.size();
 		vector<unsigned> covered_by_solid(read_size, false);
 		vector<hint_t> kmer_indices(read_size, -1);
@@ -784,11 +797,11 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
 		for (size_t j = 0; j < read_size; ++j) {
 			if (!covered_by_solid[j] ) { isGood = false; break; }
 		}
-		if ( !isGood ) continue;
+		if (!isGood) continue;
 
 		// ok, now we're sure that everything is covered
 		// first, set this read as already done
-		Globals::pr->at(readno).done();
+		pr.set_done();
 
 		// second, mark all k-mers as solid
 		for (size_t j = 0; j < read_size; ++j) {
@@ -829,12 +842,15 @@ void HammerTools::PrintKMerResult( boost::iostreams::filtering_ostream & outf, c
 	}
 }
 
-bool HammerTools::CorrectOneRead( const vector<KMerCount> & kmers, hint_t & changedReads,
-		hint_t & changedNucleotides, hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons, bool discard_bad ) {
+bool HammerTools::CorrectOneRead(const vector<KMerCount> & kmers,
+                                 hint_t & changedReads, hint_t & changedNucleotides,
+                                 hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons, bool discard_bad ) {
 	bool isGood = false;
-	string seq (Globals::blob        + Globals::pr->at(readno).start(), Globals::pr->at(readno).size());
-	const uint32_t read_size = Globals::pr->at(readno).size();
 	PositionRead & pr = Globals::pr->at(readno);
+
+  string seq (Globals::blob + pr.start(), pr.size());
+	const uint32_t read_size = pr.size();
+  VERIFY(read_size >= K);
 
 	// create auxiliary structures for consensus
 	vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
@@ -902,24 +918,24 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount> & kmers, hint_t & chan
 
 
 void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KMerCount> & kmers,
-		hint_t & changedReads, hint_t & changedNucleotides, hint_t readno, ofstream *outf_good, ofstream *outf_bad ) {
+                                   hint_t & changedReads, hint_t & changedNucleotides, hint_t readno, ofstream *outf_good, ofstream *outf_bad ) {
 	ireadstream irs(readsFilename, cfg::get().input_qvoffset);
 	VERIFY(irs.is_open());
 	bool correct_threshold = cfg::get().correct_use_threshold;
 	bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
-	if ( cfg::get().general_minimizers && (Globals::iteration_no < 2) ) discard_bad = false;
+	if (cfg::get().general_minimizers && (Globals::iteration_no < 2) ) discard_bad = false;
 	bool discard_singletons = cfg::get().bayes_discard_only_singletons;
 
 	while (irs.is_open() && !irs.eof()) {
 		Read r;
 		irs >> r;
 		size_t read_size = r.trimNsAndBadQuality(cfg::get().input_trim_quality);
-		if (read_size < K) continue;
-		if ( HammerTools::CorrectOneRead(kmers, changedReads, changedNucleotides, readno, r, 0, correct_threshold, discard_singletons, discard_bad) ) {
-			r.print(*outf_good, cfg::get().input_qvoffset);
-		} else {
-			r.print(*outf_bad, cfg::get().input_qvoffset);
-		}
+		if (read_size >=K)
+      if (HammerTools::CorrectOneRead(kmers, changedReads, changedNucleotides, readno, r, 0, correct_threshold, discard_singletons, discard_bad)) {
+        r.print(*outf_good, cfg::get().input_qvoffset);
+      } else {
+        r.print(*outf_bad, cfg::get().input_qvoffset);
+      }
 		++readno;
 	}
 	irs.close();
@@ -929,9 +945,11 @@ bool HammerTools::doingMinimizers() {
 	return ( (cfg::get().general_minimizers) && (Globals::iteration_no < 8) );
 }
 
-void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,
-		const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_left_start, hint_t readno_right_start,
-		ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp ) {
+void HammerTools::CorrectPairedReadFiles(const string & readsFilenameLeft, const string & readsFilenameRight,
+                                         const vector<KMerCount> & kmers,
+                                         hint_t & changedReads, hint_t & changedNucleotides,
+                                         hint_t readno_left_start, hint_t readno_right_start,
+                                         ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp ) {
 	int qvoffset = cfg::get().input_qvoffset;
 	bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
 	if ( HammerTools::doingMinimizers() ) discard_bad = false;
@@ -965,16 +983,8 @@ void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, cons
 			irsr >> r[buf_size];
 			read_size_left[buf_size] = l[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
 			read_size_right[buf_size] = r[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
-			if (read_size_left[buf_size] >= K) {
-				readno_left[buf_size + 1] = readno_left[buf_size] + 1;
-			} else {
-				readno_left[buf_size + 1] = readno_left[buf_size];
-			}
-			if (read_size_right[buf_size] >= K) {
-				readno_right[buf_size + 1] = readno_right[buf_size] + 1;
-			} else {
-				readno_right[buf_size + 1] = readno_right[buf_size];
-			}
+      readno_left[buf_size + 1] = readno_left[buf_size] + 1;
+      readno_right[buf_size + 1] = readno_right[buf_size] + 1;
 			if (irsl.eof() || !irsl.is_open()) { ++buf_size; break; }
 		}
 		TIMEDLN("Read batch " << buffer_no << " of " << buf_size << " reads.");
@@ -983,38 +993,34 @@ void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, cons
 		vector<hint_t> changedNuclBuf(correct_nthreads, 0);
 
 		#pragma omp parallel for shared(l, r, left_res, right_res, kmers) num_threads(correct_nthreads)
-		for( size_t i = 0; i < buf_size; ++i ) {
-			if (read_size_left[i] < K && read_size_right[i] < K) {
-				left_res[i] = false;
-				right_res[i] = false;
-				continue;
-			}
-			if (read_size_left[i] >= K) {
-				left_res[i] = HammerTools::CorrectOneRead(kmers, changedReadBuf[omp_get_thread_num()],
-						changedNuclBuf[omp_get_thread_num()], readno_left[i], l[i], 0, correct_threshold, discard_singletons, discard_bad );
-				if (HammerTools::doingMinimizers()) left_res[i] = true; //no discarding with minimizers
-			} else {
-				left_res[i] = false;
-			}
-			if (read_size_right[i] >= K) {
-				right_res[i] = HammerTools::CorrectOneRead(kmers, changedReadBuf[omp_get_thread_num()],
-						changedNuclBuf[omp_get_thread_num()], readno_right[i], r[i], 0, correct_threshold, discard_singletons, discard_bad );
-				if (HammerTools::doingMinimizers()) right_res[i] = true; //no discarding with minimizers
-			} else {
-				right_res[i] = false;
-			}
-		}
-
-		for( int i = 0; i < correct_nthreads; ++i ) {
-			changedReads += changedReadBuf[i];
-			changedNucleotides += changedNuclBuf[i];
-		}
+ 		for (size_t i = 0; i < buf_size; ++i) {
+      if (read_size_left[i] >= K) {
+ 				left_res[i] =
+            HammerTools::CorrectOneRead(kmers,
+                                        changedReadBuf[omp_get_thread_num()], changedNuclBuf[omp_get_thread_num()],
+                                        readno_left[i], l[i], 0, correct_threshold, discard_singletons, discard_bad);
+ 			} else
+        left_res[i] = false;
+ 
+      if (read_size_right[i] >= K) {
+ 				right_res[i] =
+            HammerTools::CorrectOneRead(kmers,
+                                        changedReadBuf[omp_get_thread_num()], changedNuclBuf[omp_get_thread_num()],
+                                        readno_right[i], r[i], 0, correct_threshold, discard_singletons, discard_bad);
+      } else
+        right_res[i] = false;
+    }
+  
+ 		for (int i = 0; i < correct_nthreads; ++i ) {
+      changedReads += changedReadBuf[i];
+      changedNucleotides += changedNuclBuf[i];
+    }
 
 		readno_left[0] = readno_left[buf_size];
 		readno_right[0] = readno_right[buf_size];
 
 		TIMEDLN("Processed batch " << buffer_no);
-		for( size_t i = 0; i < buf_size; ++i ) {
+		for (size_t i = 0; i < buf_size; ++i) {
 			if (  !left_res[i] ) l[i].print(*ofbadl, qvoffset );
 			if ( !right_res[i] ) r[i].print(*ofbadr, qvoffset );
 			if (  left_res[i] && !right_res[i] ) l[i].print(*ofunp, qvoffset );
@@ -1069,9 +1075,9 @@ hint_t HammerTools::CorrectAllReads() {
 		ofstream ofunp (HammerTools::getReadsFilename(cfg::get().input_working_dir, 2,       Globals::iteration_no, "cor").c_str());
 
 		HammerTools::CorrectPairedReadFiles(Globals::input_filenames[iFile], Globals::input_filenames[iFile+1],
-				*Globals::kmers, changedReads, changedNucleotides,
-				Globals::input_file_blob_positions[iFile], Globals::input_file_blob_positions[iFile+1],
-				&ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp );
+                                        *Globals::kmers, changedReads, changedNucleotides,
+                                        Globals::input_file_blob_positions[iFile], Globals::input_file_blob_positions[iFile+1],
+                                        &ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp);
 		TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " and " << Globals::input_filenames[iFile+1].c_str() << " corrected as a pair.");
 		// makes sense to change the input filenames for the next iteration immediately
 		Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");

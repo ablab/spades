@@ -197,21 +197,7 @@ class PositionKMer {
 		return ( strncmp( Globals::blob + kmer1 + start_offset, Globals::blob + kmer2 + start_offset, end_offset - start_offset ) == 0 );
 	}
 
-  	static hint_t readNoFromBlobPosInternal( hint_t blobpos, hint_t start, hint_t end ) {
-		if (start >= end - 1) return start;
-		hint_t mid = start + (end - start) / 2;
-		if ( blobpos < Globals::pr->at(mid).start() ) {
-			return readNoFromBlobPosInternal( blobpos, start, mid );
-		} else {
-			return readNoFromBlobPosInternal( blobpos, mid, end );
-		}
-	}
-
-	static hint_t readNoFromBlobPos( hint_t blobpos ) {
-		return readNoFromBlobPosInternal ( blobpos, 0, Globals::pr->size() );
-	}
-
-	PositionKMer( hint_t readno, uint32_t startpos ) : start_(Globals::pr->at(readno).start() + startpos) { }
+  PositionKMer( hint_t readno, uint32_t startpos ) : start_(Globals::pr->at(readno).start() + startpos) { }
 	PositionKMer( hint_t startpos ) : start_(startpos) { }
 	PositionKMer() : start_(-1) { }
 
