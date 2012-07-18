@@ -105,7 +105,7 @@ public:
                              size_t & changedReads, size_t & changedNucleotides,
                              hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons, bool discard_bad);
   /// parallel correction of batch of reads
-	static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads,
+	static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
                                 size_t &changedReads, size_t &changedNucleotides,
                                 const std::vector<hint_t> &readno, const std::vector<size_t> &read_sizes,
                                 const vector<KMerCount> & kmers);

@@ -859,7 +859,7 @@ bool HammerTools::CorrectOneRead(const vector<KMerCount> & kmers,
 
   string seq (Globals::blob + pr.start(), pr.size());
 	const uint32_t read_size = pr.size();
-  VERIFY(read_size >= K);
+  VERIFY(read_size >= K && r.size() == read_size);
 
 	// create auxiliary structures for consensus
 	vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
@@ -929,8 +929,8 @@ bool HammerTools::doingMinimizers() {
   return ( cfg::get().general_minimizers && (Globals::iteration_no < 8) );
 }
  
- 
-void HammerTools::CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads,
+
+void HammerTools::CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
                                     size_t &changedReads, size_t &changedNucleotides,
                                     const std::vector<hint_t> &readno, const std::vector<size_t> &read_sizes,
                                     const vector<KMerCount> & kmers) {
@@ -943,8 +943,7 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &r
   vector<size_t> changedReadBuf(correct_nthreads, 0);
   vector<size_t> changedNuclBuf(correct_nthreads, 0);
  
-  size_t buf_size = reads.size();
- # pragma omp parallel for shared(reads, res, readno, kmers) num_threads(correct_nthreads)
+# pragma omp parallel for shared(reads, res, readno, kmers) num_threads(correct_nthreads)
   for (size_t i = 0; i < buf_size; ++i) {
     if (read_sizes[i] >= K) {
       res[i] =
@@ -961,7 +960,7 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &r
   }
 }
 
-static void ConstructRead(Read &r, const PositionRead &pr) {
+static size_t ConstructRead(Read &r, const PositionRead &pr) {
   int qvoffset = cfg::get().input_qvoffset;
   size_t cpos = pr.start(), csize = pr.size();
   string s(Globals::blob + cpos, csize);
@@ -975,6 +974,8 @@ static void ConstructRead(Read &r, const PositionRead &pr) {
   r.setSequence(s.c_str());
   r.setQuality(q.c_str(), 0);
   r.set_ltrim(pr.ltrim());
+
+  return r.size();
 }
  
 void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
@@ -997,15 +998,13 @@ void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
     size_t buf_size = 0;
     for (; buf_size < read_buffer_size && read < len; ++buf_size, ++read) {
       const PositionRead &pr = Globals::pr->at(readno[buf_size]);
- 
-      ConstructRead(reads[buf_size], pr);
-      read_size[buf_size] = reads[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
- 
+      read_size[buf_size] = ConstructRead(reads[buf_size], pr);
+
       readno[buf_size + 1] = readno[buf_size] + 1;
     }
     TIMEDLN("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
- 
-    HammerTools::CorrectReadsBatch(res, reads,
+
+    HammerTools::CorrectReadsBatch(res, reads, buf_size,
                                    changedReads, changedNucleotides,
                                    readno, read_size, kmers);
  
@@ -1047,22 +1046,18 @@ void HammerTools::CorrectPairedReadFiles(const vector<KMerCount> & kmers,
     for (; buf_size < read_buffer_size && readno < len; ++buf_size, ++readno) {
       const PositionRead &prl = Globals::pr->at(readno_left[buf_size]);
       const PositionRead &prr = Globals::pr->at(readno_right[buf_size]);
- 
-      ConstructRead(l[buf_size], prl);
-      ConstructRead(r[buf_size], prr);
- 
-      read_size_left[buf_size] = l[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
-      read_size_right[buf_size] = r[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
- 
+      read_size_left[buf_size] = ConstructRead(l[buf_size], prl);
+      read_size_right[buf_size] = ConstructRead(r[buf_size], prr);
+  
       readno_left[buf_size + 1] = readno_left[buf_size] + 1;
       readno_right[buf_size + 1] = readno_right[buf_size] + 1;
     }
     TIMEDLN("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
   
-    HammerTools::CorrectReadsBatch(left_res, l,
+    HammerTools::CorrectReadsBatch(left_res, l, buf_size,
                                    changedReads, changedNucleotides,
                                    readno_left, read_size_left, kmers);
-    HammerTools::CorrectReadsBatch(right_res, r,
+    HammerTools::CorrectReadsBatch(right_res, r, buf_size,
                                    changedReads, changedNucleotides,
                                    readno_right, read_size_right, kmers);
  
