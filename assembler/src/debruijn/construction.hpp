@@ -144,15 +144,15 @@ void exec_construction(conj_graph_pack& gp) {
 	}
 
 	if (!cfg::get().pos.contigs_for_threading.empty() &&
-		fileExists(cfg::get().pos.contigs_for_threading) && cfg::get().info_printers.begin()->second.write_components_along_genome)
+		fileExists(cfg::get().pos.contigs_for_threading))
 	{
-		FillPos(gp, cfg::get().pos.contigs_for_threading, 1000);
+		FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_");
 	}
 
 	if (!cfg::get().pos.contigs_to_analyze.empty() &&
-		fileExists(cfg::get().pos.contigs_to_analyze) && cfg::get().info_printers.begin()->second.write_components_along_contigs)
+		fileExists(cfg::get().pos.contigs_to_analyze))
 	{
-		FillPos(gp, cfg::get().pos.contigs_to_analyze, 5000);
+		FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
 	}
 
 }

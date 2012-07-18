@@ -472,7 +472,7 @@ class ThornRemover: public ErroneousEdgeRemover<Graph> {
 		return false;
 	}
 
-	bool CheckAlternativeCoverage(vector<EdgeId> edges, EdgeId e = EdgeId(0)) {
+	bool CheckAlternativeCoverage(vector<EdgeId> edges, EdgeId e) {
 		for(auto it = edges.begin(); it != edges.end(); ++it) {
 			if(*it != e && this->graph().length(*it) < 400 && this->graph().coverage(*it) < 15 * this->graph().coverage(e)) {
 				return false;
@@ -482,10 +482,10 @@ class ThornRemover: public ErroneousEdgeRemover<Graph> {
 	}
 
 	bool CheckCoverageAround(EdgeId e) {
-		return CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeStart(e))) &&
-				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeStart(e))) &&
-				CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeEnd(e))) &&
-				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)));
+		return CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeStart(e)), e) &&
+				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeStart(e)), e) &&
+				CheckAlternativeCoverage(this->graph().IncomingEdges(this->graph().EdgeEnd(e)), e) &&
+				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)), e);
 	}
 
 	bool Check(EdgeId e) {

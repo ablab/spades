@@ -305,7 +305,7 @@ def usage():
                          " temp files"
     print >> sys.stderr, "\t\t\t\t[default: <output_dir>/<project_name>/corrected/tmp]"
     print >> sys.stderr, "-k\t<int,int,...>\t\tcomma-separated list of k-mer sizes"\
-                         " (must be odd) [default: 21,33,55]"
+                         " (must be odd and less than 100) [default: 21,33,55]"
     print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for error"\
                          " correction"
     print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
@@ -402,6 +402,11 @@ def main():
                 single.append(check_file(arg, 'single'))
             elif opt == '-k':
                 k_mers = map(int, arg.split(","))
+                for k in k_mers:
+                    if k > 100:
+                        error('wrong k value ' + str(k) + ': all k values should be less than 100')
+                    if k % 2 == 0:
+                        error('wrong k value ' + str(k) + ': all k values should be odd')
 
             elif opt == "--sc":
                 single_cell = True

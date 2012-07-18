@@ -1,0 +1,6 @@
+single_cell	true
+paired_reads	"//smallnas/jgi_new/spades_output/MRU6/corrected/Mru_no6_1.fastq.01.cor.fastq.gz  //smallnas/jgi_new/spades_output/MRU6/corrected/Mru_no6_2.fastq.01.cor.fastq.gz  "
+original_paired_reads  "//smallnas/jgi_new/input/Mru_no6.fastq "
+single_reads	"//smallnas/jgi_new/spades_output/MRU6/corrected/Mru_no6_unpaired.01.cor.fastq.gz  "
+reference_genome         /acestorage/data/input/M.ruber/reference_NC_013946.1.fasta
+

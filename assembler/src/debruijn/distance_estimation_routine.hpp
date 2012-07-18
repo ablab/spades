@@ -23,6 +23,7 @@
 #include "omni/weighted_distance_estimation.hpp"
 #include "omni/extensive_distance_estimation.hpp"
 #include "omni/naive_distance_estimation.hpp"
+#include "omni/smoothing_distance_estimation.hpp"
 
 namespace debruijn_graph {
 
@@ -79,9 +80,9 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 	    size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
 		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, delta);
 
-        if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_advanced) {
-            VERIFY_MSG(false, "No way, I have not rewritten advanced_estimator yet");   
-        }
+        //if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_advanced) {
+            //VERIFY_MSG(false, "No way, I have not rewritten advanced_estimator yet");   
+        //}
 
         size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
         INFO("Symmetry trick");
@@ -145,6 +146,13 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
             INFO("Starting EXTENSIVE distance estimator");
             estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
         }
+        else if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing) { 
+            PairInfoWeightFilter<Graph> filter(gp.g, 0.);
+            const AbstractDistanceEstimator<Graph>& estimator =
+                    SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder, linkage_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,cfg::get().ade.min_peak_points, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
+            INFO("Starting SMOOTHING distance estimator");
+            estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
+        }
 
 
         //experimental
@@ -153,7 +161,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
             QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g,
                     quality_handler);
-            boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+            boost::function< void(EdgeId) > removal_handler_f = boost::bind(
                     &QualityLoggingRemovalHandler<Graph>::HandleDelete,
                     &qual_removal_handler, _1);
             EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);

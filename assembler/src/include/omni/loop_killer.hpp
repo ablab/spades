@@ -186,10 +186,10 @@ public:
 		vector<EdgeId> path = FindPath(start, finish, component);
 		set<EdgeId> edges(path.begin(), path.end());
 		if(path.size() > 0 || start == finish) {
-			if(start != finish || component.size() > 2)
-				if(/*!CheckStrong(component) || */!CheckNotMuchRemoved(edges, component)) {
-					return;
-				}
+//			if(start != finish || component.size() > 2)
+			if(/*!CheckStrong(component) || */!CheckNotMuchRemoved(edges, component)) {
+				return;
+			}
 /*
 			cout << this->g().int_id(start) << " " << this->g().int_id(finish) << endl;
 			cout << this->g().VertexNucls(start) << endl;

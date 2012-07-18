@@ -1000,23 +1000,23 @@ public:
 
 //deprecated, todo remove usages!!!
 template<class gp_t>
-void FillPos(gp_t& gp, const string& contig_file, int start_contig_id) {
+void FillPos(gp_t& gp, const string& contig_file, string prefix) {
 //	typedef typename gp_t::Graph::EdgeId EdgeId;
 	INFO("Threading large contigs");
 	io::Reader irs(contig_file);
-	for (int c = start_contig_id; !irs.eof(); c++) {
+	while(!irs.eof()) {
 		io::SingleRead read;
 		irs >> read;
-		DEBUG("Contig #" << c << ", length: " << read.size());
+		DEBUG("Contig " << read.name() << ", length: " << read.size());
 		if (!read.IsValid()) {
-			WARN("Attention: contig #" << c << " contains Ns");
+			WARN("Attention: contig " << read.name() << " contains Ns");
 			continue;
 		}
 		Sequence contig = read.sequence();
 		if (contig.size() < 1500000) {
 			//		continue;
 		}
-		FillPos(gp, contig, ToString(c));
+		FillPos(gp, contig, prefix + read.name());
 	}
 }
 

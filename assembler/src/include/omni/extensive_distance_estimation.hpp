@@ -220,49 +220,8 @@ public:
 	virtual ~ExtensiveDistanceEstimator() {
 	}
 
-	virtual void Estimate(PairedInfoIndex<Graph> &result) const {
-		for (auto it = this->histogram().begin();
-				it != this->histogram().end(); ++it) {
-			ProcessEdgePair(it.first(), it.second(), *it, result);
-		}
-	}
-
-    virtual void EstimateParallel(PairedInfoIndex<Graph> &result, size_t nthreads) const {
-        std::vector< std::pair<EdgeId, EdgeId> > edge_pairs;
-
-        INFO("Collecting edge pairs");
-
-        for (auto iterator = this->histogram().begin();
-                iterator != this->histogram().end(); ++iterator) {
-
-            edge_pairs.push_back(std::make_pair(iterator.first(), iterator.second()));
-        }
-
-        std::vector< PairedInfoIndex<Graph>* > buffer(nthreads);
-        buffer[0] = &result;
-        for (size_t i = 1; i < nthreads; ++i) {
-            buffer[i] = new PairedInfoIndex<Graph>(this->graph(), result.GetMaxDifference());
-        }
-
-        INFO("Processing");
-        #pragma omp parallel num_threads(nthreads)
-        {
-            #pragma omp for
-            for (size_t i = 0; i < edge_pairs.size(); ++i)
-            {
-                EdgeId first = edge_pairs[i].first;
-                EdgeId second = edge_pairs[i].second;
-                ProcessEdgePair(first, second, this->histogram().GetEdgePairInfo(first, second), *buffer[omp_get_thread_num()]);
-            }
-        }
-
-        INFO("Merging maps");
-        for (size_t i = 1; i < nthreads; ++i) {
-            buffer[0]->AddAll(*(buffer[i]));
-            delete buffer[i];
-        }
-    }
-
+private:
+    DECL_LOGGER("ExtensiveDistanceEstimator")
 };
     
 
