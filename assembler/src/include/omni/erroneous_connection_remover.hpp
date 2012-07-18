@@ -232,7 +232,7 @@ public:
 				TRACE("Condition failed");
 			}TRACE("Edge " << e << " processed");
 		}
-		DEBUG("Total length iteratively removed low covered edges: " <<total_len);
+
 	}
 private:
 	bool CheckAlternativeCoverage(vector<EdgeId> edges, EdgeId e) {
