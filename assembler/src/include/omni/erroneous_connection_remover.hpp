@@ -231,8 +231,8 @@ public:
 			} else {
 				TRACE("Condition failed");
 			}TRACE("Edge " << e << " processed");
-			INFO("Total length iteratively removed low covered edges: " <<total_len);
 		}
+		DEBUG("Total length iteratively removed low covered edges: " <<total_len);
 	}
 private:
 	bool CheckAlternativeCoverage(vector<EdgeId> edges, EdgeId e) {
@@ -506,6 +506,7 @@ class ThornRemover: public ErroneousEdgeRemover<Graph> {
 
 	size_t max_length_;
 	size_t uniqueness_length_;
+	size_t dijkstra_depth_;
 
 	bool Unique(const vector<EdgeId>& edges, bool forward) const {
 		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
@@ -533,7 +534,7 @@ class ThornRemover: public ErroneousEdgeRemover<Graph> {
 		if(this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e)) != 2)
 			return false;
 
-		BoundedDijkstra<Graph> dij(this->graph(), 1000);
+		BoundedDijkstra<Graph> dij(this->graph(), dijkstra_depth_);
 		dij.run(this->graph().EdgeStart(e));
 		vector<VertexId> reached = dij.ReachedVertices();
 		for(auto it = reached.begin(); it != reached.end(); ++it) {
@@ -561,15 +562,17 @@ class ThornRemover: public ErroneousEdgeRemover<Graph> {
 	}
 
 	bool Check(EdgeId e) {
-		return CheckThorn(e) && (CheckUnique(e) || CheckCoverageAround(e));
+		bool tmp =  (CheckUnique(e) || CheckCoverageAround(e));
+		if (tmp)  tmp &= CheckThorn(e);
+		return tmp;
 	}
 
 public:
 	ThornRemover(Graph& g, size_t max_length,
-			size_t uniqueness_length,
+			size_t uniqueness_length, size_t dijkstra_depth,
 			AbstractEdgeRemover<Graph>& edge_remover) :
 			base(g, edge_remover), max_length_(max_length), uniqueness_length_(
-					uniqueness_length) {
+					uniqueness_length), dijkstra_depth_(dijkstra_depth) {
 		VERIFY(max_length < uniqueness_length);
 	}
 

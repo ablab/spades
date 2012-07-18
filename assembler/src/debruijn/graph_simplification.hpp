@@ -436,15 +436,12 @@ template<class Graph>
 bool TopologyReliabilityRemoveErroneousEdges(Graph &g,
 		const debruijn_config::simplification::tr_based_ec_remover& trec_config,
 		EdgeRemover<Graph>& edge_remover) {
-	INFO(
-			"Removal of erroneous edges based on topology and reliability started");
-	size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-			g.k(), trec_config.max_ec_length_coefficient);
-	return TopologyAndReliablityBasedChimericEdgeRemover<Graph>(g,
-			max_unr_length, trec_config.uniqueness_length,
-			trec_config.unreliable_coverage, edge_remover).RemoveEdges()
-			&& ThornRemover<Graph>(g, max_unr_length,
-					trec_config.uniqueness_length, edge_remover).RemoveEdges();
+	INFO("Removal of erroneous edges based on topology and reliability started");
+	size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), trec_config.max_ec_length_coefficient);
+	return TopologyAndReliablityBasedChimericEdgeRemover<Graph>(g, max_unr_length,
+				trec_config.uniqueness_length,
+				trec_config.unreliable_coverage,
+				edge_remover).RemoveEdges() && ThornRemover<Graph>(g, max_unr_length, trec_config.uniqueness_length, 15000, edge_remover).RemoveEdges();
 }
 
 template<class Graph>
@@ -730,13 +727,11 @@ void SimplifyGraph(conj_graph_pack &gp,
 
         SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
                 iteration_count, i, max_coverage);
-    }
-	for (size_t i = 0; i < iteration_count; i++) {
         IterativeRemoveRelativelyLowCoverageEdges( gp.g, edge_remover,
-        		iteration_count, i, max_coverage);
-    	printer(ipp_err_con_removal, str(format("_%d") % (i + iteration_count)));
-
+             		iteration_count, i, max_coverage);
+        printer(ipp_err_con_removal, str(format("_%d") % (i + iteration_count)));
     }
+
 //    //todo wtf
 //    if (cfg::get().simp.tc.advanced_checks)
 //        PrePostSimplification(gp, edge_remover, removal_handler_f);
