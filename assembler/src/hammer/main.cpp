@@ -60,6 +60,7 @@ using std::map;
 std::vector<std::string> Globals::input_filenames = std::vector<std::string>();
 std::vector<std::string> Globals::input_filename_bases = std::vector<std::string>();
 std::vector<hint_t> Globals::input_file_blob_positions = std::vector<hint_t>();
+std::vector<size_t> Globals::input_file_sizes = std::vector<size_t>();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 std::vector<hint_t> * Globals::kmernos = NULL;
 std::vector<KMerCount> * Globals::kmers = NULL;

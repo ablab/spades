@@ -64,7 +64,7 @@ public:
 	static void InitializeSubKMerPositions();
 
 	/// read one input file into the blob and output current position and read number
-	static void ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement);
+	static size_t ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement);
 	/// read all input files into the blob
 	static void ReadAllFilesIntoBlob();
 
@@ -110,14 +110,14 @@ public:
                                 const std::vector<hint_t> &readno, const std::vector<size_t> &read_sizes,
                                 const vector<KMerCount> & kmers);
 	/// correct reads in a given file
-	static void CorrectReadFile(const string & readsFilename, const vector<KMerCount> & kmers,
+	static void CorrectReadFile(const vector<KMerCount> & kmers,
                               size_t & changedReads, size_t & changedNucleotides,
-                              hint_t readno_start, ofstream *outf_good, ofstream *outf_bad );
+                              hint_t readno_start, size_t len,
+                              ofstream *outf_good, ofstream *outf_bad );
 	/// correct reads in a given pair of files
-	static void CorrectPairedReadFiles(const string & readsFilenameLeft, const string & readsFilenameRight,
-                                     const vector<KMerCount> & kmers,
+	static void CorrectPairedReadFiles(const vector<KMerCount> & kmers,
                                      size_t & changedReads, size_t & changedNucleotides,
-                                     hint_t readno_left_start, hint_t readno_right_start,
+                                     hint_t readno_left_start, hint_t readno_right_start, size_t len,
                                      ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp);
 	/// correct all reads
 	static hint_t CorrectAllReads();
