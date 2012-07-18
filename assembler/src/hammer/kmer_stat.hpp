@@ -76,6 +76,20 @@ struct QualBitSet {
     return *this;
   }
 
+  QualBitSet& operator+=(const QualBitSet &qbs) {
+    if (qbs.q != NULL) {
+      if (q == NULL) {
+        q = new unsigned char[K];
+        memset(q, 0, K);
+      }
+
+      for (size_t i = 0; i < K; ++i)
+        q[i] = std::min(255, qbs.q[i] + q[i]);
+    }
+
+    return *this;
+  }
+
   unsigned short operator[](size_t n) const {
     return (unsigned short)q[n];
   }
@@ -92,8 +106,8 @@ struct QualBitSet {
 };
 
 struct KMerStat {
-  KMerStat (bool first, uint32_t cnt, hint_t cng, float quality) : changeto(cng), qual(first /* empty */), totalQual(quality), count(cnt) { }
-  KMerStat () : changeto(KMERSTAT_BAD), qual(), totalQual(1.0), count(0) { }
+  KMerStat(bool first, uint32_t cnt, hint_t cng, float quality) : changeto(cng), qual(first /* empty */), totalQual(quality), count(cnt) { }
+  KMerStat() : changeto(KMERSTAT_BAD), qual(), totalQual(1.0), count(0) { }
 
   hint_t changeto;
   QualBitSet qual;
