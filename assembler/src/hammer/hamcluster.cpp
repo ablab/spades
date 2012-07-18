@@ -72,7 +72,7 @@ static unsigned hamdistKMer(hint_t x, hint_t y, unsigned tau) {
 }
 
 static bool canMerge(const unionFindClass &uf, int x, int y) {
-  return (uf.set_size(x) + uf.set_size(y)) < 1000;
+  return (uf.set_size(x) + uf.set_size(y)) < 10000;
 }
 
 
@@ -155,7 +155,7 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     ofs.open(fname, std::ios::out | std::ios::binary);
     VERIFY(ofs.good());
     while (blocks.get_block(block)) {
-      if (block.size() < 50) {
+      if (block.size() < cfg::get().subvectors_blocksize_quadratic_threshold) {
         // Merge small blocks.
         processBlockQuadratic(uf, block, kmers, tau_);
       } else {
