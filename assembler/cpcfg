@@ -43,7 +43,9 @@ case $arg in
         $cmd configs/debruijn/detail_info_printer.info.template     configs/debruijn/detail_info_printer.info
         $cmd configs/debruijn/log.properties.template               configs/debruijn/log.properties
         $cmd configs/debruijn/long_contigs/lc_config.info.template  configs/debruijn/long_contigs/lc_config.info
-        $cmd configs/debruijn/long_contigs/lc_params.info.template  configs/debruijn/long_contigs/lc_params.info;;
+        $cmd configs/debruijn/long_contigs/lc_params.info.template  configs/debruijn/long_contigs/lc_params.info
+        $cmd src/include/k_range.hpp.template  src/include/k_range.hpp;;
+
 esac
 
 done
