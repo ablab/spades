@@ -843,7 +843,7 @@ void HammerTools::PrintKMerResult( boost::iostreams::filtering_ostream & outf, c
 }
 
 bool HammerTools::CorrectOneRead(const vector<KMerCount> & kmers,
-                                 hint_t & changedReads, hint_t & changedNucleotides,
+                                 size_t & changedReads, size_t & changedNucleotides,
                                  hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons, bool discard_bad ) {
 	bool isGood = false;
 	PositionRead & pr = Globals::pr->at(readno);
@@ -917,123 +917,151 @@ bool HammerTools::CorrectOneRead(const vector<KMerCount> & kmers,
 }
 
 
-void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KMerCount> & kmers,
-                                   hint_t & changedReads, hint_t & changedNucleotides, hint_t readno, ofstream *outf_good, ofstream *outf_bad ) {
-	ireadstream irs(readsFilename, cfg::get().input_qvoffset);
-	VERIFY(irs.is_open());
-	bool correct_threshold = cfg::get().correct_use_threshold;
-	bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
-	if (cfg::get().general_minimizers && (Globals::iteration_no < 2) ) discard_bad = false;
-	bool discard_singletons = cfg::get().bayes_discard_only_singletons;
-
-	while (irs.is_open() && !irs.eof()) {
-		Read r;
-		irs >> r;
-		size_t read_size = r.trimNsAndBadQuality(cfg::get().input_trim_quality);
-		if (read_size >=K)
-      if (HammerTools::CorrectOneRead(kmers, changedReads, changedNucleotides, readno, r, 0, correct_threshold, discard_singletons, discard_bad)) {
-        r.print(*outf_good, cfg::get().input_qvoffset);
-      } else {
-        r.print(*outf_bad, cfg::get().input_qvoffset);
-      }
-		++readno;
-	}
-	irs.close();
+void HammerTools::CorrectReadFile(const string & readsFilename, const vector<KMerCount> & kmers,
+                                   size_t & changedReads, size_t & changedNucleotides,
+                                   hint_t readno_start,
+                                   ofstream *outf_good, ofstream *outf_bad ) {
+  int qvoffset = cfg::get().input_qvoffset;
+ 
+  ireadstream irs(readsFilename, qvoffset);
+  VERIFY(irs.is_open());
+ 
+  unsigned correct_nthreads = min(cfg::get().correct_nthreads, cfg::get().general_max_nthreads);
+  size_t read_buffer_size = correct_nthreads * cfg::get().correct_readbuffer;
+  vector<Read> reads(read_buffer_size);
+  vector<bool> res(read_buffer_size, false);
+  vector<size_t> read_size(read_buffer_size, 0);
+  vector<hint_t> readno(read_buffer_size+1, 0);
+  readno[0] = readno_start;
+ 
+  int buffer_no = 0;
+ 
+  while (irs.is_open() && !irs.eof()) {
+    size_t buf_size = 0;
+    for (; buf_size < read_buffer_size; ++buf_size) {
+      irs >> reads[buf_size];
+      read_size[buf_size] = reads[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
+      readno[buf_size + 1] = readno[buf_size] + 1;
+      if (irs.eof() || !irs.is_open()) { ++buf_size; break; }
+    }
+    TIMEDLN("Read batch " << buffer_no << " of " << buf_size << " reads.");
+ 
+    HammerTools::CorrectReadsBatch(res, reads,
+                                   changedReads, changedNucleotides,
+                                   readno, read_size, kmers);
+ 
+    readno[0] = readno[buf_size];
+ 
+    TIMEDLN("Processed batch " << buffer_no);
+    for (size_t i = 0; i < buf_size; ++i) {
+      reads[i].print(*(res[i] ? outf_good : outf_bad), qvoffset);
+    }
+    TIMEDLN("Written batch " << buffer_no);
+    ++buffer_no;
+  }
+  irs.close();
 }
-
+  
 bool HammerTools::doingMinimizers() {
-	return ( (cfg::get().general_minimizers) && (Globals::iteration_no < 8) );
+  return ( cfg::get().general_minimizers && (Globals::iteration_no < 8) );
 }
-
+ 
+ 
+void HammerTools::CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads,
+                                    size_t &changedReads, size_t &changedNucleotides,
+                                    const std::vector<hint_t> &readno, const std::vector<size_t> &read_sizes,
+                                    const vector<KMerCount> & kmers) {
+  unsigned correct_nthreads = min(cfg::get().correct_nthreads, cfg::get().general_max_nthreads);
+  bool discard_singletons = cfg::get().bayes_discard_only_singletons;
+  bool correct_threshold = cfg::get().correct_use_threshold;
+  bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
+  if (HammerTools::doingMinimizers()) discard_bad = false;
+ 
+  vector<size_t> changedReadBuf(correct_nthreads, 0);
+  vector<size_t> changedNuclBuf(correct_nthreads, 0);
+ 
+  size_t buf_size = reads.size();
+ # pragma omp parallel for shared(reads, res, readno, kmers) num_threads(correct_nthreads)
+  for (size_t i = 0; i < buf_size; ++i) {
+    if (read_sizes[i] >= K) {
+      res[i] =
+          HammerTools::CorrectOneRead(kmers,
+                                      changedReadBuf[omp_get_thread_num()], changedNuclBuf[omp_get_thread_num()],
+                                      readno[i], reads[i], 0, correct_threshold, discard_singletons, discard_bad);
+    } else
+      res[i] = false;
+  }
+ 
+  for (int i = 0; i < correct_nthreads; ++i ) {
+    changedReads += changedReadBuf[i];
+    changedNucleotides += changedNuclBuf[i];
+  }
+}
+  
 void HammerTools::CorrectPairedReadFiles(const string & readsFilenameLeft, const string & readsFilenameRight,
                                          const vector<KMerCount> & kmers,
-                                         hint_t & changedReads, hint_t & changedNucleotides,
+                                         size_t &changedReads, size_t &changedNucleotides,
                                          hint_t readno_left_start, hint_t readno_right_start,
                                          ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp ) {
-	int qvoffset = cfg::get().input_qvoffset;
-	bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
-	if ( HammerTools::doingMinimizers() ) discard_bad = false;
-	bool correct_threshold = cfg::get().correct_use_threshold;
-	bool discard_singletons = cfg::get().bayes_discard_only_singletons;
+  int qvoffset = cfg::get().input_qvoffset;
 
-	ireadstream irsl(readsFilenameLeft, qvoffset);
-	ireadstream irsr(readsFilenameRight, qvoffset);
-	VERIFY(irsl.is_open());
-	VERIFY(irsr.is_open());
-
-	int correct_nthreads = min( cfg::get().correct_nthreads, cfg::get().general_max_nthreads );
-	hint_t read_buffer_size = correct_nthreads * cfg::get().correct_readbuffer;
-	vector<Read> l(read_buffer_size);
-	vector<Read> r(read_buffer_size);
-	vector<bool> left_res(read_buffer_size, false);
-	vector<bool> right_res(read_buffer_size, false);
-	vector<size_t> read_size_left(read_buffer_size, 0);
-	vector<size_t> read_size_right(read_buffer_size, 0);
-	vector<hint_t> readno_left(read_buffer_size+1, 0);
-	vector<hint_t> readno_right(read_buffer_size+1, 0);
-	readno_left[0] = readno_left_start;
-	readno_right[0] = readno_right_start;
-
-	int buffer_no = 0;
-
-	while (irsl.is_open() && !irsl.eof()) {
-		size_t buf_size = 0;
-		for (; buf_size < read_buffer_size; ++buf_size) {
-			irsl >> l[buf_size];
-			irsr >> r[buf_size];
-			read_size_left[buf_size] = l[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
-			read_size_right[buf_size] = r[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
+  ireadstream irsl(readsFilenameLeft, qvoffset);
+  ireadstream irsr(readsFilenameRight, qvoffset);
+  VERIFY(irsl.is_open());
+  VERIFY(irsr.is_open());
+ 
+  unsigned correct_nthreads = min(cfg::get().correct_nthreads, cfg::get().general_max_nthreads);
+  size_t read_buffer_size = correct_nthreads * cfg::get().correct_readbuffer;
+  vector<Read> l(read_buffer_size);
+  vector<Read> r(read_buffer_size);
+  vector<bool> left_res(read_buffer_size, false);
+  vector<bool> right_res(read_buffer_size, false);
+  vector<size_t> read_size_left(read_buffer_size, 0);
+  vector<size_t> read_size_right(read_buffer_size, 0);
+  vector<hint_t> readno_left(read_buffer_size+1, 0);
+  vector<hint_t> readno_right(read_buffer_size+1, 0);
+  readno_left[0] = readno_left_start;
+  readno_right[0] = readno_right_start;
+ 
+  int buffer_no = 0;
+ 
+  while (irsl.is_open() && !irsl.eof()) {
+    size_t buf_size = 0;
+    for (; buf_size < read_buffer_size; ++buf_size) {
+      irsl >> l[buf_size];
+      irsr >> r[buf_size];
+      read_size_left[buf_size] = l[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
+      read_size_right[buf_size] = r[buf_size].trimNsAndBadQuality(cfg::get().input_trim_quality);
       readno_left[buf_size + 1] = readno_left[buf_size] + 1;
       readno_right[buf_size + 1] = readno_right[buf_size] + 1;
-			if (irsl.eof() || !irsl.is_open()) { ++buf_size; break; }
-		}
-		TIMEDLN("Read batch " << buffer_no << " of " << buf_size << " reads.");
-
-		vector<hint_t> changedReadBuf(correct_nthreads, 0);
-		vector<hint_t> changedNuclBuf(correct_nthreads, 0);
-
-		#pragma omp parallel for shared(l, r, left_res, right_res, kmers) num_threads(correct_nthreads)
- 		for (size_t i = 0; i < buf_size; ++i) {
-      if (read_size_left[i] >= K) {
- 				left_res[i] =
-            HammerTools::CorrectOneRead(kmers,
-                                        changedReadBuf[omp_get_thread_num()], changedNuclBuf[omp_get_thread_num()],
-                                        readno_left[i], l[i], 0, correct_threshold, discard_singletons, discard_bad);
- 			} else
-        left_res[i] = false;
+      if (irsl.eof() || !irsl.is_open()) { ++buf_size; break; }
+    }
+    TIMEDLN("Read batch " << buffer_no << " of " << buf_size << " reads.");
  
-      if (read_size_right[i] >= K) {
- 				right_res[i] =
-            HammerTools::CorrectOneRead(kmers,
-                                        changedReadBuf[omp_get_thread_num()], changedNuclBuf[omp_get_thread_num()],
-                                        readno_right[i], r[i], 0, correct_threshold, discard_singletons, discard_bad);
-      } else
-        right_res[i] = false;
+    HammerTools::CorrectReadsBatch(left_res, l,
+                                   changedReads, changedNucleotides,
+                                   readno_left, read_size_left, kmers);
+    HammerTools::CorrectReadsBatch(right_res, r,
+                                   changedReads, changedNucleotides,
+                                   readno_right, read_size_right, kmers);
+ 
+    readno_left[0] = readno_left[buf_size];
+    readno_right[0] = readno_right[buf_size];
+ 
+    TIMEDLN("Processed batch " << buffer_no);
+    for (size_t i = 0; i < buf_size; ++i) {
+      if (left_res[i] && right_res[i]) {
+        l[i].print(*ofcorl, qvoffset);
+        r[i].print(*ofcorr, qvoffset);
+      } else {
+        l[i].print(*(left_res[i] ? ofunp : ofbadl), qvoffset);
+        r[i].print(*(right_res[i] ? ofunp : ofbadl), qvoffset);
+      }
     }
-  
- 		for (int i = 0; i < correct_nthreads; ++i ) {
-      changedReads += changedReadBuf[i];
-      changedNucleotides += changedNuclBuf[i];
-    }
-
-		readno_left[0] = readno_left[buf_size];
-		readno_right[0] = readno_right[buf_size];
-
-		TIMEDLN("Processed batch " << buffer_no);
-		for (size_t i = 0; i < buf_size; ++i) {
-			if (  !left_res[i] ) l[i].print(*ofbadl, qvoffset );
-			if ( !right_res[i] ) r[i].print(*ofbadr, qvoffset );
-			if (  left_res[i] && !right_res[i] ) l[i].print(*ofunp, qvoffset );
-			if ( !left_res[i] &&  right_res[i] ) r[i].print(*ofunp, qvoffset );
-			if (  left_res[i] &&  right_res[i] ) {
-				l[i].print(*ofcorl, qvoffset);
-				r[i].print(*ofcorr, qvoffset);
-			}
-		}
-		TIMEDLN("Written batch " << buffer_no);
-		++buffer_no;
-	}
-	irsl.close(); irsr.close();
+    TIMEDLN("Written batch " << buffer_no);
+    ++buffer_no;
+  }
+  irsl.close(); irsr.close();
 }
 
 string getLargestPrefix(const string & str1, const string & str2) {
@@ -1049,12 +1077,11 @@ string getLargestPrefix(const string & str1, const string & str2) {
 
 hint_t HammerTools::CorrectAllReads() {
 	// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
-	hint_t changedReads = 0;
-	hint_t changedNucleotides = 0;
+	size_t changedReads = 0;
+	size_t changedNucleotides = 0;
 
 	int correct_nthreads = min( cfg::get().correct_nthreads, cfg::get().general_max_nthreads );
 
-	// TODO: make threaded read correction!
 	TIMEDLN("Starting read correction in " << correct_nthreads << " threads.");
 
 	// correcting paired files

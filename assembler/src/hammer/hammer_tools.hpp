@@ -101,14 +101,24 @@ public:
 			bool correct_threshold, bool discard_singletons);
 
 	/// correct one read
-	static bool CorrectOneRead( const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides,
-			hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons, bool discard_bad );
+	static bool CorrectOneRead(const vector<KMerCount> & kmers,
+                             size_t & changedReads, size_t & changedNucleotides,
+                             hint_t readno, Read & r, size_t i, bool correct_threshold, bool discard_singletons, bool discard_bad);
+  /// parallel correction of batch of reads
+	static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads,
+                                size_t &changedReads, size_t &changedNucleotides,
+                                const std::vector<hint_t> &readno, const std::vector<size_t> &read_sizes,
+                                const vector<KMerCount> & kmers);
 	/// correct reads in a given file
-	static void CorrectReadFile( const string & readsFilename, const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_start, ofstream *outf_good, ofstream *outf_bad );
+	static void CorrectReadFile(const string & readsFilename, const vector<KMerCount> & kmers,
+                              size_t & changedReads, size_t & changedNucleotides,
+                              hint_t readno_start, ofstream *outf_good, ofstream *outf_bad );
 	/// correct reads in a given pair of files
-	static void CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,
-			const vector<KMerCount> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_left_start, hint_t readno_right_start,
-			ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp );
+	static void CorrectPairedReadFiles(const string & readsFilenameLeft, const string & readsFilenameRight,
+                                     const vector<KMerCount> & kmers,
+                                     size_t & changedReads, size_t & changedNucleotides,
+                                     hint_t readno_left_start, hint_t readno_right_start,
+                                     ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp);
 	/// correct all reads
 	static hint_t CorrectAllReads();
 

@@ -94,7 +94,6 @@ public:
 			r.setQuality(seq_->qual.s, offset_);
 		}
 		r.setSequence(seq_->seq.s);
-		r.ltrim_ = 0; r.rtrim_ = (int)r.seq_.size(); r.initial_size_ = (int)r.seq_.size();
 		read_ahead(); // make actual read for the next result
 		return *this;
 	}

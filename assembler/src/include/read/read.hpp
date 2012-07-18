@@ -140,6 +140,7 @@ public:
 
   void setSequence(const char* s) {
     seq_ = s;
+    ltrim_ = 0; initial_size_ = rtrim_ = seq_.size();
     valid_ = updateValid();
   }
   void setQuality(const char* s, int offset = PHRED_OFFSET) {
@@ -150,13 +151,14 @@ public:
   }
 
 
-  Read() :
-    valid_(false) {
+  Read()
+      : valid_(false), ltrim_(0), rtrim_(0), initial_size_(0) {
     ;
   }
 
   Read(const std::string &name, const std::string &seq, const std::string &qual) :
     name_(name), seq_(seq), qual_(qual) {  // for test only!
+    ltrim_ = 0; initial_size_ = rtrim_ = seq_.size();
     valid_ = updateValid();
   }
 
