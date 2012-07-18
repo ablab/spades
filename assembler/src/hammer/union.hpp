@@ -39,11 +39,11 @@ class unionFindClass {
 public:
 	unionFindClass(int size) : data(size, -1), rank(size, 0) {}
 
-	void unionn( const int & x, const int & y) {
+	void unionn( const int x, const int y) {
 		link(find_set(x),find_set(y));
 	}
 
-	int find_set(const int & x) {
+	int find_set(const int x) const {
 		if (data.at(x) == -1) {
 			data.at(x) = x;
 		} else if (data.at(x) != x) {
@@ -72,7 +72,7 @@ public:
 		return data.at(i);
 	}
 
-	void get_classes (vector<vector<int > > & otherWay) {
+	void get_classes (vector<vector<int > > & otherWay) const {
 		otherWay.resize(data.size());
 		for (size_t i = 0; i < data.size(); i++) {
 			if (data[i] != -1) 
@@ -107,7 +107,7 @@ private:
 		}
 	}
 
-	vector<int> data;
+	mutable vector<int> data;
 	vector<int> rank;
 
 };
