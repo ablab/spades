@@ -1048,8 +1048,6 @@ void OutputWrongContigs(conj_graph_pack& gp, size_t bound,
 	OutputWrongContigs(gp.g, gp.index, gp.genome, bound, file_name, gp.k_value);
 }
 
-
-
 /*//		Graph& g, const EdgeIndex<k + 1, Graph>& index,
  //		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper)
  {

@@ -40,11 +40,11 @@ struct graph_pack : private boost::noncopyable {
 
 	Sequence genome;
 
-	explicit graph_pack(size_t k, Sequence const& genome = Sequence(), size_t single_gap = 0, bool careful_labeling = false) :
+	explicit graph_pack(size_t k, Sequence const& genome = Sequence(), size_t single_gap = 0, bool careful_labeling = false, bool use_inner_ids = false) :
     k_value(k),
 	g(k),
 	index(g, k + 1)
-	, int_ids (g)
+	, int_ids(g, use_inner_ids)
 	, edge_pos(g, single_gap, careful_labeling), kmer_mapper(g, k + 1),
 	genome(genome) {
 	}

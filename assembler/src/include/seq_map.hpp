@@ -196,6 +196,9 @@ public:
         }
     }
 
+    void clear() {
+    	nodes_.clear();
+    }
 };
 
 #endif /* SEQ_MAP_HPP_ */

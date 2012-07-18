@@ -1045,7 +1045,6 @@ public:
         return data_->max_size();
     }
 
-
     const_iterator begin() const {
         return const_iterator(data_->cbegin());
     }
@@ -1062,11 +1061,9 @@ public:
         return iterator(data_->end());
     }
 
-
     Value& operator[](const RtSeq& kmer_seq) {
         return data_->operator [](kmer_seq);
     }
-
 
     const_iterator find(const RtSeq& kmer_seq) const {
         return const_iterator(data_->cfind(kmer_seq));
@@ -1085,7 +1082,6 @@ public:
         return make_pair(iterator(res.first), res.second);
     }
 
-
     size_t erase(const RtSeq& kmer_seq) {
         return data_->erase(kmer_seq);
     }
@@ -1097,7 +1093,6 @@ public:
     iterator erase(const iterator& iter) {
         return iterator(data_->erase(iter.get_data()));
     }
-
 
     void clear() {
         data_->clear();

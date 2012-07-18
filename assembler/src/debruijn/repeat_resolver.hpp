@@ -221,12 +221,12 @@ public:
 			Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_,
 			EdgesPositionHandler<Graph> &new_pos_,
 			DeletedVertexHandler<Graph> &deleted_handler_,
-			EdgeLabelHandler<Graph> &LabelsAfter_) :
+			EdgeLabelHandler<Graph> &LabelsAfter_, bool developer_mode) :
 			new_graph(new_graph_), old_graph(old_graph_), new_IDs(new_IDs_), old_IDs(
 					old_IDs_), new_pos(new_pos_), old_pos(old_pos_), deleted_handler(
 					deleted_handler_), labels_after(LabelsAfter_),
-							distance_counter(old_graph_, cfg::get().rr.max_distance){
-
+							distance_counter(old_graph_, cfg::get().rr.max_distance),
+							developer_mode_(developer_mode) {
 
 		TRACE("Constructor started");
 		map<VertexId, VertexId> old_to_new;
@@ -304,15 +304,16 @@ public:
 			edge_labels[new_edge] = *e_iter;
 			TRACE("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
-			new_pos.AddEdgePosition(new_edge, old_pos.edges_positions().find(*e_iter)->second);
-
+			if (developer_mode_)
+				new_pos.AddEdgePosition(new_edge, old_pos.edges_positions().find(*e_iter)->second);
 
 			if (rc_mode) {
 				EdgeId new_rc_edge = conj_wrap(new_graph, new_edge);
 				EdgeId old_rc_edge = conj_wrap(old_graph, *e_iter);
 				edge_labels[new_rc_edge] = old_rc_edge;
 				old_to_new_edge[old_rc_edge] = new_rc_edge;
-				new_pos.AddEdgePosition(new_rc_edge, old_pos.edges_positions().find(old_rc_edge)->second);
+				if (developer_mode_)
+					new_pos.AddEdgePosition(new_rc_edge, old_pos.edges_positions().find(old_rc_edge)->second);
 				TRACE("rc edge added");
 				new_IDs.AddEdgeIntId(new_rc_edge, old_IDs.ReturnIntId(old_rc_edge));
 			}
@@ -432,6 +433,7 @@ private:
 	map<VertexId, int> resolving_vertices_degrees;
 	int sum_count;
 	FastDistanceCounter distance_counter;
+	const bool developer_mode_;
 
 private:
 	DECL_LOGGER("RepeatResolver")

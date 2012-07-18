@@ -174,7 +174,7 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
 	VERIFY(file != NULL);
 	//fprintf(file, "%ld\n", component_.e_size());
 	for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
-		fprintf(file, ">%d\n", int_ids_.ReturnIntId(*iter));
+		fprintf(file, ">%zu\n", int_ids_.ReturnIntId(*iter));
 		int len = component_.g().EdgeNucls(*iter).size();
 		for (int i = 0; i < len; i++)
 			fprintf(file, "%c", nucl(component_.g().EdgeNucls(*iter)[i]));
@@ -191,7 +191,7 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
 	VERIFY(file != NULL);
 	fprintf(file, "%ld\n", component_.e_size());
 	for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
-		fprintf(file, "%d ", int_ids_.ReturnIntId(*iter));
+		fprintf(file, "%zu ", int_ids_.ReturnIntId(*iter));
 		fprintf(file, "%f .\n", component_.g().coverage(*iter));
 	}
 	fclose(file);
@@ -238,7 +238,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 	fprintf(file, "%ld\n", to_save.size());
 
 	for (auto it = to_save.begin(); it != to_save.end(); ++it) {
-		fprintf(file, "%d %d %.2f %.2f %.2f .\n",
+		fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
 				int_ids_.ReturnIntId(it->first),
 				int_ids_.ReturnIntId(it->second), it->d, it->weight,
 				it->variance);

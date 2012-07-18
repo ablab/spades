@@ -36,7 +36,6 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 namespace debruijn_graph {
 
-
 //void estimate_pair_info_stats(Graph& g, paired_info_index& paired_index, map<size_t, double>& percentiles) {
 //	const size_t magic_edge_length = 1000;
 //	PairInfoStatsEstimator<Graph> stats_estimator(g, paired_index, magic_edge_length);
@@ -48,130 +47,159 @@ namespace debruijn_graph {
 //
 //
 
-
-void estimate_with_estimator(const Graph& graph, const AbstractDistanceEstimator<Graph>& estimator, const PairedInfoNormalizer<Graph>& normalizer, const PairInfoWeightFilter<Graph>& filter, paired_info_index& clustered_index) {
-    INFO("Estimating distances");
-    paired_info_index raw_clustered_index(graph);
-    if (cfg::get().use_multithreading) {
-        estimator.EstimateParallel(raw_clustered_index, cfg::get().max_threads);
-    } else {
-        estimator.Estimate(raw_clustered_index);
-    }
-    INFO("Normalizing Weights");
-    paired_info_index normalized_index(graph);
-    normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index);
-    DEBUG("Weights Normalized");
-    INFO("Filtering info");
-    filter.Filter(normalized_index, clustered_index);
-    DEBUG("Info Filtered");
+void estimate_with_estimator(const Graph& graph,
+		const AbstractDistanceEstimator<Graph>& estimator,
+		const PairedInfoNormalizer<Graph>& normalizer,
+		const PairInfoWeightFilter<Graph>& filter,
+		paired_info_index& clustered_index) {
+	INFO("Estimating distances");
+	paired_info_index raw_clustered_index(graph);
+	if (cfg::get().use_multithreading) {
+		estimator.EstimateParallel(raw_clustered_index, cfg::get().max_threads);
+	} else {
+		estimator.Estimate(raw_clustered_index);
+	}
+	INFO("Normalizing Weights");
+	paired_info_index normalized_index(graph);
+	normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index);
+	DEBUG("Weights Normalized");
+	INFO("Filtering info");
+	filter.Filter(normalized_index, clustered_index);
+	DEBUG("Info Filtered");
 }
 
 void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		paired_info_index& clustered_index) {
-	if (cfg::get().paired_mode)
-	{
+	if (cfg::get().paired_mode) {
 		INFO("STAGE == Estimating Distance");
-	   
+
 //	    map<size_t, double> percentiles;
 //	    estimate_pair_info_stats(gp.g, paired_index, percentiles);
 
-	    double is_var = *cfg::get().ds.is_var;
-	    size_t delta = size_t(is_var);
-	    size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
-		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, delta);
+		double is_var = *cfg::get().ds.is_var;
+		size_t delta = size_t(is_var);
+		size_t linkage_distance = size_t(
+				cfg::get().de.linkage_distance_coeff * is_var);
+		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS,
+				*cfg::get().ds.RL, delta);
 
-        //if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_advanced) {
-            //VERIFY_MSG(false, "No way, I have not rewritten advanced_estimator yet");   
-        //}
+		//if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_advanced) {
+		//VERIFY_MSG(false, "No way, I have not rewritten advanced_estimator yet");
+		//}
 
-        size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
-        INFO("Symmetry trick");
-        paired_info_index symmetric_index(gp.g);
-        PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
-        hack.FillSymmetricIndex(symmetric_index);
+		size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
+		INFO("Symmetry trick");
+		paired_info_index symmetric_index(gp.g);
+		PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
+		hack.FillSymmetricIndex(symmetric_index);
 
-        boost::function<double(int)> weight_function;
+		boost::function<double(int)> weight_function;
 
-        if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_weighted) {
-            INFO("Retaining insert size distribution for it");
-            auto streams = paired_binary_readers(false, 0);
-            InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist =
-                    GetInsertSizeHistogram(streams, gp, *cfg::get().ds.IS, *cfg::get().ds.is_var);
-            WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
-            INFO("Weight Wrapper Done");
-            weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1); 
-        }
-        else {
-            weight_function = UnityFunction;
-        }
+		if (cfg::get().est_mode
+				== debruijn_graph::estimation_mode::em_weighted) {
+			INFO("Retaining insert size distribution for it");
+			auto streams = paired_binary_readers(false, 0);
+			InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist =
+					GetInsertSizeHistogram(streams, gp, *cfg::get().ds.IS,
+							*cfg::get().ds.is_var);
+			WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
+			INFO("Weight Wrapper Done");
+			weight_function = boost::bind(&WeightDEWrapper::CountWeight,
+					wrapper, _1);
+		} else {
+			weight_function = UnityFunction;
+		}
 
-        PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
-        if (cfg::get().ds.single_cell) {
-            normalizing_f = &TrivialWeightNormalization<Graph>;
-        } else {
-            //todo reduce number of constructor params
-            PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-                    *cfg::get().ds.IS, *cfg::get().ds.is_var, *cfg::get().ds.RL, gp.k_value, *cfg::get().ds.avg_coverage);
-            normalizing_f = boost::bind(
-                    &PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
-                    weight_normalizer, _1);
-        }
-        PairedInfoNormalizer<Graph> normalizer(normalizing_f);
-        INFO("Normalizer Done");
+		PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
+		if (cfg::get().ds.single_cell) {
+			normalizing_f = &TrivialWeightNormalization<Graph>;
+		} else {
+			//todo reduce number of constructor params
+			PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
+					*cfg::get().ds.IS, *cfg::get().ds.is_var, *cfg::get().ds.RL,
+					gp.k_value, *cfg::get().ds.avg_coverage);
+			normalizing_f = boost::bind(
+					&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
+					weight_normalizer, _1);
+		}
+		PairedInfoNormalizer<Graph> normalizer(normalizing_f);
+		INFO("Normalizer Done");
 
-        PairInfoWeightFilter<Graph> filter(gp.g, cfg::get().de.filter_threshold);
-        INFO("Weight Filter Done");
+		PairInfoWeightFilter<Graph> filter(gp.g,
+				cfg::get().de.filter_threshold);
+		INFO("Weight Filter Done");
 
-        if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_simple) {
-            const AbstractDistanceEstimator<Graph>& estimator =
-                    DistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder, linkage_distance, max_distance);
-            INFO("Starting SIMPLE distance estimator");
-            estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
-        }
-        else if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_naive) {
-            const AbstractDistanceEstimator<Graph>& estimator =
-                    NaiveDistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder, weight_function, linkage_distance, max_distance);
-            INFO("Starting NAIVE distance estimator");
-            estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
-        } 
-        else if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_weighted) {
-            const AbstractDistanceEstimator<Graph>& estimator =
-                    WeightedDistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder, weight_function, linkage_distance, max_distance);
-            INFO("Starting WEIGHTED distance estimator");
-            estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
-        }
-        else if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_extensive) { 
-            const AbstractDistanceEstimator<Graph>& estimator =
-                    ExtensiveDistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder, weight_function, linkage_distance, max_distance);
-            INFO("Starting EXTENSIVE distance estimator");
-            estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
-        }
-        else if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing) { 
-            PairInfoWeightFilter<Graph> filter(gp.g, 0.);
-            const AbstractDistanceEstimator<Graph>& estimator =
-                    SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder, linkage_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,cfg::get().ade.min_peak_points, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
-            INFO("Starting SMOOTHING distance estimator");
-            estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
-        }
+		if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_simple) {
+			const AbstractDistanceEstimator<Graph>& estimator =
+					DistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder,
+							linkage_distance, max_distance);
+			INFO("Starting SIMPLE distance estimator");
+			estimate_with_estimator(gp.g, estimator, normalizer, filter,
+					clustered_index);
+		} else if (cfg::get().est_mode
+				== debruijn_graph::estimation_mode::em_naive) {
+			const AbstractDistanceEstimator<Graph>& estimator =
+					NaiveDistanceEstimator<Graph>(gp.g, symmetric_index,
+							dist_finder, weight_function, linkage_distance,
+							max_distance);
+			INFO("Starting NAIVE distance estimator");
+			estimate_with_estimator(gp.g, estimator, normalizer, filter,
+					clustered_index);
+		} else if (cfg::get().est_mode
+				== debruijn_graph::estimation_mode::em_weighted) {
+			const AbstractDistanceEstimator<Graph>& estimator =
+					WeightedDistanceEstimator<Graph>(gp.g, symmetric_index,
+							dist_finder, weight_function, linkage_distance,
+							max_distance);
+			INFO("Starting WEIGHTED distance estimator");
+			estimate_with_estimator(gp.g, estimator, normalizer, filter,
+					clustered_index);
+		} else if (cfg::get().est_mode
+				== debruijn_graph::estimation_mode::em_extensive) {
+			const AbstractDistanceEstimator<Graph>& estimator =
+					ExtensiveDistanceEstimator<Graph>(gp.g, symmetric_index,
+							dist_finder, weight_function, linkage_distance,
+							max_distance);
+			INFO("Starting EXTENSIVE distance estimator");
+			estimate_with_estimator(gp.g, estimator, normalizer, filter,
+					clustered_index);
+		} else if (cfg::get().est_mode
+				== debruijn_graph::estimation_mode::em_smoothing) {
+			PairInfoWeightFilter<Graph> filter(gp.g, 0.);
+			const AbstractDistanceEstimator<Graph>& estimator =
+					SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index,
+							dist_finder, linkage_distance,
+							cfg::get().ade.threshold,
+							cfg::get().ade.range_coeff,
+							cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
+							cfg::get().ade.min_peak_points,
+							cfg::get().ade.inv_density,
+							cfg::get().ade.percentage,
+							cfg::get().ade.derivative_threshold);
+			INFO("Starting SMOOTHING distance estimator");
+			estimate_with_estimator(gp.g, estimator, normalizer, filter,
+					clustered_index);
+		}
 
+		//experimental
+		if (cfg::get().simp.simpl_mode
+				== debruijn_graph::simplification_mode::sm_pair_info_aware) {
+			EdgeQuality<Graph> quality_handler(gp.g, gp.index, gp.kmer_mapper,
+					gp.genome);
 
-        //experimental
-        if (cfg::get().simp.simpl_mode  == debruijn_graph::simplification_mode::sm_pair_info_aware) {
-            EdgeQuality<Graph> quality_handler(gp.g, gp.index, gp.kmer_mapper, gp.genome);
-
-            QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g,
-                    quality_handler);
-            boost::function< void(EdgeId) > removal_handler_f = boost::bind(
-                    &QualityLoggingRemovalHandler<Graph>::HandleDelete,
-                    &qual_removal_handler, _1);
-            EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
-            INFO("Pair info aware ErroneousConnectionsRemoval");
-            RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index,
-                    edge_remover);
-            INFO("Pair info aware ErroneousConnectionsRemoval stats");
-            CountStats(gp.g, gp.index, gp.genome, gp.k_value);
-        }
-        //experimental
+			QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g,
+					quality_handler);
+			boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+					&QualityLoggingRemovalHandler<Graph>::HandleDelete,
+					&qual_removal_handler, _1);
+			EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
+			INFO("Pair info aware ErroneousConnectionsRemoval");
+			RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index,
+					edge_remover);
+			INFO("Pair info aware ErroneousConnectionsRemoval stats");
+			CountStats(gp.g, gp.index, gp.genome, gp.k_value);
+		}
+		//experimental
 
 	}
 }

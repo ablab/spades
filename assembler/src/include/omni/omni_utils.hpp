@@ -43,7 +43,7 @@ using std::set;
  * consistent. Now high level events are merge, glue and split. This list can be extended in near future.
  */
 template<typename VertexId, typename EdgeId>
-class ActionHandler {
+class ActionHandler : private boost::noncopyable {
 	const string handler_name_;
 public:
 	/**
@@ -163,26 +163,47 @@ class GraphActionHandler: public ActionHandler<typename Graph::VertexId,
 	typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
 
 	const Graph& g_;
+	bool attached_;
 protected:
 	const Graph& g() const {
 		return g_;
 	}
+
+	bool IsAttached() const {
+		return attached_;
+	}
+
 public:
 	GraphActionHandler(const Graph& g, const string& name) :
-			base(name), g_(g) {
+			base(name), g_(g), attached_(true) {
 		TRACE("Adding new action handler: " << this->name());
 		g_.AddActionHandler(this);
 	}
 
 	GraphActionHandler(const GraphActionHandler<Graph> &other) :
-			base(other.name()), g_(other.g_) {
+			base(other.name()), g_(other.g_), attached_(true) {
 		TRACE("Adding new action handler: " << this->name());
 		g_.AddActionHandler(this);
 	}
 
 	virtual ~GraphActionHandler() {
 		TRACE("Removing action handler: " << this->name());
+		if (attached_) {
+			g_.RemoveActionHandler(this);
+		}
+		attached_ = false;
+	}
+
+	void Attach() {
+		VERIFY(!attached_);
+		g_.AddActionHandler(this);
+		attached_ = true;
+	}
+
+	void Detach() {
+		VERIFY(attached_);
 		g_.RemoveActionHandler(this);
+		attached_ = false;
 	}
 };
 

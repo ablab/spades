@@ -16,93 +16,108 @@ namespace omnigraph {
 
 template<class VertexId, class EdgeId>
 class BaseIdTrackHandler: public ActionHandler<VertexId, EdgeId> {
+protected:
+	const bool use_inner_ids_;
 public:
-	typedef int realIdType;
+	typedef size_t realIdType;
 private:
-	unordered_map<VertexId, realIdType> VertexIntId;
-	unordered_map<EdgeId, realIdType> EdgeIntId;
-	std::unordered_map<realIdType, VertexId> VertexOriginalId;
-	std::unordered_map<realIdType, EdgeId> EdgeOriginalId;
-	int MaxVertexIntId;
-	int MaxEdgeIntId;
+	unordered_map<VertexId, realIdType> vertex2id_;
+	unordered_map<EdgeId, realIdType> edge2id_;
+	std::unordered_map<realIdType, VertexId> id2vertex_;
+	std::unordered_map<realIdType, EdgeId> id2edge_;
+	realIdType max_v_id_;
+	realIdType max_e_id_;
 
 public:
-	realIdType AddVertexIntId(VertexId NewVertexId) {
-		realIdType PreviousId = ReturnIntId(NewVertexId);
+	realIdType AddVertexIntId(VertexId v) {
+		VERIFY(!use_inner_ids_);
+		realIdType PreviousId = ReturnIntId(v);
 		if (PreviousId != 0)
-			VertexOriginalId.erase(PreviousId);
-		MaxVertexIntId++;
-		VertexIntId[NewVertexId] = MaxVertexIntId;
-		VertexOriginalId[MaxVertexIntId] = NewVertexId;
-		return MaxVertexIntId;
+			id2vertex_.erase(PreviousId);
+		max_v_id_++;
+		vertex2id_[v] = max_v_id_;
+		id2vertex_[max_v_id_] = v;
+		return max_v_id_;
 	}
-	realIdType AddVertexIntId(VertexId NewVertexId, realIdType NewIntId) {
-		TRACE("AddVertexIntId( "<< NewVertexId<<", "<<NewIntId<<")");
-		realIdType PreviousId = ReturnIntId(NewVertexId);
+	realIdType AddVertexIntId(VertexId v, realIdType int_id) {
+		VERIFY(!use_inner_ids_);
+		TRACE("AddVertexIntId( "<< v<<", "<<int_id<<")");
+		realIdType PreviousId = ReturnIntId(v);
 		if (PreviousId != 0) {
-			VertexOriginalId.erase(PreviousId);
+			id2vertex_.erase(PreviousId);
 		}
-		VertexId PreviousVertex = ReturnVertexId(NewIntId);
+		VertexId PreviousVertex = ReturnVertexId(int_id);
 		if (PreviousVertex != VertexId(NULL)) {
-			VertexIntId.erase(PreviousVertex);
+			vertex2id_.erase(PreviousVertex);
 		}
 
-		if (MaxVertexIntId < NewIntId)
-			MaxVertexIntId = NewIntId;
-		VertexIntId[NewVertexId] = NewIntId;
-		VertexOriginalId[NewIntId] = NewVertexId;
-		TRACE(VertexIntId[NewVertexId]<<" "<<VertexOriginalId[NewIntId]);
-		return NewIntId;
+		if (max_v_id_ < int_id)
+			max_v_id_ = int_id;
+		vertex2id_[v] = int_id;
+		id2vertex_[int_id] = v;
+		TRACE(vertex2id_[v]<<" "<<id2vertex_[int_id]);
+		return int_id;
 	}
-	realIdType AddEdgeIntId(EdgeId NewEdgeId) {
-		realIdType PreviousId = ReturnIntId(NewEdgeId);
+
+	realIdType AddEdgeIntId(EdgeId e) {
+		VERIFY(!use_inner_ids_);
+		realIdType PreviousId = ReturnIntId(e);
 		if (PreviousId != 0) {
 			return PreviousId;
 		}
-//			EdgeOriginalId.erase(PreviousId);
-		MaxEdgeIntId++;
-		EdgeIntId[NewEdgeId] = MaxEdgeIntId;
-		EdgeOriginalId[MaxEdgeIntId] = NewEdgeId;
-		return MaxEdgeIntId;
+//			id2edge_.erase(PreviousId);
+		max_e_id_++;
+		edge2id_[e] = max_e_id_;
+		id2edge_[max_e_id_] = e;
+		return max_e_id_;
 	}
-	realIdType AddEdgeIntId(EdgeId NewEdgeId, realIdType NewIntId) {
-		realIdType PreviousId = ReturnIntId(NewEdgeId);
+
+	realIdType AddEdgeIntId(EdgeId e, realIdType int_id) {
+		VERIFY(!use_inner_ids_);
+		realIdType PreviousId = ReturnIntId(e);
 		if (PreviousId != 0) {
-			//if (EdgeOriginalId[PreviousId] == NewEdgeId);
-			EdgeOriginalId.erase(PreviousId);
+			//if (id2edge_[PreviousId] == NewEdgeId);
+			id2edge_.erase(PreviousId);
 		}
-		EdgeId PreviousEdge = ReturnEdgeId(NewIntId);
+		EdgeId PreviousEdge = ReturnEdgeId(int_id);
 		if (PreviousEdge != EdgeId(NULL)) {
-			EdgeIntId.erase(PreviousEdge);
+			edge2id_.erase(PreviousEdge);
 		}
 
-		if (MaxEdgeIntId < NewIntId)
-			MaxEdgeIntId = NewIntId;
-		EdgeIntId[NewEdgeId] = NewIntId;
-		EdgeOriginalId[NewIntId] = NewEdgeId;
-		return NewIntId;
+		if (max_e_id_ < int_id)
+			max_e_id_ = int_id;
+		edge2id_[e] = int_id;
+		id2edge_[int_id] = e;
+		return int_id;
 	}
-	realIdType MaxVertexId() {
-		return MaxVertexIntId;
-	}
-	realIdType MaxEdgeId() {
-		return MaxEdgeIntId;
-	}
+
+//	realIdType MaxVertexId() {
+//		return MaxVertexIntId;
+//	}
+//	realIdType MaxEdgeId() {
+//		return MaxEdgeIntId;
+//	}
+
 	void ClearVertexId(VertexId OldVertexId) {
+		VERIFY(!use_inner_ids_);
 		realIdType PreviousId = ReturnIntId(OldVertexId);
 		if (PreviousId != 0)
-			VertexOriginalId.erase(PreviousId);
-		VertexIntId.erase(OldVertexId);
+			id2vertex_.erase(PreviousId);
+		vertex2id_.erase(OldVertexId);
 	}
 	void ClearEdgeId(EdgeId OldEdgeId) {
+		VERIFY(!use_inner_ids_);
 		realIdType PreviousId = ReturnIntId(OldEdgeId);
 		if (PreviousId != 0)
-			EdgeOriginalId.erase(PreviousId);
-		EdgeIntId.erase(OldEdgeId);
+			id2edge_.erase(PreviousId);
+		edge2id_.erase(OldEdgeId);
 	}
 
 	//todo why can't we put verifies here?
 	realIdType ReturnIntId(EdgeId e) const {
+		if (use_inner_ids_)
+			return e.int_id();
+
 		//todo what is this?
 		if (size_t(this) < 0x1000)
 		{
@@ -110,39 +125,48 @@ public:
 			exit(1);
 		}
 
-		auto it = EdgeIntId.find(e);
-		return it != EdgeIntId.end() ? it->second : 0;
+		auto it = edge2id_.find(e);
+		return it != edge2id_.end() ? it->second : 0;
 	}
+
 	realIdType ReturnIntId(VertexId v) const {
-		auto it = VertexIntId.find(v);
-		return it != VertexIntId.end() ? it->second : 0;
+		if (use_inner_ids_)
+			return v.int_id();
+
+		auto it = vertex2id_.find(v);
+		return it != vertex2id_.end() ? it->second : 0;
 	}
 
 	EdgeId ReturnEdgeId(realIdType id) const {
-		auto it = EdgeOriginalId.find(id);
-		if (it != EdgeOriginalId.end())
+		VERIFY(!use_inner_ids_);
+		auto it = id2edge_.find(id);
+		if (it != id2edge_.end())
 			return it->second;
 		else
 			return EdgeId(NULL);
 	}
 
 	VertexId ReturnVertexId(realIdType id) const {
-		auto it = VertexOriginalId.find(id);
-		if (it != VertexOriginalId.end())
+		VERIFY(!use_inner_ids_);
+		auto it = id2vertex_.find(id);
+		if (it != id2vertex_.end())
 			return it->second;
 		else
 			return VertexId(NULL);
 	}
 
-	BaseIdTrackHandler() :
-			ActionHandler<VertexId, EdgeId>("IdTrackHandler") {
-		MaxVertexIntId = 1;
-		MaxEdgeIntId = 1;
+	BaseIdTrackHandler(bool use_inner_ids) :
+			ActionHandler<VertexId, EdgeId>("IdTrackHandler"),
+			use_inner_ids_(use_inner_ids) {
+		max_v_id_ = 1;
+		max_e_id_ = 1;
 	}
+
 	BaseIdTrackHandler(int VertexStartIndex, int EdgeStartIndex) :
-			ActionHandler<VertexId, EdgeId>("IdTrackHandler") {
-		MaxVertexIntId = VertexStartIndex;
-		MaxEdgeIntId = EdgeStartIndex;
+			ActionHandler<VertexId, EdgeId>("IdTrackHandler"),
+			use_inner_ids_(false) {
+		max_v_id_ = VertexStartIndex;
+		max_e_id_ = EdgeStartIndex;
 	}
 
 	virtual ~BaseIdTrackHandler() {
@@ -184,17 +208,18 @@ class GraphIdTrackHandler:
 {
 private:
 	typedef BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
-
 	const Graph& g_;
 protected:
 	const Graph &g() {
 		return g_;
 	}
 public:
-	GraphIdTrackHandler(const Graph& g) :
-		g_(g) {
-		TRACE("Adding new action handler: " << this->name());
-		g_.AddActionHandler(this);
+	GraphIdTrackHandler(const Graph& g, bool use_inner_ids) :
+		base(use_inner_ids), g_(g) {
+		if (!use_inner_ids) {
+			TRACE("Adding new action handler: " << this->name());
+			g_.AddActionHandler(this);
+		}
 	}
 
 	GraphIdTrackHandler(const Graph& g, int vertex_start_index, int edge_start_index) :
@@ -203,21 +228,36 @@ public:
 		g_.AddActionHandler(this);
 	}
 
-	virtual ~GraphIdTrackHandler() {
+	~GraphIdTrackHandler() {
 		TRACE("Removing action handler: " << this->name());
-		g_.RemoveActionHandler(this);
+		if (!(this->use_inner_ids_)) {
+			g_.RemoveActionHandler(this);
+		}
 	}
+
+//	bool IsAttached() {
+//		return attached_;
+//	}
+//
+//	void Attach() const {
+//		VERIFY(!attached_);
+//		g_.AddActionHandler(this);
+//	}
+
+//	void Detach() const {
+//		VERIFY(attached_ && this->use_inner_ids_);
+//		g_.RemoveActionHandler(this);
+//	}
 };
 
 template<class Graph>
 class IdTrackHandler:
-	public GraphIdTrackHandler<Graph>,
-	private boost::noncopyable
+	public GraphIdTrackHandler<Graph>
 {
 	typedef GraphIdTrackHandler<Graph> base;
 
 public:
-	IdTrackHandler(const Graph& g) : base(g) {
+	IdTrackHandler(const Graph& g, bool use_inner_ids = false) : base(g, use_inner_ids) {
 		this->g().set_int_ids(this);
 	}
 
@@ -226,7 +266,7 @@ public:
 		this->g().set_int_ids(this);
 	}
 
-	virtual ~IdTrackHandler() {
+	~IdTrackHandler() {
 		this->g().set_int_ids((base*) 0);
 	}
 };

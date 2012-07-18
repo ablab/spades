@@ -40,6 +40,10 @@ template<class T>
 		return this->int_id_;
 	}
 
+	size_t int_id() const {
+		return int_id_;
+	}
+
 private:
 
 	static size_t generate_id(T *ptr) {

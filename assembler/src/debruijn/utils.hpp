@@ -155,6 +155,7 @@ public:
 	}
 
 	InnerIndex &inner_index() {
+		VERIFY(this->IsAttached());
 		return inner_index_;
 	}
 
@@ -170,11 +171,24 @@ public:
 	}
 
 	bool contains(const Kmer& kmer) const {
+		VERIFY(this->IsAttached());
 		return inner_index_.containsInIndex(kmer);
 	}
 
 	const pair<EdgeId, size_t>& get(const Kmer& kmer) const {
+		VERIFY(this->IsAttached());
 		return inner_index_.get(kmer);
+	}
+
+	void Refill() {
+		clear();
+		for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			renewer_.HandleAdd(*it);
+		}
+	}
+
+	void clear() {
+		inner_index_.clear();
 	}
 
 };

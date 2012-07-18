@@ -190,7 +190,7 @@ public:
 		}
 	}
 
-	bool RemoveActionHandler(Handler* action_handler) const {
+	bool RemoveActionHandler(const Handler* action_handler) const {
 		TRACE("Trying to remove action handler " << action_handler->name());
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
