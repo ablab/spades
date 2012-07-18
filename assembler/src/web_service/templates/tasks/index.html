@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-		<title>Tasks queue</title>
-        {% load static %}
-        {% get_static_prefix as STATIC_URL %}
-		<link type="text/css" href="{{ STATIC_URL }}css/smoothness/jquery-ui-1.8.21.custom.css" rel="stylesheet" />
-		<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.2.min.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.21.custom.min.js"></script>
+{% extends "tasks/base.html" %}
+{% load static %}
+{% get_static_prefix as STATIC_URL %}
+
+{% block title%} Tasks queue {% endblock %}
+
+{% block scripts %}
 		<script type="text/javascript">
 			$(function(){              
                 // Accordion
@@ -147,84 +144,16 @@
 
             
 		</script>
-		<style type="text/css">
-			/*demo page css*/
-			body{ font: 62.5% "Trebuchet MS", sans-serif; margin: 50px;}
-			.demoHeaders { margin-top: 2em; }
-			#dialog_link {padding: .4em 1em .4em 20px;text-decoration: none;position: relative;}
-			#dialog_link span.ui-icon {margin: 0 5px 0 0;position: absolute;left: .2em;top: 50%;margin-top: -8px;}
-			ul#icons {margin: 0; padding: 0;}
-			ul#icons li {margin: 2px; position: relative; padding: 4px 0; cursor: pointer; float: left;  list-style: none;}
-			ul#icons span.ui-icon {float: left; margin: 0 4px;}
-            .brd {
-                border: 4px solid gray; /* Параметры границы */
-                background: #fff; /* Цвет фона */
-                padding: 10px; /* Поля вокруг текста */                
-            }
+{% endblock %}
 
-		</style>
-	</head>
-	<body>
-        <h1>Tasks queue</h1>
-        <h2>Highest priority tasks</h2>
-        <!-- Accordion -->
-        {% if high_latest_tasks %}
-		<div class="accordion">            
-            {% for task in high_latest_tasks %}
-                <div>
-                    <h3><a href="#">{{ task.name }}</a></h3>
-                    <div>
-                        <table width="100%">
-                            <tr>
-                                <td width="80%">
-                                    <table>
-                                        <tr valign="top">
-                                            <td style="text-align:top">
-                                                <h4>Requered parameters</h4>
-                                                <table>
-                                                    <tr valign="top">
-                                                        <td><label>Property1</label></td>
-                                                        <td><input type="text" value="{{task.property1}}" disabled="true"/></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><label>Property2</label></td>
-                                                        <td><input type="text" value="{{task.property2}}" disabled="true"/></td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                            <td style="text-align:top">
-                                                <h4>Optional parameters</h4>
-                                                <table>
-                                                    <tr>
-                                                        <td><label>Property3</label></td>
-                                                        <td><input type="text" value="{{task.property3}}" disabled="true"/></td>
-                                                    </tr>
-                                                </table>                        
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </td>
-                                <td width="20%">
-                                    <div class="highpriority">
-                                        <button onClick="createRemoveDialog('Confirm deletion', '{{task.name}}', '{{task.id}}')">Remove task</button>
-                                        <button onClick="createDecreasePriorityDialog('{{task.name}}', '{{task.id}}')">Make low priority</button>
-                                        <a href="{{task.id}}">Details</a>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            {% endfor %}
-		</div>
-        {% else %}
-        <h4>There is no high priority task</h4>
-        {% endif %}
-        <!-- Accordion -->
-        <h2>Low priority tasks</h2>
-        {% if low_latest_tasks %}
-		<div class="accordion">            
-            {% for task in low_latest_tasks %}
+{% block main_body%}
+<div style="margin:50px">
+    <h1>Tasks queue</h1>
+    <h2>Highest priority tasks</h2>
+    <!-- Accordion -->
+    {% if high_latest_tasks %}
+    <div class="accordion">            
+        {% for task in high_latest_tasks %}
             <div>
                 <h3><a href="#">{{ task.name }}</a></h3>
                 <div>
@@ -252,16 +181,16 @@
                                                 <tr>
                                                     <td><label>Property3</label></td>
                                                     <td><input type="text" value="{{task.property3}}" disabled="true"/></td>
-                                                    </tr>
-                                                </table>                        
+                                                </tr>
+                                            </table>                        
                                         </td>
                                     </tr>
                                 </table>
                             </td>
                             <td width="20%">
-                                <div class="lowpriority">
+                                <div class="highpriority">
                                     <button onClick="createRemoveDialog('Confirm deletion', '{{task.name}}', '{{task.id}}')">Remove task</button>
-                                    <button onClick="createIncreasePriorityDialog('{{task.name}}', '{{task.id}}')">Make hight priority</button>
+                                    <button onClick="createDecreasePriorityDialog('{{task.name}}', '{{task.id}}')">Make low priority</button>
                                     <a href="{{task.id}}">Details</a>
                                 </div>
                             </td>
@@ -269,16 +198,69 @@
                     </table>
                 </div>
             </div>
-            {% endfor %}
-		</div>
-        {% else %}
-        <h4>There is no low priority task</h4>
-        {% endif %}
-        
-        <div class="create-task" align="right">
-            <a href="newtask">Create new task</a>        
-        </div>        
-	</body>
-</html>
-
+        {% endfor %}
+    </div>
+    {% else %}
+    <h4>There is no high priority task</h4>
+    {% endif %}
+    <!-- Accordion -->
+    <h2>Low priority tasks</h2>
+    {% if low_latest_tasks %}
+    <div class="accordion">            
+        {% for task in low_latest_tasks %}
+        <div>
+            <h3><a href="#">{{ task.name }}</a></h3>
+            <div>
+                <table width="100%">
+                    <tr>
+                        <td width="80%">
+                            <table>
+                                <tr valign="top">
+                                    <td style="text-align:top">
+                                        <h4>Requered parameters</h4>
+                                        <table>
+                                            <tr valign="top">
+                                                <td><label>Property1</label></td>
+                                                <td><input type="text" value="{{task.property1}}" disabled="true"/></td>
+                                            </tr>
+                                            <tr>
+                                                <td><label>Property2</label></td>
+                                                <td><input type="text" value="{{task.property2}}" disabled="true"/></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td style="text-align:top">
+                                        <h4>Optional parameters</h4>
+                                        <table>
+                                            <tr>
+                                                <td><label>Property3</label></td>
+                                                <td><input type="text" value="{{task.property3}}" disabled="true"/></td>
+                                                </tr>
+                                        </table>                        
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td width="20%">
+                            <div class="lowpriority">
+                                <button onClick="createRemoveDialog('Confirm deletion', '{{task.name}}', '{{task.id}}')">Remove task</button>
+                                <button onClick="createIncreasePriorityDialog('{{task.name}}', '{{task.id}}')">Make hight priority</button>
+                                <a href="{{task.id}}">Details</a>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <h4>There is no low priority task</h4>
+    {% endif %}
+    
+    <div class="create-task" align="right">
+        <a href="newtask">Create new task</a>        
+    </div>        
+</div>
+{% endblock %}
 
