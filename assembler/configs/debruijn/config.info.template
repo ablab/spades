@@ -70,7 +70,7 @@ additional_ec_removing    true
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
 
-estimation_mode smoothing
+estimation_mode simple
 ; naive, simple, weighted, extensive, smoothing
 
 paired_metrics read_count
