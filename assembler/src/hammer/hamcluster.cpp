@@ -71,6 +71,11 @@ static unsigned hamdistKMer(hint_t x, hint_t y, unsigned tau) {
   return dist;
 }
 
+static bool canMerge(const unionFindClass &uf, int x, int y) {
+  return (uf.set_size(x) + uf.set_size(y)) < 1000;
+}
+
+
 void processBlockQuadratic(unionFindClass &uf,
                            const std::vector<size_t> &block,
                            const std::vector<hint_t> &kmers,
@@ -79,7 +84,8 @@ void processBlockQuadratic(unionFindClass &uf,
   for (size_t i = 0; i < blockSize; ++i) {
     uf.find_set(block[i]);
     for (uint32_t j = i + 1; j < blockSize; j++) {
-      if (hamdistKMer(kmers[block[i]], kmers[block[j]], tau) <= tau) {
+      if (hamdistKMer(kmers[block[i]], kmers[block[j]], tau) <= tau &&
+          canMerge(uf, block[i], block[j])) {
         uf.unionn(block[i], block[j]);
       }
     }
