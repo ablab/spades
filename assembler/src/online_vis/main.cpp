@@ -1,6 +1,11 @@
 // just to check that headers from include and debruijn folders are correctly included
-#include "standard_vis.hpp"
+#include "standard.hpp"
 #include "logger/log_writers.hpp"
+
+#undef INFO
+#define INFO(message)                       LOG_MSG(logging::L_DEBUG , message)
+
+#include "standard_vis.hpp"
 #include "segfault_handler.hpp"
 #include "stacktrace.hpp"
 #include "config_struct.hpp"

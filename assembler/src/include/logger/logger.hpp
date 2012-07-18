@@ -122,7 +122,7 @@ static const char* __scope_source_name()                                        
 
 #define DEBUG(message)                      LOG_MSG(logging::L_DEBUG, message)
 #define TRACE(message)                      LOG_MSG(logging::L_TRACE, message)
-#define INFO(message)                       LOG_MSG(logging::L_DEBUG , message)
+#define INFO(message)                       LOG_MSG(logging::L_INFO , message)
 #define VERBOSE_T(n, T, message)            {size_t n_copy = (n); if (n_copy % (T) == 0 && n_copy > 0) INFO(n_copy << message)}
 #define VERBOSE(n, message)                 VERBOSE_T((n), 10000, message)
 #define VERBOSE_POWER_T(n, T, message)      {size_t n_copy = (n); if ((n_copy & (n_copy - 1)) == 0 && (n_copy > T)) INFO(n_copy << message)}

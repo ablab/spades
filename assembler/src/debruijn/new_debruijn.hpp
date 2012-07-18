@@ -110,7 +110,6 @@ private:
 public:
 	DeBruijnGraph(size_t k) :
 			base(DeBruijnMaster(k)), k_(k), coverage_index_(*this) {
-                cout << "graph constructed" << endl;
 	}
 
 	CoverageIndex<DeBruijnGraph>& coverage_index() {
