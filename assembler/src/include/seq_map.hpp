@@ -20,6 +20,7 @@
 #include "sequence/seq.hpp"
 #include "sequence/rtseq.hpp"
 #include "runtime_k.hpp"
+#include "kmer_map.hpp"
 
 
 /*
@@ -27,20 +28,38 @@
  *
  * size_ here is as K+1 in other parts of code
  *
- * Map from Seq<size_> to (Value, size_t)
- * where Value is usually EdgeId (ref) and size_t is offset where this Seq is in EdgeId
+ * Map from Seq<size_>(kmer) to EdgeInfo
+ * where IdType is usually EdgeId (ref), offset is where this Seq is in EdgeId
+ * and count is this kmer occurance quantity
  *
  */
 
 
-template<typename Value>
+/*
+ * Util struct to count kmers during graph construction.
+ */
+template<class IdType>
+struct EdgeInfo {
+	IdType edgeId_;
+	size_t offset_;
+	int count_;
+
+	EdgeInfo() :
+		edgeId_(), offset_(-1), count_(0) { }
+
+	EdgeInfo(IdType edgeId, size_t offset) :
+		edgeId_(edgeId), offset_(offset), count_(1) { }
+};
+
+
+template<typename IdType>
 class SeqMap {
 
 private:
 
     typedef runtime_k::RtSeq Kmer;
 
-    typedef runtime_k::KmerMap< std::pair<Value, size_t> > map_type;
+    typedef runtime_k::KmerMap< EdgeInfo<IdType> > map_type;
 
     size_t k_;
 
@@ -54,13 +73,14 @@ public:
 
 
 private:
-    void putInIndex(const Kmer &kmer, Value id, size_t offset) {
+    //TODO: ask someone if putInIndex should increase count
+    void putInIndex(const Kmer &kmer, IdType id, size_t offset) {
         map_iterator mi = nodes_.find(kmer);
         if (mi == nodes_.end()) {
-            nodes_.insert(make_pair(kmer, make_pair(id, offset)));
+            nodes_.insert(make_pair(kmer, EdgeInfo<IdType>(id, offset)));
         } else {
-            mi.second().first = id;
-            mi.second().second = offset;
+            mi.second().edgeId_ = id;
+            mi.second().offset_ = offset;
         }
     }
 
@@ -69,8 +89,8 @@ public:
     SeqMap(size_t k): k_(k), nodes_(k) {
     }
 
-    void addEdge(const Kmer &k) {
-        nodes_.insert(make_pair(k, make_pair(Value(), -1)));
+    void addEdge(const Kmer &kmer) {
+    	nodes_[kmer].count_ += 1;
     }
 
     void CountSequence(const Sequence& s) {
@@ -85,8 +105,10 @@ public:
         }
     }
 
-    void transfer(const runtime_k::KmerSet& set) {
-        nodes_.transfer(set, make_pair(Value(), -1));
+    void transfer(const runtime_k::KmerMap<int>& bucket) {
+    	for (auto it = bucket.begin(), end = bucket.end(); it != end; ++it) {
+    		nodes_[it.first()].count_ += it.second();
+    	}
     }
 
     map_iterator begin() {
@@ -157,26 +179,26 @@ public:
     bool containsInIndex(const Kmer& kmer) const {
         TRACE("containsInIndex");
         map_const_iterator mci = nodes_.find(kmer);
-        return (mci != nodes_.end()) && (mci.second().second != (size_t) -1);
+        return (mci != nodes_.end()) && (mci.second().offset_ != (size_t) -1);
     }
 
-    const pair<Value, size_t>& get(const Kmer& kmer) const {
+    pair<IdType, size_t> get(const Kmer& kmer) const {
         map_const_iterator mci = nodes_.find(kmer);
         VERIFY(mci != nodes_.end());
         // contains
-        return mci.second();
+        return make_pair(mci.second().edgeId_, mci.second().offset_);
     }
 
-    bool deleteIfEqual(const Kmer& kmer, Value id) {
+    bool deleteIfEqual(const Kmer& kmer, IdType id) {
         map_iterator mi = nodes_.find(kmer);
-        if (mi != nodes_.end() && mi.second().first == id) {
+        if (mi != nodes_.end() && mi.second().edgeId_ == id) {
             nodes_.erase(mi);
             return true;
         }
         return false;
     }
 
-    void RenewKmersHash(const Sequence& nucls, Value id) {
+    void RenewKmersHash(const Sequence& nucls, IdType id) {
         VERIFY(nucls.size() >= k_);
         Kmer kmer(k_, nucls);
         putInIndex(kmer, id, 0);
@@ -186,7 +208,7 @@ public:
         }
     }
 
-    void DeleteKmersHash(const Sequence& nucls, Value id) {
+    void DeleteKmersHash(const Sequence& nucls, IdType id) {
         VERIFY(nucls.size() >= k_);
         Kmer kmer(k_, nucls);
         deleteIfEqual(kmer, id);

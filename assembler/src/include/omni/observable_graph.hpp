@@ -70,6 +70,7 @@ class ObservableGraph: private boost::noncopyable {
 public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
+	typedef HandlerApplier<VertexId, EdgeId> Applier;
 
 //	typedef ReliableComparator<VertexId, EdgeId> Comparator;
 
@@ -250,6 +251,10 @@ public:
 	//Use very carefully!
 	void FireProject(EdgeId edge1, EdgeId edge2) {
 		FireGlue(edge2, edge1, edge2);
+	}
+
+	const Applier& GetHandlerApplier() const {
+		return *applier_;
 	}
 
 //	ReliableComparator<VertexId> ReliableComparatorInstance() {

@@ -4,13 +4,15 @@
 #include "openmp_wrapper.h"
 
 #include "runtime_k.hpp"
+#include "kmer_map.hpp"
+#include "kmer_hash_vector.hpp"
 
 class ParallelSeqVector {
 
 public:
     typedef runtime_k::KmerHashVector par_container_t;
 
-    typedef runtime_k::KmerSet destination_container_t;
+    typedef runtime_k::KmerMap<int> destination_container_t;
 
     typedef runtime_k::RtSeq Kmer;
 
@@ -57,19 +59,19 @@ public:
         }
 
     }
+//
+//    void MergeMaps(destination_container_t & dest_container, size_t i) {
+//        for (size_t j = 0; j < nthreads_; ++j) {
+//            dest_container.transfer(nodes_[j], i);
+//        }
+//    }
 
-    void MergeMaps(destination_container_t & dest_container, size_t i) {
-        for (size_t j = 0; j < nthreads_; ++j) {
-            dest_container.transfer(nodes_[j], i);
-        }
-    }
-
-    void Dump(destination_container_t & dest_container, size_t i) {
-        for (size_t j = 0; j < nthreads_; ++j) {
-            dest_container.transfer(nodes_[j], i);
-            nodes_[j].clear(i);
-        }
-    }
+	void Dump(destination_container_t & bucket, size_t bucket_number) {
+		for (size_t i = 0; i < nodes_.size(); ++i) {
+			nodes_[i].dump(bucket, bucket_number);
+			nodes_[i].clear(bucket_number);
+		}
+	}
 
 
     size_t SingleBucketCount() const {

@@ -22,6 +22,7 @@
 
 #include "runtime_k.hpp"
 
+#include "kmer_map.hpp"
 #include "new_debruijn.hpp"
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
@@ -138,12 +139,17 @@ private:
  */
 template<class Graph>
 class EdgeIndex: public GraphActionHandler<Graph> {
+
+public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef SeqMap<EdgeId> InnerIndex;
     typedef runtime_k::RtSeq Kmer;
+
+private:
 	InnerIndex inner_index_;
 	DataHashRenewer<Graph, EdgeId> renewer_;
 	bool delete_index_;
+
 public:
 
 	EdgeIndex(const Graph& g, size_t k) :
@@ -176,7 +182,7 @@ public:
 		return inner_index_.containsInIndex(kmer);
 	}
 
-	const pair<EdgeId, size_t>& get(const Kmer& kmer) const {
+	const pair<EdgeId, size_t> get(const Kmer& kmer) const {
 		VERIFY(this->IsAttached());
 		return inner_index_.get(kmer);
 	}

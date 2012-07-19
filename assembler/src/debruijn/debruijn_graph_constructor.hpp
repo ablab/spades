@@ -16,6 +16,7 @@
 #include "utils.hpp"
 #include "seq_map.hpp"
 #include "new_debruijn.hpp"
+#include "kmer_set.hpp"
 
 namespace debruijn_graph {
 
@@ -30,10 +31,13 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef EdgeIndex<Graph> Index;
 	typedef runtime_k::RtSeq Kmer;
+	typedef runtime_k::KmerSet KmerSet;
 	typedef runtime_k::RtSeq KPlusOneMer;
+	typedef typename DeBruijn::map_iterator map_iterator;
 
+	Graph& graph_;
+	Index &index_;
 	DeBruijn& origin_;
-
 	size_t kmer_size_;
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
@@ -78,85 +82,152 @@ private:
 		return ConstructSeqGoingRight(GoLeft(edge));
 	}
 
-	VertexId FindVertexByOutgoingEdges(Graph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertexByOutgoingEdges(Kmer kmer) {
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushBack(c);
-			if (index.contains(edge)) {
-				return graph.EdgeStart(index.get(edge).first);
+			if (origin_.containsInIndex(edge)) {
+				return graph_.EdgeStart(origin_.get(edge).first);
 			}
 		}
 		return VertexId(NULL);
 	}
 
-	VertexId FindVertexByIncomingEdges(Graph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertexByIncomingEdges(Kmer kmer) {
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushFront(c);
-			if (index.contains(edge)) {
-				return graph.EdgeEnd(index.get(edge).first);
+			if (origin_.containsInIndex(edge)) {
+				return graph_.EdgeEnd(origin_.get(edge).first);
 			}
 		}
 		return VertexId(NULL);
 	}
 
-	VertexId FindVertex(Graph &graph, Index &index, Kmer kmer) {
-		VertexId v = FindVertexByOutgoingEdges(graph, index, kmer);
-		return v == VertexId(NULL) ? FindVertexByIncomingEdges(graph, index, kmer) : v;
+	VertexId FindVertex(Kmer kmer) {
+		VertexId v = FindVertexByOutgoingEdges(kmer);
+		return v == VertexId(NULL) ? FindVertexByIncomingEdges(kmer) : v;
 	}
 
-	VertexId FindVertexMaybeMissing(Graph &graph, Index &index, Kmer kmer) {
-		VertexId v = FindVertex(graph, index, kmer);
-		return v != VertexId(NULL) ? v : graph.AddVertex();
+	VertexId FindVertexMaybeMissing(Kmer kmer) {
+		VertexId v = FindVertex(kmer);
+		return v != VertexId(NULL) ? v : graph_.AddVertex();
 	}
 
 	//todo discuss with Valera
-	VertexId FindEndMaybeMissing(ConjugateDeBruijnGraph& graph, Index& index, VertexId start, Kmer start_kmer,
+	VertexId FindEndMaybeMissing(ConjugateDeBruijnGraph& graph, VertexId start, Kmer start_kmer,
 			Kmer end_kmer) {
 		if (start_kmer == end_kmer) {
 			return start;
 		} else if (start_kmer == !end_kmer) {
 			return graph.conjugate(start);
 		} else {
-			return FindVertexMaybeMissing(graph, index, end_kmer);
+			return FindVertexMaybeMissing(end_kmer);
 		}
 	}
 
-	VertexId FindEndMaybeMissing(NonconjugateDeBruijnGraph& graph, Index& index, VertexId start, Kmer start_kmer,
+	VertexId FindEndMaybeMissing(NonconjugateDeBruijnGraph& graph, VertexId start, Kmer start_kmer,
 			Kmer end_kmer) {
 		if (start_kmer == end_kmer) {
 			return start;
 		}  else {
-			return FindVertexMaybeMissing(graph, index, end_kmer);
+			return FindVertexMaybeMissing(end_kmer);
 		}
 	}
-	//
 
-public:
-	DeBruijnGraphConstructor(DeBruijn &origin, size_t k) :
-			origin_(origin), kmer_size_(k) {
+
+	// GetSeqLabel is used to determine whether 2 sequences are same by getting unique part
+
+	//get first k+1 nucls
+//	Kmer GetSeqLabel(NonconjugateDeBruijnGraph& graph, Sequence& seq) {
+//		return seq.start<runtime_k::UPPER_BOUND>(kmer_size_ + 1);
+//	}
+//
+//	// get min from first k+1 and complementary k+1
+//	Kmer GetSeqLabel(ConjugateDeBruijnGraph& graph, Sequence& seq) {
+//
+//		//
+//		Kmer start = seq.start<runtime_k::UPPER_BOUND>(kmer_size_ + 1);
+//		Kmer complEnd = (!seq).start<runtime_k::UPPER_BOUND>(kmer_size_ + 1);
+//
+//		Kmer::less2 comparator;
+//
+//		return comparator(start, complEnd) ? start : complEnd;
+//	}
+
+
+
+	void ConstructPart(vector<KPlusOneMer>& kmers, vector<Sequence>& sequences) {
+		KmerSet seqLables = runtime_k::GetSet(kmer_size_ + 1, sequences.size());
+
+		for (size_t i = 0; i < sequences.size(); ++i) {
+			if (index_.contains(kmers[i])) {
+				continue;
+			}
+
+			Kmer start_kmer = sequences[i].start<Kmer::max_size>(kmer_size_);
+			Kmer end_kmer = sequences[i].end<Kmer::max_size>(kmer_size_);
+
+			VertexId start = FindVertexMaybeMissing(start_kmer);
+			VertexId end = FindEndMaybeMissing(graph_, start, start_kmer, end_kmer);
+
+			auto e = graph_.AddEdge(start, end, sequences[i]);
+
+			TRACE(graph_.length(e));
+		}
 	}
 
-	void ConstructGraph(Graph &graph, Index &index) {
+	void AddKmers(map_iterator& it, map_iterator& end,
+			size_t queueSize, vector<KPlusOneMer>& kmers) {
 
-	    typename DeBruijn::map_iterator it (origin_.begin());
-	    typename DeBruijn::map_iterator end(origin_.end()  );
+		for (; kmers.size() != queueSize && it != end; ++it) {
+			KPlusOneMer kmer = it.first();
 
-	    for ( ; it != end; ++it) {
-
-			KPlusOneMer edge = it.first();
-			if (!index.contains(edge)) {
-				Sequence edge_sequence = ConstructSequenceWithEdge(edge);
-				Kmer start_kmer = edge_sequence.start<Kmer::max_size>(kmer_size_);
-				Kmer end_kmer = edge_sequence.end<Kmer::max_size>(kmer_size_);
-				VertexId start = FindVertexMaybeMissing(graph, index, start_kmer);
-				VertexId end = FindEndMaybeMissing(graph, index, start, start_kmer, end_kmer);
-
-				auto e = graph.AddEdge(start, end, edge_sequence);
-                TRACE(graph.length(e));
-
-				VERIFY(index.contains(edge));
+			if (!origin_.containsInIndex(kmer)) {
+				kmers.push_back(kmer);
 			}
 		}
 	}
+
+	void CalculateSequences(vector<KPlusOneMer>& kmers, vector<Sequence>& sequences) {
+		size_t size = kmers.size();
+		sequences.resize(size);
+
+		#pragma omp parallel for schedule(guided)
+		for (size_t i = 0; i < size; ++i) {
+			sequences[i] = ConstructSequenceWithEdge(kmers[i]);
+		}
+	}
+
+public:
+	DeBruijnGraphConstructor(Graph& graph, Index& index, DeBruijn &origin, size_t k) :
+			graph_(graph), index_(index), origin_(origin), kmer_size_(k) {
+	}
+
+	void ConstructGraph(size_t queueMinSize, size_t queueMaxSize, double queueGrowthRate) {
+		map_iterator it (origin_.begin());
+		map_iterator end(origin_.end());
+
+	    size_t queueSize = queueMinSize;
+
+	    vector<KPlusOneMer> kmers;
+	    vector<Sequence> sequences;
+
+	    kmers.reserve(queueSize);
+	    sequences.reserve(queueMaxSize);
+
+	    while (it != end) {
+
+	    	AddKmers(it, end, queueSize, kmers); // format a queue of kmers that are not in index
+
+	    	CalculateSequences(kmers, sequences); // in parallel
+
+	    	ConstructPart(kmers, sequences);
+
+			kmers.clear();
+			queueSize = min(size_t(queueSize * queueGrowthRate), queueMaxSize);
+	    }
+	}
+
+
 
 private:
 	DECL_LOGGER("DeBruijnGraphConstructor")

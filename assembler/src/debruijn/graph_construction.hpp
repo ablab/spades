@@ -24,11 +24,12 @@
 #include "graphio.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"
-#include "parallel_seq_map.hpp"
+#include "parallel_seq_vector.hpp"
 #include "perfcounter.hpp"
 #include "omni/parallel_unordered_map.hpp"
 
 #include "read_converter.hpp"
+#include "kmer_map.hpp"
 
 namespace debruijn_graph {
 
@@ -153,6 +154,19 @@ void FillCoverage(io::ReadStreamVector< io::IReader<Read> >& streams, Graph& g,
 	DEBUG("Coverage counted");
 }
 
+
+void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
+
+	EdgeIndex<Graph>::InnerIndex& innerIndex = index.inner_index();
+
+	for (auto it = innerIndex.begin(), end = innerIndex.end(); it != end; ++it) {
+		/*EdgeInfo<?>*/auto& edgeInfo = it.second();
+		edgeInfo.edgeId_->IncCoverage(edgeInfo.count_);
+	}
+
+	DEBUG("Coverage counted");
+}
+
 template<class Graph, class Read>
 size_t FillUsusalIndex(io::IReader<Read>& stream,
 		SeqMap<typename Graph::EdgeId>& debruijn, size_t k) {
@@ -186,9 +200,9 @@ size_t FillIterativeParallelIndex(io::ReadStreamVector< io::IReader<Read> >& str
 		streams[i].reset();
 	}
 
-	vector<typename ParallelSeqVector::destination_container_t> temp_sets;
+	vector<typename ParallelSeqVector::destination_container_t> buckets;
 	for (size_t i = 0; i < nthreads; ++i) {
-		temp_sets.push_back(runtime_k::GetSet(k_plus_1));
+		buckets.push_back(runtime_k::GetMap<int>(k_plus_1));
 	}
 
 	perf_counter pc;
@@ -230,7 +244,7 @@ size_t FillIterativeParallelIndex(io::ReadStreamVector< io::IReader<Read> >& str
 				//Merge maps
 #pragma omp for
 				for (size_t i = 0; i < nthreads; ++i) {
-					par_debruijn.Dump(temp_sets[i], i);
+					par_debruijn.Dump(buckets[i], i);
 				}
 			}
 
@@ -239,7 +253,7 @@ size_t FillIterativeParallelIndex(io::ReadStreamVector< io::IReader<Read> >& str
 
 	size_t total_kmers = 0;
 	for (size_t i = 0; i < nthreads; ++i) {
-		total_kmers += temp_sets[i].size();
+		total_kmers += buckets[i].size();
 	}
 
 	//Merging into final map
@@ -247,8 +261,8 @@ size_t FillIterativeParallelIndex(io::ReadStreamVector< io::IReader<Read> >& str
 
 	debruijn.nodes().rehash(total_kmers);
 	for (size_t i = 0; i < nthreads; ++i) {
-		debruijn.transfer(temp_sets[i]);
-		temp_sets[i].clear();
+		debruijn.transfer(buckets[i]);
+		buckets[i].clear();
 	}
 
 	INFO("Elapsed time: " << pc.time_ms());
@@ -278,11 +292,12 @@ size_t ConstructGraph(size_t k, io::ReadStreamVector< io::IReader<Read> >& strea
 
 	TRACE("Filling indices");
 	size_t rl = 0;
-	if (streams.size() > 1) {
+	if (streams.size() >= 1) {
 		TRACE("... in parallel");
 		rl = FillIterativeParallelIndex<Graph, Read>(streams, debruijn, k);
-	} else if (streams.size() == 1) {
-		rl = FillUsusalIndex<Graph, Read>(streams.back(), debruijn, k);
+	/*change coverage filling method if use this.*/
+//	} else if (streams.size() == 1) {
+//		rl = FillUsusalIndex<Graph, Read>(*streams.back(), debruijn, k);
 	} else {
 		VERIFY_MSG(false, "No input streams specified");
 	}
@@ -300,8 +315,8 @@ size_t ConstructGraph(size_t k, io::ReadStreamVector< io::IReader<Read> >& strea
 	}
 
 	INFO("Condensing graph");
-	DeBruijnGraphConstructor<Graph> g_c(debruijn, k);
-	g_c.ConstructGraph(g, index);
+	DeBruijnGraphConstructor<Graph> g_c(g, index, debruijn, k);
+	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
 	TRACE("Graph condensed");
 
 	return rl;
@@ -312,7 +327,11 @@ size_t ConstructGraphWithCoverage(size_t k,
         io::ReadStreamVector< io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
-	FillCoverage<Read>(streams, g, index, k);
+
+	// Following can be safely invoked only after parallel index filling
+	// because coverage info is not collected during sequential one.
+	FillCoverageFromIndex(g, index, k);
+
 	return rl;
 }
 
