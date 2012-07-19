@@ -27,10 +27,7 @@
 
 namespace  omnigraph{
 
-//typedef double[2] complex;
-
-template <class EdgeId>
-class PeakFinder {
+template <class EdgeId> class PeakFinder {
 
 private:
 
@@ -253,17 +250,10 @@ public:
 			hist_[0] = x_[0];
 			hist_[0] = y_[0];
 		}
-        cout << "prestart" << endl;
 		ExtendLinear(hist_);
-        cout << "start" << endl;
-        for (size_t i = 0; i < hist_.size(); ++i)
-            cout << hist_[i] << endl;
 		InitBaseline();
 		SubtractBaseline();
         FFTForward(hist_);
-		//fftw_execute(p);
-		//p1 = fftw_plan_dft_1d(data_len_, out, outf, FFTW_BACKWARD, FFTW_ESTIMATE);
-
 		int Ncrit = (int) (cutoff);
 
 //      cutting off - standard parabolic filter
@@ -273,16 +263,8 @@ public:
 		for (int i = Ncrit; i < data_len_; i++) {
 			hist_[i] = 0.;
 		}
-
         FFTBackward(hist_);
-
-		//fftw_execute(p1);
 		AddBaseline();
-
-
-        cout << "end" << endl;
-        for (size_t i = 0; i < hist_.size(); ++i)
-            cout << hist_[i] << endl;
 	}
 
 	bool isPeak(int dist, int range) {

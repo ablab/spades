@@ -64,15 +64,13 @@ class DataDivider {
         }
 
         template <class EdgeId>
-        vector<Interval> divideData(vector<PairInfo<EdgeId> > data){
+        vector<Interval> DivideData(vector<PairInfo<EdgeId> > data){
 
             data_size_ = data.size();
             vector<Interval> answer;
 
             min_value_ = rounded_d(data.front());
             max_value_ = rounded_d(data.back());
-            cout << "Data size is " << data_size_ << endl;
-            cout << "Data length is " << data_length_ << endl;
             int begin = 0;
             for (int i = 0; i < data_size_ - 1; i++) {
                 if (isCluster(i, data)){ 

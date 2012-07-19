@@ -52,10 +52,6 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
             VERIFY(isSorted(where));
             return;
         }
-        //INFO("BEFORE SORTING");
-        //for (auto iter = where.begin(); iter != where.end(); ++iter) {
-            //cout << iter->d << " " << endl;   
-        //}
             
         // heuristics
         if (math::le(where.back().d,  what.front().d + shift)) {
@@ -69,7 +65,6 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
         }
         else {
             for (auto iter = what.begin(); iter != what.end(); ++iter) {
-                //INFO("Something is going to be added!");
                 PairInfo<EdgeId> to_be_added = *iter;
                 to_be_added.first = where[0].first;
                 to_be_added.second = where[0].second;

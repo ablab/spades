@@ -25,7 +25,7 @@ class SmoothingDistanceEstimator: public DistanceEstimator<Graph> {
     size_t threshold_;
     double range_coeff_;
     double delta_coeff_;
-	int cutoff_;
+	int    cutoff_;
     size_t min_peak_points_;    
     double inv_density_;
     double percentage_;
@@ -45,22 +45,18 @@ protected:
             return result;
 
         DataDivider data_divider(threshold_);
-		vector<Interval> clusters = data_divider.divideData<EdgeId>(data);
+		vector<Interval> clusters = data_divider.DivideData<EdgeId>(data);
 		size_t cur = 0;
         stringstream ss;
         for (size_t i = 0; i < forward.size(); i++){
             ss << forward[i] << " ";
         }
         DEBUG("Possible distances : " << ss.str());
-        cout << " MINPEAKPOINTS " << min_peak_points_ << endl;
-        cout << " cluster " << clusters.size() << endl;
 
 		for (size_t i = 0; i < clusters.size(); i++) {
             int begin = clusters[i].first;
             int end = clusters[i].second;
-            cout << end - begin << " " << min_peak_points_ << endl;
             if (end - begin >= (int) min_peak_points_) {
-                cout << 1 << endl;
                 size_t data_length = rounded_d(data[end - 1]) - rounded_d(data[begin]) + 1;
                 while (cur < forward.size() && (int) forward[cur] < rounded_d(data[begin]))
                     cur++;
@@ -68,7 +64,6 @@ protected:
                     DEBUG("BREAKING " << rounded_d(data[begin]));
                     break;
                 }
-                cout << "Forward " << forward[cur] << " Dist " << rounded_d(data[end -1]) << endl;
                 if ((int) forward[cur] > rounded_d(data[end - 1])) 
                     continue;
                 else {

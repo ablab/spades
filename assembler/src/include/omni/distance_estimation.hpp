@@ -158,18 +158,18 @@ protected:
 					&& math::ls(forward[cur_dist + 1] - data[i].d,
 							data[i].d - (int) forward[cur_dist])) {
 				cur_dist++;
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double)max_distance_))
+				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) max_distance_))
 					weights[cur_dist] += data[i].weight;
 			} else if (cur_dist + 1 < forward.size()
 					&& math::eq(forward[cur_dist + 1] - data[i].d,
 							data[i].d - (int) forward[cur_dist])) {
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double)max_distance_))
+				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) max_distance_))
 					weights[cur_dist] += data[i].weight * 0.5;
 				cur_dist++;
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double)max_distance_))
+				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) max_distance_))
 					weights[cur_dist] += data[i].weight * 0.5;
 			} else {
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double)max_distance_))
+				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) max_distance_))
 					weights[cur_dist] += data[i].weight;
 			}
 		}
