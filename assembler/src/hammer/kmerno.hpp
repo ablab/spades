@@ -10,7 +10,6 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <fstream>
 
 #include <boost/unordered_map.hpp>
 #include "google/sparse_hash_map"
@@ -35,11 +34,13 @@ public:
     errprob = prob_half::convert(qual);
   }
 
-  bool equal(const KMerNo & kmerno) const;
-  bool equal(const KMerCount & kmc) const;
-  std::string str() const;
+  bool operator==(const KMerNo &kmerno) const;
+  bool operator!=(const KMerNo &kmerno) const;
+  bool operator==(const KMerCount &kmc) const;
   bool less(const KMerNo &r) const;
   bool greater(const KMerNo &r) const;
+
+  std::string str() const;
 
   static uint64_t new_hash(hint_t index);
   static uint64_t next_hash(uint64_t old_hash, hint_t new_index);

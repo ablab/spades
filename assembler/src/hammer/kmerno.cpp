@@ -8,12 +8,24 @@
 #include "position_kmer.hpp"
 #include "kmerno.hpp"
 
-bool KMerNo::equal(const KMerNo & kmerno) const {
-	return ( (strncmp( Globals::blob + index, Globals::blob + kmerno.index, K) == 0) );
+bool KMerNo::operator==(const KMerNo &kmerno) const {
+  return (strncmp(Globals::blob + index, Globals::blob + kmerno.index, K) == 0);
 }
 
-bool KMerNo::equal(const KMerCount & kmc) const {
-	return ( (strncmp( Globals::blob + index, Globals::blob + kmc.first.start(), K) == 0) );
+bool KMerNo::operator!=(const KMerNo &kmerno) const {
+  return (strncmp(Globals::blob + index, Globals::blob + kmerno.index, K) != 0);
+}
+
+bool KMerNo::operator==(const KMerCount &kmc) const {
+  return ((strncmp(Globals::blob + index, Globals::blob + kmc.first.start(), K) == 0));
+}
+  
+bool KMerNo::less(const KMerNo &r) const {
+  return (strncmp( Globals::blob + index, Globals::blob + r.index, K) < 0);
+}
+
+bool KMerNo::greater(const KMerNo &r) const {
+  return (strncmp( Globals::blob + index, Globals::blob + r.index, K) > 0);
 }
 
 string KMerNo::str() const {
@@ -22,14 +34,6 @@ string KMerNo::str() const {
 		res += Globals::blob[ index + i ];
 	}
 	return res;
-}
-
-bool KMerNo::less(const KMerNo &r) const {
-	return ( strncmp( Globals::blob + index, Globals::blob + r.index, K) < 0 );
-}
-
-bool KMerNo::greater(const KMerNo &r) const {
-	return ( strncmp( Globals::blob + index, Globals::blob + r.index, K) > 0 );
 }
 
 inline char my_dignucl(char c) {
