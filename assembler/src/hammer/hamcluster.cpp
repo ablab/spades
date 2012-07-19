@@ -71,9 +71,28 @@ static unsigned hamdistKMer(hint_t x, hint_t y, unsigned tau) {
   return dist;
 }
 
+#if 0
+static bool canMerge(const unionFindClass &uf, int x, int y) {
+  size_t szx = uf.set_size(x), szy = uf.set_size(y);
+  const size_t hardthr = 15000;
+
+  // Global threshold - no cluster larger than hard threshold
+  if (szx + szy > hardthr)
+    return false;
+
+  // If one of the clusters is moderately large, than attach "almost" singletons
+  // only.
+  if ((szx > hardthr * 3 / 4 && szy > 10) ||
+      (szy > hardthr * 3 / 4 && szx > 10))
+    return false;
+
+  return true;
+}
+#else
 static bool canMerge(const unionFindClass &uf, int x, int y) {
   return (uf.set_size(x) + uf.set_size(y)) < 10000;
 }
+#endif
 
 
 void processBlockQuadratic(unionFindClass &uf,
