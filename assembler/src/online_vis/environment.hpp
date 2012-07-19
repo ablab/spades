@@ -8,11 +8,11 @@
 namespace online_visualization {
 
 
-    typedef debruijn_graph::NewExtendedSequenceMapper<debruijn_graph::K + 1, Graph> MapperClass;
+    typedef debruijn_graph::NewExtendedSequenceMapper<Graph> MapperClass;
 
     typedef debruijn_graph::PosFiller<Graph, MapperClass> FillerClass;
 
-    typedef debruijn_graph::KmerMapper<debruijn_graph::K + 1, Graph> KmerMapperClass;
+    typedef debruijn_graph::KmerMapper<Graph> KmerMapperClass;
 
     typedef map<EdgeId, string> ColoringClass;
 
@@ -45,8 +45,8 @@ namespace online_visualization {
                 file_name_base_("picture"),
                 max_vertices_(40),
                 edge_length_bound_(1000),
-                gp_(cfg::get().ds.reference_genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling),
-                mapper_(gp_.g, gp_.index, gp_.kmer_mapper),
+                gp_(cfg::get().K, cfg::get().ds.reference_genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling),
+                mapper_(gp_.g, gp_.index, gp_.kmer_mapper, cfg::get().K + 1),
                 filler_(gp_.g, mapper_, gp_.edge_pos),
                 graph_struct_(gp_.g, &gp_.int_ids, &gp_.edge_pos), 
                 tot_lab_(&graph_struct_)
@@ -66,7 +66,7 @@ namespace online_visualization {
 
             void ResetPositions() {
                 gp_.edge_pos.clear();
-                MapperClass mapper_(gp_.g, gp_.index, gp_.kmer_mapper);
+                MapperClass mapper_(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value + 1);
                 FillerClass filler_(gp_.g, mapper_, gp_.edge_pos);
                 filler_.Process(gp_.genome, "ref0");
                 filler_.Process(!gp_.genome, "ref1");
@@ -86,7 +86,7 @@ namespace online_visualization {
                 return gp_.genome;   
             }
 
-            const debruijn_graph::EdgeIndex<debruijn_graph::K + 1, Graph>& index() const {
+            const debruijn_graph::EdgeIndex<Graph>& index() const {
                 return gp_.index;   
             }
 

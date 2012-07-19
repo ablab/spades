@@ -41,7 +41,7 @@ namespace online_visualization {
 
     class DrawPositionCommand : public DrawingCommand {
         private:
-            void DrawPicture(EnvironmentPtr curr_env, Seq<debruijn_graph::K + 1> kmer) const {
+            void DrawPicture(EnvironmentPtr curr_env, runtime_k::RtSeq kmer) const {
                 kmer = curr_env->kmer_mapper().Substitute(kmer);
                 if (!curr_env->index().contains(kmer)) {
                     cout << "No corresponding graph location " << endl;
@@ -55,7 +55,7 @@ namespace online_visualization {
             }
 
             bool CheckPositionBounds(int position, size_t total_size) const {
-                bool result = !(position + debruijn_graph::K + 1 > total_size);
+                bool result = !(position + cfg::get().K + 1 > total_size);
                 if (!result) {
                     cout << "Ignoring request. Position is out of range : required position is " 
                          << position << " while length of the sequence is "
@@ -103,7 +103,7 @@ namespace online_visualization {
                     }
                 }
                 if (CheckPositionBounds(position, genome.size()))
-                    DrawPicture(curr_env, genome.Subseq(position).start<debruijn_graph::K + 1>());
+                    DrawPicture(curr_env, genome.Subseq(position).start<runtime_k::RtSeq::max_size>(cfg::get().K + 1));
 
             }
     };

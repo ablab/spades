@@ -39,8 +39,6 @@ void create_console_logger(fs::path cfg_filename)
 
 
 int main(int argc, char** argv) {
-	BOOST_STATIC_ASSERT(debruijn_graph::K % 2 != 0);
-    
     const size_t GB = 1 << 30;
 
     try {
@@ -50,6 +48,10 @@ int main(int argc, char** argv) {
         checkFileExistenceFATAL(cfg_filename);
         
         cfg::create_instance(cfg_filename);
+
+        VERIFY(cfg::get().K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K);
+        VERIFY(cfg::get().K % 2 != 0);
+    
         create_console_logger(cfg_filename);
         std::cout << "Hello user!" << std::endl;
         limit_memory(cfg::get().max_memory * GB);
