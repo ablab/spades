@@ -231,11 +231,6 @@ def check_config(cfg, default_project_name=""):
     if not "project_name" in cfg["common"].__dict__:
         cfg["common"].__dict__["project_name"] = default_project_name
 
-    if not "compilation_dir" in cfg["common"].__dict__:
-        cfg["common"].__dict__["compilation_dir"] = spades_init.spades_build_dir
-    else:
-        cfg["common"].compilation_dir = os.path.abspath(cfg["common"].compilation_dir)
-
     cfg["common"].output_dir = os.path.join(os.path.abspath(
         os.path.expandvars(cfg["common"].output_dir)), cfg["common"].project_name)
 
@@ -808,12 +803,8 @@ def run_bh(cfg):
 
     prepare_config_bh(cfg_file_name, cfg)
 
-    import build
-
-    build.build_hammer(cfg, spades_home)
-
-    execution_home = os.path.join(cfg.compilation_dir, 'build_hammer')
-    command = os.path.join(execution_home, "hammer", "hammer") + " " +\
+    execution_home = os.path.join(spades_home, 'bin')
+    command = os.path.join(execution_home,"hammer") + " " +\
               os.path.abspath(cfg_file_name)
 
     print("\n== Running error correction tool: " + command + "\n")
@@ -838,8 +829,7 @@ def run_spades(cfg):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
 
-    import build
-    build.build_spades_runtime_k(cfg, spades_home)
+    execution_home = os.path.join(spades_home, 'bin')
 
     count = 0
     prev_K = None
@@ -859,8 +849,7 @@ def run_spades(cfg):
             count == len(cfg.iterative_K))
         prev_K = K
 
-        execution_home = os.path.join(cfg.compilation_dir, 'build')
-        command = os.path.join(execution_home, "debruijn", "spades") + " " +\
+        command = os.path.join(execution_home, "spades") + " " +\
                   os.path.abspath(cfg_file_name)
 
         if os.path.isdir(bin_reads_dir):

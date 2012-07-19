@@ -13,18 +13,16 @@ cp -r assembler/src/tools/spades_pipeline spades-$VERSION/src/tools/spades_pipel
 cp assembler/src/CMakeLists.txt spades-$VERSION/src/CMakeLists.txt
 
 cp -r assembler/configs spades-$VERSION/configs
-cp -r assembler/debian spades-$VERSION/debian
 cp -r assembler/ext spades-$VERSION/ext
 cp -r assembler/test_dataset spades-$VERSION/test_dataset
 cp assembler/LICENSE spades-$VERSION
 cp assembler/README spades-$VERSION
 cp assembler/VERSION spades-$VERSION
-cp assembler/makefileDebian spades-$VERSION/makefile
 cp assembler/spades.py spades-$VERSION
 cp assembler/quast.py spades-$VERSION
 cp assembler/spades_config.info.template spades-$VERSION
 cp assembler/spades_download_binary.py spades-$VERSION
-cp assembler/spades_download_bayeshammer.py spades-$VERSION
+cp assembler/spades_compile.sh spades-$VERSION
 cp assembler/spades_init.py spades-$VERSION
 cp assembler/manual.html spades-$VERSION
 cp assembler/quality.html spades-$VERSION
