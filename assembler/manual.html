@@ -39,9 +39,20 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 </code>
 </pre>
 
-<h3>1.2 Compiling SPAdes and precompiled binaries</h3>
+<h3>1.2 Getting SPAdes binaries</h3>
+
+    <p>There are two ways to obtain SPAdes binaries: download static builds from our server or compile SPAdes on you server.</p>
+
+    <p>We recommend to download binaries with the following script:</p>
+
+<pre class="code">
+<code>
+    ./spades_download_binary.py
+</code>
+</pre>
+
 <p>
-    SPAdes depends on the following libraries for compiling its code:
+    Also you can compile SPAdes yourself, but SPAdes depends on the following libraries for compiling its code:
 </p>
 
     <ul>
@@ -51,16 +62,17 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
         <li>zlib</li>
     </ul>
 
-<p>If you are not able to match these requirements please use downloaded binaries, it may be downloaded with the following
-    script: </p>
+<p>
+    If you meet this requirements you can build SPAdes with the following script:
+</p>
 
 <pre class="code">
 <code>
-    ./spades_download_binary.py
+    ./spades_compile.sh
 </code>
 </pre>
 
-<p>This will download binaries to <code>build/release2.2.0</code> directory.
+<p>In both cases you should get <code>bin</code> directory with files <code>hammer</code> ans <code>spades</code>.
 </p>
 
 <a name="sec1.3"></a>
@@ -111,16 +123,23 @@ Thank you for using SPAdes!
 </ul>
 
 <h3>2.2 SPAdes pipeline</h3>
-<p>
-    SPAdes has two stages: error correction by <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> and genome assembly. By default, all the
-    results are stored in the directory <code>spades_output</code>. For each dataset, SPAdes creates a separate directory <code>&lt;project_name></code> in <code>spades_output</code>.
-    Corrected reads are stored in the subdirectory <code>corrected</code> in <code>*.fastq.qz</code> files.
-    The resulting contigs are stored in the subdirectory <code>contigs</code>  in <code>&lt;project_name>.fasta</code> file. If the
-    <code>--generate-sam-file</code> option was set the symlink to the <code>&lt;project_name>.sam</code> file also created in the same directory.
+
+<p>By default SPAdes creates the directory <code>spades_output</code> where it stores all the files. For each dataset SPAdes creates
+    a separate directory <code>&lt;project_name></code> in <code>spades_output</code>.
+</p>
+
+<p>Before the assembly itself SPAdes does the error correction by <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a>.
+   After that the corrected reads are stored in the directory <code>spades_output/project_name/corrected</code> in <code>*.fastq.qz</code> files.
 </p>
 
 <p>
-    If SPAdes finds the corrected reads, it asks the user whether it should start error correction again. By default, we do not re-run error correction and we start the assembly in 10 seconds
+    After SPAdes finishes, the resulting contigs are stored in the directory <code>spades_output/project_name/contigs</code>  in <code>&lt;project_name>.fasta</code> file.
+    If the   <code>--generate-sam-file</code> option was set the symlink to the <code>&lt;project_name>.sam</code> file also created in the same directory.
+</p>
+
+<p>
+    If SPAdes repeats the run with the same <code>project_name</code>, it finds the corrected reads and asks the user whether it should start error correction again.
+    By default, we do not re-run error correction and we start the assembly in 10 seconds
     unless user says otherwise.
 </p>
 
@@ -245,11 +264,6 @@ You can use this file as the template for your datasets. In  this file, on  each
 <h3>2.5 Supporting files and directories</h3>
 
 <p>
-    SPAdes stores compiled binaries in the directory <code>build</code> and reuses them. To save disk space, or to force SPAdes to recompile the binaries, just
-    delete this directory.  Most users will not need to do this.
-</p>
-
-<p>
     For each SPAdes run, we create the directory <code>spades_&lt;date_time></code> in <code>spades_output/&lt;project_name></code>. It contains internal configs,
     logs and intermediate results for different values of k. We also have symbolic links <code>latest</code> and <code>latest_success</code> to the directories
     for the latest and the latest successful runs.
@@ -308,8 +322,8 @@ You can use this file as the template for your datasets. In  this file, on  each
     sequence assembly visualization.</a> Bioinformatics (2010) 26 (3): 401-402.   doi: 10.1093/bioinformatics/btp666
 </p>
 <p>
-    [4] R. Ronen, C. Boucher, H. Chitsaz, and P. Pevzner. SEQuel: Improving the accuracy of genome assemblies.
-    Bioinformatics, 2012. To appear.
+    [4] R. Ronen, C. Boucher, H. Chitsaz, and P. Pevzner. SEQuel: <a href="http://bioinformatics.oxfordjournals.org/content/28/12/i188.abstract">Improving the accuracy of genome assemblies.</a>
+    Bioinformatics (2012) 28 (12): i188-i196.   doi: 10.1093/bioinformatics/bts219
 </p>
 
 <br/><br/><br/><br/><br/>
