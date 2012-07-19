@@ -640,23 +640,13 @@ void KMerClustering::process(bool doHamming, string dirprefix, boost::shared_ptr
 		k_.clear();
 		Globals::kmers->clear();
 		Globals::kmers->reserve(Globals::number_of_kmers);
-		{
-			ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"), ios::binary);
-			/*if ( HammerTools::doingMinimizers() ) {
-				KMerCount kmc;
-				for (size_t i=0; i< Globals::number_of_kmers; ++i ) {
-          binary_read(is, kmc);
-					Globals::kmers->push_back(kmc);
-				}
-			} else {*/
-			size_t sz;
-			is.read((char*)&sz, sizeof(sz));
-			Globals::kmers->resize(sz);
-			for (size_t i = 0; i < sz; ++i)
-				binary_read(is, (*Globals::kmers)[i]);
-			//}
-		}
-		HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"));
+    MMappedReader is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"),
+                     /* unlink */ true);
+    size_t sz;
+    is.read((char*)&sz, sizeof(sz));
+    Globals::kmers->resize(sz);
+    for (size_t i = 0; i < sz; ++i)
+      binary_read(is, (*Globals::kmers)[i]);
 		k_ = *Globals::kmers;
 		TIMEDLN("K-mer information read. Starting subclustering in " << nthreads_ << " threads.");
 		TIMEDLN("Estimated: size=" << k_.size() << " mem=" << sizeof(KMerCount)*k_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
