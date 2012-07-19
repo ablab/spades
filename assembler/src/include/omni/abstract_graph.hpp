@@ -10,6 +10,32 @@
 #include "id_track_handler.hpp"
 
 namespace omnigraph {
+
+
+class CoveredEdge {
+private:
+	int coverage_;
+
+public:
+	CoveredEdge() :
+			coverage_(0) { }
+
+	void SetCoverage(int coveradge) {
+		coverage_ = coveradge;
+	}
+
+	void IncCoverage(int value) {
+		coverage_ += value;
+	}
+
+	//not length normalized
+	int GetRawCoverage() const {
+		return coverage_;
+	}
+};
+
+
+
 template<typename VertexIdT, typename EdgeIdT, class DataMasterT>
 class AbstractGraph: public AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, typename set<VertexIdT>::const_iterator> {
 	typedef AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, typename set<VertexIdT>::const_iterator> base;

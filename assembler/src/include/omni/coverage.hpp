@@ -29,7 +29,7 @@ class CoverageIndex: public GraphActionHandler<Graph> {
 
 private:
 
-	map_type storage_;
+//	map_type storage_;
 
 	size_t KPlusOneMerCoverage(EdgeId edge) const {
 		return (size_t) (coverage(edge) * this->g().length(edge));
@@ -86,32 +86,23 @@ public:
 	}
 
 	void SetCoverage(EdgeId edge, int cov) {
-
 		VERIFY(cov >= 0);
-
-		storage_[edge] = cov;
-
-		VERIFY(storage_[edge] >= 0);
+		edge->SetCoverage(cov);
 	}
 
 	/**
 	 * Returns average coverage of the edge
 	 */
 	double coverage(EdgeId edge) const {
-		auto it = storage_.find(edge);
-		if (it == storage_.end()) {
-			return 0;
-		}
-		return (double) it->second / this->g().length(edge);
+		return (double) edge->GetRawCoverage() / this->g().length(edge);
 	}
 
 	/**
 	 * Method increases coverage value
 	 */
 	void IncCoverage(EdgeId edge, int toAdd) {
-		//VERIFY(toAdd >= 0);
-		storage_[edge] += toAdd;
-		VERIFY(storage_[edge] >= 0);
+		edge->IncCoverage(toAdd);
+		VERIFY(edge->GetRawCoverage() >= 0);
 	}
 
 	/**
@@ -201,11 +192,11 @@ public:
         size_t counter = 0;
 
         size_t nthreads = streams.size();
-
+//
         std::vector<map_type*> maps(nthreads);
-        maps[0] = &storage_;
+//        maps[0] = &storage_;
 
-        for (size_t i = 1; i < nthreads; ++i) {
+        for (size_t i = 0; i < nthreads; ++i) {
             maps[i] = new map_type();
         }
 
@@ -231,9 +222,9 @@ public:
         }
 
         INFO("Merging maps");
-        for (size_t i = 1; i < nthreads; ++i) {
+        for (size_t i = 0; i < nthreads; ++i) {
             for (auto it = maps[i]->begin(); it != maps[i]->end(); ++it) {
-                (*maps[0])[it->first] += it->second;
+            	it->first->IncCoverage(it->second);
             }
             delete maps[i];
         }
@@ -245,7 +236,7 @@ public:
 
 
 	virtual void HandleDelete(EdgeId edge) {
-		storage_.erase(edge);
+		SetCoverage(edge, 0);
 	}
 
 	virtual void HandleMerge(const vector<EdgeId>& oldEdges, EdgeId newEdge) {

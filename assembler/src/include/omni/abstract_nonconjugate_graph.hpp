@@ -127,7 +127,7 @@ private:
 };
 
 template<class DataMaster>
-class SingleEdge {
+class SingleEdge : public CoveredEdge {
 private:
 	typedef restricted::pure_pointer<SingleVertex<DataMaster>> VertexId;
 	typedef restricted::pure_pointer<SingleEdge<DataMaster>> EdgeId;
