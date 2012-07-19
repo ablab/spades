@@ -1963,7 +1963,7 @@ private:
 				if(graph_.length(*it) >= uniqueness_length_) {
 					result.second++;
 				} else {
-					if(!search(graph_.EdgeEnd(*it), start, e, depth + graph_.length(*it), was, result))
+					if(!search(graph_.EdgeEnd(*it), start, e, depth + 1 /*graph_.length(*it)*/, was, result))
 						return false;
 				}
 			}
