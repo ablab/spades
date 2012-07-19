@@ -645,7 +645,6 @@ void resolve_repeats() {
 			FillPos(conj_gp, cfg::get().pos.contigs_for_threading, "thr_");
 		}
 	}
-
 	//todo refactor labeler creation
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
