@@ -74,7 +74,6 @@ public:
 	/// print a processed k-mer hash file
 	static void PrintProcessedKmerHashFile( boost::iostreams::filtering_ostream & outStream, hint_t & kmer_num, KMerNoHashMap & km );
 	static void PrintProcessedKmerHashFile( boost::iostreams::filtering_ostream & outf, hint_t & kmer_num, std::vector<KMerCount> & km );
-	static void KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KMerCount> & vkmc);
 	/// count k-mers in input files
 	static void CountKMersBySplitAndMerge();
 	/// split kmers into files

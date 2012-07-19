@@ -425,7 +425,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 
   for (int iFile=0; iFile < numfiles; ++iFile) {
     std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
-    ProcessKmerHashFile(fname, kmcvec[iFile]);
+    HammerTools::ProcessKmerHashFile(fname, kmcvec[iFile]);
     TIMEDLN("Processed file " << iFile);
   }
 
@@ -472,48 +472,194 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	TIMEDLN("Merge done. There are " << vec.size() << " kmers in total.");
 }
 
-static void fillQVec(vector<int> & qvec, hint_t index) {
-	if (!Globals::use_common_quality) {
-		for (uint32_t j=0; j<K; ++j) {
-			qvec[j] = Globals::blobquality[index + j];
-		}
-	}
+static void Merge(KMerCount &lhs, const KMerNo &rhs) {
+  hint_t ridx = rhs.getIndex();
+  hint_t lidx = lhs.first.start();
+
+  if (lhs.second.count == 1) {
+    lhs.second.qual = QualBitSet();
+    for (size_t i = 1; i < K; ++i)
+      lhs.second.qual.set(i, Globals::blobquality[lidx + i]);
+  }
+
+  lhs.second.count += 1;
+  lhs.second.totalQual *= rhs.getQual();
+
+  QualBitSet qr;
+  for (size_t i = 1; i < K; ++i)
+    qr.set(i, Globals::blobquality[ridx + i]);
+  lhs.second.qual += qr;
 }
 
-void HammerTools::KmerHashUnique(const std::vector<KMerNo> & vec, std::vector<KMerCount> & vkmc) {
-	KMerCount kmc(PositionKMer(vec[0].getIndex()), KMerStat(true, 1, KMERSTAT_GOODITER, vec[0].getQual()));
+static void Merge(KMerCount &lhs, const KMerCount &rhs) {
+  hint_t ridx = rhs.first.start();
+  hint_t lidx = lhs.first.start();
 
-	vector<int> qvec(K);
-	fillQVec(qvec, vec[0].getIndex());
+  if (lhs.second.count == 1) {
+    lhs.second.qual = QualBitSet();
+    for (size_t i = 1; i < K; ++i)
+      lhs.second.qual.set(i, Globals::blobquality[lidx + i]);
+  }
 
-	bool first_occ = true;
-	vkmc.push_back(kmc);
-	for (size_t i=1; i < vec.size(); ++i) {
-		KMerCount & curkmc = vkmc[vkmc.size() - 1];
-		if (vec[i].equal(curkmc)) {
-			first_occ = false;
-			curkmc.second.count++;
-			curkmc.second.totalQual *= vec[i].getQual();
-			fillQVec(qvec, vec[i].getIndex());
-		} else {
-			if (!first_occ && !Globals::use_common_quality) {
-				curkmc.second.qual = QualBitSet();
-				for (uint32_t j=0; j<K; ++j) {
-					curkmc.second.qual.set(j, min(MAX_SHORT, qvec[j]));
-				}
-			}
-			KMerCount kmc(PositionKMer(vec[i].getIndex()), KMerStat(true, 1, KMERSTAT_GOODITER, vec[i].getQual()));
-			fillQVec(qvec, vec[i].getIndex());
-			vkmc.push_back(kmc);
-			first_occ = true;
-		}
-	}
-	if (!first_occ && !Globals::use_common_quality) {
-		vkmc[vkmc.size() - 1].second.qual = QualBitSet();
-		for (uint32_t j=0; j<K; ++j) {
-			vkmc[vkmc.size() - 1].second.qual.set(j, min(MAX_SHORT, qvec[j]));
-		}
-	}
+  lhs.second.count += rhs.second.count;
+  lhs.second.totalQual *= rhs.second.totalQual;
+
+  if (rhs.second.qual.q == NULL) {
+    QualBitSet qr;
+    for (size_t i = 1; i < K; ++i)
+      qr.set(i, Globals::blobquality[ridx + i]);
+    lhs.second.qual += qr;
+  } else
+    lhs.second.qual += rhs.second.qual;
+}
+
+void EquallySplit(size_t size, unsigned num_threads, size_t *borders) {
+  size_t s = size / num_threads;
+  size_t rem = size - s * num_threads;
+  size_t current = 0;
+  borders[0] = 0;
+  for (unsigned i = 0; i < num_threads; i++) {
+    if (rem > 0) {
+      current++;
+      rem--;
+    }
+    current += s;
+    borders[i + 1] = current;
+  }
+}
+
+static void KmerHashUnique(const std::vector<KMerNo>::const_iterator first,
+                           const std::vector<KMerNo>::const_iterator last,
+                           std::vector<KMerCount> &result) {
+  size_t size = last - first;
+  if (size == 0)
+    return;
+
+  // counter    - number of unic kmers in block
+  // borders    - borders of blocks
+  // overlaps     - number of overlaping kmers
+  // result_borders- borders of the result part for each thread
+  // merged_overlaps-merge of overlap part for each thread
+
+  size_t *counter, *borders, *overlaps, *result_borders;
+  KMerCount *merged_overlaps;
+  size_t total_unique = 0;
+  unsigned num_threads = omp_get_max_threads();
+# pragma omp parallel num_threads(num_threads)
+  {
+#   pragma omp single
+    {
+      num_threads = omp_get_num_threads();
+      borders = new size_t[num_threads + 1];
+      EquallySplit(size, num_threads, borders);
+      counter = new size_t[num_threads];
+      overlaps = new size_t[num_threads];
+      merged_overlaps = new KMerCount[num_threads];
+    }
+
+    // Count unique and overlapping kmers for thread
+    unsigned iam = omp_get_thread_num();
+
+    size_t cnt = 0;
+    size_t overlap_len = 0;
+    if (iam == 0) {
+      size_t begin = borders[0] + 1; // == 1
+      size_t end = borders[iam + 1];
+
+      overlap_len = 0;
+      cnt = 1;
+      auto I = first + begin, E = first + end;
+      for (; I != E; ++I) {
+        if (*I != *(I - 1))
+          cnt += 1;
+      }
+    } else {
+      size_t begin = borders[iam];
+      size_t end = borders[iam + 1];
+      // Count overlaps first (the ones which need to be merged into preceding
+      // chunk).
+
+      auto I = first + begin, E = first + end;
+      for (; I != E; ++I) {
+        if (*I == *(I - 1))
+          overlap_len += 1;
+        else
+          break;
+      }
+
+      // Now count remaining entries
+      I = first + begin + overlap_len, E = first + end;
+      for (; I != E; ++I) {
+        if (*I != *(I - 1))
+          cnt += 1;
+      }
+    }
+    overlaps[iam] = overlap_len;
+    counter[iam] = cnt;
+
+#   pragma omp barrier
+
+#  pragma omp single
+    {
+      // Now we can deduce result_borders
+      result_borders = new size_t[num_threads + 1];
+      result_borders[0] = 0;
+      for (unsigned i = 0; i < num_threads; i++) {
+        total_unique += counter[i];
+        result_borders[i + 1] = total_unique;
+      }
+      result.resize(total_unique);
+    }
+
+    // Merge overlaps to merged_overlaps if any
+    size_t begin = borders[iam];
+    size_t end = borders[iam] + overlaps[iam];
+
+    if (overlaps[iam]) {
+      merged_overlaps[iam] = KMerCount(PositionKMer((first + begin)->getIndex()),
+                                       KMerStat(true, 1, KMERSTAT_GOODITER, (first + begin)->getQual()));
+      auto I = first + begin + 1, E = first + end;
+      for (; I != E; ++I) {
+        Merge(merged_overlaps[iam], *I);
+      }
+    }
+
+    // Count unique kmers
+    begin = borders[iam] + overlaps[iam];
+    end = borders[iam + 1];
+    size_t out_idx = result_borders[iam];
+
+    // If block is one big overlap, do nothing
+    if (begin != end) {
+      result[out_idx] = KMerCount(PositionKMer((first + begin)->getIndex()),
+                                  KMerStat(true, 1, KMERSTAT_GOODITER, (first + begin)->getQual()));
+      auto I = first + begin + 1, E = first + end;
+      for (; I != E; ++I) {
+        if (*I != *(I - 1)) {
+          result[++out_idx] = KMerCount(PositionKMer(I->getIndex()),
+                                        KMerStat(true, 1, KMERSTAT_GOODITER, I->getQual()));;
+        } else {
+          Merge(result[out_idx], *I);
+        }
+      }
+    }
+
+#   pragma omp barrier
+    // End of parallel part
+  }
+
+  // Merge merged overlaps to result
+  for (size_t i = 0; i < num_threads; i++) {
+    if (overlaps[i]) {
+      Merge(result[result_borders[i] - 1], merged_overlaps[i]);
+    }
+  }
+
+  delete[] counter;
+  delete[] borders;
+  delete[] overlaps;
+  delete[] result_borders;
+  delete[] merged_overlaps;
 }
 
 void HammerTools::ProcessKmerHashFile(const std::string &fname, std::vector<KMerCount> & vkmc) {
@@ -537,46 +683,7 @@ void HammerTools::ProcessKmerHashFile(const std::string &fname, std::vector<KMer
   TIMEDLN("Sorting done, starting unification.");
   if (!vec.size()) return;
 
-  // FIXME: This needs to be parallel as well.
-  HammerTools::KmerHashUnique(vec, vkmc);
-}
-
-void HammerTools::ProcessKmerHashVector( const vector< pair<hint_t, double> > & sv, KMerNoHashMap & km, std::vector<KMerCount> & vkmc ) {
-	std::vector<KMerNo> vec;
-	for (size_t i=0; i < sv.size(); ++i) {
-		vec.push_back(KMerNo(sv[i].first, sv[i].second));
-	}
-	KMerNo::is_less kmerno_cmp;
-	std::sort(vec.begin(), vec.end(), kmerno_cmp );
-	if (!vec.size()) return;
-
-	HammerTools::KmerHashUnique(vec, vkmc);
-}
-
-void HammerTools::PrintProcessedKmerHashFile( boost::iostreams::filtering_ostream & outf, hint_t & kmer_num, KMerNoHashMap & km ) {
-	for (KMerNoHashMap::iterator it = km.begin(); it != km.end(); ++it) {
-		outf << it->second->first.start() << "\t"
-				<< string(Globals::blob + it->second->first.start(), K) << "\t"
-				<< it->second->second.count << "\t"
-				<< setw(8) << it->second->second.totalQual << "\t";
-		for (size_t i=0; i < K; ++i) outf << it->second->second.qual[i] << " ";
-		outf << "\n";
-		delete it->second;
-		++kmer_num;
-	}
-	km.clear();
-}
-
-void HammerTools::PrintProcessedKmerHashFile( boost::iostreams::filtering_ostream & outf, hint_t & kmer_num, std::vector<KMerCount> & km ) {
-	for (std::vector<KMerCount>::const_iterator it = km.begin(); it != km.end(); ++it) {
-		outf << it->first.start() << "\t"
-				<< string(Globals::blob + it->first.start(), K) << "\t"
-				<< it->second.count << "\t"
-				<< setw(8) << it->second.totalQual << "\t";
-		for (size_t i=0; i < K; ++i) outf << it->second.qual[i] << " ";
-		outf << "\n";
-		++kmer_num;
-	}
+  KmerHashUnique(vec.begin(), vec.end(), vkmc);
 }
 
 void HammerTools::ReadKmersWithChangeToFromFile( const string & fname, vector<KMerCount> *kmers, vector<hint_t> *kmernos ) {
