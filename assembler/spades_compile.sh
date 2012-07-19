@@ -1,3 +1,5 @@
+#!/bin/bash
+
 mkdir -p bin
 cd bin
 rm -rf src
