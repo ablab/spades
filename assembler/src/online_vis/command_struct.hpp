@@ -1,9 +1,5 @@
 #pragma once
 
-#include "all_commands.hpp"
-#include "drawing_commands.hpp"
-#include "position_commands.hpp"
-#include "setting_commands.hpp"
 #include "command_type.hpp"
 
 namespace online_visualization {
@@ -21,6 +17,8 @@ namespace online_visualization {
                 { "exit",               _exit_           }, 
                 { "load",               load             },
                 { "list",               list             },
+                { "switch",             switch_env       },
+                { "rep",                replay           },
                 { "set_folder",         set_folder       }, 
                 { "set_file_name",      set_file_name    }, 
                 { "set_max_vertices",   set_max_vertices }, 
@@ -41,32 +39,10 @@ namespace online_visualization {
             return command_name_mapping;
         }
 
-        void AddMapping(CommandMapping& mapping, Command* command) {
-            mapping.insert(make_pair(command->command_id(), shared_ptr<Command>(command)));
+        void AddMapping(CommandMapping& mapping, shared_ptr<Command>& command) {
+            mapping.insert(make_pair(command->command_id(), command));
         }
 
-        CommandMapping FillCommandMapping() {
-            CommandMapping mapping;
-            AddMapping(mapping, new NullCommand);
-            AddMapping(mapping, new LoadCommand);
-            AddMapping(mapping, new ExitCommand);
-            AddMapping(mapping, new ListCommand);
-
-            AddMapping(mapping, new SetMaxVertCommand);
-            AddMapping(mapping, new SetFolderCommand);
-            AddMapping(mapping, new SetFileNameCommand);
-
-            AddMapping(mapping, new FillPositionCommand);
-            AddMapping(mapping, new ClearPositionCommand);
-
-            AddMapping(mapping, new DrawVertexCommand);
-            AddMapping(mapping, new DrawEdgeCommand);
-            AddMapping(mapping, new DrawPositionCommand);
-
-            AddMapping(mapping, new PrintPathsCommand);
-
-            return mapping;
-        }
     }
 
     //static const string& CommandName(CommandType command) {
@@ -87,10 +63,21 @@ namespace online_visualization {
         return it->second;
     }
 
+    static CommandMapping& GetCommandMapping() {
+        static CommandMapping mapping;
+        return mapping;
+    }
+
+
     Command& GetCommand(CommandType command_id) {
-        static CommandMapping mapping = command_impl::FillCommandMapping();
+        const CommandMapping& mapping = GetCommandMapping();
         auto it = mapping.find(command_id);
         return *(it->second);
+    }
+
+    void AddCommand(shared_ptr<Command> command) {
+        CommandMapping& mapping = GetCommandMapping();
+        command_impl::AddMapping(mapping, command);
     }
 
 }

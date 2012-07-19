@@ -6,6 +6,8 @@ namespace online_visualization {
         _exit_,
         load,
         list,
+        switch_env,
+        replay,
         set_folder,
         set_file_name,
         set_max_vertices,

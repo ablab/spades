@@ -14,12 +14,12 @@ namespace online_visualization {
                 stringstream namestream;
                 namestream << curr_env->folder_ << "/" << curr_env->file_name_base_ << "_" << curr_env->picture_counter_ << ".dot";
                 string file_name = namestream.str();
-                stringstream linksteam;
-                linksteam  << curr_env->folder_ << "/" << curr_env->file_name_base_ << "_latest.dot";
+                stringstream linkstream;
+                linkstream  << curr_env->folder_ << "/" << curr_env->file_name_base_ << "_latest.dot";
                 VertexNeighborhoodFinder<Graph> splitter(curr_env->graph(), v, curr_env->max_vertices_, curr_env->edge_length_bound_);
                 //EdgePosGraphLabeler<Graph> labeler(curr_env->graph(), gp_.edge_pos);
                 WriteComponents <Graph> (curr_env->graph(), splitter, file_name, *DefaultColorer(curr_env->graph(), curr_env->coloring_), curr_env->tot_lab_);
-                WriteComponents <Graph> (curr_env->graph(), splitter, linksteam.str(), *DefaultColorer(curr_env->graph(), curr_env->coloring_), curr_env->tot_lab_);
+                WriteComponents <Graph> (curr_env->graph(), splitter, linkstream.str(), *DefaultColorer(curr_env->graph(), curr_env->coloring_), curr_env->tot_lab_);
                 cout << "Picture is written to " << file_name << endl;
                 curr_env->picture_counter_++;
             }
