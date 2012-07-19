@@ -576,81 +576,21 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-struct UfCmp {
-  bool operator()(const std::vector<int> &lhs, const std::vector<int> &rhs) {
-    return lhs[0] < rhs[0];
-  }
-};
-
-void KMerClustering::process(bool doHamming, string dirprefix, boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad) {
-  vector<vector<int> > classes;
-
-  bool useFilesystem = (k_.size() == 0);
-
-  if (doHamming) {
-    unionFindClass * ufMaster;
-    ufMaster = (k_.size() == 0 ? new unionFindClass(v_->size() + 1) : new unionFindClass(k_.size()) );
-    KMerHamClusterer clusterer(tau_);
-    clusterer.cluster(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
-                      *v_, *ufMaster);
-    ufMaster->get_classes(classes);
-    hint_t num_classes;
-    num_classes = classes.size();
-
-#if 0
-    std::sort(classes.begin(), classes.end(),  UfCmp());
-    for (size_t i = 0; i < classes.size(); ++i) {
-      std::cerr << i << ": { ";
-      for (size_t j = 0; j < classes[i].size(); ++j)
-        std::cerr << classes[i][j] << ", ";
-      std::cerr << "}" << std::endl;
-    }
-#endif
-
-	TIMEDLN("Merging finished. Centering begins. Total clusters: " << num_classes);
-
-	delete ufMaster; // no longer needed
-
-	if (useFilesystem) {
-		TIMEDLN("Writing down clusters.");
-    std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
-    std::ofstream ofs(fname, std::ios::binary | std::ios::out);
-
-		for (size_t i=0; i < classes.size(); ++i ) {
-      size_t sz = classes[i].size();
-      ofs.write((char*)&i, sizeof(i));
-      ofs.write((char*)&sz, sizeof(sz));
-
-			for (size_t j=0; j < classes[i].size(); ++j) {
-        int cls = classes[i][j];
-        ofs.write((char*)&cls, sizeof(cls));
-			}
-			classes[i].clear();
-		}
-		classes.clear();
-    ofs.close();
-		TIMEDLN("Clusters written. Reading k-mer information.");
-	}
-
-	} else {
-		TIMEDLN("Skipping subvectors entirely. Reading k-mer information");
-	}
-
-	if ( useFilesystem ) {
-		k_.clear();
-		Globals::kmers->clear();
-		Globals::kmers->reserve(Globals::number_of_kmers);
-    MMappedReader is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"),
-                     /* unlink */ true);
-    size_t sz;
-    is.read((char*)&sz, sizeof(sz));
-    Globals::kmers->resize(sz);
-    for (size_t i = 0; i < sz; ++i)
-      binary_read(is, (*Globals::kmers)[i]);
-		k_ = *Globals::kmers;
-		TIMEDLN("K-mer information read. Starting subclustering in " << nthreads_ << " threads.");
-		TIMEDLN("Estimated: size=" << k_.size() << " mem=" << sizeof(KMerCount)*k_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
-	}
+void KMerClustering::process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad) {
+  TIMEDLN("Reading k-mer information");
+  k_.clear();
+  Globals::kmers->clear();
+  Globals::kmers->reserve(Globals::number_of_kmers);
+  MMappedReader is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"),
+                   /* unlink */ true);
+  size_t sz;
+  is.read((char*)&sz, sizeof(sz));
+  Globals::kmers->resize(sz);
+  for (size_t i = 0; i < sz; ++i)
+    binary_read(is, (*Globals::kmers)[i]);
+  k_ = *Globals::kmers;
+  TIMEDLN("K-mer information read. Starting subclustering in " << nthreads_ << " threads.");
+  TIMEDLN("Estimated: size=" << k_.size() << " mem=" << sizeof(KMerCount)*k_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
 
   std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
   MMappedReader ifs(fname, /* unlink */ true);
@@ -673,14 +613,11 @@ void KMerClustering::process(bool doHamming, string dirprefix, boost::shared_ptr
 		size_t orig_class_num = cur_class_num;
 		while (cur_total_size < (size_t)cfg::get().hamming_class_buffer && ifs.good()) {
 			cur_class.clear();
-			if (useFilesystem) {
-        size_t classNum, sizeClass;
-        ifs.read(&classNum, sizeof(classNum));
-        ifs.read(&sizeClass, sizeof(sizeClass));
-        cur_class.resize(sizeClass);
-        ifs.read(&cur_class[0], sizeClass * sizeof(cur_class[0]));
-			} else
-        cur_class = classes[cur_class_num];
+      size_t classNum, sizeClass;
+      ifs.read(&classNum, sizeof(classNum));
+      ifs.read(&sizeClass, sizeof(sizeClass));
+      cur_class.resize(sizeClass);
+      ifs.read(&cur_class[0], sizeClass * sizeof(cur_class[0]));
 			++cur_class_num;
 
 			// processing singletons immediately
@@ -791,7 +728,5 @@ void KMerClustering::process(bool doHamming, string dirprefix, boost::shared_ptr
 			}
 		}
 	}
-
-	TIMEDLN("Centering finished.");
 }
 

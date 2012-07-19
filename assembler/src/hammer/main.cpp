@@ -186,7 +186,7 @@ int main(int argc, char * argv[]) {
 		HammerTools::ReadAllFilesIntoBlob();
 
     // count k-mers
-    if ( cfg::get().count_do || cfg::get().sort_do || do_everything ) {
+    if (cfg::get().count_do || cfg::get().sort_do || do_everything ) {
       HammerTools::CountKMersBySplitAndMerge();
     } else {
       {
@@ -197,7 +197,7 @@ int main(int argc, char * argv[]) {
         is.read((char*)&sz, sizeof(sz));
         Globals::kmernos->resize(sz);
         is.read((char*)&(*Globals::kmernos)[0], sz*sizeof((*Globals::kmernos)[0]));
-         TIMEDLN("Read serialized kmernos.");
+        TIMEDLN("Read serialized kmernos.");
       }
       HammerTools::RemoveFile(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.numbers.ser"));
     }
@@ -205,26 +205,73 @@ int main(int argc, char * argv[]) {
     // fill in already prepared k-mers
     if (!do_everything && cfg::get().input_read_solid_kmers) {
       TIMEDLN("Loading k-mers from " << cfg::get().input_solid_kmers );
-      HammerTools::ReadKmersWithChangeToFromFile( cfg::get().input_solid_kmers, Globals::kmers, Globals::kmernos );
+      HammerTools::ReadKmersWithChangeToFromFile(cfg::get().input_solid_kmers, Globals::kmers, Globals::kmernos );
       TIMEDLN("K-mers loaded.");
     }
   
     // cluster and subcluster the Hamming graph
-    // TODO: refactor into two different procedures
-    if (cfg::get().hamming_do || cfg::get().bayes_do || do_everything) {
-      int clustering_nthreads = min( cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
+    if (cfg::get().hamming_do || do_everything) {
+      std::vector<std::vector<int> > classes;
+
+      unionFindClass uf(Globals::kmernos->size() + 1);
+      KMerHamClusterer clusterer(cfg::get().general_tau);
+      TIMEDLN("Clustering Hamming graph.");
+      clusterer.cluster(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
+                        *Globals::kmernos, uf);
+      uf.get_classes(classes);
+      size_t num_classes = classes.size();
+
+#if 0
+      struct UfCmp {
+        bool operator()(const std::vector<int> &lhs, const std::vector<int> &rhs) {
+          return lhs[0] < rhs[0];
+        }
+      };
+
+      std::sort(classes.begin(), classes.end(),  UfCmp());
+      for (size_t i = 0; i < classes.size(); ++i) {
+        std::cerr << i << ": { ";
+        for (size_t j = 0; j < classes[i].size(); ++j)
+          std::cerr << classes[i][j] << ", ";
+        std::cerr << "}" << std::endl;
+      }
+#endif
+      TIMEDLN("Clustering done. Total clusters: " << num_classes);
+
+      TIMEDLN("Writing down clusters.");
+      std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
+      std::ofstream ofs(fname, std::ios::binary | std::ios::out);
+
+      for (size_t i=0; i < classes.size(); ++i ) {
+        size_t sz = classes[i].size();
+        ofs.write((char*)&i, sizeof(i));
+        ofs.write((char*)&sz, sizeof(sz));
+
+        for (size_t j=0; j < classes[i].size(); ++j) {
+          int cls = classes[i][j];
+          ofs.write((char*)&cls, sizeof(cls));
+        }
+        classes[i].clear();
+      }
+      classes.clear();
+      ofs.close();
+      TIMEDLN("Clusters written.");
+    }
+
+    if (cfg::get().bayes_do || do_everything) {
+      TIMEDLN("Subclustering Hamming graph");
+      int clustering_nthreads = min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
       KMerClustering kmc(Globals::kmers, Globals::kmernos, clustering_nthreads, cfg::get().general_tau);
       boost::shared_ptr<FOStream> ofkmers = cfg::get().hamming_write_solid_kmers ?
                                             FOStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.solid").c_str()) : boost::shared_ptr<FOStream>();
       boost::shared_ptr<FOStream> ofkmers_bad = cfg::get().hamming_write_bad_kmers ?
                                                 FOStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.bad").c_str()) : boost::shared_ptr<FOStream>();
-      kmc.process((cfg::get().hamming_do || do_everything),
-                  cfg::get().input_working_dir, ofkmers, ofkmers_bad);
+      kmc.process(ofkmers, ofkmers_bad);
       TIMEDLN("Finished clustering.");
     }
 
 		// expand the set of solid k-mers (with minimizer iterations, we don't need it)
-		if ( (cfg::get().expand_do || do_everything) && !HammerTools::doingMinimizers() ) {
+		if ((cfg::get().expand_do || do_everything) && !HammerTools::doingMinimizers() ) {
 			int expand_nthreads = min( cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
 			TIMEDLN("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
 			for ( int expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no ) {

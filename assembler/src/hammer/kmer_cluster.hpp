@@ -29,7 +29,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(bool doHamming, std::string dirprefix, boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad);
+	void process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad);
 
 	/// free up memory
 	void clear() {
