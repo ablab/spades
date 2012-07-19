@@ -118,29 +118,35 @@ class PositionKMer {
 		return res;
 	}
 
-  friend std::ostream& binary_write(std::ostream &os, const PositionKMer &pos);
-  friend void binary_read(std::istream &is, PositionKMer &pos);
+  template<class Writer>
+  friend Writer& binary_write(Writer &os, const PositionKMer &pos);
+  template<class Reader>
+  friend void binary_read(Reader &is, PositionKMer &pos);
 };
 
 inline bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 	return l.first < r.first;
 }
 
-inline std::ostream& binary_write(std::ostream &os, const PositionKMer &pos) {
+template<class Writer>
+inline Writer& binary_write(Writer &os, const PositionKMer &pos) {
   os.write((char*)&pos.start_, sizeof(pos.start_));
 
   return os;
 }
 
-inline void binary_read(std::istream &is, PositionKMer &pos) {
+template<class Reader>
+inline void binary_read(Reader &is, PositionKMer &pos) {
   is.read((char*)&pos.start_, sizeof(pos.start_));
 }
 
-inline std::ostream& binary_write(std::ostream &os, const KMerCount &k) {
+template<class Writer>
+inline Writer& binary_write(Writer &os, const KMerCount &k) {
   return binary_write(binary_write(os, k.first), k.second);
 }
 
-inline void binary_read(std::istream &is, KMerCount &k) {
+template<class Reader>
+inline void binary_read(Reader &is, KMerCount &k) {
   binary_read(is, k.first);
   binary_read(is, k.second);
 }

@@ -122,7 +122,8 @@ struct KMerStat {
   bool change() const { return changeto < KMERSTAT_CHANGE; }
 };
 
-inline std::ostream& binary_write(std::ostream &os, const QualBitSet &qbs) {
+template<class Writer>
+inline Writer& binary_write(Writer &os, const QualBitSet &qbs) {
   size_t sz = (qbs.q ? K : 0);
 
   os.write((char*)&sz, sizeof(sz));
@@ -132,7 +133,8 @@ inline std::ostream& binary_write(std::ostream &os, const QualBitSet &qbs) {
   return os;
 }
 
-inline void binary_read(std::istream &is, QualBitSet &qbs) {
+template<class Reader>
+inline void binary_read(Reader &is, QualBitSet &qbs) {
   size_t sz;
 
   is.read((char*)&sz, sizeof(sz));
@@ -146,14 +148,16 @@ inline void binary_read(std::istream &is, QualBitSet &qbs) {
   }
 }
 
-inline std::ostream& binary_write(std::ostream &os, const KMerStat &k) {
+template<class Writer>
+inline Writer& binary_write(Writer &os, const KMerStat &k) {
   os.write((char*)&k.count, sizeof(k.count));
   os.write((char*)&k.changeto, sizeof(k.changeto));
   os.write((char*)&k.totalQual, sizeof(k.totalQual));
   return binary_write(os, k.qual);
 }
 
-inline void binary_read(std::istream &is, KMerStat &k) {
+template<class Reader>
+inline void binary_read(Reader &is, KMerStat &k) {
   is.read((char*)&k.count, sizeof(k.count));
   is.read((char*)&k.changeto, sizeof(k.changeto));
   is.read((char*)&k.totalQual, sizeof(k.totalQual));
