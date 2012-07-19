@@ -13,24 +13,23 @@ import spades_init
 
 spades_init.init()
 spades_version = spades_init.spades_version
-spades_build_dir = spades_init.spades_build_dir
+spades_bin_dir = os.path.join(spades_init.spades_home, 'bin')
 
 import support
 
 print("\n======= Binaries download started.\n")
-dir = os.path.join(spades_build_dir, 'release' + spades_version)
-if not os.path.exists(dir):
-    os.makedirs(dir)
+if not os.path.exists(spades_bin_dir):
+    os.makedirs(spades_bin_dir)
 
 print("\n======= BayesHammer download started.\n")
 data = urllib2.urlopen('http://spades.bioinf.spbau.ru/release' + spades_version + '/hammer')
-file = os.path.join(dir, 'hammer')
+file = os.path.join(spades_bin_dir, 'hammer')
 support.save_data_to_file(data, file)
 print("\n======= BayesHammer download finished.\n")
 
 print("\n======= SPAdes download started.\n")
 data = urllib2.urlopen('http://spades.bioinf.spbau.ru/release' + spades_version + '/spades')
-file = os.path.join(dir, 'spades')
+file = os.path.join(spades_bin_dir, 'spades')
 support.save_data_to_file(data, file)
 print("\n======= SPAdes download finished.\n")
 print("\n======= Binaries download finished.\n")
