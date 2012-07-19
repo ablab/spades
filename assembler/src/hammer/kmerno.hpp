@@ -77,28 +77,13 @@ private:
 
 static_assert(sizeof(KMerNo) == 8, "Invalid size of KMerNo");
 
-// FIXME: Eventually KMerNo should become POD-like class and thus can be possed by value
-inline std::ostream& operator<<(std::ostream &os, const KMerNo &k) {
-  os << k.getIndex() << '\t' << k.getQual() << '\n';
-  return os;
-}
-
-inline std::istream& operator>>(std::istream &is, KMerNo &k) {
-  std::string buf;
-  hint_t pos; double prob;
-
-  std::getline(is, buf);
-  sscanf(buf.c_str(), "%llu\t%lf", &pos, &prob);
-  k.setIndex(pos); k.setQual(prob);
-
-  return is;
-}
-
-inline void binary_read(std::istream &is, KMerNo &k) {
+template<class Reader>
+inline void binary_read(Reader &is, KMerNo &k) {
   is.read((char*)&k, sizeof(k));
 }
 
-inline void binary_write(std::ostream &os, const KMerNo &k) {
+template<class Writer>
+inline void binary_write(Writer &os, const KMerNo &k) {
   os.write((char*)&k, sizeof(k));
 }
 
