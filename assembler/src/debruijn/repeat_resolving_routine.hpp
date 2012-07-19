@@ -627,12 +627,17 @@ void resolve_repeats() {
 	conj_graph_pack conj_gp(cfg::get().K, genome, cfg::get().pos.max_single_gap,
 			cfg::get().pos.careful_labeling, /*use_inner_ids*/
 			!cfg::get().developer_mode);
+	paired_info_index paired_index(conj_gp.g, cfg::get().online_clust_rad);
+	paired_info_index clustered_index(conj_gp.g);
 	if (!cfg::get().developer_mode) {
 		//Detaching edge_pos handler
 		conj_gp.edge_pos.Detach();
+		paired_index.Detach();
+		clustered_index.Detach();
+		if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
+			conj_gp.kmer_mapper.Detach();
+		}
 	}
-	paired_info_index paired_index(conj_gp.g, cfg::get().online_clust_rad);
-	paired_info_index clustered_index(conj_gp.g);
 
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
 

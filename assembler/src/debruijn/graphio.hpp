@@ -725,8 +725,10 @@ void PrintGraphPack(const string& file_name,
 		const graph_pack& gp) {
 	PrintBasicGraph(file_name, printer);
 //	printer.savePaired(file_name + "_et", gp.etalon_paired_index);
-	printer.savePositions(file_name, gp.edge_pos);
-	SaveKmerMapper(file_name, gp.kmer_mapper);
+	if (gp.edge_pos.IsAttached())
+		printer.savePositions(file_name, gp.edge_pos);
+	if (gp.kmer_mapper.IsAttached())
+		SaveKmerMapper(file_name, gp.kmer_mapper);
 }
 
 template<class graph_pack>

@@ -70,6 +70,12 @@ void estimate_with_estimator(const Graph& graph,
 
 void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		paired_info_index& clustered_index) {
+
+	if (!cfg::get().developer_mode) {
+		clustered_index.Attach();
+		clustered_index.Init();
+	}
+
 	if (cfg::get().paired_mode) {
 		INFO("STAGE == Estimating Distance");
 

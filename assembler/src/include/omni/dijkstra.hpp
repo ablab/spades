@@ -68,7 +68,7 @@ public:
 
 	distance_t GetDistance(VertexId vertex) {
 		VERIFY(DistanceCounted(vertex));
-		return distances_[vertex];
+		return distances_.find(vertex)->second;
 	}
 
 	std::pair<distances_map_ci, distances_map_ci> GetDistances() {

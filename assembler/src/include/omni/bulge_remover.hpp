@@ -19,6 +19,7 @@
 #include "omni_utils.hpp"
 #include "xmath.h"
 #include "sequence/sequence_tools.hpp"
+#include "path_processor.hpp"
 
 namespace omnigraph {
 
@@ -150,6 +151,27 @@ public:
 					opt_callback), removal_handler_(removal_handler) {
 	}
 
+	~BulgeRemover() {
+//		cout << "Time in counter path_processor_time: "
+//				<< human_readable_time(path_processor_time.time()) << " number of calls " << path_processor_time.counts() << endl;
+//
+//		cout << "Time in counter callback_time: "
+//				<< human_readable_time(callback_time.time()) << " number of calls " << callback_time.counts() << endl;
+//
+//		cout << "Time in counter process_bulge_time: "
+//				<< human_readable_time(process_bulge_time.time()) << " number of calls " << process_bulge_time.counts() << endl;
+//
+//		cout << "Time in counter split_time: "
+//				<< human_readable_time(split_time.time()) << " number of calls " << split_time.counts() << endl;
+//
+//		cout << "Time in counter glue_time: "
+//				<< human_readable_time(glue_time.time()) << " number of calls " << glue_time.counts() << endl;
+//
+//		cout << "Time in counter compress_time: "
+//				<< human_readable_time(compress_time.time()) << " number of calls " << compress_time.counts() << endl;
+
+	}
+
 	void RemoveBulges();
 
 private:
@@ -162,6 +184,16 @@ private:
 	BulgeCallbackF bulge_condition_;
 	BulgeCallbackF opt_callback_;
 	boost::function<void(EdgeId)> removal_handler_;
+
+	//timers
+//	avg_perf_counter path_processor_time;
+//	avg_perf_counter callback_time;
+//
+//	avg_perf_counter process_bulge_time;
+//	avg_perf_counter split_time;
+//	avg_perf_counter glue_time;
+//
+//	avg_perf_counter compress_time;
 
 	bool PossibleBulgeEdge(EdgeId e);
 
@@ -186,6 +218,7 @@ private:
 	}
 
 	void ProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
+//		process_bulge_time.start();
 //		UniformPositionAligner aligner(PathLength(path) + 1, g_.length(edge) + 1);
 		EnsureEndsPositionAligner aligner(PathLength(path), g_.length(edge));
 		double prefix_length = 0.;
@@ -201,17 +234,24 @@ private:
 			if (bulge_prefix_lengths[i] > prev_length) {
 				if (bulge_prefix_lengths[i] - prev_length
 						!= g_.length(edge_to_split)) {
+//					split_time.start();
 					pair<EdgeId, EdgeId> split_result = g_.SplitEdge(
 							edge_to_split,
 							bulge_prefix_lengths[i] - prev_length);
+//					split_time.stop();
 					edge_to_split = split_result.second;
+//					glue_time.start();
 					g_.GlueEdges(split_result.first, path[i]);
+//					glue_time.stop();
 				} else {
+//					glue_time.start();
 					g_.GlueEdges(edge_to_split, path[i]);
+//					glue_time.stop();
 				}
 			}
 			prev_length = bulge_prefix_lengths[i];
 		}
+//		process_bulge_time.stop();
 	}
 
 private:
@@ -234,6 +274,7 @@ size_t BulgeRemover<Graph>::PathLength(const vector<EdgeId>& path) {
 
 template<class Graph>
 void BulgeRemover<Graph>::RemoveBulges() {
+//	g_.PrintHandlers();
 	TRACE("Bulge remove process started");
 
 	size_t it_count = 0;
@@ -271,11 +312,13 @@ void BulgeRemover<Graph>::RemoveBulges() {
 							max_delta_));
 			MostCoveredAlternativePathChooser<Graph> path_chooser(g_, edge);
 
+//			path_processor_time.start();
 			PathProcessor<Graph> path_finder(g_,
 					(g_.length(edge) > delta) ? g_.length(edge) - delta : 0,
 					g_.length(edge) + delta, start, end, path_chooser);
 
 			path_finder.Process();
+//			path_processor_time.stop();
 
 			const vector<EdgeId>& path = path_chooser.most_covered_path();
 			double path_coverage = path_chooser.max_coverage();
@@ -287,20 +330,24 @@ void BulgeRemover<Graph>::RemoveBulges() {
 
 				TRACE("Satisfied condition");
 
+//				callback_time.start();
 				if (opt_callback_)
 					opt_callback_(edge, path);
 
 				if (removal_handler_)
 					removal_handler_(edge);
+//				callback_time.stop();
 
 				TRACE("Projecting edge " << g_.int_id(edge));
 				ProcessBulge(edge, path);
 
+//				compress_time.start();
 				TRACE("Compressing start vertex " << g_.int_id(start))
 				g_.CompressVertex(start);
 
 				TRACE("Compressing end vertex " << g_.int_id(end))
 				g_.CompressVertex(end);
+//				compress_time.stop();
 
 			} else {
 				TRACE("Didn't satisfy condition");

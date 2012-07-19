@@ -18,6 +18,11 @@ void late_pair_info_count(conj_graph_pack& gp,
 		paired_info_index& paired_index) {
 	exec_simplification(gp);
 
+	if (!cfg::get().developer_mode) {
+		paired_index.Attach();
+		paired_index.Init();
+	}
+
 	if (cfg::get().paired_mode) {
 		size_t edge_length_threshold = Nx(gp.g, 50);//500;
 		INFO("STAGE == Counting Late Pair Info");

@@ -386,14 +386,17 @@ public:
 	};
 
 	EdgePairIterator begin() const {
+		VERIFY(this->IsAttached());
 		return EdgePairIterator(data_.begin(), *this);
 	}
 
 	EdgePairIterator end() const {
+		VERIFY(this->IsAttached());
 		return EdgePairIterator(data_.end(), *this);
 	}
 
 	double GetMaxDifference() const {
+		VERIFY(this->IsAttached());
 	    return max_difference_;
 	}
 
@@ -541,6 +544,7 @@ public:
 	 * Method allows to add pair info to index directly instead of filling it from stream.
 	 */
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
+		VERIFY(this->IsAttached());
 		TRACE("IN ADD:" << pair_info.first << pair_info.second << " " << data_.size());
 //		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first,
 //				pair_info.second);
@@ -555,6 +559,7 @@ public:
 	}
 
     void AddAll(const PairedInfoIndex<Graph>& paired_index) {
+		VERIFY(this->IsAttached());
         for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
             auto infos = *iter;
             for (auto pi_iter = infos.begin(); pi_iter != infos.end(); ++pi_iter) {
@@ -564,10 +569,12 @@ public:
     }
 
 	void RemoveEdgeInfo(EdgeId edge) {
+		VERIFY(this->IsAttached());
 		data_.DeleteEdgeInfo(edge);
 	}
 
 	void RemovePairInfo(const PairInfo<EdgeId>& pair_info) {
+		VERIFY(this->IsAttached());
 		data_.DeletePairInfo(pair_info);
 	}
 
@@ -629,6 +636,12 @@ private:
 
 public:
 
+	void Init() {
+		for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			HandleAdd(*it);
+		}
+	}
+
 	//	void OutputData(ostream &os = cout) {
 	//		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it)
 	//			for (auto it1 = graph_.SmartEdgeBegin(); !it1.IsEnd(); ++it1) {
@@ -654,6 +667,7 @@ public:
 	 * Method returns all data about given edge
 	 */
 	PairInfos GetEdgeInfo(EdgeId edge) const {
+		VERIFY(this->IsAttached());
 		return data_.GetEdgeInfos(edge);
 	}
 
@@ -661,6 +675,7 @@ public:
 	 * Method returns all data about distance between two given edges
 	 */
 	PairInfos GetEdgePairInfo(EdgeId first, EdgeId second) const {
+		VERIFY(this->IsAttached());
 		return data_.GetEdgePairInfos(first, second);
 	}
 

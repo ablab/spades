@@ -130,6 +130,11 @@ public:
 	}
 };
 
+template <class Graph>
+auto_ptr<GraphLabeler<Graph>> StrGraphLabelerInstance(const Graph& g) {
+	return auto_ptr<GraphLabeler<Graph>>(new StrGraphLabeler<Graph>(g));
+}
+
 template<class Graph>
 class LengthIdGraphLabeler : public StrGraphLabeler<Graph> {
 	typedef StrGraphLabeler<Graph> base;

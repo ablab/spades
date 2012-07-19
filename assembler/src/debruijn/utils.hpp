@@ -18,6 +18,7 @@
 #include "sequence/sequence_tools.hpp"
 #include "omni/splitters.hpp"
 #include "openmp_wrapper.h"
+#include "omni/path_processor.hpp"
 
 #include "runtime_k.hpp"
 
@@ -226,6 +227,7 @@ public:
 	}
 
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
+		VERIFY(this->IsAttached());
 		//		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
 		size_t old_length = old_s.size() - k_ + 1;
 		size_t new_length = new_s.size() - k_ + 1;
@@ -255,6 +257,7 @@ public:
 	}
 
 	Kmer Substitute(const Kmer& kmer) const {
+		VERIFY(this->IsAttached());
 		Kmer answer = kmer;
 		auto it = mapping_.find(answer);
 		while (it != mapping_.end()) {

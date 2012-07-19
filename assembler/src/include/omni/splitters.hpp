@@ -7,7 +7,7 @@
 #pragma once
 
 #include "dijkstra.hpp"
-#include "observable_graph.hpp"
+//#include "observable_graph.hpp"
 namespace omnigraph {
 
 template<class Element>
@@ -436,7 +436,7 @@ public:
 	}
 };
 
-template<class Graph>
+template<class Graph, class It = typename Graph::VertexIterator>
 class ReliableSplitter: public GraphSplitter<Graph> {
 private:
 	typedef GraphSplitter<Graph> base;
@@ -445,19 +445,28 @@ private:
 	set<VertexId> visited_;
 	size_t max_size_;
 	size_t edge_length_bound_;
-	typename Graph::VertexIterator current_;
+	It current_;
+	It end_;
 
 	void SkipVisited() {
-		while (current_ != this->graph().end() && visited_.count(*current_) == 1) {
+		while (current_ != end_ && visited_.count(*current_) == 1) {
 			++current_;
 		}
 	}
 
 public:
+	ReliableSplitter(const Graph &graph, It begin, It end, size_t max_size,
+			size_t edge_length_bound) :
+			base(graph), max_size_(max_size), edge_length_bound_(
+					edge_length_bound), current_(begin), end_(end) {
+		TRACE(
+				"Long edges splitter created and queue filled with all graph vertices");
+	}
+
 	ReliableSplitter(const Graph &graph, size_t max_size,
 			size_t edge_length_bound) :
 			base(graph), max_size_(max_size), edge_length_bound_(
-					edge_length_bound), current_(graph.begin()) {
+					edge_length_bound), current_(graph.begin()), end_(graph.end()) {
 		TRACE(
 				"Long edges splitter created and queue filled with all graph vertices");
 	}
@@ -488,7 +497,7 @@ public:
 	}
 
 	virtual bool Finished() {
-		return current_ == this->graph().end();
+		return current_ == end_;
 	}
 };
 

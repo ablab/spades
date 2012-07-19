@@ -37,12 +37,29 @@ private:
 };
 
 
+inline string human_readable_time(double time_in_sec)
+{
+    assert(time_in_sec > 0);
+
+    size_t msec  = size_t(time_in_sec * 1000) % 1000;
+    size_t sec   = size_t(time_in_sec);
+    size_t hours = sec / 3600;
+    size_t mins  = (sec / 60) % 60;
+    sec         %= 60;
+
+    return str(format("%3d:%02d:%02d.%03d") % hours % mins % sec % msec);
+}
+
 struct avg_perf_counter
 {
-    avg_perf_counter()
+    avg_perf_counter(/*const string& name*/)// : name_(name)
     {
         reset();
     }
+
+//    ~avg_perf_counter() {
+//    	cout << "Time in counter " << name_ << ": " << human_readable_time(time()) << endl;
+//    }
 
     void start()
     {
@@ -85,22 +102,9 @@ struct avg_perf_counter
     }
 
 private:
+    const string name_;
     perf_counter p_cnt_;
     double whole_time_;
     size_t counter_;
 
 };
-
-
-inline string human_readable_time(double time_in_sec)
-{
-    assert(time_in_sec > 0);
-
-    size_t msec  = size_t(time_in_sec * 1000) % 1000;
-    size_t sec   = size_t(time_in_sec);
-    size_t hours = sec / 3600;
-    size_t mins  = (sec / 60) % 60;
-    sec         %= 60;
-
-    return str(format("%3d:%02d:%02d.%03d") % hours % mins % sec % msec);
-}

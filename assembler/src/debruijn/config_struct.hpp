@@ -904,6 +904,9 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 		cfg.output_nonfinal_contigs = false;
 		cfg.compute_paths_number = false;
 	}
+	if (!cfg.make_saves) {
+		load(cfg.make_saves, pt, "force_make_saves");
+	}
 
 	load(cfg.load_from, pt, "load_from");
 	cfg.load_from = cfg.output_root + cfg.load_from;

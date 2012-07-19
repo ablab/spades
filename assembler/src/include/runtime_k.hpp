@@ -1304,14 +1304,20 @@ public:
 
 private:
 
-    map_type data_;
+    map_type* data_;
 
 public:
 
-    KmerMapImpl(size_t n): data_(n) {
+    KmerMapImpl(size_t n) {
+    	data_ = new map_type(n);
     }
 
-    KmerMapImpl(): data_() {
+    KmerMapImpl() {
+    	data_ = new map_type();
+    }
+
+    /*virtual*/ ~KmerMapImpl() {
+    	delete data_;
     }
 
     virtual void transfer(IKmerSet * set, const Value& val) {
@@ -1320,7 +1326,7 @@ public:
         //KmerSetImpl<size_> * set_impl = (KmerSetImpl<size_> *) set;
         KmerSetImpl<size_> * set_impl = dynamic_cast< KmerSetImpl<size_> *> (set);
         for (auto iter = set_impl->get_data().begin(); iter != set_impl->get_data().end(); ++iter) {
-            data_.insert(make_pair(*iter, val));
+            data_->insert(make_pair(*iter, val));
         }
     }
 
@@ -1329,59 +1335,59 @@ public:
     }
 
     virtual bool empty() const {
-        return data_.empty();
+        return data_->empty();
     }
 
     virtual size_t size() const {
-        return data_.size();
+        return data_->size();
     }
 
     virtual size_t max_size() const {
-        return data_.max_size();
+        return data_->max_size();
     }
 
     virtual const_iterator_type * cbegin() const {
-        return new const_iterator_impl(data_.begin());
+        return new const_iterator_impl(data_->begin());
     }
 
     virtual iterator_type * begin()  {
-        return new iterator_impl(data_.begin());
+        return new iterator_impl(data_->begin());
     }
 
     virtual const_iterator_type * cend() const {
-        return new const_iterator_impl(data_.end());
+        return new const_iterator_impl(data_->end());
     }
 
     virtual iterator_type * end() {
-        return new iterator_impl(data_.end());
+        return new iterator_impl(data_->end());
     }
 
 
     virtual Value& operator[](const key_type& kmer_seq) {
-        return data_[type_container::from_sequence(kmer_seq)];
+        return (*data_)[type_container::from_sequence(kmer_seq)];
     }
 
 
     virtual const_iterator_type * cfind(const key_type& kmer_seq) const {
-        return new const_iterator_impl(data_.find(type_container::from_sequence(kmer_seq)));
+        return new const_iterator_impl(data_->find(type_container::from_sequence(kmer_seq)));
     }
 
     virtual iterator_type * find(const key_type& kmer_seq) {
-        return new iterator_impl(data_.find(type_container::from_sequence(kmer_seq)));
+        return new iterator_impl(data_->find(type_container::from_sequence(kmer_seq)));
     }
 
     virtual size_t count(const key_type& kmer_seq) const {
-        return data_.count(type_container::from_sequence(kmer_seq));
+        return data_->count(type_container::from_sequence(kmer_seq));
     }
 
 
     virtual pair<iterator_type *, bool> insert(const value_type& val) {
-        auto res = data_.insert(make_pair(type_container::from_sequence(val.first), val.second));
+        auto res = data_->insert(make_pair(type_container::from_sequence(val.first), val.second));
         return make_pair(new iterator_impl(res.first), res.second);
     }
 
     virtual size_t erase(const key_type& kmer_seq) {
-        return data_.erase(type_container::from_sequence(kmer_seq));
+        return data_->erase(type_container::from_sequence(kmer_seq));
     }
 
     virtual iterator_type * erase(iterator_type * iter) {
@@ -1389,7 +1395,7 @@ public:
 
         //iterator_impl * it = (iterator_impl *) iter;
         iterator_impl * it = dynamic_cast< iterator_impl * > (iter);
-        return new iterator_impl(data_.erase(it->get_data()));
+        return new iterator_impl(data_->erase(it->get_data()));
     }
 
 //    virtual iterator_type * erase(const_iterator_type * iter) {
@@ -1397,44 +1403,45 @@ public:
 //
 //        //const_iterator_impl * it = (const_iterator_impl *) iter;
 //        const_iterator_impl * it = dynamic_cast< const_iterator_impl * > (iter);
-//        return new iterator_impl(data_.erase(it->get_data()));
+//        return new iterator_impl(data_->erase(it->get_data()));
 //    }
 
 
     virtual void clear() {
-        data_.clear();
+    	delete data_;
+    	data_ = new map_type();
     }
 
     virtual size_t bucket_count() const {
-        return data_.bucket_count();
+        return data_->bucket_count();
     }
 
     virtual size_t max_bucket_count() const {
-        return data_.max_bucket_count();
+        return data_->max_bucket_count();
     }
 
     virtual size_t bucket_size(size_t n) const {
-        return data_.bucket_size(n);
+        return data_->bucket_size(n);
     }
 
     virtual size_t bucket(const RtSeq& kmer_seq) const {
-        return data_.bucket(type_container::from_sequence(kmer_seq));
+        return data_->bucket(type_container::from_sequence(kmer_seq));
     }
 
     virtual float load_factor() const {
-        return data_.load_factor();
+        return data_->load_factor();
     }
 
     virtual float max_load_factor() const {
-        return data_.max_load_factor();
+        return data_->max_load_factor();
     }
 
     virtual void max_load_factor(float z) {
-        data_.max_load_factor(z);
+        data_->max_load_factor(z);
     }
 
     virtual void rehash(size_t n) {
-        data_.rehash(n);
+        data_->rehash(n);
     }
 
     virtual size_t get_k() const {

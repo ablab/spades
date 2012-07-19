@@ -119,11 +119,11 @@ void simplify_graph(conj_graph_pack& gp) {
 	INFO("STAGE == Simplifying graph");
 
 //	PrintWeightDistribution<K>(gp.g, "distribution.txt");
-	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
-	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-	total_labeler tot_lab(&graph_struct);
 
-	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
+//	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
+	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
+	total_labeler labeler/*tot_lab*/(&graph_struct);
+//	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
 	detail_info_printer printer(gp, labeler, cfg::get().output_dir,
 			"graph.dot");

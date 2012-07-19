@@ -66,7 +66,7 @@ namespace omnigraph {
 //};
 
 template<typename VertexIdT, typename EdgeIdT, typename VertexIterator/* = typename set<VertexIdT>::iterator*/>
-class ObservableGraph : private boost::noncopyable {
+class ObservableGraph: private boost::noncopyable {
 public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
@@ -91,44 +91,44 @@ private:
 
 protected:
 	void FireAddingVertex(VertexId v) {
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
 			applier_->ApplyAdding(*it, v);
 		}
 	}
 
 	void FireAddingEdge(EdgeId edge) {
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
 			applier_->ApplyAdding(*it, edge);
 		}
 	}
 
 	void FireAddVertex(VertexId v) {
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
 			applier_->ApplyAdd(*it, v);
 		}
 	}
 
 	void FireAddEdge(EdgeId edge) {
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
 			applier_->ApplyAdd(*it, edge);
 		}
 	}
 
 	void FireDeleteVertex(VertexId v) {
-		for (auto it = action_handler_list_.rbegin(); it
-				!= action_handler_list_.rend(); ++it) {
+		for (auto it = action_handler_list_.rbegin();
+				it != action_handler_list_.rend(); ++it) {
 			applier_->ApplyDelete(*it, v);
 		}
 	}
 
 	void FireDeleteEdge(EdgeId edge) {
 		TRACE("FireDeleteEdge for "<<action_handler_list_.size()<<" handlers");
-		for (auto it = action_handler_list_.rbegin(); it
-				!= action_handler_list_.rend(); ++it) {
+		for (auto it = action_handler_list_.rbegin();
+				it != action_handler_list_.rend(); ++it) {
 			TRACE("FireDeleteEdge to handler "<<(*it)->name());
 			applier_->ApplyDelete(*it, edge);
 		}
@@ -137,16 +137,16 @@ protected:
 
 	void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 		TRACE("Fire Merge");
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
 			applier_->ApplyMerge(*it, oldEdges, newEdge);
 		}
 	}
 
 	void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 		TRACE("FireGlue for "<<action_handler_list_.size()<<" handlers");
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
 			TRACE("FireGlue to handler "<<(*it)->name());
 			applier_->ApplyGlue(*it, new_edge, edge1, edge2);
 		}
@@ -155,24 +155,35 @@ protected:
 
 	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
 		TRACE("Fire Split");
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
 			applier_->ApplySplit(*it, edge, newEdge1, newEdge2);
 		}
 	}
 
 public:
-	void FireVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
+	void FireVertexSplit(VertexId newVertex,
+			vector<pair<EdgeId, EdgeId> > newEdges,
+			vector<double> &split_coefficients, VertexId oldVertex) {
 		DEBUG("Fire VertexSplit");
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
-			applier_->ApplyVertexSplit(*it, newVertex, newEdges, split_coefficients, oldVertex);
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
+			applier_->ApplyVertexSplit(*it, newVertex, newEdges,
+					split_coefficients, oldVertex);
 		}
 	}
 
+//	void PrintHandlers() {
+//		cout << "Printing handlers" << endl;
+//		for (auto it = action_handler_list_.begin();
+//				it != action_handler_list_.end(); ++it) {
+//			cout << (*it)->name() << endl;
+//		}
+//		cout << "End of handlers" << endl;
+//	}
 
 	ObservableGraph(HandlerApplier<VertexId, EdgeId> *applier) :
-		applier_(applier)/*, element_order_(*this)*/ {
+			applier_(applier)/*, element_order_(*this)*/{
 	}
 
 	virtual ~ObservableGraph() {
@@ -183,8 +194,10 @@ public:
 
 	void AddActionHandler(Handler* action_handler) const {
 		TRACE("Action handler " << action_handler->name() << " added");
-		if (find(action_handler_list_.begin(),action_handler_list_.end(), action_handler) != action_handler_list_.end()){
-			VERIFY_MSG(false, "Action handler " << action_handler->name() << " has already been added");
+		if (find(action_handler_list_.begin(), action_handler_list_.end(),
+				action_handler) != action_handler_list_.end()) {
+			VERIFY_MSG(false,
+					"Action handler " << action_handler->name() << " has already been added");
 		} else {
 			action_handler_list_.push_back(action_handler);
 		}
@@ -192,15 +205,17 @@ public:
 
 	bool RemoveActionHandler(const Handler* action_handler) const {
 		TRACE("Trying to remove action handler " << action_handler->name());
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
 				action_handler_list_.erase(it);
-				TRACE("Action handler " << action_handler->name() << " removed");
+				TRACE(
+						"Action handler " << action_handler->name() << " removed");
 				return true;
 			}
 		}
-		TRACE("Action handler " << action_handler->name() << " wasn't found among graph action handlers");
+		TRACE(
+				"Action handler " << action_handler->name() << " wasn't found among graph action handlers");
 		return false;
 	}
 
@@ -214,24 +229,22 @@ public:
 	template<typename Comparator>
 	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator) const {
-		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
+		return SmartVertexIterator<ObservableGraph, Comparator>(*this,
 				comparator);
 	}
 
 	SmartVertexIterator<ObservableGraph> SmartVertexBegin() const {
-		return SmartVertexIterator<ObservableGraph> (*this);
+		return SmartVertexIterator<ObservableGraph>(*this);
 	}
-
 
 	template<typename Comparator>
 	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
 			const Comparator& comparator) const {
-		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
-				comparator);
+		return SmartEdgeIterator<ObservableGraph, Comparator>(*this, comparator);
 	}
 
 	SmartEdgeIterator<ObservableGraph> SmartEdgeBegin() const {
-		return SmartEdgeIterator<ObservableGraph> (*this);
+		return SmartEdgeIterator<ObservableGraph>(*this);
 	}
 
 	//Use very carefully!
@@ -242,7 +255,6 @@ public:
 //	ReliableComparator<VertexId> ReliableComparatorInstance() {
 //		return ReliableComparator<VertexId>(element_order_);
 //	}
-
 
 private:
 	DECL_LOGGER("ObservableGraph")
