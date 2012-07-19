@@ -31,8 +31,8 @@ class PositionRead {
   }
   hint_t start() const { return start_; }
   uint32_t size() const { return size_; }
-  char at(uint32_t pos) const;
-  char operator [] (uint32_t pos) const;
+  char at(size_t pos) const;
+  char operator[] (size_t pos) const;
   bool isDone() const { return done_; }
   void set_done(bool val = true) { done_ = val; }
   bool valid() const { return size_ >= K; }
@@ -42,7 +42,7 @@ class PositionRead {
     ltrim_ = val;
   }
   
-  std::pair<int, hint_t> nextKMerNo(int begin) const;
+  std::pair<size_t, hint_t> nextKMerNo(size_t begin) const;
 };
 
 #endif
