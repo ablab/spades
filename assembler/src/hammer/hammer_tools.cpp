@@ -864,7 +864,6 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &r
 }
 
 static size_t ConstructRead(Read &r, const PositionRead &pr) {
-  int qvoffset = cfg::get().input_qvoffset;
   size_t cpos = pr.start(), csize = pr.size();
   string s(Globals::blob + cpos, csize);
   string q;
@@ -1056,22 +1055,6 @@ hint_t HammerTools::CorrectAllReads() {
 
 	TIMEDLN("Correction done. Changed " << changedNucleotides << " bases in " << changedReads << " reads.");
 	return changedReads;
-}
-
-
-void HammerTools::ReadKmerNosFromFile( const string & fname, vector<hint_t> *kmernos ) {
-	kmernos->clear();
-	boost::shared_ptr<FIStream> fis = FIStream::init_buf(fname, 1 << cfg::get().general_file_buffer_exp);
-	hint_t pos;
-	hint_t prev_pos = -1;
-	string buf;
-	while (fis->fs.good()) {
-		std::getline(fis->fs, buf);
-		sscanf(buf.c_str(), "%lu", &pos);
-		if (pos == prev_pos) break;
-		kmernos->push_back(pos);
-		prev_pos = pos;
-	}
 }
 
 void HammerTools::RemoveFile(const string & fname) {

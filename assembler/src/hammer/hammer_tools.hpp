@@ -122,10 +122,6 @@ public:
 	/// correct all reads
 	static hint_t CorrectAllReads();
 
-	/// read k-mer indices from file
-	static void ReadKmerNosFromFile( const string & fname, vector<hint_t> *kmernos );
-	/// read a k-mer totals file
-	//static void ReadKmersAndNosFromFile( const string & fname, vector<KMerCount> *kmers, vector<hint_t> *kmernos );
 	/// read a k-mer result file
 	static void ReadKmersWithChangeToFromFile( const string & fname, vector<KMerCount> *kmers, vector<hint_t> *kmernos );
 
