@@ -76,15 +76,31 @@ struct QualBitSet {
     return *this;
   }
 
-  QualBitSet& operator+=(const QualBitSet &qbs) {
-    if (qbs.q != NULL) {
+  QualBitSet& operator+=(const unsigned char *data) {
+    if (data != NULL) {
       if (q == NULL) {
         q = new unsigned char[K];
-        memset(q, 0, K);
+        memcpy(q, data, K * sizeof(q[0]));
+      } else {
+        for (size_t i = 0; i < K; ++i)
+          q[i] = std::min(255, data[i] + q[i]);
       }
+    }
 
-      for (size_t i = 0; i < K; ++i)
-        q[i] = std::min(255, qbs.q[i] + q[i]);
+    return *this;
+  }
+
+  
+  QualBitSet& operator+=(const QualBitSet &qbs) {
+    const unsigned char* data = qbs.q;
+    if (data != NULL) {
+      if (q == NULL) {
+        q = new unsigned char[K];
+        memcpy(q, data, K * sizeof(q[0]));
+      } else {
+        for (size_t i = 0; i < K; ++i)
+          q[i] = std::min(255, data[i] + q[i]);
+      }
     }
 
     return *this;
@@ -102,6 +118,10 @@ struct QualBitSet {
   void set(size_t n, unsigned short value) {
     VERIFY(q != NULL);
     q[n] = (unsigned char)value;
+  }
+
+  void set(const char *value) {
+    memcpy(q, value, K);
   }
 };
 

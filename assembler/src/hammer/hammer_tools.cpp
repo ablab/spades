@@ -478,17 +478,12 @@ static void Merge(KMerCount &lhs, const KMerNo &rhs) {
 
   if (lhs.second.count == 1) {
     lhs.second.qual = QualBitSet();
-    for (size_t i = 1; i < K; ++i)
-      lhs.second.qual.set(i, Globals::blobquality[lidx + i]);
+    lhs.second.qual.set(Globals::blobquality + lidx);
   }
 
   lhs.second.count += 1;
   lhs.second.totalQual *= rhs.getQual();
-
-  QualBitSet qr;
-  for (size_t i = 1; i < K; ++i)
-    qr.set(i, Globals::blobquality[ridx + i]);
-  lhs.second.qual += qr;
+  lhs.second.qual += (Globals::blobquality + ridx);
 }
 
 static void Merge(KMerCount &lhs, const KMerCount &rhs) {
@@ -497,18 +492,14 @@ static void Merge(KMerCount &lhs, const KMerCount &rhs) {
 
   if (lhs.second.count == 1) {
     lhs.second.qual = QualBitSet();
-    for (size_t i = 1; i < K; ++i)
-      lhs.second.qual.set(i, Globals::blobquality[lidx + i]);
+    lhs.second.qual.set(Globals::blobquality + lidx);
   }
 
   lhs.second.count += rhs.second.count;
   lhs.second.totalQual *= rhs.second.totalQual;
 
   if (rhs.second.qual.q == NULL) {
-    QualBitSet qr;
-    for (size_t i = 1; i < K; ++i)
-      qr.set(i, Globals::blobquality[ridx + i]);
-    lhs.second.qual += qr;
+    lhs.second.qual += (Globals::blobquality + ridx);
   } else
     lhs.second.qual += rhs.second.qual;
 }
