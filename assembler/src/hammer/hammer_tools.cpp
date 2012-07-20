@@ -163,6 +163,16 @@ size_t HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curp
 
     if (!Globals::use_common_quality) {
       const std::string &q = r.getQualityString();
+      const char* qdata = q.data();
+      // Verify user-provided character offset
+      if (Globals::char_offset_user) {
+        for (size_t i = 0; i < read_size; ++i)
+          if (qdata[i] < 0) {
+            TIMEDLN(" Invalid quality value, probably phred offset specified was wrong");
+            exit(-1);
+          }
+      }
+
       memcpy(Globals::blobquality + curpos, q.data(), read_size);
     }
 

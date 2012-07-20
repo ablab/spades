@@ -27,7 +27,9 @@ struct Globals {
   static hint_t blob_size;
   static hint_t revNo;
   static hint_t number_of_kmers;
+
   static char char_offset;
+  static bool char_offset_user;
 
   static bool use_common_quality;
   static char common_quality;

@@ -49,7 +49,9 @@ hint_t Globals::blob_max_size = 0;
 hint_t Globals::number_of_kmers = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
+
 char Globals::char_offset = 0;
+bool Globals::char_offset_user = true;
 
 bool Globals::use_common_quality = false;
 char Globals::common_quality = 0;
@@ -105,38 +107,40 @@ int main(int argc, char * argv[]) {
     // decompress input reads if they are gzipped
 	HammerTools::DecompressIfNeeded();
 
-	// determine quality offset if not specified
-    if (!cfg::get().input_qvoffset_opt) {
-    	cout << "Trying to determine PHRED offset" << endl;
-    	int determined_offset = determine_offset(Globals::input_filenames.front());
-    	if (determined_offset < 0) {
-    		cout << "Failed to determine offset! Specify it manually and restart, please!" << endl;
-    		return 0;
-    	} else {
-    		cout << "Determined value is " << determined_offset << endl;
-    		cfg::get_writable().input_qvoffset = determined_offset;
-    	}
+  // determine quality offset if not specified
+  if (!cfg::get().input_qvoffset_opt) {
+    cout << "Trying to determine PHRED offset" << endl;
+    int determined_offset = determine_offset(Globals::input_filenames.front());
+    if (determined_offset < 0) {
+      cout << "Failed to determine offset! Specify it manually and restart, please!" << endl;
+      return 0;
     } else {
-    	cfg::get_writable().input_qvoffset = *cfg::get().input_qvoffset_opt;
+      cout << "Determined value is " << determined_offset << endl;
+      cfg::get_writable().input_qvoffset = determined_offset;
     }
-    Globals::char_offset = (char)cfg::get().input_qvoffset;
+    Globals::char_offset_user = false;
+  } else {
+    cfg::get_writable().input_qvoffset = *cfg::get().input_qvoffset_opt;
+    Globals::char_offset_user = true;
+  }
+  Globals::char_offset = (char)cfg::get().input_qvoffset;
 
-    // Pre-cache quality probabilities
-    for (unsigned qual = 0; qual < sizeof(Globals::quality_probs) / sizeof(Globals::quality_probs[0]); ++qual) {
-      Globals::quality_probs[qual] = (qual < 3 ? 0.25 : 1 - pow(10.0, -(int)qual / 10.0));
-      Globals::quality_lprobs[qual] = log(Globals::quality_probs[qual]);
-    }
+  // Pre-cache quality probabilities
+  for (unsigned qual = 0; qual < sizeof(Globals::quality_probs) / sizeof(Globals::quality_probs[0]); ++qual) {
+    Globals::quality_probs[qual] = (qual < 3 ? 0.25 : 1 - pow(10.0, -(int)qual / 10.0));
+    Globals::quality_lprobs[qual] = log(Globals::quality_probs[qual]);
+  }
 
-    // if we need to change single Ns to As, this is the time
-    if (cfg::get().general_change_n_to_a && cfg::get().count_do) {
-    	TIMEDLN("Changing single Ns to As in input read files.");
-    	HammerTools::ChangeNtoAinReadFiles();
-    	TIMEDLN("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
-    }
+  // if we need to change single Ns to As, this is the time
+  if (cfg::get().general_change_n_to_a && cfg::get().count_do) {
+    TIMEDLN("Changing single Ns to As in input read files.");
+    HammerTools::ChangeNtoAinReadFiles();
+    TIMEDLN("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
+  }
 
-    // estimate total read size
-    hint_t totalReadSize = HammerTools::EstimateTotalReadSize();
-	TIMEDLN("Estimated total size of all reads is " << totalReadSize);
+  // estimate total read size
+  hint_t totalReadSize = HammerTools::EstimateTotalReadSize();
+  TIMEDLN("Estimated total size of all reads is " << totalReadSize);
 
 	// allocate the blob
 	Globals::blob_size = totalReadSize + 1;
