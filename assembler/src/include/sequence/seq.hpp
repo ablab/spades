@@ -162,14 +162,17 @@ public:
 	 * @param s Any object with operator[], which returns 0123 chars
 	 * @param offset Offset when this sequence starts
    * @number_to_read A number of nucleotides, we want to fetch from this string
+   * @raw Flag whether to check for string length (e.g. via strlen, or not)
    * @warning assuming that s is a correct string, filled with ACGT _OR_ 0123 
    * no init method, filling right here
 	 */
   template<typename S>
-  explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_) {
+  explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_,
+               bool raw = false) {
     //TRACE("New Constructor for seq " << s[0] << " is first symbol");
     VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
-    VERIFY(offset + number_to_read <= this->size(s));
+    if (!raw)
+      VERIFY(offset + number_to_read <= this->size(s));
 
     // which symbols does our string contain : 0123 or ACGT?
     bool digit_str = is_dignucl(s[0]);
