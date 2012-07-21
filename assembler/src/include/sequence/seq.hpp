@@ -161,49 +161,48 @@ public:
 	 *
 	 * @param s Any object with operator[], which returns 0123 chars
 	 * @param offset Offset when this sequence starts
-     * @number_to_read A number of nucleotides, we want to fetch from this string
-     * @warning assuming that s is a correct string, filled with ACGT _OR_ 0123 
-     * no init method, filling right here
+   * @number_to_read A number of nucleotides, we want to fetch from this string
+   * @warning assuming that s is a correct string, filled with ACGT _OR_ 0123 
+   * no init method, filling right here
 	 */
-	template<typename S>
-	explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_) {
-		
-        //TRACE("New Constructor for seq " << s[0] << " is first symbol");
-        VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
-        VERIFY(offset + number_to_read <= this->size(s));
+  template<typename S>
+  explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_) {
+    //TRACE("New Constructor for seq " << s[0] << " is first symbol");
+    VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
+    VERIFY(offset + number_to_read <= this->size(s));
 
-        // which symbols does our string contain : 0123 or ACGT?
-        bool digit_str = is_dignucl(s[0]); 
+    // which symbols does our string contain : 0123 or ACGT?
+    bool digit_str = is_dignucl(s[0]);
 
-        // data -- one temporary variable corresponding to the i-th array element
-        // and some counters
-        T data = 0;
-		size_t cnt = 0;
-		size_t cur = 0;
+    // data -- one temporary variable corresponding to the i-th array element
+    // and some counters
+    T data = 0;
+    size_t cnt = 0;
+    size_t cur = 0;
 
-		for (size_t i = 0; i < number_to_read; ++i) {
-            //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
-            
-            // we fill everything with zeros (As) by default. 
-		    char c = digit_str ? s[offset + i] : dignucl(s[offset + i]);
-            
-	        data = data | (T(c) << cnt);
-            cnt += 2;
+    for (size_t i = 0; i < number_to_read; ++i) {
+      //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
 
-            if (cnt == TBits) {
-              this->data_[cur++] = data;
-                cnt = 0;
-                data = 0;
-            }
-        }
+      // we fill everything with zeros (As) by default.
+      char c = digit_str ? s[offset + i] : dignucl(s[offset + i]);
 
-        if (cnt != 0) {
-            this->data_[cur++] = data;
-        }
+      data = data | (T(c) << cnt);
+      cnt += 2;
 
-        for (; cur < DataSize; ++cur)
-            this->data_[cur] = 0;
-	}
+      if (cnt == TBits) {
+        this->data_[cur++] = data;
+        cnt = 0;
+        data = 0;
+      }
+    }
+
+    if (cnt != 0) {
+      this->data_[cur++] = data;
+    }
+
+    for (; cur < DataSize; ++cur)
+      this->data_[cur] = 0;
+  }
 
 
 	/**
