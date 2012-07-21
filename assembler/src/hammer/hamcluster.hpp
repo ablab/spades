@@ -53,7 +53,8 @@ struct SubKMerDummySerializer {
     SubKMer s;
 
     s.idx = (fidx == -1ULL ? idx : fidx);
-    s.data = Seq<K>(std::string(Globals::blob + idx, K));
+    const char *seq = Globals::blob + idx;
+    s.data = Seq<K>(seq, 0, K, /* raw */ true);
 
     // Yay for NRVO!
     return s;
@@ -72,8 +73,10 @@ public:
     SubKMer s;
 
     s.idx = (fidx == -1ULL ? idx : fidx);
-    s.data = Seq<K>(std::string(Globals::blob + idx + from_, to_ - from_),
-                    0, to_ - from_);
+    const char *seq = Globals::blob + idx + from_;
+    s.data = Seq<K>(seq,
+                    0, to_ - from_,
+                    /* raw */ true);
 
     // Yay for NRVO!
     return s;
