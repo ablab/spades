@@ -336,7 +336,7 @@ void HammerTools::SplitKMers() {
 		++cur_fileindex;
 
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
-		for (int k=0; k < numfiles; ++k) {
+		for (unsigned k=0; k < numfiles; ++k) {
       size_t sz = 0;
       for (size_t i = 0; i < (size_t)count_num_threads; ++i)
         sz += tmp_entries[i][k].size() * sizeof(tmp_entries[i][k][0]);
@@ -347,10 +347,10 @@ void HammerTools::SplitKMers() {
 			}
 		}
 
-		for (int i=0; i < count_num_threads; ++i) {
+		for (unsigned i=0; i < count_num_threads; ++i) {
 			tmp_entries[i].clear();
 			tmp_entries[i].resize(numfiles);
-			for (int j=0; j < numfiles; ++j) {
+			for (unsigned j=0; j < numfiles; ++j) {
 				tmp_entries[i][j].reserve((int)( 1.25 * readbuffer / count_num_threads));
 			}
 		}
@@ -428,7 +428,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
   }
 
   int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
-  int numfiles = cfg::get().count_numfiles;
+  unsigned numfiles = cfg::get().count_numfiles;
 
   TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
   std::vector< std::vector<KMerCount> > kmcvec(numfiles);
@@ -965,7 +965,7 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &r
       res[i] = false;
   }
  
-  for (int i = 0; i < correct_nthreads; ++i ) {
+  for (unsigned i = 0; i < correct_nthreads; ++i ) {
     changedReads += changedReadBuf[i];
     changedNucleotides += changedNuclBuf[i];
   }
