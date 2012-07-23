@@ -61,6 +61,13 @@ double Globals::quality_lprobs[256] = { 0 };
 
 std::vector<PositionRead> * Globals::pr = NULL;
 
+      struct UfCmp {
+        bool operator()(const std::vector<int> &lhs, const std::vector<int> &rhs) {
+          return (lhs[0] < rhs[0]);
+        }
+      };
+
+ 
 int main(int argc, char * argv[]) {
 
 	segfault_handler sh;
@@ -203,13 +210,7 @@ int main(int argc, char * argv[]) {
       size_t num_classes = classes.size();
 
 #if 0
-      struct UfCmp {
-        bool operator()(const std::vector<int> &lhs, const std::vector<int> &rhs) {
-          return lhs[0] < rhs[0];
-        }
-      };
-
-      std::sort(classes.begin(), classes.end(),  UfCmp());
+     std::sort(classes.begin(), classes.end(),  UfCmp());
       for (size_t i = 0; i < classes.size(); ++i) {
         std::cerr << i << ": { ";
         for (size_t j = 0; j < classes[i].size(); ++j)
