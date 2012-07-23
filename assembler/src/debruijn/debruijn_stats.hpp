@@ -998,25 +998,26 @@ public:
 	}
 };
 
-//deprecated, todo remove usages!!!
 template<class gp_t>
-void FillPos(gp_t& gp, const string& contig_file, string prefix) {
-//	typedef typename gp_t::Graph::EdgeId EdgeId;
+void FillPos(gp_t& gp, const string& contig_file, const string& prefix/*int start_contig_id*/) {
+//     typedef typename gp_t::Graph::EdgeId EdgeId;
 	INFO("Threading large contigs");
-	io::Reader irs(contig_file);
-	while(!irs.eof()) {
+	io::Reader raw_reader(contig_file);
+	io::RCReaderWrapper<io::SingleRead> irs(raw_reader);
+//     for (int c = start_contig_id; !irs.eof(); c++) {
+	while (!irs.eof()) {
 		io::SingleRead read;
 		irs >> read;
-		DEBUG("Contig " << read.name() << ", length: " << read.size());
+//             INFO("Contig #" << c << ", length: " << read.size());
 		if (!read.IsValid()) {
-			WARN("Attention: contig " << read.name() << " contains Ns");
+//                     WARN("Attention: contig #" << c << " contains Ns");
 			continue;
 		}
 		Sequence contig = read.sequence();
 		if (contig.size() < 1500000) {
-			//		continue;
+//              continue;
 		}
-		FillPos(gp, contig, prefix + read.name());
+		FillPos(gp, contig, prefix + read.name()/*ToString(c)*/);
 	}
 }
 
