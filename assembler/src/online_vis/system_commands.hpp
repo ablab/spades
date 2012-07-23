@@ -23,9 +23,48 @@ namespace online_visualization {
             }
     };
 
+    class HelpCommand : public Command {
+        protected:
+            bool CheckCorrectness(const vector<string>& args) const {
+                 return true;
+            }
+
+        public:
+            string Usage() {
+                string answer;
+                answer = answer + "The command `help` allows you to see a help message for any command. \n " +
+                                "Usage: \n" +
+                                "help <name_of_command> \n" +
+                                "Running `help` without parameters yields a list of all commands.";
+                return answer;
+            }
+
+            HelpCommand() : 
+                Command(CommandType::help)
+            {
+            }
+
+            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
+                const vector<string>& args_ = SplitInTokens(args);
+                if (args_.size() == 0) 
+                    cout << Command::Usage() << endl;
+                else {
+                    if (!CheckCorrectness(args_))
+                        return;
+                    string command_name = args_[0];
+                    Command& command = GetCommand(CommandId(command_name));
+                    cout << command.Usage() << endl;
+                }
+            }
+    };
+
     // exit
     class ExitCommand : public Command {
         public:
+            string Usage() const {
+                return "The command `exit` allows you to exit this application.";
+            }
+
             ExitCommand() : 
                 Command(CommandType::_exit_)
             {
@@ -40,7 +79,6 @@ namespace online_visualization {
     // loading new environment from folder with saves
     class LoadCommand : public Command {
         private:
-            //TODO: IO check
             EnvironmentPtr MakeNewEnvironment(string name, string saves) const {
                 EnvironmentPtr EnvPointer(new Environment(name, saves));
                 return EnvPointer;
@@ -77,6 +115,18 @@ namespace online_visualization {
             }
 
         public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `load` \n" + 
+                                "Usage:\n" + 
+                                "load <environment_name> <path_to_saves>\n" + 
+                                "You should specify the name of the new environment as well as a path to the graph saves. For example:\n" +
+                                "> load GraphSimplified data/saves/simplified_graph\n" + 
+                                "would load a new environment with the name `GraphSimplified` from the files\n" + 
+                                "in the folder `data/saves/` with the basename `simplified_graph` (simplified_graph.grp, simplified_graph.sqn, e.t.c).";
+                return answer;
+            }
+
             LoadCommand() : 
                 Command(CommandType::load)
             {
@@ -117,6 +167,18 @@ namespace online_visualization {
             }
 
         public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `switch` \n" + 
+                                "Usage:\n" + 
+                                "switch <environment_name>\n" + 
+                                "You should specify the name of the environment you want to switch to. For example:\n" +
+                                "> switch GraphSimplified \n" + 
+                                "would switch you to the environment with the name `GraphSimplified`.\n" + 
+                                "Of course this environment must be loaded first. To see all loaded environments, run command `list`.";
+                return answer;
+            }
+
             SwitchCommand() : 
                 Command(CommandType::switch_env)
             {
@@ -150,7 +212,21 @@ namespace online_visualization {
 
 
     class ListCommand : public Command {
+        protected:
+            bool CheckCorrectness() const {
+                return true;   
+            }
+
         public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `list` \n" +
+                                "Usage:\n" +
+                                "list\n" + 
+                                "This command lists all loaded environments.";
+                return answer;
+            }
+
             ListCommand() : Command(CommandType::list)
             {
             }
@@ -176,6 +252,18 @@ namespace online_visualization {
             }
 
         public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `replay` \n" + 
+                                "Usage:\n" + 
+                                "rep <command_number>\n" + 
+                                "Runs the command <command_number> commands before. For example:\n" +
+                                "> rep 1 \n" + 
+                                "would run the previous command.\n" + 
+                                "It is still under development.";
+                return answer;
+            }
+            
             ReplayCommand() : Command(CommandType::replay)
             {
             }
@@ -206,7 +294,7 @@ namespace online_visualization {
 
 
 //**********************
-//
+
     class PrintPathsCommand : public Command {
         
         typedef vector<EdgeId> Path;
@@ -224,7 +312,7 @@ namespace online_visualization {
 
         protected:
             size_t MinArgNumber() const {
-                return 3;   
+                return 2;   
             }
 
             bool CheckCorrectness(const vector<string>& args) const {
@@ -237,6 +325,17 @@ namespace online_visualization {
             }
 
         public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `print_paths` \n" + 
+                                "Usage:\n" + 
+                                "paths <vertex_from> <vertex_to> [<max_length>] \n" + 
+                                "This command prints all paths between two given vertices, that do not exceed `max_length` parameter.\n" +
+                                "You should specify two integers (id of vertices), between which you want to find paths. Optionally you can provide `max_length` integer, \n" +
+                                "so that tool does not consider paths longer than `max_length`.";
+                return answer;
+            }
+            
             PrintPathsCommand() : Command(CommandType::print_paths)
             {
             }
@@ -249,7 +348,10 @@ namespace online_visualization {
                 
                 size_t from = GetInt(args_[0]);
                 size_t to = GetInt(args_[1]);
-                size_t max_length = GetInt(args_[2]);
+                size_t max_length = 0;
+                if (args_.size() > 2) 
+                    max_length = GetInt(args_[2]);
+
                 if (!CheckVertexExists(curr_env->int_ids(), from) || !CheckVertexExists(curr_env->int_ids(), to))
                     return;
 

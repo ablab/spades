@@ -35,6 +35,16 @@ namespace online_visualization {
                 return correct;
             }
         public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `fill_pos` \n" + 
+                                "Usage:\n" + 
+                                "fill_pos <label> <path_to_contigs>\n" + 
+                                "This command maps contigs you provide to the graph.\n" + 
+                                "You should specify a label of this contigs, which you want to see at the edge in the DB graph.";
+                return answer;
+            }
+
             FillPositionCommand() : Command(CommandType::fill_pos)
             {
             }
@@ -66,6 +76,15 @@ namespace online_visualization {
     class ClearPositionCommand : public Command {
 
         public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `clear_pos` \n" + 
+                                "Usage:\n" + 
+                                "clear_pos\n" + 
+                                "This command resets the graph and clears all the labels you previously filled in.\n";
+                return answer;
+            }
+
             ClearPositionCommand() : Command(CommandType::clear_pos) 
             {
             }

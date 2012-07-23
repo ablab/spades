@@ -15,6 +15,7 @@ namespace online_visualization {
             { 
                 { "null",               _null_           }, 
                 { "exit",               _exit_           }, 
+                { "help",               help             }, 
                 { "load",               load             },
                 { "list",               list             },
                 { "switch",             switch_env       },

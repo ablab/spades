@@ -23,6 +23,7 @@ namespace online_visualization {
             AddCommand(shared_ptr<Command>(new NullCommand));
             AddCommand(shared_ptr<Command>(new LoadCommand));
             AddCommand(shared_ptr<Command>(new ExitCommand));
+            AddCommand(shared_ptr<Command>(new HelpCommand));
             AddCommand(shared_ptr<Command>(new ListCommand));
             AddCommand(shared_ptr<Command>(new SwitchCommand));
             AddCommand(shared_ptr<Command>(new ReplayCommand));
@@ -37,6 +38,7 @@ namespace online_visualization {
             AddCommand(shared_ptr<Command>(new DrawVertexCommand));
             AddCommand(shared_ptr<Command>(new DrawEdgeCommand));
             AddCommand(shared_ptr<Command>(new DrawPositionCommand));
+            AddCommand(shared_ptr<Command>(new ShowPositionCommand));
 
             AddCommand(shared_ptr<Command>(new PrintPathsCommand));
         }

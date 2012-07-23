@@ -4,6 +4,7 @@ namespace online_visualization {
     enum CommandType {
         _null_ = 0,
         _exit_,
+        help,
         load,
         list,
         switch_env,
@@ -16,6 +17,8 @@ namespace online_visualization {
         draw_vertex,
         draw_edge,
         draw_position,
+        show_position,
+        draw_part_of_genome,
         print_paths
         //total = 2
     };

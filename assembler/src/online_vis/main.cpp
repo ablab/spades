@@ -1,6 +1,7 @@
 // just to check that headers from include and debruijn folders are correctly included
 #include "standard.hpp"
 #include "logger/log_writers.hpp"
+// TODO: remove
 
 #undef INFO
 #define INFO(message)                       LOG_MSG(logging::L_DEBUG , message)
@@ -53,7 +54,8 @@ int main(int argc, char** argv) {
         VERIFY(cfg::get().K % 2 != 0);
     
         create_console_logger(cfg_filename);
-        std::cout << "Hello user!" << std::endl;
+        cout << "\nGAF (Graph Analysis Framework) started" << endl;
+        cout << "Print help to see readme file" << endl;
         limit_memory(cfg::get().max_memory * GB);
         OnlineVisualizer online_vis;
         online_vis.run();
