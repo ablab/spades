@@ -41,6 +41,7 @@ std::vector<size_t> Globals::input_file_sizes = std::vector<size_t>();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 std::vector<hint_t> * Globals::kmernos = NULL;
 std::vector<KMerCount> * Globals::kmers = NULL;
+KMerIndex *Globals::kmer_index = NULL;
 int Globals::iteration_no = 0;
 hint_t Globals::revNo = 0;
 
@@ -169,8 +170,9 @@ int main(int argc, char * argv[]) {
 
 		// initialize k-mer structures
 		Globals::kmernos = new std::vector<hint_t>;
-		Globals::kmers = new std::vector<KMerCount>;
-
+    Globals::kmers = new std::vector<KMerCount>;
+    Globals::kmer_index = new KMerIndex;
+    
 		// read input reads into blob
 		Globals::pr = new vector<PositionRead>();
 		HammerTools::ReadAllFilesIntoBlob();
@@ -273,6 +275,7 @@ int main(int argc, char * argv[]) {
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps
 		delete Globals::kmernos;
+    delete Globals::kmer_index;
 		delete Globals::kmers;
 		delete Globals::pr;
 

@@ -38,6 +38,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <unordered_map>
+
 using namespace std;
 
 string encode3toabyte (const string & s)  {
@@ -453,8 +455,12 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	TIMEDLN("Extracting kmernos");
 	Globals::kmernos->clear();
 	Globals::kmernos->reserve(vec.size());
+  Globals::kmer_index->clear();
+  Globals::kmer_index->reserve(vec.size());
   for (size_t i=0; i < vec.size(); ++i) {
     Globals::kmernos->push_back(vec[i].first.start());
+    const char* s = Globals::blob + vec[i].first.start();
+    Globals::kmer_index->insert(std::make_pair(Seq<K>(s, 0, K, /* raw */ true), i));
   }
 
   TIMEDLN("Serializing sorted kmers.");
@@ -799,7 +805,8 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
 		vector<unsigned> covered_by_solid(read_size, false);
 		vector<hint_t> kmer_indices(read_size, -1);
 
-		pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );
+#if 0
+    pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );
 		while ( (it = pr.nextKMerNo(it.first)).first > -1 ) {
 			kmer_indices[it.first] = it.second;
 			if ( kmers[it.second].second.isGoodForIterative() ) {
@@ -807,6 +814,34 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
 					covered_by_solid[j] = true;
 			}
 		}
+#else
+    ValidKMerGenerator<K> gen(Globals::blob + pr.start(),
+                              /* quality is not necessary */ NULL,
+                              read_size);
+    while (gen.HasMore()) {
+      const Seq<K> &kmer = gen.kmer();
+#if 0
+      auto appr_pos = std::lower_bound(Globals::kmerseqs->begin(), Globals::kmerseqs->end(),
+                                       kmer, Seq<K>::less2());
+      if (appr_pos != Globals::kmerseqs->end() &&
+          *appr_pos == kmer) {
+        size_t pos = appr_pos - Globals::kmerseqs->begin();
+        size_t read_pos = gen.pos() - 1;
+#else
+      auto it = Globals::kmer_index->find(kmer);
+      if (it != Globals::kmer_index->end()) {
+        size_t pos = it->second;
+        size_t read_pos = gen.pos() - 1;
+#endif
+        kmer_indices[read_pos] = pos;
+        if (kmers[pos].second.isGoodForIterative()) {
+          for (size_t j = read_pos; j < read_pos + K; ++j)
+            covered_by_solid[j] = true;
+        } 
+      }
+      gen.Next();
+    }
+#endif
 
 		bool isGood = true;
 		for (size_t j = 0; j < read_size; ++j) {
@@ -874,16 +909,47 @@ bool HammerTools::CorrectOneRead(const vector<KMerCount> & kmers,
 	isGood = false;
 
 	// getting the leftmost and rightmost positions of a solid kmer
-	int left = read_size; int right = -1;
-	bool changedRead = false;
-	pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );
-	while ( (it = pr.nextKMerNo(it.first)).first > -1 ) {
-		const PositionKMer & kmer = kmers[it.second].first;
-		const uint32_t pos = it.first;
-		const KMerStat & stat = kmers[it.second].second;
-		changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, kmers, kmer, pos, stat, v,
-				left, right, isGood, NULL, false, correct_threshold, discard_singletons );
-	}
+  int left = read_size; int right = -1;
+  bool changedRead = false;
+#if 0
+  pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );
+  while ( (it = pr.nextKMerNo(it.first)).first > -1 ) {
+    const PositionKMer & kmer = kmers[it.second].first;
+    const uint32_t pos = it.first;
+    const KMerStat & stat = kmers[it.second].second;
+    changedRead = changedRead ||
+                  internalCorrectReadProcedure( r, readno, seq, kmers, kmer, pos, stat, v,
+                                                left, right, isGood, NULL, false, correct_threshold, discard_singletons );
+  }
+#else
+  ValidKMerGenerator<K> gen(Globals::blob + pr.start(),
+                            /* quality is not necessary */ NULL,
+                            read_size);
+  while (gen.HasMore()) {
+    const Seq<K> &kmer = gen.kmer();
+#if 0
+    auto appr_pos = std::lower_bound(Globals::kmerseqs->begin(), Globals::kmerseqs->end(),
+                                     kmer, Seq<K>::less2());
+    if (appr_pos != Globals::kmerseqs->end() &&
+        *appr_pos == kmer) {
+      size_t pos = appr_pos - Globals::kmerseqs->begin();
+      size_t read_pos = gen.pos() - 1;
+#else
+    auto it = Globals::kmer_index->find(kmer);
+    if (it != Globals::kmer_index->end()) {
+      size_t pos = it->second;
+      size_t read_pos = gen.pos() - 1;
+#endif
+
+      const PositionKMer &kmer = kmers[pos].first;
+      const KMerStat &stat = kmers[pos].second;
+      changedRead = changedRead ||
+                    internalCorrectReadProcedure(r, readno, seq, kmers, kmer, read_pos, stat, v,
+                                                 left, right, isGood, NULL, false, correct_threshold, discard_singletons );
+    }
+    gen.Next();
+  }
+#endif
 
 	int left_rev = 0; int right_rev = read_size-(int)K;
 
