@@ -456,7 +456,9 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	Globals::kmernos->clear();
 	Globals::kmernos->reserve(vec.size());
   Globals::kmer_index->clear();
+#if 0
   Globals::kmer_index->reserve(vec.size());
+#endif
   for (size_t i=0; i < vec.size(); ++i) {
     Globals::kmernos->push_back(vec[i].first.start());
     const char* s = Globals::blob + vec[i].first.start();
