@@ -284,19 +284,21 @@ void HammerTools::SplitKMers() {
         continue;
 
       size_t cpos = pr.start(), csize = pr.size();
-      string s(Globals::blob + cpos, csize);
-			string q;
-			if (Globals::use_common_quality) {
-				q = string(csize, (char)Globals::common_quality);
-			} else {
-				q = string(Globals::blobquality + cpos, csize);
-			}
-			ValidKMerGenerator<K> gen(s, q);
-			if (use_minimizers ) {
+      const char *s = Globals::blob + cpos;
+      const char *q;
+      std::string q_common;
+      if (Globals::use_common_quality) {
+        q_common.assign(csize, (char)Globals::common_quality);
+        q = q_common.data();
+      } else {
+        q = Globals::blobquality + cpos;
+      }
 
+			ValidKMerGenerator<K> gen(s, q, csize);
+			if (use_minimizers ) {
 				// M is the larger k-mer size -- every m-mer should have several minimizer k-mers inside
-				ValidKMerGenerator<M> gen_m(s, q);
-				vector< hint_t > mmers;
+				ValidKMerGenerator<M> gen_m(s, q, csize);
+				vector<hint_t> mmers;
 				//cout << s << endl;
 				while (gen_m.HasMore()) {
 					//for (size_t j=0; j<gen_m.pos(); ++j) cout << " ";
@@ -370,32 +372,34 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
     if (!pr.valid())
       continue;
 
-    string s(Globals::blob        + pr.start() , pr.size());
-		string q;
-
+    const char *s = Globals::blob + pr.start();
+    const char *q;
+    size_t slen = pr.size();
+    std::string q_common;
 		if (Globals::use_common_quality) {
-			q = string(pr.size(), (char)Globals::common_quality);
+      q_common.assign(pr.size(), (char)Globals::common_quality);
+      q = q_common.data();
 		} else {
-			q = string(Globals::blobquality + pr.start(), pr.size());
+			q = Globals::blobquality + pr.start();
 		}
-		ValidKMerGenerator<K> gen(s, q);
+		ValidKMerGenerator<K> gen(s, q, slen);
 		vector< pair<hint_t, pair< double, size_t > > > kmers;
 		unordered_map<hint_t, Seq<K> > seqs;
 		while (gen.HasMore()) {
 			hint_t cur_pos = pr.start() + gen.pos() - 1;
 			kmers.push_back( make_pair(cur_pos, make_pair( 1 - gen.correct_probability(), my_hash(cur_pos) ) ));
-			seqs[ cur_pos ] = gen.kmer();
+			seqs[cur_pos] = gen.kmer();
 			gen.Next();
 		}
-		ValidKMerGenerator<M> gen_m(s, q);
-		vector< hint_t > mmers;
+		ValidKMerGenerator<M> gen_m(s, q, slen);
+		vector<hint_t> mmers;
 		while (gen_m.HasMore()) {
 			mmers.push_back( Globals::pr->at(i).start() + gen_m.pos() - 1 );
 			gen_m.Next();
 		}
 
 		HammerTools::findMinimizers( kmers, num_minimizers, mmers, which_first );
-		for ( vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
+		for (std::vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
 			Seq<K> km = seqs[it->first];
 			KMerMap::iterator mit = m.find(km);
 			if (mit == m.end()) {
