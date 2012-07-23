@@ -41,8 +41,6 @@ class PositionRead {
     VERIFY(val < 65536);
     ltrim_ = val;
   }
-  
-  std::pair<size_t, hint_t> nextKMerNo(size_t begin) const;
 };
 
 #endif

@@ -448,8 +448,6 @@ void HammerTools::CountKMersBySplitAndMerge() {
     size_t vsize = vec.size(), bsize = buf.size();
     vec.reserve(vsize + bsize);
     vec.insert(vec.end(), buf.begin(), buf.end());
-    std::inplace_merge(vec.begin(), vec.begin() + vsize, vec.end(),
-                       KMerNo::is_less_kmercount());
   }
 
 	TIMEDLN("Extracting kmernos");
