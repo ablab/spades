@@ -58,7 +58,7 @@ bayes_hammer_mode				0
 
 ; iterative expansion step
 expand_do					1
-expand_max_iterations		5
+expand_max_iterations		25
 expand_nthreads				6
 expand_write_each_iteration	0
 expand_write_kmers_result	0
