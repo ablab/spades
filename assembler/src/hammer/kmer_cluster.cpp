@@ -600,19 +600,29 @@ void KMerClustering::process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<
 	string buf;
 
 	size_t cur_class_num = 0;
-	vector< vector<int> > curClasses;
-	vector<int> cur_class;
+  std::vector< std::vector<int> > curClasses;
+  std::vector<int> cur_class;
 
-	vector< vector< vector<int> > > blocksInPlace(cfg::get().hamming_class_buffer);
+  std::vector< std::vector< std::vector<int> > > blocksInPlace(cfg::get().hamming_class_buffer);
 
 	while (ifs.good()) {
 		curClasses.clear();
+#if 0
+    curClasses.shrink_to_fit();
+#else
+    std::vector<std::vector<int> >().swap(curClasses);
+#endif
 
 		size_t i_nontriv = 0;
 		size_t cur_total_size = 0;
 		size_t orig_class_num = cur_class_num;
 		while (cur_total_size < (size_t)cfg::get().hamming_class_buffer && ifs.good()) {
 			cur_class.clear();
+#if 0
+      cur_class.shrink_to_fit();
+#else
+      std::vector<int>().swap(cur_class);
+#endif
       size_t classNum, sizeClass;
       ifs.read(&classNum, sizeof(classNum));
       ifs.read(&sizeClass, sizeof(sizeClass));
@@ -656,7 +666,12 @@ void KMerClustering::process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<
 		#pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_)
 		for (size_t i=0; i < i_nontriv; ++i) {
 			blocksInPlace[i].clear();
-			process_block_SIN(curClasses[i], blocksInPlace[i]);
+#if 0
+      blocksInPlace[i].shrink_to_fit();
+#else
+      std::vector< std::vector<int> >().swap(blocksInPlace[i]);
+#endif
+      process_block_SIN(curClasses[i], blocksInPlace[i]);
 		}
 
 		for (size_t n=0; n < i_nontriv; ++n) {

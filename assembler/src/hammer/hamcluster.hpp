@@ -119,6 +119,11 @@ class SubKMerBlockFile {
 
   bool get_block(std::vector<size_t> &block) {
     block.clear();
+#if 0
+    block.shrink_to_fit();
+#else
+    std::vector<size_t>().swap(block);
+#endif
 
     if (!ifs_.good())
       return false;
@@ -173,6 +178,11 @@ class SubKMerSplitter {
   void deserialize(std::vector<SubKMer> &res,
                    Reader &is) {
     res.clear();
+#if 0
+    res.shrink_to_fit();
+#else
+    std::vector<SubKMer>().swap(res);
+#endif
 
     size_t sz;
     is.read((char*)&sz, sizeof(sz));
