@@ -518,7 +518,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		make_dir(folder + "along_genome/");
 		size_t threshold = 500; //cfg::get().ds.IS ? *cfg::get().ds.IS : 250;
 		WriteGraphComponentsAlongGenome(gp.g, gp.int_ids, gp.index,
-				gp.kmer_mapper, labeler, gp.genome, folder, "along_genome/",
+				gp.kmer_mapper, labeler, gp.genome, folder, "along_genome/graph.dot",
 				threshold, k);
 	}
 
@@ -998,26 +998,25 @@ public:
 	}
 };
 
+//deprecated, todo remove usages!!!
 template<class gp_t>
-void FillPos(gp_t& gp, const string& contig_file, const string& prefix/*int start_contig_id*/) {
-//     typedef typename gp_t::Graph::EdgeId EdgeId;
+void FillPos(gp_t& gp, const string& contig_file, string prefix) {
+//	typedef typename gp_t::Graph::EdgeId EdgeId;
 	INFO("Threading large contigs");
-	io::Reader raw_reader(contig_file);
-	io::RCReaderWrapper<io::SingleRead> irs(raw_reader);
-//     for (int c = start_contig_id; !irs.eof(); c++) {
-	while (!irs.eof()) {
+	io::Reader irs(contig_file);
+	while(!irs.eof()) {
 		io::SingleRead read;
 		irs >> read;
-//             INFO("Contig #" << c << ", length: " << read.size());
+		DEBUG("Contig " << read.name() << ", length: " << read.size());
 		if (!read.IsValid()) {
-//                     WARN("Attention: contig #" << c << " contains Ns");
+			WARN("Attention: contig " << read.name() << " contains Ns");
 			continue;
 		}
 		Sequence contig = read.sequence();
 		if (contig.size() < 1500000) {
-//              continue;
+			//		continue;
 		}
-		FillPos(gp, contig, prefix + read.name()/*ToString(c)*/);
+		FillPos(gp, contig, prefix + read.name());
 	}
 }
 
@@ -1048,6 +1047,8 @@ void OutputWrongContigs(conj_graph_pack& gp, size_t bound,
 		const string &file_name) {
 	OutputWrongContigs(gp.g, gp.index, gp.genome, bound, file_name, gp.k_value);
 }
+
+
 
 /*//		Graph& g, const EdgeIndex<k + 1, Graph>& index,
  //		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper)
