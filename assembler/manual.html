@@ -109,7 +109,7 @@ Thank you for using SPAdes!
 <p>
     SPAdes accepts single reads as well as forward-reverse paired end reads in FASTA and FASTQ format;
     however, in order to run error correction, reads should be in FASTQ format. All files may be compressed
-    with gzip. At present, SPAdes can accept only one paired-end library as input.
+    with gzip. At present, SPAdes can accept only one paired-end library as an input.
 </p>
 
 <p>
@@ -163,7 +163,7 @@ Thank you for using SPAdes!
 </pre>
 
 <p>
-    To test SPAdes you can run the toy dataset (see <a href="#sec3">section 3</a>) as follows:
+    To run SPAdes on the toy dataset (see <a href="#sec3">section 3</a>) type
 </p>
 
 <pre class="code">
@@ -209,7 +209,7 @@ Thank you for using SPAdes!
     Actually consumed physical memory will be smaller than this limit.</p>
 
 <p><code>--tmp-dir &lt;dirname></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Set the directory to store temporary files from error correction.  The default value is <code>&lt;output_dir>/&lt;project_name>/corrected/tmp</code>.</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;Sets the directory to store temporary files from error correction.  The default value is <code>&lt;output_dir>/&lt;project_name>/corrected/tmp</code>.</p>
 
 
 <p><code>-k &lt;int,int,...> </code><br>
@@ -223,10 +223,10 @@ Thank you for using SPAdes!
     &nbsp;&nbsp;&nbsp;&nbsp;PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.</p>
 
 <p><code>--only-error-correction</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Run error correction only.</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs error correction only.</p>
 
 <p><code>--only-assembler</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Run assembly only.</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs assembly only.</p>
 
 <p><code>--disable-gzip-output</code> <br>
     &nbsp;&nbsp;&nbsp;&nbsp;Forces error correction not to compress the corrected reads.</p>
@@ -238,7 +238,7 @@ Thank you for using SPAdes!
     &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes in debug mode, keeping intermediate results.</p>
 
 <p><code>-h</code> (or <code>--help</code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Print help.</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;Prints help.</p>
 
 
 <h3>2.4 Preparing configuration files</h3>
