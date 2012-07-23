@@ -16,6 +16,8 @@
 #include "log.hpp"
 #include "seq_common.hpp"
 #include "seq.hpp"
+#include "simple_seq.hpp"
+
 #include <cstring>
 #include <iostream>
 
@@ -170,6 +172,14 @@ public:
     template<size_t size2_, typename T2 = T>
     explicit RuntimeSeq(const Seq<size2_, T2>& seq, bool): size_(size2_) {
         VERIFY(size_ <= max_size_);
+        seq.copy_data(data_.data());
+    }
+
+    template<size_t size2_, typename T2 = T>
+    explicit RuntimeSeq(const SimpleSeq<size2_, T2>& seq, size_t k): size_(k) {
+        VERIFY(size_ <= max_size_);
+        VERIFY(size2_ <= max_size_);
+
         seq.copy_data(data_.data());
     }
 
@@ -514,6 +524,12 @@ public:
     Seq<size2_, T2> get_seq() const {
         VERIFY_MSG(size2_ == size_, size2_ << " != " << size_ );
         return Seq<size2_, T2>((T2*) data_.data());
+    }
+
+    template<size_t size2_, typename T2 = T>
+    SimpleSeq<size2_, T2> get_sseq() const {
+        VERIFY(size2_ <= max_size_);
+        return SimpleSeq<size2_, T2>((T2*) data_.data());
     }
 
     void copy_data(void * dst) const {

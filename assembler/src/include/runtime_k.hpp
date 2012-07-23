@@ -10,7 +10,9 @@
 
 #include "sequence/sequence.hpp"
 #include "sequence/seq.hpp"
+#include "sequence/simple_seq.hpp"
 #include "sequence/rtseq.hpp"
+
 
 #include <unordered_map>
 #include <unordered_set>
@@ -20,8 +22,20 @@
 
 namespace runtime_k {
 
+#define T_SIZE sizeof(seq_element_type)
 
-const size_t UPPER_BOUND = ((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
+#define GET_T_ELEMENTS_NUMBER(value) ((value - 1) / (T_SIZE << 2) + 1)
+
+#define GET_K_BY_TS(value) (value * (T_SIZE << 2))
+
+#define GET_UPPER_BOUND(value) GET_K_BY_TS( GET_T_ELEMENTS_NUMBER(value) )
+
+
+const size_t UPPER_BOUND = GET_UPPER_BOUND(MAX_K); //((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
+
+const size_t MAX_TS = GET_T_ELEMENTS_NUMBER(MAX_K);
+
+const size_t MIN_TS = GET_T_ELEMENTS_NUMBER(MIN_K);
 
 
 typedef RuntimeSeq<UPPER_BOUND> RtSeq;
@@ -31,18 +45,18 @@ typedef RuntimeSeq<UPPER_BOUND> RtSeq;
 template <size_t size_>
 class TypeContainerImpl {
 public:
-    typedef Seq<size_> Kmer;
+    typedef SimpleSeq<size_> Kmer;
 
     typedef unordered_set<Kmer, typename Kmer::hash, typename Kmer::equal_to> set_type;
 
     typedef std::vector<Kmer> vector_type;
 
     static Kmer from_sequence(const RtSeq& seq) {
-        return seq.get_seq<size_>();
+        return seq.get_sseq<size_>();
     }
 
-    static RtSeq to_sequence(const Kmer& kmer) {
-        return RtSeq(kmer, false);
+    static RtSeq to_sequence(const Kmer& kmer, size_t k = size_) {
+        return RtSeq(kmer, k);
     }
 };
 
@@ -226,12 +240,14 @@ private:
 
     data_type data_;
 
+    size_t k_;
+
 public:
 
-    KmerHashVectorImpl(size_t nthreads):
+    KmerHashVectorImpl(size_t k, size_t nthreads):
         IKmerHashVector(nthreads)
-        , data_      (nthreads) {
-
+        , data_      (nthreads)
+        , k_         (k)   {
     }
 
     virtual base_type * copy() const {
@@ -266,7 +282,7 @@ public:
     }
 
     virtual size_t get_k() const {
-        return size_;
+        return k_;
     }
 
     virtual size_t capacity(size_t i) const {
@@ -297,7 +313,7 @@ class SingleKmerHashVectorFactory {
 
 public:
 
-    virtual IKmerHashVector * GetHashVector(size_t nthreads) const = 0;
+    virtual IKmerHashVector * GetHashVector(size_t k, size_t nthreads) const = 0;
 
     virtual ~SingleKmerHashVectorFactory() {
 
@@ -306,37 +322,40 @@ public:
 
 
 // Single factory for specific k and value
-template <size_t size_>
+template <size_t ts_>
 class SingleKmerHashVectorFactoryImpl: public SingleKmerHashVectorFactory {
 
 public:
 
-    virtual IKmerHashVector * GetHashVector(size_t nthreads) const {
-        return new KmerHashVectorImpl<size_>(nthreads);
+    virtual IKmerHashVector * GetHashVector(size_t k, size_t nthreads) const {
+        VERIFY_MSG(GET_UPPER_BOUND(k) == GET_K_BY_TS(ts_), k << " -> " << GET_UPPER_BOUND(k) << ", " << ts_ << " -> " << GET_K_BY_TS(ts_));
+        //INFO(k << " -> " << GET_UPPER_BOUND(k) << ", " << ts_ << " -> " << GET_K_BY_TS(ts_));
+
+        return new KmerHashVectorImpl< GET_K_BY_TS(ts_) >(k, nthreads);
     }
 
 };
 
 //Factory genetator
-template<size_t k>
+template<size_t ts_>
 class HashVectorGenerator {
 
 public:
 
     static void GenerateHashVectors(std::vector< SingleKmerHashVectorFactory* > & factories) {
-        factories[k] = new SingleKmerHashVectorFactoryImpl<k>();
-        HashVectorGenerator<k - 1> :: GenerateHashVectors (factories);
+        factories[ts_] = new SingleKmerHashVectorFactoryImpl<ts_>();
+        HashVectorGenerator<ts_ - 1> :: GenerateHashVectors (factories);
     }
 };
 
 //Terminating factory generator
 template<>
-class HashVectorGenerator<MIN_K> {
+class HashVectorGenerator<MIN_TS> {
 
 public:
 
     static void GenerateHashVectors(std::vector< SingleKmerHashVectorFactory* > & factories) {
-        factories[MIN_K] = new SingleKmerHashVectorFactoryImpl<MIN_K>;
+        factories[MIN_TS] = new SingleKmerHashVectorFactoryImpl<MIN_TS>;
     }
 };
 
@@ -351,8 +370,8 @@ private:
     KmerHashVectorFactory() {
         VERIFY_MSG(MIN_K <= MAX_K, "Invalid K value range");
 
-        single_factories_ = std::vector < SingleKmerHashVectorFactory* >(MAX_K + 1);
-        HashVectorGenerator<MAX_K>::GenerateHashVectors(single_factories_);
+        single_factories_ = std::vector < SingleKmerHashVectorFactory* >(MAX_TS + 1);
+        HashVectorGenerator<MAX_TS>::GenerateHashVectors(single_factories_);
     }
 
 public:
@@ -367,7 +386,7 @@ public:
         VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
                 ToString(MIN_K) + " and <= " + ToString(MAX_K));
 
-        return KmerHashVector(single_factories_[k]->GetHashVector(nthreads));
+        return KmerHashVector(single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetHashVector(k, nthreads));
     }
 };
 
@@ -512,12 +531,14 @@ private:
 
     set_type data_;
 
+    size_t k_;
+
 public:
 
-    KmerSetImpl(size_t n): data_(n) {
+    KmerSetImpl(size_t k, size_t n): data_(n), k_(k) {
     }
 
-    KmerSetImpl(): data_() {
+    KmerSetImpl(size_t k): data_(), k_(k) {
     }
 
     virtual base_type * copy() const {
@@ -541,7 +562,7 @@ public:
     }
 
     virtual void transfer(IKmerHashVector * vec, size_t thread_num) {
-        VERIFY_MSG(vec->get_k() == size_, "Unable to transfer vector to set of different k values");
+        VERIFY_MSG(vec->get_k() == k_, "Unable to transfer vector to set of different k values");
 
         //KmerHashVectorImpl<size_> * vec_impl = (KmerHashVectorImpl<size_> *) vec;
         KmerHashVectorImpl<size_> * vec_impl = dynamic_cast< KmerHashVectorImpl<size_> *>(vec);
@@ -561,7 +582,7 @@ public:
     }
 
     virtual size_t get_k() const {
-        return size_;
+        return k_;
     }
 
     virtual void to_file(const std::string& s) const {
@@ -585,9 +606,9 @@ class SingleKmerSetFactory {
 
 public:
 
-    virtual IKmerSet * GetSet(size_t capacity) const = 0;
+    virtual IKmerSet * GetSet(size_t k, size_t capacity) const = 0;
 
-    virtual IKmerSet * GetSet() const = 0;
+    virtual IKmerSet * GetSet(size_t k) const = 0;
 
     virtual ~SingleKmerSetFactory() {
 
@@ -597,41 +618,45 @@ public:
 
 
 // Single factory for specific k and value
-template <size_t size_>
+template <size_t ts_>
 class SingleKmerSetFactoryImpl: public SingleKmerSetFactory {
 
 public:
 
-    virtual IKmerSet * GetSet(size_t capacity) const {
-        return new KmerSetImpl<size_>(capacity);
+    virtual IKmerSet * GetSet(size_t k, size_t capacity) const {
+        VERIFY_MSG(GET_UPPER_BOUND(k) == GET_K_BY_TS(ts_), k << " -> " << GET_UPPER_BOUND(k) << ", " << ts_ << " -> " << GET_K_BY_TS(ts_));
+
+        return new KmerSetImpl< GET_K_BY_TS(ts_) >(k, capacity);
     }
 
-    virtual IKmerSet * GetSet() const {
-        return new KmerSetImpl<size_>();
+    virtual IKmerSet * GetSet(size_t k) const {
+        VERIFY_MSG(GET_UPPER_BOUND(k) == GET_K_BY_TS(ts_), k << " -> " << GET_UPPER_BOUND(k) << ", " << ts_ << " -> " << GET_K_BY_TS(ts_));
+
+        return new KmerSetImpl< GET_K_BY_TS(ts_) >(k);
     }
 
 };
 
 //Factory genetator
-template<size_t k>
+template<size_t ts_>
 class SetGenerator {
 
 public:
 
     static void GenerateSets(std::vector< SingleKmerSetFactory* > & factories) {
-        factories[k] = new SingleKmerSetFactoryImpl<k>();
-        SetGenerator<k - 1> :: GenerateSets (factories);
+        factories[ts_] = new SingleKmerSetFactoryImpl<ts_>();
+        SetGenerator<ts_ - 1> :: GenerateSets (factories);
     }
 };
 
 //Terminating factory generator
 template<>
-class SetGenerator<MIN_K> {
+class SetGenerator<MIN_TS> {
 
 public:
 
     static void GenerateSets(std::vector< SingleKmerSetFactory* > & factories) {
-        factories[MIN_K] = new SingleKmerSetFactoryImpl<MIN_K>();
+        factories[MIN_TS] = new SingleKmerSetFactoryImpl<MIN_TS>();
     }
 };
 
@@ -646,8 +671,8 @@ private:
     KmerSetFactory() {
         VERIFY_MSG(MIN_K <= MAX_K, "Invalid K value range");
 
-        single_factories_ = std::vector < SingleKmerSetFactory* >(MAX_K + 1);
-        SetGenerator<MAX_K>::GenerateSets(single_factories_);
+        single_factories_ = std::vector < SingleKmerSetFactory* >(MAX_TS + 1);
+        SetGenerator<MAX_TS>::GenerateSets(single_factories_);
     }
 
 public:
@@ -662,14 +687,14 @@ public:
         VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
                 ToString(MIN_K) + " and <= " + ToString(MAX_K));
 
-        return KmerSet(single_factories_[k]->GetSet(capacity));
+        return KmerSet(single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetSet(k, capacity));
     }
 
     KmerSet GetSet(size_t k) {
         VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
                 ToString(MIN_K) + " and <= " + ToString(MAX_K));
 
-        return KmerSet(single_factories_[k]->GetSet());
+        return KmerSet(single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetSet(k));
     }
 };
 
@@ -1157,26 +1182,28 @@ class KmerMapIteratorImpl: public IKmerMapIterator<Value> {
 private:
     map_iterator iter_;
 
+    size_t k_;
+
 public:
 
-    KmerMapIteratorImpl(const map_iterator& iter): iter_(iter) {
+    KmerMapIteratorImpl(size_t k, const map_iterator& iter): iter_(iter), k_(k) {
     }
 
     virtual base_type * operator++() {
-        return new iterator_impl(++iter_);
+        return new iterator_impl(k_, ++iter_);
     }
 
     virtual base_type * operator++(int) {
-        return new iterator_impl(iter_++);
+        return new iterator_impl(k_, iter_++);
     }
 
     virtual value_type operator*() {
-        return make_pair(type_container::to_sequence(iter_->first), (*iter_).second);
+        return make_pair(type_container::to_sequence(iter_->first, k_), (*iter_).second);
     }
 
 
     virtual RtSeq first() {
-        return type_container::to_sequence(iter_->first);
+        return type_container::to_sequence(iter_->first, k_);
     }
 
     virtual Value& second() {
@@ -1193,11 +1220,11 @@ public:
     }
 
     virtual base_type * copy() const {
-        return new iterator_impl(iter_);
+        return new iterator_impl(k_, iter_);
     }
 
     virtual size_t get_k() const {
-        return size_;
+        return k_;
     }
 
     const map_iterator& get_data() const {
@@ -1227,26 +1254,28 @@ class KmerConstMapIteratorImpl: public IKmerConstMapIterator<Value> {
 private:
     map_iterator iter_;
 
+    size_t k_;
+
 public:
 
-    KmerConstMapIteratorImpl(const map_iterator& iter): iter_(iter) {
+    KmerConstMapIteratorImpl(size_t k, const map_iterator& iter): iter_(iter), k_(k) {
     }
 
     virtual base_type * operator++() {
-        return new iterator_impl(++iter_);
+        return new iterator_impl(k_, ++iter_);
     }
 
     virtual base_type * operator++(int) {
-        return new iterator_impl(iter_++);
+        return new iterator_impl(k_, iter_++);
     }
 
     virtual const value_type operator*() const {
-        return make_pair(type_container::to_sequence(iter_->first), iter_->second);
+        return make_pair(type_container::to_sequence(iter_->first, k_), iter_->second);
     }
 
 
     virtual RtSeq first() const {
-        return type_container::to_sequence(iter_->first);
+        return type_container::to_sequence(iter_->first, k_);
     }
 
     virtual const Value& second() const {
@@ -1263,11 +1292,11 @@ public:
     }
 
     virtual base_type * copy() const {
-        return new iterator_impl(iter_);
+        return new iterator_impl(k_, iter_);
     }
 
     virtual size_t get_k() const {
-        return size_;
+        return k_;
     }
 
     const map_iterator& get_data() const {
@@ -1306,14 +1335,18 @@ private:
 
     map_type* data_;
 
+    size_t k_;
+
 public:
 
-    KmerMapImpl(size_t n) {
+    KmerMapImpl(size_t k, size_t n) {
     	data_ = new map_type(n);
+    	k_ = k;
     }
 
-    KmerMapImpl() {
+    KmerMapImpl(size_t k) {
     	data_ = new map_type();
+    	k_ = k;
     }
 
     /*virtual*/ ~KmerMapImpl() {
@@ -1321,7 +1354,7 @@ public:
     }
 
     virtual void transfer(IKmerSet * set, const Value& val) {
-        VERIFY_MSG(set->get_k() == size_, "Unable to transfer set to map of different k values");
+        VERIFY_MSG(set->get_k() == k_, "Unable to transfer set to map of different k values");
 
         //KmerSetImpl<size_> * set_impl = (KmerSetImpl<size_> *) set;
         KmerSetImpl<size_> * set_impl = dynamic_cast< KmerSetImpl<size_> *> (set);
@@ -1347,19 +1380,19 @@ public:
     }
 
     virtual const_iterator_type * cbegin() const {
-        return new const_iterator_impl(data_->begin());
+        return new const_iterator_impl(k_, data_->begin());
     }
 
     virtual iterator_type * begin()  {
-        return new iterator_impl(data_->begin());
+        return new iterator_impl(k_, data_->begin());
     }
 
     virtual const_iterator_type * cend() const {
-        return new const_iterator_impl(data_->end());
+        return new const_iterator_impl(k_, data_->end());
     }
 
     virtual iterator_type * end() {
-        return new iterator_impl(data_->end());
+        return new iterator_impl(k_, data_->end());
     }
 
 
@@ -1369,11 +1402,11 @@ public:
 
 
     virtual const_iterator_type * cfind(const key_type& kmer_seq) const {
-        return new const_iterator_impl(data_->find(type_container::from_sequence(kmer_seq)));
+        return new const_iterator_impl(k_, data_->find(type_container::from_sequence(kmer_seq)));
     }
 
     virtual iterator_type * find(const key_type& kmer_seq) {
-        return new iterator_impl(data_->find(type_container::from_sequence(kmer_seq)));
+        return new iterator_impl(k_, data_->find(type_container::from_sequence(kmer_seq)));
     }
 
     virtual size_t count(const key_type& kmer_seq) const {
@@ -1383,7 +1416,7 @@ public:
 
     virtual pair<iterator_type *, bool> insert(const value_type& val) {
         auto res = data_->insert(make_pair(type_container::from_sequence(val.first), val.second));
-        return make_pair(new iterator_impl(res.first), res.second);
+        return make_pair(new iterator_impl(k_, res.first), res.second);
     }
 
     virtual size_t erase(const key_type& kmer_seq) {
@@ -1391,11 +1424,11 @@ public:
     }
 
     virtual iterator_type * erase(iterator_type * iter) {
-        VERIFY_MSG(iter->get_k() == size_, "Unable to erase by iterator of different k value");
+        VERIFY_MSG(iter->get_k() == k_, "Unable to erase by iterator of different k value");
 
         //iterator_impl * it = (iterator_impl *) iter;
         iterator_impl * it = dynamic_cast< iterator_impl * > (iter);
-        return new iterator_impl(data_->erase(it->get_data()));
+        return new iterator_impl(k_, data_->erase(it->get_data()));
     }
 
 //    virtual iterator_type * erase(const_iterator_type * iter) {
@@ -1445,7 +1478,7 @@ public:
     }
 
     virtual size_t get_k() const {
-        return size_;
+        return k_;
     }
 
 };
@@ -1459,9 +1492,9 @@ class SingleKmerMapFactory {
 
 public:
 
-    virtual IKmerMap<Value> * GetMap(size_t capacity) const = 0;
+    virtual IKmerMap<Value> * GetMap(size_t k, size_t capacity) const = 0;
 
-    virtual IKmerMap<Value> * GetMap() const = 0;
+    virtual IKmerMap<Value> * GetMap(size_t k) const = 0;
 
     virtual ~SingleKmerMapFactory() {
 
@@ -1471,41 +1504,45 @@ public:
 
 
 // Single factory for specific k and value
-template <size_t size_, class Value>
+template <size_t ts_, class Value>
 class SingleKmerMapFactoryImpl: public SingleKmerMapFactory<Value> {
 
 public:
 
-    virtual IKmerMap<Value> * GetMap(size_t capacity) const {
-        return new KmerMapImpl<size_, Value>(capacity);
+    virtual IKmerMap<Value> * GetMap(size_t k, size_t capacity) const {
+        VERIFY_MSG(GET_UPPER_BOUND(k) == GET_K_BY_TS(ts_), k << " -> " << GET_UPPER_BOUND(k) << ", " << ts_ << " -> " << GET_K_BY_TS(ts_));
+
+        return new KmerMapImpl<GET_K_BY_TS(ts_), Value>(k, capacity);
     }
 
-    virtual IKmerMap<Value> * GetMap() const {
-        return new KmerMapImpl<size_, Value>();
+    virtual IKmerMap<Value> * GetMap(size_t k) const {
+        VERIFY_MSG(GET_UPPER_BOUND(k) == GET_K_BY_TS(ts_), k << " -> " << GET_UPPER_BOUND(k) << ", " << ts_ << " -> " << GET_K_BY_TS(ts_));
+
+        return new KmerMapImpl<GET_K_BY_TS(ts_), Value>(k);
     }
 
 };
 
 //Factory genetator
-template<size_t k, class Value>
+template<size_t ts_, class Value>
 class MapGenerator {
 
 public:
 
     static void GenerateMaps(std::vector< SingleKmerMapFactory<Value>* > & factories) {
-        factories.at(k) = new SingleKmerMapFactoryImpl<k, Value>();
-        MapGenerator<k - 1, Value> :: GenerateMaps (factories);
+        factories.at(ts_) = new SingleKmerMapFactoryImpl<ts_, Value>();
+        MapGenerator<ts_ - 1, Value> :: GenerateMaps (factories);
     }
 };
 
 //Terminating factory generator
 template<class Value>
-class MapGenerator<MIN_K, Value> {
+class MapGenerator<MIN_TS, Value> {
 
 public:
 
     static void GenerateMaps(std::vector< SingleKmerMapFactory<Value>* > & factories) {
-        factories.at(MIN_K) = new SingleKmerMapFactoryImpl<MIN_K, Value>;
+        factories.at(MIN_TS) = new SingleKmerMapFactoryImpl<MIN_TS, Value>;
     }
 };
 
@@ -1521,8 +1558,8 @@ private:
     KmerValueMapFactory() {
         VERIFY_MSG(MIN_K <= MAX_K, "Invalid K value range");
 
-        single_factories_ = std::vector < SingleKmerMapFactory<Value>* >(MAX_K + 1);
-        MapGenerator<MAX_K, Value>::GenerateMaps(single_factories_);
+        single_factories_ = std::vector < SingleKmerMapFactory<Value>* >(MAX_TS + 1);
+        MapGenerator<MAX_TS, Value>::GenerateMaps(single_factories_);
     }
 
 public:
@@ -1532,25 +1569,25 @@ public:
         return instance;
     }
 
-    KmerMap<Value> GetMap(size_t k, size_t capacity = 10) {
+    KmerMap<Value> GetMap(size_t k, size_t capacity) {
         VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
                 ToString(MIN_K) + " and <= " + ToString(MAX_K));
 
-        return KmerMap<Value>(single_factories_[k]->GetMap(capacity));
+        return KmerMap<Value>(single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetMap(k, capacity));
     }
 
     KmerMap<Value> GetMap(size_t k) {
         VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
                 ToString(MIN_K) + " and <= " + ToString(MAX_K));
 
-        return KmerMap<Value>(single_factories_[k]->GetMap());
+        return KmerMap<Value>(single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetMap(k));
     }
 
     IKmerMap<Value> * GetRawMap(size_t k) {
         VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
                 ToString(MIN_K) + " and <= " + ToString(MAX_K));
 
-        return single_factories_[k]->GetMap();
+        return single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetMap(k);
     }
 };
 

@@ -10,5 +10,4 @@
 
 typedef u_int64_t seq_element_type;
 
-
 #endif /* SEQ_COMMON_HPP_ */
