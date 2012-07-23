@@ -424,8 +424,7 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 }
 
 void HammerTools::CountKMersBySplitAndMerge() {
-	vector<KMerCount> vec;
-	KMerMap m;
+  std::vector<KMerCount> vec;
 
   if (cfg::get().count_do) {
     HammerTools::SplitKMers();
@@ -437,26 +436,18 @@ void HammerTools::CountKMersBySplitAndMerge() {
   TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
   std::vector< std::vector<KMerCount> > kmcvec(numfiles);
 
-  for (int iFile=0; iFile < numfiles; ++iFile) {
+  for (unsigned iFile=0; iFile < numfiles; ++iFile) {
+    std::vector<KMerCount> buf;
+    TIMEDLN("Processing file " << iFile);
     std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
-    HammerTools::ProcessKmerHashFile(fname, kmcvec[iFile]);
-    TIMEDLN("Processed file " << iFile);
-  }
+    HammerTools::ProcessKmerHashFile(fname, buf);
 
-  TIMEDLN("Concat vectors");
-  size_t totalsize = 0; for ( int iFile=0; iFile < numfiles; ++iFile ) totalsize += kmcvec[iFile].size();
-  vec.reserve(totalsize);
-  vector< size_t > enditers;
-  for (int iFile=0; iFile < numfiles; ++iFile ) {
-    vec.insert(vec.end(), kmcvec[iFile].begin(), kmcvec[iFile].end());
-    enditers.push_back(vec.size());
-    kmcvec[iFile].clear();
-  }
-
-  TIMEDLN("Merge in place");
-  KMerNo::is_less_kmercount fun_ilk;
-  for (int iFile=1; iFile < numfiles; ++iFile ) {
-    std::inplace_merge(vec.begin(), vec.begin() + enditers[iFile-1], vec.begin() + enditers[iFile], fun_ilk );
+    TIMEDLN("Merging the contents");
+    size_t vsize = vec.size(), bsize = buf.size();
+    vec.reserve(vsize + bsize);
+    vec.insert(vec.end(), buf.begin(), buf.end());
+    std::inplace_merge(vec.begin(), vec.begin() + vsize, vec.end(),
+                       KMerNo::is_less_kmercount());
   }
 
 	TIMEDLN("Extracting kmernos");
