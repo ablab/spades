@@ -73,7 +73,7 @@ function change_config
 
 if [ $# = 0 ]
 then
-    run_n_measure build/release/online_vis/online_vis $cfg_debruijn/config.info 
+    run_n_measure build/release/debruijn/spades $cfg_debruijn/config.info 
 else 
     if [ $# = 2 ]
     then
