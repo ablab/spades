@@ -242,7 +242,7 @@ def check_config(cfg, default_project_name=""):
             # error_correction
     if "error_correction" in cfg:
         if not "max_iterations" in cfg["error_correction"].__dict__:
-            cfg["error_correction"].__dict__["max_iterations"] = 2
+            cfg["error_correction"].__dict__["max_iterations"] = 1
         if not "gzip_output" in cfg["error_correction"].__dict__:
             cfg["error_correction"].__dict__["gzip_output"] = True
         if not "tmp_dir" in cfg["error_correction"].__dict__:

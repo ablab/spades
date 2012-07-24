@@ -19,7 +19,7 @@ general_hard_memory_limit	150
 general_max_nthreads		16
 general_tau					1
 general_gzip				0
-general_max_iterations		5
+general_max_iterations		1
 general_blob_margin			0.25
 general_gzip_margin			4.0
 general_file_buffer_exp		20
