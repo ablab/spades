@@ -111,3 +111,7 @@ include(CMakeListsInternal.txt)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lrt ") #-lgomp
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+
+# profiling options
+#add_definitions(-pg)
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
