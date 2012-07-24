@@ -153,9 +153,9 @@ int main(int argc, char** argv)
 
         limit_memory(cfg::get().max_memory * GB);
 
-        if (cfg::get().use_multithreading) {
-            debruijn_graph::convert_reads_to_binary();
-        }
+//        if (cfg::get().use_multithreading) {
+//            debruijn_graph::convert_reads_to_binary();
+//        }
 
         // assemble it!
         INFO("Assembling " << cfg::get().dataset_name << " dataset (" << cfg::get().dataset_file << ")");

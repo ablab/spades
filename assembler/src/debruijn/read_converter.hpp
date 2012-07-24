@@ -20,45 +20,59 @@ namespace debruijn_graph {
 typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
 typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-const static size_t current_bianry_format_verstion = 3;
+class ReadConverter {
 
-void convert_reads_to_binary() {
+private:
+    const static size_t current_bianry_format_verstion = 3;
 
-    if (fileExists(cfg::get().temp_bin_reads_info)) {
-        std::ifstream info;
-        info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::in);
-        size_t thread_num;
-        info >> thread_num;
+    void convert_reads_to_binary() {
 
-        size_t format = 0;
+        if (fileExists(cfg::get().temp_bin_reads_info)) {
+            std::ifstream info;
+            info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::in);
+            size_t thread_num;
+            info >> thread_num;
 
-        if (!info.eof()) {
-            info >> format;
+            size_t format = 0;
+
+            if (!info.eof()) {
+                info >> format;
+            }
+
+            info.close();
+
+            if (thread_num == cfg::get().max_threads && format == current_bianry_format_verstion) {
+                INFO("Binary reads detected");
+                return;
+            }
         }
 
+        std::ofstream info;
+        info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
+
+        INFO("Converting paired reads to binary format (takes a while)");
+        auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(false, 0);
+        io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
+        paired_converter.ToBinary(*paired_reader);
+
+        INFO("Converting single reads to binary format (takes a while)");
+        auto_ptr<SingleReadStream> single_reader = single_easy_reader(false, false);
+        io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
+        single_converter.ToBinary(*single_reader);
+
+        info << cfg::get().max_threads << " " << current_bianry_format_verstion;
         info.close();
-
-        if (thread_num == cfg::get().max_threads && format == current_bianry_format_verstion) {
-            INFO("Binary reads detected");
-            return;
-        }
     }
 
-    std::ofstream info;
-    info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
+public:
+    ReadConverter() {
+        convert_reads_to_binary();
+    }
+};
 
-    INFO("Converting paired reads to binary format (takes a while)");
-    auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(false, 0);
-    io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
-    paired_converter.ToBinary(*paired_reader);
 
-    INFO("Converting single reads to binary format (takes a while)");
-    auto_ptr<SingleReadStream> single_reader = single_easy_reader(false, false);
-    io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
-    single_converter.ToBinary(*single_reader);
-
-    info << cfg::get().max_threads << " " << current_bianry_format_verstion;
-    info.close();
+void convert_if_needed() {
+    static ReadConverter converter;
 }
 
 
@@ -118,6 +132,7 @@ std::vector< SequencePairedReadStream* > apply_paired_wrappers(bool followed_by_
 
 
 std::vector< SequenceSingleReadStream* > single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
+    convert_if_needed();
 
     std::vector<SequenceSingleReadStream*> single_streams(cfg::get().max_threads);
     for (size_t i = 0; i < cfg::get().max_threads; ++i) {
@@ -138,6 +153,8 @@ std::vector< SequenceSingleReadStream* > single_binary_readers(bool followed_by_
 
 
 std::vector< SequencePairedReadStream* > paired_binary_readers(bool followed_by_rc, size_t insert_size) {
+    convert_if_needed();
+
     std::vector<SequencePairedReadStream*> paired_streams(cfg::get().max_threads);
     for (size_t i = 0; i < cfg::get().max_threads; ++i) {
         paired_streams[i] = new io::SeqPairedReadStream(cfg::get().paired_read_prefix, i, insert_size);
@@ -146,10 +163,14 @@ std::vector< SequencePairedReadStream* > paired_binary_readers(bool followed_by_
 }
 
 auto_ptr<SequenceSingleReadStream> single_binary_multireader(bool followed_by_rc, bool including_paired_reads) {
+    convert_if_needed();
+
     return auto_ptr<SequenceSingleReadStream>(new io::MultifileReader<io::SingleReadSeq>(single_binary_readers(followed_by_rc, including_paired_reads)));
 }
 
 auto_ptr<SequencePairedReadStream> paired_binary_multireader(bool followed_by_rc, size_t insert_size) {
+    convert_if_needed();
+
     return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(paired_binary_readers(followed_by_rc, insert_size)));
 }
 
@@ -204,6 +225,8 @@ public:
 
 
 std::vector< SequenceSingleReadStream* > single_buffered_binary_readers(bool followed_by_rc, bool including_paired_reads) {
+    convert_if_needed();
+
     BufferedReadersStorage * storage = BufferedReadersStorage::GetInstance();
 
     if (including_paired_reads) {
@@ -215,6 +238,8 @@ std::vector< SequenceSingleReadStream* > single_buffered_binary_readers(bool fol
 }
 
 std::vector< SequencePairedReadStream* > paired_buffered_binary_readers(bool followed_by_rc, size_t insert_size) {
+    convert_if_needed();
+
     BufferedReadersStorage * storage = BufferedReadersStorage::GetInstance();
 
     std::vector<SequencePairedReadStream*> paired_streams(cfg::get().max_threads);
@@ -225,10 +250,14 @@ std::vector< SequencePairedReadStream* > paired_buffered_binary_readers(bool fol
 }
 
 auto_ptr<SequenceSingleReadStream> single_buffered_binary_multireader(bool followed_by_rc, bool including_paired_reads) {
+    convert_if_needed();
+
     return auto_ptr<SequenceSingleReadStream>(new io::MultifileReader<io::SingleReadSeq>(single_buffered_binary_readers(followed_by_rc, including_paired_reads)));
 }
 
 auto_ptr<SequencePairedReadStream> paired_buffered_binary_multireader(bool followed_by_rc, size_t insert_size) {
+    convert_if_needed();
+
     return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(paired_buffered_binary_readers(followed_by_rc, insert_size)));
 }
 
