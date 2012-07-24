@@ -41,7 +41,7 @@
 #include "read/read.hpp"
 #include "sequence/seq.hpp"
 #include "../kmer_freq_info.hpp"
-#include "../valid_kmer_generator.hpp"
+#include "valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
 
 using std::string;
