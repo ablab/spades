@@ -22,6 +22,7 @@
  * the reads provided. Reads file is supposed to be in fastq
  * format.
  */
+#include "standard.hpp"
 #include <stdint.h>
 #include <cstdio>
 #include <cstdlib>

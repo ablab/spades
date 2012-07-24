@@ -22,6 +22,9 @@
  * the reads provided. Reads file is supposed to be in fastq
  * format.
  */
+
+#include "standard.hpp"
+
 #include <stdint.h>
 #include <cstdio>
 #include <cstdlib>
@@ -48,6 +51,7 @@ using std::unordered_map;
 using std::map;
 using std::ofstream;
 using std::ifstream;
+using std::pair;
 using log4cxx::LoggerPtr;
 using log4cxx::Logger;
 using log4cxx::BasicConfigurator;
