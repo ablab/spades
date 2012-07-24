@@ -12,6 +12,7 @@
 
 #include "io/binary_io.hpp"
 #include "io/rc_reader_wrapper.hpp"
+#include "io/read_stream_vector.hpp"
 #include "dataset_readers.hpp"
 #include "simple_tools.hpp"
 
@@ -76,6 +77,7 @@ void convert_if_needed() {
 }
 
 
+
 std::vector< SequenceSingleReadStream* > apply_single_wrappers(bool followed_by_rc,
         std::vector< SequenceSingleReadStream* >& single_readers,
         std::vector< SequencePairedReadStream* > * paired_readers = 0) {
@@ -90,9 +92,9 @@ std::vector< SequenceSingleReadStream* > apply_single_wrappers(bool followed_by_
         for (size_t i = 0; i < size; ++i) {
             SequenceSingleReadStream * single_stream = single_readers.at(i);
             SequencePairedReadStream * paired_stream = paired_readers->at(i);
-            io::SeqSingleReadStreamWrapper * single_wrapper = new io::SeqSingleReadStreamWrapper(*paired_stream);
+            io::CleanSeqSingleReadStreamWrapper * single_wrapper = new io::CleanSeqSingleReadStreamWrapper(paired_stream);
 
-            raw_readers[i] = new io::MultifileReader<io::SingleReadSeq>(*single_wrapper, *single_stream);
+            raw_readers[i] = new io::MultifileReader<io::SingleReadSeq>(*single_wrapper, *single_stream, true);
         }
     }
     else {
@@ -104,7 +106,7 @@ std::vector< SequenceSingleReadStream* > apply_single_wrappers(bool followed_by_
     if (followed_by_rc) {
         std::vector<SequenceSingleReadStream*> rc_readers(size);
         for (size_t i = 0; i < size; ++i) {
-            rc_readers[i] = new io::RCReaderWrapper<io::SingleReadSeq>(*raw_readers[i]);
+            rc_readers[i] = new io::CleanRCReaderWrapper<io::SingleReadSeq>(raw_readers[i]);
         }
         return rc_readers;
     } else {
@@ -122,7 +124,7 @@ std::vector< SequencePairedReadStream* > apply_paired_wrappers(bool followed_by_
     if (followed_by_rc) {
         std::vector<SequencePairedReadStream*> rc_readers(size);
         for (size_t i = 0; i < size; ++i) {
-            rc_readers[i] = new io::RCReaderWrapper<io::PairedReadSeq>(*paired_readers[i]);
+            rc_readers[i] = new io::CleanRCReaderWrapper<io::PairedReadSeq>(paired_readers[i]);
         }
         return rc_readers;
     } else {
@@ -131,7 +133,7 @@ std::vector< SequencePairedReadStream* > apply_paired_wrappers(bool followed_by_
 }
 
 
-std::vector< SequenceSingleReadStream* > single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
+std::vector< SequenceSingleReadStream* > raw_single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
     convert_if_needed();
 
     std::vector<SequenceSingleReadStream*> single_streams(cfg::get().max_threads);
@@ -151,8 +153,12 @@ std::vector< SequenceSingleReadStream* > single_binary_readers(bool followed_by_
     }
 }
 
+io::ReadStreamVector< SequenceSingleReadStream > single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
+    return io::ReadStreamVector< SequenceSingleReadStream >(raw_single_binary_readers(followed_by_rc, including_paired_reads));
+}
 
-std::vector< SequencePairedReadStream* > paired_binary_readers(bool followed_by_rc, size_t insert_size) {
+
+std::vector< SequencePairedReadStream* > raw_paired_binary_readers(bool followed_by_rc, size_t insert_size) {
     convert_if_needed();
 
     std::vector<SequencePairedReadStream*> paired_streams(cfg::get().max_threads);
@@ -162,18 +168,25 @@ std::vector< SequencePairedReadStream* > paired_binary_readers(bool followed_by_
     return apply_paired_wrappers(followed_by_rc, paired_streams);
 }
 
+io::ReadStreamVector< SequencePairedReadStream > paired_binary_readers(bool followed_by_rc, size_t insert_size) {
+    return io::ReadStreamVector< SequencePairedReadStream >(raw_paired_binary_readers(followed_by_rc, insert_size));
+}
+
+
 auto_ptr<SequenceSingleReadStream> single_binary_multireader(bool followed_by_rc, bool including_paired_reads) {
     convert_if_needed();
 
-    return auto_ptr<SequenceSingleReadStream>(new io::MultifileReader<io::SingleReadSeq>(single_binary_readers(followed_by_rc, including_paired_reads)));
+    return auto_ptr<SequenceSingleReadStream>(new io::MultifileReader<io::SingleReadSeq>(raw_single_binary_readers(followed_by_rc, including_paired_reads), true));
 }
+
 
 auto_ptr<SequencePairedReadStream> paired_binary_multireader(bool followed_by_rc, size_t insert_size) {
     convert_if_needed();
 
-    return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(paired_binary_readers(followed_by_rc, insert_size)));
+    return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(raw_paired_binary_readers(followed_by_rc, insert_size), true));
 }
 
+/*
 
 class BufferedReadersStorage {
 
@@ -260,6 +273,7 @@ auto_ptr<SequencePairedReadStream> paired_buffered_binary_multireader(bool follo
 
     return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(paired_buffered_binary_readers(followed_by_rc, insert_size)));
 }
+*/
 
 }
 

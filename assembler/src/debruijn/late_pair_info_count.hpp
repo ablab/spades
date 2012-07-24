@@ -41,17 +41,17 @@ void late_pair_info_count(conj_graph_pack& gp,
                         gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
 
 
-            for (size_t i = 0; i < streams.size(); ++i) {
-                delete streams[i];
-                delete paired_streams[i];
-            }
+//            for (size_t i = 0; i < streams.size(); ++i) {
+//                delete streams[i];
+//                delete paired_streams[i];
+//            }
         } else {
             auto_ptr<PairedReadStream> stream = paired_easy_reader(false, 0);
-            std::vector <PairedReadStream*> streams(1, stream.get());
+            io::ReadStreamVector <PairedReadStream> streams(stream.get());
             refine_insert_size(streams, gp, edge_length_threshold);
 
             auto paired_stream = paired_easy_reader(true,  *cfg::get().ds.IS);
-            std::vector <PairedReadStream*> paired_streams(1, paired_stream.get());
+            io::ReadStreamVector <PairedReadStream> paired_streams(paired_stream.get());
 
             if (cfg::get().paired_metr == debruijn_graph::paired_metrics::pm_product)
                 FillPairedIndexWithProductMetric(gp.g, gp.index, gp.kmer_mapper,

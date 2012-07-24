@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include "logger/logger.hpp"
 #include "io/reader.hpp"
+#include "io/read_stream_vector.hpp"
 #include "perfcounter.hpp"
 
 namespace omnigraph {
@@ -132,7 +133,7 @@ public:
     }
 
 	template<class ReadThreader, class Read>
-	void FillParallelIndex(std::vector<io::IReader<Read>* >& streams, const ReadThreader& threader, size_t buffer_size) {
+	void FillParallelIndex(io::ReadStreamVector< io::IReader<Read> >& streams, const ReadThreader& threader, size_t buffer_size) {
 
         INFO("Processing reads (takes a while)");
         perf_counter pc;
@@ -147,7 +148,7 @@ public:
             for (size_t i = 0; i < nthreads; ++i) {
 
                 Read r;
-                io::IReader<Read>& stream = *streams[i];
+                io::IReader<Read>& stream = streams[i];
                 stream.reset();
                 std::vector< Path<EdgeId> > buffer(buf_size);
 
@@ -185,7 +186,7 @@ public:
 	}
 
     template<class ReadThreader, class Read>
-    void FillFastParallelIndex(std::vector<io::IReader<Read>* >& streams, const ReadThreader& threader) {
+    void FillFastParallelIndex(io::ReadStreamVector< io::IReader<Read> >& streams, const ReadThreader& threader) {
 
         INFO("Processing reads (takes a while)");
         perf_counter pc;
@@ -207,7 +208,7 @@ public:
             for (size_t i = 0; i < nthreads; ++i) {
 
                 Read r;
-                io::IReader<Read>& stream = *streams[i];
+                io::IReader<Read>& stream = streams[i];
                 stream.reset();
                 Path<EdgeId> path;
 

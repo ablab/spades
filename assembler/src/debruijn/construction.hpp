@@ -32,7 +32,7 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 namespace debruijn_graph {
 
 template<class Read>
-void construct_graph(std::vector<io::IReader<Read>*>& streams,
+void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
 		conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
 	INFO("STAGE == Constructing Graph");
 	size_t rl = ConstructGraphWithCoverage<Read>(cfg::get().K, streams, gp.g,
@@ -124,12 +124,10 @@ void exec_construction(conj_graph_pack& gp) {
 			auto streams = single_binary_readers(true, true);
 			construct_graph<io::SingleReadSeq>(streams, gp,
 					additional_contigs_stream);
-			for (size_t i = 0; i < streams.size(); ++i) {
-				delete streams[i];
-			}
+
 		} else {
 			auto single_stream = single_easy_reader(true, true);
-			std::vector<ReadStream*> streams(1, single_stream.get());
+			io::ReadStreamVector<ReadStream> streams(single_stream.get());
 			construct_graph<io::SingleRead>(streams, gp,
 					additional_contigs_stream);
 		}

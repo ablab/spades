@@ -126,7 +126,7 @@ public:
     }
 
     template<class PairedRead>
-    void CountHistogramParallel(std::vector <io::IReader<PairedRead>*>& streams) {
+    void CountHistogramParallel(io::ReadStreamVector< io::IReader<PairedRead> >& streams) {
         hist_.clear();
 
         size_t nthreads = streams.size();
@@ -145,7 +145,7 @@ public:
             for (size_t i = 0; i < nthreads; ++i) {
 
                 PairedRead r;
-                io::IReader<PairedRead>& stream = *streams[i];
+                io::IReader<PairedRead>& stream = streams[i];
                 stream.reset();
 
                 while (!stream.eof()) {
@@ -177,13 +177,13 @@ public:
 
 
 template<class graph_pack, class PairedRead>
-typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(std::vector <io::IReader<PairedRead>*>& streams, graph_pack& gp, size_t edge_length_threshold) {
+typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(io::ReadStreamVector< io::IReader<PairedRead> >& streams, graph_pack& gp, size_t edge_length_threshold) {
 	INFO("SUBSTAGE == Refining insert size and its distribution");
 
 	InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
 
 	if (streams.size() == 1) {
-	    hist_counter.CountHistogram(*streams.front());
+	    hist_counter.CountHistogram(streams.back());
 	} else {
 	    hist_counter.CountHistogramParallel(streams);
 	}
@@ -302,7 +302,7 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
 }
 
 template<class graph_pack, class PairedRead> 
-typename InsertSizeHistogramCounter<graph_pack>::hist_type GetInsertSizeHistogram(std::vector <io::IReader<PairedRead>*>& streams, graph_pack& gp, double insert_size, double delta) {
+typename InsertSizeHistogramCounter<graph_pack>::hist_type GetInsertSizeHistogram(io::ReadStreamVector< io::IReader<PairedRead> >& streams, graph_pack& gp, double insert_size, double delta) {
 
     typedef typename InsertSizeHistogramCounter<graph_pack>::hist_type hist_t;
     
@@ -311,7 +311,7 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type GetInsertSizeHistogra
     InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
 
     if (streams.size() == 1) {
-        hist_counter.CountHistogram(*streams.front());
+        hist_counter.CountHistogram(streams.back());
     } else {
         hist_counter.CountHistogramParallel(streams);
     }

@@ -887,7 +887,7 @@ private:
 	typedef boost::function<double(MappingRange, MappingRange)> WeightF;
 	const Graph& graph_;
 	const SequenceMapper& mapper_;
-    std::vector< PairedStream* > streams_;
+	io::ReadStreamVector< PairedStream > streams_;
 	WeightF weight_f_;
 
 	template<class PairedRead>
@@ -930,7 +930,7 @@ private:
 
         INFO("Processing paired reads (takes a while)");
 
-        PairedStream& stream = *(streams_.front());
+        PairedStream& stream = streams_.back();
         stream.reset();
         size_t n = 0;
         while (!stream.eof()) {
@@ -964,7 +964,7 @@ private:
             for (size_t i = 0; i < nthreads; ++i) {
 
                 typename PairedStream::read_type r;
-                PairedStream& stream = *streams_[i];
+                PairedStream& stream = streams_[i];
                 stream.reset();
 
                 while (!stream.eof()) {
@@ -987,13 +987,12 @@ private:
 public:
 
 	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, PairedStream& stream, WeightF weight_f) :
-			graph_(graph), mapper_(mapper), weight_f_(weight_f)
+			graph_(graph), mapper_(mapper), streams_(1, &stream), weight_f_(weight_f)
 	{
-	    streams_.push_back(&stream);
 	}
 
-    LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, std::vector<PairedStream*>& streams, WeightF weight_f) :
-            graph_(graph), mapper_(mapper), streams_(streams.begin(), streams.end()), weight_f_(weight_f)
+    LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, const io::ReadStreamVector< PairedStream >& streams, WeightF weight_f) :
+            graph_(graph), mapper_(mapper), streams_(streams), weight_f_(weight_f)
     {
     }
 

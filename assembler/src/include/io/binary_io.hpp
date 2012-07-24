@@ -508,6 +508,53 @@ public:
 };
 
 
+
+class CleanSeqSingleReadStreamWrapper: public io::IReader<io::SingleReadSeq> {
+
+private:
+    io::IReader<io::PairedReadSeq> * stream_;
+
+    PairedReadSeq current_read_;
+
+    bool is_read_;
+
+public:
+
+    CleanSeqSingleReadStreamWrapper(io::IReader<io::PairedReadSeq> * stream): stream_(stream), current_read_(), is_read_(false)  {
+    }
+
+    virtual ~CleanSeqSingleReadStreamWrapper() {}
+
+    virtual bool is_open() {
+        return stream_->is_open();
+    }
+
+    virtual bool eof() {
+        return stream_->eof() && !is_read_;
+    }
+
+    virtual CleanSeqSingleReadStreamWrapper& operator>>(io::SingleReadSeq& read) {
+        if (!is_read_) {
+            stream_->operator >>(current_read_);
+            read = current_read_.first();
+        } else {
+            read = current_read_.second();
+        }
+        is_read_ = !is_read_;
+        return *this;
+    }
+
+    virtual void close() {
+        stream_->close();
+    }
+
+    virtual void reset() {
+        stream_->reset();
+        is_read_ = false;
+    }
+};
+
+
 class InsertSizeModifyingWrapper: public io::IReader<io::PairedReadSeq> {
 
 private:
@@ -545,18 +592,6 @@ public:
         stream_.reset();
     }
 };
-
-
-template <class Read>
-bool ParllelStreamEOF(std::vector<io::IReader<Read>* >& streams) {
-    for (size_t i = 0; i < streams.size(); ++i) {
-        if (!streams[i]->eof()) {
-            return false;
-        }
-    }
-    return true;
-}
-
 
 }
 

@@ -42,7 +42,7 @@ void FillPairedIndexWithReadCountMetric(const Graph &g,
 		const IdTrackHandler<Graph>& int_ids, const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper,
 		PairedInfoIndex<Graph>& paired_info_index,
-		std::vector<io::IReader<PairedRead>*>& streams, size_t k) {
+		io::ReadStreamVector< io::IReader<PairedRead> >& streams, size_t k) {
 
 	INFO("Counting paired info with read count weight");
 	NewExtendedSequenceMapper<Graph> mapper(g, index, kmer_mapper, k + 1);
@@ -61,7 +61,7 @@ template<class PairedRead>
 void FillPairedIndexWithProductMetric(const Graph &g,
 		const EdgeIndex<Graph>& index, const KmerMapper<Graph>& kmer_mapper,
 		PairedInfoIndex<Graph>& paired_info_index,
-		std::vector<io::IReader<PairedRead>*>& streams, size_t k) {
+		io::ReadStreamVector< io::IReader<PairedRead> >& streams, size_t k) {
 
 	INFO("Counting paired info with product weight");
 
@@ -134,7 +134,7 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 }
 
 template<class Read>
-void FillCoverage(std::vector<io::IReader<Read>*>& streams, Graph& g,
+void FillCoverage(io::ReadStreamVector< io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph>& index, size_t k) {
 
 	typedef SimpleSequenceMapper<Graph> SequenceMapper;
@@ -146,7 +146,7 @@ void FillCoverage(std::vector<io::IReader<Read>*>& streams, Graph& g,
 		g.coverage_index().FillFastParallelIndex<SequenceMapper, Read>(streams,
 				read_threader);
 	} else if (streams.size() == 1) {
-		g.coverage_index().FillIndex<SequenceMapper, Read>(*streams.back(),
+		g.coverage_index().FillIndex<SequenceMapper, Read>(streams.back(),
 				read_threader);
 	}
 
@@ -177,13 +177,13 @@ size_t FillUsusalIndex(io::IReader<Read>& stream,
 }
 
 template<class Graph, class Read>
-size_t FillIterativeParallelIndex(std::vector<io::IReader<Read>*>& streams,
+size_t FillIterativeParallelIndex(io::ReadStreamVector< io::IReader<Read> >& streams,
 		SeqMap<typename Graph::EdgeId>& debruijn, size_t k) {
 	size_t k_plus_1 = k + 1;
 
 	size_t nthreads = streams.size();
 	for (size_t i = 0; i < nthreads; ++i) {
-		streams[i]->reset();
+		streams[i].reset();
 	}
 
 	vector<typename ParallelSeqVector::destination_container_t> temp_sets;
@@ -204,7 +204,7 @@ size_t FillIterativeParallelIndex(std::vector<io::IReader<Read>*>& streams,
 								* sizeof(seq_element_type)));
 
 		ParallelSeqVector par_debruijn(k_plus_1, nthreads, cell_size);
-		while (!ParllelStreamEOF(streams)) {
+		while (!streams.eof()) {
 
 #pragma omp parallel num_threads(nthreads)
 			{
@@ -212,7 +212,7 @@ size_t FillIterativeParallelIndex(std::vector<io::IReader<Read>*>& streams,
 				for (size_t i = 0; i < nthreads; ++i) {
 
 					Read r;
-					io::IReader<Read>& stream = *streams[i];
+					io::IReader<Read>& stream = streams[i];
 
 					while (!par_debruijn.IsFull(i) && !stream.eof()) {
 						stream >> r;
@@ -266,7 +266,7 @@ size_t FillIterativeParallelIndex(std::vector<io::IReader<Read>*>& streams,
 }
 
 template<class Graph, class Read>
-size_t ConstructGraph(size_t k, std::vector<io::IReader<Read>*>& streams,
+size_t ConstructGraph(size_t k, io::ReadStreamVector< io::IReader<Read> >& streams,
 		Graph& g, EdgeIndex<Graph>& index,
 		SingleReadStream* contigs_stream = 0) {
 
@@ -282,7 +282,7 @@ size_t ConstructGraph(size_t k, std::vector<io::IReader<Read>*>& streams,
 		TRACE("... in parallel");
 		rl = FillIterativeParallelIndex<Graph, Read>(streams, debruijn, k);
 	} else if (streams.size() == 1) {
-		rl = FillUsusalIndex<Graph, Read>(*streams.back(), debruijn, k);
+		rl = FillUsusalIndex<Graph, Read>(streams.back(), debruijn, k);
 	} else {
 		VERIFY_MSG(false, "No input streams specified");
 	}
@@ -309,7 +309,7 @@ size_t ConstructGraph(size_t k, std::vector<io::IReader<Read>*>& streams,
 
 template<class Read>
 size_t ConstructGraphWithCoverage(size_t k,
-		std::vector<io::IReader<Read>*>& streams, Graph& g,
+        io::ReadStreamVector< io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
 	FillCoverage<Read>(streams, g, index, k);
@@ -330,8 +330,7 @@ size_t ConstructGraphWithPairedInfo(size_t k, Graph& g, EdgeIndex<Graph>& index,
 		streams.push_back(single_stream);
 	}
 	CompositeSingleReadStream reads_stream(streams);
-	vector<SingleReadStream*> strs;
-	strs.push_back(&reads_stream);
+	io::ReadStreamVector<SingleReadStream> strs(&reads_stream);
 
 	size_t rl = ConstructGraphWithCoverage<io::SingleRead>(k, strs, g, index,
 			contigs_stream);
