@@ -37,8 +37,8 @@ error_correction
     ; PHRED quality offset in the input reads (33 or 64). If not given, error correction tool tries to find this value automatically.
     qvoffset                                          
 
-    ; Maximum number of iterations for the error correction procedure. Default is 2.
-    max_iterations      2     
+    ; Maximum number of iterations for the error correction procedure. Default is 1.
+    max_iterations      1
 
     ; Forces error correction tool to output compressed corrected reads (with gzip). Default is true.
     gzip_output         true                          
