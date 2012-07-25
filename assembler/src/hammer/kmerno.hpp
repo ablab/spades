@@ -11,91 +11,95 @@
 #include <string>
 #include <map>
 
-#include <boost/unordered_map.hpp>
-#include "google/sparse_hash_map"
-#include "google/dense_hash_map"
-
-//#define GOOGLE_SPARSE_MAP
-#define BOOST_UNORDERED_MAP
-//#define GOOGLE_DENSE_MAP
+#include <unordered_map>
 
 #include "kmer_stat.hpp"
 #include "half.hpp"
 
-const uint64_t KMERNO_HASH_MODULUS = 2305843009213693951;
-const uint64_t KMERNO_HASH_Q = 3712758430079221;
-const uint64_t KMERNO_HASH_Q_INV = 2250585152990002931;
-const uint64_t KMERNO_HASH_Q_POW_K_MINUS_ONE = 412252044596125152;
-
 class KMerNo {
 public:
-  explicit KMerNo(hint_t no = -1, float qual = 1.0) {
-    index = no;
-    errprob = prob_half::convert(qual);
+  explicit KMerNo(hint_t no = -1, float qual = 1.0, const Seq<K> s = Seq<K>()) {
+    info.index = no;
+    info.errprob = prob_half::convert(qual);
+    seq = s;
   }
 
-  bool operator==(const KMerNo &kmerno) const;
-  bool operator!=(const KMerNo &kmerno) const;
+  bool operator==(const KMerNo &k) const {
+    return seq == k.seq;
+  }
+
+  bool operator!=(const KMerNo &k) const {
+    return seq != k.seq;
+  }
+
   bool operator==(const KMerCount &kmc) const;
-  bool less(const KMerNo &r) const;
-  bool greater(const KMerNo &r) const;
+
+  bool less(const KMerNo &r) const {
+    return Seq<K>::less2()(seq, r.seq);
+  }
 
   std::string str() const;
-
-  static uint64_t new_hash(hint_t index);
-  static uint64_t next_hash(uint64_t old_hash, hint_t new_index);
 
   struct hash {
     uint64_t operator() (const KMerNo &kn) const;
   };
 
-  struct string_hash {
-    uint64_t operator() (const std::string &kn) const;
-  };
-
   struct are_equal {
-    bool operator() (const KMerNo &l, const KMerNo &r) const;
+    bool operator()(const KMerNo &l, const KMerNo &r) const {
+      return l.seq == r.seq;
+    }
   };
 
   struct is_less {
-    bool operator() (const KMerNo &l, const KMerNo &r) const;
+    bool operator()(const KMerNo &l, const KMerNo &r) const {
+      return Seq<K>::less2()(l.seq, r.seq);
+    }
   };
 
-  struct is_less_kmercount {
-    bool operator() (const KMerCount &l, const KMerCount &r) const;
-  };
-
-  hint_t getIndex() const { return index; }
-  void setIndex(hint_t no) { index = no; }
-  prob_half getQual() const { prob_half q; q.setBits(errprob); return q; }
-  void setQual(float q) { errprob = prob_half::convert(q); }
-
+  hint_t getIndex() const { return info.index; }
+  void setIndex(hint_t no) { info.index = no; }
+  prob_half getQual() const { prob_half q; q.setBits(info.errprob); return q; }
+  void setQual(float q) { info.errprob = prob_half::convert(q); }
+  Seq<K> getSeq() const { return seq; }
+  void setSeq(const Seq<K> s) { seq = s; }
 private:
-  hint_t index     : 48;
-  uint16_t errprob : 16;
+  struct {
+    hint_t   index   : 48;
+    uint16_t errprob : 16;
+  } info;
+  Seq<K>   seq;
+
+  template<class Reader>
+  friend void binary_read(Reader &is, KMerNo &s);
+  template<class Writer>
+  friend void binary_write(Writer &os, const KMerNo &s);
 };
 
-static_assert(sizeof(KMerNo) == 8, "Invalid size of KMerNo");
+static_assert(sizeof(KMerNo) == 16, "Invalid size of KMerNo");
+
+// FIXME: Unify with SubKMer
 
 template<class Reader>
 inline void binary_read(Reader &is, KMerNo &k) {
-  is.read((char*)&k, sizeof(k));
+  Seq<K>::DataType seq_data[Seq<K>::DataSize];
+
+  is.read((char*)&k.info, sizeof(k.info));
+  is.read((char*)seq_data, sizeof(seq_data));
+
+  k.seq = Seq<K>(seq_data);
 }
 
 template<class Writer>
-inline void binary_write(Writer &os, const KMerNo &k) {
-  os.write((char*)&k, sizeof(k));
+inline Writer &binary_write(Writer &os, const KMerNo &k) {
+  Seq<K>::DataType seq_data[Seq<K>::DataSize];
+  k.seq.copy_data(seq_data);
+
+  os.write((char*)&k.info, sizeof(k.info));
+  os.write((char*)seq_data, sizeof(seq_data));
+
+  return os;
 }
 
-#ifdef GOOGLE_SPARSE_MAP
-  typedef google::sparse_hash_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
-#endif
-#ifdef BOOST_UNORDERED_MAP
-  typedef boost::unordered_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
-#endif
-#ifdef GOOGLE_DENSE_MAP
-  typedef google::dense_hash_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
-#endif
-
+typedef std::unordered_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
 
 #endif

@@ -264,7 +264,7 @@ void HammerTools::SplitKMers() {
 	Seq<K>::hash hash_function;
 	size_t readbuffer = cfg::get().count_split_buffer;
 
-	vector< vector< vector< KMerNo > > > tmp_entries(count_num_threads);
+  std::vector< std::vector< std::vector< KMerNo > > > tmp_entries(count_num_threads);
 	for (unsigned i=0; i < count_num_threads; ++i) {
 		tmp_entries[i].resize(numfiles);
 		for (unsigned j=0; j < numfiles; ++j) {
@@ -326,11 +326,11 @@ void HammerTools::SplitKMers() {
 					tmp_entries[omp_get_thread_num()][it->second.second % numfiles].push_back(KMerNo(it->first, it->second.first));
 				}
 			} else {
-				//cout << s << endl;
 				while (gen.HasMore()) {
-					//cout << gen.kmer().str() << endl;
-					tmp_entries[omp_get_thread_num()][hash_function(gen.kmer()) % numfiles].push_back(KMerNo(cpos + gen.pos() - 1,
-                                                                                                   1 - gen.correct_probability()));
+          Seq<K> seq = gen.kmer();
+          tmp_entries[omp_get_thread_num()][hash_function(seq) % numfiles].push_back(KMerNo(cpos + gen.pos() - 1,
+                                                                                            1 - gen.correct_probability(),
+                                                                                            seq));
 					gen.Next();
 				}
 			}
