@@ -29,7 +29,7 @@ general_correct_from_memory	1
 
 ; count k-mers
 count_do					1
-count_numfiles				8
+count_numfiles				16
 count_merge_nthreads		4
 count_split_buffer			100000
 
