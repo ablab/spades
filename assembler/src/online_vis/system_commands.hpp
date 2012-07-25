@@ -30,12 +30,12 @@ namespace online_visualization {
             }
 
         public:
-            string Usage() {
+            string Usage() const {
                 string answer;
                 answer = answer + "The command `help` allows you to see a help message for any command. \n " +
                                 "Usage: \n" +
-                                "help <name_of_command> \n" +
-                                "Running `help` without parameters yields a list of all commands.";
+                                "> help <name_of_command> \n" +
+                                " Running `help` without parameters yields a list of all commands.";
                 return answer;
             }
 
@@ -119,11 +119,11 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `load` \n" + 
                                 "Usage:\n" + 
-                                "load <environment_name> <path_to_saves>\n" + 
-                                "You should specify the name of the new environment as well as a path to the graph saves. For example:\n" +
+                                "> load <environment_name> <path_to_saves>\n" + 
+                                " You should specify the name of the new environment as well as a path to the graph saves. For example:\n" +
                                 "> load GraphSimplified data/saves/simplified_graph\n" + 
-                                "would load a new environment with the name `GraphSimplified` from the files\n" + 
-                                "in the folder `data/saves/` with the basename `simplified_graph` (simplified_graph.grp, simplified_graph.sqn, e.t.c).";
+                                " would load a new environment with the name `GraphSimplified` from the files\n" + 
+                                " in the folder `data/saves/` with the basename `simplified_graph` (simplified_graph.grp, simplified_graph.sqn, e.t.c).";
                 return answer;
             }
 
@@ -171,11 +171,11 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `switch` \n" + 
                                 "Usage:\n" + 
-                                "switch <environment_name>\n" + 
-                                "You should specify the name of the environment you want to switch to. For example:\n" +
+                                " switch <environment_name>\n" + 
+                                " You should specify the name of the environment you want to switch to. For example:\n" +
                                 "> switch GraphSimplified \n" + 
-                                "would switch you to the environment with the name `GraphSimplified`.\n" + 
-                                "Of course this environment must be loaded first. To see all loaded environments, run command `list`.";
+                                " would switch you to the environment with the name `GraphSimplified`.\n" + 
+                                " Of course this environment must be loaded first. To see all loaded environments, run command `list`.";
                 return answer;
             }
 
@@ -210,6 +210,57 @@ namespace online_visualization {
 
     };
 
+    class LoadGenomeCommand : public Command {
+
+        protected:
+            size_t MinArgNumber() const {
+                return 1;    
+            }
+
+            bool CheckCorrectness(const vector<string>& args) const {
+                const string& file = args[0];
+                if (!CheckFileExists(file))
+                    return false;
+                return true;
+            }
+
+        public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `load_genome` \n" + 
+                                "Usage:\n" + 
+                                "> load_genome <path_to_genome>\n" + 
+                                " You should specify a path to the genome you want to load from. For example:\n" +
+                                " Previously loaded genomes would be lost.";
+                return answer;
+            }
+
+            LoadGenomeCommand() : Command(CommandType::load_genome)
+            {                   
+            }
+
+            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
+	            const vector<string>& args_ = SplitInTokens(args);
+                if (!CheckCorrectness(args_))
+                    return;
+                const string& file = args_[0];
+                if (file == "") {
+                    cout << "Warning: loading empty genome" << endl;
+                    return;
+                }
+                io::Reader genome_stream(file);
+                io::SingleRead genome;
+                genome_stream >> genome;
+                if (genome.IsValid()) {
+                    curr_env->LoadNewGenome(genome.sequence());
+                }
+                else {
+                    cout << "Reference genome (" + file + ") has non-ACGT characters. Skipping it" << endl;
+                    cout << "Please try again" << endl;
+                }
+            }
+    };
+
 
     class ListCommand : public Command {
         protected:
@@ -222,8 +273,8 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `list` \n" +
                                 "Usage:\n" +
-                                "list\n" + 
-                                "This command lists all loaded environments.";
+                                "> list\n" + 
+                                " This command lists all loaded environments.";
                 return answer;
             }
 
@@ -256,11 +307,11 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `replay` \n" + 
                                 "Usage:\n" + 
-                                "rep <command_number>\n" + 
-                                "Runs the command <command_number> commands before. For example:\n" +
+                                "> rep <command_number>\n" + 
+                                " Runs the command <command_number> commands before. For example:\n" +
                                 "> rep 1 \n" + 
-                                "would run the previous command.\n" + 
-                                "It is still under development.";
+                                " would run the previous command.\n" + 
+                                " It is still under development.";
                 return answer;
             }
             
@@ -329,10 +380,10 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `print_paths` \n" + 
                                 "Usage:\n" + 
-                                "paths <vertex_from> <vertex_to> [<max_length>] \n" + 
-                                "This command prints all paths between two given vertices, that do not exceed `max_length` parameter.\n" +
-                                "You should specify two integers (id of vertices), between which you want to find paths. Optionally you can provide `max_length` integer, \n" +
-                                "so that tool does not consider paths longer than `max_length`.";
+                                "> paths <vertex_from> <vertex_to> [<max_length>] \n" + 
+                                " This command prints all paths between two given vertices, that do not exceed `max_length` parameter.\n" +
+                                " You should specify two integers (id of vertices), between which you want to find paths. Optionally you can provide `max_length` integer, \n" +
+                                " so that tool does not consider paths longer than `max_length`.";
                 return answer;
             }
             

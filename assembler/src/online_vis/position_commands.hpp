@@ -39,9 +39,9 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `fill_pos` \n" + 
                                 "Usage:\n" + 
-                                "fill_pos <label> <path_to_contigs>\n" + 
-                                "This command maps contigs you provide to the graph.\n" + 
-                                "You should specify a label of this contigs, which you want to see at the edge in the DB graph.";
+                                "> fill_pos <label> <path_to_contigs>\n" + 
+                                " This command maps contigs you provide to the graph.\n" + 
+                                " You should specify a label of this contigs, which you want to see at the edge in the DB graph.";
                 return answer;
             }
 
@@ -53,10 +53,8 @@ namespace online_visualization {
                 const vector<string>& args_ = SplitInTokens(args);
                 string name = args_[0];
                 string file = args_[1];
-                if (!CheckCorrectness(args_)) {
-                    cout << "Please try again" << endl;
+                if (!CheckCorrectness(args_))
                     return;
-                }
 
                 io::Reader irs(file);
                 
@@ -80,8 +78,8 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `clear_pos` \n" + 
                                 "Usage:\n" + 
-                                "clear_pos\n" + 
-                                "This command resets the graph and clears all the labels you previously filled in.\n";
+                                "> clear_pos\n" + 
+                                " This command resets the graph and clears all the labels you previously filled in.\n";
                 return answer;
             }
 

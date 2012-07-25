@@ -64,6 +64,11 @@ namespace online_visualization {
                 ResetPositions();
             }
 
+            void LoadNewGenome(const Sequence& genome) {
+                gp_.genome = genome;
+                ResetPositions();
+            }
+
             void ResetPositions() {
                 gp_.edge_pos.clear();
                 MapperClass mapper_(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value + 1);

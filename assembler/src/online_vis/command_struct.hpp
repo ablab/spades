@@ -20,6 +20,7 @@ namespace online_visualization {
                 { "list",               list             },
                 { "switch",             switch_env       },
                 { "rep",                replay           },
+                { "load_genome",        load_genome      },
                 { "set_folder",         set_folder       }, 
                 { "set_file_name",      set_file_name    }, 
                 { "set_max_vertices",   set_max_vertices }, 

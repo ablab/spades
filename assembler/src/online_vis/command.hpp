@@ -72,25 +72,26 @@ namespace online_visualization {
         public:
             virtual string Usage() const {
                 string answer;
-                answer = answer + "Welcome to GAF (Graph Analysis Framework). This framework allows to work with the de Bruijn Graph interactively.\n " +
-                                "You can see the list of command names below. To see a command's help message just type\n" +
+                answer = answer + " Welcome to GAF (Graph Analysis Framework). This framework allows to work with the de Bruijn Graph interactively.\n " +
+                                " You can see the list of command names below. To see a command's help message just type\n" +
                                 "> help <command_name>\n" +
-                                "The list of command names\n" + 
-                                "exit\n" +
-                                "help\n" +
-                                "load\n" +
-                                "list\n" +
-                                "switch\n" +
-                                "rep\n" +
-                                "set_folder\n" +
-                                "set_file_name\n" +
-                                "set_max_vertices\n" +
-                                "fill_pos\n" +
-                                "clear_pos\n" +
-                                "vertex\n" +
-                                "edge\n" +
-                                "position\n" +
-                                "paths";
+                                " The list of command names : \n" + 
+                                " exit\n" +
+                                " help\n" +
+                                " load\n" +
+                                " list\n" +
+                                " switch\n" +
+                                " rep\n" +
+                                " load_genome\n" +
+                                " set_folder\n" +
+                                " set_file_name\n" +
+                                " set_max_vertices\n" +
+                                " fill_pos\n" +
+                                " clear_pos\n" +
+                                " vertex\n" +
+                                " edge\n" +
+                                " position\n" +
+                                " paths";
                 return answer;
             }
 

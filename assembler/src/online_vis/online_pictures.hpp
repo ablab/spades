@@ -27,6 +27,7 @@ namespace online_visualization {
             AddCommand(shared_ptr<Command>(new ListCommand));
             AddCommand(shared_ptr<Command>(new SwitchCommand));
             AddCommand(shared_ptr<Command>(new ReplayCommand));
+            AddCommand(shared_ptr<Command>(new LoadGenomeCommand));
 
             AddCommand(shared_ptr<Command>(new SetMaxVertCommand));
             AddCommand(shared_ptr<Command>(new SetFolderCommand));

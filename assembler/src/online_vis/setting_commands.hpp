@@ -26,8 +26,8 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `set_max_vertices` \n" + 
                                 "Usage:\n" + 
-                                "set_max_vertices <max_vertices> \n" + 
-                                "You should specify an integer, which is an upper bound for the number of vertices in the picture.";
+                                "> set_max_vertices <max_vertices> \n" + 
+                                " You should specify an integer, which is an upper bound for the number of vertices in the picture.";
                 return answer;
             }
 
@@ -65,8 +65,8 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `set_folder` \n" + 
                                 "Usage:\n" + 
-                                "set_folder <folder_name> \n" + 
-                                "You should specify a string, which is a new name for a pictures' folder.";
+                                "> set_folder <folder_name> \n" + 
+                                " You should specify a string, which is a new name for a pictures' folder.";
                 return answer;
             }
             SetFolderCommand() : Command(CommandType::set_folder)
@@ -103,8 +103,8 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `set_file_name` \n" + 
                                 "Usage:\n" + 
-                                "set_file_name <file_base_name>\n" + 
-                                "You should specify a string, which is a new base_name for all the pictures, that you generate.";
+                                "> set_file_name <file_base_name>\n" + 
+                                " You should specify a string, which is a new base_name for all the pictures, that you generate.";
                 return answer;
             }
         

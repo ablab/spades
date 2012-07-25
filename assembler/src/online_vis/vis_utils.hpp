@@ -4,7 +4,7 @@
 
 
 bool CheckFileExists(const string& file) {
-	if (!fs::exists(file)) {
+	if (!fs::is_regular_file(file)) {
         ERROR("The file " << file << " does not exist.");
         return false;
     }

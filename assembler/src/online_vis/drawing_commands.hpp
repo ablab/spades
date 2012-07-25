@@ -89,9 +89,9 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `draw_vertex` \n" + 
                                 "Usage:\n" + 
-                                "vertex <vertex_id>\n" + 
-                                "This command prints pictures for a neigbourhood of a vertex in the DB graph.\n" + 
-                                "You should specify an id of the vertex in the DB graph, which neighbourhood you want to look at.";
+                                "> vertex <vertex_id>\n" + 
+                                " This command prints pictures for a neigbourhood of a vertex in the DB graph.\n" + 
+                                " You should specify an id of the vertex in the DB graph, which neighbourhood you want to look at.";
                 return answer;
             }
             
@@ -155,9 +155,9 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `draw_edge` \n" + 
                                 "Usage:\n" + 
-                                "edge <edge_id>\n" + 
-                                "This command prints pictures for a neigbourhood of an edge in the DB graph.\n" + 
-                                "You should specify an id of the edge in the DB graph, which location you want to look at.";
+                                "> edge <edge_id>\n" + 
+                                " This command prints pictures for a neigbourhood of an edge in the DB graph.\n" + 
+                                " You should specify an id of the edge in the DB graph, which location you want to look at.";
                 return answer;
             }
 
@@ -229,9 +229,9 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `show_position` \n" + 
                                 "Usage:\n" + 
-                                "show_position <position>\n" + 
-                                "This command prints pictures for a neigbourhood of an edge in the DB graph, which corresponds to a given genome position.\n" + 
-                                "You should specify an integer position in the genome, which location you want to look at.";
+                                "> show_position <position>\n" + 
+                                " This command prints pictures for a neigbourhood of an edge in the DB graph, which corresponds to a given genome position.\n" + 
+                                " You should specify an integer position in the genome, which location you want to look at.";
                 return answer;
             }
 
@@ -316,8 +316,8 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `draw_part_of_genome` \n" + 
                                 "Usage:\n" + 
-                                "position <position>\n" + 
-                                "You should specify an integer position in the genome, which location you want to look at.";
+                                "> position <position>\n" + 
+                                " You should specify an integer position in the genome, which location you want to look at.";
                 return answer;
             }
 
@@ -395,8 +395,8 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `draw_position` \n" + 
                                 "Usage:\n" + 
-                                "position <position>\n" + 
-                                "You should specify an integer position in the genome, which location you want to look at.";
+                                "> position <position>\n" + 
+                                " You should specify an integer position in the genome, which location you want to look at.";
                 return answer;
             }
 

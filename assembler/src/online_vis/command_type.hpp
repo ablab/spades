@@ -9,6 +9,7 @@ namespace online_visualization {
         list,
         switch_env,
         replay,
+        load_genome,
         set_folder,
         set_file_name,
         set_max_vertices,
