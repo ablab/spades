@@ -12,6 +12,7 @@
 #include "graph_construction.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "io/vector_reader.hpp"
+#include "io/read_stream_vector.hpp"
 #include "simple_tools.hpp"
 #include "seq_map.hpp"
 #include <unordered_set>
@@ -136,7 +137,7 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
 	Graph g(k);
 	EdgeIndex<Graph> index(g, k + 1);
 
-	std::vector<io::IReader<SingleRead>* > streams = {&read_stream};
+	io::ReadStreamVector< io::IReader<SingleRead> > streams(&read_stream);
 	ConstructGraph(k, streams, g, index);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
