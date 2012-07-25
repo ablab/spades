@@ -35,8 +35,6 @@
 #include <vector>
 #include <iostream>
 #include <iomanip>
-#include "log4cxx/logger.h"
-#include "log4cxx/basicconfigurator.h"
 #include "read/ireadstream.hpp"
 #include "read/read.hpp"
 #include "sequence/seq.hpp"
@@ -52,9 +50,6 @@ using std::map;
 using std::ofstream;
 using std::ifstream;
 using std::pair;
-using log4cxx::LoggerPtr;
-using log4cxx::Logger;
-using log4cxx::BasicConfigurator;
 
 namespace {
 
