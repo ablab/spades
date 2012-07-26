@@ -994,23 +994,6 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
     changedNucleotides += changedNuclBuf[i];
   }
 }
-
-static size_t ConstructRead(Read &r, const PositionRead &pr) {
-  size_t cpos = pr.start(), csize = pr.size();
-  string s(Globals::blob + cpos, csize);
-  string q;
-  if (Globals::use_common_quality) {
-    q = string(csize, (char)Globals::common_quality);
-  } else {
-    q = string(Globals::blobquality + cpos, csize);
-  }
-  
-  r.setSequence(s.c_str());
-  r.setQuality(q.c_str(), 0);
-  r.set_ltrim(pr.ltrim());
-
-  return r.size();
-}
  
 void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
                                   size_t & changedReads, size_t & changedNucleotides,
