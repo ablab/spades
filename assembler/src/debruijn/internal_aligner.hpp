@@ -264,8 +264,8 @@ protected:
 		if (range.initial_range.start_pos > 0)
 			SamRec.CIGAR = ToString((int)(range.initial_range.start_pos))+"S";
 		SamRec.CIGAR += cigar_pair.second;
-		if (read.size() < range.initial_range.end_pos+k_)
-			SamRec.CIGAR += ToString((int)(range.initial_range.end_pos+k_ - read.size()))+"S";
+		if (read.size() > range.initial_range.end_pos+k_)
+			SamRec.CIGAR += ToString((int)(read.size() - (range.initial_range.end_pos+k_)))+"S";
 		if (rc) SamRec.FLAG |= 0x10;
 //			if (path1[0].second.mapped_range.end_pos - path1[0].second.mapped_range.start_pos != path1[0].second.initial_range.end_pos - path1[0].second.initial_range.start_pos){
 //				WARN("Possible indels: "<< s_r.name()<<" VS "<< SamRec.RNAME);
