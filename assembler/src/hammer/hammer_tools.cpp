@@ -977,7 +977,7 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
   std::vector<size_t> changedReadBuf(correct_nthreads, 0);
   std::vector<size_t> changedNuclBuf(correct_nthreads, 0);
  
-# pragma omp parallel for shared(reads, res, readno, kmers) num_threads(correct_nthreads)
+# pragma omp parallel for shared(reads, res, kmers) num_threads(correct_nthreads)
   for (size_t i = 0; i < buf_size; ++i) {
     if (reads[i].size() >= K) {
       res[i] =
