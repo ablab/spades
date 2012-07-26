@@ -25,6 +25,7 @@ general_gzip_margin			4.0
 general_file_buffer_exp		20
 general_common_quality		-1
 general_remove_temp_files	1
+general_correct_from_memory	1
 
 ; count k-mers
 count_do					1
