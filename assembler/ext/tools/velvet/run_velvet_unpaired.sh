@@ -17,7 +17,7 @@ cd ${BUILD_DIR}
 if [ ! -f velvetg ] || [ ! -f velveth ]
 then 
     echo "== making Velvet =="
-    make >${BUILD_DIR}/make.log 2>${BUILD_DIR}/make.err
+    make 'MAXKMERLENGTH=63' >${BUILD_DIR}/make.log 2>${BUILD_DIR}/make.err
     echo "== making finished =="
 fi
 
