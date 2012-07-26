@@ -170,6 +170,8 @@ void load_simplification(conj_graph_pack& gp, files_t* used_files) {
 
 	ScanGraphPack(p.string(), gp);
 	load_estimated_params(p.string());
+
+	PrintGraphPack(p.string() + "_tmp", gp);
 }
 
 void save_simplification(conj_graph_pack& gp) {

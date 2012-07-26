@@ -271,6 +271,7 @@ public:
 	void BinWrite(std::ostream& file) const {
 		u_int32_t size = mapping_.size();
 		file.write((const char *) &size, sizeof(u_int32_t));
+
 		for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
 			Kmer::BinWrite(file, iter.first());
 			Kmer::BinWrite(file, iter.second());
@@ -280,8 +281,8 @@ public:
 	void BinRead(std::istream& file) {
 		mapping_.clear();
 		u_int32_t size;
-
 		file.read((char *) &size, sizeof(u_int32_t));
+
 		for (u_int32_t i = 0; i < size; ++i) {
 			Kmer key(k_);
 			Kmer value(k_);

@@ -192,7 +192,7 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
 	fprintf(file, "%ld\n", component_.e_size());
 	for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
 		fprintf(file, "%zu ", int_ids_.ReturnIntId(*iter));
-		fprintf(file, "%f .\n", component_.g().coverage(*iter));
+		fprintf(file, "%lf .\n", component_.g().coverage(*iter));
 	}
 	fclose(file);
 }
@@ -268,7 +268,7 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 				<< endl;
 
 		for (size_t i = 0; i < pos_it->second.size(); i++) {
-			file << "    " << pos_it->second[i].contigId_ << ": "
+			file << "    " << pos_it->second[i].contigId_ << " "
 					<< pos_it->second[i].start() << " - "
 					<< pos_it->second[i].end();
 			if (careful) {
@@ -620,7 +620,9 @@ void DataScanner<Graph>::loadCoverage(const string& file_name) {
 		TRACE(edge_real_id<< " "<<edge_coverage <<" . ");
 		EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
 		TRACE("EdgeId "<<eid);
-		g_.coverage_index().SetCoverage(eid, edge_coverage * g_.length(eid));
+		g_.coverage_index().SetCoverage(eid, math::round(edge_coverage * g_.length(eid)));
+
+        INFO(edge_coverage << " " << edge_coverage * g_.length(eid) << "" << g_.coverage(eid) << " ");
 	}
 	fclose(file);
 }
@@ -692,6 +694,8 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 		}
 	}
 	fclose(file);
+
+
 }
 
 template<class Graph>
