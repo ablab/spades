@@ -621,8 +621,6 @@ void DataScanner<Graph>::loadCoverage(const string& file_name) {
 		EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
 		TRACE("EdgeId "<<eid);
 		g_.coverage_index().SetCoverage(eid, math::round(edge_coverage * g_.length(eid)));
-
-        INFO(edge_coverage << " " << edge_coverage * g_.length(eid) << "" << g_.coverage(eid) << " ");
 	}
 	fclose(file);
 }
