@@ -111,12 +111,12 @@ public:
 	/// correct reads in a given file
 	static void CorrectReadFile(const vector<KMerCount> & kmers,
                               size_t & changedReads, size_t & changedNucleotides,
-                              hint_t readno_start, size_t len,
-                              ofstream *outf_good, ofstream *outf_bad );
+                              const std::string &fname,
+                              ofstream *outf_good, ofstream *outf_bad);
 	/// correct reads in a given pair of files
 	static void CorrectPairedReadFiles(const vector<KMerCount> & kmers,
                                      size_t & changedReads, size_t & changedNucleotides,
-                                     hint_t readno_left_start, hint_t readno_right_start, size_t len,
+                                     const std::string &fnamel, const std::string &fnamer,
                                      ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp);
 	/// correct all reads
 	static hint_t CorrectAllReads();
