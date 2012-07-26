@@ -1329,7 +1329,6 @@ public:
 	}
 };
 
-
 template<class EdgeId> class TipLock{
     private:
         static map<EdgeId, bool> lock;

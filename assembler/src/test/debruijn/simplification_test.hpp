@@ -9,6 +9,7 @@
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
 #include "graph_simplification.hpp"
+//#include "repeat_resolving_routine.hpp"
 
 namespace debruijn_graph {
 
@@ -162,6 +163,26 @@ BOOST_AUTO_TEST_CASE( SelfComp ) {
        MaxFlowRemoveErroneousEdges<Graph>(g, tec_config, edge_remover);
 
        BOOST_CHECK_EQUAL(g.size(), 4);
+}
+
+BOOST_AUTO_TEST_CASE( ComplexBulge ) {
+       conj_graph_pack gp(55, Sequence(), 50, true, false);
+       ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
+       INFO("Complex bulge removal:");
+       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+       licvidator.Licvidate();
+//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
+       BOOST_CHECK_EQUAL(gp.g.size(), 8);
+}
+
+BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
+       conj_graph_pack gp(55, Sequence(), 50, true, false);
+       ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
+       INFO("Complex bulge removal:");
+       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+       licvidator.Licvidate();
+//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
+       BOOST_CHECK_EQUAL(gp.g.size(), 66);
 }
 
 BOOST_AUTO_TEST_SUITE_END()}

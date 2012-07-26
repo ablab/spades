@@ -1,0 +1,17 @@
+digraph   {
+node[fontname=<Courier>]
+vertex_0x1e38710[label=<328622>,style=<filled>,color=<black>,fillcolor=<white>]
+vertex_0x1e385e0[label=<328623>,style=<filled>,color=<black>,fillcolor=<white>]
+vertex_0x1e39170[label=<2510026>,style=<filled>,color=<black>,fillcolor=<white>]
+vertex_0x1e3c410[label=<2510027>,style=<filled>,color=<black>,fillcolor=<white>]
+vertex_0x1e38530[label=<3699256>,style=<filled>,color=<black>,fillcolor=<white>]
+vertex_0x1e3b890[label=<3699257>,style=<filled>,color=<black>,fillcolor=<white>]
+vertex_0x1e3b8f0[label=<4083354>,style=<filled>,color=<black>,fillcolor=<white>]
+vertex_0x1e3b950[label=<4083355>,style=<filled>,color=<black>,fillcolor=<white>]
+vertex_0x1e38530->vertex_0x1e385e0[label="Id 10992028\nPositions:\n(10: 52999-61732: 1-8734)\nLen(cov): 8734(3374.76)",len=<0>,K=<0>,color=<green>]
+vertex_0x1e38710->vertex_0x1e3b890[label="Id 10992029\nPositions:\n(11: 2810983-2819716: 1-8734)\nLen(cov): 8734(3374.76)",len=<0>,K=<0>,color=<green>]
+vertex_0x1e3b950->vertex_0x1e385e0[label="Id 10997642\nPositions:\n(11: 2796481-2803974: 1-7494)\nLen(cov): 7494(1944.17)",len=<0>,K=<0>,color=<green>]
+vertex_0x1e38710->vertex_0x1e3b8f0[label="Id 10997643\nPositions:\n(10: 68741-76234: 1-7494)\nLen(cov): 7494(1944.17)",len=<0>,K=<0>,color=<green>]
+vertex_0x1e385e0->vertex_0x1e39170[label="Id 10997736\nPositions:\n(10: 61733-62350: 1-618)\n(10: 61925-62350: 193-618)\n(10: 61936-62350: 204-618)\n(10: 61936-62350: 204-618)\n(10: 61936-62350: 204-618)\n(11: 2803975-2804602: 1-618)\n(11: 2804177-2804602: 193-618)\n(11: 2804188-2804602: 204-618)\n(11: 2804188-2804602: 204-618)\nLen(cov): 618(7563.37)",len=<0>,K=<0>,color=<green>]
+vertex_0x1e3c410->vertex_0x1e38710[label="Id 10997737\nPositions:\n(10: 68113-68740: 1-618)\n(10: 68528-68740: 416-618)\n(10: 68539-68740: 427-618)\n(10: 68539-68740: 427-618)\n(11: 2810365-2810982: 1-618)\n(11: 2810780-2810982: 416-618)\n(11: 2810791-2810982: 427-618)\n(11: 2810791-2810982: 427-618)\n(11: 2810791-2810982: 427-618)\nLen(cov): 618(7563.37)",len=<0>,K=<0>,color=<green>]
+}

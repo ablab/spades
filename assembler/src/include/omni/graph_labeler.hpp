@@ -173,7 +173,7 @@ class CompositeLabeler : public GraphLabeler<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	vector<GraphLabeler<Graph>* > list_;
+	vector<GraphLabeler<Graph>*> list_;
 
 	template<typename ElementId>
 	string ConstructLabel(ElementId id) const {

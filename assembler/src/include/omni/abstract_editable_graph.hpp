@@ -416,7 +416,7 @@ public:
 		return make_pair(new_edge1, new_edge2);
 	}
 
-	void GlueEdges(EdgeId edge1, EdgeId edge2) {
+	EdgeId GlueEdges(EdgeId edge1, EdgeId edge2) {
 		TRACE(
 				"Gluing edges " << str(edge1) << " and " << str(edge2));
 		EdgeId new_edge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),
@@ -437,6 +437,7 @@ public:
 			DeleteVertex(end);
 		}TRACE(
 				"Edges glued into " << str(new_edge));
+		return new_edge;
 	}
 
 private:
