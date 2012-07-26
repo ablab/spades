@@ -1014,22 +1014,25 @@ static size_t ConstructRead(Read &r, const PositionRead &pr) {
  
 void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
                                   size_t & changedReads, size_t & changedNucleotides,
-                                  hint_t readno_start, size_t len,
+                                  const std::string &fname,
                                   ofstream *outf_good, ofstream *outf_bad ) {
   int qvoffset = cfg::get().input_qvoffset;
+  int trim_quality = cfg::get().input_trim_quality;
 
   unsigned correct_nthreads = min(cfg::get().correct_nthreads, cfg::get().general_max_nthreads);
   size_t read_buffer_size = correct_nthreads * cfg::get().correct_readbuffer;
   std::vector<Read> reads(read_buffer_size);
   std::vector<bool> res(read_buffer_size, false);
 
-  int buffer_no = 0;
-  size_t read = 0;
-  while (read < len) {
+  ireadstream irs(fname, qvoffset);
+  VERIFY(irs.is_open());
+
+  unsigned buffer_no = 0;
+  while (!irs.eof()) {
     size_t buf_size = 0;
-    for (; buf_size < read_buffer_size && read < len; ++buf_size, ++read) {
-      const PositionRead &pr = Globals::pr->at(readno_start++);
-      ConstructRead(reads[buf_size], pr);
+    for (; buf_size < read_buffer_size && !irs.eof(); ++buf_size) {
+      irs >> reads[buf_size];
+      reads[buf_size].trimNsAndBadQuality(trim_quality);
     }
     TIMEDLN("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
 
@@ -1048,9 +1051,10 @@ void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
 
 void HammerTools::CorrectPairedReadFiles(const vector<KMerCount> & kmers,
                                          size_t &changedReads, size_t &changedNucleotides,
-                                         hint_t readno_left_start, hint_t readno_right_start, size_t len,
+                                         const std::string &fnamel, const std::string &fnamer,
                                          ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp) {
   int qvoffset = cfg::get().input_qvoffset;
+  int trim_quality = cfg::get().input_trim_quality;
 
   unsigned correct_nthreads = min(cfg::get().correct_nthreads, cfg::get().general_max_nthreads);
   size_t read_buffer_size = correct_nthreads * cfg::get().correct_readbuffer;
@@ -1059,16 +1063,18 @@ void HammerTools::CorrectPairedReadFiles(const vector<KMerCount> & kmers,
   std::vector<bool> left_res(read_buffer_size, false);
   std::vector<bool> right_res(read_buffer_size, false);
   
-  int buffer_no = 0;
 
-  size_t readno = 0;
-  while (readno < len) {
+  unsigned buffer_no = 0;
+
+  ireadstream irsl(fnamel, qvoffset), irsr(fnamer, qvoffset);
+  VERIFY(irsl.is_open()); VERIFY(irsr.is_open());
+
+  while (!irsl.eof() && !irsr.eof()) {
     size_t buf_size = 0;
-    for (; buf_size < read_buffer_size && readno < len; ++buf_size, ++readno) {
-      const PositionRead &prl = Globals::pr->at(readno_left_start++);
-      const PositionRead &prr = Globals::pr->at(readno_right_start++);
-      ConstructRead(l[buf_size], prl);
-      ConstructRead(r[buf_size], prr);;
+    for (; buf_size < read_buffer_size && !irsl.eof() && !irsr.eof(); ++buf_size) {
+      irsl >> l[buf_size]; irsr >> r[buf_size];
+      l[buf_size].trimNsAndBadQuality(trim_quality);
+      r[buf_size].trimNsAndBadQuality(trim_quality);
     }
     TIMEDLN("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
   
@@ -1133,7 +1139,7 @@ hint_t HammerTools::CorrectAllReads() {
 
     HammerTools::CorrectPairedReadFiles(*Globals::kmers,
                                         changedReads, changedNucleotides,
-                                        Globals::input_file_blob_positions[iFile], Globals::input_file_blob_positions[iFile+1], Globals::input_file_sizes[iFile],
+                                        Globals::input_filenames[iFile], Globals::input_filenames[iFile+1],
                                         &ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp);
 		TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " and " << Globals::input_filenames[iFile+1].c_str() << " corrected as a pair.");
 		// makes sense to change the input filenames for the next iteration immediately
@@ -1154,7 +1160,7 @@ hint_t HammerTools::CorrectAllReads() {
 		ofstream ofbad( HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "bad").c_str());
     HammerTools::CorrectReadFile(*Globals::kmers,
                                  changedReads, changedNucleotides,
-                                 Globals::input_file_blob_positions[iFile], Globals::input_file_sizes[iFile],
+                                 Globals::input_filenames[iFile],
                                  &ofgood, &ofbad);
 		TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " corrected.");
 		// makes sense to change the input filenames for the next iteration immediately
