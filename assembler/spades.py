@@ -41,6 +41,7 @@ def prepare_config_bh(filename, cfg):
     subst_dict["expand_nthreads"] = cfg.max_threads
     subst_dict["correct_nthreads"] = cfg.max_threads
     subst_dict["general_hard_memory_limit"] = cfg.max_memory
+    subst_dict["general_correct_from_memory"] = bool_to_str(not cfg.generate_sam_files)
 
     if "qvoffset" in cfg.__dict__:
         subst_dict["input_qvoffset"] = cfg.qvoffset
@@ -239,7 +240,7 @@ def check_config(cfg, default_project_name=""):
         if not "single_cell" in cfg["dataset"].__dict__:
             cfg["dataset"].__dict__["single_cell"] = False
 
-            # error_correction
+    # error_correction
     if "error_correction" in cfg:
         if not "max_iterations" in cfg["error_correction"].__dict__:
             cfg["error_correction"].__dict__["max_iterations"] = 1
@@ -542,7 +543,7 @@ def main():
 
     bh_dataset_filename = ""
     if "error_correction" in cfg:
-        bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
+        bh_cfg = merge_configs(cfg["error_correction"], cfg["common"], cfg["assembly"])
 
         bh_cfg.output_dir = os.path.join(os.path.expandvars(bh_cfg.output_dir), "corrected")
 
