@@ -21,22 +21,16 @@
 
 class KMerClustering {
 public:
-	KMerClustering(std::vector<KMerCount> * kmers_empty, int nthreads, int tau) : k_(*kmers_empty), nthreads_(nthreads) { }
+	KMerClustering(std::vector<KMerCount> &kmers, int nthreads) : k_(kmers), nthreads_(nthreads) { }
 
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
 	void process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad);
-
-	/// free up memory
-	void clear() {
-		k_.clear();
-	}
 	
 private:
 	std::vector<KMerCount> & k_;
 	int nthreads_;
-	int tau_;
 
 	/// @return total log-likelihood that x was made from center given x's quality values
 	double logLikelihoodKMer(const string & center, const KMerCount & x);

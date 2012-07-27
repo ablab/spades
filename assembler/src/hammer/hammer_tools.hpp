@@ -114,9 +114,6 @@ public:
 	/// correct all reads
 	static hint_t CorrectAllReads();
 
-	/// read a k-mer result file
-	static void ReadKmersWithChangeToFromFile( const string & fname, vector<KMerCount> *kmers, vector<hint_t> *kmernos );
-
 	static string getFilename( const string & dirprefix, const string & suffix );
 	static string getFilename( const string & dirprefix, int iter_count, const string & suffix );
 	static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );

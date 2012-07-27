@@ -407,7 +407,7 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 }
 
 void HammerTools::CountKMersBySplitAndMerge() {
-  std::vector<KMerCount> vec;
+  std::vector<KMerCount> &vec = *Globals::kmers;
 
   if (cfg::get().count_do) {
     HammerTools::SplitKMers();
@@ -431,35 +431,15 @@ void HammerTools::CountKMersBySplitAndMerge() {
     vec.insert(vec.end(), buf.begin(), buf.end());
   }
 
-	TIMEDLN("Extracting kmernos");
-	Globals::kmernos->clear();
-	Globals::kmernos->reserve(vec.size());
+	TIMEDLN("Building kmer index");
   Globals::kmer_index->clear();
 #if 0
   Globals::kmer_index->reserve(vec.size());
 #endif
   for (size_t i=0; i < vec.size(); ++i) {
-    Globals::kmernos->push_back(vec[i].first.start());
     const char* s = Globals::blob + vec[i].first.start();
     Globals::kmer_index->insert(std::make_pair(Seq<K>(s, 0, K, /* raw */ true), i));
   }
-
-  TIMEDLN("Serializing sorted kmers.");
-  ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser").c_str(), ios::binary);
-  size_t sz = vec.size();
-  os.write((char*)&sz, sizeof(sz));
-  for (auto I = vec.begin(), E = vec.end(); I != E; ++I)
-    binary_write(os, *I);
-  os.close();
-
-  if (!cfg::get().general_remove_temp_files) {
-		TIMEDLN("Serializing kmernos.");
-		ofstream os(HammerTools::getFilename(cfg::get().input_working_dir.c_str(), Globals::iteration_no, "kmers.numbers.ser").c_str(), ios::binary);
-		size_t sz = Globals::kmernos->size();
-		os.write((char*)&sz, sizeof(sz));
-		os.write((char*)&(*Globals::kmernos)[0], sz*sizeof((*Globals::kmernos)[0]));
-		os.close();
-	}
 
 	TIMEDLN("Merge done. There are " << vec.size() << " kmers in total.");
 }
@@ -667,20 +647,6 @@ void HammerTools::ProcessKmerHashFile(const std::string &fname, std::vector<KMer
   if (!vec.size()) return;
 
   KmerHashUnique(vec.begin(), vec.end(), vkmc);
-}
-
-void HammerTools::ReadKmersWithChangeToFromFile( const string & fname, vector<KMerCount> *kmers, vector<hint_t> *kmernos ) {
-	kmernos->clear();
-	kmers->clear();
-	boost::shared_ptr<FIStream> fis = FIStream::init_buf(fname, 1 << cfg::get().general_file_buffer_exp);
-	string buf;
-	while (fis->fs.good()) {
-		std::getline(fis->fs, buf);
-		hint_t pos; int cnt; double qual; hint_t chg;
-		sscanf(buf.c_str(), "%lu\t%*s\t%u\t%lu\t%lf", &pos, &cnt, &chg, &qual);
-		kmernos->push_back(pos);
-		kmers->push_back(KMerCount(PositionKMer(pos), KMerStat(Globals::use_common_quality, cnt, chg, qual)));
-	}
 }
 
 string HammerTools::getFilename( const string & dirprefix, const string & suffix ) {

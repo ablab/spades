@@ -60,10 +60,6 @@ std::pair<size_t, size_t> SubKMerSplitter::split() {
 static unsigned hamdistKMer(hint_t x, hint_t y, unsigned tau) {
   unsigned dist = 0;
   for (unsigned i = 0; i < K; ++i) {
-    if (Globals::blob[x + i] == 'N')
-      continue;
-    if (Globals::blob[y + i] == 'N')
-      continue;
     if (Globals::blob[x + i] != Globals::blob[y + i]) {
       ++dist; if (dist > tau) return dist;
     }
@@ -95,15 +91,17 @@ static bool canMerge(const unionFindClass &uf, int x, int y) {
 #endif
 
 
-void processBlockQuadratic(unionFindClass &uf,
-                           const std::vector<size_t> &block,
-                           const std::vector<hint_t> &kmers,
-                           unsigned tau) {
+static void processBlockQuadratic(unionFindClass &uf,
+                                  const std::vector<size_t> &block,
+                                  const std::vector<KMerCount> &kmers,
+                                  unsigned tau) {
   size_t blockSize = block.size();
   for (size_t i = 0; i < blockSize; ++i) {
+    hint_t kmerx = kmers[block[i]].first.start();
     uf.find_set(block[i]);
     for (uint32_t j = i + 1; j < blockSize; j++) {
-      if (hamdistKMer(kmers[block[i]], kmers[block[j]], tau) <= tau &&
+      hint_t kmery = kmers[block[j]].first.start();
+      if (hamdistKMer(kmerx, kmery, tau) <= tau &&
           canMerge(uf, block[i], block[j])) {
         uf.unionn(block[i], block[j]);
       }
@@ -111,21 +109,8 @@ void processBlockQuadratic(unionFindClass &uf,
   }
 }
 
-void clusterMerge(unionFindClass &to, const unionFindClass &from) {
-  std::vector<std::vector<int> > classes;
-
-  from.get_classes(classes);
-  for (size_t i = 0; i < classes.size(); ++i) {
-    size_t first = classes[i][0];
-    to.find_set(first);
-    for (size_t j = 0; j < classes[i].size(); ++j) {
-      to.unionn(first, classes[i][j]);
-    }
-  }
-}
-
 void KMerHamClusterer::cluster(const std::string &prefix,
-                               const std::vector<hint_t> &kmers,
+                               const std::vector<KMerCount> &kmers,
                                unionFindClass &uf) {
   // First pass - split & sort the k-mers
   std::ostringstream tmp;

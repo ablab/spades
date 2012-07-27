@@ -144,13 +144,13 @@ class SubKMerBlockFile {
 template<class Writer,
          class SubKMerSerializer = SubKMerDummySerializer>
 void serialize(Writer &os,
-               const std::vector<hint_t> &block, const std::vector<size_t> *fidx = NULL,
+               const std::vector<KMerCount> &kmers, const std::vector<size_t> *block = NULL,
                const SubKMerSerializer &serializer = SubKMerSerializer()) {
-  size_t sz = (fidx == NULL ? block.size() : fidx->size());
+  size_t sz = (block == NULL ? kmers.size() : block->size());
   os.write((char*)&sz, sizeof(sz));
   for (size_t i = 0, e = sz; i != e; ++i) {
-    size_t idx = (fidx == NULL ? i : (*fidx)[i]);
-    SubKMer s = serializer.serialize(block[idx], idx);
+    size_t idx = (block == NULL ? i : (*block)[i]);
+    SubKMer s = serializer.serialize(kmers[idx].first.start(), idx);
     binary_write(os, s);
   }
 }
@@ -203,7 +203,7 @@ class KMerHamClusterer {
       : tau_(tau) {}
 
   void cluster(const std::string &prefix,
-               const std::vector<hint_t> &kmers,
+               const std::vector<KMerCount> &kmers,
                unionFindClass &uf);
 };
 

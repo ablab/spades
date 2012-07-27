@@ -25,7 +25,6 @@ struct Globals {
   static char* blob;
   static char* blobquality;
   static std::vector<PositionRead> * pr;
-  static std::vector<hint_t> * kmernos;
   static std::vector<KMerCount> * kmers;
   static KMerIndex *kmer_index;
   static hint_t blob_max_size;

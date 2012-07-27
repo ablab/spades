@@ -565,9 +565,9 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					PositionRead rs(Globals::blob_size - bestCenters[k].first.size(), bestCenters[k].first.size(), Globals::pr->size() - 1);
 					Globals::pr->push_back(rs);
 
-					PositionKMer pkm(Globals::pr->size()-1, 0);
-					KMerStat kms( Globals::use_common_quality, 0, KMERSTAT_GOODITER, 1 );
-					k_.push_back( KMerCount( pkm, kms ) );
+					PositionKMer pkm(Globals::pr->size() -1, 0);
+					KMerStat kms(Globals::use_common_quality, 0, KMERSTAT_GOODITER, 1);
+					k_.push_back(KMerCount(pkm, kms));
 				}
 				v.insert(v.begin(), k_.size() - 1);
 			}
@@ -577,19 +577,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 }
 
 void KMerClustering::process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad) {
-  TIMEDLN("Reading k-mer information");
-  k_.clear();
-  Globals::kmers->clear();
-  Globals::kmers->reserve(Globals::number_of_kmers);
-  MMappedReader is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.ser"),
-                   /* unlink */ true);
-  size_t sz;
-  is.read((char*)&sz, sizeof(sz));
-  Globals::kmers->resize(sz);
-  for (size_t i = 0; i < sz; ++i)
-    binary_read(is, (*Globals::kmers)[i]);
-  k_ = *Globals::kmers;
-  TIMEDLN("K-mer information read. Starting subclustering in " << nthreads_ << " threads.");
+  TIMEDLN("Starting subclustering in " << nthreads_ << " threads.");
   TIMEDLN("Estimated: size=" << k_.size() << " mem=" << sizeof(KMerCount)*k_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
 
   std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
