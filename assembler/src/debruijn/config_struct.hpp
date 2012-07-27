@@ -909,7 +909,9 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	}
 
 	load(cfg.load_from, pt, "load_from");
-	cfg.load_from = cfg.output_root + cfg.load_from;
+	if (cfg.load_from[0] != '/') { // relative path
+		cfg.load_from = cfg.output_root + cfg.load_from;
+	}
 
 	load(cfg.entry_point, pt, "entry_point");
 
