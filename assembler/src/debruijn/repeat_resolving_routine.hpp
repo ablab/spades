@@ -43,6 +43,23 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
 
 namespace debruijn_graph {
 
+template<class gp_t>
+void WriteGraphPack(gp_t& gp, const string& file_name) {
+	ofstream filestr(file_name);
+	CompositeGraphColorer<typename gp_t::graph_t> colorer(
+			new FixedColorer<typename gp_t::graph_t::VertexId>("white"),
+			new PositionsEdgeColorer<typename gp_t::graph_t>(gp.g, gp.edge_pos));
+
+	EdgeQuality<typename gp_t::graph_t> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
+	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
+	total_labeler tot_lab(&graph_struct);
+	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
+
+	DotGraphPrinter<typename gp_t::graph_t> g_print(gp.g, labeler, colorer, " ", filestr);
+	SimpleGraphVisualizer<typename gp_t::graph_t> gv(gp.g, g_print);
+	gv.Visualize();
+}
+
 void save_distance_filling(conj_graph_pack& gp, paired_info_index& paired_index,
 		paired_info_index& clustered_index) {
 	if (cfg::get().make_saves) {
@@ -561,33 +578,8 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 	string resolved_name = cfg::get().output_dir + "resolve_components"
 			+ "/resolve_" + graph_name + "/";
 	make_dir(resolved_name);
-	if (cfg::get().rr.symmetric_resolve) {
-		if (cfg::get().use_multithreading) {
-//			ParalelCorrectPairedInfo(conj_gp, clustered_index, cfg::get().max_threads);
-//			ParalelCorrectPairedInfo(conj_gp, clustered_index, cfg::get().max_threads);
-		}
-	}
-	//save_distance_filling(conj_gp, clustered_index, clustered_index);
-	ofstream filestr(cfg::get().output_dir + sub_dir
-			+ graph_name
-					+ "_2_unresolved.dot");
-	CompositeGraphColorer<conj_graph_pack::graph_t> colorer(
-			new FixedColorer<conj_graph_pack::graph_t::VertexId>(
-					"white"),
-			new PositionsEdgeColorer<conj_graph_pack::graph_t>(
-					conj_gp.g, conj_gp.edge_pos));
 
-
-	EdgeQuality<Graph> edge_qual(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper, conj_gp.genome);
-	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids, &conj_gp.edge_pos);
-	total_labeler tot_lab(&graph_struct);
-	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
-
-	DotGraphPrinter<conj_graph_pack::graph_t> gp(conj_gp.g,
-			labeler, colorer, " ", filestr);
-	SimpleGraphVisualizer<conj_graph_pack::graph_t> gv(conj_gp.g,
-			gp);
-	gv.Visualize();
+	WriteGraphPack(conj_gp, cfg::get().output_dir + sub_dir + graph_name	+ "_2_unresolved.dot");
 	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name,
 			sub_dir, false);
 }

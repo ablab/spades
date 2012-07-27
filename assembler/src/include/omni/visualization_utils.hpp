@@ -195,6 +195,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 	filestr.close();
 }
 
+
 template<class Graph>
 void WritePaired(
 		const Graph& g,
