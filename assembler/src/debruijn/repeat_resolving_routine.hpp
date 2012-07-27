@@ -571,10 +571,10 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 	ofstream filestr(cfg::get().output_dir + sub_dir
 			+ graph_name
 					+ "_2_unresolved.dot");
-	CompositeGraphColorer<typename conj_graph_pack::graph_t> colorer(
-			new FixedColorer<typename conj_graph_pack::graph_t::VertexId>(
+	CompositeGraphColorer<conj_graph_pack::graph_t> colorer(
+			new FixedColorer<conj_graph_pack::graph_t::VertexId>(
 					"white"),
-			new PositionsEdgeColorer<typename conj_graph_pack::graph_t>(
+			new PositionsEdgeColorer<conj_graph_pack::graph_t>(
 					conj_gp.g, conj_gp.edge_pos));
 
 
@@ -583,9 +583,9 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 	total_labeler tot_lab(&graph_struct);
 	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
-	DotGraphPrinter<typename conj_graph_pack::graph_t> gp(conj_gp.g,
+	DotGraphPrinter<conj_graph_pack::graph_t> gp(conj_gp.g,
 			labeler, colorer, " ", filestr);
-	SimpleGraphVisualizer<typename conj_graph_pack::graph_t> gv(conj_gp.g,
+	SimpleGraphVisualizer<conj_graph_pack::graph_t> gv(conj_gp.g,
 			gp);
 	gv.Visualize();
 	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name,
