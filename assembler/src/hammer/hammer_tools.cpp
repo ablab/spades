@@ -42,24 +42,6 @@
 
 using namespace std;
 
-string encode3toabyte (const string & s)  {
-	string retval;
-	char c = 48;
-	int weight = 16;
-	size_t i;
-	for (i = 0; i < s.length(); i += 1) {
-		if (i % 3 == 0) {
-			c= 48;
-			weight = 16;
-		}
-		c += weight * nt2num(s[i]);
-		weight /= 4;
-		if (i % 3 == 2) retval += c;
-	}
-	if (i % 3 != 0) retval += c;
-	return retval;
-}
-
 void HammerTools::ChangeNtoAinReadFiles() {
 	std::vector<pid_t> pids;
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
@@ -129,7 +111,6 @@ hint_t HammerTools::EstimateTotalReadSize() {
 	totalReadSize = totalReadSize / (2.5);
 	return totalReadSize;
 }
-
 
 void HammerTools::InitializeSubKMerPositions() {
 	ostringstream log_sstream;
@@ -342,11 +323,11 @@ void HammerTools::SplitKMers() {
 		#pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
 		for (unsigned k=0; k < numfiles; ++k) {
       size_t sz = 0;
-      for (size_t i = 0; i < (size_t)count_num_threads; ++i)
+      for (size_t i = 0; i < count_num_threads; ++i)
         sz += tmp_entries[i][k].size() * sizeof(tmp_entries[i][k][0]);
 
       ostreams[k].reserve(sz);
-			for (size_t i = 0; i < (size_t)count_num_threads; ++i) {
+			for (size_t i = 0; i < count_num_threads; ++i) {
         ostreams[k].write(&tmp_entries[i][k][0], tmp_entries[i][k].size() * sizeof(tmp_entries[i][k][0]));
 			}
 		}
@@ -746,7 +727,7 @@ bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const vec
                                                ofstream * ofs,
                                                bool revcomp, bool correct_threshold, bool discard_singletons) {
   bool res = false;
-  if (  stat.isGoodForIterative() || ( correct_threshold && stat.isGood() ) ) {
+  if (stat.isGoodForIterative() || (correct_threshold && stat.isGood())) {
     isGood = true;
     if (ofs != NULL) *ofs << "\t\t\tsolid";
     //cout << "\t\t\tsolid";
@@ -762,9 +743,9 @@ bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const vec
       right = pos;
   } else {
     // if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
-    if (stat.change() && (discard_singletons
-        || km[stat.changeto].second.isGoodForIterative()
-        || ( correct_threshold && stat.isGood() ))) {
+    if (stat.change() &&
+        (discard_singletons || km[stat.changeto].second.isGoodForIterative() ||
+         (correct_threshold && stat.isGood()))) {
       if (ofs != NULL) *ofs << "\tchange to\n";
       //cout << "  kmer " << kmer.start() << " " << kmer.str() << " wants to change to " << stat.changeto << " " << km[stat.changeto].first.str() << endl;
       isGood = true;
@@ -790,23 +771,23 @@ bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const vec
   return res;
 }
 
-hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vector<KMerCount> & kmers) {
-	hint_t res = 0;
+size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vector<KMerCount> & kmers) {
+  size_t res = 0;
 
-	// cycle over the reads, looking for reads completely covered by solid k-mers
-	// and adding new solid k-mers on the fly
-	#pragma omp parallel for shared(res) num_threads(nthreads)
-	for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
-		PositionRead &pr = Globals::pr->at(readno);
+  // cycle over the reads, looking for reads completely covered by solid k-mers
+  // and adding new solid k-mers on the fly
+  #pragma omp parallel for shared(res) num_threads(nthreads)
+  for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
+    PositionRead &pr = Globals::pr->at(readno);
 
     // skip opaque reads w/o kmers
     if (!pr.valid()) continue;
     // maybe this read has already been covered by solid k-mers
-		if (pr.isDone()) continue;
+    if (pr.isDone()) continue;
 
-		const uint32_t read_size = pr.size();
-		vector<unsigned> covered_by_solid(read_size, false);
-		vector<hint_t> kmer_indices(read_size, -1);
+    const uint32_t read_size = pr.size();
+    std::vector<unsigned> covered_by_solid(read_size, false);
+    std::vector<hint_t> kmer_indices(read_size, -1);
 
     ValidKMerGenerator<K> gen(Globals::blob + pr.start(),
                               /* quality is not necessary */ NULL,
@@ -822,46 +803,46 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
         if (kmers[pos].second.isGoodForIterative()) {
           for (size_t j = read_pos; j < read_pos + K; ++j)
             covered_by_solid[j] = true;
-        } 
+        }
       }
       gen.Next();
     }
 
-		bool isGood = true;
-		for (size_t j = 0; j < read_size; ++j) {
-			if (!covered_by_solid[j] ) { isGood = false; break; }
-		}
-		if (!isGood) continue;
+    bool isGood = true;
+    for (size_t j = 0; j < read_size; ++j) {
+      if (!covered_by_solid[j] ) { isGood = false; break; }
+    }
+    if (!isGood) continue;
 
-		// ok, now we're sure that everything is covered
-		// first, set this read as already done
-		pr.set_done();
+    // ok, now we're sure that everything is covered
+    // first, set this read as already done
+    pr.set_done();
 
-		// second, mark all k-mers as solid
-		for (size_t j = 0; j < read_size; ++j) {
-			if ( kmer_indices[j] == (hint_t)-1 ) continue;
-			if ( !kmers[kmer_indices[j]].second.isGoodForIterative() &&
-           !kmers[kmer_indices[j]].second.isMarkedGoodForIterative() ) {
-				#pragma omp critical
-				{
-				++res;
-				kmers[kmer_indices[j]].second.makeGoodForIterative();
-				}
-			}
-		}
-	}
+    // second, mark all k-mers as solid
+    for (size_t j = 0; j < read_size; ++j) {
+      if (kmer_indices[j] == (hint_t)-1 ) continue;
+      if (!kmers[kmer_indices[j]].second.isGoodForIterative() &&
+          !kmers[kmer_indices[j]].second.isMarkedGoodForIterative() ) {
+#       pragma omp critical
+        {
+          ++res;
+          kmers[kmer_indices[j]].second.makeGoodForIterative();
+        }
+      }
+    }
+  }
 
-	if ( cfg::get().expand_write_each_iteration ) {
-		ofstream oftmp( getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no ).data() );
-		for ( hint_t n = 0; n < kmers.size(); ++n ) {
-			if ( kmers[n].second.isGoodForIterative() ) {
-				oftmp << kmers[n].first.str() << "\n>" << kmers[n].first.start()
-				      << "  cnt=" << kmers[n].second.count << "  tql=" << (1-kmers[n].second.totalQual) << "\n";
-			}
-		}
-	}
+  if (cfg::get().expand_write_each_iteration) {
+    ofstream oftmp( getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no ).data() );
+    for ( hint_t n = 0; n < kmers.size(); ++n ) {
+      if ( kmers[n].second.isGoodForIterative() ) {
+        oftmp << kmers[n].first.str() << "\n>" << kmers[n].first.start()
+              << "  cnt=" << kmers[n].second.count << "  tql=" << (1-kmers[n].second.totalQual) << "\n";
+      }
+    }
+  }
 
-	return res;
+  return res;
 }
 
 void HammerTools::PrintKMerResult( boost::iostreams::filtering_ostream & outf, const vector<KMerCount> & kmers ) {
@@ -1157,14 +1138,4 @@ hint_t HammerTools::CorrectAllReads() {
 
 	TIMEDLN("Correction done. Changed " << changedNucleotides << " bases in " << changedReads << " reads.");
 	return changedReads;
-}
-
-void HammerTools::RemoveFile(const string & fname) {
-	if (cfg::get().general_remove_temp_files) {
-		if (boost::filesystem::exists(boost::filesystem::path(fname))) {
-			if(remove(fname.c_str()) != 0) {
-				TIMEDLN("Error deleting file " + fname);
-			}
-		}
-	}
 }

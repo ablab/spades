@@ -35,15 +35,8 @@
 
 using namespace std;
 
-#define MAX_INT_64 1000000000000000000
-
-
 typedef Seq<K> Kmer;
-//typedef std::tr1::unordered_map<Kmer, KMerCount, typename Kmer::hash, typename Kmer::equal_to> KMerMap;
 typedef std::map<Kmer, KMerCount, Kmer::less2 > KMerMap;
-
-double oct2phred(string qoct, int qvoffset);
-string encode3toabyte (const string & s);
 
 /**
  * a container class for all general procedures in BayesHammer
@@ -80,15 +73,15 @@ public:
 	static void SplitKMers();
 
 	/// leave only minimizers
-	static void findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers,
-			vector< hint_t > & mmers, int which_first = 0 );
+	static void findMinimizers(vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers,
+                             vector< hint_t > & mmers, int which_first = 0 );
 	/// check whether this is a minimizer iteration
 	static bool doingMinimizers();
 	/// fill map
 	static void FillMapWithMinimizers( KMerMap & map );
 
 	/// do one step of iterative expansion, return the number of new solid k-mers
-	static hint_t IterativeExpansionStep(int expand_iter_no, int nthreads, vector<KMerCount> & kmers);
+	static size_t IterativeExpansionStep(int expand_iter_no, int nthreads, vector<KMerCount> & kmers);
 
 	/// print out the resulting set of k-mers
 	static void PrintKMerResult( boost::iostreams::filtering_ostream & outf, const vector<KMerCount> & kmers );
@@ -130,7 +123,6 @@ public:
 	static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num, const string & suffix2 );
 	static string getFilename( const string & dirprefix, const string & suffix, int suffix_num );
 	static string getReadsFilename( const string & dirprefix, int read_file_no, int iter_no, const string & suffix );
-	static void RemoveFile(const string & fname);
 };
 
 
