@@ -24,8 +24,8 @@
  *   or
  *   for (ValidKMerGenerator<2> gen(read, 2); gen.HasMore; gen.Next() {
  *     MyTrickyFunction(gen.kmer(), gen.pos(), gen.correct_probability());
- *   }
- * @param kK k-mer length.
+ *   k}
+ * @param kkK k-mer length.
  */
 template<uint32_t kK>
 class ValidKMerGenerator {
@@ -175,7 +175,7 @@ void ValidKMerGenerator<kK>::Next() {
       }
     }
     if (i == kK + start_hypothesis) {
-      kmer_ = Seq<kK>(seq_ + start_hypothesis, 0, K, /* raw */ true);
+      kmer_ = Seq<kK>(seq_ + start_hypothesis, 0, kK, /* raw */ true);
       pos_ = start_hypothesis + 1;
     } else {
       has_more_ = false;

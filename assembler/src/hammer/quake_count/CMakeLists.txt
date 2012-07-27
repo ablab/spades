@@ -6,8 +6,7 @@
 
 project(quake_count CXX)
 
-add_executable(quake_count
-   quake_count.cpp)
+add_executable(quake_count quake_count.cpp)
 
 add_executable(quake_count_17 quake_count_17.cpp)
 add_executable(quake_count_19 quake_count_19.cpp)

@@ -149,9 +149,11 @@ void SplitToFiles(ireadstream ifs, vector<ofstream *> &ofiles,
     }
     Read r;
     ifs >> r;
+    //cout << r.getSequenceString() << endl;
     KMer::hash hash_function;
     for (ValidKMerGenerator<kK> gen(r, error_threshold); gen.HasMore(); gen.Next()) {
       KMer kmer = gen.kmer();
+      //cout << kmer.str() << endl;
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
       }
