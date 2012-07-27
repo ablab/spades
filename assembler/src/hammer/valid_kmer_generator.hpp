@@ -168,7 +168,7 @@ void ValidKMerGenerator<kK>::Next() {
       }
     }
     if (i == kK + start_hypothesis) {
-      kmer_ = Seq<kK>(seq_ + start_hypothesis, 0, K, /* raw */ true);
+      kmer_ = Seq<kK>(seq_ + start_hypothesis, 0, kK, /* raw */ true);
       pos_ = start_hypothesis + 1;
     } else {
       has_more_ = false;
