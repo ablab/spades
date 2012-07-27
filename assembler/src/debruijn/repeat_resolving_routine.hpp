@@ -568,7 +568,26 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 		}
 	}
 	//save_distance_filling(conj_gp, clustered_index, clustered_index);
+	ofstream filestr(cfg::get().output_dir + sub_dir
+			+ graph_name
+					+ "_2_unresolved.dot");
+	CompositeGraphColorer<typename conj_graph_pack::graph_t> colorer(
+			new FixedColorer<typename conj_graph_pack::graph_t::VertexId>(
+					"white"),
+			new PositionsEdgeColorer<typename conj_graph_pack::graph_t>(
+					conj_gp.g, conj_gp.edge_pos));
 
+
+	EdgeQuality<Graph> edge_qual(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper, conj_gp.genome);
+	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids, &conj_gp.edge_pos);
+	total_labeler tot_lab(&graph_struct);
+	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
+
+	DotGraphPrinter<typename conj_graph_pack::graph_t> gp(conj_gp.g,
+			labeler, colorer, " ", filestr);
+	SimpleGraphVisualizer<typename conj_graph_pack::graph_t> gv(conj_gp.g,
+			gp);
+	gv.Visualize();
 	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name,
 			sub_dir, false);
 }
@@ -679,13 +698,13 @@ void resolve_repeats() {
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
 		int number_of_components = 0;
 
-		if (cfg::get().componential_resolve) {
-			make_dir(cfg::get().output_dir + "graph_components" + "/");
-			number_of_components = PrintGraphComponents(
-					cfg::get().output_dir + "graph_components/graph_", conj_gp,
-					*cfg::get().ds.IS + 100, clustered_index);
-			INFO("number of components " << number_of_components);
-		}
+//		if (cfg::get().componential_resolve) {
+//			make_dir(cfg::get().output_dir + "graph_components" + "/");
+//			number_of_components = PrintGraphComponents(
+//					cfg::get().output_dir + "graph_components/graph_", conj_gp,
+//					*cfg::get().ds.IS + 100, clustered_index);
+//			INFO("number of components " << number_of_components);
+//		}
 
 		if (cfg::get().rr.symmetric_resolve) {
 
@@ -706,6 +725,14 @@ void resolve_repeats() {
 //			}
 
 			save_distance_filling(conj_gp, clustered_index, clustered_index);
+
+			if (cfg::get().componential_resolve) {
+				make_dir(cfg::get().output_dir + "graph_components" + "/");
+				number_of_components = PrintGraphComponents(
+						cfg::get().output_dir + "graph_components/graph_", conj_gp,
+						*cfg::get().ds.IS + 100, clustered_index);
+				INFO("number of components " << number_of_components);
+			}
 
 			conj_graph_pack resolved_gp(cfg::get().K, genome,
 					cfg::get().pos.max_single_gap,
