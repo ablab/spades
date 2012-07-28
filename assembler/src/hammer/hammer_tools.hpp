@@ -36,6 +36,12 @@ using namespace std;
 typedef Seq<K> Kmer;
 typedef std::map<Kmer, KMerCount, Kmer::less2 > KMerMap;
 
+
+namespace hammer_tools {
+/// estimate total read size in input read files
+size_t EstimateTotalReadSize(const std::vector<std::string> &fnames);
+};
+
 /**
  * a container class for all general procedures in BayesHammer
  */
@@ -47,9 +53,6 @@ public:
 
 	/// change single Ns to As in input read files
 	static void ChangeNtoAinReadFiles();
-
-	/// estimate total read size in input read files
-	static hint_t EstimateTotalReadSize();
 
 	/// initialize subkmer positions and log about it
 	static void InitializeSubKMerPositions();

@@ -99,16 +99,18 @@ void HammerTools::DecompressIfNeeded() {
 	}
 }
 
-hint_t HammerTools::EstimateTotalReadSize() {
-	struct stat st;
-	hint_t totalReadSize = 0;
-	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		stat(Globals::input_filenames[iFile].c_str(), &st);
-		totalReadSize += st.st_size;
-	}
-	totalReadSize = totalReadSize / (2.5);
-	return totalReadSize;
+namespace hammer_tools {
+size_t EstimateTotalReadSize(const std::vector<std::string> &fnames) {
+  struct stat st;
+  size_t totalReadSize = 0;
+  for (auto I = fnames.begin(), E = fnames.end(); I != E; ++I) {
+    stat(I->c_str(), &st);
+    totalReadSize += st.st_size;
+  }
+  totalReadSize = totalReadSize / (2.5);
+  return totalReadSize;
 }
+};
 
 void HammerTools::InitializeSubKMerPositions() {
 	ostringstream log_sstream;
