@@ -10,22 +10,6 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <string>
 
-/// structure for boost istreams
-struct FIStream {
-  std::string fn;
-  boost::iostreams::filtering_istream fs;
-  std::ifstream stdstream;
-  std::vector<char> buffer;
-  bool remove_it;
-  FIStream(const std::string & fname);
-  FIStream(const std::string & fname, bool input_output);
-  FIStream(const std::string & fname, bool input_output, uint64_t bufsize);
-  ~FIStream();
-
-  static boost::shared_ptr<FIStream> init(const std::string & fname, bool input_output = false);
-  static boost::shared_ptr<FIStream> init_buf(const std::string & fname, uint64_t bufsize);
-};
-
 /// structure for boost ostreams
 struct FOStream {
   std::string fn;
