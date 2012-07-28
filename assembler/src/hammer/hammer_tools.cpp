@@ -26,7 +26,6 @@
 #endif
 
 #include "read/ireadstream.hpp"
-#include "defs.hpp"
 #include "mathfunctions.hpp"
 #include "valid_kmer_generator.hpp"
 #include "position_kmer.hpp"

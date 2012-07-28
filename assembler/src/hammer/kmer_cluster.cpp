@@ -17,7 +17,6 @@
 #include <algorithm>
 
 #include "read/ireadstream.hpp"
-#include "defs.hpp"
 #include "mathfunctions.hpp"
 #include "hammer_tools.hpp"
 #include "hamcluster.hpp"
@@ -121,42 +120,42 @@ int KMerClustering::hamdistKMer(const PositionKMer & x, const string & y, int ta
   */
 string KMerClustering::find_consensus_with_mask(const vector<int> & cl, const vector<int> & mask, int maskVal) {
 
-	//entry_logger el ("find_consensus_with_mask");
+  //entry_logger el ("find_consensus_with_mask");
 
-	size_t blockSize = cl.size();
+  size_t blockSize = cl.size();
 
-	// consensus of a single string is trivial
-	if (blockSize == 1) return k_[cl[0]].first.str();
+  // consensus of a single string is trivial
+  if (blockSize == 1) return k_[cl[0]].first.str();
 
-	string c(K, 'A');
-	for (uint32_t i = 0; i < K; i++) {
-		int scores[4] = {0,0,0,0};
-		for (uint32_t j = 0; j < blockSize; j++) {
-			if (mask[j] == maskVal)
-                          scores[static_cast<uint8_t>(dignucl(k_[cl[j]].first[i]))] += k_[cl[j]].second.count;
-		}
-		c[i] = num2nt(max_element(scores, scores + 4) - scores);
-	}
+  string c(K, 'A');
+  for (uint32_t i = 0; i < K; i++) {
+    int scores[4] = {0,0,0,0};
+    for (uint32_t j = 0; j < blockSize; j++) {
+      if (mask[j] == maskVal)
+        scores[static_cast<uint8_t>(dignucl(k_[cl[j]].first[i]))] += k_[cl[j]].second.count;
+    }
+    c[i] = nucl(max_element(scores, scores + 4) - scores);
+  }
 
-	return c;
+  return c;
 }
 
 
 string KMerClustering::find_consensus(const vector<int> & cl) {
-	size_t blockSize = cl.size();
+  size_t blockSize = cl.size();
 
-	// consensus of a single string is trivial
-	if (blockSize == 1) return k_[cl[0]].first.str();
+  // consensus of a single string is trivial
+  if (blockSize == 1) return k_[cl[0]].first.str();
 
-	string c(K, 'A');
-	for (size_t i = 0; i < K; i++) {
-		int scores[4] = {0,0,0,0};
-		for (size_t j = 0; j < blockSize; j++) {
-                  scores[static_cast<uint8_t>(dignucl(k_[cl[j]].first[i]))]+=k_[cl[j]].second.count;
-		}
-		c[i] = num2nt(max_element(scores, scores + 4) - scores);
-	}
-	return c;
+  string c(K, 'A');
+  for (size_t i = 0; i < K; i++) {
+    int scores[4] = {0,0,0,0};
+    for (size_t j = 0; j < blockSize; j++) {
+      scores[static_cast<uint8_t>(dignucl(k_[cl[j]].first[i]))]+=k_[cl[j]].second.count;
+    }
+    c[i] = nucl(max_element(scores, scores + 4) - scores);
+  }
+  return c;
 }
 
 /**
