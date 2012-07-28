@@ -236,10 +236,14 @@ int main(int argc, char * argv[]) {
       TIMEDLN("Subclustering Hamming graph");
       int clustering_nthreads = min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
       KMerClustering kmc(*Globals::kmers, clustering_nthreads);
-      boost::shared_ptr<FOStream> ofkmers = cfg::get().hamming_write_solid_kmers ?
-                                            FOStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.solid").c_str()) : boost::shared_ptr<FOStream>();
-      boost::shared_ptr<FOStream> ofkmers_bad = cfg::get().hamming_write_bad_kmers ?
-                                                FOStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.bad").c_str()) : boost::shared_ptr<FOStream>();
+      boost::shared_ptr<std::ofstream> ofkmers =
+          cfg::get().hamming_write_solid_kmers ?
+          boost::shared_ptr<std::ofstream>(new std::ofstream(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.solid"))) :
+          boost::shared_ptr<std::ofstream>();
+      boost::shared_ptr<std::ofstream> ofkmers_bad =
+          cfg::get().hamming_write_bad_kmers ?
+          boost::shared_ptr<std::ofstream>(new std::ofstream(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.bad"))) :
+          boost::shared_ptr<std::ofstream>();
       kmc.process(ofkmers, ofkmers_bad);
       TIMEDLN("Finished clustering.");
     }

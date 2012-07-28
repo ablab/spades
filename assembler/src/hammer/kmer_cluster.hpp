@@ -26,7 +26,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad);
+	void process(boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad);
 	
 private:
 	std::vector<KMerCount> & k_;

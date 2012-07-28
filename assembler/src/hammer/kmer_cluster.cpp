@@ -575,7 +575,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-void KMerClustering::process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad) {
+void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad) {
   TIMEDLN("Starting subclustering in " << nthreads_ << " threads.");
   TIMEDLN("Estimated: size=" << k_.size() << " mem=" << sizeof(KMerCount)*k_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
 
@@ -621,8 +621,8 @@ void KMerClustering::process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<
 			if ( cur_class.size() == 1 ) {
 				if ( (1-k_[cur_class[0]].second.totalQual) > cfg::get().bayes_singleton_threshold) {
 					k_[cur_class[0]].second.changeto = KMERSTAT_GOODITER;
-					if (ofs.get()) {
-						(ofs->fs) << k_[cur_class[0]].first.str() << "\n>" << k_[cur_class[0]].first.start()
+					if (std::ofstream *fs = ofs.get()) {
+						(*fs) << k_[cur_class[0]].first.str() << "\n>" << k_[cur_class[0]].first.start()
 							<< " good singleton " << "  ind=" << cur_class[0]
 							<< "  cnt=" << k_[cur_class[0]].second.count
 							<< "  tql=" << (1-k_[cur_class[0]].second.totalQual) << "\n";
@@ -632,8 +632,8 @@ void KMerClustering::process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<
 						k_[cur_class[0]].second.changeto = KMERSTAT_GOODITER_BAD;
 					else
 						k_[cur_class[0]].second.changeto = KMERSTAT_BAD;
-					if (ofs_bad.get()) {
-						(ofs_bad->fs) << k_[cur_class[0]].first.str() << "\n>" << k_[cur_class[0]].first.start()
+					if (std::ofstream *fs = ofs_bad.get()) {
+						(*fs) << k_[cur_class[0]].first.str() << "\n>" << k_[cur_class[0]].first.start()
 							<< " bad singleton "
 							<< "  ind=" << cur_class[0]
 							<< "  cnt=" << k_[cur_class[0]].second.count
@@ -667,22 +667,22 @@ void KMerClustering::process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<
 				if (blocksInPlace[n][m].size() == 1) {
 					if ( (1-k_[blocksInPlace[n][m][0]].second.totalQual) > cfg::get().bayes_singleton_threshold) {
 						k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOODITER;
-						if (ofs.get()) {
-							(ofs->fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
-							   << " good singleton " << "  ind=" << blocksInPlace[n][m][0]
-							   << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count
-							   << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
+						if (std::ofstream *fs = ofs.get()) {
+							(*fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
+                    << " good singleton " << "  ind=" << blocksInPlace[n][m][0]
+                    << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count
+                    << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 						}
 					} else {
 						if (cfg::get().correct_use_threshold && (1-k_[blocksInPlace[n][m][0]].second.totalQual) > cfg::get().correct_threshold)
 							k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOODITER_BAD;
 						else
 							k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_BAD;
-						if (ofs_bad.get()) {
-							(ofs_bad->fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
-							   << " bad singleton " << "  ind=" << blocksInPlace[n][m][0]
-							   << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count
-							   << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
+						if (std::ofstream *fs = ofs_bad.get()) {
+							(*fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
+                    << " bad singleton " << "  ind=" << blocksInPlace[n][m][0]
+                    << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count
+                    << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 						}
 					}
 				} else {
@@ -694,36 +694,36 @@ void KMerClustering::process(boost::shared_ptr<FOStream> ofs, boost::shared_ptr<
 					cluster_quality = 1-cluster_quality;
 
 					// in regular hammer mode, all nonsingletons are good
-					if ( cfg::get().bayes_hammer_mode || cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
+					if (cfg::get().bayes_hammer_mode || cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
 						k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOODITER;
-						if (ofs.get()) {
-							(ofs->fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
-							   << " center clust=" << cluster_quality
-							   << " ind=" << blocksInPlace[n][m][0]
-							   << " cnt=" << k_[blocksInPlace[n][m][0]].second.count
-							   << " tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
+						if (std::ofstream *fs = ofs.get()) {
+							(*fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
+                    << " center clust=" << cluster_quality
+                    << " ind=" << blocksInPlace[n][m][0]
+                    << " cnt=" << k_[blocksInPlace[n][m][0]].second.count
+                    << " tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 						}
 					} else {
 						if (cfg::get().correct_use_threshold && (1-k_[blocksInPlace[n][m][0]].second.totalQual) > cfg::get().correct_threshold)
 							k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOODITER_BAD;
 						else
 							k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_BAD;
-						if (ofs_bad.get()) {
-							(ofs_bad->fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
-							   << " center of bad cluster clust=" << cluster_quality
-							   << " ind=" << blocksInPlace[n][m][0]
-							   << " cnt=" << k_[blocksInPlace[n][m][0]].second.count
-							   << " tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
+						if (std::ofstream *fs = ofs_bad.get()) {
+							(*fs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>" << k_[blocksInPlace[n][m][0]].first.start()
+                    << " center of bad cluster clust=" << cluster_quality
+                    << " ind=" << blocksInPlace[n][m][0]
+                    << " cnt=" << k_[blocksInPlace[n][m][0]].second.count
+                    << " tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 						}
 					}
 					for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
 						k_[blocksInPlace[n][m][j]].second.changeto = blocksInPlace[n][m][0];
-						if (ofs_bad.get()) {
-							(ofs_bad->fs) << k_[blocksInPlace[n][m][j]].first.str() << "\n>" << k_[blocksInPlace[n][m][j]].first.start()
-							   << " part of cluster " << k_[blocksInPlace[n][m][0]].first.start() << " clust=" << cluster_quality
-								   << " ind=" << blocksInPlace[n][m][j]
-							   << " cnt=" << k_[blocksInPlace[n][m][j]].second.count
-							   << " tql=" << (1-k_[blocksInPlace[n][m][j]].second.totalQual) << "\n";
+						if (std::ofstream *fs = ofs_bad.get()) {
+							(*fs) << k_[blocksInPlace[n][m][j]].first.str() << "\n>" << k_[blocksInPlace[n][m][j]].first.start()
+                    << " part of cluster " << k_[blocksInPlace[n][m][0]].first.start() << " clust=" << cluster_quality
+                    << " ind=" << blocksInPlace[n][m][j]
+                    << " cnt=" << k_[blocksInPlace[n][m][j]].second.count
+                    << " tql=" << (1-k_[blocksInPlace[n][m][j]].second.totalQual) << "\n";
 						}
 					}
 				}

@@ -14,7 +14,6 @@
 #include "standard.hpp"
 #include <iostream>
 #include <fstream>
-#include <unordered_map>
 #include <boost/format.hpp>
 
 #include <time.h>
@@ -810,7 +809,7 @@ size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
   return res;
 }
 
-void HammerTools::PrintKMerResult( boost::iostreams::filtering_ostream & outf, const vector<KMerCount> & kmers ) {
+void HammerTools::PrintKMerResult(std::ostream& outf, const vector<KMerCount> & kmers ) {
 	for (vector<KMerCount>::const_iterator it = kmers.begin(); it != kmers.end(); ++it) {
 		outf << it->first.start() << "\t"
 			 << string(Globals::blob + it->first.start(), K) << "\t"

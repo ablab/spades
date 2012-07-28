@@ -21,7 +21,6 @@
 #include <fstream>
 #include <zlib.h>
 #include <boost/filesystem.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "union.hpp"
@@ -29,7 +28,6 @@
 #include "globals.hpp"
 #include "kmer_stat.hpp"
 #include "position_kmer.hpp"
-#include "hammer_io.hpp"
 #include "hammer_stats.hpp"
 #include "mmapped_reader.hpp"
 
@@ -63,10 +61,6 @@ public:
 
 	/// process a k-mer hash file
 	static void ProcessKmerHashFile(const std::string &fname, std::vector<KMerCount> & kmcvec );
-	static void ProcessKmerHashVector( const vector< pair<hint_t, double> > & sv, KMerNoHashMap & km, std::vector<KMerCount> & vkmc );
-	/// print a processed k-mer hash file
-	static void PrintProcessedKmerHashFile( boost::iostreams::filtering_ostream & outStream, hint_t & kmer_num, KMerNoHashMap & km );
-	static void PrintProcessedKmerHashFile( boost::iostreams::filtering_ostream & outf, hint_t & kmer_num, std::vector<KMerCount> & km );
 	/// count k-mers in input files
 	static void CountKMersBySplitAndMerge();
 	/// split kmers into files
@@ -84,7 +78,7 @@ public:
 	static size_t IterativeExpansionStep(int expand_iter_no, int nthreads, vector<KMerCount> & kmers);
 
 	/// print out the resulting set of k-mers
-	static void PrintKMerResult( boost::iostreams::filtering_ostream & outf, const vector<KMerCount> & kmers );
+	static void PrintKMerResult(std::ostream & outf, const vector<KMerCount> & kmers );
 
 	/// internal procedure
 	static bool internalCorrectReadProcedure(const std::string & seq,

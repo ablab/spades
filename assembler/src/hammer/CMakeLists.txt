@@ -22,7 +22,6 @@ add_executable(hammer
    main.cpp
    half.cpp
    hammer_tools.cpp
-   hammer_io.cpp
    hammer_stats.cpp
    hamcluster.cpp
    kmer_cluster.cpp
