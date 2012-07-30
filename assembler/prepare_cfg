@@ -42,5 +42,3 @@ mkdir -p $build/release
 cd $build/release
 cmake $src
 cd $assembler
-
-cp src/include/k_range.hpp.template  src/include/k_range.hpp
