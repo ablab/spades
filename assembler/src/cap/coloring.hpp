@@ -49,6 +49,9 @@ public:
 		data_.erase(e);
 	}
 
+	void Erase(Element e) {
+		data_.erase(e);
+	}
 };
 
 template<class Graph>
@@ -96,6 +99,16 @@ public:
 			answer[*it] = vertex_color_.ColorStr(*it);
 		}
 		return answer;
+	}
+
+	/*virtual*/
+	void HandleDelete(EdgeId e) {
+		edge_color_.Erase(e);
+	}
+
+	/*virtual*/
+	void HandleDelete(VertexId v) {
+		vertex_color_.Erase(v);
 	}
 
 	/*virtual*/
