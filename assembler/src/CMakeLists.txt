@@ -52,14 +52,6 @@ else ()
   endif()
 endif()
 
-# Add debug info
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug"          OR
-    ${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
-  add_definitions(-g3)
-else()
-  add_definitions(-g0)
-endif()
-
 add_definitions(-std=c++0x)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 if (NOT OPENMP_FOUND)
@@ -74,9 +66,16 @@ endif()
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   message("Making Debug Configuration...")
 
+  add_definitions(-g3)
   add_definitions(-D_GLIBCXX_DEBUG)
 else()
   message("Making Release Configuration...")
+
+  if (${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
+    add_definitions(-g3)
+  else()
+    add_definitions(-g0)
+  endif()
 
   add_definitions(-O2)
   add_definitions(-DNDEBUG)
@@ -91,8 +90,8 @@ find_package(Boost COMPONENTS system filesystem REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
-include_directories("${SPADES_MAIN_INCLUDE_DIR}")
-include_directories("${SPADES_BUILT_INCLUDE_DIR}")
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+include_directories(${SPADES_MAIN_INCLUDE_DIR} ${SPADES_BUILT_INCLUDE_DIR})
 include_directories("${EXT_DIR}/include")
 include_directories("${ZLIB_INCLUDE_DIRS}")
 include_directories("${Boost_INCLUDE_DIRS}")
