@@ -35,6 +35,6 @@ ade
         inv_density         5.0 ;maximal inverse density of points in cluster to be considered
 
     ;hard_mode arguments
-        derivative_threshold  0.1 ;threshold for derivative in hard mode
+        derivative_threshold  0.2 ;threshold for derivative in hard mode
 
 }

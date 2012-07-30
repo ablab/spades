@@ -39,13 +39,13 @@ class SmoothingDistanceEstimator: public DistanceEstimator<Graph> {
     }
 
 protected:
-    vector<pair<size_t, double> > EstimateEdgePairDistances(EdgeId first, EdgeId second, vector<PairInfo<EdgeId> > data, const vector<size_t> forward) const {
+    vector<pair<size_t, double> > EstimateEdgePairDistances(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId> >& data, const vector<size_t>& forward) const {
         vector<pair<size_t, double> > result;
         if (data.size() <= 1) 
             return result;
 
         DataDivider data_divider(threshold_);
-		vector<Interval> clusters = data_divider.DivideData<EdgeId>(data);
+		const vector<Interval>& clusters = data_divider.DivideData<EdgeId>(data);
 		size_t cur = 0;
         stringstream ss;
         for (size_t i = 0; i < forward.size(); i++){
@@ -72,16 +72,16 @@ protected:
                     peakfinder.FFTSmoothing(cutoff_);
                     if ( (cur + 1) == forward.size() || (int) forward[cur + 1] > rounded_d(data[end - 1] )) {
                         if (round(inv_density_ * (end - begin)) > (int) data_length) {
-                            result.push_back(make_pair(forward[cur], peakfinder.getNormalizedWeight()));       // default weight is one
-                            DEBUG("Pair made " << forward[cur] << " " << peakfinder.getNormalizedWeight());
+                            result.push_back(make_pair(forward[cur], peakfinder.GetNormalizedWeight()));       // default weight is one
+                            DEBUG("Pair made " << forward[cur] << " " << peakfinder.GetNormalizedWeight());
                         }
                         cur++;
                     } 
                     else {
                         while (cur < forward.size() && (int) forward[cur] <= rounded_d(data[end - 1] )) {
-                            if (peakfinder.isPeak(forward[cur])) { 
-                                result.push_back(make_pair(forward[cur], peakfinder.getNormalizedWeight()));
-                                DEBUG("Pair made " << forward[cur] << " " << peakfinder.getNormalizedWeight());
+                            if (peakfinder.IsPeak(forward[cur])) { 
+                                result.push_back(make_pair(forward[cur], peakfinder.GetNormalizedWeight()));
+                                DEBUG("Pair made " << forward[cur] << " " << peakfinder.GetNormalizedWeight());
                             }   
                             cur++;
                         }
@@ -90,6 +90,22 @@ protected:
 			}
 		}
 		return result;
+	}
+
+	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
+		if (make_pair(first, second) <= ConjugatePair(first, second)) {
+			vector<size_t> forward = this->GetGraphDistances(first, second);
+		    vector<pair<size_t, double> > estimated;
+            TRACE("Processing edge pair " << first << " " << second);
+            if (forward.size() > 0) 
+                estimated = EstimateEdgePairDistances(first, second, data, forward);
+            else 
+                estimated = FindEdgePairDistances(data);
+
+			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
+			this->AddToResult(result, res);
+			this->AddToResult(result, ConjugateInfos(res));
+		}
 	}
 
 public:
@@ -106,66 +122,43 @@ public:
     {
     }
 
-	//vector<pair<int, double> > FindEdgePairDistances(vector<PairInfo<EdgeId> > data, vector<size_t> forward = NULL) {
-        //vector<pair<size_t, double> > result;
-        //if (data.size() <= 1)
-            //return result;
+    vector<pair<size_t, double> > FindEdgePairDistances(const vector<PairInfo<EdgeId> >& data) const {
+        vector<pair<size_t, double> > result;
+        if (data.size() <= 1)
+            return result;
 		
-        //vector<Interval> clusters = divideData(data);
+        DataDivider data_divider(threshold_);
+		const vector<Interval>& clusters = data_divider.DivideData<EdgeId>(data);
+        DEBUG("Seeking for distances");
 		
-        //size_t cur = 0;
-        //std::stringstream ss;
-        //for (size_t i = 0; i < forward.size(); i++){
-            //ss << forward[i] << " ";
-        //}
-        //INFO("Possible distances : " << ss.str());
+        for (size_t i = 0; i < clusters.size(); i++) {
+            int begin = clusters[i].first;
+            int end = clusters[i].second;
+            size_t data_length = rounded_d(data[end - 1]) - rounded_d(data[begin]) + 1;
+            if (end - (int) begin > (int) min_peak_points_) {
+                PeakFinder<EdgeId> peakfinder(data, begin, end, round(data_length * range_coeff_), round(data_length * delta_coeff_), percentage_, derivative_threshold_);
+                DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end - 1]));
 
-		//for (size_t i = 0; i < clusters.size(); i++) {
-            //int begin = clusters[i].first;
-            //int end = clusters[i].second;
-            //size_t data_length = rounded_d(data[end - 1]) - rounded_d(data[begin]) + 1;
-            //if (end - begin > min_peak_points_) {
-                //while ((cur < forward.size()) && ( (int) forward[cur] < rounded_d(data[begin])))
-					//cur++;
-                //if (cur == forward.size()) 
-                    //break;
+                TRACE("Smoothing via FFT");
                 
-                //if ((int) forward[cur] > rounded_d(data[end - 1])) 
-                    //continue;
-                //else {
-                    //PeakFinder<EdgeId> peakfinder(data, begin, end);
-                    //DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end - 1]));
-                    
-                    //peakfinder.FFTSmoothing(cutoff_);
+                peakfinder.FFTSmoothing(cutoff_);
+                peakfinder.PrintStats();
 
-                    //vector<pair<int, double> > peaks = peakfinder.ListPeaks();
+                TRACE("Listing peaks");
 
-                    //for (auto iter = peaks.begin(); iter != peaks.end(); iter++) 
-                        //result.push_back(*iter);
-                //}
-			//}
-		//}
-		//return result;
-	//}
+                vector<pair<size_t, double> > peaks = peakfinder.ListPeaks();
 
-	//void Estimate(PairedInfoIndex<Graph> &result) {
-		//for (auto iterator = this->histogram().begin(); iterator != this->histogram().end(); ++iterator) {
-			//vector<PairInfo<EdgeId> > data = *iterator;
-			//EdgeId first = data[0].first;
-			//EdgeId second = data[0].second;
-            //int firstNumber =  this->graph().int_ids().ReturnIntId(first);
-            //int secondNumber =  this->graph().int_ids().ReturnIntId(second);
+                for (auto iter = peaks.begin(); iter != peaks.end(); iter++) {
+                    result.push_back(*iter);
+                    TRACE("PEAKS " << iter->first << " " << iter->second);
+                }
+            }
+        }
+        return result;
+    }
 
-            //DEBUG("Estimating edges number : " << firstNumber << " " << secondNumber); 
-            //vector<size_t> forward = this->GetGraphDistances(first, second);
-			//vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(data, forward);
-			//vector<PairInfo<EdgeId> > clustered = this->ClusterResult(first, second, estimated);
-			//this->AddToResult(result, clustered);
-		//}
-	//}
     private:
 	    DECL_LOGGER("SmoothingDistanceEstimator")
-
 };
 
 }

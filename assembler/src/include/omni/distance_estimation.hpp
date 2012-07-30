@@ -131,9 +131,10 @@ protected:
 	const size_t max_distance_;
 
 	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
-			vector<PairInfo<EdgeId>> data,
-			vector<size_t> raw_forward) const {
+			const vector<PairInfo<EdgeId>>& data,
+			const vector<size_t>& raw_forward) const {
 
+        cout << "SIMPLE" << endl;
         size_t first_len = this->graph().length(first);
         size_t second_len = this->graph().length(second);
 		vector<pair<size_t, double>> result;

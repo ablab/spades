@@ -81,10 +81,12 @@ for d in datasets:
     check_file(d)    
 
 if not datasets:
+    print "no datasets"
     usage()
     sys.exit(1)   
 
 if not reference:
+    print 'no ref'
     usage()
     sys.exit(1)   
 
