@@ -11,7 +11,7 @@ add_executable(spades
 
 target_link_libraries(spades ${COMMON_LIBRARIES} input)
 
-if (DEFINED static_build)
+if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
