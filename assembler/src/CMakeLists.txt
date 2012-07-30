@@ -16,29 +16,24 @@ set(CMAKE_MODULE_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
-# Default configuration
-set(SPADES_DEFAULT_BUILD_TYPE "RelWithDebInfo")
-if (NOT CMAKE_BUILD_TYPE)
-  message("Setting default build configuration: ${SPADES_DEFAULT_BUILD_TYPE}")
-  set(CMAKE_BUILD_TYPE "${SPADES_DEFAULT_BUILD_TYPE}" CACHE STRING
-      "Choose the type of build, options are: None Debug Release RelWithDebInfo."
-      FORCE)
-endif()
+# Define various dirs
+set(SPADES_MAIN_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(SPADES_MAIN_INCLUDE_DIR ${SPADES_MAIN_SRC_DIR}/include)
+set(SPADES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(SPADES_TOOLS_BINARY_DIR ${SPADES_BINARY_DIR}/bin)
+set(SPADES_BUILT_INCLUDE_DIR ${SPADES_BINARY_DIR}/include)
 
-# Define option for static / dynamic build.
-option(SPADES_STATIC_BUILD
-       "Link SPAdes statically" OFF)
-if (SPADES_STATIC_BUILD)
-  # it'll make cmake to find libraries archives, not dynamic link
-  set(CMAKE_FIND_LIBRARY_SUFFIXES .a) 
+# Everything option-dependent
+include(options)
 
-if (NOT APPLE)  
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-endif()
-  add_definitions(-static)
-
-  set(Boost_USE_STATIC_LIBS        ON)
-  set(Boost_USE_STATIC_RUNTIME     ON)
+# Sanity check our source directory to make sure that we are not trying to
+# generate an in-tree build 
+if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+  message(FATAL_ERROR "In-source builds are not allowed.
+Please create a directory and run cmake from there, passing the path
+to this source directory as the last argument.
+This process created the file `CMakeCache.txt' and the directory `CMakeFiles'.
+Please delete them.")
 endif()
 
 # Check for OpenMP and add flags if necessary
@@ -81,7 +76,7 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 else()
   message("Making Release Configuration...")
 
-  add_definitions(-O2)  
+  add_definitions(-O2)
   add_definitions(-DNDEBUG)
 endif()
 
@@ -94,13 +89,13 @@ find_package(Boost COMPONENTS system filesystem REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
-include_directories("${CMAKE_SOURCE_DIR}/include")
+include_directories("${SPADES_MAIN_INCLUDE_DIR}")
+include_directories("${SPADES_BUILT_INCLUDE_DIR}")
 include_directories("${EXT_DIR}/include")
 include_directories("${ZLIB_INCLUDE_DIRS}")
 include_directories("${Boost_INCLUDE_DIRS}")
 
-set(COMMON_LIBRARIES 
-    ${ZLIB_LIBRARIES} ${Boost_LIBRARIES})
+set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${Boost_LIBRARIES})
 
 # sub projects
 add_subdirectory(io)
@@ -108,4 +103,6 @@ add_subdirectory(debruijn)
 add_subdirectory(hammer)
 
 # Random stuff
-include(CMakeListsInternal.txt)
+if (SPADES_BUILD_INTERNAL)
+  include(CMakeListsInternal.txt)
+endif()
