@@ -147,6 +147,8 @@ public:
     typedef base_vector_type::input_value_type input_value_type;
 
 
+    KmerHashVector(size_t k, size_t nthreads);
+
     KmerHashVector(base_vector_type * vec): data_(vec) {
     }
 
@@ -388,10 +390,20 @@ public:
 
         return KmerHashVector(single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetHashVector(k, nthreads));
     }
+
+    IKmerHashVector * GetRawHashVector(size_t k, size_t nthreads) {
+        VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
+                ToString(MIN_K) + " and <= " + ToString(MAX_K));
+
+        return single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetHashVector(k, nthreads);
+    }
 };
 
 KmerHashVector GetHashVector(size_t k, size_t nthreads) {
     return KmerHashVectorFactory::GetInstance().GetHashVector(k, nthreads);
+}
+
+KmerHashVector::KmerHashVector(size_t k, size_t nthreads): data_(KmerHashVectorFactory::GetInstance().GetRawHashVector(k, nthreads)) {
 }
 
 
@@ -448,6 +460,7 @@ public:
 
     typedef base_set_type::input_value_type input_value_type;
 
+    KmerSet(size_t k);
 
     KmerSet(base_set_type * set): data_(set) {
     }
@@ -696,6 +709,13 @@ public:
 
         return KmerSet(single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetSet(k));
     }
+
+    IKmerSet * GetRawSet(size_t k) {
+        VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
+                ToString(MIN_K) + " and <= " + ToString(MAX_K));
+
+        return single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetSet(k);
+    }
 };
 
 
@@ -706,6 +726,9 @@ KmerSet GetSet(size_t k, size_t capacity) {
 
 KmerSet GetSet(size_t k) {
     return KmerSetFactory::GetInstance().GetSet(k);
+}
+
+KmerSet::KmerSet(size_t k): data_(KmerSetFactory::GetInstance().GetRawSet(k)) {
 }
 
 
