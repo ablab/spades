@@ -13,7 +13,7 @@
 <p>SPAdes stands for St. Petersburg genome assembler. It is intended for both standard (multicell) and single-cell MDA
     bacteria  assemblies. This manual will help you to install and run SPAdes. You can find the latest SPAdes release
 at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. The latest version of this manual can be found <a href="http://spades.bioinf.spbau.ru/release2.2.0/manual.html">here</a>.
-    SPAdes version 2.2.0 released under  GPLv2 on 25 July 2012.
+    SPAdes version 2.2.0 released under  GPLv2 on 2 August 2012.
 </p>
 
 
@@ -112,13 +112,20 @@ Thank you for using SPAdes!
 </p>
 
 <p>
-    SPAdes supports paired end reads organized into one or two files.
+    SPAdes supports paired end reads organized in two separate files or combined in one:
 
 <ul>
-    <li>If using a single file, interlace the corresponding mated "1" and "2" reads. Put the read from the Illumina
-        file <code>s_n_1_export.txt</code> first, followed by the read from the Illumina file <code>s_n_2_export.txt</code>.</li>
-    <li>If using a pair of files, the first file should have the Illumina "1" subreads and the second file
-        should have the Illumina "2" subreads, with corresponding reads in the exact same order. </li>
+
+    <li>If the forward and reverse reads for each lane are split into separate FASTQ files (e.g.
+        <code>s_1_1_sequence.txt</code> and <code>s_1_2_sequence.txt</code> for the forward and reverse reads, respectively, from lane 1),
+        the second file  should have corresponding reads in the exact same order.
+    </li>
+    <li>
+        If using a single file containing reads in both orientations, interlace the corresponding reads such that each read from
+        <code>s_1_1_sequence.txt</code> is followed by the corresponding read from <code>s_1_2_sequence.txt</code>.
+    </li>
+
+
 </ul>
 
 <h3>2.2 SPAdes pipeline</h3>
