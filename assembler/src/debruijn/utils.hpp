@@ -20,6 +20,7 @@
 #include "omp_wrapper.h"
 
 #include "new_debruijn.hpp"
+#include "standard.hpp"
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
 

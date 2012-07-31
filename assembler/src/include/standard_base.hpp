@@ -125,6 +125,7 @@ inline bool rm_dir(fs::path p) {
 }
 
 using boost::optional;
+using boost::make_optional;
 using boost::none;
 using boost::in_place;
 

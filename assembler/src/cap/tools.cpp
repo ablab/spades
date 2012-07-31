@@ -12,19 +12,20 @@
 #include "comparison_utils.hpp"
 #include "diff_masking.hpp"
 #include "repeat_masking.hpp"
+#include "genome_correction.hpp"
 #include "assembly_compare.hpp"
 
 namespace cap {
 
 //Gingi block
 
-BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
-	MaskDifferencesAndSave(vector<string> {
-			"/home/snurk/Dropbox/gingi/jeff.fasta",
-			"/home/snurk/Dropbox/gingi/TDC60.fasta" }, vector<string> { "jeff",
-			"tdc60" }, "assembly_comp/gingi_diff_mask/", k<15>(), k<21>(),
-			k<55>()/*, k<101>(), k<201>()*/);
-}
+//BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
+//	MaskDifferencesAndSave(vector<string> {
+//			"/home/snurk/Dropbox/gingi/jeff.fasta",
+//			"/home/snurk/Dropbox/gingi/TDC60.fasta" }, vector<string> { "jeff",
+//			"tdc60" }, "assembly_comp/gingi_diff_mask/", k<15>(), k<21>(),
+//			k<55>()/*, k<101>(), k<201>()*/);
+//}
 
 //BOOST_AUTO_TEST_CASE( ClearGingiGenome ) {
 //	Clear<201>("assembly_comp/gingi_diff_mask/tdc60.fasta",
@@ -37,7 +38,7 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
 //}
 
 BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
-	static const size_t K = /*55*/201;
+	static const size_t K = /*55*/55;
 	typedef debruijn_graph::graph_pack<
 	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> gp_t;
 	typedef gp_t::graph_t Graph;
@@ -51,33 +52,40 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff_cl.fasta");
 //	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
 //	string ref = "assembly_comp/gingi_diff_mask/tdc60_cl.fasta";
-	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff.fasta",
-			"jeff_");
-	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60.fasta",
-			"tdc_");
-	string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
-	string output_folder = "assembly_comp/gingi_jeff_vs_tdc60_" + ToString(K)
+	EasyContigStream stream_1("/home/snurk/Dropbox/lab/mrsa/MRSA_RCH_S60.fasta", "s60_");
+	EasyContigStream stream_2("/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta", "usa300_");
+//	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff.fasta",
+//			"jeff_");
+//	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60.fasta",
+//			"tdc_");
+
+//	string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
+	string output_folder = "assembly_comp/s60_usa300_" + ToString(K)
 			+ "/";
 	rm_dir(output_folder);
 	make_dir(output_folder);
 
 	int br_delta = -1;
-	gp_t gp(ReadGenome(ref), 200, true);
+	gp_t gp(Sequence()/*ReadGenome(ref)*/, 200, true);
 	ColorHandler<Graph> coloring(gp.g);
 
 	vector<ContigStream*> streams = { &stream_1, &stream_2 };
 	ConstructColoredGraph(gp, coloring, streams, br_delta);
 
-	INFO("Filling ref pos " << gp.genome.size());
+	SimpleInDelCorrector<Graph> corrector(gp.g, coloring
+			, (*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(), edge_type::blue, edge_type::red);
+	corrector.Analyze();
+
+//	INFO("Filling ref pos " << gp.genome.size());
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
 
 //Indels
-	make_dir(output_folder + "indels/");
-	SimpleInDelAnalyzer<Graph> del_analyzer(gp.g, coloring, gp.edge_pos,
-			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(),
-			edge_type::red, output_folder + "indels/");
-	del_analyzer.Analyze();
+//	make_dir(output_folder + "indels/");
+//	SimpleInDelAnalyzer<Graph> del_analyzer(gp.g, coloring, gp.edge_pos,
+//			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(),
+//			edge_type::red, output_folder + "indels/");
+//	del_analyzer.Analyze();
 
 	//Alternating paths
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
@@ -89,26 +97,26 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //			block_stats.Count();
 
 //	Missing genes
-	MissingGenesAnalyser<Graph, Mapper> missed_genes(gp.g, coloring,
-			gp.edge_pos, gp.genome, *MapperInstance(gp),
-			vector<pair<bool, pair<size_t, size_t>>> {
-			make_pair(/*true*/false, make_pair(416000, 430000)),
-			make_pair(/*true*/false, make_pair(1513000, 1518000)),
-			make_pair(/*true*/false, make_pair(260354, 260644)),
-			make_pair(/*true*/false, make_pair(300641, 300904)),
-			make_pair(/*true*/false, make_pair(300904, 301920)),
-			make_pair(/*true*/false, make_pair(301917, 302348)),
-			make_pair(/*true*/false, make_pair(260354, 260644)),
-			make_pair(/*true*/false, make_pair(300641, 300904)),
-			make_pair(/*true*/false, make_pair(300904, 301920)),
-			make_pair(/*true*/false, make_pair(301917, 302348)),
-			make_pair(/*true*/false, make_pair(302449, 304752)),
-			make_pair(/*true*/false, make_pair(263821, 264594)),
-			make_pair(/*true*/false, make_pair(265025, 265726)),
-			make_pair(/*true*/false, make_pair(265740, 266951))
-		}
-		, output_folder + "missed_genes/");
-	missed_genes.Analyze();
+//	MissingGenesAnalyser<Graph, Mapper> missed_genes(gp.g, coloring,
+//			gp.edge_pos, gp.genome, *MapperInstance(gp),
+//			vector<pair<bool, pair<size_t, size_t>>> {
+//			make_pair(/*true*/false, make_pair(416000, 430000)),
+//			make_pair(/*true*/false, make_pair(1513000, 1518000)),
+//			make_pair(/*true*/false, make_pair(260354, 260644)),
+//			make_pair(/*true*/false, make_pair(300641, 300904)),
+//			make_pair(/*true*/false, make_pair(300904, 301920)),
+//			make_pair(/*true*/false, make_pair(301917, 302348)),
+//			make_pair(/*true*/false, make_pair(260354, 260644)),
+//			make_pair(/*true*/false, make_pair(300641, 300904)),
+//			make_pair(/*true*/false, make_pair(300904, 301920)),
+//			make_pair(/*true*/false, make_pair(301917, 302348)),
+//			make_pair(/*true*/false, make_pair(302449, 304752)),
+//			make_pair(/*true*/false, make_pair(263821, 264594)),
+//			make_pair(/*true*/false, make_pair(265025, 265726)),
+//			make_pair(/*true*/false, make_pair(265740, 266951))
+//		}
+//		, output_folder + "missed_genes/");
+//	missed_genes.Analyze();
 
 //		2339834
 ////////////

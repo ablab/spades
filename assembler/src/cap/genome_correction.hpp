@@ -1,6 +1,7 @@
 #pragma once
 
-#include "utils.hpp";
+#include "utils.hpp"
+#include "coloring.hpp"
 //#include <map>;
 
 namespace cap {
@@ -10,7 +11,7 @@ class bag {
 	/*std::*/
 	map<T, size_t> data_;
 public:
-	typedef std::map<T, size_t>::const_iterator const_iterator;
+	typedef typename map<T, size_t>::const_iterator const_iterator;
 
 	void put(const T& t, size_t mult) {
 		VERIFY(mult > 0);
@@ -21,18 +22,18 @@ public:
 		put(t, 1);
 	}
 
-	bool take(const T& t, size_t mult) const {
+	bool take(const T& t, size_t mult) {
 		VERIFY(mult > 0);
-		auto it = data_.find(t);
+		/*typename map<T, size_t>::iterator*/auto it = data_.find(t);
 		if (it == data_.end()) {
 			return false;
 		} else {
 			size_t have = it->second;
 			if (have < mult) {
-				data_.erase(*it);
+				data_.erase(it->first);
 				return false;
 			} else if (have == mult) {
-				data_.erase(*it);
+				data_.erase(it->first);
 				return true;
 			} else {
 				it->second -= mult;
@@ -41,7 +42,7 @@ public:
 		}
 	}
 
-	bool take(const T& t) const {
+	bool take(const T& t) {
 		return take(t, 1);
 	}
 
@@ -76,8 +77,8 @@ public:
 private:
 	const Graph& g_;
 	const ColorHandler<Graph>& coloring_;
-	size_t edge_count_;
 	const edge_type assembly_color_;
+	size_t edge_count_;
 
 	std::vector<vector<EdgeId>> paths_;
 
@@ -85,7 +86,7 @@ private:
 		if (path.size() > edge_count_)
 			return false;
 		for (auto it = path.begin(); it != path.end(); ++it) {
-			if (coloring_.Color(*it) & assembly_color_ == 0) {
+			if ((coloring_.Color(*it) & assembly_color_) == 0) {
 				return false;
 			}
 		}
@@ -95,8 +96,8 @@ private:
 public:
 
 	AssemblyPathCallback(const Graph& g, const ColorHandler<Graph>& coloring,
-			size_t edge_count) :
-			g_(g), coloring_(coloring), edge_count_(edge_count) {
+			edge_type assembly_color, size_t edge_count) :
+			g_(g), coloring_(coloring), assembly_color_(assembly_color), edge_count_(edge_count) {
 	}
 
 	virtual void HandlePath(const vector<EdgeId>& path) {
@@ -118,12 +119,12 @@ template<class Graph>
 class SimpleInDelCorrector {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	const Graph& g_;
-	const ColorHandler<Graph>& coloring_;
+	Graph& g_;
+	ColorHandler<Graph>& coloring_;
 
 	//become invalidated during process
-	const EdgesPositionHandler<Graph>& edge_pos_;
-	const vector<EdgeId> genome_path_;
+//	const EdgesPositionHandler<Graph>& edge_pos_;
+	vector<EdgeId> genome_path_;
 	const edge_type genome_color_;
 	const edge_type assembly_color_;
 
@@ -131,7 +132,7 @@ class SimpleInDelCorrector {
 
 	vector<EdgeId> FindAssemblyPath(VertexId start, VertexId end,
 			size_t edge_count_bound, size_t min_length, size_t max_length) {
-		AssemblyPathCallback<Graph> assembly_callback(g_, coloring_,
+		AssemblyPathCallback<Graph> assembly_callback(g_, coloring_, assembly_color_,
 				edge_count_bound);
 		PathProcessor<Graph> path_finder(g_, min_length, max_length, start, end,
 				assembly_callback);
@@ -147,27 +148,25 @@ class SimpleInDelCorrector {
 		for (size_t i = 0;
 				i + pos < genome_path_.size() && i < edge_count_bound; ++i) {
 			if (g_.EdgeEnd(genome_path_[pos + i]) == end) {
-				return answer;
+				return pos + i + 1;
 			}
 		}
-		DEBUG("Edge bound reached");
-		return vector<EdgeId>();
+		return -1;
 	}
 
-	bag<edge_type> ColorLengths(const vector<EdgeId>& edges) {
-		bag<edge_type> answer;
-		for (size_t i = 0; i < edges.size(); ++i) {
-			answer.put(coloring_.Color(edges[i]), g_.length(edges[i]));
-		}
-		return answer;
-	}
+//	bag<edge_type> ColorLengths(const vector<EdgeId>& edges) {
+//		bag<edge_type> answer;
+//		for (size_t i = 0; i < edges.size(); ++i) {
+//			answer.put(coloring_.Color(edges[i]), g_.length(edges[i]));
+//		}
+//		return answer;
+//	}
 
 	size_t VioletLengthOfGenomeUnique(const vector<EdgeId>& edges) {
 		size_t answer = 0;
 		for (size_t i = 0; i < edges.size(); ++i) {
 			if (coloring_.Color(edges[i]) == edge_type::violet
-					&& std::count(genome_path_.begin(), genome_path_.end(),
-							edges[i]) == 1) {
+					&& genome_edge_mult_.mult(edges[i]) == 1) {
 				answer += g_.length(edges[i]);
 			}
 		}
@@ -175,28 +174,29 @@ class SimpleInDelCorrector {
 	}
 
 	//genome pos exclusive
-	size_t CumulativeGenomeLengthToPos(size_t pos) {
-		size_t answer = 0;
-		for (size_t i = 0; i < pos; ++i) {
-			answer += g_.length(genome_path_[i]);
-		}
-		return answer;
+//	size_t CumulativeGenomeLengthToPos(size_t pos) {
+//		size_t answer = 0;
+//		for (size_t i = 0; i < pos; ++i) {
+//			answer += g_.length(genome_path_[i]);
+//		}
+//		return answer;
+//	}
+
+	bool CheckGenomePath(size_t genome_start, size_t genome_end) {
+		return VioletLengthOfGenomeUnique(vector<EdgeId>(genome_path_.begin() + genome_start, genome_path_.begin() + genome_end)) < 25;
 	}
 
-	pair<vector<EdgeId>, pair<size_t, size_t>> FindGenomePath(VertexId start,
+	optional<pair<size_t, size_t>> FindGenomePath(VertexId start,
 			VertexId end, size_t edge_count_bound) {
 		for (size_t i = 0; i < genome_path_.size(); ++i) {
 			if (g_.EdgeStart(genome_path_[i]) == start) {
-				vector<EdgeId> path = TryFindGenomePath(i, end,
+				int path_end = TryFindGenomePath(i, end,
 						edge_count_bound);
-				if (!path.empty())
-					return make_pair(path,
-							make_pair(CumulativeGenomeLengthToPos(i),
-									CumulativeGenomeLengthToPos(
-											i + path.size())));
+				if (path_end > 0 && CheckGenomePath(i, path_end))
+					return make_optional(make_pair(size_t(i), size_t(path_end)));
 			}
 		}
-		return make_pair(vector<EdgeId>(), make_pair(0, 0));
+		return boost::none;
 	}
 
 	void RemoveObsoleteEdges(const vector<EdgeId>& edges) {
@@ -230,71 +230,73 @@ class SimpleInDelCorrector {
 		RemoveObsoleteEdges(genomic_edges);
 	}
 
-	pair<string, pair<size_t, size_t>> ContigIdAndPositions(EdgeId e) {
-		vector<EdgePosition> poss = edge_pos_.GetEdgePositions(e);
-		VERIFY(!poss.empty());
-		if (poss.size() > 1) {
-			WARN("Something strange with assembly positions");
-			return make_pair("", make_pair(0, 0));
-		}
-		EdgePosition pos = poss.front();
-		return make_pair(pos.contigId_, make_pair(pos.start(), pos.end()));
-	}
+//	pair<string, pair<size_t, size_t>> ContigIdAndPositions(EdgeId e) {
+//		vector<EdgePosition> poss = edge_pos_.GetEdgePositions(e);
+//		VERIFY(!poss.empty());
+//		if (poss.size() > 1) {
+//			WARN("Something strange with assembly positions");
+//			return make_pair("", make_pair(0, 0));
+//		}
+//		EdgePosition pos = poss.front();
+//		return make_pair(pos.contigId_, make_pair(pos.start(), pos.end()));
+//	}
 
-	void WriteAltPath(EdgeId e, const vector<EdgeId>& genome_path) {
-		LengthIdGraphLabeler<Graph> basic_labeler(g_);
-		EdgePosGraphLabeler<Graph> pos_labeler(g_, edge_pos_);
-
-		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-
-		string alt_path_folder = folder_ + ToString(g_.int_id(e)) + "/";
-		make_dir(alt_path_folder);
-		WriteComponentsAlongPath(g_, labeler, alt_path_folder + "path.dot", /*split_length*/
-		1000, /*vertex_number*/15, TrivialMappingPath(g_, genome_path),
-				*ConstructBorderColorer(g_, coloring_));
-	}
+//	void WriteAltPath(EdgeId e, const vector<EdgeId>& genome_path) {
+//		LengthIdGraphLabeler<Graph> basic_labeler(g_);
+//		EdgePosGraphLabeler<Graph> pos_labeler(g_, edge_pos_);
+//
+//		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+//
+//		string alt_path_folder = folder_ + ToString(g_.int_id(e)) + "/";
+//		make_dir(alt_path_folder);
+//		WriteComponentsAlongPath(g_, labeler, alt_path_folder + "path.dot", /*split_length*/
+//		1000, /*vertex_number*/15, TrivialMappingPath(g_, genome_path),
+//				*ConstructBorderColorer(g_, coloring_));
+//	}
 
 	void AnalyzeGenomeEdge(EdgeId e) {
-
+		DEBUG("Analysing shortcut genome edge " << g_.str(e));
+		DEBUG("Multiplicity " << genome_edge_mult_.mult(e));
+		if (genome_edge_mult_.mult(e) == 1) {
+			vector<EdgeId> assembly_path = FindAssemblyPath(g_.EdgeStart(e), g_.EdgeEnd(e),
+						100, 0, g_.length(e) + 1000);
+			if (!assembly_path.empty()) {
+				auto it = std::find(genome_path_.begin(), genome_path_.end(), e);
+				VERIFY(it != genome_path_.end());
+				size_t pos = it - genome_path_.begin();
+				CorrectGenomePath(pos, pos + 1, assembly_path);
+			}
+		}
 	}
 
 	void AnalyzeAssemblyEdge(EdgeId e) {
-		DEBUG("Analysing edge " << g_.str(e));
-		pair<vector<EdgeId>, pair<size_t, size_t>> genome_path = FindGenomePath(
+		DEBUG("Analysing shortcut assembly edge " << g_.str(e));
+		optional<pair<size_t, size_t>> genome_path = FindGenomePath(
 				g_.EdgeStart(e), g_.EdgeEnd(e), /*edge count bound*//*100*/300);
-		if (!genome_path.first.empty()) {
-			DEBUG(
-					"Non empty genome path of edge count " << genome_path.first.size());
-			DEBUG("Path " << g_.str(genome_path.first));
-			Process(e, genome_path.first, genome_path.second.first,
-					genome_path.second.second);
+		if (genome_path) {
+			CorrectGenomePath(genome_path->first, genome_path->second,
+					vector<EdgeId>{e});
 		} else {
 			DEBUG("Empty genome path");
 		}
 	}
 
-	void FillGenomeEdgeMult(const vector<EdgeId> genome_path) {
-		for (auto it = genome_path.begin(); it != genome_path.end(); ++it) {
+	void FillGenomeEdgeMult() {
+		for (auto it = genome_path_.begin(); it != genome_path_.end(); ++it) {
 			genome_edge_mult_.put(*it);
 		}
 	}
 
 public:
-	SimpleInDelCorrector(const Graph& g, const ColorHandler<Graph>& coloring,
-			const EdgesPositionHandler<Graph>& edge_pos,
-			const vector<EdgeId> genome_path, edge_type shortcut_color,
-			const string& folder) :
-			g_(g), coloring_(coloring), edge_pos_(edge_pos), genome_path_(
-					genome_path), shortcut_color_(shortcut_color), folder_(
-					folder) {
+	SimpleInDelCorrector(Graph& g, ColorHandler<Graph>& coloring,
+			const vector<EdgeId> genome_path,
+			edge_type genome_color, edge_type assembly_color) :
+			g_(g), coloring_(coloring), genome_path_(
+					genome_path), genome_color_(genome_color), assembly_color_(assembly_color) {
 	}
 
 	void Analyze() {
-		cerr
-				<< "assembly_length-genome_length relative_local_sim genome_path_length assembly_length genome_length "
-				<< "contig_id contig_start contig_end genome_start genome_end min max local_sim sim_interval edit_dist "
-				<< "edit_dist/max tot_blue tot_violet unique_violet edge_id"
-				<< endl;
+		FillGenomeEdgeMult();
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			if (coloring_.Color(*it) == genome_color_) {
 				AnalyzeGenomeEdge(*it);
@@ -306,7 +308,7 @@ public:
 	}
 
 private:
-	DECL_LOGGER("SimpleInDelAnalyzer")
+	DECL_LOGGER("SimpleInDelCorrector")
 	;
 };
 
