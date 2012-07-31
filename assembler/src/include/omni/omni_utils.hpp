@@ -801,7 +801,7 @@ public:
 
 	Path<ElementId> simple_path() const {
 		if (edges_.size() != 0)
-			return Path<ElementId>(
+			 return Path<ElementId>(
 					edges_,
 					range_mappings_[0].mapped_range.start_pos,
 					range_mappings_[range_mappings_.size() - 1].mapped_range.end_pos);
@@ -855,7 +855,7 @@ public:
 	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
 		vertices_number_++;
 
-		if (vertices_number_ > max_vertex_number_)
+		 if (vertices_number_ > max_vertex_number_)
 			vertex_limit_exceeded_ = true;
 
 		return vertices_number_ < max_vertex_number_ && distance <= bound_;

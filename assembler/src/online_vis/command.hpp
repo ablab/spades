@@ -3,70 +3,29 @@
 #include "environment.hpp"
 #include "command_type.hpp"
 #include "loaded_environments.hpp"
-
+#include "argument_list.hpp"
+#include "errors.hpp"
 
 namespace online_visualization {
     
-    typedef shared_ptr<Environment> EnvironmentPtr;
-
-    typedef map<string, EnvironmentPtr > LoadedEnvironments;
-
     class Command {
 
         protected:
             CommandType command_id_;
-            LoadedEnvironments& environments;
-
-            //ArgumentList args;
-            
-            bool IsNumber(const string& s) const {
-                 if (s.empty())
-                     return false;
-                 for  (auto iter = s.begin(); iter != s.end(); ++iter) {
-                    if (!std::isdigit(*iter))
-                        return false;
-                 }
-                 return true;
-            }
 
             virtual size_t MinArgNumber() const {
                 return 0;
             }
 
-            // TODO: create ArgumentList class, which can return the value for an option you ask.
-            //const set<string> GetAllTokens(stringstream& args) const { 
-                //set<string> answer;
-                //while (!args.eof()) {
-                    //string arg;
-                    //args >> arg;
-                    //answer.insert(arg);
-                //}
-                //return answer;
-            //}
-
-            //const vector<string> SortArgsList(set<string> args) const {
-                //return {};
-            //}
-
-            const vector<string> SplitInTokens(stringstream& args) const { 
-                vector<string> answer;
-                while (!args.eof()) {
-                    string arg;
-                    args >> arg;
-                    answer.push_back(arg);
-                }
-                return answer;
-            }
-
-            int GetInt(string str) const {
-                stringstream ss(str);
-                int ans;
-                ss >> ans;
-                return ans;
-            }
-            
-            virtual bool CheckCorrectness(vector<string> args) const {
+            virtual bool CheckCorrectness(const ArgumentList& arg_list) const {
                 return false;
+            }
+
+            bool CheckEnoughArguments(const vector<string>& args) const {
+                bool result = args.size() >= MinArgNumber();
+                if (!result) 
+                    FireNotEnoughArguments();
+                return result;
             }
 
         public:
@@ -95,7 +54,7 @@ namespace online_visualization {
                 return answer;
             }
 
-            Command(CommandType command_id) : command_id_(command_id), environments(GetLoadedEnvironments()) 
+            Command(CommandType command_id) : command_id_(command_id) 
             {
             }
 
@@ -106,8 +65,29 @@ namespace online_visualization {
                 return command_id_;
             }
 
-            virtual void Execute(EnvironmentPtr& curr_env, stringstream& args) const = 0;
+            // system command, curr_env can point to null
+            virtual void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const = 0;
+
+            // virtual void Execute(EnvironmentPtr& curr_env, const ArgumentList& arg_list) const = 0;
 
     };
+
+    class LocalCommand : public Command {
+        
+        public:
+            LocalCommand(CommandType command_id) : Command(command_id)
+            {
+            }
+            
+            // command for the current environment
+            virtual void Execute(Environment& curr_env, const ArgumentList& arg_list) const = 0;
+
+            // !!!! NO OVERRIDING !!!!
+            virtual void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
+                Execute(*curr_env, arg_list);
+            }
+
+    };
+
 
 }

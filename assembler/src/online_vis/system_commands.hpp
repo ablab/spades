@@ -4,7 +4,7 @@
 #include "environment.hpp"
 #include "command.hpp"
 #include "command_type.hpp"
-#include "vis_utils.hpp"
+#include "errors.hpp"
 
 namespace online_visualization {
 
@@ -19,7 +19,7 @@ namespace online_visualization {
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& args) const {
             }
     };
 
@@ -44,8 +44,8 @@ namespace online_visualization {
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
-                const vector<string>& args_ = SplitInTokens(args);
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
+                const vector<string>& args_ = arg_list.GetAllArguments();
                 if (args_.size() == 0) 
                     cout << Command::Usage() << endl;
                 else {
@@ -59,18 +59,18 @@ namespace online_visualization {
     };
 
     // exit
-    class ExitCommand : public Command {
+    class ExitCommand : public LocalCommand {
         public:
             string Usage() const {
                 return "The command `exit` allows you to exit this application.";
             }
 
             ExitCommand() : 
-                Command(CommandType::_exit_)
+                LocalCommand(CommandType::_exit_)
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
+            void Execute(Environment& curr_env, const ArgumentList& args) const {
                 cout << "Exitting" << endl;
                 exit(0);
             }
@@ -79,7 +79,7 @@ namespace online_visualization {
     // loading new environment from folder with saves
     class LoadCommand : public Command {
         private:
-            EnvironmentPtr MakeNewEnvironment(string name, string saves) const {
+            EnvironmentPtr MakeNewEnvironment(const string& name, const string& saves) const {
                 EnvironmentPtr EnvPointer(new Environment(name, saves));
                 return EnvPointer;
             }
@@ -90,15 +90,12 @@ namespace online_visualization {
                 return 2;
             }
 
-            bool CheckCorrectness(const vector<string>& args) const {
-                if (args.size() < MinArgNumber()) {
-                    cout << "Not enough arguments" << endl;
-                    cout << "Please try again" << endl;
+            bool CheckCorrectness(const vector<string>& args, LoadedEnvironments& loaded_environments) const {
+                if (!CheckEnoughArguments(args))
                     return false;
-                }
                 const string& name = args[0];
                 const string& saves = args[1];
-                for (auto iterator = environments.begin(); iterator != environments.end(); ++iterator) {
+                for (auto iterator = loaded_environments.begin(); iterator != loaded_environments.end(); ++iterator) {
                     if (name == iterator->first) {
                         cout << "Name " << name << " already exists" << endl;
                         cout << "Maybe you want to switch to this environment? " << name << endl;
@@ -106,12 +103,12 @@ namespace online_visualization {
                         return false;
                     }
                 }
-                bool correct = true;
 
-                correct &= CheckFileExists(saves + ".grp");
-                correct &= CheckFileExists(saves + ".sqn");
+                bool result = true;
+                result &= CheckFileExists(saves + ".grp");
+                result &= CheckFileExists(saves + ".sqn");
 
-                return correct;
+                return result;
             }
 
         public:
@@ -132,10 +129,10 @@ namespace online_visualization {
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
-                const vector<string>& args_ = SplitInTokens(args);
-                
-                if (!CheckCorrectness(args_))
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
+                const vector<string>& args_ = arg_list.GetAllArguments();
+
+                if (!CheckCorrectness(args_, loaded_environments))
                     return;
 
                 string name = args_[0]; 
@@ -143,8 +140,8 @@ namespace online_visualization {
 
                 cout << "Loading " << name << " " << saves << endl;
                 
-                const EnvironmentPtr& new_env = MakeNewEnvironment(name, saves);
-                environments.insert(make_pair(name, new_env));
+                EnvironmentPtr new_env = MakeNewEnvironment(name, saves);
+                loaded_environments.insert(make_pair(name, new_env));
                 curr_env = new_env;
             }
 
@@ -158,12 +155,7 @@ namespace online_visualization {
             }
 
             bool CheckCorrectness(const vector<string>& args) const {
-                if (args.size() < MinArgNumber()) {
-                    cout << "Not enough arguments" << endl;
-                    cout << "Please try again" << endl;
-                    return false;
-                }
-                return true;
+                return CheckEnoughArguments(args);
             }
 
         public:
@@ -184,8 +176,8 @@ namespace online_visualization {
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
-                const vector<string>& args_ = SplitInTokens(args);
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
+                const vector<string>& args_ = arg_list.GetAllArguments();
                 
                 if (!CheckCorrectness(args_))
                     return;
@@ -193,7 +185,7 @@ namespace online_visualization {
                 string name = args_[0]; 
 
                 bool okay = false;
-                for (auto iterator = environments.begin(); iterator != environments.end(); ++iterator) {
+                for (auto iterator = loaded_environments.begin(); iterator != loaded_environments.end(); ++iterator) {
                     if (name == iterator->first) {
                         okay = true;
                         curr_env = iterator->second;
@@ -209,58 +201,6 @@ namespace online_visualization {
             }
 
     };
-
-    class LoadGenomeCommand : public Command {
-
-        protected:
-            size_t MinArgNumber() const {
-                return 1;    
-            }
-
-            bool CheckCorrectness(const vector<string>& args) const {
-                const string& file = args[0];
-                if (!CheckFileExists(file))
-                    return false;
-                return true;
-            }
-
-        public:
-            string Usage() const {
-                string answer;
-                answer = answer + "Command `load_genome` \n" + 
-                                "Usage:\n" + 
-                                "> load_genome <path_to_genome>\n" + 
-                                " You should specify a path to the genome you want to load from. For example:\n" +
-                                " Previously loaded genomes would be lost.";
-                return answer;
-            }
-
-            LoadGenomeCommand() : Command(CommandType::load_genome)
-            {                   
-            }
-
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
-	            const vector<string>& args_ = SplitInTokens(args);
-                if (!CheckCorrectness(args_))
-                    return;
-                const string& file = args_[0];
-                if (file == "") {
-                    cout << "Warning: loading empty genome" << endl;
-                    return;
-                }
-                io::Reader genome_stream(file);
-                io::SingleRead genome;
-                genome_stream >> genome;
-                if (genome.IsValid()) {
-                    curr_env->LoadNewGenome(genome.sequence());
-                }
-                else {
-                    cout << "Reference genome (" + file + ") has non-ACGT characters. Skipping it" << endl;
-                    cout << "Please try again" << endl;
-                }
-            }
-    };
-
 
     class ListCommand : public Command {
         protected:
@@ -282,9 +222,9 @@ namespace online_visualization {
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
                 cout << "Environments :" << endl;
-                for (auto iter = environments.begin(); iter != environments.end(); ++iter) {
+                for (auto iter = loaded_environments.begin(); iter != loaded_environments.end(); ++iter) {
                     cout << iter->first << endl;
                 }
                 if (curr_env) 
@@ -319,109 +259,81 @@ namespace online_visualization {
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
-                const vector<string>& args_ = SplitInTokens(args);
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
+                const vector<string>& args_ = arg_list.GetAllArguments();
                 
                 if (!CheckCorrectness(args_))
                     return;
 
                 size_t number = GetInt(args_[0]);
 
-                const vector<string>& history = GetHistory();
+                vector<string>& history = GetHistory();
                 
                 cout << "Executing the command " << number << " command(s) before... " << endl;
-                const string& command_with_args = history[history.size() - 1 - number];
+                string command_with_args = history[history.size() - 1 - number];
                 cout << command_with_args << endl;
+                //inserting a command, which is to be repeated
+                history[history.size() - 1] = command_with_args;
 
                 stringstream ss(command_with_args);
                 string command_string;
                 ss >> command_string;
 
                 Command& command = GetCommand(CommandId(command_string));
-                command.Execute(curr_env, ss);
+                command.Execute(curr_env, loaded_environments, ss);
                 
             }
     };
 
-
-//**********************
-
-    class PrintPathsCommand : public Command {
-        
-        typedef vector<EdgeId> Path;
-        
-        private:
-            bool CheckVertexExists(const IdTrackHandler<Graph>& int_ids, size_t vertex_id) const {
-                VertexId vertex = int_ids.ReturnVertexId(vertex_id);
-                if ((vertex == VertexId(NULL))) {
-                    cout << "Ignoring request. Vertex " << vertex_id << " does not exist" << endl;
-                    cout << "Please try again" << endl;
-                    return false;
-                }
-                return true;
-            }
+    class LoadGenomeCommand : public LocalCommand {
 
         protected:
             size_t MinArgNumber() const {
-                return 2;   
+                return 1;    
             }
 
             bool CheckCorrectness(const vector<string>& args) const {
-                if (args.size() < MinArgNumber()) {
-                    cout << "Not enough arguments" << endl;
-                    cout << "Please try again" << endl;
+                const string& file = args[0];
+                if (!CheckFileExists(file))
                     return false;
-                }
                 return true;
             }
 
         public:
             string Usage() const {
                 string answer;
-                answer = answer + "Command `print_paths` \n" + 
+                answer = answer + "Command `load_genome` \n" + 
                                 "Usage:\n" + 
-                                "> paths <vertex_from> <vertex_to> [<max_length>] \n" + 
-                                " This command prints all paths between two given vertices, that do not exceed `max_length` parameter.\n" +
-                                " You should specify two integers (id of vertices), between which you want to find paths. Optionally you can provide `max_length` integer, \n" +
-                                " so that tool does not consider paths longer than `max_length`.";
+                                "> load_genome <path_to_genome>\n" + 
+                                " You should specify a path to the genome you want to load from. For example:\n" +
+                                " Previously loaded genomes would be lost.";
                 return answer;
             }
-            
-            PrintPathsCommand() : Command(CommandType::print_paths)
-            {
+
+            LoadGenomeCommand() : LocalCommand(CommandType::load_genome)
+            {                   
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
-                const vector<string>& args_ = SplitInTokens(args);
+            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+	            const vector<string>& args_ = arg_list.GetAllArguments();
                 if (!CheckCorrectness(args_))
                     return;
-                
-                
-                size_t from = GetInt(args_[0]);
-                size_t to = GetInt(args_[1]);
-                size_t max_length = 0;
-                if (args_.size() > 2) 
-                    max_length = GetInt(args_[2]);
-
-                if (!CheckVertexExists(curr_env->int_ids(), from) || !CheckVertexExists(curr_env->int_ids(), to))
+                const string& file = args_[0];
+                if (file == "") {
+                    cout << "Warning: loading empty genome" << endl;
                     return;
-
-                PathStorageCallback<Graph> callback(curr_env->graph());
-                PathProcessor<Graph> pp(curr_env->graph(), 0, max_length,
-                        curr_env->int_ids().ReturnVertexId(from),
-                        curr_env->int_ids().ReturnVertexId(to), callback);
-                pp.Process();
-                const vector<Path>& paths = callback.paths();
-                cout << paths.size() << " path(s) have been found : " << endl;
-                for (size_t i = 0; i < paths.size(); ++i) {
-                    cout << (i + 1) << "-th path  :::  ";
-                    for (size_t j = 0; j < paths[i].size(); ++j) {
-                        cout << curr_env->int_ids().ReturnIntId(paths[i][j]) << "(" << curr_env->graph().length(paths[i][j]) << ") ";       
-                    }
-                    cout << endl;
                 }
-                
+                io::Reader genome_stream(file);
+                io::SingleRead genome;
+                genome_stream >> genome;
+                if (genome.IsValid()) {
+                    curr_env.LoadNewGenome(genome.sequence());
+                }
+                else {
+                    cout << "Reference genome (" + file + ") has non-ACGT characters. Skipping it" << endl;
+                    cout << "Please try again" << endl;
+                }
             }
     };
-        
+
 }

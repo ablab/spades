@@ -3,22 +3,19 @@
 #include "environment.hpp"
 #include "command.hpp"
 #include "command_type.hpp"
-#include "vis_utils.hpp"
+#include "errors.hpp"
 
 namespace online_visualization {
-    class SetMaxVertCommand : public Command {
+    class SetMaxVertCommand : public LocalCommand {
         protected:
             size_t MinArgNumber() const {
                 return 1;   
             }
             
-            bool CheckCorrectness(vector<string> args) const {
-                if (args.size() < MinArgNumber()) {
-                    cout << "Not enough arguments" << endl;
-                    cout << "Please try again" << endl;
+            bool CheckCorrectness(const vector<string>& args) const {
+                if (!CheckEnoughArguments(args))
                     return false;
-                }
-                return IsNumber(args[0]);
+                return CheckIsNumber(args[0]);
             }
 
         public:
@@ -31,33 +28,28 @@ namespace online_visualization {
                 return answer;
             }
 
-            SetMaxVertCommand() : Command(CommandType::set_max_vertices)
+            SetMaxVertCommand() : LocalCommand(CommandType::set_max_vertices)
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
-                const vector<string>& args_ = SplitInTokens(args);
+            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+                const vector<string>& args_ = arg_list.GetAllArguments();
                 if (!CheckCorrectness(args_)) {
                     return;
                 }
                 size_t max_v = GetInt(args_[0]);
-                curr_env->set_max_vertices(max_v);
+                curr_env.set_max_vertices(max_v);
             }
     };
 
-    class SetFolderCommand : public Command {
+    class SetFolderCommand : public LocalCommand {
         protected:
             size_t MinArgNumber() const {
                 return 1;   
             }
             
             bool CheckCorrectness(const vector<string>& args) const {
-                if (args.size() < MinArgNumber()) {
-                    cout << "Not enough arguments" << endl;
-                    cout << "Please try again" << endl;
-                    return false;
-                }
-                return true;
+                return CheckEnoughArguments(args);
             }
 
         public:
@@ -69,33 +61,27 @@ namespace online_visualization {
                                 " You should specify a string, which is a new name for a pictures' folder.";
                 return answer;
             }
-            SetFolderCommand() : Command(CommandType::set_folder)
+            SetFolderCommand() : LocalCommand(CommandType::set_folder)
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
-                const vector<string>& args_ = SplitInTokens(args);
-                if (!CheckCorrectness(args_)) {
+            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+                const vector<string>& args_ = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args_)) 
                     return;
-                }
                 string folder_name = args_[0];
-                curr_env->set_folder(folder_name);
+                curr_env.set_folder(folder_name);
             }
     };
 
-    class SetFileNameCommand : public Command {
+    class SetFileNameCommand : public LocalCommand {
         protected:
             size_t MinArgNumber() const {
                 return 1;   
             }
 
             bool CheckCorrectness(const vector<string>& args) const {
-                if (args.size() < MinArgNumber()) {
-                    cout << "Not enough arguments" << endl;
-                    cout << "Please try again" << endl;
-                    return false;
-                }
-                return true;
+                return CheckEnoughArguments(args);
             }
 
         public:
@@ -108,18 +94,16 @@ namespace online_visualization {
                 return answer;
             }
         
-            SetFileNameCommand() : Command(CommandType::set_file_name)
+            SetFileNameCommand() : LocalCommand(CommandType::set_file_name)
             {
             }
 
-            void Execute(EnvironmentPtr& curr_env, stringstream& args) const {
-                const vector<string>& args_ = SplitInTokens(args);
-                if (!CheckCorrectness(args_)) {
-                    cout << "Please try again" << endl;
+            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+                const vector<string>& args_ = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args_))
                     return;
-                }
                 string file_name = args_[0];
-                curr_env->set_file_name(file_name);
+                curr_env.set_file_name(file_name);
             }
     };
 }

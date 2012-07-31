@@ -91,6 +91,10 @@ namespace online_visualization {
                 return gp_.genome;   
             }
 
+            const MapperClass& mapper() const {
+                return mapper_;   
+            }
+
             const debruijn_graph::EdgeIndex<Graph>& index() const {
                 return gp_.index;   
             }

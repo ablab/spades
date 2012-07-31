@@ -4,13 +4,11 @@
 #include "omni/visualization_utils.hpp"
 #include "standard_vis.hpp"
 #include "command.hpp"
+#include "loaded_environments.hpp"
 #include "environment.hpp"
 #include "command_struct.hpp"
 
-#include "system_commands.hpp"
-#include "drawing_commands.hpp"
-#include "position_commands.hpp"
-#include "setting_commands.hpp"
+#include "all_commands.hpp"
 
 namespace online_visualization {
 
@@ -18,6 +16,8 @@ namespace online_visualization {
     class OnlineVisualizer {
     private:
         shared_ptr<Environment> current_environment_;
+
+        LoadedEnvironments loaded_environments;
 
         void AddAllCommands() {
             AddCommand(shared_ptr<Command>(new NullCommand));
@@ -51,7 +51,7 @@ namespace online_visualization {
             stringstream ss("default " + p.string());
             AddAllCommands();
             Command& LoadCommand = GetCommand(CommandId("load"));
-            LoadCommand.Execute(current_environment_, ss);
+            LoadCommand.Execute(current_environment_, loaded_environments, ss);
         }
 
         void run() {
@@ -70,9 +70,10 @@ namespace online_visualization {
                 stringstream ss(command_with_args);
                 string command_string;
                 ss >> command_string;
+                ArgumentList arg_list(ss);
 
                 Command& command = GetCommand(CommandId(command_string));
-                command.Execute(current_environment_, ss);
+                command.Execute(current_environment_, loaded_environments, arg_list);
             }
         }
     };

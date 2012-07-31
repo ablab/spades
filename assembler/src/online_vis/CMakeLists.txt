@@ -12,6 +12,7 @@ add_executable(online_vis
 target_link_libraries(online_vis ${COMMON_LIBRARIES} input)
 
 include_directories(${CMAKE_SOURCE_DIR}/debruijn)
+include_directories(./drawing_commands)
 
 if (DEFINED static_build)
   set_target_properties(online_vis PROPERTIES LINK_SEARCH_END_STATIC 1)

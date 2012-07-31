@@ -2,11 +2,32 @@
 
 #include "standard_vis.hpp"
 
+namespace online_visualization {
 
-bool CheckFileExists(const string& file) {
-	if (!fs::is_regular_file(file)) {
-        ERROR("The file " << file << " does not exist.");
-        return false;
+    bool IsNumber(const string& s) {
+         if (s.empty())
+             return false;
+         for  (auto iter = s.begin(); iter != s.end(); ++iter) {
+            if (!std::isdigit(*iter))
+                return false;
+         }
+         return true;
     }
-    return true;
+            
+    int GetInt(string str) {
+        stringstream ss(str);
+        int ans;
+        ss >> ans;
+        return ans;
+    }
+    
+    vector<string> SplitInTokens(stringstream& args) { 
+        vector<string> answer;
+        while (!args.eof()) {
+            string arg;
+            args >> arg;
+            answer.push_back(arg);
+        }
+        return answer;
+    }
 }

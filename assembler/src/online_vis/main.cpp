@@ -1,10 +1,6 @@
 // just to check that headers from include and debruijn folders are correctly included
 #include "standard.hpp"
-#include "logger/log_writers.hpp"
-// TODO: remove
-
-#undef INFO
-#define INFO(message)                       LOG_MSG(logging::L_DEBUG , message)
+#include "vis_logger.hpp"
 
 #include "standard_vis.hpp"
 #include "segfault_handler.hpp"
@@ -25,8 +21,7 @@
 
 #include "online_pictures.hpp"
 
-void create_console_logger(fs::path cfg_filename)
-{
+void create_console_logger(fs::path cfg_filename) {
 	using namespace logging;
 
 	fs::path log_props_file (cfg::get().log_filename);
