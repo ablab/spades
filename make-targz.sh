@@ -1,5 +1,4 @@
 rm -r spades-*
-rm spades_*
 
 VERSION="$(cat assembler/VERSION)"
 mkdir -p spades-$VERSION/src/tools
@@ -14,6 +13,13 @@ cp assembler/src/CMakeLists.txt spades-$VERSION/src/CMakeLists.txt
 
 cp -r assembler/configs spades-$VERSION/configs
 cp -r assembler/ext spades-$VERSION/ext
+rm spades-$VERSION/ext/prepare_ext.sh
+rm -r spades-$VERSION/ext/tools
+rm -r spades-$VERSION/ext/src
+rm -r spades-$VERSION/ext/include/bowtie-0.12.7
+rm -r spades-$VERSION/ext/include/cute
+rm -r spades-$VERSION/ext/include/teamcity_boost
+
 cp -r assembler/test_dataset spades-$VERSION/test_dataset
 cp assembler/LICENSE spades-$VERSION
 cp assembler/README spades-$VERSION
