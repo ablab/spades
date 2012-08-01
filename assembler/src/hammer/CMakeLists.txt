@@ -33,3 +33,5 @@ if (SPADES_STATIC_BUILD)
   set_target_properties(hammer PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
+install(TARGETS hammer
+        RUNTIME DESTINATION bin)

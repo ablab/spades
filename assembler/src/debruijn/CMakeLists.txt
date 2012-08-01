@@ -15,3 +15,5 @@ if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
+install(TARGETS spades
+        RUNTIME DESTINATION bin)
