@@ -73,7 +73,8 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 	ConstructColoredGraph(gp, coloring, streams, br_delta);
 
 	SimpleInDelCorrector<Graph> corrector(gp.g, coloring
-			, (*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(), edge_type::blue, edge_type::red);
+			, (*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence()
+			, /*genome_color*/edge_type::blue, /*assembly_color*/edge_type::red);
 	corrector.Analyze();
 
 //	INFO("Filling ref pos " << gp.genome.size());
@@ -87,7 +88,7 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //			edge_type::red, output_folder + "indels/");
 //	del_analyzer.Analyze();
 
-	//Alternating paths
+//Alternating paths
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
 //			alt_count.CountPaths();
 

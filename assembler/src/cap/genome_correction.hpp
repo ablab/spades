@@ -211,8 +211,14 @@ class SimpleInDelCorrector {
 		}
 	}
 
+	string GenomePathStr(size_t genome_start, size_t genome_end) const {
+		return g_.str(vector<EdgeId>(genome_path_.begin() + genome_start,
+				genome_path_.begin() + genome_end));
+	}
+
 	void CorrectGenomePath(size_t genome_start, size_t genome_end,
 			const vector<EdgeId>& assembly_path) {
+		DEBUG("Substituting genome path " << GenomePathStr(genome_start, genome_end) << " with assembly path " << g_.str(assembly_path))
 		vector<EdgeId> genomic_edges;
 		for (size_t i = genome_start; i < genome_end; ++i) {
 			//side effects
@@ -254,6 +260,7 @@ class SimpleInDelCorrector {
 //				*ConstructBorderColorer(g_, coloring_));
 //	}
 
+	//todo use contig constraints here!!!
 	void AnalyzeGenomeEdge(EdgeId e) {
 		DEBUG("Analysing shortcut genome edge " << g_.str(e));
 		DEBUG("Multiplicity " << genome_edge_mult_.mult(e));
@@ -261,10 +268,13 @@ class SimpleInDelCorrector {
 			vector<EdgeId> assembly_path = FindAssemblyPath(g_.EdgeStart(e), g_.EdgeEnd(e),
 						100, 0, g_.length(e) + 1000);
 			if (!assembly_path.empty()) {
+				DEBUG("Assembly path " << g_.str(assembly_path));
 				auto it = std::find(genome_path_.begin(), genome_path_.end(), e);
 				VERIFY(it != genome_path_.end());
 				size_t pos = it - genome_path_.begin();
 				CorrectGenomePath(pos, pos + 1, assembly_path);
+			} else {
+				DEBUG("Couldn't find assembly path");
 			}
 		}
 	}
