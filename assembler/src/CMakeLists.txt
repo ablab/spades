@@ -84,7 +84,7 @@ endif()
 find_package(ZLIB)
 
 set(Boost_USE_MULTITHREADED ON)
-find_package(Boost COMPONENTS system filesystem iostreams REQUIRED)
+find_package(Boost COMPONENTS system filesystem REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
