@@ -17,7 +17,7 @@ then
     echo "prepare_cfg finished with exit code $errlvl"
     exit $errlvl
 fi
-./spades_compile.sh
+./spades_compile.sh -DSPADES_BUILD_INTERNAL=1
 popd
 
 pushd ../../../data
