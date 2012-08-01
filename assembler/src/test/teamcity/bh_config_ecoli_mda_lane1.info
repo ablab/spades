@@ -15,4 +15,5 @@ error_correction
     max_iterations      1
     max_threads         16
     max_memory          250
+    gzip_output         false
 }
