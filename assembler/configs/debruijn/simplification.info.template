@@ -73,8 +73,14 @@ sc_simplification
 		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
 		min_neighbour_length		100
 	}
-
-	isolated_min_len 160
+	
+	; isolated edges remover
+	ier
+	{
+        max_length                  400
+        max_coverage                2
+        max_length_any_cov          150
+	}
 	
 	removal_checks_enabled              true
 }
@@ -153,7 +159,13 @@ usual_simplification
 		min_neighbour_length		100
 	}
 
-	isolated_min_len 160
+	; isolated edges remover
+	ier
+	{
+        max_length                  400
+        max_coverage                2
+        max_length_any_cov          150
+	}
 	
 	removal_checks_enabled              true
 }

@@ -322,10 +322,6 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 	//			max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges();
 
-	IsolatedEdgeRemover<Graph> isolated_edge_remover(g,
-			cfg::get().simp.isolated_min_len);
-	isolated_edge_remover.RemoveIsolatedEdges();
-
 	DEBUG("Low coverage edges removed");
 }
 
@@ -342,10 +338,6 @@ void IterativeRemoveRelativelyLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edg
 	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 	//			max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges();
-
-	IsolatedEdgeRemover<Graph> isolated_edge_remover(g,
-			cfg::get().simp.isolated_min_len);
-	isolated_edge_remover.RemoveIsolatedEdges();
 
 	DEBUG("Relatively Low coverage edges removed");
 }
@@ -550,9 +542,6 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover, boost
 		VERIFY(false);
 		return false;
 	}
-	IsolatedEdgeRemover<Graph> isolated_edge_remover(g,
-			cfg::get().simp.isolated_min_len);
-	isolated_edge_remover.RemoveIsolatedEdges();
 }
 
 template<class Graph>
@@ -567,10 +556,6 @@ void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
 			g, paired_index, max_length, min_neighbour_length,
 			*cfg::get().ds.IS, *cfg::get().ds.RL, edge_remover);
 	erroneous_edge_remover.RemoveEdges();
-
-	IsolatedEdgeRemover<Graph> isolated_edge_remover(g,
-			cfg::get().simp.isolated_min_len);
-	isolated_edge_remover.RemoveIsolatedEdges();
 
 	DEBUG("Erroneous edges using paired info removed");
 }
@@ -646,10 +631,6 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 //	RemoveBulges(gp.g, removal_handler_f);
 //
 //	INFO("PreFinal isolated edges removal");
-//
-//    IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g,
-//			cfg::get().simp.isolated_min_len);
-//	isolated_edge_remover.RemoveIsolatedEdges();
 //
 //}
 
@@ -748,9 +729,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 		CloseGaps(gp);
 
 	INFO("Final isolated edges removal:");
-	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g,
-			cfg::get().simp.isolated_min_len);
-	isolated_edge_remover.RemoveIsolatedEdges();
+	IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length, cfg::get().simp.ier.max_coverage).RemoveIsolatedEdges();
 	printer(ipp_removing_isolated_edges);
 
 	printer(ipp_final_simplified);

@@ -341,6 +341,12 @@ struct debruijn_config {
 			size_t min_neighbour_length;
 		};
 
+		struct isolated_edges_remover {
+			size_t max_length;
+			double max_coverage;
+			size_t max_length_any_cov;
+		};
+
 		simplification_mode simpl_mode;
 		tip_clipper tc;
 		bulge_remover br;
@@ -350,8 +356,8 @@ struct debruijn_config {
 		tr_based_ec_remover trec;
 		max_flow_ec_remover mfec;
 		pair_info_ec_remover piec;
+		isolated_edges_remover ier;
 
-		double isolated_min_len;
 		bool removal_checks_enabled;
 
 		//typedef map<>
@@ -606,6 +612,15 @@ inline void load(debruijn_config::simplification::pair_info_ec_remover& ec,
 	load(ec.min_neighbour_length		, pt, "min_neighbour_length"		);
 }
 
+inline void load(debruijn_config::simplification::isolated_edges_remover& ier,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
+
+	load(ier.max_length					, pt, "max_length"					);
+	load(ier.max_coverage				, pt, "max_coverage"				);
+	load(ier.max_length_any_cov			, pt, "max_length_any_cov"			);
+}
+
 inline void load(
 		debruijn_config::simplification::erroneous_connections_remover& ec,
 		boost::property_tree::ptree const& pt, bool complete) {
@@ -815,8 +830,8 @@ inline void load(debruijn_config::simplification& simp,
 	// need fix in config file
     load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
 	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
+	load(simp.ier, pt, "ier"); // isolated edges remover
 
-	load(simp.isolated_min_len, pt, "isolated_min_len");
 	load(simp.removal_checks_enabled, pt, "removal_checks_enabled");
 }
 
