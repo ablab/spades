@@ -798,8 +798,12 @@ public:
     }
 
     iterator_type& operator=(const iterator_type& iter) {
+      if (iter.iter_ != iter_) {
+        delete iter_;
         iter_ = iter.iter_->copy();
-        return *this;
+      }
+
+      return *this;
     }
 
     ~KmerMapIterator() {
@@ -909,8 +913,12 @@ public:
     }
 
     iterator_type& operator=(const iterator_type& iter) {
+      if (iter.iter_ != iter_) {
+        delete iter_;
         iter_ = iter.iter_->copy();
-        return *this;
+      }
+
+      return *this;
     }
 
     ~KmerConstMapIterator() {
