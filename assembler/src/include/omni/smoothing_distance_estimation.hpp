@@ -142,7 +142,7 @@ public:
                 TRACE("Smoothing via FFT");
                 
                 peakfinder.FFTSmoothing(cutoff_);
-                peakfinder.PrintStats();
+                //peakfinder.PrintStats();
 
                 TRACE("Listing peaks");
 

@@ -28,7 +28,6 @@ protected:
 			const vector<PairInfo<EdgeId>>& data,
 			const vector<size_t>& raw_forward) const {
 
-        cout << "WEIGHTED" << endl;
         size_t first_len = this->graph().length(first);
         size_t second_len = this->graph().length(second);
         
@@ -37,7 +36,7 @@ protected:
 		int minD = rounded_d(data.front());
 		vector<size_t> forward;
 		for (size_t i = 0; i < raw_forward.size(); ++i)
-			if (minD - (int) max_distance_ <= (int) raw_forward[i] && (int)raw_forward[i] <= maxD + (int) max_distance_)
+			if (minD - (int) max_distance_ <= (int) raw_forward[i] && (int) raw_forward[i] <= maxD + (int) max_distance_)
 				forward.push_back(raw_forward[i]);
 		if (forward.size() == 0)
 			return result;

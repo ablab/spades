@@ -21,10 +21,9 @@ class NaiveDistanceEstimator: public DistanceEstimator<Graph> {
 
     boost::function<double(int)> weight_f_;
 
-	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(size_t first_len, size_t second_len,
+	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
 			const vector<PairInfo<EdgeId>>& data,
 			const vector<size_t>& raw_forward) const {
-        cout << "NAIVE" << endl;
 		vector<pair<size_t, double>> result;
 		int maxD = rounded_d(data.back());
 		int minD = rounded_d(data.front());

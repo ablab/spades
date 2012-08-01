@@ -120,8 +120,6 @@ private:
                 ++ind;
 		}
 
-        for (size_t i = 0 ; i < hist.size(); ++i) 
-            cout << "KLAFALKJSLDJ " << hist[i] << endl;
 	}
 
 
@@ -258,15 +256,13 @@ public:
 
 //      cutting off - standard parabolic filter
         for (size_t i = 0; i < data_len_ && i < Ncrit; ++i)
-			hist_[i] *= 1. - (i * i * 1.) / (Ncrit * Ncrit);
+            hist_[i] *= 1. - (i * i * 1.) / (Ncrit * Ncrit);
 		
 		for (size_t i = Ncrit; i < hist_.size(); ++i)
 			hist_[i] = 0.;
 
         FFTBackward(hist_);
 		AddBaseline();
-        for (size_t i = 0; i < hist_.size(); ++i)
-            cout << "HSDDFSD6 " << (x_left_ + (int) i) << " " << hist_[i] << endl;
 	}
 
 	bool IsPeak(int dist, size_t range) const {
@@ -284,7 +280,6 @@ public:
         size_t data_len_ = x_right_ - x_left_;
         vector<bool> was;
         //srand(time(NULL));    
-        TRACE("1");
         for (size_t i = 0; i < data_len_; ++i) 
             was.push_back(false);
 
@@ -337,7 +332,6 @@ public:
                 for (int i = left_bound; i < right_bound; ++i)
                     weight_ += hist_[i - x_left_].real();
                 TRACE("WEIGHT counted");
-                // TODO:: COMPARATOR
                 pair<size_t, double> tmp_pair = make_pair(index, weight_);
                 if (!peaks_.count(index)) {
                     TRACE("Peaks size " << peaks_.size() << " ,inserting " << tmp_pair);

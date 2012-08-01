@@ -59,7 +59,7 @@ public:
 template<class Graph>
 class AbstractDistanceEstimator {
 	typedef typename Graph::EdgeId EdgeId;
-	const Graph &graph_;
+    const Graph &graph_;
 	const PairedInfoIndex<Graph>& histogram_;
 	const GraphDistanceFinder<Graph>& distance_finder_;
 	const size_t linkage_distance_;
@@ -130,11 +130,31 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 protected:
 	const size_t max_distance_;
 
+    virtual map<int, double> GetHistogram(const vector<PairInfo<EdgeId>> & data) const {
+        map<int, double> result_hist;
+        for (auto iter = data.begin(); iter != data.end(); ++iter) {
+            result_hist.insert(make_pair(iter->d, iter->weight));
+        }
+        return result_hist;
+    }
+
+    virtual map<int, double> ConvoluteWithIsHist(boost::function<int, double>& weight_f, map<int, double>& hist) const {
+        int low_val = hist.begin()->first;
+        int high_val = (hist.end() - 1)->first;
+        
+        map<int, double> result;
+        for (int i = low_val - 20; i < high_val + 20; ++i) {
+            result[i] = 0.;
+            for (int j = low_val - 20; j < high_val + 20; ++i) {
+                result[i] += hist[j] * weight_f(j - i);
+            }
+        }
+        return result;
+    }
+
 	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
 			const vector<PairInfo<EdgeId>>& data,
 			const vector<size_t>& raw_forward) const {
-
-        cout << "SIMPLE" << endl;
         size_t first_len = this->graph().length(first);
         size_t second_len = this->graph().length(second);
 		vector<pair<size_t, double>> result;
