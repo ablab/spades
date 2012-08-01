@@ -12,7 +12,7 @@ dataset
 
 error_correction
 {
-    max_iterations      2
+    max_iterations      1
     max_threads         16
     max_memory          250
 }
