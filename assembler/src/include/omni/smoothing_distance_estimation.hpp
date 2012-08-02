@@ -93,7 +93,7 @@ protected:
 	}
 
 	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
-		if (make_pair(first, second) <= ConjugatePair(first, second)) {
+		if (make_pair(first, second) <= this->ConjugatePair(first, second)) {
 			vector<size_t> forward = this->GetGraphDistances(first, second);
 		    vector<pair<size_t, double> > estimated;
             TRACE("Processing edge pair " << first << " " << second);
@@ -104,7 +104,7 @@ protected:
 
 			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
-			this->AddToResult(result, ConjugateInfos(res));
+			this->AddToResult(result, this->ConjugateInfos(res));
 		}
 	}
 

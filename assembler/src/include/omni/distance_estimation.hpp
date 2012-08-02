@@ -138,9 +138,9 @@ protected:
         return result_hist;
     }
 
-    virtual map<int, double> ConvoluteWithIsHist(boost::function<int, double>& weight_f, map<int, double>& hist) const {
+  virtual map<int, double> ConvoluteWithIsHist(boost::function<double(int)>& weight_f, map<int, double>& hist) const {
         int low_val = hist.begin()->first;
-        int high_val = (hist.end() - 1)->first;
+        int high_val = hist.rbegin()->first;
         
         map<int, double> result;
         for (int i = low_val - 20; i < high_val + 20; ++i) {
