@@ -21,11 +21,14 @@ add_executable(hammer
    kmer_stat.cpp
    config_struct_hammer.cpp
    )
-   
-add_subdirectory(quake_count)
-#add_subdirectory(quake_enhanced)
-#add_subdirectory(quake_correct)
-add_subdirectory(gen_test_data)
+
+if (SPADES_BUILD_INTERNAL)
+  add_subdirectory(quake_count)
+  add_subdirectory(gen_test_data)
+else()
+  add_subdirectory(quake_count EXCLUDE_FROM_ALL)
+  add_subdirectory(gen_test_data EXCLUDE_FROM_ALL)
+endif()
 
 target_link_libraries(hammer ${COMMON_LIBRARIES} input)
 

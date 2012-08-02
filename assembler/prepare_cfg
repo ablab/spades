@@ -22,7 +22,7 @@ echo "/**************************************/"
 
 mkdir -p $build/debug
 cd $build/debug
-cmake $src -DCMAKE_BUILD_TYPE="Debug" -DSPADES_BUILD_INTERNAL=1
+cmake $src -DCMAKE_BUILD_TYPE="Debug"
 
 echo "/**************************************/"
 echo "/********  preparing release **********/"
@@ -30,5 +30,5 @@ echo "/**************************************/"
 
 mkdir -p $build/release
 cd $build/release
-cmake $src -DCMAKE_BUILD_TYPE="Release" -DSPADES_BUILD_INTERNAL=1
+cmake $src -DCMAKE_BUILD_TYPE="Release"
 cd $assembler

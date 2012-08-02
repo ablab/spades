@@ -4,10 +4,21 @@
 # See file LICENSE for details.
 ############################################################################
 
-add_subdirectory(online_vis)
-add_subdirectory(cap)
+if (SPADES_BUILD_INTERNAL)
+  add_subdirectory(online_vis)
+  add_subdirectory(cap)
+else()
+  add_subdirectory(online_vis EXCLUDE_FROM_ALL)
+  add_subdirectory(cap EXCLUDE_FROM_ALL)
+endif()
 
-#tests
-add_subdirectory(test/include_test)
-add_subdirectory(test/debruijn)
-add_subdirectory(test/cap)
+# tests
+if (SPADES_BUILD_INTERNAL)
+  add_subdirectory(test/include_test)
+  add_subdirectory(test/debruijn)
+  add_subdirectory(test/cap)
+else()
+  add_subdirectory(test/include_test EXCLUDE_FROM_ALL)
+  add_subdirectory(test/debruijn EXCLUDE_FROM_ALL)
+  add_subdirectory(test/cap EXCLUDE_FROM_ALL)
+endif()
