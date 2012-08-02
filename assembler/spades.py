@@ -238,6 +238,8 @@ def check_config(cfg, default_project_name=""):
     if "dataset" in cfg:
         if not "single_cell" in cfg["dataset"].__dict__:
             cfg["dataset"].__dict__["single_cell"] = False
+        if cfg["common"].developer_mode and ("quality_assessment" in cfg) and ("reference" in cfg["quality_assessment"]):
+            cfg["dataset"].__dict__["reference"] = cfg["quality_assessment"].reference
 
     # error_correction
     if "error_correction" in cfg:
@@ -264,7 +266,7 @@ def check_config(cfg, default_project_name=""):
 
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
-               "disable-gap-closer disable-gzip-output help test debug".split()
+               "disable-gap-closer disable-gzip-output help test debug reference=".split()
 short_options = "n:o:1:2:s:k:t:m:i:h"
 
 
@@ -357,6 +359,7 @@ def main():
         project_name = ""
         output_dir = ""
         tmp_dir = ""
+        reference = ""
 
         paired = []
         paired1 = []
@@ -386,6 +389,8 @@ def main():
                 output_dir = arg
             elif opt == "--tmp-dir":
                 tmp_dir = arg
+            elif opt == "--reference":
+                reference = check_file(arg, 'reference')
 
             elif opt == "--12":
                 paired.append(check_file(arg, 'paired'))
@@ -478,7 +483,7 @@ def main():
 
             if single:
                 cfg["dataset"].__dict__["single_reads"] = single
-
+            
             # filling other parameters
 
             # common
@@ -493,6 +498,8 @@ def main():
 
             # dataset
             cfg["dataset"].__dict__["single_cell"] = single_cell
+            if developer_mode and reference:
+                cfg["dataset"].__dict__["reference"] = reference
 
             # error correction
             if not only_assembler:
@@ -594,7 +601,7 @@ def main():
                 if not isinstance(v, list):
                     v = [v]
 
-                    # saving original reads to dataset
+                # saving original reads to dataset
                 if k.find("_reads") != -1:
                     quoted_value = '"'
                     for item in v:
@@ -604,10 +611,9 @@ def main():
 
                 # saving reference to dataset in developer_mode
                 if bh_cfg.developer_mode:
-                    if ("quality_assessment" in cfg) and ("reference" in
-                                                          cfg["quality_assessment"].__dict__):
+                    if "reference" in cfg["dataset"].__dict__:
                         bh_cfg.__dict__["reference_genome"] = os.path.abspath(
-                            os.path.expandvars(cfg["quality_assessment"].reference))
+                            os.path.expandvars(cfg["dataset"].reference))                       
 
                 if k.startswith("single_reads"):
                     for item in v:
@@ -722,11 +728,10 @@ def main():
                 dataset_file.write('\n')
                 # saving reference to dataset in developer_mode
             if spades_cfg.developer_mode:
-                if ("quality_assessment" in cfg) and ("reference" in
-                                                      cfg["quality_assessment"].__dict__):
+                if "reference" in cfg["dataset"].__dict__:
                     dataset_file.write("reference_genome" + '\t')
                     dataset_file.write(os.path.abspath(
-                        os.path.expandvars(cfg["quality_assessment"].reference)) + '\n')
+                        os.path.expandvars(cfg["dataset"].reference)) + '\n')                    
 
             dataset_file.close()
             spades_cfg.__dict__["dataset"] = dataset_filename
