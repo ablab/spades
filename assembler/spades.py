@@ -266,7 +266,7 @@ def check_config(cfg, default_project_name=""):
 
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
-               "disable-gap-closer disable-gzip-output help test debug reference=".split()
+               "disable-gap-closer disable-gzip-output help test debug reference= help-hidden".split()
 short_options = "n:o:1:2:s:k:t:m:i:h"
 
 
@@ -276,7 +276,7 @@ def check_file(f, message=''):
     return f
 
 
-def usage():
+def usage(show_hidden=False):
     print >> sys.stderr, "SPAdes genome assembler"
     print >> sys.stderr, "Usage:", sys.argv[0], "[options] -n <project name>"
     print >> sys.stderr, ""
@@ -295,6 +295,9 @@ def usage():
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
+    if show_hidden:
+        print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
+                         " (only in debug mode)"
     print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads [default: 16]"
     print >> sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
                          " (terminates if exceeded) [default: 250]"
@@ -314,12 +317,14 @@ def usage():
     print >> sys.stderr, "--disable-gap-closer\t\tforces SPAdes not to use the gap"\
                          " closer"
     print >> sys.stderr, "--disable-gzip-output\t\tforces error correction not to"\
-                         " compress the corrected reads"
+                         " compress the corrected reads"    
 
     print >> sys.stderr, ""
     print >> sys.stderr, "--test\t\trun SPAdes on toy dataset"
     print >> sys.stderr, "--debug\t\trun SPAdes in debug mode"
     print >> sys.stderr, "-h/--help\tprint this usage message"
+    if show_hidden:
+        print >> sys.stderr, "--help-hidden\tprint this usage message with all hidden options"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "or you can run SPAdes with config file:", sys.argv[0],\
@@ -436,6 +441,9 @@ def main():
 
             elif opt == '-h' or opt == "--help":
                 usage()
+                sys.exit(0)
+            elif opt == "--help-hidden":
+                usage(True)
                 sys.exit(0)
 
             elif opt == "--test": # running test
