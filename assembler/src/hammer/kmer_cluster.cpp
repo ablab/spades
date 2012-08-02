@@ -551,28 +551,30 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					}
 				}
 			}
-			if (centersInCluster[k] == -1) {
-				#pragma omp critical
-				{
-					// change blob
-					for (uint32_t j = 0; j < bestCenters[k].first.size(); ++j) {
-						Globals::blob[Globals::blob_size + j] = bestCenters[k].first[j];
-					}
-					Globals::blob_size += bestCenters[k].first.size();
+      if (centersInCluster[k] == -1) {
+        #pragma omp critical
+        {
+          // change blob
+          const std::string &seq = bestCenters[k].first;
+          VERIFY(seq.size() == K);
+          VERIFY(Globals::blob_size + K < Globals::blob_max_size);
+          memcpy(Globals::blob + Globals::blob_size, seq.data(), K);
+          Globals::blob_size += K;
 
-					// add position read
-					PositionRead rs(Globals::blob_size - bestCenters[k].first.size(), bestCenters[k].first.size(), Globals::pr->size() - 1);
-					Globals::pr->push_back(rs);
+          // add position read
+          PositionRead rs(Globals::blob_size - K, K, Globals::pr->size() - 1);
+          Globals::pr->push_back(rs);
 
-					PositionKMer pkm(Globals::pr->size() -1, 0);
-					KMerStat kms(Globals::use_common_quality, 0, KMERSTAT_GOODITER, 1);
-					k_.push_back(KMerCount(pkm, kms));
-				}
-				v.insert(v.begin(), k_.size() - 1);
-			}
-		}
-		vec.push_back(v);
-	}
+          PositionKMer pkm(Globals::pr->size()-1, 0);
+          KMerStat kms(Globals::use_common_quality, 0, KMERSTAT_GOODITER, 1);
+          k_.push_back(KMerCount(pkm, kms));
+          Globals::kmer_index->insert(std::make_pair(Seq<K>(seq, 0, K, /* raw */ true), k_.size()-1));
+        }
+        v.insert(v.begin(), k_.size() - 1);
+      }
+    }
+    vec.push_back(v);
+  }
 }
 
 void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad) {
