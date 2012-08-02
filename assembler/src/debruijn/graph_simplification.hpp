@@ -729,7 +729,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 		CloseGaps(gp);
 
 	INFO("Final isolated edges removal:");
-	IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length, cfg::get().simp.ier.max_coverage).RemoveIsolatedEdges();
+	IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length, cfg::get().simp.ier.max_coverage, cfg::get().simp.ier.max_length_any_cov).RemoveIsolatedEdges();
 	printer(ipp_removing_isolated_edges);
 
 	printer(ipp_final_simplified);

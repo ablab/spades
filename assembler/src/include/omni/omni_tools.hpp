@@ -141,22 +141,23 @@ class IsolatedEdgeRemover {
 	Graph& g_;
 	size_t max_length_;
 	double max_coverage_;
+	size_t max_length_any_cov_;
 
 	bool IsTerminalVertex(VertexId v) {
 		return g_.IncomingEdgeCount(v) + g_.OutgoingEdgeCount(v) == 1;
 	}
 
 public:
-	IsolatedEdgeRemover(Graph& g, size_t max_length, double max_coverage) :
-			g_(g), max_length_(max_length), max_coverage_(max_coverage) {
+	IsolatedEdgeRemover(Graph& g, size_t max_length, double max_coverage, size_t max_length_any_cov) :
+			g_(g), max_length_(max_length), max_coverage_(max_coverage), max_length_any_cov_(max_length_any_cov) {
 	}
 
 	void RemoveIsolatedEdges() {
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			if (IsTerminalVertex(g_.EdgeStart(*it))
 					&& IsTerminalVertex(g_.EdgeEnd(*it))
-					&& g_.length(*it) <= max_length_
-					&& g_.coverage(*it) <= max_coverage_) {
+					&& ((g_.length(*it) <= max_length_ && g_.coverage(*it) <= max_coverage_)
+					|| g_.length(*it) <=max_length_any_cov_)) {
 				g_.DeleteEdge(*it);
 			}
 		}
