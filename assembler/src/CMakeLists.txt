@@ -104,6 +104,6 @@ add_subdirectory(debruijn)
 add_subdirectory(hammer)
 
 # Random stuff
-#if (SPADES_BUILD_INTERNAL)
+if (SPADES_BUILD_INTERNAL)
   include(CMakeListsInternal.txt)
-#endif()
+endif()
