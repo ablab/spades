@@ -427,8 +427,15 @@ void HammerTools::CountKMersBySplitAndMerge() {
     HammerTools::ProcessKmerHashFile(fname, buf);
 
     INFO("Merging the contents");
+    // Cheap trick: assuming that almost all the buffers will be of equal size,
+    // reserve some approx amount of data on first iteration
     size_t vsize = vec.size(), bsize = buf.size();
-    vec.reserve(vsize + bsize);
+    if (iFile == 0)
+      vec.reserve(bsize * numfiles * 3 / 4);
+
+    // Reserve the decent amount of data in advance.
+    if (vec.capacity() < vsize + bsize)
+      vec.reserve(vsize + bsize);
     vec.insert(vec.end(), buf.begin(), buf.end());
   }
 
