@@ -84,17 +84,17 @@ else
     'rd' ) run_n_measure build/release/bin/spades $cfg_debruijn/config.info ;;
     'dd' ) run_n_measure build/debug/bin/spades $cfg_debruijn/config.info ;;
     'ddt' ) run_n_measure build/debug/test/bin/debruijn_test ;;
-    'rdt' ) ./build/release/test/bin/debruijn_test --log_level=test_suite ;;
-    'ddtls' ) run_n_measure build/debug/test/debruijn_tools/debruijn_tools ;;
-    'rdtls' ) run_n_measure build/release/test/debruijn_tools/debruijn_tools ;;
-    'dit' ) run_n_measure build/debug/test/include_test/include_test ;;
-    'dt') run_n_measure build/debug/test/bin/debruijn_test && run_n_measure build/debug/test/include_test/include_test ;;
+    'rdt' ) ./build/release/bin/debruijn_test --log_level=test_suite ;;
+    'ddtls' ) run_n_measure build/debug/bin/debruijn_tools ;;
+    'rdtls' ) run_n_measure build/release/bin/debruijn_tools ;;
+    'dit' ) run_n_measure build/debug/bin/include_test ;;
+    'dt') run_n_measure build/debug/bin/debruijn_test && run_n_measure build/debug/bin/include_test ;;
     'rv' ) build/release/bin/online_vis $cfg_debruijn/config.info ;;
     'dv' ) build/debug/bin/online_vis $cfg_debruijn/config.info ;;
     'rc' ) run_n_measure build/release/bin/cap ;;
     'dc' ) run_n_measure build/debug/bin/cap ;;
-    'rct' ) run_n_measure build/release/test/cap/cap_test ;;
-    'dct' ) run_n_measure build/debug/test/cap/cap_test ;;
+    'rct' ) run_n_measure build/release/bin/cap_test ;;
+    'dct' ) run_n_measure build/debug/bin/cap_test ;;
 
     * ) 
         change_config $1
