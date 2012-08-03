@@ -238,7 +238,7 @@ def check_config(cfg, default_project_name=""):
     if "dataset" in cfg:
         if not "single_cell" in cfg["dataset"].__dict__:
             cfg["dataset"].__dict__["single_cell"] = False
-        if cfg["common"].developer_mode and ("quality_assessment" in cfg) and ("reference" in cfg["quality_assessment"]):
+        if cfg["common"].developer_mode and ("quality_assessment" in cfg) and ("reference" in cfg["quality_assessment"].__dict__):
             cfg["dataset"].__dict__["reference"] = cfg["quality_assessment"].reference
 
     # error_correction
