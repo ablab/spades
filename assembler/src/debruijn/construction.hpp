@@ -145,18 +145,18 @@ void exec_construction(conj_graph_pack& gp) {
 
 	if (cfg::get().developer_mode) {
 		if (gp.genome.size() > 0) {
-			FillPos(gp, gp.genome, "0");
-			FillPos(gp, !gp.genome, "1");
+			FillPos(gp, gp.genome, "ref0");
+			FillPos(gp, !gp.genome, "ref1");
 		}
 
 		if (!cfg::get().pos.contigs_for_threading.empty()
 				&& fileExists(cfg::get().pos.contigs_for_threading)) {
-			FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_");
+			FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
 		}
 
 		if (!cfg::get().pos.contigs_to_analyze.empty()
 				&& fileExists(cfg::get().pos.contigs_to_analyze)) {
-			FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+			FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
 		}
 	}
 

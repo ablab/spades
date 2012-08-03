@@ -1020,6 +1020,27 @@ void FillPos(gp_t& gp, const string& contig_file, string prefix) {
 	}
 }
 
+template<class gp_t>
+void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
+//  typedef typename gp_t::Graph::EdgeId EdgeId;
+	INFO("Threading large contigs");
+	io::EasyReader irs(contig_file, true);
+	while(!irs.eof()) {
+		io::SingleRead read;
+		irs >> read;
+		DEBUG("Contig " << read.name() << ", length: " << read.size());
+		if (!read.IsValid()) {
+			WARN("Attention: contig " << read.name() << " contains Ns");
+			continue;
+		}
+		Sequence contig = read.sequence();
+		if (contig.size() < 1500000) {
+			//continue;
+		}
+		FillPos(gp, contig, prefix + read.name());
+    }
+}
+
 ////template<size_t k>
 ////deprecated, todo remove usages
 //void FillPos(conj_graph_pack& gp, const Sequence& genome) {
