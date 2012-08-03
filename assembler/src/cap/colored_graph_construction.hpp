@@ -297,36 +297,38 @@ void ConstructColoredGraph(gp_t& gp,
 	}
 }
 
-template<class gp_t>
-void ConstructColoredGraph(gp_t& gp,
-		ColorHandler<typename gp_t::graph_t>& coloring,
-		vector<ContigStream*>& streams, bool fill_pos = true, int br_delta = -1) {
-	typedef typename gp_t::graph_t Graph;
-	const size_t k = gp_t::k_value;
-	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
-
-	INFO("Constructing de Bruijn graph for k=" << k);
-
-	//dirty hack because parallel construction uses cfg::get!!!
-	io::MultifileReader<Contig> stream(streams);
-	ConstructGraph<k, Graph>(gp.g, gp.index, stream);
-
-	//TODO do we still need it?
-	if (br_delta > 0)
-		SimplifyGraph(gp.g, br_delta);
-
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
-			coloring, *MapperInstance < gp_t > (gp));
-	colored_graph_constructor.ConstructGraph(streams);
-
-	if (fill_pos) {
-		INFO("Filling contig positions");
-		for (auto it = streams.begin(); it != streams.end(); ++it) {
-			ContigStream& stream = **it;
-			stream.reset();
-			FillPos(gp, stream);
-		}
-	}
-}
+//template<class gp_t>
+//void ConstructColoredGraph(gp_t& gp,
+//		ColorHandler<typename gp_t::graph_t>& coloring,
+//		vector<ContigStream*>& streams, const string& reference, bool fill_pos = true, int br_delta = -1) {
+//	typedef typename gp_t::graph_t Graph;
+//	const size_t k = gp_t::k_value;
+//	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
+//
+//	INFO("Constructing de Bruijn graph for k=" << k);
+//
+//	//dirty hack because parallel construction uses cfg::get!!!
+//	vector<ContigStream*>& tmp_streams(streams.begin(), streams.end());
+//	tmp_streams.push_back(EasyC)
+//	io::MultifileReader<Contig> stream(tmp_streams);
+//	ConstructGraph<k, Graph>(gp.g, gp.index, stream);
+//
+//	//TODO do we still need it?
+//	if (br_delta > 0)
+//		SimplifyGraph(gp.g, br_delta);
+//
+//	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
+//			coloring, *MapperInstance < gp_t > (gp));
+//	colored_graph_constructor.ConstructGraph(streams);
+//
+//	if (fill_pos) {
+//		INFO("Filling contig positions");
+//		for (auto it = streams.begin(); it != streams.end(); ++it) {
+//			ContigStream& stream = **it;
+//			stream.reset();
+//			FillPos(gp, stream);
+//		}
+//	}
+//}
 
 }
