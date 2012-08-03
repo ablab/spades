@@ -8,7 +8,6 @@
 #define HAMMER_SUBKMER_SORTER_HPP
 
 #include "kmer_stat.hpp"
-#include "hammer_stats.hpp"
 #include "mmapped_reader.hpp"
 #include "position_kmer.hpp"
 

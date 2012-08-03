@@ -7,7 +7,6 @@
 #include "hamcluster.hpp"
 
 #include "globals.hpp"
-#include "hammer_stats.hpp"
 #include "mmapped_reader.hpp"
 #include "union.hpp"
 
@@ -119,12 +118,12 @@ void KMerHamClusterer::cluster(const std::string &prefix,
   std::ofstream ofs(fname, std::ios::out | std::ios::binary);
   VERIFY(ofs.good());
 
-  TIMEDLN("Serializing sub-kmers.");
+  INFO("Serializing sub-kmers.");
   for (unsigned i = 0; i < tau_ + 1; ++i) {
     size_t from = (*Globals::subKMerPositions)[i];
     size_t to = (*Globals::subKMerPositions)[i+1];
 
-    TIMEDLN("Serializing: [" << from << ", " << to << ")");
+    INFO("Serializing: [" << from << ", " << to << ")");
     serialize(ofs, kmers, NULL,
               SubKMerPartSerializer(from, to));
   }
@@ -133,10 +132,10 @@ void KMerHamClusterer::cluster(const std::string &prefix,
 
   size_t big_blocks1 = 0;
   {
-    TIMEDLN("Splitting sub-kmers, pass 1.");
+    INFO("Splitting sub-kmers, pass 1.");
     SubKMerSplitter Splitter(fname, fname + ".blocks");
     std::pair<size_t, size_t> stat = Splitter.split();
-    TIMEDLN("Splitting done."
+    INFO("Splitting done."
             " Processed " << stat.first << " blocks."
             " Produced " << stat.second << " blocks.");
 
@@ -149,7 +148,7 @@ void KMerHamClusterer::cluster(const std::string &prefix,
 
     std::vector<size_t> block;
 
-    TIMEDLN("Merge sub-kmers, pass 1");
+    INFO("Merge sub-kmers, pass 1");
     SubKMerBlockFile blocks(fname + ".blocks", /* unlink */ true);
 
     std::ostringstream tmp;
@@ -174,15 +173,15 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     }
     VERIFY(!ofs.fail());
     ofs.close();
-    TIMEDLN("Merge done, total " << big_blocks1 << " new blocks generated.");
+    INFO("Merge done, total " << big_blocks1 << " new blocks generated.");
   }
 
   size_t big_blocks2 = 0;
   {
-    TIMEDLN("Spliting sub-kmers, pass 2.");
+    INFO("Spliting sub-kmers, pass 2.");
     SubKMerSplitter Splitter(fname, fname + ".blocks");
     std::pair<size_t, size_t> stat = Splitter.split();
-    TIMEDLN("Splitting done."
+    INFO("Splitting done."
             " Processed " << stat.first << " blocks."
             " Produced " << stat.second << " blocks.");
 
@@ -191,7 +190,7 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     VERIFY(stat.first == (tau_ + 1)*big_blocks1);
     VERIFY(stat.second <= (tau_ + 1) * (tau_ + 1) * kmers.size());
 
-    TIMEDLN("Merge sub-kmers, pass 2");
+    INFO("Merge sub-kmers, pass 2");
     SubKMerBlockFile blocks(fname + ".blocks", /* unlink */ true);
     std::vector<size_t> block;
 
@@ -202,13 +201,13 @@ void KMerHamClusterer::cluster(const std::string &prefix,
 #if 0
         for (size_t i = 0; i < block.size(); ++i) {
           std::string s(Globals::blob + kmers[block[i]], K);
-          TIMEDLN("" << block[i] << ": " << s);
+          INFO("" << block[i] << ": " << s);
         }
 #endif
       }
       processBlockQuadratic(uf, block, kmers, tau_);
       nblocks += 1;
     }
-    TIMEDLN("Merge done, saw " << big_blocks2 << " big blocks out of " << nblocks << " processed.");
+    INFO("Merge done, saw " << big_blocks2 << " big blocks out of " << nblocks << " processed.");
   }
 }

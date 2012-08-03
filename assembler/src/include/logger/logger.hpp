@@ -41,7 +41,7 @@ inline string level_name(level l)
 /////////////////////////////////////////////////////
 struct writer
 {
-	virtual void write_msg(double time_in_sec, level l, const char* file, size_t line_num, const char* source, const char* msg) = 0;
+	virtual void write_msg(double time_in_sec, unsigned max_rss, level l, const char* file, size_t line_num, const char* source, const char* msg) = 0;
     virtual ~writer(){}
 };
 

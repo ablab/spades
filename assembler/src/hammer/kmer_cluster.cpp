@@ -576,8 +576,8 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 }
 
 void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad) {
-  TIMEDLN("Starting subclustering in " << nthreads_ << " threads.");
-  TIMEDLN("Estimated: size=" << k_.size() << " mem=" << sizeof(KMerCount)*k_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
+  INFO("Starting subclustering in " << nthreads_ << " threads.");
+  INFO("Estimated: size=" << k_.size() << " mem=" << sizeof(KMerCount)*k_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
 
   std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
   MMappedReader ifs(fname, /* unlink */ true);
@@ -646,7 +646,7 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
 				cur_total_size += cur_class.size();
 			}
 		}
-		TIMEDLN("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " in " << nthreads_ << " threads.");
+		INFO("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " in " << nthreads_ << " threads.");
 
 		VERIFY(blocksInPlace.size() >= i_nontriv && curClasses.size() >= i_nontriv);
 

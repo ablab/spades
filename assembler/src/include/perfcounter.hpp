@@ -50,6 +50,17 @@ inline string human_readable_time(double time_in_sec)
     return str(format("%3d:%02d:%02d.%03d") % hours % mins % sec % msec);
 }
 
+inline string human_readable_memory(unsigned max_rss)
+{
+	assert(max_rss > 0);
+
+	if (max_rss < 1024 * 1024) {
+		return str(format("%4dM") % (max_rss / 1024));
+    } else {
+    	return str(format("%4dG") % (max_rss / (1024 * 1024)));
+	}
+}
+
 struct avg_perf_counter
 {
     avg_perf_counter(/*const string& name*/)// : name_(name)

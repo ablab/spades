@@ -46,11 +46,11 @@ void HammerTools::ChangeNtoAinReadFiles() {
 		string cur_filename = HammerTools::getFilename(cfg::get().input_working_dir, Globals::input_filename_bases[iFile]);
 		pid_t cur_pid = vfork();
 		if (cur_pid == 0) {
-			TIMEDLN("  [" << getpid() << "] Child process for substituting Ns in " << Globals::input_filenames[iFile] << " starting.");
+			INFO("  [" << getpid() << "] Child process for substituting Ns in " << Globals::input_filenames[iFile] << " starting.");
 			string cmd = string("sed \'n;s/\\([ACGT]\\)N\\([ACGT]\\)/\\1A\\2/g;n;n\' ") + Globals::input_filenames[iFile].c_str() + " > " + cur_filename.c_str();
 			int exitcode = system( cmd.c_str() );
 			if (exitcode != 0) {
-				TIMEDLN("  [" << getpid() << "] ERROR: finished with non-zero exit code " << exitcode);
+				INFO("  [" << getpid() << "] ERROR: finished with non-zero exit code " << exitcode);
 			}
 			_exit(0);
 		}
@@ -83,9 +83,9 @@ void HammerTools::DecompressIfNeeded() {
 			pIDs[iFile] = vfork();
 			if (pIDs[iFile] == 0) {
 				string systemcall = string("gunzip -c ") + oldFilename + string(" > ") + newFilename;
-				TIMEDLN("  [" << getpid() << "] " << systemcall);
+				INFO("  [" << getpid() << "] " << systemcall);
 				if (system(systemcall.c_str())) {
-					TIMEDLN("  [" << getpid() << "] System error with unzipping input files!");
+					INFO("  [" << getpid() << "] System error with unzipping input files!");
 				}
 			_exit(0);
 			}
@@ -121,11 +121,11 @@ void HammerTools::InitializeSubKMerPositions() {
 		log_sstream << Globals::subKMerPositions->at(i) << " ";
 	}
 	Globals::subKMerPositions->at(cfg::get().general_tau + 1) = K;
-	TIMEDLN("Hamming graph threshold tau=" << cfg::get().general_tau << ", k=" << K << ", subkmer positions = [ " << log_sstream.str() << "]" );
+	INFO("Hamming graph threshold tau=" << cfg::get().general_tau << ", k=" << K << ", subkmer positions = [ " << log_sstream.str() << "]" );
 }
 
 size_t HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement) {
-  TIMEDLN("Reading input file " << readsFilename);
+  INFO("Reading input file " << readsFilename);
   int trim_quality = cfg::get().input_trim_quality;
   ireadstream irs(readsFilename, cfg::get().input_qvoffset);
   Read r;
@@ -151,7 +151,7 @@ size_t HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curp
       if (Globals::char_offset_user) {
         for (size_t i = 0; i < read_size; ++i)
           if (qdata[i] <= 0) {
-            TIMEDLN(" Invalid quality value, probably phred offset specified was wrong");
+            INFO(" Invalid quality value, probably phred offset specified was wrong");
             exit(-1);
           }
       }
@@ -184,7 +184,7 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
 		ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read, true);
 	}
-  TIMEDLN("All files were read. Used " << curpos << " bytes out of " << Globals::blob_max_size << " allocated.");
+  INFO("All files were read. Used " << curpos << " bytes out of " << Globals::blob_max_size << " allocated.");
 }
 
 void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers, vector< hint_t > & mmers, int which_first ) {
@@ -235,7 +235,7 @@ void HammerTools::SplitKMers() {
 	bool use_minimizers = HammerTools::doingMinimizers();
 	int which_first = Globals::iteration_no % 4;
 
-	TIMEDLN("Splitting kmer instances into files in " << count_num_threads << " threads. This takes a while");
+	INFO("Splitting kmer instances into files in " << count_num_threads << " threads. This takes a while");
 
   MMappedWriter* ostreams = new MMappedWriter[numfiles];
   for (unsigned i = 0; i < (unsigned int)numfiles; ++i) {
@@ -416,22 +416,22 @@ void HammerTools::CountKMersBySplitAndMerge() {
   int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
   unsigned numfiles = cfg::get().count_numfiles;
 
-  TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
+  INFO("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
   std::vector< std::vector<KMerCount> > kmcvec(numfiles);
 
   for (unsigned iFile=0; iFile < numfiles; ++iFile) {
     std::vector<KMerCount> buf;
-    TIMEDLN("Processing file " << iFile);
+    INFO("Processing file " << iFile);
     std::string fname = getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
     HammerTools::ProcessKmerHashFile(fname, buf);
 
-    TIMEDLN("Merging the contents");
+    INFO("Merging the contents");
     size_t vsize = vec.size(), bsize = buf.size();
     vec.reserve(vsize + bsize);
     vec.insert(vec.end(), buf.begin(), buf.end());
   }
 
-	TIMEDLN("Building kmer index");
+	INFO("Building kmer index");
   Globals::kmer_index->clear();
 #if 0
   Globals::kmer_index->reserve(vec.size());
@@ -441,7 +441,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
     Globals::kmer_index->insert(std::make_pair(Seq<K>(s, 0, K, /* raw */ true), i));
   }
 
-	TIMEDLN("Merge done. There are " << vec.size() << " kmers in total.");
+	INFO("Merge done. There are " << vec.size() << " kmers in total.");
 }
 
 static void Merge(KMerCount &lhs, const KMerNo &rhs) {
@@ -643,7 +643,7 @@ void HammerTools::ProcessKmerHashFile(const std::string &fname, std::vector<KMer
 #else
   std::sort(vec.begin(), vec.end(), KMerNo::is_less());
 #endif
-  TIMEDLN("Sorting done, starting unification.");
+  INFO("Sorting done, starting unification.");
   if (!vec.size()) return;
 
   KmerHashUnique(vec.begin(), vec.end(), vkmc);
@@ -964,17 +964,17 @@ void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
       irs >> reads[buf_size];
       reads[buf_size].trimNsAndBadQuality(trim_quality);
     }
-    TIMEDLN("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
+    INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
 
     HammerTools::CorrectReadsBatch(res, reads, buf_size,
                                    changedReads, changedNucleotides,
                                    kmers);
 
-    TIMEDLN("Processed batch " << buffer_no);
+    INFO("Processed batch " << buffer_no);
     for (size_t i = 0; i < buf_size; ++i) {
       reads[i].print(*(res[i] ? outf_good : outf_bad), qvoffset);
     }
-    TIMEDLN("Written batch " << buffer_no);
+    INFO("Written batch " << buffer_no);
     ++buffer_no;
   }
 }
@@ -1006,7 +1006,7 @@ void HammerTools::CorrectPairedReadFiles(const vector<KMerCount> & kmers,
       l[buf_size].trimNsAndBadQuality(trim_quality);
       r[buf_size].trimNsAndBadQuality(trim_quality);
     }
-    TIMEDLN("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
+    INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
   
     HammerTools::CorrectReadsBatch(left_res, l, buf_size,
                                    changedReads, changedNucleotides,
@@ -1015,7 +1015,7 @@ void HammerTools::CorrectPairedReadFiles(const vector<KMerCount> & kmers,
                                    changedReads, changedNucleotides,
                                    kmers);
  
-    TIMEDLN("Processed batch " << buffer_no);
+    INFO("Processed batch " << buffer_no);
     for (size_t i = 0; i < buf_size; ++i) {
       if (left_res[i] && right_res[i]) {
         l[i].print(*ofcorl, qvoffset);
@@ -1025,7 +1025,7 @@ void HammerTools::CorrectPairedReadFiles(const vector<KMerCount> & kmers,
         r[i].print(*(right_res[i] ? ofunp : ofbadr), qvoffset);
       }
     }
-    TIMEDLN("Written batch " << buffer_no);
+    INFO("Written batch " << buffer_no);
     ++buffer_no;
   }
 }
@@ -1048,7 +1048,7 @@ hint_t HammerTools::CorrectAllReads() {
 
 	int correct_nthreads = min( cfg::get().correct_nthreads, cfg::get().general_max_nthreads );
 
-	TIMEDLN("Starting read correction in " << correct_nthreads << " threads.");
+	INFO("Starting read correction in " << correct_nthreads << " threads.");
 
 	// correcting paired files
 	bool single_created = false;
@@ -1071,7 +1071,7 @@ hint_t HammerTools::CorrectAllReads() {
                                         changedReads, changedNucleotides,
                                         Globals::input_filenames[iFile], Globals::input_filenames[iFile+1],
                                         &ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp);
-		TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " and " << Globals::input_filenames[iFile+1].c_str() << " corrected as a pair.");
+		INFO("  " << Globals::input_filenames[iFile].c_str() << " and " << Globals::input_filenames[iFile+1].c_str() << " corrected as a pair.");
 		// makes sense to change the input filenames for the next iteration immediately
 		Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");
 		Globals::input_filenames[iFile+1] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "cor");
@@ -1092,7 +1092,7 @@ hint_t HammerTools::CorrectAllReads() {
                                  changedReads, changedNucleotides,
                                  Globals::input_filenames[iFile],
                                  &ofgood, &ofbad);
-		TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " corrected.");
+		INFO("  " << Globals::input_filenames[iFile].c_str() << " corrected.");
 		// makes sense to change the input filenames for the next iteration immediately
 		Globals::input_filenames[iFile] = HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor");
 		// delete output files from previous iteration
@@ -1102,6 +1102,6 @@ hint_t HammerTools::CorrectAllReads() {
 		//}
 	}
 
-	TIMEDLN("Correction done. Changed " << changedNucleotides << " bases in " << changedReads << " reads.");
+	INFO("Correction done. Changed " << changedNucleotides << " bases in " << changedReads << " reads.");
 	return changedReads;
 }

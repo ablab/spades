@@ -33,6 +33,7 @@
 #include "globals.hpp"
 
 #include "memory_limit.hpp"
+#include "logger/log_writers.hpp"
 
 std::vector<std::string> Globals::input_filenames = std::vector<std::string>();
 std::vector<std::string> Globals::input_filename_bases = std::vector<std::string>();
@@ -65,15 +66,23 @@ struct UfCmp {
     return (lhs[0] < rhs[0]);
   }
 };
+
+void create_console_logger()
+{
+	using namespace logging;
+
+	create_logger("");
+	__logger()->add_writer(make_shared<console_writer>());
+}
  
 int main(int argc, char * argv[]) {
 	segfault_handler sh;
 
   try {
-    TIMEDLN("Hey there");
+    create_console_logger();
     string config_file = CONFIG_FILENAME;
     if (argc > 1) config_file = argv[1];
-    TIMEDLN("Loading config from " << config_file.c_str());
+    INFO("Loading config from " << config_file.c_str());
     cfg::create_instance(config_file);
 
     // general config parameters
@@ -101,7 +110,7 @@ int main(int argc, char * argv[]) {
       Globals::input_filename_bases.push_back(
           boost::filesystem::basename(boost::filesystem::path(Globals::input_filenames[iFile])) +
           boost::filesystem::extension(boost::filesystem::path(Globals::input_filenames[iFile])));
-      std::cout << Globals::input_filename_bases[iFile] << endl;
+      INFO("Input file: " << Globals::input_filename_bases[iFile]);
     }
 
     // decompress input reads if they are gzipped
@@ -109,13 +118,13 @@ int main(int argc, char * argv[]) {
 
     // determine quality offset if not specified
     if (!cfg::get().input_qvoffset_opt) {
-      cout << "Trying to determine PHRED offset" << endl;
+      INFO("Trying to determine PHRED offset");
       int determined_offset = determine_offset(Globals::input_filenames.front());
       if (determined_offset < 0) {
-        cout << "Failed to determine offset! Specify it manually and restart, please!" << endl;
+    	ERROR("Failed to determine offset! Specify it manually and restart, please!");
         return 0;
       } else {
-        cout << "Determined value is " << determined_offset << endl;
+        INFO("Determined value is " << determined_offset);
         cfg::get_writable().input_qvoffset = determined_offset;
       }
       Globals::char_offset_user = false;
@@ -133,21 +142,21 @@ int main(int argc, char * argv[]) {
 
     // if we need to change single Ns to As, this is the time
     if (cfg::get().general_change_n_to_a && cfg::get().count_do) {
-      TIMEDLN("Changing single Ns to As in input read files.");
+      INFO("Changing single Ns to As in input read files.");
       HammerTools::ChangeNtoAinReadFiles();
-      TIMEDLN("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
+      INFO("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
     }
 
     // estimate total read size
     size_t totalReadSize = hammer_tools::EstimateTotalReadSize(Globals::input_filenames);
-    TIMEDLN("Estimated total size of all reads is " << totalReadSize);
+    INFO("Estimated total size of all reads is " << totalReadSize);
 
     // allocate the blob
     Globals::blob_size = totalReadSize + 1;
     Globals::blob_max_size = size_t(Globals::blob_size * ( 2 + cfg::get().general_blob_margin));
     Globals::blob = new char[Globals::blob_max_size];
     if (!Globals::use_common_quality) Globals::blobquality = new char[Globals::blob_max_size];
-    TIMEDLN("Max blob size as allocated is " << Globals::blob_max_size);
+    INFO("Max blob size as allocated is " << Globals::blob_max_size);
 
     // initialize subkmer positions
     HammerTools::InitializeSubKMerPositions();
@@ -172,13 +181,13 @@ int main(int argc, char * argv[]) {
       if (cfg::get().count_do || cfg::get().sort_do || do_everything ) {
         HammerTools::CountKMersBySplitAndMerge();
       } else {
-        TIMEDLN("Reading serialized kmers is not implemented (yet)");
+    	INFO("Reading serialized kmers is not implemented (yet)");
         exit(-1);
       }
 
       // fill in already prepared k-mers
       if (!do_everything && cfg::get().input_read_solid_kmers) {
-        TIMEDLN("Reading solid kmers is not implemented (yet)");
+    	INFO("Reading solid kmers is not implemented (yet)");
         exit(-1);
       }
 
@@ -188,7 +197,7 @@ int main(int argc, char * argv[]) {
 
         unionFindClass uf(Globals::kmers->size() + 1);
         KMerHamClusterer clusterer(cfg::get().general_tau);
-        TIMEDLN("Clustering Hamming graph.");
+        INFO("Clustering Hamming graph.");
         clusterer.cluster(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
                           *Globals::kmers, uf);
         uf.get_classes(classes);
@@ -203,9 +212,9 @@ int main(int argc, char * argv[]) {
           std::cerr << "}" << std::endl;
         }
 #endif
-        TIMEDLN("Clustering done. Total clusters: " << num_classes);
+        INFO("Clustering done. Total clusters: " << num_classes);
 
-        TIMEDLN("Writing down clusters.");
+        INFO("Writing down clusters.");
         std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
         std::ofstream ofs(fname, std::ios::binary | std::ios::out);
 
@@ -222,11 +231,11 @@ int main(int argc, char * argv[]) {
         }
         classes.clear();
         ofs.close();
-        TIMEDLN("Clusters written.");
+        INFO("Clusters written.");
       }
 
       if (cfg::get().bayes_do || do_everything) {
-        TIMEDLN("Subclustering Hamming graph");
+    	INFO("Subclustering Hamming graph");
         int clustering_nthreads = min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
         KMerClustering kmc(*Globals::kmers, clustering_nthreads);
         boost::shared_ptr<std::ofstream> ofkmers =
@@ -238,19 +247,19 @@ int main(int argc, char * argv[]) {
             boost::shared_ptr<std::ofstream>(new std::ofstream(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.bad"))) :
             boost::shared_ptr<std::ofstream>();
         kmc.process(ofkmers, ofkmers_bad);
-        TIMEDLN("Finished clustering.");
+        INFO("Finished clustering.");
       }
 
       // expand the set of solid k-mers (with minimizer iterations, we don't need it)
       if ((cfg::get().expand_do || do_everything) && !HammerTools::doingMinimizers() ) {
         int expand_nthreads = min( cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
-        TIMEDLN("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
+        INFO("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
         for ( int expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no ) {
           size_t res = HammerTools::IterativeExpansionStep(expand_iter_no, expand_nthreads, *Globals::kmers);
-          TIMEDLN("Solid k-mers iteration " << expand_iter_no << " produced " << res << " new k-mers.");
+          INFO("Solid k-mers iteration " << expand_iter_no << " produced " << res << " new k-mers.");
           if ( res < 10 ) break;
         }
-        TIMEDLN("Solid k-mers finalized.");
+        INFO("Solid k-mers finalized.");
       }
 
       size_t totalReads = 0;
@@ -266,7 +275,7 @@ int main(int argc, char * argv[]) {
       delete Globals::pr;
 
       if (totalReads < 1 && !HammerTools::doingMinimizers() ) {
-        TIMEDLN("Too few reads have changed in this iteration. Exiting.");
+    	INFO("Too few reads have changed in this iteration. Exiting.");
         break;
       }
       // break;
@@ -278,7 +287,7 @@ int main(int argc, char * argv[]) {
     delete [] Globals::blob;
     delete [] Globals::blobquality;
 
-    TIMEDLN("All done. Exiting.");
+    INFO("All done. Exiting.");
   } catch (std::bad_alloc const& e) {
     std::cerr << "Not enough memory to run BayesHammer. " << e.what() << std::endl;
     return EINTR;

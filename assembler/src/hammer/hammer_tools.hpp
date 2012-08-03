@@ -28,7 +28,6 @@
 #include "globals.hpp"
 #include "kmer_stat.hpp"
 #include "position_kmer.hpp"
-#include "hammer_stats.hpp"
 #include "mmapped_reader.hpp"
 
 using namespace std;
