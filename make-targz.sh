@@ -7,6 +7,7 @@ cp -r assembler/src/debruijn spades-$VERSION/src/debruijn
 cp -r assembler/src/hammer spades-$VERSION/src/hammer
 cp -r assembler/src/include spades-$VERSION/src/include
 cp -r assembler/src/io spades-$VERSION/src/io
+cp -r assembler/src/cmake spades-$VERSION/src/cmake
 cp -r assembler/src/tools/quality spades-$VERSION/src/tools/quality
 cp -r assembler/src/tools/spades_pipeline spades-$VERSION/src/tools/spades_pipeline
 cp assembler/src/CMakeLists.txt spades-$VERSION/src/CMakeLists.txt
@@ -47,7 +48,6 @@ cp configs/debruijn/distance_estimation.info.template configs/debruijn/distance_
 cp configs/debruijn/long_contigs/lc_config.info.template configs/debruijn/long_contigs/lc_config.info
 cp configs/debruijn/long_contigs/lc_params.info.template configs/debruijn/long_contigs/lc_params.info
 cp spades_config.info.template spades_config.info
-mv src/include/k_range.hpp.template src/include/k_range.hpp
 
 cd ..
 
