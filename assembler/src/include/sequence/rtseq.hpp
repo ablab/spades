@@ -160,6 +160,7 @@ public:
 
     explicit RuntimeSeq(size_t k, T* data_array): size_(k) {
         VERIFY(k <= max_size_);
+        std::fill(data_.begin(), data_.end(), 0);
 
         size_t data_size = GetDataSize(size_);
         memcpy(data_.data(), data_array, data_size * sizeof(T));
@@ -172,6 +173,7 @@ public:
     template<size_t size2_, typename T2 = T>
     explicit RuntimeSeq(const Seq<size2_, T2>& seq, bool): size_(size2_) {
         VERIFY(size_ <= max_size_);
+        std::fill(data_.begin(), data_.end(), 0);
         seq.copy_data(data_.data());
     }
 
@@ -179,7 +181,7 @@ public:
     explicit RuntimeSeq(const SimpleSeq<size2_, T2>& seq, size_t k): size_(k) {
         VERIFY(size_ <= max_size_);
         VERIFY(size2_ <= max_size_);
-
+        std::fill(data_.begin(), data_.end(), 0);
         seq.copy_data(data_.data());
     }
 
@@ -490,8 +492,7 @@ public:
      */
 
     bool operator!=(const RuntimeSeq<max_size_, T>& s) const {
-        VERIFY(size_ == s.size_);
-        return size_ != s.size_ || 0 != memcmp(data_.data(), s.data_.data(), sizeof(T) * DataSize);
+        return !operator==(s);
     }
 
     /**

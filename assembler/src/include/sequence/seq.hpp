@@ -350,7 +350,7 @@ public:
 	 */
 
 	bool operator!=(const Seq<size_, T>& s) const {
-		return 0 != memcmp(data_.data(), s.data_.data(), sizeof(T) * DataSize);
+		return !operator==(s);
 	}
 
 	/**
@@ -468,7 +468,7 @@ public:
 
 	struct equal_to {
 		bool operator()(const Seq<size_, T>& l, const Seq<size_, T>& r) const {
-			return memcmp(l.data_.data(), r.data_.data(), sizeof(T) * DataSize) == 0;
+			return r == l;
 		}
 	};
 

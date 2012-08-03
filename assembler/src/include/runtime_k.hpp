@@ -157,7 +157,11 @@ public:
     }
 
     vector_type& operator=(const vector_type& vec) {
-        data_ = vec.data_->copy();
+        if (vec.data_ != data_) {
+            delete data_;
+            data_ = vec.data_->copy();
+        }
+
         return *this;
     }
 
@@ -469,8 +473,12 @@ public:
         data_ = set.data_->copy();
     }
 
-    set_type& operator=(const set_type& map) {
-        data_ = map.data_->copy();
+    set_type& operator=(const set_type& set) {
+        if (set.data_ != data_) {
+            delete data_;
+            data_ = set.data_->copy();
+        }
+
         return *this;
     }
 
@@ -1077,7 +1085,11 @@ public:
     }
 
     map_type& operator=(const map_type& map) {
-        data_ = map.data_->copy();
+        if (map.data_ != data_) {
+            delete data_;
+            data_ = map.data_->copy();
+        }
+
         return *this;
     }
 
@@ -1364,9 +1376,10 @@ public:
 
 private:
 
-    map_type* data_;
+    map_type * data_;
 
     size_t k_;
+
 
 public:
 
@@ -1380,7 +1393,11 @@ public:
     	k_ = k;
     }
 
-    /*virtual*/ ~KmerMapImpl() {
+    KmerMapImpl(const KmerMapImpl& map) {
+        data_ = new map_type(*(map.data_));
+    }
+
+    virtual ~KmerMapImpl() {
     	delete data_;
     }
 
