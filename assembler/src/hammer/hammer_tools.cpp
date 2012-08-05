@@ -445,12 +445,17 @@ void HammerTools::CountKMersBySplitAndMerge() {
 #if 0
   Globals::kmer_index->reserve(vec.size());
 #endif
+  size_t singletons = 0;
   for (size_t i=0; i < vec.size(); ++i) {
     const char* s = Globals::blob + vec[i].first.start();
     Globals::kmer_index->insert(std::make_pair(Seq<K>(s, 0, K, /* raw */ true), i));
+
+    if (vec[i].second.count == 1)
+      singletons += 1;
   }
 
-	INFO("Merge done. There are " << vec.size() << " kmers in total.");
+	INFO("Merge done. There are " << vec.size() << " kmers in total. "
+       "Among them " << singletons << " (" <<  100.0 * singletons / vec.size() << "%) singletons.");
 }
 
 static void Merge(KMerCount &lhs, const KMerNo &rhs) {
