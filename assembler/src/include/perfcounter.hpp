@@ -16,7 +16,7 @@ struct perf_counter
 
     double time() const
     {
-        timeval now;
+        struct timeval now;
         gettimeofday(&now, NULL);
 
         return (now.tv_sec - time_.tv_sec) + (now.tv_usec - time_.tv_usec) * 1e-6;
@@ -33,7 +33,7 @@ struct perf_counter
     }
 
 private:
-    timeval time_;
+    struct timeval time_;
 };
 
 

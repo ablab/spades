@@ -42,13 +42,10 @@ inline string level_name(level l)
 struct writer
 {
 	virtual void write_msg(double time_in_sec, unsigned max_rss, level l, const char* file, size_t line_num, const char* source, const char* msg) = 0;
-    virtual ~writer(){}
+  virtual ~writer(){}
 };
 
-typedef
-	boost::shared_ptr<writer>
-	writer_ptr;
-
+typedef boost::shared_ptr<writer> writer_ptr;
 
 /////////////////////////////////////////////////////
 struct properties
@@ -92,33 +89,34 @@ private:
 	perf_counter            timer_  ;
 };
 
-inline optional<logger>& __logger();
-inline void              create_logger(string filename = "", level default_level = L_INFO);
+inline std::shared_ptr<logger>& __logger();
+inline logger* create_logger(string filename = "", level default_level = L_INFO);
+void attach_logger(logger *lg);
+void detach_logger();
 
 } // logging
 
-inline const char* __scope_source_name()
-{
-    return " General ";
+inline const char* __scope_source_name() {
+  return " General ";
 }
 
-#define DECL_LOGGER(source)                                                             \
-static const char* __scope_source_name()                                                \
-{                                                                                       \
-    return source;                                                                     \
-}
+#define DECL_LOGGER(source)                                             \
+  static const char* __scope_source_name() {                            \
+    return source;                                                      \
+  }
 
-#define LOG_MSG(l, msg)                                                                             \
-{                                                                                                   \
-    logging::logger& __lg__ = logging::__logger().get();                                            \
-                                                                                                    \
-    if (__lg__.need_log((l), __scope_source_name()))                                                \
-    {                                                                                               \
-        std::stringstream __logger__str__;                                                          \
-        __logger__str__ << msg; /* don't use brackets here! */                                      \
-		__lg__.log((l), __FILE__, __LINE__, __scope_source_name(), __logger__str__.str().c_str());  \
-    }                                                                                               \
-}
+#define LOG_MSG(l, msg)                                                 \
+  do {                                                                  \
+    std::shared_ptr<logging::logger> &__lg__ = logging::__logger(); \
+    if (!__lg__)                                                        \
+      break;                                                            \
+                                                                        \
+    if (__lg__->need_log((l), __scope_source_name())) {                 \
+      std::stringstream __logger__str__;                                \
+      __logger__str__ << msg; /* don't use brackets here! */            \
+      __lg__->log((l), __FILE__, __LINE__, __scope_source_name(), __logger__str__.str().c_str()); \
+    }                                                                   \
+  } while(0);
 
 #define DEBUG(message)                      LOG_MSG(logging::L_DEBUG, message)
 #define TRACE(message)                      LOG_MSG(logging::L_TRACE, message)

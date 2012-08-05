@@ -109,16 +109,16 @@ void load_config(string cfg_filename)
         copy_configs(cfg_filename, path_to_copy);
     }
 
-void create_console_logger(fs::path cfg_filename)
-{
-	using namespace logging;
+void create_console_logger(fs::path cfg_filename) {
+  using namespace logging;
 
-	fs::path log_props_file (cfg::get().log_filename);
-	if (!exists(log_props_file))
-		log_props_file = fs::path(cfg_filename).parent_path() / cfg::get().log_filename;
+  fs::path log_props_file (cfg::get().log_filename);
+  if (!exists(log_props_file))
+    log_props_file = fs::path(cfg_filename).parent_path() / cfg::get().log_filename;
 
-	create_logger(exists(log_props_file) ? log_props_file.string() : "");
-	__logger()->add_writer(make_shared<console_writer>());
+  logger *lg = create_logger(exists(log_props_file) ? log_props_file.string() : "");
+  lg->add_writer(make_shared<console_writer>());
+  attach_logger(lg);
 }
 
 int main(int argc, char** argv)
@@ -188,6 +188,7 @@ int main(int argc, char** argv)
     int mins = (ms / 1000 / 60) % 60;
     int hours = (ms / 1000 / 60 / 60);
     INFO("Assembling time: " << hours << " hours " << mins << " minutes " << secs << " seconds");
+
     // OK
     return 0;
 }

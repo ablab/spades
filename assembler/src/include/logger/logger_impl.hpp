@@ -129,16 +129,22 @@ inline void logger::add_writer(writer_ptr ptr)
 }
 
 ////////////////////////////////////////////////////
-inline optional<logger>& __logger()
-{
-    static optional<logger> l;
-    return l;
+inline std::shared_ptr<logger> &__logger() {
+  static std::shared_ptr<logger> l;
+  return l;
 }
 
-inline void create_logger(string filename, level default_level)
-{
-    properties props(filename, default_level);
-    __logger() = in_place(props);
+inline logger *create_logger(string filename, level default_level) {
+  return new logger(properties(filename, default_level));
 }
+
+inline void attach_logger(logger *lg) {
+  __logger().reset(lg);
+}
+
+inline void detach_logger() {
+  __logger().reset();
+}
+
 
 } // logging

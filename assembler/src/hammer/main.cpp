@@ -67,12 +67,12 @@ struct UfCmp {
   }
 };
 
-void create_console_logger()
-{
+void create_console_logger() {
 	using namespace logging;
 
-	create_logger("");
-	__logger()->add_writer(make_shared<console_writer>());
+	logger *lg = create_logger("");
+	lg->add_writer(make_shared<console_writer>());
+  attach_logger(lg);
 }
  
 int main(int argc, char * argv[]) {
@@ -80,6 +80,7 @@ int main(int argc, char * argv[]) {
 
   try {
     create_console_logger();
+
     string config_file = CONFIG_FILENAME;
     if (argc > 1) config_file = argv[1];
     INFO("Loading config from " << config_file.c_str());
