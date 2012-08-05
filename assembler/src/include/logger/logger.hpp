@@ -107,8 +107,8 @@ inline const char* __scope_source_name() {
 
 #define LOG_MSG(l, msg)                                                 \
   do {                                                                  \
-    std::shared_ptr<logging::logger> &__lg__ = logging::__logger(); \
-    if (!__lg__)                                                        \
+    std::shared_ptr<logging::logger> &__lg__ = logging::__logger();     \
+    if (__lg__.get() == NULL)                                           \
       break;                                                            \
                                                                         \
     if (__lg__->need_log((l), __scope_source_name())) {                 \
