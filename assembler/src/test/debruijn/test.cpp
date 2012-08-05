@@ -19,15 +19,16 @@
 
 ::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
 {
-	logging::create_logger("", logging::L_DEBUG);
-	logging::__logger()->add_writer(make_shared<logging::console_writer>());
+    logging::logger *log = logging::create_logger("", logging::L_DEBUG);
+    log->add_writer(make_shared<logging::console_writer>());
+    logging::attach_logger(log);
 
     using namespace ::boost::unit_test;
-	char module_name [] = "debruijn_test";
+    char module_name [] = "debruijn_test";
 
     assign_op( framework::master_test_suite().p_name.value, basic_cstring<char>(module_name), 0 );
 
-	return 0;
+    return 0;
 }
 
 
