@@ -61,16 +61,16 @@ class ValidKMerGenerator {
   explicit ValidKMerGenerator(const char *seq, const char *qual,
                               size_t len,
                               uint32_t bad_quality_threshold = 2) :
-      bad_quality_threshold_(bad_quality_threshold),
+      kmer_(),
+      seq_(seq),
+      qual_(qual),
       pos_(-1),
       end_(-1),
       len_(len),
-      has_more_(true),
       correct_probability_(1),
-      first(true),
-      kmer_(),
-      seq_(seq),
-      qual_(qual) {
+      bad_quality_threshold_(bad_quality_threshold),
+      has_more_(true),
+      first(true) {
     TrimBadQuality();
     Next();
   }
@@ -116,19 +116,20 @@ class ValidKMerGenerator {
       return qual_[pos];
     }
   }
-  uint32_t bad_quality_threshold_;
-  size_t pos_;
-  size_t end_;
-  size_t len_;
-  bool has_more_;
-  double correct_probability_;
-  bool first;
   Seq<kK> kmer_;
   const char* seq_;
   const char* qual_;
+  size_t pos_;
+  size_t end_;
+  size_t len_;
+  double correct_probability_;
+  uint32_t bad_quality_threshold_;
+  bool has_more_;
+  bool first;
+
   // Disallow copy and assign
-  ValidKMerGenerator(const ValidKMerGenerator&);
-  void operator=(const ValidKMerGenerator&);
+  ValidKMerGenerator(const ValidKMerGenerator&) = delete;
+  void operator=(const ValidKMerGenerator&) = delete;
 };
 
 template<uint32_t kK>
