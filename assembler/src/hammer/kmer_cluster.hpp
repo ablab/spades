@@ -75,6 +75,9 @@ private:
 	  * @return new value of newBlockNum
 	  */
 	void process_block_SIN(const std::vector<int> & block, std::vector< std::vector<int> > & vec);
+
+private:
+  DECL_LOGGER("Hamming Subclustering");
 };
 
 

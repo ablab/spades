@@ -204,6 +204,8 @@ class KMerHamClusterer {
   void cluster(const std::string &prefix,
                const std::vector<KMerCount> &kmers,
                unionFindClass &uf);
+ private:
+  DECL_LOGGER("Hamming Clustering");
 };
 
 #endif // HAMMER_SUBKMER_SORTER_HPP
