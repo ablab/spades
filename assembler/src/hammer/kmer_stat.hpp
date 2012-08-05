@@ -50,7 +50,12 @@ struct QualBitSet {
   // QualBitSet is POD-like object, use default stuff.
   QualBitSet(const QualBitSet &qbs) = default;
   QualBitSet& operator=(const QualBitSet &qbs) = default;
-  QualBitSet& operator=(QualBitSet &&qbs) = default;
+  // Workaround gcc bug, it cannot generate default move ctor...
+  QualBitSet& operator=(QualBitSet &&qbs) {
+    memcpy(q_, qbs.q_, K);
+
+    return *this;
+  }
 
   QualBitSet& operator+=(const unsigned char *data) {
     for (size_t i = 0; i < K; ++i)
