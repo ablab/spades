@@ -40,99 +40,56 @@ typedef std::pair<PositionKMer, KMerStat> KMerCount;
 typedef std::pair<std::string, std::pair<uint32_t, double> > StringCount;
 
 struct QualBitSet {
-  unsigned char* q;
+  unsigned char q_[K];
 
-  QualBitSet(bool empty = false):q(NULL) {
-    if (!empty) {
-      q = new unsigned char[K];
-      memset(q, 0, K);
-    }
-  }
-  ~QualBitSet() {
-    delete[] q;
+  QualBitSet(const unsigned char *q = NULL) {
+    if (q)
+      memcpy(q_, q, K);
   }
 
-  QualBitSet(const QualBitSet &qbs) {
-    q = NULL;
-
-    // Fill, if necessary.
-    if (qbs.q) {
-      q = new unsigned char[K];
-      memcpy(q, qbs.q, K * sizeof(q[0]));
-    }
-  }
-  QualBitSet& operator=(const QualBitSet &qbs) {
-    if (&qbs != this) {
-      delete[] q;
-      q = NULL;
-
-      // Fill, if necessary.
-      if (qbs.q) {
-        q = new unsigned char[K];
-        memcpy(q, qbs.q, K * sizeof(q[0]));
-      }
-    }
-
-    return *this;
-  }
+  // QualBitSet is POD-like object, use default stuff.
+  QualBitSet(const QualBitSet &qbs) = default;
+  QualBitSet& operator=(const QualBitSet &qbs) = default;
+  QualBitSet& operator=(QualBitSet &&qbs) = default;
 
   QualBitSet& operator+=(const unsigned char *data) {
-    if (data != NULL) {
-      if (q == NULL) {
-        q = new unsigned char[K];
-        memcpy(q, data, K * sizeof(q[0]));
-      } else {
-        for (size_t i = 0; i < K; ++i)
-          q[i] = std::min(255, data[i] + q[i]);
-      }
-    }
+    for (size_t i = 0; i < K; ++i)
+      q_[i] = std::min(255, data[i] + q_[i]);
 
     return *this;
   }
 
-  
   QualBitSet& operator+=(const QualBitSet &qbs) {
-    const unsigned char* data = qbs.q;
-    if (data != NULL) {
-      if (q == NULL) {
-        q = new unsigned char[K];
-        memcpy(q, data, K * sizeof(q[0]));
-      } else {
-        for (size_t i = 0; i < K; ++i)
-          q[i] = std::min(255, data[i] + q[i]);
-      }
-    }
-
-    return *this;
+    const unsigned char* data = qbs.q_;
+    return this->operator+=(data);
   }
 
   unsigned short operator[](size_t n) const {
-    return (unsigned short)q[n];
+    return (unsigned short)q_[n];
   }
 
   unsigned short at(size_t n) const {
     // FIXME: Bound checking
-    return (unsigned short)q[n];
+    return (unsigned short)q_[n];
   }
 
   void set(size_t n, unsigned short value) {
-    VERIFY(q != NULL);
-    q[n] = (unsigned char)value;
+    q_[n] = (unsigned char)value;
   }
 
   void set(const char *value) {
-    memcpy(q, value, K);
+    memcpy(q_, value, K);
   }
 };
 
 struct KMerStat {
-  KMerStat(bool first, uint32_t cnt, hint_t cng, float quality) : changeto(cng), qual(first /* empty */), totalQual(quality), count(cnt) { }
-  KMerStat() : changeto(KMERSTAT_BAD), qual(), totalQual(1.0), count(0) { }
+  KMerStat(uint32_t cnt, hint_t cng, float kquality, const unsigned char *quality) : changeto(cng), totalQual(kquality), count(cnt), qual(quality) { }
+  KMerStat() : changeto(KMERSTAT_BAD), totalQual(1.0), count(0), qual() { }
 
   hint_t changeto;
-  QualBitSet qual;
   float totalQual;
   uint32_t count;
+  QualBitSet qual;
 
   bool isGood() const { return changeto >= KMERSTAT_GOOD; }
   bool isGoodForIterative() const { return (changeto == KMERSTAT_GOODITER); }
@@ -144,28 +101,14 @@ struct KMerStat {
 
 template<class Writer>
 inline Writer& binary_write(Writer &os, const QualBitSet &qbs) {
-  size_t sz = (qbs.q ? K : 0);
-
-  os.write((char*)&sz, sizeof(sz));
-  if (sz)
-    os.write((char*)&qbs.q[0], sz*sizeof(qbs.q[0]));
+  os.write((char*)&qbs.q_[0], sizeof(qbs.q_));
 
   return os;
 }
 
 template<class Reader>
 inline void binary_read(Reader &is, QualBitSet &qbs) {
-  size_t sz;
-
-  is.read((char*)&sz, sizeof(sz));
-  delete[] qbs.q;
-  qbs.q = NULL;
-  
-  if (sz) {
-    VERIFY(sz == K);
-    qbs.q = new unsigned char[sz];
-    is.read((char*)&qbs.q[0], sz*sizeof(qbs.q[0]));
-  }
+  is.read((char*)&qbs.q_[0], sizeof(qbs.q_));
 }
 
 template<class Writer>

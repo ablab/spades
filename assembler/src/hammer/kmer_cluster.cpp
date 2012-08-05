@@ -566,7 +566,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
           Globals::pr->push_back(rs);
 
           PositionKMer pkm(Globals::pr->size()-1, 0);
-          KMerStat kms(Globals::use_common_quality, 0, KMERSTAT_GOODITER, 1);
+          KMerStat kms(0, KMERSTAT_GOODITER, 1, NULL);
           k_.push_back(KMerCount(pkm, kms));
           Globals::kmer_index->insert(std::make_pair(Seq<K>(seq, 0, K, /* raw */ true), k_.size()-1));
         }

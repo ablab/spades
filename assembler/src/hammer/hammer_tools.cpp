@@ -350,7 +350,7 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 		num_minimizers = *cfg::get().general_num_minimizers;
 	}
 	int which_first = Globals::iteration_no % 4;
-	for (int i = 0; i < (int)Globals::pr->size(); ++i ) {
+	for (size_t i = 0; i < Globals::pr->size(); ++i) {
     const PositionRead &pr = Globals::pr->at(i);
     // Skip opaque reads
     if (!pr.valid())
@@ -378,31 +378,32 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 		ValidKMerGenerator<M> gen_m(s, q, slen);
 		vector<hint_t> mmers;
 		while (gen_m.HasMore()) {
-			mmers.push_back( Globals::pr->at(i).start() + gen_m.pos() - 1 );
+			mmers.push_back(Globals::pr->at(i).start() + gen_m.pos() - 1);
 			gen_m.Next();
 		}
 
-		HammerTools::findMinimizers( kmers, num_minimizers, mmers, which_first );
+		HammerTools::findMinimizers(kmers, num_minimizers, mmers, which_first);
 		for (std::vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
 			Seq<K> km = seqs[it->first];
 			KMerMap::iterator mit = m.find(km);
+
+      const unsigned char *qdata;
+      std::string q_common;
+      if (Globals::use_common_quality) {
+        q_common.assign(K, (char)Globals::common_quality);
+        qdata = (const unsigned char*)(q_common.data());
+      } else {
+        qdata = (const unsigned char*)(Globals::blobquality + it->first);
+      }
+
 			if (mit == m.end()) {
-				m[km] = make_pair(PositionKMer(it->first), KMerStat(Globals::use_common_quality, 1, KMERSTAT_GOODITER, it->second.first));
+        m[km] = std::make_pair(PositionKMer(it->first), KMerStat(1, KMERSTAT_GOODITER, it->second.first, qdata));
+        VERIFY(Globals::use_common_quality == 0);
 			} else {
-				if (mit->second.second.count == 1) {
-					QualBitSet qbs(K);
-					for (uint32_t j=0; j<K; ++j) {
-						qbs.set(j, Globals::blobquality[mit->second.first.start() + j]);
-					}
-					mit->second.second.qual = qbs;
-				}
 				mit->second.second.count++;
 				mit->second.second.totalQual *= it->second.first;
-				for (uint32_t j=0; j<K; ++j) {
-					mit->second.second.qual.set(j,
-							min( MAX_SHORT, mit->second.second.qual[j] + Globals::blobquality[it->first + j]) );
-				}
-			}
+        mit->second.second.qual += qdata;
+      }
 		}
 	}
 }
@@ -454,34 +455,16 @@ void HammerTools::CountKMersBySplitAndMerge() {
 
 static void Merge(KMerCount &lhs, const KMerNo &rhs) {
   hint_t ridx = rhs.getIndex();
-  hint_t lidx = lhs.first.start();
-
-  if (lhs.second.count == 1) {
-    lhs.second.qual = QualBitSet();
-    lhs.second.qual.set(Globals::blobquality + lidx);
-  }
 
   lhs.second.count += 1;
   lhs.second.totalQual *= rhs.getQual();
-  lhs.second.qual += (Globals::blobquality + ridx);
+  lhs.second.qual += (const unsigned char*)(Globals::blobquality + ridx);
 }
 
 static void Merge(KMerCount &lhs, const KMerCount &rhs) {
-  hint_t ridx = rhs.first.start();
-  hint_t lidx = lhs.first.start();
-
-  if (lhs.second.count == 1) {
-    lhs.second.qual = QualBitSet();
-    lhs.second.qual.set(Globals::blobquality + lidx);
-  }
-
   lhs.second.count += rhs.second.count;
   lhs.second.totalQual *= rhs.second.totalQual;
-
-  if (rhs.second.qual.q == NULL) {
-    lhs.second.qual += (Globals::blobquality + ridx);
-  } else
-    lhs.second.qual += rhs.second.qual;
+  lhs.second.qual += rhs.second.qual;
 }
 
 void EquallySplit(size_t size, unsigned num_threads, size_t *borders) {
@@ -587,8 +570,11 @@ static void KmerHashUnique(const std::vector<KMerNo>::const_iterator first,
     size_t end = borders[iam] + overlaps[iam];
 
     if (overlaps[iam]) {
-      merged_overlaps[iam] = KMerCount(PositionKMer((first + begin)->getIndex()),
-                                       KMerStat(true, 1, KMERSTAT_GOODITER, (first + begin)->getQual()));
+      hint_t bidx = (first + begin)->getIndex();
+      const unsigned char *qdata = (const unsigned char*)(Globals::blobquality + bidx);
+      merged_overlaps[iam] = KMerCount(PositionKMer(bidx),
+                                       KMerStat(1, KMERSTAT_GOODITER,
+                                                (first + begin)->getQual(), qdata));
       auto I = first + begin + 1, E = first + end;
       for (; I != E; ++I) {
         Merge(merged_overlaps[iam], *I);
@@ -602,13 +588,17 @@ static void KmerHashUnique(const std::vector<KMerNo>::const_iterator first,
 
     // If block is one big overlap, do nothing
     if (begin != end) {
-      result[out_idx] = KMerCount(PositionKMer((first + begin)->getIndex()),
-                                  KMerStat(true, 1, KMERSTAT_GOODITER, (first + begin)->getQual()));
+      hint_t bidx = (first + begin)->getIndex();
+      const unsigned char *qdata = (const unsigned char*)(Globals::blobquality + bidx);
+      result[out_idx] = KMerCount(PositionKMer(bidx),
+                                  KMerStat(1, KMERSTAT_GOODITER, (first + begin)->getQual(), qdata));
       auto I = first + begin + 1, E = first + end;
       for (; I != E; ++I) {
         if (*I != *(I - 1)) {
-          result[++out_idx] = KMerCount(PositionKMer(I->getIndex()),
-                                        KMerStat(true, 1, KMERSTAT_GOODITER, I->getQual()));;
+          hint_t cidx = I->getIndex();
+          const unsigned char *qdata = (const unsigned char*)(Globals::blobquality + cidx);
+          result[++out_idx] = KMerCount(PositionKMer(cidx),
+                                        KMerStat(1, KMERSTAT_GOODITER, I->getQual(), qdata));
         } else {
           Merge(result[out_idx], *I);
         }

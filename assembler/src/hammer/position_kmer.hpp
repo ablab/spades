@@ -153,11 +153,9 @@ inline void binary_read(Reader &is, KMerCount &k) {
 
 inline char getQual(const KMerCount & kmc, size_t i) {
   if (Globals::use_common_quality)
-    return Globals::common_quality * kmc.second.count;
-  if (kmc.second.count == 1)
-    return Globals::blobquality[kmc.first.start() + i];
-  else
-    return kmc.second.qual[i];
+    return std::min(Globals::common_quality * kmc.second.count, 255u);
+
+  return kmc.second.qual[i];
 }
 
 inline double getProb(const KMerCount &kmc, size_t i, bool log) {
