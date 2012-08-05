@@ -10,9 +10,7 @@
 #include "kmer_stat.hpp"
 #include "kmerno.hpp"
 
-#include <unordered_map>
-
-typedef std::unordered_map<Seq<K>, size_t, Seq<K>::hash, Seq<K>::equal_to > KMerIndex;
+class KMerIndex;
 
 struct Globals {
   static int iteration_no;
@@ -25,7 +23,6 @@ struct Globals {
   static char* blob;
   static char* blobquality;
   static std::vector<PositionRead> * pr;
-  static std::vector<KMerCount> * kmers;
   static KMerIndex *kmer_index;
   static hint_t blob_max_size;
   static hint_t blob_size;

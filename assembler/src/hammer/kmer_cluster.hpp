@@ -14,14 +14,16 @@
 #ifndef KMER_CLUSTER_HPP
 #define KMER_CLUSTER_HPP
 
-#include <string>
-#include <vector>
 #include "hamcluster.hpp"
 #include "position_kmer.hpp"
+#include "kmer_index.hpp"
+
+#include <string>
+#include <vector>
 
 class KMerClustering {
 public:
-	KMerClustering(std::vector<KMerCount> &kmers, int nthreads) : k_(kmers), nthreads_(nthreads) { }
+	KMerClustering(KMerIndex &index, int nthreads) : index_(index), nthreads_(nthreads) { }
 
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
@@ -29,7 +31,7 @@ public:
 	void process(boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad);
 	
 private:
-	std::vector<KMerCount> & k_;
+	KMerIndex &index_;
 	int nthreads_;
 
 	/// @return total log-likelihood that x was made from center given x's quality values

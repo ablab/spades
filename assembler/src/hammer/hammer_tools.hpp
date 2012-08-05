@@ -76,33 +76,33 @@ public:
 	static void FillMapWithMinimizers( KMerMap & map );
 
 	/// do one step of iterative expansion, return the number of new solid k-mers
-	static size_t IterativeExpansionStep(int expand_iter_no, int nthreads, vector<KMerCount> & kmers);
+	static size_t IterativeExpansionStep(int expand_iter_no, int nthreads, KMerIndex &index);
 
 	/// print out the resulting set of k-mers
 	static void PrintKMerResult(std::ostream & outf, const vector<KMerCount> & kmers );
 
 	/// internal procedure
 	static bool internalCorrectReadProcedure(const std::string & seq,
-                                           const vector<KMerCount> & km, const PositionKMer & kmer, size_t pos, const KMerStat & stat,
+                                           const KMerIndex &index, const PositionKMer & kmer, size_t pos, const KMerStat & stat,
                                            std::vector<std::vector<int> > & v, int & left, int & right, bool & isGood,
                                            ofstream * ofs,
                                            bool revcomp, bool correct_threshold, bool discard_singletons);
 
 	/// correct one read
-	static bool CorrectOneRead(const vector<KMerCount> & kmers,
+	static bool CorrectOneRead(const KMerIndex &index,
                              size_t & changedReads, size_t & changedNucleotides,
                              Read & r, bool correct_threshold, bool discard_singletons, bool discard_bad);
   /// parallel correction of batch of reads
 	static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
                                 size_t &changedReads, size_t &changedNucleotides,
-                                const vector<KMerCount> & kmers);
+                                const KMerIndex &index);
 	/// correct reads in a given file
-	static void CorrectReadFile(const vector<KMerCount> & kmers,
+	static void CorrectReadFile(const KMerIndex &index,
                               size_t & changedReads, size_t & changedNucleotides,
                               const std::string &fname,
                               ofstream *outf_good, ofstream *outf_bad);
 	/// correct reads in a given pair of files
-	static void CorrectPairedReadFiles(const vector<KMerCount> & kmers,
+	static void CorrectPairedReadFiles(const KMerIndex &index,
                                      size_t & changedReads, size_t & changedNucleotides,
                                      const std::string &fnamel, const std::string &fnamer,
                                      ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp);

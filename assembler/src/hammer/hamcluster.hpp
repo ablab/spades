@@ -8,6 +8,7 @@
 #define HAMMER_SUBKMER_SORTER_HPP
 
 #include "kmer_stat.hpp"
+#include "kmer_index.hpp"
 #include "mmapped_reader.hpp"
 #include "position_kmer.hpp"
 
@@ -143,13 +144,13 @@ class SubKMerBlockFile {
 template<class Writer,
          class SubKMerSerializer = SubKMerDummySerializer>
 void serialize(Writer &os,
-               const std::vector<KMerCount> &kmers, const std::vector<size_t> *block = NULL,
+               const KMerIndex &index, const std::vector<size_t> *block = NULL,
                const SubKMerSerializer &serializer = SubKMerSerializer()) {
-  size_t sz = (block == NULL ? kmers.size() : block->size());
+  size_t sz = (block == NULL ? index.size() : block->size());
   os.write((char*)&sz, sizeof(sz));
   for (size_t i = 0, e = sz; i != e; ++i) {
     size_t idx = (block == NULL ? i : (*block)[i]);
-    SubKMer s = serializer.serialize(kmers[idx].first.start(), idx);
+    SubKMer s = serializer.serialize(index[idx].first.start(), idx);
     binary_write(os, s);
   }
 }
@@ -202,7 +203,7 @@ class KMerHamClusterer {
       : tau_(tau) {}
 
   void cluster(const std::string &prefix,
-               const std::vector<KMerCount> &kmers,
+               const KMerIndex &index,
                unionFindClass &uf);
  private:
   DECL_LOGGER("Hamming Clustering");

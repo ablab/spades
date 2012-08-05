@@ -32,6 +32,7 @@
 #include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"
 #include "mmapped_writer.hpp"
+#include "kmer_index.hpp"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -409,7 +410,8 @@ void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
 }
 
 void HammerTools::CountKMersBySplitAndMerge() {
-  std::vector<KMerCount> &vec = *Globals::kmers;
+  KMerIndex &index = *Globals::kmer_index;
+  index.clear();
 
   if (cfg::get().count_do) {
     HammerTools::SplitKMers();
@@ -430,46 +432,24 @@ void HammerTools::CountKMersBySplitAndMerge() {
     INFO("Merging the contents");
     // Cheap trick: assuming that almost all the buffers will be of equal size,
     // reserve some approx amount of data on first iteration
-    size_t vsize = vec.size(), bsize = buf.size();
+    size_t isize = index.size(), bsize = buf.size();
     if (iFile == 0)
-      vec.reserve(bsize * numfiles * 3 / 4);
+      index.reserve(bsize * numfiles * 3 / 4);
 
     // Reserve the decent amount of data in advance.
-    if (vec.capacity() < vsize + bsize)
-      vec.reserve(vsize + bsize);
-    vec.insert(vec.end(), buf.begin(), buf.end());
+    if (index.capacity() < isize + bsize)
+      index.reserve(isize + bsize);
+    index.push_back(buf.begin(), buf.end());
   }
 
-	INFO("Building kmer index");
-  Globals::kmer_index->clear();
-#if 0
-  Globals::kmer_index->reserve(vec.size());
-#endif
   size_t singletons = 0;
-  for (size_t i=0; i < vec.size(); ++i) {
-    const char* s = Globals::blob + vec[i].first.start();
-    Globals::kmer_index->insert(std::make_pair(Seq<K>(s, 0, K, /* raw */ true), i));
-
-    if (vec[i].second.count == 1)
+  for (size_t i = 0; i < index.size(); ++i) {
+    if (index[i].second.count == 1)
       singletons += 1;
   }
 
-	INFO("Merge done. There are " << vec.size() << " kmers in total. "
-       "Among them " << singletons << " (" <<  100.0 * singletons / vec.size() << "%) singletons.");
-}
-
-static void Merge(KMerCount &lhs, const KMerNo &rhs) {
-  hint_t ridx = rhs.getIndex();
-
-  lhs.second.count += 1;
-  lhs.second.totalQual *= rhs.getQual();
-  lhs.second.qual += (const unsigned char*)(Globals::blobquality + ridx);
-}
-
-static void Merge(KMerCount &lhs, const KMerCount &rhs) {
-  lhs.second.count += rhs.second.count;
-  lhs.second.totalQual *= rhs.second.totalQual;
-  lhs.second.qual += rhs.second.qual;
+  INFO("Merge done. There are " << index.size() << " kmers in total. "
+       "Among them " << singletons << " (" <<  100.0 * singletons / index.size() << "%) singletons.");
 }
 
 void EquallySplit(size_t size, unsigned num_threads, size_t *borders) {
@@ -690,7 +670,7 @@ string HammerTools::getFilename( const string & dirprefix, int iter_count, const
 	return tmp.str();
 }
 
-bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const vector<KMerCount> & km,
+bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const KMerIndex &index,
                                                const PositionKMer &kmer, size_t pos, const KMerStat & stat,
                                                std::vector<std::vector<int> > & v,
                                                int & left, int & right, bool & isGood,
@@ -714,7 +694,7 @@ bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const vec
   } else {
     // if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
     if (stat.change() &&
-        (discard_singletons || km[stat.changeto].second.isGoodForIterative() ||
+        (discard_singletons || index[stat.changeto].second.isGoodForIterative() ||
          (correct_threshold && stat.isGood()))) {
       if (ofs != NULL) *ofs << "\tchange to\n";
       //cout << "  kmer " << kmer.start() << " " << kmer.str() << " wants to change to " << stat.changeto << " " << km[stat.changeto].first.str() << endl;
@@ -723,7 +703,7 @@ bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const vec
         left = pos;
       if ((int) pos > right)
         right = pos;
-      const PositionKMer & newkmer = km[stat.changeto].first;
+      const PositionKMer & newkmer = index[stat.changeto].first;
 
       for (size_t j = 0; j < K; ++j) {
         v[dignucl(newkmer[j])][pos + j]++;
@@ -741,7 +721,7 @@ bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const vec
   return res;
 }
 
-size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vector<KMerCount> & kmers) {
+size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, KMerIndex &index) {
   size_t res = 0;
 
   // cycle over the reads, looking for reads completely covered by solid k-mers
@@ -764,13 +744,13 @@ size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
                               read_size);
     while (gen.HasMore()) {
       const Seq<K> &kmer = gen.kmer();
-      auto it = Globals::kmer_index->find(kmer);
-      if (it != Globals::kmer_index->end()) {
+      auto it = index.seq_find(kmer);
+      if (it != index.seq_end()) {
         size_t pos = it->second;
         size_t read_pos = gen.pos() - 1;
 
         kmer_indices[read_pos] = pos;
-        if (kmers[pos].second.isGoodForIterative()) {
+        if (index[pos].second.isGoodForIterative()) {
           for (size_t j = read_pos; j < read_pos + K; ++j)
             covered_by_solid[j] = true;
         }
@@ -791,23 +771,23 @@ size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, vec
     // second, mark all k-mers as solid
     for (size_t j = 0; j < read_size; ++j) {
       if (kmer_indices[j] == (hint_t)-1 ) continue;
-      if (!kmers[kmer_indices[j]].second.isGoodForIterative() &&
-          !kmers[kmer_indices[j]].second.isMarkedGoodForIterative() ) {
+      if (!index[kmer_indices[j]].second.isGoodForIterative() &&
+          !index[kmer_indices[j]].second.isMarkedGoodForIterative() ) {
 #       pragma omp critical
         {
           ++res;
-          kmers[kmer_indices[j]].second.makeGoodForIterative();
+          index[kmer_indices[j]].second.makeGoodForIterative();
         }
       }
     }
   }
 
   if (cfg::get().expand_write_each_iteration) {
-    ofstream oftmp( getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no ).data() );
-    for ( hint_t n = 0; n < kmers.size(); ++n ) {
-      if ( kmers[n].second.isGoodForIterative() ) {
-        oftmp << kmers[n].first.str() << "\n>" << kmers[n].first.start()
-              << "  cnt=" << kmers[n].second.count << "  tql=" << (1-kmers[n].second.totalQual) << "\n";
+    ofstream oftmp( getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no ).data());
+    for (size_t n = 0; n < index.size(); ++n ) {
+      if (index[n].second.isGoodForIterative() ) {
+        oftmp << index[n].first.str() << "\n>" << index[n].first.start()
+              << "  cnt=" << index[n].second.count << "  tql=" << (1-index[n].second.totalQual) << "\n";
       }
     }
   }
@@ -827,7 +807,7 @@ void HammerTools::PrintKMerResult(std::ostream& outf, const vector<KMerCount> & 
 	}
 }
 
-bool HammerTools::CorrectOneRead(const vector<KMerCount> & kmers,
+bool HammerTools::CorrectOneRead(const KMerIndex &index,
                                  size_t & changedReads, size_t & changedNucleotides,
                                  Read & r, bool correct_threshold, bool discard_singletons, bool discard_bad ) {
   bool isGood = false;
@@ -850,15 +830,15 @@ bool HammerTools::CorrectOneRead(const vector<KMerCount> & kmers,
                             read_size);
   while (gen.HasMore()) {
     const Seq<K> &kmer = gen.kmer();
-    auto it = Globals::kmer_index->find(kmer);
-    if (it != Globals::kmer_index->end()) {
+    auto it = index.seq_find(kmer);
+    if (it != index.seq_end()) {
       size_t pos = it->second;
       size_t read_pos = gen.pos() - 1;
 
-      const PositionKMer &kmer = kmers[pos].first;
-      const KMerStat &stat = kmers[pos].second;
+      const PositionKMer &kmer = index[pos].first;
+      const KMerStat &stat = index[pos].second;
       changedRead = changedRead ||
-                    internalCorrectReadProcedure(seq, kmers, kmer, read_pos, stat, v,
+                    internalCorrectReadProcedure(seq, index, kmer, read_pos, stat, v,
                                                  left, right, isGood, NULL, false, correct_threshold, discard_singletons);
     }
     gen.Next();
@@ -918,7 +898,7 @@ bool HammerTools::doingMinimizers() {
 void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
                                     std::vector<Read> &reads, size_t buf_size,
                                     size_t &changedReads, size_t &changedNucleotides,
-                                    const vector<KMerCount> & kmers) {
+                                    const KMerIndex &index) {
   unsigned correct_nthreads = min(cfg::get().correct_nthreads, cfg::get().general_max_nthreads);
   bool discard_singletons = cfg::get().bayes_discard_only_singletons;
   bool correct_threshold = cfg::get().correct_use_threshold;
@@ -928,11 +908,11 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
   std::vector<size_t> changedReadBuf(correct_nthreads, 0);
   std::vector<size_t> changedNuclBuf(correct_nthreads, 0);
  
-# pragma omp parallel for shared(reads, res, kmers) num_threads(correct_nthreads)
+# pragma omp parallel for shared(reads, res, index) num_threads(correct_nthreads)
   for (size_t i = 0; i < buf_size; ++i) {
     if (reads[i].size() >= K) {
       res[i] =
-          HammerTools::CorrectOneRead(kmers,
+          HammerTools::CorrectOneRead(index,
                                       changedReadBuf[omp_get_thread_num()], changedNuclBuf[omp_get_thread_num()],
                                       reads[i],
                                       correct_threshold, discard_singletons, discard_bad);
@@ -946,7 +926,7 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
   }
 }
  
-void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
+void HammerTools::CorrectReadFile(const KMerIndex &index,
                                   size_t & changedReads, size_t & changedNucleotides,
                                   const std::string &fname,
                                   ofstream *outf_good, ofstream *outf_bad ) {
@@ -972,7 +952,7 @@ void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
 
     HammerTools::CorrectReadsBatch(res, reads, buf_size,
                                    changedReads, changedNucleotides,
-                                   kmers);
+                                   index);
 
     INFO("Processed batch " << buffer_no);
     for (size_t i = 0; i < buf_size; ++i) {
@@ -983,7 +963,7 @@ void HammerTools::CorrectReadFile(const vector<KMerCount> & kmers,
   }
 }
 
-void HammerTools::CorrectPairedReadFiles(const vector<KMerCount> & kmers,
+void HammerTools::CorrectPairedReadFiles(const KMerIndex &index,
                                          size_t &changedReads, size_t &changedNucleotides,
                                          const std::string &fnamel, const std::string &fnamer,
                                          ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp) {
@@ -1014,10 +994,10 @@ void HammerTools::CorrectPairedReadFiles(const vector<KMerCount> & kmers,
   
     HammerTools::CorrectReadsBatch(left_res, l, buf_size,
                                    changedReads, changedNucleotides,
-                                   kmers);
+                                   index);
     HammerTools::CorrectReadsBatch(right_res, r, buf_size,
                                    changedReads, changedNucleotides,
-                                   kmers);
+                                   index);
  
     INFO("Processed batch " << buffer_no);
     for (size_t i = 0; i < buf_size; ++i) {
@@ -1071,7 +1051,7 @@ hint_t HammerTools::CorrectAllReads() {
 		ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile+1, Globals::iteration_no, "bad").c_str());
 		ofstream ofunp (HammerTools::getReadsFilename(cfg::get().input_working_dir, 2,       Globals::iteration_no, "cor").c_str());
 
-    HammerTools::CorrectPairedReadFiles(*Globals::kmers,
+    HammerTools::CorrectPairedReadFiles(*Globals::kmer_index,
                                         changedReads, changedNucleotides,
                                         Globals::input_filenames[iFile], Globals::input_filenames[iFile+1],
                                         &ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp);
@@ -1092,7 +1072,7 @@ hint_t HammerTools::CorrectAllReads() {
 		int iFile = Globals::input_filenames.size() - 1;
 		ofstream ofgood(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor").c_str(), fstream::app);
 		ofstream ofbad( HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "bad").c_str());
-    HammerTools::CorrectReadFile(*Globals::kmers,
+    HammerTools::CorrectReadFile(*Globals::kmer_index,
                                  changedReads, changedNucleotides,
                                  Globals::input_filenames[iFile],
                                  &ofgood, &ofbad);

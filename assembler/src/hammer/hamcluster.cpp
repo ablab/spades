@@ -92,14 +92,14 @@ static bool canMerge(const unionFindClass &uf, int x, int y) {
 
 static void processBlockQuadratic(unionFindClass &uf,
                                   const std::vector<size_t> &block,
-                                  const std::vector<KMerCount> &kmers,
+                                  const KMerIndex &index,
                                   unsigned tau) {
   size_t blockSize = block.size();
   for (size_t i = 0; i < blockSize; ++i) {
-    hint_t kmerx = kmers[block[i]].first.start();
+    hint_t kmerx = index[block[i]].first.start();
     uf.find_set(block[i]);
     for (uint32_t j = i + 1; j < blockSize; j++) {
-      hint_t kmery = kmers[block[j]].first.start();
+      hint_t kmery = index[block[j]].first.start();
       if (hamdistKMer(kmerx, kmery, tau) <= tau &&
           canMerge(uf, block[i], block[j])) {
         uf.unionn(block[i], block[j]);
@@ -109,7 +109,7 @@ static void processBlockQuadratic(unionFindClass &uf,
 }
 
 void KMerHamClusterer::cluster(const std::string &prefix,
-                               const std::vector<KMerCount> &kmers,
+                               const KMerIndex &index,
                                unionFindClass &uf) {
   // First pass - split & sort the k-mers
   std::ostringstream tmp;
@@ -124,7 +124,7 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     size_t to = (*Globals::subKMerPositions)[i+1];
 
     INFO("Serializing: [" << from << ", " << to << ")");
-    serialize(ofs, kmers, NULL,
+    serialize(ofs, index, NULL,
               SubKMerPartSerializer(from, to));
   }
   VERIFY(!ofs.fail());
@@ -142,7 +142,7 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     // Sanity check - there cannot be more blocks than tau + 1 times of total
     // kmer number. And on the first pass we have only tau + 1 input blocks!
     VERIFY(stat.first == tau_ + 1);
-    VERIFY(stat.second <= (tau_ + 1) * kmers.size());
+    VERIFY(stat.second <= (tau_ + 1) * index.size());
 
     // Ok, now in the files we have everything grouped in blocks in the output files.
 
@@ -161,12 +161,12 @@ void KMerHamClusterer::cluster(const std::string &prefix,
       unsigned block_thr = cfg::get().subvectors_blocksize_quadratic_threshold;
       if (block.size() < block_thr) {
         // Merge small blocks.
-        processBlockQuadratic(uf, block, kmers, tau_);
+        processBlockQuadratic(uf, block, index, tau_);
       } else {
         big_blocks1 += 1;
         // Otherwise - dump for next iteration.
         for (unsigned i = 0; i < tau_ + 1; ++i) {
-          serialize(ofs, kmers, &block,
+          serialize(ofs, index, &block,
                     SubKMerStridedSerializer(i, tau_ + 1));
         }
       }
@@ -188,7 +188,7 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     // Sanity check - there cannot be more blocks than tau + 1 times of total
     // kmer number. And there should be tau + 1 times big_blocks input blocks.
     VERIFY(stat.first == (tau_ + 1)*big_blocks1);
-    VERIFY(stat.second <= (tau_ + 1) * (tau_ + 1) * kmers.size());
+    VERIFY(stat.second <= (tau_ + 1) * (tau_ + 1) * index.size());
 
     INFO("Merge sub-kmers, pass 2");
     SubKMerBlockFile blocks(fname + ".blocks", /* unlink */ true);
@@ -200,12 +200,12 @@ void KMerHamClusterer::cluster(const std::string &prefix,
         big_blocks2 += 1;
 #if 0
         for (size_t i = 0; i < block.size(); ++i) {
-          std::string s(Globals::blob + kmers[block[i]], K);
+          std::string s(Globals::blob + index[block[i]], K);
           INFO("" << block[i] << ": " << s);
         }
 #endif
       }
-      processBlockQuadratic(uf, block, kmers, tau_);
+      processBlockQuadratic(uf, block, index, tau_);
       nblocks += 1;
     }
     INFO("Merge done, saw " << big_blocks2 << " big blocks out of " << nblocks << " processed.");
