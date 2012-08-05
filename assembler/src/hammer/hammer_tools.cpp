@@ -219,7 +219,7 @@ void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > 
 	}
 }
 
-size_t my_hash(hint_t pos) {
+static size_t my_hash(hint_t pos) {
 	size_t hash = 877;
 	for (size_t i = 0; i < K; i++) {
 		hash = ((hash << 5) - hash) + ((int)Globals::blob[pos + i]) * 13;
@@ -343,70 +343,6 @@ void HammerTools::SplitKMers() {
 		}
 	}
   delete[] ostreams;
-}
-
-void HammerTools::FillMapWithMinimizers( KMerMap & m ) {
-	int num_minimizers = 0;
-	if (cfg::get().general_num_minimizers) {
-		num_minimizers = *cfg::get().general_num_minimizers;
-	}
-	int which_first = Globals::iteration_no % 4;
-	for (size_t i = 0; i < Globals::pr->size(); ++i) {
-    const PositionRead &pr = Globals::pr->at(i);
-    // Skip opaque reads
-    if (!pr.valid())
-      continue;
-
-    const char *s = Globals::blob + pr.start();
-    const char *q;
-    size_t slen = pr.size();
-    std::string q_common;
-		if (Globals::use_common_quality) {
-      q_common.assign(pr.size(), (char)Globals::common_quality);
-      q = q_common.data();
-		} else {
-			q = Globals::blobquality + pr.start();
-		}
-		ValidKMerGenerator<K> gen(s, q, slen);
-		vector< pair<hint_t, pair< double, size_t > > > kmers;
-		unordered_map<hint_t, Seq<K> > seqs;
-		while (gen.HasMore()) {
-			hint_t cur_pos = pr.start() + gen.pos() - 1;
-			kmers.push_back( make_pair(cur_pos, make_pair( 1 - gen.correct_probability(), my_hash(cur_pos) ) ));
-			seqs[cur_pos] = gen.kmer();
-			gen.Next();
-		}
-		ValidKMerGenerator<M> gen_m(s, q, slen);
-		vector<hint_t> mmers;
-		while (gen_m.HasMore()) {
-			mmers.push_back(Globals::pr->at(i).start() + gen_m.pos() - 1);
-			gen_m.Next();
-		}
-
-		HammerTools::findMinimizers(kmers, num_minimizers, mmers, which_first);
-		for (std::vector< pair<hint_t, pair< double, size_t > > >::const_iterator it = kmers.begin(); it != kmers.end(); ++it ) {
-			Seq<K> km = seqs[it->first];
-			KMerMap::iterator mit = m.find(km);
-
-      const unsigned char *qdata;
-      std::string q_common;
-      if (Globals::use_common_quality) {
-        q_common.assign(K, (char)Globals::common_quality);
-        qdata = (const unsigned char*)(q_common.data());
-      } else {
-        qdata = (const unsigned char*)(Globals::blobquality + it->first);
-      }
-
-			if (mit == m.end()) {
-        m[km] = std::make_pair(PositionKMer(it->first), KMerStat(1, KMERSTAT_GOODITER, it->second.first, qdata));
-        VERIFY(Globals::use_common_quality == 0);
-			} else {
-				mit->second.second.count++;
-				mit->second.second.totalQual *= it->second.first;
-        mit->second.second.qual += qdata;
-      }
-		}
-	}
 }
 
 void HammerTools::CountKMersBySplitAndMerge() {

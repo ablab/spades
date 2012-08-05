@@ -31,10 +31,6 @@
 
 using namespace std;
 
-typedef Seq<K> Kmer;
-typedef std::map<Kmer, KMerCount, Kmer::less2 > KMerMap;
-
-
 namespace hammer_tools {
 /// estimate total read size in input read files
 size_t EstimateTotalReadSize(const std::vector<std::string> &fnames);
@@ -72,8 +68,6 @@ public:
                              vector< hint_t > & mmers, int which_first = 0 );
 	/// check whether this is a minimizer iteration
 	static bool doingMinimizers();
-	/// fill map
-	static void FillMapWithMinimizers( KMerMap & map );
 
 	/// do one step of iterative expansion, return the number of new solid k-mers
 	static size_t IterativeExpansionStep(int expand_iter_no, int nthreads, KMerIndex &index);
