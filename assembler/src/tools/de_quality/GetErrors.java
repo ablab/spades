@@ -94,7 +94,7 @@ public class GetErrors implements Runnable{
 			Locale.setDefault(Locale.US);
 			if (filename.length()>0){
 				int a = 0;
-				while (a<filename.length() && filename.charAt(a)!='.') a++;
+				while (a < filename.length() && filename.charAt(a)!='.') a++;
 				filename = filename.substring(0, a);
 				in = new MyScanner(filename + ".prd");
 				in2 = new MyScanner(filename + ".grp");
@@ -163,13 +163,14 @@ public class GetErrors implements Runnable{
 						out = new PrintWriter(folder1 + "fpr.prd");
 					}
 				}
-				if (filtering) if (x*x + y*y != 0){
+				if (filtering) if (x > 0 && x*x + y*y != 0){
                     buf.append(x + " " + 0 + "\n");
                 }
 				e1 = a;
 				e2 = b;
 			}
-		    if (out != null && filtering) out.println(buf);
+		    if (out != null && filtering) 
+                out.println(buf);
             out.close();
             fprin.close();
 
@@ -207,7 +208,7 @@ public class GetErrors implements Runnable{
 						out = new PrintWriter(folder1 + "fnr.prd");
 					}
 				}
-				if (filtering) if (x*x + y*y != 0){
+				if (filtering) if (x > 0 && x*x + y*y != 0){
                     buf.append(x + " " + 0 + "\n");
                 }
 				e1 = a;
@@ -248,7 +249,7 @@ public class GetErrors implements Runnable{
                         "#!/usr/bin/gnuplot -persist\n" + 
                         "set term x11 0\n" +
                         "plot \"unclustered.prd\" with linespoints, \"clustered.prd\" with impulses," + 
-                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 2," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 2, " + " \"paths.prd\" with impulses lt 1 lw 3 lc 5\n" +
+                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 1," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 1, " + " \"paths.prd\" with impulses lt 1 lw 2 lc 5\n" +
                         "pause -1 \"press any key to continue\"\n";
                         out1.print(text);
                         out1.close();
@@ -256,16 +257,16 @@ public class GetErrors implements Runnable{
                         out1 = new PrintWriter(folder1 + "png_plot.conf");
                         text =
                         "#!/usr/bin/gnuplot -persist\n" + 
-                        "set term png enhanced size 1024, 768 14\n" +
+                        "set term png enhanced size 1920, 1080 14\n" +
                         "plot \"unclustered.prd\" with linespoints, \"clustered.prd\" with impulses," + 
-                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 2," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 2, " + " \"paths.prd\" with impulses lt 1 lw 3 lc 5\n" +
-                        "set output \"../../../overall/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "\"\n" +
+                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 1," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 1, " + " \"paths.prd\" with impulses lt 1 lw 2 lc 5\n" +
+                        "set output \"../../../overall/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + ".png\"\n" +
                         "replot\n";
                         out1.print(text);
                         out1.close();
 					}
 				}
-				if (filtering) if (x*x + y*y != 0){
+				if (filtering) if (x > 0. && y != 0.){
                     //for (int x1 = (int) (x - z); x1 <= x + z; x1++) 
                         buf.append(x + " " + y + "\n");
                 }
@@ -309,7 +310,7 @@ public class GetErrors implements Runnable{
 						out = new PrintWriter(folder1 + "clustered.prd");
 					}
 				}
-				if (filtering) if (x*x + y*y != 0){
+				if (filtering) if (x > 0. && x*x + y*y != 0){
                     //for (int x1 = (int) (x - z); x1 <= x + z; x1++) 
                         buf.append(x + " " + y + "\n");
 

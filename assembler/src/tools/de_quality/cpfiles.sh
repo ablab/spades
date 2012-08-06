@@ -15,7 +15,8 @@ fi
 #echo $path
     cp $path/saves/distance_estimation* .
     cp $path/estimation_qual/* .
-    cp $path/etalon_paired_corrected.prd distance_estimation_et.prd 
+    cp $path/etalon_corrected_by_graph.prd distance_estimation_et.prd 
+    cp $path/etalon*.prd . 
 
 sed '1d' distance_estimation_et.prd > etalon.prd
 sed '1d' distance_estimation_cl.prd > clustered.prd
@@ -26,9 +27,9 @@ sort -rnk 4,4 fp.prd > fpr.prd
 mv fpr.prd fp.prd
 sort -rnk 4,4 tp.prd > tpr.prd
 mv tpr.prd tp.prd
-sort -rnk 3,4 etalon.prd > temp.prd
+sort -rnk 4,4 etalon.prd > temp.prd
 mv temp.prd etalon.prd
-sort -rnk 3,4 clustered.prd > temp.prd
+sort -rnk 4,4 clustered.prd > temp.prd
 mv temp.prd clustered.prd
 
 #javac PlotFPR.java
