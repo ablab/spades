@@ -87,8 +87,8 @@ case $1 in
 'dt') run_n_measure build/debug/test/debruijn/debruijn_test && run_n_measure build/debug/test/include_test/include_test ;;
 'rv' ) run_n_measure build/release/online_vis/online_vis ;;
 'dv' ) run_n_measure build/debug/online_vis/online_vis ;;
-'rc' ) run_n_measure build/release/cap/cap ;;
-'dc' ) run_n_measure build/debug/cap/cap ;;
+'rc' ) run_n_measure build/release/cap/cap --log_level=test_suite ;;
+'dc' ) run_n_measure build/debug/cap/cap --log_level=test_suite ;;
 'rct' ) run_n_measure build/release/test/cap/cap_test ;;
 'dct' ) run_n_measure build/debug/test/cap/cap_test ;;
 

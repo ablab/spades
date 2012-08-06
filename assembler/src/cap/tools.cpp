@@ -38,7 +38,7 @@ namespace cap {
 //}
 
 BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
-	static const size_t K = /*55*/55;
+	static const size_t K = 55;
 	typedef debruijn_graph::graph_pack<
 	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> gp_t;
 	typedef gp_t::graph_t Graph;
@@ -52,30 +52,27 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff_cl.fasta");
 //	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
 //	string ref = "assembly_comp/gingi_diff_mask/tdc60_cl.fasta";
-	EasyContigStream stream_1("/home/snurk/Dropbox/lab/mrsa/MRSA_RCH_S60.fasta", "s60_");
-	EasyContigStream stream_2("/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta", "usa300_");
+	EasyContigStream stream_1("/home/snurk/Dropbox/lab/mrsa/MRSA_RCH_S60.fasta",
+			"s60_");
+	EasyContigStream stream_2(
+			"/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta", "usa300_");
 //	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff.fasta",
 //			"jeff_");
 //	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60.fasta",
 //			"tdc_");
 
+	string ref = "/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta";
 //	string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
-	string output_folder = "assembly_comp/s60_usa300_" + ToString(K)
-			+ "/";
+	string output_folder = "assembly_comp/s60_usa300_" + ToString(K) + "/";
 	rm_dir(output_folder);
 	make_dir(output_folder);
 
 	int br_delta = -1;
-	gp_t gp(Sequence()/*ReadGenome(ref)*/, 200, true);
+	gp_t gp(ReadGenome(ref), 200, true);
 	ColorHandler<Graph> coloring(gp.g);
 
 	vector<ContigStream*> streams = { &stream_1, &stream_2 };
-	ConstructColoredGraph(gp, coloring, streams, br_delta);
-
-	SimpleInDelCorrector<Graph> corrector(gp.g, coloring
-			, (*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence()
-			, /*genome_color*/edge_type::blue, /*assembly_color*/edge_type::red);
-	corrector.Analyze();
+	ConstructColoredGraph(gp, coloring, streams, false, br_delta);
 
 //	INFO("Filling ref pos " << gp.genome.size());
 //			FillPos(gp_, gp_.genome, "ref_0");
@@ -124,13 +121,6 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //	WriteMagicLocality();
 ////////////
 
-//trivial breakpoints
-//		string bp_folder = output_folder + "breakpoints/";
-//		make_dir(bp_folder);
-//		TrivialBreakpointFinder<Graph> bp_finder(gp_.g, coloring_,
-//				gp_.edge_pos);
-//		bp_finder.FindBreakPoints(bp_folder);
-
 //possible rearrangements
 //		string rearr_folder = output_folder + "rearrangements/";
 //		make_dir(rearr_folder);
@@ -142,6 +132,18 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 	make_dir(output_folder + "initial_pics");
 	PrintColoredGraphAlongRef(gp, coloring,
 			output_folder + "initial_pics/colored_split_graph.dot");
+
+	//reference correction
+	SimpleInDelCorrector<Graph> corrector(gp.g, coloring,
+			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(), /*genome_color*/
+			edge_type::blue, /*assembly_color*/edge_type::red);
+	corrector.Analyze();
+
+	//trivial breakpoints
+	string bp_folder = output_folder + "breakpoints/";
+	make_dir(bp_folder);
+	TrivialBreakpointFinder<Graph> bp_finder(gp.g, coloring, gp.edge_pos);
+	bp_finder.FindBreakPoints(bp_folder);
 
 	//make saves
 	make_dir(output_folder + "saves");

@@ -134,8 +134,11 @@ private:
 
 	bool CheckConsistency(const vector<EdgeId>& edges) {
 		VERIFY(!edges.empty());
-		for (size_t i = 0; i < path_.size(); ++i) {
-			if (!CheckConsistency(edges, i)) {
+		size_t mult = edge_mult_.mult(edges[0]);
+		DEBUG("Mult of " << this->g().str(edges[0]) << " is " << mult);
+		for (size_t i = 1; i < edges.size(); ++i) {
+			DEBUG("Mult of " << this->g().str(edges[i]) << " is " << edge_mult_.mult(edges[i]));
+			if (!CheckConsistency(edges, i) || edge_mult_.mult(edges[i]) != mult) {
 				return false;
 			}
 		}
@@ -151,7 +154,7 @@ private:
 
 	void SubstituteNonBorderFragment(size_t start_pos, size_t end_pos,
 			const vector<EdgeId>& subst) {
-		VERIFY(start_pos < end_pos && end_pos < path_.size());
+		VERIFY(start_pos < end_pos && end_pos <= path_.size());
 		ChangeMult(start_pos, end_pos, subst);
 		path_.insert(
 				path_.erase(path_.begin() + start_pos, path_.begin() + end_pos),
@@ -160,7 +163,9 @@ private:
 
 	void FillEdgeMult() {
 		for (auto it = path_.begin(); it != path_.end(); ++it) {
+			DEBUG("Edge " << this->g().str(*it) << " is genomic")
 			edge_mult_.put(*it);
+//			edge_mult_.put(this->g().conjugate(*it));
 		}
 	}
 
@@ -183,19 +188,41 @@ public:
 
 	/*virtual*/
 	void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
+//		DEBUG(
+//				"Handling merge of edges " << this->g().str(old_edges) << " into edge " << this->g().str(new_edge));
 		VERIFY(CheckConsistency(old_edges));
+//		DEBUG("Path before: " << this->g().str(path_));
 		auto it = find(path_.begin(), path_.end(), old_edges.front());
 		while (it != path_.end()) {
 			size_t start = it - path_.begin();
 			size_t end = start + old_edges.size();
 			Substitute(start, end, vector<EdgeId> { new_edge });
+//			DEBUG("Path after find: " << this->g().str(path_));
+			it = find(path_.begin(), path_.end(), old_edges.front());
 		}
+		//debug
+		for (auto it2 = old_edges.begin(); it2 != old_edges.end(); ++it2) {
+//			DEBUG("Checking " << this->g().str(*it2))
+			VERIFY(find(path_.begin(), path_.end(), *it2) == path_.end());
+			VERIFY(edge_mult_.mult(*it2) == 0);
+		}
+		//debug
+//		DEBUG("Path final: " << this->g().str(path_));
+		DEBUG("Merge handled");
+	}
+
+	/*virtual*/
+	void HandleDelete(EdgeId e) {
+		DEBUG("Multiplicity of edge " << this->g().str(e) << " in delete " << edge_mult_.mult(e));
+		VERIFY(edge_mult_.mult(e) == 0);
 	}
 
 	//for cyclic paths, end_pos might be > path.size()
 	//might change indices unexpectedly
 	void Substitute(size_t start_pos, size_t end_pos,
 			const vector<EdgeId>& subst) {
+		DEBUG("Substitute called");
+		VERIFY(cyclic_ || end_pos <= path_.size());
 		if (end_pos <= path_.size()) {
 			SubstituteNonBorderFragment(start_pos, end_pos, subst);
 		} else {
@@ -223,6 +250,9 @@ public:
 		return edge_mult_.mult(e);
 	}
 
+private:
+	DECL_LOGGER("GenomePath")
+	;
 };
 
 template<class Graph>
@@ -355,15 +385,23 @@ class SimpleInDelCorrector {
 	}
 
 	void RemoveObsoleteEdges(const vector<EdgeId>& edges) {
-		for (auto it = edges.begin(); it != edges.end(); ++it) {
+		for (auto it = SmartSetIterator<Graph, EdgeId>(g_,
+						edges.begin(), edges.end()); !it.IsEnd();
+						++it) {
 			if (coloring_.Color(*it) == genome_color_
-					&& genome_path_.mult(*it) == 0) {
+					&& genome_path_.mult(*it) == 0
+					&& genome_path_.mult(g_.conjugate(*it)) == 0) {
 				DEBUG("Removing edge " << g_.str(*it) << " as obsolete");
+				VertexId start = g_.EdgeStart(*it);
+				VertexId end = g_.EdgeEnd(*it);
 				g_.DeleteEdge(*it);
-				g_.CompressVertex(g_.EdgeStart(*it));
-				if (!g_.RelatedVertices(g_.EdgeStart(*it), g_.EdgeEnd(*it))) {
-					g_.CompressVertex(g_.EdgeEnd(*it));
+				DEBUG("Comressing start");
+				g_.CompressVertex(start);
+				if (!g_.RelatedVertices(start, end)) {
+					DEBUG("Comressing end");
+					g_.CompressVertex(end);
 				}
+				DEBUG("Edge removed");
 			}
 		}
 	}
@@ -377,7 +415,7 @@ class SimpleInDelCorrector {
 	void GenPicAlongPath(const vector<EdgeId> path, size_t cnt) {
 		make_dir("ref_correction");
 		WriteComponentsAlongPath(g_, StrGraphLabeler<Graph>(g_),
-				"ref_correction/" + ToString(cnt) + ".dot", 1000, 15,
+				"ref_correction/" + ToString(cnt) + ".dot", 100000, 10,
 				TrivialMappingPath(g_, path), *ConstructColorer(coloring_));
 	}
 
@@ -385,7 +423,7 @@ class SimpleInDelCorrector {
 		make_dir("ref_correction");
 		WriteComponentsAroundEdge(g_, e,
 				"ref_correction/" + ToString(cnt) + ".dot",
-				*ConstructColorer(coloring_), StrGraphLabeler<Graph>(g_));
+				*ConstructColorer(coloring_), StrGraphLabeler<Graph>(g_), 100000, 10);
 	}
 
 	void CorrectGenomePath(size_t genome_start, size_t genome_end,
@@ -404,7 +442,7 @@ class SimpleInDelCorrector {
 		}
 		genome_path_.Substitute(genome_start, genome_end, assembly_path);
 		RemoveObsoleteEdges(genomic_edges);
-		GenPicAroundEdge(*(genome_path_.begin() + genome_start), cnt * 100 + 2);
+		GenPicAroundEdge(*((genome_start < genome_path_.size())?(genome_path_.begin() + genome_start):genome_path_.end()-1), cnt * 100 + 2);
 	}
 
 //	pair<string, pair<size_t, size_t>> ContigIdAndPositions(EdgeId e) {
@@ -434,6 +472,7 @@ class SimpleInDelCorrector {
 //todo use contig constraints here!!!
 	void AnalyzeGenomeEdge(EdgeId e) {
 		DEBUG("Analysing shortcut genome edge " << g_.str(e));
+//		VERIFY(genome_path_.mult(e) > 0);
 		DEBUG("Multiplicity " << genome_path_.mult(e));
 		if (genome_path_.mult(e) == 1) {
 			vector<EdgeId> assembly_path = FindAssemblyPath(g_.EdgeStart(e),
@@ -466,15 +505,17 @@ class SimpleInDelCorrector {
 
 public:
 	SimpleInDelCorrector(Graph& g, ColorHandler<Graph>& coloring,
-			const vector<EdgeId> genome_path, edge_type genome_color,
+			const vector<EdgeId>& genome_path, edge_type genome_color,
 			edge_type assembly_color) :
 			g_(g), coloring_(coloring), genome_path_(g_, genome_path), genome_color_(
 					genome_color), assembly_color_(assembly_color) {
 	}
 
 	void Analyze() {
+		rm_dir("ref_correction");
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (coloring_.Color(*it) == genome_color_) {
+			if (coloring_.Color(*it) == genome_color_
+					&& genome_path_.mult(*it) > 0) {
 				AnalyzeGenomeEdge(*it);
 			}
 			if (coloring_.Color(*it) == assembly_color_) {
