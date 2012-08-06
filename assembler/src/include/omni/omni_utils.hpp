@@ -809,8 +809,6 @@ public:
 			return Path<ElementId>();
 	}
 
-	//todo add iterator
-
 private:
 	vector<ElementId> edges_;
 	vector<MappingRange> range_mappings_;

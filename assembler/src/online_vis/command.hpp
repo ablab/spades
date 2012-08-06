@@ -84,7 +84,11 @@ namespace online_visualization {
 
             // !!!! NO OVERRIDING !!!!
             virtual void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
-                Execute(*curr_env, arg_list);
+                if (arg_list["--all"] == "true")
+                    for (auto iter = loaded_environments.begin(); iter != loaded_environments.end(); ++iter) 
+                        Execute(*(iter->second), arg_list);
+                else
+                    Execute(*curr_env, arg_list);
             }
 
     };

@@ -11,12 +11,12 @@
 namespace online_visualization {
     class DrawPartOfGenomeCommand : public DrawingCommand {
         private:
-            void CheckPathIntegrity(EdgeId first_edge, EdgeId second_edge) const {
-                            
-            }
-
-            void CheckCoverage(const MappingRange& first_range, const MappingRange& second_range) const {
-                   
+            void CheckPathIntegrity(const GraphDistanceFinder<Graph>& dist_finder, EdgeId first_edge, EdgeId second_edge) const {
+                const vector<size_t>& distances = dist_finder.GetGraphDistancesLengths(first_edge, second_edge);
+                if (distances[0] == 0) {
+                    INFO("Edges " << first_edge << " and " << second_edge << " are neighbouring");
+                } else 
+                    INFO("Edges " << first_edge << " and " << second_edge << " are at distance of " << distances[0]);
             }
 
         private:
@@ -26,6 +26,8 @@ namespace online_visualization {
             }
             
             void CountStatsAlongGenomePart(Environment& curr_env, Sequence& piece_of_genome, string label = "") const {    
+                GraphDistanceFinder<Graph> dist_finder(curr_env.graph(), *cfg::get().ds.IS, *cfg::get().ds.RL,
+                        size_t(*cfg::get().ds.is_var));
                 cout << "Statistics for the part of genome :" << endl;
                 const MappingPath<EdgeId>& mapping_path = curr_env.mapper().MapSequence(piece_of_genome);
                 for (size_t i = 0; i < mapping_path.size(); ++i) {
@@ -34,8 +36,7 @@ namespace online_visualization {
                     
                     if (i > 0) {
                         INFO("Checking connection between neighbouring edges");
-                        CheckPathIntegrity(mapping_path[i - 1].first, mapping_path[i].first);
-                        CheckCoverage(mapping_path[i - 1].second, mapping_path[i].second);
+                        CheckPathIntegrity(dist_finder, mapping_path[i - 1].first, mapping_path[i].first);
                     }
                 }
             }

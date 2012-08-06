@@ -13,6 +13,7 @@
 namespace online_visualization {
 
 
+    //TODO : BatchCommand
     class OnlineVisualizer {
     private:
 
@@ -39,6 +40,7 @@ namespace online_visualization {
 
             AddCommand(shared_ptr<Command>(new DrawVertexCommand));
             AddCommand(shared_ptr<Command>(new DrawEdgeCommand));
+            AddCommand(shared_ptr<Command>(new DrawPartOfGenomeCommand));
             AddCommand(shared_ptr<Command>(new DrawPositionCommand));
             AddCommand(shared_ptr<Command>(new ShowPositionCommand));
 

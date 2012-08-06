@@ -1,7 +1,11 @@
 #include "logger/log_writers.hpp"
 
 #undef INFO
-#define INFO(message)                       LOG_MSG(logging::L_DEBUG , message)
+#define INFO(message)                       \
+{                                                                         \
+    cout << __FILE__ << " " <<  __LINE__ << "  :::  " << message << endl; \
+}                                                                         \
+
 
 #define LOG(message)                                                      \
 {                                                                         \
