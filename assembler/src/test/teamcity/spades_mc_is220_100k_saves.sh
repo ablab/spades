@@ -8,7 +8,7 @@
 
 set -e
 pushd ../../../
-rm -f spades_output/ECOLI_IS220_QUAKE_100K_SAVES/latest
+rm -f spades_output/ECOLI_IS220_QUAKE_100K_SAVES
 #etalon=spades_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
 etalon=../../../etalon_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
 if [ ! -d $etalon ]; then
@@ -17,7 +17,7 @@ if [ ! -d $etalon ]; then
 fi
 ./spades.py src/test/teamcity/spades_config_mc_is220_100k_saves.info
 
-pushd spades_output/ECOLI_IS220_QUAKE_100K_SAVES/latest
+pushd spades_output/ECOLI_IS220_QUAKE_100K_SAVES
 diffs=0
 for i in link_*
 do
