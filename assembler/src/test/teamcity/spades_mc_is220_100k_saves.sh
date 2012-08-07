@@ -8,7 +8,7 @@
 
 set -e
 pushd ../../../
-rm -f spades_output/ECOLI_IS220_QUAKE_100K_SAVES
+rm -rf spades_output/ECOLI_IS220_QUAKE_100K_SAVES
 #etalon=spades_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
 etalon=../../../etalon_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
 if [ ! -d $etalon ]; then
