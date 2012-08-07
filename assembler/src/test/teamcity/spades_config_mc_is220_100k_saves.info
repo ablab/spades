@@ -1,5 +1,5 @@
 project_name        ECOLI_IS220_QUAKE_100K_SAVES
-output_dir          ./spades_output
+output_dir          ./spades_output/ECOLI_IS220_QUAKE_100K_SAVES
 max_threads         4
 developer_mode      true
 compilation_dir     ./teamcity_precompiled/ECOLI_IS220_QUAKE_100K_SAVES

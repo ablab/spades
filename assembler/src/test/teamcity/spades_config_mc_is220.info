@@ -1,5 +1,5 @@
 project_name        ECOLI_IS220_QUAKE
-output_dir          ./spades_output
+output_dir          ./spades_output/ECOLI_IS220_QUAKE
 output_to_console   true
 developer_mode      true
 compilation_dir     ./teamcity_precompiled/ECOLI_IS220_QUAKE
