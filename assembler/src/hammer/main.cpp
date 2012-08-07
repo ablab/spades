@@ -178,16 +178,17 @@ int main(int argc, char * argv[]) {
       HammerTools::ReadAllFilesIntoBlob();
 
       // count k-mers
-      if (cfg::get().count_do || cfg::get().sort_do || do_everything ) {
-        HammerTools::CountKMersBySplitAndMerge();
+      if (cfg::get().count_do || cfg::get().sort_do || do_everything) {
+        KMerCounter counter(cfg::get().count_numfiles);
+        counter.BuildIndex(*Globals::kmer_index);
       } else {
-    	INFO("Reading serialized kmers is not implemented (yet)");
+        INFO("Reading serialized kmers is not implemented (yet)");
         exit(-1);
       }
 
       // fill in already prepared k-mers
       if (!do_everything && cfg::get().input_read_solid_kmers) {
-    	INFO("Reading solid kmers is not implemented (yet)");
+        INFO("Reading solid kmers is not implemented (yet)");
         exit(-1);
       }
 

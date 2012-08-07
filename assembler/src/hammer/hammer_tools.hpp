@@ -56,13 +56,6 @@ public:
 	/// read all input files into the blob
 	static void ReadAllFilesIntoBlob();
 
-	/// process a k-mer hash file
-	static void ProcessKmerHashFile(const std::string &fname, std::vector<KMerCount> & kmcvec );
-	/// count k-mers in input files
-	static void CountKMersBySplitAndMerge();
-	/// split kmers into files
-	static void SplitKMers();
-
 	/// leave only minimizers
 	static void findMinimizers(vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers,
                              vector< hint_t > & mmers, int which_first = 0 );
