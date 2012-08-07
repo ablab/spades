@@ -25,7 +25,7 @@ def warning(warn_str, prefix="== Warning == "):
 
 def prepare_config_bh(filename, cfg):
     subst_dict = dict()
-    cfg.working_dir = os.path.abspath(cfg.working_dir)
+    cfg.working_dir = os.path.abspath(cfg.output_dir)
 
     if len(cfg.paired_reads) == 2:
         subst_dict["input_paired_1"] = cfg.paired_reads[0]
@@ -33,7 +33,7 @@ def prepare_config_bh(filename, cfg):
     if len(cfg.single_reads) == 1:
         subst_dict["input_single"] = cfg.single_reads[0]
 
-    subst_dict["input_working_dir"] = cfg.working_dir
+    subst_dict["input_working_dir"] = cfg.output_dir
     subst_dict["general_max_iterations"] = cfg.max_iterations
     subst_dict["general_max_nthreads"] = cfg.max_threads
     subst_dict["count_merge_nthreads"] = cfg.max_threads
@@ -50,11 +50,10 @@ def prepare_config_bh(filename, cfg):
 
 def prepare_config_spades(filename, cfg, prev_K, K, last_one):
     subst_dict = dict()
-    cfg.working_dir = os.path.abspath(cfg.working_dir)
 
     subst_dict["K"] = str(K)
     subst_dict["dataset"] = cfg.dataset
-    subst_dict["output_base"] = cfg.working_dir
+    subst_dict["output_base"] = cfg.output_dir
     subst_dict["additional_contigs"] = cfg.additional_contigs
     subst_dict["entry_point"] = "construction"
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
@@ -62,7 +61,6 @@ def prepare_config_spades(filename, cfg, prev_K, K, last_one):
     subst_dict["align_original_reads"] = bool_to_str(cfg.align_original_reads)
     subst_dict["align_before_RR"] = bool_to_str(not cfg.paired_mode)
     subst_dict["align_after_RR"] = bool_to_str(cfg.paired_mode)
-    subst_dict["project_name"] = ""
     subst_dict["gap_closer_enable"] = bool_to_str(last_one and cfg.gap_closer)
     subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
     subst_dict["additional_ec_removing"] = bool_to_str(last_one)
@@ -87,7 +85,6 @@ def print_used_values(cfg):
     print ""
 
     # main
-    print_value(cfg, "common", "project_name", "", "")
     print_value(cfg, "common", "output_dir", "", "")
     print "Mode:",
     if ("error_correction" in cfg) and (not "assembly" in cfg):
@@ -168,7 +165,7 @@ def print_used_values(cfg):
     print ""
 
 
-def check_config(cfg, default_project_name=""):
+def check_config(cfg):
     ## special case: 0 iterations for the error correction means "No error correction!"
 
     if ("error_correction" in cfg) and ("max_iterations" in cfg["error_correction"].__dict__):
@@ -228,11 +225,7 @@ def check_config(cfg, default_project_name=""):
     if not "developer_mode" in cfg["common"].__dict__:
         cfg["common"].__dict__["developer_mode"] = False
 
-    if not "project_name" in cfg["common"].__dict__:
-        cfg["common"].__dict__["project_name"] = default_project_name
-
-    cfg["common"].output_dir = os.path.join(os.path.abspath(
-        os.path.expandvars(cfg["common"].output_dir)), cfg["common"].project_name)
+    cfg["common"].output_dir = os.path.abspath(os.path.expandvars(cfg["common"].output_dir))
 
     # dataset
     if "dataset" in cfg:
@@ -281,7 +274,6 @@ def usage(show_hidden=False):
     print >> sys.stderr, "Usage:", sys.argv[0], "[options] -n <project name>"
     print >> sys.stderr, ""
     print >> sys.stderr, "Options:"
-    print >> sys.stderr, "-n\t<project_name>\tname of the project"
     print >> sys.stderr, "-o\t<output_dir>\tdirectory to store all result files"\
                          " [default: spades_output]"
     print >> sys.stderr, "--sc\t\t\tthis flag is required for MDA (single-cell)"\
@@ -303,7 +295,7 @@ def usage(show_hidden=False):
                          " (terminates if exceeded) [default: 250]"
     print >> sys.stderr, "--tmp-dir\t<dirname>\tdirectory for error correction's"\
                          " temp files"
-    print >> sys.stderr, "\t\t\t\t[default: <output_dir>/<project_name>/corrected/tmp]"
+    print >> sys.stderr, "\t\t\t\t[default: <output_dir>/corrected/tmp]"
     print >> sys.stderr, "-k\t<int,int,...>\t\tcomma-separated list of k-mer sizes"\
                          " (must be odd and less than 100) [default: 21,33,55]"
     print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for error"\
@@ -361,7 +353,6 @@ def main():
     cfg = dict()
 
     if options:
-        project_name = ""
         output_dir = ""
         tmp_dir = ""
         reference = ""
@@ -388,9 +379,7 @@ def main():
         iterations = None
 
         for opt, arg in options:
-            if opt == '-n':
-                project_name = arg
-            elif opt == '-o':
+            if opt == '-o':
                 output_dir = arg
             elif opt == "--tmp-dir":
                 tmp_dir = arg
@@ -456,9 +445,6 @@ def main():
                 raise ValueError
 
         if not CONFIG_FILE:
-            if not project_name:
-                error("the project name is not set! It is a mandatory parameter (-n PROJECT_NAME).")
-
             if len(paired1) != len(paired2):
                 error("the number of files with left paired reads is not equal to the"
                       " number of files with right paired reads!")
@@ -526,7 +512,7 @@ def main():
                 cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files
                 cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
 
-            if not check_config(cfg, project_name):
+            if not check_config(cfg):
                 return
 
     if CONFIG_FILE:
@@ -564,7 +550,7 @@ def main():
         bh_cfg.__dict__["working_dir"] = bh_cfg.tmp_dir
 
         bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir,
-            cfg["common"].project_name + ".dataset")
+            "dataset.info")
 
         start_bh = True
         if os.path.exists(bh_cfg.output_dir):
@@ -675,31 +661,15 @@ def main():
         else:
             spades_cfg.__dict__["paired_mode"] = False
 
-        def make_link(where, link):
-            if os.path.islink(link):
-                os.remove(link)
-            if not os.path.exists(link):
-                os.symlink(where, link)
-
-        def make_working_dir(output_dir):
-            import datetime
-
-            name = "spades_" + datetime.datetime.now().strftime("%m.%d_%H.%M.%S")
-            working_dir = os.path.join(output_dir, name)
-            os.makedirs(working_dir)
-            return working_dir
-
-        spades_cfg.__dict__["working_dir"] = make_working_dir(spades_cfg.output_dir)
-        spades_cfg.__dict__["log_filename"] = os.path.join(spades_cfg.working_dir,
+        spades_cfg.__dict__["log_filename"] = os.path.join(spades_cfg.output_dir,
             "assembly.log")
-        spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.working_dir,
-            spades_cfg.project_name + ".fasta")
-        spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.working_dir,
+        spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.output_dir,
+            "contigs.fasta")
+
+        spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir,
             "simplified_contigs.fasta")
         final_contigs_folder = os.path.join(spades_cfg.output_dir, "contigs")
 
-        make_link(os.path.basename(spades_cfg.working_dir), os.path.join(spades_cfg.output_dir,
-            "latest"))
         if os.path.exists(final_contigs_folder):
             shutil.rmtree(final_contigs_folder)
 
@@ -708,7 +678,7 @@ def main():
         tee = support.Tee(spades_cfg.log_filename, 'w', console=spades_cfg.output_to_console)
 
         if CONFIG_FILE:
-            shutil.copy(CONFIG_FILE, spades_cfg.working_dir)
+            shutil.copy(CONFIG_FILE, spades_cfg.output_dir)
 
             # dataset created during error correction
         if bh_dataset_filename:
@@ -716,8 +686,7 @@ def main():
 
         if not "dataset" in spades_cfg.__dict__:
             # creating dataset
-            dataset_filename = os.path.join(spades_cfg.working_dir, cfg["common"].project_name +
-                                                                    ".dataset")
+            dataset_filename = os.path.join(spades_cfg.output_dir, "dataset.info")
             dataset_file = open(dataset_filename, 'w')
             for k, v in cfg["dataset"].__dict__.iteritems():
                 dataset_file.write(k + '\t')
@@ -745,7 +714,7 @@ def main():
             spades_cfg.__dict__["dataset"] = dataset_filename
         else:
             spades_cfg.dataset = os.path.abspath(os.path.expandvars(spades_cfg.dataset))
-            shutil.copy(spades_cfg.dataset, spades_cfg.working_dir)
+            shutil.copy(spades_cfg.dataset, spades_cfg.output_dir)
             # for developers: if dataset was set in 'assembly' section then use reference from it
             if ("quality_assessment" in cfg) and not bh_dataset_filename:
                 for key_to_del in ["reference", "genes", "operons"]:
@@ -764,8 +733,7 @@ def main():
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
               "\n")
 
-        make_link(os.path.basename(spades_cfg.working_dir), os.path.join(spades_cfg.output_dir,
-            "latest_success"))
+
         if not os.path.exists(final_contigs_folder):
             os.makedirs(final_contigs_folder)
         shutil.copy(result_contigs_filename, final_contigs_folder)
@@ -832,7 +800,7 @@ def run_bh(cfg):
     dataset_file.close()
     print("\n== Dataset description file created: " + dataset_filename + "\n")
 
-    shutil.rmtree(cfg.working_dir)
+    shutil.rmtree(cfg.tmp_dir)
 
     return dataset_filename
 
@@ -847,13 +815,16 @@ def run_spades(cfg):
     count = 0
     prev_K = None
 
-    bin_reads_dir = os.path.join(cfg.working_dir, ".bin_reads")
+    bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
 
     for K in cfg.iterative_K:
         count += 1
 
-        dst_configs = os.path.join(cfg.working_dir, "config_K" + str(K))
+        dst_configs = os.path.join(cfg.output_dir, "config_K" + str(K))
+        if os.path.exists(dst_configs):
+            shutil.rmtree(dst_configs)
         os.mkdir(dst_configs)
+
         dst_configs = os.path.join(dst_configs, "configs")
         shutil.copytree(os.path.join(spades_home, "configs"), dst_configs)
         cfg_file_name = os.path.join(dst_configs, "debruijn", "config.info")
@@ -874,16 +845,11 @@ def run_spades(cfg):
 
         print("\n== Running assembler: " + command + "\n")
 
-        support.sys_call(command, execution_home)
+        latest = os.path.join(cfg.output_dir, "K%d" % (K))
+        if os.path.exists(latest):
+            shutil.rmtree(latest)
 
-        latest = os.path.join(cfg.working_dir, "K%d" % (K), "latest")
-        latest = os.readlink(latest)
-        latest = os.path.join("K%d" % (K), latest)
-        os.symlink(latest, os.path.join(cfg.working_dir, "link_K%d" % (K)))
-        latest = os.path.join(cfg.working_dir, latest)
-        # python2.4 doesn't support os.path.relpath
-        # os.symlink(os.path.relpath(latest, cfg.working_dir),
-        #   os.path.join(cfg.working_dir, "link_K%d" % (K)))
+        support.sys_call(command, execution_home)
 
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.developer_mode:
@@ -892,14 +858,18 @@ def run_spades(cfg):
             "contigs_before_RR.fasta")
         shutil.copyfile(os.path.join(latest, "contigs_before_RR.fasta"), before_RR_contigs)
         # saves
-        os.symlink(os.path.join(latest, "saves"), os.path.join(
-            os.path.dirname(cfg.result_contigs), "saves"))
+        saves_link = os.path.join(os.path.dirname(cfg.result_contigs), "saves")
+        if os.path.exists(saves_link):
+            os.remove(saves_link)
+        os.symlink(os.path.join(latest, "saves"), saves_link)
 
     os.remove(cfg.additional_contigs)
 
     if glob.glob(os.path.join(latest, "*.sam")):
         sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs),
-            cfg.project_name + ".sam")
+            "contigs.sam")
+        if os.path.exists(sam_file_linkname):
+            os.remove(sam_file_linkname)
         os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
 
     if os.path.isdir(bin_reads_dir):
