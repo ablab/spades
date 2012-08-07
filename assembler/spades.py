@@ -520,7 +520,7 @@ def main():
 
         os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))
 
-        if not check_config(cfg, os.path.splitext(os.path.basename(CONFIG_FILE))[0]):
+        if not check_config(cfg):
             return
 
     print("\n======= SPAdes pipeline started\n")
