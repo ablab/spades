@@ -1,5 +1,5 @@
 project_name        ECOLI_1K_TEAMCITY_BH
-output_dir          ./spades_output
+output_dir          ./spades_output/spades_output/ECOLI_1K_TEAMCITY_BH
 output_to_console   true
 developer_mode      false
 compilation_dir     ./teamcity_precompiled/ECOLI_1K_TEAMCITY_BH
