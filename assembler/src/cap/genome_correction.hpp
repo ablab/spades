@@ -269,13 +269,18 @@ private:
 	std::vector<vector<EdgeId>> paths_;
 
 	bool CheckPath(const vector<EdgeId>& path) const {
-		if (path.size() > edge_count_)
+		DEBUG("Checking path " << g_.str(path));
+		if (path.size() > edge_count_) {
+			DEBUG("false");
 			return false;
+		}
 		for (auto it = path.begin(); it != path.end(); ++it) {
 			if ((coloring_.Color(*it) & assembly_color_) == 0) {
+				DEBUG("false");
 				return false;
 			}
 		}
+		DEBUG("true");
 		return true;
 	}
 
@@ -322,7 +327,14 @@ class SimpleInDelCorrector {
 		PathProcessor<Graph> path_finder(g_, min_length, max_length, start, end,
 				assembly_callback);
 		path_finder.Process();
-		if (assembly_callback.size() == 1) {
+		if (assembly_callback.size() == 0) {
+			DEBUG("Couldn't find assembly path");
+		} else if (assembly_callback.size() > 1) {
+			DEBUG("Found several assembly paths");
+			DEBUG("Taking first");
+			return assembly_callback.paths().front();
+		} else {
+			DEBUG("Found unique assembly path");
 			return assembly_callback.paths().front();
 		}
 		return {};
