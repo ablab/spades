@@ -149,6 +149,23 @@ void CountPairedInfoStats(const Graph &g,
 	INFO("Paired info stats counted");
 }
 
+paired_info_index FilterPairsWithExistingPath(paired_info_index & index, const conj_graph_pack &gp, size_t insert_size, size_t read_length, size_t delta)
+{
+	GraphDistanceFinder<Graph> distFinder(gp.g, insert_size, read_length, delta);
+	paired_info_index scaf_paired_index(gp.g);
+    for (auto it = index.begin(); it != index.end(); ++it) {
+    	EdgeId e1 = it.first();
+    	EdgeId e2 = it.second();
+    	const vector<size_t> dists = distFinder.GetGraphDistances(e1, e2);
+        if (dists.size() == 0) {
+        	std::vector<omnigraph::PairInfo<EdgeId> > pair_info = *it;
+        	for (auto point = pair_info.begin(); point != pair_info.end(); point++)
+        	     scaf_paired_index.AddPairInfo(*point);
+        }
+    }
+    return scaf_paired_index;
+}
+
 void FillAndCorrectEtalonPairedInfo(
 		paired_info_index &corrected_etalon_index, const conj_graph_pack &gp,
 		const paired_info_index &paired_index, size_t insert_size,
@@ -199,6 +216,13 @@ void FillAndCorrectEtalonPairedInfo(
 				cfg::get().output_dir + "etalon_corrected_by_graph",
 				corrected_etalon_index);
 		INFO("Everything is saved");
+        if (cfg::get().paired_info_scaffolder) {
+        	paired_info_index scaf_paired_index = FilterPairsWithExistingPath(final_etalon_paired_index, gp, insert_size, read_length, delta);
+			data_printer.savePaired(
+					cfg::get().output_dir + "scaf_paired_corrected",
+					scaf_paired_index);
+        }
+		INFO("Everything saved");
 	}
 	INFO("Correction finished");
 }
