@@ -162,7 +162,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 
 	void ProcessEdgePair(const EdgeId first, const EdgeId second, const vector<PairInfo<EdgeId>>& raw_data, PairedInfoIndex<Graph> &result) const {
 		if (make_pair(first, second) <= this->ConjugatePair(first, second)) {
-			vector<size_t> forward = this->GetGraphDistances(first, second);
+			vector<size_t> forward = this->GetGraphDistancesLengths(first, second);
             vector<PairInfo<EdgeId>> data = raw_data;
             DEBUG("Extending paired information");
             double weight_0 = WeightSum(data);

@@ -290,11 +290,22 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //    if (cfg::get().rectangle_mode)
 //        RectangleResolve(clustered_index, origin_gp.g, cfg::get().output_root + "tmp/", cfg::get().output_dir);
 	string postfix = GeneratePostfix();
-	typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
-	typedef TotalLabeler<typename graph_pack::graph_t> total_labeler;
-	total_labeler_gs graph_struct_before(origin_gp.g, &origin_gp.int_ids,
-			&origin_gp.edge_pos, NULL);
-	total_labeler tot_labeler_before(&graph_struct_before);
+    typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
+    typedef TotalLabeler<typename graph_pack::graph_t> total_labeler;
+    total_labeler_gs graph_struct_before(origin_gp.g, &origin_gp.int_ids,
+            &origin_gp.edge_pos, NULL);
+    total_labeler tot_labeler_before(&graph_struct_before);
+		
+	//EdgeQuality<Graph> quality_lab_(origin_gp.g, origin_gp.index,
+			//origin_gp.kmer_mapper, origin_gp.genome);
+	//CompositeLabeler<Graph> lab_(tot_labeler_before, quality_lab_);
+
+    //omnigraph::WriteSimple(
+				//origin_gp.g,
+				//lab_,
+				//cfg::get().output_dir + subfolder + graph_name
+						//+ "_2_before.dot", "no_repeat_graph");
+
 	if (cfg::get().path_set_graph) {
 		VERIFY(false);
 //		INFO("testing path-set graphs");

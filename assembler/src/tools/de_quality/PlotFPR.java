@@ -107,7 +107,7 @@ public class PlotFPR implements Runnable{
             double maxfpr = -1;
 			int fpr = 0;
 			int tp = 0;
-            int size_fpr = 0;
+            int size_fp = 0;
             StringBuffer buf = new StringBuffer("");
             double weight = -1;
             double total = 0;
@@ -115,9 +115,12 @@ public class PlotFPR implements Runnable{
             int ind = 0;
             TreeMap<Double, Double> fpr_total = new TreeMap<Double, Double>();
             TreeMap<Double, Double> fnr_total = new TreeMap<Double, Double>();
+            TreeSet<Double> all_positives = new TreeSet<Double>();
+            all_positives.add(0.);
             fpr_total.put(Double.MAX_VALUE, 0.);
             fnr_total.put(Double.MAX_VALUE, 0.);
-			while (in_fpr.hasMoreTokens()){
+            
+			while (in_fpr.hasMoreTokens()) {
 				int a = in_fpr.nextInt();
 				int b = in_fpr.nextInt();
 				double x = in_fpr.nextDouble();
@@ -125,20 +128,26 @@ public class PlotFPR implements Runnable{
 				double z = in_fpr.nextDouble();
 				in_fpr.nextToken();
                 maxfpr = Math.max(maxfpr, x);
-                if (x == 0) continue;
+                if (x == 0) 
+                    continue;
                 if (weight > y + 1e-9) {
                     total += cur;
                     cur = 0;
                     fpr_total.put(weight, total);
+                    all_positives.add(weight);
                     weight = y;
                 } else if (weight < -1e-9) {
                     cur = 0;
                     weight = y;
                 }
                 cur++;
-                size_fpr++;
+                size_fp++;
             }
             total += cur;
+            cur = 0;
+            fpr_total.put(weight, total);
+            all_positives.add(weight);
+            weight = 0;
             fpr_total.put(0.0, total);
             
             weight = -1;
@@ -153,13 +162,15 @@ public class PlotFPR implements Runnable{
 				double y = in_tp.nextDouble();
 				double z = in_tp.nextDouble();
 				in_tp.nextToken();
-                if (x == 0) continue;
-                if (weight > y + 1e-9){
+                if (x == 0) 
+                    continue;
+                if (weight > y + 1e-9) {
                     total += cur;
                     cur = 0;
                     fnr_total.put(weight, total);
+                    all_positives.add(weight);
                     weight = y;
-                }else if (weight<0){
+                } else if (weight < 0) {
                     cur = 0;
                     weight = y;
                 }
@@ -167,11 +178,15 @@ public class PlotFPR implements Runnable{
                 size_tp++;
             }
             total += cur;
+            cur = 0;
+            fnr_total.put(weight, total);
+            all_positives.add(weight);
+            weight = 0;
             fnr_total.put(0.0, total);
 
             if (!output){
-                System.out.println("False positive rate now is " + 1. * size_fpr / size_cl);  
-                System.out.println("False negative rate now is " +  size_fn * 1. / size_et);   
+                System.out.println("False positive rate now is " + size_fp * 1. / size_cl);  
+                System.out.println("False negative rate now is " + size_fn * 1. / size_et);   
             }
             StringBuffer buffer_fpr = new StringBuffer("");
             StringBuffer buffer_fnr = new StringBuffer("");
@@ -179,9 +194,11 @@ public class PlotFPR implements Runnable{
             double lastKey = Math.max(maxfpr, maxfnr);
             double intersectionPoint = -1.;
 
-            for (double thr = 0.0; thr < lastKey + 1; thr += Math.max(0.01, thr / 50.)){
+            for (double thr : all_positives){
+                //System.out.println("Threshold " + thr);
                 double size_fpr_ = fpr_total.ceilingEntry(thr).getValue();
                 double size_fnr = size_fn + size_tp - fnr_total.ceilingEntry(thr).getValue();
+                //System.out.println("Sizes are " + size_fpr_ + " " + size_fnr);
                 double fpr_for_threshold = 0.;
                 if (size_fpr_ < 1e-9) 
                     fpr_for_threshold = 0.;

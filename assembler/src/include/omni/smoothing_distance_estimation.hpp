@@ -94,7 +94,7 @@ protected:
 
 	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
 		if (make_pair(first, second) <= this->ConjugatePair(first, second)) {
-			vector<size_t> forward = this->GetGraphDistances(first, second);
+			vector<size_t> forward = this->GetGraphDistancesLengths(first, second);
 		    vector<pair<size_t, double> > estimated;
             TRACE("Processing edge pair " << first << " " << second);
             map<int, double> hist, smoothed_hist;

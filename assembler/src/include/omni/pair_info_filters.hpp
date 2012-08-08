@@ -79,8 +79,8 @@ public:
 
 protected:
 	virtual bool Check(EdgeId edge1, EdgeId edge2) const {
-		vector<size_t> result1 = finder_.GetGraphDistances(edge1, edge2);
-		vector<size_t> result2 = finder_.GetGraphDistances(edge2, edge1);
+		vector<size_t> result1 = finder_.GetGraphDistancesLengths(edge1, edge2);
+		vector<size_t> result2 = finder_.GetGraphDistancesLengths(edge2, edge1);
 		bool result = result1.empty() && result2.empty();
 		if (result)
 			passed_++;

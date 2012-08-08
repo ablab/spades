@@ -18,6 +18,7 @@ namespace omnigraph {
 template<class Graph>
 class GraphDistanceFinder {
 	typedef typename Graph::EdgeId EdgeId;
+    typedef vector<EdgeId> Path;
 
 	const Graph &graph_;
 	const size_t insert_size_;
@@ -30,7 +31,7 @@ public:
 					(int) insert_size - 2 * read_length), delta_(delta) {
 	}
 
-	const vector<size_t> GetGraphDistances(EdgeId first, EdgeId second) const {
+	const vector<size_t> GetGraphDistancesLengths(EdgeId first, EdgeId second) const {
 		DifferentDistancesCallback<Graph> callback(graph_);
 
 		PathProcessor<Graph> path_processor(
@@ -43,7 +44,7 @@ public:
 				graph_.EdgeStart(second), callback);
 		path_processor.Process();
 
-		auto result = callback.distances();
+		vector<size_t> result = callback.distances();
 		for (size_t i = 0; i < result.size(); i++) {
 			result[i] += graph_.length(first);
 		}
@@ -52,6 +53,22 @@ public:
 		}
 		sort(result.begin(), result.end());
 		return result;
+	}
+
+	const vector<Path> GetGraphDistances(EdgeId first, EdgeId second) const {
+		PathStorageCallback<Graph> callback(graph_);
+
+		PathProcessor<Graph> path_processor(
+				graph_,
+				omnigraph::PairInfoPathLengthLowerBound(graph_.k(),
+						graph_.length(first), graph_.length(second), gap_,
+						delta_),
+				omnigraph::PairInfoPathLengthUpperBound(graph_.k(),
+						insert_size_, delta_), graph_.EdgeEnd(first),
+				graph_.EdgeStart(second), callback);
+		path_processor.Process();
+
+		return callback.paths();
 	}
 
 };
@@ -80,8 +97,8 @@ protected:
 		return histogram_;
 	}
 
-	const vector<size_t> GetGraphDistances(EdgeId first, EdgeId second) const {
-		return distance_finder_.GetGraphDistances(first, second);
+	const vector<size_t> GetGraphDistancesLengths(EdgeId first, EdgeId second) const {
+		return distance_finder_.GetGraphDistancesLengths(first, second);
 	}
 
 	vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2,
@@ -224,9 +241,8 @@ protected:
 
 	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
 		if (make_pair(first, second) <= ConjugatePair(first, second)) {
-			vector<size_t> forward = this->GetGraphDistances(first, second);
-			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(first, second,
-				data, forward);
+			vector<size_t> forward = this->GetGraphDistancesLengths(first, second);
+			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(first, second, data, forward);
 			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
 			this->AddToResult(result, ConjugateInfos(res));
