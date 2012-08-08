@@ -1,5 +1,5 @@
 project_name        ECOLI_SC_LANE_1_BH_woHUMAN
-output_dir          ./spades_output
+output_dir          ./spades_output/ECOLI_SC_LANE_1_BH_woHUMAN
 output_to_console   true
 developer_mode      true
 compilation_dir     ./teamcity_precompiled/ECOLI_SC_LANE_1_BH_woHUMAN
