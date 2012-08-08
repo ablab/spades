@@ -105,8 +105,8 @@ protected:
                 new_data.push_back(PairInfo<EdgeId>(data[0].first, data[0].second, iter->first, iter->second, 0.));
             if (forward.size() > 0) 
                 estimated = EstimateEdgePairDistances(first, second, new_data, forward);
-            //else 
-                //estimated = FindEdgePairDistances(data);
+            else
+                estimated = FindEdgePairDistances(data);
 
 			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);

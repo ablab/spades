@@ -71,6 +71,9 @@ additional_ec_removing    true
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
 
+; set it true to get statistics, such as false positive/negative, perfect match, etc.
+paired_info_scaffolder false
+
 estimation_mode simple
 ; naive, simple, weighted, extensive, smoothing
 

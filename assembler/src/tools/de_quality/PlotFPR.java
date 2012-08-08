@@ -8,49 +8,51 @@ import java.awt.Graphics;
 import static java.lang.Math.*;
 
 
-public class PlotFPR implements Runnable{
-	
+public class PlotFPR implements Runnable {
+
 	private static String filename = "";
 
 	private static double Threshold;
 
     private static boolean output = true;
 
-    private class Pair implements Comparable<Pair>{
+    private class Pair implements Comparable<Pair> {
         int a;
         int b;
 
-        public Pair(int x, int y){
+        public Pair(int x, int y) {
             a = x;
             b = y;
         }
 
-        public int compareTo(Pair p){
-              if (a == p.a) return (b - p.b);
-              return (a - p.a);
+        public int compareTo(Pair p) {
+            if (a == p.a) 
+                return (b - p.b);
+            else 
+                return (a - p.a);
         }
 
-        public String toString(){
-              
+        public String toString() {
             return a + " " + b;
         }
 
     }
 
-	public static void main(String[] args){
-        if (args.length > 0 && args[0].equals("-s")) output = false;
+	public static void main(String[] args) {
+        if (args.length > 0 && args[0].equals("-s")) 
+            output = false;
 		new Thread(new PlotFPR()).start();
 	}
 
-	private void debug(Object obj){
+	private void debug(Object obj) {
 		System.out.println(obj);
 	}
 
 
 
 
-	public void run(){
-		try{
+	public void run() {
+		try {
 			MyScanner in_tp, in_fpr, in_fnr, in_et, in_cl;
 			String folder0 = "";
 			Locale.setDefault(Locale.US);
@@ -63,7 +65,7 @@ public class PlotFPR implements Runnable{
             //debug(Threshold);
             int size_fn = 0;
             double maxfnr = -1;
-			while (in_fnr.hasMoreTokens()){
+			while (in_fnr.hasMoreTokens()) {
 				int a = in_fnr.nextInt();
 				int b = in_fnr.nextInt();
 
@@ -77,7 +79,7 @@ public class PlotFPR implements Runnable{
             in_fnr.close();
             int size_et = 0;
 			//in_et.nextToken();
-			while (in_et.hasMoreTokens()){
+			while (in_et.hasMoreTokens()) {
 				int a = in_et.nextInt();
 				int b = in_et.nextInt();
 
@@ -91,7 +93,7 @@ public class PlotFPR implements Runnable{
 
             int size_cl = 0;
 			//in_cl.nextToken();
-			while (in_cl.hasMoreTokens()){
+			while (in_cl.hasMoreTokens()) {
 				int a = in_cl.nextInt();
 				int b = in_cl.nextInt();
 
@@ -155,7 +157,7 @@ public class PlotFPR implements Runnable{
             total = 0;
             ind = 0;
             int size_tp = 0;
-			while (in_tp.hasMoreTokens()){
+			while (in_tp.hasMoreTokens()) {
 				int a = in_tp.nextInt();
 				int b = in_tp.nextInt();
 				double x = in_tp.nextDouble();
@@ -184,7 +186,7 @@ public class PlotFPR implements Runnable{
             weight = 0;
             fnr_total.put(0.0, total);
 
-            if (!output){
+            if (!output) {
                 System.out.println("False positive rate now is " + size_fp * 1. / size_cl);  
                 System.out.println("False negative rate now is " + size_fn * 1. / size_et);   
             }
@@ -194,7 +196,7 @@ public class PlotFPR implements Runnable{
             double lastKey = Math.max(maxfpr, maxfnr);
             double intersectionPoint = -1.;
 
-            for (double thr : all_positives){
+            for (double thr : all_positives) {
                 //System.out.println("Threshold " + thr);
                 double size_fpr_ = fpr_total.ceilingEntry(thr).getValue();
                 double size_fnr = size_fn + size_tp - fnr_total.ceilingEntry(thr).getValue();
