@@ -60,7 +60,7 @@ void KMerCounter::Split() {
 
   INFO("Splitting kmer instances into " << num_files_ << " buckets. This might take a while");
 
-  MMappedWriter* ostreams = new MMappedWriter[num_files_];
+  MMappedRecordWriter<KMerNo>* ostreams = new MMappedRecordWriter<KMerNo>[num_files_];
   for (unsigned i = 0; i < num_files_; ++i) {
     std::string filename = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i);
     ostreams[i].open(filename);
@@ -138,11 +138,11 @@ void KMerCounter::Split() {
     for (unsigned k = 0; k < num_files_; ++k) {
       size_t sz = 0;
       for (size_t i = 0; i < count_num_threads; ++i)
-        sz += tmp_entries[i][k].size() * sizeof(tmp_entries[i][k][0]);
+        sz += tmp_entries[i][k].size();
 
       ostreams[k].reserve(sz);
       for (size_t i = 0; i < count_num_threads; ++i) {
-        ostreams[k].write(&tmp_entries[i][k][0], tmp_entries[i][k].size() * sizeof(tmp_entries[i][k][0]));
+        ostreams[k].write(&tmp_entries[i][k][0], tmp_entries[i][k].size());
       }
     }
 
@@ -173,7 +173,7 @@ static void EquallySplit(size_t size, unsigned num_threads, size_t *borders) {
 
 static void KmerHashUnique(const MMappedRecordReader<KMerNo>::const_iterator first,
                            const MMappedRecordReader<KMerNo>::const_iterator last,
-                           std::vector<KMerCount> &result) {
+                           MMappedRecordWriter<KMerCount> &result) {
   size_t size = last - first;
   if (size == 0)
     return;
@@ -324,11 +324,9 @@ size_t KMerCounter::MergeKMers(const std::string &ifname, const std::string &ofn
 #endif
   INFO("Sorting done, starting unification.");
 
-  KmerHashUnique(ins.begin(), ins.end(), vkmc);
+  MMappedRecordWriter<KMerCount> os(ofname);
 
-  MMappedWriter os(ofname);
-  os.reserve(vkmc.size() * sizeof(vkmc[0]));
-  os.write(&vkmc[0], vkmc.size() * sizeof(vkmc[0]));
+  KmerHashUnique(ins.begin(), ins.end(), os);
 
   return vkmc.size();
 }

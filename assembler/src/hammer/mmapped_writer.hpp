@@ -78,5 +78,39 @@ class MMappedWriter {
   size_t size() const { return BytesReserved; }
 };
 
+template<typename T>
+class MMappedRecordWriter : public MMappedWriter {
+ public:
+  typedef pointer_iterator<T> iterator;
+  typedef const pointer_iterator<T> const_iterator;
+
+  MMappedRecordWriter() = default;
+  MMappedRecordWriter(const std::string &FileName):
+      MMappedWriter(FileName) {
+  }
+
+  void write(const T* el, size_t amount) {
+    MMappedWriter::write((void*)el, amount * sizeof(T));
+  }
+
+  void reserve(size_t amount) {
+    MMappedWriter::reserve(amount * sizeof(T));
+  }
+
+  void resize(size_t amount) {
+    MMappedWriter::reserve(amount * sizeof(T));
+  }
+
+  size_t size() const { return BytesReserved / sizeof(T); }
+  T* data() { return (T*)MappedRegion; }
+  const T* data() const { return (const T*)MappedRegion; }
+  T& operator[](size_t idx) { return data()[idx]; }
+  const T& operator[](size_t idx) const { return data()[idx]; }
+
+  iterator begin() { return iterator(data()); }
+  const_iterator begin() const { return const_iterator(data()); }
+  iterator end() { return iterator(data()+ size()); }
+  const_iterator end() const { return const_iterator(data() + size()); }
+};
 
 #endif // HAMMER_MMAPPED_WRITER_HPP

@@ -138,6 +138,8 @@ class MMappedRecordReader : public MMappedReader {
   size_t size() const { return FileSize / sizeof(T); }
   T* data() { return (T*)MappedRegion; }
   const T* data() const { return (const T*)MappedRegion; }
+  T& operator[](size_t idx) { return data()[idx]; }
+  const T& operator[](size_t idx) const { return data()[idx]; }
 
   iterator begin() { return iterator(data()); }
   const_iterator begin() const { return const_iterator(data()); }
