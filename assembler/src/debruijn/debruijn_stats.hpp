@@ -149,16 +149,17 @@ void CountPairedInfoStats(const Graph &g,
 	INFO("Paired info stats counted");
 }
 
-paired_info_index FilterPairsWithExistingPath(paired_info_index & index, const conj_graph_pack &gp, size_t insert_size, size_t read_length, size_t delta)
+// leave only those pairs, which edges have no path in the graph between them
+paired_info_index FilterPairsWithExistingPath(const paired_info_index& index, const conj_graph_pack &gp, size_t insert_size, size_t read_length, size_t delta)
 {
 	GraphDistanceFinder<Graph> distFinder(gp.g, insert_size, read_length, delta);
 	paired_info_index scaf_paired_index(gp.g);
     for (auto it = index.begin(); it != index.end(); ++it) {
     	EdgeId e1 = it.first();
     	EdgeId e2 = it.second();
-    	const vector<size_t> dists = distFinder.GetGraphDistances(e1, e2);
+    	const vector<size_t>& dists = distFinder.GetGraphDistancesLengths(e1, e2);
         if (dists.size() == 0) {
-        	std::vector<omnigraph::PairInfo<EdgeId> > pair_info = *it;
+        	vector<omnigraph::PairInfo<EdgeId> > pair_info = *it;
         	for (auto point = pair_info.begin(); point != pair_info.end(); point++)
         	     scaf_paired_index.AddPairInfo(*point);
         }
@@ -216,13 +217,20 @@ void FillAndCorrectEtalonPairedInfo(
 				cfg::get().output_dir + "etalon_corrected_by_graph",
 				corrected_etalon_index);
 		INFO("Everything is saved");
+
         if (cfg::get().paired_info_scaffolder) {
-        	paired_info_index scaf_paired_index = FilterPairsWithExistingPath(final_etalon_paired_index, gp, insert_size, read_length, delta);
+        	INFO("Saving paired information statistics for a scaffolding");
+            paired_info_index scaf_etalon_index = FilterPairsWithExistingPath(corrected_etalon_index, gp, insert_size, read_length, delta);
 			data_printer.savePaired(
-					cfg::get().output_dir + "scaf_paired_corrected",
+					cfg::get().output_dir + "scaf_etalon",
+					scaf_etalon_index);
+        	paired_info_index scaf_paired_index = FilterPairsWithExistingPath(paired_index, gp, insert_size, read_length, delta);
+			data_printer.savePaired(
+					cfg::get().output_dir + "scaf_paired",
 					scaf_paired_index);
         }
-		INFO("Everything saved");
+		
+        INFO("Everything saved");
 	}
 	INFO("Correction finished");
 }
@@ -236,7 +244,6 @@ void GetAllDistances(const PairedInfoIndex<Graph>& paired_index,
 		EdgeId first = data[0].first;
 		EdgeId second = data[0].second;
 		vector<size_t> forward = dist_finder.GetGraphDistancesLengths(first, second);
-		//if (debug(first, second)) cout<<"i'm here"<<endl;
 		for (size_t i = 0; i < forward.size(); i++)
 			result.AddPairInfo(
 					PairInfo < EdgeId
