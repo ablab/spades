@@ -93,8 +93,8 @@ it will process this dataset and if the installation is successful you will see 
 
 <pre class="code">
 <code>
- * Corrected reads are in spades_output/ECOLI_1K/corrected/
- * Assembled contigs are spades_output/ECOLI_1K/spades_04.18_17.59.30/ECOLI_1K.fasta
+ * Corrected reads are in spades_output/corrected/
+ * Assembled contigs are spades_output/contigs.fasta
 
 Thank you for using SPAdes!
 
@@ -130,21 +130,20 @@ Thank you for using SPAdes!
 
 <h3>2.2 SPAdes pipeline</h3>
 
-<p>SPAdes automatically creates a <code>spades_output</code> directory where it stores all of the resulting files. For each dataset SPAdes creates
-    a separate directory <code>&lt;project_name></code> in <code>spades_output</code>.
+<p>SPAdes stores all the resulting files in separate directory, <code>spades_output</code> by default.
 </p>
 
 <p>Before starting assembly SPAdes initiates <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> to correct errors in reads.
-   After that the corrected reads are stored in the directory <code>spades_output/project_name/corrected</code> in <code>*.fastq.qz</code> files.
+   After that the corrected reads are stored in the directory <code>spades_output/corrected</code> in <code>*.fastq.qz</code> files.
 </p>
 
 <p>
-    After assembly completion, the resulting contigs are stored in the directory <code>spades_output/project_name/contigs</code>  in <code>&lt;project_name>.fasta</code> file.
-    If the   <code>--generate-sam-file</code> option was used, the symlink to the <code>&lt;project_name>.sam</code> will also be created in the same directory.
+    After assembly completion, the resulting contigs are stored in the <code>spades_output/contigs.fasta</code> file.
+    If the   <code>--generate-sam-file</code> option was used, the symlink <code>&lt;contigs.sam</code> to the SAM-file will also be created in the same directory.
 </p>
 
 <p>
-    If user runs SPAdes with the same <code>project_name</code> more than once, SPAdes finds the corrected reads and asks the user whether
+    If user runs SPAdes with the same <code>&lt;output_dir></code> more than once, SPAdes finds the corrected reads and asks the user whether
     it should start error correction again.   By default, we do not re-run error correction and we start the assembly in 10 seconds
     unless user says otherwise.
 </p>
@@ -164,7 +163,7 @@ Thank you for using SPAdes!
 
 <pre class="code">
 <code>
-    ./spades.py [options] -n &lt;project_name>
+    ./spades.py [options]
 </code>
 </pre>
 
@@ -174,15 +173,11 @@ Thank you for using SPAdes!
 
 <pre class="code">
 <code>
-    ./spades.py -1 test_dataset/ecoli_1K_1.fq.gz -2 test_dataset/ecoli_1K_2.fq.gz -n ECOLI_1K
+    ./spades.py -1 test_dataset/ecoli_1K_1.fq.gz -2 test_dataset/ecoli_1K_2.fq.gz
 </code>
 </pre>
 
     <p>Here is the description of options:</p>
-
-<p>
-    <code>-n &lt;project_name></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;A required option that sets the name of the project.</p>
 
 <p>
     <code>-o &lt;output_dir> </code><br>
@@ -215,7 +210,7 @@ Thank you for using SPAdes!
     Actually consumed physical memory will be smaller than this limit.</p>
 
 <p><code>--tmp-dir &lt;dirname></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Sets the directory to store temporary files from error correction.  The default value is <code>&lt;output_dir>/&lt;project_name>/corrected/tmp</code>.</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;Sets the directory to store temporary files from error correction.  The default value is <code>&lt;output_dir>/corrected/tmp</code>.</p>
 
 
 <p><code>-k &lt;int,int,...> </code><br>
@@ -268,15 +263,29 @@ Thank you for using SPAdes!
 
 
 
-<h3>2.5 Supporting files and directories</h3>
+<h3>2.5 Files and directories</h3>
 
 <p>
-    For each run SPAdes creates the directory <code>spades_&lt;date_time></code> in <code>spades_output/&lt;project_name></code>.
-    It contains internal configs,  logs and intermediate results for different values of k.
-    Also symlinks <code>latest</code> and <code>latest_success</code> are created for the the directories
-    for the latest and the latest successful runs.
+    Usually <code>spades_output</code> directory contains the following files:
 </p>
 
+<pre>
+    <code>assembly.log</code> - <i>assembler log</i>
+    <code>config_K21/</code> - <i>configuration files for K=21</i>
+    <code>config_K33/</code> - <i>configuration files for K=33</i>
+    <code>config_K55/</code> - <i>configuration files for K=55</i>
+    <code>contigs.fasta</code> - <i>resulting contigs</i>
+    <code>corrected/</code> - <i>files from error ocrrection run</i>
+        <code>configs/</code> - <i>configuration files for error correction</i>
+        <code>correction.log</code> - <i>error correction log</i>
+        <code>dataset.info</code> - <i>internal configuration files</i>
+        <i>error correction resulting files</i>
+    <code>dataset.info</code> - <i>internal configuration files</i>
+    <code>K21/</code> - <i>files from the run with K=21</i>
+    <code>K33/</code> - <i>files from the run with K=33</i>
+    <code>K55/</code> - <i>files from the run with K=55</i>
+    <code>params.txt</code> - <i>information about SPAdes parameters in this run</i>
+</pre>
 
 <a name="sec3"></a>
 <h2>3 Postprocessing</h2>
@@ -306,13 +315,13 @@ Thank you for using SPAdes!
 <p>Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes.</p>
 
 <p>In case you have troubles running SPAdes, please provide us with the following files from
-    <code>&lt;output_dir>/&lt;project_name></code> directory:
+    <code>spades_output</code> directory:
 
 <pre class="code">
 <code>
     params.txt
+    assembly.log
     corrected/correction.log
-    contigs/assembly.log
 </code>
 </pre>
 
