@@ -22,7 +22,7 @@ diffs=0
     for f in saves/*
     do
         set +e
-        diff saves/$f $etalon/link_K55/saves/$f >> diff_with_etalon.txt
+        diff $f $etalon/link_K55/$f >> diff_with_etalon.txt
         errlvl=$?
         if [ $errlvl -ne 0 ]; then
             if [ $errlvl -eq 1 ]; then
