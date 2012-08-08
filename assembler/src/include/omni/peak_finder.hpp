@@ -245,8 +245,8 @@ public:
 	void FFTSmoothing(double cutoff) {
 		VERIFY(data_len_ > 0);
         if (data_len_ == 1) {
-			hist_[0] = x_[0];
 			hist_[0] = y_[0];
+            return;
 		}
 		ExtendLinear(hist_);
 		InitBaseline();

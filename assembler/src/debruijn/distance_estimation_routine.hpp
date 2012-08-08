@@ -174,7 +174,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 			PairInfoWeightFilter<Graph> filter(gp.g, 0.);
 			const AbstractDistanceEstimator<Graph>& estimator =
 					SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index,
-							dist_finder, linkage_distance,
+							dist_finder, weight_function, linkage_distance,
 							cfg::get().ade.threshold,
 							cfg::get().ade.range_coeff,
 							cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,

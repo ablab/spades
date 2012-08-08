@@ -126,30 +126,29 @@ template<class Graph>
 class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 	typedef AbstractDistanceEstimator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
+    typedef map<int, double> hist_type;
 
 protected:
 	const size_t max_distance_;
 
-    virtual map<int, double> GetHistogram(const vector<PairInfo<EdgeId>> & data) const {
-        map<int, double> result_hist;
+    virtual void GetHistogram(const vector<PairInfo<EdgeId>>& data, hist_type& hist) const {
         for (auto iter = data.begin(); iter != data.end(); ++iter) {
-            result_hist.insert(make_pair(iter->d, iter->weight));
+            hist.insert(make_pair(iter->d, iter->weight));
         }
-        return result_hist;
     }
 
-  virtual map<int, double> ConvoluteWithIsHist(boost::function<double(int)>& weight_f, map<int, double>& hist) const {
-        int low_val = hist.begin()->first;
-        int high_val = hist.rbegin()->first;
+    virtual void ConvoluteWithIsHist(const boost::function<double(int)>& weight_f, hist_type& old_hist, hist_type& new_hist) const {
+        int low_val = old_hist.begin()->first;
+        int high_val = old_hist.rbegin()->first;
+        DEBUG("Low value is " << low_val << " high value is " << high_val);
+        VERIFY(low_val <= high_val);
         
-        map<int, double> result;
         for (int i = low_val - 20; i < high_val + 20; ++i) {
-            result[i] = 0.;
-            for (int j = low_val - 20; j < high_val + 20; ++i) {
-                result[i] += hist[j] * weight_f(j - i);
+            new_hist[i] = 0.;
+            for (auto iter = old_hist.begin(); iter != old_hist.end(); ++iter) {
+                new_hist[i] += iter->second * weight_f(i - iter->first);
             }
         }
-        return result;
     }
 
 	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
@@ -288,6 +287,9 @@ public:
             delete buffer[i];
         }
     }
+
+private:
+    DECL_LOGGER("DistanceEstimator");
 };
 
 template<class Graph>

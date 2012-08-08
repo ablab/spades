@@ -179,7 +179,7 @@ public class PlotFPR implements Runnable{
             double lastKey = Math.max(maxfpr, maxfnr);
             double intersectionPoint = -1.;
 
-            for (double thr = 0.0; thr < lastKey + 1; thr += Math.max(0.1, thr / 50.)){
+            for (double thr = 0.0; thr < lastKey + 1; thr += Math.max(0.01, thr / 50.)){
                 double size_fpr_ = fpr_total.ceilingEntry(thr).getValue();
                 double size_fnr = size_fn + size_tp - fnr_total.ceilingEntry(thr).getValue();
                 double fpr_for_threshold = 0.;
@@ -219,7 +219,7 @@ public class PlotFPR implements Runnable{
             in_fpr.close();
             in_tp.close();
 
-		}catch(Exception e){
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}

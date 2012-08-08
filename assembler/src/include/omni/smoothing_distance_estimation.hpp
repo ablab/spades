@@ -11,13 +11,13 @@
 #include "omni_utils.hpp"
 #include "data_divider.hpp"
 #include "peak_finder.hpp"
-#include "distance_estimation.hpp"
+#include "weighted_distance_estimation.hpp"
 
 namespace omnigraph {
 
 template<class Graph>
-class SmoothingDistanceEstimator: public DistanceEstimator<Graph> {
-	typedef DistanceEstimator<Graph> base;
+class SmoothingDistanceEstimator: public WeightedDistanceEstimator<Graph> {
+	typedef WeightedDistanceEstimator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef pair<int, int> Interval;
 
@@ -61,7 +61,7 @@ protected:
                 while (cur < forward.size() && (int) forward[cur] < rounded_d(data[begin]))
                     cur++;
                 if (cur == forward.size()) {
-                    DEBUG("BREAKING " << rounded_d(data[begin]));
+                    DEBUG("Breaking " << rounded_d(data[begin]));
                     break;
                 }
                 if ((int) forward[cur] > rounded_d(data[end - 1])) 
@@ -79,9 +79,9 @@ protected:
                     } 
                     else {
                         while (cur < forward.size() && (int) forward[cur] <= rounded_d(data[end - 1] )) {
-                            if (peakfinder.IsPeak(forward[cur])) { 
-                                result.push_back(make_pair(forward[cur], peakfinder.GetNormalizedWeight()));
-                                DEBUG("Pair made " << forward[cur] << " " << peakfinder.GetNormalizedWeight());
+                            if (peakfinder.IsPeak(forward[cur], 10)) { 
+                                result.push_back(make_pair(forward[cur], peakfinder.weight()));
+                                DEBUG("Pair made " << forward[cur] << " " << peakfinder.weight());
                             }   
                             cur++;
                         }
@@ -97,10 +97,16 @@ protected:
 			vector<size_t> forward = this->GetGraphDistances(first, second);
 		    vector<pair<size_t, double> > estimated;
             TRACE("Processing edge pair " << first << " " << second);
+            map<int, double> hist, smoothed_hist;
+            this->GetHistogram(data, hist);
+            this->ConvoluteWithIsHist(this->weight_f_, hist, smoothed_hist);
+            vector<PairInfo<EdgeId>> new_data;
+            for (auto iter = smoothed_hist.begin(); iter != smoothed_hist.end(); ++iter) 
+                new_data.push_back(PairInfo<EdgeId>(data[0].first, data[0].second, iter->first, iter->second, 0.));
             if (forward.size() > 0) 
-                estimated = EstimateEdgePairDistances(first, second, data, forward);
-            else 
-                estimated = FindEdgePairDistances(data);
+                estimated = EstimateEdgePairDistances(first, second, new_data, forward);
+            //else 
+                //estimated = FindEdgePairDistances(data);
 
 			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
@@ -109,8 +115,8 @@ protected:
 	}
 
 public:
-	SmoothingDistanceEstimator(const Graph& graph, const PairedInfoIndex<Graph>& histogram, const GraphDistanceFinder<Graph>& dist_finder, size_t linkage_distance, size_t threshold, double range_coeff, double delta_coeff, size_t cutoff, size_t min_peak_points, double inv_density, double percentage, double derivative_threshold) : 
-        base(graph, histogram, dist_finder, linkage_distance, 0),
+	SmoothingDistanceEstimator(const Graph& graph, const PairedInfoIndex<Graph>& histogram, const GraphDistanceFinder<Graph>& dist_finder, boost::function<double(int)> weight_f,  size_t linkage_distance, size_t threshold, double range_coeff, double delta_coeff, size_t cutoff, size_t min_peak_points, double inv_density, double percentage, double derivative_threshold) : 
+        base(graph, histogram, dist_finder, weight_f, linkage_distance, 0),
         threshold_(threshold),
         range_coeff_(range_coeff), 
         delta_coeff_(delta_coeff), 

@@ -20,8 +20,6 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 
 protected:
-	const size_t max_distance_;
-
     boost::function<double(int)> weight_f_;
 
 	virtual vector<pair<size_t, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
@@ -36,7 +34,7 @@ protected:
 		int minD = rounded_d(data.front());
 		vector<size_t> forward;
 		for (size_t i = 0; i < raw_forward.size(); ++i)
-			if (minD - (int) max_distance_ <= (int) raw_forward[i] && (int) raw_forward[i] <= maxD + (int) max_distance_)
+			if (minD - (int) this->max_distance_ <= (int) raw_forward[i] && (int) raw_forward[i] <= maxD + (int) this->max_distance_)
 				forward.push_back(raw_forward[i]);
 		if (forward.size() == 0)
 			return result;
@@ -54,19 +52,19 @@ protected:
 					&& math::ls(forward[cur_dist + 1] - data[i].d,
 							data[i].d - (int) forward[cur_dist])) {
 				cur_dist++;
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) max_distance_))
-					weights[cur_dist] += data[i].weight * weight_f_(-((int) forward[cur_dist]) + data[i].d);
+				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
+					weights[cur_dist] += data[i].weight * weight_f_((int) forward[cur_dist] - data[i].d);
 			} else if (cur_dist + 1 < forward.size()
 					&& math::eq(forward[cur_dist + 1] - data[i].d,
 							data[i].d - (int) forward[cur_dist])) {
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) max_distance_))
-					weights[cur_dist] += data[i].weight * 0.5 * weight_f_(-((int) forward[cur_dist]) + data[i].d);
+				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
+					weights[cur_dist] += data[i].weight * 0.5 * weight_f_((int) forward[cur_dist] - data[i].d);
 				cur_dist++;
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) max_distance_))
-					weights[cur_dist] += data[i].weight * 0.5 * weight_f_(-((int) forward[cur_dist]) + data[i].d);
+				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
+					weights[cur_dist] += data[i].weight * 0.5 * weight_f_((int) forward[cur_dist] - data[i].d);
 			} else {
-				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) max_distance_))
-					weights[cur_dist] += data[i].weight * weight_f_(-((int) forward[cur_dist]) + data[i].d);
+				if (math::le(std::abs(forward[cur_dist] - data[i].d), (double) this->max_distance_))
+					weights[cur_dist] += data[i].weight * weight_f_((int) forward[cur_dist] - data[i].d);
 			}
 		}
         
@@ -84,8 +82,11 @@ public:
 			const PairedInfoIndex<Graph>& histogram,
 			const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
 			size_t linkage_distance, size_t max_distance) :
-			base(graph, histogram, distance_finder, linkage_distance, max_distance), max_distance_(max_distance), weight_f_(weight_f) {
+			base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f) {
 	}
+
+    virtual ~WeightedDistanceEstimator() {
+    }
 
 };
     
