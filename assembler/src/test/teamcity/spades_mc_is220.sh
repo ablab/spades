@@ -8,7 +8,7 @@
 
 set -e
 pushd ../../../
-rm -f spades_output/ECOLI_IS220_QUAKE/latest
+rm -f spades_output/ECOLI_IS220_QUAKE
 ./spades.py src/test/teamcity/spades_config_mc_is220.info
-python src/test/teamcity/assess.py spades_output/ECOLI_IS220_QUAKE/latest/quality_results/transposed_report.tsv 80000 3
+python src/test/teamcity/assess.py spades_output/ECOLI_IS220_QUAKE/quality_results/transposed_report.tsv 80000 3
 popd
