@@ -10,7 +10,7 @@ set -e
 pushd ../../../
 rm -rf spades_output/ECOLI_IS220_QUAKE_100K_SAVES
 #etalon=spades_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
-etalon=../../../etalon_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
+etalon=/smallnas/teamcity/etalon_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
 if [ ! -d $etalon ]; then
     echo "Error: no etalon saves at $etalon"
     exit 9
