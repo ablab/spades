@@ -19,13 +19,10 @@ fi
 
 pushd spades_output/ECOLI_IS220_QUAKE_100K_SAVES
 diffs=0
-for i in link_*
-do
-    echo "Exploring diff of saves for K=$i"
-    for f in $i/saves/*
+    for f in saves/*
     do
         set +e
-        diff $f $etalon/$f >> diff_with_etalon.txt
+        diff saves/$f $etalon/link_K55/saves/$f >> diff_with_etalon.txt
         errlvl=$?
         if [ $errlvl -ne 0 ]; then
             if [ $errlvl -eq 1 ]; then
@@ -38,7 +35,6 @@ do
         fi
         set -e
     done
-done
 popd
 popd
 
