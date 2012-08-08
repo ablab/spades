@@ -103,6 +103,7 @@ class KMerCounter {
 
  private:
   void Split();
+  size_t MergeKMers(const std::string &ifname, const std::string &ofname);
 
   DECL_LOGGER("K-mer Counting");
 };

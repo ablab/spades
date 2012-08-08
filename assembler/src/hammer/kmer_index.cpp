@@ -9,6 +9,7 @@
 #include "valid_kmer_generator.hpp"
 #include "mmapped_reader.hpp"
 #include "mmapped_writer.hpp"
+#include "pointer_iterator.hpp"
 
 #include <algorithm>
 #ifdef USE_GLIBCXX_PARALLEL
@@ -170,8 +171,8 @@ static void EquallySplit(size_t size, unsigned num_threads, size_t *borders) {
   }
 }
 
-static void KmerHashUnique(const std::vector<KMerNo>::const_iterator first,
-                           const std::vector<KMerNo>::const_iterator last,
+static void KmerHashUnique(const MMappedRecordReader<KMerNo>::const_iterator first,
+                           const MMappedRecordReader<KMerNo>::const_iterator last,
                            std::vector<KMerCount> &result) {
   size_t size = last - first;
   if (size == 0)
@@ -311,28 +312,19 @@ static void KmerHashUnique(const std::vector<KMerNo>::const_iterator first,
   delete[] merged_overlaps;
 }
 
-static size_t MergeKMers(const std::string &ifname, const std::string &ofname) {
-  std::vector<KMerNo> vec;
+size_t KMerCounter::MergeKMers(const std::string &ifname, const std::string &ofname) {
   std::vector<KMerCount> vkmc;
 
-  // Make sure memory mapping is released as soon as possible
-  {
-    MMappedRecordReader<KMerNo> ins(ifname, /* unlink */ true);
-
-    vec.resize(ins.size());
-    ins.read(&vec[0], vec.size());
-    VERIFY(!ins.good());
-  }
-
+  MMappedRecordReader<KMerNo> ins(ifname, /* unlink */ true, -1ULL);
 #ifdef USE_GLIBCXX_PARALLEL
   // Explicitly force a call to parallel sort routine.
-  __gnu_parallel::sort(vec.begin(), vec.end(), KMerNo::is_less());
+  __gnu_parallel::sort(ins.begin(), ins.end(), KMerNo::is_less());
 #else
-  std::sort(vec.begin(), vec.end(), KMerNo::is_less());
+  std::sort(ins.begin(), ins.end(), KMerNo::is_less());
 #endif
   INFO("Sorting done, starting unification.");
 
-  KmerHashUnique(vec.begin(), vec.end(), vkmc);
+  KmerHashUnique(ins.begin(), ins.end(), vkmc);
 
   MMappedWriter os(ofname);
   os.reserve(vkmc.size() * sizeof(vkmc[0]));
