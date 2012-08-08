@@ -7,6 +7,8 @@
 #ifndef HAMMER_MMAPPED_READER_HPP
 #define HAMMER_MMAPPED_READER_HPP
 
+#include "pointer_iterator.hpp"
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -28,8 +30,11 @@ class MMappedReader {
       munmap(MappedRegion, BlockSize);
 
     BlockOffset += BlockSize;
+    // We do not add PROT_WRITE here intentionaly - remapping and write access
+    // is pretty error-prone.
     MappedRegion =
-        (uint8_t*)mmap(NULL, BlockSize, PROT_READ, MAP_FILE | MAP_PRIVATE,
+        (uint8_t*)mmap(NULL, BlockSize,
+                       PROT_READ, MAP_FILE | MAP_PRIVATE,
                        StreamFile, BlockOffset);
     VERIFY((intptr_t)MappedRegion != -1L);
   }
@@ -62,7 +67,7 @@ class MMappedReader {
       BlockSize = FileSize;
 
     MappedRegion =
-        (uint8_t*)mmap(NULL, BlockSize, PROT_READ, MAP_FILE | MAP_PRIVATE,
+        (uint8_t*)mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
                        StreamFile, 0);
     VERIFY((intptr_t)MappedRegion != -1L);
 
@@ -117,8 +122,12 @@ class MMappedReader {
 template<typename T>
 class MMappedRecordReader : public MMappedReader {
  public:
-  MMappedRecordReader(const std::string &FileName, bool unlink = true):
-      MMappedReader(FileName, unlink) {
+  typedef pointer_iterator<T> iterator;
+  typedef const pointer_iterator<T> const_iterator;
+  
+  MMappedRecordReader(const std::string &FileName, bool unlink = true,
+                      size_t blocksize = 64*1024*1024):
+      MMappedReader(FileName, unlink, blocksize) {
     VERIFY(FileSize % sizeof(T) == 0);
   }
 
@@ -127,6 +136,12 @@ class MMappedRecordReader : public MMappedReader {
   }
 
   size_t size() const { return FileSize / sizeof(T); }
+  T* data() const { return (T*)MappedRegion; }
+
+  iterator begin() { return iterator(data()); }
+  const_iterator begin() const { return const_iterator(data()); }
+  iterator end() { return iterator(data()+ size()); }
+  const_iterator end() const { return const_iterator(data() + size()); }
 };
 
 
