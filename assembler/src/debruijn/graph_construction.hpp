@@ -33,6 +33,9 @@
 
 namespace debruijn_graph {
 
+// used for temporary reads storage during parallel reading
+static const size_t READS_BUFFER_SIZE = 512;
+
 typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
@@ -212,7 +215,7 @@ size_t FillIterativeParallelIndex(io::ReadStreamVector< io::IReader<Read> >& str
 	size_t counter = 0;
 
 	{
-		size_t cell_size = cfg::get().buffer_size
+		size_t cell_size = READS_BUFFER_SIZE
 				/ (nthreads * nthreads
 						* ((k_plus_1 / (4 * sizeof(seq_element_type)) + 1)
 								* sizeof(seq_element_type)));
