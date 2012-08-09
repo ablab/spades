@@ -8,6 +8,7 @@ import random
 
 if len(sys.argv) != 5:
 	print("Usage: " + sys.argv[0] + " <part> <contamination_reads> <main_reads> <output_file>")	
+	print ("add 1/<part> reads from contamination_reads to main reads")
 	sys.exit()
 
 contFileName = sys.argv[2]
@@ -17,7 +18,7 @@ mainFile = open(mainFileName, "r")
 outFileName = sys.argv[4]
 outFile = open(outFileName, "w")
 
-threshold = float(sys.argv[1])
+threshold = 1/float(sys.argv[1])
 
 
 
