@@ -99,6 +99,18 @@ inline const char* info_printer_pos_name(size_t pos) {
 
 } // namespace details
 
+inline std::string MakeLaunchTimeDirName() {
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
+    return std::string(buffer);
+}
+
 // struct for debruijn project's configuration file
 struct debruijn_config {
     typedef bimap<string, working_stage> stage_name_id_mapping;
@@ -106,6 +118,9 @@ struct debruijn_config {
     typedef bimap<string, estimation_mode> estimation_mode_id_mapping;
     typedef bimap<string, paired_metrics> paired_metrics_id_mapping;
 	typedef bimap<string, resolving_mode> resolve_mode_id_mapping;
+
+//  damn shit fix, it is to be removed!
+    boost::optional<bool> make_saves_dirs;
 
 	bool developer_mode;
 
@@ -865,7 +880,6 @@ inline void load(debruijn_config::jump_cfg& jump,
 inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-
     load(cfg.K, pt, "K");
 
 	// input options:
@@ -884,10 +898,23 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	// instead of dataset_name.
 	cfg.dataset_name = boost::filesystem::basename(boost::filesystem::path(cfg.dataset_file));
 
+    // TODO: remove this shit
+	cfg.make_saves_dirs = pt.get_optional<bool>("make_saves_dirs");
 
-	cfg.output_root = cfg.output_base + "/K" + ToString(cfg.K) + "/";
+	load(cfg.project_name, pt, "project_name");
+	if (cfg.make_saves_dirs) {
+        cfg.output_root = cfg.project_name.empty()
+			? (cfg.output_base + "/K" + ToString(cfg.K) + "/")
+			: (cfg.output_base + cfg.project_name + "/K" + ToString(cfg.K) + "/");
+        cfg.output_suffix = MakeLaunchTimeDirName() + "/";
+        cfg.output_dir = cfg.output_root + cfg.output_suffix;
+    } 
+    else {
+        cfg.output_root = cfg.output_base + "/K" + ToString(cfg.K) + "/";
+        
+        cfg.output_dir = cfg.output_root;
+    }
 
-	cfg.output_dir = cfg.output_root;
 	cfg.output_saves = cfg.output_dir + "saves/";
 
 	load(cfg.log_filename, pt, "log_filename");
@@ -910,7 +937,10 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.load_from, pt, "load_from");
 	if (cfg.load_from[0] != '/') { // relative path
-		cfg.load_from = cfg.output_dir + cfg.load_from;
+		if (cfg.make_saves_dirs) 
+            cfg.load_from = cfg.output_root + cfg.load_from;
+        else 
+            cfg.load_from = cfg.output_dir + cfg.load_from;
 	}
 
 	load(cfg.entry_point, pt, "entry_point");

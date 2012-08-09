@@ -6,6 +6,7 @@
 
 K		55
 
+make_saves_dirs true
 project_name    ECOLI_1K
 dataset         ./configs/debruijn/datasets_archive/ECOLI_IS220_QUAKE_1K.info
 log_filename    log.properties
