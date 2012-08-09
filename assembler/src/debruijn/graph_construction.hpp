@@ -34,7 +34,7 @@
 namespace debruijn_graph {
 
 // used for temporary reads storage during parallel reading
-static const size_t READS_BUFFER_SIZE = 512;
+static const size_t READS_BUFFER_SIZE = 524288; // 512 MB
 
 typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
