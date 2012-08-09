@@ -41,7 +41,7 @@
 template<class IdType>
 struct EdgeInfo {
 	IdType edgeId_;
-	size_t offset_;
+	int offset_;
 	int count_;
 
 	EdgeInfo() :
@@ -74,7 +74,7 @@ public:
 
 private:
     //TODO: ask someone if putInIndex should increase count
-    void putInIndex(const Kmer &kmer, IdType id, size_t offset) {
+    void putInIndex(const Kmer &kmer, IdType id, int offset) {
         map_iterator mi = nodes_.find(kmer);
         if (mi == nodes_.end()) {
             nodes_.insert(make_pair(kmer, EdgeInfo<IdType>(id, offset)));
@@ -179,14 +179,14 @@ public:
     bool containsInIndex(const Kmer& kmer) const {
         TRACE("containsInIndex");
         map_const_iterator mci = nodes_.find(kmer);
-        return (mci != nodes_.end()) && (mci.second().offset_ != (size_t) -1);
+        return (mci != nodes_.end()) && (mci.second().offset_ != -1);
     }
 
     pair<IdType, size_t> get(const Kmer& kmer) const {
         map_const_iterator mci = nodes_.find(kmer);
         VERIFY(mci != nodes_.end());
         // contains
-        return make_pair(mci.second().edgeId_, mci.second().offset_);
+        return make_pair(mci.second().edgeId_, (size_t)mci.second().offset_);
     }
 
     bool deleteIfEqual(const Kmer& kmer, IdType id) {
