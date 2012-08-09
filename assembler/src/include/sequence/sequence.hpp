@@ -39,8 +39,6 @@
 
 class Sequence {
 
-    typedef uint16_t size_type;
-
 private:
     SequenceData* data_;
     size_t from_;

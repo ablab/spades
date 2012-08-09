@@ -41,7 +41,7 @@ class PairedRead {
   typedef std::pair<std::string, std::string> FilenamesType;
 
 
-  typedef uint16_t size_type;
+  typedef int16_t size_type;
 
   /*
    * Default constructor.
