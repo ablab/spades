@@ -79,6 +79,12 @@ else
     then
         change_config $2
     fi
+
+#   awful, awful!
+    awk -v property="make_saves_dirs" -v value="true"  '{if ($1==property) print property,value; else print $0}' configs/debruijn/config.info  > config1.info
+    mv config1.info configs/debruijn/config.info
+#   --------------------------------------------
+
     case $1 in
 
     'rd' ) run_n_measure build/release/bin/spades $cfg_debruijn/config.info ;;
