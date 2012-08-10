@@ -19,7 +19,7 @@ template<class Graph>
 class SmoothingDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 	typedef WeightedDistanceEstimator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef pair<int, int> Interval;
+	typedef pair<size_t, size_t> Interval;
 
 
     size_t threshold_;
@@ -44,8 +44,10 @@ protected:
         if (data.size() <= 1) 
             return result;
 
+        vector<PairInfo<EdgeId> > new_data;
+
         DataDivider data_divider(threshold_);
-		const vector<Interval>& clusters = data_divider.DivideData<EdgeId>(data);
+		const vector<Interval>& clusters = data_divider.DivideAndSmoothData<EdgeId>(data, new_data, this->weight_f_);
 		size_t cur = 0;
         stringstream ss;
         for (size_t i = 0; i < forward.size(); i++){
@@ -54,23 +56,23 @@ protected:
         DEBUG("Possible distances : " << ss.str());
 
 		for (size_t i = 0; i < clusters.size(); i++) {
-            int begin = clusters[i].first;
-            int end = clusters[i].second;
-            if (end - begin >= (int) min_peak_points_) {
-                size_t data_length = rounded_d(data[end - 1]) - rounded_d(data[begin]) + 1;
-                while (cur < forward.size() && (int) forward[cur] < rounded_d(data[begin]))
+            size_t begin = clusters[i].first;
+            size_t end = clusters[i].second;
+            if ((end - begin) >= min_peak_points_) {
+                size_t data_length = rounded_d(new_data[end - 1]) - rounded_d(new_data[begin]) + 1;
+                while (cur < forward.size() && (int) forward[cur] < rounded_d(new_data[begin]))
                     cur++;
                 if (cur == forward.size()) {
-                    DEBUG("Breaking " << rounded_d(data[begin]));
+                    DEBUG("Breaking " << rounded_d(new_data[begin]));
                     break;
                 }
-                if ((int) forward[cur] > rounded_d(data[end - 1])) 
+                if ((int) forward[cur] > rounded_d(new_data[end - 1])) 
                     continue;
                 else {
-                    PeakFinder<EdgeId> peakfinder(data, begin, end, round(data_length * range_coeff_), round(data_length * delta_coeff_), percentage_, derivative_threshold_);
-                    DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end - 1]));
+                    PeakFinder<EdgeId> peakfinder(new_data, begin, end, round(data_length * range_coeff_), round(data_length * delta_coeff_), percentage_, derivative_threshold_);
+                    DEBUG("Processing window : " << rounded_d(new_data[begin]) << " " << rounded_d(new_data[end - 1]));
                     peakfinder.FFTSmoothing(cutoff_);
-                    if ( (cur + 1) == forward.size() || (int) forward[cur + 1] > rounded_d(data[end - 1] )) {
+                    if ( (cur + 1) == forward.size() || (int) forward[cur + 1] > rounded_d(new_data[end - 1] )) {
                         if (round(inv_density_ * (end - begin)) > (int) data_length) {
                             result.push_back(make_pair(forward[cur], peakfinder.GetNormalizedWeight()));       // default weight is one
                             DEBUG("Pair made " << forward[cur] << " " << peakfinder.GetNormalizedWeight());
@@ -78,7 +80,7 @@ protected:
                         cur++;
                     } 
                     else {
-                        while (cur < forward.size() && (int) forward[cur] <= rounded_d(data[end - 1] )) {
+                        while (cur < forward.size() && (int) forward[cur] <= rounded_d(new_data[end - 1] )) {
                             if (peakfinder.IsPeak(forward[cur], 10)) { 
                                 result.push_back(make_pair(forward[cur], peakfinder.weight()));
                                 DEBUG("Pair made " << forward[cur] << " " << peakfinder.weight());
@@ -97,14 +99,14 @@ protected:
 			vector<size_t> forward = this->GetGraphDistancesLengths(first, second);
 		    vector<pair<size_t, double> > estimated;
             TRACE("Processing edge pair " << first << " " << second);
-            map<int, double> hist, smoothed_hist;
-            this->GetHistogram(data, hist);
-            this->ConvoluteWithIsHist(this->weight_f_, hist, smoothed_hist);
-            vector<PairInfo<EdgeId>> new_data;
-            for (auto iter = smoothed_hist.begin(); iter != smoothed_hist.end(); ++iter) 
-                new_data.push_back(PairInfo<EdgeId>(data[0].first, data[0].second, iter->first, iter->second, 0.));
+            //map<int, double> hist, smoothed_hist;
+            //this->GetHistogram(data, hist);
+            //this->ConvoluteWithIsHist(this->weight_f_, hist, smoothed_hist);
+            //vector<PairInfo<EdgeId>> new_data;
+            //for (auto iter = smoothed_hist.begin(); iter != smoothed_hist.end(); ++iter) 
+                //new_data.push_back(PairInfo<EdgeId>(data[0].first, data[0].second, iter->first, iter->second, 0.));
             if (forward.size() > 0) 
-                estimated = EstimateEdgePairDistances(first, second, new_data, forward);
+                estimated = EstimateEdgePairDistances(first, second, data, forward);
             else
                 estimated = FindEdgePairDistances(data);
 
@@ -133,17 +135,24 @@ public:
         if (data.size() <= 1)
             return result;
 		
+        vector<PairInfo<EdgeId> > new_data;
         DataDivider data_divider(threshold_);
-		const vector<Interval>& clusters = data_divider.DivideData<EdgeId>(data);
+		const vector<Interval>& clusters = data_divider.DivideAndSmoothData<EdgeId>(data, new_data, this->weight_f_);
         DEBUG("Seeking for distances");
+        TRACE("size " << new_data.size());
 		
         for (size_t i = 0; i < clusters.size(); i++) {
-            int begin = clusters[i].first;
-            int end = clusters[i].second;
-            size_t data_length = rounded_d(data[end - 1]) - rounded_d(data[begin]) + 1;
-            if (end - (int) begin > (int) min_peak_points_) {
-                PeakFinder<EdgeId> peakfinder(data, begin, end, round(data_length * range_coeff_), round(data_length * delta_coeff_), percentage_, derivative_threshold_);
-                DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end - 1]));
+            size_t begin = clusters[i].first;
+            size_t end = clusters[i].second;
+            TRACE("begin " << begin << ", " << " end " << end);
+            //for (size_t j = begin; j < end; ++j) {
+                //TRACE("hist before " << data[j]);
+            //}
+            size_t data_length = rounded_d(new_data[end - 1]) - rounded_d(new_data[begin]) + 1;
+            TRACE(data_length);
+            if (end - begin > min_peak_points_) {
+                PeakFinder<EdgeId> peakfinder(new_data, begin, end, round(data_length * range_coeff_), round(data_length * delta_coeff_), percentage_, derivative_threshold_);
+                DEBUG("Processing window : " << rounded_d(new_data[begin]) << " " << rounded_d(new_data[end - 1]));
 
                 TRACE("Smoothing via FFT");
                 

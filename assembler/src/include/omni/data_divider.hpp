@@ -28,7 +28,7 @@ namespace omnigraph {
 
 
 class DataDivider {
-    typedef pair<int, int> Interval;
+    typedef pair<size_t, size_t> Interval;
 
     //	double LeftDerivative(int index, vector<int> x, vector<int> y) {
     //		return outf[dist - min_value_ + 1][0] - outf[dist - min][0];
@@ -43,16 +43,12 @@ class DataDivider {
     //	}
 
     private:
-        int data_size_, data_length_, min_value_, max_value_;
+        size_t data_size_, data_length_;
+        int min_value_, max_value_;
         size_t threshold_;
 
-        bool isCluster(int index, const vector<int> & x, const vector<int> & y) {
-            VERIFY(index < data_size_ - 1);
-            return (size_t(abs(x[index + 1] - x[index])) > threshold_);
-        }
-
         template <class EdgeId>
-        bool isCluster(int index, const vector<PairInfo<EdgeId> >& data) {
+        bool IsANewCluster(size_t index, const vector<PairInfo<EdgeId> >& data) {
             VERIFY(index < data_size_ - 1);
             return (abs(data[index + 1].d - data[index].d) > threshold_);
         }
@@ -64,21 +60,56 @@ class DataDivider {
         }
 
         template <class EdgeId>
-        vector<Interval> DivideData(vector<PairInfo<EdgeId> > data){
+        vector<Interval> DivideData(const vector<PairInfo<EdgeId> >& data) {
 
             data_size_ = data.size();
+            VERIFY(data_size_ > 0);
             vector<Interval> answer;
 
             min_value_ = rounded_d(data.front());
             max_value_ = rounded_d(data.back());
-            int begin = 0;
-            for (int i = 0; i < data_size_ - 1; i++) {
-                if (isCluster(i, data)){ 
+            size_t begin = 0;
+            for (size_t i = 0; i < data_size_ - 1; i++) {
+                if (IsANewCluster(i, data)){ 
                     answer.push_back(make_pair(begin, i + 1));
                     begin = i + 1;
                 }
             }
             answer.push_back(make_pair(begin, data_size_));
+
+            return answer;
+        }
+
+        template <class EdgeId>
+        vector<Interval> DivideAndSmoothData(const vector<PairInfo<EdgeId> >& data, vector<PairInfo<EdgeId> >& new_data, boost::function<double(int)> weight_f) {
+
+            data_size_ = data.size();
+            VERIFY(data_size_ > 0);
+            vector<Interval> answer;
+
+            min_value_ = rounded_d(data.front());
+            max_value_ = rounded_d(data.back());
+            size_t begin = 0;
+            for (size_t i = 0; i < data_size_; i++) {
+                if (i == data_size_ - 1 || IsANewCluster(i, data)) {
+                    int low_val = data[begin].d;
+                    int high_val = data[i].d;
+                    size_t new_begin = new_data.size();
+                    VERIFY(low_val <= high_val);
+                    for (int j = low_val; j <= high_val; ++j) {
+                        double val = 0.;
+                        for (size_t k = begin; k <= i; ++k) {
+                            val += data[k].weight * weight_f(j - data[k].d);
+                        }
+                        new_data.push_back(PairInfo<EdgeId>(data[0].first, data[0].second, j, val, 0.)); 
+                    }
+                    size_t new_end = new_data.size();
+                    answer.push_back(make_pair(new_begin, new_end));
+
+                    begin = i + 1;
+                }
+            }
+            //answer.push_back(make_pair(beginc, new_data.size()));
 
             return answer;
         }

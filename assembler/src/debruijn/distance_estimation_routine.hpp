@@ -102,7 +102,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		boost::function<double(int)> weight_function;
 
 		if (cfg::get().est_mode
-				== debruijn_graph::estimation_mode::em_weighted) {
+				== debruijn_graph::estimation_mode::em_weighted || cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing) {
 			INFO("Retaining insert size distribution for it");
 			auto streams = paired_binary_readers(false, 0);
 			InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist =
