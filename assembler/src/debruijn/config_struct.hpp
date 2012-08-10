@@ -120,7 +120,7 @@ struct debruijn_config {
 	typedef bimap<string, resolving_mode> resolve_mode_id_mapping;
 
 //  damn shit fix, it is to be removed!
-    boost::optional<bool> make_saves_dirs;
+    bool make_saves_dirs;
 
 	bool developer_mode;
 
@@ -900,8 +900,8 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	cfg.dataset_name = boost::filesystem::basename(boost::filesystem::path(cfg.dataset_file));
 
     // TODO: remove this shit
-	cfg.make_saves_dirs = pt.get_optional<bool>("make_saves_dirs");
-
+	load(cfg.make_saves_dirs, pt, "make_saves_dirs");
+    
 	if (cfg.make_saves_dirs) {
 	    load(cfg.project_name, pt, "project_name");
         cfg.output_root = cfg.project_name.empty()
