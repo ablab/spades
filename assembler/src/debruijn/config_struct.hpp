@@ -902,8 +902,8 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
     // TODO: remove this shit
 	cfg.make_saves_dirs = pt.get_optional<bool>("make_saves_dirs");
 
-	load(cfg.project_name, pt, "project_name");
 	if (cfg.make_saves_dirs) {
+	    load(cfg.project_name, pt, "project_name");
         cfg.output_root = cfg.project_name.empty()
 			? (cfg.output_base + "/K" + ToString(cfg.K) + "/")
 			: (cfg.output_base + cfg.project_name + "/K" + ToString(cfg.K) + "/");
