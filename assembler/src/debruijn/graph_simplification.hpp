@@ -652,9 +652,9 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	RemoveBulges(gp.g, removal_handler_f);
 	printer(ipp_final_bulge_removal);
 
-	INFO("Complex bulge removal:");
-	OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
-	licvidator.Licvidate();
+//	INFO("Complex bulge removal:");
+//	OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+//	licvidator.Licvidate();
 }
 
 double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
