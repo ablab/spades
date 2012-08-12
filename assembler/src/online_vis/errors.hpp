@@ -63,20 +63,22 @@ namespace online_visualization {
 
     bool CheckVertexExists(const IdTrackHandler<Graph>& int_ids, size_t vertex_id) {
         VertexId vertex = int_ids.ReturnVertexId(vertex_id);
-        if (vertex == VertexId(NULL))
-            return true;
-        else {
+        if (vertex == VertexId(NULL)) {
             FireVertexDoesNotExist(vertex_id);
             return false;
+        } 
+        else {
+            return true;
         }
     }
 
     bool CheckEdgeExists(const IdTrackHandler<Graph>& int_ids, size_t edge_id) {
         EdgeId edge = int_ids.ReturnEdgeId(edge_id);
-        if (edge == EdgeId(NULL)) 
-            return false;   
-        else {
+        if (edge == EdgeId(NULL)) {
             FireEdgeDoesNotExist(edge_id);
+            return false;   
+        }
+        else {
             return true;
         }
     }

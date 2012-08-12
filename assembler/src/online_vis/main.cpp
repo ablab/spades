@@ -28,8 +28,9 @@ void create_console_logger(fs::path cfg_filename) {
 	if (!exists(log_props_file))
 		log_props_file = fs::path(cfg_filename).parent_path() / cfg::get().log_filename;
 
-	create_logger(exists(log_props_file) ? log_props_file.string() : "");
-	__logger()->add_writer(make_shared<console_writer>());
+    logger *lg = create_logger(exists(log_props_file) ? log_props_file.string() : "");
+    lg->add_writer(make_shared<console_writer>());
+    attach_logger(lg);
 }
 
 

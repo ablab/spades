@@ -43,7 +43,7 @@ namespace online_visualization {
 
                 size_t from = GetInt(args_[0]);
                 size_t to = GetInt(args_[1]);
-                size_t max_length = 0;
+                size_t max_length = 10000000;
                 if (args_.size() > 2) 
                     max_length = GetInt(args_[2]);
 

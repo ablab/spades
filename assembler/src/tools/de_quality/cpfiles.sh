@@ -17,6 +17,7 @@ fi
     cp $path/estimation_qual/* .
     cp $path/etalon_corrected_by_graph.prd distance_estimation_et.prd 
     cp $path/etalon*.prd . 
+    cp $path/scaf*.prd . 
 
 sed '1d' distance_estimation_et.prd > etalon.prd
 sed '1d' distance_estimation_cl.prd > clustered.prd
