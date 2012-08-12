@@ -8,7 +8,7 @@
 
 set -e
 pushd ../../../
-rm -f spades_output/ECOLI_SC_BH_SPADES
+rm -rf spades_output/ECOLI_SC_BH_SPADES
 read line < /storage/data/input/E.coli.K12/mda_lane_1/spades.options 
 echo $line
 
