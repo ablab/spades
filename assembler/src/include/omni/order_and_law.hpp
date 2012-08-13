@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <boost/utility.hpp>
+
 #include <ostream>
 #include <unordered_set>
 #include <unordered_map>
@@ -14,14 +16,49 @@
 namespace restricted
 {
 
+class IdDistributor : boost::noncopyable {
+public:
+	virtual size_t GetId() = 0;
+};
+
+
+// Id distributor for pure_pointer. Singleton.
+class GlobalIdDistributor : public IdDistributor {
+
+public:
+	size_t GetId() {
+		return GetIdPool(1);
+	}
+
+	// return first of new ids
+	size_t GetIdPool(size_t quantity) {
+		size_t first_id = max_int_id_ + 1;
+		max_int_id_ += quantity;
+
+		return first_id;
+	}
+
+	static GlobalIdDistributor* GetInstance() {
+		static GlobalIdDistributor instance;
+		return &instance;
+	}
+
+private:
+	GlobalIdDistributor() : max_int_id_(1) { }
+
+	size_t max_int_id_;
+};
+
+
 template<class T>
 	struct pure_pointer
 {
 	typedef T  type;
 	typedef T* pointer_type;
 
-	explicit pure_pointer(T *ptr = 0)
-		: ptr_(ptr), int_id_(generate_id(ptr))
+	explicit pure_pointer(T *ptr = 0,
+			IdDistributor * idDistributor = GlobalIdDistributor::GetInstance())
+		: ptr_(ptr), int_id_(generate_id(ptr, idDistributor))
 	{
 	}
 
@@ -46,17 +83,12 @@ template<class T>
 
 private:
 
-	static size_t generate_id(T *ptr) {
+	static size_t generate_id(T *ptr, IdDistributor * idDistributor) {
 		if(ptr == 0 || ptr == (T*)1 || ptr == (T*)(-1)) {
 			return size_t(ptr);
 		}
-		return get_new_int_id();
-	}
 
-	static size_t get_new_int_id() {
-		static size_t max_int_id = 1;
-		max_int_id++;
-		return max_int_id;
+		return idDistributor->GetId();
 	}
 
 	T *ptr_;

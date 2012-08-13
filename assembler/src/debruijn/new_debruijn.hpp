@@ -13,6 +13,7 @@
 #include "omni/coverage.hpp"
 #include "omni/id_track_handler.hpp"
 #include "sequence/sequence_tools.hpp"
+#include "omni/concurrent_graph_component.hpp"
 
 namespace debruijn_graph {
 using omnigraph::CoverageIndex;
@@ -96,6 +97,9 @@ public:
 
 template<class T>
 class DeBruijnGraph: public T {
+
+	friend class omnigraph::ConcurrentGraphComponent<DeBruijnGraph>;
+
 public:
 	typedef T base;
 	typedef typename base::VertexId VertexId;
@@ -103,6 +107,8 @@ public:
 	typedef typename base::VertexData VertexData;
 	typedef typename base::EdgeData EdgeData;
 	typedef typename base::VertexIterator VertexIterator;
+	typedef VertexIterator iterator; // for for_each
+	typedef const VertexIterator const_iterator; // for for_each
 private:
 	const size_t k_;
 	CoverageIndex<DeBruijnGraph> coverage_index_;

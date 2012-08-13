@@ -15,9 +15,10 @@
 #define TIP_CLIPPER_HPP_
 
 #include <set>
-//#include "edge_graph.hpp"
-//#include "utils.hpp"
+
 #include "omni_utils.hpp"
+#include "sequential_algorithm.hpp"
+#include "sequential_algorihtm_factory.hpp"
 #include "xmath.h"
 //
 //#define DEFAULT_COVERAGE_BOUND 1000
@@ -31,40 +32,42 @@ namespace omnigraph {
  * the graph(in order defined by certain comparator) and for each edge checks if this edge is likely to be
  * a tip and if edge is judged to be one it is removed.
  */
-template<class Graph, typename Comparator>
-class AbstractTipClipper : private boost::noncopyable {
+template<class Graph>
+class AbstractTipClipper
+		: public SequentialAlgorithm<typename Graph::EdgeId>,
+		  private boost::noncopyable {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
 	Graph &graph_;
-	Comparator comparator_;
+	SmartSet<Graph, EdgeId> not_processed_edges_;
+	size_t removed_;
+
 public:
 	const size_t max_tip_length_;
+
 private:	
     boost::function<void(EdgeId)> removal_handler_;
-	//boost::function<double (EdgeId)> qual_handler_;
-protected:
 
+protected:
 
 	/**
 	 * Create TipClipper with specified parameters. Those parameters could probably be replaced later with
 	 * certain generic checker class.
 	 */
-	AbstractTipClipper(Graph &graph, Comparator comparator,
+	AbstractTipClipper(
+			Graph &graph,
 			size_t max_tip_length,
-			boost::function<void(EdgeId)> removal_handler = 0, boost::function<double(EdgeId)> qual_f = 0) :
-			graph_(graph), comparator_(comparator), max_tip_length_(
-					max_tip_length), removal_handler_(removal_handler) {
+			boost::function<void(EdgeId)> removal_handler = 0,
+			boost::function<double(EdgeId)> qual_f = 0)
+				: graph_(graph),
+				  not_processed_edges_(graph, std::less<EdgeId>(), false),
+				  removed_(0),
+				  max_tip_length_(max_tip_length),
+				  removal_handler_(removal_handler) {
 
 	}
-    //
-	//TipClipper(Graph &graph, Comparator comparator, size_t max_tip_length,
-			//size_t max_coverage, double max_relative_coverage, boost::function<void (EdgeId)> removal_handler = 0, boost::function<double (EdgeId)> qual_handler = 0) :
-				//graph_(graph), comparator_(comparator),
-				//max_tip_length_(max_tip_length), max_coverage_(max_coverage),
-				//max_relative_coverage_(max_relative_coverage), removal_handler_(removal_handler), qual_handler_(qual_handler)  {
-	//}
 
 	const Graph& graph() const{
 		return graph_;
@@ -73,10 +76,6 @@ protected:
     Graph& graph(){
         return graph_;   
     }
-
-	const Comparator& comparator() const {
-		return comparator_;
-	}
 
 	/**
 	 * This method checks if given vertex topologically looks like end of tip
@@ -101,11 +100,12 @@ protected:
 
 	void CompressSplitVertex(VertexId splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
-//	EdgeId edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
-//	EdgeId edge2 = graph_.GetUniqueIncomingEdge(splitVertex);
-//	if (IsTip(edge1) || IsTip(edge2)) {
-				graph_.CompressVertex(splitVertex);
-//	}
+
+			// for debug. It should happen only if CanCompressVertex
+			// invalidate graph.
+			VERIFY(graph_.IsValid());
+
+			graph_.CompressVertex(splitVertex);
 		}
 	}
 
@@ -134,6 +134,17 @@ protected:
 		ProcessVertex(end);
 	}
 
+	virtual bool TryToRemoveTip(EdgeId tip) {
+		if (graph_.IsInternalSafe(tip) && graph_.IsValid()) {
+			RemoveTip(tip);
+			TRACE("Edge " << tip << " removed as a tip");
+			return true;
+		} else {
+			TRACE("Component is invalid. " << "Edge "  << tip << " can not be removed in parallel.");
+			return false;
+		}
+	}
+
 	/**
 	 * This method checks if given edge is a tip and thus should be removed
 	 * @param tip edge to check
@@ -145,46 +156,44 @@ public:
 	/**
 	 * Method clips tips of the graph.
 	 */
-    virtual void ClipTips() {
-		TRACE("Tip clipping (maximal corruption mode) started");
-        size_t removed = 0;
-        for (auto iterator = this->graph().SmartEdgeBegin(this->comparator()); !iterator.IsEnd(); ) {
-			EdgeId tip = *iterator;
-			TRACE("Checking edge for being tip "  << this->graph().str(tip));
-			if (this->IsTip(tip)) {
-				TRACE("Edge "  << this->graph().str(tip) << " judged to look like a tip topologically");
-				if (AdditionalCondition(tip)) {
-                    TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
-                    this->RemoveTip(tip);
-                    removed++;
-                    TRACE("Edge "  << tip << " removed as a tip");
-				} else {
-					TRACE("Edge "  << this->graph().str(tip) << " judged NOT to be tip");
-				}
-			} else {
-				TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like tip topologically");
-			}
-			TRACE("Try to find next edge");
-			++iterator;
-			TRACE("Use next edge");
-		}
-		TRACE("Tip clipping finished");
+    virtual void ProcessNext(const EdgeId& tip) {
+		TRACE("Checking edge for being tip "  << this->graph().str(tip));
+		if (this->IsTip(tip)) {
+			TRACE("Edge "  << this->graph().str(tip) << " judged to look like a tip topologically");
+			if (AdditionalCondition(tip)) {
+				TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
 
-        DEBUG("REMOVED " << removed);
-		Compressor<Graph> compressor(this->graph());
-		compressor.CompressAllVertices();
+				if (this->TryToRemoveTip(tip)) {
+					removed_++;
+				}
+
+			} else {
+				TRACE("Edge "  << this->graph().str(tip) << " judged NOT to be tip");
+			}
+		} else {
+			TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like tip topologically");
+		}
+    }
+
+    virtual void Preprocessing() {
+    	TRACE("Tip clipping (maximal corruption mode) started");
+    }
+
+    virtual void Postprocessing() {
+    	TRACE("Tip clipping finished");
+    	DEBUG("REMOVED " << removed_);
     }
 
 private:
 	DECL_LOGGER("AbstractTipClipper")
 };
 
-template<class Graph, typename Comparator>
-class DefaultTipClipper: public AbstractTipClipper<Graph, Comparator> {
+template<class Graph>
+class DefaultTipClipper: public AbstractTipClipper<Graph> {
 
 typedef typename Graph::EdgeId EdgeId;
 typedef typename Graph::VertexId VertexId;
-typedef AbstractTipClipper<Graph, Comparator> base;
+typedef AbstractTipClipper<Graph> base;
         
 private:
     const size_t max_coverage_;
@@ -221,31 +230,82 @@ private:
 
 public:
 
-	DefaultTipClipper(Graph &graph, Comparator comparator, size_t max_tip_length, size_t max_coverage, double max_relative_coverage, 
-			boost::function<void(EdgeId)> removal_handler = 0, boost::function<double(EdgeId)> qual_f = 0) :
-			base(graph, comparator, max_tip_length, removal_handler, qual_f), max_coverage_(
-					max_coverage), max_relative_coverage_(max_relative_coverage) {
+	DefaultTipClipper(
+			Graph &graph,
+			size_t max_tip_length,
+			size_t max_coverage,
+			double max_relative_coverage,
+			boost::function<void(EdgeId)> removal_handler = 0,
+			boost::function<double(EdgeId)> qual_f = 0)
+				: base(graph, max_tip_length, removal_handler, qual_f),
+				  max_coverage_(max_coverage),
+				  max_relative_coverage_(max_relative_coverage) {
 	}
 
 private:
     DECL_LOGGER("DefaultTipClipper")
 };
 
+template<class Graph>
+class DefaultTipClipperFactory : public SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> {
 
-template<class Graph, typename Comparator>
-class AdvancedTipClipper: public AbstractTipClipper<Graph, Comparator> {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef SequentialAlgorihtmFactory<Graph, EdgeId> Base;
+	typedef typename Base::AlgorithmPtr AlgorithmPtr;
+
+	DefaultTipClipperFactory(
+			size_t max_tip_length,
+			size_t max_coverage,
+			double max_relative_coverage,
+			boost::function<void(EdgeId)> removal_handler = 0,
+			boost::function<double(EdgeId)> qual_f = 0)
+				: 	max_tip_length_(max_tip_length),
+				  	max_coverage_(max_coverage),
+				  	max_relative_coverage_(max_relative_coverage),
+				  	removal_handler_(removal_handler_),
+				  	qual_f_(qual_f) {
+	}
+
+	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
+		AlgorithmPtr ptr(
+				new DefaultTipClipper<Graph>(
+						graph, max_tip_length_, max_coverage_,
+						max_relative_coverage_, removal_handler_, qual_f_));
+		return ptr;
+	}
+
+private:
+	size_t max_tip_length_;
+	size_t max_coverage_;
+	double max_relative_coverage_;
+	boost::function<void(EdgeId)> removal_handler_;
+	boost::function<double(EdgeId)> qual_f_;
+};
+
+
+
+template<class Graph>
+class AdvancedTipClipper: public AbstractTipClipper<Graph> {
 
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef AbstractTipClipper<Graph, Comparator> base;
-    TipLock<EdgeId> tip_lock;
+	typedef AbstractTipClipper<Graph> base;
+    TipLock<EdgeId> tip_lock_;
 
     const size_t max_coverage_;
     const double max_relative_coverage_;
     const size_t max_iterations_;
     const size_t max_levenshtein_;
     const size_t max_ec_length_;
+
+    size_t removed_;
+    size_t removed_with_check_;
+    size_t locked_;
+    bool final_stage_;
+
+    TipChecker<Graph> tipchecker_;
 
 	double MaxCompetitorCoverage(EdgeId tip, vector<EdgeId> competitors) const {
 		double result = 0;
@@ -339,9 +399,9 @@ private:
         return math::ls(200.*this->graph().coverage(tip), max_coverage);
     }
 
-    bool TipHasLowRelativeCoverage(EdgeId tip, bool final_stage = false) const {
+    bool TipHasLowRelativeCoverage(EdgeId tip) const {
         double min_covlen = MinCompetitorCoverage(tip);  
-        if (final_stage && this->graph().length(tip) < this->graph().k() / 2) 
+        if (final_stage_ && this->graph().length(tip) < this->graph().k() / 2)
             return true;
         return math::ls(this->graph().coverage(tip)/this->graph().length(tip), min_covlen);
     }
@@ -358,117 +418,170 @@ private:
 
 public:
 
-	AdvancedTipClipper(Graph &graph, Comparator comparator, size_t max_tip_length,
-			size_t max_coverage, double max_relative_coverage, size_t max_iterations, size_t max_levenshtein, size_t max_ec_length,
-			boost::function<void(EdgeId)> removal_handler = 0) :
-			base(graph, comparator, max_tip_length, removal_handler), max_coverage_(
-					max_coverage), max_relative_coverage_(max_relative_coverage), max_iterations_(max_iterations),
-                            max_levenshtein_(max_levenshtein), max_ec_length_(max_ec_length) {
+	AdvancedTipClipper(
+			Graph &graph,
+			size_t max_tip_length,
+			size_t max_coverage,
+			double max_relative_coverage,
+			size_t max_iterations,
+			size_t max_levenshtein,
+			size_t max_ec_length,
+			boost::function<void(EdgeId)> removal_handler = 0,
+			bool final_stage = false)
+				: base(graph, max_tip_length, removal_handler),
+				  max_coverage_(max_coverage),
+				  max_relative_coverage_(max_relative_coverage),
+				  max_iterations_(max_iterations),
+				  max_levenshtein_(max_levenshtein),
+				  max_ec_length_(max_ec_length),
+				  final_stage_(final_stage),
+				  tipchecker_(graph, tip_lock_, max_iterations_, max_levenshtein_, max_tip_length, max_ec_length_) {
+
+        removed_ = 0;
+        removed_with_check_ = 0;
+        locked_ = 0;
+	}
+
+
+	virtual void Preprocessing() {
+		TRACE("Tip clipping started");
+	}
+
+	virtual void Postprocessing() {
+		TRACE("Tip clipping finished");
+        DEBUG("REMOVED STATS " << removed_with_check_ << " " << removed_);
+        DEBUG("LOCKED " << locked_);
 	}
 
     // Method deletes tips from the graph carefully, its work depends on the number of simplification iteration
+	virtual void ProcessNext(const EdgeId& tip) {
+        TRACE("Use next edge");
+		TRACE("Checking edge for being a tip "  << this->graph().str(tip));
 
-	void ClipTips(bool final_stage){
-        size_t removed = 0;
-        size_t removed_with_check = 0;
-        size_t locked = 0;
-		TRACE("Tip clipping started");
-        
-        TipChecker<Graph> tipchecker(this->graph(), tip_lock, max_iterations_, max_levenshtein_, this->max_tip_length_, max_ec_length_);
-         
-		for (auto iterator = this->graph().SmartEdgeBegin(this->comparator()); !iterator.IsEnd(); ++iterator) {
-			EdgeId tip = *iterator;
-			TRACE("Checking edge for being a tip "  << this->graph().str(tip));
-			if (this->IsTip(tip)) {
-				TRACE("Edge "  << this->graph().str(tip) << " judged to look like tip topologically");
-				if (AdditionalCondition(tip)) {
-                    TRACE("Additional checking");
-                    removed++;
-                    
-                    // if tip was locked, we should not delete it
-                    if (tip_lock.IsLocked(tip)){
-                        TRACE("Tip " << this->graph().str(tip) << " was locked => can not remove it");
-                        locked++;
-                        continue;
-                    }
-                    
-                    // removing only if stage is final
-                    if (final_stage && CheckUniqueExtension(tip)){
-                        TRACE("Edge " << this->graph().str(tip) << " has a unique extension");
-                        this->RemoveTip(tip);
-                        TRACE("Edge " << tip << " was removed"); 
-                        continue;
-                    }
+		if (this->IsTip(tip)) {
+			TRACE("Edge "  << this->graph().str(tip) << " judged to look like tip topologically");
+			if (AdditionalCondition(tip)) {
+				TRACE("Additional checking");
+				removed_++;
 
-                    // tricky condition -- not removing short edges with high coverage until the final stage
-                    if (!TipHasLowRelativeCoverage(tip, final_stage)){
-                        TRACE("Tip is covered well too much => not removing");
-                        continue;
-                    }
-                    
-                    // now we delete tip if we are not in the final stage
-                    if (!final_stage){
-					    TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
-                        removed_with_check++;
-                        this->RemoveTip(tip);
-                        TRACE("Edge "  << tip << " removed as a tip");
-                        continue;
-                    }
-                    
-                    // now we are in the final stage 
-                    // if the tip is covered very badly we delete it with no doubt
-                    if (TipHasVeryLowRelativeCoverage(tip)){
-					    TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
-                        removed_with_check++;
-                        this->RemoveTip(tip);
-                        TRACE("Edge "  << tip << " removed as a tip");
-                        continue;
-                    }
-
-                    // additional topology kind of check at the final stages
-                    if (tipchecker.TipCanBeProjected(tip)){
-                        TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
-                        removed_with_check++;
-                        this->RemoveTip(tip);
-                        TRACE("Edge "  << tip << " removed as a tip");
-                        continue;
-                    }
-					TRACE("Edge "  << this->graph().str(tip) << " is not a tip");
-				} else {
-					TRACE("Edge "  << this->graph().str(tip) << " judged NOT to be a tip");
+				// if tip was locked, we should not delete it
+				if (tip_lock_.IsLocked(tip)){
+					TRACE("Tip " << this->graph().str(tip) << " was locked => can not remove it");
+					locked_++;
+					return;
 				}
+
+				// removing only if stage is final
+				if (final_stage_ && CheckUniqueExtension(tip)){
+					TRACE("Edge " << this->graph().str(tip) << " has a unique extension");
+					this->TryToRemoveTip(tip);
+					return;
+				}
+
+				// tricky condition -- not removing short edges with high coverage until the final stage
+				if (!TipHasLowRelativeCoverage(tip)){
+					TRACE("Tip is covered well too much => not removing");
+					return;
+				}
+
+				// now we delete tip if we are not in the final stage
+				if (!final_stage_){
+					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
+					if (this->TryToRemoveTip(tip)) {
+						removed_with_check_++;
+					}
+					return;
+				}
+
+				// now we are in the final stage
+				// if the tip is covered very badly we delete it with no doubt
+				if (TipHasVeryLowRelativeCoverage(tip)){
+					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
+					if (this->TryToRemoveTip(tip)) {
+						removed_with_check_++;
+					}
+					return;
+				}
+
+				// additional topology kind of check at the final stages
+				if (tipchecker_.TipCanBeProjected(tip)){
+					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
+					if (this->TryToRemoveTip(tip)) {
+						removed_with_check_++;
+					}
+					return;
+				}
+				TRACE("Edge "  << this->graph().str(tip) << " is not a tip");
 			} else {
-				TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like a tip topologically");
+				TRACE("Edge "  << this->graph().str(tip) << " judged NOT to be a tip");
 			}
-			TRACE("Try to find next edge");
-			TRACE("Use next edge");
+		} else {
+			TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like a tip topologically");
 		}
-		TRACE("Tip clipping finished");
-        
-        DEBUG("REMOVED STATS " << removed_with_check << " " << removed);
-        DEBUG("LOCKED " << locked);
-        //DEBUG("REMOVED GOOD " << good_removed);
-        //DEBUG("TOTAL GOOD " << good_total);
-
-		Compressor<Graph> compressor(this->graph());
-		compressor.CompressAllVertices();
 	}
-
-    void ClipTips(){
-        ClipTips(false);   
-    }
 
 
 private:
 	DECL_LOGGER("AdvancedTipClipper")
 };
 
-template<class Graph, typename Comparator>
-class TopologyTipClipper : public AbstractTipClipper<Graph, Comparator> {
+
+template <class Graph>
+class AdvancedTipClipperFactory : public SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> {
+
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef SequentialAlgorihtmFactory<Graph, EdgeId> Base;
+	typedef typename Base::AlgorithmPtr AlgorithmPtr;
+
+	AdvancedTipClipperFactory (
+			size_t max_tip_length,
+			size_t max_coverage,
+			double max_relative_coverage,
+			size_t max_iterations,
+			size_t max_levenshtein,
+			size_t max_ec_length,
+			boost::function<void(EdgeId)> removal_handler = 0,
+			bool final_stage = false)
+				: 	max_tip_length_(max_tip_length),
+				  	max_coverage_(max_coverage),
+				  	max_relative_coverage_(max_relative_coverage),
+				  	max_iterations_(max_iterations),
+				  	max_levenshtein_(max_levenshtein),
+				  	max_ec_length_(max_ec_length),
+				  	removal_handler_(removal_handler),
+				  	final_stage_(final_stage) {
+	}
+
+	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
+		AlgorithmPtr ptr(
+			new AdvancedTipClipper<Graph>(
+					graph, max_tip_length_, max_coverage_,
+				  	max_relative_coverage_, max_iterations_, max_levenshtein_,
+				  	max_ec_length_, removal_handler_, final_stage_));
+
+		return ptr;
+	}
+
+private:
+	size_t max_tip_length_;
+	size_t max_coverage_;
+	double max_relative_coverage_;
+	size_t max_iterations_;
+	size_t max_levenshtein_;
+	size_t max_ec_length_;
+	boost::function<void(EdgeId)> removal_handler_;
+	bool final_stage_;
+
+};
+
+
+template<class Graph>
+class TopologyTipClipper : public AbstractTipClipper<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef AbstractTipClipper<Graph, Comparator> base;
+	typedef AbstractTipClipper<Graph> base;
 
 	size_t uniqueness_length_;
 	size_t plausibility_length_;
@@ -517,17 +630,23 @@ protected:
 	}
 
 public:
-	TopologyTipClipper(Graph &graph, Comparator comparator,
-			size_t max_tip_length, size_t uniqueness_length,
+	TopologyTipClipper(
+			Graph &graph,
+			size_t max_tip_length,
+			size_t uniqueness_length,
 			size_t plausibility_length,
-			boost::function<void(EdgeId)> removal_handler = 0) :
-			base(graph, comparator, max_tip_length, removal_handler), uniqueness_length_(
-					uniqueness_length), plausibility_length_(plausibility_length), unique_path_finder_(graph) {
+			boost::function<void(EdgeId)> removal_handler = 0)
+				: base(graph, max_tip_length, removal_handler),
+				  uniqueness_length_(uniqueness_length),
+				  plausibility_length_(plausibility_length),
+				  unique_path_finder_(graph) {
 	}
 
 private:
 	DECL_LOGGER("TopologyTipClipper")
 };
-}
+
+
+} // namespace omnigraph
 
 #endif /* TIP_CLIPPER_HPP_ */

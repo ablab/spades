@@ -154,6 +154,13 @@ public:
 			vector<double> &split_coefficients, VertexId oldVertex) {
 	}
 
+	/**
+	 * Every thread safe descendant should override this method for correct concurrent graph processing.
+	 */
+	bool IsThreadSafe() const {
+		return false;
+	}
+
 };
 
 template<class Graph>
@@ -611,18 +618,18 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartEdgeIterator(const Graph &graph, Comparator comparator = Comparator()) :
+	SmartEdgeIterator(const Graph &graph, Comparator comparator = Comparator(), vector<EdgeId>* edges = 0) :
 			SmartIterator<Graph, EdgeId, Comparator>(graph,
 					"SmartEdgeIterator " + ToString(this), true, comparator) {
-		for (auto it = graph.begin(); it != graph.end(); ++it) {
-			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
-			this->super::insert(outgoing.begin(), outgoing.end());
+		if (edges == 0) {
+			for (auto it = graph.begin(); it != graph.end(); ++it) {
+				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
+				this->super::insert(outgoing.begin(), outgoing.end());
+			}
+		} else {
+			this->super::insert(edges->begin(), edges->end());
 		}
 	}
-
-	virtual ~SmartEdgeIterator() {
-	}
-
 };
 
 template<class Graph, typename ElementId, typename Comparator = std::less<ElementId> >
@@ -670,6 +677,10 @@ public:
 
 	const_iterator end() const {
 		return inner_set_.end();
+	}
+
+	pair<iterator, bool> insert(const ElementId& elem) {
+		return inner_set_.insert(elem);
 	}
 
 	const set<ElementId, Comparator> &inner_set() {

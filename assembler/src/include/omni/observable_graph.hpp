@@ -91,42 +91,42 @@ private:
 //	GraphIdTrackHandler<ObservableGraph> element_order_;
 
 protected:
-	void FireAddingVertex(VertexId v) {
+	virtual void FireAddingVertex(VertexId v) {
 		for (auto it = action_handler_list_.begin();
 				it != action_handler_list_.end(); ++it) {
 			applier_->ApplyAdding(*it, v);
 		}
 	}
 
-	void FireAddingEdge(EdgeId edge) {
+	virtual void FireAddingEdge(EdgeId edge) {
 		for (auto it = action_handler_list_.begin();
 				it != action_handler_list_.end(); ++it) {
 			applier_->ApplyAdding(*it, edge);
 		}
 	}
 
-	void FireAddVertex(VertexId v) {
+	virtual void FireAddVertex(VertexId v) {
 		for (auto it = action_handler_list_.begin();
 				it != action_handler_list_.end(); ++it) {
 			applier_->ApplyAdd(*it, v);
 		}
 	}
 
-	void FireAddEdge(EdgeId edge) {
+	virtual void FireAddEdge(EdgeId edge) {
 		for (auto it = action_handler_list_.begin();
 				it != action_handler_list_.end(); ++it) {
 			applier_->ApplyAdd(*it, edge);
 		}
 	}
 
-	void FireDeleteVertex(VertexId v) {
+	virtual void FireDeleteVertex(VertexId v) {
 		for (auto it = action_handler_list_.rbegin();
 				it != action_handler_list_.rend(); ++it) {
 			applier_->ApplyDelete(*it, v);
 		}
 	}
 
-	void FireDeleteEdge(EdgeId edge) {
+	virtual void FireDeleteEdge(EdgeId edge) {
 		TRACE("FireDeleteEdge for "<<action_handler_list_.size()<<" handlers");
 		for (auto it = action_handler_list_.rbegin();
 				it != action_handler_list_.rend(); ++it) {
@@ -136,7 +136,7 @@ protected:
 		TRACE("FireDeleteEdge OK");
 	}
 
-	void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
+	virtual void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 		TRACE("Fire Merge");
 		for (auto it = action_handler_list_.begin();
 				it != action_handler_list_.end(); ++it) {
@@ -144,7 +144,7 @@ protected:
 		}
 	}
 
-	void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+	virtual void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 		TRACE("FireGlue for "<<action_handler_list_.size()<<" handlers");
 		for (auto it = action_handler_list_.begin();
 				it != action_handler_list_.end(); ++it) {
@@ -154,7 +154,7 @@ protected:
 		TRACE("FireGlue OK");
 	}
 
-	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
+	virtual void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
 		TRACE("Fire Split");
 		for (auto it = action_handler_list_.begin();
 				it != action_handler_list_.end(); ++it) {
@@ -163,7 +163,7 @@ protected:
 	}
 
 public:
-	void FireVertexSplit(VertexId newVertex,
+	virtual void FireVertexSplit(VertexId newVertex,
 			vector<pair<EdgeId, EdgeId> > newEdges,
 			vector<double> &split_coefficients, VertexId oldVertex) {
 		DEBUG("Fire VertexSplit");
@@ -260,6 +260,26 @@ public:
 //	ReliableComparator<VertexId> ReliableComparatorInstance() {
 //		return ReliableComparator<VertexId>(element_order_);
 //	}
+
+	bool AllHandlersThreadSafe() const {
+		for (auto it = action_handler_list_.begin();
+						it != action_handler_list_.end(); ++it) {
+			if (!(*it)->IsThreadSafe()) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// TODO: for debug. remove.
+	void PrintHandlersNames() const {
+		for (auto it = action_handler_list_.begin();
+				it != action_handler_list_.end(); ++it) {
+			cout << (*it)->name() << endl;
+		}
+	}
+
 
 private:
 	DECL_LOGGER("ObservableGraph")

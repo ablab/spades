@@ -16,6 +16,7 @@
 #include "omni_utils.hpp"
 #include "observable_graph.hpp"
 #include "id_track_handler.hpp"
+#include "order_and_law.hpp"
 
 namespace omnigraph {
 
@@ -41,8 +42,10 @@ private:
 
 	virtual void HiddenDeleteVertex(VertexId v) = 0;
 
+	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) = 0;
+
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
-			const EdgeData &data) = 0;
+			const EdgeData &data, restricted::IdDistributor * idDistributor) = 0;
 
 	virtual void HiddenDeleteEdge(EdgeId edge) = 0;
 

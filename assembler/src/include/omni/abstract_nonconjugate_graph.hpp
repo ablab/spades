@@ -191,11 +191,15 @@ private:
 		delete v.get();
 	}
 
-	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
-			const EdgeData &data) {
+	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+		return HiddenAddEdge(v1, v2, data, restricted::GlobalIdDistributor::GetInstance());
+	}
+
+	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data,
+			restricted::IdDistributor * idDistributor) {
 		VERIFY(
 				this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
-		EdgeId newEdge(new SingleEdge<DataMaster>(v1, v2, data));
+		EdgeId newEdge(new SingleEdge<DataMaster>(v1, v2, data), idDistributor);
 		v1->AddOutgoingEdge(newEdge);
 		v2->AddIncomingEdge(newEdge);
 		return newEdge;

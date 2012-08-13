@@ -280,6 +280,13 @@ public:
 			 IncCoverage(new_ID, floor(KPlusOneMerCoverage(old_ID)*split_coefficients[j]));
 		 }
  	 }
+
+ 	/*
+ 	 * Is thread safe if edges different threads process different edges.
+ 	 */
+	bool IsThreadSafe() const {
+		return true;
+	}
 };
 
 }

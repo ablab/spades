@@ -180,6 +180,7 @@ template<class DataMaster>
 class AbstractConjugateGraph: public AbstractGraph<restricted::pure_pointer<PairedVertex<DataMaster>>, restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster> {
 private:
 	typedef AbstractGraph<restricted::pure_pointer<PairedVertex<DataMaster>>, restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster> base;
+	typedef restricted::IdDistributor IdDistributor;
 
 public:
 	//todo remove unused typedefs
@@ -192,7 +193,7 @@ public:
 	typedef typename base::EdgeData EdgeData;
 	typedef typename base::VertexIterator VertexIterator;
 
-private:
+protected:
 
 	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
 		VertexId v1(new PairedVertex<DataMaster> (data1));
@@ -225,17 +226,24 @@ private:
 //		cout << "del v " << v << " " << conjugate << endl;
 	}
 
+
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+		return HiddenAddEdge(v1, v2, data, restricted::GlobalIdDistributor::GetInstance());
+	}
+
+	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
+			const EdgeData &data, restricted::IdDistributor * idDistributor) {
 		TRACE("Adding edge between verteices " << v1 << " and " << v2);
 		VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
 		EdgeId result = AddSingleEdge(v1, v2, data);
+
 		if (this->master().isSelfConjugate(data) && v1 == conjugate(v2)) {
 //	VERIFY(v1 == conjugate(v2));
 			result->set_conjugate(result);
 			return result;
 		}
 		EdgeId rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(),
-				this->master().conjugate(data));
+				this->master().conjugate(data), idDistributor);
 		result->set_conjugate(rcEdge);
 		rcEdge->set_conjugate(result);
 		TRACE("Edges " << result << " and " << rcEdge << " added");
@@ -300,8 +308,8 @@ private:
 		return vector<VertexId>(verticesToDelete.begin(), verticesToDelete.end());
 	}
 
-	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		EdgeId newEdge(new PairedEdge<DataMaster>(v2, data));
+	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data, IdDistributor * idDistributor) {
+		EdgeId newEdge(new PairedEdge<DataMaster>(v2, data), idDistributor);
 		v1->AddOutgoingEdge(newEdge);
 		return newEdge;
 	}
