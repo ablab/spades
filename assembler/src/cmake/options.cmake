@@ -1,3 +1,5 @@
+# -*- cmake -*-
+
 # Default configuration
 set(SPADES_DEFAULT_BUILD_TYPE "RelWithDebInfo" CACHE STRING "SPAdes default build type")
 if (NOT CMAKE_BUILD_TYPE)
@@ -28,6 +30,9 @@ set(SPADES_MAX_K 100 CACHE INTEGER "Maximum k-mer length")
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/k_range.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/k_range.hpp")
 
-
 # Various internal stuff
 option(SPADES_BUILD_INTERNAL "Build internal projects" OFF)
+option(SPADES_USE_TCMALLOC "Link spades with TCMalloc" OFF)
+if (SPADES_USE_TCMALLOC)
+  find_package(GooglePerfTools REQUIRED)
+endif()

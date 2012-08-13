@@ -3,6 +3,7 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+# -*- cmake -*-
 
 cmake_minimum_required (VERSION 2.8)
  
@@ -23,6 +24,7 @@ set(SPADES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(SPADES_TOOLS_BINARY_DIR ${SPADES_BINARY_DIR}/bin)
 set(SPADES_BUILT_INCLUDE_DIR ${SPADES_BINARY_DIR}/include)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${SPADES_TOOLS_BINARY_DIR})
+set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
 # Everything option-dependent
 include(options)
@@ -38,65 +40,17 @@ This process created the file `CMakeCache.txt' and the directory `CMakeFiles'.
 Please delete them.")
 endif()
 
-# Check for OpenMP and add flags if necessary
-find_package(OpenMP)
-if (OPENMP_FOUND)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-# Use parallel libstdc++ if possible
-  add_definitions(-DUSE_GLIBCXX_PARALLEL=1)
-else ()
-  if (NOT APPLE)
-    message(FATAL_ERROR "SPAdes requires OpenMP to be available")
-  endif()
-endif()
+# Handle commond deps
+include(deps)
 
-add_definitions(-std=c++0x)
-add_definitions(-Wall -Wno-long-long -Wno-deprecated)
-if (NOT OPENMP_FOUND)
-  add_definitions(-Wno-unknown-pragmas)
-endif()
+# Add flags if necessary
+include(flags)
 
-# Use libc++ with clang due to C++11 mode
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-endif()
+# Handle common includes
+include(includes)
 
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-  message("Making Debug Configuration...")
-
-  add_definitions(-g3)
-  add_definitions(-D_GLIBCXX_DEBUG)
-else()
-  message("Making Release Configuration...")
-
-  if (${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
-    add_definitions(-g3)
-  else()
-    add_definitions(-g0)
-  endif()
-
-  add_definitions(-O2)
-  add_definitions(-DNDEBUG)
-endif()
-
-
-# common dependencies
-find_package(ZLIB)
-
-set(Boost_USE_MULTITHREADED ON)
-find_package(Boost COMPONENTS system filesystem REQUIRED)
-
-set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include_directories(${SPADES_MAIN_INCLUDE_DIR} ${SPADES_BUILT_INCLUDE_DIR})
-include_directories("${EXT_DIR}/include")
-include_directories("${ZLIB_INCLUDE_DIRS}")
-include_directories("${Boost_INCLUDE_DIRS}")
-
-set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${Boost_LIBRARIES})
+# Handle common libs
+include(libs)
 
 # sub projects
 add_subdirectory(io)
