@@ -176,17 +176,17 @@ void FillAndCorrectEtalonPairedInfo(
 	paired_info_index etalon_paired_index(gp.g);
     bool successful_load = false;
     if (cfg::get().entry_point >= ws_distance_estimation) {
-        fs::path p = fs::path(cfg::get().load_from) / "../etalon";
-        if (!fs::is_regular_file(p.string() + ".prd")) {
-            DEBUG("file " << p.string() + ".prd" << " does not exist");
+        string p = path::append_path(cfg::get().load_from, "../etalon");
+        if (!path::is_regular_file(p + ".prd")) {
+            DEBUG("file " << p + ".prd" << " does not exist");
         }
         else {
             INFO("Loading etalon pair info from the previous run...");
             Graph& graph = const_cast<Graph&>(gp.g);
             IdTrackHandler<Graph>& int_ids = const_cast<IdTrackHandler<Graph>& >(gp.int_ids);
             ScannerTraits<Graph>::Scanner scanner(graph, int_ids);
-            scanner.loadPaired(p.string(), etalon_paired_index);
-            files_t files;
+            scanner.loadPaired(p, etalon_paired_index);
+            path::files_t files;
             files.push_back(p);
             copy_files_by_prefix(files, cfg::get().output_dir);
             successful_load = true;
@@ -680,8 +680,7 @@ struct detail_info_printer {
 		func_(
 				pos,
 				pos_name,
-				(fs::path(folder_) / (pos_name + folder_suffix)).string()
-						+ "/");
+                (path::append_path(folder_, (pos_name + folder_suffix)) + "/"));
 	}
 
 private:

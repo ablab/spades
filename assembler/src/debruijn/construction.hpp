@@ -76,18 +76,18 @@ void write_estimated_params(const string& prefix) {
 	write_param_map(filename, "hist", cfg::get().ds.hist);
 }
 
-void load_construction(conj_graph_pack& gp, files_t* files) {
-	fs::path p = fs::path(cfg::get().load_from) / "constructed_graph";
+void load_construction(conj_graph_pack& gp, path::files_t* files) {
+    string p = path::append_path(cfg::get().load_from, "constructed_graph");
 	files->push_back(p);
-	ScanGraphPack(p.string(), gp);
-	load_estimated_params(p.string());
+    ScanGraphPack(p, gp);
+    load_estimated_params(p);
 }
 
 void save_construction(conj_graph_pack& gp) {
 	if (cfg::get().make_saves) {
-		fs::path p = fs::path(cfg::get().output_saves) / "constructed_graph";
-		PrintGraphPack(p.string(), gp);
-		write_estimated_params(p.string());
+        string p = path::append_path(cfg::get().output_saves, "constructed_graph");
+        PrintGraphPack(p, gp);
+        write_estimated_params(p);
 	}
 }
 
@@ -136,7 +136,7 @@ void exec_construction(conj_graph_pack& gp) {
 	} else {
 		INFO("Loading Construction");
 
-		files_t used_files;
+        path::files_t used_files;
 		load_construction(gp, &used_files);
 		link_files_by_prefix(used_files, cfg::get().output_saves);
 //		OnlineVisualizer online(gp);

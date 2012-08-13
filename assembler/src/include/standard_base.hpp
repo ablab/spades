@@ -85,8 +85,6 @@ using std::copy;
 #include <boost/smart_ptr.hpp>
 #include <boost/make_shared.hpp>
 
-#include <boost/filesystem.hpp>
-
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
@@ -107,23 +105,6 @@ using boost::shared_ptr;
 using boost::scoped_ptr;
 using boost::make_shared;
 
-namespace fs = boost::filesystem;
-
-inline bool make_dir(fs::path p)
-{
-	namespace fs = boost::filesystem;
-	if (fs::is_directory(p) || fs::create_directories(p))
-		return true;
-	return false;
-}
-
-inline bool rm_dir(fs::path p) {
-	namespace fs = boost::filesystem;
-	if (fs::is_directory(p) && fs::remove_all(p))
-		return true;
-	return false;
-}
-
 using boost::optional;
 using boost::none;
 using boost::in_place;
@@ -135,6 +116,11 @@ using boost::noncopyable;
 
 // err handling
 #include "stacktrace.hpp"
+
+// path manipulation instead of boost filesystem
+#include "path_helper.hpp"
+using path::make_dir;
+using path::remove_dir;
 
 #ifndef NDEBUG
 namespace boost {

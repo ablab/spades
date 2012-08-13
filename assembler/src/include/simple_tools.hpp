@@ -14,6 +14,10 @@
 #ifndef SIMPLE_TOOLS_HPP_
 #define SIMPLE_TOOLS_HPP_
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "verify.hpp"
 #include "io/ireader.hpp"
 #include <memory>
@@ -22,7 +26,6 @@
 #include <vector>
 #include <boost/format.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/filesystem.hpp>
 
 /**
  * Converts anything to string (using ostringstream).
@@ -98,8 +101,9 @@ protected:
 bool fileExists(std::string filename);
 
 inline bool fileExists(std::string filename) {
-	namespace fs = boost::filesystem;
-	return fs::is_regular_file(filename);
+
+    struct stat st_buf;
+    return stat(filename.c_str(), &st_buf) == 0 && S_ISREG(st_buf.st_mode);
 }
 
 /**

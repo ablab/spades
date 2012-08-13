@@ -888,7 +888,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	// input options:
 	load(cfg.dataset_file, pt, "dataset");
 	// input dir is based on dataset file location (all pathes in datasets are relative to its location)
-	cfg.input_dir = boost::filesystem::path(cfg.dataset_file).branch_path().string();
+    cfg.input_dir = path::parent_path(cfg.dataset_file);
 	if (cfg.input_dir[cfg.input_dir.length() - 1] != '/') {
 		cfg.input_dir += '/';
 	}
@@ -899,7 +899,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	}
 
 	// instead of dataset_name.
-	cfg.dataset_name = boost::filesystem::basename(boost::filesystem::path(cfg.dataset_file));
+    cfg.dataset_name = path::basename(cfg.dataset_file);
 
     // TODO: remove this shit
 	load(cfg.run_mode, pt, "run_mode");

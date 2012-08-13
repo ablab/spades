@@ -165,19 +165,19 @@ void simplify_graph(conj_graph_pack& gp) {
 	//            cfg::get().ds.IS, int_ids, paired_index, EdgePos);
 }
 
-void load_simplification(conj_graph_pack& gp, files_t* used_files) {
-	fs::path p = fs::path(cfg::get().load_from) / "simplified_graph";
+void load_simplification(conj_graph_pack& gp, path::files_t* used_files) {
+    string p = path::append_path(cfg::get().load_from, "simplified_graph");
 	used_files->push_back(p);
 
-	ScanGraphPack(p.string(), gp);
-	load_estimated_params(p.string());
+    ScanGraphPack(p, gp);
+    load_estimated_params(p);
 }
 
 void save_simplification(conj_graph_pack& gp) {
 	if (cfg::get().make_saves) {
-		fs::path p = fs::path(cfg::get().output_saves) / "simplified_graph";
-		PrintGraphPack(p.string(), gp);
-		write_estimated_params(p.string());
+        string p = path::append_path(cfg::get().output_saves, "simplified_graph");
+        PrintGraphPack(p, gp);
+        write_estimated_params(p);
 	}
 
 	OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
@@ -256,7 +256,7 @@ void exec_simplification(conj_graph_pack& gp) {
 	} else {
 		INFO("Loading Simplification");
 
-		files_t used_files;
+        path::files_t used_files;
 		load_simplification(gp, &used_files);
 		link_files_by_prefix(used_files, cfg::get().output_saves);
 	}

@@ -16,7 +16,6 @@
 #include <cmath>
 #include <ostream>
 #include <boost/function.hpp>
-#include <boost/filesystem.hpp>
 #include "perfcounter.hpp"
 #include <ctime>
 #include "order_and_law.hpp"

@@ -21,15 +21,17 @@
 
 #include "online_pictures.hpp"
 
-void create_console_logger(fs::path cfg_filename) {
+void create_console_logger(string const& cfg_filename) {
 	using namespace logging;
 
-	fs::path log_props_file (cfg::get().log_filename);
-	if (!exists(log_props_file))
-		log_props_file = fs::path(cfg_filename).parent_path() / cfg::get().log_filename;
+    string log_props_file = cfg::get().log_filename;
 
-    logger *lg = create_logger(exists(log_props_file) ? log_props_file.string() : "");
+    if (!exists(log_props_file))
+        log_props_file = path::append_path(path::parent_path(cfg_filename), cfg::get().log_filename);
+
+    logger *lg = create_logger(exists(log_props_file) ? log_props_file : "");
     lg->add_writer(make_shared<console_writer>());
+
     attach_logger(lg);
 }
 

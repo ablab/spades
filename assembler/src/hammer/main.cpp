@@ -109,8 +109,8 @@ int main(int argc, char * argv[]) {
 
     for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
       Globals::input_filename_bases.push_back(
-          boost::filesystem::basename(boost::filesystem::path(Globals::input_filenames[iFile])) +
-          boost::filesystem::extension(boost::filesystem::path(Globals::input_filenames[iFile])));
+          path::basename(Globals::input_filenames[iFile]) +
+          path::extension(Globals::input_filenames[iFile]));
       INFO("Input file: " << Globals::input_filename_bases[iFile]);
     }
 

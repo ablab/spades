@@ -20,7 +20,6 @@
 #include <iomanip>
 #include <fstream>
 #include <zlib.h>
-#include <boost/filesystem.hpp>
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "union.hpp"

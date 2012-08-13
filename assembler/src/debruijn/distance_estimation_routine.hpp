@@ -264,12 +264,12 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 void load_distance_estimation(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index,
-		files_t* used_files) {
-	fs::path p = fs::path(cfg::get().load_from) / "distance_estimation";
+        path::files_t* used_files) {
+    string p = path::append_path(cfg::get().load_from, "distance_estimation");
 	used_files->push_back(p);
 
-	ScanAll(p.string(), gp, paired_index, clustered_index);
-	load_estimated_params(p.string());
+    ScanAll(p, gp, paired_index, clustered_index);
+    load_estimated_params(p);
 //
 //	load_param(cfg::get().estimated_params_file, "IS", cfg::get_writable().ds.IS);
 //	load_param(cfg::get().estimated_params_file, "is_var", cfg::get_writable().ds.is_var);
@@ -278,9 +278,9 @@ void load_distance_estimation(conj_graph_pack& gp,
 void save_distance_estimation(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	if (cfg::get().make_saves) {
-		fs::path p = fs::path(cfg::get().output_saves) / "distance_estimation";
-		PrintAll(p.string(), gp, paired_index, clustered_index);
-		write_estimated_params(p.string());
+        string p = path::append_path(cfg::get().output_saves, "distance_estimation");
+        PrintAll(p, gp, paired_index, clustered_index);
+        write_estimated_params(p);
 	}
 }
 
@@ -305,7 +305,7 @@ void exec_distance_estimation(conj_graph_pack& gp,
 	} else {
 		INFO("Loading Distance Estimation");
 
-		files_t used_files;
+        path::files_t used_files;
 		load_distance_estimation(gp, paired_index, clustered_index,
 				&used_files);
 		link_files_by_prefix(used_files, cfg::get().output_saves);

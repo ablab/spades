@@ -55,16 +55,16 @@ typedef graph_pack<NonconjugateDeBruijnGraph> nonconj_graph_pack;
 
 inline void Convert(const conj_graph_pack& gp1, const PairedInfoIndex<conj_graph_pack::graph_t>& clustered_index1,
 		nonconj_graph_pack& gp2, PairedInfoIndex<nonconj_graph_pack::graph_t>& clustered_index2) {
-	fs::path conv_folder = fs::path(cfg::get().output_root) / "temp_conversion";
-	make_dir(conv_folder.string());
 
-	fs::path p = conv_folder / "conj_graph";
+    string conv_folder = path::append_path(cfg::get().output_root, "temp_conversion");
+    make_dir(conv_folder);
 
-	PrintWithClusteredIndex(p.string(), gp1, clustered_index1);
+    string p = path::append_path(conv_folder, "conj_graph");
 
-	ScanWithClusteredIndex(p.string(), gp2, clustered_index2);
+    PrintWithClusteredIndex(p, gp1, clustered_index1);
+    ScanWithClusteredIndex (p, gp2, clustered_index2);
 
-	remove_all(conv_folder);
+    remove_dir(conv_folder);
 }
 
 } // namespace debruijn_graph

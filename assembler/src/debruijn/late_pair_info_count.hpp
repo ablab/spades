@@ -65,20 +65,21 @@ void late_pair_info_count(conj_graph_pack& gp,
 }
 
 void load_late_pair_info_count(conj_graph_pack& gp,
-		paired_info_index& paired_index, files_t* used_files) {
-	fs::path p = fs::path(cfg::get().load_from) / "late_pair_info_counted";
+        paired_info_index& paired_index, path::files_t* used_files) {
+    string p = path::append_path(cfg::get().load_from, "late_pair_info_counted");
 	used_files->push_back(p);
 
-	ScanWithPairedIndex(p.string(), gp, paired_index);
-	load_estimated_params(p.string());
+    ScanWithPairedIndex(p, gp, paired_index);
+    load_estimated_params(p);
 }
 
 void save_late_pair_info_count(conj_graph_pack& gp,
 		paired_info_index& paired_index) {
 	if (cfg::get().make_saves) {
-		fs::path p = fs::path(cfg::get().output_saves) / "late_pair_info_counted";
-		PrintWithPairedIndex(p.string(), gp, paired_index);
-		write_estimated_params(p.string());
+        string p = path::append_path(cfg::get().output_saves, "late_pair_info_counted");
+
+        PrintWithPairedIndex(p, gp, paired_index);
+        write_estimated_params(p);
 	}
 }
 
@@ -89,7 +90,7 @@ void exec_late_pair_info_count(conj_graph_pack& gp,
 		save_late_pair_info_count(gp, paired_index);
 	} else {
 		INFO("Loading Late Pair Info Count");
-		files_t used_files;
+        path::files_t used_files;
 		load_late_pair_info_count(gp, paired_index, &used_files);
 		link_files_by_prefix(used_files, cfg::get().output_saves);
 //		OnlineVisualizer online(gp);

@@ -28,7 +28,7 @@
 #include <iostream>
 #include <fstream>
 #include "simple_tools.hpp"
-#include "fs_path_utils.hpp"
+#include "path_helper.hpp"
 #include "verify.hpp"
 
 namespace config_common {

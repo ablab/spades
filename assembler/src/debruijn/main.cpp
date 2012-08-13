@@ -80,14 +80,14 @@ private:
     std::string link_name_;
 };
 
-void copy_configs(fs::path cfg_filename, fs::path to)
+void copy_configs(string cfg_filename, string to)
 {
     using namespace debruijn_graph;
 
     if (!make_dir(to)) {
     	WARN("Could not create files use in /tmp directory");
     }
-    copy_files_by_ext(cfg_filename.parent_path(), to, ".info", true);
+    copy_files_by_ext(path::parent_path(cfg_filename), to, ".info", true);
 }
 
 void load_config(string cfg_filename)
@@ -111,18 +111,19 @@ void load_config(string cfg_filename)
 
     make_dir(cfg::get().temp_bin_reads_path);
 
-    fs::path path_to_copy = fs::path(cfg::get().output_dir) / "configs";
+    string path_to_copy = path::append_path(cfg::get().output_dir, "configs");
         copy_configs(cfg_filename, path_to_copy);
     }
 
-void create_console_logger(fs::path cfg_filename) {
+void create_console_logger(string cfg_filename) {
   using namespace logging;
 
-  fs::path log_props_file (cfg::get().log_filename);
-  if (!exists(log_props_file))
-    log_props_file = fs::path(cfg_filename).parent_path() / cfg::get().log_filename;
+  string log_props_file = cfg::get().log_filename;
 
-  logger *lg = create_logger(exists(log_props_file) ? log_props_file.string() : "");
+  if (!fileExists(log_props_file))
+    log_props_file = path::append_path(path::parent_path(cfg_filename), cfg::get().log_filename);
+
+  logger *lg = create_logger(fileExists(log_props_file) ? log_props_file : "");
   lg->add_writer(make_shared<console_writer>());
   attach_logger(lg);
 }

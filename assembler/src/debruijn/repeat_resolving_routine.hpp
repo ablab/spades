@@ -63,9 +63,9 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 void save_distance_filling(conj_graph_pack& gp, paired_info_index& paired_index,
 		paired_info_index& clustered_index) {
 	if (cfg::get().make_saves) {
-		fs::path p = fs::path(cfg::get().output_saves) / "distance_filling";
-		PrintAll(p.string(), gp, paired_index, clustered_index);
-		write_estimated_params(p.string());
+        string p = path::append_path(cfg::get().output_saves, "distance_filling");
+        PrintAll(p, gp, paired_index, clustered_index);
+        write_estimated_params(p);
 	}
 }
 
@@ -262,11 +262,10 @@ void SaveResolvedPairedInfo(graph_pack& resolved_gp,
 			rr_filename = (cfg::get().output_dir + subfolder) + graph_name;
 		} else {
 			INFO("Saving graph and paired info");
-			fs::path p = fs::path(cfg::get().output_saves) / (graph_name);
-			rr_filename = p.string();
+            string p = path::append_path(cfg::get().output_saves, graph_name);
+            rr_filename = p;
 		}
-		PrintWithClusteredIndex(rr_filename, resolved_gp,
-				resolved_graph_paired_info);
+        PrintWithClusteredIndex(rr_filename, resolved_gp, resolved_graph_paired_info);
 		DEBUG("Saved");
 	}
 }

@@ -34,7 +34,7 @@ namespace online_visualization {
     }
 
     bool CheckFileExists(const string& file) {
-        if (!fs::is_regular_file(file)) {
+        if (!path::is_regular_file(file)) {
             FireFileDoesNotExist(file);
             return false;
         }

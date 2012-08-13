@@ -840,8 +840,9 @@ class OppositionLicvidator {
 				vector<EdgeId> best_path = path_chooser.most_covered_path();
 				DEBUG("Best path " << g_.str(best_path));
 
-				rm_dir("complex_components");
-				make_dir("complex_components");
+                remove_dir("complex_components");
+                make_dir  ("complex_components");
+
 				PrintComponent(best_path.begin(), best_path.end(), cnt);
 
 				map<VertexId, size_t> dist = AverageDistances(

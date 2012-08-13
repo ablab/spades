@@ -11,6 +11,8 @@
 #include "paired_info.hpp"
 #include "simple_tools.hpp"
 
+#include "path_helper.hpp"
+
 namespace omnigraph {
 
 /**
@@ -392,7 +394,7 @@ public:
 	}
 
 	void WriteResults(const string &folder_name) {
-		make_dir(folder_name);
+        path::make_dir(folder_name);
 		WriteResultsToFile(perfect_matches_,
 				folder_name + "/perfect_matches.txt");
 		WriteResultsToFile(good_matches_, folder_name + "/good_matches.txt");

@@ -26,6 +26,9 @@
 #include "kmer_map.hpp"
 #include "new_debruijn.hpp"
 //#include "common/io/paired_read.hpp"
+
+#include "path_helper.hpp"
+
 namespace debruijn_graph {
 
 using omnigraph::Path;
@@ -1386,7 +1389,7 @@ public:
         if (quality_handler_.IsPositiveQuality(edge)) {
 			DEBUG("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 			string folder = output_folder_ + "colored_edges_deleted/";
-			make_dir(folder);
+            path::make_dir(folder);
 			//todo magic constant
 //			map<EdgeId, string> empty_coloring;
 			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
@@ -1460,7 +1463,7 @@ public:
         if (quality_handler_.IsPositiveQuality(edge)) {
             cout << "Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge) << endl;
             string folder = output_folder_ + "colored_edges_deleted/";
-            make_dir(folder);
+            path::make_dir(folder);
             //todo magic constant
             PairInfos infos = index_.GetEdgeInfo(edge);
             if (infos.size() > 0){
@@ -1508,7 +1511,7 @@ public:
                 INFO("EdgeLocalityPrintRH handling the edge with positive quality : " << quality_f_(edge) << " " << g_.str(edge));
         
             string folder = output_folder_ + "edges_deleted/";
-            make_dir(folder);
+            path::make_dir(folder);
             //todo magic constant
             map<EdgeId, string> empty_coloring;
             EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,

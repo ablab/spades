@@ -55,8 +55,9 @@ namespace online_visualization {
     public:
         OnlineVisualizer()
         {
-	        fs::path p = fs::path(cfg::get().load_from) / "late_pair_info_counted";
-            stringstream ss("load default " + p.string());
+            string p = path::append_path(cfg::get().load_from, "late_pair_info_counted");
+
+            stringstream ss("default " + p);
             AddAllCommands();
             Command& LoadCommand = GetCommand(CommandId("load"));
             LoadCommand.Execute(current_environment_, loaded_environments, ss);

@@ -68,7 +68,7 @@ void HammerTools::DecompressIfNeeded() {
 	char f_cont[2];
 	vector<pid_t> pIDs(Globals::input_filenames.size(), 0);
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		if (boost::filesystem::extension(boost::filesystem::path(Globals::input_filenames[iFile])) != ".gz")
+        if (path::extension(Globals::input_filenames[iFile]) != ".gz")
 			continue;
 
 		stat(Globals::input_filenames[iFile].c_str(), &st);
@@ -79,7 +79,8 @@ void HammerTools::DecompressIfNeeded() {
 			string newFilename = HammerTools::getFilename(cfg::get().input_working_dir, Globals::input_filename_bases[iFile]);
 			string oldFilename = Globals::input_filenames[iFile];
 			Globals::input_filenames[iFile] = newFilename;
-			Globals::input_filename_bases[iFile] = boost::filesystem::basename(boost::filesystem::path(Globals::input_filename_bases[iFile]));
+            Globals::input_filename_bases[iFile] = path::basename(Globals::input_filename_bases[iFile]);
+
 			pIDs[iFile] = vfork();
 			if (pIDs[iFile] == 0) {
 				string systemcall = string("gunzip -c ") + oldFilename + string(" > ") + newFilename;
@@ -664,6 +665,7 @@ string HammerTools::getFilename( const string & dirprefix, int iter_count, const
 string HammerTools::getReadsFilename( const string & dirprefix, int read_file_no, int iter_no, const string & suffix ) {
 	ostringstream tmp;
 	tmp.str("");
+
 	tmp << dirprefix.data() << "/" << Globals::input_filename_bases[read_file_no] << '.' << std::setfill('0') << std::setw(2) << iter_no << "." << suffix.data() << ".fastq";
 	return tmp.str();
 }
