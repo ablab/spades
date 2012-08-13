@@ -1,10 +1,7 @@
 ; All paths are relative to the working directory but you can also use $cfg variable to set paths relative to this config.
 
-; Name of the project. If not given, name of this config file is used.
-project_name        ECOLI_1K                         
-
 ; SPAdes output directory. Default is spades_output.
-output_dir         spades_output                   
+output_dir         spades_test
 
 ; Maximum number of threads. Default is 16.
 max_threads       16                            
