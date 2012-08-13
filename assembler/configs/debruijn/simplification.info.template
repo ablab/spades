@@ -77,7 +77,7 @@ sc_simplification
 	; isolated edges remover
 	ier
 	{
-        max_length                  400
+        max_length                  0
         max_coverage                2
         max_length_any_cov          150
 	}
@@ -162,7 +162,7 @@ usual_simplification
 	; isolated edges remover
 	ier
 	{
-        max_length                  400
+        max_length                  0
         max_coverage                2
         max_length_any_cov          150
 	}
