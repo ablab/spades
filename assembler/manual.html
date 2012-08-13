@@ -93,8 +93,8 @@ it will process this dataset and if the installation is successful you will see 
 
 <pre class="code">
 <code>
- * Corrected reads are in spades_output/corrected/
- * Assembled contigs are spades_output/contigs.fasta
+ * Corrected reads are in spades_test/corrected/
+ * Assembled contigs are spades_test/contigs.fasta
 
 Thank you for using SPAdes!
 
@@ -130,15 +130,15 @@ Thank you for using SPAdes!
 
 <h3>2.2 SPAdes pipeline</h3>
 
-<p>SPAdes stores all the resulting files in separate directory, <code>spades_output</code> by default.
+<p>SPAdes stores all the resulting files in separate directory <code>&lt;output_dir></code>.
 </p>
 
 <p>Before starting assembly SPAdes initiates <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> to correct errors in reads.
-   After that the corrected reads are stored in the directory <code>spades_output/corrected</code> in <code>*.fastq.qz</code> files.
+   After that the corrected reads are stored in the directory <code>&lt;output_dir>/corrected</code> in <code>*.fastq.qz</code> files.
 </p>
 
 <p>
-    After assembly completion, the resulting contigs are stored in the <code>spades_output/contigs.fasta</code> file.
+    After assembly completion, the resulting contigs are stored in the <code>&lt;output_dir>/contigs.fasta</code> file.
     If the   <code>--generate-sam-file</code> option was used, the symlink <code>&lt;contigs.sam</code> to the SAM-file will also be created in the same directory.
 </p>
 
@@ -163,7 +163,7 @@ Thank you for using SPAdes!
 
 <pre class="code">
 <code>
-    ./spades.py [options]
+    ./spades.py [options] -o &lt;output_dir>
 </code>
 </pre>
 
@@ -173,7 +173,7 @@ Thank you for using SPAdes!
 
 <pre class="code">
 <code>
-    ./spades.py -1 test_dataset/ecoli_1K_1.fq.gz -2 test_dataset/ecoli_1K_2.fq.gz
+    ./spades.py -1 test_dataset/ecoli_1K_1.fq.gz -2 test_dataset/ecoli_1K_2.fq.gz -o spades_test
 </code>
 </pre>
 
@@ -181,7 +181,7 @@ Thank you for using SPAdes!
 
 <p>
     <code>-o &lt;output_dir> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Specify the output directory. Default: <code>spades_output</code>.
+    &nbsp;&nbsp;&nbsp;&nbsp;Specify the output directory. Required option.
 </p>
 
 <p><code>--sc</code><br>
@@ -233,7 +233,7 @@ Thank you for using SPAdes!
     &nbsp;&nbsp;&nbsp;&nbsp;Forces error correction not to compress the corrected reads.</p>
 
 <p><code>--test</code> <br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the toy dataset, see <a href="#sec1.3">section 1.3</a> .</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the toy dataset, see <a href="#sec1.3">section 1.3</a>.</p>
 
 <p><code>--debug</code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes in debug mode, keeping intermediate results.</p>
@@ -266,7 +266,7 @@ Thank you for using SPAdes!
 <h3>2.5 Files and directories</h3>
 
 <p>
-    Usually <code>spades_output</code> directory contains the following files:
+    Usually <code>&lt;output_dir></code> directory contains the following files:
 </p>
 
 <pre>
@@ -315,7 +315,7 @@ Thank you for using SPAdes!
 <p>Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes.</p>
 
 <p>In case you have troubles running SPAdes, please provide us with the following files from
-    <code>spades_output</code> directory:
+    <code>&lt;output_dir></code> directory:
 
 <pre class="code">
 <code>
