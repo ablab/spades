@@ -594,9 +594,7 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
 		detail_info_printer &printer, size_t iteration_count, size_t iteration,
 		double max_coverage) {
-	INFO(
-			"PROCEDURE == Simplification cycle, iteration " << iteration
-					<< " (0-indexed)");
+	INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
 	DEBUG(iteration << " TipClipping");
 	ClipTips(gp, removal_handler_f, iteration_count, iteration);
