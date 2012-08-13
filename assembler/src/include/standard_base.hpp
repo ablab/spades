@@ -87,6 +87,10 @@ using std::copy;
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
 
+#include <boost/foreach.hpp>
+#define foreach         BOOST_FOREACH
+#define reverse_foreach BOOST_REVERSE_FOREACH
+
 using boost::bind;
 using boost::ref;
 using boost::cref;
@@ -147,6 +151,9 @@ inline void assertion_failed_msg(char const * expr, char const * msg,
 #include <sys/time.h>
 
 //our
+//math
 #include "xmath.h"
+// log
+#include "logger/logger.hpp"
 
 

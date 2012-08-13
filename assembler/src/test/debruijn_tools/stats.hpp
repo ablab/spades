@@ -785,7 +785,7 @@ private:
 				RefPositions(gp_.edge_pos.GetEdgePositions(e)).front();
 		int coeff = boost::ends_with(pos.contigId_, "_RC") ? -1 : 1;
 		Range range = pos.m_range_.initial_range;
-		return coeff * (start_position ? range.start_pos : range.end_pos);
+		return coeff * (start_position ? range.start : range.end_pos);
 	}
 
 	bool IsSingleRefPosition(EdgeId e) const {

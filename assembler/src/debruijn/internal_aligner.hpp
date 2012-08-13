@@ -228,12 +228,12 @@ protected:
 
 	MySamRecord CreateSingleSAMFromRange(string read_name, Sequence read, EdgeId edge, MappingRange range, bool rc, string qual = "*"){
 		Sequence ref_seq = this->graph_.EdgeNucls(edge);
-		size_t ref_start = range.mapped_range.start_pos;
+		size_t ref_start = range.mapped_range.start;
 		size_t ref_end = range.mapped_range.end_pos+k_;
 
 		pair<pair<int, int>, string> cigar_pair;
 		if (this->adjust) {
-			if (CountDiference<Sequence>(read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos + k_), ref_seq.Subseq(ref_start, ref_end), 0) != 0)
+			if (CountDiference<Sequence>(read.Subseq(range.initial_range.start, range.initial_range.end_pos + k_), ref_seq.Subseq(ref_start, ref_end), 0) != 0)
 			{
 				if (ref_start > 10) ref_start -= 10;
 				else ref_start = 0;
@@ -241,19 +241,19 @@ protected:
 				if (ref_end + 10 < ref_seq.size()) ref_end += 10;
 				else ref_end = ref_seq.size();
 
-				cigar_pair = best_edit_distance_cigar(read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+k_).str()
+				cigar_pair = best_edit_distance_cigar(read.Subseq(range.initial_range.start, range.initial_range.end_pos+k_).str()
 																				, ref_seq.Subseq(ref_start, ref_end).str());
 				ref_start = cigar_pair.first.first + ref_start+1;
 			}
 			else {
-				cigar_pair = make_pair(make_pair(0, 0), ToString((int)(range.initial_range.end_pos+k_ - range.initial_range.start_pos))+"M");
-				ref_start = range.mapped_range.start_pos+1;
+				cigar_pair = make_pair(make_pair(0, 0), ToString((int)(range.initial_range.end_pos+k_ - range.initial_range.start))+"M");
+				ref_start = range.mapped_range.start+1;
 
 			}
 		} else
 		{
-			cigar_pair = make_pair(make_pair(0, 0), ToString((int)(range.initial_range.end_pos+k_ - range.initial_range.start_pos))+"M");
-			ref_start = range.mapped_range.start_pos + 1;
+			cigar_pair = make_pair(make_pair(0, 0), ToString((int)(range.initial_range.end_pos+k_ - range.initial_range.start))+"M");
+			ref_start = range.mapped_range.start + 1;
 		}
 //		MySamRecord SamRec(read_name, read.Subseq(range.initial_range.start_pos, range.initial_range.end_pos+k_).str());
 		MySamRecord SamRec(read_name, read.str(), qual);
@@ -261,8 +261,8 @@ protected:
 		SamRec.POS = ref_start; //path1[0].second.mapped_range.start_pos+1;
 		SamRec.RNAME = this->SeqNames[edge].first;
 		SamRec.CIGAR = "";
-		if (range.initial_range.start_pos > 0)
-			SamRec.CIGAR = ToString((int)(range.initial_range.start_pos))+"S";
+		if (range.initial_range.start > 0)
+			SamRec.CIGAR = ToString((int)(range.initial_range.start))+"S";
 		SamRec.CIGAR += cigar_pair.second;
 		if (read.size() > range.initial_range.end_pos+k_)
 			SamRec.CIGAR += ToString((int)(read.size() - (range.initial_range.end_pos+k_)))+"S";
@@ -488,7 +488,7 @@ protected:
 //	}
 	inline Range ReverceRanges(Range& range, size_t length){
 //		INFO("Reverce range " << range<< " with len "<< length);
-		return Range(length - range.end_pos, length - range.start_pos);
+		return Range(length - range.end_pos, length - range.start);
 	}
 
 	Range ConvertRanges(const Range& range, EdgeId& edge, vector<EdgeId> labels, bool rc) {
@@ -508,9 +508,9 @@ protected:
 					i++;
 				}
 				DEBUG("Range is rc, whole length" << whole_length);
-				return Range(whole_length - range.end_pos - shift, whole_length - range.start_pos - shift);
+				return Range(whole_length - range.end_pos - shift, whole_length - range.start - shift);
 			} else {
-				return Range(range.start_pos + shift, range.end_pos + shift);
+				return Range(range.start + shift, range.end_pos + shift);
 			}
 		}
 		else {

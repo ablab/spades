@@ -748,6 +748,12 @@ struct Range {
 		return end_pos - start_pos;
 	}
 
+	void shift(int shift) {
+		VERIFY(shift > 0 || -shift <= start_pos);
+		start_pos += shift;
+		end_pos += shift;
+	}
+
 	Range(size_t start_pos, size_t end_pos) :
 			start_pos(start_pos), end_pos(end_pos) {
 		VERIFY(end_pos >= start_pos);

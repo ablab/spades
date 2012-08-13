@@ -526,7 +526,7 @@ private:
 	}
 
 	void SkipVisited() {
-		covered_range_.start_pos =
+		covered_range_.start =
 				path_[current_index_].second.initial_range.start_pos;
 		covered_range_.end_pos =
 				path_[current_index_].second.initial_range.end_pos;
@@ -543,7 +543,7 @@ private:
 public:
 	string ComponentName() {
 		stringstream ss;
-		ss << covered_range_.start_pos << "_" << covered_range_.end_pos;
+		ss << covered_range_.start << "_" << covered_range_.end_pos;
 		return ss.str();
 	}
 

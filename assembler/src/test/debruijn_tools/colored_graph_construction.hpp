@@ -15,20 +15,20 @@ class CoveredRangesFinder {
 		vector<Range> answer;
 		size_t i = 0;
 		while (i < curr_ranges.size()
-				&& curr_ranges[i].end_pos < new_range.start_pos) {
+				&& curr_ranges[i].end_pos < new_range.start) {
 			answer.push_back(curr_ranges[i]);
 			++i;
 		}
 
 		size_t merge_start =
 				(i != curr_ranges.size()) ?
-						std::min(curr_ranges[i].start_pos,
-								new_range.start_pos) :
-						new_range.start_pos;
+						std::min(curr_ranges[i].start,
+								new_range.start) :
+						new_range.start;
 
 		size_t merge_end = new_range.end_pos;
 		while (i < curr_ranges.size()
-				&& curr_ranges[i].start_pos <= new_range.end_pos) {
+				&& curr_ranges[i].start <= new_range.end_pos) {
 			if (curr_ranges[i].end_pos > merge_end)
 				merge_end = curr_ranges[i].end_pos;
 			++i;
@@ -86,7 +86,7 @@ class ColoredGraphConstructor {
 
 	void AddBreaks(set<size_t>& breaks, const vector<Range>& ranges) const {
 		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
-			breaks.insert(it->start_pos);
+			breaks.insert(it->start);
 			breaks.insert(it->end_pos);
 		}
 	}

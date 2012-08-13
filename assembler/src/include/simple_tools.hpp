@@ -106,8 +106,13 @@ inline void checkFileExistenceFATAL(std::string filename) {
 }
 
 template <class ContainerT1, class ContainerT2>
-void insert_all(ContainerT1& target, const ContainerT2& to_insert) {
+void push_back_all(ContainerT1& target, const ContainerT2& to_insert) {
 	target.insert(target.end(), to_insert.begin(), to_insert.end());
+}
+
+template <class ContainerT1, class ContainerT2>
+void insert_all(ContainerT1& target, const ContainerT2& to_insert) {
+	target.insert(to_insert.begin(), to_insert.end());
 }
 
 template <class map_t>
