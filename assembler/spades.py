@@ -271,11 +271,10 @@ def check_file(f, message=''):
 
 def usage(show_hidden=False):
     print >> sys.stderr, "SPAdes genome assembler"
-    print >> sys.stderr, "Usage:", sys.argv[0], "[options] -n <project name>"
+    print >> sys.stderr, "Usage:", sys.argv[0], "[options] -o <output_dir>"
     print >> sys.stderr, ""
     print >> sys.stderr, "Options:"
-    print >> sys.stderr, "-o\t<output_dir>\tdirectory to store all result files"\
-                         " [default: spades_output]"
+    print >> sys.stderr, "-o\t<output_dir>\tdirectory to store all the resulting files (required)"
     print >> sys.stderr, "--sc\t\t\tthis flag is required for MDA (single-cell)"\
                          " data"
     print >> sys.stderr, "--12\t<filename>\tfile with interlaced left and right"\
@@ -445,6 +444,9 @@ def main():
                 raise ValueError
 
         if not CONFIG_FILE:
+            if not output_dir:
+                error("the output_dir is not set! It is a mandatory parameter (-o output_dir).")
+
             if len(paired1) != len(paired2):
                 error("the number of files with left paired reads is not equal to the"
                       " number of files with right paired reads!")
