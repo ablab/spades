@@ -35,4 +35,10 @@ option(SPADES_BUILD_INTERNAL "Build internal projects" OFF)
 option(SPADES_USE_TCMALLOC "Link spades with TCMalloc" OFF)
 if (SPADES_USE_TCMALLOC)
   find_package(GooglePerfTools REQUIRED)
+
+  if (GOOGLE_PERFTOOLS_ROOT)
+    # add the automatically determined parts of the RPATH
+    # which point to directories outside the build tree to the install RPATH
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  endif()
 endif()
