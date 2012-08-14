@@ -9,6 +9,8 @@
 
 #include "verify.hpp"
 
+#include "sequence/seq.hpp"
+
 #include <stdint.h>
 #include <vector>
 #include <iostream>
@@ -35,6 +37,7 @@ class PositionRead;
 class PositionKMer;
 struct KMerStat;
 
+typedef Seq<K> KMer;
 typedef std::map<PositionKMer, KMerStat> KMerStatMap;
 typedef std::pair<PositionKMer, KMerStat> KMerCount;
 typedef std::pair<std::string, std::pair<uint32_t, double> > StringCount;

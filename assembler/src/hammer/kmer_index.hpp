@@ -30,7 +30,7 @@ inline void Merge(KMerCount &lhs, const KMerCount &rhs) {
 }
 
 class KMerIndex {
-  typedef std::unordered_map<Seq<K>, size_t, Seq<K>::hash, Seq<K>::equal_to > KMerIndexMap;
+  typedef std::unordered_map<KMer, size_t, KMer::hash, KMer::equal_to > KMerIndexMap;
   typedef std::vector<KMerCount> KMerData;
 
  public:
@@ -52,6 +52,7 @@ class KMerIndex {
     KMerData().swap(data_);
   }
 
+#if 0
   template<class Writer>
   void binary_write(Writer &os) const {
     size_t sz = data_.size();
@@ -76,17 +77,18 @@ class KMerIndex {
 
     for (size_t i = 0; i < sz; ++i) {
       const char* s = Globals::blob + data_[i].first.start();
-      index_.insert(std::make_pair(Seq<K>(s, 0, K, /* raw */ true), i));
+      index_.insert(std::make_pair(KMer(s, 0, K, /* raw */ true), i));
     }
   }
+#endif
 
   KMerCount& operator[](size_t idx) { return data_[idx]; }
   const KMerCount& operator[](size_t idx) const { return data_[idx]; }
-  KMerCount& operator[](Seq<K> s) { return operator[](index_.find(s)->second); }
-  const KMerCount& operator[](Seq<K> s) const { return operator[](index_.find(s)->second); }
+  KMerCount& operator[](KMer s) { return operator[](index_.find(s)->second); }
+  const KMerCount& operator[](KMer s) const { return operator[](index_.find(s)->second); }
 
-  KMerIndexMap::iterator seq_find(Seq<K> s) { return index_.find(s); }
-  KMerIndexMap::const_iterator seq_find(Seq<K> s) const { return index_.find(s); }
+  KMerIndexMap::iterator seq_find(KMer s) { return index_.find(s); }
+  KMerIndexMap::const_iterator seq_find(KMer s) const { return index_.find(s); }
   KMerIndexMap::iterator seq_begin() { return index_.begin(); }
   KMerIndexMap::const_iterator seq_begin() const { return index_.begin(); }
   KMerIndexMap::iterator seq_end() { return index_.end(); }
@@ -115,7 +117,7 @@ void KMerIndex::push_back(const KMerCountIterator start,
   // Actually insert the stuff.
   for (size_t i = 0, idx = data_.size(), e = amt; i != e; ++i, ++idx) {
     const char* s = Globals::blob + start[i].first.start();
-    index_.insert(std::make_pair(Seq<K>(s, 0, K, /* raw */ true), idx));
+    index_.insert(std::make_pair(KMer(s, 0, K, /* raw */ true), idx));
   }
 
   data_.insert(data_.end(), start, end);

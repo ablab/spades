@@ -20,7 +20,7 @@
 
 void KMerIndex::push_back(const KMerCount &k) {
   const char* s = Globals::blob + k.first.start();
-  index_.insert(std::make_pair(Seq<K>(s, 0, K, /* raw */ true), data_.size()));
+  index_.insert(std::make_pair(KMer(s, 0, K, /* raw */ true), data_.size()));
   data_.push_back(k);
 }
 
@@ -66,7 +66,7 @@ void KMerCounter::Split() {
     ostreams[i].open(filename);
   }
 
-  Seq<K>::hash hash_function;
+  KMer::hash hash_function;
   size_t readbuffer = cfg::get().count_split_buffer;
   std::vector< std::vector< std::vector< KMerNo > > > tmp_entries(count_num_threads);
   for (unsigned i = 0; i < count_num_threads; ++i) {
@@ -122,7 +122,7 @@ void KMerCounter::Split() {
         }
       } else {
         while (gen.HasMore()) {
-          Seq<K> seq = gen.kmer();
+          KMer seq = gen.kmer();
           tmp_entries[omp_get_thread_num()][hash_function(seq) % num_files_].push_back(KMerNo(cpos + gen.pos() - 1,
                                                                                               1 - gen.correct_probability(),
                                                                                               seq));

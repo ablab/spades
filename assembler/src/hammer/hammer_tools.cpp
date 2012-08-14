@@ -326,7 +326,7 @@ size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, KMe
                               /* quality is not necessary */ NULL,
                               read_size);
     while (gen.HasMore()) {
-      const Seq<K> &kmer = gen.kmer();
+      const KMer &kmer = gen.kmer();
       auto it = index.seq_find(kmer);
       if (it != index.seq_end()) {
         size_t pos = it->second;
@@ -412,7 +412,7 @@ bool HammerTools::CorrectOneRead(const KMerIndex &index,
                             /* quality is not necessary */ NULL,
                             read_size);
   while (gen.HasMore()) {
-    const Seq<K> &kmer = gen.kmer();
+    const KMer &kmer = gen.kmer();
     auto it = index.seq_find(kmer);
     if (it != index.seq_end()) {
       size_t pos = it->second;
