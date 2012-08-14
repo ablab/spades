@@ -453,6 +453,8 @@ def main():
                     CONFIG_FILE = "spades_config.info"
                 elif os.path.isfile(os.path.join(spades_home, "spades_config.info")):
                     CONFIG_FILE = os.path.join(spades_home, "spades_config.info")
+                else:
+                    error("config file for toy dataset not found (spades_config.info)!")
                 break
             else:
                 raise ValueError
