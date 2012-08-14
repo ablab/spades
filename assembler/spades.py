@@ -25,7 +25,7 @@ def warning(warn_str, prefix="== Warning == "):
 
 def prepare_config_bh(filename, cfg):
     subst_dict = dict()
-    cfg.working_dir = os.path.abspath(cfg.output_dir)
+    cfg.working_dir = os.path.abspath(cfg.working_dir)
 
     if len(cfg.paired_reads) == 2:
         subst_dict["input_paired_1"] = cfg.paired_reads[0]
@@ -33,7 +33,7 @@ def prepare_config_bh(filename, cfg):
     if len(cfg.single_reads) == 1:
         subst_dict["input_single"] = cfg.single_reads[0]
 
-    subst_dict["input_working_dir"] = cfg.output_dir
+    subst_dict["input_working_dir"] = cfg.working_dir
     subst_dict["general_max_iterations"] = cfg.max_iterations
     subst_dict["general_max_nthreads"] = cfg.max_threads
     subst_dict["count_merge_nthreads"] = cfg.max_threads
@@ -260,7 +260,7 @@ def check_config(cfg):
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gap-closer disable-gzip-output help test debug reference= help-hidden".split()
-short_options = "n:o:1:2:s:k:t:m:i:h"
+short_options = "o:1:2:s:k:t:m:i:h"
 
 
 def check_file(f, message=''):
@@ -554,95 +554,98 @@ def main():
         bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir,
             "dataset.info")
 
-        start_bh = True
+        # _Deprecated_ asking question about restarting error correction if already done
+        #start_bh = True
+        #if os.path.exists(bh_cfg.output_dir):
+        #    if os.path.exists(bh_cfg.dataset):
+        #        question = ["WARNING! It looks like error correction was already done!",
+        #                    "Folder with corrected dataset " + bh_cfg.output_dir +
+        #                    " already exists!",
+        #                    "Do you want to overwrite this folder and start error"
+        #                    " correction again?"]
+        #        answer = support.question_with_timer(question, 10, 'n')
+        #        if answer == 'n':
+        #            start_bh = False
+        #            bh_dataset_filename = bh_cfg.dataset
+        #            print("\n===== Error correction skipped\n")
+        #        else:
+        #            os.remove(bh_cfg.dataset)
+        #            shutil.rmtree(bh_cfg.output_dir)
+        #if start_bh: ...
+
         if os.path.exists(bh_cfg.output_dir):
-            if os.path.exists(bh_cfg.dataset):
-                question = ["WARNING! It looks like error correction was already done!",
-                            "Folder with corrected dataset " + bh_cfg.output_dir +
-                            " already exists!",
-                            "Do you want to overwrite this folder and start error"
-                            " correction again?"]
-                answer = support.question_with_timer(question, 10, 'n')
-                if answer == 'n':
-                    start_bh = False
-                    bh_dataset_filename = bh_cfg.dataset
-                    print("\n===== Error correction skipped\n")
-                else:
-                    os.remove(bh_cfg.dataset)
-                    shutil.rmtree(bh_cfg.output_dir)
+            shutil.rmtree(bh_cfg.output_dir)
+        
+        os.makedirs(bh_cfg.output_dir)
+        if not os.path.exists(bh_cfg.working_dir):
+            os.makedirs(bh_cfg.working_dir)
 
-        if start_bh:
-            if not os.path.exists(bh_cfg.output_dir):
-                os.makedirs(bh_cfg.output_dir)
-            if not os.path.exists(bh_cfg.working_dir):
-                os.makedirs(bh_cfg.working_dir)
+        log_filename = os.path.join(bh_cfg.output_dir, "correction.log")
+        bh_cfg.__dict__["log_filename"] = log_filename
 
-            log_filename = os.path.join(bh_cfg.output_dir, "correction.log")
-            bh_cfg.__dict__["log_filename"] = log_filename
+        print("\n===== Error correction started. Log can be found here: " +
+              bh_cfg.log_filename + "\n")
+        tee = support.Tee(log_filename, 'w', console=bh_cfg.output_to_console)
 
-            print("\n===== Error correction started. Log can be found here: " +
-                  bh_cfg.log_filename + "\n")
-            tee = support.Tee(log_filename, 'w', console=bh_cfg.output_to_console)
+        if CONFIG_FILE:
+            shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
 
-            if CONFIG_FILE:
-                shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
+        # parsing dataset section
+        bh_cfg.__dict__["single_cell"] = cfg["dataset"].single_cell
+        bh_cfg.__dict__["paired_reads"] = []
+        bh_cfg.__dict__["single_reads"] = []
+        import bh_aux
 
-            # parsing dataset section
-            bh_cfg.__dict__["single_cell"] = cfg["dataset"].single_cell
-            bh_cfg.__dict__["paired_reads"] = []
-            bh_cfg.__dict__["single_reads"] = []
-            import bh_aux
+        for k, v in cfg["dataset"].__dict__.iteritems():
+            if not isinstance(v, list):
+                v = [v]
 
-            for k, v in cfg["dataset"].__dict__.iteritems():
-                if not isinstance(v, list):
-                    v = [v]
+            # saving original reads to dataset
+            if k.find("_reads") != -1:
+                quoted_value = '"'
+                for item in v:
+                    quoted_value += os.path.abspath(os.path.expandvars(item)) + ' '
+                quoted_value += '"'
+                bh_cfg.__dict__["original_" + k] = quoted_value
 
-                # saving original reads to dataset
-                if k.find("_reads") != -1:
-                    quoted_value = '"'
-                    for item in v:
-                        quoted_value += os.path.abspath(os.path.expandvars(item)) + ' '
-                    quoted_value += '"'
-                    bh_cfg.__dict__["original_" + k] = quoted_value
+            # saving reference to dataset in developer_mode
+            if bh_cfg.developer_mode:
+                if "reference" in cfg["dataset"].__dict__:
+                    bh_cfg.__dict__["reference_genome"] = os.path.abspath(
+                        os.path.expandvars(cfg["dataset"].reference))                       
 
-                # saving reference to dataset in developer_mode
-                if bh_cfg.developer_mode:
-                    if "reference" in cfg["dataset"].__dict__:
-                        bh_cfg.__dict__["reference_genome"] = os.path.abspath(
-                            os.path.expandvars(cfg["dataset"].reference))                       
+            if k.startswith("single_reads"):
+                for item in v:
+                    item = os.path.abspath(os.path.expandvars(item))
+                    item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir)
+                    if not bh_cfg.single_reads:
+                        bh_cfg.single_reads.append(item)
+                    else:
+                        bh_cfg.single_reads[0] = bh_aux.merge_single_files(item,
+                            bh_cfg.single_reads[0], bh_cfg.working_dir)
 
-                if k.startswith("single_reads"):
+            elif k.startswith("paired_reads"):
+                cur_paired_reads = []
+                if len(v) == 1:
+                    item = os.path.abspath(os.path.expandvars(v[0]))
+                    cur_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir)
+                elif len(v) == 2:
                     for item in v:
                         item = os.path.abspath(os.path.expandvars(item))
                         item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir)
-                        if not bh_cfg.single_reads:
-                            bh_cfg.single_reads.append(item)
-                        else:
-                            bh_cfg.single_reads[0] = bh_aux.merge_single_files(item,
-                                bh_cfg.single_reads[0], bh_cfg.working_dir)
+                        cur_paired_reads.append(item)
 
-                elif k.startswith("paired_reads"):
-                    cur_paired_reads = []
-                    if len(v) == 1:
-                        item = os.path.abspath(os.path.expandvars(v[0]))
-                        cur_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir)
-                    elif len(v) == 2:
-                        for item in v:
-                            item = os.path.abspath(os.path.expandvars(item))
-                            item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir)
-                            cur_paired_reads.append(item)
+                if not bh_cfg.paired_reads:
+                    bh_cfg.paired_reads = cur_paired_reads
+                else:
+                    bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads,
+                        bh_cfg.paired_reads, bh_cfg.working_dir)
 
-                    if not bh_cfg.paired_reads:
-                        bh_cfg.paired_reads = cur_paired_reads
-                    else:
-                        bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads,
-                            bh_cfg.paired_reads, bh_cfg.working_dir)
+        bh_dataset_filename = run_bh(bh_cfg)
 
-            bh_dataset_filename = run_bh(bh_cfg)
-
-            tee.free()
-            print("\n===== Error correction finished. Log can be found here: " +
-                  bh_cfg.log_filename + "\n")
+        tee.free()
+        print("\n===== Error correction finished. Log can be found here: " +
+              bh_cfg.log_filename + "\n")
 
     result_contigs_filename = ""
     if "assembly" in cfg:
