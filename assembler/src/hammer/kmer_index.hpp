@@ -52,6 +52,34 @@ class KMerIndex {
     KMerData().swap(data_);
   }
 
+  template<class Writer>
+  void binary_write(Writer &os) const {
+    size_t sz = data_.size();
+    os.write((char*)&sz, sizeof(sz));
+    for (size_t i = 0; i < sz; ++i)
+      binary_write(os, data_[i]);
+  }
+
+  template<class Read>
+  void binary_read(Read &is) {
+    size_t sz;
+
+    clear();
+
+    is.read((char*)&sz, sizeof(sz));
+
+    reserve(sz);
+    data_.resize(sz);
+    for (size_t i = 0; i < sz; ++i) {
+      binary_read(is, data_[i]);
+    }
+
+    for (size_t i = 0; i < sz; ++i) {
+      const char* s = Globals::blob + data_[i].first.start();
+      index_.insert(std::make_pair(Seq<K>(s, 0, K, /* raw */ true), i));
+    }
+  }
+
   KMerCount& operator[](size_t idx) { return data_[idx]; }
   const KMerCount& operator[](size_t idx) const { return data_[idx]; }
   KMerCount& operator[](Seq<K> s) { return operator[](index_.find(s)->second); }
