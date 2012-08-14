@@ -138,11 +138,11 @@ namespace online_visualization {
                     irs >> read;
                     if (read.IsValid()) {
                         const Sequence& contig = read.sequence();
-                        bool result = true;
-                        result = result & ProcessContig(curr_env, contig, genome_path, "CONTIG_" + read.name());
-                        result = result & ProcessContig(curr_env, !contig, genome_path, "CONTIG_" + read.name() + "_RC");
+                        bool result = false;
+                        result = result | ProcessContig(curr_env, contig, genome_path, "CONTIG_" + read.name());
+                        result = result | ProcessContig(curr_env, !contig, genome_path, "CONTIG_" + read.name() + "_RC");
                         if (result) {
-                            cout << " contig " << read.name() << " is okay" << endl;   
+                            cout << " contig " << read.name() << " is OKAY" << endl;   
                         }
                         else 
                             cout << " contig " << read.name() << " is MISASSEMBLED" << endl;

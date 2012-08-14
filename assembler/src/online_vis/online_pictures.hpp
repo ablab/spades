@@ -51,7 +51,7 @@ namespace online_visualization {
     public:
         OnlineVisualizer()
         {
-	        fs::path p = fs::path(cfg::get().load_from) / "constructed_graph";
+	        fs::path p = fs::path(cfg::get().load_from) / "late_pair_info_counted";
             stringstream ss("default " + p.string());
             AddAllCommands();
             Command& LoadCommand = GetCommand(CommandId("load"));
