@@ -259,7 +259,8 @@ def check_config(cfg):
 
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
-               "disable-gap-closer disable-gzip-output help test debug reference= help-hidden".split()
+               "disable-gap-closer disable-gzip-output help test debug reference= "\
+               "bh-heap-check= spades-heap-check= help-hidden".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -309,6 +310,11 @@ def usage(show_hidden=False):
                          " closer"
     print >> sys.stderr, "--disable-gzip-output\t\tforces error correction not to"\
                          " compress the corrected reads"    
+    if show_hidden:
+        print >> sys.stderr, "--bh-heap-check\t\t<value>\tset HEAPCHECK environment variable"\
+                         " for BayesHammer"
+        print >> sys.stderr, "--spades-heap-check\t<value>\tset HEAPCHECK environment variable"\
+                         " for SPAdes"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "--test\t\trun SPAdes on toy dataset"
@@ -325,7 +331,7 @@ def usage(show_hidden=False):
 
 def main():
     os.environ["LC_ALL"] = "C"
-    
+   
     CONFIG_FILE = ""
     options = None
 
@@ -369,6 +375,9 @@ def main():
 
         only_error_correction = False
         only_assembler = False
+
+        bh_heap_check = ""
+        spades_heap_check = ""
 
         developer_mode = False
 
@@ -414,6 +423,11 @@ def main():
                 only_error_correction = True
             elif opt == "--only-assembler":
                 only_assembler = True
+
+            elif opt == "--bh-heap-check":
+                bh_heap_check = arg
+            elif opt == "--spades-heap-check":
+                spades_heap_check = arg
 
             elif opt == '-t' or opt == "--threads":
                 threads = int(arg)
@@ -505,12 +519,16 @@ def main():
                     cfg["error_correction"].__dict__["qvoffset"] = qvoffset
                 if iterations != None:
                     cfg["error_correction"].__dict__["max_iterations"] = iterations
+                if bh_heap_check:
+                    cfg["error_correction"].__dict__["heap_check"] = bh_heap_check
                 cfg["error_correction"].__dict__["gzip_output"] = not disable_gzip_output
 
             # assembly
             if not only_error_correction:
                 if k_mers:
                     cfg["assembly"].__dict__["iterative_K"] = k_mers
+                if spades_heap_check:
+                    cfg["assembly"].__dict__["heap_check"] = spades_heap_check
                 cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files
                 cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
 
@@ -546,6 +564,11 @@ def main():
     bh_dataset_filename = ""
     if "error_correction" in cfg:
         bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
+
+        if "HEAPCHECK" in os.environ:
+            del os.environ["HEAPCHECK"]
+        if "heap_check" in bh_cfg.__dict__:
+            os.environ["HEAPCHECK"] = bh_cfg.heap_check
 
         bh_cfg.output_dir = os.path.join(os.path.expandvars(bh_cfg.output_dir), "corrected")
 
@@ -650,6 +673,11 @@ def main():
     result_contigs_filename = ""
     if "assembly" in cfg:
         spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
+
+        if "HEAPCHECK" in os.environ:
+            del os.environ["HEAPCHECK"]
+        if "heap_check" in spades_cfg.__dict__:
+            os.environ["HEAPCHECK"] = spades_cfg.heap_check
 
         if "error_correction" in cfg:
             spades_cfg.__dict__["align_original_reads"] = True
