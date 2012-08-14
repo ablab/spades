@@ -13,23 +13,24 @@ namespace online_visualization {
         static const CommandNameMapping FillCommandNameMapping() {
             vector<CommandNameMapping::value_type> info = 
             { 
-                { "null",               _null_           }, 
-                { "exit",               _exit_           }, 
-                { "help",               help             }, 
-                { "load",               load             },
-                { "list",               list             },
-                { "switch",             switch_env       },
-                { "rep",                replay           },
-                { "load_genome",        load_genome      },
-                { "set_folder",         set_folder       }, 
-                { "set_file_name",      set_file_name    }, 
-                { "set_max_vertices",   set_max_vertices }, 
-                { "fill_pos",           fill_pos         }, 
-                { "clear_pos",          clear_pos        },
-                { "vertex",             draw_vertex      }, 
-                { "edge",               draw_edge        }, 
-                { "position",           draw_position    }, 
-                { "paths",              print_paths      }
+                { "null",                _null_              }, 
+                { "exit",                _exit_              }, 
+                { "help",                help                }, 
+                { "load",                load                },
+                { "list",                list                },
+                { "switch",              switch_env          },
+                { "rep",                 replay              },
+                { "load_genome",         load_genome         },
+                { "set_folder",          set_folder          }, 
+                { "set_file_name",       set_file_name       }, 
+                { "set_max_vertices",    set_max_vertices    }, 
+                { "fill_pos",            fill_pos            }, 
+                { "clear_pos",           clear_pos           },
+                { "vertex",              draw_vertex         }, 
+                { "edge",                draw_edge           }, 
+                { "position",            draw_position       }, 
+                { "paths",               print_paths         },
+                { "print_contigs_stats", print_contigs_stats }
             };
             
             //VERIFY(info.size() == CommandType::total)

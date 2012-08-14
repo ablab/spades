@@ -150,21 +150,20 @@ void CountPairedInfoStats(const Graph &g,
 }
 
 // leave only those pairs, which edges have no path in the graph between them
-paired_info_index FilterPairsWithExistingPath(const paired_info_index& index, const conj_graph_pack &gp, size_t insert_size, size_t read_length, size_t delta)
+void FilterIndexWithExistingPaths(paired_info_index& scaf_paired_index, const paired_info_index& index, const conj_graph_pack &gp, const GraphDistanceFinder<Graph>& dist_finder)
 {
-	GraphDistanceFinder<Graph> distFinder(gp.g, insert_size, read_length, delta);
-	paired_info_index scaf_paired_index(gp.g);
     for (auto it = index.begin(); it != index.end(); ++it) {
-    	EdgeId e1 = it.first();
-    	EdgeId e2 = it.second();
-    	const vector<size_t>& dists = distFinder.GetGraphDistancesLengths(e1, e2);
+        const vector<omnigraph::PairInfo<EdgeId> >& pair_info = *it;
+    	EdgeId e1 = pair_info[0].first;
+    	EdgeId e2 = pair_info[0].second;
+    	const vector<size_t>& dists = dist_finder.GetGraphDistancesLengths(e1, e2);
         if (dists.size() == 0) {
-        	vector<omnigraph::PairInfo<EdgeId> > pair_info = *it;
-        	for (auto point = pair_info.begin(); point != pair_info.end(); point++)
-        	     scaf_paired_index.AddPairInfo(*point);
-        }
+        	for (size_t i = 0; i < pair_info.size(); ++i) {
+                 if (math::gr(pair_info[i].d, 0.))
+                     scaf_paired_index.AddPairInfo(pair_info[i]);
+            }
+        } 
     }
-    return scaf_paired_index;
 }
 
 void FillAndCorrectEtalonPairedInfo(
@@ -191,11 +190,11 @@ void FillAndCorrectEtalonPairedInfo(
 	paired_info_index filtered_etalon_index(gp.g);
 	for (auto iter = etalon_paired_index.begin();
 			iter != etalon_paired_index.end(); ++iter) {
-		vector<omnigraph::PairInfo<EdgeId> > pair_info = *iter;
+		const vector<omnigraph::PairInfo<EdgeId> >& pair_info = *iter;
 		if (setEdgePairs.count(
 				make_pair(pair_info[0].first, pair_info[0].second)) > 0)
 			for (auto point = pair_info.begin(); point != pair_info.end();
-					point++)
+					++point)
 				filtered_etalon_index.AddPairInfo(*point);
 	}
 
@@ -203,7 +202,7 @@ void FillAndCorrectEtalonPairedInfo(
 	GraphDistanceFinder<Graph> dist_finder(gp.g, insert_size, read_length,
 			delta);
 	DistanceEstimator<Graph> estimator(gp.g, filtered_etalon_index, dist_finder,
-			3, 4);
+			0, 4);
 	estimator.Estimate(corrected_etalon_index);
 	if (save_etalon_info_history) {
 		INFO("Saving etalon paired info indices on different stages");
@@ -219,15 +218,13 @@ void FillAndCorrectEtalonPairedInfo(
 		INFO("Everything is saved");
 
         if (cfg::get().paired_info_scaffolder) {
+	        GraphDistanceFinder<Graph> dist_finder(gp.g, insert_size, read_length, delta);
         	INFO("Saving paired information statistics for a scaffolding");
-            paired_info_index scaf_etalon_index = FilterPairsWithExistingPath(corrected_etalon_index, gp, insert_size, read_length, delta);
+            paired_info_index scaf_etalon_index(gp.g);
+            FilterIndexWithExistingPaths(scaf_etalon_index, filtered_etalon_index, gp, dist_finder);
 			data_printer.savePaired(
 					cfg::get().output_dir + "scaf_etalon",
 					scaf_etalon_index);
-        	paired_info_index scaf_paired_index = FilterPairsWithExistingPath(paired_index, gp, insert_size, read_length, delta);
-			data_printer.savePaired(
-					cfg::get().output_dir + "scaf_paired",
-					scaf_paired_index);
         }
 		
         INFO("Everything saved");
@@ -240,14 +237,13 @@ void GetAllDistances(const PairedInfoIndex<Graph>& paired_index,
 		PairedInfoIndex<Graph>& result,
 		const GraphDistanceFinder<Graph>& dist_finder) {
 	for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
-		vector<PairInfo<EdgeId> > data = *iter;
+		const vector<PairInfo<EdgeId> >& data = *iter;
 		EdgeId first = data[0].first;
 		EdgeId second = data[0].second;
-		vector<size_t> forward = dist_finder.GetGraphDistancesLengths(first, second);
-		for (size_t i = 0; i < forward.size(); i++)
+		const vector<size_t>& forward = dist_finder.GetGraphDistancesLengths(first, second);
+		for (size_t i = 0; i < forward.size(); ++i)
 			result.AddPairInfo(
-					PairInfo < EdgeId
-							> (data[0].first, data[0].second, forward[i], -10, 0.0),
+					PairInfo<EdgeId> (data[0].first, data[0].second, forward[i], -10, 0.0),
 					false);
 	}
 }
@@ -257,10 +253,10 @@ void GetAllDistances(const Graph& g, const PairedInfoIndex<Graph>& paired_index,
 		PairedInfoIndex<Graph>& result,
 		const GraphDistanceFinder<Graph>& dist_finder) {
 	for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
-		vector<PairInfo<EdgeId> > data = *iter;
+		const vector<PairInfo<EdgeId> >& data = *iter;
 		EdgeId first = data[0].first;
 		EdgeId second = data[0].second;
-		vector<vector<EdgeId> > raw_paths = dist_finder.GetGraphDistances(first, second);
+		const vector<vector<EdgeId> >& raw_paths = dist_finder.GetGraphDistances(first, second);
         // adding first edge to every path
         vector<vector<EdgeId> > paths;
         for (size_t i = 0; i < raw_paths.size(); ++i) {
@@ -362,6 +358,16 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	ClusterStat<Graph>(clustered_index).Count();
 	INFO("Overall cluster stat")
 
+    if (cfg::get().paired_info_scaffolder) {
+		ConjugateDataPrinter<Graph> data_printer(gp.g, gp.int_ids);
+        INFO("Generating the statistics of pair info for scaffolding");
+        GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, *cfg::get().ds.is_var);
+        paired_info_index scaf_clustered_index(gp.g);
+        FilterIndexWithExistingPaths(scaf_clustered_index, clustered_index, gp, dist_finder);
+        data_printer.savePaired(
+                cfg::get().output_dir + "scaf_clustered",
+                scaf_clustered_index);
+    }
 	//	PairedInfoIndex<Graph> etalon_clustered_index;
 	//	DistanceEstimator<Graph> estimator(g, etalon_paired_index, insert_size,
 	//			max_read_length, cfg::get().de.delta,

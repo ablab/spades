@@ -1,13 +1,78 @@
 #pragma once
 
+#include "vis_utils.hpp"
+
 namespace online_visualization {
     
     class ArgumentList {
         private:
+            string original_args;
             map<string, string> options;
             set<string> short_options;
             vector<string> arguments;
             //vector<string> optional_arguments;
+
+            void Preprocess(const vector<string>& history, string command) const {
+                vector<string> new_arguments;
+
+                for (auto iter = arguments.begin(); iter != arguments.end(); ++iter) {
+                    string arg = *iter;
+                    if (arg[0] == '!') {
+                        if (arg[1] == '-') {
+                            string num_of_command = "";
+                            size_t i = 2;
+                            while (i < arg.size() && arg[i] != ':') {
+                                num_of_command = num_of_command + arg[i];
+                                ++i;
+                            }
+                            if (IsNumber(num_of_command) && arg[i] == ':') {
+                                ++i;
+                                string num_of_arg = ""
+                                while (i < arg.size()) {
+                                    ++i;
+                                    num_of_arg = num_of_arg + arg[i];
+                                }
+                                if (IsNumber(num_of_arg)) {
+                                    stringstream ss(history[history.size() - GetInt(num_of_command)]);
+                                    string command_string;
+                                    ss >> command_string;
+                                    ArgumentList arg_list(ss);
+                                    string new_arg = arg_list.GetAllArguments()[GetInt(num_of_arg)];                                   
+                                    new_arguments.push_back(new_arg);
+                                }
+                            }
+                        }
+                        else if (arg[1] == '$') {
+                            string num_of_command = "1";
+                            size_t i = 2;
+                            while (i < arg.size() && arg[i] != ':') {
+                                num_of_command = num_of_command + arg[i];
+                                ++i;
+                            }
+                            if (IsNumber(num_of_command) && arg[i] == ':') {
+                                ++i;
+                                string num_of_arg = ""
+                                while (i < arg.size()) {
+                                    ++i;
+                                    num_of_arg = num_of_arg + arg[i];
+                                }
+                                if (IsNumber(num_of_arg)) {
+                                    stringstream ss(history[history.size() - GetInt(num_of_command)]);
+                                    string command_string;
+                                    ss >> command_string;
+                                    ArgumentList arg_list(ss);
+                                    string new_arg = arg_list.GetAllArguments()[GetInt(num_of_arg)];                                   
+                                    new_arguments.push_back(new_arg);
+                                }
+                            }
+                        }
+                        else {
+                            new_arguments.push_back(arg);   
+                        }
+                                                   
+                    }
+                }
+            }
 
             const vector<string> SplitInTokens(stringstream& args) const { 
                 vector<string> answer;
@@ -69,6 +134,7 @@ namespace online_visualization {
             }
 
             ArgumentList(stringstream& stream) {
+                original_args = stream.str();
                 const vector<string>& args = SplitInTokens(stream);
                 ParseArguments(args);
             }
@@ -89,6 +155,7 @@ namespace online_visualization {
             const vector<string>& GetAllArguments() const {
                 return arguments;
             }
+
     };
 
 }

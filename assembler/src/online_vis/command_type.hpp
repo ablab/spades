@@ -20,8 +20,8 @@ namespace online_visualization {
         draw_position,
         show_position,
         draw_part_of_genome,
-        print_paths
-        //total = 2
+        print_paths,
+        print_contigs_stats
     };
 }
 

@@ -19,11 +19,11 @@ mkdir -p $output_dir
 mkdir $input_dir
 ant
 
-    cp $path/saves/distance_estimation* $input_dir
-    cp $path/estimation_qual/* $input_dir
-    cp $path/etalon_corrected_by_graph.prd $input_dir/distance_estimation_et.prd 
-    cp $path/etalon*.prd $input_dir 
-    cp $path/scaf*.prd $input_dir
+cp $path/saves/distance_estimation* $input_dir
+cp $path/estimation_qual/paths.prd $input_dir
+cp $path/etalon_corrected_by_graph.prd $input_dir/distance_estimation_et.prd 
+cp $path/etalon*.prd $input_dir 
+cp $path/scaf*.prd $input_dir
 
 cd $input_dir
 sed '1d' distance_estimation_et.prd > etalon.prd

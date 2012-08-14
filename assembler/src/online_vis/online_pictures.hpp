@@ -15,6 +15,7 @@ namespace online_visualization {
 
     class OnlineVisualizer {
     private:
+
         shared_ptr<Environment> current_environment_;
 
         LoadedEnvironments loaded_environments;
@@ -42,6 +43,7 @@ namespace online_visualization {
             AddCommand(shared_ptr<Command>(new ShowPositionCommand));
 
             AddCommand(shared_ptr<Command>(new PrintPathsCommand));
+            AddCommand(shared_ptr<Command>(new PrintContigsStatsCommand));
         }
 
     public:
@@ -65,12 +67,11 @@ namespace online_visualization {
                 getline(cin, command_with_args);
                 while (history.size() >= max_buffer_size) 
                     history.pop_back();
+                stringstream ss(command_with_args);
+                ArgumentList arg_list(ss);
+                arg_list.Preprocess(history);
 
                 history.push_back(command_with_args);
-                stringstream ss(command_with_args);
-                string command_string;
-                ss >> command_string;
-                ArgumentList arg_list(ss);
 
                 Command& command = GetCommand(CommandId(command_string));
                 command.Execute(current_environment_, loaded_environments, arg_list);
