@@ -18,7 +18,8 @@ mkdir $project_dir -p
 read line < $options_dir"spades.options"
 echo $line
 
-python ./spades.py $line -o $project_dir
+python ./spades.py $line -o $project_dir --disable-gzip-output 
+
 read line < $options_dir"quast.options"
 echo $line
 
