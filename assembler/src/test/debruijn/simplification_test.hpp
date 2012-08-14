@@ -176,12 +176,28 @@ BOOST_AUTO_TEST_CASE( SelfComp ) {
        BOOST_CHECK_EQUAL(g.size(), 4);
 }
 
+BOOST_AUTO_TEST_CASE( ComplexBulgeRemoverOnSimpleBulge ) {
+       Graph g(55);
+       IdTrackHandler<Graph> int_ids(g);
+       ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
+//       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+//       licvidator.Licvidate();
+       ComplexBulgeRemover<Graph> remover(g, g.k() * 5, 5);
+       remover.Run();
+//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
+       BOOST_CHECK_EQUAL(g.size(), 4);
+}
+
 BOOST_AUTO_TEST_CASE( ComplexBulge ) {
        conj_graph_pack gp(55, Sequence(), 50, true, false);
        ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
        INFO("Complex bulge removal:");
-       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
-       licvidator.Licvidate();
+//       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+//       licvidator.Licvidate();
+
+       ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
+       remover.Run();
+
 //       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
        BOOST_CHECK_EQUAL(gp.g.size(), 8);
 }
@@ -190,8 +206,10 @@ BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
        conj_graph_pack gp(55, Sequence(), 50, true, false);
        ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
        INFO("Complex bulge removal:");
-       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
-       licvidator.Licvidate();
+//       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+//       licvidator.Licvidate();
+       ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
+       remover.Run();
 //       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
        BOOST_CHECK_EQUAL(gp.g.size(), 66);
 }

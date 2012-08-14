@@ -21,6 +21,7 @@
 #include "omni/omni_tools.hpp"
 #include "omni/tip_clipper.hpp"
 #include "omni/bulge_remover.hpp"
+#include "omni/complex_bulge_remover.hpp"
 #include "omni/erroneous_connection_remover.hpp"
 #include "omni/mf_ec_remover.hpp"
 #include "gap_closer.hpp"
@@ -717,6 +718,8 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 //	INFO("Complex bulge removal:");
 //	OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //	licvidator.Licvidate();
+	ComplexBulgeRemover<Graph> complex_bulge_remover(gp.g, gp.g.k() * 5, 5);
+	complex_bulge_remover.Run();
 }
 
 double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {

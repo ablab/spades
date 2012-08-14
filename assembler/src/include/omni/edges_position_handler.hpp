@@ -28,13 +28,13 @@ public:
 	int start_;
 	int end_;
 	int start() const {
-		return m_range_.initial_range.start;
+		return m_range_.initial_range.start_pos;
 	}
 	int end() const {
 		return m_range_.initial_range.end_pos;
 	}
 	int m_start() const {
-		return m_range_.mapped_range.start;
+		return m_range_.mapped_range.start_pos;
 	}
 	int m_end() const {
 		return m_range_.mapped_range.end_pos;
@@ -51,9 +51,9 @@ public:
 //	};
 	EdgePosition(MappingRange& m_range, std::string contigId = "0", int shift =
 			0) :
-			m_range_(m_range), start_(m_range.initial_range.start), end_(
+			m_range_(m_range), start_(m_range.initial_range.start_pos), end_(
 					m_range.initial_range.end_pos), contigId_(contigId) {
-		m_range.mapped_range.start += shift;
+		m_range.mapped_range.start_pos += shift;
 		m_range.mapped_range.end_pos += shift;
 	}
 	;
@@ -63,16 +63,16 @@ public:
 //	};
 
 	EdgePosition(const EdgePosition& e_pos, int shift = 0) :
-			m_range_(e_pos.m_range_), start_(m_range_.initial_range.start), end_(
+			m_range_(e_pos.m_range_), start_(m_range_.initial_range.start_pos), end_(
 					m_range_.initial_range.end_pos), contigId_(e_pos.contigId_) {
-		m_range_.mapped_range.start += shift;
+		m_range_.mapped_range.start_pos += shift;
 		m_range_.mapped_range.end_pos += shift;
 	}
 	;
 
 	void shift_mapped_range(int shift) {
 		if (m_range_.mapped_range.end_pos != 0) {
-			m_range_.mapped_range.start += shift;
+			m_range_.mapped_range.start_pos += shift;
 			m_range_.mapped_range.end_pos += shift;
 		}
 	}

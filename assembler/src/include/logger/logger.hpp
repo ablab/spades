@@ -91,6 +91,7 @@ private:
 
 inline std::shared_ptr<logger>& __logger();
 inline logger* create_logger(std::string filename = "", level default_level = L_INFO);
+
 void attach_logger(logger *lg);
 void detach_logger();
 

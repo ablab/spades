@@ -749,7 +749,7 @@ struct Range {
 	}
 
 	void shift(int shift) {
-		VERIFY(shift > 0 || -shift <= start_pos);
+		VERIFY(shift > 0 || size_t(-shift) <= start_pos);
 		start_pos += shift;
 		end_pos += shift;
 	}
