@@ -45,46 +45,6 @@ struct is_equal_type<T, T> {
 };
 }
 
-inline void correct_relative_includes(const fs::path& p,
-		fs::path const& working_dir = fs::initial_path()) {
-	using namespace boost;
-	using namespace boost::filesystem;
-
-	std::ifstream f(p.string().c_str());
-
-	vector < string > strings;
-
-	while (f.good()) {
-		string raw_line;
-		getline(f, raw_line);
-
-		strings.push_back(raw_line);
-		boost::trim(raw_line);
-
-		const string incl_prefix = "#include";
-
-		if (starts_with(raw_line, incl_prefix)) {
-			string incl_path_str = raw_line.substr(incl_prefix.size(),
-					string::npos);
-			trim(incl_path_str);
-			trim_if(incl_path_str, is_any_of("\""));
-
-			path incl_path = p.parent_path() / incl_path_str;
-			incl_path = make_relative_path(incl_path);
-
-			correct_relative_includes(incl_path);
-
-			strings.back() = incl_prefix + " \"" + incl_path.string() + "\"";
-		}
-	}
-
-	f.close();
-
-	std::ofstream of(p.string().c_str());
-	for (size_t i = 0; i < strings.size(); ++i)
-		of << strings[i] << std::endl;
-}
-
 template<class T>
 typename boost::enable_if_c<
 		details::is_equal_type<T, std::string>::value
@@ -178,24 +138,20 @@ void load(T& value, boost::property_tree::ptree const& pt) {
 	load(value, pt, true);
 }
 
-//    template<class T>
-//    void load(T&, boost::property_tree::ptree const&, bool complete);
-
 // config singleton-wrap
 template<class Config>
 struct config {
-	//	template<typenamea...Args>
-	//	static void create_instance(std::string const& filename, Args&&... args)
-	//	{
-	//		boost::property_tree::ptree pt;
-	//		boost::property_tree::read_info(filename, pt);
-	//		load(pt, inner_cfg(), std::forward<Args>(args)...);
-	//	}
+    static std::string dirnameOf(const std::string& fname)
+    {
+        size_t pos = fname.find_last_of("\\/");
+        return (std::string::npos == pos) ? "" : fname.substr(0, pos);
+    }
+
 
 	static void create_instance(std::string const& filename) {
-		correct_relative_includes(filename);
-
 		boost::property_tree::ptree pt;
+        int ret = chdir(dirnameOf(filename).c_str());
+        VERIFY(ret == 0);
 		boost::property_tree::read_info(filename, pt);
 		load(inner_cfg(), pt);
 		is_initialized() = true;
