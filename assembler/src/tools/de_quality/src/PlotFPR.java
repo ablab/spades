@@ -12,6 +12,8 @@ public class PlotFPR implements Runnable {
 
 	private static String filename = "";
 
+    private final static String output_dir = "data/output/";
+
 	private static double Threshold;
 
     private static boolean output = true;
@@ -48,21 +50,19 @@ public class PlotFPR implements Runnable {
 		System.out.println(obj);
 	}
 
-
+    private static final String dir_name = "data/input/";
 
 
 	public void run() {
 		try {
 			MyScanner in_tp, in_fpr, in_fnr, in_et, in_cl;
-			String folder0 = "";
 			Locale.setDefault(Locale.US);
-			in_tp = new MyScanner(folder0 + "tp.prd");
-			in_fpr = new MyScanner(folder0 + "fp.prd");
-			in_fnr = new MyScanner(folder0 + "fn.prd");
-			in_cl = new MyScanner("clustered.prd");
-			in_et = new MyScanner("etalon.prd");
+			in_tp = new MyScanner(dir_name + "tp.prd");
+			in_fpr = new MyScanner(dir_name + "fp.prd");
+			in_fnr = new MyScanner(dir_name + "fn.prd");
+			in_cl = new MyScanner(dir_name + "clustered.prd");
+			in_et = new MyScanner(dir_name + "etalon.prd");
 			PrintWriter out = new PrintWriter(System.out);
-            //debug(Threshold);
             int size_fn = 0;
             double maxfnr = -1;
 			while (in_fnr.hasMoreTokens()) {
@@ -219,14 +219,14 @@ public class PlotFPR implements Runnable {
 
             System.out.println("Intersection of graphics is at fpr = fnr = " + intersectionPoint);
 
-            PrintWriter out_fnr = new PrintWriter("plot_fnr.out");
+            PrintWriter out_fnr = new PrintWriter(output_dir + "plot/plot_fnr.out");
             out_fnr.println(buffer_fnr);
             out_fnr.close();
-            PrintWriter out_fpr = new PrintWriter("plot_fpr.out");
+            PrintWriter out_fpr = new PrintWriter(output_dir + "plot/plot_fpr.out");
             out_fpr.println(buffer_fpr);
             out_fpr.close();
             
-            PrintWriter out_config = new PrintWriter("fpnr_plot.conf");
+            PrintWriter out_config = new PrintWriter(output_dir + "plot/fpnr_plot.conf");
                         String text =
                         "#!/usr/bin/gnuplot -persist\n" + 
                         "set term x11 0\n" +

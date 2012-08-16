@@ -1,18 +1,23 @@
+import utils.*;
 import java.io.*;
 import java.util.*;
 import java.math.*;
-import utils.*;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.Graphics;
 
 
-public class Main implements Runnable{
+public class GetErrors implements Runnable{
 	
 	private static String filename = "";
 
-	private static String folder;
+	private final static String input_dir = "data/input/";
 
-	private static int Thr;
+	private final static String output_dir = "data/output/hists";
 
-	private static int thr;
+	private static int upperBound;
+
+	private static int lowerBound;
 
 	private static boolean symmetric = false;
 
@@ -22,69 +27,85 @@ public class Main implements Runnable{
 
 	//	2^0 = symmetric
     //	2^1 = non-symmetric
-	//  2^2 = morethan thr
-	//	2^3 = lessthan Thr
-	//
-	//
-	//
+	//  2^2 = morethan lowerBound
+	//	2^3 = lessthan upperBound
 	//
 
-	public static void main(String[] args){
+    private class Pair implements Comparable<Pair> {
+        int a;
+        int b;
+
+        public Pair(int x, int y){
+            a = x;
+            b = y;
+        }
+
+        public int compareTo(Pair p){
+              if (a == p.a) return (b - p.b);
+              return (a - p.a);
+        }
+
+        public String toString(){
+              
+            return a + " " + b;
+        }
+
+    }
+
+	public static void main(String[] args) {
 		if (args != null){
 			for (int i = 0; i<args.length; i++) if (args[i].equals("-s")) mask |= 1<<0;
 			for (int i = 0; i<args.length; i++) if (args[i].equals("-ns")) mask |= 1<<1;
 			for (int i = 0; i<args.length; i++) if (args[i].equals("-m")) {
-				thr = Integer.parseInt(args[i+1]);
+				lowerBound = Integer.parseInt(args[i+1]);
 				mask |= 1<<2;
 			}
 			for (int i = 0; i<args.length; i++) if (args[i].equals("-l")) {
-				Thr = Integer.parseInt(args[i+1]);
+				upperBound = Integer.parseInt(args[i+1]);
 				mask |= 1<<3;
 			}
 			for (int i = 0; i<args.length; i++) if (args[i].equals("-f")) filename = args[i+1];
 		}
-		new Thread(new Main()).start();
+		new Thread(new GetErrors()).start();
 	}
 
-	private void debug(Object obj){
+	private void debug(Object obj) {
 		System.out.println(obj);
 	}
 
-	private boolean isAcceptable(int len1, int len2){
+	private boolean isAcceptable(int len1, int len2) {
 		int b = 0;
         if (len1 == len2) b |= 1;
         if (len1 != len2) b |= 2;
-        if (len1 > thr && len2 > thr) b |= 4;
-        if (len1 < Thr && len2 < Thr) b |= 8;
+        if (len1 > lowerBound && len2 > lowerBound) b |= 4;
+        if (len1 < upperBound && len2 < upperBound) b |= 8;
 		return ((b & mask) == mask);
 	}
 
 
 
 	
-	public void run(){
-		try{
+	public void run() {
+		try {
 			MyScanner in, in2, incl, fnrin, fprin, inpaths;
 			
 			Locale.setDefault(Locale.US);
 			if (filename.length()>0){
 				int a = 0;
-				while (a<filename.length() && filename.charAt(a)!='.') a++;
+				while (a < filename.length() && filename.charAt(a)!='.') a++;
 				filename = filename.substring(0, a);
-				in = new MyScanner(filename + ".prd");
-				in2 = new MyScanner(filename + ".grp");
-                incl = new MyScanner(filename + "_cl.prd");
-                inpaths = new MyScanner("paths.prd");
-                fnrin = new MyScanner("fn.prd");
-                fprin = new MyScanner("fp.prd");
+				in = new MyScanner(input_dir + filename + ".prd");
+				in2 = new MyScanner(input_dir + filename + ".grp");
+                incl = new MyScanner(input_dir + filename + "_cl.prd");
+                inpaths = new MyScanner(input_dir + "paths.prd");
+                fnrin = new MyScanner(input_dir + "fn.prd");
+                fprin = new MyScanner(input_dir + "fp.prd");
 			}
 			else throw new IOException("no input data");
 			debug(filename);
-			//folder = ((mask & 1) == 0) ? ("testfiles_" + filename + "/!sym/") : 
+			//output_dir = ((mask & 1) == 0) ? ("testfiles_" + filename + "/!sym/") : 
 			//("testfiles_" + filename + "/sym/");
-            folder = "data/out" + "/";
-			File file = new File(folder);
-			//debug(file.getAbsolutePath());
+			File file = new File(output_dir);
 			file.mkdirs();
 			PrintWriter out = null;
 			in2.nextInt();
@@ -98,17 +119,105 @@ public class Main implements Runnable{
 				else if (s.equals("=")) edges[ind-1] = in2.nextInt();
 			}
 
-            
-                        
-//          getting paired info
-			debug("Paired Info");
+            TreeSet<Pair> set = new TreeSet<Pair>();
             StringBuffer buf = new StringBuffer("");
-			in.nextInt();
 			int len1 = 0;
 			int len2 = 0;
 			int e1 = 0;
 			int e2 = 0;
 			boolean filtering = false;
+
+//          getting fpr info
+            
+            debug("Fpr info");
+            buf = new StringBuffer("");
+			len1 = 0;
+		    len2 = 0;
+			e1 = 0;
+			e2 = 0;
+			filtering = false;
+			while (fprin.hasMoreTokens()){
+				int a = fprin.nextInt();
+				int b = fprin.nextInt();
+				double x = fprin.nextDouble();
+				double y = fprin.nextDouble();
+				double z = fprin.nextDouble();
+				fprin.nextToken();
+				if (!(a == e1 && b == e2)){
+					if (out != null && filtering){
+						out.println(buf);
+						out.close();
+						buf = new StringBuffer("");
+					}	
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+                        set.add(new Pair(e1, e2));
+						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+                        String folder1 = output_dir + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+            			file = new File(folder1);
+			            file.mkdirs();
+						out = new PrintWriter(folder1 + "fpr.prd");
+					}
+				}
+				if (filtering) if (x > 0 && x*x + y*y != 0){
+                    buf.append(x + " " + 0 + "\n");
+                }
+				e1 = a;
+				e2 = b;
+			}
+		    if (out != null && filtering) 
+                out.println(buf);
+            out.close();
+            fprin.close();
+
+
+//          getting fnr info
+            debug("Fnr info");
+            buf = new StringBuffer("");
+			len1 = 0;
+			len2 = 0;
+			e1 = 0;
+			e2 = 0;
+            out = null;
+			filtering = false;
+			while (fnrin.hasMoreTokens()){
+				int a = fnrin.nextInt();
+				int b = fnrin.nextInt();
+				double x = fnrin.nextDouble();
+				double y = fnrin.nextDouble();
+				double z = fnrin.nextDouble();
+				fnrin.nextToken();
+				if (!(a == e1 && b == e2)){
+					if (out != null && filtering){
+						out.println(buf);
+						out.close();
+						buf = new StringBuffer("");
+					}	
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+
+						//debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+                        set.add(new Pair(e1, e2));
+                        String folder1 = output_dir + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+                        file = new File(folder1);
+                        file.mkdirs();
+						out = new PrintWriter(folder1 + "fnr.prd");
+					}
+				}
+				if (filtering) if (x > 0 && x*x + y*y != 0){
+                    buf.append(x + " " + 0 + "\n");
+                }
+				e1 = a;
+				e2 = b;
+			}
+		    if (out != null && filtering) out.println(buf);
+            out.close();
+            fnrin.close();
+                        
+            e1 = e2 = 0;
+//          getting paired info
+			debug("Paired Info");
+			in.nextInt();
 			while (in.hasMoreTokens()){
 				int a = in.nextInt(); //edge1
 				int b = in.nextInt(); //edge2
@@ -125,10 +234,9 @@ public class Main implements Runnable{
 					filtering = (isAcceptable(edges[a-1], edges[b-1]));
 					if (filtering){
 
-                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
-            			file = new File(folder1);
-			            file.mkdirs();
-						out = new PrintWriter(folder1 + "unclustered.prd");
+						if (!set.contains(new Pair(a, b))) continue;
+                        String folder1 = output_dir + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+                        out = new PrintWriter(folder1 + "unclustered.prd");
                         //generating config
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
                         debug("Generating config files");
@@ -137,7 +245,7 @@ public class Main implements Runnable{
                         "#!/usr/bin/gnuplot -persist\n" + 
                         "set term x11 0\n" +
                         "plot \"unclustered.prd\" with linespoints, \"clustered.prd\" with impulses," + 
-                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 2," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 2, " + " \"paths.prd\" with impulses lt 1 lw 3 lc 5\n" +
+                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 1," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 1, " + " \"paths.prd\" with impulses lt 1 lw 2 lc 5\n" +
                         "pause -1 \"press any key to continue\"\n";
                         out1.print(text);
                         out1.close();
@@ -145,16 +253,16 @@ public class Main implements Runnable{
                         out1 = new PrintWriter(folder1 + "png_plot.conf");
                         text =
                         "#!/usr/bin/gnuplot -persist\n" + 
-                        "set term png enhanced size 1024, 768 14\n" +
+                        "set term png enhanced size 1920, 1080 14\n" +
                         "plot \"unclustered.prd\" with linespoints, \"clustered.prd\" with impulses," + 
-                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 2," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 2, " + " \"paths.prd\" with impulses lt 1 lw 3 lc 5\n" +
-                        "set output \"../../../overall/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "\"\n" +
+                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 1," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 1, " + " \"paths.prd\" with impulses lt 1 lw 2 lc 5\n" +
+                        "set output \"" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + ".png\"\n" +
                         "replot\n";
                         out1.print(text);
                         out1.close();
 					}
 				}
-				if (filtering) if (x*x + y*y != 0){
+				if (filtering) if (x > 0. && y != 0.){
                     //for (int x1 = (int) (x - z); x1 <= x + z; x1++) 
                         buf.append(x + " " + y + "\n");
                 }
@@ -193,12 +301,12 @@ public class Main implements Runnable{
 					if (filtering){
 
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
-						//if (!set.contains(new Pair(a, b))) continue;
-                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+						if (!set.contains(new Pair(a, b))) continue;
+                        String folder1 = output_dir + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
 						out = new PrintWriter(folder1 + "clustered.prd");
 					}
 				}
-				if (filtering) if (x*x + y*y != 0){
+				if (filtering) if (x > 0. && x*x + y*y != 0){
                     //for (int x1 = (int) (x - z); x1 <= x + z; x1++) 
                         buf.append(x + " " + y + "\n");
 
@@ -237,8 +345,8 @@ public class Main implements Runnable{
 					if (filtering){
 
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
-						//if (!set.contains(new Pair(a, b))) continue;
-                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+						if (!set.contains(new Pair(a, b))) continue;
+                        String folder1 = output_dir + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
 						out = new PrintWriter(folder1 + "paths.prd");
 					}
 				}
@@ -251,90 +359,6 @@ public class Main implements Runnable{
 		    if (out != null && filtering) out.println(buf);
             out.close();
             inpaths.close();
-//          getting fpr info
-            debug("Fpr info");
-            buf = new StringBuffer("");
-			fprin.nextInt();
-			len1 = 0;
-		
-		    len2 = 0;
-			e1 = 0;
-			e2 = 0;
-			filtering = false;
-			while (fprin.hasMoreTokens()){
-				int a = fprin.nextInt();
-				int b = fprin.nextInt();
-				double x = fprin.nextDouble();
-				double y = fprin.nextDouble();
-				double z = fprin.nextDouble();
-				fprin.nextToken();
-				if (!(a == e1 && b == e2)){
-					if (out != null && filtering){
-						out.println(buf);
-						out.close();
-						buf = new StringBuffer("");
-					}	
-					filtering = (isAcceptable(edges[a-1], edges[b-1]));
-					if (filtering){
-
-						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
-                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
-						out = new PrintWriter(folder1 + "fpr.prd");
-					}
-				}
-				if (filtering) if (x*x + y*y != 0){
-                    buf.append(x + " " + 0 + "\n");
-                }
-				e1 = a;
-				e2 = b;
-			}
-		    if (out != null && filtering) out.println(buf);
-            out.close();
-            fprin.close();
-
-
-//          getting fnr info
-            debug("Fnr info");
-            buf = new StringBuffer("");
-			fnrin.nextInt();
-			len1 = 0;
-		
-			len2 = 0;
-			e1 = 0;
-			e2 = 0;
-			filtering = false;
-			while (fnrin.hasMoreTokens()){
-				int a = fnrin.nextInt();
-				int b = fnrin.nextInt();
-				double x = fnrin.nextDouble();
-				double y = fnrin.nextDouble();
-				double z = fnrin.nextDouble();
-				fnrin.nextToken();
-				if (!(a == e1 && b == e2)){
-					if (out != null && filtering){
-						out.println(buf);
-						out.close();
-						buf = new StringBuffer("");
-					}	
-					filtering = (isAcceptable(edges[a-1], edges[b-1]));
-					if (filtering){
-
-						//debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
-                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
-                        file = new File(folder1);
-                        file.mkdirs();
-						out = new PrintWriter(folder1 + "fnr.prd");
-					}
-				}
-				if (filtering) if (x*x + y*y != 0){
-                    buf.append(x + " " + 0 + "\n");
-                }
-				e1 = a;
-				e2 = b;
-			}
-		    if (out != null && filtering) out.println(buf);
-            out.close();
-            fnrin.close();
              
 			
 			                                              
@@ -343,5 +367,6 @@ public class Main implements Runnable{
 		}
 	}
 
-
 }
+
+

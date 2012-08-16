@@ -28,8 +28,11 @@ public class GenStartStats implements Runnable {
             return first.hashCode() + second.hashCode();
         }
 
+        @SuppressWarnings("unchecked")
         public boolean equals(Object o) {
-            Pair<T> another = ((Pair<T>) o);
+            Pair<T> another = null;
+            if (o.getClass() == getClass()) 
+                another = ((Pair<T>) o);
             return (first.compareTo(another.first()) == 0) && (second.compareTo(another.second()) == 0);   
         }
         
@@ -64,6 +67,7 @@ public class GenStartStats implements Runnable {
             return third;   
         }
 
+        @SuppressWarnings("unchecked")
         public boolean equals(Object o) {
             Three<T> another = ((Three<T>) o);
             return (first.compareTo(another.first()) == 0);// && (second.compareTo(another.second()) == 0) && (third.compareTo(another.third()) == 0);   
@@ -82,24 +86,32 @@ public class GenStartStats implements Runnable {
         }
     }
 
+    static final String input_dir_name = "data/input/";
+
     public void run() {
         try {
             Locale.setDefault(Locale.US);
             MyScanner etalon;
             MyScanner clustered;
-            etalon = new MyScanner("etalon.prd");
-            clustered = new MyScanner("clustered.prd");
+            etalon = new MyScanner(input_dir_name + "etalon.prd");
+            clustered = new MyScanner(input_dir_name + "clustered.prd");
             
-            PrintWriter fpr = new PrintWriter("test_fp.prd");
-            PrintWriter tpr = new PrintWriter("test_tp.prd");
+            PrintWriter fpr = new PrintWriter(input_dir_name + "test_fp.prd");
+            PrintWriter tpr = new PrintWriter(input_dir_name + "test_tp.prd");
 
             HashMap<Pair<Integer>, HashSet<Three<Double>>> edges = new HashMap<Pair<Integer>, HashSet<Three<Double>>>(); 
 
+            //  Processing etalon
+            int entriesNumber = 0;
+            double clustersLength = 0.;
             while (etalon.hasMoreTokens()) {
                 Pair<Integer> edgePair = new Pair<Integer>(etalon.nextInt(), etalon.nextInt());
                 Three<Double> estThree = new Three<Double>(etalon.nextDouble(), etalon.nextDouble(), etalon.nextDouble());
                 etalon.nextToken();
-                //if (round(estThree.second()) == 0) continue;
+
+                entriesNumber++;
+                clustersLength += estThree.third() + 1.;
+
                 if (round(estThree.first()) <= 0) continue;
 
                 if (!edges.containsKey(edgePair)) {
@@ -110,11 +122,14 @@ public class GenStartStats implements Runnable {
                     //System.out.println("Warn! Contains already : " + edgePair + " " + estThree);
                     HashSet<Three<Double>> set = edges.get(edgePair);
                     set.add(estThree);
-
-                    //edges.put(edgePair, set);
                 }
             }
 
+            System.out.println("Exactness coefficient of the ETALON information is equal to " + (entriesNumber / clustersLength));
+
+            // Processing clustered
+            entriesNumber = 0;
+            clustersLength = 0.;
             while (clustered.hasMoreTokens()) {
                 Pair<Integer> edgePair = new Pair<Integer>(clustered.nextInt(), clustered.nextInt());
                 Three<Double> estThree = new Three<Double>(clustered.nextDouble(), clustered.nextDouble(), clustered.nextDouble());
@@ -122,10 +137,14 @@ public class GenStartStats implements Runnable {
                 double est_weight = estThree.second();
                 double est_var = estThree.third();
                 clustered.nextToken();  
+
+                entriesNumber++;
+                clustersLength += est_var + 1.;
+
                 if (round(est_dist) <= 0) continue;
                 if (edges.containsKey(edgePair)) {
                     boolean okay = false;
-                    for (Three<Double> three : edges.get(edgePair)) {
+                   for (Three<Double> three : edges.get(edgePair)) {
                         double dist = three.first();
                         double weight = three.second();
                         double var = three.third();
@@ -140,10 +159,10 @@ public class GenStartStats implements Runnable {
                 } else {
                     fpr.println(edgePair + " " + estThree + " .");   
                 }
-
-
             }
 
+            System.out.println("Exactness coefficient of the CLUSTERED information is equal to " + (entriesNumber / clustersLength));
+            
 
             etalon.close();
             clustered.close();

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 i=0
 
 if [ "x$3" != "x" ]
@@ -8,23 +8,25 @@ then
 fi
 STRR=`wc -l $1`
 SIZZE=`echo $STRR | cut --delimiter=' ' -f 1`
-DIRR=`pwd`;
-mkdir overall
+PROJ_DIR=`pwd`;
+OUTPUT_DIR=$PROJ_DIR/data/output/
+
+mkdir -p $OUTPUT_DIR/pics
 while [ $i -lt $SIZZE ]; do
-    i=$[i+1];
+    i=`expr $i + 1`;
     echo "Iteration "$i" of "$SIZZE
     LINE=`head -$i $1 | tail -1`
     LINE1=$(echo "$LINE" | sed 's/\([0-9]*\).*/\1/' );
     LINE2=$(echo "$LINE" | sed 's/[0-9]* \([0-9]*\).*/\1/' );
     echo "$LINE1 $LINE2";
-    f=`find data/out/ -name $LINE1"_"$LINE2*`
+    f=`find $OUTPUT_DIR/hists/ -name $LINE1"_"$LINE2*`
     echo "Dir "$f
-    grep -P $LINE1'.*'$LINE2'.*:' $2
+    if [ "x$2" != "x" ]
+    then
+        grep -P $LINE1'.*'$LINE2'.*:' $2
+    fi
     cd $f
     pwd
-    gnuplot png_plot.conf > /dev/null 2> /dev/null || { echo "Gnuplot exited "; exit 1; }
-    name=`basename $f`
-    mv ../../../overall/$name.png ../../../overall/$i'_'$name.png    
-    ls -hl ../../../overall | wc -l
+    gnuplot -geometry 1280x1024 plot.conf || { echo "Gnuplot exited "; exit 1; }
     cd $DIRR
 done;

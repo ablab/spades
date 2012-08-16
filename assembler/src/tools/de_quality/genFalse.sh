@@ -1,3 +1,3 @@
 #!/bin/sh
-rm -rf data
-java GetErrors -f distance_estimation
+mkdir -p data/output/hists
+java -cp build/ GetErrors -f distance_estimation
