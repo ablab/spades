@@ -7,8 +7,8 @@
 K		55
 
 make_saves_dirs false
-project_name    ECOLI_1K
-dataset         ./configs/debruijn/datasets_archive/ECOLI_IS220_QUAKE_1K.info
+project_name    TOY_DATASET
+dataset         ./configs/debruijn/datasets_archive/toy.info
 log_filename    log.properties
 
 
