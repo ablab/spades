@@ -11,13 +11,13 @@
 #include "omni_utils.hpp"
 #include "data_divider.hpp"
 #include "peak_finder.hpp"
-#include "weighted_distance_estimation.hpp"
+#include "extensive_distance_estimation.hpp"
 
 namespace omnigraph {
 
 template<class Graph>
-class SmoothingDistanceEstimator: public WeightedDistanceEstimator<Graph> {
-	typedef WeightedDistanceEstimator<Graph> base;
+class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
+	typedef ExtensiveDistanceEstimator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef pair<size_t, size_t> Interval;
 
@@ -94,17 +94,21 @@ protected:
 		return result;
 	}
 
-	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
+	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& raw_data, PairedInfoIndex<Graph> &result) const {
 		if (make_pair(first, second) <= this->ConjugatePair(first, second)) {
 			vector<size_t> forward = this->GetGraphDistancesLengths(first, second);
+            TRACE("Processing edge pair " << this->graph().int_id(first) << " " << this->graph().int_id(second));
+            vector<PairInfo<EdgeId>> data = raw_data;
+            //DEBUG("Extending paired information");
+            //double weight_0 = this->WeightSum(data);
+            //DEBUG("Extend left");
+            //this->ExtendInfoLeft(first, second, data);
+            //DEBUG("Extend right");
+            //this->ExtendInfoRight(first, second, data);
+            
+            //DEBUG("Weight increased " << (WeightSum(data) - weight_0));
+
 		    vector<pair<size_t, double> > estimated;
-            TRACE("Processing edge pair " << first << " " << second);
-            //map<int, double> hist, smoothed_hist;
-            //this->GetHistogram(data, hist);
-            //this->ConvoluteWithIsHist(this->weight_f_, hist, smoothed_hist);
-            //vector<PairInfo<EdgeId>> new_data;
-            //for (auto iter = smoothed_hist.begin(); iter != smoothed_hist.end(); ++iter) 
-                //new_data.push_back(PairInfo<EdgeId>(data[0].first, data[0].second, iter->first, iter->second, 0.));
             if (forward.size() > 0) 
                 estimated = EstimateEdgePairDistances(first, second, data, forward);
             else
@@ -113,6 +117,7 @@ protected:
 			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
 			this->AddToResult(result, this->ConjugateInfos(res));
+
 		}
 	}
 
@@ -144,10 +149,7 @@ public:
         for (size_t i = 0; i < clusters.size(); i++) {
             size_t begin = clusters[i].first;
             size_t end = clusters[i].second;
-            TRACE("begin " << begin << ", " << " end " << end);
-            //for (size_t j = begin; j < end; ++j) {
-                //TRACE("hist before " << data[j]);
-            //}
+            TRACE("Begin " << begin << ", " << " End " << end);
             size_t data_length = rounded_d(new_data[end - 1]) - rounded_d(new_data[begin]) + 1;
             TRACE(data_length);
             if (end - begin > min_peak_points_) {

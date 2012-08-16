@@ -273,7 +273,6 @@ public:
         return IsLocalMaximum(dist, 10);
 	}
 
-//  not tested at all
     vector<pair<size_t, double> > ListPeaks(int delta = 5) const {
         map<size_t, double> peaks_;
         //another data_len_
@@ -334,7 +333,7 @@ public:
                 TRACE("WEIGHT counted");
                 pair<size_t, double> tmp_pair = make_pair(index, weight_);
                 if (!peaks_.count(index)) {
-                    TRACE("Peaks size " << peaks_.size() << " ,inserting " << tmp_pair);
+                    TRACE("Peaks size " << peaks_.size() << ", inserting " << tmp_pair);
                     peaks_.insert(tmp_pair);
                 } else {
                     TRACE("NON UNIQUE");   

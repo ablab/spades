@@ -23,10 +23,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-    //std::set<pair<EdgeId, EdgeId>> ExtendedLeft;
-
-    //std::set<pair<EdgeId, EdgeId>> ExtendedRight;
-
+protected:
     double WeightSum(const vector<PairInfo<EdgeId>>& data) const {
         double answer = 0.;
         for (auto iter = data.begin(); iter != data.end(); ++iter) {
@@ -34,7 +31,8 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
         }
         return answer;
     }
-    bool isSorted(const vector<PairInfo<EdgeId>>& hist) const {
+
+    bool IsSorted(const vector<PairInfo<EdgeId>>& hist) const {
         for (size_t i = 0; i < hist.size() - 1; ++i) {
             if (hist[i].d > hist[i + 1].d) 
                 return false;
@@ -49,7 +47,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
             return;
         if (where.size() == 0) {
             where = what;
-            VERIFY(isSorted(where));
+            VERIFY(IsSorted(where));
             return;
         }
             
@@ -82,7 +80,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 
             }
         }
-        VERIFY(isSorted(where));
+        VERIFY(IsSorted(where));
 
     }
 
