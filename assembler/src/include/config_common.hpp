@@ -150,10 +150,14 @@ struct config {
 
 	static void create_instance(std::string const& filename) {
 		boost::property_tree::ptree pt;
+		char cwd[1024];
+		VERIFY(getcwd(cwd, sizeof(cwd)) != NULL);
         int ret = chdir(dirnameOf(filename).c_str());
         VERIFY(ret == 0);
 		boost::property_tree::read_info(filename, pt);
-		load(inner_cfg(), pt);
+		ret = chdir(cwd);
+        VERIFY(ret == 0);
+        load(inner_cfg(), pt);
 		is_initialized() = true;
 	}
 
