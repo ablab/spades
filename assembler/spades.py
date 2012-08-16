@@ -67,6 +67,7 @@ def prepare_config_spades(filename, cfg, prev_K, K, last_one):
     subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
+    subst_dict["correct_mismatches"] = bool_to_str(last_one and cfg.correct_mismatches)
 
     substitute_params(filename, subst_dict)
 

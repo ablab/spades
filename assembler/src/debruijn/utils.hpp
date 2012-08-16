@@ -233,6 +233,28 @@ public:
 		return mapping_.end();
 	}
 
+	void Normalize() {
+		vector<Kmer> all;
+		for(auto it = begin(); it != end(); ++it) {
+			all.push_back(it->first);
+		}
+		for(auto it = all.begin(); it != all.end(); ++it) {
+			Normalize(*it);
+		}
+	}
+
+	void Revert(const Kmer &kmer) {
+		Kmer old_value = Substitute(kmer);
+		if(old_value != kmer) {
+			mapping_.erase(kmer);
+			mapping_[old_value] = kmer;
+		}
+	}
+
+	void Normalize(const Kmer &kmer) {
+		mapping_[kmer] = Substitute(kmer);
+	}
+
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
 		VERIFY(this->IsAttached());
 		//		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
@@ -254,6 +276,11 @@ public:
 				}
 			}
 			Kmer new_kmer(k_, new_s, new_kmer_offest);
+			auto it = mapping_.find(new_kmer);
+			if(it != mapping_.end()) {
+				VERIFY(Substitute(new_kmer) == old_kmer);
+				mapping_.erase(it);
+			}
 			mapping_[old_kmer] = new_kmer;
 		}
 	}

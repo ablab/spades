@@ -21,6 +21,7 @@
 #include "internal_aligner.hpp"
 #include <io/single_read.hpp>
 #include <read/ireadstream.hpp>
+#include "mismatch_shall_not_pass.hpp"
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
@@ -234,12 +235,23 @@ void corrected_and_save_reads(const conj_graph_pack& gp) {
 	INFO("Error correction done");
 }
 
+void correct_mismatches(conj_graph_pack &gp) {
+	INFO("Correcting mismatches");
+	auto_ptr<io::IReader<io::SingleReadSeq>> paired_stream = single_binary_multireader(true, true);
+	size_t corrected = MismatchShallNotPass<conj_graph_pack, io::SingleReadSeq>(gp, *paired_stream, 2).StopAllMismatches(1);
+	INFO("Corrected " << corrected << " nucleotides");
+
+}
+
 void exec_simplification(conj_graph_pack& gp) {
 	if (cfg::get().entry_point <= ws_simplification) {
 		simplify_graph(gp);
 		save_simplification(gp);
 		if (cfg::get().graph_read_corr.enable) {
 			corrected_and_save_reads(gp);
+		}
+		if (cfg::get().correct_mismatches) {
+			correct_mismatches(gp);
 		}
 	} else {
 		INFO("Loading Simplification");
