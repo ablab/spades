@@ -23,7 +23,7 @@
 
 class KMerClustering {
 public:
-	KMerClustering(KMerIndex &index, int nthreads) : index_(index), nthreads_(nthreads) { }
+	KMerClustering(KMerData &data, int nthreads) : data_(data), nthreads_(nthreads) { }
 
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
@@ -31,7 +31,7 @@ public:
 	void process(boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad);
 	
 private:
-	KMerIndex &index_;
+	KMerData &data_;
 	int nthreads_;
 
 	/// @return total log-likelihood that x was made from center given x's quality values

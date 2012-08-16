@@ -17,18 +17,11 @@
 #include <map>
 #include <string>
 #include <string.h>
+#include <functional>
 
 const uint32_t K = 21;
 const uint32_t M = 55;
 typedef uint64_t hint_t;
-
-#define BLOBKMER_UNDEFINED            2e12
-#define KMERSTAT_CHANGE               2e12
-#define KMERSTAT_BAD                  2e12 + 1
-#define KMERSTAT_GOOD                 2e12 + 2
-#define KMERSTAT_GOODITER             2e12 + 3
-#define KMERSTAT_GOODITER_BAD         2e12 + 4
-#define KMERSTAT_MARKED_FOR_GOODITER  2e12 + 5
 
 #define MAX_SHORT 254
 
@@ -38,6 +31,15 @@ class PositionKMer;
 struct KMerStat;
 
 typedef Seq<K> KMer;
+namespace std {
+template<>
+struct hash<KMer> : public unary_function<KMer, size_t> {
+  size_t operator() (KMer val) {
+    return val.GetHash();
+  }
+};
+}
+
 typedef std::map<PositionKMer, KMerStat> KMerStatMap;
 typedef std::pair<PositionKMer, KMerStat> KMerCount;
 typedef std::pair<std::string, std::pair<uint32_t, double> > StringCount;
@@ -48,6 +50,8 @@ struct QualBitSet {
   QualBitSet(const unsigned char *q = NULL) {
     if (q)
       memcpy(q_, q, K);
+    else
+      memset(q_, 0, K);
   }
 
   // QualBitSet is POD-like object, use default stuff.
@@ -91,20 +95,55 @@ struct QualBitSet {
 };
 
 struct KMerStat {
-  KMerStat(uint32_t cnt, hint_t cng, float kquality, const unsigned char *quality) : changeto(cng), totalQual(kquality), count(cnt), qual(quality) { }
-  KMerStat() : changeto(KMERSTAT_BAD), totalQual(1.0), count(0), qual() { }
+  enum {
+    Change             = 0,
+    Bad                = 1,
+    Good               = 2,
+    GoodIter           = 3,
+    GoodIterBad        = 4,
+    MarkedForGoodIter  = 5
+  } KMerStatus;
 
-  hint_t changeto;
+  KMerStat(uint32_t cnt, float kquality, const unsigned char *quality) : lock_data(0), totalQual(kquality), count(cnt), qual(quality) {
+    __sync_lock_release(&lock_data);
+  }
+  KMerStat() : lock_data(0), totalQual(1.0), count(0), qual() {
+    __sync_lock_release(&lock_data);
+  }
+
+  union {
+    struct {
+      hint_t changeto : 48;
+      unsigned status : 3;
+      unsigned res    : 13;
+    };
+    uint64_t raw_data;
+    uint64_t lock_data;
+  };
+
   float totalQual;
   uint32_t count;
   QualBitSet qual;
 
-  bool isGood() const { return changeto >= KMERSTAT_GOOD; }
-  bool isGoodForIterative() const { return (changeto == KMERSTAT_GOODITER); }
-  void makeGoodForIterative() { changeto = KMERSTAT_GOODITER; }
-  void markGoodForIterative() { changeto = KMERSTAT_MARKED_FOR_GOODITER; }
-  bool isMarkedGoodForIterative() { return (changeto == KMERSTAT_MARKED_FOR_GOODITER); }
-  bool change() const { return changeto < KMERSTAT_CHANGE; }
+  void lock() {
+    while (__sync_lock_test_and_set(&lock_data, 1) == 1)
+      while (lock_data)
+        ;
+  }
+  void unlock() {
+    __sync_lock_release(&lock_data);
+  }
+
+  bool isGood() const { return status >= Good; }
+  bool isGoodForIterative() const { return (status == GoodIter); }
+  void makeGoodForIterative() { status = GoodIter; }
+  void markGoodForIterative() { status = MarkedForGoodIter; }
+  bool isMarkedGoodForIterative() { return (status == MarkedForGoodIter); }
+  bool change() const { return status == Change; }
+  void set_change(hint_t kmer) {
+    changeto = kmer;
+    status = Change;
+  }
 };
 
 template<class Writer>
@@ -122,7 +161,7 @@ inline void binary_read(Reader &is, QualBitSet &qbs) {
 template<class Writer>
 inline Writer& binary_write(Writer &os, const KMerStat &k) {
   os.write((char*)&k.count, sizeof(k.count));
-  os.write((char*)&k.changeto, sizeof(k.changeto));
+  os.write((char*)&k.raw_data, sizeof(k.raw_data));
   os.write((char*)&k.totalQual, sizeof(k.totalQual));
   return binary_write(os, k.qual);
 }
@@ -130,7 +169,7 @@ inline Writer& binary_write(Writer &os, const KMerStat &k) {
 template<class Reader>
 inline void binary_read(Reader &is, KMerStat &k) {
   is.read((char*)&k.count, sizeof(k.count));
-  is.read((char*)&k.changeto, sizeof(k.changeto));
+  is.read((char*)&k.raw_data, sizeof(k.raw_data));
   is.read((char*)&k.totalQual, sizeof(k.totalQual));
   binary_read(is, k.qual);
 }

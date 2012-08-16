@@ -67,8 +67,8 @@ class PositionKMer {
 	}
 
   PositionKMer( hint_t readno, uint32_t startpos ) : start_(Globals::pr->at(readno).start() + startpos) { }
-	PositionKMer( hint_t startpos ) : start_(startpos) { }
-	PositionKMer() : start_(-1) { }
+	explicit PositionKMer(hint_t startpos): start_(startpos) { }
+	PositionKMer() : start_(-1ULL) { }
 
 	char operator [] (hint_t pos) const {
 		return Globals::blob[ start_ + pos ];
@@ -153,9 +153,11 @@ inline void binary_read(Reader &is, KMerCount &k) {
 
 inline char getQual(const KMerCount & kmc, size_t i) {
   if (Globals::use_common_quality)
-    return std::min(Globals::common_quality * kmc.second.count, 255u);
-
-  return kmc.second.qual[i];
+    return Globals::common_quality * kmc.second.count;
+  if (kmc.second.count == 1)
+    return Globals::blobquality[kmc.first.start() + i];
+  else
+    return kmc.second.qual[i];
 }
 
 inline double getProb(const KMerCount &kmc, size_t i, bool log) {

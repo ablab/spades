@@ -9,119 +9,132 @@
 
 #include "kmer_stat.hpp"
 #include "position_kmer.hpp"
+#include "mph_index/mph_index.h"
 
 #include <vector>
 #include <unordered_map>
 
 #include <cmath>
 
-inline void Merge(KMerCount &lhs, const KMerNo &rhs) {
-  hint_t ridx = rhs.getIndex();
-
-  lhs.second.count += 1;
-  lhs.second.totalQual *= rhs.getQual();
-  lhs.second.qual += (const unsigned char*)(Globals::blobquality + ridx);
-}
-
-inline void Merge(KMerCount &lhs, const KMerCount &rhs) {
-  lhs.second.count += rhs.second.count;
-  lhs.second.totalQual *= rhs.second.totalQual;
-  lhs.second.qual += rhs.second.qual;
-}
-
 class KMerIndex {
-  typedef std::unordered_map<KMer, size_t, KMer::hash, KMer::equal_to > KMerIndexMap;
-  typedef std::vector<KMerCount> KMerData;
+  typedef cxxmph::SimpleMPHIndex<KMer, cxxmph::seeded_hash_function<KMer::hash> > KMerDataIndex;
+  typedef KMer::hash hash_function;
 
  public:
-  void reserve(size_t amount) {
-    data_.reserve(amount);
-#if 0
-    index_.reserve(amount);
-#else
-    index_.rehash(ceilf(amount / index_.max_load_factor()));
-#endif
+  KMerIndex():index_(NULL), num_buckets_(0), bucket_locks_(NULL) {}
+
+  KMerIndex(const KMerIndex&) = delete;
+  KMerIndex& operator=(const KMerIndex&) = delete;
+
+  ~KMerIndex() { clear(); }
+
+  void clear() {
+    num_buckets_ = 0;
+    bucket_starts_.clear();
+
+    for (size_t i = 0; i < num_buckets_; ++i) {
+      omp_destroy_lock(bucket_locks_ + i);
+      index_[i].clear();
+    }
+
+    delete[] index_;
+    delete[] bucket_locks_;
   }
 
+  size_t mem_size() {
+    size_t sz = 0;
+    for (size_t i = 0; i < num_buckets_; ++i)
+      sz += index_[i].mem_size();
+
+    return sz;
+  }
+
+  size_t seq_idx(KMer s) const {
+    size_t bucket = seq_bucket(s);
+
+    return bucket_starts_[bucket] + index_[bucket].index(s);
+  }
+
+ private:
+  KMerDataIndex *index_;
+
+  size_t num_buckets_;
+  std::vector<size_t> bucket_starts_;
+  omp_lock_t *bucket_locks_;
+
+  size_t seq_bucket(KMer s) const { return hash_function()(s) % num_buckets_; }
+
+  friend class KMerIndexBuilder;
+
+ public:
+  // This is just thin RAII wrapper over omp_lock_t to lock index buckets.
+  class lock {
+    omp_lock_t *l_;
+
+   public:
+    lock(omp_lock_t *l) : l_(l) { omp_set_lock(l_); }
+    lock(lock&& l) {
+      l_ = l.l_;
+      l.l_ = NULL;
+    }
+    ~lock() { if (l_) release(); }
+
+    lock(const lock&) = delete;
+    lock& operator=(const lock&) = delete;
+
+    void release() {
+      omp_unset_lock(l_);
+      l_ = NULL;
+    }
+  };
+
+  omp_lock_t *bucket_lock(KMer s) const { return bucket_locks_ + seq_bucket(s); }
+  std::pair<size_t, lock> seq_acquire(KMer s) {
+    // We rely on RVO here in order not to make several locks / copies.
+    return std::make_pair(seq_idx(s), lock(bucket_lock(s)));
+  }
+};
+
+class KMerIndexBuilder {
+ public:
+  size_t BuildIndex(KMerIndex &out, size_t num_buckets);
+
+ private:
+  void Split(size_t num_files);
+  size_t MergeKMers(const std::string &ifname, const std::string &ofname);
+
+  DECL_LOGGER("K-mer Index Building");
+};
+
+
+class KMerData {
+  typedef std::vector<KMerCount> KMerDataStorageType;
+
+ public:
   size_t size() const { return data_.size(); }
   size_t capacity() const { return data_.capacity(); }
   void clear() {
-    index_.clear();
-    KMerIndexMap().swap(index_);
     data_.clear();
-    KMerData().swap(data_);
+    KMerDataStorageType().swap(data_);
   }
+  size_t push_back(const KMerCount &k) {
+    data_.push_back(k);
 
-#if 0
-  template<class Writer>
-  void binary_write(Writer &os) const {
-    size_t sz = data_.size();
-    os.write((char*)&sz, sizeof(sz));
-    for (size_t i = 0; i < sz; ++i)
-      binary_write(os, data_[i]);
+    return data_.size() - 1;
   }
-
-  template<class Read>
-  void binary_read(Read &is) {
-    size_t sz;
-
-    clear();
-
-    is.read((char*)&sz, sizeof(sz));
-
-    reserve(sz);
-    data_.resize(sz);
-    for (size_t i = 0; i < sz; ++i) {
-      binary_read(is, data_[i]);
-    }
-
-    for (size_t i = 0; i < sz; ++i) {
-      const char* s = Globals::blob + data_[i].first.start();
-      index_.insert(std::make_pair(KMer(s, 0, K, /* raw */ true), i));
-    }
-  }
-#endif
 
   KMerCount& operator[](size_t idx) { return data_[idx]; }
   const KMerCount& operator[](size_t idx) const { return data_[idx]; }
-  KMerCount& operator[](KMer s) { return operator[](index_.find(s)->second); }
-  const KMerCount& operator[](KMer s) const { return operator[](index_.find(s)->second); }
-
-  KMerIndexMap::iterator seq_find(KMer s) { return index_.find(s); }
-  KMerIndexMap::const_iterator seq_find(KMer s) const { return index_.find(s); }
-  KMerIndexMap::iterator seq_begin() { return index_.begin(); }
-  KMerIndexMap::const_iterator seq_begin() const { return index_.begin(); }
-  KMerIndexMap::iterator seq_end() { return index_.end(); }
-  KMerIndexMap::const_iterator seq_end() const { return index_.end(); }
-
-  KMerIndex& operator+=(const KMerIndex &rhs);
-
-  void push_back(const KMerCount &k);
-  template<class KMerCountIterator>
-  void push_back(const KMerCountIterator start,
-                 const KMerCountIterator end);
+  KMerCount& operator[](KMer s) { return operator[](index_.seq_idx(s)); }
+  const KMerCount& operator[](KMer s) const { return operator[](index_.seq_idx(s)); }
+  size_t seq_idx(KMer s) const { return index_.seq_idx(s); }
 
  private:
-  KMerIndexMap index_;
-  KMerData data_;
+  KMerDataStorageType data_;
+  KMerIndex index_;
+
+  friend class KMerCounter;
 };
-
-template<class KMerCountIterator>
-void KMerIndex::push_back(const KMerCountIterator start,
-                          const KMerCountIterator end) {
-  // Reserve the decent amount of data in advance.
-  size_t isize = size(), amt = end - start;
-  if (capacity() < isize + amt)
-    reserve(isize + amt);
-
-  // Actually insert the stuff.
-  for (size_t i = 0, idx = data_.size(), e = amt; i != e; ++i, ++idx) {
-    const char* s = Globals::blob + start[i].first.start();
-    index_.insert(std::make_pair(KMer(s, 0, K, /* raw */ true), idx));
-  }
-
-  data_.insert(data_.end(), start, end);
-}
 
 class KMerCounter {
   unsigned num_files_;
@@ -129,12 +142,9 @@ class KMerCounter {
  public:
   KMerCounter(unsigned num_files) : num_files_(num_files) {}
 
-  void BuildIndex(KMerIndex &out);
+  void FillKMerData(KMerData &data);
 
  private:
-  void Split();
-  size_t MergeKMers(const std::string &ifname, const std::string &ofname);
-
   DECL_LOGGER("K-mer Counting");
 };
 

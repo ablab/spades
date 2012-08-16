@@ -41,7 +41,7 @@ std::vector<std::string> Globals::input_filename_bases = std::vector<std::string
 std::vector<hint_t> Globals::input_file_blob_positions = std::vector<hint_t>();
 std::vector<size_t> Globals::input_file_sizes = std::vector<size_t>();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
-KMerIndex *Globals::kmer_index = NULL;
+KMerData *Globals::kmer_data = NULL;
 int Globals::iteration_no = 0;
 hint_t Globals::revNo = 0;
 
@@ -171,7 +171,7 @@ int main(int argc, char * argv[]) {
       bool do_everything = cfg::get().general_do_everything_after_first_iteration && (Globals::iteration_no > 0);
       
       // initialize k-mer structures
-      Globals::kmer_index = new KMerIndex;
+      Globals::kmer_data = new KMerData;
 
       // read input reads into blob
       Globals::pr = new vector<PositionRead>();
@@ -180,7 +180,7 @@ int main(int argc, char * argv[]) {
       // count k-mers
       if (cfg::get().count_do || cfg::get().sort_do || do_everything) {
         KMerCounter counter(cfg::get().count_numfiles);
-        counter.BuildIndex(*Globals::kmer_index);
+        counter.FillKMerData(*Globals::kmer_data);
       } else {
         INFO("Reading serialized kmers is not implemented (yet)");
         exit(-1);
@@ -196,11 +196,11 @@ int main(int argc, char * argv[]) {
       if (cfg::get().hamming_do || do_everything) {
         std::vector<std::vector<int> > classes;
 
-        unionFindClass uf(Globals::kmer_index->size() + 1);
+        unionFindClass uf(Globals::kmer_data->size() + 1);
         KMerHamClusterer clusterer(cfg::get().general_tau);
         INFO("Clustering Hamming graph.");
         clusterer.cluster(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
-                          *Globals::kmer_index, uf);
+                          *Globals::kmer_data, uf);
         uf.get_classes(classes);
         size_t num_classes = classes.size();
 
@@ -238,7 +238,7 @@ int main(int argc, char * argv[]) {
       if (cfg::get().bayes_do || do_everything) {
     	INFO("Subclustering Hamming graph");
         int clustering_nthreads = min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
-        KMerClustering kmc(*Globals::kmer_index, clustering_nthreads);
+        KMerClustering kmc(*Globals::kmer_data, clustering_nthreads);
         boost::shared_ptr<std::ofstream> ofkmers =
             cfg::get().hamming_write_solid_kmers ?
             boost::shared_ptr<std::ofstream>(new std::ofstream(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.solid").c_str())) :
@@ -256,7 +256,7 @@ int main(int argc, char * argv[]) {
         int expand_nthreads = min( cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
         INFO("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
         for ( int expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no ) {
-          size_t res = HammerTools::IterativeExpansionStep(expand_iter_no, expand_nthreads, *Globals::kmer_index);
+          size_t res = HammerTools::IterativeExpansionStep(expand_iter_no, expand_nthreads, *Globals::kmer_data);
           INFO("Solid k-mers iteration " << expand_iter_no << " produced " << res << " new k-mers.");
           if ( res < 10 ) break;
         }
@@ -271,7 +271,7 @@ int main(int argc, char * argv[]) {
 
       // prepare the reads for next iteration
       // delete consensuses, clear kmer data, and restore correct revcomps
-      delete Globals::kmer_index;
+      delete Globals::kmer_data;
       delete Globals::pr;
 
       if (totalReads < 1 && !HammerTools::doingMinimizers() ) {

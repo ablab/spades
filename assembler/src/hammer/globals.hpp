@@ -10,7 +10,7 @@
 #include "kmer_stat.hpp"
 #include "kmerno.hpp"
 
-class KMerIndex;
+class KMerData;
 
 struct Globals {
   static int iteration_no;
@@ -23,7 +23,7 @@ struct Globals {
   static char* blob;
   static char* blobquality;
   static std::vector<PositionRead> * pr;
-  static KMerIndex *kmer_index;
+  static KMerData *kmer_data;
   static hint_t blob_max_size;
   static hint_t blob_size;
   static hint_t revNo;

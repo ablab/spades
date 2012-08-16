@@ -20,6 +20,10 @@ add_executable(hammer
    kmerno.cpp
    kmer_stat.cpp
    config_struct_hammer.cpp
+   mph_index/mph_index.cc
+   mph_index/MurmurHash3.cpp
+   mph_index/mph_bits.cc
+   mph_index/trigraph.cc
    )
 
 if (SPADES_BUILD_INTERNAL)
