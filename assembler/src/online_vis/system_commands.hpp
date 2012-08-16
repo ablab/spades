@@ -104,11 +104,11 @@ namespace online_visualization {
                     }
                 }
 
-                bool result = true;
-                result &= CheckFileExists(saves + ".grp");
-                result &= CheckFileExists(saves + ".sqn");
-
-                return result;
+                if (!CheckFileExists(saves + ".grp"))
+                    return false;
+                if (!CheckFileExists(saves + ".sqn"))
+                    return false;
+                return true;
             }
 
         public:
