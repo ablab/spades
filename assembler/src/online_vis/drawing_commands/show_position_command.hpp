@@ -33,7 +33,7 @@ namespace online_visualization {
                 if (!CheckEnoughArguments(args))
                     return false;
                 bool result = true;
-                result = result & CheckIsNumber(args[0]);
+                result = result & CheckIsNumber(args[1]);
                 return result;
             }
 
@@ -53,18 +53,18 @@ namespace online_visualization {
             }
 
             void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
-                if (!CheckCorrectness(args_))
+                const vector<string>& args = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args))
                     return;
 
-                int position = GetInt(args_[0]);
+                int position = GetInt(args[1]);
                 Sequence genome = curr_env.genome();
                 if (arg_list["--rc"] == "true") {
                     cout << "Inverting genome..." << endl;
                     genome = !genome;
                 }
                 if (CheckPositionBounds(position, genome.size())) {
-                    int result = ShowPicture(curr_env, genome.Subseq(position).start<runtime_k::RtSeq::max_size>(cfg::get().K + 1), args_[0]);
+                    int result = ShowPicture(curr_env, genome.Subseq(position).start<runtime_k::RtSeq::max_size>(cfg::get().K + 1), args[1]);
                     if (result) 
                         FireGenericError("Something is wrong");
                 }

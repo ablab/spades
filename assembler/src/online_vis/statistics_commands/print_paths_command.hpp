@@ -37,15 +37,15 @@ namespace online_visualization {
             }
 
             void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
-                if (!CheckCorrectness(args_))
+                const vector<string>& args = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args))
                     return; 
 
-                size_t from = GetInt(args_[0]);
-                size_t to = GetInt(args_[1]);
+                size_t from = GetInt(args[1]);
+                size_t to = GetInt(args[2]);
                 size_t max_length = 10000000;
-                if (args_.size() > 2) 
-                    max_length = GetInt(args_[2]);
+                if (args.size() > 2) 
+                    max_length = GetInt(args[3]);
 
                 if (!CheckVertexExists(curr_env.int_ids(), from) || !CheckVertexExists(curr_env.int_ids(), to))
                     return;

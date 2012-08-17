@@ -22,7 +22,7 @@ namespace online_visualization {
             }
 
             bool CheckEnoughArguments(const vector<string>& args) const {
-                bool result = args.size() >= MinArgNumber();
+                bool result = (args.size() >= MinArgNumber() + 1);
                 if (!result) 
                     FireNotEnoughArguments();
                 return result;

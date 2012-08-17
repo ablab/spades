@@ -45,13 +45,13 @@ namespace online_visualization {
             }
 
             void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
-                if (args_.size() == 0) 
+                const vector<string>& args = arg_list.GetAllArguments();
+                if (args.size() == 1) 
                     cout << Command::Usage() << endl;
                 else {
-                    if (!CheckCorrectness(args_))
+                    if (!CheckCorrectness(args))
                         return;
-                    string command_name = args_[0];
+                    string command_name = args[1];
                     Command& command = GetCommand(CommandId(command_name));
                     cout << command.Usage() << endl;
                 }
@@ -93,8 +93,8 @@ namespace online_visualization {
             bool CheckCorrectness(const vector<string>& args, LoadedEnvironments& loaded_environments) const {
                 if (!CheckEnoughArguments(args))
                     return false;
-                const string& name = args[0];
-                const string& saves = args[1];
+                const string& name = args[1];
+                const string& saves = args[2];
                 for (auto iterator = loaded_environments.begin(); iterator != loaded_environments.end(); ++iterator) {
                     if (name == iterator->first) {
                         cout << "Name " << name << " already exists" << endl;
@@ -108,6 +108,7 @@ namespace online_visualization {
                     return false;
                 if (!CheckFileExists(saves + ".sqn"))
                     return false;
+
                 return true;
             }
 
@@ -130,13 +131,13 @@ namespace online_visualization {
             }
 
             void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
+                const vector<string>& args = arg_list.GetAllArguments();
 
-                if (!CheckCorrectness(args_, loaded_environments))
+                if (!CheckCorrectness(args, loaded_environments))
                     return;
 
-                string name = args_[0]; 
-                string saves = args_[1];
+                string name = args[1]; 
+                string saves = args[2];
 
                 cout << "Loading " << name << " " << saves << endl;
                 
@@ -177,12 +178,12 @@ namespace online_visualization {
             }
 
             void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
+                const vector<string>& args = arg_list.GetAllArguments();
                 
-                if (!CheckCorrectness(args_))
+                if (!CheckCorrectness(args))
                     return;
 
-                string name = args_[0]; 
+                string name = args[1]; 
 
                 bool okay = false;
                 for (auto iterator = loaded_environments.begin(); iterator != loaded_environments.end(); ++iterator) {
@@ -237,9 +238,9 @@ namespace online_visualization {
     class ReplayCommand : public Command {
         private:
             bool CheckCorrectness(const vector<string>& args) const {
-                if (args.size() == 0)
+                if (args.size() == 1)
                     return true;
-                return IsNumber(args[0]);
+                return IsNumber(args[1]);
             }
 
         public:
@@ -260,12 +261,12 @@ namespace online_visualization {
             }
 
             void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
+                const vector<string>& args = arg_list.GetAllArguments();
                 
-                if (!CheckCorrectness(args_))
+                if (!CheckCorrectness(args))
                     return;
 
-                size_t number = GetInt(args_[0]);
+                size_t number = GetInt(args[1]);
 
                 vector<string>& history = GetHistory();
                 
@@ -293,7 +294,7 @@ namespace online_visualization {
             }
 
             bool CheckCorrectness(const vector<string>& args) const {
-                const string& file = args[0];
+                const string& file = args[1];
                 if (!CheckFileExists(file))
                     return false;
                 return true;

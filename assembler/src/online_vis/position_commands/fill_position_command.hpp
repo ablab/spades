@@ -17,8 +17,8 @@ namespace online_visualization {
             bool CheckCorrectness(const vector<string>& args) const {
                 if (!CheckEnoughArguments(args))
                     return false;
-                //const string& name = args[0];
-                const string& file = args[1];
+                //const string& name = args[1];
+                const string& file = args[2];
 
                 bool result = true;
 
@@ -42,10 +42,10 @@ namespace online_visualization {
             }
 
             void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
-                string name = args_[0];
-                string file = args_[1];
-                if (!CheckCorrectness(args_))
+                const vector<string>& args = arg_list.GetAllArguments();
+                string name = args[1];
+                string file = args[2];
+                if (!CheckCorrectness(args))
                     return;
 
                 io::Reader irs(file);

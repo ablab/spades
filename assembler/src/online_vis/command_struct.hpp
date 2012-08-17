@@ -60,7 +60,7 @@ namespace online_visualization {
     static CommandType CommandId(string name) {
         auto it = command_impl::CommandNameInfo().left.find(name);
         if (it == command_impl::CommandNameInfo().left.end()) {
-            cout << "No such command, try again" << endl;
+            cout << "No such command `"<< name <<"`, try again" << endl;
             it = command_impl::CommandNameInfo().left.find("null");
         }
         return it->second;

@@ -95,7 +95,7 @@ namespace online_visualization {
                 if (!CheckEnoughArguments(args))
                     return false;
 
-                const string& file = args[0];
+                const string& file = args[1];
                 if (!CheckFileExists(file))
                     return false;
 
@@ -118,13 +118,13 @@ namespace online_visualization {
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& args) const {
-                const vector<string>& args_ = args.GetAllArguments();
-                if (!CheckCorrectness(args_))
+            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+                const vector<string>& args = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args))
                     return;
 
-                string file = args_[0];
-                if (!CheckCorrectness(args_))
+                string file = args[1];
+                if (!CheckCorrectness(args))
                     return;
 
                 io::Reader irs(file);

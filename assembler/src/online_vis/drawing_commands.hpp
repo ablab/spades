@@ -22,9 +22,10 @@ namespace online_visualization {
             bool CheckCorrectness(const vector<string>& args) const {
                 if (!CheckEnoughArguments(args))
                     return false;
-                bool result = true;
-                result = result & CheckIsNumber(args[0]);
-                return result;
+                if (!CheckIsNumber(args[1]))
+                    return false;
+
+                return true;
             }
 
         public:

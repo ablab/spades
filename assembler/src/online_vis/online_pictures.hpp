@@ -52,7 +52,7 @@ namespace online_visualization {
         OnlineVisualizer()
         {
 	        fs::path p = fs::path(cfg::get().load_from) / "late_pair_info_counted";
-            stringstream ss("default " + p.string());
+            stringstream ss("load default " + p.string());
             AddAllCommands();
             Command& LoadCommand = GetCommand(CommandId("load"));
             LoadCommand.Execute(current_environment_, loaded_environments, ss);
@@ -61,24 +61,26 @@ namespace online_visualization {
         void run() {
 
             vector<string>& history = GetHistory();
-            const size_t max_buffer_size = 10000;
+            //const size_t max_buffer_size = 10000;
 
             while (true) {
                 cout << "> ";
                 string command_with_args;
                 getline(cin, command_with_args);
-                while (history.size() >= max_buffer_size) 
-                    history.pop_back();
                 stringstream ss(command_with_args);
                 ArgumentList arg_list(ss);
-                arg_list.Preprocess(history);
+                string processed_command = arg_list.Preprocess(history);
 
-                history.push_back(command_with_args);
+                DEBUG("processed_string " << processed_command);
+                history.push_back(processed_command);
 
+                const string& command_string = arg_list.GetAllArguments()[0];
                 Command& command = GetCommand(CommandId(command_string));
                 command.Execute(current_environment_, loaded_environments, arg_list);
             }
         }
+    private:
+        DECL_LOGGER("OnlineVisualizer");
     };
 
 }

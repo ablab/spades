@@ -15,7 +15,7 @@ namespace online_visualization {
             bool CheckCorrectness(const vector<string>& args) const {
                 if (!CheckEnoughArguments(args))
                     return false;
-                return CheckIsNumber(args[0]);
+                return CheckIsNumber(args[1]);
             }
 
         public:
@@ -33,11 +33,11 @@ namespace online_visualization {
             }
 
             void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
-                if (!CheckCorrectness(args_)) {
+                const vector<string>& args = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args)) {
                     return;
                 }
-                size_t max_v = GetInt(args_[0]);
+                size_t max_v = GetInt(args[1]);
                 curr_env.set_max_vertices(max_v);
             }
     };
@@ -66,10 +66,10 @@ namespace online_visualization {
             }
 
             void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
-                if (!CheckCorrectness(args_)) 
+                const vector<string>& args = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args)) 
                     return;
-                string folder_name = args_[0];
+                string folder_name = args[1];
                 curr_env.set_folder(folder_name);
             }
     };
@@ -99,10 +99,10 @@ namespace online_visualization {
             }
 
             void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
-                if (!CheckCorrectness(args_))
+                const vector<string>& args = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args))
                     return;
-                string file_name = args_[0];
+                string file_name = args[1];
                 curr_env.set_file_name(file_name);
             }
     };

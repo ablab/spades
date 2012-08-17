@@ -49,11 +49,12 @@ namespace online_visualization {
             bool CheckCorrectness(const vector<string>& args) const {
                 if (!CheckEnoughArguments(args))
                     return false;
-                bool result = true;
-                result = result & CheckIsNumber(args[0]);
-                result = result & CheckIsNumber(args[1]);
+                if (!CheckIsNumber(args[1]))
+                    return false;
+                if (!CheckIsNumber(args[2]))
+                    return false;
 
-                return result;
+                return true;
             }
  
         public:
@@ -71,21 +72,21 @@ namespace online_visualization {
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& args) const {
-                const vector<string>& args_ = args.GetAllArguments();
-                if (!CheckCorrectness(args_))
+            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+                const vector<string>& args = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args))
                     return;
 
-                size_t first_position = (size_t) GetInt(args_[0]);
-                size_t second_position = (size_t) GetInt(args_[1]);
+                size_t first_position = (size_t) GetInt(args[1]);
+                size_t second_position = (size_t) GetInt(args[2]);
                 Sequence genome = curr_env.genome();
-                if (args["--rc"] == "true") {
+                if (arg_list["--rc"] == "true") {
                     cout << "Inverting genome..." << endl;
                     genome = !genome;
                 }
 
                 //experimental
-                if (args.contains("-r")) {
+                if (arg_list.contains("-r")) {
                     cout << "Inverting positions..." << endl;
                     first_position = genome.size() - cfg::get().K - 1 - first_position;
                     second_position = genome.size() - cfg::get().K - 1 - first_position;
@@ -95,7 +96,7 @@ namespace online_visualization {
                         CheckPositionBounds(second_position, genome.size())) 
                 {
                     const Sequence& part_of_genome = genome.Subseq(first_position, second_position);
-                    string label = args_[0] + "_" + args_[1];
+                    string label = args[1] + "_" + args[2];
                     DrawPicturesAlongGenomePart(curr_env, part_of_genome, label);
                 }
 

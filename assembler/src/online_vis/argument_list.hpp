@@ -6,73 +6,9 @@ namespace online_visualization {
     
     class ArgumentList {
         private:
-            string original_args;
             map<string, string> options;
             set<string> short_options;
             vector<string> arguments;
-            //vector<string> optional_arguments;
-
-            void Preprocess(const vector<string>& history, string command) const {
-                vector<string> new_arguments;
-
-                for (auto iter = arguments.begin(); iter != arguments.end(); ++iter) {
-                    string arg = *iter;
-                    if (arg[0] == '!') {
-                        if (arg[1] == '-') {
-                            string num_of_command = "";
-                            size_t i = 2;
-                            while (i < arg.size() && arg[i] != ':') {
-                                num_of_command = num_of_command + arg[i];
-                                ++i;
-                            }
-                            if (IsNumber(num_of_command) && arg[i] == ':') {
-                                ++i;
-                                string num_of_arg = ""
-                                while (i < arg.size()) {
-                                    ++i;
-                                    num_of_arg = num_of_arg + arg[i];
-                                }
-                                if (IsNumber(num_of_arg)) {
-                                    stringstream ss(history[history.size() - GetInt(num_of_command)]);
-                                    string command_string;
-                                    ss >> command_string;
-                                    ArgumentList arg_list(ss);
-                                    string new_arg = arg_list.GetAllArguments()[GetInt(num_of_arg)];                                   
-                                    new_arguments.push_back(new_arg);
-                                }
-                            }
-                        }
-                        else if (arg[1] == '$') {
-                            string num_of_command = "1";
-                            size_t i = 2;
-                            while (i < arg.size() && arg[i] != ':') {
-                                num_of_command = num_of_command + arg[i];
-                                ++i;
-                            }
-                            if (IsNumber(num_of_command) && arg[i] == ':') {
-                                ++i;
-                                string num_of_arg = ""
-                                while (i < arg.size()) {
-                                    ++i;
-                                    num_of_arg = num_of_arg + arg[i];
-                                }
-                                if (IsNumber(num_of_arg)) {
-                                    stringstream ss(history[history.size() - GetInt(num_of_command)]);
-                                    string command_string;
-                                    ss >> command_string;
-                                    ArgumentList arg_list(ss);
-                                    string new_arg = arg_list.GetAllArguments()[GetInt(num_of_arg)];                                   
-                                    new_arguments.push_back(new_arg);
-                                }
-                            }
-                        }
-                        else {
-                            new_arguments.push_back(arg);   
-                        }
-                                                   
-                    }
-                }
-            }
 
             const vector<string> SplitInTokens(stringstream& args) const { 
                 vector<string> answer;
@@ -134,7 +70,6 @@ namespace online_visualization {
             }
 
             ArgumentList(stringstream& stream) {
-                original_args = stream.str();
                 const vector<string>& args = SplitInTokens(stream);
                 ParseArguments(args);
             }
@@ -155,6 +90,88 @@ namespace online_visualization {
             const vector<string>& GetAllArguments() const {
                 return arguments;
             }
+
+        public:
+            string Preprocess(const vector<string>& history) {
+                vector<string> new_arguments;
+
+                for (auto iter = arguments.begin(); iter != arguments.end(); ++iter) {
+                    string arg = *iter;
+                    TRACE("Argument " << arg);
+                    if (arg == "!$") {
+                        TRACE("!$");
+                        stringstream ss(history[history.size() - 1]);
+                        TRACE("Last COMMAND " << ss.str());
+                        ArgumentList arg_list(ss);
+                        const vector<string>& args = arg_list.GetAllArguments();
+                        string new_arg = args[args.size() - 1];
+                        TRACE("All args " << args);
+                        TRACE("NEW ARG " << new_arg);
+                        new_arguments.push_back(new_arg);
+                    }
+                    else if (arg[0] == '!') {
+                        stringstream ss(history[history.size() - 1]);
+                        size_t i = 1;
+                        string num_of_command = "";
+                        while (i < arg.size() && arg[i] != ':') {
+                            num_of_command = num_of_command + arg[i];
+                            ++i;
+                        }
+
+                        if (num_of_command != "") 
+                            num_of_command = num_of_command.substr(1, num_of_command.size() - 1);
+                        else 
+                            num_of_command = "1";
+                        TRACE("Number of command " << num_of_command);
+
+                        if (IsNumber(num_of_command) && arg[i] == ':') {
+                            ++i;
+                            string num_of_arg = "";
+                            while (i < arg.size()) {
+                                num_of_arg = num_of_arg + arg[i];
+                                ++i;
+                            }
+                            TRACE("Number of the argument " << num_of_arg);
+                            if (num_of_arg == "$" || IsNumber(num_of_arg)) {
+                                stringstream ss(history[history.size() - GetInt(num_of_command)]);
+                                ArgumentList arg_list(ss);
+                                string new_arg;
+                                // $ means the last one
+                                if (num_of_arg == "$")
+                                    new_arg = arg_list.GetAllArguments()[arg_list.GetAllArguments().size() - 1];
+                                else
+                                    new_arg = arg_list.GetAllArguments()[GetInt(num_of_arg)];
+                                new_arguments.push_back(new_arg);
+                            }
+                            else {
+                                new_arguments.push_back(arg);   
+                            }
+                        }
+                        else {
+                            new_arguments.push_back(arg);   
+                        }
+                    }
+                    else {
+                        new_arguments.push_back(arg);   
+                    }
+                }
+                arguments = new_arguments;
+                stringstream result;
+                for (auto iter = options.begin(); iter != options.end(); ++iter)
+                    result << iter->first + "=" + iter->second + " ";
+                for (auto iter = short_options.begin(); iter != short_options.end(); ++iter)
+                    result << *iter + " ";
+                for (size_t i = 0; i < arguments.size(); ++i) {
+                    result << arguments[i];
+                    if (i < arguments.size() - 1)
+                        result << " ";  
+                }
+
+                return result.str();
+            }
+
+    private:
+        DECL_LOGGER("ArgumentList");
 
     };
 
