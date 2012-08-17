@@ -59,7 +59,7 @@ namespace online_visualization {
 
                 int position = GetInt(args[1]);
                 Sequence genome = curr_env.genome();
-                if (arg_list["--rc"] == "true") {
+                if (arg_list["rc"] == "true") {
                     cout << "Inverting genome..." << endl;
                     genome = !genome;
                 }

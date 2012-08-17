@@ -41,6 +41,9 @@ namespace online_visualization {
                                 " list\n" +
                                 " switch\n" +
                                 " rep\n" +
+                                " log\n" +
+                                " save\n" +
+                                " batch\n" +
                                 " load_genome\n" +
                                 " set_folder\n" +
                                 " set_file_name\n" +
@@ -49,6 +52,8 @@ namespace online_visualization {
                                 " clear_pos\n" +
                                 " vertex\n" +
                                 " edge\n" +
+                                " contig\n" +
+                                " genome\n" +
                                 " position\n" +
                                 " paths";
                 return answer;
@@ -84,7 +89,7 @@ namespace online_visualization {
 
             // !!!! NO OVERRIDING !!!!
             virtual void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
-                if (arg_list["--all"] == "true")
+                if (arg_list["all"] == "true")
                     for (auto iter = loaded_environments.begin(); iter != loaded_environments.end(); ++iter) 
                         Execute(*(iter->second), arg_list);
                 else

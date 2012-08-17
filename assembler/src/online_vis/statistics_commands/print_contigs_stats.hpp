@@ -11,6 +11,17 @@ namespace online_visualization {
         //typedef vector<EdgeId> Path;
         
         private:
+            mutable bool ext_output;
+
+            //void info(string text) const {
+                //cout << text << endl;   
+            //}
+            
+            //void debug(string text) const {
+                //if (ext_output)
+                    //info(text);
+            //}
+
             vector<EdgeId> TryCloseGap(const Graph& graph, VertexId v1, VertexId v2) const {
                 if (v1 == v2)
                     return vector<EdgeId>();
@@ -59,29 +70,33 @@ namespace online_visualization {
         private:
 
             bool ProcessContig(Environment& curr_env, const Sequence& contig, const MappingPath<EdgeId>& genome_path, const string& contig_name) const {
-                cout << " Checking the contig " << contig_name << endl;
-                cout << " Length " << contig.size() << endl;
+                debug(ext_output, " Checking the contig " << contig_name);
+                debug(ext_output, " Length " << contig.size());
                 const Path<EdgeId>& genome_path_completed = TryFixPath(curr_env, genome_path.simple_path());
                 const MappingPath<EdgeId>& contig_path = curr_env.mapper().MapSequence(contig);
+                if (contig_path.size() == 0) {
+                    debug(ext_output, "Contig could not be aligned at all!");
+                    return false;
+                }
                 bool found = false;
                 EdgeId first_edge = contig_path[0].first;
                 for (size_t i = 0; i < genome_path_completed.size(); ++i) {
-                    TRACE("i-th edge of the genome " << genome_path_completed[i]);
+                    TRACE(" i-th edge of the genome " << genome_path_completed[i]);
                     if (genome_path_completed[i] == first_edge) {
                         found = true;
                         for (size_t j = 1; j < contig_path.size(); ++j) {
                             if (genome_path_completed[i + j] != contig_path[j].first) {
-                                cout << " Break in the edge " << contig_path[j] << endl;
+                                debug(ext_output, " Break in the edge " << curr_env.graph().int_id(contig_path[j].first));
                                 return false;
                             }
                         }
                     }
                 }
                 if (!found) {
-                    cout << " First edge was not found" << endl;   
+                    debug(ext_output, " First edge " << curr_env.graph().int_id(first_edge) << " was not found");
                     return false;
                 } else {
-                    cout << " No misassemblies" << endl;
+                    debug(ext_output, " No misassemblies");
                     return true;
                 }
             }
@@ -98,19 +113,18 @@ namespace online_visualization {
                 const string& file = args[1];
                 if (!CheckFileExists(file))
                     return false;
-
+                
                 return true;
             }
  
         public:
-            //TODO : REDO
             string Usage() const {
                 string answer;
                 answer = answer + "Command `print_contigs_stats` \n" + 
-                                "Usage:\n" + 
-                                "> print_contigs_stats <position> [--rc] [-r]\n" + 
-                                " You should specify an integer position in the genome, which location you want to look at. Optionally you can use a flag -r, whether you want the tool to invert the positions,\n" +
-                                "and an option --rc, if you would like to see the pictures of the second strand.";
+                                " Usage:\n" + 
+                                "> print_contigs_stats <contigs_file> [--stats]\n" + 
+                                " Shows the results of aligning the contigs in the <contigs_file> to the current DB graph. \n" +
+                                " --stats allows to see the details.";
                 return answer;
             }
 
@@ -124,9 +138,10 @@ namespace online_visualization {
                     return;
 
                 string file = args[1];
-                if (!CheckCorrectness(args))
-                    return;
-
+                ext_output = (arg_list["stats"] == "true");
+                
+                TRACE("Printing stats " << ext_output);
+                
                 io::Reader irs(file);
                 
                 const Sequence& genome = curr_env.genome();
@@ -142,10 +157,10 @@ namespace online_visualization {
                         result = result | ProcessContig(curr_env, contig, genome_path, "CONTIG_" + read.name());
                         result = result | ProcessContig(curr_env, !contig, genome_path, "CONTIG_" + read.name() + "_RC");
                         if (result) {
-                            cout << " contig " << read.name() << " is OKAY" << endl;   
+                            info(" contig " + read.name() + " is OKAY");
                         }
                         else 
-                            cout << " contig " << read.name() << " is MISASSEMBLED" << endl;
+                            info(" contig " + read.name() + " is MISASSEMBLED");
                     }
                 }
             }

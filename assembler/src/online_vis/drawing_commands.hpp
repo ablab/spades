@@ -4,6 +4,7 @@
 #include "drawing_commands/draw_position_command.hpp"
 #include "drawing_commands/show_position_command.hpp"
 #include "drawing_commands/draw_part_of_genome_command.hpp"
+#include "drawing_commands/draw_contig_command.hpp"
 
 #include "environment.hpp"
 #include "command.hpp"
@@ -43,14 +44,14 @@ namespace online_visualization {
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& args) const {
-                const vector<string>& args_ = args.GetAllArguments();
+            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+                const vector<string>& args = arg_list.GetAllArguments();
 
-                if (!CheckCorrectness(args_))
+                if (!CheckCorrectness(args))
                     return;
-                size_t vertex_id = GetInt(args_[0]);
+                size_t vertex_id = GetInt(args[1]);
                 if (CheckVertexExists(curr_env.int_ids(), vertex_id)) 
-                    DrawVertex(curr_env, vertex_id, args_[0]);
+                    DrawVertex(curr_env, vertex_id, args[1]);
             }
     };
 
@@ -88,14 +89,14 @@ namespace online_visualization {
             }
 
             void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
-                const vector<string>& args_ = arg_list.GetAllArguments();
+                const vector<string>& args = arg_list.GetAllArguments();
 
-                if (!CheckCorrectness(args_))
+                if (!CheckCorrectness(args))
                      return;
 
-                size_t edge_id = GetInt(args_[0]);
+                size_t edge_id = GetInt(args[1]);
                 if (CheckEdgeExists(curr_env.int_ids(), edge_id)) {
-                    DrawEdge(curr_env, edge_id, args_[0]);
+                    DrawEdge(curr_env, edge_id, args[1]);
                 }
             }
     };

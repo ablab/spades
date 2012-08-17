@@ -30,6 +30,9 @@ namespace online_visualization {
             AddCommand(shared_ptr<Command>(new SwitchCommand));
             AddCommand(shared_ptr<Command>(new ReplayCommand));
             AddCommand(shared_ptr<Command>(new LoadGenomeCommand));
+            AddCommand(shared_ptr<Command>(new LogCommand));
+            AddCommand(shared_ptr<Command>(new SaveBatchCommand));
+            AddCommand(shared_ptr<Command>(new BatchCommand));
 
             AddCommand(shared_ptr<Command>(new SetMaxVertCommand));
             AddCommand(shared_ptr<Command>(new SetFolderCommand));
@@ -40,8 +43,9 @@ namespace online_visualization {
 
             AddCommand(shared_ptr<Command>(new DrawVertexCommand));
             AddCommand(shared_ptr<Command>(new DrawEdgeCommand));
-            AddCommand(shared_ptr<Command>(new DrawPartOfGenomeCommand));
             AddCommand(shared_ptr<Command>(new DrawPositionCommand));
+            AddCommand(shared_ptr<Command>(new DrawPartOfGenomeCommand));
+            AddCommand(shared_ptr<Command>(new DrawContigCommand));
             AddCommand(shared_ptr<Command>(new ShowPositionCommand));
 
             AddCommand(shared_ptr<Command>(new PrintPathsCommand));
@@ -64,19 +68,20 @@ namespace online_visualization {
             //const size_t max_buffer_size = 10000;
 
             while (true) {
-                cout << "> ";
+                cout << "GAF$> ";
                 string command_with_args;
                 getline(cin, command_with_args);
                 stringstream ss(command_with_args);
                 ArgumentList arg_list(ss);
                 string processed_command = arg_list.Preprocess(history);
 
-                DEBUG("processed_string " << processed_command);
-                history.push_back(processed_command);
+                DEBUG("processed string " << processed_command);
 
                 const string& command_string = arg_list.GetAllArguments()[0];
                 Command& command = GetCommand(CommandId(command_string));
                 command.Execute(current_environment_, loaded_environments, arg_list);
+
+                history.push_back(processed_command);
             }
         }
     private:

@@ -22,7 +22,7 @@ namespace online_visualization {
 
             pair<string, string> ParseOption(const string& arg) const {
                 string opt_name;
-                string opt_value;
+                string opt_value = "";
 
                 size_t i = 2;
                 for (; i < arg.size() && arg[i] != '='; ++i) {
@@ -32,6 +32,7 @@ namespace online_visualization {
                     opt_value = opt_value + arg[i];   
                 }
             
+                TRACE("Name/Value " << opt_name << " " << opt_value);
                 if (opt_value == "")
                     opt_value = "true";
                 
@@ -53,7 +54,7 @@ namespace online_visualization {
                     if (args[i][0] == '-' && args[i][1] == '-') {
                         //--smth=<smth>
                         pair<string, string> opt_val = ParseOption(args[i]);
-
+                        options.insert(opt_val);
                     }
                     else if (args[i][0] == '-') {
                         const vector<string>& short_opt = ParseShortOption(args[i]);

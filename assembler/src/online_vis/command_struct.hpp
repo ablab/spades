@@ -20,6 +20,9 @@ namespace online_visualization {
                 { "list",                list                },
                 { "switch",              switch_env          },
                 { "rep",                 replay              },
+                { "log",                 log                 },
+                { "save",                save                },
+                { "batch",               batch               },
                 { "load_genome",         load_genome         },
                 { "set_folder",          set_folder          }, 
                 { "set_file_name",       set_file_name       }, 
@@ -29,6 +32,8 @@ namespace online_visualization {
                 { "vertex",              draw_vertex         }, 
                 { "edge",                draw_edge           }, 
                 { "position",            draw_position       }, 
+                { "contig",              draw_contig         },
+                { "genome",              draw_part_of_genome },
                 { "paths",               print_paths         },
                 { "print_contigs_stats", print_contigs_stats }
             };

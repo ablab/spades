@@ -61,10 +61,11 @@ namespace online_visualization {
             string Usage() const {
                 string answer;
                 answer = answer + "Command `draw_part_of_genome` \n" + 
-                                "Usage:\n" + 
-                                "> position <position> [--rc] [-r]\n" + 
-                                " You should specify an integer position in the genome, which location you want to look at. Optionally you can use a flag -r, whether you want the tool to invert the positions,\n" +
-                                "and an option --rc, if you would like to see the pictures of the second strand.";
+                                " Usage:\n" + 
+                                "> genome <first_pos> <second_pos> [--rc] [-r]\n" + 
+                                " Prints a .dot picture of a substring [first_pos, second_pos] of the genome.\n" +
+                                " Optionally you can use a flag -r, whether you want the tool to invert the positions,\n" +
+                                " and an option --rc, if you would like to see the pictures of the second strand.";
                 return answer;
             }
 
@@ -80,13 +81,13 @@ namespace online_visualization {
                 size_t first_position = (size_t) GetInt(args[1]);
                 size_t second_position = (size_t) GetInt(args[2]);
                 Sequence genome = curr_env.genome();
-                if (arg_list["--rc"] == "true") {
+                if (arg_list["rc"] == "true") {
                     cout << "Inverting genome..." << endl;
                     genome = !genome;
                 }
 
                 //experimental
-                if (arg_list.contains("-r")) {
+                if (arg_list.contains("r")) {
                     cout << "Inverting positions..." << endl;
                     first_position = genome.size() - cfg::get().K - 1 - first_position;
                     second_position = genome.size() - cfg::get().K - 1 - first_position;

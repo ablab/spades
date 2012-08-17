@@ -240,7 +240,7 @@ namespace online_visualization {
             bool CheckCorrectness(const vector<string>& args) const {
                 if (args.size() == 1)
                     return true;
-                return IsNumber(args[1]);
+                return CheckIsNumber(args[1]);
             }
 
         public:
@@ -285,6 +285,165 @@ namespace online_visualization {
                 
             }
     };
+
+    class LogCommand : public Command {
+        private:
+            size_t MinArgNumber() const {
+                return 0;
+            }
+
+            bool CheckCorrectness(const vector<string>& args) const {
+                if (args.size() > 1) 
+                    return CheckIsNumber(args[1]);
+                return true;
+            }
+
+        public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `log` \n" + 
+                                "Usage:\n" + 
+                                "> log [<number_of_commands>]\n" + 
+                                " Shows last <number_of_commands> in the history. Shows the whole log by default.";
+                return answer;
+            }
+            
+            LogCommand() : Command(CommandType::log)
+            {
+            }
+
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
+                const vector<string>& args = arg_list.GetAllArguments();
+                
+                if (!CheckCorrectness(args))
+                    return;
+
+                vector<string>& history = GetHistory();
+
+                if (args.size() > 1) {
+                    size_t number = GetInt(args[1]);
+                    if (number > history.size()) 
+                        number = history.size();
+                    for (size_t i = 0; i < number; ++i) 
+                        cout << " " << history[history.size() - number + i] << endl;
+                }
+                else {
+                    for (size_t i = 0; i < history.size(); ++i) 
+                        cout << history[i] << endl;
+                }
+            }
+    };
+
+    class SaveBatchCommand : public Command {
+        private:
+            size_t MinArgNumber() const {
+                return 2;
+            }
+
+            bool CheckCorrectness(const vector<string>& args) const {
+                if (!CheckEnoughArguments(args))
+                    return false;
+                return CheckIsNumber(args[1]);
+            }
+
+        public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `save` \n" + 
+                                "Usage:\n" + 
+                                "> save <number_of_commands> <file_name>\n" + 
+                                " Saves last <number_of_commands> of the history in the file filename.";
+                return answer;
+            }
+            
+            SaveBatchCommand() : Command(CommandType::save)
+            {
+            }
+
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
+                const vector<string>& args = arg_list.GetAllArguments();
+                
+                if (!CheckCorrectness(args))
+                    return;
+
+                size_t number = GetInt(args[1]);
+                const string& file = args[2];
+
+                ofstream outfile;
+                outfile.open(file);
+                vector<string>& history = GetHistory();
+                
+                if (number > history.size())
+                    number = history.size();
+
+                for (size_t i = 0; i < number; ++i) {
+                    outfile << history[history.size() - number + i];
+                    if (i < number - 1)
+                        outfile << endl;    
+                }
+                outfile.close();
+            }
+    };
+
+    class BatchCommand : public Command {
+        private:
+            size_t MinArgNumber() const {
+                return 1;    
+            }
+
+            bool CheckCorrectness(const vector<string>& args) const {
+                if (!CheckEnoughArguments(args))
+                    return false;
+                return true;
+            }
+
+        public:
+            string Usage() const {
+                string answer;
+                answer = answer + "Command `batch` \n" + 
+                                "Usage:\n" + 
+                                "> batch <batch_filename>\n" + 
+                                " Runs the commands from the file <batch_filename>.";
+                return answer;
+            }
+            
+            BatchCommand() : Command(CommandType::batch)
+            {
+            }
+
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& arg_list) const {
+                const vector<string>& args = arg_list.GetAllArguments();
+                
+                if (!CheckCorrectness(args))
+                    return;
+
+                const string& file = args[1];
+                if (!CheckFileExists(file))
+                    return;
+
+                ifstream infile;
+                infile.open(file);
+                vector<string>& history = GetHistory();
+                while (!infile.eof()) {
+                    string command_with_args;
+                    getline(infile, command_with_args);
+                    if (command_with_args == "")
+                        continue;
+                    cout << "> " << command_with_args << endl;
+                    stringstream ss(command_with_args);
+                    ArgumentList arg_list(ss);
+                    string processed_command = arg_list.Preprocess(history);
+
+                    const string& command_string = arg_list.GetAllArguments()[0];
+                    Command& command = GetCommand(CommandId(command_string));
+                    command.Execute(curr_env, loaded_environments, arg_list);
+
+                    history.push_back(processed_command);
+                }
+                infile.close();
+            }
+    };
+
 
     class LoadGenomeCommand : public LocalCommand {
 

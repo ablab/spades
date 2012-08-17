@@ -28,7 +28,7 @@ namespace online_visualization {
                                 "> paths <vertex_from> <vertex_to> [<max_length>] \n" + 
                                 " This command prints all paths between two given vertices, that do not exceed `max_length` parameter.\n" +
                                 " You should specify two integers (id of vertices), between which you want to find paths. Optionally you can provide `max_length` integer, \n" +
-                                " so that tool does not consider paths longer than `max_length`.";
+                                " so that tool does not consider paths longer than `max_length`. It is equal to 100000 by default.";
                 return answer;
             }
             
@@ -41,11 +41,20 @@ namespace online_visualization {
                 if (!CheckCorrectness(args))
                     return; 
 
+                bool first_edge = false;
+                bool second_edge = false;
                 size_t from = GetInt(args[1]);
                 size_t to = GetInt(args[2]);
-                size_t max_length = 10000000;
+                size_t max_length = 100000;
                 if (args.size() > 2) 
                     max_length = GetInt(args[3]);
+                if (arg_list.contains("-edge")) {
+                    // not so good, maybe do something
+                    first_edge = second_edge = true;   
+                    from = curr_env.graph().int_id(curr_env.graph().EdgeStart(curr_env.int_ids().ReturnEdgeId(from)));
+                    to = curr_env.graph().int_id(curr_env.graph().EdgeStart(curr_env.int_ids().ReturnEdgeId(to)));
+                }
+
 
                 if (!CheckVertexExists(curr_env.int_ids(), from) || !CheckVertexExists(curr_env.int_ids(), to))
                     return;
