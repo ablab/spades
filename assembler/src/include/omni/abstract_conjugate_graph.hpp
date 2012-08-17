@@ -229,7 +229,7 @@ private:
 		TRACE("Adding edge between verteices " << v1 << " and " << v2);
 		VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
 		EdgeId result = AddSingleEdge(v1, v2, data);
-		if (this->master().isSelfConjugate(data)) {
+		if (this->master().isSelfConjugate(data) && v1 == conjugate(v2)) {
 //	VERIFY(v1 == conjugate(v2));
 			result->set_conjugate(result);
 			return result;
