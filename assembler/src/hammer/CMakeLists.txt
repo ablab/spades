@@ -10,14 +10,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(hammer
    main.cpp
-   half.cpp
    hammer_tools.cpp
    hamcluster.cpp
    kmer_cluster.cpp
    kmer_index.cpp
    position_read.cpp
    globals.cpp
-   kmerno.cpp
    kmer_stat.cpp
    config_struct_hammer.cpp
    mph_index/mph_index.cc

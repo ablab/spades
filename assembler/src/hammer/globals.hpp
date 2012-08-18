@@ -8,7 +8,6 @@
 #define HAMMER_GLOBALS_HPP_
 
 #include "kmer_stat.hpp"
-#include "kmerno.hpp"
 
 class KMerData;
 

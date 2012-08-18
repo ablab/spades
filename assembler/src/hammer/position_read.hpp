@@ -14,7 +14,6 @@
 
 #include "kmer_stat.hpp"
 #include "globals.hpp"
-#include "kmerno.hpp"
 
 class PositionRead {
   hint_t start_  : 48;
