@@ -40,9 +40,19 @@ struct hash<KMer> : public unary_function<KMer, size_t> {
 };
 }
 
+template<class Seq>
+static unsigned hamdistKMer(const Seq &x, const Seq &y, unsigned tau = K) {
+  unsigned dist = 0;
+  for (unsigned i = 0; i < K; ++i) {
+    if (x[i] != y[i]) {
+      ++dist; if (dist > tau) return dist;
+    }
+  }
+  return dist;
+}
+
 typedef std::map<PositionKMer, KMerStat> KMerStatMap;
-typedef std::pair<PositionKMer, KMerStat> KMerCount;
-typedef std::pair<std::string, std::pair<uint32_t, double> > StringCount;
+typedef std::pair<KMer, std::pair<uint32_t, double> > StringCount;
 
 struct QualBitSet {
   unsigned char q_[K];
@@ -104,7 +114,7 @@ struct KMerStat {
     MarkedForGoodIter  = 5
   } KMerStatus;
 
-  KMerStat(uint32_t cnt, float kquality, const unsigned char *quality) : lock_data(0), totalQual(kquality), count(cnt), qual(quality) {
+  KMerStat(uint32_t cnt, KMer k, float kquality, const unsigned char *quality) : lock_data(0), kmer_(k), totalQual(kquality), count(cnt), qual(quality) {
     __sync_lock_release(&lock_data);
   }
   KMerStat() : lock_data(0), totalQual(1.0), count(0), qual() {
@@ -121,6 +131,7 @@ struct KMerStat {
     uint64_t lock_data;
   };
 
+  KMer kmer_;
   float totalQual;
   uint32_t count;
   QualBitSet qual;
@@ -143,6 +154,7 @@ struct KMerStat {
     changeto = kmer;
     status = Change;
   }
+  KMer kmer() const { return kmer_; }
 };
 
 template<class Writer>
@@ -171,6 +183,10 @@ inline void binary_read(Reader &is, KMerStat &k) {
   is.read((char*)&k.raw_data, sizeof(k.raw_data));
   is.read((char*)&k.totalQual, sizeof(k.totalQual));
   binary_read(is, k.qual);
+}
+
+inline unsigned char getQual(const KMerStat & kmc, size_t i) {
+  return kmc.qual[i];
 }
 
 #endif //  HAMMER_KMERSTAT_HPP_

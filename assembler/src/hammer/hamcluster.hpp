@@ -49,12 +49,11 @@ static_assert(sizeof(SubKMer) == 16, "Too big SubKMer");
 
 
 struct SubKMerDummySerializer {
-  SubKMer serialize(hint_t idx, size_t fidx = -1ULL) const {
+  SubKMer serialize(KMer k, size_t fidx) const {
     SubKMer s;
 
-    s.idx = (fidx == -1ULL ? idx : fidx);
-    const char *seq = Globals::blob + idx;
-    s.data = Seq<K>(seq, 0, K, /* raw */ true);
+    s.idx = fidx;
+    s.data = k;
 
     // Yay for NRVO!
     return s;
@@ -69,13 +68,14 @@ public:
   SubKMerPartSerializer(size_t from, size_t to)
       :from_(from), to_(to) { VERIFY(to_ - from_ <= K); }
 
-  SubKMer serialize(hint_t idx, size_t fidx = -1ULL) const {
+  SubKMer serialize(KMer k, size_t fidx) const {
     SubKMer s;
 
-    s.idx = (fidx == -1ULL ? idx : fidx);
-    const char *seq = Globals::blob + idx + from_;
-    s.data = Seq<K>(seq,
-                    0, to_ - from_,
+    s.idx = fidx;
+    // FIXME: Get rid of string here!
+    std::string seq = k.str();
+    s.data = Seq<K>(seq.data(),
+                    from_, to_ - from_,
                     /* raw */ true);
 
     // Yay for NRVO!
@@ -92,16 +92,17 @@ public:
   SubKMerStridedSerializer(size_t from, size_t stride)
       :from_(from), stride_(stride) { VERIFY(from_ + stride_ <= K); }
 
-  SubKMer serialize(hint_t idx, size_t fidx = -1ULL) const {
+  SubKMer serialize(KMer k, size_t fidx) const {
     SubKMer s;
 
-    s.idx = (fidx == -1ULL ? idx : fidx);
+    s.idx = fidx;
 
     size_t sz = (K - from_ + stride_ - 1) / stride_;
 
+    // FIXME: Get rid of strings here!
     std::string str(sz, 'A');
     for (size_t i = from_, j = 0; i < K; i+= stride_, ++j)
-      str[j] = Globals::blob[idx + i];
+      str[j] = nucl(k[i]);
 
     s.data = Seq<K>(str, 0, sz);
 
@@ -150,7 +151,7 @@ void serialize(Writer &os,
   os.write((char*)&sz, sizeof(sz));
   for (size_t i = 0, e = sz; i != e; ++i) {
     size_t idx = (block == NULL ? i : (*block)[i]);
-    SubKMer s = serializer.serialize(data[idx].first.start(), idx);
+    SubKMer s = serializer.serialize(data[idx].kmer(), idx);
     binary_write(os, s);
   }
 }

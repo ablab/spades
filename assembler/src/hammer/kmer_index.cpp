@@ -164,13 +164,14 @@ size_t KMerIndexBuilder::MergeKMers(const std::string &ifname, const std::string
   return it - ins.begin();
 }
 
-static inline void Merge(KMerCount &lhs, const KMerCount &rhs) {
-  if (lhs.first.start() == -1ULL)
-    lhs.first = rhs.first;
+static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
+  if (lhs.kmer() != rhs.kmer()) {
+    lhs.kmer_ = rhs.kmer_;
+  }
 
-  lhs.second.count += rhs.second.count;
-  lhs.second.totalQual *= rhs.second.totalQual;
-  lhs.second.qual += rhs.second.qual;
+  lhs.count += rhs.count;
+  lhs.totalQual *= rhs.totalQual;
+  lhs.qual += rhs.qual;
 }
 
 size_t KMerIndexBuilder::BuildIndex(KMerIndex &index, size_t num_buckets) {
@@ -249,14 +250,14 @@ void KMerCounter::FillKMerData(KMerData &data) {
       size_t kpos = gen.pos() - 1;
       const unsigned char *kq = (const unsigned char*)(q + kpos);
 
-      KMerCount &kmc = data[kmer];
-      kmc.second.lock();
+      KMerStat &kmc = data[kmer];
+      kmc.lock();
       Merge(kmc,
-            KMerCount(PositionKMer(cpos + kpos),
-                      KMerStat(1,
-                               1 - gen.correct_probability(),
-                               kq)));
-      kmc.second.unlock();
+            KMerStat(1,
+                     kmer,
+                     1 - gen.correct_probability(),
+                     kq));
+      kmc.unlock();
 
       gen.Next();
     }
@@ -267,9 +268,9 @@ void KMerCounter::FillKMerData(KMerData &data) {
   size_t singletons = 0;
   for (size_t i = 0; i < data.size(); ++i) {
     // Make sure all the kmers are marked as 'Bad' in the beginning
-    data[i].second.status = KMerStat::Bad;
+    data[i].status = KMerStat::Bad;
 
-    if (data[i].second.count == 1)
+    if (data[i].count == 1)
       singletons += 1;
   }
 

@@ -56,16 +56,6 @@ std::pair<size_t, size_t> SubKMerSplitter::split() {
   return make_pair(icnt, ocnt);
 }
 
-static unsigned hamdistKMer(hint_t x, hint_t y, unsigned tau) {
-  unsigned dist = 0;
-  for (unsigned i = 0; i < K; ++i) {
-    if (Globals::blob[x + i] != Globals::blob[y + i]) {
-      ++dist; if (dist > tau) return dist;
-    }
-  }
-  return dist;
-}
-
 #if 0
 static bool canMerge(const unionFindClass &uf, int x, int y) {
   size_t szx = uf.set_size(x), szy = uf.set_size(y);
@@ -97,10 +87,10 @@ static void processBlockQuadratic(unionFindClass &uf,
   size_t blockSize = block.size();
   for (size_t i = 0; i < blockSize; ++i) {
     size_t x = block[i];
-    hint_t kmerx = data[x].first.start();
+    KMer kmerx = data[x].kmer();
     for (uint32_t j = i + 1; j < blockSize; j++) {
       size_t y = block[j];
-      hint_t kmery = data[y].first.start();
+      KMer kmery = data[y].kmer();
       if (uf.find_set(x) != uf.find_set(y) &&
           canMerge(uf, x, y) &&
           hamdistKMer(kmerx, kmery, tau) <= tau) {

@@ -253,23 +253,23 @@ string HammerTools::getFilename( const string & dirprefix, int iter_count, const
 	return tmp.str();
 }
 
-bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const KMerData &data,
-                                               const PositionKMer &kmer, size_t pos, const KMerStat & stat,
-                                               std::vector<std::vector<int> > & v,
-                                               int & left, int & right, bool & isGood,
-                                               ofstream * ofs,
-                                               bool revcomp, bool correct_threshold, bool discard_singletons) {
+static bool internalCorrectReadProcedure(const std::string &seq, const KMerData &data,
+                                         size_t pos, const KMerStat & stat,
+                                         std::vector<std::vector<int> > & v,
+                                         int & left, int & right, bool & isGood,
+                                         ofstream * ofs,
+                                         bool revcomp, bool correct_threshold, bool discard_singletons) {
   bool res = false;
   if (stat.isGoodForIterative() || (correct_threshold && stat.isGood())) {
     isGood = true;
     if (ofs != NULL) *ofs << "\t\t\tsolid";
     //cout << "\t\t\tsolid";
-    for (size_t j = 0; j < K; ++j) {
-      if (!revcomp)
-        v[dignucl(kmer[j])][pos + j]++;
-      else
-        v[complement(dignucl(kmer[j]))][K-1-pos-j]++;
-    }
+    KMer kmer = stat.kmer();
+    if (revcomp)
+      kmer = !kmer;
+
+    for (size_t j = 0; j < K; ++j)
+      v[kmer[j]][pos + j]++;
     if ((int) pos < left)
       left = pos;
     if ((int) pos > right)
@@ -277,7 +277,7 @@ bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const KMe
   } else {
     // if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
     if (stat.change() &&
-        (discard_singletons || data[stat.changeto].second.isGoodForIterative() ||
+        (discard_singletons || data[stat.changeto].isGoodForIterative() ||
          (correct_threshold && stat.isGood()))) {
       if (ofs != NULL) *ofs << "\tchange to\n";
       //cout << "  kmer " << kmer.start() << " " << kmer.str() << " wants to change to " << stat.changeto << " " << km[stat.changeto].first.str() << endl;
@@ -286,10 +286,10 @@ bool HammerTools::internalCorrectReadProcedure(const std::string &seq, const KMe
         left = pos;
       if ((int) pos > right)
         right = pos;
-      const PositionKMer &newkmer = data[stat.changeto].first;
+      KMer newkmer = data[stat.changeto].kmer();
 
       for (size_t j = 0; j < K; ++j) {
-        v[dignucl(newkmer[j])][pos + j]++;
+        v[newkmer[j]][pos + j]++;
       }
       // pretty print the k-mer
       res = true;
@@ -331,7 +331,7 @@ size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, KMe
       size_t read_pos = gen.pos() - 1;
 
       kmer_indices[read_pos] = idx;
-      if (data[idx].second.isGoodForIterative()) {
+      if (data[idx].isGoodForIterative()) {
         for (size_t j = read_pos; j < read_pos + K; ++j)
           covered_by_solid[j] = true;
       }
@@ -351,23 +351,23 @@ size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, KMe
     // second, mark all k-mers as solid
     for (size_t j = 0; j < read_size; ++j) {
       if (kmer_indices[j] == (hint_t)-1 ) continue;
-      if (!data[kmer_indices[j]].second.isGoodForIterative() &&
-          !data[kmer_indices[j]].second.isMarkedGoodForIterative() ) {
+      if (!data[kmer_indices[j]].isGoodForIterative() &&
+          !data[kmer_indices[j]].isMarkedGoodForIterative() ) {
 #       pragma omp critical
         {
           ++res;
-          data[kmer_indices[j]].second.makeGoodForIterative();
+          data[kmer_indices[j]].makeGoodForIterative();
         }
       }
     }
   }
 
   if (cfg::get().expand_write_each_iteration) {
-    ofstream oftmp( getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no ).data());
+    ofstream oftmp(getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no ).data());
     for (size_t n = 0; n < data.size(); ++n ) {
-      if (data[n].second.isGoodForIterative() ) {
-        oftmp << data[n].first.str() << "\n>" << data[n].first.start()
-              << "  cnt=" << data[n].second.count << "  tql=" << (1-data[n].second.totalQual) << "\n";
+      if (data[n].isGoodForIterative() ) {
+        oftmp << data[n].kmer().str() << "\n>" << n
+              << "  cnt=" << data[n].count << "  tql=" << (1-data[n].totalQual) << "\n";
       }
     }
   }
@@ -375,16 +375,16 @@ size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, KMe
   return res;
 }
 
-void HammerTools::PrintKMerResult(std::ostream& outf, const vector<KMerCount> & kmers ) {
-	for (vector<KMerCount>::const_iterator it = kmers.begin(); it != kmers.end(); ++it) {
-		outf << it->first.start() << "\t"
-			 << string(Globals::blob + it->first.start(), K) << "\t"
-			 << it->second.count << "\t"
-			 << it->second.changeto << "\t"
-			 << setw(8) << it->second.totalQual << "\t";
-		for (size_t i=0; i < K; ++i) outf << it->second.qual[i] << " ";
-		outf << "\n";
-	}
+void HammerTools::PrintKMerResult(std::ostream& outf, const vector<KMerStat> & kmers ) {
+  for (auto it = kmers.begin(); it != kmers.end(); ++it) {
+    outf << it-kmers.begin() << "\t"
+         << it->kmer().str() << "\t"
+         << it->count << "\t"
+         << it->changeto << "\t"
+       << setw(8) << it->totalQual << "\t";
+    for (size_t i=0; i < K; ++i) outf << (unsigned)it->qual[i] << " ";
+    outf << "\n";
+  }
 }
 
 bool HammerTools::CorrectOneRead(const KMerData &data,
@@ -410,12 +410,10 @@ bool HammerTools::CorrectOneRead(const KMerData &data,
   ValidKMerGenerator<K> gen(seq.data(), qual.data(), read_size);
   while (gen.HasMore()) {
     size_t read_pos = gen.pos() - 1;
-    const KMerCount &kmer_data = data[gen.kmer()];
+    const KMerStat &kmer_data = data[gen.kmer()];
  
-    const PositionKMer &pkmer = kmer_data.first;
-    const KMerStat &stat = kmer_data.second;
     changedRead = changedRead ||
-                  internalCorrectReadProcedure(seq, data, pkmer, read_pos, stat, v,
+                  internalCorrectReadProcedure(seq, data, read_pos, kmer_data, v,
                                                left, right, isGood, NULL, false, correct_threshold, discard_singletons);
 
     gen.Next();

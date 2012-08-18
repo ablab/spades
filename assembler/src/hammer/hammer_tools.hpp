@@ -66,14 +66,7 @@ public:
 	static size_t IterativeExpansionStep(int expand_iter_no, int nthreads, KMerData &data);
 
 	/// print out the resulting set of k-mers
-	static void PrintKMerResult(std::ostream & outf, const vector<KMerCount> & kmers );
-
-	/// internal procedure
-	static bool internalCorrectReadProcedure(const std::string & seq,
-                                           const KMerData &data, const PositionKMer & kmer, size_t pos, const KMerStat & stat,
-                                           std::vector<std::vector<int> > & v, int & left, int & right, bool & isGood,
-                                           ofstream * ofs,
-                                           bool revcomp, bool correct_threshold, bool discard_singletons);
+	static void PrintKMerResult(std::ostream & outf, const vector<KMerStat> & kmers );
 
 	/// correct one read
 	static bool CorrectOneRead(const KMerData &data,

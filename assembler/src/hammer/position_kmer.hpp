@@ -124,10 +124,6 @@ class PositionKMer {
   friend void binary_read(Reader &is, PositionKMer &pos);
 };
 
-inline bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
-	return l.first < r.first;
-}
-
 template<class Writer>
 inline Writer& binary_write(Writer &os, const PositionKMer &pos) {
   os.write((char*)&pos.start_, sizeof(pos.start_));
@@ -138,27 +134,6 @@ inline Writer& binary_write(Writer &os, const PositionKMer &pos) {
 template<class Reader>
 inline void binary_read(Reader &is, PositionKMer &pos) {
   is.read((char*)&pos.start_, sizeof(pos.start_));
-}
-
-template<class Writer>
-inline Writer& binary_write(Writer &os, const KMerCount &k) {
-  return binary_write(binary_write(os, k.first), k.second);
-}
-
-template<class Reader>
-inline void binary_read(Reader &is, KMerCount &k) {
-  binary_read(is, k.first);
-  binary_read(is, k.second);
-}
-
-inline char getQual(const KMerCount & kmc, size_t i) {
-  return kmc.second.qual[i];
-}
-
-inline double getProb(const KMerCount &kmc, size_t i, bool log) {
-  uint8_t qual = getQual(kmc, i);
-
-  return (log ? Globals::quality_lprobs[qual] : Globals::quality_probs[qual]);
 }
 
 #endif

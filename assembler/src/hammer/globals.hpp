@@ -40,5 +40,11 @@ struct Globals {
   static void readBlob( const char * fname );
 };
 
+inline double getProb(const KMerStat &kmc, size_t i, bool log) {
+  uint8_t qual = getQual(kmc, i);
+
+  return (log ? Globals::quality_lprobs[qual] : Globals::quality_probs[qual]);
+}
+
 #endif //  HAMMER_GLOBALS_HPP_
 

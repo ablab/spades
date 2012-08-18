@@ -113,7 +113,7 @@ class KMerIndexBuilder {
 
 
 class KMerData {
-  typedef std::vector<KMerCount> KMerDataStorageType;
+  typedef std::vector<KMerStat> KMerDataStorageType;
 
  public:
   size_t size() const { return data_.size(); }
@@ -122,16 +122,16 @@ class KMerData {
     data_.clear();
     KMerDataStorageType().swap(data_);
   }
-  size_t push_back(const KMerCount &k) {
+  size_t push_back(const KMerStat &k) {
     data_.push_back(k);
 
     return data_.size() - 1;
   }
 
-  KMerCount& operator[](size_t idx) { return data_[idx]; }
-  const KMerCount& operator[](size_t idx) const { return data_[idx]; }
-  KMerCount& operator[](KMer s) { return operator[](index_.seq_idx(s)); }
-  const KMerCount& operator[](KMer s) const { return operator[](index_.seq_idx(s)); }
+  KMerStat& operator[](size_t idx) { return data_[idx]; }
+  const KMerStat& operator[](size_t idx) const { return data_[idx]; }
+  KMerStat& operator[](KMer s) { return operator[](index_.seq_idx(s)); }
+  const KMerStat& operator[](KMer s) const { return operator[](index_.seq_idx(s)); }
   size_t seq_idx(KMer s) const { return index_.seq_idx(s); }
 
  private:

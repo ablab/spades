@@ -34,27 +34,15 @@ private:
 	KMerData &data_;
 	int nthreads_;
 
-	/// @return total log-likelihood that x was made from center given x's quality values
-	double logLikelihoodKMer(const string & center, const KMerCount & x);
-	double logLikelihoodSingleton(const KMerCount & x);
-
-	/// @return Hamming distance between x and y with upper bound tau
-	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);
-	/// @return Hamming distance between x and y with upper bound tau
-	int hamdistKMer(const PositionKMer & x, const string & y, int tau = K);
-	/// @return Hamming distance between x and y with upper bound tau
-	int hamdistKMer(const string & x, const string & y, int tau = K);
-	/// @return Hamming distance between x and y with upper bound tau
-	int hamdistKMer(const hint_t & x, const hint_t & y, int tau = K);
 	/// @return consensus string for a block
-	std::string find_consensus(const std::vector<int> & block);
+	KMer find_consensus(const std::vector<int> & block);
 
 	/**
 	  * find consensus with mask
 	  * @param mask is a vector of integers of the same size as the block
 	  * @param maskVal is the integer that we use
 	  */
-	std::string find_consensus_with_mask(const std::vector<int> & block, const std::vector<int> & mask, int maskVal);
+	KMer find_consensus_with_mask(const std::vector<int> & block, const std::vector<int> & mask, int maskVal);
 	
 	/**
 	  * @return total log-likelihood of this particular clustering with real quality values
