@@ -604,7 +604,7 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
 
 		VERIFY(blocksInPlace.size() >= i_nontriv && curClasses.size() >= i_nontriv);
 
-		#pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_)
+#   pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_) schedule(dynamic)
 		for (size_t i=0; i < i_nontriv; ++i) {
 			blocksInPlace[i].clear();
 #if 0
