@@ -31,7 +31,7 @@ general_correct_from_memory	1
 count_do					1
 count_numfiles				16
 count_merge_nthreads		4
-count_split_buffer			100000
+count_split_buffer			1000000
 
 ; sort k-mers
 sort_do						1
@@ -44,7 +44,7 @@ subvectors_blocksize_quadratic_threshold	50
 hamming_do					1
 hamming_write_solid_kmers	0
 hamming_write_bad_kmers		0
-hamming_class_buffer		100000
+hamming_class_buffer		1000000
 
 ; bayesian subclustering
 bayes_do						1
@@ -72,7 +72,3 @@ correct_use_threshold		1
 correct_threshold			0.98
 correct_nthreads			4
 correct_readbuffer			100000
-
-
-
-
