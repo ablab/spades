@@ -127,7 +127,6 @@ struct KMerStat {
 
   void lock() {
     while (__sync_lock_test_and_set(&lock_data, 1) == 1)
-      while (lock_data)
         ;
   }
   void unlock() {
