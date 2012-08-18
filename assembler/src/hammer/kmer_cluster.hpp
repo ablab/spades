@@ -64,7 +64,7 @@ private:
 	  * @param newBlockNum current number of a new cluster; incremented inside
 	  * @return new value of newBlockNum
 	  */
-	void process_block_SIN(const std::vector<int> & block, std::vector< std::vector<int> > & vec);
+	size_t process_block_SIN(const std::vector<int> & block, std::vector< std::vector<int> > & vec);
 
 private:
   DECL_LOGGER("Hamming Subclustering");

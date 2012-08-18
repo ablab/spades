@@ -351,8 +351,9 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 	return curLikelihood;
 }
 
-void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector<int> > & vec) {
-
+size_t KMerClustering::process_block_SIN(const vector<int> & block, vector< vector<int> > & vec) {
+  size_t newkmers = 0;
+  
 	if ( cfg::get().bayes_debug_output ) {
 		#pragma omp critical
 		{
@@ -368,7 +369,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 
 	uint32_t origBlockSize = block.size();
-	if (origBlockSize == 0) return;
+	if (origBlockSize == 0) return 0;
 	
 	vector<double> multiCoef(origBlockSize,1000000);
 	vector<int> distance(origBlockSize, 0);
@@ -521,12 +522,15 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
           KMerStat kms(0 /* cnt */, newkmer, 1.0 /* total quality */, NULL /*quality */);
           kms.status = KMerStat::GoodIter;
           new_idx = data_.push_back(kms);
+          newkmers += 1;
         }
         v.insert(v.begin(), new_idx);
       }
     }
     vec.push_back(v);
   }
+
+  return newkmers;
 }
 
 void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad) {
@@ -543,9 +547,10 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
 	size_t cur_class_num = 0;
   std::vector< std::vector<int> > curClasses;
   std::vector<int> cur_class;
+  size_t newkmers = 0;
 
   std::vector< std::vector< std::vector<int> > > blocksInPlace(cfg::get().hamming_class_buffer);
-
+  
 	while (ifs.good()) {
 		curClasses.clear();
 #if 0
@@ -604,7 +609,7 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
 
 		VERIFY(blocksInPlace.size() >= i_nontriv && curClasses.size() >= i_nontriv);
 
-#   pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_) schedule(dynamic)
+#   pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers)
 		for (size_t i=0; i < i_nontriv; ++i) {
 			blocksInPlace[i].clear();
 #if 0
@@ -612,7 +617,7 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
 #else
       std::vector< std::vector<int> >().swap(blocksInPlace[i]);
 #endif
-      process_block_SIN(curClasses[i], blocksInPlace[i]);
+      newkmers += process_block_SIN(curClasses[i], blocksInPlace[i]);
 		}
 
 		for (size_t n=0; n < i_nontriv; ++n) {
@@ -684,5 +689,7 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
 			}
 		}
 	}
+
+  INFO("Total " << newkmers << " non-read kmers were generated.");
 }
 
