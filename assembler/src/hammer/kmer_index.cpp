@@ -18,6 +18,24 @@
 
 #include "globals.hpp"
 
+std::string KMerIndexBuilder::GetRawKMersFname(unsigned suffix) const {
+  // FIXME: This is ugly!
+  std::ostringstream tmp;
+  tmp.str("");
+  tmp << work_dir_ << "/" << "kmers.raw." << suffix;
+
+  return tmp.str();
+}
+
+std::string KMerIndexBuilder::GetUniqueKMersFname(unsigned suffix) const {
+  // FIXME: This is ugly!
+  std::ostringstream tmp;
+  tmp.str("");
+  tmp << work_dir_ << "/" << "kmers.unique." << suffix;
+
+  return tmp.str();
+}
+
 void KMerIndexBuilder::Split(size_t num_files) {
   unsigned count_num_threads = min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
   unsigned num_minimizers = 0;
@@ -31,8 +49,7 @@ void KMerIndexBuilder::Split(size_t num_files) {
 
   MMappedRecordWriter<KMer>* ostreams = new MMappedRecordWriter<KMer>[num_files];
   for (unsigned i = 0; i < num_files; ++i) {
-    std::string filename = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i);
-    ostreams[i].open(filename);
+    ostreams[i].open(GetRawKMersFname(i));
   }
 
   KMerIndex::hash_function hash_function;
@@ -171,10 +188,7 @@ size_t KMerIndexBuilder::BuildIndex(KMerIndex &index, size_t num_buckets) {
   index.bucket_starts_.push_back(sz);
   for (unsigned iFile = 0; iFile < num_buckets; ++iFile) {
     INFO("Processing file " << iFile);
-    std::string ifname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile);
-    std::string ofname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.unique", iFile);
-
-    sz += MergeKMers(ifname, ofname);
+    sz += MergeKMers(GetRawKMersFname(iFile), GetUniqueKMersFname(iFile));
     index.bucket_starts_.push_back(sz);
   }
   INFO("K-mer counting done. There are " << sz << " kmers in total. ");
@@ -190,8 +204,7 @@ size_t KMerIndexBuilder::BuildIndex(KMerIndex &index, size_t num_buckets) {
 # pragma omp parallel for shared(index)
   for (unsigned iFile = 0; iFile < num_buckets; ++iFile) {
     KMerIndex::KMerDataIndex &data_index = index.index_[iFile];
-    std::string ifname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.unique", iFile);
-    MMappedRecordReader<KMer> ins(ifname, /* unlink */ true, -1ULL);
+    MMappedRecordReader<KMer> ins(GetUniqueKMersFname(iFile), /* unlink */ true, -1ULL);
     if (!data_index.Reset(ins.begin(), ins.end(), ins.end() - ins.begin())) {
       INFO("Something went really wrong (read = this should not happen). Try to restart and see if the problem will be fixed.");
       exit(-1);
@@ -205,7 +218,7 @@ size_t KMerIndexBuilder::BuildIndex(KMerIndex &index, size_t num_buckets) {
 
 void KMerCounter::FillKMerData(KMerData &data) {
   // Build the index
-  size_t sz = KMerIndexBuilder().BuildIndex(data.index_, num_files_);
+  size_t sz = KMerIndexBuilder(cfg::get().input_working_dir).BuildIndex(data.index_, num_files_);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
@@ -256,7 +269,6 @@ void KMerCounter::FillKMerData(KMerData &data) {
 
     if (data[i].second.count == 1)
       singletons += 1;
-
   }
 
   INFO("Merge done. There are " << data.size() << " kmers in total. "

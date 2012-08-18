@@ -96,12 +96,17 @@ class KMerIndex {
 };
 
 class KMerIndexBuilder {
+  std::string work_dir_;
  public:
+  KMerIndexBuilder(const std::string &workdir)
+      : work_dir_(workdir) {}
   size_t BuildIndex(KMerIndex &out, size_t num_buckets);
 
  private:
   void Split(size_t num_files);
   size_t MergeKMers(const std::string &ifname, const std::string &ofname);
+  std::string GetRawKMersFname(unsigned suffix) const;
+  std::string GetUniqueKMersFname(unsigned suffix) const;
 
   DECL_LOGGER("K-mer Index Building");
 };
