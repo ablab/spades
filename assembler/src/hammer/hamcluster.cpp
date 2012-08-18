@@ -96,13 +96,15 @@ static void processBlockQuadratic(unionFindClass &uf,
                                   unsigned tau) {
   size_t blockSize = block.size();
   for (size_t i = 0; i < blockSize; ++i) {
-    hint_t kmerx = data[block[i]].first.start();
-    uf.find_set(block[i]);
+    size_t x = block[i];
+    hint_t kmerx = data[x].first.start();
     for (uint32_t j = i + 1; j < blockSize; j++) {
-      hint_t kmery = data[block[j]].first.start();
-      if (hamdistKMer(kmerx, kmery, tau) <= tau &&
-          canMerge(uf, block[i], block[j])) {
-        uf.unionn(block[i], block[j]);
+      size_t y = block[j];
+      hint_t kmery = data[y].first.start();
+      if (uf.find_set(x) != uf.find_set(y) &&
+          canMerge(uf, x, y) &&
+          hamdistKMer(kmerx, kmery, tau) <= tau) {
+        uf.unionn(x, y);
       }
     }
   }

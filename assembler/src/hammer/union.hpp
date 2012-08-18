@@ -33,7 +33,11 @@ public:
   unionFindClass(size_t size) : data(size, -1), rank(size, 0), sizes(size, 0) {}
 
   void unionn(int x, int y) {
-    link(find_set(x),find_set(y));
+    x = find_set(x);
+    y = find_set(y);
+
+    if (x != y)
+      link(x, y);
   }
 
   int find_set(int x) const {
