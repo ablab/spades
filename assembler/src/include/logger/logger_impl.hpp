@@ -13,6 +13,14 @@
 #include <sys/resource.h>
 #endif
 
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+
+#include <string>
+#include <map>
+#include <fstream>
+#include <vector>
+
 namespace logging
 {
 
@@ -42,15 +50,15 @@ inline properties::properties(level default_level)
 {
 }
 
-inline properties::properties(string filename, level default_level)
+inline properties::properties(std::string filename, level default_level)
     : def_level(default_level)
 {
     if (filename.empty())
         return;
 
-    ifstream in(filename);
+    std::ifstream in(filename);
 
-    map<string, level> remap =
+    std::map<std::string, level> remap =
     {
         {"TRACE", L_TRACE},
         {"DEBUG", L_DEBUG},
@@ -66,13 +74,13 @@ inline properties::properties(string filename, level default_level)
         char buf [0x400] = {};
         in.getline(buf, sizeof buf);
 
-        string str(buf);
+        std::string str(buf);
         trim(str);
 
         if (str.empty() || boost::starts_with(str, "#"))
             continue;
 
-        vector<string> entry;
+        std::vector<std::string> entry;
         split(entry, str, is_any_of("="));
 
         if(entry.size() != 2)
@@ -134,7 +142,7 @@ inline std::shared_ptr<logger> &__logger() {
   return l;
 }
 
-inline logger *create_logger(string filename, level default_level) {
+inline logger *create_logger(std::string filename, level default_level) {
   return new logger(properties(filename, default_level));
 }
 

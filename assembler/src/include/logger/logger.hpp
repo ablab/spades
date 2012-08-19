@@ -23,9 +23,9 @@ enum level
 	L_ERROR
 };
 
-inline string level_name(level l)
+inline std::string level_name(level l)
 {
-    static string names [] =
+  static std::string names [] =
     {
         "TRACE",
         "DEBUG",
@@ -45,7 +45,7 @@ struct writer
   virtual ~writer(){}
 };
 
-typedef boost::shared_ptr<writer> writer_ptr;
+typedef std::shared_ptr<writer> writer_ptr;
 
 /////////////////////////////////////////////////////
 struct properties
@@ -64,10 +64,10 @@ struct properties
 	 *
 	 */
 
-	properties(string filename = "", level default_level = L_INFO);
+	properties(std::string filename = "", level default_level = L_INFO);
 	properties(level default_level = L_INFO);
 
-	std::unordered_map<string, level>   levels;
+	std::unordered_map<std::string, level>   levels;
 	level								def_level;
 };
 
@@ -90,7 +90,7 @@ private:
 };
 
 inline std::shared_ptr<logger>& __logger();
-inline logger* create_logger(string filename = "", level default_level = L_INFO);
+inline logger* create_logger(std::string filename = "", level default_level = L_INFO);
 void attach_logger(logger *lg);
 void detach_logger();
 

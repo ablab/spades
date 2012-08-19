@@ -7,6 +7,9 @@
 #pragma once
 #include <sys/time.h>
 
+#include <boost/format.hpp>
+#include <string>
+
 struct perf_counter
 {
     perf_counter()
@@ -37,7 +40,7 @@ private:
 };
 
 
-inline string human_readable_time(double time_in_sec)
+inline std::string human_readable_time(double time_in_sec)
 {
     assert(time_in_sec > 0);
 
@@ -47,17 +50,17 @@ inline string human_readable_time(double time_in_sec)
     size_t mins  = (sec / 60) % 60;
     sec         %= 60;
 
-    return str(format("%3d:%02d:%02d.%03d") % hours % mins % sec % msec);
+    return str(boost::format("%3d:%02d:%02d.%03d") % hours % mins % sec % msec);
 }
 
-inline string human_readable_memory(unsigned max_rss)
+inline std::string human_readable_memory(unsigned max_rss)
 {
 	assert(max_rss > 0);
 
 	if (max_rss < 1024 * 1024) {
-		return str(format("%4dM") % (max_rss / 1024));
+		return str(boost::format("%4dM") % (max_rss / 1024));
     } else {
-    	return str(format("%4dG") % (max_rss / (1024 * 1024)));
+    return str(boost::format("%4dG") % (max_rss / (1024 * 1024)));
 	}
 }
 
@@ -113,9 +116,9 @@ struct avg_perf_counter
     }
 
 private:
-    const string name_;
-    perf_counter p_cnt_;
-    double whole_time_;
-    size_t counter_;
+  const std::string name_;
+  perf_counter p_cnt_;
+  double whole_time_;
+  size_t counter_;
 
 };
