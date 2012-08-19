@@ -8,12 +8,12 @@
 #define _HAMMER_KMERINDEX_HPP_
 
 #include "kmer_stat.hpp"
-#include "position_kmer.hpp"
 #include "mph_index/mph_index.h"
+#include "openmp_wrapper.h"
+
+#include "logger/logger.hpp"
 
 #include <vector>
-#include <unordered_map>
-
 #include <cmath>
 
 class KMerIndex {

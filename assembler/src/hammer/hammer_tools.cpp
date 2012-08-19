@@ -23,7 +23,6 @@
 #include "read/ireadstream.hpp"
 #include "mathfunctions.hpp"
 #include "valid_kmer_generator.hpp"
-#include "position_kmer.hpp"
 #include "globals.hpp"
 #include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"
@@ -185,15 +184,53 @@ void HammerTools::ReadAllFilesIntoBlob() {
   INFO("All files were read. Used " << curpos << " bytes out of " << Globals::blob_max_size << " allocated.");
 }
 
+static bool compareSubKMersGreaterSimple( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
+  return (strncmp( Globals::blob + kmer1.first, Globals::blob + kmer2.first, K ) > 0);
+}
+
+static bool compareSubKMersLessSimple( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
+  return (strncmp( Globals::blob + kmer1.first, Globals::blob + kmer2.first, K ) < 0);
+}
+
+static bool compareSubKMersGFirst( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
+  for (uint32_t i = 0; i < K; ++i) {
+    if (Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ]) {
+      switch ( Globals::blob[ kmer1.first + i ] ) {
+				case 'G': return true;
+				case 'A': return ( Globals::blob [ kmer2.first + i ] != 'G' );
+				case 'T': return ( Globals::blob [ kmer2.first + i ] == 'C' );
+				case 'C': return false;
+				default: return false;
+      }
+    }
+  }
+  return false;
+}
+
+static bool compareSubKMersCFirst( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
+  for (uint32_t i = 0; i < K; ++i) {
+    if (Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ]) {
+      switch ( Globals::blob[ kmer1.first + i ]) {
+				case 'C': return true;
+				case 'T': return (Globals::blob [kmer2.first + i] != 'C');
+				case 'A': return (Globals::blob [kmer2.first + i] == 'G');
+				case 'G': return false;
+				default: return false;
+      }
+    }
+  }
+  return false;
+}
+
 void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers, vector< hint_t > & mmers, int which_first ) {
 	if (which_first == 0) {
-		sort(v.begin(), v.end(), PositionKMer::compareSubKMersGreaterSimple);
+		sort(v.begin(), v.end(), compareSubKMersGreaterSimple);
 	} else if (which_first == 1) {
-		sort(v.begin(), v.end(), PositionKMer::compareSubKMersLessSimple);
+		sort(v.begin(), v.end(), compareSubKMersLessSimple);
 	} else if (which_first == 2) {
-		sort(v.begin(), v.end(), PositionKMer::compareSubKMersGFirst);
+		sort(v.begin(), v.end(), compareSubKMersGFirst);
 	} else {
-		sort(v.begin(), v.end(), PositionKMer::compareSubKMersCFirst);
+		sort(v.begin(), v.end(), compareSubKMersCFirst);
 	}
 	vector< pair<hint_t, pair< double, size_t > > >::iterator it = v.begin();
 	vector< int > kmers_in_mmer(mmers.size(), 0); // count kmers in mmers

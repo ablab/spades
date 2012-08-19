@@ -16,7 +16,6 @@ add_executable(hammer
    kmer_index.cpp
    position_read.cpp
    globals.cpp
-   kmer_stat.cpp
    config_struct_hammer.cpp
    mph_index/mph_index.cc
    mph_index/MurmurHash3.cpp

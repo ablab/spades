@@ -19,13 +19,11 @@
 #include <stdexcept>
 #include <iomanip>
 #include <fstream>
-#include <zlib.h>
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "sequence/seq.hpp"
 #include "globals.hpp"
 #include "kmer_stat.hpp"
-#include "position_kmer.hpp"
 #include "mmapped_reader.hpp"
 
 using namespace std;

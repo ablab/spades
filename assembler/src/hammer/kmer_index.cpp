@@ -5,11 +5,13 @@
 //****************************************************************************
 
 #include "kmer_index.hpp"
+
+#include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"
-#include "valid_kmer_generator.hpp"
 #include "mmapped_reader.hpp"
 #include "mmapped_writer.hpp"
 #include "pointer_iterator.hpp"
+#include "valid_kmer_generator.hpp"
 
 #include <algorithm>
 #ifdef USE_GLIBCXX_PARALLEL

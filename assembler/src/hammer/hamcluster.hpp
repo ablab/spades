@@ -10,8 +10,8 @@
 #include "kmer_stat.hpp"
 #include "kmer_index.hpp"
 #include "mmapped_reader.hpp"
-#include "position_kmer.hpp"
 
+#include "logger/logger.hpp"
 #include "sequence/seq.hpp"
 
 #include <iostream>

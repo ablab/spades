@@ -29,7 +29,7 @@
 #include "read/ireadstream.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"
-#include "position_kmer.hpp"
+#include "position_read.hpp"
 #include "globals.hpp"
 #include "kmer_index.hpp"
 #include "concurrent_dsu.hpp"

@@ -5,7 +5,6 @@
 //****************************************************************************
 
 #include "standard.hpp"
-#include "position_kmer.hpp"
 #include "position_read.hpp"
 
 char PositionRead::at(size_t pos) const {

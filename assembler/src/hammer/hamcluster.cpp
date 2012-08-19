@@ -6,9 +6,10 @@
 
 #include "hamcluster.hpp"
 
+#include "concurrent_dsu.hpp"
+#include "config_struct_hammer.hpp"
 #include "globals.hpp"
 #include "mmapped_reader.hpp"
-#include "concurrent_dsu.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -53,7 +54,7 @@ std::pair<size_t, size_t> SubKMerSplitter::split() {
 
   ofs.close();
 
-  return make_pair(icnt, ocnt);
+  return std::make_pair(icnt, ocnt);
 }
 
 #if 0
