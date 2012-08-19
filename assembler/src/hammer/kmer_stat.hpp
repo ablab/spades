@@ -157,6 +157,14 @@ struct KMerStat {
   KMer kmer() const { return kmer_; }
 };
 
+inline
+std::ostream& operator<<(std::ostream &os, const KMerStat &kms) {
+  os << kms.kmer().str() << '(' << kms.count << ", " << (1-kms.totalQual) << ')';
+
+  return os;
+}
+
+
 template<class Writer>
 inline Writer& binary_write(Writer &os, const QualBitSet &qbs) {
   os.write((char*)&qbs.q_[0], sizeof(qbs.q_));

@@ -484,7 +484,7 @@ size_t KMerClustering::process_block_SIN(const vector<int> & block, vector< vect
 			cout << "\nAfter the check we got centers: \n";
 			for (size_t k=0; k<bestCenters.size(); ++k) {
 				cout << "  " << bestCenters[k].first.str() << " " << bestCenters[k].second << " ";
-				if ( centersInCluster[k] >= 0 ) cout << block[centersInCluster[k]];
+				if (centersInCluster[k] >= 0) cout << block[centersInCluster[k]];
 				cout << "\n";
 			}
 			cout << endl;
@@ -540,30 +540,30 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
   std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
   MMappedReader ifs(fname, /* unlink */ true);
 
-	vector< vector< vector<int> > > blocks(nthreads_);
+  vector< vector< vector<int> > > blocks(nthreads_);
 
-	string buf;
+  string buf;
 
-	size_t cur_class_num = 0;
+  size_t cur_class_num = 0;
   std::vector< std::vector<int> > curClasses;
   std::vector<int> cur_class;
   size_t newkmers = 0;
 
   std::vector< std::vector< std::vector<int> > > blocksInPlace(cfg::get().hamming_class_buffer);
-  
-	while (ifs.good()) {
-		curClasses.clear();
+
+  while (ifs.good()) {
+    curClasses.clear();
 #if 0
     curClasses.shrink_to_fit();
 #else
     std::vector<std::vector<int> >().swap(curClasses);
 #endif
 
-		size_t i_nontriv = 0;
-		size_t cur_total_size = 0;
-		size_t orig_class_num = cur_class_num;
-		while (cur_total_size < (size_t)cfg::get().hamming_class_buffer && ifs.good()) {
-			cur_class.clear();
+    size_t i_nontriv = 0;
+    size_t cur_total_size = 0;
+    size_t orig_class_num = cur_class_num;
+    while (cur_total_size < (size_t)cfg::get().hamming_class_buffer && ifs.good()) {
+      cur_class.clear();
 #if 0
       cur_class.shrink_to_fit();
 #else
@@ -574,121 +574,106 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
       ifs.read(&sizeClass, sizeof(sizeClass));
       cur_class.resize(sizeClass);
       ifs.read(&cur_class[0], sizeClass * sizeof(cur_class[0]));
-			++cur_class_num;
+      ++cur_class_num;
 
-			// processing singletons immediately
-			if (cur_class.size() == 1) {
-				if ((1-data_[cur_class[0]].totalQual) > cfg::get().bayes_singleton_threshold) {
-					data_[cur_class[0]].status = KMerStat::GoodIter;
-					if (std::ofstream *fs = ofs.get()) {
-						(*fs) << data_[cur_class[0]].kmer().str() << "\n>" << cur_class[0]
-							<< " good singleton " << "  ind=" << cur_class[0]
-							<< "  cnt=" << data_[cur_class[0]].count
-							<< "  tql=" << (1-data_[cur_class[0]].totalQual) << "\n";
-					}
-				} else {
-					if (cfg::get().correct_use_threshold && (1-data_[cur_class[0]].totalQual) > cfg::get().correct_threshold)
-						data_[cur_class[0]].status = KMerStat::GoodIterBad;
-					else
-						data_[cur_class[0]].status = KMerStat::Bad;
-					if (std::ofstream *fs = ofs_bad.get()) {
-						(*fs) << data_[cur_class[0]].kmer().str() << "\n>" << cur_class[0]
-							<< " bad singleton "
-							<< "  ind=" << cur_class[0]
-							<< "  cnt=" << data_[cur_class[0]].count
-							<< "  tql=" << (1-data_[cur_class[0]].totalQual) << "\n";
-					}
-				}
-			} else {
-				curClasses.push_back(cur_class);
-				++i_nontriv;
-				cur_total_size += cur_class.size();
-			}
-		}
-		INFO("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " in " << nthreads_ << " threads.");
+      // processing singletons immediately
+      if (cur_class.size() == 1) {
+        size_t idx = cur_class[0];
+        KMerStat &singl = data_[idx];
+        if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
+          singl.status = KMerStat::GoodIter;
+          if (std::ofstream *fs = ofs.get())
+            (*fs) << " good singleton: " << idx << "\n  " << singl << '\n';
+        } else {
+          if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
+            singl.status = KMerStat::GoodIterBad;
+          else
+            singl.status = KMerStat::Bad;
+          if (std::ofstream *fs = ofs_bad.get())
+            (*fs) << " bad singleton: " << idx << "\n  " << singl << '\n';
+        }
+      } else {
+        curClasses.push_back(cur_class);
+        ++i_nontriv;
+        cur_total_size += cur_class.size();
+      }
+    }
+    INFO("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " in " << nthreads_ << " threads.");
 
-		VERIFY(blocksInPlace.size() >= i_nontriv && curClasses.size() >= i_nontriv);
+    VERIFY(blocksInPlace.size() >= i_nontriv && curClasses.size() >= i_nontriv);
 
 #   pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers)
-		for (size_t i=0; i < i_nontriv; ++i) {
-			blocksInPlace[i].clear();
+    for (size_t i=0; i < i_nontriv; ++i) {
+      blocksInPlace[i].clear();
 #if 0
       blocksInPlace[i].shrink_to_fit();
 #else
       std::vector< std::vector<int> >().swap(blocksInPlace[i]);
 #endif
       newkmers += process_block_SIN(curClasses[i], blocksInPlace[i]);
-		}
+    }
 
-		for (size_t n=0; n < i_nontriv; ++n) {
-			for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
-				if (blocksInPlace[n][m].size() == 0) continue;
-				if (blocksInPlace[n][m].size() == 1) {
-					if ( (1-data_[blocksInPlace[n][m][0]].totalQual) > cfg::get().bayes_singleton_threshold) {
-						data_[blocksInPlace[n][m][0]].status = KMerStat::GoodIter;
-						if (std::ofstream *fs = ofs.get()) {
-							(*fs) << data_[blocksInPlace[n][m][0]].kmer().str() << "\n>" << blocksInPlace[n][m][0]
-                    << " good singleton " << "  ind=" << blocksInPlace[n][m][0]
-                    << "  cnt=" << data_[blocksInPlace[n][m][0]].count
-                    << "  tql=" << (1-data_[blocksInPlace[n][m][0]].totalQual) << "\n";
-						}
-					} else {
-						if (cfg::get().correct_use_threshold && (1-data_[blocksInPlace[n][m][0]].totalQual) > cfg::get().correct_threshold)
-							data_[blocksInPlace[n][m][0]].status = KMerStat::GoodIterBad;
-						else
-							data_[blocksInPlace[n][m][0]].status = KMerStat::Bad;
-						if (std::ofstream *fs = ofs_bad.get()) {
-							(*fs) << data_[blocksInPlace[n][m][0]].kmer().str() << "\n>" << blocksInPlace[n][m][0]
-                    << " bad singleton " << "  ind=" << blocksInPlace[n][m][0]
-                    << "  cnt=" << data_[blocksInPlace[n][m][0]].count
-                    << "  tql=" << (1-data_[blocksInPlace[n][m][0]].totalQual) << "\n";
-						}
-					}
-				} else {
-					// we've got a nontrivial cluster; computing its overall quality
-					double cluster_quality = 1;
-					for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-						cluster_quality *= data_[blocksInPlace[n][m][j]].totalQual;
-					}
-					cluster_quality = 1-cluster_quality;
+    for (size_t n = 0; n < i_nontriv; ++n) {
+      for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
+        if (blocksInPlace[n][m].size() == 0)
+          continue;
 
-					// in regular hammer mode, all nonsingletons are good
-					if (cfg::get().bayes_hammer_mode || cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
-						data_[blocksInPlace[n][m][0]].status = KMerStat::GoodIter;
-						if (std::ofstream *fs = ofs.get()) {
-							(*fs) << data_[blocksInPlace[n][m][0]].kmer().str() << "\n>" << blocksInPlace[n][m][0]
-                    << " center clust=" << cluster_quality
-                    << " ind=" << blocksInPlace[n][m][0]
-                    << " cnt=" << data_[blocksInPlace[n][m][0]].count
-                    << " tql=" << (1-data_[blocksInPlace[n][m][0]].totalQual) << "\n";
-						}
-					} else {
-						if (cfg::get().correct_use_threshold && (1-data_[blocksInPlace[n][m][0]].totalQual) > cfg::get().correct_threshold)
-							data_[blocksInPlace[n][m][0]].status = KMerStat::GoodIterBad;
-						else
-							data_[blocksInPlace[n][m][0]].status = KMerStat::Bad;
-						if (std::ofstream *fs = ofs_bad.get()) {
-							(*fs) << data_[blocksInPlace[n][m][0]].kmer().str() << "\n>" << blocksInPlace[n][m][0]
-                    << " center of bad cluster clust=" << cluster_quality
-                    << " ind=" << blocksInPlace[n][m][0]
-                    << " cnt=" << data_[blocksInPlace[n][m][0]].count
-                    << " tql=" << (1-data_[blocksInPlace[n][m][0]].totalQual) << "\n";
-						}
-					}
-					for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-						data_[blocksInPlace[n][m][j]].set_change(blocksInPlace[n][m][0]);
-						if (std::ofstream *fs = ofs_bad.get()) {
-							(*fs) << data_[blocksInPlace[n][m][j]].kmer().str() << "\n>" << blocksInPlace[n][m][j]
-                    << " part of cluster " << blocksInPlace[n][m][0] << " clust=" << cluster_quality
-                    << " ind=" << blocksInPlace[n][m][j]
-                    << " cnt=" << data_[blocksInPlace[n][m][j]].count
-                    << " tql=" << (1-data_[blocksInPlace[n][m][j]].totalQual) << "\n";
-						}
-					}
-				}
-			}
-		}
-	}
+        if (blocksInPlace[n][m].size() == 1) {
+          size_t idx = blocksInPlace[n][m][0];
+          KMerStat &singl = data_[idx];
+          if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
+            singl.status = KMerStat::GoodIter;
+            if (std::ofstream *fs = ofs.get())
+              (*fs) << " good cluster singleton: " << idx << "\n  " << singl << '\n';
+          } else {
+            if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
+              singl.status = KMerStat::GoodIterBad;
+            else
+              singl.status = KMerStat::Bad;
+            if (std::ofstream *fs = ofs_bad.get())
+              (*fs) << " bad cluster singleton: " << idx << "\n  " << singl << '\n';
+          }
+        } else {
+          size_t cidx = blocksInPlace[n][m][0];
+          KMerStat &center = data_[cidx];
+
+          // we've got a nontrivial cluster; computing its overall quality
+          double cluster_quality = 1;
+          for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
+            cluster_quality *= data_[blocksInPlace[n][m][j]].totalQual;
+          }
+          cluster_quality = 1-cluster_quality;
+
+          // in regular hammer mode, all nonsingletons are good
+          if (cfg::get().bayes_hammer_mode ||
+              cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
+            center.status = KMerStat::GoodIter;
+            if (std::ofstream *fs = ofs.get())
+              (*fs) << " center of good cluster (" << blocksInPlace[n][m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
+                    << center << '\n';
+          } else {
+            if (cfg::get().correct_use_threshold && (1-center.totalQual) > cfg::get().correct_threshold)
+              center.status = KMerStat::GoodIterBad;
+            else
+              center.status = KMerStat::Bad;
+            if (std::ofstream *fs = ofs_bad.get())
+              (*fs) << " center of bad cluster (" << blocksInPlace[n][m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
+                    << center << '\n';
+          }
+
+          for (uint32_t j = 1; j < blocksInPlace[n][m].size(); ++j) {
+            size_t eidx = blocksInPlace[n][m][j];
+            KMerStat &kms = data_[eidx];
+
+            kms.set_change(cidx);
+            if (std::ofstream *fs = ofs_bad.get())
+              (*fs) << " part of cluster (" << blocksInPlace[n][m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
+                    << kms << '\n';
+          }
+        }
+      }
+    }
+  }
 
   INFO("Total " << newkmers << " non-read kmers were generated.");
 }
