@@ -17,7 +17,7 @@
 #include <iostream>
 #include <vector>
 
-class unionFindClass;
+class ConcurrentDSU;
 
 struct SubKMer {
   size_t idx;
@@ -203,7 +203,7 @@ class KMerHamClusterer {
   KMerHamClusterer(unsigned tau)
       : tau_(tau) {}
 
-  void cluster(const std::string &prefix, const KMerData &data, unionFindClass &uf);
+  void cluster(const std::string &prefix, const KMerData &data, ConcurrentDSU &uf);
  private:
   DECL_LOGGER("Hamming Clustering");
 };

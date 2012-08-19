@@ -32,6 +32,7 @@
 #include "position_kmer.hpp"
 #include "globals.hpp"
 #include "kmer_index.hpp"
+#include "concurrent_dsu.hpp"
 
 #include "memory_limit.hpp"
 #include "logger/log_writers.hpp"
@@ -194,14 +195,14 @@ int main(int argc, char * argv[]) {
 
       // cluster and subcluster the Hamming graph
       if (cfg::get().hamming_do || do_everything) {
-        std::vector<std::vector<int> > classes;
+        std::vector<std::vector<unsigned> > classes;
 
-        unionFindClass uf(Globals::kmer_data->size() + 1);
+        ConcurrentDSU uf(Globals::kmer_data->size());
         KMerHamClusterer clusterer(cfg::get().general_tau);
         INFO("Clustering Hamming graph.");
         clusterer.cluster(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
                           *Globals::kmer_data, uf);
-        uf.get_classes(classes);
+        uf.get_sets(classes);
         size_t num_classes = classes.size();
 
 #if 0

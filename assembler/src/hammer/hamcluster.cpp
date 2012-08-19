@@ -8,7 +8,7 @@
 
 #include "globals.hpp"
 #include "mmapped_reader.hpp"
-#include "union.hpp"
+#include "concurrent_dsu.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -74,13 +74,13 @@ static bool canMerge(const unionFindClass &uf, int x, int y) {
   return true;
 }
 #else
-static bool canMerge(const unionFindClass &uf, int x, int y) {
+static bool canMerge(const ConcurrentDSU &uf, int x, int y) {
   return (uf.set_size(x) + uf.set_size(y)) < 10000;
 }
 #endif
 
 
-static void processBlockQuadratic(unionFindClass &uf,
+static void processBlockQuadratic(ConcurrentDSU  &uf,
                                   const std::vector<size_t> &block,
                                   const KMerData &data,
                                   unsigned tau) {
@@ -94,7 +94,7 @@ static void processBlockQuadratic(unionFindClass &uf,
       if (uf.find_set(x) != uf.find_set(y) &&
           canMerge(uf, x, y) &&
           hamdistKMer(kmerx, kmery, tau) <= tau) {
-        uf.unionn(x, y);
+        uf.unite(x, y);
       }
     }
   }
@@ -102,7 +102,7 @@ static void processBlockQuadratic(unionFindClass &uf,
 
 void KMerHamClusterer::cluster(const std::string &prefix,
                                const KMerData &data,
-                               unionFindClass &uf) {
+                               ConcurrentDSU &uf) {
   // First pass - split & sort the k-mers
   std::ostringstream tmp;
   tmp << prefix << ".first";
