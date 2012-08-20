@@ -71,6 +71,11 @@ class MPHIndex {
   template <class SeededHashFcn, class Key>  // must agree with Reset
   uint32_t minimal_perfect_hash(const Key& x) const;
 
+  template<class Writer>
+  void serialize(Writer &os) const;
+  template<class Reader>
+  void deserialize(Reader &is);
+  
  private:
   template <class SeededHashFcn, class ForwardIterator>
   bool Mapping(ForwardIterator begin, ForwardIterator end,
@@ -273,6 +278,83 @@ struct FlexibleMPHIndex<false, false, Key, HashFcn>
 // From a trade-off perspective this case does not make much sense.
 // template <class Key, class HashFcn>
 // class FlexibleMPHIndex<true, true, Key, HashFcn>
+
+#define WRITE_POD(var, os)                      \
+  do {                                          \
+    (os).write((char*)&(var), sizeof(var));     \
+  } while(0)
+
+#define WRITE_CLASS(var, os) \
+  do {                       \
+    (var).serialize(os);     \
+  } while(0)
+
+#define WRITE_VECTOR(var, os)                                         \
+  do {                                                                \
+    const __typeof(var) & __vect = (var);                             \
+    size_t __sz = __vect.size();                                      \
+    WRITE_POD(__sz, os);                                              \
+    (os).write((char*)&__vect[0], __vect.size() * sizeof(__vect[0])); \
+  } while(0)
+
+#define READ_POD(var, is)                       \
+  do {                                          \
+    (is).read((char*)&(var), sizeof(var));      \
+  } while(0)
+
+#define READ_CLASS(var, is)    \
+  do {                         \
+    (var).deserialize(is);     \
+  } while(0)
+
+#define READ_VECTOR(var, is)                                          \
+  do {                                                                \
+    __typeof(var) & __vect = (var);                                   \
+    size_t __sz = 0;                                                  \
+    READ_POD(__sz, is);                                               \
+    __vect.resize(__sz);                                              \
+    (is).read((char*)&__vect[0], __sz * sizeof(__vect[0]));           \
+  } while(0)
+
+template<class Writer>
+void MPHIndex::serialize(Writer &os) const {
+  WRITE_POD(c_, os);
+  WRITE_POD(b_, os);
+  WRITE_POD(m_, os);
+  WRITE_POD(n_, os);
+  WRITE_POD(k_, os);
+  WRITE_POD(square_, os);
+  WRITE_POD(r_, os);
+  WRITE_POD(nest_displacement_, os);
+  WRITE_POD(threebit_mod3, os);
+  WRITE_POD(hash_seed_, os);
+  WRITE_VECTOR(ranktable_, os);
+  WRITE_CLASS(g_, os);
+}
+
+template<class Reader>
+void MPHIndex::deserialize(Reader &is) {
+  READ_POD(c_, is);
+  READ_POD(b_, is);
+  READ_POD(m_, is);
+  READ_POD(n_, is);
+  READ_POD(k_, is);
+  READ_POD(square_, is);
+  READ_POD(r_, is);
+  READ_POD(nest_displacement_, is);
+  READ_POD(threebit_mod3, is);
+  READ_POD(hash_seed_, is);
+  READ_VECTOR(ranktable_, is);
+  READ_CLASS(g_, is);
+}
+
+#undef WRITE_POD
+#undef WRITE_CLASS
+#undef WRITE_VECTOR
+#undef READ_POD
+#undef READ_CLASS
+#undef READ_VECTOR
+
 
 }  // namespace cxxmph
 

@@ -55,6 +55,32 @@ class KMerIndex {
     return bucket_starts_[bucket] + index_[bucket].index(s);
   }
 
+  template<class Writer>
+  void serialize(Writer &os) const {
+    os.write((char*)&num_buckets_, sizeof(num_buckets_));
+    for (size_t i = 0; i < num_buckets_; ++i)
+      index_[i].serialize(os);
+    os.write((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
+  }
+
+  template<class Reader>
+  void deserialize(Reader &is) {
+    clear();
+
+    is.read((char*)&num_buckets_, sizeof(num_buckets_));
+
+    index_ = new KMerDataIndex[num_buckets_];
+    for (size_t i = 0; i < num_buckets_; ++i)
+      index_[i].deserialize(is);
+
+    bucket_starts_.resize(num_buckets_);
+    is.read((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
+
+    bucket_locks_ = new omp_lock_t[num_buckets_];
+    for (size_t i = 0; i < num_buckets_; ++i)
+      omp_init_lock(bucket_locks_ + i);
+  }
+
  private:
   KMerDataIndex *index_;
 
@@ -133,6 +159,23 @@ class KMerData {
   KMerStat& operator[](KMer s) { return operator[](index_.seq_idx(s)); }
   const KMerStat& operator[](KMer s) const { return operator[](index_.seq_idx(s)); }
   size_t seq_idx(KMer s) const { return index_.seq_idx(s); }
+
+  template <class Writer>
+  void binary_write(Writer &os) {
+    size_t sz = data_.size();
+    os.write((char*)&sz, sizeof(sz));
+    os.write((char*)&data_[0], sz*sizeof(data_[0]));
+    index_.serialize(os);
+  }
+
+  template <class Reader>
+  void binary_read(Reader &is) {
+    size_t sz = 0;
+    is.read((char*)&sz, sizeof(sz));
+    data_.resize(sz);
+    is.read((char*)&data_[0], sz*sizeof(data_[0]));
+    index_.deserialize(is);
+  }
 
  private:
   KMerDataStorageType data_;

@@ -44,6 +44,12 @@ class dynamic_2bitset {
 
   size_t size() const { return size_; }
   const std::vector<uint8_t>& data() const { return data_; }
+
+  template<class Writer>
+  void serialize(Writer &os) const;
+  template<class Reader>
+  void deserialize(Reader &is);
+
  private:
   size_t size_;
   bool fill_;
@@ -51,6 +57,26 @@ class dynamic_2bitset {
   const uint8_t ones() { return std::numeric_limits<uint8_t>::max(); }
   static const uint8_t vmask[];
 };
+
+template<class Writer>
+void dynamic_2bitset::serialize(Writer &os) const {
+  os.write((char*)&size_, sizeof(size_));
+  os.write((char*)&fill_, sizeof(fill_));
+  size_t sz = data_.size();
+  os.write((char*)&sz, sizeof(sz));
+  os.write((char*)&data_[0], sizeof(data_[0])*sz);
+}
+
+template<class Reader>
+void dynamic_2bitset::deserialize(Reader &is) {
+  size_t sz = 0;
+
+  is.read((char*)&size_, sizeof(size_));
+  is.read((char*)&fill_, sizeof(fill_));
+  is.read((char*)&sz, sizeof(sz));
+  data_.resize(sz);
+  is.read((char*)&data_[0], sizeof(data_[0])*sz);
+}
 
 static inline uint32_t nextpoweroftwo(uint32_t k) {
   if (k == 0) return 1;
