@@ -29,7 +29,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	load(cfg.general_gzip_margin, pt, "general_gzip_margin");
 	load(cfg.general_file_buffer_exp, pt, "general_file_buffer_exp");
 	load(cfg.common_quality, pt, "general_common_quality");
-	load(cfg.general_remove_temp_files, pt, "general_remove_temp_files");
+	load(cfg.general_debug, pt, "general_debug");
 	cfg.general_minimizers = pt.get_optional<bool>("general_minimizers");
 	cfg.general_num_minimizers = pt.get_optional<int>("general_num_minimizers");
 
