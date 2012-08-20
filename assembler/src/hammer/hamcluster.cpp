@@ -151,7 +151,7 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     ofs.open(fname, std::ios::out | std::ios::binary);
     VERIFY(ofs.good());
     while (blocks.get_block(block)) {
-      unsigned block_thr = cfg::get().subvectors_blocksize_quadratic_threshold;
+      unsigned block_thr = cfg::get().hamming_blocksize_quadratic_threshold;
       if (block.size() < block_thr) {
         // Merge small blocks.
         processBlockQuadratic(uf, block, data, tau_);

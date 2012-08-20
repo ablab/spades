@@ -17,58 +17,51 @@ general_reconstruct_only	1
 general_change_n_to_a		0
 general_hard_memory_limit	150
 general_max_nthreads		16
-general_tau					1
-general_gzip				0
+general_tau			1
+general_gzip			0
 general_max_iterations		1
-general_blob_margin			0.25
-general_gzip_margin			4.0
+general_blob_margin		0.25
+general_gzip_margin		4.0
 general_file_buffer_exp		20
 general_common_quality		-1
-general_debug	0
+general_debug			0
 general_correct_from_memory	1
 
 ; count k-mers
-count_do					1
+count_do				1
 count_numfiles				16
-count_merge_nthreads		4
+count_merge_nthreads			16
 count_split_buffer			1000000
 
-; sort k-mers
-sort_do						1
-
-; extract and sort subvectors
-subvectors_do								1
-subvectors_blocksize_quadratic_threshold	50
-
 ; hamming graph clustering
-hamming_do					1
-hamming_write_solid_kmers	0
-hamming_write_bad_kmers		0
-hamming_class_buffer		1000000
+hamming_do				1
+hamming_blocksize_quadratic_threshold	50
 
 ; bayesian subclustering
-bayes_do						1
-bayes_nthreads					6
+bayes_do				1
+bayes_nthreads				16
 bayes_quality_threshold			0.995
 bayes_singleton_threshold		0.995
-bayes_nonsingleton_threshold	0.5
+bayes_nonsingleton_threshold		0.5
 bayes_use_hamming_dist			0
-bayes_discard_only_singletons	0
-bayes_debug_output				0
-bayes_hammer_mode				0
+bayes_discard_only_singletons		0
+bayes_debug_output			0
+bayes_hammer_mode			0
+bayes_write_solid_kmers			0
+bayes_write_bad_kmers			0
 
 ; iterative expansion step
-expand_do					1
-expand_max_iterations		25
+expand_do				1
+expand_max_iterations			25
 expand_nthreads				6
-expand_write_each_iteration	0
-expand_write_kmers_result	0
+expand_write_each_iteration		0
+expand_write_kmers_result		0
 
 ; read correction
-correct_do					1
+correct_do				1
 correct_discard_bad			0
-correct_use_threshold		1
-correct_use_threshold		1
+correct_use_threshold			1
+correct_use_threshold			1
 correct_threshold			0.98
 correct_nthreads			4
 correct_readbuffer			100000
