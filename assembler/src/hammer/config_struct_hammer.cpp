@@ -50,7 +50,6 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 
 	load(cfg.bayes_do, pt, "bayes_do");
 	load(cfg.bayes_nthreads, pt, "bayes_nthreads");
-	load(cfg.bayes_quality_threshold, pt, "bayes_quality_threshold");
 	load(cfg.bayes_singleton_threshold, pt, "bayes_singleton_threshold");
 	load(cfg.bayes_nonsingleton_threshold, pt, "bayes_nonsingleton_threshold");
 	load(cfg.bayes_discard_only_singletons, pt, "bayes_discard_only_singletons");
@@ -84,7 +83,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	load(cfg.input_solid_kmers, pt, "input_solid_kmers");
 
   // Fix number of threads according to OMP capabilities.
-  cfg.general_max_nthreads = min(cfg.general_max_nthreads, omp_get_max_threads());
+  cfg.general_max_nthreads = std::min(cfg.general_max_nthreads, (unsigned)omp_get_max_threads());
   // Inform OpenMP runtime about this :)
   omp_set_num_threads(cfg.general_max_nthreads);
 }

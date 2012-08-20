@@ -237,8 +237,8 @@ int main(int argc, char * argv[]) {
       }
 
       if (cfg::get().bayes_do || do_everything) {
-    	INFO("Subclustering Hamming graph");
-        int clustering_nthreads = min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
+        INFO("Subclustering Hamming graph");
+        unsigned clustering_nthreads = std::min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
         KMerClustering kmc(*Globals::kmer_data, clustering_nthreads);
         boost::shared_ptr<std::ofstream> ofkmers =
             cfg::get().hamming_write_solid_kmers ?
@@ -254,7 +254,7 @@ int main(int argc, char * argv[]) {
 
       // expand the set of solid k-mers (with minimizer iterations, we don't need it)
       if ((cfg::get().expand_do || do_everything) && !HammerTools::doingMinimizers() ) {
-        int expand_nthreads = min( cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
+        unsigned expand_nthreads = std::min(cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
         INFO("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
         for ( int expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no ) {
           size_t res = HammerTools::IterativeExpansionStep(expand_iter_no, expand_nthreads, *Globals::kmer_data);

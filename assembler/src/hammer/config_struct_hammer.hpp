@@ -40,9 +40,9 @@ struct hammer_config
 	bool general_change_n_to_a;
 	bool general_gzip;
 	int general_hard_memory_limit;
-	int general_max_nthreads;
+	unsigned general_max_nthreads;
 	int general_tau;
-	int general_max_iterations;
+	unsigned general_max_iterations;
 	double general_blob_margin;
 	double general_gzip_margin;
 	int general_file_buffer_exp;
@@ -51,23 +51,22 @@ struct hammer_config
 	boost::optional<int> general_num_minimizers;
 
 	bool count_do;
-	int count_numfiles;
-	int count_merge_nthreads;
-	int count_split_buffer;
+	unsigned count_numfiles;
+	unsigned count_merge_nthreads;
+	unsigned count_split_buffer;
 
 	bool sort_do;
 
 	bool subvectors_do;
-	int subvectors_blocksize_quadratic_threshold;
+	unsigned subvectors_blocksize_quadratic_threshold;
 
 	bool hamming_do;
 	bool hamming_write_solid_kmers;
 	bool hamming_write_bad_kmers;
-	int hamming_class_buffer;
+	unsigned hamming_class_buffer;
 
 	bool bayes_do;
-	int bayes_nthreads;
-	double bayes_quality_threshold;
+	unsigned bayes_nthreads;
 	double bayes_singleton_threshold;
 	double bayes_nonsingleton_threshold;
 	bool bayes_discard_only_singletons;
@@ -76,8 +75,8 @@ struct hammer_config
 	bool bayes_hammer_mode;
 
 	bool expand_do;
-	int expand_max_iterations;
-	int expand_nthreads;
+	unsigned expand_max_iterations;
+	unsigned expand_nthreads;
 	bool expand_write_each_iteration;
 	bool expand_write_kmers_result;
 
@@ -85,8 +84,8 @@ struct hammer_config
 	bool correct_discard_bad;
 	bool correct_use_threshold;
 	double correct_threshold;
-	int correct_readbuffer;
-	int correct_nthreads;
+	unsigned correct_readbuffer;
+	unsigned correct_nthreads;
 	bool correct_notrim;
 
 	int common_quality;
