@@ -38,8 +38,6 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	load(cfg.count_merge_nthreads, pt, "count_merge_nthreads");
 	load(cfg.count_split_buffer, pt, "count_split_buffer");
 
-	load(cfg.sort_do, pt, "sort_do");
-
 	load(cfg.subvectors_do, pt, "subvectors_do");
 	load(cfg.subvectors_blocksize_quadratic_threshold, pt, "subvectors_blocksize_quadratic_threshold");
 

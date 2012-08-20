@@ -179,7 +179,7 @@ int main(int argc, char * argv[]) {
       HammerTools::ReadAllFilesIntoBlob();
 
       // count k-mers
-      if (cfg::get().count_do || cfg::get().sort_do || do_everything) {
+      if (cfg::get().count_do || do_everything) {
         KMerCounter counter(cfg::get().count_numfiles);
         counter.FillKMerData(*Globals::kmer_data);
 

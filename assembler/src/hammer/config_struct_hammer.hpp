@@ -55,8 +55,6 @@ struct hammer_config
 	unsigned count_merge_nthreads;
 	unsigned count_split_buffer;
 
-	bool sort_do;
-
 	bool subvectors_do;
 	unsigned subvectors_blocksize_quadratic_threshold;
 
