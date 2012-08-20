@@ -193,6 +193,7 @@ int main(int argc, char * argv[]) {
         INFO("Reading K-mer index");
         std::ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index"),
                          std::ios::binary);
+        VERIFY(is.good());
         Globals::kmer_data->binary_read(is);
       }
 
@@ -217,6 +218,37 @@ int main(int argc, char * argv[]) {
         }
 #endif
         INFO("Clustering done. Total clusters: " << num_classes);
+
+        if (cfg::get().general_debug) {
+          INFO("Debug mode on. Writing down clusters.");
+
+          std::ofstream ofs(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"),
+                            std::ios::binary | std::ios::out);
+
+          ofs.write((char*)&num_classes, sizeof(num_classes));
+          for (size_t i=0; i < classes.size(); ++i) {
+            size_t sz = classes[i].size();
+            ofs.write((char*)&sz, sizeof(sz));
+            ofs.write((char*)&classes[i][0], sz * sizeof(classes[i][0]));
+          }
+        }
+      } else {
+        INFO("Reading clusters.");
+
+        std::ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"),
+                         std::ios::binary | std::ios::in);
+        VERIFY(is.good());
+
+        size_t num_classes = 0;
+        is.read((char*)&num_classes, sizeof(num_classes));
+        classes.resize(num_classes);
+
+        for (size_t i = 0; i < num_classes; ++i) {
+          size_t sz = 0;
+          is.read((char*)&sz, sizeof(sz));
+          classes[i].resize(sz);
+          is.read((char*)&classes[i][0], sz * sizeof(classes[i][0]));
+        }
       }
 
       if (cfg::get().bayes_do || do_everything) {
@@ -239,10 +271,10 @@ int main(int argc, char * argv[]) {
       if ((cfg::get().expand_do || do_everything) && !HammerTools::doingMinimizers() ) {
         unsigned expand_nthreads = std::min(cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
         INFO("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
-        for ( int expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no ) {
+        for (unsigned expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no) {
           size_t res = HammerTools::IterativeExpansionStep(expand_iter_no, expand_nthreads, *Globals::kmer_data);
           INFO("Solid k-mers iteration " << expand_iter_no << " produced " << res << " new k-mers.");
-          if ( res < 10 ) break;
+          if (res < 10) break;
         }
         INFO("Solid k-mers finalized.");
       }
