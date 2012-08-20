@@ -63,7 +63,7 @@ inline double lBeta(int x, int y) {
 /**
   * @return log({a_1+...+a_n \choose a_1, ..., a_n})
   */
-inline double lMultinomial(const vector<int> & x, const KMerData & data_) {
+inline double lMultinomial(const vector<unsigned> & x, const KMerData & data_) {
 	double res = 0.0, sum = 0.0;
 	for (size_t i=0; i<x.size(); ++i) {
 		res += lgamma(data_[x[i]].count+1);
@@ -99,7 +99,7 @@ inline double lMultinomial(const vector<StringCount> & x) {
 /**
   * @return log({a_1+...+a_n \choose a_1, ..., a_n}) for reads corresponding to the mask
   */
-inline double lMultinomialWithMask(const vector<int> & x, const KMerData &data_, const vector<int> & mask, int maskval) {
+inline double lMultinomialWithMask(const vector<unsigned> & x, const KMerData &data_, const vector<int> & mask, int maskval) {
 	assert(x.size() == mask.size());
 	double res = 0.0, sum = 0.0;
 	for (size_t i=0; i<x.size(); ++i) {

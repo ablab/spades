@@ -79,7 +79,7 @@ static double logLikelihoodSingleton(const KMerStat & x) {
   * @param mask is a vector of integers of the same size as the block
   * @param maskVal is the integer that we use
   */
-KMer KMerClustering::find_consensus_with_mask(const vector<int> & cl, const vector<int> & mask, int maskVal) {
+KMer KMerClustering::find_consensus_with_mask(const vector<unsigned> & cl, const vector<int> & mask, int maskVal) {
 
   //entry_logger el ("find_consensus_with_mask");
 
@@ -102,7 +102,7 @@ KMer KMerClustering::find_consensus_with_mask(const vector<int> & cl, const vect
 }
 
 
-KMer KMerClustering::find_consensus(const vector<int> & cl) {
+KMer KMerClustering::find_consensus(const vector<unsigned> & cl) {
   size_t blockSize = cl.size();
 
   // consensus of a single string is trivial
@@ -122,7 +122,7 @@ KMer KMerClustering::find_consensus(const vector<int> & cl) {
 /**
   * @return total log-likelihood of this particular clustering with real quality values
   */
-double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const vector<StringCount> & centers, const vector<int> & indices) {
+double KMerClustering::trueClusterLogLikelihood(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<int> & indices) {
 	size_t blockSize = cl.size();
 	if (blockSize == 0) return 0.0;
 	assert(blockSize == indices.size());
@@ -158,12 +158,12 @@ double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const ve
 /**
   * @return total log-likelihood of this particular clustering with real quality values
   */
-double KMerClustering::trueSingletonLogLikelihood(const hint_t & kmind) {
+double KMerClustering::trueSingletonLogLikelihood(size_t kmind) {
 	return logLikelihoodSingleton(data_[kmind]);
 }
 
 
-double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & distances, const vector<int> & kmerinds, vector<int> & indices, vector<StringCount> & centers) {
+double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & distances, const vector<unsigned> & kmerinds, vector<int> & indices, vector<StringCount> & centers) {
 	centers.resize(l); // there are l centers
 
 	// if l==1 then clustering is trivial
@@ -351,7 +351,7 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 	return curLikelihood;
 }
 
-size_t KMerClustering::process_block_SIN(const vector<int> & block, vector< vector<int> > & vec) {
+size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, vector< vector<int> > & vec) {
   size_t newkmers = 0;
   
 	if ( cfg::get().bayes_debug_output ) {
@@ -533,93 +533,41 @@ size_t KMerClustering::process_block_SIN(const vector<int> & block, vector< vect
   return newkmers;
 }
 
-void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad) {
-  INFO("Starting subclustering in " << nthreads_ << " threads.");
-  INFO("Estimated: size=" << data_.size() << " mem=" << sizeof(KMerStat)*data_.size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
-
-  std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
-  MMappedReader ifs(fname, /* unlink */ true);
-
-  vector< vector< vector<int> > > blocks(nthreads_);
-
-  string buf;
-
-  size_t cur_class_num = 0;
-  std::vector< std::vector<int> > curClasses;
-  std::vector<int> cur_class;
+void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
+                             boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad) {
   size_t newkmers = 0;
 
-  std::vector< std::vector< std::vector<int> > > blocksInPlace(cfg::get().hamming_class_buffer);
+#  pragma omp parallel for shared(classes, ofs, ofs_bad) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers)
+  for (size_t i = 0; i < classes.size(); ++i) {
+    auto cur_class = classes[i];
 
-  while (ifs.good()) {
-    curClasses.clear();
-#if 0
-    curClasses.shrink_to_fit();
-#else
-    std::vector<std::vector<int> >().swap(curClasses);
-#endif
-
-    size_t i_nontriv = 0;
-    size_t cur_total_size = 0;
-    size_t orig_class_num = cur_class_num;
-    while (cur_total_size < (size_t)cfg::get().hamming_class_buffer && ifs.good()) {
-      cur_class.clear();
-#if 0
-      cur_class.shrink_to_fit();
-#else
-      std::vector<int>().swap(cur_class);
-#endif
-      size_t classNum, sizeClass;
-      ifs.read(&classNum, sizeof(classNum));
-      ifs.read(&sizeClass, sizeof(sizeClass));
-      cur_class.resize(sizeClass);
-      ifs.read(&cur_class[0], sizeClass * sizeof(cur_class[0]));
-      ++cur_class_num;
-
-      // processing singletons immediately
-      if (cur_class.size() == 1) {
-        size_t idx = cur_class[0];
-        KMerStat &singl = data_[idx];
-        if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
-          singl.status = KMerStat::GoodIter;
-          if (std::ofstream *fs = ofs.get())
-            (*fs) << " good singleton: " << idx << "\n  " << singl << '\n';
-        } else {
-          if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
-            singl.status = KMerStat::GoodIterBad;
-          else
-            singl.status = KMerStat::Bad;
-          if (std::ofstream *fs = ofs_bad.get())
-            (*fs) << " bad singleton: " << idx << "\n  " << singl << '\n';
-        }
+    // No need for clustering for singletons
+    if (cur_class.size() == 1) {
+      size_t idx = cur_class[0];
+      KMerStat &singl = data_[idx];
+      if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
+        singl.status = KMerStat::GoodIter;
+        if (std::ofstream *fs = ofs.get())
+          (*fs) << " good singleton: " << idx << "\n  " << singl << '\n';
       } else {
-        curClasses.push_back(cur_class);
-        ++i_nontriv;
-        cur_total_size += cur_class.size();
+        if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
+          singl.status = KMerStat::GoodIterBad;
+        else
+          singl.status = KMerStat::Bad;
+        if (std::ofstream *fs = ofs_bad.get())
+          (*fs) << " bad singleton: " << idx << "\n  " << singl << '\n';
       }
-    }
-    INFO("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " in " << nthreads_ << " threads.");
+    } else {
+      std::vector<std::vector<int> > blocksInPlace;
 
-    VERIFY(blocksInPlace.size() >= i_nontriv && curClasses.size() >= i_nontriv);
+      newkmers += process_block_SIN(cur_class, blocksInPlace);
 
-#   pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers)
-    for (size_t i=0; i < i_nontriv; ++i) {
-      blocksInPlace[i].clear();
-#if 0
-      blocksInPlace[i].shrink_to_fit();
-#else
-      std::vector< std::vector<int> >().swap(blocksInPlace[i]);
-#endif
-      newkmers += process_block_SIN(curClasses[i], blocksInPlace[i]);
-    }
-
-    for (size_t n = 0; n < i_nontriv; ++n) {
-      for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
-        if (blocksInPlace[n][m].size() == 0)
+      for (size_t m = 0; m < blocksInPlace.size(); ++m) {
+        if (blocksInPlace[m].size() == 0)
           continue;
 
-        if (blocksInPlace[n][m].size() == 1) {
-          size_t idx = blocksInPlace[n][m][0];
+        if (blocksInPlace[m].size() == 1) {
+          size_t idx = blocksInPlace[m][0];
           KMerStat &singl = data_[idx];
           if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
             singl.status = KMerStat::GoodIter;
@@ -634,13 +582,13 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
               (*fs) << " bad cluster singleton: " << idx << "\n  " << singl << '\n';
           }
         } else {
-          size_t cidx = blocksInPlace[n][m][0];
+          size_t cidx = blocksInPlace[m][0];
           KMerStat &center = data_[cidx];
 
           // we've got a nontrivial cluster; computing its overall quality
           double cluster_quality = 1;
-          for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-            cluster_quality *= data_[blocksInPlace[n][m][j]].totalQual;
+          for (size_t j=1; j < blocksInPlace[m].size(); ++j) {
+            cluster_quality *= data_[blocksInPlace[m][j]].totalQual;
           }
           cluster_quality = 1-cluster_quality;
 
@@ -649,7 +597,7 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
               cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
             center.status = KMerStat::GoodIter;
             if (std::ofstream *fs = ofs.get())
-              (*fs) << " center of good cluster (" << blocksInPlace[n][m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
+              (*fs) << " center of good cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
                     << center << '\n';
           } else {
             if (cfg::get().correct_use_threshold && (1-center.totalQual) > cfg::get().correct_threshold)
@@ -657,17 +605,17 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
             else
               center.status = KMerStat::Bad;
             if (std::ofstream *fs = ofs_bad.get())
-              (*fs) << " center of bad cluster (" << blocksInPlace[n][m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
+              (*fs) << " center of bad cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
                     << center << '\n';
           }
 
-          for (uint32_t j = 1; j < blocksInPlace[n][m].size(); ++j) {
-            size_t eidx = blocksInPlace[n][m][j];
+          for (size_t j = 1; j < blocksInPlace[m].size(); ++j) {
+            size_t eidx = blocksInPlace[m][j];
             KMerStat &kms = data_[eidx];
 
             kms.set_change(cidx);
             if (std::ofstream *fs = ofs_bad.get())
-              (*fs) << " part of cluster (" << blocksInPlace[n][m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
+              (*fs) << " part of cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
                     << kms << '\n';
           }
         }
@@ -675,6 +623,6 @@ void KMerClustering::process(boost::shared_ptr<std::ofstream> ofs, boost::shared
     }
   }
 
-  INFO("Total " << newkmers << " non-read kmers were generated.");
+  INFO("Subclustering done. Total " << newkmers << " non-read kmers were generated.");
 }
 

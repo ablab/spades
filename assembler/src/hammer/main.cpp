@@ -196,10 +196,9 @@ int main(int argc, char * argv[]) {
         Globals::kmer_data->binary_read(is);
       }
 
-      // cluster and subcluster the Hamming graph
+      // Cluster the Hamming graph
+      std::vector<std::vector<unsigned> > classes;
       if (cfg::get().hamming_do || do_everything) {
-        std::vector<std::vector<unsigned> > classes;
-
         ConcurrentDSU uf(Globals::kmer_data->size());
         KMerHamClusterer clusterer(cfg::get().general_tau);
         INFO("Clustering Hamming graph.");
@@ -218,25 +217,6 @@ int main(int argc, char * argv[]) {
         }
 #endif
         INFO("Clustering done. Total clusters: " << num_classes);
-
-        INFO("Writing down clusters.");
-        std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
-        std::ofstream ofs(fname.c_str(), std::ios::binary | std::ios::out);
-
-        for (size_t i=0; i < classes.size(); ++i ) {
-          size_t sz = classes[i].size();
-          ofs.write((char*)&i, sizeof(i));
-          ofs.write((char*)&sz, sizeof(sz));
-
-          for (size_t j=0; j < classes[i].size(); ++j) {
-            int cls = classes[i][j];
-            ofs.write((char*)&cls, sizeof(cls));
-          }
-          classes[i].clear();
-        }
-        classes.clear();
-        ofs.close();
-        INFO("Clusters written.");
       }
 
       if (cfg::get().bayes_do || do_everything) {
@@ -251,7 +231,7 @@ int main(int argc, char * argv[]) {
             cfg::get().hamming_write_bad_kmers ?
             boost::shared_ptr<std::ofstream>(new std::ofstream(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.bad").c_str())) :
             boost::shared_ptr<std::ofstream>();
-        kmc.process(ofkmers, ofkmers_bad);
+        kmc.process(classes, ofkmers, ofkmers_bad);
         INFO("Finished clustering.");
       }
 
