@@ -182,15 +182,18 @@ int main(int argc, char * argv[]) {
       if (cfg::get().count_do || cfg::get().sort_do || do_everything) {
         KMerCounter counter(cfg::get().count_numfiles);
         counter.FillKMerData(*Globals::kmer_data);
-      } else {
-        INFO("Reading serialized kmers is not implemented (yet)");
-        exit(-1);
-      }
 
-      // fill in already prepared k-mers
-      if (!do_everything && cfg::get().input_read_solid_kmers) {
-        INFO("Reading solid kmers is not implemented (yet)");
-        exit(-1);
+        if (cfg::get().general_debug) {
+          INFO("Debug mode on. Dumping K-mer index");
+          std::ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index"),
+                           std::ios::binary);
+          Globals::kmer_data->binary_write(os);
+        }
+      } else {
+        INFO("Reading K-mer index");
+        std::ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index"),
+                         std::ios::binary);
+        Globals::kmer_data->binary_read(is);
       }
 
       // cluster and subcluster the Hamming graph
