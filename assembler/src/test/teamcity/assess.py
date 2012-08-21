@@ -30,7 +30,7 @@ if n50 < n50_limit:
 if mis > mis_limit:
     print 'Too many misassemblies: more than', mis_limit
     lvl += 2
-if len(sys.argv) >= 4:
+if len(sys.argv) > 4:
     genes_limit = int(sys.argv[4])
     genes = int(values[columns.index("Genes")].split('+')[0])
     print 'full genes =', genes
@@ -38,7 +38,7 @@ if len(sys.argv) >= 4:
     if genes < genes_limit:
 	print 'Too few genes, less than', genes_limit
 	lvl += 4
-if len(sys.argv) >= 5:
+if len(sys.argv) > 5:
     mapped_limit = float(sys.argv[5])
     mapped = float(values[columns.index("Mapped genome (%)")])
     print 'mapped genome =', mapped, '%'
