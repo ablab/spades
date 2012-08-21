@@ -163,7 +163,7 @@ double KMerClustering::trueSingletonLogLikelihood(size_t kmind) {
 }
 
 
-double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & distances, const vector<unsigned> & kmerinds, vector<int> & indices, vector<StringCount> & centers) {
+double KMerClustering::lMeansClustering(uint32_t l, const KMerHamDistMatrix &distances, const vector<unsigned> & kmerinds, vector<int> & indices, vector<StringCount> & centers) {
 	centers.resize(l); // there are l centers
 
 	// if l==1 then clustering is trivial
@@ -192,8 +192,8 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 	pair<uint32_t, uint32_t> fp(0, 1); // first pair: furthest, then count, then quality
 	for (uint32_t i=0; i<kmerinds.size(); ++i) {
 		for (uint32_t j=i+1; j<kmerinds.size(); ++j) {
-			if (distances[i][j] > distances[fp.first][fp.second] ||
-          (distances[i][j] == distances[fp.first][fp.second] &&
+			if (distances(i, j) > distances(fp.first, fp.second) ||
+          (distances(i, j) == distances(fp.first, fp.second) &&
            ( data_[kmerinds[i]].count + data_[kmerinds[j]].count >
              data_[kmerinds[fp.first]].count + data_[kmerinds[fp.second]].count ||
              ( data_[kmerinds[i]].count + data_[kmerinds[j]].count ==
@@ -221,7 +221,7 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 			if (!newIndex) continue;
 
 			int curDist = 0;
-			for (uint32_t k=0; k<j; ++k) curDist += distances[i][init[k]];
+			for (uint32_t k=0; k<j; ++k) curDist += distances(i, init[k]);
 
 			if ( curDist > bestDist ) {
 				ind = i; bestDist = curDist;
@@ -373,21 +373,19 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
 	size_t origBlockSize = block.size();
 	if (origBlockSize == 0) return 0;
 	
-	vector<int> distance(origBlockSize, 0);
-	vector< vector<int> > distances(origBlockSize, distance);
+  KMerHamDistMatrix distances(origBlockSize, origBlockSize);
 	string newkmer;
 	string reason = "noreason";
 
 	// Calculate distance matrix
 	for (size_t i = 0; i < block.size(); i++) {
-		distances[i][i] = 0;
+		distances(i, i) = 0;
     const KMerStat &kmsx = data_[block[i]];
     const KMer &kmerx = kmsx.kmer();
 		for (size_t j = i + 1; j < block.size(); j++) {
       const KMerStat &kmsy = data_[block[j]];
       const KMer &kmery = kmsy.kmer();
-			distances[i][j] = hamdistKMer(kmerx, kmery);
-			distances[j][i] = distances[i][j];
+			distances(i, j) = hamdistKMer(kmerx, kmery);
 		}
 	}
 

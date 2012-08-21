@@ -17,10 +17,14 @@
 #include "hamcluster.hpp"
 #include "kmer_index.hpp"
 
+#include <boost/numeric/ublas/symmetric.hpp>
+
 #include <string>
 #include <vector>
 
 class KMerClustering {
+  typedef boost::numeric::ublas::symmetric_matrix<uint8_t, boost::numeric::ublas::lower> KMerHamDistMatrix;
+
 public:
 	KMerClustering(KMerData &data, int nthreads) : data_(data), nthreads_(nthreads) { }
 
@@ -56,7 +60,7 @@ private:
 	  * @param centers fill array indices with ints from 0 to l that denote which kmers belong where
 	  * @return the resulting likelihood of this clustering
 	  */
-	double lMeansClustering(uint32_t l, std::vector< std::vector<int> > & distances, const std::vector<unsigned> & kmerinds, std::vector<int> & indices, std::vector<StringCount> & centers);
+	double lMeansClustering(uint32_t l, const KMerHamDistMatrix &distances, const std::vector<unsigned> & kmerinds, std::vector<int> & indices, std::vector<StringCount> & centers);
 
 	/**
 	  * SIN
