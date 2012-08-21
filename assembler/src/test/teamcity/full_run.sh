@@ -45,7 +45,7 @@ scp "$dir/quast_all/report.txt" "antipov@194.85.238.21:/var/www/teamcity_runs/$1
 read line < $options_dir"results.options"
 echo $line
 opts=( $line )
-python src/test/teamcity/assess.py $project_dir"quality_results/transposed_report.tsv" ${opts[1]} ${opts[3]}
+python src/test/teamcity/assess.py $project_dir"quality_results/transposed_report.tsv" ${opts[1]} ${opts[3]} ${opts[5]} ${opts[7]}
 #cd $dir
 #echo $dir"*.fasta" $line -o $dir"/quast_all"
 #python2.6 ~/quast/quast.py * $line -o $dir"/quast_all/"
