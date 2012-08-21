@@ -73,7 +73,7 @@ class KMerIndex {
     for (size_t i = 0; i < num_buckets_; ++i)
       index_[i].deserialize(is);
 
-    bucket_starts_.resize(num_buckets_);
+    bucket_starts_.resize(num_buckets_ + 1);
     is.read((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
 
     bucket_locks_ = new omp_lock_t[num_buckets_];
