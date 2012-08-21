@@ -29,7 +29,7 @@
 #include "verify.hpp"
 #include <iostream>
 
-const char dignucl_map['T' + 1] = {
+const unsigned char dignucl_map['T' + 1] = {
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
 
@@ -39,7 +39,7 @@ const bool isnucl_map[256] = {
 
 const char nucl_map[4] = {'A', 'C', 'G', 'T'};
 
-const char nucl_complement_map['T' + 1] = {
+const unsigned char nucl_complement_map['T' + 1] = {
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 'T', 0, 'G', 0, 0, 0, 'C', 0, 0, 0, 0, 0, 0, 'N', 0, 0, 0, 0, 0, 'A'};
 
@@ -66,15 +66,15 @@ inline bool is_dignucl(unsigned char c) { // is 0123
  * @param char c
  * @return c ^ 3
  */
-inline char complement(unsigned char c) {
+inline unsigned char complement(unsigned char c) {
 	VERIFY(is_dignucl(c));
 	return c ^ 3;
 }
 
 /**
  * ACGT -> TGCA
- * @param char c is 'A', 'C', 'G' or 'T'
- * @return complement symbol, i.e. 'A' => 'T', 'C' => 'G', 'G' => 'C', 'T' => 'A'.
+ * @param char c is 'A', 'C', 'G', 'T' or 'N'
+ * @return complement symbol, i.e. 'A' => 'T', 'C' => 'G', 'G' => 'C', 'T' => 'A', 'N' => 'N'
  */
 
 struct nucl_complement_functor { // still unused
@@ -83,8 +83,9 @@ struct nucl_complement_functor { // still unused
 	}
 };
 
-inline char nucl_complement(unsigned char c){
-	VERIFY(is_nucl(c));
+inline unsigned char nucl_complement(unsigned char c){
+    // TODO: deal with 'N' case
+	//VERIFY(is_nucl(c));
 	return nucl_complement_map[c];
 }
 
@@ -93,7 +94,7 @@ inline char nucl_complement(unsigned char c){
  * @param char c is 0, 1, 2 or 3
  * @return 0 => 'A', 1 => 'C', 2 => 'G', 3 => 'T'
  */
-inline char nucl(unsigned char c) {
+inline unsigned char nucl(unsigned char c) {
 	return nucl_map[c];
 }
 
@@ -110,7 +111,7 @@ struct dignucl : public unary_function<int,bool> {
 	}	
 };*/
 
-inline char dignucl(unsigned char c) {
+inline unsigned char dignucl(unsigned char c) {
 	VERIFY(is_nucl(c));
 	return dignucl_map[c];
 }
