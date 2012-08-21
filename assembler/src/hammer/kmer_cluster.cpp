@@ -290,9 +290,11 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 		double cur_total = 0;
 		// E step: find which clusters we belong to
 		for (size_t i=0; i < kmerinds.size(); ++i) {
+      const KMerStat &kms = data_[kmerinds[i]];
+      const KMer &kmer = kms.kmer();
 			for (uint32_t j=0; j < l; ++j) {
-				dists[j] = hamdistKMer(data_[kmerinds[i]].kmer(), centers[j].first);
-				loglike[j] = logLikelihoodKMer(centers[j].first, data_[kmerinds[i]]);
+				dists[j] = hamdistKMer(kmer, centers[j].first);
+				loglike[j] = logLikelihoodKMer(centers[j].first, kms);
 			}
 			if (cfg::get().bayes_debug_output) {
 				#pragma omp critical
@@ -368,10 +370,9 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
 		}
 	}
 
-	uint32_t origBlockSize = block.size();
+	size_t origBlockSize = block.size();
 	if (origBlockSize == 0) return 0;
 	
-	vector<double> multiCoef(origBlockSize,1000000);
 	vector<int> distance(origBlockSize, 0);
 	vector< vector<int> > distances(origBlockSize, distance);
 	string newkmer;
@@ -380,8 +381,12 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
 	// Calculate distance matrix
 	for (size_t i = 0; i < block.size(); i++) {
 		distances[i][i] = 0;
+    const KMerStat &kmsx = data_[block[i]];
+    const KMer &kmerx = kmsx.kmer();
 		for (size_t j = i + 1; j < block.size(); j++) {
-			distances[i][j] = hamdistKMer(data_[block[i]].kmer(), data_[block[j]].kmer());
+      const KMerStat &kmsy = data_[block[j]];
+      const KMer &kmery = kmsy.kmer();
+			distances[i][j] = hamdistKMer(kmerx, kmery);
 			distances[j][i] = distances[i][j];
 		}
 	}

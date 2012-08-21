@@ -153,7 +153,7 @@ struct KMerStat {
     changeto = kmer;
     status = Change;
   }
-  KMer kmer() const { return kmer_; }
+  const KMer& kmer() const { return kmer_; }
 };
 
 inline
