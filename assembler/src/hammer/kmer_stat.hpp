@@ -40,8 +40,7 @@ struct hash<KMer> : public unary_function<KMer, size_t> {
 };
 }
 
-template<class Seq>
-static unsigned hamdistKMer(const Seq &x, const Seq &y, unsigned tau = K) {
+static inline unsigned hamdistKMer(const KMer &x, const KMer &y, unsigned tau = K) {
   unsigned dist = 0;
   for (unsigned i = 0; i < K; ++i) {
     if (x[i] != y[i]) {
