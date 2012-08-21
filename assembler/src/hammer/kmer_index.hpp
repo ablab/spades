@@ -146,16 +146,24 @@ class KMerData {
   size_t capacity() const { return data_.capacity(); }
   void clear() {
     data_.clear();
+    push_back_buffer_.clear();
     KMerDataStorageType().swap(data_);
+    KMerDataStorageType().swap(push_back_buffer_);
   }
   size_t push_back(const KMerStat &k) {
-    data_.push_back(k);
+    push_back_buffer_.push_back(k);
 
-    return data_.size() - 1;
+    return data_.size() + push_back_buffer_.size() - 1;
   }
 
-  KMerStat& operator[](size_t idx) { return data_[idx]; }
-  const KMerStat& operator[](size_t idx) const { return data_[idx]; }
+  KMerStat& operator[](size_t idx) {
+    size_t dsz = data_.size();
+    return (idx < dsz ? data_[idx] : push_back_buffer_[idx - dsz]);
+  }
+  const KMerStat& operator[](size_t idx) const {
+    size_t dsz = data_.size();
+    return (idx < dsz ? data_[idx] : push_back_buffer_[idx - dsz]);
+  }
   KMerStat& operator[](KMer s) { return operator[](index_.seq_idx(s)); }
   const KMerStat& operator[](KMer s) const { return operator[](index_.seq_idx(s)); }
   size_t seq_idx(KMer s) const { return index_.seq_idx(s); }
@@ -179,6 +187,7 @@ class KMerData {
 
  private:
   KMerDataStorageType data_;
+  KMerDataStorageType push_back_buffer_;
   KMerIndex index_;
 
   friend class KMerCounter;
