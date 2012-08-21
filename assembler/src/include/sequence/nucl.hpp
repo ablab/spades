@@ -29,8 +29,6 @@
 #include "verify.hpp"
 #include <iostream>
 
-// some optimization: instead of switches we use predefined constant arrays... surprisingly works faster (10% on input).
-
 const char dignucl_map['T' + 1] = {
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
@@ -50,7 +48,7 @@ const char nucl_complement_map['T' + 1] = {
  * @param char c
  * @return true if c is 'A', 'C', 'G' or 'T'.
  */
-inline bool is_nucl(signed char c) { // is ACGT
+inline bool is_nucl(unsigned char c) { // is ACGT
 	return isnucl_map[c];
 }
 
@@ -59,8 +57,8 @@ inline bool is_nucl(signed char c) { // is ACGT
  * @param char c
  * @return true if c is 0, 1, 2 or 3.
  */
-inline bool is_dignucl(char c) { // is 0123
-	return (c < 4 && c >= 0);
+inline bool is_dignucl(unsigned char c) { // is 0123
+	return (c < 4);
 }
 
 /**
@@ -68,8 +66,8 @@ inline bool is_dignucl(char c) { // is 0123
  * @param char c
  * @return c ^ 3
  */
-inline char complement(char c) {
-	//VERIFY(is_dignucl(c));
+inline char complement(unsigned char c) {
+	VERIFY(is_dignucl(c));
 	return c ^ 3;
 }
 
@@ -80,23 +78,14 @@ inline char complement(char c) {
  */
 
 struct nucl_complement_functor { // still unused
-	inline bool operator() (signed char c) const {
+	inline bool operator() (unsigned char c) const {
 		return nucl_complement_map[c];
 	}
 };
 
-inline char nucl_complement(signed char c){
-	//VERIFY(is_nucl(c));
+inline char nucl_complement(unsigned char c){
+	VERIFY(is_nucl(c));
 	return nucl_complement_map[c];
-	/*
-	switch(c) {
-		case 'A': return 'T';
-		case 'C': return 'G';
-		case 'G': return 'C';
-		case 'T': return 'A';
-		//case 'N': return 'N';
-		default: VERIFY(false); return -1; // never happens
-	}*/
 }
 
 /**
@@ -104,18 +93,8 @@ inline char nucl_complement(signed char c){
  * @param char c is 0, 1, 2 or 3
  * @return 0 => 'A', 1 => 'C', 2 => 'G', 3 => 'T'
  */
-inline char nucl(signed char c) {
+inline char nucl(unsigned char c) {
 	return nucl_map[c];
-	/*
-	VERIFY(is_dignucl(c));
-	switch(c) {
-		case 0: return 'A';
-		case 1: return 'C';
-		case 2: return 'G';
-		case 3: return 'T';
-		default: return 'N'; // never happens
-	}
-	*/
 }
 
 /**
@@ -131,16 +110,9 @@ struct dignucl : public unary_function<int,bool> {
 	}	
 };*/
 
-inline char dignucl(signed char c) {
+inline char dignucl(unsigned char c) {
+	VERIFY(is_nucl(c));
 	return dignucl_map[c];
-	//VERIFY(is_nucl(c));
-	/*switch(c) {
-		case 'A': return 0;
-		case 'C': return 1;
-		case 'G': return 2;
-		case 'T': return 3;
-		default: VERIFY(false); return -1; // never happens
-	}*/
 }
 
 
