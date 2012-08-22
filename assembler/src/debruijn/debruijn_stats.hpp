@@ -151,7 +151,7 @@ void CountPairedInfoStats(const Graph &g,
 }
 
 // leave only those pairs, which edges have no path in the graph between them
-void FilterIndexWithExistingPaths(paired_info_index& scaf_paired_index, const paired_info_index& index, const conj_graph_pack &gp, const GraphDistanceFinder<Graph>& dist_finder)
+void FilterIndexWithExistingPaths(paired_info_index& scaf_clustered_index, const paired_info_index& index, const conj_graph_pack &gp, const GraphDistanceFinder<Graph>& dist_finder)
 {
     for (auto it = index.begin(); it != index.end(); ++it) {
         const vector<omnigraph::PairInfo<EdgeId> >& pair_info = *it;
@@ -161,7 +161,7 @@ void FilterIndexWithExistingPaths(paired_info_index& scaf_paired_index, const pa
         if (dists.size() == 0) {
         	for (size_t i = 0; i < pair_info.size(); ++i) {
                  if (math::gr(pair_info[i].d, 0.))
-                     scaf_paired_index.AddPairInfo(pair_info[i]);
+                     scaf_clustered_index.AddPairInfo(pair_info[i]);
             }
         } 
     }
@@ -174,8 +174,27 @@ void FillAndCorrectEtalonPairedInfo(
 		bool save_etalon_info_history = false) {
 	INFO("Filling etalon paired index");
 	paired_info_index etalon_paired_index(gp.g);
-	FillEtalonPairedIndex(etalon_paired_index, gp.g,
-			gp.index, gp.kmer_mapper, insert_size, read_length, 4*delta,
+    bool successful_load = false;
+    if (cfg::get().entry_point >= ws_distance_estimation) {
+        fs::path p = fs::path(cfg::get().load_from) / "../etalon";
+        if (!fs::is_regular_file(p.string() + ".prd")) {
+            DEBUG("file " << p.string() + ".prd" << " does not exist");
+        }
+        else {
+            INFO("Loading etalon pair info from the previous run...");
+            Graph& graph = const_cast<Graph&>(gp.g);
+            IdTrackHandler<Graph>& int_ids = const_cast<IdTrackHandler<Graph>& >(gp.int_ids);
+            ScannerTraits<Graph>::Scanner scanner(graph, int_ids);
+            scanner.loadPaired(p.string(), etalon_paired_index);
+            files_t files;
+            files.push_back(p);
+            copy_files_by_prefix(files, cfg::get().output_dir);
+            successful_load = true;
+        }
+    }
+    if (!successful_load) 
+	    FillEtalonPairedIndex(etalon_paired_index, gp.g,
+			gp.index, gp.kmer_mapper, insert_size, read_length, 4 * delta,
 			gp.genome, gp.k_value);
 	INFO("Etalon paired index filled");
 
@@ -344,26 +363,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 
 	paired_info_index etalon_paired_index(gp.g);
 
-    bool successful_load = false;
-    if (cfg::get().entry_point >= ws_distance_estimation) {
-        fs::path p = fs::path(cfg::get().load_from) / "../etalon";
-        if (!fs::is_regular_file(p.string() + ".prd")) {
-            DEBUG("file " << p.string() + ".prd" << " does not exist");
-        }
-        else {
-            INFO("Loading etalon pair info from the previous run...");
-            Graph& graph = const_cast<Graph&>(gp.g);
-            IdTrackHandler<Graph>& int_ids = const_cast<IdTrackHandler<Graph>& >(gp.int_ids);
-            ScannerTraits<Graph>::Scanner scanner(graph, int_ids);
-            scanner.loadPaired(p.string(), etalon_paired_index);
-            files_t files;
-            files.push_back(p);
-            copy_files_by_prefix(files, cfg::get().output_dir);
-            successful_load = true;
-        }
-    }
-    if (!successful_load) 
-        FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
+    FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
 			*cfg::get().ds.IS, *cfg::get().ds.RL, *cfg::get().ds.is_var, true);
 
 	INFO("Counting clustered info stats");

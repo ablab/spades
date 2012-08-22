@@ -105,14 +105,14 @@ protected:
 			vector<size_t> forward = this->GetGraphDistancesLengths(first, second);
             TRACE("Processing edge pair " << this->graph().int_id(first) << " " << this->graph().int_id(second));
             vector<PairInfo<EdgeId>> data = raw_data;
-            //DEBUG("Extending paired information");
-            //double weight_0 = this->WeightSum(data);
-            //DEBUG("Extend left");
-            //this->ExtendInfoLeft(first, second, data);
-            //DEBUG("Extend right");
-            //this->ExtendInfoRight(first, second, data);
+            DEBUG("Extending paired information");
+            double weight_0 = this->WeightSum(data);
+            DEBUG("Extend left");
+            this->ExtendInfoLeft(first, second, data);
+            DEBUG("Extend right");
+            this->ExtendInfoRight(first, second, data);
             
-            //DEBUG("Weight increased " << (WeightSum(data) - weight_0));
+            DEBUG("Weight increased " << (WeightSum(data) - weight_0));
 
 		    vector<pair<size_t, double> > estimated;
             if (forward.size() > 0) 
