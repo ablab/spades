@@ -519,7 +519,8 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
           KMerStat kms(0 /* cnt */, newkmer, 1.0 /* total quality */, NULL /*quality */);
           kms.status = KMerStat::GoodIter;
           new_idx = data_.push_back(kms);
-          newkmers += 1;
+          if (data_[newkmer].kmer() != newkmer)
+            newkmers += 1;
         }
         v.insert(v.begin(), new_idx);
       }
