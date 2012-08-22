@@ -73,16 +73,7 @@ static double logLikelihoodSingleton(const KMerStat & x) {
 	return res;
 }
 
-/**
-  * SIN
-  * find consensus with mask
-  * @param mask is a vector of integers of the same size as the block
-  * @param maskVal is the integer that we use
-  */
 KMer KMerClustering::find_consensus_with_mask(const vector<unsigned> & cl, const vector<int> & mask, int maskVal) {
-
-  //entry_logger el ("find_consensus_with_mask");
-
   size_t blockSize = cl.size();
 
   // consensus of a single string is trivial
@@ -539,8 +530,9 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
 void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
                              boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad) {
   size_t newkmers = 0;
+  size_t gsingl = 0, tsingl = 0, tcsingl = 0, gcsingl = 0, tcls = 0, gcls = 0;
 
-#  pragma omp parallel for shared(classes, ofs, ofs_bad) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers)
+# pragma omp parallel for shared(classes, ofs, ofs_bad) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls)
   for (size_t i = 0; i < classes.size(); ++i) {
     auto cur_class = classes[i];
 
@@ -550,6 +542,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
       KMerStat &singl = data_[idx];
       if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
         singl.status = KMerStat::GoodIter;
+        gsingl += 1;
         if (std::ofstream *fs = ofs.get())
           (*fs) << " good singleton: " << idx << "\n  " << singl << '\n';
       } else {
@@ -560,6 +553,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
         if (std::ofstream *fs = ofs_bad.get())
           (*fs) << " bad singleton: " << idx << "\n  " << singl << '\n';
       }
+      tsingl += 1;
     } else {
       std::vector<std::vector<int> > blocksInPlace;
 
@@ -574,6 +568,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
           KMerStat &singl = data_[idx];
           if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
             singl.status = KMerStat::GoodIter;
+            gcsingl += 1;
             if (std::ofstream *fs = ofs.get())
               (*fs) << " good cluster singleton: " << idx << "\n  " << singl << '\n';
           } else {
@@ -584,6 +579,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
             if (std::ofstream *fs = ofs_bad.get())
               (*fs) << " bad cluster singleton: " << idx << "\n  " << singl << '\n';
           }
+          tcsingl += 1;
         } else {
           size_t cidx = blocksInPlace[m][0];
           KMerStat &center = data_[cidx];
@@ -599,6 +595,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
           if (cfg::get().bayes_hammer_mode ||
               cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
             center.status = KMerStat::GoodIter;
+            gcls += 1;
             if (std::ofstream *fs = ofs.get())
               (*fs) << " center of good cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
                     << center << '\n';
@@ -611,6 +608,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
               (*fs) << " center of bad cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
                     << center << '\n';
           }
+          tcls += 1;
 
           for (size_t j = 1; j < blocksInPlace[m].size(); ++j) {
             size_t eidx = blocksInPlace[m][j];
@@ -627,5 +625,10 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
   }
 
   INFO("Subclustering done. Total " << newkmers << " non-read kmers were generated.");
+  INFO("Subclustering statistics:");
+  INFO("  Total singleton hamming clusters: " << tsingl << ". Among them " << gsingl << " (" << 100.0 * gsingl / tsingl << "%) are good");
+  INFO("  Total singleton subclusters: " << tcsingl << ". Among them " << gcsingl << " (" << 100.0 * gcsingl / tcsingl << "%) are good");
+  INFO("  Total non-singleton subcluster centers: " << tcls << ". Among them " << gcls << " (" << 100.0 * gcls / tcls << "%) are good");
+  INFO("  Total solid k-mers: " << gsingl + gcsingl + gcls);
 }
 
