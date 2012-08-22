@@ -41,6 +41,8 @@ class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
 protected:
     vector<pair<size_t, double> > EstimateEdgePairDistances(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId> >& data, const vector<size_t>& forward) const {
         vector<pair<size_t, double> > result;
+        size_t first_len = this->graph().length(data[0].first);
+        size_t second_len = this->graph().length(data[0].second);
         if (data.size() <= 1) 
             return result;
 
@@ -58,8 +60,12 @@ protected:
 		for (size_t i = 0; i < clusters.size(); i++) {
             size_t begin = clusters[i].first;
             size_t end = clusters[i].second;
+            if (math::ls(2. * rounded_d(new_data[begin]) + second_len, (double) first_len))
+                continue;
+            TRACE("begin " << begin << " at " << rounded_d(new_data[begin]) <<  ", " << "end " << end << " at " << rounded_d(new_data[end - 1]));
+            size_t data_length = rounded_d(new_data[end - 1]) - rounded_d(new_data[begin]) + 1;
+            TRACE("data length " << data_length);
             if ((end - begin) >= min_peak_points_) {
-                size_t data_length = rounded_d(new_data[end - 1]) - rounded_d(new_data[begin]) + 1;
                 while (cur < forward.size() && (int) forward[cur] < rounded_d(new_data[begin]))
                     cur++;
                 if (cur == forward.size()) {

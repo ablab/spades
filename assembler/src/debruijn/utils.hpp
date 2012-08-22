@@ -1469,15 +1469,16 @@ private:
 class WeightDEWrapper {
 private:
 
-    std::vector<double> new_hist;
+    vector<double> new_hist;
     int left_x;
     size_t insert_size;
 
 	void ExtendLinear(const std::map<int, size_t> & hist) {
-        size_t max_weight = 0;
+        size_t sum_weight = 0;
 
         for (auto iter = hist.begin(); iter != hist.end(); ++iter)
-            max_weight = max(max_weight, iter->second);
+            sum_weight += iter->second;
+            
 
         auto iter = hist.begin();
 
@@ -1486,7 +1487,7 @@ private:
         int prev = iter->first;
         int prev_val = iter->second;
 
-        new_hist.push_back(prev_val * 1./ max_weight);
+        new_hist.push_back(prev_val * 1./ sum_weight);
         ++iter;
 
         for (; iter != hist.end(); ++iter) {
@@ -1495,7 +1496,7 @@ private:
             double tan = 1. * (y - prev_val) / (x - prev);
 
             for (int i = prev + 1; i <= x; ++i) {
-                new_hist.push_back((prev_val + tan * (i - prev)) * 1. / max_weight);
+                new_hist.push_back((prev_val + tan * (i - prev)) * 1. / sum_weight);
             }
             prev = x;
             prev_val = y;
@@ -1503,7 +1504,7 @@ private:
 	}
 
 public:
-    WeightDEWrapper(const std::map<int, size_t>& hist, double IS) {
+    WeightDEWrapper(const map<int, size_t>& hist, double IS) {
         insert_size = (size_t) IS;
         ExtendLinear(hist);
     }

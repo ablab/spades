@@ -344,12 +344,11 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 
 	paired_info_index etalon_paired_index(gp.g);
 
-    bool successful_load = true;
+    bool successful_load = false;
     if (cfg::get().entry_point >= ws_distance_estimation) {
         fs::path p = fs::path(cfg::get().load_from) / "../etalon";
         if (!fs::is_regular_file(p.string() + ".prd")) {
             DEBUG("file " << p.string() + ".prd" << " does not exist");
-            successful_load = false;
         }
         else {
             INFO("Loading etalon pair info from the previous run...");
@@ -360,6 +359,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
             files_t files;
             files.push_back(p);
             copy_files_by_prefix(files, cfg::get().output_dir);
+            successful_load = true;
         }
     }
     if (!successful_load) 
