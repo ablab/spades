@@ -23,6 +23,9 @@
 #include "kmer_cluster.hpp"
 #include "config_struct_hammer.hpp"
 
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+
 using std::max_element;
 using std::min_element;
 
@@ -527,12 +530,22 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
   return newkmers;
 }
 
+static void UpdateErrors(boost::numeric::ublas::matrix<uint64_t> &m,
+                         const KMerStat &kms, const KMerStat &center) {
+  const KMer &kc = center.kmer();
+  const KMer &k = kms.kmer();
+  for (unsigned i = 0; i < K; ++i) {
+    m(kc[i], k[i]) += 1;
+  }
+}
+
 void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
                              boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad) {
   size_t newkmers = 0;
   size_t gsingl = 0, tsingl = 0, tcsingl = 0, gcsingl = 0, tcls = 0, gcls = 0;
 
-# pragma omp parallel for shared(classes, ofs, ofs_bad) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls)
+  std::vector<boost::numeric::ublas::matrix<uint64_t> > errs(nthreads_, boost::numeric::ublas::matrix<double>(4, 4));
+# pragma omp parallel for shared(classes, ofs, ofs_bad, errs) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls)
   for (size_t i = 0; i < classes.size(); ++i) {
     auto cur_class = classes[i];
 
@@ -615,6 +628,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
             KMerStat &kms = data_[eidx];
 
             kms.set_change(cidx);
+            UpdateErrors(errs[omp_get_thread_num()], kms, center);
             if (std::ofstream *fs = ofs_bad.get())
               (*fs) << " part of cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
                     << kms << '\n';
@@ -624,11 +638,20 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
     }
   }
 
+  for (unsigned i = 1; i < nthreads_; ++i)
+    errs[0] += errs[i];
+  boost::numeric::ublas::matrix<uint64_t> rowsums = prod(errs[0], boost::numeric::ublas::scalar_matrix<double>(4, 1, 1));
+  boost::numeric::ublas::matrix<double> err(4, 4);
+  for (unsigned i = 0; i < 4; ++i)
+    for (unsigned j = 0; j < 4; ++j)
+      err(i, j) = 1.0 * errs[0](i, j) / rowsums(i, 0);
+
   INFO("Subclustering done. Total " << newkmers << " non-read kmers were generated.");
   INFO("Subclustering statistics:");
   INFO("  Total singleton hamming clusters: " << tsingl << ". Among them " << gsingl << " (" << 100.0 * gsingl / tsingl << "%) are good");
   INFO("  Total singleton subclusters: " << tcsingl << ". Among them " << gcsingl << " (" << 100.0 * gcsingl / tcsingl << "%) are good");
   INFO("  Total non-singleton subcluster centers: " << tcls << ". Among them " << gcls << " (" << 100.0 * gcls / tcls << "%) are good");
   INFO("  Total solid k-mers: " << gsingl + gcsingl + gcls);
+  INFO("  Substitution probabilities: " << err);
 }
 
