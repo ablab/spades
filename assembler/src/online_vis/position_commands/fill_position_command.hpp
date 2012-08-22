@@ -43,10 +43,11 @@ namespace online_visualization {
 
             void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
                 const vector<string>& args = arg_list.GetAllArguments();
-                string name = args[1];
-                string file = args[2];
                 if (!CheckCorrectness(args))
                     return;
+
+                string name = args[1];
+                string file = args[2];
 
                 io::Reader irs(file);
                 

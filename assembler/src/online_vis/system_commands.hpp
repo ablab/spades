@@ -247,10 +247,10 @@ namespace online_visualization {
             string Usage() const {
                 string answer;
                 answer = answer + "Command `replay` \n" + 
-                                "Usage:\n" + 
-                                "> rep <command_number>\n" + 
+                                " Usage:\n" + 
+                                " > rep <command_number>\n" + 
                                 " Runs the command <command_number> commands before. For example:\n" +
-                                "> rep 1 \n" + 
+                                " > rep 1 \n" + 
                                 " would run the previous command.\n" + 
                                 " It is still under development.";
                 return answer;
@@ -302,8 +302,8 @@ namespace online_visualization {
             string Usage() const {
                 string answer;
                 answer = answer + "Command `log` \n" + 
-                                "Usage:\n" + 
-                                "> log [<number_of_commands>]\n" + 
+                                " Usage:\n" + 
+                                " > log [<number_of_commands>]\n" + 
                                 " Shows last <number_of_commands> in the history. Shows the whole log by default.";
                 return answer;
             }
@@ -350,8 +350,8 @@ namespace online_visualization {
             string Usage() const {
                 string answer;
                 answer = answer + "Command `save` \n" + 
-                                "Usage:\n" + 
-                                "> save <number_of_commands> <file_name>\n" + 
+                                " Usage:\n" + 
+                                " > save <number_of_commands> <file_name>\n" + 
                                 " Saves last <number_of_commands> of the history in the file filename.";
                 return answer;
             }
@@ -463,9 +463,9 @@ namespace online_visualization {
             string Usage() const {
                 string answer;
                 answer = answer + "Command `load_genome` \n" + 
-                                "Usage:\n" + 
-                                "> load_genome <path_to_genome>\n" + 
-                                " You should specify a path to the genome you want to load from. For example:\n" +
+                                " Usage:\n" + 
+                                " > load_genome <path_to_genome>\n" + 
+                                " You should specify a path to the genome you want to load from.\n" +
                                 " Previously loaded genomes would be lost.";
                 return answer;
             }
@@ -475,10 +475,10 @@ namespace online_visualization {
             }
 
             void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
-	            const vector<string>& args_ = arg_list.GetAllArguments();
-                if (!CheckCorrectness(args_))
+	            const vector<string>& args = arg_list.GetAllArguments();
+                if (!CheckCorrectness(args))
                     return;
-                const string& file = args_[0];
+                const string& file = args[1];
                 if (file == "") {
                     cout << "Warning: loading empty genome" << endl;
                     return;

@@ -13,15 +13,6 @@ namespace online_visualization {
         private:
             mutable bool ext_output;
 
-            //void info(string text) const {
-                //cout << text << endl;   
-            //}
-            
-            //void debug(string text) const {
-                //if (ext_output)
-                    //info(text);
-            //}
-
             vector<EdgeId> TryCloseGap(const Graph& graph, VertexId v1, VertexId v2) const {
                 if (v1 == v2)
                     return vector<EdgeId>();
@@ -68,6 +59,60 @@ namespace online_visualization {
             }
 
         private:
+
+            //TODO: do something!
+            bool ProcessContigCarefully(Environment& curr_env, const Sequence& contig, const MappingPath<EdgeId>& genome_path, const string& contig_name) const {
+                debug(ext_output, " Checking the contig " << contig_name);
+                debug(ext_output, " Length " << contig.size());
+                const MappingPath<EdgeId>& contig_path = curr_env.mapper().MapSequence(contig);
+                set<EdgeId> contig_edges;
+                map<EdgeId, vector<MappingRange> > edge_positions;
+                if (contig_path.size() == 0) {
+                    debug(ext_output, "Contig could not be aligned at all!");
+                    return false;
+                }
+                for (size_t i = 0; i < contig_path.size(); ++i) {
+                    contig_edges.insert(contig_path[i].first);   
+                }
+    
+                for (size_t i = 0; i < genome_path.size(); ++i) {
+                    if (contig_edges.find(genome_path[i].first) != contig_edges::end())
+                        edge_positions[genome_path[i].first].push_back(genome_path[i].second);
+                }
+
+                bool found = false;
+                
+                for (size_t i = 0; i < contig_path.size(); ++i) {
+                    TRACE(i << "-th edge of the contig " << contig_name);
+                    CheckEdgeIsNotMisassembled(contig_path[i], edge_positions[contig_path[i].first]);
+                }
+
+                contig_path.
+                for (size_t i = 0; i + 1 < contig_path.size(); ++i) {
+                    
+
+                }
+                    
+                for (size_t i = 0; i < genome_path_completed.size(); ++i) {
+                    TRACE(i << "-th edge of the genome " << genome_path_completed[i]);
+                    if (genome_path_completed[i] == first_edge) {
+                        found = true;
+                        for (size_t j = 1; j < contig_path.size(); ++j) {
+                            if (genome_path_completed[i + j] != contig_path[j].first) {
+                                debug(ext_output, " Break in the edge " << curr_env.graph().int_id(contig_path[j].first));
+                                return false;
+                            }
+                        }
+                    }
+                }
+                if (!found) {
+                    debug(ext_output, " First edge " << curr_env.graph().int_id(first_edge) << " was not found");
+                    return false;
+                } else {
+                    debug(ext_output, " No misassemblies");
+                    return true;
+                }
+            }
 
             bool ProcessContig(Environment& curr_env, const Sequence& contig, const MappingPath<EdgeId>& genome_path, const string& contig_name) const {
                 debug(ext_output, " Checking the contig " << contig_name);
