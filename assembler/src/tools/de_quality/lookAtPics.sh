@@ -28,5 +28,5 @@ while [ $i -lt $SIZZE ]; do
     cd $f
     pwd
     gnuplot -geometry 1280x1024 plot.conf || { echo "Gnuplot exited "; exit 1; }
-    cd $DIRR
+    cd $PROJ_DIR
 done;

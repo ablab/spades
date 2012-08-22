@@ -241,9 +241,9 @@ protected:
 
 	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& data, PairedInfoIndex<Graph> &result) const {
 		if (make_pair(first, second) <= ConjugatePair(first, second)) {
-			vector<size_t> forward = this->GetGraphDistancesLengths(first, second);
-			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(first, second, data, forward);
-			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
+			const vector<size_t>& forward = this->GetGraphDistancesLengths(first, second);
+			const vector<pair<size_t, double> >& estimated = EstimateEdgePairDistances(first, second, data, forward);
+			const vector<PairInfo<EdgeId>>& res = this->ClusterResult(first, second, estimated);
 			this->AddToResult(result, res);
 			this->AddToResult(result, ConjugateInfos(res));
 		}

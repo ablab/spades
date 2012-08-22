@@ -89,9 +89,6 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS,
 				*cfg::get().ds.RL, delta);
 
-		//if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_advanced) {
-		//VERIFY_MSG(false, "No way, I have not rewritten advanced_estimator yet");
-		//}
 
 		size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 		INFO("Symmetry trick");
@@ -186,6 +183,30 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 			estimate_with_estimator(gp.g, estimator, normalizer, filter,
 					clustered_index);
 		}
+        
+        INFO("Refining clustered pair information");
+        //postprocessing, dealing with the cases when clusters intersect
+        //assuming that intersection can be only in the case when two clusters touch each other
+        for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
+            const vector<PairInfo<EdgeId> >& infos = *iter;
+            for (size_t i = 1; i < infos.size(); ++i) {
+                if (math::le(abs(infos[i].d - infos[i - 1].d), infos[i].variance + infos[i - 1].variance)) {
+                    //Uniting clusters, which intersect
+                    // just interested, whether the only point, in which they can intersect, is zero
+                    if (!math::eq(infos[i].d + infos[i - 1].d, 0.))
+                        WARN("Clusters intersected not in zero, edges -- " << gp.g.int_id(infos[0].first) <<  " " << gp.g.int_id(infos[1].second));
+                    PairInfo<EdgeId> new_info(infos[i].first, infos[i].second, 
+                                        0.5*(infos[i].d + infos[i - 1].d),
+                                        infos[i].weight + infos[i - 1].weight,
+                                        infos[i].variance + infos[i - 1].variance);
+                    clustered_index.RemovePairInfo(infos[i]);
+                    clustered_index.RemovePairInfo(infos[i - 1]);
+                    clustered_index.AddPairInfo(new_info);
+                }
+                    
+            }
+        }
+        INFO("Pair information was refined");
 
 		//experimental
 		if (cfg::get().simp.simpl_mode

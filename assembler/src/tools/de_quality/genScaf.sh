@@ -5,6 +5,7 @@ OUTPUT_DIR=$PROJ_DIR/data/output/
 INPUT_DIR=$PROJ_DIR/data/input/
 
 
+cd $INPUT_DIR
 sed '1d' scaf_etalon.prd > etalon.prd
 sed '1d' scaf_clustered.prd > clustered.prd
 

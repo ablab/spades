@@ -23,6 +23,7 @@
 #include "io/easy_reader.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "copy_file.hpp"
 #include <cmath>
 
 namespace debruijn_graph {
@@ -207,7 +208,7 @@ void FillAndCorrectEtalonPairedInfo(
 	if (save_etalon_info_history) {
 		INFO("Saving etalon paired info indices on different stages");
 		ConjugateDataPrinter<Graph> data_printer(gp.g, gp.int_ids);
-		data_printer.savePaired(cfg::get().output_dir + "etalon_paired",
+		data_printer.savePaired(cfg::get().output_dir + "etalon",
 				etalon_paired_index);
 		data_printer.savePaired(
 				cfg::get().output_dir + "etalon_filtered_by_index",
@@ -342,7 +343,27 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 		const PairedInfoIndex<Graph> &clustered_index) {
 
 	paired_info_index etalon_paired_index(gp.g);
-	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
+
+    bool successful_load = true;
+    if (cfg::get().entry_point >= ws_distance_estimation) {
+        fs::path p = fs::path(cfg::get().load_from) / "../etalon";
+        if (!fs::is_regular_file(p.string() + ".prd")) {
+            DEBUG("file " << p.string() + ".prd" << " does not exist");
+            successful_load = false;
+        }
+        else {
+            INFO("Loading etalon pair info from the previous run...");
+            Graph& graph = const_cast<Graph&>(gp.g);
+            IdTrackHandler<Graph>& int_ids = const_cast<IdTrackHandler<Graph>& >(gp.int_ids);
+            ScannerTraits<Graph>::Scanner scanner(graph, int_ids);
+            scanner.loadPaired(p.string(), etalon_paired_index);
+            files_t files;
+            files.push_back(p);
+            copy_files_by_prefix(files, cfg::get().output_dir);
+        }
+    }
+    if (!successful_load) 
+        FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
 			*cfg::get().ds.IS, *cfg::get().ds.RL, *cfg::get().ds.is_var, true);
 
 	INFO("Counting clustered info stats");

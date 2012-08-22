@@ -98,9 +98,8 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		const KmerMapper<Graph>& kmer_mapper, size_t is, size_t rs,
 		size_t delta, const Sequence& genome, size_t k) {
 
-	INFO(
-			(string) (FormattedString(
-					"Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i")
+    VERIFY_MSG(genome.size() > 0, "The genome seems not to be loaded, program will exit");
+	INFO((string) (FormattedString("Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i")
 					<< genome.size() << k << is << rs << delta));
 
 	EtalonPairedInfoCounter<Graph> etalon_paired_info_counter(g, index,

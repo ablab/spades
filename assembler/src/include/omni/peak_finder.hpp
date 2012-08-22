@@ -195,6 +195,7 @@ private:
 
 	bool IsLocalMaximum(int peak, size_t range, int left_bound, int right_bound, int delta) const {
 
+        DEBUG("Is local maximum :  peak " << peak << " range " << range << " bounds " << left_bound << " " << right_bound << " delta " << delta);
 		for (int i = left_bound + (int) range; i < right_bound - (int) range; ++i) {
 			int index_max = i - (int) range;
 			for (int j = i - (int) range; j < i + (int) range; j++)
@@ -274,6 +275,7 @@ public:
 	}
 
     vector<pair<size_t, double> > ListPeaks(int delta = 5) const {
+        DEBUG("Listing peaks");
         map<size_t, double> peaks_;
         //another data_len_
         size_t data_len_ = x_right_ - x_left_;
@@ -296,12 +298,12 @@ public:
                 double right_derivative = RightDerivative(index);
                 double left_derivative = LeftDerivative(index);
 
-                if (math::gr(right_derivative, 0.) && math::gr(right_derivative, left_derivative)) {
+                if (math::gr(right_derivative, 0.) && math::gr(right_derivative, -left_derivative)) {
                     index++;
                     if ((iteration & 1) == 0)
                         ++iteration;
                 } 
-                else if (math::gr(left_derivative, 0.)) {
+                else if (math::le(left_derivative, 0.)) {
                     index--;
                     if ((iteration & 1) == 1)
                         ++iteration;

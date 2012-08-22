@@ -136,6 +136,8 @@ public:
     }
 
     vector<pair<size_t, double> > FindEdgePairDistances(const vector<PairInfo<EdgeId> >& data) const {
+        size_t first_len = this->graph().length(data[0].first);
+        size_t second_len = this->graph().length(data[0].second);
         vector<pair<size_t, double> > result;
         if (data.size() <= 1)
             return result;
@@ -149,9 +151,11 @@ public:
         for (size_t i = 0; i < clusters.size(); i++) {
             size_t begin = clusters[i].first;
             size_t end = clusters[i].second;
-            TRACE("Begin " << begin << ", " << " End " << end);
+            if (math::ls(2. * rounded_d(new_data[begin]) + second_len, (double) first_len))
+                continue;
+            TRACE("begin " << begin << " at " << rounded_d(new_data[begin]) <<  ", " << " end " << end << " at " << rounded_d(new_data[begin]));
             size_t data_length = rounded_d(new_data[end - 1]) - rounded_d(new_data[begin]) + 1;
-            TRACE(data_length);
+            TRACE("data length " << data_length);
             if (end - begin > min_peak_points_) {
                 PeakFinder<EdgeId> peakfinder(new_data, begin, end, round(data_length * range_coeff_), round(data_length * delta_coeff_), percentage_, derivative_threshold_);
                 DEBUG("Processing window : " << rounded_d(new_data[begin]) << " " << rounded_d(new_data[end - 1]));
