@@ -31,7 +31,34 @@ cp $project_dir"contigs.fasta" $dir$(date +%Y%m%d_%H%M%S)".fasta"
 python2.6 ~/quast/quast.py $project_dir"contigs.fasta" $line -o $project_dir"/quality_results/"
 rm $dir"/quast_all" -rf
 #echo $dir"*.fasta" $line -o $dir"/quast_all"
-quast_line="$output_pref/quast/quast.py $dir* $line -o $dir/quast_all/"
+dirtmp=$dir"tmp/"
+rm $dirtmp -rf
+mkdir $dirtmp
+
+for i in $dir*.fasta ; do 
+#find DIR -type f | while read FILENAME; do
+  flag="False"
+  for j in $dirtmp*.fasta ; do
+    echo $i
+    echo $j
+    if [ -f $j ] ;
+    then
+      compare_res=$(python2.6 ~/algorithmic-biology/assembler/src/tools/contig_analysis/compare_fasta.py $i $j)
+      echo $compare_res
+      if [ $compare_res = "True" ]; 
+      then
+        flag="True"
+        break     
+      fi	 
+    fi
+  done  
+  if [ $flag = "False" ] ;
+  then
+    cp $i $dirtmp
+  fi
+done
+
+quast_line="$output_pref/quast/quast.py $dirtmp* $line -o $dir/quast_all/"
 
 
 
