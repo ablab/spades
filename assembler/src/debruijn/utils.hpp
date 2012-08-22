@@ -338,6 +338,7 @@ private:
 
 	bool TryThread(Kmer &kmer, vector<EdgeId> &passed,
 			size_t& endPosition) const {
+        VERIFY(passed.size() > 0);
 		EdgeId last = passed[passed.size() - 1];
         if (endPosition + 1 < g_.length(last)) {
             if (g_.EdgeNucls(last)[endPosition + k_] == kmer[k_ - 1]) {

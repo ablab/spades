@@ -68,6 +68,9 @@ online_clust_rad 0.
 ;if true long ec are removed based on topology and coverage
 additional_ec_removing    true
 
+; set it true to separate the clusters after de stage
+divide_clusters false
+
 ; set it true to get statistics for pair information, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
 

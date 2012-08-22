@@ -507,6 +507,7 @@ public:
 	bool paired_mode;
 	double online_clust_rad;
 	bool additional_ec_removing;
+	bool divide_clusters;;
 	bool paired_info_statistics;
 	bool paired_info_scaffolder;
 //	bool etalon_info_mode;
@@ -955,6 +956,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.paired_mode, pt, "paired_mode");
 	load(cfg.online_clust_rad, pt, "online_clust_rad");
 	load(cfg.additional_ec_removing, pt, "additional_ec_removing");
+	load(cfg.divide_clusters, pt, "divide_clusters");
 	load(cfg.paired_info_statistics, pt, "paired_info_statistics");
 	load(cfg.paired_info_scaffolder, pt, "paired_info_scaffolder");
 //	load(cfg.etalon_info_mode, pt, "etalon_info_mode");

@@ -46,6 +46,84 @@ namespace debruijn_graph {
 //}
 //
 //
+//
+void DivideClusters(const Graph& g, const PairedInfoIndex<Graph>& clustered_index, const IdTrackHandler<Graph>& int_ids, PairedInfoIndex<Graph>& result,
+    const GraphDistanceFinder<Graph>& dist_finder) {
+
+    for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
+        const vector<PairInfo<EdgeId> >& data = *iter;
+        EdgeId first_edge = data[0].first;
+        EdgeId second_edge = data[0].second;
+        TRACE("Analyzing edges " << first_edge << " and " << second_edge);
+
+        const vector<vector<EdgeId> >& paths = dist_finder.GetGraphDistances(first_edge, second_edge);
+        //count the lengths of corresponding paths
+        TRACE(paths.size() << " paths found");
+        vector<size_t> paths_lengths;
+        for (size_t i = 0; i < paths.size(); ++i) {
+            const vector<EdgeId>& path = paths[i];
+            size_t len = g.length(first_edge);
+            for (size_t j = 0; j + 1 < path.size(); ++j)
+                len += g.length(path[j]);
+            paths_lengths.push_back(len);
+        }
+        TRACE("Lengths counted");
+        
+        for (auto data_iter = data.begin(); data_iter != data.end(); ++data_iter) {
+            const PairInfo<EdgeId>& pair_info = *data_iter;
+            TRACE("New pair info " << pair_info);
+            // choose only clusters
+            if (math::gr(pair_info.variance, 0.)) {
+                // filtering paths with corresponding length
+                TRACE("Var > 0");
+                double average_weight = 0.;
+                vector<double> paths_weights;
+                size_t num_of_clustered_paths = 0;
+                for (size_t i = 0; i < paths.size(); ++i) {
+                    double weight_total = 0.;
+                    if (math::le(std::abs(paths_lengths[i] - pair_info.d), pair_info.variance)) {
+                        ++num_of_clustered_paths;
+                        const vector<EdgeId>& path = paths[i];
+                        double cur_len = g.length(first_edge);
+                        for (size_t j = 0; j + 1 < path.size(); ++j) {
+                            const vector<PairInfo<EdgeId> >& back_infos = clustered_index.GetEdgePairInfo(first_edge, path[j]);
+                            for (auto iter = back_infos.begin(); iter != back_infos.end(); ++iter) {
+                                const PairInfo<EdgeId>& info = *iter;
+                                if (info.d == cur_len) {
+                                    weight_total += info.weight;   
+                                }
+                            }
+                            const vector<PairInfo<EdgeId> >& forward_infos = clustered_index.GetEdgePairInfo(path[j], second_edge);
+                            for (auto iter = forward_infos.begin(); iter != forward_infos.end(); ++iter) {
+                                const PairInfo<EdgeId>& info = *iter;
+                                if (info.d + cur_len == paths_lengths[i]) {
+                                    weight_total += info.weight;   
+                                }
+                            }
+                        }
+                    }
+                    paths_weights.push_back(weight_total);
+                    average_weight += weight_total;
+                }
+                double sum_weight = average_weight;
+                average_weight /= 1. * num_of_clustered_paths;
+                // filtering bad paths
+                for (size_t i = 0; i < paths.size(); ++i) {
+                    if (math::le(abs(paths_lengths[i] - pair_info.d), pair_info.variance)) {
+                        if (true || math::gr(paths_weights[i], average_weight)) {
+                            result.AddPairInfo(PairInfo<EdgeId>(first_edge, second_edge, paths_lengths[i], 
+                            pair_info.weight / num_of_clustered_paths * paths_weights[i] / sum_weight, 0.));
+                        }
+                    }
+                }
+            } else {
+                TRACE("variance zero");   
+                result.AddPairInfo(pair_info);
+            }
+        }
+    }
+       
+}
 
 void estimate_with_estimator(const Graph& graph,
 		const AbstractDistanceEstimator<Graph>& estimator,
@@ -207,6 +285,15 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
             }
         }
         INFO("Pair information was refined");
+
+        if (cfg::get().divide_clusters) {
+            paired_info_index new_clustered_index(gp.g);
+            DivideClusters(gp.g, clustered_index, gp.int_ids, new_clustered_index, dist_finder);
+            paired_info_index clustered_index(gp.g);
+            // copying all over again
+            clustered_index.AddAll(new_clustered_index);
+        }
+
 
 		//experimental
 		if (cfg::get().simp.simpl_mode
