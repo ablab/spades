@@ -23,7 +23,7 @@ namespace online_visualization {
         public:
             string Usage() const {
                 string answer;
-                answer = answer + "Command `print_paths` \n" + 
+                answer = answer + "Command `paths` \n" + 
                                 "Usage:\n" + 
                                 "> paths <vertex_from> <vertex_to> [<max_length>] \n" + 
                                 " This command prints all paths between two given vertices, that do not exceed `max_length` parameter.\n" +
@@ -46,11 +46,14 @@ namespace online_visualization {
                 size_t from = GetInt(args[1]);
                 size_t to = GetInt(args[2]);
                 size_t max_length = 100000;
-                if (args.size() > 2) 
+                if (args.size() > 3) 
                     max_length = GetInt(args[3]);
-                if (arg_list.contains("-edge")) {
+                if (arg_list["edge"]=="true") {
                     // not so good, maybe do something
                     first_edge = second_edge = true;   
+                    TRACE("Looking at edges");
+                    if (!CheckEdgeExists(curr_env.int_ids(), from) || !CheckEdgeExists(curr_env.int_ids(), to))
+                        return;
                     from = curr_env.graph().int_id(curr_env.graph().EdgeStart(curr_env.int_ids().ReturnEdgeId(from)));
                     to = curr_env.graph().int_id(curr_env.graph().EdgeStart(curr_env.int_ids().ReturnEdgeId(to)));
                 }
@@ -59,6 +62,7 @@ namespace online_visualization {
                 if (!CheckVertexExists(curr_env.int_ids(), from) || !CheckVertexExists(curr_env.int_ids(), to))
                     return;
 
+                TRACE("Looking for the paths");
                 PathStorageCallback<Graph> callback(curr_env.graph());
                 PathProcessor<Graph> pp(curr_env.graph(), 0, max_length,
                         curr_env.int_ids().ReturnVertexId(from),
@@ -75,5 +79,7 @@ namespace online_visualization {
                 }
                 
             }
+        private:
+            DECL_LOGGER("PrintPathsCommand");
     };
 }
