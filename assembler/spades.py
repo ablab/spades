@@ -856,14 +856,14 @@ def run_spades(cfg):
     for K in cfg.iterative_K:
         count += 1
 
-        dst_configs = os.path.join(cfg.output_dir, "config_K" + str(K))
+        dst_configs = os.path.join(cfg.output_dir, "config_K%d" % (K))
         if os.path.exists(dst_configs):
             shutil.rmtree(dst_configs)
-        os.mkdir(dst_configs)
-
+        os.makedirs(dst_configs)
+    
         dst_configs = os.path.join(dst_configs, "configs")
-        shutil.copytree(os.path.join(spades_home, "configs"), dst_configs)
-        cfg_file_name = os.path.join(dst_configs, "debruijn", "config.info")
+        shutil.copytree(os.path.join(spades_home, "configs", "debruijn"), dst_configs)  
+        cfg_file_name = os.path.join(dst_configs, "config.info")
 
         prepare_config_spades(cfg_file_name, cfg, prev_K, K,
             count == len(cfg.iterative_K))
@@ -880,12 +880,16 @@ def run_spades(cfg):
                     shutil.move(cor_filename, new_bin_filename)
 
         print("\n== Running assembler: " + command + "\n")
-
+        
         latest = os.path.join(cfg.output_dir, "K%d" % (K))
         if os.path.exists(latest):
             shutil.rmtree(latest)
 
         support.sys_call(command, execution_home)
+
+        dst_configs = os.path.join(cfg.output_dir, "config_K%d" % (K))
+        if os.path.exists(dst_configs):
+            shutil.rmtree(dst_configs)
 
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.developer_mode:
@@ -909,7 +913,7 @@ def run_spades(cfg):
         os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
 
     if os.path.isdir(bin_reads_dir):
-        shutil.rmtree(bin_reads_dir)
+        shutil.rmtree(bin_reads_dir)    
 
     return cfg.result_contigs
 
