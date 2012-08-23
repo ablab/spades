@@ -17,10 +17,6 @@ namespace debruijn_graph {
 void late_pair_info_count(conj_graph_pack& gp,
 		paired_info_index& paired_index) {
 	exec_simplification(gp);
-    INFO("Correcting mismatches");
-	auto_ptr<io::IReader<io::SingleReadSeq>> paired_stream = single_binary_multireader(true, true);
-	size_t corrected = MismatchShallNotPass<conj_graph_pack, io::SingleReadSeq>(gp, *paired_stream, 2).StopAllMismatches(1);
-	INFO("Corrected " << corrected << " nucleotides");
 	if (!cfg::get().developer_mode) {
 		paired_index.Attach();
 		paired_index.Init();
