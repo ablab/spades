@@ -71,6 +71,12 @@ function change_config
     rm temp
 }
 
+
+#   awful, awful!
+    awk -v property="run_mode" -v value="true"  '{if ($1==property) print property,value; else print $0}' $cfg_debruijn/config.info  > config1.info
+    mv config1.info $cfg_debruijn/config.info
+#   --------------------------------------------
+
 if [ $# = 0 ]
 then
     run_n_measure build/release/bin/spades $cfg_debruijn/config.info 
@@ -79,11 +85,6 @@ else
     then
         change_config $2
     fi
-
-#   awful, awful!
-    awk -v property="make_saves_dirs" -v value="true"  '{if ($1==property) print property,value; else print $0}' configs/debruijn/config.info  > config1.info
-    mv config1.info configs/debruijn/config.info
-#   --------------------------------------------
 
     case $1 in
 

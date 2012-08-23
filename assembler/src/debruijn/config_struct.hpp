@@ -119,8 +119,8 @@ struct debruijn_config {
     typedef bimap<string, paired_metrics> paired_metrics_id_mapping;
 	typedef bimap<string, resolving_mode> resolve_mode_id_mapping;
 
-//  damn shit fix, it is to be removed!
-    bool make_saves_dirs;
+//  damn shit fix, it is to be removed! To determine is it started from run.sh or from spades.py
+    bool run_mode;
 
 	bool developer_mode;
 
@@ -902,9 +902,9 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	cfg.dataset_name = boost::filesystem::basename(boost::filesystem::path(cfg.dataset_file));
 
     // TODO: remove this shit
-	load(cfg.make_saves_dirs, pt, "make_saves_dirs");
+	load(cfg.run_mode, pt, "run_mode");
     
-	if (cfg.make_saves_dirs) {
+	if (cfg.run_mode) {
 	    load(cfg.project_name, pt, "project_name");
         cfg.output_root = cfg.project_name.empty()
 			? (cfg.output_base + "/K" + ToString(cfg.K) + "/")
@@ -940,7 +940,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.load_from, pt, "load_from");
 	if (cfg.load_from[0] != '/') { // relative path
-		if (cfg.make_saves_dirs) 
+		if (cfg.run_mode) 
             cfg.load_from = cfg.output_root + cfg.load_from;
         else 
             cfg.load_from = cfg.output_dir + cfg.load_from;

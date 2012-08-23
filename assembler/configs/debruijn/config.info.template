@@ -6,7 +6,7 @@
 
 K		55
 
-make_saves_dirs false
+run_mode false
 project_name    TOY_DATASET
 dataset         ./configs/debruijn/datasets_archive/toy.info
 log_filename    log.properties

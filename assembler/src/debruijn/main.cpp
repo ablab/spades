@@ -33,6 +33,9 @@
 
 void link_output(std::string const& link_name)
 {
+    if (!cfg::get().run_mode)
+        return;
+
     std::string link = cfg::get().output_root + link_name;
     unlink(link.c_str());
     if (symlink(cfg::get().output_suffix.c_str(), link.c_str()) != 0)
@@ -40,6 +43,9 @@ void link_output(std::string const& link_name)
 }
 
 void link_previous_run(std::string const& previous_link_name, std::string const& link_name){
+   if (!cfg::get().run_mode)
+       return;
+
    char buf[255];
 
    std::string link = cfg::get().output_dir + previous_link_name;
