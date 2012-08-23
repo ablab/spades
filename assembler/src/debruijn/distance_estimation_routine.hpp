@@ -114,7 +114,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		}
 
 		PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
-		if (false && cfg::get().ds.single_cell) {
+		if (cfg::get().ds.single_cell) {
 			normalizing_f = &TrivialWeightNormalization<Graph>;
 		} else {
 			//todo reduce number of constructor params
