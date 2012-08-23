@@ -255,13 +255,15 @@ def check_config(cfg):
             cfg["assembly"].__dict__["generate_sam_files"] = False
         if not "gap_closer" in cfg["assembly"].__dict__:
             cfg["assembly"].__dict__["gap_closer"] = True
+        if not "correct_mismatches" in cfg["assembly"].__dict__:	
+            cfg["assembly"].__dict__["correct_mismatches"] = False			
 
     return True
 
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gap-closer disable-gzip-output help test debug reference= "\
-               "bh-heap-check= spades-heap-check= help-hidden".split()
+               "bh-heap-check= spades-heap-check= help-hidden correct-mismatches".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -316,6 +318,7 @@ def usage(show_hidden=False):
                          " for BayesHammer"
         print >> sys.stderr, "--spades-heap-check\t<value>\tset HEAPCHECK environment variable"\
                          " for SPAdes"
+        print >> sys.stderr, "--correct-mismatches\t\t\tcorrect mismatches"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "--test\t\trun SPAdes on toy dataset"
@@ -379,6 +382,7 @@ def main():
 
         bh_heap_check = ""
         spades_heap_check = ""
+        correct_mismatches = False
 
         developer_mode = False
 
@@ -429,6 +433,8 @@ def main():
                 bh_heap_check = arg
             elif opt == "--spades-heap-check":
                 spades_heap_check = arg
+            elif opt == "--correct-mismatches":
+                correct_mismatches = True
 
             elif opt == '-t' or opt == "--threads":
                 threads = int(arg)
@@ -534,6 +540,7 @@ def main():
                     cfg["assembly"].__dict__["heap_check"] = spades_heap_check
                 cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files
                 cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
+                cfg["assembly"].__dict__["correct_mismatches"] = correct_mismatches
 
             if not check_config(cfg):
                 return
