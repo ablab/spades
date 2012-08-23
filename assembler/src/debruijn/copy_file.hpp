@@ -111,7 +111,9 @@ void copy_files_by_ext(fs::path const& from_folder, fs::path const& to_folder, s
 		    copy_files_by_ext(it->path(), subdir, ext, recursive);
         }
 
-	    if (it->path().extension() == ext)
-	    	details::copy_file(*it, to_folder / it->path().filename());
+	    if (it->path().extension() == ext) {
+	    	if (! fs::equivalent(*it, to_folder / it->path().filename()))
+	    		details::copy_file(*it, to_folder / it->path().filename());
+	    }
     }
 }

@@ -290,9 +290,6 @@ def usage(show_hidden=False):
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
-    if show_hidden:
-        print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
-                         " (only in debug mode)"
     print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads [default: 16]"
     print >> sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
                          " (terminates if exceeded) [default: 250]"
@@ -312,13 +309,18 @@ def usage(show_hidden=False):
     print >> sys.stderr, "--disable-gap-closer\t\tforces SPAdes not to use the gap"\
                          " closer"
     print >> sys.stderr, "--disable-gzip-output\t\tforces error correction not to"\
-                         " compress the corrected reads"    
+                         " compress the corrected reads" 
+
     if show_hidden:
+        print >> sys.stderr, ""
+        print >> sys.stderr, "HIDDEN options:"  
+        print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
+                         " (only in debug mode)" 
         print >> sys.stderr, "--bh-heap-check\t\t<value>\tset HEAPCHECK environment variable"\
                          " for BayesHammer"
         print >> sys.stderr, "--spades-heap-check\t<value>\tset HEAPCHECK environment variable"\
                          " for SPAdes"
-        print >> sys.stderr, "--correct-mismatches\t\t\tcorrect mismatches"
+        print >> sys.stderr, "--correct-mismatches\t\tcorrect mismatches"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "--test\t\trun SPAdes on toy dataset"
@@ -863,11 +865,11 @@ def run_spades(cfg):
     for K in cfg.iterative_K:
         count += 1
 
-        dst_configs = os.path.join(cfg.output_dir, "config_K%d" % (K))
+        dst_configs = os.path.join(cfg.output_dir, "K%d" % (K))
         if os.path.exists(dst_configs):
             shutil.rmtree(dst_configs)
         os.makedirs(dst_configs)
-    
+        
         dst_configs = os.path.join(dst_configs, "configs")
         shutil.copytree(os.path.join(spades_home, "configs", "debruijn"), dst_configs)  
         cfg_file_name = os.path.join(dst_configs, "config.info")
@@ -888,16 +890,9 @@ def run_spades(cfg):
 
         print("\n== Running assembler: " + command + "\n")
         
-        latest = os.path.join(cfg.output_dir, "K%d" % (K))
-        if os.path.exists(latest):
-            shutil.rmtree(latest)
-
         support.sys_call(command, execution_home)
 
-        dst_configs = os.path.join(cfg.output_dir, "config_K%d" % (K))
-        if os.path.exists(dst_configs):
-            shutil.rmtree(dst_configs)
-
+    latest = os.path.join(cfg.output_dir, "K%d" % (K))
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.developer_mode:
         # before repeat resolver contigs
