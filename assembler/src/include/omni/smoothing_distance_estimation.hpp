@@ -112,7 +112,7 @@ protected:
             DEBUG("Extend right");
             this->ExtendInfoRight(first, second, data);
             
-            DEBUG("Weight increased " << (WeightSum(data) - weight_0));
+            DEBUG("Weight increased " << (this->WeightSum(data) - weight_0));
 
 		    vector<pair<size_t, double> > estimated;
             if (forward.size() > 0) 
