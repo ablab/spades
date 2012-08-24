@@ -254,16 +254,8 @@ int main(int argc, char * argv[]) {
       if (cfg::get().bayes_do || do_everything) {
         INFO("Subclustering Hamming graph");
         unsigned clustering_nthreads = std::min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
-        KMerClustering kmc(*Globals::kmer_data, clustering_nthreads);
-        boost::shared_ptr<std::ofstream> ofkmers =
-            cfg::get().bayes_write_solid_kmers ?
-            boost::shared_ptr<std::ofstream>(new std::ofstream(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.solid").c_str())) :
-            boost::shared_ptr<std::ofstream>();
-        boost::shared_ptr<std::ofstream> ofkmers_bad =
-            cfg::get().bayes_write_bad_kmers ?
-            boost::shared_ptr<std::ofstream>(new std::ofstream(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.bad").c_str())) :
-            boost::shared_ptr<std::ofstream>();
-        kmc.process(classes, ofkmers, ofkmers_bad);
+        KMerClustering kmc(*Globals::kmer_data, clustering_nthreads, cfg::get().input_working_dir);
+        kmc.process(classes);
         INFO("Finished clustering.");
       }
 

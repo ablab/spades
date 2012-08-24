@@ -26,17 +26,18 @@ class KMerClustering {
   typedef boost::numeric::ublas::symmetric_matrix<uint8_t, boost::numeric::ublas::lower> KMerHamDistMatrix;
 
 public:
-	KMerClustering(KMerData &data, int nthreads) : data_(data), nthreads_(nthreads) { }
+	KMerClustering(KMerData &data, unsigned nthreads, const std::string &workdir) :
+      data_(data), nthreads_(nthreads), workdir_(workdir) { }
 
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(std::vector<std::vector<unsigned> > classes,
-               boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad);
+	void process(std::vector<std::vector<unsigned> > classes);
 	
 private:
 	KMerData &data_;
-	int nthreads_;
+	unsigned nthreads_;
+  std::string workdir_;
 
 	/// @return consensus string for a block
 	KMer find_consensus(const std::vector<unsigned> & block);
@@ -70,6 +71,9 @@ private:
 	  */
 	size_t process_block_SIN(const std::vector<unsigned> & block, std::vector< std::vector<int> > & vec);
 
+  std::string GetGoodKMersFname() const;
+  std::string GetBadKMersFname() const;
+  
 private:
   DECL_LOGGER("Hamming Subclustering");
 };

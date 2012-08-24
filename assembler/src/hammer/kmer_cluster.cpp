@@ -29,30 +29,23 @@
 using std::max_element;
 using std::min_element;
 
-struct entry_logger
-{
-	entry_logger(std::string const& name)
-		: name_(name)
-		, tid_ (syscall(SYS_gettid))
-	{
-		#pragma omp critical
-		{
-			std::cout << ">> entered " << name_ << "; thread " << tid_ << std::endl;
-		}
-	}
+std::string KMerClustering::GetGoodKMersFname() const {
+  // FIXME: This is ugly!
+  std::ostringstream tmp;
+  tmp.str("");
+  tmp << workdir_ << "/" << "kmers.solid";
 
-	~entry_logger()
-	{
-		#pragma omp critical
-		{
-			std::cout << ">> finished " << name_ << "; thread " << tid_ << std::endl;
-		}
-	}
+  return tmp.str();
+}
 
-private:
-	string name_;
-	pid_t  tid_;
-};
+std::string KMerClustering::GetBadKMersFname() const {
+  // FIXME: This is ugly!
+  std::ostringstream tmp;
+  tmp.str("");
+  tmp << workdir_ << "/" << "kmers.bad";
+
+  return tmp.str();
+}
 
 static double logLikelihoodKMer(const KMer center, const KMerStat &x) {
 	double res = 0;
@@ -540,10 +533,15 @@ static void UpdateErrors(boost::numeric::ublas::matrix<uint64_t> &m,
   }
 }
 
-void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
-                             boost::shared_ptr<std::ofstream> ofs, boost::shared_ptr<std::ofstream> ofs_bad) {
+void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
   size_t newkmers = 0;
   size_t gsingl = 0, tsingl = 0, tcsingl = 0, gcsingl = 0, tcls = 0, gcls = 0;
+
+  std::ofstream ofs, ofs_bad;
+  if (cfg::get().bayes_write_solid_kmers)
+    ofs.open(GetGoodKMersFname());
+  if (cfg::get().bayes_write_bad_kmers)
+    ofs_bad.open(GetBadKMersFname());
 
   std::vector<boost::numeric::ublas::matrix<uint64_t> > errs(nthreads_, boost::numeric::ublas::matrix<double>(4, 4));
 # pragma omp parallel for shared(classes, ofs, ofs_bad, errs) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls)
@@ -557,15 +555,23 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
       if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
         singl.status = KMerStat::GoodIter;
         gsingl += 1;
-        if (std::ofstream *fs = ofs.get())
-          (*fs) << " good singleton: " << idx << "\n  " << singl << '\n';
+        if (ofs.good()) {
+#         pragma omp critical
+          {
+            ofs << " good singleton: " << idx << "\n  " << singl << '\n';
+          }
+        }
       } else {
         if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
           singl.status = KMerStat::GoodIterBad;
         else
           singl.status = KMerStat::Bad;
-        if (std::ofstream *fs = ofs_bad.get())
-          (*fs) << " bad singleton: " << idx << "\n  " << singl << '\n';
+        if (ofs_bad.good()) {
+#         pragma omp critical
+          {
+            ofs_bad << " bad singleton: " << idx << "\n  " << singl << '\n';
+          }
+        }
       }
       tsingl += 1;
     } else {
@@ -583,15 +589,23 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
           if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
             singl.status = KMerStat::GoodIter;
             gcsingl += 1;
-            if (std::ofstream *fs = ofs.get())
-              (*fs) << " good cluster singleton: " << idx << "\n  " << singl << '\n';
+            if (ofs.good()) {
+#             pragma omp critical
+              {
+                ofs << " good cluster singleton: " << idx << "\n  " << singl << '\n';
+              }
+            }
           } else {
             if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
               singl.status = KMerStat::GoodIterBad;
             else
               singl.status = KMerStat::Bad;
-            if (std::ofstream *fs = ofs_bad.get())
-              (*fs) << " bad cluster singleton: " << idx << "\n  " << singl << '\n';
+            if (ofs_bad.good()) {
+#             pragma omp critical
+              {
+                ofs_bad << " bad cluster singleton: " << idx << "\n  " << singl << '\n';
+              }
+            }
           }
           tcsingl += 1;
         } else {
@@ -610,17 +624,25 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
               cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
             center.status = KMerStat::GoodIter;
             gcls += 1;
-            if (std::ofstream *fs = ofs.get())
-              (*fs) << " center of good cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
+            if (ofs.good()) {
+#           pragma omp critical
+              {
+                ofs << " center of good cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
                     << center << '\n';
+              }
+            }
           } else {
             if (cfg::get().correct_use_threshold && (1-center.totalQual) > cfg::get().correct_threshold)
               center.status = KMerStat::GoodIterBad;
             else
               center.status = KMerStat::Bad;
-            if (std::ofstream *fs = ofs_bad.get())
-              (*fs) << " center of bad cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
-                    << center << '\n';
+            if (ofs_bad.good()) {
+#           pragma omp critical
+              {
+                ofs_bad << " center of bad cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
+                        << center << '\n';
+              }
+            }
           }
           tcls += 1;
 
@@ -630,9 +652,13 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes,
 
             kms.set_change(cidx);
             UpdateErrors(errs[omp_get_thread_num()], kms, center);
-            if (std::ofstream *fs = ofs_bad.get())
-              (*fs) << " part of cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
-                    << kms << '\n';
+            if (ofs_bad.good()) {
+#           pragma omp critical
+              {
+              ofs_bad << " part of cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
+                      << kms << '\n';
+              }
+            }
           }
         }
       }
