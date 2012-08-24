@@ -130,7 +130,7 @@ Thank you for using SPAdes!
 
 <h3>2.2 SPAdes pipeline</h3>
 
-<p>SPAdes stores all the resulting files in separate directory <code>&lt;output_dir></code>.
+<p>SPAdes stores all the resulting files in the directory <code>&lt;output_dir></code>.
 </p>
 
 <p>Before starting assembly SPAdes initiates <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> to correct errors in reads.
@@ -138,15 +138,9 @@ Thank you for using SPAdes!
 </p>
 
 <p>
-    After assembly completion, the resulting contigs are stored in the <code>&lt;output_dir>/contigs.fasta</code> file.
+    After assembly completion the resulting contigs are stored in the <code>&lt;output_dir>/contigs.fasta</code> file.
     If the   <code>--generate-sam-file</code> option was used, the symlink <code>contigs.sam</code> to the SAM-file will also be created in the same directory.
 </p>
-
-<p>
-    There are two ways to run SPAdes for you dataset: you can specify the parameters from the command line or provide the configuration
-    file as the only <code>./spades.py</code> parameter.
-</p>
-
 
 
 <h3>2.3 SPAdes command line options </h3>
@@ -236,28 +230,7 @@ Thank you for using SPAdes!
     &nbsp;&nbsp;&nbsp;&nbsp;Prints help.</p>
 
 
-<h3>2.4 Preparing configuration files</h3>
-
-<p>
- You can find the toy dataset configuration file <code>spades_config.info</code> (<a href="#sec1.3">section 1.3</a>)
-    in the directory containing extracted archive (see section 1.1). This file can be used as the template for your datasets.
-    Text placed after the first semicolon in this file is a comment.
-</p>
-
-<p>
-    The configuration file starts with the common parameters for the SPAdes run. We recommend setting the <code>project_name</code> parameter that specifies the directory
-    and names for output files. Next is a dataset section that contains input reads information. This section is required and you need to specify
-    either <code>paired_reads</code> or <code>single_reads</code> or both.
-</p>
-
-<p>
-    The next two sections are <code>error_correction</code> and <code>assembly</code>. If you want to skip one of these stages, you can
-    remove or rename or comment it.
-</p>
-
-
-
-<h3>2.5 Files and directories</h3>
+<h3>2.4 Files and directories</h3>
 
 <p>
     Usually <code>&lt;output_dir></code> directory contains the following files:

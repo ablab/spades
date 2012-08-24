@@ -260,10 +260,32 @@ def check_config(cfg):
 
     return True
 
+
+# for spades.py --test
+def fill_test_config(cfg):
+    # common
+    cfg["common"] = load_config_from_vars(dict())
+    cfg["common"].__dict__["output_dir"] = 'spades_test'
+
+    # dataset
+    cfg["dataset"] = load_config_from_vars(dict())
+    cfg["dataset"].__dict__["paired_reads"] = \
+        [os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), 
+         os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz")]
+    cfg["dataset"].__dict__["single_cell"] = False
+
+    # error_correction (load default params)
+    cfg["error_correction"] = load_config_from_vars(dict())    
+
+    # assembly (load default params)
+    cfg["assembly"] = load_config_from_vars(dict())
+
+
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gap-closer disable-gzip-output help test debug reference= "\
-               "bh-heap-check= spades-heap-check= help-hidden correct-mismatches".split()
+               "bh-heap-check= spades-heap-check= help-hidden correct-mismatches "\
+               "config-file=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -297,7 +319,8 @@ def usage(show_hidden=False):
                          " temp files"
     print >> sys.stderr, "\t\t\t\t[default: <output_dir>/corrected/tmp]"
     print >> sys.stderr, "-k\t<int,int,...>\t\tcomma-separated list of k-mer sizes"\
-                         " (must be odd and less than 100) [default: 21,33,55]"
+                         " (must be odd and less than 100)"
+    print >> sys.stderr, "\t\t\t\t[default: 21,33,55]"
     print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for error"\
                          " correction"
     print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
@@ -314,12 +337,14 @@ def usage(show_hidden=False):
     if show_hidden:
         print >> sys.stderr, ""
         print >> sys.stderr, "HIDDEN options:"  
+        print >> sys.stderr, "--config-file\t<filename>\tconfiguration file for spades.py"\
+                             " (WARN: all other options will be skipped)"   
         print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
-                         " (only in debug mode)" 
+                             " (only in debug mode)" 
         print >> sys.stderr, "--bh-heap-check\t\t<value>\tset HEAPCHECK environment variable"\
-                         " for BayesHammer"
+                             " for BayesHammer"
         print >> sys.stderr, "--spades-heap-check\t<value>\tset HEAPCHECK environment variable"\
-                         " for SPAdes"
+                             " for SPAdes"
         print >> sys.stderr, "--correct-mismatches\t\tcorrect mismatches"
 
     print >> sys.stderr, ""
@@ -329,34 +354,23 @@ def usage(show_hidden=False):
     if show_hidden:
         print >> sys.stderr, "--help-hidden\tprint this usage message with all hidden options"
 
-    print >> sys.stderr, ""
-    print >> sys.stderr, "or you can run SPAdes with config file:", sys.argv[0],\
-    "<config file>"
-    print >> sys.stderr, "sample config is spades_config.info"
-
 
 def main():
     os.environ["LC_ALL"] = "C"
    
     CONFIG_FILE = ""
     options = None
+    TEST = False
 
     if len(sys.argv) == 1:
         usage()
         sys.exit(0)
-    elif len(sys.argv) == 2:
-        if os.path.isfile(sys.argv[1]):
-            CONFIG_FILE = sys.argv[1]
-    if not CONFIG_FILE:
-        try:
-            options, not_options = getopt.gnu_getopt(sys.argv, short_options, long_options)
-        except getopt.GetoptError, err:
-            print >> sys.stderr, err
-            print >> sys.stderr
-            usage()
-            sys.exit(1)
-
-    if not CONFIG_FILE and not options:
+        
+    try:
+        options, not_options = getopt.gnu_getopt(sys.argv, short_options, long_options)
+    except getopt.GetoptError, err:
+        print >> sys.stderr, err
+        print >> sys.stderr
         usage()
         sys.exit(1)
 
@@ -457,18 +471,18 @@ def main():
                 usage(True)
                 sys.exit(0)
 
-            elif opt == "--test": # running test
-                if os.path.isfile("spades_config.info"):
-                    CONFIG_FILE = "spades_config.info"
-                elif os.path.isfile(os.path.join(spades_home, "spades_config.info")):
-                    CONFIG_FILE = os.path.join(spades_home, "spades_config.info")
-                else:
-                    error("config file for toy dataset not found (spades_config.info)!")
+            elif opt == "--config-file":
+                CONFIG_FILE = check_file(arg, 'config file')
+                break
+
+            elif opt == "--test": 
+                fill_test_config(cfg)
+                TEST = True
                 break
             else:
                 raise ValueError
 
-        if not CONFIG_FILE:
+        if not CONFIG_FILE and not TEST:
             if not output_dir:
                 error("the output_dir is not set! It is a mandatory parameter (-o output_dir).")
 
@@ -492,8 +506,7 @@ def main():
             if paired:
                 for read in paired:
                     paired_counter += 1
-                    cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = read
-                    #cfg["dataset"].__dict__["paired_reads"] = read
+                    cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = read                    
 
             if paired1:
                 for i in range(len(paired1)):
@@ -544,16 +557,16 @@ def main():
                 cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
                 cfg["assembly"].__dict__["correct_mismatches"] = correct_mismatches
 
-            if not check_config(cfg):
-                return
-
     if CONFIG_FILE:
         cfg = load_config_from_info_file(CONFIG_FILE)
-
         os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))
 
-        if not check_config(cfg):
-            return
+    if not CONFIG_FILE and not options and not TEST:
+        usage()
+        sys.exit(1)
+
+    if not check_config(cfg):
+        return
 
     print("\n======= SPAdes pipeline started\n")
 

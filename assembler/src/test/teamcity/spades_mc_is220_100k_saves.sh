@@ -15,7 +15,7 @@ if [ ! -d $etalon ]; then
     echo "Error: no etalon saves at $etalon"
     exit 9
 fi
-./spades.py src/test/teamcity/spades_config_mc_is220_100k_saves.info
+./spades.py --config-file src/test/teamcity/spades_config_mc_is220_100k_saves.info
 
 pushd spades_output/ECOLI_IS220_QUAKE_100K_SAVES
 diffs=0
