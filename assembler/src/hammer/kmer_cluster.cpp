@@ -535,7 +535,7 @@ static void UpdateErrors(boost::numeric::ublas::matrix<uint64_t> &m,
 
 void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
   size_t newkmers = 0;
-  size_t gsingl = 0, tsingl = 0, tcsingl = 0, gcsingl = 0, tcls = 0, gcls = 0;
+  size_t gsingl = 0, tsingl = 0, tcsingl = 0, gcsingl = 0, tcls = 0, gcls = 0, tkmers = 0, tncls = 0;
 
   std::ofstream ofs, ofs_bad;
   if (cfg::get().bayes_write_solid_kmers)
@@ -544,7 +544,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
     ofs_bad.open(GetBadKMersFname());
 
   std::vector<boost::numeric::ublas::matrix<uint64_t> > errs(nthreads_, boost::numeric::ublas::matrix<double>(4, 4));
-# pragma omp parallel for shared(classes, ofs, ofs_bad, errs) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls)
+# pragma omp parallel for shared(classes, ofs, ofs_bad, errs) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
   for (size_t i = 0; i < classes.size(); ++i) {
     auto cur_class = classes[i];
 
@@ -579,6 +579,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
 
       newkmers += process_block_SIN(cur_class, blocksInPlace);
 
+      tncls += 1;
       for (size_t m = 0; m < blocksInPlace.size(); ++m) {
         if (blocksInPlace[m].size() == 0)
           continue;
@@ -645,6 +646,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
             }
           }
           tcls += 1;
+          tkmers += (blocksInPlace[m].size() - 1);
 
           for (size_t j = 1; j < blocksInPlace[m].size(); ++j) {
             size_t eidx = blocksInPlace[m][j];
@@ -678,6 +680,8 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
   INFO("  Total singleton hamming clusters: " << tsingl << ". Among them " << gsingl << " (" << 100.0 * gsingl / tsingl << "%) are good");
   INFO("  Total singleton subclusters: " << tcsingl << ". Among them " << gcsingl << " (" << 100.0 * gcsingl / tcsingl << "%) are good");
   INFO("  Total non-singleton subcluster centers: " << tcls << ". Among them " << gcls << " (" << 100.0 * gcls / tcls << "%) are good");
+  INFO("  Average size of non-trivial subcluster: " << 1.0 * tkmers / tcls << " kmers");
+  INFO("  Average number of sub-clusters per non-singleton cluster: " << 1.0 * (tcsingl + tcls) / tncls);
   INFO("  Total solid k-mers: " << gsingl + gcsingl + gcls);
   INFO("  Substitution probabilities: " << err);
 }
