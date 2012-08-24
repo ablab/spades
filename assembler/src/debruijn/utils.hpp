@@ -255,6 +255,35 @@ public:
 		mapping_[kmer] = Substitute(kmer);
 	}
 
+	bool CheckCanRemap(const Sequence& old_s, const Sequence& new_s) const {
+		size_t old_length = old_s.size() - k_ + 1;
+		size_t new_length = new_s.size() - k_ + 1;
+		UniformPositionAligner aligner(old_s.size() - k_ + 1,
+				new_s.size() - k_ + 1);
+		Kmer old_kmer = old_s.start<Kmer::max_size>(k_);
+		old_kmer >>= 0;
+
+		for (size_t i = k_ - 1; i < old_s.size(); ++i) {
+			old_kmer <<= old_s[i];
+			size_t old_kmer_offset = i - k_ + 1;
+			size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
+			if(old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
+				Kmer middle(k_ - 1, new_s, new_length / 2);
+				if(typename Kmer::less2()(middle, !middle)) {
+					new_kmer_offest = new_length - 1 - new_kmer_offest;
+				}
+			}
+			Kmer new_kmer(k_, new_s, new_kmer_offest);
+			auto it = mapping_.find(new_kmer);
+			if(it != mapping_.end()) {
+				if(Substitute(new_kmer) != old_kmer) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
 		VERIFY(this->IsAttached());
 		//		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
