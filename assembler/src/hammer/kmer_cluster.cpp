@@ -286,7 +286,7 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
     if (curLikelihood > bestLikelihood) {
       bestLikelihood = curLikelihood;
       bestCenters = centers; bestIndices = indices;
-    } else if (l > maxcls)
+    } else if (l >= maxcls)
       break;
   }
 
