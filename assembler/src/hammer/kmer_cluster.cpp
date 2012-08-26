@@ -110,13 +110,13 @@ double KMerClustering::trueClusterLogLikelihood(const vector<unsigned> & cl, con
   unsigned total = 0;
   for (size_t i=0; i<blockSize; ++i) {
     unsigned cnt = data_[cl[i]].count;
-    loglik += cnt*logLikelihoodKMer(centers[indices[i]].first, data_[cl[i]]);
+    loglik += logLikelihoodKMer(centers[indices[i]].first, data_[cl[i]]);
     total += cnt;
   }
 
-  unsigned nparams = (clusters - 1) + clusters*K + 4*clusters*K;
+  unsigned nparams = (clusters - 1) + clusters*K + 2*clusters*K;
 
-  return loglik - nparams*log(total) / 2;
+  return loglik - nparams*log(blockSize) / 2;
 }
 
 double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> &kmerinds,
@@ -174,7 +174,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     for (size_t i=0; i < kmerinds.size(); ++i) {
       const KMerStat &kms = data_[kmerinds[i]];
       const KMer &kmer = kms.kmer();
-      for (uint32_t j=0; j < l; ++j) {
+      for (unsigned j=0; j < l; ++j) {
         dists[j] = hamdistKMer(kmer, centers[j].first);
         loglike[j] = logLikelihoodKMer(centers[j].first, kms);
       }
@@ -252,10 +252,12 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
   size_t origBlockSize = block.size();
   if (origBlockSize == 0) return 0;
 
+  // Ad-hoc max cluster limit: we start to consider only thous k-mers which
+  // multiplicity differs from maximum multiplicity by 10x.
   unsigned maxcls = 0;
-  for (size_t i = 0; i < block.size(); ++i) {
-    maxcls += data_[block[i]].count > 10;
-  }
+  unsigned cntthr = std::max(10u, data_[block[0]].count / 10);
+  for (size_t i = 0; i < block.size(); ++i)
+    maxcls += (data_[block[i]].count > cntthr);
   maxcls = std::max(1u, maxcls);
 
   if (cfg::get().bayes_debug_output > 0) {
@@ -306,7 +308,7 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
     {
       std::cout << "Centers: \n";
       for (size_t k=0; k<bestCenters.size(); ++k) {
-        std::cout << "  " << bestCenters[k].second.first << ": ";
+        std::cout << "  " << std::setw(4) << bestCenters[k].second.first << ": ";
         if (centersInCluster[k] != -1u) {
           const KMerStat &kms = data_[block[centersInCluster[k]]];
           std::cout << kms << " " << setw(8) << block[centersInCluster[k]] << "  ";
@@ -461,8 +463,6 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
   std::vector<boost::numeric::ublas::matrix<uint64_t> > errs(nthreads_, boost::numeric::ublas::matrix<double>(4, 4));
 # pragma omp parallel for shared(classes, ofs, ofs_bad, errs) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
   for (size_t i = 0; i < classes.size(); ++i) {
-    //  {
-    // size_t i = 8;
     auto cur_class = classes[i];
 
     // No need for clustering for singletons
