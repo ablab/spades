@@ -47,12 +47,12 @@ private:
 	  * @param mask is a vector of integers of the same size as the block
 	  * @param maskVal is the integer that we use
 	  */
-	KMer find_consensus_with_mask(const std::vector<unsigned> & block, const std::vector<int> & mask, int maskVal);
+	KMer find_consensus_with_mask(const std::vector<unsigned> & block, const std::vector<unsigned> & mask, unsigned maskVal);
 	
 	/**
 	  * @return total log-likelihood of this particular clustering with real quality values
 	  */
-	double trueClusterLogLikelihood(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<int> & indices);
+	double trueClusterLogLikelihood(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices);
 	double trueSingletonLogLikelihood(size_t kmerind);
 
 	/**
@@ -61,7 +61,7 @@ private:
 	  * @param centers fill array indices with ints from 0 to l that denote which kmers belong where
 	  * @return the resulting likelihood of this clustering
 	  */
-	double lMeansClustering(uint32_t l, const KMerHamDistMatrix &distances, const std::vector<unsigned> & kmerinds, std::vector<int> & indices, std::vector<StringCount> & centers);
+	double lMeansClustering(unsigned l, const std::vector<unsigned> & kmerinds, std::vector<unsigned> & indices, std::vector<StringCount> & centers);
 
 	/**
 	  * SIN
@@ -69,7 +69,7 @@ private:
 	  * @param newBlockNum current number of a new cluster; incremented inside
 	  * @return new value of newBlockNum
 	  */
-	size_t process_block_SIN(const std::vector<unsigned> & block, std::vector< std::vector<int> > & vec);
+	size_t process_block_SIN(const std::vector<unsigned> & block, std::vector< std::vector<unsigned> > & vec);
 
   std::string GetGoodKMersFname() const;
   std::string GetBadKMersFname() const;
