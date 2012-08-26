@@ -63,7 +63,7 @@ struct hammer_config
   double bayes_singleton_threshold;
   double bayes_nonsingleton_threshold;
   bool bayes_discard_only_singletons;
-  bool bayes_debug_output;
+  unsigned bayes_debug_output;
   bool bayes_use_hamming_dist;
   bool bayes_hammer_mode;
   bool bayes_write_solid_kmers;

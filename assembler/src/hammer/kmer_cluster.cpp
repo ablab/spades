@@ -139,7 +139,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     centers[j].second.second = data_[kmerinds[j]].totalQual;
   }
 
-  if (cfg::get().bayes_debug_output) {
+  if (cfg::get().bayes_debug_output > 1) {
 #   pragma omp critical
     {
       std::cout << "    centers:\n";
@@ -179,7 +179,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
         loglike[j] = logLikelihoodKMer(centers[j].first, kms);
       }
 
-      if (cfg::get().bayes_debug_output) {
+      if (cfg::get().bayes_debug_output > 1) {
 #       pragma omp critical
         {
           cout << "      likelihoods for " << i << ": ";
@@ -201,7 +201,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
       }
       ++centers[indices[i]].second.first;
     }
-    if (cfg::get().bayes_debug_output) {
+    if (cfg::get().bayes_debug_output > 1) {
 #     pragma omp critical
       {
         cout << "      total likelihood=" << cur_total << " as compared to previous " << totalLikelihood << endl;
@@ -223,7 +223,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
   for (unsigned j=0; j < l; ++j) {
     centers[j].first = find_consensus_with_mask(kmerinds, indices, j);
   }
-  if (cfg::get().bayes_debug_output) {
+  if (cfg::get().bayes_debug_output > 1) {
 #   pragma omp critical
     {
       std::cout << "    final centers:\n";
@@ -239,7 +239,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
 size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, vector< vector<unsigned> > & vec) {
   size_t newkmers = 0;
 
-  if (cfg::get().bayes_debug_output) {
+  if (cfg::get().bayes_debug_output > 0) {
 #   pragma omp critical
     {
       std::cout << "  kmers:\n";
@@ -258,7 +258,7 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
   }
   maxcls = std::max(1u, maxcls);
 
-  if (cfg::get().bayes_debug_output) {
+  if (cfg::get().bayes_debug_output > 0) {
     #pragma omp critical
     {
       std::cout << "\nClustering an interesting block. Maximum # of clusters estimated: " << maxcls << std::endl;
@@ -274,7 +274,7 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
   for (unsigned l = 1; l <= max_l; ++l) {
     std::vector<StringCount> centers(l);
     double curLikelihood = lMeansClustering(l, block, indices, centers);
-    if (cfg::get().bayes_debug_output) {
+    if (cfg::get().bayes_debug_output > 0) {
       #pragma omp critical
       {
         cout << "    indices: ";
@@ -291,7 +291,7 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
   }
 
   // find if centers are in clusters
-  std::vector<int> centersInCluster(bestCenters.size(), -1);
+  std::vector<unsigned> centersInCluster(bestCenters.size(), -1u);
   for (unsigned i = 0; i < origBlockSize; i++) {
     unsigned dist = hamdistKMer(data_[block[i]].kmer(), bestCenters[bestIndices[i]].first);
     if (dist == 0) {
@@ -301,13 +301,13 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
 
   bool cons_suspicion = false;
   for (size_t k=0; k<bestCenters.size(); ++k) if (centersInCluster[k] == -1) cons_suspicion = true;
-  if (cfg::get().bayes_debug_output) {
+  if (cfg::get().bayes_debug_output > 0) {
 #   pragma omp critical
     {
       std::cout << "Centers: \n";
       for (size_t k=0; k<bestCenters.size(); ++k) {
         std::cout << "  " << bestCenters[k].second.first << ": ";
-        if (centersInCluster[k] >= 0) {
+        if (centersInCluster[k] != -1u) {
           const KMerStat &kms = data_[block[centersInCluster[k]]];
           std::cout << kms << " " << setw(8) << block[centersInCluster[k]] << "  ";
         } else {
@@ -333,15 +333,15 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
     for (size_t k=0; k<bestCenters.size(); ++k) {
       if (foundBadCenter) break; // restart if found one bad center
       if (bestCenters[k].second.first == 0) continue;
-      if (centersInCluster[k] >= 0) continue;
-      for (size_t s=0; s<bestCenters.size(); ++s) {
-        if (s == k || centersInCluster[s] < 0) continue;
-        int dist = hamdistKMer(bestCenters[k].first, bestCenters[s].first);
-        if ( dist == 0 ) {
+      if (centersInCluster[k] != -1u) continue;
+      for (size_t s = 0; s<bestCenters.size(); ++s) {
+        if (s == k || centersInCluster[s] == -1u) continue;
+        unsigned dist = hamdistKMer(bestCenters[k].first, bestCenters[s].first);
+        if (dist == 0) {
           // OK, that's the situation, cluster k should be added to cluster s
           for (uint32_t i = 0; i < origBlockSize; i++) {
-            if ( indices[i] == (int)k ) {
-              indices[i] = (int)s;
+            if (indices[i] == k) {
+              indices[i] = s;
               bestCenters[s].second.first++;
             }
           }
@@ -352,16 +352,14 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
       }
     }
   }
-  if (foundBadCenter)
-    std::cerr << "Warning2" << std::endl;
 
-  if (cfg::get().bayes_debug_output && origBlockSize > 2) {
+  if (cfg::get().bayes_debug_output > 0 && origBlockSize > 2) {
     #pragma omp critical
     {
       cout << "\nAfter the check we got centers: \n";
       for (size_t k=0; k<bestCenters.size(); ++k) {
         cout << "  " << bestCenters[k].first.str() << " " << bestCenters[k].second << " ";
-        if (centersInCluster[k] >= 0) cout << block[centersInCluster[k]];
+        if (centersInCluster[k] != -1u) cout << block[centersInCluster[k]];
         cout << "\n";
       }
       cout << endl;
