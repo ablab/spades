@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <vector>
 #include <iostream>
+#include <iomanip>
 #include <map>
 #include <string>
 #include <string.h>
@@ -158,11 +159,10 @@ struct KMerStat {
 
 inline
 std::ostream& operator<<(std::ostream &os, const KMerStat &kms) {
-  os << kms.kmer().str() << '(' << kms.count << ", " << (1-kms.totalQual) << ')';
+  os << kms.kmer().str() << " (" << std::setw(3) << kms.count << ", " << std::setprecision(6) << std::setw(8) << (1-kms.totalQual) << ')';
 
   return os;
 }
-
 
 template<class Writer>
 inline Writer& binary_write(Writer &os, const QualBitSet &qbs) {
