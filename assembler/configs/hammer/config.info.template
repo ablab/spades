@@ -42,7 +42,7 @@ bayes_do				1
 bayes_nthreads				16
 bayes_quality_threshold			0.995
 bayes_singleton_threshold		0.995
-bayes_nonsingleton_threshold		0.5
+bayes_nonsingleton_threshold		0.9
 bayes_use_hamming_dist			0
 bayes_discard_only_singletons		0
 bayes_debug_output			0
