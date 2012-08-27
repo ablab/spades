@@ -55,13 +55,7 @@ private:
 	  */
 	double lMeansClustering(unsigned l, const std::vector<unsigned> & kmerinds, std::vector<unsigned> & indices, std::vector<StringCount> & centers);
 
-	/**
-	  * SIN
-	  * new version of process_block
-	  * @param newBlockNum current number of a new cluster; incremented inside
-	  * @return new value of newBlockNum
-	  */
-	size_t process_block_SIN(const std::vector<unsigned> & block, std::vector< std::vector<unsigned> > & vec);
+	size_t SubClusterSingle(const std::vector<unsigned> & block, std::vector< std::vector<unsigned> > & vec);
 
   std::string GetGoodKMersFname() const;
   std::string GetBadKMersFname() const;

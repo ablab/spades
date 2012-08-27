@@ -253,7 +253,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
   return ClusterBIC(kmerinds, centers, indices);
 }
 
-size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, vector< vector<unsigned> > & vec) {
+size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vector< vector<unsigned> > & vec) {
   size_t newkmers = 0;
 
   if (cfg::get().bayes_debug_output > 0) {
@@ -517,7 +517,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
           std::cout << "process_SIN with block idx= " << i << " size=" << cur_class.size() << std::endl;
         }
       }
-      newkmers += process_block_SIN(cur_class, blocksInPlace);
+      newkmers += SubClusterSingle(cur_class, blocksInPlace);
 
       tncls += 1;
       for (size_t m = 0; m < blocksInPlace.size(); ++m) {
