@@ -49,11 +49,7 @@ private:
 	  */
 	KMer find_consensus_with_mask(const std::vector<unsigned> & block, const std::vector<unsigned> & mask, unsigned maskVal);
 	
-	/**
-	  * @return total log-likelihood of this particular clustering with real quality values
-	  */
-	double trueClusterLogLikelihood(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices);
-	double trueSingletonLogLikelihood(size_t kmerind);
+	double ClusterBIC(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices);
 
 	/**
 	  * perform l-means clustering on the set of k-mers with initial centers being the l most frequent k-mers here

@@ -101,7 +101,7 @@ KMer KMerClustering::find_consensus(const vector<unsigned> & cl) {
   return KMer(kmer);
 }
 
-double KMerClustering::trueClusterLogLikelihood(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices) {
+double KMerClustering::ClusterBIC(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices) {
   size_t blockSize = cl.size();
   size_t clusters = centers.size();
   if (blockSize == 0)
@@ -133,7 +133,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     centers[0].second.second = 1;
     for (size_t i = 0; i < kmerinds.size(); ++i)
       indices[i] = 0;
-    return trueClusterLogLikelihood(kmerinds, centers, indices);
+    return ClusterBIC(kmerinds, centers, indices);
   }
 
   // We assume that kmerinds are sorted wrt the count.
@@ -249,7 +249,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     }
   }
 
-  return trueClusterLogLikelihood(kmerinds, centers, indices);
+  return ClusterBIC(kmerinds, centers, indices);
 }
 
 size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, vector< vector<unsigned> > & vec) {
