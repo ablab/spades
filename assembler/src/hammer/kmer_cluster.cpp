@@ -524,85 +524,72 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
         if (blocksInPlace[m].size() == 0)
           continue;
 
-        if (blocksInPlace[m].size() == 1) {
-          size_t idx = blocksInPlace[m][0];
-          KMerStat &singl = data_[idx];
-          if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
-            singl.status = KMerStat::GoodIter;
-            gcsingl += 1;
-            if (ofs.good()) {
-#             pragma omp critical
-              {
-                ofs << " good cluster singleton: " << idx << "\n  " << singl << '\n';
-              }
-            }
-          } else {
-            if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
-              singl.status = KMerStat::GoodIterBad;
-            else
-              singl.status = KMerStat::Bad;
-            if (ofs_bad.good()) {
-#             pragma omp critical
-              {
-                ofs_bad << " bad cluster singleton: " << idx << "\n  " << singl << '\n';
-              }
-            }
-          }
-          tcsingl += 1;
-        } else {
-          size_t cidx = blocksInPlace[m][0];
-          KMerStat &center = data_[cidx];
+        size_t cidx = blocksInPlace[m][0];
+        KMerStat &center = data_[cidx];
+        double center_quality = 1 - center.totalQual;
 
-          // we've got a nontrivial cluster; computing its overall quality
-          double cluster_quality = 1;
+        // Computing the overall quality of a cluster.
+        double cluster_quality = 1;
+        if (blocksInPlace[m].size() > 1) {
           for (size_t j = 1; j < blocksInPlace[m].size(); ++j) {
             cluster_quality *= data_[blocksInPlace[m][j]].totalQual;
           }
           cluster_quality = 1-cluster_quality;
+        }
 
-          // in regular hammer mode, all nonsingletons are good
-          if (cfg::get().bayes_hammer_mode ||
-              cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
-            center.status = KMerStat::GoodIter;
+        if (blocksInPlace[m].size() == 1)
+          tcsingl += 1;
+        else
+          tcls += 1;
+
+        if ((center_quality > cfg::get().bayes_singleton_threshold &&
+             cluster_quality > cfg::get().bayes_nonsingleton_threshold) ||
+            cfg::get().bayes_hammer_mode) {
+          center.status = KMerStat::GoodIter;
+
+          if (blocksInPlace[m].size() == 1)
+            gcsingl += 1;
+          else
             gcls += 1;
-            if (ofs.good()) {
+
+          if (ofs.good()) {
 #           pragma omp critical
-              {
-                ofs << " center of good cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
-                    << center << '\n';
-              }
-            }
-          } else {
-            if (cfg::get().correct_use_threshold && (1-center.totalQual) > cfg::get().correct_threshold)
-              center.status = KMerStat::GoodIterBad;
-            else
-              center.status = KMerStat::Bad;
-            if (ofs_bad.good()) {
-#           pragma omp critical
-              {
-                ofs_bad << " center of bad cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
-                        << center << '\n';
-              }
+            {
+              ofs << " center of good cluster (" << blocksInPlace[m].size() << ", " << cluster_quality << ")" << "\n  "
+                  << center << '\n';
             }
           }
-          tcls += 1;
-          tkmers += (blocksInPlace[m].size() - 1);
-
-          for (size_t j = 1; j < blocksInPlace[m].size(); ++j) {
-            size_t eidx = blocksInPlace[m][j];
-            KMerStat &kms = data_[eidx];
-
-            kms.set_change(cidx);
-            UpdateErrors(errs[omp_get_thread_num()], kms, center);
-            if (ofs_bad.good()) {
+        } else {
+          if (cfg::get().correct_use_threshold && center_quality > cfg::get().correct_threshold)
+            center.status = KMerStat::GoodIterBad;
+          else
+            center.status = KMerStat::Bad;
+          if (ofs_bad.good()) {
 #           pragma omp critical
-              {
-              ofs_bad << " part of cluster (" << blocksInPlace[m].size() - 1 << ", " << cluster_quality << ")" << "\n  "
-                      << kms << '\n';
-              }
+            {
+              ofs_bad << " center of bad cluster (" << blocksInPlace[m].size() << ", " << cluster_quality << ")" << "\n  "
+                      << center << '\n';
             }
           }
         }
+
+        tkmers += blocksInPlace[m].size();
+
+        for (size_t j = 1; j < blocksInPlace[m].size(); ++j) {
+          size_t eidx = blocksInPlace[m][j];
+          KMerStat &kms = data_[eidx];
+
+          kms.set_change(cidx);
+          UpdateErrors(errs[omp_get_thread_num()], kms, center);
+          if (ofs_bad.good()) {
+#           pragma omp critical
+            {
+              ofs_bad << " part of cluster (" << blocksInPlace[m].size() << ", " << cluster_quality << ")" << "\n  "
+                      << kms << '\n';
+            }
+          }
+        }
+
       }
     }
   }
