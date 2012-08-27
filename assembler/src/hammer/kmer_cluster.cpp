@@ -133,10 +133,12 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     return trueClusterLogLikelihood(kmerinds, centers, indices);
   }
 
+  // We assume that kmerinds are sorted wrt the count.
   for (unsigned j = 0; j < l; ++j) {
-    centers[j].first = data_[kmerinds[j]].kmer();
-    centers[j].second.first = data_[kmerinds[j]].count;
-    centers[j].second.second = data_[kmerinds[j]].totalQual;
+    const KMerStat &kms = data_[kmerinds[j]];
+    centers[j].first = kms.kmer();
+    centers[j].second.first = kms.count;
+    centers[j].second.second = kms.totalQual;
   }
 
   if (cfg::get().bayes_debug_output > 1) {
@@ -149,29 +151,43 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     }
   }
 
+  // Provide the initial approximation.
+  double totalLikelihood = 0.0;
+  for (size_t i = 0; i < kmerinds.size(); ++i) {
+    const KMerStat &kms = data_[kmerinds[i]];
+    const KMer &kmer = kms.kmer();
+    unsigned mdist = K;
+    unsigned cidx = 0;
+    for (unsigned j = 0; j < l; ++j) {
+      unsigned cdist = hamdistKMer(kmer, centers[j].first);
+      if (cdist < mdist) {
+        mdist = cdist;
+        cidx = j;
+      }
+    }
+    indices[i] = cidx;
+    totalLikelihood += logLikelihoodKMer(centers[cidx].first, kms);
+  }
+
+  // Main loop
+  bool changed = true, improved = true;
+
   // auxiliary variables
-  std::vector<int> dists(l);
+  std::vector<unsigned> dists(l);
   std::vector<double> loglike(l);
   std::vector<bool> changedCenter(l);
-
-  // main loop
-  bool changed = true, improved = true;
-  double totalLikelihood = -std::numeric_limits<double>::infinity();
-
-  std::vector<StringCount> bestCenters;
-  std::vector<unsigned> bestIndices(kmerinds.size());
 
   while (changed && improved) {
     // fill everything with zeros
     changed = false;
     std::fill(changedCenter.begin(), changedCenter.end(), false);
-    for (unsigned j=0; j < l; ++j)
+    for (unsigned j = 0; j < l; ++j)
       centers[j].second.first = 0;
 
-    double cur_total = 0;
+    double curlik = 0;
 
     // E step: find which clusters we belong to
-    for (size_t i=0; i < kmerinds.size(); ++i) {
+    for (size_t i = 0; i < kmerinds.size(); ++i) {
       const KMerStat &kms = data_[kmerinds[i]];
       const KMer &kmer = kms.kmer();
       for (unsigned j=0; j < l; ++j) {
@@ -192,7 +208,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
       unsigned newInd = cfg::get().bayes_use_hamming_dist ?
                         (std::min_element(dists.begin(), dists.end()) - dists.begin()) :
                         (std::max_element(loglike.begin(), loglike.end()) - loglike.begin());
-      cur_total += loglike[newInd];
+      curlik += loglike[newInd];
       if (indices[i] != newInd) {
         changed = true;
         changedCenter[indices[i]] = true;
@@ -204,12 +220,12 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     if (cfg::get().bayes_debug_output > 1) {
 #     pragma omp critical
       {
-        cout << "      total likelihood=" << cur_total << " as compared to previous " << totalLikelihood << endl;
+        cout << "      total likelihood=" << curlik << " as compared to previous " << totalLikelihood << endl;
       }
     }
-    improved = (cur_total > totalLikelihood);
+    improved = (curlik > totalLikelihood);
     if (improved)
-      totalLikelihood = cur_total;
+      totalLikelihood = curlik;
 
     // M step: find new cluster centers
     for (unsigned j=0; j < l; ++j) {
@@ -223,6 +239,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
   for (unsigned j=0; j < l; ++j) {
     centers[j].first = find_consensus_with_mask(kmerinds, indices, j);
   }
+
   if (cfg::get().bayes_debug_output > 1) {
 #   pragma omp critical
     {
@@ -302,7 +319,7 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
   }
 
   bool cons_suspicion = false;
-  for (size_t k=0; k<bestCenters.size(); ++k) if (centersInCluster[k] == -1) cons_suspicion = true;
+  for (size_t k=0; k<bestCenters.size(); ++k) if (centersInCluster[k] == -1u) cons_suspicion = true;
   if (cfg::get().bayes_debug_output > 0) {
 #   pragma omp critical
     {
@@ -390,7 +407,7 @@ size_t KMerClustering::process_block_SIN(const std::vector<unsigned> & block, ve
           }
         }
       }
-      if (centersInCluster[k] == -1) {
+      if (centersInCluster[k] == -1u) {
         size_t new_idx = 0;
         #pragma omp critical
         {
