@@ -69,10 +69,12 @@ KMer KMerClustering::find_consensus_with_mask(const vector<unsigned> & cl, const
 
   std::string kmer(K, 'A');
   for (unsigned i = 0; i < K; i++) {
-    int scores[4] = {0,0,0,0};
+    unsigned scores[4] = {0,0,0,0};
     for (uint32_t j = 0; j < blockSize; j++) {
-      if (mask[j] == maskVal)
-        scores[static_cast<uint8_t>(data_[cl[j]].kmer()[i])] += data_[cl[j]].count;
+      if (mask[j] == maskVal) {
+        const KMerStat &kms = data_[cl[j]];
+        scores[static_cast<uint8_t>(kms.kmer()[i])] += kms.count;
+      }
     }
     kmer[i] = nucl(std::max_element(scores, scores + 4) - scores);
   }
@@ -89,9 +91,10 @@ KMer KMerClustering::find_consensus(const vector<unsigned> & cl) {
 
   std::string kmer(K, 'A');
   for (size_t i = 0; i < K; i++) {
-    int scores[4] = {0,0,0,0};
+    unsigned scores[4] = {0,0,0,0};
     for (size_t j = 0; j < blockSize; j++) {
-      scores[static_cast<uint8_t>(data_[cl[j]].kmer()[i])]+=data_[cl[j]].count;
+      const KMerStat &kms = data_[cl[j]];
+      scores[static_cast<uint8_t>(kms.kmer()[i])] += kms.count;
     }
     kmer[i] = nucl(std::max_element(scores, scores + 4) - scores);
   }
@@ -190,24 +193,19 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     for (size_t i = 0; i < kmerinds.size(); ++i) {
       const KMerStat &kms = data_[kmerinds[i]];
       const KMer &kmer = kms.kmer();
-      for (unsigned j=0; j < l; ++j) {
-        dists[j] = hamdistKMer(kmer, centers[j].first);
+
+      unsigned newInd = 0;
+      for (unsigned j=0; j < l; ++j)
         loglike[j] = logLikelihoodKMer(centers[j].first, kms);
+      newInd = std::max_element(loglike.begin(), loglike.end()) - loglike.begin();
+
+      if (cfg::get().bayes_use_hamming_dist) {
+        for (unsigned j=0; j < l; ++j)
+          dists[j] = hamdistKMer(kmer, centers[j].first);
+
+        newInd = std::min_element(dists.begin(), dists.end()) - dists.begin();
       }
 
-      if (cfg::get().bayes_debug_output > 1) {
-#       pragma omp critical
-        {
-          cout << "      likelihoods for " << i << ": ";
-          for (size_t j=0; j < l; ++j) {
-            cout << loglike[j] << " ";
-          }
-          cout << endl;
-        }
-      }
-      unsigned newInd = cfg::get().bayes_use_hamming_dist ?
-                        (std::min_element(dists.begin(), dists.end()) - dists.begin()) :
-                        (std::max_element(loglike.begin(), loglike.end()) - loglike.begin());
       curlik += loglike[newInd];
       if (indices[i] != newInd) {
         changed = true;
@@ -217,6 +215,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
       }
       ++centers[indices[i]].second.first;
     }
+
     if (cfg::get().bayes_debug_output > 1) {
 #     pragma omp critical
       {
@@ -521,23 +520,24 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
 
       tncls += 1;
       for (size_t m = 0; m < blocksInPlace.size(); ++m) {
-        if (blocksInPlace[m].size() == 0)
+        const std::vector<unsigned> &currentBlock = blocksInPlace[m];
+        if (currentBlock.size() == 0)
           continue;
 
-        size_t cidx = blocksInPlace[m][0];
+        size_t cidx = currentBlock[0];
         KMerStat &center = data_[cidx];
         double center_quality = 1 - center.totalQual;
 
         // Computing the overall quality of a cluster.
         double cluster_quality = 1;
-        if (blocksInPlace[m].size() > 1) {
-          for (size_t j = 1; j < blocksInPlace[m].size(); ++j) {
-            cluster_quality *= data_[blocksInPlace[m][j]].totalQual;
+        if (currentBlock.size() > 1) {
+          for (size_t j = 1; j < currentBlock.size(); ++j) {
+            cluster_quality *= data_[currentBlock[j]].totalQual;
           }
           cluster_quality = 1-cluster_quality;
         }
 
-        if (blocksInPlace[m].size() == 1)
+        if (currentBlock.size() == 1)
           tcsingl += 1;
         else
           tcls += 1;
@@ -547,7 +547,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
             cfg::get().bayes_hammer_mode) {
           center.status = KMerStat::GoodIter;
 
-          if (blocksInPlace[m].size() == 1)
+          if (currentBlock.size() == 1)
             gcsingl += 1;
           else
             gcls += 1;
@@ -555,7 +555,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
           if (ofs.good()) {
 #           pragma omp critical
             {
-              ofs << " center of good cluster (" << blocksInPlace[m].size() << ", " << cluster_quality << ")" << "\n  "
+              ofs << " center of good cluster (" << currentBlock.size() << ", " << cluster_quality << ")" << "\n  "
                   << center << '\n';
             }
           }
@@ -567,16 +567,16 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
           if (ofs_bad.good()) {
 #           pragma omp critical
             {
-              ofs_bad << " center of bad cluster (" << blocksInPlace[m].size() << ", " << cluster_quality << ")" << "\n  "
+              ofs_bad << " center of bad cluster (" << currentBlock.size() << ", " << cluster_quality << ")" << "\n  "
                       << center << '\n';
             }
           }
         }
 
-        tkmers += blocksInPlace[m].size();
+        tkmers += currentBlock.size();
 
-        for (size_t j = 1; j < blocksInPlace[m].size(); ++j) {
-          size_t eidx = blocksInPlace[m][j];
+        for (size_t j = 1; j < currentBlock.size(); ++j) {
+          size_t eidx = currentBlock[j];
           KMerStat &kms = data_[eidx];
 
           kms.set_change(cidx);
@@ -584,7 +584,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
           if (ofs_bad.good()) {
 #           pragma omp critical
             {
-              ofs_bad << " part of cluster (" << blocksInPlace[m].size() << ", " << cluster_quality << ")" << "\n  "
+              ofs_bad << " part of cluster (" << currentBlock.size() << ", " << cluster_quality << ")" << "\n  "
                       << kms << '\n';
             }
           }
