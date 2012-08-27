@@ -17,14 +17,10 @@
 #include "hamcluster.hpp"
 #include "kmer_index.hpp"
 
-#include <boost/numeric/ublas/symmetric.hpp>
-
 #include <string>
 #include <vector>
 
 class KMerClustering {
-  typedef boost::numeric::ublas::symmetric_matrix<uint8_t, boost::numeric::ublas::lower> KMerHamDistMatrix;
-
 public:
 	KMerClustering(KMerData &data, unsigned nthreads, const std::string &workdir) :
       data_(data), nthreads_(nthreads), workdir_(workdir) { }

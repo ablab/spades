@@ -25,6 +25,7 @@
 
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/symmetric.hpp>
 
 using std::max_element;
 using std::min_element;
