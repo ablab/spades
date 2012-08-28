@@ -30,6 +30,8 @@
 using std::max_element;
 using std::min_element;
 
+namespace numeric = boost::numeric::ublas;
+
 std::string KMerClustering::GetGoodKMersFname() const {
   // FIXME: This is ugly!
   std::ostringstream tmp;
@@ -113,8 +115,9 @@ double KMerClustering::ClusterBIC(const vector<unsigned> & cl, const vector<Stri
   double loglik = 0;
   unsigned total = 0;
   for (size_t i=0; i<blockSize; ++i) {
-    unsigned cnt = data_[cl[i]].count;
-    loglik += logLikelihoodKMer(centers[indices[i]].first, data_[cl[i]]);
+    const KMerStat &kms = data_[cl[i]];
+    unsigned cnt = kms.count;
+    loglik += logLikelihoodKMer(centers[indices[i]].first, kms);
     total += cnt;
   }
 
@@ -428,7 +431,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
   return newkmers;
 }
 
-static void UpdateErrors(boost::numeric::ublas::matrix<uint64_t> &m,
+static void UpdateErrors(numeric::matrix<uint64_t> &m,
                          const KMerStat &kms, const KMerStat &center) {
   const KMer &kc = center.kmer();
   const KMer &k = kms.kmer();
@@ -477,7 +480,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
   }
 #endif
 
-  std::vector<boost::numeric::ublas::matrix<uint64_t> > errs(nthreads_, boost::numeric::ublas::matrix<double>(4, 4));
+  std::vector<numeric::matrix<uint64_t> > errs(nthreads_, numeric::matrix<double>(4, 4));
 # pragma omp parallel for shared(classes, ofs, ofs_bad, errs) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
   for (size_t i = 0; i < classes.size(); ++i) {
     auto cur_class = classes[i];
@@ -597,8 +600,8 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
 
   for (unsigned i = 1; i < nthreads_; ++i)
     errs[0] += errs[i];
-  boost::numeric::ublas::matrix<uint64_t> rowsums = prod(errs[0], boost::numeric::ublas::scalar_matrix<double>(4, 1, 1));
-  boost::numeric::ublas::matrix<double> err(4, 4);
+  numeric::matrix<uint64_t> rowsums = prod(errs[0], numeric::scalar_matrix<double>(4, 1, 1));
+  numeric::matrix<double> err(4, 4);
   for (unsigned i = 0; i < 4; ++i)
     for (unsigned j = 0; j < 4; ++j)
       err(i, j) = 1.0 * errs[0](i, j) / rowsums(i, 0);
