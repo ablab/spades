@@ -64,47 +64,60 @@ static double logLikelihoodKMer(const KMer center, const KMerStat &x) {
   return res;
 }
 
-KMer KMerClustering::find_consensus_with_mask(const vector<unsigned> & cl, const vector<unsigned> & mask, unsigned maskVal) {
+KMer KMerClustering::ConsensusWithMask(const vector<unsigned> & cl, const vector<unsigned> & mask, unsigned maskVal) const {
   size_t blockSize = cl.size();
 
   // consensus of a single string is trivial
-  if (blockSize == 1) return data_[cl[0]].kmer();
+  if (blockSize == 1)
+    return data_[cl[0]].kmer();
 
-  std::string kmer(K, 'A');
-  for (unsigned i = 0; i < K; i++) {
-    unsigned scores[4] = {0,0,0,0};
-    for (uint32_t j = 0; j < blockSize; j++) {
-      if (mask[j] == maskVal) {
-        const KMerStat &kms = data_[cl[j]];
-        scores[static_cast<uint8_t>(kms.kmer()[i])] += kms.count;
-      }
+  uint64_t scores[4*K] = {0};
+  for (size_t j = 0; j < blockSize; ++j) {
+    if (mask[j] != maskVal)
+      continue;
+
+    const KMerStat &kms = data_[cl[j]];
+    const KMer kmer = kms.kmer();
+
+    for (unsigned i = 0; i < K; ++i) {
+      scores[4*i + kmer[i]] += kms.count;
     }
-    kmer[i] = nucl(std::max_element(scores, scores + 4) - scores);
   }
 
-  return KMer(kmer);
+  std::string res(K, 'A');
+  for (unsigned i = 0; i < K; ++i) {
+    res[i] = nucl(std::max_element(scores + 4*i, scores + 4*i + 4) - (scores + 4*i));
+  }
+
+  return KMer(res);
 }
 
-
-KMer KMerClustering::find_consensus(const vector<unsigned> & cl) {
+KMer KMerClustering::Consensus(const vector<unsigned> & cl) const {
   size_t blockSize = cl.size();
 
   // consensus of a single string is trivial
-  if (blockSize == 1) return data_[cl[0]].kmer();
+  if (blockSize == 1)
+    return data_[cl[0]].kmer();
 
-  std::string kmer(K, 'A');
-  for (size_t i = 0; i < K; i++) {
-    unsigned scores[4] = {0,0,0,0};
-    for (size_t j = 0; j < blockSize; j++) {
-      const KMerStat &kms = data_[cl[j]];
-      scores[static_cast<uint8_t>(kms.kmer()[i])] += kms.count;
+  uint64_t scores[4*K] = {0};
+  for (size_t j = 0; j < blockSize; ++j) {
+    const KMerStat &kms = data_[cl[j]];
+    const KMer kmer = kms.kmer();
+
+    for (unsigned i = 0; i < K; ++i) {
+      scores[4*i + kmer[i]] += kms.count;
     }
-    kmer[i] = nucl(std::max_element(scores, scores + 4) - scores);
   }
-  return KMer(kmer);
+
+  std::string res(K, 'A');
+  for (unsigned i = 0; i < K; ++i) {
+    res[i] = nucl(std::max_element(scores + 4*i, scores + 4*i + 4) - (scores + 4*i));
+  }
+
+  return KMer(res);
 }
 
-double KMerClustering::ClusterBIC(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices) {
+double KMerClustering::ClusterBIC(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices) const {
   size_t blockSize = cl.size();
   size_t clusters = centers.size();
   if (blockSize == 0)
@@ -132,7 +145,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
 
   // if l==1 then clustering is trivial
   if (l == 1) {
-    centers[0].first = find_consensus(kmerinds);
+    centers[0].first = Consensus(kmerinds);
     centers[0].second.first = kmerinds.size();
     centers[0].second.second = 1;
     for (size_t i = 0; i < kmerinds.size(); ++i)
@@ -234,13 +247,13 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     for (unsigned j=0; j < l; ++j) {
       if (!changedCenter[j])
         continue; // nothing has changed
-      centers[j].first = find_consensus_with_mask(kmerinds, indices, j);
+      centers[j].first = ConsensusWithMask(kmerinds, indices, j);
     }
   }
 
   // last M step
   for (unsigned j=0; j < l; ++j) {
-    centers[j].first = find_consensus_with_mask(kmerinds, indices, j);
+    centers[j].first = ConsensusWithMask(kmerinds, indices, j);
   }
 
   if (cfg::get().bayes_debug_output > 1) {
@@ -480,7 +493,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
   }
 #endif
 
-  std::vector<numeric::matrix<uint64_t> > errs(nthreads_, numeric::matrix<double>(4, 4));
+  std::vector<numeric::matrix<uint64_t> > errs(nthreads_, numeric::matrix<double>(4, 4, 0.0));
 # pragma omp parallel for shared(classes, ofs, ofs_bad, errs) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
   for (size_t i = 0; i < classes.size(); ++i) {
     auto cur_class = classes[i];
