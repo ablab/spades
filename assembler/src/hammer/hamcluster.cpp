@@ -57,10 +57,10 @@ std::pair<size_t, size_t> SubKMerSplitter::split() {
   return std::make_pair(icnt, ocnt);
 }
 
-#if 0
-static bool canMerge(const unionFindClass &uf, int x, int y) {
+#if 1
+static bool canMerge(const ConcurrentDSU &uf, int x, int y) {
   size_t szx = uf.set_size(x), szy = uf.set_size(y);
-  const size_t hardthr = 15000;
+  const size_t hardthr = 2500;
 
   // Global threshold - no cluster larger than hard threshold
   if (szx + szy > hardthr)
@@ -68,8 +68,8 @@ static bool canMerge(const unionFindClass &uf, int x, int y) {
 
   // If one of the clusters is moderately large, than attach "almost" singletons
   // only.
-  if ((szx > hardthr * 3 / 4 && szy > 10) ||
-      (szy > hardthr * 3 / 4 && szx > 10))
+  if ((szx > hardthr * 3 / 4 && szy > 50) ||
+      (szy > hardthr * 3 / 4 && szx > 50))
     return false;
 
   return true;
