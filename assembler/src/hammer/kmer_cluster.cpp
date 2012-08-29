@@ -55,7 +55,7 @@ static double logLikelihoodKMer(const KMer center, const KMerStat &x) {
   KMer kmer = x.kmer();
   for (unsigned i = 0; i < K; ++i) {
     if (center[i] != kmer[i]) {
-      res += - log(10) * getQual(x, i) / 10.0;
+      res += getRevProb(x, i, /* log */ true);
     } else {
       res += getProb(x, i, /* log */ true);
     }
