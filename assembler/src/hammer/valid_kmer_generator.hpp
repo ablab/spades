@@ -34,22 +34,14 @@ class ValidKMerGenerator {
    * @param read Read to generate k-mers from.
    * @param bad_quality_threshold  This class virtually cuts
    * nucleotides with quality lower the threshold from the ends of the
-   * read. 
+   * read.
    */
   explicit ValidKMerGenerator(const Read &read,
-                              uint32_t bad_quality_threshold = 2) :
-      bad_quality_threshold_(bad_quality_threshold),
-      pos_(-1),
-      end_(-1),
-      len_(read.getSequenceString().size()),
-      has_more_(true),
-      correct_probability_(1),
-      first(true),
-      kmer_(),
-      seq_(read.getSequenceString().data()),
-      qual_(read.getQualityString().data()) {
-    TrimBadQuality();
-    Next();
+                              uint32_t bad_quality_threshold = 2) {
+    Reset(read.getSequenceString().data(),
+          read.getQualityString().data(),
+          read.getSequenceString().size(),
+          bad_quality_threshold);
   }
   /**
    * @param seq sequence to generate k-mers from.
@@ -60,23 +52,37 @@ class ValidKMerGenerator {
    */
   explicit ValidKMerGenerator(const char *seq, const char *qual,
                               size_t len,
-                              uint32_t bad_quality_threshold = 2) :
-      kmer_(),
-      seq_(seq),
-      qual_(qual),
-      pos_(-1),
-      end_(-1),
-      len_(len),
-      correct_probability_(1),
-      bad_quality_threshold_(bad_quality_threshold),
-      has_more_(true),
-      first(true) {
+                              uint32_t bad_quality_threshold = 2) {
+    Reset(seq, qual, len, bad_quality_threshold);
+  }
+
+  ValidKMerGenerator()
+      : kmer_(), seq_(0), qual_(0),
+        pos_(-1), end_(-1), len_(0),
+        correct_probability_(1), bad_quality_threshold_(2),
+        has_more_(false), first(true) {}
+
+  void Reset(const char *seq, const char *qual,
+             size_t len,
+             uint32_t bad_quality_threshold = 2) {
+    kmer_ = Seq<kK>();
+    seq_ = seq;
+    qual_ = qual;
+    pos_ = -1;
+    end_ = -1;
+    len_ = len;
+    correct_probability_ = 1.0;
+    bad_quality_threshold_ = bad_quality_threshold;
+    has_more_ = true;
+    first = true;
+
     TrimBadQuality();
     Next();
   }
+
   /**
    * @result true if Next() succeed while generating new k-mer, false
-   * otherwise. 
+   * otherwise.
    */
   bool HasMore() const {
     return has_more_;
@@ -135,7 +141,7 @@ class ValidKMerGenerator {
 template<uint32_t kK>
 void ValidKMerGenerator<kK>::TrimBadQuality() {
   pos_ = 0;
-  if (qual_) 
+  if (qual_)
     for (; pos_ < len_; ++pos_) {
       if (GetQual(pos_) >= bad_quality_threshold_)
         break;
