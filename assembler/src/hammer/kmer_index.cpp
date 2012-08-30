@@ -115,6 +115,8 @@ void KMerIndexBuilder::Split(size_t num_files) {
         while (gen.HasMore()) {
           KMer seq = gen.kmer();
           tmp_entries[omp_get_thread_num()][hash_function(seq) % num_files].push_back(seq);
+          seq = !seq;
+          tmp_entries[omp_get_thread_num()][hash_function(seq) % num_files].push_back(seq);
           gen.Next();
         }
       }
@@ -219,6 +221,31 @@ size_t KMerIndexBuilder::BuildIndex(KMerIndex &index, size_t num_buckets) {
   return sz;
 }
 
+static void PushKMer(KMerData &data,
+                     KMer kmer, const unsigned char *q, double prob) {
+  KMerStat &kmc = data[kmer];
+  kmc.lock();
+  Merge(kmc,
+        KMerStat(1, kmer, prob, q));
+  kmc.unlock();
+}
+
+static void PushKMerRC(KMerData &data,
+                       KMer kmer, const unsigned char *q, double prob) {
+  unsigned char rcq[K];
+
+  // Prepare RC kmer with quality.
+  kmer = !kmer;
+  for (unsigned i = 0; i < K; ++i)
+    rcq[K - i - 1] = q[i];
+
+  KMerStat &kmc = data[kmer];
+  kmc.lock();
+  Merge(kmc,
+        KMerStat(1, kmer, prob, rcq));
+  kmc.unlock();
+}
+
 void KMerCounter::FillKMerData(KMerData &data) {
   // Build the index
   size_t sz = KMerIndexBuilder(cfg::get().input_working_dir).BuildIndex(data.index_, num_files_);
@@ -248,18 +275,10 @@ void KMerCounter::FillKMerData(KMerData &data) {
     ValidKMerGenerator<K> gen(s, q, csize);
     while (gen.HasMore()) {
       const KMer &kmer = gen.kmer();
+      const unsigned char *kq = (const unsigned char*)(q + gen.pos() - 1);
 
-      size_t kpos = gen.pos() - 1;
-      const unsigned char *kq = (const unsigned char*)(q + kpos);
-
-      KMerStat &kmc = data[kmer];
-      kmc.lock();
-      Merge(kmc,
-            KMerStat(1,
-                     kmer,
-                     1 - gen.correct_probability(),
-                     kq));
-      kmc.unlock();
+      PushKMer(data, kmer, kq, 1 - gen.correct_probability());
+      PushKMerRC(data, kmer, kq, 1 - gen.correct_probability());
 
       gen.Next();
     }

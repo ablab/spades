@@ -121,7 +121,7 @@ void HammerTools::InitializeSubKMerPositions() {
 	INFO("Hamming graph threshold tau=" << cfg::get().general_tau << ", k=" << K << ", subkmer positions = [ " << log_sstream.str() << "]" );
 }
 
-size_t HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement) {
+size_t HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read) {
   INFO("Reading input file " << readsFilename);
   int trim_quality = cfg::get().input_trim_quality;
   ireadstream irs(readsFilename, cfg::get().input_qvoffset);
@@ -129,7 +129,6 @@ size_t HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curp
   size_t reads = 0;
   while (irs.is_open() && !irs.eof()) {
     irs >> r;
-    if (reverse_complement) r = !r;
     size_t read_size = r.trimNsAndBadQuality(trim_quality);
 
     PositionRead pread(curpos, read_size, cur_read, false);
@@ -173,13 +172,9 @@ void HammerTools::ReadAllFilesIntoBlob() {
   Globals::input_file_sizes.clear();
 	Globals::input_file_blob_positions.push_back(0);
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		size_t reads = ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read, false);
+		size_t reads = ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read);
 		Globals::input_file_blob_positions.push_back(cur_read);
     Globals::input_file_sizes.push_back(reads);
-	}
-	Globals::revNo = cur_read;
-	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read, true);
 	}
   INFO("All files were read. Used " << curpos << " bytes out of " << Globals::blob_max_size << " allocated.");
 }
@@ -344,10 +339,10 @@ static bool internalCorrectReadProcedure(const std::string &seq, const KMerData 
 size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, KMerData &data) {
   size_t res = 0;
 
-  // cycle over the reads, looking for reads completely covered by solid k-mers
-  // and adding new solid k-mers on the fly
+  // Cycle over the reads, looking for reads completely covered by solid k-mers
+  // and adding new solid k-mers on the fly.
   #pragma omp parallel for shared(res) num_threads(nthreads)
-  for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
+  for (hint_t readno = 0; readno < Globals::pr->size(); ++readno) {
     PositionRead &pr = Globals::pr->at(readno);
 
     // skip opaque reads w/o kmers

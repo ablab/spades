@@ -44,7 +44,6 @@ std::vector<size_t> Globals::input_file_sizes = std::vector<size_t>();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 KMerData *Globals::kmer_data = NULL;
 int Globals::iteration_no = 0;
-hint_t Globals::revNo = 0;
 
 hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
@@ -159,7 +158,7 @@ int main(int argc, char * argv[]) {
 
     // allocate the blob
     Globals::blob_size = totalReadSize + 1;
-    Globals::blob_max_size = size_t(Globals::blob_size * ( 2 + cfg::get().general_blob_margin));
+    Globals::blob_max_size = Globals::blob_size;
     Globals::blob = new char[Globals::blob_max_size];
     if (!Globals::use_common_quality) Globals::blobquality = new char[Globals::blob_max_size];
     INFO("Max blob size as allocated is " << Globals::blob_max_size);

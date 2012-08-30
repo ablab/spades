@@ -25,7 +25,6 @@ struct Globals {
   static KMerData *kmer_data;
   static hint_t blob_max_size;
   static hint_t blob_size;
-  static hint_t revNo;
 
   static char char_offset;
   static bool char_offset_user;

@@ -49,7 +49,7 @@ public:
 	static void InitializeSubKMerPositions();
 
 	/// read one input file into the blob and output current position and read number
-	static size_t ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement);
+	static size_t ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read);
 	/// read all input files into the blob
 	static void ReadAllFilesIntoBlob();
 
