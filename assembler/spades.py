@@ -726,10 +726,6 @@ def main():
 
         spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir,
             "simplified_contigs.fasta")
-        final_contigs_folder = os.path.join(spades_cfg.output_dir, "contigs")
-
-        if os.path.exists(final_contigs_folder):
-            shutil.rmtree(final_contigs_folder)
 
         print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename +
               "\n")
@@ -790,16 +786,6 @@ def main():
         tee.free()
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
               "\n")
-
-
-        if not os.path.exists(final_contigs_folder):
-            os.makedirs(final_contigs_folder)
-        shutil.copy(result_contigs_filename, final_contigs_folder)
-        shutil.copy(spades_cfg.log_filename, final_contigs_folder)
-        sam_file_linkname = os.path.splitext(result_contigs_filename)[0] + ".sam"
-        if os.path.exists(sam_file_linkname):
-            os.symlink(sam_file_linkname, os.path.join(final_contigs_folder,
-                os.path.basename(sam_file_linkname)))
 
     quality_final_report = ""
     if ("quality_assessment" in cfg) and result_contigs_filename:
