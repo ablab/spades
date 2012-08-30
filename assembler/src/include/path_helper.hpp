@@ -64,11 +64,11 @@ inline string append_path(string const& prefix, string const& suffix)
 
 inline string current_dir()
 {
-    char* cwd = get_current_dir_name();
-    string result = cwd;
+  char* cwd = getcwd(NULL, 0);
+  string result = cwd;
 
-    free(cwd);
-    return result;
+  free(cwd);
+  return result;
 }
 
 inline void make_full_path(string& path)
