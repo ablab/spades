@@ -104,7 +104,7 @@ size_t EstimateTotalReadSize(const std::vector<std::string> &fnames) {
     stat(I->c_str(), &st);
     totalReadSize += st.st_size;
   }
-  totalReadSize = totalReadSize / (2.5);
+  totalReadSize = totalReadSize / 2.0;
   return totalReadSize;
 }
 };
