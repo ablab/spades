@@ -188,14 +188,14 @@ int main(int argc, char * argv[]) {
 
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Dumping K-mer index");
-          std::ofstream os(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index"),
-                           std::ios::binary);
+          std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
+          std::ofstream os(fname.c_str(), std::ios::binary);
           Globals::kmer_data->binary_write(os);
         }
       } else {
         INFO("Reading K-mer index");
-        std::ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index"),
-                         std::ios::binary);
+        std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
+        std::ifstream is(fname.c_str(), std::ios::binary);
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is);
       }
@@ -225,7 +225,8 @@ int main(int argc, char * argv[]) {
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Writing down clusters.");
 
-          std::ofstream ofs(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"),
+          std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
+          std::ofstream ofs(fname.c_str(),
                             std::ios::binary | std::ios::out);
 
           ofs.write((char*)&num_classes, sizeof(num_classes));
@@ -238,8 +239,8 @@ int main(int argc, char * argv[]) {
       } else {
         INFO("Reading clusters.");
 
-        std::ifstream is(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"),
-                         std::ios::binary | std::ios::in);
+        std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
+        std::ifstream is(fname.c_str(), std::ios::binary | std::ios::in);
         VERIFY(is.good());
 
         size_t num_classes = 0;
