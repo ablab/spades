@@ -59,18 +59,18 @@ namespace online_visualization {
     };
 
     // exit
-    class ExitCommand : public LocalCommand {
+    class ExitCommand : public Command {
         public:
             string Usage() const {
                 return "The command `exit` allows you to exit this application.";
             }
 
             ExitCommand() : 
-                LocalCommand(CommandType::_exit_)
+                Command(CommandType::_exit_)
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& args) const {
+            void Execute(EnvironmentPtr& curr_env, LoadedEnvironments& loaded_environments, const ArgumentList& args) const {
                 cout << "Exitting" << endl;
                 exit(0);
             }

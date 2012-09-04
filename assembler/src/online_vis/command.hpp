@@ -92,8 +92,11 @@ namespace online_visualization {
                 if (arg_list["all"] == "true")
                     for (auto iter = loaded_environments.begin(); iter != loaded_environments.end(); ++iter) 
                         Execute(*(iter->second), arg_list);
-                else
+                else if (curr_env) {
                     Execute(*curr_env, arg_list);
+                }
+                else 
+                    cout << "The environment is not loaded" << endl;
             }
 
     };

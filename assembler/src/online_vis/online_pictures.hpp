@@ -13,7 +13,6 @@
 namespace online_visualization {
 
 
-    //TODO : BatchCommand
     class OnlineVisualizer {
     private:
 
@@ -57,7 +56,7 @@ namespace online_visualization {
         {
             string p = path::append_path(cfg::get().load_from, "late_pair_info_counted");
 
-            stringstream ss("default " + p);
+            stringstream ss("load default " + p);
             AddAllCommands();
             Command& LoadCommand = GetCommand(CommandId("load"));
             LoadCommand.Execute(current_environment_, loaded_environments, ss);
