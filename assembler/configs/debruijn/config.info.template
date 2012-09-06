@@ -72,7 +72,7 @@ additional_ec_removing    true
 divide_clusters false
 
 ;if true simple mismatches are corrected
-correct_mismatches          false
+correct_mismatches          true
 
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
