@@ -20,7 +20,7 @@ mis_limit = int(sys.argv[3])
 columns = map(lambda s: s.strip(), f.readline().split('\t'))
 values = map(lambda s: s.strip(), f.readline().split('\t'))
 n50 = int(values[columns.index("N50")])
-mis = int(values[columns.index("Misassemblies")])
+mis = int(values[columns.index("# misassemblies")])
 print 'N50 =', n50
 print 'Misasemblies =', mis
 lvl = 0
@@ -32,7 +32,7 @@ if mis > mis_limit:
     lvl += 2
 if len(sys.argv) > 4:
     genes_limit = int(sys.argv[4])
-    genes = int(values[columns.index("Genes")].split('+')[0])
+    genes = int(values[columns.index("# genes")].split('+')[0])
     print 'full genes =', genes
 
     if genes < genes_limit:
@@ -40,7 +40,7 @@ if len(sys.argv) > 4:
 	lvl += 4
 if len(sys.argv) > 5:
     mapped_limit = float(sys.argv[5])
-    mapped = float(values[columns.index("Mapped genome (%)")])
+    mapped = float(values[columns.index("Genome fraction (%)")])
     print 'mapped genome =', mapped, '%'
 
     if mapped < mapped_limit:

@@ -28,7 +28,7 @@ echo $dir
 mkdir $dir -p
 cp $project_dir"contigs.fasta" $dir$(date +%Y%m%d_%H%M%S)".fasta"
 
-python2.6 ~/quast/quast.py $project_dir"contigs.fasta" $line -o $project_dir"/quality_results/"
+python2.6 ~/quast-1.1/quast.py $project_dir"contigs.fasta" $line -o $project_dir"/quality_results/"
 rm $dir"/quast_all" -rf
 #echo $dir"*.fasta" $line -o $dir"/quast_all"
 dirtmp=$dir"tmp/"
@@ -58,7 +58,7 @@ for i in $dir*.fasta ; do
   fi
 done
 
-quast_line="$output_pref/quast/quast.py $dirtmp* $line -o $dir/quast_all/"
+quast_line="$output_pref/quast-1.1/quast.py $dirtmp* $line -o $dir/quast_all/"
 
 
 
@@ -73,9 +73,6 @@ read line < $options_dir"results.options"
 echo $line
 opts=( $line )
 python src/test/teamcity/assess.py $project_dir"quality_results/transposed_report.tsv" ${opts[1]} ${opts[3]} ${opts[5]} ${opts[7]}
-#cd $dir
-#echo $dir"*.fasta" $line -o $dir"/quast_all"
-#python2.6 ~/quast/quast.py * $line -o $dir"/quast_all/"
 
 
 popd
