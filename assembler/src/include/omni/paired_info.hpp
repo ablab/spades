@@ -1030,12 +1030,15 @@ public:
 
 	}
 
-	void FillNormalizedIndex(const PairedInfoIndex<Graph>& paired_index, PairedInfoIndex<Graph>& normalized_index) const {
+// temporary due to path_extend absolute thresholds
+	void FillNormalizedIndex(const PairedInfoIndex<Graph>& paired_index, PairedInfoIndex<Graph>& normalized_index, double coeff = 1.) const {
 		for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
 			const vector<PairInfo<EdgeId> >& infos = *it;
 			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
-                DEBUG("Normalized pair info " << (*it2) << " " << normalizing_function_(*it2));
-				normalized_index.AddPairInfo(normalizing_function_(*it2), false);
+                PairInfo<EdgeId> tmp = *it2;
+                tmp.weight *= coeff;
+                DEBUG("Normalized pair info " << (tmp) << " " << normalizing_function_(tmp));
+				normalized_index.AddPairInfo(normalizing_function_(tmp), false);
 			}
 		}
 	}

@@ -699,6 +699,60 @@ void prepare_jump_index(const Graph& g, const paired_info_index& raw_jump_index,
 	filter.Filter(normalized_jump_index, jump_index);
 }
 
+void prepare_scaffolding_index(conj_graph_pack& gp, paired_info_index& paired_index,
+                                paired_info_index& clustered_index) {
+    double is_var = *cfg::get().ds.is_var;
+    size_t delta = size_t(is_var);
+    size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
+    GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, delta);
+
+    size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
+    INFO("Symmetry trick");
+    paired_info_index symmetric_index(gp.g);
+    PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
+    hack.FillSymmetricIndex(symmetric_index);
+
+    boost::function<double(int)> weight_function;
+
+    INFO("Retaining insert size distribution for it");
+    InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist = cfg::get().ds.hist;
+    WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
+    INFO("Weight Wrapper Done");
+    weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
+
+    PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
+    if (cfg::get().ds.single_cell) {
+        normalizing_f = &TrivialWeightNormalization<Graph>;
+    } else {
+        //todo reduce number of constructor params
+        PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
+                *cfg::get().ds.IS, *cfg::get().ds.is_var, *cfg::get().ds.RL,
+                gp.k_value, *cfg::get().ds.avg_coverage);
+        normalizing_f = boost::bind(
+                &PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
+                weight_normalizer, _1);
+    }
+    PairedInfoNormalizer<Graph> normalizer(normalizing_f);
+    INFO("Normalizer Done");
+
+    PairInfoWeightFilter<Graph> filter(gp.g, 0.);
+    INFO("Weight Filter Done");
+
+    const AbstractDistanceEstimator<Graph>& estimator =
+            SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index,
+                    dist_finder, weight_function, linkage_distance, max_distance,
+                    cfg::get().ade.threshold,
+                    cfg::get().ade.range_coeff,
+                    cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
+                    cfg::get().ade.min_peak_points,
+                    cfg::get().ade.inv_density,
+                    cfg::get().ade.percentage,
+                    cfg::get().ade.derivative_threshold,
+                    true);
+    INFO("Starting SMOOTHING distance estimator");
+    estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
+}
+
 void resolve_repeats() {
 	Sequence genome = cfg::get().developer_mode ? cfg::get().ds.reference_genome : Sequence();
 
@@ -818,15 +872,17 @@ void resolve_repeats() {
                                       resolved_gp.g);
 
                 if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-                    PairedInfoIndex<conj_graph_pack::graph_t> scaff_clustered(
-                                          conj_gp.g);
+                    PairedInfoIndex<conj_graph_pack::graph_t> scaff_clustered(conj_gp.g);
 
                     //TODO: cluster here from paired_index to scaff_clustered
+                    prepare_scaffolding_index(conj_gp, paired_index, scaff_clustered);
 
                     PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_scaff_clustered(
                                           resolved_gp.g);
                     ProduceResolvedPairedInfo(conj_gp, scaff_clustered, resolved_gp,
                           labels_after, resolved_graph_scaff_clustered);
+
+                    DEBUG("Resolved scaffolding index size " << resolved_graph_scaff_clustered.size());
 
                     INFO("Scaffolding");
                     resolve_repeats_pe(cfg::get().K, resolved_gp,

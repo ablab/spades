@@ -26,6 +26,7 @@ protected:
 			const vector<PairInfo<EdgeId>>& data,
 			const vector<size_t>& raw_forward) const {
 
+        TRACE("Estimating with weight function");
         size_t first_len = this->graph().length(first);
         size_t second_len = this->graph().length(second);
         
@@ -88,6 +89,8 @@ public:
     virtual ~WeightedDistanceEstimator() {
     }
 
+private:
+    DECL_LOGGER("WeightedDistanceEstimator");
 };
     
 

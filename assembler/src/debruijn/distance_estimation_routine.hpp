@@ -59,17 +59,27 @@ void estimate_with_estimator(const Graph& graph,
 	} else {
 		estimator.Estimate(raw_clustered_index);
 	}
-    DEBUG("Size of clustered index is " << raw_clustered_index.size());
-    for (auto iter = raw_clustered_index.begin(); iter != raw_clustered_index.end(); ++iter) {
-        const vector<PairInfo<EdgeId> >& infos = *iter;
-        DEBUG("Size " << infos.size());
-        for (auto infos_iter = infos.begin(); infos_iter != infos.end(); ++infos_iter) {
-            DEBUG("Pair info " << *infos_iter);   
-        }
-    }
+
+    //DEBUG("Size of clustered index is " << raw_clustered_index.size());
+    //for (auto iter = raw_clustered_index.begin(); iter != raw_clustered_index.end(); ++iter) {
+        //const vector<PairInfo<EdgeId> >& infos = *iter;
+        //DEBUG("Size " << infos.size());
+        //for (auto infos_iter = infos.begin(); infos_iter != infos.end(); ++infos_iter) {
+            //DEBUG("Pair info " << *infos_iter);   
+        //}
+    //}
 	INFO("Normalizing Weights");
 	paired_info_index normalized_index(graph);
-	normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index);
+
+    // temporary fix for scaffolding (I hope) due to absolute thresholds in path_extend
+    if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_weighted || 
+        cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing || 
+        cfg::get().est_mode == debruijn_graph::estimation_mode::em_extensive) {
+        double coeff = (cfg::get().ds.single_cell ? (10. / 80.) : (0.2 / 3.00) );
+	    normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index, coeff);
+    } else
+	    normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index);
+
 	DEBUG("Weights Normalized");
 	INFO("Filtering info");
 	filter.Filter(normalized_index, clustered_index);

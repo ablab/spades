@@ -249,7 +249,7 @@ public:
             return;
 		}
 		ExtendLinear(hist_);
-        PrintStats("extended linearly");
+        PrintStats("extended linearly ");
 		//InitBaseline();
         //PrintStats("baseline");
 		//SubtractBaseline();
@@ -350,7 +350,7 @@ public:
                 for (int i = left_bound; i < right_bound; ++i)
                     weight_ += hist_[i - x_left_].real();
                 TRACE("WEIGHT counted");
-                pair<int, double> tmp_pair = make_pair(index, 10000. * weight_);
+                pair<int, double> tmp_pair = make_pair(index, 100. * weight_);
                 if (!peaks_.count(index)) {
                     TRACE("Peaks size " << peaks_.size() << ", inserting " << tmp_pair);
                     peaks_.insert(tmp_pair);
