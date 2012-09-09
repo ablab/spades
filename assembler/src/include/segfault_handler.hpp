@@ -9,54 +9,45 @@
 #include "stacktrace.hpp"
 #include "signal.h"
 
+struct segfault_handler : boost::noncopyable {
+  typedef boost::function<void ()> callback_t;
+  typedef void (*seg_handler_t)(int);
 
-struct segfault_handler
-    : boost::noncopyable
-{
-    typedef boost::function<void ()> callback_t;
-    typedef void (*seg_handler_t)(int);
+  segfault_handler(callback_t const& cb = 0) {
+    if (callback() != 0)
+      throw std::runtime_error("failed to initialize segfault_handler, it has been already initialized");
 
-    segfault_handler(callback_t const& cb = 0)
-    {
-        if (callback() != 0)
-            throw std::runtime_error("failed to initialize segfault_handler, it has been already initialized");
+    callback() = cb;
+    old_func_  = signal(SIGSEGV, &segfault_handler::handler);
+  }
 
-        callback() = cb;
-        old_func_  = signal(SIGSEGV, &segfault_handler::handler);
+  ~segfault_handler() {
+    callback() = 0;
+    signal(SIGSEGV, old_func_);
+  }
+
+ private:
+  static callback_t& callback() {
+    static callback_t cb = 0;
+    return cb;
+  }
+
+  static void handler(int signum) {
+    if (signum == SIGSEGV) {
+      std::cerr << "The program was terminated by segmentation fault" << std::endl;
+      print_stacktrace();
+
+      if (callback())
+        callback()();
     }
 
-    ~segfault_handler()
-    {
-        callback() = 0;
-        signal(SIGSEGV, old_func_);
-    }
+    //TEST!!
+    exit(1);
 
-private:
-    static callback_t& callback()
-    {
-        static callback_t cb = 0;
-        return cb;
-    }
+    signal(signum, SIG_DFL);
+    kill  (getpid(), signum);
+  }
 
-    static void handler(int signum)
-    {
-        if (signum == SIGSEGV)
-        {
-            std::cerr << "The program was terminated by segmentation fault" << std::endl;
-            print_stacktrace();
-
-            if (callback())
-            	callback()();
-        }
-
-        //TEST!!
-        exit(1);
-
-        signal(signum, SIG_DFL);
-        kill  (getpid(), signum);
-    }
-
-
-private:
-    seg_handler_t  old_func_;
+ private:
+  seg_handler_t  old_func_;
 };
