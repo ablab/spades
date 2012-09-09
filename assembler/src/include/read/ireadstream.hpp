@@ -19,7 +19,6 @@
 #include "verify.hpp"
 #include "read/read.hpp"
 #include "sequence/nucl.hpp"
-#include "boost/lexical_cast.hpp"
 
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
