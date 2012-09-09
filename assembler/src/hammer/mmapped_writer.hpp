@@ -7,13 +7,16 @@
 #ifndef HAMMER_MMAPPED_WRITER_HPP
 #define HAMMER_MMAPPED_WRITER_HPP
 
+#include "pointer_iterator.hpp"
+
+#include <string>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <strings.h>
-#include <string>
 
 class MMappedWriter {
   int StreamFile;

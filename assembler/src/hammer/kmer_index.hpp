@@ -8,19 +8,22 @@
 #define _HAMMER_KMERINDEX_HPP_
 
 #include "kmer_stat.hpp"
+
 #include "mph_index/mph_index.h"
 #include "openmp_wrapper.h"
 
 #include "logger/logger.hpp"
+#include "path_helper.hpp"
 
 #include <vector>
 #include <cmath>
 
 class KMerIndex {
   typedef cxxmph::SimpleMPHIndex<KMer, cxxmph::seeded_hash_function<KMer::hash> > KMerDataIndex;
-  typedef KMer::hash hash_function;
 
  public:
+  typedef KMer::hash hash_function;
+
   KMerIndex():index_(NULL), num_buckets_(0), bucket_locks_(NULL) {}
 
   KMerIndex(const KMerIndex&) = delete;
@@ -121,88 +124,34 @@ class KMerIndex {
   }
 };
 
+class KMerSplitter {
+ public:
+  KMerSplitter(std::string &work_dir, unsigned num_files)
+      : work_dir_(work_dir), num_files_(num_files) {}
+
+  virtual path::files_t Split() = 0;
+
+ protected:
+  std::string work_dir_;
+  unsigned num_files_;
+  std::string GetRawKMersFname(unsigned suffix) const;
+
+  DECL_LOGGER("K-mer Splitting");
+};
+
 class KMerIndexBuilder {
   std::string work_dir_;
+  
  public:
   KMerIndexBuilder(const std::string &workdir)
       : work_dir_(workdir) {}
-  size_t BuildIndex(KMerIndex &out, size_t num_buckets);
+  size_t BuildIndex(KMerIndex &out, KMerSplitter &splitter);
 
  private:
-  void Split(size_t num_files);
   size_t MergeKMers(const std::string &ifname, const std::string &ofname);
-  std::string GetRawKMersFname(unsigned suffix) const;
   std::string GetUniqueKMersFname(unsigned suffix) const;
 
   DECL_LOGGER("K-mer Index Building");
-};
-
-
-class KMerData {
-  typedef std::vector<KMerStat> KMerDataStorageType;
-
- public:
-  size_t size() const { return data_.size(); }
-  size_t capacity() const { return data_.capacity(); }
-  void clear() {
-    data_.clear();
-    push_back_buffer_.clear();
-    KMerDataStorageType().swap(data_);
-    KMerDataStorageType().swap(push_back_buffer_);
-  }
-  size_t push_back(const KMerStat &k) {
-    push_back_buffer_.push_back(k);
-
-    return data_.size() + push_back_buffer_.size() - 1;
-  }
-
-  KMerStat& operator[](size_t idx) {
-    size_t dsz = data_.size();
-    return (idx < dsz ? data_[idx] : push_back_buffer_[idx - dsz]);
-  }
-  const KMerStat& operator[](size_t idx) const {
-    size_t dsz = data_.size();
-    return (idx < dsz ? data_[idx] : push_back_buffer_[idx - dsz]);
-  }
-  KMerStat& operator[](KMer s) { return operator[](index_.seq_idx(s)); }
-  const KMerStat& operator[](KMer s) const { return operator[](index_.seq_idx(s)); }
-  size_t seq_idx(KMer s) const { return index_.seq_idx(s); }
-
-  template <class Writer>
-  void binary_write(Writer &os) {
-    size_t sz = data_.size();
-    os.write((char*)&sz, sizeof(sz));
-    os.write((char*)&data_[0], sz*sizeof(data_[0]));
-    index_.serialize(os);
-  }
-
-  template <class Reader>
-  void binary_read(Reader &is) {
-    size_t sz = 0;
-    is.read((char*)&sz, sizeof(sz));
-    data_.resize(sz);
-    is.read((char*)&data_[0], sz*sizeof(data_[0]));
-    index_.deserialize(is);
-  }
-
- private:
-  KMerDataStorageType data_;
-  KMerDataStorageType push_back_buffer_;
-  KMerIndex index_;
-
-  friend class KMerCounter;
-};
-
-class KMerCounter {
-  unsigned num_files_;
-
- public:
-  KMerCounter(unsigned num_files) : num_files_(num_files) {}
-
-  void FillKMerData(KMerData &data);
-
- private:
-  DECL_LOGGER("K-mer Counting");
 };
 
 #endif // _HAMMER_KMERINDEX_HPP_

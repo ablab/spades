@@ -31,7 +31,7 @@
 #include "kmer_cluster.hpp"
 #include "position_read.hpp"
 #include "globals.hpp"
-#include "kmer_index.hpp"
+#include "kmer_data.hpp"
 #include "concurrent_dsu.hpp"
 
 #include "memory_limit.hpp"

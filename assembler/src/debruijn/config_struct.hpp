@@ -27,7 +27,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
 namespace debruijn_graph {
 
 enum working_stage {
