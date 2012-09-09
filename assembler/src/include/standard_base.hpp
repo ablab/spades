@@ -76,7 +76,6 @@ using std::copy;
 
 #include <boost/assert.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/bimap.hpp>
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -92,8 +91,6 @@ using boost::bind;
 using boost::ref;
 using boost::cref;
 using boost::function;
-
-using boost::bimap;
 
 using boost::optional;
 using boost::none;

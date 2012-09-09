@@ -16,12 +16,17 @@
 
 #include "config_common.hpp"
 #include "path_extend/pe_config_struct.hpp"
-#include <sys/types.h>
-#include <sys/stat.h>
+
 #include <io/reader.hpp>
 #include <io/ireader.hpp>
 #include <io/easy_reader.hpp>
 #include <io/converting_reader_wrapper.hpp>
+
+#include <boost/bimap.hpp>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
 
 namespace debruijn_graph {
 
@@ -114,11 +119,11 @@ inline std::string MakeLaunchTimeDirName() {
 
 // struct for debruijn project's configuration file
 struct debruijn_config {
-    typedef bimap<string, working_stage> stage_name_id_mapping;
-    typedef bimap<string, simplification_mode> simpl_mode_id_mapping;
-    typedef bimap<string, estimation_mode> estimation_mode_id_mapping;
-    typedef bimap<string, paired_metrics> paired_metrics_id_mapping;
-	typedef bimap<string, resolving_mode> resolve_mode_id_mapping;
+  typedef boost::bimap<string, working_stage> stage_name_id_mapping;
+  typedef boost::bimap<string, simplification_mode> simpl_mode_id_mapping;
+  typedef boost::bimap<string, estimation_mode> estimation_mode_id_mapping;
+  typedef boost::bimap<string, paired_metrics> paired_metrics_id_mapping;
+  typedef boost::bimap<string, resolving_mode> resolve_mode_id_mapping;
 
 //  damn shit fix, it is to be removed! To determine is it started from run.sh or from spades.py
     bool run_mode;
