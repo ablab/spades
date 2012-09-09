@@ -14,10 +14,13 @@ len_arg = len(sys.argv)
 file_names = []
 files = []
 parts = []
-for i in range(0, len/2 - 1 ):
-    file_names.append(sys.argv[i + 2])
-    parts.append(sys.argv[i + 1])
-    files.append(open(file_names[i + 2]))
+ds = int(len(sys.argv)/2 -1)
+print len(sys.argv)
+for i in range(0, ds ):
+    print i;
+    file_names.append(sys.argv[i * 2 + 2])
+    parts.append(sys.argv[i * 2 + 1])
+    files.append(open(file_names[i]))
 
 outFileName = sys.argv[len_arg-1];
 outFile = open(outFileName, "w")
@@ -26,21 +29,18 @@ threshold = 1/float(sys.argv[1])
 
 
 
-mainName, mainext = os.path.splitext(mainFileName)
-contName, context = os.path.splitext(contFileName)
-
 #outFile = open(mainName + "+"+ str(threshold) + "* contamunation"  + ext, "w") 
-line = contFile.readline()
-for i in range(len(file_names)):
-
+for i in range(0, ds):
+    print " mixing "+str(i) +"   of "  + str(len(files))
+    line = (files[i]).readline()
     while 1:
         if not line:
             break
         out = random.random() < (1/float(parts[i]))
-        for i in range(8):
+        for j in range(8):
             if out:
                 outFile.write(line)
-            line = files.readline()
+            line = (files[i]).readline()
 
     files[i].close()
 
