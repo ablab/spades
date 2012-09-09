@@ -86,14 +86,11 @@ using std::copy;
 #include <boost/make_shared.hpp>
 
 #include <boost/optional.hpp>
-#include <boost/utility/in_place_factory.hpp>
-#include <boost/utility/typed_in_place_factory.hpp>
 
 #include <boost/format.hpp>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/algorithm/string.hpp>
 
 using boost::bind;
 using boost::ref;
