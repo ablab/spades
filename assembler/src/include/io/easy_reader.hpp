@@ -13,6 +13,8 @@
 #include "io/careful_filtering_reader_wrapper.hpp"
 #include "io/single_read.hpp"
 
+#include <memory>
+
 namespace io {
 //todo refactor, and maybe merge them once again
 class EasyReader : public DelegatingReaderWrapper<io::SingleRead> {
@@ -50,7 +52,7 @@ public:
 class PairedEasyReader
 	: public DelegatingReaderWrapper<io::PairedRead>
 {
-	scoped_ptr<IReader<io::PairedRead>> raw_reader_;
+  std::unique_ptr<IReader<io::PairedRead>> raw_reader_;
 	CarefulFilteringReaderWrapper<io::PairedRead> filtered_reader_;
 	RCReaderWrapper<io::PairedRead> rc_reader_;
 

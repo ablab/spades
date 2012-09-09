@@ -2,6 +2,8 @@
 
 #include "io/delegating_reader_wrapper.hpp"
 
+#include <memory>
+
 namespace io {
 
 class SequenceModifier {
@@ -18,10 +20,10 @@ class ModifyingWrapper;
 
 template<>
 class ModifyingWrapper<io::SingleRead>: public io::DelegatingReaderWrapper<io::SingleRead> {
-	shared_ptr<const SequenceModifier> modifier_;
+  std::shared_ptr<const SequenceModifier> modifier_;
 
 public:
-	ModifyingWrapper(io::IReader<io::SingleRead>& reader, shared_ptr<const SequenceModifier> modifier) :
+	ModifyingWrapper(io::IReader<io::SingleRead>& reader, std::shared_ptr<const SequenceModifier> modifier) :
 			io::DelegatingReaderWrapper<io::SingleRead>(reader), modifier_(modifier) {}
 
 	ModifyingWrapper& operator>>(io::SingleRead& read) {
@@ -33,10 +35,10 @@ public:
 
 template<>
 class ModifyingWrapper<io::PairedRead>: public io::DelegatingReaderWrapper<io::PairedRead> {
-	shared_ptr<const SequenceModifier> modifier_;
+  std::shared_ptr<const SequenceModifier> modifier_;
 
 public:
-	ModifyingWrapper(io::IReader<io::PairedRead>& reader, shared_ptr<const SequenceModifier> modifier) :
+	ModifyingWrapper(io::IReader<io::PairedRead>& reader, std::shared_ptr<const SequenceModifier> modifier) :
 			io::DelegatingReaderWrapper<io::PairedRead>(reader), modifier_(modifier) {}
 
 	ModifyingWrapper& operator>>(io::PairedRead& read) {
@@ -49,11 +51,11 @@ public:
 
 template<>
 class ModifyingWrapper<io::SingleReadSeq>: public io::DelegatingReaderWrapper<io::SingleReadSeq> {
-    shared_ptr<const SequenceModifier> modifier_;
+  std::shared_ptr<const SequenceModifier> modifier_;
 
 public:
-    ModifyingWrapper(io::IReader<io::SingleReadSeq>& reader, shared_ptr<const SequenceModifier> modifier) :
-            io::DelegatingReaderWrapper<io::SingleReadSeq>(reader), modifier_(modifier) {}
+  ModifyingWrapper(io::IReader<io::SingleReadSeq>& reader, std::shared_ptr<const SequenceModifier> modifier) :
+      io::DelegatingReaderWrapper<io::SingleReadSeq>(reader), modifier_(modifier) {}
 
     ModifyingWrapper& operator>>(io::SingleReadSeq& read) {
         this->reader() >> read;
@@ -64,10 +66,10 @@ public:
 
 template<>
 class ModifyingWrapper<io::PairedReadSeq>: public io::DelegatingReaderWrapper<io::PairedReadSeq> {
-    shared_ptr<const SequenceModifier> modifier_;
+  std::shared_ptr<const SequenceModifier> modifier_;
 
 public:
-    ModifyingWrapper(io::IReader<io::PairedReadSeq>& reader, shared_ptr<const SequenceModifier> modifier) :
+  ModifyingWrapper(io::IReader<io::PairedReadSeq>& reader, std::shared_ptr<const SequenceModifier> modifier) :
             io::DelegatingReaderWrapper<io::PairedReadSeq>(reader), modifier_(modifier) {}
 
     ModifyingWrapper& operator>>(io::PairedReadSeq& read) {

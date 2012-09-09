@@ -29,6 +29,8 @@
 
 #include "path_helper.hpp"
 
+using namespace std;
+
 namespace debruijn_graph {
 
 using omnigraph::Path;
@@ -726,7 +728,7 @@ private:
 template<class gp_t>
 shared_ptr<const NewExtendedSequenceMapper<typename gp_t::graph_t> > MapperInstance(const gp_t& gp) {
     size_t k_plus_1 = gp.k_value + 1;
-	return boost::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t> >(gp.g, gp.index, gp.kmer_mapper, k_plus_1);
+	return make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t> >(gp.g, gp.index, gp.kmer_mapper, k_plus_1);
 }
 
 template<class Graph>

@@ -39,6 +39,7 @@
 #include <stack>
 #include <cmath>
 #include <limits>
+#include <memory>
 
 using std::cin;
 using std::cout;
@@ -82,9 +83,6 @@ using std::copy;
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
-#include <boost/smart_ptr.hpp>
-#include <boost/make_shared.hpp>
-
 #include <boost/optional.hpp>
 
 #include <boost/format.hpp>
@@ -98,9 +96,6 @@ using boost::cref;
 using boost::function;
 
 using boost::bimap;
-using boost::shared_ptr;
-using boost::scoped_ptr;
-using boost::make_shared;
 
 using boost::optional;
 using boost::none;
