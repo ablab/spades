@@ -13,28 +13,23 @@
 
 #pragma once
 
-#include <boost/static_assert.hpp>
-
 namespace utils
 {
 
 // arrays
 template <class T, size_t N>
-size_t array_size(T (&arr)[N])
-{
-    return N;
+size_t array_size(T (&arr)[N]) {
+  return N;
 }
 
 template <class T, size_t N>
-T* array_end(T (&arr)[N])
-{
-    return &arr[N];
+T* array_end(T (&arr)[N]) {
+  return &arr[N];
 }
 
 template <size_t EXPECTED_SIZE, class T, size_t N>
-void check_array_size(T (&arr)[N])
-{
-    BOOST_STATIC_ASSERT(EXPECTED_SIZE == N);
+void check_array_size(T (&arr)[N]) {
+  static_assert(EXPECTED_SIZE == N, "Unexpected array size");
 }
 
 template <class T>
