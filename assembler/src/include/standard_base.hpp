@@ -36,7 +36,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <deque>
-#include <stack>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -67,7 +66,6 @@ using std::stringstream;
 using std::numeric_limits;
 using std::deque;
 using std::ostream_iterator;
-using std::stack;
 using std::copy;
 
 //==boost

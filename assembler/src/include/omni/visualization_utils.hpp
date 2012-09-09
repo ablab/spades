@@ -9,8 +9,6 @@
 
 #include "graph_printer.hpp"
 #include "omni_utils.hpp"
-#include <stack>
-#include <queue>
 #include "dijkstra.hpp"
 #include "splitters.hpp"
 #include "abstract_conjugate_graph.hpp"

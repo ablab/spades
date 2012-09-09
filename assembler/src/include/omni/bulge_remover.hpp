@@ -15,7 +15,6 @@
 #define BULGE_REMOVER_HPP_
 
 #include <cmath>
-#include <stack>
 #include "omni_utils.hpp"
 #include "xmath.h"
 #include "sequence/sequence_tools.hpp"
