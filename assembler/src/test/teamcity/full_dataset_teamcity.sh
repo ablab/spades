@@ -19,7 +19,9 @@ then
     exit $errlvl
 fi
 
+rm bin/ -rf
 ./spades_compile.sh
+./cpcfg
 errlvl=$?
 if [ "$errlvl" -ne 0 ]
 then
