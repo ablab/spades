@@ -35,6 +35,7 @@
 #include <unordered_map>
 
 using namespace std;
+using namespace hammer;
 
 void HammerTools::ChangeNtoAinReadFiles() {
 	std::vector<pid_t> pids;

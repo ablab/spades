@@ -32,6 +32,8 @@ using std::min_element;
 
 namespace numeric = boost::numeric::ublas;
 
+using namespace hammer;
+
 std::string KMerClustering::GetGoodKMersFname() const {
   // FIXME: This is ugly!
   std::ostringstream tmp;

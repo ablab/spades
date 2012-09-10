@@ -20,7 +20,7 @@
 
 struct SubKMerComparator {
   bool operator()(const SubKMer &lhs, const SubKMer &rhs) {
-    return Seq<K>::less2()(lhs.data, rhs.data);
+    return Seq<hammer::K>::less2()(lhs.data, rhs.data);
   }
 };
 
@@ -88,10 +88,10 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
   size_t blockSize = block.size();
   for (size_t i = 0; i < blockSize; ++i) {
     size_t x = block[i];
-    KMer kmerx = data[x].kmer();
+    hammer::KMer kmerx = data[x].kmer();
     for (uint32_t j = i + 1; j < blockSize; j++) {
       size_t y = block[j];
-      KMer kmery = data[y].kmer();
+      hammer::KMer kmery = data[y].kmer();
       if (uf.find_set(x) != uf.find_set(y) &&
           canMerge(uf, x, y) &&
           hamdistKMer(kmerx, kmery, tau) <= tau) {

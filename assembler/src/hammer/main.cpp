@@ -92,7 +92,7 @@ int main(int argc, char * argv[]) {
     Globals::use_common_quality = cfg::get().common_quality > 0;
     Globals::common_quality = (char)cfg::get().common_quality;
     Globals::common_kmer_errprob = 1.0;
-    for (size_t i=0; i<K; ++i)
+    for (size_t i=0; i < hammer::K; ++i)
       Globals::common_kmer_errprob *= 1 - pow(10.0, - Globals::common_quality / 10.0);
     Globals::common_kmer_errprob = 1 - Globals::common_kmer_errprob;
 

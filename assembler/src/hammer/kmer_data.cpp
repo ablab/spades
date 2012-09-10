@@ -10,6 +10,8 @@
 
 #include "config_struct_hammer.hpp"
 
+using namespace hammer;
+
 class HammerKMerSplitter : public KMerSplitter {
  public:
   HammerKMerSplitter(std::string &work_dir, unsigned num_files)

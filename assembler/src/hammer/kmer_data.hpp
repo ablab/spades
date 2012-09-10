@@ -31,9 +31,9 @@ class KMerData {
     size_t dsz = data_.size();
     return (idx < dsz ? data_[idx] : push_back_buffer_[idx - dsz]);
   }
-  KMerStat& operator[](KMer s) { return operator[](index_.seq_idx(s)); }
-  const KMerStat& operator[](KMer s) const { return operator[](index_.seq_idx(s)); }
-  size_t seq_idx(KMer s) const { return index_.seq_idx(s); }
+  KMerStat& operator[](hammer::KMer s) { return operator[](index_.seq_idx(s)); }
+  const KMerStat& operator[](hammer::KMer s) const { return operator[](index_.seq_idx(s)); }
+  size_t seq_idx(hammer::KMer s) const { return index_.seq_idx(s); }
 
   template <class Writer>
   void binary_write(Writer &os) {
@@ -55,7 +55,7 @@ class KMerData {
  private:
   KMerDataStorageType data_;
   KMerDataStorageType push_back_buffer_;
-  KMerIndex<KMer> index_;
+  KMerIndex<hammer::KMer> index_;
 
   friend class KMerCounter;
 };

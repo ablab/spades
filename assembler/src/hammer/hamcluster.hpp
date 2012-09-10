@@ -21,22 +21,22 @@ class ConcurrentDSU;
 
 struct SubKMer {
   size_t idx;
-  Seq<K> data;
+  Seq<hammer::K> data;
 };
 
 template<class Reader>
 inline void binary_read(Reader &is, SubKMer &s) {
-  Seq<K>::DataType seq_data[Seq<K>::DataSize];
+  Seq<hammer::K>::DataType seq_data[Seq<hammer::K>::DataSize];
 
   is.read((char*)&s.idx, sizeof(s.idx));
   is.read((char*)seq_data, sizeof(seq_data));
 
-  s.data = Seq<K>(seq_data);
+  s.data = Seq<hammer::K>(seq_data);
 }
 
 template<class Writer>
 inline Writer &binary_write(Writer &os, const SubKMer &s) {
-  Seq<K>::DataType seq_data[Seq<K>::DataSize];
+  Seq<hammer::K>::DataType seq_data[Seq<hammer::K>::DataSize];
   s.data.copy_data(seq_data);
 
   os.write((char*)&s.idx, sizeof(s.idx));
@@ -49,7 +49,7 @@ static_assert(sizeof(SubKMer) == 16, "Too big SubKMer");
 
 
 struct SubKMerDummySerializer {
-  SubKMer serialize(KMer k, size_t fidx) const {
+  SubKMer serialize(hammer::KMer k, size_t fidx) const {
     SubKMer s;
 
     s.idx = fidx;
@@ -66,17 +66,17 @@ class SubKMerPartSerializer{
 
 public:
   SubKMerPartSerializer(size_t from, size_t to)
-      :from_(from), to_(to) { VERIFY(to_ - from_ <= K); }
+      :from_(from), to_(to) { VERIFY(to_ - from_ <= hammer::K); }
 
-  SubKMer serialize(KMer k, size_t fidx) const {
+  SubKMer serialize(hammer::KMer k, size_t fidx) const {
     SubKMer s;
 
     s.idx = fidx;
     // FIXME: Get rid of string here!
     std::string seq = k.str();
-    s.data = Seq<K>(seq.data(),
-                    from_, to_ - from_,
-                    /* raw */ true);
+    s.data = Seq<hammer::K>(seq.data(),
+                            from_, to_ - from_,
+                            /* raw */ true);
 
     // Yay for NRVO!
     return s;
@@ -90,21 +90,21 @@ class SubKMerStridedSerializer{
 
 public:
   SubKMerStridedSerializer(size_t from, size_t stride)
-      :from_(from), stride_(stride) { VERIFY(from_ + stride_ <= K); }
+      :from_(from), stride_(stride) { VERIFY(from_ + stride_ <= hammer::K); }
 
-  SubKMer serialize(KMer k, size_t fidx) const {
+  SubKMer serialize(hammer::KMer k, size_t fidx) const {
     SubKMer s;
 
     s.idx = fidx;
 
-    size_t sz = (K - from_ + stride_ - 1) / stride_;
+    size_t sz = (hammer::K - from_ + stride_ - 1) / stride_;
 
     // FIXME: Get rid of strings here!
     std::string str(sz, 'A');
-    for (size_t i = from_, j = 0; i < K; i+= stride_, ++j)
+    for (size_t i = from_, j = 0; i < hammer::K; i+= stride_, ++j)
       str[j] = nucl(k[i]);
 
-    s.data = Seq<K>(str, 0, sz);
+    s.data = Seq<hammer::K>(str, 0, sz);
 
     // Yay for NRVO!
     return s;
