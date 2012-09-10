@@ -20,8 +20,8 @@
 #include <boost/foreach.hpp>
 
 #include "standard_base.hpp"
+#include "order_and_law.hpp"
 #include "abstract_editable_graph.hpp"
-#include "concurrent_graph_component_routines.hpp"
 
 
 namespace omnigraph {
@@ -43,7 +43,6 @@ public:
 	typedef typename Graph::VertexData VertexData;
 	typedef typename unordered_set<VertexId>::const_iterator VertexIterator;
 	typedef typename Graph::DataMaster DataMaster;
-	typedef HandlerApplierStub<VertexId, EdgeId> HandlerApplierT;
 	typedef AbstractEditableGraph<VertexId, EdgeId, DataMaster, VertexIterator> base;
 
 
@@ -430,7 +429,7 @@ protected:
 
 	unordered_set<VertexId> vertices_;
 	unordered_set<VertexId> border_vertices_;
-	PoolEdgeIdDistributor edge_id_distributor_;
+	restricted::PoolEdgeIdDistributor edge_id_distributor_;
 	mutable bool all_actions_valid_;
 
 

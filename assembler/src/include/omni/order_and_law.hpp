@@ -49,6 +49,28 @@ private:
 	size_t max_int_id_;
 };
 
+class PoolEdgeIdDistributor : public restricted::IdDistributor {
+
+public:
+	PoolEdgeIdDistributor(size_t pool_size) {
+		cur_id_ = restricted::GlobalIdDistributor::GetInstance()->GetIdPool(pool_size);
+		max_id_ = cur_id_ + pool_size - 1;
+	}
+
+	virtual size_t GetId() {
+		VERIFY(HasIds() > 0);
+		return cur_id_++;
+	}
+
+	size_t HasIds() {
+		return max_id_ - cur_id_;
+	}
+
+private:
+	size_t cur_id_;
+	size_t max_id_;
+};
+
 
 template<class T>
 	struct pure_pointer
