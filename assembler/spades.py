@@ -67,7 +67,7 @@ def prepare_config_spades(filename, cfg, prev_K, K, last_one):
     subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
-    subst_dict["correct_mismatches"] = bool_to_str(last_one and cfg.correct_mismatches)
+    subst_dict["correct_mismatches"] = bool_to_str(last_one)
 
     substitute_params(filename, subst_dict)
 
@@ -255,8 +255,6 @@ def check_config(cfg):
             cfg["assembly"].__dict__["generate_sam_files"] = False
         if not "gap_closer" in cfg["assembly"].__dict__:
             cfg["assembly"].__dict__["gap_closer"] = True
-        if not "correct_mismatches" in cfg["assembly"].__dict__:	
-            cfg["assembly"].__dict__["correct_mismatches"] = False			
 
     return True
 
@@ -398,7 +396,6 @@ def main():
 
         bh_heap_check = ""
         spades_heap_check = ""
-        correct_mismatches = False
 
         developer_mode = False
 
@@ -449,8 +446,6 @@ def main():
                 bh_heap_check = arg
             elif opt == "--spades-heap-check":
                 spades_heap_check = arg
-            elif opt == "--correct-mismatches":
-                correct_mismatches = True
 
             elif opt == '-t' or opt == "--threads":
                 threads = int(arg)
@@ -555,7 +550,6 @@ def main():
                     cfg["assembly"].__dict__["heap_check"] = spades_heap_check
                 cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files
                 cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
-                cfg["assembly"].__dict__["correct_mismatches"] = correct_mismatches
 
     if CONFIG_FILE:
         cfg = load_config_from_info_file(CONFIG_FILE)

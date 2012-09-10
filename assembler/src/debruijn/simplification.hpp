@@ -230,11 +230,17 @@ void corrected_and_save_reads(const conj_graph_pack& gp) {
 }
 
 void correct_mismatches(conj_graph_pack &gp) {
-	INFO("Correcting mismatches");
-	auto_ptr<io::IReader<io::SingleReadSeq>> paired_stream = single_binary_multireader(true, true);
-	size_t corrected = MismatchShallNotPass<conj_graph_pack, io::SingleReadSeq>(gp, *paired_stream, 2).StopAllMismatches(1);
-	INFO("Corrected " << corrected << " nucleotides");
+    INFO("Correcting mismatches");
+    auto_ptr<io::IReader<io::SingleReadSeq>> stream = single_binary_multireader(true, true);
+    size_t corrected = MismatchShallNotPass<conj_graph_pack, io::SingleReadSeq>(gp, 2).StopAllMismatches(*stream, 1);
+    INFO("Corrected " << corrected << " nucleotides");
+}
 
+void parallel_correct_mismatches(conj_graph_pack &gp) {
+    INFO("Correcting mismatches");
+    auto streams = single_binary_readers(true,  true);
+    size_t corrected = MismatchShallNotPass<conj_graph_pack, io::SingleReadSeq>(gp, 2).ParallelStopAllMismatches(streams, 1);
+    INFO("Corrected " << corrected << " nucleotides");
 }
 
 void exec_simplification(conj_graph_pack& gp) {
@@ -245,7 +251,7 @@ void exec_simplification(conj_graph_pack& gp) {
 			corrected_and_save_reads(gp);
 		}
 		if (cfg::get().correct_mismatches) {
-			correct_mismatches(gp);
+			parallel_correct_mismatches(gp);
 		}
 	} else {
 		INFO("Loading Simplification");
