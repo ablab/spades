@@ -232,8 +232,6 @@ void ClipTipsForResolver(Graph &graph) {
 template<class Graph, class TipClipperFactoryPtr>
 void ClipTips(Graph& graph, TipClipperFactoryPtr factory) {
 
-	graph.PrintHandlersNames();
-
 	LengthComparator<Graph> comparator(graph);
 
 	size_t nthreads = 1;
