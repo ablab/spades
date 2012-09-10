@@ -46,12 +46,14 @@ public:
 	typedef AbstractEditableGraph<VertexId, EdgeId, DataMaster, VertexIterator> base;
 
 
+	// TODO: rewrite edge id distributor.
+
 	template<class InputVertexIterator>
 	ConcurrentGraphComponent(Graph& graph, HandlerApplier<VertexId, EdgeId>* applier,
 		InputVertexIterator verticesBegin, InputVertexIterator verticesEnd)
 			: base(applier, graph.master()),
 			graph_(graph), vertices_(verticesBegin, verticesEnd),
-			edge_id_distributor_(vertices_.size()) {
+			edge_id_distributor_(vertices_.size() * 10) {
 
 		BOOST_FOREACH(const VertexId& vertex, vertices_) {
 			if (!IsInComponent(graph_.OutgoingEdges(vertex)) ||
