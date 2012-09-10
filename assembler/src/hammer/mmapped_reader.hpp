@@ -9,6 +9,8 @@
 
 #include "pointer_iterator.hpp"
 
+#include "verify.hpp"
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>

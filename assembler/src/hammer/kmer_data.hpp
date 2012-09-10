@@ -55,7 +55,7 @@ class KMerData {
  private:
   KMerDataStorageType data_;
   KMerDataStorageType push_back_buffer_;
-  KMerIndex index_;
+  KMerIndex<KMer> index_;
 
   friend class KMerCounter;
 };

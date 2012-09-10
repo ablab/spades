@@ -32,7 +32,7 @@ path::files_t HammerKMerSplitter::Split() {
   for (unsigned i = 0; i < num_files_; ++i)
     ostreams[i].open(out[i]);
 
-  KMerIndex::hash_function hash_function;
+  KMerIndex<KMer>::hash_function hash_function;
   size_t readbuffer = cfg::get().count_split_buffer;
   std::vector<std::vector< std::vector<KMer> > > tmp_entries(count_num_threads);
   for (unsigned i = 0; i < count_num_threads; ++i) {
@@ -140,7 +140,7 @@ void KMerCounter::FillKMerData(KMerData &data) {
   // Build the index
   std::string workdir = cfg::get().input_working_dir;
   HammerKMerSplitter splitter(workdir, num_files_);
-  size_t sz = KMerIndexBuilder(workdir).BuildIndex(data.index_, splitter);
+  size_t sz = KMerIndexBuilder<KMer>(workdir).BuildIndex(data.index_, splitter);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
