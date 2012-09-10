@@ -56,7 +56,7 @@ inline properties::properties(std::string filename, level default_level)
     if (filename.empty())
         return;
 
-    std::ifstream in(filename);
+    std::ifstream in(filename.c_str());
 
     std::map<std::string, level> remap =
     {
