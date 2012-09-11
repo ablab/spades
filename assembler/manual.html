@@ -139,7 +139,7 @@ Thank you for using SPAdes!
 
 <p>
     After assembly completion the resulting contigs are stored in the <code>&lt;output_dir>/contigs.fasta</code> file.
-    If the   <code>--generate-sam-file</code> option was used, the symlink <code>contigs.sam</code> to the SAM-file will also be created in the same directory.
+    If the <code>--generate-sam-file</code> option was used, the symlink <code>contigs.sam</code> to the SAM-file will also be created in the same directory.
 </p>
 
 
@@ -188,7 +188,8 @@ Thank you for using SPAdes!
     &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads.</p>
 
 <p><code>--generate-sam-file</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Generate a SAM file. See more details in <a href="#sec3">section 3</a>.</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;Generate a SAM file that contains information about the alignment of the original reads to the resulting
+    contigs.</p>
 
 <p><code>-t &lt;int></code> (or <code>--threads &lt;int></code>)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 16.</p>
@@ -239,6 +240,7 @@ Thank you for using SPAdes!
 <pre>
     <code>assembly.log</code> - <i>assembler log</i>
     <code>contigs.fasta</code> - <i>resulting contigs</i>
+    <code>contigs.sam</code> - <i>SAM file, generated only with <code>--generate-sam-file</code> option</i>
     <code>corrected/</code> - <i>files from error correction run</i>
         <code>configs/</code> - <i>configuration files for error correction</i>
         <code>correction.log</code> - <i>error correction log</i>
@@ -251,30 +253,14 @@ Thank you for using SPAdes!
     <code>params.txt</code> - <i>information about SPAdes parameters in this run</i>
 </pre>
 
-<a name="sec3"></a>
-<h2>3 Postprocessing</h2>
+
+<h3>2.5 Assembly evaluation</h3>
 
 <p>
-    After running SPAdes you can evaluate different quality metrics. Please see <a href="quality.html">quality.html</a> for details.
+    We recommend to use <a href="http://bioinf.spbau.ru/quast">QUAST</a> for assembly evaluation.
 </p>
 
-<p>
-    SPAdes generates a SAM file for further processing if the <code>--generate-sam-file</code> option in set the command line.
-    SAM file contains information about the alignment of the original reads to the resulting
-    contigs.  We recommend using <a href="http://bioinf.scri.ac.uk/tablet/">Tablet</a> [3] to visualize  these alignments.
-</p>
-
-<p>
-    Also we recommend to use  <a href="http://bix.ucsd.edu/SEQuel/">SEQuel</a> [4]
-    after SPAdes to further  reduce the number of small errors (single nucleotide substitutions and small indels). It also requires the SAM-file
-    as an input.
-</p>
-<p>
-    Publicly available tools (for example, <a href="http://sourceforge.net/projects/operasf/">Opera</a> [2])
-    can be used to build scaffolds as the current version of SPAdes is not yet providing this option.
-</p>
-
-<h2>4 Feedback and bug reports</h2>
+<h2>3 Feedback and bug reports</h2>
 
 <p>Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes.</p>
 
@@ -291,24 +277,6 @@ Thank you for using SPAdes!
 
 
     <p>Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru">spades.support@bioinf.spbau.ru</a>.</p>
-
-<h2>References</h2>
-<p>
-    [1] A. Bankevich, S. Nurk, et al. <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021">SPAdes: A New Genome Assembly Algorithm and Its Applications to Single-Cell Sequencing.</a>
-    Journal of Computational Biology. May 2012, 19(5): 455-477. doi:10.1089/cmb.2012.0021.
-</p>
-<p>
-    [2] Song Gao, Wing-Kin Sung, and Niranjan Nagarajan. <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2011.0170">Opera: reconstructing optimal genomic scaffolds with high-throughput paired-end sequences.</a>
-    Journal of Computational Biology. November 2011, 18(11): 1681-1691. doi:10.1089/cmb.2011.0170.
-</p>
-<p>
-    [3] I. Milne, M. Bayer, L. Cardle, P. Shaw, G. Stephen, F.Wright, and D. Marshall. <a href="http://bioinformatics.oxfordjournals.org/content/26/3/401.abstract">Tablet &mdash; next generation
-    sequence assembly visualization.</a> Bioinformatics (2010) 26 (3): 401-402.   doi: 10.1093/bioinformatics/btp666
-</p>
-<p>
-    [4] R. Ronen, C. Boucher, H. Chitsaz, and P. Pevzner. SEQuel: <a href="http://bioinformatics.oxfordjournals.org/content/28/12/i188.abstract">Improving the accuracy of genome assemblies.</a>
-    Bioinformatics (2012) 28 (12): i188-i196.   doi: 10.1093/bioinformatics/bts219
-</p>
 
 <br/><br/><br/><br/><br/>
 
