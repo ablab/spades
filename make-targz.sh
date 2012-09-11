@@ -46,6 +46,7 @@ cp configs/debruijn/simplification.info.template configs/debruijn/simplification
 cp configs/debruijn/distance_estimation.info.template configs/debruijn/distance_estimation.info
 cp configs/debruijn/long_contigs/lc_config.info.template configs/debruijn/long_contigs/lc_config.info
 cp configs/debruijn/long_contigs/lc_params.info.template configs/debruijn/long_contigs/lc_params.info
+cp configs/debruijn/path_extend/pe_params.info.template configs/debruijn/path_extend/pe_params.info
 
 cd ..
 
