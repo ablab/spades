@@ -120,6 +120,9 @@ EdgeId CorrectNucl(EdgeId edge, size_t position, char nucl) {
 	}
 	Sequence s_mm = gp_.g.EdgeNucls(mismatch);
 	Sequence correct = s_mm.Subseq(0, gp_.g.k()) + Sequence(string(1, nucl)) + s_mm.Subseq(gp_.g.k() + 1, gp_.g.k() * 2 + 1);
+	if(!gp_.kmer_mapper.CheckCanRemap(s_mm, correct)) {
+		return edge;
+	}
 	VERIFY(nucl != s_mm[gp_.g.k()]);
 	EdgeId correct_edge = gp_.g.AddEdge(gp_.g.EdgeStart(mismatch), gp_.g.EdgeEnd(mismatch), correct);
 	if(position > gp_.g.k()) {
