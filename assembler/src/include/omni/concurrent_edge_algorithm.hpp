@@ -19,6 +19,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "order_and_law.hpp"
 #include "devisible_tree.hpp"
 #include "omni_tools.hpp"
 #include "sequential_algorihtm_factory.hpp"
@@ -49,20 +50,28 @@ public:
 	typedef ComponentAlgorithmRunner<Graph, EdgeId> Runner;
 	typedef boost::shared_ptr<Runner> RunnerPtr;
 
-//	typedef SmartEdgeIterator<Component, Comparator> EdgeSmartIterator;
-
 	ConcurrentEdgeAlgorithm(const size_t nthreads, Graph& graph, FactoryPtr factory)
 			: nthreads_(nthreads), graph_(graph), factory_(factory) {
+
+
+		for (size_t i = 0; i < nthreads; ++i) {
+			id_distributors_.push_back(
+					restricted::PeriodicIdDistributor(
+							restricted::GlobalIdDistributor::GetInstance()->GetId(),
+							nthreads
+					)
+			);
+		}
 
 		GluedVertexGraph glued_vertex_graph (graph);
 		DevisibleTree<GluedVertexGraph> tree (glued_vertex_graph);
 		const size_t component_size = tree.GetSize() / nthreads;
 
-		for (size_t i = 0; i < nthreads_; ++i) {
+		for (size_t thread = 0; thread < nthreads_; ++thread) {
 			vector<VertexId> vertices;
 
 			// to put all the rest to last component.
-			size_t size = (i == nthreads - 1) ? tree.GetSize() : component_size;
+			size_t size = (thread == nthreads - 1) ? tree.GetSize() : component_size;
 
 			vertices.reserve(size * 2);
 
@@ -72,7 +81,15 @@ public:
 				vertices.push_back(graph.conjugate(vertices[i]));
 			}
 
-			ComponentPtr ptr (new ConjugateComponent(graph, vertices.begin(), vertices.end()));
+			ComponentPtr ptr (
+					new ConjugateComponent(
+							graph,
+							id_distributors_[thread],
+							vertices.begin(),
+							vertices.end()
+					)
+			);
+
 			components_.push_back(ptr);
 		}
 
@@ -100,6 +117,19 @@ public:
 		}
 
 		for (size_t i = 0; i < nthreads_; ++i) {
+			id_distributors_[i].Synchronize();
+		}
+
+
+		ConjugateComponent all_graph_component (
+				graph_,
+				*restricted::GlobalIdDistributor::GetInstance(),
+				graph_.begin(),
+				graph_.end()
+		);
+
+
+		for (size_t i = 0; i < nthreads_; ++i) {
 			runners_[i]->GetNotProcessedArguments(not_processed_edges_with_duplicates);
 		}
 
@@ -107,7 +137,6 @@ public:
 			components_[i]->GetEdgesGoingOutOfComponent(not_processed_edges_with_duplicates);
 		}
 
-		ConjugateComponent all_graph_component (graph_, graph_.begin(), graph_.end());
 		Runner border_runner(all_graph_component, factory_->CreateAlgorithm(all_graph_component));
 
 		auto border_edge_iterator =	all_graph_component.SmartEdgeBegin(
@@ -115,10 +144,12 @@ public:
 
 		border_runner.Run(border_edge_iterator);
 
+
 		// TODO: for debug only. remove.
 		vector<EdgeId> border_not_processed_edges; // test vector. should have size = 0.
 		border_runner.GetNotProcessedArguments(border_not_processed_edges);
 		VERIFY(border_not_processed_edges.size() == 0);
+
 
 		Compressor<Graph> compressor(graph_);
 		compressor.CompressAllVertices();
@@ -130,6 +161,7 @@ private:
 	FactoryPtr factory_;
 	vector<ComponentPtr> components_;
 	vector<RunnerPtr> runners_;
+	vector<restricted::PeriodicIdDistributor> id_distributors_;
 };
 
 } // namespace omnigraph

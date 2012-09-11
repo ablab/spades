@@ -46,14 +46,16 @@ public:
 	typedef AbstractEditableGraph<VertexId, EdgeId, DataMaster, VertexIterator> base;
 
 
-	// TODO: rewrite edge id distributor.
-
 	template<class InputVertexIterator>
-	ConcurrentGraphComponent(Graph& graph, HandlerApplier<VertexId, EdgeId>* applier,
-		InputVertexIterator verticesBegin, InputVertexIterator verticesEnd)
-			: base(applier, graph.master()),
-			graph_(graph), vertices_(verticesBegin, verticesEnd),
-			edge_id_distributor_(vertices_.size() * 10) {
+	ConcurrentGraphComponent(
+			Graph& graph,
+			HandlerApplier<VertexId, EdgeId>* applier,
+			restricted::IdDistributor& id_distributor,
+			InputVertexIterator verticesBegin,
+			InputVertexIterator verticesEnd)
+				: base(applier, graph.master()),
+				graph_(graph), vertices_(verticesBegin, verticesEnd),
+				edge_id_distributor_(id_distributor) {
 
 		BOOST_FOREACH(const VertexId& vertex, vertices_) {
 			if (!IsInComponent(graph_.OutgoingEdges(vertex)) ||
@@ -293,7 +295,6 @@ protected:
 		graph_.HiddenDeleteVertex(vertex);
 	}
 
-
 	virtual EdgeId HiddenAddEdge(VertexId vertex1, VertexId vertex2, const EdgeData &data) {
 		return HiddenAddEdge(vertex1, vertex2, data, &edge_id_distributor_);
 	}
@@ -382,10 +383,6 @@ protected:
 	}
 
 
-
-
-
-
 	const vector<EdgeId> GetEdgesFromComponentOrSetFlag(const std::vector<EdgeId>& edges) const {
 		vector<EdgeId> edges_from_component;
 		edges_from_component.reserve(edges.size());
@@ -401,7 +398,6 @@ protected:
 
 		return edges_from_component;
 	}
-
 
 	void SetFlagIfNotInternal(const VertexId& vertex) const {
 		if (!IsInternal(vertex)) {
@@ -431,7 +427,7 @@ protected:
 
 	unordered_set<VertexId> vertices_;
 	unordered_set<VertexId> border_vertices_;
-	restricted::PoolEdgeIdDistributor edge_id_distributor_;
+	restricted::IdDistributor& edge_id_distributor_;
 	mutable bool all_actions_valid_;
 
 

@@ -16,26 +16,20 @@
 namespace restricted
 {
 
-class IdDistributor : boost::noncopyable {
+class IdDistributor {
 public:
 	virtual size_t GetId() = 0;
 };
 
 
 // Id distributor for pure_pointer. Singleton.
-class GlobalIdDistributor : public IdDistributor {
+class GlobalIdDistributor : public IdDistributor, boost::noncopyable {
+
+	friend class PeriodicIdDistributor;
 
 public:
 	size_t GetId() {
-		return GetIdPool(1);
-	}
-
-	// return first of new ids
-	size_t GetIdPool(size_t quantity) {
-		size_t first_id = max_int_id_ + 1;
-		max_int_id_ += quantity;
-
-		return first_id;
+		return max_int_id_++;
 	}
 
 	static GlobalIdDistributor* GetInstance() {
@@ -49,26 +43,34 @@ private:
 	size_t max_int_id_;
 };
 
-class PoolEdgeIdDistributor : public restricted::IdDistributor {
+
+/* id distributor used for concurrent algorithms.
+ * each thread use their own PeriodicIdDistributor with period equals to
+ * the quantity of threads. After thread's job is done Synchronize call are required
+ * to increase id in GlobalIdDistributor.
+*/
+class PeriodicIdDistributor : public IdDistributor {
 
 public:
-	PoolEdgeIdDistributor(size_t pool_size) {
-		cur_id_ = restricted::GlobalIdDistributor::GetInstance()->GetIdPool(pool_size);
-		max_id_ = cur_id_ + pool_size - 1;
+	PeriodicIdDistributor(size_t first_id, size_t period)
+			: cur_id_(first_id), period_(period) {
 	}
 
 	virtual size_t GetId() {
-		VERIFY(HasIds() > 0);
-		return cur_id_++;
+		size_t id = cur_id_;
+		cur_id_ += period_;
+
+		return id;
 	}
 
-	size_t HasIds() {
-		return max_id_ - cur_id_;
+	void Synchronize() const {
+		size_t& global_max_id = GlobalIdDistributor::GetInstance()->max_int_id_;
+		global_max_id = max(cur_id_, global_max_id);
 	}
 
 private:
 	size_t cur_id_;
-	size_t max_id_;
+	size_t period_;
 };
 
 

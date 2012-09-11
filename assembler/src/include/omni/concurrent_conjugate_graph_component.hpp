@@ -30,11 +30,17 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 
 	template<class InputVertexIterator>
-	ConcurrentConjugateGraphComponent(Graph& graph,
-		InputVertexIterator verticesBegin, InputVertexIterator verticesEnd)
-			: base(graph, new PairedHandlerApplier<ConcurrentConjugateGraphComponent>(*this),
-					verticesBegin, verticesEnd) {
-
+	ConcurrentConjugateGraphComponent(
+			Graph& graph,
+			restricted::IdDistributor& id_distributor,
+			InputVertexIterator verticesBegin,
+			InputVertexIterator verticesEnd)
+				: base(
+						graph,
+						new PairedHandlerApplier<ConcurrentConjugateGraphComponent>(*this),
+						id_distributor,
+						verticesBegin,
+						verticesEnd) {
 	}
 
 	VertexId conjugate(VertexId vertex) const {
