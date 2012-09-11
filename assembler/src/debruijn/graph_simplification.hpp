@@ -91,13 +91,19 @@ void Composition(EdgeId e, boost::function<void(EdgeId)> f1,
 }
 
 template<class Graph>
-boost::shared_ptr<omnigraph::SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> > GetDefaultTipClipperFactory(
+boost::shared_ptr<
+	omnigraph::SequentialAlgorihtmFactory<
+		ConcurrentGraphComponent<Graph>,
+		typename Graph::EdgeId> >
+GetDefaultTipClipperFactory(
+
 		const debruijn_config::simplification::tip_clipper& tc_config,
 		size_t max_tip_length,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
-	typedef omnigraph::DefaultTipClipperFactory<Graph> Factory;
-	typedef omnigraph::SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> FactoryInterface;
+	typedef ConcurrentGraphComponent<Graph> Component;
+	typedef omnigraph::DefaultTipClipperFactory<Component> Factory;
+	typedef omnigraph::SequentialAlgorihtmFactory<Component, typename Graph::EdgeId> FactoryInterface;
 
 	return boost::shared_ptr<FactoryInterface> (
 		new Factory (
@@ -108,15 +114,21 @@ boost::shared_ptr<omnigraph::SequentialAlgorihtmFactory<Graph, typename Graph::E
 }
 
 template<class Graph>
-boost::shared_ptr<omnigraph::SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> > GetAdvancedTipClipperFactory(
+boost::shared_ptr<
+	omnigraph::SequentialAlgorihtmFactory<
+		ConcurrentGraphComponent<Graph>,
+		typename Graph::EdgeId> >
+GetAdvancedTipClipperFactory(
+
 		const debruijn_config::simplification::tip_clipper& tc_config,
 		size_t max_tip_length,
 		double max_relative_coverage,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		bool final_stage = false) {
 
-	typedef omnigraph::AdvancedTipClipperFactory<Graph> Factory;
-	typedef omnigraph::SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> FactoryInterface;
+	typedef ConcurrentGraphComponent<Graph> Component;
+	typedef omnigraph::AdvancedTipClipperFactory<Component> Factory;
+	typedef omnigraph::SequentialAlgorihtmFactory<Component, typename Graph::EdgeId> FactoryInterface;
 
 	return boost::shared_ptr<FactoryInterface> (
 		new Factory (
@@ -130,7 +142,12 @@ boost::shared_ptr<omnigraph::SequentialAlgorihtmFactory<Graph, typename Graph::E
 }
 
 template<class Graph, class GraphPack>
-boost::shared_ptr<omnigraph::SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> > GetTipClipperFactory(
+boost::shared_ptr<
+	omnigraph::SequentialAlgorihtmFactory<
+		ConcurrentGraphComponent<Graph>,
+		typename Graph::EdgeId>>
+GetTipClipperFactory(
+
 		GraphPack& graph_pack,
 		size_t k,
 		size_t iteration_count,
@@ -188,7 +205,7 @@ void ClipTips(
 
 	Graph& graph = graph_pack.g;
 
-	auto factory = GetTipClipperFactory<ConcurrentGraphComponent<Graph>>(
+	auto factory = GetTipClipperFactory<Graph>(
 			graph_pack,
 			graph.k(),
 			iteration_count,
@@ -203,8 +220,12 @@ void ClipTips(
 
 
 template<class Graph>
-boost::shared_ptr<omnigraph::SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> >
+boost::shared_ptr<
+	omnigraph::SequentialAlgorihtmFactory<
+		ConcurrentGraphComponent<Graph>,
+		typename Graph::EdgeId> >
 GetTipClipperResolverFactory(size_t k) {
+
 	auto tc_config = cfg::get().simp.tc;
 
 	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
@@ -223,7 +244,7 @@ template<class Graph>
 void ClipTipsForResolver(Graph &graph) {
 	INFO("SUBSTAGE == Clipping tips for Resolver");
 
-	auto factory = GetTipClipperResolverFactory<ConcurrentGraphComponent<Graph>>(graph.k());
+	auto factory = GetTipClipperResolverFactory<Graph>(graph.k());
 	ClipTips(graph, factory);
 
 	DEBUG("Clipping tips for Resolver finished");
@@ -231,8 +252,6 @@ void ClipTipsForResolver(Graph &graph) {
 
 template<class Graph, class TipClipperFactoryPtr>
 void ClipTips(Graph& graph, TipClipperFactoryPtr factory) {
-
-	LengthComparator<Graph> comparator(graph);
 
 	size_t nthreads = 1;
 
