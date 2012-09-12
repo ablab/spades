@@ -263,7 +263,7 @@ public:
 				: 	max_tip_length_(max_tip_length),
 				  	max_coverage_(max_coverage),
 				  	max_relative_coverage_(max_relative_coverage),
-				  	removal_handler_(removal_handler_),
+				  	removal_handler_(removal_handler),
 				  	qual_f_(qual_f) {
 	}
 
