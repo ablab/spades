@@ -44,35 +44,35 @@ public:
 	}
 
 	VertexId conjugate(VertexId vertex) const {
-		SetFlagIfNotInComponent(vertex);
+		this->SetFlagIfNotInComponent(vertex);
 
 		VertexId conjugate = this->graph_.conjugate(vertex);
-		SetFlagIfNotInComponent(conjugate);
+		this->SetFlagIfNotInComponent(conjugate);
 
 		return conjugate;
 	}
 
 	EdgeId conjugate(EdgeId edge) const {
-		SetFlagIfNotInComponent(edge);
+		this->SetFlagIfNotInComponent(edge);
 
 		EdgeId conjugate = this->graph_.conjugate(edge);
-		SetFlagIfNotInComponent(conjugate);
+		this->SetFlagIfNotInComponent(conjugate);
 
 		return conjugate;
 	}
 
 	virtual bool IsInternalSafe(const VertexId& vertex) const {
-		return IsInternal(vertex) && IsInternal(conjugate(vertex));
+		return this->IsInternal(vertex) && this->IsInternal(conjugate(vertex));
 	}
 
 	virtual bool IsInternalSafe(const EdgeId& edge) const {
 		EdgeId conjugate = this->conjugate(edge);
 
 		return
-				IsInternalSafe(EdgeStart(edge)) &&
-				IsInternalSafe(EdgeEnd(edge)) &&
-				IsInternalSafe(EdgeStart(conjugate)) &&
-				IsInternalSafe(EdgeEnd(conjugate));
+				IsInternalSafe(this->EdgeStart(edge)) &&
+				IsInternalSafe(this->EdgeEnd(edge)) &&
+				IsInternalSafe(this->EdgeStart(conjugate)) &&
+				IsInternalSafe(this->EdgeEnd(conjugate));
 	}
 
 	virtual ~ConcurrentConjugateGraphComponent() {
@@ -83,14 +83,14 @@ protected:
 		VertexId conjugate = this->graph_.conjugate(vertex);
 
 		VERIFY(this->all_actions_valid_);
-		VERIFY(IsInComponent(vertex));
-		VERIFY(IsInComponent(conjugate));
+		VERIFY(this->IsInComponent(vertex));
+		VERIFY(this->IsInComponent(conjugate));
 
-		VERIFY(IncomingEdgeCount(vertex) == 0);
-		VERIFY(OutgoingEdgeCount(vertex) == 0);
+		VERIFY(this->IncomingEdgeCount(vertex) == 0);
+		VERIFY(this->OutgoingEdgeCount(vertex) == 0);
 
-		VERIFY(IncomingEdgeCount(conjugate) == 0);
-		VERIFY(OutgoingEdgeCount(conjugate) == 0);
+		VERIFY(this->IncomingEdgeCount(conjugate) == 0);
+		VERIFY(this->OutgoingEdgeCount(conjugate) == 0);
 
 		this->vertices_.erase(vertex);
 		this->vertices_.erase(conjugate);
