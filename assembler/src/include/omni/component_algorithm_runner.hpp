@@ -16,7 +16,7 @@
 #ifndef COMPONENT_ALGORITHM_RUNNER_HPP_
 #define COMPONENT_ALGORITHM_RUNNER_HPP_
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "concurrent_graph_component.hpp"
 #include "sequential_algorithm.hpp"
@@ -28,7 +28,7 @@ class ComponentAlgorithmRunner {
 
 public:
 	typedef ConcurrentGraphComponent<Graph> Component;
-	typedef boost::shared_ptr<SequentialAlgorithm<Argument>> AlgorithmPtr;
+	typedef std::shared_ptr<SequentialAlgorithm<Argument>> AlgorithmPtr;
 
 
 	ComponentAlgorithmRunner(Component& component, AlgorithmPtr algorithm)

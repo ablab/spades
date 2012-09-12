@@ -16,9 +16,9 @@
 #ifndef SEQUENTIAL_ALGORIHTM_FACTORY_HPP_
 #define SEQUENTIAL_ALGORIHTM_FACTORY_HPP_
 
-#include <boost/shared_ptr.hpp>
-
 #include "sequential_algorithm.hpp"
+
+#include <memory>
 
 namespace omnigraph {
 
@@ -26,7 +26,7 @@ template <class Graph, class Argument>
 class SequentialAlgorihtmFactory {
 
 public:
-	typedef boost::shared_ptr<SequentialAlgorithm<Argument>> AlgorithmPtr;
+	typedef std::shared_ptr<SequentialAlgorithm<Argument>> AlgorithmPtr;
 
 	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) = 0;
 	virtual ~SequentialAlgorihtmFactory() { }

@@ -16,9 +16,6 @@
 #ifndef CONCURRENT_EDGE_ALGORITHM_HPP_
 #define CONCURRENT_EDGE_ALGORITHM_HPP_
 
-
-#include <boost/shared_ptr.hpp>
-
 #include "order_and_law.hpp"
 #include "devisible_tree.hpp"
 #include "omni_tools.hpp"
@@ -27,6 +24,8 @@
 #include "concurrent_conjugate_graph_component.hpp"
 #include "conjugate_vertex_glued_graph.hpp"
 #include "component_algorithm_runner.hpp"
+
+#include <memory>
 
 namespace omnigraph {
 
@@ -42,13 +41,13 @@ public:
 	typedef ConcurrentConjugateGraphComponent<Graph> ConjugateComponent;
 
 	typedef ConcurrentGraphComponent<Graph> Component;
-	typedef boost::shared_ptr<Component> ComponentPtr;
+	typedef std::shared_ptr<Component> ComponentPtr;
 
 	typedef SequentialAlgorihtmFactory<Component, EdgeId> Factory;
-	typedef boost::shared_ptr<Factory> FactoryPtr;
+	typedef std::shared_ptr<Factory> FactoryPtr;
 
 	typedef ComponentAlgorithmRunner<Graph, EdgeId> Runner;
-	typedef boost::shared_ptr<Runner> RunnerPtr;
+	typedef std::shared_ptr<Runner> RunnerPtr;
 
 	ConcurrentEdgeAlgorithm(const size_t nthreads, Graph& graph, FactoryPtr factory)
 			: nthreads_(nthreads), graph_(graph), factory_(factory) {
