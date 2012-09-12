@@ -94,7 +94,6 @@ using boost::function;
 
 using boost::optional;
 using boost::none;
-using boost::in_place;
 
 using boost::format;
 
