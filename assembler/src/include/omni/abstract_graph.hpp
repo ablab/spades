@@ -48,19 +48,15 @@ public:
 	typedef typename DataMaster::EdgeData EdgeData;
 	typedef typename base::VertexIterator VertexIterator;
 
-private:
-	typedef SmartSet<AbstractGraph, VertexId> Vertices;
-
-	Vertices smart_vertices_;
 
 protected:
 
-	const set<VertexId> &vertices_;
+	set<VertexId> vertices_;
 
 public:
 	AbstractGraph(HandlerApplier<VertexId, EdgeId>* applier,
 			const DataMaster& master) :
-		base(applier, master), smart_vertices_(*this), vertices_(smart_vertices_.inner_set()) {
+		base(applier, master) {
 	}
 
 	virtual ~AbstractGraph() {
@@ -113,6 +109,20 @@ public:
 
 	virtual VertexId EdgeEnd(EdgeId edge) const {
 		return edge->end();
+	}
+
+
+protected:
+
+	void AddVertexToGraph(VertexId vertex) {
+		auto result = vertices_.insert(vertex);
+		VERIFY(result.second); // was not in set before
+	}
+
+	void DeleteVertexFromGraph(VertexId vertex) {
+		auto it = vertices_.find(vertex);
+		VERIFY(it != vertices_.end()); // is it in set
+		vertices_.erase(it);
 	}
 
 private:

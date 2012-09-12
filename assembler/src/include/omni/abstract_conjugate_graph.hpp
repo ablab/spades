@@ -198,8 +198,13 @@ protected:
 	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
 		VertexId v1(new PairedVertex<DataMaster> (data1));
 		VertexId v2(new PairedVertex<DataMaster> (data2));
+
 		v1->set_conjugate(v2);
 		v2->set_conjugate(v1);
+
+		AddVertexToGraph(v1);
+		AddVertexToGraph(v2);
+
 //		TRACE("Vettices " << v1 << " and " << v2 << " added");
 		return v1;
 	}
@@ -211,10 +216,19 @@ protected:
 
 	virtual void HiddenDeleteVertex(VertexId v) {
 		VertexId conjugate = v->conjugate();
-//		TRACE("ab_conj delete "<<v);
+
+//		TRACE("ab_conj DeleteVertex " << v << " and conj " << conjugate);
+//		TRACE("ab_conj delete  " << v);
+
+		DeleteVertexFromGraph(v);
 		delete v.get();
-//		TRACE("ab_conj erase "<<conjugate);
+
+//		TRACE("ab_conj erase " << conjugate);
+
+		DeleteVertexFromGraph(conjugate);
 		delete conjugate.get();
+
+//		TRACE("ab_conj delete FINISHED");
 	}
 
 

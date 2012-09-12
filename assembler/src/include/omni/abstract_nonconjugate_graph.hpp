@@ -182,12 +182,12 @@ private:
 
 	virtual VertexId HiddenAddVertex(const VertexData &data) {
 		VertexId v(new SingleVertex<DataMaster>(data));
-//		this->vertices_.insert(v);
+		AddVertexToGraph(v);
 		return v;
 	}
 
 	virtual void HiddenDeleteVertex(VertexId v) {
-//		this->vertices_.erase(v);
+		DeleteVertexFromGraph(v);
 		delete v.get();
 	}
 
