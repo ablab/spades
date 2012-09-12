@@ -69,7 +69,6 @@ public:
 	}
 
 
-
 	virtual const EdgeData& data(EdgeId edge) const {
 		SetFlagIfNotInComponent(edge);
 		return graph_.data(edge);
@@ -212,6 +211,9 @@ public:
 	}
 
 	virtual ~ConcurrentGraphComponent() {
+		// failing here means that algorithm performed on this component
+		// created not temporary vertex (did not delete it)
+		VERIFY(temporary_vertices_.size() == 0);
 	}
 
 	void ValidateComponent() {
@@ -277,22 +279,14 @@ public:
 
 
 protected:
+
+	virtual void AddVertexToComponent(VertexId vertex) = 0;
+
+	virtual void DeleteVertexFromComponent(VertexId vertex) = 0;
+
 	virtual bool AdditionalCompressCondition(VertexId vertex) const  {
 		SetFlagIfNotInComponent(vertex);
 		return graph_.AdditionalCompressCondition(vertex);
-	}
-
-protected:
-
-// AbstractEditableGraph methods
-	virtual VertexId HiddenAddVertex(const VertexData &data) {
-		VERIFY(false); // not implemented
-		return graph_.HiddenAddVertex(data);
-	}
-
-	virtual void HiddenDeleteVertex(VertexId vertex) {
-		VERIFY(false); // not implemented
-		graph_.HiddenDeleteVertex(vertex);
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId vertex1, VertexId vertex2, const EdgeData &data) {
@@ -300,11 +294,11 @@ protected:
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId vertex1, VertexId vertex2,
-			const EdgeData &data, restricted::IdDistributor * idDistributor) {
+			const EdgeData &data, restricted::IdDistributor * id_distributor) {
 		VERIFY(IsInComponent(vertex1));
 		VERIFY(IsInComponent(vertex2));
 		VERIFY(all_actions_valid_);
-		return graph_.HiddenAddEdge(vertex1, vertex2, data, idDistributor);
+		return graph_.HiddenAddEdge(vertex1, vertex2, data, id_distributor);
 	}
 
 	virtual void HiddenDeleteEdge(EdgeId edge) {
@@ -332,6 +326,13 @@ protected:
 		return vertices_to_delete;
 	}
 
+	virtual VertexId CreateVertex(const VertexData &data) {
+		return graph_.CreateVertex(data);
+	}
+
+	virtual void DestroyVertex(VertexId vertex) {
+		graph_.DestroyVertex(vertex);
+	}
 
 protected:
 	// observable graph methods.
@@ -427,6 +428,10 @@ protected:
 
 	unordered_set<VertexId> vertices_;
 	unordered_set<VertexId> border_vertices_;
+
+	// used for temporary vertices created by algorithms
+	unordered_set<VertexId> temporary_vertices_;
+
 	restricted::IdDistributor& edge_id_distributor_;
 	mutable bool all_actions_valid_;
 

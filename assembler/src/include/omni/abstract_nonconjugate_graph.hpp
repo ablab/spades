@@ -180,15 +180,31 @@ public:
 
 private:
 
-	virtual VertexId HiddenAddVertex(const VertexData &data) {
-		VertexId v(new SingleVertex<DataMaster>(data));
-		AddVertexToGraph(v);
-		return v;
+	virtual VertexId CreateVertex(const VertexData &data) {
+		return VertexId(new SingleVertex<DataMaster>(data));
 	}
 
-	virtual void HiddenDeleteVertex(VertexId v) {
-		DeleteVertexFromGraph(v);
-		delete v.get();
+	virtual void DestroyVertex(VertexId vertex) {
+		delete vertex.get();
+	}
+
+	virtual void AddVertexToGraph(VertexId vertex) {
+		this->vertices_.insert(vertex);
+	}
+
+	virtual void DeleteVertexFromGraph(VertexId vertex) {
+		this->vertices_.erase(vertex);
+	}
+
+	virtual VertexId HiddenAddVertex(const VertexData &data) {
+		VertexId vertex = CreateVertex(data);
+		AddVertexToGraph(vertex);
+		return vertex;
+	}
+
+	virtual void HiddenDeleteVertex(VertexId vertex) {
+		DeleteVertexFromGraph(vertex);
+		DestroyVertex(vertex);
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {

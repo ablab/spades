@@ -38,6 +38,10 @@ private:
 
 	mutable BaseIdTrackHandler<VertexIdT, EdgeIdT>* int_ids_;
 
+	virtual VertexId CreateVertex(const VertexData &data) = 0;
+
+	virtual void DestroyVertex(VertexId vertex) = 0;
+
 	virtual VertexId HiddenAddVertex(const VertexData &data) = 0;
 
 	virtual void HiddenDeleteVertex(VertexId v) = 0;

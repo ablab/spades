@@ -114,16 +114,10 @@ public:
 
 protected:
 
-	void AddVertexToGraph(VertexId vertex) {
-		auto result = vertices_.insert(vertex);
-		VERIFY(result.second); // was not in set before
-	}
+	virtual void AddVertexToGraph(VertexId vertex) = 0;
 
-	void DeleteVertexFromGraph(VertexId vertex) {
-		auto it = vertices_.find(vertex);
-		VERIFY(it != vertices_.end()); // is it in set
-		vertices_.erase(it);
-	}
+	virtual void DeleteVertexFromGraph(VertexId vertex) = 0;
+
 
 private:
 DECL_LOGGER("AbstractGraph");

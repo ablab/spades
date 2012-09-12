@@ -195,42 +195,54 @@ public:
 
 protected:
 
-	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
-		VertexId v1(new PairedVertex<DataMaster> (data1));
-		VertexId v2(new PairedVertex<DataMaster> (data2));
 
-		v1->set_conjugate(v2);
-		v2->set_conjugate(v1);
 
-		AddVertexToGraph(v1);
-		AddVertexToGraph(v2);
+	VertexId CreateVertex(const VertexData &data1, const VertexData &data2) {
+		VertexId vertex1(new PairedVertex<DataMaster> (data1));
+		VertexId vertex2(new PairedVertex<DataMaster> (data2));
 
-//		TRACE("Vettices " << v1 << " and " << v2 << " added");
-		return v1;
+		vertex1->set_conjugate(vertex2);
+		vertex2->set_conjugate(vertex1);
+
+		//TRACE("Vettices " << vertex1 << " and " << vertex2 << " created");
+
+		return vertex1;
+	}
+
+	virtual VertexId CreateVertex(const VertexData &data) {
+		return CreateVertex(data, this->master().conjugate(data));
+	}
+
+	virtual void DestroyVertex(VertexId vertex) {
+		VertexId conjugate = vertex->conjugate();
+
+		//TRACE("ab_conj destroy  " << vertex);
+		delete vertex.get();
+
+		//TRACE("ab_conj destroy " << conjugate);
+		delete conjugate.get();
+	}
+
+	virtual void AddVertexToGraph(VertexId vertex) {
+		this->vertices_.insert(vertex);
+		this->vertices_.insert(conjugate(vertex));
+	}
+
+	virtual void DeleteVertexFromGraph(VertexId vertex) {
+		this->vertices_.erase(vertex);
+		this->vertices_.erase(conjugate(vertex));
+	}
+
+	virtual void HiddenDeleteVertex(VertexId vertex) {
+		DeleteVertexFromGraph(vertex);
+		DestroyVertex(vertex);
 	}
 
 	virtual VertexId HiddenAddVertex(const VertexData &data) {
-		return HiddenAddVertex(data, this->master().conjugate(data));
+		VertexId vertex = CreateVertex(data);
+		AddVertexToGraph(vertex);
+		return vertex;
 	}
-
-
-	virtual void HiddenDeleteVertex(VertexId v) {
-		VertexId conjugate = v->conjugate();
-
-//		TRACE("ab_conj DeleteVertex " << v << " and conj " << conjugate);
-//		TRACE("ab_conj delete  " << v);
-
-		DeleteVertexFromGraph(v);
-		delete v.get();
-
-//		TRACE("ab_conj erase " << conjugate);
-
-		DeleteVertexFromGraph(conjugate);
-		delete conjugate.get();
-
-//		TRACE("ab_conj delete FINISHED");
-	}
-
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
 		return HiddenAddEdge(v1, v2, data, restricted::GlobalIdDistributor::GetInstance());

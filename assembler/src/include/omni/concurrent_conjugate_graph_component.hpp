@@ -28,6 +28,7 @@ public:
 	typedef ConcurrentGraphComponent<Graph> base;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexData VertexData;
 
 	template<class InputVertexIterator>
 	ConcurrentConjugateGraphComponent(
@@ -78,24 +79,38 @@ public:
 	virtual ~ConcurrentConjugateGraphComponent() {
 	}
 
+
 protected:
-	virtual void HiddenDeleteVertex(VertexId vertex) {
-		VertexId conjugate = this->graph_.conjugate(vertex);
 
-		VERIFY(this->all_actions_valid_);
-		VERIFY(this->IsInComponent(vertex));
-		VERIFY(this->IsInComponent(conjugate));
+	virtual void AddVertexToComponent(VertexId vertex) {
+		this->vertices_.insert(vertex);
+		this->temporary_vertices_.insert(vertex);
 
-		VERIFY(this->IncomingEdgeCount(vertex) == 0);
-		VERIFY(this->OutgoingEdgeCount(vertex) == 0);
-
-		VERIFY(this->IncomingEdgeCount(conjugate) == 0);
-		VERIFY(this->OutgoingEdgeCount(conjugate) == 0);
-
-		this->vertices_.erase(vertex);
-		this->vertices_.erase(conjugate);
+		this->vertices_.insert(conjugate(vertex));
+		this->temporary_vertices_.insert(conjugate(vertex));
 	}
 
+	virtual void DeleteVertexFromComponent(VertexId vertex) {
+		this->vertices_.erase(vertex);
+		this->temporary_vertices_.erase(vertex);
+
+		this->vertices_.erase(conjugate(vertex));
+		this->temporary_vertices_.erase(conjugate(vertex));
+	}
+
+	virtual VertexId HiddenAddVertex(const VertexData &data) {
+		VertexId vertex = this->CreateVertex(data);
+		AddVertexToComponent(vertex);
+		return vertex;
+	}
+
+	virtual void HiddenDeleteVertex(VertexId vertex) {
+		VERIFY(IsInternalSafe(vertex));
+		VERIFY(this->all_actions_valid_);
+
+		DeleteVertexFromComponent(vertex);
+		this->DestroyVertex(vertex);
+	}
 };
 
 } //namespace omnigraph
