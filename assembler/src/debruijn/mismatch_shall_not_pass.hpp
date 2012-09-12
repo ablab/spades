@@ -32,8 +32,9 @@ private:
 
 	struct NuclCount {
 		size_t counts_[4];
-		NuclCount() : counts_({0, 0, 0, 0}) {
-		}
+		NuclCount() {
+      memset(counts_, 0, sizeof(counts_));
+    }
 
 		size_t &operator[](size_t nucl) {
 			return counts_[nucl];
