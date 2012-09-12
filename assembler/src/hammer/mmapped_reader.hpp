@@ -149,5 +149,36 @@ class MMappedRecordReader : public MMappedReader {
   const_iterator end() const { return const_iterator(data() + size()); }
 };
 
+template<typename T>
+class MMappedRecordArrayReader : public MMappedReader {
+  size_t elcnt_;
+ public:
+  typedef pointer_array_iterator<T> iterator;
+  typedef const pointer_array_iterator<T> const_iterator;
+
+  MMappedRecordArrayReader(const std::string &FileName,
+                           size_t elcnt = 1,
+                           bool unlink = true,
+                           size_t blocksize = 64*1024*1024):
+      MMappedReader(FileName, unlink, blocksize), elcnt_(elcnt){
+    VERIFY(FileSize % (sizeof(T) * elcnt_) == 0);
+  }
+
+  void read(T* el, size_t amount) {
+    MMappedReader::read(el, amount * sizeof(T) * elcnt_);
+  }
+
+  size_t size() const { return FileSize / sizeof(T) / elcnt_; }
+  T* data() { return (T*)MappedRegion; }
+  const T* data() const { return (const T*)MappedRegion; }
+  T& operator[](size_t idx) { return data()[idx*elcnt_]; }
+  const T& operator[](size_t idx) const { return data()[idx*elcnt_]; }
+
+  iterator begin() { return iterator(data(), /* size */ elcnt_); }
+  const_iterator begin() const { return const_iterator(data()), /* size */ elcnt_; }
+  iterator end() { return iterator(data() + size()*elcnt_, elcnt_); }
+  const_iterator end() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
+};
+
 
 #endif // HAMMER_MMAPPED_READER_HPP

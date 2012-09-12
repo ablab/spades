@@ -32,11 +32,49 @@ class KMerIndexBuilder;
 
 template<class Seq>
 class KMerIndex {
-  typedef cxxmph::SimpleMPHIndex<Seq, cxxmph::seeded_hash_function<typename Seq::hash> > KMerDataIndex;
-
  public:
   typedef typename Seq::hash hash_function;
 
+ private:
+  typedef typename MMappedRecordArrayReader<typename Seq::DataType>::iterator::value_type KMerRawData;
+
+  // This is really the most fragile part of the whole story.  Basically, we're
+  // building the PHM with "raw" data, but query the PHM with real Key's!  We're
+  // relying that hashes are exactly the same in both cases (thus - two almost
+  // equal implementations!).
+  struct seeded_hash_function {
+    uint32_t operator()(const KMerRawData &k, uint32_t seed) const {
+      uint32_t h;
+      size_t h0 = hash_function()(k.ptr, k.size);
+      MurmurHash3_x86_32(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
+      return h;
+    }
+
+    uint32_t operator()(const Seq &k, uint32_t seed) const {
+      uint32_t h;
+      size_t h0 = hash_function()(k);
+      MurmurHash3_x86_32(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
+      return h;
+    }
+
+    cxxmph::h128 hash128(const KMerRawData &k, uint32_t seed) const {
+      cxxmph::h128 h;
+      size_t h0 = hash_function()(k.ptr, k.size);
+      MurmurHash3_x64_128(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
+      return h;
+    }
+
+    cxxmph::h128 hash128(const Seq &k, uint32_t seed) const {
+      cxxmph::h128 h;
+      size_t h0 = hash_function()(k);
+      MurmurHash3_x64_128(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
+      return h;
+    }
+  };
+
+  typedef cxxmph::SimpleMPHIndex<Seq, seeded_hash_function> KMerDataIndex;
+
+ public:
   KMerIndex():index_(NULL), num_buckets_(0), bucket_locks_(NULL) {}
 
   KMerIndex(const KMerIndex&) = delete;
@@ -158,7 +196,7 @@ class KMerSplitter {
 template<class Seq>
 class KMerIndexBuilder {
   std::string work_dir_;
-  
+
  public:
   KMerIndexBuilder(const std::string &workdir)
       : work_dir_(workdir) {}
@@ -173,23 +211,25 @@ class KMerIndexBuilder {
   DECL_LOGGER("K-mer Index Building");
 };
 
+// FIXME: Change DataSize to runtime K
 template<class Seq>
 size_t KMerIndexBuilder<Seq>::MergeKMers(const std::string &ifname, const std::string &ofname) {
-  MMappedRecordReader<Seq> ins(ifname, /* unlink */ true, -1ULL);
+  MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::DataSize, /* unlink */ true, -1ULL);
 #ifdef USE_GLIBCXX_PARALLEL
   // Explicitly force a call to parallel sort routine.
-  __gnu_parallel::sort(ins.begin(), ins.end(), KMer::less2());
+  __gnu_parallel::sort(ins.begin(), ins.end());
 #else
-  std::sort(ins.begin(), ins.end(), typename Seq::less2());
+  std::sort(ins.begin(), ins.end());
 #endif
   INFO("Sorting done, starting unification.");
 
   // FIXME: Use something like parallel version of unique_copy but with explicit
   // resizing.
-  auto it = std::unique(ins.begin(), ins.end());
+  auto it = std::unique(ins.begin(), ins.end(),
+                        typename array_ref<typename Seq::DataType>::equal_to());
 
-  MMappedRecordWriter<Seq> os(ofname);
-  os.resize(it - ins.begin());
+  MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::DataSize);
+  os.resize((it - ins.begin()) * Seq::DataSize);
   std::copy(ins.begin(), it, os.begin());
 
   return it - ins.begin();
@@ -226,7 +266,7 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter &sp
 # pragma omp parallel for shared(index)
   for (unsigned iFile = 0; iFile < num_buckets; ++iFile) {
     typename KMerIndex<Seq>::KMerDataIndex &data_index = index.index_[iFile];
-    MMappedRecordReader<Seq> ins(GetUniqueKMersFname(iFile), /* unlink */ true, -1ULL);
+    MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(iFile), Seq::DataSize, /* unlink */ true, -1ULL);
     if (!data_index.Reset(ins.begin(), ins.end(), ins.end() - ins.begin())) {
       INFO("Something went really wrong (read = this should not happen). Try to restart and see if the problem will be fixed.");
       exit(-1);
