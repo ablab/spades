@@ -718,8 +718,8 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 //	INFO("Complex bulge removal:");
 //	OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //	licvidator.Licvidate();
-	ComplexBulgeRemover<Graph> complex_bulge_remover(gp.g, gp.g.k() * 5, 5);
-	complex_bulge_remover.Run();
+//	ComplexBulgeRemover<Graph> complex_bulge_remover(gp.g, gp.g.k() * 5, 5);
+//	complex_bulge_remover.Run();
 }
 
 double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
