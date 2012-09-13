@@ -91,11 +91,13 @@ protected:
 	}
 
 	virtual void DeleteVertexFromComponent(VertexId vertex) {
+		VertexId conjugate_vertex = conjugate(vertex);
+
 		this->vertices_.erase(vertex);
 		this->temporary_vertices_.erase(vertex);
 
-		this->vertices_.erase(conjugate(vertex));
-		this->temporary_vertices_.erase(conjugate(vertex));
+		this->vertices_.erase(conjugate_vertex);
+		this->temporary_vertices_.erase(conjugate_vertex);
 	}
 
 	virtual VertexId HiddenAddVertex(const VertexData &data) {
@@ -109,7 +111,6 @@ protected:
 		VERIFY(this->all_actions_valid_);
 
 		DeleteVertexFromComponent(vertex);
-		this->DestroyVertex(vertex);
 	}
 };
 

@@ -331,7 +331,8 @@ protected:
 	}
 
 	virtual void DestroyVertex(VertexId vertex) {
-		graph_.DestroyVertex(vertex);
+		// can not be used because vertices are not deleted from graph.
+		VERIFY(false);
 	}
 
 protected:
