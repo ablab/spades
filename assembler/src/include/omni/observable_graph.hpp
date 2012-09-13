@@ -194,30 +194,40 @@ public:
 	}
 
 	void AddActionHandler(Handler* action_handler) const {
-		TRACE("Action handler " << action_handler->name() << " added");
-		if (find(action_handler_list_.begin(), action_handler_list_.end(),
-				action_handler) != action_handler_list_.end()) {
-			VERIFY_MSG(false,
-					"Action handler " << action_handler->name() << " has already been added");
-		} else {
-			action_handler_list_.push_back(action_handler);
+		#pragma omp critical(action_handler_list_modification)
+		{
+			TRACE("Action handler " << action_handler->name() << " added");
+			if (find(action_handler_list_.begin(), action_handler_list_.end(),
+					action_handler) != action_handler_list_.end()) {
+				VERIFY_MSG(false,
+						"Action handler " << action_handler->name() << " has already been added");
+			} else {
+				action_handler_list_.push_back(action_handler);
+			}
 		}
 	}
 
 	bool RemoveActionHandler(const Handler* action_handler) const {
-		TRACE("Trying to remove action handler " << action_handler->name());
-		for (auto it = action_handler_list_.begin();
-				it != action_handler_list_.end(); ++it) {
-			if (*it == action_handler) {
-				action_handler_list_.erase(it);
+		bool result = false;
+		#pragma omp critical(action_handler_list_modification)
+		{
+			TRACE("Trying to remove action handler " << action_handler->name());
+			for (auto it = action_handler_list_.begin();
+					it != action_handler_list_.end(); ++it) {
+				if (*it == action_handler) {
+					action_handler_list_.erase(it);
+					TRACE(
+							"Action handler " << action_handler->name() << " removed");
+					result = true;
+					break;
+				}
+			}
+			if(!result) {
 				TRACE(
-						"Action handler " << action_handler->name() << " removed");
-				return true;
+						"Action handler " << action_handler->name() << " wasn't found among graph action handlers");
 			}
 		}
-		TRACE(
-				"Action handler " << action_handler->name() << " wasn't found among graph action handlers");
-		return false;
+		return result;
 	}
 
 	virtual VertexIterator begin() const = 0;
