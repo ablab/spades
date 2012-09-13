@@ -231,9 +231,7 @@ def check_config(cfg):
     # dataset
     if "dataset" in cfg:
         if not "single_cell" in cfg["dataset"].__dict__:
-            cfg["dataset"].__dict__["single_cell"] = False
-        if cfg["common"].developer_mode and ("quality_assessment" in cfg) and ("reference" in cfg["quality_assessment"].__dict__):
-            cfg["dataset"].__dict__["reference"] = cfg["quality_assessment"].reference
+            cfg["dataset"].__dict__["single_cell"] = False        
 
     # error_correction
     if "error_correction" in cfg:
@@ -749,9 +747,9 @@ def main():
                         item = os.path.abspath(os.path.expandvars(item))
                         dataset_file.write(str(item) + ' ')
                     dataset_file.write('"')
-
                 dataset_file.write('\n')
-                # saving reference to dataset in developer_mode
+
+            # saving reference to dataset in developer_mode
             if spades_cfg.developer_mode:
                 if "reference" in cfg["dataset"].__dict__:
                     dataset_file.write("reference_genome" + '\t')
@@ -763,17 +761,6 @@ def main():
         else:
             spades_cfg.dataset = os.path.abspath(os.path.expandvars(spades_cfg.dataset))
             shutil.copy(spades_cfg.dataset, spades_cfg.output_dir)
-            # for developers: if dataset was set in 'assembly' section then use reference from it
-            if ("quality_assessment" in cfg) and not bh_dataset_filename:
-                for key_to_del in ["reference", "genes", "operons"]:
-                    if key_to_del in cfg["quality_assessment"].__dict__:
-                        del cfg["quality_assessment"].__dict__[key_to_del]
-
-                dataset_cfg = load_config_from_file(spades_cfg.dataset)
-                for k, v in dataset_cfg.__dict__.iteritems():
-                    if k == "reference_genome":
-                        cfg["quality_assessment"].__dict__["reference"] = os.path.join(
-                            os.path.dirname(spades_cfg.dataset), v)
 
         result_contigs_filename = run_spades(spades_cfg)
 
@@ -868,9 +855,8 @@ def run_spades(cfg):
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.developer_mode:
         # before repeat resolver contigs
-        before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs),
-            "simplified_contigs.fasta")
-#       shutil.copyfile(os.path.join(latest, "simplified_contigs.fasta"), before_RR_contigs)
+        # before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "simplified_contigs.fasta")
+        # shutil.copyfile(os.path.join(latest, "simplified_contigs.fasta"), before_RR_contigs)
         # saves
         saves_link = os.path.join(os.path.dirname(cfg.result_contigs), "saves")
         if os.path.exists(saves_link):
@@ -890,34 +876,6 @@ def run_spades(cfg):
         shutil.rmtree(bin_reads_dir)    
 
     return cfg.result_contigs
-
-
-def run_quality(cfg):        
-
-    args = [cfg.result_contigs]
-
-    if cfg.developer_mode:
-        before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs),
-            "contigs_before_RR.fasta")
-        args.append(before_RR_contigs)
-
-    if "reference" in cfg.__dict__:
-        args.append("-R")
-        args.append(os.path.abspath(os.path.expandvars(cfg.reference)))
-    if "genes" in cfg.__dict__:
-        args.append("-G")
-        args.append(os.path.abspath(os.path.expandvars(cfg.genes)))
-    if "operons" in cfg.__dict__:
-        args.append("-O")
-        args.append(os.path.abspath(os.path.expandvars(cfg.operons)))
-    quality_output_dir = os.path.join(cfg.working_dir, "quality_results")
-    args.append("-o")
-    args.append(quality_output_dir)
-    import quality
-
-    quality.main(args, lib_dir=os.path.join(spades_home, "src/tools/quality/libs"))
-
-    return os.path.join(quality_output_dir, "report.txt")
 
 
 if __name__ == '__main__':
