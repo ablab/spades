@@ -75,7 +75,7 @@ class KMerIndex {
   typedef cxxmph::SimpleMPHIndex<Seq, seeded_hash_function> KMerDataIndex;
 
  public:
-  KMerIndex():index_(NULL), num_buckets_(0), bucket_locks_(NULL) {}
+  KMerIndex():index_(NULL), num_buckets_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -87,12 +87,10 @@ class KMerIndex {
     bucket_starts_.clear();
 
     for (size_t i = 0; i < num_buckets_; ++i) {
-      omp_destroy_lock(bucket_locks_ + i);
       index_[i].clear();
     }
 
     delete[] index_;
-    delete[] bucket_locks_;
   }
 
   size_t mem_size() {
@@ -129,10 +127,6 @@ class KMerIndex {
 
     bucket_starts_.resize(num_buckets_ + 1);
     is.read((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
-
-    bucket_locks_ = new omp_lock_t[num_buckets_];
-    for (size_t i = 0; i < num_buckets_; ++i)
-      omp_init_lock(bucket_locks_ + i);
   }
 
  private:
@@ -140,39 +134,10 @@ class KMerIndex {
 
   size_t num_buckets_;
   std::vector<size_t> bucket_starts_;
-  omp_lock_t *bucket_locks_;
 
   size_t seq_bucket(Seq s) const { return hash_function()(s) % num_buckets_; }
 
   friend class KMerIndexBuilder<Seq>;
-
- public:
-  // This is just thin RAII wrapper over omp_lock_t to lock index buckets.
-  class lock {
-    omp_lock_t *l_;
-
-   public:
-    lock(omp_lock_t *l) : l_(l) { omp_set_lock(l_); }
-    lock(lock&& l) {
-      l_ = l.l_;
-      l.l_ = NULL;
-    }
-    ~lock() { if (l_) release(); }
-
-    lock(const lock&) = delete;
-    lock& operator=(const lock&) = delete;
-
-    void release() {
-      omp_unset_lock(l_);
-      l_ = NULL;
-    }
-  };
-
-  omp_lock_t *bucket_lock(Seq s) const { return bucket_locks_ + seq_bucket(s); }
-  std::pair<size_t, lock> seq_acquire(Seq s) {
-    // We rely on RVO here in order not to make several locks / copies.
-    return std::make_pair(seq_idx(s), lock(bucket_lock(s)));
-  }
 };
 
 class KMerSplitter {
@@ -257,10 +222,6 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter &sp
 
   index.num_buckets_ = num_buckets;
   index.index_ = new typename KMerIndex<Seq>::KMerDataIndex[num_buckets];
-  index.bucket_locks_ = new omp_lock_t[num_buckets];
-
-  for (size_t i = 0; i < num_buckets; ++i)
-    omp_init_lock(index.bucket_locks_ + i);
 
   INFO("Building perfect hash indices");
 # pragma omp parallel for shared(index)
