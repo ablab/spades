@@ -232,11 +232,13 @@ def ungzip_if_needed(filename, output_folder):
         ungzipped_filename = os.path.join(output_folder, os.path.basename(file_basename))
         ungzipped_file = open(ungzipped_filename, 'w')
 
-        print("== Ungzipping " + filename + " into " + ungzipped_filename)
+        print("== Extracting " + filename + " into " + ungzipped_filename)
 
         import subprocess
 
-        subprocess.call(['gunzip', filename, '-c'], stdout=ungzipped_file)
+        return_code = subprocess.call(['gunzip', filename, '-c'], stdout=ungzipped_file)
+        verify(return_code == 0, "GZIP failed to extract " + filename + ". Maybe the archive is broken.")
+
         ungzipped_file.close()
         filename = ungzipped_filename
 
