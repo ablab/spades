@@ -251,7 +251,7 @@ void exec_simplification(conj_graph_pack& gp) {
 			corrected_and_save_reads(gp);
 		}
 		if (cfg::get().correct_mismatches) {
-			correct_mismatches(gp);
+			parallel_correct_mismatches(gp);
 		}
 	} else {
 		INFO("Loading Simplification");
