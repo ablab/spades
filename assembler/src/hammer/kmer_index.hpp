@@ -101,7 +101,7 @@ class KMerIndex {
     return sz;
   }
 
-  size_t seq_idx(Seq s) const {
+  size_t seq_idx(const Seq &s) const {
     size_t bucket = seq_bucket(s);
 
     return bucket_starts_[bucket] + index_[bucket].index(s);
@@ -135,7 +135,7 @@ class KMerIndex {
   size_t num_buckets_;
   std::vector<size_t> bucket_starts_;
 
-  size_t seq_bucket(Seq s) const { return hash_function()(s) % num_buckets_; }
+  size_t seq_bucket(const Seq &s) const { return hash_function()(s) % num_buckets_; }
 
   friend class KMerIndexBuilder<Seq>;
 };
