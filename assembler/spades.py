@@ -870,7 +870,7 @@ def run_spades(cfg):
         # before repeat resolver contigs
         before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs),
             "simplified_contigs.fasta")
-        shutil.copyfile(os.path.join(latest, "simplified_contigs.fasta"), before_RR_contigs)
+#       shutil.copyfile(os.path.join(latest, "simplified_contigs.fasta"), before_RR_contigs)
         # saves
         saves_link = os.path.join(os.path.dirname(cfg.result_contigs), "saves")
         if os.path.exists(saves_link):
