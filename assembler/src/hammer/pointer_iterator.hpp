@@ -167,12 +167,16 @@ template<typename T>
 struct array_ref {
   T *ptr;
   size_t size;
+  bool allocated;
 
   array_ref() = delete;
-  array_ref(T *p, size_t sz) : ptr(p), size(sz) {  }
+  array_ref(T *p, size_t sz) : ptr(p), size(sz), allocated(false) {  }
 
-  operator T*() {
-    return ptr;
+  array_ref(const array_ref &that) {
+    size = that.size;
+    ptr = new T[size];
+    allocated = true;
+    memcpy(ptr, that.ptr, size * sizeof(T));
   }
 
   array_ref& operator=(const array_ref &that) {
@@ -180,6 +184,19 @@ struct array_ref {
       memcpy(ptr, that.ptr, size*sizeof(T));
 
     return *this;
+  }
+
+  array_ref& operator=(const array_ref &&that) {
+    if (this != &that)
+      memcpy(ptr, that.ptr, size*sizeof(T));
+
+    return *this;
+  }
+
+  ~array_ref() {
+    if (allocated) {
+      delete[] ptr;
+    }
   }
 
   bool operator==(const array_ref &that) const {
@@ -220,8 +237,7 @@ class pointer_array_iterator : public std::iterator<std::random_access_iterator_
 
   pointer_array_iterator() : data_(NULL, 0) {}
 
-  template<typename T2>
-  pointer_array_iterator(const pointer_array_iterator<T2> &r) : data_(r.data_.ptr, r.data_.size) {}
+  pointer_array_iterator(const pointer_array_iterator<T> &r) : data_(r.data_.ptr, r.data_.size) {}
 
   pointer_array_iterator(T *data, size_t size = 1) : data_(data, size) { }
 
