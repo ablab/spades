@@ -103,7 +103,7 @@ std::string parent_path(const std::string &path) {
   std::string cpath(path);
   
   make_full_path(cpath);
-  size_t slash_pos = path.find_last_of('/');
+  size_t slash_pos = cpath.find_last_of('/');
 
   return (slash_pos == 0 ?
           std::string("/") : cpath.substr(0, slash_pos));
