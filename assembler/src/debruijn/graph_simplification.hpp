@@ -666,6 +666,12 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
+     //  DEBUG(iteration << " Complex BR start");
+     //  ComplexBulgeRemover<Graph> complex_bulge_remover(gp.g, gp.g.k() * 5, 5);
+     //  complex_bulge_remover.Run();
+     //  DEBUG(iteration << " Complex BR fin");
+
+
 	DEBUG(iteration << " BulgeRemoval");
 	RemoveBulges(gp.g, removal_handler_f);
 	DEBUG(iteration << " BulgeRemoval stats");

@@ -690,7 +690,7 @@ public:
 		return start_vertex_;
 	}
 
-	const set<VertexId> end_vertices() const {
+	const set<VertexId>& end_vertices() const {
 		return end_vertices_;
 	}
 
@@ -1028,7 +1028,7 @@ class BRComponentSpanningTreeFinder {
 //	BRComponentSpanningTree<Graph> tree_;
 	vector<size_t> level_heights_;
 
-	size_t current_level_;
+	int current_level_;
 	color_partition_ds_t current_color_partition_;
 
 	set<VertexId> good_vertices_;
@@ -1072,7 +1072,9 @@ class BRComponentSpanningTreeFinder {
 	vector<EdgeId> GoodOutgoingEdges(const vector<VertexId>& vertices) const {
 		vector<EdgeId> answer;
 		foreach(VertexId v, vertices) {
-			push_back_all(answer, GoodOutgoingEdges(v));
+			if (component_.end_vertices().count(v) == 0) {
+				push_back_all(answer, GoodOutgoingEdges(v));
+			}
 		}
 		return answer;
 	}
@@ -1183,8 +1185,7 @@ public:
 
 	bool FindTree() {
 		DEBUG("Looking for tree");
-		while (current_level_ > 0) {
-			current_level_--;
+		while (current_level_ >= 0) {
 			size_t height = level_heights_[current_level_];
 			set<VertexId> level_vertices = component_.vertices_on_height(
 					height);
@@ -1198,12 +1199,15 @@ public:
 
 			//counting colors and color partitions
 			foreach(VertexId v, level_vertices) {
-				UpdateColorPartitionWithVertex(v);
-				if (IsGoodVertex(v)) {
-					good_vertices_.insert(v);
-					UpdateNextEdgesAndCoverage(v);
+				if (component_.end_vertices().count(v) == 0) {
+					UpdateColorPartitionWithVertex(v);
+					if (IsGoodVertex(v)) {
+						good_vertices_.insert(v);
+						UpdateNextEdgesAndCoverage(v);
+					}
 				}
 			}
+			current_level_--;
 		}
 		if (good_vertices_.count(component_.start_vertex()) > 0) {
 			DEBUG("Looking for tree was successful");
