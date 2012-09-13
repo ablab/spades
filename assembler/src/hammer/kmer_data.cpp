@@ -12,34 +12,33 @@
 
 using namespace hammer;
 
-class HammerKMerSplitter : public KMerSplitter {
+class HammerKMerSplitter : public KMerSplitter<KMer> {
  public:
-  HammerKMerSplitter(std::string &work_dir, unsigned num_files)
-      : KMerSplitter(work_dir, num_files) {}
+  HammerKMerSplitter(std::string &work_dir)
+      : KMerSplitter<KMer>(work_dir) {}
 
-  virtual path::files_t Split();
+  virtual path::files_t Split(size_t num_files);
 };
 
-path::files_t HammerKMerSplitter::Split() {
+path::files_t HammerKMerSplitter::Split(size_t num_files) {
   unsigned count_num_threads = min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
 
-  INFO("Splitting kmer instances into " << num_files_ << " buckets. This might take a while.");
+  INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
   // Determine the set of output files
   path::files_t out;
-  for (unsigned i = 0; i < num_files_; ++i)
+  for (unsigned i = 0; i < num_files; ++i)
     out.push_back(GetRawKMersFname(i));
 
-  MMappedRecordWriter<KMer>* ostreams = new MMappedRecordWriter<KMer>[num_files_];
-  for (unsigned i = 0; i < num_files_; ++i)
+  MMappedRecordWriter<KMer>* ostreams = new MMappedRecordWriter<KMer>[num_files];
+  for (unsigned i = 0; i < num_files; ++i)
     ostreams[i].open(out[i]);
 
-  KMerIndex<KMer>::hash_function hash_function;
   size_t readbuffer = cfg::get().count_split_buffer;
   std::vector<std::vector< std::vector<KMer> > > tmp_entries(count_num_threads);
   for (unsigned i = 0; i < count_num_threads; ++i) {
-    tmp_entries[i].resize(num_files_);
-    for (unsigned j = 0; j < num_files_; ++j) {
+    tmp_entries[i].resize(num_files);
+    for (unsigned j = 0; j < num_files; ++j) {
       tmp_entries[i][j].reserve(1.25 * readbuffer / count_num_threads);
     }
   }
@@ -70,9 +69,9 @@ path::files_t HammerKMerSplitter::Split() {
       ValidKMerGenerator<K> gen(s, q, csize);
       while (gen.HasMore()) {
         KMer seq = gen.kmer();
-        tmp_entries[omp_get_thread_num()][hash_function(seq) % num_files_].push_back(seq);
+        tmp_entries[omp_get_thread_num()][GetFileNumForSeq(seq, num_files)].push_back(seq);
         seq = !seq;
-        tmp_entries[omp_get_thread_num()][hash_function(seq) % num_files_].push_back(seq);
+        tmp_entries[omp_get_thread_num()][GetFileNumForSeq(seq, num_files)].push_back(seq);
         gen.Next();
       }
     }
@@ -80,7 +79,7 @@ path::files_t HammerKMerSplitter::Split() {
 
     ++cur_fileindex;
 
-    for (unsigned k = 0; k < num_files_; ++k) {
+    for (unsigned k = 0; k < num_files; ++k) {
       size_t sz = 0;
       for (size_t i = 0; i < count_num_threads; ++i)
         sz += tmp_entries[i][k].size();
@@ -92,7 +91,7 @@ path::files_t HammerKMerSplitter::Split() {
     }
 
     for (unsigned i = 0; i < count_num_threads; ++i) {
-      for (unsigned j = 0; j < num_files_; ++j) {
+      for (unsigned j = 0; j < num_files; ++j) {
         tmp_entries[i][j].clear();
       }
     }
@@ -141,8 +140,8 @@ static void PushKMerRC(KMerData &data,
 void KMerCounter::FillKMerData(KMerData &data) {
   // Build the index
   std::string workdir = cfg::get().input_working_dir;
-  HammerKMerSplitter splitter(workdir, num_files_);
-  size_t sz = KMerIndexBuilder<KMer>(workdir).BuildIndex(data.index_, splitter);
+  HammerKMerSplitter splitter(workdir);
+  size_t sz = KMerIndexBuilder<KMer>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, splitter);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");

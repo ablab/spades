@@ -140,19 +140,25 @@ class KMerIndex {
   friend class KMerIndexBuilder<Seq>;
 };
 
+template<class Seq>
 class KMerSplitter {
  public:
-  KMerSplitter(std::string &work_dir, unsigned num_files)
-      : work_dir_(work_dir), num_files_(num_files) {}
+  typedef typename Seq::hash hash_function;
 
-  virtual path::files_t Split() = 0;
+  KMerSplitter(std::string &work_dir)
+      : work_dir_(work_dir) {}
+
+  virtual path::files_t Split(size_t num_files) = 0;
 
  protected:
   std::string work_dir_;
-  unsigned num_files_;
+  hash_function hash_;
 
   std::string GetRawKMersFname(unsigned suffix) const {
     return path::append_path(work_dir_, "kmers.raw." + boost::lexical_cast<std::string>(suffix));
+  }
+  unsigned GetFileNumForSeq(const Seq &s, size_t total) const {
+    return hash_(s) % total;
   }
 
   DECL_LOGGER("K-mer Splitting");
@@ -161,16 +167,22 @@ class KMerSplitter {
 template<class Seq>
 class KMerIndexBuilder {
   std::string work_dir_;
+  unsigned num_buckets_;
+  unsigned num_threads_;
 
  public:
-  KMerIndexBuilder(const std::string &workdir)
-      : work_dir_(workdir) {}
-  size_t BuildIndex(KMerIndex<Seq> &out, KMerSplitter &splitter);
+  KMerIndexBuilder(const std::string &workdir,
+                   unsigned num_buckets, unsigned num_threads)
+      : work_dir_(workdir), num_buckets_(num_buckets), num_threads_(num_threads) {}
+  size_t BuildIndex(KMerIndex<Seq> &out, KMerSplitter<Seq> &splitter);
 
  private:
   size_t MergeKMers(const std::string &ifname, const std::string &ofname);
   std::string GetUniqueKMersFname(unsigned suffix) const {
     return path::append_path(work_dir_, "kmers.unique." + boost::lexical_cast<std::string>(suffix));
+  }
+  std::string GetMergedKMersFname(unsigned suffix) const {
+    return path::append_path(work_dir_, "kmers.merged." + boost::lexical_cast<std::string>(suffix));
   }
 
   DECL_LOGGER("K-mer Index Building");
@@ -180,13 +192,9 @@ class KMerIndexBuilder {
 template<class Seq>
 size_t KMerIndexBuilder<Seq>::MergeKMers(const std::string &ifname, const std::string &ofname) {
   MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::DataSize, /* unlink */ true, -1ULL);
-#ifdef USE_GLIBCXX_PARALLEL
-  // Explicitly force a call to parallel sort routine.
-  __gnu_parallel::sort(ins.begin(), ins.end());
-#else
+
+  // Sort the stuff
   std::sort(ins.begin(), ins.end());
-#endif
-  INFO("Sorting done, starting unification.");
 
   // FIXME: Use something like parallel version of unique_copy but with explicit
   // resizing.
@@ -194,45 +202,59 @@ size_t KMerIndexBuilder<Seq>::MergeKMers(const std::string &ifname, const std::s
                         typename array_ref<typename Seq::DataType>::equal_to());
 
   MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::DataSize);
-  os.resize((it - ins.begin()) * Seq::DataSize);
+  os.resize(it - ins.begin());
   std::copy(ins.begin(), it, os.begin());
 
   return it - ins.begin();
 }
 
 template<class Seq>
-size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter &splitter) {
+size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq> &splitter) {
   index.clear();
 
   INFO("Building kmer index");
 
   // Split k-mers into buckets.
-  path::files_t buckets = splitter.Split();
-  unsigned num_buckets = buckets.size();
+  path::files_t raw_kmers = splitter.Split(num_buckets_ * num_threads_);
 
   INFO("Starting k-mer counting.");
   size_t sz = 0;
-  index.bucket_starts_.push_back(sz);
-  for (unsigned iFile = 0; iFile < num_buckets; ++iFile) {
-    INFO("Processing file " << iFile);
-    sz += MergeKMers(buckets[iFile], GetUniqueKMersFname(iFile));
-    index.bucket_starts_.push_back(sz);
+# pragma omp parallel for shared(raw_kmers) num_threads(num_threads_)
+  for (unsigned iFile = 0; iFile < raw_kmers.size(); ++iFile) {
+    sz += MergeKMers(raw_kmers[iFile], GetUniqueKMersFname(iFile));
   }
   INFO("K-mer counting done. There are " << sz << " kmers in total. ");
 
-  index.num_buckets_ = num_buckets;
-  index.index_ = new typename KMerIndex<Seq>::KMerDataIndex[num_buckets];
+  INFO("Merging temporary buckets.");
+  for (unsigned i = 0; i < num_buckets_; ++i) {
+    MMappedRecordArrayWriter<typename Seq::DataType> os(GetMergedKMersFname(i), Seq::DataSize);
+    for (unsigned j = 0; j < num_threads_; ++j) {
+      MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(i + j * num_buckets_), Seq::DataSize, /* unlink */ true, -1ULL);
+      size_t sz = ins.end() - ins.begin();
+      os.reserve(sz);
+      os.write(ins.data(), sz);
+    }
+  }
+
+  index.num_buckets_ = num_buckets_;
+  index.bucket_starts_.resize(num_buckets_ + 1);
+  index.index_ = new typename KMerIndex<Seq>::KMerDataIndex[num_buckets_];
 
   INFO("Building perfect hash indices");
 # pragma omp parallel for shared(index)
-  for (unsigned iFile = 0; iFile < num_buckets; ++iFile) {
+  for (unsigned iFile = 0; iFile < num_buckets_; ++iFile) {
     typename KMerIndex<Seq>::KMerDataIndex &data_index = index.index_[iFile];
-    MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(iFile), Seq::DataSize, /* unlink */ true, -1ULL);
-    if (!data_index.Reset(ins.begin(), ins.end(), ins.end() - ins.begin())) {
+    MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(iFile), Seq::DataSize, /* unlink */ true, -1ULL);
+    size_t sz = ins.end() - ins.begin();
+    index.bucket_starts_[iFile + 1] = sz;
+    if (!data_index.Reset(ins.begin(), ins.end(), sz)) {
       INFO("Something went really wrong (read = this should not happen). Try to restart and see if the problem will be fixed.");
       exit(-1);
     }
   }
+  // Finally, record the sizes of buckets.
+  for (unsigned iFile = 1; iFile < num_buckets_; ++iFile)
+    index.bucket_starts_[iFile] += index.bucket_starts_[iFile - 1];
 
   INFO("Index built. Total " << index.mem_size() << " bytes occupied.");
 
