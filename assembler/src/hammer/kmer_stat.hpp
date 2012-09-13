@@ -34,15 +34,6 @@ class PositionRead;
 class PositionKMer;
 struct KMerStat;
 
-namespace std {
-template<>
-struct hash<hammer::KMer> : public unary_function<hammer::KMer, size_t> {
-  size_t operator() (hammer::KMer val) {
-    return val.GetHash();
-  }
-};
-}
-
 static inline unsigned hamdistKMer(const hammer::KMer &x, const hammer::KMer &y,
                                    unsigned tau = hammer::K) {
   unsigned dist = 0;
