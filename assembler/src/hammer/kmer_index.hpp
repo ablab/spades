@@ -75,7 +75,7 @@ class KMerIndex {
   typedef cxxmph::SimpleMPHIndex<Seq, seeded_hash_function> KMerDataIndex;
 
  public:
-  KMerIndex():index_(NULL), num_buckets_(0) {}
+  KMerIndex(unsigned k):k_(k), index_(NULL),  num_buckets_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -130,6 +130,7 @@ class KMerIndex {
   }
 
  private:
+  unsigned k_;
   KMerDataIndex *index_;
 
   size_t num_buckets_;
@@ -177,7 +178,7 @@ class KMerIndexBuilder {
   size_t BuildIndex(KMerIndex<Seq> &out, KMerSplitter<Seq> &splitter);
 
  private:
-  size_t MergeKMers(const std::string &ifname, const std::string &ofname);
+  size_t MergeKMers(const std::string &ifname, const std::string &ofname, unsigned K);
   std::string GetUniqueKMersFname(unsigned suffix) const {
     return path::append_path(work_dir_, "kmers.unique." + boost::lexical_cast<std::string>(suffix));
   }
@@ -190,8 +191,9 @@ class KMerIndexBuilder {
 
 // FIXME: Change DataSize to runtime K
 template<class Seq>
-size_t KMerIndexBuilder<Seq>::MergeKMers(const std::string &ifname, const std::string &ofname) {
-  MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::DataSize, /* unlink */ true, -1ULL);
+size_t KMerIndexBuilder<Seq>::MergeKMers(const std::string &ifname, const std::string &ofname,
+                                         unsigned K) {
+  MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(K), /* unlink */ true, -1ULL);
 
   // Sort the stuff
   std::sort(ins.begin(), ins.end());
@@ -201,7 +203,7 @@ size_t KMerIndexBuilder<Seq>::MergeKMers(const std::string &ifname, const std::s
   auto it = std::unique(ins.begin(), ins.end(),
                         typename array_ref<typename Seq::DataType>::equal_to());
 
-  MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::DataSize);
+  MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::GetDataSize(K));
   os.resize(it - ins.begin());
   std::copy(ins.begin(), it, os.begin());
 
@@ -211,6 +213,7 @@ size_t KMerIndexBuilder<Seq>::MergeKMers(const std::string &ifname, const std::s
 template<class Seq>
 size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq> &splitter) {
   index.clear();
+  unsigned K = index.k_;
 
   INFO("Building kmer index");
 
@@ -221,15 +224,15 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
   size_t sz = 0;
 # pragma omp parallel for shared(raw_kmers) num_threads(num_threads_)
   for (unsigned iFile = 0; iFile < raw_kmers.size(); ++iFile) {
-    sz += MergeKMers(raw_kmers[iFile], GetUniqueKMersFname(iFile));
+    sz += MergeKMers(raw_kmers[iFile], GetUniqueKMersFname(iFile), K);
   }
   INFO("K-mer counting done. There are " << sz << " kmers in total. ");
 
   INFO("Merging temporary buckets.");
   for (unsigned i = 0; i < num_buckets_; ++i) {
-    MMappedRecordArrayWriter<typename Seq::DataType> os(GetMergedKMersFname(i), Seq::DataSize);
+    MMappedRecordArrayWriter<typename Seq::DataType> os(GetMergedKMersFname(i), Seq::GetDataSize(K));
     for (unsigned j = 0; j < num_threads_; ++j) {
-      MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(i + j * num_buckets_), Seq::DataSize, /* unlink */ true, -1ULL);
+      MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(i + j * num_buckets_), Seq::GetDataSize(K), /* unlink */ true, -1ULL);
       size_t sz = ins.end() - ins.begin();
       os.reserve(sz);
       os.write(ins.data(), sz);
@@ -244,7 +247,7 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
 # pragma omp parallel for shared(index)
   for (unsigned iFile = 0; iFile < num_buckets_; ++iFile) {
     typename KMerIndex<Seq>::KMerDataIndex &data_index = index.index_[iFile];
-    MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(iFile), Seq::DataSize, /* unlink */ true, -1ULL);
+    MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(iFile), Seq::GetDataSize(K), /* unlink */ true, -1ULL);
     size_t sz = ins.end() - ins.begin();
     index.bucket_starts_[iFile + 1] = sz;
     if (!data_index.Reset(ins.begin(), ins.end(), sz)) {
