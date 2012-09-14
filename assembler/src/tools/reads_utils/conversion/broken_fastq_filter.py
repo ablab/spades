@@ -20,7 +20,7 @@ is_broken_region = False
 for line in in_file:  
     cur_read.append(line)
 
-    if ( (i == 0) and not line.startswith('@') ) or ( (i == 2) and not line.startswith('+') ) or (i >= 2 and cur_read[0][1:] != cur_read[2][1:]):
+    if ( (i == 0) and not line.startswith('@') ) or ( (i == 2) and not line.startswith('+') ) or (i >= 2 and cur_read[0][1:] != cur_read[2][1:]) or ( (i == 3) and len(cur_read[1]) != len(cur_read[3]) ):
         if not is_broken_region:
             print >> sys.stderr, "Broken started!"
             print >> sys.stderr, "Cur read (cropped to 100): "
