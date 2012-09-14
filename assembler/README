@@ -1,5 +1,5 @@
 SPAdes
-Genome assembler for single-cell and multicell data
+Genome assembler for single-cell and isolates data
 Version: see VERSION
 
 Developed in Algorithmic Biology Lab of St. Petersburg Academic University of the Russian Academy of Sciences.
@@ -12,13 +12,17 @@ Authors
     Alexey Gurevich, 
     Mikhail Dvorkin, 
     Alexander Kulikov, 
-    Valery Lesin, 
+    Valery Lesin,
+    Anton Korobeynikov,
     Sergey Nikolenko, 
     Son Pham, 
     Andrey Prjibelski, 
-    Alexey Pyshkin, 
-    Alexander Sirotkin, 
-    Nikolay Vyahhi, 
+    Alexey Pyshkin,
+    Alexander Opeykin,
+    Alexander Sirotkin,
+    Yakov Sirotkin,
+    Nikolay Vyahhi,
+    Alla Lapidus,
     Glenn Tesler, 
     Max Alekseyev and 
     Pavel Pevzner
@@ -28,7 +32,7 @@ http://bioinf.spbau.ru/spades
 
 Reference
 
-Anton Bankevich, Sergey Nurk, Dmitry Antipov, Alexey A. Gurevich, Mikhail Dvorkin, Alexander S. Kulikov, Valery M. Lesin, Sergey I. Nikolenko, Son Pham, Andrey D. Prjibelski, Alexey V. Pyshkin, Alexander V. Sirotkin, Nikolay Vyahhi, Glenn Tesler, Max A. Alekseyev, and Pavel A. Pevzner
-SPAdes: a New Genome Assembly Algorithm and its Applications to Single-Cell Sequencing
-
-To appear in the Journal of Computational Biology, 2012
+Anton Bankevich, Sergey Nurk, Dmitry Antipov, Alexey A. Gurevich, Mikhail Dvorkin, Alexander S. Kulikov, Valery M. Lesin,
+Sergey I. Nikolenko, Son Pham, Andrey D. Prjibelski, Alexey V. Pyshkin, Alexander V. Sirotkin, Nikolay Vyahhi, Glenn Tesler,
+Max A. Alekseyev, and Pavel A. Pevzner. SPAdes: A New Genome Assembly Algorithm and Its Applications to Single-Cell Sequencing.
+Journal of Computational Biology 19(5) (2012), 455-477. doi:10.1089/cmb.2012.0021
