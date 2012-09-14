@@ -750,6 +750,7 @@ public:
 	virtual void HandleDelete(VertexId v) {
 		VERIFY(end_vertices_.count(v) == 0);
 		if (contains(v)) {
+			DEBUG("Deleting vertex " << g_.str(v) << " from the component=");
 			size_t depth = avg_distance(v);
 			vertex_depth_.erase(v);
 			for (auto it = height_2_vertices_.lower_bound(depth);
@@ -789,7 +790,8 @@ public:
 			//todo do better later (needs to be synched with splitting strategy)
 //					+ (vertex_depth_[end] - vertex_depth_[start])
 //							* g_.length(new_edge_1) / g_.length(old_edge);
-			vertex_depth_.insert(make_pair(new_vertex,new_vertex_depth));
+			DEBUG("Inserting vertex " << g_.str(new_vertex) << " to component during split");
+			vertex_depth_.insert(make_pair(new_vertex, new_vertex_depth));
 			height_2_vertices_.insert(make_pair(Average(new_vertex_depth), new_vertex));
 		}
 	}
@@ -1266,14 +1268,20 @@ class ComponentProjector {
 	}
 
 	EdgeId CorrespondingTreeEdge(EdgeId e) const {
+		DEBUG("Getting height of vertex " << g_.str(g_.EdgeStart(e)));
 		size_t start_height = component_.avg_distance(g_.EdgeStart(e));
+		DEBUG("Done");
 		mixed_color_t color = coloring_.color(e);
+		DEBUG("Getting height of vertex " << g_.str(g_.EdgeEnd(e)));
 		size_t end_height = component_.avg_distance(g_.EdgeEnd(e));
+		DEBUG("Done");
 		FOREACH (VertexId v, component_.vertices_on_height(start_height)) {
-			FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
-				VERIFY(component_.avg_distance(g_.EdgeEnd(e)) == end_height);
-				if (tree_.Contains(e) && coloring_.IsSubset(coloring_.color(e), color)) {
-					return e;
+			if (component_.end_vertices().count(v) == 0) {
+				FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+					VERIFY(component_.avg_distance(g_.EdgeEnd(e)) == end_height);
+					if (tree_.Contains(e) && coloring_.IsSubset(coloring_.color(e), color)) {
+						return e;
+					}
 				}
 			}
 		}
