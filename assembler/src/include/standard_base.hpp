@@ -88,8 +88,7 @@ using std::copy;
 #include <boost/noncopyable.hpp>
 
 #include <boost/foreach.hpp>
-#define foreach         BOOST_FOREACH
-#define reverse_foreach BOOST_REVERSE_FOREACH
+#define FOREACH         BOOST_FOREACH
 
 using boost::bind;
 using boost::ref;

@@ -586,7 +586,7 @@ class BRComponent: public GraphActionHandler<Graph> /*: public GraphComponent<Gr
 	size_t diff_threshold_;
 
 	bool AllEdgeOut(VertexId v) const {
-		foreach (EdgeId e, g_.OutgoingEdges(v)) {
+		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
 			if (contains(g_.EdgeEnd(e)))
 				return false;
 		}
@@ -594,7 +594,7 @@ class BRComponent: public GraphActionHandler<Graph> /*: public GraphComponent<Gr
 	}
 
 	bool AllEdgeIn(VertexId v) const {
-		foreach (EdgeId e, g_.OutgoingEdges(v)) {
+		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
 			if (!contains(g_.EdgeEnd(e)))
 				return false;
 		}
@@ -626,7 +626,7 @@ public:
 		Range r = NeighbourDistanceRange(v);
 		vertex_depth_.insert(make_pair(v, r));
 		height_2_vertices_.insert(make_pair(Average(r), v));
-		foreach (EdgeId e, g_.IncomingEdges(v)) {
+		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
 			end_vertices_.erase(g_.EdgeStart(e));
 		}
 		end_vertices_.insert(v);
@@ -635,7 +635,7 @@ public:
 	//todo what if path processor will fail inside
 	size_t TotalPathCount() const {
 		size_t answer = 0;
-		foreach (VertexId end_v, end_vertices_) {
+		FOREACH (VertexId end_v, end_vertices_) {
 			PathStorageCallback<Graph> path_storage(g_);
 			Range r = vertex_depth_.find(end_v)->second;
 			PathProcessor<Graph> best_path_finder(g_, r.start_pos, r.end_pos,
@@ -647,7 +647,7 @@ public:
 	}
 
 	bool CheckCompleteness() const {
-		foreach (VertexId v, KeySet(vertex_depth_)) {
+		FOREACH (VertexId v, KeySet(vertex_depth_)) {
 			if (!AllEdgeIn(v) && !AllEdgeOut(v))
 				return false;
 		}
@@ -680,7 +680,7 @@ public:
 
 	set<size_t> avg_distances() const {
 		set<size_t> distances;
-		foreach(VertexId v, KeySet(vertex_depth_)) {
+		FOREACH(VertexId v, KeySet(vertex_depth_)) {
 			distances.insert(avg_distance(v));
 		}
 		return distances;
@@ -700,7 +700,7 @@ public:
 		size_t max = 0;
 		VERIFY(g_.IncomingEdgeCount(v) > 0);
 		VERIFY(CheckCloseNeighbour(v));
-		foreach (EdgeId e, g_.IncomingEdges(v)) {
+		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
 			Range range = vertex_depth_.find(g_.EdgeStart(e))->second;
 			range.shift(g_.length(e));
 			DEBUG("Edge " << g_.str(e) << " provide distance range " << range);
@@ -718,7 +718,7 @@ public:
 
 	bool CheckCloseNeighbour(VertexId v) const {
 		DEBUG("Check if vertex " << g_.str(v) << " can be processed");
-		foreach (EdgeId e, g_.IncomingEdges(v)) {
+		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
 			if (!contains(g_.EdgeStart(e))) {
 				DEBUG(
 						"Blocked by unprocessed or external vertex " << g_.int_id(g_.EdgeStart(e)) << " that starts edge " << g_.int_id(e));
@@ -737,7 +737,7 @@ public:
 
 	bool ContainsConjugateVertices() const {
 		set<VertexId> conjugate_vertices;
-		foreach (VertexId v, KeySet(vertex_depth_)) {
+		FOREACH (VertexId v, KeySet(vertex_depth_)) {
 			if (conjugate_vertices.count(v) == 0) {
 				conjugate_vertices.insert(g_.conjugate(v));
 			} else {
@@ -846,7 +846,7 @@ public:
 
 	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
 		//verify false
-		foreach (EdgeId e, old_edges) {
+		FOREACH (EdgeId e, old_edges) {
 			VERIFY(!Contains(e));
 		}
 	}
@@ -877,7 +877,7 @@ public:
 			const set<EdgeId>& edges) :
 			base(br_comp.g(), "br_tree"), br_comp_(br_comp), edges_(edges) {
 		DEBUG("Tree edges " << br_comp.g().str(edges));
-		foreach(EdgeId e, edges_) {
+		FOREACH(EdgeId e, edges_) {
 			vertices_.insert(br_comp_.g().EdgeStart(e));
 			vertices_.insert(br_comp_.g().EdgeEnd(e));
 		}
@@ -938,7 +938,7 @@ private:
 
 	mixed_color_t CountVertexColor(VertexId v) const {
 		mixed_color_t answer = mixed_color_t(0);
-		foreach(EdgeId e, comp_.g().OutgoingEdges(v)) {
+		FOREACH(EdgeId e, comp_.g().OutgoingEdges(v)) {
 			answer |= color(e);
 		}
 		return answer;
@@ -951,7 +951,7 @@ private:
 	void ColorComponent() {
 		DEBUG("Coloring component");
 		size_t cnt = 0;
-		foreach(VertexId v, comp_.end_vertices()) {
+		FOREACH(VertexId v, comp_.end_vertices()) {
 			mixed_color_t color = 1 << cnt;
 			vertex_colors_.insert(make_pair(v, color));
 			cnt++;
@@ -1062,7 +1062,7 @@ class BRComponentSpanningTreeFinder {
 
 	vector<EdgeId> GoodOutgoingEdges(VertexId v) const {
 		vector<EdgeId> answer;
-		foreach(EdgeId e, component_.g().OutgoingEdges(v)) {
+		FOREACH(EdgeId e, component_.g().OutgoingEdges(v)) {
 			if (IsGoodEdge(e))
 				answer.push_back(e);
 		}
@@ -1071,7 +1071,7 @@ class BRComponentSpanningTreeFinder {
 
 	vector<EdgeId> GoodOutgoingEdges(const vector<VertexId>& vertices) const {
 		vector<EdgeId> answer;
-		foreach(VertexId v, vertices) {
+		FOREACH(VertexId v, vertices) {
 			if (component_.end_vertices().count(v) == 0) {
 				push_back_all(answer, GoodOutgoingEdges(v));
 			}
@@ -1097,7 +1097,7 @@ class BRComponentSpanningTreeFinder {
 		VERIFY(component_.g().OutgoingEdgeCount(v) > 0);
 		primitive_color_t ds = GetCorrespondingDisjointSet(
 				coloring_.color(*(component_.g().OutgoingEdges(v).begin())));
-		foreach (EdgeId e, component_.g().OutgoingEdges(v)) {
+		FOREACH (EdgeId e, component_.g().OutgoingEdges(v)) {
 			current_color_partition_.unite(ds,
 					GetCorrespondingDisjointSet(coloring_.color(e)));
 		}
@@ -1107,7 +1107,7 @@ class BRComponentSpanningTreeFinder {
 		if (!ConsistentWithPartition(coloring_.color(v)))
 			return false;
 		mixed_color_t union_color_of_good_children = mixed_color_t(0);
-		foreach (EdgeId e, component_.g().OutgoingEdges(v)) {
+		FOREACH (EdgeId e, component_.g().OutgoingEdges(v)) {
 			if (good_edges_.count(e) > 0) {
 				union_color_of_good_children |= coloring_.color(e);
 			}
@@ -1118,7 +1118,7 @@ class BRComponentSpanningTreeFinder {
 	void Init() {
 		current_level_ = level_heights_.size() - 1;
 		size_t end_cnt = 0;
-		foreach(VertexId v, component_.end_vertices()) {
+		FOREACH(VertexId v, component_.end_vertices()) {
 			good_vertices_.insert(v);
 			subtree_coverage_[v] = 0;
 			end_cnt++;
@@ -1132,7 +1132,7 @@ class BRComponentSpanningTreeFinder {
 	void UpdateNextEdgesAndCoverage(VertexId v) {
 		map<mixed_color_t, size_t> best_subtrees_coverage;
 		map<mixed_color_t, EdgeId> best_alternatives;
-		foreach (EdgeId e, component_.g().OutgoingEdges(v)) {
+		FOREACH (EdgeId e, component_.g().OutgoingEdges(v)) {
 			if (good_edges_.count(e) > 0) {
 				VertexId end = component_.g().EdgeEnd(e);
 				mixed_color_t color = coloring_.color(e);
@@ -1145,7 +1145,7 @@ class BRComponentSpanningTreeFinder {
 			}
 		}
 		size_t coverage = 0;
-		foreach (size_t cov, ValueSet(best_subtrees_coverage)) {
+		FOREACH (size_t cov, ValueSet(best_subtrees_coverage)) {
 			coverage += cov;
 		}
 		next_edges_[v] = SetAsVector<EdgeId>(ValueSet(best_alternatives));
@@ -1171,7 +1171,7 @@ public:
 			vertex_queue.pop();
 			if (next_edges_.count(v) == 0)
 				continue;
-			foreach (EdgeId e, next_edges_.find(v)->second) {
+			FOREACH (EdgeId e, next_edges_.find(v)->second) {
 				answer.insert(e);
 				vertex_queue.push(component_.g().EdgeEnd(e));
 			}
@@ -1198,7 +1198,7 @@ public:
 									level_vertices.end())));
 
 			//counting colors and color partitions
-			foreach(VertexId v, level_vertices) {
+			FOREACH(VertexId v, level_vertices) {
 				if (component_.end_vertices().count(v) == 0) {
 					UpdateColorPartitionWithVertex(v);
 					if (IsGoodVertex(v)) {
@@ -1269,8 +1269,8 @@ class ComponentProjector {
 		size_t start_height = component_.avg_distance(g_.EdgeStart(e));
 		mixed_color_t color = coloring_.color(e);
 		size_t end_height = component_.avg_distance(g_.EdgeEnd(e));
-		foreach (VertexId v, component_.vertices_on_height(start_height)) {
-			foreach (EdgeId e, g_.OutgoingEdges(v)) {
+		FOREACH (VertexId v, component_.vertices_on_height(start_height)) {
+			FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
 				VERIFY(component_.avg_distance(g_.EdgeEnd(e)) == end_height);
 				if (tree_.Contains(e) && coloring_.IsSubset(coloring_.color(e), color)) {
 					return e;
@@ -1340,7 +1340,7 @@ class BRComponentFinder {
 	void ProcessLocality(VertexId processing_v) {
 		vector<VertexId> processed_neighb;
 		vector<VertexId> unprocessed_neighb;
-		foreach (EdgeId e, g_.OutgoingEdges(processing_v)) {
+		FOREACH (EdgeId e, g_.OutgoingEdges(processing_v)) {
 			VertexId v = g_.EdgeEnd(e);
 			if (!comp_.contains(v)) {
 				DEBUG("Vertex " << g_.str(v) << " added to neighbourhood")
@@ -1356,14 +1356,14 @@ class BRComponentFinder {
 			}
 		}
 		if (!processed_neighb.empty()) {
-			foreach (VertexId v, unprocessed_neighb) {
+			FOREACH (VertexId v, unprocessed_neighb) {
 				disturbing_.insert(v);
 			}
 		}
 	}
 
 	bool CheckNoEdgeToStart(VertexId v) {
-		foreach (EdgeId e, g_.OutgoingEdges(v)) {
+		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
 			if (g_.EdgeEnd(e) == comp_.start_vertex()) {
 				return false;
 			}
@@ -1394,7 +1394,7 @@ class BRComponentFinder {
 
 	bool CheckPathLengths() const {
 		VERIFY(CheckCompleteness());
-		foreach (VertexId v, comp_.end_vertices()) {
+		FOREACH (VertexId v, comp_.end_vertices()) {
 			if (comp_.distance_range(v).size() > length_diff_threshold_)
 				return false;
 		}
@@ -1496,7 +1496,7 @@ public:
 				}
 			}
 			}
-			foreach (VertexId v, vertices_to_post_process) {
+			FOREACH (VertexId v, vertices_to_post_process) {
 				it.HandleAdd(v);
 				g_.CompressVertex(v);
 			}
