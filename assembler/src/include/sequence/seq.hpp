@@ -71,6 +71,11 @@ class Seq {
    */
   const static size_t TotalBytes = sizeof(T) * DataSize;
 
+  static size_t GetDataSize(size_t size) {
+    VERIFY(size == size_);
+    return (size_ + TNucl - 1) >> TNuclBits;
+  }
+
  private:
   /* *
    * @variable Just some prime number to count the hash function of the kmer
