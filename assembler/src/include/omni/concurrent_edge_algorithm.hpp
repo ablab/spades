@@ -119,6 +119,10 @@ public:
 			id_distributors_[i].Synchronize();
 		}
 
+		for (size_t i = 0; i < nthreads_; ++i) {
+			components_[i]->Synchronize();
+		}
+
 
 		ConjugateComponent all_graph_component (
 				graph_,
@@ -150,6 +154,9 @@ public:
 		VERIFY(border_not_processed_edges.size() == 0);
 
 
+		all_graph_component.Synchronize();
+
+		// TODO: Tip Clipper only?
 		Compressor<Graph> compressor(graph_);
 		compressor.CompressAllVertices();
 	}

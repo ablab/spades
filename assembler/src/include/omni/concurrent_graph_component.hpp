@@ -277,12 +277,18 @@ public:
 
 	virtual bool IsInternalSafe(const EdgeId& edge) const = 0;
 
+	void Synchronize() {
+		BOOST_FOREACH(VertexId vertex, deleted_vertices_) {
+			graph_.HiddenDeleteVertex(vertex);
+		}
+
+		deleted_vertices_.resize(0);
+	}
+
 
 protected:
 
 	virtual void AddVertexToComponent(VertexId vertex) = 0;
-
-	virtual void DeleteVertexFromComponent(VertexId vertex) = 0;
 
 	virtual bool AdditionalCompressCondition(VertexId vertex) const  {
 		SetFlagIfNotInComponent(vertex);
@@ -331,8 +337,7 @@ protected:
 	}
 
 	virtual void DestroyVertex(VertexId vertex) {
-		// can not be used because vertices are not deleted from graph.
-		VERIFY(false);
+		graph_.DestroyVertex(vertex);
 	}
 
 protected:
@@ -430,7 +435,7 @@ protected:
 	unordered_set<VertexId> vertices_;
 	unordered_set<VertexId> border_vertices_;
 
-	// used for temporary vertices created by algorithms
+	vector<VertexId> deleted_vertices_;
 	unordered_set<VertexId> temporary_vertices_;
 
 	restricted::IdDistributor& edge_id_distributor_;

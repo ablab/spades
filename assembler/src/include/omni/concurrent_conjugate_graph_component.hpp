@@ -90,16 +90,6 @@ protected:
 		this->temporary_vertices_.insert(conjugate(vertex));
 	}
 
-	virtual void DeleteVertexFromComponent(VertexId vertex) {
-		VertexId conjugate_vertex = conjugate(vertex);
-
-		this->vertices_.erase(vertex);
-		this->temporary_vertices_.erase(vertex);
-
-		this->vertices_.erase(conjugate_vertex);
-		this->temporary_vertices_.erase(conjugate_vertex);
-	}
-
 	virtual VertexId HiddenAddVertex(const VertexData &data) {
 		VertexId vertex = this->CreateVertex(data);
 		AddVertexToComponent(vertex);
@@ -110,7 +100,19 @@ protected:
 		VERIFY(IsInternalSafe(vertex));
 		VERIFY(this->all_actions_valid_);
 
-		DeleteVertexFromComponent(vertex);
+		VertexId conjugate_vertex = conjugate(vertex);
+
+		this->vertices_.erase(vertex);
+		this->vertices_.erase(conjugate_vertex);
+
+		if (this->temporary_vertices_.find(vertex) != this->temporary_vertices_.end()) {
+			this->temporary_vertices_.erase(vertex);
+			this->temporary_vertices_.erase(conjugate_vertex);
+
+			DestroyVertex(vertex); // conjugate will be deleted too
+		} else {
+			this->deleted_vertices_.push_back(vertex);
+		}
 	}
 };
 
