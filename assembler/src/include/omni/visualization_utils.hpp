@@ -417,6 +417,15 @@ void WriteComponents(const Graph& g,
 }
 
 template<class Graph>
+void WriteComponent(const GraphComponent<Graph>& gc,
+		const string& file_name, const GraphColorer<Graph> &colorer,
+		const GraphLabeler<Graph>& labeler, const string& graph_name =
+				"my_graph") {
+	PrecountedComponentSplitter<typename Graph::VertexId> splitter(gc.v_begin(), gc.v_end());
+	WriteComponents(gc, splitter, file_name, colorer, labeler, graph_name);
+}
+
+template<class Graph>
 void WriteComponents(const Graph& g, size_t split_edge_length,
 		const string& file_name, const GraphColorer<Graph>& colorer,
 		const GraphLabeler<Graph>& labeler, const string& graph_name =

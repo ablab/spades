@@ -1048,7 +1048,6 @@ class BRComponentSpanningTreeFinder {
 	bool IsGoodEdge(EdgeId e) const {
 		VertexId start = component_.g().EdgeStart(e);
 		VertexId end = component_.g().EdgeEnd(e);
-		VERIFY(component_.avg_distance(start) < component_.avg_distance(end));
 		//check if end is good
 		if (good_vertices_.count(end) == 0)
 			return false;
@@ -1419,6 +1418,21 @@ class BRComponentFinder {
 		return true;
 	}
 
+	bool CheckPositiveHeightDiff() const {
+		DEBUG("Checking for positive height diff of each edge");
+		GraphComponent<Graph> gc = comp_.AsGraphComponent();
+		for (auto it = gc.e_begin(); it != gc.e_end(); ++it) {
+			size_t start_height = comp_.avg_distance(g_.EdgeStart(*it));
+			size_t end_height = comp_.avg_distance(g_.EdgeEnd(*it));
+			VERIFY(end_height >= start_height);
+			if (end_height == start_height) {
+				DEBUG("Check failed for edge " << g_.str(*it) << " both heights are " << start_height);
+				return false;
+			}
+		}
+		return true;
+	}
+
 	VertexId NextVertex() const {
 		if (!disturbing_.empty()) {
 			return *disturbing_.begin();
@@ -1454,6 +1468,10 @@ public:
 		}
 		if (!CheckPathLengths()) {
 			DEBUG("Path lengths check failed");
+			return false;
+		}
+		if (!CheckPositiveHeightDiff()) {
+			DEBUG("Check for positive height diff of each edge failed");
 			return false;
 		}
 		if (comp_.ContainsConjugateVertices()) {
@@ -1499,19 +1517,28 @@ class ComplexBulgeRemover {
 		}
 	}
 
+	void PrintComponent(const BRComponent<Graph>& component, const string& file_name) const {
+		WriteComponent(component.AsGraphComponent(), file_name, *DefaultColorer(g_), *StrGraphLabelerInstance(g_));
+	}
+
 public:
 	ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff) :
 			g_(g), max_length_(max_length), length_diff_(length_diff) {
 	}
 
 	void Run() {
-		DEBUG("Complex bulge remover started")
+		DEBUG("Complex bulge remover started");
+		size_t component_cnt = 0;
+		make_dir("complex_br_components");
 		for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
 			vector<VertexId> vertices_to_post_process;
 			{
 			BRComponentFinder<Graph> comp_finder(g_, max_length_, length_diff_, *it);
 			if (comp_finder.TryFindComponent()) {
+				component_cnt++;
+				DEBUG("Found component " << component_cnt);
 				BRComponent<Graph> component = comp_finder.component();
+				PrintComponent(component, "complex_br_components/" + ToString(component_cnt));
 				if (ProcessComponent(component)) {
 					GraphComponent<Graph> gc = component.AsGraphComponent();
 					vertices_to_post_process.insert(vertices_to_post_process.end(),
@@ -1524,7 +1551,7 @@ public:
 				g_.CompressVertex(v);
 			}
 		}
-		DEBUG("Complex bulge remover finished")
+		DEBUG("Complex bulge remover finished");
 	}
 
 private:
