@@ -209,6 +209,38 @@ public:
 			&& bulge_condition_(e, path);
 	}
 
+	virtual bool TryToProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
+		if (!graph_.IsInternalSafe(edge) || !graph_.IsInternalSafe(path)) {
+			// for algorithm to process this edge sequently.
+			graph_.InvalidateComponent();
+		}
+
+		if (graph_.IsValid()) {
+			if (opt_callback_)
+				opt_callback_(edge, path);
+
+			if (removal_handler_)
+				removal_handler_(edge);
+
+			VertexId start = graph_.EdgeStart(edge);
+			VertexId end = graph_.EdgeEnd(edge);
+
+			TRACE("Projecting edge " << graph_.str(edge));
+			ProcessBulge(edge, path);
+
+			TRACE("Compressing start vertex " << graph_.str(start));
+			graph_.CompressVertex(start);
+
+			TRACE("Compressing end vertex " << graph_.str(end));
+			graph_.CompressVertex(end);
+
+			return true;
+		} else {
+			TRACE("Component is invalid. " << "Edge "  << edge << " can not be processed in parallel.");
+			return false;
+		}
+	}
+
 	void ProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
 
 		EnsureEndsPositionAligner aligner(PathLength(path), graph_.length(edge));
@@ -329,24 +361,9 @@ void BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 
 	//if edge was returned, this condition will fail
 	if (BulgeCondition(edge, path, path_coverage)) {
-
 		TRACE("Satisfied condition");
 
-		if (opt_callback_)
-			opt_callback_(edge, path);
-
-		if (removal_handler_)
-			removal_handler_(edge);
-
-		TRACE("Projecting edge " << graph_.str(edge));
-		ProcessBulge(edge, path);
-
-		TRACE("Compressing start vertex " << graph_.str(start));
-		graph_.CompressVertex(start);
-
-		TRACE("Compressing end vertex " << graph_.str(end));
-		graph_.CompressVertex(end);
-
+		TryToProcessBulge(edge, path);
 	} else {
 		TRACE("Didn't satisfy condition");
 	}

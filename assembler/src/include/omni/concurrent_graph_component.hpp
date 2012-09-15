@@ -220,6 +220,10 @@ public:
 		all_actions_valid_ = true;
 	}
 
+	void InvalidateComponent() {
+		all_actions_valid_ = false;
+	}
+
 	bool IsValid() const {
 		return all_actions_valid_;
 	}
@@ -276,6 +280,16 @@ public:
 	virtual bool IsInternalSafe(const VertexId& vertex) const = 0;
 
 	virtual bool IsInternalSafe(const EdgeId& edge) const = 0;
+
+	virtual bool IsInternalSafe(const vector<EdgeId>& path) const {
+		BOOST_FOREACH(EdgeId edge, path) {
+			if (!IsInternalSafe(edge)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 
 	void Synchronize() {
 		BOOST_FOREACH(VertexId vertex, deleted_vertices_) {

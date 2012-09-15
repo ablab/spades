@@ -135,8 +135,12 @@ protected:
 	}
 
 	virtual bool TryToRemoveTip(EdgeId tip) {
-		if (graph_.IsInternalSafe(tip) && graph_.IsValid()) {
-			TRACE("Removing edge " << graph_.str(tip) << " as a tip");
+		if (!graph_.IsInternalSafe(tip)) {
+			// for algorithm to process this edge sequently.
+			graph_.InvalidateComponent();
+		}
+
+		if (graph_.IsValid()) {
 			RemoveTip(tip);
 			TRACE("Edge removed");
 			return true;
