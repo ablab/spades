@@ -19,5 +19,3 @@
         cout << message << endl;            \
     }                                       \
 }                                           \
-
-#define info(message)                       LOG(message)

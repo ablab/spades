@@ -8,7 +8,7 @@ namespace online_visualization {
 
     namespace command_impl {
 
-        typedef bimap<string, CommandType> CommandNameMapping;
+        typedef boost::bimap<string, CommandType> CommandNameMapping;
 
         static const CommandNameMapping FillCommandNameMapping() {
             vector<CommandNameMapping::value_type> info = 

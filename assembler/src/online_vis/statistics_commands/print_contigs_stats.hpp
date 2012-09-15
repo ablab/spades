@@ -202,10 +202,10 @@ namespace online_visualization {
                         result = result | ProcessContig(curr_env, contig, genome_path, "CONTIG_" + read.name());
                         result = result | ProcessContig(curr_env, !contig, genome_path, "CONTIG_" + read.name() + "_RC");
                         if (result) {
-                            info(" contig " + read.name() + " is OKAY");
+                            INFO(" contig " + read.name() + " is OKAY");
                         }
                         else 
-                            info(" contig " + read.name() + " is MISASSEMBLED");
+                            INFO(" contig " + read.name() + " is MISASSEMBLED");
                     }
                 }
             }

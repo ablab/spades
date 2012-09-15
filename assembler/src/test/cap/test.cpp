@@ -16,7 +16,6 @@
 #include <unistd.h>
 #include "omni/distance_estimation.hpp"
 #include "memory_limit.hpp"
-#include "boost/archive/tmpdir.hpp"
 #include "read_converter.hpp"
 
 int main() {
