@@ -621,11 +621,12 @@ public:
 	}
 
 	void AddVertex(VertexId v) {
-		DEBUG("Adding vertex " << g_.str(v) << " to the component");
 		VERIFY(CheckCloseNeighbour(v));
 		Range r = NeighbourDistanceRange(v);
+		DEBUG("Adding vertex " << g_.str(v) << " to the component");
 		vertex_depth_.insert(make_pair(v, r));
 		height_2_vertices_.insert(make_pair(Average(r), v));
+		DEBUG("Range " << r << " Average height " << Average(r));
 		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
 			end_vertices_.erase(g_.EdgeStart(e));
 		}
@@ -656,7 +657,7 @@ public:
 
 	bool NeedsProjection() const {
 		size_t tot_path_count = TotalPathCount();
-		VERIFY(tot_path_count >= end_vertices_.size());
+//		more robust to path processor failure this way VERIFY(tot_path_count >= end_vertices_.size());
 		return tot_path_count > end_vertices_.size();
 	}
 
@@ -1234,9 +1235,14 @@ class ComponentProjector {
 	const ComponentColoring<Graph>& coloring_;
 	const BRComponentSpanningTree<Graph>& tree_;
 
+//	DEBUG("Result: edges " << g_.str(split_res.first) << " " << g_.str(split_res.second));
+//	DEBUG("New vertex" << g_.str(inner_v) << " ");
+
 	void SplitComponent() {
 		DEBUG("Splitting component");
 		set<size_t> level_heights(component_.avg_distances());
+		DEBUG("Level heights " << ToString<size_t>(level_heights));
+
 		GraphComponent<Graph> gc = component_.AsGraphComponent();
 
 		for (auto it = gc.e_begin(); it != gc.e_end(); ++it) {
@@ -1244,20 +1250,24 @@ class ComponentProjector {
 			VertexId end_v = g_.EdgeEnd(*it);
 			size_t start_dist = component_.avg_distance(start_v);
 			size_t end_dist = component_.avg_distance(end_v);
+			DEBUG("Processing edge " << g_.str(*it)
+					<< " avg_start " << start_dist << " avg_end " << end_dist);
 			set<size_t> dist_to_split(level_heights.lower_bound(start_dist),
 					level_heights.upper_bound(end_dist));
+			DEBUG("Distances to split " << ToString<size_t>(dist_to_split));
+
 			size_t offset = start_dist;
 			EdgeId e = *it;
 			for (auto split_it = dist_to_split.begin();
 					split_it != dist_to_split.end(); ++split_it) {
 				size_t curr = *split_it;
+				DEBUG("Splitting on " << curr);
 				size_t pos = curr - offset;
 				if (pos > 0 && pos < g_.length(e)) {
 					DEBUG("Splitting edge " << g_.str(e) << " on position " << pos);
 					pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, pos);
-					VertexId inner_v = g_.EdgeEnd(split_res.first);
-					DEBUG("Result: edges " << g_.str(split_res.first) << " " << g_.str(split_res.second) << " inner vertex" << inner_v);
 					//checks accordance
+					VertexId inner_v = g_.EdgeEnd(split_res.first);
 					VERIFY(component_.avg_distance(inner_v) == curr);
 					e = split_res.second;
 					offset = curr;
@@ -1473,14 +1483,18 @@ class ComplexBulgeRemover {
 	size_t length_diff_;
 
 	bool ProcessComponent(BRComponent<Graph>& component) {
+		DEBUG("Processing component");
 		ComponentColoring<Graph> coloring(component);
 		BRComponentSpanningTreeFinder<Graph> tree_finder(component, coloring);
+		DEBUG("Looking for a tree");
 		if (tree_finder.FindTree()) {
+			DEBUG("Tree found");
 			BRComponentSpanningTree<Graph> tree(component, tree_finder.GetTreeEdges());
 			ComponentProjector<Graph> projector(g_, component, coloring, tree);
 			projector.ProjectComponent();
 			return true;
 		} else {
+			DEBUG("Tree not found");
 			return false;
 		}
 	}
@@ -1491,6 +1505,7 @@ public:
 	}
 
 	void Run() {
+		DEBUG("Complex bulge remover started")
 		for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
 			vector<VertexId> vertices_to_post_process;
 			{
@@ -1509,6 +1524,7 @@ public:
 				g_.CompressVertex(v);
 			}
 		}
+		DEBUG("Complex bulge remover finished")
 	}
 
 private:
