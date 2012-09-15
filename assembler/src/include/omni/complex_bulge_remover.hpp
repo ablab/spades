@@ -1261,17 +1261,17 @@ class ComponentProjector {
 			for (auto split_it = dist_to_split.begin();
 					split_it != dist_to_split.end(); ++split_it) {
 				size_t curr = *split_it;
+				if (curr == start_dist || curr == end_dist)
+					continue;
 				DEBUG("Splitting on " << curr);
 				size_t pos = curr - offset;
-				if (pos > 0 && pos < g_.length(e)) {
-					DEBUG("Splitting edge " << g_.str(e) << " on position " << pos);
-					pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, pos);
-					//checks accordance
-					VertexId inner_v = g_.EdgeEnd(split_res.first);
-					VERIFY(component_.avg_distance(inner_v) == curr);
-					e = split_res.second;
-					offset = curr;
-				}
+				DEBUG("Splitting edge " << g_.str(e) << " on position " << pos);
+				pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, pos);
+				//checks accordance
+				VertexId inner_v = g_.EdgeEnd(split_res.first);
+				VERIFY(component_.avg_distance(inner_v) == curr);
+				e = split_res.second;
+				offset = curr;
 			}
 		}
 		DEBUG("Component split");
