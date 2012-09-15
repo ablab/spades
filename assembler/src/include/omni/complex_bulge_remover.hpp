@@ -751,7 +751,7 @@ public:
 	virtual void HandleDelete(VertexId v) {
 		VERIFY(end_vertices_.count(v) == 0);
 		if (contains(v)) {
-			DEBUG("Deleting vertex " << g_.str(v) << " from the component=");
+			DEBUG("Deleting vertex " << g_.str(v) << " from the component");
 			size_t depth = avg_distance(v);
 			vertex_depth_.erase(v);
 			for (auto it = height_2_vertices_.lower_bound(depth);
@@ -1538,7 +1538,7 @@ public:
 				component_cnt++;
 				DEBUG("Found component " << component_cnt);
 				BRComponent<Graph> component = comp_finder.component();
-				PrintComponent(component, "complex_br_components/" + ToString(component_cnt));
+				PrintComponent(component, "complex_br_components/" + ToString(component_cnt) + ".dot");
 				if (ProcessComponent(component)) {
 					GraphComponent<Graph> gc = component.AsGraphComponent();
 					vertices_to_post_process.insert(vertices_to_post_process.end(),
