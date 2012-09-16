@@ -555,13 +555,27 @@ class RuntimeSeq {
     return operator[](0);
   }
 
-  size_t GetHash() const {
+  static size_t GetHash(const DataType *data, size_t sz) {
     size_t hash = PrimeNum;
-    for (size_t i = 0; i < GetDataSize(size_); i++) {
-      hash = ((hash << 5) - hash) + data_[i];
+    for (size_t i = 0; i < sz; i++) {
+      hash = ((hash << 5) - hash) + data[i];
     }
     return hash;
   }
+
+  size_t GetHash() const {
+    return GetHash(data_.data(), GetDataSize(size_));
+  }
+
+  struct hash {
+    size_t operator()(const RuntimeSeq<max_size_, T>& seq) const {
+      return seq.GetHash();
+    }
+
+    size_t operator()(const DataType *data, size_t sz) {
+      return GetHash(data, sz);
+    }
+  };
 
   struct less2 {
     int operator()(const RuntimeSeq<max_size_, T> &l, const RuntimeSeq<max_size_, T> &r) const {
