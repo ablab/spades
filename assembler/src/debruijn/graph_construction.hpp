@@ -323,7 +323,7 @@ SPAdesKMerSplitter<Read>::FillBufferFromStream(ReadStream& stream,
   unsigned k_plus_one = K_ + 1;
   size_t reads = 0, kmers = 0, rl = 0;
 
-  while (!stream.eof() && kmers < 3 * num_files * cell_size / 4) {
+  while (!stream.eof() && kmers < num_files * cell_size) {
     stream >> r;
     rl = std::max(rl, r.size());
     reads += 1;
@@ -353,15 +353,26 @@ void SPAdesKMerSplitter<Read>::DumpBuffers(size_t num_files, size_t nthreads,
   size_t item_size = sizeof(runtime_k::RtSeq::DataType),
              items = runtime_k::RtSeq::GetDataSize(k_plus_one);
 
+# pragma omp parallel for shared(items, item_size, k_plus_one)
   for (unsigned k = 0; k < num_files; ++k) {
     size_t sz = 0;
     for (size_t i = 0; i < nthreads; ++i)
       sz += buffers[i][k].size();
 
+    std::vector<runtime_k::RtSeq> SortBuffer;
+    SortBuffer.reserve(sz);
     for (size_t i = 0; i < nthreads; ++i) {
       KMerBuffer &entry = buffers[i];
       for (size_t j = 0; j < entry[k].size(); ++j)
-        fwrite(entry[k][j].data(), item_size, items, ostreams[k]);
+        SortBuffer.push_back(entry[k][j]);
+    }
+    std::sort(SortBuffer.begin(), SortBuffer.end(), runtime_k::RtSeq::less2_fast());
+    auto it = std::unique(SortBuffer.begin(), SortBuffer.end());
+
+#   pragma omp critical
+    {
+      for (auto I = SortBuffer.begin(), E = it; I != E; ++I)
+        fwrite(I->data(), item_size, items, ostreams[k]);
     }
   }
 
@@ -375,7 +386,6 @@ void SPAdesKMerSplitter<Read>::DumpBuffers(size_t num_files, size_t nthreads,
 template<class Read>
 path::files_t SPAdesKMerSplitter<Read>::Split(size_t num_files) {
   unsigned nthreads = streams_.size();
-  unsigned k_plus_one = K_ + 1;
 
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
@@ -389,8 +399,7 @@ path::files_t SPAdesKMerSplitter<Read>::Split(size_t num_files) {
     ostreams[i] = fopen(out[i].c_str(), "wb");
 
   size_t cell_size = READS_BUFFER_SIZE /
-                     (nthreads * num_files *
-                      runtime_k::RtSeq::GetDataSize(k_plus_one) * sizeof(runtime_k::RtSeq::DataType));
+                     (nthreads * num_files * sizeof(runtime_k::RtSeq));
   INFO("Using cell size of " << cell_size);
 
   std::vector<KMerBuffer> tmp_entries(nthreads);
