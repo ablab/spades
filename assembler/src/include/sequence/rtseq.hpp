@@ -588,6 +588,15 @@ class RuntimeSeq {
     }
   };
 
+  /**
+   * Denotes some (weird) order on k-mers. Works fast.
+   */
+  struct less2_fast {
+    bool operator()(const RuntimeSeq<max_size_, T> &l, const RuntimeSeq<max_size_, T> &r) const {
+      return 0 > memcmp(l.data(), r.data(), sizeof(T) * l.data_size());
+    }
+  };
+
 };
 
 template<size_t max_size_, typename T>
