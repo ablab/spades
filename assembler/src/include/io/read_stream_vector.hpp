@@ -71,6 +71,11 @@ public:
         return ParallelStreamEOF(streams_);
     }
 
+  void reset() const {
+    for (auto I = streams_.begin(), E = streams_.end(); I != E; ++I)
+      (*I)->reset();
+  }
+  
 };
 
 }
