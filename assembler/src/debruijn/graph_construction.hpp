@@ -323,7 +323,7 @@ SPAdesKMerSplitter<Read>::FillBufferFromStream(ReadStream& stream,
   unsigned k_plus_one = K_ + 1;
   size_t reads = 0, kmers = 0, rl = 0;
 
-  while (!stream.eof() && kmers < cell_size) {
+  while (!stream.eof() && kmers < 3 * num_files * cell_size / 4) {
     stream >> r;
     rl = std::max(rl, r.size());
     reads += 1;
@@ -398,7 +398,7 @@ path::files_t SPAdesKMerSplitter<Read>::Split(size_t num_files) {
     KMerBuffer &entry = tmp_entries[i];
     entry.resize(num_files);
     for (unsigned j = 0; j < num_files; ++j) {
-      entry[j].reserve(1.1 * cell_size);
+      entry[j].reserve(1.25 * cell_size);
     }
   }
 
