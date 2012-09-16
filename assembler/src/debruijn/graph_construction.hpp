@@ -492,7 +492,7 @@ size_t ConstructGraph(size_t k, io::ReadStreamVector< io::IReader<Read> >& strea
   INFO("Total kmers in index: " << debruijn.nodes().size());
 
   INFO("Condensing graph");
-  DeBruijnGraphConstructor<Graph> g_c(g, index, debruijn, k);
+  DeBruijnGraphConstructor<Graph> g_c(g, debruijn, k);
   g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
   TRACE("Graph condensed");
 

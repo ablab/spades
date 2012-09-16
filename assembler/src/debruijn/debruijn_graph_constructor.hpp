@@ -29,14 +29,12 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef SeqMap<EdgeId> DeBruijn;
 	typedef typename Graph::VertexId VertexId;
-	typedef EdgeIndex<Graph> Index;
 	typedef runtime_k::RtSeq Kmer;
 	typedef runtime_k::KmerSet KmerSet;
 	typedef runtime_k::RtSeq KPlusOneMer;
 	typedef typename DeBruijn::map_iterator map_iterator;
 
 	Graph& graph_;
-	Index &index_;
 	DeBruijn& origin_;
 	size_t kmer_size_;
 
@@ -159,7 +157,7 @@ private:
 		KmerSet seqLables = runtime_k::GetSet(kmer_size_ + 1, sequences.size());
 
 		for (size_t i = 0; i < sequences.size(); ++i) {
-			if (index_.contains(kmers[i])) {
+			if (origin_.containsInIndex(kmers[i])) {
 				continue;
 			}
 
@@ -198,8 +196,8 @@ private:
 	}
 
 public:
-	DeBruijnGraphConstructor(Graph& graph, Index& index, DeBruijn &origin, size_t k) :
-			graph_(graph), index_(index), origin_(origin), kmer_size_(k) {
+	DeBruijnGraphConstructor(Graph& graph, DeBruijn &origin, size_t k) :
+			graph_(graph), origin_(origin), kmer_size_(k) {
 	}
 
 	void ConstructGraph(size_t queueMinSize, size_t queueMaxSize, double queueGrowthRate) {
