@@ -523,6 +523,14 @@ class RuntimeSeq {
     return size_;
   }
 
+  size_t data_size() const {
+    return GetDataSize(size_);
+  }
+
+  const T * data() const {
+    return data_.data();
+  }
+
   template<size_t size2_, typename T2 = T>
   Seq<size2_, T2> get_seq() const {
     VERIFY_MSG(size2_ == size_, size2_ << " != " << size_ );

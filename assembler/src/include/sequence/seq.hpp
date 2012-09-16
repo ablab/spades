@@ -425,6 +425,15 @@ class Seq {
     return Seq<size2_, T2> (*this, size_ - size2_);
   }
 
+  const T *data() const {
+    return data_.data();
+  }
+
+  size_t data_size() const {
+    return DataSize;
+  }
+
+
   char last() const {
     return operator[](size_ - 1);
   }
