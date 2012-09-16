@@ -1,8 +1,8 @@
 #ifndef __HAMMER_KMER_DATA_HPP__
 #define __HAMMER_KMER_DATA_HPP__
 
-#include "kmer_index.hpp"
 #include "kmer_stat.hpp"
+#include "mph_index/kmer_index.hpp"
 #include <vector>
 
 class KMerData {

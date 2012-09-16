@@ -7,10 +7,10 @@
 #ifndef _HAMMER_KMERINDEX_HPP_
 #define _HAMMER_KMERINDEX_HPP_
 
-#include "mph_index/mph_index.h"
-#include "mmapped_reader.hpp"
-#include "mmapped_writer.hpp"
-#include "pointer_iterator.hpp"
+#include "mph_index.h"
+#include "io/mmapped_reader.hpp"
+#include "io/mmapped_writer.hpp"
+#include "io/pointer_iterator.hpp"
 
 #include "openmp_wrapper.h"
 
@@ -39,35 +39,19 @@ class KMerIndex {
   typedef typename MMappedRecordArrayReader<typename Seq::DataType>::iterator::value_type KMerRawData;
 
   // This is really the most fragile part of the whole story.  Basically, we're
-  // building the PHM with "raw" data, but query the PHM with real Key's!  We're
-  // relying that hashes are exactly the same in both cases (thus - two almost
-  // equal implementations!).
+  // building the PHM with "raw" data, but query the PHM with real Key-s!  We're
+  // relying on fact that hashes are exactly the same in both cases (thus - two
+  // almost equal implementations!).
   struct seeded_hash_function {
-    uint32_t operator()(const KMerRawData &k, uint32_t seed) const {
-      uint32_t h;
-      size_t h0 = hash_function()(k.ptr, k.size);
-      MurmurHash3_x86_32(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
-      return h;
-    }
-
-    uint32_t operator()(const Seq &k, uint32_t seed) const {
-      uint32_t h;
-      size_t h0 = hash_function()(k);
-      MurmurHash3_x86_32(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
-      return h;
-    }
-
     cxxmph::h128 hash128(const KMerRawData &k, uint32_t seed) const {
       cxxmph::h128 h;
-      size_t h0 = hash_function()(k.ptr, k.size);
-      MurmurHash3_x64_128(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
+      MurmurHash3_x64_128(k.ptr, k.size * sizeof(*k.ptr), seed, &h);
       return h;
     }
 
     cxxmph::h128 hash128(const Seq &k, uint32_t seed) const {
       cxxmph::h128 h;
-      size_t h0 = hash_function()(k);
-      MurmurHash3_x64_128(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
+      MurmurHash3_x64_128(k.data(), k.data_size() * sizeof(typename Seq::DataType), seed, &h);
       return h;
     }
   };
@@ -146,13 +130,13 @@ class KMerSplitter {
  public:
   typedef typename Seq::hash hash_function;
 
-  KMerSplitter(std::string &work_dir)
+  KMerSplitter(const std::string &work_dir)
       : work_dir_(work_dir) {}
 
   virtual path::files_t Split(size_t num_files) = 0;
 
  protected:
-  std::string work_dir_;
+  const std::string &work_dir_;
   hash_function hash_;
 
   std::string GetRawKMersFname(unsigned suffix) const {
@@ -215,18 +199,18 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
   index.clear();
   unsigned K = index.k_;
 
-  INFO("Building kmer index");
+  INFO("Building kmer index ");
 
   // Split k-mers into buckets.
   path::files_t raw_kmers = splitter.Split(num_buckets_ * num_threads_);
 
   INFO("Starting k-mer counting.");
-  size_t sz = 0;
+  size_t kmers = 0;
 # pragma omp parallel for shared(raw_kmers) num_threads(num_threads_)
   for (unsigned iFile = 0; iFile < raw_kmers.size(); ++iFile) {
-    sz += MergeKMers(raw_kmers[iFile], GetUniqueKMersFname(iFile), K);
+    kmers += MergeKMers(raw_kmers[iFile], GetUniqueKMersFname(iFile), K);
   }
-  INFO("K-mer counting done. There are " << sz << " kmers in total. ");
+  INFO("K-mer counting done. There are " << kmers << " kmers in total. ");
 
   INFO("Merging temporary buckets.");
   for (unsigned i = 0; i < num_buckets_; ++i) {
@@ -259,9 +243,10 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
   for (unsigned iFile = 1; iFile < num_buckets_; ++iFile)
     index.bucket_starts_[iFile] += index.bucket_starts_[iFile - 1];
 
-  INFO("Index built. Total " << index.mem_size() << " bytes occupied.");
+  double bits_per_kmer = 8.0 * index.mem_size() / kmers;
+  INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
 
-  return sz;
+  return kmers;
 }
 
 #endif // _HAMMER_KMERINDEX_HPP_

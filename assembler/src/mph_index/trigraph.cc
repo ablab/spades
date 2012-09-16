@@ -2,7 +2,7 @@
 #include <limits>
 #include <iostream>
 
-#include "trigraph.h"
+#include "mph_index/trigraph.h"
 
 using std::cerr;
 using std::endl;

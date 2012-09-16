@@ -9,7 +9,8 @@
 #include "concurrent_dsu.hpp"
 #include "config_struct_hammer.hpp"
 #include "globals.hpp"
-#include "mmapped_reader.hpp"
+
+#include "io/mmapped_reader.hpp"
 
 #include <iostream>
 #include <sstream>

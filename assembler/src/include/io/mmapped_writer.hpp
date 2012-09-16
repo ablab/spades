@@ -123,10 +123,17 @@ class MMappedRecordArrayWriter : public MMappedWriter {
   typedef pointer_array_iterator<T> iterator;
   typedef const pointer_array_iterator<T> const_iterator;
 
+  MMappedRecordArrayWriter() = default;
   MMappedRecordArrayWriter(const std::string &FileName,
                            size_t elcnt = 1):
       MMappedWriter(FileName), elcnt_(elcnt) {}
 
+  void open(const std::string &FileName,
+            size_t elcnt = 1) {
+    elcnt_ = elcnt;
+    MMappedWriter::open(FileName);
+  }
+  
   void write(const T* el, size_t amount) {
     MMappedWriter::write((void*)el, amount * sizeof(T) * elcnt_);
   }

@@ -15,7 +15,7 @@
 #define KMER_CLUSTER_HPP
 
 #include "hamcluster.hpp"
-#include "kmer_index.hpp"
+#include "kmer_data.hpp"
 
 #include <string>
 #include <vector>

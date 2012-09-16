@@ -179,6 +179,7 @@ bool MPHIndex::Mapping(ForwardIterator begin, ForwardIterator end,
     uint32_t v0 = h[0] % r_;
     uint32_t v1 = h[1] % r_ + r_;
     uint32_t v2 = h[2] % r_ + (r_ << 1);
+    
     // cerr << "Key: " << *it << " edge " <<  it - begin << " (" << v0 << "," << v1 << "," << v2 << ")" << endl;
     graph.AddEdge(TriGraph::Edge(v0, v1, v2));
   }

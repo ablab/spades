@@ -24,7 +24,7 @@
 #include "sequence/seq.hpp"
 #include "globals.hpp"
 #include "kmer_stat.hpp"
-#include "mmapped_reader.hpp"
+#include "io/mmapped_reader.hpp"
 
 using namespace std;
 

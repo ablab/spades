@@ -26,8 +26,9 @@
 #include "globals.hpp"
 #include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"
-#include "mmapped_writer.hpp"
 #include "kmer_data.hpp"
+
+#include "io/mmapped_writer.hpp"
 
 #include <sys/types.h>
 #include <sys/wait.h>

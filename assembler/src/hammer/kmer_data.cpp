@@ -5,8 +5,9 @@
 //****************************************************************************
 
 #include "kmer_data.hpp"
-#include "mmapped_writer.hpp"
 #include "valid_kmer_generator.hpp"
+
+#include "io/mmapped_writer.hpp"
 
 #include "config_struct_hammer.hpp"
 

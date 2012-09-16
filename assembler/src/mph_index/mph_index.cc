@@ -5,7 +5,7 @@
 using std::cerr;
 using std::endl;
 
-#include "mph_index.h"
+#include "mph_index/mph_index.h"
 
 using std::vector;
 
