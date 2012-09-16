@@ -31,6 +31,8 @@
 #include "read_converter.hpp"
 #include "kmer_map.hpp"
 
+#include "mph_index/kmer_index.hpp"
+
 namespace debruijn_graph {
 
 // used for temporary reads storage during parallel reading
@@ -281,82 +283,247 @@ size_t FillIterativeParallelIndex(io::ReadStreamVector< io::IReader<Read> >& str
 	return rl;
 }
 
+typedef ::KMerSplitter<runtime_k::RtSeq> RtSeqKMerSplitter;
+
+template<class Read>
+class SPAdesKMerSplitter : public RtSeqKMerSplitter {
+  unsigned K_;
+  io::ReadStreamVector<io::IReader<Read>> &streams_;
+  SingleReadStream *contigs_;
+
+ private:
+  typedef std::vector< std::vector<runtime_k::RtSeq> > KMerBuffer;
+
+  template<class ReadStream>
+  std::pair<size_t, size_t>
+  FillBufferFromStream(ReadStream& stream,
+                       KMerBuffer &tmp_entries,
+                       unsigned num_files, size_t cell_size) const;
+  void DumpBuffers(size_t num_files, size_t nthreads,
+                   std::vector<KMerBuffer> &buffers,
+                   FILE **ostreams) const;
+
+ public:
+  SPAdesKMerSplitter(const std::string &work_dir,
+                     unsigned K,
+                     io::ReadStreamVector< io::IReader<Read> >& streams,
+                     SingleReadStream* contigs_stream = 0)
+      : RtSeqKMerSplitter(work_dir), K_(K), streams_(streams), contigs_(contigs_stream) {
+  }
+
+  virtual path::files_t Split(size_t num_files);
+};
+
+template<class Read> template<class ReadStream>
+std::pair<size_t, size_t>
+SPAdesKMerSplitter<Read>::FillBufferFromStream(ReadStream& stream,
+                                               KMerBuffer &buffer,
+                                               unsigned num_files, size_t cell_size) const {
+  typename ReadStream::read_type r;
+  unsigned k_plus_one = K_ + 1;
+  size_t reads = 0, kmers = 0, rl = 0;
+
+  while (!stream.eof() && kmers < cell_size) {
+    stream >> r;
+    rl = std::max(rl, r.size());
+    reads += 1;
+
+    const Sequence seq = r.sequence();
+    if (seq.size() < k_plus_one)
+      continue;
+
+    runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq::max_size>(k_plus_one);
+    buffer[this->GetFileNumForSeq(kmer, num_files)].push_back(kmer);
+    for (size_t j = k_plus_one; j < seq.size(); ++j) {
+      kmer <<= seq[j];
+      buffer[this->GetFileNumForSeq(kmer, num_files)].push_back(kmer);
+    }
+
+    kmers += ((seq.size() - k_plus_one + 1) + 1);
+  }
+
+  return std::make_pair(reads, rl);
+}
+
+template<class Read>
+void SPAdesKMerSplitter<Read>::DumpBuffers(size_t num_files, size_t nthreads,
+                                           std::vector<KMerBuffer> &buffers,
+                                           FILE **ostreams) const {
+  unsigned k_plus_one = K_ + 1;
+  size_t item_size = sizeof(runtime_k::RtSeq::DataType),
+             items = runtime_k::RtSeq::GetDataSize(k_plus_one);
+
+  for (unsigned k = 0; k < num_files; ++k) {
+    size_t sz = 0;
+    for (size_t i = 0; i < nthreads; ++i)
+      sz += buffers[i][k].size();
+
+    for (size_t i = 0; i < nthreads; ++i) {
+      KMerBuffer &entry = buffers[i];
+      for (size_t j = 0; j < entry[k].size(); ++j)
+        fwrite(entry[k][j].data(), item_size, items, ostreams[k]);
+    }
+  }
+
+  for (unsigned i = 0; i < nthreads; ++i) {
+    for (unsigned j = 0; j < num_files; ++j) {
+      buffers[i][j].clear();
+    }
+  }
+}
+
+template<class Read>
+path::files_t SPAdesKMerSplitter<Read>::Split(size_t num_files) {
+  unsigned nthreads = streams_.size();
+  unsigned k_plus_one = K_ + 1;
+
+  INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
+
+  // Determine the set of output files
+  path::files_t out;
+  for (unsigned i = 0; i < num_files; ++i)
+    out.push_back(this->GetRawKMersFname(i));
+
+  FILE** ostreams = new FILE*[num_files];
+  for (unsigned i = 0; i < num_files; ++i)
+    ostreams[i] = fopen(out[i].c_str(), "wb");
+
+  size_t cell_size = READS_BUFFER_SIZE /
+                     (nthreads * num_files *
+                      runtime_k::RtSeq::GetDataSize(k_plus_one) * sizeof(runtime_k::RtSeq::DataType));
+  INFO("Using cell size of " << cell_size);
+
+  std::vector<KMerBuffer> tmp_entries(nthreads);
+  for (unsigned i = 0; i < nthreads; ++i) {
+    KMerBuffer &entry = tmp_entries[i];
+    entry.resize(num_files);
+    for (unsigned j = 0; j < num_files; ++j) {
+      entry[j].reserve(1.1 * cell_size);
+    }
+  }
+
+  size_t counter = 0, rl = 0;
+  streams_.reset();
+  while (!streams_.eof()) {
+#   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) shared(rl)
+    for (size_t i = 0; i < nthreads; ++i) {
+      std::pair<size_t, size_t> stats = FillBufferFromStream(streams_[i], tmp_entries[i], num_files, cell_size);
+      counter += stats.first;
+
+      // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
+#     pragma omp flush(rl)
+      if (stats.second > rl)
+#     pragma omp critical
+      {
+        rl = std::max(rl, stats.second);
+      }
+    }
+
+    DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+  }
+
+  if (contigs_) {
+    INFO("Adding contigs from previous K");
+    size_t cnt = 0;
+    contigs_->reset();
+    while (!contigs_->eof()) {
+      FillBufferFromStream(*contigs_, tmp_entries[cnt], num_files, cell_size);
+      DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+      if (++cnt >= nthreads)
+        cnt = 0;
+    }
+  }
+
+  for (unsigned i = 0; i < num_files; ++i)
+    fclose(ostreams[i]);
+
+  delete[] ostreams;
+
+  INFO("Used " << counter << " reads. Maximum read length " << rl);
+
+  return out;
+}
+
 template<class Graph, class Read>
 size_t ConstructGraph(size_t k, io::ReadStreamVector< io::IReader<Read> >& streams,
-		Graph& g, EdgeIndex<Graph>& index,
-		SingleReadStream* contigs_stream = 0) {
+                      Graph& g, EdgeIndex<Graph>& index,
+                      SingleReadStream* contigs_stream = 0) {
 
-	typedef SeqMap<typename Graph::EdgeId> DeBruijn;
+  typedef SeqMap<typename Graph::EdgeId> DeBruijn;
 
-	INFO("Constructing DeBruijn graph");
+  INFO("Constructing DeBruijn graph");
 
-	DeBruijn& debruijn = index.inner_index();
+  DeBruijn& debruijn = index.inner_index();
 
-	TRACE("Filling indices");
-	size_t rl = 0;
-	if (streams.size() >= 1) {
-		TRACE("... in parallel");
-		rl = FillIterativeParallelIndex<Graph, Read>(streams, debruijn, k);
-	/*change coverage filling method if use this.*/
-//	} else if (streams.size() == 1) {
-//		rl = FillUsusalIndex<Graph, Read>(*streams.back(), debruijn, k);
-	} else {
-		VERIFY_MSG(false, "No input streams specified");
-	}
-	TRACE("Filled indices");
+  TRACE("Filling indices");
+  size_t rl = 0;
+  VERIFY_MSG(streams.size(), "No input streams specified");
 
-	io::SingleRead r;
-	if (contigs_stream) {
-		INFO("Adding contigs from previous K");
-		while (!contigs_stream->eof()) {
-			*contigs_stream >> r;
-			Sequence s = r.sequence();
-			debruijn.CountSequence(s);
-		}
-		TRACE("Added contigs from previous K");
-	}
+  SPAdesKMerSplitter<Read> splitter(cfg::get().output_dir, k, streams, contigs_stream);
+  KMerIndex<runtime_k::RtSeq> kindex(k + 1);
+  KMerIndexBuilder<runtime_k::RtSeq>(cfg::get().output_dir, 16, streams.size()).BuildIndex(kindex, splitter);
 
-	INFO("Condensing graph");
-	DeBruijnGraphConstructor<Graph> g_c(g, index, debruijn, k);
-	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
-	TRACE("Graph condensed");
+  TRACE("... in parallel");
+  streams.reset();
+  rl = FillIterativeParallelIndex<Graph, Read>(streams, debruijn, k);
+  TRACE("Filled indices");
 
-	return rl;
+  io::SingleRead r;
+  if (contigs_stream) {
+    INFO("Adding contigs from previous K");
+    contigs_stream->reset();
+    while (!contigs_stream->eof()) {
+      *contigs_stream >> r;
+      Sequence s = r.sequence();
+      debruijn.CountSequence(s);
+    }
+    TRACE("Added contigs from previous K");
+  }
+
+  INFO("Total kmers in index: " << debruijn.nodes().size());
+
+  INFO("Condensing graph");
+  DeBruijnGraphConstructor<Graph> g_c(g, index, debruijn, k);
+  g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
+  TRACE("Graph condensed");
+
+  return rl;
 }
 
 template<class Read>
 size_t ConstructGraphWithCoverage(size_t k,
-        io::ReadStreamVector< io::IReader<Read> >& streams, Graph& g,
-		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
-	size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
+                                  io::ReadStreamVector< io::IReader<Read> >& streams, Graph& g,
+                                  EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
+  size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
 
-	// Following can be safely invoked only after parallel index filling
-	// because coverage info is not collected during sequential one.
-	FillCoverageFromIndex(g, index, k);
+  // Following can be safely invoked only after parallel index filling
+  // because coverage info is not collected during sequential one.
+  FillCoverageFromIndex(g, index, k);
 
-	return rl;
+  return rl;
 }
 
 size_t ConstructGraphWithPairedInfo(size_t k, Graph& g, EdgeIndex<Graph>& index,
-		PairedInfoIndex<Graph>& paired_index, PairedReadStream& paired_stream,
-		SingleReadStream* single_stream = 0, SingleReadStream* contigs_stream =
-				0) {
-	DEBUG("Constructing DeBruijn graph with paired info");
+                                    PairedInfoIndex<Graph>& paired_index, PairedReadStream& paired_stream,
+                                    SingleReadStream* single_stream = 0,
+                                    SingleReadStream* contigs_stream = 0) {
+  DEBUG("Constructing DeBruijn graph with paired info");
 
-	UnitedStream united_stream(paired_stream);
+  UnitedStream united_stream(paired_stream);
 
-	vector<SingleReadStream*> streams;
-	streams.push_back(&united_stream);
-	if (single_stream) {
-		streams.push_back(single_stream);
-	}
-	CompositeSingleReadStream reads_stream(streams);
-	io::ReadStreamVector<SingleReadStream> strs(&reads_stream);
+  vector<SingleReadStream*> streams;
+  streams.push_back(&united_stream);
+  if (single_stream)
+    streams.push_back(single_stream);
 
-	size_t rl = ConstructGraphWithCoverage<io::SingleRead>(k, strs, g, index,
-			contigs_stream);
-	FillPairedIndex(g, index, paired_index, paired_stream, k);
-	return rl;
+  CompositeSingleReadStream reads_stream(streams);
+  io::ReadStreamVector<SingleReadStream> strs(&reads_stream);
+
+  size_t rl = ConstructGraphWithCoverage<io::SingleRead>(k, strs, g, index,
+                                                         contigs_stream);
+  FillPairedIndex(g, index, paired_index, paired_stream, k);
+
+  return rl;
 }
 
 }
