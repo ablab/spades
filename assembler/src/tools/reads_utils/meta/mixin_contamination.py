@@ -6,7 +6,7 @@ import sys
 import os
 import random
 
-if len(sys.argv) < 6 or (len(sys.argv) %2 != 0) :
+if len(sys.argv) < 4 or (len(sys.argv) %2 != 0) :
 	print("Usage: " + sys.argv[0] + " {<part> <contamination_reads>}   <output_file>")
 	print ("add 1/<part> reads from contamination_reads to main reads")
 	sys.exit()
