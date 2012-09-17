@@ -34,10 +34,9 @@ template<class Seq>
 class KMerIndex {
  public:
   typedef typename Seq::hash hash_function;
-
- private:
   typedef typename MMappedRecordArrayReader<typename Seq::DataType>::iterator::value_type KMerRawData;
 
+ private:
   // This is really the most fragile part of the whole story.  Basically, we're
   // building the PHM with "raw" data, but query the PHM with real Key-s!  We're
   // relying on fact that hashes are exactly the same in both cases (thus - two
@@ -91,6 +90,12 @@ class KMerIndex {
     return bucket_starts_[bucket] + index_[bucket].index(s);
   }
 
+  size_t raw_seq_idx(const KMerRawData &data) const {
+    size_t bucket = raw_seq_bucket(data);
+
+    return bucket_starts_[bucket] + index_[bucket].index(data);
+  }
+
   template<class Writer>
   void serialize(Writer &os) const {
     os.write((char*)&num_buckets_, sizeof(num_buckets_));
@@ -120,7 +125,12 @@ class KMerIndex {
   size_t num_buckets_;
   std::vector<size_t> bucket_starts_;
 
-  size_t seq_bucket(const Seq &s) const { return hash_function()(s) % num_buckets_; }
+  size_t seq_bucket(const Seq &s) const {
+    return hash_function()(s) % num_buckets_;
+  }
+  size_t raw_seq_bucket(const KMerRawData &data) const {
+    return hash_function()(data.ptr, data.size) % num_buckets_;
+  }
 
   friend class KMerIndexBuilder<Seq>;
 };
@@ -159,7 +169,14 @@ class KMerIndexBuilder {
   KMerIndexBuilder(const std::string &workdir,
                    unsigned num_buckets, unsigned num_threads)
       : work_dir_(workdir), num_buckets_(num_buckets), num_threads_(num_threads) {}
-  size_t BuildIndex(KMerIndex<Seq> &out, KMerSplitter<Seq> &splitter);
+  size_t BuildIndex(KMerIndex<Seq> &out, KMerSplitter<Seq> &splitter,
+                    bool save_final = false);
+
+  unsigned num_buckets() const { return num_buckets_; }
+
+  std::string GetFinalKMersFname() const {
+    return path::append_path(work_dir_, "kmers.final");
+  }
 
  private:
   size_t MergeKMers(const std::string &ifname, const std::string &ofname, unsigned K);
@@ -195,7 +212,8 @@ size_t KMerIndexBuilder<Seq>::MergeKMers(const std::string &ifname, const std::s
 }
 
 template<class Seq>
-size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq> &splitter) {
+size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq> &splitter,
+                                         bool save_final) {
   index.clear();
   unsigned K = index.k_;
 
@@ -231,7 +249,7 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
 # pragma omp parallel for shared(index)
   for (unsigned iFile = 0; iFile < num_buckets_; ++iFile) {
     typename KMerIndex<Seq>::KMerDataIndex &data_index = index.index_[iFile];
-    MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(iFile), Seq::GetDataSize(K), /* unlink */ true, -1ULL);
+    MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(iFile), Seq::GetDataSize(K), /* unlink */ !save_final, -1ULL);
     size_t sz = ins.end() - ins.begin();
     index.bucket_starts_[iFile + 1] = sz;
     if (!data_index.Reset(ins.begin(), ins.end(), sz)) {
@@ -242,6 +260,17 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
   // Finally, record the sizes of buckets.
   for (unsigned iFile = 1; iFile < num_buckets_; ++iFile)
     index.bucket_starts_[iFile] += index.bucket_starts_[iFile - 1];
+
+  if (save_final) {
+    INFO("Merging final buckets.");
+    MMappedRecordArrayWriter<typename Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(K));
+    for (unsigned j = 0; j < num_buckets_; ++j) {
+      MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(j), Seq::GetDataSize(K), /* unlink */ true, -1ULL);
+      size_t sz = ins.end() - ins.begin();
+      os.reserve(sz);
+      os.write(ins.data(), sz);
+    }
+  }
 
   double bits_per_kmer = 8.0 * index.mem_size() / kmers;
   INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
