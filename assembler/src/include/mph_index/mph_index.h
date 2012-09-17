@@ -235,7 +235,7 @@ uint32_t MPHIndex::index(const Key& key) const {
 
 // Simple wrapper around MPHIndex to simplify calling code. Please refer to the
 // MPHIndex class for documentation.
-template <class Key, class HashFcn = typename seeded_hash<std::hash<Key>>::hash_function>
+template <class DefaultKey, class HashFcn = typename seeded_hash<std::hash<DefaultKey>>::hash_function>
 class SimpleMPHIndex : public MPHIndex {
  public:
   SimpleMPHIndex(bool advanced_usage = false) : MPHIndex(advanced_usage) {}
@@ -243,6 +243,7 @@ class SimpleMPHIndex : public MPHIndex {
   bool Reset(ForwardIterator begin, ForwardIterator end, uint32_t size) {
     return MPHIndex::Reset<HashFcn>(begin, end, size);
   }
+  template<class Key = DefaultKey>
   uint32_t index(const Key& key) const { return MPHIndex::index<HashFcn>(key); }
 };
 
