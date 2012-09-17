@@ -314,6 +314,19 @@ size_t ConstructGraph(size_t k, io::ReadStreamVector< io::IReader<Read> >& strea
     TRACE("Added contigs from previous K");
   }
 
+  size_t idx = 0;
+  for (auto I = debruijn.nodes().begin(), E = debruijn.nodes().end(); I != E; ++I, ++idx) {
+    const runtime_k::RtSeq &kmer = I.first();
+    const auto& edgeInfo = I.second();
+
+    const auto& edgeInfo2 = kindex[kmer];
+
+    VERIFY(edgeInfo.offset_ == edgeInfo2.offset_);
+    if (edgeInfo.count_ != edgeInfo2.count_) {
+      INFO("" << idx << ":" << kmer << " " << edgeInfo.count_ << ":" << edgeInfo2.count_)
+    }
+  }
+  
   INFO("Total kmers in index: " << debruijn.nodes().size());
 
   INFO("Condensing graph");

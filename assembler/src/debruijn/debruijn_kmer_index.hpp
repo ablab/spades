@@ -87,7 +87,7 @@ void DeBruijnKMerSplitter<Read>::DumpBuffers(size_t num_files, size_t nthreads,
   size_t item_size = sizeof(runtime_k::RtSeq::DataType),
              items = runtime_k::RtSeq::GetDataSize(K_);
 
-# pragma omp parallel for shared(items, item_size, K_)
+# pragma omp parallel for shared(items, item_size)
   for (unsigned k = 0; k < num_files; ++k) {
     size_t sz = 0;
     for (size_t i = 0; i < nthreads; ++i)
