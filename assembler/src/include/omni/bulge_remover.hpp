@@ -53,19 +53,6 @@ struct SimplePathCondition {
 	}
 };
 
-//template<class Graph>
-//struct TrivialCondition {
-//	typedef typename Graph::EdgeId EdgeId;
-//
-//	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
-//		for (size_t i = 0; i < path.size(); ++i)
-//			for (size_t j = i + 1; j < path.size(); ++j)
-//				if (path[i] == path[j])
-//					return false;
-//		return true;
-//	}
-//};
-
 template<class Graph>
 bool TrivialCondition(typename Graph::EdgeId edge,
 		const vector<typename Graph::EdgeId>& path) {
@@ -261,14 +248,20 @@ public:
 			if (bulge_prefix_lengths[i] > prev_length) {
 				if (bulge_prefix_lengths[i] - prev_length != graph_.length(edge_to_split)) {
 
+					TRACE("SplitEdge " << graph_.str(edge_to_split));
+					TRACE("Start: " << graph_.str(graph_.EdgeStart(edge_to_split)));
+					TRACE("Start: " << graph_.str(graph_.EdgeEnd(edge_to_split)));
+
 					pair<EdgeId, EdgeId> split_result =
 						graph_.SplitEdge(edge_to_split,	bulge_prefix_lengths[i] - prev_length);
 
 					edge_to_split = split_result.second;
 
+					TRACE("GlueEdges " << graph_.str(split_result.first));
 					graph_.GlueEdges(split_result.first, path[i]);
 
 				} else {
+					TRACE("GlueEdges " << graph_.str(edge_to_split));
 					graph_.GlueEdges(edge_to_split, path[i]);
 				}
 			}
@@ -313,7 +306,7 @@ void BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 //	CoverageComparator<Graph> comparator(graph_);
 
 	TRACE(
-		"Considering edge " << graph_.int_id(edge) <<
+		"Considering edge " << graph_.str(edge) <<
 		" of length " << graph_.length(edge) <<
 		" and avg coverage " << graph_.coverage(edge)
 	);
@@ -326,13 +319,13 @@ void BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 	}
 
 	size_t kplus_one_mer_coverage = math::round(graph_.length(edge) * graph_.coverage(edge));
-	TRACE("Processing edge " << graph_.int_id(edge) << " and coverage " << kplus_one_mer_coverage);
+	TRACE("Processing edge " << graph_.str(edge) << " and coverage " << kplus_one_mer_coverage);
 
 	VertexId start = graph_.EdgeStart(edge);
-	TRACE("Start " << graph_.int_id(start));
+	TRACE("Start " << graph_.str(start));
 
 	VertexId end = graph_.EdgeEnd(edge);
-	TRACE("End " << graph_.int_id(end));
+	TRACE("End " << graph_.str(end));
 
 	size_t delta = std::floor(
 		std::max(

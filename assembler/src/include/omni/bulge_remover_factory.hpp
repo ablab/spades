@@ -20,12 +20,12 @@ class BulgeRemoverFactory : public SequentialAlgorihtmFactory<Graph, typename Gr
 	typedef typename Graph::EdgeId EdgeId;
 	typedef SequentialAlgorihtmFactory<Graph, EdgeId> Base;
 	typedef typename Base::AlgorithmPtr AlgorithmPtr;
+	typedef typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF BulgeCallbackF;
 
 
 public:
 
 	BulgeRemoverFactory(
-			Graph& graph,
 			size_t max_length,
 			double max_coverage,
 			double max_relative_coverage,
@@ -34,8 +34,7 @@ public:
 			BulgeCallbackF bulge_condition,
 			BulgeCallbackF opt_callback = 0,
 			boost::function<void(EdgeId)> removal_handler = 0)
-				: graph_(graph),
-				  max_length_(max_length),
+				: max_length_(max_length),
 				  max_coverage_(max_coverage),
 				  max_relative_coverage_(max_relative_coverage),
 				  max_delta_(max_delta),
@@ -48,7 +47,7 @@ public:
 	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
 		AlgorithmPtr ptr(
 			new BulgeRemover<Graph>(
-					graph_, max_length_, max_coverage_, max_relative_coverage_,
+					graph, max_length_, max_coverage_, max_relative_coverage_,
 					max_delta_, max_relative_delta_, bulge_condition_,
 					opt_callback_, removal_handler_));
 
@@ -58,7 +57,6 @@ public:
 
 private:
 
-	Graph& graph_;
 	size_t max_length_;
 	double max_coverage_;
 	double max_relative_coverage_;

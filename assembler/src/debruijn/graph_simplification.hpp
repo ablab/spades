@@ -26,6 +26,7 @@
 #include "omni/mf_ec_remover.hpp"
 #include "gap_closer.hpp"
 #include "graph_read_correction.hpp"
+#include "omni/bulge_remover_factory.hpp"
 
 //#include "omni/devisible_tree.hpp"
 //
@@ -190,7 +191,7 @@ void ClipTips(GraphPack& graph_pack,
 	auto factory = GetTipClipperFactory<Graph>(graph_pack, graph.k(),
 			iteration_count, iteration, raw_removal_handler);
 
-	ClipTips(graph, factory);
+	RunConcurrentAlgorithm(graph, factory, LengthComparator<Graph>(graph));
 
 	DEBUG("Clipping tips finished");
 }
@@ -219,13 +220,14 @@ void ClipTipsForResolver(Graph &graph) {
 	INFO("SUBSTAGE == Clipping tips for Resolver");
 
 	auto factory = GetTipClipperResolverFactory<Graph>(graph.k());
-	ClipTips(graph, factory);
+
+	RunConcurrentAlgorithm(graph, factory, LengthComparator<Graph>(graph));
 
 	DEBUG("Clipping tips for Resolver finished");
 }
 
-template<class Graph, class TipClipperFactoryPtr>
-void ClipTips(Graph& graph, TipClipperFactoryPtr factory) {
+template<class Graph, class AlgorithmFactoryPtr, class Comparator>
+void RunConcurrentAlgorithm(Graph& graph, AlgorithmFactoryPtr factory, Comparator comparator) {
 
 	size_t nthreads = 1;
 
@@ -235,85 +237,99 @@ void ClipTips(Graph& graph, TipClipperFactoryPtr factory) {
 
 	ConcurrentEdgeAlgorithm<Graph> algorithm(nthreads, graph, factory);
 
-	algorithm.Run(LengthComparator<Graph>(graph));
+	algorithm.Run(comparator);
 }
 
 template<class Graph>
-void RemoveBulges(Graph &g,
-		const debruijn_config::simplification::bulge_remover& br_config,
-		typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF bulge_cond,
+typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF GetBulgeCondition(ConjugateDeBruijnGraph &graph) {
+	return boost::bind(
+			&omnigraph::SimplePathCondition<ConjugateDeBruijnGraph>::operator(),
+			omnigraph::SimplePathCondition<ConjugateDeBruijnGraph>(graph),
+			_1,
+			_2);
+}
+
+template<class Graph>
+boost::shared_ptr<
+	omnigraph::SequentialAlgorihtmFactory<
+		ConcurrentGraphComponent<Graph>,
+		typename Graph::EdgeId>>
+GetBulgeRemoverFactory(
+		Graph &graph,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
-	size_t max_length = LengthThresholdFinder::MaxBulgeLength(g.k(),
+
+	typedef ConcurrentGraphComponent<Graph> Component;
+	typedef omnigraph::BulgeRemoverFactory<Component> Factory;
+	typedef omnigraph::SequentialAlgorihtmFactory<Component, typename Graph::EdgeId> FactoryInterface;
+
+	const debruijn_config::simplification::bulge_remover& br_config = cfg::get().simp.br;
+
+	size_t max_length = LengthThresholdFinder::MaxBulgeLength(
+			graph.k(),
 			br_config.max_bulge_length_coefficient);
+
 	if (additional_length_bound != 0 && additional_length_bound < max_length) {
 		max_length = additional_length_bound;
 	}
-//	EditDistanceTrackingCallback<Graph> callback(g);
-	omnigraph::BulgeRemover<Graph> bulge_remover(g, max_length,
-			br_config.max_coverage, br_config.max_relative_coverage,
-			br_config.max_delta, br_config.max_relative_delta, bulge_cond,
-			/*boost::bind(&EditDistanceTrackingCallback<Graph>::operator(),
-			 &callback, _1, _2)*/0, removal_handler);
-	bulge_remover.RemoveBulges();
+
+//	return
+	return boost::shared_ptr<FactoryInterface>(
+			new omnigraph::BulgeRemoverFactory<Component> (
+				max_length,
+				br_config.max_coverage,
+				br_config.max_relative_coverage,
+				br_config.max_delta,
+				br_config.max_relative_delta,
+				GetBulgeCondition<Graph>(graph),
+				0,
+				removal_handler
+			)
+	);
 }
 
-void RemoveBulges(ConjugateDeBruijnGraph &g,
-		const debruijn_config::simplification::bulge_remover& br_config,
-		boost::function<void(ConjugateDeBruijnGraph::EdgeId)> removal_handler =
-				0, size_t additional_length_bound = 0) {
-	omnigraph::SimplePathCondition<ConjugateDeBruijnGraph> simple_path_condition(
-			g);
-	RemoveBulges(g, br_config,
-			boost::bind(
-					&omnigraph::SimplePathCondition<ConjugateDeBruijnGraph>::operator(),
-					&simple_path_condition, _1, _2), removal_handler,
-			additional_length_bound);
-}
-
-void RemoveBulges(NonconjugateDeBruijnGraph &g,
-		const debruijn_config::simplification::bulge_remover& br_config,
-		boost::function<void(NonconjugateDeBruijnGraph::EdgeId)> removal_handler =
-				0, size_t additional_length_bound = 0) {
-	RemoveBulges(g, br_config, &TrivialCondition<NonconjugateDeBruijnGraph>,
-			removal_handler, additional_length_bound);
-}
-
-template<class Graph>
-void RemoveBulges(Graph &g,
+void RemoveBulges(
+		Graph &graph,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
-	INFO("SUBSTAGE == Removing bulges");
-	RemoveBulges(g, cfg::get().simp.br, removal_handler,
-			additional_length_bound);
-	//	Cleaner<Graph> cleaner(g);
-	//	cleaner.Clean();
-	DEBUG("Bulges removed");
+
+	auto factory = GetBulgeRemoverFactory(graph, removal_handler, additional_length_bound);
+
+	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
 }
 
 template<class Graph>
 void RemoveBulges2(Graph &g) {
-	INFO("SUBSTAGE == Removing bulges");
-	double max_coverage = cfg::get().simp.br.max_coverage;
-	double max_relative_coverage = cfg::get().simp.br.max_relative_coverage;
-	double max_delta = cfg::get().simp.br.max_delta;
-	double max_relative_delta = cfg::get().simp.br.max_relative_delta;
-	size_t max_length = LengthThresholdFinder::MaxBulgeLength(g.k(),
-			cfg::get().simp.br.max_bulge_length_coefficient);
-	omnigraph::BulgeRemover<Graph> bulge_remover(g, max_length, max_coverage,
-			0.5 * max_relative_coverage, max_delta, max_relative_delta,
-			&TrivialCondition<Graph>);
-	bulge_remover.RemoveBulges();
-	DEBUG("Bulges removed");
+
+	VERIFY(false); // make parallel to
+//	INFO("SUBSTAGE == Removing bulges");
+//
+//	size_t max_length = LengthThresholdFinder::MaxBulgeLength(
+//					g.k(),
+//					cfg::get().simp.br.max_bulge_length_coefficient);
+//
+//	omnigraph::BulgeRemover<Graph> bulge_remover(
+//			g,
+//			max_length,
+//			cfg::get().simp.br.max_coverage,
+//			0.5 * cfg::get().simp.br.max_relative_coverage,
+//			cfg::get().simp.br.max_delta,
+//			cfg::get().simp.br.max_relative_delta,
+//			&TrivialCondition<Graph>
+//	);
+//
+//	bulge_remover.RemoveBulges();
+//
+//	DEBUG("Bulges removed");
 }
 
 void BulgeRemoveWrap(Graph& g) {
 	RemoveBulges(g);
 }
-
-void BulgeRemoveWrap(NCGraph& g) {
-	RemoveBulges2(g);
-}
+//
+//void BulgeRemoveWrap(NCGraph& g) {
+//	RemoveBulges2(g);
+//}
 
 size_t PrecountThreshold(Graph &g, double percentile) {
 	if (percentile == 0) {
