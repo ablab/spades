@@ -10,6 +10,7 @@ import spades_init
 
 spades_init.init()
 spades_home = spades_init.spades_home
+execution_home = os.path.join(spades_home, 'bin')
 
 import support
 from process_cfg import *
@@ -254,6 +255,18 @@ def check_config(cfg):
         if not "gap_closer" in cfg["assembly"].__dict__:
             cfg["assembly"].__dict__["gap_closer"] = True
 
+    return True
+
+
+def check_binaries(binary_dir):
+    for binary in ["hammer", "spades"]:
+        binary_path = os.path.join(binary_dir, binary)
+        if not os.path.isfile(binary_path):
+            error("SPAdes binary file not found: " + binary_path + 
+                  "\nYou can obtain SPAdes binaries in one of two ways:" + 
+                  "\n1. Download the binaries from SPAdes server with ./spades_download_binary.py script" + 
+                  "\n2. Build source code with ./spades_compile.py script")
+            return False
     return True
 
 
@@ -559,6 +572,9 @@ def main():
 
     if not check_config(cfg):
         return
+        
+    if not check_binaries(execution_home):
+        return
 
     print("\n======= SPAdes pipeline started\n")
 
@@ -788,7 +804,6 @@ def run_bh(cfg):
 
     prepare_config_bh(cfg_file_name, cfg)
 
-    execution_home = os.path.join(spades_home, 'bin')
     command = os.path.join(execution_home,"hammer") + " " +\
               os.path.abspath(cfg_file_name)
 
@@ -812,9 +827,7 @@ def run_bh(cfg):
 def run_spades(cfg):
     if not isinstance(cfg.iterative_K, list):
         cfg.iterative_K = [cfg.iterative_K]
-    cfg.iterative_K = sorted(cfg.iterative_K)
-
-    execution_home = os.path.join(spades_home, 'bin')
+    cfg.iterative_K = sorted(cfg.iterative_K)    
 
     count = 0
     prev_K = None
