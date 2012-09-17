@@ -291,7 +291,7 @@ size_t ConstructGraph(size_t k, io::ReadStreamVector< io::IReader<Read> >& strea
   DeBruijn& debruijn = index.inner_index();
 
   DeBruijnKMerIndex<typename Graph::EdgeId> kindex(k+1);
-  DeBruijnKMerIndexBuilder<Read>().BuildIndex(kindex, k, streams, contigs_stream);
+  DeBruijnKMerIndexBuilder<Read>().BuildIndex(kindex, streams, contigs_stream);
 
   TRACE("Filling indices");
   size_t rl = 0;
