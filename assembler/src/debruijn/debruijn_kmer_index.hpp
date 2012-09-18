@@ -305,6 +305,7 @@ class DeBruijnKMerIndex {
   typedef typename KMerIndexStorageType::const_iterator const_value_iterator;
   typedef typename MMappedRecordArrayReader<typename KMer::DataType>::iterator kmer_iterator;
   typedef typename MMappedRecordArrayReader<typename KMer::DataType>::const_iterator const_kmer_iterator;
+  typedef size_t KMerIdx;
 
   DeBruijnKMerIndex(unsigned K)
       : K_(K), index_(K + 1), kmers(NULL) {}
@@ -322,7 +323,7 @@ class DeBruijnKMerIndex {
 
   unsigned K() const { return K_; }
 
-  const KMerIndexValueType &operator[](size_t idx) const {
+  const KMerIndexValueType &operator[](KMerIdx idx) const {
     return data_[idx];
   }
   KMerIndexValueType &operator[](const KMer &s) {
@@ -331,7 +332,7 @@ class DeBruijnKMerIndex {
   const KMerIndexValueType &operator[](const KMer &s) const {
     return operator[](index_.seq_idx(s));
   }
-  KMerIndexValueType &operator[](size_t idx) {
+  KMerIndexValueType &operator[](KMerIdx idx) {
     return data_[idx];
   }
   size_t seq_idx(const KMer &s) const { return index_.seq_idx(s); }
@@ -370,10 +371,27 @@ class DeBruijnKMerIndex {
     return kmers->end();
   }
 
+  KMerIdx kmer_idx_begin() const {
+    return 0;
+  }
+
+  KMerIdx kmer_idx_end() const {
+    return data_.size();
+  }
+
   bool contains(const KMer &k) const {
     size_t idx = seq_idx(k);
 
     return contains(idx, k);
+  }
+
+  bool contains(KMerIdx idx) const {
+    return idx < data_.size();
+  }
+
+  KMer kmer(KMerIdx idx) const {
+    auto it = kmers->begin() + idx;
+    return KMer(K_, (*it).ptr);
   }
 
   /**
@@ -381,6 +399,16 @@ class DeBruijnKMerIndex {
    */
   unsigned RivalEdgeCount(const KMer &kmer) const {
     KMer kmer2 = kmer << 'A';
+    unsigned res = 0;
+    for (char c = 0; c < 4; ++c)
+      if (contains(kmer2 >> c))
+        res += 1;
+
+    return res;
+  }
+
+  unsigned RivalEdgeCount(KMerIdx idx) const {
+    KMer kmer2 = kmer(idx) << 'A';
     unsigned res = 0;
     for (char c = 0; c < 4; ++c)
       if (contains(kmer2 >> c))
@@ -402,7 +430,33 @@ class DeBruijnKMerIndex {
     return res;
   }
 
+  unsigned NextEdgeCount(KMerIdx idx) const {
+    KMer kmer = this->kmer(idx);
+
+    unsigned res = 0;
+    for (char c = 0; c < 4; ++c) {
+      if (contains(kmer << c))
+        res += 1;
+    }
+
+    return res;
+  }
+
   KMer NextEdge(const KMer &kmer) const { // returns any next edge
+    for (char c = 0; c < 4; ++c) {
+      KMer s = kmer << c;
+      if (contains(s))
+        return s;
+    }
+
+    VERIFY_MSG(false, "Couldn't find requested edge!");
+    return KMer(K_);
+    // no next edges (we should request one here).
+  }
+
+  KMer NextEdge(KMerIdx idx) const { // returns any next edge
+    KMer kmer = this->kmer(idx);
+
     for (char c = 0; c < 4; ++c) {
       KMer s = kmer << c;
       if (contains(s))
@@ -420,6 +474,11 @@ class DeBruijnKMerIndex {
 
     const KMerIndexValueType &entry = operator[](idx);
     return std::make_pair(entry.edgeId_, (size_t)entry.offset_);
+  }
+
+  bool ContainsInIndex(KMerIdx idx) const {
+    const KMerIndexValueType &entry = operator[](idx);
+    return (entry.offset_ != -1);
   }
 
   bool ContainsInIndex(const KMer& kmer) const {
