@@ -383,7 +383,7 @@ class DeBruijnKMerIndex {
     auto it = kmers->begin() + idx;
     const KMerIndex<KMer>::KMerRawData &truekmer = *it;
 
-    return (0 == memcmp(k.data(), truekmer.ptr, truekmer.size));
+    return (0 == memcmp(k.data(), truekmer.ptr, truekmer.size * sizeof(typename KMer::DataType)));
   }
 
   void PutInIndex(const KMer &kmer, IdType id, int offset) {
