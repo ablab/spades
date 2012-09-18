@@ -181,14 +181,14 @@ struct array_ref {
 
   array_ref& operator=(const array_ref &that) {
     if (this != &that)
-      memcpy(ptr, that.ptr, size*sizeof(T));
+      memcpy(ptr, that.ptr, mem_size());
 
     return *this;
   }
 
   array_ref& operator=(const array_ref &&that) {
     if (this != &that)
-      memcpy(ptr, that.ptr, size*sizeof(T));
+      memcpy(ptr, that.ptr, mem_size());
 
     return *this;
   }
@@ -199,6 +199,10 @@ struct array_ref {
     }
   }
 
+  size_t mem_size() const {
+    return size * sizeof(T);
+  }
+
   bool operator==(const array_ref &that) const {
     return (ptr == that.ptr && size == that.size);
   }
@@ -207,12 +211,12 @@ struct array_ref {
   }
 
   bool operator<(const array_ref &that) const {
-    return 0 > memcmp(ptr, that.ptr, that.size*sizeof(T));
+    return 0 > memcmp(ptr, that.ptr, mem_size());
   }
 
   struct equal_to : std::binary_function<array_ref, array_ref, bool> {
     bool operator()(const array_ref &x, const array_ref &y) {
-      return (0 == memcmp(x.ptr, y.ptr, x.size*sizeof(T)));
+      return (0 == memcmp(x.ptr, y.ptr, x.mem_size()));
     }
   };
 };
