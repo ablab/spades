@@ -357,6 +357,12 @@ struct debruijn_config {
 			size_t max_length_any_cov;
 		};
 
+		struct complex_bulge_remover {
+			bool enabled;
+			double max_relative_length;
+			size_t max_length_difference;
+		};
+
 		simplification_mode simpl_mode;
 		tip_clipper tc;
 		bulge_remover br;
@@ -367,6 +373,7 @@ struct debruijn_config {
 		max_flow_ec_remover mfec;
 		pair_info_ec_remover piec;
 		isolated_edges_remover ier;
+		complex_bulge_remover cbr;
 
 		bool removal_checks_enabled;
 
@@ -635,6 +642,15 @@ inline void load(debruijn_config::simplification::isolated_edges_remover& ier,
 	load(ier.max_length_any_cov			, pt, "max_length_any_cov"			);
 }
 
+inline void load(debruijn_config::simplification::complex_bulge_remover& cbr,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
+
+	load(cbr.enabled                    , pt, "enabled"                     );
+	load(cbr.max_relative_length		, pt, "max_relative_length"			);
+	load(cbr.max_length_difference		, pt, "max_length_difference"		);
+}
+
 inline void load(
 		debruijn_config::simplification::erroneous_connections_remover& ec,
 		boost::property_tree::ptree const& pt, bool complete) {
@@ -845,6 +861,7 @@ inline void load(debruijn_config::simplification& simp,
     load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
 	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
 	load(simp.ier, pt, "ier"); // isolated edges remover
+	load(simp.cbr, pt, "cbr"); // complex bulge remover
 
 	load(simp.removal_checks_enabled, pt, "removal_checks_enabled");
 }

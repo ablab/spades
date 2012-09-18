@@ -905,12 +905,11 @@ class ComponentColoring: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	static const size_t exit_bound = 10;
 public:
 
-	static size_t CountPrimitiveColors(mixed_color_t color) {
+	size_t CountPrimitiveColors(mixed_color_t color) const {
 		size_t cnt = 0;
-		for (size_t shift = 0; shift < exit_bound; ++shift) {
+		for (size_t shift = 0; shift < color_cnt_; ++shift) {
 			mixed_color_t prim_color = 1 << shift;
 			if ((prim_color & color) != 0) {
 				cnt++;
@@ -920,8 +919,8 @@ public:
 		return cnt;
 	}
 
-	static primitive_color_t GetAnyPrimitiveColor(mixed_color_t color) {
-		for (size_t shift = 0; shift < exit_bound; ++shift) {
+	primitive_color_t GetAnyPrimitiveColor(mixed_color_t color) const {
+		for (size_t shift = 0; shift < color_cnt_; ++shift) {
 			if ((1 << shift & color) != 0) {
 				return shift;
 			}
@@ -930,13 +929,14 @@ public:
 		return 0;
 	}
 
-	static bool IsSubset(mixed_color_t super_set, mixed_color_t sub_set) {
+	bool IsSubset(mixed_color_t super_set, mixed_color_t sub_set) const {
 		return (super_set | sub_set) == super_set;
 	}
 
 private:
 
 	const BRComponent<Graph>& comp_;
+	const size_t color_cnt_;
 	map<VertexId, mixed_color_t> vertex_colors_;
 
 	mixed_color_t CountVertexColor(VertexId v) const {
@@ -971,9 +971,8 @@ private:
 
 public:
 
-	ComponentColoring(const BRComponent<Graph>& comp) : base(comp.g(), "br_comp_coloring"), comp_(comp) {
-		VERIFY(exit_bound <= sizeof(size_t) * 8);
-		VERIFY(comp_.end_vertices().size() < exit_bound);
+	ComponentColoring(const BRComponent<Graph>& comp) : base(comp.g(), "br_comp_coloring"), comp_(comp), color_cnt_(comp_.end_vertices().size()) {
+		VERIFY(comp.end_vertices().size() <= sizeof(size_t) * 8);
 		ColorComponent();
 	}
 
@@ -1335,6 +1334,8 @@ class BRComponentFinder {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
+	static const size_t exit_bound = 32;
+	
 	Graph& g_;
 	size_t max_length_;
 	size_t length_diff_threshold_;
@@ -1424,9 +1425,9 @@ class BRComponentFinder {
 		for (auto it = gc.e_begin(); it != gc.e_end(); ++it) {
 			size_t start_height = comp_.avg_distance(g_.EdgeStart(*it));
 			size_t end_height = comp_.avg_distance(g_.EdgeEnd(*it));
-			VERIFY(end_height >= start_height);
-			if (end_height == start_height) {
-				DEBUG("Check failed for edge " << g_.str(*it) << " both heights are " << start_height);
+			//VERIFY(end_height >= start_height);
+			if (end_height <= start_height) {
+				DEBUG("Check failed for edge " << g_.str(*it) << " start_height " << start_height << " end_height " << end_height);
 				return false;
 			}
 		}
@@ -1478,6 +1479,10 @@ public:
 			DEBUG("Found component contains conjugate vertices");
 			return false;
 		}
+		if (comp_.end_vertices().size() > exit_bound) {
+			DEBUG("Too many exits:" << comp_.end_vertices().size());
+			return false;
+		}
 		GraphComponent<Graph> gc = comp_.AsGraphComponent();
 		DEBUG("Found component. Vertices: " << g_.str(gc.vertices()));
 		return true;
@@ -1526,10 +1531,11 @@ public:
 			g_(g), max_length_(max_length), length_diff_(length_diff) {
 	}
 
-	void Run() {
+	bool Run() {
 		DEBUG("Complex bulge remover started");
 		size_t component_cnt = 0;
 		make_dir("complex_br_components");
+		bool something_done_flag = false;
 		for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
 			vector<VertexId> vertices_to_post_process;
 			{
@@ -1540,6 +1546,7 @@ public:
 				BRComponent<Graph> component = comp_finder.component();
 				PrintComponent(component, "complex_br_components/" + ToString(component_cnt) + ".dot");
 				if (ProcessComponent(component)) {
+					something_done_flag = true;
 					GraphComponent<Graph> gc = component.AsGraphComponent();
 					vertices_to_post_process.insert(vertices_to_post_process.end(),
 							gc.v_begin(), gc.v_end());
@@ -1552,6 +1559,7 @@ public:
 			}
 		}
 		DEBUG("Complex bulge remover finished");
+		return something_done_flag;
 	}
 
 private:

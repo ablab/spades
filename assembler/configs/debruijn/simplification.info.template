@@ -81,7 +81,15 @@ sc_simplification
         max_coverage                2
         max_length_any_cov          150
 	}
-	
+
+	; complex bulge remover
+	cbr
+	{
+		enabled	0
+		max_relative_length	5.
+		max_length_difference	5
+	}
+
 	removal_checks_enabled              true
 }
 
@@ -167,5 +175,13 @@ usual_simplification
         max_length_any_cov          150
 	}
 	
+	; complex bulge remover
+	cbr
+	{
+		enabled	0
+		max_relative_length	5.
+		max_length_difference	5
+	}
+
 	removal_checks_enabled              true
 }

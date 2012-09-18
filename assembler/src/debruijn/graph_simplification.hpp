@@ -564,6 +564,16 @@ bool MaxFlowRemoveErroneousEdges(Graph &g,
 }
 
 template<class Graph>
+bool RemoveComplexBulges(Graph& g) {
+	if (!cfg::get().simp.cbr.enabled)
+		return false;
+	size_t max_length = g.k() * cfg::get().simp.cbr.max_relative_length;
+	size_t max_diff = cfg::get().simp.cbr.max_length_difference;
+    ComplexBulgeRemover<Graph> complex_bulge_remover(g, max_length, max_diff);
+    return complex_bulge_remover.Run();
+}
+
+template<class Graph>
 bool AllTopology(Graph &g, EdgeRemover<Graph>& edge_remover, boost::function<void(EdgeId)> &removal_handler_f) {
 	bool res = TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
 		edge_remover);
@@ -572,6 +582,7 @@ bool AllTopology(Graph &g, EdgeRemover<Graph>& edge_remover, boost::function<voi
 				edge_remover);
 		res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
 				edge_remover);
+		res |= RemoveComplexBulges(g);
 	}
 	return res;
 }
@@ -587,6 +598,7 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover, boost
 		break;
 	case sm_topology: {
 		bool res = false;
+       
 		while(AllTopology(g, edge_remover, removal_handler_f)) {
 			res = true;
 		}
@@ -665,12 +677,6 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	ClipTips(gp, removal_handler_f, iteration_count, iteration);
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
-
-     //  DEBUG(iteration << " Complex BR start");
-     //  ComplexBulgeRemover<Graph> complex_bulge_remover(gp.g, gp.g.k() * 5, 5);
-     //  complex_bulge_remover.Run();
-     //  DEBUG(iteration << " Complex BR fin");
-
 
 	DEBUG(iteration << " BulgeRemoval");
 	RemoveBulges(gp.g, removal_handler_f);
