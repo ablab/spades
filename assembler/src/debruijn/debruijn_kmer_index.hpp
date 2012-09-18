@@ -208,6 +208,84 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   return out;
 }
 
+template<class Graph>
+class DeBruijnGraphKMerSplitter : public DeBruijnKMerSplitter {
+  typedef typename Graph::SmartEdgeIt EdgeIt;
+  typedef typename Graph::EdgeId EdgeId;
+
+  unsigned K_;
+  const Graph &g_;
+
+  size_t FillBufferFromEdges(EdgeIt &edge,
+                             KMerBuffer &tmp_entries,
+                             unsigned num_files, size_t cell_size) const;
+
+ public:
+  DeBruijnGraphKMerSplitter(const std::string &work_dir,
+                            unsigned K, const Graph &g)
+      : DeBruijnKMerSplitter(work_dir, K), g_(g) {}
+
+  virtual path::files_t Split(size_t num_files);
+};
+
+template<class Graph>
+size_t
+DeBruijnGraphKMerSplitter<Graph>::FillBufferFromEdges(EdgeIt &edge,
+                                                      KMerBuffer &buffer,
+                                                      unsigned num_files, size_t cell_size) const {
+  size_t seqs = 0;
+  for (size_t kmers = 0; !edge.IsEnd() && kmers < num_files * cell_size; ++edge) {
+    const Sequence &nucls = g_.EdgeNucls(*edge);
+
+    kmers += FillBufferFromSequence(nucls, buffer, num_files);
+    seqs += 1;
+  }
+
+  return seqs;
+}
+
+template<class Graph>
+path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
+  INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
+
+  // Determine the set of output files
+  path::files_t out;
+  for (unsigned i = 0; i < num_files; ++i)
+    out.push_back(this->GetRawKMersFname(i));
+
+  FILE** ostreams = new FILE*[num_files];
+  for (unsigned i = 0; i < num_files; ++i)
+    ostreams[i] = fopen(out[i].c_str(), "wb");
+
+  size_t cell_size = READS_BUFFER_SIZE /
+                     (num_files * sizeof(runtime_k::RtSeq));
+  INFO("Using cell size of " << cell_size);
+
+  std::vector<KMerBuffer> tmp_entries(1);
+  KMerBuffer &entry = tmp_entries[0];
+  entry.resize(num_files);
+  for (unsigned j = 0; j < num_files; ++j) {
+    entry[j].reserve(1.25 * cell_size);
+  }
+
+  size_t counter = 0;
+  for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    counter += FillBufferFromEdges(it, tmp_entries[0], num_files, cell_size);
+
+    DumpBuffers(num_files, 1, tmp_entries, ostreams);
+  }
+
+  for (unsigned i = 0; i < num_files; ++i)
+    fclose(ostreams[i]);
+
+  delete[] ostreams;
+
+  INFO("Used " << counter << " sequences.");
+
+  return out;
+}
+
+
 template<class IdType>
 class DeBruijnKMerIndex {
  public:
@@ -396,9 +474,7 @@ class DeBruijnKMerIndex {
     }
   }
 
-  template<class Read>
   friend class DeBruijnKMerIndexBuilder;
-
  private:
   size_t raw_seq_idx(typename KMerIndex<KMer>::KMerRawData &s) const {
     return index_.raw_seq_idx(s);
@@ -425,7 +501,6 @@ class DeBruijnKMerIndex {
   }
 };
 
-template<class Read>
 class DeBruijnKMerIndexBuilder {
   template<class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
@@ -435,7 +510,7 @@ class DeBruijnKMerIndexBuilder {
                        DeBruijnKMerIndex<IdType> &index) const;
 
  public:
-  template<class IdType>
+  template<class Read, class IdType>
   size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType> &index,
                               io::ReadStreamVector<io::IReader<Read> > &streams,
                               SingleReadStream* contigs_stream = 0) const;
@@ -444,15 +519,15 @@ class DeBruijnKMerIndexBuilder {
   DECL_LOGGER("K-mer Index Building");
 };
 
-template<class Read> template<class ReadStream, class IdType>
+template<class ReadStream, class IdType>
 size_t
-DeBruijnKMerIndexBuilder<Read>::FillCoverageFromStream(ReadStream &stream,
-                                                       DeBruijnKMerIndex<IdType> &index) const {
-  typename ReadStream::read_type r;
+DeBruijnKMerIndexBuilder::FillCoverageFromStream(ReadStream &stream,
+                                                 DeBruijnKMerIndex<IdType> &index) const {
   unsigned K = index.K();
   size_t rl = 0;
 
   while (!stream.eof()) {
+    typename ReadStream::read_type r;
     stream >> r;
     rl = std::max(rl, r.size());
 
@@ -479,10 +554,10 @@ DeBruijnKMerIndexBuilder<Read>::FillCoverageFromStream(ReadStream &stream,
   return rl;
 }
 
-template<class Read> template<class IdType>
+template<class IdType>
 void
-DeBruijnKMerIndexBuilder<Read>::SortUniqueKMers(const KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMer> &builder,
-                                                DeBruijnKMerIndex<IdType> &index) const {
+DeBruijnKMerIndexBuilder::SortUniqueKMers(const KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMer> &builder,
+                                          DeBruijnKMerIndex<IdType> &index) const {
   typedef typename DeBruijnKMerIndex<IdType>::KMer KMer;
   unsigned K = index.K();
 
@@ -509,12 +584,11 @@ DeBruijnKMerIndexBuilder<Read>::SortUniqueKMers(const KMerIndexBuilder<typename 
   INFO("Done. Total swaps: " << swaps);
 }
 
-
-template<class Read> template<class IdType>
+template<class Read, class IdType>
 size_t
-DeBruijnKMerIndexBuilder<Read>::BuildIndexFromStream(DeBruijnKMerIndex<IdType> &index,
-                                                     io::ReadStreamVector<io::IReader<Read> > &streams,
-                                                     SingleReadStream* contigs_stream) const {
+DeBruijnKMerIndexBuilder::BuildIndexFromStream(DeBruijnKMerIndex<IdType> &index,
+                                               io::ReadStreamVector<io::IReader<Read> > &streams,
+                                               SingleReadStream* contigs_stream) const {
   unsigned nthreads = streams.size();
   DeBruijnReadKMerSplitter<Read> splitter(cfg::get().output_dir, index.K(), streams, contigs_stream);
   KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMer> builder(cfg::get().output_dir, 16, streams.size());
