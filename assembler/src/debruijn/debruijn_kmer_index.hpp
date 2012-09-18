@@ -213,6 +213,14 @@ class DeBruijnKMerIndex {
     delete kmers;
   }
 
+  void clear() {
+    index_.clear();
+    data_.clear();
+    KMerIndexStorageType().swap(data_);
+    delete kmers;
+    kmers = NULL;
+  }
+
   unsigned K() const { return K_; }
 
   const KMerIndexValueType &operator[](size_t idx) const {
@@ -262,7 +270,7 @@ class DeBruijnKMerIndex {
   const_kmer_iterator kmer_end() const {
     return kmers->end();
   }
-  
+
   bool contains(const KMer &k) const {
     size_t idx = seq_idx(k);
 
