@@ -251,7 +251,10 @@ protected:
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
 			const EdgeData &data, restricted::IdDistributor * id_distributor) {
 		TRACE("Adding edge between vertices " << this->str(v1) << " and " << this->str(v2));
-		VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
+
+		// suppressed for concurrent execution reasons (see concurrent_graph_component.hpp)
+//		VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
+
 		EdgeId result = AddSingleEdge(v1, v2, data, id_distributor);
 
 		if (this->master().isSelfConjugate(data) && v1 == conjugate(v2)) {

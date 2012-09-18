@@ -86,8 +86,8 @@ protected:
 		this->vertices_.insert(vertex);
 		this->temporary_vertices_.insert(vertex);
 
-		this->vertices_.insert(conjugate(vertex));
-		this->temporary_vertices_.insert(conjugate(vertex));
+		this->vertices_.insert(GetConjugateWithoutChecks(vertex));
+		this->temporary_vertices_.insert(GetConjugateWithoutChecks(vertex));
 	}
 
 	virtual VertexId HiddenAddVertex(const VertexData &data) {
@@ -113,6 +113,14 @@ protected:
 		} else {
 			this->deleted_vertices_.push_back(vertex);
 		}
+	}
+
+	VertexId GetConjugateWithoutChecks(VertexId vertex) const {
+		return this->graph_.conjugate(vertex);
+	}
+
+	EdgeId GetConjugateWithoutChecks(EdgeId edge) const {
+		return this->graph_.conjugate(edge);
 	}
 };
 
