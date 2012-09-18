@@ -204,6 +204,8 @@ class DeBruijnKMerIndex {
  public:
   typedef typename KMerIndexStorageType::iterator value_iterator;
   typedef typename KMerIndexStorageType::const_iterator const_value_iterator;
+  typedef typename MMappedRecordArrayReader<typename KMer::DataType>::iterator kmer_iterator;
+  typedef typename MMappedRecordArrayReader<typename KMer::DataType>::const_iterator const_kmer_iterator;
 
   DeBruijnKMerIndex(unsigned K)
       : K_(K), index_(K + 1), kmers(NULL) {}
@@ -248,6 +250,19 @@ class DeBruijnKMerIndex {
     return data_.cend();
   }
 
+  kmer_iterator kmer_begin() {
+    return kmers->begin();
+  }
+  const_kmer_iterator kmer_begin() const {
+    return kmers->begin();
+  }
+  kmer_iterator kmer_end() {
+    return kmers->end();
+  }
+  const_kmer_iterator kmer_end() const {
+    return kmers->end();
+  }
+  
   bool contains(const KMer &k) const {
     size_t idx = seq_idx(k);
 
