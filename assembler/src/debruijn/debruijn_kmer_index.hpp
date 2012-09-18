@@ -269,7 +269,7 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
   }
 
   size_t counter = 0;
-  for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+  for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ) {
     counter += FillBufferFromEdges(it, tmp_entries[0], num_files, cell_size);
 
     DumpBuffers(num_files, 1, tmp_entries, ostreams);
@@ -514,6 +514,10 @@ class DeBruijnKMerIndexBuilder {
   size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType> &index,
                               io::ReadStreamVector<io::IReader<Read> > &streams,
                               SingleReadStream* contigs_stream = 0) const;
+  template<class Graph>
+  void BuildIndexFromGraph(DeBruijnKMerIndex<typename Graph::EdgeId> &index,
+                           const Graph &g) const;
+
 
  private:
   DECL_LOGGER("K-mer Index Building");
@@ -621,6 +625,26 @@ DeBruijnKMerIndexBuilder::BuildIndexFromStream(DeBruijnKMerIndex<IdType> &index,
   }
 
   return rl;
+}
+
+template<class Graph>
+void
+DeBruijnKMerIndexBuilder::BuildIndexFromGraph(DeBruijnKMerIndex<typename Graph::EdgeId> &index,
+                                              const Graph &g) const {
+  DeBruijnGraphKMerSplitter<Graph> splitter(cfg::get().output_dir, index.K(), g);
+  KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId>::KMer> builder(cfg::get().output_dir, 16, 1);
+  size_t sz = builder.BuildIndex(index.index_, splitter, /* save final */ true);
+
+  SortUniqueKMers(builder, index);
+
+  // Now use the index to fill the coverage and EdgeId's
+  INFO("Collecting k-mer coverage information, this takes a while.");
+  index.data_.resize(sz);
+
+  for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    typename Graph::EdgeId edge = *it;
+    index.RenewKMers(g.EdgeNucls(edge), edge);
+  }
 }
 
 }

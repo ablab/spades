@@ -78,19 +78,6 @@ void FillPairedIndexWithProductMetric(const Graph &g,
 	DEBUG("Paired info with product weight counted");
 }
 
-void FillPairedIndex(const Graph &g, const EdgeIndex<Graph>& index,
-		PairedInfoIndex<Graph>& paired_info_index,
-		io::IReader<io::PairedRead>& stream, size_t k) {
-	typedef SimpleSequenceMapper<Graph> SequenceMapper;
-	stream.reset();
-	INFO("Counting paired info");
-	SequenceMapper mapper(g, index, k + 1);
-	PairedIndexFiller<Graph, SequenceMapper, io::IReader<io::PairedRead> > pif(
-			g, mapper, stream);
-	pif.FillIndex(paired_info_index);
-	DEBUG("Paired info counted");
-}
-
 void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		const Graph &g, const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper, size_t is, size_t rs,
@@ -134,33 +121,11 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 //	INFO("Etalon paired info counted");
 }
 
-template<class Read>
-void FillCoverage(io::ReadStreamVector< io::IReader<Read> >& streams, Graph& g,
-		EdgeIndex<Graph>& index, size_t k) {
-
-	typedef SimpleSequenceMapper<Graph> SequenceMapper;
-
-	INFO("Counting coverage");
-	SequenceMapper read_threader(g, index, k + 1);
-
-	if (streams.size() > 1) {
-		g.coverage_index().FillFastParallelIndex<SequenceMapper, Read>(streams,
-				read_threader);
-	} else if (streams.size() == 1) {
-		g.coverage_index().FillIndex<SequenceMapper, Read>(streams.back(),
-				read_threader);
-	}
-
-	DEBUG("Coverage counted");
-}
-
-
 void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
+	typename EdgeIndex<Graph>::InnerIndex &innerIndex = index.inner_index();
 
-	EdgeIndex<Graph>::InnerIndex& innerIndex = index.inner_index();
-
-	for (auto it = innerIndex.begin(), end = innerIndex.end(); it != end; ++it) {
-		/*EdgeInfo<?>*/auto& edgeInfo = it.second();
+	for (auto I = innerIndex.value_cbegin(), E = innerIndex.value_cend(); I != E; ++I) {
+    const auto& edgeInfo = *I;
 		edgeInfo.edgeId_->IncCoverage(edgeInfo.count_);
 	}
 
@@ -168,167 +133,22 @@ void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
 }
 
 template<class Graph, class Read>
-size_t FillUsusalIndex(io::IReader<Read>& stream,
-		SeqMap<typename Graph::EdgeId>& debruijn, size_t k) {
-	INFO("Processing reads (takes a while)");
-
-	size_t counter = 0;
-	size_t rl = 0;
-	stream.reset();
-
-	Read r;
-	while (!stream.eof()) {
-		stream >> r;
-		Sequence s = r.sequence();
-		debruijn.CountSequence(s);
-		rl = max(rl, s.size());
-		VERBOSE_POWER(++counter, " reads processed");
-	}
-
-	INFO("DeBruijn graph constructed, " << counter << " reads used");
-
-	return rl;
-}
-
-template<class Graph, class Read>
-size_t FillIterativeParallelIndex(io::ReadStreamVector< io::IReader<Read> >& streams,
-		SeqMap<typename Graph::EdgeId>& debruijn, size_t k) {
-	size_t k_plus_1 = k + 1;
-
-	size_t nthreads = streams.size();
-	for (size_t i = 0; i < nthreads; ++i) {
-		streams[i].reset();
-	}
-
-	vector<typename ParallelSeqVector::destination_container_t> buckets;
-	for (size_t i = 0; i < nthreads; ++i) {
-		buckets.push_back(runtime_k::GetMap<int>(k_plus_1));
-	}
-
-	perf_counter pc;
-
-	INFO("Processing reads (takes a while)");
-	std::vector<size_t> rls(nthreads, 0);
-	size_t counter = 0;
-
-	{
-		size_t cell_size = READS_BUFFER_SIZE
-				/ (nthreads * nthreads
-						* ((k_plus_1 / (4 * sizeof(seq_element_type)) + 1)
-								* sizeof(seq_element_type)));
-
-		ParallelSeqVector par_debruijn(k_plus_1, nthreads, cell_size);
-		while (!streams.eof()) {
-
-#pragma omp parallel num_threads(nthreads)
-			{
-#pragma omp for reduction(+ : counter)
-				for (size_t i = 0; i < nthreads; ++i) {
-
-					Read r;
-					io::IReader<Read>& stream = streams[i];
-
-					while (!par_debruijn.IsFull(i) && !stream.eof()) {
-						stream >> r;
-						if (r.size() > rls[i]) {
-							rls[i] = r.size();
-						}
-						++counter;
-
-						par_debruijn.CountSequence(r.sequence(), i);
-					}
-				}
-
-#pragma omp barrier
-
-				//Merge maps
-#pragma omp for
-				for (size_t i = 0; i < nthreads; ++i) {
-					par_debruijn.Dump(buckets[i], i);
-				}
-			}
-
-		}
-	}
-
-	size_t total_kmers = 0;
-	for (size_t i = 0; i < nthreads; ++i) {
-		total_kmers += buckets[i].size();
-	}
-
-	//Merging into final map
-	INFO("Merging final maps");
-
-	debruijn.nodes().rehash(total_kmers);
-	for (size_t i = 0; i < nthreads; ++i) {
-		debruijn.transfer(buckets[i]);
-		buckets[i].clear();
-	}
-
-	INFO("Elapsed time: " << pc.time_ms());
-
-	INFO("DeBruijn graph constructed, reads used: " << counter);
-
-	size_t rl = 0;
-	for (size_t i = 0; i < nthreads; ++i) {
-		if (rl < rls[i]) {
-			rl = rls[i];
-		}
-	}
-
-	return rl;
-}
-
-template<class Graph, class Read>
 size_t ConstructGraph(size_t k, io::ReadStreamVector< io::IReader<Read> >& streams,
                       Graph& g, EdgeIndex<Graph>& index,
                       SingleReadStream* contigs_stream = 0) {
 
-  typedef SeqMap<typename Graph::EdgeId> DeBruijn;
-
   INFO("Constructing DeBruijn graph");
-
-  DeBruijn& debruijn = index.inner_index();
-
-  DeBruijnKMerIndex<typename Graph::EdgeId> kindex(k+1);
-  DeBruijnKMerIndexBuilder<Read>().BuildIndex(kindex, streams, contigs_stream);
 
   TRACE("Filling indices");
   size_t rl = 0;
   VERIFY_MSG(streams.size(), "No input streams specified");
 
   TRACE("... in parallel");
-  streams.reset();
-  rl = FillIterativeParallelIndex<Graph, Read>(streams, debruijn, k);
+  DeBruijnKMerIndex<typename Graph::EdgeId>& debruijn = index.inner_index();
+  rl = DeBruijnKMerIndexBuilder().BuildIndexFromStream(debruijn, streams, contigs_stream);
+
   TRACE("Filled indices");
-
-  io::SingleRead r;
-  if (contigs_stream) {
-    INFO("Adding contigs from previous K");
-    contigs_stream->reset();
-    while (!contigs_stream->eof()) {
-      *contigs_stream >> r;
-      Sequence s = r.sequence();
-      debruijn.CountSequence(s);
-    }
-    TRACE("Added contigs from previous K");
-  }
-
-  size_t idx = 0;
-  for (auto I = debruijn.nodes().begin(), E = debruijn.nodes().end(); I != E; ++I, ++idx) {
-    const runtime_k::RtSeq &kmer = I.first();
-    const auto& edgeInfo = I.second();
-
-    const auto& edgeInfo2 = kindex[kmer];
-
-    VERIFY(edgeInfo.offset_ == edgeInfo2.offset_);
-    if (edgeInfo.count_ != edgeInfo2.count_) {
-      INFO("" << idx << ":" << kmer << " " << edgeInfo.count_ << ":" << edgeInfo2.count_)
-    }
-  }
   
-  INFO("Total kmers in index: " << debruijn.nodes().size());
-
   INFO("Condensing graph");
   DeBruijnGraphConstructor<Graph> g_c(g, debruijn, k);
   g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
@@ -343,32 +163,7 @@ size_t ConstructGraphWithCoverage(size_t k,
                                   EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
   size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
 
-  // Following can be safely invoked only after parallel index filling
-  // because coverage info is not collected during sequential one.
   FillCoverageFromIndex(g, index, k);
-
-  return rl;
-}
-
-size_t ConstructGraphWithPairedInfo(size_t k, Graph& g, EdgeIndex<Graph>& index,
-                                    PairedInfoIndex<Graph>& paired_index, PairedReadStream& paired_stream,
-                                    SingleReadStream* single_stream = 0,
-                                    SingleReadStream* contigs_stream = 0) {
-  DEBUG("Constructing DeBruijn graph with paired info");
-
-  UnitedStream united_stream(paired_stream);
-
-  vector<SingleReadStream*> streams;
-  streams.push_back(&united_stream);
-  if (single_stream)
-    streams.push_back(single_stream);
-
-  CompositeSingleReadStream reads_stream(streams);
-  io::ReadStreamVector<SingleReadStream> strs(&reads_stream);
-
-  size_t rl = ConstructGraphWithCoverage<io::SingleRead>(k, strs, g, index,
-                                                         contigs_stream);
-  FillPairedIndex(g, index, paired_index, paired_stream, k);
 
   return rl;
 }

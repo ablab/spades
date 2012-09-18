@@ -26,7 +26,7 @@
 #include "kmer_map.hpp"
 #include "new_debruijn.hpp"
 #include "standard.hpp"
-//#include "common/io/paired_read.hpp"
+#include "debruijn_kmer_index.hpp"
 
 #include "path_helper.hpp"
 
@@ -40,7 +40,6 @@ using omnigraph::Range;
 using omnigraph::MappingRange;
 using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
-//using io::PairedRead;
 
 template<typename Graph>
 class ReadThreaderResult {
@@ -81,6 +80,7 @@ public:
 
 	}
 };
+
 /**
  * DataHashRenewer listens to add/delete events and updates index according to those events. This class
  * can be used both with vertices and edges of graph.
@@ -88,11 +88,10 @@ public:
  */
 template<typename Graph, typename ElementId>
 class DataHashRenewer {
-
 	typedef runtime_k::RtSeq Kmer;
-	typedef SeqMap<ElementId> Index;
-	const Graph &g_;
+  typedef DeBruijnKMerIndex<EdgeId> Index;
 
+  const Graph &g_;
 	Index &index_;
 
 	/**
@@ -102,13 +101,13 @@ class DataHashRenewer {
 	void RenewKmersHash(ElementId id) {
 		Sequence nucls = g_.EdgeNucls(id);
 		//		DEBUG("Renewing hashes for k-mers of sequence " << nucls);
-		index_.RenewKmersHash(nucls, id);
+		index_.RenewKMers(nucls, id);
 	}
 
 	void DeleteKmersHash(ElementId id) {
 		Sequence nucls = g_.EdgeNucls(id);
 		//		DEBUG("Deleting hashes for k-mers of sequence " << nucls);
-		index_.DeleteKmersHash(nucls, id);
+		index_.DeleteKMers(nucls, id);
 	}
 
 public:
@@ -149,8 +148,8 @@ class EdgeIndex: public GraphActionHandler<Graph> {
 
 public:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef SeqMap<EdgeId> InnerIndex;
-    typedef runtime_k::RtSeq Kmer;
+  typedef DeBruijnKMerIndex<EdgeId> InnerIndex;
+  typedef runtime_k::RtSeq Kmer;
 
 private:
 	InnerIndex inner_index_;
@@ -186,7 +185,7 @@ public:
 
 	bool contains(const Kmer& kmer) const {
 		VERIFY(this->IsAttached());
-		return inner_index_.containsInIndex(kmer);
+		return inner_index_.ContainsInIndex(kmer);
 	}
 
 	const pair<EdgeId, size_t> get(const Kmer& kmer) const {
@@ -196,9 +195,8 @@ public:
 
 	void Refill() {
 		clear();
-		for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			renewer_.HandleAdd(*it);
-		}
+    DeBruijnKMerIndexBuilder().BuildIndexFromGraph(inner_index_,
+                                                   this->g());
 	}
 
 	void clear() {
