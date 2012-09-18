@@ -74,6 +74,7 @@ class KMerIndex {
     }
 
     delete[] index_;
+    index_ = NULL;
   }
 
   size_t mem_size() {
