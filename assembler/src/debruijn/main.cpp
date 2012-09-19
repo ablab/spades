@@ -101,6 +101,10 @@ void load_config(string cfg_filename)
     
     cfg::create_instance(cfg_filename);
 
+    if (!cfg::get().project_name.empty()){
+        make_dir(cfg::get().output_base + cfg::get().project_name);
+    }
+
     make_dir(cfg::get().output_root);
 
     make_dir(cfg::get().output_dir);
