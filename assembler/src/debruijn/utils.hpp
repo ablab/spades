@@ -89,10 +89,12 @@ public:
 template<typename Graph, typename ElementId>
 class DataHashRenewer {
 	typedef runtime_k::RtSeq Kmer;
-  typedef DeBruijnKMerIndex<EdgeId> Index;
+	typedef DeBruijnKMerIndex<EdgeId> Index;
 
-  const Graph &g_;
+	const Graph &g_;
 	Index &index_;
+
+	const bool ignore_new_kmers_;
 
 	/**
 	 *	renews hash for vertex and complementary
@@ -101,7 +103,7 @@ class DataHashRenewer {
 	void RenewKmersHash(ElementId id) {
 		Sequence nucls = g_.EdgeNucls(id);
 		//		DEBUG("Renewing hashes for k-mers of sequence " << nucls);
-		index_.RenewKMers(nucls, id);
+		index_.RenewKMers(nucls, id, ignore_new_kmers_);
 	}
 
 	void DeleteKmersHash(ElementId id) {
@@ -116,8 +118,8 @@ public:
 	 * @param g graph to be indexed
 	 * @param index index to be synchronized with graph
 	 */
-	DataHashRenewer(const Graph& g, Index& index) :
-			g_(g), index_(index) {
+	DataHashRenewer(const Graph& g, Index& index, bool ignore_new_kmers) :
+			g_(g), index_(index), ignore_new_kmers_(ignore_new_kmers) {
 	}
 
 	virtual ~DataHashRenewer() {
@@ -160,7 +162,7 @@ public:
 
 	EdgeIndex(const Graph& g, size_t k) :
 			GraphActionHandler<Graph>(g, "EdgeIndex"), inner_index_(k), renewer_(
-					g, inner_index_), delete_index_(true) {
+					g, inner_index_, true), delete_index_(true) {
 	}
 
 	virtual ~EdgeIndex() {

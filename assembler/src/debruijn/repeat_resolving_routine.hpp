@@ -796,6 +796,7 @@ void resolve_repeats() {
 			conj_graph_pack resolved_gp(cfg::get().K, genome,
 					cfg::get().pos.max_single_gap,
 					cfg::get().pos.careful_labeling);
+			resolved_gp.index.Detach();
 
 			EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(
 					resolved_gp.g, conj_gp.g);

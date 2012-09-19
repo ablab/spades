@@ -512,14 +512,15 @@ class DeBruijnKMerIndex {
     return false;
   }
 
-  void RenewKMers(const Sequence &nucls, IdType id) {
+
+  void RenewKMers(const Sequence &nucls, IdType id, bool ignore_new_kmers = false) {
     VERIFY(nucls.size() >= K_);
     KMer kmer(K_, nucls);
 
-    PutInIndex(kmer, id, 0);
+    PutInIndex(kmer, id, 0, ignore_new_kmers);
     for (size_t i = K_, n = nucls.size(); i < n; ++i) {
       kmer <<= nucls[i];
-      PutInIndex(kmer, id, i - K_ + 1);
+      PutInIndex(kmer, id, i - K_ + 1, ignore_new_kmers);
     }
   }
 
@@ -550,13 +551,15 @@ class DeBruijnKMerIndex {
     return (0 == memcmp(k.data(), truekmer.ptr, truekmer.mem_size()));
   }
 
-  void PutInIndex(const KMer &kmer, IdType id, int offset) {
+  void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
     size_t idx = seq_idx(kmer);
-    VERIFY(contains(idx, kmer));
-
-    KMerIndexValueType &entry = operator[](idx);
-    entry.edgeId_ = id;
-    entry.offset_ = offset;
+    if (contains(idx, kmer)) {
+        KMerIndexValueType &entry = operator[](idx);
+        entry.edgeId_ = id;
+        entry.offset_ = offset;
+    } else {
+    	VERIFY(ignore_new_kmer);
+    }
   }
 };
 

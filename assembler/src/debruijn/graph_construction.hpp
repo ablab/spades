@@ -122,7 +122,7 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 }
 
 void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
-	typename EdgeIndex<Graph>::InnerIndex &innerIndex = index.inner_index();
+	EdgeIndex<Graph>::InnerIndex &innerIndex = index.inner_index();
 
 	for (auto I = innerIndex.value_cbegin(), E = innerIndex.value_cend(); I != E; ++I) {
     const auto& edgeInfo = *I;
