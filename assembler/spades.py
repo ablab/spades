@@ -53,6 +53,7 @@ def prepare_config_spades(filename, cfg, prev_K, K, last_one):
     subst_dict = dict()
 
     subst_dict["K"] = str(K)
+    subst_dict["run_mode"] = "false"
     subst_dict["dataset"] = cfg.dataset
     subst_dict["output_base"] = cfg.output_dir
     subst_dict["additional_contigs"] = cfg.additional_contigs
