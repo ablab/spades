@@ -569,7 +569,7 @@ bool RemoveComplexBulges(Graph& g) {
 		return false;
 	size_t max_length = g.k() * cfg::get().simp.cbr.max_relative_length;
 	size_t max_diff = cfg::get().simp.cbr.max_length_difference;
-    ComplexBulgeRemover<Graph> complex_bulge_remover(g, max_length, max_diff);
+    ComplexBulgeRemover<Graph> complex_bulge_remover(g, max_length, max_diff, cfg::get().output_dir + "complex_br_components/");
     return complex_bulge_remover.Run();
 }
 

@@ -1505,6 +1505,8 @@ class ComplexBulgeRemover {
 	size_t max_length_;
 	size_t length_diff_;
 
+	string pics_folder_;
+
 	bool ProcessComponent(BRComponent<Graph>& component) {
 		DEBUG("Processing component");
 		ComponentColoring<Graph> coloring(component);
@@ -1527,14 +1529,16 @@ class ComplexBulgeRemover {
 	}
 
 public:
-	ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff) :
-			g_(g), max_length_(max_length), length_diff_(length_diff) {
+	ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff, const string& pics_folder = "") :
+			g_(g), max_length_(max_length), length_diff_(length_diff), pics_folder_(pics_folder) {
 	}
 
 	bool Run() {
 		DEBUG("Complex bulge remover started");
 		size_t component_cnt = 0;
-		make_dir("complex_br_components");
+		if (!pics_folder_.empty()) {
+			make_dir(pics_folder_);
+		}
 		bool something_done_flag = false;
 		for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
 			vector<VertexId> vertices_to_post_process;
@@ -1544,7 +1548,9 @@ public:
 				component_cnt++;
 				DEBUG("Found component " << component_cnt);
 				BRComponent<Graph> component = comp_finder.component();
-				PrintComponent(component, "complex_br_components/" + ToString(component_cnt) + ".dot");
+				if (!pics_folder_.empty()) {
+					PrintComponent(component, pics_folder_ + ToString(component_cnt) + ".dot");
+				}
 				if (ProcessComponent(component)) {
 					something_done_flag = true;
 					GraphComponent<Graph> gc = component.AsGraphComponent();
