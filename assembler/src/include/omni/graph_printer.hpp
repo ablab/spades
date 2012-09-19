@@ -149,10 +149,17 @@ public:
 	}
 
 	void AddVertices(const set<VertexId> &elements) {
-			map<VertexId, string> colours = this->colorer().GetColours(elements);
-			for (auto it = colours.begin(); it != colours.end(); ++ it) {
-				Vertex<VertexId> vertex(it->first, this->labeler().label(it->first), it->second);
-				recordVertex<VertexId>(this->out(), vertex);
+//			map<VertexId, string> colours = this->colorer().GetColours(elements);
+//			for (auto it = colours.begin(); it != colours.end(); ++ it) {
+//				Vertex<VertexId> vertex(it->first, this->labeler().label(it->first), it->second);
+//				recordVertex<VertexId>(this->out(), vertex);
+//		}
+		set<VertexId> conjugate_vertices;
+		for (auto it = elements.begin(); it != elements.end(); ++ it) {
+			if (conjugate_vertices.find(*it) == conjugate_vertices.end()){
+				AddVertex(*it);
+				conjugate_vertices.insert(this->g().conjugate(*it));
+			}
 		}
 	}
 
