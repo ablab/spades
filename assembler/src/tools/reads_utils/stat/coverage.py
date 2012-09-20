@@ -19,7 +19,7 @@ def coverage(in_filename, out_filename, maxLen, bar, kmer):
 			    hist[cpos] += 1
 
     covered = 0.0
-    for i in range(0,maxLen + 1):
+    for i in range(0, maxLen + 1):
 	    if (hist[i] > 0):
 		    covered += 1.0
 
@@ -36,7 +36,7 @@ def coverage(in_filename, out_filename, maxLen, bar, kmer):
     inFile.close()
     outFile.close()
 
-    return covered/(maxLen + 1)
+    return covered/maxLen
 
 
 def read_genome(filename):
