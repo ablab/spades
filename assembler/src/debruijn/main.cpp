@@ -81,6 +81,9 @@ private:
 
 void copy_configs(string cfg_filename, string to)
 {
+	if (!cfg::get().run_mode)
+	   return;
+
     using namespace debruijn_graph;
 
     if (!make_dir(to)) {
@@ -91,14 +94,8 @@ void copy_configs(string cfg_filename, string to)
 
 void load_config(string cfg_filename)
 {
-    
     checkFileExistenceFATAL(cfg_filename);
 
-    // deprecated: precopy of config in /tmp (!!!) just to read the values of output_root and output_dir!
-//    fs::path tmp_folder = fs::path("/tmp") / debruijn_graph::MakeLaunchTimeDirName() / ("K");
-//    copy_configs(cfg_filename, tmp_folder);
-//    cfg_filename = (tmp_folder / fs::path(cfg_filename).filename()).string();
-    
     cfg::create_instance(cfg_filename);
 
     if (!cfg::get().project_name.empty()){
@@ -116,7 +113,7 @@ void load_config(string cfg_filename)
 
     string path_to_copy = path::append_path(cfg::get().output_dir, "configs");
         copy_configs(cfg_filename, path_to_copy);
-    }
+}
 
 void create_console_logger(string cfg_filename) {
   using namespace logging;

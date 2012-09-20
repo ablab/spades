@@ -846,6 +846,11 @@ def run_spades(cfg):
         dst_configs = os.path.join(dst_configs, "configs")
         shutil.copytree(os.path.join(spades_home, "configs", "debruijn"), dst_configs)  
         cfg_file_name = os.path.join(dst_configs, "config.info")
+        # removing template configs
+        for root, dirs, files in os.walk(dst_configs):
+          for cfg_file in files:
+            if cfg_file.endswith('.template'):
+                os.remove(os.path.join(root, cfg_file))                
 
         prepare_config_spades(cfg_file_name, cfg, prev_K, K,
             count == len(cfg.iterative_K))
