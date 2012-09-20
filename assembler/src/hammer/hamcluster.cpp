@@ -20,13 +20,13 @@
 #endif
 
 struct SubKMerComparator {
-  bool operator()(const SubKMer &lhs, const SubKMer &rhs) {
-    return Seq<hammer::K>::less2()(lhs.data, rhs.data);
+  bool operator()(const SubKMerData &lhs, const SubKMerData &rhs) {
+    return SubKMer::less2_fast()(lhs.data, rhs.data);
   }
 };
 
 std::pair<size_t, size_t> SubKMerSplitter::split() {
-  std::vector<SubKMer> data;
+  std::vector<SubKMerData> data;
 
   MMappedReader ifs(ifname_, /* unlink */ true);
   std::ofstream ofs(ofname_, std::ios::out | std::ios::binary);
