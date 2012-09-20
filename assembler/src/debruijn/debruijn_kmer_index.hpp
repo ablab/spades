@@ -10,7 +10,6 @@
 #include "openmp_wrapper.h"
 
 #include "io/multifile_reader.hpp"
-#include "read_converter.hpp"
 
 #include "mph_index/kmer_index.hpp"
 
