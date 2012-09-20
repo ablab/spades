@@ -359,6 +359,7 @@ struct debruijn_config {
 
 		struct complex_bulge_remover {
 			bool enabled;
+			bool pics_enabled;
 			double max_relative_length;
 			size_t max_length_difference;
 		};
@@ -647,6 +648,7 @@ inline void load(debruijn_config::simplification::complex_bulge_remover& cbr,
 	using config_common::load;
 
 	load(cbr.enabled                    , pt, "enabled"                     );
+	load(cbr.pics_enabled               , pt, "pics_enabled"                );
 	load(cbr.max_relative_length		, pt, "max_relative_length"			);
 	load(cbr.max_length_difference		, pt, "max_length_difference"		);
 }
