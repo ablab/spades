@@ -485,7 +485,7 @@ class Seq {
    * Denotes some (weird) order on k-mers. Works fast.
    */
   struct less2_fast {
-    bool operator()(const Seq<size_> &l, const Seq<size_> &r) const {
+    bool operator()(const Seq<size_, T> &l, const Seq<size_, T> &r) const {
       return 0 > memcmp(l.data_.data(), r.data_.data(), sizeof(T) * DataSize);
     }
   };
