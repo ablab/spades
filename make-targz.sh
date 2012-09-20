@@ -24,7 +24,6 @@ cp assembler/LICENSE spades-$VERSION
 cp assembler/README spades-$VERSION
 cp assembler/VERSION spades-$VERSION
 cp assembler/spades.py spades-$VERSION
-cp assembler/quast.py spades-$VERSION
 cp assembler/spades_config.info.template spades-$VERSION
 cp assembler/spades_download_binary.py spades-$VERSION
 cp assembler/spades_compile.sh spades-$VERSION
