@@ -34,6 +34,8 @@ dir=$output_pref"contigs/teamcity/"$creature_name$project_name #$(date +%Y%m%d_%
 echo $dir
 mkdir $dir -p
 cp $project_dir"contigs.fasta" $dir$(date +%Y%m%d_%H%M%S)".fasta"
+cp $project_dir"/K55/scaffolds.fasta" $dir$(date +%Y%m%d_%H%M%S)_scaf".fasta"
+
 
 python2.6 ~/quast-1.1/quast.py $project_dir"contigs.fasta" $line -o $project_dir"/quality_results/"
 rm $dir"/quast_all" -rf
