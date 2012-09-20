@@ -68,16 +68,20 @@ class MMappedReader {
     } else
       BlockSize = FileSize;
 
-    MappedRegion =
-        (uint8_t*)mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
-                       StreamFile, 0);
-    VERIFY((intptr_t)MappedRegion != -1L);
+    if (BlockSize) {
+      MappedRegion =
+          (uint8_t*)mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
+                         StreamFile, 0);
+      VERIFY((intptr_t)MappedRegion != -1L);
+    } else
+      MappedRegion = NULL;
 
     BlockOffset = BytesRead = 0;
   }
 
   virtual ~MMappedReader() {
-    munmap(MappedRegion, BlockSize);
+    if (MappedRegion)
+      munmap(MappedRegion, BlockSize);
     close(StreamFile);
 
     if (Unlink) {

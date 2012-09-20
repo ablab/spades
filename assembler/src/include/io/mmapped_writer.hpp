@@ -57,7 +57,11 @@ class MMappedWriter {
     if (MappedRegion) {
       munmap(MappedRegion, BytesReserved);
       FileOffset += BytesWritten;
+      MappedRegion = NULL;
     }
+
+    if (amount == 0)
+      return;
     
     int res = lseek(StreamFile, amount-1, SEEK_CUR);
     VERIFY(res != -1);
