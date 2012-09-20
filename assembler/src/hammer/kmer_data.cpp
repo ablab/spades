@@ -14,6 +14,12 @@
 using namespace hammer;
 
 class HammerKMerSplitter : public KMerSplitter<KMer> {
+  typedef std::vector<std::vector<KMer> > KMerBuffer;
+
+  void DumpBuffers(size_t num_files, size_t nthreads,
+                   std::vector<KMerBuffer> &buffers,
+                   MMappedRecordWriter<KMer> *ostreams) const;
+
  public:
   HammerKMerSplitter(std::string &work_dir)
       : KMerSplitter<KMer>(work_dir) {}
@@ -21,8 +27,42 @@ class HammerKMerSplitter : public KMerSplitter<KMer> {
   virtual path::files_t Split(size_t num_files);
 };
 
+void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
+                                     std::vector<KMerBuffer> &buffers,
+                                     MMappedRecordWriter<KMer> *ostreams) const {
+# pragma omp parallel for num_threads(nthreads)
+  for (unsigned k = 0; k < num_files; ++k) {
+    size_t sz = 0;
+    for (size_t i = 0; i < nthreads; ++i)
+      sz += buffers[i][k].size();
+
+    std::vector<KMer> SortBuffer;
+    SortBuffer.reserve(sz);
+    for (size_t i = 0; i < nthreads; ++i) {
+      KMerBuffer &entry = buffers[i];
+      SortBuffer.insert(SortBuffer.end(), entry[k].begin(), entry[k].end());
+    }
+    std::sort(SortBuffer.begin(), SortBuffer.end(), KMer::less2_fast());
+    auto it = std::unique(SortBuffer.begin(), SortBuffer.end());
+
+#   pragma omp critical
+    {
+      size_t osz = it - SortBuffer.begin();
+      ostreams[k].reserve(osz);
+      ostreams[k].write(&SortBuffer[0], osz);
+    }
+  }
+
+  for (unsigned i = 0; i < nthreads; ++i) {
+    for (unsigned j = 0; j < num_files; ++j) {
+      buffers[i][j].clear();
+    }
+  }
+}
+
+
 path::files_t HammerKMerSplitter::Split(size_t num_files) {
-  unsigned count_num_threads = min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
+  unsigned nthreads = min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
 
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
@@ -35,21 +75,26 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   for (unsigned i = 0; i < num_files; ++i)
     ostreams[i].open(out[i]);
 
-  size_t readbuffer = cfg::get().count_split_buffer;
-  std::vector<std::vector< std::vector<KMer> > > tmp_entries(count_num_threads);
-  for (unsigned i = 0; i < count_num_threads; ++i) {
-    tmp_entries[i].resize(num_files);
+  size_t read_buffer = cfg::get().count_split_buffer;
+  size_t cell_size = (read_buffer * (Globals::read_length - K + 1)) /
+                      (nthreads * num_files * sizeof(KMer));
+
+  INFO("Using cell size of " << cell_size);
+  std::vector<KMerBuffer> tmp_entries(nthreads);
+  for (unsigned i = 0; i < nthreads; ++i) {
+    KMerBuffer &entry = tmp_entries[i];
+    entry.resize(num_files);
     for (unsigned j = 0; j < num_files; ++j) {
-      tmp_entries[i][j].reserve(1.25 * readbuffer / count_num_threads);
+      entry[j].reserve(1.25 * cell_size);
     }
   }
 
   size_t cur_i = 0, cur_limit = 0;
   size_t cur_fileindex = 0;
   while (cur_i < Globals::pr->size()) {
-    cur_limit = min(cur_limit + readbuffer, Globals::pr->size());
+    cur_limit = std::min(cur_limit + read_buffer, Globals::pr->size());
 
-    #pragma omp parallel for shared(tmp_entries) num_threads(count_num_threads)
+    #pragma omp parallel for shared(tmp_entries) num_threads(nthreads)
     for (size_t i = cur_i; i < cur_limit; ++i) {
       const PositionRead &pr = Globals::pr->at(i);
       // Skip opaque reads
@@ -80,22 +125,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
 
     ++cur_fileindex;
 
-    for (unsigned k = 0; k < num_files; ++k) {
-      size_t sz = 0;
-      for (size_t i = 0; i < count_num_threads; ++i)
-        sz += tmp_entries[i][k].size();
-
-      ostreams[k].reserve(sz);
-      for (size_t i = 0; i < count_num_threads; ++i) {
-        ostreams[k].write(&tmp_entries[i][k][0], tmp_entries[i][k].size());
-      }
-    }
-
-    for (unsigned i = 0; i < count_num_threads; ++i) {
-      for (unsigned j = 0; j < num_files; ++j) {
-        tmp_entries[i][j].clear();
-      }
-    }
+    DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
   }
 
   delete[] ostreams;

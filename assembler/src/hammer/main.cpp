@@ -49,6 +49,7 @@ hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
+size_t Globals::read_length = 0;
 
 char Globals::char_offset = 0;
 bool Globals::char_offset_user = true;
