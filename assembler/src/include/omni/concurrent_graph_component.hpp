@@ -396,6 +396,11 @@ protected:
 		graph_.FireGlue(new_edge, edge1, edge2);
 	}
 
+	virtual void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
+		base::FireSplit(edge, newEdge1, newEdge2);
+		graph_.FireSplit(edge, newEdge1, newEdge2);
+	}
+
 	virtual void FireVertexSplit(VertexId newVertex,
 				vector<pair<EdgeId, EdgeId> > newEdges,
 				vector<double> &split_coefficients, VertexId oldVertex) {
