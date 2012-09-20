@@ -191,18 +191,24 @@ protected:
 
         EdgeId loop;
         EdgeId exit;
+        bool loop_found = false;
+        bool exit_found = false;
+
         auto edges = g_.OutgoingEdges(v);
         for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
             if (g_.EdgeEnd(*edge) == g_.EdgeStart(e)) {
                 loop = *edge;
+                loop_found = true;
             }
             else {
                 exit = *edge;
+                exit_found = true;
             }
         }
 
+
         result = make_pair(loop, exit);
-        return true;
+        return exit_found && loop_found;
     }
 
 public:
@@ -415,18 +421,12 @@ protected:
                 }
 
                 do {
-                    //INFO("CHKF")
 					path->CheckGrow();
-					//INFO("FWD")
 					GrowPath(*path);
 					//verifyMap(result);
-                    //INFO("CHKBW")
 					conjugatePath->CheckGrow();
-					//INFO("BCK")
 					GrowPath(*conjugatePath);
 					//verifyMap(result);
-					//INFO("done")
-					//path->Print();
                 } while (conjugatePath->CheckPrevious() || path->CheckPrevious());
 
                 if (!coverageMap_.IsCovered(*paths.Get(i)) || !coverageMap_.IsCovered(*paths.GetConjugate(i))) {
@@ -518,10 +518,6 @@ protected:
         }
     }
 
-    void ResolveShortLoop(BidirectionalPath& path) {
-
-    }
-
     virtual void GrowPath(BidirectionalPath& path) {
         ExtensionChooser::EdgeContainer candidates;
         do {
@@ -610,8 +606,6 @@ protected:
             }
 
 			if (path.getLoopDetector().IsCycled(maxLoops_)) {
-                //INFO("WTF: " << path.getLoopDetector().IsCycled(maxLoops_) << " " << maxLoops_);
-                //path.Print();
 				path.getLoopDetector().RemoveLoop();
 				break;
 			}

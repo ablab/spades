@@ -45,6 +45,7 @@ public:
 
     void FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate, std::vector<EdgeWithPairedInfo>& edges) {
         edges.clear();
+
         for (int i = (int) path.Size() - 1; i >= 0; --i) {
             double w = lib_.IdealPairedInfo(path[i], candidate, path.LengthAt(i));
             if (math::gr(w, 0.)) {
@@ -271,6 +272,7 @@ protected:
         double idealWeight = 0.0;
 
         std::vector<EdgeWithPairedInfo> coveredEdges;
+
         analyzers_[libIndex]->FindCoveredEdges(path, e, coveredEdges);
 
         for (auto iter = coveredEdges.begin(); iter != coveredEdges.end(); ++iter) {
