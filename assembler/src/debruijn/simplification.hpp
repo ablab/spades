@@ -246,13 +246,14 @@ void parallel_correct_mismatches(conj_graph_pack &gp) {
 void exec_simplification(conj_graph_pack& gp) {
 	if (cfg::get().entry_point <= ws_simplification) {
 		simplify_graph(gp);
+		if (cfg::get().correct_mismatches) {
+			parallel_correct_mismatches(gp);
+		}
 		save_simplification(gp);
 		if (cfg::get().graph_read_corr.enable) {
 			corrected_and_save_reads(gp);
 		}
-		if (cfg::get().correct_mismatches) {
-			parallel_correct_mismatches(gp);
-		}
+
 	} else {
 		INFO("Loading Simplification");
 
