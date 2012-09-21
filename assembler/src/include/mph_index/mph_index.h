@@ -131,6 +131,7 @@ bool MPHIndex::Reset(ForwardIterator begin, ForwardIterator end, uint32_t size) 
 
   m_ = size;
   r_ = static_cast<uint32_t>(ceil((c_*m_)/3));
+  r_ = std::max(3u, r_);
   if ((r_ % 2) == 0) r_ += 1;
 
   // This can be used to speed mods, but increases occupation too much. 
