@@ -13,7 +13,7 @@
 
 namespace debruijn_graph {
 
-BOOST_AUTO_TEST_SUITE(graph_simplification_tests)
+BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, TmpFolderFixture)
 
 static debruijn_config::simplification::bulge_remover standard_br_config_generation() {
 	debruijn_config::simplification::bulge_remover br_config;

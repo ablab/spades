@@ -6,6 +6,7 @@
 
 #pragma once
 #include <boost/test/unit_test.hpp>
+#include "test_utils.hpp"
 #include "omni/id_track_handler.hpp"
 
 namespace omni_graph {
@@ -127,7 +128,7 @@ public:
 
 namespace debruijn_graph {
 
-BOOST_AUTO_TEST_SUITE(robust_order_tests)
+BOOST_FIXTURE_TEST_SUITE(robust_order_tests, TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( OrderTest ) {
 	string file_name = "src/debruijn/test_save";

@@ -216,4 +216,19 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	AssertPairInfo(gp.g, paired_index, AddComplement(AddBackward(etalon_pair_info)));
 }
 
+struct TmpFolderFixture
+{
+	TmpFolderFixture()
+    {
+        make_dir(tmp_folder);
+    }
+
+    ~TmpFolderFixture()
+    {
+    	//todo check that folder is empty
+    	remove_dir(tmp_folder);
+//        BOOST_TEST_MESSAGE("teardown mass");
+    }
+};
+
 }
