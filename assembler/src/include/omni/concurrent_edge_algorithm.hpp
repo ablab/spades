@@ -52,16 +52,6 @@ public:
 	ConcurrentEdgeAlgorithm(const size_t nthreads, Graph& graph, FactoryPtr factory)
 			: nthreads_(nthreads), graph_(graph), factory_(factory) {
 
-
-		for (size_t i = 0; i < nthreads; ++i) {
-			id_distributors_.push_back(
-					restricted::PeriodicIdDistributor(
-							restricted::GlobalIdDistributor::GetInstance()->GetId(),
-							nthreads
-					)
-			);
-		}
-
 		GluedVertexGraph glued_vertex_graph (graph);
 		DevisibleTree<GluedVertexGraph> tree (glued_vertex_graph);
 		const size_t component_size = tree.GetSize() / nthreads;
@@ -83,7 +73,10 @@ public:
 			ComponentPtr ptr (
 					new ConjugateComponent(
 							graph,
-							id_distributors_[thread],
+							restricted::PeriodicIdDistributor(
+								restricted::GlobalIdDistributor::GetInstance()->GetId(),
+								nthreads
+							),
 							vertices.begin(),
 							vertices.end()
 					)
@@ -116,21 +109,19 @@ public:
 		}
 
 		for (size_t i = 0; i < nthreads_; ++i) {
-			id_distributors_[i].Synchronize();
-		}
-
-		for (size_t i = 0; i < nthreads_; ++i) {
 			components_[i]->Synchronize();
 		}
 
 
 		ConjugateComponent all_graph_component (
 				graph_,
-				*restricted::GlobalIdDistributor::GetInstance(),
+				restricted::PeriodicIdDistributor(
+					restricted::GlobalIdDistributor::GetInstance()->GetId(),
+					1
+				),
 				graph_.begin(),
 				graph_.end()
 		);
-
 
 		for (size_t i = 0; i < nthreads_; ++i) {
 			runners_[i]->GetNotProcessedArguments(not_processed_edges_with_duplicates);
@@ -147,7 +138,6 @@ public:
 
 		border_runner.Run(border_edge_iterator);
 
-
 		// TODO: for debug only. remove.
 		vector<EdgeId> border_not_processed_edges; // test vector. should have size = 0.
 		border_runner.GetNotProcessedArguments(border_not_processed_edges);
@@ -162,7 +152,6 @@ private:
 	FactoryPtr factory_;
 	vector<ComponentPtr> components_;
 	vector<RunnerPtr> runners_;
-	vector<restricted::PeriodicIdDistributor> id_distributors_;
 };
 
 } // namespace omnigraph

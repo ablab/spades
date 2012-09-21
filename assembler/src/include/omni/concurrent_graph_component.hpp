@@ -50,7 +50,7 @@ public:
 	ConcurrentGraphComponent(
 			Graph& graph,
 			HandlerApplier<VertexId, EdgeId>* applier,
-			restricted::IdDistributor& id_distributor,
+			const restricted::PeriodicIdDistributor& id_distributor,
 			InputVertexIterator verticesBegin,
 			InputVertexIterator verticesEnd)
 				: base(applier, graph.master()),
@@ -292,6 +292,8 @@ public:
 	}
 
 	void Synchronize() {
+		edge_id_distributor_.Synchronize();
+
 		BOOST_FOREACH(VertexId vertex, deleted_vertices_) {
 			graph_.HiddenDeleteVertex(vertex);
 		}
@@ -457,7 +459,7 @@ protected:
 	vector<VertexId> deleted_vertices_;
 	unordered_set<VertexId> temporary_vertices_;
 
-	restricted::IdDistributor& edge_id_distributor_;
+	restricted::PeriodicIdDistributor edge_id_distributor_;
 	mutable bool all_actions_valid_;
 
 

@@ -33,7 +33,7 @@ public:
 	template<class InputVertexIterator>
 	ConcurrentConjugateGraphComponent(
 			Graph& graph,
-			restricted::IdDistributor& id_distributor,
+			const restricted::PeriodicIdDistributor& id_distributor,
 			InputVertexIterator verticesBegin,
 			InputVertexIterator verticesEnd)
 				: base(
