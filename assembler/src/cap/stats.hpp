@@ -104,7 +104,7 @@ public:
 			g_(g), coloring_(coloring), bulge_length_(g_.k() * 1000000) {
 	}
 
-	edge_type GetColour(EdgeId edge) const {
+	TColorSet GetColour(EdgeId edge) const {
 		return coloring_.Color(edge);
 	}
 
@@ -155,7 +155,7 @@ public:
 		return true;
 	}
 
-	bool CheckIsolated(edge_type colour,
+	bool CheckIsolated(TColorSet colour,
 			const vector<VertexId> &component) const {
 		if (component.size() != 2)
 			return false;
@@ -215,7 +215,7 @@ public:
 	}
 
 	bool CheckMonochrome(const vector<VertexId> &component) const {
-		set<edge_type> colours;
+		set<TColorSet> colours;
 		for (size_t i = 0; i < component.size(); i++)
 			for (size_t j = 0; j < component.size(); j++) {
 				vector<EdgeId> edges = g_.GetEdgesBetween(component[i],
@@ -231,9 +231,9 @@ public:
 		if (component.size() < 2)
 			return component_type::error;
 		if (component.size() == 2) {
-			if (CheckIsolated(edge_type::red, component))
+			if (CheckIsolated(kRedColor, component))
 				return component_type::single_red;
-			if (CheckIsolated(edge_type::blue, component))
+			if (CheckIsolated(kBlueColor, component))
 				return component_type::single_blue;
 			if (CheckBulge(component)) {
 				return component_type::simple_bulge;
@@ -295,7 +295,7 @@ public:
 	}
 
 	bool MultiColored(const GraphComponent<Graph>& component) const {
-		set<edge_type> colors;
+		set<TColorSet> colors;
 		for (auto it = component.e_begin(); it != component.e_end(); ++it) {
 			colors.insert(coloring_.Color(*it));
 		}
@@ -332,9 +332,9 @@ private:
 			for(size_t j = 0; j < component.size(); j++) {
 				vector<EdgeId> edges = this->graph().GetEdgesBetween(component[i], component[j]);
 				for(auto it = edges.begin(); it != edges.end(); ++it) {
-					if(coloring_.Color(*it) == edge_type::red)
+					if(coloring_.Color(*it) == kRedColorSet)
 					total_red_[t] += this->graph().length(*it);
-					if(coloring_.Color(*it) == edge_type::blue)
+					if(coloring_.Color(*it) == kBlueColorSet)
 					total_blue_[t] += this->graph().length(*it);
 				}
 			}
@@ -488,8 +488,8 @@ class TrivialBreakpointFinder: public AbstractFilter<
 		size_t MaxRedBlueLength(const vector<EdgeId> edges) {
 			size_t max_length = 0;
 			for (auto it = edges.begin(); it != edges.end(); ++it) {
-				if (coloring_.Color(*it) == edge_type::blue
-						|| coloring_.Color(*it) == edge_type::red) {
+				if (coloring_.Color(*it) == kBlueColorSet
+						|| coloring_.Color(*it) == kRedColorSet) {
 					if (g_.length(*it) > max_length) {
 						max_length = g_.length(*it);
 					}
@@ -519,11 +519,11 @@ class TrivialBreakpointFinder: public AbstractFilter<
 	}
 
 	bool CheckEdges(const vector<EdgeId>& edges) const {
-		set<edge_type> colors;
+		set<TColorSet> colors;
 		for (auto it = edges.begin(); it != edges.end(); ++it) {
 			colors.insert(coloring_.Color(*it));
 		}
-		return edges.size() == 2 && colors.count(edge_type::blue) == 1
+		return edges.size() == 2 && colors.count(kBlueColorSet) == 1
 				&& NotTips(edges);
 	}
 
@@ -552,7 +552,7 @@ public:
 	void FindBreakPoints(const string& folder) {
 		vector<VertexId> breakpoints;
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (coloring_.Color(*it) == edge_type::red) {
+			if (coloring_.Color(*it) == kRedColorSet) {
 				if (CheckEdges(g_.OutgoingEdges(g_.EdgeStart(*it))))
 					breakpoints.push_back(g_.EdgeStart(*it));
 //					ReportBreakpoint(g_.EdgeStart(*it));
@@ -576,7 +576,7 @@ public:
 	virtual bool Check(const vector<typename Graph::VertexId> &vertices) const {
 		GraphComponent<Graph> component(g_, vertices.begin(), vertices.end());
 		for (auto it = component.e_begin(); it != component.e_end(); ++it) {
-			if (coloring_.Color(*it) == edge_type::red) {
+			if (coloring_.Color(*it) == kRedColorSet) {
 				if (CheckEdges(g_.OutgoingEdges(g_.EdgeStart(*it)))
 						|| CheckEdges(g_.IncomingEdges(g_.EdgeEnd(*it))))
 					return true;
@@ -598,7 +598,7 @@ class SimpleInDelAnalyzer {
 	const ColorHandler<Graph>& coloring_;
 	const EdgesPositionHandler<Graph>& edge_pos_;
 	const vector<EdgeId> genome_path_;
-	const edge_type shortcut_color_;
+	const TColorSet shortcut_color_;
 	const string folder_;
 
 	vector<EdgeId> TryFindPath(size_t pos, VertexId end,
@@ -619,8 +619,8 @@ class SimpleInDelAnalyzer {
 		return vector<EdgeId>();
 	}
 
-	map<edge_type, size_t> ColorLengths(const vector<EdgeId>& edges) {
-		map<edge_type, size_t> answer;
+	map<TColorSet, size_t> ColorLengths(const vector<EdgeId>& edges) {
+		map<TColorSet, size_t> answer;
 		for (size_t i = 0; i < edges.size(); ++i) {
 			answer[coloring_.Color(edges[i])] += g_.length(edges[i]);
 		}
@@ -630,7 +630,7 @@ class SimpleInDelAnalyzer {
 	size_t VioletLengthOfGenomeUnique(const vector<EdgeId>& edges) {
 		size_t answer = 0;
 		for (size_t i = 0; i < edges.size(); ++i) {
-			if (coloring_.Color(edges[i]) == edge_type::violet
+			if (coloring_.Color(edges[i]) == kVioletColorSet
 					&& std::count(genome_path_.begin(), genome_path_.end(), edges[i]) == 1) {
 				answer += g_.length(edges[i]);
 			}
@@ -708,21 +708,21 @@ class SimpleInDelAnalyzer {
 
 		WriteAltPath(e, genome_path);
 		size_t unique_violet = VioletLengthOfGenomeUnique(genome_path);
-		map<edge_type, size_t> color_cumm_lengths = ColorLengths(genome_path);
-		if (color_cumm_lengths[edge_type::violet] * 10
-				> color_cumm_lengths[edge_type::blue]) {
+		map<TColorSet, size_t> color_cumm_lengths = ColorLengths(genome_path);
+		if (color_cumm_lengths[kVioletColorSet] * 10
+				> color_cumm_lengths[kBlueColorSet]) {
 			WARN(
 					"Very long path along violet edges: "
-							<< color_cumm_lengths[edge_type::violet]
+							<< color_cumm_lengths[kVioletColorSet]
 							<< " while blue path length: "
-							<< color_cumm_lengths[edge_type::blue]);
+							<< color_cumm_lengths[kBlueColorSet]);
 			WARN("While processing edge: " << g_.str(e));
 		}
-		if (color_cumm_lengths[edge_type::violet] > 0)
+		if (color_cumm_lengths[kVioletColorSet] > 0)
 			DEBUG("Violet edges in path");
 
-		DEBUG("Total blue " << color_cumm_lengths[edge_type::blue]);
-		DEBUG("Total violet " << color_cumm_lengths[edge_type::violet]);
+		DEBUG("Total blue " << color_cumm_lengths[kBlueColorSet]);
+		DEBUG("Total violet " << color_cumm_lengths[kVioletColorSet]);
 		DEBUG("Total unique violet " << unique_violet);
 
 		if (edge_length * path_length <= mem_lim) {
@@ -756,8 +756,8 @@ class SimpleInDelAnalyzer {
 									% edit_dist
 									% (double(edit_dist)
 											/ max(edge_length, path_length))
-									% color_cumm_lengths[edge_type::blue]
-									% color_cumm_lengths[edge_type::violet]
+									% color_cumm_lengths[kBlueColorSet]
+									% color_cumm_lengths[kVioletColorSet]
 									% unique_violet
 									% g_.int_id(e)) << endl;
 		} else {
@@ -784,7 +784,7 @@ class SimpleInDelAnalyzer {
 public:
 	SimpleInDelAnalyzer(const Graph& g, const ColorHandler<Graph>& coloring,
 			const EdgesPositionHandler<Graph>& edge_pos,
-			const vector<EdgeId> genome_path, edge_type shortcut_color,
+			const vector<EdgeId> genome_path, TColorSet shortcut_color,
 			const string& folder) :
 			g_(g), coloring_(coloring), edge_pos_(edge_pos), genome_path_(
 					genome_path), shortcut_color_(shortcut_color), folder_(
@@ -842,7 +842,7 @@ private:
 
 	bool ContainsBlueEdge(const vector<EdgeId>& edges) const {
 		for (size_t i = 0; i < edges.size(); ++i) {
-			if (coloring_.Color(edges[i]) == edge_type::blue)
+			if (coloring_.Color(edges[i]) == kBlueColorSet)
 				return true;
 		}
 		return false;
@@ -850,7 +850,7 @@ private:
 
 	EdgeId GetBlueEdge(const vector<EdgeId>& edges) const {
 		for (size_t i = 0; i < edges.size(); ++i) {
-			if (coloring_.Color(edges[i]) == edge_type::blue)
+			if (coloring_.Color(edges[i]) == kBlueColorSet)
 				return edges[i];
 		}
 		VERIFY(false);
@@ -889,7 +889,7 @@ public:
 
 	void Detect() const {
 		for (auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (coloring_.Color(*it) == edge_type::red) {
+			if (coloring_.Color(*it) == kRedColorSet) {
 				INFO("Processing red edge " << gp_.g.str(*it));
 				if (gp_.g.OutgoingEdgeCount(gp_.g.EdgeStart(*it)) == 2
 						&& ContainsBlueEdge(
@@ -1075,17 +1075,17 @@ class AlternatingPathsCounter {
 	const Graph& g_;
 	const ColorHandler<Graph>& coloring_;
 
-	edge_type InvertColor(edge_type color) const {
-		if (color == edge_type::red) {
-			return edge_type::blue;
-		} else if (color == edge_type::blue) {
-			return edge_type::red;
+	TColorSet InvertColor(TColorSet color) const {
+		if (color == kRedColorSet) {
+			return kBlueColorSet;
+		} else if (color == kBlueColorSet) {
+			return kRedColorSet;
 		}
 		VERIFY(false);
-		return edge_type::blue;
+		return kBlueColorSet;
 	}
 
-	vector<EdgeId> FilterEdges(vector<EdgeId> edges, edge_type color) const {
+	vector<EdgeId> FilterEdges(vector<EdgeId> edges, TColorSet color) const {
 		vector<EdgeId> answer;
 		for (size_t i = 0; i < edges.size(); ++i) {
 			if (coloring_.Color(edges[i]) == color) {
@@ -1095,14 +1095,14 @@ class AlternatingPathsCounter {
 		return answer;
 	}
 
-	vector<EdgeId> OutgoingEdges(VertexId v, edge_type color) const {
+	vector<EdgeId> OutgoingEdges(VertexId v, TColorSet color) const {
 		DEBUG(
 				"Looking for outgoing edges for vertex " << g_.str(v)
 						<< " of color " << color);
 		return FilterEdges(g_.OutgoingEdges(v), color);
 	}
 
-	vector<EdgeId> IncomingEdges(VertexId v, edge_type color) const {
+	vector<EdgeId> IncomingEdges(VertexId v, TColorSet color) const {
 		DEBUG(
 				"Looking for incoming edges for vertex " << g_.str(v)
 						<< " of color " << color);
@@ -1129,7 +1129,7 @@ class AlternatingPathsCounter {
 		DEBUG("Growing path for vertex " << g_.str(last_vertex));
 		EdgeId last_edge = path.back();
 		DEBUG("Last edge " << last_edge);
-		edge_type next_color = InvertColor(coloring_.Color(last_edge));
+		TColorSet next_color = InvertColor(coloring_.Color(last_edge));
 		vector<EdgeId> next_candidates =
 				(g_.EdgeEnd(last_edge) == last_vertex) ?
 						IncomingEdges(last_vertex, next_color) :
@@ -1189,7 +1189,7 @@ public:
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			if (visited_edges.count(*it) > 0)
 				continue;
-			if (coloring_.Color(*it) == edge_type::red) {
+			if (coloring_.Color(*it) == kRedColorSet) {
 				DEBUG("Looking for alt path for edge " << g_.str(*it));
 				vector<EdgeId> alt_path = AlternatingPathContainingEdge(*it);
 				if (!alt_path.empty()) {

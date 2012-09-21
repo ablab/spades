@@ -263,7 +263,7 @@ public:
 private:
 	const Graph& g_;
 	const ColorHandler<Graph>& coloring_;
-	const edge_type assembly_color_;
+	const TColorSet assembly_color_;
 	size_t edge_count_;
 
 	std::vector<vector<EdgeId>> paths_;
@@ -275,7 +275,7 @@ private:
 			return false;
 		}
 		for (auto it = path.begin(); it != path.end(); ++it) {
-			if ((coloring_.Color(*it) & assembly_color_) == 0) {
+			if ((coloring_.Color(*it)[assembly_color_]) == 0) {
 				DEBUG("false");
 				return false;
 			}
@@ -287,7 +287,7 @@ private:
 public:
 
 	AssemblyPathCallback(const Graph& g, const ColorHandler<Graph>& coloring,
-			edge_type assembly_color, size_t edge_count) :
+			TColorSet assembly_color, size_t edge_count) :
 			g_(g), coloring_(coloring), assembly_color_(assembly_color), edge_count_(
 					edge_count) {
 	}
@@ -317,8 +317,8 @@ class SimpleInDelCorrector {
 	//become invalidated during process
 //	const EdgesPositionHandler<Graph>& edge_pos_;
 	GenomePath<Graph> genome_path_;
-	const edge_type genome_color_;
-	const edge_type assembly_color_;
+	const TColorSet genome_color_;
+	const TColorSet assembly_color_;
 
 	vector<EdgeId> FindAssemblyPath(VertexId start, VertexId end,
 			size_t edge_count_bound, size_t min_length, size_t max_length) {
@@ -350,8 +350,8 @@ class SimpleInDelCorrector {
 		return -1;
 	}
 
-//	bag<edge_type> ColorLengths(const vector<EdgeId>& edges) {
-//		bag<edge_type> answer;
+//	bag<TColorSet> ColorLengths(const vector<EdgeId>& edges) {
+//		bag<TColorSet> answer;
 //		for (size_t i = 0; i < edges.size(); ++i) {
 //			answer.put(coloring_.Color(edges[i]), g_.length(edges[i]));
 //		}
@@ -361,8 +361,10 @@ class SimpleInDelCorrector {
 	size_t VioletLengthOfGenomeUnique(const vector<EdgeId>& edges) {
 		size_t answer = 0;
 		for (size_t i = 0; i < edges.size(); ++i) {
-			if (coloring_.Color(edges[i]) == edge_type::violet
-					&& genome_path_.mult(edges[i]) == 1) {
+			// TODO make reference, do not copy!!!
+			TColorSet edge_color_set = coloring_.Color(edges[i]);
+			if (edge_color_set[0] && edge_color_set[1]
+					&& (genome_path_.mult(edges[i]) == 1)) {
 				answer += g_.length(edges[i]);
 			}
 		}
@@ -450,7 +452,7 @@ class SimpleInDelCorrector {
 		GenPicAlongPath(genomic_edges, cnt * 100);
 		GenPicAlongPath(assembly_path, cnt * 100 + 1);
 		for (size_t i = 0; i < assembly_path.size(); ++i) {
-			coloring_.Paint(assembly_path[i], genome_color_);
+			coloring_.PaintEdge(assembly_path[i], genome_color_);
 		}
 		genome_path_.Substitute(genome_start, genome_end, assembly_path);
 		RemoveObsoleteEdges(genomic_edges);
@@ -517,8 +519,8 @@ class SimpleInDelCorrector {
 
 public:
 	SimpleInDelCorrector(Graph& g, ColorHandler<Graph>& coloring,
-			const vector<EdgeId>& genome_path, edge_type genome_color,
-			edge_type assembly_color) :
+			const vector<EdgeId>& genome_path, TColorSet genome_color,
+			TColorSet assembly_color) :
 			g_(g), coloring_(coloring), genome_path_(g_, genome_path), genome_color_(
 					genome_color), assembly_color_(assembly_color) {
 	}

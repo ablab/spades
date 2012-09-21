@@ -374,8 +374,8 @@ class GapComparativeAnalyzer {
 	const EdgesPositionHandler<Graph>& pos_;
 
 	bool PurpleOrRed(EdgeId e) {
-		return coloring_.Color(e) == edge_type::red
-				|| coloring_.Color(e) == edge_type::violet;
+		return coloring_.Color(e) == kRedColorSet
+				|| coloring_.Color(e) == kVioletColorSet;
 	}
 
 	bool CheckVertexCondition(VertexId v) {
@@ -397,12 +397,12 @@ class GapComparativeAnalyzer {
 	}
 
 //	bool CheckEdges(const vector<EdgeId>& edges) {
-//		set<edge_type> colors;
+//		set<TColorSet> colors;
 //		for (auto it = edges.begin(); it != edges.end(); ++it) {
 //			colors.insert(coloring_.Color(*it));
 //		}
 //		return edges.size() == 1
-//				|| (edges.size() == 2 && colors.count(edge_type::blue) == 1);
+//				|| (edges.size() == 2 && colors.count(kBlueColor) == 1);
 //	}
 
 public:
@@ -414,7 +414,7 @@ public:
 	void ReportPotentialGapsCloses(const string& folder) {
 		make_dir(folder);
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (coloring_.Color(*it) == edge_type::red
+			if (coloring_.Color(*it) == kRedColorSet
 					&& CheckVertexCondition(g_.EdgeStart(*it))
 					&& CheckVertexCondition(g_.EdgeEnd(*it))) {
 				ReportEdge(*it, folder);
@@ -425,7 +425,7 @@ public:
 //	void ReportDeepGapsCloses(const string& folder) {
 //		make_dir(folder);
 //		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-//			if (coloring_.Color(*it) == edge_type::red
+//			if (coloring_.Color(*it) == kRedColorSet
 //					&& CheckEdges(g_.OutgoingEdges(g_.EdgeStart(*it)))
 //					&& CheckEdges(g_.IncomingEdges(g_.EdgeEnd(*it)))
 //					&& ContainsTip()) {

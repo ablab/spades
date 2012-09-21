@@ -53,9 +53,9 @@ namespace cap {
 //}
 
 template <class Graph>
-void DeleteEdgesByColor(Graph& g, const ColorHandler<Graph>& coloring, color_t color) {
+void DeleteEdgesByColor(Graph& g, const ColorHandler<Graph>& coloring, TColorSet color) {
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		if ((color_t) coloring.Color(*it) == color) {
+		if (coloring.Color(*it) == color) {
 			g.DeleteEdge(*it);
 		}
 	}
@@ -67,11 +67,11 @@ class GapsRemover {
 	typedef typename Graph::VertexId VertexId;
 	Graph& g_;
 	const ColorHandler<Graph>& coloring_;
-	const edge_type gap_color_;
+	const TColorSet gap_color_;
 	const size_t length_bound_;
 public:
 	GapsRemover(Graph& g, const ColorHandler<Graph>& coloring,
-			edge_type gap_color, size_t length_bound) :
+			TColorSet gap_color, size_t length_bound) :
 			g_(g), coloring_(coloring), gap_color_(gap_color), length_bound_(
 					length_bound) {
 
@@ -164,21 +164,21 @@ private:
 	template<class gp_t2>
 	void ProduceResults(gp_t2& gp, const ColorHandler<Graph>& coloring,
 			const string& output_folder, bool detailed_output) {
-		INFO("Removing unnecessary edges");
-		DeleteVioletEdges(gp.g, coloring);
+// 		INFO("Removing unnecessary edges");
+// 		DeleteVioletEdges(gp.g, coloring);
 
-//		if (detailed_output) {
-//			PrintColoredGraph(gp.g, coloring, gp.edge_pos,
-//					output_folder + "initial_pics/purple_removed.dot");
-//			UniversalSaveGP(gp, output_folder + "saves/purple_removed");
-//		}
+// //		if (detailed_output) {
+// //			PrintColoredGraph(gp.g, coloring, gp.edge_pos,
+// //					output_folder + "initial_pics/purple_removed.dot");
+// //			UniversalSaveGP(gp, output_folder + "saves/purple_removed");
+// //		}
 
-//		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
-//		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
-		INFO("Counting stats, outputting pictures");
-		BPGraphStatCounter<Graph> counter(gp.g, coloring, output_folder);
-		LengthIdGraphLabeler<Graph> labeler(gp.g);
-		counter.CountStats(labeler, detailed_output);
+// //		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
+// //		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
+// 		INFO("Counting stats, outputting pictures");
+// 		BPGraphStatCounter<Graph> counter(gp.g, coloring, output_folder);
+// 		LengthIdGraphLabeler<Graph> labeler(gp.g);
+// 		counter.CountStats(labeler, detailed_output);
 	}
 
 	void PrepareDirs(const string& output_folder, bool detailed_output) {
@@ -225,7 +225,8 @@ public:
 					coloring_,
 					gp_.edge_pos,
 					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
-					edge_type::red);
+					kRedColorSet,
+					output_folder);
 			del_analyzer.Analyze();
 
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
@@ -262,7 +263,7 @@ public:
 
 //		2339834
 //		INFO("Removing gaps");
-//		GapsRemover<Graph> gaps_remover(gp_.g, coloring, edge_type::blue, 700);
+//		GapsRemover<Graph> gaps_remover(gp_.g, coloring, kBlueColorSet, 700);
 //		gaps_remover.RemoveGaps();
 //		INFO("Gaps removed");
 
@@ -275,14 +276,14 @@ public:
 		if (one_many_resolve) {
 			VERIFY(!untangle_);
 			RestrictedOneManyResolver<Graph> resolver(gp_.g, coloring_,
-					edge_type::violet);
+					kVioletColorSet);
 			resolver.Resolve();
 		}
 
 		if (detailed_output) {
 			if (gp_.genome.size() > 0) {
-				PrintColoredGraphAlongRef(gp_, coloring_, gp_.edge_pos,
-						gp_.genome,
+				PrintColoredGraphAlongRef(gp_, coloring_,// gp_.edge_pos,  TODO why not corresponding???
+						//gp_.genome,
 						output_folder + "initial_pics/colored_split_graph.dot");
 			} else {
 				PrintColoredGraph(gp_.g, coloring_, gp_.edge_pos,

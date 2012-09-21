@@ -107,7 +107,7 @@ private:
 		}
 	}
 
-	void Untangle(ContigStream& stream, edge_type color) {
+	void Untangle(ContigStream& stream, TColorSet color) {
 		io::SingleRead read;
 		stream.reset();
 		set<string> processed;
@@ -123,8 +123,8 @@ private:
 		}
 	}
 
-	void Untangle(const Sequence& contig, const string& name, edge_type color) {
-		VERIFY(color == edge_type::red || color == edge_type::blue);
+	void Untangle(const Sequence& contig, const string& name, TColorSet color) {
+		VERIFY(color == kRedColor || color == kBlueColor);
 		DEBUG("Untangling contig " << name);
 		Mapper mapper(old_gp_.g, old_gp_.index,
 				old_gp_.kmer_mapper);
@@ -133,12 +133,12 @@ private:
 		DEBUG("Mapped contig" << name);
 		for (size_t i = 0; i < path.size(); i++) {
 			EdgeId next;
-			if (old_coloring_.Color(path[i]) != edge_type::violet) {
+			if (old_coloring_.Color(path[i]) != kVioletColorSet) {
 				DEBUG("Next edge is not purple");
 				size_t j = i;
 				vector<EdgeId> to_glue;
 				while (j < path.size()
-						&& old_coloring_.Color(path[j]) != edge_type::violet) {
+						&& old_coloring_.Color(path[j]) != kVioletColorSet) {
 					to_glue.push_back(path[j]);
 					j++;
 				}
@@ -156,7 +156,7 @@ private:
 			DEBUG("Coloring new edge and complement");
 			PaintEdgeWithVertices(next, color);
 		}
-		if (color == edge_type::red) {
+		if (color == kRedColor) {
 			VERIFY(new_gp_.red_paths.find(name) == new_gp_.red_paths.end());
 			new_gp_.red_paths[name] = new_path;
 			new_gp_.red_paths[ConjugateContigId(name)] = ConjugatePath(
@@ -177,12 +177,12 @@ private:
 	}
 
 	template<class T>
-	void ColorWithConjugate(T t, edge_type color) {
+	void ColorWithConjugate(T t, TColorSet color) {
 		new_gp_.coloring.Paint(t, color);
 		new_gp_.coloring.Paint(new_gp_.g.conjugate(t), color);
 	}
 
-	void PaintEdgeWithVertices(EdgeId e, edge_type color) {
+	void PaintEdgeWithVertices(EdgeId e, TColorSet color) {
 		DEBUG(
 				"Coloring edges " << new_gp_.g.int_id(e) << " and " << new_gp_.g.int_id(new_gp_.g.conjugate(e)));
 		ColorWithConjugate(e, color);
@@ -219,7 +219,7 @@ public:
 			processed_purple.insert(*it);
 			processed_purple.insert(old_graph.conjugate(*it));
 
-			if (old_coloring.Color(*it) == edge_type::violet) {
+			if (old_coloring.Color(*it) == kVioletColorSet) {
 				EdgeId new_edge = new_gp_.g.AddEdge(
 						vertex_mapping_[old_graph.EdgeStart(*it)],
 						vertex_mapping_[old_graph.EdgeEnd(*it)],
@@ -229,15 +229,15 @@ public:
 				purple_edge_mapping_[*it] = new_edge;
 				purple_edge_mapping_[old_graph.conjugate(*it)] =
 						new_gp_.g.conjugate(new_edge);
-				PaintEdgeWithVertices(new_edge, edge_type::violet);
+				PaintEdgeWithVertices(new_edge, kVioletColorSet);
 			}
 		}
 
 		VERIFY(new_gp_.red_paths.empty());
 		VERIFY(new_gp_.blue_paths.empty());
 
-		Untangle(stream1, edge_type::red);
-		Untangle(stream2, edge_type::blue);
+		Untangle(stream1, 0);
+		Untangle(stream2, 1);
 
 		UntangledGraphContigMapper<bp_graph_pack<Graph>> contig_mapper(new_gp_);
 		FillPos(new_gp_.g, contig_mapper, new_gp_.edge_pos, stream1);
@@ -256,7 +256,7 @@ class RestrictedOneManyResolver {
 
 	Graph& g_;
 	const ColorHandler<Graph>& coloring_;
-	edge_type restricting_color_;
+	TColorSet restricting_color_;
 
 	bool CheckColor(const vector<EdgeId>& edges) {
 		DEBUG("Checking color")
@@ -317,7 +317,7 @@ class RestrictedOneManyResolver {
 
 public:
 	RestrictedOneManyResolver(Graph& g, const ColorHandler<Graph>& coloring,
-			edge_type restricting_color) :
+			TColorSet restricting_color) :
 			g_(g), coloring_(coloring), restricting_color_(restricting_color) {
 
 	}

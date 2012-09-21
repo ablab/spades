@@ -176,7 +176,7 @@ class ColoredGraphConstructor {
 		}
 	}
 
-	void PaintGraph(ContigStream& stream, edge_type color) {
+	void PaintGraph(ContigStream& stream, TColorSet color) {
 		io::SingleRead read;
 		stream.reset();
 		while (!stream.eof()) {
@@ -186,7 +186,7 @@ class ColoredGraphConstructor {
 		}
 	}
 
-	void PaintGraph(const vector<pair<ContigStream*, edge_type>>& stream_mapping) {
+	void PaintGraph(const vector<pair<ContigStream*, TColorSet> >& stream_mapping) {
 		INFO("Coloring graph");
 		for (auto it = stream_mapping.begin(); it != stream_mapping.end();
 				++it) {
@@ -194,11 +194,11 @@ class ColoredGraphConstructor {
 		}
 	}
 
-	void PaintPath(const Path<EdgeId>& path, edge_type color) {
+	void PaintPath(const Path<EdgeId>& path, TColorSet color) {
 		for (size_t i = 0; i < path.size(); ++i) {
-			coloring_.Paint(path[i], color);
-			coloring_.Paint(g_.EdgeStart(path[i]), color);
-			coloring_.Paint(g_.EdgeEnd(path[i]), color);
+			coloring_.PaintEdge(path[i], color);
+			coloring_.PaintVertex(g_.EdgeStart(path[i]), color);
+			coloring_.PaintVertex(g_.EdgeEnd(path[i]), color);
 		}
 	}
 
@@ -235,9 +235,9 @@ public:
 //			SaveOldGraph(output_folder + "saves/split_graph");
 //		}
 
-		vector<pair<ContigStream*, edge_type>> stream_mapping;
-		stream_mapping.push_back(make_pair(streams[0], edge_type::red));
-		stream_mapping.push_back(make_pair(streams[1], edge_type::blue));
+		vector<pair<ContigStream*, TColorSet> > stream_mapping;
+		stream_mapping.push_back(make_pair(streams[0], kRedColor));
+		stream_mapping.push_back(make_pair(streams[1], kBlueColor));
 
 		PaintGraph(stream_mapping);
 

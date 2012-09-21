@@ -2,40 +2,198 @@
 
 namespace cap {
 
-enum edge_type {
-	//don't change order!!!
-	black = 0,
-	red,
-	blue,
-	violet
+const size_t kDefaultMaxColorsUsed = 100;
+
+typedef size_t TColor;
+
+class TColorSet {
+	typedef std::bitset <kDefaultMaxColorsUsed> TBitSet;
+
+private:
+	TBitSet bitset_; 
+
+public:
+	TColorSet() : bitset_ () {
+	}
+
+	TColorSet(const string &bitset_string) : bitset_ (bitset_string) {
+	}
+
+	TColorSet(const unsigned long bitset_ul) : bitset_ (bitset_ul) {
+	}
+
+	TColorSet(const TBitSet &base_set) {
+		bitset_ = base_set;
+	}
+
+	const TBitSet &getBitset() const {
+		return bitset_;
+	}
+
+	inline TColorSet operator | (const TColorSet &other) const {
+		return TColorSet(getBitset() | other.getBitset());
+	}
+
+	inline bool operator == (const TColorSet &other) const {
+		return getBitset() == other.getBitset();
+	}
+
+	inline bool operator != (const TColorSet &other) const {
+		return getBitset() != other.getBitset();
+	}
+
+	bool operator [] (size_t pos) const {
+		return bitset_[pos];
+	}
+	
+	bool operator < (const TColorSet &other) const {
+		const TBitSet &other_bitset = other.getBitset();
+		for (int i = 0; i < kDefaultMaxColorsUsed; ++i) {
+			if (bitset_[i] != other_bitset[i]) {
+				return bitset_[i] < other_bitset[i];
+			}
+		}
+		return false;
+	}
+
+	bool any() const {
+		return bitset_.any();
+	}
+
+	void SetBit(size_t bit_number, bool value) {
+		bitset_[bit_number] = value;
+	}
+
+	string ToString() {
+		return bitset_.to_string();
+	}
+
+	static TColorSet SingleColor(TColor color) {
+		TBitSet bitset;
+		bitset[color] = 1;
+		
+		return TColorSet(bitset);
+	}
 };
 
-typedef size_t color_t;
+
+// ColorGenerator generates max_colors different colors in HSV format
+// First color is always black
+class ColorGenerator {
+	static size_t max_colors;
+
+	// Hue array of needed size
+	static vector <double> hue_array;
+
+	static double GenerateIthColor(const size_t color_number) {
+		double hue_value = 0;
+		int accumulated_exp = 0;
+
+		for (int i = 0; (1 << i) <= color_number; ++i) {
+			bool bit = (color_number >> i) & 1;
+			if (bit) {
+				hue_value = hue_value / (1 << accumulated_exp);
+				hue_value += 0.5;
+				accumulated_exp = 0;
+			} else {
+				accumulated_exp++;
+			}
+		}
+
+		return hue_value;
+	}
+
+public:
+	ColorGenerator(const size_t _max_colors = kDefaultMaxColorsUsed) {
+		GenerateColors(_max_colors);
+	}
+
+	static void GenerateColors(const size_t number_of_colors) {
+		// If all needed colors were already generated, do nothing
+		if (number_of_colors <= max_colors) {
+			return;
+		}
+
+		hue_array.resize(number_of_colors);
+		for (int i = max_colors; i < number_of_colors; ++i) {
+			hue_array[i] = GenerateIthColor(i);
+		}
+		max_colors = number_of_colors;
+	}
+
+	string GetIthColor(const size_t color_number) {
+		VERIFY(color_number < max_colors);
+
+		// black one is the very special
+		if (color_number == 0) {
+			return "0 0 0";
+		}
+
+		return str(
+			boost::format("%.3lf %.3lf %.3lf") % hue_array[color_number - 1] % 1 % 1
+			);
+	}
+
+};
+
+size_t ColorGenerator::max_colors = 0;
+vector <double> ColorGenerator::hue_array = vector <double> ();
+
 
 template<class Graph, class Element>
 class ElementColorHandler: public GraphActionHandler<Graph> {
 	typedef GraphActionHandler<Graph> base;
 
-	restricted::map<Element, edge_type> data_;
+	// For each element will store a bitmask of used there colors.
+	restricted::map<Element, TColorSet > data_;
+
+	// Maximum number of different colors that may be used in coloring
+	size_t max_colors;
+
+	// One color strings generator for all cases.
+	static ColorGenerator color_generator;
+
 public:
-	static string color_str(edge_type color) {
-		static string colors[] = { "black", "red", "blue", "purple" };
-		return colors[(int) color];
+	// here we have no VERIFYcation. However, there is in color generator.
+	static string color_str(const TColor color) {
+		return color_generator.GetIthColor((size_t) color);
 	}
 
-	ElementColorHandler(const Graph& g) :
-			base(g, "ElementColorHandler") {
-
+	string color_str(const TColorSet &color_set) const {
+		if (!color_set.any()) {
+			return color_str((TColor) 0);
+		}
+		string result = "";
+		for (int i = 0; i < max_colors; ++i) {
+			if (!color_set[i]) continue;
+			if (result.length() != 0) {
+				result += ':';
+			}
+			result += color_str((TColor) (i + 1));
+		}
+		return result;
 	}
 
-	void Paint(Element e, edge_type color) {
-		data_[e] = (edge_type) ((int) data_[e] | (int) color);
+	ElementColorHandler(const Graph& g, const size_t _max_colors = kDefaultMaxColorsUsed) :
+			base(g, "ElementColorHandler"),
+			max_colors(_max_colors) {
+		color_generator.GenerateColors(max_colors);
 	}
 
-	edge_type Color(Element e) const {
+	void PaintElement(Element e, const TColor color) {
+		TColorSet &e_colors = data_[e];
+		e_colors.SetBit((size_t) color, 1);
+	}
+
+	void PaintElement(Element e, const TColorSet &color_set) {
+		TColorSet &e_colors = data_[e];
+		e_colors = e_colors | color_set;
+	}
+
+	TColorSet Color(Element e) const {
 		auto it = data_.find(e);
 		if (it == data_.end())
-			return edge_type::black;
+			return TColorSet();
 		else
 			return it->second;
 	}
@@ -64,24 +222,34 @@ class ColorHandler: public GraphActionHandler<Graph> {
 	ElementColorHandler<Graph, VertexId> vertex_color_;
 public:
 
-	ColorHandler(const Graph& g) :
-			base(g, "ColorHandler"), edge_color_(g), vertex_color_(g) {
+	ColorHandler(const Graph& g, const size_t _max_colors = kDefaultMaxColorsUsed) :
+			base(g, "ColorHandler"),
+			edge_color_(g, _max_colors),
+			vertex_color_(g, _max_colors) {
 
 	}
 
-	void Paint(EdgeId e, edge_type color) {
-		edge_color_.Paint(e, color);
+	void PaintEdge(EdgeId e, const TColor color) {
+		edge_color_.PaintElement(e, color);
 	}
 
-	void Paint(VertexId v, edge_type color) {
-		vertex_color_.Paint(v, color);
+	void PaintEdge(EdgeId e, const TColorSet &color_set) {
+		edge_color_.PaintElement(e, color_set);
 	}
 
-	edge_type Color(EdgeId e) const {
+	void PaintVertex(VertexId v, const TColor color) {
+		vertex_color_.PaintElement(v, color);
+	}
+
+	void PaintVertex(VertexId v, const TColorSet &color_set) {
+		vertex_color_.PaintElement(v, color_set);
+	}
+
+	TColorSet Color(EdgeId e) const {
 		return edge_color_.Color(e);
 	}
 
-	edge_type Color(VertexId v) const {
+	TColorSet Color(VertexId v) const {
 		return vertex_color_.Color(v);
 	}
 
@@ -117,7 +285,7 @@ public:
 //		auto color = Color(old_edges.front());
 		for (auto it = old_edges.begin(); it != old_edges.end(); ++it) {
 //			VERIFY(color == Color(*it));
-			Paint(new_edge, Color(*it));
+			PaintEdge(new_edge, Color(*it));
 		}
 //		Paint(new_edge, color);
 	}
@@ -126,17 +294,18 @@ public:
 	void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 		//todo temporary verification
 //		VERIFY(Color(edge2) == edge_type::black && new_edge == edge2);
-		Paint(new_edge, Color(edge2));
-		Paint(new_edge, Color(edge1));
+		PaintEdge(new_edge, Color(edge2));
+		PaintEdge(new_edge, Color(edge1));
 	}
 
 	/*virtual*/
 	void HandleSplit(EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge_2) {
-		Paint(this->g().EdgeEnd(new_edge_1), Color(old_edge));
-		Paint(new_edge_1, Color(old_edge));
-		Paint(new_edge_2, Color(old_edge));
+		PaintVertex(this->g().EdgeEnd(new_edge_1), Color(old_edge));
+		PaintEdge(new_edge_1, Color(old_edge));
+		PaintEdge(new_edge_2, Color(old_edge));
 	}
 };
+
 
 template<class Graph>
 void SaveColoring(const Graph& g
@@ -147,11 +316,11 @@ void SaveColoring(const Graph& g
 	ofstream stream((filename + ".clr").c_str());
 	stream << whole_graph.v_size() << endl;
 	for (auto it = whole_graph.v_begin(); it != whole_graph.v_end(); ++it) {
-		stream << g.int_id(*it) << " " << int(coloring.Color(*it)) << endl;
+		stream << g.int_id(*it) << " " << coloring.Color(*it).ToString() << endl;
 	}
 	stream << whole_graph.e_size() << endl;
 	for (auto it = whole_graph.e_begin(); it != whole_graph.e_end(); ++it) {
-		stream << g.int_id(*it) << " " << int(coloring.Color(*it)) << endl;
+		stream << g.int_id(*it) << " " << coloring.Color(*it).ToString() << endl;
 	}
 }
 
@@ -166,18 +335,18 @@ void LoadColoring(const Graph& g
 	for (size_t i = 0; i < v_count; ++i) {
 		size_t id;
 		stream >> id;
-		size_t color;
-		stream >> color;
-		coloring.Paint(int_ids.ReturnVertexId(id), color);
+		string color_string;
+		stream >> color_string;
+		coloring.Paint(int_ids.ReturnVertexId(id), TColorSet(color_string));
 	}
 	size_t e_count;
 	stream >> e_count;
 	for (size_t i = 0; i < e_count; ++i) {
 		size_t id;
 		stream >> id;
-		size_t color;
-		stream >> color;
-		coloring.Paint(int_ids.ReturnEdgeId(id), color);
+		string color_string;
+		stream >> color_string;
+		coloring.Paint(int_ids.ReturnEdgeId(id), TColorSet(color_string));
 	}
 }
 
@@ -202,4 +371,12 @@ auto_ptr<GraphColorer<Graph>> ConstructBorderColorer(const Graph& g,
 							coloring.EdgeColorMap())));
 }
 
+// Temporary while have only two colors
+TColor kRedColor = (TColor) 0;
+TColor kBlueColor = (TColor) 1;
+TColorSet kRedColorSet = TColorSet::SingleColor(kRedColor);
+TColorSet kBlueColorSet = TColorSet::SingleColor(kBlueColor);
+TColorSet kVioletColorSet = kRedColorSet | kBlueColorSet;
+
 }
+

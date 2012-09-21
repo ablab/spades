@@ -15,6 +15,7 @@
 #include "genome_correction.hpp"
 #include "assembly_compare.hpp"
 
+
 namespace cap {
 
 //Gingi block
@@ -36,125 +37,125 @@ namespace cap {
 //	Clear<201>("assembly_comp/gingi_diff_mask/jeff.fasta",
 //		"assembly_comp/gingi_diff_mask/jeff_cl.fasta");
 //}
+// BOOST_AUTO_TEST_CASE
+// ( AssemblyRefComparison ) {
+// 	static const size_t K = 55;
+// 	typedef debruijn_graph::graph_pack<
+// 	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> gp_t;
+// 	typedef gp_t::graph_t Graph;
+// 	typedef Graph::EdgeId EdgeId;
+// 	typedef Graph::VertexId VertexId;
+// 	typedef NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> Mapper;
 
-BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
-	static const size_t K = 55;
-	typedef debruijn_graph::graph_pack<
-	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> gp_t;
-	typedef gp_t::graph_t Graph;
-	typedef Graph::EdgeId EdgeId;
-	typedef Graph::VertexId VertexId;
-	typedef NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> Mapper;
+// //	EasyContigStream stream_1("/home/snurk/Dropbox/gingi/jeff.fasta");
+// //	EasyContigStream stream_2("/home/snurk/Dropbox/gingi/TDC60.fasta");
+// //	string ref = "/home/snurk/Dropbox/gingi/TDC60.fasta";
+// //	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff_cl.fasta");
+// //	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
+// //	string ref = "assembly_comp/gingi_diff_mask/tdc60_cl.fasta";
+// 	EasyContigStream stream_1("/home/snurk/Dropbox/lab/mrsa/MRSA_RCH_S60.fasta",
+// 			"s60_");
+// 	EasyContigStream stream_2(
+// 			"/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta", "usa300_");
+// //	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff.fasta",
+// //			"jeff_");
+// //	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60.fasta",
+// //			"tdc_");
 
-//	EasyContigStream stream_1("/home/snurk/Dropbox/gingi/jeff.fasta");
-//	EasyContigStream stream_2("/home/snurk/Dropbox/gingi/TDC60.fasta");
-//	string ref = "/home/snurk/Dropbox/gingi/TDC60.fasta";
-//	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff_cl.fasta");
-//	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60_cl.fasta");
-//	string ref = "assembly_comp/gingi_diff_mask/tdc60_cl.fasta";
-	EasyContigStream stream_1("/home/snurk/Dropbox/lab/mrsa/MRSA_RCH_S60.fasta",
-			"s60_");
-	EasyContigStream stream_2(
-			"/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta", "usa300_");
-//	EasyContigStream stream_1("assembly_comp/gingi_diff_mask/jeff.fasta",
-//			"jeff_");
-//	EasyContigStream stream_2("assembly_comp/gingi_diff_mask/tdc60.fasta",
-//			"tdc_");
+// 	string ref = "/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta";
+// //	string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
+// 	string output_folder = "assembly_comp/s60_usa300_" + ToString(K) + "/";
+// 	rm_dir(output_folder);
+// 	make_dir(output_folder);
 
-	string ref = "/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta";
-//	string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
-	string output_folder = "assembly_comp/s60_usa300_" + ToString(K) + "/";
-	rm_dir(output_folder);
-	make_dir(output_folder);
+// 	int br_delta = -1;
+// 	gp_t gp(ReadGenome(ref), 200, true);
+// 	ColorHandler<Graph> coloring(gp.g);
 
-	int br_delta = -1;
-	gp_t gp(ReadGenome(ref), 200, true);
-	ColorHandler<Graph> coloring(gp.g);
+// 	vector<ContigStream*> streams = { &stream_1, &stream_2 };
+// 	ConstructColoredGraph(gp, coloring, streams, false, br_delta);
 
-	vector<ContigStream*> streams = { &stream_1, &stream_2 };
-	ConstructColoredGraph(gp, coloring, streams, false, br_delta);
+// //	INFO("Filling ref pos " << gp.genome.size());
+// //			FillPos(gp_, gp_.genome, "ref_0");
+// //			FillPos(gp_, !gp_.genome, "ref_1");
 
-//	INFO("Filling ref pos " << gp.genome.size());
-//			FillPos(gp_, gp_.genome, "ref_0");
-//			FillPos(gp_, !gp_.genome, "ref_1");
+// //Indels
+// //	make_dir(output_folder + "indels/");
+// //	SimpleInDelAnalyzer<Graph> del_analyzer(gp.g, coloring, gp.edge_pos,
+// //			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(),
+// //			edge_type::red, output_folder + "indels/");
+// //	del_analyzer.Analyze();
 
-//Indels
-//	make_dir(output_folder + "indels/");
-//	SimpleInDelAnalyzer<Graph> del_analyzer(gp.g, coloring, gp.edge_pos,
-//			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(),
-//			edge_type::red, output_folder + "indels/");
-//	del_analyzer.Analyze();
+// //Alternating paths
+// //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
+// //			alt_count.CountPaths();
 
-//Alternating paths
-//			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
-//			alt_count.CountPaths();
+// //Block stats
+// //			ContigBlockStats<Graph, Mapper> block_stats(gp_.g, gp_.edge_pos,
+// //					*MapperInstance(gp_), gp_.genome, stream1_);
+// //			block_stats.Count();
 
-//Block stats
-//			ContigBlockStats<Graph, Mapper> block_stats(gp_.g, gp_.edge_pos,
-//					*MapperInstance(gp_), gp_.genome, stream1_);
-//			block_stats.Count();
+// //	Missing genes
+// //	MissingGenesAnalyser<Graph, Mapper> missed_genes(gp.g, coloring,
+// //			gp.edge_pos, gp.genome, *MapperInstance(gp),
+// //			vector<pair<bool, pair<size_t, size_t>>> {
+// //			make_pair(/*true*/false, make_pair(416000, 430000)),
+// //			make_pair(/*true*/false, make_pair(1513000, 1518000)),
+// //			make_pair(/*true*/false, make_pair(260354, 260644)),
+// //			make_pair(/*true*/false, make_pair(300641, 300904)),
+// //			make_pair(/*true*/false, make_pair(300904, 301920)),
+// //			make_pair(/*true*/false, make_pair(301917, 302348)),
+// //			make_pair(/*true*/false, make_pair(260354, 260644)),
+// //			make_pair(/*true*/false, make_pair(300641, 300904)),
+// //			make_pair(/*true*/false, make_pair(300904, 301920)),
+// //			make_pair(/*true*/false, make_pair(301917, 302348)),
+// //			make_pair(/*true*/false, make_pair(302449, 304752)),
+// //			make_pair(/*true*/false, make_pair(263821, 264594)),
+// //			make_pair(/*true*/false, make_pair(265025, 265726)),
+// //			make_pair(/*true*/false, make_pair(265740, 266951))
+// //		}
+// //		, output_folder + "missed_genes/");
+// //	missed_genes.Analyze();
 
-//	Missing genes
-//	MissingGenesAnalyser<Graph, Mapper> missed_genes(gp.g, coloring,
-//			gp.edge_pos, gp.genome, *MapperInstance(gp),
-//			vector<pair<bool, pair<size_t, size_t>>> {
-//			make_pair(/*true*/false, make_pair(416000, 430000)),
-//			make_pair(/*true*/false, make_pair(1513000, 1518000)),
-//			make_pair(/*true*/false, make_pair(260354, 260644)),
-//			make_pair(/*true*/false, make_pair(300641, 300904)),
-//			make_pair(/*true*/false, make_pair(300904, 301920)),
-//			make_pair(/*true*/false, make_pair(301917, 302348)),
-//			make_pair(/*true*/false, make_pair(260354, 260644)),
-//			make_pair(/*true*/false, make_pair(300641, 300904)),
-//			make_pair(/*true*/false, make_pair(300904, 301920)),
-//			make_pair(/*true*/false, make_pair(301917, 302348)),
-//			make_pair(/*true*/false, make_pair(302449, 304752)),
-//			make_pair(/*true*/false, make_pair(263821, 264594)),
-//			make_pair(/*true*/false, make_pair(265025, 265726)),
-//			make_pair(/*true*/false, make_pair(265740, 266951))
-//		}
-//		, output_folder + "missed_genes/");
-//	missed_genes.Analyze();
+// //		2339834
+// ////////////
+// //	WriteMagicLocality();
+// ////////////
 
-//		2339834
-////////////
-//	WriteMagicLocality();
-////////////
+// //possible rearrangements
+// //		string rearr_folder = output_folder + "rearrangements/";
+// //		make_dir(rearr_folder);
+// //		SimpleRearrangementDetector<gp_t> rearr_det(gp_, coloring_, "tdc_",
+// //				rearr_folder);
+// //		rearr_det.Detect();
 
-//possible rearrangements
-//		string rearr_folder = output_folder + "rearrangements/";
-//		make_dir(rearr_folder);
-//		SimpleRearrangementDetector<gp_t> rearr_det(gp_, coloring_, "tdc_",
-//				rearr_folder);
-//		rearr_det.Detect();
+// //print graph
+// 	make_dir(output_folder + "initial_pics");
+// 	PrintColoredGraphAlongRef(gp, coloring,
+// 			output_folder + "initial_pics/colored_split_graph.dot");
 
-//print graph
-	make_dir(output_folder + "initial_pics");
-	PrintColoredGraphAlongRef(gp, coloring,
-			output_folder + "initial_pics/colored_split_graph.dot");
+// 	//reference correction
+// 	SimpleInDelCorrector<Graph> corrector(gp.g, coloring,
+// 			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(), /*genome_color*/
+// 			kBlueColor, /*assembly_color*/kRedColor);
+// 	corrector.Analyze();
 
-	//reference correction
-	SimpleInDelCorrector<Graph> corrector(gp.g, coloring,
-			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(), /*genome_color*/
-			edge_type::blue, /*assembly_color*/edge_type::red);
-	corrector.Analyze();
+// 	//trivial breakpoints
+// 	string bp_folder = output_folder + "breakpoints/";
+// 	make_dir(bp_folder);
+// 	TrivialBreakpointFinder<Graph> bp_finder(gp.g, coloring, gp.edge_pos);
+// 	bp_finder.FindBreakPoints(bp_folder);
 
-	//trivial breakpoints
-	string bp_folder = output_folder + "breakpoints/";
-	make_dir(bp_folder);
-	TrivialBreakpointFinder<Graph> bp_finder(gp.g, coloring, gp.edge_pos);
-	bp_finder.FindBreakPoints(bp_folder);
-
-	//make saves
-	make_dir(output_folder + "saves");
-	string filename = output_folder + "saves/graph";
-	PrinterTraits<Graph>::Printer printer(gp.g, gp.int_ids);
-	INFO("Saving graph to " << filename);
-	printer.saveGraph(filename);
-	printer.saveEdgeSequences(filename);
-	printer.savePositions(filename, gp.edge_pos);
-	SaveColoring(gp.g, gp.int_ids, coloring, filename);
-}
+// 	//make saves
+// 	make_dir(output_folder + "saves");
+// 	string filename = output_folder + "saves/graph";
+// 	PrinterTraits<Graph>::Printer printer(gp.g, gp.int_ids);
+// 	INFO("Saving graph to " << filename);
+// 	printer.saveGraph(filename);
+// 	printer.saveEdgeSequences(filename);
+// 	printer.savePositions(filename, gp.edge_pos);
+// 	SaveColoring(gp.g, gp.int_ids, coloring, filename);
+// }
 
 //End of gingi block
 
@@ -301,34 +302,40 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 //		ReadGenome(ref));
 //}
 
-//BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
-//	make_dir("bp_graph_test");
-//	INFO("Running comparison of two strains");
-//	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(CorrectGenomes<21>(ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz")
-//			, ReadGenome("data/input/E.coli/DH10B-K12.fasta")), 200);
-//	INFO("Genomes ready");
-//
-//	CompareGenomes<701>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp_wr/");
-//	INFO("Finished");
-//}
+BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
+	INFO("Running comparison of two strains");
 
-//inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, const string& output_folder) {
-//	make_dir("bp_graph_test");
-//	INFO("Running comparison of two strains");
-//	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(TotallyClearGenomes<55>(CorrectGenomes<21>(ReadGenome(strain_1)
-//			, ReadGenome(strain_2))), 30);
-////	genomes = TotallyClearGenomes<701>(genomes);
-//	VERIFY(CheckNoRepeats<301>(genomes.first));
-//	VERIFY(CheckNoRepeats<301>(genomes.second));
-//	INFO("Genomes ready");
-//
-//	CompareGenomes<701>(genomes.first, genomes.second, output_folder);
-//}
+	make_dir("bp_graph_test");
 
-//BOOST_AUTO_TEST_CASE( TwoStrainComparisonWOR ) {
-//	StrainComparisonWOR("data/input/E.coli/MG1655-K12.fasta.gz"
-//, "data/input/E.coli/DH10B-K12.fasta", "bp_graph_test/two_strain_comp_wo_repeats/");
-//}
+	string base_dir = "/Users/valich/Dropbox/mrsa/";
+	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(CorrectGenomes<21>(
+			ReadGenome(base_dir + "MRSA_RCH_I56.fasta"),
+			ReadGenome(base_dir + "MRSA_RCH_S60.fasta")), 200);
+	
+	INFO("Genomes ready");
+
+	CompareGenomes<701>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp_wr/");
+	INFO("Finished");
+}
+
+// inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, const string& output_folder) {
+// 	make_dir("bp_graph_test");
+// 	INFO("Running comparison of two strains");
+// 	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(TotallyClearGenomes<55>(CorrectGenomes<21>(ReadGenome(strain_1)
+// 			, ReadGenome(strain_2))), 30);
+// //	genomes = TotallyClearGenomes<701>(genomes);
+// 	VERIFY(CheckNoRepeats<301>(genomes.first));
+// 	VERIFY(CheckNoRepeats<301>(genomes.second));
+// 	INFO("Genomes ready");
+
+// 	CompareGenomes<701>(genomes.first, genomes.second, output_folder);
+// }
+
+// BOOST_AUTO_TEST_CASE( TwoStrainComparisonWOR ) {
+// 	string base_dir = "/Users/valich/Dropbox/mrsa/";
+// 	StrainComparisonWOR(base_dir + "/MRSA_RCH_I56.fasta"
+// , base_dir + "MRSA_RCH_S60.fasta", "bp_graph_test/two_strain_comp_wo_repeats/");
+// }
 
 //BOOST_AUTO_TEST_CASE( CompareAllMRSA ) {
 //	string mrsa_root = "/home/snurk/MRSA/more_strains/";
@@ -474,3 +481,4 @@ BOOST_AUTO_TEST_CASE( AssemblyRefComparison ) {
 
 	return 0;
 }
+
