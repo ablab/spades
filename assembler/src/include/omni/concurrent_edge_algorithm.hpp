@@ -153,12 +153,7 @@ public:
 		border_runner.GetNotProcessedArguments(border_not_processed_edges);
 		VERIFY(border_not_processed_edges.size() == 0);
 
-
 		all_graph_component.Synchronize();
-
-		// TODO: Tip Clipper only?
-		Compressor<Graph> compressor(graph_);
-		compressor.CompressAllVertices();
 	}
 
 private:

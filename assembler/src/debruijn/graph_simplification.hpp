@@ -191,7 +191,7 @@ void ClipTips(GraphPack& graph_pack,
 	auto factory = GetTipClipperFactory<Graph>(graph_pack, graph.k(),
 			iteration_count, iteration, raw_removal_handler);
 
-	RunConcurrentAlgorithm(graph, factory, LengthComparator<Graph>(graph));
+	ClipTips(graph, factory);
 
 	DEBUG("Clipping tips finished");
 }
@@ -221,9 +221,17 @@ void ClipTipsForResolver(Graph &graph) {
 
 	auto factory = GetTipClipperResolverFactory<Graph>(graph.k());
 
-	RunConcurrentAlgorithm(graph, factory, LengthComparator<Graph>(graph));
+	ClipTips(graph, factory);
 
 	DEBUG("Clipping tips for Resolver finished");
+}
+
+template <class Graph, class FactoryPtr>
+void ClipTips(Graph& graph, FactoryPtr factory) {
+	RunConcurrentAlgorithm(graph, factory, LengthComparator<Graph>(graph));
+
+	Compressor<Graph> compressor(graph);
+	compressor.CompressAllVertices();
 }
 
 template<class Graph, class AlgorithmFactoryPtr, class Comparator>
