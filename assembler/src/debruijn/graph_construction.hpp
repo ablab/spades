@@ -44,7 +44,7 @@ void FillPairedIndexWithReadCountMetric(const Graph &g,
 		const IdTrackHandler<Graph>& int_ids, const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper,
 		PairedInfoIndex<Graph>& paired_info_index,
-		io::ReadStreamVector< io::IReader<PairedRead> >& streams, size_t k) {
+		io::ReadStreamVector<io::IReader<PairedRead> >& streams, size_t k) {
 
 	INFO("Counting paired info with read count weight");
 	NewExtendedSequenceMapper<Graph> mapper(g, index, kmer_mapper, k + 1);
@@ -63,7 +63,7 @@ template<class PairedRead>
 void FillPairedIndexWithProductMetric(const Graph &g,
 		const EdgeIndex<Graph>& index, const KmerMapper<Graph>& kmer_mapper,
 		PairedInfoIndex<Graph>& paired_info_index,
-		io::ReadStreamVector< io::IReader<PairedRead> >& streams, size_t k) {
+		io::ReadStreamVector<io::IReader<PairedRead> >& streams, size_t k) {
 
 	INFO("Counting paired info with product weight");
 
@@ -83,9 +83,10 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		const KmerMapper<Graph>& kmer_mapper, size_t is, size_t rs,
 		size_t delta, const Sequence& genome, size_t k) {
 
-    VERIFY_MSG(genome.size() > 0, "The genome seems not to be loaded, program will exit");
-	INFO((string) (FormattedString("Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i")
-					<< genome.size() << k << is << rs << delta));
+	VERIFY_MSG(genome.size() > 0,
+			"The genome seems not to be loaded, program will exit");
+	INFO(
+			(string) (FormattedString("Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i") << genome.size() << k << is << rs << delta));
 
 	EtalonPairedInfoCounter<Graph> etalon_paired_info_counter(g, index,
 			kmer_mapper, is, rs, delta, k);
@@ -124,8 +125,9 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
 	EdgeIndex<Graph>::InnerIndex &innerIndex = index.inner_index();
 
-	for (auto I = innerIndex.value_cbegin(), E = innerIndex.value_cend(); I != E; ++I) {
-    const auto& edgeInfo = *I;
+	for (auto I = innerIndex.value_cbegin(), E = innerIndex.value_cend();
+			I != E; ++I) {
+		const auto& edgeInfo = *I;
 		edgeInfo.edgeId_->IncCoverage(edgeInfo.count_);
 	}
 
@@ -133,39 +135,40 @@ void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
 }
 
 template<class Graph, class Read>
-size_t ConstructGraph(size_t k, io::ReadStreamVector< io::IReader<Read> >& streams,
-                      Graph& g, EdgeIndex<Graph>& index,
-                      SingleReadStream* contigs_stream = 0) {
+size_t ConstructGraph(size_t k,
+		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
+		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
 
-  INFO("Constructing DeBruijn graph");
+	INFO("Constructing DeBruijn graph");
 
-  TRACE("Filling indices");
-  size_t rl = 0;
-  VERIFY_MSG(streams.size(), "No input streams specified");
+	TRACE("Filling indices");
+	size_t rl = 0;
+	VERIFY_MSG(streams.size(), "No input streams specified");
 
-  TRACE("... in parallel");
-  DeBruijnKMerIndex<typename Graph::EdgeId>& debruijn = index.inner_index();
-  rl = DeBruijnKMerIndexBuilder().BuildIndexFromStream(debruijn, streams, contigs_stream);
+	TRACE("... in parallel");
+	DeBruijnKMerIndex<typename Graph::EdgeId>& debruijn = index.inner_index();
+	rl = DeBruijnKMerIndexBuilder().BuildIndexFromStream(debruijn, streams,
+			contigs_stream);
 
-  TRACE("Filled indices");
-  
-  INFO("Condensing graph");
-  DeBruijnGraphConstructor<Graph> g_c(g, debruijn, k);
-  g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
-  TRACE("Graph condensed");
+	TRACE("Filled indices");
 
-  return rl;
+	INFO("Condensing graph");
+	DeBruijnGraphConstructor<Graph> g_c(g, debruijn, k);
+	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
+	TRACE("Graph condensed");
+
+	return rl;
 }
 
 template<class Read>
 size_t ConstructGraphWithCoverage(size_t k,
-                                  io::ReadStreamVector< io::IReader<Read> >& streams, Graph& g,
-                                  EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
-  size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
+		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
+		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
+	size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
 
-  FillCoverageFromIndex(g, index, k);
+	FillCoverageFromIndex(g, index, k);
 
-  return rl;
+	return rl;
 }
 
 }

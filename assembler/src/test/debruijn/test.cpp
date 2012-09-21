@@ -19,7 +19,7 @@
 
 ::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
 {
-    logging::logger *log = logging::create_logger("", logging::L_DEBUG);
+    logging::logger *log = logging::create_logger("", logging::L_TRACE/*DEBUG*/);
     log->add_writer(std::make_shared<logging::console_writer>());
     logging::attach_logger(log);
 
@@ -29,4 +29,8 @@
     assign_op( framework::master_test_suite().p_name.value, basic_cstring<char>(module_name), 0 );
 
     return 0;
+}
+
+namespace debruijn_graph {
+	const string tmp_folder = "tmp/";
 }
