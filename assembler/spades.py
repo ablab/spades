@@ -743,7 +743,7 @@ def main():
         if CONFIG_FILE:
             shutil.copy(CONFIG_FILE, spades_cfg.output_dir)
 
-            # dataset created during error correction
+        # dataset created during error correction
         if bh_dataset_filename:
             spades_cfg.__dict__["dataset"] = bh_dataset_filename
 
@@ -775,9 +775,6 @@ def main():
 
             dataset_file.close()
             spades_cfg.__dict__["dataset"] = dataset_filename
-        else:
-            spades_cfg.dataset = os.path.abspath(os.path.expandvars(spades_cfg.dataset))
-            shutil.copy(spades_cfg.dataset, spades_cfg.output_dir)
 
         result_contigs_filename = run_spades(spades_cfg)
 
@@ -800,8 +797,13 @@ def run_bh(cfg):
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)
-    shutil.copytree(os.path.join(spades_home, "configs"), dst_configs)
-    cfg_file_name = os.path.join(dst_configs, "hammer", "config.info")
+    shutil.copytree(os.path.join(spades_home, "configs", "hammer"), dst_configs)
+    cfg_file_name = os.path.join(dst_configs, "config.info")
+    # removing template configs
+    for root, dirs, files in os.walk(dst_configs):
+      for cfg_file in files:
+        if cfg_file.endswith('.template'):
+            os.remove(os.path.join(root, cfg_file))  
 
     prepare_config_bh(cfg_file_name, cfg)
 
