@@ -160,9 +160,9 @@ private:
 
 public:
 
-	EdgeIndex(const Graph& g, size_t k) :
-			GraphActionHandler<Graph>(g, "EdgeIndex"), inner_index_(k), renewer_(
-					g, inner_index_, true), delete_index_(true) {
+	EdgeIndex(const Graph& g, size_t k, const std::string &workdir) :
+			GraphActionHandler<Graph>(g, "EdgeIndex"), inner_index_(k, workdir),
+      renewer_(g, inner_index_, true), delete_index_(true) {
 	}
 
 	virtual ~EdgeIndex() {
@@ -197,8 +197,7 @@ public:
 
 	void Refill() {
 		clear();
-    DeBruijnKMerIndexBuilder().BuildIndexFromGraph(inner_index_,
-                                                   this->g());
+    DeBruijnKMerIndexBuilder().BuildIndexFromGraph(inner_index_, this->g());
 	}
 
 	void clear() {

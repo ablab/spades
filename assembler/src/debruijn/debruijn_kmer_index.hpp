@@ -295,6 +295,7 @@ class DeBruijnKMerIndex {
   typedef std::vector<KMerIndexValueType> KMerIndexStorageType;
 
   unsigned K_;
+  std::string workdir_;
   KMerIndex<KMer> index_;
   KMerIndexStorageType data_;
   MMappedRecordArrayReader<typename KMer::DataType> *kmers;
@@ -306,8 +307,8 @@ class DeBruijnKMerIndex {
   typedef typename MMappedRecordArrayReader<typename KMer::DataType>::const_iterator const_kmer_iterator;
   typedef size_t KMerIdx;
 
-  DeBruijnKMerIndex(unsigned K)
-      : K_(K), index_(K + 1), kmers(NULL) {}
+  DeBruijnKMerIndex(unsigned K, const std::string &workdir)
+      : K_(K), workdir_(workdir), index_(K + 1), kmers(NULL) {}
   ~DeBruijnKMerIndex() {
     delete kmers;
   }
@@ -535,6 +536,10 @@ class DeBruijnKMerIndex {
 
   friend class DeBruijnKMerIndexBuilder;
  private:
+  const std::string &workdir() const {
+    return workdir_;
+  }
+  
   size_t raw_seq_idx(typename KMerIndex<KMer>::KMerRawData &s) const {
     return index_.raw_seq_idx(s);
   }
@@ -655,8 +660,8 @@ DeBruijnKMerIndexBuilder::BuildIndexFromStream(DeBruijnKMerIndex<IdType> &index,
                                                io::ReadStreamVector<io::IReader<Read> > &streams,
                                                SingleReadStream* contigs_stream) const {
   unsigned nthreads = streams.size();
-  DeBruijnReadKMerSplitter<Read> splitter(cfg::get().output_dir, index.K(), streams, contigs_stream);
-  KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMer> builder(cfg::get().output_dir, 16, streams.size());
+  DeBruijnReadKMerSplitter<Read> splitter(index.workdir(), index.K(), streams, contigs_stream);
+  KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMer> builder(index.workdir(), 16, streams.size());
   size_t sz = builder.BuildIndex(index.index_, splitter, /* save final */ true);
 
   SortUniqueKMers(builder, index);
@@ -692,8 +697,8 @@ template<class Graph>
 void
 DeBruijnKMerIndexBuilder::BuildIndexFromGraph(DeBruijnKMerIndex<typename Graph::EdgeId> &index,
                                               const Graph &g) const {
-  DeBruijnGraphKMerSplitter<Graph> splitter(cfg::get().output_dir, index.K(), g);
-  KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId>::KMer> builder(cfg::get().output_dir, 16, 1);
+  DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.K(), g);
+  KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId>::KMer> builder(index.workdir(), 16, 1);
   size_t sz = builder.BuildIndex(index.index_, splitter, /* save final */ true);
 
   SortUniqueKMers(builder, index);
