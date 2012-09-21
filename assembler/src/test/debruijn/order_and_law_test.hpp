@@ -143,8 +143,8 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 	ScannerTraits<Graph>::Scanner scanner(new_graph, new_int_ids);
 	scanner.loadGraph(file_name);
 	omni_graph::IteratorOrderChecker<Graph> checker(graph, new_graph);
-	BOOST_ASSERT(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
-	BOOST_ASSERT(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));
+	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
+	BOOST_CHECK(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));
 //	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
 //	BOOST_CHECK(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));
 }
