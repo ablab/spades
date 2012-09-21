@@ -1,6 +1,6 @@
 #pragma once
 
-namespace compare {
+namespace cap {
 
 template<class Graph, class Mapper>
 class CoveredRangesFinder {
@@ -176,7 +176,7 @@ class ColoredGraphConstructor {
 		}
 	}
 
-	void PaintGraph(ContigStream& stream, edge_type color) {
+	void PaintGraph(ContigStream& stream, TColorSet color) {
 		io::SingleRead read;
 		stream.reset();
 		while (!stream.eof()) {
@@ -186,7 +186,7 @@ class ColoredGraphConstructor {
 		}
 	}
 
-	void PaintGraph(const vector<pair<ContigStream*, edge_type>>& stream_mapping) {
+	void PaintGraph(const vector<pair<ContigStream*, TColorSet> >& stream_mapping) {
 		INFO("Coloring graph");
 		for (auto it = stream_mapping.begin(); it != stream_mapping.end();
 				++it) {
@@ -194,11 +194,11 @@ class ColoredGraphConstructor {
 		}
 	}
 
-	void PaintPath(const Path<EdgeId>& path, edge_type color) {
+	void PaintPath(const Path<EdgeId>& path, TColorSet color) {
 		for (size_t i = 0; i < path.size(); ++i) {
-			coloring_.Paint(path[i], color);
-			coloring_.Paint(g_.EdgeStart(path[i]), color);
-			coloring_.Paint(g_.EdgeEnd(path[i]), color);
+			coloring_.PaintEdge(path[i], color);
+			coloring_.PaintVertex(g_.EdgeStart(path[i]), color);
+			coloring_.PaintVertex(g_.EdgeEnd(path[i]), color);
 		}
 	}
 
@@ -235,9 +235,9 @@ public:
 //			SaveOldGraph(output_folder + "saves/split_graph");
 //		}
 
-		vector<pair<ContigStream*, edge_type>> stream_mapping;
-		stream_mapping.push_back(make_pair(streams[0], edge_type::red));
-		stream_mapping.push_back(make_pair(streams[1], edge_type::blue));
+		vector<pair<ContigStream*, TColorSet> > stream_mapping;
+		stream_mapping.push_back(make_pair(streams[0], kRedColor));
+		stream_mapping.push_back(make_pair(streams[1], kBlueColor));
 
 		PaintGraph(stream_mapping);
 
@@ -245,5 +245,90 @@ public:
 		CompressGraph(g_, coloring_);
 	}
 };
+
+
+template<class Graph>
+void SimplifyGraph(Graph& g, size_t br_delta) {
+	debruijn_config::simplification::bulge_remover br_config;
+	br_config.max_bulge_length_coefficient = 2;
+	br_config.max_coverage = 1000.;
+	br_config.max_relative_coverage = 1.2;
+	br_config.max_delta = br_delta;
+	br_config.max_relative_delta = 0.1;
+	INFO("Removing bulges");
+	RemoveBulges(g, br_config);
+
+//		debruijn_config::simplification::tip_clipper tc;
+//		tc.max_coverage = 1000;
+//		tc.max_relative_coverage = 1000;
+//		tc.max_tip_length_coefficient = 6;
+//		ClipTips(gp.g, tc, 10 * gp.g.k());
+}
+
+template<class gp_t>
+void ConstructColoredGraph(gp_t& gp,
+		ColorHandler<typename gp_t::graph_t>& coloring,
+		vector<ContigStream*>& streams, bool fill_pos = true, int br_delta = -1) {
+	typedef typename gp_t::graph_t Graph;
+	const size_t k = gp_t::k_value;
+	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
+
+	INFO("Constructing de Bruijn graph for k=" << k);
+
+	//dirty hack because parallel construction uses cfg::get!!!
+	io::MultifileReader<Contig> stream(streams);
+	ConstructGraph<k, Graph>(gp.g, gp.index, stream);
+
+	//TODO do we still need it?
+	if (br_delta > 0)
+		SimplifyGraph(gp.g, br_delta);
+
+	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
+			coloring, *MapperInstance < gp_t > (gp));
+	colored_graph_constructor.ConstructGraph(streams);
+
+	if (fill_pos) {
+		INFO("Filling contig positions");
+		for (auto it = streams.begin(); it != streams.end(); ++it) {
+			ContigStream& stream = **it;
+			stream.reset();
+			FillPos(gp, stream);
+		}
+	}
+}
+
+//template<class gp_t>
+//void ConstructColoredGraph(gp_t& gp,
+//		ColorHandler<typename gp_t::graph_t>& coloring,
+//		vector<ContigStream*>& streams, const string& reference, bool fill_pos = true, int br_delta = -1) {
+//	typedef typename gp_t::graph_t Graph;
+//	const size_t k = gp_t::k_value;
+//	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
+//
+//	INFO("Constructing de Bruijn graph for k=" << k);
+//
+//	//dirty hack because parallel construction uses cfg::get!!!
+//	vector<ContigStream*>& tmp_streams(streams.begin(), streams.end());
+//	tmp_streams.push_back(EasyC)
+//	io::MultifileReader<Contig> stream(tmp_streams);
+//	ConstructGraph<k, Graph>(gp.g, gp.index, stream);
+//
+//	//TODO do we still need it?
+//	if (br_delta > 0)
+//		SimplifyGraph(gp.g, br_delta);
+//
+//	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
+//			coloring, *MapperInstance < gp_t > (gp));
+//	colored_graph_constructor.ConstructGraph(streams);
+//
+//	if (fill_pos) {
+//		INFO("Filling contig positions");
+//		for (auto it = streams.begin(); it != streams.end(); ++it) {
+//			ContigStream& stream = **it;
+//			stream.reset();
+//			FillPos(gp, stream);
+//		}
+//	}
+//}
 
 }

@@ -98,8 +98,8 @@ else
     'dt') run_n_measure build/debug/bin/debruijn_test && run_n_measure build/debug/bin/include_test ;;
     'rv' ) build/release/bin/online_vis $cfg_debruijn/config.info ;;
     'dv' ) build/debug/bin/online_vis $cfg_debruijn/config.info ;;
-    'rc' ) run_n_measure build/release/bin/cap ;;
-    'dc' ) run_n_measure build/debug/bin/cap ;;
+    'rc' ) run_n_measure build/release/bin/cap --log_level=test_suite ;;
+    'dc' ) run_n_measure build/debug/bin/cap --log_level=test_suite ;;
     'rct' ) run_n_measure build/release/bin/cap_test ;;
     'dct' ) run_n_measure build/debug/bin/cap_test ;;
 

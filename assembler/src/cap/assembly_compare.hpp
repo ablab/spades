@@ -23,9 +23,9 @@
 #include "stats.hpp"
 #include "visualization.hpp"
 
-namespace compare {
+namespace cap {
 
-//class RCSplittingStream: public io::DelegatingReaderWrapper<io::SingleRead> {
+//class RCSplittingStream: public io::DelegatingReaderWrapper<io::SingleReaGapsRemoverd> {
 //private:
 //	io::SplittingWrapper filtered_reader_;
 //	io::RCReaderWrapper<io::SingleRead> stream_;
@@ -52,16 +52,26 @@ namespace compare {
 //	//
 //}
 
+template <class Graph>
+void DeleteEdgesByColor(Graph& g, const ColorHandler<Graph>& coloring, TColorSet color) {
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		if (coloring.Color(*it) == color) {
+			g.DeleteEdge(*it);
+		}
+	}
+	Cleaner<Graph>(g).Clean();
+}
+
 template<class Graph>
 class GapsRemover {
 	typedef typename Graph::VertexId VertexId;
 	Graph& g_;
 	const ColorHandler<Graph>& coloring_;
-	const edge_type gap_color_;
+	const TColorSet gap_color_;
 	const size_t length_bound_;
 public:
 	GapsRemover(Graph& g, const ColorHandler<Graph>& coloring,
-			edge_type gap_color, size_t length_bound) :
+			TColorSet gap_color, size_t length_bound) :
 			g_(g), coloring_(coloring), gap_color_(gap_color), length_bound_(
 					length_bound) {
 
@@ -84,53 +94,19 @@ public:
 	}
 };
 
-template<class Graph>
-void SimplifyGraph(Graph& g, size_t br_delta) {
-	debruijn_config::simplification::bulge_remover br_config;
-	br_config.max_bulge_length_coefficient = 2;
-	br_config.max_coverage = 1000.;
-	br_config.max_relative_coverage = 1.2;
-	br_config.max_delta = br_delta;
-	br_config.max_relative_delta = 0.1;
-	INFO("Removing bulges");
-	RemoveBulges(g, br_config);
-
-//		debruijn_config::simplification::tip_clipper tc;
-//		tc.max_coverage = 1000;
-//		tc.max_relative_coverage = 1000;
-//		tc.max_tip_length_coefficient = 6;
-//		ClipTips(gp.g, tc, 10 * gp.g.k());
-}
-
-template<class gp_t>
-void ConstructColoredGraph(gp_t& gp,
-		ColorHandler<typename gp_t::graph_t>& coloring,
-		vector<ContigStream*>& streams, int br_delta = -1) {
-	typedef typename gp_t::graph_t Graph;
-	const size_t k = gp_t::k_value;
-	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
-
-	INFO("Constructing de Bruijn graph for k=" << k);
-
-	//dirty hack because parallel construction uses cfg::get!!!
-	io::MultifileReader<Contig> stream(streams);
-	ConstructGraph<k, Graph>(gp.g, gp.index, stream);
-
-	//TODO do we still need it?
-	if (br_delta > 0)
-		SimplifyGraph(gp.g, br_delta);
-
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
-			coloring, *MapperInstance < gp_t > (gp));
-	colored_graph_constructor.ConstructGraph(streams);
-
-	INFO("Filling contig positions");
-	for (auto it = streams.begin(); it != streams.end(); ++it) {
-		ContigStream& stream = **it;
-		stream.reset();
-		FillPos(gp, stream);
+class EasyContigStream: public io::DelegatingReaderWrapper<io::SingleRead> {
+private:
+	io::Reader raw_stream_;
+	io::RCReaderWrapper<io::SingleRead> rc_stream_;
+	io::PrefixAddingReaderWrapper prefix_stream_;
+public:
+	EasyContigStream(const string& filename, const string& prefix) :
+			raw_stream_(filename),
+			rc_stream_(raw_stream_),
+			prefix_stream_(rc_stream_, prefix) {
+		Init(prefix_stream_);
 	}
-}
+};
 
 template<class gp_t>
 class AssemblyComparer {
@@ -140,17 +116,25 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> Mapper;
 
-//	io::IReader<io::SingleRead> &stream1_;
-//	io::IReader<io::SingleRead> &stream2_;
 	gp_t gp_;
 	ColorHandler<Graph> coloring_;
 	io::RCReaderWrapper<io::SingleRead> rc_stream1_;
 	io::RCReaderWrapper<io::SingleRead> rc_stream2_;
 	string name1_;
-	PrefixAddingReaderWrapper stream1_;
+	io::PrefixAddingReaderWrapper stream1_;
 	string name2_;
-	PrefixAddingReaderWrapper stream2_;
+	io::PrefixAddingReaderWrapper stream2_;
 	bool untangle_;
+
+//	void WriteMagicLocality() {
+//		LengthIdGraphLabeler<Graph> basic_labeler(gp_.g);
+//		EdgePosGraphLabeler<Graph> pos_labeler(gp_.g, gp_.edge_pos);
+//
+//		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+//		make_dir("/home/snurk/gingi_dbg");
+//		WriteComponentsAlongPath(gp_.g, labeler, "/home/snurk/gingi_dbg/path.dot", /*split_length*/1000, /*vertex_number*/15
+//				, (*MapperInstance(gp_)).MapSequence((!gp_.genome).Subseq(2024608, 2067372)), *ConstructBorderColorer(gp_.g, coloring_));
+//	}
 
 	template<class gp_t2>
 	void UniversalSaveGP(
@@ -170,15 +154,6 @@ private:
 //		WriteSimple(gp.g, labeler, filename + ".dot");
 	}
 
-	void DeleteVioletEdges(Graph& g, const ColorHandler<Graph>& coloring) {
-		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (coloring.Color(*it) == edge_type::violet) {
-				g.DeleteEdge(*it);
-			}
-		}
-		Cleaner<Graph>(g).Clean();
-	}
-
 	void SaveOldGraph(const string& path) {
 		INFO("Saving graph to " << path);
 		PrintGraphPack(path, gp_);
@@ -189,21 +164,21 @@ private:
 	template<class gp_t2>
 	void ProduceResults(gp_t2& gp, const ColorHandler<Graph>& coloring,
 			const string& output_folder, bool detailed_output) {
-		INFO("Removing unnecessary edges");
-		DeleteVioletEdges(gp.g, coloring);
+// 		INFO("Removing unnecessary edges");
+// 		DeleteVioletEdges(gp.g, coloring);
 
-//		if (detailed_output) {
-//			PrintColoredGraph(gp.g, coloring, gp.edge_pos,
-//					output_folder + "initial_pics/purple_removed.dot");
-//			UniversalSaveGP(gp, output_folder + "saves/purple_removed");
-//		}
+// //		if (detailed_output) {
+// //			PrintColoredGraph(gp.g, coloring, gp.edge_pos,
+// //					output_folder + "initial_pics/purple_removed.dot");
+// //			UniversalSaveGP(gp, output_folder + "saves/purple_removed");
+// //		}
 
-//		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
-//		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
-		INFO("Counting stats, outputting pictures");
-		BPGraphStatCounter<Graph> counter(gp.g, coloring, output_folder);
-		LengthIdGraphLabeler<Graph> labeler(gp.g);
-		counter.CountStats(labeler, detailed_output);
+// //		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/5000);
+// //		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
+// 		INFO("Counting stats, outputting pictures");
+// 		BPGraphStatCounter<Graph> counter(gp.g, coloring, output_folder);
+// 		LengthIdGraphLabeler<Graph> labeler(gp.g);
+// 		counter.CountStats(labeler, detailed_output);
 	}
 
 	void PrepareDirs(const string& output_folder, bool detailed_output) {
@@ -237,27 +212,6 @@ public:
 
 		PrepareDirs(output_folder, detailed_output);
 
-//		INFO("Constructing graph");
-//		INFO("K = " << gp_t::k_value);
-//		ConstructGraph<gp_t::k_value, Graph>(gp_.g, gp_.index, stream1_,
-//				stream2_);
-//
-//		//TODO do we still need it?
-//		if (br_delta > 0)
-//			SimplifyGraph(gp_.g, (size_t) br_delta);
-//
-//		ColorHandler<Graph> coloring(gp_.g);
-//		ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp_.g,
-//				coloring, *MapperInstance < gp_t > (gp_));
-//		colored_graph_constructor.ConstructGraph(vector<ContigStream*> {
-//				&stream1_, &stream2_ });
-//
-//		INFO("Filling contig positions");
-//		stream1_.reset();
-//		FillPos(gp_, stream1_);
-//		stream2_.reset();
-//		FillPos(gp_, stream2_);
-
 		vector<ContigStream*> streams = { &stream1_, &stream2_ };
 		ConstructColoredGraph(gp_, coloring_, streams, br_delta);
 
@@ -266,20 +220,21 @@ public:
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
 
-//			SimpleInDelAnalyzer<Graph> del_analyzer(
-//					gp_.g,
-//					coloring_,
-//					gp_.edge_pos,
-//					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
-//					edge_type::red);
-//			del_analyzer.Analyze();
+			SimpleInDelAnalyzer<Graph> del_analyzer(
+					gp_.g,
+					coloring_,
+					gp_.edge_pos,
+					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
+					kRedColorSet,
+					output_folder);
+			del_analyzer.Analyze();
 
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
 //			alt_count.CountPaths();
 
-			ContigBlockStats<Graph, Mapper> block_stats(gp_.g, gp_.edge_pos,
-					*MapperInstance(gp_), gp_.genome, stream1_);
-			block_stats.Count();
+//			ContigBlockStats<Graph, Mapper> block_stats(gp_.g, gp_.edge_pos,
+//					*MapperInstance(gp_), gp_.genome, stream1_);
+//			block_stats.Count();
 
 			MissingGenesAnalyser<Graph, Mapper> missed_genes(gp_.g, coloring_,
 					gp_.edge_pos, gp_.genome, *MapperInstance(gp_),
@@ -301,9 +256,14 @@ public:
 
 			missed_genes.Analyze();
 			}
+
+		////////////
+//		WriteMagicLocality();
+		////////////
+
 //		2339834
 //		INFO("Removing gaps");
-//		GapsRemover<Graph> gaps_remover(gp_.g, coloring, edge_type::blue, 700);
+//		GapsRemover<Graph> gaps_remover(gp_.g, coloring, kBlueColorSet, 700);
 //		gaps_remover.RemoveGaps();
 //		INFO("Gaps removed");
 
@@ -316,14 +276,14 @@ public:
 		if (one_many_resolve) {
 			VERIFY(!untangle_);
 			RestrictedOneManyResolver<Graph> resolver(gp_.g, coloring_,
-					edge_type::violet);
+					kVioletColorSet);
 			resolver.Resolve();
 		}
 
 		if (detailed_output) {
 			if (gp_.genome.size() > 0) {
-				PrintColoredGraphAlongRef(gp_, coloring_, gp_.edge_pos,
-						gp_.genome,
+				PrintColoredGraphAlongRef(gp_, coloring_,// gp_.edge_pos,  TODO why not corresponding???
+						//gp_.genome,
 						output_folder + "initial_pics/colored_split_graph.dot");
 			} else {
 				PrintColoredGraph(gp_.g, coloring_, gp_.edge_pos,

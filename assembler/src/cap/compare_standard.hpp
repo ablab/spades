@@ -19,7 +19,7 @@
 #include "io/rc_reader_wrapper.hpp"
 #include "io/ofastastream.hpp"
 
-namespace compare {
+namespace cap {
 typedef io::SingleRead Contig;
 typedef io::IReader<Contig> ContigStream;
 typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;

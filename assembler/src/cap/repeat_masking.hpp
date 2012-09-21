@@ -1,6 +1,6 @@
 #pragma once
 
-namespace compare {
+namespace cap {
 template<size_t k>
 void FillBagForStrand(const Sequence& strand,
 		map<Seq<k>, size_t, typename Seq<k>::less2>& bag) {

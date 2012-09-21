@@ -4,7 +4,7 @@
 #include "graph_simplification.hpp"
 #include "graph_read_correction.hpp"
 
-namespace compare {
+namespace cap {
 
 template<class Collection>
 void DisposeCollection(Collection c) {

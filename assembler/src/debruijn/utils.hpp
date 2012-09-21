@@ -25,6 +25,7 @@
 
 #include "kmer_map.hpp"
 #include "new_debruijn.hpp"
+#include "standard.hpp"
 //#include "common/io/paired_read.hpp"
 
 #include "path_helper.hpp"

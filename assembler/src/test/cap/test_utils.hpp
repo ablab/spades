@@ -1,6 +1,6 @@
 #pragma once
 
-namespace compare {
+namespace cap {
 
 inline double uniform_01() {
 	static boost::mt19937 rng(43);
@@ -88,7 +88,6 @@ vector<Sequence> RepeatGraphEdges(const Sequence& genome) {
 	ConstructRepeatGraph(gp);
 	return EdgesSequences(gp.g);
 }
-
 
 bool CheckFileDiff(const string& file1, const string& file2) {
 	INFO("Checking differences between " << file1 << " and " << file2);

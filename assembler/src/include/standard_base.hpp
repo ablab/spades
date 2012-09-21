@@ -96,6 +96,7 @@ using boost::cref;
 using boost::function;
 
 using boost::optional;
+using boost::make_optional;
 using boost::none;
 
 using boost::format;

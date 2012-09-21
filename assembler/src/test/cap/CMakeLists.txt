@@ -10,6 +10,8 @@ include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 include_directories(${CMAKE_SOURCE_DIR}/cap)
 
 add_executable(cap_test
+ ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
+ ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
  test.cpp)
 
 target_link_libraries(cap_test ${COMMON_LIBRARIES} input)
