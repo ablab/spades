@@ -14,7 +14,6 @@
 #include "io/vector_reader.hpp"
 #include "io/read_stream_vector.hpp"
 #include "simple_tools.hpp"
-#include "seq_map.hpp"
 #include <unordered_set>
 
 namespace debruijn_graph {
