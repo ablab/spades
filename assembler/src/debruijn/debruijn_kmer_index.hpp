@@ -8,12 +8,31 @@
 #define DEBRUIJN_KMER_INDEX_HPP
 
 #include "openmp_wrapper.h"
+#include "standard.hpp"
 
 #include "io/multifile_reader.hpp"
 
 #include "mph_index/kmer_index.hpp"
 
+#include <vector>
+#include <cstdlib>
+#include <cstdio>
+
 namespace debruijn_graph {
+
+// Aux struct to count kmers during graph construction.
+template<class IdType>
+struct EdgeInfo {
+  IdType edgeId_;
+  int offset_;
+  int count_;
+
+  EdgeInfo() :
+      edgeId_(), offset_(-1), count_(0) { }
+
+  EdgeInfo(IdType edgeId, size_t offset) :
+      edgeId_(edgeId), offset_(offset), count_(1) { }
+};
 
 // used for temporary reads storage during parallel reading
 static const size_t READS_BUFFER_SIZE = 536870912; // 512 MB in bytes

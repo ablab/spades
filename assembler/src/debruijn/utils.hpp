@@ -7,7 +7,6 @@
 #pragma once
 
 #include "io/paired_read.hpp"
-#include "seq_map.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/id_track_handler.hpp"
 #include "logger/logger.hpp"
@@ -140,9 +139,9 @@ private:
 
 /**
  * EdgeIndex is a structure to store info about location of certain k-mers in graph. It delegates all
- * container procedures to inner_index_ which is SeqMap and all handling procedures to
+ * container procedures to inner_index_ which is DeBruijnKMerIndex and all handling procedures to
  * renewer_ which is DataHashRenewer.
- * @see SeqMap
+ * @see DeBruijnKMerIndex
  * @see DataHashRenewer
  */
 template<class Graph>
@@ -160,8 +159,8 @@ private:
 
 public:
 
-	EdgeIndex(const Graph& g, size_t k, const std::string &workdir) :
-			GraphActionHandler<Graph>(g, "EdgeIndex"), inner_index_(k, workdir),
+  EdgeIndex(const Graph& g, size_t k, const std::string &workdir) :
+      GraphActionHandler<Graph>(g, "EdgeIndex"), inner_index_(k, workdir),
       renewer_(g, inner_index_, true), delete_index_(true) {
 	}
 

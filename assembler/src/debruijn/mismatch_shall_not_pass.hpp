@@ -1,13 +1,11 @@
 #pragma once
 
 #include "io/paired_read.hpp"
-#include "seq_map.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/id_track_handler.hpp"
 #include "logger/logger.hpp"
 #include "omni/paired_info.hpp"
 #include "xmath.h"
-#include <boost/optional.hpp>
 #include <iostream>
 #include "sequence/sequence_tools.hpp"
 #include "omni/splitters.hpp"

@@ -14,7 +14,6 @@
 #ifndef DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
 #define DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
 #include "utils.hpp"
-#include "seq_map.hpp"
 #include "new_debruijn.hpp"
 #include "kmer_set.hpp"
 
