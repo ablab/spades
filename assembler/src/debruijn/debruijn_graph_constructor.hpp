@@ -15,7 +15,6 @@
 #define DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
 #include "utils.hpp"
 #include "new_debruijn.hpp"
-#include "kmer_set.hpp"
 
 namespace debruijn_graph {
 
@@ -29,7 +28,6 @@ class DeBruijnGraphConstructor {
   typedef DeBruijnKMerIndex<EdgeId> DeBruijn;
   typedef typename Graph::VertexId VertexId;
   typedef runtime_k::RtSeq Kmer;
-  typedef runtime_k::KmerSet KmerSet;
   typedef runtime_k::RtSeq KPlusOneMer;
   typedef typename DeBruijn::kmer_iterator kmer_iterator;
 
@@ -160,8 +158,6 @@ class DeBruijnGraphConstructor {
 
 
   void ConstructPart(vector<KPlusOneMer>& kmers, vector<Sequence>& sequences) {
-    KmerSet seqLables = runtime_k::GetSet(kmer_size_ + 1, sequences.size());
-
     for (size_t i = 0; i < sequences.size(); ++i) {
       if (origin_.ContainsInIndex(kmers[i])) {
         continue;
