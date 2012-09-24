@@ -157,7 +157,7 @@ public:
 	/**
 	 * Every thread safe descendant should override this method for correct concurrent graph processing.
 	 */
-	bool IsThreadSafe() const {
+	virtual bool IsThreadSafe() const {
 		return false;
 	}
 
