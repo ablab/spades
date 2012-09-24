@@ -298,7 +298,7 @@ GetBulgeRemoverFactory(
 
 void RemoveBulges(
 		Graph &graph,
-		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+		boost::function<void(EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
 	auto factory = GetBulgeRemoverFactory(graph, removal_handler, additional_length_bound);
