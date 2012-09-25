@@ -90,10 +90,10 @@ using std::copy;
 #include <boost/foreach.hpp>
 #define FOREACH         BOOST_FOREACH
 
-using boost::bind;
-using boost::ref;
-using boost::cref;
-using boost::function;
+//using boost::bind;
+//using boost::ref;
+//using boost::cref;
+//using boost::function;
 
 using boost::optional;
 using boost::make_optional;

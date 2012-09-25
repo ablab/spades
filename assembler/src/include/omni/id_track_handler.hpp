@@ -14,6 +14,7 @@ using namespace omnigraph;
 
 namespace omnigraph {
 
+//todo refactor
 template<class VertexId, class EdgeId>
 class BaseIdTrackHandler: public ActionHandler<VertexId, EdgeId> {
 protected:
@@ -89,6 +90,14 @@ public:
 		edge2id_[e] = int_id;
 		id2edge_[int_id] = e;
 		return int_id;
+	}
+
+	realIdType add(VertexId v, realIdType int_id) {
+		return AddVertexIntId(v, int_id);
+	}
+
+	realIdType add(EdgeId e, realIdType int_id) {
+		return AddEdgeIntId(e, int_id);
 	}
 
 //	realIdType MaxVertexId() {
@@ -208,6 +217,9 @@ class GraphIdTrackHandler:
 {
 private:
 	typedef BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
+public:
+	typedef typename base::realIdType realIdType;
+private:
 	const Graph& g_;
 protected:
 	const Graph &g() {
@@ -255,6 +267,8 @@ class IdTrackHandler:
 	public GraphIdTrackHandler<Graph>
 {
 	typedef GraphIdTrackHandler<Graph> base;
+public:
+	typedef typename  base::realIdType realIdType;
 
 public:
 	IdTrackHandler(const Graph& g, bool use_inner_ids = false) : base(g, use_inner_ids) {

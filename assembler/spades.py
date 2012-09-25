@@ -295,7 +295,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gap-closer disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden correct-mismatches "\
-               "config-file=".split()
+               "config-file= normalize-ids".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -356,6 +356,7 @@ def usage(show_hidden=False):
         print >> sys.stderr, "--spades-heap-check\t<value>\tset HEAPCHECK environment variable"\
                              " for SPAdes"
         print >> sys.stderr, "--correct-mismatches\t\tcorrect mismatches"
+        print >> sys.stderr, "--normalize-ids\t\tnormalize ids"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "--test\t\trun SPAdes on toy dataset"
@@ -410,6 +411,8 @@ def main():
         spades_heap_check = ""
 
         developer_mode = False
+	
+        normalize_ids = False
 
         threads = None
         memory = None
@@ -470,6 +473,9 @@ def main():
 
             elif opt == "--debug":
                 developer_mode = True
+            
+            elif opt == "--normalize-ids":
+                normalize_ids = True
 
             elif opt == '-h' or opt == "--help":
                 usage()
@@ -536,6 +542,8 @@ def main():
                 cfg["common"].__dict__["max_memory"] = memory
             if developer_mode:
                 cfg["common"].__dict__["developer_mode"] = developer_mode
+            if normalize_ids:
+                cfg["common"].__dict__["normalize_ids"] = normalize_ids
 
             # dataset
             cfg["dataset"].__dict__["single_cell"] = single_cell
