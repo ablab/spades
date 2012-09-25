@@ -8,6 +8,6 @@
 
 set -e
 pushd ../../../
-make rt
-./run rt
+make rdt
+./run rdt
 popd
