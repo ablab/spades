@@ -39,7 +39,7 @@ private:
 	typedef io::SingleRead Contig;
 	typedef io::IReader<io::SingleRead> ContigStream;
 	typedef	io::MultifileReader<io::SingleRead> CompositeStream;
-	typedef debruijn_graph::NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> Mapper;
+	typedef debruijn_graph::NewExtendedSequenceMapper<Graph> Mapper; // gp_t::k_value + 1
 
 	const gp_t& gp_;
 	const ColorHandler<Graph>& coloring_;
@@ -181,8 +181,8 @@ private:
 
 	vector<EdgeId> AdjacentEdges(VertexId v) {
 		vector<EdgeId> ans;
-		insert_all(ans, gp_.g.IncomingEdges(v));
-		insert_all(ans, gp_.g.OutgoingEdges(v));
+		push_back_all(ans, gp_.g.IncomingEdges(v));
+		push_back_all(ans, gp_.g.OutgoingEdges(v));
 		return ans;
 	}
 
@@ -343,7 +343,7 @@ public:
 			const string& bad_assembly_prefix,
 			const string& dir)
 	: gp_(gp)/*, pos_(pos)*/, coloring_(coloring)
-	, mapper_(gp.g, gp.index, gp.kmer_mapper)
+	, mapper_(gp.g, gp.index, gp.kmer_mapper, gp.k_value + 1)
 	, good_assembly_prefix_(good_assembly_prefix)
 	, bad_assembly_prefix_(bad_assembly_prefix)
 	, dir_(dir) {

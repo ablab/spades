@@ -65,7 +65,7 @@ namespace cap {
 // 	string ref = "/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta";
 // //	string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
 // 	string output_folder = "assembly_comp/s60_usa300_" + ToString(K) + "/";
-// 	rm_dir(output_folder);
+// 	remove_dir(output_folder);
 // 	make_dir(output_folder);
 
 // 	int br_delta = -1;

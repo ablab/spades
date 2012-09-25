@@ -15,20 +15,20 @@ class CoveredRangesFinder {
 		vector<Range> answer;
 		size_t i = 0;
 		while (i < curr_ranges.size()
-				&& curr_ranges[i].end_pos < new_range.start) {
+				&& curr_ranges[i].end_pos < new_range.start_pos) {
 			answer.push_back(curr_ranges[i]);
 			++i;
 		}
 
 		size_t merge_start =
 				(i != curr_ranges.size()) ?
-						std::min(curr_ranges[i].start,
-								new_range.start) :
-						new_range.start;
+						std::min(curr_ranges[i].start_pos,
+								new_range.start_pos) :
+						new_range.start_pos;
 
 		size_t merge_end = new_range.end_pos;
 		while (i < curr_ranges.size()
-				&& curr_ranges[i].start <= new_range.end_pos) {
+				&& curr_ranges[i].start_pos <= new_range.end_pos) {
 			if (curr_ranges[i].end_pos > merge_end)
 				merge_end = curr_ranges[i].end_pos;
 			++i;
@@ -86,7 +86,7 @@ class ColoredGraphConstructor {
 
 	void AddBreaks(set<size_t>& breaks, const vector<Range>& ranges) const {
 		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
-			breaks.insert(it->start);
+			breaks.insert(it->start_pos);
 			breaks.insert(it->end_pos);
 		}
 	}
@@ -270,20 +270,20 @@ void ConstructColoredGraph(gp_t& gp,
 		ColorHandler<typename gp_t::graph_t>& coloring,
 		vector<ContigStream*>& streams, bool fill_pos = true, int br_delta = -1) {
 	typedef typename gp_t::graph_t Graph;
-	const size_t k = gp_t::k_value;
-	typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
+	const size_t k = gp.k_value;
+	typedef NewExtendedSequenceMapper<Graph> Mapper;
 
 	INFO("Constructing de Bruijn graph for k=" << k);
 
-	//dirty hack because parallel construction uses cfg::get!!!
-	io::MultifileReader<Contig> stream(streams);
-	ConstructGraph<k, Graph>(gp.g, gp.index, stream);
+	// it's much better now?
+	io::ReadStreamVector<ContigStream> read_stream_vector(streams);
+	ConstructGraph<Graph>(k, read_stream_vector, gp.g, gp.index);
 
 	//TODO do we still need it?
 	if (br_delta > 0)
 		SimplifyGraph(gp.g, br_delta);
 
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
+	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g, // MAPPER K+1!!
 			coloring, *MapperInstance < gp_t > (gp));
 	colored_graph_constructor.ConstructGraph(streams);
 

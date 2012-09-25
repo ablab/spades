@@ -526,7 +526,7 @@ public:
 	}
 
 	void Analyze() {
-		rm_dir("ref_correction");
+		remove_dir("ref_correction");
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			if (coloring_.Color(*it) == genome_color_
 					&& genome_path_.mult(*it) > 0) {

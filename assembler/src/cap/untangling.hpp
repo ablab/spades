@@ -52,7 +52,7 @@ private:
 	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef debruijn_graph::NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> Mapper;
+	typedef debruijn_graph::NewExtendedSequenceMapper<Graph> Mapper; // gp_t::k_value + 1
 
 	static const size_t k = gp_t::k_value;
 
@@ -127,7 +127,7 @@ private:
 		VERIFY(color == kRedColor || color == kBlueColor);
 		DEBUG("Untangling contig " << name);
 		Mapper mapper(old_gp_.g, old_gp_.index,
-				old_gp_.kmer_mapper);
+				old_gp_.kmer_mapper, gp_t::k_value + 1);
 		Path<EdgeId> path = mapper.MapSequence(contig).simple_path();
 		vector<EdgeId> new_path;
 		DEBUG("Mapped contig" << name);

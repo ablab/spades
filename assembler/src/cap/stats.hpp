@@ -476,8 +476,8 @@ class TrivialBreakpointFinder: public AbstractFilter<
 
 		size_t MaxRedBlueIncLength(VertexId v) {
 			vector<EdgeId> edges;
-			insert_all(edges, g_.IncomingEdges(v));
-			insert_all(edges, g_.OutgoingEdges(v));
+			push_back_all(edges, g_.IncomingEdges(v));
+			push_back_all(edges, g_.OutgoingEdges(v));
 			return MaxRedBlueLength(edges);
 		}
 
@@ -862,7 +862,7 @@ private:
 				RefPositions(gp_.edge_pos.GetEdgePositions(e)).front();
 		int coeff = boost::ends_with(pos.contigId_, "_RC") ? -1 : 1;
 		Range range = pos.m_range_.initial_range;
-		return coeff * (start_position ? range.start : range.end_pos);
+		return coeff * (start_position ? range.start_pos : range.end_pos);
 	}
 
 	bool IsSingleRefPosition(EdgeId e) const {
@@ -1237,7 +1237,7 @@ public:
 	}
 
 	void Analyze() {
-		rm_dir(output_dir_);
+		remove_dir(output_dir_);
 		make_dir(output_dir_);
 		for (size_t i = 0; i < locations_.size(); ++i) {
 			pair<bool, pair<size_t, size_t>> location = locations_[i];

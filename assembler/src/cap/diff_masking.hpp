@@ -24,7 +24,7 @@ void Transfer(Stream1& s1, Stream2& s2) {
 
 template<class gp_t>
 void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
-		size_t delta) {
+		size_t delta = 5) {
 	using namespace debruijn_graph;
 	typedef typename gp_t::graph_t Graph;
 	INFO("Constructing graph pack for refinement");
@@ -35,9 +35,9 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 		rc_contigs.back()->reset();
 	}
 
-	CompositeContigStream comp_stream(rc_contigs);
+	io::ReadStreamVector<ContigStream> rc_read_stream_vector(rc_contigs);
 
-	ConstructGraph<gp_t::k_value>(gp.g, gp.index, comp_stream);
+	ConstructGraph(gp.k_value, rc_read_stream_vector, gp.g, gp.index);
 
 //	make_dir("bp_graph_test/tmp/");
 //	LengthIdGraphLabeler<Graph> labeler(gp.g);
@@ -65,7 +65,9 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 	tc_config.max_tip_length_coefficient = 2.;
 
 	INFO("Clipping tips with projection");
-	DefaultClipTips(gp.g, tc_config, /*read_length*/10000, projecting_callback);
+
+	auto tip_clipper_factory = GetDefaultTipClipperFactory<Graph>(tc_config, /*read_length*/10000, projecting_callback);
+	ClipTips(gp.g, tip_clipper_factory);
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 
@@ -78,7 +80,7 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 template<class gp_t>
 void ConstructGPForRefinement(gp_t& gp,
 		io::IReader<io::SingleRead>& raw_stream_1,
-		io::IReader<io::SingleRead>& raw_stream_2, size_t delta) {
+		io::IReader<io::SingleRead>& raw_stream_2, size_t delta = 5) {
 	vector<ContigStream*> contigs = { &raw_stream_1, &raw_stream_2 };
 	ConstructGPForRefinement(gp, contigs, delta);
 }
@@ -92,8 +94,8 @@ pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1,
 	io::VectorReader<io::SingleRead> stream2(
 			io::SingleRead("second", genome2.str()));
 
-	typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph, k> refining_gp_t;
-	refining_gp_t refining_gp;
+	typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph> refining_gp_t;
+	refining_gp_t refining_gp(k);
 	ConstructGPForRefinement(refining_gp, stream1, stream2, delta);
 
 	io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1
@@ -119,8 +121,8 @@ pair<Sequence, vector<Sequence>> RefineData(
 			io::SingleRead("first", data.first.str()));
 	io::VectorReader<io::SingleRead> stream2(MakeReads(data.second));
 
-	typedef graph_pack<ConjugateDeBruijnGraph, k> refining_gp_t;
-	refining_gp_t refining_gp;
+	typedef graph_pack<ConjugateDeBruijnGraph> refining_gp_t;
+	refining_gp_t refining_gp(k);
 	ConstructGPForRefinement(refining_gp, stream1, stream2);
 
 	io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1
@@ -136,9 +138,9 @@ template<size_t k>
 void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams, const vector<string> out_files) {
 	VERIFY(streams.size() == out_files.size());
 	const size_t delta = std::max(size_t(5), k / 5);
-	typedef graph_pack<ConjugateDeBruijnGraph, k> gp_t;
+	typedef graph_pack<ConjugateDeBruijnGraph> gp_t;
 	DEBUG("Constructing graph pack for k=" << k << " delta=" << delta);
-	gp_t gp;
+	gp_t gp(k);
 	ConstructGPForRefinement(gp, streams, delta);
 	for (size_t i = 0; i < streams.size(); ++i) {
 		string output_filename = out_files[i];
@@ -233,7 +235,7 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams, const vect
 template<typename ... Ks>
 void MaskDifferencesAndSave(const vector<string>& in_files, const vector<string>& suffixes
 		, const string& out_root, Ks... ks) {
-	rm_dir(out_root);
+	remove_dir(out_root);
 	make_dir(out_root);
 	vector<ContigStream*> streams = OpenStreams(in_files);
 	MaskDifferencesAndSave(streams, suffixes, out_root, ks...);

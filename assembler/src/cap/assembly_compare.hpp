@@ -114,7 +114,7 @@ private:
 	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> Mapper;
+	typedef NewExtendedSequenceMapper<Graph> Mapper; // gp_t::k_value + 1
 
 	gp_t gp_;
 	ColorHandler<Graph> coloring_;
@@ -182,7 +182,7 @@ private:
 	}
 
 	void PrepareDirs(const string& output_folder, bool detailed_output) {
-		rm_dir(output_folder);
+		remove_dir(output_folder);
 		make_dir(output_folder);
 		if (detailed_output) {
 			make_dir(output_folder + "initial_pics/");
@@ -193,11 +193,11 @@ private:
 
 public:
 
-	AssemblyComparer(io::IReader<io::SingleRead> &stream1,
+	AssemblyComparer(size_t k_value, io::IReader<io::SingleRead> &stream1,
 			io::IReader<io::SingleRead> &stream2, const string& name1,
 			const string& name2, bool untangle = false,
 			const Sequence& reference = Sequence()) :
-			gp_(reference, 200, true), coloring_(gp_.g), rc_stream1_(stream1), rc_stream2_(
+			gp_(k_value, reference, 200, true), coloring_(gp_.g), rc_stream1_(stream1), rc_stream2_(
 					stream2), name1_(name1), stream1_(rc_stream1_, name1), name2_(
 					name2), stream2_(rc_stream2_, name2), untangle_(untangle) {
 	}
@@ -236,23 +236,23 @@ public:
 //					*MapperInstance(gp_), gp_.genome, stream1_);
 //			block_stats.Count();
 
-			MissingGenesAnalyser<Graph, Mapper> missed_genes(gp_.g, coloring_,
+			MissingGenesAnalyser<Graph, Mapper> missed_genes(gp_.g, coloring_, // TODO gp_t::k_value + 1
 					gp_.edge_pos, gp_.genome, *MapperInstance(gp_),
 					vector<pair<bool, pair<size_t, size_t>>> {
-					make_pair(true, make_pair(260354, 260644)),
-					make_pair(true, make_pair(300641, 300904)),
-					make_pair(true, make_pair(300904, 301920)),
-					make_pair(true, make_pair(301917, 302348)),
-					make_pair(true, make_pair(260354, 260644)),
-					make_pair(true, make_pair(300641, 300904)),
-					make_pair(true, make_pair(300904, 301920)),
-					make_pair(true, make_pair(301917, 302348)),
-					make_pair(true, make_pair(302449, 304752)),
-					make_pair(true, make_pair(263821, 264594)),
-					make_pair(true, make_pair(265025, 265726)),
-					make_pair(true, make_pair(265740, 266951))
-				}
-				, output_folder + "missed_genes/");
+						make_pair(true, make_pair(260354, 260644)),
+						make_pair(true, make_pair(300641, 300904)),
+						make_pair(true, make_pair(300904, 301920)),
+						make_pair(true, make_pair(301917, 302348)),
+						make_pair(true, make_pair(260354, 260644)),
+						make_pair(true, make_pair(300641, 300904)),
+						make_pair(true, make_pair(300904, 301920)),
+						make_pair(true, make_pair(301917, 302348)),
+						make_pair(true, make_pair(302449, 304752)),
+						make_pair(true, make_pair(263821, 264594)),
+						make_pair(true, make_pair(265025, 265726)),
+						make_pair(true, make_pair(265740, 266951))
+					}
+					, output_folder + "missed_genes/");
 
 			missed_genes.Analyze();
 			}
@@ -363,11 +363,11 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 	io::SplittingWrapper stream2(raw_stream2);
 
 	typedef debruijn_graph::graph_pack<
-	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, K> comparing_gp_t;
+	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph> comparing_gp_t; // K
 
 	if (refine) {
-		typedef graph_pack<ConjugateDeBruijnGraph, k> refining_gp_t;
-		refining_gp_t refining_gp;
+		typedef graph_pack<ConjugateDeBruijnGraph> refining_gp_t;
+		refining_gp_t refining_gp(k);
 		io::VectorReader<io::SingleRead> genome_stream(
 				io::SingleRead("genome", reference.str()));
 		vector<ContigStream*> comp_stream =
@@ -389,13 +389,13 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 						*MapperInstance(refining_gp)));
 
 		reference_stream.reset();
-		AssemblyComparer<comparing_gp_t> comparer(refined_stream1,
+		AssemblyComparer<comparing_gp_t> comparer(K, refined_stream1,
 				refined_stream2, name1, name2, untangle,
 				ReadSequence(reference_stream));
 		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
 		false, 10, add_saves_path);
 	} else {
-		AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, name1,
+		AssemblyComparer<comparing_gp_t> comparer(K, stream1, stream2, name1,
 				name2, untangle, reference);
 		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
 		false, 10, add_saves_path);
@@ -439,9 +439,9 @@ void CompareGenomes(const Sequence& genome_1, const Sequence& genome_2,
 			io::SingleRead("", genome_1.str()));
 	io::VectorReader<io::SingleRead> stream2(
 			io::SingleRead("", genome_2.str()));
-	typedef graph_pack</*Nonc*/ConjugateDeBruijnGraph, k> comparing_gp_t;
+	typedef graph_pack</*Nonc*/ConjugateDeBruijnGraph> comparing_gp_t; // k
 	INFO("Running assembly comparer");
-	AssemblyComparer<comparing_gp_t> comparer(stream1, stream2, "strain1",
+	AssemblyComparer<comparing_gp_t> comparer(k, stream1, stream2, "strain1",
 			"strain2", /*untangle*/false);
 	comparer.CompareAssemblies(output_dir, /*detailed_output*/true, /*on_many_resolve*/
 	false);
@@ -464,8 +464,8 @@ void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
 	StrGraphLabeler<Graph> str_labeler(gp.g);
 	CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
 
-	NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp.g, gp.index,
-			gp.kmer_mapper);
+	NewExtendedSequenceMapper<Graph> mapper(gp.g, gp.index, // gp_t::k_value + 1
+			gp.kmer_mapper, gp_t::k_value + 1);
 
 	assembly_to_thread.reset();
 	io::SingleRead read;

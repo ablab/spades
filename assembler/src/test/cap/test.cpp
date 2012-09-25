@@ -44,7 +44,7 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir, cons
 	string add_saves_path = "";
 	if (regenerate_etalon) {
 //		string etalon_root = "./src/test/debruijn_tools/tests/etalon/";
-		rm_dir(etalon_root);
+		remove_dir(etalon_root);
 		add_saves_path = etalon_root;
 		make_dir(add_saves_path);
 	}
@@ -98,14 +98,14 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTests ) {
 	make_dir("bp_graph_test");
 	LoadAndRunBPG<15, 25>("./src/test/debruijn_tools/tests/synthetic/tests.xml",
 			"bp_graph_test/simulated_common/", "./src/test/debruijn_tools/tests/synthetic/etalon/", "");
-	rm_dir("bp_graph_test");
+	remove_dir("bp_graph_test");
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesWithErrorsTests ) {
 	make_dir("bp_graph_test");
 	LoadAndRunBPG<15, 25>("./src/test/debruijn_tools/tests/synthetic_with_err/tests2.xml",
 			"bp_graph_test/simulated_common_err/", "./src/test/debruijn_tools/tests/synthetic_with_err/etalon/", "1_err");
-	rm_dir("bp_graph_test");
+	remove_dir("bp_graph_test");
 }
 
 // todo parts for more tests

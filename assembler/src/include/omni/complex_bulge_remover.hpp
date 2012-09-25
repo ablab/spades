@@ -563,8 +563,7 @@ public:
 private:
 	DECL_LOGGER("OppositionLicvidator")
 	;
-}
-;
+};
 
 //-------------------- new version -------------------
 

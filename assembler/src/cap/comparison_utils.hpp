@@ -52,14 +52,14 @@ inline Sequence ReadSequence(ContigStream& reader) {
 }
 
 template<size_t k, class Graph>
-void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
+void ConstructGraph(Graph& g, EdgeIndex<Graph>& index,
 		ContigStream& stream) {
 	vector<ContigStream*> streams = { &stream };
 	ConstructGraph<k, Graph>(streams, g, index);
 }
 
 template<size_t k, class Graph>
-void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
+void ConstructGraph(Graph& g, EdgeIndex<Graph>& index,
 		ContigStream& stream1,
 		ContigStream& stream2) {
 	io::MultifileReader<io::SingleRead> composite_reader(stream1, stream2);
