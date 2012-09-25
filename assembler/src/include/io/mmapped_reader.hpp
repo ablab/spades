@@ -8,6 +8,7 @@
 #define HAMMER_MMAPPED_READER_HPP
 
 #include "pointer_iterator.hpp"
+#include "array_vector.hpp"
 
 #include "verify.hpp"
 
@@ -156,15 +157,15 @@ class MMappedRecordReader : public MMappedReader {
 template<typename T>
 class MMappedRecordArrayReader : public MMappedReader {
   size_t elcnt_;
+
  public:
-  typedef pointer_array_iterator<T> iterator;
-  typedef const pointer_array_iterator<T> const_iterator;
+  typedef typename array_vector<T>::iterator iterator;
+  typedef typename array_vector<T>::const_iterator const_iterator;
 
   MMappedRecordArrayReader(const std::string &FileName,
                            size_t elcnt = 1,
-                           bool unlink = true,
-                           size_t blocksize = 64*1024*1024):
-      MMappedReader(FileName, unlink, blocksize), elcnt_(elcnt){
+                           bool unlink = true):
+      MMappedReader(FileName, unlink, -1ULL), elcnt_(elcnt) {
     VERIFY(FileSize % (sizeof(T) * elcnt_) == 0);
   }
 

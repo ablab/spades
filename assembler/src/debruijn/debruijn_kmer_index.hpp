@@ -422,7 +422,7 @@ class DeBruijnKMerIndex {
   KMer kmer(KMerIdx idx) const {
     VERIFY(contains(idx));
     auto it = kmers->begin() + idx;
-    return KMer(K_, (*it).ptr);
+    return KMer(K_, (*it).data());
   }
 
   /**
@@ -580,12 +580,11 @@ class DeBruijnKMerIndex {
       return false;
 
     auto it = kmers->begin() + idx;
-    const KMerIndex<KMer>::KMerRawData &truekmer = *it;
 
-    return (0 == memcmp(k.data(), truekmer.ptr, truekmer.mem_size()));
+    return (0 == memcmp(k.data(), (*it).data(), (*it).data_size()));
   }
 
-  size_t raw_seq_idx(typename KMerIndex<KMer>::KMerRawData &s) const {
+  size_t raw_seq_idx(const typename KMerIndex<KMer>::KMerRawData &s) const {
     return index_.raw_seq_idx(s);
   }
 
@@ -667,22 +666,20 @@ DeBruijnKMerIndexBuilder::SortUniqueKMers(const KMerIndexBuilder<typename DeBrui
 
   if (!index.kmers)
     index.kmers =
-        new MMappedRecordArrayReader<typename KMer::DataType>(builder.GetFinalKMersFname(), KMer::GetDataSize(K), /* unlink */ true, -1ULL);
+        new MMappedRecordArrayReader<typename KMer::DataType>(builder.GetFinalKMersFname(), KMer::GetDataSize(K), /* unlink */ true);
 
   size_t swaps = 0;
   INFO("Arranging kmers in hash map order");
   for (auto I = index.kmers->begin(), E = index.kmers->end(); I != E; ++I) {
-    array_ref<typename KMer::DataType> &cval = *I;
     size_t cidx = I - index.kmers->begin();
-
-    size_t kidx = index.raw_seq_idx(cval);
+    size_t kidx = index.raw_seq_idx(*I);
     while (cidx != kidx) {
       auto J = index.kmers->begin() + kidx;
       using std::swap;
-      swap(cval, *J);
+      swap(*I, *J);
       swaps += 1;
 
-      kidx = index.raw_seq_idx(cval);
+      kidx = index.raw_seq_idx(*I);
     }
   }
   INFO("Done. Total swaps: " << swaps);
