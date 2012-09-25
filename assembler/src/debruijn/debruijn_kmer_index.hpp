@@ -329,6 +329,7 @@ class DeBruijnKMerIndex {
   typedef typename MMappedRecordArrayReader<typename KMer::DataType>::iterator kmer_iterator;
   typedef typename MMappedRecordArrayReader<typename KMer::DataType>::const_iterator const_kmer_iterator;
   typedef size_t KMerIdx;
+  static const size_t InvalidKMerIdx = SIZE_MAX;
 
   DeBruijnKMerIndex(unsigned K, const std::string &workdir)
       : K_(K), workdir_(workdir), index_(K + 1), kmers(NULL) {}
@@ -358,7 +359,10 @@ class DeBruijnKMerIndex {
   KMerIndexValueType &operator[](KMerIdx idx) {
     return data_[idx];
   }
-  size_t seq_idx(const KMer &s) const { return index_.seq_idx(s); }
+  KMerIdx seq_idx(const KMer &s) const {
+    KMerIdx idx = index_.seq_idx(s);
+    return (contains(idx, s) ? idx : InvalidKMerIdx);
+  }
 
   size_t size() const { return data_.size(); }
 
@@ -403,9 +407,9 @@ class DeBruijnKMerIndex {
   }
 
   bool contains(const KMer &k) const {
-    size_t idx = seq_idx(k);
+    KMerIdx idx = seq_idx(k);
 
-    return contains(idx, k);
+    return idx != InvalidKMerIdx;
   }
 
   bool contains(KMerIdx idx) const {
@@ -413,6 +417,7 @@ class DeBruijnKMerIndex {
   }
 
   KMer kmer(KMerIdx idx) const {
+    VERIFY(contains(idx));
     auto it = kmers->begin() + idx;
     return KMer(K_, (*it).ptr);
   }
@@ -492,9 +497,14 @@ class DeBruijnKMerIndex {
   }
 
   std::pair<IdType, size_t> get(const KMer &kmer) const {
-    size_t idx = seq_idx(kmer);
-    VERIFY(contains(idx, kmer));
+    KMerIdx idx = seq_idx(kmer);
+    VERIFY(idx != InvalidKMerIdx);
 
+    const KMerIndexValueType &entry = operator[](idx);
+    return std::make_pair(entry.edgeId_, (size_t)entry.offset_);
+  }
+
+  std::pair<IdType, size_t> get(KMerIdx idx) const {
     const KMerIndexValueType &entry = operator[](idx);
     return std::make_pair(entry.edgeId_, (size_t)entry.offset_);
   }
@@ -506,10 +516,10 @@ class DeBruijnKMerIndex {
 
   bool ContainsInIndex(const KMer& kmer) const {
     TRACE("ContainsInIndex");
-    size_t idx = seq_idx(kmer);
+    KMerIdx idx = seq_idx(kmer);
 
     // Early exit if kmer has not been seen at all
-    if (!contains(idx, kmer))
+    if (idx == InvalidKMerIdx)
       return false;
 
     // Otherwise, check, whether it's attached to any edge
@@ -518,10 +528,10 @@ class DeBruijnKMerIndex {
   }
 
   bool DeleteIfEqual(const KMer &kmer, IdType id) {
-    size_t idx = seq_idx(kmer);
+    KMerIdx idx = seq_idx(kmer);
 
     // Early exit if kmer has not been seen at all
-    if (!contains(idx, kmer))
+    if (idx == InvalidKMerIdx)
       return false;
 
     // Now we know that idx is in range. Check the edge id.
@@ -534,7 +544,6 @@ class DeBruijnKMerIndex {
 
     return false;
   }
-
 
   void RenewKMers(const Sequence &nucls, IdType id, bool ignore_new_kmers = false) {
     VERIFY(nucls.size() >= K_);
@@ -562,12 +571,8 @@ class DeBruijnKMerIndex {
   const std::string &workdir() const {
     return workdir_;
   }
-  
-  size_t raw_seq_idx(typename KMerIndex<KMer>::KMerRawData &s) const {
-    return index_.raw_seq_idx(s);
-  }
 
-  bool contains(size_t idx, const KMer &k) const {
+  bool contains(KMerIdx idx, const KMer &k) const {
     // Sanity check
     if (idx >= data_.size())
       return false;
@@ -576,6 +581,10 @@ class DeBruijnKMerIndex {
     const KMerIndex<KMer>::KMerRawData &truekmer = *it;
 
     return (0 == memcmp(k.data(), truekmer.ptr, truekmer.mem_size()));
+  }
+
+  size_t raw_seq_idx(typename KMerIndex<KMer>::KMerRawData &s) const {
+    return index_.raw_seq_idx(s);
   }
 
   void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
