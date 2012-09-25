@@ -8,6 +8,6 @@
 
 set -e
 pushd ../../../
-make dt
-./run dt
+make rt
+./run rt
 popd
