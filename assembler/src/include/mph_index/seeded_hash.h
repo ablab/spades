@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cstdint>
 #include <unordered_map>  // for std::hash
 
 #include "MurmurHash3.h"
@@ -27,14 +28,16 @@ struct seeded_hash_function {
   template <class Key>
   uint32_t operator()(const Key& k, uint32_t seed) const {
     uint32_t h;
-    typename std::hash<Key>::result_type h0 = HashFcn()(k);
+    using std::hash;
+    typename hash<Key>::result_type h0 = HashFcn()(k);
     MurmurHash3_x86_32(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
     return h;
   }
   template <class Key>
   h128 hash128(const Key& k, uint32_t seed) const {
     h128 h;
-    typename std::hash<Key>::result_type h0 = HashFcn()(k);
+    using std::hash;
+    typename hash<Key>::result_type h0 = HashFcn()(k);
     MurmurHash3_x64_128(reinterpret_cast<const void*>(&h0), sizeof(h0), seed, &h);
     return h;
   }

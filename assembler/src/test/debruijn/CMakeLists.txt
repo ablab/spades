@@ -13,4 +13,4 @@ add_executable(debruijn_test
  ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
  test.cpp)
 
-target_link_libraries(debruijn_test ${COMMON_LIBRARIES} input)
+target_link_libraries(debruijn_test ${COMMON_LIBRARIES} input mph_index)

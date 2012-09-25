@@ -13,15 +13,10 @@ add_executable(hammer
    hammer_tools.cpp
    hamcluster.cpp
    kmer_cluster.cpp
-   kmer_index.cpp
+   kmer_data.cpp
    position_read.cpp
    globals.cpp
-   config_struct_hammer.cpp
-   mph_index/mph_index.cc
-   mph_index/MurmurHash3.cpp
-   mph_index/mph_bits.cc
-   mph_index/trigraph.cc
-   )
+   config_struct_hammer.cpp)
 
 if (SPADES_BUILD_INTERNAL)
   add_subdirectory(quake_count)
@@ -31,7 +26,7 @@ else()
   add_subdirectory(gen_test_data EXCLUDE_FROM_ALL)
 endif()
 
-target_link_libraries(hammer ${COMMON_LIBRARIES} input)
+target_link_libraries(hammer ${COMMON_LIBRARIES} input mph_index)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(hammer PROPERTIES LINK_SEARCH_END_STATIC 1)

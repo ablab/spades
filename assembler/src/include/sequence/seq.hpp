@@ -40,90 +40,95 @@
  */
 template<size_t size_, typename T = seq_element_type>
 class Seq {
-public:  
+ public:
   /**
-	 * @variable Number of bits in type T (e.g. 8 for char)
-	 * @example 8: 2^8 = 256 or 16
-	 */
-	const static size_t TBits = sizeof(T) << 3;
+   * @variable Number of bits in type T (e.g. 8 for char)
+   * @example 8: 2^8 = 256 or 16
+   */
+  const static size_t TBits = sizeof(T) << 3;
 
-	/**
-	 * @variable Number of nucleotides that can be stored in one type T (e.g. 4 for char)
-     * TNucl MUST be a power of two
-	 * @example 4: 8/2 = 4 or 16/2 = 8
-	 */
-	const static size_t TNucl = TBits >> 1;
+  /**
+   * @variable Number of nucleotides that can be stored in one type T (e.g. 4 for char)
+   * TNucl MUST be a power of two
+   * @example 4: 8/2 = 4 or 16/2 = 8
+   */
+  const static size_t TNucl = TBits >> 1;
 
-	/**
-	 * @variable Number of bits in TNucl (e.g. 2 for char). Useful for shifts instead of divisions.
-	 */
-	const static size_t TNuclBits = log_<TNucl, 2>::value;
+  /**
+   * @variable Number of bits in TNucl (e.g. 2 for char). Useful for shifts instead of divisions.
+   */
+  const static size_t TNuclBits = log_<TNucl, 2>::value;
 
-	/**
-	 * @variable Number of Ts which required to store all sequence.
-	 */
-	const static size_t DataSize = (size_ + TNucl - 1) >> TNuclBits;
+  /**
+   * @variable Number of Ts which required to store all sequence.
+   */
+  const static size_t DataSize = (size_ + TNucl - 1) >> TNuclBits;
 
   typedef T DataType;
 
-    /**
-     * @variable Number of meaningful bytes in whick seq is stored
-     */
-	const static size_t TotalBytes = sizeof(T) * DataSize;
+  /**
+   * @variable Number of meaningful bytes in whick seq is stored
+   */
+  const static size_t TotalBytes = sizeof(T) * DataSize;
 
-private:
-    /* *
-     * @variable Just some prime number to count the hash function of the kmer
-     * */    
-    const static size_t PrimeNum = 239;
+  static size_t GetDataSize(size_t size) {
+    VERIFY(size == size_);
+    return (size_ + TNucl - 1) >> TNuclBits;
+  }
 
-    // number of nucleotides in the last data_ bucket
-    const static size_t NuclsRemain = size_ & (TNucl - 1);
-	
-    // useful mask to fill the last element of the data_ array
-    const static size_t MaskForLastBucket = (((T) 1) << (NuclsRemain << 1) ) - 1;
+ private:
+  /* *
+   * @variable Just some prime number to count the hash function of the kmer
+   * */
+  const static size_t PrimeNum = 239;
 
-        
-    /**
-	 * @variable Inner representation of sequence: array of Ts with length = DataSize.
-	 *
-	 * @invariant Invariant: all nucleotides >= size_ are 'A's (useful for comparison)
-	 */
-	std::array<T, DataSize> data_;
+  // number of nucleotides in the last data_ bucket
+  const static size_t NuclsRemain = size_ & (TNucl - 1);
 
-	friend class Seq<size_ - 1, T> ;
+  // useful mask to fill the last element of the data_ array
+  const static size_t MaskForLastBucket = (((T) 1) << (NuclsRemain << 1) ) - 1;
 
-	/**
-	 * Initialize data_ array of this object with C-string
-	 *
-	 * @param s C-string (ACGT chars only), strlen(s) = size_
-	 */
-	void init(const char* s) {
-		T data = 0;
-		size_t cnt = 0;
-		int cur = 0;
-		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
-			// VERIFY(is_nucl(*s)); // for performance
-			data = data | ((T) dignucl(*s) << cnt);
-			cnt += 2;
-			if (cnt == TBits) {
-                this->data_[cur++] = data;
-				cnt = 0;
-				data = 0;
-			}
-		}
-		if (cnt != 0) {
-			this->data_[cur++] = data;
-		}
-		VERIFY(*s == 0); // C-string always ends on 0
-	}
 
-	/**
-	 * Sets i-th symbol of Seq with 0123-char
-	 */
-	inline void set(const size_t i, char c) {
-		data_[i >> TNuclBits] = (data_[i >> TNuclBits] & ~((T) 3 << ((i & (TNucl - 1)) << 1))) | ((T) c << ((i & (TNucl - 1)) << 1));
-	}
+  /**
+   * @variable Inner representation of sequence: array of Ts with length = DataSize.
+   *
+   * @invariant Invariant: all nucleotides >= size_ are 'A's (useful for comparison)
+   */
+  std::array<T, DataSize> data_;
+
+  friend class Seq<size_ - 1, T> ;
+
+  /**
+   * Initialize data_ array of this object with C-string
+   *
+   * @param s C-string (ACGT chars only), strlen(s) = size_
+   */
+  void init(const char* s) {
+    T data = 0;
+    size_t cnt = 0;
+    int cur = 0;
+    for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
+      // VERIFY(is_nucl(*s)); // for performance
+      data = data | ((T) dignucl(*s) << cnt);
+      cnt += 2;
+      if (cnt == TBits) {
+        this->data_[cur++] = data;
+        cnt = 0;
+        data = 0;
+      }
+    }
+    if (cnt != 0) {
+      this->data_[cur++] = data;
+    }
+    VERIFY(*s == 0); // C-string always ends on 0
+  }
+
+  /**
+   * Sets i-th symbol of Seq with 0123-char
+   */
+  inline void set(const size_t i, char c) {
+    data_[i >> TNuclBits] = (data_[i >> TNuclBits] & ~((T) 3 << ((i & (TNucl - 1)) << 1))) | ((T) c << ((i & (TNucl - 1)) << 1));
+  }
 
   // Template voodoo to calculate the length of the string regardless whether it is std::string or const char*
   template<class S>
@@ -137,39 +142,36 @@ private:
     return strlen(t);
   }
 
-public:
-	/**
-	 * Default constructor, fills Seq with A's
-	 */
-	Seq() {
-		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
-		std::fill(data_.begin(), data_.end(), 0);
-	}
+ public:
+  /**
+   * Default constructor, fills Seq with A's
+   */
+  Seq() {
+    std::fill(data_.begin(), data_.end(), 0);
+  }
 
-	Seq(const char* s) {
-		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
-		init(s);
-	}
+  Seq(const char* s) {
+    init(s);
+  }
 
-    explicit Seq(T * data_array) {
-        memcpy(data_.data(), data_array, TotalBytes);
-    }
+  explicit Seq(T * data_array) {
+    memcpy(data_.data(), data_array, TotalBytes);
+  }
 
 
-	/**
-	 * Ultimate constructor from ACGT0123-string.
-	 *
-	 * @param s Any object with operator[], which returns 0123 chars
-	 * @param offset Offset when this sequence starts
+  /**
+   * Ultimate constructor from ACGT0123-string.
+   *
+   * @param s Any object with operator[], which returns 0123 chars
+   * @param offset Offset when this sequence starts
    * @number_to_read A number of nucleotides, we want to fetch from this string
    * @raw Flag whether to check for string length (e.g. via strlen, or not)
-   * @warning assuming that s is a correct string, filled with ACGT _OR_ 0123 
+   * @warning assuming that s is a correct string, filled with ACGT _OR_ 0123
    * no init method, filling right here
-	 */
+   */
   template<typename S>
   explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_,
                bool raw = false) {
-    //TRACE("New Constructor for seq " << s[0] << " is first symbol");
     VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
     if (!raw)
       VERIFY(offset + number_to_read <= this->size(s));
@@ -208,296 +210,291 @@ public:
   }
 
 
-	/**
-	 * Get i-th symbol of Seq.
-	 *
-	 * @param i Index of the symbol (0 <= i < size_)
-	 * @return 0123-char on position i
-	 */
-	char operator[](const size_t i) const {
-        //VERIFY(i >= 0);
-        //VERIFY(i < size_);
-		return (data_[i >> TNuclBits] >> ((i & (TNucl - 1)) << 1)) & 3;
-	}
+  /**
+   * Get i-th symbol of Seq.
+   *
+   * @param i Index of the symbol (0 <= i < size_)
+   * @return 0123-char on position i
+   */
+  char operator[](const size_t i) const {
+    return (data_[i >> TNuclBits] >> ((i & (TNucl - 1)) << 1)) & 3;
+  }
 
-	/**
-	 * Reverse complement.
-	 *
-	 * @return Reverse complement Seq.
-	 */
-	Seq<size_, T> operator!() const {
-		Seq<size_, T> res(*this);
-		for (size_t i = 0; i < (size_ >> 1); ++i) {
-			T front = complement(res[i]);
-			T end = complement(res[size_ - 1 - i]);
-			res.set(i, end);
-			res.set(size_ - 1 - i, front);
-		}
-		if ((size_ & 1) == 1) {
-			res.set(size_ >> 1, complement(res[size_ >> 1]));
-		}
-		// can be made without complement calls, but with xor on all bytes afterwards.
-        return res;
-	}
+  /**
+   * Reverse complement.
+   *
+   * @return Reverse complement Seq.
+   */
+  Seq<size_, T> operator!() const {
+    Seq<size_, T> res(*this);
+    for (size_t i = 0; i < (size_ >> 1); ++i) {
+      T front = complement(res[i]);
+      T end = complement(res[size_ - 1 - i]);
+      res.set(i, end);
+      res.set(size_ - 1 - i, front);
+    }
+    if ((size_ & 1) == 1) {
+      res.set(size_ >> 1, complement(res[size_ >> 1]));
+    }
+    // can be made without complement calls, but with xor on all bytes afterwards.
+    return res;
+  }
 
-	/**
-	 * Shift left
-	 *
-	 * @param c New 0123 char which should be added to the right.
-	 * @return Shifted (to the left) sequence with 'c' char on the right.
-	 */
-	Seq<size_, T> operator<<(char c) const {
-		if (is_nucl(c)) {
-			c = dignucl(c);
-		}
-		Seq<size_, T> res(*this);
-        std::array<T, DataSize>& data = res.data_;
-		if (DataSize != 0) { // unless empty sequence
-			T rm = data[DataSize - 1] & 3;
-			T lastnuclshift_ = ((size_ + TNucl - 1) & (TNucl - 1)) << 1;
-			data[DataSize - 1] = (data[DataSize - 1] >> 2) | ((T) c << lastnuclshift_);
+  /**
+   * Shift left
+   *
+   * @param c New 0123 char which should be added to the right.
+   * @return Shifted (to the left) sequence with 'c' char on the right.
+   */
+  Seq<size_, T> operator<<(char c) const {
+    if (is_nucl(c)) {
+      c = dignucl(c);
+    }
+    Seq<size_, T> res(*this);
+    std::array<T, DataSize>& data = res.data_;
+    if (DataSize != 0) { // unless empty sequence
+      T rm = data[DataSize - 1] & 3;
+      T lastnuclshift_ = ((size_ + TNucl - 1) & (TNucl - 1)) << 1;
+      data[DataSize - 1] = (data[DataSize - 1] >> 2) | ((T) c << lastnuclshift_);
 
-			if (DataSize >= 2) { // if we have at least 2 elements in data
-				int data_size = DataSize;
-			    for (int i = data_size - 2; i >= 0; --i){
-					T new_rm = data[i] & 3;
-					data[i] = (data[i] >> 2) | (rm << (TBits - 2)); // we need & here because if we shift negative, it fill with ones :(
-					rm = new_rm;
-			    }
-			}
-		}
-		return res;
-	}
-
-	Seq<size_ + 1, T> pushBack(char c) const {
-		if (is_nucl(c)) {
-			c = dignucl(c);
-		}
-		//VERIFY(is_dignucl(c));
-		Seq<size_ + 1, T> s;
-		copy(this->data_.begin(), this->data_.end(), s.data_.begin());
-		s.data_[s.DataSize - 1] = s.data_[s.DataSize - 1] | ((T) c << ((size_ & (TNucl - 1)) << 1));
-
-        return s; //was: Seq<size_ + 1, T>(str() + nucl(c));
-
-	}
-
-//	/**
-//	 * @todo optimize!!!
-//	 */
-//    Seq<size_ + 1, T> pushFront(char c) const {
-//        if (is_nucl(c)) {
-//            c = dignucl(c);
-//        }
-//        VERIFY(is_dignucl(c));
-//        return Seq<size_ + 1, T> (nucl(c) + str());
-//    }
-
-	Seq<size_ + 1, T> pushFront(char c) const {
-        if (is_nucl(c)) {
-            c = dignucl(c);
+      if (DataSize >= 2) { // if we have at least 2 elements in data
+        int data_size = DataSize;
+        for (int i = data_size - 2; i >= 0; --i){
+          T new_rm = data[i] & 3;
+          data[i] = (data[i] >> 2) | (rm << (TBits - 2)); // we need & here because if we shift negative, it fill with ones :(
+          rm = new_rm;
         }
-        VERIFY(is_dignucl(c));
-        Seq<size_ + 1, T> res;
+      }
+    }
+    return res;
+  }
 
-        //if new kmer has more Ts
-        if (Seq<size_ + 1, T>::DataSize > DataSize) {
-            res.data_[DataSize] = (data_[DataSize - 1] >> (TBits - 2)) & 3;
-        }
+  Seq<size_ + 1, T> pushBack(char c) const {
+    if (is_nucl(c)) {
+      c = dignucl(c);
+    }
+    //VERIFY(is_dignucl(c));
+    Seq<size_ + 1, T> s;
+    copy(this->data_.begin(), this->data_.end(), s.data_.begin());
+    s.data_[s.DataSize - 1] = s.data_[s.DataSize - 1] | ((T) c << ((size_ & (TNucl - 1)) << 1));
 
-        T rm = c;
-        for (size_t i = 0; i < DataSize; ++i) {
-            T new_rm = (data_[i] >> (TBits - 2)) & 3;
-            res.data_[i] = (data_[i] << 2) | rm;
-            rm = new_rm;
-        }
+    return s; //was: Seq<size_ + 1, T>(str() + nucl(c));
 
-        return res;
-	}
+  }
 
-	/**
-	 * Shift right
-	 *
-	 * @param c New 0123 char which should be added to the left.
-	 * @return Shifted (to the right) sequence with 'c' char on the left.
-	 */
-	Seq<size_, T> operator>>(char c) const {
-		if (is_nucl(c)) {
-			c = dignucl(c);
-		}
-		VERIFY(is_dignucl(c));
-		Seq<size_, T> res(*this);
-		T rm = c;
-		for (size_t i = 0; i < DataSize; ++i) {
-			T new_rm = (res.data_[i] >> (TBits - 2)) & 3;
-			res.data_[i] = (res.data_[i] << 2) | rm;
-			rm = new_rm;
-		}
-		if ((size_ & (TNucl - 1)) != 0) {
-			T lastnuclshift_ = (size_ & (TNucl - 1)) << 1;
-			res.data_[DataSize - 1] = res.data_[DataSize - 1] & (((T) 1
-					<< lastnuclshift_) - 1);
-		}
-        return res;
-	}
+  //	/**
+  //   * @todo optimize!!!
+  //   */
+  //    Seq<size_ + 1, T> pushFront(char c) const {
+  //        if (is_nucl(c)) {
+  //            c = dignucl(c);
+  //        }
+  //        VERIFY(is_dignucl(c));
+  //        return Seq<size_ + 1, T> (nucl(c) + str());
+  //    }
 
-	bool operator==(const Seq<size_, T>& s) const {
-		return 0 == memcmp(data_.data(), s.data_.data(), sizeof(T) * DataSize);
-	}
+  Seq<size_ + 1, T> pushFront(char c) const {
+    if (is_nucl(c)) {
+      c = dignucl(c);
+    }
+    VERIFY(is_dignucl(c));
+    Seq<size_ + 1, T> res;
 
-	/**
-	 * @see operator ==()
-	 */
-
-	bool operator!=(const Seq<size_, T>& s) const {
-		return !operator==(s);
-	}
-
-	/**
-	 * String representation of this Seq
-	 *
-	 * @return ACGT-string of length size_
-	 * @see nucl()
-	 */
-	std::string str() const {
-		std::string res(size_, '-');
-		for (size_t i = 0; i < size_; ++i) {
-			res[i] = nucl(operator[](i));
-		}
-		return res;
-	}
-
-	static size_t size() {
-		return size_;
-	}
-
-
-	void copy_data(void * dst) const {
-	    memcpy(dst, (const void *) data_.data(), TotalBytes);
-	}
-
-    /**
-     *  Reads sequence from the file (in the same format as BinWrite writes it)
-     *  and returns false if error occured, true otherwise.
-     */
-    static bool BinRead(std::istream& file, Seq<size_> *seq) {
-        file.read((char *) seq->data_.data(), sizeof(T) * DataSize);
-        return !file.fail();
+    //if new kmer has more Ts
+    if (Seq<size_ + 1, T>::DataSize > DataSize) {
+      res.data_[DataSize] = (data_[DataSize - 1] >> (TBits - 2)) & 3;
     }
 
-    /**
-     *  Writes sequence to the file (in the same format as BinRead reads it)
-     *  and returns false if error occured, true otherwise.
-     */
-    static bool BinWrite(std::ostream& file, const Seq<size_> &seq) {
-        file.write((const char *) seq.data_.data(), sizeof(T) * DataSize);
-        return !file.fail();
+    T rm = c;
+    for (size_t i = 0; i < DataSize; ++i) {
+      T new_rm = (data_[i] >> (TBits - 2)) & 3;
+      res.data_[i] = (data_[i] << 2) | rm;
+      rm = new_rm;
     }
 
-    /**
-     *  Reads sequence from the file (in the same format as BinWrite writes it)
-     *  and returns false if error occured, true otherwise.
-     */
-    bool BinRead(std::istream& file) {
-        return BinRead(file, this);
+    return res;
+  }
+
+  /**
+   * Shift right
+   *
+   * @param c New 0123 char which should be added to the left.
+   * @return Shifted (to the right) sequence with 'c' char on the left.
+   */
+  Seq<size_, T> operator>>(char c) const {
+    if (is_nucl(c)) {
+      c = dignucl(c);
+    }
+    VERIFY(is_dignucl(c));
+    Seq<size_, T> res(*this);
+    T rm = c;
+    for (size_t i = 0; i < DataSize; ++i) {
+      T new_rm = (res.data_[i] >> (TBits - 2)) & 3;
+      res.data_[i] = (res.data_[i] << 2) | rm;
+      rm = new_rm;
+    }
+    if ((size_ & (TNucl - 1)) != 0) {
+      T lastnuclshift_ = (size_ & (TNucl - 1)) << 1;
+      res.data_[DataSize - 1] = res.data_[DataSize - 1] & (((T) 1
+                                                            << lastnuclshift_) - 1);
+    }
+    return res;
+  }
+
+  bool operator==(const Seq<size_, T>& s) const {
+    return 0 == memcmp(data_.data(), s.data_.data(), sizeof(T) * DataSize);
+  }
+
+  /**
+   * @see operator ==()
+   */
+
+  bool operator!=(const Seq<size_, T>& s) const {
+    return !operator==(s);
+  }
+
+  /**
+   * String representation of this Seq
+   *
+   * @return ACGT-string of length size_
+   * @see nucl()
+   */
+  std::string str() const {
+    std::string res(size_, '-');
+    for (size_t i = 0; i < size_; ++i) {
+      res[i] = nucl(operator[](i));
+    }
+    return res;
+  }
+
+  static size_t size() {
+    return size_;
+  }
+
+
+  void copy_data(void * dst) const {
+    memcpy(dst, (const void *) data_.data(), TotalBytes);
+  }
+
+  /**
+   *  Reads sequence from the file (in the same format as BinWrite writes it)
+   *  and returns false if error occured, true otherwise.
+   */
+  static bool BinRead(std::istream& file, Seq<size_> *seq) {
+    file.read((char *) seq->data_.data(), sizeof(T) * DataSize);
+    return !file.fail();
+  }
+
+  /**
+   *  Writes sequence to the file (in the same format as BinRead reads it)
+   *  and returns false if error occured, true otherwise.
+   */
+  static bool BinWrite(std::ostream& file, const Seq<size_> &seq) {
+    file.write((const char *) seq.data_.data(), sizeof(T) * DataSize);
+    return !file.fail();
+  }
+
+  /**
+   *  Reads sequence from the file (in the same format as BinWrite writes it)
+   *  and returns false if error occured, true otherwise.
+   */
+  bool BinRead(std::istream& file) {
+    return BinRead(file, this);
+  }
+
+  /**
+   *  Writes sequence to the file (in the same format as BinRead reads it)
+   *  and returns false if error occured, true otherwise.
+   */
+  bool BinWrite(std::ostream& file) const {
+    return BinWrite(file, *this);
+  }
+
+  /**
+   * @see Seq
+   */
+  template<size_t size2_, typename T2 = T>
+  Seq<size2_, T2> start() const {
+    VERIFY(size2_ <= size_);
+    return Seq<size2_, T2> (*this);
+  }
+
+  template<size_t size2_/* = size_ - 1*/, typename T2 = T>
+  Seq<size2_, T2> end() const {
+    VERIFY(size2_ <= size_);
+    return Seq<size2_, T2> (*this, size_ - size2_);
+  }
+
+  const T *data() const {
+    return data_.data();
+  }
+
+  size_t data_size() const {
+    return DataSize;
+  }
+
+
+  char last() const {
+    return operator[](size_ - 1);
+  }
+
+  char first() const {
+    return operator[](0);
+  }
+
+  static size_t GetHash(const DataType *data, size_t sz = DataSize) {
+    size_t hash = PrimeNum;
+    for (size_t i = 0; i < sz; i++) {
+      hash = ((hash << 5) - hash) + data[i];
+    }
+    return hash;
+  }
+
+  size_t GetHash() const {
+    return GetHash(data_.data());
+  }
+
+  struct hash {
+    size_t operator()(const Seq<size_, T>& seq) const {
+      return seq.GetHash();
     }
 
-    /**
-     *  Writes sequence to the file (in the same format as BinRead reads it)
-     *  and returns false if error occured, true otherwise.
-     */
-    bool BinWrite(std::ostream& file) const {
-        return BinWrite(file, *this);
+    size_t operator()(const DataType *data, size_t sz = DataSize) {
+      return GetHash(data, sz);
     }
+  };
 
-	/**
-	 * @see Seq
-	 */
-	template<size_t size2_, typename T2 = T>
-	Seq<size2_, T2> start() const {
-		VERIFY(size2_ <= size_);
-		return Seq<size2_, T2> (*this);
-	}
+  struct equal_to {
+    bool operator()(const Seq<size_, T>& l, const Seq<size_, T>& r) const {
+      return r == l;
+    }
+  };
 
-	template<size_t size2_/* = size_ - 1*/, typename T2 = T>
-	Seq<size2_, T2> end() const {
-		VERIFY(size2_ <= size_);
-		return Seq<size2_, T2> (*this, size_ - size2_);
-	}
-
-	char last() const {
-		return operator[](size_ - 1);
-	}
-
-	char first() const {
-		return operator[](0);
-	}
-
-    size_t GetHash() const {
-        size_t hash = PrimeNum;
-        for (size_t i = 0; i < DataSize; i++) {
-            hash = ((hash << 5) - hash) + data_[i];
+  struct less2 {
+    bool operator()(const Seq<size_, T> &l, const Seq<size_, T> &r) const {
+      for (size_t i = 0; i < size_; ++i) {
+        if (l[i] != r[i]) {
+          return (l[i] < r[i]);
         }
-        return hash;
+      }
+      return false;
     }
+  };
 
-    struct hash {
-        //size_t operator()(const Seq<size_, T>& seq) const {
-            //return seq.seq_hash_; 
-        //}
-        size_t operator()(const Seq<size_, T>& seq) const {
-            size_t hash = PrimeNum;
-            for (size_t i = 0; i < seq.DataSize; i++) {
-                hash = ((hash << 5) - hash) + seq.data_[i];
-            }
-            return hash;
-        }
-	};
-
-	struct multiple_hash {
-		size_t operator()(const Seq<size_, T>& seq, size_t hash_num, 
-				size_t h) const {
-//            WARN("using multiple hash");
-			++hash_num;
-			for (size_t i = 0; i < seq.DataSize; i++) {
-				h = (h << hash_num) + seq.data_[i];
-			}
-			return h;
-		}
-	};
-
-	struct equal_to {
-		bool operator()(const Seq<size_, T>& l, const Seq<size_, T>& r) const {
-			return r == l;
-		}
-	};
-
-	struct less2 {
-		int operator()(const Seq<size_, T> &l, const Seq<size_, T> &r) const {
-			for (size_t i = 0; i < size_; ++i) {
-				if (l[i] != r[i]) {
-					return (l[i] < r[i]);
-				}
-			}
-			return false;
-		}
-	};
-
-	//	/**
-	//	 * Denotes some (weird) order on k-mers. Works fast.
-	//	 */
-	//	struct less {
-	//		int operator()(const Seq<size_> &l, const Seq<size_> &r) const {
-	//			return 0 > memcmp(data_.data(), that.data_.data(), sizeof(T) * DataSize);
-	//		}
-	//	};
-
+  /**
+   * Denotes some (weird) order on k-mers. Works fast.
+   */
+  struct less2_fast {
+    bool operator()(const Seq<size_, T> &l, const Seq<size_, T> &r) const {
+      return 0 > memcmp(l.data_.data(), r.data_.data(), sizeof(T) * DataSize);
+    }
+  };
 };
 
 template<size_t size_, typename T>
 std::ostream& operator<<(std::ostream& os, Seq<size_, T> seq) {
-	os << seq.str();
-	return os;
+  os << seq.str();
+  return os;
 }
 
 

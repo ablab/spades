@@ -13,7 +13,7 @@
 
 namespace debruijn_graph {
 
-BOOST_AUTO_TEST_SUITE(basic_debruijn_graph_tests)
+BOOST_FIXTURE_TEST_SUITE(basic_debruijn_graph_tests, TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( EmptyGraphTest ) {
 	Graph g(11);

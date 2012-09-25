@@ -1,40 +1,21 @@
 #pragma once
 
-#include "io/paired_read.hpp"
-#include "seq_map.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/id_track_handler.hpp"
 #include "logger/logger.hpp"
-#include "omni/paired_info.hpp"
-#include "xmath.h"
-#include <boost/optional.hpp>
-#include <iostream>
-#include "sequence/sequence_tools.hpp"
-#include "omni/splitters.hpp"
 
 #include "runtime_k.hpp"
 
 #include "kmer_map.hpp"
-#include "new_debruijn.hpp"
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
 
-template<class graph_pack, class read_type>
-class MismatchShallNotPass {
-private:
-	typedef typename graph_pack::graph_t Graph;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	typedef runtime_k::RtSeq Kmer;
-
-	graph_pack &gp_;
-	double relative_threshold_;
-
+namespace mismatches {
 	struct NuclCount {
 		size_t counts_[4];
 		NuclCount() {
-      memset(counts_, 0, sizeof(counts_));
-    }
+			memset(counts_, 0, sizeof(counts_));
+		}
 
 		size_t &operator[](size_t nucl) {
 			return counts_[nucl];
@@ -49,64 +30,151 @@ private:
 		}
 	};
 
-	typedef vector<NuclCount> MMInfo;
+	struct MismatchEdgeInfo {
+		NuclCount operator[](size_t i) const {
+			auto it = info_.find(i);
+			if(it == info_.end())
+				return NuclCount();
+			else
+				return it->second;
+		}
 
-void CountStatistics(io::IReader<read_type>& stream, map<EdgeId, MMInfo> &statistics) {
-	for(auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		statistics[*it] = MMInfo(gp_.g.length(*it) + gp_.g.k());
-	}
-	stream.reset();
-	NewExtendedSequenceMapper<Graph> sm(gp_.g, gp_.index, gp_.kmer_mapper, gp_.g.k() + 1);
-	while(!stream.eof()) {
-		read_type read;
-		stream >> read;
-		const Sequence &s_read = read.sequence();
-		omnigraph::MappingPath<EdgeId> path = sm.MapSequence(s_read);
-		if(path.size() == 1 && path[0].second.initial_range.size() == path[0].second.mapped_range.size()) {
-			Range initial_range = path[0].second.initial_range;
-			Range mapped_range = path[0].second.mapped_range;
-			const Sequence &s_edge = gp_.g.EdgeNucls(path[0].first);
-			size_t len = initial_range.size() + gp_.g.k();
-			size_t cnt = 0;
-			for(size_t i = 0; i < len; i++) {
-				if(s_read[initial_range.start_pos + i] != s_edge[mapped_range.start_pos + i]) {
-					cnt++;
-				}
+		void operator+=(const MismatchEdgeInfo &other) {
+			for(auto it = other.info_.begin(); it != other.info_.end(); ++it) {
+				info_[it->first] += it->second;
 			}
-			if(cnt <= 1) {
-				MMInfo &info = statistics[path[0].first];
-				for(size_t i = 0; i < len; i++) {
-					size_t nucl_code = s_read[initial_range.start_pos + i];
-					info[mapped_range.start_pos + i][nucl_code]++;
+		}
+
+		void IncIfContains(size_t position, size_t nucl) {
+			auto it = info_.find(position);
+			if(it != info_.end()) {
+				it->second[nucl]++;
+			}
+		}
+
+		void AddPosition(size_t position) {
+			info_[position]; //in case map did not contain this key creates entry in the map with default value
+		}
+
+	private:
+		map<size_t, NuclCount> info_;
+	};
+
+	template<typename EdgeId>
+	class MismatchStatistics {
+	private:
+		typedef typename map<EdgeId, MismatchEdgeInfo>::const_iterator const_iterator;
+		map<EdgeId, MismatchEdgeInfo> statistics_;
+
+		template<class graph_pack>
+		void CollectPotensialMismatches(const graph_pack &gp) {
+			auto &kmer_mapper = gp.kmer_mapper;
+			for(auto it = kmer_mapper.begin(); it != kmer_mapper.end(); ++it) {
+				runtime_k::RtSeq from = it.first();
+				runtime_k::RtSeq to = it.second();
+				size_t cnt = 0;
+				for(size_t i = 0; i < from.size(); i++) {
+					if(from[i] != to[i]) {
+						cnt++;
+					}
+				}
+				if(cnt >= 1 && cnt <= 5) {
+					for(size_t i = 0; i < from.size(); i++) {
+						if(from[i] != to[i] && gp.index.contains(to)) {
+							pair<EdgeId, size_t> position = gp.index.get(to);
+							statistics_[position.first].AddPosition(position.second + i);
+						}
+					}
 				}
 			}
 		}
-	}
+
+		void operator+=(MismatchStatistics<EdgeId> other) {
+			for(auto it = other.statistics_.begin(); it != other.statistics_.end(); ++it) {
+				statistics_[it->first] += it->second;
+			}
+		}
+
+	public:
+		template<class graph_pack>
+		MismatchStatistics(const graph_pack &gp) {
+			CollectPotensialMismatches(gp);
+		}
+
+		const_iterator begin() const {
+			return statistics_.begin();
+		}
+
+		const_iterator end() const {
+			return statistics_.end();
+		}
+
+		const_iterator find(const EdgeId &edge) const {
+			return statistics_.find(edge);
+		}
+
+		template<class graph_pack, class read_type>
+		void Count(io::IReader<read_type>& stream, const graph_pack &gp) {
+			stream.reset();
+			NewExtendedSequenceMapper<Graph> sm(gp.g, gp.index, gp.kmer_mapper, gp.g.k() + 1);
+			while(!stream.eof()) {
+				read_type read;
+				stream >> read;
+				const Sequence &s_read = read.sequence();
+				omnigraph::MappingPath<EdgeId> path = sm.MapSequence(s_read);
+				if(path.size() == 1 && path[0].second.initial_range.size() == path[0].second.mapped_range.size()) {
+					Range initial_range = path[0].second.initial_range;
+					Range mapped_range = path[0].second.mapped_range;
+					const Sequence &s_edge = gp.g.EdgeNucls(path[0].first);
+					size_t len = initial_range.size() + gp.g.k();
+					size_t cnt = 0;
+					for(size_t i = 0; i < len; i++) {
+						if(s_read[initial_range.start_pos + i] != s_edge[mapped_range.start_pos + i]) {
+							cnt++;
+						}
+					}
+					if(cnt <= 2) {
+						auto it = statistics_.find(path[0].first);
+						if(it == statistics_.end())
+							continue;
+						for(size_t i = 0; i < len; i++) {
+							size_t nucl_code = s_read[initial_range.start_pos + i];
+							it->second.IncIfContains(mapped_range.start_pos + i, nucl_code);
+						}
+					}
+				}
+			}
+		}
+
+		template<class graph_pack, class read_type>
+		void ParallelCount(io::ReadStreamVector<io::IReader<read_type>> &streams, const graph_pack &gp) {
+		    size_t nthreads = streams.size();
+		    std::vector<MismatchStatistics<EdgeId>*> statistics(nthreads);
+
+		    #pragma omp parallel for num_threads(nthreads) shared(streams, statistics)
+		    for (size_t i = 0; i < nthreads; ++i) {
+		    	statistics[i] = new MismatchStatistics<EdgeId>(*this);
+		        statistics[i]->Count(streams[i], gp);
+		    }
+
+		   	for(size_t i = 0; i < statistics.size(); i++) {
+		   		*this += *statistics[i];
+		   		delete statistics[i];
+		   	}
+		}
+	};
 }
 
-map<EdgeId, MMInfo> CountStatistics(io::IReader<read_type>& stream) {
-	map<EdgeId, MMInfo> statistics;
-	CountStatistics(stream, statistics);
-	return statistics;
-}
+template<class graph_pack, class read_type>
+class MismatchShallNotPass {
+private:
+	typedef typename graph_pack::graph_t Graph;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef runtime_k::RtSeq Kmer;
 
-map<EdgeId, MMInfo> ParallelCountStatistics(io::ReadStreamVector<io::IReader<read_type>> streams) {
-    size_t nthreads = streams.size();
-    std::vector<map<EdgeId, MMInfo>> statistics(nthreads);
-
-    #pragma omp parallel for num_threads(nthreads) shared(streams, statistics)
-    for (size_t i = 0; i < nthreads; ++i) {
-        CountStatistics(streams[i], statistics[i]);
-    }
-
-   	for(auto it = statistics[0].begin(); it != statistics[0].end(); ++it) {
-   		for(size_t j = 1; j < statistics.size(); j++)
-   		for(size_t i = 0; i < statistics[0][it->first].size(); i++) {
-   			statistics[0][it->first][i] += statistics[j][it->first][i];
-   		}
-   	}
-   	return statistics[0];
-}
+	graph_pack &gp_;
+	double relative_threshold_;
 
 EdgeId CorrectNucl(EdgeId edge, size_t position, char nucl) {
 	VERIFY(position >= gp_.g.k());
@@ -141,18 +209,19 @@ void CorrectNucls(EdgeId edge, vector<pair<size_t, char>> mismatches) {
 	Compressor<Graph>(gp_.g).CompressVertex(gp_.g.EdgeEnd(edge));
 }
 
-vector<pair<size_t, char>> FindMismatches(EdgeId edge, MMInfo &statistics) {
+vector<pair<size_t, char>> FindMismatches(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) {
 	vector<pair<size_t, char>> to_correct;
 	Sequence s_edge = gp_.g.EdgeNucls(edge);
 	for(size_t i = gp_.g.k(); i < gp_.g.length(edge); i++) {
 		size_t cur_best = 0;
+		mismatches::NuclCount nc = statistics[i];
 		for(size_t j = 1; j < 4; j++) {
-			if(statistics[i][j] > statistics[i][cur_best]) {
+			if(nc[j] > nc[cur_best]) {
 				cur_best = j;
 			}
 		}
 		size_t nucl_code = s_edge[i];
-		if(statistics[i][cur_best] > relative_threshold_ * statistics[i][nucl_code] + 1) {
+		if(nc[cur_best] > relative_threshold_ * nc[nucl_code] + 1) {
 			to_correct.push_back(make_pair(i, cur_best));
 			i += gp_.g.k();
 		}
@@ -160,29 +229,31 @@ vector<pair<size_t, char>> FindMismatches(EdgeId edge, MMInfo &statistics) {
 	return to_correct;
 }
 
-size_t CorrectEdge(EdgeId edge, MMInfo &statistics) {
+size_t CorrectEdge(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) {
 	vector<pair<size_t, char>> to_correct = FindMismatches(edge, statistics);
 	CorrectNucls(edge, to_correct);
 	return to_correct.size();
 }
 
-size_t CorrectAllEdges(map<EdgeId, MMInfo> statistics) {
+size_t CorrectAllEdges(mismatches::MismatchStatistics<typename Graph::EdgeId> statistics) {
 	size_t res = 0;
 	for(auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		if(!gp_.g.RelatedVertices(gp_.g.EdgeStart(*it), gp_.g.EdgeEnd(*it)) && statistics.find(*it) != statistics.end()) {
-			res += CorrectEdge(*it, statistics[*it]);
+			res += CorrectEdge(*it, statistics.find(*it)->second);
 		}
 	}
 	return res;
 }
 
 size_t StopMismatchIteration(io::IReader<read_type>& stream) {
-	map<EdgeId, MMInfo> statistics = CountStatistics(stream);
+	mismatches::MismatchStatistics<typename Graph::EdgeId> statistics(gp_);
+	statistics.Count(stream, gp_);
 	return CorrectAllEdges(statistics);
 }
 
-size_t ParallelStopMismatchIteration(io::ReadStreamVector<io::IReader<read_type>> streams) {
-	map<EdgeId, MMInfo> statistics = ParallelCountStatistics(streams);
+size_t ParallelStopMismatchIteration(io::ReadStreamVector<io::IReader<read_type>> &streams) {
+	mismatches::MismatchStatistics<typename Graph::EdgeId> statistics(gp_);
+	statistics.ParallelCount(streams, gp_);
 	return CorrectAllEdges(statistics);
 }
 

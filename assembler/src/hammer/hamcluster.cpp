@@ -9,7 +9,8 @@
 #include "concurrent_dsu.hpp"
 #include "config_struct_hammer.hpp"
 #include "globals.hpp"
-#include "mmapped_reader.hpp"
+
+#include "io/mmapped_reader.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -19,13 +20,13 @@
 #endif
 
 struct SubKMerComparator {
-  bool operator()(const SubKMer &lhs, const SubKMer &rhs) {
-    return Seq<K>::less2()(lhs.data, rhs.data);
+  bool operator()(const SubKMerData &lhs, const SubKMerData &rhs) {
+    return SubKMer::less2_fast()(lhs.data, rhs.data);
   }
 };
 
 std::pair<size_t, size_t> SubKMerSplitter::split() {
-  std::vector<SubKMer> data;
+  std::vector<SubKMerData> data;
 
   MMappedReader ifs(ifname_, /* unlink */ true);
   std::ofstream ofs(ofname_, std::ios::out | std::ios::binary);
@@ -88,10 +89,10 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
   size_t blockSize = block.size();
   for (size_t i = 0; i < blockSize; ++i) {
     size_t x = block[i];
-    KMer kmerx = data[x].kmer();
+    hammer::KMer kmerx = data[x].kmer();
     for (uint32_t j = i + 1; j < blockSize; j++) {
       size_t y = block[j];
-      KMer kmery = data[y].kmer();
+      hammer::KMer kmery = data[y].kmer();
       if (uf.find_set(x) != uf.find_set(y) &&
           canMerge(uf, x, y) &&
           hamdistKMer(kmerx, kmery, tau) <= tau) {

@@ -26,8 +26,9 @@
 #include "globals.hpp"
 #include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"
-#include "mmapped_writer.hpp"
-#include "kmer_index.hpp"
+#include "kmer_data.hpp"
+
+#include "io/mmapped_writer.hpp"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -35,6 +36,7 @@
 #include <unordered_map>
 
 using namespace std;
+using namespace hammer;
 
 void HammerTools::ChangeNtoAinReadFiles() {
 	std::vector<pid_t> pids;
@@ -121,16 +123,17 @@ void HammerTools::InitializeSubKMerPositions() {
 	INFO("Hamming graph threshold tau=" << cfg::get().general_tau << ", k=" << K << ", subkmer positions = [ " << log_sstream.str() << "]" );
 }
 
-size_t HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read) {
+std::pair<size_t, size_t> HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read) {
   INFO("Reading input file " << readsFilename);
   int trim_quality = cfg::get().input_trim_quality;
   ireadstream irs(readsFilename, cfg::get().input_qvoffset);
   Read r;
-  size_t reads = 0;
+  size_t reads = 0, rl = 0;
   while (irs.is_open() && !irs.eof()) {
     irs >> r;
     size_t read_size = r.trimNsAndBadQuality(trim_quality);
-
+    rl = std::max(rl, read_size);
+ 
     PositionRead pread(curpos, read_size, cur_read, false);
     if (read_size >= K) {
       pread.set_ltrim(r.ltrim());
@@ -161,7 +164,7 @@ size_t HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curp
   }
   irs.close();
 
-  return reads;
+  return std::make_pair(reads, rl);
 }
 
 void HammerTools::ReadAllFilesIntoBlob() {
@@ -172,9 +175,10 @@ void HammerTools::ReadAllFilesIntoBlob() {
   Globals::input_file_sizes.clear();
 	Globals::input_file_blob_positions.push_back(0);
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		size_t reads = ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read);
+    std::pair<size_t, size_t> stats  = ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read);
 		Globals::input_file_blob_positions.push_back(cur_read);
-    Globals::input_file_sizes.push_back(reads);
+    Globals::input_file_sizes.push_back(stats.first);
+    Globals::read_length = std::max(Globals::read_length, stats.second);
 	}
   INFO("All files were read. Used " << curpos << " bytes out of " << Globals::blob_max_size << " allocated.");
 }

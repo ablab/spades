@@ -20,30 +20,24 @@
 #include <string.h>
 #include <functional>
 
+namespace hammer {
 const uint32_t K = 21;
 const uint32_t M = 55;
+typedef Seq<K> KMer;
+};
+
 typedef uint64_t hint_t;
 
-#define MAX_SHORT 254
 
 class Read;
 class PositionRead;
 class PositionKMer;
 struct KMerStat;
 
-typedef Seq<K> KMer;
-namespace std {
-template<>
-struct hash<KMer> : public unary_function<KMer, size_t> {
-  size_t operator() (KMer val) {
-    return val.GetHash();
-  }
-};
-}
-
-static inline unsigned hamdistKMer(const KMer &x, const KMer &y, unsigned tau = K) {
+static inline unsigned hamdistKMer(const hammer::KMer &x, const hammer::KMer &y,
+                                   unsigned tau = hammer::K) {
   unsigned dist = 0;
-  for (unsigned i = 0; i < K; ++i) {
+  for (unsigned i = 0; i < hammer::K; ++i) {
     if (x[i] != y[i]) {
       ++dist; if (dist > tau) return dist;
     }
@@ -52,16 +46,16 @@ static inline unsigned hamdistKMer(const KMer &x, const KMer &y, unsigned tau = 
 }
 
 typedef std::map<PositionKMer, KMerStat> KMerStatMap;
-typedef std::pair<KMer, std::pair<uint32_t, double> > StringCount;
+typedef std::pair<hammer::KMer, std::pair<uint32_t, double> > StringCount;
 
 struct QualBitSet {
-  unsigned char q_[K];
+  unsigned char q_[hammer::K];
 
   QualBitSet(const unsigned char *q = NULL) {
     if (q)
-      memcpy(q_, q, K);
+      memcpy(q_, q, hammer::K);
     else
-      memset(q_, 0, K);
+      memset(q_, 0, hammer::K);
   }
 
   // QualBitSet is POD-like object, use default stuff.
@@ -69,13 +63,13 @@ struct QualBitSet {
   QualBitSet& operator=(const QualBitSet &qbs) = default;
   // Workaround gcc bug, it cannot generate default move ctor...
   QualBitSet& operator=(QualBitSet &&qbs) {
-    memcpy(q_, qbs.q_, K);
+    memcpy(q_, qbs.q_, hammer::K);
 
     return *this;
   }
 
   QualBitSet& operator+=(const unsigned char *data) {
-    for (size_t i = 0; i < K; ++i)
+    for (size_t i = 0; i < hammer::K; ++i)
       q_[i] = std::min(255, data[i] + q_[i]);
 
     return *this;
@@ -100,7 +94,7 @@ struct QualBitSet {
   }
 
   void set(const char *value) {
-    memcpy(q_, value, K);
+    memcpy(q_, value, hammer::K);
   }
 };
 
@@ -114,7 +108,7 @@ struct KMerStat {
     MarkedForGoodIter  = 5
   } KMerStatus;
 
-  KMerStat(uint32_t cnt, KMer k, float kquality, const unsigned char *quality) : lock_data(0), kmer_(k), totalQual(kquality), count(cnt), qual(quality) {
+  KMerStat(uint32_t cnt, hammer::KMer k, float kquality, const unsigned char *quality) : lock_data(0), kmer_(k), totalQual(kquality), count(cnt), qual(quality) {
     __sync_lock_release(&lock_data);
   }
   KMerStat() : lock_data(0), totalQual(1.0), count(0), qual() {
@@ -131,7 +125,7 @@ struct KMerStat {
     uint64_t lock_data;
   };
 
-  KMer kmer_;
+  hammer::KMer kmer_;
   float totalQual;
   uint32_t count;
   QualBitSet qual;
@@ -154,7 +148,7 @@ struct KMerStat {
     changeto = kmer;
     status = Change;
   }
-  const KMer& kmer() const { return kmer_; }
+  const hammer::KMer& kmer() const { return kmer_; }
 };
 
 inline

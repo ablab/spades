@@ -13,7 +13,7 @@
 
 namespace debruijn_graph {
 
-BOOST_AUTO_TEST_SUITE(graph_simplification_tests)
+BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, TmpFolderFixture)
 
 static debruijn_config::simplification::bulge_remover standard_br_config_generation() {
 	debruijn_config::simplification::bulge_remover br_config;
@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE( ComplexBulgeRemoverOnSimpleBulge ) {
 }
 
 BOOST_AUTO_TEST_CASE( ComplexBulge ) {
-       conj_graph_pack gp(55, Sequence(), 50, true, false);
+       conj_graph_pack gp(55, tmp_folder, Sequence(), 50, true, false);
        ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
        INFO("Complex bulge removal:");
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE( ComplexBulge ) {
 }
 
 BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
-       conj_graph_pack gp(55, Sequence(), 50, true, false);
+       conj_graph_pack gp(55, tmp_folder, Sequence(), 50, true, false);
        ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
        INFO("Complex bulge removal:");
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);

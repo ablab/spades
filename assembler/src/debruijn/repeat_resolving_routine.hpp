@@ -622,14 +622,17 @@ void component_statistics(graph_pack & conj_gp, int component_id,
 }
 
 void resolve_conjugate_component(int component_id, const Sequence& genome) {
-	conj_graph_pack conj_gp(cfg::get().K, genome, cfg::get().pos.max_single_gap,
-			cfg::get().pos.careful_labeling);
+	conj_graph_pack conj_gp(cfg::get().K,
+                          cfg::get().output_dir,
+                          genome, cfg::get().pos.max_single_gap,
+                          cfg::get().pos.careful_labeling);
 	paired_info_index paired_index(conj_gp.g/*, 5.*/);
 	paired_info_index clustered_index(conj_gp.g);
 
 	INFO("Resolve component " << component_id);
 
 	string graph_name = ConstructComponentName("graph_", component_id).c_str();
+  // FIXME: Use path_utils
 	string component_name = cfg::get().output_dir + "graph_components/"
 			+ graph_name;
 
@@ -637,10 +640,13 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 
 	component_statistics(conj_gp, component_id, clustered_index);
 
-	conj_graph_pack resolved_gp(cfg::get().K, genome,
-			cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
+	conj_graph_pack resolved_gp(cfg::get().K,
+                              cfg::get().output_dir,
+                              genome,
+                              cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
 	string sub_dir = "resolve_components/";
 
+  // FIXME: Use path_utils
 	string resolved_name = cfg::get().output_dir + "resolve_components"
 			+ "/resolve_" + graph_name + "/";
 	make_dir(resolved_name);
@@ -702,9 +708,11 @@ void prepare_jump_index(const Graph& g, const paired_info_index& raw_jump_index,
 void resolve_repeats() {
 	Sequence genome = cfg::get().developer_mode ? cfg::get().ds.reference_genome : Sequence();
 
-	conj_graph_pack conj_gp(cfg::get().K, genome, cfg::get().pos.max_single_gap,
-			cfg::get().pos.careful_labeling, /*use_inner_ids*/
-			!cfg::get().developer_mode);
+	conj_graph_pack conj_gp(cfg::get().K,
+                          cfg::get().output_dir,
+                          genome, cfg::get().pos.max_single_gap,
+                          cfg::get().pos.careful_labeling, /*use_inner_ids*/
+                          !cfg::get().developer_mode);
 	paired_info_index paired_index(conj_gp.g, cfg::get().online_clust_rad);
 	paired_info_index clustered_index(conj_gp.g);
 	if (!cfg::get().developer_mode) {
@@ -793,9 +801,12 @@ void resolve_repeats() {
 				INFO("number of components " << number_of_components);
 			}
 
-			conj_graph_pack resolved_gp(cfg::get().K, genome,
-					cfg::get().pos.max_single_gap,
-					cfg::get().pos.careful_labeling);
+			conj_graph_pack resolved_gp(cfg::get().K,
+                                  cfg::get().output_dir,
+                                  genome,
+                                  cfg::get().pos.max_single_gap,
+                                  cfg::get().pos.careful_labeling);
+			resolved_gp.index.Detach();
 
 			EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(
 					resolved_gp.g, conj_gp.g);
@@ -923,9 +934,11 @@ void resolve_repeats() {
 
         distance_filling(conj_gp, paired_index, clustered_index);
 
-        conj_graph_pack resolved_gp(cfg::get().K, genome,
-            cfg::get().pos.max_single_gap,
-            cfg::get().pos.careful_labeling);
+        conj_graph_pack resolved_gp(cfg::get().K,
+                                    cfg::get().output_dir,
+                                    genome,
+                                    cfg::get().pos.max_single_gap,
+                                    cfg::get().pos.careful_labeling);
 
         EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(
             resolved_gp.g, conj_gp.g);

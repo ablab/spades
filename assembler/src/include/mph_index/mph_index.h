@@ -131,6 +131,7 @@ bool MPHIndex::Reset(ForwardIterator begin, ForwardIterator end, uint32_t size) 
 
   m_ = size;
   r_ = static_cast<uint32_t>(ceil((c_*m_)/3));
+  r_ = std::max(3u, r_);
   if ((r_ % 2) == 0) r_ += 1;
 
   // This can be used to speed mods, but increases occupation too much. 
@@ -179,6 +180,7 @@ bool MPHIndex::Mapping(ForwardIterator begin, ForwardIterator end,
     uint32_t v0 = h[0] % r_;
     uint32_t v1 = h[1] % r_ + r_;
     uint32_t v2 = h[2] % r_ + (r_ << 1);
+    
     // cerr << "Key: " << *it << " edge " <<  it - begin << " (" << v0 << "," << v1 << "," << v2 << ")" << endl;
     graph.AddEdge(TriGraph::Edge(v0, v1, v2));
   }
@@ -234,7 +236,7 @@ uint32_t MPHIndex::index(const Key& key) const {
 
 // Simple wrapper around MPHIndex to simplify calling code. Please refer to the
 // MPHIndex class for documentation.
-template <class Key, class HashFcn = typename seeded_hash<std::hash<Key>>::hash_function>
+template <class DefaultKey, class HashFcn = typename seeded_hash<std::hash<DefaultKey>>::hash_function>
 class SimpleMPHIndex : public MPHIndex {
  public:
   SimpleMPHIndex(bool advanced_usage = false) : MPHIndex(advanced_usage) {}
@@ -242,6 +244,7 @@ class SimpleMPHIndex : public MPHIndex {
   bool Reset(ForwardIterator begin, ForwardIterator end, uint32_t size) {
     return MPHIndex::Reset<HashFcn>(begin, end, size);
   }
+  template<class Key = DefaultKey>
   uint32_t index(const Key& key) const { return MPHIndex::index<HashFcn>(key); }
 };
 

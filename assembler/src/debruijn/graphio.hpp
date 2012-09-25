@@ -536,9 +536,9 @@ public:
 	void loadGraph(const string& file_name) {
 		int flag;
 		FILE* file = fopen((file_name + ".grp").c_str(), "r");
-		if (file == NULL
-)
-						WARN("File "<<(file_name + ".grp")<<" not found");
+		if (file == NULL) {
+			WARN("File "<<(file_name + ".grp")<<" not found");
+		}
 		VERIFY(file != NULL);
 		FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
 		VERIFY(sequence_file != NULL);
@@ -844,7 +844,10 @@ void ScanBasicGraph(const string& file_name, DataScanner<Graph>& scanner) {
 template<class graph_pack>
 void ScanGraphPack(const string& file_name,
 		DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp) {
+	gp.index.Detach();
 	ScanBasicGraph(file_name, scanner);
+	gp.index.Refill();
+	gp.index.Attach();
 //	scanner.loadPaired(file_name + "_et", gp.etalon_paired_index);
 	scanner.loadPositions(file_name, gp.edge_pos);
 	LoadKmerMapper(file_name, gp.kmer_mapper);

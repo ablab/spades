@@ -14,7 +14,7 @@
 #ifndef MATHFUNCTIONS_H
 #define MATHFUNCTIONS_H
 
-#include "kmer_index.hpp"
+#include "kmer_data.hpp"
 
 #include <cmath>
 

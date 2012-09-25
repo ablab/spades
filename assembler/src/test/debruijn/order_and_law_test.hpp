@@ -6,6 +6,7 @@
 
 #pragma once
 #include <boost/test/unit_test.hpp>
+#include "test_utils.hpp"
 #include "omni/id_track_handler.hpp"
 
 namespace omni_graph {
@@ -127,7 +128,7 @@ public:
 
 namespace debruijn_graph {
 
-BOOST_AUTO_TEST_SUITE(robust_order_tests)
+BOOST_FIXTURE_TEST_SUITE(robust_order_tests, TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( OrderTest ) {
 	string file_name = "src/debruijn/test_save";
@@ -142,8 +143,8 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 	ScannerTraits<Graph>::Scanner scanner(new_graph, new_int_ids);
 	scanner.loadGraph(file_name);
 	omni_graph::IteratorOrderChecker<Graph> checker(graph, new_graph);
-	BOOST_ASSERT(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
-	BOOST_ASSERT(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));
+	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
+	BOOST_CHECK(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));
 //	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
 //	BOOST_CHECK(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));
 }

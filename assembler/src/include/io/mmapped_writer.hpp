@@ -7,13 +7,16 @@
 #ifndef HAMMER_MMAPPED_WRITER_HPP
 #define HAMMER_MMAPPED_WRITER_HPP
 
+#include "pointer_iterator.hpp"
+
+#include <string>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <strings.h>
-#include <string>
 
 class MMappedWriter {
   int StreamFile;
@@ -54,7 +57,11 @@ class MMappedWriter {
     if (MappedRegion) {
       munmap(MappedRegion, BytesReserved);
       FileOffset += BytesWritten;
+      MappedRegion = NULL;
     }
+
+    if (amount == 0)
+      return;
     
     int res = lseek(StreamFile, amount-1, SEEK_CUR);
     VERIFY(res != -1);
@@ -111,6 +118,48 @@ class MMappedRecordWriter : public MMappedWriter {
   const_iterator begin() const { return const_iterator(data()); }
   iterator end() { return iterator(data()+ size()); }
   const_iterator end() const { return const_iterator(data() + size()); }
+};
+
+template<typename T>
+class MMappedRecordArrayWriter : public MMappedWriter {
+  size_t elcnt_;
+ public:
+  typedef pointer_array_iterator<T> iterator;
+  typedef const pointer_array_iterator<T> const_iterator;
+
+  MMappedRecordArrayWriter() = default;
+  MMappedRecordArrayWriter(const std::string &FileName,
+                           size_t elcnt = 1):
+      MMappedWriter(FileName), elcnt_(elcnt) {}
+
+  void open(const std::string &FileName,
+            size_t elcnt = 1) {
+    elcnt_ = elcnt;
+    MMappedWriter::open(FileName);
+  }
+  
+  void write(const T* el, size_t amount) {
+    MMappedWriter::write((void*)el, amount * sizeof(T) * elcnt_);
+  }
+
+  void reserve(size_t amount) {
+    MMappedWriter::reserve(amount * sizeof(T) * elcnt_);
+  }
+
+  void resize(size_t amount) {
+    MMappedWriter::reserve(amount * sizeof(T) * elcnt_);
+  }
+
+  size_t size() const { return BytesReserved / sizeof(T) / elcnt_; }
+  T* data() { return (T*)MappedRegion; }
+  const T* data() const { return (const T*)MappedRegion; }
+  T& operator[](size_t idx) { return data()[idx*elcnt_]; }
+  const T& operator[](size_t idx) const { return data()[idx*elcnt_]; }
+
+  iterator begin() { return iterator(data(), elcnt_); }
+  const_iterator begin() const { return const_iterator(data(), elcnt_); }
+  iterator end() { return iterator(data() + size()*elcnt_, elcnt_); }
+  const_iterator end() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
 };
 
 #endif // HAMMER_MMAPPED_WRITER_HPP

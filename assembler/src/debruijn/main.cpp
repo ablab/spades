@@ -137,7 +137,9 @@ int main(int argc, char** argv)
     const size_t GB = 1 << 30;
     
     segfault_handler sh(bind(link_output, "latest"));
-    
+
+    srand(42);
+
     try
     {
         using namespace debruijn_graph;

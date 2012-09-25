@@ -15,7 +15,7 @@
 #define KMER_CLUSTER_HPP
 
 #include "hamcluster.hpp"
-#include "kmer_index.hpp"
+#include "kmer_data.hpp"
 
 #include <string>
 #include <vector>
@@ -36,9 +36,9 @@ private:
   std::string workdir_;
 
   /// @return consensus string for a block
-  KMer Consensus(const std::vector<unsigned> & block) const;
+  hammer::KMer Consensus(const std::vector<unsigned> & block) const;
 
-  KMer ConsensusWithMask(const std::vector<unsigned> & block, const std::vector<unsigned> & mask, unsigned maskVal) const;
+  hammer::KMer ConsensusWithMask(const std::vector<unsigned> & block, const std::vector<unsigned> & mask, unsigned maskVal) const;
 
   double ClusterBIC(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices) const;
 

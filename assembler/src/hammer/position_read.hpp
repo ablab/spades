@@ -34,7 +34,7 @@ class PositionRead {
   char operator[] (size_t pos) const;
   bool isDone() const { return done_; }
   void set_done(bool val = true) { done_ = val; }
-  bool valid() const { return size_ >= K; }
+  bool valid() const { return size_ >= hammer::K; }
   unsigned ltrim() const { return ltrim_; }
   void set_ltrim(unsigned val) {
     VERIFY(val < 65536);

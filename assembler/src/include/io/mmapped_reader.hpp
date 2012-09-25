@@ -9,6 +9,8 @@
 
 #include "pointer_iterator.hpp"
 
+#include "verify.hpp"
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -66,16 +68,20 @@ class MMappedReader {
     } else
       BlockSize = FileSize;
 
-    MappedRegion =
-        (uint8_t*)mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
-                       StreamFile, 0);
-    VERIFY((intptr_t)MappedRegion != -1L);
+    if (BlockSize) {
+      MappedRegion =
+          (uint8_t*)mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
+                         StreamFile, 0);
+      VERIFY((intptr_t)MappedRegion != -1L);
+    } else
+      MappedRegion = NULL;
 
     BlockOffset = BytesRead = 0;
   }
 
   virtual ~MMappedReader() {
-    munmap(MappedRegion, BlockSize);
+    if (MappedRegion)
+      munmap(MappedRegion, BlockSize);
     close(StreamFile);
 
     if (Unlink) {
@@ -145,6 +151,37 @@ class MMappedRecordReader : public MMappedReader {
   const_iterator begin() const { return const_iterator(data()); }
   iterator end() { return iterator(data()+ size()); }
   const_iterator end() const { return const_iterator(data() + size()); }
+};
+
+template<typename T>
+class MMappedRecordArrayReader : public MMappedReader {
+  size_t elcnt_;
+ public:
+  typedef pointer_array_iterator<T> iterator;
+  typedef const pointer_array_iterator<T> const_iterator;
+
+  MMappedRecordArrayReader(const std::string &FileName,
+                           size_t elcnt = 1,
+                           bool unlink = true,
+                           size_t blocksize = 64*1024*1024):
+      MMappedReader(FileName, unlink, blocksize), elcnt_(elcnt){
+    VERIFY(FileSize % (sizeof(T) * elcnt_) == 0);
+  }
+
+  void read(T* el, size_t amount) {
+    MMappedReader::read(el, amount * sizeof(T) * elcnt_);
+  }
+
+  size_t size() const { return FileSize / sizeof(T) / elcnt_; }
+  T* data() { return (T*)MappedRegion; }
+  const T* data() const { return (const T*)MappedRegion; }
+  T& operator[](size_t idx) { return data()[idx*elcnt_]; }
+  const T& operator[](size_t idx) const { return data()[idx*elcnt_]; }
+
+  iterator begin() { return iterator(data(), /* size */ elcnt_); }
+  const_iterator begin() const { return const_iterator(data()), /* size */ elcnt_; }
+  iterator end() { return iterator(data() + size()*elcnt_, elcnt_); }
+  const_iterator end() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
 };
 
 

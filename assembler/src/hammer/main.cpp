@@ -31,7 +31,7 @@
 #include "kmer_cluster.hpp"
 #include "position_read.hpp"
 #include "globals.hpp"
-#include "kmer_index.hpp"
+#include "kmer_data.hpp"
 #include "concurrent_dsu.hpp"
 
 #include "memory_limit.hpp"
@@ -49,6 +49,7 @@ hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
+size_t Globals::read_length = 0;
 
 char Globals::char_offset = 0;
 bool Globals::char_offset_user = true;
@@ -92,7 +93,7 @@ int main(int argc, char * argv[]) {
     Globals::use_common_quality = cfg::get().common_quality > 0;
     Globals::common_quality = (char)cfg::get().common_quality;
     Globals::common_kmer_errprob = 1.0;
-    for (size_t i=0; i<K; ++i)
+    for (size_t i=0; i < hammer::K; ++i)
       Globals::common_kmer_errprob *= 1 - pow(10.0, - Globals::common_quality / 10.0);
     Globals::common_kmer_errprob = 1 - Globals::common_kmer_errprob;
 
