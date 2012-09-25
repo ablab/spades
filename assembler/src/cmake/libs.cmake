@@ -1,7 +1,7 @@
 # -*- cmake -*-
 
 # Collect all the necessary common libraries
-set(COMMON_LIBRARIES ${ZLIB_LIBRARIES})
+set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${SYSTEM_LIBRARIES})
 
 # Add TCMalloc
 if (SPADES_USE_TCMALLOC)

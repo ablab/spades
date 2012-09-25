@@ -8,7 +8,7 @@ if (OPENMP_FOUND)
 # Use parallel libstdc++ if possible
   add_definitions(-DUSE_GLIBCXX_PARALLEL=1)
 else ()
-  if (NOT APPLE)
+  if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     message(FATAL_ERROR "SPAdes requires OpenMP to be available")
   endif()
 endif()
@@ -22,6 +22,10 @@ endif()
 # Use libc++ with clang due to C++11 mode
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+  # Require libsupc++ on Linux
+  if (UNIX AND NOT APPLE)
+    set(SYSTEM_LIBRARIES "supc++")
+  endif()
 endif()
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
