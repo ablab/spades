@@ -168,8 +168,10 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
     out.push_back(this->GetRawKMersFname(i));
 
   FILE** ostreams = new FILE*[num_files];
-  for (unsigned i = 0; i < num_files; ++i)
+  for (unsigned i = 0; i < num_files; ++i) {
     ostreams[i] = fopen(out[i].c_str(), "wb");
+    VERIFY_MSG(ostreams[i], "Cannot open temporary file to write");
+  }
 
   size_t cell_size = READS_BUFFER_SIZE /
                      (nthreads * num_files * sizeof(runtime_k::RtSeq));
@@ -272,8 +274,10 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
     out.push_back(this->GetRawKMersFname(i));
 
   FILE** ostreams = new FILE*[num_files];
-  for (unsigned i = 0; i < num_files; ++i)
+  for (unsigned i = 0; i < num_files; ++i) {
     ostreams[i] = fopen(out[i].c_str(), "wb");
+    VERIFY_MSG(ostreams[i], "Cannot open temporary file to write");
+  }
 
   size_t cell_size = READS_BUFFER_SIZE /
                      (num_files * sizeof(runtime_k::RtSeq));
@@ -581,7 +585,7 @@ class DeBruijnKMerIndex {
         entry.edgeId_ = id;
         entry.offset_ = offset;
     } else {
-    	VERIFY(ignore_new_kmer);
+      VERIFY(ignore_new_kmer);
     }
   }
 };
