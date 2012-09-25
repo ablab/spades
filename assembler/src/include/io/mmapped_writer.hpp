@@ -124,8 +124,8 @@ template<typename T>
 class MMappedRecordArrayWriter : public MMappedWriter {
   size_t elcnt_;
  public:
-  typedef pointer_array_iterator<T> iterator;
-  typedef const pointer_array_iterator<T> const_iterator;
+  typedef typename array_vector<T>::iterator iterator;
+  typedef typename array_vector<T>::const_iterator const_iterator;
 
   MMappedRecordArrayWriter() = default;
   MMappedRecordArrayWriter(const std::string &FileName,
