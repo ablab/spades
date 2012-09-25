@@ -383,7 +383,9 @@ class NewExtendedSequenceMapper {
   typedef std::vector<MappingRange> RangeMappings;
   typedef runtime_k::RtSeq Kmer;
   typedef EdgeIndex<Graph> Index;
+  typedef typename Index::InnerIndex KMerIndex;
   typedef KmerMapper<Graph> KmerSubs;
+  typedef typename KMerIndex::KMerIdx KMerIdx;
 
  private:
   const Graph& g_;
@@ -393,10 +395,12 @@ class NewExtendedSequenceMapper {
   //	mutable size_t mapped_;
   //	mutable size_t unmapped_;
 
-  bool FindKmer(Kmer kmer, size_t kmer_pos, std::vector<EdgeId> &passed,
+  bool FindKmer(const Kmer &kmer, size_t kmer_pos, std::vector<EdgeId> &passed,
                 RangeMappings& range_mappings) const {
-    if (index_.contains(kmer)) {
-      pair<EdgeId, size_t> position = index_.get(kmer);
+    KMerIdx idx = index_.seq_idx(kmer);
+    if (idx != KMerIndex::InvalidKMerIdx &&
+        index_.contains(idx)) {
+      std::pair<EdgeId, size_t> position = index_.get(idx);
       if (passed.empty() || passed.back() != position.first ||
           kmer_pos != range_mappings.back().initial_range.end_pos ||
           position.second + 1 < range_mappings.back().mapped_range.end_pos) {
