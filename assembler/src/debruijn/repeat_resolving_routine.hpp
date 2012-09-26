@@ -868,9 +868,7 @@ void resolve_repeats() {
                             cfg::get().pe_params);
                 }
 
-                if (cfg::get().run_mode) {
-                    save_resolved(resolved_gp, resolved_graph_paired_info, resolved_graph_paired_info_cl);
-                }
+                save_resolved(resolved_gp, resolved_graph_paired_info, resolved_graph_paired_info_cl);
 	        }
 
 
