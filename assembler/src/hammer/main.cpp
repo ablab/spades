@@ -79,7 +79,10 @@ void create_console_logger() {
 }
  
 int main(int argc, char * argv[]) {
-	segfault_handler sh;
+  segfault_handler sh;
+
+  srand(42);
+  srandom(42);
 
   try {
     create_console_logger();

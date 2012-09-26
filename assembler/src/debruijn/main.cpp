@@ -139,6 +139,7 @@ int main(int argc, char** argv)
     segfault_handler sh(bind(link_output, "latest"));
 
     srand(42);
+    srandom(42);
 
     try
     {
