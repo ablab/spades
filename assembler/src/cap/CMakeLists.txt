@@ -17,4 +17,4 @@ add_executable(cap
 #  set_target_properties(cap PROPERTIES LINK_SEARCH_END_STATIC 1)
 #endif()
 
-target_link_libraries(cap ${COMMON_LIBRARIES} input)
+target_link_libraries(cap ${COMMON_LIBRARIES} input mph_index)

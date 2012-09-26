@@ -48,7 +48,7 @@ public:
 	
 	bool operator < (const TColorSet &other) const {
 		const TBitSet &other_bitset = other.getBitset();
-		for (int i = 0; i < kDefaultMaxColorsUsed; ++i) {
+		for (size_t i = 0; i < kDefaultMaxColorsUsed; ++i) {
 			if (bitset_[i] != other_bitset[i]) {
 				return bitset_[i] < other_bitset[i];
 			}
@@ -89,7 +89,7 @@ class ColorGenerator {
 		double hue_value = 0;
 		int accumulated_exp = 0;
 
-		for (int i = 0; (1 << i) <= color_number; ++i) {
+		for (size_t i = 0; (1ul << i) <= color_number; ++i) {
 			bool bit = (color_number >> i) & 1;
 			if (bit) {
 				hue_value = hue_value / (1 << accumulated_exp);
@@ -115,7 +115,7 @@ public:
 		}
 
 		hue_array.resize(number_of_colors);
-		for (int i = max_colors; i < number_of_colors; ++i) {
+		for (size_t i = max_colors; i < number_of_colors; ++i) {
 			hue_array[i] = GenerateIthColor(i);
 		}
 		max_colors = number_of_colors;
@@ -164,7 +164,7 @@ public:
 			return color_str((TColor) 0);
 		}
 		string result = "";
-		for (int i = 0; i < max_colors; ++i) {
+		for (size_t i = 0; i < max_colors; ++i) {
 			if (!color_set[i]) continue;
 			if (result.length() != 0) {
 				result += ':';

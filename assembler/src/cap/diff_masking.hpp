@@ -95,7 +95,7 @@ pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1,
 			io::SingleRead("second", genome2.str()));
 
 	typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph> refining_gp_t;
-	refining_gp_t refining_gp(k);
+	refining_gp_t refining_gp(k, "tmp");
 	ConstructGPForRefinement(refining_gp, stream1, stream2, delta);
 
 	io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1

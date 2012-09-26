@@ -14,4 +14,4 @@ add_executable(cap_test
  ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
  test.cpp)
 
-target_link_libraries(cap_test ${COMMON_LIBRARIES} input)
+target_link_libraries(cap_test ${COMMON_LIBRARIES} input mph_index)

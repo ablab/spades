@@ -197,7 +197,7 @@ public:
 			io::IReader<io::SingleRead> &stream2, const string& name1,
 			const string& name2, bool untangle = false,
 			const Sequence& reference = Sequence()) :
-			gp_(k_value, reference, 200, true), coloring_(gp_.g), rc_stream1_(stream1), rc_stream2_(
+			gp_(k_value, "tmp1", reference, 200, true), coloring_(gp_.g), rc_stream1_(stream1), rc_stream2_( // TODO dir
 					stream2), name1_(name1), stream1_(rc_stream1_, name1), name2_(
 					name2), stream2_(rc_stream2_, name2), untangle_(untangle) {
 	}
@@ -367,7 +367,7 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 
 	if (refine) {
 		typedef graph_pack<ConjugateDeBruijnGraph> refining_gp_t;
-		refining_gp_t refining_gp(k);
+		refining_gp_t refining_gp(k, "tmp2");
 		io::VectorReader<io::SingleRead> genome_stream(
 				io::SingleRead("genome", reference.str()));
 		vector<ContigStream*> comp_stream =
