@@ -187,7 +187,17 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 
 void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 		EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
-	int offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
+	int offset = 0;
+	if (cfg::get().ds.paired_reads.size() > 0){
+		if (cfg::get().ds.paired_reads[0].size() > 0) {
+			offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
+ 		}
+	}
+	if (offset == 0) {
+		if (cfg::get().ds.single_reads.size() > 0) {
+			offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
+		}
+	}
 	io::OffsetType offset_type;
 	if (offset == 33) {
 		INFO("Using offset +33");
@@ -199,6 +209,9 @@ void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 		WARN("Unable to define offset type, assume +33");
 		offset_type = io::PhredOffset;
 	}
+
+	string OutputFileName = (cfg::get().run_mode) ? cfg::get().output_dir + "align_after_RR.sam": cfg::get().output_base + "contigs.sam";
+
 
 	if (cfg::get().sw.align_original_reads) {
 //			if (cfg::get().sw.original_first && cfg::get().sw.original_second)
@@ -225,7 +238,7 @@ void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 					cfg::get().sw.output_map_format,
 					cfg::get().sw.output_broken_pairs, print_quality);
 			Aligner.AlignPairedReads(*original_paired_reads, *paired_reads,
-					cfg::get().output_dir + "align_after_RR.sam");
+					OutputFileName);
 		}
 	} else {
 		auto paired_reads = paired_easy_reader(false, 0, false, false, false,
@@ -247,10 +260,10 @@ void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 				cfg::get().sw.output_broken_pairs, print_quality);
 		if (cfg::get().sw.align_only_paired)
 			Aligner.AlignPairedReads(*paired_reads,
-					cfg::get().output_dir + "align_after_RR.sam");
+					OutputFileName);
 		else
 			Aligner.AlignReads(*paired_reads, *single_reads,
-					cfg::get().output_dir + "align_after_RR.sam");
+					OutputFileName);
 
 	}
 }

@@ -895,11 +895,11 @@ def run_spades(cfg):
     os.remove(cfg.additional_contigs)
 
     if glob.glob(os.path.join(latest, "*.sam")):
-        sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs),
-            "contigs.sam")
+#        sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs),
+#            "contigs.sam")
         if os.path.exists(sam_file_linkname):
             os.remove(sam_file_linkname)
-        os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
+#        os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
 
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)    

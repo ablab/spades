@@ -45,6 +45,8 @@ void SAMBeforeResolve(conj_graph_pack& conj_gp) {
 		WARN("Unable to define offset type, assume +33");
 		offset_type = io::PhredOffset;
 	}
+	string OutputFileName = (cfg::get().run_mode || cfg::get().paired_mode) ? cfg::get().output_dir + "align_before_RR.sam":  cfg::get().output_base + "contigs.sam";
+
 	if (cfg::get().sw.align_original_reads) {
 		{
 			auto paired_reads = paired_easy_reader(false, 0, false, false,
@@ -63,7 +65,7 @@ void SAMBeforeResolve(conj_graph_pack& conj_gp) {
 					cfg::get().sw.adjust_align, cfg::get().sw.output_map_format,
 					cfg::get().sw.output_broken_pairs, print_quality);
 			Aligner.AlignPairedReads(*original_paired_reads, *paired_reads,
-					cfg::get().output_dir + "align_before_RR.sam");
+					OutputFileName);
 
 		}
 	} else {
@@ -86,10 +88,10 @@ void SAMBeforeResolve(conj_graph_pack& conj_gp) {
 				cfg::get().sw.output_broken_pairs, print_quality);
 		if (cfg::get().sw.align_only_paired)
 			Aligner.AlignPairedReads(*paired_reads,
-					cfg::get().output_dir + "align_before_RR.sam");
+					OutputFileName);
 		else
 			Aligner.AlignReads(*paired_reads, *single_reads,
-					cfg::get().output_dir + "align_before_RR.sam");
+					OutputFileName);
 
 	}
 }
