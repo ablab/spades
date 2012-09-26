@@ -29,6 +29,12 @@ namespace omnigraph {
 template <class Value>
 class TreeNode {
 
+	struct NodeComparator {
+		bool operator() (TreeNode* node1, TreeNode* node2) {
+			return node1->GetSize() < node2->GetSize();
+		}
+	};
+
 public:
 	TreeNode() : parent_(0), subtree_size_(0) { }
 
@@ -41,23 +47,59 @@ public:
 		return subtree_size_;
 	}
 
-	virtual size_t SeparateNodes(vector<Value>& output, const size_t howMuchToSeparate) {
-		size_t separated = 0;
+	void sort() {
+		std::sort(children_.begin(), children_.end(), NodeComparator());
+		BOOST_FOREACH(TreeNode* node, children_) {
+			node->sort();
+		}
+	}
+//
+//	virtual size_t SeparateNodes(vector<Value>& output, const size_t howMuchToSeparate) {
+//		size_t separated = 0;
+//
+//		while (subtree_size_ > 0 && howMuchToSeparate - separated > 0) {
+//			TreeNode * node = children_.back();
+//
+//			if (node->GetSize() <= howMuchToSeparate - separated) {
+//				children_.pop_back();
+//			}
+//
+//			// get descendants
+//			size_t result = node->SeparateNodes(output, howMuchToSeparate - separated);
+//			separated += result;
+//			subtree_size_ -= result;
+//		}
+//
+//		return separated;
+//	}
 
-		while (subtree_size_ > 0 && howMuchToSeparate - separated > 0) {
-			TreeNode * node = children_.back();
+	TreeNode* GetSubtreeWithSize(const size_t size) {
+		VERIFY(size <= this->GetSize());
 
-			if (node->GetSize() <= howMuchToSeparate - separated) {
-				children_.pop_back();
-			}
-
-			// get descendants
-			size_t result = node->SeparateNodes(output, howMuchToSeparate - separated);
-			separated += result;
-			subtree_size_ -= result;
+		if (children_.size() == 0) {
+			return this;
 		}
 
-		return separated;
+		TreeNode* biggest_child = children_.back();
+		if (biggest_child->GetSize() < size) {
+			return this;
+		}
+
+		TreeNode* node = biggest_child->GetSubtreeWithSize(size);
+		if (node == biggest_child) {
+			children_.pop_back();
+		}
+
+		subtree_size_ -= node->GetSize();
+		return node;
+	}
+
+	virtual void CollectValues(vector<Value>& output) {
+		BOOST_FOREACH(TreeNode* node, children_) {
+			node->CollectValues(output);
+		}
+		subtree_size_ = 0;
+		children_.clear();
 	}
 
 	TreeNode* GetRoot() {
@@ -89,16 +131,21 @@ public:
 	TreeNodeWithValue(const Value& value) : value_(value) {	}
 
 	virtual ~TreeNodeWithValue() { }
+//
+//	virtual size_t SeparateNodes(vector<Value>& output, const size_t howMuchToSeparate) {
+//		size_t separated = TreeNode<Value>::SeparateNodes(output, howMuchToSeparate);
+//
+//		if (separated < howMuchToSeparate) {
+//			output.push_back(value_);
+//			++separated;
+//		}
+//
+//		return separated;
+//	}
 
-	virtual size_t SeparateNodes(vector<Value>& output, const size_t howMuchToSeparate) {
-		size_t separated = TreeNode<Value>::SeparateNodes(output, howMuchToSeparate);
-
-		if (separated < howMuchToSeparate) {
-			output.push_back(value_);
-			++separated;
-		}
-
-		return separated;
+	virtual void CollectValues(vector<Value>& output) {
+		output.push_back(value_);
+		TreeNode<Value>::CollectValues(output);
 	}
 
 	virtual size_t GetSize() const {
@@ -181,13 +228,15 @@ public:
 		BOOST_FOREACH(const VertexId& vertex, setRoots) {
 			root_.AddChild(*GetNode(vertex).GetRoot());
 		}
+
+		root_.sort();
 	}
 
 	void SeparateVertices(vector<VertexId>& output, size_t size) {
-		VERIFY(GetSize() >= size);
-
-		output.reserve(size);
-		root_.SeparateNodes(output, size);
+//		VERIFY(GetSize() >= size);
+		TreeNode<VertexId>* node = root_.GetSubtreeWithSize(min(size, GetSize()));
+		output.reserve(node->GetSize());
+		node->CollectValues(output);
 	}
 
 	size_t GetSize() const {

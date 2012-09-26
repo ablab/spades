@@ -56,19 +56,21 @@ public:
 		DevisibleTree<GluedVertexGraph> tree (glued_vertex_graph);
 		const size_t component_size = tree.GetSize() / nthreads;
 
+		INFO("tree size: " << tree.GetSize());
+
 		for (size_t thread = 0; thread < nthreads_; ++thread) {
 			vector<VertexId> vertices;
+			tree.SeparateVertices(vertices, component_size);
+			INFO("Got" << vertices.size());
+			INFO("tree size: " << tree.GetSize());
 
-			// to put all the rest to last component.
-			size_t size = (thread == nthreads - 1) ? tree.GetSize() : component_size;
-
-			vertices.reserve(size * 2);
-
-			tree.SeparateVertices(vertices, size);
-
-			for (size_t i = 0; i < size; ++i) {
+			size_t actual_size = vertices.size();
+			for (size_t i = 0; i < actual_size; ++i) {
 				vertices.push_back(graph.conjugate(vertices[i]));
 			}
+
+			INFO("Graph size: " << graph.size());
+			INFO(thread << "th component size: " << vertices.size());
 
 			ComponentPtr ptr (
 					new ConjugateComponent(
