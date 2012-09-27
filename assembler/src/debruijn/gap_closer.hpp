@@ -535,7 +535,7 @@ void CloseGaps(conj_graph_pack& gp) {
 //		}
 	} else {
 		auto_ptr<PairedReadStream> stream = paired_easy_reader(true, 0);
-		std::vector<PairedReadStream*> streams = { stream.get() };
+        io::ReadStreamVector <PairedReadStream> streams(stream.get());
 		CloseGaps<PairedReadStream>(gp, streams);
 	}
 
