@@ -153,10 +153,11 @@ bool MPHIndex::Reset(ForwardIterator begin, ForwardIterator end, uint32_t size) 
   int iterations;
   std::vector<TriGraph::Edge> edges;
   std::vector<uint32_t> queue;
+  uint32_t seed = 0;
   for (iterations = 0; iterations < 1000; ++iterations) {
     // cerr << "Iterations missing: " << iterations << endl;
     for (unsigned i = 0; i < 3; ++i)
-      hash_seed_[i] = random();
+      hash_seed_[i] = seed++;
     if (Mapping<SeededHashFcn>(begin, end, &edges, &queue))
       break;
   }
