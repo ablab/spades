@@ -713,6 +713,7 @@ def main():
               bh_cfg.log_filename + "\n")
 
     result_contigs_filename = ""
+    result_scaffolds_filename = ""
     if "assembly" in cfg:
         spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
 
@@ -740,6 +741,8 @@ def main():
             "assembly.log")
         spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.output_dir,
             "contigs.fasta")
+        spades_cfg.__dict__["result_scaffolds"] = os.path.join(spades_cfg.output_dir,
+            "scaffolds.fasta")
 
         spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir,
             "simplified_contigs.fasta")
@@ -784,7 +787,7 @@ def main():
             dataset_file.close()
             spades_cfg.__dict__["dataset"] = dataset_filename
 
-        result_contigs_filename = run_spades(spades_cfg)
+        result_contigs_filename, result_scaffolds_filename = run_spades(spades_cfg)
 
         tee.free()
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
@@ -795,6 +798,8 @@ def main():
         print " * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/"
     if result_contigs_filename:
         print " * Assembled contigs are " + result_contigs_filename
+    if result_scaffolds_filename:
+        print " * Assembled scaffolds are " + result_scaffolds_filename
     print ""
     print "Thank you for using SPAdes!"
 
@@ -882,6 +887,7 @@ def run_spades(cfg):
 
     latest = os.path.join(cfg.output_dir, "K%d" % (K))
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
+    shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)    
     if cfg.developer_mode:
         # before repeat resolver contigs
         # before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "simplified_contigs.fasta")
@@ -904,7 +910,7 @@ def run_spades(cfg):
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)    
 
-    return cfg.result_contigs
+    return cfg.result_contigs, cfg.result_scaffolds
 
 
 if __name__ == '__main__':
