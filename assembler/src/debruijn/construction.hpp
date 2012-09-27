@@ -18,7 +18,6 @@
 #include "io/vector_reader.hpp"
 #include "omni_labelers.hpp"
 #include "dataset_readers.hpp"
-#include "id_normalizer.hpp"
 //#include "online_pictures.hpp"
 
 namespace debruijn_graph {
@@ -34,7 +33,7 @@ namespace debruijn_graph {
 
 template<class Read>
 void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
-		conj_graph_pack& gp, ReadStream* contigs_stream = 0, bool normalize_ids = false) {
+		conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
 	INFO("STAGE == Constructing Graph");
 	size_t rl = ConstructGraphWithCoverage<Read>(cfg::get().K, streams, gp.g,
 			gp.index, contigs_stream);
@@ -44,10 +43,6 @@ void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
 	} else if (*cfg::get().ds.RL != rl) {
 		WARN(
 				"In datasets.info, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
-	}
-	if (normalize_ids) {
-		IdNormalizer<conj_graph_pack::graph_t> id_normalizer(gp.g, gp.int_ids);
-		id_normalizer();
 	}
 }
 
@@ -126,20 +121,16 @@ void exec_construction(conj_graph_pack& gp) {
 					cfg::get().additional_contigs, true);
 		}
 
-		bool normalize_ids = cfg::get().normalize_ids;
-		VERIFY(!normalize_ids || cfg::get().developer_mode);
-
 		if (cfg::get().use_multithreading) {
 			auto streams = single_binary_readers(true, true);
 			construct_graph<io::SingleReadSeq>(streams, gp,
-					additional_contigs_stream, normalize_ids);
+					additional_contigs_stream);
 
 		} else {
-			//todo isn't it obsolete???
 			auto single_stream = single_easy_reader(true, true);
 			io::ReadStreamVector<ReadStream> streams(single_stream.get());
 			construct_graph<io::SingleRead>(streams, gp,
-					additional_contigs_stream, normalize_ids);
+					additional_contigs_stream);
 		}
 
 		save_construction(gp);

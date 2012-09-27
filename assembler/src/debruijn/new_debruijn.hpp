@@ -164,14 +164,6 @@ public:
 		return Sequence();
 	}
 
-	const Sequence& nucls(EdgeId e) const {
-		return EdgeNucls(e);
-	}
-
-	const Sequence nucls(VertexId v) const {
-		return VertexNucls(v);
-	}
-
 private:
 	DECL_LOGGER("DeBruijnGraph")
 };

@@ -529,7 +529,6 @@ public:
 	bool componential_resolve;
 	bool gap_closer_enable;
 	bool SAM_writer_enable;
-	bool normalize_ids;
 
 	//Convertion options
 	size_t buffer_size;
@@ -1052,7 +1051,6 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.jump, pt, "jump");
 
 	load_reference_genome(cfg.ds, cfg.input_dir);
-	load(cfg.normalize_ids, pt, "normalize_ids");
 
 //	cfg.is_infinity = 100000000;
 }

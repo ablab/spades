@@ -186,5 +186,3 @@ graph_read_corr
 
 ;temporary flag to generate saves even in non-developer mode
 force_make_saves false
-
-normalize_ids false
