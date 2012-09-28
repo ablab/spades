@@ -45,7 +45,7 @@ namespace online_visualization {
                 file_name_base_("picture"),
                 max_vertices_(40),
                 edge_length_bound_(1000),
-                gp_(cfg::get().K, cfg::get().ds.reference_genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling),
+                gp_(cfg::get().K, env_path + "/tmp", cfg::get().ds.reference_genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling),
                 mapper_(gp_.g, gp_.index, gp_.kmer_mapper, cfg::get().K + 1),
                 filler_(gp_.g, mapper_, gp_.edge_pos),
                 graph_struct_(gp_.g, &gp_.int_ids, &gp_.edge_pos), 
