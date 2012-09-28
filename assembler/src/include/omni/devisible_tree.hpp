@@ -35,6 +35,14 @@ class TreeNode {
 		}
 	};
 
+	struct SizePred {
+		const size_t size;
+		SizePred(size_t size) : size(size) { }
+		bool operator()(TreeNode* node) {
+			return node->GetSize() >= size;
+		}
+	};
+
 public:
 	TreeNode() : parent_(0), subtree_size_(0) { }
 
@@ -47,13 +55,7 @@ public:
 		return subtree_size_;
 	}
 
-	void sort() {
-		std::sort(children_.begin(), children_.end(), NodeComparator());
-		BOOST_FOREACH(TreeNode* node, children_) {
-			node->sort();
-		}
-	}
-//
+	//
 //	virtual size_t SeparateNodes(vector<Value>& output, const size_t howMuchToSeparate) {
 //		size_t separated = 0;
 //
@@ -74,20 +76,16 @@ public:
 //	}
 
 	TreeNode* GetSubtreeWithSize(const size_t size) {
-		VERIFY(size <= this->GetSize());
-
-		if (children_.size() == 0) {
-			return this;
+		// find big enough child.
+		auto it = std::find_if(children_.begin(), children_.end(), SizePred(size));
+		if (it == children_.end()) {
+			return 0;
 		}
 
-		TreeNode* biggest_child = children_.back();
-		if (biggest_child->GetSize() < size) {
-			return this;
-		}
-
-		TreeNode* node = biggest_child->GetSubtreeWithSize(size);
-		if (node == biggest_child) {
-			children_.pop_back();
+		TreeNode* node = (*it)->GetSubtreeWithSize(size);
+		if (node == 0) {
+			node = *it;
+			children_.erase(it);
 		}
 
 		subtree_size_ -= node->GetSize();
@@ -119,7 +117,7 @@ public:
 
 private:
 	TreeNode * parent_;
-	vector<TreeNode *> children_;
+	list<TreeNode *> children_;
 	size_t subtree_size_;
 };
 
@@ -228,13 +226,13 @@ public:
 		BOOST_FOREACH(const VertexId& vertex, setRoots) {
 			root_.AddChild(*GetNode(vertex).GetRoot());
 		}
-
-		root_.sort();
 	}
 
 	void SeparateVertices(vector<VertexId>& output, size_t size) {
-//		VERIFY(GetSize() >= size);
 		TreeNode<VertexId>* node = root_.GetSubtreeWithSize(min(size, GetSize()));
+		if (node == 0) {
+			node = &root_;
+		}
 		output.reserve(node->GetSize());
 		node->CollectValues(output);
 	}
