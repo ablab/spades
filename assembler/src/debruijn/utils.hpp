@@ -329,11 +329,11 @@ private:
 				double weight = weight_f_(mapping_edge_1.second,
 						mapping_edge_2.second);
 				size_t kmer_distance = read_distance
-						+ mapping_edge_2.second.initial_range.start_pos
+						+ mapping_edge_2.second.initial_range.end_pos
 						- mapping_edge_1.second.initial_range.start_pos;
 				int edge_distance = kmer_distance
 						+ mapping_edge_1.second.mapped_range.start_pos
-						- mapping_edge_2.second.mapped_range.start_pos;
+						- mapping_edge_2.second.mapped_range.end_pos;
 
 				paired_index.AddPairInfo(
 						PairInfo<EdgeId>(mapping_edge_1.first,
