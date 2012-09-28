@@ -879,7 +879,8 @@ def run_spades(cfg):
 
     latest = os.path.join(cfg.output_dir, "K%d" % (K))
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
-    shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)    
+    if cfg.paired_mode:
+        shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)    
     if cfg.developer_mode:
         # before repeat resolver contigs
         # before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "simplified_contigs.fasta")
@@ -901,9 +902,10 @@ def run_spades(cfg):
 
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)    
+    if not cfg.paired_mode:
+        return cfg.result_contigs, ""
 
     return cfg.result_contigs, cfg.result_scaffolds
-
 
 if __name__ == '__main__':
     try:
