@@ -36,24 +36,24 @@ class DeBruijnGraphConstructor {
   size_t kmer_size_;
 
   bool StepRightIfPossible(KPlusOneMer &edge) {
-    TRACE("Considering edge " << edge);
+    //TRACE("Considering edge " << edge);
     VERIFY(origin_.contains(edge));
     if (origin_.RivalEdgeCount(edge) == 1 &&
         origin_.NextEdgeCount(edge) == 1) {
       KPlusOneMer next_edge = origin_.NextEdge(edge);
-      TRACE("Found extension " << next_edge);
+      //TRACE("Found extension " << next_edge);
       VERIFY(origin_.contains(next_edge));
       //if (edge != !next_edge) { // rev compl
       edge = next_edge;
       return true;
       //}
     }
-    TRACE("Stopped going right at " << edge);
+    //TRACE("Stopped going right at " << edge);
     return false;
   }
 
   KPlusOneMer GoRight(KPlusOneMer edge) {
-    TRACE("Starting going right for edge " << edge);
+    //TRACE("Starting going right for edge " << edge);
     KPlusOneMer initial = edge;
     while (StepRightIfPossible(edge) && edge != initial) {
       ;
@@ -62,9 +62,9 @@ class DeBruijnGraphConstructor {
   }
 
   KPlusOneMer GoLeft(KPlusOneMer edge) {
-    TRACE("Starting going left for edge " << edge);
+    //TRACE("Starting going left for edge " << edge);
     auto res = !GoRight(!edge);
-    TRACE("Stopped going left at " << res);
+    //TRACE("Stopped going left at " << res);
     return res;
   }
 
@@ -171,7 +171,7 @@ class DeBruijnGraphConstructor {
 
       auto e = graph_.AddEdge(start, end, sequences[i]);
 
-      TRACE(graph_.length(e));
+      //TRACE(graph_.length(e));
     }
   }
 

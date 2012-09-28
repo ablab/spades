@@ -545,7 +545,7 @@ public:
 	 */
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
 		VERIFY(this->IsAttached());
-		TRACE("IN ADD:" << pair_info.first << pair_info.second << " " << data_.size());
+		TRACE("IN ADD:" << this->g().int_id(pair_info.first) << " " << this->g().int_id(pair_info.second) << " " << data_.size());
 //		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first,
 //				pair_info.second);
 //		int cluster_index = NearestClusterIndex(pair_infos, pair_info);

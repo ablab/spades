@@ -515,7 +515,6 @@ class DeBruijnKMerIndex {
   }
 
   bool ContainsInIndex(const KMer& kmer) const {
-    TRACE("ContainsInIndex");
     KMerIdx idx = seq_idx(kmer);
 
     // Early exit if kmer has not been seen at all
