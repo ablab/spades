@@ -13,6 +13,10 @@
 
 #include "path_helper.hpp"
 
+#ifdef USE_GLIBCXX_PARALLEL
+#include <parallel/algorithm>
+#endif
+
 namespace omnigraph {
 
 /**
@@ -440,9 +444,8 @@ private:
 	double deviation_;
 	map<size_t, double> percentiles_;
 public:
-	PairInfoStatsEstimator(const Graph &graph
-			, const PairedInfoIndex<Graph>& paired_index, size_t enough_edge_length) : graph_(graph)
-	, enough_edge_length_(enough_edge_length), mean_(0.), deviation_(0.) {
+	PairInfoStatsEstimator(const Graph &graph, const PairedInfoIndex<Graph>& paired_index, size_t enough_edge_length)
+      : graph_(graph), enough_edge_length_(enough_edge_length), mean_(0.), deviation_(0.) {
 	}
 
 	void EstimateStats() {
@@ -479,8 +482,8 @@ private:
 	vector<double> CollectWeights() const {
 		vector<double> result;
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			vector<EdgeId> v1 = graph_.OutgoingEdges(graph_.EdgeStart(*it));
-			vector<EdgeId> v2 = graph_.IncomingEdges(graph_.EdgeEnd(*it));
+			const std::vector<EdgeId> &v1 = graph_.OutgoingEdges(graph_.EdgeStart(*it));
+			const std::vector<EdgeId> &v2 = graph_.IncomingEdges(graph_.EdgeEnd(*it));
 			bool eq = false;
 			if (v1.size() == 2 && v2.size() == 2)
 				if ((v1[0] == v2[0] && v1[1] == v2[1])
@@ -492,11 +495,16 @@ private:
 					&& !eq)
 				result.push_back(graph_.coverage(*it));
 		}
-		std::sort(result.begin(), result.end());
+#ifdef USE_GLIBCXX_PARALLEL
+    // Explicitly force a call to parallel sort routine.
+    __gnu_parallel::sort(result.begin(), result.end());
+#else
+    std::sort(result.begin(), result.end());
+#endif
 		return result;
 	}
 
-	vector<size_t> ConstructHistogram(vector<double> coverage_set) const {
+	vector<size_t> ConstructHistogram(const std::vector<double> &coverage_set) const {
 		vector < size_t > result;
 		size_t cur = 0;
 		result.push_back(0);
@@ -510,11 +518,10 @@ private:
 		return result;
 	}
 
-	double weight(size_t value, vector<size_t> histogram,
-			size_t backet_width) const {
+	double weight(size_t value, const vector<size_t> &histogram,
+                size_t backet_width) const {
 		double result = 0;
-		for (size_t i = 0; i < backet_width && value + i < histogram.size();
-				i++) {
+		for (size_t i = 0; i < backet_width && value + i < histogram.size(); i++) {
 			result += histogram[value + i] * std::min(i + 1, backet_width - i);
 		}
 		return result;
@@ -536,27 +543,29 @@ private:
 			if (graph_.length(*it) > 500)
 				coverages.push_back(graph_.coverage(*it));
 		}
-		sort(coverages.begin(), coverages.end());
+#ifdef USE_GLIBCXX_PARALLEL
+    // Explicitly force a call to parallel sort routine.
+    __gnu_parallel::sort(coverages.begin(), coverages.end());
+#else
+    std::sort(coverages.begin(), coverages.end());
+#endif
 		return coverages[coverages.size() / 2];
 	}
 
 public:
-	ErroneousConnectionThresholdFinder(const Graph &graph, size_t backet_width =
-			0) :
+	ErroneousConnectionThresholdFinder(const Graph &graph, size_t backet_width = 0) :
 			graph_(graph), backet_width_(backet_width) {
 	}
 
-	double FindThreshold(vector<size_t> histogram) const {
+	double FindThreshold(const vector<size_t> &histogram) const {
 		size_t backet_width = backet_width_;
 		if (backet_width == 0) {
-			backet_width = (size_t)(
-					0.3 * AvgCovereageCounter<Graph>(graph_).Count() + 5);
+			backet_width = (size_t)(0.3 * AvgCovereageCounter<Graph>(graph_).Count() + 5);
 		}
 		INFO("Bucket size: " << backet_width);
 		size_t cnt = 0;
 		for (size_t i = 1; i + backet_width < histogram.size(); i++) {
-			if (weight(i, histogram, backet_width)
-					> weight(i - 1, histogram, backet_width)) {
+			if (weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width)) {
 				cnt++;
 			}
 			if (i > backet_width
@@ -569,15 +578,14 @@ public:
 				return i;
 
 		}
-		INFO(
-				"Proper threshold was not found. Threshold set to 0.1 of average coverage");
+		INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");
 		return 0.1 * AvgCovereageCounter<Graph>(graph_).Count();
 	}
 
 	double FindThreshold() const {
 		INFO("Finding threshold started");
-		vector<double> weights = CollectWeights();
-		vector < size_t > histogram = ConstructHistogram(weights);
+    std::vector<double> weights = CollectWeights();
+    std::vector<size_t> histogram = ConstructHistogram(weights);
 		for(size_t i = 0; i < histogram.size(); i++) {
 			TRACE(i << " " << histogram[i]);
 		}
