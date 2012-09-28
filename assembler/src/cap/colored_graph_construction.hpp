@@ -220,6 +220,10 @@ public:
 
 	}
 
+  ~ColoredGraphConstructor() {
+    INFO("Destr ColorGraCons");
+  }
+
 	void ConstructGraph(const vector<ContigStream*>& streams) {
 		VERIFY(streams.size() == 2);
 
@@ -275,8 +279,8 @@ void ConstructColoredGraph(gp_t& gp,
 
 	INFO("Constructing de Bruijn graph for k=" << k);
 
-	// it's much better now?
-	io::ReadStreamVector<ContigStream> read_stream_vector(streams);
+	// false: do not delete streams after usage
+	io::ReadStreamVector<ContigStream> read_stream_vector(streams, false);
 	ConstructGraph<Graph>(k, read_stream_vector, gp.g, gp.index);
 
 	//TODO do we still need it?

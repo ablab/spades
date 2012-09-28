@@ -100,6 +100,7 @@ bool CheckFileDiff(const string& file1, const string& file2) {
 		f1 >> s1;
 		string s2;
 		f2 >> s2;
+    TRACE("COMPARING " + s1 + " " + s2);
 		if (s1 != s2)
 			return false;
 	}

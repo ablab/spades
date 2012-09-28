@@ -77,15 +77,16 @@ public:
 };
 
 
+// ColorGenerator: Singleton class for generating colors
 // ColorGenerator generates max_colors different colors in HSV format
 // First color is always black
 class ColorGenerator {
-	static size_t max_colors;
+	 size_t max_colors_;
 
 	// Hue array of needed size
-	static vector <double> hue_array;
+	 vector <double> hue_array_;
 
-	static double GenerateIthColor(const size_t color_number) {
+	 static double GenerateIthColor(const size_t color_number) {
 		double hue_value = 0;
 		int accumulated_exp = 0;
 
@@ -104,25 +105,25 @@ class ColorGenerator {
 	}
 
 public:
-	ColorGenerator(const size_t _max_colors = kDefaultMaxColorsUsed) {
-		GenerateColors(_max_colors);
+	ColorGenerator(const size_t max_colors = kDefaultMaxColorsUsed) : max_colors_(0), hue_array_() {
+		GenerateColors(max_colors);
 	}
 
-	static void GenerateColors(const size_t number_of_colors) {
+  void GenerateColors(const size_t number_of_colors) {
 		// If all needed colors were already generated, do nothing
-		if (number_of_colors <= max_colors) {
+		if (number_of_colors <= max_colors_) {
 			return;
 		}
 
-		hue_array.resize(number_of_colors);
-		for (size_t i = max_colors; i < number_of_colors; ++i) {
-			hue_array[i] = GenerateIthColor(i);
+		hue_array_.resize(number_of_colors);
+		for (size_t i = max_colors_; i < number_of_colors; ++i) {
+			hue_array_[i] = GenerateIthColor(i);
 		}
-		max_colors = number_of_colors;
+		max_colors_ = number_of_colors;
 	}
 
-	string GetIthColor(const size_t color_number) {
-		VERIFY(color_number < max_colors);
+	string GetIthColor(const size_t color_number) const {
+		VERIFY(color_number < max_colors_);
 
 		// black one is the very special
 		if (color_number == 0) {
@@ -130,15 +131,16 @@ public:
 		}
 
 		return str(
-			boost::format("%.3lf %.3lf %.3lf") % hue_array[color_number - 1] % 1 % 1
+			boost::format("%.3lf %.3lf %.3lf") % hue_array_[color_number - 1] % 1 % 1
 			);
 	}
 
+  static ColorGenerator instance() {
+    static ColorGenerator instance;
+    return instance;
+  }
+
 };
-
-size_t ColorGenerator::max_colors = 0;
-vector <double> ColorGenerator::hue_array = vector <double> ();
-
 
 template<class Graph, class Element>
 class ElementColorHandler: public GraphActionHandler<Graph> {
@@ -148,15 +150,12 @@ class ElementColorHandler: public GraphActionHandler<Graph> {
 	restricted::map<Element, TColorSet > data_;
 
 	// Maximum number of different colors that may be used in coloring
-	size_t max_colors;
-
-	// One color strings generator for all cases.
-	static ColorGenerator color_generator;
+	size_t max_colors_;
 
 public:
 	// here we have no VERIFYcation. However, there is in color generator.
-	static string color_str(const TColor color) {
-		return color_generator.GetIthColor((size_t) color);
+	 string color_str(const TColor color) const {
+		return ColorGenerator::instance().GetIthColor((size_t) color);
 	}
 
 	string color_str(const TColorSet &color_set) const {
@@ -164,7 +163,7 @@ public:
 			return color_str((TColor) 0);
 		}
 		string result = "";
-		for (size_t i = 0; i < max_colors; ++i) {
+		for (size_t i = 0; i < max_colors_; ++i) {
 			if (!color_set[i]) continue;
 			if (result.length() != 0) {
 				result += ':';
@@ -174,10 +173,9 @@ public:
 		return result;
 	}
 
-	ElementColorHandler(const Graph& g, const size_t _max_colors = kDefaultMaxColorsUsed) :
-			base(g, "ElementColorHandler"),
-			max_colors(_max_colors) {
-		color_generator.GenerateColors(max_colors);
+	ElementColorHandler(const Graph& g, const size_t max_colors = kDefaultMaxColorsUsed) :
+    base(g, "ElementColorHandler"),
+    max_colors_(max_colors) {
 	}
 
 	void PaintElement(Element e, const TColor color) {
@@ -222,10 +220,10 @@ class ColorHandler: public GraphActionHandler<Graph> {
 	ElementColorHandler<Graph, VertexId> vertex_color_;
 public:
 
-	ColorHandler(const Graph& g, const size_t _max_colors = kDefaultMaxColorsUsed) :
+	ColorHandler(const Graph& g, const size_t max_colors = kDefaultMaxColorsUsed) :
 			base(g, "ColorHandler"),
-			edge_color_(g, _max_colors),
-			vertex_color_(g, _max_colors) {
+			edge_color_(g, max_colors),
+			vertex_color_(g, max_colors) {
 
 	}
 

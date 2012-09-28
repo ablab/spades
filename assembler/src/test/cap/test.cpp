@@ -17,8 +17,11 @@
 
 ::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
 {
-	logging::create_logger("", logging::L_DEBUG);
-	logging::__logger()->add_writer(make_shared<logging::console_writer>());
+	//logging::create_logger("", logging::L_DEBUG);
+	//logging::__logger()->add_writer(make_shared<logging::console_writer>());
+  logging::logger *log = logging::create_logger("", logging::L_TRACE);
+	log->add_writer(std::make_shared<logging::console_writer>());
+	logging::attach_logger(log);
 
     using namespace ::boost::unit_test;
 	char module_name [] = "cap_test";
@@ -96,15 +99,15 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir, cons
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTests ) {
 	make_dir("bp_graph_test");
-	LoadAndRunBPG<15, 25>("./src/test/debruijn_tools/tests/synthetic/tests.xml",
-			"bp_graph_test/simulated_common/", "./src/test/debruijn_tools/tests/synthetic/etalon/", "");
+	LoadAndRunBPG<15, 25>("./src/test/cap/tests/synthetic/tests.xml",
+			"bp_graph_test/simulated_common/", "./src/test/cap/tests/synthetic/etalon/", "");
 	remove_dir("bp_graph_test");
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesWithErrorsTests ) {
 	make_dir("bp_graph_test");
-	LoadAndRunBPG<15, 25>("./src/test/debruijn_tools/tests/synthetic_with_err/tests2.xml",
-			"bp_graph_test/simulated_common_err/", "./src/test/debruijn_tools/tests/synthetic_with_err/etalon/", "1_err");
+	LoadAndRunBPG<15, 25>("./src/test/cap/tests/synthetic_with_err/tests2.xml",
+			"bp_graph_test/simulated_common_err/", "./src/test/cap/tests/synthetic_with_err/etalon/", "1_err");
 	remove_dir("bp_graph_test");
 }
 

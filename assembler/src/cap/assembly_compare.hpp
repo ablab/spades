@@ -181,9 +181,22 @@ private:
 // 		counter.CountStats(labeler, detailed_output);
 	}
 
+  void MakeDirPath(const string& path) {
+    size_t slash_pos = 0;
+    while ((slash_pos = path.find_first_of('/', slash_pos + 1)) != string::npos) {
+      make_dir(path.substr(0, slash_pos));
+    }
+  }
+
 	void PrepareDirs(const string& output_folder, bool detailed_output) {
-		remove_dir(output_folder);
-		make_dir(output_folder);
+    DIR *dp;
+    if ((dp = opendir(output_folder.c_str())) == NULL) {
+      TRACE("Dir " + output_folder + " did not exist, creating"); 
+    } else {
+      TRACE("Dir " + output_folder + " purged"); 
+  		remove_dir(output_folder);
+    }
+		MakeDirPath(output_folder);
 		if (detailed_output) {
 			make_dir(output_folder + "initial_pics/");
 			make_dir(output_folder + "saves/");
@@ -197,7 +210,7 @@ public:
 			io::IReader<io::SingleRead> &stream2, const string& name1,
 			const string& name2, bool untangle = false,
 			const Sequence& reference = Sequence()) :
-			gp_(k_value, "tmp1", reference, 200, true), coloring_(gp_.g), rc_stream1_(stream1), rc_stream2_( // TODO dir
+			gp_(k_value, "tmp", reference, 200, true), coloring_(gp_.g), rc_stream1_(stream1), rc_stream2_( // TODO dir
 					stream2), name1_(name1), stream1_(rc_stream1_, name1), name2_(
 					name2), stream2_(rc_stream2_, name2), untangle_(untangle) {
 	}
@@ -367,7 +380,7 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 
 	if (refine) {
 		typedef graph_pack<ConjugateDeBruijnGraph> refining_gp_t;
-		refining_gp_t refining_gp(k, "tmp2");
+		refining_gp_t refining_gp(k, "tmp");
 		io::VectorReader<io::SingleRead> genome_stream(
 				io::SingleRead("genome", reference.str()));
 		vector<ContigStream*> comp_stream =

@@ -302,6 +302,7 @@ namespace cap {
 //		ReadGenome(ref));
 //}
 
+  
 BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 	INFO("Running comparison of two strains");
 
@@ -470,8 +471,11 @@ BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 }
 
 ::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {
-	logging::create_logger("", logging::L_DEBUG);
-	logging::__logger()->add_writer(make_shared<logging::console_writer>());
+//	logging::create_logger("", logging::L_DEBUG);
+//	logging::__logger()->add_writer(make_shared<logging::console_writer>());
+  	logging::logger *log = logging::create_logger("", logging::L_DEBUG/*TRACE*/);
+	  log->add_writer(std::make_shared<logging::console_writer>());
+	  logging::attach_logger(log);
 
 	using namespace ::boost::unit_test;
 	char module_name[] = "cap";

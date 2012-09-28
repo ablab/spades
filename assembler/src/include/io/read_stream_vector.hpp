@@ -35,7 +35,7 @@ class ReadStreamVector {
 
  public:
 
-  ReadStreamVector(std::vector< Reader *> streams): streams_(streams.size()), destroy_readers_(true) {
+  ReadStreamVector(std::vector< Reader *> streams, bool destroy_readers = true): streams_(streams.size()), destroy_readers_(destroy_readers) {
     for (size_t i = 0; i < streams.size(); ++i) {
       streams_[i] = streams[i];
     }
