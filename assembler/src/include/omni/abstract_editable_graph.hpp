@@ -212,12 +212,12 @@ public:
 	}
 
 	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		TRACE("Adding edge connecting " << v1 << " and " << v2);
+		TRACE("Adding edge connecting " << str(v1) << " and " << str(v2));
 		EdgeId e = HiddenAddEdge(v1, v2, data);
 		this->FireAddingEdge(e);
 		this->FireAddEdge(e);
 		TRACE(
-				"Added edge " << str(e) << " connecting " << v1 << " and " << v2);
+				"Added edge " << str(e) << " connecting " << str(v1) << " and " << str(v2));
 		return e;
 	}
 
@@ -247,7 +247,7 @@ public:
 		TRACE("Deleting edge " << str(e));
 		this->FireDeleteEdge(e);
 		HiddenDeleteEdge(e);
-		TRACE("Edge " << e << " deleted");
+		TRACE("Edge deleted");
 	}
 
 	bool IsDeadEnd(VertexId v) const {

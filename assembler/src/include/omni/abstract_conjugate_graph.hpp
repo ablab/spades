@@ -200,9 +200,7 @@ protected:
 		VertexId v2(new PairedVertex<DataMaster> (data2));
 		v1->set_conjugate(v2);
 		v2->set_conjugate(v1);
-//		this->vertices_.insert(v1);
-//		this->vertices_.insert(v2);
-		TRACE("Vettices " << v1 << " and " << v2 << " added");
+//		TRACE("Vettices " << v1 << " and " << v2 << " added");
 		return v1;
 	}
 
@@ -212,18 +210,11 @@ protected:
 
 
 	virtual void HiddenDeleteVertex(VertexId v) {
-		TRACE("ab_conj DeleteVertex "<<v);
 		VertexId conjugate = v->conjugate();
-		TRACE("ab_conj DeleteVertex "<<v<<" and conj "<<conjugate);
-//		this->vertices_.erase(v);
-		TRACE("ab_conj delete "<<v);
+//		TRACE("ab_conj delete "<<v);
 		delete v.get();
-		TRACE("ab_conj erase "<<conjugate);
-//		this->vertices_.erase(conjugate);
-		TRACE("ab_conj delete "<<conjugate);
+//		TRACE("ab_conj erase "<<conjugate);
 		delete conjugate.get();
-		TRACE("ab_conj delete FINISHED");
-//		cout << "del v " << v << " " << conjugate << endl;
 	}
 
 
@@ -246,7 +237,8 @@ protected:
 				this->master().conjugate(data), id_distributor);
 		result->set_conjugate(rcEdge);
 		rcEdge->set_conjugate(result);
-		TRACE("Edges " << result << " and " << rcEdge << " added");
+		TRACE("Edges added");
+//		TRACE("Edges " << result << " and " << rcEdge << " added");
 //		cout << "add e" << result << " " << rcEdge << endl;
 		return result;
 	}
@@ -255,13 +247,14 @@ protected:
 		EdgeId rcEdge = conjugate(edge);
 		VertexId rcStart = conjugate(edge->end());
 		VertexId start = conjugate(rcEdge->end());
+		TRACE("Deleting edges " << str(edge) << " and " << str(rcEdge));
 		start->RemoveOutgoingEdge(edge);
 		rcStart->RemoveOutgoingEdge(rcEdge);
 		if (edge != rcEdge) {
 			delete rcEdge.get();
 		}
 		delete edge.get();
-		TRACE("Edges " << edge << " and " << rcEdge << " deleted");
+		TRACE("Edges deleted");
 //		cout << "del e" << edge << " " << rcEdge << endl;
 	}
 

@@ -348,124 +348,101 @@ public:
 	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler
 			, VertexId v) const {
 		VertexId rcv = graph_.conjugate(v);
-		TRACE(
-				"Triggering add event of handler " << handler->name() << " to vertex " << v);
+		//TRACE("Triggering add event of handler " << handler->name() << " to vertex " << v);
 		handler->HandleAdding(v);
 		if (v != rcv) {
-			TRACE(
-					"Triggering add event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
+			//TRACE("Triggering add event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
 			handler->HandleAdding(rcv);
 		} else {
-			TRACE(
-					"Vertex " << v << "is self-conjugate thus handler is not applied the second time");
+			//TRACE("Vertex " << v << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
 	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler
 			, EdgeId e) const {
 		EdgeId rce = graph_.conjugate(e);
-		TRACE(
-				"Triggering add event of handler " << handler->name() << " to edge " << e << ". Event is Add");
+		//TRACE("Triggering add event of handler " << handler->name() << " to edge " << e << ". Event is Add");
 		handler->HandleAdding(e);
 		if (e != rce) {
-			TRACE(
-					"Triggering add event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
+			//TRACE("Triggering add event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
 			handler->HandleAdding(rce);
 		} else {
-			TRACE(
-					"Edge " << e << "is self-conjugate thus handler is not applied the second time");
+			//TRACE("Edge " << e << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler
 			, VertexId v) const {
 		VertexId rcv = graph_.conjugate(v);
-		TRACE(
-				"Triggering add event of handler " << handler->name() << " to vertex " << v);
+		//TRACE("Triggering add event of handler " << handler->name() << " to vertex " << v);
 		handler->HandleAdd(v);
 		if (v != rcv) {
-			TRACE(
-					"Triggering add event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
+			//TRACE("Triggering add event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
 			handler->HandleAdd(rcv);
 		} else {
-			TRACE(
-					"Vertex " << v << "is self-conjugate thus handler is not applied the second time");
+			//TRACE("Vertex " << v << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler
 			, EdgeId e) const {
 		EdgeId rce = graph_.conjugate(e);
-		TRACE(
-				"Triggering add event of handler " << handler->name() << " to edge " << e << ". Event is Add");
+		//TRACE("Triggering add event of handler " << handler->name() << " to edge " << e << ". Event is Add");
 		handler->HandleAdd(e);
 		if (e != rce) {
-			TRACE(
-					"Triggering add event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
+			//TRACE("Triggering add event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
 			handler->HandleAdd(rce);
 		} else {
-			TRACE(
-					"Edge " << e << "is self-conjugate thus handler is not applied the second time");
+			//TRACE("Edge " << e << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
-	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler,
-	VertexId v) const {
+	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
 		VertexId rcv = graph_.conjugate(v);
-		TRACE(
-				"Triggering delete event of handler " << handler->name() << " to vertex " << v);
+		//TRACE("Triggering delete event of handler " << handler->name() << " to vertex " << v);
 		handler->HandleDelete(v);
 		if (v != rcv) {
-			TRACE(
-					"Triggering delete event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
+			//TRACE("Triggering delete event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
 			handler->HandleDelete(rcv);
 		} else {
-			TRACE(
-					"Vertex " << v << "is self-conjugate thus handler is not applied the second time");
+			//TRACE("Vertex " << v << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
 	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler
 			, EdgeId e) const {
 		EdgeId rce = graph_.conjugate(e);
-		TRACE(
-				"Triggering delete event of handler " << handler->name() << " to edge " << e);
+		//TRACE("Triggering delete event of handler " << handler->name() << " to edge " << e);
 		handler->HandleDelete(e);
 		if (e != rce) {
-			TRACE(
-					"Triggering delete event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
+			//TRACE("Triggering delete event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
 			handler->HandleDelete(rce);
 		} else {
-			TRACE(
-					"Edge " << e << "is self-conjugate thus handler is not applied the second time");
+			//TRACE("Edge " << e << "is self-conjugate thus handler is not applied the second time");
 		}
 
 	}
 
 	virtual void ApplyMerge(ActionHandler<VertexId, EdgeId> *handler,
 	vector<EdgeId> old_edges, EdgeId new_edge) const {
-		TRACE(
-				"Triggering merge event of handler " << handler->name() << " with new edge " << new_edge);
+		//TRACE("Triggering merge event of handler " << handler->name() << " with new edge " << new_edge);
 		EdgeId rce = graph_.conjugate(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
 		if (new_edge != rce) {
-			TRACE(
-					"Triggering merge event of handler " << handler->name() << " with new edge " << rce << " which is conjugate to " << new_edge);
+			//TRACE("Triggering merge event of handler " << handler->name() << " with new edge " << rce << " which is conjugate to " << new_edge);
 			vector<EdgeId> ecOldEdges;
 			for (int i = old_edges.size() - 1; i >= 0; i--) {
 				ecOldEdges.push_back(graph_.conjugate(old_edges[i]));
 			}
 			handler->HandleMerge(ecOldEdges, rce);
 		} else {
-			TRACE(
-					"Edge " << new_edge << "is self-conjugate thus handler is not applied the second time");
+			//TRACE("Edge " << new_edge << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
 	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler,
 	EdgeId new_edge, EdgeId edge1, EdgeId edge2) const {
-		TRACE(
-				"Triggering glue event of handler " << handler->name() << " with old edge " << edge1);
+		//TRACE("Triggering glue event of handler " << handler->name() << " with old edge " << edge1);
 		EdgeId rcOldEdge = graph_.conjugate(edge1);
 		EdgeId rcNewEdge = graph_.conjugate(edge2);
 		VERIFY(edge1 != edge2);
@@ -474,13 +451,11 @@ public:
 		//		VERIFY(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
 		handler->HandleGlue(new_edge, edge1, edge2);
 		if (edge1 != rcOldEdge) {
-			TRACE(
-					"Triggering merge event of handler " << handler->name() << " with old edge " << edge1 << " which is conjugate to " << rcOldEdge);
+			//TRACE("Triggering merge event of handler " << handler->name() << " with old edge " << edge1 << " which is conjugate to " << rcOldEdge);
 			handler->HandleGlue(graph_.conjugate(new_edge), rcOldEdge,
 					rcNewEdge);
 		} else {
-			TRACE(
-					"Edge " << edge1 << "is self-conjugate thus handler is not applied the second time");
+			//TRACE("Edge " << edge1 << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
@@ -488,17 +463,14 @@ public:
 	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
 		EdgeId rce = graph_.conjugate(old_edge);
 		VERIFY(old_edge != rce);
-		TRACE(
-				"Triggering split event of handler " << handler->name() << " with old edge " << old_edge);
+		//TRACE("Triggering split event of handler " << handler->name() << " with old edge " << old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);
 		if (old_edge != rce) {
-			TRACE(
-					"Triggering split event of handler " << handler->name() << " with old edge " << old_edge << " which is conjugate to " << rce);
+			//TRACE("Triggering split event of handler " << handler->name() << " with old edge " << old_edge << " which is conjugate to " << rce);
 			handler->HandleSplit(rce, graph_.conjugate(new_edge2),
 					graph_.conjugate(new_edge_1));
 		} else {
-			TRACE(
-					"Edge " << old_edge << "is self-conjugate thus handler is not applied the second time");
+			//TRACE("Edge " << old_edge << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
@@ -510,7 +482,7 @@ public:
 	}
 
 	virtual ~PairedHandlerApplier() {
-		TRACE("~PairedHandlerApplier");
+		//TRACE("~PairedHandlerApplier");
 
 	}
 
