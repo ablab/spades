@@ -14,6 +14,8 @@
 #ifndef CONFIG_STRUCT_HDIP_
 #define CONFIG_STRUCT_HDIP_
 
+#include "openmp_wrapper.h"
+
 #include "config_common.hpp"
 #include "path_extend/pe_config_struct.hpp"
 
@@ -1009,11 +1011,14 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
 	cfg.single_read_prefix =cfg.temp_bin_reads_path +  "_single";
 
-
 	load(cfg.use_multithreading, pt, "use_multithreading");
 	load(cfg.max_threads, pt, "max_threads");
+  // Fix number of threads according to OMP capabilities.
+  cfg.max_threads = std::min(cfg.max_threads, (size_t)omp_get_max_threads());
+  // Inform OpenMP runtime about this :)
+  omp_set_num_threads(cfg.max_threads);
 
-    load(cfg.max_memory, pt, "max_memory");
+  load(cfg.max_memory, pt, "max_memory");
 
 	checkFileExistenceFATAL(cfg.dataset_file);
 	boost::property_tree::ptree ds_pt;
