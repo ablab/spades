@@ -224,7 +224,7 @@ protected:
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
 			const EdgeData &data, restricted::IdDistributor * id_distributor) {
-		TRACE("Adding edge between verteices " << v1 << " and " << v2);
+		TRACE("Adding edge between vertices " << str(v1) << " and " << str(v2));
 		VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
 		EdgeId result = AddSingleEdge(v1, v2, data, id_distributor);
 
@@ -247,7 +247,7 @@ protected:
 		EdgeId rcEdge = conjugate(edge);
 		VertexId rcStart = conjugate(edge->end());
 		VertexId start = conjugate(rcEdge->end());
-		TRACE("Deleting edges " << str(edge) << " and " << str(rcEdge));
+		TRACE("Deleting edges " << this->str(edge) << " and " << this->str(rcEdge));
 		start->RemoveOutgoingEdge(edge);
 		rcStart->RemoveOutgoingEdge(rcEdge);
 		if (edge != rcEdge) {

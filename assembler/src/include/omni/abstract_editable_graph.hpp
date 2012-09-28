@@ -200,7 +200,7 @@ public:
 		TRACE("Deleting vertex " << str(v));
 		this->FireDeleteVertex(v);
 		HiddenDeleteVertex(v);
-		TRACE("Vertex " << v << " deleted");
+		TRACE("Vertex deleted");
 	}
 
 	void ForceDeleteVertex(VertexId v) {
@@ -208,7 +208,7 @@ public:
 		DeleteAllOutgoing(v);
 		DeleteAllIncoming(v);
 		DeleteVertex(v);
-		TRACE("Vertex " << v << " force-deleted");
+		TRACE("Vertex force-deleted");
 	}
 
 	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
@@ -216,8 +216,7 @@ public:
 		EdgeId e = HiddenAddEdge(v1, v2, data);
 		this->FireAddingEdge(e);
 		this->FireAddEdge(e);
-		TRACE(
-				"Added edge " << str(e) << " connecting " << str(v1) << " and " << str(v2));
+		TRACE("Added edge " << str(e) << " connecting " << str(v1) << " and " << str(v2));
 		return e;
 	}
 
@@ -279,18 +278,18 @@ public:
 	}
 
 	void CompressVertex(VertexId v) {
-		TRACE("Trying to compress vertex " << v);
+		TRACE("Trying to compress vertex " << str(v));
 		//VERIFY(CanCompressVertex(v));
 		if (CanCompressVertex(v)) {
 			UnsafeCompressVertex(v);
 		} else {
-			TRACE("Vertex " << v << " can't be compressed");
+			TRACE("Vertex " << str(v) << " can't be compressed");
 		}
 	}
 
 	EdgeId UnsafeCompressVertex(VertexId v) {
 		VERIFY(CanCompressVertex(v));
-		TRACE("Compressing vertex " << v);
+		TRACE("Compressing vertex " << str(v));
 		vector<EdgeId> edges_to_merge;
 		edges_to_merge.push_back(GetUniqueIncomingEdge(v));
 		edges_to_merge.push_back(GetUniqueOutgoingEdge(v));

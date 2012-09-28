@@ -562,11 +562,17 @@ class SmartVertexIterator: public SmartIterator<Graph, typename Graph::VertexId,
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+
+	static size_t get_id() {
+		static size_t id = 0;
+		return id++;
+	}
+
 public:
 	SmartVertexIterator(const Graph &graph, const Comparator& comparator =
 			Comparator()) :
 			SmartIterator<Graph, VertexId, Comparator>(graph,
-					"SmartVertexIterator " + ToString(this), true, comparator) {
+					"SmartVertexIterator " + ToString(get_id()), true, comparator) {
 		this->insert(graph.begin(), graph.end());
 	}
 
@@ -589,10 +595,15 @@ public:
 	typedef QueueIterator<typename Graph::EdgeId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+
+	static size_t get_id() {
+		static size_t id = 0;
+		return id++;
+	}
 public:
 	SmartEdgeIterator(const Graph &graph, Comparator comparator = Comparator(), vector<EdgeId>* edges = 0) :
 			SmartIterator<Graph, EdgeId, Comparator>(graph,
-					"SmartEdgeIterator " + ToString(this), true, comparator) {
+					"SmartEdgeIterator " + ToString(get_id()), true, comparator) {
 		if (edges == 0) {
 			for (auto it = graph.begin(); it != graph.end(); ++it) {
 				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
@@ -1014,7 +1025,7 @@ public:
 
 	bool DeleteEdge(EdgeId e, bool compress = true) {
 		bool delete_between_related = true;
-		TRACE("Deletion of edge " << e << " was requested");
+		TRACE("Deletion of edge " << g_.str(e) << " was requested");
 		if (checks_enabled_ && !CheckAlternatives(e)) {
 			TRACE("Check of alternative edges failed");
 			return false;
@@ -1090,7 +1101,7 @@ public:
 
 	bool DeleteEdge(EdgeId e, bool compress = true) {
 		bool delete_between_related = true;
-		TRACE("Deletion of edge " << e << " was requested");
+		TRACE("Deletion of edge " << g_.str(e) << " was requested");
 		if (checks_enabled_ && !CheckAlternatives(e)) {
 			TRACE("Check of alternative edges failed");
 			return false;
@@ -1107,8 +1118,8 @@ public:
 			return false;
 		}
 
-		TRACE("Start " << start);
-		TRACE("End " << end);
+		TRACE("Start " << g_.str(start));
+		TRACE("End " << g_.str(end));
 		if (removal_handler_) {
 			TRACE("Calling handler");
 			removal_handler_(e);
@@ -1176,7 +1187,7 @@ public:
 	}
 
 	const vector<EdgeId> UniquePathBackward(EdgeId e) const {
-		TRACE("UniquePathBackward from " << e);
+		TRACE("UniquePathBackward from " << graph_.str(e));
 		vector<EdgeId> answer;
 		EdgeId curr = e;
 		answer.push_back(curr);
@@ -1189,7 +1200,7 @@ public:
 			was.insert(curr);
 			answer.push_back(curr);
 		}
-		TRACE("UniquePathBackward from " << e << " finished");
+		TRACE("UniquePathBackward from " << graph_.str(e) << " finished");
 		return vector<EdgeId>(answer.rbegin(), answer.rend());
 	}
 };

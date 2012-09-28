@@ -103,7 +103,7 @@ public:
 	}
 
 	void run(VertexId start) {
-		TRACE("Starting dijkstra run from vertex " << start);
+		TRACE("Starting dijkstra run from vertex " << graph_.str(start));
 		TRACE("Initializing dijkstra priority queue");
 		set_finished(false);
 		distances_.clear();
@@ -121,18 +121,18 @@ public:
 			distance_t distance = next.first;
 			VertexId vertex = next.second;
 			TRACE(
-					"Vertex " << vertex << " with distance " << distance
-							<< "fetched from queue");
+					"Vertex " << graph_.str(vertex) << " with distance " << distance
+							<< " fetched from queue");
 			if (DistanceCounted(vertex)) {
 				TRACE(
-						"Distance to vertex " << vertex
+						"Distance to vertex " << graph_.str(vertex)
 								<< " already counted. Proceeding to next queue entry.");
 				continue;
 			}
 			distances_.insert(make_pair(vertex, distance));
 			TRACE(
-					"Vertex " << vertex << " is found to be at distance "
-							<< distance << " from vertex " << start);
+					"Vertex " << graph_.str(vertex) << " is found to be at distance "
+							<< distance << " from vertex " << graph_.str(start));
 
 
 			if (!CheckProcessVertex(vertex, distance)) {
@@ -143,29 +143,29 @@ public:
 			processed_vertices_.insert(vertex);
 			auto neighbours = Neighbours(vertex);
 			TRACE(
-					"Neighbours of vertex " << vertex
+					"Neighbours of vertex " << graph_.str(vertex)
 							<< " found. Iterating through neighbours and adding them to queue.");
 			for (size_t i = 0; i < neighbours.size(); i++) {
-				TRACE("Checking " << i << "th neighbour of vertex " << vertex << " started");
+				TRACE("Checking " << i << "th neighbour of vertex " << graph_.str(vertex) << " started");
 				auto neighbour = neighbours[i];
-				TRACE("Which is " << neighbours[i]);
+//				TRACE("Which is " << neighbours[i]);
 				if (!DistanceCounted(neighbour.first)) {
 					TRACE("Adding new entry to queue");
 					distance_t new_distance = GetLength(neighbour.second)
 							+ distance;
-					TRACE("Entry: vertex " << vertex << " distance " << new_distance);
+					TRACE("Entry: vertex " << graph_.str(vertex) << " distance " << new_distance);
 					if (CheckPutVertex(neighbour.first, neighbour.second,
 							new_distance)) {
 						TRACE("CheckPutVertex returned true and new entry is added");
 						q.push(make_pair(new_distance, neighbour.first));
 					}
 				}
-				TRACE("Checking " << i << "th neighbour of vertex " << vertex << " finished");
+				TRACE("Checking " << i << "th neighbour of vertex " << graph_.str(vertex) << " finished");
 			}
-			TRACE("All neighbours of vertex " << vertex << " processed");
+			TRACE("All neighbours of vertex " << graph_.str(vertex) << " processed");
 		}
 		set_finished(true);
-		TRACE("Finished dijkstra run from vertex " << start);
+		TRACE("Finished dijkstra run from vertex " << graph_.str(start));
 	}
 
 	std::vector<VertexId> ReachedVertices() {
@@ -263,7 +263,7 @@ public:
 	}
 
 	virtual std::vector<std::pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
-		TRACE("Starting to collect incoming edges for vertex " << vertex);
+		TRACE("Starting to collect incoming edges for vertex " << this->graph().str(vertex));
 		std::vector<std::pair<VertexId, EdgeId> > result;
 		const Graph &g = this->graph();
 		std::vector<EdgeId> edges = g.IncomingEdges(vertex);
@@ -271,7 +271,7 @@ public:
 		for (size_t i = 0; i < edges.size(); i++) {
 			result.push_back(make_pair(g.EdgeStart(edges[i]), edges[i]));
 		}
-		TRACE("Incoming edges info for vertex " << vertex << " constructed");
+		TRACE("Incoming edges info for vertex " << this->graph().str(vertex) << " constructed");
 		return result;
 	}
 private:

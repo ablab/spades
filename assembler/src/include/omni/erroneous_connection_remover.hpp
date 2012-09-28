@@ -155,7 +155,7 @@ public:
 		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
 				++it) {
 			typename Graph::EdgeId e = *it;
-			TRACE("Considering edge " << e);
+			TRACE("Considering edge " << this->graph().str(e));
 			if (math::gr(this->graph().coverage(e), max_coverage_)) {
 				TRACE("Max coverage " << max_coverage_ << " achieved");
 				return;
@@ -178,7 +178,7 @@ public:
 //				g_.CompressVertex(start);
 			} else {
 				TRACE("Condition failed");
-			}TRACE("Edge " << e << " processed");
+			}TRACE("Edge " << this->graph().str(e) << " processed");
 		}
 //		TRACE("Cleaning graph");
 //		omnigraph::Cleaner<Graph> cleaner(this->graph());
@@ -215,7 +215,7 @@ public:
 		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
 				++it) {
 			typename Graph::EdgeId e = *it;
-			TRACE("Considering edge " << e);
+			TRACE("Considering edge " << this->graph().str(e));
 
 			if (math::gr(this->graph().coverage(e), max_coverage_)) {
 				TRACE("Max coverage " << max_coverage_ << " achieved");
@@ -230,7 +230,7 @@ public:
 				}
 			} else {
 				TRACE("Condition failed");
-			}TRACE("Edge " << e << " processed");
+			}TRACE("Edge " << this->graph().str(e) << " processed");
 		}
 
 	}

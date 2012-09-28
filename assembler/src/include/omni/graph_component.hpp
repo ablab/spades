@@ -39,7 +39,7 @@ class GraphComponent {
 	void FillEdges() {
 		for (auto v_it = vertices_.begin(); v_it != vertices_.end(); ++v_it) {
 			const vector<EdgeId> edges = g_.OutgoingEdges(*v_it);
-			TRACE("working with vertex " << *v_it);
+			TRACE("working with vertex " << g_.str(*v_it));
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
 				VertexId edge_end = g_.EdgeEnd(*e_it);
 				TRACE(g_.coverage(*e_it) << " " << g_.length(*e_it));

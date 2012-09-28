@@ -61,17 +61,17 @@ public:
 	 * @return true if vertex can be compressed and false otherwise
 	 */
 	bool CompressVertex(VertexId v) {
-		TRACE("Processing vertex " << v << " started");
+		TRACE("Processing vertex " << graph_.str(v) << " started");
 		if (!graph_.CheckUniqueOutgoingEdge(v)
 				|| !graph_.CheckUniqueIncomingEdge(v)) {
 			TRACE(
 					"Vertex "
-							<< v
+							<< graph_.str(v)
 							<< " judged NOT compressible. Proceeding to the next vertex");
-			TRACE("Processing vertex " << v << " finished");
+			TRACE("Processing vertex " << graph_.str(v) << " finished");
 			return false;
 		}
-		TRACE("Vertex " << v << " judged compressible");
+		TRACE("Vertex " << graph_.str(v) << " judged compressible");
 		EdgeId e = graph_.GetUniqueOutgoingEdge(v);
 		EdgeId start_edge = e;
 		while (GoUniqueWayBackward(e) && e != start_edge
@@ -87,10 +87,8 @@ public:
 				&& !graph_.RelatedVertices(graph_.EdgeStart(e),
 						graph_.EdgeEnd(e)));
 		EdgeId new_edge = graph_.MergePath(mergeList);
-		TRACE(
-				"Vertex " << v << " compressed and is now part of edge "
-						<< new_edge);
-		TRACE("Processing vertex " << v << " finished");
+		TRACE("Vertex compressed and is now part of edge "
+						<< graph_.str(new_edge));
 		return true;
 	}
 
