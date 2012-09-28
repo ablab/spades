@@ -185,31 +185,12 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 	}
 }
 
+
 void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 		EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
-	int offset = 0;
-	if (cfg::get().ds.paired_reads.size() > 0){
-		if (cfg::get().ds.paired_reads[0].size() > 0) {
-			offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
- 		}
-	}
-	if (offset == 0) {
-		if (cfg::get().ds.single_reads.size() > 0) {
-			offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
-		}
-	}
-	io::OffsetType offset_type;
-	if (offset == 33) {
-		INFO("Using offset +33");
-		offset_type = io::PhredOffset;
-	} else if (offset == 64) {
-		INFO("Using offset +64");
-		offset_type = io::SolexaOffset;
-	} else {
-		WARN("Unable to define offset type, assume +33");
-		offset_type = io::PhredOffset;
-	}
 
+
+	io::OffsetType offset_type = EvaluateOffset();
 	string OutputFileName = (cfg::get().run_mode) ? cfg::get().output_dir + "align_after_RR.sam": cfg::get().output_base + "contigs.sam";
 
 

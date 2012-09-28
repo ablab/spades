@@ -836,6 +836,27 @@ public:
 		this->FinalizeSamFile();
 	}
 
+	template<class Stream, class OrigStream>
+	void AlignSingleReads(OrigStream& original_s, Stream& s, const string& sam_output_filename) {
+		this->InitializeSamFile(sam_output_filename);
+		size_t n = 0;
+		while (!s.eof()){
+			io::SingleRead s_r;
+			s >> s_r;
+			while (!original_s.eof()) {
+				io::SingleRead orig_s_r;
+				original_s >> orig_s_r;
+				if (s_r.original_name() == orig_s_r.original_name().substr(0, s_r.original_name().size())){
+					VERBOSE_POWER(++n, " single reads processed");
+					ProcessSingleRead(s_r, orig_s_r);
+					break;
+				}
+			}
+		}
+		this->FinalizeSamFile();
+	}
+
+
 	void ProcessPairedRead(const io::PairedRead& p_r, const io::PairedRead& orig_p_r ) {
 		if (p_r.first().size()>orig_p_r.first().size()) return;
 		if (p_r.second().size()>orig_p_r.second().size()) return;
