@@ -29,9 +29,10 @@ void late_pair_info_count(conj_graph_pack& gp,
         if (cfg::get().use_multithreading) {
             auto streams = paired_binary_readers(false, 0);
 	        const std::map<int, size_t>& hist = refine_insert_size(streams, gp, edge_length_threshold);
-            if (hist.size() == 0) 
+            if (hist.size() == 0) {
+	            cfg::get_writable().paired_mode = false;
                 return;
-
+            }
             auto paired_streams = paired_binary_readers(true,  *cfg::get().ds.IS);
 
             if (cfg::get().paired_metr == debruijn_graph::paired_metrics::pm_product)
@@ -50,8 +51,10 @@ void late_pair_info_count(conj_graph_pack& gp,
             auto_ptr<PairedReadStream> stream = paired_easy_reader(false, 0);
             io::ReadStreamVector <PairedReadStream> streams(stream.get());
             const std::map<int, size_t>& hist = refine_insert_size(streams, gp, edge_length_threshold);
-            if (hist.size() == 0)
+            if (hist.size() == 0) {
+	            cfg::get_writable().paired_mode = false;
                 return;
+            }
 
             auto paired_stream = paired_easy_reader(true,  *cfg::get().ds.IS);
             io::ReadStreamVector <PairedReadStream> paired_streams(paired_stream.get());

@@ -199,7 +199,6 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
 	if (n == 0) {
         WARN("Failed to estimate the insert size of paired reads, because none of the paired reads aligned to long edges.");
         WARN("Paired reads will not be used.");
-	    cfg::get_writable().paired_mode = false;
         return hist;
     }
 	INFO(n << " paired reads (" << (n * 100.0 / total) << "% of all) aligned to long edges");
