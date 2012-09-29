@@ -148,12 +148,7 @@ public:
 		TRACE("Backward dijkstra created with bound " << max_length_);
 		TRACE("Backward dijkstra started");
 
-		perf_counter pc;
 		backward_dijkstra.run(end_);
-
-		double elapsed = pc.time();
-		if (elapsed > 1e-4)
-			TRACE("Too much time for dijkstra: " << elapsed);
 
 		if (backward_dijkstra.VertexLimitExceeded())
 			TRACE("backward_dijkstra : vertex limit exceeded");

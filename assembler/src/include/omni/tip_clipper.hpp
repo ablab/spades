@@ -136,8 +136,9 @@ protected:
 
 	virtual bool TryToRemoveTip(EdgeId tip) {
 		if (graph_.IsInternalSafe(tip) && graph_.IsValid()) {
+			TRACE("Removing edge " << graph_.str(tip) << " as a tip");
 			RemoveTip(tip);
-			TRACE("Edge " << graph_.str(tip) << " removed as a tip");
+			TRACE("Edge removed");
 			return true;
 		} else {
 			TRACE("Component is invalid. " << "Edge "  << graph_.str(tip) << " can not be removed in parallel.");
