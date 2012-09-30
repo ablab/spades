@@ -44,7 +44,7 @@ class TreeNode {
 	};
 
 public:
-	TreeNode() : parent_(0), subtree_size_(0) { }
+	TreeNode() :/* parent_(0), */subtree_size_(0) { }
 
 	void AddChild(TreeNode& node) {
 		children_.push_back(&node);
@@ -99,24 +99,28 @@ public:
 		subtree_size_ = 0;
 		children_.clear();
 	}
-
-	TreeNode* GetRoot() {
-		if (parent_ == 0) {
-			return this;
-		} else {
-			return parent_->GetRoot();
-		}
-	}
-
-	void SetParent(TreeNode& parent) {
-		VERIFY(parent_ == 0);
-		parent_ = &parent;
-	}
+//
+//	TreeNode* GetRoot() {
+//		if (parent_ == 0) {
+//			return this;
+//		} else {
+//			return parent_->GetRoot();
+//		}
+//	}
+//
+//	void SetParent(TreeNode& parent) {
+//		VERIFY(parent_ == 0);
+//		parent_ = &parent;
+//	}
+//
+//	TreeNode* GetParent() const {
+//		return parent_;
+//	}
 
 	virtual ~TreeNode() { }
 
 private:
-	TreeNode * parent_;
+//	TreeNode * parent_;
 	list<TreeNode *> children_;
 	size_t subtree_size_;
 };
@@ -126,7 +130,8 @@ template <class Value>
 class TreeNodeWithValue : public TreeNode<Value> {
 
 public:
-	TreeNodeWithValue(const Value& value) : value_(value) {	}
+	TreeNodeWithValue(const Value& value) : value_(value) {
+	}
 
 	virtual ~TreeNodeWithValue() { }
 //
@@ -150,6 +155,10 @@ public:
 		return TreeNode<Value>::GetSize() + 1;
 	}
 
+	Value GetValue() const {
+		return value_;
+	}
+
 
 private:
 	Value value_;
@@ -167,7 +176,7 @@ class DevisibleTree {
 
 public:
 
-	DevisibleTree(Graph & graph) {
+	DevisibleTree(Graph & graph) : graph_(graph) {
 		typedef unordered_map<VertexId, int> RankMap;
 		typedef unordered_map<VertexId, VertexId> ParentMap;
 
@@ -182,50 +191,49 @@ public:
 
 		boost::disjoint_sets<BoostRankMap, BoostParentMap> dset(boost_rank_map, boost_parent_map);
 
-		BOOST_FOREACH(const VertexId& vertex, graph) {
+		BOOST_FOREACH(const VertexId& vertex, graph_) {
 			dset.make_set(vertex);
 		}
 
-		BOOST_FOREACH(const VertexId& vertex, graph) {
+		BOOST_FOREACH(const VertexId& vertex, graph_) {
 			nodes_.push_back(Node(vertex));
 			index_[vertex] = nodes_.size() - 1;
 		}
 
+		TRACE("Creating tree of size:" << nodes_.size());
+
+
 // build trees
-		for (auto it = graph.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			VertexId start = graph.EdgeStart(*it);
-			VertexId end = graph.EdgeEnd(*it);
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			EdgeId edge = *it;
+			VertexId start = graph_.EdgeStart(edge);
+			VertexId end = graph_.EdgeEnd(edge);
 
 			VertexId start_root = dset.find_set(start);
 			VertexId end_root = dset.find_set(end);
 
 			if (start_root != end_root) {
 				dset.link(start_root, end_root);
-
-				Node& start_root_node = GetNode(start_root);
-				Node& end_root_node = GetNode(end_root);
-
-				if (start_root == dset.find_set(start_root)) {
-					start_root_node.AddChild(end_root_node);
-					end_root_node.SetParent(start_root_node);
-				} else {
-					end_root_node.AddChild(start_root_node);
-					start_root_node.SetParent(end_root_node);
-				}
+				edges_.insert(edge);
 			}
 		}
 
+		TRACE("Node quantity: " << nodes_.size());
+		TRACE("Edges for tree: " << edges_.size());
 
-// find roots of trees. Roots of disjoint dset may not be root of trees,
-// but it is good point to start search.
-		unordered_set<VertexId> setRoots;
-		BOOST_FOREACH(const VertexId& vertex, graph) {
-			setRoots.insert(dset.find_set(vertex));
+		unordered_set<VertexId> forest_roots;
+
+		BOOST_FOREACH(VertexId vertex, graph_) {
+			forest_roots.insert(dset.find_set(vertex));
 		}
 
-		BOOST_FOREACH(const VertexId& vertex, setRoots) {
-			root_.AddChild(*GetNode(vertex).GetRoot());
+		BOOST_FOREACH(VertexId vertex, forest_roots) {
+			Node& node = GetNode(vertex);
+			TRACE("Adding " << vertex);
+			CreateTree(node, edges_);
+			root_.AddChild(node);
 		}
+
 	}
 
 	void SeparateVertices(vector<VertexId>& output, size_t size) {
@@ -244,6 +252,55 @@ public:
 
 private:
 
+	vector<EdgeId> GetEdges(VertexId vertex) {
+		vector<EdgeId> result;
+		vector<EdgeId> outgoing = graph_.OutgoingEdges(vertex);
+		vector<EdgeId> incoming = graph_.IncomingEdges(vertex);
+		result.insert(result.end(), outgoing.begin(), outgoing.end());
+		result.insert(result.end(), incoming.begin(), incoming.end());
+		return result;
+	}
+
+	vector<EdgeId> Filter(const vector<EdgeId>& vertex_edges, unordered_set<EdgeId>& edges) {
+		vector<EdgeId> result;
+		BOOST_FOREACH(EdgeId edge, vertex_edges) {
+			auto it = edges.find(edge);
+			if (it != edges.end()) {
+				TRACE("Edge " << edge << " went through the filter");
+				result.push_back(edge);
+				edges.erase(it);
+			}
+		}
+		return result;
+	}
+
+	VertexId GetSecond(VertexId first, EdgeId edge) {
+		VertexId start = graph_.EdgeStart(edge);
+		VertexId end = graph_.EdgeEnd(edge);
+		return (first == start) ? end : start;
+	}
+
+	void CreateTree(Node& node, unordered_set<EdgeId>& tree_edges) {
+		TRACE("Create tree");
+		TRACE("Tree has " << tree_edges.size() << " edges");
+		VertexId vertex = node.GetValue();
+		vector<EdgeId> vertex_tree_edges = Filter(GetEdges(vertex), tree_edges);
+		TRACE("Children size: " << vertex_tree_edges.size());
+		BOOST_FOREACH(EdgeId edge, vertex_tree_edges) {
+			VertexId second = GetSecond(vertex, edge);
+			TRACE("This is " << vertex << " second is " << second);
+			Node& child = GetNode(GetSecond(vertex, edge));
+			TRACE("Adding " << second << " through edge " << edge);
+			CreateTree(child, tree_edges);
+			node.AddChild(child);
+		}
+	}
+
+//
+//	void (Node& node) {
+//
+//	}
+
 	Node& GetNode(const VertexId& vertex) {
 		auto it = index_.find(vertex);
 		VERIFY(it != index_.end());
@@ -254,8 +311,14 @@ private:
 
 private:
 	unordered_map<VertexId, size_t> index_;
-	RootNode root_;
+//	unordered_map<VertexId, vector<EdgeId> > tree_graph_;
+	unordered_set<EdgeId> edges_;
 	vector<Node> nodes_;
+	Graph& graph_;
+	RootNode root_;
+
+private:
+	DECL_LOGGER("DevisibleTree");
 };
 
 } // namespace omnigraph

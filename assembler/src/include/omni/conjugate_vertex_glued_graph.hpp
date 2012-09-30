@@ -74,6 +74,36 @@ public:
 		return SmartEdgeIterator<Graph>(graph_);
 	}
 
+	const vector<EdgeId> OutgoingEdges(VertexId vertex) const {
+		return JoinVectors(
+				graph_.OutgoingEdges(vertex),
+				graph_.OutgoingEdges(graph_.conjugate(vertex)));
+	}
+
+	const vector<EdgeId> IncomingEdges(VertexId vertex) const {
+		return JoinVectors(
+				graph_.IncomingEdges(vertex),
+				graph_.IncomingEdges(graph_.conjugate(vertex)));
+	}
+
+	string str(VertexId vertex) const {
+		return graph_.str(vertex);
+	}
+
+	string str(EdgeId edge) const {
+		return graph_.str(edge);
+	}
+
+
+private:
+	const vector<EdgeId> JoinVectors(const vector<EdgeId>& edges1, const vector<EdgeId>& edges2) const {
+		vector<EdgeId> result;
+		result.insert(result.end(), edges1.begin(), edges1.end());
+		result.insert(result.end(), edges2.begin(), edges2.end());
+		return result;
+	}
+
+
 private:
 	Graph& graph_;
 	set<VertexId> vertices_;
