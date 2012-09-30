@@ -125,12 +125,20 @@ public:
 	MapColorer(const map<ElementId, string> &color_map) : color_map_(color_map) {
 	}
 
-	virtual ~MapColorer() {
-	}
-
 	MapColorer(const map<ElementId, string> &color_map, const string& default_color) :
 		color_map_(color_map),
 		default_color_(default_color) {
+	}
+
+	template<class It>
+	MapColorer(It begin, It end, const string& color, const string& default_color) :
+		default_color_(default_color) {
+		for (auto it = begin; it != end; ++it) {
+			color_map_.insert(make_pair(*it, color));
+		}
+	}
+
+	virtual ~MapColorer() {
 	}
 
 	virtual string GetColour(ElementId element) const {

@@ -13,6 +13,8 @@
 
 namespace omnigraph {
 
+namespace complex_br {
+
 template<class MapT>
 set<typename MapT::key_type> KeySet(const MapT& m) {
 	set<typename MapT::key_type> answer;
@@ -31,545 +33,546 @@ set<typename MapT::mapped_type> ValueSet(const MapT& m) {
 	return answer;
 }
 
-template<class Graph>
-class MostCoveredPathChooser: public PathProcessor<Graph>::Callback {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-
-	Graph& g_;
-	double max_coverage_;
-	vector<EdgeId> most_covered_path_;
-
-	double PathAvgCoverage(const vector<EdgeId>& path) {
-		double unnormalized_coverage = 0;
-		size_t path_length = 0;
-		for (size_t i = 0; i < path.size(); ++i) {
-			EdgeId edge = path[i];
-			size_t length = g_.length(edge);
-			path_length += length;
-			unnormalized_coverage += g_.coverage(edge) * length;
-		}
-		return unnormalized_coverage / path_length;
-	}
-
-public:
-
-	MostCoveredPathChooser(Graph& g) :
-			g_(g), max_coverage_(-1.0) {
-
-	}
-
-	virtual void HandlePath(const vector<EdgeId>& path) {
-		double path_cov = PathAvgCoverage(path);
-		if (path_cov > max_coverage_) {
-			max_coverage_ = path_cov;
-			most_covered_path_ = path;
-		}
-	}
-
-	double max_coverage() {
-		return max_coverage_;
-	}
-
-	const vector<EdgeId>& most_covered_path() {
-		return most_covered_path_;
-	}
-};
-
-template<class Graph>
-class OppositionLicvidator {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	class ComponentFinder {
-		Graph& g_;
-		size_t max_length_;
-		size_t length_difference_;
-		VertexId start_v_;
-		map<VertexId, pair<size_t, size_t>> processed_;
-		set<VertexId> can_be_processed_;
-		set<VertexId> neighbourhood_;
-		VertexId end_v_;
-
-		bool CanBeProcessed(VertexId v) {
-			vector<EdgeId> incoming = g_.IncomingEdges(v);
-			TRACE("Check of process possibilities of "<<g_.int_id(v));
-			for (auto it = incoming.begin(); it != incoming.end(); ++it) {
-				if (processed_.count(g_.EdgeStart(*it)) == 0) {
-					TRACE(
-							"Blocked by unprocessed or external vertex "<<g_.int_id(g_.EdgeStart(*it))<<" that starts edge "<<g_.int_id(*it));
-					return false;
-				}
-			}
-			return true;
-		}
-
-		void CountNeighbourhood(VertexId v) {
-			vector<EdgeId> outgoing = g_.OutgoingEdges(v);
-			for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
-				TRACE(
-						"Vertex "<<g_.int_id(g_.EdgeEnd(*it)) <<" added to neighbourhood_")
-				neighbourhood_.insert(g_.EdgeEnd(*it));
-			}
-		}
-
-		void CountCanBeProcessedNeighb(VertexId v) {
-			vector<EdgeId> outgoing = g_.OutgoingEdges(v);
-			for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
-				if (CanBeProcessed(g_.EdgeEnd(*it))) {
-					TRACE(
-							"Vertex "<<g_.int_id(g_.EdgeEnd(*it)) <<" added to can_be_processed_")
-					can_be_processed_.insert(g_.EdgeEnd(*it));
-				}
-			}
-		}
-
-		pair<size_t, size_t> DistancesRange(EdgeId e) {
-			VertexId start = g_.EdgeStart(e);
-			TRACE(
-					"Edge "<<g_.int_id(e) <<" of length "<<g_.length(e)<<" with start vertex "<<g_.int_id(start)<<" on distance "<<processed_[g_.EdgeStart(e)]);
-			return make_pair(processed_[g_.EdgeStart(e)].first + g_.length(e),
-					processed_[g_.EdgeStart(e)].second + g_.length(e));
-		}
-
-		void ProcessStartVertex() {
-			TRACE("Process vertex "<< g_.int_id(start_v_));
-			processed_.insert(make_pair(start_v_, make_pair(0, 0)));
-			CountCanBeProcessedNeighb(start_v_);
-			CountNeighbourhood(start_v_);
-		}
-
-		bool CheckEdgeToStartAbsence(VertexId v) {
-			vector<EdgeId> outgoing = g_.OutgoingEdges(v);
-			for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
-				if (g_.EdgeEnd(*it) == start_v_) {
-					return false;
-				}
-			}
-			return true;
-		}
-
-		void ProcessVertex(VertexId v) {
-			TRACE("Process vertex "<< g_.int_id(v));
-			vector<EdgeId> incoming = g_.IncomingEdges(v);
-			pair<size_t, size_t> final_range(max_length_, 0);
-			for (auto it = incoming.begin(); it != incoming.end(); ++it) {
-				pair<size_t, size_t> range = DistancesRange(*it);
-				TRACE(
-						"Edge "<< g_.int_id(*it) << " provide distance range "<<range);
-				if (range.first < final_range.first)
-					final_range.first = range.first;
-				if (range.second > final_range.second)
-					final_range.second = range.second;
-			}
-			processed_[v] = final_range;
-			CountCanBeProcessedNeighb(v);
-			CountNeighbourhood(v);
-			neighbourhood_.erase(v);
-			can_be_processed_.erase(v);
-		}
-
-		void ProcessEndVertex(VertexId v) {
-			TRACE("Process vertex "<< g_.int_id(v));
-			vector<EdgeId> incoming = g_.IncomingEdges(v);
-			pair<size_t, size_t> final_range(max_length_, 0);
-			for (auto it = incoming.begin(); it != incoming.end(); ++it) {
-				pair<size_t, size_t> range = DistancesRange(*it);
-				TRACE(
-						"Edge "<< g_.int_id(*it) << " provide distance range "<<range);
-				if (range.first < final_range.first)
-					final_range.first = range.first;
-				if (range.second > final_range.second)
-					final_range.second = range.second;
-			}
-			processed_[v] = final_range;
-			neighbourhood_.erase(v);
-			can_be_processed_.erase(v);
-		}
-
-		bool CheckVertexDist(VertexId v) {
-			return processed_[v].first < max_length_;
-		}
-
-		bool CheckPathLengths() {
-			VERIFY(end_v_ != VertexId(NULL));
-			return processed_[end_v_].second - processed_[end_v_].first
-					< length_difference_;
-		}
-
-	public:
-		ComponentFinder(Graph& g, size_t max_length, size_t length_difference,
-				VertexId start_v) :
-				g_(g), max_length_(max_length), length_difference_(
-						length_difference), start_v_(start_v), end_v_(
-						VertexId(NULL)) {
-		}
-
-		bool TryFindComponent() {
-			ProcessStartVertex();
-			while (neighbourhood_.size() != 1) {
-				if (can_be_processed_.empty()) {
-					return false;
-				} else {
-					VertexId v = *(can_be_processed_.begin());
-					ProcessVertex(v);
-					if (!CheckVertexDist(v) || !CheckEdgeToStartAbsence(v)) {
-						return false;
-					}
-				}
-			}
-			end_v_ = *(neighbourhood_.begin());
-			if (CanBeProcessed(end_v_)) {
-				ProcessEndVertex(end_v_);
-			} else
-				return false;
-
-			return CheckPathLengths();
-		}
-
-		const map<VertexId, pair<size_t, size_t>>& processed() const {
-			VERIFY(end_v_ != VertexId(NULL));
-			return processed_;
-		}
-
-		VertexId start_v() const {
-			return start_v_;
-		}
-
-		VertexId end_v() const {
-			return end_v_;
-		}
-
-		bool HaveConjugateVertices() const {
-			set<VertexId> conjugate_vertices;
-			for (auto iter = processed_.begin(); iter != processed_.end();
-					++iter) {
-				if (conjugate_vertices.find(iter->first)
-						== conjugate_vertices.end()) {
-					conjugate_vertices.insert(g_.conjugate(iter->first));
-				} else {
-					return true;
-				}
-			}
-			return false;
-		}
-	};
-
-	map<VertexId, size_t> AverageDistances(
-			const map<VertexId, pair<size_t, size_t>>& ranges) {
-		map<VertexId, size_t> answer;
-		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
-			answer.insert(make_pair(it->first, /*(*/
-			it->second.first /*+ it->second.second) / 2*/));
-		}
-		return answer;
-	}
-
-//	EdgeId Project(EdgeId e, EdgeId target, size_t start, size_t end) {
-//		EdgeId processed_target = target;
-//		bool compress_start = false;
-//		bool compress_end = false;
-//		if (start > 0) {
-//			compress_start = true;
-//			pair<EdgeId, EdgeId> split_res = g_.SplitEdge(processed_target,
-//					start);
-//			processed_target = split_res.second;
+//template<class Graph>
+//class MostCoveredPathChooser: public PathProcessor<Graph>::Callback {
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//
+//	Graph& g_;
+//	double max_coverage_;
+//	vector<EdgeId> most_covered_path_;
+//
+//	double PathAvgCoverage(const vector<EdgeId>& path) {
+//		double unnormalized_coverage = 0;
+//		size_t path_length = 0;
+//		for (size_t i = 0; i < path.size(); ++i) {
+//			EdgeId edge = path[i];
+//			size_t length = g_.length(edge);
+//			path_length += length;
+//			unnormalized_coverage += g_.coverage(edge) * length;
 //		}
-//		if (end < g_.length(target)) {
-//			compress_end = true;
-//			size_t pos = end > start ? end - start : 1;
-//			pair<EdgeId, EdgeId> split_res = g_.SplitEdge(processed_target,
-//					pos);
-//			processed_target = split_res.first;
-//		}
-//		EdgeId answer = g_.GlueEdges(e, processed_target);
-//		if (compress_start
-//				&& g_.CanCompressVertex(g_.EdgeStart(processed_target))) {
-//			answer = g_.UnsafeCompressVertex(g_.EdgeStart(processed_target));
-//		}
-//		if (compress_end
-//				&& g_.CanCompressVertex(g_.EdgeEnd(processed_target))) {
-//			answer = g_.UnsafeCompressVertex(g_.EdgeEnd(processed_target));
-//		}
-//		return answer;
+//		return unnormalized_coverage / path_length;
 //	}
-
-//	EdgeId LicvidateComponent(const map<VertexId, size_t>& component_dist,
-//			const vector<EdgeId>& best_path) {
-//		for (auto it = component_dist.begin(); it != component_dist.end();
-//				++it) {
-//			TRACE(
-//					"Process vertex "<<g_.int_id(it->first)<<" and distance "<< it->second);
-//			VertexId v = it->first;
-//			vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
-//			for (auto e_it = outgoing_edges.begin();
-//					e_it != outgoing_edges.end(); ++e_it) {
-//				EdgeId e = *e_it;
-//				VertexId end_v = g_.EdgeEnd(e);
-//				if (e != fake_edge && component_dist.count(end_v) > 0) {
-//					TRACE("Project edge "<<g_.int_id(e));
-//					fake_edge = Project(e, fake_edge, it->second,
-//							component_dist.find(end_v)->second);
+//
+//public:
+//
+//	MostCoveredPathChooser(Graph& g) :
+//			g_(g), max_coverage_(-1.0) {
+//
+//	}
+//
+//	virtual void HandlePath(const vector<EdgeId>& path) {
+//		double path_cov = PathAvgCoverage(path);
+//		if (path_cov > max_coverage_) {
+//			max_coverage_ = path_cov;
+//			most_covered_path_ = path;
+//		}
+//	}
+//
+//	double max_coverage() {
+//		return max_coverage_;
+//	}
+//
+//	const vector<EdgeId>& most_covered_path() {
+//		return most_covered_path_;
+//	}
+//};
+//
+//template<class Graph>
+//class OppositionLicvidator {
+//	typedef typename Graph::VertexId VertexId;
+//	typedef typename Graph::EdgeId EdgeId;
+//
+//	class ComponentFinder {
+//		Graph& g_;
+//		size_t max_length_;
+//		size_t length_difference_;
+//		VertexId start_v_;
+//		map<VertexId, pair<size_t, size_t>> processed_;
+//		set<VertexId> can_be_processed_;
+//		set<VertexId> neighbourhood_;
+//		VertexId end_v_;
+//
+//		bool CanBeProcessed(VertexId v) {
+//			vector<EdgeId> incoming = g_.IncomingEdges(v);
+//			TRACE("Check of process possibilities of "<<g_.int_id(v));
+//			for (auto it = incoming.begin(); it != incoming.end(); ++it) {
+//				if (processed_.count(g_.EdgeStart(*it)) == 0) {
 //					TRACE(
-//							"fake_edge after proj "<<g_.int_id(fake_edge)<< " from "<< g_.int_id(g_.EdgeStart(fake_edge))<<" to "<<g_.int_id(g_.EdgeEnd(fake_edge)));
-//					TRACE("Project finished");
+//							"Blocked by unprocessed or external vertex "<<g_.int_id(g_.EdgeStart(*it))<<" that starts edge "<<g_.int_id(*it));
+//					return false;
+//				}
+//			}
+//			return true;
+//		}
+//
+//		void CountNeighbourhood(VertexId v) {
+//			vector<EdgeId> outgoing = g_.OutgoingEdges(v);
+//			for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
+//				TRACE(
+//						"Vertex "<<g_.int_id(g_.EdgeEnd(*it)) <<" added to neighbourhood_")
+//				neighbourhood_.insert(g_.EdgeEnd(*it));
+//			}
+//		}
+//
+//		void CountCanBeProcessedNeighb(VertexId v) {
+//			vector<EdgeId> outgoing = g_.OutgoingEdges(v);
+//			for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
+//				if (CanBeProcessed(g_.EdgeEnd(*it))) {
+//					TRACE(
+//							"Vertex "<<g_.int_id(g_.EdgeEnd(*it)) <<" added to can_be_processed_")
+//					can_be_processed_.insert(g_.EdgeEnd(*it));
 //				}
 //			}
 //		}
-//		return fake_edge;
-//	}
-
-	set<size_t> AllAvgDist(const map<VertexId, size_t>& avg_dist) {
-		set<size_t> answer;
-		for (auto it = avg_dist.begin(); it != avg_dist.end(); ++it) {
-			answer.insert(it->second);
-		}
-		return answer;
-	}
-
-	bool SinglePath(VertexId start_v, VertexId end_v, size_t min_dist,
-			size_t max_dist) {
-		PathStorageCallback<Graph> path_storage(g_);
-		PathProcessor<Graph> best_path_finder(g_, min_dist, max_dist, start_v,
-				end_v, path_storage);
-		best_path_finder.Process();
-		VERIFY(path_storage.paths().size() > 0);
-		return path_storage.paths().size() == 1;
-	}
-
-//	EdgeId AddFakeEdge(const vector<EdgeId>& path) {
-//		VERIFY(path.size() > 0);
-//		vector<const typename Graph::EdgeData*> datas;
-//		for (auto it = path.begin(); it != path.end(); ++it) {
-//			datas.push_back(&g_.data(*it));
+//
+//		pair<size_t, size_t> DistancesRange(EdgeId e) {
+//			VertexId start = g_.EdgeStart(e);
+//			TRACE(
+//					"Edge "<<g_.int_id(e) <<" of length "<<g_.length(e)<<" with start vertex "<<g_.int_id(start)<<" on distance "<<processed_[g_.EdgeStart(e)]);
+//			return make_pair(processed_[g_.EdgeStart(e)].first + g_.length(e),
+//					processed_[g_.EdgeStart(e)].second + g_.length(e));
 //		}
-//		return g_.AddEdge(g_.EdgeStart(path.front()), g_.EdgeEnd(path.back()),
-//				g_.master().MergeData(datas));
+//
+//		void ProcessStartVertex() {
+//			TRACE("Process vertex "<< g_.int_id(start_v_));
+//			processed_.insert(make_pair(start_v_, make_pair(0, 0)));
+//			CountCanBeProcessedNeighb(start_v_);
+//			CountNeighbourhood(start_v_);
+//		}
+//
+//		bool CheckEdgeToStartAbsence(VertexId v) {
+//			vector<EdgeId> outgoing = g_.OutgoingEdges(v);
+//			for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
+//				if (g_.EdgeEnd(*it) == start_v_) {
+//					return false;
+//				}
+//			}
+//			return true;
+//		}
+//
+//		void ProcessVertex(VertexId v) {
+//			TRACE("Process vertex "<< g_.int_id(v));
+//			vector<EdgeId> incoming = g_.IncomingEdges(v);
+//			pair<size_t, size_t> final_range(max_length_, 0);
+//			for (auto it = incoming.begin(); it != incoming.end(); ++it) {
+//				pair<size_t, size_t> range = DistancesRange(*it);
+//				TRACE(
+//						"Edge "<< g_.int_id(*it) << " provide distance range "<<range);
+//				if (range.first < final_range.first)
+//					final_range.first = range.first;
+//				if (range.second > final_range.second)
+//					final_range.second = range.second;
+//			}
+//			processed_[v] = final_range;
+//			CountCanBeProcessedNeighb(v);
+//			CountNeighbourhood(v);
+//			neighbourhood_.erase(v);
+//			can_be_processed_.erase(v);
+//		}
+//
+//		void ProcessEndVertex(VertexId v) {
+//			TRACE("Process vertex "<< g_.int_id(v));
+//			vector<EdgeId> incoming = g_.IncomingEdges(v);
+//			pair<size_t, size_t> final_range(max_length_, 0);
+//			for (auto it = incoming.begin(); it != incoming.end(); ++it) {
+//				pair<size_t, size_t> range = DistancesRange(*it);
+//				TRACE(
+//						"Edge "<< g_.int_id(*it) << " provide distance range "<<range);
+//				if (range.first < final_range.first)
+//					final_range.first = range.first;
+//				if (range.second > final_range.second)
+//					final_range.second = range.second;
+//			}
+//			processed_[v] = final_range;
+//			neighbourhood_.erase(v);
+//			can_be_processed_.erase(v);
+//		}
+//
+//		bool CheckVertexDist(VertexId v) {
+//			return processed_[v].first < max_length_;
+//		}
+//
+//		bool CheckPathLengths() {
+//			VERIFY(end_v_ != VertexId(NULL));
+//			return processed_[end_v_].second - processed_[end_v_].first
+//					< length_difference_;
+//		}
+//
+//	public:
+//		ComponentFinder(Graph& g, size_t max_length, size_t length_difference,
+//				VertexId start_v) :
+//				g_(g), max_length_(max_length), length_difference_(
+//						length_difference), start_v_(start_v), end_v_(
+//						VertexId(NULL)) {
+//		}
+//
+//		bool TryFindComponent() {
+//			ProcessStartVertex();
+//			while (neighbourhood_.size() != 1) {
+//				if (can_be_processed_.empty()) {
+//					return false;
+//				} else {
+//					VertexId v = *(can_be_processed_.begin());
+//					ProcessVertex(v);
+//					if (!CheckVertexDist(v) || !CheckEdgeToStartAbsence(v)) {
+//						return false;
+//					}
+//				}
+//			}
+//			end_v_ = *(neighbourhood_.begin());
+//			if (CanBeProcessed(end_v_)) {
+//				ProcessEndVertex(end_v_);
+//			} else
+//				return false;
+//
+//			return CheckPathLengths();
+//		}
+//
+//		const map<VertexId, pair<size_t, size_t>>& processed() const {
+//			VERIFY(end_v_ != VertexId(NULL));
+//			return processed_;
+//		}
+//
+//		VertexId start_v() const {
+//			return start_v_;
+//		}
+//
+//		VertexId end_v() const {
+//			return end_v_;
+//		}
+//
+//		bool HaveConjugateVertices() const {
+//			set<VertexId> conjugate_vertices;
+//			for (auto iter = processed_.begin(); iter != processed_.end();
+//					++iter) {
+//				if (conjugate_vertices.find(iter->first)
+//						== conjugate_vertices.end()) {
+//					conjugate_vertices.insert(g_.conjugate(iter->first));
+//				} else {
+//					return true;
+//				}
+//			}
+//			return false;
+//		}
+//	};
+//
+//	map<VertexId, size_t> AverageDistances(
+//			const map<VertexId, pair<size_t, size_t>>& ranges) {
+//		map<VertexId, size_t> answer;
+//		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
+//			answer.insert(make_pair(it->first, /*(*/
+//			it->second.first /*+ it->second.second) / 2*/));
+//		}
+//		return answer;
 //	}
+//
+////	EdgeId Project(EdgeId e, EdgeId target, size_t start, size_t end) {
+////		EdgeId processed_target = target;
+////		bool compress_start = false;
+////		bool compress_end = false;
+////		if (start > 0) {
+////			compress_start = true;
+////			pair<EdgeId, EdgeId> split_res = g_.SplitEdge(processed_target,
+////					start);
+////			processed_target = split_res.second;
+////		}
+////		if (end < g_.length(target)) {
+////			compress_end = true;
+////			size_t pos = end > start ? end - start : 1;
+////			pair<EdgeId, EdgeId> split_res = g_.SplitEdge(processed_target,
+////					pos);
+////			processed_target = split_res.first;
+////		}
+////		EdgeId answer = g_.GlueEdges(e, processed_target);
+////		if (compress_start
+////				&& g_.CanCompressVertex(g_.EdgeStart(processed_target))) {
+////			answer = g_.UnsafeCompressVertex(g_.EdgeStart(processed_target));
+////		}
+////		if (compress_end
+////				&& g_.CanCompressVertex(g_.EdgeEnd(processed_target))) {
+////			answer = g_.UnsafeCompressVertex(g_.EdgeEnd(processed_target));
+////		}
+////		return answer;
+////	}
+//
+////	EdgeId LicvidateComponent(const map<VertexId, size_t>& component_dist,
+////			const vector<EdgeId>& best_path) {
+////		for (auto it = component_dist.begin(); it != component_dist.end();
+////				++it) {
+////			TRACE(
+////					"Process vertex "<<g_.int_id(it->first)<<" and distance "<< it->second);
+////			VertexId v = it->first;
+////			vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
+////			for (auto e_it = outgoing_edges.begin();
+////					e_it != outgoing_edges.end(); ++e_it) {
+////				EdgeId e = *e_it;
+////				VertexId end_v = g_.EdgeEnd(e);
+////				if (e != fake_edge && component_dist.count(end_v) > 0) {
+////					TRACE("Project edge "<<g_.int_id(e));
+////					fake_edge = Project(e, fake_edge, it->second,
+////							component_dist.find(end_v)->second);
+////					TRACE(
+////							"fake_edge after proj "<<g_.int_id(fake_edge)<< " from "<< g_.int_id(g_.EdgeStart(fake_edge))<<" to "<<g_.int_id(g_.EdgeEnd(fake_edge)));
+////					TRACE("Project finished");
+////				}
+////			}
+////		}
+////		return fake_edge;
+////	}
+//
+//	set<size_t> AllAvgDist(const map<VertexId, size_t>& avg_dist) {
+//		set<size_t> answer;
+//		for (auto it = avg_dist.begin(); it != avg_dist.end(); ++it) {
+//			answer.insert(it->second);
+//		}
+//		return answer;
+//	}
+//
+//	bool SinglePath(VertexId start_v, VertexId end_v, size_t min_dist,
+//			size_t max_dist) {
+//		PathStorageCallback<Graph> path_storage(g_);
+//		PathProcessor<Graph> best_path_finder(g_, min_dist, max_dist, start_v,
+//				end_v, path_storage);
+//		best_path_finder.Process();
+//		VERIFY(path_storage.paths().size() > 0);
+//		return path_storage.paths().size() == 1;
+//	}
+//
+////	EdgeId AddFakeEdge(const vector<EdgeId>& path) {
+////		VERIFY(path.size() > 0);
+////		vector<const typename Graph::EdgeData*> datas;
+////		for (auto it = path.begin(); it != path.end(); ++it) {
+////			datas.push_back(&g_.data(*it));
+////		}
+////		return g_.AddEdge(g_.EdgeStart(path.front()), g_.EdgeEnd(path.back()),
+////				g_.master().MergeData(datas));
+////	}
+//
+//	pair<vector<EdgeId>, map<size_t, VertexId>> SplitPath(
+//			const map<VertexId, size_t>& avg_dist, const vector<EdgeId>& path) {
+//		VERIFY(!path.empty());
+//		DEBUG("Splitting path " << g_.str(path));
+//		vector<EdgeId> split_path;
+//		map<size_t, VertexId> dist_map;
+//		set<size_t> all_dist = AllAvgDist(avg_dist);
+//		for (auto it = path.begin(); it != path.end(); ++it) {
+//			VertexId start_v = g_.EdgeStart(*it);
+//			VertexId end_v = g_.EdgeEnd(*it);
+//			size_t start_dist = avg_dist.find(g_.EdgeStart(*it))->second;
+//			size_t end_dist = avg_dist.find(g_.EdgeEnd(*it))->second;
+//			set<size_t> dist_to_split(all_dist.lower_bound(start_dist),
+//					all_dist.upper_bound(end_dist));
+//			size_t offset = start_dist;
+//			EdgeId e = *it;
+//			for (auto split_it = dist_to_split.begin();
+//					split_it != dist_to_split.end(); ++split_it) {
+//				size_t curr = *split_it;
+//				size_t pos = curr - offset;
+//				if (pos > 0 && pos < g_.length(e)) {
+//					DEBUG(
+//							"Splitting edge " << g_.str(e) << " on position " << pos);
+//					pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, pos);
+//					VertexId inner_v = g_.EdgeEnd(split_res.first);
+//					DEBUG(
+//							"Result: edges " << g_.str(split_res.first) << " " << g_.str(split_res.second) << " inner vertex" << inner_v);
+//					split_path.push_back(split_res.first);
+//					dist_map[curr] = inner_v;
+////					avg_dist[inner_v] = curr;
+//					e = split_res.second;
+//					offset = curr;
+//				}
+//			}
+//			split_path.push_back(e);
+//			dist_map[start_dist] = start_v;
+//			dist_map[end_dist] = end_v;
+//		}
+//		DEBUG("Path splitted");
+//		return make_pair(split_path, dist_map);
+//	}
+//
+//	set<VertexId> KeySet(const map<VertexId, size_t>& avg_dist) {
+//		set<VertexId> answer;
+//		for (auto it = avg_dist.begin(); it != avg_dist.end(); ++it) {
+//			answer.insert(it->first);
+//		}
+//		return answer;
+//	}
+//
+//	vector<EdgeId> NonPathEdges(const map<VertexId, size_t>& avg_dist,
+//			const vector<EdgeId>& path) {
+//		set<VertexId> vertices = KeySet(avg_dist);
+//		GraphComponent<Graph> component(g_, vertices.begin(), vertices.end());
+//		set<EdgeId> path_edges(path.begin(), path.end());
+//		vector<EdgeId> non_path_edges;
+//		for (auto it = component.e_begin(); it != component.e_end(); ++it) {
+//			if (path_edges.count(*it) == 0) {
+//				non_path_edges.push_back(*it);
+//			}
+//		}
+//		return non_path_edges;
+//	}
+//
+//	EdgeId FindPathEdge(VertexId v, const set<EdgeId>& path_edges) {
+//		vector<EdgeId> out_edges = g_.OutgoingEdges(v);
+//		for (auto it = out_edges.begin(); it != out_edges.end(); ++it) {
+//			if (path_edges.count(*it) > 0) {
+//				return *it;
+//			}
+//		}
+//		VERIFY(false);
+//		return EdgeId(NULL);
+//	}
+//
+//	void ProjectComponentPath(const map<VertexId, size_t>& avg_dist,
+//			const vector<EdgeId>& path, const map<size_t, VertexId>& path_map) {
+//		DEBUG("Projecting component");
+//		vector<EdgeId> non_path_edges = NonPathEdges(avg_dist, path);
+//		set<EdgeId> path_edges_of_all_time(path.begin(), path.end());
+//		set<size_t> all_dist = AllAvgDist(avg_dist);
+//
+//		for (auto it = non_path_edges.begin(); it != non_path_edges.end();
+//				++it) {
+//			size_t start_dist = avg_dist.find(g_.EdgeStart(*it))->second;
+//			size_t end_dist = avg_dist.find(g_.EdgeEnd(*it))->second;
+//			set<size_t> dist_to_split(all_dist.lower_bound(start_dist),
+//					all_dist.upper_bound(end_dist));
+//			size_t offset = start_dist;
+//			EdgeId e = *it;
+//			for (auto split_it = dist_to_split.begin();
+//					split_it != dist_to_split.end(); ++split_it) {
+//				size_t curr = *split_it;
+//				size_t pos = curr - offset;
+//				if (pos > 0 && pos < g_.length(e)) {
+//					DEBUG(
+//							"Splitting edge " << g_.str(e) << " on position " << pos);
+//					pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, pos);
+//					DEBUG(
+//							"Splitting edge " << g_.str(e) << " on position " << pos);
+//					DEBUG(
+//							"Gluing edges " << g_.str(split_res.first) << " " << g_.str(FindPathEdge(path_map.find(offset)->second, path_edges_of_all_time)));
+//					EdgeId new_edge = g_.GlueEdges(split_res.first,
+//							FindPathEdge(path_map.find(offset)->second,
+//									path_edges_of_all_time));
+//					DEBUG("New edge " << g_.str(new_edge));
+//					path_edges_of_all_time.insert(new_edge);
+//					DEBUG(
+//							"Result: edges " << g_.str(split_res.first) << " " << g_.str(split_res.second));
+//					e = split_res.second;
+//					offset = curr;
+//				}
+//			}
+//			path_edges_of_all_time.insert(
+//					g_.GlueEdges(e,
+//							FindPathEdge(path_map.find(offset)->second,
+//									path_edges_of_all_time)));
+//		}
+//		DEBUG("Component projected");
+//	}
+//
+//	//todo remove
+//	MappingRange TrivialRange(EdgeId e, size_t& offset) const {
+//		size_t l = g_.length(e);
+//		offset += l;
+//		return MappingRange(Range(offset - l, offset), Range(0, 1));
+//	}
+//
+//	MappingPath<EdgeId> TrivialMappingPath(const vector<EdgeId>& edges) const {
+//		vector<MappingRange> ranges;
+//		size_t offset = 0;
+//		for (auto it = edges.begin(); it != edges.end(); ++it) {
+//			ranges.push_back(TrivialRange(*it, offset));
+//		}
+//		return MappingPath<EdgeId>(edges, ranges);
+//	}
+//
+//	template<class It>
+//	void PrintComponent(It begin, It end, size_t cnt) {
+//		LengthIdGraphLabeler<Graph> labeler(g_);
+//		WriteComponentsAlongPath(g_, labeler,
+//				"complex_components/" + ToString(cnt) + ".dot", 5000, 30,
+//				TrivialMappingPath(vector<EdgeId>(begin, end)),
+//				*DefaultColorer(g_));
+//	}
+//	//end of todo
+//
+//	void ProcessComponent(const ComponentFinder& comp_finder) {
+//		static size_t cnt = 0;
+//		DEBUG("Checking if has conjugate vertices and not single path");
+//		if (!comp_finder.HaveConjugateVertices()) {
+//			//find best path!
+//			pair<size_t, size_t> dist_range = comp_finder.processed().find(
+//					comp_finder.end_v())->second;
+//
+//			if (!SinglePath(comp_finder.start_v(), comp_finder.end_v(),
+//					dist_range.first, dist_range.second)) {
+//				DEBUG("Check ok");
+//				DEBUG(
+//						"Component: " << ++cnt << ". Start vertex - " << g_.int_id(comp_finder.start_v()) << ". End vertex - "<<g_.int_id(comp_finder.end_v())<<". Distance ranges "<< dist_range);
+//				MostCoveredPathChooser<Graph> path_chooser(g_);
+//				PathProcessor<Graph> best_path_finder(g_, dist_range.first,
+//						dist_range.second, comp_finder.start_v(),
+//						comp_finder.end_v(), path_chooser);
+//				best_path_finder.Process();
+//				vector<EdgeId> best_path = path_chooser.most_covered_path();
+//				DEBUG("Best path " << g_.str(best_path));
+//
+//				remove_dir("complex_components");
+//				make_dir("complex_components");
+//				PrintComponent(best_path.begin(), best_path.end(), cnt);
+//
+//				map<VertexId, size_t> dist = AverageDistances(
+//						comp_finder.processed());
+//
+//				DEBUG("Licvidating");
+//				auto split_result = SplitPath(dist, best_path);
+//				DEBUG("Splitted best path " << split_result.first);
+//				ProjectComponentPath(dist, split_result.first,
+//						split_result.second);
+//				//						TRACE(
+//				//								"fake_edge "<<g_.int_id(fake_edge)<< " from "<< g_.int_id(g_.EdgeStart(fake_edge))<<" to "<<g_.int_id(g_.EdgeEnd(fake_edge)));
+//				Compressor<Graph>(g_).CompressAllVertices();
+//				//						VertexId v_end = g_.EdgeEnd(fake_edge);
+//				//						g_.CompressVertex(g_.EdgeStart(fake_edge));
+//				//						g_.CompressVertex(v_end);
+//
+//				TRACE("Licvidate finished");
+//			} else {
+//				DEBUG("Check fail");
+//			}
+//		} else {
+//			DEBUG("Check fail");
+//		}
+//	}
+//
+//	Graph& g_;
+//	size_t max_length_;
+//	size_t length_diff_;
+//
+//public:
+//	OppositionLicvidator(Graph& g, size_t max_length, size_t length_diff) :
+//			g_(g), max_length_(max_length), length_diff_(length_diff) {
+//	}
+//
+//	void Licvidate() {
+//		for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
+//			ComponentFinder comp_finder(g_, max_length_, length_diff_, *it);
+//			if (comp_finder.TryFindComponent()) {
+//				ProcessComponent(comp_finder);
+//			}
+//		}
+//	}
+//private:
+//	DECL_LOGGER("OppositionLicvidator")
+//	;
+//};
 
-	pair<vector<EdgeId>, map<size_t, VertexId>> SplitPath(
-			const map<VertexId, size_t>& avg_dist, const vector<EdgeId>& path) {
-		VERIFY(!path.empty());
-		DEBUG("Splitting path " << g_.str(path));
-		vector<EdgeId> split_path;
-		map<size_t, VertexId> dist_map;
-		set<size_t> all_dist = AllAvgDist(avg_dist);
-		for (auto it = path.begin(); it != path.end(); ++it) {
-			VertexId start_v = g_.EdgeStart(*it);
-			VertexId end_v = g_.EdgeEnd(*it);
-			size_t start_dist = avg_dist.find(g_.EdgeStart(*it))->second;
-			size_t end_dist = avg_dist.find(g_.EdgeEnd(*it))->second;
-			set<size_t> dist_to_split(all_dist.lower_bound(start_dist),
-					all_dist.upper_bound(end_dist));
-			size_t offset = start_dist;
-			EdgeId e = *it;
-			for (auto split_it = dist_to_split.begin();
-					split_it != dist_to_split.end(); ++split_it) {
-				size_t curr = *split_it;
-				size_t pos = curr - offset;
-				if (pos > 0 && pos < g_.length(e)) {
-					DEBUG(
-							"Splitting edge " << g_.str(e) << " on position " << pos);
-					pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, pos);
-					VertexId inner_v = g_.EdgeEnd(split_res.first);
-					DEBUG(
-							"Result: edges " << g_.str(split_res.first) << " " << g_.str(split_res.second) << " inner vertex" << inner_v);
-					split_path.push_back(split_res.first);
-					dist_map[curr] = inner_v;
-//					avg_dist[inner_v] = curr;
-					e = split_res.second;
-					offset = curr;
-				}
-			}
-			split_path.push_back(e);
-			dist_map[start_dist] = start_v;
-			dist_map[end_dist] = end_v;
-		}
-		DEBUG("Path splitted");
-		return make_pair(split_path, dist_map);
-	}
-
-	set<VertexId> KeySet(const map<VertexId, size_t>& avg_dist) {
-		set<VertexId> answer;
-		for (auto it = avg_dist.begin(); it != avg_dist.end(); ++it) {
-			answer.insert(it->first);
-		}
-		return answer;
-	}
-
-	vector<EdgeId> NonPathEdges(const map<VertexId, size_t>& avg_dist,
-			const vector<EdgeId>& path) {
-		set<VertexId> vertices = KeySet(avg_dist);
-		GraphComponent<Graph> component(g_, vertices.begin(), vertices.end());
-		set<EdgeId> path_edges(path.begin(), path.end());
-		vector<EdgeId> non_path_edges;
-		for (auto it = component.e_begin(); it != component.e_end(); ++it) {
-			if (path_edges.count(*it) == 0) {
-				non_path_edges.push_back(*it);
-			}
-		}
-		return non_path_edges;
-	}
-
-	EdgeId FindPathEdge(VertexId v, const set<EdgeId>& path_edges) {
-		vector<EdgeId> out_edges = g_.OutgoingEdges(v);
-		for (auto it = out_edges.begin(); it != out_edges.end(); ++it) {
-			if (path_edges.count(*it) > 0) {
-				return *it;
-			}
-		}
-		VERIFY(false);
-		return EdgeId(NULL);
-	}
-
-	void ProjectComponentPath(const map<VertexId, size_t>& avg_dist,
-			const vector<EdgeId>& path, const map<size_t, VertexId>& path_map) {
-		DEBUG("Projecting component");
-		vector<EdgeId> non_path_edges = NonPathEdges(avg_dist, path);
-		set<EdgeId> path_edges_of_all_time(path.begin(), path.end());
-		set<size_t> all_dist = AllAvgDist(avg_dist);
-
-		for (auto it = non_path_edges.begin(); it != non_path_edges.end();
-				++it) {
-			size_t start_dist = avg_dist.find(g_.EdgeStart(*it))->second;
-			size_t end_dist = avg_dist.find(g_.EdgeEnd(*it))->second;
-			set<size_t> dist_to_split(all_dist.lower_bound(start_dist),
-					all_dist.upper_bound(end_dist));
-			size_t offset = start_dist;
-			EdgeId e = *it;
-			for (auto split_it = dist_to_split.begin();
-					split_it != dist_to_split.end(); ++split_it) {
-				size_t curr = *split_it;
-				size_t pos = curr - offset;
-				if (pos > 0 && pos < g_.length(e)) {
-					DEBUG(
-							"Splitting edge " << g_.str(e) << " on position " << pos);
-					pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, pos);
-					DEBUG(
-							"Splitting edge " << g_.str(e) << " on position " << pos);
-					DEBUG(
-							"Gluing edges " << g_.str(split_res.first) << " " << g_.str(FindPathEdge(path_map.find(offset)->second, path_edges_of_all_time)));
-					EdgeId new_edge = g_.GlueEdges(split_res.first,
-							FindPathEdge(path_map.find(offset)->second,
-									path_edges_of_all_time));
-					DEBUG("New edge " << g_.str(new_edge));
-					path_edges_of_all_time.insert(new_edge);
-					DEBUG(
-							"Result: edges " << g_.str(split_res.first) << " " << g_.str(split_res.second));
-					e = split_res.second;
-					offset = curr;
-				}
-			}
-			path_edges_of_all_time.insert(
-					g_.GlueEdges(e,
-							FindPathEdge(path_map.find(offset)->second,
-									path_edges_of_all_time)));
-		}
-		DEBUG("Component projected");
-	}
-
-	//todo remove
-	MappingRange TrivialRange(EdgeId e, size_t& offset) const {
-		size_t l = g_.length(e);
-		offset += l;
-		return MappingRange(Range(offset - l, offset), Range(0, 1));
-	}
-
-	MappingPath<EdgeId> TrivialMappingPath(const vector<EdgeId>& edges) const {
-		vector<MappingRange> ranges;
-		size_t offset = 0;
-		for (auto it = edges.begin(); it != edges.end(); ++it) {
-			ranges.push_back(TrivialRange(*it, offset));
-		}
-		return MappingPath<EdgeId>(edges, ranges);
-	}
-
-	template<class It>
-	void PrintComponent(It begin, It end, size_t cnt) {
-		LengthIdGraphLabeler<Graph> labeler(g_);
-		WriteComponentsAlongPath(g_, labeler,
-				"complex_components/" + ToString(cnt) + ".dot", 5000, 30,
-				TrivialMappingPath(vector<EdgeId>(begin, end)),
-				*DefaultColorer(g_));
-	}
-	//end of todo
-
-	void ProcessComponent(const ComponentFinder& comp_finder) {
-		static size_t cnt = 0;
-		DEBUG("Checking if has conjugate vertices and not single path");
-		if (!comp_finder.HaveConjugateVertices()) {
-			//find best path!
-			pair<size_t, size_t> dist_range = comp_finder.processed().find(
-					comp_finder.end_v())->second;
-
-			if (!SinglePath(comp_finder.start_v(), comp_finder.end_v(),
-					dist_range.first, dist_range.second)) {
-				DEBUG("Check ok");
-				DEBUG(
-						"Component: " << ++cnt << ". Start vertex - " << g_.int_id(comp_finder.start_v()) << ". End vertex - "<<g_.int_id(comp_finder.end_v())<<". Distance ranges "<< dist_range);
-				MostCoveredPathChooser<Graph> path_chooser(g_);
-				PathProcessor<Graph> best_path_finder(g_, dist_range.first,
-						dist_range.second, comp_finder.start_v(),
-						comp_finder.end_v(), path_chooser);
-				best_path_finder.Process();
-				vector<EdgeId> best_path = path_chooser.most_covered_path();
-				DEBUG("Best path " << g_.str(best_path));
-
-				remove_dir("complex_components");
-				make_dir("complex_components");
-				PrintComponent(best_path.begin(), best_path.end(), cnt);
-
-				map<VertexId, size_t> dist = AverageDistances(
-						comp_finder.processed());
-
-				DEBUG("Licvidating");
-				auto split_result = SplitPath(dist, best_path);
-				DEBUG("Splitted best path " << split_result.first);
-				ProjectComponentPath(dist, split_result.first,
-						split_result.second);
-				//						TRACE(
-				//								"fake_edge "<<g_.int_id(fake_edge)<< " from "<< g_.int_id(g_.EdgeStart(fake_edge))<<" to "<<g_.int_id(g_.EdgeEnd(fake_edge)));
-				Compressor < Graph > (g_).CompressAllVertices();
-				//						VertexId v_end = g_.EdgeEnd(fake_edge);
-				//						g_.CompressVertex(g_.EdgeStart(fake_edge));
-				//						g_.CompressVertex(v_end);
-
-				TRACE("Licvidate finished");
-			} else {
-				DEBUG("Check fail");
-			}
-		} else {
-			DEBUG("Check fail");
-		}
-	}
-
-	Graph& g_;
-	size_t max_length_;
-	size_t length_diff_;
-
-public:
-	OppositionLicvidator(Graph& g, size_t max_length, size_t length_diff) :
-			g_(g), max_length_(max_length), length_diff_(length_diff) {
-	}
-
-	void Licvidate() {
-		for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
-			ComponentFinder comp_finder(g_, max_length_, length_diff_, *it);
-			if (comp_finder.TryFindComponent()) {
-				ProcessComponent(comp_finder);
-			}
-		}
-	}
-private:
-	DECL_LOGGER("OppositionLicvidator")
-	;
-};
-
-//-------------------- new version -------------------
-
+//-------------------- new version -------------------//
 //doesn't support loops
+//works for well-localized components only
+
 template<class Graph>
-class BRComponent: public GraphActionHandler<Graph> /*: public GraphComponent<Graph>*/{
+class LocalizedComponent: public GraphActionHandler<Graph> /*: public GraphComponent<Graph>*/{
 
 //	typedef GraphComponent<Graph> base;
 	typedef GraphActionHandler<Graph> base;
@@ -607,7 +610,7 @@ class BRComponent: public GraphActionHandler<Graph> /*: public GraphComponent<Gr
 public:
 
 //	template <class It>
-	BRComponent(const Graph& g, //It begin, It end,
+	LocalizedComponent(const Graph& g, //It begin, It end,
 			VertexId start_vertex/*, const vector<VertexId>& end_vertices*/) :
 			base(g, "br_component"), g_(g), start_vertex_(start_vertex) {
 		end_vertices_.insert(start_vertex);
@@ -790,9 +793,11 @@ public:
 			//todo do better later (needs to be synched with splitting strategy)
 //					+ (vertex_depth_[end] - vertex_depth_[start])
 //							* g_.length(new_edge_1) / g_.length(old_edge);
-			DEBUG("Inserting vertex " << g_.str(new_vertex) << " to component during split");
+			DEBUG(
+					"Inserting vertex " << g_.str(new_vertex) << " to component during split");
 			vertex_depth_.insert(make_pair(new_vertex, new_vertex_depth));
-			height_2_vertices_.insert(make_pair(Average(new_vertex_depth), new_vertex));
+			height_2_vertices_.insert(
+					make_pair(Average(new_vertex_depth), new_vertex));
 		}
 	}
 
@@ -802,23 +807,33 @@ public:
 
 	const set<VertexId> vertices_on_height(size_t height) const {
 		set<VertexId> answer;
-		for (auto it = height_2_vertices_.lower_bound(height); it != height_2_vertices_.upper_bound(height); ++it) {
+		for (auto it = height_2_vertices_.lower_bound(height);
+				it != height_2_vertices_.upper_bound(height); ++it) {
 			answer.insert(it->second);
 		}
 		return answer;
 	}
 
 private:
-	DECL_LOGGER("BRComponent");
+	DECL_LOGGER("BRComponent")
+	;
 };
 
 template<class Graph>
-class BRComponentSpanningTree: public GraphActionHandler<Graph> {
+class SkeletonTree: public GraphActionHandler<Graph> {
 	typedef GraphActionHandler<Graph> base;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
 public:
+
+	const set<EdgeId>& edges() const {
+		return edges_;
+	}
+
+	const set<VertexId>& vertices() const {
+		return vertices_;
+	}
 
 	bool Contains(EdgeId e) const {
 //		VertexId start = br_comp_.g().EdgeStart(e);
@@ -856,7 +871,8 @@ public:
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 //		 verify edge2 in tree
 //		 put new_edge instead of edge2
-		DEBUG("Glueing " << br_comp_.g().str(new_edge) << " " << br_comp_.g().str(edge1) << " " << br_comp_.g().str(edge2));
+		DEBUG(
+				"Glueing " << br_comp_.g().str(new_edge) << " " << br_comp_.g().str(edge1) << " " << br_comp_.g().str(edge2));
 		if (Contains(edge2)) {
 			DEBUG("Erasing from tree: " << br_comp_.g().str(edge2));
 			DEBUG("Inserting to tree: " << br_comp_.g().str(new_edge));
@@ -875,7 +891,7 @@ public:
 		}
 	}
 
-	BRComponentSpanningTree(const BRComponent<Graph>& br_comp,
+	SkeletonTree(const LocalizedComponent<Graph>& br_comp,
 			const set<EdgeId>& edges) :
 			base(br_comp.g(), "br_tree"), br_comp_(br_comp), edges_(edges) {
 		DEBUG("Tree edges " << br_comp.g().str(edges));
@@ -886,12 +902,13 @@ public:
 	}
 
 private:
-	const BRComponent<Graph>& br_comp_;
+	const LocalizedComponent<Graph>& br_comp_;
 	set<EdgeId> edges_;
 	set<VertexId> vertices_;
 
 private:
-	DECL_LOGGER("BRComponentSpanningTree");
+	DECL_LOGGER("BRComponentSpanningTree")
+	;
 };
 
 typedef size_t mask;
@@ -934,7 +951,7 @@ public:
 
 private:
 
-	const BRComponent<Graph>& comp_;
+	const LocalizedComponent<Graph>& comp_;
 	const size_t color_cnt_;
 	map<VertexId, mixed_color_t> vertex_colors_;
 
@@ -970,7 +987,9 @@ private:
 
 public:
 
-	ComponentColoring(const BRComponent<Graph>& comp) : base(comp.g(), "br_comp_coloring"), comp_(comp), color_cnt_(comp_.end_vertices().size()) {
+	ComponentColoring(const LocalizedComponent<Graph>& comp) :
+			base(comp.g(), "br_comp_coloring"), comp_(comp), color_cnt_(
+					comp_.end_vertices().size()) {
 		VERIFY(comp.end_vertices().size() <= sizeof(size_t) * 8);
 		ColorComponent();
 	}
@@ -979,8 +998,10 @@ public:
 		auto it = vertex_colors_.find(v);
 		if (it == vertex_colors_.end()) {
 			DEBUG("No color for vertex " << comp_.g().str(v));
-			DEBUG("Incoming edges " << comp_.g().str(comp_.g().IncomingEdges(v)));
-			DEBUG("Outgoing edges " << comp_.g().str(comp_.g().OutgoingEdges(v)));
+			DEBUG(
+					"Incoming edges " << comp_.g().str(comp_.g().IncomingEdges(v)));
+			DEBUG(
+					"Outgoing edges " << comp_.g().str(comp_.g().OutgoingEdges(v)));
 		}
 		VERIFY(it != vertex_colors_.end());
 		return it->second;
@@ -1013,17 +1034,18 @@ public:
 	}
 
 private:
-	DECL_LOGGER("ComponentColoring");
+	DECL_LOGGER("ComponentColoring")
+	;
 };
 
 template<class Graph>
-class BRComponentSpanningTreeFinder {
+class SkeletonTreeFinder {
 
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef ConcurrentDSU color_partition_ds_t;
 
-	const BRComponent<Graph>& component_;
+	const LocalizedComponent<Graph>& component_;
 	const ComponentColoring<Graph>& coloring_;
 
 //	BRComponentSpanningTree<Graph> tree_;
@@ -1153,7 +1175,7 @@ class BRComponentSpanningTreeFinder {
 	}
 
 public:
-	BRComponentSpanningTreeFinder(const BRComponent<Graph>& component,
+	SkeletonTreeFinder(const LocalizedComponent<Graph>& component,
 			const ComponentColoring<Graph>& coloring) :
 			component_(component), coloring_(coloring), level_heights_(
 					SetAsVector<size_t>(component_.avg_distances())), current_level_(
@@ -1219,8 +1241,28 @@ public:
 	}
 
 private:
-	DECL_LOGGER("BRComponentSpanningTreeFinder");
+	DECL_LOGGER("BRComponentSpanningTreeFinder")
+	;
 };
+
+template<class Graph>
+void PrintComponent(const LocalizedComponent<Graph>& component,
+		const SkeletonTree<Graph>& tree,
+		const string& file_name) {
+	typedef typename Graph::EdgeId EdgeId;
+	const set<EdgeId> tree_edges = tree.edges();
+	WriteComponent(component.AsGraphComponent(), file_name,
+			*DefaultColorer(component.g(), new MapColorer<EdgeId>(tree_edges.begin(), tree_edges.end(), "green", "")),
+			*StrGraphLabelerInstance(component.g()));
+}
+
+template<class Graph>
+void PrintComponent(const LocalizedComponent<Graph>& component,
+		const string& file_name) {
+	WriteComponent(component.AsGraphComponent(), file_name,
+			*DefaultColorer(component.g()),
+			*StrGraphLabelerInstance(component.g()));
+}
 
 template<class Graph>
 class ComponentProjector {
@@ -1228,9 +1270,9 @@ class ComponentProjector {
 	typedef typename Graph::VertexId VertexId;
 
 	Graph& g_;
-	const BRComponent<Graph>& component_;
+	const LocalizedComponent<Graph>& component_;
 	const ComponentColoring<Graph>& coloring_;
-	const BRComponentSpanningTree<Graph>& tree_;
+	const SkeletonTree<Graph>& tree_;
 
 //	DEBUG("Result: edges " << g_.str(split_res.first) << " " << g_.str(split_res.second));
 //	DEBUG("New vertex" << g_.str(inner_v) << " ");
@@ -1247,8 +1289,8 @@ class ComponentProjector {
 			VertexId end_v = g_.EdgeEnd(*it);
 			size_t start_dist = component_.avg_distance(start_v);
 			size_t end_dist = component_.avg_distance(end_v);
-			DEBUG("Processing edge " << g_.str(*it)
-					<< " avg_start " << start_dist << " avg_end " << end_dist);
+			DEBUG(
+					"Processing edge " << g_.str(*it) << " avg_start " << start_dist << " avg_end " << end_dist);
 			set<size_t> dist_to_split(level_heights.lower_bound(start_dist),
 					level_heights.upper_bound(end_dist));
 			DEBUG("Distances to split " << ToString<size_t>(dist_to_split));
@@ -1285,8 +1327,10 @@ class ComponentProjector {
 		FOREACH (VertexId v, component_.vertices_on_height(start_height)) {
 			if (component_.end_vertices().count(v) == 0) {
 				FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
-					VERIFY(component_.avg_distance(g_.EdgeEnd(e)) == end_height);
-					if (tree_.Contains(e) && coloring_.IsSubset(coloring_.color(e), color)) {
+					VERIFY(
+							component_.avg_distance(g_.EdgeEnd(e)) == end_height);
+					if (tree_.Contains(e)
+							&& coloring_.IsSubset(coloring_.color(e), color)) {
 						return e;
 					}
 				}
@@ -1304,7 +1348,8 @@ public:
 		DEBUG("Projecting split component");
 		GraphComponent<Graph> gc = component_.AsGraphComponent();
 
-		for (auto it = SmartSetIterator<Graph, EdgeId>(g_, gc.e_begin(), gc.e_end()); !it.IsEnd(); ++it) {
+		for (auto it = SmartSetIterator<Graph, EdgeId>(g_, gc.e_begin(),
+				gc.e_end()); !it.IsEnd(); ++it) {
 			DEBUG("Trying to project edge " << g_.str(*it));
 			EdgeId target = CorrespondingTreeEdge(*it);
 			DEBUG("Target found " << g_.str(target));
@@ -1318,28 +1363,30 @@ public:
 		DEBUG("Component projected");
 	}
 
-	ComponentProjector(Graph& g, const BRComponent<Graph>& component, const ComponentColoring<Graph>& coloring,
-			const BRComponentSpanningTree<Graph>& tree) :
+	ComponentProjector(Graph& g, const LocalizedComponent<Graph>& component,
+			const ComponentColoring<Graph>& coloring,
+			const SkeletonTree<Graph>& tree) :
 			g_(g), component_(component), coloring_(coloring), tree_(tree) {
 
 	}
 
 private:
-	DECL_LOGGER("ComponentProjector");
+	DECL_LOGGER("ComponentProjector")
+	;
 };
 
 template<class Graph>
-class BRComponentFinder {
+class LocalizedComponentFinder {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
 	static const size_t exit_bound = 32;
-	
+
 	Graph& g_;
 	size_t max_length_;
 	size_t length_diff_threshold_;
 
-	BRComponent<Graph> comp_;
+	LocalizedComponent<Graph> comp_;
 
 	set<VertexId> neighbourhood_;
 	set<VertexId> can_be_processed_;
@@ -1426,7 +1473,8 @@ class BRComponentFinder {
 			size_t end_height = comp_.avg_distance(g_.EdgeEnd(*it));
 			//VERIFY(end_height >= start_height);
 			if (end_height <= start_height) {
-				DEBUG("Check failed for edge " << g_.str(*it) << " start_height " << start_height << " end_height " << end_height);
+				DEBUG(
+						"Check failed for edge " << g_.str(*it) << " start_height " << start_height << " end_height " << end_height);
 				return false;
 			}
 		}
@@ -1443,15 +1491,16 @@ class BRComponentFinder {
 	}
 
 public:
-	BRComponentFinder(Graph& g, size_t max_length,
-			size_t length_diff_threshold, VertexId start_v) :
+	LocalizedComponentFinder(Graph& g, size_t max_length, size_t length_diff_threshold,
+			VertexId start_v) :
 			g_(g), max_length_(max_length), length_diff_threshold_(
 					length_diff_threshold), comp_(g, start_v) {
+		DEBUG("Component finder from vertex " << g_.str(comp_.start_vertex()) << " created");
+		ProcessStartVertex();
 	}
 
-	bool TryFindComponent() {
-		DEBUG("Trying to find component from vertex " << g_.str(comp_.start_vertex()));
-		ProcessStartVertex();
+	bool ProceedFurther() {
+		DEBUG("Processing further");
 		while (!comp_.CheckCompleteness() || !comp_.NeedsProjection()) {
 			if (can_be_processed_.empty()) {
 				DEBUG("No more vertices can be processed");
@@ -1460,8 +1509,7 @@ public:
 				VertexId v = NextVertex();
 				ProcessVertex(v);
 				if (!CheckVertexDist(v) || !CheckNoEdgeToStart(v)) {
-					DEBUG(
-							"Max component length exceeded or edge to start vertex detected");
+					DEBUG("Max component length exceeded or edge to start vertex detected");
 					return false;
 				}
 			}
@@ -1483,16 +1531,17 @@ public:
 			return false;
 		}
 		GraphComponent<Graph> gc = comp_.AsGraphComponent();
-		DEBUG("Found component. Vertices: " << g_.str(gc.vertices()));
+		DEBUG("Found component candidate. Vertices: " << g_.str(gc.vertices()));
 		return true;
 	}
 
-	const BRComponent<Graph>& component() {
+	const LocalizedComponent<Graph>& component() {
 		return comp_;
 	}
 
 private:
-	DECL_LOGGER("BRComponentFinder");
+	DECL_LOGGER("BRComponentFinder")
+	;
 };
 
 template<class Graph>
@@ -1506,57 +1555,74 @@ class ComplexBulgeRemover {
 
 	string pics_folder_;
 
-	bool ProcessComponent(BRComponent<Graph>& component) {
+	bool ProcessComponent(LocalizedComponent<Graph>& component, size_t candidate_cnt) {
 		DEBUG("Processing component");
 		ComponentColoring<Graph> coloring(component);
-		BRComponentSpanningTreeFinder<Graph> tree_finder(component, coloring);
+		SkeletonTreeFinder<Graph> tree_finder(component, coloring);
 		DEBUG("Looking for a tree");
 		if (tree_finder.FindTree()) {
 			DEBUG("Tree found");
-			BRComponentSpanningTree<Graph> tree(component, tree_finder.GetTreeEdges());
+
+			SkeletonTree<Graph> tree(component,
+					tree_finder.GetTreeEdges());
+
+			if (!pics_folder_.empty()) {
+				PrintComponent(component, tree,
+						pics_folder_ + "success/" + ToString(g_.int_id(component.start_vertex())) + "_" + ToString(candidate_cnt)
+								+ ".dot");
+			}
+
 			ComponentProjector<Graph> projector(g_, component, coloring, tree);
 			projector.ProjectComponent();
+			DEBUG("Successfully processed component candidate " << candidate_cnt << " start_v " << g_.str(component.start_vertex()));
 			return true;
 		} else {
-			DEBUG("Tree not found");
+			DEBUG("Failed to find skeleton tree for candidate " << candidate_cnt << " start_v " << g_.str(component.start_vertex()));
+			if (!pics_folder_.empty()) {
+				PrintComponent(component,
+						pics_folder_  + "fail/" + ToString(g_.int_id(component.start_vertex())) + "_" + ToString(candidate_cnt)
+								+ ".dot");
+			}
 			return false;
 		}
 	}
 
-	void PrintComponent(const BRComponent<Graph>& component, const string& file_name) const {
-		WriteComponent(component.AsGraphComponent(), file_name, *DefaultColorer(g_), *StrGraphLabelerInstance(g_));
-	}
-
 public:
-	ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff, const string& pics_folder = "") :
-			g_(g), max_length_(max_length), length_diff_(length_diff), pics_folder_(pics_folder) {
+	ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff,
+			const string& pics_folder = "") :
+			g_(g), max_length_(max_length), length_diff_(length_diff), pics_folder_(
+					pics_folder) {
 	}
 
 	bool Run() {
 		INFO("Complex bulge remover started");
-		size_t component_cnt = 0;
 		if (!pics_folder_.empty()) {
 			make_dir(pics_folder_);
+			make_dir(pics_folder_ + "success/");
+			make_dir(pics_folder_ + "fail/");
 		}
 		bool something_done_flag = false;
 		for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
+			DEBUG("Processing vertex " << g_.str(*it));
+			size_t candidate_cnt = 0;
 			vector<VertexId> vertices_to_post_process;
 			{
-			BRComponentFinder<Graph> comp_finder(g_, max_length_, length_diff_, *it);
-			if (comp_finder.TryFindComponent()) {
-				component_cnt++;
-				DEBUG("Found component " << component_cnt);
-				BRComponent<Graph> component = comp_finder.component();
-				if (!pics_folder_.empty()) {
-					PrintComponent(component, pics_folder_ + ToString(component_cnt) + ".dot");
+				LocalizedComponentFinder<Graph> comp_finder(g_, max_length_,
+						length_diff_, *it);
+				while (comp_finder.ProceedFurther()) {
+					candidate_cnt++;
+					DEBUG("Found component candidate " << candidate_cnt << " start_v " << g_.str(*it));
+					LocalizedComponent<Graph> component = comp_finder.component();
+					if (ProcessComponent(component, candidate_cnt)) {
+						something_done_flag = true;
+						GraphComponent<Graph> gc = component.AsGraphComponent();
+						vertices_to_post_process.insert(
+								vertices_to_post_process.end(), gc.v_begin(),
+								gc.v_end());
+						break;
+					}
 				}
-				if (ProcessComponent(component)) {
-					something_done_flag = true;
-					GraphComponent<Graph> gc = component.AsGraphComponent();
-					vertices_to_post_process.insert(vertices_to_post_process.end(),
-							gc.v_begin(), gc.v_end());
-				}
-			}
+				DEBUG("Failed to find component candidate");
 			}
 			FOREACH (VertexId v, vertices_to_post_process) {
 				it.HandleAdd(v);
@@ -1568,7 +1634,10 @@ public:
 	}
 
 private:
-	DECL_LOGGER("ComplexBulgeRemover");
+	DECL_LOGGER("ComplexBulgeRemover")
+	;
 };
+
+}
 
 }
