@@ -122,7 +122,7 @@ pair<Sequence, vector<Sequence>> RefineData(
 	io::VectorReader<io::SingleRead> stream2(MakeReads(data.second));
 
 	typedef graph_pack<ConjugateDeBruijnGraph> refining_gp_t;
-	refining_gp_t refining_gp(k);
+	refining_gp_t refining_gp(k, "tmp");
 	ConstructGPForRefinement(refining_gp, stream1, stream2);
 
 	io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1
@@ -140,7 +140,7 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams, const vect
 	const size_t delta = std::max(size_t(5), k / 5);
 	typedef graph_pack<ConjugateDeBruijnGraph> gp_t;
 	DEBUG("Constructing graph pack for k=" << k << " delta=" << delta);
-	gp_t gp(k);
+	gp_t gp(k, "tmp");
 	ConstructGPForRefinement(gp, streams, delta);
 	for (size_t i = 0; i < streams.size(); ++i) {
 		string output_filename = out_files[i];
