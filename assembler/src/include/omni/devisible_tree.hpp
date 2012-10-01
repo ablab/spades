@@ -45,36 +45,21 @@ class TreeNode {
 	};
 
 public:
-	TreeNode() :/* parent_(0), */subtree_size_(0) { }
+	TreeNode() : subtree_size_(0) { }
 
 	void AddChild(TreeNode& node) {
 		children_.push_back(&node);
-		subtree_size_ += node.GetSize();
+	}
+
+	void UpdateSubtreeSize() {
+		BOOST_FOREACH(TreeNode* node, children_) {
+			subtree_size_ += node->GetSize();
+		}
 	}
 
 	virtual size_t GetSize() const {
 		return subtree_size_;
 	}
-
-	//
-//	virtual size_t SeparateNodes(vector<Value>& output, const size_t howMuchToSeparate) {
-//		size_t separated = 0;
-//
-//		while (subtree_size_ > 0 && howMuchToSeparate - separated > 0) {
-//			TreeNode * node = children_.back();
-//
-//			if (node->GetSize() <= howMuchToSeparate - separated) {
-//				children_.pop_back();
-//			}
-//
-//			// get descendants
-//			size_t result = node->SeparateNodes(output, howMuchToSeparate - separated);
-//			separated += result;
-//			subtree_size_ -= result;
-//		}
-//
-//		return separated;
-//	}
 
 	TreeNode* GetSubtreeWithSize(const size_t size) {
 		// find big enough child.
@@ -100,28 +85,10 @@ public:
 		subtree_size_ = 0;
 		children_.clear();
 	}
-//
-//	TreeNode* GetRoot() {
-//		if (parent_ == 0) {
-//			return this;
-//		} else {
-//			return parent_->GetRoot();
-//		}
-//	}
-//
-//	void SetParent(TreeNode& parent) {
-//		VERIFY(parent_ == 0);
-//		parent_ = &parent;
-//	}
-//
-//	TreeNode* GetParent() const {
-//		return parent_;
-//	}
 
 	virtual ~TreeNode() { }
 
 private:
-//	TreeNode * parent_;
 	list<TreeNode *> children_;
 	size_t subtree_size_;
 };
@@ -135,17 +102,6 @@ public:
 	}
 
 	virtual ~TreeNodeWithValue() { }
-//
-//	virtual size_t SeparateNodes(vector<Value>& output, const size_t howMuchToSeparate) {
-//		size_t separated = TreeNode<Value>::SeparateNodes(output, howMuchToSeparate);
-//
-//		if (separated < howMuchToSeparate) {
-//			output.push_back(value_);
-//			++separated;
-//		}
-//
-//		return separated;
-//	}
 
 	virtual void CollectValues(vector<Value>& output) {
 		output.push_back(value_);
@@ -234,6 +190,7 @@ public:
 			CreateTree(node, edges_);
 			root_.AddChild(node);
 		}
+		root_.UpdateSubtreeSize();
 
 	}
 
@@ -253,7 +210,7 @@ public:
 
 private:
 
-	vector<EdgeId> GetEdges(VertexId vertex) {
+	const vector<EdgeId> GetEdges(VertexId vertex) const {
 		vector<EdgeId> result;
 		vector<EdgeId> outgoing = graph_.OutgoingEdges(vertex);
 		vector<EdgeId> incoming = graph_.IncomingEdges(vertex);
@@ -262,7 +219,7 @@ private:
 		return result;
 	}
 
-	vector<EdgeId> Filter(const vector<EdgeId>& vertex_edges, unordered_set<EdgeId>& edges) {
+	const vector<EdgeId> Filter(const vector<EdgeId>& vertex_edges, unordered_set<EdgeId>& edges) const {
 		vector<EdgeId> result;
 		BOOST_FOREACH(EdgeId edge, vertex_edges) {
 			auto it = edges.find(edge);
@@ -275,32 +232,50 @@ private:
 		return result;
 	}
 
-	VertexId GetSecond(VertexId first, EdgeId edge) {
+	VertexId GetSecond(VertexId first, EdgeId edge) const {
 		VertexId start = graph_.EdgeStart(edge);
 		VertexId end = graph_.EdgeEnd(edge);
 		return (first == start) ? end : start;
 	}
 
-	void CreateTree(Node& node, unordered_set<EdgeId>& tree_edges) {
-		TRACE("Create tree");
-		TRACE("Tree has " << tree_edges.size() << " edges");
-		VertexId vertex = node.GetValue();
-		vector<EdgeId> vertex_tree_edges = Filter(GetEdges(vertex), tree_edges);
-		TRACE("Children size: " << vertex_tree_edges.size());
+
+	const vector<VertexId> GetNeighbours(VertexId vertex, unordered_set<EdgeId>& edges) const {
+		const vector<EdgeId> vertex_tree_edges = Filter(GetEdges(vertex), edges);
+		vector<VertexId> neighbours;
 		BOOST_FOREACH(EdgeId edge, vertex_tree_edges) {
-			VertexId second = GetSecond(vertex, edge);
-			TRACE("This is " << vertex << " second is " << second);
-			Node& child = GetNode(GetSecond(vertex, edge));
-			TRACE("Adding " << second << " through edge " << edge);
-			CreateTree(child, tree_edges);
-			node.AddChild(child);
+			neighbours.push_back(GetSecond(vertex, edge));
 		}
+		return neighbours;
 	}
 
-//
-//	void (Node& node) {
-//
-//	}
+	static const bool white = true;
+	static const bool grey = false;
+
+	void CreateTree(Node& root, unordered_set<EdgeId>& tree_edges) {
+		typedef pair<Node&, bool> stack_elem;
+		stack<stack_elem> nodes;
+		nodes.push(stack_elem(root, white));
+
+		while(!nodes.empty()) {
+			stack_elem elem = nodes.top();
+			nodes.pop();
+			Node& node = elem.first;
+
+			if (elem.second == white) {
+				nodes.push(stack_elem(node, grey));
+				const vector<VertexId> neighbours = GetNeighbours(node.GetValue(), tree_edges);
+				TRACE("Tree has " << tree_edges.size() << " edges");
+				BOOST_FOREACH(VertexId neighbour, neighbours) {
+					TRACE("Adding " << neighbour);
+					Node& child = GetNode(neighbour);
+					node.AddChild(child);
+					nodes.push(stack_elem(child, white));
+				}
+			} else {
+				node.UpdateSubtreeSize();
+			}
+		}
+	}
 
 	Node& GetNode(const VertexId& vertex) {
 		auto it = index_.find(vertex);
@@ -312,7 +287,6 @@ private:
 
 private:
 	unordered_map<VertexId, size_t> index_;
-//	unordered_map<VertexId, vector<EdgeId> > tree_graph_;
 	unordered_set<EdgeId> edges_;
 	vector<Node> nodes_;
 	Graph& graph_;
