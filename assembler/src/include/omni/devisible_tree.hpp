@@ -22,6 +22,7 @@
 #include <boost/property_map/property_map.hpp>
 
 #include "standard_base.hpp"
+#include "omni_utils.hpp"
 
 
 namespace omnigraph {
@@ -204,7 +205,7 @@ public:
 
 
 // build trees
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		for (auto it = graph_.SmartEdgeBegin(LengthComparator<Graph>(graph_)); !it.IsEnd(); ++it) {
 			EdgeId edge = *it;
 			VertexId start = graph_.EdgeStart(edge);
 			VertexId end = graph_.EdgeEnd(edge);

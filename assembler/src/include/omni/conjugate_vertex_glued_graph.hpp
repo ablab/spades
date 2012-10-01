@@ -70,9 +70,16 @@ public:
 		return GetMinWithConjugate(graph_.EdgeEnd(edge));
 	}
 
-	SmartEdgeIterator<Graph> SmartEdgeBegin() const {
-		return SmartEdgeIterator<Graph>(graph_);
-	}
+	 SmartEdgeIterator<Graph> SmartEdgeBegin() const {
+			 return SmartEdgeIterator<Graph>(graph_);
+	 }
+
+	 template<typename Comparator>
+	 SmartEdgeIterator<Graph, Comparator> SmartEdgeBegin(
+					 const Comparator& comparator) const {
+			 return SmartEdgeIterator<Graph, Comparator>(graph_, comparator);
+	 }
+
 
 	const vector<EdgeId> OutgoingEdges(VertexId vertex) const {
 		return JoinVectors(
@@ -92,6 +99,10 @@ public:
 
 	string str(EdgeId edge) const {
 		return graph_.str(edge);
+	}
+
+	size_t length(EdgeId edge) const {
+		return graph_.length(edge);
 	}
 
 
