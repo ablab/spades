@@ -24,6 +24,9 @@ std::string make_temp_dir(const std::string &prefix, const std::string &suffix) 
     throw std::runtime_error("Cannot create temporary dir " + name);
 
   result = actual;
+  if (result == name)
+    throw std::runtime_error("Cannot create temporary dir " + name);
+
   delete[] actual;
 
   return actual;
