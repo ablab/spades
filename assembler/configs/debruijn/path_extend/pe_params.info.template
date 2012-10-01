@@ -81,7 +81,7 @@ singlecell {
 		rel_cutoff    0.1
 		sum_threshold 3  
 
-		cluster_info  false
+		cluster_info  true
 		cl_threshold  0
 	}
 	
@@ -150,7 +150,7 @@ multicell {
 		rel_cutoff    0.1
 		sum_threshold 3  
 
-		cluster_info  false
+		cluster_info  true
 		cl_threshold  0
 	}
 	
