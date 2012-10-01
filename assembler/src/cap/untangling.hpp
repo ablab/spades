@@ -124,7 +124,7 @@ private:
 	}
 
 	void Untangle(const Sequence& contig, const string& name, TColorSet color) {
-		VERIFY(color == kRedColor || color == kBlueColor);
+		VERIFY(color == kRedColorSet || color == kBlueColorSet);
 		DEBUG("Untangling contig " << name);
 		Mapper mapper(old_gp_.g, old_gp_.index,
 				old_gp_.kmer_mapper, gp_t::k_value + 1);
@@ -156,7 +156,7 @@ private:
 			DEBUG("Coloring new edge and complement");
 			PaintEdgeWithVertices(next, color);
 		}
-		if (color == kRedColor) {
+		if (color == kRedColorSet) {
 			VERIFY(new_gp_.red_paths.find(name) == new_gp_.red_paths.end());
 			new_gp_.red_paths[name] = new_path;
 			new_gp_.red_paths[ConjugateContigId(name)] = ConjugatePath(

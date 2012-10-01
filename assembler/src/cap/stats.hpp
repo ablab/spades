@@ -231,9 +231,9 @@ public:
 		if (component.size() < 2)
 			return component_type::error;
 		if (component.size() == 2) {
-			if (CheckIsolated(kRedColor, component))
+			if (CheckIsolated(kRedColorSet, component))
 				return component_type::single_red;
-			if (CheckIsolated(kBlueColor, component))
+			if (CheckIsolated(kBlueColorSet, component))
 				return component_type::single_blue;
 			if (CheckBulge(component)) {
 				return component_type::simple_bulge;
@@ -519,7 +519,7 @@ class TrivialBreakpointFinder: public AbstractFilter<
 	}
 
 	bool CheckEdges(const vector<EdgeId>& edges) const {
-		set<TColorSet> colors;
+        std::set<TColorSet> colors;
 		for (auto it = edges.begin(); it != edges.end(); ++it) {
 			colors.insert(coloring_.Color(*it));
 		}

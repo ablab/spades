@@ -137,7 +137,7 @@ namespace cap {
 // 	//reference correction
 // 	SimpleInDelCorrector<Graph> corrector(gp.g, coloring,
 // 			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(), /*genome_color*/
-// 			kBlueColor, /*assembly_color*/kRedColor);
+// 			kBlueColorSet, /*assembly_color*/kRedColorSet);
 // 	corrector.Analyze();
 
 // 	//trivial breakpoints

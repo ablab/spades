@@ -2,6 +2,18 @@
 
 namespace cap {
 
+struct EdgeData {
+    std::string sequence;
+    TColorSet color;
+
+    bool operator < (const EdgeData &other) const {
+        return sequence < other.sequence;
+    }
+    bool operator == (const EdgeData &other) const {
+        return sequence == other.sequence && color == other.color;
+    }
+};
+
 inline double uniform_01() {
 	static boost::mt19937 rng(43);
 	static boost::uniform_01<boost::mt19937> zeroone(rng);
@@ -109,4 +121,104 @@ bool CheckFileDiff(const string& file1, const string& file2) {
 	return true;
 }
 
+void ReadLabelsInMap(ifstream &ifs, std::map <int, EdgeData> &edges) {
+    char temp_char;
+
+    bool read_flag = 0;
+    int edge_id = 0;
+    string sequence_string;
+
+    while (!ifs.eof()) {
+        if (read_flag == 0) {
+            ifs >> std::ws >> temp_char;
+            VERIFY(temp_char == '>');
+
+            ifs >> edge_id;
+        } else {
+            ifs >> sequence_string;
+
+            EdgeData &node = edges[edge_id];
+            node.sequence = sequence_string;
+        }
+
+        read_flag ^= 1;
+    }
+}
+
+void ReadColorsInMap(ifstream &ifs, std::map <int, EdgeData> &edges) {
+    size_t nv, ne, temp;
+    int edge_id;
+    string coloring_string;
+
+    // First, read colors of vertices (we dont need em)
+    ifs >> nv;
+    for (size_t i = 0; i < 2 * nv; ++i) {
+        ifs >> temp;
+    }
+    // Now that's for edges
+    ifs >> ne;
+    for (size_t i = 0; i < ne; ++i) {
+        ifs >> edge_id >> coloring_string;
+
+        EdgeData &node = edges[edge_id];
+        // TColorSet constructor knows about 'uint' legacy data
+        node.color = TColorSet(coloring_string);
+    }
+}
+
+vector <EdgeData> EdgeDataMapSortedValueSet(std::map <int, EdgeData> m) {
+    vector <EdgeData> result;
+    result.reserve(m.size());
+    for (auto it = m.begin(); it != m.end(); ++it) {
+        result.push_back(it->second);
+    }
+    sort(result.begin(), result.end());
+
+    return result;
+}
+
+bool MapsValueSetEquals(std::map <int, EdgeData> m1, std::map <int, EdgeData> m2) {
+    vector <EdgeData> v1 = EdgeDataMapSortedValueSet(m1),
+                      v2 = EdgeDataMapSortedValueSet(m2);
+
+    for (size_t i = 0; i < v1.size() && i < v2.size(); ++i) {
+        TRACE(v1[i].sequence << ", " << v1[i].color.ToString() << " --- " << v2[i].sequence << ", " << v2[i].color.ToString());
+    }
+
+    return v1 == v2;
+}
+
+// Returns true if graphs are isomorhic
+// Actually currently check consists of comparing sets of labels on the edges
+// and check for equality of colors on corresponding edges.
+bool CheckColoredGraphIsomorphism(const string &prefix1, const string &prefix2) {
+    INFO("Checking colored graphs in files " + prefix1 + ".* and " + prefix2 + ".* for isomorphic equality");
+    string color_suffix = ".clr",
+           label_suffix = ".sqn";
+
+    checkFileExistenceFATAL(prefix1 + color_suffix);
+    checkFileExistenceFATAL(prefix2 + color_suffix);
+    checkFileExistenceFATAL(prefix1 + label_suffix);
+    checkFileExistenceFATAL(prefix2 + label_suffix);
+
+    std::map <int, EdgeData> edges1, edges2;
+
+    // Do we need graph structure?
+
+    ifstream *ifs1 = new ifstream((prefix1 + label_suffix).c_str()),
+             *ifs2 = new ifstream((prefix2 + label_suffix).c_str());
+    ReadLabelsInMap(*ifs1, edges1);
+    ReadLabelsInMap(*ifs2, edges2);
+    delete ifs1,
+    delete ifs2;
+
+    ifs1 = new ifstream((prefix1 + color_suffix).c_str()),
+    ifs2 = new ifstream((prefix2 + color_suffix).c_str());
+    ReadColorsInMap(*ifs1, edges1);
+    ReadColorsInMap(*ifs2, edges2);
+    delete ifs1,
+    delete ifs2;
+    
+    return MapsValueSetEquals(edges1, edges2);
+}
 }

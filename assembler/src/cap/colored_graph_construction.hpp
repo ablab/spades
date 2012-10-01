@@ -240,8 +240,8 @@ public:
 //		}
 
 		vector<pair<ContigStream*, TColorSet> > stream_mapping;
-		stream_mapping.push_back(make_pair(streams[0], kRedColor));
-		stream_mapping.push_back(make_pair(streams[1], kBlueColor));
+		stream_mapping.push_back(make_pair(streams[0], kRedColorSet));
+		stream_mapping.push_back(make_pair(streams[1], kBlueColorSet));
 
 		PaintGraph(stream_mapping);
 

@@ -32,14 +32,28 @@
 }
 
 namespace cap {
-inline void CheckDiffs(const string& actual_prefix, const string& etalon_prefix) {
-	TRACE("Checking differences for files");
-	string suffixes[4] = {"grp", "clr", "sqn", "pos"};
-	for (size_t i = 0; i < 4; ++i) {
-		BOOST_CHECK_MESSAGE(CheckFileDiff(actual_prefix + "." + suffixes[i], etalon_prefix + "." + suffixes[i]),
-				"Check for suffix " + suffixes[i] + " failed");
-	}
+inline void CheckDiffs(const string& actual_prefix, const string& etalon_prefix, bool exact_match = true) {
+    string comparison_type_string;
+    if (exact_match) {
+        comparison_type_string = "exact match";
+    } else {
+        comparison_type_string = "graph isomorphism";
+    }
+    INFO("Checking differences for graphs: " + comparison_type_string);
+
+    if (exact_match) {
+        string suffixes[4] = {"grp", "clr", "sqn", "pos"};
+        for (size_t i = 0; i < 4; ++i) {
+            BOOST_CHECK_MESSAGE(CheckFileDiff(actual_prefix + "." + suffixes[i], etalon_prefix + "." + suffixes[i]),
+                    "Check for suffix " + suffixes[i] + " failed");
+        }
+    } else {
+        // TODO load both graphs and compare them as graphs.
+        // In order to incapsulate reading of greaph and coloring.
+        BOOST_CHECK_MESSAGE(CheckColoredGraphIsomorphism(actual_prefix, etalon_prefix), "GRAPHS DIFFER");
+    }
 }
+
 
 template<size_t k, size_t K>
 inline void LoadAndRunBPG(const string& filename, const string& output_dir, const string& etalon_root,
@@ -86,23 +100,24 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir, cons
 					stream_2,
 					"genome_0_",
 					"genome_1_", /*refine*/
-					false, /*untangle*/
+					true, /*untangle*/
 					false,
 					output_dir + "example_" + n /*ToString(++example_cnt)*/
 						+ "/", /*detailed_output*/true
 						,5, Sequence(), (add_saves_path != "") ? add_saves_path + n : "");
 			if (!regenerate_etalon) {
-				CheckDiffs(output_dir + "example_" + n + "/saves/colored_split_graph", etalon_root + n);
+				CheckDiffs(output_dir + "example_" + n + "/saves/colored_split_graph", etalon_root + n, false);
 			}
 		}
 }
-
+/*
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTests ) {
 	make_dir("bp_graph_test");
 	LoadAndRunBPG<15, 25>("./src/test/cap/tests/synthetic/tests.xml",
 			"bp_graph_test/simulated_common/", "./src/test/cap/tests/synthetic/etalon/", "");
 	remove_dir("bp_graph_test");
 }
+*/
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesWithErrorsTests ) {
 	make_dir("bp_graph_test");

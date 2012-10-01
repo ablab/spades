@@ -16,15 +16,35 @@ public:
 	TColorSet() : bitset_ () {
 	}
 
-	TColorSet(const string &bitset_string) : bitset_ (bitset_string) {
+  // Legacy 'uint' strings support
+  // Assuming uints were used only for two colors
+    explicit TColorSet(const string &bitset_string) {
+        bool is_legacy;
+        size_t length = bitset_string.length();
+        if (length == 1) {
+            is_legacy = true;
+        } else {
+            is_legacy = false;
+        }
+        if (is_legacy) {
+            std::istringstream iss(bitset_string);
+            unsigned long bitset_ul;
+            iss >> bitset_ul;
+
+            bitset_ = TBitSet(bitset_ul);
+        } else {
+            bitset_ = TBitSet(bitset_string);
+        }
+    }
+
+	explicit TColorSet(const unsigned long bitset_ul) : bitset_ (bitset_ul) {
 	}
 
-	TColorSet(const unsigned long bitset_ul) : bitset_ (bitset_ul) {
+	explicit TColorSet(const TBitSet &base_set) : bitset_(base_set) {
 	}
 
-	TColorSet(const TBitSet &base_set) {
-		bitset_ = base_set;
-	}
+    TColorSet(const TColorSet &tcs) : bitset_(tcs.getBitset()) {
+    }
 
 	const TBitSet &getBitset() const {
 		return bitset_;
@@ -48,7 +68,7 @@ public:
 	
 	bool operator < (const TColorSet &other) const {
 		const TBitSet &other_bitset = other.getBitset();
-		for (size_t i = 0; i < kDefaultMaxColorsUsed; ++i) {
+		for (int i = kDefaultMaxColorsUsed - 1; i >= 0; --i) {
 			if (bitset_[i] != other_bitset[i]) {
 				return bitset_[i] < other_bitset[i];
 			}
@@ -64,7 +84,7 @@ public:
 		bitset_[bit_number] = value;
 	}
 
-	string ToString() {
+	string ToString() const {
 		return bitset_.to_string();
 	}
 
@@ -175,17 +195,18 @@ public:
 
 	ElementColorHandler(const Graph& g, const size_t max_colors = kDefaultMaxColorsUsed) :
     base(g, "ElementColorHandler"),
+    data_(),
     max_colors_(max_colors) {
 	}
 
-	void PaintElement(Element e, const TColor color) {
-		TColorSet &e_colors = data_[e];
-		e_colors.SetBit((size_t) color, 1);
-	}
-
 	void PaintElement(Element e, const TColorSet &color_set) {
-		TColorSet &e_colors = data_[e];
-		e_colors = e_colors | color_set;
+		auto find_it = data_.find(e);
+        if (find_it == data_.end()) {
+            data_[e] = color_set;   
+        } else {
+            find_it->second = find_it->second | color_set;
+        }
+        VERIFY((data_[e] | color_set) == data_[e]);
 	}
 
 	TColorSet Color(Element e) const {
@@ -227,16 +248,8 @@ public:
 
 	}
 
-	void PaintEdge(EdgeId e, const TColor color) {
-		edge_color_.PaintElement(e, color);
-	}
-
 	void PaintEdge(EdgeId e, const TColorSet &color_set) {
 		edge_color_.PaintElement(e, color_set);
-	}
-
-	void PaintVertex(VertexId v, const TColor color) {
-		vertex_color_.PaintElement(v, color);
 	}
 
 	void PaintVertex(VertexId v, const TColorSet &color_set) {
@@ -335,7 +348,7 @@ void LoadColoring(const Graph& g
 		stream >> id;
 		string color_string;
 		stream >> color_string;
-		coloring.Paint(int_ids.ReturnVertexId(id), TColorSet(color_string));
+		coloring.PaintVertex(int_ids.ReturnVertexId(id), TColorSet(color_string));
 	}
 	size_t e_count;
 	stream >> e_count;
@@ -344,9 +357,11 @@ void LoadColoring(const Graph& g
 		stream >> id;
 		string color_string;
 		stream >> color_string;
-		coloring.Paint(int_ids.ReturnEdgeId(id), TColorSet(color_string));
+		coloring.PaintEdge(int_ids.ReturnEdgeId(id), TColorSet(color_string));
 	}
 }
+
+
 
 template<class Graph>
 auto_ptr<GraphColorer<Graph>> ConstructColorer(

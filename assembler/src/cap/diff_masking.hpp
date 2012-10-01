@@ -35,7 +35,7 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 		rc_contigs.back()->reset();
 	}
 
-	io::ReadStreamVector<ContigStream> rc_read_stream_vector(rc_contigs);
+	io::ReadStreamVector<ContigStream> rc_read_stream_vector(rc_contigs, false);
 
 	ConstructGraph(gp.k_value, rc_read_stream_vector, gp.g, gp.index);
 
