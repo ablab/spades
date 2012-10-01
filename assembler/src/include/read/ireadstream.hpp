@@ -116,7 +116,6 @@ private:
 	kseq_t* seq_;
 	bool is_open_;
 	bool eof_;
-	bool rtl_;
 	int offset_;
 	/*
 	 * open i's file with FASTQ reads,
