@@ -252,27 +252,27 @@ private:
 	static const bool grey = false;
 
 	void CreateTree(Node& root, unordered_set<EdgeId>& tree_edges) {
-		typedef pair<Node&, bool> stack_elem;
+		typedef pair<Node*, bool> stack_elem;
 		stack<stack_elem> nodes;
-		nodes.push(stack_elem(root, white));
+		nodes.push(stack_elem(&root, white));
 
 		while(!nodes.empty()) {
 			stack_elem elem = nodes.top();
 			nodes.pop();
-			Node& node = elem.first;
+			Node* node = elem.first;
 
 			if (elem.second == white) {
 				nodes.push(stack_elem(node, grey));
-				const vector<VertexId> neighbours = GetNeighbours(node.GetValue(), tree_edges);
+				const vector<VertexId> neighbours = GetNeighbours(node->GetValue(), tree_edges);
 				TRACE("Tree has " << tree_edges.size() << " edges");
 				BOOST_FOREACH(VertexId neighbour, neighbours) {
 					TRACE("Adding " << neighbour);
 					Node& child = GetNode(neighbour);
-					node.AddChild(child);
-					nodes.push(stack_elem(child, white));
+					node->AddChild(child);
+					nodes.push(stack_elem(&child, white));
 				}
 			} else {
-				node.UpdateSubtreeSize();
+				node->UpdateSubtreeSize();
 			}
 		}
 	}
