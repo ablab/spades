@@ -43,7 +43,7 @@ class DataDivider {
     //	}
 
     private:
-        size_t data_size_, data_length_;
+        size_t data_size_;
         int min_value_, max_value_;
         size_t threshold_;
 
