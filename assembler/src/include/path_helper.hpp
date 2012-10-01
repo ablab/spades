@@ -13,6 +13,7 @@ namespace path {
 typedef std::vector<std::string> files_t;
 
 bool make_dir(std::string const& folder);
+std::string make_temp_dir(const std::string &prefix, const std::string &suffix);
 void remove_dir(std::string const& folder);
 bool is_regular_file(std::string const& path);
 std::string append_path(std::string const& prefix, std::string const& suffix);
@@ -26,5 +27,4 @@ std::string parent_path(const std::string &path);
 // doesn't support symlinks
 std::string resolve(std::string const& path);
 std::string make_relative_path(const std::string &p, std::string base = current_dir());
-
 }

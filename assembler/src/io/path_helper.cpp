@@ -17,6 +17,18 @@ bool make_dir(std::string const& folder) {
   return mkdir(folder.c_str(), 0755) == 0;
 }
 
+std::string make_temp_dir(const std::string &prefix, const std::string &suffix) {
+  std::string name = append_path(prefix, suffix + "_XXXXXX"), result;
+  char* actual;
+  if ((actual = ::mkdtemp(strcpy(new char[name.length()+1], name.c_str()))) == NULL)
+    throw std::runtime_error("Cannot create temporary dir " + name);
+
+  result = actual;
+  delete[] actual;
+
+  return actual;
+}
+
 void remove_dir(std::string const& folder) {
   DIR *dp;
   if ((dp = opendir(folder.c_str())) == NULL)
