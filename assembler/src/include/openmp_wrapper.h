@@ -4,10 +4,6 @@
 #ifdef _OPENMP
 # include <omp.h>
 #else
-/* Sanity check. Allow lack of OpenMP on Darwin only for now */
-# ifndef __APPLE__
-#  error "SPAdes requires OpenMP on this platform"
-# endif
 /* Provide single-threaded stubs */
 # define omp_set_num_threads(x)  ((void)(x))
 # define omp_get_max_threads()   1
