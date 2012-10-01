@@ -169,9 +169,7 @@ class DeBruijnGraphConstructor {
       VertexId start = FindVertexMaybeMissing(start_kmer);
       VertexId end = FindEndMaybeMissing(graph_, start, start_kmer, end_kmer);
 
-      auto e = graph_.AddEdge(start, end, sequences[i]);
-
-      //TRACE(graph_.length(e));
+      graph_.AddEdge(start, end, sequences[i]);
     }
   }
 
