@@ -119,7 +119,7 @@ void save_resolved(conj_graph_pack& resolved_gp,
         paired_info_index& resolved_graph_paired_info_cl) {
 
     if (cfg::get().make_saves) {
-        string p = path::append_path(cfg::get().output_saves, "split_resovled");
+        string p = path::append_path(cfg::get().output_saves, "split_resolved");
         PrintAll(p, resolved_gp, resolved_graph_paired_info, resolved_graph_paired_info_cl);
         write_estimated_params(p);
     }
@@ -864,17 +864,16 @@ void resolve_repeats() {
 
 	        if (cfg::get().use_scaffolder) {
                 INFO("Transfering paired information");
-                PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info_cl(
-                      resolved_gp.g);
+                PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info_cl(resolved_gp.g);
                 ProduceResolvedPairedInfo(conj_gp, clustered_index, resolved_gp,
                       labels_after, resolved_graph_paired_info_cl);
-                PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info(
-                                      resolved_gp.g);
+                PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
+                ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp,
+                        labels_after, resolved_graph_paired_info);
 
                 if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
                     PairedInfoIndex<conj_graph_pack::graph_t> scaff_clustered(conj_gp.g);
 
-                    //TODO: cluster here from paired_index to scaff_clustered
                     prepare_scaffolding_index(conj_gp, paired_index, scaff_clustered);
 
                     PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_scaff_clustered(
@@ -893,9 +892,6 @@ void resolve_repeats() {
                             cfg::get().pe_params);
                 }
                 else  {
-                    ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp,
-                            labels_after, resolved_graph_paired_info);
-
                     INFO("Scaffolding");
                     resolve_repeats_pe(cfg::get().K, resolved_gp,
                             resolved_graph_paired_info_cl,
@@ -948,11 +944,13 @@ void resolve_repeats() {
 	    }
 
 	    if (cfg::get().pe_params.param_set.scaffolder_options.on) {
-	        if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+            if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
                 PairedInfoIndex<conj_graph_pack::graph_t> scaff_clustered(
-                                      conj_gp.g);
+                        conj_gp.g);
 
-                //TODO: cluster here
+                prepare_scaffolding_index(conj_gp, paired_index, scaff_clustered);
+
+                DEBUG("Resolved scaffolding index size " << scaff_clustered.size());
 
                 resolve_repeats_pe(cfg::get().K, conj_gp, clustered_index, scaff_clustered,
                         cfg::get().output_dir,
@@ -1010,14 +1008,16 @@ void resolve_repeats() {
 
         if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
             PairedInfoIndex<conj_graph_pack::graph_t> scaff_clustered(
-                                  conj_gp.g);
+                    conj_gp.g);
 
-            //TODO: cluster here
+            prepare_scaffolding_index(conj_gp, paired_index, scaff_clustered);
 
             PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_scaff_clustered(
-                                  resolved_gp.g);
+                    resolved_gp.g);
             ProduceResolvedPairedInfo(conj_gp, scaff_clustered, resolved_gp,
-                  labels_after, resolved_graph_scaff_clustered);
+                    labels_after, resolved_graph_scaff_clustered);
+
+            DEBUG("Resolved scaffolding index size " << resolved_graph_scaff_clustered.size());
 
             INFO("Scaffolding");
             resolve_repeats_pe(cfg::get().K, resolved_gp,
