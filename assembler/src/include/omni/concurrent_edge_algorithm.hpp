@@ -55,11 +55,7 @@ public:
 		GluedVertexGraph glued_vertex_graph (graph);
 		DevisibleTree<GluedVertexGraph> tree (glued_vertex_graph);
 
-		INFO("Graph size: " << graph.size());
-		INFO("Tree size: " << tree.GetSize());
-
 		const size_t component_size = tree.GetSize() / nthreads;
-		INFO("Component size: " << component_size);
 
 		for (size_t thread = 0; thread < nthreads_; ++thread) {
 			vector<VertexId> vertices;
@@ -68,16 +64,11 @@ public:
 			} else {
 				tree.SeparateVertices(vertices, component_size);
 			}
-			INFO("Got " << vertices.size());
-			INFO("tree size: " << tree.GetSize());
 
 			size_t actual_size = vertices.size();
 			for (size_t i = 0; i < actual_size; ++i) {
 				vertices.push_back(graph.conjugate(vertices[i]));
 			}
-
-			INFO("Graph size: " << graph.size());
-			INFO(thread << "th component size: " << vertices.size());
 
 			ComponentPtr ptr (
 					new ConjugateComponent(
@@ -107,7 +98,6 @@ public:
 		if (nthreads_ > 1) {
 			VERIFY(graph_.AllHandlersThreadSafe());
 		}
-		INFO("Executing in " << nthreads_ << " thread(s)");
 
 		vector<EdgeId> not_processed_edges_with_duplicates;
 

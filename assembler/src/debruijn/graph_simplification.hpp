@@ -258,7 +258,7 @@ typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF GetBulgeCondition(Conjug
 }
 
 template<class Graph>
-boost::shared_ptr<
+std::shared_ptr<
 	omnigraph::SequentialAlgorihtmFactory<
 		ConcurrentGraphComponent<Graph>,
 		typename Graph::EdgeId>>
@@ -281,7 +281,7 @@ GetBulgeRemoverFactory(
 	}
 
 //	return
-	return boost::shared_ptr<FactoryInterface>(
+	return std::shared_ptr<FactoryInterface>(
 			new omnigraph::BulgeRemoverFactory<Component> (
 				max_length,
 				br_config.max_coverage,
