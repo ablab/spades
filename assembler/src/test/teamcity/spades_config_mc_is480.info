@@ -1,0 +1,26 @@
+project_name        ECOLI_IS480_QUAKE
+output_dir          ./spades_output/ECOLI_IS480_QUAKE
+output_to_console   true
+developer_mode      true
+compilation_dir     ./teamcity_precompiled/ECOLI_IS480_QUAKE
+
+dataset
+{
+    paired_reads             $cfg/../../../data/input/E.coli/is480/ERR022075_1.cor.fastq.gz $cfg/../../../data/input/E.coli/is480/ERR022075_2.cor.fastq.gz
+    single_reads             $cfg/../../../data/input/E.coli/is480/ERR022075_1.cor_single.fastq.gz $cfg/../../../data/input/E.coli/is480/ERR022075_2.cor_single.fastq.gz
+    single_cell              false
+}
+
+assembly
+{
+    iterative_K         21 33 55
+    paired_mode         true
+    generate_sam_files  true
+}
+
+quality_assessment
+{
+    reference           $cfg/../../../data/input/E.coli/MG1655-K12.fasta.gz
+    genes               $cfg/../../../data/input/E.coli/genes/genes.gff
+    operons             $cfg/../../../data/input/E.coli/genes/operons.gff
+}
