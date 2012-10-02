@@ -186,11 +186,25 @@ bool MapsValueSetEquals(std::map <int, EdgeData> m1, std::map <int, EdgeData> m2
     vector <EdgeData> v1 = EdgeDataMapSortedValueSet(m1),
                       v2 = EdgeDataMapSortedValueSet(m2);
 
+    bool has_errors = false;
+    if (v1.size() != v2.size()) {
+        INFO("ERROR: Number of edges differ!");
+        return false;
+    }
+
     for (size_t i = 0; i < v1.size() && i < v2.size(); ++i) {
+        if (v1[i] == v2[i]) continue;
+
+        has_errors = true;
         TRACE(v1[i].sequence << ", " << v1[i].color.ToString() << " --- " << v2[i].sequence << ", " << v2[i].color.ToString());
     }
 
-    return v1 == v2;
+    if (has_errors) {
+        INFO("ERROR: vectors differ!");
+        return false;
+    }
+
+    return true;
 }
 
 // Returns true if graphs are isomorhic

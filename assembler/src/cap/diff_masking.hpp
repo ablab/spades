@@ -66,7 +66,7 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 
 	INFO("Clipping tips with projection");
 
-	auto tip_clipper_factory = GetDefaultTipClipperFactory<Graph>(tc_config, /*read_length*/10000, projecting_callback);
+	auto tip_clipper_factory = GetDefaultTipClipperFactory<Graph>(tc_config, /*read_length*/70, projecting_callback);
 	ClipTips(gp.g, tip_clipper_factory);
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");

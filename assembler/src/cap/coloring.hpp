@@ -108,18 +108,16 @@ class ColorGenerator {
 
 	 static double GenerateIthColor(const size_t color_number) {
 		double hue_value = 0;
-		int accumulated_exp = 0;
+        size_t high_bit = 0;
 
 		for (size_t i = 0; (1ul << i) <= color_number; ++i) {
 			bool bit = (color_number >> i) & 1;
 			if (bit) {
-				hue_value = hue_value / (1 << accumulated_exp);
-				hue_value += 0.5;
-				accumulated_exp = 0;
-			} else {
-				accumulated_exp++;
+                high_bit = i;
 			}
 		}
+
+        hue_value = (1.0 + 2 * (color_number ^ (1 << high_bit))) / (1 << (high_bit + 1));
 
 		return hue_value;
 	}
@@ -149,9 +147,13 @@ public:
 		if (color_number == 0) {
 			return "0 0 0";
 		}
+        // personally, I like red much more than cyan, so
+        if (color_number == 1) {
+            return "0 1 1";
+        }
 
 		return str(
-			boost::format("%.3lf %.3lf %.3lf") % hue_array_[color_number - 1] % 1 % 1
+			boost::format("%.3lf %.3lf %.3lf") % hue_array_[color_number] % 0.8 % 0.8
 			);
 	}
 

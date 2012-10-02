@@ -302,13 +302,13 @@ public:
 				PrintColoredGraph(gp_.g, coloring_, gp_.edge_pos,
 						output_folder + "initial_pics/colored_split_graph.dot");
 			}
-//			if (add_saves_path != "") {
-//				UniversalSaveGP(gp_, //coloring,
-//						add_saves_path);
-//				SaveColoring(gp_.g, gp_.int_ids, coloring, add_saves_path);
-//				PrintColoredGraph(gp_.g, coloring, gp_.edge_pos,
-//						add_saves_path + ".dot");
-//			}
+			if (add_saves_path != "") {
+				UniversalSaveGP(gp_, //coloring,
+						add_saves_path);
+				SaveColoring(gp_.g, gp_.int_ids, coloring_, add_saves_path);
+				PrintColoredGraph(gp_.g, coloring_, gp_.edge_pos,
+						add_saves_path + ".dot");
+			}
 			UniversalSaveGP(gp_, //coloring,
 					output_folder + "saves/colored_split_graph");
 			SaveColoring(gp_.g, gp_.int_ids, coloring_,

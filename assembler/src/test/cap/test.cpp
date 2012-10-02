@@ -110,19 +110,26 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir, cons
 			}
 		}
 }
-/*
+
+BOOST_AUTO_TEST_CASE( ColoringStringsTest ) {
+    ColorGenerator::instance().GenerateColors(20);
+    for (size_t i = 0; i < 20; ++i) {
+        INFO("Color #" << i << ": " << ColorGenerator::instance().GetIthColor(i));
+    }
+}
+
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTests ) {
 	make_dir("bp_graph_test");
 	LoadAndRunBPG<15, 25>("./src/test/cap/tests/synthetic/tests.xml",
-			"bp_graph_test/simulated_common/", "./src/test/cap/tests/synthetic/etalon/", "");
+			"bp_graph_test/simulated_common/", "./src/test/cap/tests/synthetic/etalon/", "", false);
 	remove_dir("bp_graph_test");
 }
-*/
+
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesWithErrorsTests ) {
 	make_dir("bp_graph_test");
 	LoadAndRunBPG<15, 25>("./src/test/cap/tests/synthetic_with_err/tests2.xml",
-			"bp_graph_test/simulated_common_err/", "./src/test/cap/tests/synthetic_with_err/etalon/", "1_err");
+			"bp_graph_test/simulated_common_err/", "./src/test/cap/tests/synthetic_with_err/etalon/", "1_err", false);
 	remove_dir("bp_graph_test");
 }
 

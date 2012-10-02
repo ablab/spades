@@ -302,7 +302,7 @@ namespace cap {
 //		ReadGenome(ref));
 //}
 
-  
+/*  
 BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 	INFO("Running comparison of two strains");
 
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 	CompareGenomes<701>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp_wr/");
 	INFO("Finished");
 }
-
+*/
 // inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, const string& output_folder) {
 // 	make_dir("bp_graph_test");
 // 	INFO("Running comparison of two strains");
@@ -467,6 +467,11 @@ BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 //			tot_lab, output_path + ".dot",
 //			"mygraph", Path<EdgeId>(), Path<EdgeId>());
 //}
+
+BOOST_AUTO_TEST_CASE( GapComparativeAnalysis ) {
+    std::string strain1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
+                strain2 = "/smallnas/yana/X5_results/scaffolds_fcb.fasta";
+}
 
 }
 
