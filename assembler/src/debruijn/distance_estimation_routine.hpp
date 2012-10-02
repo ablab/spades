@@ -109,10 +109,10 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 
 		size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
-		INFO("Symmetry trick");
-		paired_info_index symmetric_index(gp.g);
-		PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
-		hack.FillSymmetricIndex(symmetric_index);
+//		INFO("Symmetry trick");
+//		paired_info_index symmetric_index(gp.g);
+//		PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
+//		hack.FillSymmetricIndex(symmetric_index);
 
 		boost::function<double(int)> weight_function;
 
@@ -153,7 +153,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 		if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_simple) {
 			const AbstractDistanceEstimator<Graph>& estimator =
-					DistanceEstimator<Graph>(gp.g, symmetric_index, dist_finder,
+					DistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
 							linkage_distance, max_distance);
 			INFO("Starting SIMPLE distance estimator");
 			estimate_with_estimator(gp.g, estimator, normalizer, filter,
@@ -161,7 +161,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		} else if (cfg::get().est_mode
 				== debruijn_graph::estimation_mode::em_naive) {
 			const AbstractDistanceEstimator<Graph>& estimator =
-					NaiveDistanceEstimator<Graph>(gp.g, symmetric_index,
+					NaiveDistanceEstimator<Graph>(gp.g, paired_index,
 							dist_finder, weight_function, linkage_distance,
 							max_distance);
 			INFO("Starting NAIVE distance estimator");
@@ -170,7 +170,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		} else if (cfg::get().est_mode
 				== debruijn_graph::estimation_mode::em_weighted) {
 			const AbstractDistanceEstimator<Graph>& estimator =
-					WeightedDistanceEstimator<Graph>(gp.g, symmetric_index,
+					WeightedDistanceEstimator<Graph>(gp.g, paired_index,
 							dist_finder, weight_function, linkage_distance,
 							max_distance);
 			INFO("Starting WEIGHTED distance estimator");
@@ -179,7 +179,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		} else if (cfg::get().est_mode
 				== debruijn_graph::estimation_mode::em_extensive) {
 			const AbstractDistanceEstimator<Graph>& estimator =
-					ExtensiveDistanceEstimator<Graph>(gp.g, symmetric_index,
+					ExtensiveDistanceEstimator<Graph>(gp.g, paired_index,
 							dist_finder, weight_function, linkage_distance,
 							max_distance);
 			INFO("Starting EXTENSIVE distance estimator");
@@ -188,7 +188,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		} else if (cfg::get().est_mode
 				== debruijn_graph::estimation_mode::em_smoothing) {
 			const AbstractDistanceEstimator<Graph>& estimator =
-					SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index,
+					SmoothingDistanceEstimator<Graph>(gp.g, paired_index,
 							dist_finder, weight_function, linkage_distance, max_distance,
 							cfg::get().ade.threshold,
 							cfg::get().ade.range_coeff,
