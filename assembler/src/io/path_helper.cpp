@@ -18,18 +18,18 @@ bool make_dir(std::string const& folder) {
 }
 
 std::string make_temp_dir(const std::string &prefix, const std::string &suffix) {
-  std::string name = append_path(prefix, suffix + "_XXXXXX"), result;
+  std::string name = append_path(prefix, suffix + "_XXXXXX");
   char* actual;
-  if ((actual = ::mkdtemp(strcpy(new char[name.length()+1], name.c_str()))) == NULL)
+  if ((actual = ::mkdtemp(strcpy(new char[name.length() + 1], name.c_str()))) == NULL)
     throw std::runtime_error("Cannot create temporary dir " + name);
 
-  result = actual;
+  std::string result(actual);
   if (result == name)
     throw std::runtime_error("Cannot create temporary dir " + name);
 
   delete[] actual;
 
-  return actual;
+  return result;
 }
 
 void remove_dir(std::string const& folder) {
@@ -116,7 +116,7 @@ std::string extension(std::string const& path) {
 
 std::string parent_path(const std::string &path) {
   std::string cpath(path);
-  
+
   make_full_path(cpath);
   size_t slash_pos = cpath.find_last_of('/');
 
