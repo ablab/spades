@@ -264,14 +264,13 @@ boost::shared_ptr<
 		typename Graph::EdgeId>>
 GetBulgeRemoverFactory(
 		Graph &graph,
+		const debruijn_config::simplification::bulge_remover& br_config,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
 	typedef ConcurrentGraphComponent<Graph> Component;
 	typedef omnigraph::BulgeRemoverFactory<Component> Factory;
 	typedef omnigraph::SequentialAlgorihtmFactory<Component, typename Graph::EdgeId> FactoryInterface;
-
-	const debruijn_config::simplification::bulge_remover& br_config = cfg::get().simp.br;
 
 	size_t max_length = LengthThresholdFinder::MaxBulgeLength(
 			graph.k(),
@@ -301,7 +300,7 @@ void RemoveBulges(
 		boost::function<void(EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
-	auto factory = GetBulgeRemoverFactory(graph, removal_handler, additional_length_bound);
+	auto factory = GetBulgeRemoverFactory(graph, cfg::get().simp.br, removal_handler, additional_length_bound);
 
 	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
 }
