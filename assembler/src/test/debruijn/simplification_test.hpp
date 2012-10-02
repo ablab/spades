@@ -104,12 +104,12 @@ void DefaultClipTips(Graph& graph) {
 		)
 	);
 }
-
+/*
 void DefaultRemoveBulges(Graph& graph) {
 	auto factory = GetBulgeRemoverFactory(graph, standard_br_config());
 	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
 }
-
+*/
 
 BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
 	Graph g(55);
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
 //	PrintGraph(g);
-	DefaultRemoveBulges(g);
+	RemoveBulges(g, standard_br_config());
 //	PrintGraph(g);
 
 	BOOST_CHECK_EQUAL(g.size(), 4);
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
 
 	DefaultClipTips(g);
 
-	DefaultRemoveBulges(g);
+	RemoveBulges(g, standard_br_config());
 
 	BOOST_CHECK_EQUAL(g.size(), 16);
 }

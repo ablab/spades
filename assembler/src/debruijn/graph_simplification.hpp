@@ -297,11 +297,11 @@ GetBulgeRemoverFactory(
 
 void RemoveBulges(
 		Graph &graph,
+		const debruijn_config::simplification::bulge_remover& br_config,
 		boost::function<void(EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
-	auto factory = GetBulgeRemoverFactory(graph, cfg::get().simp.br, removal_handler, additional_length_bound);
-
+	auto factory = GetBulgeRemoverFactory(graph, br_config, removal_handler, additional_length_bound);
 	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
 }
 
@@ -331,7 +331,7 @@ void RemoveBulges2(Graph &g) {
 }
 
 void BulgeRemoveWrap(Graph& g) {
-	RemoveBulges(g);
+	RemoveBulges(g, cfg::get().simp.br);
 }
 //
 //void BulgeRemoveWrap(NCGraph& g) {
@@ -658,7 +658,7 @@ void PreSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	ClipTips(gp, removal_handler_f);
 
 	INFO("Early bulge removal:");
-	RemoveBulges(gp.g, removal_handler_f, gp.g.k() + 1);
+	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f, gp.g.k() + 1);
 
 	//INFO("Early ErroneousConnectionsRemoval");
 	//RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
@@ -677,7 +677,7 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
 	DEBUG(iteration << " BulgeRemoval");
-	RemoveBulges(gp.g, removal_handler_f);
+	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
 	DEBUG(iteration << " BulgeRemoval stats");
 	printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
@@ -723,7 +723,7 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_final_tip_clipping);
 
 	INFO("Final bulge removal:");
-	RemoveBulges(gp.g, removal_handler_f);
+	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
 	printer(ipp_final_bulge_removal);
 
 //	INFO("Complex bulge removal:");
