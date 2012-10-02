@@ -302,23 +302,25 @@ namespace cap {
 //		ReadGenome(ref));
 //}
 
-/*  
+
 BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 	INFO("Running comparison of two strains");
 
 	make_dir("bp_graph_test");
 
-	string base_dir = "/Users/valich/Dropbox/mrsa/";
+    std::string base_dir = "/Users/valich/Dropbox/mrsa/";
+    std::string genome_path1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
+                genome_path2 = "/smallnas/yana/X5_results/scaffolds.fasta";
 	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(CorrectGenomes<21>(
-			ReadGenome(base_dir + "MRSA_RCH_I56.fasta"),
-			ReadGenome(base_dir + "MRSA_RCH_S60.fasta")), 200);
+			ReadGenome(genome_path1),
+			ReadGenome(genome_path2)), 200);
 	
 	INFO("Genomes ready");
 
 	CompareGenomes<701>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp_wr/");
 	INFO("Finished");
 }
-*/
+
 // inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, const string& output_folder) {
 // 	make_dir("bp_graph_test");
 // 	INFO("Running comparison of two strains");
@@ -468,19 +470,18 @@ BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 //			"mygraph", Path<EdgeId>(), Path<EdgeId>());
 //}
 
+/*
 BOOST_AUTO_TEST_CASE( GapComparativeAnalysis ) {
     std::string strain1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
                 strain2 = "/smallnas/yana/X5_results/scaffolds_fcb.fasta";
 }
-
+*/
 }
 
 ::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {
-//	logging::create_logger("", logging::L_DEBUG);
-//	logging::__logger()->add_writer(make_shared<logging::console_writer>());
-  	logging::logger *log = logging::create_logger("", logging::L_DEBUG/*TRACE*/);
-	  log->add_writer(std::make_shared<logging::console_writer>());
-	  logging::attach_logger(log);
+    logging::logger *log = logging::create_logger("", logging::L_TRACE);
+    log->add_writer(std::make_shared<logging::console_writer>());
+    logging::attach_logger(log);
 
 	using namespace ::boost::unit_test;
 	char module_name[] = "cap";

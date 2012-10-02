@@ -174,6 +174,14 @@ public:
 			return graph_.str(vertex);
 	}
 
+    virtual size_t int_id(VertexId vertex) const {
+        return graph_.int_id(vertex);
+    }
+    
+    virtual size_t int_id(EdgeId edge) const {
+        return graph_.int_id(edge);
+    }
+
 	template<typename Comparator>
 	SmartEdgeIterator<ConcurrentGraphComponent, Comparator> SmartEdgeBegin(
 			const Comparator& comparator, vector<EdgeId>* edges = 0) const {
