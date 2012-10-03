@@ -26,5 +26,5 @@ std::string parent_path(const std::string &path);
 
 // doesn't support symlinks
 std::string resolve(std::string const& path);
-std::string make_relative_path(const std::string &p, std::string base = current_dir());
+std::string make_relative_path(std::string const&p, std::string base = current_dir());
 }

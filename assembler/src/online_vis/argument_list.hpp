@@ -15,6 +15,7 @@ namespace online_visualization {
                 while (!args.eof()) {
                     string arg;
                     args >> arg;
+                    TRACE("Found argument " << arg);
                     answer.push_back(arg);
                 }
                 return answer;
@@ -44,23 +45,30 @@ namespace online_visualization {
                 vector<string> result;
                 size_t i = 1;
                 for (; i < arg.size(); ++i) {
-                    result.push_back((const char*) arg[i]);
+                    string s = "";
+                    s = s + arg[i];
+                    result.push_back(s);
                 }       
                 return result;
             }
         
             void ParseArguments(const vector<string>& args) {
                 for (size_t i = 0; i < args.size(); ++i) {
+                    TRACE("Parsing argument " << args[i]);
                     if (args[i][0] == '-' && args[i][1] == '-') {
                         //--smth=<smth>
+                        TRACE("it is an option");
                         pair<string, string> opt_val = ParseOption(args[i]);
                         options.insert(opt_val);
                     }
                     else if (args[i][0] == '-') {
+                        TRACE("it is a short option");
                         const vector<string>& short_opt = ParseShortOption(args[i]);
+                        TRACE("short options in a vector " << short_opt);
                         short_options.insert(short_opt.begin(), short_opt.end());
                     }
                     else {
+                        TRACE("it is a usual arg");
                         arguments.push_back(args[i]);    
                     }
                 }
@@ -71,7 +79,9 @@ namespace online_visualization {
             }
 
             ArgumentList(stringstream& stream) {
+                DEBUG("Splitting in tokens");
                 const vector<string>& args = SplitInTokens(stream);
+                DEBUG("Parsing args");
                 ParseArguments(args);
             }
 

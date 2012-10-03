@@ -80,7 +80,9 @@ namespace online_visualization {
     class LoadCommand : public Command {
         private:
             EnvironmentPtr MakeNewEnvironment(const string& name, const string& saves) const {
+                DEBUG("Making new environment " << name);
                 EnvironmentPtr EnvPointer(new Environment(name, saves));
+                DEBUG("DONE");
                 return EnvPointer;
             }
 

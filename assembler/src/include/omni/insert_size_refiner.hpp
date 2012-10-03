@@ -193,8 +193,8 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
 	size_t n = hist_counter.GetCounted();
 	size_t total = hist_counter.GetTotal();
 
-	double sum = 0;
-	double sum2 = 0;
+	double sum = 0.;
+	double sum2 = 0.;
 
 	if (n == 0) {
         WARN("Failed to estimate the insert size of paired reads, because none of the paired reads aligned to long edges.");
@@ -202,11 +202,13 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
         return hist;
     }
 	INFO(n << " paired reads (" << (n * 100.0 / total) << "% of all) aligned to long edges");
+    for (auto iter = hist.begin(); iter != hist.end(); ++iter)
+        cout << "hist " << iter->first << " " << iter->second << endl;
 
 	// Misha's approach
 
 	size_t often = 0;
-	size_t mode = -1;
+	int mode = 0;
 	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
 		if (iter->second > often) {
 			often = iter->second;
@@ -214,8 +216,14 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
 		}
 	}
 
-	int low = -mode;
+    DEBUG("Mode " << mode);
+	int low = -3 * mode;
 	int high = 3 * mode;
+
+    if (low > 0) {
+        low = -low;
+        high = -high;
+    }
 
 	n = 0;
 	sum = 0;
@@ -227,6 +235,7 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
 		n += iter->second;
 		sum += iter->second * 1.0 * iter->first;
 		sum2 += iter->second * 1.0 * iter->first * iter->first;
+        cout << "SUM " << sum << " " << sum2 << endl;
 	}
 	double mean, delta;
 	mean = sum / n;
@@ -272,6 +281,7 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
 		m = mm;
 	}
 
+    DEBUG("Mean and delta " << mean << " " << delta);
 	cfg::get_writable().ds.IS = mean;
 	cfg::get_writable().ds.is_var = delta;
 

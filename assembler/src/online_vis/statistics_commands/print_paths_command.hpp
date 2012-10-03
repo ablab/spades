@@ -41,6 +41,7 @@ namespace online_visualization {
                 if (!CheckCorrectness(args))
                     return; 
 
+                TRACE("Executing `paths` command");
                 bool first_edge = false;
                 bool second_edge = false;
                 size_t from = GetInt(args[1]);

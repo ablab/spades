@@ -56,10 +56,15 @@ namespace online_visualization {
         {
             string p = path::append_path(cfg::get().load_from, "late_pair_info_counted");
 
+            path::make_dir("tmp");
             stringstream ss("load default " + p);
+            DEBUG("Adding Commands");
             AddAllCommands();
+            DEBUG("Commands added");
             Command& LoadCommand = GetCommand(CommandId("load"));
+            DEBUG("Loading current environment");
             LoadCommand.Execute(current_environment_, loaded_environments, ss);
+            DEBUG("Environment loaded");
         }
 
         void run() {
@@ -72,6 +77,7 @@ namespace online_visualization {
                 string command_with_args;
                 getline(cin, command_with_args);
                 stringstream ss(command_with_args);
+                TRACE("Delegating to the ArgumentList class");
                 ArgumentList arg_list(ss);
                 string processed_command = arg_list.Preprocess(history);
 

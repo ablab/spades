@@ -322,6 +322,7 @@ private:
 		MappingPath<EdgeId> path1 = mapper_.MapSequence(read1);
 		MappingPath<EdgeId> path2 = mapper_.MapSequence(read2);
 		size_t read_distance = p_r.distance();
+        DEBUG("Read distance " << read_distance);
 		for (size_t i = 0; i < path1.size(); ++i) {
 			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
 			for (size_t j = 0; j < path2.size(); ++j) {
