@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE( ComplexBulgeRemoverOnSimpleBulge ) {
        ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
-       ComplexBulgeRemover<Graph> remover(g, g.k() * 5, 5);
+       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(g, g.k() * 5, 5);
        remover.Run();
 //       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
        BOOST_CHECK_EQUAL(g.size(), 4);
@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE( ComplexBulge ) {
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
 
-       ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
+       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
        remover.Run();
 
 //       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
        INFO("Complex bulge removal:");
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
-       ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
+       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
        remover.Run();
 //       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
        BOOST_CHECK_EQUAL(gp.g.size(), 66);
