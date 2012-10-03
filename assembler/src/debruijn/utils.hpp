@@ -570,7 +570,7 @@ public:
 		quality_.erase(e);
 	}
 
-	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
+	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
 		size_t res = 0;
 		for (size_t i = 0; i < old_edges.size(); i++) {
 			res += quality_[old_edges[i]];
