@@ -1147,7 +1147,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 				double d = tmp[j].d;
 				int dif_d = 0;
 				{
-					if ((dir == 1) /*&& (edge_labels[left_id] != right_id)*/) {
+					if (dir == 1) {
 						dif_d = new_graph.length(left_id);
 					}
 
