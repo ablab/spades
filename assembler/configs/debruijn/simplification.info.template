@@ -85,7 +85,7 @@ sc_simplification
 	; complex bulge remover
 	cbr
 	{
-		enabled	1
+		enabled	0
 		pics_enabled 1
 		max_relative_length	5.
 		max_length_difference	5
