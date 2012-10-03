@@ -60,7 +60,7 @@ class TipsProjector {
 			}
 		}
 
-		TRACE(
+		INFO(
 				"Remapping " << aligned_tip.size()
 						<< " kmers of aligned_tip to aligned_alt");
 		gp_.kmer_mapper.RemapKmers(aligned_tip, aligned_alt);

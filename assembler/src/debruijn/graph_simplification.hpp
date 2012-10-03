@@ -799,6 +799,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 		gp.index.clear();
 		INFO("Index clearing finished");
 	}
+//	VERIFY(gp.kmer_mapper.IsAttached());
 
 	if (cfg::get().ds.single_cell)
 		PreSimplification(gp, edge_remover, removal_handler_f, printer,

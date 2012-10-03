@@ -50,28 +50,9 @@ class Compressor {
 		return true;
 	}
 
-public:
-	Compressor(Graph &graph) :
-			graph_(graph) {
-	}
+//do not use without checks:)
+	EdgeId CompressWithoutChecks(VertexId v) {
 
-	/**
-	 * Method compresses longest possible path, containing given vertex.
-	 * @param vertex to be compressed as part of a path
-	 * @return true if vertex can be compressed and false otherwise
-	 */
-	bool CompressVertex(VertexId v) {
-		TRACE("Processing vertex " << graph_.str(v) << " started");
-		if (!graph_.CheckUniqueOutgoingEdge(v)
-				|| !graph_.CheckUniqueIncomingEdge(v)) {
-			TRACE(
-					"Vertex "
-							<< graph_.str(v)
-							<< " judged NOT compressible. Proceeding to the next vertex");
-			TRACE("Processing vertex " << graph_.str(v) << " finished");
-			return false;
-		}
-		TRACE("Vertex " << graph_.str(v) << " judged compressible");
 		EdgeId e = graph_.GetUniqueOutgoingEdge(v);
 		EdgeId start_edge = e;
 		while (GoUniqueWayBackward(e) && e != start_edge
@@ -89,7 +70,48 @@ public:
 		EdgeId new_edge = graph_.MergePath(mergeList);
 		TRACE("Vertex compressed and is now part of edge "
 						<< graph_.str(new_edge));
+		return new_edge;
+
+	}
+	bool CanCompressVertex(VertexId v) {
+		if (!graph_.CheckUniqueOutgoingEdge(v)
+			|| !graph_.CheckUniqueIncomingEdge(v)) {
+			TRACE(
+					"Vertex "
+							<< graph_.str(v)
+							<< " judged NOT compressible. Proceeding to the next vertex");
+			TRACE("Processing vertex " << graph_.str(v) << " finished");
+			return false;
+		}
 		return true;
+	}
+public:
+	Compressor(Graph &graph) :
+			graph_(graph) {
+	}
+
+	/**
+	 * Method compresses longest possible path, containing given vertex.
+	 * @param vertex to be compressed as part of a path
+	 * @return true if vertex can be compressed and false otherwise
+	 */
+	bool CompressVertex(VertexId v) {
+		TRACE("Processing vertex " << graph_.str(v) << " started");
+		if (! CanCompressVertex(v)) {
+			return false;
+		}
+		TRACE("Vertex " << graph_.str(v) << " judged compressible");
+		CompressWithoutChecks(v);
+		return true;
+	}
+	EdgeId CompressVertexEdgeId(VertexId v){
+		TRACE("Processing vertex " << graph_.str(v) << " started");
+		if (! CanCompressVertex(v)) {
+			return EdgeId(0);
+		}
+		TRACE("Vertex " << graph_.str(v) << " judged compressible");
+		return CompressWithoutChecks(v);
+
 	}
 
 	/**

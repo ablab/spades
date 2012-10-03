@@ -226,7 +226,6 @@ void save_simplification(conj_graph_pack& gp) {
         PrintGraphPack(p, gp);
         write_estimated_params(p);
 	}
-
 	OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
 			cfg::get().simp.tec.plausibility_length
 			/*conj_graph_pack::k_value * 3*/);
@@ -293,12 +292,13 @@ void parallel_correct_mismatches(conj_graph_pack &gp) {
 void exec_simplification(conj_graph_pack& gp) {
 	if (cfg::get().entry_point <= ws_simplification) {
 		simplify_graph(gp);
-		if (cfg::get().correct_mismatches) {
+		//if (cfg::get().correct_mismatches)
+		{
 			parallel_correct_mismatches(gp);
 		}
 		save_simplification(gp);
 		if (cfg::get().graph_read_corr.enable) {
-			corrected_and_save_reads(gp);
+//			corrected_and_save_reads(gp);
 		}
 
 	} else {
@@ -307,6 +307,9 @@ void exec_simplification(conj_graph_pack& gp) {
         path::files_t used_files;
 		load_simplification(gp, &used_files);
 		link_files_by_prefix(used_files, cfg::get().output_saves);
+		if (cfg::get().correct_mismatches) {
+			parallel_correct_mismatches(gp);
+		}
 	}
 }
 

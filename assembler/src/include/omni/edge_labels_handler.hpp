@@ -189,6 +189,20 @@ public:
 		}
 		return ss.str();
 	}
+	vector<pair<EdgeId, size_t> > resolvedPositions(EdgeId old_edge, size_t position_on_edge){
+		vector<pair<EdgeId, size_t> > res;
+		for (auto it = edge_inclusions[old_edge].begin(); it!= edge_inclusions[old_edge].end(); it++){
+			EdgeId cur_edge = *it;
+			size_t cur_shift = 0;
+			for(size_t i = 0; i < edge_labels[cur_edge].size(); i++) {
+				if (edge_labels[cur_edge][i] == old_edge) {
+					res.push_back(make_pair(cur_edge, cur_shift + position_on_edge));
+				}
+				cur_shift += old_graph_.length(edge_labels[cur_edge][i]);
+			}
+		}
+		return res;
+	}
 
 };
 

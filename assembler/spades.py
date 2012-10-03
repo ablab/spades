@@ -920,7 +920,7 @@ def run_spades(cfg):
             os.remove(saves_link)
         os.symlink(os.path.join(latest, "saves"), saves_link)
 
-    os.remove(cfg.additional_contigs)
+#    os.remove(cfg.additional_contigs)
 
     if glob.glob(os.path.join(latest, "*.sam")):
 #        sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs),

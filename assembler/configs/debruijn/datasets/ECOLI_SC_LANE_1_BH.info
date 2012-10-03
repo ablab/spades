@@ -1,6 +1,6 @@
-paired_reads             "../../../data/input/E.coli/sc_lane_1/bh20120615/ecoli_mda_lane1_left.fastq.01.cor.fastq.gz ../../../data/input/E.coli/sc_lane_1/bh20120615/ecoli_mda_lane1_right.fastq.01.cor.fastq.gz "
-single_reads             "../../../data/input/E.coli/sc_lane_1/bh20120615/ecoli_mda_lane1_unpaired.01.cor.fastq.gz "
+paired_reads             "../../../data/input/E.coli/sc_lane_1/bh20120615/ecoli_mda_lane1_1.fastq.00.cor.fastq.gz ../../../data/input/E.coli/sc_lane_1/bh20120615/ecoli_mda_lane1_2.fastq.00.cor.fastq.gz "
+single_reads             "../../../data/input/E.coli/sc_lane_1/bh20120615/ecoli_mda_lane1_unpaired.00.cor.fastq.gz "
 RL                       100
-IS                       270
+IS                       285
 single_cell              true
 reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz

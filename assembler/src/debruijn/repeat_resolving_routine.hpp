@@ -33,6 +33,7 @@
 #include "pair_info_improver.hpp"
 
 #include "path_extend/path_extend_launch.hpp"
+#include "mismatch_masker.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -321,6 +322,84 @@ void SaveResolvedPairedInfo(graph_pack& resolved_gp,
 }
 
 template<class graph_pack>
+void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after) {
+	size_t Ncount = 0;
+	for (auto iter = origin_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+//		size_t len = origin_gp.g.length(*iter) + origin_gp.g.k();
+		size_t multiplicity = labels_after.edge_inclusions[*iter].size();
+		if (multiplicity > 0) {
+//			INFO(origin_gp.g.int_id(*iter));
+//			INFO(origin_gp.g.int_id(origin_gp.g.conjugate(*iter)));
+			vector<typename MismatchMasker<typename graph_pack::graph_t>::MismatchInfo> mismatches = origin_gp.mismatch_masker.mismatch_map[*iter];
+			DEBUG (mismatches.size());
+			vector<typename MismatchMasker<typename graph_pack::graph_t>::MismatchInfo> rc_mismatches = origin_gp.mismatch_masker.mismatch_map[origin_gp.g.conjugate(*iter)];
+			DEBUG (rc_mismatches.size());
+			if (mismatches.size() != rc_mismatches.size()) {
+				WARN(mismatches.size() <<" /// " << rc_mismatches.size());
+			}
+			if (origin_gp.g.int_id(*iter) >= 10006349 || origin_gp.g.int_id(*iter) <= 10006352) {
+				INFO("suspicious edge" << origin_gp.g.int_id(*iter) );
+				INFO (mismatches.size() << " "<< rc_mismatches.size());
+			}
+			for(size_t i = 0; i < mismatches.size(); i++) {
+//TODO:: cutoff selection!
+				vector<pair<EdgeId, size_t> > resolved_positions = labels_after.resolvedPositions(*iter, mismatches[i].position);
+				double cutoff = 1.0;
+				if (origin_gp.g.length(*iter) > *cfg::get().ds.IS && multiplicity > 1)
+					cutoff /= 4;
+				else
+					cutoff *= 1.5;
+				cutoff /= 2;
+				map<EdgeId, int> diff_res;
+				for(auto it = resolved_positions.begin(); it < resolved_positions.end(); it++)
+					if(diff_res.find(it->first) == diff_res.end())
+						diff_res.insert(make_pair(it->first, 1));
+					else
+						diff_res[it->first]++;
+				for(size_t j = 0; j < resolved_positions.size(); j++){
+					if (origin_gp.g.int_id(*iter) >= 10006349 && origin_gp.g.int_id(*iter) <= 10006352) {
+						INFO(origin_gp.g.int_id(*iter) << " cutoff: " << cutoff);
+						INFO(origin_gp.g.coverage(*iter) <<" // " << resolved_gp.g.coverage(resolved_positions[j].first));
+						INFO("loop coefficient" << diff_res[resolved_positions[j].first]);
+					}
+					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
+
+					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff ) {
+						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, multiplicity * mismatches[i].ratio);
+						Ncount++;
+						if (origin_gp.g.int_id(*iter) >= 10006349 && origin_gp.g.int_id(*iter) <= 10006352) {
+							INFO("multiplicity" << real_multiplicity<<" position added:"<< resolved_positions[j].second) ;
+						}
+					}
+				}
+				if (mismatches[i].ratio < cutoff)
+					origin_gp.mismatch_masker.mismatch_map[*iter][i].ratio = 0;
+			}
+//			for(size_t i = 0; i < rc_mismatches.size(); i++) {
+//			//TODO:: cutoff selection!
+//				vector<pair<EdgeId, size_t> > resolved_positions = labels_after.resolvedPositions(*iter, len - 1 - rc_mismatches[i].position);
+//				double cutoff = 1.0;
+//				if (origin_gp.g.length(*iter) > *cfg::get().ds.IS && multiplicity > 1)
+//					cutoff /= 4;
+//				else
+//					cutoff *= 1.5;
+//				cutoff /= 2;
+//				for(size_t j = 0; j < resolved_positions.size(); j++){
+//					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
+//					if (real_multiplicity * mismatches[i].ratio > cutoff ) {
+//						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, multiplicity * mismatches[i].ratio);
+//						Ncount++;
+//					}
+//				}
+//				if (mismatches[i].ratio < cutoff)
+//					origin_gp.mismatch_masker.mismatch_map[*iter][i].ratio = 0;
+//			}
+		}
+	}
+	INFO("masked "<< Ncount << " potential mismatches");
+}
+
+template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp, const string& graph_name,
@@ -387,6 +466,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	if (cfg::get().output_nonfinal_contigs && output_contigs) {
 		OutputContigs(resolved_gp.g,
 				cfg::get().output_dir + "after_rr_before_simplify" + postfix);
+		OutputContigs(origin_gp.g, cfg::get().output_dir + "before_resolve.fasta");
 	}
 	INFO("Running total labeler");
 
@@ -426,6 +506,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g,
 			false);
 	size_t iters = 3; // TODO Constant 3? Shouldn't it be taken from config?
+
 	for (size_t i = 0; i < iters; ++i) {
 		INFO(
 				"Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
@@ -459,13 +540,14 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //				"no_repeat_graph");
 	}
 
-//	OnlineVisualizer online(resolved_gp);
-//	online.run();
 	if (kill_loops) {
 		SimpleLoopKiller<typename graph_pack::graph_t> lk(resolved_gp.g,
 				cfg::get().rr.max_repeat_length, 6);
 		lk.KillAllLoops();
 	}
+	RemapMaskedMismatches(resolved_gp, origin_gp, labels_after);
+
+	OutputMaskedContigs(origin_gp.g, cfg::get().output_dir + "before_resolve_masked.fasta", origin_gp.mismatch_masker);
 
 	DEBUG("Clearing resolved graph complete");
 
@@ -484,10 +566,19 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	DEBUG("Output Contigs");
 
 	if (output_contigs) {
-		OutputContigs(resolved_gp.g,
-				cfg::get().output_dir + "final_contigs.fasta");
+		OutputMaskedContigs(resolved_gp.g,
+				cfg::get().output_dir + "final_contigs_masked.fasta", resolved_gp.mismatch_masker);
 		cfg::get_writable().final_contigs_file = cfg::get().output_dir
 				+ "final_contigs.fasta";
+		OutputContigs(resolved_gp.g, cfg::get().output_dir + "final_contigs_unmasked.fasta");
+		if (cfg::get().paired_mode) {
+			INFO("outputing final masked contigs: " );
+			OutputMaskedContigs(resolved_gp.g,
+					cfg::get().output_dir + "final_contigs.fasta", resolved_gp.mismatch_masker);
+		} else {
+			INFO("outputing final NONmasked contigs: " );
+			OutputContigs(resolved_gp.g, cfg::get().output_dir + "final_contigs.fasta");
+		}
 	}
 
 	if (cfg::get().output_pictures) {
@@ -769,7 +860,7 @@ void resolve_repeats() {
 		paired_index.Detach();
 		clustered_index.Detach();
 		if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
-			conj_gp.kmer_mapper.Detach();
+//			conj_gp.kmer_mapper.Detach();
 		}
 	}
 
@@ -826,19 +917,6 @@ void resolve_repeats() {
 			PairInfoInprover<conj_graph_pack::graph_t> pi_imp(conj_gp.g);
 			pi_imp.ImprovePairedInfo(clustered_index,
 					cfg::get().use_multithreading, cfg::get().max_threads);
-//			if (cfg::get().use_multithreading) {
-//				ParalelCorrectPairedInfo(conj_gp, clustered_index, cfg::get().max_threads);
-//				ParalelCorrectPairedInfo(conj_gp, clustered_index, cfg::get().max_threads);
-//			} else {
-//				CorrectPairedInfo(conj_gp, clustered_index, true, false);
-////				CorrectPairedInfo(conj_gp, clustered_index, true, false);
-////				CorrectPairedInfo(conj_gp, clustered_index, true, false);
-////				CorrectPairedInfo(conj_gp, clustered_index);
-////				CorrectPairedInfo(conj_gp, clustered_index);
-////				CorrectPairedInfo(conj_gp, clustered_index);
-////				CorrectPairedInfo(conj_gp, clustered_index);
-//			}
-
 			save_distance_filling(conj_gp, paired_index, clustered_index);
 
 			if (cfg::get().componential_resolve) {

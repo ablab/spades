@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include "copy_file.hpp"
 #include <cmath>
+#include "mismatch_masker.hpp"
 
 namespace debruijn_graph {
 
@@ -786,6 +787,30 @@ void ReportEdge(osequencestream_cov& oss
 	}
 }
 
+template<class Graph>
+void ReportMaskedEdge(osequencestream_cov& oss
+		, const Graph& g
+		, typename Graph::EdgeId e
+		, MismatchMasker<Graph> mismatch_masker
+		, bool output_unipath = false
+		, size_t solid_edge_length_bound = 0) {
+	typedef typename Graph::EdgeId EdgeId;
+	if (!output_unipath || (PossibleECSimpleCheck(g, e) && g.length(e) <= solid_edge_length_bound)) {
+		TRACE("Outputting edge " << g.str(e) << " as single edge");
+		oss << g.coverage(e);
+		string s = mismatch_masker.MaskedEdgeNucls(e, 0.00001);
+		oss << s;
+	} else {
+		//support unipath
+		TRACE("Outputting edge " << g.str(e) << " as part of unipath");
+		vector<EdgeId> unipath = Unipath(g, e);
+		TRACE("Unipath is " << g.str(unipath));
+		oss << AvgCoverage(g, unipath);
+		TRACE("Merged sequence is of length " << MergeSequences(g, unipath).size());
+		oss << MergeSequences(g, unipath);
+	}
+}
+
 void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool output_unipath = false,
@@ -814,6 +839,21 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 	}DEBUG("Contigs written");
 }
 
+void OutputMaskedContigs(ConjugateDeBruijnGraph& g,
+		const string& contigs_output_filename, MismatchMasker<ConjugateDeBruijnGraph>& masker,
+		bool output_unipath = false,
+		size_t solid_edge_length_bound = 0) {
+	INFO("Outputting contigs with masked mismatches to " << contigs_output_filename);
+	osequencestream_cov oss(contigs_output_filename);
+	set<ConjugateDeBruijnGraph::EdgeId> edges;
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		if (edges.count(*it) == 0) {
+			ReportMaskedEdge(oss, g, *it, masker, output_unipath, solid_edge_length_bound);
+			edges.insert(g.conjugate(*it));
+		}
+		//		oss << g.EdgeNucls(*it);
+	}DEBUG("Contigs written");
+}
 void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_dir) {
 	INFO("Outputting contigs to " << contigs_output_dir);

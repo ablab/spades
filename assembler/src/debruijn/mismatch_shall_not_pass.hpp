@@ -56,7 +56,7 @@ namespace mismatches {
 			info_[position]; //in case map did not contain this key creates entry in the map with default value
 		}
 
-	private:
+	public:
 		map<size_t, NuclCount> info_;
 	};
 
@@ -73,12 +73,19 @@ namespace mismatches {
 				runtime_k::RtSeq from = it.first();
 				runtime_k::RtSeq to = it.second();
 				size_t cnt = 0;
+				size_t cnt_arr[4];
+				for(size_t i = 0; i < 4; i++)
+					cnt_arr[i] = 0;
 				for(size_t i = 0; i < from.size(); i++) {
 					if(from[i] != to[i]) {
 						cnt++;
+						cnt_arr[(i * 4)/from.size()] ++;
 					}
 				}
-				if(cnt >= 1 && cnt <= 5) {
+//last two contitions - to avoid excessive indels.
+//if two/third of nucleotides in first/last quoter are mismatches, then it means erroneous mapping
+
+				if(cnt >= 1 && cnt <= from.size()/3 && cnt_arr[0] <= from.size()/6 && cnt_arr[3] <= from.size()/6) {
 					for(size_t i = 0; i < from.size(); i++) {
 						if(from[i] != to[i] && gp.index.contains(to)) {
 							pair<EdgeId, size_t> position = gp.index.get(to);
@@ -87,6 +94,14 @@ namespace mismatches {
 					}
 				}
 			}
+			for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it){
+				if (gp.g.length(*it) < cfg::get().rr.max_repeat_length) {
+//					INFO("edge id " <<gp.g.int_id(*it) << " added to stat" );
+//					for(size_t i = 0; i < gp.g.length(*it) + gp.g.k(); i++)
+//						statistics_[*it].AddPosition(i);
+				}
+			}
+			INFO("collecting potential mismatches finished");
 		}
 
 		void operator+=(MismatchStatistics<EdgeId> other) {
@@ -116,12 +131,15 @@ namespace mismatches {
 		template<class graph_pack, class read_type>
 		void Count(io::IReader<read_type>& stream, const graph_pack &gp) {
 			stream.reset();
+			DEBUG("count started");
 			NewExtendedSequenceMapper<Graph> sm(gp.g, gp.index, gp.kmer_mapper, gp.g.k() + 1);
+			DEBUG("seq mapper created");
 			while(!stream.eof()) {
 				read_type read;
 				stream >> read;
 				const Sequence &s_read = read.sequence();
 				omnigraph::MappingPath<EdgeId> path = sm.MapSequence(s_read);
+				DEBUG("read mapped");
 				if(path.size() == 1 && path[0].second.initial_range.size() == path[0].second.mapped_range.size()) {
 					Range initial_range = path[0].second.initial_range;
 					Range mapped_range = path[0].second.mapped_range;
@@ -133,10 +151,14 @@ namespace mismatches {
 							cnt++;
 						}
 					}
-					if(cnt <= 2) {
+					if(cnt <= gp.g.k() / 3) {
+						DEBUG("statistics changing");
 						auto it = statistics_.find(path[0].first);
-						if(it == statistics_.end())
-							continue;
+						if(it == statistics_.end()) {
+//							if (gp.g.length(path[0].first) < 4000)
+//								WARN ("WTFFTW id "<< gp.g.length(path[0].first)<<"  " << len);
+							continue;							
+						}
 						for(size_t i = 0; i < len; i++) {
 							size_t nucl_code = s_read[initial_range.start_pos + i];
 							it->second.IncIfContains(mapped_range.start_pos + i, nucl_code);
@@ -150,11 +172,12 @@ namespace mismatches {
 		void ParallelCount(io::ReadStreamVector<io::IReader<read_type>> &streams, const graph_pack &gp) {
 		    size_t nthreads = streams.size();
 		    std::vector<MismatchStatistics<EdgeId>*> statistics(nthreads);
-
 		    #pragma omp parallel for num_threads(nthreads) shared(streams, statistics)
 		    for (size_t i = 0; i < nthreads; ++i) {
 		    	statistics[i] = new MismatchStatistics<EdgeId>(*this);
+			DEBUG("statistics created thread " << i);
 		        statistics[i]->Count(streams[i], gp);
+			DEBUG("count finished thread " << i);
 		    }
 
 		   	for(size_t i = 0; i < statistics.size(); i++) {
@@ -202,11 +225,12 @@ EdgeId CorrectNucl(EdgeId edge, size_t position, char nucl) {
 	}
 }
 
-void CorrectNucls(EdgeId edge, vector<pair<size_t, char>> mismatches) {
+EdgeId CorrectNucls(EdgeId edge, vector<pair<size_t, char>> mismatches) {
 	for(auto it = mismatches.rbegin(); it != mismatches.rend(); ++it) {
 		edge = CorrectNucl(edge, it->first, it->second);
 	}
-	Compressor<Graph>(gp_.g).CompressVertex(gp_.g.EdgeEnd(edge));
+	EdgeId tmp = Compressor<Graph>(gp_.g).CompressVertexEdgeId(gp_.g.EdgeEnd(edge));
+	return tmp;
 }
 
 vector<pair<size_t, char>> FindMismatches(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) {
@@ -225,23 +249,77 @@ vector<pair<size_t, char>> FindMismatches(EdgeId edge, const mismatches::Mismatc
 			to_correct.push_back(make_pair(i, cur_best));
 			i += gp_.g.k();
 		}
+
 	}
 	return to_correct;
 }
 
+int FindMaskingPositions(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics, int rc = 0) {
+	Sequence s_edge = gp_.g.EdgeNucls(edge);
+	int changed = 0;
+	if (gp_.g.length(edge) < *cfg::get().ds.IS) {
+//		return 0;
+	}
+	size_t len = gp_.g.length(edge) + gp_.g.k() ;
+	for(size_t i = 0; i < len; i++) {
+		mismatches::NuclCount nc = statistics[i];
+		if (rc)
+			nc = statistics[len - 1 - i];
+		size_t nucl_code = s_edge[i];
+		size_t cur_best = 3 - nucl_code;
+		for(size_t j = 0; j < 4; j++) {
+			if(j != nucl_code && nc[j] > nc[cur_best]) {
+				cur_best = j;
+			}
+		}
+		if(nc[cur_best] > 0.00025 * nc[nucl_code] ) {
+			double ratio = 0;
+			if (nc[nucl_code] == 0) {
+				WARN("Zero confirmed nucleotide at " << gp_.g.int_id(edge)<<" " << i);
+				ratio = 1000;
+			} else
+				ratio =  double(nc[cur_best])/nc[nucl_code];
+			gp_.mismatch_masker.insert(edge, i, ratio);
+			if (ratio > 0.1) {
+				DEBUG(gp_.g.int_id(edge)<<" " << i <<" " << ratio);
+				changed ++;
+			} else {
+				DEBUG(gp_.g.int_id(edge)<<" " << i <<" " << ratio);
+			}
+
+		}
+	}
+	if (changed != 0)
+		INFO("On edge " << gp_.g.int_id(edge) << " len: "<< gp_.g.length(edge)  <<" to mask : " << changed << " nucls");
+	return changed;
+}
+
 size_t CorrectEdge(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) {
 	vector<pair<size_t, char>> to_correct = FindMismatches(edge, statistics);
-	CorrectNucls(edge, to_correct);
+	EdgeId new_edge = CorrectNucls(edge, to_correct);
+	if (new_edge == EdgeId(0))
+		new_edge = edge;
+//	for(auto it = statistics.info_.begin();it != statistics.info_.end(); it);
+	FindMaskingPositions(new_edge, statistics);
+
+///	FindMaskingPositions(gp_.g.conjugate(new_edge), statistics, 1);
 	return to_correct.size();
 }
 
 size_t CorrectAllEdges(mismatches::MismatchStatistics<typename Graph::EdgeId> statistics) {
 	size_t res = 0;
 	for(auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		if(!gp_.g.RelatedVertices(gp_.g.EdgeStart(*it), gp_.g.EdgeEnd(*it)) && statistics.find(*it) != statistics.end()) {
-			res += CorrectEdge(*it, statistics.find(*it)->second);
+		DEBUG("processing edge" << gp_.g.int_id(*it));
+
+		if (statistics.find(*it) != statistics.end()) {
+			if(!gp_.g.RelatedVertices(gp_.g.EdgeStart(*it), gp_.g.EdgeEnd(*it))) {
+				res += CorrectEdge(*it, statistics.find(*it)->second);
+			} else {
+				FindMaskingPositions(*it, statistics.find(*it)->second);
+			}
 		}
 	}
+	DEBUG("all edges processed");
 	return res;
 }
 
@@ -258,7 +336,7 @@ size_t ParallelStopMismatchIteration(io::ReadStreamVector<io::IReader<read_type>
 }
 
 public:
-	MismatchShallNotPass(graph_pack &gp, double relative_threshold = 2) : gp_(gp), relative_threshold_(relative_threshold) {
+	MismatchShallNotPass(graph_pack &gp, double relative_threshold = 1.5) : gp_(gp), relative_threshold_(relative_threshold) {
 		VERIFY(relative_threshold >= 1);
 	}
 
