@@ -429,7 +429,7 @@ protected:
 	}
 
 
-	virtual void ProcessSingleRead(const io::SingleRead& s_r) {
+	void ProcessSingleRead(const io::SingleRead& s_r) {
 		if (this->map_mode){
 			MySamRecord SamRec = CreateSingleSAMFromSingleRead(s_r);
 			if (SamRec.is_aligned())
@@ -440,7 +440,7 @@ protected:
 		}
 	}
 
-	virtual void ProcessPairedRead(const io::PairedRead& p_r) {
+	void ProcessPairedRead(const io::PairedRead& p_r) {
 		MySamRecord SamRec1 = CreateSingleSAMFromSingleRead(p_r.first());
 		MySamRecord SamRec2 = CreateSingleSAMFromSingleRead(p_r.second());
 		if (this->map_mode) {
@@ -666,7 +666,7 @@ public:
 //		graph_(g), mapper_(m), adjust(adjust_reads), map_mode(output_map_format), print_broken(print_broken_pairs)
 	{};
 
-	virtual void ProcessSingleRead(const io::SingleRead& s_r) {
+	void ProcessSingleRead(const io::SingleRead& s_r) {
 		vector<MySamRecord> SamRecs = CreateMultipleSAMFromSingleRead(s_r);
 		if (this->map_mode){
 			for(size_t i = 0; i < SamRecs.size(); i++){
@@ -682,7 +682,7 @@ public:
 	}
 
 
-	virtual void ProcessPairedRead(const io::PairedRead& p_r) {
+	void ProcessPairedRead(const io::PairedRead& p_r) {
 		if (this->map_mode) {
 			ProcessSingleRead(p_r.first());
 			ProcessSingleRead(p_r.second());
