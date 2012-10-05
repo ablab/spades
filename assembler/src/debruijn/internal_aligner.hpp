@@ -748,7 +748,7 @@ public:
 				original_s >> orig_p_r;
 				if (p_r.first().original_name() == orig_p_r.first().original_name().substr(0, p_r.first().original_name().size())){
 					VERBOSE_POWER(++n, " paired reads processed");
-					ProcessPairedRead(p_r, orig_p_r);
+					ProcessPairedReadWithOriginal(p_r, orig_p_r);
 					break;
 				}
 			}
@@ -756,12 +756,12 @@ public:
 		this->FinalizeSamFile();
 	}
 
-	void ProcessPairedRead(const io::PairedRead& p_r, const io::PairedRead& orig_p_r ) {
+	void ProcessPairedReadWithOriginal(const io::PairedRead& p_r, const io::PairedRead& orig_p_r ) {
 		if (p_r.first().size()>orig_p_r.first().size()) return;
 		if (p_r.second().size()>orig_p_r.second().size()) return;
 		if (this->map_mode) {
-			ProcessSingleRead(p_r.first(), orig_p_r.first());
-			ProcessSingleRead(p_r.second(), orig_p_r.second());
+			ProcessSingleReadWithOriginal(p_r.first(), orig_p_r.first());
+			ProcessSingleReadWithOriginal(p_r.second(), orig_p_r.second());
 		}
 		else {
 			vector<MySamRecord> SamRecs1 = this->CreateMultipleSAMFromSingleRead(p_r.first());
@@ -787,7 +787,7 @@ public:
 	}
 
 
-	void ProcessSingleRead(const io::SingleRead& s_r, const io::SingleRead& orig_s_r) {
+	void ProcessSingleReadWithOriginal(const io::SingleRead& s_r, const io::SingleRead& orig_s_r) {
 		if (s_r.size()>orig_s_r.size()) return;
 		vector<MySamRecord> SamRecs = this->CreateMultipleSAMFromSingleRead(s_r);
 		if (this->map_mode){
@@ -828,7 +828,7 @@ public:
 				original_s >> orig_p_r;
 				if (p_r.first().original_name() == orig_p_r.first().original_name().substr(0, p_r.first().original_name().size())){
 					VERBOSE_POWER(++n, " paired reads processed");
-					ProcessPairedRead(p_r, orig_p_r);
+					ProcessPairedReadWithOriginal(p_r, orig_p_r);
 					break;
 				}
 			}
@@ -848,7 +848,7 @@ public:
 				original_s >> orig_s_r;
 				if (s_r.original_name() == orig_s_r.original_name().substr(0, s_r.original_name().size())){
 					VERBOSE_POWER(++n, " single reads processed");
-					ProcessSingleRead(s_r, orig_s_r);
+					ProcessSingleReadWithOriginal(s_r, orig_s_r);
 					break;
 				}
 			}
@@ -857,7 +857,7 @@ public:
 	}
 
 
-	void ProcessPairedRead(const io::PairedRead& p_r, const io::PairedRead& orig_p_r ) {
+	void ProcessPairedReadWithOriginal(const io::PairedRead& p_r, const io::PairedRead& orig_p_r ) {
 		if (p_r.first().size()>orig_p_r.first().size()) return;
 		if (p_r.second().size()>orig_p_r.second().size()) return;
 
@@ -894,7 +894,7 @@ public:
 
 
 
-	void ProcessSingleRead(const io::SingleRead& s_r, const io::SingleRead& orig_s_r) {
+	void ProcessSingleReadWithOriginal(const io::SingleRead& s_r, const io::SingleRead& orig_s_r) {
 		if (s_r.size()>orig_s_r.size()) return;
 		if (this->map_mode){
 			MySamRecord SamRec = this->CreateSingleSAMFromSingleRead(s_r);
