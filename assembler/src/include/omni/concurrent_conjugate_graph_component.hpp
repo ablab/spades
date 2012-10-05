@@ -109,7 +109,7 @@ protected:
 			this->temporary_vertices_.erase(vertex);
 			this->temporary_vertices_.erase(conjugate_vertex);
 
-			DestroyVertex(vertex); // conjugate will be deleted too
+			this->DestroyVertex(vertex); // conjugate will be deleted too
 		} else {
 			this->deleted_vertices_.push_back(vertex);
 		}
