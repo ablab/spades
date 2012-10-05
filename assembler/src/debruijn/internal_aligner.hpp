@@ -81,6 +81,9 @@ public:
 	bool is_aligned(){
 		return !(FLAG & 0x04);
 	}
+	bool is_rc(){
+		return (FLAG & 0x10);
+	}
 	void updateInfoFromNextSegment(MySamRecord & NextSegment){
 		PNEXT = NextSegment.POS;
 		if (RNAME == NextSegment.RNAME){
@@ -393,19 +396,20 @@ class SimpleInternalAligner: public BaseInternalAligner<Graph, SequenceMapper>{
 protected:
 	typedef typename Graph::EdgeId EdgeId;
 
-	MySamRecord CreateSingleSAMFromSingleRead(const io::SingleRead& s_r){
+	MySamRecord CreateSingleSAMFromSingleRead(const io::SingleRead& s_r, bool try_rc_align_first = false){
 		Sequence read = s_r.sequence();
+		if (try_rc_align_first) read = !read;
 		MappingPath<EdgeId> path1 = this->mapper_.MapSequence(read);
 		this->ProcessedReads++;
 		string qual = "*";
 		if (path1.size() == 1){
 			EdgeId edge = path1[0].first;
-			bool rc = false;
+			bool rc = try_rc_align_first;
 			if (!this->SeqNames[edge].second){
 				read = !read;
 				path1 = this->mapper_.MapSequence(read);
 				edge = path1[0].first;
-				rc = true;
+				rc = !try_rc_align_first;
 				if (this->print_quality) {
 					qual = (!s_r).GetPhredQualityString();
 				}
@@ -442,7 +446,7 @@ protected:
 
 	void ProcessPairedRead(const io::PairedRead& p_r) {
 		MySamRecord SamRec1 = CreateSingleSAMFromSingleRead(p_r.first());
-		MySamRecord SamRec2 = CreateSingleSAMFromSingleRead(p_r.second());
+		MySamRecord SamRec2 = CreateSingleSAMFromSingleRead(p_r.second(), !SamRec1.is_rc());
 		if (this->map_mode) {
 			if (SamRec1.is_aligned())
 				fprintf(this->samOut, "%s\n", SamRec1.map_str().c_str());
@@ -601,9 +605,10 @@ protected:
 		}
 	}
 
-	vector<MySamRecord> CreateMultipleSAMFromSingleRead(const io::SingleRead& s_r){
+	vector<MySamRecord> CreateMultipleSAMFromSingleRead(const io::SingleRead& s_r, bool try_rc_align_first = false){
 		vector<MySamRecord> result;
 		Sequence proto_read = s_r.sequence();
+		if (try_rc_align_first) proto_read = !proto_read;
 		MappingPath<EdgeId> path1 = this->mapper_.MapSequence(proto_read);
 		this->ProcessedReads++;
 		if (path1.size() > 0){
@@ -635,7 +640,7 @@ protected:
 				MappingRange new_range(i_r, m_r);
 				if (rc) edge = this->graph_.conjugate(edge);
 				if (m_r.end_pos!=0) {
-					result.push_back(this->CreateSingleSAMFromRange(s_r.original_name(), read, edge, new_range, rc, qual));
+					result.push_back(this->CreateSingleSAMFromRange(s_r.original_name(), read, edge, new_range, try_rc_align_first?!rc:rc, qual));
 					this->SamRecordsCount++;
 				}
 			}
@@ -689,7 +694,11 @@ public:
 		}
 		else {
 			vector<MySamRecord> SamRecs1 = CreateMultipleSAMFromSingleRead(p_r.first());
-			vector<MySamRecord> SamRecs2 = CreateMultipleSAMFromSingleRead(p_r.second());
+			bool try_rc_first = false;
+			if (SamRecs1.size() > 0){
+				if (!SamRecs1[0].is_rc()) try_rc_first = true;
+			}
+			vector<MySamRecord> SamRecs2 = CreateMultipleSAMFromSingleRead(p_r.second(), try_rc_first);
 //			INFO( " SamRecordsCount "<< this->SamRecordsCount);
 			if ((SamRecs1.size() == 1)&&((SamRecs1.size() == 1))){
 				if (SamRecs1[0].is_aligned()&&SamRecs2[0].is_aligned()){
@@ -765,7 +774,11 @@ public:
 		}
 		else {
 			vector<MySamRecord> SamRecs1 = this->CreateMultipleSAMFromSingleRead(p_r.first());
-			vector<MySamRecord> SamRecs2 = this->CreateMultipleSAMFromSingleRead(p_r.second());
+			bool try_rc_first = false;
+			if (SamRecs1.size() > 0){
+				if (!SamRecs1[0].is_rc()) try_rc_first = true;
+			}
+			vector<MySamRecord> SamRecs2 = this->CreateMultipleSAMFromSingleRead(p_r.second(), try_rc_first);
 //			INFO( " SamRecordsCount "<< this->SamRecordsCount);
 			if ((SamRecs1.size() == 1)&&((SamRecs1.size() == 1))){
 				SubstituteByOriginalRead(SamRecs1[0], p_r.first(), orig_p_r.first(), this->print_quality);
@@ -862,7 +875,7 @@ public:
 		if (p_r.second().size()>orig_p_r.second().size()) return;
 
 		MySamRecord SamRec1 = this->CreateSingleSAMFromSingleRead(p_r.first());
-		MySamRecord SamRec2 = this->CreateSingleSAMFromSingleRead(p_r.second());
+		MySamRecord SamRec2 = this->CreateSingleSAMFromSingleRead(p_r.second(), !SamRec1.is_rc());
 		if (this->map_mode) {
 			SubstituteByOriginalRead(SamRec1, p_r.first(), orig_p_r.first(), this->print_quality);
 			SubstituteByOriginalRead(SamRec2, p_r.second(), orig_p_r.second(), this->print_quality);
