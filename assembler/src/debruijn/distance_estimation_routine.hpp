@@ -109,10 +109,6 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 
 		size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
-//		INFO("Symmetry trick");
-//		paired_info_index symmetric_index(gp.g);
-//		PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
-//		hack.FillSymmetricIndex(symmetric_index);
 
 		boost::function<double(int)> weight_function;
 

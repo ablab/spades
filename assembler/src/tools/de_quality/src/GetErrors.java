@@ -21,7 +21,7 @@ public class GetErrors implements Runnable{
 
 	private static boolean symmetric = false;
 
-    private static int Nmax = 10000000;
+    private static int Nmax = 100000000;
 	
 	private static int mask = 0; 
 

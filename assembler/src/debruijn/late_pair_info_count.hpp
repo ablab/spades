@@ -28,11 +28,22 @@ void late_pair_info_count(conj_graph_pack& gp,
 
         if (cfg::get().use_multithreading) {
             auto streams = paired_binary_readers(false, 0);
-	        const std::map<int, size_t>& hist = refine_insert_size(streams, gp, edge_length_threshold);
+	        std::map<int, size_t> hist;
+            refine_insert_size(streams, gp, 
+                                edge_length_threshold,
+                                *cfg::get_writable().ds.IS,
+                                *cfg::get_writable().ds.is_var,
+                                *cfg::get_writable().ds.median,
+                                *cfg::get_writable().ds.mad,
+                                hist);
+
             if (hist.size() == 0) {
 	            cfg::get_writable().paired_mode = false;
+                WARN("Failed to estimate the insert size of paired reads, because none of the paired reads aligned to long edges.");
+                WARN("Paired reads will not be used.");
                 return;
             }
+
             auto paired_streams = paired_binary_readers(true,  *cfg::get().ds.IS);
 
             if (cfg::get().paired_metr == debruijn_graph::paired_metrics::pm_product)
@@ -41,22 +52,26 @@ void late_pair_info_count(conj_graph_pack& gp,
             else
                 FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
                         gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
-
-
-//            for (size_t i = 0; i < streams.size(); ++i) {
-//                delete streams[i];
-//                delete paired_streams[i];
-//            }
         } else {
             auto_ptr<PairedReadStream> stream = paired_easy_reader(false, 0);
             io::ReadStreamVector <PairedReadStream> streams(stream.get());
-            const std::map<int, size_t>& hist = refine_insert_size(streams, gp, edge_length_threshold);
+	        std::map<int, size_t> hist;
+            refine_insert_size(streams, gp, 
+                                edge_length_threshold,
+                                *cfg::get_writable().ds.IS,
+                                *cfg::get_writable().ds.is_var,
+                                *cfg::get_writable().ds.median,
+                                *cfg::get_writable().ds.mad,
+                                hist);
+
             if (hist.size() == 0) {
 	            cfg::get_writable().paired_mode = false;
+                WARN("Failed to estimate the insert size of paired reads, because none of the paired reads aligned to long edges.");
+                WARN("Paired reads will not be used.");
                 return;
             }
 
-            auto paired_stream = paired_easy_reader(true,  *cfg::get().ds.IS);
+            auto paired_stream = paired_easy_reader(true, *cfg::get().ds.IS);
             io::ReadStreamVector <PairedReadStream> paired_streams(paired_stream.get());
 
             if (cfg::get().paired_metr == debruijn_graph::paired_metrics::pm_product)
@@ -66,8 +81,6 @@ void late_pair_info_count(conj_graph_pack& gp,
                 FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
                         gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
         }
-
-
 	}
 }
 

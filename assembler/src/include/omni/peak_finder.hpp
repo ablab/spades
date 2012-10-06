@@ -163,6 +163,7 @@ private:
 		x_left_ = x_[0];
 		x_right_ = x_[data_size_ - 1] + 1;
 		data_len_ = x_right_ - x_left_;
+		ExtendLinear(hist_);
 	}
 
 	bool IsInRange(int peak) const {
@@ -248,28 +249,20 @@ public:
 			hist_[0] = y_[0];
             return;
 		}
-		ExtendLinear(hist_);
-        PrintStats("extended linearly ");
-		//InitBaseline();
-        //PrintStats("baseline");
-		//SubtractBaseline();
-        //PrintStats("subtracted");
-        //FFTForward(hist_);
-        //PrintStats("fft done");
-		//size_t Ncrit = (size_t) (cutoff);
+        InitBaseline();
+        SubtractBaseline();
+        FFTForward(hist_);
+        size_t Ncrit = (size_t) (cutoff);
 
-////      cutting off - standard parabolic filter
-        //for (size_t i = 0; i < data_len_ && i < Ncrit; ++i)
-            //hist_[i] *= 1. - (i * i * 1.) / (Ncrit * Ncrit);
-		
-		//for (size_t i = Ncrit; i < hist_.size(); ++i)
-			//hist_[i] = 0.;
+//      cutting off - standard parabolic filter
+        for (size_t i = 0; i < data_len_ && i < Ncrit; ++i)
+            hist_[i] *= 1. - (i * i * 1.) / (Ncrit * Ncrit);
+        
+        for (size_t i = Ncrit; i < hist_.size(); ++i)
+            hist_[i] = 0.;
 
-        //PrintStats("doing backward fft");
-        //FFTBackward(hist_);
-        //PrintStats("done");
-		//AddBaseline();
-        //PrintStats("adding baseline");
+        FFTBackward(hist_);
+        AddBaseline();
 	}
 
 	bool IsPeak(int dist, size_t range) const {

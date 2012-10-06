@@ -270,8 +270,8 @@ double PairedReadCountWeight(const MappingRange&, const MappingRange&) {
 }
 
 double KmerCountProductWeight(const MappingRange& mr1,
-		const MappingRange& mr2) {
-	return mr1.initial_range.size() * mr2.initial_range.size();
+        const MappingRange& mr2) {
+    return mr1.initial_range.size() * mr2.initial_range.size();
 }
 
 ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g,
@@ -886,15 +886,16 @@ private:
 
     vector<double> new_hist;
     int left_x;
-    size_t insert_size;
+    int insert_size;
 
 	void ExtendLinear(const std::map<int, size_t> & hist) {
         size_t sum_weight = 0;
 
         for (auto iter = hist.begin(); iter != hist.end(); ++iter)
             sum_weight += iter->second;
-            
+        DEBUG(sum_weight);
 
+        VERIFY(hist.size() > 0);
         auto iter = hist.begin();
 
         left_x = iter->first;
@@ -902,7 +903,7 @@ private:
         int prev = iter->first;
         int prev_val = iter->second;
 
-        new_hist.push_back(prev_val * 1./ sum_weight);
+        new_hist.push_back(prev_val * 1. / sum_weight);
         ++iter;
 
         for (; iter != hist.end(); ++iter) {
@@ -910,17 +911,21 @@ private:
             int y = iter->second;
             double tan = 1. * (y - prev_val) / (x - prev);
 
+            VERIFY(prev < x);
             for (int i = prev + 1; i <= x; ++i) {
                 new_hist.push_back((prev_val + tan * (i - prev)) * 1. / sum_weight);
             }
             prev = x;
             prev_val = y;
+            DEBUG("hist " << x << " " << y);
         }
 	}
 
 public:
     WeightDEWrapper(const map<int, size_t>& hist, double IS) {
-        insert_size = (size_t) IS;
+        DEBUG("WeightDEWrapper " << IS);
+        insert_size = (int) IS;
+        DEBUG("Extending linear");
         ExtendLinear(hist);
     }
 
@@ -932,7 +937,7 @@ public:
         int xx = insert_size - left_x + x - 1;
         
         if (!(xx >= 0 && xx < (int) new_hist.size())) return 0.;
-        //cout << x << " " << xx << " " << new_hist[xx] << endl;
+        cout << x << " " << xx << " " << new_hist[xx] << endl;
         VERIFY(math::le(new_hist[xx], 1.));
         return 1000. * new_hist[xx];
     }
