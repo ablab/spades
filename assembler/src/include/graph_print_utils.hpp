@@ -292,6 +292,17 @@ inline void startSimpleGraphRecord(ostream &out, const string &name) {
 	out << "node" << "[";
 	recordParameter(out, "fontname", "Courier");
 	out << "]" << endl;
+/* 
+ * If this does not break any principles of
+ * drawing pictures in debrujin, please uncomment
+ * and commit. Multicolored pics are very bad w/o
+ * penwidth change
+ * fondarat@gmail.com
+ *
+  out << "edge" << "[";
+  recordParameter(out, "penwidth", "1.8");
+  out << "]" << endl;
+*/
 }
 
 inline void endGraphRecord(ostream &out) {

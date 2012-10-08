@@ -225,7 +225,8 @@ public:
   }
 
 	void ConstructGraph(const vector<ContigStream*>& streams) {
-		VERIFY(streams.size() == 2);
+// It is not truth anymore?
+//		VERIFY(streams.size() == 2);
 
 //		if (detailed_output) {
 //			//saving for debug and investigation
@@ -240,8 +241,16 @@ public:
 //		}
 
 		vector<pair<ContigStream*, TColorSet> > stream_mapping;
-		stream_mapping.push_back(make_pair(streams[0], kRedColorSet));
-		stream_mapping.push_back(make_pair(streams[1], kBlueColorSet));
+
+    // Obsolete two-coloring
+//		stream_mapping.push_back(make_pair(streams[0], kRedColorSet));
+//		stream_mapping.push_back(make_pair(streams[1], kBlueColorSet));
+
+    TColor color_number = 0;
+    for (auto it = streams.begin(); it != streams.end(); ++it) {
+      stream_mapping.push_back(make_pair(*it, TColorSet::SingleColor(color_number)));
+      ++color_number;
+    }
 
 		PaintGraph(stream_mapping);
 
@@ -254,7 +263,7 @@ public:
 template<class Graph>
 void SimplifyGraph(Graph& g, size_t br_delta) {
 	debruijn_config::simplification::bulge_remover br_config;
-	br_config.max_bulge_length_coefficient = 2;
+	br_config.max_bulge_length_coefficient = 20;
 	br_config.max_coverage = 1000.;
 	br_config.max_relative_coverage = 1.2;
 	br_config.max_delta = br_delta;

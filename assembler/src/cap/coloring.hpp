@@ -88,12 +88,21 @@ public:
 		return bitset_.to_string();
 	}
 
-	static TColorSet SingleColor(TColor color) {
+	static TColorSet SingleColor(const TColor color) {
 		TBitSet bitset;
 		bitset[color] = 1;
 		
 		return TColorSet(bitset);
 	}
+
+  static TColorSet AllColorsSet(const size_t number_of_colors) {
+    TBitSet bitset;
+    for (size_t i = 0; i < number_of_colors; ++i) {
+      bitset[i] = 1;
+    }
+
+    return TColorSet(bitset);
+  }
 };
 
 
@@ -239,15 +248,17 @@ class ColorHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
+  size_t max_colors_;
+
 	ElementColorHandler<Graph, EdgeId> edge_color_;
 	ElementColorHandler<Graph, VertexId> vertex_color_;
 public:
 
 	ColorHandler(const Graph& g, const size_t max_colors = kDefaultMaxColorsUsed) :
 			base(g, "ColorHandler"),
+      max_colors_(max_colors),
 			edge_color_(g, max_colors),
 			vertex_color_(g, max_colors) {
-
 	}
 
 	void PaintEdge(EdgeId e, const TColorSet &color_set) {
@@ -317,6 +328,10 @@ public:
 		PaintEdge(new_edge_1, Color(old_edge));
 		PaintEdge(new_edge_2, Color(old_edge));
 	}
+
+  size_t max_colors() const {
+    return max_colors_;
+  }
 };
 
 

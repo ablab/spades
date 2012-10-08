@@ -302,7 +302,63 @@ namespace cap {
 //		ReadGenome(ref));
 //}
 
+BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
+	typedef debruijn_graph::graph_pack<
+	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph> comparing_gp_t;
+  static const size_t k = 19;
+  static const size_t K = 200;
 
+  ////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+  ////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+
+  // vector of pairs <name, path_to_fasta>
+  vector<pair<std::string, std::string> > genomes_paths = {
+    make_pair("MSSA476", "/home/valich/mrsa/more_strains/MSSA476.fasta"),
+    make_pair("MRSA252", "/home/valich/mrsa/more_strains/MRSA252.fasta"),
+    make_pair("TW20", "/home/valich/mrsa/more_strains/TW20.fasta"),
+    make_pair("USA300", "/home/valich/mrsa/more_strains/USA300.fasta")
+//    make_pair("11819", "/home/valich/mrsa/more_strains/11819.fasta"),
+//    make_pair("COL", "/home/valich/mrsa/more_strains/COL.fasta")
+  };
+
+  std::string folder = "bp_graph_test/multiple_genomes_visualization/";
+
+  RunMultipleGenomesVisualization<comparing_gp_t>(k, K,
+      genomes_paths,
+      false, /*refine*/
+      folder);
+}
+
+BOOST_AUTO_TEST_CASE( TwoGenomesComparison ) {
+  return;
+  static const size_t k = 19;
+  static const size_t K = 55;
+
+  ////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+  ////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+
+  // TODO filter on colors do not work
+
+  std::string genome_path1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
+              genome_path2 = "/smallnas/yana/X5_results/scaffolds_fcb_010_cleaned.fasta";
+  io::Reader stream_1(genome_path1),
+             stream_2(genome_path2);
+
+  string folder = "bp_graph_test/two_genomes_comparison/";
+
+  RunBPComparison<k, K>(
+      stream_1,
+      stream_2,
+      "genome1_",
+      "genome2_",
+      false/*refine*/,
+      false/*untangle*/,
+      folder,
+      true/*detailed_output*/,
+      5/*delta*/);
+}
+
+/*
 BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 	INFO("Running comparison of two strains");
 
@@ -311,16 +367,17 @@ BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
     std::string base_dir = "/Users/valich/Dropbox/mrsa/";
     std::string genome_path1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
                 genome_path2 = "/smallnas/yana/X5_results/scaffolds.fasta";
+
 	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(CorrectGenomes<21>(
 			ReadGenome(genome_path1),
 			ReadGenome(genome_path2)), 200);
 	
 	INFO("Genomes ready");
 
-	CompareGenomes<701>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp_wr/");
+	CompareGenomes<77>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp_wr/");
 	INFO("Finished");
 }
-
+*/
 // inline void StrainComparisonWOR(const string& strain_1, const string& strain_2, const string& output_folder) {
 // 	make_dir("bp_graph_test");
 // 	INFO("Running comparison of two strains");
@@ -479,7 +536,7 @@ BOOST_AUTO_TEST_CASE( GapComparativeAnalysis ) {
 }
 
 ::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {
-    logging::logger *log = logging::create_logger("", logging::L_TRACE);
+    logging::logger *log = logging::create_logger("", logging::L_INFO);
     log->add_writer(std::make_shared<logging::console_writer>());
     logging::attach_logger(log);
 
