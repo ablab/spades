@@ -77,6 +77,9 @@ function change_config
     mv config1.info $cfg_debruijn/config.info
 #   --------------------------------------------
 
+## creating output_base dir if not exists
+awk -v property="output_base" '{if ($1==property) {cmd="mkdir -p "$2; system(cmd)}}' $cfg_debruijn/config.info
+
 if [ $# = 0 ]
 then
     run_n_measure build/release/bin/spades $cfg_debruijn/config.info 
