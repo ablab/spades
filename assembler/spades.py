@@ -5,6 +5,7 @@ import shutil
 import sys
 import getopt
 import glob
+import platform
 
 import spades_init
 
@@ -85,6 +86,17 @@ def print_used_values(cfg):
             if param.find("offset") != -1:
                 print " will be auto-detected"
 
+    print ""
+
+    # system info
+    print "System information:"
+    try:
+        print "  OS: ", platform.platform() 
+        # for more deatils: '[' + str(platform.uname()) + ']'
+        print "  Python version:", str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
+        # for more details: '[' + str(sys.version_info) + ']'
+    except:
+        print "  Problem occured when getting system information"        
     print ""
 
     # main
