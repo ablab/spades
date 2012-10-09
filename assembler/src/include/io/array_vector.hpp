@@ -15,6 +15,7 @@ template <class _Cp>
 class __array {
   typedef typename _Cp::__storage_type    __storage_type;
   typedef typename _Cp::__storage_pointer __storage_pointer;
+  typedef typename _Cp::__const_storage_pointer __const_storage_pointer;
   typedef typename _Cp::size_type         __size_type;
 
 #if defined(__clang__)
@@ -77,6 +78,14 @@ class __array {
     return *this;
   }
 
+  __array& operator=(__const_storage_pointer that_ptr) {
+    __storage_pointer this_ptr = data();
+    if (this_ptr != that_ptr)
+      memcpy(this_ptr, that_ptr, data_size());
+
+    return *this;
+  }
+
   bool operator<(const __array &that) const {
     return 0 > memcmp(data(), that.data(), data_size());
   }
@@ -110,6 +119,7 @@ template <class _Cp>
 class __array_reference {
   typedef typename _Cp::__storage_type    __storage_type;
   typedef typename _Cp::__storage_pointer __storage_pointer;
+  typedef typename _Cp::__const_storage_pointer __const_storage_pointer;
   typedef typename _Cp::size_type         __size_type;
 
 #if defined(__clang__)
@@ -141,6 +151,14 @@ class __array_reference {
 
   __array_reference& operator=(const __array<_Cp> &that) {
     __storage_pointer this_ptr = data(), that_ptr = that.data();
+    if (this_ptr != that_ptr)
+      memcpy(this_ptr, that_ptr, data_size());
+
+    return *this;
+  }
+
+  __array_reference& operator=(__const_storage_pointer that_ptr) {
+    __storage_pointer this_ptr = data();
     if (this_ptr != that_ptr)
       memcpy(this_ptr, that_ptr, data_size());
 
@@ -407,6 +425,7 @@ class array_vector {
   typedef ptrdiff_t              difference_type;
 
   typedef __array_reference<array_vector>       reference;
+  typedef __array_const_reference<array_vector> const_reference;
   typedef __array<array_vector>                 value_type;
   typedef __array_vector_iterator<array_vector, false> iterator;
   typedef __array_vector_iterator<array_vector, true>  const_iterator;
@@ -434,6 +453,9 @@ class array_vector {
   reference operator[](size_t pos) {
     return reference(data_ + pos * el_sz_, el_sz_);
   }
+  const_reference operator[](size_t pos) const {
+    return const_reference(data_ + pos * el_sz_, el_sz_);
+  }
   iterator begin() {
     return iterator(data_, el_sz_);
   }
@@ -447,6 +469,12 @@ class array_vector {
     return const_iterator(data_ + size_ * el_sz_, el_sz_);
   }
 
+  void set_size(size_t size) {
+    size_ = size;
+  }
+  void set_data(__storage_pointer data) {
+    data_ = data;
+  }
 };
 
 template<typename ElTy>

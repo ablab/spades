@@ -13,6 +13,7 @@
 #include "io/multifile_reader.hpp"
 
 #include "mph_index/kmer_index.hpp"
+#include "kmer_vector.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -43,7 +44,8 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
  protected:
   unsigned K_;
 
-  typedef std::vector< std::vector<runtime_k::RtSeq> > KMerBuffer;
+  typedef KMerVector<runtime_k::RtSeq> RtSeqKMerVector;
+  typedef std::vector<RtSeqKMerVector> KMerBuffer;
 
   size_t FillBufferFromSequence(const Sequence &seq,
                                 KMerBuffer &tmp_entries, unsigned num_files) const;
@@ -80,29 +82,24 @@ DeBruijnKMerSplitter::FillBufferFromSequence(const Sequence &seq,
 void DeBruijnKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
                                        std::vector<KMerBuffer> &buffers,
                                        FILE **ostreams) const {
-  size_t item_size = sizeof(runtime_k::RtSeq::DataType),
-             items = runtime_k::RtSeq::GetDataSize(K_);
-
-# pragma omp parallel for shared(items, item_size)
+# pragma omp parallel for
   for (unsigned k = 0; k < num_files; ++k) {
     size_t sz = 0;
     for (size_t i = 0; i < nthreads; ++i)
       sz += buffers[i][k].size();
 
-    std::vector<runtime_k::RtSeq> SortBuffer;
-    SortBuffer.reserve(sz);
+    KMerVector<runtime_k::RtSeq> SortBuffer(K_, sz);
     for (size_t i = 0; i < nthreads; ++i) {
       KMerBuffer &entry = buffers[i];
       for (size_t j = 0; j < entry[k].size(); ++j)
         SortBuffer.push_back(entry[k][j]);
     }
-    std::sort(SortBuffer.begin(), SortBuffer.end(), runtime_k::RtSeq::less2_fast());
-    auto it = std::unique(SortBuffer.begin(), SortBuffer.end());
+    std::sort(SortBuffer.begin(), SortBuffer.end(), KMerVector<runtime_k::RtSeq>::less2_fast());
+    auto it = std::unique(SortBuffer.begin(), SortBuffer.end(), KMerVector<runtime_k::RtSeq>::equal_to());
 
 #   pragma omp critical
     {
-      for (auto I = SortBuffer.begin(), E = it; I != E; ++I)
-        fwrite(I->data(), item_size, items, ostreams[k]);
+      fwrite(SortBuffer.data(), SortBuffer.el_data_size(), it - SortBuffer.begin(), ostreams[k]);
     }
   }
 
@@ -115,7 +112,6 @@ void DeBruijnKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
 
 template<class Read>
 class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter {
-  unsigned K_;
   io::ReadStreamVector<io::IReader<Read>> &streams_;
   SingleReadStream *contigs_;
 
@@ -174,16 +170,13 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   }
 
   size_t cell_size = READS_BUFFER_SIZE /
-                     (nthreads * num_files * sizeof(runtime_k::RtSeq));
+                     (nthreads * num_files * runtime_k::RtSeq::GetDataSize(K_) * sizeof(runtime_k::RtSeq::DataType));
   INFO("Using cell size of " << cell_size);
 
   std::vector<KMerBuffer> tmp_entries(nthreads);
   for (unsigned i = 0; i < nthreads; ++i) {
     KMerBuffer &entry = tmp_entries[i];
-    entry.resize(num_files);
-    for (unsigned j = 0; j < num_files; ++j) {
-      entry[j].reserve(1.25 * cell_size);
-    }
+    entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
   }
 
   size_t counter = 0, rl = 0;
@@ -233,7 +226,6 @@ class DeBruijnGraphKMerSplitter : public DeBruijnKMerSplitter {
   typedef typename Graph::SmartEdgeIt EdgeIt;
   typedef typename Graph::EdgeId EdgeId;
 
-  unsigned K_;
   const Graph &g_;
 
   size_t FillBufferFromEdges(EdgeIt &edge,
@@ -280,15 +272,12 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
   }
 
   size_t cell_size = READS_BUFFER_SIZE /
-                     (num_files * sizeof(runtime_k::RtSeq));
+                     (num_files * runtime_k::RtSeq::GetDataSize(K_) * sizeof(runtime_k::RtSeq::DataType));
   INFO("Using cell size of " << cell_size);
 
   std::vector<KMerBuffer> tmp_entries(1);
   KMerBuffer &entry = tmp_entries[0];
-  entry.resize(num_files);
-  for (unsigned j = 0; j < num_files; ++j) {
-    entry[j].reserve(1.25 * cell_size);
-  }
+  entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
 
   size_t counter = 0;
   for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ) {
