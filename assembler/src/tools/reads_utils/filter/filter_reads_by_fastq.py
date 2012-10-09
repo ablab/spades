@@ -52,15 +52,20 @@ uids = set(ids)
 
 fName1, ext1 = os.path.splitext(rFileName1)
 outFile1 = open(fName1 + "_filtered" + ext1, "w") 
+outFile2 = open(fName1 + "_found" + ext1, "w")
+
 
 id1, read1 = read_read(rFile1)
 while id1 is not None:
 	if id1 not in uids:
 		outFile1.write(read1)
+	else:
+		outFile2.write(read1)
 
 	id1, read1 = read_read(rFile1)
 
 
 rFile1.close()
 outFile1.close()
+outFile2.close()
 rFile2.close()
