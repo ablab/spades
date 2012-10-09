@@ -301,6 +301,8 @@ void RemoveBulges(
 		boost::function<void(EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
+	INFO("SUBSTAGE == Removing bulges");
+
 //	auto factory = GetBulgeRemoverFactory(graph, br_config, removal_handler, additional_length_bound);
 //	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
 
