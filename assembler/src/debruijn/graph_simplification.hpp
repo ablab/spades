@@ -301,8 +301,29 @@ void RemoveBulges(
 		boost::function<void(EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
-	auto factory = GetBulgeRemoverFactory(graph, br_config, removal_handler, additional_length_bound);
-	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
+//	auto factory = GetBulgeRemoverFactory(graph, br_config, removal_handler, additional_length_bound);
+//	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
+
+	size_t max_length = LengthThresholdFinder::MaxBulgeLength(graph.k(),
+			br_config.max_bulge_length_coefficient);
+
+	if (additional_length_bound != 0 && additional_length_bound < max_length) {
+		max_length = additional_length_bound;
+	}
+
+	omnigraph::BulgeRemover<Graph> bulge_remover(
+			graph,
+			max_length,
+			br_config.max_coverage,
+			br_config.max_relative_coverage,
+			br_config.max_delta,
+			br_config.max_relative_delta,
+			GetBulgeCondition<Graph>(graph),
+			0,
+			removal_handler
+	);
+
+	bulge_remover.RemoveBulges();
 }
 
 template<class Graph>

@@ -197,12 +197,12 @@ public:
 	}
 
 	virtual bool TryToProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
-		if (!graph_.IsInternalSafe(edge) || !graph_.IsInternalSafe(path)) {
-			// for algorithm to process this edge sequently.
-			graph_.InvalidateComponent();
-		}
-
-		if (graph_.IsValid()) {
+//		if (!graph_.IsInternalSafe(edge) || !graph_.IsInternalSafe(path)) {
+//			// for algorithm to process this edge sequently.
+//			graph_.InvalidateComponent();
+//		}
+//
+//		if (graph_.IsValid()) {
 			if (opt_callback_)
 				opt_callback_(edge, path);
 
@@ -222,10 +222,10 @@ public:
 			graph_.CompressVertex(end);
 
 			return true;
-		} else {
-			TRACE("Component is invalid. " << "Edge "  << edge << " can not be processed in parallel.");
-			return false;
-		}
+//		} else {
+//			TRACE("Component is invalid. " << "Edge "  << edge << " can not be processed in parallel.");
+//			return false;
+//		}
 	}
 
 	void ProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
