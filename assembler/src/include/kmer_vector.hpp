@@ -118,7 +118,7 @@ class KMerVector {
     return capacity_;
   }
   const ElTy *operator[](size_t idx) const {
-    return vector_[idx].data();
+    return vector_[idx];
   }
   
  private:

@@ -381,13 +381,13 @@ class DeBruijnKMerIndex {
     return kmers->begin();
   }
   const_kmer_iterator kmer_begin() const {
-    return kmers->begin();
+    return kmers->cbegin();
   }
   kmer_iterator kmer_end() {
     return kmers->end();
   }
   const_kmer_iterator kmer_end() const {
-    return kmers->end();
+    return kmers->cend();
   }
 
   KMerIdx kmer_idx_begin() const {
