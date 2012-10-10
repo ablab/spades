@@ -302,31 +302,47 @@ namespace cap {
 //		ReadGenome(ref));
 //}
 
+BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
+  return;
+  vector<std::string> paths = {
+    "/home/valich/mrsa/more_strains/MSSA476.fasta",
+    "/home/valich/mrsa/more_strains/MRSA252.fasta",
+    "/home/valich/mrsa/more_strains/TW20.fasta",
+    "/home/valich/mrsa/more_strains/USA300.fasta"
+  };
+
+  vector<std::string> suffixes = {
+    "mssa476",
+    "rmsa252",
+    "tw20",
+    "usa300"
+  };
+
+  vector<size_t> k_sequence = {
+    201, 101, 55, 21, 15
+  };
+
+	MaskDifferencesAndSave(paths, suffixes, "bp_graph_test/refined/", k_sequence);
+}
+
 BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
 	typedef debruijn_graph::graph_pack<
 	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph> comparing_gp_t;
-  static const size_t k = 19;
-  static const size_t K = 200;
-
-  ////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
-  ////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+  static const size_t K = 297;
 
   // vector of pairs <name, path_to_fasta>
   vector<pair<std::string, std::string> > genomes_paths = {
-    make_pair("MSSA476", "/home/valich/mrsa/more_strains/MSSA476.fasta"),
-    make_pair("MRSA252", "/home/valich/mrsa/more_strains/MRSA252.fasta"),
-    make_pair("TW20", "/home/valich/mrsa/more_strains/TW20.fasta"),
-    make_pair("USA300", "/home/valich/mrsa/more_strains/USA300.fasta")
-//    make_pair("11819", "/home/valich/mrsa/more_strains/11819.fasta"),
-//    make_pair("COL", "/home/valich/mrsa/more_strains/COL.fasta")
+    make_pair("MSSA476", "bp_graph_test/refined/mssa476.fasta"),
+    make_pair("MRSA252", "bp_graph_test/refined/mrsa252.fasta"),
+    make_pair("TW20", "bp_graph_test/refined/tw20.fasta"),
+    make_pair("USA300", "bp_graph_test/refined/usa300.fasta")
+//    make_pair("11819", "bp_graph_test/refined/11819.fasta"),
+//    make_pair("COL", "bp_graph_test/refined/COL.fasta")
   };
 
   std::string folder = "bp_graph_test/multiple_genomes_visualization/";
 
-  RunMultipleGenomesVisualization<comparing_gp_t>(k, K,
-      genomes_paths,
-      false, /*refine*/
-      folder);
+  RunMultipleGenomesVisualization<comparing_gp_t>(K, genomes_paths, folder);
 }
 
 BOOST_AUTO_TEST_CASE( TwoGenomesComparison ) {

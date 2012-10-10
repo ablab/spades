@@ -498,8 +498,9 @@ void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
 }
 
 template<class gp_t>
-void RunMultipleGenomesVisualization(size_t k_refine, size_t k_visualize,
-        vector<pair<std::string, std::string> > genomes_paths, bool do_refine, std::string output_folder) {
+void RunMultipleGenomesVisualization(size_t k_visualize,
+    vector<pair<std::string, std::string> > genomes_paths,
+    std::string output_folder) {
   typedef typename gp_t::graph_t Graph;
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
@@ -509,10 +510,6 @@ void RunMultipleGenomesVisualization(size_t k_refine, size_t k_visualize,
 
   gp_t gp(k_visualize, "tmp", Sequence(), 200, true);
   ColorHandler<Graph> coloring(gp.g, genomes_paths.size());
-
-  if (do_refine) {
-    VERIFY(false);
-  }
 
   // ContigStream -> SplittingWrapper -> RCReaderWrapper -> PrefixAddingReaderWrapper
 
@@ -531,7 +528,7 @@ void RunMultipleGenomesVisualization(size_t k_refine, size_t k_visualize,
     to_destroy.push_back(pointer);
   }
 
-  ConstructColoredGraph(gp, coloring, genomes_stream_pointers, true, 10);
+  ConstructColoredGraph(gp, coloring, genomes_stream_pointers, true);
 
   for (auto it = to_destroy.begin(); it != to_destroy.end(); ++it) {
     delete (*it);

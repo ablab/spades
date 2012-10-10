@@ -134,8 +134,7 @@ pair<Sequence, vector<Sequence>> RefineData(
 			AllSequences(refined_stream2));
 }
 
-template<size_t k>
-void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams, const vector<string> out_files) {
+void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams, const vector<string> out_files, size_t k) {
 	VERIFY(streams.size() == out_files.size());
 	const size_t delta = std::max(size_t(5), k / 5);
 	typedef graph_pack<ConjugateDeBruijnGraph> gp_t;
@@ -219,26 +218,33 @@ struct k
 //  return 0;
 //}
 
-template<typename k, typename ... Ks>
 void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams, const vector<string>& suffixes
-		, const string& out_root, k current_k, Ks... other_k) {
-	make_dir(out_root + ToString((size_t)k::value));
-	MaskDifferencesAndSave<k::value>(streams, CorrectPaths(suffixes, out_root, k::value));
-	vector<ContigStream*> corr_streams = OpenStreams(CorrectPaths(suffixes, out_root, k::value));
-	MaskDifferencesAndSave(corr_streams, suffixes, out_root, other_k...);
+		, const string& out_root, vector<size_t> &k_values) {
+
+  if (k_values.size() == 0) {
+    MaskDifferencesAndSave(streams, suffixes, out_root);
+    return;
+  }
+
+  size_t current_k = k_values.back();
+  k_values.pop_back();
+
+	make_dir(out_root + ToString(current_k));
+	MaskDifferencesAndSave(streams, CorrectPaths(suffixes, out_root, current_k), current_k);
+	vector<ContigStream*> corr_streams = OpenStreams(CorrectPaths(suffixes, out_root, current_k));
+	MaskDifferencesAndSave(corr_streams, suffixes, out_root, k_values);
 
 	for (auto it = corr_streams.begin(); it != corr_streams.end(); ++it) {
 		delete *it;
 	}
 }
 
-template<typename ... Ks>
 void MaskDifferencesAndSave(const vector<string>& in_files, const vector<string>& suffixes
-		, const string& out_root, Ks... ks) {
+		, const string& out_root, vector<size_t> k_values) {
 	remove_dir(out_root);
 	make_dir(out_root);
 	vector<ContigStream*> streams = OpenStreams(in_files);
-	MaskDifferencesAndSave(streams, suffixes, out_root, ks...);
+	MaskDifferencesAndSave(streams, suffixes, out_root, k_values);
 	DisposeCollection(streams);
 }
 
