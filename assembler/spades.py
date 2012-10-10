@@ -853,6 +853,8 @@ def run_spades(cfg):
     prev_K = None
 
     bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
+    if os.path.isdir(bin_reads_dir):
+        shutil.rmtree(bin_reads_dir)        
 
     for K in cfg.iterative_K:
         count += 1
