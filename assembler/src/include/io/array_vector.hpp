@@ -146,9 +146,6 @@ class __array_reference {
     return ptr_;
   }
 
-  __array_reference(const __array_reference &that)
-      : ptr_(that.ptr_), size_(that.size_) {}
-
   __array_reference& operator=(const __array<_Cp> &that) {
     __storage_pointer this_ptr = data(), that_ptr = that.data();
     if (this_ptr != that_ptr)
@@ -312,10 +309,6 @@ class __array_vector_iterator {
   __array_vector_iterator(__storage_pointer data, __size_type el_sz)
       : data_(data), el_sz_(el_sz) {}
 
-  // We can always convert non-const iterator to const.
-  __array_vector_iterator(const __array_vector_iterator<_Cp, false> &r)
-      : data_(r.data_), el_sz_(r.el_sz_) {}
-
   size_t size() const {
     return el_sz_;
   }
@@ -453,8 +446,8 @@ class array_vector {
   reference operator[](size_t pos) {
     return reference(data_ + pos * el_sz_, el_sz_);
   }
-  const_reference operator[](size_t pos) const {
-    return const_reference(data_ + pos * el_sz_, el_sz_);
+  const ElTy *operator[](size_t pos) const {
+    return data_ + pos * el_sz_;
   }
   iterator begin() {
     return iterator(data_, el_sz_);
@@ -466,6 +459,12 @@ class array_vector {
     return const_iterator(data_, el_sz_);
   }
   const_iterator end() const {
+    return const_iterator(data_ + size_ * el_sz_, el_sz_);
+  }
+  const_iterator cbegin() const {
+    return const_iterator(data_, el_sz_);
+  }
+  const_iterator cend() const {
     return const_iterator(data_ + size_ * el_sz_, el_sz_);
   }
 

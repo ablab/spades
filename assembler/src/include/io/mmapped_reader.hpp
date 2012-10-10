@@ -181,8 +181,10 @@ class MMappedRecordArrayReader : public MMappedReader {
 
   iterator begin() { return iterator(data(), /* size */ elcnt_); }
   const_iterator begin() const { return const_iterator(data()), /* size */ elcnt_; }
+  const_iterator cbegin() const { return const_iterator(data()), /* size */ elcnt_; }
   iterator end() { return iterator(data() + size()*elcnt_, elcnt_); }
   const_iterator end() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
+  const_iterator cend() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
 };
 
 
