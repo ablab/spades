@@ -48,12 +48,12 @@ for i in $dir*.fasta ; do
 #find DIR -type f | while read FILENAME; do
   flag="False"
   for j in $dirtmp*.fasta ; do
-    echo $i
-    echo $j
+#    echo $i
+#    echo $j
     if [ -f $j ] ;
     then
       compare_res=$(python2.6 ~/algorithmic-biology/assembler/src/tools/contig_analysis/compare_fasta.py $i $j)
-      echo $compare_res
+#      echo $compare_res
       if [ $compare_res = "True" ]; 
       then
         flag="True"
