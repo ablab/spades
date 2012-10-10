@@ -1,0 +1,22 @@
+REQUIREMENTS:
+
+1. 16S rRNA database from arb-silva.de:
+Download from ftp://ftp.arb-silva.de/release_108/Exports/SSURef_108_NR_tax_silva_v2.fasta.tgz
+
+2. Bowtie
+Download from http://bowtie-bio.sourceforge.net
+
+
+PREPROCESSING:
+
+ ./preprocessing.sh SSURef_108_NR_tax_silva_v2.fasta
+
+
+USAGE:
+
+ ./taxonomy.sh reads.fastq [threads=1]
+
+
+FAQ:
+
+ Ask Kolya.
