@@ -28,8 +28,8 @@ class __array {
   friend class __array_const_reference<_Cp>;
 
   __storage_pointer ptr_;
-  __size_type size_ : 63;
-  bool allocated    : 1;
+  __size_type size_;
+  bool allocated;
 
  public:
   ~__array() {
