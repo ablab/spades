@@ -321,7 +321,7 @@ class DeBruijnKMerIndex {
   static const size_t InvalidKMerIdx = SIZE_MAX;
 
   DeBruijnKMerIndex(unsigned K, const std::string &workdir)
-      : K_(K), index_(K + 1), kmers(NULL) {
+      : K_(K), index_(K), kmers(NULL) {
     workdir_ = path::make_temp_dir(workdir, "kmeridx");
   }
   ~DeBruijnKMerIndex() {
