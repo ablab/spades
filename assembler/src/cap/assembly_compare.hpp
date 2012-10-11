@@ -22,6 +22,7 @@
 #include "assembly_problem_detection.hpp"
 #include "stats.hpp"
 #include "visualization.hpp"
+#include "simple_indel_finder.hpp"
 
 namespace cap {
 
@@ -502,8 +503,6 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
     vector<pair<std::string, std::string> > genomes_paths,
     std::string output_folder) {
   typedef typename gp_t::graph_t Graph;
-  typedef typename Graph::EdgeId EdgeId;
-  typedef typename Graph::VertexId VertexId;
 
   MakeDirPath(output_folder);
   
@@ -529,6 +528,11 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
   }
 
   ConstructColoredGraph(gp, coloring, genomes_stream_pointers, true);
+
+  ofstream indel_event_logger(output_folder + "/indel_events");
+
+  SimpleIndelFinder<gp_t> indel_finder(gp, coloring, indel_event_logger);
+  indel_finder.FindIndelEvents();
 
   for (auto it = to_destroy.begin(); it != to_destroy.end(); ++it) {
     delete (*it);

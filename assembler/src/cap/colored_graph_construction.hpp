@@ -220,10 +220,6 @@ public:
 
 	}
 
-  ~ColoredGraphConstructor() {
-    INFO("Destr ColorGraCons");
-  }
-
 	void ConstructGraph(const vector<ContigStream*>& streams) {
 // It is not truth anymore?
 //		VERIFY(streams.size() == 2);

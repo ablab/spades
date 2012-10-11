@@ -54,6 +54,18 @@ public:
 		return TColorSet(getBitset() | other.getBitset());
 	}
 
+  inline void operator |= (const TColorSet &other) {
+    bitset_ |= other.getBitset();
+  }
+
+	inline TColorSet operator & (const TColorSet &other) const {
+		return TColorSet(getBitset() & other.getBitset());
+	}
+
+  inline void operator &= (const TColorSet &other) {
+    bitset_ &= other.getBitset();
+  }
+
 	inline bool operator == (const TColorSet &other) const {
 		return getBitset() == other.getBitset();
 	}
@@ -200,6 +212,11 @@ public:
 				result += ':';
 			}
 			result += color_str((TColor) (i + 1));
+
+      // IF WE ARE DIRTY BASTARDS
+      if (color_set[max_colors_]) {
+        result += ":" + color_str((TColor) (i + 1));
+      }
 		}
 		return result;
 	}
