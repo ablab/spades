@@ -1044,42 +1044,42 @@ public:
 	}
 };
 
-template<class Graph>
-class PairedInfoSymmetryHack {
-public:
-	typedef typename Graph::EdgeId EdgeId;
-private:
-	const Graph& graph_;
-	const PairedInfoIndex<Graph>& paired_index_;
-public:
-
-	PairedInfoSymmetryHack(const Graph& graph,
-			const PairedInfoIndex<Graph>& paired_index) :
-			graph_(graph), paired_index_(paired_index) {
-	}
-
-	void FillSymmetricIndex(PairedInfoIndex<Graph>& index) {
-		for (auto it = paired_index_.begin(); it != paired_index_.end(); ++it) {
-			vector<PairInfo<EdgeId>> infos = *it;
-			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
-				index.AddPairInfo(
-						PairInfo<EdgeId>(it2->first, it2->second, it2->d,
-								it2->weight * 0.5, it2->variance), 0);
-				index.AddPairInfo(
-						PairInfo<EdgeId>(
-								graph_.conjugate(it2->second),
-								graph_.conjugate(it2->first),
-								it2->d + graph_.length(it2->second)
-										- graph_.length(it2->first),
-								it2->weight * 0.5, it2->variance), 0);
-				auto info = index.GetEdgePairInfo(infos[0].first,
-						infos[0].second);
-				auto symmetric_info = index.GetEdgePairInfo(
-						graph_.conjugate(info[0].second),
-						graph_.conjugate(info[0].first));
-			}
-		}
-	}
-};
+//template<class Graph>
+//class PairedInfoSymmetryHack {
+//public:
+//	typedef typename Graph::EdgeId EdgeId;
+//private:
+//	const Graph& graph_;
+//	const PairedInfoIndex<Graph>& paired_index_;
+//public:
+//
+//	PairedInfoSymmetryHack(const Graph& graph,
+//			const PairedInfoIndex<Graph>& paired_index) :
+//			graph_(graph), paired_index_(paired_index) {
+//	}
+//
+//	void FillSymmetricIndex(PairedInfoIndex<Graph>& index) {
+//		for (auto it = paired_index_.begin(); it != paired_index_.end(); ++it) {
+//			vector<PairInfo<EdgeId>> infos = *it;
+//			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
+//				index.AddPairInfo(
+//						PairInfo<EdgeId>(it2->first, it2->second, it2->d,
+//								it2->weight * 0.5, it2->variance), 0);
+//				index.AddPairInfo(
+//						PairInfo<EdgeId>(
+//								graph_.conjugate(it2->second),
+//								graph_.conjugate(it2->first),
+//								it2->d + graph_.length(it2->second)
+//										- graph_.length(it2->first),
+//								it2->weight * 0.5, it2->variance), 0);
+//				auto info = index.GetEdgePairInfo(infos[0].first,
+//						infos[0].second);
+//				auto symmetric_info = index.GetEdgePairInfo(
+//						graph_.conjugate(info[0].second),
+//						graph_.conjugate(info[0].first));
+//			}
+//		}
+//	}
+//};
 
 }

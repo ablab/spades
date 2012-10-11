@@ -707,10 +707,10 @@ void prepare_scaffolding_index(conj_graph_pack& gp, paired_info_index& paired_in
     GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, delta);
 
     size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
-    INFO("Symmetry trick");
-    paired_info_index symmetric_index(gp.g);
-    PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
-    hack.FillSymmetricIndex(symmetric_index);
+//    INFO("Symmetry trick");
+//    paired_info_index symmetric_index(gp.g);
+//    PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
+//    hack.FillSymmetricIndex(symmetric_index);
 
     boost::function<double(int)> weight_function;
 
@@ -739,7 +739,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp, paired_info_index& paired_in
     INFO("Weight Filter Done");
 
     const AbstractDistanceEstimator<Graph>& estimator =
-            SmoothingDistanceEstimator<Graph>(gp.g, symmetric_index,
+            SmoothingDistanceEstimator<Graph>(gp.g, paired_index,
                     dist_finder, weight_function, linkage_distance, max_distance,
                     cfg::get().ade.threshold,
                     cfg::get().ade.range_coeff,
