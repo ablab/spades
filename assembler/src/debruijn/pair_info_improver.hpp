@@ -11,6 +11,7 @@
 #include "path_utils.hpp"
 #include "graph_pack.hpp"
 #include "split_path_constructor.hpp"
+#include <math.h>
 
 
 
@@ -233,7 +234,7 @@ private:
 						|| (first_info.d > second_info.d)) return true;
 	//	size_t max_comparable_path = *cfg::get().ds.IS - K
 	//			+ size_t(*cfg::get().ds.is_var);
-		int pi_distance = second_info.d - first_info.d;
+		double pi_distance = second_info.d - first_info.d;
 		int first_length = g_.length(first_info.second);
 		double variance = first_info.variance + second_info.variance;
 
@@ -243,18 +244,18 @@ private:
 		TRACE("vs PI "<< g_.int_id(second_info.first)<<" "<<g_.int_id(second_info.second)<<" d "<<second_info.d<<"var "<<second_info.variance<<" tr "<< omp_get_thread_num());
 
 
-		if (abs(pi_distance - first_length)<=variance){
+		if (abs(pi_distance - first_length)<=variance+0.0001){
 			if (g_.EdgeEnd(first_edge) == g_.EdgeStart(second_edge)) return true;
 			else {
 				auto paths = GetAllPathsBetweenEdges(g_, first_edge, second_edge, 0,
-						pi_distance - first_length + variance);
+						ceil(pi_distance - first_length + variance));
 				return (paths.size() > 0);
 			}
 		}
 		else {
 			if ((int)pi_distance > first_length){
-				auto paths = GetAllPathsBetweenEdges(g_, first_edge, second_edge, pi_distance - first_length - variance,
-						pi_distance - first_length + variance);
+				auto paths = GetAllPathsBetweenEdges(g_, first_edge, second_edge, (size_t)floor(pi_distance - first_length - variance),
+						(size_t)ceil(pi_distance - first_length + variance));
 				return (paths.size() > 0);
 			}
 			return false;
