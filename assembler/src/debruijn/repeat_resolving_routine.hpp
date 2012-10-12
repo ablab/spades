@@ -494,9 +494,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
 				cfg::get().output_dir + subfolder + graph_name
 						+ "_4_cleared.dot", "no_repeat_graph");
-		ofstream filestr(
-				cfg::get().output_dir + subfolder + graph_name
-						+ "_4_cleared_colored.dot");
+		string file_str = cfg::get().output_dir + subfolder + graph_name
+				+ "_4_cleared_colored.dot";
+		ofstream filestr(file_str.c_str());
 		CompositeGraphColorer<typename graph_pack::graph_t> colorer(
 				new FixedColorer<typename graph_pack::graph_t::VertexId>(
 						"white"),
