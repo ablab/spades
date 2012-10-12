@@ -248,9 +248,10 @@ private:
 		return neighbours;
 	}
 
-	static const bool white = true;
-	static const bool grey = false;
-
+	enum {
+	    white,
+	    grey
+	};
 	void CreateTree(Node& root, unordered_set<EdgeId>& tree_edges) {
 		typedef pair<Node*, bool> stack_elem;
 		stack<stack_elem> nodes;
