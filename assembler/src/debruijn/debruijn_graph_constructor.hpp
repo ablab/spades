@@ -176,7 +176,7 @@ class DeBruijnGraphConstructor {
   void AddKmers(kmer_iterator &it, kmer_iterator &end,
                 size_t queueSize, std::vector<KPlusOneMer>& kmers) {
     for (; kmers.size() != queueSize && it != end; ++it) {
-      KPlusOneMer kmer(kmer_size_ + 1, (*it).data());
+      KPlusOneMer kmer(kmer_size_ + 1, (*it).ptr);
 
       if (!origin_.ContainsInIndex(kmer)) {
         kmers.push_back(kmer);

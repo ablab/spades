@@ -35,7 +35,6 @@ class KMerIndex {
  public:
   typedef typename Seq::hash hash_function;
   typedef typename MMappedRecordArrayReader<typename Seq::DataType>::iterator::value_type KMerRawData;
-  typedef typename MMappedRecordArrayReader<typename Seq::DataType>::iterator::reference  KMerRawReference;
 
  private:
   // This is really the most fragile part of the whole story.  Basically, we're
@@ -45,13 +44,7 @@ class KMerIndex {
   struct seeded_hash_function {
     cxxmph::h128 hash128(const KMerRawData &k, uint32_t seed) const {
       cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
-      return h;
-    }
-
-    cxxmph::h128 hash128(const KMerRawReference k, uint32_t seed) const {
-      cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
+      MurmurHash3_x64_128(k.ptr, k.size * sizeof(*k.ptr), seed, &h);
       return h;
     }
 
@@ -137,7 +130,7 @@ class KMerIndex {
     return hash_function()(s) % num_buckets_;
   }
   size_t raw_seq_bucket(const KMerRawData &data) const {
-    return hash_function()(data.data(), data.size()) % num_buckets_;
+    return hash_function()(data.ptr, data.size) % num_buckets_;
   }
 
   friend class KMerIndexBuilder<Seq>;
@@ -198,17 +191,19 @@ class KMerIndexBuilder {
   DECL_LOGGER("K-mer Index Building");
 };
 
+// FIXME: Change DataSize to runtime K
 template<class Seq>
 size_t KMerIndexBuilder<Seq>::MergeKMers(const std::string &ifname, const std::string &ofname,
                                          unsigned K) {
-  MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(K), /* unlink */ true);
+  MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(K), /* unlink */ true, -1ULL);
 
   // Sort the stuff
-  std::sort(ins.begin(), ins.end(), array_less<typename Seq::DataType>());
+  std::sort(ins.begin(), ins.end());
 
   // FIXME: Use something like parallel version of unique_copy but with explicit
   // resizing.
-  auto it = std::unique(ins.begin(), ins.end(), array_equal_to<typename Seq::DataType>());
+  auto it = std::unique(ins.begin(), ins.end(),
+                        typename array_ref<typename Seq::DataType>::equal_to());
 
   MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::GetDataSize(K));
   os.resize(it - ins.begin());
@@ -240,7 +235,7 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
   for (unsigned i = 0; i < num_buckets_; ++i) {
     MMappedRecordArrayWriter<typename Seq::DataType> os(GetMergedKMersFname(i), Seq::GetDataSize(K));
     for (unsigned j = 0; j < num_threads_; ++j) {
-      MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(i + j * num_buckets_), Seq::GetDataSize(K), /* unlink */ true);
+      MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(i + j * num_buckets_), Seq::GetDataSize(K), /* unlink */ true, -1ULL);
       size_t sz = ins.end() - ins.begin();
       os.reserve(sz);
       os.write(ins.data(), sz);
@@ -255,7 +250,7 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
 # pragma omp parallel for shared(index)
   for (unsigned iFile = 0; iFile < num_buckets_; ++iFile) {
     typename KMerIndex<Seq>::KMerDataIndex &data_index = index.index_[iFile];
-    MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(iFile), Seq::GetDataSize(K), /* unlink */ !save_final);
+    MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(iFile), Seq::GetDataSize(K), /* unlink */ !save_final, -1ULL);
     size_t sz = ins.end() - ins.begin();
     index.bucket_starts_[iFile + 1] = sz;
     if (!data_index.Reset(ins.begin(), ins.end(), sz)) {
@@ -271,7 +266,7 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
     INFO("Merging final buckets.");
     MMappedRecordArrayWriter<typename Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(K));
     for (unsigned j = 0; j < num_buckets_; ++j) {
-      MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(j), Seq::GetDataSize(K), /* unlink */ true);
+      MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(j), Seq::GetDataSize(K), /* unlink */ true, -1ULL);
       size_t sz = ins.end() - ins.begin();
       os.reserve(sz);
       os.write(ins.data(), sz);
