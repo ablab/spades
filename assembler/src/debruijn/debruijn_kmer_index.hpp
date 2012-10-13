@@ -196,13 +196,13 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
       }
     }
 
+    DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+
     if (counter >> n) {
       if (counter > 10000)
         INFO("Processed " << counter << " reads");
       n += 1;
     }
-
-    DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
   }
 
   if (contigs_) {
