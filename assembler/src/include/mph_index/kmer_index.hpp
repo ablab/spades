@@ -230,7 +230,7 @@ size_t KMerIndexBuilder<Seq>::BuildIndex(KMerIndex<Seq> &index, KMerSplitter<Seq
 
   INFO("Starting k-mer counting.");
   size_t kmers = 0;
-# pragma omp parallel for shared(raw_kmers) num_threads(num_threads_)
+# pragma omp parallel for shared(raw_kmers) num_threads(num_threads_) schedule(dynamic)
   for (unsigned iFile = 0; iFile < raw_kmers.size(); ++iFile) {
     kmers += MergeKMers(raw_kmers[iFile], GetUniqueKMersFname(iFile), K);
   }
