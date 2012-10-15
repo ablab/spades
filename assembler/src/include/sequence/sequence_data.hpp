@@ -24,10 +24,11 @@
 #ifndef SEQUENCE_DATA_HPP_
 #define SEQUENCE_DATA_HPP_
 
-#include <vector>
-#include <string>
 #include "log.hpp"
 #include "seq_common.hpp"
+
+#include <vector>
+#include <string>
 
 class SequenceData {
 private:
@@ -35,22 +36,19 @@ private:
     // type to store Seq in Sequences
     typedef seq_element_type ST;
     // number of bits in ST
-	const static size_t STBits = sizeof(ST) << 3;
+    const static size_t STBits = sizeof(ST) << 3;
     // number of nucleotides in ST
     const static size_t STN = (STBits >> 1);
     // number of bits in STN (for faster div and mod)
     const static size_t STNBits = log_<STN, 2>::value;
     // ref counter
-    volatile size_t kCount; 
+    volatile size_t kCount;
     // sequence (actual data for what it's for)
     ST *bytes_;
-
-
 
     // methods:
     SequenceData(const SequenceData &sd); // forbidden
     SequenceData& operator=(const SequenceData&); // forbidden
-
 
     void Grab() {
         ++kCount;
@@ -82,13 +80,13 @@ public:
         kmer.copy_data((void *) bytes_);
     }
     /**
-	 * Sequence initialization (arbitrary size string)
+     * Sequence initialization (arbitrary size string)
      * copypaste from the seq constructor
-	 *
-	 * @param s ACGT or 0123-string
-	 */
+     *
+     * @param s ACGT or 0123-string
+    */
     template<typename S>
-    SequenceData(const S &s, size_t size) : kCount(0) 
+    SequenceData(const S &s, size_t size) : kCount(0)
     {
         size_t bytes_size = (size + STN - 1) >> STNBits;
 
@@ -97,20 +95,19 @@ public:
         bytes_ = (ST*) malloc(bytes_size * sizeof(ST));
 
         // which symbols does our string contain : 0123 or ACGT?
-        bool digit_str = is_dignucl(s[0]); 
+        bool digit_str = is_dignucl(s[0]);
 
         // data -- one temporary variable corresponding to the i-th array element
         // and some counters
         ST data = 0;
-		size_t cnt = 0;
-		size_t cur = 0;
+        size_t cnt = 0;
+        size_t cur = 0;
 
-		for (size_t i = 0; i < size; ++i) {
+        for (size_t i = 0; i < size; ++i) {
             //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
-            
-		    char c = digit_str ? s[i] : dignucl(s[i]);
-            
-	        data = data | (ST(c) << cnt);
+            char c = digit_str ? s[i] : dignucl(s[i]);
+
+            data = data | (ST(c) << cnt);
             cnt += 2;
 
             if (cnt == STBits) {
@@ -198,7 +195,7 @@ public:
     }
 
     char operator[](const size_t i) const {
-		return (bytes_[i >> STNBits] >> ((i & (STN - 1)) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
+        return (bytes_[i >> STNBits] >> ((i & (STN - 1)) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
     }
 };
 
