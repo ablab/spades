@@ -67,8 +67,9 @@ struct properties
 	properties(std::string filename = "", level default_level = L_INFO);
 	properties(level default_level = L_INFO);
 
-	std::unordered_map<std::string, level>   levels;
-	level								def_level;
+	std::unordered_map<std::string, level> levels;
+	level	def_level;
+  bool  all_default;
 };
 
 ////////////////////////////////////////////////////

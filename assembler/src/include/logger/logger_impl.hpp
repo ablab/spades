@@ -46,12 +46,12 @@ inline unsigned get_max_rss() {
 #endif
 
 inline properties::properties(level default_level)
-    : def_level(default_level)
+    : def_level(default_level), all_default(true)
 {
 }
 
 inline properties::properties(std::string filename, level default_level)
-    : def_level(default_level)
+    : def_level(default_level), all_default(true)
 {
     if (filename.empty())
         return;
@@ -100,6 +100,13 @@ inline properties::properties(std::string filename, level default_level)
     auto def = levels.find("default");
     if (def != levels.end())
         def_level = def->second;
+
+    for (auto I = levels.begin(), E = levels.end(); I != E; ++I) {
+      if (I->second != def_level) {
+        all_default = false;
+        break;
+      }
+    }
 }
 
 
@@ -114,9 +121,11 @@ inline bool logger::need_log(level desired_level, const char* source) const
 {
     level source_level = props_.def_level;
 
-    auto it = props_.levels.find(source);
-    if (it != props_.levels.end())
+    if (!props_.all_default) {
+      auto it = props_.levels.find(source);
+      if (it != props_.levels.end())
         source_level = it->second;
+    }
 
     return desired_level >= source_level;
 }
