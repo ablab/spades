@@ -52,16 +52,13 @@ private:
 
     void Grab() {
 #     pragma omp atomic
-      {
-          kCount += 1;
-      }
+      kCount += 1;
     }
     void Release() {
       // FIXME: This is really not correct. Here we have race condition between Grab() and Release()
 #     pragma omp atomic
-      {
-          kCount -= 1;
-      }
+      kCount -= 1;
+
 #     pragma omp flush(kCount)
 #     pragma omp critical
       if (kCount == 0) {
