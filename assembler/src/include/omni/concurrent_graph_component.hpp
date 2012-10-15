@@ -64,18 +64,14 @@ public:
 				border_vertices_.insert(vertex);
 			}
 		}
-
-		all_actions_valid_ = true;
 	}
 
 
 	virtual const EdgeData& data(EdgeId edge) const {
-		SetFlagIfNotInComponent(edge);
 		return graph_.data(edge);
 	}
 
 	virtual const VertexData& data(VertexId vertex) const {
-		SetFlagIfNotInComponent(vertex);
 		return graph_.data(vertex);
 	}
 
@@ -89,22 +85,18 @@ public:
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId vertex) const {
 		if (IsInComponent(vertex)) {
-			return GetEdgesFromComponentOrSetFlag(graph_.OutgoingEdges(vertex));
+			return GetEdgesFromComponent(graph_.OutgoingEdges(vertex));
 		} else {
-			// edges can be filtered by GetEdgesFromComponentOrSetFlag.
-			// but this execution branch prevents data races.
 			TRACE("Invalidate component action on OutgoingEdges for " << str(vertex));
-			all_actions_valid_ = false;
 			return vector<EdgeId>();
 		}
 	}
 
 	virtual const vector<EdgeId> IncomingEdges(VertexId vertex) const {
 		if (IsInComponent(vertex)) {
-			return GetEdgesFromComponentOrSetFlag(graph_.IncomingEdges(vertex));
+			return GetEdgesFromComponent(graph_.IncomingEdges(vertex));
 		} else {
 			TRACE("Invalidate component action on IncomingEdges for " << str(vertex));
-			all_actions_valid_ = false;
 			return vector<EdgeId>();
 		}
 	}
@@ -115,29 +107,23 @@ public:
 		} else {
 			TRACE("Invalidate component action on GetEdgesBetween for "
 					<< str(vertex1) << " and " << str(vertex2));
-			all_actions_valid_ = false;
 			return vector<EdgeId>();
 		}
 	}
 
 	virtual VertexId EdgeStart(EdgeId edge) const {
-		SetFlagIfNotInComponent(edge);
 		return graph_.EdgeStart(edge);
 	}
 
 	virtual VertexId EdgeEnd(EdgeId edge) const {
-		SetFlagIfNotInComponent(edge);
 		return graph_.EdgeEnd(edge);
 	}
 
 	virtual bool RelatedVertices(VertexId vertex1, VertexId vertex2) const {
-		SetFlagIfNotInComponent(vertex1);
-		SetFlagIfNotInComponent(vertex2);
 		return graph_.RelatedVertices(vertex1, vertex2);
 	}
 
 	virtual bool CanCompressVertex(const VertexId& vertex) const {
-		SetFlagIfNotInternal(vertex);
 		return graph_.CanCompressVertex(vertex);
 	}
 
@@ -146,22 +132,18 @@ public:
 	}
 
 	double coverage(EdgeId edge) const {
-		SetFlagIfNotInComponent(edge);
 		return graph_.coverage(edge);
 	}
 
 	size_t length(EdgeId edge) const {
-		SetFlagIfNotInComponent(edge);
 		return graph_.length(edge);
 	}
 
 	size_t length(VertexId vertex) const {
-		SetFlagIfNotInComponent(vertex);
 		return graph_.length(vertex);
 	}
 
 	const Sequence& EdgeNucls(EdgeId edge) const {
-		SetFlagIfNotInComponent(edge);
 		return graph_.EdgeNucls(edge);
 	}
 
@@ -186,28 +168,12 @@ public:
 	SmartEdgeIterator<ConcurrentGraphComponent, Comparator> SmartEdgeBegin(
 			const Comparator& comparator, vector<EdgeId>* edges = 0) const {
 
-		bool all_actions_was_valid = all_actions_valid_;
-
-		auto it = SmartEdgeIterator<ConcurrentGraphComponent, Comparator>(*this, comparator, edges);
-
-		// No doubt that creating of iterator will invalidate component.
-		// But it's ok.
-		all_actions_valid_ = all_actions_was_valid;
-
-		return it;
+		return SmartEdgeIterator<ConcurrentGraphComponent, Comparator>(*this, comparator, edges);
 	}
 
 	SmartEdgeIterator<ConcurrentGraphComponent> SmartEdgeBegin(vector<EdgeId>* edges = 0) const {
-		bool all_actions_was_valid = all_actions_valid_;
-
-		auto it = SmartEdgeIterator<ConcurrentGraphComponent, std::less<EdgeId>>(
+		return SmartEdgeIterator<ConcurrentGraphComponent, std::less<EdgeId>>(
 				*this, std::less<EdgeId>(), edges);
-
-		// No doubt that creating of iterator will invalidate component.
-		// But it's ok.
-		all_actions_valid_ = all_actions_was_valid;
-
-		return it;
 	}
 
 	virtual VertexIterator begin() const {
@@ -222,18 +188,6 @@ public:
 		// failing here means that algorithm performed on this component
 		// created not temporary vertex (did not delete it)
 		VERIFY(temporary_vertices_.size() == 0);
-	}
-
-	void ValidateComponent() {
-		all_actions_valid_ = true;
-	}
-
-	void InvalidateComponent() {
-		all_actions_valid_ = false;
-	}
-
-	bool IsValid() const {
-		return all_actions_valid_;
 	}
 
 	void GetEdgesGoingOutOfComponent(vector<EdgeId>& output) {
@@ -315,7 +269,6 @@ protected:
 	virtual void AddVertexToComponent(VertexId vertex) = 0;
 
 	virtual bool AdditionalCompressCondition(VertexId vertex) const  {
-		SetFlagIfNotInComponent(vertex);
 		return graph_.AdditionalCompressCondition(vertex);
 	}
 
@@ -327,13 +280,11 @@ protected:
 			const EdgeData &data, restricted::IdDistributor * id_distributor) {
 		VERIFY(IsInComponent(vertex1));
 		VERIFY(IsInComponent(vertex2));
-		VERIFY(all_actions_valid_);
 		return graph_.HiddenAddEdge(vertex1, vertex2, data, id_distributor);
 	}
 
 	virtual void HiddenDeleteEdge(EdgeId edge) {
 		VERIFY(IsInComponent(edge));
-		VERIFY(all_actions_valid_);
 		graph_.HiddenDeleteEdge(edge);
 	}
 
@@ -419,41 +370,17 @@ protected:
 	}
 
 
-	const vector<EdgeId> GetEdgesFromComponentOrSetFlag(const std::vector<EdgeId>& edges) const {
+	const vector<EdgeId> GetEdgesFromComponent(const std::vector<EdgeId>& edges) const {
 		vector<EdgeId> edges_from_component;
 		edges_from_component.reserve(edges.size());
 
 		BOOST_FOREACH(const EdgeId& edge, edges) {
 			if (IsInComponent(edge)) {
 				edges_from_component.push_back(edge);
-			} else {
-				all_actions_valid_ = false;
-				TRACE("COMPONENT INVALIDATION: Edge Not in component " << graph_.str(edge));
 			}
 		}
 
 		return edges_from_component;
-	}
-
-	void SetFlagIfNotInternal(const VertexId& vertex) const {
-		if (!IsInternal(vertex)) {
-			all_actions_valid_ = false;
-			TRACE("COMPONENT INVALIDATION: vertex not internal " << graph_.str(vertex));
-		}
-	}
-
-	void SetFlagIfNotInComponent(const EdgeId& edge) const {
-		if (!IsInComponent(edge)) {
-			all_actions_valid_ = false;
-			TRACE("COMPONENT INVALIDATION: Edge Not in component " << graph_.str(edge));
-		}
-	}
-
-	void SetFlagIfNotInComponent(const VertexId& vertex) const {
-		if (!IsInComponent(vertex)) {
-			all_actions_valid_ = false;
-			TRACE("COMPONENT INVALIDATION: vertex not internal " << graph_.str(vertex));
-		}
 	}
 
 
@@ -468,8 +395,6 @@ protected:
 	unordered_set<VertexId> temporary_vertices_;
 
 	restricted::PeriodicIdDistributor edge_id_distributor_;
-	mutable bool all_actions_valid_;
-
 
 private:
 	DECL_LOGGER("ConcurrentGraphComponent");

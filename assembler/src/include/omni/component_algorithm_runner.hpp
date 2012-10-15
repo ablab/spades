@@ -41,20 +41,13 @@ public:
 	void Run(JavaStyleIterator& it) {
 		algorithm_->Preprocessing();
 
-		VERIFY(component_.IsValid());
-
 		for (; !it.IsEnd(); ++it) {
-			algorithm_->ProcessNext(*it);
-
-			if (!component_.IsValid()) {
+			if (!algorithm_->ProcessNext(*it)) {
 				not_processed_arguments_.insert(*it);
-				component_.ValidateComponent();
 			}
 		}
 
 		algorithm_->Postprocessing();
-
-		VERIFY(component_.IsValid());
 	}
 
 	void GetNotProcessedArguments(vector<Argument>& arguments) {

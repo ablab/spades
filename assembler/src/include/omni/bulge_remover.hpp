@@ -159,7 +159,7 @@ public:
 
 	size_t PathLength(const vector<EdgeId>& path);
 
-	virtual void ProcessNext(const EdgeId& edge);
+	virtual bool ProcessNext(const EdgeId& edge);
 
 	virtual void Preprocessing() {
 		TRACE("Bulge remove process started");
@@ -301,7 +301,7 @@ size_t BulgeRemover<Graph>::PathLength(const vector<EdgeId>& path) {
 }
 
 template<class Graph>
-void BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
+bool BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 
 //	CoverageComparator<Graph> comparator(graph_);
 
@@ -315,7 +315,7 @@ void BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 
 	if (!PossibleBulgeEdge(edge)) {
 		TRACE("-----------------------------------");
-		return;
+		return true;
 	}
 
 	size_t kplus_one_mer_coverage = math::round(graph_.length(edge) * graph_.coverage(edge));
@@ -356,11 +356,12 @@ void BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 	if (BulgeCondition(edge, path, path_coverage)) {
 		TRACE("Satisfied condition");
 
-		TryToProcessBulge(edge, path);
+		return TryToProcessBulge(edge, path);
 	} else {
 		TRACE("Didn't satisfy condition");
 	}
 
 	TRACE("-----------------------------------");
+	return true;
 }
 }

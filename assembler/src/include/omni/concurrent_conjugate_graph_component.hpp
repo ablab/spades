@@ -45,21 +45,11 @@ public:
 	}
 
 	VertexId conjugate(VertexId vertex) const {
-		this->SetFlagIfNotInComponent(vertex);
-
-		VertexId conjugate = this->graph_.conjugate(vertex);
-		this->SetFlagIfNotInComponent(conjugate);
-
-		return conjugate;
+		return this->graph_.conjugate(vertex);
 	}
 
 	EdgeId conjugate(EdgeId edge) const {
-		this->SetFlagIfNotInComponent(edge);
-
-		EdgeId conjugate = this->graph_.conjugate(edge);
-		this->SetFlagIfNotInComponent(conjugate);
-
-		return conjugate;
+		return this->graph_.conjugate(edge);
 	}
 
 	virtual bool IsInternalSafe(const VertexId& vertex) const {
@@ -67,13 +57,9 @@ public:
 	}
 
 	virtual bool IsInternalSafe(const EdgeId& edge) const {
-		EdgeId conjugate = this->conjugate(edge);
-
 		return
 				IsInternalSafe(this->EdgeStart(edge)) &&
-				IsInternalSafe(this->EdgeEnd(edge)) &&
-				IsInternalSafe(this->EdgeStart(conjugate)) &&
-				IsInternalSafe(this->EdgeEnd(conjugate));
+				IsInternalSafe(this->EdgeEnd(edge));
 	}
 
 	virtual ~ConcurrentConjugateGraphComponent() {
@@ -98,7 +84,6 @@ protected:
 
 	virtual void HiddenDeleteVertex(VertexId vertex) {
 		VERIFY(IsInternalSafe(vertex));
-		VERIFY(this->all_actions_valid_);
 
 		VertexId conjugate_vertex = conjugate(vertex);
 
