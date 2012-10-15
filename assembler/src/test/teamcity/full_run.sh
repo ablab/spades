@@ -25,7 +25,7 @@ mkdir $project_dir -p
 read line < $options_dir"spades.options"
 echo $line
 ./cpcfg
-python ./spades.py $line -o $project_dir --disable-gzip-output 
+python ./spades.py $line --debug -o $project_dir --disable-gzip-output 
 
 read line < $options_dir"quast.options"
 echo $line
@@ -68,14 +68,18 @@ for i in $dir*.fasta ; do
 done
 
 quast_line="$output_pref/quast-1.1/quast.py $dirtmp* $line -o $dir/quast_all/"
+quast1_2_line="$output_pref/quast-1.2/quast.py $dirtmp* $line -o $dir/quast1_2_all/"
 
 
 
 echo "$quast_line"
 python2.6 $quast_line
+python2.6 $quast1_2_line
+
 ssh -n antipov@194.85.238.21 mkdir -p "/var/www/teamcity_runs/$1$2" &
 
 scp "$dir/quast_all/report.txt" "antipov@194.85.238.21:/var/www/teamcity_runs/$1$2/report.txt"
+scp "$dir/quast1_2_all/report.txt" "antipov@194.85.238.21:/var/www/teamcity_runs/$1$2/report1_2.txt"
 
 #espected results
 read line < $options_dir"results.options"
