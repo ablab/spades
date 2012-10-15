@@ -179,7 +179,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
     entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
   }
 
-  size_t counter = 0, rl = 0, n = 0;
+  size_t counter = 0, rl = 0, n = 15;
   streams_.reset();
   while (!streams_.eof()) {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) shared(rl)
@@ -199,8 +199,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
     DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
 
     if (counter >> n) {
-      if (counter > 10000)
-        INFO("Processed " << counter << " reads");
+      INFO("Processed " << counter << " reads");
       n += 1;
     }
   }
@@ -257,6 +256,7 @@ DeBruijnGraphKMerSplitter<Graph>::FillBufferFromEdges(EdgeIt &edge,
 
     kmers += FillBufferFromSequence(nucls, buffer, num_files);
     seqs += 1;
+    VERBOSE_POWER(seqs, " edges processed");
   }
 
   return seqs;

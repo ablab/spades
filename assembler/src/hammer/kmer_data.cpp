@@ -89,7 +89,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     }
   }
 
-  size_t cur_i = 0, cur_limit = 0;
+  size_t cur_i = 0, cur_limit = 0, n = 15;
   size_t cur_fileindex = 0;
   while (cur_i < Globals::pr->size()) {
     cur_limit = std::min(cur_limit + read_buffer, Globals::pr->size());
@@ -124,6 +124,11 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     cur_i = cur_limit;
 
     ++cur_fileindex;
+
+    if (cur_i >> n) {
+      INFO("Processed " << cur_i << " reads");
+      n += 1;
+    }
 
     DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
   }
