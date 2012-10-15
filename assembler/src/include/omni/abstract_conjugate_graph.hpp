@@ -7,18 +7,14 @@
 #ifndef ABSTRACT_CONJUGATE_GRAPH_HPP_
 #define ABSTRACT_CONJUGATE_GRAPH_HPP_
 
-#include <vector>
-#include <set>
-#include <cstring>
-#include "sequence/seq.hpp"
-#include "sequence/sequence.hpp"
 #include "logger/logger.hpp"
-#include "sequence/nucl.hpp"
-//#include "strobe_read.hpp"
-#include "io/paired_read.hpp"
 #include "omni_utils.hpp"
 #include "abstract_graph.hpp"
 #include "coverage.hpp"
+
+#include <vector>
+#include <set>
+#include <cstring>
 
 namespace omnigraph {
 
