@@ -42,7 +42,7 @@ private:
     // number of bits in STN (for faster div and mod)
     const static size_t STNBits = log_<STN, 2>::value;
     // ref counter
-    volatile size_t kCount;
+    size_t kCount;
     // sequence (actual data for what it's for)
     ST *bytes_;
 
@@ -51,13 +51,22 @@ private:
     SequenceData& operator=(const SequenceData&); // forbidden
 
     void Grab() {
-        ++kCount;
+#     pragma omp atomic
+      {
+          kCount += 1;
+      }
     }
     void Release() {
-        --kCount;
-        if (kCount == 0) {
-            delete this;
-        }
+      // FIXME: This is really not correct. Here we have race condition between Grab() and Release()
+#     pragma omp atomic
+      {
+          kCount -= 1;
+      }
+#     pragma omp flush(kCount)
+#     pragma omp critical
+      if (kCount == 0) {
+          delete this;
+      }
     }
 
 public:
