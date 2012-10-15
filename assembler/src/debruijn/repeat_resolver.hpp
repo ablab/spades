@@ -16,7 +16,6 @@
 #include <cmath>
 #include <set>
 #include <map>
-#include <unordered_map>
 #include <algorithm>
 
 #include "logger/logger.hpp"
@@ -375,9 +374,9 @@ private:
 	avg_perf_counter multisplit_time;
 	avg_perf_counter resolve_time;
 	int near_vertex;
-	unordered_map<int, VertexId> fillVerticesAuto();
-	unordered_map<int, VertexId> fillVerticesComponents();
-	unordered_map<int, VertexId> fillVerticesComponentsInNonVariableOrder();
+	map<int, VertexId> fillVerticesAuto();
+	map<int, VertexId> fillVerticesComponents();
+	map<int, VertexId> fillVerticesComponentsInNonVariableOrder();
 	size_t SplitResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler);
 	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v );
@@ -846,8 +845,8 @@ void RepeatResolver<Graph>::WrappedSetCoverage(EdgeId e, int cov){
 
 
 template<class Graph>
-unordered_map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
-	unordered_map<int, typename Graph::VertexId> vertices;
+map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
+	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
 	for (auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
 		vertices.insert(make_pair(10000 - new_IDs.ReturnIntId(*v_iter), *v_iter));
@@ -879,11 +878,11 @@ namespace details
 }
 
 template<class Graph>
-unordered_map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponentsInNonVariableOrder(){
+map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponentsInNonVariableOrder(){
 
 	vector<details::VertexCompositId<Graph>> TemporaryOrderVect;
 
-	unordered_map<int, typename Graph::VertexId> vertices;
+	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
 	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, *cfg::get().ds.IS);
 
@@ -935,8 +934,8 @@ unordered_map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVertices
 
 
 template<class Graph>
-unordered_map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents(){
-	unordered_map<int, typename Graph::VertexId> vertices;
+map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents(){
+	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
 	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, *cfg::get().ds.IS);
 
@@ -981,7 +980,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode; cheating_mode++) {
 		INFO("Trying \"resolve mode\" " << cheating_mode);
 		bool changed = true;
-		unordered_map<int, VertexId> vertices;
+		map<int, VertexId> vertices;
 		int GraphCnt = 0;
 		set<VertexId> available_verices;
 		for (auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
