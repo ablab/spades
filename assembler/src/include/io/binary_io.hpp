@@ -523,7 +523,9 @@ public:
     CleanSeqSingleReadStreamWrapper(io::IReader<io::PairedReadSeq> * stream): stream_(stream), current_read_(), is_read_(false)  {
     }
 
-    virtual ~CleanSeqSingleReadStreamWrapper() {}
+    virtual ~CleanSeqSingleReadStreamWrapper() {
+        delete stream_;
+    }
 
     virtual bool is_open() {
         return stream_->is_open();
