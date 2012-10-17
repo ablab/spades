@@ -515,10 +515,6 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
   vector <ContigStream *> genomes_stream_pointers;
   vector <ContigStream *> to_destroy;
   for (auto it = genomes_paths.begin(); it != genomes_paths.end(); ++it) {
-/*    Sequence seq = ReadGenome(it->second);
-    ContigStream *pointer = new io::VectorReader<io::SingleRead>(
-        io::SingleRead(it->first, seq.str()));*/
-
     ContigStream *reader_ptr = new io::Reader(it->second);
     ContigStream *pointer = new io::RCReaderWrapper<io::SingleRead>(*reader_ptr);
 

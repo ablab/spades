@@ -18,6 +18,27 @@
 
 namespace cap {
 
+class TmpFolderFixture {
+  std::string tmp_folder_;
+
+ public:
+	TmpFolderFixture(std::string tmp_folder) {
+    tmp_folder_ = tmp_folder;
+    INFO("Creating " << tmp_folder_ << ": " << make_dir(tmp_folder_));
+  }
+
+  void Stub() {
+    if (1 + 1 == 1) {
+      INFO("LOL WAT");
+    }
+  }
+
+  ~TmpFolderFixture() {
+    INFO("Removing ");
+    remove_dir(tmp_folder_);
+  }
+};
+
 //Gingi block
 
 //BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
@@ -303,20 +324,37 @@ namespace cap {
 //}
 
 BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
-  return;
+  TmpFolderFixture _("tmp");
+
+  std::string base_path = "/home/valich/work/youtubercoolez/";
+
+  /*
   vector<std::string> paths = {
     "/home/valich/mrsa/more_strains/MSSA476.fasta",
     "/home/valich/mrsa/more_strains/MRSA252.fasta",
     "/home/valich/mrsa/more_strains/TW20.fasta",
     "/home/valich/mrsa/more_strains/USA300.fasta"
   };
-
   vector<std::string> suffixes = {
     "mssa476",
     "rmsa252",
     "tw20",
     "usa300"
   };
+
+  */
+
+  vector<std::string> paths = {
+    base_path + "CCDC5079.fasta",
+    base_path + "CCDC5180.fasta",
+    base_path + "H37Rv.fasta"
+  };
+  vector<std::string> suffixes = {
+    "CCDC5079",
+    "CCDC5180",
+    "H37Rv"
+  };
+
 
   vector<size_t> k_sequence = {
     201, 101, 55, 21, 15
@@ -329,8 +367,12 @@ BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
 	typedef debruijn_graph::graph_pack<
 	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph> comparing_gp_t;
   static const size_t K = 297;
+  TmpFolderFixture _("tmp");
+
+  std::string base_path = "bp_graph_test/refined/";
 
   // vector of pairs <name, path_to_fasta>
+/*
   vector<pair<std::string, std::string> > genomes_paths = {
     make_pair("MSSA476", "bp_graph_test/refined/mssa476.fasta"),
     make_pair("MRSA252", "bp_graph_test/refined/mrsa252.fasta"),
@@ -338,6 +380,13 @@ BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
     make_pair("USA300", "bp_graph_test/refined/usa300.fasta")
 //    make_pair("11819", "bp_graph_test/refined/11819.fasta"),
 //    make_pair("COL", "bp_graph_test/refined/COL.fasta")
+  };
+  */
+  
+  vector<pair<std::string, std::string> > genomes_paths = {
+    make_pair("CCDC5079", base_path + "CCDC5079.fasta"),
+    make_pair("CCDC5180", base_path + "CCDC5180.fasta"),
+    make_pair("H37Rv",    base_path + "H37Rv.fasta")
   };
 
   std::string folder = "bp_graph_test/multiple_genomes_visualization/";
@@ -349,11 +398,10 @@ BOOST_AUTO_TEST_CASE( TwoGenomesComparison ) {
   return;
   static const size_t k = 19;
   static const size_t K = 55;
+  TmpFolderFixture("tmp");
 
   ////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
   ////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-
-  // TODO filter on colors do not work
 
   std::string genome_path1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
               genome_path2 = "/smallnas/yana/X5_results/scaffolds_fcb_010_cleaned.fasta";
