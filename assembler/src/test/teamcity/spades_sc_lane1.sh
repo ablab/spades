@@ -22,7 +22,10 @@ python src/test/teamcity/assess.py ~/quast-1.1/ECOLI_SC_LANE_1_BH_woHUMAN/transp
 exitlvl=$?
 popd
 
-etalon=/smallnas/teamcity/etalon_output/ECOLI_SC_LANE_1_BH_woHUMAN/etalon
-./detect_diffs.sh ../../../spades_output/ECOLI_SC_LANE_1_BH_woHUMAN $etalon
-(( exitlvl += $? ))
-exit $exitlvl
+if [ $exitlvl -ne 0 ]; then
+    exit $exitlvl
+else
+    etalon=/smallnas/teamcity/etalon_output/ECOLI_SC_LANE_1_BH_woHUMAN/etalon
+    ./detect_diffs.sh ../../../spades_output/ECOLI_SC_LANE_1_BH_woHUMAN $etalon
+    exit $?
+fi
