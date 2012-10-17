@@ -370,12 +370,13 @@ protected:
 	}
 
 
+	// return edges that start from component. WARNING! borded edge are included also
 	const vector<EdgeId> GetEdgesFromComponent(const std::vector<EdgeId>& edges) const {
 		vector<EdgeId> edges_from_component;
 		edges_from_component.reserve(edges.size());
 
 		BOOST_FOREACH(const EdgeId& edge, edges) {
-			if (IsInComponent(edge)) {
+			if (IsInComponent(graph_.EdgeStart(edge))) {
 				edges_from_component.push_back(edge);
 			}
 		}
