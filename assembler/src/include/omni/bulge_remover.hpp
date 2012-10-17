@@ -203,6 +203,10 @@ public:
 //		}
 //
 //		if (graph_.IsValid()) {
+		if (!graph_.IsInternalSafe(edge) || !graph_.IsInternalSafe(path)) {
+			return false;
+		}
+
 			if (opt_callback_)
 				opt_callback_(edge, path);
 
