@@ -159,6 +159,10 @@ public:
 		return seq_.size();
 	}
 
+    size_t nucl_count() const {
+        return size();
+    }
+
 	/*
 	 * Return SingleRead sequence string (in readable form with ATGC).
 	 *
@@ -417,6 +421,10 @@ public:
 
     size_t size() const {
         return seq_.size();
+    }
+
+    size_t nucl_count() const {
+        return size();
     }
 
     SingleReadSeq operator!() const {

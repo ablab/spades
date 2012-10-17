@@ -105,6 +105,14 @@ class PairedRead {
     return insert_size_ - first_.size() - second_.size();
   }
 
+  size_t size() const {
+      return max(first_.size(), second_.size());
+  }
+
+  size_t nucl_count() const {
+      return first_.size() + second_.size();
+  }
+
   /*
    * Check whether PairedRead is valid.
    *
@@ -250,6 +258,14 @@ public:
 
     size_t gap() const {
       return insert_size_ - first_.size() - second_.size();
+    }
+
+    size_t size() const {
+        return max(first_.size(), second_.size());
+    }
+
+    size_t nucl_count() const {
+        return first_.size() + second_.size();
     }
 
     PairedReadSeq(const SingleReadSeq& first,

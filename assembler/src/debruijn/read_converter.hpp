@@ -24,20 +24,20 @@ typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 class ReadConverter {
 
 private:
-    const static size_t current_bianry_format_verstion = 3;
+    const static size_t current_bianry_format_verstion = 5;
 
     void convert_reads_to_binary() {
 
         if (fileExists(cfg::get().temp_bin_reads_info)) {
             std::ifstream info;
             info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::in);
-            size_t thread_num;
-            info >> thread_num;
 
+            size_t thread_num = 0;
             size_t format = 0;
 
+            info >> format;
             if (!info.eof()) {
-                info >> format;
+                info >> thread_num;
             }
 
             info.close();
@@ -50,18 +50,27 @@ private:
 
         std::ofstream info;
         info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
+        info << "0 0";
+        info.close();
 
         INFO("Converting paired reads to binary format (takes a while)");
         auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(false, 0);
         io::BinaryWriter paired_converter(cfg::get().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
-        paired_converter.ToBinary(*paired_reader);
+        io::ReadStat paired_stat = paired_converter.ToBinary(*paired_reader);
 
         INFO("Converting single reads to binary format (takes a while)");
         auto_ptr<SingleReadStream> single_reader = single_easy_reader(false, false);
         io::BinaryWriter single_converter(cfg::get().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
-        single_converter.ToBinary(*single_reader);
+        io::ReadStat single_stat = single_converter.ToBinary(*single_reader);
 
-        info << cfg::get().max_threads << " " << current_bianry_format_verstion;
+        paired_stat.read_count_ *= 2;
+        paired_stat.merge(single_stat);
+
+        info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
+
+        size_t paired_libs_count = 1;
+        info << current_bianry_format_verstion << " " << cfg::get().max_threads << " " << paired_libs_count << " " <<
+                paired_stat.read_count_ << " " << paired_stat.max_len_ << " " << paired_stat.total_len_;
         info.close();
     }
 
