@@ -94,6 +94,26 @@ public:
         INFO("Visualizing graph " << graph_name << " done");
     }
 
+    void writeGraphSimple(conj_graph_pack& gp, const string& file_name, const string& graph_name) {
+        INFO("Visualizing graph " << graph_name << " to file " << file_name);
+        std::fstream filestr;
+        filestr.open(file_name.c_str(), std::fstream::out);
+
+        StrGraphLabeler<Graph> str_labeler(gp.g);
+        EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
+        CompositeLabeler<Graph> composite_labeler(str_labeler, pos_labeler);
+
+        auto_ptr<GraphColorer<Graph>> colorer(DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
+                , FindGenomePath(!gp.genome, gp.g, gp.index, k_)));
+
+        omnigraph::DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
+        ColoredGraphVisualizer<Graph> gv(gp.g, printer);
+        AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
+        result_vis.Visualize();
+        filestr.close();
+        INFO("Visualizing graph " << graph_name << " done");
+    }
+
     bool isWriteLength() const
     {
         return writeLength;

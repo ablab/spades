@@ -43,7 +43,12 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
     PathInfoWriter path_writer;
 	PathVisualizer visualizer(k);
 	ContigWriter writer(gp.g, k);
-	writer.writeEdges(etcDir + "before_resolve.fasta");
+
+    if (params.debug_output) {
+        writer.writeEdges(etcDir + "before_resolve.fasta");
+        visualizer.writeGraphSimple(gp, etcDir + "before_resolve.dot", "before_resolve");
+    }
+
 
 	INFO("Initializing weight counters");
 	WeightCounter * wc = 0;
@@ -247,6 +252,7 @@ void scaffold_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& scafolding_
 
     if (params.debug_output) {
         writer.writeEdges(etcDir + "before_resolve.fasta");
+        visualizer.writeGraphSimple(gp, etcDir + "before_resolve.dot", "before_resolve");
     }
 
     WeightCounter * scaf_wc = 0;
