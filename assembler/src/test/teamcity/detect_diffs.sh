@@ -30,5 +30,11 @@ diffs=0
         fi
         set -e
     done
+
 echo $diffs differences with etalon saves found
-exit $diffs
+#returning $diffs is bad idea since return code should be less than 255
+if [ $diffs -ne 0 ]; then
+	exit 1
+else
+	exit 0
+fi

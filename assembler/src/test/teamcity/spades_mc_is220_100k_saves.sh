@@ -14,14 +14,14 @@ if [ -d $target ]; then
 	rm -rf $target #etalon=spades_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
 fi	
 
-etalon=/smallnas/teamcity/etalon_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon
+etalon=/smallnas/teamcity/etalon_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon_saves
 
 #if [ ! -d $etalon ]; then
 #    echo "Error: no etalon saves at $etalon"
 #    exit 9
 #fi
 
-./spades_compile.sh
+#./spades_compile.sh
 ./spades.py --config-file src/test/teamcity/spades_config_mc_is220_100k_saves.info
 
 #pushd spades_output/ECOLI_IS220_QUAKE_100K_SAVES
