@@ -311,6 +311,7 @@ struct debruijn_config {
 
 		struct bulge_remover {
 			double max_bulge_length_coefficient;
+            size_t max_additive_length_coefficient;
 			double max_coverage;
 			double max_relative_coverage;
 			double max_delta;
@@ -621,6 +622,7 @@ inline void load(debruijn_config::simplification::bulge_remover& br,
 	using config_common::load;
 
 	load(br.max_bulge_length_coefficient	, pt, "max_bulge_length_coefficient"	);
+	load(br.max_additive_length_coefficient	, pt, "max_additive_length_coefficient"	);
 	load(br.max_coverage         			, pt, "max_coverage"					);
 	load(br.max_relative_coverage			, pt, "max_relative_coverage"			);
 	load(br.max_delta		     			, pt, "max_delta"			    		);

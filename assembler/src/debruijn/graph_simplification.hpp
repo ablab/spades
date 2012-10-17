@@ -74,8 +74,8 @@ public:
 		return (size_t) (std::min(k, read_length / 2) * coefficient);
 	}
 
-	static size_t MaxBulgeLength(size_t k, double coefficient) {
-		return (size_t) (k * coefficient);
+	static size_t MaxBulgeLength(size_t k, double coefficient, size_t additive_coeff) {
+		return std::max((size_t) (k * coefficient), k + additive_coeff);
 	}
 
 	static size_t MaxErroneousConnectionLength(size_t k, size_t coefficient) {
@@ -274,7 +274,7 @@ GetBulgeRemoverFactory(
 
 	size_t max_length = LengthThresholdFinder::MaxBulgeLength(
 			graph.k(),
-			br_config.max_bulge_length_coefficient);
+			br_config.max_bulge_length_coefficient, br_config.max_additive_length_coefficient);
 
 	if (additional_length_bound != 0 && additional_length_bound < max_length) {
 		max_length = additional_length_bound;
@@ -307,7 +307,7 @@ void RemoveBulges(
 //	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
 
 	size_t max_length = LengthThresholdFinder::MaxBulgeLength(graph.k(),
-			br_config.max_bulge_length_coefficient);
+			br_config.max_bulge_length_coefficient, br_config.max_additive_length_coefficient);
 
 	if (additional_length_bound != 0 && additional_length_bound < max_length) {
 		max_length = additional_length_bound;

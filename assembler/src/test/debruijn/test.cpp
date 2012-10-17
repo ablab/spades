@@ -19,7 +19,7 @@
 
 ::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
 {
-    logging::logger *log = logging::create_logger("", logging::L_TRACE/*DEBUG*/);
+    logging::logger *log = logging::create_logger("", logging::L_DEBUG);
     log->add_writer(std::make_shared<logging::console_writer>());
     logging::attach_logger(log);
 
