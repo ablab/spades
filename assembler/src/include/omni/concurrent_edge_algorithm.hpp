@@ -156,6 +156,35 @@ private:
 	vector<RunnerPtr> runners_;
 };
 
+
+template <class Graph, class Algorithm>
+class SequentialEdgeAlgorithm {
+private:
+	Graph &graph_;
+	Algorithm &algorithm_;
+
+public:
+
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	SequentialEdgeAlgorithm(Graph& graph, Algorithm &algorithm)
+			: graph_(graph), algorithm_(algorithm) {
+	}
+
+	// Comparator is used to define edge processing order. Not important by default.
+	template <class Comparator = std::less<EdgeId>>
+	void Run(Comparator comparator = std::less<EdgeId>()) {
+
+		algorithm_.Preprocessing();
+
+		for (auto it = graph_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
+			algorithm_.ProcessNext(*it);
+		}
+
+		algorithm_.Postprocessing();
+	}
+};
 } // namespace omnigraph
 
 

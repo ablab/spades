@@ -20,6 +20,8 @@
 #include "sequential_algorithm.hpp"
 #include "sequential_algorihtm_factory.hpp"
 #include "xmath.h"
+#include "concurrent_conjugate_graph_component.hpp"
+#include "concurrent_edge_algorithm.hpp"
 //
 //#define DEFAULT_COVERAGE_BOUND 1000
 //#define DEFAULT_RELATIVE_COVERAGE_BOUND 2.0
@@ -650,6 +652,25 @@ public:
 private:
 	DECL_LOGGER("TopologyTipClipper")
 };
+
+template<class Graph>
+void RunTopologyTipClipper(Graph &graph,
+		size_t max_tip_length,
+		size_t uniqueness_length,
+		size_t plausibility_length,
+		boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+	ConcurrentConjugateGraphComponent<Graph> all_graph_component (
+			graph,
+			restricted::PeriodicIdDistributor(
+				restricted::GlobalIdDistributor::GetInstance()->GetId(),
+				1
+			),
+			graph.begin(),
+			graph.end()
+	);
+	omnigraph::TopologyTipClipper<ConcurrentConjugateGraphComponent<Graph>> tc(all_graph_component, max_tip_length, uniqueness_length, plausibility_length, removal_handler);
+	SequentialEdgeAlgorithm<ConcurrentConjugateGraphComponent<Graph>, omnigraph::TopologyTipClipper<ConcurrentConjugateGraphComponent<Graph>>>(all_graph_component, tc).Run();
+}
 
 
 } // namespace omnigraph

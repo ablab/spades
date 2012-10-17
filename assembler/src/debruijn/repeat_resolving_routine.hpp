@@ -775,6 +775,8 @@ void resolve_repeats() {
 
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
 
+//	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
+
 	DEBUG("Online clusterization rad = " << cfg::get().online_clust_rad);
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
