@@ -1,0 +1,34 @@
+#!/bin/bash
+
+############################################################################
+# Copyright (c) 2011-2012 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+	
+target_folder=$1
+etalons_folder=$2
+if [ ! -d $etalons_folder ]; then
+    echo "Error: no etalon saves at $etalons_folder"
+    exit 9
+fi
+
+diffs=0
+    for f in $etalons_folder/*/saves/*
+    do
+        set +e
+        diff $f $target_folder/${f#$etalons_folder} >> diff_with_etalon.txt
+        errlvl=$?
+        if [ $errlvl -ne 0 ]; then
+            if [ $errlvl -eq 1 ]; then
+                echo "^^^^^^^ it was $f" >> diff_with_etalon.txt
+                echo "BAD: difference found in $f"
+            else
+                echo "BAD: unable to compare with $f"
+            fi
+            (( diffs += 1 ))
+        fi
+        set -e
+    done
+echo $diffs differences with etalon saves found
+exit $diffs
