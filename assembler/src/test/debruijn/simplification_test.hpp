@@ -18,7 +18,6 @@ BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, TmpFolderFixture)
 static debruijn_config::simplification::bulge_remover standard_br_config_generation() {
 	debruijn_config::simplification::bulge_remover br_config;
 	br_config.max_bulge_length_coefficient = 4;
-	br_config.max_additive_length_coefficient = 0;
 	br_config.max_coverage = 1000.;
 	br_config.max_relative_coverage = 1.2;
 	br_config.max_delta = 3;

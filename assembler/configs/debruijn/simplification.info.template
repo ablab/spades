@@ -22,7 +22,6 @@ sc_simplification
 	br
 	{
 		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		10000.0		; bulge_cov < this * not_bulge_cov
 		max_delta			2.1
@@ -117,7 +116,6 @@ usual_simplification
 	br
 	{
 		max_bulge_length_coefficient	3.	; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
 		max_coverage			1000.0
 		max_relative_coverage		1.1	; bulge_cov < this * not_bulge_cov
 		max_delta			3.0
