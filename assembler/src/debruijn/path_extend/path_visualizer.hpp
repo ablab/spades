@@ -83,8 +83,14 @@ public:
 
         CompositeLabeler<Graph> composite_labeler(str_labeler, path_labeler, pos_labeler);
 
-        auto_ptr<GraphColorer<Graph>> colorer(DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
-                , FindGenomePath(!gp.genome, gp.g, gp.index, k_)));
+        auto_ptr<GraphColorer<Graph>> colorer;
+        if (gp.index.IsAttached()) {
+             colorer = DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
+                 , FindGenomePath(!gp.genome, gp.g, gp.index, k_));
+        } else {
+            Path<EdgeId> empty;
+            colorer = DefaultColorer(gp.g, empty, empty);
+        }
 
         omnigraph::DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
         ColoredGraphVisualizer<Graph> gv(gp.g, printer);
@@ -103,8 +109,14 @@ public:
         EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
         CompositeLabeler<Graph> composite_labeler(str_labeler, pos_labeler);
 
-        auto_ptr<GraphColorer<Graph>> colorer(DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
-                , FindGenomePath(!gp.genome, gp.g, gp.index, k_)));
+        auto_ptr<GraphColorer<Graph>> colorer;
+        if (gp.index.IsAttached()) {
+             colorer = DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
+                 , FindGenomePath(!gp.genome, gp.g, gp.index, k_));
+        } else {
+            Path<EdgeId> empty;
+            colorer = DefaultColorer(gp.g, empty, empty);
+        }
 
         omnigraph::DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
         ColoredGraphVisualizer<Graph> gv(gp.g, printer);
