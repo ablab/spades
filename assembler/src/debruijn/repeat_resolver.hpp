@@ -16,6 +16,7 @@
 #include <cmath>
 #include <set>
 #include <map>
+#include <vector>
 #include <algorithm>
 
 #include "logger/logger.hpp"
@@ -37,22 +38,15 @@
 #include "perfcounter.hpp"
 #include "split_path_constructor.hpp"
 
-
-
 namespace debruijn_graph {
 
 #define MAX_DISTANCE_CORRECTION 10
-
 
 using omnigraph::SmartVertexIterator;
 using omnigraph::Compressor;
 using omnigraph::PairedInfoIndexT;
 using omnigraph::PairInfoIndexData;
 using debruijn_graph::DeletedVertexHandler;
-
-
-
-
 
 template<class Graph>
 class RepeatResolver {
@@ -96,7 +90,6 @@ public:
 				return distances[start][end];
 		}
 	};
-
 
 	class EdgeInfo {
 	public:
@@ -211,7 +204,6 @@ public:
 		double d;
 
 	};
-
 
 	map<EdgeId, EdgeId> GetEdgeLabels(){
 		return edge_labels;
@@ -809,8 +801,6 @@ void RepeatResolver<Graph>::BanRCVertex(VertexId v ){
 	TRACE("outgoing cheaters added");
 }
 
-
-
 template<class Graph>
 ConjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(const ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::VertexId v){
 	return g.conjugate(v);
@@ -847,8 +837,6 @@ void RepeatResolver<Graph>::WrappedSetCoverage(EdgeId e, int cov){
 
 }
 
-
-
 template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
 	map<int, typename Graph::VertexId> vertices;
@@ -858,7 +846,6 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
 	}
 	return vertices;
 }
-
 
 namespace details
 {
@@ -935,8 +922,6 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 
 	return vertices;
 }
-
-
 
 template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents(){
@@ -1193,7 +1178,6 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	return right_edges.size();
 }
 
-
 template<class Graph>
 int RepeatResolver<Graph>::ColoringEdgesInfos(int &size, TotalLabeler<Graph>& tot_labler) {
 	rectangle_resolve_3_time.start();
@@ -1357,7 +1341,6 @@ vector<typename RepeatResolver<Graph>::PathInfo> RepeatResolver<Graph>::ConvertE
 	return ret;
 }
 
-
 template<class Graph>
 int RepeatResolver<Graph>::prefix_or_included(PathInfo&path1, PathInfo&path2, int shift1, int shift2){
 	size_t j = 1;
@@ -1424,7 +1407,6 @@ bool RepeatResolver<Graph>::pathesAdjacent(PathInfo& path1, PathInfo & path2, Ve
 	return false;
 }
 
-
 template<class Graph>
 vector<int> RepeatResolver<Graph>::ColoringPathes(vector<PathInfo> &pathes, VertexId V_Id){
 	DEBUG("ColoringPathes start");
@@ -1468,7 +1450,6 @@ vector<int> RepeatResolver<Graph>::ColoringPathes(vector<PathInfo> &pathes, Vert
 	DEBUG("ColoringPathes end");
 	return ret;
 }
-
 
 template<class Graph>
 int RepeatResolver<Graph>::ColoringEdgesInfosByPathes(int &size, TotalLabeler<Graph>& tot_labler, VertexId V_Id) {
@@ -1520,10 +1501,6 @@ int RepeatResolver<Graph>::ColoringEdgesInfosByPathes(int &size, TotalLabeler<Gr
 	return 0;
 }
 
-
-
-
-
 template<class Graph>
 size_t RepeatResolver<Graph>::SplitResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler) {
 
@@ -1566,7 +1543,6 @@ size_t RepeatResolver<Graph>::SplitResolveVertex(VertexId vid, TotalLabeler<Grap
 	vector<typename Graph::VertexId> new_vertices = MultiSplit(vid);
 	return new_vertices.size();
 }
-
 
 template<class Graph>
 size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {

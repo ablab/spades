@@ -41,11 +41,6 @@ typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream
 namespace debruijn_graph {
 
 void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
-} // debruijn_graph
-
-// TODO move impl to *.cpp
-
-namespace debruijn_graph {
 
 template<class gp_t>
 void WriteGraphPack(gp_t& gp, const string& file_name) {
@@ -94,7 +89,6 @@ bool try_load_distance_filling(conj_graph_pack& gp, PairedIndexT& clustered_inde
   return true;
 }
 
-
 void distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index, PairedIndexT& clustered_index) 
 {
     path::files_t used_files;
@@ -110,7 +104,6 @@ void distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index, PairedInd
         save_distance_filling(gp, paired_index, clustered_index);
     }
 }
-
 
 void save_resolved(conj_graph_pack& resolved_gp,
         PairedIndexT& resolved_graph_paired_info,
@@ -289,7 +282,6 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 		}
 	}
 }
-
 
 void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 		EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
@@ -693,7 +685,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 				gp);
 		gv.Visualize();
 		filestr.close();
-
 	}
 }
 

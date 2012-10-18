@@ -14,6 +14,7 @@
 #ifndef GRAPH_SIMPLIFICATION_HPP_
 #define GRAPH_SIMPLIFICATION_HPP_
 
+#include "standard_base.hpp"
 #include "config_struct.hpp"
 #include "new_debruijn.hpp"
 #include "debruijn_stats.hpp"
@@ -72,11 +73,11 @@ class LengthThresholdFinder {
 public:
 	static size_t MaxTipLength(size_t read_length, size_t k,
 			double coefficient) {
-		return (size_t) (std::min(k, read_length / 2) * coefficient);
+		return std::max((size_t) (std::min(k, read_length / 2) * coefficient), read_length);
 	}
 
-	static size_t MaxBulgeLength(size_t k, double coefficient) {
-		return (size_t) (k * coefficient);
+	static size_t MaxBulgeLength(size_t k, double coefficient, size_t additive_coeff) {
+		return std::max((size_t) (k * coefficient), k + additive_coeff);
 	}
 
 	static size_t MaxErroneousConnectionLength(size_t k, size_t coefficient) {
@@ -164,9 +165,9 @@ std::shared_ptr<
 	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
 			*cfg::get().ds.RL, k, tc_config.max_tip_length_coefficient);
 
-	size_t max_tip_length_corrected = (size_t) math::round(
+	size_t max_tip_length_corrected = max_tip_length;/*(size_t) math::round(
 			(double) max_tip_length / 2
-					* (1 + (iteration + 1.) / iteration_count));
+					* (1 + (iteration + 1.) / iteration_count));*/
 
 	if (cfg::get().simp.tc.advanced_checks) {
 		return GetAdvancedTipClipperFactory<Graph>(tc_config,
@@ -270,7 +271,7 @@ void ClipTipsForResolver(Graph &graph) {
 	DEBUG("Clipping tips for Resolver finished");
 }
 
-//template <class Graph, class FactoryPtr>
+//template<class Graph, class FactoryPtr>
 //void ClipTips(Graph& graph, FactoryPtr factory) {
 //	RunConcurrentAlgorithm(graph, factory, LengthComparator<Graph>(graph));
 //
@@ -315,8 +316,9 @@ std::shared_ptr<
 	typedef omnigraph::SequentialAlgorihtmFactory<Component,
 			typename Graph::EdgeId> FactoryInterface;
 
-	size_t max_length = LengthThresholdFinder::MaxBulgeLength(graph.k(),
-			br_config.max_bulge_length_coefficient);
+	size_t max_length = LengthThresholdFinder::MaxBulgeLength(
+			graph.k(),
+			br_config.max_bulge_length_coefficient, br_config.max_additive_length_coefficient);
 
 	if (additional_length_bound != 0 && additional_length_bound < max_length) {
 		max_length = additional_length_bound;
@@ -340,7 +342,7 @@ void RemoveBulges(Graph &graph,
 //	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
 
 	size_t max_length = LengthThresholdFinder::MaxBulgeLength(graph.k(),
-			br_config.max_bulge_length_coefficient);
+			br_config.max_bulge_length_coefficient, br_config.max_additive_length_coefficient);
 
 	if (additional_length_bound != 0 && additional_length_bound < max_length) {
 		max_length = additional_length_bound;
@@ -707,23 +709,6 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
 }
-
-//void PrePostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
-//		boost::function<void(EdgeId)> &removal_handler_f){
-//
-//	INFO("PreFinal erroneous connections removal");
-//	FinalRemoveErroneousEdges(gp.g, edge_remover, removal_handler_f);
-//
-//	INFO("PreFinal tip clipping");
-//
-//    FinalTipClipping(gp.g, removal_handler_f);
-//
-//	INFO("PreFinal bulge removal");
-//	RemoveBulges(gp.g, removal_handler_f);
-//
-//	INFO("PreFinal isolated edges removal");
-//
-//}
 
 void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,

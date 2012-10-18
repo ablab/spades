@@ -9,7 +9,7 @@ sc_simplification
 	; tip clipper:
 	tc
 	{
-		max_tip_length_coefficient	3.5	; max_tip_length = (read_length - k) * max_tip_length_coefficient
+		max_tip_length_coefficient	3.5	; max_tip_length = max((min(k, read_length / 2) * coefficient), read_length);
 		max_coverage				100000
 		max_relative_coverage		10000   ; tip_cov < this * not_tip_cov
         max_iterations              400
@@ -22,6 +22,7 @@ sc_simplification
 	br
 	{
 		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
+        max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
 		max_delta			2.1
@@ -104,7 +105,7 @@ usual_simplification
 	; tip clipper:
 	tc
 	{
-		max_tip_length_coefficient	3.5	; max_tip_length = min(k, read_length - k) * max_tip_length_coefficient
+		max_tip_length_coefficient	3.5	; max_tip_length = max((min(k, read_length / 2) * coefficient), read_length);
 		max_coverage				1000
 		max_relative_coverage		2.0		; tip_cov < this * not_tip_cov
         max_iterations              200
@@ -117,6 +118,7 @@ usual_simplification
 	br
 	{
 		max_bulge_length_coefficient	3.	; max_bulge_length = max_bulge_length_coefficient * k
+        max_additive_length_coefficient 100
 		max_coverage			1000.0
 		max_relative_coverage		1.1	; bulge_cov < this * not_bulge_cov
 		max_delta			3.0

@@ -121,15 +121,12 @@ public:
  */
 template<class Graph>
 class BulgeRemover : public SequentialAlgorithm<typename Graph::EdgeId> {
-
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-
 
 public:
 
 	typedef boost::function<bool(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
-
 
 	BulgeRemover(
 			Graph& graph,
@@ -140,7 +137,7 @@ public:
 			double max_relative_delta,
 			BulgeCallbackF bulge_condition,
 			BulgeCallbackF opt_callback = 0,
-			boost::function<void(EdgeId)> removal_handler = 0)
+			boost::function<void (EdgeId)> removal_handler = 0)
 				: graph_(graph),
 				  max_length_(max_length),
 				  max_coverage_(max_coverage),
@@ -150,9 +147,6 @@ public:
 				  bulge_condition_(bulge_condition),
 				  opt_callback_(opt_callback),
 				  removal_handler_(removal_handler) {
-	}
-
-	~BulgeRemover() {
 	}
 
 	bool PossibleBulgeEdge(EdgeId e);
@@ -178,14 +172,6 @@ public:
 		this->Postprocessing();
 	}
 
-
-	/**
-	 * Returns most covered path from start to the end such that its length doesn't exceed length_left.
-	 * Returns pair of empty vector and -1 if no such path could be found.
-	 * Edges are returned in reverse order!
-	 */
-	//	pair<vector<EdgeId> , int> BestPath(VertexId start,
-	//			VertexId end, int length_left);
 	/**
 	 * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
 	 * and its average coverage is greater than max_relative_coverage_ * g.coverage(e)
@@ -280,7 +266,6 @@ private:
 	BulgeCallbackF bulge_condition_;
 	BulgeCallbackF opt_callback_;
 	boost::function<void(EdgeId)> removal_handler_;
-
 
 private:
 	DECL_LOGGER("BulgeRemover")
