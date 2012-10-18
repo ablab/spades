@@ -20,6 +20,7 @@
 #include <boost/foreach.hpp>
 #include <boost/pending/disjoint_sets.hpp>
 #include <boost/property_map/property_map.hpp>
+#include <queue>
 
 #include "standard_base.hpp"
 #include "omni_utils.hpp"
@@ -78,9 +79,12 @@ public:
 		return node;
 	}
 
-	virtual void CollectValues(vector<Value>& output) {
+	virtual void CollectValue(vector<Value>& output) {
+	}
+
+	virtual void CollectNodes(std::queue<TreeNode<Value>*>& nodes) {
 		BOOST_FOREACH(TreeNode* node, children_) {
-			node->CollectValues(output);
+			nodes.push(node);
 		}
 		subtree_size_ = 0;
 		children_.clear();
@@ -103,9 +107,8 @@ public:
 
 	virtual ~TreeNodeWithValue() { }
 
-	virtual void CollectValues(vector<Value>& output) {
+	virtual void CollectValue(vector<Value>& output) {
 		output.push_back(value_);
-		TreeNode<Value>::CollectValues(output);
 	}
 
 	virtual size_t GetSize() const {
@@ -200,7 +203,19 @@ public:
 			node = &root_;
 		}
 		output.reserve(node->GetSize());
-		node->CollectValues(output);
+		CollectValues(node, output);
+	}
+
+	void CollectValues(TreeNode<VertexId>* root, vector<VertexId>& output) {
+		std::queue<TreeNode<VertexId>*> nodes;
+		nodes.push(root);
+
+		while (nodes.size() > 0) {
+			TreeNode<VertexId>* node = nodes.front();
+			nodes.pop();
+			node->CollectNodes(nodes);
+			node->CollectValue(output);
+		}
 	}
 
 	size_t GetSize() const {
