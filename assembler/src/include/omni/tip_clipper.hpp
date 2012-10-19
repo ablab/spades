@@ -670,6 +670,7 @@ void RunTopologyTipClipper(Graph &graph,
 	);
 	omnigraph::TopologyTipClipper<ConcurrentConjugateGraphComponent<Graph>> tc(all_graph_component, max_tip_length, uniqueness_length, plausibility_length, removal_handler);
 	SequentialEdgeAlgorithm<ConcurrentConjugateGraphComponent<Graph>, omnigraph::TopologyTipClipper<ConcurrentConjugateGraphComponent<Graph>>>(all_graph_component, tc).Run();
+	all_graph_component.Synchronize();
 }
 
 
