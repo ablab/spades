@@ -11,6 +11,9 @@
 
 #include "simple_tools.hpp"
 
+// longseq
+#include "longseq.hpp"
+
 // io
 #include "io/ireader.hpp"
 #include "io/converting_reader_wrapper.hpp"
@@ -24,6 +27,7 @@ typedef io::SingleRead Contig;
 typedef io::IReader<Contig> ContigStream;
 typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;
 typedef	io::RCReaderWrapper<io::SingleRead> RCWrapper;
+typedef LongSeq<MultiPolynomialHash<3, uint64_t> > LSeq;
 }
 
 // debruijn

@@ -18,7 +18,7 @@
 #include "memory_limit.hpp"
 #include "read_converter.hpp"
 
-#include "online_pictures.hpp"
+#include "debruijn_online_visualizer.hpp"
 
 void create_console_logger(string const& cfg_filename) {
 	using namespace logging;
@@ -40,30 +40,30 @@ int main(int argc, char** argv) {
     const size_t GB = 1 << 30;
 
     try {
-        
+
         using namespace online_visualization;
         string cfg_filename = argv[1];
         checkFileExistenceFATAL(cfg_filename);
-        
+
         cfg::create_instance(cfg_filename);
 
         VERIFY(cfg::get().K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K);
         VERIFY(cfg::get().K % 2 != 0);
-    
+
         create_console_logger(cfg_filename);
         cout << "\nGAF (Graph Analysis Framework) started" << endl;
         cout << "Print help to see readme file" << endl;
         limit_memory(cfg::get().max_memory * GB);
-        OnlineVisualizer online_vis;
+
+        DebruijnOnlineVisualizer online_vis;
+        online_vis.init();
         online_vis.run();
     }
-    catch (std::exception const& e)
-    {
+    catch (std::exception const& e) {
         std::cerr << "Exception caught " << e.what() << std::endl;
         return EINTR;
     }
-    catch (...)
-    {
+    catch (...) {
         std::cerr << "Unknown exception caught " << std::endl;
         return EINTR;
     }

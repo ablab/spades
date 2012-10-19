@@ -16,12 +16,12 @@
 #include <cstdlib>
 
 namespace debruijn_graph {
-template<class Graph>
-class KmerMapper: public omnigraph::GraphActionHandler<Graph> {
+template <class Graph, class Seq = runtime_k::RtSeq>
+class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
   typedef omnigraph::GraphActionHandler<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
-  typedef runtime_k::RtSeq Kmer;
-  typedef typename runtime_k::KmerMap<Kmer> MapType;
+  typedef Seq Kmer;
+  typedef typename runtime_k::KmerMap<Kmer, Seq> MapType;
 
   MapType mapping_;
 
@@ -71,7 +71,7 @@ class KmerMapper: public omnigraph::GraphActionHandler<Graph> {
     size_t new_length = new_s.size() - k_ + 1;
     UniformPositionAligner aligner(old_s.size() - k_ + 1,
                                    new_s.size() - k_ + 1);
-    Kmer old_kmer = old_s.start<Kmer::max_size>(k_);
+    Kmer old_kmer = old_s.start<Kmer>(k_);
     old_kmer >>= 0;
 
     for (size_t i = k_ - 1; i < old_s.size(); ++i) {
@@ -102,11 +102,14 @@ class KmerMapper: public omnigraph::GraphActionHandler<Graph> {
     size_t new_length = new_s.size() - k_ + 1;
     UniformPositionAligner aligner(old_s.size() - k_ + 1,
                                    new_s.size() - k_ + 1);
-    Kmer old_kmer = old_s.start<Kmer::max_size>(k_);
-    old_kmer >>= 0;
+    Kmer old_kmer = old_s.start<Kmer>(k_);
 
     for (size_t i = k_ - 1; i < old_s.size(); ++i) {
-      old_kmer <<= old_s[i];
+      // Instead of shifting right
+      if (i != k_ - 1) {
+        old_kmer <<= old_s[i];
+      }
+
       size_t old_kmer_offset = i - k_ + 1;
       size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
       if(old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
@@ -166,7 +169,7 @@ class KmerMapper: public omnigraph::GraphActionHandler<Graph> {
     }
   }
 
-  bool CompareTo(KmerMapper<Graph> const& m) {
+  bool CompareTo(KmerMapper<Graph, Kmer> const& m) {
     if (mapping_.size() != m.mapping_.size()) {
       INFO("Unequal sizes");
     }
@@ -192,12 +195,18 @@ class KmerMapper: public omnigraph::GraphActionHandler<Graph> {
  * This class finds how certain sequence is mapped to genome. As it is now it works correct only if sequence
  * is mapped to graph ideally and in unique way.
  */
-template<class Graph>
+template <class Graph, class Seq = runtime_k::RtSeq>
 class SimpleSequenceMapper {
+  /*
+};
+
+template<class Graph>
+class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
+*/
  public:
   typedef typename Graph::EdgeId EdgeId;
-  typedef runtime_k::RtSeq Kmer;
-  typedef EdgeIndex<Graph> Index;
+  typedef Seq Kmer;
+  typedef EdgeIndex<Graph, Kmer> Index;
 
  private:
   const Graph& g_;
@@ -282,7 +291,7 @@ class SimpleSequenceMapper {
       return Path<EdgeId>();
     }
 
-    Kmer kmer = read.start<Kmer::max_size>(k_);
+    Kmer kmer = read.start<Kmer>(k_);
     //DEBUG("started " << kmer.str() << omp_get_thread_num() );
     size_t startPosition = -1;
     size_t endPosition = -1;
@@ -301,14 +310,14 @@ class SimpleSequenceMapper {
 
 };
 
-template<class Graph>
+template<class Graph, class Seq = runtime_k::RtSeq>
 class ExtendedSequenceMapper {
  public:
   typedef typename Graph::EdgeId EdgeId;
   typedef std::vector<MappingRange> RangeMappings;
-  typedef runtime_k::RtSeq Kmer;
-  typedef EdgeIndex<Graph> Index;
-  typedef KmerMapper<Graph> KmerSubs;
+  typedef Seq Kmer;
+  typedef EdgeIndex<Graph, Kmer> Index;
+  typedef KmerMapper<Graph, Kmer> KmerSubs;
 
  private:
   const Graph& g_;
@@ -358,9 +367,10 @@ class ExtendedSequenceMapper {
     if (sequence.size() < k_) {
       return MappingPath<EdgeId>();
     }
-    Kmer kmer = sequence.start<Kmer::max_size>(k_);
-    kmer >>= 0;
-    for (size_t i = k_ - 1; i < sequence.size(); ++i) {
+    Kmer kmer = sequence.start<Kmer>(k_);
+    //kmer >>= 0;
+    ProcessKmer(kmer, 0, passed_edges, range_mapping);
+    for (size_t i = k_; i < sequence.size(); ++i) {
       kmer <<= sequence[i];
       ProcessKmer(kmer, i - k_ + 1, passed_edges, range_mapping);
     }
@@ -377,15 +387,15 @@ class ExtendedSequenceMapper {
 };
 
 //todo compare performance
-template<class Graph>
+template<class Graph, class Seq = runtime_k::RtSeq>
 class NewExtendedSequenceMapper {
  public:
   typedef typename Graph::EdgeId EdgeId;
   typedef std::vector<MappingRange> RangeMappings;
-  typedef runtime_k::RtSeq Kmer;
-  typedef EdgeIndex<Graph> Index;
+  typedef Seq Kmer;
+  typedef EdgeIndex<Graph, Kmer> Index;
   typedef typename Index::InnerIndex KMerIndex;
-  typedef KmerMapper<Graph> KmerSubs;
+  typedef KmerMapper<Graph, Kmer> KmerSubs;
   typedef typename KMerIndex::KMerIdx KMerIdx;
 
  private:
@@ -504,10 +514,12 @@ class NewExtendedSequenceMapper {
       return MappingPath<EdgeId>();
     }
 
-    Kmer kmer = sequence.start<Kmer::max_size>(k_);
-    kmer >>= 0;
+    Kmer kmer = sequence.start<Kmer>(k_);
+    //kmer >>= 0;
     bool try_thread = false;
-    for (size_t i = k_ - 1; i < sequence.size(); ++i) {
+    try_thread = ProcessKmer(kmer, 0, passed_edges,
+                             range_mapping, try_thread);
+    for (size_t i = k_; i < sequence.size(); ++i) {
       kmer <<= sequence[i];
       try_thread = ProcessKmer(kmer, i - k_ + 1, passed_edges,
                                range_mapping, try_thread);
@@ -534,9 +546,9 @@ class NewExtendedSequenceMapper {
 };
 
 template<class gp_t>
-std::shared_ptr<const NewExtendedSequenceMapper<typename gp_t::graph_t> > MapperInstance(const gp_t& gp) {
+std::shared_ptr<const NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::seq_t> > MapperInstance(const gp_t& gp) {
   size_t k_plus_1 = gp.k_value + 1;
-  return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t> >(gp.g, gp.index, gp.kmer_mapper, k_plus_1);
+  return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::seq_t> >(gp.g, gp.index, gp.kmer_mapper, k_plus_1);
 }
 
 }

@@ -34,12 +34,13 @@ template<class gp_t>
 class IDBADiffAnalyzer {
 private:
 	typedef typename gp_t::graph_t Graph;
+	typedef typename gp_t::seq_t Kmer;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef io::SingleRead Contig;
 	typedef io::IReader<io::SingleRead> ContigStream;
 	typedef	io::MultifileReader<io::SingleRead> CompositeStream;
-	typedef debruijn_graph::NewExtendedSequenceMapper<Graph> Mapper; // gp_t::k_value + 1
+	typedef debruijn_graph::NewExtendedSequenceMapper<Graph, Kmer> Mapper;
 
 	const gp_t& gp_;
 	const ColorHandler<Graph>& coloring_;
@@ -338,15 +339,16 @@ private:
 public:
 	IDBADiffAnalyzer(const gp_t& gp,
 //			const EdgesPositionHandler<Graph>& pos,
-			const ColorHandler<Graph>& coloring,
-			const string& good_assembly_prefix,
-			const string& bad_assembly_prefix,
-			const string& dir)
-	: gp_(gp)/*, pos_(pos)*/, coloring_(coloring)
-	, mapper_(gp.g, gp.index, gp.kmer_mapper, gp.k_value + 1)
-	, good_assembly_prefix_(good_assembly_prefix)
-	, bad_assembly_prefix_(bad_assembly_prefix)
-	, dir_(dir) {
+                   const ColorHandler<Graph>& coloring,
+                   const string& good_assembly_prefix,
+                   const string& bad_assembly_prefix,
+                   const string& dir)
+    : gp_(gp)/*, pos_(pos)*/,
+      coloring_(coloring),
+      mapper_(gp.g, gp.index, gp.kmer_mapper, gp.k_value + 1),
+      good_assembly_prefix_(good_assembly_prefix),
+      bad_assembly_prefix_(bad_assembly_prefix),
+      dir_(dir) {
 		DEBUG("\"Good\" assembly prefix " << good_assembly_prefix);
 		DEBUG("\"Bad\" assembly prefix " << bad_assembly_prefix);
 	}

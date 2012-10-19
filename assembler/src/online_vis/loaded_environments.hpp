@@ -4,9 +4,9 @@
 
 namespace online_visualization {
 
-    typedef shared_ptr<Environment> EnvironmentPtr;
-
-    typedef map<string, EnvironmentPtr> LoadedEnvironments;
+    template <class Env>
+    class LoadedEnvironments : public map<string, shared_ptr<Env> > {};
+//    typedef map<string, shared_ptr<Env> > LoadedEnvironments;
 
     static vector<string>& GetHistory() {
         static vector<string> history;

@@ -2,12 +2,11 @@
 
 #include "../environment.hpp"
 #include "../command.hpp"
-#include "../command_type.hpp"
 #include "../errors.hpp"
 #include "omni/omni_utils.hpp"
 
 namespace online_visualization {
-    class PrintContigsStatsCommand : public LocalCommand {
+    class PrintContigsStatsCommand : public LocalCommand<DebruijnEnvironment> {
         //typedef vector<EdgeId> Path;
         
         private:
@@ -38,7 +37,7 @@ namespace online_visualization {
                 return answer;
             }
 
-            vector<EdgeId> TryFixPath(Environment& curr_env, const vector<EdgeId>& edges) const {
+            vector<EdgeId> TryFixPath(DebruijnEnvironment& curr_env, const vector<EdgeId>& edges) const {
                 vector<EdgeId> answer;
                 if (edges.empty()) {
                     //  WARN("Mapping path was empty");
@@ -54,14 +53,14 @@ namespace online_visualization {
                 return answer;
             }
 
-            Path<EdgeId> TryFixPath(Environment& curr_env, const Path<EdgeId>& path) const {
+            Path<EdgeId> TryFixPath(DebruijnEnvironment& curr_env, const Path<EdgeId>& path) const {
                 return Path<EdgeId>(TryFixPath(curr_env, path.sequence()), path.start_pos(), path.end_pos());
             }
 
         private:
 
             //TODO: do something!
-            //bool ProcessContigCarefully(Environment& curr_env, const Sequence& contig, const MappingPath<EdgeId>& genome_path, const string& contig_name) const {
+            //bool ProcessContigCarefully(DebruijnEnvironment& curr_env, const Sequence& contig, const MappingPath<EdgeId>& genome_path, const string& contig_name) const {
                 //debug(ext_output, " Checking the contig " << contig_name);
                 //debug(ext_output, " Length " << contig.size());
                 //const MappingPath<EdgeId>& contig_path = curr_env.mapper().MapSequence(contig);
@@ -114,7 +113,7 @@ namespace online_visualization {
                 //}
             //}
 
-            bool ProcessContig(Environment& curr_env, const Sequence& contig, const MappingPath<EdgeId>& genome_path, const string& contig_name) const {
+            bool ProcessContig(DebruijnEnvironment& curr_env, const Sequence& contig, const MappingPath<EdgeId>& genome_path, const string& contig_name) const {
                 debug(ext_output, " Checking the contig " << contig_name);
                 debug(ext_output, " Length " << contig.size());
                 const Path<EdgeId>& genome_path_completed = TryFixPath(curr_env, genome_path.simple_path());
@@ -173,11 +172,11 @@ namespace online_visualization {
                 return answer;
             }
 
-            PrintContigsStatsCommand() : LocalCommand(CommandType::print_contigs_stats)
+            PrintContigsStatsCommand() : LocalCommand<DebruijnEnvironment>("print_contigs_stats")
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
                 const vector<string>& args = arg_list.GetAllArguments();
                 if (!CheckCorrectness(args))
                     return;

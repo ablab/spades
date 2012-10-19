@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iostream>
+#include "coloring.hpp"
+
 namespace cap {
 
 template <class gp_t>
@@ -7,7 +10,7 @@ class SimpleIndelFinder {
   typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-  typedef unsigned long long u64int;
+  typedef uint64_t u64int;
 
   gp_t &gp_;
   Graph &g_;

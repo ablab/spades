@@ -392,10 +392,13 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
     counter.OpenBucket(iFile, !save_final);
     size_t sz = counter.bucket_end(iFile) - counter.bucket_begin(iFile);
     index.bucket_starts_[iFile + 1] = sz;
+    INFO("TRY TO WIN");
     if (!data_index.Reset(counter.bucket_begin(iFile), counter.bucket_end(iFile), sz)) {
       INFO("Something went really wrong (read = this should not happen). Try to restart and see if the problem will be fixed.");
       exit(-1);
     }
+    INFO("WIN");
+    
     counter.ReleaseBucket(iFile);
   }
 

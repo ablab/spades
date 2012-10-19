@@ -23,3 +23,4 @@ add_executable(cap
 #endif()
 
 target_link_libraries(cap ${COMMON_LIBRARIES} input mph_index)
+

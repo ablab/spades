@@ -50,7 +50,7 @@ public:
         if (s.size() < k_)
             return;
 
-        Kmer kmer = s.start<Kmer::max_size>(k_);
+        Kmer kmer = s.start<Kmer>(k_);
 
         AddEdge(kmer, thread_number);
         for (size_t j = k_; j < s.size(); ++j) {

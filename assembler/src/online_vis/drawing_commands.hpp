@@ -8,7 +8,6 @@
 
 #include "environment.hpp"
 #include "command.hpp"
-#include "command_type.hpp"
 #include "errors.hpp"
 #include "argument_list.hpp"
 
@@ -40,11 +39,11 @@ namespace online_visualization {
                 return answer;
             }
             
-            DrawVertexCommand() : DrawingCommand(CommandType::draw_vertex)
+            DrawVertexCommand() : DrawingCommand("draw_vertex")
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
                 const vector<string>& args = arg_list.GetAllArguments();
 
                 if (!CheckCorrectness(args))
@@ -65,11 +64,11 @@ namespace online_visualization {
                 return CheckEnoughArguments(args);
             }
 
-            void DrawEdge(Environment& curr_env, EdgeId edge, string label = "") const {
+            void DrawEdge(DebruijnEnvironment& curr_env, EdgeId edge, string label = "") const {
                 DrawingCommand::DrawPicture(curr_env, curr_env.graph().EdgeStart(edge), label); 
             }
 
-            void DrawEdge(Environment& curr_env, size_t edge_id, string label = "") const {
+            void DrawEdge(DebruijnEnvironment& curr_env, size_t edge_id, string label = "") const {
                 DrawEdge(curr_env, curr_env.int_ids().ReturnEdgeId(edge_id), label);
             }
 
@@ -84,11 +83,11 @@ namespace online_visualization {
                 return answer;
             }
 
-            DrawEdgeCommand() : DrawingCommand(CommandType::draw_edge)
+            DrawEdgeCommand() : DrawingCommand("draw_edge")
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
                 const vector<string>& args = arg_list.GetAllArguments();
 
                 if (!CheckCorrectness(args))

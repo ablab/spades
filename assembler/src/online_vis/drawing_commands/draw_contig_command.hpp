@@ -2,14 +2,13 @@
 
 #include "../environment.hpp"
 #include "../command.hpp"
-#include "../command_type.hpp"
 #include "../errors.hpp"
 
 namespace online_visualization {
     class DrawContigCommand : public DrawingCommand {
 
         private:
-            void DrawPicturesAlongGenomePart(Environment& curr_env, const Sequence& piece_of_genome, string label = "") const {
+            void DrawPicturesAlongGenomePart(DebruijnEnvironment& curr_env, const Sequence& piece_of_genome, string label = "") const {
                 const MappingPath<EdgeId>& mapping_path = curr_env.mapper().MapSequence(piece_of_genome);
                 DrawingCommand::DrawPicturesAlongPath(curr_env, mapping_path, label);
             }
@@ -36,11 +35,11 @@ namespace online_visualization {
                 return answer;
             }
 
-            DrawContigCommand() : DrawingCommand(CommandType::draw_contig)
+            DrawContigCommand() : DrawingCommand("draw_contig")
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
                 const vector<string>& args = arg_list.GetAllArguments();
                 if (!CheckCorrectness(args))
                     return;

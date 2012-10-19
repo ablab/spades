@@ -2,12 +2,11 @@
 
 #include "../environment.hpp"
 #include "../command.hpp"
-#include "../command_type.hpp"
 #include "../errors.hpp"
 
 namespace online_visualization {
 
-    class FillPositionCommand : public LocalCommand {
+    class FillPositionCommand : public LocalCommand<DebruijnEnvironment> {
 
         protected:
             size_t MinArgNumber() const {
@@ -37,11 +36,11 @@ namespace online_visualization {
                 return answer;
             }
 
-            FillPositionCommand() : LocalCommand(CommandType::fill_pos)
+            FillPositionCommand() : LocalCommand<DebruijnEnvironment>("fill_pos")
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
                 const vector<string>& args = arg_list.GetAllArguments();
                 if (!CheckCorrectness(args))
                     return;

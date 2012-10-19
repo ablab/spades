@@ -206,7 +206,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	io::ReadStreamVector<io::IReader<io::PairedRead>> paired_stream_vector({&paired_read_stream});
 	DEBUG("Streams initialized");
 
-	graph_pack<Graph> gp(k, tmp_folder, (Sequence()));
+	graph_pack<Graph, runtime_k::RtSeq> gp(k, tmp_folder, (Sequence()));
 	DEBUG("Graph pack created");
 
 	PairedInfoIndex<Graph> paired_index(gp.g);

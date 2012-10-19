@@ -2,7 +2,6 @@
 
 #include "../environment.hpp"
 #include "../command.hpp"
-#include "../command_type.hpp"
 #include "../errors.hpp"
 #include "../argument_list.hpp"
 
@@ -11,7 +10,7 @@
 namespace online_visualization {
     class ShowPositionCommand : public DrawingCommand {
         private:
-            int ShowPicture(Environment& curr_env, runtime_k::RtSeq kmer, string label = "") const {
+            int ShowPicture(DebruijnEnvironment& curr_env, runtime_k::RtSeq kmer, string label = "") const {
                 kmer = curr_env.kmer_mapper().Substitute(kmer);
                 if (!curr_env.index().contains(kmer)) {
                     FireNoCorrespondingGraphLocation(label);
@@ -48,11 +47,11 @@ namespace online_visualization {
                 return answer;
             }
 
-            ShowPositionCommand() : DrawingCommand(CommandType::show_position)
+            ShowPositionCommand() : DrawingCommand("show_position")
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
                 const vector<string>& args = arg_list.GetAllArguments();
                 if (!CheckCorrectness(args))
                     return;
@@ -64,7 +63,7 @@ namespace online_visualization {
                     genome = !genome;
                 }
                 if (CheckPositionBounds(position, genome.size(), curr_env.k_value())) {
-                    int result = ShowPicture(curr_env, genome.Subseq(position).start<runtime_k::RtSeq::max_size>(curr_env.k_value() + 1), args[1]);
+                    int result = ShowPicture(curr_env, genome.Subseq(position).start<runtime_k::RtSeq>(curr_env.k_value() + 1), args[1]);
                     if (result) 
                         FireGenericError("Something is wrong");
                 }

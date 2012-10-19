@@ -505,7 +505,7 @@ public:
 
 		Sequence read = p_r.sequence();
 		if (k_ + 1 <= read.size()) {
-			runtime_k::RtSeq kmer = read.start<runtime_k::RtSeq::max_size>(k_ + 1);
+			runtime_k::RtSeq kmer = read.start<runtime_k::RtSeq>(k_ + 1);
 			bool found;
 			for (size_t i = k_ + 1; i <= read.size(); ++i) {
 				if (index_.contains(kmer)) {
@@ -541,7 +541,7 @@ public:
 			, const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
 		if (genome.size() < k_)
 			return;
-		runtime_k::RtSeq cur = genome.start<runtime_k::RtSeq::max_size>(k_);
+		runtime_k::RtSeq cur = genome.start<runtime_k::RtSeq>(k_);
 		cur >>= 0;
 		for (size_t i = 0; i + k_ - 1 < genome.size(); i++) {
 			cur <<= genome[i + k_ - 1];

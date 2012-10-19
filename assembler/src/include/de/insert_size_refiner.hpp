@@ -73,8 +73,8 @@ class InsertSizeHistogramCounter {
                 if (sequence_left.size() <= k_ || sequence_right.size() <= k_) {
                     return 0;
                 }
-                runtime_k::RtSeq left = sequence_left.end<runtime_k::RtSeq::max_size>(k_ + 1);
-                runtime_k::RtSeq right = sequence_right.start<runtime_k::RtSeq::max_size>(k_ + 1);
+                runtime_k::RtSeq left = sequence_left.end<runtime_k::RtSeq>(k_ + 1);
+                runtime_k::RtSeq right = sequence_right.start<runtime_k::RtSeq>(k_ + 1);
                 left = gp_.kmer_mapper.Substitute(left);
                 right = gp_.kmer_mapper.Substitute(right);
                 if (!gp_.index.contains(left) || !gp_.index.contains(right)) {

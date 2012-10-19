@@ -1,5 +1,8 @@
 #pragma once
 
+#include "runtime_k.hpp"
+#include "cap_kmer_index.hpp"
+
 namespace cap {
 
 template<class Graph, class Mapper>
@@ -280,13 +283,13 @@ void ConstructColoredGraph(gp_t& gp,
 		vector<ContigStream*>& streams, bool fill_pos = true, int br_delta = -1) {
 	typedef typename gp_t::graph_t Graph;
 	const size_t k = gp.k_value;
-	typedef NewExtendedSequenceMapper<Graph> Mapper;
+	typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
 
 	INFO("Constructing de Bruijn graph for k=" << k);
 
 	// false: do not delete streams after usage
 	io::ReadStreamVector<ContigStream> read_stream_vector(streams, false);
-	ConstructGraph<Graph>(k, read_stream_vector, gp.g, gp.index);
+  ConstructGraph<Graph, Contig, typename gp_t::seq_t>(k, read_stream_vector, gp.g, gp.index);
 
 	//TODO do we still need it?
 	if (br_delta > 0)
@@ -301,6 +304,7 @@ void ConstructColoredGraph(gp_t& gp,
 		for (auto it = streams.begin(); it != streams.end(); ++it) {
 			ContigStream& stream = **it;
 			stream.reset();
+
 			FillPos(gp, stream);
 		}
 	}

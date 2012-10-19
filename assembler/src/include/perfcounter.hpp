@@ -75,15 +75,17 @@ struct avg_perf_counter
 //    	cout << "Time in counter " << name_ << ": " << human_readable_time(time()) << endl;
 //    }
 
-    void start()
+    int start(int ret = 0)
     {
         p_cnt_.reset();
+        return ret;
     }
 
-    void stop()
+    int stop(int ret = 0)
     {
         counter_++;
         whole_time_ += p_cnt_.time();
+        return ret;
     }
     double time() const
     {

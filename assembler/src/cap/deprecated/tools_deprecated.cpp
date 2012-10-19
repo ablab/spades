@@ -1,48 +1,4 @@
-//***************************************************************************
-//* Copyright (c) 2011-2012 Saint-Petersburg Academic University
-//* All Rights Reserved
-//* See file LICENSE for details.
-//****************************************************************************
 
-#include "compare_standard.hpp"
-#include "logger/log_writers.hpp"
-#include "graphio.hpp"
-#include <boost/test/unit_test.hpp>
-
-#include "comparison_utils.hpp"
-#include "diff_masking.hpp"
-#include "repeat_masking.hpp"
-#include "genome_correction.hpp"
-#include "assembly_compare.hpp"
-#include "test_utils.hpp"
-
-namespace cap {
-
-<<<<<<< HEAD
-const string tmp_folder = "tmp/";
-
-class TmpFolderFixture {
-  std::string tmp_folder_;
-
- public:
-	TmpFolderFixture(/*std::string tmp_folder*/) {
-    tmp_folder_ = tmp_folder;
-    INFO("Creating " << tmp_folder_ << ": " << make_dir(tmp_folder_));
-  }
-
-  void Stub() {
-    if (1 + 1 == 1) {
-      INFO("LOL WAT");
-    }
-  }
-
-  ~TmpFolderFixture() {
-    INFO("Removing ");
-    remove_dir(tmp_folder_);
-  }
-};
-
-BOOST_FIXTURE_TEST_SUITE(cap_tools, TmpFolderFixture)
 //Gingi block
 
 //BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
@@ -203,33 +159,34 @@ BOOST_FIXTURE_TEST_SUITE(cap_tools, TmpFolderFixture)
 //			20);
 //}
 
-BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
-	static const size_t k = 19;
-	static const size_t K = 55;
-//	static const size_t K = 57;
-//	static const size_t K = 53;
-
-//	io::Reader stream_1("/home/snurk/gingi/2.fasta");
-//	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-
-	io::Reader stream_1("/home/snurk/Dropbox/lab/phep_issue/phep_master.fasta");
-	io::Reader stream_2("/home/snurk/Dropbox/lab/phep_issue/phep_param_opt.fasta");
-	string ref = "/home/snurk/Dropbox/lab/phep_issue/reference_NC_013061.1.fasta";
-	string folder = "phep_issue/results/";
-	make_dir(folder);
-
-	RunBPComparison<k, K>(
-		stream_1,
-		stream_2,
-		"master_",
-		"opt_",
-		true/*refine*/,
-		false/*untangle*/,
-		folder,
-		true/*detailed_output*/,
-		5/*delta*/,
-		ReadGenome(ref));
-}
+//BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
+//	static const size_t k = 19;
+//	static const size_t K = 55;
+////	static const size_t K = 57;
+////	static const size_t K = 53;
+//
+////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+//
+//	io::Reader stream_1("/home/anton/idba_compare/idba.fasta");
+//	io::Reader stream_2("/home/anton/idba_compare/hammer21_dis_tuned_simpl_try_improve.fasta");
+//	string ref = "/home/anton/idba_compare/MG1655-K12.fasta";
+//	string folder = "/home/anton/idba_compare/hammer21_dis_tuned_simpl_vs_idba/";
+////	string folder = "assembly_comp/gingi_new_3_vs_jeff/";
+//	make_dir(folder);
+//
+//	RunBPComparison<k, K>(
+//		stream_1,
+//		stream_2,
+//		"idba_",
+//		"k21ts_",
+//		true/*refine*/,
+//		false/*untangle*/,
+//		folder,
+//		true/*detailed_output*/,
+//		5/*delta*/,
+//		ReadGenome(ref));
+//}
 
 //BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 //	static const size_t k = 19;
@@ -326,104 +283,7 @@ BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 //		ReadGenome(ref));
 //}
 
-//BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
-//  TmpFolderFixture _("tmp");
-//
-//  std::string base_path = "/home/valich/work/youtubercoolez/";
-//
-//  /*
-//  vector<std::string> paths = {
-//    "/home/valich/mrsa/more_strains/MSSA476.fasta",
-//    "/home/valich/mrsa/more_strains/MRSA252.fasta",
-//    "/home/valich/mrsa/more_strains/TW20.fasta",
-//    "/home/valich/mrsa/more_strains/USA300.fasta"
-//  };
-//  vector<std::string> suffixes = {
-//    "mssa476",
-//    "rmsa252",
-//    "tw20",
-//    "usa300"
-//  };
-//
-//  */
-//
-//  vector<std::string> paths = {
-//    base_path + "CCDC5079.fasta",
-//    base_path + "CCDC5180.fasta",
-//    base_path + "H37Rv.fasta"
-//  };
-//  vector<std::string> suffixes = {
-//    "CCDC5079",
-//    "CCDC5180",
-//    "H37Rv"
-//  };
-//
-//
-//  vector<size_t> k_sequence = {
-//    201, 101, 55, 21, 15
-//  };
-//
-//	MaskDifferencesAndSave(paths, suffixes, "bp_graph_test/refined/", k_sequence);
-//}
 
-//BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
-//	typedef debruijn_graph::graph_pack<
-//	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph> comparing_gp_t;
-//  static const size_t K = 297;
-//  TmpFolderFixture _("tmp");
-//
-//  std::string base_path = "bp_graph_test/refined/";
-//
-//  // vector of pairs <name, path_to_fasta>
-///*
-//  vector<pair<std::string, std::string> > genomes_paths = {
-//    make_pair("MSSA476", "bp_graph_test/refined/mssa476.fasta"),
-//    make_pair("MRSA252", "bp_graph_test/refined/mrsa252.fasta"),
-//    make_pair("TW20", "bp_graph_test/refined/tw20.fasta"),
-//    make_pair("USA300", "bp_graph_test/refined/usa300.fasta")
-////    make_pair("11819", "bp_graph_test/refined/11819.fasta"),
-////    make_pair("COL", "bp_graph_test/refined/COL.fasta")
-//  };
-//  */
-//
-//  vector<pair<std::string, std::string> > genomes_paths = {
-//    make_pair("CCDC5079", base_path + "CCDC5079.fasta"),
-//    make_pair("CCDC5180", base_path + "CCDC5180.fasta"),
-//    make_pair("H37Rv",    base_path + "H37Rv.fasta")
-//  };
-//
-//  std::string folder = "bp_graph_test/multiple_genomes_visualization/";
-//
-//  RunMultipleGenomesVisualization<comparing_gp_t>(K, genomes_paths, folder);
-//}
-
-//BOOST_AUTO_TEST_CASE( TwoGenomesComparison ) {
-//  return;
-//  static const size_t k = 19;
-//  static const size_t K = 55;
-//  TmpFolderFixture("tmp");
-//
-//  ////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
-//  ////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-//
-//  std::string genome_path1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
-//              genome_path2 = "/smallnas/yana/X5_results/scaffolds_fcb_010_cleaned.fasta";
-//  io::Reader stream_1(genome_path1),
-//             stream_2(genome_path2);
-//
-//  string folder = "bp_graph_test/two_genomes_comparison/";
-//
-//  RunBPComparison<k, K>(
-//      stream_1,
-//      stream_2,
-//      "genome1_",
-//      "genome2_",
-//      false/*refine*/,
-//      false/*untangle*/,
-//      folder,
-//      true/*detailed_output*/,
-//      5/*delta*/);
-//}
 
 /*
 BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
@@ -600,158 +460,3 @@ BOOST_AUTO_TEST_CASE( GapComparativeAnalysis ) {
                 strain2 = "/smallnas/yana/X5_results/scaffolds_fcb.fasta";
 }
 */
-
-BOOST_AUTO_TEST_SUITE_END()
-=======
-
-BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
-  utils::TmpFolderFixture _("tmp");
-
-  std::string base_path = "/home/valich/work/ecoli/";
-
-  /*
-  vector<std::string> paths = {
-    "/home/valich/mrsa/more_strains/MSSA476.fasta",
-    "/home/valich/mrsa/more_strains/MRSA252.fasta",
-    "/home/valich/mrsa/more_strains/TW20.fasta",
-    "/home/valich/mrsa/more_strains/USA300.fasta"
-  };
-  vector<std::string> suffixes = {
-    "mssa476",
-    "rmsa252",
-    "tw20",
-    "usa300"
-  };
-
-    base_path + "CCDC5079.fasta",
-    base_path + "CCDC5180.fasta"
-
-  */
-  // E.Coli
-  vector<std::string> paths = {
-//    base_path + "EDL.fasta",
-    base_path + "H6.fasta",
-//    base_path + "HS.fasta",
-    base_path + "K12.fasta",
-    base_path + "TW.fasta",
-    base_path + "UTI.fasta"
-  };
-  vector<std::string> suffices = {
-//    "EDL",
-    "H6",
-//    "HS",
-    "K12",
-    "TW",
-    "UTI"
-  };
-
-  vector<size_t> k_sequence = {
-    501, 201, 101, 55, 21, 15
-  };
-
-  /*
-  std::string base_path = "/home/valich/work/human/";
-  
-  vector<std::string> paths = {
-    base_path + "homo_sapiens_X.fasta",
-    base_path + "pan_troglodytes_X.fasta"
-  };
-  vector<std::string> suffices = {
-    "homo_sapiens_X",
-    "pan_troglodytes_X"
-  };
-  vector<size_t> k_sequence = {
-    101, 55, 21, 15
-  };
-  */
-
-  std::string files_md5 = utils::GenMD5FromFiles(paths);
-  INFO("result is stored with md5 of " << files_md5);
-
-	MaskDifferencesAndSave(paths, suffices, "bp_graph_" + files_md5 + "/refined/", k_sequence);
-}
-
-BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
-  return;
-	typedef debruijn_graph::graph_pack<
-	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, LSeq> comparing_gp_t;
-  static const size_t K = 1001;
-  utils::TmpFolderFixture _("tmp");
-
-  std::string base_path = "bp_graph/refined/501/";
-
-  // vector of pairs <name, path_to_fasta>
-/*
-  vector<pair<std::string, std::string> > genomes_paths = {
-    make_pair("MSSA476", "bp_graph_test/refined/mssa476.fasta"),
-    make_pair("MRSA252", "bp_graph_test/refined/mrsa252.fasta"),
-    make_pair("TW20", "bp_graph_test/refined/tw20.fasta"),
-    make_pair("USA300", "bp_graph_test/refined/usa300.fasta")
-//    make_pair("11819", "bp_graph_test/refined/11819.fasta"),
-//    make_pair("COL", "bp_graph_test/refined/COL.fasta")
-  };
-  */
-  
-  vector<pair<std::string, std::string> > genomes_paths = {
-//    make_pair("EDL", base_path + "EDL.fasta"),
-    make_pair("H6", base_path + "H6.fasta"),
-//    make_pair("HS", base_path + "HS.fasta"),
-    make_pair("K12", base_path + "K12.fasta"),
-    make_pair("TW", base_path + "TW.fasta"),
-    make_pair("UTI", base_path + "UTI.fasta")
-//    make_pair("CCDC5079", base_path + "CCDC5079.fasta"),
-//    make_pair("CCDC5180", base_path + "CCDC5180.fasta")
-  };
-
-  std::string folder = "bp_graph/multiple_genomes_visualization/";
-
-  RunMultipleGenomesVisualization<comparing_gp_t>(K, genomes_paths, folder);
-}
-
-BOOST_AUTO_TEST_CASE( TwoGenomesComparison ) {
-  return;
-  static const size_t k = 19;
-  static const size_t K = 55;
-  utils::TmpFolderFixture("tmp");
-
-  ////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
-  ////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-
-  std::string genome_path1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
-              genome_path2 = "/smallnas/yana/X5_results/scaffolds_fcb_010_cleaned.fasta";
-  io::Reader stream_1(genome_path1),
-             stream_2(genome_path2);
-
-  string folder = "bp_graph_test/two_genomes_comparison/";
-
-  RunBPComparison<k, K, LSeq>(
-      stream_1,
-      stream_2,
-      "genome1_",
-      "genome2_",
-      false/*refine*/,
-      false/*untangle*/,
-      folder,
-      true/*detailed_output*/,
-      5/*delta*/);
-}
-
->>>>>>> LongSeq support in cap, online_vis refactoring cap
-}
-
-::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {
-    logging::logger *log = logging::create_logger("", logging::L_INFO);
-    log->add_writer(std::make_shared<logging::console_writer>());
-    logging::attach_logger(log);
-
-	using namespace ::boost::unit_test;
-	char module_name[] = "cap";
-
-	assign_op(framework::master_test_suite().p_name.value,
-			basic_cstring<char>(module_name), 0);
-
-  omp_set_num_threads(1);
-
-	return 0;
-}
-

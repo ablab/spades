@@ -510,6 +510,9 @@ class RuntimeSeq {
     }
     return res;
   }
+  std::string err() const {
+    return "";
+  }
 
   std::string full_str() const {
     std::string res(max_size, '-');

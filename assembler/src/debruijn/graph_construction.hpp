@@ -131,10 +131,10 @@ void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
 	DEBUG("Coverage counted");
 }
 
-template<class Graph, class Read>
+template<class Graph, class Read, class Seq>
 size_t ConstructGraph(size_t k,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
-		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
+		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
 
 	INFO("Constructing DeBruijn graph");
 
@@ -143,14 +143,15 @@ size_t ConstructGraph(size_t k,
 	VERIFY_MSG(streams.size(), "No input streams specified");
 
 	TRACE("... in parallel");
-	DeBruijnKMerIndex<typename Graph::EdgeId>& debruijn = index.inner_index();
-	rl = DeBruijnKMerIndexBuilder().BuildIndexFromStream(debruijn, streams,
+	DeBruijnKMerIndex<typename Graph::EdgeId, Seq>& debruijn = index.inner_index();
+	rl = DeBruijnKMerIndexBuilder<Seq>().BuildIndexFromStream(debruijn, streams,
 			contigs_stream);
 
 	TRACE("Filled indices");
 
 	INFO("Condensing graph");
-	DeBruijnGraphConstructor<Graph> g_c(g, debruijn, k);
+	DeBruijnGraphConstructor<Graph, Seq> g_c(g, debruijn, k);
+  INFO("Constructor ok");
 	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
 	TRACE("Graph condensed");
 

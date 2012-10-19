@@ -318,8 +318,12 @@ public:
 };
 
 //Map pointer wrapper
-template <typename Value>
+template <typename Value, typename Seq = RtSeq>
 class KmerMap {
+};
+
+template <typename Value>
+class KmerMap<Value, RtSeq> {
 
 public:
 

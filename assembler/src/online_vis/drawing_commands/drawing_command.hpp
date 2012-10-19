@@ -2,15 +2,14 @@
 
 #include "../environment.hpp"
 #include "../command.hpp"
-#include "../command_type.hpp"
 #include "../errors.hpp"
 #include "../argument_list.hpp"
 
 namespace online_visualization {
 
-    class DrawingCommand : public LocalCommand {
+    class DrawingCommand : public LocalCommand<DebruijnEnvironment> {
         protected:
-            void DrawPicture(Environment& curr_env, VertexId vertex, string label = "") const {
+            void DrawPicture(DebruijnEnvironment& curr_env, VertexId vertex, string label = "") const {
                 make_dir(curr_env.folder_);
 
 
@@ -28,7 +27,7 @@ namespace online_visualization {
                 curr_env.picture_counter_++;
             }
 
-            void DrawPicturesAlongPath(Environment& curr_env, const MappingPath<EdgeId>& path, string label = "") const {
+            void DrawPicturesAlongPath(DebruijnEnvironment& curr_env, const MappingPath<EdgeId>& path, string label = "") const {
                 make_dir(curr_env.folder_);
                 stringstream namestream;
                 namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << curr_env.file_name_base_ << "_" << label << "_" << ".dot";
@@ -42,7 +41,7 @@ namespace online_visualization {
 
               
             //TODO: copy zgrviewer 
-            int ShowPicture(Environment& curr_env, VertexId vertex, string label = "") const {
+            int ShowPicture(DebruijnEnvironment& curr_env, VertexId vertex, string label = "") const {
                 DrawPicture(curr_env, vertex, label);
                 stringstream command_line_string;
                 command_line_string << "gnome-open " << curr_env.folder_ << "/" << curr_env.file_name_base_ 
@@ -53,13 +52,13 @@ namespace online_visualization {
                 return result;
             }
 
-            void DrawVertex(Environment& curr_env, size_t vertex_id, string label = "") const {
+            void DrawVertex(DebruijnEnvironment& curr_env, size_t vertex_id, string label = "") const {
                 DrawPicture(curr_env, curr_env.int_ids().ReturnVertexId(vertex_id), label);
             }
 
 
         public:
-            DrawingCommand(CommandType command_type) : LocalCommand(command_type)
+            DrawingCommand(string command_type) : LocalCommand<DebruijnEnvironment>(command_type)
             {
             }
 

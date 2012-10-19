@@ -2,11 +2,10 @@
 
 #include "../environment.hpp"
 #include "../command.hpp"
-#include "../command_type.hpp"
 #include "../errors.hpp"
 
 namespace online_visualization {
-    class ClearPositionCommand : public LocalCommand {
+    class ClearPositionCommand : public LocalCommand<DebruijnEnvironment> {
         public:
             string Usage() const {
                 string answer;
@@ -17,11 +16,11 @@ namespace online_visualization {
                 return answer;
             }
 
-            ClearPositionCommand() : LocalCommand(CommandType::clear_pos) 
+            ClearPositionCommand() : LocalCommand<DebruijnEnvironment>("clear_pos") 
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& args) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& args) const {
                 curr_env.ResetPositions();
             }
         

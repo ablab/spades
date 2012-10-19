@@ -19,7 +19,7 @@
 {
 	//logging::create_logger("", logging::L_DEBUG);
 	//logging::__logger()->add_writer(make_shared<logging::console_writer>());
-  logging::logger *log = logging::create_logger("", logging::L_TRACE);
+  logging::logger *log = logging::create_logger("", logging::L_INFO);
 	log->add_writer(std::make_shared<logging::console_writer>());
 	logging::attach_logger(log);
 
@@ -31,7 +31,10 @@
 	return 0;
 }
 
+#include "lseq_test.hpp"
+
 namespace cap {
+
 inline void CheckDiffs(const string& actual_prefix, const string& etalon_prefix, bool exact_match = true) {
     string comparison_type_string;
     if (exact_match) {
@@ -55,7 +58,7 @@ inline void CheckDiffs(const string& actual_prefix, const string& etalon_prefix,
 }
 
 
-template<size_t k, size_t K>
+template<size_t k, size_t K, class BuildSeq>
 inline void LoadAndRunBPG(const string& filename, const string& output_dir, const string& etalon_root,
 		const string& example_id = "", bool regenerate_etalon = false) {
 	string add_saves_path = "";
@@ -95,44 +98,60 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir, cons
 		VERIFY(genomes.size() == 2);
 		io::VectorReader<io::SingleRead> stream_1(genomes[0]);
 		io::VectorReader<io::SingleRead> stream_2(genomes[1]);
-			RunBPComparison<k, K>(
-					stream_1,
-					stream_2,
-					"genome_0_",
-					"genome_1_", /*refine*/
-					true, /*untangle*/
-					false,
-					output_dir + "example_" + n /*ToString(++example_cnt)*/
-						+ "/", /*detailed_output*/true
-						,5, Sequence(), (add_saves_path != "") ? add_saves_path + n : "");
-			if (!regenerate_etalon) {
-				CheckDiffs(output_dir + "example_" + n + "/saves/colored_split_graph", etalon_root + n, false);
-			}
-		}
+    RunBPComparison<k, K, BuildSeq>(
+        stream_1,
+        stream_2,
+        "genome_0_",
+        "genome_1_", /*refine*/
+        true, /*untangle*/
+        false,
+        output_dir + "example_" + n /*ToString(++example_cnt)*/
+          + "/", /*detailed_output*/true
+          ,5, Sequence(), (add_saves_path != "") ? add_saves_path + n : "");
+    if (!regenerate_etalon) {
+      CheckDiffs(output_dir + "example_" + n + "/saves/colored_split_graph", etalon_root + n, false);
+    }
+  }
 }
 
+/*
 BOOST_AUTO_TEST_CASE( ColoringStringsTest ) {
     ColorGenerator::instance().GenerateColors(20);
     for (size_t i = 0; i < 20; ++i) {
         INFO("Color #" << i << ": " << ColorGenerator::instance().GetIthColor(i));
     }
 }
+*/
 
-BOOST_AUTO_TEST_CASE( SyntheticExamplesTests ) {
+BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
+  utils::TmpFolderFixture _("tmp");
 	make_dir("bp_graph_test");
-	LoadAndRunBPG<15, 25>("./src/test/cap/tests/synthetic/tests.xml",
+	LoadAndRunBPG<15, 25, runtime_k::RtSeq>("./src/test/cap/tests/synthetic/tests.xml",
 			"bp_graph_test/simulated_common/", "./src/test/cap/tests/synthetic/etalon/", "", false);
 	remove_dir("bp_graph_test");
 }
 
+BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
 
-BOOST_AUTO_TEST_CASE( SyntheticExamplesWithErrorsTests ) {
+  utils::TmpFolderFixture _("tmp");
 	make_dir("bp_graph_test");
-	LoadAndRunBPG<15, 25>("./src/test/cap/tests/synthetic_with_err/tests2.xml",
-			"bp_graph_test/simulated_common_err/", "./src/test/cap/tests/synthetic_with_err/etalon/", "1_err", false);
+
+	LoadAndRunBPG<15, 25, LSeq>("./src/test/cap/tests/synthetic/tests.xml",
+			"bp_graph_test/simulated_common/", "./src/test/cap/tests/synthetic/etalon/", "", false);
 	remove_dir("bp_graph_test");
 }
 
+/*
+BOOST_AUTO_TEST_CASE( SyntheticExamplesWithErrorsTests ) {
+  utils::TmpFolderFixture _("tmp");
+	make_dir("bp_graph_test");
+	LoadAndRunBPG<15, 25, runtime_k::RtSeq>("./src/test/cap/tests/synthetic_with_err/tests2.xml",
+			"bp_graph_test/simulated_common_err/", "./src/test/cap/tests/synthetic_with_err/etalon/", "1_err", false);
+	LoadAndRunBPG<15, 25, LSeq>("./src/test/cap/tests/synthetic_with_err_lseq/tests2.xml",
+			"bp_graph_test/simulated_common_err/", "./src/test/cap/tests/synthetic_with_err_lseq/etalon/", "1_err_lseq", false);
+	remove_dir("bp_graph_test");
+}
+*/
 // todo parts for more tests
 //	Sequence genome = ReadGenome("data/input/E.coli/MG1655-K12.fasta.gz");
 //	INFO("Running comparison against mutated genome");

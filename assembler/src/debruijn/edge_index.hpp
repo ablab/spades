@@ -21,10 +21,10 @@ namespace debruijn_graph {
  * can be used both with vertices and edges of graph.
  * todo EdgeNucls are hardcoded!
  */
-template<typename Graph, typename ElementId>
+template<typename Graph, typename ElementId, typename Seq = runtime_k::RtSeq>
 class DataHashRenewer {
-  typedef runtime_k::RtSeq Kmer;
-  typedef DeBruijnKMerIndex<EdgeId> Index;
+  typedef Seq Kmer;
+  typedef DeBruijnKMerIndex<EdgeId, Kmer> Index;
 
   const Graph &g_;
   Index &index_;
@@ -80,18 +80,18 @@ private:
  * @see DeBruijnKMerIndex
  * @see DataHashRenewer
  */
-template<class Graph>
+template<class Graph, class Seq = runtime_k::RtSeq>
 class EdgeIndex: public GraphActionHandler<Graph> {
 
 public:
+  typedef Seq Kmer;
   typedef typename Graph::EdgeId EdgeId;
-  typedef DeBruijnKMerIndex<EdgeId> InnerIndex;
+  typedef DeBruijnKMerIndex<EdgeId, Kmer> InnerIndex;
   typedef typename InnerIndex::KMerIdx KMerIdx;
-  typedef runtime_k::RtSeq Kmer;
 
 private:
   InnerIndex inner_index_;
-  DataHashRenewer<Graph, EdgeId> renewer_;
+  DataHashRenewer<Graph, EdgeId, Kmer> renewer_;
   bool delete_index_;
 
 public:
@@ -147,7 +147,7 @@ public:
 
   void Refill() {
     clear();
-    DeBruijnKMerIndexBuilder().BuildIndexFromGraph(inner_index_, this->g());
+    DeBruijnKMerIndexBuilder<Seq>().BuildIndexFromGraph(inner_index_, this->g());
   }
 
   void clear() {

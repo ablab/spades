@@ -91,7 +91,7 @@ bool CheckContains(const runtime_k::RtSeq& pattern, const Sequence& s, size_t k)
 	if (s.size() < k)
 		return false;
 
-	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq::max_size>(k);
+	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(k);
 	kmer >>= 0;
 	for (size_t i = k - 1; i < s.size(); ++i) {
 		kmer <<= s[i];
@@ -105,7 +105,7 @@ bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s, size_t k) 
 	if (pattern.size() < k || s.size() < k)
 		return false;
 
-	runtime_k::RtSeq kmer = pattern.start<runtime_k::RtSeq::max_size>(k);
+	runtime_k::RtSeq kmer = pattern.start<runtime_k::RtSeq>(k);
 	kmer >>= 0;
 	for (size_t i = k - 1; i < pattern.size(); ++i) {
 		kmer <<= pattern[i];

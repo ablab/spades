@@ -3,14 +3,14 @@
 #include "vis_utils.hpp"
 
 namespace online_visualization {
-    
+
     class ArgumentList {
         private:
             map<string, string> options;
             set<string> short_options;
             vector<string> arguments;
 
-            const vector<string> SplitInTokens(stringstream& args) const { 
+            const vector<string> SplitInTokens(stringstream& args) const {
                 vector<string> answer;
                 while (!args.eof()) {
                     string arg;
@@ -27,16 +27,16 @@ namespace online_visualization {
 
                 size_t i = 2;
                 for (; i < arg.size() && arg[i] != '='; ++i) {
-                    opt_name = opt_name + arg[i];   
+                    opt_name = opt_name + arg[i];
                 }
                 for (; i < arg.size(); ++i) {
-                    opt_value = opt_value + arg[i];   
+                    opt_value = opt_value + arg[i];
                 }
-            
+
                 TRACE("Name/Value " << opt_name << " " << opt_value);
                 if (opt_value == "")
                     opt_value = "true";
-                
+
 
                 return make_pair(opt_name, opt_value);
             }
@@ -48,10 +48,10 @@ namespace online_visualization {
                     string s = "";
                     s = s + arg[i];
                     result.push_back(s);
-                }       
+                }
                 return result;
             }
-        
+
             void ParseArguments(const vector<string>& args) {
                 for (size_t i = 0; i < args.size(); ++i) {
                     TRACE("Parsing argument " << args[i]);
@@ -69,7 +69,7 @@ namespace online_visualization {
                     }
                     else {
                         TRACE("it is a usual arg");
-                        arguments.push_back(args[i]);    
+                        arguments.push_back(args[i]);
                     }
                 }
             }
@@ -88,7 +88,7 @@ namespace online_visualization {
             string operator[](const string& option_name) const {
                 // usual option
                 if (options.find(option_name) == options.end()) {
-                    return "null";   
+                    return "null";
                 }
                 string result = options.find(option_name)->second;
                 return result;
@@ -129,9 +129,9 @@ namespace online_visualization {
                             ++i;
                         }
 
-                        if (num_of_command != "") 
+                        if (num_of_command != "")
                             num_of_command = num_of_command.substr(1, num_of_command.size() - 1);
-                        else 
+                        else
                             num_of_command = "1";
                         TRACE("Number of command " << num_of_command);
 
@@ -155,15 +155,15 @@ namespace online_visualization {
                                 new_arguments.push_back(new_arg);
                             }
                             else {
-                                new_arguments.push_back(arg);   
+                                new_arguments.push_back(arg);
                             }
                         }
                         else {
-                            new_arguments.push_back(arg);   
+                            new_arguments.push_back(arg);
                         }
                     }
                     else {
-                        new_arguments.push_back(arg);   
+                        new_arguments.push_back(arg);
                     }
                 }
                 arguments = new_arguments;
@@ -175,7 +175,7 @@ namespace online_visualization {
                 for (size_t i = 0; i < arguments.size(); ++i) {
                     result << arguments[i];
                     if (i < arguments.size() - 1)
-                        result << " ";  
+                        result << " ";
                 }
 
                 return result.str();

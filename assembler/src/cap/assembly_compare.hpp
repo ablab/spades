@@ -23,6 +23,7 @@
 #include "stats.hpp"
 #include "visualization.hpp"
 #include "simple_indel_finder.hpp"
+#include "test_utils.hpp"
 
 namespace cap {
 
@@ -52,13 +53,6 @@ namespace cap {
 //	scanner.loadPositions(filename, bp_gp.edge_pos);
 //	//
 //}
-
-void MakeDirPath(const string& path) {
-  size_t slash_pos = 0;
-  while ((slash_pos = path.find_first_of('/', slash_pos + 1)) != string::npos) {
-    make_dir(path.substr(0, slash_pos));
-  }
-}
 
 template <class Graph>
 void DeleteEdgesByColor(Graph& g, const ColorHandler<Graph>& coloring, TColorSet color) {
@@ -122,7 +116,7 @@ private:
 	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef NewExtendedSequenceMapper<Graph> Mapper; // gp_t::k_value + 1
+	typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper; // gp_t::k_value + 1
 
 	gp_t gp_;
 	ColorHandler<Graph> coloring_;
@@ -197,7 +191,7 @@ private:
             INFO("Dir " + output_folder + " purged"); 
             remove_dir(output_folder);
         }
-        MakeDirPath(output_folder);
+        utils::MakeDirPath(output_folder);
         if (detailed_output) {
             make_dir(output_folder + "initial_pics/");
             make_dir(output_folder + "saves/");
@@ -227,21 +221,21 @@ public:
 		PrepareDirs(output_folder, detailed_output);
 
 		vector<ContigStream*> streams = { &stream1_, &stream2_ };
-		ConstructColoredGraph(gp_, coloring_, streams, br_delta);
+		ConstructColoredGraph<gp_t>(gp_, coloring_, streams, br_delta);
 
 		if (gp_.genome.size() > 0) {
 			INFO("Filling ref pos " << gp_.genome.size());
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
 
-//			SimpleInDelAnalyzer<Graph> del_analyzer(
-//					gp_.g,
-//					coloring_,
-//					gp_.edge_pos,
-//					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
-//					kRedColorSet,
-//					output_folder);
-//			del_analyzer.Analyze();
+			SimpleInDelAnalyzer<Graph> del_analyzer(
+					gp_.g,
+					coloring_,
+					gp_.edge_pos,
+					(*MapperInstance<gp_t> (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
+					kRedColorSet,
+					output_folder);
+			del_analyzer.Analyze();
 
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
 //			alt_count.CountPaths();
@@ -303,6 +297,7 @@ public:
 				PrintColoredGraph(gp_.g, coloring_, gp_.edge_pos,
 						output_folder + "initial_pics/colored_split_graph.dot");
 			}
+
 			if (add_saves_path != "") {
 				UniversalSaveGP(gp_, //coloring,
 						add_saves_path);
@@ -370,20 +365,23 @@ private:
 	;
 };
 
-template<size_t k, size_t K>
+template<size_t k, size_t K, class BuildSeq>
 void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 		const string& name1, const string& name2, bool refine, bool untangle,
 		const string& output_folder, bool detailed_output = true, size_t delta =
 				5, Sequence reference = Sequence(),
 		const string& add_saves_path = "") {
+  static double lol_time = 0;
+  cap::utils::add_time(lol_time, -1);
+
 	io::SplittingWrapper stream1(raw_stream1);
 	io::SplittingWrapper stream2(raw_stream2);
 
 	typedef debruijn_graph::graph_pack<
-	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph> comparing_gp_t; // K
+	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, BuildSeq> comparing_gp_t;
 
 	if (refine) {
-		typedef graph_pack<ConjugateDeBruijnGraph> refining_gp_t;
+		typedef graph_pack<ConjugateDeBruijnGraph, BuildSeq> refining_gp_t;
 		refining_gp_t refining_gp(k, "tmp");
 		io::VectorReader<io::SingleRead> genome_stream(
 				io::SingleRead("genome", reference.str()));
@@ -418,6 +416,8 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
                 false, 10, add_saves_path);
 	}
 
+  cap::utils::add_time(lol_time, +1);
+  INFO("LOL_TIME:: " << lol_time);
 }
 
 template<size_t k, size_t K>
@@ -449,7 +449,7 @@ void RunBPComparison(const Sequence& ref, const vector<Sequence>& contigs,
 			output_folder, detailed_output);
 }
 
-template<size_t k>
+template<size_t k, class BuildSeq>
 void CompareGenomes(const Sequence& genome_1, const Sequence& genome_2,
 		const string& output_dir) {
 	INFO("Genome comparison started");
@@ -457,7 +457,7 @@ void CompareGenomes(const Sequence& genome_1, const Sequence& genome_2,
 			io::SingleRead("", genome_1.str()));
 	io::VectorReader<io::SingleRead> stream2(
 			io::SingleRead("", genome_2.str()));
-	typedef graph_pack</*Nonc*/ConjugateDeBruijnGraph> comparing_gp_t; // k
+	typedef graph_pack</*Nonc*/ConjugateDeBruijnGraph, BuildSeq> comparing_gp_t; // k
 	INFO("Running assembly comparer");
 	AssemblyComparer<comparing_gp_t> comparer(k, stream1, stream2, "strain1",
 			"strain2", /*untangle*/false);
@@ -504,7 +504,7 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
     std::string output_folder) {
   typedef typename gp_t::graph_t Graph;
 
-  MakeDirPath(output_folder);
+  utils::MakeDirPath(output_folder);
   
 
   gp_t gp(k_visualize, "tmp", Sequence(), 200, true);

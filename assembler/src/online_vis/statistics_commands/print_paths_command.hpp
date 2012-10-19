@@ -2,12 +2,11 @@
 
 #include "../environment.hpp"
 #include "../command.hpp"
-#include "../command_type.hpp"
 #include "../errors.hpp"
 
 namespace online_visualization {
 
-    class PrintPathsCommand : public LocalCommand {
+    class PrintPathsCommand : public LocalCommand<DebruijnEnvironment> {
         
         typedef vector<EdgeId> Path;
         
@@ -32,11 +31,11 @@ namespace online_visualization {
                 return answer;
             }
             
-            PrintPathsCommand() : LocalCommand(CommandType::print_paths)
+            PrintPathsCommand() : LocalCommand<DebruijnEnvironment>("print_paths")
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
                 const vector<string>& args = arg_list.GetAllArguments();
                 if (!CheckCorrectness(args))
                     return; 

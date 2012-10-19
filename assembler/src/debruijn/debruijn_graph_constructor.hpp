@@ -21,14 +21,14 @@ namespace debruijn_graph {
 /*
  * Constructs DeBruijnGraph from DeBruijn Graph using "new DeBruijnGraphConstructor(DeBruijn).ConstructGraph(DeBruijnGraph, Index)"
  */
-template<class Graph>
+template<class Graph, class Seq>
 class DeBruijnGraphConstructor {
  private:
   typedef typename Graph::EdgeId EdgeId;
-  typedef DeBruijnKMerIndex<EdgeId> DeBruijn;
+  typedef DeBruijnKMerIndex<EdgeId, Seq> DeBruijn;
   typedef typename Graph::VertexId VertexId;
-  typedef runtime_k::RtSeq Kmer;
-  typedef runtime_k::RtSeq KPlusOneMer;
+  typedef Seq Kmer;
+  typedef Seq KPlusOneMer;
   typedef typename DeBruijn::kmer_iterator kmer_iterator;
 
   Graph &graph_;
@@ -36,7 +36,9 @@ class DeBruijnGraphConstructor {
   size_t kmer_size_;
 
   bool StepRightIfPossible(KPlusOneMer &edge) {
-    //TRACE("Considering edge " << edge);
+//      TRACE("Considering edge " << edge << " contained: " <<
+//          origin_.contains(edge) << "; namely " << edge.err());
+
     VERIFY(origin_.contains(edge));
     if (origin_.RivalEdgeCount(edge) == 1 &&
         origin_.NextEdgeCount(edge) == 1) {
@@ -163,8 +165,8 @@ class DeBruijnGraphConstructor {
         continue;
       }
 
-      Kmer start_kmer = sequences[i].start<Kmer::max_size>(kmer_size_);
-      Kmer end_kmer = sequences[i].end<Kmer::max_size>(kmer_size_);
+      Kmer start_kmer = sequences[i].start<Kmer>(kmer_size_);
+      Kmer end_kmer = sequences[i].end<Kmer>(kmer_size_);
 
       VertexId start = FindVertexMaybeMissing(start_kmer);
       VertexId end = FindEndMaybeMissing(graph_, start, start_kmer, end_kmer);

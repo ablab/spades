@@ -154,13 +154,14 @@ public:
     Seq<size2_> end() const;
     
 
-    template<size_t size2_>
-    RuntimeSeq<size2_> start(size_t k) const;
+    template<class Seq>
+    Seq start(size_t k) const;
 
-    template<size_t size2_>
-    RuntimeSeq<size2_> end(size_t k) const;
+    template<class Seq>
+    Seq end(size_t k) const;
 
     inline std::string str() const;
+    inline std::string err() const;
     inline size_t size() const;
 
 private:
@@ -207,14 +208,14 @@ Seq<size2_> Sequence::end() const {
 }
 
 
-template<size_t size2_>
-RuntimeSeq<size2_> Sequence::start(size_t k) const {
-    return RuntimeSeq<size2_>(k, *this);
+template<class Seq>
+Seq Sequence::start(size_t k) const {
+    return Seq(k, *this);
 }
 
-template<size_t size2_>
-RuntimeSeq<size2_> Sequence::end(size_t k) const {
-    return RuntimeSeq<size2_>(k, *this, size_ - k);
+template<class Seq>
+Seq Sequence::end(size_t k) const {
+    return Seq(k, *this, size_ - k);
 }
 
 
@@ -440,6 +441,14 @@ std::string Sequence::str() const {
 		res[i] = nucl(this->operator[](i));
 	}
 	return res;
+}
+std::string Sequence::err() const {
+  std::ostringstream oss;
+  oss << "{ *data=" << data_ <<
+    ", from_=" << from_ <<
+    ", size_=" << size_ <<
+    ", rtl_=" << int(rtl_) << " }";
+  return oss.str();
 }
 
 std::ostream& operator<<(std::ostream& os, const Sequence& s) {

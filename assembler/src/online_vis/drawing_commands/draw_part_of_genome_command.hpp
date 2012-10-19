@@ -2,7 +2,6 @@
 
 #include "../environment.hpp"
 #include "../command.hpp"
-#include "../command_type.hpp"
 #include "../errors.hpp"
 #include "../argument_list.hpp"
 
@@ -20,12 +19,12 @@ namespace online_visualization {
             }
 
         private:
-            void DrawPicturesAlongGenomePart(Environment& curr_env, const Sequence& piece_of_genome, string label = "") const {
+            void DrawPicturesAlongGenomePart(DebruijnEnvironment& curr_env, const Sequence& piece_of_genome, string label = "") const {
                 const MappingPath<EdgeId>& mapping_path = curr_env.mapper().MapSequence(piece_of_genome);
                 DrawingCommand::DrawPicturesAlongPath(curr_env, mapping_path, label);
             }
             
-            void CountStatsAlongGenomePart(Environment& curr_env, Sequence& piece_of_genome, string label = "") const {    
+            void CountStatsAlongGenomePart(DebruijnEnvironment& curr_env, Sequence& piece_of_genome, string label = "") const {    
                 GraphDistanceFinder<Graph> dist_finder(curr_env.graph(), *cfg::get().ds.IS, *cfg::get().ds.RL,
                         size_t(*cfg::get().ds.is_var));
                 cout << "Statistics for the part of genome :" << endl;
@@ -69,11 +68,11 @@ namespace online_visualization {
                 return answer;
             }
 
-            DrawPartOfGenomeCommand() : DrawingCommand(CommandType::draw_part_of_genome)
+            DrawPartOfGenomeCommand() : DrawingCommand("draw_part_of_genome")
             {
             }
 
-            void Execute(Environment& curr_env, const ArgumentList& arg_list) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
                 const vector<string>& args = arg_list.GetAllArguments();
                 if (!CheckCorrectness(args))
                     return;

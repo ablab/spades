@@ -6,6 +6,9 @@
 
 project(cap_test CXX)
 
+add_definitions(-pg)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+
 include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 include_directories(${CMAKE_SOURCE_DIR}/cap)
 

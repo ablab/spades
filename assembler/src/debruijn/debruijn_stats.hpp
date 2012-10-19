@@ -55,7 +55,7 @@ public:
 		size_t fail = 0;
 		if (genome_.size() <= k_)
 			return;
-		runtime_k::RtSeq cur = genome_.start<runtime_k::RtSeq::max_size>(k_);
+		runtime_k::RtSeq cur = genome_.start<runtime_k::RtSeq>(k_);
 		cur >>= 0;
 		bool breaked = true;
 		pair<EdgeId, size_t> cur_position;
@@ -1124,7 +1124,7 @@ void FillPos(const Graph& g, const Mapper& mapper,
 template<class gp_t>
 void FillPos(gp_t& gp, io::IReader<io::SingleRead>& stream) {
 	typedef typename gp_t::graph_t Graph;
-	typedef NewExtendedSequenceMapper<Graph> Mapper;
+	typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
 	Mapper mapper(gp.g, gp.index, gp.kmer_mapper, gp.k_value + 1);
 	FillPos<Graph, Mapper>(gp.g, mapper, gp.edge_pos, stream);
 }
