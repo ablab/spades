@@ -13,7 +13,7 @@
 
 using namespace hammer;
 
-class HammerKMerSplitter : public KMerSplitter<KMer> {
+class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
   typedef std::vector<std::vector<KMer> > KMerBuffer;
 
   void DumpBuffers(size_t num_files, size_t nthreads,
@@ -22,7 +22,7 @@ class HammerKMerSplitter : public KMerSplitter<KMer> {
 
  public:
   HammerKMerSplitter(std::string &work_dir)
-      : KMerSplitter<KMer>(work_dir) {}
+      : KMerSplitter<hammer::KMer>(work_dir, hammer::K) {}
 
   virtual path::files_t Split(size_t num_files);
 };
@@ -76,7 +76,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     ostreams[i].open(out[i]);
 
   size_t read_buffer = cfg::get().count_split_buffer;
-  size_t cell_size = (read_buffer * (Globals::read_length - K + 1)) /
+  size_t cell_size = (read_buffer * (Globals::read_length - hammer::K + 1)) /
                       (nthreads * num_files * sizeof(KMer));
 
   INFO("Using cell size of " << cell_size);
@@ -112,7 +112,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
         q = Globals::blobquality + cpos;
       }
 
-      ValidKMerGenerator<K> gen(s, q, csize);
+      ValidKMerGenerator<hammer::K> gen(s, q, csize);
       while (gen.HasMore()) {
         KMer seq = gen.kmer();
         tmp_entries[omp_get_thread_num()][GetFileNumForSeq(seq, num_files)].push_back(seq);
@@ -173,11 +173,12 @@ static void PushKMerRC(KMerData &data,
   kmc.unlock();
 }
 
-void KMerCounter::FillKMerData(KMerData &data) {
+void KMerDataCounter::FillKMerData(KMerData &data) {
   // Build the index
   std::string workdir = cfg::get().input_working_dir;
   HammerKMerSplitter splitter(workdir);
-  size_t sz = KMerIndexBuilder<KMer>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, splitter);
+  KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
+  size_t sz = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");

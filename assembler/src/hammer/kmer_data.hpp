@@ -5,6 +5,8 @@
 #include "mph_index/kmer_index.hpp"
 #include <vector>
 
+typedef KMerIndex<hammer::KMer> HammerKMerIndex;
+
 class KMerData {
   typedef std::vector<KMerStat> KMerDataStorageType;
 
@@ -57,16 +59,16 @@ class KMerData {
  private:
   KMerDataStorageType data_;
   KMerDataStorageType push_back_buffer_;
-  KMerIndex<hammer::KMer> index_;
+  HammerKMerIndex index_;
 
-  friend class KMerCounter;
+  friend class KMerDataCounter;
 };
 
-class KMerCounter {
+class KMerDataCounter {
   unsigned num_files_;
 
  public:
-  KMerCounter(unsigned num_files) : num_files_(num_files) {}
+  KMerDataCounter(unsigned num_files) : num_files_(num_files) {}
 
   void FillKMerData(KMerData &data);
 

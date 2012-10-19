@@ -187,7 +187,7 @@ int main(int argc, char * argv[]) {
 
       // count k-mers
       if (cfg::get().count_do || do_everything) {
-        KMerCounter counter(cfg::get().count_numfiles);
+        KMerDataCounter counter(cfg::get().count_numfiles);
         counter.FillKMerData(*Globals::kmer_data);
 
         if (cfg::get().general_debug) {
