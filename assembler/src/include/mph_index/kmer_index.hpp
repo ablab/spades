@@ -59,7 +59,6 @@ struct kmer_index_traits {
       return typename Seq::hash()(k.data(), k.size());
     }
   };
-
   // This is really the most fragile part of the whole story.  Basically, we're
   // building the PHM with "raw" data, but query the PHM with real Key-s!  We're
   // relying on fact that hashes are exactly the same in both cases (thus - two
