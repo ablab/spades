@@ -29,7 +29,6 @@ class GlobalIdDistributor : public IdDistributor, boost::noncopyable {
 
 public:
 	size_t GetId() {
-	    INFO(max_int_id_);
 		return max_int_id_++;
 	}
 
@@ -94,7 +93,6 @@ template<class T>
 	bool operator==(const pure_pointer &rhs) const {
 	    if (int_id_ == rhs.int_id_) {
 	        if (ptr_ != rhs.ptr_) {
-	            INFO(int_id_ << " " << ptr_ << " " << rhs.ptr_);
 	            print_stacktrace();
 	        }
 	        VERIFY(ptr_ == rhs.ptr_);
