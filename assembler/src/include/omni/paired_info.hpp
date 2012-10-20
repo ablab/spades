@@ -44,34 +44,8 @@ struct PairInfo {
 					variance) {
 	}
 
-	/*	const PairInfo set_first(EdgeId first) const {
-	 return PairInfo(first, this->second, this->d, this->weight,
-	 this->variance);
-	 }
-
-	 const PairInfo set_second(EdgeId second) const {
-	 return PairInfo(this->first, second, this->d, this->weight,
-	 this->variance);
-	 }
-
-	 const PairInfo set_distance(double d) const {
-	 return PairInfo(this->first, this->second, d, this->weight,
-	 this->variance);
-	 }
-
-	 const PairInfo set_weight(EdgeId first) const {
-	 return PairInfo(this->first, this->second, this->d, weight,
-	 this->variance);
-	 }
-
-	 const PairInfo set_variance(EdgeId first) const {
-	 return PairInfo(this->first, this->second, this->d, this->weight,
-	 variance);
-	 }*/
-
 	/**
-	 * Two paired infos are considered equal if they coinside in all parameters except for the weight of
-	 * info.
+	 * Two paired infos are considered equal if they coinside in all parameters except for the weight and the variance.
 	 */
 	bool operator==(const PairInfo& rhs) const {
 		const PairInfo &lhs = *this;
@@ -92,22 +66,6 @@ struct PairInfo {
 	}
 };
 
-//template<typename EdgeId, class Comparator>
-//class PairInfoComparator {
-//private:
-//	Comparator comparator_;
-//public:
-//	PairInfoComparator(Comparator comparator) : comparator_(comparator) {
-//	}
-//
-//	bool operator()(const PairInfo<EdgeId>& lhs, const PairInfo<EdgeId>& rhs) const {
-//		return lhs.first == rhs.first ?
-//				lhs.second == rhs.second ?
-//						math::ls(lhs.d, rhs.d) : comparator_(lhs.second, rhs.second)
-//				: comparator_(lhs.first, rhs.first);
-//	}
-//};
-
 template<typename Graph>
 ostream& operator<<(ostream& os, const PairInfo<Graph>& info) {
 	return os << "PairInfo: first=" << info.first << ", second=" << info.second
@@ -115,18 +73,16 @@ ostream& operator<<(ostream& os, const PairInfo<Graph>& info) {
 			<< ", variance=" << info.variance;
 }
 
-//typedef vector<PairInfo<> > PairInfos;
-
 template<typename EdgeId>
 const PairInfo<EdgeId> MinPairInfo(EdgeId id) {
 	return PairInfo<EdgeId>(id, EdgeId(typename EdgeId::pointer_type(1)),
-			-100000000/*numeric_limits<double>::min()*/, 0., 0.);
+			-10000000000, 0., 0.);
 }
 
 template<typename EdgeId>
 const PairInfo<EdgeId> MaxPairInfo(EdgeId id) {
 	return PairInfo<EdgeId>(id, EdgeId(typename EdgeId::pointer_type(-1)),
-			1000000000/*numeric_limits<double>::max()*/, 0., 0.);
+			 10000000000, 0., 0.);
 }
 
 template<typename EdgeId>
@@ -152,7 +108,7 @@ const PairInfo<EdgeId> MaxPairInfo(EdgeId e1, EdgeId e2) {
 template<typename EdgeId>
 int rounded_d(PairInfo<EdgeId> const& pi) {
 	int res = (int) math::round(std::abs(pi.d));
-	if (pi.d < 0)
+	if (math::ls(pi.d, 0.))
 		res = -res;
 	return res;
 }
@@ -164,49 +120,36 @@ PairInfo<EdgeId> BackwardInfo(const PairInfo<EdgeId>& pi) {
 
 template<typename EdgeId>
 bool IsSymmetric(PairInfo<EdgeId> const& pi) {
-	return pi.first == pi.second && pi.d == 0;
+	return pi.first == pi.second && math::eq(pi.d, 0.);
 }
 
-//todo try storing set<PairInfo>
-template<typename EdgeId>
+//TODO: try storing set<PairInfo>
+template <typename EdgeId>
 class PairInfoIndexData {
 public:
-	typedef set<PairInfo<EdgeId>> Data;
+	typedef set<PairInfo<EdgeId> > Data;
 	typedef typename Data::iterator data_iterator;
-	typedef typename Data::const_iterator data_const_iterator;
-	typedef vector<PairInfo<EdgeId>> PairInfos;
-
-	typedef std::pair<data_const_iterator, data_const_iterator> iterator_range;
+	//typedef typename Data::const_iterator data_const_iterator;
+	typedef vector<PairInfo<EdgeId> > PairInfos;
+	//typedef std::pair<data_const_iterator, data_const_iterator> iterator_range;
 
 public:
-	void UpdateSingleInfo(const PairInfo<EdgeId>& info, double d,
-			double weight) {
-		//todo get rid of this find
-		auto const_it = data_.find(info);
-		VERIFY(const_it != data_.end());
 
-		const PairInfo<EdgeId>& to_upd_const = *const_it;
+    //  we can not update elements in the std::set, 
+    //  although we can delete element, 
+    //  and then insert a modified version of it
+    void UpdateSingleInfo(const PairInfo<EdgeId>& info, double new_weight) {
 
-		PairInfo<EdgeId>& to_upd = const_cast<PairInfo<EdgeId>&>(to_upd_const);
+        TRACE("Weight " << new_weight << " is about to be added to " << info);
+        // we want to be sure that only one element was removed
+        PairInfo<EdgeId>& info_to_update = const_cast<PairInfo<EdgeId>&>(*data_.find(info));
+        info_to_update.weight = new_weight;
 
-		to_upd.d = d;
-		to_upd.weight = weight;
+    }
 
-//		VERIFY(data_.find(PairInfo<EdgeId>(to_upd.first, to_upd.second, d, weight, 0.)) != data_.end());
-
-//		size_t count = data_.erase(info);
-//		VERIFY(count != 0);
-//		data_.insert(
-//				PairInfo<EdgeId>(info.first, info.second, d, weight,
-//						info.variance));
-	}
-
+    //TODO: rename the method
 	void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
-		//		size_t count = data_.erase(info);
-		//	VERIFY(count != 0);
-		data_.insert(
-				PairInfo<EdgeId>(newId, info.second, info.d, info.weight,
-						info.variance));
+		data_.insert(PairInfo<EdgeId>(newId, info.second, info.d, info.weight, info.variance));
 	}
 public:
 
@@ -215,20 +158,6 @@ public:
 	}
 
 	data_iterator begin() const {
-//		//todo what is this???
-//		auto itp = data_.begin();
-//		int cnt = 1;
-//		for (auto it = data_.begin(); it != data_.end(); ++it) {
-//			if (it->first == itp->first && it->second == itp->second
-//					&& it != data_.begin()) {
-//				cnt++;
-//			} else {
-//				if (it != data_.begin()) {
-//					cnt = 1;
-//				}
-//			}
-//			itp = it;
-//		}
 		return data_.begin();
 	}
 
@@ -240,15 +169,24 @@ public:
 		return data_.size();
 	}
 
-	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool addSymmetric = 1) {
-		data_.insert(pair_info);
+	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_symmetric = 1) {
+        data_.insert(pair_info);
 
-		if (!IsSymmetric(pair_info) && addSymmetric)
+		if (!IsSymmetric(pair_info) && add_symmetric)
 			data_.insert(BackwardInfo(pair_info));
 	}
 
+	void UpdateInfo(const PairInfo<EdgeId>& info, double weight, bool add_reversed) {
+        // first we update backward info in order to leave @info not modified
+		if (add_reversed && !IsSymmetric(info)) {
+			UpdateSingleInfo(BackwardInfo(info), weight);
+        }
+
+		UpdateSingleInfo(info, weight);
+	}
+
 	void DeleteEdgeInfo(EdgeId e) {
-		set<PairInfo<EdgeId>> paired_edges;
+		set<PairInfo<EdgeId> > paired_edges;
 
 		for (auto lower = LowerBound(e), upper = UpperBound(e); lower != upper;
 				++lower) {
@@ -263,9 +201,8 @@ public:
 	}
 
 	void DeletePairInfo(const PairInfo<EdgeId>& info) {
-
+        VERIFY(data_.find(info) != data_.end());
 		data_.erase(info);
-//		data_.erase(LowerBound(e), UpperBound(e));
 	}
 
 	void DeleteEdgePairInfo(EdgeId e1, EdgeId e2) {
@@ -282,29 +219,19 @@ public:
 		return PairInfos(LowerBound(e1, e2), UpperBound(e1, e2));
 	}
 
-	void UpdateInfo(const PairInfo<EdgeId>& info, const double d,
-			const double weight, bool add_reversed) {
-
-		//todo remove after dirty hack is removed
-		PairInfo<EdgeId> info_cp = info;
-
-		UpdateSingleInfo(info_cp, d, weight);
-
-		if (add_reversed && !IsSymmetric(info_cp))
-			UpdateSingleInfo(BackwardInfo(info_cp), -d, weight);
-	}
-
 	void clear() {
 		data_.clear();
 	}
 
-	//todo discuss
-	data_iterator LowerBound(const PairInfo<EdgeId> pair_info) const {
+    data_iterator Find(const PairInfo<EdgeId>& pair_info) const {
+        return data_.find(pair_info);   
+    }
+
+	data_iterator LowerBound(const PairInfo<EdgeId>& pair_info) const {
 		return data_.lower_bound(pair_info);
 	}
 
-	//todo discuss
-	data_iterator UpperBound(const PairInfo<EdgeId> pair_info) const {
+	data_iterator UpperBound(const PairInfo<EdgeId>& pair_info) const {
 		return data_.upper_bound(pair_info);
 	}
 
@@ -326,6 +253,8 @@ public:
 
 private:
 	Data data_;
+
+    DECL_LOGGER("PairedInfoIndexData");
 };
 
 /**
@@ -338,11 +267,8 @@ class PairedInfoIndex: public GraphActionHandler<Graph> {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef const vector<PairInfo<EdgeId>> PairInfos;
+	typedef const vector<PairInfo<EdgeId> > PairInfos;
 	typedef typename PairInfoIndexData<EdgeId>::data_iterator data_iterator;
-
-private:
-	const double max_difference_;
 
 public:
 	/**
@@ -372,7 +298,7 @@ public:
 		}
 
 		void operator++() {
-			position_ = index_.data_.UpperBound(position_->first,
+			position_ = index_.index_data_.UpperBound(position_->first,
 					position_->second);
 		}
 
@@ -387,52 +313,29 @@ public:
 
 	EdgePairIterator begin() const {
 		VERIFY(this->IsAttached());
-		return EdgePairIterator(data_.begin(), *this);
+		return EdgePairIterator(index_data_.begin(), *this);
 	}
 
 	EdgePairIterator end() const {
 		VERIFY(this->IsAttached());
-		return EdgePairIterator(data_.end(), *this);
+		return EdgePairIterator(index_data_.end(), *this);
 	}
-
-	double GetMaxDifference() const {
-		VERIFY(this->IsAttached());
-	    return max_difference_;
-	}
-
-//	const Graph& GetGraph() const {
-//	    return this->g();
-//	}
 
 	//begin-end insert size supposed
-	PairedInfoIndex(const Graph &g, double max_difference = 0.) :
-			GraphActionHandler<Graph>(g, "PairedInfoIndex"), max_difference_(
-					max_difference) {
+	PairedInfoIndex(const Graph &g) :
+			GraphActionHandler<Graph>(g, "PairedInfoIndex")
+    {
 	}
 
 	virtual ~PairedInfoIndex() {
 		TRACE("~PairedInfoIndex ok");
 	}
 
-	//	double sum() {
-	//		double res = 0;
-	//		for (auto it = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd() != it; ++it)
-	//			for (auto it1 = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd()
-	//					!= it1; ++it1) {
-	//				PairInfos vec = GetEdgePairInfo(*it1, *it);
-	//				if (vec.size() != 0) {
-	//					for (size_t i = 0; i < vec.size(); i++)
-	//						res += vec[i].weight;
-	//				}
-	//			}
-	//		return res;
-	//	}
-
 private:
 
-	PairInfoIndexData<EdgeId> data_;
+	PairInfoIndexData<EdgeId> index_data_;
 
-	size_t CorrectLength(const Path<EdgeId>& path, size_t index) {
+	size_t CorrectLength(const Path<EdgeId>& path, size_t index) const {
 		size_t result = this->g().length(path[index]);
 		if (index == 0) {
 			result -= path.start_pos();
@@ -450,118 +353,44 @@ private:
 	//		path_nucls_passed += edge_length;
 	//	}
 
-	bool CanMergeData(const PairInfo<EdgeId>& info1,
-			const PairInfo<EdgeId>& info2) {
-		if (info1.first != info2.first || info1.second != info2.second)
-			return false;
-		if (math::le(std::abs(info2.d - info1.d), max_difference_)) {
-			return true;
-		}
-		return false;
-	}
-
-	void MergeData(const PairInfo<EdgeId>& info1, const PairInfo<EdgeId>& info2,
+	void MergeData(const PairInfo<EdgeId>& info_to_update, const PairInfo<EdgeId>& info_to_add,
 			bool add_reversed) {
-		VERIFY(info1.first == info2.first && info1.second == info2.second);
-		double newWeight = info1.weight + info2.weight;
-		double newD = (info1.d * info1.weight + info2.d * info2.weight)
-				/ newWeight;
-		if (info1.first == info1.second && (info1.d == 0/* || info2.d == 0*/)) {
-			newD = 0;
-		}
-		data_.UpdateInfo(info1, newD, newWeight, add_reversed);
+        VERIFY(HasVarianceZero(info_to_update));
+        VERIFY(HasVarianceZero(info_to_add));
+        double weight_to_add = info_to_add.weight;
+		double new_weight = info_to_update.weight + weight_to_add;
+		index_data_.UpdateInfo(info_to_update, new_weight, add_reversed);
 	}
 
-	data_iterator ProcessBound(data_iterator pos,
-			const PairInfo<EdgeId>& info) {
-		if (pos != data_.end() && pos->first == info.first
-				&& pos->second == info.second)
-			return pos;
-		return data_.end();
-	}
-
-	pair<data_iterator, data_iterator> ClosestCandidates(
-			data_iterator lower_bound,
-			const PairInfo<EdgeId>& info) {
-		pair<data_iterator, data_iterator> answer = make_pair(data_.end(),
-				data_.end());
-		answer.second = ProcessBound(lower_bound, info);
-		if (lower_bound != data_.begin()) {
-			answer.first = ProcessBound(--lower_bound, info);
-		}
-		return answer;
-	}
-
-	data_iterator ChooseBest(pair<data_iterator, data_iterator> candidates
-			, const PairInfo<EdgeId>& info) {
-		//todo check
-		data_iterator answer = data_.end();
-		double min_dist = max_difference_;
-		if (candidates.first != data_.end()) {
-			if (math::le(std::abs(info.d - candidates.first->d), min_dist)) {
-				min_dist = std::abs(info.d - candidates.first->d);
-				answer = candidates.first;
-			}
-		}
-		if (candidates.second != data_.end()) {
-			if (math::le(std::abs(info.d - candidates.second->d), min_dist)) {
-				if (math::ls(std::abs(info.d - candidates.second->d),
-						min_dist) || answer == data_.end()
-						|| math::gr(std::abs(answer->d),
-								std::abs(candidates.second->d))) {
-//					min_dist = std::abs(new_info.d - current_pair_infos[i].d);
-					answer = candidates.second;
-				}
-			}
-		}
-		return answer;
-	}
-
-	data_iterator FindCluster(const PairInfo<EdgeId>& info) {
-		return ChooseBest(ClosestCandidates(data_.LowerBound(info), info), info);
-	}
-
-//	int NearestClusterIndex(const vector<PairInfo<EdgeId>>& current_pair_infos,
-//			const PairInfo<EdgeId>& new_info) {
-//		double min_dist = max_difference_;
-//		int answer = -1;
-//		for (size_t i = 0; i < current_pair_infos.size(); ++i) {
-//			if (math::le(std::abs(new_info.d - current_pair_infos[i].d),
-//					min_dist))
-//				if (math::ls(std::abs(new_info.d - current_pair_infos[i].d),
-//						min_dist) || answer == -1
-//						|| math::gr(std::abs(current_pair_infos[answer].d),
-//								std::abs(current_pair_infos[i].d))) {
-//					min_dist = std::abs(new_info.d - current_pair_infos[i].d);
-//					answer = i;
-//				}
-//		}
-//		return answer;
-//	}
+    bool inline HasVarianceZero(const PairInfo<EdgeId>& pair_info) const {
+        return math::eq(pair_info.variance, 0.);   
+    }
 
 public:
 	/**
 	 * Method allows to add pair info to index directly instead of filling it from stream.
+     * Notice, that you can merge two pair infos only if their variances are equal to zero!
 	 */
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
 		VERIFY(this->IsAttached());
-		TRACE("IN ADD:" << this->g().int_id(pair_info.first) << " " << this->g().int_id(pair_info.second) << " " << data_.size());
-//		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first,
-//				pair_info.second);
-//		int cluster_index = NearestClusterIndex(pair_infos, pair_info);
-		data_iterator cluster_it = FindCluster(pair_info);
-		if (cluster_it != data_.end()) {
-			//todo unfortunately now have to put * here, because of if (add_reversed && !IsSymmetric(info)) in UpdateInfo
-			MergeData(*cluster_it, pair_info, add_reversed);
+		TRACE("Adding pair info to pi index: " << pair_info.first << pair_info.second << " " << index_data_.size());
+
+		data_iterator cluster_it = index_data_.Find(pair_info);
+        if (cluster_it != index_data_.end()) {
+            TRACE("Such pair info exists, merging now");
+            const PairInfo<EdgeId>& existing_info = *cluster_it;
+            VERIFY(existing_info == pair_info);
+			MergeData(existing_info, pair_info, add_reversed);
 		} else {
-			data_.AddPairInfo(pair_info, add_reversed);
+            TRACE("Such pair info does not exist");
+			index_data_.AddPairInfo(pair_info, add_reversed);
 		}
 	}
 
     void AddAll(const PairedInfoIndex<Graph>& paired_index) {
 		VERIFY(this->IsAttached());
         for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
-            auto infos = *iter;
+            const vector<PairInfo<EdgeId> >& infos = *iter;
             for (auto pi_iter = infos.begin(); pi_iter != infos.end(); ++pi_iter) {
                 this->AddPairInfo(*pi_iter, false);
             }
@@ -570,16 +399,16 @@ public:
 
 	void RemoveEdgeInfo(EdgeId edge) {
 		VERIFY(this->IsAttached());
-		data_.DeleteEdgeInfo(edge);
+		index_data_.DeleteEdgeInfo(edge);
 	}
 
 	void RemovePairInfo(const PairInfo<EdgeId>& pair_info) {
 		VERIFY(this->IsAttached());
-		data_.DeletePairInfo(pair_info);
+		index_data_.DeletePairInfo(pair_info);
 	}
 
 	void Clear() {
-	    data_.clear();
+	    index_data_.clear();
 	}
 
 private:
@@ -624,7 +453,7 @@ private:
 								old_pair_info.d - shift,
 								weight_scale * old_pair_info.weight,
 								old_pair_info.variance));
-			} else if (old_pair_info.d != 0) {
+			} else if (!math::eq(old_pair_info.d, 0.)) {
 				AddPairInfo(
 						PairInfo<EdgeId>(new_edge, new_edge, old_pair_info.d,
 								weight_scale * 0.5 * old_pair_info.weight,
@@ -664,7 +493,7 @@ public:
 	 * @return quantity of paired info
 	 */
 	size_t size() const {
-		return data_.size();
+		return index_data_.size();
 	}
 
 	/**
@@ -672,7 +501,7 @@ public:
 	 */
 	PairInfos GetEdgeInfo(EdgeId edge) const {
 		VERIFY(this->IsAttached());
-		return data_.GetEdgeInfos(edge);
+		return index_data_.GetEdgeInfos(edge);
 	}
 
 	/**
@@ -680,11 +509,11 @@ public:
 	 */
 	PairInfos GetEdgePairInfo(EdgeId first, EdgeId second) const {
 		VERIFY(this->IsAttached());
-		return data_.GetEdgePairInfos(first, second);
+		return index_data_.GetEdgePairInfos(first, second);
 	}
 
 	virtual void HandleAdd(EdgeId e) {
-		this->AddPairInfo(PairInfo<EdgeId>(e, e, 0, 0.0, 0.));
+		this->AddPairInfo(PairInfo<EdgeId>(e, e, 0., 0., 0.));
 	}
 
 	virtual void HandleDelete(EdgeId e) {
@@ -692,7 +521,7 @@ public:
 	}
 
 	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
-		this->AddPairInfo(PairInfo<EdgeId>(new_edge, new_edge, 0, 0.0, 0.));
+		this->AddPairInfo(PairInfo<EdgeId>(new_edge, new_edge, 0., 0., 0.));
 		int shift = 0;
 		for (size_t i = 0; i < old_edges.size(); ++i) {
 			EdgeId old_edge = old_edges[i];
@@ -718,7 +547,7 @@ public:
 	}
 
 	//	bool Check() {
-	//		for (auto it = data_.begin(); it != data_.end(); ++it) {
+	//		for (auto it = index_data_.begin(); it != index_data_.end(); ++it) {
 	//			PairInfo<EdgeId> inf = *it;
 	//			if (inf.first != inf.second && inf.d > 0) {
 	////				cout << inf.first << endl;
@@ -737,7 +566,7 @@ public:
 	//	}
 
 private:
-    DECL_LOGGER("PairInfo");
+    DECL_LOGGER("PairedInfoIndex");
 };
 
 /**
@@ -760,8 +589,8 @@ public:
 	PairInfos ProcessEdgePair(const PairInfos &infos) {
 		EdgeId edge1 = infos[0].first;
 		EdgeId edge2 = infos[0].second;
-		double d_sum = 0;
-		double weight_sum = 0;
+		double d_sum = 0.;
+		double weight_sum = 0.;
 		for (size_t i = 0; i < infos.size(); i++) {
 			d_sum += infos[i].d;
 			weight_sum += infos[i].weight;
@@ -834,7 +663,7 @@ private:
      */
     void FillUsualIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
         for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-            paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
+            paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0., 0., 0.));
         }
 
         INFO("Processing paired reads (takes a while)");
@@ -919,8 +748,7 @@ public:
 
 
 private:
-	DECL_LOGGER("PairedIndexFiller")
-	;
+	DECL_LOGGER("PairedIndexFiller");
 
 };
 
@@ -954,7 +782,7 @@ public:
 		double w = 0.;
 		if (math::eq(pair_info.d, 0.) && pair_info.first == pair_info.second) {
 			w = 0. + g_.length(pair_info.first) - insert_size_
-					+ 2 * read_length_ + 1 - k_;
+					+ 2. * read_length_ + 1. - k_;
 		} else {
 			EdgeId e1 =
 					(math::ge(pair_info.d, 0.)) ?
@@ -974,7 +802,7 @@ public:
 		if (math::gr(w, /*-10.*/0.)) {
 			result_weight /= w; //(w + 10);
 		} else result_weight = 0;
-		double cov_norm_coeff = avg_coverage_ / (2 * (read_length_ - k_));
+		double cov_norm_coeff = avg_coverage_ / (2. * (read_length_ - k_));
 		result_weight /= cov_norm_coeff;
 
 		PairInfo<EdgeId> result(pair_info);

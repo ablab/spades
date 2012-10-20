@@ -761,7 +761,7 @@ void resolve_repeats() {
                           genome, cfg::get().pos.max_single_gap,
                           cfg::get().pos.careful_labeling, /*use_inner_ids*/
                           !cfg::get().developer_mode);
-	paired_info_index paired_index(conj_gp.g, cfg::get().online_clust_rad);
+	paired_info_index paired_index(conj_gp.g);
 	paired_info_index clustered_index(conj_gp.g);
 	if (!cfg::get().developer_mode) {
 		//Detaching edge_pos handler
@@ -776,8 +776,6 @@ void resolve_repeats() {
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
 
 //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
-
-	DEBUG("Online clusterization rad = " << cfg::get().online_clust_rad);
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");

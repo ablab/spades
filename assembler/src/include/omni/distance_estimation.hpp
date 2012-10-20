@@ -282,7 +282,7 @@ public:
         vector< PairedInfoIndex<Graph>* > buffer(nthreads);
         buffer[0] = &result;
         for (size_t i = 1; i < nthreads; ++i) {
-            buffer[i] = new PairedInfoIndex<Graph>(this->graph(), result.GetMaxDifference());
+            buffer[i] = new PairedInfoIndex<Graph>(this->graph());
         }
 
         INFO("Processing");

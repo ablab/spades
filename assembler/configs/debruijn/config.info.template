@@ -62,9 +62,6 @@ use_additional_contigs false
 ; use unipaths as additional contigs instead of just graph edges
 use_unipaths false
 
-;radius for online pair info clusteing algorithm
-online_clust_rad 0.
-
 ;if true long ec are removed based on topology and coverage
 additional_ec_removing    true
 

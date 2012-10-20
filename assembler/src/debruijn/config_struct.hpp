@@ -513,7 +513,6 @@ public:
 
 	bool use_additional_contigs;
 	bool use_unipaths;
-//	bool etalon_graph_mode;
 	std::string additional_contigs;
 
 	std::string load_from;
@@ -521,13 +520,11 @@ public:
 	working_stage entry_point;
 
 	bool paired_mode;
-	double online_clust_rad;
 	bool additional_ec_removing;
 	bool divide_clusters;;
 	bool correct_mismatches;
 	bool paired_info_statistics;
 	bool paired_info_scaffolder;
-//	bool etalon_info_mode;
 	bool componential_resolve;
 	bool gap_closer_enable;
 	bool SAM_writer_enable;
@@ -976,20 +973,17 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.entry_point, pt, "entry_point");
 
-//	load(cfg.etalon_graph_mode, pt, "etalon_graph_mode");
 	load(cfg.use_additional_contigs, pt, "use_additional_contigs");
 	load(cfg.use_unipaths, pt, "use_unipaths");
 
 	load(cfg.additional_contigs, pt, "additional_contigs");
 
 	load(cfg.paired_mode, pt, "paired_mode");
-	load(cfg.online_clust_rad, pt, "online_clust_rad");
 	load(cfg.additional_ec_removing, pt, "additional_ec_removing");
 	load(cfg.divide_clusters, pt, "divide_clusters");
 	load(cfg.correct_mismatches, pt, "correct_mismatches");
 	load(cfg.paired_info_statistics, pt, "paired_info_statistics");
 	load(cfg.paired_info_scaffolder, pt, "paired_info_scaffolder");
-//	load(cfg.etalon_info_mode, pt, "etalon_info_mode");
 	load(cfg.componential_resolve, pt, "componential_resolve");
 	load(cfg.gap_closer_enable, pt, "gap_closer_enable");
 	load(cfg.SAM_writer_enable, pt, "SAM_writer_enable");

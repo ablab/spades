@@ -182,28 +182,27 @@ private:
 		buffer_pi[0] = &paired_index;
 
 		for (size_t i = 1; i < nthreads; ++i) {
-			buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_,
-					paired_index.GetMaxDifference());
+			buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_);
 		}
 
 		size_t counter = 0;
 #pragma omp parallel num_threads(nthreads)
-		{
+        {
 #pragma omp for reduction(+ : counter)
-			for (size_t i = 0; i < nthreads; ++i) {
+            for (size_t i = 0; i < nthreads; ++i) {
 
-				typename PairedStream::read_type r;
-				PairedStream& stream = streams_[i];
-				stream.reset();
+                typename PairedStream::read_type r;
+                PairedStream& stream = streams_[i];
+                stream.reset();
 
-				while (!stream.eof()) {
-					stream >> r;
-					++counter;
+                while (!stream.eof()) {
+                    stream >> r;
+                    ++counter;
 
-					ProcessPairedRead(*buffer_pi[i], r);
-				}
-			}
-		}
+                    ProcessPairedRead(*buffer_pi[i], r);
+                }
+            }
+        }
 		INFO("Used " << counter << " paired reads");
 
 		INFO("Merging paired indices");

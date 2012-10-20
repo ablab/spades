@@ -377,7 +377,7 @@ private:
         buffer_pi[0] = &paired_index;
 
         for (size_t i = 1; i < nthreads; ++i) {
-            buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_, paired_index.GetMaxDifference());
+            buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_);
         }
 
         size_t counter = 0;

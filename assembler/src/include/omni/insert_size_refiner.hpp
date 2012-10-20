@@ -98,7 +98,7 @@ public:
     {
     }
 
-    hist_type& GetHist() {
+    hist_type GetHist() {
         return hist_;
     }
 
@@ -178,7 +178,7 @@ public:
 
 
 template<class graph_pack, class PairedRead>
-typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(io::ReadStreamVector< io::IReader<PairedRead> >& streams, graph_pack& gp, size_t edge_length_threshold) {
+typename InsertSizeHistogramCounter<graph_pack>::hist_type refine_insert_size(io::ReadStreamVector< io::IReader<PairedRead> >& streams, graph_pack& gp, size_t edge_length_threshold) {
 	INFO("SUBSTAGE == Refining insert size and its distribution");
 
 	InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
@@ -189,7 +189,7 @@ typename InsertSizeHistogramCounter<graph_pack>::hist_type & refine_insert_size(
 	    hist_counter.CountHistogramParallel(streams);
 	}
 
-	typename InsertSizeHistogramCounter<graph_pack>::hist_type& hist = hist_counter.GetHist();
+	typename InsertSizeHistogramCounter<graph_pack>::hist_type hist = hist_counter.GetHist();
 	size_t n = hist_counter.GetCounted();
 	size_t total = hist_counter.GetTotal();
 
