@@ -30,7 +30,7 @@ sed '1d' distance_estimation_et.prd > etalon.prd
 sed '1d' distance_estimation_cl.prd > clustered.prd
 cd $proj_dir
 
-./genStats.sh
+./genFiles.sh
 
 cd $input_dir
 #sort -rnk 4,4 fp.prd > fpr.prd
