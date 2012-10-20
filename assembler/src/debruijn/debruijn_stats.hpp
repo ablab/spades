@@ -200,7 +200,7 @@ void FillAndCorrectEtalonPairedInfo(
     }
     if (!successful_load) 
 	    FillEtalonPairedIndex(etalon_index, gp.g,
-			gp.index, gp.kmer_mapper, insert_size, read_length, 2 * delta,
+			gp.index, gp.kmer_mapper, insert_size, read_length, delta,
 			gp.genome, gp.k_value);
 	INFO("Etalon paired index filled");
 

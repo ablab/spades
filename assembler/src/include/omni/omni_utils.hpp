@@ -1326,34 +1326,35 @@ public:
 	}
 };
 
-template<class EdgeId> class TipLock{
+template <class EdgeId> 
+class TipLock {
     private:
         static map<EdgeId, bool> lock;
     public:
-        static void Lock(EdgeId tip){
+        static void Lock(EdgeId tip) {
             lock[tip] = true;   
         }
 
-        static void Unlock(EdgeId tip){
+        static void Unlock(EdgeId tip) {
             lock[tip] = false;   
         }
 
-        static bool IsLocked(EdgeId tip){
-            if (lock.find(tip) != lock.end()){
-                return lock[tip];   
-            }
-            return false;
+        static bool IsLocked(EdgeId tip) {
+            if (lock.find(tip) != lock.end())
+                return lock[tip];
+            else
+                return false;
         }        
 };
 
 template<class EdgeId> map<EdgeId, bool> TipLock<EdgeId>::lock;
+
 template<class Graph>
-class TipChecker{
+class TipChecker {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-
     const Graph& graph_;
-    TipLock<typename Graph::EdgeId> & tip_lock_;
+    TipLock<typename Graph::EdgeId>& tip_lock_;
 
 private:
     size_t lower_bound;
@@ -1363,40 +1364,46 @@ private:
     size_t max_tip_length_;
     size_t max_ec_length_;
     size_t iteration;
-      
+
     EdgeId tip;
 
     // defines the orientation of current tip
     bool backward;
 
-        
     // simple check whether the edge is tip
-    bool IsTip(EdgeId edge){
-        if (graph_.length(edge) > max_tip_length_) return false;
+    bool IsTip(EdgeId edge) {
+        if (graph_.length(edge) > max_tip_length_) 
+            return false;
         VertexId start = graph_.EdgeStart(edge);
-        if (graph_.IncomingEdgeCount(start) + graph_.OutgoingEdgeCount(start) == 1) return true;
+        if (graph_.IncomingEdgeCount(start) + graph_.OutgoingEdgeCount(start) == 1) 
+            return true;
         VertexId end = graph_.EdgeEnd(edge);
-        if (graph_.IncomingEdgeCount(end) + graph_.OutgoingEdgeCount(end) == 1) return true;
+        if (graph_.IncomingEdgeCount(end) + graph_.OutgoingEdgeCount(end) == 1) 
+            return true;
         return false;
     }
-    
-    // checking in the case of H-situation whether we have an alternative tip. In this case, we choose from the tip, alternative tip, and potential erroneous connection between them.
-    bool CheckTipTip(EdgeId tip, EdgeId alter){
-        if (backward){
-            for (size_t i = 0; i<graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)); ++i){
+
+    // checking in the case of H-situation whether we have an alternative tip. 
+    // In this case, we choose from the tip, alternative tip, 
+    // and potential erroneous connection between them.
+    bool CheckTipTip(EdgeId tip, EdgeId alter) {
+        if (backward) {
+            for (size_t i = 0; i < graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)); ++i) {
                 EdgeId alter_tip = graph_.OutgoingEdges(graph_.EdgeStart(alter))[i];
-                if (IsTip(graph_.OutgoingEdges(graph_.EdgeStart(alter))[i])){ 
-                    if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip))){
+                if (IsTip(graph_.OutgoingEdges(graph_.EdgeStart(alter))[i])) { 
+                    if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) 
+                        && math::ge(graph_.coverage(alter), graph_.coverage(tip))) {
                         tip_lock_.Lock(alter_tip);
                         return true;
                     }
                 }
             }
-        }else{
-            for (size_t i = 0; i<graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)); ++i){
+        } 
+        else {
+            for (size_t i = 0; i < graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)); ++i) {
                 EdgeId alter_tip = graph_.IncomingEdges(graph_.EdgeEnd(alter))[i];
                 if (IsTip(graph_.IncomingEdges(graph_.EdgeEnd(alter))[i])) {
-                    if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip))){
+                    if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip))) {
                         tip_lock_.Lock(alter_tip);
                         return true;   
                     }
@@ -1407,124 +1414,110 @@ private:
     }
 
     // checking whether it is a potential erroneous connection situation. (H - situation)
-    bool CheckAlternativeForEC(EdgeId tip, EdgeId alter){
-            if (graph_.length(alter) > max_ec_length_) 
-                return false; 
-            if (graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)) <= 1 
-                || graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)) <= 1) 
-                return false;
-            return true;
+    bool CheckAlternativeForEC(EdgeId tip, EdgeId alter) {
+        if (graph_.length(alter) > max_ec_length_) 
+            return false; 
+        if (graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)) <= 1 
+            || graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)) <= 1) 
+            return false;
+        return true;
     }
 
-    bool TipShouldBeRemoved(vector<EdgeId> path, size_t path_length){
+    bool TipShouldBeRemoved(vector<EdgeId> path, size_t path_length) {
         SequenceBuilder seq_builder;
-        if (backward){
-
-            for (auto iter = path.rbegin(); iter != path.rend(); ++iter){ 
+        if (backward) {
+            for (auto iter = path.rbegin(); iter != path.rend(); ++iter) {
                 seq_builder.append(graph_.EdgeNucls(*iter).Subseq(0, graph_.length(*iter)));
             }
-                
+
             Sequence sequence;
             Sequence sequence_tip = graph_.EdgeNucls(tip).Subseq(0, graph_.length(tip));
-            
 
-    //      trimming
+            //      trimming
             VERIFY(path_length == seq_builder.size());
             sequence = seq_builder.BuildSequence().Subseq(seq_builder.size() - sequence_tip.size(), seq_builder.size());
             VERIFY(sequence.size() == sequence_tip.size());
-            
+
             size_t dist = edit_distance(sequence.str(), sequence_tip.str());
 
             VERIFY(dist <= sequence_tip.size());
 
-            if (dist < max_distance_){
-                if (CheckAlternativeForEC(tip, path.front())){
+            if (dist < max_distance_) {
+                if (CheckAlternativeForEC(tip, path.front())) {
                     TRACE("Alter path looks like EC");
-                    if (CheckTipTip(tip, path.front())){
+                    if (CheckTipTip(tip, path.front())) {
                         TRACE("Judged to have an alternative TIP");
                         return true;
                     }
                 }
-                else{
+                else {
                     TRACE("Doesn't look like a EC => will remove it");
                     return true;
                 }
             }
             TRACE("Levenshtein is too high " << dist);
-            
-            
             return false;
-
         }
-        else{
-
+        else {
             for (size_t i = 0; i<path.size(); ++i)
                 seq_builder.append(graph_.EdgeNucls(path[i]).Subseq(graph_.k(), graph_.k() + graph_.length(path[i])));
-            
+
             Sequence sequence;
             SequenceBuilder tip_builder;
 
             tip_builder.append(graph_.EdgeNucls(tip));
             Sequence sequence_tip = tip_builder.BuildSequence().Subseq(graph_.k(), tip_builder.size());
-            
+
             VERIFY(seq_builder.size() == path_length);
 
-    //      trimming
+            //      trimming
             sequence = seq_builder.BuildSequence().Subseq(0, sequence_tip.size());
-            
+
             VERIFY(sequence.size() == sequence_tip.size());
-            
+
             size_t dist = edit_distance(sequence.str(), sequence_tip.str());
-            
+
             VERIFY(dist <= sequence_tip.size());
 
-            if (dist < max_distance_){
-                if (CheckAlternativeForEC(tip, path.front())){
+            if (dist < max_distance_) {
+                if (CheckAlternativeForEC(tip, path.front())) {
                     TRACE("Alter path looks like EC");
-                    if (CheckTipTip(tip, path.front())){
+                    if (CheckTipTip(tip, path.front())) {
                         TRACE("Judged to have an alternative TIP");
                         return true;
                     }
                 }
-                else{
+                else {
                     TRACE("Doesn't look like a EC => will remove it");
                     return true;
                 }
             }
-            
-            TRACE("Levenshtein is too high " << dist);
-            
 
+            TRACE("Levenshtein is too high " << dist);
             return false;
-            
         }
     } 
 
-    bool Dfs(VertexId vertex, const AbstractDirection<Graph>& direction, vector<EdgeId>& path, size_t path_length){
-        
+    bool Dfs(VertexId vertex, const AbstractDirection<Graph>& direction, vector<EdgeId>& path, size_t path_length) {
         if (iteration++ > max_iterations_) {
             WARN("MAX_ITERARION was reached " << graph_.int_id(tip));
             return false;
         }
 
-        if (path_length >= lower_bound){
+        if (path_length >= lower_bound) {
             TRACE("Checking similarity");
             return TipShouldBeRemoved(path, path_length);
         }
-        for (size_t i = 0; i<direction.OutgoingEdgeCount(vertex); i++){
+        for (size_t i = 0; i < direction.OutgoingEdgeCount(vertex); ++i) {
             EdgeId edge = direction.OutgoingEdges(vertex)[i];
-            if (edge != tip){
+            if (edge != tip) {
                 path.push_back(edge);
-                
-                TRACE("Pushing edge " << graph_.str(edge));
-                
-                size_t sum = graph_.length(edge);
 
+                TRACE("Pushing edge " << graph_.str(edge));
+                size_t sum = graph_.length(edge);
                 if (Dfs(direction.EdgeEnd(edge), direction, path, path_length + sum)) 
                     return true;
-                
                 TRACE("Popping edge " << graph_.str(edge));
-                
                 path.pop_back();
             }
         }
@@ -1535,16 +1528,16 @@ private:
 public:
 
     TipChecker(const Graph& graph, TipLock<EdgeId>& tip_lock, size_t max_iterations_, size_t max_distance, size_t max_tip_length, size_t max_ec_length):
-    graph_(graph), tip_lock_(tip_lock), max_iterations_(max_iterations_), max_distance_(max_distance), max_tip_length_(max_tip_length), max_ec_length_(max_ec_length){
-        TRACE("Max levenstein " << max_distance_);
-    }
+        graph_(graph), tip_lock_(tip_lock), max_iterations_(max_iterations_), max_distance_(max_distance), max_tip_length_(max_tip_length), max_ec_length_(max_ec_length) {
+            TRACE("Max levenstein " << max_distance_);
+        }
 
-   
+
     /**
      * Hard check whether it's really the tip
      */
 
-    bool TipCanBeProjected(EdgeId edge_tip){
+    bool TipCanBeProjected(EdgeId edge_tip) {
         vector<EdgeId> path;
         tip = edge_tip;
         iteration = 0;
@@ -1553,12 +1546,13 @@ public:
         TRACE("Thinking about the tip " << graph_.str(tip));
 
         VertexId vert = graph_.EdgeStart(tip);
-        
+
         // Checking the orientation of the tip
-        if (graph_.IncomingEdgeCount(vert) == 0 && graph_.OutgoingEdgeCount(vert) == 1){
+        if (graph_.IncomingEdgeCount(vert) == 0 && graph_.OutgoingEdgeCount(vert) == 1) {
             backward = true;
             return Dfs(vert, BackwardDirection<Graph>(graph_), path, 0);
-        }else{
+        }
+        else {
             backward = false;
             return Dfs(vert, ForwardDirection<Graph>(graph_), path, 0);
         }

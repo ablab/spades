@@ -11,104 +11,40 @@
 #include "omni_utils.hpp"
 #include "data_divider.hpp"
 #include "peak_finder.hpp"
-#include "extensive_distance_estimation.hpp"
 
 namespace omnigraph {
 
 template<class Graph>
 class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
-	typedef ExtensiveDistanceEstimator<Graph> base;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef pair<size_t, size_t> Interval;
+    typedef ExtensiveDistanceEstimator<Graph> base;
+public:
+	SmoothingDistanceEstimator(const Graph& graph, const PairedInfoIndex<Graph>& histogram, const GraphDistanceFinder<Graph>& dist_finder, boost::function<double(int)> weight_f, size_t linkage_distance, size_t max_distance, size_t threshold, double range_coeff, double delta_coeff, size_t cutoff, size_t min_peak_points, double inv_density, double percentage, double derivative_threshold, bool only_scaffolding = false) : 
+        base(graph, histogram, dist_finder, weight_f, linkage_distance, max_distance),
+        threshold_(threshold),
+        range_coeff_(range_coeff), 
+        delta_coeff_(delta_coeff), 
+        cutoff_(cutoff), 
+        min_peak_points_(min_peak_points), 
+        inv_density_(inv_density), 
+        percentage_(percentage), 
+        derivative_threshold_(derivative_threshold),
+        only_scaffolding_(only_scaffolding),
+        gap_distances(0)
+    {
+    }
 
-    size_t threshold_;
-    double range_coeff_;
-    double delta_coeff_;
-	int    cutoff_;
-    size_t min_peak_points_;    
-    double inv_density_;
-    double percentage_;
-    double derivative_threshold_;
-    bool   only_scaffolding_;
-    mutable size_t gap_distances;
-
-    int round(double x) const { 
-        int res = (int) (abs(x) + 0.5 + 1e-9);
-        if (x < 0)
-            res = -res;
-        return res;
+    virtual ~SmoothingDistanceEstimator()
+    {
     }
 
 protected: 
+	typedef typename base::EdgeId EdgeId;
 
-    vector<pair<int, double> > FindEdgePairDistances(const vector<PairInfo<EdgeId> >& raw_data) const {
-        size_t first_len = this->graph().length(raw_data[0].first);
-        size_t second_len = this->graph().length(raw_data[0].second);
-        TRACE("Lengths are " << first_len << " " << second_len);
-        vector<PairInfo<EdgeId> > data;
-        for (size_t i = 0 ; i < raw_data.size(); ++i) {
-            if (math::ge(2. * rounded_d(raw_data[i]) + second_len, (double) first_len))
-                if (rounded_d(raw_data[i]) >= (int) first_len)
-                    data.push_back(raw_data[i]);
-        }
-        vector<pair<int, double> > result;
-        double picture_weight = 0;
-        for (size_t i = 0; i < data.size(); ++i) 
-            picture_weight += data[i].weight;
-        if (math::ls(picture_weight, 3.))
-            return result;
-		
-        vector<PairInfo<EdgeId> > new_data;
-        DataDivider data_divider(threshold_);
-		const vector<Interval>& clusters = data_divider.DivideAndSmoothData<EdgeId>(data, new_data, this->weight_f_);
-        DEBUG("Seeking for distances");
-        TRACE("size " << new_data.size());
-		
-        for (size_t i = 0; i < clusters.size(); i++) {
-            size_t begin = clusters[i].first;
-            size_t end = clusters[i].second;
-            TRACE("begin " << begin << " at " << rounded_d(new_data[begin]) <<  ", " << " end " << end << " at " << rounded_d(new_data[end - 1]));
-            size_t data_length = rounded_d(new_data[end - 1]) - rounded_d(new_data[begin]) + 1;
-            TRACE("data length " << data_length);
-            if (end - begin > min_peak_points_) {
-                PeakFinder<EdgeId> peakfinder(new_data, begin, end, round(data_length * range_coeff_), round(data_length * delta_coeff_), percentage_, derivative_threshold_);
-                DEBUG("Processing window : " << rounded_d(new_data[begin]) << " " << rounded_d(new_data[end - 1]));
-
-                TRACE("Smoothing via FFT");
-                peakfinder.FFTSmoothing(cutoff_);
-                TRACE("Listing peaks");
-                const vector<pair<int, double> >& peaks = peakfinder.ListPeaks();
-                TRACE("Listed");
-                int index_of_max_weight = 0;
-                for (auto iter = peaks.begin(); iter != peaks.end(); ++iter) {
-                    //result.push_back(*iter);
-                    TRACE("PEAKS " << iter->first << " " << iter->second);
-                }
-                if (peaks.size() == 0) 
-                    continue;
-                for (size_t i = 0; i < peaks.size(); ++i) 
-                    if (math::ls(peaks[index_of_max_weight].second, peaks[i].second))
-                        index_of_max_weight = i;
-                if (index_of_max_weight >= 0) 
-                    result.push_back(peaks[index_of_max_weight]);
-            }
-        }
-        if (result.size() == 0)
-            return result;
-        int index_of_max_weight = 0;
-        for (size_t i = 0; i < result.size(); ++i) 
-            if (math::ls(result[index_of_max_weight].second, result[i].second))
-                index_of_max_weight = i;
-        vector<pair<int, double> > new_result;
-        for (size_t i = 0; i < result.size(); ++i)
-            if (math::eq(result[i].second, result[index_of_max_weight].second)) {
-                new_result.push_back(result[i]);
-                break;
-            }
-        return new_result;
-    }
-
-    vector<pair<int, double> > EstimateEdgePairDistances(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId> >& raw_data, const vector<size_t>& forward) const {
+    virtual vector<pair<int, double> >
+    EstimateEdgePairDistances(EdgeId first, EdgeId second, 
+                                const vector<PairInfo<EdgeId> >& raw_data,
+                                const vector<size_t>& forward) const {
+        VERIFY(false);
         vector<PairInfo<EdgeId> > data;
         size_t first_len = this->graph().length(raw_data[0].first);
         size_t second_len = this->graph().length(raw_data[0].second);
@@ -174,6 +110,115 @@ protected:
 		return result;
 	}
 
+private:
+	typedef pair<size_t, size_t> Interval;
+
+    size_t threshold_;
+    double range_coeff_;
+    double delta_coeff_;
+	int    cutoff_;
+    size_t min_peak_points_;    
+    double inv_density_;
+    double percentage_;
+    double derivative_threshold_;
+    bool   only_scaffolding_;
+    mutable size_t gap_distances;
+
+    vector<pair<int, double> > FindEdgePairDistances(const vector<PairInfo<EdgeId> >& raw_data) const {
+        size_t first_len = this->graph().length(raw_data[0].first);
+        size_t second_len = this->graph().length(raw_data[0].second);
+        TRACE("Lengths are " << first_len << " " << second_len);
+        vector<PairInfo<EdgeId> > data;
+        for (size_t i = 0 ; i < raw_data.size(); ++i) {
+            if (math::ge(2. * rounded_d(raw_data[i]) + second_len, (double) first_len))
+                if (rounded_d(raw_data[i]) >= (int) first_len)
+                    data.push_back(raw_data[i]);
+        }
+        vector<pair<int, double> > result;
+        double picture_weight = 0;
+        for (size_t i = 0; i < data.size(); ++i) 
+            picture_weight += data[i].weight;
+        if (math::ls(picture_weight, 3.))
+            return result;
+		
+        vector<PairInfo<EdgeId> > new_data;
+        DataDivider data_divider(threshold_);
+		const vector<Interval>& clusters = data_divider.DivideAndSmoothData<EdgeId>(data, new_data, this->weight_f_);
+        DEBUG("Seeking for distances");
+        TRACE("size " << new_data.size());
+		
+        for (size_t i = 0; i < clusters.size(); i++) {
+            size_t begin = clusters[i].first;
+            size_t end = clusters[i].second;
+            TRACE("begin " << begin << " at " << rounded_d(new_data[begin]) <<  ", " << " end " << end << " at " << rounded_d(new_data[end - 1]));
+            size_t data_length = rounded_d(new_data[end - 1]) - rounded_d(new_data[begin]) + 1;
+            TRACE("data length " << data_length);
+            if (end - begin > min_peak_points_) {
+                PeakFinder<EdgeId> peakfinder(new_data, begin, end, round(data_length * range_coeff_), round(data_length * delta_coeff_), percentage_, derivative_threshold_);
+                DEBUG("Processing window : " << rounded_d(new_data[begin]) << " " << rounded_d(new_data[end - 1]));
+                peakfinder.FFTSmoothing(cutoff_);
+                TRACE("Listing peaks");
+                const vector<pair<int, double> >& peaks = peakfinder.ListPeaks();
+                TRACE("Listed");
+                int index_of_max_weight = 0;
+                //for (auto iter = peaks.begin(); iter != peaks.end(); ++iter) {
+                    //TRACE("PEAKS " << iter->first << " " << iter->second);
+                //}
+                if (peaks.size() == 0) 
+                    continue;
+                for (size_t i = 0; i < peaks.size(); ++i) 
+                    if (math::ls(peaks[index_of_max_weight].second, peaks[i].second))
+                        index_of_max_weight = i;
+                if (index_of_max_weight >= 0) 
+                    result.push_back(peaks[index_of_max_weight]);
+            }
+        }
+        if (result.size() == 0)
+            return result;
+        int index_of_max_weight = 0;
+        for (size_t i = 0; i < result.size(); ++i) 
+            if (math::ls(result[index_of_max_weight].second, result[i].second))
+                index_of_max_weight = i;
+        vector<pair<int, double> > new_result;
+        for (size_t i = 0; i < result.size(); ++i)
+            if (result[i].second > .5 * result[index_of_max_weight].second)
+                new_result.push_back(result[i]);
+        return new_result;
+    }
+
+    int round(double x) const { 
+        int res = (int) (abs(x) + 0.5 + eps<double>());
+        if (math::ls(x, 0.))
+            res = -res;
+        return res;
+    }
+
+	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& raw_data, PairedInfoIndex<Graph> &result) const {
+		if (make_pair(first, second) <= this->ConjugatePair(first, second)) {
+			vector<size_t> forward = this->GetGraphDistancesLengths(first, second);
+            vector<size_t> backward = this->GetGraphDistancesLengths(second, first);
+            TRACE("Processing edge pair " << this->graph().int_id(first) << " " << this->graph().int_id(second));
+            vector<PairInfo<EdgeId>> data(raw_data);
+		    vector<pair<int, double> > estimated;
+            if (forward.size() == 0) {
+                estimated = FindEdgePairDistances(data);
+                ++gap_distances;
+            }
+            else if (forward.size() > 0 && (!only_scaffolding_)) { 
+                DEBUG("Extending paired information");
+                DEBUG("Extend left");
+                this->ExtendInfoLeft(first, second, data, 1000);
+                DEBUG("Extend right");
+                this->ExtendInfoRight(first, second, data, 1000);
+                estimated = this->base::EstimateEdgePairDistances(first, second, data, forward);
+            }
+            DEBUG(gap_distances << " distances between gap edge pairs have been found");
+			const vector<PairInfo<EdgeId>>& res = this->ClusterResult(first, second, estimated);
+			this->AddToResult(result, res);
+			this->AddToResult(result, this->ConjugateInfos(res));
+		}
+	}
+
     bool IsTipTip(EdgeId first, EdgeId second) const {
             return (this->graph().OutgoingEdgeCount(this->graph().EdgeEnd(first)) == 0 && 
                     this->graph().IncomingEdgeCount(this->graph().EdgeEnd(first)) == 1 && 
@@ -181,51 +226,7 @@ protected:
                     this->graph().OutgoingEdgeCount(this->graph().EdgeStart(second)) == 1); 
     }
 
-	virtual void ProcessEdgePair(EdgeId first, EdgeId second, const vector<PairInfo<EdgeId>>& raw_data, PairedInfoIndex<Graph> &result) const {
-		if (make_pair(first, second) <= this->ConjugatePair(first, second)) {
-			vector<size_t> forward = this->GetGraphDistancesLengths(first, second);
-            TRACE("Processing edge pair " << this->graph().int_id(first) << " " << this->graph().int_id(second));
-            vector<PairInfo<EdgeId>> data = raw_data;
-		    vector<pair<int, double> > estimated;
-            if (forward.size() == 0 /* && IsTipTip(first, second)*/) {
-                estimated = FindEdgePairDistances(data);
-                ++gap_distances;
-            }
-            else if (forward.size() > 0 && (!only_scaffolding_)) { 
-                DEBUG("Extending paired information");
-                DEBUG("Extend left");
-                this->ExtendInfoLeft(first, second, data);
-                DEBUG("Extend right");
-                this->ExtendInfoRight(first, second, data);
-                
-                estimated = this->base::EstimateEdgePairDistances(first, second, data, forward);
-            }
-            DEBUG(gap_distances << " distances between gap edge pairs have been found");
-			vector<PairInfo<EdgeId>> res = this->ClusterResult(first, second, estimated);
-			this->AddToResult(result, res);
-			this->AddToResult(result, this->ConjugateInfos(res));
-
-		}
-	}
-
-public:
-	SmoothingDistanceEstimator(const Graph& graph, const PairedInfoIndex<Graph>& histogram, const GraphDistanceFinder<Graph>& dist_finder, boost::function<double(int)> weight_f, size_t linkage_distance, size_t max_distance, size_t threshold, double range_coeff, double delta_coeff, size_t cutoff, size_t min_peak_points, double inv_density, double percentage, double derivative_threshold, bool only_scaffolding = false) : 
-        base(graph, histogram, dist_finder, weight_f, linkage_distance, max_distance),
-        threshold_(threshold),
-        range_coeff_(range_coeff), 
-        delta_coeff_(delta_coeff), 
-        cutoff_(cutoff), 
-        min_peak_points_(min_peak_points), 
-        inv_density_(inv_density), 
-        percentage_(percentage), 
-        derivative_threshold_(derivative_threshold),
-        only_scaffolding_(only_scaffolding),
-        gap_distances(0)
-    {
-    }
-
-    private:
-	    DECL_LOGGER("SmoothingDistanceEstimator")
+    DECL_LOGGER("SmoothingDistanceEstimator")
 };
 
 }

@@ -16,8 +16,19 @@ namespace omnigraph {
 
 template<class Graph>
 class NaiveDistanceEstimator: public DistanceEstimator<Graph> {
+public:
+	NaiveDistanceEstimator(const Graph &graph,
+			const PairedInfoIndex<Graph>& histogram,
+			const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
+			size_t linkage_distance, size_t max_distance) :
+			base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f) {
+	}
+
+	virtual ~NaiveDistanceEstimator() {
+	}
+
 	typedef DistanceEstimator<Graph> base;
-	typedef typename Graph::EdgeId EdgeId;
+	typedef typename base::EdgeId EdgeId;
 
     boost::function<double(int)> weight_f_;
 
@@ -48,17 +59,6 @@ class NaiveDistanceEstimator: public DistanceEstimator<Graph> {
 			}
 		}
 		return result;
-	}
-
-public:
-	NaiveDistanceEstimator(const Graph &graph,
-			const PairedInfoIndex<Graph>& histogram,
-			const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
-			size_t linkage_distance, size_t max_distance) :
-			base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f) {
-	}
-
-	virtual ~NaiveDistanceEstimator() {
 	}
 
 };

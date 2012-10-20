@@ -10,16 +10,25 @@
 #include "xmath.h"
 #include "paired_info.hpp"
 #include "omni_utils.hpp"
-#include "distance_estimation.hpp"
 
 namespace omnigraph {
 
 template<class Graph>
 class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
-	typedef DistanceEstimator<Graph> base;
-	typedef typename Graph::EdgeId EdgeId;
+public:
+	WeightedDistanceEstimator(const Graph &graph,
+			const PairedInfoIndex<Graph>& histogram,
+			const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
+			size_t linkage_distance, size_t max_distance) :
+			base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f) {
+	}
+
+    virtual ~WeightedDistanceEstimator() {
+    }
 
 protected:
+	typedef DistanceEstimator<Graph> base;
+	typedef typename base::EdgeId EdgeId;
     boost::function<double(int)> weight_f_;
 
 	virtual vector<pair<int, double>> EstimateEdgePairDistances(EdgeId first, EdgeId second,
@@ -77,20 +86,6 @@ protected:
 		return result;
 	}
 
-
-public:
-	WeightedDistanceEstimator(const Graph &graph,
-			const PairedInfoIndex<Graph>& histogram,
-			const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
-			size_t linkage_distance, size_t max_distance) :
-			base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f) {
-	}
-
-    virtual ~WeightedDistanceEstimator() {
-    }
-
-private:
-    DECL_LOGGER("WeightedDistanceEstimator");
 };
     
 
