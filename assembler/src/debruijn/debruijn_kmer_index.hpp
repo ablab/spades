@@ -256,7 +256,6 @@ DeBruijnGraphKMerSplitter<Graph>::FillBufferFromEdges(EdgeIt &edge,
 
     kmers += FillBufferFromSequence(nucls, buffer, num_files);
     seqs += 1;
-    VERBOSE_POWER(seqs, " edges processed");
   }
 
   return seqs;
@@ -285,11 +284,15 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
   KMerBuffer &entry = tmp_entries[0];
   entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
 
-  size_t counter = 0;
+  size_t counter = 0, n = 15;
   for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ) {
     counter += FillBufferFromEdges(it, tmp_entries[0], num_files, cell_size);
 
     DumpBuffers(num_files, 1, tmp_entries, ostreams);
+    if (counter >> n) {
+      INFO("Processed " << counter << " edges");
+      n += 1;
+    }
   }
 
   for (unsigned i = 0; i < num_files; ++i)
