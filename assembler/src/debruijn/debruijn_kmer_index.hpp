@@ -309,7 +309,7 @@ class DeBruijnKMerIndex {
 
     auto it = kmers->begin() + idx;
 
-    return (0 == memcmp(k.data(), (*it).data(), (*it).data_size()));
+    return (typename traits::raw_equal_to()(k, *it));
   }
 
   size_t raw_seq_idx(const typename KMerIndex::KMerRawReference s) const {

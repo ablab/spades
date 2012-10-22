@@ -39,6 +39,12 @@ struct kmer_index_traits {
   typedef typename RawKMerStorage::iterator::value_type KMerRawData;
   typedef typename RawKMerStorage::iterator::reference  KMerRawReference;
 
+  struct raw_equal_to {
+    bool operator()(const Seq &lhs, const KMerRawReference rhs) {
+      return (array_equal_to<typename Seq::DataType>()(lhs.data(), lhs.data_size(), rhs));
+    }
+  };
+
   struct hash_function {
     uint64_t operator()(const Seq &k) const{
       return typename Seq::hash()(k);
@@ -47,7 +53,7 @@ struct kmer_index_traits {
       return typename Seq::hash()(k.data(), k.size());
     }
   };
-  
+
   // This is really the most fragile part of the whole story.  Basically, we're
   // building the PHM with "raw" data, but query the PHM with real Key-s!  We're
   // relying on fact that hashes are exactly the same in both cases (thus - two
