@@ -150,7 +150,7 @@ class DeBruijnKMerIndex {
   KMer kmer(KMerIdx idx) const {
     VERIFY(contains(idx));
     auto it = kmers->begin() + idx;
-    return KMer(K_, (*it).data());
+    return (typename traits::raw_create()(K_, *it));
   }
 
   /**

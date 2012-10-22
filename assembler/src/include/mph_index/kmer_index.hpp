@@ -45,6 +45,12 @@ struct kmer_index_traits {
     }
   };
 
+  struct raw_create {
+    Seq operator()(unsigned K, const KMerRawReference kmer) {
+      return Seq(K, kmer.data());
+    }
+  };
+
   struct hash_function {
     uint64_t operator()(const Seq &k) const{
       return typename Seq::hash()(k);
