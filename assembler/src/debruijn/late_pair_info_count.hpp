@@ -44,7 +44,7 @@ void late_pair_info_count(conj_graph_pack& gp,
                 return;
             }
 
-            auto paired_streams = paired_binary_readers(true,  *cfg::get().ds.IS);
+            auto paired_streams = paired_binary_readers(true, *cfg::get().ds.IS);
 
             if (cfg::get().paired_metr == debruijn_graph::paired_metrics::pm_product)
                 FillPairedIndexWithProductMetric(gp.g, gp.index, gp.kmer_mapper,

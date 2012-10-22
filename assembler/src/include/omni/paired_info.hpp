@@ -174,9 +174,8 @@ public:
 
 	void UpdateInfo(const PairInfo<EdgeId>& info, double new_dist, double new_weight, double new_variance, bool add_reversed) {
         // first we update backward info in order to leave @info not modified
-		if (add_reversed && !IsSymmetric(info)) {
-			UpdateSingleInfo(BackwardInfo(info), new_dist, new_weight, new_variance);
-        }
+		if (add_reversed && !IsSymmetric(info))
+			UpdateSingleInfo(BackwardInfo(info), -new_dist, new_weight, new_variance);
 
 		UpdateSingleInfo(info, new_dist, new_weight, new_variance);
 	}
