@@ -749,7 +749,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp, paired_info_index& paired_in
                     cfg::get().ade.percentage,
                     cfg::get().ade.derivative_threshold,
                     true);
-    INFO("Starting SMOOTHING distance estimator");
+    INFO("Starting SCAFFOLDING distance estimator");
     estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
 }
 

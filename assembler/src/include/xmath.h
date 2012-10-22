@@ -137,7 +137,7 @@ namespace math {
             // Constants.
 
             // # of bits in a number.
-            static const size_t kBitCount = 8*sizeof(RawType);
+            static const size_t kBitCount = 8 * sizeof(RawType);
 
             // # of fraction bits in a number.
             static const size_t kFractionBitCount =
@@ -319,6 +319,18 @@ namespace math {
 
 	template<class T> inline
 	T round(T t) { return floor(t + 0.5); }
+
+    // updates floating point @variable only if it does not differ from the @new_value too much
+    // @returns true if the @variable was updated indeed
+    template<class T> inline
+    bool update_value_if_needed(T& variable, T new_value) {
+        bool result = !eq<T>(variable, new_value);
+
+        if (result) {    
+            variable = new_value;
+        }
+        return result;
+    }
 
 }
 

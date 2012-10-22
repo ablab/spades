@@ -129,29 +129,25 @@ class PairInfoIndexData {
 public:
 	typedef set<PairInfo<EdgeId> > Data;
 	typedef typename Data::iterator data_iterator;
-	//typedef typename Data::const_iterator data_const_iterator;
 	typedef vector<PairInfo<EdgeId> > PairInfos;
-	//typedef std::pair<data_const_iterator, data_const_iterator> iterator_range;
-
-public:
 
     //  we can not update elements in the std::set, 
     //  although we can delete element, 
     //  and then insert a modified version of it
-    void UpdateSingleInfo(const PairInfo<EdgeId>& info, double new_weight) {
-
-        TRACE("Weight " << new_weight << " is about to be added to " << info);
-        // we want to be sure that only one element was removed
+    //  but here we do not care about safety, and making illegal @const_cast on the std::set element
+    void UpdateSingleInfo(const PairInfo<EdgeId>& info, double new_dist, double new_weight, double new_variance) {
+        TRACE(info << " is about to be merged with " << new_dist << " " << new_weight << " " << new_variance);
         PairInfo<EdgeId>& info_to_update = const_cast<PairInfo<EdgeId>&>(*data_.find(info));
-        info_to_update.weight = new_weight;
-
+        using namespace math;
+        update_value_if_needed<double>(info_to_update.d, new_dist);
+        update_value_if_needed<double>(info_to_update.weight, new_weight);
+        update_value_if_needed<double>(info_to_update.variance, new_variance);
     }
 
     //TODO: rename the method
 	void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
 		data_.insert(PairInfo<EdgeId>(newId, info.second, info.d, info.weight, info.variance));
 	}
-public:
 
 	PairInfoIndexData() :
 			data_() {
@@ -176,13 +172,13 @@ public:
 			data_.insert(BackwardInfo(pair_info));
 	}
 
-	void UpdateInfo(const PairInfo<EdgeId>& info, double weight, bool add_reversed) {
+	void UpdateInfo(const PairInfo<EdgeId>& info, double new_dist, double new_weight, double new_variance, bool add_reversed) {
         // first we update backward info in order to leave @info not modified
 		if (add_reversed && !IsSymmetric(info)) {
-			UpdateSingleInfo(BackwardInfo(info), weight);
+			UpdateSingleInfo(BackwardInfo(info), new_dist, new_weight, new_variance);
         }
 
-		UpdateSingleInfo(info, weight);
+		UpdateSingleInfo(info, new_dist, new_weight, new_variance);
 	}
 
 	void DeleteEdgeInfo(EdgeId e) {
@@ -331,142 +327,6 @@ public:
 		TRACE("~PairedInfoIndex ok");
 	}
 
-private:
-
-	PairInfoIndexData<EdgeId> index_data_;
-
-	size_t CorrectLength(const Path<EdgeId>& path, size_t index) const {
-		size_t result = this->g().length(path[index]);
-		if (index == 0) {
-			result -= path.start_pos();
-		}
-		if (index == path.size() - 1) {
-			result -= this->g().length(path[index]) - path.end_pos();
-		}
-		return result;
-	}
-
-	//	void PassEdge(size_t edge_length, size_t &path_nucls_passed) {
-	//		if (path_nucls_passed == 0) {
-	//			path_nucls_passed += graph_.k();
-	//		}
-	//		path_nucls_passed += edge_length;
-	//	}
-
-	void MergeData(const PairInfo<EdgeId>& info_to_update, const PairInfo<EdgeId>& info_to_add,
-			bool add_reversed) {
-        VERIFY(HasVarianceZero(info_to_update));
-        VERIFY(HasVarianceZero(info_to_add));
-        double weight_to_add = info_to_add.weight;
-		double new_weight = info_to_update.weight + weight_to_add;
-		index_data_.UpdateInfo(info_to_update, new_weight, add_reversed);
-	}
-
-    bool inline HasVarianceZero(const PairInfo<EdgeId>& pair_info) const {
-        return math::eq(pair_info.variance, 0.);   
-    }
-
-public:
-	/**
-	 * Method allows to add pair info to index directly instead of filling it from stream.
-     * Notice, that you can merge two pair infos only if their variances are equal to zero!
-	 */
-	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
-		VERIFY(this->IsAttached());
-		TRACE("Adding pair info to pi index: " << pair_info.first << pair_info.second << " " << index_data_.size());
-
-		data_iterator cluster_it = index_data_.Find(pair_info);
-        if (cluster_it != index_data_.end()) {
-            TRACE("Such pair info exists, merging now");
-            const PairInfo<EdgeId>& existing_info = *cluster_it;
-            VERIFY(existing_info == pair_info);
-			MergeData(existing_info, pair_info, add_reversed);
-		} else {
-            TRACE("Such pair info does not exist");
-			index_data_.AddPairInfo(pair_info, add_reversed);
-		}
-	}
-
-    void AddAll(const PairedInfoIndex<Graph>& paired_index) {
-		VERIFY(this->IsAttached());
-        for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
-            const vector<PairInfo<EdgeId> >& infos = *iter;
-            for (auto pi_iter = infos.begin(); pi_iter != infos.end(); ++pi_iter) {
-                this->AddPairInfo(*pi_iter, false);
-            }
-        }
-    }
-
-	void RemoveEdgeInfo(EdgeId edge) {
-		VERIFY(this->IsAttached());
-		index_data_.DeleteEdgeInfo(edge);
-	}
-
-	void RemovePairInfo(const PairInfo<EdgeId>& pair_info) {
-		VERIFY(this->IsAttached());
-		index_data_.DeletePairInfo(pair_info);
-	}
-
-	void Clear() {
-	    index_data_.clear();
-	}
-
-private:
-	//	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
-	//		PairInfos vec = GetEdgePairInfo(edge1, edge2);
-	//		if (vec.size() != 0) {
-	//			os << edge1 << " " << this->g().length(edge1) << " " << edge2 << " "
-	//					<< this->g().length(edge2) << endl;
-	//			if (this->g().EdgeEnd(edge1) == this->g().EdgeStart(edge2))
-	//				os << "+" << endl;
-	//			if (this->g().EdgeEnd(edge2) == this->g().EdgeStart(edge1))
-	//				os << "-" << endl;
-	//			int min = INT_MIN;
-	//			for (size_t i = 0; i < vec.size(); i++) {
-	//				int next = -1;
-	//				for (size_t j = 0; j < vec.size(); j++) {
-	//					if (vec[j].d > min
-	//							&& (next == -1 || vec[next].d > vec[j].d)) {
-	//						next = j;
-	//					}
-	//				}
-	//				os << vec[next].d << " " << vec[next].weight << endl;
-	//				if (next == -1) {
-	//					VERIFY(false);
-	//				}
-	//				if (vec[next].d > 100000) {
-	//					VERIFY(false);
-	//				}
-	//				min = vec[next].d;
-	//			}
-	//		}
-	//	}
-
-	void TransferInfo(EdgeId old_edge, EdgeId new_edge, int shift = 0,
-			double weight_scale = 1.0) {
-		PairInfos pair_infos = GetEdgeInfo(old_edge);
-		for (size_t j = 0; j < pair_infos.size(); ++j) {
-			PairInfo<EdgeId> old_pair_info = pair_infos[j];
-			if (old_edge != old_pair_info.second) {
-				AddPairInfo(
-						PairInfo<EdgeId>(new_edge, old_pair_info.second,
-								old_pair_info.d - shift,
-								weight_scale * old_pair_info.weight,
-								old_pair_info.variance));
-			} else if (!math::eq(old_pair_info.d, 0.)) {
-				AddPairInfo(
-						PairInfo<EdgeId>(new_edge, new_edge, old_pair_info.d,
-								weight_scale * 0.5 * old_pair_info.weight,
-								old_pair_info.variance));
-			} else {
-				AddPairInfo(
-						PairInfo<EdgeId>(new_edge, new_edge, old_pair_info.d,
-								weight_scale * old_pair_info.weight,
-								old_pair_info.variance));
-			}
-		}
-	}
-
 public:
 
 	void Init() {
@@ -565,53 +425,136 @@ public:
 	//		return true;
 	//	}
 
-private:
-    DECL_LOGGER("PairedInfoIndex");
-};
+	/**
+	 * Method allows to add pair info to index directly instead of filling it from stream.
+     * Notice, that you can merge two pair infos only if their variances are equal to zero!
+	 */
+	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
+		VERIFY(this->IsAttached());
+		TRACE("Adding pair info to pi index: " << pair_info.first << pair_info.second << " " << index_data_.size());
 
-/**
- * This class performs the most simple offline clustering of paired information.
- */
-template<class Graph>
-class SimpleOfflineClusterer {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	typedef vector<PairInfo<EdgeId> > PairInfos;
-
-public:
-	PairedInfoIndex<Graph> &not_clustered_;
-
-	SimpleOfflineClusterer(PairedInfoIndex<Graph> &not_clustered) :
-			not_clustered_(not_clustered) {
-	}
-
-	PairInfos ProcessEdgePair(const PairInfos &infos) {
-		EdgeId edge1 = infos[0].first;
-		EdgeId edge2 = infos[0].second;
-		double d_sum = 0.;
-		double weight_sum = 0.;
-		for (size_t i = 0; i < infos.size(); i++) {
-			d_sum += infos[i].d;
-			weight_sum += infos[i].weight;
+		data_iterator cluster_it = index_data_.Find(pair_info);
+        if (cluster_it != index_data_.end()) {
+            TRACE("Such pair info exists, merging now");
+            const PairInfo<EdgeId>& existing_info = *cluster_it;
+            VERIFY(existing_info == pair_info);
+			MergeData(existing_info, pair_info, add_reversed);
+		} else {
+            TRACE("Such pair info does not exist");
+			index_data_.AddPairInfo(pair_info, add_reversed);
 		}
-		PairInfo<EdgeId> sum_info(edge1, edge2, d_sum / infos.size(),
-				weight_sum);
-		PairInfos result;
-		result.push_back(sum_info);
-		return result;
 	}
 
-	void cluster(PairedInfoIndex<Graph> &clustered) {
-		VERIFY(&not_clustered_ != &clustered);
-		for (typename PairedInfoIndex<Graph>::EdgePairIterator it =
-				not_clustered_.begin(); it != not_clustered_.end(); ++it) {
-			PairInfos newInfos = ProcessEdgePair(*it);
-			for (size_t i = 0; i < newInfos.size(); i++) {
-				clustered.AddPairInfo(newInfos[i]);
+    void AddAll(const PairedInfoIndex<Graph>& paired_index) {
+		VERIFY(this->IsAttached());
+        for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
+            const vector<PairInfo<EdgeId> >& infos = *iter;
+            for (auto pi_iter = infos.begin(); pi_iter != infos.end(); ++pi_iter) {
+                this->AddPairInfo(*pi_iter, false);
+            }
+        }
+    }
+
+	void RemoveEdgeInfo(EdgeId edge) {
+		VERIFY(this->IsAttached());
+		index_data_.DeleteEdgeInfo(edge);
+	}
+
+	void RemovePairInfo(const PairInfo<EdgeId>& pair_info) {
+		VERIFY(this->IsAttached());
+		index_data_.DeletePairInfo(pair_info);
+	}
+
+	void Clear() {
+	    index_data_.clear();
+	}
+
+private:
+	PairInfoIndexData<EdgeId> index_data_;
+
+	void MergeData(const PairInfo<EdgeId>& info_to_update, const PairInfo<EdgeId>& info_to_add,
+			bool add_reversed) {
+        double weight_to_add = info_to_add.weight;
+
+        // counting new bounds in the case, when we are merging pair infos with non-zero variance
+        double left_bound = min(info_to_update.d - info_to_update.variance, 
+                info_to_add.d - info_to_add.variance);
+        double right_bound = max(info_to_update.d + info_to_update.variance, 
+                info_to_add.d + info_to_add.variance);
+        double new_dist = (left_bound + right_bound) * 0.5;
+        double new_weight = info_to_update.weight + weight_to_add;
+        double new_variance = (right_bound - left_bound) * 0.5;
+
+        index_data_.UpdateInfo(info_to_update, new_dist, new_weight, new_variance, add_reversed);
+	}
+
+	//	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
+	//		PairInfos vec = GetEdgePairInfo(edge1, edge2);
+	//		if (vec.size() != 0) {
+	//			os << edge1 << " " << this->g().length(edge1) << " " << edge2 << " "
+	//					<< this->g().length(edge2) << endl;
+	//			if (this->g().EdgeEnd(edge1) == this->g().EdgeStart(edge2))
+	//				os << "+" << endl;
+	//			if (this->g().EdgeEnd(edge2) == this->g().EdgeStart(edge1))
+	//				os << "-" << endl;
+	//			int min = INT_MIN;
+	//			for (size_t i = 0; i < vec.size(); i++) {
+	//				int next = -1;
+	//				for (size_t j = 0; j < vec.size(); j++) {
+	//					if (vec[j].d > min
+	//							&& (next == -1 || vec[next].d > vec[j].d)) {
+	//						next = j;
+	//					}
+	//				}
+	//				os << vec[next].d << " " << vec[next].weight << endl;
+	//				if (next == -1) {
+	//					VERIFY(false);
+	//				}
+	//				if (vec[next].d > 100000) {
+	//					VERIFY(false);
+	//				}
+	//				min = vec[next].d;
+	//			}
+	//		}
+	//	}
+
+	void TransferInfo(EdgeId old_edge, EdgeId new_edge, int shift = 0,
+			double weight_scale = 1.0) {
+		PairInfos pair_infos = GetEdgeInfo(old_edge);
+		for (size_t j = 0; j < pair_infos.size(); ++j) {
+			PairInfo<EdgeId> old_pair_info = pair_infos[j];
+			if (old_edge != old_pair_info.second) {
+				AddPairInfo(
+						PairInfo<EdgeId>(new_edge, old_pair_info.second,
+								old_pair_info.d - shift,
+								weight_scale * old_pair_info.weight,
+								old_pair_info.variance));
+			} else if (!math::eq(old_pair_info.d, 0.)) {
+				AddPairInfo(
+						PairInfo<EdgeId>(new_edge, new_edge, old_pair_info.d,
+								weight_scale * 0.5 * old_pair_info.weight,
+								old_pair_info.variance));
+			} else {
+				AddPairInfo(
+						PairInfo<EdgeId>(new_edge, new_edge, old_pair_info.d,
+								weight_scale * old_pair_info.weight,
+								old_pair_info.variance));
 			}
 		}
 	}
+
+	size_t CorrectLength(const Path<EdgeId>& path, size_t index) const {
+		size_t result = this->g().length(path[index]);
+		if (index == 0) {
+			result -= path.start_pos();
+		}
+		if (index == path.size() - 1) {
+			result -= this->g().length(path[index]) - path.end_pos();
+		}
+		return result;
+	}
+
+    DECL_LOGGER("PairedInfoIndex");
 };
 
 template<class Graph, class SequenceMapper, class PairedStream>
