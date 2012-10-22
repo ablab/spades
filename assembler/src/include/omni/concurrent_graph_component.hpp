@@ -201,6 +201,14 @@ public:
 		}
 	}
 
+	void CompressVertex(VertexId vertex) {
+		if (IsInternalSafe(vertex)) {
+			base::CompressVertex(vertex);
+		} else {
+			vertices_to_compress_.insert(vertex);
+		}
+	}
+
 
 // Self methods
 	bool IsInComponent(const VertexId& vertex) const {
@@ -241,6 +249,8 @@ public:
 
 	virtual bool IsInternalSafe(const VertexId& vertex) const = 0;
 
+	virtual bool IsInComponentSafe(const EdgeId& edge) const = 0;
+
 	virtual bool IsInternalSafe(const EdgeId& edge) const = 0;
 
 	virtual bool IsInternalSafe(const vector<EdgeId>& path) const {
@@ -253,14 +263,30 @@ public:
 		return true;
 	}
 
+	virtual bool IsInComponentSafe(const vector<EdgeId>& path) const {
+		BOOST_FOREACH(EdgeId edge, path) {
+			if (!IsInComponentSafe(edge)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	void Synchronize() {
+		TRACE("Start synchronize");
 		edge_id_distributor_.Synchronize();
 
 		BOOST_FOREACH(VertexId vertex, deleted_vertices_) {
 			graph_.HiddenDeleteVertex(vertex);
 		}
 
+		BOOST_FOREACH(VertexId vertex, vertices_to_compress_) {
+			graph_.CompressVertex(vertex);
+		}
+
 		deleted_vertices_.resize(0);
+		TRACE("Finish synchronize");
 	}
 
 
@@ -370,7 +396,7 @@ protected:
 	}
 
 
-	// return edges that start from component. WARNING! borded edge are included also
+	// return edges that start from component. WARNING! border edges are included also
 	const vector<EdgeId> GetEdgesFromComponent(const std::vector<EdgeId>& edges) const {
 		vector<EdgeId> edges_from_component;
 		edges_from_component.reserve(edges.size());
@@ -385,6 +411,8 @@ protected:
 	}
 
 
+
+
 protected:
 
 	Graph& graph_;
@@ -394,6 +422,7 @@ protected:
 
 	vector<VertexId> deleted_vertices_;
 	unordered_set<VertexId> temporary_vertices_;
+	unordered_set<VertexId> vertices_to_compress_;
 
 	restricted::PeriodicIdDistributor edge_id_distributor_;
 

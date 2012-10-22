@@ -203,7 +203,8 @@ public:
 //		}
 //
 //		if (graph_.IsValid()) {
-		if (!graph_.IsInternalSafe(edge) || !graph_.IsInternalSafe(path)) {
+		if (!graph_.IsInComponentSafe(edge) || !graph_.IsInComponentSafe(path)) {
+//			if (!graph_.IsInternalSafe(edge) || !graph_.IsInternalSafe(path)) {
 			return false;
 		}
 

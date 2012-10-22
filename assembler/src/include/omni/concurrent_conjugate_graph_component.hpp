@@ -62,6 +62,12 @@ public:
 				IsInternalSafe(this->EdgeEnd(edge));
 	}
 
+	virtual bool IsInComponentSafe(const EdgeId& edge) const {
+		return
+			IsInComponent(edge) &&
+			IsInComponent(this->graph_.conjugate(edge));
+	}
+
 	virtual ~ConcurrentConjugateGraphComponent() {
 	}
 
