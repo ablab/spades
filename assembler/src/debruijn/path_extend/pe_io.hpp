@@ -13,10 +13,12 @@
 
 namespace path_extend {
 
+using namespace debruijn_graph;
+
 class ContigWriter {
 
 protected:
-    const Graph& g;
+    conj_graph_pack& gp_;
 
     size_t k_;
 
@@ -24,7 +26,7 @@ protected:
         std::stringstream ss;
 
         if (!path.Empty()) {
-            ss  << g.EdgeNucls(path[0]).Subseq(0, k_).str();
+            ss  << gp_.g.EdgeNucls(path[0]).Subseq(0, k_).str();
         }
 
         for (size_t i = 0; i < path.Size(); ++i) {
@@ -32,14 +34,14 @@ protected:
                 for (size_t j = 0; j < path.GapAt(i) - k_; ++ j) {
                     ss << "N";
                 }
-                ss << g.EdgeNucls(path[i]).str();
+                ss << gp_.g.EdgeNucls(path[i]).str();
             }
             else {
                 int overlapLen = k_ - path.GapAt(i);
-                if (overlapLen >= (int) g.length(path[i]) + (int) k_) {
+                if (overlapLen >= (int) gp_.g.length(path[i]) + (int) k_) {
                     continue;
                 }
-                ss << g.EdgeNucls(path[i]).Subseq(overlapLen).str();
+                ss << gp_.g.EdgeNucls(path[i]).Subseq(overlapLen).str();
             }
         }
 
@@ -50,10 +52,10 @@ protected:
         SequenceBuilder result;
 
         if (!path.Empty()) {
-            result.append(g.EdgeNucls(path[0]).Subseq(0, k_));
+            result.append(gp_.g.EdgeNucls(path[0]).Subseq(0, k_));
         }
         for (size_t i = 0; i < path.Size(); ++i) {
-            result.append(g.EdgeNucls(path[i]).Subseq(k_));
+            result.append(gp_.g.EdgeNucls(path[i]).Subseq(k_));
         }
 
         return result.BuildSequence();
@@ -61,7 +63,7 @@ protected:
 
 
 public:
-    ContigWriter(const Graph& g_, size_t k): g(g_), k_(k) {
+    ContigWriter(conj_graph_pack& gp, size_t k): gp_(gp), k_(k) {
 
     }
 
@@ -70,14 +72,14 @@ public:
         osequencestream_with_data_for_scaffold oss(filename);
 
         std::set<EdgeId> included;
-        for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = gp_.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0) {
-                oss.setCoverage(g.coverage(*iter));
-                oss.setID(g.int_id(*iter));
-                oss << g.EdgeNucls(*iter);
+                oss.setCoverage(gp_.g.coverage(*iter));
+                oss.setID(gp_.g.int_id(*iter));
+                oss << gp_.g.EdgeNucls(*iter);
 
                 included.insert(*iter);
-                included.insert(g.conjugate(*iter));
+                included.insert(gp_.g.conjugate(*iter));
             }
         }
         INFO("Contigs written");
@@ -93,7 +95,7 @@ public:
             BidirectionalPath path = *paths.Get(i);
             oss << "PATH " << paths.Get(i)->GetId() << " " << path.Size() << " " << path.Length() + k_ << endl;
             for (size_t j = 0; j < path.Size(); ++j) {
-			    oss << g.int_id(path[j]) << " " << g.length(path[j]) << endl;
+			    oss << gp_.g.int_id(path[j]) << " " << gp_.g.length(path[j]) << endl;
             }
             oss << endl;
 		}

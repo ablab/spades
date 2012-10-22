@@ -42,7 +42,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
 
     PathInfoWriter path_writer;
 	PathVisualizer visualizer(k);
-	ContigWriter writer(gp.g, k);
+	ContigWriter writer(gp, k);
 
     if (params.debug_output) {
         writer.writeEdges(etcDir + "before_resolve.fasta");
@@ -248,7 +248,7 @@ void scaffold_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& scafolding_
 
     PathInfoWriter path_writer;
     PathVisualizer visualizer(k);
-    ContigWriter writer(gp.g, k);
+    ContigWriter writer(gp, k);
 
     if (params.debug_output) {
         writer.writeEdges(etcDir + "before_resolve.fasta");
