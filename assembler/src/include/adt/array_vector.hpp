@@ -11,6 +11,7 @@
 template <class _Cp, bool _IsConst> class __array_vector_iterator;
 template <class _Cp> class __array_reference;
 template <class _Cp> class __array_const_reference;
+template <typename ElTy> struct array_equal_to;
 
 template <class _Cp>
 class __array {
@@ -130,6 +131,7 @@ class __array_reference {
 #endif
   friend class __array_vector_iterator<_Cp, false>;
   friend class __array<_Cp>;
+  friend struct array_equal_to<__storage_type>;
 
   __storage_pointer ptr_;
   __size_type size_;
@@ -204,6 +206,7 @@ template <class _Cp>
 class __array_const_reference {
   typedef typename _Cp::__storage_type    __storage_type;
   typedef typename _Cp::__storage_pointer __storage_pointer;
+  typedef typename _Cp::__const_storage_pointer __const_storage_pointer;
   typedef typename _Cp::size_type         __size_type;
 
 #if defined(__clang__)
@@ -212,8 +215,9 @@ class __array_const_reference {
   friend class _Cp::__self;
 #endif
   friend class __array_vector_iterator<_Cp, true>;
+  friend struct array_equal_to<__storage_type>;
 
-  __storage_pointer ptr_;
+  __const_storage_pointer ptr_;
   __size_type size_;
 
  public:
@@ -225,7 +229,7 @@ class __array_const_reference {
     return size() * sizeof(__storage_type);
   }
 
-  const __storage_pointer data() const {
+  __const_storage_pointer data() const {
     return ptr_;
   }
 
@@ -240,12 +244,19 @@ class __array_const_reference {
     return 0 == memcmp(data(), that.data(), data_size());
   }
 
+  bool operator==(const __array_reference<_Cp> that) const {
+    return 0 == memcmp(data(), that.data(), data_size());
+  }
+
   bool operator!=(const __array_const_reference that) const {
+    return !operator==(that);
+  }
+  bool operator!=(const __array_reference<_Cp> that) const {
     return !operator==(that);
   }
 
  private:
-  __array_const_reference(__storage_pointer p, __size_type sz) :
+  __array_const_reference(__const_storage_pointer p, __size_type sz) :
       ptr_(p), size_(sz) { }
   __array_const_reference& operator=(const __array_const_reference &that);
 };
@@ -500,6 +511,7 @@ template<typename ElTy>
 struct array_equal_to {
   typedef typename array_vector<ElTy>::value_type value;
   typedef typename array_vector<ElTy>::reference reference;
+  typedef typename array_vector<ElTy>::const_reference const_reference;
 
   bool operator()(const value& lhs, const value& rhs) const {
     return lhs == rhs;
@@ -510,8 +522,14 @@ struct array_equal_to {
   bool operator()(const reference lhs, const value& rhs) const {
     return lhs == rhs;
   }
+  bool operator()(const reference lhs, const ElTy *rhs, size_t sz) const {
+    return lhs == reference(rhs, sz);
+  }
   bool operator()(const reference lhs, const reference rhs) const {
     return lhs == rhs;
+  }
+  bool operator()(const ElTy *lhs, size_t sz, const reference rhs) const {
+    return const_reference(lhs, sz) == rhs;
   }
 };
 
