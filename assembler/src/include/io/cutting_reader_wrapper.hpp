@@ -100,6 +100,10 @@ class CuttingReaderWrapper : public IReader<ReadType> {
     reader_.reset();
   }
 
+  ReadStat get_stat() const {
+      return reader_.get_stat();
+  }
+
  private:
   /*
    * @variable Internal stream readers.

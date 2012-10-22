@@ -121,6 +121,10 @@ class Reader : public IReader<SingleRead> {
     }
   }
 
+  ReadStat get_stat() const {
+        return ReadStat();
+  }
+
  private:
   /* 
    * @variable The name of the file which stream reads from.
@@ -143,6 +147,8 @@ class Reader : public IReader<SingleRead> {
    * Hidden assign operator.
    */
   void operator=(const Reader& reader);
+
+
 };
 
 
@@ -228,6 +234,10 @@ class SeparateReader : public IReader<PairedRead> {
     second_->reset();
   }
 
+  ReadStat get_stat() const {
+    return ReadStat();
+  }
+
  private:
   /*
    * @variable The names of the files which stream reads from.
@@ -262,6 +272,8 @@ class SeparateReader : public IReader<PairedRead> {
    * Hidden assign operator.
    */
   void operator=(const SeparateReader& reader);
+
+
 };
 
 
@@ -341,6 +353,10 @@ class MixedReader : public IReader<PairedRead> {
     single_->reset();
   }
 
+  ReadStat get_stat() const {
+        return ReadStat();
+  }
+
  private:
   /*
    * @variable The names of the file which stream reads from.
@@ -371,6 +387,7 @@ class MixedReader : public IReader<PairedRead> {
    * Hidden assign operator.
    */
   void operator=(const MixedReader& reader);
+
 };
 
 

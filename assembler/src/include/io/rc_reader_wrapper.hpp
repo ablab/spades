@@ -100,6 +100,12 @@ class RCReaderWrapper : public IReader<ReadType> {
     reader_.reset();
   }
 
+  ReadStat get_stat() const {
+      ReadStat stat = reader_.get_stat();
+      stat.merge(stat);
+      return stat;
+  }
+
  private:
   /*
    * @variable Internal stream readers.
@@ -197,6 +203,12 @@ class CleanRCReaderWrapper : public IReader<ReadType> {
   /* virtual */ void reset() {
     was_rc_ = true;
     reader_->reset();
+  }
+
+  ReadStat get_stat() const {
+      ReadStat stat = reader_->get_stat();
+      stat.merge(stat);
+      return stat;
   }
 
  private:

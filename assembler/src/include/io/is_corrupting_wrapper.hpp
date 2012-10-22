@@ -25,6 +25,7 @@ public:
 		read = PairedRead(read.first(), read.second(), is_);
 		return *this;
 	}
+
 };
 
 }

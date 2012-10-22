@@ -136,6 +136,15 @@ public:
 		current_reader_index_ = 0;
 	}
 
+	ReadStat get_stat() const {
+	    ReadStat stat;
+
+        for (size_t i = 0; i < readers_.size(); ++i) {
+            stat.merge(readers_[i]->get_stat());
+        }
+	    return stat;
+	}
+
 private:
 	/*
 	 * @variable Internal stream readers.

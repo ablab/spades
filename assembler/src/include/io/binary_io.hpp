@@ -21,54 +21,6 @@ typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
 
 
-struct ReadStat {
-
-    size_t read_count_;
-
-    size_t max_len_;
-
-    u_int64_t total_len_;
-
-
-    ReadStat(): read_count_(0), max_len_(0), total_len_(0) {
-
-    }
-
-    void write(std::ostream& stream) const {
-        stream.write((const char *) &read_count_, sizeof(read_count_));
-        stream.write((const char *) &max_len_, sizeof(max_len_));
-        stream.write((const char *) &total_len_, sizeof(total_len_));
-    }
-
-    void read(std::istream& stream) {
-        stream.read((char *) &read_count_, sizeof(read_count_));
-        stream.read((char *) &max_len_, sizeof(max_len_));
-        stream.read((char *) &total_len_, sizeof(total_len_));
-    }
-
-    template<class Read>
-    void increase(const Read& read) {
-        size_t len = read.size();
-
-        ++read_count_;
-        if (max_len_ < len) {
-            max_len_ = len;
-        }
-        total_len_ += read.nucl_count();
-    }
-
-    void merge(const ReadStat& stat) {
-        read_count_ += stat.read_count_;
-        if (max_len_ < stat.max_len_) {
-            max_len_ = stat.max_len_;
-        }
-        total_len_ += stat.total_len_;
-    }
-
-};
-
-
-
 class BinaryWriter {
 
 private:
@@ -269,8 +221,6 @@ class PredictableIReader: public io::IReader<Read> {
 public:
     virtual size_t size() const = 0;
 
-    virtual ReadStat get_stat() const = 0;
-
 };
 
 // == Deprecated classes ==
@@ -403,8 +353,10 @@ public:
         return read_stat_.read_count_;
     }
 
-    virtual ReadStat get_stat() const {
-        return read_stat_;
+    ReadStat get_stat() const {
+        ReadStat stat = read_stat_;
+        stat.read_count_ *= 2;
+        return stat;
     }
 };
 
@@ -579,6 +531,10 @@ public:
         stream_.reset();
         is_read_ = false;
     }
+
+    virtual ReadStat get_stat() const {
+        return stream_.get_stat();
+    }
 };
 
 
@@ -628,6 +584,10 @@ public:
         stream_->reset();
         is_read_ = false;
     }
+
+    virtual ReadStat get_stat() const {
+        return stream_->get_stat();
+    }
 };
 
 
@@ -666,6 +626,10 @@ public:
 
     virtual void reset() {
         stream_.reset();
+    }
+
+    virtual ReadStat get_stat() const {
+        return stream_.get_stat();
     }
 };
 

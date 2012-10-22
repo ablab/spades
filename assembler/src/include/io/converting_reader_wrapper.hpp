@@ -102,6 +102,10 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
     reader_.reset();
   }
 
+  ReadStat get_stat() const {
+        return reader_.get_stat();
+  }
+
  private:
   /*
    * @variable Internal stream reader.

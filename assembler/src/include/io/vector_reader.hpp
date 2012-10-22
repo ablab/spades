@@ -50,6 +50,14 @@ public:
                pos_ = 0;
        }
 
+       ReadStat get_stat() const {
+           //todo
+           ReadStat stat;
+           stat.read_count_ = data_.size();
+
+           return stat;
+       }
+
 };
 
 }

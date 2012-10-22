@@ -48,6 +48,10 @@ public:
 		reader_->reset();
 	}
 
+    ReadStat get_stat() const {
+            return reader_->get_stat();
+    }
+
 protected:
 	DelegatingReaderWrapper() {
 
