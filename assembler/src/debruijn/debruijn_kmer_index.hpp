@@ -714,11 +714,6 @@ DeBruijnKMerIndexBuilder::BuildIndexFromStream(DeBruijnKMerIndex<IdType> &index,
     }
   }
 
-  if (contigs_stream) {
-    contigs_stream->reset();
-    FillCoverageFromStream(*contigs_stream, index);
-  }
-
   return rl;
 }
 
