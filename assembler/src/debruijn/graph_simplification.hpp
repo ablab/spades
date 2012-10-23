@@ -139,7 +139,7 @@ const debruijn_config::simplification::tip_clipper& tc_config,
 					removal_handler));
 }
 
-typedef const debruijn_config::simplification::tip_clipper TcConfig;
+typedef const debruijn_config::simplification::tip_clipper& TcConfig;
 
 
 template<class Graph, class GraphPack>
@@ -220,15 +220,16 @@ void ClipTips(GraphPack& graph_pack,
 	}
 
 	INFO("SUBSTAGE == Clipping tips");
-	ClipTips(graph_pack.g, max_tip_length_corrected, raw_removal_handler);
+	ClipTips(graph_pack.g, max_tip_length_corrected, cfg::get().simp.tc, raw_removal_handler);
 }
 
 template<class Graph>
 void ClipTips(Graph& graph,
 		size_t max_tip_length,
+		TcConfig tc_config,
 		boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0) {
 
-	auto tc_config = cfg::get().simp.tc;
+//	auto tc_config = cfg::get().simp.tc;
 
 	omnigraph::DefaultTipClipper<Graph> tc(
 			graph,
@@ -274,7 +275,7 @@ void ClipTipsForResolver(Graph &graph) {
 			*cfg::get().ds.RL, graph.k(), tc_config.max_tip_length_coefficient);
 
 	INFO("SUBSTAGE == Clipping tips for Resolver");
-	ClipTips(graph, max_tip_length);
+	ClipTips(graph, max_tip_length, cfg::get().simp.tc);
 
 	DEBUG("Clipping tips for Resolver finished");
 }

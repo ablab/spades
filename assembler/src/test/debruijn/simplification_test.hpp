@@ -96,13 +96,14 @@ void PrintGraph(const Graph & g) {
 }
 
 void DefaultClipTips(Graph& graph) {
-	ClipTips(
-		graph,
-		GetDefaultTipClipperFactory<Graph>(
-			standard_tc_config(),
-			standard_read_length()
-		)
-	);
+//	ClipTips(
+//		graph,
+//		GetDefaultTipClipperFactory<Graph>(
+//			standard_tc_config(),
+//			standard_read_length()
+//		)
+//	);
+	ClipTips(graph, standard_read_length(), standard_tc_config());
 }
 /*
 void DefaultRemoveBulges(Graph& graph) {
