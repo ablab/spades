@@ -71,7 +71,6 @@ void write_estimated_params(const string& prefix) {
 	write_param(filename, "is_var", cfg::get().ds.is_var);
 	write_param_map(filename, "perc", cfg::get().ds.percentiles);
 	write_param(filename, "avg_coverage", cfg::get().ds.avg_coverage);
-	// Kolya's params:
 	write_param(filename, "median", cfg::get().ds.median);
 	write_param(filename, "mad", cfg::get().ds.mad);
 	write_param_map(filename, "hist", cfg::get().ds.hist);

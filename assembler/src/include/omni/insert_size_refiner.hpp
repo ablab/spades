@@ -100,7 +100,7 @@ class InsertSizeHistogramCounter {
         {
         }
 
-        hist_type& GetHist() {
+        hist_type GetHist() {
             return hist_;
         }
 
@@ -191,7 +191,7 @@ class InsertSizeHistogramCounter {
 
             }
 
-        void FindMean(double& IS, double& is_var) const {
+        void FindMean(double& mean, double& delta, std::map<size_t, size_t>& percentiles) const { 
             size_t often = 0;
             size_t mode = -1;
             for (auto iter = hist_.begin(); iter != hist_.end(); ++iter) {
@@ -206,8 +206,8 @@ class InsertSizeHistogramCounter {
             int high = 3 * mode;
 
             int n = 0;
-            double sum = 0;
-            double sum2 = 0;
+            double sum = 0.;
+            double sum2 = 0.;
             DEBUG("Counting average");
             for (auto iter = hist_.begin(); iter != hist_.end(); ++iter) {
                 if (iter->first < low || iter->first > high) {
@@ -217,16 +217,15 @@ class InsertSizeHistogramCounter {
                 sum += iter->second * 1. * iter->first;
                 sum2 += iter->second * 1. * iter->first * iter->first;
             }
-            double mean, delta;
             mean = sum / n;
             delta = sqrt(sum2 / n - mean * mean);
 
-            low = mean - 3 * delta;
-            high = mean + 3 * delta;
+            low = mean - 5 * delta;
+            high = mean + 5 * delta;
 
             n = 0;
-            sum = 0;
-            sum2 = 0;
+            sum = 0.;
+            sum2 = 0.;
             for (auto iter = hist_.begin(); iter != hist_.end(); ++iter) {
                 if (iter->first < low || iter->first > high) {
                     continue;
@@ -254,44 +253,39 @@ class InsertSizeHistogramCounter {
                 for (size_t i = 0; i < utils::array_size(q); i++) {
                     size_t scaled_q_i(q[i] / 100. * n);
                     if (m < scaled_q_i && mm >= scaled_q_i) {
-                        cfg::get_writable().ds.percentiles[q[i]] = iter->first;
-                        //				INFO("Percentile: " << q[i] << " = " << iter->first);
+                        percentiles[q[i]] = iter->first;
                     }
-                }
+                } 
                 m = mm;
             }
 
-            IS = mean;
-            is_var = delta;
-            INFO("IS = " << mean);
-            INFO("delta = " << delta);
 
         }
 
         void FindMedian(double& median, double& mad, hist_type& histogram) const {
-
             DEBUG("Counting median and MAD");
             median = get_median(hist_);
             mad = get_mad(hist_, median);
-            double low = median - 3. * 1.4826 * mad;
-            double high = median + 3. * 1.4826 * mad;
+            double low = median - 5. * 1.4826 * mad;
+            double high = median + 5. * 1.4826 * mad;
             hist_crop(hist_, low, high, histogram);
             median = get_median(histogram);
             mad = get_mad(histogram, median);
-            INFO("median = " << median);
-            INFO("delta_mad = " << 1.4826 * mad);
         }
 
 };
 
 template<class graph_pack, class PairedRead> 
-void refine_insert_size(io::ReadStreamVector< io::IReader<PairedRead> >& streams, graph_pack& gp, 
+void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams, graph_pack& gp, 
         size_t edge_length_threshold, 
         double& mean, 
         double& delta, 
         double& median, 
-        double& mad, 
+        double& mad,
+        std::map<size_t, size_t>& percentiles,
         typename InsertSizeHistogramCounter<graph_pack>::hist_type& hist) {
+    
+    typedef typename InsertSizeHistogramCounter<graph_pack>::hist_type HistType;
 
     INFO("SUBSTAGE == Refining insert size and its distribution");
     InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
@@ -303,8 +297,7 @@ void refine_insert_size(io::ReadStreamVector< io::IReader<PairedRead> >& streams
     }
 
     hist_counter.FilterPositiveValues();
-
-    typename InsertSizeHistogramCounter<graph_pack>::hist_type& histogram = hist_counter.GetHist();
+    //const HistType& histogram = hist_counter.GetHist();
 
     //for (auto iter = histogram.begin(); iter != histogram.end(); ++iter) {
         //cout << "HIST " << iter->first << " " << iter->second << endl;   
@@ -316,21 +309,16 @@ void refine_insert_size(io::ReadStreamVector< io::IReader<PairedRead> >& streams
     if (n == 0) {
         return;
     }
-
     INFO(n << " paired reads (" << (n * 100.0 / total) << "% of all) aligned to long edges");
-
-    hist_counter.FindMean(mean, delta);
-
-    hist_counter.FindMedian(median, mad, histogram);
-
-    hist = histogram;
+    hist_counter.FindMean(mean, delta, percentiles);
+    hist_counter.FindMedian(median, mad, hist);
 }
 
 template<class graph_pack, class PairedRead> 
 void GetInsertSizeHistogram(io::ReadStreamVector< io::IReader<PairedRead> >& streams, graph_pack& gp, double insert_size, double delta, 
                         typename InsertSizeHistogramCounter<graph_pack>::hist_type& hist) {
 
-    typedef typename InsertSizeHistogramCounter<graph_pack>::hist_type hist_t;
+    typedef typename InsertSizeHistogramCounter<graph_pack>::hist_type HistType;
     
     size_t edge_length_threshold = Nx(gp.g, 50);//500;
 
@@ -342,16 +330,11 @@ void GetInsertSizeHistogram(io::ReadStreamVector< io::IReader<PairedRead> >& str
         hist_counter.CountHistogramParallel(streams);
     }
 
-    auto histogram = hist_counter.GetHist();
-
-    double low = insert_size - 3 * delta;
-    double high = insert_size + 5 * delta;
+    double low = insert_size - 5. * delta;
+    double high = insert_size + 5. * delta;
     
-    hist_t histogram_cropped;
-
     INFO("Cropping the histogram");
-    hist_crop(hist_counter.GetHist(), low, high, histogram_cropped);
-    hist = histogram_cropped;
+    hist_crop(hist_counter.GetHist(), low, high, hist);
 }
 
 }

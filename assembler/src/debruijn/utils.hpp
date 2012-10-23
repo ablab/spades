@@ -943,7 +943,42 @@ public:
     }
 };
 
+template<class graph_pack, class PairedRead, class ConfigType> 
+bool RefineInsertSize(const graph_pack& gp,
+                        io::ReadStreamVector<io::IReader<PairedRead> >& streams,
+                        ConfigType& config,
+                        size_t edge_length_threshold) 
+{
+    double mean;
+    double delta;
+    double median;
+    double mad;
+    std::map<size_t, size_t> percentiles;
+    std::map<int, size_t> hist;
+    // calling default method
+    refine_insert_size(streams, gp, edge_length_threshold, mean, delta, median, mad, percentiles, hist);
 
+    if (hist.size() == 0) {
+        config.paired_mode = false;
+        WARN("Failed to estimate the insert size of paired reads, because none of the paired reads aligned to long edges.");
+        WARN("Paired reads will not be used.");
+        return false;
+    }
+
+    config.ds.IS = mean;
+    config.ds.is_var = delta;
+    config.ds.median = median;
+    config.ds.mad = mad;
+    config.ds.percentiles = percentiles;
+    config.ds.hist = hist;
+    INFO("IS = " << mean);
+    INFO("Delta = " << delta);
+    INFO("Median = " << median);
+    INFO("MAD = " << mad);
+    DEBUG("Delta_Mad = " << 1.4826 * mad);
+
+    return true;
+}
 
 double UnityFunction(int x) {
     return 1.;   
