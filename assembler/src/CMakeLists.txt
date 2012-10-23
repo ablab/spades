@@ -60,3 +60,6 @@ add_subdirectory(hammer)
 
 # Random stuff
 include(CMakeListsInternal.txt)
+
+# Packaging
+include(pack)

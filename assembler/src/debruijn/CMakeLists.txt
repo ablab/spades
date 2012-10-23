@@ -17,3 +17,6 @@ endif()
 
 install(TARGETS spades
         RUNTIME DESTINATION bin)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../configs/debruijn"
+        DESTINATION configs
+        FILES_MATCHING PATTERN "*.info.template")

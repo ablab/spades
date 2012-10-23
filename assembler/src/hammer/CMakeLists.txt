@@ -34,3 +34,6 @@ endif()
 
 install(TARGETS hammer
         RUNTIME DESTINATION bin)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../configs/hammer"
+        DESTINATION configs
+        FILES_MATCHING PATTERN "*.info.template")
