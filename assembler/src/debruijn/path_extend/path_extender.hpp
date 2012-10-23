@@ -38,7 +38,7 @@ protected:
         auto iter = edgeCoverage_.find(e);
         if (iter != edgeCoverage_.end()) {
             if (iter->second->count(path) == 0) {
-                WARN("Error erasing path from coverage map");
+                DEBUG("Error erasing path from coverage map");
             } else {
                 auto entry = iter->second->find(path);
                 iter->second->erase(entry);
@@ -389,14 +389,14 @@ protected:
             auto path = result->Get(i);
             for (size_t j = 0; j < path->Size(); ++j) {
                 if (coverageMap_.GetCoveringPaths(path->At(j)).count(path) == 0) {
-                    WARN("Inconsistent coverage map");
+                    DEBUG("Inconsistent coverage map");
                 }
             }
 
             path = result->GetConjugate(i);
             for (size_t j = 0; j < path->Size(); ++j) {
                 if (coverageMap_.GetCoveringPaths(path->At(j)).count(path) == 0) {
-                    WARN("Inconsistent coverage map");
+                    DEBUG("Inconsistent coverage map");
                 }
             }
         }
@@ -649,7 +649,7 @@ protected:
                 sources_.push_back(EdgeWithDistance(*iter, 0));
             }
         }
-        INFO("Found " << sources_.size() << " source edges");
+        DEBUG("Found " << sources_.size() << " source edges");
     }
 
     bool IsSink(EdgeId e)

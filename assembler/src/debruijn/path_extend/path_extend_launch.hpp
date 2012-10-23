@@ -37,8 +37,8 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
 
 
     INFO("Path extend repeat resolving tool started");
-    INFO("Using " << params.param_set.metric << " metric");
-    INFO("Scaffolder is " << (cfg::get().pe_params.param_set.scaffolder_options.on ? "on" : "off"));
+    DEBUG("Using " << params.param_set.metric << " metric");
+    DEBUG("Scaffolder is " << (cfg::get().pe_params.param_set.scaffolder_options.on ? "on" : "off"));
 
     PathInfoWriter path_writer;
 	PathVisualizer visualizer(k);
@@ -50,7 +50,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
     }
 
 
-	INFO("Initializing weight counters");
+    DEBUG("Initializing weight counters");
 	WeightCounter * wc = 0;
     WeightCounter * scaf_wc = 0;
 
@@ -68,7 +68,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
 	wc->setNormalizeWeight(params.param_set.normalize_weight);
 	wc->setNormalizeWightByCoverage(params.param_set.normalize_by_coverage);
 
-	INFO("Initializing resolver");
+	DEBUG("Initializing resolver");
 	ExtensionChooser * seedEC;
 	if (params.param_set.seed_selection.check_trusted) {
 	    seedEC = new TrivialExtensionChooserWithPI(gp.g, wc);
@@ -97,7 +97,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
     }
 
     if ( params.param_set.seed_selection.min_coverage > 0) {
-        INFO("Filtering seeds by coverage " << params.param_set.seed_selection.min_coverage);
+        DEBUG("Filtering seeds by coverage " << params.param_set.seed_selection.min_coverage);
         CoveragePathFilter coverageFilter(gp.g, params.param_set.seed_selection.min_coverage);
         coverageFilter.filter(seeds);
     }
@@ -129,7 +129,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
 	mainPE->GetCoverageMap().PrintUncovered();
 	paths.CheckSymmetry();
 
-	INFO("Adding uncovered edges");
+	DEBUG("Adding uncovered edges");
 	resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 
 	paths.SortByLength();
@@ -137,9 +137,9 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
 //	mainPE->getCoverageMap().printUncovered();
 //	paths.checkSymmetry();
 
-	INFO("Start validating");
-    PathValidator pathValidator(gp.g, wc, scaf_wc);
-    vector<bool> validationResult = pathValidator.ValidatePaths(paths);
+//	DEBUG("Start validating");
+//    PathValidator pathValidator(gp.g, wc, scaf_wc);
+//    vector<bool> validationResult = pathValidator.ValidatePaths(paths);
 
 	INFO("Found " << paths.size() << " contigs");
 	writer.writePaths(paths, output_dir + contigs_name);
@@ -314,7 +314,7 @@ void scaffold_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& scafolding_
     mainPE->GetCoverageMap().PrintUncovered();
     paths.CheckSymmetry();
 
-    INFO("Adding uncovered edges");
+    DEBUG("Adding uncovered edges");
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 
     paths.SortByLength();

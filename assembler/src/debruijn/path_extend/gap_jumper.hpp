@@ -75,7 +75,7 @@ public:
 			      }
 			 }
 		}
-    	INFO("Paths with gaps: " << count);
+    	DEBUG("Paths with gaps: " << count);
     }
 
 

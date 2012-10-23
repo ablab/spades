@@ -259,10 +259,10 @@ protected:
 protected:
 	void Verify() {
 	    if (cumulativeLength_.empty() && totalLength_ != 0) {
-	        INFO("---" << totalLength_);
+	        DEBUG("---" << totalLength_);
 	    }
 	    else if (!cumulativeLength_.empty() && cumulativeLength_[0] != totalLength_) {
-	        INFO("|||" << totalLength_);
+	        DEBUG("|||" << totalLength_);
 	    }
 	}
 
@@ -362,7 +362,7 @@ protected:
 
     void SafePopFront() {
         if (seedCoords_.In(0)) {
-            INFO("Cannot remove front edge due to seed restrictions");
+            DEBUG("Cannot remove front edge due to seed restrictions");
             return;
         }
 
@@ -485,7 +485,7 @@ public:
 
 	void SafePopBack() {
         if (seedCoords_.In(Size() - 1)) {
-            INFO("Cannot remove back edge due to seed restrictions");
+            DEBUG("Cannot remove back edge due to seed restrictions");
             return;
         }
 
