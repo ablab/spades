@@ -189,14 +189,13 @@ def check_config(cfg):
 
     ## checking mandatory sections
 
-    if (not "dataset" in cfg) and not (("assembly" in cfg) and ("dataset" in
-                                                                cfg["assembly"].__dict__)):
+    if (not "dataset" in cfg):
         error("wrong config! You should specify 'dataset' section!")
         return False
 
     if (not "error_correction" in cfg) and (not "assembly" in cfg):
-        error("wrong config! You should specify either 'error_correction' section (for reads"
-              " error correction) or 'assembly' one (for assembling) or both!")
+        error("wrong options! You should specify either '--only-error-correction' (for reads"
+              " error correction) or '--only-assembler' (for assembling) or none of these options (for both)!")
         return False
 
     ## checking existence of all files in dataset section
@@ -219,7 +218,7 @@ def check_config(cfg):
                         return False
 
     if no_files_with_reads:
-        error("wrong config! You should specify at least one file with reads!")
+        error("wrong options! You should specify at least one file with reads!")
         return False
 
     ## setting default values if needed
@@ -307,7 +306,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gap-closer disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= use-jemalloc".split()
+               "config-file= use-jemalloc dataset=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -361,6 +360,8 @@ def usage(show_hidden=False):
         print >> sys.stderr, "HIDDEN options:"  
         print >> sys.stderr, "--config-file\t<filename>\tconfiguration file for spades.py"\
                              " (WARN: all other options will be skipped)"   
+        print >> sys.stderr, "--dataset\t<filename>\tfile with dataset description"\
+                             " (WARN: works exclusively in --only-assembler mode)" 
         print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
                              " (only in debug mode)" 
         print >> sys.stderr, "--bh-heap-check\t\t<value>\tset HEAPCHECK environment variable"\
@@ -403,6 +404,7 @@ def main():
         output_dir = ""
         tmp_dir = ""
         reference = ""
+        dataset = ""
 
         paired = []
         paired1 = []
@@ -437,6 +439,8 @@ def main():
                 tmp_dir = arg
             elif opt == "--reference":
                 reference = check_file(arg, 'reference')
+            elif opt == "--dataset":
+                dataset = check_file(arg, 'dataset')
 
             elif opt == "--12":
                 paired.append(check_file(arg, 'paired'))
@@ -513,36 +517,59 @@ def main():
             if len(paired1) != len(paired2):
                 error("the number of files with left paired reads is not equal to the"
                       " number of files with right paired reads!")
+    
+            # processing hidden option "--dataset"
+            if dataset: 
+                if not only_assembler:
+                    error("hidden option --dataset works exclusively in --only-assembler mode!")
+                # reading info about dataset from provided dataset file
+                cfg["dataset"] = load_config_from_file(dataset)
+                # correcting reads relative pathes (reads can be specified relatively to provided dataset file)
+                for k, v in cfg["dataset"].__dict__.iteritems():
+                    if k.find("_reads") != -1:
+                        corrected_reads_filenames = []
+                        if not isinstance(v, list):
+                            v = [v]
+                        for reads_filename in v:
+                            corrected_reads_filename = os.path.join(os.path.dirname(dataset), reads_filename)
+                            check_file(corrected_reads_filename, k + " in " + dataset)
+                            corrected_reads_filenames.append(corrected_reads_filename)
+                        cfg["dataset"].__dict__[k] = corrected_reads_filenames
+            else:
+                if not paired and not paired1 and not single:
+                    error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!")
 
-            if not paired and not paired1 and not single:
-                error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!")
+                # creating empty "dataset" section
+                cfg["dataset"] = load_config_from_vars(dict())
+
+                # filling reads
+                paired_counter = 0
+                if paired:
+                    for read in paired:
+                        paired_counter += 1
+                        cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = read
+
+                if paired1:
+                    for i in range(len(paired1)):
+                        paired_counter += 1
+                        cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = [paired1[i],
+                                                                                          paired2[i]]
+                        #cfg["dataset"].__dict__["paired_reads"] = [paired1[i], paired2[i]]
+
+                if single:
+                    cfg["dataset"].__dict__["single_reads"] = single
+
+                # filling other parameters
+                cfg["dataset"].__dict__["single_cell"] = single_cell
+                if developer_mode and reference:
+                    cfg["dataset"].__dict__["reference"] = reference
 
             # filling cfg
             cfg["common"] = load_config_from_vars(dict())
-            cfg["dataset"] = load_config_from_vars(dict())
             if not only_assembler:
                 cfg["error_correction"] = load_config_from_vars(dict())
             if not only_error_correction:
                 cfg["assembly"] = load_config_from_vars(dict())
-
-            # filling reads
-            paired_counter = 0
-            if paired:
-                for read in paired:
-                    paired_counter += 1
-                    cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = read                    
-
-            if paired1:
-                for i in range(len(paired1)):
-                    paired_counter += 1
-                    cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = [paired1[i],
-                                                                                      paired2[i]]
-                    #cfg["dataset"].__dict__["paired_reads"] = [paired1[i], paired2[i]]  
-
-            if single:
-                cfg["dataset"].__dict__["single_reads"] = single
-            
-            # filling other parameters
 
             # common
             if output_dir:
@@ -555,11 +582,6 @@ def main():
                 cfg["common"].__dict__["developer_mode"] = developer_mode
             if use_jemalloc:
                 cfg["common"].__dict__["use_jemalloc"] = use_jemalloc
-
-            # dataset
-            cfg["dataset"].__dict__["single_cell"] = single_cell
-            if developer_mode and reference:
-                cfg["dataset"].__dict__["reference"] = reference
 
             # error correction
             if not only_assembler:
@@ -825,9 +847,9 @@ def run_bh(cfg):
     cfg_file_name = os.path.join(dst_configs, "config.info")
     # removing template configs
     for root, dirs, files in os.walk(dst_configs):
-      for cfg_file in files:
-        if cfg_file.endswith('.template'):
-            os.remove(os.path.join(root, cfg_file))  
+        for cfg_file in files:
+            if cfg_file.endswith('.template'):
+                os.remove(os.path.join(root, cfg_file))
 
     prepare_config_bh(cfg_file_name, cfg)
 
@@ -880,9 +902,9 @@ def run_spades(cfg):
         cfg_file_name = os.path.join(dst_configs, "config.info")
         # removing template configs
         for root, dirs, files in os.walk(dst_configs):
-          for cfg_file in files:
-            if cfg_file.endswith('.template'):
-                os.remove(os.path.join(root, cfg_file))                
+            for cfg_file in files:
+                if cfg_file.endswith('.template'):
+                    os.remove(os.path.join(root, cfg_file))                
 
         prepare_config_spades(cfg_file_name, cfg, prev_K, K,
             count == len(cfg.iterative_K))
@@ -909,7 +931,10 @@ def run_spades(cfg):
     latest = os.path.join(cfg.output_dir, "K%d" % (K))
     shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.paired_mode:
-        shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)    
+        if os.path.isfile(os.path.join(latest, "scaffolds.fasta")):
+            shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds) 
+        else:
+            cfg.result_scaffolds = None   
     if cfg.developer_mode:
         # before repeat resolver contigs
         # before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "simplified_contigs.fasta")

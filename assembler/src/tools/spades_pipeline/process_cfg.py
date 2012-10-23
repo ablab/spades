@@ -21,6 +21,12 @@ def file_lines(filename):
 def skip_info_comment(line):
     return line.split(';')[0].strip()
 
+def skip_double_quotes(line):
+    line = line.strip()
+    if line.endswith('"'):
+        line = line[:-1].strip()
+        line = line.replace('"', '', 1)
+    return line
 
 def check_property(prop_line):
     if len(prop_line.split()) > 1: # property is set, i.e. has value
@@ -50,7 +56,7 @@ def vars_from_lines(lines):
             return True
 
     def var_from_line(line, line_num):
-        l = skip_info_comment(line).split()
+        l = skip_double_quotes(skip_info_comment(line)).split()
         if len(l) == 0 or not valid_var_name(l[0]):
             return None, None
 
