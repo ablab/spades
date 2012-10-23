@@ -33,7 +33,6 @@
 ////#include "ireadstream_test.hpp"
 //#include "online_graph_visualizer_test.hpp"
 //#include "similar_test.hpp"
-//#include "cuckoo_test.hpp"
 //#include "single_read_test.hpp"
 //#include "paired_read_test.hpp"
 //#include "parser_test.hpp"
