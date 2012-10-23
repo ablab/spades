@@ -105,9 +105,12 @@ const debruijn_config::simplification::tip_clipper& tc_config,
 	typedef omnigraph::SequentialAlgorihtmFactory<Component,
 			typename Graph::EdgeId> FactoryInterface;
 
-	return std::shared_ptr < FactoryInterface
-			> (new Factory(max_tip_length, tc_config.max_coverage,
-					tc_config.max_relative_coverage, removal_handler));
+	return std::shared_ptr < FactoryInterface>(
+			new Factory(
+					max_tip_length,
+					tc_config.max_coverage,
+					tc_config.max_relative_coverage,
+					removal_handler));
 }
 
 template<class Graph>
@@ -126,9 +129,13 @@ const debruijn_config::simplification::tip_clipper& tc_config,
 			typename Graph::EdgeId> FactoryInterface;
 
 	return std::shared_ptr < FactoryInterface
-			> (new Factory(max_tip_length, tc_config.max_iterations,
-					tc_config.max_levenshtein, tc_config.max_ec_length,
-					tc_config.max_coverage, max_relative_coverage,
+			> (new Factory(
+					max_tip_length,
+					tc_config.max_coverage,
+					max_relative_coverage,
+					tc_config.max_iterations,
+					tc_config.max_levenshtein,
+					tc_config.max_ec_length,
 					removal_handler));
 }
 
