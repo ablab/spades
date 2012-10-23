@@ -139,6 +139,9 @@ const debruijn_config::simplification::tip_clipper& tc_config,
 					removal_handler));
 }
 
+typedef const debruijn_config::simplification::tip_clipper TcConfig;
+
+
 template<class Graph, class GraphPack>
 std::shared_ptr<
 		omnigraph::SequentialAlgorihtmFactory<ConcurrentGraphComponent<Graph>,
@@ -191,16 +194,57 @@ void ClipTips(GraphPack& graph_pack,
 
 	typedef typename GraphPack::graph_t Graph;
 
+	auto tc_config = cfg::get().simp.tc;
+
+	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
+			*cfg::get().ds.RL, graph_pack.g.k(), tc_config.max_tip_length_coefficient);
+
+	size_t max_tip_length_corrected = (size_t) math::round(
+			(double) max_tip_length / 2
+					* (1 + (iteration + 1.) / iteration_count));
+
+	boost::function<void(typename Graph::EdgeId)> removal_handler =
+				raw_removal_handler;
+
+	if (cfg::get().graph_read_corr.enable) {
+
+		//enableing tip projection
+		TipsProjector<GraphPack> tip_projector(graph_pack);
+
+		boost::function<void(EdgeId)> projecting_callback = boost::bind(
+				&TipsProjector<GraphPack>::ProjectTip, tip_projector, _1);
+
+		removal_handler = boost::bind(Composition, _1,
+				boost::ref(raw_removal_handler), projecting_callback);
+
+	}
+
 	INFO("SUBSTAGE == Clipping tips");
+	ClipTips(graph_pack.g, max_tip_length_corrected, raw_removal_handler);
+}
 
-	Graph& graph = graph_pack.g;
+template<class Graph>
+void ClipTips(Graph& graph,
+		size_t max_tip_length,
+		boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0) {
 
-	auto factory = GetTipClipperFactory<Graph>(graph_pack, graph.k(),
-			iteration_count, iteration, raw_removal_handler);
+	auto tc_config = cfg::get().simp.tc;
 
-	ClipTips(graph, factory);
+	omnigraph::DefaultTipClipper<Graph> tc(
+			graph,
+			max_tip_length,
+			tc_config.max_coverage,
+			tc_config.max_relative_coverage,
+			raw_removal_handler
+	);
 
-	DEBUG("Clipping tips finished");
+	LengthComparator<Graph> comparator(graph);
+	for (auto iterator = graph.SmartEdgeBegin(comparator); !iterator.IsEnd(); ++iterator) {
+		tc.ProcessNext(*iterator);
+	}
+
+	Compressor<Graph> compressor(graph);
+	compressor.CompressAllVertices();
 }
 
 template<class Graph>
@@ -224,22 +268,24 @@ std::shared_ptr<
 
 template<class Graph>
 void ClipTipsForResolver(Graph &graph) {
+		auto tc_config = cfg::get().simp.tc;
+
+	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
+			*cfg::get().ds.RL, graph.k(), tc_config.max_tip_length_coefficient);
+
 	INFO("SUBSTAGE == Clipping tips for Resolver");
-
-	auto factory = GetTipClipperResolverFactory<Graph>(graph.k());
-
-	ClipTips(graph, factory);
+	ClipTips(graph, max_tip_length);
 
 	DEBUG("Clipping tips for Resolver finished");
 }
 
-template <class Graph, class FactoryPtr>
-void ClipTips(Graph& graph, FactoryPtr factory) {
-	RunConcurrentAlgorithm(graph, factory, LengthComparator<Graph>(graph));
-
-	Compressor<Graph> compressor(graph);
-	compressor.CompressAllVertices();
-}
+//template <class Graph, class FactoryPtr>
+//void ClipTips(Graph& graph, FactoryPtr factory) {
+//	RunConcurrentAlgorithm(graph, factory, LengthComparator<Graph>(graph));
+//
+//	Compressor<Graph> compressor(graph);
+//	compressor.CompressAllVertices();
+//}
 
 template<class Graph, class AlgorithmFactoryPtr, class Comparator>
 void RunConcurrentAlgorithm(Graph& graph, AlgorithmFactoryPtr factory, Comparator comparator) {

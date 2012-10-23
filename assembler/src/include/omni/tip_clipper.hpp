@@ -103,7 +103,7 @@ protected:
 
 			// for debug. It should happen only if CanCompressVertex
 			// invalidate graph.
-			VERIFY(graph_.IsValid());
+//			VERIFY(graph_.IsValid());
 
 			graph_.CompressVertex(splitVertex);
 		}
@@ -135,19 +135,20 @@ protected:
 	}
 
 	virtual bool TryToRemoveTip(EdgeId tip) {
-		if (!graph_.IsInternalSafe(tip)) {
-			// for algorithm to process this edge sequently.
-			graph_.InvalidateComponent();
-		}
-
-		if (graph_.IsValid()) {
+//		if (!graph_.IsInternalSafe(tip)) {
+//			// for algorithm to process this edge sequently.
+//			graph_.InvalidateComponent();
+//		}
+//
+//		if (graph_.IsValid()) {
 			RemoveTip(tip);
 			TRACE("Edge removed");
+//			return true;
+//		} else {
+//			TRACE("Component is invalid. " << "Edge "  << graph_.str(tip) << " can not be removed in parallel.");
+//			return false;
+//		}
 			return true;
-		} else {
-			TRACE("Component is invalid. " << "Edge "  << graph_.str(tip) << " can not be removed in parallel.");
-			return false;
-		}
 	}
 
 	/**
