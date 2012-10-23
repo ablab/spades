@@ -372,7 +372,8 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 						}
 					}
 				}
-				if (mismatches[i].ratio < cutoff)
+
+				if (cutoff > mismatches[i].ratio)
 					origin_gp.mismatch_masker.mismatch_map[*iter][i].ratio = 0;
 			}
 //			for(size_t i = 0; i < rc_mismatches.size(); i++) {
