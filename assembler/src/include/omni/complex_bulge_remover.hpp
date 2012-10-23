@@ -1066,7 +1066,7 @@ class SkeletonTreeFinder {
 	}
 
 	bool IsGoodEdge(EdgeId e) const {
-		VertexId start = component_.g().EdgeStart(e);
+//		VertexId start = component_.g().EdgeStart(e);
 		VertexId end = component_.g().EdgeEnd(e);
 		//check if end is good
 		if (good_vertices_.count(end) == 0)
