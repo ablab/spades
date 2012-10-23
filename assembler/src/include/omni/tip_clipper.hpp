@@ -43,7 +43,6 @@ private:
 	typedef typename Graph::VertexId VertexId;
 
 	Graph &graph_;
-	SmartSet<Graph, EdgeId> not_processed_edges_;
 	size_t removed_;
 
 public:
@@ -64,7 +63,6 @@ protected:
 			boost::function<void(EdgeId)> removal_handler = 0,
 			boost::function<double(EdgeId)> qual_f = 0)
 				: graph_(graph),
-				  not_processed_edges_(graph, std::less<EdgeId>(), false),
 				  removed_(0),
 				  max_tip_length_(max_tip_length),
 				  removal_handler_(removal_handler) {
@@ -277,8 +275,12 @@ public:
 	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
 		AlgorithmPtr ptr(
 				new DefaultTipClipper<Graph>(
-						graph, max_tip_length_, max_coverage_,
-						max_relative_coverage_, removal_handler_, qual_f_));
+						graph,
+						max_tip_length_,
+						max_coverage_,
+						max_relative_coverage_,
+						removal_handler_,
+						qual_f_));
 		return ptr;
 	}
 
@@ -563,9 +565,15 @@ public:
 	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
 		AlgorithmPtr ptr(
 			new AdvancedTipClipper<Graph>(
-					graph, max_tip_length_, max_coverage_,
-				  	max_relative_coverage_, max_iterations_, max_levenshtein_,
-				  	max_ec_length_, removal_handler_, final_stage_));
+					graph,
+					max_tip_length_,
+					max_coverage_,
+				  	max_relative_coverage_,
+				  	max_iterations_,
+				  	max_levenshtein_,
+				  	max_ec_length_,
+				  	removal_handler_,
+				  	final_stage_));
 
 		return ptr;
 	}
