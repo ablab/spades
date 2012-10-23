@@ -306,8 +306,8 @@ def fill_test_config(cfg):
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gap-closer disable-gzip-output help test debug reference= "\
-               "bh-heap-check= spades-heap-check= help-hidden correct-mismatches "\
-               "config-file=".split()
+               "bh-heap-check= spades-heap-check= help-hidden "\
+               "config-file= use-jemalloc".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -367,7 +367,7 @@ def usage(show_hidden=False):
                              " for BayesHammer"
         print >> sys.stderr, "--spades-heap-check\t<value>\tset HEAPCHECK environment variable"\
                              " for SPAdes"
-        print >> sys.stderr, "--correct-mismatches\t\tcorrect mismatches"
+        print >> sys.stderr, "--use-jemalloc\t\tall binaries are run with jemalloc.sh"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "--test\t\trun SPAdes on toy dataset"
@@ -423,6 +423,8 @@ def main():
 
         developer_mode = False
 
+        use_jemalloc = False
+
         threads = None
         memory = None
         qvoffset = None
@@ -470,7 +472,7 @@ def main():
                 bh_heap_check = arg
             elif opt == "--spades-heap-check":
                 spades_heap_check = arg
-
+            
             elif opt == '-t' or opt == "--threads":
                 threads = int(arg)
             elif opt == '-m' or opt == "--memory":
@@ -482,6 +484,9 @@ def main():
 
             elif opt == "--debug":
                 developer_mode = True
+
+            elif opt == "--use-jemalloc":
+                use_jemalloc = True
 
             elif opt == '-h' or opt == "--help":
                 usage()
@@ -548,6 +553,8 @@ def main():
                 cfg["common"].__dict__["max_memory"] = memory
             if developer_mode:
                 cfg["common"].__dict__["developer_mode"] = developer_mode
+            if use_jemalloc:
+                cfg["common"].__dict__["use_jemalloc"] = use_jemalloc
 
             # dataset
             cfg["dataset"].__dict__["single_cell"] = single_cell
@@ -824,7 +831,11 @@ def run_bh(cfg):
 
     prepare_config_bh(cfg_file_name, cfg)
 
-    command = os.path.join(execution_home,"hammer") + " " +\
+    command = ""
+    if "use_jemalloc" in cfg.__dict__ and os.path.isfile("jemalloc.sh"):
+        command = os.path.abspath("jemalloc.sh") + " "
+
+    command += os.path.join(execution_home, "hammer") + " " +\
               os.path.abspath(cfg_file_name)
 
     print("\n== Running error correction tool: " + command + "\n")
@@ -877,7 +888,11 @@ def run_spades(cfg):
             count == len(cfg.iterative_K))
         prev_K = K
 
-        command = os.path.join(execution_home, "spades") + " " +\
+        command = ""
+        if "use_jemalloc" in cfg.__dict__ and os.path.isfile("jemalloc.sh"):
+            command = os.path.abspath("jemalloc.sh") + " "
+
+        command += os.path.join(execution_home, "spades") + " " +\
                   os.path.abspath(cfg_file_name)
 
         if os.path.isdir(bin_reads_dir):
