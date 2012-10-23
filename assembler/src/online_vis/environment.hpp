@@ -19,7 +19,7 @@ namespace online_visualization {
 
     struct Environment {
         friend class DrawingCommand;
-        private :
+        private:
             const string name;
             const string path;
             size_t picture_counter_;
@@ -36,8 +36,8 @@ namespace online_visualization {
             ColoringClass coloring_;
             //CompositeLabeler<Graph> labeler_;
 
-        public :
-            Environment(const string& env_name, const string& env_path) :
+        public:
+            Environment(const string& env_name, const string& env_path, size_t K = cfg::get().K) :
                 name(env_name),
                 path(env_path),
                 picture_counter_(0),
@@ -45,8 +45,8 @@ namespace online_visualization {
                 file_name_base_("picture"),
                 max_vertices_(40),
                 edge_length_bound_(1000),
-                gp_(cfg::get().K, "./tmp", cfg::get().ds.reference_genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling),
-                mapper_(gp_.g, gp_.index, gp_.kmer_mapper, cfg::get().K + 1),
+                gp_(K, "./tmp", cfg::get().ds.reference_genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling),
+                mapper_(gp_.g, gp_.index, gp_.kmer_mapper, K + 1),
                 filler_(gp_.g, mapper_, gp_.edge_pos),
                 graph_struct_(gp_.g, &gp_.int_ids, &gp_.edge_pos), 
                 tot_lab_(&graph_struct_)
@@ -84,6 +84,26 @@ namespace online_visualization {
                 stringstream ss;
                 ss << name + " " + path;
                 return ss.str();   
+            }
+
+            string GetFormattedPictureCounter() const {
+                stringstream tmpstream;
+                size_t number_of_digs = 0;
+                size_t pc = picture_counter_;
+
+                do {    
+                    pc /= 10;
+                    number_of_digs++;
+                } while (pc > 0);
+
+                for (size_t i = 0; i < 4 - number_of_digs; ++i) 
+                    tmpstream << '0';
+                tmpstream << picture_counter_;
+                return tmpstream.str();
+            }
+
+            size_t k_value() const {
+                return gp_.k_value;    
             }
 
             const Graph& graph() const {

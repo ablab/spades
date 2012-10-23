@@ -116,8 +116,8 @@ namespace online_visualization {
                         ArgumentList arg_list(ss);
                         const vector<string>& args = arg_list.GetAllArguments();
                         string new_arg = args[args.size() - 1];
-                        TRACE("All args " << args);
-                        TRACE("NEW ARG " << new_arg);
+                        TRACE("all args " << args);
+                        TRACE("new arg " << new_arg);
                         new_arguments.push_back(new_arg);
                     }
                     else if (arg[0] == '!') {

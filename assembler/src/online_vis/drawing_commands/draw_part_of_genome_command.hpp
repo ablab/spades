@@ -89,12 +89,12 @@ namespace online_visualization {
                 //experimental
                 if (arg_list.contains("r")) {
                     cout << "Inverting positions..." << endl;
-                    first_position = genome.size() - cfg::get().K - 1 - first_position;
-                    second_position = genome.size() - cfg::get().K - 1 - first_position;
+                    first_position = genome.size() - curr_env.k_value() - 1 - first_position;
+                    second_position = genome.size() - curr_env.k_value() - 1 - first_position;
                 }
 
-                if (CheckPositionBounds(first_position, genome.size()) && 
-                        CheckPositionBounds(second_position, genome.size())) 
+                if (CheckPositionBounds(first_position, genome.size(), curr_env.k_value()) && 
+                        CheckPositionBounds(second_position, genome.size(), curr_env.k_value())) 
                 {
                     const Sequence& part_of_genome = genome.Subseq(first_position, second_position);
                     string label = args[1] + "_" + args[2];

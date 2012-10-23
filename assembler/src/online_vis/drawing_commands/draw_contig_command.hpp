@@ -55,13 +55,15 @@ namespace online_visualization {
                 while (!irs.eof()) {
                     io::SingleRead read;
                     irs >> read;
+                    LOG("Contig " << read.name() << " is being processed now");
 
                     // if read is valid and also the name contains a given string <contig_name> as a substring.
                     if (read.IsValid() && read.name().find(contig_name) != string::npos) {
                         const Sequence& contig = read.sequence();
                         const string& label = read.name();
                         DrawPicturesAlongGenomePart(curr_env, contig, label);
-                    }
+                        LOG("Contig " << read.name() << " has been drawn");
+                    }                        
                 }
 
             }

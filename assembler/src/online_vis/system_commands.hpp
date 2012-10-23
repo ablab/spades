@@ -79,13 +79,12 @@ namespace online_visualization {
     // loading new environment from folder with saves
     class LoadCommand : public Command {
         private:
-            EnvironmentPtr MakeNewEnvironment(const string& name, const string& saves) const {
+            EnvironmentPtr MakeNewEnvironment(const string& name, const string& saves, size_t K) const {
                 DEBUG("Making new environment " << name);
-                EnvironmentPtr EnvPointer(new Environment(name, saves));
+                EnvironmentPtr EnvPointer(new Environment(name, saves, K));
                 DEBUG("DONE");
                 return EnvPointer;
             }
-
 
         protected:
             size_t MinArgNumber() const {
@@ -105,11 +104,28 @@ namespace online_visualization {
                         return false;
                     }
                 }
+                size_t K;
+                if (args.size() > 3) {
+                    if (!CheckIsNumber(args[3]))
+                        return false;
+                    K = GetInt(args[3]); 
+                } else {
+                    K = cfg::get().K;   
+                }
 
                 if (!CheckFileExists(saves + ".grp"))
                     return false;
                 if (!CheckFileExists(saves + ".sqn"))
                     return false;
+
+                if (!(K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K)) {
+                    LOG("K " << K << " is out of bounds");
+                    return false; 
+                }
+                if (K % 2 == 0) {
+                    LOG("K must be odd");
+                    return false;
+                }
 
                 return true;
             }
@@ -119,8 +135,10 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `load` \n" + 
                                 "Usage:\n" + 
-                                "> load <environment_name> <path_to_saves>\n" + 
-                                " You should specify the name of the new environment as well as a path to the graph saves. For example:\n" +
+                                "> load <environment_name> <path_to_saves> [<k-value>]\n" + 
+                                " You should specify the name of the new environment as well as a path to the graph saves. Optionally, \n" +
+                                " you can provide a k-value for these saves. \n: " +
+                                " For example:\n" +
                                 "> load GraphSimplified data/saves/simplified_graph\n" + 
                                 " would load a new environment with the name `GraphSimplified` from the files\n" + 
                                 " in the folder `data/saves/` with the basename `simplified_graph` (simplified_graph.grp, simplified_graph.sqn, e.t.c).";
@@ -140,10 +158,16 @@ namespace online_visualization {
 
                 string name = args[1]; 
                 string saves = args[2];
+                size_t K = 0;
+                if (args.size() > 3) {
+                    K = GetInt(args[3]); 
+                } else {
+                    K = cfg::get().K;   
+                }
 
                 cout << "Loading " << name << " " << saves << endl;
                 
-                EnvironmentPtr new_env = MakeNewEnvironment(name, saves);
+                EnvironmentPtr new_env = MakeNewEnvironment(name, saves, K);
                 loaded_environments.insert(make_pair(name, new_env));
                 curr_env = new_env;
             }
@@ -275,16 +299,16 @@ namespace online_visualization {
                 cout << "Executing the command " << number << " command(s) before... " << endl;
                 string command_with_args = history[history.size() - 1 - number];
                 cout << command_with_args << endl;
-                //inserting a command, which is to be repeated
-                history[history.size() - 1] = command_with_args;
-
                 stringstream ss(command_with_args);
-                string command_string;
-                ss >> command_string;
-
+                TRACE("Delegating to the ArgumentList class");
+                ArgumentList tmp_arg_list(ss);
+                //inserting a command, which is to be repeated
+                string processed_command = tmp_arg_list.Preprocess(history);
+                DEBUG("processed string " << processed_command);
+                const string& command_string = tmp_arg_list.GetAllArguments()[0];
                 Command& command = GetCommand(CommandId(command_string));
-                command.Execute(curr_env, loaded_environments, ss);
-                
+                command.Execute(curr_env, loaded_environments, tmp_arg_list);
+                history[history.size() - 1] = command_with_args;
             }
     };
 

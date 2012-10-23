@@ -80,9 +80,7 @@ namespace online_visualization {
                 TRACE("Delegating to the ArgumentList class");
                 ArgumentList arg_list(ss);
                 string processed_command = arg_list.Preprocess(history);
-
                 DEBUG("processed string " << processed_command);
-
                 const string& command_string = arg_list.GetAllArguments()[0];
                 Command& command = GetCommand(CommandId(command_string));
                 command.Execute(current_environment_, loaded_environments, arg_list);

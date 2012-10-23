@@ -65,8 +65,8 @@ namespace online_visualization {
                     genome = !genome;
                 }
 
-                if (CheckPositionBounds(position, genome.size())) {
-                    DrawPicture(curr_env, genome.Subseq(position).start<runtime_k::RtSeq::max_size>(cfg::get().K + 1), args[1]);
+                if (CheckPositionBounds(position, genome.size(), curr_env.k_value())) {
+                    DrawPicture(curr_env, genome.Subseq(position).start<runtime_k::RtSeq::max_size>(curr_env.k_value() + 1), args[1]);
                 }
 
             }

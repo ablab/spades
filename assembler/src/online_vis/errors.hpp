@@ -41,8 +41,8 @@ namespace online_visualization {
         return true;
     }
 
-    bool CheckPositionBounds(int position, size_t total_size) {
-        bool result = (position + cfg::get().K + 1) <= total_size;
+    bool CheckPositionBounds(int position, size_t total_size, size_t K) {
+        bool result = (position + K + 1) <= total_size;
         if (!result) {
             cout << "Ignoring the request. Position is out of range : required position is " 
                  << position << " while length of the sequence is "
