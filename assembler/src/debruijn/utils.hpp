@@ -935,9 +935,8 @@ public:
 
     double CountWeight(int x) const {
         int xx = insert_size - left_x + x - 1;
-        
+
         if (!(xx >= 0 && xx < (int) new_hist.size())) return 0.;
-        cout << x << " " << xx << " " << new_hist[xx] << endl;
         VERIFY(math::le(new_hist[xx], 1.));
         return 1000. * new_hist[xx];
     }
