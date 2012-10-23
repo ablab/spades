@@ -26,7 +26,7 @@ protected:
         std::stringstream ss;
 
         if (!path.Empty()) {
-            ss  << gp_.g.EdgeNucls(path[0]).Subseq(0, k_).str();
+            ss  << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.001).substr(0, k_);
         }
 
         for (size_t i = 0; i < path.Size(); ++i) {
@@ -34,14 +34,14 @@ protected:
                 for (size_t j = 0; j < path.GapAt(i) - k_; ++ j) {
                     ss << "N";
                 }
-                ss << gp_.g.EdgeNucls(path[i]).str();
+                ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001);
             }
             else {
                 int overlapLen = k_ - path.GapAt(i);
                 if (overlapLen >= (int) gp_.g.length(path[i]) + (int) k_) {
                     continue;
                 }
-                ss << gp_.g.EdgeNucls(path[i]).Subseq(overlapLen).str();
+                ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001).substr(overlapLen);
             }
         }
 
