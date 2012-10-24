@@ -45,8 +45,9 @@ class MismatchMasker {
   string MaskedEdgeNucls(EdgeId edge, double cutoff) {
 	  Sequence s_edge = g_.EdgeNucls(edge);
 	  string s = s_edge.str();
-	  if (mismatch_map[edge].size() > 0)
-		  INFO("in edge length " << g_.length(edge)<< " replaced " << mismatch_map[edge].size() << "mismatches");
+	  if (mismatch_map[edge].size() > 0) {
+		  DEBUG("in edge length " << g_.length(edge)<< " replaced " << mismatch_map[edge].size() << "mismatches");
+	  }
 	  for(size_t i = 0; i < mismatch_map[edge].size(); i++)
 		  if (mismatch_map[edge][i].ratio > cutoff)
 			  s[mismatch_map[edge][i].position] = 'N';

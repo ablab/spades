@@ -275,7 +275,7 @@ int FindMaskingPositions(EdgeId edge, const mismatches::MismatchEdgeInfo &statis
 		if(nc[cur_best] > 0.00025 * nc[nucl_code] ) {
 			double ratio = 0;
 			if (nc[nucl_code] == 0) {
-				WARN("Zero confirmed nucleotide at " << gp_.g.int_id(edge)<<" " << i);
+				INFO("Zero confirmed nucleotide at " << gp_.g.int_id(edge)<<" " << i);
 				ratio = 1000;
 			} else
 				ratio =  double(nc[cur_best])/nc[nucl_code];
@@ -289,8 +289,9 @@ int FindMaskingPositions(EdgeId edge, const mismatches::MismatchEdgeInfo &statis
 
 		}
 	}
-	if (changed != 0)
-		INFO("On edge " << gp_.g.int_id(edge) << " len: "<< gp_.g.length(edge)  <<" to mask : " << changed << " nucls");
+	if (changed != 0) {
+		DEBUG("On edge " << gp_.g.int_id(edge) << " len: "<< gp_.g.length(edge)  <<" to mask : " << changed << " nucls");
+	}
 	return changed;
 }
 

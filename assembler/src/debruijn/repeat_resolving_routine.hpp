@@ -337,10 +337,7 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 			if (mismatches.size() != rc_mismatches.size()) {
 				WARN(mismatches.size() <<" /// " << rc_mismatches.size());
 			}
-			if (origin_gp.g.int_id(*iter) >= 10006349 || origin_gp.g.int_id(*iter) <= 10006352) {
-				INFO("suspicious edge" << origin_gp.g.int_id(*iter) );
-				INFO (mismatches.size() << " "<< rc_mismatches.size());
-			}
+
 			for(size_t i = 0; i < mismatches.size(); i++) {
 //TODO:: cutoff selection!
 				vector<pair<EdgeId, size_t> > resolved_positions = labels_after.resolvedPositions(*iter, mismatches[i].position);
