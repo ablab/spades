@@ -4,7 +4,6 @@ import os
 import shutil
 import sys
 import getopt
-import glob
 import platform
 
 import spades_init
@@ -15,64 +14,8 @@ execution_home = os.path.join(spades_home, 'bin')
 
 import support
 from process_cfg import *
-
-def error(err_str, prefix="== Error == "):
-    print >> sys.stderr, "\n\n" + prefix + " " + err_str + "\n\n"
-    exit(1)
-
-
-def warning(warn_str, prefix="== Warning == "):
-    print("\n\n" + prefix + " " + warn_str + "\n\n")
-
-
-def prepare_config_bh(filename, cfg):
-    subst_dict = dict()
-    cfg.working_dir = os.path.abspath(cfg.working_dir)
-
-    if len(cfg.paired_reads) == 2:
-        subst_dict["input_paired_1"] = cfg.paired_reads[0]
-        subst_dict["input_paired_2"] = cfg.paired_reads[1]
-    if len(cfg.single_reads) == 1:
-        subst_dict["input_single"] = cfg.single_reads[0]
-
-    subst_dict["input_working_dir"] = cfg.working_dir
-    subst_dict["general_max_iterations"] = cfg.max_iterations
-    subst_dict["general_max_nthreads"] = cfg.max_threads
-    subst_dict["count_merge_nthreads"] = cfg.max_threads
-    subst_dict["bayes_nthreads"] = cfg.max_threads
-    subst_dict["expand_nthreads"] = cfg.max_threads
-    subst_dict["correct_nthreads"] = cfg.max_threads
-    subst_dict["general_hard_memory_limit"] = cfg.max_memory
-
-    if "qvoffset" in cfg.__dict__:
-        subst_dict["input_qvoffset"] = cfg.qvoffset
-
-    substitute_params(filename, subst_dict)
-
-
-def prepare_config_spades(filename, cfg, prev_K, K, last_one):
-    subst_dict = dict()
-
-    subst_dict["K"] = str(K)
-    subst_dict["run_mode"] = "false"
-    subst_dict["dataset"] = cfg.dataset
-    subst_dict["output_base"] = cfg.output_dir
-    subst_dict["additional_contigs"] = cfg.additional_contigs
-    subst_dict["entry_point"] = "construction"
-    subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
-    subst_dict["SAM_writer_enable"] = bool_to_str(cfg.generate_sam_files and last_one)
-    subst_dict["align_original_reads"] = bool_to_str(cfg.align_original_reads)
-    subst_dict["align_before_RR"] = bool_to_str(not cfg.paired_mode)
-    subst_dict["align_after_RR"] = bool_to_str(cfg.paired_mode)
-    subst_dict["gap_closer_enable"] = bool_to_str(last_one and cfg.gap_closer)
-    subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
-    subst_dict["additional_ec_removing"] = bool_to_str(last_one)
-    subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
-    subst_dict["max_threads"] = cfg.max_threads
-    subst_dict["max_memory"] = cfg.max_memory
-    subst_dict["correct_mismatches"] = bool_to_str(last_one)
-
-    substitute_params(filename, subst_dict)
+import bh_logic
+import spades_logic
 
 
 def print_used_values(cfg):
@@ -190,11 +133,11 @@ def check_config(cfg):
     ## checking mandatory sections
 
     if (not "dataset" in cfg):
-        error("wrong config! You should specify 'dataset' section!")
+        support.error("wrong config! You should specify 'dataset' section!")
         return False
 
     if (not "error_correction" in cfg) and (not "assembly" in cfg):
-        error("wrong options! You should specify either '--only-error-correction' (for reads"
+        support.error("wrong options! You should specify either '--only-error-correction' (for reads"
               " error correction) or '--only-assembler' (for assembling) or none of these options (for both)!")
         return False
 
@@ -208,17 +151,17 @@ def check_config(cfg):
                 v = [v]
             for reads_file in v:
                 if not os.path.isfile(os.path.expandvars(reads_file)):
-                    error("file with reads doesn't exist! " + os.path.expandvars(reads_file))
+                    support.error("file with reads doesn't exist! " + os.path.expandvars(reads_file))
                     return False
                 else:
                     ext = os.path.splitext(os.path.expandvars(reads_file))[1]
                     if ext not in ['.fa', '.fasta', '.fq', '.fastq', '.gz']:
-                        error("file with reads has unsupported format (only .fa, .fasta, .fq,"
+                        support.error("file with reads has unsupported format (only .fa, .fasta, .fq,"
                               " .fastq, .gz are supported)! " + os.path.expandvars(reads_file))
                         return False
 
     if no_files_with_reads:
-        error("wrong options! You should specify at least one file with reads!")
+        support.error("wrong options! You should specify at least one file with reads!")
         return False
 
     ## setting default values if needed
@@ -274,7 +217,7 @@ def check_binaries(binary_dir):
     for binary in ["hammer", "spades"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
-            error("SPAdes binary file not found: " + binary_path + 
+            support.error("SPAdes binary file not found: " + binary_path +
                   "\nYou can obtain SPAdes binaries in one of two ways:" + 
                   "\n1. Download the binaries from SPAdes server with ./spades_download_binary.py script" + 
                   "\n2. Build source code with ./spades_compile.py script")
@@ -312,7 +255,7 @@ short_options = "o:1:2:s:k:t:m:i:h"
 
 def check_file(f, message=''):
     if not os.path.isfile(f):
-        error("file not found (%s): %s" % (message, f))
+        support.error("file not found (%s): %s" % (message, f))
     return f
 
 
@@ -454,9 +397,9 @@ def main():
                 k_mers = map(int, arg.split(","))
                 for k in k_mers:
                     if k > 100:
-                        error('wrong k value ' + str(k) + ': all k values should be less than 100')
+                        support.error('wrong k value ' + str(k) + ': all k values should be less than 100')
                     if k % 2 == 0:
-                        error('wrong k value ' + str(k) + ': all k values should be odd')
+                        support.error('wrong k value ' + str(k) + ': all k values should be odd')
 
             elif opt == "--sc":
                 single_cell = True
@@ -512,16 +455,16 @@ def main():
 
         if not CONFIG_FILE and not TEST:
             if not output_dir:
-                error("the output_dir is not set! It is a mandatory parameter (-o output_dir).")
+                support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).")
 
             if len(paired1) != len(paired2):
-                error("the number of files with left paired reads is not equal to the"
+                support.error("the number of files with left paired reads is not equal to the"
                       " number of files with right paired reads!")
     
             # processing hidden option "--dataset"
             if dataset: 
                 if not only_assembler:
-                    error("hidden option --dataset works exclusively in --only-assembler mode!")
+                    support.error("hidden option --dataset works exclusively in --only-assembler mode!")
                 # reading info about dataset from provided dataset file
                 cfg["dataset"] = load_config_from_file(dataset)
                 # correcting reads relative pathes (reads can be specified relatively to provided dataset file)
@@ -537,7 +480,7 @@ def main():
                         cfg["dataset"].__dict__[k] = corrected_reads_filenames
             else:
                 if not paired and not paired1 and not single:
-                    error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!")
+                    support.error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!")
 
                 # creating empty "dataset" section
                 cfg["dataset"] = load_config_from_vars(dict())
@@ -652,25 +595,6 @@ def main():
         bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir,
             "dataset.info")
 
-        # _Deprecated_ asking question about restarting error correction if already done
-        #start_bh = True
-        #if os.path.exists(bh_cfg.output_dir):
-        #    if os.path.exists(bh_cfg.dataset):
-        #        question = ["WARNING! It looks like error correction was already done!",
-        #                    "Folder with corrected dataset " + bh_cfg.output_dir +
-        #                    " already exists!",
-        #                    "Do you want to overwrite this folder and start error"
-        #                    " correction again?"]
-        #        answer = support.question_with_timer(question, 10, 'n')
-        #        if answer == 'n':
-        #            start_bh = False
-        #            bh_dataset_filename = bh_cfg.dataset
-        #            print("\n===== Error correction skipped\n")
-        #        else:
-        #            os.remove(bh_cfg.dataset)
-        #            shutil.rmtree(bh_cfg.output_dir)
-        #if start_bh: ...
-
         if os.path.exists(bh_cfg.output_dir):
             shutil.rmtree(bh_cfg.output_dir)
         
@@ -692,6 +616,7 @@ def main():
         bh_cfg.__dict__["single_cell"] = cfg["dataset"].single_cell
         bh_cfg.__dict__["paired_reads"] = []
         bh_cfg.__dict__["single_reads"] = []
+
         import bh_aux
 
         for k, v in cfg["dataset"].__dict__.iteritems():
@@ -739,7 +664,7 @@ def main():
                     bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads,
                         bh_cfg.paired_reads, bh_cfg.working_dir)
 
-        bh_dataset_filename = run_bh(bh_cfg)
+        bh_dataset_filename = bh_logic.run_bh(spades_home, execution_home, bh_cfg)
 
         tee.free()
         print("\n===== Error correction finished. Log can be found here: " +
@@ -820,7 +745,7 @@ def main():
             dataset_file.close()
             spades_cfg.__dict__["dataset"] = dataset_filename
 
-        result_contigs_filename, result_scaffolds_filename = run_spades(spades_cfg)
+        result_contigs_filename, result_scaffolds_filename = spades_logic.run_spades(spades_home, execution_home, spades_cfg)
 
         tee.free()
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
@@ -839,130 +764,5 @@ def main():
     print("\n======= SPAdes pipeline finished\n")
 
 
-def run_bh(cfg):
-    dst_configs = os.path.join(cfg.output_dir, "configs")
-    if os.path.exists(dst_configs):
-        shutil.rmtree(dst_configs)
-    shutil.copytree(os.path.join(spades_home, "configs", "hammer"), dst_configs)
-    cfg_file_name = os.path.join(dst_configs, "config.info")
-    # removing template configs
-    for root, dirs, files in os.walk(dst_configs):
-        for cfg_file in files:
-            if cfg_file.endswith('.template'):
-                os.remove(os.path.join(root, cfg_file))
-
-    prepare_config_bh(cfg_file_name, cfg)
-
-    command = ""
-    if "use_jemalloc" in cfg.__dict__ and os.path.isfile("jemalloc.sh"):
-        command = os.path.abspath("jemalloc.sh") + " "
-
-    command += os.path.join(execution_home, "hammer") + " " +\
-              os.path.abspath(cfg_file_name)
-
-    print("\n== Running error correction tool: " + command + "\n")
-    support.sys_call(command)
-
-    import bh_aux
-
-    dataset_str = bh_aux.generate_dataset(cfg)
-    dataset_filename = cfg.dataset
-    dataset_file = open(dataset_filename, "w")
-    dataset_file.write(dataset_str)
-    dataset_file.close()
-    print("\n== Dataset description file created: " + dataset_filename + "\n")
-
-    shutil.rmtree(cfg.tmp_dir)
-
-    return dataset_filename
-
-
-def run_spades(cfg):
-    if not isinstance(cfg.iterative_K, list):
-        cfg.iterative_K = [cfg.iterative_K]
-    cfg.iterative_K = sorted(cfg.iterative_K)    
-
-    count = 0
-    prev_K = None
-
-    bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
-    if os.path.isdir(bin_reads_dir):
-        shutil.rmtree(bin_reads_dir)        
-
-    for K in cfg.iterative_K:
-        count += 1
-
-        dst_configs = os.path.join(cfg.output_dir, "K%d" % (K))
-        if os.path.exists(dst_configs):
-            shutil.rmtree(dst_configs)
-        os.makedirs(dst_configs)
-        
-        dst_configs = os.path.join(dst_configs, "configs")
-        shutil.copytree(os.path.join(spades_home, "configs", "debruijn"), dst_configs)  
-        cfg_file_name = os.path.join(dst_configs, "config.info")
-        # removing template configs
-        for root, dirs, files in os.walk(dst_configs):
-            for cfg_file in files:
-                if cfg_file.endswith('.template'):
-                    os.remove(os.path.join(root, cfg_file))                
-
-        prepare_config_spades(cfg_file_name, cfg, prev_K, K,
-            count == len(cfg.iterative_K))
-        prev_K = K
-
-        command = ""
-        if "use_jemalloc" in cfg.__dict__ and os.path.isfile("jemalloc.sh"):
-            command = os.path.abspath("jemalloc.sh") + " "
-
-        command += os.path.join(execution_home, "spades") + " " +\
-                  os.path.abspath(cfg_file_name)
-
-        if os.path.isdir(bin_reads_dir):
-            if glob.glob(os.path.join(bin_reads_dir, "*_cor*")):
-                for cor_filename in glob.glob(os.path.join(bin_reads_dir, "*_cor*")):
-                    cor_index = cor_filename.rfind("_cor")
-                    new_bin_filename = cor_filename[:cor_index] + cor_filename[cor_index + 4:]
-                    shutil.move(cor_filename, new_bin_filename)
-
-        print("\n== Running assembler: " + command + "\n")
-        
-        support.sys_call(command, execution_home)
-
-    latest = os.path.join(cfg.output_dir, "K%d" % (K))
-    shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
-    if cfg.paired_mode:
-        if os.path.isfile(os.path.join(latest, "scaffolds.fasta")):
-            shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds) 
-        else:
-            cfg.result_scaffolds = None   
-    if cfg.developer_mode:
-        # before repeat resolver contigs
-        # before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "simplified_contigs.fasta")
-        # shutil.copyfile(os.path.join(latest, "simplified_contigs.fasta"), before_RR_contigs)
-        # saves
-        saves_link = os.path.join(os.path.dirname(cfg.result_contigs), "saves")
-        if os.path.exists(saves_link):
-            os.remove(saves_link)
-        os.symlink(os.path.join(latest, "saves"), saves_link)
-
-#    os.remove(cfg.additional_contigs)
-
-    if glob.glob(os.path.join(latest, "*.sam")):
-#        sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs),
-#            "contigs.sam")
-        if os.path.exists(sam_file_linkname):
-            os.remove(sam_file_linkname)
-#        os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
-
-    if os.path.isdir(bin_reads_dir):
-        shutil.rmtree(bin_reads_dir)    
-    if not cfg.paired_mode:
-        return cfg.result_contigs, ""
-
-    return cfg.result_contigs, cfg.result_scaffolds
-
 if __name__ == '__main__':
-    try:
-        main()
-    except support.spades_error, e:
-        print(e.what())
+    main()

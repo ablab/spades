@@ -17,6 +17,6 @@ def init():
     if spades_home == "/usr/bin":
         spades_home = "/usr/share/spades"
 
-    sys.path.append(os.path.join(spades_home, "src/tools/spades_pipeline/"))
+    sys.path.append(os.path.join(spades_home, "src/spades_pipeline/"))
 
     spades_version =  open(os.path.join(spades_home, 'VERSION'), 'r').readline()

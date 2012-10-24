@@ -9,7 +9,7 @@ cp -r assembler/src/include spades-$VERSION/src/include
 cp -r assembler/src/io spades-$VERSION/src/io
 cp -r assembler/src/mph_index spades-$VERSION/src/mph_index
 cp -r assembler/src/cmake spades-$VERSION/src/cmake
-cp -r assembler/src/tools/spades_pipeline spades-$VERSION/src/tools/spades_pipeline
+cp -r assembler/src/spades_pipeline spades-$VERSION/src/spades_pipeline
 cp assembler/src/CMakeLists.txt spades-$VERSION/src/CMakeLists.txt
 
 cp -r assembler/configs spades-$VERSION/configs

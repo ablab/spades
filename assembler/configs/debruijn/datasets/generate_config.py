@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import os
+import sys
 
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../../src/spades_pipeline'))
 from process_cfg import *
 
 def process(config, dataset):

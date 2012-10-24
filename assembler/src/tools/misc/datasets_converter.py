@@ -3,7 +3,7 @@
 import os
 import sys
 
-sys.path.append(os.path.join(sys.path[0], "../spades_pipeline/"))
+sys.path.append(os.path.join(sys.path[0], "../../spades_pipeline/"))
 from process_cfg import *
 
 ########################################################################

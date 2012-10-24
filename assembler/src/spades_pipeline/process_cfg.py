@@ -7,13 +7,6 @@ class cfg_placeholder:
     pass
 
 
-def config_file_name():
-    if len(sys.argv) != 2:
-        support.error("Usage: <script_name>.py <config_file_name>", "")
-
-    return sys.argv[1]
-
-
 def file_lines(filename):
     return open(filename).readlines()
 
@@ -21,12 +14,14 @@ def file_lines(filename):
 def skip_info_comment(line):
     return line.split(';')[0].strip()
 
+
 def skip_double_quotes(line):
     line = line.strip()
     if line.endswith('"'):
         line = line[:-1].strip()
         line = line.replace('"', '', 1)
     return line
+
 
 def check_property(prop_line):
     if len(prop_line.split()) > 1: # property is set, i.e. has value
@@ -88,6 +83,7 @@ def substitute_params(filename, var_dict):
 
     file = open(filename, "w")
     file.writelines(lines)
+
 
 # configs with more priority should go first in parameters
 def merge_configs(*cfgs):

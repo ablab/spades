@@ -3,18 +3,14 @@
 import os
 import sys
 import re
-
-def verify(expr, message):
-    if (not (expr)):
-        print "Assertion failed. Message: " + message
-        exit(0)
+import support
 
 
 def determine_it_count(tmp_dir, prefix):
     import re
 
     files = os.listdir(tmp_dir)
-    answer = 0;
+    answer = 0
     for f in files:
         m = re.match(r"^" + prefix + "\.(\d{2})\..*", f)
         if m:
@@ -33,7 +29,7 @@ def determine_read_files(folder, str_it_count, input_files, num_paired):
     for id, input_file in enumerate(input_files):
         prefix = os.path.basename(input_file) + "." + str_it_count
         full_name = folder + prefix + ".cor.fastq"
-        verify(os.path.isfile(full_name), "corrected file not found: " + full_name)
+        support.verify(os.path.isfile(full_name), "corrected file not found: " + full_name)
         if id < num_paired:
             answer["paired_reads"] += full_name + '  '
         else:
@@ -237,7 +233,7 @@ def ungzip_if_needed(filename, output_folder):
         import subprocess
 
         return_code = subprocess.call(['gunzip', filename, '-c'], stdout=ungzipped_file)
-        verify(return_code == 0, "GZIP failed to extract " + filename + ". Maybe the archive is broken.")
+        support.verify(return_code == 0, "GZIP failed to extract " + filename + ". Maybe the archive is broken.")
 
         ungzipped_file.close()
         filename = ungzipped_filename
