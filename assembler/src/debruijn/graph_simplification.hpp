@@ -225,6 +225,7 @@ void ClipTips(GraphPack& graph_pack,
 
 template<class Graph>
 void ClipTips(Graph& graph,
+		//todo what is this parameter for
 		size_t max_tip_length,
 		TcConfig tc_config,
 		boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0) {

@@ -199,34 +199,33 @@ class TmpFolderFixture {
 //			20);
 //}
 
-//BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
-//	static const size_t k = 19;
-//	static const size_t K = 55;
-////	static const size_t K = 57;
-////	static const size_t K = 53;
-//
-////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
-////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-//
-//	io::Reader stream_1("/home/anton/idba_compare/idba.fasta");
-//	io::Reader stream_2("/home/anton/idba_compare/hammer21_dis_tuned_simpl_try_improve.fasta");
-//	string ref = "/home/anton/idba_compare/MG1655-K12.fasta";
-//	string folder = "/home/anton/idba_compare/hammer21_dis_tuned_simpl_vs_idba/";
-////	string folder = "assembly_comp/gingi_new_3_vs_jeff/";
-//	make_dir(folder);
-//
-//	RunBPComparison<k, K>(
-//		stream_1,
-//		stream_2,
-//		"idba_",
-//		"k21ts_",
-//		true/*refine*/,
-//		false/*untangle*/,
-//		folder,
-//		true/*detailed_output*/,
-//		5/*delta*/,
-//		ReadGenome(ref));
-//}
+BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
+	static const size_t k = 19;
+	static const size_t K = 55;
+//	static const size_t K = 57;
+//	static const size_t K = 53;
+
+//	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+//	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+
+	io::Reader stream_1("./phep_issue/phep_master.fasta");
+	io::Reader stream_2("./phep_issue/phep_param_opt.fasta");
+	string ref = "./phep_issue/reference_NC_013061.1.fasta";
+	string folder = "./phep_issue/results/";
+	make_dir(folder);
+
+	RunBPComparison<k, K>(
+		stream_1,
+		stream_2,
+		"master_",
+		"opt_",
+		true/*refine*/,
+		false/*untangle*/,
+		folder,
+		true/*detailed_output*/,
+		5/*delta*/,
+		ReadGenome(ref));
+}
 
 //BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 //	static const size_t k = 19;
@@ -323,104 +322,104 @@ class TmpFolderFixture {
 //		ReadGenome(ref));
 //}
 
-BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
-  TmpFolderFixture _("tmp");
+//BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
+//  TmpFolderFixture _("tmp");
+//
+//  std::string base_path = "/home/valich/work/youtubercoolez/";
+//
+//  /*
+//  vector<std::string> paths = {
+//    "/home/valich/mrsa/more_strains/MSSA476.fasta",
+//    "/home/valich/mrsa/more_strains/MRSA252.fasta",
+//    "/home/valich/mrsa/more_strains/TW20.fasta",
+//    "/home/valich/mrsa/more_strains/USA300.fasta"
+//  };
+//  vector<std::string> suffixes = {
+//    "mssa476",
+//    "rmsa252",
+//    "tw20",
+//    "usa300"
+//  };
+//
+//  */
+//
+//  vector<std::string> paths = {
+//    base_path + "CCDC5079.fasta",
+//    base_path + "CCDC5180.fasta",
+//    base_path + "H37Rv.fasta"
+//  };
+//  vector<std::string> suffixes = {
+//    "CCDC5079",
+//    "CCDC5180",
+//    "H37Rv"
+//  };
+//
+//
+//  vector<size_t> k_sequence = {
+//    201, 101, 55, 21, 15
+//  };
+//
+//	MaskDifferencesAndSave(paths, suffixes, "bp_graph_test/refined/", k_sequence);
+//}
 
-  std::string base_path = "/home/valich/work/youtubercoolez/";
+//BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
+//	typedef debruijn_graph::graph_pack<
+//	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph> comparing_gp_t;
+//  static const size_t K = 297;
+//  TmpFolderFixture _("tmp");
+//
+//  std::string base_path = "bp_graph_test/refined/";
+//
+//  // vector of pairs <name, path_to_fasta>
+///*
+//  vector<pair<std::string, std::string> > genomes_paths = {
+//    make_pair("MSSA476", "bp_graph_test/refined/mssa476.fasta"),
+//    make_pair("MRSA252", "bp_graph_test/refined/mrsa252.fasta"),
+//    make_pair("TW20", "bp_graph_test/refined/tw20.fasta"),
+//    make_pair("USA300", "bp_graph_test/refined/usa300.fasta")
+////    make_pair("11819", "bp_graph_test/refined/11819.fasta"),
+////    make_pair("COL", "bp_graph_test/refined/COL.fasta")
+//  };
+//  */
+//
+//  vector<pair<std::string, std::string> > genomes_paths = {
+//    make_pair("CCDC5079", base_path + "CCDC5079.fasta"),
+//    make_pair("CCDC5180", base_path + "CCDC5180.fasta"),
+//    make_pair("H37Rv",    base_path + "H37Rv.fasta")
+//  };
+//
+//  std::string folder = "bp_graph_test/multiple_genomes_visualization/";
+//
+//  RunMultipleGenomesVisualization<comparing_gp_t>(K, genomes_paths, folder);
+//}
 
-  /*
-  vector<std::string> paths = {
-    "/home/valich/mrsa/more_strains/MSSA476.fasta",
-    "/home/valich/mrsa/more_strains/MRSA252.fasta",
-    "/home/valich/mrsa/more_strains/TW20.fasta",
-    "/home/valich/mrsa/more_strains/USA300.fasta"
-  };
-  vector<std::string> suffixes = {
-    "mssa476",
-    "rmsa252",
-    "tw20",
-    "usa300"
-  };
-
-  */
-
-  vector<std::string> paths = {
-    base_path + "CCDC5079.fasta",
-    base_path + "CCDC5180.fasta",
-    base_path + "H37Rv.fasta"
-  };
-  vector<std::string> suffixes = {
-    "CCDC5079",
-    "CCDC5180",
-    "H37Rv"
-  };
-
-
-  vector<size_t> k_sequence = {
-    201, 101, 55, 21, 15
-  };
-
-	MaskDifferencesAndSave(paths, suffixes, "bp_graph_test/refined/", k_sequence);
-}
-
-BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
-	typedef debruijn_graph::graph_pack<
-	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph> comparing_gp_t;
-  static const size_t K = 297;
-  TmpFolderFixture _("tmp");
-
-  std::string base_path = "bp_graph_test/refined/";
-
-  // vector of pairs <name, path_to_fasta>
-/*
-  vector<pair<std::string, std::string> > genomes_paths = {
-    make_pair("MSSA476", "bp_graph_test/refined/mssa476.fasta"),
-    make_pair("MRSA252", "bp_graph_test/refined/mrsa252.fasta"),
-    make_pair("TW20", "bp_graph_test/refined/tw20.fasta"),
-    make_pair("USA300", "bp_graph_test/refined/usa300.fasta")
-//    make_pair("11819", "bp_graph_test/refined/11819.fasta"),
-//    make_pair("COL", "bp_graph_test/refined/COL.fasta")
-  };
-  */
-  
-  vector<pair<std::string, std::string> > genomes_paths = {
-    make_pair("CCDC5079", base_path + "CCDC5079.fasta"),
-    make_pair("CCDC5180", base_path + "CCDC5180.fasta"),
-    make_pair("H37Rv",    base_path + "H37Rv.fasta")
-  };
-
-  std::string folder = "bp_graph_test/multiple_genomes_visualization/";
-
-  RunMultipleGenomesVisualization<comparing_gp_t>(K, genomes_paths, folder);
-}
-
-BOOST_AUTO_TEST_CASE( TwoGenomesComparison ) {
-  return;
-  static const size_t k = 19;
-  static const size_t K = 55;
-  TmpFolderFixture("tmp");
-
-  ////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
-  ////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-
-  std::string genome_path1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
-              genome_path2 = "/smallnas/yana/X5_results/scaffolds_fcb_010_cleaned.fasta";
-  io::Reader stream_1(genome_path1),
-             stream_2(genome_path2);
-
-  string folder = "bp_graph_test/two_genomes_comparison/";
-
-  RunBPComparison<k, K>(
-      stream_1,
-      stream_2,
-      "genome1_",
-      "genome2_",
-      false/*refine*/,
-      false/*untangle*/,
-      folder,
-      true/*detailed_output*/,
-      5/*delta*/);
-}
+//BOOST_AUTO_TEST_CASE( TwoGenomesComparison ) {
+//  return;
+//  static const size_t k = 19;
+//  static const size_t K = 55;
+//  TmpFolderFixture("tmp");
+//
+//  ////	io::Reader stream_1("/home/snurk/gingi/2.fasta");
+//  ////	io::Reader stream_2("/home/snurk/gingi/3.fasta");
+//
+//  std::string genome_path1 = "/smallnas/yana/X5-l-velvet-scaff.closed.fasta",
+//              genome_path2 = "/smallnas/yana/X5_results/scaffolds_fcb_010_cleaned.fasta";
+//  io::Reader stream_1(genome_path1),
+//             stream_2(genome_path2);
+//
+//  string folder = "bp_graph_test/two_genomes_comparison/";
+//
+//  RunBPComparison<k, K>(
+//      stream_1,
+//      stream_2,
+//      "genome1_",
+//      "genome2_",
+//      false/*refine*/,
+//      false/*untangle*/,
+//      folder,
+//      true/*detailed_output*/,
+//      5/*delta*/);
+//}
 
 /*
 BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
