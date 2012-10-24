@@ -445,7 +445,7 @@ public:
 		FILE* file = fopen((file_name + ".grp").c_str(), "r");
 		VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
 		FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
-		VERIFY(sequence_file != NULL);
+		VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".sqn"));
 		set<int> vertex_set;
 		set<int> edge_set;
 		INFO(
@@ -536,12 +536,10 @@ public:
 	void loadGraph(const string& file_name) {
 		int flag;
 		FILE* file = fopen((file_name + ".grp").c_str(), "r");
-		if (file == NULL) {
-			WARN("File "<<(file_name + ".grp")<<" not found");
-		}
-		VERIFY(file != NULL);
+		VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
+
 		FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
-		VERIFY(sequence_file != NULL);
+		VERIFY_MSG(sequence_file != NULL, "Couldn't find file " << (file_name + ".sqn"));
 
 		INFO(
 				"Reading NON conjugate de bruujn graph from " << file_name << " started");
