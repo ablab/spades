@@ -168,7 +168,7 @@ public:
 			size_t read_length, size_t delta, size_t k) :
 			g_(g), index_(index), k_(k), insert_size_(insert_size), read_length_(
 					read_length), gap_(insert_size_ - 2 * read_length_), delta_(
-					delta) {
+					2 * delta) {
 		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
