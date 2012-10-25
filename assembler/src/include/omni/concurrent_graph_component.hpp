@@ -282,7 +282,7 @@ public:
 		}
 
 		BOOST_FOREACH(VertexId vertex, vertices_to_compress_) {
-			graph_.CompressVertex(vertex);
+			base::CompressVertex(vertex);
 		}
 
 		deleted_vertices_.resize(0);
