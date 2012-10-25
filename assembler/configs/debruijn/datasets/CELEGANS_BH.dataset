@@ -1,0 +1,4 @@
+single_cell	false
+paired_reads	"/home/data/input/C.elegans/bh.corrected/SRR065390_1.fastq.00.cor.fastq /home/data/input/C.elegans/bh.corrected/SRR065390_2.fastq.00.cor.fastq "
+single_reads	"/home/data/input/C.elegans/bh.corrected/SRR065390_unpaired.00.cor.fastq "
+reference_genome ../../../data/input/E.coli/MG1655-K12.fasta.gz
