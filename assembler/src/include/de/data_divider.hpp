@@ -11,7 +11,10 @@
  *      Author: alexeyka
  */
 
-//#include <fftw3.h>
+
+#ifndef DATA_DIVIDER_HPP_
+#define DATA_DIVIDER_HPP_
+
 #include <iostream>
 #include <math.h>
 #include "verify.hpp"
@@ -22,113 +25,109 @@
 #include "paired_info.hpp"
 #include "omni/omni_utils.hpp"
 
-#ifndef DATA_DIVIDER_HPP_
-#define DATA_DIVIDER_HPP_
 namespace omnigraph {
 
-
+template<class EdgeId>
 class DataDivider {
-    typedef pair<size_t, size_t> Interval;
+  typedef pair<size_t, size_t> Interval;
+  typedef vector<PairInfo<EdgeId> > PairInfos;
+  typedef pair<EdgeId, EdgeId> EdgePair;
+  typedef vector<Point> PointArray;
+  typedef boost::function<double(int)> WeightFunction;
 
-    //	double LeftDerivative(int index, vector<int> x, vector<int> y) {
-    //		return outf[dist - min_value_ + 1][0] - outf[dist - min][0];
-    //	}
-    //
-    //	double RightDerivative(index, std::vector<int> x, std::vector<int> y) {
-    //		return outf[dist - min_value_][0] - outf[dist - min - 1][0];
-    //	}
-    //
-    //	double MiddleDerivative(int index, std::vector<int> x, std::vector<int> y) {
-    //		return 0.5f * (outf[dist - min_value_ + 1][0] - outf[dist - min - 1][0]);
-    //	}
+  //	double LeftDerivative(int index, vector<int> x, vector<int> y) {
+  //		return outf[dist - min_value_ + 1][0] - outf[dist - min][0];
+  //	}
+  //
+  //	double RightDerivative(index, std::vector<int> x, std::vector<int> y) {
+  //		return outf[dist - min_value_][0] - outf[dist - min - 1][0];
+  //	}
+  //
+  //	double MiddleDerivative(int index, std::vector<int> x, std::vector<int> y) {
+  //		return 0.5f * (outf[dist - min_value_ + 1][0] - outf[dist - min - 1][0]);
+  //	}
 
-    private:
-        size_t data_size_;
-        int min_value_, max_value_;
-        size_t threshold_;
+ public:
+  DataDivider(size_t threshold, const PointArray& points) : 
+    threshold_(threshold), points_(points)
+  {
+  }
 
-        template <class EdgeId>
-        void Print(const vector<PairInfo<EdgeId> >& data) const {
-            for (size_t i = 0; i < data.size(); ++i) {
-                TRACE(data[i].d << " " << data[i].weight);   
-            }
+  vector<Interval> DivideData() {
+    VERIFY(points_.size() > 0);
+    vector<Interval> answer;
+    min_value_ = rounded_d(points_.front());
+    max_value_ = rounded_d(points_.back());
+    size_t begin = 0;
+    for (size_t i = 0; i < points_.size() - 1; ++i) {
+      if (IsANewCluster(i, points_)) { 
+        answer.push_back(make_pair(begin, i + 1));
+        begin = i + 1;
+      }
+    }
+    answer.push_back(make_pair(begin, points_.size()));
+
+    return answer;
+  }
+
+  vector<Interval> DivideAndSmoothData(const EdgePair& ep, 
+                                      PairInfos& new_data, 
+                                      WeightFunction weight_f)
+  {
+    VERIFY(points_.size() > 0);
+    vector<Interval> answer;
+
+    TRACE("Data");
+    //Print();
+    const Point& point = points_.front();
+    min_value_ = rounded_d(point);
+    max_value_ = rounded_d(points_.back());
+    size_t begin = 0;
+    for (size_t i = 0; i < points_.size(); ++i) {
+      if (i == points_.size() - 1 || IsANewCluster(i)) {
+        int low_val = points_[begin].d;
+        int high_val = points_[i].d;
+        size_t new_begin = new_data.size();
+        VERIFY(low_val <= high_val);
+        for (int j = low_val; j <= high_val; ++j) {
+          double val = 0.;
+          for (size_t k = begin; k <= i; ++k) {
+            val += points_[k].weight * weight_f(j - points_[k].d);
+          }
+          new_data.push_back(PairInfo<EdgeId>(ep.first, ep.second, j, val, 0.)); 
         }
+        size_t new_end = new_data.size();
+        answer.push_back(make_pair(new_begin, new_end));
 
-        template <class EdgeId>
-        bool IsANewCluster(size_t index, const vector<PairInfo<EdgeId> >& data) {
-            VERIFY(index < data_size_ - 1);
-            return (abs(data[index + 1].d - data[index].d) > threshold_);
-        }
+        begin = i + 1;
+      }
+    }
+    //answer.push_back(make_pair(beginc, new_data.size()));
+    TRACE("New_data ");
+    Print();
 
-    public:
+    return answer;
+  }
 
-        DataDivider(size_t threshold) : threshold_(threshold) 
-        {
-        }
+ private:
+  int min_value_;
+  int max_value_;
+  size_t threshold_;
+  PointArray points_;
 
-        template <class EdgeId>
-        vector<Interval> DivideData(const vector<PairInfo<EdgeId> >& data) {
+  void Print() const {
+    for (size_t i = 0; i < points_.size(); ++i) {
+      TRACE(points_[i].d << " " << points_[i].weight);   
+    }
+  }
 
-            data_size_ = data.size();
-            VERIFY(data_size_ > 0);
-            vector<Interval> answer;
+  bool IsANewCluster(size_t index) {
+    VERIFY(index < points_.size() - 1);
+    return (math::gr(abs(points_[index + 1].d - points_[index].d), (double) threshold_));
+  }
 
-            min_value_ = rounded_d(data.front());
-            max_value_ = rounded_d(data.back());
-            size_t begin = 0;
-            for (size_t i = 0; i < data_size_ - 1; i++) {
-                if (IsANewCluster(i, data)){ 
-                    answer.push_back(make_pair(begin, i + 1));
-                    begin = i + 1;
-                }
-            }
-            answer.push_back(make_pair(begin, data_size_));
-
-            return answer;
-        }
-
-        template <class EdgeId>
-        vector<Interval> DivideAndSmoothData(const vector<PairInfo<EdgeId> >& data, vector<PairInfo<EdgeId> >& new_data, boost::function<double(int)> weight_f) {
-
-            data_size_ = data.size();
-            VERIFY(data_size_ > 0);
-            vector<Interval> answer;
-            
-            TRACE("Data");
-            Print(data);
-
-            min_value_ = rounded_d(data.front());
-            max_value_ = rounded_d(data.back());
-            size_t begin = 0;
-            for (size_t i = 0; i < data_size_; i++) {
-                if (i == data_size_ - 1 || IsANewCluster(i, data)) {
-                    int low_val = data[begin].d;
-                    int high_val = data[i].d;
-                    size_t new_begin = new_data.size();
-                    VERIFY(low_val <= high_val);
-                    for (int j = low_val; j <= high_val; ++j) {
-                        double val = 0.;
-                        for (size_t k = begin; k <= i; ++k) {
-                            val += data[k].weight * weight_f(j - data[k].d);
-                        }
-                        new_data.push_back(PairInfo<EdgeId>(data[0].first, data[0].second, j, val, 0.)); 
-                    }
-                    size_t new_end = new_data.size();
-                    answer.push_back(make_pair(new_begin, new_end));
-
-                    begin = i + 1;
-                }
-            }
-            //answer.push_back(make_pair(beginc, new_data.size()));
-            TRACE("New_data ");
-            Print(new_data);
-
-            return answer;
-        }
-
-    private:
-        DECL_LOGGER("DataDivider");
-    };
+  DECL_LOGGER("DataDivider");
+};
 }
 
 #endif /* DATA_DIVIDER_HPP_ */

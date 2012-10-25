@@ -73,7 +73,7 @@ class MismatchMasker: public GraphActionHandler<Graph> {
 
   }
   string MaskedEdgeNucls(EdgeId edge, double cutoff) {
-	  Sequence s_edge = g_.EdgeNucls(edge);
+	  const Sequence& s_edge = g_.EdgeNucls(edge);
 	  string s = s_edge.str();
 	  if (mismatch_map[edge].size() > 0) {
 		  DEBUG("in edge length " << g_.length(edge)<< " replacing " << mismatch_map[edge].size() << "mismatches");

@@ -886,12 +886,13 @@ public:
 	}
 
 	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
-		vertices_number_++;
+		++vertices_number_;
 
 		if (vertices_number_ > max_vertex_number_)
 			vertex_limit_exceeded_ = true;
 
-		return vertices_number_ < max_vertex_number_ && distance <= bound_;
+		return (vertices_number_ < max_vertex_number_) 
+                && (distance <= bound_);
 	}
 
 public:

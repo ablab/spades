@@ -728,7 +728,7 @@ class PairInfoAwareErroneousEdgeRemover: public ErroneousEdgeRemover<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef ErroneousEdgeRemover<Graph> base;
 
-	const PairedInfoIndex<Graph>& paired_index_;
+	const PairedInfoIndexT<Graph>& paired_index_;
 	size_t max_length_;
 	size_t min_neighbour_length_;
 	size_t insert_size_;
@@ -737,7 +737,7 @@ class PairInfoAwareErroneousEdgeRemover: public ErroneousEdgeRemover<Graph> {
 
 public:
 	PairInfoAwareErroneousEdgeRemover(Graph& g,
-			const PairedInfoIndex<Graph>& paired_index, size_t max_length,
+			const PairedInfoIndexT<Graph>& paired_index, size_t max_length,
 			size_t min_neighbour_length, size_t insert_size, size_t read_length,
 			AbstractEdgeRemover<Graph>& edge_remover) :
 			base(g, edge_remover), paired_index_(paired_index), max_length_(
@@ -764,18 +764,18 @@ public:
 	}
 
 	bool ContainsInfo(EdgeId e1, EdgeId e2, size_t ec_length) {
-		TRACE(
-				"Looking for pair info between e1 " << PrintEdge(e1) << " and e2 " << PrintEdge(e2));
-		vector<PairInfo<EdgeId>> infos = paired_index_.GetEdgePairInfo(e1, e2);
+		TRACE("Looking for pair info between e1 " << PrintEdge(e1) << " and e2 " << PrintEdge(e2));
+		const set<Point>& infos = paired_index_.GetEdgePairInfo(e1, e2);
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
-			PairInfo<EdgeId> info = *it;
+			const Point& point = *it;
 			size_t distance = this->graph().length(e1) + ec_length;
-			if (math::ge(0. + distance + info.variance, info.d)
-					&& math::le(0. + distance, info.d + info.variance)) {
+			if (math::ge(distance + point.var, point.d)
+					&& math::le(double(distance), point.d + point.var)) {
 				TRACE("Pair info found");
 				return true;
 			}
-		}TRACE("Pair info not found");
+		}
+    TRACE("Pair info not found");
 		return false;
 	}
 

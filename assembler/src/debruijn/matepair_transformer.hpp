@@ -21,10 +21,10 @@ typedef typename graph_pack::graph_t Graph;
 typedef typename Graph::EdgeId EdgeId;
 typedef vector<EdgeId> Path;
 const graph_pack& gp;
-const PairedInfoIndex<Graph>& pair_info_;
+const PairedInfoIndexT<Graph>& pair_info_;
 
 public:
-MatePairTransformer(const graph_pack& gp, const PairedInfoIndex<Graph>& pair_info):
+MatePairTransformer(const graph_pack& gp, const PairedInfoIndexT<Graph>& pair_info):
     gp(gp), pair_info_(pair_info){}
 
 

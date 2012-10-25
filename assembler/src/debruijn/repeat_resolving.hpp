@@ -17,13 +17,13 @@ namespace debruijn_graph {
 
 template<class Graph>
 void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
-		PairedInfoIndex<Graph> &info, EdgesPositionHandler<Graph> &edges_pos,
+		const PairedInfoIndexT<Graph> &info, EdgesPositionHandler<Graph> &edges_pos,
 		Graph &new_graph, IdTrackHandler<Graph> &new_IDs,
 		EdgesPositionHandler<Graph> &edges_pos_new, const string& output_folder,
-		EdgeLabelHandler<Graph> &LabelsAfter, bool developer_mode) {
+		EdgeLabelHandler<Graph> &LabelsAfter, bool developer_mode)
+{
 	INFO("SUBSTAGE == Resolving primitive repeats");
-	for (auto e_iter = g.SmartEdgeBegin(); !e_iter.IsEnd();
-			++e_iter) {
+	for (auto e_iter = g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		{
 			if ( (g.EdgeStart(*e_iter) == g.EdgeEnd(*e_iter))){
 				if ((g.length(*e_iter) > 1) ){
@@ -126,7 +126,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 //
 //	Graph graph(k);
 //	IdTrackHandler<Graph> int_ids(graph);
-//	PairedInfoIndex<Graph> paired_index(graph);
+//	PairedInfoIndexT<Graph> paired_index(graph);
 //	EdgesPositionHandler<Graph> edge_pos(graph, cfg::get().pos.max_single_gap);
 //
 //	ConjugateDataScanner<Graph> scanner(graph, int_ids);

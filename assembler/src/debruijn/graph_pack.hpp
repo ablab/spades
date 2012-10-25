@@ -24,7 +24,8 @@
 
 namespace debruijn_graph {
 
-typedef PairedInfoIndex<ConjugateDeBruijnGraph> paired_info_index;
+typedef PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
+//typedef PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 
 template<class Graph, class SeqType>
 struct graph_pack : private boost::noncopyable {
@@ -58,17 +59,16 @@ struct graph_pack : private boost::noncopyable {
 typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq> conj_graph_pack;
 typedef graph_pack<NonconjugateDeBruijnGraph, runtime_k::RtSeq> nonconj_graph_pack;
 
-inline void Convert(const conj_graph_pack& gp1, const PairedInfoIndex<conj_graph_pack::graph_t>& clustered_index1,
-		nonconj_graph_pack& gp2, PairedInfoIndex<nonconj_graph_pack::graph_t>& clustered_index2) {
-
+inline void Convert(const conj_graph_pack& gp1, 
+                    const PairedInfoIndexT<conj_graph_pack::graph_t>& clustered_index1,
+		                nonconj_graph_pack& gp2, 
+                    PairedInfoIndexT<nonconj_graph_pack::graph_t>& clustered_index2) 
+{
     string conv_folder = path::append_path(cfg::get().output_root, "temp_conversion");
     make_dir(conv_folder);
-
     string p = path::append_path(conv_folder, "conj_graph");
-
     PrintWithClusteredIndex(p, gp1, clustered_index1);
     ScanWithClusteredIndex (p, gp2, clustered_index2);
-
     remove_dir(conv_folder);
 }
 

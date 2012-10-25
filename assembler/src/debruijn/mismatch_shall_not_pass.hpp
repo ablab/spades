@@ -136,7 +136,7 @@ namespace mismatches {
 				stream >> read;
 				const Sequence &s_read = read.sequence();
 				omnigraph::MappingPath<EdgeId> path = sm.MapSequence(s_read);
-				DEBUG("read mapped");
+				TRACE("read mapped");
 				if(path.size() == 1 && path[0].second.initial_range.size() == path[0].second.mapped_range.size()) {
 					Range initial_range = path[0].second.initial_range;
 					Range mapped_range = path[0].second.mapped_range;
@@ -149,7 +149,7 @@ namespace mismatches {
 						}
 					}
 					if(cnt <= gp.g.k() / 3) {
-						DEBUG("statistics changing");
+						TRACE("statistics changing");
 						auto it = statistics_.find(path[0].first);
 						if(it == statistics_.end()) {
 //							if (gp.g.length(path[0].first) < 4000)

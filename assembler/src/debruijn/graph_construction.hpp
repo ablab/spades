@@ -40,7 +40,7 @@ template<class PairedRead>
 void FillPairedIndexWithReadCountMetric(const Graph &g,
 		const IdTrackHandler<Graph>& int_ids, const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper,
-		PairedInfoIndex<Graph>& paired_info_index,
+		PairedInfoIndexT<Graph>& paired_info_index,
 		io::ReadStreamVector<io::IReader<PairedRead> >& streams, size_t k) {
 
 	INFO("Counting paired info with read count weight");
@@ -59,7 +59,7 @@ void FillPairedIndexWithReadCountMetric(const Graph &g,
 template<class PairedRead>
 void FillPairedIndexWithProductMetric(const Graph &g,
 		const EdgeIndex<Graph>& index, const KmerMapper<Graph>& kmer_mapper,
-		PairedInfoIndex<Graph>& paired_info_index,
+		PairedInfoIndexT<Graph>& paired_info_index,
 		io::ReadStreamVector<io::IReader<PairedRead> >& streams, size_t k) {
 
 	INFO("Counting paired info with product weight");
@@ -75,25 +75,22 @@ void FillPairedIndexWithProductMetric(const Graph &g,
 	DEBUG("Paired info with product weight counted");
 }
 
-void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
+void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const Graph &g, const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper, size_t is, size_t rs,
-		size_t delta, const Sequence& genome, size_t k) {
-
+		size_t delta, const Sequence& genome, size_t k) 
+{
 	VERIFY_MSG(genome.size() > 0,
 			"The genome seems not to be loaded, program will exit");
-	INFO(
-			(string) (FormattedString("Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i") << genome.size() << k << is << rs << delta));
+	INFO((string) (FormattedString("Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i") << genome.size() << k << is << rs << delta));
 
-	EtalonPairedInfoCounter<Graph> etalon_paired_info_counter(g, index,
-			kmer_mapper, is, rs, delta, k);
-	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
-			etalon_paired_index);
+	EtalonPairedInfoCounter<Graph> etalon_paired_info_counter(g, index, kmer_mapper, is, rs, delta, k);
+	etalon_paired_info_counter.FillEtalonPairedInfo(genome, etalon_paired_index);
 
 	DEBUG("Etalon paired info counted");
 }
 
-void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
+void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const Graph &g, const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper, const Sequence& genome,
 		size_t k) {
@@ -112,7 +109,7 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 	//	Sequence new_genome = sequence_builder.BuildSequence();
 	//	NewEtalonPairedInfoCounter<k, Graph> new_etalon_paired_info_counter(g, index,
 	//			insert_size, read_length, insert_size * 0.1);
-	//	PairedInfoIndex<Graph> new_paired_info_index(g);
+	//	PairedInfoIndexT<Graph> new_paired_info_index(g);
 	//	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
 	//	CheckInfoEquality(etalon_paired_index, new_paired_info_index);
 	//////////////////DEBUG

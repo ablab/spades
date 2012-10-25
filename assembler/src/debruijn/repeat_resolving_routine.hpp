@@ -63,40 +63,39 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 	gv.Visualize();
 }
 
-void save_distance_filling(conj_graph_pack& gp, paired_info_index& paired_index,
-		paired_info_index& clustered_index) {
-	if (cfg::get().make_saves || cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
-        string p = path::append_path(cfg::get().output_saves, "distance_filling");
-        PrintAll(p, gp, paired_index, clustered_index);
-        write_estimated_params(p);
-	}
+void save_distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index,
+    PairedIndexT& clustered_index) {
+  if (cfg::get().make_saves || cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
+    string p = path::append_path(cfg::get().output_saves, "distance_filling");
+    PrintAll(p, gp, paired_index, clustered_index);
+    write_estimated_params(p);
+  }
 }
 
-bool try_load_distance_filling(conj_graph_pack& gp, paired_info_index& clustered_index,
-        path::files_t* used_files) {
+bool try_load_distance_filling(conj_graph_pack& gp, PairedIndexT& clustered_index,
+    path::files_t* used_files)
+{
+  string p = path::append_path(cfg::get().load_from, "distance_filling");
 
-    string p = path::append_path(cfg::get().load_from, "distance_filling");
+  FILE* file = fopen((p + ".grp").c_str(), "r");
+  if (file == NULL) {
+    return false;
+  }
+  fclose(file);
 
-    FILE* file = fopen((p + ".grp").c_str(), "r");
-    if (file == NULL) {
-        return false;
-    }
-    fclose(file);
+  used_files->push_back(p);
 
-    used_files->push_back(p);
+  clustered_index.Clear();
+  ScannerTraits<conj_graph_pack::graph_t>::Scanner scanner(gp.g,
+      gp.int_ids);
+  ScanClusteredIndex(p, scanner, clustered_index);
 
-    clustered_index.Clear();
-    ScannerTraits<conj_graph_pack::graph_t>::Scanner scanner(gp.g,
-                gp.int_ids);
-    ScanClusteredIndex(p, scanner, clustered_index);
-
-    return true;
+  return true;
 }
 
 
-void distance_filling(conj_graph_pack& gp, paired_info_index& paired_index,
-        paired_info_index& clustered_index) {
-
+void distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index, PairedIndexT& clustered_index) 
+{
     path::files_t used_files;
     if (try_load_distance_filling(gp, clustered_index, &used_files)) {
 
@@ -105,19 +104,16 @@ void distance_filling(conj_graph_pack& gp, paired_info_index& paired_index,
     }
     else {
         INFO("Filling paired information");
-
-        PairInfoInprover<conj_graph_pack::graph_t> pi_imp(gp.g);
-        pi_imp.ImprovePairedInfo(clustered_index,
-                    cfg::get().use_multithreading, cfg::get().max_threads);
-
+        PairInfoImprover<conj_graph_pack::graph_t> pi_imp(gp.g, clustered_index);
+        pi_imp.ImprovePairedInfo(cfg::get().use_multithreading, cfg::get().max_threads);
         save_distance_filling(gp, paired_index, clustered_index);
     }
 }
 
 
 void save_resolved(conj_graph_pack& resolved_gp,
-        paired_info_index& resolved_graph_paired_info,
-        paired_info_index& resolved_graph_paired_info_cl) {
+        PairedIndexT& resolved_graph_paired_info,
+        PairedIndexT& resolved_graph_paired_info_cl) {
 
     if (cfg::get().make_saves) {
         string p = path::append_path(cfg::get().output_saves, "split_resolved");
@@ -330,21 +326,21 @@ string GeneratePostfix() {
 
 template<class graph_pack>
 void ProduceResolvedPairedInfo(graph_pack& origin_gp,
-		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
+    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp,
 		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
-		PairedInfoIndex<typename graph_pack::graph_t>& resolved_graph_paired_info) {
+    PairedInfoIndexT<typename graph_pack::graph_t>& resolved_graph_paired_info)
+{
 	INFO("Generating paired info for resolved graph");
 	ResolvedGraphPairInfoCounter<typename graph_pack::graph_t> resolved_graph_paired_info_counter(
 			origin_gp.g, clustered_index, resolved_gp.g, labels_after);
-	resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(
-			resolved_graph_paired_info);
+  resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(resolved_graph_paired_info);
 	DEBUG("Generating paired info for resolved graph complete");
 }
 
 template<class graph_pack>
 void SaveResolvedPairedInfo(graph_pack& resolved_gp,
-		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info,
+    PairedInfoIndexT<typename graph_pack::graph_t> resolved_graph_paired_info,
 		const string& graph_name, const string& subfolder) {
 	if (cfg::get().make_saves) {
 		std::string rr_filename;
@@ -425,7 +421,7 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 
 template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
-		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
+    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp, const string& graph_name,
 		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
 		const string& subfolder = "", bool output_contigs = true, bool kill_loops = true) {
@@ -480,7 +476,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 						+ "/", labels_after, cfg::get().developer_mode);
 
 		//Generating paired info for resolved graph
-//		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
+//    PairedInfoIndexT<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
 //		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
 //		SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
 		//Paired info for resolved graph generated
@@ -507,10 +503,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	//Generating paired info for resolved graph
 	{
-		PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
+    PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 				resolved_gp.g);
 		if (cfg::get().path_set_graph == false) {
-
 			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
 					labels_after, resolved_cleared_graph_paired_info_before);
 		}
@@ -532,13 +527,12 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	size_t iters = 3; // TODO Constant 3? Shouldn't it be taken from config?
 	RemapMaskedMismatches(resolved_gp, origin_gp, labels_after);
 	for (size_t i = 0; i < iters; ++i) {
-		INFO(
-				"Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
+    INFO("Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
 
 		ClipTipsForResolver(resolved_gp.g);
 
 		if (cfg::get().path_set_graph == false) {
-			PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
+      PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 					resolved_gp.g);
 
 			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
@@ -550,7 +544,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //		FinalRemoveErroneousEdges(resolved_gp.g, edge_remover);
 
 		if (cfg::get().path_set_graph == false) {
-			PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
+      PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 					resolved_gp.g);
 
 			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
@@ -570,14 +564,13 @@ void process_resolve_repeats(graph_pack& origin_gp,
 		lk.KillAllLoops();
 	}
 
-
 	OutputMaskedContigs(origin_gp.g, cfg::get().output_dir + "before_resolve_masked.fasta", origin_gp.mismatch_masker);
 
 	DEBUG("Clearing resolved graph complete");
 
 	//Generating paired info for resolved graph
 	if (cfg::get().path_set_graph == false) {
-		PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
+    PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
 				resolved_gp.g);
 
 		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
@@ -629,7 +622,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
-		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
+    PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp, const string& graph_name,
 		const string& subfolder = "", bool output_contigs = true) {
 
@@ -642,7 +635,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 template<class graph_pack>
 void component_statistics(graph_pack & conj_gp, int component_id,
-		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
+    PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
 
 	string graph_name = ConstructComponentName("graph_", component_id).c_str();
 	string component_name = cfg::get().output_dir + "graph_components/"
@@ -735,8 +728,8 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
                           cfg::get().output_dir,
                           genome, cfg::get().pos.max_single_gap,
                           cfg::get().pos.careful_labeling);
-	paired_info_index paired_index(conj_gp.g/*, 5.*/);
-	paired_info_index clustered_index(conj_gp.g);
+  PairedIndexT paired_index(conj_gp.g/*, 5.*/);
+  PairedIndexT clustered_index(conj_gp.g);
 
 	INFO("Resolve component " << component_id);
 
@@ -767,7 +760,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 
 void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 //	nonconj_graph_pack nonconj_gp(genome);
-//	PairedInfoIndex<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
+//  PairedInfoIndexT<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
 //
 //	INFO("Resolve component "<<component_id);
 //
@@ -789,33 +782,33 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 //			graph_name, sub_dir, false);
 }
 
-void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndex<Graph>& index,
-		const paired_info_index& jump_index) {
+void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndexT<Graph>& index,
+    const PairedIndexT& jump_index) {
 	WARN("Jump resolver not alailable");
 
 //	VERIFY(cfg::get().andrey_params.);
 //	resolve_repeats_ml(gp, index, cfg::get().output_dir + "jump_resolve/",
 //			cfg::get().andrey_params,
-//			boost::optional<const paired_info_index&>(jump_index));
+//      boost::optional<const PairedIndexT>(jump_index));
 }
 
-void prepare_jump_index(const Graph& g, const paired_info_index& raw_jump_index,
-		paired_info_index& jump_index) {
+void prepare_jump_index(const Graph& g, const PairedIndexT& raw_jump_index,
+    PairedIndexT& jump_index) {
 	JumpingEstimator<Graph> estimator(raw_jump_index);
-	paired_info_index clustered_jump_index(g);
+  PairedIndexT clustered_jump_index(g);
 	estimator.Estimate(clustered_jump_index);
 
-	JumpingNormilizerFunction<Graph> nf(g, *cfg::get().ds.RL, 500);
+  JumpingNormalizerFunction<Graph> nf(g, *cfg::get().ds.RL, 500);
 	PairedInfoNormalizer<Graph> normalizer(nf);
-	paired_info_index normalized_jump_index(g);
+  PairedIndexT normalized_jump_index(g);
 	normalizer.FillNormalizedIndex(clustered_jump_index, normalized_jump_index);
 
 	JumpingPairInfoChecker<Graph> filter(g, 300, 100, 100);
 	filter.Filter(normalized_jump_index, jump_index);
 }
 
-void prepare_scaffolding_index(conj_graph_pack& gp, paired_info_index& paired_index,
-                                paired_info_index& clustered_index) {
+void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
+                                PairedIndexT& clustered_index) {
     double is_var = *cfg::get().ds.is_var;
     size_t delta = size_t(is_var);
     size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
@@ -823,14 +816,14 @@ void prepare_scaffolding_index(conj_graph_pack& gp, paired_info_index& paired_in
 
     size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 //    INFO("Symmetry trick");
-//    paired_info_index symmetric_index(gp.g);
+//    PairedIndexT& symmetric_index(gp.g);
 //    PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
 //    hack.FillSymmetricIndex(symmetric_index);
 
     boost::function<double(int)> weight_function;
 
     INFO("Retaining insert size distribution for it");
-    InsertSizeHistogramCounter<conj_graph_pack>::hist_type insert_size_hist = cfg::get().ds.hist;
+    map<int, size_t> insert_size_hist = cfg::get().ds.hist;
     WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
     INFO("Weight Wrapper Done");
     weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
@@ -845,7 +838,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp, paired_info_index& paired_in
                 gp.k_value, *cfg::get().ds.avg_coverage);
         normalizing_f = boost::bind(
                 &PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
-                weight_normalizer, _1);
+                weight_normalizer, _1, _2, _3);
     }
     PairedInfoNormalizer<Graph> normalizer(normalizing_f);
     INFO("Normalizer Done");
@@ -864,7 +857,6 @@ void prepare_scaffolding_index(conj_graph_pack& gp, paired_info_index& paired_in
                     cfg::get().ade.percentage,
                     cfg::get().ade.derivative_threshold,
                     true);
-    INFO("Starting SCAFFOLDING distance estimator");
     estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
 }
 
@@ -876,8 +868,8 @@ void resolve_repeats() {
                           genome, cfg::get().pos.max_single_gap,
                           cfg::get().pos.careful_labeling, /*use_inner_ids*/
                           !cfg::get().developer_mode);
-	paired_info_index paired_index(conj_gp.g);
-	paired_info_index clustered_index(conj_gp.g);
+  PairedIndexT paired_index(conj_gp.g);
+  PairedIndexT clustered_index(conj_gp.g);
 	if (!cfg::get().developer_mode) {
 		//Detaching edge_pos handler
 		conj_gp.edge_pos.Detach();
@@ -938,9 +930,8 @@ void resolve_repeats() {
 
 		if (cfg::get().rr.symmetric_resolve) {
 
-			PairInfoInprover<conj_graph_pack::graph_t> pi_imp(conj_gp.g);
-			pi_imp.ImprovePairedInfo(clustered_index,
-					cfg::get().use_multithreading, cfg::get().max_threads);
+      PairInfoImprover<conj_graph_pack::graph_t> pi_imp(conj_gp.g, clustered_index);
+      pi_imp.ImprovePairedInfo(cfg::get().use_multithreading, cfg::get().max_threads);
 			save_distance_filling(conj_gp, paired_index, clustered_index);
 
 			if (cfg::get().componential_resolve) {
@@ -966,20 +957,17 @@ void resolve_repeats() {
 
 	        if (cfg::get().use_scaffolder) {
                 INFO("Transfering paired information");
-                PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info_cl(resolved_gp.g);
-                ProduceResolvedPairedInfo(conj_gp, clustered_index, resolved_gp,
-                      labels_after, resolved_graph_paired_info_cl);
-                PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
-                ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp,
-                        labels_after, resolved_graph_paired_info);
+                PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info_cl(resolved_gp.g);
+                ProduceResolvedPairedInfo(conj_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info_cl);
+                PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
+                ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp, labels_after, resolved_graph_paired_info);
 
                 if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-                    PairedInfoIndex<conj_graph_pack::graph_t> scaff_clustered(conj_gp.g);
+                    PairedInfoIndexT<conj_graph_pack::graph_t> scaff_clustered(conj_gp.g);
 
                     prepare_scaffolding_index(conj_gp, paired_index, scaff_clustered);
 
-                    PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_scaff_clustered(
-                                          resolved_gp.g);
+                    PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_scaff_clustered(resolved_gp.g);
                     ProduceResolvedPairedInfo(conj_gp, scaff_clustered, resolved_gp,
                           labels_after, resolved_graph_scaff_clustered);
 
@@ -1019,7 +1007,7 @@ void resolve_repeats() {
 			}
 		} else {
 //			nonconj_graph_pack origin_gp(conj_gp.genome);
-//			PairedInfoIndex<nonconj_graph_pack::graph_t> orig_clustered_idx(
+//      PairedInfoIndexT<nonconj_graph_pack::graph_t> orig_clustered_idx(
 //					origin_gp.g);
 //			Convert(conj_gp, clustered_index, origin_gp, orig_clustered_idx);
 //			nonconj_graph_pack resolved_gp(conj_gp.genome);
@@ -1047,7 +1035,7 @@ void resolve_repeats() {
 
 	    if (cfg::get().pe_params.param_set.scaffolder_options.on) {
             if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-                PairedInfoIndex<conj_graph_pack::graph_t> scaff_clustered(
+                PairedInfoIndexT<conj_graph_pack::graph_t> scaff_clustered(
                         conj_gp.g);
 
                 prepare_scaffolding_index(conj_gp, paired_index, scaff_clustered);
@@ -1095,12 +1083,12 @@ void resolve_repeats() {
             "graph", labels_after, "", false, false);
 
 
-        PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info_cl(
+        PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info_cl(
               resolved_gp.g);
         ProduceResolvedPairedInfo(conj_gp, clustered_index, resolved_gp,
               labels_after, resolved_graph_paired_info_cl);
 
-        PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info(
+        PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info(
               resolved_gp.g);
         if (cfg::get().pe_params.param_set.scaffolder_options.on) {
             ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp,
@@ -1109,12 +1097,12 @@ void resolve_repeats() {
 
 
         if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-            PairedInfoIndex<conj_graph_pack::graph_t> scaff_clustered(
+            PairedInfoIndexT<conj_graph_pack::graph_t> scaff_clustered(
                     conj_gp.g);
 
             prepare_scaffolding_index(conj_gp, paired_index, scaff_clustered);
 
-            PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_scaff_clustered(
+            PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_scaff_clustered(
                     resolved_gp.g);
             ProduceResolvedPairedInfo(conj_gp, scaff_clustered, resolved_gp,
                     labels_after, resolved_graph_scaff_clustered);
@@ -1151,9 +1139,8 @@ void resolve_repeats() {
 
         INFO("Preparing paired information for rectangles repeat resolution module");
 
-        PairInfoInprover<conj_graph_pack::graph_t> pi_imp(conj_gp.g);
-        pi_imp.ImprovePairedInfo(clustered_index,
-                cfg::get().use_multithreading, cfg::get().max_threads);
+        PairInfoImprover<conj_graph_pack::graph_t> pi_imp(conj_gp.g, clustered_index);
+        pi_imp.ImprovePairedInfo(cfg::get().use_multithreading, cfg::get().max_threads);
         save_distance_filling(conj_gp, paired_index, clustered_index);
 
         INFO("Ready to run rectangles repeat resolution module");

@@ -30,9 +30,9 @@ struct PairedInfoLibrary {
 
     double coverage_coeff_;
 
-    PairedInfoIndex<Graph>& index_;
+    PairedInfoIndexT<Graph>& index_;
 
-    PairedInfoLibrary(size_t k, Graph& g, size_t readS, size_t insS, size_t var, PairedInfoIndex<Graph>& index):
+    PairedInfoLibrary(size_t k, Graph& g, size_t readS, size_t insS, size_t var, PairedInfoIndexT<Graph>& index):
         g_(g), k_(k), read_size_(readS), insert_size_(insS), is_variation_(var), index_(index) {
 
         coverage_coeff_ = 1.0;
@@ -77,49 +77,44 @@ struct PairedInfoLibrary {
 
     set<EdgeId> GetEdges(EdgeId e) {
         set<EdgeId> res;
-        omnigraph::PairedInfoIndex<Graph>::PairInfos pairs = index_.GetEdgeInfo(e);
-
-        for (auto pairIter = pairs.begin(); pairIter != pairs.end(); ++pairIter) {
-            if (pairIter->first == e) {
-                res.insert(pairIter->second);
-            }
-            else {
-                res.insert(pairIter->first);
-            }
-        }
+        typedef set<Point> Histogram;
+        const InnerMap<Graph>& pairs = index_.GetEdgeInfo(e, 0); // map[second_edge -> histogram]
+        for (auto pairIter = pairs.begin(); pairIter != pairs.end(); ++pairIter)
+          res.insert(pairIter->first);
         return res;
     }
 
-    void CountDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist, std::vector<double>& w) {
+    void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) {
+      typedef set<Point> Histogram;
     	if (e1 != e2) {
-			omnigraph::PairedInfoIndex<Graph>::PairInfos pairs = index_.GetEdgePairInfo(e1, e2);
-
-			for (auto pairIter = pairs.begin(); pairIter != pairs.end(); ++pairIter) {
-				int pairedDistance = rounded_d(*pairIter);
-				if (pairedDistance >= 0) {
-					dist.push_back(pairedDistance);
-					w.push_back(pairIter->weight);
-				}
-			}
+        Histogram histogram = index_.GetEdgePairInfo(e1, e2);
+        for (auto pointIter = histogram.begin(); pointIter != histogram.end(); ++pointIter) {
+          int pairedDistance = rounded_d(*pointIter);
+          if (pairedDistance >= 0) {
+            dist.push_back(pairedDistance);
+            w.push_back(pointIter->weight);
+          }
+        }
     	}
 	}
 
     double CountPairedInfo(EdgeId e1, EdgeId e2, int distance) {
-        double weight = 0.0;
-        omnigraph::PairedInfoIndex<Graph>::PairInfos pairs =  index_.GetEdgePairInfo(e1, e2);
+      typedef set<Point> Histogram;
+      double weight = 0.0;
+      Histogram pairs =  index_.GetEdgePairInfo(e1, e2);
 
-        for (auto pairIter = pairs.begin(); pairIter != pairs.end(); ++pairIter) {
-            int pairedDistance = rounded_d(*pairIter);
+      for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
+        int pairedDistance = rounded_d(*pointIter);
 
-            int distanceDev = max((int) pairIter->variance, (int) is_variation_);
+        int distanceDev = max((int) pointIter->var, (int) is_variation_);
 
-            //Can be modified according to distance comparison
-            if (pairedDistance >= distance - distanceDev  && pairedDistance <= distance + distanceDev) {
-                weight += pairIter->weight;
-            }
-
+        //Can be modified according to distance comparison
+        if (pairedDistance >= distance - distanceDev  && pairedDistance <= distance + distanceDev) {
+          weight += pointIter->weight;
         }
-        return weight;
+
+      }
+      return weight;
     }
 
 
@@ -146,7 +141,7 @@ struct PairedInfoLibrary {
     double NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
         double w = IdealPairedInfo(pair_info.first, pair_info.second, rounded_d(pair_info));
 
-        double result_weight = pair_info.weight;
+        double result_weight = pair_info.weight();
         if (math::gr(w, 0.)) {
             result_weight /= w;
         } else {

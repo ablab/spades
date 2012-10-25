@@ -56,7 +56,6 @@ enum paired_metrics {
 };
 
 enum estimation_mode {
-    em_naive,
     em_simple,
     em_weighted,
     em_extensive,
@@ -162,7 +161,6 @@ struct debruijn_config {
 
     static const estimation_mode_id_mapping FillEstimationModeInfo() {
         estimation_mode_id_mapping::value_type info[] = {
-          estimation_mode_id_mapping::value_type("naive",       em_naive       ),
           estimation_mode_id_mapping::value_type("simple",      em_simple      ),
           estimation_mode_id_mapping::value_type("weighted",    em_weighted    ),
           estimation_mode_id_mapping::value_type("extensive",   em_extensive   ),

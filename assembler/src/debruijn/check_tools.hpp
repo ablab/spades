@@ -22,12 +22,12 @@
 namespace debruijn_graph {
 
 
-/*void FindZeros(PairedInfoIndex<Graph>& etalon_paired_index) {
+/*void FindZeros(PairedInfoIndexT<Graph>& etalon_paired_index) {
 	for (auto it = etalon_paired_index.begin(); it != etalon_paired_index.end(); ++it) {
 		const vector<PairInfo<EdgeId>> infos = *it;
 		for (auto it2 = infos.begin(); it2!=infos.end(); ++it2) {
 			PairInfo<EdgeId> info = *it2;
-			if (info.first == info.second && info.d == 0.) {
+			if (info.first == info.second && info.d() == 0.) {
 				cout << "FOUND ZEROS!!!" << endl;
 				return;
 			}
@@ -35,7 +35,7 @@ namespace debruijn_graph {
 	}
 }*/
 
-//void ToSet(PairedInfoIndex<Graph>& paired_index, set<PairInfo<EdgeId>>& as_set) {
+//void ToSet(PairedInfoIndexT<Graph>& paired_index, set<PairInfo<EdgeId>>& as_set) {
 ////	static size_t count = 0;
 //	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
 //		vector<PairInfo<EdgeId>> infos = *it;
@@ -57,14 +57,15 @@ void CheckPairInfo(const vector<PairInfo<EdgeId>>& infos1, const vector<PairInfo
 			if (*it == *it2)
 				found = true;
 		}
-		if (!found && !((*it).first == (*it).second && (*it).d == 0.)) {
+		if (!found && !((*it).first == (*it).second && math::eq((*it).d(), 0.))) {
 			cerr << "Didn't find " << *it << " in " << infos2 <<  " initial:" << infos1 << endl;
 		}
 	}
 
 }
 
-void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Graph>& paired_index2) {
+void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Graph>& paired_index2) 
+{
 	for (auto it = paired_index1.begin(); it != paired_index1.end(); ++it) {
 		const vector<PairInfo<EdgeId>> infos1 = *it;
 		EdgeId first = infos1.front().first;
@@ -145,7 +146,7 @@ double TotalPositiveWeight(const conj_graph_pack& gp, PairedInfoIndex<Graph> pai
 	vector<PairInfo<EdgeId>> infos = paired_index.GetEdgePairInfo(gp.int_ids.ReturnEdgeId(e1), gp.int_ids.ReturnEdgeId(e2));
 	double s = 0.;
 	for (auto it = infos.begin(); it != infos.end(); ++it) {
-		double weight = it->weight;
+		double weight = it->weight();
         TRACE("Weight " << weight);
 		//if (math::gr(weight, 0.)) {
 			s += weight;

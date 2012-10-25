@@ -22,7 +22,7 @@ namespace debruijn_graph {
 extern const string tmp_folder;
 
 //void ConstructGraphFromGenome(size_t k, Graph& g, EdgeIndex<Graph>& index/*, CoverageHandler<DeBruijnGraph>& coverage_handler*/
-//, PairedInfoIndex<Graph>& paired_index, const string& genome
+//, PairedInfoIndexT<Graph>& paired_index, const string& genome
 //		, size_t read_size) {
 //	typedef read_generator::ReadGenerator<read_generator::SmoothPositionChooser> Stream;
 //	size_t coverage = 2 * read_size;
@@ -159,13 +159,15 @@ void AssertCoverage(Graph& g, const CoverageInfo& etalon_coverage) {
 	}
 }
 
-typedef PairedInfoIndex<Graph> PairedIndex;
-typedef PairedIndex::PairInfos PairInfos;
-//typedef PairedIndex::InnerPairInfo PairInfo;
+typedef PairedInfoIndexT<Graph> PairedIndex;
+typedef vector<PairInfo<EdgeId>> PairInfos;
 
 void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
 	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
-		PairInfos infos = *it;
+		PairInfos infos;
+    infos.reserve(it->size());
+    for (auto set_it = it->begin(); set_it != it->end(); ++set_it)
+      infos.push_back(PairInfo<EdgeId>(it.first(), it.second(), *set_it));
 		for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
 			PairInfo<EdgeId> pair_info = *info_it;
 			if (pair_info.first == pair_info.second && rounded_d(pair_info) == 0) {
@@ -187,8 +189,8 @@ void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, co
 			}
 			BOOST_CHECK_MESSAGE(etalon_weight > 0,
 					"Etalon didn't contain distance=" << rounded_d(pair_info) << " for edge pair " << my_edge_pair_str);
-			BOOST_CHECK_MESSAGE(EqualDouble(etalon_weight, pair_info.weight),
-					"Actual weight for edge pair " << my_edge_pair_str << " on distance " << rounded_d(pair_info) << " was " << pair_info.weight << " but etalon is " <<  etalon_weight);
+			BOOST_CHECK_MESSAGE(EqualDouble(etalon_weight, pair_info.weight()),
+					"Actual weight for edge pair " << my_edge_pair_str << " on distance " << rounded_d(pair_info) << " was " << pair_info.weight() << " but etalon is " <<  etalon_weight);
 		}
 	}
 }
@@ -209,7 +211,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	graph_pack<Graph, runtime_k::RtSeq> gp(k, tmp_folder, (Sequence()));
 	DEBUG("Graph pack created");
 
-	PairedInfoIndex<Graph> paired_index(gp.g);
+	PairedInfoIndexT<Graph> paired_index(gp.g);
 
 	SingleStream single_stream(paired_read_stream);
 	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({&single_stream});

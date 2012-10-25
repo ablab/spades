@@ -170,7 +170,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
 }
 
 
-void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndex<Graph>& paired_index,
+void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index,
         const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
 
     PairedInfoLibraries libs;
@@ -183,7 +183,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndex<Graph>& p
 
 
 
-void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndex<Graph>& paired_index, PairedInfoIndex<Graph>& scaffolder_index,
+void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index, PairedInfoIndexT<Graph>& scaffolder_index,
         const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
 
 
@@ -196,8 +196,8 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndex<Graph>& p
     resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
 }
 
-void resolve_repeats_pe_wj(size_t k, conj_graph_pack& gp, PairedInfoIndex<Graph>& paired_index,
-        PairedInfoIndex<Graph>& jpi,
+void resolve_repeats_pe_wj(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index,
+        PairedInfoIndexT<Graph>& jpi,
         const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
 
     PairedInfoLibraries libs;
@@ -209,10 +209,10 @@ void resolve_repeats_pe_wj(size_t k, conj_graph_pack& gp, PairedInfoIndex<Graph>
     resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
 }
 
-void resolve_repeats_pe_wj(size_t k, conj_graph_pack& gp, PairedInfoIndex<Graph>& paired_index,
-        PairedInfoIndex<Graph>& jpi,
-        PairedInfoIndex<Graph>& scaffolder_index,
-        PairedInfoIndex<Graph>& jspi,
+void resolve_repeats_pe_wj(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index,
+        PairedInfoIndexT<Graph>& jpi,
+        PairedInfoIndexT<Graph>& scaffolder_index,
+        PairedInfoIndexT<Graph>& jspi,
         const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
 
     PairedInfoLibraries libs;
@@ -330,7 +330,7 @@ void scaffold_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& scafolding_
 
 
 
-void scaffold_pe(size_t k, conj_graph_pack& gp, PairedInfoIndex<Graph>& scaffolder_index,
+void scaffold_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& scaffolder_index,
         const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
 
     PairedInfoLibraries libs;

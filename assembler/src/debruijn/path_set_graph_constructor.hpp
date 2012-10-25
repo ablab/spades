@@ -28,13 +28,13 @@ typedef typename graph_pack::graph_t::VertexId VertexId;
 typedef typename graph_pack::graph_t Graph;
 typedef vector<EdgeId > Path;
 graph_pack& gp;
-const PairedInfoIndex<Graph>& pair_info_;
+const PairedInfoIndexT<Graph>& pair_info_;
 graph_pack& new_gp;
 RestrictedMap<EdgeId, EdgeId> new_to_old;
 RestrictedMap<EdgeId, EdgeId> old_to_new;
 
 public:
-	PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index, graph_pack& new_gp): gp(gp), pair_info_(clustered_index), new_gp(new_gp)
+	PathSetGraphConstructor(graph_pack& gp, PairedInfoIndexT<Graph>& clustered_index, graph_pack& new_gp): gp(gp), pair_info_(clustered_index), new_gp(new_gp)
 	{
 		new_to_old.clear();
 		old_to_new.clear();

@@ -100,14 +100,15 @@ class OldEtalonPairedInfoCounter {
 	size_t gap_;
 	size_t delta_;
 
-	void AddEtalonInfo(omnigraph::PairedInfoIndex<Graph>& paired_info,
+  void AddEtalonInfo(omnigraph::PairedInfoIndexT<Graph>& paired_info,
 			EdgeId e1, EdgeId e2, double d) {
 		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0, 0.);
 		paired_info.AddPairInfo(pair_info);
 	}
 
 	void ProcessSequence(const Sequence& sequence,
-			omnigraph::PairedInfoIndex<Graph>& paired_info) {
+      omnigraph::PairedInfoIndexT<Graph>& paired_info) 
+  {
 		SimpleSequenceMapper<Graph> sequence_mapper(g_, index_, k_ + 1);
 		Path<EdgeId> path = sequence_mapper.MapSequence(sequence);
 
@@ -136,7 +137,7 @@ class OldEtalonPairedInfoCounter {
 	}
 
 	/* DEBUG method
-	 void CheckPairInfo(const Sequence& genome, omnigraph::PairedInfoIndex<Graph>& paired_info) {
+   void CheckPairInfo(const Sequence& genome, omnigraph::PairedInfoIndexT<Graph>& paired_info) {
 	 SimpleSequenceMapper<k + 1, Graph> mapper(g_, index_);
 	 Path<EdgeId> path = mapper.MapSequence(genome);
 	 vector<EdgeId> sequence = path.sequence();
@@ -175,7 +176,7 @@ public:
 	}
 
 	void FillEtalonPairedInfo(const Sequence& genome,
-			omnigraph::PairedInfoIndex<Graph>& paired_info) {
+      omnigraph::PairedInfoIndexT<Graph>& paired_info) {
 		ProcessSequence(genome, paired_info);
 		ProcessSequence(!genome, paired_info);
 		//DEBUG
@@ -198,14 +199,12 @@ class EtalonPairedInfoCounter {
 	int gap_;
 	size_t delta_;
 
-	void AddEtalonInfo(set<PairInfo<EdgeId>> & paired_info, EdgeId e1, EdgeId e2,
-			double d) {
-		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0, 0.);
-		paired_info.insert(pair_info);
+  void AddEtalonInfo(PairedInfoIndexT<Graph>& index, EdgeId e1, EdgeId e2, double d) {
+    index.AddPairInfo(e1, e2, d, 1000., 0.);
 	}
 
-	void ProcessSequence(const Sequence& sequence,
-			set<PairInfo<EdgeId>>& temporary_info) {
+  void ProcessSequence(const Sequence& sequence, PairedInfoIndexT<Graph>& index) 
+  {
 		int mod_gap = (gap_ + (int) k_ > (int) delta_ ) ? gap_ - (int) delta_ :int(0) -k_;
 		runtime_k::RtSeq left(k_ +1, sequence);
 		left >>= 0;
@@ -225,7 +224,8 @@ class EtalonPairedInfoCounter {
 			for (;
 					right_idx + k_ + 1 <= left_idx + insert_size_ + delta_
 							&& right_idx + k_ + 1 <= sequence.size();
-					++right_idx) {
+          ++right_idx) 
+      {
 				right <<= sequence[right_idx + k_];
 				runtime_k::RtSeq right_upd = kmer_mapper_.Substitute(right);
 				if (!index_.contains(right_upd)) {
@@ -234,19 +234,16 @@ class EtalonPairedInfoCounter {
 				pair<EdgeId, size_t> right_pos = index_.get(right_upd);
 
 				AddEtalonInfo(
-						temporary_info,
+            index,
 						left_pos.first,
 						right_pos.first,
-						0. + right_idx - left_idx + left_pos.second
-								- right_pos.second);
+            0. + right_idx - left_idx + left_pos.second - right_pos.second);
 			}
 		}
 	}
 
 public:
-
-	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<Graph>& index
-			,
+  EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<Graph>& index,
 			const KmerMapper<Graph>& kmer_mapper,
 			size_t insert_size,
 			size_t read_length, size_t delta, size_t k) :
@@ -256,15 +253,10 @@ public:
 //		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
-	void FillEtalonPairedInfo(const Sequence& genome,
-			omnigraph::PairedInfoIndex<Graph>& paired_info) {
-		set<PairInfo<EdgeId>> temporary_info;
-		ProcessSequence(genome, temporary_info);
-		ProcessSequence(!genome, temporary_info);
-		for (auto it = temporary_info.begin(); it != temporary_info.end();
-				++it) {
-			paired_info.AddPairInfo(*it);
-		}
+  void FillEtalonPairedInfo(const Sequence& genome, omnigraph::PairedInfoIndexT<Graph>& paired_info) 
+  {
+    ProcessSequence(genome, paired_info);
+    ProcessSequence(!genome, paired_info);
 	}
 };
 
@@ -307,6 +299,7 @@ void WrappedSetCoverage(NonconjugateDeBruijnGraph& g,
  */
 template<class Graph, class SequenceMapper, class PairedStream>
 class LatePairedIndexFiller {
+
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef runtime_k::RtSeq Kmer;
@@ -317,8 +310,8 @@ private:
 	WeightF weight_f_;
 
 	template<class PairedRead>
-	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph>& paired_index,
-			const PairedRead& p_r) {
+  void ProcessPairedRead(omnigraph::PairedInfoIndexT<Graph>& paired_index, const PairedRead& p_r)
+  {
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
 
@@ -338,10 +331,9 @@ private:
 						+ mapping_edge_1.second.mapped_range.start_pos
 						- mapping_edge_2.second.mapped_range.end_pos;
 
-				paired_index.AddPairInfo(
-						PairInfo<EdgeId>(mapping_edge_1.first,
-								mapping_edge_2.first, (double) edge_distance,
-								weight, 0.));
+        paired_index.AddPairInfo(mapping_edge_1.first,
+                                 mapping_edge_2.first, 
+                                 (double) edge_distance, weight, 0.);
 			}
 		}
 	}
@@ -349,9 +341,9 @@ private:
     /**
      * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
      */
-    void FillUsualIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+  void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
         for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-            paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
+      paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
         }
 
         INFO("Processing paired reads (takes a while)");
@@ -367,28 +359,27 @@ private:
         }
     }
 
-
-    void FillParallelIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+  void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
         for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-            paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
+      paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
         }
 
         INFO("Processing paired reads (takes a while)");
 
         size_t nthreads = streams_.size();
-        std::vector< omnigraph::PairedInfoIndex<Graph>* > buffer_pi(nthreads);
+    vector<omnigraph::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
         buffer_pi[0] = &paired_index;
 
         for (size_t i = 1; i < nthreads; ++i) {
-            buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_);
+      buffer_pi[i] = new omnigraph::PairedInfoIndexT<Graph>(graph_);
         }
 
         size_t counter = 0;
         #pragma omp parallel num_threads(nthreads)
         {
             #pragma omp for reduction(+ : counter)
-            for (size_t i = 0; i < nthreads; ++i) {
-
+      for (size_t i = 0; i < nthreads; ++i)
+      {
                 typename PairedStream::read_type r;
                 PairedStream& stream = streams_[i];
                 stream.reset();
@@ -396,7 +387,6 @@ private:
                 while (!stream.eof()) {
                     stream >> r;
                     ++counter;
-
                     ProcessPairedRead(*buffer_pi[i], r);
                 }
             }
@@ -411,7 +401,6 @@ private:
     }
 
 public:
-
 	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, PairedStream& stream, WeightF weight_f) :
 			graph_(graph), mapper_(mapper), streams_(1, &stream), weight_f_(weight_f)
 	{
@@ -422,7 +411,7 @@ public:
     {
     }
 
-    void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+  void FillIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
         if (streams_.size() == 1) {
             FillUsualIndex(paired_index);
         } else {
@@ -986,90 +975,52 @@ double UnityFunction(int x) {
     return 1.;   
 }
 
-void DivideClusters(const Graph& g, PairedInfoIndex<Graph>& clustered_index, const GraphDistanceFinder<Graph>& dist_finder) {
-
-    vector<PairInfo<EdgeId> > vector_to_remove;
-    vector<PairInfo<EdgeId> > vector_to_add;
+//postprocessing, checking that clusters do not intersect
+template<class Graph>
+void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index) 
+{
+  typedef set<Point> Histogram;
     for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
-        const vector<PairInfo<EdgeId> >& data = *iter;
-        EdgeId first_edge = data[0].first;
-        EdgeId second_edge = data[0].second;
-        DEBUG("Analyzing edges " << g.int_id(first_edge) << " and " << g.int_id(second_edge));
+    EdgeId first_edge = iter.first();
+    EdgeId second_edge = iter.second();
+    const Histogram& infos = *iter; 
+    auto prev_it = infos.begin();
+    auto it = prev_it;
+    ++it;
+    for (auto end_it = infos.end(); it != end_it; ++it) {
+      if (math::le(abs(it->d - prev_it->d), it->var + prev_it->var)) {
+        WARN("Clusters intersect, edges -- " << graph.int_id(first_edge) 
+                                      << " " << graph.int_id(second_edge));
+        INFO("Trying to handle this case");
+        // seeking the symmetric pair info to [i - 1]
+        bool success = false;
+        double total_weight = prev_it->weight;
+        for (auto inner_it = it; inner_it != end_it; ++inner_it) {
+          total_weight += inner_it->weight;
+          if (math::eq(inner_it->d + prev_it->d, 0.)) {
+            success = true;
+            double center = 0.;
+            double var = inner_it->d + inner_it->var;
+            for (auto inner_it_2 = prev_it; inner_it_2 != inner_it; ++inner_it_2) 
+            {
+              TRACE("Removing pair info " << *inner_it_2);
+              clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it_2);
+                        }
+            clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it);
+            Point new_point(center, total_weight, var);
+            TRACE("Adding new pair info " << first_edge << " " << second_edge << " " << new_point);
+            clustered_index.AddPairInfo(first_edge, second_edge, new_point);
+            break;
+                    }
+                }
+        INFO("Pair information was resolved");
 
-        const vector<vector<EdgeId> >& paths = dist_finder.GetGraphDistances(first_edge, second_edge);
-        //count the lengths of corresponding paths
-        DEBUG(paths.size() << " paths found");
-        vector<size_t> paths_lengths;
-        for (size_t i = 0; i < paths.size(); ++i) {
-            const vector<EdgeId>& path = paths[i];
-            size_t len = g.length(first_edge);
-            for (size_t j = 0; j + 1 < path.size(); ++j)
-                len += g.length(path[j]);
-            paths_lengths.push_back(len);
-        }
-        DEBUG("Lengths counted");
-        
-        for (size_t iter = 0; iter < data.size(); ++iter) {
-            const PairInfo<EdgeId>& pair_info = data[iter];
-            DEBUG("New pair info " << pair_info);
-            // choose only clusters
-            if (math::gr(pair_info.variance, 0.)) {
-                // filtering paths with corresponding length
-                DEBUG("Variance > 0");
-                vector_to_remove.push_back(pair_info);
-                double average_weight = 0.;
-                vector<double> paths_weights;
-                size_t num_of_clustered_paths = 0;
-                for (size_t i = 0; i < paths.size(); ++i) {
-                    double weight_total = 0.;
-                    if (math::le(abs(paths_lengths[i] - pair_info.d), pair_info.variance)) {
-                        ++num_of_clustered_paths;
-                        const vector<EdgeId>& path = paths[i];
-                        double cur_len = g.length(first_edge);
-                        for (size_t j = 0; j + 1 < path.size(); ++j) {
-                            const vector<PairInfo<EdgeId> >& back_infos = clustered_index.GetEdgePairInfo(first_edge, path[j]);
-                            for (auto iter = back_infos.begin(); iter != back_infos.end(); ++iter) {
-                                const PairInfo<EdgeId>& info = *iter;
-                                if (info.d == cur_len) {
-                                    weight_total += info.weight;   
-                                }
-                            }
-                            const vector<PairInfo<EdgeId> >& forward_infos = clustered_index.GetEdgePairInfo(path[j], second_edge);
-                            for (auto iter = forward_infos.begin(); iter != forward_infos.end(); ++iter) {
-                                const PairInfo<EdgeId>& info = *iter;
-                                if (info.d + cur_len == paths_lengths[i]) {
-                                    weight_total += info.weight;   
-                                }
-                            }
-                        }
-                    }
-                    paths_weights.push_back(weight_total);
-                    average_weight += weight_total;
-                }
-                double sum_weight = average_weight;
-                average_weight /= 1. * num_of_clustered_paths;
-                // filtering bad paths
-                for (size_t i = 0; i < paths.size(); ++i) {
-                    if (math::le(abs(paths_lengths[i] - pair_info.d), pair_info.variance)) {
-                        if (math::gr(paths_weights[i], average_weight)) {
-                            PairInfo<EdgeId> new_pair_info(first_edge, second_edge, paths_lengths[i], 
-                                                            pair_info.weight / num_of_clustered_paths * paths_weights[i] / sum_weight, 0.);
-                            DEBUG("Adding new pair info " << new_pair_info);
-                            vector_to_add.push_back(new_pair_info);
-                        }
-                    }
-                }
-            } else {
-                DEBUG("Variance zero");   
+        if (!success)
+          WARN("This intersection can not be handled in the right way");
+        break;
             }
         }
     }
-    for (size_t i = 0; i < vector_to_remove.size(); ++i)
-        clustered_index.RemovePairInfo(vector_to_remove[i]);
-
-    for (size_t i = 0; i < vector_to_add.size(); ++i)
-        clustered_index.AddPairInfo(vector_to_add[i], false);
-       
 }
 
 

@@ -49,6 +49,7 @@ public:
 			const std::map<EdgeId, EdgeId>&  from_resolve) :
 			GraphActionHandler<Graph>(new_graph, "EdgePositionHandler"), new_graph_(
 					new_graph), old_graph_(old_graph) {
+    // printing from resolve
 		FillLabels(from_resolve);
 		/*		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
 		 if (edge_inclusions.find(iter->second) == edge_inclusions.end()){
@@ -69,8 +70,7 @@ public:
 					new_graph), old_graph_(old_graph) {
 	}
 	void FillLabels(const map<EdgeId, EdgeId>& from_resolve) {
-		for (auto iter = from_resolve.begin(); iter != from_resolve.end();
-				++iter) {
+		for (auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
 			if (edge_inclusions.find(iter->second) == edge_inclusions.end()) {
 				set<EdgeId> tmp;
 				edge_inclusions.insert(make_pair(iter->second, tmp));
@@ -91,9 +91,7 @@ public:
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 		TRACE("Handle glue");
 		if (edge_labels[edge1] != edge_labels[edge2])
-			;
-		WARN(
-				"gluing two different edges is not a good idea on this step! EdgeLabel Handler can fail on such operation");
+		WARN("gluing two different edges is not a good idea on this step! EdgeLabel Handler can fail on such operation");
 		vector<EdgeId> tmp;
 		for (size_t i = 0; i < edge_labels[edge1].size(); i++) {
 			edge_inclusions.find(edge_labels[edge1][i])->second.insert(new_edge);
@@ -181,8 +179,8 @@ public:
 
 		auto it = edge_labels.find(edgeId);
 		if (it != edge_labels.end()) {
-			TRACE("Number of labels " << it->second.size());
-			for (auto label_it = it->second.begin(), end = it->second.end();
+      TRACE("Number of labels " << it->second.size());
+      for (auto label_it = it->second.begin(), end = it->second.end();
 					label_it != end; ++label_it) {
 				ss << f(*label_it) << "\\n";
 			}

@@ -78,7 +78,7 @@ paired_info_statistics false
 paired_info_scaffolder false
 
 estimation_mode simple
-; naive, simple, weighted, extensive, smoothing
+; simple, weighted, extensive, smoothing
 
 paired_metrics read_count
 ; read_count, product

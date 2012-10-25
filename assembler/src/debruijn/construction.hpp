@@ -23,7 +23,7 @@
 namespace debruijn_graph {
 
 void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
-		total_labeler& tl, paired_info_index& paired_index);
+		total_labeler& tl, PairedIndexT& paired_index);
 
 } // namespace debruijn_graph
 

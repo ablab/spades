@@ -14,9 +14,10 @@ namespace debruijn_graph {
 template<class Graph>
 class ResolvedGraphPairInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
+  typedef set<Point> Histogram;
 
 	const Graph& old_graph_;
-	const PairedInfoIndex<Graph>& old_pair_info_;
+	const PairedInfoIndexT<Graph>& old_pair_info_;
 	const Graph& new_graph_;
 	const EdgeLabelHandler<Graph>& labels_;
 
@@ -25,14 +26,15 @@ class ResolvedGraphPairInfoCounter {
 
 public:
 	ResolvedGraphPairInfoCounter(Graph& old_graph,
-			PairedInfoIndex<Graph>& old_pair_info, Graph& new_graph,
+			const PairedInfoIndexT<Graph>& old_pair_info, Graph& new_graph,
 			EdgeLabelHandler<Graph>& labels) :
 			old_graph_(old_graph), old_pair_info_(old_pair_info), new_graph_(
 					new_graph), labels_(labels) {
 	}
 
 	bool MapsUniquely(EdgeId old_edge) {
-		VERIFY(labels_.edge_inclusions.find(old_edge) != labels_.edge_inclusions.end());
+		VERIFY_MSG(labels_.edge_inclusions.find(old_edge) != labels_.edge_inclusions.end(), 
+               "old_edge " << old_graph_.int_id(old_edge));
 //		VERIFY(labels_.edge_inclusions.find(old_edge)->second.size() > 0);
 		if (!(labels_.edge_inclusions.find(old_edge)->second.size() > 0)){
 			DEBUG("There are no current copy for old graph edge " << old_edge << " " << old_graph_.str(old_edge));
@@ -62,33 +64,35 @@ public:
 		return make_pair(new_edge, offset);
 	}
 
-	void ProcessInfos(PairedInfoIndex<Graph>& new_pair_info, const vector<PairInfo<EdgeId>>& infos) {
-		EdgeId first_old_edge = infos.begin()->first;
-		EdgeId second_old_edge = infos.begin()->second;
-		if (MapsUniquely(first_old_edge) && MapsUniquely(second_old_edge)) {
-			pair<EdgeId, size_t> new_pos_of_first = OldEdgePositionInNewGraph(first_old_edge);
-			pair<EdgeId, size_t> new_pos_of_second = OldEdgePositionInNewGraph(second_old_edge);
+	void ProcessInfos(PairedInfoIndexT<Graph>& new_pair_info, 
+                    EdgeId e1, 
+                    EdgeId e2, 
+                    const Histogram& infos) 
+  {
+		if (MapsUniquely(e1) && MapsUniquely(e2)) {
+			pair<EdgeId, size_t> new_pos_of_first = OldEdgePositionInNewGraph(e1);
+			pair<EdgeId, size_t> new_pos_of_second = OldEdgePositionInNewGraph(e2);
 			for (auto it = infos.begin(); it != infos.end(); ++it) {
-				new_pair_info.AddPairInfo(
-						PairInfo<EdgeId>(new_pos_of_first.first, new_pos_of_second.first,
+				new_pair_info.AddPairInfo(new_pos_of_first.first, new_pos_of_second.first,
 								0. + it->d + new_pos_of_first.second - new_pos_of_second.second,
-								it->weight, it->variance), false);
+								it->weight, it->var, false);
 			}
 		}
 	}
 
-	void FillResolvedGraphPairedInfo(PairedInfoIndex<Graph>& new_pair_info) {
+	void FillResolvedGraphPairedInfo(PairedInfoIndexT<Graph>& new_pair_info) {
 		no_current_copies = 0;
 		no_current_copies_ids.clear();
 		for (auto it = old_pair_info_.begin(); it != old_pair_info_.end(); ++it) {
-			ProcessInfos(new_pair_info, *it);
+			ProcessInfos(new_pair_info, it.first(), it.second(), *it);
 		}
 		if (no_current_copies) {
 			DEBUG("There were no current copies for " << no_current_copies_ids.size() << " old graph edges: "<<ToString(no_current_copies_ids));
 		}
 	}
-private:
-DECL_LOGGER("ResolvedGraphPairInfoCounter")
+
+ private:
+  DECL_LOGGER("ResolvedGraphPairInfoCounter")
 
 };
 

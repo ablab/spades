@@ -131,8 +131,7 @@ public:
 					(min_length < 0) ? 0 : (size_t) std::floor(min_length)), max_length_(
 					(size_t) std::floor(max_length + 0.5)), start_(start), end_(
 					end), callback_(callback), call_cnt_(0) {
-		TRACE(
-				"Finding path from vertex " << g.int_id(start_) << " to vertex " << g.int_id(end_) << " of length [" << min_length_ << ", " << max_length_ << "]");
+		TRACE("Finding path from vertex " << g.int_id(start_) << " to vertex " << g.int_id(end_) << " of length [" << min_length_ << ", " << max_length_ << "]");
 	}
 
 	~PathProcessor() {
@@ -302,13 +301,12 @@ class DifferentDistancesCallback: public PathProcessor<Graph>::Callback {
 	set<size_t> distances_;
 
 public:
-	DifferentDistancesCallback(const Graph& g) :
-			g_(g) {
-
+	DifferentDistancesCallback(const Graph& g) : g_(g)
+  {
 	}
 
-	virtual ~DifferentDistancesCallback() {
-
+	virtual ~DifferentDistancesCallback()
+  {
 	}
 
 	virtual void HandlePath(const vector<EdgeId>& path) {

@@ -682,7 +682,7 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 
 template<class Graph>
 void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
-		const PairedInfoIndex<Graph>& paired_index,
+		const PairedInfoIndexT<Graph>& paired_index,
 		EdgeRemover<Graph>& edge_remover) {
 	INFO("Removing erroneous edges using paired info");
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(

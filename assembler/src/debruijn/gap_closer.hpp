@@ -61,7 +61,7 @@ private:
 	}
 
 	template<typename PairedRead>
-	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph> &paired_index,
+  void ProcessPairedRead(omnigraph::PairedInfoIndexT<Graph> &paired_index,
 			PairedRead& p_r) {
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
@@ -73,11 +73,8 @@ private:
 			if (OutTipIter != OutTipMap.end()) {
 				for (size_t j = 0; j < path2.size(); ++j) {
 					auto InTipIter = InTipMap.find(path2[j]);
-					if (InTipIter != InTipMap.end()) {
-						paired_index.AddPairInfo(
-								PairInfo < EdgeId
-										> (OutTipIter->second.first, InTipIter->second.first, 1000000, 1, 0.));
-					}
+          if (InTipIter != InTipMap.end())
+            paired_index.AddPairInfo(OutTipIter->second.first, InTipIter->second.first, 1000000., 1., 0.);
 				}
 			}
 		}
@@ -154,7 +151,7 @@ private:
 		}
 	}
 
-	void FillUsualIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+  void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index) {
 		INFO("Processing paired reads (takes a while)");
 
 		PairedStream& stream = streams_.back();
@@ -168,15 +165,15 @@ private:
 		}
 	}
 
-	void FillParallelIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+  void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index) {
 		INFO("Processing paired reads (takes a while)");
 
 		size_t nthreads = streams_.size();
-		std::vector<omnigraph::PairedInfoIndex<Graph>*> buffer_pi(nthreads);
+    std::vector<omnigraph::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
 		buffer_pi[0] = &paired_index;
 
 		for (size_t i = 1; i < nthreads; ++i) {
-			buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_);
+      buffer_pi[i] = new omnigraph::PairedInfoIndexT<Graph>(graph_);
 		}
 
 		size_t counter = 0;
@@ -218,7 +215,7 @@ public:
 	 * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
 	 */
 
-	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+  void FillIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index) {
 		INFO("Preparing shift maps");
 		PrepareShiftMaps();
 
@@ -235,20 +232,19 @@ template<class Graph, class SequenceMapper>
 class GapCloser {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef vector<PairInfo<EdgeId>> PairInfos;
+  typedef set<Point> Histogram;
 
 	Graph& g_;
 	int k_;
-	PairedInfoIndex<Graph>& tips_paired_idx_;
+  PairedInfoIndexT<Graph>& tips_paired_idx_;
 	const size_t min_intersection_;
 	const size_t hamming_dist_bound_;
 	const int init_gap_val_;
 	const double weight_threshold_;
 	const SequenceMapper mapper_;
 
-	bool WeightCondition(const PairInfos& infos) const {
+  bool WeightCondition(const Histogram& infos) const {
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
-			DEBUG("Trace info d=" << it->d << " weight=" << it->weight);
 //			VERIFY(math::eq(it->d, 100.));
 			if (math::ge(it->weight, weight_threshold_))
 				return true;
@@ -446,23 +442,24 @@ class GapCloser {
 	}
 
 public:
-
 	void CloseShortGaps() {
 		INFO("Closing short gaps");
 		int gaps_filled = 0;
 		int gaps_checked = 0;
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			PairInfos infos = tips_paired_idx_.GetEdgeInfo(*it);
-			for (auto pi_it = infos.begin(); pi_it != infos.end(); ++pi_it) {
-				if (pi_it->first != pi_it->second
-						&& math::ge(pi_it->weight, weight_threshold_)) {
-					if (!g_.IsDeadEnd(g_.EdgeEnd(pi_it->first)) || !g_.IsDeadStart(g_.EdgeStart(pi_it->second))) {
-//						WARN("Topologycally wrong tips");
+      EdgeId first_edge = *it;
+      const InnerMap<Graph>& inner_map = tips_paired_idx_.GetEdgeInfo(*it, 0);
+      for (auto inner_it = inner_map.Begin(); inner_it != inner_map.End(); ++inner_it) {
+        EdgeId second_edge = (*inner_it).first;
+        const Point& point = (*inner_it).second;
+          if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
+            if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
+              // WARN("Topologically wrong tips");
 						continue;
 					}
-					gaps_checked++;
-					if (ProcessPair(pi_it->first, pi_it->second)) {
-						gaps_filled++;
+            ++gaps_checked;
+            if (ProcessPair(first_edge, second_edge)) {
+              ++gaps_filled;
 						break;
 					}
 				}
@@ -476,7 +473,7 @@ public:
 		compressor.CompressAllVertices();
 	}
 
-	GapCloser(Graph& g, PairedInfoIndex<Graph>& tips_paired_idx,
+  GapCloser(Graph& g, PairedInfoIndexT<Graph>& tips_paired_idx,
 			size_t min_intersection, double weight_threshold,
 			const SequenceMapper& mapper, size_t hamming_dist_bound = 0/*min_intersection_ / 5*/) :
 			g_(g), k_(g_.k()), tips_paired_idx_(tips_paired_idx), min_intersection_(
@@ -500,7 +497,7 @@ void CloseGaps(conj_graph_pack& gp, const io::ReadStreamVector<PairedStream>& st
 	SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper, k + 1);
 	GapCloserPairedIndexFiller< Graph, SequenceMapper, PairedStream> gcpif(
 			gp.g, mapper, streams);
-	paired_info_index tips_paired_idx(gp.g);
+  PairedIndexT tips_paired_idx(gp.g);
 //	if (fileExists("tip_info.prd")) {
 //		ConjugateDataScanner<Graph> scanner(gp.g, gp.int_ids);
 //		scanner.loadPaired("tip_info", tips_paired_idx);

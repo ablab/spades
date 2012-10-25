@@ -1,5 +1,4 @@
 /*
- * xmath.h
  *
  *  Created on: Jul 30, 2011
  *      Author: sergey
@@ -320,17 +319,26 @@ namespace math {
 	template<class T> inline
 	T round(T t) { return floor(t + 0.5); }
 
-    // updates floating point @variable only if it does not differ from the @new_value too much
-    // @returns true if the @variable was updated indeed
-    template<class T> inline
-    bool update_value_if_needed(T& variable, T new_value) {
-        bool result = !eq<T>(variable, new_value);
+	template<class T> inline
+	int round_to_zero(T t) { 
+    using math::ls;
+    int res = (int) math::round(std::abs(t));
+    if (ls(t, 0.))
+      res = -res;
+    return res;
+  }
+  
+  // updates floating point @variable only if it does not differ from the @new_value too much
+  // @returns true if the @variable was updated indeed
+  template<class T> inline
+  bool update_value_if_needed(T& variable, T new_value) {
+      bool result = !eq<T>(variable, new_value);
 
-        if (result) {    
-            variable = new_value;
-        }
-        return result;
-    }
+      if (result) {    
+          variable = new_value;
+      }
+      return result;
+  }
 
 }
 

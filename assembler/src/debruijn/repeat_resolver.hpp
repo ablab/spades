@@ -46,7 +46,7 @@ namespace debruijn_graph {
 
 using omnigraph::SmartVertexIterator;
 using omnigraph::Compressor;
-using omnigraph::PairedInfoIndex;
+using omnigraph::PairedInfoIndexT;
 using omnigraph::PairInfoIndexData;
 using debruijn_graph::DeletedVertexHandler;
 
@@ -59,10 +59,12 @@ class RepeatResolver {
 	typedef PathInfoClass<Graph> PathInfo;
 	typedef typename Graph::VertexId VertexId;
 
-	typedef omnigraph::PairedInfoIndex<Graph> PIIndex;
+	typedef omnigraph::PairedInfoIndexT<Graph> PIIndex;
 	typedef omnigraph::PairInfo<EdgeId> PairInfo;
 	typedef vector<PairInfo> PairInfos;
 	typedef PairInfoIndexData<EdgeId> MixedData;
+
+  typedef set<Point> Histogram;
 
 public:
 
@@ -113,7 +115,7 @@ public:
 		}
 
 		bool follow(EdgeInfo &other_info, const Graph &old_graph){
-			bool res = (old_graph.EdgeEnd(other_info.lp.second) == old_graph.EdgeStart(lp.second)) && (isClose(old_graph.length(other_info.lp.second) + other_info.lp.d, lp.d, 0.1 + lp.variance + other_info.lp.variance));
+			bool res = (old_graph.EdgeEnd(other_info.lp.second) == old_graph.EdgeStart(lp.second)) && (isClose(old_graph.length(other_info.lp.second) + other_info.lp.d(), lp.d(), 0.1 + lp.var() + other_info.lp.var()));
 			return (res);
 		}
 
@@ -193,7 +195,7 @@ public:
 					return true;
 				}
 
-			double max_diff = max(lp.variance, other_info.lp.variance) + 0.5
+			double max_diff = max(lp.var(), other_info.lp.var()) + 0.5
 					+ 1e-9;
 
 			bool old_res = IsEdgesOnDistanceAdjacent(this->edge, this->d, other_info.getEdge()
@@ -216,7 +218,7 @@ public:
 	}
 
 	RepeatResolver(Graph &old_graph_, IdTrackHandler<Graph> &old_IDs_,
-			PIIndex &ind, EdgesPositionHandler<Graph> &old_pos_,
+			const PIIndex &ind, EdgesPositionHandler<Graph> &old_pos_,
 			Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_,
 			EdgesPositionHandler<Graph> &new_pos_,
 			DeletedVertexHandler<Graph> &deleted_handler_,
@@ -325,17 +327,20 @@ public:
 		DEBUG("Copying of paired info started");
 		for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 				p_iter != p_end_iter; ++p_iter) {
-			PairInfos pi = *p_iter;
-			paired_size += pi.size();
-			for (size_t j = 0; j < pi.size(); j++) {
-				if 	(old_to_new_edge.find(pi[j].first ) != old_to_new_edge.end()
-				  && old_to_new_edge.find(pi[j].second) != old_to_new_edge.end()) {
-					TRACE("Adding pair " << pi[j].first<<"  " <<old_to_new_edge[pi[j].first] << "  " <<pi[j].second);
-					PairInfo tmp(old_to_new_edge[pi[j].first],
-							pi[j].second, pi[j].d, pi[j].weight, pi[j].variance);
+			EdgeId e1 = p_iter.first();
+      EdgeId e2 = p_iter.second();
+      const Histogram& hist = *p_iter;
+			paired_size += hist.size();
+			for (auto it = hist.begin(); it != hist.end(); ++it) {
+        const Point& p = *it;
+				if 	(old_to_new_edge.find(e1) != old_to_new_edge.end()
+				  && old_to_new_edge.find(e2) != old_to_new_edge.end())
+        {
+					TRACE("Adding pair " << e1<<"  " <<old_to_new_edge[e1] << "  " <<e2);
+					PairInfo tmp(old_to_new_edge[e1], e2, p.d, p.weight, p.var);
 					paired_di_data.AddPairInfo(tmp, 0);
 				} else {
-					DEBUG("Paired Info with deleted edge! " << pi[j].first<<"  " <<pi[j].second);
+					DEBUG("Paired Info with deleted edge! " << e1 << "  " << e2);
 				}
 			}
 		}
@@ -343,11 +348,11 @@ public:
 		DEBUG("pi copied");
 		int zero_paired_length = 0;
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
-			PairInfos pi = paired_di_data.GetEdgeInfos(old_to_new_edge[*e_iter]);
+			const PairInfos &pi = paired_di_data.GetEdgeInfos(old_to_new_edge[*e_iter]);
 			bool cheat_edge = true;
 
 			for(size_t i =0; i < pi.size(); ++i){
-				if ((pi[i].weight > 1e-8)&&(pi[i].d >= 0)){
+				if ((pi[i].weight() > 1e-8)&&(pi[i].d() >= 0)){
 					cheat_edge = false;
 					break;
 				}
@@ -491,8 +496,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				int fl = 0;
 				for(size_t j = 0; j < tmp.size(); j ++ ){
 					EdgeId right_id = tmp[j].second;
-					double d = tmp[j].d;
-					int w = tmp[j].weight;
+					double d = tmp[j].d();
+					int w = tmp[j].weight();
 					if (w < 1e-8)
 						continue;
 					int dif_d = 0;
@@ -582,10 +587,10 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		int color = edge_info_colors[i];
 		if (old_paired_coverage.find(le) == old_paired_coverage.end())
 			old_paired_coverage[le] = 0;
-		old_paired_coverage[le] += edge_infos[i].lp.weight;
+		old_paired_coverage[le] += edge_infos[i].lp.weight();
 		if (colored_paired_coverage[color].find(le) == colored_paired_coverage[color].end())
 			colored_paired_coverage[color][le] = 0;
-		colored_paired_coverage[color][le] += edge_infos[i].lp.weight;
+		colored_paired_coverage[color][le] += edge_infos[i].lp.weight();
 	}
 
 	map<EdgeId, int> OldCopyCnt;
@@ -660,7 +665,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 			for (size_t j = 0; j < edge_infos.size(); j++){
 				if (edge_info_colors[j] == i){
 					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
-					DEBUG("Replace first edge: new info is " << new_IDs.ReturnIntId(old_to_new_edgeId[edge_infos[j].lp.first])<<" << "<< new_IDs.ReturnIntId(edge_infos[j].lp.first)<<"  "<< old_IDs.ReturnIntId(edge_infos[j].lp.second) <<" "<< edge_infos[j].lp.d);
+					DEBUG("Replace first edge: new info is " << new_IDs.ReturnIntId(old_to_new_edgeId[edge_infos[j].lp.first])<<" << "<< new_IDs.ReturnIntId(edge_infos[j].lp.first)<<"  "<< old_IDs.ReturnIntId(edge_infos[j].lp.second) <<" "<< edge_infos[j].lp.d());
 
 				}
 			}
@@ -1106,8 +1111,8 @@ namespace details
 	bool operator() (EI i, EI j){
 		if (new_graph->int_id(i.lp.first) < new_graph->int_id(j.lp.first)) return true;
 		if (new_graph->int_id(i.lp.first) > new_graph->int_id(j.lp.first)) return false;
-		if (i.lp.d < j.lp.d - 1e-5) return true;
-		if (i.lp.d > j.lp.d + 1e-5) return false;
+		if (i.lp.d() < j.lp.d() - 1e-5) return true;
+		if (i.lp.d() > j.lp.d() + 1e-5) return false;
 		if (old_graph->int_id(i.lp.second) < old_graph->int_id(j.lp.second)) return true;
 		return false;
 	}
@@ -1140,10 +1145,10 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 			vector<EdgeInfo> tmp_edge_infos;
 			TRACE("Paired Info about vertex: " << tmp.size());
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
-				if (tmp[j].weight  < 1e-8) continue;
+				if (tmp[j].weight()  < 1e-8) continue;
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
-				double d = tmp[j].d;
+				double d = tmp[j].d();
 				int dif_d = 0;
 				{
 					if (dir == 1) {
@@ -1151,15 +1156,15 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 					}
 
 					if (d * mult >= -1e-8) {
-						TRACE("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(labels_after.edge_labels[tmp[j].first][0]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
+						TRACE("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(labels_after.edge_labels[tmp[j].first][0]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d());
 						TRACE("try to correct")
 
-						EdgeInfo ei(tmp[j], dir, right_id, tmp[j].d - dif_d);
+						EdgeInfo ei(tmp[j], dir, right_id, tmp[j].d() - dif_d);
 
 						int trusted_dist = *cfg::get().ds.IS - *cfg::get().ds.RL;
-						if (cheating_mode == 2 && ((tmp[j].d - dif_d + old_graph.length(right_id) < trusted_dist - near_vertex) || (tmp[j].d - dif_d > trusted_dist  + near_vertex))) {
+						if (cheating_mode == 2 && ((tmp[j].d() - dif_d + old_graph.length(right_id) < trusted_dist - near_vertex) || (tmp[j].d() - dif_d > trusted_dist  + near_vertex))) {
 							local_cheating_edges.insert(make_pair(left_id, 0));
-							TRACE("ignored paired_info between " << new_IDs.ReturnIntId(left_id) <<" and " <<old_IDs.ReturnIntId(right_id) <<" with distance " << tmp[j].d - dif_d);
+							TRACE("ignored paired_info between " << new_IDs.ReturnIntId(left_id) <<" and " <<old_IDs.ReturnIntId(right_id) <<" with distance " << tmp[j].d() - dif_d);
 						} else {
 							tmp_edge_infos.push_back(ei);
 							TRACE(right_id);
@@ -1181,7 +1186,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 	for (int j = 0; j < (int)edge_infos.size(); j++) {
 		PairInfo tmp = edge_infos[j].lp;
-		DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(labels_after.edge_labels[tmp.first][0]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d << " from vertex: "<<edge_infos[j].d<< " weigth "<<tmp.weight);
+		DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(labels_after.edge_labels[tmp.first][0]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d() << " from vertex: "<<edge_infos[j].d<< " weigth "<<tmp.weight());
 	}
 
 	produce_pair_info_time.stop();
@@ -1215,7 +1220,7 @@ int RepeatResolver<Graph>::ColoringEdgesInfos(int &size, TotalLabeler<Graph>& to
 			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler, old_IDs, distance_counter)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
-				TRACE(old_IDs.ReturnIntId(edge_infos[i].lp.second) <<" " << edge_infos[i].d << " is adjacent "<<old_IDs.ReturnIntId( edge_infos[j].lp.second) <<" " << edge_infos[j].d);
+				TRACE(old_IDs.ReturnIntId(edge_infos[i].lp.second) <<" " << edge_infos[i].d() << " is adjacent "<<old_IDs.ReturnIntId( edge_infos[j].lp.second) <<" " << edge_infos[j].d());
 			}
 		}
 	}
@@ -1260,7 +1265,7 @@ vector<typename RepeatResolver<Graph>::PathInfo> RepeatResolver<Graph>::ConvertE
 			DEBUG("Generating pathes for edge "<<new_IDs.ReturnIntId(cur_edge));
 			for (int j = 0; j < (int)cur_edge_infos.size(); j++) {
 				PairInfo tmp = cur_edge_infos[j].lp;
-				DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(labels_after.edge_labels[tmp.first][0]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d << " from vertex: "<<cur_edge_infos[j].d<< " weigth "<<tmp.weight);
+				DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(labels_after.edge_labels[tmp.first][0]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d() << " from vertex: "<<cur_edge_infos[j].d<< " weigth "<<tmp.weight());
 			}
 
 			for (size_t ext_edge_num = 0; ext_edge_num < cur_edge_infos.size(); ext_edge_num++){
@@ -1357,14 +1362,14 @@ template<class Graph>
 int RepeatResolver<Graph>::prefix_or_included(PathInfo&path1, PathInfo&path2, int shift1, int shift2){
 	size_t j = 1;
 	size_t i = 1;
-	while ( ( (path2[j].first != path1[i].first)||(abs(path1[i].second - shift1 - path2[j].second + shift2) > path1.path[i-1].variance + path2.path[j-1].variance + 0.1))){
+	while ( ( (path2[j].first != path1[i].first)||(abs(path1[i].second - shift1 - path2[j].second + shift2) > path1.path[i-1].var() + path2.path[j-1].var() + 0.1))){
 		j++;
 		if (j == path2.size()) break;
 	}
 	if (j<path2.size()) {
 		while (j<path2.size() && i<path1.size()){
 			if ((path2[j].first != path1[i].first)||
-			    (abs(path1[i].second - shift1 - path2[j].second + shift2) > path1.path[i-1].variance + path2.path[j-1].variance + 0.1)) {
+			    (abs(path1[i].second - shift1 - path2[j].second + shift2) > path1.path[i-1].var() + path2.path[j-1].var() + 0.1)) {
 				return 0;
 			}
 			i++;
@@ -1374,8 +1379,8 @@ int RepeatResolver<Graph>::prefix_or_included(PathInfo&path1, PathInfo&path2, in
 		else return 2;
 	} else {
 		int dist = distance_counter.GetDistances(old_graph.EdgeEnd(path2[j-1].first), old_graph.EdgeStart(path1[1].first));
-		TRACE("variances " <<path1.path[0].variance << " "<< path2.path[j-2].variance);
-		if (abs(path1[1].second - shift1 - path2[j-1].second + shift2 - old_graph.length(path2[j-1].first) - dist) < 0.1 + path1.path[0].variance + path2.path[j-2].variance){
+		TRACE("variances " <<path1.path[0].var() << " "<< path2.path[j-2].var());
+		if (abs(path1[1].second - shift1 - path2[j-1].second + shift2 - old_graph.length(path2[j-1].first) - dist) < 0.1 + path1.path[0].var() + path2.path[j-2].var()){
 			return 1;
 		}
 	}
@@ -1485,7 +1490,7 @@ int RepeatResolver<Graph>::ColoringEdgesInfosByPathes(int &size, TotalLabeler<Gr
 			if (edge_infos[i].lp.first == split_pathes[j][0].first){
 				for (size_t l = 1; l < split_pathes[j].size(); l++) {
 					if ((edge_infos[i].lp.second == split_pathes[j][l].first) &&
-					    (abs(edge_infos[i].lp.d - split_pathes[j][l].second) < 1e-5)) {
+					    (abs(edge_infos[i].lp.d() - split_pathes[j][l].second) < 1e-5)) {
 						info_color_set.insert(path_colors[j]);
 						break;
 					}
@@ -1496,7 +1501,7 @@ int RepeatResolver<Graph>::ColoringEdgesInfosByPathes(int &size, TotalLabeler<Gr
 			edge_info_colors[i] = *(info_color_set.begin());
 		} else
 		if (info_color_set.size() > 1) {
-			edge_infos[i].lp.weight = edge_infos[i].lp.weight / info_color_set.size();
+			edge_infos[i].lp.weight() = edge_infos[i].lp.weight() / info_color_set.size();
 			auto iter = info_color_set.begin();
 			edge_info_colors[i] = *iter;
 			++iter;
@@ -1507,7 +1512,7 @@ int RepeatResolver<Graph>::ColoringEdgesInfosByPathes(int &size, TotalLabeler<Gr
 			}
 		} else
 		if (info_color_set.size() < 1) {
-			WARN("Info "<<new_graph.int_id(edge_infos[i].lp.first)<<"("<<original_id(edge_infos[i].lp.first)<< ") "<<old_graph.int_id(edge_infos[i].lp.second) <<" "<<edge_infos[i].lp.d <<" " << edge_infos[i].lp.variance<<" not included in any path");
+			WARN("Info "<<new_graph.int_id(edge_infos[i].lp.first)<<"("<<original_id(edge_infos[i].lp.first)<< ") "<<old_graph.int_id(edge_infos[i].lp.second) <<" "<<edge_infos[i].lp.d() <<" " << edge_infos[i].lp.var()<<" not included in any path");
 		}
 	}
 	DEBUG("ColoringEdgesInfosByPathes end");

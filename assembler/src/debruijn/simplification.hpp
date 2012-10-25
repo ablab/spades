@@ -25,7 +25,7 @@
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
-		paired_info_index& paired_index);
+		PairedIndexT& paired_index);
 } // debruijn_graph
 
 // move impl to *.cpp
