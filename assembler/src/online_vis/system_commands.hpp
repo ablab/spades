@@ -293,11 +293,14 @@ namespace online_visualization {
                     return;
 
                 size_t number = GetInt(args[1]);
+                if (number == 0 || number > 100000) {
+                    LOG(number << " is not in the range");    
+                }
 
                 vector<string>& history = GetHistory();
                 
                 cout << "Executing the command " << number << " command(s) before... " << endl;
-                string command_with_args = history[history.size() - 1 - number];
+                string command_with_args = history[history.size() - number];
                 cout << command_with_args << endl;
                 stringstream ss(command_with_args);
                 TRACE("Delegating to the ArgumentList class");
@@ -308,7 +311,7 @@ namespace online_visualization {
                 const string& command_string = tmp_arg_list.GetAllArguments()[0];
                 Command& command = GetCommand(CommandId(command_string));
                 command.Execute(curr_env, loaded_environments, tmp_arg_list);
-                history[history.size() - 1] = command_with_args;
+                history.push_back(command_with_args);
             }
     };
 

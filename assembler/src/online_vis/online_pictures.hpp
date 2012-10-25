@@ -85,7 +85,8 @@ namespace online_visualization {
                 Command& command = GetCommand(CommandId(command_string));
                 command.Execute(current_environment_, loaded_environments, arg_list);
 
-                history.push_back(processed_command);
+                if (CommandId(command_string) != CommandType::replay)
+                    history.push_back(processed_command);
             }
         }
     private:
