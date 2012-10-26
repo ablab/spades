@@ -50,7 +50,7 @@ class MismatchMasker {
 	  }
 	  for(size_t i = 0; i < mismatch_map[edge].size(); i++)
 		  if (mismatch_map[edge][i].ratio > cutoff)
-			  s[mismatch_map[edge][i].position] = 'N';
+			  s[mismatch_map[edge][i].position] += 'a' - 'A';
 	  return s;
   }
 };
