@@ -18,11 +18,13 @@
 
 namespace cap {
 
+const string tmp_folder = "tmp/";
+
 class TmpFolderFixture {
   std::string tmp_folder_;
 
  public:
-	TmpFolderFixture(std::string tmp_folder) {
+	TmpFolderFixture(/*std::string tmp_folder*/) {
     tmp_folder_ = tmp_folder;
     INFO("Creating " << tmp_folder_ << ": " << make_dir(tmp_folder_));
   }
@@ -39,6 +41,7 @@ class TmpFolderFixture {
   }
 };
 
+BOOST_FIXTURE_TEST_SUITE(cap_tools, TmpFolderFixture)
 //Gingi block
 
 //BOOST_AUTO_TEST_CASE( MaskDiffsForGingi ) {
@@ -208,10 +211,10 @@ BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 //	io::Reader stream_1("/home/snurk/gingi/2.fasta");
 //	io::Reader stream_2("/home/snurk/gingi/3.fasta");
 
-	io::Reader stream_1("./phep_issue/phep_master.fasta");
-	io::Reader stream_2("./phep_issue/phep_param_opt.fasta");
-	string ref = "./phep_issue/reference_NC_013061.1.fasta";
-	string folder = "./phep_issue/results/";
+	io::Reader stream_1("/home/snurk/Dropbox/lab/phep_issue/phep_master.fasta");
+	io::Reader stream_2("/home/snurk/Dropbox/lab/phep_issue/phep_param_opt.fasta");
+	string ref = "/home/snurk/Dropbox/lab/phep_issue/reference_NC_013061.1.fasta";
+	string folder = "phep_issue/results/";
 	make_dir(folder);
 
 	RunBPComparison<k, K>(
@@ -596,6 +599,8 @@ BOOST_AUTO_TEST_CASE( GapComparativeAnalysis ) {
                 strain2 = "/smallnas/yana/X5_results/scaffolds_fcb.fasta";
 }
 */
+
+BOOST_AUTO_TEST_SUITE_END()
 }
 
 ::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {

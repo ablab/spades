@@ -234,14 +234,14 @@ public:
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
 
-			SimpleInDelAnalyzer<Graph> del_analyzer(
-					gp_.g,
-					coloring_,
-					gp_.edge_pos,
-					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
-					kRedColorSet,
-					output_folder);
-			del_analyzer.Analyze();
+//			SimpleInDelAnalyzer<Graph> del_analyzer(
+//					gp_.g,
+//					coloring_,
+//					gp_.edge_pos,
+//					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
+//					kRedColorSet,
+//					output_folder);
+//			del_analyzer.Analyze();
 
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
 //			alt_count.CountPaths();
@@ -250,25 +250,25 @@ public:
 //					*MapperInstance(gp_), gp_.genome, stream1_);
 //			block_stats.Count();
 
-			MissingGenesAnalyser<Graph, Mapper> missed_genes(gp_.g, coloring_,
-					gp_.edge_pos, gp_.genome, *MapperInstance(gp_),
-					vector<pair<bool, pair<size_t, size_t>>> {
-						make_pair(true, make_pair(260354, 260644)),
-						make_pair(true, make_pair(300641, 300904)),
-						make_pair(true, make_pair(300904, 301920)),
-						make_pair(true, make_pair(301917, 302348)),
-						make_pair(true, make_pair(260354, 260644)),
-						make_pair(true, make_pair(300641, 300904)),
-						make_pair(true, make_pair(300904, 301920)),
-						make_pair(true, make_pair(301917, 302348)),
-						make_pair(true, make_pair(302449, 304752)),
-						make_pair(true, make_pair(263821, 264594)),
-						make_pair(true, make_pair(265025, 265726)),
-						make_pair(true, make_pair(265740, 266951))
-					}
-					, output_folder + "missed_genes/");
-
-			missed_genes.Analyze();
+//			MissingGenesAnalyser<Graph, Mapper> missed_genes(gp_.g, coloring_,
+//					gp_.edge_pos, gp_.genome, *MapperInstance(gp_),
+//					vector<pair<bool, pair<size_t, size_t>>> {
+//						make_pair(true, make_pair(260354, 260644)),
+//						make_pair(true, make_pair(300641, 300904)),
+//						make_pair(true, make_pair(300904, 301920)),
+//						make_pair(true, make_pair(301917, 302348)),
+//						make_pair(true, make_pair(260354, 260644)),
+//						make_pair(true, make_pair(300641, 300904)),
+//						make_pair(true, make_pair(300904, 301920)),
+//						make_pair(true, make_pair(301917, 302348)),
+//						make_pair(true, make_pair(302449, 304752)),
+//						make_pair(true, make_pair(263821, 264594)),
+//						make_pair(true, make_pair(265025, 265726)),
+//						make_pair(true, make_pair(265740, 266951))
+//					}
+//					, output_folder + "missed_genes/");
+//
+//			missed_genes.Analyze();
 			}
 
 		////////////
