@@ -89,7 +89,7 @@ protected:
 	}
 
 	virtual void HiddenDeleteVertex(VertexId vertex) {
-		VERIFY(IsInternalSafe(vertex));
+//		VERIFY(IsInternalSafe(vertex));
 
 		VertexId conjugate_vertex = conjugate(vertex);
 
