@@ -315,9 +315,9 @@ protected:
 	}
 
 	virtual vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path) {
-		VERIFY(IsInComponent(path)); // TODO: debug only??
+//		VERIFY(IsInComponent(path)); // TODO: debug only??
 		vector<EdgeId> corrected_path = graph_.CorrectMergePath(path);
-		VERIFY(IsInComponent(corrected_path)); // TODO: are always from same component??
+//		VERIFY(IsInComponent(corrected_path)); // TODO: are always from same component??
 		return corrected_path;
 	}
 
