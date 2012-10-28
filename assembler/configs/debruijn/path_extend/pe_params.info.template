@@ -83,6 +83,14 @@ singlecell {
 
 		cluster_info  true
 		cl_threshold  0
+
+		fix_gaps true
+                min_gap_score  0.7
+
+		max_must_overlap  0.5
+	        max_can_overlap 0.5
+	        short_overlap  6
+	        artificial_gap 10
 	}
 	
 	; loops removal
@@ -152,6 +160,13 @@ multicell {
 
 		cluster_info  true
 		cl_threshold  0
+
+		fix_gaps true
+                min_gap_score  0.7
+                max_must_overlap  0.5
+                max_can_overlap 0.5
+                short_overlap  6
+                artificial_gap 10 
 	}
 	
 	; loops removal

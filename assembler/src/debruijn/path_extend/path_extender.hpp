@@ -283,7 +283,7 @@ public:
 				 MakeCycleStep(experiment, edges.first);
 				 weight = chooser_.CountWeight(experiment, edges.second);
 				 double weight2 = chooser_.CountWeight(experiment, edges.first);
-				 //INFO("now weight is " << weight << " dif w is: " << weight - weight2)
+				 //DEBUG("now weight is " << weight << " dif w is: " << weight - weight2)
 				 if (weight > maxWeight || (weight == maxWeight && weight - weight2 > diff) ) {
 					 maxWeight = weight;
 					 maxIter = i;
@@ -294,7 +294,7 @@ public:
          for (size_t i = 0; i < maxIter; ++ i) {
         	 MakeCycleStep(path, edges.first);
          }
-         //INFO("Max number of iterations: " << maxIter);
+         //DEBUG("Max number of iterations: " << maxIter);
          path.PushBack(edges.second);
     }
 
@@ -312,6 +312,191 @@ public:
 };
 
 
+class GapJoiner {
+
+protected:
+
+    Graph& g_;
+
+public:
+
+    GapJoiner(Graph& g): g_(g) {
+    }
+
+    virtual int FixGap(EdgeId sink, EdgeId source, int initial_gap) const = 0;
+
+    virtual ~GapJoiner() {
+
+    }
+
+    static const int INVALID_GAP = -1000000;
+
+};
+
+
+class SimpleGapJoiner: public GapJoiner {
+
+public:
+
+    SimpleGapJoiner(Graph& g): GapJoiner(g) {
+    }
+
+    virtual int FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
+        if (initial_gap > 2 * (int) g_.k()) {
+            return initial_gap;
+        }
+
+        for (int l = g_.k() ; l > 0; --l) {
+            if (g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l) == g_.EdgeNucls(source).Subseq(0, l)) {
+                DEBUG("Found correct gap length");
+                DEBUG("Inintial: " << initial_gap << ", new gap: " << g_.k() - l);
+                DEBUG(g_.EdgeNucls(sink).Subseq(g_.length(sink)).str())
+                string s = "";
+                for (int i = 0; i < (int) g_.k() - l; ++i) {
+                    s += " ";
+                }
+                DEBUG(s << g_.EdgeNucls(source).Subseq(0, g_.k()).str());
+                return g_.k() - l;
+            }
+        }
+
+        string s = "";
+        for (int i = 0; i < initial_gap; ++i) {
+            s += " ";
+        }
+
+        DEBUG("Perfect overlap is not found, inintial: " << initial_gap);
+        DEBUG(g_.EdgeNucls(sink).Subseq(g_.length(sink)).str())
+        DEBUG(s << g_.EdgeNucls(source).Subseq(0, g_.k()).str());
+        return initial_gap;
+    }
+
+};
+
+
+class HammingGapJoiner: public GapJoiner {
+
+private:
+
+    double minGapScore_;
+
+    int maxMustHaveOverlap_;
+
+    int maxCanHaveOverlap_;
+
+    int shortOverlap_;
+
+    int noOverlapGap_;
+
+    vector<size_t> DiffPos(const Sequence& s1, const Sequence& s2) const {
+        VERIFY(s1.size() == s2.size());
+        vector < size_t > answer;
+        for (size_t i = 0; i < s1.size(); ++i)
+            if (s1[i] != s2[i])
+                answer.push_back(i);
+        return answer;
+    }
+
+    size_t HammingDistance(const Sequence& s1, const Sequence& s2) const {
+        VERIFY(s1.size() == s2.size());
+        size_t dist = 0;
+        for (size_t i = 0; i < s1.size(); ++i) {
+            if (s1[i] != s2[i]) {
+                dist++;
+            }
+        }
+        return dist;
+    }
+
+
+    double ScoreGap(const Sequence& s1, const Sequence& s2, int gap, int initial_gap) const {
+        return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size() - (double) abs(gap - initial_gap) / (double) (2 * g_.k());
+    }
+
+
+public:
+
+    HammingGapJoiner(Graph& g,
+            double minGapScore,
+            int mustHaveOverlap,
+            int canHaveOverlap,
+            int shortOverlap_,
+            int artificalGap):
+                GapJoiner(g),
+                minGapScore_(minGapScore),
+                maxMustHaveOverlap_(mustHaveOverlap),
+                maxCanHaveOverlap_(canHaveOverlap),
+                shortOverlap_(shortOverlap_),
+                noOverlapGap_(artificalGap)
+    {
+    }
+
+    virtual int FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
+        if (initial_gap > (int) g_.k() + maxCanHaveOverlap_) {
+            return initial_gap;
+        }
+
+        int start = g_.k();
+        if (initial_gap < 0) {
+            start = g_.k() + min( -initial_gap, (int) min(g_.length(sink), g_.length(source)));
+        }
+
+        double max_score = minGapScore_;
+        int best_gap = initial_gap;
+        bool found = false;
+
+        for (int l = start; l >= shortOverlap_; --l) {
+            double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l), g_.EdgeNucls(source).Subseq(0, l), g_.k() - l, initial_gap);
+            if (score > max_score) {
+                max_score = score;
+                best_gap = (int) g_.k() - l;
+                found = true;
+            }
+        }
+
+        if (!found) {
+            for (int l = shortOverlap_ - 1; l > 0; --l) {
+                double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l), g_.EdgeNucls(source).Subseq(0, l), g_.k() - l, initial_gap);
+                if (score > max_score) {
+                    max_score = score;
+                    best_gap = (int) g_.k() - l;
+                    found = true;
+                }
+            }
+        }
+
+        if (!found) {
+            if (initial_gap < maxMustHaveOverlap_) {
+                DEBUG("Initial gap looks like shit: " << initial_gap);
+                best_gap = INVALID_GAP;
+            }
+//            else if (initial_gap < (int) g_.k()) {
+//                best_gap = (int) g_.k() + noOverlapGap_;
+//                DEBUG("Overlap is not found, initial gap: " << initial_gap << ", changing to " << best_gap);
+//            }
+            else {
+                DEBUG("Overlap is not found, initial gap: " << initial_gap << ", not changing.");
+                //best_gap = max(initial_gap, (int) g_.k() + noOverlapGap_);
+                best_gap = initial_gap;
+            }
+        }
+        else {
+            DEBUG("Found candidate gap length with score " << max_score);
+            DEBUG("Initial: " << initial_gap << ", new gap: " << best_gap);
+        }
+
+
+        string s = "";
+        for (int i = 0; i < best_gap; ++i) {
+            s += " ";
+        }
+
+        DEBUG(g_.EdgeNucls(sink).Subseq(g_.length(sink)).str())
+        DEBUG(s << g_.EdgeNucls(source).Subseq(0, g_.k()).str());
+        return best_gap;
+    }
+
+};
 
 
 class PathExtender {
@@ -559,6 +744,8 @@ protected:
 
     ExtensionChooser::EdgeContainer sources_;
 
+    HammingGapJoiner gapJoiner_;
+
 
     void InitSources() {
         sources_.clear();
@@ -600,7 +787,18 @@ protected:
             	}
 				if (candidates.size() == 1) {
 					 DEBUG(candidates.size() << " " << g_.int_id(candidates[0].e_) << " Path id :" << path.GetId()<< "  Edge len : " << g_.length(candidates[0].e_))
-                     path.PushBack(candidates.back().e_, candidates.back().d_);
+
+                     int gap = params.param_set.scaffolder_options.fix_gaps ?
+                             gapJoiner_.FixGap(path.Back(), candidates.back().e_, candidates.back().d_) :
+                             candidates.back().d_;
+
+					 if (gap != GapJoiner::INVALID_GAP) {
+					     DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << gap);
+					     path.PushBack(candidates.back().e_, gap);
+					 } else {
+					     DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_);
+					     break;
+					 }
 					 //path.Print();
 			    }
             }
@@ -616,8 +814,14 @@ protected:
 
 public:
 
-    ScaffoldingPathExtender(Graph& g_, ExtensionChooser * usualEC, ExtensionChooser * scaffoldingEC): SimplePathExtender(g_, usualEC),
-            scaffoldingExtensionChooser_(scaffoldingEC)  {
+    ScaffoldingPathExtender(Graph& g, ExtensionChooser * usualEC, ExtensionChooser * scaffoldingEC): SimplePathExtender(g, usualEC),
+            scaffoldingExtensionChooser_(scaffoldingEC),
+            gapJoiner_(g, params.param_set.scaffolder_options.min_gap_score,
+                    (int) (params.param_set.scaffolder_options.max_must_overlap * g.k()),
+                    (int) (params.param_set.scaffolder_options.max_can_overlap * g.k()),
+                    params.param_set.scaffolder_options.short_overlap,
+                    params.param_set.scaffolder_options.artificial_gap)
+    {
         InitSources();
     }
 

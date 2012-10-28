@@ -41,6 +41,7 @@ protected:
                 if (overlapLen >= (int) gp_.g.length(path[i]) + (int) k_) {
                     continue;
                 }
+
                 ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001).substr(overlapLen);
             }
         }

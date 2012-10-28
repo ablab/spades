@@ -137,6 +137,13 @@ struct pe_config
 
 	        bool cluster_info;
 	        double cl_threshold;
+
+	        bool fix_gaps;
+	        double min_gap_score;
+	        double max_must_overlap;
+	        double max_can_overlap;
+	        int short_overlap;
+	        int artificial_gap;
 		} scaffolder_options;
 
 
@@ -294,6 +301,13 @@ inline void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_t
 
     load(so.cluster_info      , pt, "cluster_info"      );
     load(so.cl_threshold      , pt, "cl_threshold"      );
+
+    load(so.fix_gaps      , pt, "fix_gaps"      );
+    load(so.min_gap_score      , pt, "min_gap_score"      );
+    load(so.max_must_overlap      , pt, "max_must_overlap"      );
+    load(so.max_can_overlap      , pt, "max_can_overlap"      );
+    load(so.short_overlap      , pt, "short_overlap"      );
+    load(so.artificial_gap      , pt, "artificial_gap"      );
 }
 
 inline void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete) {
