@@ -69,13 +69,14 @@ id2, read2 = read_read(rightFile, read_length)
 right_reads = []
 
 while id2 is not None:
-	if id2 in left_reads:
+	if not id2 in left_reads:
+		right_reads.append(read2)
+	else:
 		pFile1.write(left_reads[id2])
 		pFile2.write(read2)
 		del left_reads[id2]
-	else:
-		right_reads.append(read2)
-		id2, read2 = read_read(rightFile, read_length)
+
+	id2, read2 = read_read(rightFile, read_length)
 
 
 for id1, read1 in left_reads.iteritems():
