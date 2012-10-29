@@ -301,9 +301,14 @@ void RemoveBulges(
 		boost::function<void(EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
+//<<<<<<< Updated upstream
 	INFO("SUBSTAGE == Removing bulges");
 
 	auto factory = GetBulgeRemoverFactory(graph, br_config, removal_handler, additional_length_bound);
+//=======
+//	auto factory = GetBulgeRemoverFactory(graph, removal_handler, additional_length_bound);
+//	INFO("SUBSTAGE == Removing bulges");
+//>>>>>>> Stashed changes
 	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
 //
 //	size_t max_length = LengthThresholdFinder::MaxBulgeLength(graph.k(),
@@ -672,35 +677,52 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 
 void PreSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
-		detail_info_printer &printer, size_t iteration_count) {
+		detail_info_printer &printer, size_t iteration_count,
+		avg_perf_counter& tip_clipper_timer, avg_perf_counter& bulge_remover_timer) {
 	//INFO("Early ErroneousConnectionsRemoval");
 	//RemoveLowCoverageEdges(graph, edge_remover, 1, 0, 1.5);
 	//INFO("ErroneousConnectionsRemoval stats");
 
 	INFO("Early tip clipping:");
+	tip_clipper_timer.start();
 	ClipTips(gp, removal_handler_f);
+	tip_clipper_timer.stop();
 
 	INFO("Early bulge removal:");
+//<<<<<<< Updated upstream
+	bulge_remover_timer.start();
 	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f, gp.g.k() + 1);
-
+	bulge_remover_timer.stop();
+/*=======
+	RemoveBulges(gp.g, removal_handler_f, gp.g.k() + 1);
+>>>>>>> Stashed changes
+*/
 	//INFO("Early ErroneousConnectionsRemoval");
 	//RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
 	//INFO("ErroneousConnectionsRemoval stats");
 }
-
 void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
 		detail_info_printer &printer, size_t iteration_count, size_t iteration,
-		double max_coverage) {
+		double max_coverage, avg_perf_counter& tip_clipper_timer, avg_perf_counter& bulge_remover_timer) {
 	INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
 	DEBUG(iteration << " TipClipping");
+	tip_clipper_timer.start();
 	ClipTips(gp, removal_handler_f, iteration_count, iteration);
+	tip_clipper_timer.stop();
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
 	DEBUG(iteration << " BulgeRemoval");
+//<<<<<<< Updated upstream
+//	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
+//=======
+	bulge_remover_timer.start();
+//	RemoveBulges(gp.g, removal_handler_f);
 	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
+	bulge_remover_timer.stop();
+//>>>>>>> Stashed changes
 	DEBUG(iteration << " BulgeRemoval stats");
 	printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
@@ -713,7 +735,6 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
 }
-
 //void PrePostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 //		boost::function<void(EdgeId)> &removal_handler_f){
 //
@@ -800,20 +821,35 @@ void SimplifyGraph(conj_graph_pack &gp,
 		INFO("Index clearing finished");
 	}
 
+	perf_counter timer;
+	avg_perf_counter tip_clipper_timer;
+	avg_perf_counter bulge_remover_timer;
+
 	if (cfg::get().ds.single_cell)
 		PreSimplification(gp, edge_remover, removal_handler_f, printer,
-				iteration_count);
+			iteration_count, tip_clipper_timer, bulge_remover_timer);
+
 
 	for (size_t i = 0; i < iteration_count; i++) {
 		if ((cfg::get().gap_closer_enable) && (cfg::get().gc.in_simplify)) {
 			CloseGaps(gp);
 		}
 
-		SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
-				iteration_count, i, max_coverage);
+//<<<<<<< Updated upstream
+//		SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
+//				iteration_count, i, max_coverage);
+//=======
+        SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
+                iteration_count, i, max_coverage, tip_clipper_timer, bulge_remover_timer);
+//>>>>>>> Stashed changes
 //        printer(ipp_err_con_removal, str(format("_%d") % (i + iteration_count)));
 	}
 
+	cout << endl;
+	cout << "TOTAL simplification time: " << human_readable_time(timer.time()) << endl;
+	cout << "tip clipper time: " << human_readable_time(tip_clipper_timer.time()) << endl;
+	cout << "bulge remover time: " << human_readable_time(bulge_remover_timer.time()) << endl;;
+	cout << endl;
 //    //todo wtf
 //    if (cfg::get().simp.tc.advanced_checks)
 //        PrePostSimplification(gp, edge_remover, removal_handler_f);
