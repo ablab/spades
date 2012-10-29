@@ -346,7 +346,7 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 				vector<pair<EdgeId, size_t> > resolved_positions = labels_after.resolvedPositions(*iter, mismatches[i].position);
 				double cutoff = 1.0;
 				if (origin_gp.g.length(*iter) > *cfg::get().ds.IS && multiplicity > 1)
-					cutoff /= (4* cfg::get().mismatch_ratio);
+					cutoff /= (4 / cfg::get().mismatch_ratio);
 				else
 					cutoff *= 1.5* cfg::get().mismatch_ratio;
 				cutoff /= 2;
@@ -356,6 +356,10 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 						diff_res.insert(make_pair(it->first, 1));
 					else
 						diff_res[it->first]++;
+				int real_count = 0;
+				for(size_t j = 0; j < resolved_positions.size(); j++)
+					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff ) real_count++;
+
 				for(size_t j = 0; j < resolved_positions.size(); j++){
 //					if (origin_gp.g.int_id(*iter) >= 10006349 && origin_gp.g.int_id(*iter) <= 10006352) {
 //						INFO(origin_gp.g.int_id(*iter) << " cutoff: " << cutoff);
@@ -364,7 +368,7 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 //					}
 					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
 
-					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff ) {
+					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff && real_count <= 5) {
 						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, multiplicity * mismatches[i].ratio, mismatches[i].counts);
 						Ncount++;
 					}
@@ -373,25 +377,6 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 				if (cutoff > mismatches[i].ratio)
 					origin_gp.mismatch_masker.mismatch_map[*iter][i].ratio = 0;
 			}
-//			for(size_t i = 0; i < rc_mismatches.size(); i++) {
-//			//TODO:: cutoff selection!
-//				vector<pair<EdgeId, size_t> > resolved_positions = labels_after.resolvedPositions(*iter, len - 1 - rc_mismatches[i].position);
-//				double cutoff = 1.0;
-//				if (origin_gp.g.length(*iter) > *cfg::get().ds.IS && multiplicity > 1)
-//					cutoff /= 4;
-//				else
-//					cutoff *= 1.5;
-//				cutoff /= 2;
-//				for(size_t j = 0; j < resolved_positions.size(); j++){
-//					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
-//					if (real_multiplicity * mismatches[i].ratio > cutoff ) {
-//						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, multiplicity * mismatches[i].ratio);
-//						Ncount++;
-//					}
-//				}
-//				if (mismatches[i].ratio < cutoff)
-//					origin_gp.mismatch_masker.mismatch_map[*iter][i].ratio = 0;
-//			}
 		}
 	}
 	INFO("masked "<< Ncount << " potential mismatches masked");

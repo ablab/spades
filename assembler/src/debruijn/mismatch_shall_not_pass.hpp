@@ -239,7 +239,10 @@ EdgeId CorrectNucls(EdgeId edge, vector<pair<size_t, char>> mismatches) {
 		edge = CorrectNucl(edge, it->first, it->second);
 	}
 	EdgeId tmp = Compressor<Graph>(gp_.g).CompressVertexEdgeId(gp_.g.EdgeEnd(edge));
-	return tmp;
+	if (tmp == EdgeId(0))
+		return edge;
+	else
+		return tmp;
 }
 
 vector<pair<size_t, char>> FindMismatches(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) {
