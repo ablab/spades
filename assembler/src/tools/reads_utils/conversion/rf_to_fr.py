@@ -8,16 +8,9 @@ def read_read(infile):
         read = infile.readline()
 
         if not read or read.strip() == "":
-                return None, None, None
+                return None, None
 
         id1 = (read.split('/', 1)[0])[1:]
-        strand = (read.split('/', 1)[1])[0]
-
-        if strand != '2' and strand != '1':
-                print("Wrong strands\n");
-                return None, None, None
-
-        delim = (read.split('/', 1)[0])[0]
 
         line = infile.readline()
         i = 0
@@ -27,11 +20,11 @@ def read_read(infile):
                 line = infile.readline()
 
         if not line:
-                return id1, strand, read
+                return id1, read
 
         infile.seek(infile.tell() - len(line))
         
-        return id1, strand, read
+        return id1, read
 
 
 def comp(letter):
@@ -59,7 +52,7 @@ outFile = open(fName + "_rc" + ext, "w")
 
 read = read_read(inFile)
 while read[0]:
-	outFile.write(rc_read(read[2]))
+	outFile.write(rc_read(read[1]))
 	read = read_read(inFile)
 
 outFile.close()
