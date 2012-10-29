@@ -200,7 +200,6 @@ private:
 	double relative_threshold_;
 
 EdgeId CorrectNucl(EdgeId edge, size_t position, char nucl) {
-	size_t len = gp_.g.EdgeNucls(edge).str().length();
 	VERIFY(position >= gp_.g.k());
 	if(position + 1 < gp_.g.length(edge)) {
 		edge = gp_.g.SplitEdge(edge, position + 1).first;
