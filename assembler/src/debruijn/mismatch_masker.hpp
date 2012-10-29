@@ -83,10 +83,12 @@ class MismatchMasker {
 			  //if (mismatch_map[edge][i].ratio > 0.5)
 			  s[mismatch_map[edge][i].position] = char(s[mismatch_map[edge][i].position] +'a' - 'A');
 			  if ((mismatch_map[edge][i].position >= 1 && ! is_nucl(s[mismatch_map[edge][i].position - 1])) || (mismatch_map[edge][i].position <s.length() -1  && ! is_nucl(s[mismatch_map[edge][i].position + 1]))){
+
 //				 INFO("replacement to 'N' blocked") ;
+				  ;
 			  }else {
 //				  if (mismatch_map[edge][i].position >= 1 && s[mismatch_map[edge][i].position - 1] == 'N')
-//					  INFO("2 succesive N'th. BUT HOW?");
+	//				  INFO("2 succesive N'th. BUT HOW?");
 				  s[mismatch_map[edge][i].position] = char('N');
 
 			  }
