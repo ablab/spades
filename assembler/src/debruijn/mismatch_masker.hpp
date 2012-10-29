@@ -49,8 +49,8 @@ class MismatchMasker {
 		  DEBUG("in edge length " << g_.length(edge)<< " replaced " << mismatch_map[edge].size() << "mismatches");
 	  }
 	  for(size_t i = 0; i < mismatch_map[edge].size(); i++)
-		  if (mismatch_map[edge][i].ratio > cutoff)
-			  s[mismatch_map[edge][i].position] += 'a' - 'A';
+		  if (mismatch_map[edge][i].ratio > cutoff && is_nucl(s[mismatch_map[edge][i].position]))
+			  s[mismatch_map[edge][i].position] =  char (s[mismatch_map[edge][i].position] + 'a' - 'A') ;
 	  return s;
   }
 };
