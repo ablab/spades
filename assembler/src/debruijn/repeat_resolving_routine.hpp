@@ -357,9 +357,11 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 					else
 						diff_res[it->first]++;
 				int real_count = 0;
-				for(size_t j = 0; j < resolved_positions.size(); j++)
-					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff ) real_count++;
-
+				for(size_t j = 0; j < resolved_positions.size(); j++) {
+					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
+					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff )
+						real_count++;
+				}
 				for(size_t j = 0; j < resolved_positions.size(); j++){
 //					if (origin_gp.g.int_id(*iter) >= 10006349 && origin_gp.g.int_id(*iter) <= 10006352) {
 //						INFO(origin_gp.g.int_id(*iter) << " cutoff: " << cutoff);
