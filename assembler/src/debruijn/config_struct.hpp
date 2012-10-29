@@ -385,6 +385,7 @@ struct debruijn_config {
 	std::string uncorrected_reads;
 	bool need_consensus;
 	bool path_set_graph;
+	double mismatch_ratio;
 	simplification simp;
 
 	struct repeat_resolver {
@@ -1041,6 +1042,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.need_consensus, pt, "need_consensus");
 	load(cfg.uncorrected_reads, pt, "uncorrected_reads");
 	load(cfg.path_set_graph, pt, "path_set_graph");
+	load(cfg.mismatch_ratio, pt, "mismatch_ratio");
 
 	load(
 			cfg.simp,

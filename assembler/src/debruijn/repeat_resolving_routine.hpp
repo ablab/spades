@@ -324,15 +324,18 @@ void SaveResolvedPairedInfo(graph_pack& resolved_gp,
 template<class graph_pack>
 void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after) {
 	size_t Ncount = 0;
+	//FILE* file = fopen(("multipicities.tmp"), "w");
+
 	for (auto iter = origin_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 //		size_t len = origin_gp.g.length(*iter) + origin_gp.g.k();
 		size_t multiplicity = labels_after.edge_inclusions[*iter].size();
+//		fprintf(file, "%d %d \n",origin_gp.int_ids.ReturnIntId(*iter), multiplicity);
 		if (multiplicity > 0) {
 //			INFO(origin_gp.g.int_id(*iter));
 //			INFO(origin_gp.g.int_id(origin_gp.g.conjugate(*iter)));
-			vector<typename MismatchMasker<typename graph_pack::graph_t>::MismatchInfo> mismatches = origin_gp.mismatch_masker.mismatch_map[*iter];
+			const vector<typename MismatchMasker<typename graph_pack::graph_t>::MismatchInfo> mismatches = origin_gp.mismatch_masker.mismatch_map[*iter];
 			DEBUG (mismatches.size());
-			vector<typename MismatchMasker<typename graph_pack::graph_t>::MismatchInfo> rc_mismatches = origin_gp.mismatch_masker.mismatch_map[origin_gp.g.conjugate(*iter)];
+			const vector<typename MismatchMasker<typename graph_pack::graph_t>::MismatchInfo> rc_mismatches = origin_gp.mismatch_masker.mismatch_map[origin_gp.g.conjugate(*iter)];
 			DEBUG (rc_mismatches.size());
 			if (mismatches.size() != rc_mismatches.size()) {
 				WARN(mismatches.size() <<" /// " << rc_mismatches.size());
@@ -343,9 +346,9 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 				vector<pair<EdgeId, size_t> > resolved_positions = labels_after.resolvedPositions(*iter, mismatches[i].position);
 				double cutoff = 1.0;
 				if (origin_gp.g.length(*iter) > *cfg::get().ds.IS && multiplicity > 1)
-					cutoff /= 4;
+					cutoff /= (4* cfg::get().mismatch_ratio);
 				else
-					cutoff *= 1.5;
+					cutoff *= 1.5* cfg::get().mismatch_ratio;
 				cutoff /= 2;
 				map<EdgeId, int> diff_res;
 				for(auto it = resolved_positions.begin(); it < resolved_positions.end(); it++)
@@ -354,19 +357,16 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 					else
 						diff_res[it->first]++;
 				for(size_t j = 0; j < resolved_positions.size(); j++){
-					if (origin_gp.g.int_id(*iter) >= 10006349 && origin_gp.g.int_id(*iter) <= 10006352) {
-						INFO(origin_gp.g.int_id(*iter) << " cutoff: " << cutoff);
-						INFO(origin_gp.g.coverage(*iter) <<" // " << resolved_gp.g.coverage(resolved_positions[j].first));
-						INFO("loop coefficient" << diff_res[resolved_positions[j].first]);
-					}
+//					if (origin_gp.g.int_id(*iter) >= 10006349 && origin_gp.g.int_id(*iter) <= 10006352) {
+//						INFO(origin_gp.g.int_id(*iter) << " cutoff: " << cutoff);
+//						INFO(origin_gp.g.coverage(*iter) <<" // " << resolved_gp.g.coverage(resolved_positions[j].first));
+//						INFO("loop coefficient" << diff_res[resolved_positions[j].first]);
+//					}
 					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
 
 					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff ) {
-						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, multiplicity * mismatches[i].ratio);
+						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, multiplicity * mismatches[i].ratio, mismatches[i].counts);
 						Ncount++;
-						if (origin_gp.g.int_id(*iter) >= 10006349 && origin_gp.g.int_id(*iter) <= 10006352) {
-							INFO("multiplicity" << real_multiplicity<<" position added:"<< resolved_positions[j].second) ;
-						}
 					}
 				}
 
@@ -394,7 +394,7 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 //			}
 		}
 	}
-	INFO("masked "<< Ncount << " potential mismatches");
+	INFO("masked "<< Ncount << " potential mismatches masked");
 }
 
 template<class graph_pack>

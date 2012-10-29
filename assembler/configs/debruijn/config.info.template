@@ -167,6 +167,7 @@ need_consensus  false ; output is VERY large(gigabytes).
 uncorrected_reads	none
 
 path_set_graph false  ;experimental
+mismatch_ratio 1;
 
 jump
 {

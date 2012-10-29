@@ -101,7 +101,7 @@ namespace mismatches {
 //						statistics_[*it].AddPosition(i);
 				}
 			}
-			INFO("collecting potential mismatches finished");
+			INFO("collecting potential mismatches positions finished");
 		}
 
 		void operator+=(MismatchStatistics<EdgeId> other) {
@@ -200,6 +200,8 @@ private:
 	double relative_threshold_;
 
 EdgeId CorrectNucl(EdgeId edge, size_t position, char nucl) {
+//	EdgeId old_edge = edge;
+	size_t len = gp_.g.EdgeNucls(edge).str().length();
 	VERIFY(position >= gp_.g.k());
 	if(position + 1 < gp_.g.length(edge)) {
 		edge = gp_.g.SplitEdge(edge, position + 1).first;
@@ -210,17 +212,24 @@ EdgeId CorrectNucl(EdgeId edge, size_t position, char nucl) {
 		edge = tmp.first;
 		mismatch = tmp.second;
 	}
-	Sequence s_mm = gp_.g.EdgeNucls(mismatch);
+	const Sequence& s_mm = gp_.g.EdgeNucls(mismatch);
+//	Sequence s_mm = gp_.g.EdgeNucls(mismatch);
 	Sequence correct = s_mm.Subseq(0, gp_.g.k()) + Sequence(string(1, nucl)) + s_mm.Subseq(gp_.g.k() + 1, gp_.g.k() * 2 + 1);
 	if(!gp_.kmer_mapper.CheckCanRemap(s_mm, correct)) {
+		if (len == 39)
+			INFO ("len 39, could not remap");
 		return edge;
 	}
 	VERIFY(nucl != s_mm[gp_.g.k()]);
 	EdgeId correct_edge = gp_.g.AddEdge(gp_.g.EdgeStart(mismatch), gp_.g.EdgeEnd(mismatch), correct);
 	if(position > gp_.g.k()) {
+		if (len == 39)
+			INFO ("len 39, position detected erroneously");
 		gp_.g.GlueEdges(mismatch, correct_edge);
 		return edge;
 	} else {
+		if (len == 39)
+			INFO ("len 39, remapped");
 		return gp_.g.GlueEdges(mismatch, correct_edge);
 	}
 }
@@ -235,7 +244,8 @@ EdgeId CorrectNucls(EdgeId edge, vector<pair<size_t, char>> mismatches) {
 
 vector<pair<size_t, char>> FindMismatches(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) {
 	vector<pair<size_t, char>> to_correct;
-	Sequence s_edge = gp_.g.EdgeNucls(edge);
+	const Sequence& s_edge = gp_.g.EdgeNucls(edge);
+//	Sequence s_edge = gp_.g.EdgeNucls(edge);
 	for(size_t i = gp_.g.k(); i < gp_.g.length(edge); i++) {
 		size_t cur_best = 0;
 		mismatches::NuclCount nc = statistics[i];
@@ -255,17 +265,21 @@ vector<pair<size_t, char>> FindMismatches(EdgeId edge, const mismatches::Mismatc
 }
 
 int FindMaskingPositions(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics, int rc = 0) {
-	Sequence s_edge = gp_.g.EdgeNucls(edge);
+
+//	INFO("inside masking position");
+	const Sequence& s_edge = gp_.g.EdgeNucls(edge);
+
+//	Sequence s_edge = gp_.g.EdgeNucls(edge);
 	int changed = 0;
-	if (gp_.g.length(edge) < *cfg::get().ds.IS) {
-//		return 0;
-	}
+//	INFO("seq taken");
 	size_t len = gp_.g.length(edge) + gp_.g.k() ;
+//	INFO("len counted");
 	for(size_t i = 0; i < len; i++) {
 		mismatches::NuclCount nc = statistics[i];
 		if (rc)
 			nc = statistics[len - 1 - i];
 		size_t nucl_code = s_edge[i];
+//		INFO("nucl_code receoved");
 		size_t cur_best = 3 - nucl_code;
 		for(size_t j = 0; j < 4; j++) {
 			if(j != nucl_code && nc[j] > nc[cur_best]) {
@@ -275,11 +289,18 @@ int FindMaskingPositions(EdgeId edge, const mismatches::MismatchEdgeInfo &statis
 		if(nc[cur_best] > 0.00025 * nc[nucl_code] ) {
 			double ratio = 0;
 			if (nc[nucl_code] == 0) {
-				INFO("Zero confirmed nucleotide at " << gp_.g.int_id(edge)<<" " << i);
+				if (gp_.g.length(edge) > 200) {
+					INFO("Zero confirmed nucleotide at " << gp_.g.int_id(edge)<<" " << i);
+				}
 				ratio = 1000;
 			} else
 				ratio =  double(nc[cur_best])/nc[nucl_code];
-			gp_.mismatch_masker.insert(edge, i, ratio);
+			vector<size_t> counts;
+			for(size_t ii = 0; ii < 4; ii++)
+				counts.push_back(nc[ii]);
+//			INFO("vefore inserting masked");
+			gp_.mismatch_masker.insert(edge, i, ratio , counts);
+//			INFO("masked inserted");
 			if (ratio > 0.1) {
 				DEBUG(gp_.g.int_id(edge)<<" " << i <<" " << ratio);
 				changed ++;
@@ -292,6 +313,7 @@ int FindMaskingPositions(EdgeId edge, const mismatches::MismatchEdgeInfo &statis
 	if (changed != 0) {
 		DEBUG("On edge " << gp_.g.int_id(edge) << " len: "<< gp_.g.length(edge)  <<" to mask : " << changed << " nucls");
 	}
+//	INFO("exiting");
 	return changed;
 }
 
@@ -301,6 +323,8 @@ size_t CorrectEdge(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) 
 	if (new_edge == EdgeId(0))
 		new_edge = edge;
 //	for(auto it = statistics.info_.begin();it != statistics.info_.end(); it);
+//	INFO("masking corrected edge" << gp_.g.int_id(new_edge) << " old version: "  << gp_.g.int_id(edge));
+
 	FindMaskingPositions(new_edge, statistics);
 
 ///	FindMaskingPositions(gp_.g.conjugate(new_edge), statistics, 1);
@@ -322,11 +346,12 @@ size_t CorrectAllEdges(mismatches::MismatchStatistics<typename Graph::EdgeId> st
 			if(!gp_.g.RelatedVertices(gp_.g.EdgeStart(*it), gp_.g.EdgeEnd(*it))) {
 				res += CorrectEdge(*it, statistics.find(*it)->second);
 			} else {
+//				INFO("masking without correction" << gp_.g.int_id(*it));
 				FindMaskingPositions(*it, statistics.find(*it)->second);
 			}
 		}
 	}
-	DEBUG("all edges processed");
+	INFO("all edges processed");
 	return res;
 }
 

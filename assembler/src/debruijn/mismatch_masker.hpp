@@ -12,6 +12,7 @@
 #include "edge_index.hpp"
 #include <cstdlib>
 
+
 namespace debruijn_graph {
 template<class Graph>
 class MismatchMasker {
@@ -24,13 +25,15 @@ class MismatchMasker {
 	  size_t position;
 // Ratio:
 	  double ratio;
-	  MismatchInfo(size_t position, double ratio): position(position), ratio(ratio){}
+	  vector<size_t> counts;
+	  MismatchInfo(size_t position, double ratio, vector<size_t> count): position(position), ratio(ratio), counts(count.begin(), count.end()){}
   };
   map<EdgeId, vector<MismatchInfo> > mismatch_map;
 
   MismatchMasker(const Graph& g) : g_(g){
   }
-  void insert(EdgeId edge, size_t position, double ratio){
+
+  void insert(EdgeId edge, size_t position, double ratio, vector<size_t> counts){
 	  if (mismatch_map.find(edge) == mismatch_map.end()) {
 
 		  vector<MismatchInfo> tmp;
@@ -38,19 +41,48 @@ class MismatchMasker {
 		  vector<MismatchInfo> rc_tmp;
 		  mismatch_map.insert(make_pair(g_.conjugate(edge), rc_tmp));
 	  }
-	  mismatch_map[edge].push_back(MismatchInfo(position, ratio));
-	  mismatch_map[g_.conjugate(edge)].push_back(MismatchInfo(g_.length(edge) + g_.k() - position - 1, ratio));
+	  VERIFY(counts.size() == 4);
+	  mismatch_map[edge].push_back(MismatchInfo(position, ratio, counts));
+	  vector<size_t> reversed_counts(4, 0);
+	  for(size_t i = 0; i < 4; i ++)
+		  reversed_counts[complement(i)] = counts[i];
+	  VERIFY(reversed_counts.size() == 4);
+	  mismatch_map[g_.conjugate(edge)].push_back(MismatchInfo(g_.length(edge) + g_.k() - position - 1, ratio, reversed_counts));
 
   }
   string MaskedEdgeNucls(EdgeId edge, double cutoff) {
 	  Sequence s_edge = g_.EdgeNucls(edge);
 	  string s = s_edge.str();
 	  if (mismatch_map[edge].size() > 0) {
-		  DEBUG("in edge length " << g_.length(edge)<< " replaced " << mismatch_map[edge].size() << "mismatches");
+		  DEBUG("in edge length " << g_.length(edge)<< " replacing " << mismatch_map[edge].size() << "mismatches");
 	  }
-	  for(size_t i = 0; i < mismatch_map[edge].size(); i++)
-		  if (mismatch_map[edge][i].ratio > cutoff && is_nucl(s[mismatch_map[edge][i].position]))
-			  s[mismatch_map[edge][i].position] =  char (s[mismatch_map[edge][i].position] + 'a' - 'A') ;
+	  for(size_t i = 0; i < mismatch_map[edge].size(); i++) {
+		  DEBUG(mismatch_map[edge][i].position  << " " << mismatch_map[edge][i].ratio <<" " <<  mismatch_map[edge][i].counts.size());
+
+		  if (mismatch_map[edge][i].ratio > cutoff && is_nucl(s[mismatch_map[edge][i].position])) {
+			  DEBUG(s[mismatch_map[edge][i].position]  << "  before " );
+			  VERIFY(mismatch_map[edge][i].position < s.length() && mismatch_map[edge][i].position >= 0);
+			  if (mismatch_map[edge][i].ratio > 1) {
+				  DEBUG("replacing...");
+				  for(size_t ii = 0; ii < mismatch_map[edge][i].counts.size(); ii++) {
+					  DEBUG(" counts "<< ii << " " << mismatch_map[edge][i].counts[ii])
+			  	  }
+				  size_t max_count = 0;
+	  	  	  	  size_t max_i = 0;
+	  	  	  	  VERIFY(mismatch_map[edge][i].counts.size() == 4);
+				  for(size_t ii = 0; ii < mismatch_map[edge][i].counts.size(); ii++)
+					  if (max_count < mismatch_map[edge][i].counts[ii]) {
+						  max_count = mismatch_map[edge][i].counts[ii];
+						  max_i = ii;
+					  }
+				  DEBUG("max_i found: "<< max_i);
+				  s[mismatch_map[edge][i].position] = char(nucl(max_i)) ;
+				  DEBUG("replaced");
+			  }
+			  s[mismatch_map[edge][i].position] = char(s[mismatch_map[edge][i].position] +'a' - 'A');
+			  DEBUG(s[mismatch_map[edge][i].position]  << "  " <<'a' - 'A');
+		  }
+	  }
 	  return s;
   }
 };
