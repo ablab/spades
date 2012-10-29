@@ -281,13 +281,11 @@ public:
 			graph_.HiddenDeleteVertex(vertex);
 		}
 		
-		INFO("start synchronize compress");
 		BOOST_FOREACH(VertexId vertex, vertices_to_compress_) {
 			if (graph_.CanCompressVertex(vertex)) {
 				base::CompressVertex(vertex);
 			}
 		}
-		INFO("finish synchronize compress");
 
 		deleted_vertices_.resize(0);
 		TRACE("Finish synchronize");
