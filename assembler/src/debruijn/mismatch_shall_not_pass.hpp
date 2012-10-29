@@ -309,7 +309,13 @@ size_t CorrectEdge(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) 
 
 size_t CorrectAllEdges(mismatches::MismatchStatistics<typename Graph::EdgeId> statistics) {
 	size_t res = 0;
+	set<EdgeId> conjugate_fix;
 	for(auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		if (conjugate_fix.find(gp_.g.conjugate(*it)) == conjugate_fix.end()){
+			conjugate_fix.insert(*it);
+		}
+	}
+	for(auto it = conjugate_fix.begin(); it != conjugate_fix.end(); ++it) {
 		DEBUG("processing edge" << gp_.g.int_id(*it));
 
 		if (statistics.find(*it) != statistics.end()) {
