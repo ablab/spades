@@ -490,7 +490,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g,
 			false);
 	size_t iters = 3; // TODO Constant 3? Shouldn't it be taken from config?
-
+	RemapMaskedMismatches(resolved_gp, origin_gp, labels_after);
 	for (size_t i = 0; i < iters; ++i) {
 		INFO(
 				"Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
@@ -529,7 +529,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 				cfg::get().rr.max_repeat_length, 6);
 		lk.KillAllLoops();
 	}
-	RemapMaskedMismatches(resolved_gp, origin_gp, labels_after);
+
 
 	OutputMaskedContigs(origin_gp.g, cfg::get().output_dir + "before_resolve_masked.fasta", origin_gp.mismatch_masker);
 

@@ -15,7 +15,7 @@
 
 namespace debruijn_graph {
 template<class Graph>
-class MismatchMasker {
+class MismatchMasker: public GraphActionHandler<Graph> {
 
   typedef typename Graph::EdgeId EdgeId;
 
@@ -31,8 +31,29 @@ class MismatchMasker {
   };
   map<EdgeId, vector<MismatchInfo> > mismatch_map;
 
-  MismatchMasker(const Graph& g) : g_(g){
+  MismatchMasker(Graph& g) : GraphActionHandler<Graph> (g, "Mismatch Masker"), g_(g)	  {
   }
+
+  virtual void HandleDelete(EdgeId edge) {
+//  		SetCoverage(edge, 0);
+	  mismatch_map.erase(edge);
+  }
+
+  virtual void HandleMerge(const vector<EdgeId>& oldEdges, EdgeId newEdge) {
+	  int len_shift = 0;
+	  for (auto it = oldEdges.begin(); it != oldEdges.end(); ++it) {
+		  if (mismatch_map.find(*it) != mismatch_map.end())
+			  for (auto mis_t = mismatch_map[*it].begin(); mis_t != mismatch_map[*it].end(); ++mis_t) {
+				  if(mismatch_map.find(newEdge) == mismatch_map.end()) {
+					  vector<MismatchInfo> tmp_v;
+					  mismatch_map.insert(make_pair(newEdge, tmp_v));
+				  }
+				  mismatch_map[newEdge].push_back(MismatchInfo(mis_t->position + len_shift, mis_t->ratio, mis_t->counts, mis_t->cutoff));
+			  }
+		  len_shift+= g_.length(*it);
+  	  }
+  }
+
 
   void insert(EdgeId edge, size_t position, double ratio, vector<size_t> counts, double cutoff = 0){
 	  if (mismatch_map.find(edge) == mismatch_map.end()) {
