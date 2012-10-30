@@ -26,14 +26,15 @@ class MismatchMasker {
 // Ratio:
 	  double ratio;
 	  vector<size_t> counts;
-	  MismatchInfo(size_t position, double ratio, vector<size_t> count): position(position), ratio(ratio), counts(count.begin(), count.end()){}
+	  double cutoff;
+	  MismatchInfo(size_t position, double ratio, vector<size_t> count, double cutoff = 0): position(position), ratio(ratio), counts(count.begin(), count.end()), cutoff(cutoff){}
   };
   map<EdgeId, vector<MismatchInfo> > mismatch_map;
 
   MismatchMasker(const Graph& g) : g_(g){
   }
 
-  void insert(EdgeId edge, size_t position, double ratio, vector<size_t> counts){
+  void insert(EdgeId edge, size_t position, double ratio, vector<size_t> counts, double cutoff = 0){
 	  if (mismatch_map.find(edge) == mismatch_map.end()) {
 
 		  vector<MismatchInfo> tmp;
@@ -42,12 +43,12 @@ class MismatchMasker {
 		  mismatch_map.insert(make_pair(g_.conjugate(edge), rc_tmp));
 	  }
 	  VERIFY(counts.size() == 4);
-	  mismatch_map[edge].push_back(MismatchInfo(position, ratio, counts));
+	  mismatch_map[edge].push_back(MismatchInfo(position, ratio, counts, cutoff));
 	  vector<size_t> reversed_counts(4, 0);
 	  for(size_t i = 0; i < 4; i ++)
 		  reversed_counts[complement(i)] = counts[i];
 	  VERIFY(reversed_counts.size() == 4);
-	  mismatch_map[g_.conjugate(edge)].push_back(MismatchInfo(g_.length(edge) + g_.k() - position - 1, ratio, reversed_counts));
+	  mismatch_map[g_.conjugate(edge)].push_back(MismatchInfo(g_.length(edge) + g_.k() - position - 1, ratio, reversed_counts, cutoff));
 
   }
   string MaskedEdgeNucls(EdgeId edge, double cutoff) {
@@ -79,17 +80,13 @@ class MismatchMasker {
 				  s[mismatch_map[edge][i].position] = char(nucl(max_i)) ;
 				  DEBUG("replaced");
 			  }
-			  //s[mismatch_map[edge][i].position] = char(s[mismatch_map[edge][i].position] +'a' - 'A');
-			  //if (mismatch_map[edge][i].ratio > 0.5)
 			  s[mismatch_map[edge][i].position] = char(s[mismatch_map[edge][i].position] +'a' - 'A');
 			  if ((mismatch_map[edge][i].position >= 1 && ! is_nucl(s[mismatch_map[edge][i].position - 1])) || (mismatch_map[edge][i].position <s.length() -1  && ! is_nucl(s[mismatch_map[edge][i].position + 1]))){
-
-//				 INFO("replacement to 'N' blocked") ;
 				  ;
 			  }else {
-//				  if (mismatch_map[edge][i].position >= 1 && s[mismatch_map[edge][i].position - 1] == 'N')
-	//				  INFO("2 succesive N'th. BUT HOW?");
-				  s[mismatch_map[edge][i].position] = char('N');
+//				  INFO(mismatch_map[edge][i].cutoff <<" " << mismatch_map[edge][i].ratio <<" " << cfg::get().mismatch_ratio )
+				  if (mismatch_map[edge][i].cutoff * cfg::get().mismatch_ratio < mismatch_map[edge][i].ratio )
+					  s[mismatch_map[edge][i].position] = char('N');
 
 			  }
 			  DEBUG(s[mismatch_map[edge][i].position]  << "  " <<'a' - 'A');
