@@ -386,7 +386,7 @@ private:
 
     int shortOverlap_;
 
-    int noOverlapGap_;
+    //int noOverlapGap_;
 
     vector<size_t> DiffPos(const Sequence& s1, const Sequence& s2) const {
         VERIFY(s1.size() == s2.size());
@@ -420,14 +420,14 @@ public:
             double minGapScore,
             int mustHaveOverlap,
             int canHaveOverlap,
-            int shortOverlap_,
-            int artificalGap):
+            int shortOverlap_):
+            //int artificalGap):
                 GapJoiner(g),
                 minGapScore_(minGapScore),
                 maxMustHaveOverlap_(mustHaveOverlap),
                 maxCanHaveOverlap_(canHaveOverlap),
-                shortOverlap_(shortOverlap_),
-                noOverlapGap_(artificalGap)
+                shortOverlap_(shortOverlap_)
+                //noOverlapGap_(artificalGap)
     {
     }
 
@@ -819,8 +819,8 @@ public:
             gapJoiner_(g, params.param_set.scaffolder_options.min_gap_score,
                     (int) (params.param_set.scaffolder_options.max_must_overlap * g.k()),
                     (int) (params.param_set.scaffolder_options.max_can_overlap * g.k()),
-                    params.param_set.scaffolder_options.short_overlap,
-                    params.param_set.scaffolder_options.artificial_gap)
+                    params.param_set.scaffolder_options.short_overlap)
+                    //params.param_set.scaffolder_options.artificial_gap)
     {
         InitSources();
     }
