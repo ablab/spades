@@ -6,6 +6,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cstddef>
 
 template <class _Cp, bool _IsConst> class __array_vector_iterator;
 template <class _Cp> class __array_reference;
