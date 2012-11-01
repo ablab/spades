@@ -27,11 +27,7 @@
 #include "utils.hpp"
 #include "perfcounter.hpp"
 
-#include "parallel_seq_vector.hpp"
-#include "omni/parallel_unordered_map.hpp"
-
 #include "read_converter.hpp"
-#include "kmer_map.hpp"
 
 namespace debruijn_graph {
 

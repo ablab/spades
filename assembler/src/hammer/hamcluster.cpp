@@ -6,11 +6,11 @@
 
 #include "hamcluster.hpp"
 
-#include "concurrent_dsu.hpp"
+#include "adt/concurrent_dsu.hpp"
+#include "io/mmapped_reader.hpp"
+
 #include "config_struct_hammer.hpp"
 #include "globals.hpp"
-
-#include "io/mmapped_reader.hpp"
 
 #include <iostream>
 #include <sstream>

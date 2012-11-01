@@ -17,22 +17,24 @@
 #include "de/distance_estimation.hpp"
 #include "de/paired_info.hpp"
 
+#include "adt/kmer_map.hpp"
+
 #include "logger/logger.hpp"
 #include "xmath.h"
 #include "sequence/sequence_tools.hpp"
 
 #include "runtime_k.hpp"
 
-#include <iostream>
+#include "path_helper.hpp"
 
-#include "kmer_map.hpp"
 #include "new_debruijn.hpp"
 #include "debruijn_kmer_index.hpp"
 #include "edge_index.hpp"
 #include "sequence_mapper.hpp"
 #include "standard.hpp"
 
-#include "path_helper.hpp"
+#include <iostream>
+
 
 using namespace std;
 

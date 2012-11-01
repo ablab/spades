@@ -13,7 +13,7 @@
 #include "io/multifile_reader.hpp"
 
 #include "mph_index/kmer_index.hpp"
-#include "kmer_vector.hpp"
+#include "adt/kmer_vector.hpp"
 
 #include <vector>
 #include <cstdlib>

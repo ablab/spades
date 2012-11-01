@@ -24,15 +24,15 @@
 #include <algorithm>
 #include <cassert>
 
+#include "read/ireadstream.hpp"
+#include "adt/concurrent_dsu.hpp"
 #include "segfault_handler.hpp"
 #include "config_struct_hammer.hpp"
-#include "read/ireadstream.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"
 #include "position_read.hpp"
 #include "globals.hpp"
 #include "kmer_data.hpp"
-#include "concurrent_dsu.hpp"
 
 #include "memory_limit.hpp"
 #include "logger/log_writers.hpp"

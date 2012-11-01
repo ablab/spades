@@ -3,7 +3,7 @@
 #include <cmath>
 #include <stack>
 #include <queue>
-#include "concurrent_dsu.hpp"
+#include "adt/concurrent_dsu.hpp"
 #include "standard_base.hpp"
 #include "omni_utils.hpp"
 #include "graph_component.hpp"

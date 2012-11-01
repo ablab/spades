@@ -9,8 +9,8 @@
 #include "openmp_wrapper.h"
 
 #include "omni/omni_utils.hpp"
+#include "adt/kmer_map.hpp"
 
-#include "kmer_map.hpp"
 #include "new_debruijn.hpp"
 #include "standard.hpp"
 #include "debruijn_kmer_index.hpp"

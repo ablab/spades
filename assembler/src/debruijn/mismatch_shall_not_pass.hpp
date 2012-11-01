@@ -6,8 +6,6 @@
 
 #include "runtime_k.hpp"
 
-#include "kmer_map.hpp"
-//#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
 
 namespace mismatches {
