@@ -20,19 +20,19 @@
 
 #include "logger/logger.hpp"
 #include "simple_tools.hpp"
-#include "omni/paired_info.hpp"
+#include "de/paired_info.hpp"
 #include "deleted_vertex_handler.hpp"
 #include "config_struct.hpp"
-#include "omni/omni_utils.hpp"
 
+#include "omni/omni_utils.hpp"
 #include "omni/omni_tools.hpp"
 #include "omni/omnigraph.hpp"
 #include "omni/splitters.hpp"
-
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/total_labeler.hpp"
 #include "omni/dijkstra.hpp"
+
 #include "new_debruijn.hpp"
 #include "perfcounter.hpp"
 #include "split_path_constructor.hpp"

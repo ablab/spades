@@ -9,21 +9,21 @@
 
 #include "standard.hpp"
 #include "omni/omni_tools.hpp"
-#include "simple_tools.hpp"
-#include "xmath.h"
-#include "omni/paired_info.hpp"
-#include "omni/distance_estimation.hpp"
-#include "omni/pair_info_filters.hpp"
+#include "de/paired_info.hpp"
+#include "de/distance_estimation.hpp"
+#include "de/pair_info_filters.hpp"
 
 #include "graphio.hpp"
-#include <iostream>
-#include <fstream>
-#include <map>
+#include "simple_tools.hpp"
+#include "xmath.h"
 
 #include "path_set.hpp" 
 #include "matepair_transformer.hpp"
 #include "path_set_stats.hpp"
 
+#include <iostream>
+#include <fstream>
+#include <map>
 
 namespace debruijn_graph {
 using namespace math;

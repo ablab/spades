@@ -15,15 +15,17 @@
 
 #include "standard.hpp"
 #include "dataset_readers.hpp"
-#include "omni/paired_info.hpp"
 #include "late_pair_info_count.hpp"
-#include <set>
 #include "gap_closer.hpp"
 #include "check_tools.hpp"
-#include "omni/weighted_distance_estimation.hpp"
-#include "omni/extensive_distance_estimation.hpp"
-#include "omni/naive_distance_estimation.hpp"
-#include "omni/smoothing_distance_estimation.hpp"
+
+#include "de/paired_info.hpp"
+#include "de/weighted_distance_estimation.hpp"
+#include "de/extensive_distance_estimation.hpp"
+#include "de/naive_distance_estimation.hpp"
+#include "de/smoothing_distance_estimation.hpp"
+
+#include <set>
 
 namespace debruijn_graph {
 

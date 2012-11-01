@@ -16,9 +16,7 @@
 #include "standard.hpp"
 #include "omni/visualization_utils.hpp"
 
-//#include "debruijn_graph.hpp"
 #include "omni/edge_labels_handler.hpp"
-#include "omni/paired_info.hpp"
 #include "graph_construction.hpp"
 #include "graph_simplification.hpp"
 #include "repeat_resolving.hpp"
@@ -26,12 +24,13 @@
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 
+#include "de/paired_info.hpp"
+#include "de/distance_estimation.hpp"
+
 #include "new_debruijn.hpp"
 #include "config_struct.hpp"
 #include "debruijn_stats.hpp"
 #include "graphio.hpp"
-#include "omni/distance_estimation.hpp"
-//#include "omni/advanced_distance_estimation.hpp"
 #include "omni/loop_resolver.hpp"
 #include "check_tools.hpp"
 #include "copy_file.hpp"

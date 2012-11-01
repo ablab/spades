@@ -22,7 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "omni/distance_estimation.hpp"
+#include "de/distance_estimation.hpp"
 #include "memory_limit.hpp"
 #include "read_converter.hpp"
 

@@ -26,7 +26,6 @@
 #include "io/converting_reader_wrapper.hpp"
 
 // omni
-#include "omni/paired_info.hpp"
 #include "omni/total_labeler.hpp"
 
 #include "runtime_k.hpp"

@@ -8,9 +8,10 @@
 #define DISTANCE_ESTIMATION_HPP_
 
 #include "xmath.h"
-#include "paired_info.hpp"
-#include "omni_utils.hpp"
 #include "openmp_wrapper.h"
+
+#include "paired_info.hpp"
+#include "omni/omni_utils.hpp"
 
 namespace omnigraph {
 

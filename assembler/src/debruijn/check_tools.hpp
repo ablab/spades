@@ -14,7 +14,8 @@
 #ifndef CHECK_TOOLS_HPP_
 #define CHECK_TOOLS_HPP_
 
-#include "omni/paired_info.hpp"
+#include "de/paired_info.hpp"
+
 #include "new_debruijn.hpp"
 #include "graph_pack.hpp"
 

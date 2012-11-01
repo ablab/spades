@@ -9,7 +9,7 @@
 
 #include "xmath.h"
 #include "paired_info.hpp"
-#include "omni_utils.hpp"
+#include "omni/omni_utils.hpp"
 #include "distance_estimation.hpp"
 
 namespace omnigraph {

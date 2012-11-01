@@ -7,11 +7,12 @@
 #pragma once
 
 #include "standard.hpp"
-#include "omni/paired_info.hpp"
 #include "simplification.hpp"
 #include "graph_construction.hpp"
-#include "omni/insert_size_refiner.hpp"
 #include "dataset_readers.hpp"
+
+#include "de/insert_size_refiner.hpp"
+#include "de/paired_info.hpp"
 
 namespace debruijn_graph {
 void late_pair_info_count(conj_graph_pack& gp,

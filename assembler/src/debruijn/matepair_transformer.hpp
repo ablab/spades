@@ -5,7 +5,7 @@
 //****************************************************************************
 
 #pragma once
-#include "omni/paired_info.hpp"
+#include "de/paired_info.hpp"
 #include "path_set.hpp"
 #include "path_set_tools.hpp"
 #include "xmath.h"

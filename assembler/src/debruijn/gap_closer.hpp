@@ -19,12 +19,13 @@
 #include <type_traits>
 #include <unordered_map>
 
-#include "omni/paired_info.hpp"
 #include "omni/omni_tools.hpp"
 #include "standard.hpp"
 #include "omni_labelers.hpp"
 #include "io/easy_reader.hpp"
 #include "dataset_readers.hpp"
+
+#include "de/paired_info.hpp"
 
 namespace debruijn_graph {
 

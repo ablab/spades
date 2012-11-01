@@ -17,16 +17,17 @@
 #include "openmp_wrapper.h"
 
 #include "io/multifile_reader.hpp"
+#include "omni/edges_position_handler.hpp"
+
 #include "debruijn_graph_constructor.hpp"
 #include "debruijn_kmer_index.hpp"
-#include "omni/edges_position_handler.hpp"
 #include "new_debruijn.hpp"
-#include "omni/paired_info.hpp"
 #include "graphio.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"
-#include "parallel_seq_vector.hpp"
 #include "perfcounter.hpp"
+
+#include "parallel_seq_vector.hpp"
 #include "omni/parallel_unordered_map.hpp"
 
 #include "read_converter.hpp"

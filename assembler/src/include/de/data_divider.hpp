@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include "paired_info.hpp"
-#include "omni_utils.hpp"
+#include "omni/omni_utils.hpp"
 
 #ifndef DATA_DIVIDER_HPP_
 #define DATA_DIVIDER_HPP_

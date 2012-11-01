@@ -6,28 +6,29 @@
 
 #pragma once
 
-#include "omni/visualization_utils.hpp"
 #include "statistics.hpp"
 #include "new_debruijn.hpp"
 #include "graph_construction.hpp"
 #include "graphio.hpp"
 #include "graph_read_correction.hpp"
-#include "io/easy_reader.hpp"
-#include "io/rc_reader_wrapper.hpp"
+#include "mismatch_masker.hpp"
+
+#include "omni/visualization_utils.hpp"
 #include "omni/edges_position_handler.hpp"
-#include "omni/distance_estimation.hpp"
 #include "omni/graph_component.hpp"
+#include "io/rc_reader_wrapper.hpp"
 #include "io/delegating_reader_wrapper.hpp"
-#include "omni/pair_info_filters.hpp"
 #include "io/easy_reader.hpp"
 #include "io/wrapper_collection.hpp"
 #include "read/osequencestream.hpp"
-#include "io/easy_reader.hpp"
+
+#include "de/distance_estimation.hpp"
+#include "de/pair_info_filters.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "copy_file.hpp"
 #include <cmath>
-#include "mismatch_masker.hpp"
 
 namespace debruijn_graph {
 

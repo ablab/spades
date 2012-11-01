@@ -6,15 +6,12 @@
 
 #pragma once
 
-//#include "utils.hpp"
-//#include "sequence.hpp"
-//#include "paired_read.hpp"
-#include "io/paired_read.hpp"
+#include "xmath.h"
+#include "omni/omni_utils.hpp"
+
 #include <cmath>
 #include <map>
 #include <limits>
-#include <xmath.h>
-#include "omni_utils.hpp"
 
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
 

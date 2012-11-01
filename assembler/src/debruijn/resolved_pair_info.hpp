@@ -7,7 +7,7 @@
 #pragma once
 
 #include "omni/edge_labels_handler.hpp"
-#include "omni/paired_info.hpp"
+#include "de/paired_info.hpp"
 
 namespace debruijn_graph {
 

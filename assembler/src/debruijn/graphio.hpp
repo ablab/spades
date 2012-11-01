@@ -14,12 +14,9 @@
 #include <cstdio>
 
 #include "standard.hpp"
-#include "omni/paired_info.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/abstract_conjugate_graph.hpp"
 #include "omni/abstract_nonconjugate_graph.hpp"
-#include "utils.hpp"
-#include "new_debruijn.hpp"
 
 #include "omni/omni_tools.hpp"
 #include "omni/omnigraph.hpp"
@@ -27,6 +24,9 @@
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/graph_component.hpp"
+
+#include "utils.hpp"
+#include "new_debruijn.hpp"
 
 namespace debruijn_graph {
 using namespace omnigraph;

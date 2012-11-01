@@ -13,8 +13,9 @@
 #include "omni/id_track_handler.hpp"
 #include "omni/splitters.hpp"
 #include "omni/path_processor.hpp"
-#include "omni/distance_estimation.hpp"
-#include "omni/paired_info.hpp"
+
+#include "de/distance_estimation.hpp"
+#include "de/paired_info.hpp"
 
 #include "logger/logger.hpp"
 #include "xmath.h"

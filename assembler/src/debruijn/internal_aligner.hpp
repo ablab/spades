@@ -9,7 +9,7 @@
 
 #include "standard.hpp"
 #include "logger/logger.hpp"
-#include "omni/paired_info.hpp"
+#include "de/paired_info.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/abstract_conjugate_graph.hpp"
 #include "omni/abstract_nonconjugate_graph.hpp"

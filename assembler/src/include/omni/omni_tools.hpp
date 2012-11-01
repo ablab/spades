@@ -8,8 +8,9 @@
 #define OMNI_TOOLS_HPP_
 
 #include "omni_utils.hpp"
-#include "paired_info.hpp"
 #include "simple_tools.hpp"
+
+#include "de/paired_info.hpp"
 
 #include "path_helper.hpp"
 

@@ -24,7 +24,7 @@
 #include "resolved_pair_info.hpp"
 #include "graph_construction.hpp"
 #include "debruijn_stats.hpp"
-#include "omni/distance_estimation.hpp"
+#include "de/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 
 #include "internal_aligner.hpp"
