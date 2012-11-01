@@ -8,7 +8,7 @@
 #define OMNI_UTILS_HPP_
 
 #include "simple_tools.hpp"
-#include "queue_iterator.hpp"
+#include "adt/queue_iterator.hpp"
 #include "logger/logger.hpp"
 #include "simple_tools.hpp"
 #include "dijkstra.hpp"
