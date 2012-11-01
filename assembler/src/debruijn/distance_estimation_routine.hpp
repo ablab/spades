@@ -232,14 +232,14 @@ void exec_distance_estimation(conj_graph_pack& gp,
     exec_late_pair_info_count(gp, paired_index);
     estimate_distance(gp, paired_index, clustered_index);
     save_distance_estimation(gp, paired_index, clustered_index);
-    if (cfg::get().paired_mode && cfg::get().paired_info_statistics)
-      count_estimated_info_stats(gp, paired_index, clustered_index);
   } else {
     INFO("Loading Distance Estimation");
     path::files_t used_files;
     load_distance_estimation(gp, paired_index, clustered_index, &used_files);
     link_files_by_prefix(used_files, cfg::get().output_saves);
   }
+  if (cfg::get().paired_mode && cfg::get().paired_info_statistics)
+    count_estimated_info_stats(gp, paired_index, clustered_index);
 }
 
 }
