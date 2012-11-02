@@ -13,7 +13,7 @@
 <p>SPAdes stands for St. Petersburg genome assembler. It is intended for both standard isolates and single-cell MDA
     bacteria  assemblies. This manual will help you to install and run SPAdes. You can find the latest SPAdes release
 at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. The latest version of this manual can be found <a href="http://spades.bioinf.spbau.ru/release2.3.0/manual.html">here</a>.
-    SPAdes version 2.3.0 released under  GPLv2 on 10 October 2012.
+    SPAdes version 2.3.0 was released under  GPLv2 on 30 October 2012.
 </p>
 
 
@@ -21,8 +21,8 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 
 <p>
     SPAdes requires a 64-bit Linux system.
-    We have two test datasets: <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/">single-cell  E. coli dataset</a> and
-    <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_mc/">E. coli isolates dataset</a>. SPAdes requires 24 Gb of RAM for processing these datasets. Also SPAdes requires  Python 2.4 or higher installed.
+    We have two test datasets: <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/">single-cell  <i>E. coli</i> dataset</a> and
+    <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_mc/"><i>E. coli</i> isolates dataset</a>. SPAdes requires 24 Gb of RAM for processing these datasets. Also SPAdes requires  Python 2.4 or higher installed.
 </p>
 
 <h3>1.1 SPAdes tar.gz file</h3>
@@ -61,7 +61,7 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
     </ul>
 
 <p>
-    If you meet this requirements you can build SPAdes with the following script:
+    If you meet these requirements you can build SPAdes with the following script:
 </p>
 
 <pre class="code">
@@ -70,14 +70,14 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 </code>
 </pre>
 
-<p>In both cases you should get <code>bin</code> directory with files <code>hammer</code> (error correcting module) ans <code>spades</code> (assembly module).
+<p>In both cases you should get a <code>bin</code> directory with files <code>hammer</code> (error correcting module) ans <code>spades</code> (assembly module).
 </p>
 
 <a name="sec1.3"></a>
 <h3>1.3 Testing your installation</h3>
 
 <p>
-For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of E. coli). If you run <code>spades.py</code> with the parameter <code>--test</code>
+For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of <i>E. coli</i>). If you run <code>spades.py</code> with the parameter <code>--test</code>
 </p>
 
 <pre class="code">
@@ -118,10 +118,10 @@ Thank you for using SPAdes!
 
     <li>If the forward and reverse reads for each lane are split into separate FASTQ files (e.g.
         <code>s_1_1_sequence.txt</code> and <code>s_1_2_sequence.txt</code> for the forward and reverse reads, respectively, from lane 1),
-        the second file  should have corresponding reads in the exact same order.
+        the two file  should have corresponding reads in the exact same order.
     </li>
     <li>
-        If using a single file containing reads in both orientations, interlace the corresponding reads such that each read from
+        If you are using a single file containing reads in both orientations, interlace the corresponding reads such that each read from
         <code>s_1_1_sequence.txt</code> is followed by the corresponding read from <code>s_1_2_sequence.txt</code>.
     </li>
 
@@ -130,24 +130,24 @@ Thank you for using SPAdes!
 
 <h3>2.2 SPAdes pipeline</h3>
 
-<p>SPAdes stores all the resulting files in the directory <code>&lt;output_dir></code>.
+<p>SPAdes stores all of its output files in the directory <code>&lt;output_dir></code>.
 </p>
 
-<p>Before starting assembly SPAdes initiates <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> to correct errors in reads.
-   After that the corrected reads are stored in the directory <code>&lt;output_dir>/corrected</code> in <code>*.fastq.qz</code> files.
+<p>Before starting assembly, SPAdes runs <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> to correct errors in reads.
+   After that, the corrected reads are stored in the directory <code>&lt;output_dir>/corrected</code> in <code>*.fastq.gz</code> files.
 </p>
 
 <p>
-    After assembly completion the resulting contigs are stored in the <code>&lt;output_dir>/contigs.fasta</code> file and the resulting
-    scaffolds are stored in the <code>&lt;output_dir>/scaffolds.fasta</code> file.
-    If the <code>--generate-sam-file</code> option was used, the symlink <code>contigs.sam</code> to the SAM-file will also be created in the same directory.
+    After assembly completion, the resulting contigs are stored in the file <code>&lt;output_dir>/contigs.fasta</code> and the resulting
+    scaffolds are stored in the file <code>&lt;output_dir>/scaffolds.fasta</code>.
+    If the <code>--generate-sam-file</code> option was used, a symlink <code>contigs.sam</code> to the SAM-file will also be created in the same directory.
 </p>
 
 
 <h3>2.3 SPAdes command line options </h3>
 
 <p>
-    To run SPAdes from the command line type
+    To run SPAdes from the command line, type
 </p>
 
 <pre class="code">
@@ -157,7 +157,7 @@ Thank you for using SPAdes!
 </pre>
 
 <p>
-    To run SPAdes on the toy dataset (see <a href="#sec1.3">section 1.3</a>) type
+    To run SPAdes on the toy dataset (see <a href="#sec1.3">section 1.3</a>), type
 </p>
 
 <pre class="code">
@@ -205,7 +205,7 @@ Thank you for using SPAdes!
 
 <p><code>-k &lt;int,int,...> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of k-mer sizes to be used (all values must be odd,
-    less than 100 and listed in the in ascending order). Default is 21,33,55.</p>
+    less than 100 and listed in ascending order). The default value is 21,33,55.</p>
 
 <p><code>-i &lt;int></code> (or <code>--iterations &lt;int></code>)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for error correction. The default value is 1.</p>
@@ -223,7 +223,7 @@ Thank you for using SPAdes!
     &nbsp;&nbsp;&nbsp;&nbsp;Forces error correction not to compress the corrected reads.</p>
 
 <p><code>--test</code> <br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the toy dataset, see <a href="#sec1.3">section 1.3</a>.</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the toy dataset; see <a href="#sec1.3">section 1.3</a>.</p>
 
 <p><code>--debug</code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes in debug mode, keeping intermediate results.</p>
@@ -235,7 +235,7 @@ Thank you for using SPAdes!
 <h3>2.4 Files and directories</h3>
 
 <p>
-    Usually <code>&lt;output_dir></code> directory contains the following files:
+    The directory <code>&lt;output_dir></code> contains the following files:
 </p>
 
 <pre>
@@ -246,7 +246,7 @@ Thank you for using SPAdes!
         <code>configs/</code> - <i>configuration files for error correction</i>
         <code>correction.log</code> - <i>error correction log</i>
         <code>dataset.info</code> - <i>internal configuration files</i>
-        <i>error correction resulting files</i>
+        <i>other error correction output file</i>
     <code>dataset.info</code> - <i>internal configuration files</i>
     <code>K21/</code> - <i>files from the run with K=21</i>
     <code>K33/</code> - <i>files from the run with K=33</i>
@@ -256,21 +256,21 @@ Thank you for using SPAdes!
 </pre>
 
 <p>
-    SPAdes will override these files and directories if they exist in the specified <code>&lt;output_dir></code>.
+    SPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir></code>.
 </p>
 
 <h3>2.5 Assembly evaluation</h3>
 
 <p>
-    We recommend to use <a href="http://bioinf.spbau.ru/quast">QUAST</a> for assembly evaluation.
+    We recommend using <a href="http://bioinf.spbau.ru/quast">QUAST</a> for assembly evaluation.
 </p>
 
 <h2>3 Feedback and bug reports</h2>
 
 <p>Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes.</p>
 
-<p>In case you have troubles running SPAdes, please provide us with the following files from
-    <code>&lt;output_dir></code> directory:
+<p>In case you have troubles running SPAdes, please provide us with the following files from the directory
+    <code>&lt;output_dir></code>:
 
 <pre class="code">
 <code>
