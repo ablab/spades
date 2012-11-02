@@ -17,7 +17,7 @@ set -e
 pushd ../../../
 project_name=$2
 creature_name=$1
-project_dir="spades_output/"$creature_name$project_name
+project_dir="spades_output/opeykin/"$creature_name$project_name
 output_pref="/home/dantipov/"
 options_dir=$output_pref"input/"$creature_name$project_name
 rm -rf $project_dir
@@ -67,8 +67,7 @@ for i in $dir*.fasta ; do
   fi
 done
 
-quast_line="$output_pref/quast-1.1/quast.py $dirtmp* $line -o $dir/quast_all/"
-quast1_2_line="$output_pref/quast-1.2/quast.py $dirtmp* $line -o $dir/quast1_2_all/"
+quast_line="$output_pref/quast-1.2/quast.py -M 500 $dirtmp* $line -o $dir/quast_all/"
 
 
 
