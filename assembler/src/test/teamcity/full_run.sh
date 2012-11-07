@@ -17,7 +17,7 @@ set -e
 pushd ../../../
 project_name=$2
 creature_name=$1
-project_dir="spades_output/opeykin/"$creature_name$project_name
+project_dir="spades_output/"$creature_name$project_name
 output_pref="/home/dantipov/"
 options_dir=$output_pref"input/"$creature_name$project_name
 rm -rf $project_dir
