@@ -10,7 +10,7 @@
 #include "mph_index.h"
 #include "io/mmapped_reader.hpp"
 #include "io/mmapped_writer.hpp"
-#include "io/pointer_iterator.hpp"
+#include "adt/pointer_iterator.hpp"
 
 #include "openmp_wrapper.h"
 

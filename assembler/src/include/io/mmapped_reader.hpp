@@ -7,8 +7,8 @@
 #ifndef HAMMER_MMAPPED_READER_HPP
 #define HAMMER_MMAPPED_READER_HPP
 
-#include "pointer_iterator.hpp"
-#include "array_vector.hpp"
+#include "adt/pointer_iterator.hpp"
+#include "adt/array_vector.hpp"
 
 #include "verify.hpp"
 

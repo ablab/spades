@@ -7,7 +7,7 @@
 #ifndef HAMMER_MMAPPED_WRITER_HPP
 #define HAMMER_MMAPPED_WRITER_HPP
 
-#include "pointer_iterator.hpp"
+#include "adt/pointer_iterator.hpp"
 
 #include <string>
 

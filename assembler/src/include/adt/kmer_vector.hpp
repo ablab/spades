@@ -1,7 +1,7 @@
 #ifndef __KMER_VECTOR_HPP__
 #define __KMER_VECTOR_HPP__
 
-#include "io/array_vector.hpp"
+#include "array_vector.hpp"
 
 template<class Seq>
 class KMerVector {
