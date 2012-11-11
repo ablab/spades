@@ -555,16 +555,16 @@ private:
 		double cov = 0;
 		double length = 0;
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			cov += graph_.coverage(*it) * graph_.length(*it);
+      cov += graph_.coverage(*it) * graph_.length(*it);
 			length += graph_.length(*it);
 		}
 		return cov / length;
 	}
 
-	double Median() const {
+	double Median(double thr = 500.0) const {
 		vector<double> coverages;
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (graph_.length(*it) > 500)
+			if (graph_.length(*it) > thr)
 				coverages.push_back(graph_.coverage(*it));
 		}
 #ifdef USE_GLIBCXX_PARALLEL
@@ -603,10 +603,9 @@ public:
 			if (weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width)) {
 				cnt++;
 			}
-			if (i > backet_width
-					&& weight(i - backet_width, histogram, backet_width)
-							> weight(i - backet_width - 1, histogram,
-									backet_width)) {
+			if (i > backet_width &&
+          weight(i - backet_width,     histogram, backet_width) >
+          weight(i - backet_width - 1, histogram, backet_width)) {
 				cnt--;
 			}
 			if (2 * cnt >= backet_width)
@@ -621,12 +620,13 @@ public:
 		INFO("Finding threshold started");
 //    std::vector<double> weights = CollectWeights();
     map<size_t, size_t> histogram = ConstructHistogram(/*weights*/);
-		for(size_t i = 0; i < histogram.size(); i++) {
+		for (size_t i = 0; i < histogram.size(); i++) {
 			TRACE(i << " " << histogram[i]);
 		}
 		double result = FindThreshold(histogram);
-		TRACE("Average coverage: " << AvgCoverage());
-		result = std::min(AvgCoverage(), result);
+		INFO("Average edge coverage: " << AvgCoverage());
+    INFO("Graph threshold: " << result);
+		result = std::max(AvgCoverage(), result);
 		INFO("Threshold finding finished. Threshold is set to " << result);
 		return result;
 	}

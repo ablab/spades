@@ -18,6 +18,7 @@
 #include "config_struct.hpp"
 #include "new_debruijn.hpp"
 #include "debruijn_stats.hpp"
+
 #include "omni/omni_utils.hpp"
 #include "omni/omni_tools.hpp"
 #include "omni/tip_clipper.hpp"
@@ -26,9 +27,10 @@
 #include "omni/erroneous_connection_remover.hpp"
 #include "omni/mf_ec_remover.hpp"
 #include "utils.hpp"
+
 #include "gap_closer.hpp"
 #include "graph_read_correction.hpp"
-#include "omni/bulge_remover_factory.hpp"
+#include "ec_threshold_finder.hpp"
 
 //#include "omni/devisible_tree.hpp"
 //
@@ -736,13 +738,16 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 //	complex_bulge_remover.Run();
 }
 
-double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
+template<class Graph>
+double FindErroneousConnectionsCoverageThreshold(const Graph &graph,
+                                                 const DeBruijnKMerIndex<typename Graph::EdgeId> &index) {
 	if (cfg::get().simp.ec.estimate_max_coverage) {
 		ErroneousConnectionThresholdFinder<Graph> t_finder(graph);
+    MCErroneousConnectionThresholdFinder<Graph> mct_finder(index);
+    INFO("MC: " << mct_finder.FindThreshold());
 		return t_finder.FindThreshold();
 	} else {
-		INFO(
-				"Coverage threshold value was set manually to " << cfg::get().simp.ec.max_coverage);
+		INFO("Coverage threshold value was set manually to " << cfg::get().simp.ec.max_coverage);
 		return cfg::get().simp.ec.max_coverage;
 	}
 }
@@ -767,7 +772,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 			cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
 	//ec auto threshold
-	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g);
+	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g, gp.index.inner_index());
 
 	if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
 		CloseGaps(gp);
