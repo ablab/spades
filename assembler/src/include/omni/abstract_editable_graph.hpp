@@ -32,6 +32,8 @@ public:
 	typedef typename DataMaster::VertexData VertexData;
 	typedef typename DataMaster::EdgeData EdgeData;
 	typedef VertexIt VertexIterator;
+  typedef typename std::vector<EdgeId>::const_iterator edge_const_iterator;
+
 private:
 	//todo think of necessity to pull these typedefs through hierarchy
 	DataMaster master_;
@@ -149,6 +151,10 @@ public:
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const = 0;
 
+  virtual edge_const_iterator out_begin(VertexId v) const = 0;
+
+  virtual edge_const_iterator out_end(VertexId v) const = 0;
+  
 	virtual const vector<EdgeId> IncomingEdges(VertexId v) const = 0;
 
 	virtual size_t OutgoingEdgeCount(VertexId v) const = 0;

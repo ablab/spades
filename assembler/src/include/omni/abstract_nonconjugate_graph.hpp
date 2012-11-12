@@ -32,6 +32,7 @@ private:
 	typedef restricted::pure_pointer<SingleVertex<DataMaster>> VertexId;
 	typedef restricted::pure_pointer<SingleEdge<DataMaster>> EdgeId;
 	typedef typename DataMaster::VertexData VertexData;
+  typedef typename std::vector<EdgeId>::const_iterator edge_const_iterator;
 
 	friend class AbstractGraph<restricted::pure_pointer<SingleVertex<DataMaster>>, restricted::pure_pointer<SingleEdge<DataMaster>>, DataMaster> ;
 	friend class AbstractNonconjugateGraph<DataMaster> ;
@@ -49,6 +50,14 @@ private:
 	const vector<EdgeId> OutgoingEdges() const {
 		return outgoing_edges_;
 	}
+
+  edge_const_iterator out_begin() const {
+    return outgoing_edges_.cbegin();
+  }
+
+  edge_const_iterator out_end() const {
+    return outgoing_edges_.cend();
+  }
 
 	size_t IncomingEdgeCount() const {
 		return incoming_edges_.size();

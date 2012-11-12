@@ -30,12 +30,13 @@ private:
 	typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
 	typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
 	typedef typename DataMaster::VertexData VertexData;
+  typedef typename std::vector<EdgeId>::const_iterator edge_const_iterator;
 
 	friend class AbstractGraph<restricted::pure_pointer<PairedVertex<DataMaster>>, restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster>;
 	friend class AbstractConjugateGraph<DataMaster>;
 	friend class PairedEdge<DataMaster>;
 
-	vector<EdgeId> outgoing_edges_;
+  std::vector<EdgeId> outgoing_edges_;
 
 	VertexId conjugate_;
 
@@ -52,6 +53,14 @@ private:
 	const vector<EdgeId>& OutgoingEdges() const {
 		return outgoing_edges_;
 	}
+
+  edge_const_iterator out_begin() const {
+    return outgoing_edges_.cbegin();
+  }
+
+  edge_const_iterator out_end() const {
+    return outgoing_edges_.cend();
+  }
 
 	const vector<EdgeId> OutgoingEdgesTo(VertexId v) const {
 		vector<EdgeId> result;

@@ -47,7 +47,7 @@ public:
 	typedef typename DataMaster::VertexData VertexData;
 	typedef typename DataMaster::EdgeData EdgeData;
 	typedef typename base::VertexIterator VertexIterator;
-
+  typedef typename std::vector<EdgeId>::const_iterator edge_const_iterator;
 
 protected:
 
@@ -66,6 +66,14 @@ public:
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
 		return v->OutgoingEdges();
 	}
+
+  virtual edge_const_iterator out_begin(VertexId v) const {
+    return v->out_begin();
+  }
+
+  virtual edge_const_iterator out_end(VertexId v) const {
+    return v->out_end();
+  }
 
 	virtual const vector<EdgeId> IncomingEdges(VertexId v) const {
 		return v->IncomingEdges();
