@@ -62,7 +62,7 @@ def vars_from_lines(lines):
 
     vars = dict()
 
-    for i in xrange(len(lines)):
+    for i in range(len(lines)):
         var, meta = var_from_line(lines[i], i)
         if var is not None:
             vars[var] = meta
@@ -133,7 +133,7 @@ def load_config_from_info_file(filename):
 
     cur_block_name = "common"
     blocks[cur_block_name] = []
-    for i in xrange(1, len(lines) + 1):
+    for i in range(1, len(lines) + 1):
         prev_line = skip_info_comment(lines[i - 1])
         cur_line = ""
         if i < len(lines):
