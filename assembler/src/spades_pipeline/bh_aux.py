@@ -53,7 +53,7 @@ def hammer(given_props, output_dir, compress):
 
     cmd = []
     dataset_entry = []
-    for prop in given_props.iterkeys():
+    for prop in given_props.keys():
         val = given_props[prop]
         if prop in read_files():
             new_val = '"'
@@ -79,7 +79,7 @@ def hammer(given_props, output_dir, compress):
 def dataset_print(dataset):
     result = ""
     dataset_dict = dict(dataset)
-    for key, value in dataset_dict.iteritems():
+    for key, value in dataset_dict.items():
         result += key + "\t" + value + "\n"
     return result
 
@@ -119,7 +119,7 @@ def generate_dataset(cfg):
     import process_cfg
 
     dataset_cfg["single_cell"] = process_cfg.bool_to_str(cfg.single_cell)
-    for key, value in cfg.__dict__.iteritems():
+    for key, value in cfg.__dict__.items():
         if key.startswith("original_"):
             dataset_cfg[key] = value
         elif key == "reference_genome":
