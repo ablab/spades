@@ -606,8 +606,7 @@ public:
 					"SmartEdgeIterator " + ToString(get_id()), true, comparator) {
 		if (edges == 0) {
 			for (auto it = graph.begin(); it != graph.end(); ++it) {
-				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
-				this->super::insert(outgoing.begin(), outgoing.end());
+        this->super::insert(graph.out_begin(*it), graph.out_end(*it));
 			}
 		} else {
 			this->super::insert(edges->begin(), edges->end());
@@ -998,11 +997,11 @@ class RelativeEdgeRemover : public AbstractEdgeRemover<Graph>{
 	 }*/
 
 	bool CheckAlternatives(EdgeId e) {
-		if(g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1
-				&& g_.IncomingEdgeCount(g_.EdgeEnd(e)) > 1)
+		if (g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1 &&
+				g_.IncomingEdgeCount(g_.EdgeEnd(e)) > 1)
 			return true;
 		vector<EdgeId> alternatives;
-		if(g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1) {
+		if (g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1) {
 			alternatives = g_.OutgoingEdges(g_.EdgeStart(e));
 		} else {
 			alternatives = g_.IncomingEdges(g_.EdgeEnd(e));
@@ -1087,8 +1086,8 @@ class EdgeRemover : public AbstractEdgeRemover<Graph>{
 	 }*/
 
 	bool CheckAlternatives(EdgeId e) {
-		return g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1
-				&& g_.IncomingEdgeCount(g_.EdgeEnd(e)) > 1;
+		return g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1 &&
+				   g_.IncomingEdgeCount(g_.EdgeEnd(e)) > 1;
 	}
 
 public:
@@ -1387,38 +1386,40 @@ private:
     // In this case, we choose from the tip, alternative tip, 
     // and potential erroneous connection between them.
     bool CheckTipTip(EdgeId tip, EdgeId alter) {
-        if (backward) {
-            for (size_t i = 0; i < graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)); ++i) {
-                EdgeId alter_tip = graph_.OutgoingEdges(graph_.EdgeStart(alter))[i];
-                if (IsTip(graph_.OutgoingEdges(graph_.EdgeStart(alter))[i])) { 
-                    if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) 
-                        && math::ge(graph_.coverage(alter), graph_.coverage(tip))) {
-                        tip_lock_.Lock(alter_tip);
-                        return true;
-                    }
-                }
+      if (backward) {
+        EdgeId edge = graph_.EdgeStart(alter);
+        for (auto I = graph_.out_begin(edge), E = graph_.out_end(edge); I != E; ++I) {
+          EdgeId alter_tip = *I;
+          if (IsTip(alter_tip)) {
+            if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) &&
+                math::ge(graph_.coverage(alter), graph_.coverage(tip))) {
+              tip_lock_.Lock(alter_tip);
+              return true;
             }
-        } 
-        else {
-            for (size_t i = 0; i < graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)); ++i) {
-                EdgeId alter_tip = graph_.IncomingEdges(graph_.EdgeEnd(alter))[i];
-                if (IsTip(graph_.IncomingEdges(graph_.EdgeEnd(alter))[i])) {
-                    if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) && math::ge(graph_.coverage(alter), graph_.coverage(tip))) {
-                        tip_lock_.Lock(alter_tip);
-                        return true;   
-                    }
-                }
-            }
+          }
         }
-        return false;
+      } else {
+        auto edges = graph_.IncomingEdges(graph_.EdgeEnd(alter));
+        for (size_t i = 0; i < edges.size(); ++i) {
+          EdgeId alter_tip = edges[i];
+          if (IsTip(alter_tip)) {
+            if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) &&
+                math::ge(graph_.coverage(alter), graph_.coverage(tip))) {
+              tip_lock_.Lock(alter_tip);
+              return true;
+            }
+          }
+        }
+      }
+      return false;
     }
 
     // checking whether it is a potential erroneous connection situation. (H - situation)
     bool CheckAlternativeForEC(EdgeId tip, EdgeId alter) {
         if (graph_.length(alter) > max_ec_length_) 
             return false; 
-        if (graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)) <= 1 
-            || graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)) <= 1) 
+        if (graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)) <= 1 ||
+            graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)) <= 1) 
             return false;
         return true;
     }
@@ -1650,17 +1651,16 @@ private:
 		was.insert(a);
 		if(graph_.OutgoingEdgeCount(a) == 0 || graph_.IncomingEdgeCount(a) == 0)
 			return false;
-		vector<EdgeId> out = graph_.OutgoingEdges(a);
-		for(auto it = out.begin(); it != out.end(); ++it) {
-			if(*it == e) {
-				if(a != start) {
+    for (auto I = graph_.out_begin(a), E = graph_.out_end(a); I != E; ++I) {
+			if (*I == e) {
+				if (a != start) {
 					return false;
 				}
 			} else {
-				if(graph_.length(*it) >= uniqueness_length_) {
+				if (graph_.length(*I) >= uniqueness_length_) {
 					result.second++;
 				} else {
-					if(!search(graph_.EdgeEnd(*it), start, e, depth + 1 /*graph_.length(*it)*/, was, result))
+					if (!search(graph_.EdgeEnd(*I), start, e, depth + 1 /*graph_.length(*it)*/, was, result))
 						return false;
 				}
 			}

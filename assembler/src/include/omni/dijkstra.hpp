@@ -95,9 +95,9 @@ public:
 
 	virtual std::vector<std::pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
 		std::vector<std::pair<VertexId, EdgeId> > result;
-		std::vector<EdgeId> edges = graph_.OutgoingEdges(vertex);
-		for (size_t i = 0; i < edges.size(); i++) {
-			result.push_back(make_pair(graph_.EdgeEnd(edges[i]), edges[i]));
+    for (auto I = graph_.out_begin(vertex), E = graph_.out_end(vertex); I != E; ++I) {
+      EdgeId edge = *I;
+      result.push_back(make_pair(graph_.EdgeEnd(edge), edge));
 		}
 		return result;
 	}
@@ -236,15 +236,18 @@ public:
 	virtual std::vector<std::pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
 		std::vector <std::pair<VertexId, EdgeId> > result;
 		const Graph &g = this->graph();
-		std::vector <EdgeId> edges = g.OutgoingEdges(vertex);
-		for (size_t i = 0; i < edges.size(); i++) {
-			result.push_back(make_pair(g.EdgeEnd(edges[i]), edges[i]));
-		}
-		edges = g.IncomingEdges(vertex);
+
+    for (auto I = g.out_begin(vertex), E = g.out_end(vertex); I != E; ++I) {
+      EdgeId edge = *I;
+			result.push_back(make_pair(g.EdgeEnd(edge), edge));
+    }
+
+		std::vector <EdgeId> edges = g.IncomingEdges(vertex);
 		for (size_t i = 0; i < edges.size(); i++) {
 			result.push_back(make_pair(g.EdgeStart(edges[i]), edges[i]));
 		}
-		return result;
+
+    return result;
 	}
 };
 

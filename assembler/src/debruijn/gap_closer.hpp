@@ -94,15 +94,11 @@ private:
 				while (edge_stack.size() > 0) {
 					pair<EdgeId, int> checking_pair = edge_stack.top();
 					edge_stack.pop();
-					if (graph_.IncomingEdgeCount(
-							graph_.EdgeEnd(checking_pair.first)) == 1) {
-						if (graph_.OutgoingEdges(
-								graph_.EdgeEnd(checking_pair.first)).size()
-								> 0) {
-							vector<EdgeId> vec = graph_.OutgoingEdges(
-									graph_.EdgeEnd(checking_pair.first));
-							for (size_t i = 0; i < vec.size(); i++) {
-								EdgeId Cur_edge = vec[i];
+					if (graph_.IncomingEdgeCount(graph_.EdgeEnd(checking_pair.first)) == 1) {
+            VertexId v = graph_.EdgeEnd(checking_pair.first);
+						if (graph_.OutgoingEdgeCount(v)) {
+              for (auto I = graph_.out_begin(v), E = graph_.out_end(v); I != E; ++I) {
+								EdgeId Cur_edge = *I;
 								InTipMap.insert(
 										make_pair(
 												Cur_edge,
@@ -130,11 +126,8 @@ private:
 				while (edge_stack.size() > 0) {
 					pair<EdgeId, int> checking_pair = edge_stack.top();
 					edge_stack.pop();
-					if (graph_.OutgoingEdgeCount(
-							graph_.EdgeStart(checking_pair.first)) == 1) {
-						if (graph_.IncomingEdges(
-								graph_.EdgeStart(checking_pair.first)).size()
-								> 0) {
+					if (graph_.OutgoingEdgeCount(graph_.EdgeStart(checking_pair.first)) == 1) {
+						if (graph_.IncomingEdgeCount(graph_.EdgeStart(checking_pair.first))) {
 							vector<EdgeId> vec = graph_.IncomingEdges(
 									graph_.EdgeStart(checking_pair.first));
 							for (size_t i = 0; i < vec.size(); i++) {

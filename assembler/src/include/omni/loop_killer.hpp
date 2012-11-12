@@ -30,10 +30,9 @@ private:
 	VertexId FindFinish(set<VertexId> component_set) {
 		VertexId result;
 		for(auto it = component_set.begin(); it != component_set.end(); ++it) {
-			vector<EdgeId> outgoing = graph_.OutgoingEdges(*it);
-			for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
-				if(component_set.count(graph_.EdgeEnd(*eit)) == 0) {
-					if(result != VertexId()) {
+			for (auto I = graph_.out_begin(*it), E = graph_.out_end(*it); I != E; ++I) {
+				if (component_set.count(graph_.EdgeEnd(*I)) == 0) {
+					if (result != VertexId()) {
 						return VertexId();
 					}
 					result = *it;
@@ -101,18 +100,18 @@ private:
 
 	vector<EdgeId> FindPath(VertexId start, VertexId finish, set<VertexId> &was, const set<VertexId> &component) {
 		was.insert(start);
-		if(start == finish)
+		if (start == finish)
 			return {};
-		vector<EdgeId> outgoing = this->g().OutgoingEdges(start);
-		for(auto it = outgoing.begin(); it != outgoing.end(); ++it) {
-			VertexId next = this->g().EdgeEnd(*it);
-			if(next == finish) {
-				return {*it};
+    for (auto I = this->g().out_begin(start), E = this->g().out_end(start); I != E; ++I) {
+      EdgeId edge = *I;
+			VertexId next = this->g().EdgeEnd(edge);
+			if (next == finish) {
+				return { edge };
 			}
-			if(was.count(next) == 0 && component.count(next) != 0) {
+			if (was.count(next) == 0 && component.count(next) != 0) {
 				vector<EdgeId> result = FindPath(next, finish, was, component);
-				if(result.size() > 0) {
-					result.push_back(*it);
+				if (result.size() > 0) {
+					result.push_back(edge);
 					return result;
 				}
 			}
@@ -122,14 +121,14 @@ private:
 
 	bool CheckNotMuchRemoved(const set<EdgeId> &edges, const set<VertexId> &component) {
 		size_t sum = 0;
-		for(auto it = component.begin(); it != component.end(); ++it) {
-			vector<EdgeId> outgoing = this->g().OutgoingEdges(*it);
-			for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
-				if(component.count(this->g().EdgeEnd(*eit)) == 1 && edges.count(*eit) == 0 ) {
-					if(this->g().length(*eit) > 500) {
+		for (auto it = component.begin(); it != component.end(); ++it) {
+      for (auto I = this->g().out_begin(*it), E = this->g().out_end(*it); I != E; ++I) {
+        EdgeId edge = *I;
+				if (component.count(this->g().EdgeEnd(edge)) == 1 && edges.count(edge) == 0 ) {
+					if (this->g().length(edge) > 500) {
 						return false;
 					}
-					sum += this->g().length(*eit);
+					sum += this->g().length(edge);
 				}
 			}
 		}
@@ -142,16 +141,17 @@ private:
 	void RemoveExtraEdges(const set<EdgeId> &edges, const set<VertexId> &component) {
 		vector<VertexId> comp(component.begin(), component.end());
 		vector<EdgeId> to_delete;
-		for(auto it = comp.begin(); it != comp.end(); ++it) {
-			vector<EdgeId> outgoing = this->g().OutgoingEdges(*it);
-			for(auto eit = outgoing.begin(); eit != outgoing.end(); ++eit) {
-				if(component.count(this->g().EdgeEnd(*eit)) == 1 && edges.count(*eit) == 0 ) {
-					to_delete.push_back(*eit);
+		for (auto it = comp.begin(); it != comp.end(); ++it) {
+      for (auto I = this->g().out_begin(*it), E = this->g().out_end(*it); I != E; ++I) {
+        EdgeId edge = *I;
+				if (component.count(this->g().EdgeEnd(edge)) == 1 && edges.count(edge) == 0) {
+					to_delete.push_back(edge);
 				}
 			}
 		}
+    
 		SmartSetIterator<Graph, EdgeId> s(this->g(), to_delete.begin(), to_delete.end());
-		while(!s.IsEnd()) {
+		while (!s.IsEnd()) {
 			this->g().DeleteEdge(*s);
 			++s;
 		}
@@ -159,8 +159,8 @@ private:
 
 	void RemoveIsolatedVertices(set<VertexId> component) {
 		SmartSetIterator<Graph, VertexId> s(this->g(), component.begin(), component.end());
-		while(!s.IsEnd()) {
-			if(this->g().IsDeadStart(*s) && this->g().IsDeadEnd(*s)) {
+		while (!s.IsEnd()) {
+			if (this->g().IsDeadStart(*s) && this->g().IsDeadEnd(*s)) {
 				this->g().DeleteVertex(*s);
 			}
 			++s;

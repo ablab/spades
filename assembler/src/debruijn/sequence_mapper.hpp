@@ -214,10 +214,11 @@ class SimpleSequenceMapper {
         return true;
       }
     } else {
-      std::vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last));
-      for (size_t i = 0; i < edges.size(); i++) {
-        if (g_.EdgeNucls(edges[i])[k_ - 1] == kmer[k_ - 1]) {
-          passed.push_back(edges[i]);
+      VertexId v = g_.EdgeEnd(last);
+      for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
+        EdgeId edge = *I;
+        if (g_.EdgeNucls(edge)[k_ - 1] == kmer[k_ - 1]) {
+          passed.push_back(edge);
           endPosition = 0;
           return true;
         }
@@ -428,10 +429,11 @@ class NewExtendedSequenceMapper {
         return true;
       }
     } else {
-      std::vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last_edge));
-      for (size_t i = 0; i < edges.size(); i++) {
-        if (g_.EdgeNucls(edges[i])[k_ - 1] == kmer[k_ - 1]) {
-          passed.push_back(edges[i]);
+      VertexId v = g_.EdgeEnd(last_edge);
+      for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
+        EdgeId edge = *I;
+        if (g_.EdgeNucls(edge)[k_ - 1] == kmer[k_ - 1]) {
+          passed.push_back(edge);
           range_mappings.push_back(
               MappingRange(Range(kmer_pos, kmer_pos + 1),
                            Range(0, 1)));

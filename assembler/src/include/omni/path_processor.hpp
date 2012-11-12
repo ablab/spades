@@ -111,19 +111,17 @@ private:
 			TRACE("Callback is performed.");
 			callback_.HandlePath(path_);
 			TRACE("Callback finished");
-		}TRACE("Iterating through outgoing edges of vertex " << g_.int_id(v))
-		vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
-		for (size_t i = 0; i < outgoing_edges.size(); ++i) {
-			TRACE(
-					"Processing outgoing edge " << g_.int_id(outgoing_edges[i]) << " started");
-			EdgeId edge = outgoing_edges[i];
+		}
+    TRACE("Iterating through outgoing edges of vertex " << g_.int_id(v))
+		for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
+			EdgeId edge = *I;
+      TRACE("Processing outgoing edge " << g_.int_id(edge) << " started");
 			path_.push_back(edge);
-			Go(g_.EdgeEnd(edge), current_path_length + g_.length(edge),
-					distances_to_end);
+			Go(g_.EdgeEnd(edge), current_path_length + g_.length(edge),	distances_to_end);
 			path_.pop_back();
-			TRACE(
-					"Processing outgoing edge " << g_.int_id(outgoing_edges[i]) << " finished");
-		}TRACE("Processing vertex " << g_.int_id(v) << " finished");
+			TRACE("Processing outgoing edge " << g_.int_id(edge) << " finished");
+		}
+    TRACE("Processing vertex " << g_.int_id(v) << " finished");
 	}
 
 public:

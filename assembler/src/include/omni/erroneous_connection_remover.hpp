@@ -264,7 +264,13 @@ private:
 
 template<class T>
 void Append(vector<T>& current, const vector<T>& to_append) {
-	current.insert(current.end(), to_append.begin(), to_append.end());
+  Append(current, to_append.begin(), to_append.end());
+}
+
+template<class T>
+void Append(vector<T>& current,
+            const typename vector<T>::const_iterator begin, const typename vector<T>::const_iterator end) {
+  current.insert(current.end(), begin, end);
 }
 
 template<class Graph>
@@ -304,22 +310,20 @@ public:
 	}
 
 	void InnerRemoveEdges() {
-		LengthComparator<Graph> comparator(this->graph());
-		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
-				++it) {
+    const Graph &g = this->graph();
+		LengthComparator<Graph> comparator(g);
+		for (auto it = g.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
-			if (this->graph().length(e) > max_length_) {
+			if (g.length(e) > max_length_) {
 				return;
 			}
 			vector<EdgeId> adjacent_edges;
 			Append(adjacent_edges,
-					this->graph().OutgoingEdges(this->graph().EdgeStart(e)));
+             g.out_begin(g.EdgeStart(e)), g.out_end(g.EdgeStart(e)));
+			Append(adjacent_edges, g.IncomingEdges(g.EdgeStart(e)));
 			Append(adjacent_edges,
-					this->graph().IncomingEdges(this->graph().EdgeStart(e)));
-			Append(adjacent_edges,
-					this->graph().OutgoingEdges(this->graph().EdgeEnd(e)));
-			Append(adjacent_edges,
-					this->graph().IncomingEdges(this->graph().EdgeEnd(e)));
+             g.out_begin(g.EdgeEnd(e)), g.out_end(g.EdgeEnd(e)));
+			Append(adjacent_edges, g.IncomingEdges(g.EdgeEnd(e)));
 
 			if (CheckAdjacent(adjacent_edges, e)) {
 				this->DeleteEdge(e);
@@ -524,7 +528,6 @@ class ThornRemover: public ErroneousEdgeRemover<Graph> {
 		if(this->graph().RelatedVertices(this->graph().EdgeStart(e), this->graph().EdgeEnd(e))) {
 			return true;
 		}
-		vector<EdgeId> edges = this->graph().OutgoingEdges(this->graph().EdgeStart(e));
 		if(this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e)) != 2)
 			return false;
 		if(this->graph().IncomingEdgeCount(this->graph().EdgeStart(e)) != 1)
@@ -767,17 +770,13 @@ public:
 	}
 
 	bool CheckAnyPairInfoAbsense(EdgeId possible_ec) {
+    const Graph &g = this->graph();
 		TRACE("Checking pair info absense");
-		vector<EdgeId> incoming = this->graph().IncomingEdges(
-				this->graph().EdgeStart(possible_ec));
-		vector<EdgeId> outgoing = this->graph().OutgoingEdges(
-				this->graph().EdgeEnd(possible_ec));
+		vector<EdgeId> incoming = g.IncomingEdges(g.EdgeStart(possible_ec));
 		for (auto it1 = incoming.begin(); it1 != incoming.end(); ++it1)
-			for (auto it2 = outgoing.begin(); it2 != outgoing.end(); ++it2)
-				if (!ShouldContainInfo(*it1, *it2,
-						this->graph().length(possible_ec))
-						|| ContainsInfo(*it1, *it2,
-								this->graph().length(possible_ec))) {
+			for (auto I2 = g.out_begin(g.EdgeEnd(possible_ec)), E2 = g.out_end(g.EdgeEnd(possible_ec)); I2 != E2; ++I2)
+				if (!ShouldContainInfo(*it1, *I2, g.length(possible_ec)) ||
+						ContainsInfo(*it1, *I2, g.length(possible_ec))) {
 					TRACE("Check absense: fail");
 					return false;
 				}TRACE("Check absense: ok");
@@ -805,24 +804,26 @@ public:
 	}
 
 	void InnerRemoveEdges() {
+    const Graph &g = this->graph();
+
 		TRACE("Removing erroneous edges based on pair info");
-		LengthComparator<Graph> comparator(this->graph());
-		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
+		LengthComparator<Graph> comparator(g);
+		for (auto it = g.SmartEdgeBegin(comparator); !it.IsEnd();
 				++it) {
 			typename Graph::EdgeId e = *it;
 			TRACE("Considering edge " << PrintEdge(e));
-			if (this->graph().length(e) > max_length_) {
+			if (g.length(e) > max_length_) {
 				TRACE("Max length bound = " << max_length_ << " was exceeded");
 				return;
 			}
 			vector<EdgeId> adjacent_edges;
 			Append(adjacent_edges,
-					this->graph().IncomingEdges(this->graph().EdgeStart(e)));
+             g.IncomingEdges(g.EdgeStart(e)));
 			Append(adjacent_edges,
-					this->graph().OutgoingEdges(this->graph().EdgeEnd(e)));
+             g.out_begin(g.EdgeEnd(e)), g.out_end(g.EdgeEnd(e)));
 
-			if (CheckAdjacentLengths(adjacent_edges, e)
-					&& CheckAnyPairInfoAbsense(e)) {
+			if (CheckAdjacentLengths(adjacent_edges, e) &&
+					CheckAnyPairInfoAbsense(e)) {
 //				VertexId start = g_.EdgeStart(e);
 //				VertexId end = g_.EdgeEnd(e);
 //				TRACE("Try deleting edge " << PrintEdge(e));

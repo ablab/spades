@@ -361,25 +361,28 @@ private:
 	}
 
     bool CheckAllAlternativesAreTips(EdgeId tip) const {
-        VertexId start = this->graph().EdgeStart(tip);
-        TRACE("Check started");
-        VertexId end = this->graph().EdgeEnd(tip);
-        for (size_t i = 0; i<this->graph().OutgoingEdgeCount(start); ++i){
-            EdgeId edge = this->graph().OutgoingEdges(start)[i];
-            if (edge != tip){
-                if (!IsTip(edge))
-                    return false;
-            }
+      const Graph &g = this->graph();
+      VertexId start = g.EdgeStart(tip);
+      TRACE("Check started");
+      VertexId end = g.EdgeEnd(tip);
+      for (auto I = g.out_begin(start), E = g.out_end(start); I != E; ++I) {
+        EdgeId edge = *I;
+        if (edge != tip){
+          if (!IsTip(edge))
+            return false;
         }
-        for (size_t i = 0; i<this->graph().IncomingEdgeCount(end); ++i){
-            EdgeId edge = this->graph().IncomingEdges(end)[i];
-            if (edge != tip){
-                if (!IsTip(edge))
-                    return false;
-            }
+      }
+
+      auto edges = g.IncomingEdges(end);
+      for (size_t i = 0; i < edges.size(); ++i){
+        EdgeId edge = edges[i];
+        if (edge != tip){
+          if (!IsTip(edge))
+            return false;
         }
-        TRACE("Check finished");
-        return true;
+      }
+      TRACE("Check finished");
+      return true;
     }
 
     //TODO: remove constants
@@ -387,20 +390,28 @@ private:
     bool CheckUniqueExtension(EdgeId tip) const {
         static const size_t mid_edge = 200;
         static const size_t long_edge = 1500;
-        bool backward = this->IsTip(this->graph().EdgeStart(tip));
-        if (backward){
-            VertexId vertex = this->graph().EdgeEnd(tip);
-            for (size_t i = 0; i<this->graph().IncomingEdgeCount(vertex); ++i) 
-                if (this->graph().length(this->graph().IncomingEdges(vertex)[i]) < mid_edge) return false;
-            if (this->graph().IncomingEdgeCount(vertex) == 2 && this->graph().OutgoingEdgeCount(vertex) == 1)
-                return (this->graph().length(this->graph().OutgoingEdges(vertex)[0]) > long_edge);
-        }else{
-            VertexId vertex = this->graph().EdgeStart(tip);
-            for (size_t i = 0; i<this->graph().OutgoingEdgeCount(vertex); ++i) 
-                if (this->graph().length(this->graph().OutgoingEdges(vertex)[i]) < mid_edge) return false;
-            if (this->graph().OutgoingEdgeCount(vertex) == 2 && this->graph().IncomingEdgeCount(vertex) == 1)
-                return (this->graph().length(this->graph().IncomingEdges(vertex)[0]) > long_edge);
+        const Graph &g = this->graph();
+        bool backward = this->IsTip(g).EdgeStart(tip);
+        if (backward) {
+            VertexId vertex = g.EdgeEnd(tip);
+            auto edges = g.IncomingEdges(vertex);
+            for (size_t i = 0; i < edges.size(); ++i) {
+              if (g.length(edges[i]) < mid_edge)
+                return false;
+            }
+
+            if (g.IncomingEdgeCount(vertex) == 2 && g.OutgoingEdgeCount(vertex) == 1)
+              return (g.length(*g.out_begin(vertex)) > long_edge);
+        } else {
+            VertexId vertex = g.EdgeStart(tip);
+            for (auto I = g.out_begin(vertex), E = g.out_end(vertex); I != E; ++I)
+              if (g.length(*I) < mid_edge)
+                return false;
+
+            if (g.OutgoingEdgeCount(vertex) == 2 && g.IncomingEdgeCount(vertex) == 1)
+              return (g.length(g.IncomingEdges(vertex)[0]) > long_edge);
         }
+
         return false;
     }
 
