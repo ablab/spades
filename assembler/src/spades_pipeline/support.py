@@ -32,7 +32,7 @@ class Tee(object):
 
 def verify(expr, message):
     if (not (expr)):
-        print "Assertion failed. Message: " + message
+        print ("Assertion failed. Message: " + message)
         exit(1)
 
 
