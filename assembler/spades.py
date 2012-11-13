@@ -98,7 +98,7 @@ def print_used_values(cfg):
         print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
 
         if cfg["error_correction"].gzip_output:
-            print ("  Corrected reads will be compressed (with gzip)"),
+            print ("  Corrected reads will be compressed (with gzip)")
         else:
             print ("  Corrected reads will NOT be compressed (with gzip)")
 
