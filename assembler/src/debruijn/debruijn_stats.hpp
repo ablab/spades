@@ -840,6 +840,49 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 	}DEBUG("Contigs written");
 }
 
+bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
+	vector<EdgeId> edges = g.OutgoingEdges(v);
+	if(edges.size() == 0)
+		return false;
+	for(size_t i = 1; i < edges.size(); i++) {
+		if(g.EdgeNucls(edges[i])[g.k()] != g.EdgeNucls(edges[0])[g.k()])
+			return false;
+	}
+	for(size_t i = 0; i < edges.size(); i++)
+		for(size_t j = i + 1; j < edges.size(); j++) {
+			if(g.EdgeNucls(edges[i])[g.k()] != g.EdgeNucls(edges[j])[g.k()])
+				return true;
+		}
+	return false;
+}
+
+void OutputCutContigs(ConjugateDeBruijnGraph& g,
+		const string& contigs_output_filename,
+		bool output_unipath = false,
+		size_t solid_edge_length_bound = 0) {
+	INFO("Outputting contigs to " << contigs_output_filename);
+	osequencestream_cov oss(contigs_output_filename);
+	set<ConjugateDeBruijnGraph::EdgeId> edges;
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		EdgeId e = *it;
+		if (edges.count(e) == 0) {
+			Sequence s = g.EdgeNucls(e);
+			if(s.size() > g.k() && ShouldCut(g, g.EdgeEnd(e))) {
+				s = s.Subseq(0, s.size() - g.k());
+			}
+			if(s.size() > g.k() && ShouldCut(g, g.conjugate(g.EdgeStart(e)))) {
+				s = s.Subseq(g.k(), s.size());
+			}
+			if (PossibleECSimpleCheck(g, e) && s.size() <= solid_edge_length_bound) {
+				oss << g.coverage(e);
+				oss << s;
+			}
+			edges.insert(g.conjugate(*it));
+		}
+		//		oss << g.EdgeNucls(*it);
+	}
+}
+
 void OutputMaskedContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename, MismatchMasker<ConjugateDeBruijnGraph>& masker,
 		bool output_unipath = false,
