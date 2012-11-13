@@ -24,103 +24,103 @@ def print_used_values(cfg):
             pretty_param = param.capitalize().replace('_', ' ')
         sys.stdout.write(margin + pretty_param)
         if param in cfg[section].__dict__:
-            print ": " + str(cfg[section].__dict__[param])
+            print (": " + str(cfg[section].__dict__[param]))
         else:
             if param.find("offset") != -1:
-                print " will be auto-detected"
+                print (" will be auto-detected")
 
-    print ""
+    print ("")
 
     # system info
-    print "System information:"
+    print ("System information:")
     try:
-        print "  OS: ", platform.platform() 
+        print ("  OS: " + platform.platform())
         # for more deatils: '[' + str(platform.uname()) + ']'
-        print "  Python version:", str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
+        print ("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.' + str(sys.version_info[2]))
         # for more details: '[' + str(sys.version_info) + ']'
     except:
-        print "  Problem occured when getting system information"        
-    print ""
+        print ("  Problem occured when getting system information")
+    print ("")
 
     # main
     print_value(cfg, "common", "output_dir", "", "")
     print "Mode:",
     if ("error_correction" in cfg) and (not "assembly" in cfg):
-        print "ONLY error correction (without assembler)"
+        print ("ONLY error correction (without assembler)")
     elif (not "error_correction" in cfg) and ("assembly" in cfg):
-        print "ONLY assembler (without error correction)"
+        print ("ONLY assembler (without error correction)")
     else:
-        print "error correction and assembler"
+        print ("error correction and assembler")
     if ("common" in cfg) and ("developer_mode" in cfg["common"].__dict__):
         if cfg["common"].developer_mode:
-            print "Debug mode turned ON"
+            print ("Debug mode turned ON")
         else:
-            print "Debug mode turned OFF"
-    print ""
+            print ("Debug mode turned OFF")
+    print ("")
 
     # dataset
     if "dataset" in cfg:
-        print "Dataset parameters:"
+        print ("Dataset parameters:")
 
         if cfg["dataset"].single_cell:
-            print "  Single-cell mode"
+            print ("  Single-cell mode")
         else:
-            print "  Multi-cell mode (you should set '--sc' flag if input data"\
-                  " was obtained with MDA (single-cell) technology"
+            print ("  Multi-cell mode (you should set '--sc' flag if input data"\
+                  " was obtained with MDA (single-cell) technology")
 
         no_single = True
         no_paired = True
-        for k, v in cfg["dataset"].__dict__.iteritems():
+        for k, v in cfg["dataset"].__dict__.items():
             if k.startswith("single_reads") or k.startswith("paired_reads"):
                 if k.startswith("paired_reads"):
                     no_paired = False
                     if not isinstance(v, list):
-                        print "  Paired reads (file with interlaced reads):"
+                        print ("  Paired reads (file with interlaced reads):")
                     else:
-                        print "  Paired reads (files with left and right reads):"
+                        print ("  Paired reads (files with left and right reads):")
                 else:
                     no_single = False
-                    print "  Single reads:"
+                    print ("  Single reads:")
                 if not isinstance(v, list):
                     v = [v]
                 for reads_file in v:
-                    print "    ", os.path.abspath(os.path.expandvars(reads_file))
+                    print ("    "  + os.path.abspath(os.path.expandvars(reads_file)))
 
         if no_paired:
-            print "  Paired reads was not specified"
+            print ("  Paired reads was not specified")
         if no_single:
-            print "  Single reads was not specified"
+            print ("  Single reads was not specified")
 
     # error correction
     if "error_correction" in cfg:
-        print "Error correction parameters:"
+        print ("Error correction parameters:")
         print_value(cfg, "error_correction", "tmp_dir", "Dir for temp files")
         print_value(cfg, "error_correction", "max_iterations", "Iterations")
         print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
         print "  Corrected reads will",
         if not cfg["error_correction"].gzip_output:
             print "NOT",
-        print "be compressed (with gzip)"
+        print ("be compressed (with gzip)")
 
     # assembly
     if "assembly" in cfg:
-        print "Assembly parameters:"
+        print ("Assembly parameters:")
         print_value(cfg, "assembly", "iterative_K", "k")
         print "  SAM file will",
         if not cfg["assembly"].generate_sam_files:
-            print "NOT be generated (WARNING: SAM file are required "\
-                  "for some of postprocessing tools)"
+            print ("NOT be generated (WARNING: SAM file are required "\
+                  "for some of postprocessing tools)")
         else:
-            print "be generated"
+            print ("be generated")
         print "  The gap closer will",
         if not cfg["assembly"].gap_closer:
             print "NOT",
-        print "be used"
+        print ("be used")
 
-    print "Other parameters:"
+    print ("Other parameters:")
     print_value(cfg, "common", "max_threads", "Threads")
     print_value(cfg, "common", "max_memory", "Memory limit (in Gb)", "  ")
-    print ""
+    print ("")
 
 
 def check_config(cfg):
@@ -144,7 +144,7 @@ def check_config(cfg):
     ## checking existence of all files in dataset section
 
     no_files_with_reads = True
-    for k, v in cfg["dataset"].__dict__.iteritems():
+    for k, v in cfg["dataset"].__dict__.items():
         if k.startswith("single_reads") or k.startswith("paired_reads"):
             no_files_with_reads = False
             if not isinstance(v, list):
@@ -334,7 +334,7 @@ def main():
         
     try:
         options, not_options = getopt.gnu_getopt(sys.argv, short_options, long_options)
-    except getopt.GetoptError, err:
+    except (getopt.GetoptError, err):
         print >> sys.stderr, err
         print >> sys.stderr
         usage()
@@ -574,7 +574,7 @@ def main():
         print "Command line: ",
         for v in sys.argv:
             print v,
-        print ""
+        print ("")
 
     print_used_values(cfg)
     tee.free()
@@ -686,7 +686,7 @@ def main():
             spades_cfg.__dict__["align_original_reads"] = False
 
         has_paired = False
-        for k in cfg["dataset"].__dict__.iterkeys():
+        for k in cfg["dataset"].__dict__.keys():
             if k.startswith("paired_reads"):
                 has_paired = True
                 break
@@ -751,15 +751,15 @@ def main():
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
               "\n")
 
-    print ""
+    print ("")
     if bh_dataset_filename:
-        print " * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/"
+        print (" * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/")
     if result_contigs_filename:
-        print " * Assembled contigs are " + result_contigs_filename
+        print (" * Assembled contigs are " + result_contigs_filename)
     if result_scaffolds_filename:
-        print " * Assembled scaffolds are " + result_scaffolds_filename
-    print ""
-    print "Thank you for using SPAdes!"
+        print (" * Assembled scaffolds are " + result_scaffolds_filename)
+    print ("")
+    print ("Thank you for using SPAdes!")
 
     print("\n======= SPAdes pipeline finished\n")
 
