@@ -44,13 +44,12 @@ def print_used_values(cfg):
 
     # main
     print_value(cfg, "common", "output_dir", "", "")
-    print "Mode:",
     if ("error_correction" in cfg) and (not "assembly" in cfg):
-        print ("ONLY error correction (without assembler)")
+        print ("Mode: ONLY error correction (without assembler)")
     elif (not "error_correction" in cfg) and ("assembly" in cfg):
-        print ("ONLY assembler (without error correction)")
+        print ("Mode: ONLY assembler (without error correction)")
     else:
-        print ("error correction and assembler")
+        print ("Mode: error correction and assembler")
     if ("common" in cfg) and ("developer_mode" in cfg["common"].__dict__):
         if cfg["common"].developer_mode:
             print ("Debug mode turned ON")
@@ -97,25 +96,29 @@ def print_used_values(cfg):
         print_value(cfg, "error_correction", "tmp_dir", "Dir for temp files")
         print_value(cfg, "error_correction", "max_iterations", "Iterations")
         print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
-        print "  Corrected reads will",
-        if not cfg["error_correction"].gzip_output:
-            print "NOT",
-        print ("be compressed (with gzip)")
+
+        if cfg["error_correction"].gzip_output:
+            print ("  Corrected reads will be compressed (with gzip)"),
+        else:
+            print ("  Corrected reads will NOT be compressed (with gzip)")
+
 
     # assembly
     if "assembly" in cfg:
         print ("Assembly parameters:")
         print_value(cfg, "assembly", "iterative_K", "k")
-        print "  SAM file will",
-        if not cfg["assembly"].generate_sam_files:
-            print ("NOT be generated (WARNING: SAM file are required "\
-                  "for some of postprocessing tools)")
+
+        if cfg["assembly"].generate_sam_files:
+            print ("  SAM file will be generated")
         else:
-            print ("be generated")
-        print "  The gap closer will",
-        if not cfg["assembly"].gap_closer:
-            print "NOT",
-        print ("be used")
+            print ("  SAM file will NOT be generated (WARNING: SAM file are required "\
+                   "for some of postprocessing tools)")
+
+        if cfg["assembly"].gap_closer:
+            print ("  The gap closer will be used")
+        else:
+            print ("  The gap closer will NOT be used")
+
 
     print ("Other parameters:")
     print_value(cfg, "common", "max_threads", "Threads")
@@ -571,10 +574,10 @@ def main():
     if CONFIG_FILE:
         print("Using config file: " + CONFIG_FILE)
     else:
-        print "Command line: ",
+        command = "Command line:"
         for v in sys.argv:
-            print v,
-        print ("")
+            command += " " + v
+        print (command)
 
     print_used_values(cfg)
     tee.free()
@@ -619,7 +622,7 @@ def main():
 
         import bh_aux
 
-        for k, v in cfg["dataset"].__dict__.iteritems():
+        for k, v in cfg["dataset"].__dict__.items():
             if not isinstance(v, list):
                 v = [v]
 
