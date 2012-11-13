@@ -166,11 +166,11 @@ def main():
     inserted = 0;
     deleted = 0;
     now = datetime.datetime.now()
-    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M")+"/";
+    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
     if not os.path.exists(res_directory):
         os.makedirs(res_directory)
 #    refinedFileName = res_directory + sys.argv[2].split('/')[-1].split('.')[0] + '.ref.fasta';
-    dir = sys.argv[1].split('/')[0];
+    dir = sys.argv[1];
 
     filelist = [os.path.abspath(os.path.join(dir, i)) for i in os.listdir(dir) if os.path.isfile(os.path.join(dir, i))]
     for contig_file in filelist:
@@ -185,7 +185,7 @@ def main():
 
             samFile = open(samfilename, 'r');
             fasta_contig = read_genome(contig_file);
-            print "processing " + contig_file + ", contig length:" len(fasta_contig[1]);
+            print "processing " + str(contig_file) + ", contig length:" + str(len(fasta_contig[1]));
             contig = fasta_contig[1].upper()
 #            profile = []
             total_reads = 0;
@@ -225,37 +225,42 @@ def main():
             else:
                 print "insertions very big, most popular:"
                 for element in insertions:
-                    if len(insertions[element]) > 50:
+                    if len(insertions[element]) > 10:
                         print str(element) + str(insertions[element])
+                        print "profile here: " + str(profile[element])
             for i in range (0, l):
         #        print profile[i];
                 tj = contig[i]
-                for j in ('A','C','G','T','N', 'I', 'D'):
-                    if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] != 1):
-                        tj = j
-        #                rescontig[i] = j
+                tmp =''
+                for count in range(0,2):
+                    for j in ('A','C','G','T','N', 'I', 'D'):
+                        if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] != 1):
+                            tj = j
+            #                rescontig[i] = j
 
-                if tj != contig[i] :
-                    if tj =='I' or tj == 'D' :
-                        print "there was in-del"
-                    else:
-                        print profile[i]
-                        print "changing " + contig[i] + " to " + tj + " on position " + str(i+1) + '\n'
-                        replaced += 1;
-                if tj in ('A','C','T','G','N'):
-                    rescontig += tj
-                elif tj == 'D':
-                    print "skipping deletion"+ " on position " + str(i+1) + '\n'
-                    deleted += 1;
-                elif tj == 'I':
-                    tmp = vote_insertions(i);
-                    print "inserting " + tmp + " on position " + str(i+1) + '\n'
+                    if tj != contig[i] :
+                        if tj =='I' or tj == 'D' :
+                            print "there was in-del"
+                        else:
+                            print profile[i]
+                            print "changing " + contig[i] + " to " + tj + " on position " + str(i+1) + '\n'
+                            replaced += 1;
+                    if tj in ('A','C','T','G','N'):
+                        rescontig += tj
+                        break;
+                    elif tj == 'D':
+                        print "skipping deletion"+ " on position " + str(i+1) + '\n'
+                        deleted += 1;
+                        break;
+                    elif tj == 'I':
+                        tmp = vote_insertions(i);
+
+                        profile[i]['I'] = 0;
+                if tmp != '':
                     rescontig += tmp;
                     inserted += len (tmp)
-                    profile[i]['I'] = 0;
-                    i -= 1
 
-#            print(fasta_contig[0]);
+                #            print(fasta_contig[0]);
             res_fasta = [[]]
             #res_fasta.append([])
             res_fasta[0].append(fasta_contig[0]);
