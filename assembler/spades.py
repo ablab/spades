@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 import getopt
+import logging
 import platform
 
 import spades_init
@@ -18,53 +19,54 @@ import bh_logic
 import spades_logic
 
 
-def print_used_values(cfg):
+def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
         if not pretty_param:
             pretty_param = param.capitalize().replace('_', ' ')
-        sys.stdout.write(margin + pretty_param)
+        line = margin + pretty_param
         if param in cfg[section].__dict__:
-            print (": " + str(cfg[section].__dict__[param]))
+            line +=  ": " + str(cfg[section].__dict__[param])
         else:
             if param.find("offset") != -1:
-                print (" will be auto-detected")
+                line += " will be auto-detected"
+        log.info(line)
 
-    print ("")
+    log.info("")
 
     # system info
-    print ("System information:")
+    log.info("System information:")
     try:
-        print ("  OS: " + platform.platform())
+        log.info("  OS: " + platform.platform())
         # for more deatils: '[' + str(platform.uname()) + ']'
-        print ("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.' + str(sys.version_info[2]))
+        log.info("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.' + str(sys.version_info[2]))
         # for more details: '[' + str(sys.version_info) + ']'
     except:
-        print ("  Problem occured when getting system information")
-    print ("")
+        log.info("  Problem occured when getting system information")
+    log.info("")
 
     # main
     print_value(cfg, "common", "output_dir", "", "")
     if ("error_correction" in cfg) and (not "assembly" in cfg):
-        print ("Mode: ONLY error correction (without assembler)")
+        log.info("Mode: ONLY error correction (without assembler)")
     elif (not "error_correction" in cfg) and ("assembly" in cfg):
-        print ("Mode: ONLY assembler (without error correction)")
+        log.info("Mode: ONLY assembler (without error correction)")
     else:
-        print ("Mode: error correction and assembler")
+        log.info("Mode: error correction and assembler")
     if ("common" in cfg) and ("developer_mode" in cfg["common"].__dict__):
         if cfg["common"].developer_mode:
-            print ("Debug mode turned ON")
+            log.info("Debug mode turned ON")
         else:
-            print ("Debug mode turned OFF")
-    print ("")
+            log.info("Debug mode turned OFF")
+    log.info("")
 
     # dataset
     if "dataset" in cfg:
-        print ("Dataset parameters:")
+        log.info("Dataset parameters:")
 
         if cfg["dataset"].single_cell:
-            print ("  Single-cell mode")
+            log.info("  Single-cell mode")
         else:
-            print ("  Multi-cell mode (you should set '--sc' flag if input data"\
+            log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
                   " was obtained with MDA (single-cell) technology")
 
         no_single = True
@@ -74,56 +76,56 @@ def print_used_values(cfg):
                 if k.startswith("paired_reads"):
                     no_paired = False
                     if not isinstance(v, list):
-                        print ("  Paired reads (file with interlaced reads):")
+                        log.info("  Paired reads (file with interlaced reads):")
                     else:
-                        print ("  Paired reads (files with left and right reads):")
+                        log.info("  Paired reads (files with left and right reads):")
                 else:
                     no_single = False
-                    print ("  Single reads:")
+                    log.info("  Single reads:")
                 if not isinstance(v, list):
                     v = [v]
                 for reads_file in v:
-                    print ("    "  + os.path.abspath(os.path.expandvars(reads_file)))
+                    log.info("    "  + os.path.abspath(os.path.expandvars(reads_file)))
 
         if no_paired:
-            print ("  Paired reads was not specified")
+            log.info("  Paired reads was not specified")
         if no_single:
-            print ("  Single reads was not specified")
+            log.info("  Single reads was not specified")
 
     # error correction
     if "error_correction" in cfg:
-        print ("Error correction parameters:")
+        log.info("Error correction parameters:")
         print_value(cfg, "error_correction", "tmp_dir", "Dir for temp files")
         print_value(cfg, "error_correction", "max_iterations", "Iterations")
         print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
 
         if cfg["error_correction"].gzip_output:
-            print ("  Corrected reads will be compressed (with gzip)")
+            log.info("  Corrected reads will be compressed (with gzip)")
         else:
-            print ("  Corrected reads will NOT be compressed (with gzip)")
+            log.info("  Corrected reads will NOT be compressed (with gzip)")
 
 
     # assembly
     if "assembly" in cfg:
-        print ("Assembly parameters:")
+        log.info("Assembly parameters:")
         print_value(cfg, "assembly", "iterative_K", "k")
 
         if cfg["assembly"].generate_sam_files:
-            print ("  SAM file will be generated")
+            log.info("  SAM file will be generated")
         else:
-            print ("  SAM file will NOT be generated (WARNING: SAM file are required "\
+            log.info("  SAM file will NOT be generated (WARNING: SAM file are required "\
                    "for some of postprocessing tools)")
 
         if cfg["assembly"].gap_closer:
-            print ("  The gap closer will be used")
+            log.info("  The gap closer will be used")
         else:
-            print ("  The gap closer will NOT be used")
+            log.info("  The gap closer will NOT be used")
 
 
-    print ("Other parameters:")
+    log.info("Other parameters:")
     print_value(cfg, "common", "max_threads", "Threads")
     print_value(cfg, "common", "max_memory", "Memory limit (in Gb)", "  ")
-    print ("")
+    log.info("")
 
 
 def check_config(cfg):
@@ -568,19 +570,28 @@ def main():
 
     if not os.path.isdir(cfg["common"].output_dir):
         os.makedirs(cfg["common"].output_dir)
-    log_filename = os.path.join(cfg["common"].output_dir, "params.txt")
-    tee = support.Tee(log_filename, 'w', console=cfg["common"].output_to_console)
+
+    log = logging.getLogger('params')
+    log.setLevel(logging.DEBUG)
+
+    console = logging.StreamHandler(sys.stdout)
+    console.setFormatter(logging.Formatter('%(message)s'))
+    console.setLevel(logging.DEBUG)
+    log.addHandler(console)
+
+    params_filename = os.path.join(cfg["common"].output_dir, "params.txt")
+    params = logging.FileHandler(params_filename, mode='w')
+    log.addHandler(params)
 
     if CONFIG_FILE:
-        print("Using config file: " + CONFIG_FILE)
+        log.info("Using config file: " + CONFIG_FILE)
     else:
         command = "Command line:"
         for v in sys.argv:
             command += " " + v
-        print (command)
+        log.info(command)
 
-    print_used_values(cfg)
-    tee.free()
+    print_used_values(cfg, log)
 
     bh_dataset_filename = ""
     if "error_correction" in cfg:
