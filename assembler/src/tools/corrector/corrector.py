@@ -94,7 +94,11 @@ def process_read(cigar, aligned, position, l):
             operations.append(cigar[i]);
             if cigar[i]=='M':
                 aligned_length += int(tms)
-            tms = ''
+            
+	    if (cigar[i] =='D' or cigar[i] == 'I') and int(tms) > 5:
+#TODO: dirty hack, we do not fix big indels now
+		return 0;
+	    tms = ''
 #we do not need short reads aligned near gaps
     if aligned_length < 40 and position > 50 and l - position > 50:
         return 0;
@@ -208,6 +212,8 @@ def main():
                 for j in ('A','C','G','T','N','I','D'):
                     profile[i][j] = 0;
             insertions = {}
+#TODO: estimation on insert size, need to be replaced            
+            insert_size_est = 500
             for line in samFile:
                 arr = line.split();
                 if arr[2].split('_')[1] != cont_num:
@@ -216,6 +222,9 @@ def main():
                 cigar = arr[5]
                 aligned = arr[9];
                 position = int(arr[3]) - 1
+		mate = arr[6];
+		if mate != '=' and mate != '*' and position > insert_size_est and position < l - insert_size_est - 100:
+		    continue;
         #        print position;
         #        print l;
                 indelled_reads += 1 - process_read(cigar, aligned, position, l)
