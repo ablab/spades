@@ -5,6 +5,10 @@
 import sys
 import os
 import datetime
+import io
+import cProfile
+import getopt
+#from joblib import Parallel, delayed
 
 profile = []
 insertions = {}
@@ -12,7 +16,7 @@ def read_genome(filename):
     res_seq = []
 
     seq =''
-    for line in open(filename):
+    for line in io.open(filename):
             if line[0] == '>':
     	    	    res_seq.append(line[1:])
             else:
@@ -20,9 +24,26 @@ def read_genome(filename):
     res_seq.append(seq)
     return res_seq
 
+def read_contigs(filename):
+    res_seq = {}
+
+    seq =''
+    cont_name = ''
+    for line in io.open(filename):
+        if line[0] == '>':
+            if cont_name != '':
+                res_seq[cont_name] = seq
+            seq = ''
+            cont_name = line[1:].strip()
+        else:
+            seq += line.strip()
+    if cont_name != '':
+        res_seq[cont_name] = seq
+    return res_seq
+
 
 def write_fasta(data, filename):
-    outFile = open(filename, 'w')
+    outFile = io.open(filename, 'w')
     #print data[0][0];
     for seq in data:
 #            print(seq[0])
@@ -155,10 +176,62 @@ def process_read(cigar, aligned, position, l):
             insertions[ind]= []
         insertions[ind].append(insertion_string)
     return 1
-def split_fasta(filename):
-#    for
-    return 32
+def split_sam(filename, tmpdir):
 
+    inFile = io.open(filename, buffering=131072)
+    separate_sams ={}
+    print("file io.opened")
+    for line in inFile:
+        arr = line.split('\t')
+        if len(arr) > 5:
+            if arr[2] in separate_sams:
+                separate_sams[arr[2]].write(line)
+        else:
+            contig = arr[1].split(':')
+            if contig[0] == 'SN':
+                samfilename = tmpdir + '/' +contig[1] + '.pair.sam'
+                print contig[1] + " " + samfilename;
+                separate_sams[contig[1]] = io.open(samfilename, 'w', buffering=131072)
+
+    for file_name in separate_sams:
+        separate_sams[file_name].close()
+
+    return 0
+def split_contigs(filename, tmpdir):
+    ref_seq = read_contigs(filename);
+    for contig_desc in ref_seq:
+        tfilename = tmpdir + '/' + contig_desc +'.fasta'
+        write_fasta([contig_desc, ref_seq[contig_desc]], tfilename)
+
+    return 0
+
+def run_bwa():
+# align with BWA
+    global config;
+    os.system("bwa index -a is " + config.contigs + " 2")
+#    (contigs_name, path, suf) = fileparse(config.contigs)
+
+    os.system("bwa aln  "+ contigs_name +" " +  config.reads1 + " -t 4 -O 7 -E 2 -k 3 -n 0.08 -q 15")
+    os.system("bwa aln  "+ contigs_name +" " +  config.reads2 + " -t 4 -O 7 -E 2 -k 3 -n 0.08 -q 15")
+    os.system("bwa sampe "+ config.contigs + " " + config.sai1 + " " + config.reads1 +" " + config.sai2 + " " + config.reads2 "> tmp.sam 2 > isize.txt")
+#    my ($sai1, $sai2, $sam) = ("reads1_aln.sai", "reads2_aln.sai", "reads_aln.sam");
+#    my $cmd;
+#    $cmd = "$bwa index -a is $contigs 2>/dev/null";
+#    system($cmd);
+#
+#    my ($max_ge, $max_go, $k, $n) = (100, 3, 3, 0.08);
+#    $bwa_aln1_cmd  = "$bwa aln $contigs_name $reads1 -t $num_threads -O 7 -E 2 -k $k -n $n -q 15";
+#    $bwa_aln2_cmd  = "$bwa aln $contigs_name $reads2 -t $num_threads -O 7 -E 2 -k $k -n $n -q 15";
+#}
+#    $cmd = $bwa_aln1_cmd . " > $sai1";
+#    system($cmd);
+#    $cmd = $bwa_aln2_cmd . " > $sai2";
+#    system($cmd);
+#
+#    print "\nGenerating paired-end alignments & estimating insert-size...\n";
+#    my $is = "isize.txt";
+#    my $bwa_sampe_cmd = "$bwa sampe $contigs $sai1 $sai2 $reads1 $reads2 > $sam 2>$is";
+    return 0;
 def main():
     global profile
     global insertions
@@ -171,6 +244,12 @@ def main():
     deleted = 0;
     now = datetime.datetime.now()
     res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
+    tmpdir = res_directory +'tmp';
+#    os.makedirs(tmpdir)
+#    split_contigs(sys.argv[2], tmpdir)
+#    print("contigs splitted, starting splitting samfile");
+#    split_sam(sys.argv[1], tmpdir)
+#    return 0
     if not os.path.exists(res_directory):
         os.makedirs(res_directory)
 #    refinedFileName = res_directory + sys.argv[2].split('/')[-1].split('.')[0] + '.ref.fasta';
@@ -187,7 +266,7 @@ def main():
 
             samfilename = os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam");
 
-            samFile = open(samfilename, 'r');
+            samFile = io.open(samfilename, 'r');
             fasta_contig = read_genome(contig_file);
             print "processing " + str(contig_file) + ", contig length:" + str(len(fasta_contig[1]));
             contig = fasta_contig[1].upper()
@@ -196,7 +275,7 @@ def main():
             indelled_reads = 0;
 #            print samfilename
             refinedFileName = res_directory + samfilename.split('/')[-1].split('.')[0] + '.ref.fasta';
-    #    samFile = open( sys.argv[1], 'r');
+    #    samFile = io.open( sys.argv[1], 'r');
 # accurate!
             cont_num = contig_file.split('/')[-1].split('.')[0];
 #    fasta_contig = read_genome(sys.argv[2]);
@@ -222,9 +301,11 @@ def main():
                 cigar = arr[5]
                 aligned = arr[9];
                 position = int(arr[3]) - 1
-		mate = arr[6];
-		if mate != '=' and mate != '*' and position > insert_size_est and position < l - insert_size_est - 100:
-		    continue;
+
+        		mate = arr[6];
+		        if mate != '=' and mate != '*' and position > insert_size_est and position < l - insert_size_est - 100:
+		            continue;
+
         #        print position;
         #        print l;
                 indelled_reads += 1 - process_read(cigar, aligned, position, l)
