@@ -44,15 +44,13 @@ def read_contigs(filename):
 
 def write_fasta(data, filename):
     outFile = io.open(filename, 'w')
-    #print data[0][0];
     for seq in data:
-#            print(seq[0])
             outFile.write('>' + seq[0] );
             i = 0
             while i < len(seq[1]):
                     outFile.write(seq[1][i:i+60] + '\n')
+#                    print seq[1][i:i+60]
                     i += 60
-
     outFile.close()
 
 def vote_insertions(position):
@@ -90,7 +88,7 @@ def vote_insertions(position):
     return best_ins
 
 
-def process_read(cigar, aligned, position, l):
+def process_read(cigar, aligned, position, l, mate):
     global profile
     global insertions
     l_read = len(aligned);
@@ -115,13 +113,14 @@ def process_read(cigar, aligned, position, l):
             operations.append(cigar[i]);
             if cigar[i]=='M':
                 aligned_length += int(tms)
-            
+
+
 	    if (cigar[i] =='D' or cigar[i] == 'I') and int(tms) > 5:
 #TODO: dirty hack, we do not fix big indels now
 		return 0;
 	    tms = ''
 #we do not need short reads aligned near gaps
-    if aligned_length < 40 and position > 50 and l - position > 50:
+    if aligned_length < 40 and position > 50 and l - position > 50 and mate == 1:
         return 0;
     state_pos = 0;
     shift = 0;
@@ -154,18 +153,18 @@ def process_read(cigar, aligned, position, l):
             insertion_string = ''
         if operations[state_pos] == 'M':
             if i +  position - skipped < l:
-                profile[i+position -skipped][aligned[i]] += 1
+                profile[i+position -skipped][aligned[i]] += mate
         else:
             if  operations[state_pos] in {'S', 'I', 'H'}:
                 if operations[state_pos] == 'I':
 #                    print "ddd" + str(i) +" " + str(position) + " " + str(skipped)+ " " + str(l_read) + " " + cigar +" " + str(l) + " " + insertion_string + "  " + operations[state_pos]
                     if insertion_string == '':
-                        profile[i+position -skipped - 1 ]['I'] += 1
+                        profile[i+position -skipped - 1 ]['I'] += mate
                     insertion_string += (aligned[i])
                 skipped += 1;
             elif operations[state_pos] == 'D':
 #               print str(i) +" " + str(position) + " " + str(skipped)+ " " + str(l_read) + " " + cigar +" " + str(l) + " " + insertion_string + "  " + operations[state_pos]
-                profile[i+position - skipped]['D'] += 1
+                profile[i+position - skipped]['D'] += mate
                 skipped -=1;
                 shift -= 1;
     if insertion_string != '' and operations[state_pos] != 'I':
@@ -189,8 +188,8 @@ def split_sam(filename, tmpdir):
         else:
             contig = arr[1].split(':')
             if contig[0] == 'SN':
-                samfilename = tmpdir + '/' +contig[1] + '.pair.sam'
-                print contig[1] + " " + samfilename;
+                samfilename = tmpdir + '/' +contig[1].split('_')[1] + '.pair.sam'
+#                print contig[1] + " " + samfilename;
                 separate_sams[contig[1]] = io.open(samfilename, 'w', buffering=131072)
 
     for file_name in separate_sams:
@@ -200,8 +199,9 @@ def split_sam(filename, tmpdir):
 def split_contigs(filename, tmpdir):
     ref_seq = read_contigs(filename);
     for contig_desc in ref_seq:
-        tfilename = tmpdir + '/' + contig_desc +'.fasta'
-        write_fasta([contig_desc, ref_seq[contig_desc]], tfilename)
+        tfilename = tmpdir + '/' + contig_desc.split('_')[1] +'.fasta'
+
+        write_fasta([[contig_desc, ref_seq[contig_desc]]], tfilename)
 
     return 0
 
@@ -213,7 +213,7 @@ def run_bwa():
 
     os.system("bwa aln  "+ contigs_name +" " +  config.reads1 + " -t 4 -O 7 -E 2 -k 3 -n 0.08 -q 15")
     os.system("bwa aln  "+ contigs_name +" " +  config.reads2 + " -t 4 -O 7 -E 2 -k 3 -n 0.08 -q 15")
-    os.system("bwa sampe "+ config.contigs + " " + config.sai1 + " " + config.reads1 +" " + config.sai2 + " " + config.reads2 "> tmp.sam 2 > isize.txt")
+    os.system("bwa sampe "+ config.contigs + " " + config.sai1 + " " + config.reads1 +" " + config.sai2 + " " + config.reads2 + "> tmp.sam 2 > isize.txt")
 #    my ($sai1, $sai2, $sam) = ("reads1_aln.sai", "reads2_aln.sai", "reads_aln.sam");
 #    my $cmd;
 #    $cmd = "$bwa index -a is $contigs 2>/dev/null";
@@ -245,6 +245,7 @@ def main():
     now = datetime.datetime.now()
     res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
     tmpdir = res_directory +'tmp';
+#    tmpdir = 'tmp'
 #    os.makedirs(tmpdir)
 #    split_contigs(sys.argv[2], tmpdir)
 #    print("contigs splitted, starting splitting samfile");
@@ -302,29 +303,40 @@ def main():
                 aligned = arr[9];
                 position = int(arr[3]) - 1
 
-        		mate = arr[6];
-		        if mate != '=' and mate != '*' and position > insert_size_est and position < l - insert_size_est - 100:
-		            continue;
-
+                mate_el = arr[6];
+                if abs(position - 188264) < 100:
+                    print arr[0] + " "+ arr[3] +" "+ mate_el
+                if mate_el != '=' and mate_el != '*' and position > insert_size_est and position < l - insert_size_est - 100:
+                    if abs(position - 188264) < 100:
+                        print "skipping"
+                    continue;
         #        print position;
         #        print l;
-                indelled_reads += 1 - process_read(cigar, aligned, position, l)
+
+                if mate_el == '=' and (int(arr[1]) & 8) == 0:
+                    mate = 2;
+                else:
+                    mate = 1;
+                indelled_reads += 1 - process_read(cigar, aligned, position, l, mate)
                 total_reads += 1;
             if len(insertions) < 50:
                 print insertions
             else:
                 print "insertions very big, most popular:"
                 for element in insertions:
-                    if len(insertions[element]) > 10:
+                    if len(insertions[element]) > 30:
                         print str(element) + str(insertions[element])
                         print "profile here: " + str(profile[element])
             for i in range (0, l):
+                if i in {188260, 188264, 188268, 188272, 188276, 188248}:
+                    print "FFFFFFUUUU "+ str(i + 1)
+                    print(profile[i])
         #        print profile[i];
                 tj = contig[i]
                 tmp =''
                 for count in range(0,2):
                     for j in ('A','C','G','T','N', 'I', 'D'):
-                        if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] != 1):
+                        if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] > 2):
                             tj = j
             #                rescontig[i] = j
 
