@@ -288,7 +288,7 @@ def usage(show_hidden=False):
                          " temp files"
     print >> sys.stderr, "\t\t\t\t[default: <output_dir>/corrected/tmp]"
     print >> sys.stderr, "-k\t<int,int,...>\t\tcomma-separated list of k-mer sizes"\
-                         " (must be odd and less than 100)"
+                         " (must be odd and less than 128)"
     print >> sys.stderr, "\t\t\t\t[default: 21,33,55]"
     print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for error"\
                          " correction"
@@ -401,8 +401,8 @@ def main():
             elif opt == '-k':
                 k_mers = map(int, arg.split(","))
                 for k in k_mers:
-                    if k > 100:
-                        support.error('wrong k value ' + str(k) + ': all k values should be less than 100')
+                    if k > 127:
+                        support.error('wrong k value ' + str(k) + ': all k values should be less than 128')
                     if k % 2 == 0:
                         support.error('wrong k value ' + str(k) + ': all k values should be odd')
 
