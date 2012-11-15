@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>SPAdes 2.3.0 Manual</title>
+    <title>SPAdes 2.4.0 Manual</title>
     <style type="text/css">
         .code {
             background-color: lightgray;
@@ -8,12 +8,12 @@
     </style>
 </head>
 <body>
-<h1>SPAdes 2.3.0 Manual</h1>
+<h1>SPAdes 2.4.0 Manual</h1>
 
 <p>SPAdes stands for St. Petersburg genome assembler. It is intended for both standard isolates and single-cell MDA
     bacteria  assemblies. This manual will help you to install and run SPAdes. You can find the latest SPAdes release
-at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. The latest version of this manual can be found <a href="http://spades.bioinf.spbau.ru/release2.3.0/manual.html">here</a>.
-    SPAdes version 2.3.0 was released under  GPLv2 on 30 October 2012.
+at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. The latest version of this manual can be found <a href="http://spades.bioinf.spbau.ru/release2.4.0/manual.html">here</a>.
+    SPAdes version 2.4.0 was released under  GPLv2 on 30 November 2012.
 </p>
 
 
@@ -27,14 +27,14 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 
 <h3>1.1 SPAdes tar.gz file</h3>
 
-<p>To download <a href="http://spades.bioinf.spbau.ru/release2.3.0/spades-2.3.0.tar.gz">SPAdes tar.gz</a> and extract it:
+<p>To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/spades-2.4.0.tar.gz">SPAdes tar.gz</a> and extract it:
 </p>
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release2.3.0/spades-2.3.0.tar.gz
-    tar -xzf spades-2.3.0.tar.gz
-    cd spades-2.3.0
+    wget http://spades.bioinf.spbau.ru/release2.4.0/spades-2.4.0.tar.gz
+    tar -xzf spades-2.4.0.tar.gz
+    cd spades-2.4.0
 </code>
 </pre>
 
@@ -205,7 +205,7 @@ Thank you for using SPAdes!
 
 <p><code>-k &lt;int,int,...> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of k-mer sizes to be used (all values must be odd,
-    less than 100 and listed in ascending order). The default value is 21,33,55.</p>
+    less than 128 and listed in ascending order). The default value is 21,33,55.</p>
 
 <p><code>-i &lt;int></code> (or <code>--iterations &lt;int></code>)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for error correction. The default value is 1.</p>
