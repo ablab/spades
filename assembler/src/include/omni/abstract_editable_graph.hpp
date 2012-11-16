@@ -32,7 +32,7 @@ public:
 	typedef typename DataMaster::VertexData VertexData;
 	typedef typename DataMaster::EdgeData EdgeData;
 	typedef VertexIt VertexIterator;
-  typedef typename std::vector<EdgeId>::const_iterator edge_const_iterator;
+  typedef typename base::edge_const_iterator edge_const_iterator;
 
 private:
 	//todo think of necessity to pull these typedefs through hierarchy

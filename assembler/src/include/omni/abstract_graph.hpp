@@ -47,7 +47,7 @@ public:
 	typedef typename DataMaster::VertexData VertexData;
 	typedef typename DataMaster::EdgeData EdgeData;
 	typedef typename base::VertexIterator VertexIterator;
-  typedef typename std::vector<EdgeId>::const_iterator edge_const_iterator;
+  typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
 
 protected:
 

@@ -30,8 +30,9 @@ private:
 	typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
 	typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
 	typedef typename DataMaster::VertexData VertexData;
+public:
   typedef typename std::vector<EdgeId>::const_iterator edge_const_iterator;
-
+private:
 	friend class AbstractGraph<restricted::pure_pointer<PairedVertex<DataMaster>>, restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster>;
 	friend class AbstractConjugateGraph<DataMaster>;
 	friend class PairedEdge<DataMaster>;

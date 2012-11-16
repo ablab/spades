@@ -71,7 +71,7 @@ public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
 	typedef HandlerApplier<VertexId, EdgeId> Applier;
-  typedef typename std::vector<EdgeId>::const_iterator edge_const_iterator;
+  typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
 
 //	typedef ReliableComparator<VertexId, EdgeId> Comparator;
 
