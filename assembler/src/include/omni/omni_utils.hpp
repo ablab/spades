@@ -1424,7 +1424,7 @@ private:
         return true;
     }
 
-    bool TipShouldBeRemoved(vector<EdgeId> path, size_t path_length) {
+    bool TipShouldBeRemoved(const vector<EdgeId>& path, size_t path_length) {
         SequenceBuilder seq_builder;
         if (backward) {
             for (auto iter = path.rbegin(); iter != path.rend(); ++iter) {

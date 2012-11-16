@@ -205,7 +205,7 @@ private:
     const size_t max_coverage_;
     const double max_relative_coverage_;
 
-	double MaxCompetitorCoverage(EdgeId tip, vector<EdgeId> competitors) const {
+	double MaxCompetitorCoverage(EdgeId tip, const vector<EdgeId>& competitors) const {
 		double result = 0;
 		for (auto it = competitors.begin(); it != competitors.end(); ++it) {
 			if (*it != tip)
@@ -317,7 +317,7 @@ private:
 
     TipChecker<Graph> tipchecker_;
 
-	double MaxCompetitorCoverage(EdgeId tip, vector<EdgeId> competitors) const {
+	double MaxCompetitorCoverage(EdgeId tip, const vector<EdgeId>& competitors) const {
 		double result = 0;
 		for (auto it = competitors.begin(); it != competitors.end(); ++it) {
 			if (*it != tip)
@@ -338,7 +338,7 @@ private:
 								this->graph().EdgeEnd(tip))));
 	}
 
-	double MinCompetitorCoverage(EdgeId tip, vector<EdgeId> competitors) const {
+	double MinCompetitorCoverage(EdgeId tip, const vector<EdgeId>& competitors) const {
 		double result = 1000000; //inf
 		for (auto it = competitors.begin(); it != competitors.end(); ++it) {
 			if (*it != tip)
