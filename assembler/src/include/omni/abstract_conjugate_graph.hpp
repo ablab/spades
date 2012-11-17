@@ -85,8 +85,8 @@ private:
 		return result;
 	}
 
-	const vector<EdgeId> IncomingEdgesCount() const {
-		return (conjugate_->OutgoingEdges()).size();
+	size_t IncomingEdgesCount() const {
+		return (conjugate_->OutgoingEdgeCount());
 	}
 
 	PairedVertex(VertexData data) :
