@@ -109,17 +109,14 @@ private:
 		outgoing_edges_.push_back(e);
 	}
 
-	bool RemoveOutgoingEdge(const EdgeId e) {
-		auto it = outgoing_edges_.begin();
-		while (it != outgoing_edges_.end() && *it != e) {
-			++it;
-		}
-		if (it == outgoing_edges_.end()) {
-			return false;
-		}
-		outgoing_edges_.erase(it);
-		return true;
-	}
+  bool RemoveOutgoingEdge(const EdgeId e) {
+    auto it = std::find(outgoing_edges_.begin(), outgoing_edges_.end(), e);
+    if (it == outgoing_edges_.end())
+      return false;
+
+    outgoing_edges_.erase(it);
+    return true;
+  }
 
 	VertexId conjugate() const {
 		return conjugate_;
