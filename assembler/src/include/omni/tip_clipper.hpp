@@ -205,25 +205,26 @@ private:
     const size_t max_coverage_;
     const double max_relative_coverage_;
 
-	double MaxCompetitorCoverage(EdgeId tip, const vector<EdgeId>& competitors) const {
+	double MaxCompetitorCoverage(EdgeId tip,
+                               typename Graph::edge_const_iterator begin,
+                               typename Graph::edge_const_iterator end) const {
 		double result = 0;
-		for (auto it = competitors.begin(); it != competitors.end(); ++it) {
+		for (auto it = begin; it != end; ++it) {
 			if (*it != tip)
-				result = max(result, this->graph().coverage(*it));
+				result = std::max(result, this->graph().coverage(*it));
 		}
 		return result;
 	}
 
 	double MaxCompetitorCoverage(EdgeId tip) const {
-		return max(
-				MaxCompetitorCoverage(
-						tip,
-						this->graph().OutgoingEdges(
-								this->graph().EdgeStart(tip))),
-				MaxCompetitorCoverage(
-						tip,
-						this->graph().IncomingEdges(
-								this->graph().EdgeEnd(tip))));
+    const Graph &g = this->graph();
+    VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
+    std::vector<EdgeId> incoming = g.IncomingEdges(end);
+		return
+        std::max(MaxCompetitorCoverage(tip,
+                                       g.out_begin(start), g.out_end(start)),
+                 MaxCompetitorCoverage(tip,
+                                       incoming.begin(), incoming.end()));
 	}
 
 	bool AdditionalCondition(EdgeId tip) const {
@@ -231,7 +232,7 @@ private:
 			return false;
 		double max_coverage = MaxCompetitorCoverage(tip) + 1;
 		return math::le(this->graph().coverage(tip),
-				max_relative_coverage_ * max_coverage);
+                    max_relative_coverage_ * max_coverage);
 	}
 
 public:
@@ -317,73 +318,74 @@ private:
 
     TipChecker<Graph> tipchecker_;
 
-	double MaxCompetitorCoverage(EdgeId tip, const vector<EdgeId>& competitors) const {
+  double MaxCompetitorCoverage(EdgeId tip,
+                               typename Graph::edge_const_iterator begin,
+                               typename Graph::edge_const_iterator end) const {
 		double result = 0;
-		for (auto it = competitors.begin(); it != competitors.end(); ++it) {
+		for (auto it = begin; it != end; ++it) {
 			if (*it != tip)
-				result = max(result, this->graph().coverage(*it));
+				result = std::max(result, this->graph().coverage(*it));
 		}
 		return result;
 	}
 
-	double MaxCompetitorCoverage(EdgeId tip) const {
-		return max(
-				MaxCompetitorCoverage(
-						tip,
-						this->graph().OutgoingEdges(
-								this->graph().EdgeStart(tip))),
-				MaxCompetitorCoverage(
-						tip,
-						this->graph().IncomingEdges(
-								this->graph().EdgeEnd(tip))));
+  double MaxCompetitorCoverage(EdgeId tip) const {
+    const Graph &g = this->graph();
+    VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
+    std::vector<EdgeId> incoming = g.IncomingEdges(end);
+		return
+        std::max(MaxCompetitorCoverage(tip,
+                                       g.out_begin(start), g.out_end(start)),
+                 MaxCompetitorCoverage(tip,
+                                       incoming.begin(), incoming.end()));
 	}
 
-	double MinCompetitorCoverage(EdgeId tip, const vector<EdgeId>& competitors) const {
+  double MinCompetitorCoverage(EdgeId tip,
+                               typename Graph::edge_const_iterator begin,
+                               typename Graph::edge_const_iterator end) const {
 		double result = 1000000; //inf
-		for (auto it = competitors.begin(); it != competitors.end(); ++it) {
+		for (auto it = begin; it != end; ++it) {
 			if (*it != tip)
-				result = min(result, this->graph().coverage(*it)/this->graph().length(*it));
+				result = std::min(result, this->graph().coverage(*it) / this->graph().length(*it));
 		}
-        //if (result == 1000000) WARN("INFINITY REACHED, WHILE SEEKING FOR MINIMUM");
 		return result;
 	}
 
-	double MinCompetitorCoverage(EdgeId tip) const {
-		return min(
-				MinCompetitorCoverage(
-						tip,
-						this->graph().OutgoingEdges(
-								this->graph().EdgeStart(tip))),
-				MinCompetitorCoverage(
-						tip,
-						this->graph().IncomingEdges(
-								this->graph().EdgeEnd(tip))));
+  double MinCompetitorCoverage(EdgeId tip) const {
+    const Graph &g = this->graph();
+    VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
+    std::vector<EdgeId> incoming = g.IncomingEdges(end);
+		return
+        std::min(MinCompetitorCoverage(tip,
+                                       g.out_begin(start), g.out_end(start)),
+                 MinCompetitorCoverage(tip,
+                                       incoming.begin(), incoming.end()));
 	}
 
-    bool CheckAllAlternativesAreTips(EdgeId tip) const {
-      const Graph &g = this->graph();
-      VertexId start = g.EdgeStart(tip);
-      TRACE("Check started");
-      VertexId end = g.EdgeEnd(tip);
-      for (auto I = g.out_begin(start), E = g.out_end(start); I != E; ++I) {
-        EdgeId edge = *I;
-        if (edge != tip){
-          if (!IsTip(edge))
-            return false;
-        }
+  bool CheckAllAlternativesAreTips(EdgeId tip) const {
+    const Graph &g = this->graph();
+    VertexId start = g.EdgeStart(tip);
+    TRACE("Check started");
+    VertexId end = g.EdgeEnd(tip);
+    for (auto I = g.out_begin(start), E = g.out_end(start); I != E; ++I) {
+      EdgeId edge = *I;
+      if (edge != tip){
+        if (!IsTip(edge))
+          return false;
       }
-
-      auto edges = g.IncomingEdges(end);
-      for (size_t i = 0; i < edges.size(); ++i){
-        EdgeId edge = edges[i];
-        if (edge != tip){
-          if (!IsTip(edge))
-            return false;
-        }
-      }
-      TRACE("Check finished");
-      return true;
     }
+
+    auto edges = g.IncomingEdges(end);
+    for (size_t i = 0; i < edges.size(); ++i){
+      EdgeId edge = edges[i];
+      if (edge != tip){
+        if (!IsTip(edge))
+          return false;
+      }
+    }
+    TRACE("Check finished");
+    return true;
+  }
 
     //TODO: remove constants
     /// checking whether the next edge after tip is very long, then we'd rather remove it
@@ -434,7 +436,7 @@ private:
 			return false;
 		double max_coverage = MaxCompetitorCoverage(tip);
 		return math::le(this->graph().coverage(tip),
-				max_relative_coverage_ * max_coverage);
+                    max_relative_coverage_ * max_coverage);
 	}
 
 public:
