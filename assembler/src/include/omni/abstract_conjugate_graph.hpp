@@ -28,7 +28,7 @@ template<class VertexId>
 class conjugate_iterator {
   typedef typename VertexId::type::edge_raw_iterator edge_raw_iterator;
   edge_raw_iterator it_;
-  bool conjugate_;
+  const bool conjugate_;
 
 public:
   typedef typename edge_raw_iterator::difference_type difference_type;
