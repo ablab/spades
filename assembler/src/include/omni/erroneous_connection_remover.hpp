@@ -273,6 +273,13 @@ void Append(vector<T>& current,
   current.insert(current.end(), begin, end);
 }
 
+template<class T, class It>
+void Append(vector<T>& current, It begin, It end) {
+  current.reserve(current.size() + (end - begin));
+  while (begin != end)
+    current.push_back(*begin++);
+}
+
 template<class Graph>
 class TopologyBasedChimericEdgeRemover: public ErroneousEdgeRemover<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
@@ -318,12 +325,15 @@ public:
 				return;
 			}
 			vector<EdgeId> adjacent_edges;
+      VertexId start = g.EdgeStart(e), end = g.EdgeEnd(e);
 			Append(adjacent_edges,
-             g.out_begin(g.EdgeStart(e)), g.out_end(g.EdgeStart(e)));
-			Append(adjacent_edges, g.IncomingEdges(g.EdgeStart(e)));
+             g.out_begin(start), g.out_end(start));
 			Append(adjacent_edges,
-             g.out_begin(g.EdgeEnd(e)), g.out_end(g.EdgeEnd(e)));
-			Append(adjacent_edges, g.IncomingEdges(g.EdgeEnd(e)));
+             g.in_begin(start), g.in_end(start));
+			Append(adjacent_edges,
+             g.out_begin(end), g.out_end(end));
+			Append(adjacent_edges,
+             g.in_begin(end), g.in_end(end));
 
 			if (CheckAdjacent(adjacent_edges, e)) {
 				this->DeleteEdge(e);
@@ -772,14 +782,17 @@ public:
 	bool CheckAnyPairInfoAbsense(EdgeId possible_ec) {
     const Graph &g = this->graph();
 		TRACE("Checking pair info absense");
-		vector<EdgeId> incoming = g.IncomingEdges(g.EdgeStart(possible_ec));
-		for (auto it1 = incoming.begin(); it1 != incoming.end(); ++it1)
-			for (auto I2 = g.out_begin(g.EdgeEnd(possible_ec)), E2 = g.out_end(g.EdgeEnd(possible_ec)); I2 != E2; ++I2)
-				if (!ShouldContainInfo(*it1, *I2, g.length(possible_ec)) ||
-						ContainsInfo(*it1, *I2, g.length(possible_ec))) {
+    VertexId start = g.EdgeStart(possible_ec);
+		for (auto I1 = g.in_begin(start), E1 = g.in_end(start); I1 != E1; ++I1) {
+      VertexId end = g.EdgeEnd(possible_ec);
+			for (auto I2 = g.out_begin(end), E2 = g.out_end(end); I2 != E2; ++I2)
+				if (!ShouldContainInfo(*I1, *I2, g.length(possible_ec)) ||
+						ContainsInfo(*I1, *I2, g.length(possible_ec))) {
 					TRACE("Check absense: fail");
 					return false;
-				}TRACE("Check absense: ok");
+				}
+      TRACE("Check absense: ok");
+    }
 		return true;
 	}
 
@@ -817,10 +830,11 @@ public:
 				return;
 			}
 			vector<EdgeId> adjacent_edges;
+      VertexId start = g.EdgeStart(e), end = g.EdgeEnd(e);
 			Append(adjacent_edges,
-             g.IncomingEdges(g.EdgeStart(e)));
+             g.in_begin(start), g.in_end(start));
 			Append(adjacent_edges,
-             g.out_begin(g.EdgeEnd(e)), g.out_end(g.EdgeEnd(e)));
+             g.out_begin(end), g.out_end(end));
 
 			if (CheckAdjacentLengths(adjacent_edges, e) &&
 					CheckAnyPairInfoAbsense(e)) {

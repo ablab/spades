@@ -219,12 +219,11 @@ private:
 	double MaxCompetitorCoverage(EdgeId tip) const {
     const Graph &g = this->graph();
     VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
-    std::vector<EdgeId> incoming = g.IncomingEdges(end);
 		return
         std::max(MaxCompetitorCoverage(tip,
                                        g.out_begin(start), g.out_end(start)),
                  MaxCompetitorCoverage(tip,
-                                       incoming.begin(), incoming.end()));
+                                       g.in_begin(end), g.in_end(end)));
 	}
 
 	bool AdditionalCondition(EdgeId tip) const {
@@ -332,12 +331,11 @@ private:
   double MaxCompetitorCoverage(EdgeId tip) const {
     const Graph &g = this->graph();
     VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
-    std::vector<EdgeId> incoming = g.IncomingEdges(end);
 		return
         std::max(MaxCompetitorCoverage(tip,
                                        g.out_begin(start), g.out_end(start)),
                  MaxCompetitorCoverage(tip,
-                                       incoming.begin(), incoming.end()));
+                                       g.in_begin(), g.in_end()));
 	}
 
   double MinCompetitorCoverage(EdgeId tip,
@@ -354,12 +352,11 @@ private:
   double MinCompetitorCoverage(EdgeId tip) const {
     const Graph &g = this->graph();
     VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
-    std::vector<EdgeId> incoming = g.IncomingEdges(end);
 		return
         std::min(MinCompetitorCoverage(tip,
                                        g.out_begin(start), g.out_end(start)),
                  MinCompetitorCoverage(tip,
-                                       incoming.begin(), incoming.end()));
+                                       g.in_begin(), g.in_end()));
 	}
 
   bool CheckAllAlternativesAreTips(EdgeId tip) const {
@@ -376,9 +373,9 @@ private:
     }
 
     auto edges = g.IncomingEdges(end);
-    for (size_t i = 0; i < edges.size(); ++i){
-      EdgeId edge = edges[i];
-      if (edge != tip){
+    for (auto I = g.in_begin(end), E = g.in_end(end); I != E; ++I) {
+      EdgeId edge = *I;
+      if (edge != tip) {
         if (!IsTip(edge))
           return false;
       }
@@ -396,11 +393,9 @@ private:
         bool backward = this->IsTip(g).EdgeStart(tip);
         if (backward) {
             VertexId vertex = g.EdgeEnd(tip);
-            auto edges = g.IncomingEdges(vertex);
-            for (size_t i = 0; i < edges.size(); ++i) {
-              if (g.length(edges[i]) < mid_edge)
+            for (auto I = g.in_begin(vertex), E = g.in_end(vertex); I != E; ++I)
+              if (g.length(*I) < mid_edge)
                 return false;
-            }
 
             if (g.IncomingEdgeCount(vertex) == 2 && g.OutgoingEdgeCount(vertex) == 1)
               return (g.length(*g.out_begin(vertex)) > long_edge);
@@ -411,7 +406,7 @@ private:
                 return false;
 
             if (g.OutgoingEdgeCount(vertex) == 2 && g.IncomingEdgeCount(vertex) == 1)
-              return (g.length(g.IncomingEdges(vertex)[0]) > long_edge);
+              return (g.length(*g.in_begin(vertex)) > long_edge);
         }
 
         return false;
