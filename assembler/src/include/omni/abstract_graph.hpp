@@ -79,6 +79,14 @@ public:
 		return v->IncomingEdges();
 	}
 
+  virtual edge_const_iterator in_begin(VertexId v) const {
+    return v->in_begin();
+  }
+
+  virtual edge_const_iterator in_end(VertexId v) const {
+    return v->in_end();
+  }
+
 	virtual size_t OutgoingEdgeCount(VertexId v) const {
 		return v->OutgoingEdgeCount();
 	}

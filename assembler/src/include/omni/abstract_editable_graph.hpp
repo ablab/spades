@@ -157,6 +157,10 @@ public:
   
 	virtual const vector<EdgeId> IncomingEdges(VertexId v) const = 0;
 
+  virtual edge_const_iterator in_begin(VertexId v) const = 0;
+
+  virtual edge_const_iterator in_end(VertexId v) const = 0;
+
 	virtual size_t OutgoingEdgeCount(VertexId v) const = 0;
 
 	virtual size_t IncomingEdgeCount(VertexId v) const = 0;

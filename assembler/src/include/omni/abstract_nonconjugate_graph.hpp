@@ -68,6 +68,14 @@ private:
 		return incoming_edges_;
 	}
 
+  edge_const_iterator in_begin() const {
+    return incoming_edges_.cbegin();
+  }
+
+  edge_const_iterator in_end() const {
+    return incoming_edges_.cend();
+  }
+
 	SingleVertex(VertexData data) :
 			data_(data) {
 	}
