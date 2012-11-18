@@ -25,114 +25,7 @@ template<class DataMaster>
 class PairedEdge;
 
 template<class VertexId>
-class conjugate_iterator {
-  typedef typename VertexId::type::edge_raw_iterator edge_raw_iterator;
-  edge_raw_iterator it_;
-  const bool conjugate_;
-
-public:
-  typedef typename edge_raw_iterator::difference_type difference_type;
-  typedef typename edge_raw_iterator::pointer         pointer;
-  typedef typename edge_raw_iterator::value_type      reference;
-  typedef typename edge_raw_iterator::value_type      value_type;
-
-  explicit conjugate_iterator(edge_raw_iterator it, bool conjugate = false)
-      : it_(it), conjugate_(conjugate) {}
-
-  reference operator*() const {
-    if (conjugate_)
-      return (*it_)->conjugate();
-    else
-      return *it_;
-  }
-
-  reference operator[](difference_type n) const {
-    return *(*this + n);
-  }
-
-  conjugate_iterator& operator++() {
-    ++it_;
-    return *this;
-  }
-
-  conjugate_iterator& operator--() {
-    --it_;
-    return *this;
-  }
-
-  conjugate_iterator operator++(int) {
-    conjugate_iterator res = *this;
-    ++it_;
-    return res;
-  }
-
-  conjugate_iterator operator--(int) {
-    conjugate_iterator res = *this;
-    --it_;
-    return res;
-  }
-
-  conjugate_iterator& operator+(const difference_type &n) {
-    return conjugate_iterator(it_ + n, conjugate_);
-  }
-
-  conjugate_iterator& operator-(const difference_type &n) {
-    return conjugate_iterator(it_ - n, conjugate_);
-  }
-
-  conjugate_iterator& operator+=(const difference_type &n) {
-    it_ += n;
-    return *this;
-  }
-
-  conjugate_iterator& operator-=(const difference_type &n) {
-    it_ -= n;
-    return *this;
-  }
-
-  friend bool operator==(const conjugate_iterator &r1,
-                         const conjugate_iterator &r2) {
-    return r1.it_ == r2.it_;
-  }
-
-  friend bool operator!=(const conjugate_iterator &r1,
-                         const conjugate_iterator &r2) {
-    return r1.it_ != r2.it_;
-  }
-
-  friend bool operator<(const conjugate_iterator &r1,
-                         const conjugate_iterator &r2) {
-    return r1.it_ < r2.it_;
-  }
-
-  friend bool operator<=(const conjugate_iterator &r1,
-                         const conjugate_iterator &r2) {
-    return r1.it_ <= r2.it_;
-  }
-
-  friend bool operator>=(const conjugate_iterator &r1,
-                         const conjugate_iterator &r2) {
-    return r1.it_ >= r2.it_;
-  }
-
-  friend bool operator>(const conjugate_iterator &r1,
-                         const conjugate_iterator &r2) {
-    return r1.it_ > r2.it_;
-  }
-
-  friend conjugate_iterator
-  operator+(difference_type n,
-            const conjugate_iterator &i1) {
-    return i1 + n;
-  }
-
-
-  friend difference_type
-  operator-(const conjugate_iterator &i1,
-            const conjugate_iterator &i2) {
-    return i1.it_ - i2.it_;
-  }
-};
+class conjugate_iterator;
 
 template<class DataMaster>
 class PairedVertex {
@@ -247,6 +140,116 @@ private:
 		VERIFY(outgoing_edges_.size() == 0);
 		TRACE("PairedVertex destructor ok");
 	}
+};
+
+template<class VertexId>
+class conjugate_iterator {
+  typedef typename VertexId::type::edge_raw_iterator edge_raw_iterator;
+  edge_raw_iterator it_;
+  const bool conjugate_;
+
+public:
+  typedef typename edge_raw_iterator::difference_type difference_type;
+  typedef typename edge_raw_iterator::pointer         pointer;
+  typedef typename edge_raw_iterator::value_type      reference;
+  typedef typename edge_raw_iterator::value_type      value_type;
+
+  explicit conjugate_iterator(edge_raw_iterator it, bool conjugate = false)
+      : it_(it), conjugate_(conjugate) {}
+
+  reference operator*() const {
+    if (conjugate_)
+      return (*it_)->conjugate();
+    else
+      return *it_;
+  }
+
+  reference operator[](difference_type n) const {
+    return *(*this + n);
+  }
+
+  conjugate_iterator& operator++() {
+    ++it_;
+    return *this;
+  }
+
+  conjugate_iterator& operator--() {
+    --it_;
+    return *this;
+  }
+
+  conjugate_iterator operator++(int) {
+    conjugate_iterator res = *this;
+    ++it_;
+    return res;
+  }
+
+  conjugate_iterator operator--(int) {
+    conjugate_iterator res = *this;
+    --it_;
+    return res;
+  }
+
+  conjugate_iterator& operator+(const difference_type &n) {
+    return conjugate_iterator(it_ + n, conjugate_);
+  }
+
+  conjugate_iterator& operator-(const difference_type &n) {
+    return conjugate_iterator(it_ - n, conjugate_);
+  }
+
+  conjugate_iterator& operator+=(const difference_type &n) {
+    it_ += n;
+    return *this;
+  }
+
+  conjugate_iterator& operator-=(const difference_type &n) {
+    it_ -= n;
+    return *this;
+  }
+
+  friend bool operator==(const conjugate_iterator &r1,
+                         const conjugate_iterator &r2) {
+    return r1.it_ == r2.it_;
+  }
+
+  friend bool operator!=(const conjugate_iterator &r1,
+                         const conjugate_iterator &r2) {
+    return r1.it_ != r2.it_;
+  }
+
+  friend bool operator<(const conjugate_iterator &r1,
+                         const conjugate_iterator &r2) {
+    return r1.it_ < r2.it_;
+  }
+
+  friend bool operator<=(const conjugate_iterator &r1,
+                         const conjugate_iterator &r2) {
+    return r1.it_ <= r2.it_;
+  }
+
+  friend bool operator>=(const conjugate_iterator &r1,
+                         const conjugate_iterator &r2) {
+    return r1.it_ >= r2.it_;
+  }
+
+  friend bool operator>(const conjugate_iterator &r1,
+                         const conjugate_iterator &r2) {
+    return r1.it_ > r2.it_;
+  }
+
+  friend conjugate_iterator
+  operator+(difference_type n,
+            const conjugate_iterator &i1) {
+    return i1 + n;
+  }
+
+
+  friend difference_type
+  operator-(const conjugate_iterator &i1,
+            const conjugate_iterator &i2) {
+    return i1.it_ - i2.it_;
+  }
 };
 
 template<class DataMaster>
