@@ -341,7 +341,7 @@ def main():
                     profile[i][j] = 0;
             insertions = {}
 #TODO: estimation on insert size, need to be replaced            
-            insert_size_est = 500
+            insert_size_est = 400
             for line in samFile:
                 arr = line.split();
                 if arr[2].split('_')[1] != cont_num:
