@@ -266,7 +266,7 @@ class PairInfoImprover {
 
   // Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
   bool IsConsistent(EdgeId e, EdgeId e1, EdgeId e2, const Point& p1, const Point& p2) const {
-    if ((math::le(p1.d, 0.)
+	  if ((math::le(p1.d, 0.)
       || math::le(p2.d, 0.))
       || math::gr(p1.d, p2.d))
     return true;

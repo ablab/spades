@@ -197,6 +197,13 @@ public:
 	CompositeLabeler() {
 	}
 
+    CompositeLabeler(GraphLabeler<Graph> &labeler1, GraphLabeler<Graph> &labeler2, GraphLabeler<Graph> &labeler3, GraphLabeler<Graph> &labeler4) {
+        AddLabeler(labeler1);
+        AddLabeler(labeler2);
+        AddLabeler(labeler3);
+        AddLabeler(labeler4);
+    }
+
 	CompositeLabeler(GraphLabeler<Graph> &labeler1, GraphLabeler<Graph> &labeler2, GraphLabeler<Graph> &labeler3) {
 		AddLabeler(labeler1);
 		AddLabeler(labeler2);

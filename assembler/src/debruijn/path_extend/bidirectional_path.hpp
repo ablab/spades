@@ -117,7 +117,7 @@ public:
     LoopDetectorData(size_t i): iteration_(i), alternatives_()  {
     }
 
-    LoopDetectorData(): alternatives_()  {
+    LoopDetectorData(): alternatives_(){
     }
 
     LoopDetectorData(const LoopDetectorData& d) {
@@ -216,13 +216,13 @@ public:
     bool EdgeInShortLoop() const;
 
     void Print() const {
-        DEBUG("== Detector data_ ==");
+        INFO("== Detector data_ ==");
         for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
-            DEBUG("Edge " << g_.length(iter->first));
+            INFO("Edge " << g_.length(iter->first));
 
             const LoopDetectorData::AltenativeMap& alts = iter->second->GetAlternatives();
             for(auto alt = alts.begin(); alt != alts.end(); ++alt) {
-                DEBUG("Edge " << g_.length(alt->first) << ", weight " << alt->second);
+                INFO("Edge " << g_.length(alt->first) << ", weight " << alt->second);
             }
         }
     }
@@ -241,6 +241,12 @@ protected:
 
 	// Edges: e1 e2 ... eN
 	std::deque <EdgeId> data_;
+
+	set<BidirectionalPath*> overlaped_begin;
+	set<BidirectionalPath*> overlaped_end;
+	bool overlap;
+
+	BidirectionalPath* conj_path;
 
 	// Length from beginning of i-th edge to path end for forward directed path:
 	// L(e2 + ... + eN) ... L(eN), 0
@@ -265,10 +271,10 @@ protected:
 protected:
 	void Verify() {
 	    if (cumulativeLength_.empty() && totalLength_ != 0) {
-	        DEBUG("---" << totalLength_);
+	        INFO("---" << totalLength_);
 	    }
 	    else if (!cumulativeLength_.empty() && cumulativeLength_[0] != totalLength_) {
-	        DEBUG("|||" << totalLength_);
+	        INFO("|||" << totalLength_);
 	    }
 	}
 
@@ -383,27 +389,157 @@ public:
     BidirectionalPath(Graph& g): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_(){
 	    Subscribe(&loopDetector_);
 	    Subscribe(&seedCoords_);
+	    overlap = false;
 	}
 
 	BidirectionalPath(Graph& g, std::vector < EdgeId > path): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_() {
+
 		Subscribe(&loopDetector_);
 		Subscribe(&seedCoords_);
-		id_ = g_.int_id(path[0]);
-		for (size_t i = 0; i < path.size(); ++i) {
-			Push(path[i]);
+		overlap = false;
+		if (path.size() != 0) {
+            id_ = g_.int_id(path[0]);
+            for (size_t i = 0; i < path.size(); ++i) {
+                Push(path[i]);
+            }
+            prev_ = path[path.size() - 1];
+            now_ = path[path.size() - 1];
+            RecountLengths();
 		}
-		prev_ = path[path.size() - 1];
-		now_ = path[path.size() - 1];
-		RecountLengths();
 	}
 
 	BidirectionalPath(const BidirectionalPath& path): g_(path.g_), id_(path.id_), data_(path.data_), cumulativeLength_(path.cumulativeLength_), gapLength_(path.gapLength_), totalLength_(path.totalLength_),
 	        loopDetector_(g_, this), seedCoords_(), listeners_() {
 	    Subscribe(&loopDetector_);
 	    Subscribe(&seedCoords_);
+	    overlap = false;
 	    prev_ = data_.back();
 	    now_ = data_.back();
 	}
+
+	void setConjPath(BidirectionalPath* path) {
+		conj_path = path;
+	}
+
+	BidirectionalPath* getConjPath() {
+		return conj_path;
+	}
+
+	void clearOverlapedEnd() {
+		overlaped_end.clear();
+		conj_path->overlaped_begin.clear();
+	}
+
+	void clearOverlapedBegin() {
+		overlaped_begin.clear();
+		conj_path->overlaped_end.clear();
+	}
+private:
+	void removeOverlapedBegin(BidirectionalPath* p) {
+		auto iter = overlaped_begin.find(p);
+		if (iter != overlaped_begin.end()) {
+			overlaped_begin.erase(iter);
+			iter = conj_path->overlaped_end.find(p->conj_path);
+			conj_path->overlaped_end.erase(iter);
+		}
+	}
+
+	void changeOverlapedBegin(BidirectionalPath* from, BidirectionalPath* to) {
+		removeOverlapedBegin(from);
+		overlaped_begin.insert(to);
+		conj_path->overlaped_end.insert(to->conj_path);
+	}
+
+	void changeAllOverlapedBegin(BidirectionalPath* to) {
+		for (auto iter = overlaped_begin.begin(); iter != overlaped_begin.end(); ++iter) {
+			(*iter)->changeOverlapedEnd(this, to);
+		}
+	}
+
+public:
+	void changeOverlapedBeginTo(BidirectionalPath* to) {
+		changeAllOverlapedBegin(to);
+		to->addOverlapedBegin(getOverlapedBegin());
+		clearOverlapedBegin();
+		addOverlapedBegin(to);
+		to->addOverlapedEnd(this);
+	}
+
+	void changeOverlapedEndTo(BidirectionalPath* to) {
+		changeAllOverlapedEnd(to);
+		to->addOverlapedEnd(getOverlapedEnd());
+		clearOverlapedEnd();
+		addOverlapedEnd(to);
+		to->addOverlapedBegin(this);
+	}
+private:
+	void changeAllOverlapedEnd(BidirectionalPath* to) {
+		for (auto iter = overlaped_end.begin(); iter != overlaped_end.end(); ++iter) {
+			(*iter)->changeOverlapedBegin(this, to);
+		}
+	}
+
+	void removeOverlapedEnd(BidirectionalPath* p) {
+		auto iter = overlaped_end.find(p);
+		if (iter != overlaped_end.end()) {
+			overlaped_end.erase(iter);
+			iter = conj_path->overlaped_begin.find(p->conj_path);
+			conj_path->overlaped_begin.erase(iter);
+		}
+	}
+
+	void changeOverlapedEnd(BidirectionalPath* from, BidirectionalPath* to) {
+		removeOverlapedEnd(from);
+		overlaped_begin.insert(to);
+		conj_path->overlaped_begin.insert(to->conj_path);
+	}
+	void addOverlapedBegin(BidirectionalPath* begin) {
+		overlaped_begin.insert(begin);
+		conj_path->overlaped_end.insert(begin->conj_path);
+	}
+	void addOverlapedEnd(BidirectionalPath* end) {
+		overlaped_end.insert(end);
+		conj_path->overlaped_begin.insert(end->conj_path);
+	}
+public:
+	void addOverlapedBegin(set<BidirectionalPath*>& begin) {
+		for (auto iter = begin.begin(); iter != begin.end(); ++iter) {
+			addOverlapedBegin(*iter);
+		}
+	}
+	void addOverlapedEnd(set<BidirectionalPath*>& end) {
+		for (auto iter = end.begin(); iter != end.end(); ++iter) {
+			addOverlapedEnd(*iter);
+		}
+	}
+
+	bool hasOverlapedBegin() {
+		return getOverlapedBegin().size() != 0;
+	}
+
+	set<BidirectionalPath*>& getOverlapedBegin() {
+		return overlaped_begin;
+	}
+
+	bool hasOverlapedEnd() {
+		return getOverlapedEnd().size() != 0;
+	}
+
+	set<BidirectionalPath*>& getOverlapedEnd() {
+		return overlaped_end;
+	}
+
+	void setOverlap(bool isOverlap_ = true) {
+		overlap = isOverlap_;
+		if (!conj_path->isOverlap() != isOverlap_) {
+			conj_path->setOverlap(true);
+		}
+	}
+
+	bool isOverlap() const {
+		return overlap;
+	}
+
 
 	size_t Size() const {
 	    return data_.size();
@@ -489,6 +625,12 @@ public:
 	    NotifyBackEdgeRemoved(e);
 	}
 
+	void PopBack(size_t count) {
+		for (size_t i = 0; i < count; ++i) {
+			PopBack();
+		}
+	}
+
 	void SafePopBack() {
         if (seedCoords_.In(Size() - 1)) {
             DEBUG("Cannot remove back edge due to seed restrictions");
@@ -518,6 +660,7 @@ public:
     BidirectionalPath(Graph& g_, EdgeId startingEdge): g_(g_), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(0, 0), listeners_() {
         Subscribe(&loopDetector_);
         Subscribe(&seedCoords_);
+        overlap = false;
         Push(startingEdge);
         id_ = g_.int_id(startingEdge);
         prev_ = data_.back();
@@ -551,6 +694,81 @@ public:
         return true;
     }
 
+	size_t CommonEndSize(const BidirectionalPath& sample) const{
+		std::vector<size_t> begins;
+		for (size_t i = 0; i < Size(); ++i) {
+			if (At(i) == sample.At(0)) {
+				begins.push_back(i);
+			}
+		}
+		for (size_t i = 0; i < begins.size(); ++i) {
+			size_t it1 = begins[i];
+			size_t it2 = 0;
+			while (it2 < sample.Size() and At(it1) == sample.At(it2)) {
+				it1++;
+				it2++;
+				if (it1 == Size()) {
+					return it2;
+				}
+			}
+		}
+		return 0;
+	}
+
+    int FindFirst(EdgeId e) {
+        for (size_t i = 0; i < Size(); ++i) {
+            if (data_[i] == e) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    int FindLast(EdgeId e) {
+        for (int i = Size(); i > 0; --i) {
+            if (data_[i] == e) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    vector<size_t> FindAll(EdgeId e) const{
+        vector<size_t> result;
+        for (size_t i = 0; i < Size(); ++i) {
+            if (data_[i] == e) {
+                result.push_back(i);
+            }
+        }
+        return result;
+    }
+
+    size_t OverlapEndSize(const BidirectionalPath* path) const {
+		if (Size() == 0) {
+			return 0;
+		}
+		int last_index = Size() - 1;
+		int max_overlaped_size = 0;
+		vector<size_t> begins_in_path = path->FindAll(At(last_index));
+		for (size_t begin_index = 0; begin_index < begins_in_path.size(); ++begin_index) {
+			int begin_in_path = begins_in_path[begin_index];
+			int index_in_current_path = last_index;
+			while (begin_in_path > 0 && index_in_current_path > 0
+					&& path->At(begin_in_path - 1) == At(index_in_current_path - 1)) {
+				index_in_current_path--;
+				begin_in_path--;
+			}
+			int overlaped_size = last_index - index_in_current_path + 1;
+			if (begin_in_path == 0) {
+				if (index_in_current_path > 0
+						&& overlaped_size > max_overlaped_size) {
+					max_overlaped_size = overlaped_size;
+				}
+			}
+		}
+		return max_overlaped_size;
+	}
+
     bool Contains(const BidirectionalPath& path) const {
         if (path.Size() > Size()) {
             return false;
@@ -581,6 +799,18 @@ public:
 
     bool operator!=(const BidirectionalPath& path) const {
         return !operator==(path);
+    }
+
+    void CheckConjugateEnd(){
+    	size_t begin = 0;
+    	size_t end = Size() - 1;
+    	while (begin < end && At(begin) == g_.conjugate(At(end))){
+    		begin++;
+    		end--;
+    	}
+    	for (size_t i = 0; i < begin ; ++i){
+    		PopBack();
+    	}
     }
 
     void CheckGrow()
@@ -629,11 +859,11 @@ public:
     }
 
     void Print() const {
-        DEBUG("Path " << id_);
-        DEBUG("Length " << totalLength_);
-        DEBUG("#, edge, length, total length");
+        INFO("Path " << id_);
+        INFO("Length " << totalLength_);
+        INFO("#, edge, length, total length");
         for(size_t i = 0; i < Size(); ++i) {
-            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
+            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
         }
     }
 
@@ -696,6 +926,10 @@ public:
 	PathContainer() {
 	}
 
+    BidirectionalPath& operator[](size_t index) const {
+        return *(data_[index].first);
+    }
+
     BidirectionalPath* Get(size_t index) const {
         return data_[index].first;
     }
@@ -716,8 +950,14 @@ public:
         data_.reserve(size);
     }
 
+    BidirectionalPath* FindConjugate(BidirectionalPath* p) {
+		return p->getConjPath();
+	}
+
     bool AddPair(BidirectionalPath* p, BidirectionalPath* cp) {
-        p->Subscribe(cp);
+    	p->setConjPath(cp);
+    	cp->setConjPath(p);
+    	p->Subscribe(cp);
         cp->Subscribe(p);
 
         data_.push_back(std::make_pair(p, cp));

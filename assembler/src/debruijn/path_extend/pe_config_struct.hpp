@@ -117,6 +117,9 @@ struct pe_config {
             : single_threshold(so.single_threshold), weight_threshold(so.weight_threshold), priority_coeff(so.priority_coeff) {}
       } select_options;
 
+      ExtensionOptionsT mate_pair_options;
+
+
     } extension_options;
 
 
@@ -150,7 +153,6 @@ struct pe_config {
       bool remove_overlaps;
     } filter_options;
   };
-
   struct UtilsT {
     int mode;
     std::string file1;
@@ -166,6 +168,8 @@ struct pe_config {
   struct MainPEParamsT {
     std::string name;
 
+    string additional_contigs;
+
     bool debug_output;
 
     OutputParamsT output;
@@ -179,6 +183,7 @@ struct pe_config {
 
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool complete);
 void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool complete);
+
 }
 
 typedef config_common::config<path_extend::pe_config> pe_cfg;

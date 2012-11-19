@@ -27,34 +27,46 @@ protected:
     conj_graph_pack& gp_;
 
     size_t k_;
+    size_t insert_size;
+	string ToString(const BidirectionalPath& path, bool with_overlaps = true) const {
+		/*string overlap = "";
+		 if (with_overlaps && !path.isOverlap() && path.hasOverlapedBegin()){
+		 overlap = ToString(*path.getOverlapedBegin()[0], false);
+		 int begin = overlap.length() > insert_size? overlap.length() - insert_size: 0;
+		 overlap = overlap.substr(begin, overlap.length() - k_ + 1 - begin);
+		 }*/
+		stringstream ss;
+		//ss << overlap;
+		if (!path.Empty()) {
+			ss << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.001).substr(0, k_);
+		}
 
-    string ToString(const BidirectionalPath& path) const {
-        stringstream ss;
+		for (size_t i = 0; i < path.Size(); ++i) {
+			int gap = i == 0 ? 0 : path.GapAt(i);
+			if (gap > (int) k_) {
+				for (size_t j = 0; j < gap - k_; ++j) {
+					ss << "N";
+				}
+				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001);
+			} else {
+				int overlapLen = k_ - gap;
+				if (overlapLen >= (int) gp_.g.length(path[i]) + (int) k_) {
+					continue;
+				}
 
-        if (!path.Empty()) {
-            ss  << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.001).substr(0, k_);
-        }
-
-        for (size_t i = 0; i < path.Size(); ++i) {
-            int gap = i == 0 ? 0 : path.GapAt(i);
-            if (gap > (int) k_) {
-                for (size_t j = 0; j < gap - k_; ++ j) {
-                    ss << "N";
-                }
-                ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001);
-            }
-            else {
-                int overlapLen = k_ - gap;
-                if (overlapLen >= (int) gp_.g.length(path[i]) + (int) k_) {
-                    continue;
-                }
-
-                ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001).substr(overlapLen);
-            }
-        }
-
-        return ss.str();
-    }
+				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001).substr(overlapLen);
+			}
+		}
+		/*overlap = "";
+		 if (with_overlaps &&!path.isOverlap() && path.hasOverlapedEnd()){
+		 path.getOverlapedEnd()[0]->Print();
+		 overlap = ToString(*path.getOverlapedEnd()[0], false);
+		 int begin = overlap.length() > k_ ? k_ + 1: k_;
+		 overlap =overlap.substr(begin, insert_size - k_);
+		 }
+		 ss << overlap;*/
+		return ss.str();
+	}
 
     Sequence ToSequence(const BidirectionalPath& path) const {
         SequenceBuilder result;
@@ -72,7 +84,7 @@ protected:
 
 
 public:
-    ContigWriter(conj_graph_pack& gp, size_t k): gp_(gp), k_(k) {
+    ContigWriter(conj_graph_pack& gp, size_t k, size_t insert_size_): gp_(gp), k_(k), insert_size(insert_size_){
 
     }
 
@@ -116,13 +128,17 @@ public:
 
         INFO("Writing contigs to " << filename);
         osequencestream_with_data_for_scaffold oss(filename);
-
+        int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            oss.setID(iter.get()->GetId());
+        	if (iter.get()->Length() < k_){
+        		continue;
+        	}
+        	INFO("NODE " << ++i);
+        	iter.get()->Print();
+        	oss.setID(iter.get()->GetId());
             oss.setCoverage(iter.get()->Coverage());
             oss << ToString(*iter.get());
         }
-
         INFO("Contigs written");
     }
 

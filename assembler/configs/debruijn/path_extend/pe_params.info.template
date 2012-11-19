@@ -6,14 +6,14 @@ output {
 	write_seeds             true 
 	write_overlaped_paths   true
 	write_paths             true
-	write_path_loc		false
+	write_path_loc		    false
 }
 
 
 visualize {
-        print_seeds  		true
+        print_seeds  		    true
         print_overlaped_paths 	true
-        print_paths 		true
+        print_paths 		    true
 }
 
 
@@ -33,29 +33,31 @@ research {
 	}
 }
 
+additional_contigs ""
 
 singlecell {
 
 	improve_paired_info	true
 
 	; metric = path_cover | read_count 
-	metric 			path_cover
+	metric 			        path_cover
 	normalize_weight        true
 	normalize_by_coverage   false
 	    
 	; seed selection
 	seed_selection
 	{
-	    min_coverage   		0
+	    min_coverage   		    0
 	    start_egde_coverage 	0
-	    max_cycles     		1
+	    max_cycles     		    1
 
 	    exclude_chimeric  false
-	    chimeric_delta    10
+	    min_len           0
+        max_len           -1 ; -a = a * K
 	    check_trusted     true
 
 	    read_count_trusted_threshold 2
-	    path_cover_trusted_threshold 0.9
+	    path_cover_trusted_threshold 0.6
 	    
 	}
 	
@@ -67,16 +69,31 @@ singlecell {
 		    priority_coeff             6
 		}
 	 	path_cover  {
-		    single_threshold	       0.01
-		    weight_threshold           0.9
-		    priority_coeff             1.2
+		    single_threshold	       0.001
+		    weight_threshold           0.6
+		    priority_coeff             1.5
+		}
+	    
+		try_deep_search		false
+	}
+
+	mate_pair_options
+	{
+	 	read_count {
+		    weight_threshold           0.2
+		    priority_coeff             3
+		}
+	 	path_cover  {
+		    single_threshold	       0.0001
+		    weight_threshold           0.5
+		    priority_coeff             1.5
 		}
 	    
 		try_deep_search		false
 	}
 
 	scaffolder {
-		on	true
+ 		on	          true
 		cutoff        2
 		rel_cutoff    0.1
 		sum_threshold 3  
@@ -85,12 +102,12 @@ singlecell {
 		cl_threshold  0
 
 		fix_gaps true
-                min_gap_score  0.7
+        min_gap_score  0.7
 
 		max_must_overlap  0.5
-	        max_can_overlap 0.5
-	        short_overlap  6
-	        artificial_gap 10
+	    max_can_overlap   0.5
+	    short_overlap     6
+	    artificial_gap    10
 	}
 	
 	; loops removal
@@ -98,15 +115,15 @@ singlecell {
 	{
 	    inspect_short_loops true
 
-	    max_loops          10
-	    full_loop_removal  true
+	    max_loops           30
+	    full_loop_removal   true
 	}
 	
 
 	; filter options
 	filter_options
 	{
-	    remove_overlaps         true
+	    remove_overlaps     true
 	}
 }
 
@@ -117,23 +134,24 @@ multicell {
 	improve_paired_info     true
 
 	; metric = path_cover | read_count 
-	metric 			path_cover
+	metric 			        path_cover
 	normalize_weight        false
 	normalize_by_coverage   false
 	    
 	; seed selection
 	seed_selection
 	{
-	    min_coverage   		0
+	    min_coverage   		        0
 	    start_egde_coverage         0
-	    max_cycles     		1
+	    max_cycles     		        1
 
 	    exclude_chimeric  false
-	    chimeric_delta    10
+        min_len           0
+        max_len           -1 ; -a = a * K
 	    check_trusted     true
 
 	    read_count_trusted_threshold 0.3
-	    path_cover_trusted_threshold 0.8
+	    path_cover_trusted_threshold 0.5
 	}
 	
 	; extension selection
@@ -145,15 +163,30 @@ multicell {
 		}
 	 	path_cover  {
 		    single_threshold	       0.01
-		    weight_threshold           0.8
-		    priority_coeff             1.2
+		    weight_threshold           0.5
+		    priority_coeff             1.5
 		}
 	    
 	 	try_deep_search		false
 	}    
 
+	mate_pair_options
+	{
+	 	read_count {
+		    weight_threshold           0.2
+		    priority_coeff             3
+		}
+	 	path_cover  {
+		    single_threshold	       0.001
+		    weight_threshold           0.5
+		    priority_coeff             1.5
+		}
+	    
+		try_deep_search		false
+	}
+
 	scaffolder {
-		on	true
+ 		on	          true
 		cutoff        2
 		rel_cutoff    0.1
 		sum_threshold 3  
@@ -162,11 +195,12 @@ multicell {
 		cl_threshold  0
 
 		fix_gaps true
-                min_gap_score  0.7
-                max_must_overlap  0.5
-                max_can_overlap 0.5
-                short_overlap  6
-                artificial_gap 10 
+        min_gap_score  0.7
+
+		max_must_overlap  0.5
+	    max_can_overlap   0.5
+	    short_overlap     6
+	    artificial_gap    10
 	}
 	
 	; loops removal
@@ -174,14 +208,14 @@ multicell {
 	{
 	    inspect_short_loops true
 
-	    max_loops          10
-	    full_loop_removal  true
+	    max_loops           30
+	    full_loop_removal   true
 	}
 	
 
 	; filter options
 	filter_options
 	{
-	    remove_overlaps         true
+	    remove_overlaps     true
 	}
 }
