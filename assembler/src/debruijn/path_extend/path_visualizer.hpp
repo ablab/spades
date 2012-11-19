@@ -85,9 +85,10 @@ public:
 
         StrGraphLabeler<Graph> str_labeler(gp.g);
         PathGraphLabeler<Graph> path_labeler(gp.g, paths);
+        CoverageGraphLabeler<Graph> cov_labler(gp.g);
         EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
 
-        CompositeLabeler<Graph> composite_labeler(str_labeler, path_labeler, pos_labeler);
+        CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, path_labeler, pos_labeler);
 
         auto_ptr<GraphColorer<Graph>> colorer;
         if (gp.index.IsAttached()) {
@@ -113,7 +114,8 @@ public:
 
         StrGraphLabeler<Graph> str_labeler(gp.g);
         EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
-        CompositeLabeler<Graph> composite_labeler(str_labeler, pos_labeler);
+        CoverageGraphLabeler<Graph> cov_labler(gp.g);
+        CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, pos_labeler);
 
         auto_ptr<GraphColorer<Graph>> colorer;
         if (gp.index.IsAttached()) {

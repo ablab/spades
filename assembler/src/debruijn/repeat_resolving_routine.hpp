@@ -322,6 +322,28 @@ void SaveResolvedPairedInfo(graph_pack& resolved_gp,
 	}
 }
 
+bool try_load_paired_index(conj_graph_pack& gp, PairedIndexT& index, const string& name, path::files_t* used_files = 0) {
+
+    string p = path::append_path(cfg::get().load_from, name);
+
+    FILE* file = fopen((p + ".prd").c_str(), "r");
+    if (file == NULL) {
+        return false;
+    }
+    fclose(file);
+
+    if (used_files != 0)
+        used_files->push_back(p);
+
+    index.Clear();
+    ScannerTraits<conj_graph_pack::graph_t>::Scanner scanner(gp.g,
+                gp.int_ids);
+    ScanPairedIndex(p, scanner, index);
+
+    return true;
+
+}
+
 template<class graph_pack>
 void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp,
 		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
@@ -553,9 +575,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	}
 
 	if (kill_loops) {
-		SimpleLoopKiller<typename graph_pack::graph_t> lk(resolved_gp.g,
-				cfg::get().rr.max_repeat_length, 6);
-		lk.KillAllLoops();
 	}
 
 	OutputMaskedContigs(origin_gp.g,
@@ -1119,19 +1138,51 @@ void resolve_repeats() {
 		}
 	}
 
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_jump) {
-		WARN("Jump resover unavailable so far");
+	//todo magic constants!!!
+	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_mate_pair) {
+		PairedIndexT mate_pair_index(conj_gp.g);
+		if (!try_load_paired_index(conj_gp, mate_pair_index,
+				"late_pair_info_counted_j")) {
+			WARN("No mate_pair library detected");
+			return;
+		}
+		PairedIndexT mate_pair_clustered_index(conj_gp.g);
+		if (!try_load_paired_index(conj_gp, mate_pair_clustered_index,
+				"distance_estimation_j_cl")) {
+			WARN("No clustered mate_pair library detected");
+			mate_pair_clustered_index.AddAll(mate_pair_index);
+		}
+		if (cfg::get().pe_params.param_set.scaffolder_options.on) {
+			if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+				PairedIndexT scaff_clustered(conj_gp.g);
+				prepare_scaffolding_index(conj_gp, paired_index,
+						scaff_clustered);
+				resolve_repeats_pe_mp(cfg::get().K, conj_gp, clustered_index,
+						mate_pair_clustered_index, scaff_clustered,
+						mate_pair_index, cfg::get().output_dir,
+						"scaffolds.fasta", cfg::get().pe_params);
+			} else {
+				resolve_repeats_pe_mp(cfg::get().K, conj_gp, clustered_index,
+						mate_pair_clustered_index, paired_index,
+						mate_pair_index, cfg::get().output_dir,
+						"scaffolds.fasta", cfg::get().pe_params);
+			}
+		} else {
+			resolve_repeats_pe_mp(cfg::get().K, conj_gp, clustered_index,
+					mate_pair_clustered_index,
+					cfg::get().output_dir, "final_contigs.fasta",
+					cfg::get().pe_params);
+		}
+
 	}
 
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
 		//if (cfg::get().pe_params.param_set.improve_paired_info) {
 		//distance_filling(conj_gp, paired_index, clustered_index);
 		//}
-
-		if (cfg::get().pe_params.param_set.scaffolder_options.on) {
-			if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-				PairedInfoIndexT<conj_graph_pack::graph_t> scaff_clustered(
-						conj_gp.g);
+	    if (cfg::get().pe_params.param_set.scaffolder_options.on) {
+            if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+                PairedIndexT scaff_clustered(conj_gp.g);
 
 				prepare_scaffolding_index(conj_gp, paired_index,
 						scaff_clustered);
