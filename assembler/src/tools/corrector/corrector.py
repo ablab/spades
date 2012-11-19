@@ -45,7 +45,7 @@ def read_contigs(filename):
 def write_fasta(data, filename):
     outFile = io.open(filename, 'w')
     for seq in data:
-            outFile.write('>' + seq[0] );
+            outFile.write('>' + seq[0].strip() + '\n' );
             i = 0
             while i < len(seq[1]):
                     outFile.write(seq[1][i:i+60] + '\n')
@@ -115,9 +115,9 @@ def process_read(cigar, aligned, position, l, mate):
                 aligned_length += int(tms)
 
 
-	    if (cigar[i] =='D' or cigar[i] == 'I') and int(tms) > 5:
+#	    if (cigar[i] =='D' or cigar[i] == 'I') and int(tms) > 5:
 #TODO: dirty hack, we do not fix big indels now
-		return 0;
+#	    	return 0;
 	    tms = ''
 #we do not need short reads aligned near gaps
     if aligned_length < 40 and position > 50 and l - position > 50 and mate == 1:
@@ -125,6 +125,7 @@ def process_read(cigar, aligned, position, l, mate):
     state_pos = 0;
     shift = 0;
     skipped = 0;
+    deleted = 0;
 #    if position < 150:
 #        print aligned+ " "+ cigar +" " + str(position)
     insertion_string = ''
@@ -153,7 +154,7 @@ def process_read(cigar, aligned, position, l, mate):
             insertion_string = ''
         if operations[state_pos] == 'M':
             if i +  position - skipped < l:
-                profile[i+position -skipped][aligned[i]] += mate
+                profile[i+position -skipped][aligned[i - deleted]] += mate
         else:
             if  operations[state_pos] in {'S', 'I', 'H'}:
                 if operations[state_pos] == 'I':
@@ -164,9 +165,11 @@ def process_read(cigar, aligned, position, l, mate):
                 skipped += 1;
             elif operations[state_pos] == 'D':
 #               print str(i) +" " + str(position) + " " + str(skipped)+ " " + str(l_read) + " " + cigar +" " + str(l) + " " + insertion_string + "  " + operations[state_pos]
+#                print str(i) + " " + str(i+position - skipped) + "    deletion!"
                 profile[i+position - skipped]['D'] += mate
-                skipped -=1;
-                shift -= 1;
+#                skipped =1;
+#                shift -= 1;
+                deleted += 1;
     if insertion_string != '' and operations[state_pos] != 'I':
 #        print "inserting" + str(i) +" " + str(position) + " " + str(skipped)+ " " + str(l_read) + " " + cigar +" " + str(l) + " " + insertion_string + "  " + operations[state_pos]
 
@@ -180,11 +183,37 @@ def split_sam(filename, tmpdir):
     inFile = io.open(filename, buffering=131072)
     separate_sams ={}
     print("file io.opened")
+    read_num = 0;
+    paired_read = []
     for line in inFile:
         arr = line.split('\t')
         if len(arr) > 5:
-            if arr[2] in separate_sams:
-                separate_sams[arr[2]].write(line)
+            read_num += 1
+            paired_read.append(line.strip())
+            if read_num == 2:
+                unique = {}
+                for j in range(0, 2):
+                    tags = paired_read[j].split()[11:]
+                    parsed_tags = {}
+                    unique_fl = paired_read[j].split()[2];
+                    if paired_read[j].split()[5] == "*":
+                        unique_fl = ''
+                    else:
+                        for tag in tags:
+                            if (tag.split(':')[0] == "X0" and int(tag.split(':')[2]) > 1):
+                                unique_fl = '';
+                                break;
+                    if unique_fl != '':
+                        unique[unique_fl] = 1
+                for cont_name in unique :
+                    if cont_name in separate_sams:
+                        for j in range(0,2):
+                            separate_sams[cont_name].write(paired_read[j]+ '\n')
+                read_num = 0;
+                paired_read = []
+#            if arr[2] in separate_sams:
+#                separate_sams[arr[2]].write(line)
+
         else:
             contig = arr[1].split(':')
             if contig[0] == 'SN':
@@ -210,7 +239,7 @@ def run_bwa():
     global config;
     os.system("bwa index -a is " + config.contigs + " 2")
 #    (contigs_name, path, suf) = fileparse(config.contigs)
-
+    contigs_name = config.contigs.split('/')[-1];
     os.system("bwa aln  "+ contigs_name +" " +  config.reads1 + " -t 4 -O 7 -E 2 -k 3 -n 0.08 -q 15")
     os.system("bwa aln  "+ contigs_name +" " +  config.reads2 + " -t 4 -O 7 -E 2 -k 3 -n 0.08 -q 15")
     os.system("bwa sampe "+ config.contigs + " " + config.sai1 + " " + config.reads1 +" " + config.sai2 + " " + config.reads2 + "> tmp.sam 2 > isize.txt")
@@ -232,6 +261,24 @@ def run_bwa():
 #    my $is = "isize.txt";
 #    my $bwa_sampe_cmd = "$bwa sampe $contigs $sai1 $sai2 $reads1 $reads2 > $sam 2>$is";
     return 0;
+def parse_profile():
+    global config
+
+    long_options = "output_dir= contigs= save-json-to= genes= operons= reference= contig-thresholds= min-contig= genemark-thresholds= save-json gage not-circular plain-report-no-plots help debug".split()
+    short_options = "1:2:o:c:G:O:R:t:M:e:J:jpgnhd"
+    options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
+    for opt, arg in options:
+    # Yes, this is a code duplicating. Python's getopt is non well-thought!!
+        if opt in ('-o', "--output-dir"):
+            config.output_dirpath = os.path.abspath(arg)
+            config.make_latest_symlink = False
+        if opt in ('c', "--contigs"):
+            config.contigs = arg
+        if opt in ('1'):
+            config.reads1 = arg
+        if opt in ('2'):
+            config.reads2 = arg
+
 def main():
     global profile
     global insertions
@@ -250,6 +297,7 @@ def main():
 #    split_contigs(sys.argv[2], tmpdir)
 #    print("contigs splitted, starting splitting samfile");
 #    split_sam(sys.argv[1], tmpdir)
+
 #    return 0
     if not os.path.exists(res_directory):
         os.makedirs(res_directory)
@@ -263,7 +311,7 @@ def main():
  #       print contig_file + "  is contig_file";
  #       print os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")
 
-        if len(f_arr) == 2 and f_arr[1] == "fa" and len(f_arr[0]) < 16 and os.path.exists(os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")):
+        if len(f_arr) == 2 and f_arr[1][0:2] == "fa" and len(f_arr[0]) < 16 and os.path.exists(os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")):
 
             samfilename = os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam");
 
@@ -302,19 +350,33 @@ def main():
                 cigar = arr[5]
                 aligned = arr[9];
                 position = int(arr[3]) - 1
-
+                tags = arr[11:]
+                parsed_tags = []
+                for tag in tags:
+                    parsed_tags.append(tag.split(':')[0])
                 mate_el = arr[6];
-                if abs(position - 188264) < 100:
-                    print arr[0] + " "+ arr[3] +" "+ mate_el
-                if mate_el != '=' and mate_el != '*' and position > insert_size_est and position < l - insert_size_est - 100:
-                    if abs(position - 188264) < 100:
-                        print "skipping"
+#                if abs(position - 188264) < 100:
+#                    print arr[0] + " "+ arr[3] +" "+ mate_el
+#Mate of non-end read in other contig
+#TODO: contig breaker/ fixer can be here
+                if mate_el != '=' and mate_el != '*' and (position > insert_size_est and position < l - insert_size_est - 100 ):
+#                    if abs(position - 188264) < 100:
+#                        print "skipping"
                     continue;
-        #        print position;
+#Mate not in this contig; another alignment of this read present
+                if mate_el != '='\
+                and "XA" in parsed_tags:
+                    if abs(position - 200) < 100:
+                        print position + 1
+                        print "XA tag present, read: " + arr[0] +" cigar " + cigar
+                    continue;
+
+
+                    #        print position;
         #        print l;
 
                 if mate_el == '=' and (int(arr[1]) & 8) == 0:
-                    mate = 2;
+                    mate = 1;
                 else:
                     mate = 1;
                 indelled_reads += 1 - process_read(cigar, aligned, position, l, mate)
@@ -324,14 +386,15 @@ def main():
             else:
                 print "insertions very big, most popular:"
                 for element in insertions:
-                    if len(insertions[element]) > 30:
+                    if len(insertions[element]) > 20 or profile[int(element)]['I'] * 3 > profile[int(element)][contig[int(element)]] :
                         print str(element) + str(insertions[element])
                         print "profile here: " + str(profile[element])
             for i in range (0, l):
-                if i in {188260, 188264, 188268, 188272, 188276, 188248}:
-                    print "FFFFFFUUUU "+ str(i + 1)
-                    print(profile[i])
-        #        print profile[i];
+                #*
+#                if i in range(183, 224):
+#                    print "FFFFFFUUUU "+ str(i + 1)
+#                    print(profile[i])
+
                 tj = contig[i]
                 tmp =''
                 for count in range(0,2):
@@ -344,9 +407,10 @@ def main():
                         if tj =='I' or tj == 'D' :
                             print "there was in-del"
                         else:
-                            print profile[i]
-                            print "changing " + contig[i] + " to " + tj + " on position " + str(i+1) + '\n'
-                            replaced += 1;
+                            replaced += 1
+                        print profile[i]
+                        print "changing " + contig[i] + " to " + tj + " on position " + str(i+1) + '\n'
+
                     if tj in ('A','C','T','G','N'):
                         rescontig += tj
                         break;
@@ -372,6 +436,9 @@ def main():
  #           nonFasta.write(rescontig);
             profile = []
             print "total/indelled reads:" + str(total_reads) + '/' + str(indelled_reads)
+    cat_line = "cat "+ res_directory + "/*.ref.fasta > "+ res_directory + "corrected.fasta"
+    print cat_line
+    os.system(cat_line);
     print "TOTAL replaced: "+ str(replaced) + " inserted: "+ str(inserted) + " deleted: " + str(deleted);
 
 if __name__ == '__main__':
