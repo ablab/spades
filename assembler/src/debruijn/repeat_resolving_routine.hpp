@@ -65,7 +65,7 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 
 void save_distance_filling(conj_graph_pack& gp, paired_info_index& paired_index,
 		paired_info_index& clustered_index) {
-	if (cfg::get().make_saves) {
+	if (cfg::get().make_saves || cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
         string p = path::append_path(cfg::get().output_saves, "distance_filling");
         PrintAll(p, gp, paired_index, clustered_index);
         write_estimated_params(p);
@@ -1105,8 +1105,20 @@ void resolve_repeats() {
         if (cfg::get().run_mode) {
             save_resolved(resolved_gp, resolved_graph_paired_info, resolved_graph_paired_info_cl);
         }
-
 	}
+
+    if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
+
+        INFO("Preparing paired information for rectangles repeat resolution module");
+
+        PairInfoInprover<conj_graph_pack::graph_t> pi_imp(conj_gp.g);
+        pi_imp.ImprovePairedInfo(clustered_index,
+                cfg::get().use_multithreading, cfg::get().max_threads);
+        save_distance_filling(conj_gp, paired_index, clustered_index);
+
+        INFO("Ready to run rectangles repeat resolution module");
+    }
+
 
 }
 

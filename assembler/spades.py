@@ -18,6 +18,9 @@ from process_cfg import *
 import bh_logic
 import spades_logic
 
+sys.path.append("src/rectangles") 
+import rrr
+
 
 def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
@@ -759,18 +762,36 @@ def main():
             dataset_file.close()
             spades_cfg.__dict__["dataset"] = dataset_filename
 
-        result_contigs_filename, result_scaffolds_filename = spades_logic.run_spades(spades_home, execution_home, spades_cfg)
+        result_contigs_filename, result_scaffolds_filename, latest_dir = spades_logic.run_spades(spades_home, execution_home, spades_cfg)
+
+
+        #RECTANGLES
+        debruijn_config = load_config_from_file(os.path.join(latest_dir, "configs", "config.info"))
+
+        if spades_cfg.paired_mode and debruijn_config.resolving_mode == "rectangles":
+            rrr_input_dir = os.path.join(latest_dir, "saves")
+            rrr_outpath = os.path.join(spades_cfg.output_dir, "rectangles")
+            if not os.path.exists(rrr_outpath):
+                os.mkdir(rrr_outpath)
+
+            rrr_reference_information_file = os.path.join(rrr_input_dir,"late_pair_info_counted_etalon_distance.txt")
+            rrr_test_util = rrr.TestUtils(rrr_reference_information_file, os.path.join(rrr_outpath, "rectangles.log"))
+            rrr.resolve(rrr_input_dir, rrr_outpath, rrr_test_util, "", cfg["dataset"].single_cell)
+
+            shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend_before_scaffold.fasta"), spades_cfg.result_contigs)
+            shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
+        #EOR
 
         tee.free()
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
               "\n")
 
     print ("")
-    if bh_dataset_filename:
+    if os.path.isdir(os.path.dirname(bh_dataset_filename)):
         print (" * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/")
-    if result_contigs_filename:
+    if os.path.isfile(result_contigs_filename):
         print (" * Assembled contigs are " + result_contigs_filename)
-    if result_scaffolds_filename:
+    if os.path.isfile(result_scaffolds_filename):
         print (" * Assembled scaffolds are " + result_scaffolds_filename)
     print ("")
     print ("Thank you for using SPAdes!")

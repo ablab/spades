@@ -85,12 +85,13 @@ def run_spades(spades_home, execution_home, cfg):
         support.sys_call(command, execution_home)
 
     latest = os.path.join(cfg.output_dir, "K%d" % (K))
-    shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
+
+    if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):    
+        shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.paired_mode:
         if os.path.isfile(os.path.join(latest, "scaffolds.fasta")):
             shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)
-        else:
-            cfg.result_scaffolds = None
+
     if cfg.developer_mode:
         # before repeat resolver contigs
         # before_RR_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "simplified_contigs.fasta")
@@ -113,6 +114,6 @@ def run_spades(spades_home, execution_home, cfg):
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)
     if not cfg.paired_mode:
-        return cfg.result_contigs, ""
+        return cfg.result_contigs, "", latest
 
-    return cfg.result_contigs, cfg.result_scaffolds
+    return cfg.result_contigs, cfg.result_scaffolds, latest

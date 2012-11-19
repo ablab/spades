@@ -70,7 +70,8 @@ enum resolving_mode
     rm_path_extend    ,
     rm_combined       ,
     rm_split_scaff    ,
-    rm_jump
+    rm_jump           ,
+    rm_rectangles
 };
 
 enum info_printer_pos {
@@ -188,6 +189,7 @@ struct debruijn_config {
         resolve_mode_id_mapping::value_type("combined"         , rm_combined       ),
         resolve_mode_id_mapping::value_type("split_scaff"      , rm_split_scaff    ),
         resolve_mode_id_mapping::value_type("jump"             , rm_jump           ),
+        resolve_mode_id_mapping::value_type("rectangles"       , rm_rectangles     ),
     };
 
 		return resolve_mode_id_mapping(info, utils::array_end(info));

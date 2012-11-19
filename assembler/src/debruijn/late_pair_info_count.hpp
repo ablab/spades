@@ -73,7 +73,10 @@ void load_late_pair_info_count(conj_graph_pack& gp,
 
 void save_late_pair_info_count(conj_graph_pack& gp,
 		paired_info_index& paired_index) {
-	if (cfg::get().make_saves) {
+	if (cfg::get().make_saves || (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles && cfg::get().paired_mode)) {
+	    if (!cfg::get().make_saves)
+	        make_dir(cfg::get().output_saves);
+
         string p = path::append_path(cfg::get().output_saves, "late_pair_info_counted");
 
         PrintWithPairedIndex(p, gp, paired_index);
