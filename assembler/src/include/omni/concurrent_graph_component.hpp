@@ -296,9 +296,11 @@ public:
 		BOOST_FOREACH(VertexId vertex, deleted_vertices_) {
 			graph_.HiddenDeleteVertex(vertex);
 		}
-
+		
 		BOOST_FOREACH(VertexId vertex, vertices_to_compress_) {
-			base::CompressVertex(vertex);
+			if (graph_.CanCompressVertex(vertex)) {
+				base::CompressVertex(vertex);
+			}
 		}
 
 		deleted_vertices_.resize(0);
@@ -320,13 +322,13 @@ protected:
 
 	virtual EdgeId HiddenAddEdge(VertexId vertex1, VertexId vertex2,
 			const EdgeData &data, restricted::IdDistributor * id_distributor) {
-		VERIFY(IsInComponent(vertex1));
-		VERIFY(IsInComponent(vertex2));
+		//VERIFY(IsInComponent(vertex1));
+		//VERIFY(IsInComponent(vertex2));
 		return graph_.HiddenAddEdge(vertex1, vertex2, data, id_distributor);
 	}
 
 	virtual void HiddenDeleteEdge(EdgeId edge) {
-		VERIFY(IsInComponent(edge));
+		//VERIFY(IsInComponent(edge));
 		graph_.HiddenDeleteEdge(edge);
 	}
 
@@ -339,13 +341,13 @@ protected:
 
 	virtual vector<EdgeId> EdgesToDelete(const vector<EdgeId> &path) {
 		vector<EdgeId> edges_to_delete = graph_.EdgesToDelete(path);
-		VERIFY(IsInComponent(edges_to_delete));
+		//VERIFY(IsInComponent(edges_to_delete));
 		return edges_to_delete;
 	}
 
 	virtual vector<VertexId> VerticesToDelete(const vector<EdgeId> &path) {
 		vector<VertexId> vertices_to_delete = graph_.VerticesToDelete(path);
-		VERIFY(IsInComponent(vertices_to_delete));
+		//VERIFY(IsInComponent(vertices_to_delete));
 		return vertices_to_delete;
 	}
 
