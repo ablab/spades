@@ -12,6 +12,8 @@ import getopt
 
 profile = []
 insertions = {}
+config = {}
+
 def read_genome(filename):
     res_seq = []
 
@@ -180,9 +182,9 @@ def process_read(cigar, aligned, position, l, mate):
     return 1
 def split_sam(filename, tmpdir):
 
-    inFile = io.open(filename, buffering=131072)
+    inFile = open(filename)
     separate_sams ={}
-    print("file io.opened")
+    print("file "+ filename+"opened")
     read_num = 0;
     paired_read = []
     for line in inFile:
@@ -219,7 +221,7 @@ def split_sam(filename, tmpdir):
             if contig[0] == 'SN':
                 samfilename = tmpdir + '/' +contig[1].split('_')[1] + '.pair.sam'
 #                print contig[1] + " " + samfilename;
-                separate_sams[contig[1]] = io.open(samfilename, 'w', buffering=131072)
+                separate_sams[contig[1]] = open(samfilename, 'w')
 
     for file_name in separate_sams:
         separate_sams[file_name].close()
@@ -237,12 +239,36 @@ def split_contigs(filename, tmpdir):
 def run_bwa():
 # align with BWA
     global config;
-    os.system("bwa index -a is " + config.contigs + " 2")
+
 #    (contigs_name, path, suf) = fileparse(config.contigs)
-    contigs_name = config.contigs.split('/')[-1];
-    os.system("bwa aln  "+ contigs_name +" " +  config.reads1 + " -t 4 -O 7 -E 2 -k 3 -n 0.08 -q 15")
-    os.system("bwa aln  "+ contigs_name +" " +  config.reads2 + " -t 4 -O 7 -E 2 -k 3 -n 0.08 -q 15")
-    os.system("bwa sampe "+ config.contigs + " " + config.sai1 + " " + config.reads1 +" " + config.sai2 + " " + config.reads2 + "> tmp.sam 2 > isize.txt")
+    if not "contigs" in config:
+        print "NEED CONTIGS TO REFINE!!!"
+        exit()
+    if not "reads1" in config or not "reads2" in config:
+        print "NEED READS TO REFINE!!!"
+        exit()
+    contigs_name = config["contigs"].split('/')[-1];
+    os.system ("mkdir " +config["output_dirpath"])
+    os.system ("mkdir " +config["output_dirpath"] + "/tmp")
+    work_dir = config["output_dirpath"]+"/tmp/"
+    os.system("cp " + config["contigs"] + " " + work_dir)
+    os.system("cp " + config["reads1"] + " " + work_dir)
+    os.system("cp " + config["reads2"] + " " + work_dir)
+
+    contigs_name = work_dir + contigs_name
+    reads_1 = work_dir + config["reads1"].split('/')[-1]
+    reads_2 = work_dir + config["reads2"].split('/')[-1]
+
+
+    os.system(config["bwa"] + " index -a is " + contigs_name + " 2")
+    os.system(config["bwa"] + " aln  "+ contigs_name +" " + reads_1 + " -t " +config["t"]+ "  -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+work_dir+ "tmp1.sai" )
+    os.system(config["bwa"] + " aln  "+ contigs_name +" " + reads_2 + " -t " +config["t"]+ " -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+work_dir+ "tmp2.sai" )
+    os.system(config["bwa"] + " sampe "+ contigs_name +" " +work_dir+ "tmp1.sai "+work_dir+ "tmp2.sai " + reads_1 + " " + reads_2 + ">"+work_dir+ "tmp.sam 2>"+work_dir+ "isize.txt")
+    config["reads1"] = reads_1
+    config["reads2"] = reads_2
+    config["sam_file"] = work_dir + "tmp.sam"
+    config["contigs"] = contigs_name
+    config["work_dir"] = work_dir
 #    my ($sai1, $sai2, $sam) = ("reads1_aln.sai", "reads2_aln.sai", "reads_aln.sam");
 #    my $cmd;
 #    $cmd = "$bwa index -a is $contigs 2>/dev/null";
@@ -264,20 +290,31 @@ def run_bwa():
 def parse_profile():
     global config
 
-    long_options = "output_dir= contigs= save-json-to= genes= operons= reference= contig-thresholds= min-contig= genemark-thresholds= save-json gage not-circular plain-report-no-plots help debug".split()
-    short_options = "1:2:o:c:G:O:R:t:M:e:J:jpgnhd"
-    options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
+    long_options = "threads= sam_file= output_dir= bwa= contigs=  help debug".split()
+    short_options = "1:2:o:s:c:t:M:e:J:t:jpgnhd"
+    options, contigs_fpaths = getopt.gnu_getopt(sys.argv, short_options, long_options)
     for opt, arg in options:
     # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
-            config.output_dirpath = os.path.abspath(arg)
-            config.make_latest_symlink = False
-        if opt in ('c', "--contigs"):
-            config.contigs = arg
-        if opt in ('1'):
-            config.reads1 = arg
-        if opt in ('2'):
-            config.reads2 = arg
+            config["output_dirpath"] = os.path.abspath(arg)
+            config["make_latest_symlink"] = False
+        if opt in ('-c', "--contigs"):
+            config["contigs"] = os.path.abspath(arg)
+        if opt in ('-1'):
+            config["reads1"] = os.path.abspath(arg)
+        if opt in ('-2'):
+            config["reads2"] = os.path.abspath(arg)
+        if opt in ("--bwa"):
+            config["bwa"] = os.path.abspath(arg)
+        if opt in ('t', "--threads"):
+            config["t"] = int(arg)
+        if opt in ('s', "--sam_file"):
+            config["sam_file"] = os.path.abspath(arg)
+def init_config():
+    now = datetime.datetime.now()
+    config["output_dirpath"] = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
+    config["bwa"] = "bwa"
+    config["t"] = str(4)
 
 def main():
     global profile
@@ -289,29 +326,29 @@ def main():
     replaced = 0;
     inserted = 0;
     deleted = 0;
-    now = datetime.datetime.now()
-    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
-    tmpdir = res_directory +'tmp';
-#    tmpdir = 'tmp'
-#    os.makedirs(tmpdir)
-#    split_contigs(sys.argv[2], tmpdir)
-#    print("contigs splitted, starting splitting samfile");
-#    split_sam(sys.argv[1], tmpdir)
+    init_config()
+    parse_profile()
+    if "sam_file" not in config:
+        run_bwa()
+#    now = datetime.datetime.now()
+#    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
+    split_contigs(config["contigs"],config["work_dir"])
+    print("contigs splitted, starting splitting samfile");
+    split_sam(config["sam_file"], config["work_dir"])
 
 #    return 0
-    if not os.path.exists(res_directory):
-        os.makedirs(res_directory)
+#    if not os.path.exists(res_directory):
+#        os.makedirs(res_directory)
 #    refinedFileName = res_directory + sys.argv[2].split('/')[-1].split('.')[0] + '.ref.fasta';
-    dir = sys.argv[1];
 
-    filelist = [os.path.abspath(os.path.join(dir, i)) for i in os.listdir(dir) if os.path.isfile(os.path.join(dir, i))]
+    filelist = [os.path.abspath(os.path.join(config["work_dir"], i)) for i in os.listdir(config["work_dir"]) if os.path.isfile(os.path.join(config["work_dir"], i))]
     for contig_file in filelist:
         f_name = contig_file.split('/')[-1];
         f_arr = f_name.split('.');
  #       print contig_file + "  is contig_file";
  #       print os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")
 
-        if len(f_arr) == 2 and f_arr[1][0:2] == "fa" and len(f_arr[0]) < 16 and os.path.exists(os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")):
+        if len(f_arr) == 2 and f_arr[1][0:2] == "fa" and os.path.exists(os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")):
 
             samfilename = os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam");
 
@@ -323,7 +360,7 @@ def main():
             total_reads = 0;
             indelled_reads = 0;
 #            print samfilename
-            refinedFileName = res_directory + samfilename.split('/')[-1].split('.')[0] + '.ref.fasta';
+            refinedFileName = config["work_dir"] + samfilename.split('/')[-1].split('.')[0] + '.ref.fasta';
     #    samFile = io.open( sys.argv[1], 'r');
 # accurate!
             cont_num = contig_file.split('/')[-1].split('.')[0];
@@ -436,7 +473,7 @@ def main():
  #           nonFasta.write(rescontig);
             profile = []
             print "total/indelled reads:" + str(total_reads) + '/' + str(indelled_reads)
-    cat_line = "cat "+ res_directory + "/*.ref.fasta > "+ res_directory + "corrected.fasta"
+    cat_line = "cat "+ config["work_dir"] + "/*.ref.fasta > "+ config["work_dir"] + "../corrected.fasta"
     print cat_line
     os.system(cat_line);
     print "TOTAL replaced: "+ str(replaced) + " inserted: "+ str(inserted) + " deleted: " + str(deleted);
