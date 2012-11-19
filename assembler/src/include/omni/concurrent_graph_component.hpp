@@ -76,16 +76,28 @@ public:
 	}
 
 	virtual size_t OutgoingEdgeCount(VertexId vertex) const {
-		return OutgoingEdges(vertex).size();
+		if (IsAtBorder(vertex)) {
+			return OutgoingEdges(vertex).size();
+		} else {
+			return graph_.OutgoingEdgeCount(vertex);
+		}
 	}
 
 	virtual size_t IncomingEdgeCount(VertexId vertex) const {
-		return IncomingEdges(vertex).size();
+		if (IsAtBorder(vertex)) {
+			return IncomingEdges(vertex).size();
+		} else {
+			return graph_.IncomingEdgeCount(vertex);
+		}
 	}
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId vertex) const {
 		if (IsInComponent(vertex)) {
-			return GetEdgesFromComponent(graph_.OutgoingEdges(vertex));
+			if (IsAtBorder(vertex)) {
+				return GetEdgesFromComponent(graph_.OutgoingEdges(vertex));
+			} else {
+				return graph_.OutgoingEdges(vertex);
+			}
 		} else {
 			TRACE("Invalidate component action on OutgoingEdges for " << str(vertex));
 			return vector<EdgeId>();
@@ -94,7 +106,11 @@ public:
 
 	virtual const vector<EdgeId> IncomingEdges(VertexId vertex) const {
 		if (IsInComponent(vertex)) {
-			return GetEdgesFromComponent(graph_.IncomingEdges(vertex));
+			if (IsAtBorder(vertex)) {
+				return GetEdgesFromComponent(graph_.IncomingEdges(vertex));
+			} else {
+				return graph_.IncomingEdges(vertex);
+			}
 		} else {
 			TRACE("Invalidate component action on IncomingEdges for " << str(vertex));
 			return vector<EdgeId>();
