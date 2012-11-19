@@ -9,16 +9,22 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-void limit_memory(size_t limit){
+void limit_memory(size_t limit) {
+  rlimit rl;
+  if (sizeof(rlim_t) < 8) {
+    INFO("Can't limit virtual memory because of 32-bit system");
+    return;
+  }
 
-	rlimit rl = {limit, limit};
+  int res = getrlimit(RLIMIT_AS, &rl);
+  VERIFY_MSG(res == 0,
+             "getrlimit(2) call failed, errno = " << errno);
 
-	if (sizeof(rl.rlim_max) < 8){
-
-		INFO("Can't limit virtual memory because of 32-bit system");
-		return;
-	}
-
-	int res = setrlimit(RLIMIT_AS, &rl);
-    VERIFY(res == 0);
+  // We cannot go beyond hard limit and we might not have enough privileges to
+  // increase the hard limit
+  rl.rlim_cur = std::min<size_t>(limit, rl.rlim_max);
+  res = setrlimit(RLIMIT_AS, &rl);
+  VERIFY_MSG(res == 0,
+             "setrlimit(2) call failed, errno = " << errno);
+  INFO("Memory limit set to " << (1.0 * rl.rlim_cur / 1024 / 1024 / 1024) << " Gb");
 }
