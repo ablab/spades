@@ -18,7 +18,7 @@ def read_genome(filename):
     res_seq = []
 
     seq =''
-    for line in io.open(filename):
+    for line in open(filename):
             if line[0] == '>':
     	    	    res_seq.append(line[1:])
             else:
@@ -31,7 +31,7 @@ def read_contigs(filename):
 
     seq =''
     cont_name = ''
-    for line in io.open(filename):
+    for line in open(filename):
         if line[0] == '>':
             if cont_name != '':
                 res_seq[cont_name] = seq
@@ -45,13 +45,12 @@ def read_contigs(filename):
 
 
 def write_fasta(data, filename):
-    outFile = io.open(filename, 'w')
+    outFile = open(filename, 'w')
     for seq in data:
             outFile.write('>' + seq[0].strip() + '\n' );
             i = 0
             while i < len(seq[1]):
                     outFile.write(seq[1][i:i+60] + '\n')
-#                    print seq[1][i:i+60]
                     i += 60
     outFile.close()
 
@@ -95,9 +94,6 @@ def process_read(cigar, aligned, position, l, mate):
     global insertions
     l_read = len(aligned);
 
-#    if position > 36470:
-#        print aligned+ " "+ cigar +" " + str(position)
-#    if 'I' in cigar or 'D' in cigar or '*' in cigar:
     if '*' in cigar:
         return 0;
 
@@ -118,11 +114,10 @@ def process_read(cigar, aligned, position, l, mate):
 
 
 #	    if (cigar[i] =='D' or cigar[i] == 'I') and int(tms) > 5:
-#TODO: dirty hack, we do not fix big indels now
 #	    	return 0;
 	    tms = ''
 #we do not need short reads aligned near gaps
-    if aligned_length < 40 and position > 50 and l - position > 50 and mate == 1:
+    if aligned_length < min(l_read* 0.4, 40) and position > l_read/2 and l - position > l_read/2 and mate == 1:
         return 0;
     state_pos = 0;
     shift = 0;
@@ -134,9 +129,6 @@ def process_read(cigar, aligned, position, l, mate):
     for i in range(0, l_read):
     #            print aligned[i];
     #            print profile[i+position - 1]
-#        if position == 698:
-#            print "inserting" + str(i) +" " + str(position) + " " + str(skipped)+ " " + str(l_read) + " " + cigar +" " + str(l) + " " + insertion_string + "  " + operations[state_pos]
-
         if i + position - skipped >= l:
 #            print str(i) +" " + str(position) + " " + str(skipped)+ " " + str(l_read) + " " + cigar +" " + str(l) + " " + insertion_string + "  " + operations[state_pos]
 #            print "read going out of contig"
@@ -160,7 +152,6 @@ def process_read(cigar, aligned, position, l, mate):
         else:
             if  operations[state_pos] in {'S', 'I', 'H'}:
                 if operations[state_pos] == 'I':
-#                    print "ddd" + str(i) +" " + str(position) + " " + str(skipped)+ " " + str(l_read) + " " + cigar +" " + str(l) + " " + insertion_string + "  " + operations[state_pos]
                     if insertion_string == '':
                         profile[i+position -skipped - 1 ]['I'] += mate
                     insertion_string += (aligned[i])
@@ -184,7 +175,7 @@ def split_sam(filename, tmpdir):
 
     inFile = open(filename)
     separate_sams ={}
-    print("file "+ filename+"opened")
+    print("file "+ filename+" opened")
     read_num = 0;
     paired_read = []
     for line in inFile:
@@ -235,6 +226,11 @@ def split_contigs(filename, tmpdir):
         write_fasta([[contig_desc, ref_seq[contig_desc]]], tfilename)
 
     return 0
+def usage():
+    print >> sys.stderr, 'Corrector. Simple postprocessing tool'
+    print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] -1 left_reads -2 right_reads -c contigs'
+    print >> sys.stderr, "options description later"
+
 
 def run_bwa():
 # align with BWA
@@ -243,9 +239,11 @@ def run_bwa():
 #    (contigs_name, path, suf) = fileparse(config.contigs)
     if not "contigs" in config:
         print "NEED CONTIGS TO REFINE!!!"
+        usage()
         exit()
     if not "reads1" in config or not "reads2" in config:
         print "NEED READS TO REFINE!!!"
+        usage()
         exit()
     contigs_name = config["contigs"].split('/')[-1];
     os.system ("mkdir " +config["output_dirpath"])
@@ -345,14 +343,11 @@ def main():
     for contig_file in filelist:
         f_name = contig_file.split('/')[-1];
         f_arr = f_name.split('.');
- #       print contig_file + "  is contig_file";
- #       print os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")
-
         if len(f_arr) == 2 and f_arr[1][0:2] == "fa" and os.path.exists(os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")):
 
             samfilename = os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam");
 
-            samFile = io.open(samfilename, 'r');
+            samFile = open(samfilename, 'r');
             fasta_contig = read_genome(contig_file);
             print "processing " + str(contig_file) + ", contig length:" + str(len(fasta_contig[1]));
             contig = fasta_contig[1].upper()
@@ -403,9 +398,9 @@ def main():
 #Mate not in this contig; another alignment of this read present
                 if mate_el != '='\
                 and "XA" in parsed_tags:
-                    if abs(position - 200) < 100:
-                        print position + 1
-                        print "XA tag present, read: " + arr[0] +" cigar " + cigar
+#                    if abs(position - 200) < 100:
+#                        print position + 1
+#                        print "XA tag present, read: " + arr[0] +" cigar " + cigar
                     continue;
 
 
@@ -418,14 +413,15 @@ def main():
                     mate = 1;
                 indelled_reads += 1 - process_read(cigar, aligned, position, l, mate)
                 total_reads += 1;
-            if len(insertions) < 50:
-                print insertions
-            else:
-                print "insertions very big, most popular:"
-                for element in insertions:
-                    if len(insertions[element]) > 20 or profile[int(element)]['I'] * 3 > profile[int(element)][contig[int(element)]] :
-                        print str(element) + str(insertions[element])
-                        print "profile here: " + str(profile[element])
+
+#            if len(insertions) < 50:
+#                print insertions
+#            else:
+#                print "insertions very big, most popular:"
+#                for element in insertions:
+#                    if len(insertions[element]) > 20 or profile[int(element)]['I'] * 3 > profile[int(element)][contig[int(element)]] :
+#                        print str(element) + str(insertions[element])
+#                        print "profile here: " + str(profile[element]) """
             for i in range (0, l):
                 #*
 #                if i in range(183, 224):
@@ -435,7 +431,8 @@ def main():
                 tj = contig[i]
                 tmp =''
                 for count in range(0,2):
-                    for j in ('A','C','G','T','N', 'I', 'D'):
+                    #exluded 'N's from cycle
+                    for j in ('A','C','G','T', 'I', 'D'):
                         if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] > 2):
                             tj = j
             #                rescontig[i] = j
