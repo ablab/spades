@@ -246,9 +246,7 @@ def run_bwa():
         usage()
         exit()
     contigs_name = config["contigs"].split('/')[-1];
-    os.system ("mkdir " +config["output_dirpath"])
-    os.system ("mkdir " +config["output_dirpath"] + "/tmp")
-    work_dir = config["output_dirpath"]+"/tmp/"
+    work_dir = config['work_dir']
     os.system("cp " + config["contigs"] + " " + work_dir)
     os.system("cp " + config["reads1"] + " " + work_dir)
     os.system("cp " + config["reads2"] + " " + work_dir)
@@ -259,14 +257,14 @@ def run_bwa():
 
 
     os.system(config["bwa"] + " index -a is " + contigs_name + " 2")
-    os.system(config["bwa"] + " aln  "+ contigs_name +" " + reads_1 + " -t " +config["t"]+ "  -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+work_dir+ "tmp1.sai" )
-    os.system(config["bwa"] + " aln  "+ contigs_name +" " + reads_2 + " -t " +config["t"]+ " -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+work_dir+ "tmp2.sai" )
+    os.system(config["bwa"] + " aln  "+ contigs_name +" " + reads_1 + " -t " + str(config["t"]) + "  -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+work_dir+ "tmp1.sai" )
+    os.system(config["bwa"] + " aln  "+ contigs_name +" " + reads_2 + " -t " + str(config["t"]) + " -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+work_dir+ "tmp2.sai" )
     os.system(config["bwa"] + " sampe "+ contigs_name +" " +work_dir+ "tmp1.sai "+work_dir+ "tmp2.sai " + reads_1 + " " + reads_2 + ">"+work_dir+ "tmp.sam 2>"+work_dir+ "isize.txt")
     config["reads1"] = reads_1
     config["reads2"] = reads_2
     config["sam_file"] = work_dir + "tmp.sam"
     config["contigs"] = contigs_name
-    config["work_dir"] = work_dir
+
 #    my ($sai1, $sai2, $sam) = ("reads1_aln.sai", "reads2_aln.sai", "reads_aln.sam");
 #    my $cmd;
 #    $cmd = "$bwa index -a is $contigs 2>/dev/null";
@@ -288,13 +286,17 @@ def run_bwa():
 def parse_profile():
     global config
 
-    long_options = "threads= sam_file= output_dir= bwa= contigs=  help debug".split()
-    short_options = "1:2:o:s:c:t:M:e:J:t:jpgnhd"
+    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= help debug".split()
+    short_options = "1:2:o:s:c:t:m:"
     options, contigs_fpaths = getopt.gnu_getopt(sys.argv, short_options, long_options)
     for opt, arg in options:
     # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
             config["output_dirpath"] = os.path.abspath(arg)
+            os.system ("mkdir " +config["output_dirpath"])
+            os.system ("mkdir " +config["output_dirpath"] + "/tmp")
+            work_dir = config["output_dirpath"]+"/tmp/"
+            config["work_dir"] = work_dir
             config["make_latest_symlink"] = False
         if opt in ('-c', "--contigs"):
             config["contigs"] = os.path.abspath(arg)
@@ -304,15 +306,18 @@ def parse_profile():
             config["reads2"] = os.path.abspath(arg)
         if opt in ("--bwa"):
             config["bwa"] = os.path.abspath(arg)
-        if opt in ('t', "--threads"):
+        if opt in ('-t', "--threads"):
             config["t"] = int(arg)
-        if opt in ('s', "--sam_file"):
+        if opt in ('-m', "--mate_weight"):
+            config["mate_weight"] = int(arg)
+        if opt in ('-s', "--sam_file"):
             config["sam_file"] = os.path.abspath(arg)
 def init_config():
     now = datetime.datetime.now()
     config["output_dirpath"] = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
     config["bwa"] = "bwa"
-    config["t"] = str(4)
+    config["t"] = int(4)
+    config["mate_weight"] = int(1)
 
 def main():
     global profile
@@ -328,12 +333,15 @@ def main():
     parse_profile()
     if "sam_file" not in config:
         run_bwa()
+    else:
+        os.system("cp "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
+        config["sam_file"] = config["work_dir"]+"tmp.sam"
 #    now = datetime.datetime.now()
 #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
     split_contigs(config["contigs"],config["work_dir"])
-    print("contigs splitted, starting splitting samfile");
+    print("contigs splitted, starting splitting .sam file");
     split_sam(config["sam_file"], config["work_dir"])
-
+    print(".sam file splitted")
 #    return 0
 #    if not os.path.exists(res_directory):
 #        os.makedirs(res_directory)
@@ -408,7 +416,7 @@ def main():
         #        print l;
 
                 if mate_el == '=' and (int(arr[1]) & 8) == 0:
-                    mate = 1;
+                    mate = config["mate_weight"];
                 else:
                     mate = 1;
                 indelled_reads += 1 - process_read(cigar, aligned, position, l, mate)
@@ -469,7 +477,7 @@ def main():
         #    refinedFile.write(rescontig);
  #           nonFasta.write(rescontig);
             profile = []
-            print "total/indelled reads:" + str(total_reads) + '/' + str(indelled_reads)
+            print "Finished. Used " + str(total_reads) + " reads."
     cat_line = "cat "+ config["work_dir"] + "/*.ref.fasta > "+ config["work_dir"] + "../corrected.fasta"
     print cat_line
     os.system(cat_line);
