@@ -150,7 +150,7 @@ def process_read(cigar, aligned, position, l, mate, profile, insertions):
             if i +  position - skipped < l:
                 profile[i+position -skipped][aligned[i - deleted]] += mate
         else:
-            if  operations[state_pos] in {'S', 'I', 'H'}:
+            if  operations[state_pos] in ('S', 'I', 'H'):
                 if operations[state_pos] == 'I':
                     if insertion_string == '':
                         profile[i+position -skipped - 1 ]['I'] += mate
