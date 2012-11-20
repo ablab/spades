@@ -8,10 +8,10 @@ import datetime
 import io
 import cProfile
 import getopt
-#from joblib import Parallel, delayed
+from joblib import Parallel, delayed
 
-profile = []
-insertions = {}
+#profile = []
+#insertions = {}
 config = {}
 
 def read_genome(filename):
@@ -54,8 +54,8 @@ def write_fasta(data, filename):
                     i += 60
     outFile.close()
 
-def vote_insertions(position):
-    global insertions;
+def vote_insertions(position, insertions):
+#    global insertions;
     arr = insertions[position]
     lengths = {}
     for strn in arr:
@@ -89,9 +89,9 @@ def vote_insertions(position):
     return best_ins
 
 
-def process_read(cigar, aligned, position, l, mate):
-    global profile
-    global insertions
+def process_read(cigar, aligned, position, l, mate, profile, insertions):
+#    global profile
+#    global insertions
     l_read = len(aligned);
 
     if '*' in cigar:
@@ -286,7 +286,7 @@ def run_bwa():
 def parse_profile():
     global config
 
-    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= help debug".split()
+    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= help debug".split()
     short_options = "1:2:o:s:c:t:m:"
     options, contigs_fpaths = getopt.gnu_getopt(sys.argv, short_options, long_options)
     for opt, arg in options:
@@ -312,6 +312,8 @@ def parse_profile():
             config["mate_weight"] = int(arg)
         if opt in ('-s', "--sam_file"):
             config["sam_file"] = os.path.abspath(arg)
+        if opt in ("--splitted_dir"):
+            config["splitted_dir"] = os.path.abspath(arg)
 def init_config():
     now = datetime.datetime.now()
     config["output_dirpath"] = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
@@ -319,169 +321,183 @@ def init_config():
     config["t"] = int(4)
     config["mate_weight"] = int(1)
 
+def process_contig(samfilename, contig_file):
+
+    profile = []
+    insertions = {}
+    inserted = 0;
+    replaced = 0;
+    samFile = open(samfilename, 'r');
+    fasta_contig = read_genome(contig_file);
+    print "processing " + str(contig_file) + ", contig length:" + str(len(fasta_contig[1]));
+    contig = fasta_contig[1].upper()
+    #            profile = []
+    total_reads = 0;
+    indelled_reads = 0;
+    #            print samfilename
+    refinedFileName = config["work_dir"] + samfilename.split('/')[-1].split('.')[0] + '.ref.fasta';
+    #    samFile = io.open( sys.argv[1], 'r');
+    # accurate!
+    cont_num = contig_file.split('/')[-1].split('.')[0];
+    #    fasta_contig = read_genome(sys.argv[2]);
+
+
+
+    l = len(contig)
+    #            print l;
+    #            print contig
+    rescontig = ""
+    for i in range (0, l):
+        profile.append( {} );
+        for j in ('A','C','G','T','N','I','D'):
+            profile[i][j] = 0;
+    insertions = {}
+    #TODO: estimation on insert size, need to be replaced
+    insert_size_est = 400
+    for line in samFile:
+        arr = line.split();
+        if arr[2].split('_')[1] != cont_num:
+            continue
+            #        print line;
+        cigar = arr[5]
+        aligned = arr[9];
+        position = int(arr[3]) - 1
+        tags = arr[11:]
+        parsed_tags = []
+        for tag in tags:
+            parsed_tags.append(tag.split(':')[0])
+        mate_el = arr[6];
+        #Mate of non-end read in other contig
+        #TODO: contig breaker/ fixer can be here
+        if mate_el != '=' and mate_el != '*' and (position > insert_size_est and position < l - insert_size_est - 100 ):
+            continue;
+        #Mate not in this contig; another alignment of this read present
+        if mate_el != '='\
+        and ("X0" in parsed_tags or "XA" in parsed_tags):
+        #                    if abs(position - 200) < 100:
+        #                        print position + 1
+        #                        print "XA tag present, read: " + arr[0] +" cigar " + cigar
+            continue;
+        if mate_el == '=' and (int(arr[1]) & 8) == 0:
+            mate = config["mate_weight"];
+        else:
+            mate = 1;
+        indelled_reads += 1 - process_read(cigar, aligned, position, l, mate, profile, insertions)
+        total_reads += 1;
+
+    #            if len(insertions) < 50:
+    #                print insertions
+    #            else:
+    #                print "insertions very big, most popular:"
+    #                for element in insertions:
+    #                    if len(insertions[element]) > 20 or profile[int(element)]['I'] * 3 > profile[int(element)][contig[int(element)]] :
+    #                        print str(element) + str(insertions[element])
+    #                        print "profile here: " + str(profile[element]) """
+    for i in range (0, l):
+    #*
+    #                if i in range(183, 224):
+    #                    print "FFFFFFUUUU "+ str(i + 1)
+    #                    print(profile[i])
+
+        tj = contig[i]
+        tmp =''
+        for count in range(0,2):
+            #exluded 'N's from cycle
+            for j in ('A','C','G','T', 'I', 'D'):
+                if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] > 2):
+                    tj = j
+                    #                rescontig[i] = j
+
+            if tj != contig[i] :
+                if tj =='I' or tj == 'D' :
+                    print "there was in-del"
+                else:
+                    replaced += 1
+                print profile[i]
+                print "changing " + contig[i] + " to " + tj + " on position " + str(i+1) + '\n'
+
+            if tj in ('A','C','T','G','N'):
+                rescontig += tj
+                break;
+            elif tj == 'D':
+                print "skipping deletion"+ " on position " + str(i+1) + '\n'
+                deleted += 1;
+                break;
+            elif tj == 'I':
+                tmp = vote_insertions(i,insertions);
+
+                profile[i]['I'] = 0;
+        if tmp != '':
+            rescontig += tmp;
+            inserted += len (tmp)
+
+            #            print(fasta_contig[0]);
+    res_fasta = [[]]
+    #res_fasta.append([])
+    res_fasta[0].append(fasta_contig[0]);
+    res_fasta[0].append(rescontig)
+    write_fasta(res_fasta, refinedFileName)
+    #    refinedFile.write(rescontig);
+    #           nonFasta.write(rescontig);
+
+    print "Finished processing "+ str(contig_file) + ". Used " + str(total_reads) + " reads."
+#    return inserted, replaced
+
+
+
 def main():
-    global profile
-    global insertions
+
     if len(sys.argv) < 2:
 	    print("Usage: dir with .pair.sam and fasta files")
 	    exit(0)
 
-    replaced = 0;
-    inserted = 0;
     deleted = 0;
     init_config()
     parse_profile()
-    if "sam_file" not in config:
-        run_bwa()
+    inserted = 0;
+    replaced = 0;
+    if "splitted_dir" not in config:
+        if "sam_file" not in config:
+            run_bwa()
+        else:
+            os.system("cp "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
+            config["sam_file"] = config["work_dir"]+"tmp.sam"
+    #    now = datetime.datetime.now()
+    #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
+        split_contigs(config["contigs"],config["work_dir"])
+        print("contigs splitted, starting splitting .sam file");
+        split_sam(config["sam_file"], config["work_dir"])
+        print(".sam file splitted")
     else:
-        os.system("cp "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
-        config["sam_file"] = config["work_dir"]+"tmp.sam"
-#    now = datetime.datetime.now()
-#    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
-    split_contigs(config["contigs"],config["work_dir"])
-    print("contigs splitted, starting splitting .sam file");
-    split_sam(config["sam_file"], config["work_dir"])
-    print(".sam file splitted")
-#    return 0
+        os.system("cp "+ config["splitted_dir"] +"/* " + config["work_dir"])
+    #    return 0
 #    if not os.path.exists(res_directory):
 #        os.makedirs(res_directory)
 #    refinedFileName = res_directory + sys.argv[2].split('/')[-1].split('.')[0] + '.ref.fasta';
 
     filelist = [os.path.abspath(os.path.join(config["work_dir"], i)) for i in os.listdir(config["work_dir"]) if os.path.isfile(os.path.join(config["work_dir"], i))]
+    pairs = []
     for contig_file in filelist:
         f_name = contig_file.split('/')[-1];
         f_arr = f_name.split('.');
         if len(f_arr) == 2 and f_arr[1][0:2] == "fa" and os.path.exists(os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")):
 
             samfilename = os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam");
+            tmp = []
+            tmp.append(samfilename)
+            tmp.append(contig_file)
+            pairs.append(tmp)
+    print pairs[0];
+    Parallel(n_jobs=config["t"])(delayed(process_contig)(pair[0],pair[1])for pair in pairs)
+#    for pair in pairs:
+#        (loc_ins, loc_rep) = process_contig(pair[0], pair[1])
+#        inserted += loc_ins;
+#        replaced += loc_rep;
 
-            samFile = open(samfilename, 'r');
-            fasta_contig = read_genome(contig_file);
-            print "processing " + str(contig_file) + ", contig length:" + str(len(fasta_contig[1]));
-            contig = fasta_contig[1].upper()
-#            profile = []
-            total_reads = 0;
-            indelled_reads = 0;
-#            print samfilename
-            refinedFileName = config["work_dir"] + samfilename.split('/')[-1].split('.')[0] + '.ref.fasta';
-    #    samFile = io.open( sys.argv[1], 'r');
-# accurate!
-            cont_num = contig_file.split('/')[-1].split('.')[0];
-#    fasta_contig = read_genome(sys.argv[2]);
-
-
-
-            l = len(contig)
-#            print l;
-#            print contig
-            rescontig = ""
-            for i in range (0, l):
-                profile.append( {} );
-                for j in ('A','C','G','T','N','I','D'):
-                    profile[i][j] = 0;
-            insertions = {}
-#TODO: estimation on insert size, need to be replaced            
-            insert_size_est = 400
-            for line in samFile:
-                arr = line.split();
-                if arr[2].split('_')[1] != cont_num:
-                    continue
-        #        print line;
-                cigar = arr[5]
-                aligned = arr[9];
-                position = int(arr[3]) - 1
-                tags = arr[11:]
-                parsed_tags = []
-                for tag in tags:
-                    parsed_tags.append(tag.split(':')[0])
-                mate_el = arr[6];
-#                if abs(position - 188264) < 100:
-#                    print arr[0] + " "+ arr[3] +" "+ mate_el
-#Mate of non-end read in other contig
-#TODO: contig breaker/ fixer can be here
-                if mate_el != '=' and mate_el != '*' and (position > insert_size_est and position < l - insert_size_est - 100 ):
-#                    if abs(position - 188264) < 100:
-#                        print "skipping"
-                    continue;
-#Mate not in this contig; another alignment of this read present
-                if mate_el != '='\
-                and "XA" in parsed_tags:
-#                    if abs(position - 200) < 100:
-#                        print position + 1
-#                        print "XA tag present, read: " + arr[0] +" cigar " + cigar
-                    continue;
-
-
-                    #        print position;
-        #        print l;
-
-                if mate_el == '=' and (int(arr[1]) & 8) == 0:
-                    mate = config["mate_weight"];
-                else:
-                    mate = 1;
-                indelled_reads += 1 - process_read(cigar, aligned, position, l, mate)
-                total_reads += 1;
-
-#            if len(insertions) < 50:
-#                print insertions
-#            else:
-#                print "insertions very big, most popular:"
-#                for element in insertions:
-#                    if len(insertions[element]) > 20 or profile[int(element)]['I'] * 3 > profile[int(element)][contig[int(element)]] :
-#                        print str(element) + str(insertions[element])
-#                        print "profile here: " + str(profile[element]) """
-            for i in range (0, l):
-                #*
-#                if i in range(183, 224):
-#                    print "FFFFFFUUUU "+ str(i + 1)
-#                    print(profile[i])
-
-                tj = contig[i]
-                tmp =''
-                for count in range(0,2):
-                    #exluded 'N's from cycle
-                    for j in ('A','C','G','T', 'I', 'D'):
-                        if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] > 2):
-                            tj = j
-            #                rescontig[i] = j
-
-                    if tj != contig[i] :
-                        if tj =='I' or tj == 'D' :
-                            print "there was in-del"
-                        else:
-                            replaced += 1
-                        print profile[i]
-                        print "changing " + contig[i] + " to " + tj + " on position " + str(i+1) + '\n'
-
-                    if tj in ('A','C','T','G','N'):
-                        rescontig += tj
-                        break;
-                    elif tj == 'D':
-                        print "skipping deletion"+ " on position " + str(i+1) + '\n'
-                        deleted += 1;
-                        break;
-                    elif tj == 'I':
-                        tmp = vote_insertions(i);
-
-                        profile[i]['I'] = 0;
-                if tmp != '':
-                    rescontig += tmp;
-                    inserted += len (tmp)
-
-                #            print(fasta_contig[0]);
-            res_fasta = [[]]
-            #res_fasta.append([])
-            res_fasta[0].append(fasta_contig[0]);
-            res_fasta[0].append(rescontig)
-            write_fasta(res_fasta, refinedFileName)
-        #    refinedFile.write(rescontig);
- #           nonFasta.write(rescontig);
-            profile = []
-            print "Finished. Used " + str(total_reads) + " reads."
     cat_line = "cat "+ config["work_dir"] + "/*.ref.fasta > "+ config["work_dir"] + "../corrected.fasta"
     print cat_line
     os.system(cat_line);
-    print "TOTAL replaced: "+ str(replaced) + " inserted: "+ str(inserted) + " deleted: " + str(deleted);
+#    print "TOTAL replaced: "+ str(replaced) + " inserted: "+ str(inserted) + " deleted: " + str(deleted);
 
 if __name__ == '__main__':
     main()
