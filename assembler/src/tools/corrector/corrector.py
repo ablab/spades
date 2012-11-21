@@ -287,7 +287,7 @@ def parse_profile():
     global config
 
     long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= help debug".split()
-    short_options = "1:2:o:s:c:t:m:"
+    short_options = "1:2:o:s:S:c:t:m:"
     options, contigs_fpaths = getopt.gnu_getopt(sys.argv, short_options, long_options)
     for opt, arg in options:
     # Yes, this is a code duplicating. Python's getopt is non well-thought!!
@@ -312,7 +312,7 @@ def parse_profile():
             config["mate_weight"] = int(arg)
         if opt in ('-s', "--sam_file"):
             config["sam_file"] = os.path.abspath(arg)
-        if opt in ("--splitted_dir"):
+        if opt in ('-S', "--splitted_dir"):
             config["splitted_dir"] = os.path.abspath(arg)
 def init_config():
     now = datetime.datetime.now()
@@ -458,10 +458,14 @@ def main():
     parse_profile()
     inserted = 0;
     replaced = 0;
+    print(config)
     if "splitted_dir" not in config:
+#        print "no splitted dir, looking for sam file"
         if "sam_file" not in config:
+            print "no sam file, running bwa"
             run_bwa()
         else:
+            print "sam file found"
             os.system("cp "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
             config["sam_file"] = config["work_dir"]+"tmp.sam"
     #    now = datetime.datetime.now()
@@ -471,6 +475,7 @@ def main():
         split_sam(config["sam_file"], config["work_dir"])
         print(".sam file splitted")
     else:
+        print "splitted tmp dir found, starting voting"
         os.system("cp "+ config["splitted_dir"] +"/* " + config["work_dir"])
     #    return 0
 #    if not os.path.exists(res_directory):
