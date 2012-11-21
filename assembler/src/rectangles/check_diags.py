@@ -28,10 +28,9 @@ def check(reference, bgraph, K, log, test_util):
         d = {}
         for i in xrange(len(genome)):
             kmer = s[i:i+K]
-            if kmer in d:
-                d[kmer].add(i+1 if not_rc else -(len(genome)-i - K + 1))
-            else:
-                d[kmer] = {i+1 if not_rc else -(len(genome) -i - K + 1)}
+            if not (kmer in d):
+                d[kmer] = set()
+            d[kmer].add(i+1 if not_rc else -(len(genome)-i - K + 1))
         return d
 
     igenome = get_index(genome, True)
