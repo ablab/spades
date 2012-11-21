@@ -327,6 +327,7 @@ def process_contig(samfilename, contig_file):
     insertions = {}
     inserted = 0;
     replaced = 0;
+    deleted = 0;
     samFile = open(samfilename, 'r');
     fasta_contig = read_genome(contig_file);
     print "processing " + str(contig_file) + ", contig length:" + str(len(fasta_contig[1]));
@@ -441,6 +442,7 @@ def process_contig(samfilename, contig_file):
     #           nonFasta.write(rescontig);
 
     print "Finished processing "+ str(contig_file) + ". Used " + str(total_reads) + " reads."
+    print "replaced: " + str(replaced) + " deleted: "+ str(deleted) +" inserted: " + str(inserted)
 #    return inserted, replaced
 
 
