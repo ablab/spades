@@ -67,14 +67,12 @@ for i in $dir*.fasta ; do
   fi
 done
 
-quast_line="$output_pref/quast-1.2/quast.py -M 500 $dirtmp* $line -o $dir/quast_all/"
+quast_line="$output_pref/quast-1.2/quast.py -M 500 $dirtmp* $line -o $dir/quast_all"
 quast1_3_line="$output_pref/quast-1.3/quast.py -M 500 $dirtmp* $line -o $dir/quast1_3_all/"
 
-
-
 echo "$quast_line"
-python2.6 $quast_line
-python2.6 $quast1_3_line
+python2.6 $quast_line >null
+python2.6 $quast1_3_line >null
 
 ssh -n antipov@194.85.238.21 mkdir -p "/var/www/teamcity_runs/$1$2" &
 
