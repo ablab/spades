@@ -229,7 +229,13 @@ def split_contigs(filename, tmpdir):
 def usage():
     print >> sys.stderr, 'Corrector. Simple postprocessing tool'
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] -1 left_reads -2 right_reads -c contigs'
-    print >> sys.stderr, "options description later"
+    print >> sys.stderr, 'Or: python', sys.argv[0], '[options] -s sam_file -c contigs'
+    print >> sys.stderr, 'Options:'
+    print >> sys.stderr, '-t <int> thread number'
+    print >> sys.stderr, '-o <dir_name> directory to store results'
+    print >> sys.stderr, '-m <int> weight for paired reads aligned properly. By default, equal to single reads weight (=1)'
+    print >> sys.stderr, '--bwa <path>  path to bwa tool. Required if bwa is not in PATH'
+
 
 
 def run_bwa():
@@ -366,7 +372,7 @@ def process_contig(samfilename, contig_file):
         tags = arr[11:]
         parsed_tags = []
         for tag in tags:
-            parsed_tags.append(tag.split(':')[0])
+            parsed_tags.append(tag.split(':'))
         mate_el = arr[6];
         #Mate of non-end read in other contig
         #TODO: contig breaker/ fixer can be here
@@ -374,7 +380,7 @@ def process_contig(samfilename, contig_file):
             continue;
         #Mate not in this contig; another alignment of this read present
         if mate_el != '='\
-        and ("X0" in parsed_tags or "XA" in parsed_tags):
+        and (("X0" in parsed_tags and parsed_tags["X0"] > 1)):
         #                    if abs(position - 200) < 100:
         #                        print position + 1
         #                        print "XA tag present, read: " + arr[0] +" cigar " + cigar
@@ -408,7 +414,6 @@ def process_contig(samfilename, contig_file):
                 if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] > 2):
                     tj = j
                     #                rescontig[i] = j
-
             if tj != contig[i] :
                 if tj =='I' or tj == 'D' :
                     print "there was in-del"
