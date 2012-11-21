@@ -681,15 +681,19 @@ class BGraph(Abstract_Graph):
             del self.es[be2.eid]
             del self.es[be3.eid]
         else: # most usual case
-            assert len({be1, be2, be3, be4}) == 4, (be1, be2, be3, be4) # all different
+            be_set = set()
+            be_set.add(be1, be2, be3, be4)
+            assert len(be_set) == 4, (be1, be2, be3, be4)  #all different
+            six_set = set()
+            six_set.add(u, v, w, x, y, z)
             if u == w:
                 assert z == x
-                assert len({u, v, w, x, y, z}) == 4, (u, v, w, x, y, z) # same ends, ok
+                assert len(six_set) == 4, (u, v, w, x, y, z) # same ends, ok
             elif u == x:
                 assert z == w
-                assert len({u, v, w, x, y, z}) == 4, (u, v, w, x, y, z) # conjugated ends, ok
+                assert len(six_set) == 4, (u, v, w, x, y, z) # conjugated ends, ok
             else:
-                assert len({u, v, w, x, y, z}) == 6, (u, v, w, x, y, z) # all different
+                assert len(six_set) == 6, (u, v, w, x, y, z) # all different
             # TODO: check (x == u and w == z)
             beA = BEdge(u, w, None)
             beA.diagonals = be1.diagonals + be2.diagonals
