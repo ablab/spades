@@ -695,10 +695,18 @@ class BGraph(Abstract_Graph):
             del self.es[be3.eid]
         else: # most usual case
             be_set = set()
-            be_set.add(be1, be2, be3, be4)
+            be_set.add(be1)
+            be_set.add(be2)
+            be_set.add(be3)
+            be_set.add(be4)
             assert len(be_set) == 4, (be1, be2, be3, be4)  #all different
             six_set = set()
-            six_set.add(u, v, w, x, y, z)
+            six_set.add(u)
+            six_set.add(v)
+            six_set.add(w)
+            six_set.add(x)
+            six_set.add(y)
+            six_set.add(z)
             if u == w:
                 assert z == x
                 assert len(six_set) == 4, (u, v, w, x, y, z) # same ends, ok
