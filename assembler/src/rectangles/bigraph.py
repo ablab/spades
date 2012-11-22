@@ -597,7 +597,7 @@ class BGraph(Abstract_Graph):
     if diag in self.diagonals:
       return
     be = self.__add_bedge(diag)
-    cong = be
+    conj = be
     if diag.conj != diag:
         conj = self.__add_bedge(diag.conj)
     self.diagonals.add(diag)
@@ -618,6 +618,8 @@ class BGraph(Abstract_Graph):
     D = diag.D - diag.rectangle.e1.len + diag.rectangle.e2.len
     if experimental.filter == experimental.Filter.pathsets:
         pathset = diag.pathset.conj()
+    else:
+        pathset = None
     rect_conj.add_diagonal(self.d, D, pathset)
     diag_conj = rect.conj.diagonals[D, pathset]       
     conjugate(diag, diag_conj)
