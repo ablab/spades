@@ -4,7 +4,6 @@
 ###
 #######################################################
 
-from collections import namedtuple
 import utils
 
 ########################
@@ -148,8 +147,6 @@ def cvr(filename):
 # PARSE CONFIG (info) #
 #######################
 
-Config = namedtuple('Config', ['RL', 'IS', 'is_var', 'perc', 'avg_coverage', 'median', 'mad', 'hist', 'K'])
-
 def config(filename):
     f = open(filename)
     RL = int(f.readline().split()[1])
@@ -169,7 +166,7 @@ def config(filename):
     hist2 = {}
     for k, v in hist.iteritems():
         hist2[k - RL] = v # * 1.0 / s
-    return Config(RL, IS, is_var, perc, avg_coverage, median, mad, hist2, K)
+    return dict(RL=RL, IS=IS, is_var=is_var, perc=perc, avg_coverage=avg_coverage, median=median, mad=mad, hist=hist2, K=K)
 
 #######
 # EOF #
