@@ -764,6 +764,7 @@ def main():
 
         result_contigs_filename, result_scaffolds_filename, latest_dir = spades_logic.run_spades(spades_home, execution_home, spades_cfg)
 
+        tee.free()
 
         #RECTANGLES
         debruijn_config = load_config_from_file(os.path.join(latest_dir, "configs", "config.info"))
@@ -782,7 +783,7 @@ def main():
             shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
         #EOR
 
-        tee.free()
+
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
               "\n")
 
