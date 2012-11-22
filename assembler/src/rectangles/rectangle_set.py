@@ -122,6 +122,8 @@ class RectangleSet(object):
                 D = diag.D - diag.rectangle.e1.len + diag.rectangle.e2.len
                 if experimental.filter == experimental.Filter.pathsets:
                     pathset = diag.pathset.conj()
+                else:
+                    pathset = None
                 conj = rect.conj.diagonals[D, pathset]
                 conjugate(diag, conj)
 
