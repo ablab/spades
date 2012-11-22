@@ -55,8 +55,13 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     sqn_filename = os.path.join(input_path, 'late_pair_info_counted.sqn')
     cvr_filename = os.path.join(input_path, 'late_pair_info_counted.cvr')
     first_prd_filename = os.path.join(input_path, 'late_pair_info_counted.prd')
-    prd_filename = os.path.join(input_path, 'late_pair_info_counted.prd' if experimental.filter != experimental.Filter.spades else 'distance_filling_cl.prd')
-    pst_filename = os.path.join(input_path, 'distance_estimation.pst') if experimental.filter == experimental.Filter.pathsets else None
+
+    if experimental.filter != experimental.Filter.spades:
+        prd_filename = first_prd_filename
+    else:
+        prd_filename = os.path.join(input_path, 'distance_filling_cl.prd')
+    if experimental.filter == experimental.Filter.pathsets:
+        pst_filename = os.path.join(input_path, 'distance_estimation.pst')
     inf_filename = os.path.join(input_path, 'late_pair_info_counted_est_params.info')
     log_filename = os.path.join(output_path, 'rectangles.log')
     config = saveparser.config(inf_filename)
