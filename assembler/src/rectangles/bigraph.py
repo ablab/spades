@@ -35,16 +35,21 @@ class BEdge(Abstract_Edge):
     for diag in self.diagonals:
       length += diag.offsetc - diag.offseta
     return length
-  
+
+  def avoid_N(x, y):
+    if x != 'N':
+      return x
+    return y
+
   def get_begin_seq(self, K, d, is_sc):
     (seq1, seq2) = self.get_paired_seq(K, d)
-    seq = ''.join(map(lambda x, y: x if x != 'N' else (y if y != 'N' else 'N'), seq1, seq2)).strip('N')
+    seq = ''.join(map(avoid_N, seq1, seq2)).strip('N')
     seq = seq.split(self.get_midle_seq())[0]
     return seq
    
   def get_end_seq(self, K, d, is_sc):
     (seq1, seq2) = self.get_paired_seq(K, d)
-    seq = ''.join(map(lambda x, y: x if x != 'N' else (y if y != 'N' else 'N'), seq1, seq2)).strip('N')
+    seq = ''.join(map(avoid_N, seq1, seq2)).strip('N')
     seq = seq.split(self.get_midle_seq())[1]
     return seq
    
@@ -64,7 +69,7 @@ class BEdge(Abstract_Edge):
       CUT_THRESHOLD = 0.0
       MIN_LENGTH = 0
     (seq1, seq2) = self.get_paired_seq(K, d)
-    seq = ''.join(map(lambda x, y: x if x != 'N' else (y if y != 'N' else 'N'), seq1, seq2)).strip('N')
+    seq = ''.join(map(avoid_N, seq1, seq2)).strip('N')
     first = self.diagonals[0]
     last = self.diagonals[-1]
     if len(seq1) > MIN_LENGTH:
@@ -589,7 +594,9 @@ class BGraph(Abstract_Graph):
     if diag in self.diagonals:
       return
     be = self.__add_bedge(diag)
-    conj = self.__add_bedge(diag.conj) if diag.conj != diag else be
+    cong = be
+    if diag.conj != diag:
+        conj = self.__add_bedge(diag.conj)
     self.diagonals.add(diag)
     self.diagonals.add(diag.conj)
     conjugate(be, conj)
@@ -605,8 +612,9 @@ class BGraph(Abstract_Graph):
     rect = diag.rectangle
     rect_conj = Rectangle(rect.e2.conj, rect.e1.conj)
     conjugate(rect, rect_conj)
-    D = diag.D - diag.rectangle.e1.len + diag.rectangle.e2.len       
-    pathset = diag.pathset.conj() if experimental.filter == experimental.Filter.pathsets else None
+    D = diag.D - diag.rectangle.e1.len + diag.rectangle.e2.len
+    if experimental.filter == experimental.Filter.pathsets:
+        pathset = diag.pathset.conj()
     rect_conj.add_diagonal(self.d, D, pathset)
     diag_conj = rect.conj.diagonals[D, pathset]       
     conjugate(diag, diag_conj)
