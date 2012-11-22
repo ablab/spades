@@ -76,9 +76,9 @@ class Diagonal(object):
         elif experimental.filter == experimental.Filter.closest:
             self.inc_closest(D, weight)
         elif experimental.filter == experimental.Filter.normal:
-            self.inc_normal(D, weight, config.is_var)
+            self.inc_normal(D, weight, config[is_var])
         elif experimental.filter == experimental.Filter.hist:
-            self.inc_hist(D, weight, config.hist)
+            self.inc_hist(D, weight, config[hist])
         else:
             assert False
 
