@@ -36,20 +36,20 @@ class BEdge(Abstract_Edge):
       length += diag.offsetc - diag.offseta
     return length
 
-  def avoid_N(x, y):
+  def avoid_N(self, x, y):
     if x != 'N':
       return x
     return y
 
   def get_begin_seq(self, K, d, is_sc):
     (seq1, seq2) = self.get_paired_seq(K, d)
-    seq = ''.join(map(avoid_N, seq1, seq2)).strip('N')
+    seq = ''.join(map(self.avoid_N(), seq1, seq2)).strip('N')
     seq = seq.split(self.get_midle_seq())[0]
     return seq
    
   def get_end_seq(self, K, d, is_sc):
     (seq1, seq2) = self.get_paired_seq(K, d)
-    seq = ''.join(map(avoid_N, seq1, seq2)).strip('N')
+    seq = ''.join(map(self.avoid_N(), seq1, seq2)).strip('N')
     seq = seq.split(self.get_midle_seq())[1]
     return seq
    
@@ -69,7 +69,7 @@ class BEdge(Abstract_Edge):
       CUT_THRESHOLD = 0.0
       MIN_LENGTH = 0
     (seq1, seq2) = self.get_paired_seq(K, d)
-    seq = ''.join(map(avoid_N, seq1, seq2)).strip('N')
+    seq = ''.join(map(self.avoid_N, seq1, seq2)).strip('N')
     first = self.diagonals[0]
     last = self.diagonals[-1]
     if len(seq1) > MIN_LENGTH:
@@ -393,6 +393,9 @@ class BGraph(Abstract_Graph):
     self.condense()
   
   def delete_missing_loops(self, DG_loops, K, L, threshold):
+    if DG_loops == None:
+        return
+
     begs_related_to_loop = dict()
     begin_loops = dict()
     end_loops = dict()
