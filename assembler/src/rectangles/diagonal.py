@@ -94,8 +94,21 @@ class Diagonal(object):
     @staticmethod
     def key(e1, offset1, e2, offset2, pathset):
         # key = ((e, o), v, pathset) or (v, (e, o), pathset) or (v, v, pathset)
-        first = e1.v1 if offset1 == 0 else ( e1.v2 if offset1 == e1.len else (e1, offset1) )
-        second = e2.v1 if offset2 == 0 else ( e2.v2 if offset2 == e2.len else (e2, offset2) )
+        if offset1 == 0:
+            first = e1.v1
+        else:
+            if offset1 == e1.len:
+                first = e1.v2
+            else:
+                first = (e1, offset1)
+        if offset2 == 0:
+            second = e2.v1
+        else:
+            if offset2 == e2.len:
+                second = e2.v2
+            else:
+                second = (e2, offset2)
+
         if experimental.filter == experimental.Filter.pathsets:
             if offset2 == 0:
                 pathset = pathset.crop_right()
