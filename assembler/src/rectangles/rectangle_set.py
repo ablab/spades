@@ -120,7 +120,8 @@ class RectangleSet(object):
             for diag in rect.diagonals.itervalues():
                 assert diag.rectangle == rect
                 D = diag.D - diag.rectangle.e1.len + diag.rectangle.e2.len
-                pathset = diag.pathset.conj() if experimental.filter == experimental.Filter.pathsets else None
+                if experimental.filter == experimental.Filter.pathsets:
+                    pathset = diag.pathset.conj()
                 conj = rect.conj.diagonals[D, pathset]
                 conjugate(diag, conj)
 
