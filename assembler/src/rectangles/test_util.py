@@ -52,9 +52,8 @@ class TestUtils(object):
     self.has_ref_info = True  
     if edge_aligned_file:
       try:
-        with open(edge_aligned_file) as f: 
-           self.ref_info = parse_ref_info(open(edge_aligned_file))
-      except IOError as e:
+          self.ref_info = parse_ref_info(open(edge_aligned_file))
+      except IOError:
            self.ref_info = dict()
            self.has_ref_info = False
     else:
@@ -143,8 +142,11 @@ class TestUtils(object):
       print "D", D
 
     print "diag support", diag.support(), "len", diag.offsetc- diag.offseta"""
-    
-    return self.TRUE_DIAG if true_diag else self.FALSE_DIAG
+
+    if true_diag:
+        return self.TRUE_DIAG
+    else:
+        return self.FALSE_DIAG
 
   def should_join(self, diag1, diag2):
      rect1 = diag1.rectangle
