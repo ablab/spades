@@ -65,7 +65,7 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     inf_filename = os.path.join(input_path, 'late_pair_info_counted_est_params.info')
     log_filename = os.path.join(output_path, 'rectangles.log')
     config = saveparser.config(inf_filename)
-    d = config[median] - config[RL]
+    d = config['median'] - config['RL']
 
     makelogger(log_filename)
     logger = logging.getLogger('rectangles')
