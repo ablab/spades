@@ -48,7 +48,10 @@ def read_fasta(filename):
     seq = ''
     name = ''
     file_ext = os.path.splitext(filename)[1]
-    fastafile = gzip.open(filename) if file_ext == ".gz" else open(filename)
+    if file_ext == ".gz":
+        fastafile = gzip.open(filename)
+    else:
+        fastafile = open(filename)
 
     for line in fastafile:
         if line[0] == '>':
