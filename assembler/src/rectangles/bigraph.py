@@ -234,7 +234,7 @@ class BGraph(Abstract_Graph):
               if e22 == diag.rectangle.e1:
                 break
               if diag.rectangle.e1 not in used:  
-                path_2.append(diag.rectange.e1)
+                path_2.append(diag.rectangle.e1)
                 used.add(diag.rectangle.e1)
             print "path1", [e.eid for e in path_1] , "path2", [e.eid for e in path_2]  
             #self.add_rectangles_by_path(path_1, path_2, start_offset)
