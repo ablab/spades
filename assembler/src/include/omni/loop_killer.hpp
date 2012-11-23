@@ -92,6 +92,7 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 
 private:
+	int count;
 	vector<EdgeId> FindPath(VertexId start, VertexId finish, const set<VertexId> &component) {
 		set<VertexId> was;
 		vector<EdgeId> rr = FindPath(start, finish, was, component);
@@ -179,7 +180,7 @@ private:
 
 public:
 	SimpleLoopKiller(Graph &graph, size_t splitting_edge_length, size_t max_component_size) :
-			AbstractLoopKiller<Graph>(graph, splitting_edge_length, max_component_size) {
+			AbstractLoopKiller<Graph>(graph, splitting_edge_length, max_component_size) { count = 0;
 	}
 
 	virtual void KillLoop(VertexId start, VertexId finish, const set<VertexId> &component) {
@@ -203,6 +204,7 @@ public:
 				}
 			}
 */
+			INFO("loop " << count <<" removed");
 			RemoveExtraEdges(edges, component);
 			RemoveIsolatedVertices(component);
 		}
