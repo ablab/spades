@@ -455,8 +455,8 @@ def process_contig(samfilename, contig_file):
 def main():
 
     if len(sys.argv) < 2:
-	    print("Usage: dir with .pair.sam and fasta files")
-	    exit(0)
+	usage()
+        exit(0)
 
     deleted = 0;
     init_config()
