@@ -14,6 +14,11 @@ import utils
 
 DEEP_THRESHOLD = 10
 
+def avoid_N(x, y):
+  if x != 'N':
+    return x
+  return y
+
 class BVertex(Abstract_Vertex):
   vid = 0
 
@@ -35,11 +40,6 @@ class BEdge(Abstract_Edge):
     for diag in self.diagonals:
       length += diag.offsetc - diag.offseta
     return length
-
-  def avoid_N(x, y):
-    if x != 'N':
-      return x
-    return y
 
   def get_begin_seq(self, K, d, is_sc):
     (seq1, seq2) = self.get_paired_seq(K, d)
