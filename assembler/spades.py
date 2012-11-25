@@ -21,6 +21,9 @@ import spades_logic
 sys.path.append("src/rectangles") 
 import rrr
 
+#corrector
+sys.path.append("src/tools/corrector") 
+import corrector
 
 def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
@@ -257,7 +260,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gap-closer disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= use-jemalloc dataset=".split()
+               "config-file= use-jemalloc dataset= mismatch-correction bwa=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -300,7 +303,11 @@ def usage(show_hidden=False):
     print >> sys.stderr, "--only-error-correction\t\trun only error correction"\
                          " (without assembler)"
     print >> sys.stderr, "--only-assembler\t\trun only assembler (without error"\
-                         " correction)"
+                         " correction)"    
+    print >> sys.stderr, "--mismatch-correction\t\trun post processing correction"\
+                         " of mismathces and short indels"
+    print >> sys.stderr, "--bwa\t<path>\t\t\tpath to BWA tool. Required for --mismatch-correction"\
+                         " if BWA is not in PATH"
     print >> sys.stderr, "--disable-gap-closer\t\tforces SPAdes not to use the gap"\
                          " closer"
     print >> sys.stderr, "--disable-gzip-output\t\tforces error correction not to"\
@@ -342,7 +349,7 @@ def main():
         
     try:
         options, not_options = getopt.gnu_getopt(sys.argv, short_options, long_options)
-    except (getopt.GetoptError, err):
+    except getopt.GetoptError, err:
         print >> sys.stderr, err
         print >> sys.stderr
         usage()
@@ -382,6 +389,10 @@ def main():
         memory = None
         qvoffset = None
         iterations = None
+
+        #corrector
+        mismatch_corrector = False
+        bwa = None
 
         for opt, arg in options:
             if opt == '-o':
@@ -442,6 +453,12 @@ def main():
 
             elif opt == "--use-jemalloc":
                 use_jemalloc = True
+
+            #corrector
+            elif opt == "--mismatch-correction":
+                mismatch_corrector = True
+            elif opt == "--bwa":
+                bwa = arg
 
             elif opt == '-h' or opt == "--help":
                 usage()
@@ -520,7 +537,7 @@ def main():
             if not only_assembler:
                 cfg["error_correction"] = load_config_from_vars(dict())
             if not only_error_correction:
-                cfg["assembly"] = load_config_from_vars(dict())
+                cfg["assembly"] = load_config_from_vars(dict())            
 
             # common
             if output_dir:
@@ -532,7 +549,7 @@ def main():
             if developer_mode:
                 cfg["common"].__dict__["developer_mode"] = developer_mode
             if use_jemalloc:
-                cfg["common"].__dict__["use_jemalloc"] = use_jemalloc
+                cfg["common"].__dict__["use_jemalloc"] = use_jemalloc            
 
             # error correction
             if not only_assembler:
@@ -554,6 +571,19 @@ def main():
                     cfg["assembly"].__dict__["heap_check"] = spades_heap_check
                 cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files
                 cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
+
+            #corrector can work only with -1 and -2 reads and only if contigs are exists (not only error correction)
+            if paired1 and (not only_error_correction) and mismatch_corrector:
+                cfg["mismatch_corrector"] = load_config_from_vars(dict())
+                if bwa:
+                    cfg["mismatch_corrector"].__dict__["bwa"] = bwa
+                if "max_threads" in cfg["common"].__dict__:
+                    cfg["mismatch_corrector"].__dict__["t"] = cfg["common"].max_threads
+                if "output_dir" in cfg["common"].__dict__:
+                    cfg["mismatch_corrector"].__dict__["o"] = cfg["common"].output_dir
+                # reads                
+                cfg["mismatch_corrector"].__dict__["1"] = paired1[0]
+                cfg["mismatch_corrector"].__dict__["2"] = paired2[0]
 
     if CONFIG_FILE:
         cfg = load_config_from_info_file(CONFIG_FILE)
@@ -781,17 +811,65 @@ def main():
 
             shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend_before_scaffold.fasta"), spades_cfg.result_contigs)
             shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
-        #EOR
 
+            if not spades_cfg.developer_mode:
+                shutil.rmtree(rrr_input_dir)
+                shutil.rmtree(rrr_outpath)                
+        #EOR
 
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
               "\n")
+
+    #corrector
+    result_corrected_contigs_filename = ""
+    if "mismatch_corrector" in cfg and os.path.isfile(result_contigs_filename):
+        corrector_cfg = cfg["mismatch_corrector"]
+        corrector_log_filename = os.path.join(corrector_cfg.o, "mismatch_correction.log")
+        corrector_cfg.__dict__["c"] = result_contigs_filename
+
+        # The way it should be logged, but I can't do it because I should totaly modify the corrector code.. 
+        # logger
+        #log = logging.getLogger('corrector')
+        #log.setLevel(logging.DEBUG)
+        #log.addHandler(console)
+        #log_file = logging.FileHandler(corrector_cfg.log_filename, mode='w')
+        #log.addHandler(log_file)
+
+        print("\n===== Mismatch correction started. Log can be found here: " + corrector_log_filename +
+              "\n")
+        tee = support.Tee(corrector_log_filename, 'w', console=cfg["common"].output_to_console)
+
+        args = []        
+        for k, v in corrector_cfg.__dict__.items():
+            if len(k) == 1:           
+                args.append('-' + k)
+            else:
+                args.append('--' + k)
+            args.append(v)
+
+        corrector.main(args)
+
+        if not cfg["common"].developer_mode:
+            tmp_dir = os.path.join(corrector_cfg.o, "tmp")
+            if os.path.isdir(tmp_dir):
+                shutil.rmtree(tmp_dir)
+
+        result_corrected_contigs_filename = os.path.join(corrector_cfg.o, "corrected_contigs.fasta")
+        if not os.path.isfile(result_corrected_contigs_filename):            
+            result_corrected_contigs_filename = ""
+
+        tee.free()
+        print("\n===== Mismatch correction finished. Log can be found here: " + corrector_log_filename +
+              "\n")        
 
     print ("")
     if os.path.isdir(os.path.dirname(bh_dataset_filename)):
         print (" * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/")
     if os.path.isfile(result_contigs_filename):
         print (" * Assembled contigs are " + result_contigs_filename)
+    #corrector    
+    if os.path.isfile(result_corrected_contigs_filename):
+        print (" * Corrected contigs are " + result_corrected_contigs_filename)
     if os.path.isfile(result_scaffolds_filename):
         print (" * Assembled scaffolds are " + result_scaffolds_filename)
     print ("")

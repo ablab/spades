@@ -14,6 +14,7 @@ from joblib import Parallel, delayed
 #insertions = {}
 config = {}
 
+
 def read_genome(filename):
     res_seq = []
 
@@ -25,6 +26,7 @@ def read_genome(filename):
     	    	    seq += line.strip()
     res_seq.append(seq)
     return res_seq
+
 
 def read_contigs(filename):
     res_seq = {}
@@ -53,6 +55,7 @@ def write_fasta(data, filename):
                     outFile.write(seq[1][i:i+60] + '\n')
                     i += 60
     outFile.close()
+
 
 def vote_insertions(position, insertions):
 #    global insertions;
@@ -171,6 +174,8 @@ def process_read(cigar, aligned, position, l, mate, profile, insertions):
             insertions[ind]= []
         insertions[ind].append(insertion_string)
     return 1
+
+
 def split_sam(filename, tmpdir):
 
     inFile = open(filename)
@@ -218,6 +223,8 @@ def split_sam(filename, tmpdir):
         separate_sams[file_name].close()
 
     return 0
+
+
 def split_contigs(filename, tmpdir):
     ref_seq = read_contigs(filename);
     for contig_desc in ref_seq:
@@ -226,6 +233,8 @@ def split_contigs(filename, tmpdir):
         write_fasta([[contig_desc, ref_seq[contig_desc]]], tfilename)
 
     return 0
+
+
 def usage():
     print >> sys.stderr, 'Corrector. Simple postprocessing tool'
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] -1 left_reads -2 right_reads -c contigs'
@@ -235,7 +244,6 @@ def usage():
     print >> sys.stderr, '-o <dir_name> directory to store results'
     print >> sys.stderr, '-m <int> weight for paired reads aligned properly. By default, equal to single reads weight (=1)'
     print >> sys.stderr, '--bwa <path>  path to bwa tool. Required if bwa is not in PATH'
-
 
 
 def run_bwa():
@@ -288,13 +296,15 @@ def run_bwa():
 #    print "\nGenerating paired-end alignments & estimating insert-size...\n";
 #    my $is = "isize.txt";
 #    my $bwa_sampe_cmd = "$bwa sampe $contigs $sai1 $sai2 $reads1 $reads2 > $sam 2>$is";
-    return 0;
-def parse_profile():
+    return 0
+
+
+def parse_profile(args):
     global config
 
     long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= help debug".split()
     short_options = "1:2:o:s:S:c:t:m:"
-    options, contigs_fpaths = getopt.gnu_getopt(sys.argv, short_options, long_options)
+    options, contigs_fpaths = getopt.gnu_getopt(args, short_options, long_options)
     for opt, arg in options:
     # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
@@ -320,12 +330,15 @@ def parse_profile():
             config["sam_file"] = os.path.abspath(arg)
         if opt in ('-S', "--splitted_dir"):
             config["splitted_dir"] = os.path.abspath(arg)
+
+
 def init_config():
     now = datetime.datetime.now()
     config["output_dirpath"] = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
     config["bwa"] = "bwa"
     config["t"] = int(4)
     config["mate_weight"] = int(1)
+
 
 def process_contig(samfilename, contig_file):
 
@@ -451,16 +464,15 @@ def process_contig(samfilename, contig_file):
 #    return inserted, replaced
 
 
+def main(args):
 
-def main():
-
-    if len(sys.argv) < 2:
-	usage()
+    if len(args) < 1:
+        usage()
         exit(0)
 
     deleted = 0;
     init_config()
-    parse_profile()
+    parse_profile(args)
     inserted = 0;
     replaced = 0;
     print(config)
@@ -506,10 +518,11 @@ def main():
 #        inserted += loc_ins;
 #        replaced += loc_rep;
 
-    cat_line = "cat "+ config["work_dir"] + "/*.ref.fasta > "+ config["work_dir"] + "../corrected.fasta"
+    cat_line = "cat "+ config["work_dir"] + "/*.ref.fasta > "+ config["work_dir"] + "../corrected_contigs.fasta"
     print cat_line
     os.system(cat_line);
 #    print "TOTAL replaced: "+ str(replaced) + " inserted: "+ str(inserted) + " deleted: " + str(deleted);
 
+
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

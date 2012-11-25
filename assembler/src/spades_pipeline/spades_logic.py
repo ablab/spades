@@ -98,18 +98,18 @@ def run_spades(spades_home, execution_home, cfg):
         # shutil.copyfile(os.path.join(latest, "simplified_contigs.fasta"), before_RR_contigs)
         # saves
         saves_link = os.path.join(os.path.dirname(cfg.result_contigs), "saves")
-        if os.path.exists(saves_link):
+        if os.path.lexists(saves_link): # exists return False for broken link! lexists return True
             os.remove(saves_link)
         os.symlink(os.path.join(latest, "saves"), saves_link)
 
     #    os.remove(cfg.additional_contigs)
 
-    if glob.glob(os.path.join(latest, "*.sam")):
-    #        sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs),
-    #            "contigs.sam")
-        if os.path.exists(sam_file_linkname):
-            os.remove(sam_file_linkname)
-        #        os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
+    #if glob.glob(os.path.join(latest, "*.sam")):
+    #    sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs),
+    #        "contigs.sam")
+    #    if os.path.exists(sam_file_linkname):
+    #        os.remove(sam_file_linkname)
+    #    os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
 
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)
