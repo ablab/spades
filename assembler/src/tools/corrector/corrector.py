@@ -370,7 +370,6 @@ def init_config():
     config["use_quality"] = 0;
 
 def process_contig(samfilename, contig_file):
-
     profile = []
     insertions = {}
     inserted = 0;
