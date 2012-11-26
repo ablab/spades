@@ -6,7 +6,14 @@ import sys
 import os
 import datetime
 import getopt
-#from joblib import Parallel, delayed
+#import libs.joblib
+from site import addsitedir
+
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+addsitedir(os.path.join(__location__, 'libs'))
+
+from joblib import Parallel, delayed
 from math import pow;
 #profile = []
 #insertions = {}
@@ -18,10 +25,10 @@ def read_genome(filename):
 
     seq =''
     for line in open(filename):
-            if line[0] == '>':
-    	    	    res_seq.append(line[1:])
-            else:
-    	    	    seq += line.strip()
+        if line[0] == '>':
+            res_seq.append(line[1:])
+        else:
+            seq += line.strip()
     res_seq.append(seq)
     return res_seq
 
@@ -69,7 +76,7 @@ def vote_insertions(position, insertions):
         if lengths[l] > max:
             max = lengths[l]
             opt_len = l;
-    print "insertion; length =" + str(opt_len)
+#    print "insertion; length =" + str(opt_len)
     ins_profile = []
     for i in range (0, opt_len):
         ins_profile.append({})
@@ -121,11 +128,7 @@ def process_read(arr, l,m, profile, insertions):
             operations.append(cigar[i]);
             if cigar[i]=='M':
                 aligned_length += int(tms)
-
-
-#	    if (cigar[i] =='D' or cigar[i] == 'I') and int(tms) > 5:
-#	    	return 0;
-	    tms = ''
+            tms = ''
 #we do not need short reads aligned near gaps
     if aligned_length < min(l_read* 0.4, 40) and position > l_read/2 and l - position > l_read/2 and mate == 1:
         return 0;
@@ -195,33 +198,49 @@ def split_sam(filename, tmpdir):
 
     inFile = open(filename)
     separate_sams ={}
+    mult_aligned = {}
     print("file "+ filename+" opened")
     read_num = 0;
     paired_read = []
     for line in inFile:
-        arr = line.split('\t')
+        arr = line.split()
         if len(arr) > 5:
             read_num += 1
             paired_read.append(line.strip())
             if read_num == 2:
                 unique = {}
+                all_contigs = {}
                 for j in range(0, 2):
                     tags = paired_read[j].split()[11:]
                     parsed_tags = {}
                     unique_fl = paired_read[j].split()[2];
+                    all_contigs[unique_fl] = 1;
+                    AS = 0;
+                    XS = -1000;
                     if paired_read[j].split()[5] == "*":
                         unique_fl = ''
                     else:
                         for tag in tags:
-                            if (tag.split(':')[0] == "X0" and int(tag.split(':')[2]) > 1):
+                            tr = tag.split(':')
+                            tag_name = tr[0]
+                            tag_val = tr[2];
+                            if (tag_name == "X0" and int(tag_val) > 1):
                                 unique_fl = '';
-                                break;
-                    if unique_fl != '':
+                            elif (tag_name == "AS"):
+                                AS = tag_val
+                            elif (tag_name == "XS"):
+                                XS = tag_val
+                    if unique_fl != '' and AS > XS:
                         unique[unique_fl] = 1
-                for cont_name in unique :
+
+                for cont_name in all_contigs :
                     if cont_name in separate_sams:
                         for j in range(0,2):
-                            separate_sams[cont_name].write(paired_read[j]+ '\n')
+                            if cont_name in unique:
+                                separate_sams[cont_name].write(paired_read[j]+ '\n')
+                            else:
+                                mult_aligned[cont_name].write(paired_read[j]+ '\n')
+
                 read_num = 0;
                 paired_read = []
 #            if arr[2] in separate_sams:
@@ -231,8 +250,11 @@ def split_sam(filename, tmpdir):
             contig = arr[1].split(':')
             if contig[0] == 'SN':
                 samfilename = tmpdir + '/' +contig[1].split('_')[1] + '.pair.sam'
-#                print contig[1] + " " + samfilename;
+                multalignedfilename = tmpdir + '/' +contig[1].split('_')[1] + '.multiple.sam'
+#               print contig[1] + " " + samfilename;
+
                 separate_sams[contig[1]] = open(samfilename, 'w')
+                mult_aligned[contig[1]] = open(multalignedfilename , 'w')
 
     for file_name in separate_sams:
         separate_sams[file_name].close()
@@ -246,7 +268,6 @@ def split_contigs(filename, tmpdir):
         tfilename = tmpdir + '/' + contig_desc.split('_')[1] +'.fasta'
 
         write_fasta([[contig_desc, ref_seq[contig_desc]]], tfilename)
-
     return 0
 
 
@@ -293,7 +314,7 @@ def run_aligner():
         run_bwa()
 def run_bowtie2():
     global config;
-    os.system(config["bowtie2"] + "-build " + config["contigs"] + " " + config["work_dir"] + "tmp")
+    os.system(config["bowtie2"] + "-build " + config["contigs"] + " " + config["work_dir"] + "tmp > /dev/null")
     os.system(config["bowtie2"] + " -x" + config["work_dir"] + "tmp  -1 " + config["reads1"] + " -2 " + config["reads2"] + " -S " + config["sam_file"] + " -p " + str(config["t"])+ " --local  --non-deterministic")
 def run_bwa():
 # align with BWA
@@ -303,24 +324,6 @@ def run_bwa():
     os.system(config["bwa"] + " aln  "+ config["contigs"] +" " + config["reads1"] + " -t " + str(config["t"]) + "  -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+config["work_dir"]+ "tmp1.sai" )
     os.system(config["bwa"] + " aln  "+ config["contigs"] +" " + config["reads2"] + " -t " + str(config["t"]) + " -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+config["work_dir"]+ "tmp2.sai" )
     os.system(config["bwa"] + " sampe "+ config["contigs"] +" " + config["work_dir"]+ "tmp1.sai "+config["work_dir"]+ "tmp2.sai " + config["reads1"] + " " + config["reads2"] + ">"+config["work_dir"]+ "tmp.sam 2>"+config["work_dir"]+ "isize.txt")
-
-#    my ($sai1, $sai2, $sam) = ("reads1_aln.sai", "reads2_aln.sai", "reads_aln.sam");
-#    my $cmd;
-#    $cmd = "$bwa index -a is $contigs 2>/dev/null";
-#    system($cmd);
-#
-#    my ($max_ge, $max_go, $k, $n) = (100, 3, 3, 0.08);
-#    $bwa_aln1_cmd  = "$bwa aln $contigs_name $reads1 -t $num_threads -O 7 -E 2 -k $k -n $n -q 15";
-#    $bwa_aln2_cmd  = "$bwa aln $contigs_name $reads2 -t $num_threads -O 7 -E 2 -k $k -n $n -q 15";
-#}
-#    $cmd = $bwa_aln1_cmd . " > $sai1";
-#    system($cmd);
-#    $cmd = $bwa_aln2_cmd . " > $sai2";
-#    system($cmd);
-#
-#    print "\nGenerating paired-end alignments & estimating insert-size...\n";
-#    my $is = "isize.txt";
-#    my $bwa_sampe_cmd = "$bwa sampe $contigs $sai1 $sai2 $reads1 $reads2 > $sam 2>$is";
     return 0
 
 
@@ -354,13 +357,14 @@ def parse_profile(args):
         if opt in ('-q', "--use_quality"):
             config["use_quality"]= 1;
         if opt in ("--bowtie2"):
-	    if arg != "bowtie2":
-		arg = os.path.abspath(arg)
+            if arg != "bowtie2":
+                arg = os.path.abspath(arg)
             config["bowtie2"]= arg;
-    os.system ("mkdir " +config["output_dirpath"])
-    os.system ("mkdir " +config["output_dirpath"] + "/tmp")
+        if opt in ("--debug"):
+            config["debug"] = 1;
     work_dir = config["output_dirpath"]+"/tmp/"
     config["work_dir"] = work_dir
+    os.system ("mkdir -p " + work_dir)
 
 
 def init_config():
@@ -370,22 +374,31 @@ def init_config():
     config["t"] = int(4)
     config["mate_weight"] = float(1)
     config["use_quality"] = 0;
+    config["debug"] = 0;
 
-def process_contig(samfilename, contig_file):
+def process_contig(samfilename, contig_file, mult_aligned_filename):
+
     profile = []
+    mult_profile = []
     insertions = {}
+    mult_insertions = {}
     inserted = 0;
     replaced = 0;
     deleted = 0;
-    samFile = open(samfilename, 'r');
+    mult_alignedFile = open(mult_aligned_filename, 'r')
     fasta_contig = read_genome(contig_file);
-    print "processing " + str(contig_file) + ", contig length:" + str(len(fasta_contig[1]));
+#no spam about short contig processing
+    if len(fasta_contig[1]) > 20000:
+        print "processing long contig " + str(contig_file) + ", contig length:" + str(len(fasta_contig[1]));
     contig = fasta_contig[1].upper()
     #            profile = []
     total_reads = 0;
     indelled_reads = 0;
     #            print samfilename
-    refinedFileName = config["work_dir"] + samfilename.split('/')[-1].split('.')[0] + '.ref.fasta';
+    contig_name = samfilename.split('/')[-1].split('.')[0]
+    refinedFileName = config["work_dir"] + contig_name + '.ref.fasta';
+    logFileName =  config["work_dir"] + contig_name + '.stdout';
+    logFile = open(logFileName, 'w')
     #    samFile = io.open( sys.argv[1], 'r');
     # accurate!
     cont_num = contig_file.split('/')[-1].split('.')[0];
@@ -399,11 +412,18 @@ def process_contig(samfilename, contig_file):
     rescontig = ""
     for i in range (0, l):
         profile.append( {} );
+        mult_profile.append({});
         for j in ('A','C','G','T','N','I','D'):
             profile[i][j] = 0;
-    insertions = {}
+            mult_profile[i][j] = 0;
+    for line in mult_alignedFile:
+        arr = line.split();
+        if arr[2].split('_')[1] != cont_num:
+            continue
+        process_read(arr, l, 1, mult_profile, mult_insertions)
     #TODO: estimation on insert size, need to be replaced
     insert_size_est = 400
+    samFile = open(samfilename, 'r');
     for line in samFile:
         arr = line.split();
         if arr[2].split('_')[1] != cont_num:
@@ -422,12 +442,9 @@ def process_contig(samfilename, contig_file):
         if mate_el != '=' and mate_el != '*' and (position > insert_size_est and position < l - insert_size_est - 100 ):
             continue;
         #Mate not in this contig; another alignment of this read present
-        if mate_el != '=' and ("XA" in parsed_tags):
+        if mate_el != '=' and ("XA" in parsed_tags or ("XS" in parsed_tags and "AS" in parsed_tags and parsed_tags["XS"] >= parsed_tags["AS"])):
 #        and (("X0" in parsed_tags and parsed_tags["X0"] > 1)):
 
-        #                    if abs(position - 200) < 100:
-        #                        print position + 1
-        #                        print "XA tag present, read: " + arr[0] +" cigar " + cigar
             continue;
         if mate_el == '=' and (int(arr[1]) & 8) == 0:
             mate = config["mate_weight"];
@@ -435,42 +452,36 @@ def process_contig(samfilename, contig_file):
             mate = 1;
         indelled_reads += 1 - process_read(arr, l, mate, profile, insertions)
         total_reads += 1;
-
-    #            if len(insertions) < 50:
-    #                print insertions
-    #            else:
-    #                print "insertions very big, most popular:"
-    #                for element in insertions:
-    #                    if len(insertions[element]) > 20 or profile[int(element)]['I'] * 3 > profile[int(element)][contig[int(element)]] :
-    #                        print str(element) + str(insertions[element])
-    #                        print "profile here: " + str(profile[element]) """
     for i in range (0, l):
-    #*
-    #                if i in range(183, 224):
-    #                    print "FFFFFFUUUU "+ str(i + 1)
-    #                    print(profile[i])
-
         tj = contig[i]
         tmp =''
+        mate_weight = config["mate_weight"]
         for count in range(0,2):
-            #exluded 'N's from cycle
             for j in ('A','C','G','T','N', 'I', 'D'):
-                if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] > 2):
+#first condition trivial,
+# second - for insertions we have both the base after insertion and 'I' (but want to have more than one 'I' to insert),
+# third - to avoid issues with multiple alignment OK, but few uniquely discordant erroneous reads making to "correct"
+# position
+
+                if (profile[i][tj] < profile[i][j] or \
+                    (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] > mate_weight)) and \
+                    mult_profile[i][tj] < profile[i][j] * 3:
+
                     tj = j
                     #                rescontig[i] = j
             if tj != contig[i] :
                 if tj =='I' or tj == 'D' :
-                    print "there was in-del"
+                    logFile.write ("there was in-del \n")
                 else:
                     replaced += 1
-                print profile[i]
-                print "changing " + contig[i] + " to " + tj + " on position " + str(i+1) + '\n'
+                logFile.write (str(profile[i]))
+                logFile.write("changing " + contig[i] + " to " + tj + " on position " + str(i+1) +'\n')
 
             if tj in ('A','C','T','G','N'):
                 rescontig += tj
                 break;
             elif tj == 'D':
-                print "skipping deletion"+ " on position " + str(i+1) + '\n'
+                logFile.write( "skipping deletion"+ " on position " + str(i+1) +'\n')
                 deleted += 1;
                 break;
             elif tj == 'I':
@@ -480,18 +491,12 @@ def process_contig(samfilename, contig_file):
         if tmp != '':
             rescontig += tmp;
             inserted += len (tmp)
-
-            #            print(fasta_contig[0]);
     res_fasta = [[]]
-    #res_fasta.append([])
     res_fasta[0].append(fasta_contig[0]);
     res_fasta[0].append(rescontig)
     write_fasta(res_fasta, refinedFileName)
-    #    refinedFile.write(rescontig);
-    #           nonFasta.write(rescontig);
-
-    print "Finished processing "+ str(contig_file) + ". Used " + str(total_reads) + " reads."
-    print "replaced: " + str(replaced) + " deleted: "+ str(deleted) +" inserted: " + str(inserted)
+    logFile.write("Finished processing "+ str(contig_file) + ". Used " + str(total_reads) + " reads.\n")
+    logFile.write("replaced: " + str(replaced) + " deleted: "+ str(deleted) +" inserted: " + str(inserted) +'\n')
 #    return inserted, replaced
 
 
@@ -514,7 +519,7 @@ def main(args):
             run_aligner()
         else:
             print "sam file found"
-            os.system("cp "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
+            os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
             config["sam_file"] = config["work_dir"]+"tmp.sam"
     #    now = datetime.datetime.now()
     #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
@@ -523,7 +528,7 @@ def main(args):
         split_sam(config["sam_file"], config["work_dir"])
         print(".sam file splitted")
     else:
-        print "splitted tmp dir found, starting voting"
+        print "splitted tmp dir found, starting correcting"
         os.system("cp "+ config["splitted_dir"] +"/* " + config["work_dir"])
     #    return 0
 #    if not os.path.exists(res_directory):
@@ -536,22 +541,39 @@ def main(args):
         f_name = contig_file.split('/')[-1];
         f_arr = f_name.split('.');
         if len(f_arr) == 2 and f_arr[1][0:2] == "fa" and os.path.exists(os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam")):
-
             samfilename = os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".pair.sam");
+            mult_aligned_filename = os.path.join("/".join(contig_file.split('/')[:-1]), f_arr[0]+".multiple.sam");
             tmp = []
             tmp.append(samfilename)
             tmp.append(contig_file)
+            tmp.append(mult_aligned_filename)
             pairs.append(tmp)
     print pairs[0];
-#    Parallel(n_jobs=config["t"])(delayed(process_contig)(pair[0],pair[1])for pair in pairs)
-    for pair in pairs:
-         process_contig(pair[0], pair[1])
+    Parallel(n_jobs=config["t"])(delayed(process_contig)(pair[0],pair[1], pair[2])for pair in pairs)
 #        inserted += loc_ins;
 #        replaced += loc_rep;
-
+    replaced = 0;
+    deleted = 0;
+    inserted = 0;
     cat_line = "cat "+ config["work_dir"] + "/*.ref.fasta > "+ config["work_dir"] + "../corrected_contigs.fasta"
     print cat_line
     os.system(cat_line);
+    filelist = [os.path.abspath(os.path.join(config["work_dir"], i)) for i in os.listdir(config["work_dir"]) if os.path.isfile(os.path.join(config["work_dir"], i))]
+    for stdout_file in filelist:
+        if stdout_file.split('.')[-1] == 'stdout':
+            stdoutFile = open(stdout_file, 'r')
+
+            for line in stdoutFile:
+                arr = line.split()
+                if arr[0] == "replaced:":
+                    replaced += int(arr[1])
+                    deleted += int(arr[3])
+                    inserted += int(arr[5])
+        elif config["debug"] == 0:
+            os.system("rm " + stdout_file)
+    print ("TOTAL - replaced: " + str(replaced) + " deleted: "+ str(deleted) +" inserted: " + str(inserted))
+
+
 #    print "TOTAL replaced: "+ str(replaced) + " inserted: "+ str(inserted) + " deleted: " + str(deleted);
 
 
