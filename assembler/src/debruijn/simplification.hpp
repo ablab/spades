@@ -22,6 +22,7 @@
 #include <io/single_read.hpp>
 #include <read/ireadstream.hpp>
 #include "mismatch_shall_not_pass.hpp"
+#include "contig_output.hpp"
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,

@@ -35,6 +35,7 @@
 
 #include "path_extend/path_extend_launch.hpp"
 #include "mismatch_masker.hpp"
+#include "contig_output.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -562,9 +563,10 @@ void process_resolve_repeats(graph_pack& origin_gp,
 		const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp, const string& graph_name,
 		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
-		const string& subfolder = "", bool output_contigs = true,
-		bool kill_loops = true) {
-
+		const string& subfolder = "", bool output_contigs = true, bool kill_loops = true) {
+	typename graph_pack::graph_t &g = origin_gp.g;
+	const PairedInfoIndexT<typename graph_pack::graph_t> &pii = clustered_index;
+	BadConnectionCutter<typename graph_pack::graph_t>(g, pii).CutConnections();
 //	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
 //			origin_gp.g);
 //	ProduceLongEdgesStat( origin_gp,  clustered_index);
@@ -744,6 +746,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 					cfg::get().output_dir + "final_contigs.fasta");
 		}
 	}
+	OutputCutContigs(resolved_gp.g, cfg::get().output_dir + "cut.fasta");
 
 	if (cfg::get().output_pictures) {
 		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,

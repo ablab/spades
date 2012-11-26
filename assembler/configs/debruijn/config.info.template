@@ -83,6 +83,9 @@ estimation_mode simple
 paired_metrics read_count
 ; read_count, product
 
+;set it true to detach connections that are not supported by paired info before repeat resolution
+cut_bad_connections false
+
 ; repeat resolving mode (none split path_extend combined rectangles)
 resolving_mode split
 

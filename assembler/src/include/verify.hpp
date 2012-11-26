@@ -8,6 +8,7 @@
 #include "boost/current_function.hpp"
 #include <sstream>
 #include <iostream>
+#include "stacktrace.hpp"
 
 struct assertion_failed_exception : public std::exception {
 };
@@ -19,6 +20,7 @@ if (!(expr)) {																									\
 	"'. In file '" << __FILE__ << " on line " << __LINE__ << "'." << std::endl;									\
 	std::cout << ss.str();																						\
 	std::cerr << ss.str();																						\
+	print_stacktrace();																						    \
 	throw((assertion_failed_exception()));																		\
 }
 

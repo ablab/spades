@@ -12,6 +12,7 @@
  */
 
 #pragma once
+#include <execinfo.h>
 
 inline void print_stacktrace()
 {
