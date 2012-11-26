@@ -9,7 +9,7 @@ import io
 import cProfile
 import getopt
 from joblib import Parallel, delayed
-
+from math import pow;
 #profile = []
 #insertions = {}
 config = {}
@@ -92,14 +92,23 @@ def vote_insertions(position, insertions):
     return best_ins
 
 
-def process_read(cigar, aligned, position, l, mate, profile, insertions):
+def process_read(arr, l,m, profile, insertions):
 #    global profile
 #    global insertions
+    cigar = arr[5]
+    aligned = arr[9];
+    qual_aligned = arr[10]
+    position = int(arr[3]) - 1
+    map_q = int(arr[4]);
+    mate = m;
     l_read = len(aligned);
 
     if '*' in cigar:
         return 0;
 
+
+    if config["use_quality"]:
+        mate *=  (1 - pow(10,map_q/-10))
     shift = 0;
     nums = []
     operations = []
@@ -129,6 +138,7 @@ def process_read(cigar, aligned, position, l, mate, profile, insertions):
 #    if position < 150:
 #        print aligned+ " "+ cigar +" " + str(position)
     insertion_string = ''
+    int_A = ord('A') - 1
     for i in range(0, l_read):
     #            print aligned[i];
     #            print profile[i+position - 1]
@@ -151,7 +161,14 @@ def process_read(cigar, aligned, position, l, mate, profile, insertions):
             insertion_string = ''
         if operations[state_pos] == 'M':
             if i +  position - skipped < l:
-                profile[i+position -skipped][aligned[i - deleted]] += mate
+                t_mate = mate;
+                if config["use_quality"]:
+                    k = pow(10, (ord(qual_aligned[i - deleted]) - int_A ) /-10);
+                    if qual_aligned[i - deleted] == 'B':
+                        t_mate *= 0.2
+                    else:
+                        t_mate = t_mate * (1 - k/(k+1))
+                profile[i+position -skipped][aligned[i - deleted]] += t_mate
         else:
             if  operations[state_pos] in ('S', 'I', 'H'):
                 if operations[state_pos] == 'I':
@@ -245,12 +262,10 @@ def usage():
     print >> sys.stderr, '-m <int> weight for paired reads aligned properly. By default, equal to single reads weight (=1)'
     print >> sys.stderr, '--bwa <path>  path to bwa tool. Required if bwa is not in PATH'
 
-
-def run_bwa():
-# align with BWA
+def run_aligner():
     global config;
 
-#    (contigs_name, path, suf) = fileparse(config.contigs)
+    #    (contigs_name, path, suf) = fileparse(config.contigs)
     if not "contigs" in config:
         print "NEED CONTIGS TO REFINE!!!"
         usage()
@@ -264,20 +279,32 @@ def run_bwa():
     os.system("cp " + config["contigs"] + " " + work_dir)
     os.system("cp " + config["reads1"] + " " + work_dir)
     os.system("cp " + config["reads2"] + " " + work_dir)
-
     contigs_name = work_dir + contigs_name
     reads_1 = work_dir + config["reads1"].split('/')[-1]
     reads_2 = work_dir + config["reads2"].split('/')[-1]
-
-
-    os.system(config["bwa"] + " index -a is " + contigs_name + " 2")
-    os.system(config["bwa"] + " aln  "+ contigs_name +" " + reads_1 + " -t " + str(config["t"]) + "  -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+work_dir+ "tmp1.sai" )
-    os.system(config["bwa"] + " aln  "+ contigs_name +" " + reads_2 + " -t " + str(config["t"]) + " -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+work_dir+ "tmp2.sai" )
-    os.system(config["bwa"] + " sampe "+ contigs_name +" " +work_dir+ "tmp1.sai "+work_dir+ "tmp2.sai " + reads_1 + " " + reads_2 + ">"+work_dir+ "tmp.sam 2>"+work_dir+ "isize.txt")
     config["reads1"] = reads_1
     config["reads2"] = reads_2
     config["sam_file"] = work_dir + "tmp.sam"
     config["contigs"] = contigs_name
+    print ("config")
+    if "bowtie2" in config:
+        print("bowtie2 found, aligning")
+        run_bowtie2()
+    else:
+        print("running bwa")
+        run_bwa()
+def run_bowtie2():
+    global config;
+    os.system(config["bowtie2"] + "-build " + config["contigs"] + " " + config["work_dir"] + "tmp")
+    os.system(config["bowtie2"] + " -x" + config["work_dir"] + "tmp  -1 " + config["reads1"] + " -2 " + config["reads2"] + " -S " + config["sam_file"] + " -p " + str(config["t"])+ " --local  --non-deterministic")
+def run_bwa():
+# align with BWA
+    global config;
+
+    os.system(config["bwa"] + " index -a is " + config["contigs"] + " 2")
+    os.system(config["bwa"] + " aln  "+ config["contigs"] +" " + config["reads1"] + " -t " + str(config["t"]) + "  -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+config["work_dir"]+ "tmp1.sai" )
+    os.system(config["bwa"] + " aln  "+ config["contigs"] +" " + config["reads2"] + " -t " + str(config["t"]) + " -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+config["work_dir"]+ "tmp2.sai" )
+    os.system(config["bwa"] + " sampe "+ config["contigs"] +" " + config["work_dir"]+ "tmp1.sai "+config["work_dir"]+ "tmp2.sai " + config["reads1"] + " " + config["reads2"] + ">"+config["work_dir"]+ "tmp.sam 2>"+config["work_dir"]+ "isize.txt")
 
 #    my ($sai1, $sai2, $sam) = ("reads1_aln.sai", "reads2_aln.sai", "reads_aln.sam");
 #    my $cmd;
@@ -302,17 +329,13 @@ def run_bwa():
 def parse_profile(args):
     global config
 
-    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= help debug".split()
-    short_options = "1:2:o:s:S:c:t:m:"
+    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= bowtie2= help debug use_quality".split()
+    short_options = "1:2:o:s:S:c:t:m:q"
     options, contigs_fpaths = getopt.gnu_getopt(args, short_options, long_options)
     for opt, arg in options:
     # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
             config["output_dirpath"] = os.path.abspath(arg)
-            os.system ("mkdir " +config["output_dirpath"])
-            os.system ("mkdir " +config["output_dirpath"] + "/tmp")
-            work_dir = config["output_dirpath"]+"/tmp/"
-            config["work_dir"] = work_dir
             config["make_latest_symlink"] = False
         if opt in ('-c', "--contigs"):
             config["contigs"] = os.path.abspath(arg)
@@ -325,11 +348,19 @@ def parse_profile(args):
         if opt in ('-t', "--threads"):
             config["t"] = int(arg)
         if opt in ('-m', "--mate_weight"):
-            config["mate_weight"] = int(arg)
+            config["mate_weight"] = float(arg)
         if opt in ('-s', "--sam_file"):
             config["sam_file"] = os.path.abspath(arg)
         if opt in ('-S', "--splitted_dir"):
             config["splitted_dir"] = os.path.abspath(arg)
+        if opt in ('-q', "--use_quality"):
+            config["use_quality"]= 1;
+        if opt in ("--bowtie2"):
+            config["bowtie2"]= os.path.abspath(arg);
+    os.system ("mkdir " +config["output_dirpath"])
+    os.system ("mkdir " +config["output_dirpath"] + "/tmp")
+    work_dir = config["output_dirpath"]+"/tmp/"
+    config["work_dir"] = work_dir
 
 
 def init_config():
@@ -337,8 +368,8 @@ def init_config():
     config["output_dirpath"] = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/";
     config["bwa"] = "bwa"
     config["t"] = int(4)
-    config["mate_weight"] = int(1)
-
+    config["mate_weight"] = float(1)
+    config["use_quality"] = 0;
 
 def process_contig(samfilename, contig_file):
 
@@ -383,17 +414,18 @@ def process_contig(samfilename, contig_file):
         aligned = arr[9];
         position = int(arr[3]) - 1
         tags = arr[11:]
-        parsed_tags = []
+        parsed_tags = {}
         for tag in tags:
-            parsed_tags.append(tag.split(':'))
+            parsed_tags[tag.split(':')[0]] = tag.split(':')[2]
         mate_el = arr[6];
         #Mate of non-end read in other contig
         #TODO: contig breaker/ fixer can be here
         if mate_el != '=' and mate_el != '*' and (position > insert_size_est and position < l - insert_size_est - 100 ):
             continue;
         #Mate not in this contig; another alignment of this read present
-        if mate_el != '='\
-        and (("X0" in parsed_tags and parsed_tags["X0"] > 1)):
+        if mate_el != '=' and ("XA" in parsed_tags):
+#        and (("X0" in parsed_tags and parsed_tags["X0"] > 1)):
+
         #                    if abs(position - 200) < 100:
         #                        print position + 1
         #                        print "XA tag present, read: " + arr[0] +" cigar " + cigar
@@ -402,7 +434,7 @@ def process_contig(samfilename, contig_file):
             mate = config["mate_weight"];
         else:
             mate = 1;
-        indelled_reads += 1 - process_read(cigar, aligned, position, l, mate, profile, insertions)
+        indelled_reads += 1 - process_read(arr, l, mate, profile, insertions)
         total_reads += 1;
 
     #            if len(insertions) < 50:
@@ -423,7 +455,7 @@ def process_contig(samfilename, contig_file):
         tmp =''
         for count in range(0,2):
             #exluded 'N's from cycle
-            for j in ('A','C','G','T', 'I', 'D'):
+            for j in ('A','C','G','T','N', 'I', 'D'):
                 if profile[i][tj] < profile[i][j] or (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] > 2):
                     tj = j
                     #                rescontig[i] = j
@@ -479,8 +511,8 @@ def main(args):
     if "splitted_dir" not in config:
 #        print "no splitted dir, looking for sam file"
         if "sam_file" not in config:
-            print "no sam file, running bwa"
-            run_bwa()
+            print "no sam file, running aligner"
+            run_aligner()
         else:
             print "sam file found"
             os.system("cp "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
