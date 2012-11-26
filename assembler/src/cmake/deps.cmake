@@ -12,3 +12,6 @@ else()
 endif()
 set(Boost_USE_MULTITHREADED ON)
 find_package(Boost)
+
+# Build external dependencies (if any)
+add_subdirectory("${EXT_DIR}/src" "${Project_BINARY_DIR}/ext")

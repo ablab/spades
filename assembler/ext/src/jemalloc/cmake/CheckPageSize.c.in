@@ -1,0 +1,18 @@
+#include <unistd.h>
+#include <stdio.h>
+
+int main(void) {
+  long result;
+  FILE *f;
+
+  result = sysconf(_SC_PAGESIZE);
+
+  if (result == -1) {
+    return 1;
+  }
+  result = ffsl(result) - 1;
+
+  printf("%u\n", result);
+
+  return 0;
+}
