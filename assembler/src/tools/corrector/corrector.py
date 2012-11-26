@@ -543,9 +543,9 @@ def main(args):
     print pairs[0];
 #    Parallel(n_jobs=config["t"])(delayed(process_contig)(pair[0],pair[1])for pair in pairs)
     for pair in pairs:
-        (loc_ins, loc_rep) = process_contig(pair[0], pair[1])
-        inserted += loc_ins;
-        replaced += loc_rep;
+         process_contig(pair[0], pair[1])
+#        inserted += loc_ins;
+#        replaced += loc_rep;
 
     cat_line = "cat "+ config["work_dir"] + "/*.ref.fasta > "+ config["work_dir"] + "../corrected_contigs.fasta"
     print cat_line
