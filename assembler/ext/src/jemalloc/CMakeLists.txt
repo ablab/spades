@@ -8,6 +8,7 @@
 
 project(jemalloc C CXX)
 
+include(CheckIncludeFiles)
 include(CheckSymbolExists)
 include(CheckFunctionExists)
 include(CheckCSourceCompiles)
@@ -16,6 +17,9 @@ include(CheckTypeSize)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${EXT_DIR}/include)
 include_directories(${SPADES_BUILT_INCLUDE_DIR})
+
+check_include_files(features.h HAVE_FEATURES_H)
+check_include_files(sys/cdefs.h HAVE_SYS_CDEFS_H)
 
 set(JEMALLOC_VERSION "3.2.0-0-g87499f6748ebe4817571e817e9f680ccb5bf54a9")
 set(JEMALLOC_VERSION_MAJOR "3")
@@ -54,12 +58,14 @@ check_symbol_exists(atomic_fetchadd_long "sys/types.h;machine/atomic.h;inttypes.
 check_symbol_exists(OSAtomicAdd64 "libkern/OSAtomic.h;inttypes.h" JEMALLOC_OSATOMIC)
 check_symbol_exists(OSSpinLockLock "libkern/OSAtomic.h;inttypes.h" JEMALLOC_OSSPIN)
 check_function_exists(_malloc_thread_cleanup JEMALLOC_MALLOC_THREAD_CLEANUP)
+
 check_function_exists(_pthread_mutex_init_calloc_cb, JEMALLOC_MUTEX_INIT_CB)
 check_function_exists(sbrk JEMALLOC_HAVE_SBRK)
 
 set(CMAKE_REQUIRED_FLAGS "-Werror")
 check_c_source_compiles("static __thread int
 __attribute__((tls_model(\"initial-exec\"))) foo = 0; int main(void) { return 0; }" JEMALLOC_TLS_MODEL)
+set(CMAKE_REQUIRED_FLAGS)
 
 set(JEMALLOC_USABLE_SIZE_CONST "const")
 set(JEMALLOC_TCACHE)

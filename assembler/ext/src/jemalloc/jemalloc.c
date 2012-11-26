@@ -8,6 +8,8 @@ malloc_tsd_data(, arenas, arena_t *, NULL)
 malloc_tsd_data(, thread_allocated, thread_allocated_t,
     THREAD_ALLOCATED_INITIALIZER)
 
+#include "intercept.inl"
+
 /* Runtime configuration options. */
 const char	*je_malloc_conf;
 #ifdef JEMALLOC_DEBUG
