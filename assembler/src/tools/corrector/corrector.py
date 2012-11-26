@@ -354,7 +354,9 @@ def parse_profile(args):
         if opt in ('-q', "--use_quality"):
             config["use_quality"]= 1;
         if opt in ("--bowtie2"):
-            config["bowtie2"]= os.path.abspath(arg);
+	    if arg != "bowtie2":
+		arg = os.path.abspath(arg)
+            config["bowtie2"]= arg;
     os.system ("mkdir " +config["output_dirpath"])
     os.system ("mkdir " +config["output_dirpath"] + "/tmp")
     work_dir = config["output_dirpath"]+"/tmp/"
