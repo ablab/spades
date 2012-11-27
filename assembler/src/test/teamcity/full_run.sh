@@ -37,7 +37,7 @@ cp $project_dir"contigs.fasta" $dir$(date +%Y%m%d_%H%M%S)".fasta"
 cp $project_dir"/scaffolds.fasta" $dir$(date +%Y%m%d_%H%M%S)_scaf".fasta"
 
 
-python2.6 ~/quast-1.1/quast.py $project_dir"contigs.fasta" $line -o $project_dir"/quality_results/"
+python2.6 ~/quast-1.3/quast.py $project_dir"contigs.fasta" $line -o $project_dir"/quality_results/"
 rm $dir"/quast_all" -rf
 #echo $dir"*.fasta" $line -o $dir"/quast_all"
 dirtmp=$dir"tmp/"
@@ -67,17 +67,17 @@ for i in $dir*.fasta ; do
   fi
 done
 
-quast_line="$output_pref/quast-1.2/quast.py -M 500 $dirtmp* $line -o $dir/quast_all"
-quast1_3_line="$output_pref/quast-1.3/quast.py -M 500 $dirtmp* $line -o $dir/quast1_3_all/"
+quast_line="$output_pref/quast-1.3/quast.py -M 500 $dirtmp* $line -o $dir/quast_all"
+quast1_2_line="$output_pref/quast-1.2/quast.py -M 500 $dirtmp* $line -o $dir/quast1_3_all/"
 
 echo "$quast_line"
 python2.6 $quast_line >null
-python2.6 $quast1_3_line >null
+python2.6 $quast1_2_line >null
 
 ssh -n antipov@194.85.238.21 mkdir -p "/var/www/teamcity_runs/$1$2" &
 
 scp "$dir/quast_all/report.txt" "antipov@194.85.238.21:/var/www/teamcity_runs/$1$2/report.txt"
-scp "$dir/quast1_3_all/report.txt" "antipov@194.85.238.21:/var/www/teamcity_runs/$1$2/report1_3.txt"
+scp "$dir/quast1_2_all/report.txt" "antipov@194.85.238.21:/var/www/teamcity_runs/$1$2/report1_2.txt"
 
 #espected results
 read line < $options_dir"results.options"
