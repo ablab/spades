@@ -622,17 +622,28 @@ public:
 		return g_;
 	}
 
-	void AddVertex(VertexId v) {
-		VERIFY(CheckCloseNeighbour(v));
-		Range r = NeighbourDistanceRange(v);
+	bool IsEndVertex(VertexId v) const {
+		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+			if (contains(g_.EdgeEnd(e)))
+				return false;
+		}
+		return true;
+	}
+
+	void AddVertex(VertexId v, Range dist_range) {
+//		VERIFY(CheckCloseNeighbour(v));
+//		Range r = NeighbourDistanceRange(v);
 		DEBUG("Adding vertex " << g_.str(v) << " to the component");
-		vertex_depth_.insert(make_pair(v, r));
-		height_2_vertices_.insert(make_pair(Average(r), v));
-		DEBUG("Range " << r << " Average height " << Average(r));
+		vertex_depth_.insert(make_pair(v, dist_range));
+		height_2_vertices_.insert(make_pair(Average(dist_range), v));
+		DEBUG(
+				"Range " << dist_range << " Average height " << Average(dist_range));
 		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
 			end_vertices_.erase(g_.EdgeStart(e));
 		}
-		end_vertices_.insert(v);
+		if (IsEndVertex(v)) {
+			end_vertices_.insert(v);
+		}
 	}
 
 	//todo what if path processor will fail inside
@@ -651,6 +662,8 @@ public:
 
 	bool CheckCompleteness() const {
 		FOREACH (VertexId v, KeySet(vertex_depth_)) {
+			if (v == start_vertex_)
+				continue;
 			if (!AllEdgeIn(v) && !AllEdgeOut(v))
 				return false;
 		}
@@ -658,9 +671,16 @@ public:
 	}
 
 	bool NeedsProjection() const {
+		DEBUG("Checking if component needs projection");
 		size_t tot_path_count = TotalPathCount();
+		bool answer = tot_path_count > end_vertices_.size();
 //		more robust to path processor failure this way VERIFY(tot_path_count >= end_vertices_.size());
-		return tot_path_count > end_vertices_.size();
+		if (answer) {
+			DEBUG("Needs projection");
+		} else {
+			DEBUG("Doesn't need projection");
+		}
+		return answer;
 	}
 
 	bool contains(VertexId v) const {
@@ -695,28 +715,6 @@ public:
 
 	const set<VertexId>& end_vertices() const {
 		return end_vertices_;
-	}
-
-	Range NeighbourDistanceRange(VertexId v) const {
-		DEBUG("Counting distance range for vertex " << g_.str(v));
-		size_t min = numeric_limits<size_t>::max();
-		size_t max = 0;
-		VERIFY(g_.IncomingEdgeCount(v) > 0);
-		VERIFY(CheckCloseNeighbour(v));
-		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
-			Range range = vertex_depth_.find(g_.EdgeStart(e))->second;
-			range.shift(g_.length(e));
-			DEBUG("Edge " << g_.str(e) << " provide distance range " << range);
-			if (range.start_pos < min)
-				min = range.start_pos;
-			if (range.end_pos > max)
-				max = range.end_pos;
-		}
-		VERIFY(
-				(max > 0) && (min < numeric_limits<size_t>::max()) && (min <= max));
-		Range answer(min, max);
-		DEBUG("Range " << answer);
-		return answer;
 	}
 
 	bool CheckCloseNeighbour(VertexId v) const {
@@ -1247,12 +1245,13 @@ private:
 
 template<class Graph>
 void PrintComponent(const LocalizedComponent<Graph>& component,
-		const SkeletonTree<Graph>& tree,
-		const string& file_name) {
+		const SkeletonTree<Graph>& tree, const string& file_name) {
 	typedef typename Graph::EdgeId EdgeId;
 	const set<EdgeId> tree_edges = tree.edges();
 	WriteComponent(component.AsGraphComponent(), file_name,
-			*DefaultColorer(component.g(), new MapColorer<EdgeId>(tree_edges.begin(), tree_edges.end(), "green", "")),
+			*DefaultColorer(component.g(),
+					new MapColorer<EdgeId>(tree_edges.begin(), tree_edges.end(),
+							"green", "")),
 			*StrGraphLabelerInstance(component.g()));
 }
 
@@ -1354,7 +1353,8 @@ public:
 			EdgeId target = CorrespondingTreeEdge(*it);
 			DEBUG("Target found " << g_.str(target));
 			if (target != *it) {
-				DEBUG("Glueing " << g_.str(*it) << " to target " << g_.str(target));
+				DEBUG(
+						"Glueing " << g_.str(*it) << " to target " << g_.str(target));
 				g_.GlueEdges(*it, target);
 				DEBUG("Glued");
 			}
@@ -1375,12 +1375,182 @@ private:
 	;
 };
 
+//template<class Graph>
+//class LocalizedComponentFinder {
+//	typedef typename Graph::VertexId VertexId;
+//	typedef typename Graph::EdgeId EdgeId;
+//
+//	static const size_t exit_bound = 32;
+//
+//	Graph& g_;
+//	size_t max_length_;
+//	size_t length_diff_threshold_;
+//
+//	LocalizedComponent<Graph> comp_;
+//
+//	set<VertexId> neighbourhood_;
+//	set<VertexId> can_be_processed_;
+//	set<VertexId> disturbing_;
+//
+//	bool CheckCompleteness() const {
+//		if (disturbing_.size() == 0) {
+//			VERIFY(comp_.CheckCompleteness());
+//			return true;
+//		}
+//		return false;
+//	}
+//
+//	//updating can_be_processed, neighbourhood and disturbing.
+//	void ProcessLocality(VertexId processing_v) {
+//		vector<VertexId> processed_neighb;
+//		vector<VertexId> unprocessed_neighb;
+//		FOREACH (EdgeId e, g_.OutgoingEdges(processing_v)) {
+//			VertexId v = g_.EdgeEnd(e);
+//			if (!comp_.contains(v)) {
+//				DEBUG("Vertex " << g_.str(v) << " added to neighbourhood")
+//				neighbourhood_.insert(v);
+//				if (comp_.CheckCloseNeighbour(v)) {
+//					DEBUG(
+//							"Vertex " << g_.str(v) << " added to can_be_processed")
+//					can_be_processed_.insert(v);
+//				}
+//				unprocessed_neighb.push_back(v);
+//			} else {
+//				processed_neighb.push_back(v);
+//			}
+//		}
+//		if (!processed_neighb.empty()) {
+//			FOREACH (VertexId v, unprocessed_neighb) {
+//				disturbing_.insert(v);
+//			}
+//		}
+//	}
+//
+//	bool CheckNoEdgeToStart(VertexId v) {
+//		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+//			if (g_.EdgeEnd(e) == comp_.start_vertex()) {
+//				return false;
+//			}
+//		}
+//		return true;
+//	}
+//
+//	void ProcessStartVertex() {
+//		DEBUG("Processing start vertex "<< g_.str(comp_.start_vertex()));
+//		ProcessLocality(comp_.start_vertex());
+//	}
+//
+//	void ProcessVertex(VertexId v) {
+//		//todo delete check
+//		VERIFY(comp_.CheckCloseNeighbour(v));
+//		DEBUG("Processing vertex " << g_.str(v));
+//		comp_.AddVertex(v);
+//		ProcessLocality(v);
+//
+//		neighbourhood_.erase(v);
+//		can_be_processed_.erase(v);
+//		disturbing_.erase(v);
+//	}
+//
+//	bool CheckVertexDist(VertexId v) const {
+//		return comp_.distance_range(v).start_pos < max_length_;
+//	}
+//
+//	bool CheckPathLengths() const {
+//		VERIFY(CheckCompleteness());
+//		FOREACH (VertexId v, comp_.end_vertices()) {
+//			if (comp_.distance_range(v).size() > length_diff_threshold_)
+//				return false;
+//		}
+//		return true;
+//	}
+//
+//	bool CheckPositiveHeightDiff() const {
+//		DEBUG("Checking for positive height diff of each edge");
+//		GraphComponent<Graph> gc = comp_.AsGraphComponent();
+//		for (auto it = gc.e_begin(); it != gc.e_end(); ++it) {
+//			size_t start_height = comp_.avg_distance(g_.EdgeStart(*it));
+//			size_t end_height = comp_.avg_distance(g_.EdgeEnd(*it));
+//			//VERIFY(end_height >= start_height);
+//			if (end_height <= start_height) {
+//				DEBUG(
+//						"Check failed for edge " << g_.str(*it) << " start_height " << start_height << " end_height " << end_height);
+//				return false;
+//			}
+//		}
+//		return true;
+//	}
+//
+//	VertexId NextVertex() const {
+//		if (!disturbing_.empty()) {
+//			return *disturbing_.begin();
+//		} else {
+//			VERIFY(!can_be_processed_.empty());
+//			return *can_be_processed_.begin();
+//		}
+//	}
+//
+//public:
+//	LocalizedComponentFinder(Graph& g, size_t max_length, size_t length_diff_threshold,
+//			VertexId start_v) :
+//			g_(g), max_length_(max_length), length_diff_threshold_(
+//					length_diff_threshold), comp_(g, start_v) {
+//		DEBUG("Component finder from vertex " << g_.str(comp_.start_vertex()) << " created");
+//		ProcessStartVertex();
+//	}
+//
+//	bool ProceedFurther() {
+//		DEBUG("Processing further");
+//		while (!comp_.CheckCompleteness() || !comp_.NeedsProjection()) {
+//			if (can_be_processed_.empty()) {
+//				DEBUG("No more vertices can be processed");
+//				return false;
+//			} else {
+//				VertexId v = NextVertex();
+//				ProcessVertex(v);
+//				if (!CheckVertexDist(v) || !CheckNoEdgeToStart(v)) {
+//					DEBUG("Max component length exceeded or edge to start vertex detected");
+//					return false;
+//				}
+//			}
+//		}
+//		if (!CheckPathLengths()) {
+//			DEBUG("Path lengths check failed");
+//			return false;
+//		}
+//		if (!CheckPositiveHeightDiff()) {
+//			DEBUG("Check for positive height diff of each edge failed");
+//			return false;
+//		}
+//		if (comp_.ContainsConjugateVertices()) {
+//			DEBUG("Found component contains conjugate vertices");
+//			return false;
+//		}
+//		if (comp_.end_vertices().size() > exit_bound) {
+//			DEBUG("Too many exits:" << comp_.end_vertices().size());
+//			return false;
+//		}
+//		GraphComponent<Graph> gc = comp_.AsGraphComponent();
+//		DEBUG("Found component candidate. Vertices: " << g_.str(gc.vertices()));
+//		return true;
+//	}
+//
+//	const LocalizedComponent<Graph>& component() {
+//		return comp_;
+//	}
+//
+//private:
+//	DECL_LOGGER("BRComponentFinder")
+//	;
+//};
+
 template<class Graph>
-class LocalizedComponentFinder {
+class NewLocalizedComponentFinder {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
 	static const size_t exit_bound = 32;
+	static const size_t inf = -1;
 
 	Graph& g_;
 	size_t max_length_;
@@ -1388,42 +1558,52 @@ class LocalizedComponentFinder {
 
 	LocalizedComponent<Graph> comp_;
 
-	set<VertexId> neighbourhood_;
-	set<VertexId> can_be_processed_;
-	set<VertexId> disturbing_;
+	map<VertexId, Range> dominated_;
+	set<VertexId> interfering_;
 
-	bool CheckCompleteness() const {
-		if (disturbing_.size() == 0) {
-			VERIFY(comp_.CheckCompleteness());
-			return true;
+	bool CheckCanBeProcessed(VertexId v) const {
+		DEBUG("Check if vertex " << g_.str(v) << " is dominated close neighbour");
+		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
+			if (dominated_.count(g_.EdgeStart(e)) == 0) {
+				DEBUG("Blocked by external vertex " << g_.int_id(g_.EdgeStart(e)) << " that starts edge " << g_.int_id(e));
+				DEBUG("Check fail");
+				return false;
+			}
 		}
-		return false;
+		DEBUG("Check ok");
+		return true;
 	}
 
-	//updating can_be_processed, neighbourhood and disturbing.
-	void ProcessLocality(VertexId processing_v) {
-		vector<VertexId> processed_neighb;
-		vector<VertexId> unprocessed_neighb;
-		FOREACH (EdgeId e, g_.OutgoingEdges(processing_v)) {
-			VertexId v = g_.EdgeEnd(e);
-			if (!comp_.contains(v)) {
-				DEBUG("Vertex " << g_.str(v) << " added to neighbourhood")
-				neighbourhood_.insert(v);
-				if (comp_.CheckCloseNeighbour(v)) {
-					DEBUG(
-							"Vertex " << g_.str(v) << " added to can_be_processed")
-					can_be_processed_.insert(v);
-				}
-				unprocessed_neighb.push_back(v);
-			} else {
-				processed_neighb.push_back(v);
+	void UpdateCanBeProcessed(VertexId v,
+			std::queue<VertexId>& can_be_processed) const {
+		FOREACH(EdgeId e, g_.OutgoingEdges(v)) {
+			VertexId neighbour_v = g_.EdgeEnd(e);
+			if (CheckCanBeProcessed(neighbour_v)) {
+				can_be_processed.push(neighbour_v);
 			}
 		}
-		if (!processed_neighb.empty()) {
-			FOREACH (VertexId v, unprocessed_neighb) {
-				disturbing_.insert(v);
-			}
+	}
+
+	Range NeighbourDistanceRange(VertexId v) const {
+		DEBUG("Counting distance range for vertex " << g_.str(v));
+		size_t min = numeric_limits<size_t>::max();
+		size_t max = 0;
+		VERIFY(g_.IncomingEdgeCount(v) > 0);
+		VERIFY(CheckCanBeProcessed(v));
+		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
+			Range range = dominated_.find(g_.EdgeStart(e))->second;
+			range.shift(g_.length(e));
+			DEBUG("Edge " << g_.str(e) << " provide distance range " << range);
+			if (range.start_pos < min)
+				min = range.start_pos;
+			if (range.end_pos > max)
+				max = range.end_pos;
 		}
+		VERIFY(
+				(max > 0) && (min < numeric_limits<size_t>::max()) && (min <= max));
+		Range answer(min, max);
+		DEBUG("Range " << answer);
+		return answer;
 	}
 
 	bool CheckNoEdgeToStart(VertexId v) {
@@ -1435,26 +1615,101 @@ class LocalizedComponentFinder {
 		return true;
 	}
 
-	void ProcessStartVertex() {
-		DEBUG("Processing start vertex "<< g_.str(comp_.start_vertex()));
-		ProcessLocality(comp_.start_vertex());
+	void FillDominated() {
+		DEBUG("Adding starting vertex to dominated set");
+		dominated_.insert(make_pair(comp_.start_vertex(), Range(0, 0)));
+		std::queue<VertexId> can_be_processed;
+		UpdateCanBeProcessed(comp_.start_vertex(), can_be_processed);
+		while (!can_be_processed.empty()) {
+			VertexId v = can_be_processed.front();
+			can_be_processed.pop();
+			Range r = NeighbourDistanceRange(v);
+			if (CheckNoEdgeToStart(v) && r.start_pos < max_length_) {
+				DEBUG("Adding vertex " << g_.str(v) << " to dominated set");
+				dominated_.insert(make_pair(v, r));
+				UpdateCanBeProcessed(v, can_be_processed);
+			}
+		}
 	}
 
-	void ProcessVertex(VertexId v) {
-		//todo delete check
-		VERIFY(comp_.CheckCloseNeighbour(v));
-		DEBUG("Processing vertex " << g_.str(v));
-		comp_.AddVertex(v);
-		ProcessLocality(v);
-
-		neighbourhood_.erase(v);
-		can_be_processed_.erase(v);
-		disturbing_.erase(v);
+	bool CheckCompleteness() const {
+		if (interfering_.size() == 0) {
+			VERIFY(comp_.CheckCompleteness());
+			return true;
+		}
+		return false;
 	}
 
-	bool CheckVertexDist(VertexId v) const {
-		return comp_.distance_range(v).start_pos < max_length_;
+	//false if new interfering vertex is not dominated
+	//can be slightly modified in new algorithm
+	bool ProcessLocality(VertexId processing_v) {
+		vector<VertexId> processed_neighb;
+		vector<VertexId> unprocessed_neighb;
+		FOREACH (EdgeId e, g_.OutgoingEdges(processing_v)) {
+			VertexId v = g_.EdgeEnd(e);
+			if (!comp_.contains(v)) {
+				unprocessed_neighb.push_back(v);
+			} else {
+				processed_neighb.push_back(v);
+			}
+		}
+		if (!processed_neighb.empty()) {
+			FOREACH (VertexId v, unprocessed_neighb) {
+				if (dominated_.count(v) > 0) {
+					interfering_.insert(v);
+				} else {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
+
+	bool AddVertexWithBackwardPaths(VertexId v) {
+		std::queue<VertexId> q;
+		q.push(v);
+		while (!q.empty()) {
+			VertexId next_v = q.front();
+			q.pop();
+			if (!ProcessLocality(next_v)) {
+				return false;
+			}
+			if (!comp_.contains(next_v)) {
+				VERIFY(dominated_.count(v) > 0);
+				comp_.AddVertex(next_v, dominated_.find(next_v)->second);
+				FOREACH(EdgeId e, g_.IncomingEdges(next_v)) {
+					q.push(g_.EdgeStart(e));
+				}
+			}
+		}
+		return true;
+	}
+
+	boost::optional<VertexId> ClosestNeigbour() const {
+		size_t min_dist = inf;
+		boost::optional<VertexId> answer = boost::none;
+		for (auto it = dominated_.begin(); it != dominated_.end(); ++it) {
+			if (!comp_.contains(it->first) && it->second.start_pos < min_dist) {
+				min_dist = it->second.start_pos;
+				answer = boost::optional<VertexId>(it->first);
+			}
+		}
+		return answer;
+	}
+
+//	void ProcessStartVertex() {
+//		DEBUG("Processing start vertex "<< g_.str(comp_.start_vertex()));
+//		ProcessLocality(comp_.start_vertex());
+//	}
+
+	bool ProcessInterferingVertex(VertexId v) {
+		interfering_.erase(v);
+		return AddVertexWithBackwardPaths(v);
+	}
+
+//	bool CheckVertexDist(VertexId v) const {
+//		return comp_.distance_range(v).start_pos < max_length_;
+//	}
 
 	bool CheckPathLengths() const {
 		VERIFY(CheckCompleteness());
@@ -1473,47 +1728,57 @@ class LocalizedComponentFinder {
 			size_t end_height = comp_.avg_distance(g_.EdgeEnd(*it));
 			//VERIFY(end_height >= start_height);
 			if (end_height <= start_height) {
-				DEBUG(
-						"Check failed for edge " << g_.str(*it) << " start_height " << start_height << " end_height " << end_height);
+				DEBUG("Check failed for edge " << g_.str(*it) << " start_height " << start_height << " end_height " << end_height);
 				return false;
 			}
 		}
 		return true;
 	}
 
-	VertexId NextVertex() const {
-		if (!disturbing_.empty()) {
-			return *disturbing_.begin();
-		} else {
-			VERIFY(!can_be_processed_.empty());
-			return *can_be_processed_.begin();
+	bool CloseComponent() {
+		while (!interfering_.empty()) {
+			if (!ProcessInterferingVertex(*interfering_.begin())) {
+				return false;
+			}
 		}
+		return true;
 	}
 
 public:
-	LocalizedComponentFinder(Graph& g, size_t max_length, size_t length_diff_threshold,
-			VertexId start_v) :
+	NewLocalizedComponentFinder(Graph& g, size_t max_length,
+			size_t length_diff_threshold, VertexId start_v) :
 			g_(g), max_length_(max_length), length_diff_threshold_(
 					length_diff_threshold), comp_(g, start_v) {
-		DEBUG("Component finder from vertex " << g_.str(comp_.start_vertex()) << " created");
-		ProcessStartVertex();
+		DEBUG(
+				"Component finder from vertex " << g_.str(comp_.start_vertex()) << " created");
+		FillDominated();
+//		ProcessStartVertex();
 	}
 
 	bool ProceedFurther() {
 		DEBUG("Processing further");
-		while (!comp_.CheckCompleteness() || !comp_.NeedsProjection()) {
-			if (can_be_processed_.empty()) {
-				DEBUG("No more vertices can be processed");
-				return false;
-			} else {
-				VertexId v = NextVertex();
-				ProcessVertex(v);
-				if (!CheckVertexDist(v) || !CheckNoEdgeToStart(v)) {
-					DEBUG("Max component length exceeded or edge to start vertex detected");
+
+		DEBUG("Choosing closest vertex");
+		do {
+			optional<VertexId> next_v = ClosestNeigbour();
+
+			if (next_v) {
+				DEBUG(
+						"Vertex " << g_.str(*next_v) << " was chosen as closest neighbour");
+				interfering_.insert(*next_v);
+				DEBUG("Trying to construct closure");
+				if (!CloseComponent()) {
+					DEBUG("Failed to close component");
 					return false;
+				} else {
+					DEBUG("Component closed");
 				}
+			} else {
+				DEBUG("No more vertices can be added");
+				return false;
 			}
-		}
+		} while (!comp_.NeedsProjection());
+
 		if (!CheckPathLengths()) {
 			DEBUG("Path lengths check failed");
 			return false;
@@ -1540,7 +1805,7 @@ public:
 	}
 
 private:
-	DECL_LOGGER("BRComponentFinder")
+	DECL_LOGGER("NewBRComponentFinder")
 	;
 };
 
@@ -1555,7 +1820,8 @@ class ComplexBulgeRemover {
 
 	string pics_folder_;
 
-	bool ProcessComponent(LocalizedComponent<Graph>& component, size_t candidate_cnt) {
+	bool ProcessComponent(LocalizedComponent<Graph>& component,
+			size_t candidate_cnt) {
 		DEBUG("Processing component");
 		ComponentColoring<Graph> coloring(component);
 		SkeletonTreeFinder<Graph> tree_finder(component, coloring);
@@ -1563,24 +1829,28 @@ class ComplexBulgeRemover {
 		if (tree_finder.FindTree()) {
 			DEBUG("Tree found");
 
-			SkeletonTree<Graph> tree(component,
-					tree_finder.GetTreeEdges());
+			SkeletonTree<Graph> tree(component, tree_finder.GetTreeEdges());
 
 			if (!pics_folder_.empty()) {
 				PrintComponent(component, tree,
-						pics_folder_ + "success/" + ToString(g_.int_id(component.start_vertex())) + "_" + ToString(candidate_cnt)
-								+ ".dot");
+						pics_folder_ + "success/"
+								+ ToString(g_.int_id(component.start_vertex()))
+								+ "_" + ToString(candidate_cnt) + ".dot");
 			}
 
 			ComponentProjector<Graph> projector(g_, component, coloring, tree);
 			projector.ProjectComponent();
-			DEBUG("Successfully processed component candidate " << candidate_cnt << " start_v " << g_.str(component.start_vertex()));
+			DEBUG(
+					"Successfully processed component candidate " << candidate_cnt << " start_v " << g_.str(component.start_vertex()));
 			return true;
 		} else {
-			DEBUG("Failed to find skeleton tree for candidate " << candidate_cnt << " start_v " << g_.str(component.start_vertex()));
+			DEBUG(
+					"Failed to find skeleton tree for candidate " << candidate_cnt << " start_v " << g_.str(component.start_vertex()));
 			if (!pics_folder_.empty()) {
+				//todo check if we rewrite all of the previous pics!
 				PrintComponent(component,
-						pics_folder_  + "fail/" + ToString(g_.int_id(component.start_vertex())) + "_" + ToString(candidate_cnt)
+						pics_folder_ + "fail/"
+								+ ToString(g_.int_id(component.start_vertex())) //+ "_" + ToString(candidate_cnt)
 								+ ".dot");
 			}
 			return false;
@@ -1597,6 +1867,7 @@ public:
 	bool Run() {
 		INFO("Complex bulge remover started");
 		if (!pics_folder_.empty()) {
+//			remove_dir(pics_folder_);
 			make_dir(pics_folder_);
 			make_dir(pics_folder_ + "success/");
 			make_dir(pics_folder_ + "fail/");
@@ -1606,13 +1877,15 @@ public:
 			DEBUG("Processing vertex " << g_.str(*it));
 			size_t candidate_cnt = 0;
 			vector<VertexId> vertices_to_post_process;
-			{
-				LocalizedComponentFinder<Graph> comp_finder(g_, max_length_,
+			{ //important scope!!!
+				NewLocalizedComponentFinder<Graph> comp_finder(g_, max_length_,
 						length_diff_, *it);
 				while (comp_finder.ProceedFurther()) {
 					candidate_cnt++;
-					DEBUG("Found component candidate " << candidate_cnt << " start_v " << g_.str(*it));
-					LocalizedComponent<Graph> component = comp_finder.component();
+					DEBUG(
+							"Found component candidate " << candidate_cnt << " start_v " << g_.str(*it));
+					LocalizedComponent<Graph> component =
+							comp_finder.component();
 					if (ProcessComponent(component, candidate_cnt)) {
 						something_done_flag = true;
 						GraphComponent<Graph> gc = component.AsGraphComponent();
