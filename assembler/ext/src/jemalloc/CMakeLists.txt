@@ -64,12 +64,17 @@ check_function_exists(sbrk JEMALLOC_HAVE_SBRK)
 
 set(CMAKE_REQUIRED_FLAGS "-Werror")
 check_c_source_compiles("static __thread int
-__attribute__((tls_model(\"initial-exec\"))) foo = 0; int main(void) { return 0; }" JEMALLOC_TLS_MODEL)
+__attribute__((tls_model(\"initial-exec\"))) foo = 0; int main(void) { return 0; }" JEMALLOC_TLS_MODEL_SUPPORTED)
 set(CMAKE_REQUIRED_FLAGS)
+
+if (JEMALLOC_TLS_MODEL_SUPPORTED)
+set(JEMALLOC_TLS_MODEL "__attribute__((tls_model(\"initial-exec\")))")
+endif()
 
 set(JEMALLOC_USABLE_SIZE_CONST "const")
 set(JEMALLOC_TCACHE)
 set(JEMALLOC_MUNMAP ON)
+set(JEMALLOC_IVSALLOC OFF)
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(JEMALLOC_PURGE_MADVISE_DONTNEED ON)
   set(JEMALLOC_THREADED_INIT ON)

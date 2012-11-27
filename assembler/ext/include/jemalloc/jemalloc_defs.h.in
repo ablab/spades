@@ -133,7 +133,7 @@
 #cmakedefine JEMALLOC_HAVE_SBRK
 
 /* Non-empty if the tls_model attribute is supported. */
-#cmakedefine JEMALLOC_TLS_MODEL
+#define JEMALLOC_TLS_MODEL @JEMALLOC_TLS_MODEL@
 
 /* JEMALLOC_CC_SILENCE enables code that silences unuseful compiler warnings. */
 #undef JEMALLOC_CC_SILENCE
@@ -145,7 +145,7 @@
 #undef JEMALLOC_DEBUG
 
 /* JEMALLOC_STATS enables statistics calculation. */
-#undef JEMALLOC_STATS
+#define JEMALLOC_STATS
 
 /* JEMALLOC_PROF enables allocation profiling. */
 #undef JEMALLOC_PROF
@@ -173,7 +173,7 @@
 #undef JEMALLOC_DSS
 
 /* Support memory filling (junk/zero/quarantine/redzone). */
-#define JEMALLOC_FILL
+#undef JEMALLOC_FILL
 
 /* Support the experimental API. */
 #define JEMALLOC_EXPERIMENTAL
