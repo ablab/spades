@@ -290,6 +290,15 @@ public:
 		}
 	}
 
+	Handler* GetHandler(const string& name) {
+		BOOST_FOREACH(Handler* handler, action_handler_list_) {
+			if (handler->name() == name) {
+				return handler;
+			}
+		}
+		return 0;
+	}
+
 
 private:
 	DECL_LOGGER("ObservableGraph")

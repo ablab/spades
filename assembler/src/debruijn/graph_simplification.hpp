@@ -26,7 +26,8 @@
 #include "omni/mf_ec_remover.hpp"
 #include "gap_closer.hpp"
 #include "graph_read_correction.hpp"
-#include "omni/bulge_remover_factory.hpp"
+#include "bulge_remover_factory.hpp"
+#include "kmer_mapper_logger.hpp"
 
 //#include "omni/devisible_tree.hpp"
 //
@@ -257,19 +258,21 @@ typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF GetBulgeCondition(Conjug
 			_2);
 }
 
+//template<class Graph>
+//std::shared_ptr<
+//	omnigraph::SequentialAlgorihtmFactory<
+//		ConcurrentGraphComponent<Graph>,
+//		typename Graph::EdgeId>>
+
 template<class Graph>
-std::shared_ptr<
-	omnigraph::SequentialAlgorihtmFactory<
-		ConcurrentGraphComponent<Graph>,
-		typename Graph::EdgeId>>
-GetBulgeRemoverFactory(
+debruijn::BulgeRemoverFactory<Graph>* GetBulgeRemoverFactory(
 		Graph &graph,
 		const debruijn_config::simplification::bulge_remover& br_config,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
 	typedef ConcurrentGraphComponent<Graph> Component;
-	typedef omnigraph::BulgeRemoverFactory<Component> Factory;
+	typedef debruijn::BulgeRemoverFactory<Graph> Factory;
 	typedef omnigraph::SequentialAlgorihtmFactory<Component, typename Graph::EdgeId> FactoryInterface;
 
 	size_t max_length = LengthThresholdFinder::MaxBulgeLength(
@@ -280,86 +283,63 @@ GetBulgeRemoverFactory(
 		max_length = additional_length_bound;
 	}
 
-//	return
-	return std::shared_ptr<FactoryInterface>(
-			new omnigraph::BulgeRemoverFactory<Component> (
-				max_length,
-				br_config.max_coverage,
-				br_config.max_relative_coverage,
-				br_config.max_delta,
-				br_config.max_relative_delta,
-				GetBulgeCondition<Graph>(graph),
-				0,
-				removal_handler
-			)
-	);
+	return new Factory (
+			max_length,
+			br_config.max_coverage,
+			br_config.max_relative_coverage,
+			br_config.max_delta,
+			br_config.max_relative_delta,
+			GetBulgeCondition<Graph>(graph),
+			0,
+			removal_handler
+		);
 }
 
+typedef ConcurrentGraphComponent<Graph> Component;
+typedef typename Graph::EdgeId EdgeId;
+typedef omnigraph::SequentialAlgorihtmFactory<Component, EdgeId> FactoryInterface;
+typedef std::shared_ptr<FactoryInterface> FactoryInterfacePtr;
+
 void RemoveBulges(
-		Graph &graph,
+		conj_graph_pack& gp,
 		const debruijn_config::simplification::bulge_remover& br_config,
 		boost::function<void(EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
-//<<<<<<< Updated upstream
 	INFO("SUBSTAGE == Removing bulges");
+	Graph& graph = gp.g;
+	KmerMapper<Graph> kmer_mapper = gp.kmer_mapper;
 
-	auto factory = GetBulgeRemoverFactory(graph, br_config, removal_handler, additional_length_bound);
-//=======
-//	auto factory = GetBulgeRemoverFactory(graph, removal_handler, additional_length_bound);
-//	INFO("SUBSTAGE == Removing bulges");
-//>>>>>>> Stashed changes
-	RunConcurrentAlgorithm(graph, factory, CoverageComparator<Graph>(graph));
-//
-//	size_t max_length = LengthThresholdFinder::MaxBulgeLength(graph.k(),
-//			br_config.max_bulge_length_coefficient);
-//
-//	if (additional_length_bound != 0 && additional_length_bound < max_length) {
-//		max_length = additional_length_bound;
-//	}
-//
-//	omnigraph::BulgeRemover<Graph> bulge_remover(
-//			graph,
-//			max_length,
-//			br_config.max_coverage,
-//			br_config.max_relative_coverage,
-//			br_config.max_delta,
-//			br_config.max_relative_delta,
-//			GetBulgeCondition<Graph>(graph),
-//			0,
-//			removal_handler
-//	);
-//
-//	bulge_remover.RemoveBulges();
+	bool was_attached = kmer_mapper.IsAttached();
+	if (was_attached) {
+		kmer_mapper.Detach();
+	}
+
+	debruijn::BulgeRemoverFactory<Graph>* factory = GetBulgeRemoverFactory(graph, br_config, removal_handler, additional_length_bound);
+	RunConcurrentAlgorithm(graph, FactoryInterfacePtr(factory), CoverageComparator<Graph>(graph));
+
+	typedef const pair<Sequence, Sequence> Mapping;
+	typedef debruijn::KmerMapperLogger<Graph> Logger;
+
+	if (was_attached) {
+		BOOST_FOREACH(Logger* logger, factory->loggers()) {
+			BOOST_FOREACH(Mapping& mapping, logger->log()) {
+				kmer_mapper.RemapKmers(mapping.first, mapping.second);
+			}
+		}
+		kmer_mapper.Attach();
+	}
+
 }
 
 template<class Graph>
 void RemoveBulges2(Graph &g) {
-
-	VERIFY(false); // make parallel to
-//	INFO("SUBSTAGE == Removing bulges");
-//
-//	size_t max_length = LengthThresholdFinder::MaxBulgeLength(
-//					g.k(),
-//					cfg::get().simp.br.max_bulge_length_coefficient);
-//
-//	omnigraph::BulgeRemover<Graph> bulge_remover(
-//			g,
-//			max_length,
-//			cfg::get().simp.br.max_coverage,
-//			0.5 * cfg::get().simp.br.max_relative_coverage,
-//			cfg::get().simp.br.max_delta,
-//			cfg::get().simp.br.max_relative_delta,
-//			&TrivialCondition<Graph>
-//	);
-//
-//	bulge_remover.RemoveBulges();
-//
-//	DEBUG("Bulges removed");
+	VERIFY(false); // make parallel too
 }
 
 void BulgeRemoveWrap(Graph& g) {
-	RemoveBulges(g, cfg::get().simp.br);
+	VERIFY(false); // make parallel too
+//	RemoveBulges(g, cfg::get().simp.br);
 }
 //
 //void BulgeRemoveWrap(NCGraph& g) {
@@ -689,14 +669,9 @@ void PreSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	tip_clipper_timer.stop();
 
 	INFO("Early bulge removal:");
-//<<<<<<< Updated upstream
 	bulge_remover_timer.start();
-	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f, gp.g.k() + 1);
+	RemoveBulges(gp, cfg::get().simp.br, removal_handler_f, gp.g.k() + 1);
 	bulge_remover_timer.stop();
-/*=======
-	RemoveBulges(gp.g, removal_handler_f, gp.g.k() + 1);
->>>>>>> Stashed changes
-*/
 	//INFO("Early ErroneousConnectionsRemoval");
 	//RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
 	//INFO("ErroneousConnectionsRemoval stats");
@@ -715,14 +690,9 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
 	DEBUG(iteration << " BulgeRemoval");
-//<<<<<<< Updated upstream
-//	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
-//=======
 	bulge_remover_timer.start();
-//	RemoveBulges(gp.g, removal_handler_f);
-	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
+	RemoveBulges(gp, cfg::get().simp.br, removal_handler_f);
 	bulge_remover_timer.stop();
-//>>>>>>> Stashed changes
 	DEBUG(iteration << " BulgeRemoval stats");
 	printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
@@ -735,22 +705,6 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
 }
-//void PrePostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
-//		boost::function<void(EdgeId)> &removal_handler_f){
-//
-//	INFO("PreFinal erroneous connections removal");
-//	FinalRemoveErroneousEdges(gp.g, edge_remover, removal_handler_f);
-//
-//	INFO("PreFinal tip clipping");
-//
-//    FinalTipClipping(gp.g, removal_handler_f);
-//
-//	INFO("PreFinal bulge removal");
-//	RemoveBulges(gp.g, removal_handler_f);
-//
-//	INFO("PreFinal isolated edges removal");
-//
-//}
 
 void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
@@ -767,14 +721,9 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_final_tip_clipping);
 
 	INFO("Final bulge removal:");
-	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
+	RemoveBulges(gp, cfg::get().simp.br, removal_handler_f);
 	printer(ipp_final_bulge_removal);
 
-//	INFO("Complex bulge removal:");
-//	OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
-//	licvidator.Licvidate();
-//	ComplexBulgeRemover<Graph> complex_bulge_remover(gp.g, gp.g.k() * 5, 5);
-//	complex_bulge_remover.Run();
 }
 
 double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
@@ -835,14 +784,8 @@ void SimplifyGraph(conj_graph_pack &gp,
 			CloseGaps(gp);
 		}
 
-//<<<<<<< Updated upstream
-//		SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
-//				iteration_count, i, max_coverage);
-//=======
         SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
                 iteration_count, i, max_coverage, tip_clipper_timer, bulge_remover_timer);
-//>>>>>>> Stashed changes
-//        printer(ipp_err_con_removal, str(format("_%d") % (i + iteration_count)));
 	}
 
 	cout << endl;
@@ -850,9 +793,6 @@ void SimplifyGraph(conj_graph_pack &gp,
 	cout << "tip clipper time: " << human_readable_time(tip_clipper_timer.time()) << endl;
 	cout << "bulge remover time: " << human_readable_time(bulge_remover_timer.time()) << endl;;
 	cout << endl;
-//    //todo wtf
-//    if (cfg::get().simp.tc.advanced_checks)
-//        PrePostSimplification(gp, edge_remover, removal_handler_f);
 
 	PostSimplification(gp, edge_remover, removal_handler_f, printer);
 
