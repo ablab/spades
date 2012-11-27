@@ -25,7 +25,7 @@ mkdir $project_dir -p
 read line < $options_dir"spades.options"
 echo $line
 ./cpcfg
-python ./spades.py $line --debug -o $project_dir --disable-gzip-output 
+python ./spades.py $line -o $project_dir --disable-gzip-output --mismatch-correction
 
 read line < $options_dir"quast.options"
 echo $line
