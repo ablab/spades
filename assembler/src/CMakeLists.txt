@@ -52,6 +52,9 @@ include(includes)
 # Handle common libs
 include(libs)
 
+configure_file("${SPADES_MAIN_INCLUDE_DIR}/config.hpp.in"
+               "${SPADES_BUILT_INCLUDE_DIR}/config.hpp")
+
 # sub projects
 add_subdirectory(io)
 add_subdirectory(mph_index)
