@@ -816,7 +816,9 @@ def main():
                 if os.path.exists(rrr_input_dir):
                     shutil.rmtree(rrr_input_dir)
                 if os.path.exists(rrr_outpath):
-                    shutil.rmtree(rrr_outpath)
+                    shutil.rmtree(rrr_outpath, True)
+                if os.path.exists(rrr_outpath):
+                    os.system('rm -r ' + rrr_outpath)
         #EOR
 
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
