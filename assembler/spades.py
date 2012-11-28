@@ -813,8 +813,10 @@ def main():
             shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
 
             if not spades_cfg.developer_mode:
-                shutil.rmtree(rrr_input_dir)
-                shutil.rmtree(rrr_outpath)                
+                if os.path.exists(rrr_input_dir):
+                    shutil.rmtree(rrr_input_dir)
+                if os.path.exists(rrr_outpath):
+                    shutil.rmtree(rrr_outpath)
         #EOR
 
         print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
