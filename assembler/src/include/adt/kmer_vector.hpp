@@ -2,6 +2,11 @@
 #define __KMER_VECTOR_HPP__
 
 #include "array_vector.hpp"
+#include "config.hpp"
+
+#ifdef SPADES_USE_JEMALLOC
+# include <jemalloc/jemalloc.h>
+#endif
 
 template<class Seq>
 class KMerVector {
@@ -9,12 +14,27 @@ class KMerVector {
   typedef typename Seq::DataType ElTy;
 
   ElTy *realloc() {
+#ifdef SPADES_USE_JEMALLOC
+    // First, try to expand in-place
+    if (storage_ && sizeof(ElTy) * capacity_ * el_sz_ > 4096 &&
+        je_rallocm((void**)&storage_, NULL, sizeof(ElTy) * capacity_ * el_sz_, 0, ALLOCM_NO_MOVE) == ALLOCM_SUCCESS)
+      return storage_;
+
+    // Failed, do usual malloc / memcpy / free cycle
+    ElTy *res = (ElTy*) je_malloc(sizeof(ElTy) * capacity_ * el_sz_);
+    if (storage_)
+      std::memcpy(res, storage_, size_ * sizeof(ElTy) * el_sz_);
+    je_free(storage_);
+    storage_ = res;
+#else
+    // No JEMalloc, no cookies
     ElTy *res = new ElTy[capacity_ * el_sz_];
     if (storage_)
-      memcpy(res, storage_, size_ * sizeof(ElTy) * el_sz_);
+      std:: memcpy(res, storage_, size_ * sizeof(ElTy) * el_sz_);
 
     delete[] storage_;
     storage_ = res;
+#endif
 
     return storage_;
   }
@@ -43,7 +63,11 @@ class KMerVector {
   }
   
   ~KMerVector() {
+#ifdef SPADES_USE_JEMALLOC
+    je_free(storage_);
+#else
     delete[] storage_;
+#endif
   }
 
   KMerVector &operator=(const KMerVector& that) {
