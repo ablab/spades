@@ -18,11 +18,11 @@ from process_cfg import *
 import bh_logic
 import spades_logic
 
-sys.path.append("src/rectangles") 
+sys.path.append(os.path.join(os.path.dirname(__file__), "src/rectangles"))
 import rrr
 
 #corrector
-sys.path.append("src/tools/corrector") 
+sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/corrector"))
 import corrector
 
 def print_used_values(cfg, log):
