@@ -9,7 +9,7 @@
  * - ctl_stats.*
  * - opt_prof_active
  */
-static malloc_mutex_t	ctl_mtx;
+malloc_mutex_t	ctl_mtx;
 static bool		ctl_initialized;
 static uint64_t		ctl_epoch;
 static ctl_stats_t	ctl_stats;
@@ -174,6 +174,7 @@ CTL_PROTO(stats_arenas_i_nmadvise)
 CTL_PROTO(stats_arenas_i_purged)
 INDEX_PROTO(stats_arenas_i)
 CTL_PROTO(stats_cactive)
+CTL_PROTO(stats_cactive_max)
 CTL_PROTO(stats_allocated)
 CTL_PROTO(stats_active)
 CTL_PROTO(stats_mapped)
@@ -396,6 +397,7 @@ static const ctl_indexed_node_t stats_arenas_node[] = {
 
 static const ctl_named_node_t stats_node[] = {
 	{NAME("cactive"),		CTL(stats_cactive)},
+  {NAME("cactive_max"),		CTL(stats_cactive_max)},
 	{NAME("allocated"),		CTL(stats_allocated)},
 	{NAME("active"),		CTL(stats_active)},
 	{NAME("mapped"),		CTL(stats_mapped)},
@@ -1666,6 +1668,7 @@ label_return:
 }
 
 CTL_RO_CGEN(config_stats, stats_cactive, &stats_cactive, size_t *)
+CTL_RO_CGEN(config_stats, stats_cactive_max, &stats_cactive_max, size_t *)
 CTL_RO_CGEN(config_stats, stats_allocated, ctl_stats.allocated, size_t)
 CTL_RO_CGEN(config_stats, stats_active, ctl_stats.active, size_t)
 CTL_RO_CGEN(config_stats, stats_mapped, ctl_stats.mapped, size_t)

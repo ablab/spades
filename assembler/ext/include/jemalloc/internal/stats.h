@@ -132,6 +132,8 @@ struct chunk_stats_s {
 extern bool	opt_stats_print;
 
 extern size_t	stats_cactive;
+extern size_t	stats_cactive_max;
+extern malloc_mutex_t ctl_mtx;
 
 void	stats_print(void (*write)(void *, const char *), void *cbopaque,
     const char *opts);
@@ -147,6 +149,11 @@ void	stats_cactive_sub(size_t size);
 #endif
 
 #if (defined(JEMALLOC_ENABLE_INLINE) || defined(JEMALLOC_STATS_C_))
+JEMALLOC_INLINE void
+malloc_mutex_lock(malloc_mutex_t *mutex);
+JEMALLOC_INLINE void
+malloc_mutex_unlock(malloc_mutex_t *mutex);
+
 JEMALLOC_INLINE size_t
 stats_cactive_get(void)
 {
@@ -158,7 +165,13 @@ JEMALLOC_INLINE void
 stats_cactive_add(size_t size)
 {
 
-	atomic_add_z(&stats_cactive, size);
+	size_t cactive = atomic_add_z(&stats_cactive, size);
+  if (cactive > atomic_read_z(&stats_cactive_max)) {
+    malloc_mutex_lock(&ctl_mtx);
+    if (cactive > atomic_read_z(&stats_cactive_max))
+      stats_cactive_max = cactive;
+    malloc_mutex_unlock(&ctl_mtx);
+  }
 }
 
 JEMALLOC_INLINE void

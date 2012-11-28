@@ -40,6 +40,7 @@
 bool	opt_stats_print = false;
 
 size_t	stats_cactive = 0;
+size_t	stats_cactive_max = 0;
 
 /******************************************************************************/
 /* Function prototypes for non-inline static functions. */
@@ -454,7 +455,7 @@ stats_print(void (*write_cb)(void *, const char *), void *cbopaque,
 	}
 
 	if (config_stats) {
-		size_t *cactive;
+		size_t *cactive, *cactive_max;
 		size_t allocated, active, mapped;
 		size_t chunks_current, chunks_high;
 		uint64_t chunks_total;
@@ -462,6 +463,7 @@ stats_print(void (*write_cb)(void *, const char *), void *cbopaque,
 		uint64_t huge_nmalloc, huge_ndalloc;
 
 		CTL_GET("stats.cactive", &cactive, size_t *);
+    CTL_GET("stats.cactive_max", &cactive_max, size_t *);
 		CTL_GET("stats.allocated", &allocated, size_t);
 		CTL_GET("stats.active", &active, size_t);
 		CTL_GET("stats.mapped", &mapped, size_t);
@@ -469,7 +471,7 @@ stats_print(void (*write_cb)(void *, const char *), void *cbopaque,
 		    "Allocated: %zu, active: %zu, mapped: %zu\n",
 		    allocated, active, mapped);
 		malloc_cprintf(write_cb, cbopaque,
-		    "Current active ceiling: %zu\n", atomic_read_z(cactive));
+                   "Current active ceiling: %zu, max: %zu\n", atomic_read_z(cactive), atomic_read_z(cactive_max));
 
 		/* Print chunk stats. */
 		CTL_GET("stats.chunks.total", &chunks_total, uint64_t);
