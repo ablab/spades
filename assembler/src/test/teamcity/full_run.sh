@@ -33,7 +33,7 @@ echo $line
 dir=$output_pref"contigs/teamcity/"$creature_name$project_name #$(date +%Y%m%d_%H%M%S)"/"
 echo $dir
 mkdir $dir -p
-cp $project_dir"contigs.fasta" $dir$(date +%Y%m%d_%H%M%S)".fasta"
+cp $project_dir"/corrected_contigs.fasta" $dir$(date +%Y%m%d_%H%M%S)".fasta"
 cp $project_dir"/scaffolds.fasta" $dir$(date +%Y%m%d_%H%M%S)_scaf".fasta"
 
 
@@ -68,7 +68,7 @@ for i in $dir*.fasta ; do
 done
 
 quast_line="$output_pref/quast-1.3/quast.py -M 500 $dirtmp* $line -o $dir/quast_all"
-quast1_2_line="$output_pref/quast-1.2/quast.py -M 500 $dirtmp* $line -o $dir/quast1_3_all/"
+quast1_2_line="$output_pref/quast-1.2/quast.py -M 500 $dirtmp* $line -o $dir/quast1_2_all/"
 
 echo "$quast_line"
 python2.6 $quast_line >null
