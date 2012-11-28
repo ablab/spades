@@ -21,11 +21,17 @@
 #include <fstream>
 #include <vector>
 
+#include "config.hpp"
+
+#ifdef SPADES_USE_JEMALLOC
+# include <jemalloc/jemalloc.h>
+#endif
+
 namespace logging
 {
 
 #if __DARWIN || __DARWIN_UNIX03
-inline unsigned get_max_rss() {
+inline size_t get_max_rss() {
   struct task_basic_info t_info;
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
 
@@ -37,7 +43,7 @@ inline unsigned get_max_rss() {
   return t_info.resident_size / 1024;
 }
 #else
-inline unsigned get_max_rss() {
+inline size_t get_max_rss() {
   rusage ru;
   getrusage(RUSAGE_SELF, &ru);
 
@@ -130,14 +136,28 @@ inline bool logger::need_log(level desired_level, const char* source) const
     return desired_level >= source_level;
 }
 
-inline void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg)
-{
-    double time = timer_.time();
-    unsigned max_rss = get_max_rss();
+#ifdef SPADES_USE_JEMALLOC
 
-    for(auto it = writers_.begin(); it != writers_.end(); ++it)
-        (*it)->write_msg(time, max_rss, desired_level, file, line_num, source, msg);
+inline void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
+  double time = timer_.time();
+  size_t max_rss = get_max_rss();
+  const size_t *cmem = 0;
+  size_t clen = sizeof(cmem);
+
+  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
+
+  for (auto it = writers_.begin(); it != writers_.end(); ++it)
+    (*it)->write_msg(time, (*cmem) / 1024, max_rss, desired_level, file, line_num, source, msg);
 }
+#else
+inline void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
+  double time = timer_.time();
+  size_t max_rss = get_max_rss();
+
+  for (auto it = writers_.begin(); it != writers_.end(); ++it)
+    (*it)->write_msg(time, max_rss, desired_level, file, line_num, source, msg);
+}
+#endif
 
 //
 inline void logger::add_writer(writer_ptr ptr)
