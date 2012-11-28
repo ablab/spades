@@ -26,7 +26,7 @@ else()
   add_subdirectory(gen_test_data EXCLUDE_FROM_ALL)
 endif()
 
-target_link_libraries(hammer ${COMMON_LIBRARIES} input mph_index)
+target_link_libraries(hammer input mph_index ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(hammer PROPERTIES LINK_SEARCH_END_STATIC 1)

@@ -10,5 +10,5 @@ add_library(input STATIC
             parser.cpp
             path_helper.cpp)
 
-target_link_libraries(input ${COMMON_LIBRARIES})
+target_link_libraries(input)
 

@@ -11,6 +11,3 @@ add_library(mph_index STATIC
             mph_bits.cc
             mph_index.cc
             trigraph.cc)
-
-target_link_libraries(mph_index ${COMMON_LIBRARIES})
-
