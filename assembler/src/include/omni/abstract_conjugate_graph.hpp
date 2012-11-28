@@ -32,15 +32,17 @@ private:
   typedef typename DataMaster::VertexData VertexData;
   typedef typename std::vector<EdgeId>::const_iterator edge_raw_iterator;
 
-  class conjugate_iterator {
+  class conjugate_iterator :
+      public std::iterator<std::forward_iterator_tag,
+                           typename std::iterator_traits<edge_raw_iterator>::value_type> {
     edge_raw_iterator it_;
     const bool conjugate_;
 
   public:
-    typedef typename edge_raw_iterator::difference_type difference_type;
-    typedef typename edge_raw_iterator::pointer         pointer;
-    typedef typename edge_raw_iterator::value_type      reference;
-    typedef typename edge_raw_iterator::value_type      value_type;
+    typedef typename std::iterator_traits<edge_raw_iterator>::difference_type difference_type;
+    typedef typename std::iterator_traits<edge_raw_iterator>::pointer         pointer;
+    typedef typename std::iterator_traits<edge_raw_iterator>::value_type      reference;
+    typedef typename std::iterator_traits<edge_raw_iterator>::value_type      value_type;
 
     explicit conjugate_iterator(edge_raw_iterator it, bool conjugate = false)
         : it_(it), conjugate_(conjugate) {}
