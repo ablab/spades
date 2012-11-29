@@ -146,6 +146,7 @@ std::ostream& operator<< (std::ostream& os, const std::vector<T>& v)
  	os << "]";
  	return os;
 }
+
 }
 
 #endif /* SIMPLE_TOOLS_HPP_ */

@@ -289,7 +289,8 @@ void ConstructColoredGraph(gp_t& gp,
 
 	// false: do not delete streams after usage
 	io::ReadStreamVector<ContigStream> read_stream_vector(streams, false);
-  ConstructGraph<Graph, Contig, typename gp_t::seq_t>(k, read_stream_vector, gp.g, gp.index);
+	ConstructGraph<Graph, Contig, typename gp_t::seq_t>(k, read_stream_vector,
+			gp.g, gp.index);
 
 	//TODO do we still need it?
 	if (br_delta > 0)

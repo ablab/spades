@@ -71,7 +71,7 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 	INFO("Clipping tips with projection");
 
 	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
-			/*read_length*/70, gp.k_value, tc_config.max_tip_length_coefficient);
+	/*read_length*/70, gp.k_value, tc_config.max_tip_length_coefficient);
 	ClipTips(gp.g, max_tip_length, tc_config, projecting_callback);
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
@@ -90,7 +90,6 @@ void ConstructGPForRefinement(gp_t& gp,
 	ConstructGPForRefinement(gp, contigs, delta);
 }
 
-
 template<size_t k, class Seq>
 pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1,
 		const Sequence& genome2, size_t delta = 5) {
@@ -99,14 +98,17 @@ pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1,
 	io::VectorReader<io::SingleRead> stream2(
 			io::SingleRead("second", genome2.str()));
 
-	typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph, Seq> refining_gp_t;
+	typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph,
+			Seq> refining_gp_t;
 	refining_gp_t refining_gp(k, "tmp");
 	ConstructGPForRefinement(refining_gp, stream1, stream2, delta);
 
-	io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1
-			, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
-	io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2
-			, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
+	io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1,
+			GraphReadCorrectorInstance(refining_gp.g,
+					*MapperInstance(refining_gp)));
+	io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2,
+			GraphReadCorrectorInstance(refining_gp.g,
+					*MapperInstance(refining_gp)));
 
 	pair<Sequence, Sequence> answer = make_pair(FirstSequence(refined_stream1),
 			FirstSequence(refined_stream2));
@@ -114,8 +116,8 @@ pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1,
 }
 
 template<size_t k>
-pair<Sequence, Sequence> CorrectGenomes(const pair<Sequence, Sequence>& genomes
-		, size_t delta = 5) {
+pair<Sequence, Sequence> CorrectGenomes(const pair<Sequence, Sequence>& genomes,
+		size_t delta = 5) {
 	return CorrectGenomes<k>(genomes.first, genomes.second, delta);
 }
 
@@ -130,17 +132,19 @@ pair<Sequence, vector<Sequence>> RefineData(
 	refining_gp_t refining_gp(k, "tmp");
 	ConstructGPForRefinement(refining_gp, stream1, stream2);
 
-	io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1
-			, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
-	io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2
-			, GraphReadCorrectorInstance(refining_gp.g, *MapperInstance(refining_gp)));
+	io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1,
+			GraphReadCorrectorInstance(refining_gp.g,
+					*MapperInstance(refining_gp)));
+	io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2,
+			GraphReadCorrectorInstance(refining_gp.g,
+					*MapperInstance(refining_gp)));
 
 	return make_pair(FirstSequence(refined_stream1),
 			AllSequences(refined_stream2));
 }
 
 inline vector<string> CorrectPaths(const vector<string>& out_files_suffs,
-                                   const string& out_root, size_t k) {
+		const string& out_root, size_t k) {
 	vector<string> answer;
 	for (auto it = out_files_suffs.begin(); it != out_files_suffs.end(); ++it) {
 		if (it->empty()) {
@@ -163,10 +167,9 @@ inline vector<ContigStream*> OpenStreams(const vector<string>& filenames) {
 	return streams;
 }
 
-template <class Seq>
+template<class Seq>
 void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
-                            const vector<string> out_files,
-                            size_t k) {
+		const vector<string> out_files, size_t k) {
 	VERIFY(streams.size() == out_files.size());
 
 	const size_t delta = std::max(size_t(5), k / 5);
@@ -176,39 +179,43 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 	INFO("Constructing graph pack for k=" << k << " delta=" << delta);
 	gp_t gp(k, "tmp");
 	ConstructGPForRefinement(gp, streams, delta);
+	vector<ContigStream*> refined_streams;
+	for (size_t i = 0; i < streams.size(); ++i) {
+		refined_streams.push_back(new io::ModifyingWrapper<io::SingleRead>(*streams[i],
+				GraphReadCorrectorInstance(gp.g, *MapperInstance(gp))));
+	}
+
 	for (size_t i = 0; i < streams.size(); ++i) {
 		string output_filename = out_files[i];
 		if (!output_filename.empty()) {
-			io::ModifyingWrapper<io::SingleRead> refined_stream(*streams[i]
-					, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
-			refined_stream.reset();
 			Contig contig;
 			io::ofastastream out_stream(output_filename);
 			DEBUG("Saving to " << output_filename);
-			while (!refined_stream.eof()) {
-				refined_stream >> contig;
+			while (!refined_streams[i]->eof()) {
+				(*refined_streams[i]) >> contig;
 				out_stream << contig;
 			}
 		}
 	}
 
-  // Saving some pics for analysis
-  for (auto it = streams.begin(); it != streams.end(); ++it) {
-    (*it)->reset();
-  }
-  ColorHandler<Graph> coloring(gp.g, streams.size());
+	// Saving some pics for analysis
+	for (auto it = refined_streams.begin(); it != refined_streams.end(); ++it) {
+		(*it)->reset();
+	}
+	ColorHandler<Graph> coloring(gp.g, refined_streams.size());
 	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
-			coloring, *MapperInstance<gp_t> (gp));
-	colored_graph_constructor.ConstructGraph(streams);
+			coloring, *MapperInstance < gp_t > (gp));
+	colored_graph_constructor.ConstructGraph(refined_streams);
 
-  size_t last_slash_pos = out_files[0].find_last_of('/');
-  string out_root = out_files[0].substr(0, last_slash_pos + 1);
-  PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos, out_root + "after_pics/colored_split_graph.dot");
+	size_t last_slash_pos = out_files[0].find_last_of('/');
+	string out_root = out_files[0].substr(0, last_slash_pos + 1);
+	PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
+			out_root + "after_pics/colored_split_graph.dot");
+	DisposeCollection(refined_streams);
 }
 
 inline void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
-                                   const vector<string>& suffixes,
-                                   const string& out_root) {
+		const vector<string>& suffixes, const string& out_root) {
 	for (size_t i = 0; i < streams.size(); ++i) {
 		if (!suffixes[i].empty()) {
 			string output_filename = out_root + suffixes[i] + ".fasta";
@@ -219,31 +226,31 @@ inline void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 }
 
 void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
-                            const vector<string>& suffixes,
-		                        const string& out_root,
-                            vector<size_t> &k_values) {
+		const vector<string>& suffixes, const string& out_root,
+		vector<size_t> &k_values) {
 
-  if (k_values.size() == 0) {
-    MaskDifferencesAndSave(streams, suffixes, out_root);
-    return;
-  }
+	if (k_values.size() == 0) {
+		MaskDifferencesAndSave(streams, suffixes, out_root);
+		return;
+	}
 
-  size_t current_k = k_values.back();
-  k_values.pop_back();
+	size_t current_k = k_values.back();
+	k_values.pop_back();
 
 	make_dir(out_root + ToString(current_k));
 
-  if (utils::NeedToUseLongSeq(current_k)) {
-    omp_set_num_threads(1);
-    MaskDifferencesAndSave<LSeq>(
-        streams, CorrectPaths(suffixes, out_root, current_k), current_k);
-  } else {
-    omp_set_num_threads(8);
-    MaskDifferencesAndSave<runtime_k::RtSeq>(
-        streams, CorrectPaths(suffixes, out_root, current_k), current_k);
-  }
+	if (utils::NeedToUseLongSeq(current_k)) {
+		omp_set_num_threads(1);
+		MaskDifferencesAndSave<LSeq>(streams,
+				CorrectPaths(suffixes, out_root, current_k), current_k);
+	} else {
+		omp_set_num_threads(8);
+		MaskDifferencesAndSave<runtime_k::RtSeq>(streams,
+				CorrectPaths(suffixes, out_root, current_k), current_k);
+	}
 
-	vector<ContigStream*> corr_streams = OpenStreams(CorrectPaths(suffixes, out_root, current_k));
+	vector<ContigStream*> corr_streams = OpenStreams(
+			CorrectPaths(suffixes, out_root, current_k));
 	MaskDifferencesAndSave(corr_streams, suffixes, out_root, k_values);
 
 	for (auto it = corr_streams.begin(); it != corr_streams.end(); ++it) {
@@ -252,11 +259,10 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 }
 
 void MaskDifferencesAndSave(const vector<string>& in_files,
-                            const vector<string>& suffixes,
-		                        const string& out_root,
-                            vector<size_t> k_values) {
+		const vector<string>& suffixes, const string& out_root,
+		vector<size_t> k_values) {
 //	remove_dir(out_root);
-  utils::MakeDirPath(out_root);
+	utils::MakeDirPath(out_root);
 	vector<ContigStream*> streams = OpenStreams(in_files);
 	MaskDifferencesAndSave(streams, suffixes, out_root, k_values);
 	DisposeCollection(streams);

@@ -54,8 +54,9 @@ namespace cap {
 //	//
 //}
 
-template <class Graph>
-void DeleteEdgesByColor(Graph& g, const ColorHandler<Graph>& coloring, TColorSet color) {
+template<class Graph>
+void DeleteEdgesByColor(Graph& g, const ColorHandler<Graph>& coloring,
+		TColorSet color) {
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		if (coloring.Color(*it) == color) {
 			g.DeleteEdge(*it);
@@ -103,9 +104,8 @@ private:
 	io::PrefixAddingReaderWrapper prefix_stream_;
 public:
 	EasyContigStream(const string& filename, const string& prefix) :
-			raw_stream_(filename),
-			rc_stream_(raw_stream_),
-			prefix_stream_(rc_stream_, prefix) {
+			raw_stream_(filename), rc_stream_(raw_stream_), prefix_stream_(
+					rc_stream_, prefix) {
 		Init(prefix_stream_);
 	}
 };
@@ -183,21 +183,21 @@ private:
 // 		counter.CountStats(labeler, detailed_output);
 	}
 
-    void PrepareDirs(const string& output_folder, bool detailed_output) {
-        DIR *dp;
-        if ((dp = opendir(output_folder.c_str())) == NULL) {
-            INFO("Dir " + output_folder + " did not exist, creating"); 
-        } else {
-            INFO("Dir " + output_folder + " purged"); 
-            remove_dir(output_folder);
-        }
-        utils::MakeDirPath(output_folder);
-        if (detailed_output) {
-            make_dir(output_folder + "initial_pics/");
-            make_dir(output_folder + "saves/");
-            make_dir(output_folder + "purple_edges_pics/");
-        }
-    }
+	void PrepareDirs(const string& output_folder, bool detailed_output) {
+		DIR *dp;
+		if ((dp = opendir(output_folder.c_str())) == NULL) {
+			INFO("Dir " + output_folder + " did not exist, creating");
+		} else {
+			INFO("Dir " + output_folder + " purged");
+			remove_dir(output_folder);
+		}
+		utils::MakeDirPath(output_folder);
+		if (detailed_output) {
+			make_dir(output_folder + "initial_pics/");
+			make_dir(output_folder + "saves/");
+			make_dir(output_folder + "purple_edges_pics/");
+		}
+	}
 
 public:
 
@@ -205,7 +205,8 @@ public:
 			io::IReader<io::SingleRead> &stream2, const string& name1,
 			const string& name2, bool untangle = false,
 			const Sequence& reference = Sequence()) :
-			gp_(k_value, "tmp", reference, 200, true), coloring_(gp_.g, 2), rc_stream1_(stream1), rc_stream2_( // TODO dir
+			gp_(k_value, "tmp", reference, 200, true), coloring_(gp_.g, 2), rc_stream1_(
+					stream1), rc_stream2_( // TODO dir
 					stream2), name1_(name1), stream1_(rc_stream1_, name1), name2_(
 					name2), stream2_(rc_stream2_, name2), untangle_(untangle) {
 	}
@@ -228,13 +229,10 @@ public:
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
 
-			SimpleInDelAnalyzer<Graph> del_analyzer(
-					gp_.g,
-					coloring_,
+			SimpleInDelAnalyzer<Graph> del_analyzer(gp_.g, coloring_,
 					gp_.edge_pos,
-					(*MapperInstance<gp_t> (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
-					kRedColorSet,
-					output_folder);
+					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
+					kRedColorSet, output_folder);
 			del_analyzer.Analyze();
 
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
@@ -263,7 +261,7 @@ public:
 //					, output_folder + "missed_genes/");
 //
 //			missed_genes.Analyze();
-			}
+		}
 
 		////////////
 //		WriteMagicLocality();
@@ -290,7 +288,7 @@ public:
 
 		if (detailed_output) {
 			if (gp_.genome.size() > 0) {
-				PrintColoredGraphAlongRef(gp_, coloring_,// gp_.edge_pos,  TODO why not corresponding???
+				PrintColoredGraphAlongRef(gp_, coloring_, // gp_.edge_pos,  TODO why not corresponding???
 						//gp_.genome,
 						output_folder + "initial_pics/colored_split_graph.dot");
 			} else {
@@ -313,8 +311,8 @@ public:
 					output_folder + "saves/colored_split_graph.dot");
 		}
 
-        // DISABLING ALL ANALYSIS AFTER WRITE
-        return;
+		// DISABLING ALL ANALYSIS AFTER WRITE
+		return;
 
 		if (untangle_) {
 			VERIFY(false);
@@ -371,8 +369,8 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 		const string& output_folder, bool detailed_output = true, size_t delta =
 				5, Sequence reference = Sequence(),
 		const string& add_saves_path = "") {
-  static double lol_time = 0;
-  cap::utils::add_time(lol_time, -1);
+	static double lol_time = 0;
+	cap::utils::add_time(lol_time, -1);
 
 	io::SplittingWrapper stream1(raw_stream1);
 	io::SplittingWrapper stream2(raw_stream2);
@@ -390,16 +388,13 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 
 		ConstructGPForRefinement(refining_gp, comp_stream, delta);
 
-		io::ModifyingWrapper<io::SingleRead> refined_stream1(
-				stream1,
+		io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1,
 				GraphReadCorrectorInstance(refining_gp.g,
 						*MapperInstance(refining_gp)));
-		io::ModifyingWrapper<io::SingleRead> refined_stream2(
-				stream2,
+		io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2,
 				GraphReadCorrectorInstance(refining_gp.g,
 						*MapperInstance(refining_gp)));
-		io::ModifyingWrapper<io::SingleRead> reference_stream(
-				genome_stream,
+		io::ModifyingWrapper<io::SingleRead> reference_stream(genome_stream,
 				GraphReadCorrectorInstance(refining_gp.g,
 						*MapperInstance(refining_gp)));
 
@@ -407,17 +402,17 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 		AssemblyComparer<comparing_gp_t> comparer(K, refined_stream1,
 				refined_stream2, name1, name2, untangle,
 				ReadSequence(reference_stream));
-        comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
-                false, 10, add_saves_path);
+		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
+		false, 10, add_saves_path);
 	} else {
 		AssemblyComparer<comparing_gp_t> comparer(K, stream1, stream2, name1,
 				name2, untangle, reference);
-        comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
-                false, 10, add_saves_path);
+		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
+		false, 10, add_saves_path);
 	}
 
-  cap::utils::add_time(lol_time, +1);
-  INFO("LOL_TIME:: " << lol_time);
+	cap::utils::add_time(lol_time, +1);
+	INFO("LOL_TIME:: " << lol_time);
 }
 
 template<size_t k, size_t K>
@@ -500,43 +495,44 @@ void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
 
 template<class gp_t>
 void RunMultipleGenomesVisualization(size_t k_visualize,
-    vector<pair<std::string, std::string> > genomes_paths,
-    std::string output_folder) {
-  typedef typename gp_t::graph_t Graph;
+		vector<pair<std::string, std::string> > genomes_paths,
+		std::string output_folder) {
+	typedef typename gp_t::graph_t Graph;
 
-  utils::MakeDirPath(output_folder);
-  
+	utils::MakeDirPath(output_folder);
 
-  gp_t gp(k_visualize, "tmp", Sequence(), 200, true);
-  ColorHandler<Graph> coloring(gp.g, genomes_paths.size());
+	gp_t gp(k_visualize, "tmp", Sequence(), 200, true);
+	ColorHandler<Graph> coloring(gp.g, genomes_paths.size());
 
-  // ContigStream -> SplittingWrapper -> RCReaderWrapper -> PrefixAddingReaderWrapper
+	// ContigStream -> SplittingWrapper -> RCReaderWrapper -> PrefixAddingReaderWrapper
 
-  vector <ContigStream *> genomes_stream_pointers;
-  vector <ContigStream *> to_destroy;
-  for (auto it = genomes_paths.begin(); it != genomes_paths.end(); ++it) {
-    ContigStream *reader_ptr = new io::Reader(it->second);
-    ContigStream *pointer = new io::RCReaderWrapper<io::SingleRead>(*reader_ptr);
+	vector<ContigStream *> genomes_stream_pointers;
+	vector<ContigStream *> to_destroy;
+	for (auto it = genomes_paths.begin(); it != genomes_paths.end(); ++it) {
+		ContigStream *reader_ptr = new io::Reader(it->second);
+		ContigStream *pointer = new io::RCReaderWrapper<io::SingleRead>(
+				*reader_ptr);
 
-    genomes_stream_pointers.push_back(pointer);
-    to_destroy.push_back(reader_ptr);
-    to_destroy.push_back(pointer);
-  }
+		genomes_stream_pointers.push_back(pointer);
+		to_destroy.push_back(reader_ptr);
+		to_destroy.push_back(pointer);
+	}
 
-  ConstructColoredGraph(gp, coloring, genomes_stream_pointers, true);
+	ConstructColoredGraph(gp, coloring, genomes_stream_pointers, true);
 
-  ofstream indel_event_logger(output_folder + "/indel_events");
+	ofstream indel_event_logger(output_folder + "/indel_events");
 
-  SimpleIndelFinder<gp_t> indel_finder(gp, coloring, indel_event_logger);
-  indel_finder.FindIndelEvents();
+	SimpleIndelFinder<gp_t> indel_finder(gp, coloring, indel_event_logger);
+	indel_finder.FindIndelEvents();
 
-  for (auto it = to_destroy.begin(); it != to_destroy.end(); ++it) {
-    delete (*it);
-  }
+	for (auto it = to_destroy.begin(); it != to_destroy.end(); ++it) {
+		delete (*it);
+	}
 
 //  UnversalSaveGP(gp, output_folder + "/colored_split_graph");
 //  SaveColoring(gp.g, gp.int_ids, coloring, output_folder + "/colored_split_graph");
-  PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos, output_folder + "/colored_split_graph.dot");
+	PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
+			output_folder + "/colored_split_graph.dot");
 }
 
 }
