@@ -186,13 +186,20 @@ void ClipTips(GraphPack& graph_pack,
 	typedef typename GraphPack::graph_t Graph;
 
 	INFO("SUBSTAGE == Clipping tips");
-
+	bool was_attached = graph_pack.kmer_mapper.IsAttached();
+	if (was_attached) {
+		graph_pack.kmer_mapper.Detach();
+	}
 	Graph& graph = graph_pack.g;
 
 	auto factory = GetTipClipperFactory<Graph>(graph_pack, graph.k(),
 			iteration_count, iteration, raw_removal_handler);
 
 	ClipTips(graph, factory);
+
+	if (was_attached) {
+		graph_pack.kmer_mapper.Attach();
+	}
 
 	DEBUG("Clipping tips finished");
 }
@@ -322,8 +329,8 @@ void RemoveBulges(
 	typedef debruijn::KmerMapperLogger<Graph> Logger;
 
 	if (was_attached) {
-		BOOST_FOREACH(Logger* logger, factory->loggers()) {
-			BOOST_FOREACH(Mapping& mapping, logger->log()) {
+		BOOST_FOREACH(const Logger* logger, factory->loggers()) {
+			BOOST_FOREACH(const Mapping& mapping, logger->log()) {
 				kmer_mapper.RemapKmers(mapping.first, mapping.second);
 			}
 		}

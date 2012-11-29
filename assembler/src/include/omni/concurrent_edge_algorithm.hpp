@@ -53,6 +53,8 @@ public:
 	ConcurrentEdgeAlgorithm(const size_t nthreads, Graph& graph, FactoryPtr factory)
 			: nthreads_(nthreads), graph_(graph), factory_(factory) {
 
+		INFO("Run in " << nthreads_ << " threads")
+
 		GluedVertexGraph glued_vertex_graph (graph);
 		DevisibleTree<GluedVertexGraph> tree (glued_vertex_graph);
 
