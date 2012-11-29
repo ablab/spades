@@ -178,32 +178,28 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 
 	INFO("Constructing graph pack for k=" << k << " delta=" << delta);
 	gp_t gp(k, "tmp");
-		ConstructGPForRefinement(gp, streams, delta);
-		vector<ContigStream*> refined_streams;
-		for (size_t i = 0; i < streams.size(); ++i) {
-			refined_streams.push_back(new io::ModifyingWrapper<io::SingleRead>(*streams[i],
-					GraphReadCorrectorInstance(gp.g, *MapperInstance(gp))));
-		}
-
-		for (size_t i = 0; i < streams.size(); ++i) {
-			string output_filename = out_files[i];
-			if (!output_filename.empty()) {
-				Contig contig;
-				io::ofastastream out_stream(output_filename);
-				DEBUG("Saving to " << output_filename);
-				while (!refined_streams[i]->eof()) {
-					(*refined_streams[i]) >> contig;
-					out_stream << contig;
-				}
+	ConstructGPForRefinement(gp, streams, delta);
+	for (size_t i = 0; i < streams.size(); ++i) {
+		string output_filename = out_files[i];
+		if (!output_filename.empty()) {
+			io::ModifyingWrapper<io::SingleRead> refined_stream(*streams[i],
+					GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
+			refined_stream.reset();
+			Contig contig;
+			io::ofastastream out_stream(output_filename);
+			DEBUG("Saving to " << output_filename);
+			while (!refined_stream.eof()) {
+				refined_stream >> contig;
+				out_stream << contig;
 			}
 		}
+	}
+	// Saving some pics for analysis
+	for (auto it = streams.begin(); it != streams.end(); ++it) {
+		(*it)->reset();
+	}
 
-		// Saving some pics for analysis
-		for (auto it = streams.begin(); it != streams.end(); ++it) {
-			(*it)->reset();
-		}
-
-	gp_t gp2(k, "tmp");	
+	gp_t gp2(k, "tmp");
 	using namespace debruijn_graph;
 	vector<ContigStream*> rc_contigs;
 	for (auto it = streams.begin(); it != streams.end(); ++it) {
@@ -211,20 +207,19 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 		rc_contigs.back()->reset();
 	}
 
-	io::ReadStreamVector<ContigStream> rc_read_stream_vector(rc_contigs, false);
-
-	ConstructGraph(gp2.k_value, rc_read_stream_vector, gp2.g, gp2.index);
-	ColorHandler<Graph> coloring(gp2.g, streams.size());
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp2.g,
-			coloring, *MapperInstance < gp_t > (gp2));
-	colored_graph_constructor.ConstructGraph(rc_contigs);
+	// Saving some pics for analysis
+	for (auto it = streams.begin(); it != streams.end(); ++it) {
+		(*it)->reset();
+	}
+	ColorHandler<Graph> coloring(gp.g, streams.size());
+	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
+			coloring, *MapperInstance<gp_t>(gp));
+	colored_graph_constructor.ConstructGraph(streams);
 
 	size_t last_slash_pos = out_files[0].find_last_of('/');
 	string out_root = out_files[0].substr(0, last_slash_pos + 1);
-	PrintColoredGraphWithColorFilter(gp2.g, coloring, gp2.edge_pos,
+	PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
 			out_root + "after_pics/colored_split_graph.dot");
-	DisposeCollection(refined_streams);
-	DisposeCollection(rc_contigs);
 }
 
 inline void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,

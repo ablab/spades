@@ -212,7 +212,7 @@ public:
 	}
 
 	void CompareAssemblies(const string& output_folder, bool detailed_output =
-			true, bool one_many_resolve = false, int br_delta = -1,
+			true, bool one_many_resolve = false,
 			const string& add_saves_path = "") {
 //		VERIFY(gp_.genome.size() > 0);
 		//todo ???
@@ -222,7 +222,7 @@ public:
 		PrepareDirs(output_folder, detailed_output);
 
 		vector<ContigStream*> streams = { &stream1_, &stream2_ };
-		ConstructColoredGraph<gp_t>(gp_, coloring_, streams, br_delta);
+		ConstructColoredGraph<gp_t>(gp_, coloring_, streams);
 
 		if (gp_.genome.size() > 0) {
 			INFO("Filling ref pos " << gp_.genome.size());
@@ -402,13 +402,13 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 		AssemblyComparer<comparing_gp_t> comparer(K, refined_stream1,
 				refined_stream2, name1, name2, untangle,
 				ReadSequence(reference_stream));
-		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
-		false, 10, add_saves_path);
+        comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
+                false, add_saves_path);
 	} else {
 		AssemblyComparer<comparing_gp_t> comparer(K, stream1, stream2, name1,
 				name2, untangle, reference);
-		comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
-		false, 10, add_saves_path);
+        comparer.CompareAssemblies(output_folder, detailed_output, /*one_many_resolve*/
+                false, add_saves_path);
 	}
 
 	cap::utils::add_time(lol_time, +1);

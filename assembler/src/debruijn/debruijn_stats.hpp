@@ -1255,5 +1255,10 @@ size_t Nx(Graph &g, double percent) {
 	return 0;
 }
 
+template<class Graph>
+class AdditionalKmerStats {
+
+};
+
 }
 

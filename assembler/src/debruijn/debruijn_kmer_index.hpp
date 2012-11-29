@@ -31,8 +31,8 @@ struct EdgeInfo {
   EdgeInfo() :
       edgeId_(), offset_(-1), count_(0) { }
 
-  EdgeInfo(IdType edgeId, size_t offset) :
-      edgeId_(edgeId), offset_(offset), count_(1) { }
+//  EdgeInfo(IdType edgeId, size_t offset) :
+//      edgeId_(edgeId), offset_(offset), count_(1) { }
 };
 
 template <class Seq>

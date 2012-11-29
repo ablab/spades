@@ -15,7 +15,7 @@ class CoveredRangesFinder {
 
 	vector<Range> ProcessRange(Range new_range,
 			const vector<Range>& curr_ranges) const {
-		vector<Range> answer;
+		vector < Range > answer;
 		size_t i = 0;
 		while (i < curr_ranges.size()
 				&& curr_ranges[i].end_pos < new_range.start_pos) {
@@ -44,7 +44,8 @@ class CoveredRangesFinder {
 		return answer;
 	}
 
-	void ProcessPath(const MappingPath<EdgeId>& path, CoveredRanges& crs) const {
+	void ProcessPath(const MappingPath<EdgeId>& path,
+			CoveredRanges& crs) const {
 		for (size_t i = 0; i < path.size(); ++i) {
 			auto mapping = path[i];
 			EdgeId edge = mapping.first;
@@ -106,7 +107,8 @@ class ColoredGraphConstructor {
 		return final_breaks;
 	}
 
-	void FindBreakPoints(BreakPoints& bps, const vector<CoveredRanges>& crss) const {
+	void FindBreakPoints(BreakPoints& bps,
+			const vector<CoveredRanges>& crss) const {
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			EdgeId e = *it;
 			set<size_t> tmp_breaks;
@@ -189,7 +191,8 @@ class ColoredGraphConstructor {
 		}
 	}
 
-	void PaintGraph(const vector<pair<ContigStream*, TColorSet> >& stream_mapping) {
+	void PaintGraph(
+			const vector<pair<ContigStream*, TColorSet> >& stream_mapping) {
 		INFO("Coloring graph");
 		for (auto it = stream_mapping.begin(); it != stream_mapping.end();
 				++it) {
@@ -239,17 +242,18 @@ public:
 //			SaveOldGraph(output_folder + "saves/split_graph");
 //		}
 
-		vector<pair<ContigStream*, TColorSet> > stream_mapping;
+		vector < pair<ContigStream*, TColorSet> > stream_mapping;
 
-    // Obsolete two-coloring
+		// Obsolete two-coloring
 //		stream_mapping.push_back(make_pair(streams[0], kRedColorSet));
 //		stream_mapping.push_back(make_pair(streams[1], kBlueColorSet));
 
-    TColor color_number = 0;
-    for (auto it = streams.begin(); it != streams.end(); ++it) {
-      stream_mapping.push_back(make_pair(*it, TColorSet::SingleColor(color_number)));
-      ++color_number;
-    }
+		TColor color_number = 0;
+		for (auto it = streams.begin(); it != streams.end(); ++it) {
+			stream_mapping.push_back(
+					make_pair(*it, TColorSet::SingleColor(color_number)));
+			++color_number;
+		}
 
 		PaintGraph(stream_mapping);
 
@@ -257,7 +261,6 @@ public:
 		CompressGraph(g_, coloring_);
 	}
 };
-
 
 template<class Graph>
 void SimplifyGraph(Graph& g, size_t br_delta) {
@@ -280,7 +283,7 @@ void SimplifyGraph(Graph& g, size_t br_delta) {
 template<class gp_t>
 void ConstructColoredGraph(gp_t& gp,
 		ColorHandler<typename gp_t::graph_t>& coloring,
-		vector<ContigStream*>& streams, bool fill_pos = true, int br_delta = -1) {
+		vector<ContigStream*>& streams, bool fill_pos = true) {
 	typedef typename gp_t::graph_t Graph;
 	const size_t k = gp.k_value;
 	typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
@@ -292,12 +295,10 @@ void ConstructColoredGraph(gp_t& gp,
 	ConstructGraph<Graph, Contig, typename gp_t::seq_t>(k, read_stream_vector,
 			gp.g, gp.index);
 
-	//TODO do we still need it?
-	if (br_delta > 0)
-		SimplifyGraph(gp.g, br_delta);
-
 	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g, // MAPPER K+1!!
-			coloring, *MapperInstance < gp_t > (gp));
+			coloring, *MapperInstance<gp_t>(gp));
+
+
 	colored_graph_constructor.ConstructGraph(streams);
 
 	if (fill_pos) {

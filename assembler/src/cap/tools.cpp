@@ -35,19 +35,11 @@ BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 	string ref =
 			"/home/snurk/Dropbox/lab/phep_issue/reference_NC_013061.1.fasta";
 	string folder = "phep_issue/results/";
-	make_dir (folder);
+	make_dir(folder);
 
-RunBPComparison	<k, K, runtime_k::RtSeq>(
-			stream_1,
-			stream_2,
-			"master_",
-			"opt_",
-			true/*refine*/,
-			false/*untangle*/,
-			folder,
-			true/*detailed_output*/,
-			5/*delta*/,
-			ReadGenome(ref));
+	RunBPComparison < k, K, runtime_k::RtSeq
+			> (stream_1, stream_2, "master_", "opt_", true/*refine*/, false/*untangle*/, folder, true/*detailed_output*/, 5/*delta*/, ReadGenome(
+					ref));
 }
 
 BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
@@ -107,7 +99,8 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 	std::string files_md5 = utils::GenMD5FromFiles(paths);
 	INFO("result is stored with md5 of " << files_md5);
 
-	MaskDifferencesAndSave(paths, suffices, "bp_graph_" + files_md5 + "/refined/", k_sequence);
+	MaskDifferencesAndSave(paths, suffices,
+			"bp_graph_" + files_md5 + "/refined/", k_sequence);
 }
 
 BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
@@ -144,24 +137,24 @@ BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
 
 	std::string folder = "bp_graph/multiple_genomes_visualization/";
 
-	RunMultipleGenomesVisualization<comparing_gp_t>(K, genomes_paths, folder);
+	RunMultipleGenomesVisualization < comparing_gp_t
+			> (K, genomes_paths, folder);
 }
 
 }
 
 ::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {
-logging::logger *log = logging::create_logger("", logging::L_INFO);
-log->add_writer(std::make_shared<logging::console_writer>());
-logging::attach_logger(log);
+	logging::logger *log = logging::create_logger("", logging::L_INFO);
+	log->add_writer(std::make_shared<logging::console_writer>());
+	logging::attach_logger(log);
 
-using namespace ::boost::unit_test;
-char module_name[] = "cap";
+	using namespace ::boost::unit_test;
+	char module_name[] = "cap";
 
-assign_op(framework::master_test_suite().p_name.value,
-		basic_cstring<char>(module_name), 0);
+	assign_op(framework::master_test_suite().p_name.value,
+			basic_cstring<char>(module_name), 0);
 
-omp_set_num_threads(1);
+	omp_set_num_threads(1);
 
-return 0;
+	return 0;
 }
-
