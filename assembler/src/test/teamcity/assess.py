@@ -21,6 +21,8 @@ columns = map(lambda s: s.strip(), f.readline().split('\t'))
 values = map(lambda s: s.strip(), f.readline().split('\t'))
 n50 = int(values[columns.index("N50")])
 mis = int(values[columns.index("# misassemblies")])
+mismatches = float(values[columns.index("# mismatches per 100 kbp")])
+indels = float(values[columns.index("# indels per 100 kbp")])
 print 'N50 =', n50
 print 'Misasemblies =', mis
 lvl = 0
@@ -46,6 +48,22 @@ if len(sys.argv) > 5:
     if mapped < mapped_limit:
         print 'Too few mapped genome, less than', mapped_limit
         lvl += 8
+if len(sys.argv) > 6:
+    mismatches_limit = float(sys.argv[6])
+    print 'mismatches per 100kb =', mismatches 
+
+    if mismatches > mismatches_limit:
+        print 'Too much mismatches, more than', mismatches_limit
+        lvl += 16
+if len(sys.argv) > 7:
+    indels_limit = float(sys.argv[7])
+    print 'indels per 100kb =', indels
+
+    if indels > indels_limit:
+        print 'Too much indels, more than', indels_limit
+        lvl += 32
+
+
 
 f.close()
 sys.exit(lvl)

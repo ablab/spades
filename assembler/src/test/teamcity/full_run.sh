@@ -90,7 +90,15 @@ scp "$dir/quast1_2_all/report.txt" "antipov@194.85.238.21:/var/www/teamcity_runs
 read line < $options_dir"results.options"
 echo $line
 opts=( $line )
-python src/test/teamcity/assess.py $project_dir"quality_results/transposed_report.tsv" ${opts[1]} ${opts[3]} ${opts[5]} ${opts[7]}
-rm $project_dir"/corrected/tmp" -rf
+splitted_opts=''
+tLen=${#opts[@]}
+for (( i=0; i<${tLen} / 2; i++ ));
+do
+  splitted_opts=$splitted_opts" "${opts[$i *  2 + 1]}
+done
+echo $splitted_opts
+python src/test/teamcity/assess.py $project_dir"quality_results/transposed_report.tsv" $splitted_opts
+rm $project_dir"/corrected/" -rf
+
 
 popd
