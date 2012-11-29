@@ -33,11 +33,11 @@ except ImportError:
         json = None
 
 # Local imports
-from .hashing import hash
-from .func_inspect import get_func_code, get_func_name, filter_args
-from .logger import Logger, format_time
-from . import numpy_pickle
-from .disk import mkdirp, rm_subdirs
+from hashing import hash
+from func_inspect import get_func_code, get_func_name, filter_args
+from logger import Logger, format_time
+import numpy_pickle
+from disk import mkdirp, rm_subdirs
 
 FIRST_LINE_TEXT = "# first line:"
 
