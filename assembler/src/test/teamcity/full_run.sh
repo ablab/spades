@@ -33,11 +33,18 @@ echo $line
 dir=$output_pref"contigs/teamcity/"$creature_name$project_name #$(date +%Y%m%d_%H%M%S)"/"
 echo $dir
 mkdir $dir -p
-cp $project_dir"/corrected_contigs.fasta" $dir$(date +%Y%m%d_%H%M%S)".fasta"
+if  [ -f $project_dir"/corrected_contigs.fasta" ]; then 
+ echo "corrected contigs found, working with them"
+ work_contigs=$project_dir"corrected_contigs.fasta"
+else 
+ echo "no corrected contigs, working with original"
+ work_contigs=$project_dir"contigs.fasta"
+fi
+cp $work_contigs $dir$(date +%Y%m%d_%H%M%S)".fasta"
 cp $project_dir"/scaffolds.fasta" $dir$(date +%Y%m%d_%H%M%S)_scaf".fasta"
 
 
-python2.6 ~/quast-1.3/quast.py $project_dir"contigs.fasta" $line -o $project_dir"/quality_results/"
+python2.6 ~/quast-1.3/quast.py $work_contigs $line -o $project_dir"/quality_results/"
 rm $dir"/quast_all" -rf
 #echo $dir"*.fasta" $line -o $dir"/quast_all"
 dirtmp=$dir"tmp/"
@@ -84,6 +91,6 @@ read line < $options_dir"results.options"
 echo $line
 opts=( $line )
 python src/test/teamcity/assess.py $project_dir"quality_results/transposed_report.tsv" ${opts[1]} ${opts[3]} ${opts[5]} ${opts[7]}
-rm $project_dir"/corrected" -rf
+rm $project_dir"/corrected/tmp" -rf
 
 popd
