@@ -48,10 +48,17 @@ static void* glibc_override_memalign(size_t align, size_t size,
   return je_memalign(align, size);
 }
 
-void *(*__malloc_hook)(size_t size, const void *caller) = &glibc_override_malloc;
-void *(*__realloc_hook)(void *ptr, size_t size, const void *caller) = &glibc_override_realloc;
-void (*__free_hook) (void*, const void *) = &glibc_override_free;
-void *(*__memalign_hook) (size_t alignment, size_t size, const void *caller) = &glibc_override_memalign;
+/* From GNU libc 2.14 this macro is defined, to declare
+   hook variables as volatile. Define it as empty for
+   older glibc versions
+#ifndef __MALLOC_HOOK_VOLATILE
+# define __MALLOC_HOOK_VOLATILE
+#endif
+
+void *(*__MALLOC_HOOK_VOLATILE __malloc_hook)(size_t size, const void *caller) = &glibc_override_malloc;
+void *(*__MALLOC_HOOK_VOLATILE __realloc_hook)(void *ptr, size_t size, const void *caller) = &glibc_override_realloc;
+void (*__MALLOC_HOOK_VOLATILE __free_hook) (void*, const void *) = &glibc_override_free;
+void *(*__MALLOC_HOOK_VOLATILE __memalign_hook) (size_t alignment, size_t size, const void *caller) = &glibc_override_memalign;
 
 # endif /* __GLIBC__ */
 #undef ALIAS
