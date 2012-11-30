@@ -50,7 +50,7 @@ static void* glibc_override_memalign(size_t align, size_t size,
 
 /* From GNU libc 2.14 this macro is defined, to declare
    hook variables as volatile. Define it as empty for
-   older glibc versions
+   older glibc versions */
 #ifndef __MALLOC_HOOK_VOLATILE
 # define __MALLOC_HOOK_VOLATILE
 #endif
