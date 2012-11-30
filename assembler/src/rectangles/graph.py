@@ -119,7 +119,7 @@ class Graph(Abstract_Graph):
             if edge.conj.eid <= edge.eid: # non-conjugate
                 if edge.eid in scaffold:
                     str_id = ""
-                    print "PRINTING SCAFFOLD", edge.eid, [e.eid for e in scaffold[edge.eid]]
+                    #print "PRINTING SCAFFOLD", edge.eid, [e.eid for e in scaffold[edge.eid]]
                     path = scaffold[edge.eid]
                     seq = ""
                     for be in path:
@@ -132,7 +132,7 @@ class Graph(Abstract_Graph):
                     continue
                 if edge.eid in should_connect:
                     str_id = ""
-                    print "PRINTING", edge.eid, [e.eid for e in should_connect[edge.eid]]
+                    #print "PRINTING", edge.eid, [e.eid for e in should_connect[edge.eid]]
                     path = should_connect[edge.eid]
                     seq = path[0].get_begin_seq(K, d, is_sc)
                     seq = ""

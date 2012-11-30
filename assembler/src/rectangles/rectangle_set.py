@@ -19,8 +19,8 @@ class RectangleSet(object):
         self.additional_prd = dict()
         if prd_file_name:
             self.__get_prd(prd_file_name)
-        if first_prd_file_name:
-            self.__get_additional_prd(first_prd_file_name)
+        #if first_prd_file_name:
+        #    self.__get_additional_prd(first_prd_file_name)
         self.rectangles = {} # (e1, e2) -> Rectangle
         self.logger = logging.getLogger('rectangles')
         self.test_utils = test_utils
@@ -98,12 +98,12 @@ class RectangleSet(object):
 
     def __diags(self, threshold=0.0):
         assert self.ranking, "rank/filter first"
-        diag_file = open("diagonals_all.txt", "w")
+        #diag_file = open("diagonals_all.txt", "w")
         for d in self.ranking:
             if d.support() > threshold:
-                diag_file.write(str(d.rectangle.e1.eid) + " " + str(d.rectangle.e2.eid) + " " + str(d.D) + "\n")
+                #diag_file.write(str(d.rectangle.e1.eid) + " " + str(d.rectangle.e2.eid) + " " + str(d.D) + "\n")
                 yield d
-        diag_file.close()
+        #diag_file.close()
 
     def __build_from_graph(self):
         for e1 in self.graph.es.itervalues():

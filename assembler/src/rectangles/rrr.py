@@ -64,8 +64,11 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     inf_filename = os.path.join(input_path, 'late_pair_info_counted_est_params.info')
     log_filename = os.path.join(output_path, 'rectangles.log')
     config = saveparser.config(inf_filename)
-    d = config['median'] - config['RL']
 
+    d = config['median'] - config['RL']
+    if d <= 0:
+      print "Read length", config ['RL'], "is smaller than insert size", config['median'],", can't do anything"
+      return
     makelogger(log_filename)
     logger = logging.getLogger('rectangles')
 
@@ -110,27 +113,25 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
         maxbgraph = bgraph
         maxthreshold = threshold
 
-    maxgraph.fasta(open(os.path.join(output_path, 'begin_rectangles.fasta'), 'w'))
-    #maxgraph.save(os.path.join(output_path, 'rectangles'))
-    maxbgraph.save(output_path, ingraph.K)
+    #maxgraph.fasta(open(os.path.join(output_path, 'begin_rectangles.fasta'), 'w'))
+    #maxbgraph.save(output_path, ingraph.K)
     maxbgraph.check_tips(ingraph.K)
     outgraph = maxbgraph.project(output_path, is_sc)
-    outgraph.fasta(open(os.path.join(output_path, 'delete_tips.fasta'), 'w'))
+    #outgraph.fasta(open(os.path.join(output_path, 'delete_tips.fasta'), 'w'))
     edges_before_loop = maxbgraph.delete_loops(ingraph.K, 1000, 10)
     maxbgraph.condense()
     outgraph = maxbgraph.project(output_path, is_sc)
-    outgraph.fasta(open(os.path.join(output_path, "delete_tips_delete_loops_1000.fasta"), "w"))
+    #outgraph.fasta(open(os.path.join(output_path, "delete_tips_delete_loops_1000.fasta"), "w"))
     to_del = set()
     for eid in edges_before_loop_DG:
         if eid in edges_before_loop:
             to_del.add(eid)
-    print "to_del", len(to_del)
     for eid in to_del:
         del edges_before_loop_DG[eid]
     maxbgraph.delete_missing_loops(edges_before_loop_DG, ingraph.K, 1000, 10)
     maxbgraph.condense()
     outgraph = maxbgraph.project(output_path, is_sc)
-    outgraph.fasta(open(os.path.join(output_path, 'delete_tips_delete_all_loops_1000.fasta'), 'w'))
+    #outgraph.fasta(open(os.path.join(output_path, 'delete_tips_delete_all_loops_1000.fasta'), 'w'))
     edges_before_loop_DG = ingraph.find_loops(4, 10000)
     edges_before_loop_DG = edges_before_loop_DG or maxbgraph.delete_missing_loops(edges_before_loop_DG, ingraph.K, 10000
         , 10)
@@ -139,13 +140,12 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
         for eid in edges_before_loop_DG:
             if eid in edges_before_loop:
                 to_del.add(eid)
-    print "to_del", len(to_del)
     for eid in to_del:
         del edges_before_loop_DG[eid]
     maxbgraph.delete_missing_loops(edges_before_loop_DG, ingraph.K, 10000, 10)
     maxbgraph.condense()
     outgraph = maxbgraph.project(output_path, is_sc)
-    outgraph.fasta(open(os.path.join(output_path, "after_deleting_big_loops.fasta"), "w"))
+    #outgraph.fasta(open(os.path.join(output_path, "after_deleting_big_loops.fasta"), "w"))
     additional_paired_info = dict()
     should_connect = maxbgraph.edges_expand(5000)
     should_connect_by_first_pair_info = maxbgraph.use_scaffold_paired_info(2 * maxbgraph.d, rs.additional_prd)
@@ -156,10 +156,9 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
             additional_paired_info[maxbgraph.es[e1id].conj.eid] = [maxbgraph.es[e2id].conj, maxbgraph.es[e1id].conj]
     outgraph.fasta_for_long_contigs(ingraph.K, maxbgraph.d, is_sc,
         open(os.path.join(output_path, "rectangles_extend.fasta"), "w"), should_connect, additional_paired_info)
-    outgraph.fasta_for_long_contigs(ingraph.K, maxbgraph.d, is_sc,
-        open(os.path.join(output_path, "rectangles_extend_before_scaffold.fasta"), "w"), should_connect, dict())
+    #outgraph.fasta_for_long_contigs(ingraph.K, maxbgraph.d, is_sc,
+    #    open(os.path.join(output_path, "rectangles_extend_before_scaffold.fasta"), "w"), should_connect, dict())
 
-    maxbgraph.print_about_edges([20586, 23014, 23806, 19630, 23350], ingraph.K)
     outgraph.save(os.path.join(output_path, "last_graph"))
     if genome:
         check_diags.check(genome, maxbgraph, maxgraph.K, open(os.path.join(output_path, "check_log.txt"), "w"),
