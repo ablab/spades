@@ -65,17 +65,19 @@ def read_fasta(filename):
     if name or seq:
         yield name, seq
 
+
 def write_fasta(fasta):
     for name, seq in fasta:
         print '>%s' % name
-        for i in xrange(0,len(seq),60):
-            print seq[i:i+60]
+        for i in xrange(0, len(seq), 60):
+            print seq[i:i + 60]
+
 
 def write_fasta_to_file(filename, fasta):
     outfile = open(filename, 'w')
     for name, seq in fasta:
         outfile.write('>%s\n' % name)
-        for i in xrange(0,len(seq),60):
-            outfile.write(seq[i:i+60] + '\n')
+        for i in xrange(0, len(seq), 60):
+            outfile.write(seq[i:i + 60] + '\n')
     outfile.close()
 

@@ -1,6 +1,4 @@
-
 class PathSet:
-
     def __init__(self, pathset):
         pathset.sort()
         self.pathset = set(tuple(path) for path in pathset)

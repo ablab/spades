@@ -11,43 +11,42 @@ import saveparser
 import graph
 
 class RectangleSet(object):
-
-    def __init__(self, graph, d, test_utils = None, prd_file_name = None, first_prd_file_name = None, config = None):
+    def __init__(self, graph, d, test_utils=None, prd_file_name=None, first_prd_file_name=None, config=None):
         self.graph = graph
         self.d = d
         self.prd = dict()
         self.config = config
-        self.additional_prd = dict() 
+        self.additional_prd = dict()
         if prd_file_name:
-          self.__get_prd(prd_file_name)
+            self.__get_prd(prd_file_name)
         if first_prd_file_name:
-          self.__get_additional_prd(first_prd_file_name)
+            self.__get_additional_prd(first_prd_file_name)
         self.rectangles = {} # (e1, e2) -> Rectangle
         self.logger = logging.getLogger('rectangles')
         self.test_utils = test_utils
         self.not_used_prd_support = dict()
-        
+
     def __get_prd(self, prd_file_name):
-      for e1id, e2id, D, weight, delta in saveparser.prd(prd_file_name):
-        self.prd[(e1id, e2id)] = (D, weight, delta + 2)
-    
+        for e1id, e2id, D, weight, delta in saveparser.prd(prd_file_name):
+            self.prd[(e1id, e2id)] = (D, weight, delta + 2)
+
     def __get_additional_prd(self, prd_file_name):
-      for e1id, e2id, D, weight, delta in saveparser.prd(prd_file_name):
-        if (e1id, e2id) not in self.prd:
-          e1= self.graph.es[e1id]
-          e2 = self.graph.es[e2id]
-          if len(e1.v2.out) != 0 or len(e2.v1.inn) != 0:
-            continue
-          e1_len = e1.len
-          if D - e1_len > 0 and D - e1_len < 100:
-            if (e1id, e2id) not in self.additional_prd:
-              self.additional_prd[(e1id, e2id)] = []   
-            self.additional_prd[(e1id, e2id)].append((D, weight, delta))
+        for e1id, e2id, D, weight, delta in saveparser.prd(prd_file_name):
+            if (e1id, e2id) not in self.prd:
+                e1 = self.graph.es[e1id]
+                e2 = self.graph.es[e2id]
+                if len(e1.v2.out) != 0 or len(e2.v1.inn) != 0:
+                    continue
+                e1_len = e1.len
+                if D - e1_len > 0 and D - e1_len < 100:
+                    if (e1id, e2id) not in self.additional_prd:
+                        self.additional_prd[(e1id, e2id)] = []
+                    self.additional_prd[(e1id, e2id)].append((D, weight, delta))
 
 
     def filter_without_prd(self):
-      self.__build_from_graph()
-      self.__conjugate()
+        self.__build_from_graph()
+        self.__conjugate()
 
     def filter(self, prd_filename, config):
         self.__build_from_graph()
@@ -72,35 +71,37 @@ class RectangleSet(object):
         for diag in self.__diags(threshold):
             is_true_diag = self.test_utils.is_true_diagonal(diag)
             if is_true_diag == self.test_utils.TRUE_DIAG:
-              count_true_diags +=1 
+                count_true_diags += 1
             elif is_true_diag == self.test_utils.FALSE_DIAG:
-              count_false_diags += 1
+                count_false_diags += 1
             else:
-              count_unaligned_diags += 1
+                count_unaligned_diags += 1
             self.test_utils.add_to_diags(diag)
             bg.add_diagonal(diag)
-        self.test_utils.logger.info("true diag = "+ str(count_true_diags) + " false diag = " + str(count_false_diags) + " unanligned = " + str(count_unaligned_diags) + "\n")
+        self.test_utils.logger.info(
+            "true diag = " + str(count_true_diags) + " false diag = " + str(count_false_diags) + " unanligned = " + str(
+                count_unaligned_diags) + "\n")
         return bg
-    
+
     def bgraph_from_genome(self):
         bg = BGraph(self.graph, self.d, self.test_utils)
         for key, rect in self.rectangles.items():
-          for key, diag in rect.diagonals.items():
-            bg.add_diagonal(diag)
+            for key, diag in rect.diagonals.items():
+                bg.add_diagonal(diag)
         return bg
 
     def get_support(self, e1, e2):
-      if (e1, e2) in self.rectangles:
-        rectangle = self.rectangles[(e1,e2)]
-        return max([diag.support() for diag in rectangle.diagonals.itervalues()])
-      return 0
+        if (e1, e2) in self.rectangles:
+            rectangle = self.rectangles[(e1, e2)]
+            return max([diag.support() for diag in rectangle.diagonals.itervalues()])
+        return 0
 
-    def __diags(self, threshold = 0.0):
+    def __diags(self, threshold=0.0):
         assert self.ranking, "rank/filter first"
-        diag_file = open("diagonals_all.txt","w")
+        diag_file = open("diagonals_all.txt", "w")
         for d in self.ranking:
             if d.support() > threshold:
-                diag_file.write(str(d.rectangle.e1.eid) + " " + str(d.rectangle.e2.eid ) + " " + str(d.D) + "\n")
+                diag_file.write(str(d.rectangle.e1.eid) + " " + str(d.rectangle.e2.eid) + " " + str(d.D) + "\n")
                 yield d
         diag_file.close()
 
@@ -111,7 +112,7 @@ class RectangleSet(object):
                     self.rectangles[(e1, e2)] = Rectangle(e1, e2)
                 r = self.rectangles[(e1, e2)]
                 r.add_diagonal(self.d, D)
-                
+
 
     def __conjugate(self):
         for rect in self.rectangles.itervalues():
@@ -133,27 +134,28 @@ class RectangleSet(object):
             e2 = self.graph.es[e2id]
             if (e1, e2) not in self.rectangles: # there' no possible rectangles between e1 and e2
                 if weight < 0.00001 or D - e1.len + 100 < self.d:
-                  continue
-                if (e1,e2) not in self.not_used_prd_support:
-                  self.not_used_prd_support[(e1,e2)] = []
-                self.not_used_prd_support[(e1,e2)].append((D, weight,delta))
+                    continue
+                if (e1, e2) not in self.not_used_prd_support:
+                    self.not_used_prd_support[(e1, e2)] = []
+                self.not_used_prd_support[(e1, e2)].append((D, weight, delta))
                 continue
             r = self.rectangles[(e1, e2)]
             for diag in r.diagonals.itervalues():
                 diag.inc_prd_support(D, weight, delta, config)
                 if diag != diag.conj:
-                    diag.conj.inc_prd_support(D - e1.len + e2.len, weight, delta, config) # TODO: check if prd is symmetric or not
-        #print self.not_used_prd_support
-     
+                    diag.conj.inc_prd_support(D - e1.len + e2.len, weight, delta,
+                        config) # TODO: check if prd is symmetric or not
+                    #print self.not_used_prd_support
+
     def use_prd_diag(self, diag):
         rect = diag.rectangle
         diag_e1_id = rect.e1.eid
         diag_e2_id = rect.e2.eid
         if (diag_e1_id, diag_e2_id) in self.prd:
-           (D, weight, delta) = self.prd[(diag_e1_id, diag_e2_id)]
-           diag.inc_prd_support(D, weight, delta, self.config)
-           if hasattr(diag, "conj") and diag != diag.conj:
-             diag.conj.inc_prd_support(D - rect.e1.len + rect.e2.len, weight, delta, self.config) 
+            (D, weight, delta) = self.prd[(diag_e1_id, diag_e2_id)]
+            diag.inc_prd_support(D, weight, delta, self.config)
+            if hasattr(diag, "conj") and diag != diag.conj:
+                diag.conj.inc_prd_support(D - rect.e1.len + rect.e2.len, weight, delta, self.config)
 
     def __build_from_pst(self, pst_filename):
         for e1id, e2id, pathset in saveparser.pst(pst_filename):
@@ -176,7 +178,7 @@ class RectangleSet(object):
                 Ds[D] += [path]
             else:
                 Ds[D] = [path]
-            # making diagonal
+                # making diagonal
         for D, pathset in Ds.iteritems():
             if -e2.len < D - self.d < e1.len:
                 pathset = pathsets.PathSet(pathset)
@@ -189,7 +191,7 @@ class RectangleSet(object):
                 self.ranking.append(d)
         self.ranking.sort(key=lambda x: x.support(), reverse=True)
         step = 1
-        percentiles = [utils.quantile(self.ranking, q).support() for q in xrange(0,100+step,step)]
+        percentiles = [utils.quantile(self.ranking, q).support() for q in xrange(0, 100 + step, step)]
         self.logger.info("Percentiles: %s" % list(enumerate(percentiles)))
 
     def __all(self):

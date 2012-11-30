@@ -166,7 +166,8 @@ def config(filename):
     hist2 = {}
     for k, v in hist.iteritems():
         hist2[k - RL] = v # * 1.0 / s
-    return dict(RL=RL, IS=IS, is_var=is_var, perc=perc, avg_coverage=avg_coverage, median=median, mad=mad, hist=hist2, K=K)
+    return dict(RL=RL, IS=IS, is_var=is_var, perc=perc, avg_coverage=avg_coverage, median=median, mad=mad, hist=hist2,
+        K=K)
 
 #######
 # EOF #

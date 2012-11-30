@@ -31,7 +31,6 @@ class Key(object):
 
 
 class Diagonal(object):
-
     def __init__(self, rectangle, d, D, pathset):
         self.rectangle = rectangle
         self.D = D
