@@ -80,6 +80,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(JEMALLOC_THREADED_INIT ON)
   set(JEMALLOC_MUNMAP OFF)
   set(JEMALLOC_USABLE_SIZE_CONST "")
+  add_definitions(-D_GNU_SOURCE)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   set(JEMALLOC_LAZY_LOCK ON)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -88,6 +89,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(JEMALLOC_ZONE_VERSION "8")
   set(JEMALLOC_IVSALLOC ON)
 endif()
+
+add_definitions(-D_REENTRANT)
 
 check_c_source_compiles("__thread int x;
 int main(void) { x = 42; return 0; }" JEMALLOC_TLS)
