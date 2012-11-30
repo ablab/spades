@@ -53,7 +53,7 @@ RunBPComparison	<k, K, runtime_k::RtSeq>(
 BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 	utils::TmpFolderFixture _("tmp");
 
-	std::string base_path = "/home/snurk/git/algorithmic-biology/assembler/ecoli/";
+	std::string base_path = "/home/valich/work/ecoli/";
 
 	/*
 	 vector<std::string> paths = {
