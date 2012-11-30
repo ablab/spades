@@ -48,7 +48,7 @@ def erf(x): # from http://stackoverflow.com/a/457805/92396
 
 
 def rc(seq):
-    returnseq.translate(
+    return seq.translate(
         '*****************************************************************TVGHEFCDIJMLKNOPQYSAUBWXRZ[\]^_`tvghefcdijmlknopqysaubwxrz*************************************************************************************************************************************')[
           ::-1]
 
