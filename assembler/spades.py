@@ -573,7 +573,7 @@ def main():
                 cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
 
             #corrector can work only with -1 and -2 reads and only if contigs are exists (not only error correction)
-            if paired1 and (not only_error_correction) and mismatch_corrector:
+            if (paired1 or paired) and (not only_error_correction) and mismatch_corrector:
                 cfg["mismatch_corrector"] = load_config_from_vars(dict())
                 if bwa:
                     cfg["mismatch_corrector"].__dict__["bwa"] = bwa
@@ -581,9 +581,12 @@ def main():
                     cfg["mismatch_corrector"].__dict__["t"] = cfg["common"].max_threads
                 if "output_dir" in cfg["common"].__dict__:
                     cfg["mismatch_corrector"].__dict__["o"] = cfg["common"].output_dir
-                # reads                
-                cfg["mismatch_corrector"].__dict__["1"] = paired1[0]
-                cfg["mismatch_corrector"].__dict__["2"] = paired2[0]
+                # reads
+                if paired1:
+                    cfg["mismatch_corrector"].__dict__["1"] = paired1[0]
+                    cfg["mismatch_corrector"].__dict__["2"] = paired2[0]
+                elif paired:
+                    cfg["mismatch_corrector"].__dict__["interleaved"] = paired[0]
 
     if CONFIG_FILE:
         cfg = load_config_from_info_file(CONFIG_FILE)
@@ -843,6 +846,16 @@ def main():
               "\n")
         tee = support.Tee(corrector_log_filename, 'w', console=cfg["common"].output_to_console)
 
+        tmp_dir = os.path.join(corrector_cfg.o, "tmp")
+        if not os.path.isdir(tmp_dir):
+            os.makedirs(tmp_dir)
+        
+        if "interleaved" in corrector_cfg.__dict__:
+            reads = bh_aux.split_paired_file(corrector_cfg.interleaved, tmp_dir)
+            del corrector_cfg.__dict__["interleaved"]
+            corrector_cfg.__dict__["1"] = reads[0]
+            corrector_cfg.__dict__["2"] = reads[1]            
+
         args = []        
         for k, v in corrector_cfg.__dict__.items():
             if len(k) == 1:           
@@ -853,8 +866,7 @@ def main():
 
         corrector.main(args)
 
-        if not cfg["common"].developer_mode:
-            tmp_dir = os.path.join(corrector_cfg.o, "tmp")
+        if not cfg["common"].developer_mode:            
             if os.path.isdir(tmp_dir):
                 shutil.rmtree(tmp_dir)
 
