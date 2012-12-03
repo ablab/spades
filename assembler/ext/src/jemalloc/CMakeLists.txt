@@ -91,6 +91,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 add_definitions(-D_REENTRANT)
+add_definitions(-O3 -funroll-loops)
 
 check_c_source_compiles("__thread int x;
 int main(void) { x = 42; return 0; }" JEMALLOC_TLS)
