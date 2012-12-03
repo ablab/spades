@@ -84,7 +84,7 @@ paired_metrics read_count
 ; read_count, product
 
 ; repeat resolving mode (none split path_extend combined rectangles)
-resolving_mode rectangles
+resolving_mode split
 
 use_scaffolder  true
 
