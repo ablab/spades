@@ -21,10 +21,6 @@ import spades_logic
 sys.path.append(os.path.join(os.path.dirname(__file__), "src/rectangles"))
 import rrr
 
-#corrector
-sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/corrector"))
-import corrector
-
 def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
         if not pretty_param:
@@ -259,7 +255,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gap-closer disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= use-jemalloc dataset= mismatch-correction bwa=".split()
+               "config-file= dataset= mismatch-correction bwa=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -325,7 +321,6 @@ def usage(show_hidden=False):
                              " for BayesHammer"
         print >> sys.stderr, "--spades-heap-check\t<value>\tset HEAPCHECK environment variable"\
                              " for SPAdes"
-        print >> sys.stderr, "--use-jemalloc\t\tall binaries are run with jemalloc.sh"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "--test\t\trun SPAdes on toy dataset"
@@ -381,8 +376,6 @@ def main():
         spades_heap_check = ""
 
         developer_mode = False
-
-        use_jemalloc = False
 
         threads = None
         memory = None
@@ -449,9 +442,6 @@ def main():
 
             elif opt == "--debug":
                 developer_mode = True
-
-            elif opt == "--use-jemalloc":
-                use_jemalloc = True
 
             #corrector
             elif opt == "--mismatch-correction":
@@ -538,7 +528,7 @@ def main():
             if not only_error_correction:
                 cfg["assembly"] = load_config_from_vars(dict())
 
-                # common
+            # common
             if output_dir:
                 cfg["common"].__dict__["output_dir"] = output_dir
             if threads:
@@ -547,10 +537,8 @@ def main():
                 cfg["common"].__dict__["max_memory"] = memory
             if developer_mode:
                 cfg["common"].__dict__["developer_mode"] = developer_mode
-            if use_jemalloc:
-                cfg["common"].__dict__["use_jemalloc"] = use_jemalloc
 
-                # error correction
+            # error correction
             if not only_assembler:
                 if tmp_dir:
                     cfg["error_correction"].__dict__["tmp_dir"] = tmp_dir
@@ -824,20 +812,15 @@ def main():
 
             log.info("\n===== Assembling finished. \n")
 
-            #corrector
+        #corrector
         result_corrected_contigs_filename = ""
         if "mismatch_corrector" in cfg and os.path.isfile(result_contigs_filename):
+            sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/corrector"))
+            import corrector
+
             corrector_cfg = cfg["mismatch_corrector"]
             corrector_log_filename = os.path.join(corrector_cfg.o, "mismatch_correction.log")
             corrector_cfg.__dict__["c"] = result_contigs_filename
-
-            # The way it should be logged, but I can't do it because I should totaly modify the corrector code..
-            # logger
-            #log = logging.getLogger('corrector')
-            #log.setLevel(logging.DEBUG)
-            #log.addHandler(console)
-            #log_file = logging.FileHandler(corrector_cfg.log_filename, mode='w')
-            #log.addHandler(log_file)
 
             log.info("\n===== Mismatch correction started. \n")
 
@@ -876,7 +859,7 @@ def main():
             log.info(" * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/")
         if os.path.isfile(result_contigs_filename):
             log.info(" * Assembled contigs are " + result_contigs_filename)
-            #corrector
+        #corrector
         if os.path.isfile(result_corrected_contigs_filename):
             log.info(" * Corrected contigs are " + result_corrected_contigs_filename)
         if os.path.isfile(result_scaffolds_filename):
