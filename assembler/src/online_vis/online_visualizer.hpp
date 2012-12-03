@@ -23,8 +23,8 @@ class OnlineVisualizer {
   void AddBaseCommands() {
     AddCommand(shared_ptr<Command<Env> >(new NullCommand<Env>));
     AddCommand(shared_ptr<Command<Env> >(new ExitCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new HelpCommand<Env>(&command_mapping_)));
     AddCommand(shared_ptr<Command<Env> >(new ListCommand<Env>));
+    AddCommand(shared_ptr<Command<Env> >(new HelpCommand<Env>(&command_mapping_)));
     
     AddCommand(shared_ptr<Command<Env> >(new LogCommand<Env>));
     AddCommand(shared_ptr<Command<Env> >(new SaveBatchCommand<Env>));

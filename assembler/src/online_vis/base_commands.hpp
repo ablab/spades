@@ -12,7 +12,7 @@ template <class Env>
 class NullCommand : public Command<Env> {
     public:
         NullCommand() : 
-            Command<Env>("_null_")
+            Command<Env>("null")
         {
         }
 
@@ -20,16 +20,15 @@ class NullCommand : public Command<Env> {
         }
 
         string Usage() const {
-          return "LOLWAT";
+          return "Nothing to do here";
         }
 };
 
 template <class Env>
 class HelpCommand : public CommandServingCommand<Env> {
-        string common_usage_string_;
 
-        void InitCommonUsageString() {
-          common_usage_string_ = 
+        std::string GetCommonUsageString() const {
+          std::string answer = 
             " Welcome to GAF (Graph Analysis Framework). This framework allows to work with the de Bruijn Graph interactively.\n "
             " You can see the list of command names below. To see a command's help message just type\n"
             "> help <command_name>\n"
@@ -37,9 +36,10 @@ class HelpCommand : public CommandServingCommand<Env> {
           
           vector<string> command_names = this->command_container_->GetCommandNamesList();
           for (auto it = command_names.begin(); it != command_names.end(); ++it) {
-            common_usage_string_ += *it;
-            common_usage_string_ += '\n';
+            answer += *it;
+            answer += '\n';
           }
+          return answer;
         }
 
     protected:
@@ -57,15 +57,15 @@ class HelpCommand : public CommandServingCommand<Env> {
             return answer;
         }
 
-        HelpCommand(CommandMapping<Env> *command_mapping) : CommandServingCommand<Env>("help", command_mapping) {
-          InitCommonUsageString();
+        HelpCommand(CommandMapping<Env> *command_mapping)
+            : CommandServingCommand<Env>("help", command_mapping) {
         }
 
         void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& arg_list) const {
             const vector<string>& args = arg_list.GetAllArguments();
-            if (args.size() == 1) 
-                cout << common_usage_string_ << endl;
-            else {
+            if (args.size() == 1) {
+                cout << GetCommonUsageString() << endl;
+            } else {
                 if (!CheckCorrectness(args))
                     return;
                 string command_name = args[1];
@@ -84,12 +84,12 @@ class ExitCommand : public Command<Env> {
         }
 
         ExitCommand() : 
-            Command<Env>("_exit_")
+            Command<Env>("exit")
         {
         }
 
         void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& args) const {
-            cout << "Exitting" << endl;
+            cout << "Exiting" << endl;
             exit(0);
         }
 };

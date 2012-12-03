@@ -84,6 +84,8 @@ class CommandServingCommand : public Command<Env> {
   CommandServingCommand(string invocation_string, CommandMapping<Env> *command_mapper)
       : Command<Env>(invocation_string),
         command_container_(command_mapper) {
+    INFO("command mapper::" << command_mapper);
+    cerr << "command mapper::" << command_mapper << endl;
   }
 };
 
