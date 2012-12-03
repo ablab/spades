@@ -18,7 +18,6 @@ cp -r assembler/configs spades-$VERSION/configs
 cp -r assembler/ext spades-$VERSION/ext
 rm spades-$VERSION/ext/prepare_ext.sh
 rm -r spades-$VERSION/ext/tools
-rm -r spades-$VERSION/ext/src
 rm -r spades-$VERSION/ext/include/cute
 rm -r spades-$VERSION/ext/include/teamcity_boost
 
