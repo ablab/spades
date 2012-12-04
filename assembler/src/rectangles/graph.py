@@ -91,11 +91,11 @@ class Graph(Abstract_Graph):
         for e in self.es.itervalues():
             assert e.seq == utils.rc(e.conj.seq), (e.seq, utils.rc(e.conj.seq))
 
-    def find_loops(self, threshold, L):
+    def find_loops(self, threshold, L, rs):
         edges_before_loop = dict()
         for eid, e in self.es.items():
             if e.len > L:
-                result_loop = self.find_all_loops(e, threshold, L)
+                result_loop = self.find_all_loops(e, threshold, L, rs.rectangles)
                 if result_loop:
                     edges_before_loop[e.eid] = result_loop
         return edges_before_loop
