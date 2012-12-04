@@ -16,7 +16,7 @@ class CommandMapping {
   const Command<Env> &GetCommand(string name) const {
     auto it = command_map_.find(name);
     if (it == command_map_.end()) {
-      cout << "No such command `"<< name <<"`, try again" << endl;
+      cout << "No such command `" << name << "`, try again" << endl;
       it = command_map_.find("null");
       VERIFY(it != command_map_.end());
     }

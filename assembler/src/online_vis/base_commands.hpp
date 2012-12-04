@@ -97,78 +97,89 @@ class ExitCommand : public Command<Env> {
 // loading new environment from folder with saves
 template <class Env>
 class LoadCommand : public Command<Env> {
-    private:
-        shared_ptr<Env> MakeNewEnvironment(const string& name, const string& saves, size_t K) const {
-            DEBUG("Making new environment " << name);
-            shared_ptr<Env> EnvPointer(new Env(name, saves, K));
-            DEBUG("DONE");
-            return EnvPointer;
-        }
+ private:
+  shared_ptr<Env> MakeNewEnvironment(const string& name, const string& saves, size_t K) const {
+    DEBUG("Making new environment " << name);
+    shared_ptr<Env> EnvPointer(new Env(name, saves, K));
+    DEBUG("Done");
+    return EnvPointer;
+  }
 
+ protected:
+  size_t MinArgNumber() const {
+    return 2;
+  }
 
-    protected:
-        size_t MinArgNumber() const {
-            return 2;
-        }
+  bool CheckCorrectness(const vector<string>& args, LoadedEnvironments<Env>& loaded_environments) const 
+  {
+    if (!this->CheckEnoughArguments(args))
+      return false;
 
-        bool CheckCorrectness(const shared_ptr<Env> &env, const vector<string>& args,
-                LoadedEnvironments<Env>& loaded_environments) const {
-            if (!this->CheckEnoughArguments(args))
-                return false;
-            const string& name = args[1];
-            for (auto iterator = loaded_environments.begin(); iterator != loaded_environments.end(); ++iterator) {
-                if (name == iterator->first) {
-                    cout << "Name " << name << " already exists" << endl;
-                    cout << "Maybe you want to switch to this environment? " << name << endl;
-                    cout << "Please try again" << endl;
-                    return false;
-                }
-            }
+    string path = args[2];
+    size_t K;
+    if (args.size() > 3) {
+      if (!CheckIsNumber(args[3]))
+        return false;
+      K = GetInt(args[3]);
+    } else {
+      K = cfg::get().K;   
+    }
+    if (!CheckEnvIsCorrect(path, K))
+      return false;
 
-            return env->IsCorrect();
-        }
+    string name = args[1];
+    for (auto iterator = loaded_environments.begin(); iterator != loaded_environments.end(); ++iterator) {
+      if (name == iterator->first) {
+        cout << "Name " << name << " already exists" << endl;
+        cout << "Maybe you want to switch to this environment? " << name << endl;
+        cout << "Please try again" << endl;
+        return false;
+      }
+    }
+    return true;
+  }
 
-    public:
-        string Usage() const {
-            string answer;
-            answer = answer + "Command `load` \n" + 
-                            "Usage:\n" + 
-                            "> load <environment_name> <path_to_saves> [<k-value>]\n" + 
-                            " You should specify the name of the new environment as well as a path to the graph saves. Optionally, \n" +
-                            " you can provide a k-value for these saves. \n: " +
-                            " For example:\n" +
-                            "> load GraphSimplified data/saves/simplified_graph\n" + 
-                            " would load a new environment with the name `GraphSimplified` from the files\n" + 
-                            " in the folder `data/saves/` with the basename `simplified_graph` (simplified_graph.grp, simplified_graph.sqn, e.t.c).";
-            return answer;
-        }
+ public:
+  string Usage() const {
+    string answer;
+    answer = answer + "Command `load` \n" + 
+      "Usage:\n" + 
+      "> load <environment_name> <path_to_saves> [<k-value>]\n" + 
+      " You should specify the name of the new environment as well as a path to the graph saves. Optionally, \n" +
+      " you can provide a k-value for these saves. \n: " +
+      " For example:\n" +
+      "> load GraphSimplified data/saves/simplified_graph\n" + 
+      " would load a new environment with the name `GraphSimplified` from the files\n" + 
+      " in the folder `data/saves/` with the basename `simplified_graph` (simplified_graph.grp, simplified_graph.sqn, e.t.c).";
+    return answer;
+  }
 
-        LoadCommand() : 
-            Command<Env>("load")
-        {
-        }
+  LoadCommand() : Command<Env>("load")
+  {
+  }
 
-        void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& arg_list) const {
-            const vector<string>& args = arg_list.GetAllArguments();
+  void Execute(shared_ptr<Env>& curr_env,
+               LoadedEnvironments<Env>& loaded_environments,
+               const ArgumentList& arg_list) const 
+  {
+    vector<string> args = arg_list.GetAllArguments();
+    string name  = args[1]; 
+    string saves = args[2];
+    size_t K;
+    if (args.size() > 3) {
+      K = GetInt(args[3]);
+    } else {
+      K = cfg::get().K;   
+    }
 
-            string name = args[1]; 
-            string saves = args[2];
-            size_t K;
-            if (args.size() > 3) {
-                  K = GetInt(args[3]);
-            } else {
-                  K = cfg::get().K;   
-            }
+    cout << "Loading " << name << " " << saves << endl;
+    if (!CheckCorrectness(args, loaded_environments))
+      return;
 
-            cout << "Loading " << name << " " << saves << endl;
-            
-            shared_ptr<Env> new_env = MakeNewEnvironment(name, saves, K);
-            if (!CheckCorrectness(new_env, args, loaded_environments))
-                return;
-
-            loaded_environments.insert(make_pair(name, new_env));
-            curr_env = new_env;
-        }
+    shared_ptr<Env> new_env = MakeNewEnvironment(name, saves, K);
+    loaded_environments.insert(make_pair(name, new_env));
+    curr_env = new_env;
+  }
 
 };
 

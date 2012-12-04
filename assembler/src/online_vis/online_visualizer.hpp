@@ -43,8 +43,6 @@ class OnlineVisualizer {
     AddCommand(shared_ptr<Command<Env> >(new LoadCommand<Env>));
   }
 
- private:
-
  public:
   OnlineVisualizer() : command_mapping_() {
   }
@@ -69,9 +67,8 @@ class OnlineVisualizer {
 
   void run() {
     vector<string>& history = GetHistory();
-    //const size_t max_buffer_size = 10000;
 
-    while (true) {
+    while (!cin.eof()) {
       cout << "GAF$> ";
       string command_with_args;
       getline(cin, command_with_args);
@@ -80,9 +77,11 @@ class OnlineVisualizer {
       ArgumentList arg_list(ss);
       string processed_command = arg_list.Preprocess(history);
 
-      DEBUG("processed string " << processed_command);
+      DEBUG("Processed string " << processed_command);
 
-      const string& command_string = arg_list.GetAllArguments()[0];
+      string command_string = arg_list.GetAllArguments()[0];
+      if (command_string == "")
+        continue;
       const Command<Env>& command = command_mapping_.GetCommand(command_string);
       command.Execute(current_environment_, loaded_environments_, arg_list);
 

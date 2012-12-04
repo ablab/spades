@@ -24,7 +24,7 @@ class Command {
   }
 
   bool CheckEnoughArguments(const vector<string>& args) const {
-    bool result = (args.size() >= MinArgNumber() + 1);
+    bool result = (args.size() > MinArgNumber());
     if (!result)
       FireNotEnoughArguments();
     return result;
@@ -83,9 +83,8 @@ class CommandServingCommand : public Command<Env> {
  public:
   CommandServingCommand(string invocation_string, CommandMapping<Env> *command_mapper)
       : Command<Env>(invocation_string),
-        command_container_(command_mapper) {
-    INFO("command mapper::" << command_mapper);
-    cerr << "command mapper::" << command_mapper << endl;
+        command_container_(command_mapper)
+  {
   }
 };
 
