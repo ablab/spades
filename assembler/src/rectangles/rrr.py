@@ -82,6 +82,7 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     ingraph = Graph()
     ingraph.load(grp_filename, sqn_filename, cvr_filename)
     ingraph.check()
+    edges_before_loop_DG = ingraph.find_loops(10, 1000)
     maxN50 = 0
     maxgraph = None
     maxbgraph = None
@@ -121,7 +122,6 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     maxbgraph.condense()
     outgraph = maxbgraph.project(output_path, is_sc)
     #outgraph.fasta(open(os.path.join(output_path, "delete_tips_delete_loops_1000.fasta"), "w"))
-    edges_before_loop_DG = ingraph.find_loops(10, 1000, rs)
     to_del = set()
     for eid in edges_before_loop_DG:
         if eid in edges_before_loop:
@@ -132,7 +132,7 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     maxbgraph.condense()
     outgraph = maxbgraph.project(output_path, is_sc)
     #outgraph.fasta(open(os.path.join(output_path, 'delete_tips_delete_all_loops_1000.fasta'), 'w'))
-    edges_before_loop_DG = ingraph.find_loops(4, 10000, rs)
+    edges_before_loop_DG = ingraph.find_loops(4, 10000)
     edges_before_loop_DG = edges_before_loop_DG or maxbgraph.delete_missing_loops(edges_before_loop_DG, ingraph.K, 10000
         , 10)
     to_del = set()
@@ -186,10 +186,10 @@ def make_rectangles_from_genome(options):
     ingraph = Graph()
     _, genome = fastaparser.read_fasta(options.genome).next()
     ingraph.make_graph(genome, int(k))
+    edges_before_loop_DG = ingraph.find_loops(10, 1000)
     ingraph.save(os.path.join(options.out_dir, "graph"))
     rs = RectangleSet(ingraph, int(options.d))
     rs.filter_without_prd()
-    edges_before_loop_DG = ingraph.find_loops(10, 1000, rs)
     f_left = open(os.path.join(options.out_dir, "paired_genom_contigs_1.fasta"), "w") # TODO: what is it?
     f_right = open(os.path.join(options.out_dir, "paired_genom_contigs_2.fasta"), "w") # TODO: what is it?
     contigs_id = 0

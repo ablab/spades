@@ -30,7 +30,7 @@ class Abstract_Graph(object):
     def get_edge(self, eid):
         return self.es.get(eid, None)
 
-    def find_all_loops(self, edge, threshold, L, rs):
+    def find_all_loops(self, edge, threshold, L):
         NO_LOOPS = None
         v1 = edge.v2
         lst = [(v1, 0)]
@@ -54,7 +54,6 @@ class Abstract_Graph(object):
         visited_es.add(long_end.eid)
         visited_es.add(edge.eid)
         good_vertex = [edge.v1.vid, edge.v2.vid, long_end.v1.vid, long_end.v2.vid]
-        bad_edges = set()
         for v in visited_vs:
             for e in v.out:
                 visited_es.add(e.eid)
@@ -62,19 +61,12 @@ class Abstract_Graph(object):
                 visited_es.add(e.eid)
             for v2 in [e.v2 for e in v.out]:
                 if v2.vid not in good_vertex and v2 not in visited_vs:
-                    bad_edges.add(v2)
+                    return NO_LOOPS
             for v_begin in [e.v1 for e in v.inn]:
                 if v_begin.vid not in good_vertex and v_begin not in visited_vs:
-                    bad_edges.add (v_begin)
-        for e_bad in bad_edges:
-            for e_good in visited_es:
-                if (e_good, e_bad) in rs:
-                    return NO_LOOPS
-                if (e_bad, e_good) in rs:
                     return NO_LOOPS
         if len(visited_es) == 2:
             return NO_LOOPS
-        
         for v in visited_vs:
             if not self.is_connected(v, long_end, threshold):
                 return NO_LOOPS
