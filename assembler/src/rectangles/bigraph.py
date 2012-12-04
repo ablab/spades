@@ -519,7 +519,7 @@ class BGraph(Abstract_Graph):
         return edges_before_loop
 
     def __find_loops(self, be, K, threshold, L, edges_to_delete, connected_path):
-        result = self.find_all_loops(be, threshold, L)
+        result = self.find_all_loops(be, threshold, L, dict())
         if not result:
             return False
         long_end = self.es[result[1]]

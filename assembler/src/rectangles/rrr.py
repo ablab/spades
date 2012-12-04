@@ -82,7 +82,6 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     ingraph = Graph()
     ingraph.load(grp_filename, sqn_filename, cvr_filename)
     ingraph.check()
-    edges_before_loop_DG = ingraph.find_loops(10, 1000)
     maxN50 = 0
     maxgraph = None
     maxbgraph = None
@@ -113,15 +112,16 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
         maxbgraph = bgraph
         maxthreshold = threshold
 
-    #maxgraph.fasta(open(os.path.join(output_path, 'begin_rectangles.fasta'), 'w'))
+    maxgraph.fasta(open(os.path.join(output_path, 'begin_rectangles.fasta'), 'w'))
     #maxbgraph.save(output_path, ingraph.K)
     maxbgraph.check_tips(ingraph.K)
     outgraph = maxbgraph.project(output_path, is_sc)
-    #outgraph.fasta(open(os.path.join(output_path, 'delete_tips.fasta'), 'w'))
+    outgraph.fasta(open(os.path.join(output_path, 'delete_tips.fasta'), 'w'))
     edges_before_loop = maxbgraph.delete_loops(ingraph.K, 1000, 10)
     maxbgraph.condense()
     outgraph = maxbgraph.project(output_path, is_sc)
-    #outgraph.fasta(open(os.path.join(output_path, "delete_tips_delete_loops_1000.fasta"), "w"))
+    outgraph.fasta(open(os.path.join(output_path, "delete_tips_delete_loops_1000.fasta"), "w"))
+    edges_before_loop_DG = ingraph.find_loops(10, 1000, rs)
     to_del = set()
     for eid in edges_before_loop_DG:
         if eid in edges_before_loop:
@@ -131,8 +131,8 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     maxbgraph.delete_missing_loops(edges_before_loop_DG, ingraph.K, 1000, 10)
     maxbgraph.condense()
     outgraph = maxbgraph.project(output_path, is_sc)
-    #outgraph.fasta(open(os.path.join(output_path, 'delete_tips_delete_all_loops_1000.fasta'), 'w'))
-    edges_before_loop_DG = ingraph.find_loops(4, 10000)
+    outgraph.fasta(open(os.path.join(output_path, 'delete_tips_delete_all_loops_1000.fasta'), 'w'))
+    edges_before_loop_DG = ingraph.find_loops(4, 10000, rs)
     edges_before_loop_DG = edges_before_loop_DG or maxbgraph.delete_missing_loops(edges_before_loop_DG, ingraph.K, 10000
         , 10)
     to_del = set()
@@ -145,7 +145,7 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     maxbgraph.delete_missing_loops(edges_before_loop_DG, ingraph.K, 10000, 10)
     maxbgraph.condense()
     outgraph = maxbgraph.project(output_path, is_sc)
-    #outgraph.fasta(open(os.path.join(output_path, "after_deleting_big_loops.fasta"), "w"))
+    outgraph.fasta(open(os.path.join(output_path, "after_deleting_big_loops.fasta"), "w"))
     additional_paired_info = dict()
     should_connect = maxbgraph.edges_expand(5000)
     should_connect_by_first_pair_info = maxbgraph.use_scaffold_paired_info(2 * maxbgraph.d, rs.additional_prd)
@@ -156,8 +156,8 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
             additional_paired_info[maxbgraph.es[e1id].conj.eid] = [maxbgraph.es[e2id].conj, maxbgraph.es[e1id].conj]
     outgraph.fasta_for_long_contigs(ingraph.K, maxbgraph.d, is_sc,
         open(os.path.join(output_path, "rectangles_extend.fasta"), "w"), should_connect, additional_paired_info)
-    #outgraph.fasta_for_long_contigs(ingraph.K, maxbgraph.d, is_sc,
-    #    open(os.path.join(output_path, "rectangles_extend_before_scaffold.fasta"), "w"), should_connect, dict())
+    outgraph.fasta_for_long_contigs(ingraph.K, maxbgraph.d, is_sc,
+        open(os.path.join(output_path, "rectangles_extend_before_scaffold.fasta"), "w"), should_connect, dict())
 
     outgraph.save(os.path.join(output_path, "last_graph"))
     if genome:
@@ -186,10 +186,10 @@ def make_rectangles_from_genome(options):
     ingraph = Graph()
     _, genome = fastaparser.read_fasta(options.genome).next()
     ingraph.make_graph(genome, int(k))
-    edges_before_loop_DG = ingraph.find_loops(10, 1000)
     ingraph.save(os.path.join(options.out_dir, "graph"))
     rs = RectangleSet(ingraph, int(options.d))
     rs.filter_without_prd()
+    edges_before_loop_DG = ingraph.find_loops(10, 1000, rs)
     f_left = open(os.path.join(options.out_dir, "paired_genom_contigs_1.fasta"), "w") # TODO: what is it?
     f_right = open(os.path.join(options.out_dir, "paired_genom_contigs_2.fasta"), "w") # TODO: what is it?
     contigs_id = 0

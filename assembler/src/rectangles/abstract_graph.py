@@ -30,7 +30,7 @@ class Abstract_Graph(object):
     def get_edge(self, eid):
         return self.es.get(eid, None)
 
-    def find_all_loops(self, edge, threshold, L):
+    def find_all_loops(self, edge, threshold, L, rs):
         NO_LOOPS = None
         v1 = edge.v2
         lst = [(v1, 0)]
@@ -51,20 +51,69 @@ class Abstract_Graph(object):
                     lst.append((e1.v2, deep + 1))
         if not long_end:
             return NO_LOOPS
+        
         visited_es.add(long_end.eid)
         visited_es.add(edge.eid)
         good_vertex = [edge.v1.vid, edge.v2.vid, long_end.v1.vid, long_end.v2.vid]
+        bad_edges = set()
         for v in visited_vs:
             for e in v.out:
                 visited_es.add(e.eid)
             for e in v.inn:
                 visited_es.add(e.eid)
-            for v2 in [e.v2 for e in v.out]:
+            for e in v.out:
+                v2 = e.v2
+            #for v2 in [e.v2 for e in v.out]:
                 if v2.vid not in good_vertex and v2 not in visited_vs:
-                    return NO_LOOPS
-            for v_begin in [e.v1 for e in v.inn]:
+                    bad_edges.add(e)
+            for e in v.inn:
+                v_begin = e.v1
+            #for v_begin in [e.v1 for e in v.inn]:
                 if v_begin.vid not in good_vertex and v_begin not in visited_vs:
-                    return NO_LOOPS
+                    bad_edges.add(e)
+        """if len(bad_edges) != 0:
+          return NO_LOOPS"""
+        if len(bad_edges) != 0 and len(rs.keys()) == 0:
+          return NO_LOOPS
+        
+        if len(rs.keys()) != 0:
+            tips = set()
+            for e_bad in bad_edges:
+                tip = True
+                for e_inn in  e_bad.v1.inn:
+                    if e_inn.eid not in visited_es:
+                        tip = False
+                for e_out in e_bad.v1.out:
+                    if e_out.eid != e_bad.eid and e_out.eid not in visited_es:
+                        tip = False
+                for e_inn in e_bad.v2.inn:
+                    if e_inn.eid != e_bad.eid and e_inn.eid not in visited_es:
+                        tip = False
+                for e_out in e_bad.v2.out:
+                    if e_out.eid not in visited_es:
+                        tip = False
+                if tip:
+                    tips.add(e_bad)
+                    continue
+    
+                for e_good in visited_es:
+                    if (self.es[e_good], e_bad) in rs:
+                        return NO_LOOPS
+                    if (e_bad, self.es[e_good]) in rs:
+                        return NO_LOOPS
+            for tip in tips:
+                bad_edges.remove(tip)
+            not_aligned = set(bad_edges)
+            for (first,second), r in rs.items():
+              if first in not_aligned:
+                if second != first :
+                  not_aligned.remove(first)
+              if second in not_aligned:
+                if first != second:
+                  not_aligned.remove(second)
+
+            if len(bad_edges) !=0 and len(not_aligned) != len(bad_edges):
+                return NO_LOOPS  
         if len(visited_es) == 2:
             return NO_LOOPS
         for v in visited_vs:

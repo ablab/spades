@@ -19,8 +19,8 @@ class RectangleSet(object):
         self.additional_prd = dict()
         if prd_file_name:
             self.__get_prd(prd_file_name)
-        #if first_prd_file_name:
-        #    self.__get_additional_prd(first_prd_file_name)
+        if first_prd_file_name:
+            self.__get_additional_prd(first_prd_file_name)
         self.rectangles = {} # (e1, e2) -> Rectangle
         self.logger = logging.getLogger('rectangles')
         self.test_utils = test_utils
