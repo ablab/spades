@@ -31,7 +31,7 @@ def print_used_values(cfg, log):
             pretty_param = param.capitalize().replace('_', ' ')
         line = margin + pretty_param
         if param in cfg[section].__dict__:
-            line +=  ": " + str(cfg[section].__dict__[param])
+            line += ": " + str(cfg[section].__dict__[param])
         else:
             if param.find("offset") != -1:
                 line += " will be auto-detected"
@@ -73,7 +73,7 @@ def print_used_values(cfg, log):
             log.info("  Single-cell mode")
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
-                  " was obtained with MDA (single-cell) technology")
+                     " was obtained with MDA (single-cell) technology")
 
         no_single = True
         no_paired = True
@@ -91,7 +91,7 @@ def print_used_values(cfg, log):
                 if not isinstance(v, list):
                     v = [v]
                 for reads_file in v:
-                    log.info("    "  + os.path.abspath(os.path.expandvars(reads_file)))
+                    log.info("    " + os.path.abspath(os.path.expandvars(reads_file)))
 
         if no_paired:
             log.info("  Paired reads was not specified")
@@ -120,13 +120,12 @@ def print_used_values(cfg, log):
             log.info("  SAM file will be generated")
         else:
             log.info("  SAM file will NOT be generated (WARNING: SAM file are required "\
-                   "for some of postprocessing tools)")
+                     "for some of postprocessing tools)")
 
         if cfg["assembly"].gap_closer:
             log.info("  The gap closer will be used")
         else:
             log.info("  The gap closer will NOT be used")
-
 
     log.info("Other parameters:")
     print_value(cfg, "common", "max_threads", "Threads")
@@ -134,7 +133,7 @@ def print_used_values(cfg, log):
     log.info("")
 
 
-def check_config(cfg):
+def check_config(cfg, log):
     ## special case: 0 iterations for the error correction means "No error correction!"
 
     if ("error_correction" in cfg) and ("max_iterations" in cfg["error_correction"].__dict__):
@@ -149,7 +148,7 @@ def check_config(cfg):
 
     if (not "error_correction" in cfg) and (not "assembly" in cfg):
         support.error("wrong options! You should specify either '--only-error-correction' (for reads"
-              " error correction) or '--only-assembler' (for assembling) or none of these options (for both)!")
+                      " error correction) or '--only-assembler' (for assembling) or none of these options (for both)!")
         return False
 
     ## checking existence of all files in dataset section
@@ -168,7 +167,7 @@ def check_config(cfg):
                     ext = os.path.splitext(os.path.expandvars(reads_file))[1]
                     if ext not in ['.fa', '.fasta', '.fq', '.fastq', '.gz']:
                         support.error("file with reads has unsupported format (only .fa, .fasta, .fq,"
-                              " .fastq, .gz are supported)! " + os.path.expandvars(reads_file))
+                                      " .fastq, .gz are supported)! " + os.path.expandvars(reads_file), log)
                         return False
 
     if no_files_with_reads:
@@ -198,9 +197,9 @@ def check_config(cfg):
     # dataset
     if "dataset" in cfg:
         if not "single_cell" in cfg["dataset"].__dict__:
-            cfg["dataset"].__dict__["single_cell"] = False        
+            cfg["dataset"].__dict__["single_cell"] = False
 
-    # error_correction
+            # error_correction
     if "error_correction" in cfg:
         if not "max_iterations" in cfg["error_correction"].__dict__:
             cfg["error_correction"].__dict__["max_iterations"] = 1
@@ -229,9 +228,9 @@ def check_binaries(binary_dir):
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
             support.error("SPAdes binary file not found: " + binary_path +
-                  "\nYou can obtain SPAdes binaries in one of two ways:" + 
-                  "\n1. Download the binaries from SPAdes server with ./spades_download_binary.py script" + 
-                  "\n2. Build source code with ./spades_compile.py script")
+                          "\nYou can obtain SPAdes binaries in one of two ways:" +
+                          "\n1. Download the binaries from SPAdes server with ./spades_download_binary.py script" +
+                          "\n2. Build source code with ./spades_compile.py script")
             return False
     return True
 
@@ -244,13 +243,13 @@ def fill_test_config(cfg):
 
     # dataset
     cfg["dataset"] = load_config_from_vars(dict())
-    cfg["dataset"].__dict__["paired_reads"] = \
-        [os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), 
-         os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz")]
+    cfg["dataset"].__dict__["paired_reads"] =\
+    [os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"),
+     os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz")]
     cfg["dataset"].__dict__["single_cell"] = False
 
     # error_correction (load default params)
-    cfg["error_correction"] = load_config_from_vars(dict())    
+    cfg["error_correction"] = load_config_from_vars(dict())
 
     # assembly (load default params)
     cfg["assembly"] = load_config_from_vars(dict())
@@ -303,7 +302,7 @@ def usage(show_hidden=False):
     print >> sys.stderr, "--only-error-correction\t\trun only error correction"\
                          " (without assembler)"
     print >> sys.stderr, "--only-assembler\t\trun only assembler (without error"\
-                         " correction)"    
+                         " correction)"
     print >> sys.stderr, "--mismatch-correction\t\trun post processing correction"\
                          " of mismathces and short indels"
     print >> sys.stderr, "--bwa\t<path>\t\t\tpath to BWA tool. Required for --mismatch-correction"\
@@ -311,17 +310,17 @@ def usage(show_hidden=False):
     print >> sys.stderr, "--disable-gap-closer\t\tforces SPAdes not to use the gap"\
                          " closer"
     print >> sys.stderr, "--disable-gzip-output\t\tforces error correction not to"\
-                         " compress the corrected reads" 
+                         " compress the corrected reads"
 
     if show_hidden:
         print >> sys.stderr, ""
-        print >> sys.stderr, "HIDDEN options:"  
+        print >> sys.stderr, "HIDDEN options:"
         print >> sys.stderr, "--config-file\t<filename>\tconfiguration file for spades.py"\
-                             " (WARN: all other options will be skipped)"   
+                             " (WARN: all other options will be skipped)"
         print >> sys.stderr, "--dataset\t<filename>\tfile with dataset description"\
-                             " (WARN: works exclusively in --only-assembler mode)" 
+                             " (WARN: works exclusively in --only-assembler mode)"
         print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
-                             " (only in debug mode)" 
+                             " (only in debug mode)"
         print >> sys.stderr, "--bh-heap-check\t\t<value>\tset HEAPCHECK environment variable"\
                              " for BayesHammer"
         print >> sys.stderr, "--spades-heap-check\t<value>\tset HEAPCHECK environment variable"\
@@ -338,7 +337,7 @@ def usage(show_hidden=False):
 
 def main():
     os.environ["LC_ALL"] = "C"
-   
+
     CONFIG_FILE = ""
     options = None
     TEST = False
@@ -346,7 +345,7 @@ def main():
     if len(sys.argv) == 1:
         usage()
         sys.exit(0)
-        
+
     try:
         options, not_options = getopt.gnu_getopt(sys.argv, short_options, long_options)
     except getopt.GetoptError, err:
@@ -438,7 +437,7 @@ def main():
                 bh_heap_check = arg
             elif opt == "--spades-heap-check":
                 spades_heap_check = arg
-            
+
             elif opt == '-t' or opt == "--threads":
                 threads = int(arg)
             elif opt == '-m' or opt == "--memory":
@@ -471,7 +470,7 @@ def main():
                 CONFIG_FILE = check_file(arg, 'config file')
                 break
 
-            elif opt == "--test": 
+            elif opt == "--test":
                 fill_test_config(cfg)
                 TEST = True
                 break
@@ -485,9 +484,9 @@ def main():
             if len(paired1) != len(paired2):
                 support.error("the number of files with left paired reads is not equal to the"
                       " number of files with right paired reads!")
-    
+
             # processing hidden option "--dataset"
-            if dataset: 
+            if dataset:
                 if not only_assembler:
                     support.error("hidden option --dataset works exclusively in --only-assembler mode!")
                 # reading info about dataset from provided dataset file
@@ -537,9 +536,9 @@ def main():
             if not only_assembler:
                 cfg["error_correction"] = load_config_from_vars(dict())
             if not only_error_correction:
-                cfg["assembly"] = load_config_from_vars(dict())            
+                cfg["assembly"] = load_config_from_vars(dict())
 
-            # common
+                # common
             if output_dir:
                 cfg["common"].__dict__["output_dir"] = output_dir
             if threads:
@@ -549,9 +548,9 @@ def main():
             if developer_mode:
                 cfg["common"].__dict__["developer_mode"] = developer_mode
             if use_jemalloc:
-                cfg["common"].__dict__["use_jemalloc"] = use_jemalloc            
+                cfg["common"].__dict__["use_jemalloc"] = use_jemalloc
 
-            # error correction
+                # error correction
             if not only_assembler:
                 if tmp_dir:
                     cfg["error_correction"].__dict__["tmp_dir"] = tmp_dir
@@ -581,7 +580,7 @@ def main():
                     cfg["mismatch_corrector"].__dict__["t"] = cfg["common"].max_threads
                 if "output_dir" in cfg["common"].__dict__:
                     cfg["mismatch_corrector"].__dict__["o"] = cfg["common"].output_dir
-                # reads
+                    # reads
                 if paired1:
                     cfg["mismatch_corrector"].__dict__["1"] = paired1[0]
                     cfg["mismatch_corrector"].__dict__["2"] = paired2[0]
@@ -596,18 +595,7 @@ def main():
         usage()
         sys.exit(1)
 
-    if not check_config(cfg):
-        return
-        
-    if not check_binaries(execution_home):
-        return
-
-    print("\n======= SPAdes pipeline started\n")
-
-    if not os.path.isdir(cfg["common"].output_dir):
-        os.makedirs(cfg["common"].output_dir)
-
-    log = logging.getLogger('params')
+    log = logging.getLogger('spades')
     log.setLevel(logging.DEBUG)
 
     console = logging.StreamHandler(sys.stdout)
@@ -615,9 +603,22 @@ def main():
     console.setLevel(logging.DEBUG)
     log.addHandler(console)
 
+    if not check_config(cfg, log):
+        return
+
+    if not check_binaries(execution_home):
+        return
+
+    if not os.path.isdir(cfg["common"].output_dir):
+        os.makedirs(cfg["common"].output_dir)
+
+    log_filename = os.path.join(cfg["common"].output_dir, "spades.log")
+    log_handler = logging.FileHandler(log_filename, mode='w')
+    log.addHandler(log_handler)
+
     params_filename = os.path.join(cfg["common"].output_dir, "params.txt")
-    params = logging.FileHandler(params_filename, mode='w')
-    log.addHandler(params)
+    params_handler = logging.FileHandler(params_filename, mode='w')
+    log.addHandler(params_handler)
 
     if CONFIG_FILE:
         log.info("Using config file: " + CONFIG_FILE)
@@ -629,269 +630,263 @@ def main():
 
     print_used_values(cfg, log)
 
-    bh_dataset_filename = ""
-    if "error_correction" in cfg:
-        bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
+    log.removeHandler(params_handler)
 
-        if "HEAPCHECK" in os.environ:
-            del os.environ["HEAPCHECK"]
-        if "heap_check" in bh_cfg.__dict__:
-            os.environ["HEAPCHECK"] = bh_cfg.heap_check
+    log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
-        bh_cfg.output_dir = os.path.join(os.path.expandvars(bh_cfg.output_dir), "corrected")
+    try:
+        bh_dataset_filename = ""
+        if "error_correction" in cfg:
+            bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
 
-        bh_cfg.__dict__["working_dir"] = bh_cfg.tmp_dir
+            if "HEAPCHECK" in os.environ:
+                del os.environ["HEAPCHECK"]
+            if "heap_check" in bh_cfg.__dict__:
+                os.environ["HEAPCHECK"] = bh_cfg.heap_check
 
-        bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir,
-            "dataset.info")
+            bh_cfg.output_dir = os.path.join(os.path.expandvars(bh_cfg.output_dir), "corrected")
 
-        if os.path.exists(bh_cfg.output_dir):
-            shutil.rmtree(bh_cfg.output_dir)
-        
-        os.makedirs(bh_cfg.output_dir)
-        if not os.path.exists(bh_cfg.working_dir):
-            os.makedirs(bh_cfg.working_dir)
+            bh_cfg.__dict__["working_dir"] = bh_cfg.tmp_dir
 
-        log_filename = os.path.join(bh_cfg.output_dir, "correction.log")
-        bh_cfg.__dict__["log_filename"] = log_filename
+            bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir,
+                "dataset.info")
 
-        print("\n===== Error correction started. Log can be found here: " +
-              bh_cfg.log_filename + "\n")
-        tee = support.Tee(log_filename, 'w', console=bh_cfg.output_to_console)
+            if os.path.exists(bh_cfg.output_dir):
+                shutil.rmtree(bh_cfg.output_dir)
 
-        if CONFIG_FILE:
-            shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
+            os.makedirs(bh_cfg.output_dir)
+            if not os.path.exists(bh_cfg.working_dir):
+                os.makedirs(bh_cfg.working_dir)
 
-        # parsing dataset section
-        bh_cfg.__dict__["single_cell"] = cfg["dataset"].single_cell
-        bh_cfg.__dict__["paired_reads"] = []
-        bh_cfg.__dict__["single_reads"] = []
+            log.info("\n===== Error correction started. \n")
 
-        import bh_aux
+            if CONFIG_FILE:
+                shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
 
-        for k, v in cfg["dataset"].__dict__.items():
-            if not isinstance(v, list):
-                v = [v]
+            # parsing dataset section
+            bh_cfg.__dict__["single_cell"] = cfg["dataset"].single_cell
+            bh_cfg.__dict__["paired_reads"] = []
+            bh_cfg.__dict__["single_reads"] = []
 
-            # saving original reads to dataset
-            if k.find("_reads") != -1:
-                quoted_value = '"'
-                for item in v:
-                    quoted_value += os.path.abspath(os.path.expandvars(item)) + ' '
-                quoted_value += '"'
-                bh_cfg.__dict__["original_" + k] = quoted_value
+            import bh_aux
 
-            # saving reference to dataset in developer_mode
-            if bh_cfg.developer_mode:
-                if "reference" in cfg["dataset"].__dict__:
-                    bh_cfg.__dict__["reference_genome"] = os.path.abspath(
-                        os.path.expandvars(cfg["dataset"].reference))                       
+            for k, v in cfg["dataset"].__dict__.items():
+                if not isinstance(v, list):
+                    v = [v]
 
-            if k.startswith("single_reads"):
-                for item in v:
-                    item = os.path.abspath(os.path.expandvars(item))
-                    item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir)
-                    if not bh_cfg.single_reads:
-                        bh_cfg.single_reads.append(item)
-                    else:
-                        bh_cfg.single_reads[0] = bh_aux.merge_single_files(item,
-                            bh_cfg.single_reads[0], bh_cfg.working_dir)
+                # saving original reads to dataset
+                if k.find("_reads") != -1:
+                    quoted_value = '"'
+                    for item in v:
+                        quoted_value += os.path.abspath(os.path.expandvars(item)) + ' '
+                    quoted_value += '"'
+                    bh_cfg.__dict__["original_" + k] = quoted_value
 
-            elif k.startswith("paired_reads"):
-                cur_paired_reads = []
-                if len(v) == 1:
-                    item = os.path.abspath(os.path.expandvars(v[0]))
-                    cur_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir)
-                elif len(v) == 2:
+                # saving reference to dataset in developer_mode
+                if bh_cfg.developer_mode:
+                    if "reference" in cfg["dataset"].__dict__:
+                        bh_cfg.__dict__["reference_genome"] = os.path.abspath(
+                            os.path.expandvars(cfg["dataset"].reference))
+
+                if k.startswith("single_reads"):
                     for item in v:
                         item = os.path.abspath(os.path.expandvars(item))
                         item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir)
-                        cur_paired_reads.append(item)
+                        if not bh_cfg.single_reads:
+                            bh_cfg.single_reads.append(item)
+                        else:
+                            bh_cfg.single_reads[0] = bh_aux.merge_single_files(item,
+                                bh_cfg.single_reads[0], bh_cfg.working_dir)
 
-                if not bh_cfg.paired_reads:
-                    bh_cfg.paired_reads = cur_paired_reads
-                else:
-                    bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads,
-                        bh_cfg.paired_reads, bh_cfg.working_dir)
+                elif k.startswith("paired_reads"):
+                    cur_paired_reads = []
+                    if len(v) == 1:
+                        item = os.path.abspath(os.path.expandvars(v[0]))
+                        cur_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir)
+                    elif len(v) == 2:
+                        for item in v:
+                            item = os.path.abspath(os.path.expandvars(item))
+                            item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir, log)
+                            cur_paired_reads.append(item)
 
-        bh_dataset_filename = bh_logic.run_bh(spades_home, execution_home, bh_cfg)
+                    if not bh_cfg.paired_reads:
+                        bh_cfg.paired_reads = cur_paired_reads
+                    else:
+                        bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads,
+                            bh_cfg.paired_reads, bh_cfg.working_dir)
 
-        tee.free()
-        print("\n===== Error correction finished. Log can be found here: " +
-              bh_cfg.log_filename + "\n")
+            bh_dataset_filename = bh_logic.run_bh(spades_home, execution_home, bh_cfg, log)
 
-    result_contigs_filename = ""
-    result_scaffolds_filename = ""
-    if "assembly" in cfg:
-        spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
+            log.info("\n===== Error correction finished. \n")
 
-        if "HEAPCHECK" in os.environ:
-            del os.environ["HEAPCHECK"]
-        if "heap_check" in spades_cfg.__dict__:
-            os.environ["HEAPCHECK"] = spades_cfg.heap_check
+        result_contigs_filename = ""
+        result_scaffolds_filename = ""
+        if "assembly" in cfg:
+            spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
 
-        if "error_correction" in cfg:
-            spades_cfg.__dict__["align_original_reads"] = True
-        else:
-            spades_cfg.__dict__["align_original_reads"] = False
+            if "HEAPCHECK" in os.environ:
+                del os.environ["HEAPCHECK"]
+            if "heap_check" in spades_cfg.__dict__:
+                os.environ["HEAPCHECK"] = spades_cfg.heap_check
 
-        has_paired = False
-        for k in cfg["dataset"].__dict__.keys():
-            if k.startswith("paired_reads"):
-                has_paired = True
-                break
-        if has_paired:
-            spades_cfg.__dict__["paired_mode"] = True
-        else:
-            spades_cfg.__dict__["paired_mode"] = False
-
-        spades_cfg.__dict__["log_filename"] = os.path.join(spades_cfg.output_dir,
-            "assembly.log")
-        spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.output_dir,
-            "contigs.fasta")
-        spades_cfg.__dict__["result_scaffolds"] = os.path.join(spades_cfg.output_dir,
-            "scaffolds.fasta")
-
-        spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir,
-            "simplified_contigs.fasta")
-
-        print("\n===== Assembling started. Log can be found here: " + spades_cfg.log_filename +
-              "\n")
-        tee = support.Tee(spades_cfg.log_filename, 'w', console=spades_cfg.output_to_console)
-
-        if CONFIG_FILE:
-            shutil.copy(CONFIG_FILE, spades_cfg.output_dir)
-
-        # dataset created during error correction
-        if bh_dataset_filename:
-            spades_cfg.__dict__["dataset"] = bh_dataset_filename
-
-        if not "dataset" in spades_cfg.__dict__:
-            # creating dataset
-            dataset_filename = os.path.join(spades_cfg.output_dir, "dataset.info")
-            dataset_file = open(dataset_filename, 'w')
-            for k, v in cfg["dataset"].__dict__.iteritems():
-                dataset_file.write(k + '\t')
-
-                if isinstance(v, bool):
-                    dataset_file.write(bool_to_str(v))
-                else:
-                    dataset_file.write('"')
-                    if not isinstance(v, list):
-                        v = [v]
-                    for item in v:
-                        item = os.path.abspath(os.path.expandvars(item))
-                        dataset_file.write(str(item) + ' ')
-                    dataset_file.write('"')
-                dataset_file.write('\n')
-
-            # saving reference to dataset in developer_mode
-            if spades_cfg.developer_mode:
-                if "reference" in cfg["dataset"].__dict__:
-                    dataset_file.write("reference_genome" + '\t')
-                    dataset_file.write(os.path.abspath(
-                        os.path.expandvars(cfg["dataset"].reference)) + '\n')                    
-
-            dataset_file.close()
-            spades_cfg.__dict__["dataset"] = dataset_filename
-
-        result_contigs_filename, result_scaffolds_filename, latest_dir = spades_logic.run_spades(spades_home, execution_home, spades_cfg)
-
-        tee.free()
-
-        #RECTANGLES
-        debruijn_config = load_config_from_file(os.path.join(latest_dir, "configs", "config.info"))
-
-        if spades_cfg.paired_mode and debruijn_config.resolving_mode == "rectangles":
-            rrr_input_dir = os.path.join(latest_dir, "saves")
-            rrr_outpath = os.path.join(spades_cfg.output_dir, "rectangles")
-            if not os.path.exists(rrr_outpath):
-                os.mkdir(rrr_outpath)
-
-            rrr_reference_information_file = os.path.join(rrr_input_dir,"late_pair_info_counted_etalon_distance.txt")
-            rrr_test_util = rrr.TestUtils(rrr_reference_information_file, os.path.join(rrr_outpath, "rectangles.log"))
-            rrr.resolve(rrr_input_dir, rrr_outpath, rrr_test_util, "", cfg["dataset"].single_cell)
-
-            shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend_before_scaffold.fasta"), spades_cfg.result_contigs)
-            shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
-
-            if not spades_cfg.developer_mode:
-                if os.path.exists(rrr_input_dir):
-                    shutil.rmtree(rrr_input_dir)
-                if os.path.exists(rrr_outpath):
-                    shutil.rmtree(rrr_outpath, True)
-                if os.path.exists(rrr_outpath):
-                    os.system('rm -r ' + rrr_outpath)
-        #EOR
-
-        print("\n===== Assembling finished. Log can be found here: " + spades_cfg.log_filename +
-              "\n")
-
-    #corrector
-    result_corrected_contigs_filename = ""
-    if "mismatch_corrector" in cfg and os.path.isfile(result_contigs_filename):
-        corrector_cfg = cfg["mismatch_corrector"]
-        corrector_log_filename = os.path.join(corrector_cfg.o, "mismatch_correction.log")
-        corrector_cfg.__dict__["c"] = result_contigs_filename
-
-        # The way it should be logged, but I can't do it because I should totaly modify the corrector code.. 
-        # logger
-        #log = logging.getLogger('corrector')
-        #log.setLevel(logging.DEBUG)
-        #log.addHandler(console)
-        #log_file = logging.FileHandler(corrector_cfg.log_filename, mode='w')
-        #log.addHandler(log_file)
-
-        print("\n===== Mismatch correction started. Log can be found here: " + corrector_log_filename +
-              "\n")
-        tee = support.Tee(corrector_log_filename, 'w', console=cfg["common"].output_to_console)
-
-        tmp_dir = os.path.join(corrector_cfg.o, "tmp")
-        if not os.path.isdir(tmp_dir):
-            os.makedirs(tmp_dir)
-        
-        if "interleaved" in corrector_cfg.__dict__:
-            reads = bh_aux.split_paired_file(corrector_cfg.interleaved, tmp_dir)
-            del corrector_cfg.__dict__["interleaved"]
-            corrector_cfg.__dict__["1"] = reads[0]
-            corrector_cfg.__dict__["2"] = reads[1]            
-
-        args = []        
-        for k, v in corrector_cfg.__dict__.items():
-            if len(k) == 1:           
-                args.append('-' + k)
+            if "error_correction" in cfg:
+                spades_cfg.__dict__["align_original_reads"] = True
             else:
-                args.append('--' + k)
-            args.append(v)
+                spades_cfg.__dict__["align_original_reads"] = False
 
-        corrector.main(args)
+            has_paired = False
+            for k in cfg["dataset"].__dict__.keys():
+                if k.startswith("paired_reads"):
+                    has_paired = True
+                    break
+            if has_paired:
+                spades_cfg.__dict__["paired_mode"] = True
+            else:
+                spades_cfg.__dict__["paired_mode"] = False
 
-        if not cfg["common"].developer_mode:            
-            if os.path.isdir(tmp_dir):
-                shutil.rmtree(tmp_dir)
+            spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.output_dir,
+                "contigs.fasta")
+            spades_cfg.__dict__["result_scaffolds"] = os.path.join(spades_cfg.output_dir,
+                "scaffolds.fasta")
 
-        result_corrected_contigs_filename = os.path.join(corrector_cfg.o, "corrected_contigs.fasta")
-        if not os.path.isfile(result_corrected_contigs_filename):            
-            result_corrected_contigs_filename = ""
+            spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir,
+                "simplified_contigs.fasta")
 
-        tee.free()
-        print("\n===== Mismatch correction finished. Log can be found here: " + corrector_log_filename +
-              "\n")        
+            log.info("\n===== Assembling started.\n")
 
-    print ("")
-    if os.path.isdir(os.path.dirname(bh_dataset_filename)):
-        print (" * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/")
-    if os.path.isfile(result_contigs_filename):
-        print (" * Assembled contigs are " + result_contigs_filename)
-    #corrector    
-    if os.path.isfile(result_corrected_contigs_filename):
-        print (" * Corrected contigs are " + result_corrected_contigs_filename)
-    if os.path.isfile(result_scaffolds_filename):
-        print (" * Assembled scaffolds are " + result_scaffolds_filename)
-    print ("")
-    print ("Thank you for using SPAdes!")
+            if CONFIG_FILE:
+                shutil.copy(CONFIG_FILE, spades_cfg.output_dir)
 
-    print("\n======= SPAdes pipeline finished\n")
+            # dataset created during error correction
+            if bh_dataset_filename:
+                spades_cfg.__dict__["dataset"] = bh_dataset_filename
+
+            if not "dataset" in spades_cfg.__dict__:
+                # creating dataset
+                dataset_filename = os.path.join(spades_cfg.output_dir, "dataset.info")
+                dataset_file = open(dataset_filename, 'w')
+                for k, v in cfg["dataset"].__dict__.iteritems():
+                    dataset_file.write(k + '\t')
+
+                    if isinstance(v, bool):
+                        dataset_file.write(bool_to_str(v))
+                    else:
+                        dataset_file.write('"')
+                        if not isinstance(v, list):
+                            v = [v]
+                        for item in v:
+                            item = os.path.abspath(os.path.expandvars(item))
+                            dataset_file.write(str(item) + ' ')
+                        dataset_file.write('"')
+                    dataset_file.write('\n')
+
+                # saving reference to dataset in developer_mode
+                if spades_cfg.developer_mode:
+                    if "reference" in cfg["dataset"].__dict__:
+                        dataset_file.write("reference_genome" + '\t')
+                        dataset_file.write(os.path.abspath(
+                            os.path.expandvars(cfg["dataset"].reference)) + '\n')
+
+                dataset_file.close()
+                spades_cfg.__dict__["dataset"] = dataset_filename
+
+            result_contigs_filename, result_scaffolds_filename, latest_dir = spades_logic.run_spades(spades_home,
+                execution_home, spades_cfg, log)
+
+            #RECTANGLES
+            debruijn_config = load_config_from_file(os.path.join(latest_dir, "configs", "config.info"))
+
+            if spades_cfg.paired_mode and debruijn_config.resolving_mode == "rectangles":
+                rrr_input_dir = os.path.join(latest_dir, "saves")
+                rrr_outpath = os.path.join(spades_cfg.output_dir, "rectangles")
+                if not os.path.exists(rrr_outpath):
+                    os.mkdir(rrr_outpath)
+
+                rrr_reference_information_file = os.path.join(rrr_input_dir,
+                    "late_pair_info_counted_etalon_distance.txt")
+                rrr_test_util = rrr.TestUtils(rrr_reference_information_file,
+                    os.path.join(rrr_outpath, "rectangles.log"))
+                rrr.resolve(rrr_input_dir, rrr_outpath, rrr_test_util, "", cfg["dataset"].single_cell)
+
+
+
+                shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend_before_scaffold.fasta"), spades_cfg.result_contigs)
+                shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
+
+                if not spades_cfg.developer_mode:
+                    if os.path.exists(rrr_input_dir):
+                        shutil.rmtree(rrr_input_dir)
+                    if os.path.exists(rrr_outpath):
+                        shutil.rmtree(rrr_outpath, True)
+                    if os.path.exists(rrr_outpath):
+                        os.system('rm -r ' + rrr_outpath)
+                        #EOR
+
+            log.info("\n===== Assembling finished. \n")
+
+            #corrector
+        result_corrected_contigs_filename = ""
+        if "mismatch_corrector" in cfg and os.path.isfile(result_contigs_filename):
+            corrector_cfg = cfg["mismatch_corrector"]
+            corrector_log_filename = os.path.join(corrector_cfg.o, "mismatch_correction.log")
+            corrector_cfg.__dict__["c"] = result_contigs_filename
+
+            # The way it should be logged, but I can't do it because I should totaly modify the corrector code..
+            # logger
+            #log = logging.getLogger('corrector')
+            #log.setLevel(logging.DEBUG)
+            #log.addHandler(console)
+            #log_file = logging.FileHandler(corrector_cfg.log_filename, mode='w')
+            #log.addHandler(log_file)
+
+            log.info("\n===== Mismatch correction started. \n")
+
+            tmp_dir = os.path.join(corrector_cfg.o, "tmp")
+            if not os.path.isdir(tmp_dir):
+                os.makedirs(tmp_dir)
+
+            if "interleaved" in corrector_cfg.__dict__:
+                reads = bh_aux.split_paired_file(corrector_cfg.interleaved, tmp_dir)
+                del corrector_cfg.__dict__["interleaved"]
+                corrector_cfg.__dict__["1"] = reads[0]
+                corrector_cfg.__dict__["2"] = reads[1]
+
+            args = []
+            for k, v in corrector_cfg.__dict__.items():
+                if len(k) == 1:
+                    args.append('-' + k)
+                else:
+                    args.append('--' + k)
+                args.append(v)
+
+            corrector.main(args)
+
+            if not cfg["common"].developer_mode:
+                if os.path.isdir(tmp_dir):
+                    shutil.rmtree(tmp_dir)
+
+            result_corrected_contigs_filename = os.path.join(corrector_cfg.o, "corrected_contigs.fasta")
+            if not os.path.isfile(result_corrected_contigs_filename):
+                result_corrected_contigs_filename = ""
+
+            log.info("\n===== Mismatch correction finished.\n")
+
+        log.info("")
+        if os.path.isdir(os.path.dirname(bh_dataset_filename)):
+            log.info(" * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/")
+        if os.path.isfile(result_contigs_filename):
+            log.info(" * Assembled contigs are " + result_contigs_filename)
+            #corrector
+        if os.path.isfile(result_corrected_contigs_filename):
+            log.info(" * Corrected contigs are " + result_corrected_contigs_filename)
+        if os.path.isfile(result_scaffolds_filename):
+            log.info(" * Assembled scaffolds are " + result_scaffolds_filename)
+        log.info("")
+        log.info("Thank you for using SPAdes!")
+
+        log.info("\n======= SPAdes pipeline finished. Log can be found here: " + log_filename + "\n")
+    except Exception, e:
+        log.exception(e)
 
 
 if __name__ == '__main__':

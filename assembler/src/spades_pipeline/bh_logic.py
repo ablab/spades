@@ -31,7 +31,7 @@ def prepare_config_bh(filename, cfg):
     process_cfg.substitute_params(filename, subst_dict)
 
 
-def run_bh(spades_home, execution_home, cfg):
+def run_bh(spades_home, execution_home, cfg, log):
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)
@@ -52,17 +52,17 @@ def run_bh(spades_home, execution_home, cfg):
     command += os.path.join(execution_home, "hammer") + " " +\
                os.path.abspath(cfg_file_name)
 
-    print("\n== Running error correction tool: " + command + "\n")
-    support.sys_call(command)
+    log.info("\n== Running error correction tool: " + command + "\n")
+    support.sys_call(command, log)
 
     import bh_aux
 
-    dataset_str = bh_aux.generate_dataset(cfg)
+    dataset_str = bh_aux.generate_dataset(cfg, log)
     dataset_filename = cfg.dataset
     dataset_file = open(dataset_filename, "w")
     dataset_file.write(dataset_str)
     dataset_file.close()
-    print("\n== Dataset description file created: " + dataset_filename + "\n")
+    log.info("\n== Dataset description file created: " + dataset_filename + "\n")
 
     shutil.rmtree(cfg.tmp_dir)
 

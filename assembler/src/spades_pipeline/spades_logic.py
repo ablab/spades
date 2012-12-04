@@ -33,7 +33,7 @@ def prepare_config_spades(filename, cfg, prev_K, K, last_one):
     process_cfg.substitute_params(filename, subst_dict)
 
 
-def run_spades(spades_home, execution_home, cfg):
+def run_spades(spades_home, execution_home, cfg, log):
     if not isinstance(cfg.iterative_K, list):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
@@ -80,9 +80,9 @@ def run_spades(spades_home, execution_home, cfg):
                     new_bin_filename = cor_filename[:cor_index] + cor_filename[cor_index + 4:]
                     shutil.move(cor_filename, new_bin_filename)
 
-        print("\n== Running assembler: " + command + "\n")
+        log.info("\n== Running assembler: " + command + "\n")
 
-        support.sys_call(command, execution_home)
+        support.sys_call(command, log, execution_home)
 
     latest = os.path.join(cfg.output_dir, "K%d" % (K))
 

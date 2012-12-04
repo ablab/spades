@@ -20,7 +20,7 @@ def determine_it_count(tmp_dir, prefix):
     return "%02d" % answer
 
 
-def determine_read_files(folder, str_it_count, input_files, num_paired):
+def determine_read_files(folder, str_it_count, input_files, num_paired, log):
     answer = dict()
     answer["paired_reads"] = '"'
     answer["single_reads"] = '"'
@@ -29,7 +29,7 @@ def determine_read_files(folder, str_it_count, input_files, num_paired):
     for id, input_file in enumerate(input_files):
         prefix = os.path.basename(input_file) + "." + str_it_count
         full_name = folder + prefix + ".cor.fastq"
-        support.verify(os.path.isfile(full_name), "corrected file not found: " + full_name)
+        support.verify(os.path.isfile(full_name), "corrected file not found: " + full_name, log)
         if id < num_paired:
             answer["paired_reads"] += full_name + '  '
         else:
@@ -106,7 +106,7 @@ def generate_paired_basename(filename1, filename2, i):
     return prefix + "_paired_" + str(i + 1)
 
 
-def generate_dataset(cfg):
+def generate_dataset(cfg, log):
     tmp_dir = cfg.working_dir
     if len(cfg.single_reads) == 0:
         cfg.single_reads = [generate_unpaired_basename(cfg.paired_reads[0], cfg.paired_reads[1])]
@@ -114,7 +114,7 @@ def generate_dataset(cfg):
 
     str_it_count = determine_it_count(tmp_dir, os.path.basename(input_files[0]))
 
-    dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count, input_files, len(cfg.paired_reads))
+    dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count, input_files, len(cfg.paired_reads), log)
 
     import process_cfg
 
@@ -220,7 +220,7 @@ def merge_single_files(src_single_read, dst_single_read, output_folder):
     return merged_filename
 
 
-def ungzip_if_needed(filename, output_folder):
+def ungzip_if_needed(filename, output_folder, log):
     file_basename, file_extension = os.path.splitext(filename)
     if file_extension == ".gz":
         if not os.path.exists(output_folder):
@@ -228,12 +228,12 @@ def ungzip_if_needed(filename, output_folder):
         ungzipped_filename = os.path.join(output_folder, os.path.basename(file_basename))
         ungzipped_file = open(ungzipped_filename, 'w')
 
-        print("== Extracting " + filename + " into " + ungzipped_filename)
+        log.info("== Extracting " + filename + " into " + ungzipped_filename)
 
         import subprocess
 
         return_code = subprocess.call(['gunzip', filename, '-c'], stdout=ungzipped_file)
-        support.verify(return_code == 0, "GZIP failed to extract " + filename + ". Maybe the archive is broken.")
+        support.verify(return_code == 0, log, "GZIP failed to extract " + filename + ". Maybe the archive is broken.")
 
         ungzipped_file.close()
         filename = ungzipped_filename
