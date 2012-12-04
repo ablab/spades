@@ -17,7 +17,10 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <strings.h>
+
+#include <cstring>
+#include <cerrno>
+
 #include <string>
 
 class MMappedReader {
@@ -39,7 +42,8 @@ class MMappedReader {
         (uint8_t*)mmap(NULL, BlockSize,
                        PROT_READ, MAP_FILE | MAP_PRIVATE,
                        StreamFile, BlockOffset);
-    VERIFY((intptr_t)MappedRegion != -1L);
+    VERIFY_MSG((intptr_t)MappedRegion != -1L,
+               "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
   }
 
   void read_internal(void *buf, size_t amount) {
@@ -61,7 +65,8 @@ class MMappedReader {
     FileSize = (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size);
 
     StreamFile = open(FileName.c_str(), O_RDONLY);
-    VERIFY(StreamFile != -1);
+    VERIFY_MSG(StreamFile != -1,
+               "open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
 
     if (BlockSize != -1ULL) {
       size_t PageSize = getpagesize();
@@ -73,7 +78,8 @@ class MMappedReader {
       MappedRegion =
           (uint8_t*)mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
                          StreamFile, 0);
-      VERIFY((intptr_t)MappedRegion != -1L);
+      VERIFY_MSG((intptr_t)MappedRegion != -1L,
+                 "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     } else
       MappedRegion = NULL;
 
@@ -87,7 +93,8 @@ class MMappedReader {
 
     if (Unlink) {
       int res = unlink(FileName.c_str());
-      VERIFY(res == 0);
+      VERIFY_MSG(res == 0,
+                 "open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     }
   }
 

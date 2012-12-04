@@ -32,7 +32,8 @@ class MMappedWriter {
 
   void open(const std::string &FileName) {
     StreamFile = ::open(FileName.c_str(), O_RDWR | O_CREAT | O_TRUNC, (mode_t)0660);
-    VERIFY(StreamFile != -1);
+    VERIFY_MSG(StreamFile != -1,
+               "open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     
     FileOffset = BytesWritten = 0;
     MappedRegion = NULL;
@@ -64,10 +65,12 @@ class MMappedWriter {
       return;
     
     int res = lseek(StreamFile, amount-1, SEEK_CUR);
-    VERIFY(res != -1);
+    VERIFY_MSG(res != -1,
+               "lseek(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     res = ::write(StreamFile, "", 1);
-    VERIFY(res != -1);
-    
+    VERIFY_MSG(res != -1,
+               "write(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+
     // FileOffset here should be aligned to page boundary. Tune the stuff due to this fact.
     int PageSize = getpagesize();
     size_t FileOffsetAligned = FileOffset / PageSize * PageSize;
@@ -79,7 +82,8 @@ class MMappedWriter {
         (uint8_t*)mmap(NULL, BytesReserved,
                        PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED,
                        StreamFile, FileOffsetAligned);
-    VERIFY((intptr_t)MappedRegion != -1L);
+    VERIFY_MSG((intptr_t)MappedRegion != -1L,
+               "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
   }
   
   size_t size() const { return BytesReserved; }
