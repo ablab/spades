@@ -18,7 +18,7 @@ pushd ../../../
 project_name=$2
 creature_name=$1
 project_dir="spades_output/"$creature_name$project_name
-output_pref="/home/dantipov/"
+output_pref="/scratchfast/spb_teamcity/"
 options_dir=$output_pref"input/"$creature_name$project_name
 rm -rf $project_dir
 mkdir $project_dir -p
