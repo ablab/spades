@@ -135,6 +135,8 @@ def analyze_gaps(in_filename, out_filename, reference, out_ref, kmer):
             i += 1
     write_fasta(ref_chunks, out_ref)
 
+    return chunks, gaps
+
 def main():
 
     if len(sys.argv) < 5:
