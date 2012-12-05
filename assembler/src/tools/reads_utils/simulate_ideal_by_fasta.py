@@ -2,6 +2,12 @@
 
 import sys
 
+rc_map = {'A':'T', 'C':'G', 'G':'C', 'T':'A', 'N':'N'}
+
+def revcomp(string):
+    rc = "".join([rc_map[x] for x in string.strip()])
+    return rc[::-1]
+
 
 def trusted_gaps(log, gaps, last_gap, max_gap):
     logfile = open(log, "r")
@@ -61,7 +67,7 @@ def print_paired(outfile, contig, rl, distance, postfix):
         outfile.write(">READ_" + str(j) + postfix + "/1\n")
         outfile.write(contig[j : j + rl] + "\n")
         outfile.write(">READ_" + str(j) + postfix + "/2\n")
-        outfile.write(contig[j + distance : j + distance + rl] + "\n")
+        outfile.write(revcomp(contig[j + distance : j + distance + rl]) + "\n")
 
 
 def simulate_single(filename, fasta, rl = 100, circular = False):
@@ -99,7 +105,7 @@ def simulate_paired_over_gaps(filename, fasta, chunks, trusted_gaps, last_gap, r
                 outfile.write(">READ_0" + str() + "_SGAP_" + str(i) + "/1\n")
                 outfile.write(fasta[i][1][-rl:] + "\n")
                 outfile.write(">READ_0" + str() + "_SGAP_" + str(i) + "/2\n")
-                outfile.write(fasta[i + 1][1][:rl] + "\n")
+                outfile.write(revcomp(fasta[i + 1][1][:rl]) + "\n")
                 continue
 
             lpos = trusted_gaps[i][1] - distance - chunks[i][0]
@@ -121,7 +127,7 @@ def simulate_paired_over_gaps(filename, fasta, chunks, trusted_gaps, last_gap, r
             outfile.write(">READ_0" + str() + "_LSGAP_" + str(i) + "/1\n")
             outfile.write(fasta[-1][1][-rl:] + "\n")
             outfile.write(">READ_0" + str() + "_LSGAP_" + str(i) + "/2\n")
-            outfile.write(fasta[0][1][:rl] + "\n")
+            outfile.write(revcomp(fasta[0][1][:rl]) + "\n")
         else:
             lpos = last_gap[1] - distance + ref_len - chunks[-1][0]
             if lpos < 0:

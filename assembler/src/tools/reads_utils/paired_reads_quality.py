@@ -198,7 +198,7 @@ for dataset in datasets_dict.iterkeys():
     align_log = open(os.path.join(output_dir, dataset + ".log"),'w')
     align_err = open(os.path.join(output_dir, dataset + ".err"),'w') 
     reads_string = reduce(lambda x, y: x + ',' + y, datasets_dict[dataset])   
-    subprocess.call([bowtie, '-c', '-q', '--suppress', '6,7,8', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
+    subprocess.call([bowtie, '-c', '-q', '-m', '1', '--suppress', '6,7,8', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
     align_log.close()
     align_err.close() 
 
