@@ -39,8 +39,6 @@ def usage():
     print "-r\t--reference\tFile with reference genome (Mandatory parameter)"
     print "-o\t--output-dir\tDirectory to store all result files"
     print "-t\t--thread-num\tMax number of threads (default is " + str(thread_num) + ")"
-    print "-k\t--kmer-size\tK-mer size for which coverage is counted (default is " + str(kmer) + ")"
-    print "-b\t--bin-size\tSize of bins for counting coverage (default is " + str(bin_size) + ")"
     
 def check_file(f):
     if not os.path.isfile(f):
@@ -219,6 +217,15 @@ for dataset in datasets_dict.iterkeys():
     raw_file  = os.path.join(output_dir, dataset + ".raw")
     raw_single.raw_single(align_log, raw_file)
 
+# is form logs    
+print("Retaining insert size")
+import is_from_single_log
+stat_dict = {}
+for dataset in datasets_dict.iterkeys():
+    print("  " + dataset + "...")
+    align_log = os.path.join(output_dir, dataset + ".log")
+    stat_dict[dataset] = is_from_single_log.dist_from_logs(align_log, 1000)
+
 # get length of reference
 ref_len = 0
 for line in open(reference):
@@ -228,16 +235,17 @@ for line in open(reference):
 # coverage # python reads_utils/stat/coverage.py ec.raw ec.cov 4639675 1000
 print("Analyzing coverage")
 report_dict["header"] += ["Genome mapped (%)"]
+gaps_dict = {}
 import coverage
 for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     raw_file  = os.path.join(output_dir, dataset + ".raw")
     cov_file  = os.path.join(output_dir, dataset + ".cov")
-    cov = coverage.coverage(raw_file, cov_file, ref_len, bin_size, kmer)
+    cov = coverage.coverage(raw_file, cov_file, ref_len, 1, 1)
     
     gaps_file  = os.path.join(output_dir, dataset + ".gaps")
     chunks_file  = os.path.join(output_dir, os.path.splitext(os.path.basename(reference))[0] + "gaps_" + dataset + ".fasta")
-    coverage.analyze_gaps(cov_file, gaps_file, reference, chunks_file, kmer)
+    gaps_dict[dataset] = coverage.analyze_gaps(cov_file, gaps_file, reference, chunks_file, kmer)
 
     report_dict[dataset].append( str(cov * 100) )
 
