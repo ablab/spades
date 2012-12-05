@@ -95,6 +95,7 @@ def pred_fwd( start_pos, compared, min_dist) :
 def pred_bwd( start_pos, compared, min_dist) :
 	return ( start_pos < compared and compared - start_pos < min_dist ) 
 
+# returns id in list that is closest to id i by pos value
 def find_closest( i, start_pos, list, pred, contigs, coverage ) :
 
 	min_dist = MAX_DIST
@@ -111,34 +112,41 @@ def find_closest( i, start_pos, list, pred, contigs, coverage ) :
 
 	return min_id
 
+# splits graph into component discarding reads that are potential to be unique
 def get_components( edges ) :
 
 	print "splitting into components..."
 	#print edges
-	import itertools
+	#import itertools
 
-	func_in = lambda x : edges[x][1]
-	v_ins =  dict(itertools.groupby( edges, func_in )).keys()
-	#in_out_dict = dict( v_ins, list(outs) )
+	out_count = {}
+	in_count = {}
+	for e in edges.keys() :
+		ed = edges[e][0]
+		if ed in out_count.keys() :
+			out_count[ed] += 1
+		else :
+			out_count[ed] = 1
+		ed = edges[e][1]
+		if ed in in_count.keys() :
+			in_count[ed] += 1
+		else :
+			in_count[ed] = 1
 	
-	func_out = lambda x : edges[x][0]
-	v_outs = dict(itertools.groupby( edges, func_out )).keys()
-	#out_in_dict = dict( v_outs, list(ins) )
-
 	components = {}
 	singles = {}
 	for e in edges.keys() :
-		if edges[e][0] in v_ins and edges[e][1] in v_outs :
-				components[e] = edges[e]
-		else :
+		v_out = edges[e][0]
+		v_in = edges[e][1]
+
+		if (not v_out in in_count or out_count[v_out] > 1 ) and (in_count[v_in] > 1 or not v_in in out_count ) :
 			singles[e] = edges[e]
-			
-	#print filtered_edges
-	#components = {}
-	#for e in filtered_edges :
-	#	if visited[e] = False
+		else :
+			components[e] = edges[e]
+
 	return components, singles
 
+# dfs traversal of components that are considered to be in the same repeat 
 def traverse_components( components, singles, cov, redges ) :
 
 	visited = set()
@@ -166,9 +174,7 @@ def traverse_components( components, singles, cov, redges ) :
 			 
 				print
 
-			#print 'ins: ', ins_dict
-			#print 'outs: ', outs_dict
-
+# part of dfs implementation
 def visit( e, visited, components, singles, ins, outs ) :
 
 	#print "singles: ", singles
@@ -188,7 +194,7 @@ def visit( e, visited, components, singles, ins, outs ) :
 				visit (adj_e, visited, components, singles, ins, outs)
 
 	
-
+# simple search for "fork" components in graph, which checks one-edge repeats
 def split_by_coverage( contigs, edges, long ) :
 
 	#print "EDGES: ", edges
@@ -337,17 +343,17 @@ def flush(rank) :
 #coverage = parse_cvr("distance_filling.cvr")
 #rank = get_rank(contigs,coverage)
 
-TEST = False
+TEST = False 
 if TEST :
 	PREFIX = "./"
-	contigs = parse_pos("test1.pos",0,100000000)
-	coverage = parse_cvr("test1.cvr")
-	edges, redges = parse_grp("test1.grp")
+	contigs = parse_pos("test.pos",0,100000000)
+	coverage = parse_cvr("test.cvr")
+	edges, redges = parse_grp("test.grp")
 	#split_by_coverage(contigs, edges, 0)
 	components, singles = get_components( edges )
 	traverse_components( components, singles, coverage, redges )
 else :
-	contigs = parse_pos("distance_filling.pos",20,10000)
+	contigs = parse_pos("distance_filling.pos",0,10000)
 	coverage = parse_cvr("distance_filling.cvr")
 	edges, redges = parse_grp("distance_filling.grp")
 	#split_by_coverage(contigs, edges, 100)
