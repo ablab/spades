@@ -228,7 +228,6 @@ def split_sam(filename, tmpdir):
 
     paired_read = []
     processed_reads = 0;
-#У кого нет гигабайта, тот может идти лесом
     max_cashed_lines = 1000000;
     for line in inFile:
         arr = line.split()
