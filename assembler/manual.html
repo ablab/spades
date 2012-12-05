@@ -98,7 +98,7 @@ it will process this dataset and if the installation is successful you will see 
 
 Thank you for using SPAdes!
 
-======= SPAdes pipeline finished
+======= SPAdes pipeline finished. Log can be found here: spades_test/spades.log
 </code>
 </pre>
 
@@ -239,12 +239,10 @@ Thank you for using SPAdes!
 </p>
 
 <pre>
-    <code>assembly.log</code> - <i>assembler log</i>
     <code>contigs.fasta</code> - <i>resulting contigs</i>
     <code>contigs.sam</code> - <i>SAM file, generated only with <code>--generate-sam-file</code> option</i>
     <code>corrected/</code> - <i>files from error correction run</i>
         <code>configs/</code> - <i>configuration files for error correction</i>
-        <code>correction.log</code> - <i>error correction log</i>
         <code>dataset.info</code> - <i>internal configuration files</i>
         <i>other error correction output file</i>
     <code>dataset.info</code> - <i>internal configuration files</i>
@@ -253,6 +251,7 @@ Thank you for using SPAdes!
     <code>K55/</code> - <i>files from the run with K=55</i>
     <code>params.txt</code> - <i>information about SPAdes parameters in this run</i>
     <code>scaffolds.fasta</code> - <i>resulting scaffolds</i>
+    <code>spades.log</code> - <i>SPAdes log</i>
 </pre>
 
 <p>
@@ -269,17 +268,8 @@ Thank you for using SPAdes!
 
 <p>Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes.</p>
 
-<p>In case you have troubles running SPAdes, please provide us with the following files from the directory
-    <code>&lt;output_dir></code>:
-
-<pre class="code">
-<code>
-    params.txt
-    assembly.log
-    corrected/correction.log
-</code>
-</pre>
-
+<p>In case you have troubles running SPAdes, please provide us with <code>params.txt</code> and <code>spades.log</code> files from the directory
+<code>&lt;output_dir></code>.
 
     <p>Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru">spades.support@bioinf.spbau.ru</a>.</p>
 
