@@ -126,6 +126,46 @@ void save_resolved(conj_graph_pack& resolved_gp,
     }
 }
 
+void found_distance_from_repeats(conj_graph_pack& gp){
+	set<EdgeId> not_unique;
+	for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		VertexId start = gp.g.EdgeStart(*iter);
+		VertexId end = gp.g.EdgeEnd(*iter);
+		if ((gp.g.CheckUniqueIncomingEdge(end) && !gp.g.IsDeadEnd(end)) ||( gp.g.CheckUniqueOutgoingEdge(start)  && !gp.g.IsDeadStart(start) ))
+			not_unique.insert(*iter);
+	}
+	while (!not_unique.empty()) {
+		set<EdgeId> wfs_set ;
+		wfs_set.insert(*not_unique.begin());
+		set<EdgeId> component;
+		while (!wfs_set.empty()) {
+			for (auto iter = wfs_set.begin(); iter != wfs_set.end(); ++iter) {
+				component.insert(*iter);
+				VertexId start = gp.g.EdgeStart(*iter);
+				VertexId end = gp.g.EdgeEnd(*iter);
+				vector<EdgeId> next = gp.g.IncomingEdges(start);
+				for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
+					if (not_unique.find(*e_iter) != not_unique.end() && component.find(*e_iter) == component.end())
+						wfs_set.insert(*e_iter);
+				next = gp.g.OutgoingEdges(end);
+				for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
+					if (not_unique.find(*e_iter) != not_unique.end() && component.find(*e_iter) == component.end())
+						wfs_set.insert(*e_iter);
+
+				wfs_set.erase(iter);
+			}
+		}
+		INFO("not_unique_component");
+		for (auto iter = component.begin(); iter != component.end(); ++iter){
+			INFO (gp.g.int_id(*iter));
+			not_unique.erase(*iter);
+		}
+		component.clear();
+
+	}
+
+}
+
 template<class graph_pack>
 void SelectReadsForConsensus(graph_pack& etalon_gp,
 		typename graph_pack::graph_t& cur_graph,
@@ -884,7 +924,7 @@ void resolve_repeats() {
 	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
 
 	INFO("STAGE == Resolving Repeats");
-
+//	found_distance_from_repeats(conj_gp);
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
 		int number_of_components = 0;
 

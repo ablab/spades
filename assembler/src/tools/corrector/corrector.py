@@ -18,7 +18,7 @@ from math import pow;
 #profile = []
 #insertions = {}
 config = {}
-
+total_contigs = 0
 
 def read_genome(filename):
     res_seq = []
@@ -193,17 +193,49 @@ def process_read(arr, l,m, profile, insertions):
         insertions[ind].append(insertion_string)
     return 1
 
+def drop_cash(cashed_sams, separate_sams):
+    print ("dropping cashed lines...")
+    for contig_info in cashed_sams:
+        file_name = separate_sams[contig_info]
+        file = open(file_name, "a");
+        for line in cashed_sams[contig_info]:
+            file.write(line);
+        file.close();
+        cashed_sams[contig_info] = []
+    return;
 
 def split_sam(filename, tmpdir):
-
+    global total_contigs;
     inFile = open(filename)
     separate_sams ={}
     mult_aligned = {}
+    cashed_sams = {}
     print("file "+ filename+" opened")
     read_num = 0;
+
+    import subprocess
+    ulimit = subprocess.check_output("ulimit -n", shell=True)
+    print "ulimit :", ulimit
+    ulimit = int(ulimit)
+    need_to_cashe = True;
+#TODO: whether multiple aligned helps?
+    needed_ulimit = total_contigs * 2 + 20
+    if (ulimit < needed_ulimit):
+        print ("Limit for simultaniously opened file is too small. limit: " + str(ulimit) + "; needed: " + str(needed_ulimit))
+        print ("Increasing it will speedup this stage for a while")
+        print ("For most systems (if you are a sudoer) you can fix it by adding \"*  soft    nofile    "+ str(needed_ulimit + 20) + "\" to /etc/security/limits.conf")
+        need_to_cashe = True
+
     paired_read = []
+    processed_reads = 0;
+#У кого нет гигабайта, тот может идти лесом
+    max_cashed_lines = 1000000;
     for line in inFile:
         arr = line.split()
+        processed_reads += 1;
+        if (processed_reads % max_cashed_lines == 0 and need_to_cashe):
+            print processed_reads
+            drop_cash(cashed_sams , separate_sams);
         if len(arr) > 5:
             read_num += 1
             paired_read.append(line.strip())
@@ -236,10 +268,13 @@ def split_sam(filename, tmpdir):
                 for cont_name in all_contigs :
                     if cont_name in separate_sams:
                         for j in range(0,2):
-                            if cont_name in unique:
-                                separate_sams[cont_name].write(paired_read[j]+ '\n')
+                            if (not need_to_cashe):
+                                if cont_name in unique:
+                                    separate_sams[cont_name].write(paired_read[j]+ '\n')
+                                else:
+                                    mult_aligned[cont_name].write(paired_read[j]+ '\n')
                             else:
-                                mult_aligned[cont_name].write(paired_read[j]+ '\n')
+                                cashed_sams[cont_name].append(paired_read[j] + '\n');
 
                 read_num = 0;
                 paired_read = []
@@ -252,24 +287,32 @@ def split_sam(filename, tmpdir):
                 samfilename = tmpdir + '/' +contig[1].split('_')[1] + '.pair.sam'
                 multalignedfilename = tmpdir + '/' +contig[1].split('_')[1] + '.multiple.sam'
 #               print contig[1] + " " + samfilename;
+                if need_to_cashe:
+                    separate_sams[contig[1]] = samfilename
+                    cashed_sams[contig[1]] = [];
+                else:
+                    separate_sams[contig[1]] = open(samfilename, 'w')
+                    mult_aligned[contig[1]] = open(multalignedfilename , 'w')
+    if (need_to_cashe):
+        drop_cash(cashed_sams , separate_sams);
+        cashed_sams = None
+    else:
+        for file_name in separate_sams:
+            separate_sams[file_name].close()
 
-                separate_sams[contig[1]] = open(samfilename, 'w')
-                mult_aligned[contig[1]] = open(multalignedfilename , 'w')
 
-    for file_name in separate_sams:
-        separate_sams[file_name].close()
+
 
     return 0
 
 
 def split_contigs(filename, tmpdir):
+    global total_contigs;
     ref_seq = read_contigs(filename);
     for contig_desc in ref_seq:
         tfilename = tmpdir + '/' + contig_desc.split('_')[1] +'.fasta'
-
+        total_contigs += 1;
         write_fasta([[contig_desc, ref_seq[contig_desc]]], tfilename)
-    return 0
-
 
 def usage():
     print >> sys.stderr, 'Corrector. Simple postprocessing tool'
@@ -305,6 +348,7 @@ def run_aligner():
     config["reads2"] = reads_2
     config["sam_file"] = work_dir + "tmp.sam"
     config["contigs"] = contigs_name
+
     print ("config")
     if "bowtie2" in config:
         print("bowtie2 found, aligning")
@@ -312,6 +356,7 @@ def run_aligner():
     else:
         print("running bwa")
         run_bwa()
+
 def run_bowtie2():
     global config;
     os.system(config["bowtie2"] + "-build " + config["contigs"] + " " + config["work_dir"] + "tmp > /dev/null")
@@ -385,7 +430,7 @@ def process_contig(samfilename, contig_file, mult_aligned_filename):
     inserted = 0;
     replaced = 0;
     deleted = 0;
-    mult_alignedFile = open(mult_aligned_filename, 'r')
+#    mult_alignedFile = open(mult_aligned_filename, 'r')
     fasta_contig = read_genome(contig_file);
 #no spam about short contig processing
     if len(fasta_contig[1]) > 20000:
@@ -416,11 +461,11 @@ def process_contig(samfilename, contig_file, mult_aligned_filename):
         for j in ('A','C','G','T','N','I','D'):
             profile[i][j] = 0;
             mult_profile[i][j] = 0;
-    for line in mult_alignedFile:
-        arr = line.split();
-        if arr[2].split('_')[1] != cont_num:
-            continue
-        process_read(arr, l, 1, mult_profile, mult_insertions)
+#    for line in mult_alignedFile:
+#        arr = line.split();
+#        if arr[2].split('_')[1] != cont_num:
+#            continue
+#        process_read(arr, l, 1, mult_profile, mult_insertions)
     #TODO: estimation on insert size, need to be replaced
     insert_size_est = 400
     samFile = open(samfilename, 'r');
@@ -498,9 +543,10 @@ def process_contig(samfilename, contig_file, mult_aligned_filename):
     logFile.write("Finished processing "+ str(contig_file) + ". Used " + str(total_reads) + " reads.\n")
     logFile.write("replaced: " + str(replaced) + " deleted: "+ str(deleted) +" inserted: " + str(inserted) +'\n')
 #    return inserted, replaced
-
+    return;
 
 def main(args):
+    paired_read = []
 
     if len(args) < 1:
         usage()

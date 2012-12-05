@@ -104,6 +104,8 @@ class BEdge(Abstract_Edge):
                     continue
                 diag = self.diagonals[diag_index]
                 cur_len += diag.offsetc - diag.offseta
+#            can_add_begin = False;
+#            can_add_end = False;
             if can_add_end and can_add_begin:
                 return first.rectangle.e1.seq[:first.offseta] + seq + last.rectangle.e2.seq[last.offsetd + K:]
             if can_add_end:
