@@ -360,45 +360,50 @@ private:
     }
 
   void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
-        }
+    }
 
-        INFO("Processing paired reads (takes a while)");
+    INFO("Processing paired reads (takes a while)");
 
-        size_t nthreads = streams_.size();
+    size_t nthreads = streams_.size();
     vector<omnigraph::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
-        buffer_pi[0] = &paired_index;
+    buffer_pi[0] = &paired_index;
 
-        for (size_t i = 1; i < nthreads; ++i) {
+    for (size_t i = 1; i < nthreads; ++i) {
       buffer_pi[i] = new omnigraph::PairedInfoIndexT<Graph>(graph_);
-        }
+    }
 
-        size_t counter = 0;
-        #pragma omp parallel num_threads(nthreads)
-        {
-            #pragma omp for reduction(+ : counter)
+    size_t counter = 0;
+    #pragma omp parallel num_threads(nthreads)
+    {
+      #pragma omp for reduction(+ : counter)
       for (size_t i = 0; i < nthreads; ++i)
       {
-                typename PairedStream::read_type r;
-                PairedStream& stream = streams_[i];
-                stream.reset();
+        typename PairedStream::read_type r;
+        PairedStream& stream = streams_[i];
+        stream.reset();
 
-                while (!stream.eof()) {
-                    stream >> r;
-                    ++counter;
-                    ProcessPairedRead(*buffer_pi[i], r);
-                }
-            }
+        while (!stream.eof()) {
+          stream >> r;
+          ++counter;
+          ProcessPairedRead(*buffer_pi[i], r);
         }
-        INFO("Used " << counter << " paired reads");
-
-        INFO("Merging paired indices");
-        for (size_t i = 1; i < nthreads; ++i) {
-            buffer_pi[0]->AddAll(*(buffer_pi[i]));
-            delete buffer_pi[i];
-        }
+      }
     }
+    INFO("Used " << counter << " paired reads");
+
+    for (size_t i = 0; i < nthreads; ++i)
+      DEBUG("Size of " << i << "-th map is " << buffer_pi[i]->size());
+
+    INFO("Merging paired indices");
+    for (size_t i = 1; i < nthreads; ++i) {
+      buffer_pi[0]->AddAll(*(buffer_pi[i]));
+      delete buffer_pi[i];
+    }
+
+    DEBUG("Size of map is " << buffer_pi[0]->size());
+  }
 
 public:
 	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, PairedStream& stream, WeightF weight_f) :

@@ -347,7 +347,6 @@ class InnerMap {
     }
 
     bool operator==(const FastIterator& other) const {
-      DEBUG("Comparing Iteratos");
       return (this->position_ == other.position_) && (this->inner_pos_ == other.inner_pos_);
     }
 
@@ -360,7 +359,6 @@ class InnerMap {
     }
 
     FastIterator& operator++() {
-      DEBUG("iterating");
       if (position_ == (map_->wrapped_map_).end())
         return *this;
 
@@ -506,6 +504,18 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
       return inner_pos_->second;
     }
 
+    const EdgeId first() const {
+      VERIFY(position_ != index_.index_.end());
+      return position_->first;
+    }
+
+    const EdgeId second() const {
+      VERIFY(position_ != index_.index_.end());
+      const auto& inner_map = position_->second;
+      VERIFY(inner_pos_ != inner_map.end());
+      return inner_pos_->first;
+    }
+
     const Histogram* operator->() const {
       VERIFY(position_ != index_.index_.end());
       const Histogram& hist = inner_pos_->second;
@@ -533,18 +543,6 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
       EdgePairIterator tmp(*this);
       this->operator++();
       return tmp;
-    }
-
-    const EdgeId first() const {
-      VERIFY(position_ != index_.index_.end());
-      return position_->first;
-    }
-
-    const EdgeId second() const {
-      VERIFY(position_ != index_.index_.end());
-      const auto& inner_map = position_->second;
-      VERIFY(inner_pos_ != inner_map.end());
-      return inner_pos_->first;
     }
 
     friend ostream& operator<<(ostream& os, const EdgePairIterator& iter) {
@@ -721,6 +719,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
 
   // here we trying to insert PairInfo, 
   // if there is no existing PairInfo with the same key
+  // very complicated implementation, but it seems to be faster.
   void AddAll(const PairedInfoIndexT& index_to_add) {
     typedef typename IndexDataType::iterator data_iterator;
     VERIFY(this->IsAttached());
@@ -739,6 +738,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     }
   }
 
+  // Printing the contents of index.
   void PrintAll() const {
     size_t size = 0;
     for (auto I = this->begin(), E = this->end(); I != E; ++I) {
@@ -979,7 +979,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
           const pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
           if (!result.second) // in this case we need to merge two points 
           {
-            Point point_exists = *result.first;
+            const Point& point_exists = *result.first;
             this->MergeData(e1_to_add, e2_to_add, point_exists, new_point, false);
           } else
             ++size_; 

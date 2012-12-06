@@ -204,7 +204,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     INFO("Processing");
     #pragma omp parallel num_threads(nthreads)
     {
-    #pragma omp for
+      #pragma omp for
       for (size_t i = 0; i < edge_pairs.size(); ++i)
         {
           EdgeId e1 = edge_pairs[i].first;
@@ -307,7 +307,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
                                PairedInfoIndexT<Graph>& result) const 
   {
     if (ep <= ConjugatePair(ep)) {
-      DEBUG("Edge pair is " << this->graph().int_id(ep.first) <<
+      TRACE("Edge pair is " << this->graph().int_id(ep.first) <<
                         " " << this->graph().int_id(ep.second));
       const vector<size_t>& forward = this->GetGraphDistancesLengths(ep);
       const EstimHist& estimated = this->EstimateEdgePairDistances(ep, histogram, forward);

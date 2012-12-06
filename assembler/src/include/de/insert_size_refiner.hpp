@@ -39,7 +39,7 @@ double get_mad(const map<int, size_t> &hist, double median) { // median absolute
 void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, size_t>& res) {
 	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
 		if (iter->first >= low && iter->first <= high) {
-      DEBUG("Cropped histogram" <<  iter->first << " " << iter->second);
+      DEBUG("Cropped histogram " <<  iter->first << " " << iter->second);
 			res.insert(*iter);
 		}
 	}
