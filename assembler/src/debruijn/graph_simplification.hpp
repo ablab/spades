@@ -819,6 +819,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 		boost::function<void(EdgeId)> removal_handler_f,
 		omnigraph::GraphLabeler<Graph>& labeler, detail_info_printer& printer,
 		size_t iteration_count) {
+	printer(ipp_before_simplification);
 	DEBUG("Graph simplification started");
 	EdgeRemover<Graph> edge_remover(gp.g,
 			cfg::get().simp.removal_checks_enabled, removal_handler_f);
