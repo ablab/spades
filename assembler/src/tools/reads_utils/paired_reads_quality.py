@@ -191,8 +191,9 @@ index_log.close()
 index_err.close()
 
 # bowtie-ing
-print("Aligning")
-report_dict["header"] += ["Total reads", "Aligned reads", "Not aligned reads"]
+print("Aligning (ignoring reads with multiple possible aligment)")
+report_dict["header"] += ["Total reads", "Uniquely aligned reads", "Unaligned reads", "Non-niquely aligned reads"]
+total_reads = {}
 for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     align_log = open(os.path.join(output_dir, dataset + ".log"),'w')
@@ -203,10 +204,20 @@ for dataset in datasets_dict.iterkeys():
     align_err.close() 
 
     align_err = open(os.path.join(output_dir, dataset + ".err"),'r') 
+    suppressed_added = False
     for line in align_err:
         if line.startswith("# reads processed") or line.startswith("# reads with at least one") or line.startswith("# reads that failed"):
             report_dict[dataset].append( (line.split(':')[1]).strip() )
+        elif line.startswith("# reads with alignments suppressed due to"):
+            report_dict[dataset].append( (line.split(':')[1]).strip() )
+            suppressed_added = True
+        if line.startswith("# reads processed"):
+            total_reads[dataset] = int((line.split(':')[1]).strip())
+
     align_err.close()       
+
+    if not suppressed_added:
+        report_dict[dataset].append( "0 (0.00%)" )
 
 # raw-single    
 print("Parsing Bowtie log")
@@ -216,15 +227,6 @@ for dataset in datasets_dict.iterkeys():
     align_log = os.path.join(output_dir, dataset + ".log")
     raw_file  = os.path.join(output_dir, dataset + ".raw")
     raw_single.raw_single(align_log, raw_file)
-
-# is form logs    
-print("Retaining insert size")
-import is_from_single_log
-stat_dict = {}
-for dataset in datasets_dict.iterkeys():
-    print("  " + dataset + "...")
-    align_log = os.path.join(output_dir, dataset + ".log")
-    stat_dict[dataset] = is_from_single_log.dist_from_logs(align_log, 1000)
 
 # get length of reference
 ref_len = 0
@@ -242,16 +244,39 @@ for dataset in datasets_dict.iterkeys():
     raw_file  = os.path.join(output_dir, dataset + ".raw")
     cov_file  = os.path.join(output_dir, dataset + ".cov")
     cov = coverage.coverage(raw_file, cov_file, ref_len, 1, 1)
-    
     gaps_file  = os.path.join(output_dir, dataset + ".gaps")
     chunks_file  = os.path.join(output_dir, os.path.splitext(os.path.basename(reference))[0] + "gaps_" + dataset + ".fasta")
     gaps_dict[dataset] = coverage.analyze_gaps(cov_file, gaps_file, reference, chunks_file, kmer)
 
     report_dict[dataset].append( str(cov * 100) )
 
+# is form logs    
+print("Retaining insert size")
+report_dict["header"] += ["Read length", "FR read pairs", "Insert size (deviation)", "RF read pairs", "Insert size (deviation)", "FF read pairs", "Insert size (deviation)", "One uniquely aligned read in pair", "Suppressed due to insert size limit"]
+import is_from_single_log
+for dataset in datasets_dict.iterkeys():
+    print("  " + dataset + "...")
+    align_log = os.path.join(output_dir, dataset + ".log")
+    stat = is_from_single_log.stat_from_log(align_log)
+    read_pairs = total_reads[dataset] / 2
+
+    report_dict[dataset].append( str(stat[0]) )
+
+    report_dict[dataset].append( str(stat[1]["FR"].count) + " (" + str(round( 100.0 * float(stat[1]["FR"].count) / float(read_pairs), 2) ) + "%)" )
+    report_dict[dataset].append( str(round(stat[1]["FR"].mean, 2)) + " (" + str(round(stat[1]["FR"].dev, 2)) + ")"  )
+
+    report_dict[dataset].append( str(stat[1]["RF"].count) + " (" + str(round( 100.0 * float(stat[1]["RF"].count) / float(read_pairs), 2) ) + "%)" )
+    report_dict[dataset].append( str(round(stat[1]["RF"].mean, 2)) + " (" + str(round(stat[1]["RF"].dev, 2)) + ")"  )
+
+    report_dict[dataset].append( str(stat[1]["FF"].count) + " (" + str(round( 100.0 * float(stat[1]["FF"].count) / float(read_pairs), 2) ) + "%)" )
+    report_dict[dataset].append( str(round(stat[1]["FF"].mean, 2)) + " (" + str(round(stat[1]["FF"].dev, 2)) + ")"  )
+
+    report_dict[dataset].append( str(stat[1]["AU"].count) + " (" + str(round( 100.0 * float(stat[1]["AU"].count) / float(read_pairs), 2) ) + "%)" )
+    report_dict[dataset].append( str(stat[1]["SP"].count) + " (" + str(round( 100.0 * float(stat[1]["SP"].count) / float(read_pairs), 2) ) + "%)" )
+
 # total report
 import report_maker
-report_maker.do(report_dict, os.path.join(output_dir, 'all'), os.path.join(output_dir, 'all.transposed'))
+report_maker.do(report_dict, os.path.join(output_dir, 'report.horizontal'), os.path.join(output_dir, 'report'))
 
 # clearing temp folder
 shutil.rmtree(tmp_folder)

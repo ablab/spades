@@ -9,11 +9,13 @@ def coverage(in_filename, out_filename, maxLen, bar, kmer):
     inFile = open(in_filename)
     outFile = open(out_filename, 'w')
     
-    hist = [0 for i in range(maxLen	+ 1)]
+    hist = [0] * (maxLen + 1)
 
     for line in inFile:
-	    stpos = int(line.split()[0])
-	    for i in range(0, int(line.split()[1]) - kmer + 1):
+	    coords = line.split()
+	    stpos = int(coords[0])
+	    rlen =  int(coords[1])
+	    for i in range(0, rlen - kmer + 1):
 		    cpos = stpos + i
 		    if cpos <= maxLen:
 			    hist[cpos] += 1

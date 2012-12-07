@@ -194,7 +194,7 @@ index_err.close()
 
 # bowtie-ing
 print("Aligning")
-report_dict["header"] += ["Total reads", "Aligned reads", "Not aligned reads"]
+report_dict["header"] += ["Total reads", "Aligned reads", "Unaligned reads"]
 for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     align_log = open(os.path.join(output_dir, dataset + ".log"),'w')
@@ -243,7 +243,7 @@ for dataset in datasets_dict.iterkeys():
 
 # total report
 import report_maker
-report_maker.do(report_dict, os.path.join(output_dir, 'all'), os.path.join(output_dir, 'all.transposed'))
+report_maker.do(report_dict, os.path.join(output_dir, 'report.horizontal'), os.path.join(output_dir, 'report'))
 
 # clearing temp folder
 shutil.rmtree(tmp_folder)
