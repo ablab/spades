@@ -25,11 +25,12 @@ bin_size = 1
 kmer = 1
 make_latest_symlink = True
 reference = ""
+max_is = 1000000000
 
 ###################################################################
 
-long_options = "output-dir= reference= thread-num= bin-size= kmer-size=".split()
-short_options = "o:r:t:b:k:"
+long_options = "output-dir= reference= thread-num= bin-size= kmer-size= max-is=".split()
+short_options = "o:r:t:b:k:x:"
 
 def usage():
     print 'Estimation reads quality'
@@ -39,6 +40,7 @@ def usage():
     print "-r\t--reference\tFile with reference genome (Mandatory parameter)"
     print "-o\t--output-dir\tDirectory to store all result files"
     print "-t\t--thread-num\tMax number of threads (default is " + str(thread_num) + ")"
+    print "-x\t--max-is\tMaximal inser size (default is none)"
     
 def check_file(f):
     if not os.path.isfile(f):
@@ -64,14 +66,10 @@ for opt, arg in options:
         thread_num = int(arg)
         if thread_num < 1:
             thread_num = 1 
-    elif opt in ('-b', "--bin-size"):
-        bin_size = int(arg)
-        if bin_size < 1:
-            bin_size = 1   
-    elif opt in ('-k', "--kmer-size"):
-        kmer = int(arg)
-        if kmer < 1:
-            kmer = 1      
+    elif opt in ('-x', "--max-is"):
+        max_is = int(arg)
+        if max_is < 0:
+            max_is = 1000000000
     else:
         raise ValueError
 
@@ -257,7 +255,7 @@ import is_from_single_log
 for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     align_log = os.path.join(output_dir, dataset + ".log")
-    stat = is_from_single_log.stat_from_log(align_log)
+    stat = is_from_single_log.stat_from_log(align_log, max_is)
     read_pairs = total_reads[dataset] / 2
 
     report_dict[dataset].append( str(stat[0]) )
