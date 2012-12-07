@@ -3,6 +3,8 @@
 import argparse
 import sys
 import os
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.patches
 import matplotlib.pyplot
 import matplotlib.lines
