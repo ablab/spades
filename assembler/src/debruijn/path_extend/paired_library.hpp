@@ -9,6 +9,7 @@
 #define PAIRED_LIBRARY_HPP_
 
 #include "../new_debruijn.hpp"
+#include "xmath.h"
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;

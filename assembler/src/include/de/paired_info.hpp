@@ -174,7 +174,7 @@ const PairInfo<EdgeId> MaxPairInfo(EdgeId e1, EdgeId e2) {
  */
 template<typename EdgeId>
 int rounded_d(PairInfo<EdgeId> const& pi) {
-  return round_to_zero(pi.d());
+  return math::round_to_zero(pi.d());
 }
 
 template<typename EdgeId>
