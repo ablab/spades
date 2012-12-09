@@ -268,29 +268,12 @@ class Graph(Abstract_Graph):
         ls = [set() for _ in xrange(limit2)]
         ls[0].add(e.v2)
         all_dist = dict()
-        if self.__from_genome():
-            all_dist[(0, e.v2.vid)] = (e, self.etalon_dist[e.eid])
         for pos in xrange(limit2):
             for v in ls[pos]:
-                if self.__from_genome():
-                    (prev_e, dists) = all_dist[(pos, v.vid)]
                 for e2 in v.out:
-                    if self.__from_genome():
-                        new_dists = []
-                        for dist in dists:
-                            if dist >= 0 and dist + prev_e.len + 1 in self.etalon_dist[e2.eid]:
-                                new_dists.append(dist + prev_e.len + 1)
-                            elif dist <= 0 and -(-dist + prev_e.len + 1) in self.etalon_dist[e2.eid]:
-                                new_dists.append(dist - prev_e.len - 1)
-                        if len(new_dists) == 0:
-                            continue
                     pos2 = pos + e2.len
                     if pos2 < limit2:
                         ls[pos2].add(e2.v2)
-                        if self.__from_genome():
-                            if (pos2, e2.v2.vid) in all_dist:
-                                new_dists += all_dist[(pos2, e2.v2.vid)][1]
-                            all_dist[(pos2, e2.v2.vid)] = (e2, new_dists)
                     if pos + e2.len > limit1:
                         yield e2, pos + e.len
 
