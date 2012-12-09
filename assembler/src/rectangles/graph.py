@@ -38,7 +38,22 @@ class Edge(Abstract_Edge):
 
     def __repr__(self):
         return "E%d(%d)" % (self.eid, self.len)
+    
+    def print_fasta(self, stream, contig_id_start):
+        contig_id = contig_id_start
+        for id_contig, contig in enumerate(self.seq.split('N')):
+            if not contig: 
+                continue
+            l = len(contig)
+            print >> stream, '>contig_%d_%d_%d_%d_l=%06d' % (contig_id, self.eid, self.conj.eid, id_contig, l)
+            contig_id += 1
+            for l in xrange(0, l, 60):
+                print >> stream, contig[l:l + 60]
+            
+        return contig_id
 
+       
+        
 
 class Graph(Abstract_Graph):
     def __init__(self):
@@ -130,26 +145,16 @@ class Graph(Abstract_Graph):
                 
                 if edge.eid in in_paths:
                     continue
-                for id_contig, contig in enumerate(edge.seq.split('N')):
-                    if not contig: continue
-                    l = len(contig)
-                    print >> stream, '>contig_%d_%d_%d_%d_l=%06d' % (contig_id, edge.eid, edge.conj.eid, id_contig, l)
-                    contig_id += 1
-                    for l in xrange(0, l, 60):
-                        print >> stream, contig[l:l + 60]
+                
+                contig_id = edge.print_fasta(stream, contig_id)
 
     def fasta(self, stream=sys.stdout):
         contig_id = 0
         for edge in self.es.itervalues():
             if edge.conj.eid <= edge.eid: # non-conjugate
-                for id_contig, contig in enumerate(edge.seq.split('N')):
-                    if not contig: continue
-                    l = len(contig)
-                    print >> stream, '>contig_%d_%d_%d_%d_l=%06d' % (contig_id, edge.eid, edge.conj.eid, id_contig, l)
-                    contig_id += 1
-                    for l in xrange(0, l, 60):
-                        print >> stream, contig[l:l + 60]
-
+                contig_id = edge.print_fasta(stream, contig_id)
+    
+    
     def stats(self, d):
         ls = []
         for edge in self.es.itervalues():
