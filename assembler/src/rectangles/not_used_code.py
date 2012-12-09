@@ -231,4 +231,131 @@ def find_pair_paths(paths1, paths2, diag1, diag2):
     return paired_paths
   
   
+### from graph.py
+    def make_graph(self, genome, k):
+        self.K = k
+        kmers = self.__get_kmers_pos(genome, k)
+        visit = set()
+        vid = 0
+        eid = 0
+        edges = set()
+        verts = dict()
+        for key in kmers:
+            if key in visit:
+                continue
+            body = [key[-1]]
+            end_vertex = key[1:]
+            while True:
+                next_kmer = extend_forward(end_vertex, kmers)
+                if next_kmer == None:
+                    break
+                body.append(next_kmer[-1])
+                end_vertex = next_kmer[1:]
+                visit.add(next_kmer)
+                visit.add(utils.rc(next_kmer))
+
+            begin_vertex = key[:-1]
+            while True:
+                next_kmer = extend_backward(begin_vertex, kmers)
+                if next_kmer == None:
+                    break
+                body.insert(0, next_kmer[-1])
+                begin_vertex = next_kmer[0:-1]
+                visit.add(next_kmer)
+                visit.add(utils.rc(next_kmer))
+
+            body = begin_vertex + ''.join(body)
+            if begin_vertex not in verts:
+                begin_ref = self.add_vertex(vid, vid + 1)
+                r_end_ref = self.add_vertex(vid + 1, vid)
+                verts[begin_vertex] = begin_ref.vid
+                verts[utils.rc(begin_vertex)] = r_end_ref.vid
+                vid += 2
+            if end_vertex not in verts:
+                end_ref = self.add_vertex(vid, vid + 1)
+                r_begin_ref = self.add_vertex(vid + 1, vid)
+                verts[end_vertex] = end_ref.vid
+                verts[utils.rc(end_vertex)] = r_begin_ref.vid
+                vid += 2
+            bv = verts[begin_vertex]
+            ev = verts[end_vertex]
+            rbv = verts[utils.rc(end_vertex)]
+            rev = verts[utils.rc(begin_vertex)]
+            if (bv, ev) not in edges:
+                if (bv, ev) == (rbv, rev) and body == utils.rc(body):
+                    self.add_edge(eid, bv, ev, len(body) - k + 1, eid)
+                    edges.add((bv, ev))
+                    self.add_seq(eid, body)
+                    self.etalon_dist[eid] = kmers[body[:k]] + kmers[utils.rc(body)[:k]]
+                    eid += 1
+                else:
+                    self.add_edge(eid, bv, ev, len(body) - k + 1, eid + 1)
+                    self.add_edge(eid + 1, rbv, rev, len(body) - k + 1, eid)
+                    edges.add((bv, ev))
+                    edges.add((rbv, rev))
+                    self.add_seq(eid, body)
+                    self.add_seq(eid + 1, utils.rc(body))
+                    self.etalon_dist[eid] = kmers[body[:k]]
+                    self.etalon_dist[eid + 1] = kmers[utils.rc(body)[:k]]
+                    eid += 2
+
+alphabet = "ACGT"
+
+def find_out_edges(vertex_body, kmer_map):
+    next_kmer = [(vertex_body + base) for base in alphabet]
+    return [kmer for kmer in next_kmer if kmer in kmer_map]
+
+
+def find_in_edges(vertex_body, kmer_map):
+    next_kmer = [(base + vertex_body) for base in alphabet]
+    return [kmer for kmer in next_kmer if kmer in kmer_map]
+
+
+def extend_forward(vertex_body, kmer_map):
+    return extend_in_direction(vertex_body, kmer_map, True)
+
+def extend_backward(vertex_body, kmer_map):
+    return extend_in_direction(vertex_body, kmer_map, False)
+
+def extend_in_direction(vertex_body, kmer_map, direction_forward):
+    in_edge = find_in_edges(vertex_body, kmer_map)
+    out_edge = find_out_edges(vertex_body, kmer_map)
+    res = out_edge if direction_forward else in_edge
+    if len(in_edge) == 1 and len(out_edge) == 1:
+        return res[0]
+    return None
+
+    def dfs(self, e, d):
+        limit1 = d - e.len
+        limit2 = d
+        if e.len > d:
+            yield e, 0
+        ls = [set() for _ in xrange(limit2)]
+        ls[0].add(e.v2)
+        all_dist = dict()
+        if self.__from_genome():
+            all_dist[(0, e.v2.vid)] = (e, self.etalon_dist[e.eid])
+        for pos in xrange(limit2):
+            for v in ls[pos]:
+                if self.__from_genome():
+                    (prev_e, dists) = all_dist[(pos, v.vid)]
+                for e2 in v.out:
+                    if self.__from_genome():
+                        new_dists = []
+                        for dist in dists:
+                            if dist >= 0 and dist + prev_e.len + 1 in self.etalon_dist[e2.eid]:
+                                new_dists.append(dist + prev_e.len + 1)
+                            elif dist <= 0 and -(-dist + prev_e.len + 1) in self.etalon_dist[e2.eid]:
+                                new_dists.append(dist - prev_e.len - 1)
+                        if len(new_dists) == 0:
+                            continue
+                    pos2 = pos + e2.len
+                    if pos2 < limit2:
+                        ls[pos2].add(e2.v2)
+                        if self.__from_genome():
+                            if (pos2, e2.v2.vid) in all_dist:
+                                new_dists += all_dist[(pos2, e2.v2.vid)][1]
+                            all_dist[(pos2, e2.v2.vid)] = (e2, new_dists)
+                    if pos + e2.len > limit1:
+                        yield e2, pos + e.len
 

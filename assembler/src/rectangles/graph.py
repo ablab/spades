@@ -257,73 +257,6 @@ class Graph(Abstract_Graph):
                 kmers[utils.rc(kmer)].append(-(len(genome) - i - k + 1))
         return kmers
 
-    def make_graph(self, genome, k):
-        self.K = k
-        kmers = self.__get_kmers_pos(genome, k)
-        visit = set()
-        vid = 0
-        eid = 0
-        edges = set()
-        verts = dict()
-        for key in kmers:
-            if key in visit:
-                continue
-            body = [key[-1]]
-            end_vertex = key[1:]
-            while True:
-                next_kmer = extend_forward(end_vertex, kmers)
-                if next_kmer == None:
-                    break
-                body.append(next_kmer[-1])
-                end_vertex = next_kmer[1:]
-                visit.add(next_kmer)
-                visit.add(utils.rc(next_kmer))
-
-            begin_vertex = key[:-1]
-            while True:
-                next_kmer = extend_backward(begin_vertex, kmers)
-                if next_kmer == None:
-                    break
-                body.insert(0, next_kmer[-1])
-                begin_vertex = next_kmer[0:-1]
-                visit.add(next_kmer)
-                visit.add(utils.rc(next_kmer))
-
-            body = begin_vertex + ''.join(body)
-            if begin_vertex not in verts:
-                begin_ref = self.add_vertex(vid, vid + 1)
-                r_end_ref = self.add_vertex(vid + 1, vid)
-                verts[begin_vertex] = begin_ref.vid
-                verts[utils.rc(begin_vertex)] = r_end_ref.vid
-                vid += 2
-            if end_vertex not in verts:
-                end_ref = self.add_vertex(vid, vid + 1)
-                r_begin_ref = self.add_vertex(vid + 1, vid)
-                verts[end_vertex] = end_ref.vid
-                verts[utils.rc(end_vertex)] = r_begin_ref.vid
-                vid += 2
-            bv = verts[begin_vertex]
-            ev = verts[end_vertex]
-            rbv = verts[utils.rc(end_vertex)]
-            rev = verts[utils.rc(begin_vertex)]
-            if (bv, ev) not in edges:
-                if (bv, ev) == (rbv, rev) and body == utils.rc(body):
-                    self.add_edge(eid, bv, ev, len(body) - k + 1, eid)
-                    edges.add((bv, ev))
-                    self.add_seq(eid, body)
-                    self.etalon_dist[eid] = kmers[body[:k]] + kmers[utils.rc(body)[:k]]
-                    eid += 1
-                else:
-                    self.add_edge(eid, bv, ev, len(body) - k + 1, eid + 1)
-                    self.add_edge(eid + 1, rbv, rev, len(body) - k + 1, eid)
-                    edges.add((bv, ev))
-                    edges.add((rbv, rev))
-                    self.add_seq(eid, body)
-                    self.add_seq(eid + 1, utils.rc(body))
-                    self.etalon_dist[eid] = kmers[body[:k]]
-                    self.etalon_dist[eid + 1] = kmers[utils.rc(body)[:k]]
-                    eid += 2
-
     def __from_genome(self):
         return len(self.etalon_dist.keys()) > 0
 
@@ -361,29 +294,3 @@ class Graph(Abstract_Graph):
                     if pos + e2.len > limit1:
                         yield e2, pos + e.len
 
-alphabet = "ACGT"
-
-def find_out_edges(vertex_body, kmer_map):
-    next_kmer = [(vertex_body + base) for base in alphabet]
-    return [kmer for kmer in next_kmer if kmer in kmer_map]
-
-
-def find_in_edges(vertex_body, kmer_map):
-    next_kmer = [(base + vertex_body) for base in alphabet]
-    return [kmer for kmer in next_kmer if kmer in kmer_map]
-
-
-def extend_forward(vertex_body, kmer_map):
-    return extend_in_direction(vertex_body, kmer_map, True)
-
-def extend_backward(vertex_body, kmer_map):
-    return extend_in_direction(vertex_body, kmer_map, False)
-
-def extend_in_direction(vertex_body, kmer_map, direction_forward):
-    in_edge = find_in_edges(vertex_body, kmer_map)
-    out_edge = find_out_edges(vertex_body, kmer_map)
-    res = out_edge if direction_forward else in_edge
-    if len(in_edge) == 1 and len(out_edge) == 1:
-        return res[0]
-    return None
- 
