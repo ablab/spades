@@ -399,11 +399,12 @@ class BGraph(Abstract_Graph):
     def delete_missing_loops(self, DG_loops, K, L, threshold):
         if DG_loops == None:
             return
-
+        print "here_1"
         begs_related_to_loop = dict()
         begin_loops = dict()
         end_loops = dict()
         for eeid1, (long_eid1, long_eid2, busheids, path, visited_vs) in DG_loops.items():
+            print eeid1, long_eid1, long_eid2, busheids, [e.eid for e in path], visited_vs
             for k, be in self.es.items():
                 for diag in be.diagonals:
                     rect = diag.rectangle
@@ -422,7 +423,8 @@ class BGraph(Abstract_Graph):
                         if eeid1 not in begs_related_to_loop:
                             begs_related_to_loop[eeid1] = set()
                         begs_related_to_loop[eeid1].add(be)
-        diag_to_add = set()
+        print "here_2"
+        diag_to_add = []
         for eid, begs in begs_related_to_loop.items():
             (long_eid1, long_eid2, busheids, path, visited_vs) = DG_loops[eid]
             if len(begs) < 2:
@@ -468,31 +470,38 @@ class BGraph(Abstract_Graph):
                     first_shift = 0
                     second_shift = 0
             for diag in diags:
-                diag_to_add.add(diag)
+                diag_to_add.append(diag)
+                print "here", diag
 
             for bedge in begs:
+                print "remove", bedge.eid, bedge.conj.eid
                 self.__remove_bedge__(bedge)
                 self.__remove_bedge__(bedge.conj)
 
                 for diag in bedge.diagonals:
                     if diag.rectangle.e1.eid not in busheids or diag.rectangle.e2.eid not in busheids:
-                        diag_to_add.add(diag)
+                        diag_to_add.append(diag)
+                        print "to add_1", diag
 
                 if begin_diag in bedge.diagonals:
                     for diag in bedge.diagonals:
                         if diag == begin_diag:
                             break
-                        diag_to_add.add(diag)
+                        diag_to_add.append(diag)
+                        print "to add_2", diag
 
                 elif end_diag in bedge.diagonals:
                     bedge.diagonals.reverse()
                     for diag in bedge.diagonals:
                         if diag == end_diag:
                             break
-                        diag_to_add.add(diag)
+                        diag_to_add.append(diag)
+                        print "to add_4", diag
 
         for diag in diag_to_add:
+            print "to add_3_5", diag
             self.add_diagonal_and_conj(diag)
+            print "to add_3", diag
 
 
     #L - big contig's len > L
@@ -856,162 +865,4 @@ class BGraph(Abstract_Graph):
             for this, next in itertools.izip(edge.diagonals, edge.diagonals[1:]):
                 assert this.key2 == next.key1, (this, "->", next)
 
-    def build_missing_rectangles(self, K, rectangles):
-        return
-        threshold = self.d
-        self.test_utils.logger.info("treshold " + str(threshold))
-        count_ovelaps = 0
-        count_miss_rect = 0
-        count_miss_path = 0
-        true_miss_path = 0
-        count_overlaps = 0
-        v1s = set()
-        v2s = set()
-        for bv in self.vs.itervalues():
-            if len(bv.inn) == 1 and len(bv.out) == 0 and len(bv.inn[0].get_seq(K, self.d)) > 3 * self.d:
-                v1s.add(bv)
-            if len(bv.inn) == 0 and len(bv.out) == 1 and len(bv.out[0].get_seq(K, self.d)) > 3 * self.d:
-                v2s.add(bv)
-        assert len(v1s) == len(v2s) # because of rev-compl
-        self.test_utils.logger.info("v1s.len " + str(len(v1s)))
-
-        all_paired_paths = []
-        for v1 in v1s:
-            be1 = v1.inn[0]
-            diag1 = be1.diagonals[-1]
-            for v2 in v2s:
-                be2 = v2.out[0]
-                if (be1.eid == be2.eid):
-                    continue
-                diag2 = be2.diagonals[0]
-                paths1 = abstract_graph.find_paths(diag1.rectangle.e1.v1, diag2.rectangle.e1.v1, diag1.rectangle.e1,
-                    threshold + diag1.rectangle.e1.len, DEEP_THRESHOLD)
-                paths2 = abstract_graph.find_paths(diag1.rectangle.e2.v1, diag2.rectangle.e2.v1, diag1.rectangle.e2,
-                    threshold + diag1.rectangle.e2.len, DEEP_THRESHOLD)
-                paired_paths = find_pair_paths(paths1, paths2, diag1, diag2)
-                if len(paired_paths) != 0:
-                    all_paired_paths.append((paired_paths, diag1, diag2))
-        self.test_utils.logger.info("all_paired_paths " + str(len(all_paired_paths)))
-        can_find_one_path_more = True
-        added_paths = []
-        while can_find_one_path_more:
-            the_best_path = None
-            the_best_support = 0
-            can_find_one_path_more = False
-
-            for paired_paths in all_paired_paths:
-                (best_support, best_len, best_rectangles, best_diags, best_path) = self.choose_best_path(paired_paths[0]
-                    , rectangles, paired_paths[1], paired_paths[2], self.d, added_paths)
-                if best_support / best_len >= 0.0 and best_support / best_len > the_best_support:
-                    the_best_support = best_support / best_len
-                    the_best_path = (best_support, best_len, best_rectangles, best_diags, best_path)
-            if the_best_path:
-                added_paths.append(the_best_path[-1])
-                (best_support, best_len, best_rectangles, best_diags, best_path) = the_best_path
-                can_find_one_path_more = True
-                prev_diag = best_diags[0]
-                true_path = True
-                for diag in best_diags[1:]:
-                    if prev_diag:
-                        should_connect = self.test_utils.should_join(prev_diag, diag)
-                        if not should_connect:
-                            true_path = False
-                        self.add_diagonal_and_conj(diag)
-                        is_true = self.test_utils.is_true_diagonal(diag)
-                        if not is_true:
-                            true_path = False
-                        count_miss_rect += 1
-                        prev_diag = diag
-                count_miss_path += 1
-                if true_path:
-                    true_miss_path += 1
-        self.test_utils.logger.info("count_overlap " + str(count_ovelaps) + " count_miss_rect " + str(
-            count_miss_rect) + " count miss path " + str(count_miss_path) + " true miss path " + str(true_miss_path))
-
-
-    def choose_best_path(self, paired_paths, rectangeles_set, diag1, diag2, d, added_paths):
-        best_support = 0
-        best_len = 10000
-        best_rectangles = []
-        best_diags = []
-        best_path = paired_paths[0]
-        best_not_supported = 0
-
-        for paired_path in paired_paths:
-            (path1, path2, path_len) = paired_path
-            if paired_path in added_paths:
-                continue
-            first_shift = diag1.offseta
-            second_shift = diag1.offsetb
-            path1.append(diag2.rectangle.e1)
-            path2.append(diag2.rectangle.e2)
-            rectangles = []
-            diags = []
-            not_supported = []
-            path_support = 0
-            pos_first_path = 0
-            pos_second_path = 0
-            first_len = first_shift
-            make_less_N50 = False
-            while not make_less_N50 and first_len < path_len + diag2.offseta:
-                ed1 = path1[pos_first_path]
-                ed2 = path2[pos_second_path]
-                rectangle = Rectangle(ed1, ed2)
-                rectangle.add_diagonal(d, d + first_shift - second_shift)
-                rect_diag = rectangle.get_closest_diagonal(d + first_shift - second_shift)
-                if (not (rect_diag.key1 == diag1.key1 and rect_diag.key2 == diag1.key2) and not(
-                rect_diag.key1 == diag2.key1 and rect_diag.key2 == diag2.key2)):
-                    can_use = [diag1.key1, diag1.key2, diag2.key1, diag2.key2]
-                    if (rect_diag.key1 in self.vs and rect_diag.key1 not in can_use) or  (
-                    rect_diag.key2 in self.vs and rect_diag.key2 not in can_use):
-                        make_less_N50 = True
-                        continue
-                diags.append(rect_diag)
-                rectangles.append(rectangle)
-                rectangeles_set.use_prd_diag(rect_diag)
-                #if rect_diag.prd_support < 0.00001 and (ed2.len > 10 and ed1.len > 10):
-                #  make_less_N50 = True
-                #  continue
-                path_support += rect_diag.prd_support
-                if ed2.len - second_shift < ed1.len - first_shift:
-                    pos_second_path += 1
-                    first_shift += ed2.len - second_shift
-                    first_len += ed2.len - second_shift
-                    if rect_diag.prd_support < 0.000000001:
-                        not_supported.append(ed2.len - second_shift)
-                    second_shift = 0
-                elif ed1.len - first_shift < ed2.len - second_shift:
-                    pos_first_path += 1
-                    first_len += ed1.len - first_shift
-                    second_shift += ed1.len - first_shift
-                    if rect_diag.prd_support < 0.000000001:
-                        not_supported.append(ed1.len - first_shift)
-                    first_shift = 0
-                else:
-                    first_len += ed1.len - first_shift
-                    pos_second_path += 1
-                    pos_first_path += 1
-                    first_shift = 0
-                    second_shift = 0
-            if not make_less_N50 and path_len > 1 and  path_support / path_len < 1000 and  path_support / path_len > best_support:
-                best_support = path_support
-                best_len = path_len
-                best_rectangles = rectangles
-                best_diags = diags
-                best_path = (path1, path2, path_len)
-                best_not_supported = not_supported
-        return (best_support, best_len, best_rectangles, best_diags, best_path)
-
-
-def find_pair_paths(paths1, paths2, diag1, diag2):
-    paired_paths = []
-    for (path1, len1) in paths1:
-        for (path2, len2) in paths2:
-            if path1[0] != diag1.rectangle.e1 or path2[0] != diag1.rectangle.e2:
-                continue
-            if len1 - diag1.offseta + diag2.offseta == len2 - diag1.offsetb + diag2.offsetb:
-                paired_paths.append((path1, path2, len1))
-    return paired_paths
-  
-  
-
+    

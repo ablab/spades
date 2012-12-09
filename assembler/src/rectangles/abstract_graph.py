@@ -122,7 +122,7 @@ class Abstract_Graph(object):
         paths = self.get_paths(edge.v1, long_end, int(1.5 * (threshold + 1)), False)
         best_path = paths[0]
         best_len = self.path_len(best_path)
-        for path in paths:
+        """for path in paths:
             if self.path_len(path) > best_len:
                 if path[0] != edge:
                     continue
@@ -140,7 +140,7 @@ class Abstract_Graph(object):
                 if false_path:
                     continue
                 best_path = self.path_len(path)
-                best_path = path
+                best_path = path"""
         return (edge.eid, long_end.eid, visited_es, best_path, visited_vs)
 
     def path_len(self, path):
