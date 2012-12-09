@@ -115,37 +115,19 @@ class Graph(Abstract_Graph):
                 in_paths.add(e.eid)
                 in_paths.add(e.conj.eid)
         contig_id = 0
+        
+        empty_format_function = lambda x : ""
+        scaffold_format_function = lambda be : be.get_seq_for_contig(K, d, is_sc) + "NNN"
+        should_connect_pre_format = lambda path : path[0].get_begin_seq(K, d, is_sc)
+        should_connect_format = lambda be: be.get_midle_seq() 
+        should_connect_post_format = lambda path : path[-1].get_end_seq(K, d, is_sc)
+
         for edge in self.es.itervalues():
             if edge.conj.eid <= edge.eid: # non-conjugate
-                if edge.eid in scaffold:
-                    str_id = ""
-                    #print "PRINTING SCAFFOLD", edge.eid, [e.eid for e in scaffold[edge.eid]]
-                    path = scaffold[edge.eid]
-                    seq = ""
-                    for be in path:
-                        seq += be.get_seq_for_contig(K, d, is_sc) + "NNN"
-                        str_id += "_" + str(be.eid) + "_"
-                    print >> stream, '>contig_%d_l=%06d_long%s' % (edge.eid, len(seq), str_id)
-                    l = len(seq)
-                    for l in xrange(0, l, 60):
-                        print >> stream, seq[l:l + 60]
+                if (print_graph_edge(edge, scaffold, stream, empty_format_function, scaffold_format_function, empty_format_function) or
+                        print_graph_edge(edge, should_connect, stream, should_connect_pre_format, should_connect_format, should_connect_post_format)):
                     continue
-                if edge.eid in should_connect:
-                    str_id = ""
-                    #print "PRINTING", edge.eid, [e.eid for e in should_connect[edge.eid]]
-                    path = should_connect[edge.eid]
-                    seq = path[0].get_begin_seq(K, d, is_sc)
-                    seq = ""
-                    for be in path:
-                        seq += be.get_midle_seq()
-                        str_id += "_" + str(be.eid) + "_"
-                    seq += path[-1].get_end_seq(K, d, is_sc)
-                    print >> stream, '>contig_%d_l=%06d_long%s' % (edge.eid, len(seq), str_id)
-                    l = len(seq)
-                    for l in xrange(0, l, 60):
-                        print >> stream, seq[l:l + 60]
-                    continue
-
+                
                 if edge.eid in in_paths:
                     continue
                 for id_contig, contig in enumerate(edge.seq.split('N')):
@@ -276,4 +258,24 @@ class Graph(Abstract_Graph):
                         ls[pos2].add(e2.v2)
                     if pos + e2.len > limit1:
                         yield e2, pos + e.len
+
+
+def print_graph_edge(edge, paths, stream, pre_format_function, format_function, post_format_function):
+    if not edge.eid in paths:
+        return False    
+    str_id = ""
+    #print "PRINTING SCAFFOLD", edge.eid, [e.eid for e in scaffold[edge.eid]]
+    path = paths[edge.eid]
+    seq = pre_format_function(path)
+    for be in path:
+        seq += format_function(be)
+        str_id += "_" + str(be.eid) + "_"
+    seq += post_format_function(path)
+    print >> stream, '>contig_%d_l=%06d_long%s' % (edge.eid, len(seq), str_id)
+    l = len(seq)
+    for l in xrange(0, l, 60):
+        print >> stream, seq[l:l + 60]
+    return True
+
+
 
