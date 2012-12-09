@@ -38,11 +38,9 @@ class BEdge(Abstract_Edge):
         self.diagonals = [diag]
         BEdge.eid += 1
 
-    def length(self):
-        length = 0
-        for diag in self.diagonals:
-            length += diag.offsetc - diag.offseta
-        return length
+    def length(self): 
+        return reduce(lambda l, d: l + d.offsetc - d.offseta, self.diagonals, 0)
+        
     
     def _get_splitted_seq(self, K, d, is_sc): 
         (seq1, seq2) = self.get_paired_seq(K, d)
@@ -56,11 +54,8 @@ class BEdge(Abstract_Edge):
         return self._get_splitted_seq(K, d, is_sc)[1] 
 
     def get_midle_seq(self):
-        seq = ""
-        for diag in self.diagonals:
-            seq += diag.rectangle.e1.seq[diag.offseta:diag.offsetc]
-        return seq
-
+        return reduce(lambda seq, d: seq + d.rectangle.e1.seq[d.offseta:d.offsetc], self.diagonals, "")
+     
     def get_seq_for_contig(self, K, d, is_sc):
         if is_sc:
             CUT_THRESHOLD = 2.0 #TODO: should take from histogram
