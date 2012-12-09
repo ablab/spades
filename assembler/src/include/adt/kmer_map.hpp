@@ -878,6 +878,11 @@ private:
         MapGenerator<MAX_TS, Value>::GenerateMaps(single_factories_);
     }
 
+  ~KmerValueMapFactory() {
+    for (auto I = single_factories_.begin(), E = single_factories_.end(); I != E; ++ I)
+      delete *I;
+  }
+
 public:
 
     static KmerValueMapFactory& GetInstance() {
