@@ -374,18 +374,16 @@ def find_in_edges(vertex_body, kmer_map):
 
 
 def extend_forward(vertex_body, kmer_map):
-    in_edge = find_in_edges(vertex_body, kmer_map)
-    out_edge = find_out_edges(vertex_body, kmer_map)
-    if len(in_edge) == 1 and len(out_edge) == 1:
-        return out_edge[0]
-    return None
-
+    return extend_in_direction(vertex_body, kmer_map, True)
 
 def extend_backward(vertex_body, kmer_map):
+    return extend_in_direction(vertex_body, kmer_map, False)
+
+def extend_in_direction(vertex_body, kmer_map, direction_forward):
     in_edge = find_in_edges(vertex_body, kmer_map)
     out_edge = find_out_edges(vertex_body, kmer_map)
+    res = out_edge if direction_forward else in_edge
     if len(in_edge) == 1 and len(out_edge) == 1:
-        return in_edge[0]
+        return res[0]
     return None
-
-    
+ 
