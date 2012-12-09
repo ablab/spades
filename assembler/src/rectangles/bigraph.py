@@ -43,18 +43,17 @@ class BEdge(Abstract_Edge):
         for diag in self.diagonals:
             length += diag.offsetc - diag.offseta
         return length
-
-    def get_begin_seq(self, K, d, is_sc):
+    
+    def _get_splitted_seq(self, K, d, is_sc): 
         (seq1, seq2) = self.get_paired_seq(K, d)
         seq = ''.join(map(avoid_N, seq1, seq2)).strip('N')
-        seq = seq.split(self.get_midle_seq())[0]
-        return seq
+        return  seq.split(self.get_midle_seq())
+    
+    def get_begin_seq(self, K, d, is_sc):
+        return self._get_splitted_seq(K, d, is_sc)[0]
 
     def get_end_seq(self, K, d, is_sc):
-        (seq1, seq2) = self.get_paired_seq(K, d)
-        seq = ''.join(map(avoid_N, seq1, seq2)).strip('N')
-        seq = seq.split(self.get_midle_seq())[1]
-        return seq
+        return self._get_splitted_seq(K, d, is_sc)[1] 
 
     def get_midle_seq(self):
         seq = ""
