@@ -10,6 +10,7 @@ import itertools
 from test_util import TestUtils
 from rectangle import Rectangle
 from utils import conjugate
+from collections import defaultdict
 import utils
 
 DEEP_THRESHOLD = 10
@@ -178,6 +179,10 @@ class BGraph(Abstract_Graph):
         for diag in bedge.diagonals:
             if diag in self.diagonals:
                 self.diagonals.remove(diag)
+    
+    def __remove_bedge_and_conj(self, bedge):
+        self.__remove_bedge__(bedge)
+        self.__remove_bedge__(bedge.conj)
 
     def use_scaffold_paired_info(self, L, additional_prd):
         long_edges = set()
@@ -400,7 +405,7 @@ class BGraph(Abstract_Graph):
         if DG_loops == None:
             return
         print "here_1"
-        begs_related_to_loop = dict()
+        begs_related_to_loop = defaultdict(set)
         begin_loops = dict()
         end_loops = dict()
         for eeid1, (long_eid1, long_eid2, busheids, path, visited_vs) in DG_loops.items():
@@ -408,21 +413,17 @@ class BGraph(Abstract_Graph):
             for k, be in self.es.items():
                 for diag in be.diagonals:
                     rect = diag.rectangle
-                    eids = [rect.e1.eid, rect.e2.eid]
-                    if rect.e1.eid not in busheids or rect.e2.eid not in busheids:
+                    if not set([rect.e1.eid, rect.e2.eid]) <= busheids:
                         continue
-                    for eid in eids:
-                        if eid not in busheids:
-                            continue
-                        if rect.e1.eid == long_eid1:
-                            if rect.e2.eid == long_eid1:
-                                begin_loops[long_eid1] = (diag, be)
-                        if rect.e2.eid == long_eid2:
-                            if rect.e1.eid == long_eid2:
-                                end_loops[long_eid1] = (diag, be)
-                        if eeid1 not in begs_related_to_loop:
-                            begs_related_to_loop[eeid1] = set()
-                        begs_related_to_loop[eeid1].add(be)
+                    
+                    if rect.e1.eid == long_eid1 and rect.e2.eid == long_eid1:
+                        begin_loops[long_eid1] = (diag, be)
+                    
+                    if rect.e1.eid == long_eid2 and  rect.e2.eid == long_eid2:
+                        end_loops[long_eid1] = (diag, be)                        
+                    
+                    begs_related_to_loop[eeid1].add(be)
+
         print "here_2"
         diag_to_add = []
         for eid, begs in begs_related_to_loop.items():
@@ -437,9 +438,8 @@ class BGraph(Abstract_Graph):
             path.append(end_loops[eid][0].rectangle.e1)
             first_shift = begin_diag.offseta
             second_shift = begin_diag.offsetb
-            path_len = 0
-            for e in path:
-                path_len += e.len
+            
+            path_len = reduce(lambda s, e: s + e.len, path, 0)           
             rectangles = []
             diags = []
             pos_first_path = 0
@@ -469,15 +469,13 @@ class BGraph(Abstract_Graph):
                     pos_first_path += 1
                     first_shift = 0
                     second_shift = 0
-            for diag in diags:
-                diag_to_add.append(diag)
-                print "here", diag
-
+            
+            diag_to_add.extend(diags)
+            
             for bedge in begs:
                 print "remove", bedge.eid, bedge.conj.eid
-                self.__remove_bedge__(bedge)
-                self.__remove_bedge__(bedge.conj)
-
+                self.__remove_bedge_and_conj(bedge)
+             
                 for diag in bedge.diagonals:
                     if diag.rectangle.e1.eid not in busheids or diag.rectangle.e2.eid not in busheids:
                         diag_to_add.append(diag)
@@ -525,8 +523,7 @@ class BGraph(Abstract_Graph):
                         #  edges_before_loop.add(e)
         for edge in edges_to_delete:
             if edge.eid not in connected_paths and edge.conj.eid not in connected_paths:
-                self.__remove_bedge__(edge)
-                self.__remove_bedge__(edge.conj)
+                self.__remove_bedge_and_conj(edge)
         return edges_before_loop
 
     def __find_loops(self, be, K, threshold, L, edges_to_delete, connected_path):
