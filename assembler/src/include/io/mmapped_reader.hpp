@@ -129,6 +129,7 @@ class MMappedReader {
   }
 
   size_t size() const { return FileSize; }
+  size_t data_size() const { return FileSize; }
 
   void* data() const { return MappedRegion; }
 };
@@ -150,6 +151,7 @@ class MMappedRecordReader : public MMappedReader {
   }
 
   size_t size() const { return FileSize / sizeof(T); }
+  size_t data_size() const { return FileSize; }
   T* data() { return (T*)MappedRegion; }
   const T* data() const { return (const T*)MappedRegion; }
   T& operator[](size_t idx) { return data()[idx]; }
@@ -181,6 +183,7 @@ class MMappedRecordArrayReader : public MMappedReader {
   }
 
   size_t size() const { return FileSize / sizeof(T) / elcnt_; }
+  size_t data_size() const { return FileSize; }
   T* data() { return (T*)MappedRegion; }
   const T* data() const { return (const T*)MappedRegion; }
   T& operator[](size_t idx) { return data()[idx*elcnt_]; }

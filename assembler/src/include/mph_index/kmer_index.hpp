@@ -278,12 +278,11 @@ public:
 
     INFO("Merging temporary buckets.");
     for (unsigned i = 0; i < num_buckets; ++i) {
-      MMappedRecordArrayWriter<typename Seq::DataType> os(GetMergedKMersFname(i), Seq::GetDataSize(K));
+      std::string ofname = GetMergedKMersFname(i);
+      std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
       for (unsigned j = 0; j < num_threads; ++j) {
         MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(i + j * num_buckets), Seq::GetDataSize(K), /* unlink */ true);
-        size_t sz = ins.end() - ins.begin();
-        os.reserve(sz);
-        os.write(ins.data(), sz);
+        ofs.write((const char*)ins.data(), ins.data_size());
       }
     }
 
@@ -302,12 +301,13 @@ public:
     buckets_.resize(1);
 
     MMappedRecordArrayWriter<typename Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(K));
+    std::string ofname = GetFinalKMersFname();
+    std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
     for (unsigned j = 0; j < num_buckets; ++j) {
       MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(j), Seq::GetDataSize(K), /* unlink */ true);
-      size_t sz = ins.end() - ins.begin();
-      os.reserve(sz);
-      os.write(ins.data(), sz);
+      ofs.write((const char*)ins.data(), ins.data_size());
     }
+    ofs.close();
 
     buckets_[0] = new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
   }
