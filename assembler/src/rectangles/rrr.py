@@ -127,7 +127,7 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
 
     additional_paired_info = dict()
     should_connect = maxbgraph.edges_expand(5000)
-    should_connect_by_first_pair_info = maxbgraph.use_scaffold_paired_info(2 * maxbgraph.d, rs.additional_prd)
+    should_connect_by_first_pair_info = maxbgraph.use_scaffold_paired_info(2 * maxbgraph.d, rs.prd_for_scaffold)
     
     for (e1id, e2id) in should_connect_by_first_pair_info:
         if e1id not in additional_paired_info and maxbgraph.es[

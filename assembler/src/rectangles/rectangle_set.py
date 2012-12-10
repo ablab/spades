@@ -16,31 +16,30 @@ class RectangleSet(object):
         self.d = d
         self.prd = dict()
         self.config = config
-        self.additional_prd = dict()
+        self.prd_for_scaffold = dict()
         if prd_file_name:
             self.__get_prd(prd_file_name)
         if first_prd_file_name:
-            self.__get_additional_prd(first_prd_file_name)
+            self.__get_prd_for_scaffold(first_prd_file_name)
         self.rectangles = {} # (e1, e2) -> Rectangle
         self.logger = logging.getLogger('rectangles')
         self.test_utils = test_utils
 
     def __get_prd(self, prd_file_name):
         for e1id, e2id, D, weight, delta in saveparser.prd(prd_file_name):
-            self.prd[(e1id, e2id)] = (D, weight, delta + 2)
+            self.prd[(e1id, e2id)] = (D, weight, delta)
 
-    def __get_additional_prd(self, prd_file_name):
+    def __get_prd_for_scaffold(self, prd_file_name):
         for e1id, e2id, D, weight, delta in saveparser.prd(prd_file_name):
             if (e1id, e2id) not in self.prd:
                 e1 = self.graph.es[e1id]
                 e2 = self.graph.es[e2id]
                 if len(e1.v2.out) != 0 or len(e2.v1.inn) != 0:
                     continue
-                e1_len = e1.len
-                if D - e1_len > 0 and D - e1_len < 100:
-                    if (e1id, e2id) not in self.additional_prd:
-                        self.additional_prd[(e1id, e2id)] = []
-                    self.additional_prd[(e1id, e2id)].append((D, weight, delta))
+                if D - e1.len > 0 and D - e1.len < self.d:
+                    if (e1id, e2id) not in self.prd_for_scaffold:
+                        self.prd_for_scaffold[(e1id, e2id)] = []
+                    self.prd_for_scaffold[(e1id, e2id)].append((D, weight, delta))
 
 
     def filter_without_prd(self):
