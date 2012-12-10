@@ -18,6 +18,7 @@
 #include <vector>
 #include <cstdlib>
 #include <cstdio>
+#include <cstdint>
 
 namespace debruijn_graph {
 
