@@ -318,10 +318,15 @@ def usage():
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] -1 left_reads -2 right_reads -c contigs'
     print >> sys.stderr, 'Or: python', sys.argv[0], '[options] -s sam_file -c contigs'
     print >> sys.stderr, 'Options:'
-    print >> sys.stderr, '-t <int> thread number'
-    print >> sys.stderr, '-o <dir_name> directory to store results'
-    print >> sys.stderr, '-m <int> weight for paired reads aligned properly. By default, equal to single reads weight (=1)'
-    print >> sys.stderr, '--bwa <path>  path to bwa tool. Required if bwa is not in PATH'
+    print >> sys.stderr, '-t/--threads  <int>   threads number'
+    print >> sys.stderr, '-o/--output_dir   <dir_name>  directory to store results'
+    print >> sys.stderr, '-m/--mate-weight  <int>   weight for paired reads aligned properly. By default, equal to single reads weight (=1)'
+    print >> sys.stderr, '--bwa <path>   path to bwa tool. Required if bwa is not in PATH'
+    print >> sys.stderr, '--bowtie2    <path>  path to bowtie2 tool. Can be used instead of bwa; is faster but provides a bit worse results'
+    print >> sys.stderr, '  --use_quality use quality values as probabilities '
+    print >> sys.stderr, '  --debug   save all intermediate files '
+    print >> sys.stderr, '  --use_multiple_aligned  use paired reads with multiple alignment'
+    print >> sys.stderr, '  --skip_masked   do not correct single \'N\', provided by assembler'
 
 def run_aligner():
     global config;
@@ -374,7 +379,7 @@ def run_bwa():
 def parse_profile(args):
     global config
 
-    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= bowtie2= help debug use_quality".split()
+    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= bowtie2= help debug use_quality use_multiple_aligned skip_masked".split()
     short_options = "1:2:o:s:S:c:t:m:q"
     options, contigs_fpaths = getopt.gnu_getopt(args, short_options, long_options)
     for opt, arg in options:
@@ -406,9 +411,14 @@ def parse_profile(args):
             config["bowtie2"]= arg;
         if opt in ("--debug"):
             config["debug"] = 1;
+        if opt in ("--use_multiple_aligned"):
+            config["use_multiple_aligned"] = 1;
+        if opt in ("--skip_masked"):
+            config["skip_masked"] = 1;
     work_dir = config["output_dirpath"]+"/tmp/"
     config["work_dir"] = work_dir
     os.system ("mkdir -p " + work_dir)
+    os.system("rm -rf " + work_dir + "/*")
 
 
 def init_config():
@@ -419,9 +429,14 @@ def init_config():
     config["mate_weight"] = float(1)
     config["use_quality"] = 0;
     config["debug"] = 0;
+    config["use_multiple_aligned"] = 0;
+    config["skip_masked"] = 0;
 
-def process_contig(samfilename, contig_file, mult_aligned_filename):
-
+def process_contig(files):
+    samfilename = files[0]
+    contig_file = files[1]
+    if len(files) == 3:
+        mult_aligned_filename = files[2]
     profile = []
     mult_profile = []
     insertions = {}
@@ -429,7 +444,7 @@ def process_contig(samfilename, contig_file, mult_aligned_filename):
     inserted = 0;
     replaced = 0;
     deleted = 0;
-#    mult_alignedFile = open(mult_aligned_filename, 'r')
+
     fasta_contig = read_genome(contig_file);
 #no spam about short contig processing
     if len(fasta_contig[1]) > 20000:
@@ -453,6 +468,14 @@ def process_contig(samfilename, contig_file, mult_aligned_filename):
     l = len(contig)
     #            print l;
     #            print contig
+    if config["use_multiple_aligned"]:
+        mult_alignedFile = open(mult_aligned_filename, 'r')
+        for line in mult_alignedFile:
+            arr = line.split();
+            if arr[2].split('_')[1] != cont_num:
+                continue
+            process_read(arr, l, 1, mult_profile, mult_insertions)
+
     rescontig = ""
     for i in range (0, l):
         profile.append( {} );
@@ -460,11 +483,6 @@ def process_contig(samfilename, contig_file, mult_aligned_filename):
         for j in ('A','C','G','T','N','I','D'):
             profile[i][j] = 0;
             mult_profile[i][j] = 0;
-#    for line in mult_alignedFile:
-#        arr = line.split();
-#        if arr[2].split('_')[1] != cont_num:
-#            continue
-#        process_read(arr, l, 1, mult_profile, mult_insertions)
     #TODO: estimation on insert size, need to be replaced
     insert_size_est = 400
     samFile = open(samfilename, 'r');
@@ -498,22 +516,28 @@ def process_contig(samfilename, contig_file, mult_aligned_filename):
         total_reads += 1;
     for i in range (0, l):
         tj = contig[i]
-        tmp =''
+        skip = 0;
+        if (tj == 'N' and config["skip_masked"]):
+            skip = 1;
+        tmp = ''
         mate_weight = config["mate_weight"]
+#cycle on count is usefull for insertions only
         for count in range(0,2):
             for j in ('A','C','G','T','N', 'I', 'D'):
 #first condition trivial,
 # second - for insertions we have both the base after insertion and 'I' (but want to have more than one 'I' to insert),
 # third - to avoid issues with multiple alignment OK, but few uniquely discordant erroneous reads making to "correct"
 # position
-
                 if (profile[i][tj] < profile[i][j] or \
                     (j == 'I' and profile[i][tj] < 1.5 * profile[i][j] and profile[i][j] > mate_weight)) and \
-                    mult_profile[i][tj] < profile[i][j] * 3:
+                    mult_profile[i][tj] < profile[i][j] * 10:
 
                     tj = j
                     #                rescontig[i] = j
             if tj != contig[i] :
+                if tj != 'I' and skip:
+                    rescontig += 'N'
+                    break;
                 if tj =='I' or tj == 'D' :
                     logFile.write ("there was in-del \n")
                 else:
@@ -546,7 +570,6 @@ def process_contig(samfilename, contig_file, mult_aligned_filename):
 
 def main(args):
     paired_read = []
-
     if len(args) < 1:
         usage()
         exit(0)
@@ -591,10 +614,11 @@ def main(args):
             tmp = []
             tmp.append(samfilename)
             tmp.append(contig_file)
-            tmp.append(mult_aligned_filename)
+            if (config["use_multiple_aligned"]):
+                tmp.append(mult_aligned_filename)
             pairs.append(tmp)
     print pairs[0];
-    Parallel(n_jobs=config["t"])(delayed(process_contig)(pair[0],pair[1], pair[2])for pair in pairs)
+    Parallel(n_jobs=config["t"])(delayed(process_contig)(pair)for pair in pairs)
 #        inserted += loc_ins;
 #        replaced += loc_rep;
     replaced = 0;

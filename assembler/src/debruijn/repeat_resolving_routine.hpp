@@ -127,7 +127,11 @@ void found_distance_from_repeats(conj_graph_pack& gp){
 	for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		VertexId start = gp.g.EdgeStart(*iter);
 		VertexId end = gp.g.EdgeEnd(*iter);
-		if ((gp.g.CheckUniqueIncomingEdge(end) && !gp.g.IsDeadEnd(end)) ||( gp.g.CheckUniqueOutgoingEdge(start)  && !gp.g.IsDeadStart(start) ))
+		//Graph topology implied repeats
+		if (((gp.g.CheckUniqueIncomingEdge(end) && !gp.g.IsDeadEnd(end)) ||( gp.g.CheckUniqueOutgoingEdge(start)  && !gp.g.IsDeadStart(start) )) && (gp.g.length(*iter) <  cfg::get().rr.max_repeat_length))
+			not_unique.insert(*iter);
+		//Split-based repeats
+		else if (labels_after.edge_inclusions.find(*iter) != labels_after.edge_inclusions.end() && labels_after.edge_inclusions[*iter].size()> 1)
 			not_unique.insert(*iter);
 	}
 	while (!not_unique.empty()) {
@@ -157,7 +161,50 @@ void found_distance_from_repeats(conj_graph_pack& gp){
 			not_unique.erase(*iter);
 		}
 		component.clear();
+	}
+	string p = path::append_path(cfg::get().output_saves, "distance_filling");
+	if (cfg::get().make_saves)
+		saveComponents(p, components, gp);
+}
 
+template<class graph_pack>
+void fillComponentDistances(set<EdgeId>& component, map<EdgeId, pair<size_t, size_t> > & distances_map, graph_pack& gp){
+	map<EdgeId, pair<size_t, size_t> >  component_map;
+	//longest pathes from start and end of edge resp to first base(backward and forward resp) not in repeat;
+	for (auto iter  = component.begin(); iter != component.end(); iter ++)
+		component_map[*iter] = std::make_pair(0, 0);
+
+	for(size_t j = 0; j < 1000; j++){
+		bool changed = false;
+		for (auto iter = component.begin(); iter != component.end(); iter ++) {
+			size_t max_incoming_path = 0;
+			size_t max_outgoing_path = 0;
+			VertexId start = gp.g.EdgeStart(*iter);
+			VertexId end = gp.g.EdgeEnd(*iter);
+			vector<EdgeId> next = gp.g.IncomingEdges(start);
+			for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
+				if (component_map.find(*e_iter) != component_map.end())
+					max_incoming_path = max(max_incoming_path, component_map[*e_iter].first + gp.g.length(*e_iter));
+			next = gp.g.OutgoingEdges(end);
+			for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
+				if (component_map.find(*e_iter) != component_map.end())
+					max_outgoing_path = max(max_outgoing_path, component_map[*e_iter].second + gp.g.length(*e_iter));
+			if (max_incoming_path > component_map[*iter].first){
+				changed = true;
+				component_map[*iter].first = max_incoming_path;
+			}
+			if (max_outgoing_path > component_map[*iter].second){
+				changed = true;
+				component_map[*iter].second = max_outgoing_path;
+			}
+		}
+		if (!changed)
+			break;
+	}
+	DEBUG("not_unique_component");
+	for (auto iter = component.begin(); iter != component.end(); ++iter){
+		DEBUG(gp.g.int_id(*iter)<<" len "<< gp.g.length(*iter) <<" :  "<<component_map[*iter].first <<" " << component_map[*iter].second);
+		distances_map[*iter] = component_map[*iter];
 	}
 
 }

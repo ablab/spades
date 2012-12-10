@@ -562,6 +562,7 @@ def main():
             #corrector can work only with -1 and -2 reads and only if contigs are exists (not only error correction)
             if (paired1 or paired) and (not only_error_correction) and mismatch_corrector:
                 cfg["mismatch_corrector"] = load_config_from_vars(dict())
+                cfg["mismatch_corrector"].__dict__["skip_masked"] = "NONE"
                 if bwa:
                     cfg["mismatch_corrector"].__dict__["bwa"] = bwa
                 if "max_threads" in cfg["common"].__dict__:
@@ -840,8 +841,8 @@ def main():
                     args.append('-' + k)
                 else:
                     args.append('--' + k)
-                args.append(v)
-
+                if v != "NONE":	
+                    args.append(v)
             corrector.main(args)
 
             if not cfg["common"].developer_mode:
