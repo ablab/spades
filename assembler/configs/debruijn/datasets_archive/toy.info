@@ -1,4 +1,3 @@
 paired_reads             "../../../test_dataset/ecoli_1K_1.fq.gz ../../../test_dataset/ecoli_1K_2.fq.gz"
 RL                       100
 single_cell              false
-reference_genome	"/home/lab42/references/E.coli/MG1655-K12.fasta"

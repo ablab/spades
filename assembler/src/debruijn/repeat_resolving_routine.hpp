@@ -122,20 +122,14 @@ void save_resolved(conj_graph_pack& resolved_gp,
     }
 }
 
-template<class graph_pack>
-void found_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after, 	map<EdgeId, pair<size_t, size_t> >& distance_to_repeats_end){
+void found_distance_from_repeats(conj_graph_pack& gp){
 	set<EdgeId> not_unique;
 	for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		VertexId start = gp.g.EdgeStart(*iter);
 		VertexId end = gp.g.EdgeEnd(*iter);
-		//Graph topology implied repeats
-		if ((gp.g.CheckUniqueIncomingEdge(end) && !gp.g.IsDeadEnd(end)) ||( gp.g.CheckUniqueOutgoingEdge(start)  && !gp.g.IsDeadStart(start) ) )
-			not_unique.insert(*iter);
-		//Split-based repeats
-		else if (labels_after.edge_inclusions.find(*iter) != labels_after.edge_inclusions.end() && labels_after.edge_inclusions[*iter].size()> 1)
+		if ((gp.g.CheckUniqueIncomingEdge(end) && !gp.g.IsDeadEnd(end)) ||( gp.g.CheckUniqueOutgoingEdge(start)  && !gp.g.IsDeadStart(start) ))
 			not_unique.insert(*iter);
 	}
-	set<set<EdgeId> > components;
 	while (!not_unique.empty()) {
 		set<EdgeId> wfs_set ;
 		wfs_set.insert(*not_unique.begin());
@@ -157,73 +151,15 @@ void found_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph
 				wfs_set.erase(iter);
 			}
 		}
-		DEBUG("not_unique_component");
+		INFO("not_unique_component");
 		for (auto iter = component.begin(); iter != component.end(); ++iter){
-			DEBUG (gp.g.int_id(*iter));
+			INFO (gp.g.int_id(*iter));
 			not_unique.erase(*iter);
 		}
-		components.insert(component);
-		fillComponentDistances(component, distance_to_repeats_end, gp);
 		component.clear();
-	}
-	string p = path::append_path(cfg::get().output_saves, "distance_filling");
-	saveComponents(p, components, gp);
-}
 
-template<class graph_pack>
-void fillComponentDistances(set<EdgeId>& component, map<EdgeId, pair<size_t, size_t> > & distances_map, graph_pack& gp){
-	map<EdgeId, pair<size_t, size_t> >  component_map;
-	//longest pathes from start and end of edge resp to first base(backward and forward resp) not in repeat;
-	for (auto iter  = component.begin(); iter != component.end(); iter ++)
-		component_map[*iter] = std::make_pair(0, 0);
+	}
 
-	for(size_t j = 0; j < 1000; j++){
-		bool changed = false;
-		for (auto iter = component.begin(); iter != component.end(); iter ++) {
-			size_t max_incoming_path = 0;
-			size_t max_outgoing_path = 0;
-			VertexId start = gp.g.EdgeStart(*iter);
-			VertexId end = gp.g.EdgeEnd(*iter);
-			vector<EdgeId> next = gp.g.IncomingEdges(start);
-			for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
-				if (component_map.find(*e_iter) != component_map.end())
-					max_incoming_path = max(max_incoming_path, component_map[*e_iter].first + gp.g.length(*e_iter));
-			next = gp.g.OutgoingEdges(end);
-			for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
-				if (component_map.find(*e_iter) != component_map.end())
-					max_outgoing_path = max(max_outgoing_path, component_map[*e_iter].second + gp.g.length(*e_iter));
-			if (max_incoming_path > component_map[*iter].first){
-				changed = true;
-				component_map[*iter].first = max_incoming_path;
-			}
-			if (max_outgoing_path > component_map[*iter].second){
-				changed = true;
-				component_map[*iter].second = max_outgoing_path;
-			}
-		}
-		if (!changed)
-			break;
-	}
-	INFO("not_unique_component");
-	for (auto iter = component.begin(); iter != component.end(); ++iter){
-		INFO(gp.g.int_id(*iter)<<" len "<< gp.g.length(*iter) <<" :  "<<component_map[*iter].first <<" " << component_map[*iter].second);
-		distances_map[*iter] = component_map[*iter];
-	}
-}
-
-//TODO Move to graphio if saves needed;
-template<class graph_pack>
-void saveComponents(string file_name, set<set<EdgeId> >& components, graph_pack& gp){
-	FILE* file = fopen((file_name + ".rep").c_str(), "w");
-	fprintf(file, "%zu\n", components.size());
-	for (auto iter = components.begin(); iter != components.end(); ++ iter){
-		fprintf(file, "%zu\n", iter->size());
-		for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter){
-			fprintf(file,"%zu ", gp.int_ids.ReturnIntId(*j_iter));
-		}
-		fprintf(file, "\n");
-	}
-	fclose(file);
 }
 
 template<class graph_pack>
@@ -425,9 +361,6 @@ template<class graph_pack>
 void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after) {
 	size_t Ncount = 0;
 	//FILE* file = fopen(("multipicities.tmp"), "w");
-	map<EdgeId, pair<size_t, size_t> > distance_to_repeats_end;
-
-    found_distance_from_repeats(origin_gp, labels_after, distance_to_repeats_end);
 
 	for (auto iter = origin_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 //		size_t len = origin_gp.g.length(*iter) + origin_gp.g.k();
@@ -472,13 +405,7 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 //					}
 					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
 
-					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff && real_count <= 7
-// only long repeats are interesting; others will be fixed by corrector
-						&& distance_to_repeats_end.find(*iter) != distance_to_repeats_end.end()
-//and we are not interested in long repeats begins/ends.
-						&& (distance_to_repeats_end[*iter].first + mismatches[i].position > *cfg::get().ds.IS)
-						&& (distance_to_repeats_end[*iter].second + origin_gp.g.length(*iter) + cfg::get().K - mismatches[i].position > *cfg::get().ds.IS)
-						) {
+					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff && real_count <= 5) {
 						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, real_multiplicity * mismatches[i].ratio, mismatches[i].counts, cutoff);
 						Ncount++;
 					}
@@ -989,6 +916,7 @@ void resolve_repeats() {
 	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
 
 	INFO("STAGE == Resolving Repeats");
+//	found_distance_from_repeats(conj_gp);
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
 		int number_of_components = 0;
 
@@ -1064,8 +992,6 @@ void resolve_repeats() {
                 }
 
                 save_resolved(resolved_gp, resolved_graph_paired_info, resolved_graph_paired_info_cl);
-
-
 	        }
 
 
@@ -1192,9 +1118,9 @@ void resolve_repeats() {
                     cfg::get().pe_params);
         }
         else  {
-
             ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp,
                     labels_after, resolved_graph_paired_info);
+
             INFO("Scaffolding");
             resolve_repeats_pe(cfg::get().K, resolved_gp,
                     resolved_graph_paired_info_cl,
@@ -1203,7 +1129,6 @@ void resolve_repeats() {
                     "scaffolds.fasta",
                     cfg::get().pe_params);
         }
-
 
         if (cfg::get().run_mode) {
             save_resolved(resolved_gp, resolved_graph_paired_info, resolved_graph_paired_info_cl);
