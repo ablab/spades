@@ -226,9 +226,13 @@ def split_sam(filename, tmpdir):
         print ("For most systems (if you are a sudoer) you can fix it by adding \"*  soft    nofile    "+ str(needed_ulimit + 20) + "\" to /etc/security/limits.conf")
         need_to_cashe = True
 
+    if config["use_multiple_aligned"]:
+        need_to_cashe = False;
+
     paired_read = []
     processed_reads = 0;
     max_cashed_lines = 1000000;
+
     for line in inFile:
         arr = line.split()
         processed_reads += 1;
@@ -374,7 +378,7 @@ def run_bwa():
 def parse_profile(args):
     global config
 
-    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= bowtie2= help debug use_quality".split()
+    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= bowtie2= help debug use_quality use_multiple_aligned".split()
     short_options = "1:2:o:s:S:c:t:m:q"
     options, contigs_fpaths = getopt.gnu_getopt(args, short_options, long_options)
     for opt, arg in options:
@@ -406,6 +410,8 @@ def parse_profile(args):
             config["bowtie2"]= arg;
         if opt in ("--debug"):
             config["debug"] = 1;
+        if opt in ("--use_multiple_aligned"):
+            config["use_multiple_aligned"] = 1;
     work_dir = config["output_dirpath"]+"/tmp/"
     config["work_dir"] = work_dir
     os.system ("mkdir -p " + work_dir)
@@ -419,6 +425,7 @@ def init_config():
     config["mate_weight"] = float(1)
     config["use_quality"] = 0;
     config["debug"] = 0;
+    config["use_multiple_aligned"] = 0;
 
 def process_contig(samfilename, contig_file, mult_aligned_filename):
 
