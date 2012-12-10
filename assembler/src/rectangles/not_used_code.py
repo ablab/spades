@@ -358,4 +358,7 @@ def extend_in_direction(vertex_body, kmer_map, direction_forward):
                             all_dist[(pos2, e2.v2.vid)] = (e2, new_dists)
                     if pos + e2.len > limit1:
                         yield e2, pos + e.len
+    def __from_genome(self):
+        return len(self.etalon_dist.keys()) > 0
 
+ 

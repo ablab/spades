@@ -24,7 +24,6 @@ class RectangleSet(object):
         self.rectangles = {} # (e1, e2) -> Rectangle
         self.logger = logging.getLogger('rectangles')
         self.test_utils = test_utils
-        self.not_used_prd_support = dict()
 
     def __get_prd(self, prd_file_name):
         for e1id, e2id, D, weight, delta in saveparser.prd(prd_file_name):
@@ -133,11 +132,6 @@ class RectangleSet(object):
             e1 = self.graph.es[e1id]
             e2 = self.graph.es[e2id]
             if (e1, e2) not in self.rectangles: # there' no possible rectangles between e1 and e2
-                if weight < 0.00001 or D - e1.len + 100 < self.d:
-                    continue
-                if (e1, e2) not in self.not_used_prd_support:
-                    self.not_used_prd_support[(e1, e2)] = []
-                self.not_used_prd_support[(e1, e2)].append((D, weight, delta))
                 continue
             r = self.rectangles[(e1, e2)]
             for diag in r.diagonals.itervalues():

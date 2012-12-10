@@ -244,9 +244,6 @@ class Graph(Abstract_Graph):
                 kmers[utils.rc(kmer)].append(-(len(genome) - i - k + 1))
         return kmers
 
-    def __from_genome(self):
-        return len(self.etalon_dist.keys()) > 0
-
     def dfs(self, e, d):
         limit1 = d - e.len
         limit2 = d
@@ -264,7 +261,6 @@ class Graph(Abstract_Graph):
                     if pos + e2.len > limit1:
                         yield e2, pos + e.len
 
-
 def print_graph_edge(edge, paths, stream, pre_format_function, format_function, post_format_function):
     if not edge.eid in paths:
         return False    
@@ -281,6 +277,5 @@ def print_graph_edge(edge, paths, stream, pre_format_function, format_function, 
     for l in xrange(0, l, 60):
         print >> stream, seq[l:l + 60]
     return True
-
 
 
