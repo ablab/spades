@@ -61,7 +61,7 @@ class PeakFinder {
 
   void PrintStats(string host) const {
     for (size_t i = 0; i < data_len_; ++i)
-      DEBUG(host << (x_left_ + (int) i) << " " << hist_[i])
+      DEBUG(host << (x_left_ + (int) i) << " " << hist_[i]);
   }
 
   void FFTSmoothing(double cutoff) {
