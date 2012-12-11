@@ -168,7 +168,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
         BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
         brokenScaffolds.AddPair(p, cp);
     }
-    writer.writePaths(brokenScaffolds, output_dir + "broken_scaffolds");
+    writer.writePaths(brokenScaffolds, output_dir + "broken_scaffolds.fasta");
 
 //    size_t count = 0;
 //    ofstream out("./sinks.log");

@@ -30,14 +30,15 @@ protected:
         }
 
         for (size_t i = 0; i < path.Size(); ++i) {
-            if (path.GapAt(i) > (int) k_) {
-                for (size_t j = 0; j < path.GapAt(i) - k_; ++ j) {
+            int gap = i == 0 ? 0 : path.GapAt(i);
+            if (gap > (int) k_) {
+                for (size_t j = 0; j < gap - k_; ++ j) {
                     ss << "N";
                 }
                 ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001);
             }
             else {
-                int overlapLen = k_ - path.GapAt(i);
+                int overlapLen = k_ - gap;
                 if (overlapLen >= (int) gp_.g.length(path[i]) + (int) k_) {
                     continue;
                 }
