@@ -208,13 +208,11 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 	}
 
 	// Saving some pics for analysis
-	for (auto it = streams.begin(); it != streams.end(); ++it) {
+	for (auto it = rc_contigs.begin(); it != rc_contigs.end(); ++it) {
 		(*it)->reset();
 	}
-	ColorHandler<Graph> coloring(gp2.g, streams.size());
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp2.g,
-			coloring, *MapperInstance<gp_t>(gp2));
-	colored_graph_constructor.ConstructGraph(streams);
+	ColorHandler<Graph> coloring(gp2.g, rc_contigs.size());
+	ConstructColoredGraph(gp2, coloring, rc_contigs, true);
 
 	size_t last_slash_pos = out_files[0].find_last_of('/');
 	string out_root = out_files[0].substr(0, last_slash_pos + 1);
