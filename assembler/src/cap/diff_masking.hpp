@@ -211,14 +211,14 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 	for (auto it = streams.begin(); it != streams.end(); ++it) {
 		(*it)->reset();
 	}
-	ColorHandler<Graph> coloring(gp.g, streams.size());
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
-			coloring, *MapperInstance<gp_t>(gp));
+	ColorHandler<Graph> coloring(gp2.g, streams.size());
+	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp2.g,
+			coloring, *MapperInstance<gp_t>(gp2));
 	colored_graph_constructor.ConstructGraph(streams);
 
 	size_t last_slash_pos = out_files[0].find_last_of('/');
 	string out_root = out_files[0].substr(0, last_slash_pos + 1);
-	PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
+	PrintColoredGraphWithColorFilter(gp2.g, coloring, gp2.edge_pos,
 			out_root + "after_pics/colored_split_graph.dot");
 }
 
