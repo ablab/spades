@@ -22,8 +22,8 @@ protected:
 
     size_t k_;
 
-    std::string ToString(const BidirectionalPath& path) const {
-        std::stringstream ss;
+    string ToString(const BidirectionalPath& path) const {
+        stringstream ss;
 
         if (!path.Empty()) {
             ss  << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.001).substr(0, k_);
@@ -63,16 +63,17 @@ protected:
     }
 
 
+
 public:
     ContigWriter(conj_graph_pack& gp, size_t k): gp_(gp), k_(k) {
 
     }
 
-    void writeEdges(const std::string& filename) {
+    void writeEdges(const string& filename) {
         INFO("Outputting edges to " << filename);
         osequencestream_with_data_for_scaffold oss(filename);
 
-        std::set<EdgeId> included;
+        set<EdgeId> included;
         for (auto iter = gp_.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0) {
                 oss.setCoverage(gp_.g.coverage(*iter));
@@ -87,7 +88,7 @@ public:
     }
 
 
-    void writePathEdges(const PathContainer& paths, const std::string& filename) {
+    void writePathEdges(const PathContainer& paths, const string& filename) {
 		INFO("Outputting path data to " << filename);
 		ofstream oss;
         oss.open(filename.c_str());
@@ -104,7 +105,7 @@ public:
 		INFO("Edges written");
 	}
 
-    void writePaths(PathContainer& paths, const std::string& filename) {
+    void writePaths(PathContainer& paths, const string& filename) {
 
         INFO("Writing contigs to " << filename);
         osequencestream_with_data_for_scaffold oss(filename);
@@ -118,6 +119,7 @@ public:
         INFO("Contigs written");
     }
 
+
 };
 
 
@@ -126,7 +128,7 @@ class PathInfoWriter {
 
 public:
 
-    void writePaths(PathContainer& paths, const std::string& filename) {
+    void writePaths(PathContainer& paths, const string& filename) {
         ofstream oss(filename);
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
