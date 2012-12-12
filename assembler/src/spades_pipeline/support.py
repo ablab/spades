@@ -2,16 +2,17 @@
 
 import os
 import stat
+import sys
 
 def verify(expr, log, message):
     if (not (expr)):
         log.info ("Assertion failed. Message: " + message)
-        exit(1)
+        sys.exit(1)
 
 
 def error(err_str, log, prefix="== Error == "):
     log.info("\n\n" + prefix + " " + err_str + "\n\n")
-    exit(1)
+    sys.exit(1)
 
 
 def warning(warn_str, log, prefix="== Warning == "):
