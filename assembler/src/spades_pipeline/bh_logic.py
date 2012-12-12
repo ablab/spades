@@ -6,7 +6,7 @@ import shutil
 import support
 import process_cfg
 
-def prepare_config_bh(filename, cfg):
+def prepare_config_bh(filename, cfg, log):
     subst_dict = dict()
     cfg.working_dir = os.path.abspath(cfg.working_dir)
 
@@ -28,7 +28,7 @@ def prepare_config_bh(filename, cfg):
     if "qvoffset" in cfg.__dict__:
         subst_dict["input_qvoffset"] = cfg.qvoffset
 
-    process_cfg.substitute_params(filename, subst_dict)
+    process_cfg.substitute_params(filename, subst_dict, log)
 
 
 def run_bh(spades_home, execution_home, cfg, log):
@@ -43,7 +43,7 @@ def run_bh(spades_home, execution_home, cfg, log):
             if cfg_file.endswith('.template'):
                 os.remove(os.path.join(root, cfg_file))
 
-    prepare_config_bh(cfg_file_name, cfg)
+    prepare_config_bh(cfg_file_name, cfg, log)
 
     command = ""
     if "use_jemalloc" in cfg.__dict__ and os.path.isfile("jemalloc.sh"):

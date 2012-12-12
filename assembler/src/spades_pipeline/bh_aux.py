@@ -29,7 +29,7 @@ def determine_read_files(folder, str_it_count, input_files, num_paired, log):
     for id, input_file in enumerate(input_files):
         prefix = os.path.basename(input_file) + "." + str_it_count
         full_name = folder + prefix + ".cor.fastq"
-        support.verify(os.path.isfile(full_name), "corrected file not found: " + full_name, log)
+        support.verify(os.path.isfile(full_name), log, "corrected file not found: " + full_name)
         if id < num_paired:
             answer["paired_reads"] += full_name + '  '
         else:

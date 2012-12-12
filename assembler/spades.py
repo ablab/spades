@@ -139,12 +139,12 @@ def check_config(cfg, log):
     ## checking mandatory sections
 
     if (not "dataset" in cfg):
-        support.error("wrong config! You should specify 'dataset' section!")
+        support.error("wrong config! You should specify 'dataset' section!", log)
         return False
 
     if (not "error_correction" in cfg) and (not "assembly" in cfg):
         support.error("wrong options! You should specify either '--only-error-correction' (for reads"
-                      " error correction) or '--only-assembler' (for assembling) or none of these options (for both)!")
+                      " error correction) or '--only-assembler' (for assembling) or none of these options (for both)!", log)
         return False
 
     ## checking existence of all files in dataset section
@@ -157,7 +157,7 @@ def check_config(cfg, log):
                 v = [v]
             for reads_file in v:
                 if not os.path.isfile(os.path.expandvars(reads_file)):
-                    support.error("file with reads doesn't exist! " + os.path.expandvars(reads_file))
+                    support.error("file with reads doesn't exist! " + os.path.expandvars(reads_file), log)
                     return False
                 else:
                     ext = os.path.splitext(os.path.expandvars(reads_file))[1]
@@ -167,7 +167,7 @@ def check_config(cfg, log):
                         return False
 
     if no_files_with_reads:
-        support.error("wrong options! You should specify at least one file with reads!")
+        support.error("wrong options! You should specify at least one file with reads!", log)
         return False
 
     ## setting default values if needed
@@ -219,14 +219,14 @@ def check_config(cfg, log):
     return True
 
 
-def check_binaries(binary_dir):
+def check_binaries(binary_dir, log):
     for binary in ["hammer", "spades"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
             support.error("SPAdes binary file not found: " + binary_path +
                           "\nYou can obtain SPAdes binaries in one of two ways:" +
                           "\n1. Download the binaries from SPAdes server with ./spades_download_binary.py script" +
-                          "\n2. Build source code with ./spades_compile.py script")
+                          "\n2. Build source code with ./spades_compile.py script", log)
             return False
     return True
 
@@ -259,9 +259,9 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
-def check_file(f, message=''):
+def check_file(f, message, log):
     if not os.path.isfile(f):
-        support.error("file not found (%s): %s" % (message, f))
+        support.error("file not found (%s): %s" % (message, f), log)
     return f
 
 
@@ -349,6 +349,14 @@ def main():
         usage()
         sys.exit(1)
 
+    log = logging.getLogger('spades')
+    log.setLevel(logging.DEBUG)
+
+    console = logging.StreamHandler(sys.stdout)
+    console.setFormatter(logging.Formatter('%(message)s'))
+    console.setLevel(logging.DEBUG)
+    log.addHandler(console)
+
     # all parameters are stored here
     cfg = dict()
 
@@ -392,25 +400,25 @@ def main():
             elif opt == "--tmp-dir":
                 tmp_dir = arg
             elif opt == "--reference":
-                reference = check_file(arg, 'reference')
+                reference = check_file(arg, 'reference', log)
             elif opt == "--dataset":
-                dataset = check_file(arg, 'dataset')
+                dataset = check_file(arg, log, 'dataset', log)
 
             elif opt == "--12":
-                paired.append(check_file(arg, 'paired'))
+                paired.append(check_file(arg, 'paired', log))
             elif opt == '-1':
-                paired1.append(check_file(arg, 'left paired'))
+                paired1.append(check_file(arg, 'left paired', log))
             elif opt == '-2':
-                paired2.append(check_file(arg, 'right paired'))
+                paired2.append(check_file(arg, 'right paired', log))
             elif opt == '-s':
-                single.append(check_file(arg, 'single'))
+                single.append(check_file(arg, 'single', log))
             elif opt == '-k':
                 k_mers = map(int, arg.split(","))
                 for k in k_mers:
                     if k > 127:
-                        support.error('wrong k value ' + str(k) + ': all k values should be less than 128')
+                        support.error('wrong k value ' + str(k) + ': all k values should be less than 128', log)
                     if k % 2 == 0:
-                        support.error('wrong k value ' + str(k) + ': all k values should be odd')
+                        support.error('wrong k value ' + str(k) + ': all k values should be odd', log)
 
             elif opt == "--sc":
                 single_cell = True
@@ -457,7 +465,7 @@ def main():
                 sys.exit(0)
 
             elif opt == "--config-file":
-                CONFIG_FILE = check_file(arg, 'config file')
+                CONFIG_FILE = check_file(arg, 'config file', log)
                 break
 
             elif opt == "--test":
@@ -469,16 +477,16 @@ def main():
 
         if not CONFIG_FILE and not TEST:
             if not output_dir:
-                support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).")
+                support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
 
             if len(paired1) != len(paired2):
                 support.error("the number of files with left paired reads is not equal to the"
-                      " number of files with right paired reads!")
+                      " number of files with right paired reads!", log)
 
             # processing hidden option "--dataset"
             if dataset:
                 if not only_assembler:
-                    support.error("hidden option --dataset works exclusively in --only-assembler mode!")
+                    support.error("hidden option --dataset works exclusively in --only-assembler mode!", log)
                 # reading info about dataset from provided dataset file
                 cfg["dataset"] = load_config_from_file(dataset)
                 # correcting reads relative pathes (reads can be specified relatively to provided dataset file)
@@ -489,12 +497,12 @@ def main():
                             v = [v]
                         for reads_filename in v:
                             corrected_reads_filename = os.path.join(os.path.dirname(dataset), reads_filename)
-                            check_file(corrected_reads_filename, k + " in " + dataset)
+                            check_file(corrected_reads_filename, k + " in " + dataset, log)
                             corrected_reads_filenames.append(corrected_reads_filename)
                         cfg["dataset"].__dict__[k] = corrected_reads_filenames
             else:
                 if not paired and not paired1 and not single:
-                    support.error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!")
+                    support.error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!", log)
 
                 # creating empty "dataset" section
                 cfg["dataset"] = load_config_from_vars(dict())
@@ -584,18 +592,10 @@ def main():
         usage()
         sys.exit(1)
 
-    log = logging.getLogger('spades')
-    log.setLevel(logging.DEBUG)
-
-    console = logging.StreamHandler(sys.stdout)
-    console.setFormatter(logging.Formatter('%(message)s'))
-    console.setLevel(logging.DEBUG)
-    log.addHandler(console)
-
     if not check_config(cfg, log):
         return
 
-    if not check_binaries(execution_home):
+    if not check_binaries(execution_home, log):
         return
 
     if not os.path.isdir(cfg["common"].output_dir):

@@ -8,7 +8,7 @@ import support
 import process_cfg
 from process_cfg import bool_to_str
 
-def prepare_config_spades(filename, cfg, prev_K, K, last_one):
+def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
     subst_dict = dict()
 
     subst_dict["K"] = str(K)
@@ -30,7 +30,7 @@ def prepare_config_spades(filename, cfg, prev_K, K, last_one):
     subst_dict["max_memory"] = cfg.max_memory
     subst_dict["correct_mismatches"] = bool_to_str(last_one)
 
-    process_cfg.substitute_params(filename, subst_dict)
+    process_cfg.substitute_params(filename, subst_dict, log)
 
 
 def run_spades(spades_home, execution_home, cfg, log):
@@ -62,7 +62,7 @@ def run_spades(spades_home, execution_home, cfg, log):
                 if cfg_file.endswith('.template'):
                     os.remove(os.path.join(root, cfg_file))
 
-        prepare_config_spades(cfg_file_name, cfg, prev_K, K,
+        prepare_config_spades(cfg_file_name, cfg, log, prev_K, K,
             count == len(cfg.iterative_K))
         prev_K = K
 

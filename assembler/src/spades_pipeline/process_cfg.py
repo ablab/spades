@@ -70,13 +70,13 @@ def vars_from_lines(lines):
     return vars
 
 
-def substitute_params(filename, var_dict):
+def substitute_params(filename, var_dict, log):
     lines = file_lines(filename)
     vars_in_file = vars_from_lines(lines)
 
     for var, value in var_dict.items():
         if var not in vars_in_file:
-            support.error("Couldn't find " + var + " in " + filename)
+            support.error("Couldn't find " + var + " in " + filename, log)
 
         meta = vars_in_file[var]
         lines[meta.line_num] = meta.indent + str(var) + " " + str(value) + "\n"
