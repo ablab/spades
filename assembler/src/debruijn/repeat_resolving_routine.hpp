@@ -122,7 +122,10 @@ void save_resolved(conj_graph_pack& resolved_gp,
     }
 }
 
-void found_distance_from_repeats(conj_graph_pack& gp){
+
+
+template<class graph_pack>
+void found_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after, 	map<EdgeId, pair<size_t, size_t> >& distance_to_repeats_end){
 	set<EdgeId> not_unique;
 	for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		VertexId start = gp.g.EdgeStart(*iter);
@@ -134,6 +137,7 @@ void found_distance_from_repeats(conj_graph_pack& gp){
 		else if (labels_after.edge_inclusions.find(*iter) != labels_after.edge_inclusions.end() && labels_after.edge_inclusions[*iter].size()> 1)
 			not_unique.insert(*iter);
 	}
+	set<set<EdgeId> > components;
 	while (!not_unique.empty()) {
 		set<EdgeId> wfs_set ;
 		wfs_set.insert(*not_unique.begin());
@@ -155,11 +159,13 @@ void found_distance_from_repeats(conj_graph_pack& gp){
 				wfs_set.erase(iter);
 			}
 		}
-		INFO("not_unique_component");
+		DEBUG("not_unique_component");
 		for (auto iter = component.begin(); iter != component.end(); ++iter){
-			INFO (gp.g.int_id(*iter));
+			DEBUG (gp.g.int_id(*iter));
 			not_unique.erase(*iter);
 		}
+		components.insert(component);
+		fillComponentDistances(component, distance_to_repeats_end, gp);
 		component.clear();
 	}
 	string p = path::append_path(cfg::get().output_saves, "distance_filling");
@@ -206,7 +212,21 @@ void fillComponentDistances(set<EdgeId>& component, map<EdgeId, pair<size_t, siz
 		DEBUG(gp.g.int_id(*iter)<<" len "<< gp.g.length(*iter) <<" :  "<<component_map[*iter].first <<" " << component_map[*iter].second);
 		distances_map[*iter] = component_map[*iter];
 	}
+}
 
+//TODO Move to graphio if saves needed;
+template<class graph_pack>
+void saveComponents(string file_name, set<set<EdgeId> >& components, graph_pack& gp){
+	FILE* file = fopen((file_name + ".rep").c_str(), "w");
+	fprintf(file, "%zu\n", components.size());
+	for (auto iter = components.begin(); iter != components.end(); ++ iter){
+		fprintf(file, "%zu\n", iter->size());
+		for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter){
+			fprintf(file,"%zu ", gp.int_ids.ReturnIntId(*j_iter));
+		}
+		fprintf(file, "\n");
+	}
+	fclose(file);
 }
 
 template<class graph_pack>
