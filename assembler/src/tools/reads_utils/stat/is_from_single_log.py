@@ -39,6 +39,12 @@ class PairedStat:
 
         return self.mean, self.dev
 
+    def write_hist(self, filename):
+        outf = open(filename, "w")
+        for i in sorted(self.hist.keys()):
+            outf.write(str(i) + " " + str(self.hist[i]) + "\n")            
+        outf.close()
+
 
 def stat_from_log(log, max_is= 1000000000):
     logfile = open(log, "r")

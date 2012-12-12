@@ -256,6 +256,10 @@ for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     align_log = os.path.join(output_dir, dataset + ".log")
     stat = is_from_single_log.stat_from_log(align_log, max_is)
+    stat[1]["FR"].write_hist(os.path.join(output_dir, dataset + "_FR.is"))
+    stat[1]["RF"].write_hist(os.path.join(output_dir, dataset + "_RF.is"))
+    stat[1]["FF"].write_hist(os.path.join(output_dir, dataset + "_FF.is"))
+
     read_pairs = total_reads[dataset] / 2
 
     report_dict[dataset].append( str(stat[0]) )
