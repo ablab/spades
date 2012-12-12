@@ -2,5 +2,5 @@
 set -e
 if [ ! -e input ];
 then
-    ln -s ../../../../input input
+    ln -s /storage/acestorage/data/input input
 fi
