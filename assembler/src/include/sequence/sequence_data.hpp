@@ -161,7 +161,9 @@ public:
     }
 
     ~SequenceData() {
+        VERIFY(bytes_);
         free(bytes_);
+        bytes_ = NULL;
     }
 
     // for a faster start method of Sequence
