@@ -58,10 +58,11 @@ protected:
   typedef set<Point> Histogram;
   typedef vector<pair<int, double> > EstimHist;
   typedef vector<PairInfo<EdgeId> > PairInfos;
+  typedef vector<size_t> GraphLengths;
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
-                                const Histogram& histogram,
-                                const vector<size_t>& raw_forward) const
+                                const Histogram& raw_data,
+                                const vector<size_t>& forward) const
   {
     VERIFY_MSG(false, "Sorry, the SMOOOOTHING estimator is not available anymore." <<
                "SPAdes is going to terminate");
@@ -82,8 +83,7 @@ private:
   mutable size_t gap_distances;
 
   EstimHist FindEdgePairDistances(EdgePair ep,
-                                  const Histogram& raw_hist,
-                                  const vector<size_t> forward) const
+                                  const Histogram& raw_hist) const
   {
     size_t first_len = this->graph().length(ep.first);
     size_t second_len = this->graph().length(ep.second);
@@ -156,51 +156,54 @@ private:
     return new_result;
     }
 
-  virtual void ProcessEdgePair(EdgePair ep,
-                               const Histogram& raw_hist, 
-                               PairedInfoIndexT<Graph>& result,
-                               perf_counter& pc) const
+  virtual void ProcessEdge(EdgeId e1,
+                           const InnerMap<Graph>& inner_map,
+                           PairedInfoIndexT<Graph>& result,
+                           perf_counter& pc) const
   {
     pc.reset();
-    if (ep <= this->ConjugatePair(ep)) {
-      EdgeId e1 = ep.first;
-      EdgeId e2 = ep.second;
-      const vector<size_t>& forward = this->GetGraphDistancesLengths(ep);
+    set<EdgeId> second_edges;
+    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
+      second_edges.insert(I->first);
 
-      TRACE("Processing edge pair " << this->graph().int_id(e1) 
-                             << " " << this->graph().int_id(e2));
-      Histogram hist(raw_hist);
-      EstimHist estimated;
-      //DEBUG("Extending paired information");
-      //DEBUG("Extend left");
-      //this->ExtendInfoLeft(e1, e2, hist, 1000);
-      //DEBUG("Extend right");
-      //this->ExtendInfoRight(e1, e2, hist, 1000);
-      if (forward.size() == 0) {
-        estimated = FindEdgePairDistances(ep, hist, forward);
-        ++gap_distances;
-      }
-      else if (forward.size() > 0 && (!only_scaffolding_)) {
-        DEBUG("Extending paired information");
-        DEBUG("Extend left");
-        this->ExtendInfoLeft(e1, e2, hist, 1000);
+    const vector<GraphLengths>& lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+
+    size_t i = 0;
+    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I) {
+      EdgeId e2 = I->first;
+      EdgePair ep(e1, e2);
+      if (ep <= this->ConjugatePair(ep)) {
+        const GraphLengths& forward = lens_array[i++];
+
+        TRACE("Processing edge pair " << this->graph().int_id(e1)
+                               << " " << this->graph().int_id(e2));
+        Histogram hist = I->second;
+        EstimHist estimated;
+        //DEBUG("Extending paired information");
+        //DEBUG("Extend left");
+        //this->base::ExtendInfoLeft(e1, e2, hist, 1000);
         DEBUG("Extend right");
         this->ExtendInfoRight(e1, e2, hist, 1000);
-        estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
+        if (forward.size() == 0) {
+          estimated = FindEdgePairDistances(ep, hist);
+          ++gap_distances;
+        }
+        else if (forward.size() > 0 && (!only_scaffolding_)) {
+          estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
+        }
+        DEBUG(gap_distances << " distances between gap edge pairs have been found");
+        Histogram res = this->ClusterResult(ep, estimated);
+        this->AddToResult(res, ep, result);
+        this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
       }
-
-      DEBUG(gap_distances << " distances between gap edge pairs have been found");
-      const Histogram& res = this->ClusterResult(ep, estimated);
-      this->AddToResult(res, ep, result);
-      this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
     }
   }
 
   bool IsTipTip(EdgeId e1, EdgeId e2) const {
     return (this->graph().OutgoingEdgeCount(this->graph().EdgeEnd(e1)) == 0 &&
-        this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e1)) == 1 &&
-        this->graph().IncomingEdgeCount(this->graph().EdgeStart(e2)) == 0 &&
-        this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e2)) == 1);
+            this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e1)) == 1 &&
+            this->graph().IncomingEdgeCount(this->graph().EdgeStart(e2)) == 0 &&
+            this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e2)) == 1);
   }
 
   virtual const string Name() const {

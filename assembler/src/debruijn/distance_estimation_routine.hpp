@@ -34,7 +34,7 @@ void estimate_with_estimator(const Graph& graph,
                              const AbstractDistanceEstimator<Graph>& estimator,
                              const PairedInfoNormalizer<Graph>& normalizer,
                              const PairInfoWeightFilter<Graph>& filter,
-                             PairedIndexT& clustered_index) 
+                             PairedIndexT& clustered_index)
 {
   INFO("Estimating distances");
   PairedIndexT raw_clustered_index(graph);
@@ -49,14 +49,14 @@ void estimate_with_estimator(const Graph& graph,
   PairedIndexT normalized_index(graph);
 
     // temporary fix for scaffolding (I hope) due to absolute thresholds in path_extend
-  if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_weighted 
+  if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_weighted
    || cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing
-   || cfg::get().est_mode == debruijn_graph::estimation_mode::em_extensive) 
+   || cfg::get().est_mode == debruijn_graph::estimation_mode::em_extensive)
   {
     //TODO: add to config
     double coeff = (cfg::get().ds.single_cell ? (10. / 80.) : (0.2 / 3.00) );
     normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index, coeff);
-  } 
+  }
   else
     normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index);
 
@@ -65,9 +65,9 @@ void estimate_with_estimator(const Graph& graph,
   DEBUG("Info Filtered");
 }
 
-void estimate_distance(conj_graph_pack& gp, 
+void estimate_distance(conj_graph_pack& gp,
                        const PairedIndexT& paired_index,
-                             PairedIndexT& clustered_index) 
+                             PairedIndexT& clustered_index)
 {
   if (!cfg::get().developer_mode) {
     clustered_index.Attach();
@@ -91,7 +91,7 @@ void estimate_distance(conj_graph_pack& gp,
       map<int, size_t> insert_size_hist = cfg::get().ds.hist;
       if (insert_size_hist.size() == 0) {
         auto streams = paired_binary_readers(false, 0);
-        GetInsertSizeHistogram(streams, gp, *cfg::get().ds.IS, *cfg::get().ds.is_var, 
+        GetInsertSizeHistogram(streams, gp, *cfg::get().ds.IS, *cfg::get().ds.is_var,
                                insert_size_hist);
       }
       WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
@@ -133,8 +133,8 @@ void estimate_distance(conj_graph_pack& gp,
         }
       case debruijn_graph::estimation_mode::em_weighted :
         {
-          const AbstractDistanceEstimator<Graph>& 
-              estimator = 
+          const AbstractDistanceEstimator<Graph>&
+              estimator =
                   WeightedDistanceEstimator<Graph>(gp.g, paired_index,
                       dist_finder, weight_function, linkage_distance, max_distance);
 
@@ -143,7 +143,7 @@ void estimate_distance(conj_graph_pack& gp,
         }
       case debruijn_graph::estimation_mode::em_extensive :
         {
-          const AbstractDistanceEstimator<Graph>& 
+          const AbstractDistanceEstimator<Graph>&
               estimator =
                   ExtensiveDistanceEstimator<Graph>(gp.g, paired_index,
                       dist_finder, weight_function, linkage_distance, max_distance);
@@ -153,7 +153,7 @@ void estimate_distance(conj_graph_pack& gp,
         }
       case debruijn_graph::estimation_mode::em_smoothing :
         {
-          const AbstractDistanceEstimator<Graph>& 
+          const AbstractDistanceEstimator<Graph>&
               estimator =
                   SmoothingDistanceEstimator<Graph>(gp.g, paired_index,
                       dist_finder, weight_function, linkage_distance, max_distance,
@@ -196,7 +196,7 @@ void estimate_distance(conj_graph_pack& gp,
 }
 
 void load_distance_estimation(conj_graph_pack& gp,
-                              PairedIndexT& paired_index, 
+                              PairedIndexT& paired_index,
                               PairedIndexT& clustered_index,
                               path::files_t* used_files)
 {
@@ -206,8 +206,8 @@ void load_distance_estimation(conj_graph_pack& gp,
   load_estimated_params(p);
 }
 
-void save_distance_estimation(const conj_graph_pack& gp, 
-                              const PairedIndexT& paired_index, 
+void save_distance_estimation(const conj_graph_pack& gp,
+                              const PairedIndexT& paired_index,
                               const PairedIndexT& clustered_index)
 {
   if (cfg::get().make_saves) {
@@ -219,14 +219,14 @@ void save_distance_estimation(const conj_graph_pack& gp,
 }
 
 void count_estimated_info_stats(const conj_graph_pack& gp,
-                                const PairedIndexT& paired_index, 
+                                const PairedIndexT& paired_index,
                                 const PairedIndexT& clustered_index)
 {
   CountClusteredPairedInfoStats(gp, paired_index, clustered_index);
 }
 
 void exec_distance_estimation(conj_graph_pack& gp,
-                             PairedIndexT& paired_index, 
+                             PairedIndexT& paired_index,
                              PairedIndexT& clustered_index)
 {
   if (cfg::get().entry_point <= ws_distance_estimation) {

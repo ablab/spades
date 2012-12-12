@@ -1713,16 +1713,14 @@ public:
 	}
 };
 
-inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size,
-		double delta) {
+inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size, double delta) {
 	double answer = 0. + insert_size + delta - k - 2;
 	VERIFY(math::gr(answer, 0.));
 	return std::floor(answer);
 }
 
-inline size_t PairInfoPathLengthLowerBound(size_t k, size_t l_e1, size_t l_e2,
-		int gap, double delta) {
-	double answer = 0. + gap + k + 2 - l_e1 - l_e2 - delta;
+inline size_t PairInfoPathLengthLowerBound(size_t k, size_t l1, size_t l2, int gap, double delta) {
+	double answer = 0. + gap + k + 2 - l1 - l2 - delta;
 	return math::gr(answer, 0.) ? std::floor(answer) : 0;
 }
 

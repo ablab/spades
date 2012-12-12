@@ -19,7 +19,7 @@ public:
 	ReverseDistanceComparator() {
 	}
 
-	bool operator()(std::pair<distance_t, T> a, std::pair<distance_t, T> b) {
+	bool operator()(pair<distance_t, T> a, pair<distance_t, T> b) {
 		if(a.first != b.first)
 			return b.first < a.first;
 		else
@@ -32,14 +32,13 @@ class Dijkstra {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef std::map<VertexId, distance_t> distances_map;
-	//	typedef map<VertexId, distance_t>::iterator distances_map_iterator;
+	typedef map<VertexId, distance_t> distances_map;
 	typedef typename distances_map::const_iterator distances_map_ci;
 
 	const Graph &graph_;
 	bool finished_;
 	distances_map distances_;
-	std::set<VertexId> processed_vertices_;
+	set<VertexId> processed_vertices_;
 
 protected:
 	const Graph& graph() {
@@ -47,16 +46,17 @@ protected:
 	}
 
 public:
-
 	bool finished() {
 		return finished_;
 	}
 
-	Dijkstra(const Graph &graph) :
-			graph_(graph), finished_(false) {
+	Dijkstra(const Graph& graph) :
+			graph_(graph), finished_(false)
+  {
 	}
 
-	virtual ~Dijkstra() {
+	virtual ~Dijkstra()
+  {
 	}
 
 	bool DistanceCounted(VertexId vertex) {
@@ -71,7 +71,7 @@ public:
 		return distances_.find(vertex)->second;
 	}
 
-	std::pair<distances_map_ci, distances_map_ci> GetDistances() {
+	pair<distances_map_ci, distances_map_ci> GetDistances() {
 		distances_map_ci begin = distances_.begin();
 		distances_map_ci end = distances_.end();
 		return make_pair(begin, end);
@@ -93,8 +93,8 @@ public:
 		return graph_.length(edge);
 	}
 
-	virtual std::vector<std::pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
-		std::vector<std::pair<VertexId, EdgeId> > result;
+	virtual vector<pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
+		vector<pair<VertexId, EdgeId> > result;
     for (auto I = graph_.out_begin(vertex), E = graph_.out_end(vertex); I != E; ++I) {
       EdgeId edge = *I;
       result.push_back(make_pair(graph_.EdgeEnd(edge), edge));
@@ -109,8 +109,8 @@ public:
 		distances_.clear();
 		processed_vertices_.clear();
 		init(start);
-		std::priority_queue<std::pair<distance_t, VertexId> , std::vector<std::pair<distance_t,
-				VertexId> > , ReverseDistanceComparator<distance_t, VertexId> > q;
+		std::priority_queue<pair<distance_t, VertexId> , vector<pair<distance_t, VertexId> >, 
+                                       ReverseDistanceComparator<distance_t, VertexId> > q;
 		q.push(make_pair(0, start));
 		TRACE("Priority queue initialized. Starting search");
 
@@ -120,63 +120,54 @@ public:
 			q.pop();
 			distance_t distance = next.first;
 			VertexId vertex = next.second;
-			TRACE(
-					"Vertex " << graph_.str(vertex) << " with distance " << distance
-							<< " fetched from queue");
+      //TRACE("Vertex " << graph_.str(vertex) << " with distance " << distance << " fetched from queue");
 			if (DistanceCounted(vertex)) {
-				TRACE(
-						"Distance to vertex " << graph_.str(vertex)
-								<< " already counted. Proceeding to next queue entry.");
+				//TRACE("Distance to vertex " << graph_.str(vertex) << " already counted. Proceeding to next queue entry.");
 				continue;
 			}
 			distances_.insert(make_pair(vertex, distance));
-			TRACE(
-					"Vertex " << graph_.str(vertex) << " is found to be at distance "
-							<< distance << " from vertex " << graph_.str(start));
+			//TRACE("Vertex " << graph_.str(vertex) << " is found to be at distance "
+							//<< distance << " from vertex " << graph_.str(start));
 
 
 			if (!CheckProcessVertex(vertex, distance)) {
-				TRACE("Check for processing vertex failed. Proceeding to the next queue entry.");
+				//TRACE("Check for processing vertex failed. Proceeding to the next queue entry.");
 				continue;
 			}
 
 			processed_vertices_.insert(vertex);
 			auto neighbours = Neighbours(vertex);
-			TRACE(
-					"Neighbours of vertex " << graph_.str(vertex)
-							<< " found. Iterating through neighbours and adding them to queue.");
-			for (size_t i = 0; i < neighbours.size(); i++) {
-				TRACE("Checking " << i << "th neighbour of vertex " << graph_.str(vertex) << " started");
+			//TRACE("Neighbours of vertex " << graph_.str(vertex)
+			//   << " found. Iterating through neighbours and adding them to queue.");
+			for (size_t i = 0; i < neighbours.size(); ++i) {
+				//TRACE("Checking " << i << "th neighbour of vertex " << graph_.str(vertex) << " started");
 				auto neighbour = neighbours[i];
-//				TRACE("Which is " << neighbours[i]);
 				if (!DistanceCounted(neighbour.first)) {
-					TRACE("Adding new entry to queue");
-					distance_t new_distance = GetLength(neighbour.second)
-							+ distance;
-					TRACE("Entry: vertex " << graph_.str(vertex) << " distance " << new_distance);
-					if (CheckPutVertex(neighbour.first, neighbour.second,
-							new_distance)) {
-						TRACE("CheckPutVertex returned true and new entry is added");
+					//TRACE("Adding new entry to queue");
+					distance_t new_distance = GetLength(neighbour.second) + distance;
+					//TRACE("Entry: vertex " << graph_.str(vertex) << " distance " << new_distance);
+					if (CheckPutVertex(neighbour.first, neighbour.second, new_distance)) {
+						//TRACE("CheckPutVertex returned true and new entry is added");
 						q.push(make_pair(new_distance, neighbour.first));
 					}
 				}
-				TRACE("Checking " << i << "th neighbour of vertex " << graph_.str(vertex) << " finished");
+				//TRACE("Checking " << i << "th neighbour of vertex " << graph_.str(vertex) << " finished");
 			}
-			TRACE("All neighbours of vertex " << graph_.str(vertex) << " processed");
+			//TRACE("All neighbours of vertex " << graph_.str(vertex) << " processed");
 		}
 		set_finished(true);
 		TRACE("Finished dijkstra run from vertex " << graph_.str(start));
 	}
 
-	std::vector<VertexId> ReachedVertices() {
-		std::vector<VertexId> result;
+	vector<VertexId> ReachedVertices() {
+		vector<VertexId> result;
 		for (auto it = distances_.begin(); it != distances_.end(); ++it) {
 			result.push_back(it->first);
 		}
 		return result;
 	}
 
-	const std::set<VertexId>& ProcessedVertices() {
+	const set<VertexId>& ProcessedVertices() {
 		return processed_vertices_;
 	}
 
@@ -233,8 +224,8 @@ public:
 	virtual ~UnorientedDijkstra() {
 	}
 
-	virtual std::vector<std::pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
-		std::vector <std::pair<VertexId, EdgeId> > result;
+	virtual vector<pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
+		vector <pair<VertexId, EdgeId> > result;
 		const Graph &g = this->graph();
 
     for (auto I = g.out_begin(vertex), E = g.out_end(vertex); I != E; ++I) {
@@ -242,7 +233,7 @@ public:
 			result.push_back(make_pair(g.EdgeEnd(edge), edge));
     }
 
-		std::vector <EdgeId> edges = g.IncomingEdges(vertex);
+		vector <EdgeId> edges = g.IncomingEdges(vertex);
 		for (size_t i = 0; i < edges.size(); i++) {
 			result.push_back(make_pair(g.EdgeStart(edges[i]), edges[i]));
 		}
@@ -265,16 +256,15 @@ public:
 	virtual ~BackwardDijkstra() {
 	}
 
-	virtual std::vector<std::pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
-		TRACE("Starting to collect incoming edges for vertex " << this->graph().str(vertex));
-		std::vector<std::pair<VertexId, EdgeId> > result;
+	virtual vector<pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
+		//TRACE("Starting to collect incoming edges for vertex " << this->graph().str(vertex));
+		vector<pair<VertexId, EdgeId> > result;
 		const Graph &g = this->graph();
-		std::vector<EdgeId> edges = g.IncomingEdges(vertex);
-		TRACE("Vector of incoming edges fetched from graph");
-		for (size_t i = 0; i < edges.size(); i++) {
+		vector<EdgeId> edges = g.IncomingEdges(vertex);
+		//TRACE("Vector of incoming edges fetched from graph");
+		for (size_t i = 0; i < edges.size(); ++i)
 			result.push_back(make_pair(g.EdgeStart(edges[i]), edges[i]));
-		}
-		TRACE("Incoming edges info for vertex " << this->graph().str(vertex) << " constructed");
+		//TRACE("Incoming edges info for vertex " << this->graph().str(vertex) << " constructed");
 		return result;
 	}
 private:
@@ -283,33 +273,35 @@ private:
 
 template<class Graph, typename distance_t = size_t>
 class BoundedDijkstra: public Dijkstra<Graph, distance_t> {
-private:
 	typedef Dijkstra<Graph, distance_t> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	distance_t bound_;
-
 public:
 	BoundedDijkstra(const Graph &graph, distance_t bound) :
-		super(graph), bound_(bound) {
-	}
+		super(graph), bound_(bound)
+  {
+  }
 
 	virtual ~BoundedDijkstra() {
 	}
 
 	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, distance_t length) {
-		if (length > bound_)
-			return false;
-		return true;
+    return (length <= bound_);
+		//if (length > bound_)
+			//return false;
+		//return true;
 	}
 
 	virtual bool CheckProcessVertex(VertexId vertex, distance_t distance) {
-		if (distance > bound_)
-			return false;
-		return true;
+    return (distance <= bound_);
+		//if (distance > bound_)
+			//return false;
+		//return true;
 	}
 
+private:
+	distance_t bound_;
 };
 
 }

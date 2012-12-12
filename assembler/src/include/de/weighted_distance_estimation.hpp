@@ -19,13 +19,13 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
  public:
   WeightedDistanceEstimator(const Graph &graph,
       const PairedInfoIndexT<Graph>& histogram,
-      const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
+      const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f,
       size_t linkage_distance, size_t max_distance) :
-      base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f) 
+      base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f)
   {
   }
 
-  virtual ~WeightedDistanceEstimator() 
+  virtual ~WeightedDistanceEstimator()
   {
   }
 
@@ -36,12 +36,13 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   typedef set<Point> Histogram;
   typedef vector<pair<int, double> > EstimHist;
   typedef pair<EdgeId, EdgeId> EdgePair;
+  typedef vector<size_t> GraphLengths;
 
   boost::function<double(int)> weight_f_;
 
-	virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
+  virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                               const Histogram& histogram,
-                                              const vector<size_t>& raw_forward) const 
+                                              const GraphLengths& raw_forward) const
   {
     using std::abs;
     using namespace math;
@@ -52,13 +53,15 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     EstimHist result;
     int maxD = rounded_d(*histogram.rend());
     int minD = rounded_d(*histogram.rbegin());
-    vector<size_t> forward;
-    for (size_t i = 0; i < raw_forward.size(); ++i)
-      if (minD - (int) this->max_distance_ <= (int) raw_forward[i] 
-          && (int) raw_forward[i] <= maxD + (int) this->max_distance_) 
+    vector<int> forward;
+    for (auto I = raw_forward.begin(), E = raw_forward.end(); I != E; ++I) {
+      int length = *I;
+      if (minD - (int) this->max_distance_ <= length
+                                 && length <= maxD + (int) this->max_distance_)
       {
-        forward.push_back(raw_forward[i]);
+        forward.push_back(length);
       }
+    }
     if (forward.size() == 0)
       return result;
 
@@ -73,27 +76,26 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
         ++cur_dist;
       }
       if (cur_dist + 1 < forward.size() && ls(forward[cur_dist + 1] - point.d,
-                                              point.d - (int) forward[cur_dist]))
+                                              point.d - forward[cur_dist]))
       {
         ++cur_dist;
         if (le(abs(forward[cur_dist] - point.d), max_dist))
-          weights[cur_dist] += point.weight * weight_f_((int) forward[cur_dist] - point.d);
-      } 
+          weights[cur_dist] += point.weight * weight_f_(forward[cur_dist] - point.d);
+      }
       else if (cur_dist + 1 < forward.size() && eq(forward[cur_dist + 1] - point.d,
-                                                   point.d - (int) forward[cur_dist])) 
+                                                   point.d - forward[cur_dist]))
       {
         if (le(abs(forward[cur_dist] - point.d), max_dist))
-          weights[cur_dist] += point.weight * 0.5 * weight_f_((int) forward[cur_dist] - point.d);
+          weights[cur_dist] += point.weight * 0.5 * weight_f_(forward[cur_dist] - point.d);
 
         ++cur_dist;
 
         if (le(abs(forward[cur_dist] - point.d), max_dist))
-          weights[cur_dist] += point.weight * 0.5 * weight_f_((int) forward[cur_dist] - point.d);
+          weights[cur_dist] += point.weight * 0.5 * weight_f_(forward[cur_dist] - point.d);
       } else
         if (le(abs(forward[cur_dist] - point.d), max_dist))
-          weights[cur_dist] += point.weight * weight_f_((int) forward[cur_dist] - point.d);
+          weights[cur_dist] += point.weight * weight_f_(forward[cur_dist] - point.d);
     }
-        
     for (size_t i = 0; i < forward.size(); ++i)
       if (gr(weights[i], 0.))
         result.push_back(make_pair(forward[i], weights[i]));
@@ -107,7 +109,6 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   }
 
 };
-    
 
 }
 #endif

@@ -93,7 +93,12 @@ public:
 
 	}
 
-	virtual void HandlePath(const vector<EdgeId>& path) {
+  // TODO: do we really need to make this faster?
+  virtual void Flush() {
+  }
+
+	virtual void HandleReversedPath(const vector<EdgeId>& reversed_path) {
+    vector<EdgeId> path = this->ReversePath(reversed_path); 
 		double path_cov = PathAvgCoverage(path);
 		for (size_t i = 0; i < path.size(); i++) {
 			if (path[i] == forbidden_edge_)

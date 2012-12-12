@@ -23,9 +23,9 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
  public:
   ExtensiveDistanceEstimator(const Graph &graph,
       const PairedInfoIndexT<Graph>& histogram,
-      const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
+      const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f,
       size_t linkage_distance, size_t max_distance) :
-        base(graph, histogram, distance_finder, weight_f, linkage_distance, max_distance) 
+        base(graph, histogram, distance_finder, weight_f, linkage_distance, max_distance)
   {
   }
 
@@ -38,6 +38,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   typedef set<Point> Histogram;
   typedef vector<PairInfo<EdgeId> > PairInfos;
   typedef vector<pair<int, double> > EstimHist;
+  typedef vector<size_t> GraphLengths;
 
   void ExtendInfoLeft(EdgeId e1, EdgeId e2, Histogram& data, size_t max_shift) const
   {
@@ -54,24 +55,36 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   typedef pair<EdgeId, EdgeId> EdgePair;
 
 // TODO: constant in the config
-  virtual void ProcessEdgePair(EdgePair ep, const Histogram& raw_hist, PairedInfoIndexT<Graph>& result, perf_counter& pc) const 
+  virtual void ProcessEdge(EdgeId e1,
+                           const InnerMap<Graph>& inner_map,
+                           PairedInfoIndexT<Graph>& result,
+                           perf_counter& pc) const
   {
-    if (ep <= this->ConjugatePair(ep)) {
-      EdgeId e1 = ep.first;
-      EdgeId e2 = ep.second;
-      const vector<size_t>& forward = this->GetGraphDistancesLengths(e1, e2);
-      Histogram hist(raw_hist);
-      DEBUG("Extending paired information");
-      double weight_0 = WeightSum(hist);
-      DEBUG("Extend left");
-      ExtendInfoLeft(e1, e2, hist, 1000);
-      DEBUG("Extend right");
-      ExtendInfoRight(e1, e2, hist, 1000);
-      DEBUG("Weight increased " << (WeightSum(hist) - weight_0));
-      const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
-      const Histogram& res = this->ClusterResult(ep, estimated);
-      this->AddToResult(res, ep, result);
-      this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
+    set<EdgeId> second_edges;
+    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
+      second_edges.insert(I->first);
+
+    const vector<GraphLengths>& lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+
+    size_t i = 0;
+    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I) {
+      EdgeId e2 = I->first;
+      EdgePair ep(e1, e2);
+      if (ep <= this->ConjugatePair(ep)) {
+        const GraphLengths& forward = lens_array[i++];
+        Histogram hist = I->second;
+        DEBUG("Extending paired information");
+        double weight_0 = WeightSum(hist);
+        DEBUG("Extend left");
+        ExtendInfoLeft(e1, e2, hist, 1000);
+        DEBUG("Extend right");
+        ExtendInfoRight(e1, e2, hist, 1000);
+        DEBUG("Weight increased " << (WeightSum(hist) - weight_0));
+        const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
+        Histogram res = this->ClusterResult(ep, estimated);
+        this->AddToResult(res, ep, result);
+        this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
+      }
     }
   }
 
@@ -84,11 +97,11 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   }
 
   bool IsSorted(const Histogram& hist) const {
-    if (hist.size() == 0) 
+    if (hist.size() == 0)
       return true;
     double prev = hist.begin()->d;
     for (auto it = hist.begin(); it != hist.end(); ++it) {
-      if (math::gr(prev, it->d)) 
+      if (math::gr(prev, it->d))
         return false;
       prev = it->d;
     }
@@ -121,7 +134,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
         if (to_be_added == *low_bound) {
           to_be_added.weight += low_bound->weight;
           where.erase(to_be_added);
-        } 
+        }
         where.insert(low_bound, to_be_added);
       }
     }
@@ -141,13 +154,13 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   }
 
   // left edge being extended to the left, shift is negative always
-  void ExtendLeftDFS(EdgeId current, const EdgeId& last, Histogram& data, int shift, size_t max_shift) const 
+  void ExtendLeftDFS(EdgeId current, const EdgeId& last, Histogram& data, int shift, size_t max_shift) const
   {
     VertexId start = this->graph().EdgeStart(current);
-    if (current == last) 
+    if (current == last)
       return;
-    if (this->graph().OutgoingEdgeCount(start) > 1) 
-      return; 
+    if (this->graph().OutgoingEdgeCount(start) > 1)
+      return;
     const vector<EdgeId>& InEdges = this->graph().IncomingEdges(start);
     for (auto iterator = InEdges.begin(); iterator != InEdges.end(); ++iterator) {
       EdgeId next = *iterator;
@@ -155,18 +168,18 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       if (-shift < (int) max_shift)
         ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next), max_shift);
       const Histogram& filtered_infos = FilterPositive(hist, this->graph().length(next), this->graph().length(last));
-      if (filtered_infos.size() > 0) 
+      if (filtered_infos.size() > 0)
         MergeInto(filtered_infos, data, shift - (int) this->graph().length(next));
     }
   }
 
   // right edge being extended to the right, shift is negative always
-  void ExtendRightDFS(const EdgeId& first, EdgeId current, Histogram& data, int shift, size_t max_shift) const 
+  void ExtendRightDFS(const EdgeId& first, EdgeId current, Histogram& data, int shift, size_t max_shift) const
   {
     VertexId end = this->graph().EdgeEnd(current);
     if (current == first)
       return;
-    if (this->graph().IncomingEdgeCount(end) > 1) 
+    if (this->graph().IncomingEdgeCount(end) > 1)
       return;
     const vector<EdgeId>& OutEdges = this->graph().OutgoingEdges(end);
     for (auto iter = OutEdges.begin(); iter != OutEdges.end(); ++iter) {

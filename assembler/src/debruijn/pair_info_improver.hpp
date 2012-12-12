@@ -25,17 +25,17 @@ class PairInfoImprover {
 
  public:
   PairInfoImprover(const Graph& g, PairedInfoIndexT<Graph>& clustered_index):
-  graph_(g), index_(clustered_index) 
+  graph_(g), index_(clustered_index)
   {
   }
 
-  void ImprovePairedInfo(bool parallel = false, 
+  void ImprovePairedInfo(bool parallel = false,
                          size_t num_treads = 1)
   {
     if (parallel) {
       ParallelCorrectPairedInfo(num_treads);
       ParallelCorrectPairedInfo(num_treads);
-    } 
+    }
     else {
       NonParallelCorrectPairedInfo();
       NonParallelCorrectPairedInfo();
@@ -84,13 +84,13 @@ class PairInfoImprover {
     {
       #pragma omp for schedule(guided)
       for (size_t i = 0; i < inner_maps.size(); ++i) {
-        FindInconsistent(inner_maps[i].first, inner_maps[i].second, 
+        FindInconsistent(inner_maps[i].first, inner_maps[i].second,
                          to_remove[omp_get_thread_num()]);
       }
       TRACE("Thread number " << omp_get_thread_num() << " finished");
     }
     DEBUG("ParallelRemoveContraditional: Threads finished");
-    
+
     DEBUG("Merging maps");
     for (size_t i = 1; i < nthreads; ++i) {
       to_remove[0]->AddAll(*to_remove[i]);
@@ -135,7 +135,7 @@ class PairInfoImprover {
     vector<PairInfos> infos;
     set<EdgeId> edges;
     for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-      infos.push_back(index_.GetEdgeInfo(*e_iter));      
+      infos.push_back(index_.GetEdgeInfo(*e_iter));
     }
 
     TRACE("Fill missing: Creating indexes");
@@ -219,7 +219,7 @@ class PairInfoImprover {
   }
 
 // Checking the consitency of two edge pairs (e, e_1) and (e, e_2) for all pairs (e, <some_edge>)
-  void FindInconsistent(EdgeId e, const InnerMap<Graph>& inner_map, PairedInfoIndexT<Graph>* pi) 
+  void FindInconsistent(EdgeId base_edge, const InnerMap<Graph>& inner_map, PairedInfoIndexT<Graph>* pi)
   {
     for (auto I_1 = inner_map.Begin(), E = inner_map.End(); I_1 != E; ++I_1) {
       for (auto I_2 = inner_map.Begin(); I_2 != E; ++I_2) {
@@ -230,11 +230,11 @@ class PairInfoImprover {
         EdgeId e2 = (*I_2).first;
         const Point& p2 = (*I_2).second;
 
-        if (!IsConsistent(e, e1, e2, p1, p2)) {
+        if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
           if (math::le(p1.weight, p2.weight))
-            pi->AddPairInfo(e, e1, p1);
+            pi->AddPairInfo(base_edge, e1, p1);
           else
-            pi->AddPairInfo(e, e2, p2);
+            pi->AddPairInfo(base_edge, e2, p2);
         }
       }
     }
@@ -242,9 +242,9 @@ class PairInfoImprover {
 
 // Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
   bool IsConsistent(EdgeId e, EdgeId e1, EdgeId e2, const Point& p1, const Point& p2) const {
-    if ((math::le(p1.d, 0.) 
+    if ((math::le(p1.d, 0.)
       || math::le(p2.d, 0.))
-      || math::gr(p1.d, p2.d)) 
+      || math::gr(p1.d, p2.d))
     return true;
 
     double pi_dist = p2.d - p1.d;
@@ -254,10 +254,10 @@ class PairInfoImprover {
     TRACE("   PI " << p1  << " tr "  << omp_get_thread_num());
     TRACE("vs PI " << p2  << " tr "  << omp_get_thread_num());
 
-    if (math::le(pi_dist, double(first_length) + var) 
-     && math::le(double(first_length), pi_dist + var)) 
+    if (math::le(pi_dist, double(first_length) + var)
+     && math::le(double(first_length), pi_dist + var))
     {
-      if (graph_.EdgeEnd(e1) == graph_.EdgeStart(e2)) 
+      if (graph_.EdgeEnd(e1) == graph_.EdgeStart(e2))
         return true;
       else {
         auto paths = GetAllPathsBetweenEdges(graph_, e1, e2, 0, ceil(pi_dist - first_length + var));
@@ -266,7 +266,7 @@ class PairInfoImprover {
     }
     else {
       if (math::gr(p2.d, p1.d + first_length)) {
-        auto paths = GetAllPathsBetweenEdges(graph_, e1, e2, 
+        auto paths = GetAllPathsBetweenEdges(graph_, e1, e2,
                               (size_t) floor(pi_dist - first_length - var),
                               (size_t)  ceil(pi_dist - first_length + var));
         return (paths.size() > 0);
@@ -284,7 +284,7 @@ class PairInfoImprover {
         if (math::eq(p_iter->d, point.d)) {
           cnt += index_.RemovePairInfo(e1, e2, *p_iter);
           cnt += index_.RemovePairInfo(e1, e2, -*p_iter);
-          TRACE("Removed pi " << graph_.int_id(e1) << " " << graph_.int_id(e2) 
+          TRACE("Removed pi " << graph_.int_id(e1) << " " << graph_.int_id(e2)
                   << " dist " << p_iter->d << " var " << p_iter->var);
         }
       }
@@ -305,7 +305,7 @@ class PairInfoImprover {
         if (math::eq(p_iter->d, point.d)) {
           cnt += index_.RemovePairInfo(rc_e1, rc_e2, *p_iter);
           cnt += index_.RemovePairInfo(rc_e1, rc_e2, -*p_iter);
-          TRACE("Removed pi " << graph_.int_id(rc_e1) << " " << graph_.int_id(rc_e2) 
+          TRACE("Removed pi " << graph_.int_id(rc_e1) << " " << graph_.int_id(rc_e2)
                   << " dist " << p_iter->d << " var " << p_iter->var);
         }
       }
@@ -326,7 +326,7 @@ class PairInfoImprover {
 
   bool TryToAddPairInfo(PairedInfoIndexT<Graph>& clustered_index,
                         EdgeId e1,
-                        EdgeId e2, 
+                        EdgeId e2,
                         const Point& p,
                         bool reflected = true)
   {
