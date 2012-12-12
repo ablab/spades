@@ -122,6 +122,7 @@ void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
 	for (auto I = innerIndex.value_cbegin(), E = innerIndex.value_cend();
 			I != E; ++I) {
 		const auto& edgeInfo = *I;
+		VERIFY(edgeInfo.edgeId_.get() != NULL);
 		edgeInfo.edgeId_->IncCoverage(edgeInfo.count_);
 	}
 
