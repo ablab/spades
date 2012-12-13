@@ -55,7 +55,22 @@ class BEdge(Abstract_Edge):
 
     def get_midle_seq(self):
         return reduce(lambda seq, d: seq + d.rectangle.e1.seq[d.offseta:d.offsetc], self.diagonals, "")
-     
+    
+    def __can_add(self, d, step, init_index, CUT_LENGTH_THRESHOLD, CUT_THRESHOLD):
+        cur_len = 0
+        diag_index = init_index
+        diag = self.diagonals[diag_index]
+        while cur_len < d:
+            if diag.offsetc - diag.offseta < CUT_LENGTH_THRESHOLD or (diag.support() < CUT_THRESHOLD):
+                return False   
+            diag_index += step
+            if diag_index == -1 or diag_index == len(self.diagonals):
+                return True
+
+            diag = self.diagonals[diag_index]
+            cur_len += diag.offsetc - diag.offseta
+        return True
+
     def get_seq_for_contig(self, K, d, is_sc):
         if is_sc:
             CUT_THRESHOLD = 2.0 #TODO: should take from histogram
@@ -70,35 +85,8 @@ class BEdge(Abstract_Edge):
         first = self.diagonals[0]
         last = self.diagonals[-1]
         if len(seq1) > MIN_LENGTH:
-            cur_len = 0
-            diag_index = 0
-            diag = self.diagonals[diag_index]
-            can_add_begin = True
-            while cur_len < d:
-                if diag.offsetc - diag.offseta < CUT_LENGTH_THRESHOLD or (diag.support() < CUT_THRESHOLD):
-                    can_add_begin = False
-                    break
-                diag_index += 1
-                if diag_index == len(self.diagonals):
-                    cur_len = d
-                    continue
-                diag = self.diagonals[diag_index]
-                cur_len += diag.offsetc - diag.offseta
-
-            cur_len = 0
-            diag_index = len(self.diagonals) - 1
-            diag = self.diagonals[diag_index]
-            can_add_end = True
-            while cur_len < d:
-                if diag.offsetc - diag.offseta < CUT_LENGTH_THRESHOLD or (diag.support() < CUT_THRESHOLD):
-                    can_add_end = False
-                    break
-                diag_index -= 1
-                if diag_index == -1:
-                    cur_len = d
-                    continue
-                diag = self.diagonals[diag_index]
-                cur_len += diag.offsetc - diag.offseta
+            can_add_begin = self.__can_add(d, 1, 0, CUT_LENGTH_THRESHOLD, CUT_THRESHOLD)
+            can_add_end = self.__can_add(d, -1, len(self.diagonals) - 1, CUT_LENGTH_THRESHOLD, CUT_THRESHOLD)
 #            can_add_begin = False;
 #            can_add_end = False;
             if can_add_end and can_add_begin:
@@ -107,6 +95,7 @@ class BEdge(Abstract_Edge):
                 return seq + last.rectangle.e2.seq[last.offsetd + K:]
             if can_add_begin:
                 return first.rectangle.e1.seq[:first.offseta] + seq
+
         seq1 = cStringIO.StringIO()
         for this in self.diagonals:
             seq1.write(this.rectangle.e1.seq[this.offseta: this.offsetc])
