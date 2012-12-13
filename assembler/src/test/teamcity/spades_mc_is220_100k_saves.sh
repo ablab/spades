@@ -22,7 +22,7 @@ etalon=/smallnas/teamcity/etalon_output/ECOLI_IS220_QUAKE_100K_SAVES/etalon_save
 #fi
 
 #./spades_compile.sh
-./spades.py --only-assembler --debug -k 55 -1 data/input/E.coli/is220/cropped/s_6.first100000_1.fastq.gz -2 data/input/E.coli/is220/cropped/s_6.first100000_2.fastq.gz -o $target
+./spades.py --only-assembler --debug -t 4 -k 55 -1 data/input/E.coli/is220/cropped/s_6.first100000_1.fastq.gz -2 data/input/E.coli/is220/cropped/s_6.first100000_2.fastq.gz -o $target
 
 #pushd spades_output/ECOLI_IS220_QUAKE_100K_SAVES
 #diffs=0
