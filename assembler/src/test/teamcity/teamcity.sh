@@ -44,7 +44,7 @@ errlvl=$?
 echo "### POSTPROCESSING ###"
 
 pushd ../../../data
-#./unlink.sh
+./unlink.sh
 popd
 
 echo "### TEAMCITY INVOKATION COMPLETE, EXIT CODE = $errlvl ###"
