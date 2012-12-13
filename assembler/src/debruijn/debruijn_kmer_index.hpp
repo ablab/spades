@@ -470,6 +470,9 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
 
   size_t cell_size = READS_BUFFER_SIZE /
                      (nthreads * num_files * runtime_k::RtSeq::GetDataSize(K_) * sizeof(runtime_k::RtSeq::DataType));
+  // Set sane minimum cell size
+  if (cell_size < 16384)
+    cell_size = 16384;
   INFO("Using cell size of " << cell_size);
 
   std::vector<KMerBuffer> tmp_entries(nthreads);

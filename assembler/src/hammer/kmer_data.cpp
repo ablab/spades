@@ -78,6 +78,9 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   size_t read_buffer = cfg::get().count_split_buffer;
   size_t cell_size = (read_buffer * (Globals::read_length - hammer::K + 1)) /
                       (nthreads * num_files * sizeof(KMer));
+  // Set sane minimum cell size
+  if (cell_size < 16384)
+    cell_size = 16384;
 
   INFO("Using cell size of " << cell_size);
   std::vector<KMerBuffer> tmp_entries(nthreads);
