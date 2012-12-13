@@ -12,7 +12,10 @@ pushd ../../../
 rm -rf spades_output/ECOLI_SC_LANE_1_BH_woHUMAN
 
 #./spades_compile.sh
-./spades.py --config-file src/test/teamcity/spades_config_sc_lane1.info
+./spades.py --sc --only-assembler -m 12 -k 21,33,55 -1 data/input/E.coli/sc_lane_1/bh20111014/human_filtered_paired_left.fastq.gz -2 data/input/E.coli/sc_lane_1/bh20111014/human_filtered_paired_right.fastq.gz -s data/input/E.coli/sc_lane_1/bh20111014/human_filtered_single_left.fastq.gz -s data/input/E.coli/sc_lane_1/bh20111014/human_filtered_single_right.fastq.gz -o spades_output/ECOLI_SC_LANE_1_BH_woHUMAN
+
+$cfg/../../../data/input/E.coli/sc_lane_1/bh20111014/human_filtered_paired_left.fastq.gz $cfg/../../../data/input/E.coli/sc_lane_1/bh20111014/human_filtered_paired_right.fastq.gz
+    single_reads             $cfg/../../../data/input/E.coli/sc_lane_1/bh20111014/human_filtered_single_left.fastq.gz $cfg/../../../data/input/E.coli/sc_lane_1/bh20111014
 
 rm -rf ~/quast-1.3/ECOLI_SC_LANE_1_BH_woHUMAN/
 
