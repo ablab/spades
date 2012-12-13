@@ -18,7 +18,7 @@ rm -rf ~/quast-1.3/PMARINUS/
 
 python ~/quast-1.3/quast.py -R data/input/P.marinus/ref.fasta -o ~/quast-1.3/PMARINUS/ /tmp/data/output/spades_output/PMARINUS/contigs.fasta
 
-python src/test/teamcity/assess.py ~/quast-1.3/PMARINUS/transposed_report.tsv 292000 0 1612 95.3 3.4 1.2
+python src/test/teamcity/assess.py ~/quast-1.3/PMARINUS/transposed_report.tsv 292000 0 1612 95.3 3.4 1.5
 exitlvl=$?
 popd
 

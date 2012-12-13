@@ -18,7 +18,7 @@ rm -rf ~/quast-1.3/MRUBER_PRENORM/
 
 python ~/quast-1.3/quast.py -R data/input/M.ruber/ref.fasta -G data/input/M.ruber/MRU_genes.txt -o ~/quast-1.3/MRUBER_PRENORM/ /tmp/data/output/spades_output/MRUBER_PRENORM/contigs.fasta
 
-python src/test/teamcity/assess.py ~/quast-1.3/MRUBER_PRENORM/transposed_report.tsv 15100 24 2148 81.0 100 100
+python src/test/teamcity/assess.py ~/quast-1.3/MRUBER_PRENORM/transposed_report.tsv 49100 16 2152 75.6 65 21
 exitlvl=$?
 popd
 

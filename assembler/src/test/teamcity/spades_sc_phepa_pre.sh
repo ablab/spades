@@ -18,7 +18,7 @@ rm -rf ~/quast-1.3/PHEPARINUS_PRENORM/
 
 python ~/quast-1.3/quast.py -R data/input/P.heparinus/ref.fasta -G data/input/P.heparinus/PHE_genes.txt -o ~/quast-1.3/PHEPARINUS_PRENORM/ /tmp/data/output/spades_output/PHEPARINUS_PRENORM/contigs.fasta
 
-python src/test/teamcity/assess.py ~/quast-1.3/PHEPARINUS_PRENORM/transposed_report.tsv 206000 9 3908 95.5 8.0 0.8
+python src/test/teamcity/assess.py ~/quast-1.3/PHEPARINUS_PRENORM/transposed_report.tsv 160000 9 3900 95.5 10.0 1.0
 exitlvl=$?
 popd
 
