@@ -29,7 +29,7 @@ fi
 
 popd
 pushd ../../../data
-
+./link_ant.sh
 popd
 
 echo "### PRINTING CODE TO BE EXECUTED: $1 ###"
@@ -44,7 +44,7 @@ errlvl=$?
 echo "### POSTPROCESSING ###"
 
 pushd ../../../data
-
+./unlink.sh
 popd
 
 echo "### TEAMCITY INVOKATION COMPLETE, EXIT CODE = $errlvl ###"
