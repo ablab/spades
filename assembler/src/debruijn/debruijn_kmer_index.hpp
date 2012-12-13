@@ -15,6 +15,8 @@
 #include "mph_index/kmer_index.hpp"
 #include "adt/kmer_vector.hpp"
 
+#include "libcxx/sort.hpp"
+
 #include <vector>
 #include <cstdlib>
 #include <cstdio>
@@ -393,7 +395,7 @@ void DeBruijnKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
       for (size_t j = 0; j < entry[k].size(); ++j)
         SortBuffer.push_back(entry[k][j]);
     }
-    std::sort(SortBuffer.begin(), SortBuffer.end(), KMerVector<runtime_k::RtSeq>::less2_fast());
+    libcxx::sort(SortBuffer.begin(), SortBuffer.end(), KMerVector<runtime_k::RtSeq>::less2_fast());
     auto it = std::unique(SortBuffer.begin(), SortBuffer.end(), KMerVector<runtime_k::RtSeq>::equal_to());
 
 #   pragma omp critical

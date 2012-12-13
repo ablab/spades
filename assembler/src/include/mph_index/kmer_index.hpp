@@ -17,6 +17,7 @@
 #include "logger/logger.hpp"
 #include "path_helper.hpp"
 
+#include <libcxx/sort.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
@@ -335,7 +336,7 @@ private:
     MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(K), /* unlink */ true);
 
     // Sort the stuff
-    std::sort(ins.begin(), ins.end(), array_less<typename Seq::DataType>());
+    libcxx::sort(ins.begin(), ins.end(), array_less<typename Seq::DataType>());
 
     // FIXME: Use something like parallel version of unique_copy but with explicit
     // resizing.

@@ -11,6 +11,8 @@
 
 #include "config_struct_hammer.hpp"
 
+#include <libcxx/sort.hpp>
+
 using namespace hammer;
 
 class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
@@ -42,7 +44,7 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
       KMerBuffer &entry = buffers[i];
       SortBuffer.insert(SortBuffer.end(), entry[k].begin(), entry[k].end());
     }
-    std::sort(SortBuffer.begin(), SortBuffer.end(), KMer::less2_fast());
+    libcxx::sort(SortBuffer.begin(), SortBuffer.end(), KMer::less2_fast());
     auto it = std::unique(SortBuffer.begin(), SortBuffer.end());
 
 #   pragma omp critical
