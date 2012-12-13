@@ -303,7 +303,7 @@ debruijn::BulgeRemoverFactory<Graph>* GetBulgeRemoverFactory(
 }
 
 typedef ConcurrentGraphComponent<Graph> Component;
-typedef typename Graph::EdgeId EdgeId;
+typedef Graph::EdgeId EdgeId;
 typedef omnigraph::SequentialAlgorihtmFactory<Component, EdgeId> FactoryInterface;
 typedef std::shared_ptr<FactoryInterface> FactoryInterfacePtr;
 
