@@ -66,7 +66,6 @@ class BEdge(Abstract_Edge):
             diag_index += step
             if diag_index == -1 or diag_index == len(self.diagonals):
                 return True
-
             diag = self.diagonals[diag_index]
             cur_len += diag.offsetc - diag.offseta
         return True
@@ -89,12 +88,10 @@ class BEdge(Abstract_Edge):
             can_add_end = self.__can_add(d, -1, len(self.diagonals) - 1, CUT_LENGTH_THRESHOLD, CUT_THRESHOLD)
 #            can_add_begin = False;
 #            can_add_end = False;
-            if can_add_end and can_add_begin:
-                return first.rectangle.e1.seq[:first.offseta] + seq + last.rectangle.e2.seq[last.offsetd + K:]
-            if can_add_end:
-                return seq + last.rectangle.e2.seq[last.offsetd + K:]
-            if can_add_begin:
-                return first.rectangle.e1.seq[:first.offseta] + seq
+            begin = first.rectangle.e1.seq[:first.offseta] if can_add_begin else ''
+            end = last.rectangle.e2.seq[last.offsetd + K:] if can_add_end else ''
+            if can_add_end or can_add_begin:
+                return begin + seq + end
 
         seq1 = cStringIO.StringIO()
         for this in self.diagonals:
@@ -338,13 +335,13 @@ class BGraph(Abstract_Graph):
         for diag in edge.diagonals:
             if diag.rectangle.e1 != first and diag.rectangle.e1 != prev_first:
                 return None
-            else:
-                if diag.rectangle.e1 == first:
-                    prev_first = first
-                    while prev_first.eid == first.eid:
-                        if len(second_edges) == 0:
-                            return (edge, second_edges, None, prev_first)
-                        first = second_edges.pop(0)
+  
+            if diag.rectangle.e1 == first:
+                prev_first = first
+                while prev_first.eid == first.eid:
+                    if len(second_edges) == 0:
+                        return (edge, second_edges, None, prev_first)
+                    first = second_edges.pop(0)
         return (edge, second_edges, first, prev_first)
 
 
@@ -353,19 +350,11 @@ class BGraph(Abstract_Graph):
             del self.vs[v.key]
 
     def check_tips(self, K ):
-        v1s = set()
-        v2s = set()
         tips = set()
         for bv in self.vs.itervalues():
             if len(bv.inn) == 1 and len(bv.out) == 0 and len(bv.inn[0].get_seq(K, self.d)) < 3 * self.d and bv.inn[
                                                                                                             0].v1.vid != bv.vid:
-                edge = bv.inn[0]
-                if len(edge.diagonals) == 1:
-                    rect = edge.diagonals[0].rectangle
-                v1s.add(bv)
-                supp = 0
-                for diag in edge.diagonals:
-                    supp += diag.support()
+               
                 tips.add(bv.inn[0])
         self.delete_tips(K, tips)
 
