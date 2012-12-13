@@ -16,7 +16,7 @@ rm -rf /tmp/data/output/spades_output/PMARINUS
 
 rm -rf ~/quast-1.3/PMARINUS/
 
-python ~/quast-1.3/quast.py -R data/input/E.coli/MG1655-K12.fasta.gz -G data/input/E.coli/genes/genes.gff -O data/input/E.coli/genes/operons.gff -o ~/quast-1.3/PMARINUS/ /tmp/data/output/spades_output/PMARINUS/contigs.fasta
+python ~/quast-1.3/quast.py -R data/input/P.marinus/ref.fasta -o ~/quast-1.3/PMARINUS/ /tmp/data/output/spades_output/PMARINUS/contigs.fasta
 
 python src/test/teamcity/assess.py ~/quast-1.3/PMARINUS/transposed_report.tsv 292000 0 1612 95.3 3.4 1.2
 exitlvl=$?

@@ -16,7 +16,7 @@ rm -rf /tmp/data/output/spades_output/MRUBER
 
 rm -rf ~/quast-1.3/MRUBER/
 
-python ~/quast-1.3/quast.py -R data/input/E.coli/MG1655-K12.fasta.gz -G data/input/E.coli/genes/genes.gff -O data/input/E.coli/genes/operons.gff -o ~/quast-1.3/MRUBER/ /tmp/data/output/spades_output/MRUBER/contigs.fasta
+python ~/quast-1.3/quast.py -R data/input/M.ruber/ref.fasta -G data/input/M.ruber/MRU_genes.txt -o ~/quast-1.3/MRUBER/ /tmp/data/output/spades_output/MRUBER/contigs.fasta
 
 python src/test/teamcity/assess.py ~/quast-1.3/MRUBER/transposed_report.tsv 49100 16 2152 75.6 65 20
 exitlvl=$?
