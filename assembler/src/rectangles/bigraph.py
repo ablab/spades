@@ -136,13 +136,8 @@ class BEdge(Abstract_Edge):
         return (seq1.getvalue(), seq2.getvalue())
 
     def get_cvr(self):
-        cvr = 0.0
-        sumlen = 0
-        for this in self.diagonals:
-            thiscvr = (this.rectangle.e1.cvr + this.rectangle.e2.cvr) * 0.5
-            l = this.offsetc - this.offseta
-            cvr += thiscvr * l
-            sumlen += l
+        sumlen = reduce(lambda s, d: s + d.offsetc - d.offseta, self.diagonals, 0)
+        cvr = reduce(lambda cvr, d: (d.rectangle.e1.cvr + d.rectangle.e2.cvr) * 0.5 * (d.offsetc - d.offseta), self.diagonals, 0.0) 
         cvr /= sumlen
         return cvr
 
