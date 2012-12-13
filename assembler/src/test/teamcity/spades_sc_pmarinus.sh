@@ -12,7 +12,7 @@ pushd ../../../
 rm -rf /tmp/data/output/spades_output/PMARINUS
 
 #./spades_compile.sh
-./spades.py --sc -m 160 -k 21,33,55 -1 data/input/P.marinus/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R1_001.fastq.gz -1 data/input/P.marinus/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R1_002.fastq.gz -1 data/input/P.marinus/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R1_003.fastq.gz -1 data/input/P.marinus/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R1_004.fastq.gz -2 data/input/P.marinus/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R2_001.fastq.gz -2 data/input/P.marinus/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R2_002.fastq.gz -2 data/input/P.marinus/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R2_003.fastq.gz -2 data/input/P.marinus/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R2_004.fastq.gz -o /tmp/data/output/spades_output/PMARINUS
+./spades.py --sc -m 160 -k 21,33,55 -1 data/input/P.marinus/AC-193-C02/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R1_001.fastq.gz -1 data/input/P.marinus/AC-193-C02/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R1_002.fastq.gz -1 data/input/P.marinus/AC-193-C02/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R1_003.fastq.gz -1 data/input/P.marinus/AC-193-C02/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R1_004.fastq.gz -2 data/input/P.marinus/AC-193-C02/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R2_001.fastq.gz -2 data/input/P.marinus/AC-193-C02/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R2_002.fastq.gz -2 data/input/P.marinus/AC-193-C02/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R2_003.fastq.gz -2 data/input/P.marinus/AC-193-C02/lane6-index21-GTTTCG-AC-193-C02_GTTTCG_L006_R2_004.fastq.gz -o /tmp/data/output/spades_output/PMARINUS
 
 rm -rf ~/quast-1.3/PMARINUS/
 
