@@ -361,4 +361,25 @@ def extend_in_direction(vertex_body, kmer_map, direction_forward):
     def __from_genome(self):
         return len(self.etalon_dist.keys()) > 0
 
- 
+#from rectangle_set.py
+    def filter_without_prd(self):
+        self.__build_from_graph()
+        self.__conjugate()
+    
+    def percentiles(self):
+        percentiles = [utils.quantile(self.ranking, percentile).support() for percentile in xrange(101)]
+        return percentiles
+
+    def bgraph_from_genome(self):
+        bg = BGraph(self.graph, self.d, self.test_utils)
+        for key, rect in self.rectangles.items():
+            for key, diag in rect.diagonals.items():
+                bg.add_diagonal(diag)
+        return bg
+
+    def get_support(self, e1, e2):
+        if (e1, e2) in self.rectangles:
+            rectangle = self.rectangles[(e1, e2)]
+            return max([diag.support() for diag in rectangle.diagonals.itervalues()])
+        return 0
+

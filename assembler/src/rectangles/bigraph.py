@@ -205,7 +205,6 @@ class BGraph(Abstract_Graph):
                     used_paires.add((e12.eid, e21.eid))
                     count_incorrect_scaffolds += 1
                     if D - first_rectangle.e2.len > 0 and D - first_rectangle.e2.len < 100:
-                        #print "SHOULD CONNECT", (e1.eid, e2.eid), (e12.eid, e21.eid), D - first_rectangle.e2.len, "\n",
                         first_rectangle.e2.seq[-55:], "\n", second_rectangle.e1.seq[:55]
                         connect_edges.add((e1.eid, e2.eid))
                         max_eid = self.graph.max_eid
@@ -240,8 +239,6 @@ class BGraph(Abstract_Graph):
                             if diag.rectangle.e1 not in used:
                                 path_2.append(diag.rectangle.e1)
                                 used.add(diag.rectangle.e1)
-                        #print "path1", [e.eid for e in path_1], "path2", [e.eid for e in path_2]
-                        #self.add_rectangles_by_path(path_1, path_2, start_offset)
 
         self.test_utils.logger.info("count_correct_scaffolds " + str(count_correct_scaffolds) + " " + str(
             count_incorrect_scaffolds) + " " + str(len(used_paires)) + "\n")
@@ -398,12 +395,10 @@ class BGraph(Abstract_Graph):
     def delete_missing_loops(self, DG_loops, K, L, threshold):
         if DG_loops == None:
             return
-        print "here_1"
         begs_related_to_loop = defaultdict(set)
         begin_loops = dict()
         end_loops = dict()
         for eeid1, (long_eid1, long_eid2, busheids, path, visited_vs) in DG_loops.items():
-            print eeid1, long_eid1, long_eid2, busheids, [e.eid for e in path], visited_vs
             for k, be in self.es.items():
                 for diag in be.diagonals:
                     rect = diag.rectangle
@@ -418,14 +413,12 @@ class BGraph(Abstract_Graph):
                     
                     begs_related_to_loop[eeid1].add(be)
 
-        print "here_2"
         diag_to_add = []
         for eid, begs in begs_related_to_loop.items():
             (long_eid1, long_eid2, busheids, path, visited_vs) = DG_loops[eid]
             if len(begs) < 2:
                 continue
             if eid not in begin_loops or eid not in end_loops:
-                print "not find begin_end"
                 continue
             begin_diag = begin_loops[eid][0]
             end_diag = end_loops[eid][0]
@@ -467,20 +460,17 @@ class BGraph(Abstract_Graph):
             diag_to_add.extend(diags)
             
             for bedge in begs:
-                print "remove", bedge.eid, bedge.conj.eid
                 self.__remove_bedge_and_conj(bedge)
              
                 for diag in bedge.diagonals:
                     if diag.rectangle.e1.eid not in busheids or diag.rectangle.e2.eid not in busheids:
                         diag_to_add.append(diag)
-                        print "to add_1", diag
 
                 if begin_diag in bedge.diagonals:
                     for diag in bedge.diagonals:
                         if diag == begin_diag:
                             break
                         diag_to_add.append(diag)
-                        print "to add_2", diag
 
                 elif end_diag in bedge.diagonals:
                     bedge.diagonals.reverse()
@@ -488,12 +478,9 @@ class BGraph(Abstract_Graph):
                         if diag == end_diag:
                             break
                         diag_to_add.append(diag)
-                        print "to add_4", diag
 
         for diag in diag_to_add:
-            print "to add_3_5", diag
             self.add_diagonal_and_conj(diag)
-            print "to add_3", diag
 
 
     #L - big contig's len > L
@@ -579,12 +566,12 @@ class BGraph(Abstract_Graph):
 
     def __get_bvertex(self, key):
         if key in self.vs:
-            bv = self.vs.pop(key)
-            bv.key = bv.key.join_with(key) # transitive closure
+            #print key
+            bv = self.vs[key]
+            #bv.key = bv.key.join_with(key) # transitive closure
         else:
-            bv = BVertex(key)
-        self.vs[bv.key] = bv
-        return bv
+            self.vs[key] = BVertex(key)
+        return self.vs[key]
 
     def __is_bvertex(self, key):
         return key in self.vs
@@ -599,12 +586,16 @@ class BGraph(Abstract_Graph):
     def add_diagonal(self, diag):
         if diag in self.diagonals:
             return
+       
         be = self.__add_bedge(diag)
         conj = be
         if diag.conj != diag:
             conj = self.__add_bedge(diag.conj)
+            #print len(self.es), len(self.vs)
         self.diagonals.add(diag)
         self.diagonals.add(diag.conj)
+       # print diag.rectangle.e1.eid, diag.rectangle.e2.eid, diag.D, diag.conj.rectangle.e1.eid, diag.conj.rectangle.e2.eid, diag.conj.D
+       # print diag.conj.rectangle.e1.eid, diag.conj.rectangle.e2.eid, diag.conj.D, diag.rectangle.e1.eid, diag.rectangle.e2.eid, diag.D
         conjugate(be, conj)
         conjugate(be.v1, conj.v2)
         conjugate(be.v2, conj.v1)
@@ -762,41 +753,15 @@ class BGraph(Abstract_Graph):
                                                                                          len(self.vs)))
 
     def project(self, outpath, is_sc):
-        log = open(os.path.join(outpath, "mis_log.txt"), "w")
         g = graph.Graph()
-        count_correct_rectangles = 0
-        count_part_correct_rectangles = 0
-        count_not_correct_rectanlges = 0
-        count_part_unaligned_correct = 0
-        count_unaligned = 0
+        count = 0
         for key, be in self.es.items():
+            #print count + 1 
+            count += 1
             # v ---------be--------> w
             # y <-----be.conj------- x
             v, w = be.v1, be.v2
             x, y = be.conj.v1, be.conj.v2
-            correct_diag = 0
-            unalign_diag = 0
-            false_diag = 0
-            for diag in be.diagonals:
-                if self.test_utils:
-                    is_true_diag = self.test_utils.is_true_diagonal(diag)
-                    if is_true_diag == self.test_utils.TRUE_DIAG:
-                        correct_diag += 1
-                    elif is_true_diag == self.test_utils.UNALIGNED_DIAG:
-                        unalign_diag += 1
-                    else:
-                        false_diag += 1
-            if correct_diag > 0 and false_diag == 0 and unalign_diag == 0:
-                count_correct_rectangles += 1
-            elif correct_diag > 0 and false_diag == 0:
-                count_part_unaligned_correct += 1
-            elif correct_diag > 0:
-                count_part_correct_rectangles += 1
-            elif false_diag == 0:
-                count_unaligned += 1
-            elif false_diag > 0:
-                count_not_correct_rectanlges += 1
-                #assert be != be.conj
             #assert v != w
             #assert v != x
             seq = be.get_seq_for_contig(self.graph.K, self.d, is_sc)
@@ -807,23 +772,8 @@ class BGraph(Abstract_Graph):
             g.add_vertex(x.vid, w.vid)
             g.add_edge(be.eid, v.vid, w.vid, len(seq) - self.graph.K, be.conj.eid)
             g.add_seq(be.eid, seq)
+            print seq
             g.add_cvr(be.eid, cvr)
-
-            log.write("\nmisassemble " + str(be.eid) + " " + str(be.conj.eid) + " " + str(len(seq)))
-            accum = 0
-            for diag in be.diagonals:
-                accum += diag.offsetc - diag.offseta
-                log.write("\n" + str(diag.offsetc - diag.offseta) + " " + str(accum) + " " + str(
-                    diag.support()) + " diag.e1.len " + str(diag.rectangle.e1.len) + " diag.e2.len " + str(
-                    diag.rectangle.e2.len) + " e1.eid " + str(diag.rectangle.e1.eid) + " e2.eid " + str(
-                    diag.rectangle.e2.eid))
-        log.close()
-        if self.test_utils:
-            self.test_utils.logger.info("count_correct_rectangles  = " + str(
-                count_correct_rectangles) + "\ncount_part_unaligned_correct = " + str(
-                count_part_unaligned_correct) + "\ncount_part_correct_rectangles  = " + str(
-                count_part_correct_rectangles) + "\ncount_unaligned = " + str(
-                count_unaligned) + "\ncount_not_correct = " + str(count_not_correct_rectanlges) + "\n\n")
         g.update_K()
         maxv = BVertex.vid
         maxe = BEdge.eid

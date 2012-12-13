@@ -88,11 +88,12 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     ingraph = Graph()
     ingraph.load(grp_filename, sqn_filename, cvr_filename)
     ingraph.check()
-
+    print "init rectangles set"
     rs = RectangleSet(ingraph, d, test_utils, prd_filename, first_prd_filename, config)
     if experimental.filter == experimental.Filter.pathsets:
         rs.pathsets(pst_filename)
     else:
+        print "begin filter"
         rs.filter(prd_filename, config)
     logger.info("  RectangleSet built.")
     
@@ -100,7 +101,6 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     logger.info("  Checking threshold %f..." % threshold)
     maxbgraph = rs.bgraph(threshold)
     save_fasta(maxbgraph, output_path, is_sc, 'begin_rectangles.fasta')
-    
     maxbgraph.check_tips(ingraph.K)
     save_fasta(maxbgraph, output_path, is_sc, 'delete_tips.fasta')
 
@@ -112,7 +112,6 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     to_del = set(edges_before_loop_DG.keys()) & edges_before_loop
     for eid in to_del:
         del edges_before_loop_DG[eid]
-    print [k for k in edges_before_loop_DG.keys()]
     
     maxbgraph.delete_missing_loops(edges_before_loop_DG, ingraph.K, 1000, 10)
     save_fasta(maxbgraph, output_path, is_sc, 'delete_tips_delete_all_loops_1000.fasta')

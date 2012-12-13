@@ -16,7 +16,10 @@ class Key(object):
             if not self.pathset.have_common_with(other.pathset):
                 return False
         return True
+    def __repr__(self):
+        return str(self.first) + " " + str(self.second)
 
+    
     def __hash__(self):
         return self.hash
 
@@ -42,6 +45,12 @@ class Diagonal(object):
         self.d = d
         self.key1 = Diagonal.key(self.rectangle.e1, self.offseta, self.rectangle.e2, self.offsetb, pathset)
         self.key2 = Diagonal.key(self.rectangle.e1, self.offsetc, self.rectangle.e2, self.offsetd, pathset)
+
+    def __hash__(self):
+        return hash( (self.rectangle.e1.eid, self.rectangle.e2.eid, self.D))
+    def __eq__(self, other):
+        print "eq diag"
+        return self.rectangle.e1.eid == other.rectangle.e1.eid and self.rectangle.e2.eid == other.rectangle.e2.eid and self.D == other.D
 
     def inc_closest(self, D, weight):
         r = self.rectangle
@@ -94,19 +103,19 @@ class Diagonal(object):
     def key(e1, offset1, e2, offset2, pathset):
         # key = ((e, o), v, pathset) or (v, (e, o), pathset) or (v, v, pathset)
         if offset1 == 0:
-            first = e1.v1
+            first = e1.v1.vid
         else:
             if offset1 == e1.len:
-                first = e1.v2
+                first = e1.v2.vid
             else:
-                first = (e1, offset1)
+                first = (e1.eid, offset1)
         if offset2 == 0:
-            second = e2.v1
+            second = e2.v1.vid
         else:
             if offset2 == e2.len:
-                second = e2.v2
+                second = e2.v2.vid
             else:
-                second = (e2, offset2)
+                second = (e2.eid, offset2)
 
         if experimental.filter == experimental.Filter.pathsets:
             if offset2 == 0:
