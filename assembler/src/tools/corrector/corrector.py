@@ -343,13 +343,13 @@ def run_aligner():
     contigs_name = config["contigs"].split('/')[-1];
     work_dir = config['work_dir']
     os.system("cp " + config["contigs"] + " " + work_dir)
-    os.system("cp " + config["reads1"] + " " + work_dir)
-    os.system("cp " + config["reads2"] + " " + work_dir)
+#    os.system("cp " + config["reads1"] + " " + work_dir)
+#    os.system("cp " + config["reads2"] + " " + work_dir)
     contigs_name = work_dir + contigs_name
     reads_1 = work_dir + config["reads1"].split('/')[-1]
     reads_2 = work_dir + config["reads2"].split('/')[-1]
-    config["reads1"] = reads_1
-    config["reads2"] = reads_2
+#    config["reads1"] = reads_1
+#    config["reads2"] = reads_2
     config["sam_file"] = work_dir + "tmp.sam"
     config["contigs"] = contigs_name
 
