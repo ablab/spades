@@ -35,9 +35,6 @@
 
 #include <iostream>
 
-
-using namespace std;
-
 namespace debruijn_graph {
 
 using omnigraph::Path;

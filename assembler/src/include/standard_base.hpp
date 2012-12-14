@@ -27,6 +27,7 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <stack>
 #include <set>
 #include <string>
 #include <sstream>
@@ -51,6 +52,7 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 using std::array;
+using std::stack;
 using std::set;
 using std::string;
 using std::pair;
@@ -67,6 +69,8 @@ using std::numeric_limits;
 using std::deque;
 using std::ostream_iterator;
 using std::copy;
+
+using std::shared_ptr;
 
 //==boost
 
