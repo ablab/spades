@@ -361,6 +361,7 @@ struct debruijn_config {
 		struct complex_bulge_remover {
 			bool enabled;
 			bool pics_enabled;
+            std::string folder;
 			double max_relative_length;
 			size_t max_length_difference;
 		};
@@ -648,6 +649,7 @@ inline void load(debruijn_config::simplification::complex_bulge_remover& cbr,
 
 	load(cbr.enabled                    , pt, "enabled"                     );
 	load(cbr.pics_enabled               , pt, "pics_enabled"                );
+	load(cbr.folder                     , pt, "folder"                      );
 	load(cbr.max_relative_length		, pt, "max_relative_length"			);
 	load(cbr.max_length_difference		, pt, "max_length_difference"		);
 }
@@ -1048,6 +1050,9 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 			cfg.simp,
 			pt,
 			(cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"));
+
+    cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
+
 	load(cfg.info_printers, pt, "info_printers");
 	load(cfg.jump, pt, "jump");
 

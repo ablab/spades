@@ -613,14 +613,14 @@ bool MaxFlowRemoveErroneousEdges(Graph &g,
 }
 
 template<class Graph>
-bool RemoveComplexBulges(Graph& g, size_t iteration) {
-	if (!cfg::get().simp.cbr.enabled)
+bool RemoveComplexBulges(Graph& g, const debruijn_config::simplification::complex_bulge_remover& cbr_config, size_t iteration = 0) {
+	if (!cbr_config.enabled)
 		return false;
-	size_t max_length = g.k() * cfg::get().simp.cbr.max_relative_length;
-	size_t max_diff = cfg::get().simp.cbr.max_length_difference;
+	size_t max_length = g.k() * cbr_config.max_relative_length;
+	size_t max_diff = cbr_config.max_length_difference;
 	string output_dir = "";
-	if (cfg::get().simp.cbr.pics_enabled) {
-		output_dir = cfg::get().output_dir + "complex_br_components/";
+	if (cbr_config.pics_enabled) {
+		output_dir = cbr_config.folder;
 		make_dir(output_dir);
 		output_dir += ToString(iteration) + "/";
 	}
@@ -639,7 +639,7 @@ bool AllTopology(Graph &g, EdgeRemover<Graph>& edge_remover,
 				edge_remover);
 		res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
 				edge_remover);
-		res |= RemoveComplexBulges(g, iteration);
+		res |= RemoveComplexBulges(g, cfg::get().simp.cbr, iteration);
 	}
 	return res;
 }

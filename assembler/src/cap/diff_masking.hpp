@@ -59,6 +59,16 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 	RemoveBulges(gp.g, br_config);
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
+    
+	debruijn_config::simplification::complex_bulge_remover cbr_config;
+    cbr_config.enabled = true;
+    cbr_config.pics_enabled = false;
+    cbr_config.folder = "";
+    cbr_config.max_relative_length = 3;
+    cbr_config.max_length_difference = 1000;
+
+    INFO("Removing complex bulges");
+    RemoveComplexBulges(gp.g, cbr_config);
 
 	TipsProjector<gp_t> tip_projector(gp);
 	boost::function<void(EdgeId)> projecting_callback = boost::bind(

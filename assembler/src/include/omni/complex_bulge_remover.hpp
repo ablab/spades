@@ -970,6 +970,7 @@ private:
 		size_t cnt = 0;
 		FOREACH(VertexId v, comp_.end_vertices()) {
 			mixed_color_t color = 1 << cnt;
+			DEBUG("Coloring exit " << comp_.g().str(v));
 			vertex_colors_.insert(make_pair(v, color));
 			cnt++;
 		}
@@ -1083,8 +1084,12 @@ class SkeletonTreeFinder {
 	vector<EdgeId> GoodOutgoingEdges(VertexId v) const {
 		vector<EdgeId> answer;
 		FOREACH(EdgeId e, component_.g().OutgoingEdges(v)) {
-			if (IsGoodEdge(e))
+			if (IsGoodEdge(e)) {
+				DEBUG("Edge " << component_.g().str(e) << " is classified as good");
 				answer.push_back(e);
+			} else {
+				DEBUG("Edge " << component_.g().str(e) << " is classified as NOT good");
+			}
 		}
 		return answer;
 	}
@@ -1156,8 +1161,9 @@ class SkeletonTreeFinder {
 			if (good_edges_.count(e) > 0) {
 				VertexId end = component_.g().EdgeEnd(e);
 				mixed_color_t color = coloring_.color(e);
+				VERIFY(subtree_coverage_.count(end) > 0);
 				if (subtree_coverage_[end] + absolute_coverage(e)
-						> best_subtrees_coverage[color]) {
+						>= best_subtrees_coverage[color]) {
 					best_subtrees_coverage[color] = subtree_coverage_[end]
 							+ absolute_coverage(e);
 					best_alternatives[color] = e;
@@ -1207,6 +1213,7 @@ public:
 		DEBUG("Looking for tree");
 		while (current_level_ >= 0) {
 			size_t height = level_heights_[current_level_];
+			DEBUG("Processing level " << current_level_ << " on height " << height);
 			set<VertexId> level_vertices = component_.vertices_on_height(
 					height);
 			VERIFY(!level_vertices.empty());
@@ -1217,13 +1224,18 @@ public:
 							vector<VertexId>(level_vertices.begin(),
 									level_vertices.end())));
 
+
+
 			//counting colors and color partitions
 			FOREACH(VertexId v, level_vertices) {
 				if (component_.end_vertices().count(v) == 0) {
 					UpdateColorPartitionWithVertex(v);
 					if (IsGoodVertex(v)) {
+						DEBUG("Vertex " << component_.g().str(v) << " is classified as good");
 						good_vertices_.insert(v);
 						UpdateNextEdgesAndCoverage(v);
+					} else {
+						DEBUG("Vertex " << component_.g().str(v) << " is classified as NOT good");
 					}
 				}
 			}
@@ -1561,6 +1573,16 @@ class NewLocalizedComponentFinder {
 	map<VertexId, Range> dominated_;
 	set<VertexId> interfering_;
 
+	std::string ToString(EdgeId e) const {
+		std::stringstream ss;
+		ss << g_.str(e)
+				<< " start: "
+				<< g_.str(g_.EdgeStart(e))
+				<< " end: "
+				<< g_.str(g_.EdgeEnd(e));
+		return ss.str();
+	}
+
 	bool CheckCanBeProcessed(VertexId v) const {
 		DEBUG("Check if vertex " << g_.str(v) << " is dominated close neighbour");
 		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
@@ -1576,7 +1598,9 @@ class NewLocalizedComponentFinder {
 
 	void UpdateCanBeProcessed(VertexId v,
 			std::queue<VertexId>& can_be_processed) const {
+		DEBUG("Updating can be processed")
 		FOREACH(EdgeId e, g_.OutgoingEdges(v)) {
+			DEBUG("Considering edge " << ToString(e));
 			VertexId neighbour_v = g_.EdgeEnd(e);
 			if (CheckCanBeProcessed(neighbour_v)) {
 				can_be_processed.push(neighbour_v);
@@ -1616,7 +1640,8 @@ class NewLocalizedComponentFinder {
 	}
 
 	void FillDominated() {
-		DEBUG("Adding starting vertex to dominated set");
+		DEBUG("Adding starting vertex "
+				<< g_.str(comp_.start_vertex()) << " to dominated set");
 		dominated_.insert(make_pair(comp_.start_vertex(), Range(0, 0)));
 		std::queue<VertexId> can_be_processed;
 		UpdateCanBeProcessed(comp_.start_vertex(), can_be_processed);
@@ -1666,6 +1691,7 @@ class NewLocalizedComponentFinder {
 	}
 
 	bool AddVertexWithBackwardPaths(VertexId v) {
+		DEBUG("Adding vertex with backward paths");
 		std::queue<VertexId> q;
 		q.push(v);
 		while (!q.empty()) {
@@ -1737,7 +1763,10 @@ class NewLocalizedComponentFinder {
 
 	bool CloseComponent() {
 		while (!interfering_.empty()) {
-			if (!ProcessInterferingVertex(*interfering_.begin())) {
+			VertexId v = *interfering_.begin();
+			DEBUG("Processing interfering vertex " << g_.str(v));
+			if (!ProcessInterferingVertex(v)) {
+				DEBUG("Vertex processing failed");
 				return false;
 			}
 		}

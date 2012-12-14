@@ -87,6 +87,7 @@ sc_simplification
 	{
 		enabled	0
 		pics_enabled 1
+        folder  complex_br_components 
 		max_relative_length	5.
 		max_length_difference	5
 	}
@@ -181,6 +182,7 @@ usual_simplification
 	{
 		enabled	0
 		pics_enabled 1
+        folder  complex_br_components 
 		max_relative_length	5.
 		max_length_difference	5
 	}

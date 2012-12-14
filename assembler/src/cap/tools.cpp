@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 	utils::TmpFolderFixture _("tmp");
 
-	std::string base_path = "/home/valich/work/ecoli/";
+	std::string base_path = "ecoli/";
 
 	/*
 	 vector<std::string> paths = {
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 //    "HS",
 			"K12", "TW", "UTI" };
 
-	vector<size_t> k_sequence = { 501, 201, 101, 55, 21, 15 };
+	vector<size_t> k_sequence = { 1001, 501, 201, 101, 55, 21, 15 };
 
 	/*
 	 std::string base_path = "/home/valich/work/human/";
@@ -96,11 +96,12 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 	 };
 	 */
 
-	std::string files_md5 = utils::GenMD5FromFiles(paths);
-	INFO("result is stored with md5 of " << files_md5);
+//	std::string files_md5 = utils::GenMD5FromFiles(paths);
+//	INFO("result is stored with md5 of " << files_md5);
 
 	MaskDifferencesAndSave(paths, suffices,
-			"bp_graph_" + files_md5 + "/refined/", k_sequence);
+			//"bp_graph_" + files_md5 + 
+            "bp_graph/refined/", k_sequence);
 }
 
 BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {

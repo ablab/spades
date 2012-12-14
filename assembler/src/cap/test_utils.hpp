@@ -69,7 +69,7 @@ std::string GenMD5FromFiles(const std::vector<std::string> &paths) {
 }
 
 bool NeedToUseLongSeq(unsigned k) {
-  return k > 101;
+  return k > 99;
 }
 
 }
