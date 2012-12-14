@@ -12,7 +12,7 @@ pushd ../../../
 rm -rf /tmp/data/output/spades_output/SAUREUS_LANE_7
 
 #./spades_compile.sh
-./spades.py --sc -m 160 -k 21,33,55 --12 data/input/S.aureus/sc_lane_7/bacteria_mda_lane7.fastq.gz -o /tmp/data/output/spades_output/SAUREUS_LANE_7
+./spades.py --sc -m 160 -k 21,33,55 -1 data/input/S.aureus/sc_lane_7/bacteria_mda_lane7_left.fastq -2 data/input/S.aureus/sc_lane_7/bacteria_mda_lane7_right.fastq -o /tmp/data/output/spades_output/SAUREUS_LANE_7
 
 rm -rf ~/quast-1.3/SAUREUS_LANE_7/
 
