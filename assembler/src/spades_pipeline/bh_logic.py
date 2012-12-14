@@ -45,11 +45,7 @@ def run_bh(spades_home, execution_home, cfg, log):
 
     prepare_config_bh(cfg_file_name, cfg, log)
 
-    command = ""
-    if "use_jemalloc" in cfg.__dict__ and os.path.isfile("jemalloc.sh"):
-        command = os.path.abspath("jemalloc.sh") + " "
-
-    command += os.path.join(execution_home, "hammer") + " " +\
+    command = os.path.join(execution_home, "hammer") + " " +\
                os.path.abspath(cfg_file_name)
 
     log.info("\n== Running error correction tool: " + command + "\n")

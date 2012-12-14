@@ -402,7 +402,7 @@ def main():
             elif opt == "--reference":
                 reference = check_file(arg, 'reference', log)
             elif opt == "--dataset":
-                dataset = check_file(arg, log, 'dataset', log)
+                dataset = check_file(arg, 'dataset', log)
 
             elif opt == "--12":
                 paired.append(check_file(arg, 'paired', log))

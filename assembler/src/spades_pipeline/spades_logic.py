@@ -66,11 +66,7 @@ def run_spades(spades_home, execution_home, cfg, log):
             count == len(cfg.iterative_K))
         prev_K = K
 
-        command = ""
-        if "use_jemalloc" in cfg.__dict__ and os.path.isfile("jemalloc.sh"):
-            command = os.path.abspath("jemalloc.sh") + " "
-
-        command += os.path.join(execution_home, "spades") + " " +\
+        command = os.path.join(execution_home, "spades") + " " +\
                    os.path.abspath(cfg_file_name)
 
         if os.path.isdir(bin_reads_dir):
