@@ -304,6 +304,28 @@ def split_sam(filename, tmpdir):
 
     return 0
 
+def split_reads(filename):
+    splitted_reads = []
+
+    left = config["work_dir"]+filename.split('/')[-1].split('.')[0]+ "_1.fastq"
+    right = config["work_dir"]+filename.split('/')[-1].split('.')[0]+ "_2.fastq"
+    leftFile = open(left, "w")
+    rightFile = open(right, "w")
+    count = 0
+    state = 0
+    for line in open(filename, 'r'):
+        if (state == 0):
+            leftFile.write(line)
+        else:
+            rightFile.write(line)
+        count += 1;
+        if count == 4:
+            count = 0
+            state = 1 - state
+    leftFile.close()
+    rightFile.close()
+    config["reads1"] = left
+    config["reads2"] = right
 
 def split_contigs(filename, tmpdir):
     global total_contigs;
@@ -316,6 +338,7 @@ def split_contigs(filename, tmpdir):
 def usage():
     print >> sys.stderr, 'Corrector. Simple postprocessing tool'
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] -1 left_reads -2 right_reads -c contigs'
+    print >> sys.stderr, 'Or: python', sys.argv[0], '[options] --12 mixed_reads -c contigs'
     print >> sys.stderr, 'Or: python', sys.argv[0], '[options] -s sam_file -c contigs'
     print >> sys.stderr, 'Options:'
     print >> sys.stderr, '-t/--threads  <int>   threads number'
@@ -329,7 +352,7 @@ def usage():
     print >> sys.stderr, '  --skip_masked   do not correct single \'N\', provided by assembler'
 
 def run_aligner():
-    global config;
+    global config
 
     #    (contigs_name, path, suf) = fileparse(config.contigs)
     if not "contigs" in config:
@@ -337,9 +360,12 @@ def run_aligner():
         usage()
         exit()
     if not "reads1" in config or not "reads2" in config:
-        print "NEED READS TO REFINE!!!"
-        usage()
-        exit()
+        if not "reads_mixed" in config:
+            print "NEED READS TO REFINE!!!"
+            usage()
+            exit()
+        else:
+            split_reads(config["reads_mixed"])
     contigs_name = config["contigs"].split('/')[-1];
     work_dir = config['work_dir']
     os.system("cp " + config["contigs"] + " " + work_dir)
@@ -379,11 +405,10 @@ def run_bwa():
 def parse_profile(args):
     global config
 
-    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= bowtie2= help debug use_quality use_multiple_aligned skip_masked".split()
+    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= bowtie2= 12= help debug use_quality use_multiple_aligned skip_masked".split()
     short_options = "1:2:o:s:S:c:t:m:q"
     options, contigs_fpaths = getopt.gnu_getopt(args, short_options, long_options)
     for opt, arg in options:
-    # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
             config["output_dirpath"] = os.path.abspath(arg)
             config["make_latest_symlink"] = False
@@ -393,6 +418,8 @@ def parse_profile(args):
             config["reads1"] = os.path.abspath(arg)
         if opt in ('-2'):
             config["reads2"] = os.path.abspath(arg)
+        if opt in ('--12'):
+            config["reads_mixed"] = os.path.abspath(arg)
         if opt in ("--bwa"):
             config["bwa"] = os.path.abspath(arg)
         if opt in ('-t', "--threads"):
