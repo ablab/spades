@@ -167,9 +167,9 @@ spades_params = []
 i = 0
 while i < len(dataset_info.spades_params):
     option = dataset_info.spades_params[i]
-    spades_params.append(option)
+    spades_params.append(str(option))
     if i < len(dataset_info.spades_params) - 1 and (option == '-1' or option == '-2' or option == '--12' or option == '-s'):
-        spades_params.append(os.path.join(dataset_path, dataset_info.spades_params[i + 1]))
+        spades_params.append(os.path.join(dataset_path, str(dataset_info.spades_params[i + 1])))
         i += 1
     i += 1
 
@@ -197,9 +197,9 @@ if 'reads_quality_params' in dataset_info.__dict__:
         i = 0
         while i < len(dataset_info.reads_quality_params):
             option = dataset_info.reads_quality_params[i]
-            rq_params.append(option)
+            rq_params.append(str(option))
             if i < len(dataset_info.reads_quality_params) - 1 and option == '-r':
-                rq_params.append(os.path.join(dataset_path, dataset_info.reads_quality_params[i + 1]))
+                rq_params.append(os.path.join(dataset_path, str(dataset_info.reads_quality_params[i + 1])))
                 i += 1
             i += 1
 
@@ -235,9 +235,9 @@ if 'quast_params' in dataset_info.__dict__:
         i = 0
         while i < len(dataset_info.quast_params):
             option = dataset_info.quast_params[i]
-            quast_params.append(option)
+            quast_params.append(str(option))
             if i < len(dataset_info.quast_params) - 1 and (option == '-R' or option == '-G' or option == '-O'):
-                quast_params.append(os.path.join(dataset_path, dataset_info.quast_params[i + 1]))
+                quast_params.append(os.path.join(dataset_path, str(dataset_info.quast_params[i + 1])))
                 i += 1
             i += 1
 

@@ -6,8 +6,33 @@
 # See file LICENSE for details.
 ############################################################################
 
-set -e
-pushd ../../../
+
+echo "### PREPROCESSING ###"
+
+./prepare_cfg
+errlvl=$?
+if [ "$errlvl" -ne 0 ]
+then
+    echo "prepare_cfg finished with exit code $errlvl"
+    exit $errlvl
+fi
+
 make rdt
+errlvl=$?
+if [ "$errlvl" -ne 0 ]
+then
+    echo "make rdt finished with exit code $errlvl"
+    exit $errlvl
+fi
+
+echo "### RUNNING ###"
+
+set -e
 ./run rdt
-popd
+
+errlvl=$?
+
+echo "### TEAMCITY INVOKATION COMPLETE, EXIT CODE = $errlvl ###"
+
+exit $errlvl
+
