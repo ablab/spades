@@ -1,0 +1,66 @@
+;output dir
+output_dir ./spades_output/
+
+;history file (optional) to keep quality logs
+;IMPORTANT! files have to be either specified by absolute path, either relatively output dir
+history_log quality.log
+
+;data set name
+name DATASET
+
+;bulid agent (options)
+build_agent ANT01
+
+;=== TOOLS PARAMETERS ===
+
+;run prepare_cfg (optional, default True)
+prepare_cfg true
+
+;spades options, excluding output dir, disable gzip output,
+;IMPORTANT! files have to be either specified by absolute path, either relatively to this contig
+spades_params "--sc --12 data.fastq"
+
+;etalon saves, will add --debug to spades and compare saves faterwards (optional)
+etalon_saves /data/etalon_saves
+
+
+;QUAST dir
+quast_dir ../quast-1.3
+
+;quast options, excluding output (optional). ;
+;will not assess contigs if not given
+quast_params "-R genome.fasta -G genes.txt"
+
+;read quality options, excluding output (optional)
+;will not assess reads if not given
+reads_quality_params "-r genome.fasta"
+
+;=== ASSESSING OPTIONS ===
+
+;assess. will assess quast results ant/or reads quality (default true)
+assess true
+
+;min n50 (optional, default 0)
+min_n50  10000
+
+;max misassemblies (optional, default 1000)
+max_mis  2
+
+;min genome mapped, % (optional)
+min_genome_mapped  95.1
+
+;min genes (optional)
+min_genes  2400
+
+;max indels (optional)
+max_indels 10
+
+;max mismatches (optional)
+max_subs 10
+
+;min reads aligned, % (optional)
+min_aligned 64.4
+
+
+
+
