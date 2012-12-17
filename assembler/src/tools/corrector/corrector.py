@@ -350,6 +350,7 @@ def usage():
     print >> sys.stderr, '  --debug   save all intermediate files '
     print >> sys.stderr, '  --use_multiple_aligned  use paired reads with multiple alignment'
     print >> sys.stderr, '  --skip_masked   do not correct single \'N\', provided by assembler'
+    print >> sys.stderr, '  --insert_size <int> estimation on insert size'
 
 def run_aligner():
     global config
@@ -405,7 +406,7 @@ def run_bwa():
 def parse_profile(args):
     global config
 
-    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= bowtie2= 12= help debug use_quality use_multiple_aligned skip_masked".split()
+    long_options = "threads= sam_file= output_dir= bwa= contigs= mate_weight= splitted_dir= bowtie2= 12= insert_size= help debug use_quality use_multiple_aligned skip_masked".split()
     short_options = "1:2:o:s:S:c:t:m:q"
     options, contigs_fpaths = getopt.gnu_getopt(args, short_options, long_options)
     for opt, arg in options:
@@ -442,6 +443,9 @@ def parse_profile(args):
             config["use_multiple_aligned"] = 1;
         if opt in ("--skip_masked"):
             config["skip_masked"] = 1;
+        if opt in ('--insert_size'):
+            config["reads_mixed"] = int(arg)
+
     work_dir = config["output_dirpath"]+"/tmp/"
     config["work_dir"] = work_dir
     os.system ("mkdir -p " + work_dir)
@@ -458,7 +462,7 @@ def init_config():
     config["debug"] = 0;
     config["use_multiple_aligned"] = 0;
     config["skip_masked"] = 0;
-
+    config["insert_size"] = 400;
 def process_contig(files):
     samfilename = files[0]
     contig_file = files[1]
@@ -511,7 +515,7 @@ def process_contig(files):
             profile[i][j] = 0;
             mult_profile[i][j] = 0;
     #TODO: estimation on insert size, need to be replaced
-    insert_size_est = 400
+
     samFile = open(samfilename, 'r');
     for line in samFile:
         arr = line.split();
