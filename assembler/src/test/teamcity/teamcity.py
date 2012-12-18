@@ -90,10 +90,12 @@ def assess_reads(report, limit_map):
     f.close()
 
     result_map = {}
-    aligned = values[columns.index("Aligned reads")]
-    aligned = re.search('\((.+)%\)', aligned).group(1)
-    result_map["Aligned reads"] = float(aligned)
-    result_map["Genome mapped"] = float(values[columns.index("Genome mapped (%)")])
+    if "Aligned read" in columns:
+        aligned = values[columns.index("Aligned reads")]
+        aligned = re.search('\((.+)%\)', aligned).group(1)
+        result_map["Aligned reads"] = float(aligned)
+    if "Genome mapped (%)" in columns:
+        result_map["Genome mapped"] = float(values[columns.index("Genome mapped (%)")])
 
     log_str = "Read quality " + str(datetime.datetime.now().strftime('%d.%m.%Y %H:%M')) + "\n"
 
@@ -110,12 +112,18 @@ def assess_quast(report, limit_map, name = ""):
     f.close()
 
     result_map = {}
-    result_map["N50"] = int(values[columns.index("N50")])
-    result_map["Misassemblies"] = int(values[columns.index("# misassemblies")])
-    result_map["Genes"] = int(values[columns.index("# genes")].split('+')[0])
-    result_map["Genome mapped"] = float(values[columns.index("Genome fraction (%)")])
-    result_map["Mismatches"] = float(values[columns.index("# mismatches per 100 kbp")])
-    result_map["Indels"] = float(values[columns.index("# indels per 100 kbp")])
+    if "N50" in columns:
+        result_map["N50"] = int(values[columns.index("N50")])
+    if "# misassemblies" in columns:
+        result_map["Misassemblies"] = int(values[columns.index("# misassemblies")])
+    if "# genes" in columns:
+        result_map["Genes"] = int(values[columns.index("# genes")].split('+')[0])
+    if "Genome fraction (%)" in columns:
+        result_map["Genome mapped"] = float(values[columns.index("Genome fraction (%)")])
+    if "# mismatches per 100 kbp" in columns:
+        result_map["Mismatches"] = float(values[columns.index("# mismatches per 100 kbp")])
+    if "# indels per 100 kbp" in columns:
+        result_map["Indels"] = float(values[columns.index("# indels per 100 kbp")])
 
     log_str = "Quast " + str(datetime.datetime.now().strftime('%d.%m.%Y %H:%M')) + " " + name + "\n"
 
@@ -172,7 +180,7 @@ if 'build_agent' in dataset_info.__dict__:
 output_dir = os.path.join(dataset_info.output_dir, spades_output_dir_name)
 
 history_log = read_log(output_dir, dataset_info)
-if history_log is not None:
+if history_log != "":
     print("Quality log found, going to append")
     
 if os.path.exists(output_dir):
