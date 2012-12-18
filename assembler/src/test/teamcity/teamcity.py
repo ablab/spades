@@ -95,7 +95,7 @@ def assess_reads(report, limit_map):
     result_map["Aligned reads"] = float(aligned)
     result_map["Genome mapped"] = float(values[columns.index("Genome mapped (%)")])
 
-    log_str = "Read quality " + str(datetime.datetime.now()) + "\n"
+    log_str = "Read quality " + str(datetime.datetime.now().strftime('%d.%m.%Y %H:%M')) + "\n"
 
     result = assess_map(result_map, limit_map)
 
@@ -117,13 +117,29 @@ def assess_quast(report, limit_map, name = ""):
     result_map["Mismatches"] = float(values[columns.index("# mismatches per 100 kbp")])
     result_map["Indels"] = float(values[columns.index("# indels per 100 kbp")])
 
-    log_str = "Quast " + str(datetime.datetime.now()) + " " + name + "\n"
+    log_str = "Quast " + str(datetime.datetime.now().strftime('%d.%m.%Y %H:%M')) + " " + name + "\n"
 
+    print("Assessing " + name)
     result = assess_map(result_map, limit_map)
 
     log_str += result[1] + ".\n"
     return result[0], log_str
 
+
+def filter_file_list(file_list):
+    current = 0
+    result_list = [file_list[current]]    
+    current_set = compare_fasta.read_fasta(file_list[current])
+
+    i = 1
+    while i < len(file_list):
+        if not compare_contigs(current_set, read_fasta(file_list[i])):
+            current = i
+            result_list.append(file_list[current])
+            current_set = compare_fasta.read_fasta(file_list[current])
+        i += 1
+    
+    return result_list
 
 
 ### main ###
@@ -136,14 +152,14 @@ dataset_path, dataset_info = load_info(sys.argv[1])
 
 #prepare cfg
 if 'prepare_cfg' not in dataset_info.__dict__ or ('prepare_cfg' in dataset_info.__dict__ and dataset_info.prepare_cfg):
-    ecode = os.system('./prepare_cfg')
+    ecode = 0#os.system('./prepare_cfg')
     if ecode != 0:
         print("Preparing configuration files finished abnormally with exit code " + str(ecode))
         sys.exit(ecode)
 
 
 #compile
-ecode = os.system('./spades_compile.sh')
+ecode = 0#os.system('./spades_compile.sh')
 if ecode != 0:
     print("Compilation finished abnormally with exit code " + str(ecode))
     sys.exit(ecode)
@@ -161,6 +177,7 @@ if history_log is not None:
 if os.path.exists(output_dir):
     shutil.rmtree(output_dir)
 os.makedirs(output_dir)
+os.system("chmod -R 777 " + output_dir)
 
 #make correct files to files
 spades_params = []
@@ -180,6 +197,7 @@ ecode = os.system(spades_cmd)
 if ecode != 0:
     print("SPAdes finished abnormally with exit code " + str(ecode))
     write_log(history_log, "", output_dir, dataset_info)
+    os.system("chmod -R 777 " + output_dir)
     sys.exit(ecode)
 
 new_log = ''
@@ -209,10 +227,11 @@ if 'reads_quality_params' in dataset_info.__dict__:
         if ecode != 0:
             print("Reads quality tool finished abnormally with exit code " + str(ecode))
             write_log(history_log, "", output_dir, dataset_info)
+            os.system("chmod -R 777 " + output_dir)
             sys.exit(ecode)
 
         limit_map = {}
-        if 'assess' not in dataset_info.__dict__ or dataset_info.assess:
+        if 'assess' in dataset_info.__dict__ and dataset_info.assess:
             if 'min_genome_mapped' in dataset_info.__dict__:
                 limit_map["Genome mapped"] = (dataset_info.min_genome_mapped, True)
             if 'min_aligned' in dataset_info.__dict__:
@@ -224,6 +243,7 @@ if 'reads_quality_params' in dataset_info.__dict__:
 
 
 #QUAST
+quast_cmd = ""
 if 'quast_params' in dataset_info.__dict__:
     contigs = os.path.join(output_dir, "contigs.fasta")
 
@@ -243,15 +263,16 @@ if 'quast_params' in dataset_info.__dict__:
 
         #CONTIGS
         quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS")
-        quast_cmd = os.path.join(dataset_info.quast_dir, "quast.py") + " " + " ".join(quast_params) + " -o " + quast_output_dir + " " + contigs
-        ecode = os.system(quast_cmd)
+        quast_cmd = os.path.join(dataset_info.quast_dir, "quast.py") + " " + " ".join(quast_params)
+        ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + contigs)
         if ecode != 0:
             print("QUAST finished abnormally with exit code " + str(ecode))
             write_log(history_log, "", output_dir, dataset_info)
+            os.system("chmod -R 777 " + output_dir)
             sys.exit(ecode)
 
         limit_map = {}
-        if 'assess' not in dataset_info.__dict__ or dataset_info.assess:
+        if 'assess' in dataset_info.__dict__ and dataset_info.assess:
             limit_map = {}
             if 'min_n50' in dataset_info.__dict__:
                 limit_map["N50"] = (dataset_info.min_n50, True)
@@ -289,8 +310,33 @@ if 'etalon_saves' in dataset_info.__dict__:
         print("Comparing etalon saves finished abnormally with exit code " + str(ecode))
         exit_code = ecode
 
+
 #writing log
 write_log(history_log, new_log, output_dir, dataset_info)
 
+
+#saving contigs
+if 'contig_storage' in dataset_info.__dict__:
+    contig_dir = dataset_info.contig_storage
+    quast_contig_dir = os.path.join(contig_dir, "quast_results")
+    if not os.path.exists(quast_contig_dir):
+        os.makedirs(quast_contig_dir)
+
+    name_prefix = datetime.datetime.now().strftime('%Y%m%d-%H%M')
+    shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + ".fasta"))
+
+    scafs = os.path.join(output_dir, "scaffolds.fasta")
+    if os.path.exists(scafs):
+        shutil.copy(scafs, os.path.join(contig_dir, name_prefix + "_scafs.fasta"))
+
+    if quast_cmd != "":
+        import glob
+#        sys.path.append('./src/tools/contig_analysis/')
+#        import compare_fasta
+        print("Running quast for all saved contigs now...")
+        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
+        print("Done")
+
+os.system("chmod -R 777 " + output_dir)
 sys.exit(exit_code)
 
