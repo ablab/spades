@@ -31,11 +31,11 @@ def prepare_config_bh(filename, cfg, log):
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def run_bh(spades_home, execution_home, cfg, log):
+def run_bh(configs_dir, execution_home, cfg, log):
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)
-    shutil.copytree(os.path.join(spades_home, "configs", "hammer"), dst_configs)
+    shutil.copytree(os.path.join(configs_dir, "hammer"), dst_configs)
     cfg_file_name = os.path.join(dst_configs, "config.info")
     # removing template configs
     for root, dirs, files in os.walk(dst_configs):

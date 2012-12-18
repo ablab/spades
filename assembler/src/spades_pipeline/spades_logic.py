@@ -33,7 +33,7 @@ def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def run_spades(spades_home, execution_home, cfg, log):
+def run_spades(configs_dir, execution_home, cfg, log):
     if not isinstance(cfg.iterative_K, list):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
@@ -54,7 +54,7 @@ def run_spades(spades_home, execution_home, cfg, log):
         os.makedirs(dst_configs)
 
         dst_configs = os.path.join(dst_configs, "configs")
-        shutil.copytree(os.path.join(spades_home, "configs", "debruijn"), dst_configs)
+        shutil.copytree(os.path.join(configs_dir, "debruijn"), dst_configs)
         cfg_file_name = os.path.join(dst_configs, "config.info")
         # removing template configs
         for root, dirs, files in os.walk(dst_configs):

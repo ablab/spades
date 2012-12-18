@@ -624,6 +624,12 @@ def main():
     log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
     try:
+        # copying configs before all computations (to prevent its changing between Hammer and SPAdes or during SPAdes iterations)
+        tmp_configs_dir = os.path.join(cfg["common"].output_dir, "configs")
+        if os.path.isdir(tmp_configs_dir):
+            shutil.rmtree(tmp_configs_dir)
+        shutil.copytree(os.path.join(spades_home, "configs"), tmp_configs_dir)
+
         bh_dataset_filename = ""
         if "error_correction" in cfg:
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
@@ -704,7 +710,7 @@ def main():
                         bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads,
                             bh_cfg.paired_reads, bh_cfg.working_dir)
 
-            bh_dataset_filename = bh_logic.run_bh(spades_home, execution_home, bh_cfg, log)
+            bh_dataset_filename = bh_logic.run_bh(tmp_configs_dir, execution_home, bh_cfg, log)
 
             log.info("\n===== Error correction finished. \n")
 
@@ -779,7 +785,7 @@ def main():
                 dataset_file.close()
                 spades_cfg.__dict__["dataset"] = dataset_filename
 
-            result_contigs_filename, result_scaffolds_filename, latest_dir = spades_logic.run_spades(spades_home,
+            result_contigs_filename, result_scaffolds_filename, latest_dir = spades_logic.run_spades(tmp_configs_dir,
                 execution_home, spades_cfg, log)
 
             #RECTANGLES
@@ -854,6 +860,9 @@ def main():
                 result_corrected_contigs_filename = ""
 
             log.info("\n===== Mismatch correction finished.\n")
+
+        if not cfg["common"].developer_mode and os.path.isdir(tmp_configs_dir):
+            shutil.rmtree(tmp_configs_dir)
 
         log.info("")
         if os.path.isdir(os.path.dirname(bh_dataset_filename)):
