@@ -15,8 +15,11 @@ build_agent ANT01
 
 ;=== TOOLS PARAMETERS ===
 
-;run prepare_cfg (optional, default True)
+;run prepare_cfg (optional, default true)
 prepare_cfg true
+
+;spades compile (optional, default true)
+spades_compile true
 
 ;spades options, excluding output dir, disable gzip output,
 ;IMPORTANT! files have to be either specified by absolute path, either relatively to this config
@@ -30,7 +33,7 @@ etalon_saves /data/etalon_saves
 quast_params "-R genome.fasta -G genes.txt"
 
 ;QUAST dir
-quast_dir ../quast-1.3
+quast_dir /home/teamcity/quast-1.3/
 
 ;read quality options, excluding output (optional)
 ;will not assess reads if not given

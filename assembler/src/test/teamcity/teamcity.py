@@ -151,7 +151,7 @@ if len(sys.argv) < 2:
 dataset_path, dataset_info = load_info(sys.argv[1])
 
 #prepare cfg
-if 'prepare_cfg' not in dataset_info.__dict__ or ('prepare_cfg' in dataset_info.__dict__ and dataset_info.prepare_cfg):
+if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
     ecode = os.system('./prepare_cfg')
     if ecode != 0:
         print("Preparing configuration files finished abnormally with exit code " + str(ecode))
@@ -159,10 +159,11 @@ if 'prepare_cfg' not in dataset_info.__dict__ or ('prepare_cfg' in dataset_info.
 
 
 #compile
-ecode = os.system('./spades_compile.sh')
-if ecode != 0:
-    print("Compilation finished abnormally with exit code " + str(ecode))
-    sys.exit(ecode)
+if 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
+    ecode = os.system('./spades_compile.sh')
+    if ecode != 0:
+        print("Compilation finished abnormally with exit code " + str(ecode))
+        sys.exit(ecode)
 
 #make dirs and remembering history
 spades_output_dir_name = dataset_info.name
