@@ -152,14 +152,14 @@ dataset_path, dataset_info = load_info(sys.argv[1])
 
 #prepare cfg
 if 'prepare_cfg' not in dataset_info.__dict__ or ('prepare_cfg' in dataset_info.__dict__ and dataset_info.prepare_cfg):
-    ecode = 0#os.system('./prepare_cfg')
+    ecode = os.system('./prepare_cfg')
     if ecode != 0:
         print("Preparing configuration files finished abnormally with exit code " + str(ecode))
         sys.exit(ecode)
 
 
 #compile
-ecode = 0#os.system('./spades_compile.sh')
+ecode = os.system('./spades_compile.sh')
 if ecode != 0:
     print("Compilation finished abnormally with exit code " + str(ecode))
     sys.exit(ecode)
