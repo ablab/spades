@@ -304,7 +304,7 @@ if 'quast_params' in dataset_info.__dict__:
         scafs = os.path.join(output_dir, "scaffolds.fasta")
         if os.path.exists(scafs):
             quast_output_scaf_dir = os.path.join(output_dir, "QUAST_RESULTS_SCAF")
-            if os.system(quast_cmd + " -o " + quast_output_dir + " " + scafs) != 0:
+            if os.system(quast_cmd + " -o " + quast_output_scaf_dir + " " + scafs) != 0:
                 print("Failed to estimate scaffolds")
             else:
                 result = assess_quast(os.path.join(quast_output_scaf_dir, "transposed_report.tsv"), {}, "scaffolds")
