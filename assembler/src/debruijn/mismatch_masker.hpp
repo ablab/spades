@@ -102,7 +102,7 @@ class MismatchMasker: public GraphActionHandler<Graph> {
 				  DEBUG("replaced");
 			  }
 			  s[mismatch_map[edge][i].position] = char(s[mismatch_map[edge][i].position] +'a' - 'A');
-			  if (cfg::get().mask_all && ((mismatch_map[edge][i].position >= 1 && ! is_nucl(s[mismatch_map[edge][i].position - 1])) || (mismatch_map[edge][i].position <s.length() -1  && ! is_nucl(s[mismatch_map[edge][i].position + 1])))){
+			  if (!cfg::get().mask_all && ((mismatch_map[edge][i].position >= 1 && ! is_nucl(s[mismatch_map[edge][i].position - 1])) || (mismatch_map[edge][i].position <s.length() -1  && ! is_nucl(s[mismatch_map[edge][i].position + 1])))){
 				  ;
 			  }else {
 //				  INFO(mismatch_map[edge][i].cutoff <<" " << mismatch_map[edge][i].ratio <<" " << cfg::get().mismatch_ratio )

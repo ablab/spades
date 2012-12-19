@@ -527,9 +527,7 @@ def init_config():
     config["debug"] = 0;
     config["use_multiple_aligned"] = 0;
     config["skip_masked"] = 0;
-
     config["insert_size"] = int(400)
-
 
 def chouseLetters(first_node, second_node, prof, node, choused_letter, single_profile, interest, contig):
 #    print first_node;
@@ -793,7 +791,7 @@ def process_contig(files):
         mate_el = arr[6];
         #Mate of non-end read in other contig
         #TODO: contig breaker/ fixer can be here
-        if mate_el != '=' and mate_el != '*' and (position >  config["insert_size"] and position < l -  config["insert_size"] - 100 ):
+        if mate_el != '=' and mate_el != '*' and (position > config["insert_size"] and position < l - config["insert_size"] - 100 ):
             continue;
         #Mate not in this contig; another alignment of this read present
         if mate_el != '=' and ("XA" in parsed_tags or ("XS" in parsed_tags and "AS" in parsed_tags and parsed_tags["XS"] >= parsed_tags["AS"])):
