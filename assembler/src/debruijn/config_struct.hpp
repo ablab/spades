@@ -562,6 +562,7 @@ public:
 	smoothing_distance_estimator ade;
 	repeat_resolver rr;
 	bool use_scaffolder;
+	bool mask_all;
 	dataset ds;
 	position_handler pos;
 	gap_closer gc;
@@ -1049,6 +1050,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
     cfg.pe_params.name = cfg.ds.single_cell ? "singlecell" : "multicell";
     load(cfg.pe_params, pt, "andrey_params"    );
     load(cfg.use_scaffolder, pt, "use_scaffolder");
+    load(cfg.mask_all, pt, "mask_all");
 
 
 	load(cfg.gc, pt, "gap_closer");

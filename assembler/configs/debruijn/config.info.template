@@ -87,6 +87,7 @@ paired_metrics read_count
 resolving_mode split
 
 use_scaffolder  true
+mask_all	true
 
 andrey_params {
 	#include "path_extend/pe_params.info"
