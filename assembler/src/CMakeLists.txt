@@ -55,6 +55,9 @@ include(libs)
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/config.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/config.hpp")
 
+# Build external dependencies (if any)
+add_subdirectory("${EXT_DIR}/src" "${Project_BINARY_DIR}/ext")
+
 # sub projects
 add_subdirectory(io)
 add_subdirectory(mph_index)
