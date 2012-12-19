@@ -204,6 +204,70 @@ def drop_cash(cashed_sams, separate_sams):
         cashed_sams[contig_info] = []
     return;
 
+def process_read_for_pairs(arr, l,m, pair_profile, symb_num, symb_pos, symb_state):
+#    global profile
+#    global insertions
+    cigar = arr[5]
+    aligned = arr[9];
+    qual_aligned = arr[10]
+    position = int(arr[3]) - 1
+    map_q = int(arr[4]);
+    mate = m;
+    l_read = len(aligned);
+    if '*' in cigar:
+        return 0;
+    if config["use_quality"]:
+        mate *=  (1 - pow(10,map_q/-10))
+    shift = 0;
+    nums = []
+    operations = []
+    tms = "";
+    aligned_length = 0;
+    for i in range(0, len(cigar)):
+
+        if cigar[i].isdigit():
+             tms += cigar[i]
+        else:
+            nums.append(int(tms));
+            operations.append(cigar[i]);
+            if cigar[i]=='M':
+                aligned_length += int(tms)
+            tms = ''
+#we do not need short reads aligned near gaps
+    if aligned_length < min(l_read* 0.4, 40) and position > l_read/2 and l - position > l_read/2 and mate == 1:
+        return 0;
+    state_pos = 0;
+    shift = 0;
+    skipped = 0;
+    deleted = 0;
+    int_A = ord('A') - 1
+    for i in range(0, l_read):
+        if i + position - skipped >= l:
+            break;
+
+        if shift + nums[state_pos] <= i:
+            shift += nums[state_pos]
+            state_pos += 1
+        if operations[state_pos] == 'M':
+            if i +  position - skipped < l:
+                t_mate = mate;
+                if config["use_quality"]:
+                    k = pow(10, (ord(qual_aligned[i - deleted]) - int_A ) /-10);
+                    if qual_aligned[i - deleted] == 'B':
+                        t_mate *= 0.2
+                    else:
+                        t_mate = t_mate * (1 - k/(k+1))
+                symb_pos.append(i+position -skipped);
+                symb_state.append(aligned[i - deleted])
+                symb_num += 1;
+        else:
+            if  operations[state_pos] in ('S', 'I', 'H'):
+                skipped += 1;
+            elif operations[state_pos] == 'D':
+                deleted += 1;
+    return symb_num
+
+
 def split_sam(filename, tmpdir):
     global total_contigs;
     inFile = open(filename)
@@ -462,7 +526,197 @@ def init_config():
     config["debug"] = 0;
     config["use_multiple_aligned"] = 0;
     config["skip_masked"] = 0;
+
     config["insert_size"] = int(400)
+
+
+def chouseLetters(first_node, second_node, prof, node, choused_letter, single_profile, interest, contig):
+#    print first_node;
+#    print second_node;
+    print "total factors num -- " + str(len(first_node))
+    if len(first_node) == 0:
+        return
+    current_nodes = [first_node[0], second_node[0]];
+    active_current_nodes = [first_node[0], second_node[0]];
+    non_zero_seq = [];
+    active_non_zero_seq = [];
+    non_zero_weight = []
+    for s1 in ('A','C','G','T','N'):
+        for s2 in ('A','C','G','T','N'):
+            if prof[0][s1][s2] > 0:
+                non_zero_seq.append(str(s1)+str(s2));
+		non_zero_weight.append(prof[0][s1][s2])
+                active_non_zero_seq.append(str(s1)+str(s2));
+#                print non_zero_seq[len(non_zero_seq)-1]
+    fact_num = len(first_node);
+    last_processed_first_node = first_node[0] 
+    for i in range (1, fact_num):
+#        print "process factor " + str(i) + " of " + str(fact_num) + ": " + str(first_node[i]) + " --> " + str(second_node[i])
+#	print non_zero_seq;
+#	print non_zero_weight;
+#	print current_nodes;
+#	print active_non_zero_seq;
+#	print active_current_nodes;
+#	print "from " + str(first_node[i]) + " to " + str(second_node[i])
+#	print prof[i]
+#        print len(non_zero_seq)
+        ind1 = -1
+	if last_processed_first_node != first_node[i]:
+            #reduce strings
+            aind1 = active_current_nodes.index(last_processed_first_node)
+            for j in range (0, len(active_non_zero_seq)):
+#                print aind1, " ", active_non_zero_seq[j], " -> ", active_non_zero_seq[j][:aind1], " + ", active_non_zero_seq[j][aind1+1:],  
+                active_non_zero_seq[j] = active_non_zero_seq[j][:aind1] + active_non_zero_seq[j][aind1+1:];
+            for j in range (0, len(active_non_zero_seq)):
+                str1 = active_non_zero_seq[j];
+                for k in range (j+1, len(active_non_zero_seq)):
+                    str2 = active_non_zero_seq[k];
+                    if (str1 == str2):
+                        if (non_zero_weight[j] < non_zero_weight[k]):
+                            non_zero_weight[j] = 0
+                            break
+                        else:
+                            non_zero_weight[k] = 0
+            del active_current_nodes[aind1];    
+            k = 0
+            while k < len (non_zero_seq):
+                if (non_zero_weight[k] == 0):
+                    del non_zero_weight[k]
+                    del non_zero_seq[k]
+                    del active_non_zero_seq[k]
+                else:
+                    k += 1
+        last_processed_first_node = first_node[i];
+        if (first_node[i] in current_nodes):
+            ind1 = current_nodes.index(first_node[i])
+	else: 
+            max_node = max(current_nodes)
+#            if second_node[i] in current_nodes or :
+            if first_node[i] < max_node:
+                ind1 = len (current_nodes)
+		k = len(non_zero_seq)
+                current_nodes.append(first_node[i])
+                active_current_nodes.append(first_node[i])
+                possible_letters = [];
+                for s1 in ('A','C','G','T','N'):
+                    if single_profile[first_node[i]][s1] > 0:
+                        possible_letters.append(s1)
+                while k > 0:
+                    for s1 in possible_letters:
+                        non_zero_seq.append(non_zero_seq[0]+s1)
+                        active_non_zero_seq.append(active_non_zero_seq[0]+s1)
+                        non_zero_weight.append(non_zero_weight[0])
+                    del non_zero_seq[0]
+                    del active_non_zero_seq[0]
+                    del non_zero_weight[0]
+                    k -= 1
+        if ind1 > -1: #current_nodes[0] = first_node[i]:
+            ind = -1
+            if second_node[i] in current_nodes:
+                ind = current_nodes.index(second_node[i])
+            if ind == -1:
+                ind = len (current_nodes)
+                current_nodes.append(second_node[i])
+                active_current_nodes.append(second_node[i])
+                possible_letters = [];
+                for s1 in ('A','C','G','T','N'):
+                    if single_profile[second_node[i]][s1] > 0:
+                        possible_letters.append(s1)
+		k = len(non_zero_seq)
+                while k > 0:
+                    for s1 in possible_letters:
+                        non_zero_seq.append(non_zero_seq[0]+s1)
+                        active_non_zero_seq.append(active_non_zero_seq[0]+s1)
+                        non_zero_weight.append(non_zero_weight[0])
+                    del non_zero_seq[0]
+                    del active_non_zero_seq[0]
+                    del non_zero_weight[0]
+                    k -= 1
+            k = 0
+#	    print "ind1 =  ", ind1, "   ind = ", ind
+            while k < len (non_zero_seq):
+#                print non_zero_seq[k]
+                non_zero_weight[k] *= prof[i][non_zero_seq[k][ind1]][non_zero_seq[k][ind]]
+                if (non_zero_weight[k] == 0):
+                    del non_zero_weight[k]
+                    del non_zero_seq[k]
+                    del active_non_zero_seq[k]
+                else:
+                    k += 1
+#            print "non zero strings: " + str (k)
+            if len(non_zero_weight) > 125:
+                max_start_node = max(current_nodes)
+#                print "seeking for factors that can reduce this"
+                for r in range (i+1, fact_num):
+#                    print "factor ", r,": ", first_node[r], " ->  ", second_node[r]
+                    if first_node[r] in current_nodes and second_node[r] in current_nodes:
+                        act_ind1 = current_nodes.index(first_node[r]);
+                        act_ind2 = current_nodes.index(second_node[r]);
+#                        print "factor ", r,": ", first_node[r], " ->  ", second_node[r]
+#                        print "with ", prof[r] 
+                        k = 0
+                        while k < len (non_zero_seq):
+                            if (prof[r][non_zero_seq[k][act_ind1]][non_zero_seq[k][act_ind2]] == 0):
+                                del non_zero_weight[k]
+                                del non_zero_seq[k]
+                                del active_non_zero_seq[k]
+                            else:
+                                k += 1
+                    elif max_start_node < first_node[r]:
+                        break
+#                print "reduced down to " + str(len (non_zero_seq))
+#            if len (non_zero_seq) == 0:
+#                print "No pathes"
+        else:
+#            print "non zero pathes:"    
+#            for j in range (0, len(non_zero_seq)):
+#                print non_zero_seq[j] + " " + str(non_zero_weight[j])
+            if len(non_zero_seq) > 0: 
+                max_ind = 0
+                for j in range (1, len(non_zero_seq)):
+                    if (non_zero_weight[max_ind] < non_zero_weight[j]):
+                        max_ind = j
+                allNs = 1
+                for j in range (0, len(current_nodes)):
+                    if j in interest and contig[j] != 'N':
+                        allNs = 0
+                        break
+                if allNs == 0:
+                    for j in range (0, len(current_nodes)):
+                        node.append(current_nodes[j])
+                        choused_letter.append(non_zero_seq[max_ind][j])
+            current_nodes = [first_node[i], second_node[i]];
+            active_current_nodes = [first_node[i], second_node[i]];
+            non_zero_seq = [];
+            non_zero_weight = []
+            active_non_zero_seq = [];
+            last_processed_first_node = first_node[i]
+            for s1 in ('A','C','G','T','N'):
+                for s2 in ('A','C','G','T','N'):
+                    if prof[i][s1][s2] > 0:
+                        non_zero_seq.append(str(s1)+str(s2));
+                        non_zero_weight.append(prof[i][s1][s2])
+                        active_non_zero_seq.append(str(s1)+str(s2));
+#                        print non_zero_seq[len(non_zero_seq)-1]
+#    print "non zero pathes:"    
+#    for i in range (0, len(non_zero_seq)):
+#        print non_zero_seq[i] + " " + str(non_zero_weight[i])
+    if len(non_zero_seq) > 0: 
+        max_ind = 0
+        for j in range (1, len(non_zero_seq)):
+            if (non_zero_weight[max_ind] < non_zero_weight[j]):
+                max_ind = j
+        allNs = 1
+        for j in range (0, len(current_nodes)):
+            if j in interest and contig[j] != 'N':
+                allNs = 0
+                break
+        if allNs == 0:
+            for j in range (0, len(current_nodes)):
+                node.append(current_nodes[j])
+                choused_letter.append(non_zero_seq[max_ind][j])
+
+
 def process_contig(files):
     samfilename = files[0]
     contig_file = files[1]
@@ -475,6 +729,8 @@ def process_contig(files):
     inserted = 0;
     replaced = 0;
     deleted = 0;
+    pair_profile = {}
+
 
     fasta_contig = read_genome(contig_file);
 #no spam about short contig processing
@@ -493,6 +749,9 @@ def process_contig(files):
     # accurate!
     cont_num = contig_file.split('/')[-1].split('.')[0];
     #    fasta_contig = read_genome(sys.argv[2]);
+    stime = datetime.datetime.now();
+    logFile.write(stime.strftime("%Y.%m.%d_%H.%M.%S") + ":  Start!\n");
+    starttime = stime;
 
 
 
@@ -516,6 +775,7 @@ def process_contig(files):
             mult_profile[i][j] = 0;
     #TODO: estimation on insert size, need to be replaced
 
+    insert_size_est = config["insert_size"]
     samFile = open(samfilename, 'r');
     for line in samFile:
         arr = line.split();
@@ -545,10 +805,155 @@ def process_contig(files):
             mate = 1;
         indelled_reads += 1 - process_read(arr, l, mate, profile, insertions)
         total_reads += 1;
+    ntime = datetime.datetime.now()
+    stime = ntime - stime
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": File processed. ");
+    logFile.write("elapsed time time: " + str(stime) + "\n");
+    stime = ntime
+    interest = set([])
+    interest100 = set(range(0, l, 100))
+    for i in range (0, l):
+        alls = 0;
+        for s1 in ('A','C','G','T','N'):
+            alls += profile[i][s1];
+	ini = 0;
+        for s1 in ('A','C','G','T','N'):
+            if (profile[i][s1] > 0.1 * alls) and (profile[i][s1] < 0.9 * alls) and (alls > 20):
+                ini += 1;
+        if ini > 1:
+            interest.add(i)
+            interest100.add(i)
+    read_name = "";
+    prev_read_name = "";
+    max_dist =  config["insert_size"];
+    int_seq = [];
+    int_nodes = [];
+    int_seq_cnt = []; 
+    print str(contig_file)+": interest positions " + str(len(interest))
+    print str(contig_file)+": working positions " + str(len(interest100))
+    for i in interest100:
+        pair_profile[i] = {}
+        for j in interest100:
+            if i < j and j - i < max_dist:
+                pair_profile[i][j] = {}
+                for s1 in ('A','C','G','T','N'):
+                    pair_profile[i][j][s1] = {}
+                    for s2 in ('A','C','G','T','N'):
+                        pair_profile[i][j][s1][s2] = 0;
+    ntime = datetime.datetime.now()
+    stime = ntime - stime
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+":  Prepare pair profile. ");
+    logFile.write("elapsed time time: " + str(stime) + "\n");
+    stime = ntime
+#    print "second go"
+    samFile.seek(0)
+    for line in samFile:
+#        print "second go +"
+        arr = line.split();
+        if arr[2].split('_')[1] != cont_num:
+            continue
+            #        print line;
+        read_name = arr[0];
+        cigar = arr[5]	
+        aligned = arr[9];
+        position = int(arr[3]) - 1
+        tags = arr[11:]
+        parsed_tags = {}
+        for tag in tags:
+            parsed_tags[tag.split(':')[0]] = tag.split(':')[2]
+        mate_el = arr[6];
+        #Mate of non-end read in other contig
+        #TODO: contig breaker/ fixer can be here
+        if mate_el != '=' and mate_el != '*' and (position > insert_size_est and position < l - insert_size_est - 100 ):
+            prev_read_name = read_name
+            continue;
+        #Mate not in this contig; another alignment of this read present
+        if mate_el != '=' and ("XA" in parsed_tags or ("XS" in parsed_tags and "AS" in parsed_tags and parsed_tags["XS"] >= parsed_tags["AS"])):
+#        and (("X0" in parsed_tags and parsed_tags["X0"] > 1)):
+            prev_read_name = read_name
+            continue;
+        if mate_el == '=' and (int(arr[1]) & 8) == 0:
+            mate = config["mate_weight"];
+        else:
+            mate = 1;
+        if read_name == prev_read_name:
+            symb_num = process_read_for_pairs(arr, l,mate, pair_profile, symb_num, symb_pos, symb_state)
+            if symb_num < len(symb_pos):
+#                print "ups " + str(symb_num)+" < "+str(len(symb_pos))
+                symb_num = len(symb_pos)
+            for i in range(0, symb_num-1):
+                if symb_pos[i] in interest100:
+                    for j in range(i+1, symb_num):
+                        if symb_pos[j] in interest100:
+                            if symb_pos[j] > symb_pos[i] and symb_pos[j] - symb_pos[i] < max_dist: 
+                                pair_profile[symb_pos[i]][symb_pos[j]][symb_state[i]][symb_state[j]] += 1;
+                            elif symb_pos[j] < symb_pos[i] and symb_pos[i] - symb_pos[j] < max_dist:
+                                pair_profile[symb_pos[j]][symb_pos[i]][symb_state[j]][symb_state[i]] += 1;
+        else:
+            symb_num = 0
+            symb_state = []
+            symb_pos = []
+            process_read_for_pairs(arr, l,mate, pair_profile, symb_num, symb_pos, symb_state)
+        total_reads += 1;
+        prev_read_name = read_name
+    ntime = datetime.datetime.now()
+    stime = ntime - stime
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": File processed second time. ");
+    logFile.write("elapsed time time: " + str(stime) + "\n");
+    stime = ntime
+
+    first_node = [];
+    second_node = [];
+    prof = [];
+    my_interest_range = list(interest100)
+    my_interest_range.sort()
+    for i in my_interest_range:
+        for j in my_interest_range:
+            if j > i and j - i < max_dist:
+                alls = 0;
+                all1 = {};
+                all2 = {};
+                for s1 in ('A','C','G','T','N'):
+                    for s2 in ('A','C','G','T','N'):
+                        alls += pair_profile[i][j][s1][s2];
+                fun1 = 1
+                fun2 = 1
+                if (i in interest) and alls > 20:
+                    fun1 = 2
+                if ((j) in interest) and alls > 20:
+                    fun2 = 2
+#		print i, " ", j, " ", pair_profile[i][j]
+#		print fun1, " ", fun2
+                
+                if fun1 * fun2 > 1 and alls > 0:
+                    first_node.append(i);
+		    second_node.append(j);
+                    prof.append(pair_profile[i][j])
+#                print str(i) + " -- "+ str(i+j);
+#                for s1 in ('A','C','G','T','N'):
+#                    for s2 in ('A','C','G','T','N'):
+#                        print s1+ "->"+ s2 +": "+ str(pair_profile[i][j][s1][s2]);
+    ntime = datetime.datetime.now()
+    stime = ntime - stime
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": Factors prepared. ");
+    logFile.write("elapsed time time: " + str(stime) + "\n");
+    stime = ntime
+    node = [];
+    choused_letter = [];
+    chouseLetters(first_node, second_node, prof, node, choused_letter, profile, interest, contig)
+#    print "checked positions:"
+#    print node 
+#    print choused_letter
+    ntime = datetime.datetime.now()
+    stime = ntime - stime
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": Letters choused. ");
+    logFile.write("elapsed time time: " + str(stime) + "\n");
+    stime = ntime
+
     for i in range (0, l):
         tj = contig[i]
         skip = 0;
-        if (tj == 'N' and config["skip_masked"]):
+        if (tj == 'N' and config["skip_masked"] and not i in node):
             skip = 1;
         tmp = ''
         mate_weight = config["mate_weight"]
@@ -565,6 +970,12 @@ def process_contig(files):
 
                     tj = j
                     #                rescontig[i] = j
+            if tj != 'I' and i in node:
+#                print "Letter ", choused_letter[node.index(i)], " forced by potentials, ", tj, " sugested for position ", i, " by profile while ",  contig[i], " present"
+                tj = choused_letter[node.index(i)]
+                if tj != contig[i] :
+                    logFile.write ("forced changing " + contig[i] + " to " + tj + " on position " + str(i+1) +'\n')
+
             if tj != contig[i] :
                 if tj != 'I' and skip:
                     rescontig += 'N'
@@ -594,6 +1005,13 @@ def process_contig(files):
     res_fasta[0].append(fasta_contig[0]);
     res_fasta[0].append(rescontig)
     write_fasta(res_fasta, refinedFileName)
+    ntime = datetime.datetime.now()
+    stime = ntime - stime
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S") + ": All done. ");
+    logFile.write("elapsed time time: " + str(stime) + "\n");
+    stime = ntime - starttime
+    logFile.write("Time spended: " + str(stime) + "\n");
+
     logFile.write("Finished processing "+ str(contig_file) + ". Used " + str(total_reads) + " reads.\n")
     logFile.write("replaced: " + str(replaced) + " deleted: "+ str(deleted) +" inserted: " + str(inserted) +'\n')
 #    return inserted, replaced
