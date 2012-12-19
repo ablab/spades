@@ -9,7 +9,7 @@ project(spades CXX)
 add_executable(spades
  main.cpp)
 
-target_link_libraries(spades ${COMMON_LIBRARIES} input mph_index)
+target_link_libraries(spades ${COMMON_LIBRARIES} input mph_index otkpp)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)

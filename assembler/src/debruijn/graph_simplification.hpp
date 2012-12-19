@@ -742,10 +742,11 @@ template<class Graph>
 double FindErroneousConnectionsCoverageThreshold(const Graph &graph,
                                                  const DeBruijnKMerIndex<typename Graph::EdgeId> &index) {
 	if (cfg::get().simp.ec.estimate_max_coverage) {
-		ErroneousConnectionThresholdFinder<Graph> t_finder(graph);
-    MCErroneousConnectionThresholdFinder<Graph> mct_finder(index);
-    INFO("MC: " << mct_finder.FindThreshold());
-		return t_finder.FindThreshold();
+    double ECThreshold = (cfg::get().ds.single_cell ?
+                          ErroneousConnectionThresholdFinder<Graph>(graph).FindThreshold() :
+                          MCErroneousConnectionThresholdFinder<Graph>(index).FindThreshold());
+    INFO("Coverage threshold value was calculated as " << ECThreshold);
+    return ECThreshold;
 	} else {
 		INFO("Coverage threshold value was set manually to " << cfg::get().simp.ec.max_coverage);
 		return cfg::get().simp.ec.max_coverage;
