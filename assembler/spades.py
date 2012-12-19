@@ -90,9 +90,9 @@ def print_used_values(cfg, log):
                     log.info("    " + os.path.abspath(os.path.expandvars(reads_file)))
 
         if no_paired:
-            log.info("  Paired reads was not specified")
+            log.info("  Paired reads were not specified")
         if no_single:
-            log.info("  Single reads was not specified")
+            log.info("  Single reads were not specified")
 
     # error correction
     if "error_correction" in cfg:

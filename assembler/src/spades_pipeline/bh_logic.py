@@ -51,8 +51,10 @@ def run_bh(configs_dir, execution_home, cfg, log):
     log.info("\n== Running error correction tool: " + command + "\n")
     support.sys_call(command, log)
 
+    if cfg.gzip_output:
+        log.info("\n== Compressing corrected reads (with gzip)")
+        
     import bh_aux
-
     dataset_str = bh_aux.generate_dataset(cfg, log)
     dataset_filename = cfg.dataset
     dataset_file = open(dataset_filename, "w")
