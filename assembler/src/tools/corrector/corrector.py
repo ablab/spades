@@ -332,10 +332,11 @@ def split_sam(filename, tmpdir):
                     if cont_name in separate_sams:
                         for j in range(0,2):
                             if (not need_to_cashe):
-                                if cont_name in unique:
-                                    separate_sams[cont_name].write(paired_read[j]+ '\n')
-                                else:
-                                    mult_aligned[cont_name].write(paired_read[j]+ '\n')
+                                separate_sams[cont_name].write(paired_read[j]+ '\n')
+#                                if cont_name in unique:
+#                                    separate_sams[cont_name].write(paired_read[j]+ '\n')
+#                                else:
+#                                    mult_aligned[cont_name].write(paired_read[j]+ '\n')
                             else:
                                 cashed_sams[cont_name].append(paired_read[j] + '\n');
 
