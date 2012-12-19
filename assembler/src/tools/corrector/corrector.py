@@ -214,17 +214,17 @@ def split_sam(filename, tmpdir):
     read_num = 0;
 
     import subprocess
-    ulimit = subprocess.check_output("ulimit -n", shell=True)
-    print "ulimit :", ulimit
-    ulimit = int(ulimit)
+#    ulimit = subprocess.check_output("ulimit -n", shell=True)
+#    print "ulimit :", ulimit
+#    ulimit = int(ulimit)
     need_to_cashe = True;
 #TODO: whether multiple aligned helps?
-    needed_ulimit = total_contigs * 2 + 20
-    if (ulimit < needed_ulimit):
-        print ("Limit for simultaniously opened file is too small. limit: " + str(ulimit) + "; needed: " + str(needed_ulimit))
-        print ("Increasing it will speedup this stage for a while")
-        print ("For most systems (if you are a sudoer) you can fix it by adding \"*  soft    nofile    "+ str(needed_ulimit + 20) + "\" to /etc/security/limits.conf")
-        need_to_cashe = True
+#    needed_ulimit = total_contigs * 2 + 20
+#    if (ulimit < needed_ulimit):
+#        print ("Limit for simultaniously opened file is too small. limit: " + str(ulimit) + "; needed: " + str(needed_ulimit))
+#        print ("Increasing it will speedup this stage for a while")
+#        print ("For most systems (if you are a sudoer) you can fix it by adding \"*  soft    nofile    "+ str(needed_ulimit + 20) + "\" to /etc/security/limits.conf")
+#        need_to_cashe = True
 
     paired_read = []
     processed_reads = 0;
