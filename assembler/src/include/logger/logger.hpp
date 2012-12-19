@@ -9,6 +9,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <sstream>
 
 #include "config.hpp"
 

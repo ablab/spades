@@ -25,8 +25,11 @@
 #include <cstring>
 #include <cstdint>
 #include <cstddef>
+#include <cmath>
 
 namespace cov_model {
+using std::isfinite;
+
 static const size_t MaxCopy = 30;
 
 static double dzeta(double x, double p) {

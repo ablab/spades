@@ -26,6 +26,7 @@
 #include "omni/complex_bulge_remover.hpp"
 #include "omni/erroneous_connection_remover.hpp"
 #include "omni/mf_ec_remover.hpp"
+#include "omni/bulge_remover_factory.hpp"
 #include "utils.hpp"
 
 #include "gap_closer.hpp"

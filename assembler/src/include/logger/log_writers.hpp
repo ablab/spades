@@ -9,6 +9,8 @@
 #include "logger.hpp"
 #include "config.hpp"
 
+#include <iostream>
+
 namespace logging {
 
 struct console_writer  : public writer {
