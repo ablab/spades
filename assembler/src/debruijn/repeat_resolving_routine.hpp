@@ -34,8 +34,13 @@
 #include "path_extend/path_extend_launch.hpp"
 #include "mismatch_masker.hpp"
 #include "contig_output.hpp"
+
 #include "pac_index.hpp"
 #include "long_read_storage.hpp"
+#include "loop_filter.hpp"
+#include "graphio.hpp"
+#include "coverage_based_rr.hpp"
+
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -583,6 +588,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	DEBUG("Clearing resolved graph complete");
 
+
 	//Generating paired info for resolved graph
 		PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
 				resolved_gp.g);
@@ -1000,7 +1006,6 @@ void resolve_repeats() {
 		}
 	}
 
-
 	exec_distance_estimation(conj_gp, paired_indices, clustered_indices);
 
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
@@ -1279,10 +1284,26 @@ void resolve_repeats() {
 		}
 	}
 
+	
+	INFO("Resolving repeats by coverage");
+
+	//auto index = FlankingCoverage<EdgeId>(conj_gp, 50);
+/*	auto filter = LoopFilter<conj_graph_pack, FlankingCoverage<EdgeId>>(conj_gp, index);
+	filter.get_loopy_components(quality_labeler); */
+	//EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
+
+
+	//auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp);
+	//cov_rr.resolve_repeats_by_coverage(index, labels_after, quality_labeler);
+
+	//INFO("Repeats are resolved by coverage");
+
+	//SaveCoverageBasedRRPaths(conj_gp, cov_rr.filteredPaths, cfg::get().output_dir+"saves/coverage_based.paths");
+
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
 		INFO("Ready to run rectangles repeat resolution module");
-	}
 
+	}
 }
 
 void exec_repeat_resolving() {

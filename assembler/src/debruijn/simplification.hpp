@@ -22,6 +22,8 @@
 #include "io/ireadstream.hpp"
 #include "mismatch_shall_not_pass.hpp"
 #include "contig_output.hpp"
+#include "detail_coverage.hpp"
+#include "graphio.hpp"
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
@@ -54,8 +56,33 @@ void simplify_graph(conj_graph_pack& gp) {
 
 	exec_construction(gp);
 
-	INFO("STAGE == Simplifying graph");
+	//auto index = detail_coverage::FlankingKMers<DeBruijnEdgeIndex<EdgeId>,EdgeId>(gp.index.inner_index());
+	//index.save("/home/ksenia/detail_in.cvr","/home/ksenia/detail_out.cvr");
 
+	/*for ( auto index_iterator = gp.index.inner_index().value_begin(); index_iterator < gp.index.inner_index().value_end(); ++index_iterator ){
+	         std::cout << index_iterator->edgeId_ << " " << index_iterator->offset_ << " " << index_iterator->count_ << std::endl;
+	}*/
+	INFO("STAGE == Simplifying graph");
+/*
+#if 0
+	if (contigs_stream) {
+		contigs_stream->reset();
+		FillCoverageFromStream(*contigs_stream, index);
+	}
+#endif
+	
+	// Check sanity in developer mode
+	if (cfg::get().developer_mode) {
+		for (auto idx = gp.index.inner_index().kmer_idx_begin(), eidx = gp.index.inner_index().kmer_idx_end(); idx != eidx; ++idx) {
+			runtime_k::RtSeq k = gp.index.inner_index().kmer(idx);
+			INFO("" << gp.index.inner_index()[k].count_ << ":" << gp.index.inner_index()[!k].count_);
+
+			VERIFY(gp.index.inner_index()[k].count_ == gp.index.inner_index()[!k].count_);	
+		}
+	}
+*/
+
+	SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction",gp.index.inner_index());
 //	PrintWeightDistribution<K>(gp.g, "distribution.txt");
 
 //	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
@@ -66,7 +93,7 @@ void simplify_graph(conj_graph_pack& gp) {
 	detail_info_printer printer(gp, labeler, cfg::get().output_dir,
 			"graph.dot");
 	printer(ipp_before_first_gap_closer);
-
+;
 //	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
 //	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, edge_qual,
 //			labeler, cfg::get().output_dir);
@@ -76,6 +103,7 @@ void simplify_graph(conj_graph_pack& gp) {
 //			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 //			boost::ref(qual_removal_handler), _1);
 
+	
 	SimplifyGraph(gp, 0/*removal_handler_f*/, labeler, printer, 10
 	/*, etalon_paired_index*/);
 

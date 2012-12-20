@@ -15,9 +15,14 @@ use('Agg')
 from matplotlib import pyplot
 
 #PREFIX = "./"
-PREFIX="/smallnas/dima/algorithmic-biology/assembler/data/debruijn/ECOLI_SC_LANE_1_BH/K55/11.15_20.38.26/saves/"
-#PREFIX="/home/lab42/work/ksenia/ecoli_saves/"
-PREFIX="/home/ksenia/ecoli_saves/"
+#PREFIX="/smallnas/dima/algorithmic-biology/assembler/data/debruijn/ECOLI_SC_LANE_1_BH/K55/11.15_20.38.26/saves/"
+#PREFIX="/home/ksenia/ecoli_saves/"
+#PREFIX="/home/ksenia/algorithmic-biology/assembler/data/debruijn/ECOLI_IS220_QUAKE_100K/K55/01.29_17.33.47/saves/"
+#PREFIX="/home/ksenia/algorithmic-biology/assembler/data/debruijn/ECOLI_SC_LANE_1_BH/K55/02.19_14.55.27/saves/"
+PREFIX="/home/ksenia/algorithmic-biology/assembler/data/debruijn/ECOLI_SC_LANE_1_BH/K55/02.25_19.11.47/saves/"
+PREFIX="/home/ksenia/algorithmic-biology/assembler/data/debruijn/ECOLI_SC_LANE_1_BH/K55/02.27_11.06.47/saves/"
+PREFIX="/home/ksenia/algorithmic-biology/assembler/data/debruijn/ECOLI_SC_LANE_1_BH/K55/02.27_19.57.16/saves/"
+#PREFIX="/home/ksenia/algorithmic-biology/assembler/data/debruijn/TOY_DATASET/K55/01.30_18.17.48/saves/"
 #PREFIX="/home/antipov/algorithmic-biology/assembler/data/debruijn/SAUREUS_SC_LANE_7_BH/K55/12.17_22.23.06/saves/"
 MAX_DIST = 10000000
 #DOWN_CUT = 20
@@ -47,7 +52,7 @@ def parse_pos(filename) :# down_cut, up_cut) :
                 #	print ref_num
                 for i in range(ref_num) :
                     line = infile.readline()
-                    line = line.strip()
+		    line = line.strip()
                     data_seq = string.split(line,' ')
                     #if data[0] == '10010966' :
                     #	print data_seq
@@ -81,7 +86,6 @@ def parse_cvr(filename) :
             break
 
         if (size == 3) :
-
             coverage[ int(data[0]) ] = float(data[1])
     file.close()
     return coverage
@@ -158,20 +162,26 @@ def get_components( edges, redges ) :
     for e in edges.keys() :
         v_out = edges[e][0]
         v_in = edges[e][1]
-        if ((not v_out in in_count or out_count[v_out] > 1 ) and (in_count[v_in] > 1 or not v_in in out_count)) or edges[e][2] > upper_bound:
-            singles[e] = edges[e]
+	#if e == 17014031 :
+	#	print "--------------------------",out_count[v_out], in_count[v_in], v_in in out_count
+        if ((not v_out in in_count or out_count[v_out] > 1 ) and (in_count[v_in] > 1 or not v_in in out_count)):# or edges[e][2] > upper_bound:
+	#	if e == 17014031 :
+	#		print "singles"
+            	singles[e] = edges[e]
         else :
             components[e] = edges[e]
 
+    
+    print
+    
     return components, singles
 
 def path_length( path ) :
 
     return sum(map( lambda x : x[1][2], path.iteritems()))
 
-
 # dfs traversal of components that are considered to be in the same repeat
-def traverse_components( components, singles, cov, edges, redges, coverage ) :
+def traverse_components( components, singles, in_cov, out_cov, edges, redges, coverage ) :
     resolved_paths_begin = {}
     resolved_paths_end = {}
     visited = set()
@@ -183,16 +193,18 @@ def traverse_components( components, singles, cov, edges, redges, coverage ) :
     long_resolved = 0
     cannot_resolve_long = 0
     upper_bound = 10000
-    comp_file = open("component.log", "w");
+    comp_file = open(PREFIX+"component.log", "w");
     resolved_paths = []
     failed_paths = {}
+    all_paths = []
     for e in components :
         path = set()
         if not e in visited:
             ins = []
             outs = []
+	    
             visit(e, visited, components, path, singles, ins, outs)
-            #if len(ins) != len(outs) :
+	   #if len(ins) != len(outs) :
 	   # 	continue
 	
 	    #for e in ins :
@@ -206,7 +218,8 @@ def traverse_components( components, singles, cov, edges, redges, coverage ) :
 #	    	if redges[e] in resolved_edges :
 #			continue
 
-	    comp_file.write('Component:\n')
+	    all_paths.append(list(path))
+ 
             for r in path:
                 comp_file.write(str(r) + ' ')
             comp_file.write('\nIncoming:\n')
@@ -219,49 +232,32 @@ def traverse_components( components, singles, cov, edges, redges, coverage ) :
             comp_file.write('\n\n')
             ins_dict = {}
             outs_dict = {}
+	    #print ins
             for i in ins :
-                ins_dict[i] = cov[i]
+                ins_dict[i] = in_cov[i]
             for i in outs :
-                outs_dict[i] = cov[i]
+                outs_dict[i] = out_cov[i]
 
             # overall counts components that do not have regions unaligned to reference
             has_empty_alignment = False
-            skip = False
+	    
             for edge in path:
 
-                #filter too long edges in the component
-		#WTF? WE NEED NOT TO ADD THEM TO THE COMPONENT - THEY ARE NOT REPEATS
-#                l = path_length( dict(filter ( lambda x : x[0] in path , edges.iteritems() )) )
-#                if l > upper_bound :
-#                    skip = True
-#                    break
 
                 if len(get_ref_coord(edge, contigs)) == 0 :
                     has_empty_alignment = True
                     break
-#            has_empty_alignment = False
-            if skip :
-                continue
-            #if not has_empty_alignment :
-            #	overall += 1
-
-
+	    
             # do not traverse components with hanging vertices
             if len(ins) == 0 or len(outs) == 0 :
                 continue
-
+	    
             # filter loops
             if len( set(ins) & set(outs) ) > 0 :
-                continue
+                continue 
 
             #l = path_length( dict(filter ( lambda x : x[0] in path , edges.iteritems() )) )
             #print "max path length is ", len(path), '(', l, 'nt ) - ', path
-
-            #skip = False
-            #for r_edge in redges.keys() :
-            #    if  ( r_edge in ins and redges[r_edge] in outs or r_edge in outs and redges[r_edge] in ins ):
-	    #        skip = True
-            #        break
 
 	
 	    ins_list = sorted(ins_dict.iteritems(), key=lambda (k,v): (-v,k))
@@ -269,7 +265,7 @@ def traverse_components( components, singles, cov, edges, redges, coverage ) :
 
                 #ins_list, outs_list =
 
-            ps = find_closest( ins_list, outs_list )
+            ps = find_closest( ins_list, outs_list)
 
             l = path_length( dict(filter ( lambda x : x[0] in path , edges.iteritems() )) )
 
@@ -279,44 +275,20 @@ def traverse_components( components, singles, cov, edges, redges, coverage ) :
                     if l > 300 :
                         cannot_resolve_long += 1
                         print l, ':', path
-                        '''print 'in edges:'
-                        for i in sorted(ins_dict.keys()) :
-                            print i, '-', ins_dict[i],
-                            for q in contigs :
-                                if q[0] == i :
-                                    print '(',q[1],'-',q[2],');',
-                            print
-                        print 'out edges:'
-                        for i in sorted(outs_dict.keys()) :
-                            print i,'-', outs_dict[i],
-                            for q in contigs:
-                                if q[0] == i :
-                                    print '(',q[1],'-',q[2],');',
-                            print
-                        print'''
-                    #	print 'in edges: ', ins_dict
-                    #	print 'out edges: ', outs_dict
-                    #	print
-                    #	print
-                #resolved_paths = []
-                #for e_pair in ps :
-                #	res_path = [e_pair[0][0]]
-                #	res_path += list(path)
-                #	res_path.append( e_pair[1][0])
-                #	print res_path
-                #	resolved_paths.append(res_path)#([e_pair[0][0]].append( list(path) )).append( e_pair[1][0]) )
-                #print resolved_paths
 
             for e_pair in ps :
-
+			
 		    skip = False
                     coord_list_front = get_ref_coord(e_pair[0][0], contigs)
                     coord_list_back = get_ref_coord(e_pair[1][0], contigs)
-                    if len(coord_list_front) >  0 and len(coord_list_back) > 0:
-
-                        resolved_path = resolve(e_pair, path, edges)
-		
-			print "resolved_path:", resolved_path	
+		    overall += 1
+		    resolved_path = resolve( e_pair, path, edges )
+		    #print "resolved_path:", resolved_path	
+		    print "pair:", e_pair[0], e_pair[1]
+                    #if len(coord_list_front) >  0 and len(coord_list_back) > 0:
+		    if True:
+			#resolved_path = resolve( e_pair, path, edges )
+			#print "resolved_path:", resolved_path	
 			#for e in resolved_path:
 			#	if redges[e] in resolved_edges :
 			#		skip = True
@@ -327,13 +299,15 @@ def traverse_components( components, singles, cov, edges, redges, coverage ) :
 
 				#print resolved_edges
 
-                        	if len(resolved_path) > 2 :
+				if len(resolved_path) > 2 :
                             		resolved_paths_begin[resolved_path[0]] = resolved_path
                             		resolved_paths_end[resolved_path[-1]] = resolved_path
+					print "resolved_path:",resolved_path
 
                             		if not has_empty_alignment :
-                                		ifAligned, nothing_close_number = compare_to_ref(resolved_path, contigs, cov, ps, nothing_close_number)
+                                		ifAligned, nothing_close_number = compare_to_ref(resolved_path, contigs, ps, nothing_close_number)
                                 		if  ifAligned:
+							print "aligned:", resolved_path
                                     			success += 1
                                     			#print "success: max path length is ", len(path), '(', l, 'nt ) - '
                                     			if l > 300 :
@@ -343,20 +317,34 @@ def traverse_components( components, singles, cov, edges, redges, coverage ) :
                                 		else :
 							failed_paths[resolved_path[0]] = resolved_path
                                     			print "fail:  path length is ", len(resolved_path), '(', l, 'nt ) - '
-				    			print "failed_path: " + str(resolved_path)
+				    			print "failed_path: " + str(resolved_path),
+							for e in resolved_path :
+								print e, ':', in_cov[e], '-', out_cov[e], ';',
+							print
 
-                                		overall += 1
     #unite_all_paths(resolved_paths_begin, resolved_paths_end);
-    unite_all_paths(failed_paths, resolved_paths_end);
+    #unite_all_paths(failed_paths, resolved_paths_end);
     
-    print len(failed_paths)
+    #print len(failed_paths)
     #resolved_paths_begin = filter_reverse_complementary( resolved_paths_begin, redges ) 
     #resolved_paths_begin = filter_reverse_complementary( failed_paths, redges ) 
     #print len(failed_paths)
     #output_united_paths(resolved_paths_begin, "coverage_based.pth", edges,redges )
-    output_united_paths(failed_paths, "coverage_based.pth", edges,redges )
+    
+    #commented if TEST
+    #output_united_paths(failed_paths, "coverage_based_failed.pth", edges,redges )
+    unite_all_paths(resolved_paths_begin, resolved_paths_end);
+    
+    #print len(failed_paths)
+    #resolved_paths_begin = filter_reverse_complementary( resolved_paths_begin, redges ) 
+    #resolved_paths_begin = filter_reverse_complementary( failed_paths, redges ) 
+    #print len(failed_paths)
+    output_united_paths(resolved_paths_begin, "coverage_based.pth", edges,redges )
+    #output_united_paths(failed_paths, "coverage_based.pth", edges,redges )
 
     print 'overall (not counting the paths we can not resolve):',overall
+
+    print "all_paths: ", all_paths
 
     print "can not resolve", cannot_resolve
     print "can not resolve > 300", cannot_resolve_long
@@ -409,6 +397,11 @@ def unite_all_paths( resolved_paths_begin, resolved_paths_end) :
                 changed = True
                 new_path = resolved_paths_end[start]
 		new_path.extend(resolved_paths_begin[start][1:])
+		#print resolved_paths_end[start]
+		#print resolved_paths_begin[start]
+        #       new_path = resolved_paths_end[start]
+		#new_path.extend(resolved_paths_begin[start][1:])
+		#print "PATH " + str(new_path)
                 del resolved_paths_end[start]
                 del resolved_paths_begin[start]
                 break
@@ -421,7 +414,7 @@ def unite_all_paths( resolved_paths_begin, resolved_paths_end) :
 def output_united_paths(resolved_paths_begin, outfilename, edges, redges):
 
     print resolved_paths_begin
-    seq_file = open(PREFIX+ "distance_filling.sqn", "r")
+    seq_file = open(PREFIX+ "distance_estimation.sqn", "r")
     sequences = {}
     while (1):
         cont_name = seq_file.readline()
@@ -429,7 +422,7 @@ def output_united_paths(resolved_paths_begin, outfilename, edges, redges):
             break
         cont = seq_file.readline().strip()
         sequences[int(cont_name.strip()[1:])] = cont
-    seq_path_file =  open(PREFIX+ "distance_filling_paths.sqn", "w")
+    seq_path_file =  open(PREFIX+ "distance_estimation_paths.sqn", "w")
     outFile = open (outfilename, "w")
     outFile.write(str(len(resolved_paths_begin)) + '\n')
     used = {}
@@ -467,16 +460,30 @@ def output_united_paths(resolved_paths_begin, outfilename, edges, redges):
             outFile.write('\n')
             outFile.write('\n')
         seq_path_file.write(seq + '\n')
-    #for e in edges:
-    #    if not e in used and not redges[e] in used:
-    #        used[redges[e]] = 1
-    #        used[e] = 1
-    #        seq_path_file.write(">" + str(e) +"\n")
-    #        seq_path_file.write( sequences[e])
-    #        seq_path_file.write("\n")
-
+    for e in edges:
+        if not e in used and not redges[e] in used:
+            used[redges[e]] = 1
+            used[e] = 1
+            seq_path_file.write(">" + str(e) +"\n")
+            seq_path_file.write( sequences[e])
+            seq_path_file.write("\n")
     print str(path_count) + " is path count"
 
+def dfs_comp( v_start, v_end, component, edges, path ) :
+
+	#if v_start == v_end :
+	#	return [8]
+	for e in component:
+		if v_start == edges[e][0] :
+			if v_end == edges[e][1] :
+				return [e]
+			path = dfs_comp(edges[e][1], v_end, component, edges, path)
+			if len(path) > 0:
+				print path
+				return [e] + path
+	return []	
+
+			
 
 def resolve( in_out, component, edges ) :
 
@@ -485,28 +492,37 @@ def resolve( in_out, component, edges ) :
     edge_in = in_out[0]
     edge_out = in_out[1]
 
-    path.append(edge_in[0])
+    #path.append(edge_in[0])
 
     v_start_repeat = edges[edge_in[0]][1]
     #print edges[edge_in[0]][0],  v_start_repeat,
     v_end_repeat = edges[edge_out[0]][0]
 
+    path = dfs_comp(v_start_repeat, v_end_repeat, component, edges, path)
+    print path
+    '''print v_start_repeat, v_end_repeat
     cur_v_from = v_start_repeat
     #visited = set()
     #print component, in_out
     #ordered_component = sorted( list(component), key=lambda x: edges[x][0])
     #print component, edges[9372386], edges[9962223]
     #print ordered_component
+    #print "component:", component
+    #for e in component :
+    #	print e, edges[e][0], edges[e][1]
+    print component
+    print in_out
     while cur_v_from != v_end_repeat :
-        for e in component :
+    	#print cur_v_from, v_end_repeat
+    	for e in component :
         #if not e in visited :
             #print 'e',e
+	    #print cur_v_from
             if cur_v_from == edges[e][0] :
                 path.append(e)
                 cur_v_from = edges[e][1]
-
             if cur_v_from == v_end_repeat :
-                path.append(edge_out[0])
+         	path.append(edge_out[0])
 
                 break
             #print e,'-',path
@@ -517,8 +533,8 @@ def resolve( in_out, component, edges ) :
     #print edges[edge_out[0]][1]
 
     #if path[-1] == path[-2] :
-    #	print "path:", path
-    return path
+    #	print "path:", path'''
+    return [edge_in[0]] + path + [edge_out[0]]
 
 def get_closest( el, list_b ) :
 
@@ -544,6 +560,8 @@ def find_closest( list_a, list_b ) :
     	threshold = 0.93
 	threshold_diff = 0.5
     # check if resolution is possible
+     	threshold = 0.97
+    	threshold_diff = 0.64
     for i in range( length_bound - 1 ) :
 
         # minimize (dont need max min actually since sorted)
@@ -562,7 +580,8 @@ def find_closest( list_a, list_b ) :
         #	return []
 
     i = length_bound - 1
-    if float ( min(list_a[i][1], list_b[i][1]) ) / max(list_a[i][1], list_b[i][1]) < threshold_diff :
+ 
+    if i > -1 and float ( min(list_a[i][1], list_b[i][1]) ) / max(list_a[i][1], list_b[i][1]) < threshold_diff :
     	return []
     
     list_remained = []
@@ -572,11 +591,11 @@ def find_closest( list_a, list_b ) :
     elif length_bound < len(list_b) :
         list_remained = list_b
 
-    for i in range(length_bound-1, len(list_remained)-1) :
-        diff_rem = float( min(list_remained[i][1], list_remained[i + 1][1] )) / max( list_remained[i][1], list_remained[i + 1][1])
-        if diff_rem > threshold :
-            return []
-
+    if length_bound > 0 :
+    	for i in range(length_bound-1, len(list_remained)-1) :
+        	diff_rem = float( min(list_remained[i][1], list_remained[i + 1][1] )) / max( list_remained[i][1], list_remained[i + 1][1])
+        	if diff_rem > threshold :
+            		return []
     for i in range( length_bound ) :
         pairs.append((list_a[i],list_b[i]))
 
@@ -603,7 +622,6 @@ def find_closest( list_a, list_b ) :
             pairs.append((e,e_closest))
         else :
             pairs.append((e_closest,e)) '''
-
 
 # part of dfs implementation
 def visit( e, visited, components, path, singles, ins, outs ) :
@@ -739,7 +757,7 @@ def alignments_to_ref( ins_list, outs_list, path, contigs ) :
         #component_ref_coord.append( get_ref_coord( e, contigs ) )
     print
 
-def compare_to_ref( resolved_path, contigs, coverage, siblings, nothing_close_number ) :
+def compare_to_ref( resolved_path, contigs, siblings, nothing_close_number ) :
 
     #for e in resolved_path :
     #	print get_ref_coord( e, contigs ),
@@ -776,7 +794,7 @@ def compare_to_ref( resolved_path, contigs, coverage, siblings, nothing_close_nu
     #if match :
     #	return False, nothing_close_number, too_short_number
     if not close :
-        print zip( resolved_path, list(coverage[x] for x in resolved_path)  )
+        '''print zip( resolved_path, list(coverage[x] for x in resolved_path)  )
         for pair in siblings :
             print pair[0][0], '-', get_ref_coord(pair[0][0], contigs)
             print pair[1][0], '-', get_ref_coord(pair[1][0], contigs)
@@ -784,7 +802,7 @@ def compare_to_ref( resolved_path, contigs, coverage, siblings, nothing_close_nu
         print 'resolved path: '
         for e in resolved_path :
             print e, '-', get_ref_coord(e, contigs)
-        print
+        print'''
         return False, nothing_close_number + 1
 
         #else :
@@ -893,26 +911,34 @@ def flush(rank) :
 #coverage = parse_cvr("distance_filling.cvr")
 #rank = get_rank(contigs,coverage)
 
-TEST = False
+TEST =False 
 if TEST :
-    PREFIX = "./"
-    contigs = parse_pos("test1.pos",0,100000000)
-    coverage = parse_cvr("test1.cvr")
-    edges, redges = parse_grp("test1.grp")
+    PREFIX = "/home/ksenia/coverage/"
+    contigs = parse_pos("test2.pos")
+    coverage = parse_cvr("test2.cvr")
+    edges, redges = parse_grp("test2.grp")
+    component = set([1,2,3,5,6])
+    path = []
+    path = dfs_comp(1,7,component,edges,path )
+    print path
     #split_by_coverage(contigs, edges, 0)
-    components, singles = get_components( edges, redges )
-    traverse_components( components, singles, coverage, edges, redges, contigs )
+    #components, singles = get_components( edges, redges )
+    #traverse_components( components, singles, coverage, coverage, edges, redges, contigs )
 else :
 #	upper_edges = 10000
 #	print "upper bound for edges: ", upper_edges
-    name = "distance_filling"
+    name = "distance_estimation"
     #name = "constructed_graph"
     print "parsing pos.."
     contigs = parse_pos(name+".pos")
 #    print contigs
     print "parsing cvr.."
-    coverage = parse_cvr(name+".cvr")
-    #print coverage
+    #in_coverage = parse_cvr("detail_in.cvr")
+    in_coverage = parse_cvr(name+".cvr")
+    #out_coverage = parse_cvr("detail_out.cvr")
+    out_coverage = parse_cvr(name+".cvr")
+    #print in_coverage
+    #print out_coverage
     print "parsing grp.."
     edges, redges = parse_grp(name+".grp")
     #print edges
@@ -920,7 +946,7 @@ else :
     print "getting components..."
     components, singles = get_components( edges, redges )
     print "traversing graph.."
-    traverse_components( components, singles, coverage, edges, redges, contigs )
+    traverse_components( components, singles, in_coverage, out_coverage, edges, redges, contigs )
 
     #pyplot.xlim([0,500])
     #pyplot.ylim([0,500])

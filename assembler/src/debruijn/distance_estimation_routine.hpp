@@ -212,6 +212,8 @@ void load_distance_estimation(conj_graph_pack& gp,
   used_files->push_back(p);
   ScanAll(p, gp, paired_index, clustered_index);
   load_estimated_params(p);
+  p = path::append_path(cfg::get().load_from, "debruijn_kmer_index_after_construction");
+  used_files->push_back(p);
 }
 
 //bool try_load_distance_filling(conj_graph_pack& gp, PairedIndexT& clustered_index,
@@ -284,6 +286,9 @@ void exec_distance_estimation(conj_graph_pack& gp,
     exec_late_pair_info_count(gp, paired_index);
     estimate_distance(gp, paired_index, clustered_index);
     save_distance_estimation(gp, paired_index, clustered_index);
+    /*auto index = detail_coverage::FlankingKMers<EdgeId>(gp);
+    index.save("/home/ksenia/detail_in.cvr","/home/ksenia/detail_out.cvr");*/
+
   } else {
     INFO("Loading Distance Estimation");
     path::files_t used_files;

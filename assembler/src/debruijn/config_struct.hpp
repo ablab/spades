@@ -43,6 +43,9 @@ enum resolving_mode {
   rm_rectangles
 };
 
+
+
+
 enum info_printer_pos {
   ipp_default = 0,
   ipp_before_first_gap_closer,

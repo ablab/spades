@@ -88,7 +88,7 @@ bool LoadEdgeIndex(const std::string& file_name,
   std::ifstream file;
   file.open((file_name + ".kmidx").c_str(),
             std::ios_base::binary | std::ios_base::in);
-  DEBUG("Reading kmer index, " << file_name <<" started");
+  INFO("Reading kmer index, " << file_name <<" started");
   if (!file.is_open())
     return false;
 
@@ -104,6 +104,28 @@ bool LoadEdgeIndex(const std::string& file_name,
   return true;
 }
 
+void SaveMapCoverage( const std::string& path, const std::map<int, int>& data ) {
+
+	std::ofstream outFile;
+	outFile.open(path.c_str());
+
+	INFO("Saving detailed coverage in file " << path <<" started");
+	outFile << data.size() << "\n";
+	for (auto dataIterator = data.begin(); dataIterator != data.end(); ++dataIterator){
+
+		 outFile << dataIterator->first << " " << dataIterator->second << " .\n";
+	}
+}
+
+template<class KmerIndex>
+void SaveDetailCoverage(const std::string& pathInCov, const std::string& pathOutCov, const KmerIndex& index ) {
+
+	SaveMapCoverage(pathInCov, index.inCoverage);
+	SaveMapCoverage(pathOutCov, index.outCoverage);
+
+}
+
+
 template<class Graph>
 class DataPrinter {
   typedef typename Graph::EdgeId EdgeId;
@@ -116,6 +138,7 @@ public:
       PairedInfoIndexT<Graph> const& paired_index);
   void savePositions(const string& file_name,
       EdgesPositionHandler<Graph> const& ref_pos);
+
 
 private:
   void save(FILE* file, EdgeId eid);
@@ -171,6 +194,8 @@ public:
   }
 };
 
+
+
 template<class Graph>
 void DataPrinter<Graph>::saveGraph(const string& file_name) {
 
@@ -204,9 +229,11 @@ void DataPrinter<Graph>::save(FILE* file, EdgeId eid) {
   fprintf(file, "%s\n", toPrint(eid).c_str());
 }
 
+
 template<class Graph>
 void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
   FILE* file = fopen((file_name + ".sqn").c_str(), "w");
+  //FILE* path_file = fopen("/home/lab42/algorithmic-biology/assembler/src/tools/coverage_based_rr")
   DEBUG("Saving sequences " << file_name <<" created");
   VERIFY(file != NULL);
   //fprintf(file, "%ld\n", component_.e_size());

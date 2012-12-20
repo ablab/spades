@@ -26,6 +26,20 @@
 
 namespace debruijn_graph {
 
+/*// Aux struct to count kmers during graph construction.
+template<class IdType>
+struct EdgeInfo {
+  IdType edgeId_;
+  int offset_;
+  int count_;
+
+  EdgeInfo() :
+      edgeId_(), offset_(-1), count_(0) { }
+
+  EdgeInfo(IdType edgeId, size_t offset, int count) :
+      edgeId_(edgeId), offset_(offset), count_(count) { }
+};*/
+
 template <class Seq>
 class DeBruijnKMerIndexBuilder;
 template <class Seq>
@@ -484,7 +498,7 @@ private:
       entry.edgeId_ = id;
       entry.offset_ = offset;
     } else {
-      VERIFY(ignore_new_kmer);
+      //VERIFY(ignore_new_kmer);
       idx = base::insert(kmer, EdgeInfo<IdType>(id, offset, 1));
 
       VERIFY(idx != base::InvalidKMerIdx);
@@ -1091,7 +1105,7 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
       }
     }
 
-    // Contigs have zero coverage!
+    /*// Contigs have zero coverage!
 #if 0
     if (contigs_stream) {
       contigs_stream->reset();
@@ -1107,6 +1121,7 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
       VERIFY(index[k].count_ == index[!k].count_);
     }
 #endif
+*/
 
     return rl;
   }
@@ -1127,7 +1142,7 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
                             const Graph &g) const {
     for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
       typename Graph::EdgeId edge = *it;
-      index.RenewKMers(g.EdgeNucls(edge), edge);
+      index.RenewKMers(g.EdgeNucls(edge), edge, false);
     }
   }
 

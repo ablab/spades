@@ -25,6 +25,11 @@ namespace debruijn_graph {
   {
     exec_simplification(gp);
 
+	/*for ( auto index_iterator = gp.index.inner_index().value_begin(); index_iterator < gp.index.inner_index().value_end(); ++index_iterator ){
+              std::cout << index_iterator->edgeId_ << " " << index_iterator->offset_ << " " << index_iterator->count_ << std::endl;
+     }*/
+
+
     if (!cfg::get().developer_mode) {
       paired_index.Attach();
       paired_index.Init();

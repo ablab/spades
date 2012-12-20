@@ -41,6 +41,7 @@ protected:
 			ss << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.001).substr(0, k_);
 		}
 
+
 		for (size_t i = 0; i < path.Size(); ++i) {
 			int gap = i == 0 ? 0 : path.GapAt(i);
 			if (gap > (int) k_) {
@@ -130,6 +131,7 @@ public:
         osequencestream_with_data_for_scaffold oss(filename);
         int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+
         	if (iter.get()->Length() < k_){
         		continue;
         	}
@@ -137,6 +139,7 @@ public:
         	iter.get()->Print();
         	oss.setID(iter.get()->GetId());
             oss.setCoverage(iter.get()->Coverage());
+            //INFO("toString");
             oss << ToString(*iter.get());
         }
         INFO("Contigs written");

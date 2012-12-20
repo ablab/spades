@@ -338,7 +338,7 @@ protected:
         }
     }
 
-
+public:
     void PushFront(EdgeId e, int gap = 0) {
         data_.push_front(e);
         gapLength_.push_front(gap);
@@ -354,7 +354,7 @@ protected:
         NotifyFrontEdgeAdded(e, gap);
         Verify();
     }
-
+protected:
     void PopFront() {
         EdgeId e = data_.front();
         data_.pop_front();

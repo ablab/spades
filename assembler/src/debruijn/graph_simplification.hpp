@@ -27,6 +27,7 @@
 #include "omni/mf_ec_remover.hpp"
 #include "utils.hpp"
 
+#include "detail_coverage.hpp"
 #include "gap_closer.hpp"
 #include "graph_read_correction.hpp"
 #include "ec_threshold_finder.hpp"
