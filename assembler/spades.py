@@ -686,18 +686,18 @@ def main():
                 if k.startswith("single_reads"):
                     for item in v:
                         item = os.path.abspath(os.path.expandvars(item))
-                        item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir)
+                        item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir, log)
                         if not bh_cfg.single_reads:
                             bh_cfg.single_reads.append(item)
                         else:
                             bh_cfg.single_reads[0] = bh_aux.merge_single_files(item,
-                                bh_cfg.single_reads[0], bh_cfg.working_dir)
+                                bh_cfg.single_reads[0], bh_cfg.working_dir, log)
 
                 elif k.startswith("paired_reads"):
                     cur_paired_reads = []
                     if len(v) == 1:
                         item = os.path.abspath(os.path.expandvars(v[0]))
-                        cur_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir)
+                        cur_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir, log)
                     elif len(v) == 2:
                         for item in v:
                             item = os.path.abspath(os.path.expandvars(item))
@@ -708,7 +708,7 @@ def main():
                         bh_cfg.paired_reads = cur_paired_reads
                     else:
                         bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads,
-                            bh_cfg.paired_reads, bh_cfg.working_dir)
+                            bh_cfg.paired_reads, bh_cfg.working_dir, log)
 
             bh_dataset_filename = bh_logic.run_bh(tmp_configs_dir, execution_home, bh_cfg, log)
 
@@ -836,7 +836,7 @@ def main():
                 os.makedirs(tmp_dir)
 
             if "interleaved" in corrector_cfg.__dict__:
-                reads = bh_aux.split_paired_file(corrector_cfg.interleaved, tmp_dir)
+                reads = bh_aux.split_paired_file(corrector_cfg.interleaved, tmp_dir, log)
                 del corrector_cfg.__dict__["interleaved"]
                 corrector_cfg.__dict__["1"] = reads[0]
                 corrector_cfg.__dict__["2"] = reads[1]

@@ -130,7 +130,7 @@ def generate_dataset(cfg, log):
 
 #### auxiliary function to manage input files 
 
-def split_paired_file(input_filename, output_folder):
+def split_paired_file(input_filename, output_folder, log):
     ext = os.path.splitext(input_filename)[1]
 
     input_file = file
@@ -149,7 +149,7 @@ def split_paired_file(input_filename, output_folder):
     out_left_filename = os.path.join(output_folder, out_basename + "_1.fastq")
     out_right_filename = os.path.join(output_folder, out_basename + "_2.fastq")
 
-    print("== Splitting " + input_filename + " into left and right reads")
+    log.info("== Splitting " + input_filename + " into left and right reads")
 
     out_left_file = open(out_left_filename, 'w')
     out_right_file = open(out_right_filename, 'w')
@@ -166,7 +166,7 @@ def split_paired_file(input_filename, output_folder):
     return [out_left_filename, out_right_filename]
 
 
-def merge_paired_files(src_paired_reads, dst_paired_reads, output_folder):
+def merge_paired_files(src_paired_reads, dst_paired_reads, output_folder, log):
     merged = []
 
     for i in [0, 1]:
@@ -183,7 +183,7 @@ def merge_paired_files(src_paired_reads, dst_paired_reads, output_folder):
 
         merged.append(dst_filename)
 
-        print("== Merging " + src_paired_reads[i] + " and " + dst_paired_reads[
+        log.info("== Merging " + src_paired_reads[i] + " and " + dst_paired_reads[
                                                               i] + " into one file with paired reads: " + dst_filename)
 
         src_file = open(src_paired_reads[i], 'r')
@@ -195,7 +195,7 @@ def merge_paired_files(src_paired_reads, dst_paired_reads, output_folder):
     return merged
 
 
-def merge_single_files(src_single_read, dst_single_read, output_folder):
+def merge_single_files(src_single_read, dst_single_read, output_folder, log):
     dst_filename = ""
     if dst_single_read.startswith(output_folder):
         dst_filename = dst_single_read
@@ -207,8 +207,8 @@ def merge_single_files(src_single_read, dst_single_read, output_folder):
     merged_filename = os.path.join(os.path.dirname(dst_filename),
         generate_unpaired_basename(src_single_read, dst_filename))
 
-    print(
-    "== Merging " + src_single_read + " and " + dst_single_read + " into one file with unpaired reads: " + merged_filename)
+    log.info("== Merging " + src_single_read + " and " + dst_single_read + \
+             " into one file with unpaired reads: " + merged_filename)
 
     src_file = open(src_single_read, 'r')
     dst_file = open(dst_filename, "a")
