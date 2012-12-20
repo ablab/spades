@@ -36,8 +36,8 @@ srun -w ant18 ./src/test/teamcity/teamcity.py /tmp/data/input/M.ruber/jgi_lane_9
 echo "done"
 
 
-echo "Starting P.heparinus JGI lane 7 on ant19..."
+echo "Starting P.heparinus JGI lane 7 on ant16..."
 rm -f ./ant_benchmark/PHEPARINUS_JGI_LANE_7.log
-srun -w ant19 ./src/test/teamcity/teamcity.py /tmp/data/input/P.heparinus/jgi_lane_7/PHEPARINUS_JGI_LANE_7.info >> ./ant_benchmark/PHEPARINUS_JGI_LANE_7_$timestamp.log 2>> ./ant_benchmark/PHEPARINUS_JGI_LANE_7_$timestamp.log &
+srun -w ant16 ./src/test/teamcity/teamcity.py /tmp/data/input/P.heparinus/jgi_lane_7/PHEPARINUS_JGI_LANE_7.info >> ./ant_benchmark/PHEPARINUS_JGI_LANE_7_$timestamp.log 2>> ./ant_benchmark/PHEPARINUS_JGI_LANE_7_$timestamp.log &
 echo "done"
 
