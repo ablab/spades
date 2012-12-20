@@ -427,14 +427,10 @@ bool CheatingRemoveErroneousEdges(Graph &g,
 			g.k(), cec_config.max_ec_length_coefficient);
 	double coverage_gap = cec_config.coverage_gap;
 	size_t sufficient_neighbour_length = cec_config.sufficient_neighbour_length;
-	omnigraph::TopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(g,
-			max_length, coverage_gap, sufficient_neighbour_length,
-			edge_remover);
+	return omnigraph::TopologyBasedChimericEdgeRemover<Graph>(g, max_length,
+			coverage_gap, sufficient_neighbour_length, edge_remover).RemoveEdges();
 	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 	//			max_length_div_K * g.k(), max_coverage);
-	bool changed = erroneous_edge_remover.RemoveEdges();
-	DEBUG("Cheating removal of erroneous edges finished");
-	return changed;
 }
 
 template<class Graph>
@@ -445,13 +441,12 @@ bool TopologyRemoveErroneousEdges(Graph &g,
 	size_t iteration_count = 0;
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
 			g.k(), tec_config.max_ec_length_coefficient);
-	omnigraph::AdvancedTopologyChimericEdgeRemover<Graph> erroneous_edge_remover(
-			g, max_length, tec_config.uniqueness_length,
-			tec_config.plausibility_length, edge_remover);
+	return omnigraph::AdvancedTopologyChimericEdgeRemover<Graph>(g, max_length,
+			tec_config.uniqueness_length, tec_config.plausibility_length,
+			edge_remover).RemoveEdges();
 //		omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
 //				g, tec_config.max_length, tec_config.uniqueness_length,
 //				tec_config.plausibility_length, edge_remover);
-	return erroneous_edge_remover.RemoveEdges();
 //	omnigraph::TopologyTipClipper<Graph, omnigraph::LengthComparator<Graph>>(g, LengthComparator<Graph>(g), 300, 2000, 1000).ClipTips();
 //	if(cfg::get().simp.trec_on) {
 //		size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), trec_config.max_ec_length_coefficient);
@@ -467,16 +462,14 @@ bool MultiplicityCountingRemoveErroneousEdges(Graph &g,
 		const debruijn_config::simplification::topology_based_ec_remover& tec_config,
 		EdgeRemover<Graph>& edge_remover) {
 	INFO("Removal of erroneous edges based on multiplicity counting started");
-	bool changed = true;
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
 			g.k(), tec_config.max_ec_length_coefficient);
-	omnigraph::SimpleMultiplicityCountingChimericEdgeRemover<Graph> erroneous_edge_remover(
-			g, max_length, tec_config.uniqueness_length,
-			tec_config.plausibility_length, edge_remover);
+	return omnigraph::SimpleMultiplicityCountingChimericEdgeRemover<Graph>(g,
+			max_length, tec_config.uniqueness_length,
+			tec_config.plausibility_length, edge_remover).RemoveEdges();
 //		omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
 //				g, tec_config.max_length, tec_config.uniqueness_length,
 //				tec_config.plausibility_length, edge_remover);
-	changed = erroneous_edge_remover.RemoveEdges();
 //	omnigraph::TopologyTipClipper<Graph, omnigraph::LengthComparator<Graph>>(g, LengthComparator<Graph>(g), 300, 2000, 1000).ClipTips();
 //	if(cfg::get().simp.trec_on) {
 //		size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), trec_config.max_ec_length_coefficient);
