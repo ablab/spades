@@ -195,17 +195,18 @@ def check_config(cfg, log):
         if not "single_cell" in cfg["dataset"].__dict__:
             cfg["dataset"].__dict__["single_cell"] = False
 
-            # error_correction
+    # error_correction
     if "error_correction" in cfg:
+        cfg["error_correction"].__dict__["output_dir"] = os.path.join(
+            cfg["common"].output_dir, "corrected")
         if not "max_iterations" in cfg["error_correction"].__dict__:
             cfg["error_correction"].__dict__["max_iterations"] = 1
         if not "gzip_output" in cfg["error_correction"].__dict__:
             cfg["error_correction"].__dict__["gzip_output"] = True
         if not "tmp_dir" in cfg["error_correction"].__dict__:
-            cfg["error_correction"].__dict__["tmp_dir"] = os.path.join(
-                cfg["common"].output_dir, os.path.join('corrected', 'tmp'))
-        cfg["error_correction"].tmp_dir = os.path.abspath(
-            os.path.expandvars(cfg["error_correction"].tmp_dir))
+            cfg["error_correction"].__dict__["tmp_dir"] = cfg["error_correction"].output_dir
+        cfg["error_correction"].tmp_dir = os.path.join(os.path.abspath(
+            os.path.expandvars(cfg["error_correction"].tmp_dir)), 'tmp')
 
     # assembly
     if "assembly" in cfg:
@@ -639,8 +640,6 @@ def main():
             if "heap_check" in bh_cfg.__dict__:
                 os.environ["HEAPCHECK"] = bh_cfg.heap_check
 
-            bh_cfg.output_dir = os.path.join(os.path.expandvars(bh_cfg.output_dir), "corrected")
-
             bh_cfg.__dict__["working_dir"] = bh_cfg.tmp_dir
 
             bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir,
@@ -650,7 +649,7 @@ def main():
                 shutil.rmtree(bh_cfg.output_dir)
 
             os.makedirs(bh_cfg.output_dir)
-            if not os.path.exists(bh_cfg.working_dir):
+            if not os.path.exists(bh_cfg.working_dir):                
                 os.makedirs(bh_cfg.working_dir)
 
             log.info("\n===== Error correction started. \n")
