@@ -251,7 +251,9 @@ private:
 
 template<class Graph>
 bool BulgeRemover<Graph>::PossibleBulgeEdge(EdgeId e) {
-	return graph_.length(e) <= max_length_ && graph_.coverage(e) < max_coverage_;
+  return (graph_.length(e) <= max_length_ && graph_.coverage(e) < max_coverage_ &&
+          graph_.OutgoingEdgeCount(graph_.EdgeStart(e)) > 1 &&
+          graph_.IncomingEdgeCount(graph_.EdgeEnd(e)) > 1);
 }
 
 template<class Graph>
