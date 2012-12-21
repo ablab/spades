@@ -30,7 +30,7 @@
 namespace cov_model {
 using std::isfinite;
 
-static const size_t MaxCopy = 30;
+static const size_t MaxCopy = 10;
 
 static double dzeta(double x, double p) {
   return pow(x, -p-1) / boost::math::zeta(p + 1);
@@ -106,7 +106,7 @@ class CovModelLogLikeEM : public Cloneable<CovModelLogLikeEM, FunctionEvaluator>
   double eval_(const double *x) const {
     double zp = x[0], shape = x[1], u = x[2], sd = x[3];
 
-    // INFO("" << x[0] << " " << x[1] << " " << x[2] << " " << x[3] << " " << x[4]);
+    // INFO("" << x[0] << " " << x[1] << " " << x[2] << " " << x[3]);
 
     if (zp <= 1 || shape <= 0 || sd <= 0 || u <= 0 ||
         !isfinite(zp) || !isfinite(shape) || !isfinite(sd) || !isfinite(u))
@@ -139,6 +139,8 @@ static std::vector<double> EStep(const boost::numeric::ublas::vector<double> &x,
   for (size_t i = 0; i < N; ++i) {
     double pe = p * perr(i + 1, shape);
     res[i] = pe / (pe + (1 - p) * pgood(i + 1, zp, u, sd));
+    if (!isfinite(res[i]))
+      res[i] = 1.0;
   }
 
   return res;
@@ -201,10 +203,12 @@ void KMerCoverageModel::Fit() {
   x0[0] = 3;
   x0[1] = ErrorProb;
   x0[2] = 3;
-  x0[3] = MaxCov;
-  x0[4] = sqrt(5.0*MaxCov);
+  x0[3] = MaxCov_;
+  x0[4] = sqrt(5.0*MaxCov_);
 
-  Function F(CovModelLogLike(cov), Function::DERIV_FDIFF_CENTRAL_2);
+  auto GoodCov = cov_;
+  GoodCov.resize(1.25 * MaxCopy * MaxCov_);
+  Function F(CovModelLogLike(GoodCov), Function::DERIV_FDIFF_CENTRAL_2);
   auto Results = DoglegBFGS().solve(F, x0, GradNormTest(1e-3));
 
   INFO("Results: ");
@@ -217,26 +221,28 @@ void KMerCoverageModel::Fit() {
 #else
   boost::numeric::ublas::vector<double> x0(4);
 
-  x0[0] = 0.5;
+  x0[0] = 3;
   x0[1] = 3;
   x0[2] = MaxCov_;
   x0[3] = sqrt(5.0*MaxCov_);
 
   // Ensure that there will be at least 2 iterations.
   double PrevErrProb = 2;
+  auto GoodCov = cov_;
+  GoodCov.resize(1.25 * MaxCopy * MaxCov_);
   while (fabs(PrevErrProb - ErrorProb) > 1e-6) {
     // Recalculate the vector of posterior error probabilities
-    std::vector<double> z = EStep(x0, ErrorProb, cov_.size());
+    std::vector<double> z = EStep(x0, ErrorProb, GoodCov.size());
 
     // Recalculate the probability of error
     PrevErrProb = ErrorProb; ErrorProb = 0;
-    for (size_t i=0; i < cov_.size(); ++i)
-      ErrorProb += z[i] * cov_[i];
+    for (size_t i=0; i < GoodCov.size(); ++i)
+      ErrorProb += z[i] * GoodCov[i];
     ErrorProb /= 1.0 * Total;
 
     bool LastIter = fabs(PrevErrProb - ErrorProb) <= 1e-6;
 
-    Function F(CovModelLogLikeEM(cov_, z), Function::DERIV_FDIFF_CENTRAL_2);
+    Function F(CovModelLogLikeEM(GoodCov, z), Function::DERIV_FDIFF_CENTRAL_2);
     auto Results = LRWWSimplex().solve(F, x0,
                                        MaxNumIterTest(LastIter ? 100 : 20));
 

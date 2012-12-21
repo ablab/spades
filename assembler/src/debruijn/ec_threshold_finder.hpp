@@ -46,7 +46,6 @@ class MCErroneousConnectionThresholdFinder {
     }
     scov.resize(sz);
 
-
     // Fit the coverage model and get the threshold
     cov_model::KMerCoverageModel CovModel(scov);
     CovModel.Fit();
