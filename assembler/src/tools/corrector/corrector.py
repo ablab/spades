@@ -558,7 +558,7 @@ def chouseLetters(first_node, second_node, prof, node, choused_letter, single_pr
 #	print active_current_nodes;
 #	print "from " + str(first_node[i]) + " to " + str(second_node[i])
 #	print prof[i]
-#       print len(non_zero_seq)
+ #       print len(non_zero_seq)
         ind1 = -1
 	if last_processed_first_node != first_node[i]:
             while last_processed_first_node < first_node[i]:
@@ -681,7 +681,8 @@ def chouseLetters(first_node, second_node, prof, node, choused_letter, single_pr
                 for j in range (1, len(non_zero_seq)):
                     if (non_zero_weight[max_ind] < non_zero_weight[j]):
                         max_ind = j
-                allNs = 1
+#                allNs = 1
+                allNs = 0
                 for j in range (0, len(current_nodes)):
                     if j in interest and contig[j] != 'N':
                         allNs = 0
@@ -706,12 +707,20 @@ def chouseLetters(first_node, second_node, prof, node, choused_letter, single_pr
 #    print "non zero pathes:"    
 #    for i in range (0, len(non_zero_seq)):
 #        print non_zero_seq[i] + " " + str(non_zero_weight[i])
+#    print "All done";
+#    print non_zero_seq;
+#    print non_zero_weight;
+#    print current_nodes;
+#    print active_non_zero_seq;
+#    print active_current_nodes;
+
     if len(non_zero_seq) > 0: 
         max_ind = 0
         for j in range (1, len(non_zero_seq)):
             if (non_zero_weight[max_ind] < non_zero_weight[j]):
                 max_ind = j
-        allNs = 1
+#       allNs = 1
+        allNs = 0
         for j in range (0, len(current_nodes)):
             if j in interest and contig[j] != 'N':
                 allNs = 0
@@ -787,6 +796,8 @@ def process_contig(files):
         if arr[2].split('_')[1] != cont_num:
             continue
             #        print line;
+#	print arr[0]
+
         cigar = arr[5]
         aligned = arr[9];
         position = int(arr[3]) - 1
@@ -822,10 +833,11 @@ def process_contig(files):
         for s1 in ('A','C','G','T','N'):
             alls += profile[i][s1];
 	ini = 0;
+#        print i," ", profile[i] 
         for s1 in ('A','C','G','T','N'):
             if (profile[i][s1] > 0.1 * alls) and (profile[i][s1] < 0.9 * alls) and (alls > 20):
                 ini += 1;
-        if ini > 1:
+        if ini > 1 or (contig[i] == 'N'):
             interest.add(i)
             interest100.add(i)
     read_name = "";
@@ -835,6 +847,7 @@ def process_contig(files):
     int_nodes = [];
     int_seq_cnt = []; 
     print str(contig_file)+": interest positions " + str(len(interest))
+#    print str(contig_file)+": ", interest
     print str(contig_file)+": working positions " + str(len(interest100))
     for i in interest100:
         pair_profile[i] = {}
@@ -852,6 +865,7 @@ def process_contig(files):
     stime = ntime
 #    print "second go"
     samFile.seek(0)
+    read_processed = 0
     for line in samFile:
 #        print "second go +"
         arr = line.split();
@@ -869,12 +883,37 @@ def process_contig(files):
         mate_el = arr[6];
         #Mate of non-end read in other contig
         #TODO: contig breaker/ fixer can be here
+#	print read_name
         if mate_el != '=' and mate_el != '*' and (position > insert_size_est and position < l - insert_size_est - 100 ):
+            if read_processed == 1:
+                for i in range(0, len (symb_pos)):
+                    if symb_pos[i] in interest100:
+                        for j in range(i+1, len (symb_pos)):
+                            if symb_pos[j] in interest100:
+                                if symb_pos[j] > symb_pos[i] and symb_pos[j] - symb_pos[i] < max_dist: 
+                                    pair_profile[symb_pos[i]][symb_pos[j]][symb_state[i]][symb_state[j]] += 1;
+                                elif symb_pos[j] < symb_pos[i] and symb_pos[i] - symb_pos[j] < max_dist:
+                                    pair_profile[symb_pos[j]][symb_pos[i]][symb_state[j]][symb_state[i]] += 1;
+            symb_pos = []
+            symb_state = []
+            read_processed = 0
             prev_read_name = read_name
             continue;
         #Mate not in this contig; another alignment of this read present
         if mate_el != '=' and ("XA" in parsed_tags or ("XS" in parsed_tags and "AS" in parsed_tags and parsed_tags["XS"] >= parsed_tags["AS"])):
 #        and (("X0" in parsed_tags and parsed_tags["X0"] > 1)):
+            if read_processed == 1:
+                for i in range(0, len (symb_pos)):
+                    if symb_pos[i] in interest100:
+                        for j in range(i+1, len (symb_pos)):
+                            if symb_pos[j] in interest100:
+                                if symb_pos[j] > symb_pos[i] and symb_pos[j] - symb_pos[i] < max_dist: 
+                                    pair_profile[symb_pos[i]][symb_pos[j]][symb_state[i]][symb_state[j]] += 1;
+                                elif symb_pos[j] < symb_pos[i] and symb_pos[i] - symb_pos[j] < max_dist:
+                                    pair_profile[symb_pos[j]][symb_pos[i]][symb_state[j]][symb_state[i]] += 1;
+            symb_pos = []
+            symb_state = []
+            read_processed = 0
             prev_read_name = read_name
             continue;
         if mate_el == '=' and (int(arr[1]) & 8) == 0:
@@ -883,24 +922,36 @@ def process_contig(files):
             mate = 1;
         if read_name == prev_read_name:
             symb_num = process_read_for_pairs(arr, l,mate, pair_profile, symb_num, symb_pos, symb_state)
-            if symb_num < len(symb_pos):
-#                print "ups " + str(symb_num)+" < "+str(len(symb_pos))
-                symb_num = len(symb_pos)
-            for i in range(0, symb_num-1):
+            read_processed = 0
+            for i in range(0, len (symb_pos)):
                 if symb_pos[i] in interest100:
-                    for j in range(i+1, symb_num):
+                    for j in range(i+1, len (symb_pos)):
                         if symb_pos[j] in interest100:
                             if symb_pos[j] > symb_pos[i] and symb_pos[j] - symb_pos[i] < max_dist: 
                                 pair_profile[symb_pos[i]][symb_pos[j]][symb_state[i]][symb_state[j]] += 1;
                             elif symb_pos[j] < symb_pos[i] and symb_pos[i] - symb_pos[j] < max_dist:
                                 pair_profile[symb_pos[j]][symb_pos[i]][symb_state[j]][symb_state[i]] += 1;
+            symb_pos = []
+            symb_state = []
         else:
+            if read_processed == 1:
+                for i in range(0, len (symb_pos)):
+                    if symb_pos[i] in interest100:
+                        for j in range(i+1, len (symb_pos)):
+                            if symb_pos[j] in interest100:
+                                if symb_pos[j] > symb_pos[i] and symb_pos[j] - symb_pos[i] < max_dist: 
+                                    pair_profile[symb_pos[i]][symb_pos[j]][symb_state[i]][symb_state[j]] += 1;
+                                elif symb_pos[j] < symb_pos[i] and symb_pos[i] - symb_pos[j] < max_dist:
+                                    pair_profile[symb_pos[j]][symb_pos[i]][symb_state[j]][symb_state[i]] += 1;
             symb_num = 0
             symb_state = []
             symb_pos = []
             process_read_for_pairs(arr, l,mate, pair_profile, symb_num, symb_pos, symb_state)
-        total_reads += 1;
+            read_processed = 1
+#        total_reads += 1;
         prev_read_name = read_name
+    
+
     ntime = datetime.datetime.now()
     stime = ntime - stime
     logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": File processed second time. ");
