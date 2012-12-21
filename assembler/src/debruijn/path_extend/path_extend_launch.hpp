@@ -151,24 +151,25 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
         visualizer.writeGraphWithPathsSimple(gp, etcDir + "paths.dot", "Final_paths", paths);
         path_writer.writePaths(paths, etcDir + "paths.data");
     }
+    writer.writePaths(paths, output_dir + contigs_name);
 
-    PathContainer brokenScaffolds;
-    for (size_t i = 0; i < paths.size(); ++i) {
-        BidirectionalPath * path = paths.Get(i);
-        size_t last_pos = 0;
-        for (size_t j = 0; j < path->Size(); ++j) {
-            if (path->GapAt(j) > (int) gp.g.k()) {
-                BidirectionalPath * p = new BidirectionalPath(path->SubPath(last_pos, j));
-                BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
-                last_pos = j;
-                brokenScaffolds.AddPair(p, cp);
-            }
-        }
-        BidirectionalPath * p = new BidirectionalPath(path->SubPath(last_pos));
-        BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
-        brokenScaffolds.AddPair(p, cp);
-    }
-    writer.writePaths(brokenScaffolds, output_dir + "broken_scaffolds.fasta");
+//    PathContainer brokenScaffolds;
+//    for (size_t i = 0; i < paths.size(); ++i) {
+//        BidirectionalPath * path = paths.Get(i);
+//        size_t last_pos = 0;
+//        for (size_t j = 0; j < path->Size(); ++j) {
+//            if (path->GapAt(j) > (int) gp.g.k()) {
+//                BidirectionalPath * p = new BidirectionalPath(path->SubPath(last_pos, j));
+//                BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
+//                last_pos = j;
+//                brokenScaffolds.AddPair(p, cp);
+//            }
+//        }
+//        BidirectionalPath * p = new BidirectionalPath(path->SubPath(last_pos));
+//        BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
+//        brokenScaffolds.AddPair(p, cp);
+//    }
+//    writer.writePaths(brokenScaffolds, output_dir + "broken_scaffolds.fasta");
 
 //    size_t count = 0;
 //    ofstream out("./sinks.log");

@@ -803,8 +803,6 @@ def main():
                     os.path.join(rrr_outpath, "rectangles.log"))
                 rrr.resolve(rrr_input_dir, rrr_outpath, rrr_test_util, "", cfg["dataset"].single_cell)
 
-
-
                 shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend_before_scaffold.fasta"), spades_cfg.result_contigs)
                 shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
 
@@ -818,6 +816,7 @@ def main():
                         #EOR
 
             log.info("\n===== Assembling finished. \n")
+
 
         #corrector
         result_corrected_contigs_filename = ""
@@ -874,6 +873,16 @@ def main():
             log.info(" * Corrected contigs are " + result_corrected_contigs_filename)
         if os.path.isfile(result_scaffolds_filename):
             log.info(" * Assembled scaffolds are " + result_scaffolds_filename)
+        #log.info("")
+
+        #breaking sacffolds
+        result_broken_scaffolds = os.path.join(spades_cfg.output_dir, "broken_scaffolds.fasta")
+        sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/contig_analysis"))
+        import break_scaffolds_into_contigs
+        threshold = 3
+        break_scaffolds_into_contigs.break_scaffolds(["", spades_cfg.result_scaffolds, str(threshold), result_broken_scaffolds])
+        log.info(" * Scaffolds broken by " + str(threshold) + " Ns are " + result_broken_scaffolds)
+
         log.info("")
         log.info("Thank you for using SPAdes!")
 
