@@ -558,33 +558,39 @@ def chouseLetters(first_node, second_node, prof, node, choused_letter, single_pr
 #	print active_current_nodes;
 #	print "from " + str(first_node[i]) + " to " + str(second_node[i])
 #	print prof[i]
-#        print len(non_zero_seq)
+#       print len(non_zero_seq)
         ind1 = -1
 	if last_processed_first_node != first_node[i]:
-            #reduce strings
-            aind1 = active_current_nodes.index(last_processed_first_node)
-            for j in range (0, len(active_non_zero_seq)):
-#                print aind1, " ", active_non_zero_seq[j], " -> ", active_non_zero_seq[j][:aind1], " + ", active_non_zero_seq[j][aind1+1:],  
-                active_non_zero_seq[j] = active_non_zero_seq[j][:aind1] + active_non_zero_seq[j][aind1+1:];
-            for j in range (0, len(active_non_zero_seq)):
-                str1 = active_non_zero_seq[j];
-                for k in range (j+1, len(active_non_zero_seq)):
-                    str2 = active_non_zero_seq[k];
-                    if (str1 == str2):
-                        if (non_zero_weight[j] < non_zero_weight[k]):
-                            non_zero_weight[j] = 0
-                            break
-                        else:
-                            non_zero_weight[k] = 0
-            del active_current_nodes[aind1];    
-            k = 0
-            while k < len (non_zero_seq):
-                if (non_zero_weight[k] == 0):
-                    del non_zero_weight[k]
-                    del non_zero_seq[k]
-                    del active_non_zero_seq[k]
-                else:
-                    k += 1
+            while last_processed_first_node < first_node[i]:
+#                print last_processed_first_node, " ", first_node[i], " ", active_current_nodes
+ #reduce strings
+                aind1 = active_current_nodes.index(last_processed_first_node)
+                for j in range (0, len(active_non_zero_seq)):
+#                    print aind1, " ", active_non_zero_seq[j], " -> ", active_non_zero_seq[j][:aind1], " + ", active_non_zero_seq[j][aind1+1:],  
+                    active_non_zero_seq[j] = active_non_zero_seq[j][:aind1] + active_non_zero_seq[j][aind1+1:];
+                for j in range (0, len(active_non_zero_seq)):
+                    str1 = active_non_zero_seq[j];
+                    for k in range (j+1, len(active_non_zero_seq)):
+                        str2 = active_non_zero_seq[k];
+                        if (str1 == str2):
+                            if (non_zero_weight[j] < non_zero_weight[k]):
+                                non_zero_weight[j] = 0
+                                break
+                            else:
+                                non_zero_weight[k] = 0
+                del active_current_nodes[aind1];    
+                k = 0
+                while k < len (non_zero_seq):
+                    if (non_zero_weight[k] == 0):
+                        del non_zero_weight[k]
+                        del non_zero_seq[k]
+                        del active_non_zero_seq[k]
+                    else:
+                        k += 1
+                if len (active_current_nodes) == 0:
+                    break
+                last_processed_first_node = min (active_current_nodes)
+        
         last_processed_first_node = first_node[i];
         if (first_node[i] in current_nodes):
             ind1 = current_nodes.index(first_node[i])
@@ -915,6 +921,10 @@ def process_contig(files):
                 for s1 in ('A','C','G','T','N'):
                     for s2 in ('A','C','G','T','N'):
                         alls += pair_profile[i][j][s1][s2];
+                for s1 in ('A','C','G','T','N'):
+                    for s2 in ('A','C','G','T','N'):
+                        if pair_profile[i][j][s1][s2] < alls / 1000:
+                            pair_profile[i][j][s1][s2] = 0;
                 fun1 = 1
                 fun2 = 1
                 if (i in interest) and alls > 20:
