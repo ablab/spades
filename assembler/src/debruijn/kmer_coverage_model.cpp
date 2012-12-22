@@ -30,7 +30,7 @@
 namespace cov_model {
 using std::isfinite;
 
-static const size_t MaxCopy = 10;
+static const size_t MaxCopy = 15;
 
 static double dzeta(double x, double p) {
   return pow(x, -p-1) / boost::math::zeta(p + 1);
@@ -40,6 +40,16 @@ static double perr(size_t i, double shape) {
   boost::math::pareto pareto(1, shape);
 
   return boost::math::cdf(pareto, i + 1) - boost::math::cdf(pareto, i);
+}
+
+static double lperr(size_t i, double shape) {
+  double res = -shape * logl(i);
+  double corr = 1/(1.0 + i);
+
+  double y = log1p(-corr) * shape;
+  double z = expm1(y) + 1;
+
+  return res + log1p(-z);
 }
 
 static double pgood(size_t i, double zp, double u, double sd) {
@@ -115,12 +125,19 @@ class CovModelLogLikeEM : public Cloneable<CovModelLogLikeEM, FunctionEvaluator>
     std::vector<double> kmer_probs(cov.size());
 
     // Error
-    for (size_t i = 0; i < kmer_probs.size(); ++i)
-      kmer_probs[i] += z[i] * log(perr(i + 1, shape));
+    for (size_t i = 0; i < kmer_probs.size(); ++i) {
+      kmer_probs[i] += z[i] * lperr(i + 1, shape);
+    }
+
 
     // Good
-    for (size_t i = 0; i < kmer_probs.size(); ++i)
-      kmer_probs[i] += (1 - z[i]) * log(pgood(i + 1, zp, u, sd));
+    for (size_t i = 0; i < kmer_probs.size(); ++i) {
+      double val = log(pgood(i + 1, zp, u, sd));
+      if (!isfinite(val))
+        val = -1000.0;
+      kmer_probs[i] += (1 - z[i]) * val;
+    }
+
 
     double res = 0;
     for (size_t i = 0; i < kmer_probs.size(); ++i)
