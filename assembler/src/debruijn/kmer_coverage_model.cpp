@@ -313,6 +313,12 @@ void KMerCoverageModel::Fit() {
     ErrorThreshold_ = Valley_;
   }
 
+  GenomeSize_ = 0;
+  for (size_t i = ErrorThreshold_ - 1; i < GoodCov.size(); ++i)
+    GenomeSize_ += GoodCov[i];
+  GenomeSize_ /= 2;
+
+  INFO("Estimated genome size (ignoring repeats): " << GenomeSize_);
 #endif
 }
 
