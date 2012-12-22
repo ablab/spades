@@ -34,20 +34,8 @@ class MCErroneousConnectionThresholdFinder {
     //for (size_t i = 0; i < cov.size(); ++i)
     //  fprintf(stderr, "%zu %zu\n", i + 1, cov[i]);
 
-    // Smooth it!
-    std::vector<size_t> scov;
-    math::Smooth3RS3R(scov, cov);
-
-    // Trim last zeros
-    size_t sz;
-    for (sz = scov.size(); sz > 0; --sz) {
-      if (scov[sz - 1] > 0)
-        break;
-    }
-    scov.resize(sz);
-
     // Fit the coverage model and get the threshold
-    cov_model::KMerCoverageModel CovModel(scov);
+    cov_model::KMerCoverageModel CovModel(cov);
     CovModel.Fit();
 
     return CovModel.GetErrorThreshold();

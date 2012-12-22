@@ -7,6 +7,7 @@
 #include "kmer_coverage_model.hpp"
 
 #include "logger/logger.hpp"
+#include "smooth.hpp"
 
 #include <boost/math/special_functions/zeta.hpp>
 #include <boost/math/distributions/normal.hpp>
@@ -165,37 +166,41 @@ static std::vector<double> EStep(const boost::numeric::ublas::vector<double> &x,
 
 // Estimate the coverage mean by finding the max past the
 // first valley.
-std::pair<size_t, size_t> KMerCoverageModel::EstimateCoverage() const {
-  size_t Valley = cov_[0];
+std::pair<size_t, size_t> KMerCoverageModel::EstimateCoverage(const std::vector<size_t> &cov) const {
+  size_t Valley = cov[0];
 
   // Start finding the valley
   size_t Idx = 1;
-  while (cov_[Idx] < Valley) {
-    Valley = cov_[Idx];
+  while (cov[Idx] < Valley) {
+    Valley = cov[Idx];
     Idx += 1;
-    if (Idx == cov_.size() - 1)
+    if (Idx == cov.size() - 1)
       break;
   }
 
-  INFO("Valley at: " << Idx);
+  INFO("Kmer coverage valley at: " << Idx);
 
   // Return max over the rest
-  size_t MaxHist = cov_[Idx], MaxCov = Idx;
-  for (size_t i = Idx + 1; i < cov_.size(); ++i) {
-    if (cov_[i] > MaxHist) {
-      MaxHist = cov_[i];
+  size_t MaxHist = cov[Idx], MaxCov = Idx;
+  for (size_t i = Idx + 1; i < cov.size(); ++i) {
+    if (cov[i] > MaxHist) {
+      MaxHist = cov[i];
       MaxCov = i;
     }
   }
 
-  INFO("Max coverage: " << MaxCov);
+  INFO("Estimated coverage: " << MaxCov);
 
   return std::make_pair(Idx, MaxCov);
 }
 
 void KMerCoverageModel::Fit() {
-  // Find the maximal and minimal coverage points.
-  auto CovData = EstimateCoverage();
+  // Smooth the histogram
+  std::vector<size_t> scov;
+  math::Smooth3RS3R(scov, cov_);
+  
+  // Find the maximal and minimal coverage points using smoothed histogram.
+  auto CovData = EstimateCoverage(scov);
   MaxCov_ = CovData.second, Valley_ = CovData.first;
 
   // Estimate error probability as ratio of kmers before the valley.
@@ -211,8 +216,8 @@ void KMerCoverageModel::Fit() {
   ErrorProb = std::min(1-1e-3, ErrorProb);
   ErrorProb = std::max(1e-3, ErrorProb);
 
-  INFO("Total: " << Total << ". Before: " << BeforeValley);
-  INFO("p: " << ErrorProb);
+  TRACE("Total: " << Total << ". Before: " << BeforeValley);
+  TRACE("p: " << ErrorProb);
 
 #if 0
   boost::numeric::ublas::vector<double> x0(5);
@@ -223,18 +228,25 @@ void KMerCoverageModel::Fit() {
   x0[3] = MaxCov_;
   x0[4] = sqrt(5.0*MaxCov_);
 
+  // Trim last zeros
+  size_t sz;
+  for (sz = scov.size(); sz > 0; --sz) {
+    if (scov[sz - 1] > 0)
+      break;
+  }
+  
   auto GoodCov = cov_;
-  GoodCov.resize(1.25 * MaxCopy * MaxCov_);
+  GoodCov.resize(std::min(1.25 * MaxCopy * MaxCov_, sz));
   Function F(CovModelLogLike(GoodCov), Function::DERIV_FDIFF_CENTRAL_2);
   auto Results = DoglegBFGS().solve(F, x0, GradNormTest(1e-3));
 
-  INFO("Results: ");
-  INFO("Converged: " << Results->converged << " " << "F: " << Results->fMin);
-  INFO("Num iterations: " << Results->numIter);
+  TRACE("Results: ");
+  TRACE("Converged: " << Results->converged << " " << "F: " << Results->fMin);
+  TRACE("Num iterations: " << Results->numIter);
 
   auto const& x = Results->xMin;
   double zp = x[0], p = x[1], shape = x[2], u = x[3], sd = x[4];
-  INFO("" << zp << " " << p << " " << shape << " " << u << " " << sd);
+  TRACE("" << zp << " " << p << " " << shape << " " << u << " " << sd);
 #else
   boost::numeric::ublas::vector<double> x0(4);
 
@@ -265,13 +277,13 @@ void KMerCoverageModel::Fit() {
                                        MaxNumIterTest(LastIter ? 100 : 50));
     Converged = Results->converged;
 
-    INFO("Results: ");
-    INFO("Converged: " << Results->converged << " " << "F: " << Results->fMin);
-    INFO("Num iterations: " << Results->numIter);
+    TRACE("Results: ");
+    TRACE("Converged: " << Results->converged << " " << "F: " << Results->fMin);
+    TRACE("Num iterations: " << Results->numIter);
 
     auto const& x = Results->xMin;
     double zp = x[0], shape = x[1], u = x[2], sd = x[3];
-    INFO("" << zp << " " << ErrorProb << " " << shape << " " << u << " " << sd);
+    TRACE("" << zp << " " << ErrorProb << " " << shape << " " << u << " " << sd);
 
     x0 = Results->xMin;
   }
@@ -292,12 +304,15 @@ void KMerCoverageModel::Fit() {
     for (size_t i = 0; i < z.size(); ++i)
       if (z[i] < 0.1) {
         ErrorThreshold_ = std::max(i + 1, Valley_);
-        return;
+        break;
       }
   }
 
-  WARN("Failed to determine erroneous kmer threshold");
-  ErrorThreshold_ = Valley_;
+  if (!Converged) {
+    WARN("Failed to determine erroneous kmer threshold");
+    ErrorThreshold_ = Valley_;
+  }
+
 #endif
 }
 

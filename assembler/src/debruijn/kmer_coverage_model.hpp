@@ -18,7 +18,7 @@ class KMerCoverageModel {
   size_t GetErrorThreshold() const { return ErrorThreshold_; }
 
  private:
-  std::pair<size_t, size_t> EstimateCoverage() const;
+  std::pair<size_t, size_t> EstimateCoverage(const std::vector<size_t> &cov) const;
 };
 
 };
