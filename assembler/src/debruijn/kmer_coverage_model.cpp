@@ -247,6 +247,7 @@ void KMerCoverageModel::Fit() {
   double PrevErrProb = 2;
   auto GoodCov = cov_;
   GoodCov.resize(1.25 * MaxCopy * MaxCov_);
+  bool Converged = true;
   while (fabs(PrevErrProb - ErrorProb) > 1e-6) {
     // Recalculate the vector of posterior error probabilities
     std::vector<double> z = EStep(x0, ErrorProb, GoodCov.size());
@@ -261,7 +262,8 @@ void KMerCoverageModel::Fit() {
 
     Function F(CovModelLogLikeEM(GoodCov, z), Function::DERIV_FDIFF_CENTRAL_2);
     auto Results = LRWWSimplex().solve(F, x0,
-                                       MaxNumIterTest(LastIter ? 100 : 20));
+                                       MaxNumIterTest(LastIter ? 100 : 50));
+    Converged = Results->converged;
 
     INFO("Results: ");
     INFO("Converged: " << Results->converged << " " << "F: " << Results->fMin);
@@ -272,25 +274,30 @@ void KMerCoverageModel::Fit() {
     INFO("" << zp << " " << ErrorProb << " " << shape << " " << u << " " << sd);
 
     x0 = Results->xMin;
-  };
-
-  for (size_t i = 0; i < 4; ++i)
-    if (!isfinite(x0[i])) {
-      WARN("Failed to determine error kmer threshold");
-      ErrorThreshold_ = (MaxCov_ + Valley_) / 2;
-      return;
-    }
-
-  std::vector<double> z = EStep(x0, ErrorProb, cov_.size());
-  for (size_t i = 0; i < z.size(); ++i) {
-    if (z[i] < 0.5) {
-      ErrorThreshold_ = i + 1;
-      return;
-    }
   }
 
-  WARN("Failed to determine error kmer threshold");
-  ErrorThreshold_ = (MaxCov_ + Valley_) / 2;
+  // Now let us check whether we have sane results
+  for (size_t i = 0; i < x0.size(); ++i)
+    if (!isfinite(x0[i])) {
+      Converged = false;
+      break;
+    }
+
+  if (!isfinite(ErrorProb))
+    Converged = false;
+
+  if (Converged) {
+    std::vector<double> z = EStep(x0, ErrorProb, cov_.size());
+    INFO("Probability of erroneous kmer at valley: " << z[Valley_ - 1]);
+    for (size_t i = 0; i < z.size(); ++i)
+      if (z[i] < 0.1) {
+        ErrorThreshold_ = std::max(i + 1, Valley_);
+        return;
+      }
+  }
+
+  WARN("Failed to determine erroneous kmer threshold");
+  ErrorThreshold_ = Valley_;
 #endif
 }
 
