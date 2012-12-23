@@ -438,7 +438,6 @@ bool TopologyRemoveErroneousEdges(Graph &g,
 		const debruijn_config::simplification::topology_based_ec_remover& tec_config,
 		EdgeRemover<Graph>& edge_remover) {
 	INFO("Removal of erroneous edges based on topology started");
-	size_t iteration_count = 0;
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
 			g.k(), tec_config.max_ec_length_coefficient);
 	return omnigraph::AdvancedTopologyChimericEdgeRemover<Graph>(g, max_length,
