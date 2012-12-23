@@ -165,9 +165,10 @@ std::shared_ptr<
 	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
 			*cfg::get().ds.RL, k, tc_config.max_tip_length_coefficient);
 
-	size_t max_tip_length_corrected = max_tip_length;/*(size_t) math::round(
+	size_t max_tip_length_corrected = (size_t) math::round(
 			(double) max_tip_length / 2
-					* (1 + (iteration + 1.) / iteration_count));*/
+					* (1 + (iteration + 1.) / iteration_count));
+	//todo try use max_tip_length
 
 	if (cfg::get().simp.tc.advanced_checks) {
 		return GetAdvancedTipClipperFactory<Graph>(tc_config,
