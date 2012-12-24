@@ -49,7 +49,6 @@ class Diagonal(object):
     def __hash__(self):
         return hash( (self.rectangle.e1.eid, self.rectangle.e2.eid, self.D))
     def __eq__(self, other):
-        print "eq diag"
         return self.rectangle.e1.eid == other.rectangle.e1.eid and self.rectangle.e2.eid == other.rectangle.e2.eid and self.D == other.D
 
     def inc_closest(self, D, weight):

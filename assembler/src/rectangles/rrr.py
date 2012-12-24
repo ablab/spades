@@ -88,12 +88,12 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     ingraph = Graph()
     ingraph.load(grp_filename, sqn_filename, cvr_filename)
     ingraph.check()
-    print "init rectangles set"
+    logger.info("init rectangles set")
     rs = RectangleSet(ingraph, d, test_utils, prd_filename, first_prd_filename, config)
     if experimental.filter == experimental.Filter.pathsets:
         rs.pathsets(pst_filename)
     else:
-        print "begin filter"
+        logger.info("begin filter")
         rs.filter(prd_filename, config)
     logger.info("  RectangleSet built.")
     
@@ -101,19 +101,21 @@ def resolve(input_path, output_path, test_utils, genome, is_sc):
     logger.info("  Checking threshold %f..." % threshold)
     maxbgraph = rs.bgraph(threshold)
     save_fasta(maxbgraph, output_path, is_sc, 'begin_rectangles.fasta')
+    logger.info("outputed begin rectangles")
     maxbgraph.check_tips(ingraph.K)
     save_fasta(maxbgraph, output_path, is_sc, 'delete_tips.fasta')
-
+    logger.info("outputed delete tips")
     edges_before_loop = maxbgraph.delete_loops(ingraph.K, 1000, 10)
     save_fasta(maxbgraph, output_path, is_sc, "delete_tips_delete_loops_1000.fasta")
-    
+    logger.info("outputed delete loops")
     edges_before_loop_DG = ingraph.find_loops(10, 1000, rs)
-    
+    logger.info("find DG 1000 loops")
     to_del = set(edges_before_loop_DG.keys()) & edges_before_loop
     for eid in to_del:
         del edges_before_loop_DG[eid]
     
     maxbgraph.delete_missing_loops(edges_before_loop_DG, ingraph.K, 1000, 10)
+    logger.info("delete missing loops")
     save_fasta(maxbgraph, output_path, is_sc, 'delete_tips_delete_all_loops_1000.fasta')
     
     edges_before_loop_DG = ingraph.find_loops(4, 10000, rs)

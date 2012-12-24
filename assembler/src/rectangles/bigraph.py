@@ -745,7 +745,6 @@ class BGraph(Abstract_Graph):
             g.add_vertex(x.vid, w.vid)
             g.add_edge(be.eid, v.vid, w.vid, len(seq) - self.graph.K, be.conj.eid)
             g.add_seq(be.eid, seq)
-            print seq
             g.add_cvr(be.eid, cvr)
         g.update_K()
         maxv = BVertex.vid
