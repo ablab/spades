@@ -460,13 +460,15 @@ struct debruijn_config {
 
 	struct info_printer {
         bool print_stats;
-        bool detailed_dot_write;
         bool write_components;
         string components_for_kmer;
         string components_for_genome_pos;
         bool write_components_along_genome;
         bool write_components_along_contigs;
         bool save_full_graph;
+        bool write_error_loc;
+        bool write_full_graph;
+        bool write_full_nc_graph;
 	};
 
 	struct jump_cfg {
@@ -874,13 +876,15 @@ inline void load(debruijn_config::info_printer& printer, boost::property_tree::p
     using config_common::load;
 
     load(printer.print_stats				  ,	pt, "print_stats"                   , complete);
-    load(printer.detailed_dot_write			  , pt, "detailed_dot_write"            , complete);
     load(printer.write_components			  , pt, "write_components"              , complete);
     load(printer.components_for_kmer		  , pt, "components_for_kmer"           , complete);
     load(printer.components_for_genome_pos	  , pt, "components_for_genome_pos"     , complete);
     load(printer.write_components_along_genome,	pt, "write_components_along_genome" , complete);
-    load(printer.write_components_along_contigs,	pt, "write_components_along_contigs" , complete);
+    load(printer.write_components_along_contigs,pt, "write_components_along_contigs" , complete);
     load(printer.save_full_graph			  ,	pt, "save_full_graph"			  	, complete);
+    load(printer.write_full_graph			  , pt, "write_full_graph"            , complete);
+    load(printer.write_full_nc_graph		  , pt, "write_full_nc_graph"            , complete);
+    load(printer.write_error_loc			  , pt, "write_error_loc"            , complete);
 }
 
 inline void load(debruijn_config::info_printers_t& printers,

@@ -760,16 +760,18 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 
 	size_t max_length_;
-	size_t vertex_number_;
+	size_t min_vertex_number_;
+	size_t max_vertex_number_;
 public:
 	ComponentSizeFilter(const Graph &graph, size_t max_length,
-			size_t vertex_number) :
-			base(graph), max_length_(max_length), vertex_number_(vertex_number) {
+			size_t min_vertex_number, size_t max_vertex_number) :
+			base(graph), max_length_(max_length), min_vertex_number_(min_vertex_number),
+			max_vertex_number_(max_vertex_number) {
 	}
 
 	/*virtual*/
 	bool Check(const vector<VertexId> &vertices) const {
-		if (vertices.size() <= vertex_number_)
+		if (vertices.size() <= min_vertex_number_ || vertices.size() >= max_vertex_number_)
 			return false;
 		set < VertexId > component(vertices.begin(), vertices.end());
 		for (auto iterator = vertices.begin(); iterator != vertices.end();

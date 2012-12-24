@@ -362,7 +362,7 @@ void WriteErrors(
 	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
 	ErrorComponentSplitter<Graph> splitter(g, black);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	ComponentSizeFilter<Graph> checker(g, 1500, 2);
+	ComponentSizeFilter<Graph> checker(g, 1500, 2, 300);
 	string error_file_name = InsertComponentName<Graph>(file_name, "error");
 	WriteComponents(g, splitter, checker, error_file_name,
 			*DefaultColorer(g, coloring), labeler);
@@ -431,7 +431,7 @@ void WriteComponents(const Graph& g, size_t split_edge_length,
 		const GraphLabeler<Graph>& labeler, const string& graph_name =
 				"my_graph") {
 	ReliableSplitter<Graph> splitter(g, 60, split_edge_length);
-	ComponentSizeFilter<Graph> filter(g, split_edge_length, 2);
+	ComponentSizeFilter<Graph> filter(g, split_edge_length, 2, 300);
 	WriteComponents<Graph>(g, splitter, filter, file_name, colorer, labeler,
 			graph_name);
 }
@@ -520,21 +520,6 @@ void WriteComponentsAroundEdge(const Graph& g, const AbstractFilter<vector<typen
 	FilteringSplitterWrapper<Graph> filtering_splitter(splitter, filter);
 	WriteComponents(g, filtering_splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
 	, file_name, colorer, labeler);
-}
-
-template<class Graph>
-void WriteToFile(
-		const Graph& g,
-		const GraphLabeler<Graph>& labeler,
-		const string& file_name,
-		const string& graph_name,
-		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
-		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
-//	if (g.size() < 10000) {
-	WritePaired(g, labeler, file_name, graph_name, path1, path2);
-	WriteSimple(g, labeler, file_name, graph_name, path1, path2);
-//	}
-	WriteErrors(g, labeler, file_name, graph_name, path1, path2);
 }
 
 }

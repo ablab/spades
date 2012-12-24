@@ -419,12 +419,21 @@ void WriteToDotFile(const Graph &g,
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
-void DetailedWriteToDot(const Graph &g,
+void WriteErrorLoc(const Graph &g,
 		const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
 		string graph_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
 		Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
-	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	omnigraph::WriteToFile(g, labeler, file_name, graph_name, path1, path2);
+	INFO("Writing error localities for graph '" << graph_name << "' to file " << file_name);
+	omnigraph::WriteErrors(g, labeler, file_name, graph_name, path1, path2);
+	INFO("Error localities written '" << graph_name << "' written to file " << file_name);
+}
+
+void WriteToDotSimple(const Graph &g,
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
+		string graph_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
+		Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
+	INFO("Writing paired graph '" << graph_name << "' to file " << file_name);
+	omnigraph::WriteSimple(g, labeler, file_name, graph_name, path1, path2);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
@@ -548,7 +557,7 @@ void WriteKmerComponent(conj_graph_pack &gp,
 	VERIFY(gp.index.contains(kp1mer));
 	EdgeNeighborhoodFinder<Graph> splitter(gp.g, gp.index.get(kp1mer).first, 50,
 			*cfg::get().ds.IS);
-	ComponentSizeFilter<Graph> filter(gp.g, *cfg::get().ds.IS, 2);
+	ComponentSizeFilter<Graph> filter(gp.g, 500, 2, 500);
 	PathColorer<Graph> colorer(gp.g, path1, path2);
 	WriteComponents<Graph>(gp.g, splitter, filter, folder + "kmer.dot",
 			*DefaultColorer(gp.g, path1, path2), labeler);
@@ -588,7 +597,10 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 	path_t path1;
 	path_t path2;
 
-	if (config.detailed_dot_write || config.write_components
+	if (config.write_error_loc
+			|| config.write_full_graph
+			|| config.write_full_nc_graph
+			|| config.write_components
 			|| !config.components_for_kmer.empty()
 			|| config.write_components_along_genome
 			|| config.write_components_along_contigs || config.save_full_graph
@@ -602,9 +614,21 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		make_dir(folder);
 	}
 
-	if (config.detailed_dot_write) {
+	if (config.write_error_loc) {
 		make_dir(folder + "error_loc/");
-		DetailedWriteToDot(gp.g, labeler, folder + "error_loc/" + file_name,
+		WriteErrorLoc(gp.g, labeler, folder + "error_loc/" + file_name,
+				graph_name, path1, path2);
+	}
+
+	if (config.write_full_graph) {
+		make_dir(folder + "full_graph/");
+		WriteToDotFile(gp.g, labeler, folder + "full_graph/" + file_name,
+				graph_name, path1, path2);
+	}
+
+	if (config.write_full_nc_graph) {
+		make_dir(folder + "full_graph_nc/");
+		WriteToDotSimple(gp.g, labeler, folder + "full_graph_nc/" + file_name,
 				graph_name, path1, path2);
 	}
 
@@ -723,7 +747,7 @@ template<class graph_pack>
 int PrintGraphComponents(const string& file_name, graph_pack& gp,
     size_t split_edge_length, PairedInfoIndexT<Graph> &clustered_index) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(gp.g, split_edge_length);
-	ComponentSizeFilter<Graph> checker(gp.g, split_edge_length, 2);
+	ComponentSizeFilter<Graph> checker(gp.g, split_edge_length, 2, 300);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
 	while (!splitter.Finished() && cnt <= 1000) {

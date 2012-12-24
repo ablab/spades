@@ -11,7 +11,10 @@ info_printers
        write_components_along_genome    false
        write_components_along_contigs   false
        save_full_graph                  false
-    }
+       write_error_loc                  false
+       write_full_graph                 false
+       write_full_nc_graph              false
+}
 
 ;	before_simplification
 ;	tip_clipping
@@ -26,18 +29,25 @@ info_printers
 ;	before_repeat_resolution
 
 
-;    final_simplified
-;    {
+	before_simplification
+    {
 ;       write_components                 true
 ;       write_components_along_genome    true
 ;       ;detailed_dot_write		true
-;    }
+    }
+
+    final_simplified
+    {
+;       write_components                 true
+;       write_components_along_genome    true
+;       write_error_loc                  true
+    }
 
 ;    before_repeat_resolution
 ;    {
 ;       ;write_components                 true
 ;       ;write_components_along_genome    true
-;       ;detailed_dot_write		 true
+;       ;write_error_loc                  true
 ;    }
 
 }
