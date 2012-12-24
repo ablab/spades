@@ -840,14 +840,19 @@ inline void load_reference_genome(debruijn_config::dataset& ds,
 	io::Reader genome_stream(ds.reference_genome_filename);
 	io::SingleRead genome;
 	genome_stream >> genome;
-	if (genome.IsValid()) {
-		ds.reference_genome = genome.sequence();
-	}
-	else {
-		INFO("Reference genome (" + ds.reference_genome_filename + ") has non-ACGT characters. Skipping it");
-		ds.reference_genome = Sequence();
-		ds.reference_genome_filename = "";
-	}
+	VERIFY(genome.IsValid());
+//	if (VERIFY(genome.IsValid())) 
+   // {
+	ds.reference_genome = genome.sequence();
+        //INFO("Reference genome loaded. Length " << ds.reference_genome.size());
+//        cout << "Reference genome loaded. Length " << ds.reference_genome.size() << endl;
+//	} 
+//    else {
+//		//INFO("Reference genome (" + ds.reference_genome_filename + ") has non-ACGT characters. Skipping it");
+//		cout << "Reference genome (" + ds.reference_genome_filename + ") has non-ACGT characters. Skipping it" << endl;
+//		ds.reference_genome = Sequence();
+//		ds.reference_genome_filename = "";
+//	}
 }
 
 inline void load(debruijn_config::simplification& simp,
@@ -1059,7 +1064,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.info_printers, pt, "info_printers");
 	load(cfg.jump, pt, "jump");
-
+    
 	load_reference_genome(cfg.ds, cfg.input_dir);
 
 //	cfg.is_infinity = 100000000;
