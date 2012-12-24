@@ -63,7 +63,7 @@ class Graph(Abstract_Graph):
         self.logger = logging.getLogger('rectangles')
 
     def add_vertex(self, vid, conj_id):
-        assert vid != conj_id, "Vertex can't be self-conjugated"
+        #assert vid != conj_id, "Vertex can't be self-conjugated"
         conj = self.vs.get(conj_id, None)
         v = Vertex(vid, conj)
         self.vs[vid] = v

@@ -26,11 +26,14 @@ class Abstract_Graph(object):
     def __init__(self):
         self.vs = {} # key -> Vertex
         self.es = {} # key -> Edges
+        self.logger = logging.getLogger('rectangles')
+        
 
     def get_edge(self, eid):
         return self.es.get(eid, None)
 
     def find_all_loops(self, edge, threshold, L, rs):
+        self.logger.info ("find all loops " + str(edge.eid))
         NO_LOOPS = None
         v1 = edge.v2
         lst = [(v1, 0)]
@@ -51,7 +54,7 @@ class Abstract_Graph(object):
                     lst.append((e1.v2, deep + 1))
         if not long_end:
             return NO_LOOPS
-        
+        self.logger.info("found loops")             
         visited_es.add(long_end.eid)
         visited_es.add(edge.eid)
         good_vertex = [edge.v1.vid, edge.v2.vid, long_end.v1.vid, long_end.v2.vid]
@@ -75,7 +78,7 @@ class Abstract_Graph(object):
           return NO_LOOPS"""
         if len(bad_edges) != 0 and len(rs.keys()) == 0:
           return NO_LOOPS
-        
+        self.logger.info("found visited vs")
         if len(rs.keys()) != 0:
             tips = set()
             for e_bad in bad_edges:
@@ -114,6 +117,7 @@ class Abstract_Graph(object):
 
             if len(bad_edges) !=0 and len(not_aligned) != len(bad_edges):
                 return NO_LOOPS  
+        self.logger.info("found tips")
         if len(visited_es) == 2:
             return NO_LOOPS
         for v in visited_vs:

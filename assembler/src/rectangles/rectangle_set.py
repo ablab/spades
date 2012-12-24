@@ -11,23 +11,25 @@ import saveparser
 import graph
 
 class RectangleSet(object):
-    def __init__(self, graph, d, test_utils=None, prd_file_name=None, first_prd_file_name=None, config=None):
+    def __init__(self, graph, d, test_utils=None, prd_file_name=None, late_pair_info_counted_prd=None, config=None):
         self.graph = graph
         self.d = d
-        self.prd = dict()
         self.config = config
+        self.prd = dict()
         self.prd_for_scaffold = dict()
         if prd_file_name:
             self.__get_prd(prd_file_name)
-        if first_prd_file_name:
-            self.__get_prd_for_scaffold(first_prd_file_name)
+        if late_pair_info_counted_prd:
+            self.__get_prd_for_scaffold(late_pair_info_counted_prd)
         self.rectangles = {} # (e1, e2) -> Rectangle
         self.logger = logging.getLogger('rectangles')
         self.test_utils = test_utils
 
     def __get_prd(self, prd_file_name):
         for e1id, e2id, D, weight, delta in saveparser.prd(prd_file_name):
-            self.prd[(e1id, e2id)] = (D, weight, delta)
+            if (e1id, e2id) not in self.prd:
+                self.prd[(e1id, e2id)] = []
+            self.prd[(e1id, e2id)].append((D, weight, delta))
 
     def __get_prd_for_scaffold(self, prd_file_name):
         for e1id, e2id, D, weight, delta in saveparser.prd(prd_file_name):
@@ -41,77 +43,70 @@ class RectangleSet(object):
                         self.prd_for_scaffold[(e1id, e2id)] = []
                     self.prd_for_scaffold[(e1id, e2id)].append((D, weight, delta))
 
-
-    def filter_without_prd(self):
-        self.__build_from_graph()
-        self.__conjugate()
-
     def filter(self, prd_filename, config):
-        self.__build_from_graph()
-        self.__conjugate()
-        self.__use_prd(prd_filename, config)
-        self.__rank()
-
-    def pathsets(self, pst_filename):
-        self.__build_from_pst(pst_filename)
-        self.__conjugate()
-        self.__all()
-
-    def percentiles(self):
-        percentiles = [utils.quantile(self.ranking, percentile).support() for percentile in xrange(101)]
-        return percentiles
-
+        self.__build_from_graph(config)
+        #self.__conjugate()
+        #self.__use_prd(prd_filename, config)
+        #self.__rank()
+    
     def bgraph(self, threshold):
         bg = BGraph(self.graph, self.d, self.test_utils)
-        count_true_diags = 0
-        count_false_diags = 0
-        count_unaligned_diags = 0
         for diag in self.__diags(threshold):
-            is_true_diag = self.test_utils.is_true_diagonal(diag)
-            if is_true_diag == self.test_utils.TRUE_DIAG:
-                count_true_diags += 1
-            elif is_true_diag == self.test_utils.FALSE_DIAG:
-                count_false_diags += 1
-            else:
-                count_unaligned_diags += 1
-            self.test_utils.add_to_diags(diag)
             bg.add_diagonal(diag)
-        self.test_utils.logger.info(
-            "true diag = " + str(count_true_diags) + " false diag = " + str(count_false_diags) + " unanligned = " + str(
-                count_unaligned_diags) + "\n")
+        
         return bg
-
-    def bgraph_from_genome(self):
-        bg = BGraph(self.graph, self.d, self.test_utils)
-        for key, rect in self.rectangles.items():
-            for key, diag in rect.diagonals.items():
-                bg.add_diagonal(diag)
-        return bg
-
-    def get_support(self, e1, e2):
-        if (e1, e2) in self.rectangles:
-            rectangle = self.rectangles[(e1, e2)]
-            return max([diag.support() for diag in rectangle.diagonals.itervalues()])
-        return 0
 
     def __diags(self, threshold=0.0):
-        assert self.ranking, "rank/filter first"
-        #diag_file = open("diagonals_all.txt", "w")
-        for d in self.ranking:
+        #assert self.ranking, "rank/filter first"
+        for d in [diag for r in self.rectangles.itervalues() for diag in r.diagonals.itervalues()]:
+        #for d in self.ranking#:
             if d.support() > threshold:
-                #diag_file.write(str(d.rectangle.e1.eid) + " " + str(d.rectangle.e2.eid) + " " + str(d.D) + "\n")
                 yield d
-        #diag_file.close()
 
-    def __build_from_graph(self):
+    def __build_from_graph(self, config):
         for e1 in self.graph.es.itervalues():
             for e2, D in self.graph.dfs(e1, self.d):
+                if e1.eid != e2.eid and (e1.eid, e2.eid) not in self.prd:
+                    continue
                 if (e1, e2) not in self.rectangles:
                     self.rectangles[(e1, e2)] = Rectangle(e1, e2)
                 r = self.rectangles[(e1, e2)]
+                if (e2.conj, e1.conj) not in self.rectangles:
+                    self.rectangles[(e2.conj, e1.conj)] = Rectangle(e2.conj, e1.conj)
+                r_conj = self.rectangles[(e2.conj, e1.conj)]
+                conjugate(r, r_conj)
                 r.add_diagonal(self.d, D)
+                D_conj = D - e1.len + e2.len
+                r_conj.add_diagonal(self.d, D_conj)
+                diag = r.diagonals[(D, None)]
+                diag_conj = r_conj.diagonals[(D_conj, None)]
+                conjugate(diag, diag_conj)
+                if (e1.eid, e2.eid) in self.prd:
+                    for (D1, weight, delta) in self.prd[(e1.eid, e2.eid)]:
+                        diag.inc_prd_support(D1, weight, delta, config)
+                        if diag != diag.conj:
+                            diag.conj.inc_prd_support(D1 - e1.len + e2.len, weight, delta, config)     
+                if (e2.conj.eid, e1.conj.eid) in self.prd:
+                    for (D1, weight, delta) in self.prd[(e2.conj.eid, e1.conj.eid)]:
+                        diag_conj.inc_prd_support(D1, weight, delta, config)
+                        if diag != diag.conj:
+                            diag.inc_prd_support(D1 - e2.conj.len + e1.conj.len, weight, delta, config)     
+                    
+                if diag.support() < 0.0000000001:
+                    if (D,None) in r.diagonals:
+                        del r.diagonals[(D, None)]
+                    if (D_conj, None) in r_conj.diagonals:
+                        del r_conj.diagonals[(D_conj, None)]
+                if len(r.diagonals.keys()) == 0:
+                    if (e1,e2) in self.rectangles:
+                        del self.rectangles[(e1,e2)]
+                    if (e2.conj, e1.conj) in self.rectangles:
+                        del self.rectangles[(e2.conj, e1.conj)]
 
 
+
+                    
+    
     def __conjugate(self):
         for rect in self.rectangles.itervalues():
             conj = self.rectangles[(rect.e2.conj, rect.e1.conj)]
@@ -150,6 +145,19 @@ class RectangleSet(object):
             if hasattr(diag, "conj") and diag != diag.conj:
                 diag.conj.inc_prd_support(D - rect.e1.len + rect.e2.len, weight, delta, self.config)
 
+    
+    def __rank(self):
+        self.ranking = []
+        for r in self.rectangles.itervalues():
+            for d in r.diagonals.itervalues():
+                self.ranking.append(d)
+        self.ranking.sort(key=lambda x: x.support(), reverse=True)
+        step = 1
+        percentiles = [utils.quantile(self.ranking, q).support() for q in xrange(0, 100 + step, step)]
+        self.logger.info("Percentiles: %s" % list(enumerate(percentiles)))
+
+    
+    #next code about pathset, not_used
     def __build_from_pst(self, pst_filename):
         for e1id, e2id, pathset in saveparser.pst(pst_filename):
             e1 = self.graph.es[e1id]
@@ -177,15 +185,10 @@ class RectangleSet(object):
                 pathset = pathsets.PathSet(pathset)
                 r.add_diagonal(self.d, D, pathset)
 
-    def __rank(self):
-        self.ranking = []
-        for r in self.rectangles.itervalues():
-            for d in r.diagonals.itervalues():
-                self.ranking.append(d)
-        self.ranking.sort(key=lambda x: x.support(), reverse=True)
-        step = 1
-        percentiles = [utils.quantile(self.ranking, q).support() for q in xrange(0, 100 + step, step)]
-        self.logger.info("Percentiles: %s" % list(enumerate(percentiles)))
+    def pathsets(self, pst_filename):
+        self.__build_from_pst(pst_filename)
+        self.__conjugate()
+        self.__all()
 
     def __all(self):
         self.ranking = [diag for r in self.rectangles.itervalues() for diag in r.diagonals.itervalues()]
