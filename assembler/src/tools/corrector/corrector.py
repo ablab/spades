@@ -670,6 +670,12 @@ def chouseLetters(first_node, second_node, prof, node, choused_letter, single_pr
                     elif max_start_node < first_node[r]:
                         break
 #                print "reduced down to " + str(len (non_zero_seq))
+                if len(non_zero_weight) > 5000:
+                    while 0 < len (non_zero_seq):
+                        del non_zero_weight[0]
+                        del non_zero_seq[0]
+                        del active_non_zero_seq[0]
+                     
 #            if len (non_zero_seq) == 0:
 #                print "No pathes"
         else:
