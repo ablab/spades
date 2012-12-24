@@ -11,6 +11,7 @@
 
 #include <boost/math/special_functions/zeta.hpp>
 #include <boost/math/distributions/normal.hpp>
+#include <boost/math/distributions/skew_normal.hpp>
 #include <boost/math/distributions/geometric.hpp>
 #include <boost/math/distributions/pareto.hpp>
 
@@ -31,34 +32,22 @@
 namespace cov_model {
 using std::isfinite;
 
-static const size_t MaxCopy = 15;
+static const size_t MaxCopy = 10;
 
 static double dzeta(double x, double p) {
   return pow(x, -p-1) / boost::math::zeta(p + 1);
 }
 
-static double perr(size_t i, double shape) {
-  boost::math::pareto pareto(1, shape);
-
-  return boost::math::cdf(pareto, i + 1) - boost::math::cdf(pareto, i);
+static double perr(size_t i, double scale, double shape) {
+  return pow((1 + shape*(i-1)/scale), -1/shape) - pow((1 + shape*(i)/scale), -1/shape);
 }
 
-static double lperr(size_t i, double shape) {
-  double res = -shape * logl(i);
-  double corr = 1/(1.0 + i);
-
-  double y = log1p(-corr) * shape;
-  double z = expm1(y) + 1;
-
-  return res + log1p(-z);
-}
-
-static double pgood(size_t i, double zp, double u, double sd) {
+static double pgood(size_t i, double zp, double u, double sd, double shape) {
   double res = 0;
 
   for (unsigned copy = 0; copy < MaxCopy; ++copy) {
-    boost::math::normal normal((copy + 1)* u, sd * sqrt(copy + 1));
-    res += dzeta(copy + 1, zp) * boost::math::pdf(normal, i);
+    boost::math::skew_normal snormal((copy + 1)* u, sd * sqrt(copy + 1), shape);
+    res += dzeta(copy + 1, zp) * (boost::math::cdf(snormal, i + 1) - boost::math::cdf(snormal, i));
   }
 
   return res;
@@ -71,28 +60,27 @@ class CovModelLogLike : public Cloneable<CovModelLogLike, FunctionEvaluator> {
   CovModelLogLike(const std::vector<size_t> &cov)
       : cov(cov) {}
 
-  int getN() const { return 5; };
+  int getN() const { return 7; };
 
  private:
 
   double eval_(const double *x) const {
-    double zp = x[0], p = x[1], shape = x[2], u = x[3], sd = x[4];
+    double zp = x[0], p = x[1], shape = x[2], u = x[3], sd = x[4], scale = x[5], shape2 = x[6];
 
-    // INFO("" << x[0] << " " << x[1] << " " << x[2] << " " << x[3] << " " << x[4]);
-
-    if (zp <= 1 || shape <= 0 || sd <= 0 || p < 1e-9 || p > 1-1e-9 || u <= 0 ||
-        !isfinite(zp) || !isfinite(shape) || !isfinite(sd) || !isfinite(p) || !isfinite(u))
+    if (zp <= 1 || shape <= 0 || sd <= 0 || p < 1e-9 || p > 1-1e-9 || u <= 0 || scale <= 0 ||
+        !isfinite(zp) || !isfinite(shape) || !isfinite(sd) || !isfinite(p) || !isfinite(u) ||
+        !isfinite(scale) || !isfinite(shape2))
       return +std::numeric_limits<double>::infinity();
 
     std::vector<double> kmer_probs(cov.size());
 
     // Error
     for (size_t i = 0; i < kmer_probs.size(); ++i)
-      kmer_probs[i] += p * perr(i + 1, shape);
+      kmer_probs[i] += p * perr(i + 1, scale, shape);
 
     // Good
     for (size_t i = 0; i < kmer_probs.size(); ++i)
-      kmer_probs[i] += (1 - p) * pgood(i + 1, zp, u, sd);
+      kmer_probs[i] += (1 - p) * pgood(i + 1, zp, u, sd, shape2);
 
     double res = 0;
     for (size_t i = 0; i < kmer_probs.size(); ++i)
@@ -111,29 +99,30 @@ class CovModelLogLikeEM : public Cloneable<CovModelLogLikeEM, FunctionEvaluator>
                     const std::vector<double> &z)
       : cov(cov), z(z) {}
 
-  int getN() const { return 4; };
+  int getN() const { return 6; };
 
  private:
   double eval_(const double *x) const {
-    double zp = x[0], shape = x[1], u = x[2], sd = x[3];
+    double zp = x[0], shape = x[1], u = x[2], sd = x[3], scale = x[4], shape2 = x[5];
 
-    // INFO("" << x[0] << " " << x[1] << " " << x[2] << " " << x[3]);
+    // INFO("" << x[0] << " " << x[1] << " " << x[2] << " " << x[3] << " " << x[4]);
 
-    if (zp <= 1 || shape <= 0 || sd <= 0 || u <= 0 ||
-        !isfinite(zp) || !isfinite(shape) || !isfinite(sd) || !isfinite(u))
+    if (zp <= 1 || shape <= 0 || sd <= 0 || u <= 0 || scale <= 0 ||
+        !isfinite(zp) || !isfinite(shape) || !isfinite(sd) || !isfinite(u) ||
+        !isfinite(scale) || !isfinite(shape2))
       return +std::numeric_limits<double>::infinity();
 
     std::vector<double> kmer_probs(cov.size());
 
     // Error
     for (size_t i = 0; i < kmer_probs.size(); ++i) {
-      kmer_probs[i] += z[i] * lperr(i + 1, shape);
+      kmer_probs[i] += z[i] * log(perr(i + 1, scale, shape));
     }
 
 
     // Good
     for (size_t i = 0; i < kmer_probs.size(); ++i) {
-      double val = log(pgood(i + 1, zp, u, sd));
+      double val = log(pgood(i + 1, zp, u, sd, shape2));
       if (!isfinite(val))
         val = -1000.0;
       kmer_probs[i] += (1 - z[i]) * val;
@@ -151,12 +140,12 @@ class CovModelLogLikeEM : public Cloneable<CovModelLogLikeEM, FunctionEvaluator>
 
 static std::vector<double> EStep(const boost::numeric::ublas::vector<double> &x,
                                  double p, size_t N) {
-  double zp = x[0], shape = x[1], u = x[2], sd = x[3];
+  double zp = x[0], shape = x[1], u = x[2], sd = x[3], scale = x[4], shape2 = x[5];
 
   std::vector<double> res(N);
   for (size_t i = 0; i < N; ++i) {
-    double pe = p * perr(i + 1, shape);
-    res[i] = pe / (pe + (1 - p) * pgood(i + 1, zp, u, sd));
+    double pe = p * perr(i + 1, scale, shape);
+    res[i] = pe / (pe + (1 - p) * pgood(i + 1, zp, u, sd, shape2));
     if (!isfinite(res[i]))
       res[i] = 1.0;
   }
@@ -220,13 +209,14 @@ void KMerCoverageModel::Fit() {
   TRACE("p: " << ErrorProb);
 
 #if 0
-  boost::numeric::ublas::vector<double> x0(5);
+  boost::numeric::ublas::vector<double> x0(6);
 
   x0[0] = 3;
   x0[1] = ErrorProb;
   x0[2] = 3;
   x0[3] = MaxCov_;
-  x0[4] = sqrt(5.0*MaxCov_);
+  x0[4] = sqrt(2.0*MaxCov_);
+  x0[5] = 0;
 
   // Trim last zeros
   size_t sz;
@@ -248,12 +238,14 @@ void KMerCoverageModel::Fit() {
   double zp = x[0], p = x[1], shape = x[2], u = x[3], sd = x[4];
   TRACE("" << zp << " " << p << " " << shape << " " << u << " " << sd);
 #else
-  boost::numeric::ublas::vector<double> x0(4);
+  boost::numeric::ublas::vector<double> x0(6);
 
   x0[0] = 3;
   x0[1] = 3;
   x0[2] = MaxCov_;
   x0[3] = sqrt(5.0*MaxCov_);
+  x0[4] = 1;
+  x0[5] = 0;
 
   // Ensure that there will be at least 2 iterations.
   double PrevErrProb = 2;
@@ -282,8 +274,8 @@ void KMerCoverageModel::Fit() {
     TRACE("Num iterations: " << Results->numIter);
 
     auto const& x = Results->xMin;
-    double zp = x[0], shape = x[1], u = x[2], sd = x[3];
-    TRACE("" << zp << " " << ErrorProb << " " << shape << " " << u << " " << sd);
+    double zp = x[0], shape = x[1], u = x[2], sd = x[3], scale = x[4], shape2 = x[5];
+    TRACE("" << zp << " " << ErrorProb << " " << shape << " " << u << " " << sd << " " << scale << " " << shape2);
 
     x0 = Results->xMin;
   }
@@ -299,10 +291,11 @@ void KMerCoverageModel::Fit() {
     Converged = false;
 
   if (Converged) {
-    std::vector<double> z = EStep(x0, ErrorProb, cov_.size());
+    std::vector<double> z = EStep(x0, ErrorProb, GoodCov.size());
+
     INFO("Probability of erroneous kmer at valley: " << z[Valley_ - 1]);
     for (size_t i = 0; i < z.size(); ++i)
-      if (z[i] < 0.1) {
+      if (z[i] < 0.05) {
         ErrorThreshold_ = std::max(i + 1, Valley_);
         break;
       }
