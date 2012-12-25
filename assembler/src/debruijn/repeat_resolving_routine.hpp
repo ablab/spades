@@ -9,6 +9,7 @@
  *
  *  Created on: 1 Sep 2011
  *      Author: valery
+ *      Poor Valery
  */
 
 #pragma once
@@ -125,7 +126,7 @@ void save_resolved(conj_graph_pack& resolved_gp,
 
 
 template<class graph_pack>
-void found_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after, 	map<EdgeId, pair<size_t, size_t> >& distance_to_repeats_end){
+void find_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after, 	map<EdgeId, pair<size_t, size_t> >& distance_to_repeats_end){
 	set<EdgeId> not_unique;
 	for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		VertexId start = gp.g.EdgeStart(*iter);
@@ -425,10 +426,10 @@ void SaveResolvedPairedInfo(graph_pack& resolved_gp,
 }
 
 template<class graph_pack>
-void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after) {
+void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after, 	map<EdgeId, pair<size_t, size_t> >& distance_to_repeats_end) {
 	size_t Ncount = 0;
 	//FILE* file = fopen(("multipicities.tmp"), "w");
-
+	int not_masked = 0;
 	for (auto iter = origin_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 //		size_t len = origin_gp.g.length(*iter) + origin_gp.g.k();
 		size_t multiplicity = labels_after.edge_inclusions[*iter].size();
@@ -448,10 +449,14 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 //TODO:: cutoff selection!
 				vector<pair<EdgeId, size_t> > resolved_positions = labels_after.resolvedPositions(*iter, mismatches[i].position);
 				double cutoff = 0.5;
-				if (origin_gp.g.length(*iter) > *cfg::get().ds.IS && multiplicity > 1)
+				if ((origin_gp.g.length(*iter) > *cfg::get().ds.IS && multiplicity > 1 )|| distance_to_repeats_end[*iter].first + mismatches[i].position > *cfg::get().ds.IS || distance_to_repeats_end[*iter].second + origin_gp.g.length(*iter) - mismatches[i].position > *cfg::get().ds.IS )
 					cutoff /= (4 );// /cfg::get().mismatch_ratio);
-				else
+				else {
+					not_masked ++;
+					continue;
 					cutoff *= 1.5 ;//* cfg::get().mismatch_ratio;
+
+				}
 				map<EdgeId, int> diff_res;
 				for(auto it = resolved_positions.begin(); it < resolved_positions.end(); it++)
 					if(diff_res.find(it->first) == diff_res.end())
@@ -473,6 +478,7 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
 
 					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff && real_count <= 5) {
+
 						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, real_multiplicity * mismatches[i].ratio, mismatches[i].counts, cutoff);
 						Ncount++;
 					}
@@ -483,7 +489,9 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 			}
 		}
 	}
+
 	INFO("masked "<< Ncount << " potential mismatches masked");
+	INFO(" "<< not_masked<< " potential mismatches left for corrector");
 }
 
 template<class graph_pack>
@@ -592,7 +600,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g,
 			false);
 	size_t iters = 3; // TODO Constant 3? Shouldn't it be taken from config?
-	RemapMaskedMismatches(resolved_gp, origin_gp, labels_after);
+	map<EdgeId, pair<size_t, size_t> > distance_to_repeats_end;
+	find_distance_from_repeats(origin_gp, labels_after, distance_to_repeats_end);
+	RemapMaskedMismatches(resolved_gp, origin_gp, labels_after, distance_to_repeats_end);
 	for (size_t i = 0; i < iters; ++i) {
     INFO("Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
 
@@ -983,7 +993,6 @@ void resolve_repeats() {
 	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
 
 	INFO("STAGE == Resolving Repeats");
-//	found_distance_from_repeats(conj_gp);
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
 		int number_of_components = 0;
 
