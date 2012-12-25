@@ -395,7 +395,7 @@ class BGraph(Abstract_Graph):
                 continue
             begin_diag = begin_loops[eid][0]
             if begin_diag.rectangle.e1.len < 2*self.d or len(path) < 1 or path[0] != begin_diag.rectangle.e1 or path[0].len < 2 * self.d:
-                print "BAD CASE", eid, begin_diag.rectangle.e1.len,(long_eid1, long_eid2, busheids, path, visited_vs) 
+                self.logger.info("BAD CASE " + str( eid)+ " " + str( begin_diag.rectangle.e1.len) + " " +str((long_eid1, long_eid2, busheids, path, visited_vs))) 
                 continue
             end_diag = end_loops[eid][0]
             path.append(end_loops[eid][0].rectangle.e1)

@@ -9,6 +9,7 @@ python rrr.py -s /storage/labnas/students/igorbunova/spades_2.3/all_datasets_res
 python rrr.py -s /storage/labnas/students/igorbunova/spades_2.3/all_datasets_results/P.heparinus/saves -o /storage/labnas/students/igorbunova/spades_2.3/rectangles_result/P.heparinus --sc true
 python rrr.py -s /storage/labnas/students/igorbunova/spades_2.3/all_datasets_results/P.heparinus_PRENORM/saves -o /storage/labnas/students/igorbunova/spades_2.3/rectangles_result/P.heparinus_PRENORM --sc true
 python rrr.py -s /storage/labnas/students/igorbunova/spades_2.3/all_datasets_results/S.aureus/saves -o /storage/labnas/students/igorbunova/spades_2.3/rectangles_result/S.aureus --sc true
+rm -r /storage/labnas/students/igorbunova/spades_2.3/quast_results_prev
 mv /storage/labnas/students/igorbunova/spades_2.3/quast_results /storage/labnas/students/igorbunova/spades_2.3/quast_results_prev
 mkdir /storage/labnas/students/igorbunova/spades_2.3/quast_results
 quast -R  /acestorage/data/input/E.coli/genes/MG1655-K12.fasta -G /acestorage/data/input/E.coli/genes/genes.txt /storage/labnas/students/igorbunova/spades_2.3/rectangles_result/ECOLI_MC220/rectangles_extend.fasta /storage/labnas/students/igorbunova/spades_2.3/all_datasets_results/mc_220/scaffolds.fasta /storage/labnas/students/igorbunova/spades_2.3/all_datasets_results/mc_220/contigs.fasta /storage/labnas/students/igorbunova/spades_2.3/all_datasets_results/mc_220/simplified_contigs.fasta -o /storage/labnas/students/igorbunova/spades_2.3/quast_results/ECOLI_MC220/

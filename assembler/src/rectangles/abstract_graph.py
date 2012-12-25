@@ -1,3 +1,4 @@
+import logging
 class Abstract_Vertex(object):
     def __init__(self, vid):
         self.inn = []
@@ -99,23 +100,23 @@ class Abstract_Graph(object):
                     tips.add(e_bad)
                     continue
     
-                for e_good in visited_es:
+                """for e_good in visited_es:
                     if (self.es[e_good], e_bad) in rs:
                         return NO_LOOPS
                     if (e_bad, self.es[e_good]) in rs:
-                        return NO_LOOPS
+                        return NO_LOOPS"""
             for tip in tips:
                 bad_edges.remove(tip)
-            not_aligned = set(bad_edges)
+            """not_aligned = set(bad_edges)
             for (first,second), r in rs.items():
               if first in not_aligned:
                 if second != first :
                   not_aligned.remove(first)
               if second in not_aligned:
                 if first != second:
-                  not_aligned.remove(second)
+                  not_aligned.remove(second)"""
 
-            if len(bad_edges) !=0 and len(not_aligned) != len(bad_edges):
+            if len(bad_edges) !=0:# and len(not_aligned) != len(bad_edges):
                 return NO_LOOPS  
         self.logger.info("found tips")
         if len(visited_es) == 2:
