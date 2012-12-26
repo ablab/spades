@@ -458,7 +458,6 @@ public:
     {
       if (ContainsPositiveDistance(it.first(), *it)) {
         considered_edge_pair_cnt_++;
-        Point delegate = *(*it).begin(); // :)
         EdgeId e1 = it.first();
         EdgeId e2 = it.second();
 
@@ -1052,8 +1051,6 @@ class ClusterStat: public AbstractStatCounter {
   virtual void Count() {
     for (auto it = estimated_pair_info_.begin(); it != estimated_pair_info_.end(); ++it) {
       Histogram infos = *it;
-      EdgeId e1 = it.first();
-      EdgeId e2 = it.second();
       for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
         Point point = *it2;
         if (gr(point.var, 0.))
