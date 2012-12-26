@@ -18,40 +18,40 @@ namespace debruijn_graph {
 template<class Graph>
 class PathInfoClass {
 public:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef omnigraph::PairInfo<EdgeId> PairInfo;
+  typedef typename Graph::EdgeId EdgeId;
+  typedef omnigraph::PairInfo<EdgeId> PairInfo;
 
-	EdgeId base_edge;
-	vector<PairInfo> path;
-	PathInfoClass(): base_edge(NULL) {};
-	PathInfoClass(const EdgeId Edge): base_edge(Edge) {};
-	pair<EdgeId, double> operator[](const size_t i) const {
-		if (i == 0) {
-			return(make_pair(base_edge, 0.0));
-		}
-		VERIFY(i < path.size() + 1);
-		return (make_pair(path[i-1].second, path[i-1].d()));
-	}
-	size_t size() const {
-		return path.size() + 1;
-	}
-	void push_back(const PairInfo& pi) {
-		path.push_back(pi);
-	}
-	typename vector<PairInfo>::const_iterator begin() const {
-		return path.begin();
-	}
-	typename vector<PairInfo>::const_iterator end() const {
-		return path.end();
-	}
-	std::string PrintPath(const Graph& graph) const {
-		std::ostringstream ss;
-		ss<<" "<<graph.int_id(base_edge)<<": ";
-		for (size_t j=0; j < path.size(); j++){
-			ss<<"("<<graph.int_id(path[j].second)<<", "<<path[j].d()<<"), ";
-		}
-		return ss.str();
-	}
+  EdgeId base_edge;
+  vector<PairInfo> path;
+  PathInfoClass(): base_edge(NULL) {};
+  PathInfoClass(const EdgeId Edge): base_edge(Edge) {};
+  pair<EdgeId, double> operator[](const size_t i) const {
+    if (i == 0) {
+      return(make_pair(base_edge, 0.0));
+    }
+    VERIFY(i < path.size() + 1);
+    return (make_pair(path[i-1].second, path[i-1].d()));
+  }
+  size_t size() const {
+    return path.size() + 1;
+  }
+  void push_back(const PairInfo& pi) {
+    path.push_back(pi);
+  }
+  typename vector<PairInfo>::const_iterator begin() const {
+    return path.begin();
+  }
+  typename vector<PairInfo>::const_iterator end() const {
+    return path.end();
+  }
+  std::string PrintPath(const Graph& graph) const {
+    std::ostringstream ss;
+    ss<<" "<<graph.int_id(base_edge)<<": ";
+    for (size_t j=0; j < path.size(); j++){
+      ss<<"("<<graph.int_id(path[j].second)<<", "<<path[j].d()<<"), ";
+    }
+    return ss.str();
+  }
 
 };
 
@@ -62,11 +62,11 @@ class SplitPathConstructor {
   typedef PathInfoClass<Graph> PathInfo;
 
 public:
-  SplitPathConstructor(const Graph &graph): graph_(graph) 
+  SplitPathConstructor(const Graph &graph): graph_(graph)
   {
   }
 
-  vector<PathInfo> ConvertPIToSplitPaths(const vector<PairInfo<EdgeId> >& pair_infos) const 
+  vector<PathInfo> ConvertPIToSplitPaths(const vector<PairInfo<EdgeId> >& pair_infos) const
   {
     vector<PathInfo> result;
     if (pair_infos.size() == 0) 
@@ -78,13 +78,13 @@ public:
         const PairInfo<EdgeId>& cur_info = pair_infos[i - 1];
         if (math::le(cur_info.d(), 0.))
             continue;
-        if (pair_info_used[i - 1]) 
+        if (pair_info_used[i - 1] )
           continue;
         DEBUG("SPC: pi " << cur_info);
-        const vector<EdgeId>& common_part = GetCommonPathsEnd(graph_, cur_edge, 
-                                                          cur_info.second, 
-                                                          cur_info.d() - cur_info.var(), 
-                                                          cur_info.d() + cur_info.var());
+        vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge,
+                                                       cur_info.second,
+                                                       cur_info.d() - cur_info.var(),
+                                                       cur_info.d() + cur_info.var());
         DEBUG("Found common part of size " << common_part.size());
         PathInfoClass<Graph> sub_res(cur_edge);
         if (common_part.size() > 0) {
@@ -94,15 +94,18 @@ public:
           }
           DEBUG(ToString(common_part));
           for (size_t j = 0; j < common_part.size(); ++j) {
-            PairInfo<EdgeId> cur_pi(cur_edge, common_part[j], 
-                            cur_info.d() - total_length, cur_info.weight(), cur_info.var());
+            PairInfo<EdgeId> cur_pi(cur_edge, common_part[j],
+                                    cur_info.d() - total_length,
+                                    cur_info.weight(),
+                                    cur_info.var());
 
             sub_res.push_back(cur_pi);
             total_length -= graph_.length(common_part[j]);
             for (size_t ind = 0; ind + 1 < i; ++ind) {
-              if (cur_pi.first == pair_infos[ind].first
-                  &&  cur_pi.second == pair_infos[ind].second
-                  &&  math::eq(cur_pi.d(), pair_infos[ind].d())) {
+              if (cur_pi.first  == pair_infos[ind].first
+               && cur_pi.second == pair_infos[ind].second
+               && math::eq(cur_pi.d(), pair_infos[ind].d()))
+              {
                 pair_info_used[ind] = true;
               }
 
@@ -110,6 +113,7 @@ public:
 
           }
         }
+
         sub_res.push_back(cur_info);
         result.push_back(sub_res);
         DEBUG(sub_res.PrintPath(graph_));

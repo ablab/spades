@@ -363,7 +363,10 @@ public:
 
 private:
 
-	avg_perf_counter adjacent_time;
+  static size_t low_cov_count;
+  static size_t max_low_cov_count;
+
+  avg_perf_counter adjacent_time;
 	avg_perf_counter rectangle_resolve_1_time;
 	avg_perf_counter rectangle_resolve_2_time;
 	avg_perf_counter rectangle_resolve_3_time;
@@ -434,6 +437,9 @@ private:
 private:
 	DECL_LOGGER("RepeatResolver")
 };
+
+template<class Graph> size_t RepeatResolver<Graph>::low_cov_count = 0;
+template<class Graph> size_t RepeatResolver<Graph>::max_low_cov_count = 1;
 
 template<class Graph>
 vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
@@ -724,7 +730,12 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 			WARN("For " << not_found << " edges, no copies of them were found");
 		}
 		if (low_coverage) {
-			WARN("Deleted " << low_coverage << " just-created edges due to low coverage");
+      low_cov_count += low_coverage;
+      if (low_cov_count > max_low_cov_count) {
+        max_low_cov_count = max_low_cov_count * 2;
+			  WARN("Deleted " << low_cov_count << " just-created edges due to low coverage");
+        low_cov_count = 0;
+      }
 		}
 	}
 

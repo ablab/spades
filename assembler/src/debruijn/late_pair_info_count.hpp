@@ -75,6 +75,7 @@ namespace debruijn_graph {
         make_dir(cfg::get().output_saves);
 
       string p = path::append_path(cfg::get().output_saves, "late_pair_info_counted");
+      INFO("Saving current state to " << p);
       PrintWithPairedIndex(p, gp, paired_index);
       write_estimated_params(p);
     }

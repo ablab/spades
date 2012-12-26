@@ -173,8 +173,18 @@ const PairInfo<EdgeId> MaxPairInfo(EdgeId e1, EdgeId e2) {
  * todo check that written here is true
  */
 template<typename EdgeId>
-int rounded_d(PairInfo<EdgeId> const& pi) {
+inline int rounded_d(PairInfo<EdgeId> const& pi) {
   return math::round_to_zero(pi.d());
+}
+
+inline bool ClustersIntersect(Point p1, Point p2) {
+  return math::le(p1.d, p2.d + p1.var + p2.var) &&
+         math::le(p2.d, p1.d + p1.var + p2.var); 
+}
+
+inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point)
+{
+  return Point(point.d + l2 - (double) l1, point.weight, point.var);
 }
 
 template<typename EdgeId>
@@ -183,7 +193,7 @@ PairInfo<EdgeId> BackwardInfo(const PairInfo<EdgeId>& pi) {
 }
 
 template<typename EdgeId>
-bool IsSymmetric(PairInfo<EdgeId> const& pi) {
+inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
   return pi.first == pi.second && math::eq(pi.d(), 0.);
 }
 
@@ -260,7 +270,7 @@ public:
   }
 
   void DeletePairInfo(const PairInfo<EdgeId>& info) {
-        VERIFY(data_.find(info) != data_.end());
+    VERIFY(data_.find(info) != data_.end());
     data_.erase(info);
   }
 
@@ -389,17 +399,15 @@ class InnerMap {
   {
   }
 
-// these two methods require a wrapper for map<EdgeId, Histogram>
-// we need them to iterate through map<EdgeId, set<Point> > in a smart way
+  // these two methods require a wrapper for map<EdgeId, Histogram>
+  // we need them to iterate through map<EdgeId, set<Point> > in a smart way
   FastIterator Begin() const {
-    TRACE("Begin");
     if (wrapped_map_.size() == 0)
       return this->End();
     return FastIterator(wrapped_map_.begin(), *this);
   }
 
   FastIterator End() const {
-    TRACE("End");
     if (wrapped_map_.size() == 0) {
       static Histogram EMPTY_HISTOGRAM;
       return FastIterator(wrapped_map_.end(), EMPTY_HISTOGRAM.end(), *this);
@@ -637,8 +645,21 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     }
   }
 
+  // method adds paired info to the conjugate edges
+  void AddConjPairInfo(EdgeId e1,
+                       EdgeId e2,
+                       Point point_to_add,
+                       bool add_reversed = 1)
+  {
+    const Graph& g = this->g();
+    this->AddPairInfo(g.conjugate(e2),
+                      g.conjugate(e1),
+                      ConjugatePoint(g.length(e1), g.length(e2), point_to_add),
+                      add_reversed);
+  }
+
   // erasing specific entry from the index
-  size_t RemovePairInfo(EdgeId e1, EdgeId e2, Point point) {
+  size_t RemovePairInfo(EdgeId e1, EdgeId e2, const Point& point_to_remove) {
     VERIFY(this->IsAttached());
     auto iter = index_.find(e1);
     if (iter != index_.end())
@@ -648,7 +669,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
       if (iter2 != map.end())
       {
         Histogram& hist = iter2->second;
-        size_t success = hist.erase(point);
+        size_t success = hist.erase(point_to_remove);
         if (success == 1) 
           --size_;
         if (hist.empty())
@@ -660,6 +681,17 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
       }
     }
     return 0;
+  }
+  
+  // method adds paired info to the conjugate edges
+  void RemoveConjPairInfo(EdgeId e1,
+                          EdgeId e2,
+                          Point point_to_remove)
+  {
+    const Graph& g = this->g();
+    this->RemovePairInfo(g.conjugate(e2),
+                         g.conjugate(e1),
+                         ConjugatePoint(g.length(e1), g.length(e2), point_to_remove));
   }
 
   void RemovePairInfo(const PairInfo<EdgeId>& info) {
@@ -738,7 +770,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     }
   }
 
-  // Printing the contents of index.
+  // prints the contents of index
   void PrintAll() const {
     size_t size = 0;
     for (auto I = this->begin(), E = this->end(); I != E; ++I) {
@@ -750,7 +782,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
           << this->g().int_id(e1) << " "
           << this->g().int_id(e2));
       for (auto it = histogram.begin(); it != histogram.end(); ++it) {
-        INFO("    Entry " << it->str()); 
+        INFO("    Entry " << it->str());
       }
     }
     VERIFY_MSG(size_ == size, "Size " << size << " must have been equal to " << size_);

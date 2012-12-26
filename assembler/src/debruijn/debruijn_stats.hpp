@@ -286,7 +286,6 @@ void GetAllDistances(const Graph& g,
   typedef set<Point> Histogram;
   typedef vector<EdgeId> Path;
 	for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
-    const Histogram& data = *iter;
     EdgeId first = iter.first();
     EdgeId second = iter.second();
     const vector<Path>& raw_paths = dist_finder.GetGraphDistances(first, second);
