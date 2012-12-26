@@ -297,15 +297,30 @@ void WrappedSetCoverage(NonconjugateDeBruijnGraph& g,
 template<class Graph, class SequenceMapper, class PairedStream>
 class LatePairedIndexFiller {
 
-private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef runtime_k::RtSeq Kmer;
 	typedef boost::function<double(MappingRange, MappingRange)> WeightF;
-	const Graph& graph_;
-	const SequenceMapper& mapper_;
-	io::ReadStreamVector< PairedStream > streams_;
-	WeightF weight_f_;
 
+public:
+	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, PairedStream& stream, WeightF weight_f) :
+			graph_(graph), mapper_(mapper), streams_(1, &stream), weight_f_(weight_f)
+	{
+	}
+
+  LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, const io::ReadStreamVector< PairedStream >& streams, WeightF weight_f) :
+    graph_(graph), mapper_(mapper), streams_(streams), weight_f_(weight_f)
+  {
+  }
+
+  void FillIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+    if (streams_.size() == 1) {
+      FillUsualIndex(paired_index);
+    } else {
+      FillParallelIndex(paired_index);
+    }
+  }
+
+private:
 	template<class PairedRead>
   void ProcessPairedRead(omnigraph::PairedInfoIndexT<Graph>& paired_index, const PairedRead& p_r)
   {
@@ -335,26 +350,26 @@ private:
 		}
 	}
 
-    /**
-     * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
-     */
+  /**
+   * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
+   */
   void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
-        }
-
-        INFO("Processing paired reads (takes a while)");
-
-        PairedStream& stream = streams_.back();
-        stream.reset();
-        size_t n = 0;
-        while (!stream.eof()) {
-            typename PairedStream::read_type p_r;
-            stream >> p_r;
-            ProcessPairedRead(paired_index, p_r);
-            VERBOSE_POWER(++n, " paired reads processed");
-        }
     }
+
+    INFO("Processing paired reads (takes a while)");
+
+    PairedStream& stream = streams_.back();
+    stream.reset();
+    size_t n = 0;
+    while (!stream.eof()) {
+      typename PairedStream::read_type p_r;
+      stream >> p_r;
+      ProcessPairedRead(paired_index, p_r);
+      VERBOSE_POWER(++n, " paired reads processed");
+    }
+  }
 
   void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
     for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
@@ -362,66 +377,72 @@ private:
     }
 
     INFO("Processing paired reads (takes a while)");
-
     size_t nthreads = streams_.size();
     vector<omnigraph::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
-    buffer_pi[0] = &paired_index;
 
-    for (size_t i = 1; i < nthreads; ++i) {
+    for (size_t i = 0; i < nthreads; ++i) {
       buffer_pi[i] = new omnigraph::PairedInfoIndexT<Graph>(graph_);
     }
 
     size_t counter = 0;
+    static const double coeff = 1.3;
     #pragma omp parallel num_threads(nthreads)
     {
       #pragma omp for reduction(+ : counter)
       for (size_t i = 0; i < nthreads; ++i)
       {
+        size_t size = 0;
+        size_t limit = 1000000;
         typename PairedStream::read_type r;
         PairedStream& stream = streams_[i];
         stream.reset();
+        bool end_of_stream = false;
 
-        while (!stream.eof()) {
-          stream >> r;
-          ++counter;
-          ProcessPairedRead(*buffer_pi[i], r);
+        //DEBUG("Starting " << omp_get_thread_num());
+        while (!end_of_stream) {
+          end_of_stream = stream.eof();
+          while (!end_of_stream && size < limit) {
+            stream >> r;
+            ++counter;
+            ++size;
+            //DEBUG("Processing paired read " << omp_get_thread_num());
+            ProcessPairedRead(*(buffer_pi[i]), r);
+            end_of_stream = stream.eof();
+          }
+
+          #pragma omp critical
+          {
+            DEBUG("Merging " << omp_get_thread_num());
+            paired_index.AddAll(*(buffer_pi[i]));
+            DEBUG("Thread number " << omp_get_thread_num()
+               << " is going to increase its limit by " << coeff 
+               << " times, current limit is " << limit);
+          }
+          buffer_pi[i]->Clear();
+          limit = coeff * limit;
         }
       }
+      DEBUG("Thread number " << omp_get_thread_num() << " finished");
     }
     INFO("Used " << counter << " paired reads");
 
     for (size_t i = 0; i < nthreads; ++i)
       DEBUG("Size of " << i << "-th map is " << buffer_pi[i]->size());
 
-    INFO("Merging paired indices");
-    for (size_t i = 1; i < nthreads; ++i) {
-      buffer_pi[0]->AddAll(*(buffer_pi[i]));
+    for (size_t i = 0; i < nthreads; ++i) {
       delete buffer_pi[i];
     }
+    INFO("Index built");
 
-    DEBUG("Size of map is " << buffer_pi[0]->size());
+    DEBUG("Size of map is " << paired_index.size());
   }
 
-public:
-	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, PairedStream& stream, WeightF weight_f) :
-			graph_(graph), mapper_(mapper), streams_(1, &stream), weight_f_(weight_f)
-	{
-	}
-
-    LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, const io::ReadStreamVector< PairedStream >& streams, WeightF weight_f) :
-            graph_(graph), mapper_(mapper), streams_(streams), weight_f_(weight_f)
-    {
-    }
-
-  void FillIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-        if (streams_.size() == 1) {
-            FillUsualIndex(paired_index);
-        } else {
-            FillParallelIndex(paired_index);
-        }
-    }
-
 private:
+	const Graph& graph_;
+	const SequenceMapper& mapper_;
+	io::ReadStreamVector< PairedStream > streams_;
+	WeightF weight_f_;
+
 	DECL_LOGGER("LatePairedIndexFiller");
 };
 
@@ -983,45 +1004,45 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
 {
   typedef set<Point> Histogram;
     for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
-    EdgeId first_edge = iter.first();
-    EdgeId second_edge = iter.second();
-    const Histogram& infos = *iter; 
-    auto prev_it = infos.begin();
-    auto it = prev_it;
-    ++it;
-    for (auto end_it = infos.end(); it != end_it; ++it) {
-      if (math::le(abs(it->d - prev_it->d), it->var + prev_it->var)) {
-        WARN("Clusters intersect, edges -- " << graph.int_id(first_edge) 
-                                      << " " << graph.int_id(second_edge));
-        INFO("Trying to handle this case");
-        // seeking the symmetric pair info to [i - 1]
-        bool success = false;
-        double total_weight = prev_it->weight;
-        for (auto inner_it = it; inner_it != end_it; ++inner_it) {
-          total_weight += inner_it->weight;
-          if (math::eq(inner_it->d + prev_it->d, 0.)) {
-            success = true;
-            double center = 0.;
-            double var = inner_it->d + inner_it->var;
-            for (auto inner_it_2 = prev_it; inner_it_2 != inner_it; ++inner_it_2) 
-            {
-              TRACE("Removing pair info " << *inner_it_2);
-              clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it_2);
-                        }
-            clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it);
-            Point new_point(center, total_weight, var);
-            TRACE("Adding new pair info " << first_edge << " " << second_edge << " " << new_point);
-            clustered_index.AddPairInfo(first_edge, second_edge, new_point);
-            break;
-                    }
-                }
-        INFO("Pair information was resolved");
-
-        if (!success)
-          WARN("This intersection can not be handled in the right way");
-        break;
+      EdgeId first_edge = iter.first();
+      EdgeId second_edge = iter.second();
+      const Histogram& infos = *iter; 
+      auto prev_it = infos.begin();
+      auto it = prev_it;
+      ++it;
+      for (auto end_it = infos.end(); it != end_it; ++it) {
+        if (math::le(abs(it->d - prev_it->d), it->var + prev_it->var)) {
+          WARN("Clusters intersect, edges -- " << graph.int_id(first_edge) 
+              << " " << graph.int_id(second_edge));
+          INFO("Trying to handle this case");
+          // seeking the symmetric pair info to [i - 1]
+          bool success = false;
+          double total_weight = prev_it->weight;
+          for (auto inner_it = it; inner_it != end_it; ++inner_it) {
+            total_weight += inner_it->weight;
+            if (math::eq(inner_it->d + prev_it->d, 0.)) {
+              success = true;
+              double center = 0.;
+              double var = inner_it->d + inner_it->var;
+              for (auto inner_it_2 = prev_it; inner_it_2 != inner_it; ++inner_it_2) 
+              {
+                TRACE("Removing pair info " << *inner_it_2);
+                clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it_2);
+              }
+              clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it);
+              Point new_point(center, total_weight, var);
+              TRACE("Adding new pair info " << first_edge << " " << second_edge << " " << new_point);
+              clustered_index.AddPairInfo(first_edge, second_edge, new_point);
+              break;
             }
+          }
+          INFO("Pair information was resolved");
+
+          if (!success)
+            WARN("This intersection can not be handled in the right way");
+          break;
         }
+      }
     }
 }
 
