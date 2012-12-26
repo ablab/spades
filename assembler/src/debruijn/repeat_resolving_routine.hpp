@@ -63,6 +63,7 @@ void save_distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index,
     PairedIndexT& clustered_index) {
   if (cfg::get().make_saves || cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
     string p = path::append_path(cfg::get().output_saves, "distance_filling");
+    INFO("Saving current state to " << p);
     PrintAll(p, gp, paired_index, clustered_index);
     write_estimated_params(p);
   }
@@ -71,6 +72,7 @@ void save_distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index,
 bool try_load_distance_filling(conj_graph_pack& gp, PairedIndexT& clustered_index,
     path::files_t* used_files)
 {
+  WARN("trying to load distance filling");
   string p = path::append_path(cfg::get().load_from, "distance_filling");
 
   FILE* file = fopen((p + ".grp").c_str(), "r");
@@ -109,11 +111,12 @@ void save_resolved(conj_graph_pack& resolved_gp,
         PairedIndexT& resolved_graph_paired_info,
         PairedIndexT& resolved_graph_paired_info_cl) {
 
-    if (cfg::get().make_saves) {
-        string p = path::append_path(cfg::get().output_saves, "split_resolved");
-        PrintAll(p, resolved_gp, resolved_graph_paired_info, resolved_graph_paired_info_cl);
-        write_estimated_params(p);
-    }
+  if (cfg::get().make_saves) {
+    string p = path::append_path(cfg::get().output_saves, "split_resolved");
+    INFO("Saving current state to " << p);
+    PrintAll(p, resolved_gp, resolved_graph_paired_info, resolved_graph_paired_info_cl);
+    write_estimated_params(p);
+  }
 }
 
 
@@ -600,25 +603,25 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 		ClipTipsForResolver(resolved_gp.g);
 
-		if (cfg::get().path_set_graph == false) {
-      PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
-					resolved_gp.g);
+		//if (cfg::get().path_set_graph == false) {
+      //PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
+					//resolved_gp.g);
 
-			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
-					labels_after, resolved_cleared_graph_paired_info_before);
-		}
+			//ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
+					//labels_after, resolved_cleared_graph_paired_info_before);
+		//}
 
 //		INFO("Erroneous remove "<<i);
 //        BulgeRemoveWrap      (resolved_gp.g);
 //		FinalRemoveErroneousEdges(resolved_gp.g, edge_remover);
 
-		if (cfg::get().path_set_graph == false) {
-      PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
-					resolved_gp.g);
+		//if (cfg::get().path_set_graph == false) {
+      //PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
+					//resolved_gp.g);
 
-			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
-					labels_after, resolved_cleared_graph_paired_info_before);
-		}
+			//ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
+					//labels_after, resolved_cleared_graph_paired_info_before);
+		//}
 
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
 //		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
@@ -876,20 +879,14 @@ void prepare_jump_index(const Graph& g, const PairedIndexT& raw_jump_index,
 }
 
 void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
-                                PairedIndexT& clustered_index) {
+                                                    PairedIndexT& clustered_index)
+{
     double is_var = *cfg::get().ds.is_var;
     size_t delta = size_t(is_var);
     size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
     GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, delta);
-
     size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
-//    INFO("Symmetry trick");
-//    PairedIndexT& symmetric_index(gp.g);
-//    PairedInfoSymmetryHack<Graph> hack(gp.g, paired_index);
-//    hack.FillSymmetricIndex(symmetric_index);
-
     boost::function<double(int)> weight_function;
-
     INFO("Retaining insert size distribution for it");
     map<int, size_t> insert_size_hist = cfg::get().ds.hist;
     WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);

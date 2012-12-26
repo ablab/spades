@@ -1,4 +1,4 @@
-//***************************************************************************
+//****************************************************************************
 //* Copyright (c) 2011-2012 Saint-Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
@@ -222,9 +222,10 @@ void load_simplification(conj_graph_pack& gp, path::files_t* used_files) {
 
 void save_simplification(conj_graph_pack& gp) {
 	if (cfg::get().make_saves) {
-        string p = path::append_path(cfg::get().output_saves, "simplified_graph");
-        PrintGraphPack(p, gp);
-        write_estimated_params(p);
+    string p = path::append_path(cfg::get().output_saves, "simplified_graph");
+    INFO("Saving current state to " << p);
+    PrintGraphPack(p, gp);
+    write_estimated_params(p);
 	}
 	OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
 			cfg::get().simp.tec.plausibility_length

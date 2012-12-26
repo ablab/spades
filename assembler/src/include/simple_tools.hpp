@@ -69,20 +69,30 @@ std::string ToString(std::set<T>& t) {
 
 //taken from http://habrahabr.ru/post/131977/
 class FormattedString {
-public:
-	FormattedString(const char* fmt): m_fmt(fmt) {}
 
-    template<class T>
-    FormattedString& operator<< (const T& arg) {
-        m_fmt % arg;
-        return *this;
-    }
-    operator std::string() const {
-        return m_fmt.str();
-    }
-protected:
-    boost::format m_fmt;
+ public:
+  FormattedString(const char* fmt): m_fmt(fmt)
+  {
+  }
+
+  template<class T>
+  FormattedString& operator<< (const T& arg) {
+    m_fmt % arg;
+    return *this;
+  }
+
+  operator std::string() const {
+    return m_fmt.str();
+  }
+
+ protected:
+  boost::format m_fmt;
 };
+
+template<typename EdgeId>
+inline const std::pair<EdgeId, EdgeId> ReversePair(std::pair<EdgeId, EdgeId> ep) {
+  return std::pair<EdgeId, EdgeId>(ep.second, ep.first);
+}
 
 /**
  * Checks if file exists.

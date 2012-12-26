@@ -76,7 +76,6 @@ void estimate_distance(conj_graph_pack& gp,
 
   if (cfg::get().paired_mode) {
     INFO("STAGE == Estimating Distance");
-
     double is_var = *cfg::get().ds.is_var;
     size_t delta = size_t(is_var);
     size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
@@ -84,9 +83,9 @@ void estimate_distance(conj_graph_pack& gp,
     size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
     boost::function<double(int)> weight_function;
 
-    if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_weighted 
-     || cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing
-     || cfg::get().est_mode == debruijn_graph::estimation_mode::em_extensive)
+    if (cfg::get().est_mode == debruijn_graph::estimation_mode::em_weighted   // in these cases we need a weight function
+     || cfg::get().est_mode == debruijn_graph::estimation_mode::em_smoothing  // to estimate graph distances in the
+     || cfg::get().est_mode == debruijn_graph::estimation_mode::em_extensive) // histogram
     {
       INFO("Retaining insert size distribution for it");
       map<int, size_t> insert_size_hist = cfg::get().ds.hist;
@@ -98,14 +97,15 @@ void estimate_distance(conj_graph_pack& gp,
       WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
       INFO("Weight Wrapper Done");
       weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
-    } else
+    }
+    else
       weight_function = UnityFunction;
 
     PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
-    if (cfg::get().ds.single_cell) {
-      normalizing_f = &TrivialWeightNormalization<Graph>;
-    } else {
-      // todo reduce number of constructor params
+    if (cfg::get().ds.single_cell) {                                          // paired info normalization
+      normalizing_f = &TrivialWeightNormalization<Graph>;                     // only in the single-cell case,
+    } else {                                                                  // in the case of ``multi-cell''
+      // todo reduce number of constructor params                             // we use a trivial weight (equal to 1.)
       PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
           *cfg::get().ds.IS, *cfg::get().ds.is_var, *cfg::get().ds.RL,
           gp.k_value, *cfg::get().ds.avg_coverage);
@@ -119,13 +119,13 @@ void estimate_distance(conj_graph_pack& gp,
     PairInfoWeightFilter<Graph> filter(gp.g, cfg::get().de.filter_threshold);
     INFO("Weight Filter Done");
 
-    switch (cfg::get().est_mode) 
+    switch (cfg::get().est_mode)
     {
-      case debruijn_graph::estimation_mode::em_simple : 
+      case debruijn_graph::estimation_mode::em_simple :
         {
-          const AbstractDistanceEstimator<Graph>& 
+          const AbstractDistanceEstimator<Graph>&
               estimator =
-                  DistanceEstimator<Graph>(gp.g, paired_index, dist_finder, 
+                  DistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
                                               linkage_distance, max_distance);
 
           estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
@@ -170,9 +170,9 @@ void estimate_distance(conj_graph_pack& gp,
         }
     }
 
-    INFO("Refining clustered pair information");
-    RefinePairedInfo(gp.g, clustered_index);
-    INFO("The refining of clustered pair information has been finished");
+    INFO("Refining clustered pair information");                              // this procedure checks, whether index
+    RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
+    INFO("The refining of clustered pair information has been finished");     // if so, it resolves such conflicts.
 
     //experimental [here we can remove some edges from the graph]
     if (cfg::get().simp.simpl_mode
@@ -212,6 +212,7 @@ void save_distance_estimation(const conj_graph_pack& gp,
 {
   if (cfg::get().make_saves) {
     string p = path::append_path(cfg::get().output_saves, "distance_estimation");
+    INFO("Saving current state to " << p);
     PrintAll(p, gp, paired_index, clustered_index);
     write_estimated_params(p);
   }
@@ -239,7 +240,7 @@ void exec_distance_estimation(conj_graph_pack& gp,
     link_files_by_prefix(used_files, cfg::get().output_saves);
   }
   if (cfg::get().paired_mode && cfg::get().paired_info_statistics)
-    count_estimated_info_stats(gp, paired_index, clustered_index);
+    count_estimated_info_stats(gp, paired_index, clustered_index);            // counting stats for paired index (etalon, false positives, etc.)
 }
 
 }
