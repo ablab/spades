@@ -661,11 +661,11 @@ void process_resolve_repeats(graph_pack& origin_gp,
 				+ "final_contigs.fasta";
 		OutputContigs(resolved_gp.g, cfg::get().output_dir + "final_contigs_unmasked.fasta");
 		if (cfg::get().paired_mode) {
-			INFO("outputing final masked contigs: " );
+			INFO("Outputting final masked contigs: " );
 			OutputMaskedContigs(resolved_gp.g,
 					cfg::get().output_dir + "final_contigs.fasta", resolved_gp.mismatch_masker);
 		} else {
-			INFO("outputing final NONmasked contigs: " );
+			INFO("Outputting final NONmasked contigs: " );
 			OutputContigs(resolved_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 		}
 	}

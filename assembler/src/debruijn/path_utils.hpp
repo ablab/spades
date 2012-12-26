@@ -10,36 +10,42 @@ namespace debruijn_graph {
   template<class Graph>
     vector<typename Graph::EdgeId> GetCommonPathsEnd(
         const Graph& g,
-        const typename Graph::EdgeId& e1,
-        const typename Graph::EdgeId& e2, 
+        typename Graph::EdgeId e1,
+        typename Graph::EdgeId e2,
         size_t min_dist,
         size_t max_dist) 
   {
+      typedef typename Graph::EdgeId EdgeId;
       PathStorageCallback<Graph> callback(g);
       PathProcessor<Graph> path_processor(g,
           min_dist - g.length(e1),
           max_dist - g.length(e1),
-          g.EdgeEnd(e1), g.EdgeStart(e2),
-          callback);
-      path_processor.Process();
+          g.EdgeEnd(e1), g.EdgeStart(e2), callback);
+      int error_code = path_processor.Process();
+      vector<EdgeId> result;
       auto paths = callback.paths();
-      vector<typename Graph::EdgeId> result;
-      if (paths.size() == 0) return result;
-      if (paths.size() == 1) return paths[0];
-      size_t j=0;
-      while (j<paths[0].size()) {
+      if (error_code != 0) {
+        DEBUG("Edge " << g.int_id(e1) << " path_processor problem")
+        return result;
+      }
+      if (paths.size() == 0)
+        return result;
+      if (paths.size() == 1)
+        return paths[0];
+      size_t j = 0;
+      while (j < paths[0].size()) {
         for (size_t i = 1;  i < paths.size(); ++i){
           if (j == paths[i].size()) {
-            vector<typename Graph::EdgeId> result(paths[0].begin()+(paths[0].size() - j), paths[0].end());
+            vector<EdgeId> result(paths[0].begin()+(paths[0].size() - j), paths[0].end());
             return result;
           } else {
             if (paths[0][paths[0].size()-1-j] != paths[i][paths[i].size()-1-j]) {
-              vector<typename Graph::EdgeId> result(paths[0].begin()+(paths[0].size() - j), paths[0].end());
+              vector<EdgeId> result(paths[0].begin()+(paths[0].size() - j), paths[0].end());
               return result;
             }
           }
         }
-        j++;
+        ++j;
       }
       return paths[0];
     }
