@@ -124,7 +124,7 @@ class Abstract_Graph(object):
         for v in visited_vs:
             if not self.is_connected(v, long_end, threshold):
                 return NO_LOOPS
-        paths = self.get_paths(edge.v1, long_end, int(1.5 * (threshold + 1)), False)
+        paths = self.get_paths(edge.v1, long_end, edge, int(1.5 * (threshold + 1)), False)
         best_path = paths[0]
         best_len = self.path_len(best_path)
         """for path in paths:
@@ -146,7 +146,7 @@ class Abstract_Graph(object):
                     continue
                 best_path = self.path_len(path)
                 best_path = path"""
-        return (edge.eid, long_end.eid, visited_es, best_path, visited_vs)
+        return (edge.eid, long_end.eid, visited_es, best_path, visited_vs, paths)
 
     def path_len(self, path):
         path_len = 0
@@ -155,9 +155,9 @@ class Abstract_Graph(object):
         return path_len
 
     def is_connected(self, vertex, edge, threshold):
-        return len(self.get_paths(vertex, edge, threshold, True)) > 0
+        return len(self.get_paths(vertex, edge, None, threshold, True)) > 0
 
-    def get_paths(self, vertex, edge, threshold, one_path=False):
+    def get_paths(self, vertex, edge, begin_edge, threshold, one_path=False):
         paths = []
         lst = [(vertex, 0, [])]
         while len(lst) != 0:
@@ -165,6 +165,8 @@ class Abstract_Graph(object):
             if deep > threshold:
                 continue
             for e in v.out:
+                if begin_edge and v.vid == vertex.vid and e.eid != begin_edge.eid:
+                    continue
                 if e.eid == edge.eid:
                     paths.append(path)
                     if one_path:

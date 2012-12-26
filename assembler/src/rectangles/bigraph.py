@@ -365,6 +365,68 @@ class BGraph(Abstract_Graph):
                 self.__remove_bedge__(be.conj)
         self.condense()
 
+    def path_is_subpath(self, path, sub_path):
+        cur_edge_index = 0
+        cur_edge_eid  = sub_path[cur_edge_index]
+        for edge in path:
+            if edge.eid == cur_edge_eid:
+                cur_edge_index += 1
+                if cur_edge_index == len(sub_path):
+                    return True
+            else:
+                cur_edge_index = 0
+            cur_edge_eid = sub_path[cur_edge_index]
+        return False
+            
+    def choose_best_path(self, all_paths, long_eid1, long_eid2, begs):
+        if len(all_paths) < 2:
+            return all_paths[0]
+        real_first_paths = []
+        real_second_paths = []
+        for be in begs:
+            path_first = []
+            path_second = []
+            for diag in be.diagonals:
+                e1_eid = diag.rectangle.e1.eid
+                e2_eid = diag.rectangle.e2.eid
+                if e1_eid == long_eid1:
+                    path_first = []
+                if e2_eid == long_eid1:
+                    path_second = []
+                if e1_eid == long_eid2:
+                    path_first.append(e1_eid)
+                    break
+                if len(path_first) == 0 or path_first[-1] != e1_eid:
+                    path_first.append(e1_eid)
+                if len(path_second) == 0 or path_second[-1] != e2_eid:
+                    path_second.append(e2_eid)
+            if len(path_first) > 1:
+                real_first_paths.append(path_first)
+            if len(path_second) > 1:
+                real_second_paths.append(path_second)
+        print "real_first_paths", real_first_paths
+        print "real_second_paths", real_second_paths
+        print "path between ", long_eid1, " ", long_eid2, " ", all_paths[0]
+        print "all paths", all_paths
+        best_count_real_paths = 0
+        best_path = all_paths[0]
+        for path in  all_paths:
+            count_real_paths = 0
+            path.append(self.graph.es[long_eid2])
+            for real_path in real_first_paths:
+                if self.path_is_subpath(path, real_path):
+                    count_real_paths += 1
+            for real_path in real_second_paths:
+                if self.path_is_subpath(path, real_path):
+                    count_real_paths += 1
+            if count_real_paths > best_count_real_paths :
+                best_count_real_paths = count_real_paths
+                best_path = path
+        print "best path", best_path
+        print "\n\n\n"
+        return best_path[:-1]
+
+
     def delete_missing_loops(self, DG_loops, K, L, threshold):
         if DG_loops == None:
             return
@@ -373,7 +435,7 @@ class BGraph(Abstract_Graph):
         end_loops = dict()
         for k, be in self.es.items():
             for diag in be.diagonals:
-                for eeid1, (long_eid1, long_eid2, busheids, path, visited_vs) in DG_loops.items():
+                for eeid1, (long_eid1, long_eid2, busheids, path, visited_vs, all_paths) in DG_loops.items():
                     rect = diag.rectangle
                     if not set([rect.e1.eid, rect.e2.eid]) <= busheids:
                         continue
@@ -388,7 +450,8 @@ class BGraph(Abstract_Graph):
 
         diag_to_add = []
         for eid, begs in begs_related_to_loop.items():
-            (long_eid1, long_eid2, busheids, path, visited_vs) = DG_loops[eid]
+            (long_eid1, long_eid2, busheids, path, visited_vs, all_paths) = DG_loops[eid]
+            path = self.choose_best_path(all_paths, long_eid1, long_eid2, begs)
             if len(begs) < 2:
                 continue
             if eid not in begin_loops or eid not in end_loops:
@@ -499,7 +562,7 @@ class BGraph(Abstract_Graph):
                 bv_begin = e.v1
                 if bv_begin.vid != begin_long_edge_id:
                     edges_to_delete.add(e)
-        path = self.get_paths(be.v2, long_end, threshold)[0]
+        path = self.get_paths(be.v2, long_end, None, threshold)[0]
         for e in path:
             connected_path.add(e.eid)
         return True
