@@ -60,8 +60,7 @@ class GraphDistanceFinder {
     PathProcessor<Graph> path_processor(
         graph_,
         omnigraph::PairInfoPathLengthLowerBound(graph_.k(),
-          graph_.length(e1), graph_.length(e2), gap_,
-          delta_),
+          graph_.length(e1), graph_.length(e2), gap_, delta_),
         omnigraph::PairInfoPathLengthUpperBound(graph_.k(),
           insert_size_, delta_), graph_.EdgeEnd(e1),
         graph_.EdgeStart(e2), callback);
@@ -129,13 +128,13 @@ class AbstractDistanceEstimator {
       size_t left = i;
       double weight = estimated[i].second;
       while (i + 1 < estimated.size()
-          && (estimated[i + 1].first - estimated[i].first) <= (int) linkage_distance_) 
+         && (estimated[i + 1].first - estimated[i].first) <= (int) linkage_distance_) 
       {
         ++i;
         weight += estimated[i].second;
       }
       double center = (estimated[left].first + estimated[i].first) * 0.5;
-      double var = (estimated[i].first - estimated[left].first) * 0.5;
+      double var    = (estimated[i].first - estimated[left].first) * 0.5;
       result.insert(Point(center, weight, var));
     }
     return result;
@@ -184,8 +183,9 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
   virtual void Estimate(PairedInfoIndexT<Graph>& result) const {
     this->Init();
+    perf_counter pc;
     for (auto it = this->index().begin(); it != this->index().end(); ++it) 
-      ProcessEdgePair(make_pair(it.first(), it.second()), *it, result);
+      ProcessEdgePair(make_pair(it.first(), it.second()), *it, result, pc);
   }
 
   virtual void EstimateParallel(PairedInfoIndexT<Graph>& result, size_t nthreads) const {
@@ -201,18 +201,29 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       buffer[i] = new PairedInfoIndexT<Graph>(this->graph());
     }
 
+    time_path_processor = 0.;
+    time_estimating = 0.;
+    time_clustering = 0.;
     INFO("Processing");
     #pragma omp parallel num_threads(nthreads)
     {
-      #pragma omp for
+      perf_counter pc;
+      #pragma omp for schedule(dynamic, 5)
       for (size_t i = 0; i < edge_pairs.size(); ++i)
-        {
-          EdgeId e1 = edge_pairs[i].first;
-          EdgeId e2 = edge_pairs[i].second;
-          ProcessEdgePair(edge_pairs[i],
-                          this->index().GetEdgePairInfo(e1, e2), 
-                          *buffer[omp_get_thread_num()]);
-        }
+      {
+        EdgeId e1 = edge_pairs[i].first;
+        EdgeId e2 = edge_pairs[i].second;
+        ProcessEdgePair(edge_pairs[i],
+            this->index().GetEdgePairInfo(e1, e2), 
+            *buffer[omp_get_thread_num()], pc);
+        //if (i % 10000 == 0) {
+          //INFO("Used time : ");
+          //INFO("PathProcessing : "    << time_path_processor);
+          //INFO("Estimating itself : " << time_estimating);
+          //INFO("Clustering : "        << time_clustering);
+        //}
+      }
+      TRACE("Thread number " << omp_get_thread_num() << " is finished");
     }
 
     INFO("Merging maps");
@@ -264,7 +275,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       return result;
 
     size_t cur_dist = 0;
-    vector<double> weights(forward.size());
+    vector<double> weights(forward.size(), 0.);
     for (auto iter = histogram.begin(), end_iter = histogram.end(); iter != end_iter; ++iter) {
       const Point& point = *iter;
       if (ls(2. * point.d + second_len, (double) first_len))
@@ -295,16 +306,23 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     }
 
     for (size_t i = 0; i < forward.size(); ++i) {
-      if (gr(weights[i], 0.)) 
+      if (ge(weights[i], 0.))
         result.push_back(make_pair(forward[i], weights[i]));
     }
+    VERIFY(result.size() == forward.size());
     return result;
   }
+
+ protected:
+  static double time_path_processor;
+  static double time_estimating;
+  static double time_clustering;
 
  private:
   virtual void ProcessEdgePair(EdgePair ep,
                                const Histogram& histogram, 
-                               PairedInfoIndexT<Graph>& result) const 
+                               PairedInfoIndexT<Graph>& result,
+                               perf_counter& pc) const 
   {
     if (ep <= ConjugatePair(ep)) {
       TRACE("Edge pair is " << this->graph().int_id(ep.first) <<
@@ -331,6 +349,10 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
   DECL_LOGGER("DistanceEstimator");
 };
+
+template<class Graph> double DistanceEstimator<Graph>::time_path_processor = 0.;
+template<class Graph> double DistanceEstimator<Graph>::time_estimating     = 0.;
+template<class Graph> double DistanceEstimator<Graph>::time_clustering     = 0.;
 
 template<class Graph>
 class JumpingEstimator {

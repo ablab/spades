@@ -54,7 +54,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   typedef pair<EdgeId, EdgeId> EdgePair;
 
 // TODO: constant in the config
-  virtual void ProcessEdgePair(EdgePair ep, const Histogram& raw_hist, PairedInfoIndexT<Graph>& result) const 
+  virtual void ProcessEdgePair(EdgePair ep, const Histogram& raw_hist, PairedInfoIndexT<Graph>& result, perf_counter& pc) const 
   {
     if (ep <= this->ConjugatePair(ep)) {
       EdgeId e1 = ep.first;

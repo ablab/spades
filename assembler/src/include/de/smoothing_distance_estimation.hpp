@@ -16,7 +16,7 @@ namespace omnigraph {
 
 template<class Graph>
 class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
-    typedef ExtensiveDistanceEstimator<Graph> base;
+  typedef ExtensiveDistanceEstimator<Graph> base;
 
  public:
   SmoothingDistanceEstimator(const Graph& graph,
@@ -156,18 +156,28 @@ private:
     return new_result;
     }
 
-  virtual void ProcessEdgePair(EdgePair ep, const Histogram& raw_hist,
-                                      PairedInfoIndexT<Graph>& result) const {
+  virtual void ProcessEdgePair(EdgePair ep,
+                               const Histogram& raw_hist, 
+                               PairedInfoIndexT<Graph>& result,
+                               perf_counter& pc) const
+  {
+    pc.reset();
     if (ep <= this->ConjugatePair(ep)) {
       EdgeId e1 = ep.first;
       EdgeId e2 = ep.second;
       const vector<size_t>& forward = this->GetGraphDistancesLengths(ep);
-      TRACE("Processing edge pair " << this->graph().int_id(e1)
+
+      TRACE("Processing edge pair " << this->graph().int_id(e1) 
                              << " " << this->graph().int_id(e2));
       Histogram hist(raw_hist);
       EstimHist estimated;
+      //DEBUG("Extending paired information");
+      //DEBUG("Extend left");
+      //this->ExtendInfoLeft(e1, e2, hist, 1000);
+      //DEBUG("Extend right");
+      //this->ExtendInfoRight(e1, e2, hist, 1000);
       if (forward.size() == 0) {
-        estimated = FindEdgePairDistances(ep, raw_hist, forward);
+        estimated = FindEdgePairDistances(ep, hist, forward);
         ++gap_distances;
       }
       else if (forward.size() > 0 && (!only_scaffolding_)) {
@@ -178,6 +188,7 @@ private:
         this->ExtendInfoRight(e1, e2, hist, 1000);
         estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
       }
+
       DEBUG(gap_distances << " distances between gap edge pairs have been found");
       const Histogram& res = this->ClusterResult(ep, estimated);
       this->AddToResult(res, ep, result);
@@ -190,10 +201,6 @@ private:
         this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e1)) == 1 &&
         this->graph().IncomingEdgeCount(this->graph().EdgeStart(e2)) == 0 &&
         this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e2)) == 1);
-  }
-
-  EdgePair ReversePair(EdgePair ep) const {
-    return EdgePair(ep.second, ep.first);
   }
 
   virtual const string Name() const {

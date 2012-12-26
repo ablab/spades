@@ -39,10 +39,9 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
 
   boost::function<double(int)> weight_f_;
 
-  virtual EstimHist EstimateEdgePairDistances(
-      EdgePair ep,
-      const Histogram& histogram,
-      const vector<size_t>& raw_forward) const 
+	virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
+                                              const Histogram& histogram,
+                                              const vector<size_t>& raw_forward) const 
   {
     using std::abs;
     using namespace math;
