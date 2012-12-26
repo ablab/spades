@@ -404,10 +404,6 @@ class BGraph(Abstract_Graph):
                 real_first_paths.append(path_first)
             if len(path_second) > 1:
                 real_second_paths.append(path_second)
-        print "real_first_paths", real_first_paths
-        print "real_second_paths", real_second_paths
-        print "path between ", long_eid1, " ", long_eid2, " ", all_paths[0]
-        print "all paths", all_paths
         best_count_real_paths = 0
         best_path = all_paths[0]
         for path in  all_paths:
@@ -422,8 +418,6 @@ class BGraph(Abstract_Graph):
             if count_real_paths > best_count_real_paths :
                 best_count_real_paths = count_real_paths
                 best_path = path
-        print "best path", best_path
-        print "\n\n\n"
         return best_path[:-1]
 
 
