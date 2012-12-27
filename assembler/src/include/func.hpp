@@ -1,0 +1,128 @@
+#pragma once
+
+#include "standard_base.hpp"
+
+namespace func {
+
+template<class A, class B>
+class Func {
+public:
+	typedef function<B(A)> function_t;
+
+	virtual B Apply(A a) const = 0;
+
+	virtual ~Func() {
+	}
+};
+
+template<class T>
+class AndOperator;
+
+template<class T>
+class OrOperator;
+
+template<class T>
+class NotOperator;
+
+template<class T>
+class Predicate: public Func<T, bool> {
+public:
+	bool Apply(T t) const {
+		return Check(t);
+	}
+
+	virtual bool Check(T t) const = 0;
+
+	virtual ~Predicate() {
+	}
+};
+
+//template<class T>
+//const shared_ptr<Predicate<T>> operator &&(const shared_ptr<Predicate<T>>& a, const shared_ptr<Predicate<T>>& b) {
+//	return AndOperator<T>(a, b);
+//}
+//
+//template<class T>
+//const shared_ptr<Predicate<T>> operator ||(const shared_ptr<Predicate<T>>& a, const shared_ptr<Predicate<T>>& b) {
+//	return OrOperator<T>(a, b);
+//}
+//
+//template<class T>
+//const shared_ptr<Predicate<T>> operator !(const shared_ptr<Predicate<T>>& a) {
+//	return NotOperator<T>(a);
+//}
+
+template<class T>
+const shared_ptr<Predicate<T>> And(const shared_ptr<Predicate<T>>& a,
+		const shared_ptr<Predicate<T>>& b) {
+	return make_shared<AndOperator<T>>(a, b);
+}
+
+template<class T>
+const shared_ptr<Predicate<T>> Or(const shared_ptr<Predicate<T>>& a,
+		const shared_ptr<Predicate<T>>& b) {
+	return OrOperator<T>(a, b);
+}
+
+template<class T>
+const shared_ptr<Predicate<T>> Not(const shared_ptr<Predicate<T>>& a) {
+	return NotOperator<T>(a);
+}
+
+template<class T>
+class AlwaysTrue: public Predicate<T> {
+public:
+
+	bool Check(T t) const {
+		return true;
+	}
+
+};
+
+template<class T>
+class NotOperator: public Predicate<T> {
+	shared_ptr<Predicate<T>> a_;
+
+public:
+	NotOperator(const shared_ptr<Predicate<T>>& a) :
+			a_(a) {
+	}
+
+	bool Check(T t) const {
+		return !a_->Check(t);
+	}
+};
+
+template<class T>
+class AndOperator: public Predicate<T> {
+	shared_ptr<Predicate<T>> a_;
+	shared_ptr<Predicate<T>> b_;
+
+public:
+	AndOperator(const shared_ptr<Predicate<T>>& a,
+			const shared_ptr<Predicate<T>>& b) :
+			a_(a), b_(b) {
+	}
+
+	bool Check(T t) const {
+		return a_->Check(t) && b_->Check(t);
+	}
+};
+
+template<class T>
+class OrOperator: public Predicate<T> {
+	shared_ptr<Predicate<T>> a_;
+	shared_ptr<Predicate<T>> b_;
+
+public:
+	OrOperator(const shared_ptr<Predicate<T>>& a,
+			const shared_ptr<Predicate<T>>& b) :
+			a_(a), b_(b) {
+	}
+
+	bool Check(T t) const {
+		return a_->Check(t) || b_->Check(t);
+	}
+};
+
+}

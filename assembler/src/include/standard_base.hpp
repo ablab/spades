@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <list>
 #include <map>
+#include <queue>
 #include <vector>
 #include <stack>
 #include <set>
@@ -51,6 +52,7 @@ using std::multimap;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
+using std::queue;
 using std::array;
 using std::stack;
 using std::set;
