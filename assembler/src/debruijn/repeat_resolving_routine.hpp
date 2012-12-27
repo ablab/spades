@@ -128,10 +128,11 @@ void find_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_
 		VertexId start = gp.g.EdgeStart(*iter);
 		VertexId end = gp.g.EdgeEnd(*iter);
 		//Graph topology implied repeats
-		if (((gp.g.CheckUniqueIncomingEdge(end) && !gp.g.IsDeadEnd(end)) ||( gp.g.CheckUniqueOutgoingEdge(start)  && !gp.g.IsDeadStart(start) )) && (gp.g.length(*iter) <  cfg::get().rr.max_repeat_length))
-			not_unique.insert(*iter);
-		//Split-based repeats
-		else if (labels_after.edge_inclusions.find(*iter) != labels_after.edge_inclusions.end() && labels_after.edge_inclusions[*iter].size()> 1)
+//		if (((gp.g.CheckUniqueIncomingEdge(end) && !gp.g.IsDeadEnd(end)) ||( gp.g.CheckUniqueOutgoingEdge(start)  && !gp.g.IsDeadStart(start) )) && (gp.g.length(*iter) <  cfg::get().rr.max_repeat_length))
+//			not_unique.insert(*iter);
+//		//Split-based repeats
+//		else
+			if (labels_after.edge_inclusions.find(*iter) != labels_after.edge_inclusions.end() && labels_after.edge_inclusions[*iter].size()> 1)
 			not_unique.insert(*iter);
 	}
 	set<set<EdgeId> > components;
@@ -448,6 +449,7 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 					cutoff /= (4 );// /cfg::get().mismatch_ratio);
 				else {
 					not_masked ++;
+					origin_gp.mismatch_masker.mismatch_map[*iter][i].ratio = 0;
 					continue;
 					cutoff *= 1.5 ;//* cfg::get().mismatch_ratio;
 
