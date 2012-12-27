@@ -71,6 +71,7 @@ using std::ostream_iterator;
 using std::copy;
 
 using std::shared_ptr;
+using std::make_shared;
 
 //==boost
 
