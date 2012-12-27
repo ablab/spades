@@ -125,43 +125,97 @@ void find_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_
 template<class graph_pack>
 void fillComponentDistances(set<EdgeId>& component, map<EdgeId, pair<size_t, size_t> > & distances_map, graph_pack& gp){
 	map<EdgeId, pair<size_t, size_t> >  component_map;
+	map<VertexId, pair<int, int> > vertex_map;
 	//longest pathes from start and end of edge resp to first base(backward and forward resp) not in repeat;
-	for (auto iter  = component.begin(); iter != component.end(); iter ++)
-		component_map[*iter] = std::make_pair(0, 0);
+	for (auto iter  = component.begin(); iter != component.end(); iter ++) {
+		component_map.insert(std::make_pair(*iter, std::make_pair(1000000,1000000)));
+		VertexId start = gp.g.EdgeStart(*iter);
+		VertexId end = gp.g.EdgeEnd(*iter);
+		vertex_map.insert(std::make_pair(start, std::make_pair(-1000000, -1000000)));
+		vertex_map.insert(std::make_pair(end, std::make_pair(-1000000, -1000000)));
+	}
+	for (auto iter  = component.begin(); iter != component.end(); iter ++) {
+		VertexId start = gp.g.EdgeStart(*iter);
+		VertexId end = gp.g.EdgeEnd(*iter);
+		vector<EdgeId> next = gp.g.IncomingEdges(start);
+		for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
+			if (component.find(*e_iter) == component.end())
+				vertex_map[start].first = 0;
+		if (next.size() == 0)
+			vertex_map[start].first = 0;
 
-	for(size_t j = 0; j < 1000; j++){
+		next = gp.g.OutgoingEdges(end);
+		for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
+			if (component.find(*e_iter) == component.end())
+				vertex_map[end].second = 0;
+		if (next.size() == 0)
+			vertex_map[end].second = 0;
+	}
+	pair<set<EdgeId>, set<EdgeId> >used;
+	for(size_t j = 0; j < 10000; j++){
 		bool changed = false;
 		for (auto iter = component.begin(); iter != component.end(); iter ++) {
-			size_t max_incoming_path = 0;
-			size_t max_outgoing_path = 0;
 			VertexId start = gp.g.EdgeStart(*iter);
 			VertexId end = gp.g.EdgeEnd(*iter);
-			vector<EdgeId> next = gp.g.IncomingEdges(start);
-			for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
-				if (component_map.find(*e_iter) != component_map.end())
-					max_incoming_path = max(max_incoming_path, component_map[*e_iter].first + gp.g.length(*e_iter));
-			next = gp.g.OutgoingEdges(end);
-			for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
-				if (component_map.find(*e_iter) != component_map.end())
-					max_outgoing_path = max(max_outgoing_path, component_map[*e_iter].second + gp.g.length(*e_iter));
-			if (max_incoming_path > component_map[*iter].first){
-				changed = true;
-				component_map[*iter].first = max_incoming_path;
+			int len = gp.g.length(*iter);
+			if (used.first.find(*iter) == used.first.end()) {
+				if (vertex_map[start].first >=0 && vertex_map[start].first + len > vertex_map[end].first){
+					vertex_map[end].first = vertex_map[start].first + len;
+					changed = true;
+					used.first.insert(*iter);
+				}
 			}
-			if (max_outgoing_path > component_map[*iter].second){
-				changed = true;
-				component_map[*iter].second = max_outgoing_path;
+
+			if (used.second.find(*iter) == used.second.end()) {
+				if (vertex_map[end].second >=0 && vertex_map[end].second + len > vertex_map[start].second){
+					vertex_map[start].second = vertex_map[end].second + len;
+					changed = true;
+					used.second.insert(*iter);
+				}
 			}
 		}
-		if (!changed)
+		if (! changed)
 			break;
 	}
-	DEBUG("not_unique_component");
+	for (auto iter = component.begin(); iter != component.end(); iter ++) {
+		VertexId start = gp.g.EdgeStart(*iter);
+		VertexId end = gp.g.EdgeEnd(*iter);
+		component_map[*iter] = std::make_pair(vertex_map[start].first, vertex_map[end].second);
+	}
+//	for(size_t j = 0; j < 1000; j++){
+//		bool changed = false;
+//		for (auto iter = component.begin(); iter != component.end(); iter ++) {
+//			size_t max_incoming_path = -1000;
+//			size_t max_outgoing_path = -1000;
+//			VertexId start = gp.g.EdgeStart(*iter);
+//			VertexId end = gp.g.EdgeEnd(*iter);
+//			vector<EdgeId> next = gp.g.IncomingEdges(start);
+//			for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
+//				if (component_map.find(*e_iter) != component_map.end())
+//					max_incoming_path = max(max_incoming_path, component_map[*e_iter].first + gp.g.length(*e_iter));
+//			next = gp.g.OutgoingEdges(end);
+//			for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
+//				if (component_map.find(*e_iter) != component_map.end())
+//					max_outgoing_path = min(max_outgoing_path, component_map[*e_iter].second + gp.g.length(*e_iter));
+//			if (max_incoming_path < component_map[*iter].first){
+//				changed = true;
+//				component_map[*iter].first = max_incoming_path;
+//			}
+//			if (max_outgoing_path < component_map[*iter].second){
+//				changed = true;
+//				component_map[*iter].second = max_outgoing_path;
+//			}
+//		}
+//		if (!changed)
+//			break;
+//	}
+	INFO("not_unique_component");
 	for (auto iter = component.begin(); iter != component.end(); ++iter){
-		DEBUG(gp.g.int_id(*iter)<<" len "<< gp.g.length(*iter) <<" :  "<<component_map[*iter].first <<" " << component_map[*iter].second);
+		INFO(gp.g.int_id(*iter)<<" len "<< gp.g.length(*iter) <<" :  "<<component_map[*iter].first <<" " << component_map[*iter].second);
 		distances_map[*iter] = component_map[*iter];
 	}
 }
+
 
 //TODO Move to graphio if saves needed;
 template<class graph_pack>
@@ -426,7 +480,9 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
 
 					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff && real_count <= 5) {
-
+                                                INFO(origin_gp.g.int_id(*iter) << " "<< resolved_positions[j].second <<" edge length:  "<< origin_gp.g.length(*iter));
+                                                INFO(distance_to_repeats_end[*iter].first<< " " << distance_to_repeats_end[*iter].second );
+ 
 						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, real_multiplicity * mismatches[i].ratio, mismatches[i].counts, cutoff);
 						Ncount++;
 					}
