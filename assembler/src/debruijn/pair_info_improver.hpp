@@ -183,7 +183,7 @@ class PairInfoImprover {
           EdgeId e1 = I.first();
           EdgeId e2 = I.second();
           for (auto it = hist.begin(); it != hist.end(); ++it) {
-            cnt += TryToAddPairInfo(index_, I.first(), I.second(), *it);
+            cnt += TryToAddPairInfo(index_, e1, e2, *it);
           }
         }
       }

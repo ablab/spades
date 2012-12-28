@@ -17,20 +17,20 @@ template<class Graph>
 class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
 
  public:
-	WeightedDistanceEstimator(const Graph &graph,
+  WeightedDistanceEstimator(const Graph &graph,
       const PairedInfoIndexT<Graph>& histogram,
       const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f, 
       size_t linkage_distance, size_t max_distance) :
       base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f) 
   {
-	}
+  }
 
   virtual ~WeightedDistanceEstimator() 
   {
   }
 
  protected:
-	typedef DistanceEstimator<Graph> base;
+  typedef DistanceEstimator<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
 
   typedef set<Point> Histogram;
@@ -39,10 +39,10 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
 
   boost::function<double(int)> weight_f_;
 
-	virtual EstimHist EstimateEdgePairDistances(
-      const EdgePair& ep,
-			const Histogram& histogram,
-			const vector<size_t>& raw_forward) const 
+  virtual EstimHist EstimateEdgePairDistances(
+      EdgePair ep,
+      const Histogram& histogram,
+      const vector<size_t>& raw_forward) const 
   {
     using std::abs;
     using namespace math;
@@ -93,14 +93,14 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
       } else
         if (le(abs(forward[cur_dist] - point.d), max_dist))
           weights[cur_dist] += point.weight * weight_f_((int) forward[cur_dist] - point.d);
-		}
+    }
         
-		for (size_t i = 0; i < forward.size(); ++i)
-			if (gr(weights[i], 0.))
-				result.push_back(make_pair(forward[i], weights[i]));
+    for (size_t i = 0; i < forward.size(); ++i)
+      if (gr(weights[i], 0.))
+        result.push_back(make_pair(forward[i], weights[i]));
 
-		return result;
-	}
+    return result;
+  }
 
   virtual const string Name() const {
     static const string my_name = "WEIGHTED";

@@ -84,7 +84,7 @@ class JumpingPairInfoChecker: public AbstractPairInfoFilter<Graph> {
   }
 
  protected:
-  virtual bool Check(const EdgeId& e1, const EdgeId& e2) const {
+  virtual bool Check(EdgeId e1, EdgeId e2) const {
     vector<size_t> result1 = finder_.GetGraphDistancesLengths(e1, e2);
     vector<size_t> result2 = finder_.GetGraphDistancesLengths(e2, e1);
     bool result = result1.empty() && result2.empty();
