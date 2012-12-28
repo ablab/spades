@@ -72,11 +72,11 @@ def assess_map(result_map, limit_map):
             if limit_map[metric][1] and result_map[metric] < limit_map[metric][0]:
                 print(metric + " is less than expected: " + str(limit_map[metric][0]))
                 log_str += " (bad)"
-                res -= 1
+                res = -1
             elif not limit_map[metric][1] and result_map[metric] > limit_map[metric][0]:
                 print(metric + " is higher than expected: " + str(limit_map[metric][0]))
                 log_str += " (bad)"
-                res -= 1
+                res = -1
 
         log_str += "; "
 
@@ -154,7 +154,7 @@ def filter_file_list(file_list):
 
 if len(sys.argv) < 2:
     print("Data set info is not provided")
-    sys.exit(-1)
+    sys.exit(1)
 
 dataset_path, dataset_info = load_info(sys.argv[1])
 
@@ -163,7 +163,7 @@ if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
     ecode = os.system('./prepare_cfg')
     if ecode != 0:
         print("Preparing configuration files finished abnormally with exit code " + str(ecode))
-        sys.exit(ecode)
+        sys.exit(2)
 
 
 #compile
@@ -171,7 +171,7 @@ if 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
     ecode = os.system('./spades_compile.sh')
     if ecode != 0:
         print("Compilation finished abnormally with exit code " + str(ecode))
-        sys.exit(ecode)
+        sys.exit(3)
 
 #make dirs and remembering history
 spades_output_dir_name = dataset_info.name
@@ -207,7 +207,7 @@ if ecode != 0:
     print("SPAdes finished abnormally with exit code " + str(ecode))
     write_log(history_log, "", output_dir, dataset_info)
     os.system("chmod -R 777 " + output_dir)
-    sys.exit(ecode)
+    sys.exit(4)
 
 new_log = ''
 exit_code = 0
@@ -218,7 +218,7 @@ if 'reads_quality_params' in dataset_info.__dict__:
 
     if not os.path.exists(corrected_reads_dataset):
         print("Corrected reads were not detected in " + corrected_reads_dataset)
-        exit_code = -3
+        exit_code = 5
     else:
         rq_params = []
         i = 0
@@ -237,7 +237,7 @@ if 'reads_quality_params' in dataset_info.__dict__:
             print("Reads quality tool finished abnormally with exit code " + str(ecode))
             write_log(history_log, "", output_dir, dataset_info)
             os.system("chmod -R 777 " + output_dir)
-            sys.exit(ecode)
+            sys.exit(6)
 
         limit_map = {}
         if 'assess' in dataset_info.__dict__ and dataset_info.assess:
@@ -258,7 +258,7 @@ if 'quast_params' in dataset_info.__dict__:
 
     if not os.path.exists(contigs):
         print("No contigs were found in " + output_dir)
-        exit_code = -4
+        exit_code = 7
     else:
         quast_params = []
         i = 0
@@ -278,7 +278,7 @@ if 'quast_params' in dataset_info.__dict__:
             print("QUAST finished abnormally with exit code " + str(ecode))
             write_log(history_log, "", output_dir, dataset_info)
             os.system("chmod -R 777 " + output_dir)
-            sys.exit(ecode)
+            sys.exit(8)
 
         limit_map = {}
         if 'assess' in dataset_info.__dict__ and dataset_info.assess:
@@ -297,7 +297,8 @@ if 'quast_params' in dataset_info.__dict__:
                 limit_map["Mismatches"] = (dataset_info.max_subs, False)
             
         result = assess_quast(os.path.join(quast_output_dir, "transposed_report.tsv"), limit_map, "contigs")
-        exit_code += result[0]
+        if result[0] != 0:
+            exit_code = 9
         new_log += result[1]
 
         #SCAFFOLDS
@@ -316,7 +317,7 @@ if 'etalon_saves' in dataset_info.__dict__:
     ecode = os.system("./src/test/teamcity/detect_diffs.sh " + output_dir + " " + dataset_info.etalon_saves)
     if ecode != 0:
         print("Comparing etalon saves finished abnormally with exit code " + str(ecode))
-        exit_code = ecode
+        exit_code = 10
 
 
 #writing log
