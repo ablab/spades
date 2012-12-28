@@ -138,7 +138,8 @@ public:
 		using namespace boost;
 		vector<string> tmp_tokenized_input;
 		split(tmp_tokenized_input, input_, is_any_of(" ,;"), token_compress_on);
-		for (auto it = tmp_tokenized_input.begin(); it != tmp_tokenized_input.end(); ++it) {
+		for (auto it = tmp_tokenized_input.begin();
+				it != tmp_tokenized_input.end(); ++it) {
 			tokenized_input_.push(*it);
 		}
 		ReadNext();
