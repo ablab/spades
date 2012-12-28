@@ -875,12 +875,13 @@ def main():
         #log.info("")
 
         #breaking sacffolds
-        result_broken_scaffolds = os.path.join(spades_cfg.output_dir, "broken_scaffolds.fasta")
-        sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/contig_analysis"))
-        import break_scaffolds_into_contigs
-        threshold = 3
-        break_scaffolds_into_contigs.break_scaffolds(["", spades_cfg.result_scaffolds, str(threshold), result_broken_scaffolds])
-        log.info(" * Scaffolds broken by " + str(threshold) + " Ns are " + result_broken_scaffolds)
+	if os.path.isfile(result_scaffolds_filename):
+	        result_broken_scaffolds = os.path.join(spades_cfg.output_dir, "broken_scaffolds.fasta")
+        	sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/contig_analysis"))
+	        import break_scaffolds_into_contigs
+        	threshold = 3
+	        break_scaffolds_into_contigs.break_scaffolds(["", result_scaffolds_filename, str(threshold), result_broken_scaffolds])
+        	log.info(" * Scaffolds broken by " + str(threshold) + " Ns are " + result_broken_scaffolds)
 
         log.info("")
         log.info("Thank you for using SPAdes!")
