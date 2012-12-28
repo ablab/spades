@@ -247,7 +247,8 @@ if 'reads_quality_params' in dataset_info.__dict__:
                 limit_map["Aligned reads"] = (dataset_info.min_aligned, True)
             
         result = assess_reads(os.path.join(rq_output_dir, "report.horizontal.tsv"), limit_map)
-        exit_code += result[0]
+        if result[0] != 0:
+            exit_code = 7
         new_log += result[1]
 
 
@@ -258,7 +259,7 @@ if 'quast_params' in dataset_info.__dict__:
 
     if not os.path.exists(contigs):
         print("No contigs were found in " + output_dir)
-        exit_code = 7
+        exit_code = 8
     else:
         quast_params = []
         i = 0
@@ -278,7 +279,7 @@ if 'quast_params' in dataset_info.__dict__:
             print("QUAST finished abnormally with exit code " + str(ecode))
             write_log(history_log, "", output_dir, dataset_info)
             os.system("chmod -R 777 " + output_dir)
-            sys.exit(8)
+            sys.exit(9)
 
         limit_map = {}
         if 'assess' in dataset_info.__dict__ and dataset_info.assess:
@@ -298,7 +299,7 @@ if 'quast_params' in dataset_info.__dict__:
             
         result = assess_quast(os.path.join(quast_output_dir, "transposed_report.tsv"), limit_map, "contigs")
         if result[0] != 0:
-            exit_code = 9
+            exit_code = 10
         new_log += result[1]
 
         #SCAFFOLDS
@@ -317,7 +318,7 @@ if 'etalon_saves' in dataset_info.__dict__:
     ecode = os.system("./src/test/teamcity/detect_diffs.sh " + output_dir + " " + dataset_info.etalon_saves)
     if ecode != 0:
         print("Comparing etalon saves finished abnormally with exit code " + str(ecode))
-        exit_code = 10
+        exit_code = 11
 
 
 #writing log
