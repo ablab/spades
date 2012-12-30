@@ -546,7 +546,8 @@ def main():
                 cfg["common"].__dict__["max_memory"] = memory
             if developer_mode:
                 cfg["common"].__dict__["developer_mode"] = developer_mode
-
+	    if mismatch_corrector:
+		cfg["common"].__dict__["mismatch-correction"] = mismatch_corrector
             # error correction
             if not only_assembler:
                 if tmp_dir:
