@@ -211,9 +211,9 @@ void fillComponentDistances(set<EdgeId>& component, map<EdgeId, pair<size_t, siz
 //		if (!changed)
 //			break;
 //	}
-	INFO("not_unique_component");
+	DEBUG("not_unique_component");
 	for (auto iter = component.begin(); iter != component.end(); ++iter){
-		INFO(gp.g.int_id(*iter)<<" len "<< gp.g.length(*iter) <<" :  "<<component_map[*iter].first <<" " << component_map[*iter].second);
+		DEBUG(gp.g.int_id(*iter)<<" len "<< gp.g.length(*iter) <<" :  "<<component_map[*iter].first <<" " << component_map[*iter].second);
 		distances_map[*iter] = component_map[*iter];
 	}
 }
