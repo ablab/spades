@@ -98,7 +98,7 @@ public:
 	}
 
 	bool Check(EdgeId e) const {
-		return this->g().length(e) < max_length_;
+		return this->g().length(e) <= max_length_;
 	}
 
 };
