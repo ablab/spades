@@ -113,7 +113,7 @@ def find_closest( i, start_pos, list, pred, contigs, coverage ) :
 	return min_id
 
 # splits graph into component discarding reads that are potential to be unique
-def get_components( edges ) :
+def get_components( edges, redges ) :
 
 	print "splitting into components..."
 	#print edges
@@ -140,9 +140,11 @@ def get_components( edges ) :
 		v_in = edges[e][1]
 
 		if (not v_out in in_count or out_count[v_out] > 1 ) and (in_count[v_in] > 1 or not v_in in out_count ) :
-			singles[e] = edges[e]
+			if not redges[e] in singles.keys() :
+				singles[e] = edges[e]
 		else :
-			components[e] = edges[e]
+			if not redges[e] in components.keys() :
+				components[e] = edges[e]
 
 	return components, singles
 
@@ -156,19 +158,19 @@ def traverse_components( components, singles, cov, redges ) :
 			outs = []
 			visit(e, visited, components, singles, ins, outs)
 
-			ins_dict = {}
-			outs_dict = {}
-			for i in ins :
-				ins_dict[i] = cov[i]
-			for i in outs :
-				outs_dict[i] = cov[i]
-
 			skip = False
-			for r_edge in redges.keys() :
-				if  ( r_edge in ins and redges[r_edge] in outs or r_edge in outs and redges[r_edge] in ins ):
-					skip = True
-					break
-			if not skip :
+
+			if len(ins) != len(outs) :
+				skip = True
+
+			if not skip:
+				ins_dict = {}
+				outs_dict = {}
+				for i in ins :
+					ins_dict[i] = cov[i]
+				for i in outs :
+					outs_dict[i] = cov[i]
+
 				print dict(sorted(ins_dict.iteritems(), key=lambda (k,v): (v,k)))
 				print dict(sorted(outs_dict.iteritems(), key=lambda (k,v): (v,k)))
 			 
@@ -350,19 +352,19 @@ if TEST :
 	coverage = parse_cvr("test.cvr")
 	edges, redges = parse_grp("test.grp")
 	#split_by_coverage(contigs, edges, 0)
-	components, singles = get_components( edges )
+	components, singles = get_components( edges, redges )
 	traverse_components( components, singles, coverage, redges )
 else :
 	contigs = parse_pos("distance_filling.pos",0,10000)
 	coverage = parse_cvr("distance_filling.cvr")
 	edges, redges = parse_grp("distance_filling.grp")
 	#split_by_coverage(contigs, edges, 100)
-	components, singles = get_components( edges )
+	components, singles = get_components( edges, redges )
 	traverse_components( components, singles, coverage, redges )
 
-	pyplot.xlim([0,500])	
-	pyplot.ylim([0,500])	
-	pyplot.plot(x,y,marker='.',linestyle="")
-	pyplot.savefig('plot.png')
+#	pyplot.xlim([0,500])	
+#	pyplot.ylim([0,500])	
+#	pyplot.plot(x,y,marker='.',linestyle="")
+#	pyplot.savefig('plot.png')
 #print rank
 #flush(rank)
