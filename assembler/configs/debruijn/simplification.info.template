@@ -9,10 +9,12 @@ sc_simplification
 	; tip clipper:
 	tc
 	{
+        ; max_tip_length = max((min(k, read_length / 2) * lb), read_length);
+        condition               "{ lb 3.5, cb 100000, rctc 10000 }"
 		max_tip_length_coefficient	3.5	; max_tip_length = max((min(k, read_length / 2) * coefficient), read_length);
-		max_coverage				100000
-		max_relative_coverage		10000   ; tip_cov < this * not_tip_cov
-        max_iterations              400
+        max_coverage                            100000
+        max_relative_coverage           10000   ; tip_cov < this * not_tip_cov
+        max_iterations              200
         advanced_checks_enabled     false
         max_levenshtein             2000
         max_ec_length               60
@@ -105,6 +107,8 @@ usual_simplification
 	; tip clipper:
 	tc
 	{
+        ; max_tip_length = max((min(k, read_length / 2) * lb), read_length);
+        condition               "{ lb 3.5, cb 1000, rctc 2.0 }"
 		max_tip_length_coefficient	3.5	; max_tip_length = max((min(k, read_length / 2) * coefficient), read_length);
 		max_coverage				1000
 		max_relative_coverage		2.0		; tip_cov < this * not_tip_cov
