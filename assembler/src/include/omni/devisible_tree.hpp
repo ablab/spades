@@ -164,17 +164,19 @@ public:
 
 
 // build trees
-		for (auto it = graph_.SmartEdgeBegin(LengthComparator<Graph>(graph_)); !it.IsEnd(); ++it) {
-			EdgeId edge = *it;
-			VertexId start = graph_.EdgeStart(edge);
-			VertexId end = graph_.EdgeEnd(edge);
+//		for (auto it = graph_.SmartEdgeBegin(LengthComparator<Graph>(graph_)); !it.IsEnd(); ++it) {
+		BOOST_FOREACH(VertexId vertex, graph) {
+			BOOST_FOREACH(EdgeId edge, graph.OutgoingEdges(vertex)) {
+				VertexId start = graph_.EdgeStart(edge);
+				VertexId end = graph_.EdgeEnd(edge);
 
-			VertexId start_root = dset.find_set(start);
-			VertexId end_root = dset.find_set(end);
+				VertexId start_root = dset.find_set(start);
+				VertexId end_root = dset.find_set(end);
 
-			if (start_root != end_root) {
-				dset.link(start_root, end_root);
-				edges_.insert(edge);
+				if (start_root != end_root) {
+					dset.link(start_root, end_root);
+					edges_.insert(edge);
+				}
 			}
 		}
 

@@ -29,7 +29,7 @@ public:
 
 	virtual void Preprocessing() { }
 	virtual void Postprocessing() { }
-	virtual void ProcessNext(const T& arg) = 0;
+	virtual bool ProcessNext(const T& arg) = 0;
 };
 
 } //namespace omnigraph

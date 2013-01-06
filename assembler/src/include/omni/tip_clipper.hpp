@@ -43,6 +43,7 @@ private:
 	typedef typename Graph::VertexId VertexId;
 
 	Graph &graph_;
+	SmartSet<Graph, EdgeId> not_processed_edges_;
 	size_t removed_;
 
 public:
@@ -63,6 +64,7 @@ protected:
 			boost::function<void(EdgeId)> removal_handler = 0,
 			boost::function<double(EdgeId)> qual_f = 0)
 				: graph_(graph),
+				  not_processed_edges_(graph, std::less<EdgeId>(), false),
 				  removed_(0),
 				  max_tip_length_(max_tip_length),
 				  removal_handler_(removal_handler) {
@@ -100,11 +102,6 @@ protected:
 
 	void CompressSplitVertex(VertexId splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
-
-			// for debug. It should happen only if CanCompressVertex
-			// invalidate graph.
-//			VERIFY(graph_.IsValid());
-
 			graph_.CompressVertex(splitVertex);
 		}
 	}
@@ -135,20 +132,13 @@ protected:
 	}
 
 	virtual bool TryToRemoveTip(EdgeId tip) {
-//		if (!graph_.IsInternalSafe(tip)) {
-//			// for algorithm to process this edge sequently.
-//			graph_.InvalidateComponent();
-//		}
-//
-//		if (graph_.IsValid()) {
-			RemoveTip(tip);
-			TRACE("Edge removed");
-//			return true;
-//		} else {
-//			TRACE("Component is invalid. " << "Edge "  << graph_.str(tip) << " can not be removed in parallel.");
-//			return false;
-//		}
-			return true;
+		if (!graph_.IsInternalSafe(tip)) {
+			return false;
+		}
+
+		RemoveTip(tip);
+		TRACE("Edge removed");
+		return true;
 	}
 
 	/**
@@ -162,7 +152,7 @@ public:
 	/**
 	 * Method clips tips of the graph.
 	 */
-    virtual void ProcessNext(const EdgeId& tip) {
+    virtual bool ProcessNext(const EdgeId& tip) {
 		TRACE("Checking edge for being tip "  << this->graph().str(tip));
 		if (this->IsTip(tip)) {
 			TRACE("Edge "  << this->graph().str(tip) << " judged to look like a tip topologically");
@@ -171,6 +161,8 @@ public:
 
 				if (this->TryToRemoveTip(tip)) {
 					removed_++;
+				} else {
+					return false;
 				}
 
 			} else {
@@ -179,6 +171,8 @@ public:
 		} else {
 			TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like tip topologically");
 		}
+
+		return true;
     }
 
     virtual void Preprocessing() {
@@ -472,7 +466,7 @@ public:
 	}
 
     // Method deletes tips from the graph carefully, its work depends on the number of simplification iteration
-	virtual void ProcessNext(const EdgeId& tip) {
+	virtual bool ProcessNext(const EdgeId& tip) {
         TRACE("Use next edge");
 		TRACE("Checking edge for being a tip "  << this->graph().str(tip));
 
@@ -486,20 +480,19 @@ public:
 				if (tip_lock_.IsLocked(tip)){
 					TRACE("Tip " << this->graph().str(tip) << " was locked => can not remove it");
 					locked_++;
-					return;
+					return true;
 				}
 
 				// removing only if stage is final
 				if (final_stage_ && CheckUniqueExtension(tip)){
 					TRACE("Edge " << this->graph().str(tip) << " has a unique extension");
-					this->TryToRemoveTip(tip);
-					return;
+					return this->TryToRemoveTip(tip);
 				}
 
 				// tricky condition -- not removing short edges with high coverage until the final stage
 				if (!TipHasLowRelativeCoverage(tip)){
 					TRACE("Tip is covered well too much => not removing");
-					return;
+					return true;
 				}
 
 				// now we delete tip if we are not in the final stage
@@ -507,8 +500,9 @@ public:
 					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
 					if (this->TryToRemoveTip(tip)) {
 						removed_with_check_++;
+						return true;
 					}
-					return;
+					return false;
 				}
 
 				// now we are in the final stage
@@ -517,8 +511,9 @@ public:
 					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
 					if (this->TryToRemoveTip(tip)) {
 						removed_with_check_++;
+						return true;
 					}
-					return;
+					return false;
 				}
 
 				// additional topology kind of check at the final stages
@@ -526,8 +521,9 @@ public:
 					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
 					if (this->TryToRemoveTip(tip)) {
 						removed_with_check_++;
+						return true;
 					}
-					return;
+					return false;
 				}
 				TRACE("Edge "  << this->graph().str(tip) << " is not a tip");
 			} else {
@@ -536,6 +532,8 @@ public:
 		} else {
 			TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like a tip topologically");
 		}
+
+		return true;
 	}
 
 

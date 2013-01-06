@@ -8,19 +8,25 @@
 #ifndef BULGE_REMOVER_FACTORY_HPP_
 #define BULGE_REMOVER_FACTORY_HPP_
 
-#include "sequential_algorihtm_factory.hpp"
-#include "bulge_remover.hpp"
+#include "omni/sequential_algorihtm_factory.hpp"
+#include "omni/concurrent_graph_component.hpp"
+#include "omni/sequential_algorihtm_factory.hpp"
+#include "omni/bulge_remover.hpp"
+#include "kmer_mapper_logger.hpp"
 
-namespace omnigraph {
+namespace debruijn {
 
 
 template <class Graph>
-class BulgeRemoverFactory : public SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> {
+class BulgeRemoverFactory
+		: public omnigraph::SequentialAlgorihtmFactory<omnigraph::ConcurrentGraphComponent<Graph>, typename Graph::EdgeId> {
 
-	typedef typename Graph::EdgeId EdgeId;
-	typedef SequentialAlgorihtmFactory<Graph, EdgeId> Base;
+	typedef omnigraph::ConcurrentGraphComponent<Graph> Component;
+	typedef typename Component::EdgeId EdgeId;
+	typedef SequentialAlgorihtmFactory<Component, EdgeId> Base;
 	typedef typename Base::AlgorithmPtr AlgorithmPtr;
-	typedef typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF BulgeCallbackF;
+	typedef typename omnigraph::BulgeRemover<Component>::BulgeCallbackF BulgeCallbackF;
+	typedef KmerMapperLogger<Graph> Logger;
 
 
 public:
@@ -42,16 +48,29 @@ public:
 				  bulge_condition_(bulge_condition),
 				  opt_callback_(opt_callback),
 				  removal_handler_(removal_handler) {
+
+		// TODO: KMermapper handling here
 	}
 
-	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
+	virtual AlgorithmPtr CreateAlgorithm(Component& graph) {
 		AlgorithmPtr ptr(
-			new BulgeRemover<Graph>(
+			new BulgeRemover<Component>(
 					graph, max_length_, max_coverage_, max_relative_coverage_,
 					max_delta_, max_relative_delta_, bulge_condition_,
 					opt_callback_, removal_handler_));
 
 		return ptr;
+	}
+
+	~BulgeRemoverFactory() {
+		while (!loggers_.empty()) {
+			delete loggers_.back();
+			loggers_.pop_back();
+		}
+	}
+
+	const vector<Logger*>& loggers() const {
+		return loggers_;
 	}
 
 
@@ -65,6 +84,7 @@ private:
 	BulgeCallbackF bulge_condition_;
 	BulgeCallbackF opt_callback_;
 	boost::function<void(EdgeId)> removal_handler_;
+	vector<Logger*> loggers_;
 
 };
 

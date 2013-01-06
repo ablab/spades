@@ -24,6 +24,7 @@
 #include "concurrent_conjugate_graph_component.hpp"
 #include "conjugate_vertex_glued_graph.hpp"
 #include "component_algorithm_runner.hpp"
+#include "perfcounter.hpp"
 
 #include <memory>
 
@@ -52,23 +53,29 @@ public:
 	ConcurrentEdgeAlgorithm(const size_t nthreads, Graph& graph, FactoryPtr factory)
 			: nthreads_(nthreads), graph_(graph), factory_(factory) {
 
+		INFO("Run in " << nthreads_ << " threads")
+
 		GluedVertexGraph glued_vertex_graph (graph);
 		DevisibleTree<GluedVertexGraph> tree (glued_vertex_graph);
 
 		const size_t component_size = tree.GetSize() / nthreads;
 
+		avg_perf_counter counter;
 		for (size_t thread = 0; thread < nthreads_; ++thread) {
 			vector<VertexId> vertices;
+			counter.start();
 			if (thread == nthreads_ - 1) {
 				tree.SeparateVertices(vertices, tree.GetSize());
 			} else {
 				tree.SeparateVertices(vertices, component_size);
 			}
+			INFO(thread << "th component gets " << vertices.size());
 
 			size_t actual_size = vertices.size();
 			for (size_t i = 0; i < actual_size; ++i) {
 				vertices.push_back(graph.conjugate(vertices[i]));
 			}
+			counter.stop();
 
 			ComponentPtr ptr (
 					new ConjugateComponent(
@@ -84,6 +91,7 @@ public:
 
 			components_.push_back(ptr);
 		}
+		INFO("Splitting to component time: " << human_readable_time(counter.time()));
 
 		for (size_t i = 0; i < nthreads_; ++i) {
 			RunnerPtr ptr (new Runner(*components_[i], factory->CreateAlgorithm(*components_[i])));
@@ -100,6 +108,15 @@ public:
 		}
 
 		vector<EdgeId> not_processed_edges_with_duplicates;
+		
+		{
+			size_t edges_quant = 0;
+			for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+				++edges_quant;
+			}
+
+			INFO("Total edge quantity: " << edges_quant);
+		}
 
 		#pragma omp parallel for num_threads(nthreads_)
 		for (size_t i = 0; i < nthreads_; ++i) {
@@ -123,12 +140,25 @@ public:
 		);
 
 		for (size_t i = 0; i < nthreads_; ++i) {
+			components_[i]->GetEdgesGoingOutOfComponent(not_processed_edges_with_duplicates);
+		}
+
+		unordered_set<EdgeId> not_processed_edges(
+			not_processed_edges_with_duplicates.begin(), 
+			not_processed_edges_with_duplicates.end()
+		);
+		INFO("Edge on border: " << not_processed_edges.size());
+
+		for (size_t i = 0; i < nthreads_; ++i) {
 			runners_[i]->GetNotProcessedArguments(not_processed_edges_with_duplicates);
 		}
 
-		for (size_t i = 0; i < nthreads_; ++i) {
-			components_[i]->GetEdgesGoingOutOfComponent(not_processed_edges_with_duplicates);
-		}
+		not_processed_edges.insert(
+			not_processed_edges_with_duplicates.begin(),
+			not_processed_edges_with_duplicates.end()
+		);
+		INFO("Edge non processed in parallel: " << not_processed_edges.size());
+
 
 		Runner border_runner(all_graph_component, factory_->CreateAlgorithm(all_graph_component));
 

@@ -212,22 +212,16 @@ public:
 		bool result = false;
 		#pragma omp critical(action_handler_list_modification)
 		{
-			TRACE("Trying to remove action handler " << action_handler->name());
-			for (auto it = action_handler_list_.begin();
-					it != action_handler_list_.end(); ++it) {
-				if (*it == action_handler) {
-					action_handler_list_.erase(it);
-					TRACE(
-							"Action handler " << action_handler->name() << " removed");
-					result = true;
-					break;
-				}
-			}
-			if(!result) {
-				TRACE(
-						"Action handler " << action_handler->name() << " wasn't found among graph action handlers");
+			auto it = std::find(action_handler_list_.begin(), action_handler_list_.end(), action_handler);
+			if (it != action_handler_list_.end()) {
+				action_handler_list_.erase(it);
+				TRACE("Action handler " << action_handler->name() << " removed");
+				result = true;
+			} else {
+				TRACE("Action handler " << action_handler->name() << " wasn't found among graph action handlers");
 			}
 		}
+
 		return result;
 	}
 
@@ -277,24 +271,20 @@ public:
 //	}
 
 	bool AllHandlersThreadSafe() const {
-		for (auto it = action_handler_list_.begin();
-						it != action_handler_list_.end(); ++it) {
-			if (!(*it)->IsThreadSafe()) {
+		BOOST_FOREACH(Handler* handler, action_handler_list_) {
+			if (!handler->IsThreadSafe()) {
 				return false;
 			}
 		}
-
 		return true;
 	}
 
 	// TODO: for debug. remove.
 	void PrintHandlersNames() const {
-		for (auto it = action_handler_list_.begin();
-				it != action_handler_list_.end(); ++it) {
-			cout << (*it)->name() << endl;
+		BOOST_FOREACH(Handler* handler, action_handler_list_) {
+			cout << handler->name() << endl;
 		}
 	}
-
 
 private:
 	DECL_LOGGER("ObservableGraph")
