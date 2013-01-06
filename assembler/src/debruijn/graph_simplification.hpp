@@ -114,26 +114,26 @@ std::shared_ptr<
 					tc_config.max_relative_coverage, removal_handler));
 }
 
-template<class Graph>
-std::shared_ptr<
-		omnigraph::SequentialAlgorihtmFactory<ConcurrentGraphComponent<Graph>,
-				typename Graph::EdgeId>> GetAdvancedTipClipperFactory(
-		const debruijn_config::simplification::tip_clipper& tc_config,
-		size_t max_tip_length, double max_relative_coverage,
-		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
-		bool final_stage = false) {
-
-	typedef ConcurrentGraphComponent<Graph> Component;
-	typedef omnigraph::AdvancedTipClipperFactory<Component> Factory;
-	typedef omnigraph::SequentialAlgorihtmFactory<Component,
-			typename Graph::EdgeId> FactoryInterface;
-
-	return std::shared_ptr < FactoryInterface
-			> (new Factory(max_tip_length, tc_config.max_iterations,
-					tc_config.max_levenshtein, tc_config.max_ec_length,
-					tc_config.max_coverage, max_relative_coverage,
-					removal_handler));
-}
+//template<class Graph>
+//std::shared_ptr<
+//		omnigraph::SequentialAlgorihtmFactory<ConcurrentGraphComponent<Graph>,
+//				typename Graph::EdgeId>> GetAdvancedTipClipperFactory(
+//		const debruijn_config::simplification::tip_clipper& tc_config,
+//		size_t max_tip_length, double max_relative_coverage,
+//		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+//		bool final_stage = false) {
+//
+//	typedef ConcurrentGraphComponent<Graph> Component;
+//	typedef omnigraph::AdvancedTipClipperFactory<Component> Factory;
+//	typedef omnigraph::SequentialAlgorihtmFactory<Component,
+//			typename Graph::EdgeId> FactoryInterface;
+//
+//	return std::shared_ptr < FactoryInterface
+//			> (new Factory(max_tip_length, tc_config.max_iterations,
+//					tc_config.max_levenshtein, tc_config.max_ec_length,
+//					tc_config.max_coverage, max_relative_coverage,
+//					removal_handler));
+//}
 
 typedef const debruijn_config::simplification::tip_clipper& TcConfig;
 
@@ -173,14 +173,14 @@ std::shared_ptr<
 					* (1 + (iteration + 1.) / iteration_count));
 	//todo try use max_tip_length
 
-	if (cfg::get().simp.tc.advanced_checks) {
-		return GetAdvancedTipClipperFactory<Graph>(tc_config,
-				max_tip_length_corrected, tc_config.max_relative_coverage,
-				removal_handler);
-	} else {
+//	if (cfg::get().simp.tc.advanced_checks) {
+//		return GetAdvancedTipClipperFactory<Graph>(tc_config,
+//				max_tip_length_corrected, tc_config.max_relative_coverage,
+//				removal_handler);
+//	} else {
 		return GetDefaultTipClipperFactory<Graph>(tc_config,
 				max_tip_length_corrected, removal_handler);
-	}
+//	}
 }
 
 template<class GraphPack>
@@ -220,12 +220,12 @@ std::shared_ptr<
 	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
 			*cfg::get().ds.RL, k, tc_config.max_tip_length_coefficient);
 
-	if (cfg::get().simp.tc.advanced_checks) {
-		return GetAdvancedTipClipperFactory<Graph>(tc_config, max_tip_length,
-				tc_config.max_relative_coverage * 0.5, 0, true);
-	} else {
+//	if (cfg::get().simp.tc.advanced_checks) {
+//		return GetAdvancedTipClipperFactory<Graph>(tc_config, max_tip_length,
+//				tc_config.max_relative_coverage * 0.5, 0, true);
+//	} else {
 		return GetDefaultTipClipperFactory<Graph>(tc_config, max_tip_length);
-	}
+//	}
 }
 
 template<class Graph>
@@ -662,7 +662,6 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 void PreSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
 		detail_info_printer &printer, size_t iteration_count) {
-		avg_perf_counter& tip_clipper_timer, avg_perf_counter& bulge_remover_timer) {
 	//INFO("Early ErroneousConnectionsRemoval");
 	//RemoveLowCoverageEdges(graph, edge_remover, 1, 0, 1.5);
 	//INFO("ErroneousConnectionsRemoval stats");

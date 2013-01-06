@@ -47,6 +47,12 @@ private:
     explicit conjugate_iterator(edge_raw_iterator it, bool conjugate = false)
         : it_(it), conjugate_(conjugate) {}
 
+    // Should not exist. Temporary patch to write empty in_begin, out_end... methods for
+    // ConcurrentGraphComponent which can not have such methods by definition
+    conjugate_iterator() : conjugate_(false) {
+    	VERIFY_MSG(false, "There is no sense in using this. See comments.")
+    }
+
     reference operator*() const {
       if (conjugate_)
         return (*it_)->conjugate();

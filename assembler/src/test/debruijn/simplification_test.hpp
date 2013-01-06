@@ -97,14 +97,11 @@ void PrintGraph(const Graph & g) {
 }
 
 void DefaultClipTips(Graph& graph) {
-//	ClipTips(
-//		graph,
-//		GetDefaultTipClipperFactory<Graph>(
-//			standard_tc_config(),
-//			standard_read_length()
-//		)
-//	);
-	ClipTips(graph, standard_read_length(), standard_tc_config());
+	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
+			standard_read_length(), graph.k(), standard_tc_config().max_tip_length_coefficient);
+
+	auto factory = 	GetDefaultTipClipperFactory<Graph>(standard_tc_config(), max_tip_length, 0);
+	ClipTips(graph, factory);
 }
 /*
 void DefaultRemoveBulges(Graph& graph) {
@@ -127,9 +124,9 @@ BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
-//	PrintGraph(g);
-	RemoveBulges(g, standard_br_config());
-//	PrintGraph(g);
+
+	debruijn::BulgeRemoverFactory<Graph>* factory = GetBulgeRemoverFactory(g, standard_br_config());
+	RunConcurrentAlgorithm(g, FactoryInterfacePtr(factory), CoverageComparator<Graph>(g));
 
 	BOOST_CHECK_EQUAL(g.size(), 4);
 }
@@ -141,7 +138,8 @@ BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
 
 	DefaultClipTips(g);
 
-	RemoveBulges(g, standard_br_config());
+	debruijn::BulgeRemoverFactory<Graph>* factory = GetBulgeRemoverFactory(g, standard_br_config());
+	RunConcurrentAlgorithm(g, FactoryInterfacePtr(factory), CoverageComparator<Graph>(g));
 
 	BOOST_CHECK_EQUAL(g.size(), 16);
 }

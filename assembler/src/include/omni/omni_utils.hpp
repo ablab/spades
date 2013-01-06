@@ -1388,8 +1388,8 @@ private:
     // and potential erroneous connection between them.
     bool CheckTipTip(EdgeId tip, EdgeId alter) {
       if (backward) {
-        EdgeId edge = graph_.EdgeStart(alter);
-        for (auto I = graph_.out_begin(edge), E = graph_.out_end(edge); I != E; ++I) {
+        VertexId vertex = graph_.EdgeStart(alter);
+        for (auto I = graph_.out_begin(vertex), E = graph_.out_end(vertex); I != E; ++I) {
           EdgeId alter_tip = *I;
           if (IsTip(alter_tip)) {
             if (math::ge(graph_.coverage(alter_tip), graph_.coverage(tip)) &&

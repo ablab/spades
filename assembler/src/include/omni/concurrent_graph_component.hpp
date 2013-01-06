@@ -44,6 +44,7 @@ public:
 	typedef typename unordered_set<VertexId>::const_iterator VertexIterator;
 	typedef typename Graph::DataMaster DataMaster;
 	typedef AbstractEditableGraph<VertexId, EdgeId, DataMaster, VertexIterator> base;
+	typedef typename base::edge_const_iterator edge_const_iterator;
 
 
 	template<class InputVertexIterator>
@@ -66,6 +67,45 @@ public:
 		}
 	}
 
+	edge_const_iterator out_begin(VertexId v) const {
+		VERIFY_MSG(false, "Not implemented here");
+		return edge_const_iterator();
+	}
+
+	edge_const_iterator out_end(VertexId v) const {
+		VERIFY_MSG(false, "Not implemented here");
+		return edge_const_iterator();
+	}
+
+	edge_const_iterator in_begin(VertexId v) const {
+		VERIFY_MSG(false, "Not implemented here");
+		return edge_const_iterator();
+	}
+
+	edge_const_iterator in_end(VertexId v) const {
+		VERIFY_MSG(false, "Not implemented here");
+		return edge_const_iterator();
+	}
+
+	edge_const_iterator in_begin() const {
+		VERIFY_MSG(false, "Not implemented here");
+		return edge_const_iterator();
+	}
+
+	edge_const_iterator in_end() const {
+		VERIFY_MSG(false, "Not implemented here");
+		return edge_const_iterator();
+	}
+
+	edge_const_iterator out_begin() const {
+		VERIFY_MSG(false, "Not implemented here");
+		return edge_const_iterator();
+	}
+
+	edge_const_iterator out_end() const {
+		VERIFY_MSG(false, "Not implemented here");
+		return edge_const_iterator();
+	}
 
 	virtual const EdgeData& data(EdgeId edge) const {
 		return graph_.data(edge);

@@ -230,7 +230,8 @@ private:
 	const vector<EdgeId> GetEdges(VertexId vertex) const {
 		vector<EdgeId> result;
 		vector<EdgeId> incoming = graph_.IncomingEdges(vertex);
-		result.insert(result.end(), graph_.out_begin(vertex), graph_.out_end(vertex));
+		vector<EdgeId> outgoing = graph_.OutgoingEdges(vertex);
+		result.insert(result.end(), outgoing.begin(), outgoing.end());
 		result.insert(result.end(), incoming.begin(), incoming.end());
 		return result;
 	}

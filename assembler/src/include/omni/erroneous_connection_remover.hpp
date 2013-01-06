@@ -14,11 +14,12 @@
 #ifndef ERRONEOUS_CONNECTION_REMOVER_HPP_
 #define ERRONEOUS_CONNECTION_REMOVER_HPP_
 
-namespace omnigraph {
-
 #include "omni_tools.hpp"
 #include "omni_utils.hpp"
 #include "xmath.h"
+
+namespace omnigraph {
+
 
 template<class Graph>
 class LowCoverageEdgeRemover {

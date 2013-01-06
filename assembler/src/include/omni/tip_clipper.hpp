@@ -384,7 +384,9 @@ private:
         static const size_t mid_edge = 200;
         static const size_t long_edge = 1500;
         const Graph &g = this->graph();
-        bool backward = this->IsTip(g).EdgeStart(tip);
+//        bool backward = this->IsTip(g).EdgeStart(tip); // WTF is this?!
+        VERIFY_MSG(false, "Some strange staff. See comment.");
+        bool backward = false;
         if (backward) {
             VertexId vertex = g.EdgeEnd(tip);
             for (auto I = g.in_begin(vertex), E = g.in_end(vertex); I != E; ++I)
