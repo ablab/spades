@@ -66,6 +66,7 @@ add_subdirectory(mph_index)
 add_subdirectory(ssw)
 add_subdirectory(debruijn)
 add_subdirectory(hammer)
+add_subdirectory(hammer-it)
 add_subdirectory(spades_pipeline)
 add_subdirectory(dipspades)
 

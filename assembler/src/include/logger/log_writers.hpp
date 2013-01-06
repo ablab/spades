@@ -7,6 +7,9 @@
 #pragma once
 #include "path_helper.hpp"
 #include "logger.hpp"
+
+#include <iostream>
+
 #include "config.hpp"
 
 #include <iostream>
