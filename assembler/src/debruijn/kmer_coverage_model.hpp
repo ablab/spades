@@ -2,6 +2,7 @@
 #define __KMER_COVERAGE_MODEL_HPP__
 
 #include <vector>
+#include <cstddef>
 
 namespace cov_model {
 
