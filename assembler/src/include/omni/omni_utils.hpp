@@ -606,7 +606,10 @@ public:
 					"SmartEdgeIterator " + ToString(get_id()), true, comparator) {
 		if (edges == 0) {
 			for (auto it = graph.begin(); it != graph.end(); ++it) {
-        this->super::insert(graph.out_begin(*it), graph.out_end(*it));
+				auto out = graph.OutgoingEdges(*it);
+				this->super::insert(out.begin(), out.end());
+				// todo: doesn't work with parallel simplification
+				//        this->super::insert(graph.out_begin(*it), graph.out_end(*it));
 			}
 		} else {
 			this->super::insert(edges->begin(), edges->end());

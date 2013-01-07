@@ -199,9 +199,8 @@ private:
     const size_t max_coverage_;
     const double max_relative_coverage_;
 
-	double MaxCompetitorCoverage(EdgeId tip,
-                               typename Graph::edge_const_iterator begin,
-                               typename Graph::edge_const_iterator end) const {
+    template<class IteratorType>
+	double MaxCompetitorCoverage(EdgeId tip, IteratorType begin, IteratorType end) const {
 		double result = 0;
 		for (auto it = begin; it != end; ++it) {
 			if (*it != tip)
@@ -213,11 +212,16 @@ private:
 	double MaxCompetitorCoverage(EdgeId tip) const {
     const Graph &g = this->graph();
     VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
-		return
-        std::max(MaxCompetitorCoverage(tip,
-                                       g.out_begin(start), g.out_end(start)),
-                 MaxCompetitorCoverage(tip,
-                                       g.in_begin(end), g.in_end(end)));
+// todo: doesn't work with parallel simprification
+//		return
+//       std::max(MaxCompetitorCoverage(tip,
+//                                       g.out_begin(start), g.out_end(start)),
+//                 MaxCompetitorCoverage(tip,
+//                                       g.in_begin(end), g.in_end(end)));
+    auto out = g.OutgoingEdges(start);
+    auto in = g.IncomingEdges(end);
+		return std::max(MaxCompetitorCoverage(tip, out.begin(), out.end()),
+                        MaxCompetitorCoverage(tip, in.begin(), in.end()));
 	}
 
 	bool AdditionalCondition(EdgeId tip) const {
@@ -289,315 +293,315 @@ private:
 
 
 
-template<class Graph>
-class AdvancedTipClipper: public AbstractTipClipper<Graph> {
+//template<class Graph>
+//class AdvancedTipClipper: public AbstractTipClipper<Graph> {
+//
+//private:
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//	typedef AbstractTipClipper<Graph> base;
+//    TipLock<EdgeId> tip_lock_;
+//
+//    const size_t max_coverage_;
+//    const double max_relative_coverage_;
+//    const size_t max_iterations_;
+//    const size_t max_levenshtein_;
+//    const size_t max_ec_length_;
+//
+//    size_t removed_;
+//    size_t removed_with_check_;
+//    size_t locked_;
+//    bool final_stage_;
+//
+//    TipChecker<Graph> tipchecker_;
+//
+//  double MaxCompetitorCoverage(EdgeId tip,
+//                               typename Graph::edge_const_iterator begin,
+//                               typename Graph::edge_const_iterator end) const {
+//		double result = 0;
+//		for (auto it = begin; it != end; ++it) {
+//			if (*it != tip)
+//				result = std::max(result, this->graph().coverage(*it));
+//		}
+//		return result;
+//	}
+//
+//  double MaxCompetitorCoverage(EdgeId tip) const {
+//    const Graph &g = this->graph();
+//    VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
+//		return
+//        std::max(MaxCompetitorCoverage(tip,
+//                                       g.out_begin(start), g.out_end(start)),
+//                 MaxCompetitorCoverage(tip,
+//                                       g.in_begin(), g.in_end()));
+//	}
+//
+//  double MinCompetitorCoverage(EdgeId tip,
+//                               typename Graph::edge_const_iterator begin,
+//                               typename Graph::edge_const_iterator end) const {
+//		double result = 1000000; //inf
+//		for (auto it = begin; it != end; ++it) {
+//			if (*it != tip)
+//				result = std::min(result, this->graph().coverage(*it) / this->graph().length(*it));
+//		}
+//		return result;
+//	}
+//
+//  double MinCompetitorCoverage(EdgeId tip) const {
+//    const Graph &g = this->graph();
+//    VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
+//		return
+//        std::min(MinCompetitorCoverage(tip,
+//                                       g.out_begin(start), g.out_end(start)),
+//                 MinCompetitorCoverage(tip,
+//                                       g.in_begin(), g.in_end()));
+//	}
+//
+//  bool CheckAllAlternativesAreTips(EdgeId tip) const {
+//    const Graph &g = this->graph();
+//    VertexId start = g.EdgeStart(tip);
+//    TRACE("Check started");
+//    VertexId end = g.EdgeEnd(tip);
+//    for (auto I = g.out_begin(start), E = g.out_end(start); I != E; ++I) {
+//      EdgeId edge = *I;
+//      if (edge != tip){
+//        if (!IsTip(edge))
+//          return false;
+//      }
+//    }
+//
+//    auto edges = g.IncomingEdges(end);
+//    for (auto I = g.in_begin(end), E = g.in_end(end); I != E; ++I) {
+//      EdgeId edge = *I;
+//      if (edge != tip) {
+//        if (!IsTip(edge))
+//          return false;
+//      }
+//    }
+//    TRACE("Check finished");
+//    return true;
+//  }
+//
+//    //TODO: remove constants
+//    /// checking whether the next edge after tip is very long, then we'd rather remove it
+//    bool CheckUniqueExtension(EdgeId tip) const {
+//        static const size_t mid_edge = 200;
+//        static const size_t long_edge = 1500;
+//        const Graph &g = this->graph();
+////        bool backward = this->IsTip(g).EdgeStart(tip); // WTF is this?!
+//        VERIFY_MSG(false, "Some strange staff. See comment.");
+//        bool backward = false;
+//        if (backward) {
+//            VertexId vertex = g.EdgeEnd(tip);
+//            for (auto I = g.in_begin(vertex), E = g.in_end(vertex); I != E; ++I)
+//              if (g.length(*I) < mid_edge)
+//                return false;
+//
+//            if (g.IncomingEdgeCount(vertex) == 2 && g.OutgoingEdgeCount(vertex) == 1)
+//              return (g.length(*g.out_begin(vertex)) > long_edge);
+//        } else {
+//            VertexId vertex = g.EdgeStart(tip);
+//            for (auto I = g.out_begin(vertex), E = g.out_end(vertex); I != E; ++I)
+//              if (g.length(*I) < mid_edge)
+//                return false;
+//
+//            if (g.OutgoingEdgeCount(vertex) == 2 && g.IncomingEdgeCount(vertex) == 1)
+//              return (g.length(*g.in_begin(vertex)) > long_edge);
+//        }
+//
+//        return false;
+//    }
+//
+//    bool TipHasVeryLowRelativeCoverage(EdgeId tip) const {
+//        double max_coverage = MaxCompetitorCoverage(tip);
+//        return math::ls(200.*this->graph().coverage(tip), max_coverage);
+//    }
+//
+//    bool TipHasLowRelativeCoverage(EdgeId tip) const {
+//        double min_covlen = MinCompetitorCoverage(tip);
+//        if (final_stage_ && this->graph().length(tip) < this->graph().k() / 2)
+//            return true;
+//        return math::ls(this->graph().coverage(tip)/this->graph().length(tip), min_covlen);
+//    }
+//
+//
+//	/*virtual*/
+//	bool AdditionalCondition(EdgeId tip) const {
+//		if (this->graph().coverage(tip) > max_coverage_)
+//			return false;
+//		double max_coverage = MaxCompetitorCoverage(tip);
+//		return math::le(this->graph().coverage(tip),
+//                    max_relative_coverage_ * max_coverage);
+//	}
+//
+//public:
+//
+//	AdvancedTipClipper(
+//			Graph &graph,
+//			size_t max_tip_length,
+//			size_t max_coverage,
+//			double max_relative_coverage,
+//			size_t max_iterations,
+//			size_t max_levenshtein,
+//			size_t max_ec_length,
+//			boost::function<void(EdgeId)> removal_handler = 0,
+//			bool final_stage = false)
+//				: base(graph, max_tip_length, removal_handler),
+//				  max_coverage_(max_coverage),
+//				  max_relative_coverage_(max_relative_coverage),
+//				  max_iterations_(max_iterations),
+//				  max_levenshtein_(max_levenshtein),
+//				  max_ec_length_(max_ec_length),
+//				  final_stage_(final_stage),
+//				  tipchecker_(graph, tip_lock_, max_iterations_, max_levenshtein_, max_tip_length, max_ec_length_) {
+//
+//        removed_ = 0;
+//        removed_with_check_ = 0;
+//        locked_ = 0;
+//	}
+//
+//
+//	virtual void Preprocessing() {
+//		TRACE("Tip clipping started");
+//	}
+//
+//	virtual void Postprocessing() {
+//		TRACE("Tip clipping finished");
+//        DEBUG("REMOVED STATS " << removed_with_check_ << " " << removed_);
+//        DEBUG("LOCKED " << locked_);
+//	}
+//
+//    // Method deletes tips from the graph carefully, its work depends on the number of simplification iteration
+//	virtual bool ProcessNext(const EdgeId& tip) {
+//        TRACE("Use next edge");
+//		TRACE("Checking edge for being a tip "  << this->graph().str(tip));
+//
+//		if (this->IsTip(tip)) {
+//			TRACE("Edge "  << this->graph().str(tip) << " judged to look like tip topologically");
+//			if (AdditionalCondition(tip)) {
+//				TRACE("Additional checking");
+//				removed_++;
+//
+//				// if tip was locked, we should not delete it
+//				if (tip_lock_.IsLocked(tip)){
+//					TRACE("Tip " << this->graph().str(tip) << " was locked => can not remove it");
+//					locked_++;
+//					return true;
+//				}
+//
+//				// removing only if stage is final
+//				if (final_stage_ && CheckUniqueExtension(tip)){
+//					TRACE("Edge " << this->graph().str(tip) << " has a unique extension");
+//					return this->TryToRemoveTip(tip);
+//				}
+//
+//				// tricky condition -- not removing short edges with high coverage until the final stage
+//				if (!TipHasLowRelativeCoverage(tip)){
+//					TRACE("Tip is covered well too much => not removing");
+//					return true;
+//				}
+//
+//				// now we delete tip if we are not in the final stage
+//				if (!final_stage_){
+//					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
+//					if (this->TryToRemoveTip(tip)) {
+//						removed_with_check_++;
+//						return true;
+//					}
+//					return false;
+//				}
+//
+//				// now we are in the final stage
+//				// if the tip is covered very badly we delete it with no doubt
+//				if (TipHasVeryLowRelativeCoverage(tip)){
+//					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
+//					if (this->TryToRemoveTip(tip)) {
+//						removed_with_check_++;
+//						return true;
+//					}
+//					return false;
+//				}
+//
+//				// additional topology kind of check at the final stages
+//				if (tipchecker_.TipCanBeProjected(tip)){
+//					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
+//					if (this->TryToRemoveTip(tip)) {
+//						removed_with_check_++;
+//						return true;
+//					}
+//					return false;
+//				}
+//				TRACE("Edge "  << this->graph().str(tip) << " is not a tip");
+//			} else {
+//				TRACE("Edge "  << this->graph().str(tip) << " judged NOT to be a tip");
+//			}
+//		} else {
+//			TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like a tip topologically");
+//		}
+//
+//		return true;
+//	}
+//
+//
+//private:
+//	DECL_LOGGER("AdvancedTipClipper")
+//};
 
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	typedef AbstractTipClipper<Graph> base;
-    TipLock<EdgeId> tip_lock_;
-
-    const size_t max_coverage_;
-    const double max_relative_coverage_;
-    const size_t max_iterations_;
-    const size_t max_levenshtein_;
-    const size_t max_ec_length_;
-
-    size_t removed_;
-    size_t removed_with_check_;
-    size_t locked_;
-    bool final_stage_;
-
-    TipChecker<Graph> tipchecker_;
-
-  double MaxCompetitorCoverage(EdgeId tip,
-                               typename Graph::edge_const_iterator begin,
-                               typename Graph::edge_const_iterator end) const {
-		double result = 0;
-		for (auto it = begin; it != end; ++it) {
-			if (*it != tip)
-				result = std::max(result, this->graph().coverage(*it));
-		}
-		return result;
-	}
-
-  double MaxCompetitorCoverage(EdgeId tip) const {
-    const Graph &g = this->graph();
-    VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
-		return
-        std::max(MaxCompetitorCoverage(tip,
-                                       g.out_begin(start), g.out_end(start)),
-                 MaxCompetitorCoverage(tip,
-                                       g.in_begin(), g.in_end()));
-	}
-
-  double MinCompetitorCoverage(EdgeId tip,
-                               typename Graph::edge_const_iterator begin,
-                               typename Graph::edge_const_iterator end) const {
-		double result = 1000000; //inf
-		for (auto it = begin; it != end; ++it) {
-			if (*it != tip)
-				result = std::min(result, this->graph().coverage(*it) / this->graph().length(*it));
-		}
-		return result;
-	}
-
-  double MinCompetitorCoverage(EdgeId tip) const {
-    const Graph &g = this->graph();
-    VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
-		return
-        std::min(MinCompetitorCoverage(tip,
-                                       g.out_begin(start), g.out_end(start)),
-                 MinCompetitorCoverage(tip,
-                                       g.in_begin(), g.in_end()));
-	}
-
-  bool CheckAllAlternativesAreTips(EdgeId tip) const {
-    const Graph &g = this->graph();
-    VertexId start = g.EdgeStart(tip);
-    TRACE("Check started");
-    VertexId end = g.EdgeEnd(tip);
-    for (auto I = g.out_begin(start), E = g.out_end(start); I != E; ++I) {
-      EdgeId edge = *I;
-      if (edge != tip){
-        if (!IsTip(edge))
-          return false;
-      }
-    }
-
-    auto edges = g.IncomingEdges(end);
-    for (auto I = g.in_begin(end), E = g.in_end(end); I != E; ++I) {
-      EdgeId edge = *I;
-      if (edge != tip) {
-        if (!IsTip(edge))
-          return false;
-      }
-    }
-    TRACE("Check finished");
-    return true;
-  }
-
-    //TODO: remove constants
-    /// checking whether the next edge after tip is very long, then we'd rather remove it
-    bool CheckUniqueExtension(EdgeId tip) const {
-        static const size_t mid_edge = 200;
-        static const size_t long_edge = 1500;
-        const Graph &g = this->graph();
-//        bool backward = this->IsTip(g).EdgeStart(tip); // WTF is this?!
-        VERIFY_MSG(false, "Some strange staff. See comment.");
-        bool backward = false;
-        if (backward) {
-            VertexId vertex = g.EdgeEnd(tip);
-            for (auto I = g.in_begin(vertex), E = g.in_end(vertex); I != E; ++I)
-              if (g.length(*I) < mid_edge)
-                return false;
-
-            if (g.IncomingEdgeCount(vertex) == 2 && g.OutgoingEdgeCount(vertex) == 1)
-              return (g.length(*g.out_begin(vertex)) > long_edge);
-        } else {
-            VertexId vertex = g.EdgeStart(tip);
-            for (auto I = g.out_begin(vertex), E = g.out_end(vertex); I != E; ++I)
-              if (g.length(*I) < mid_edge)
-                return false;
-
-            if (g.OutgoingEdgeCount(vertex) == 2 && g.IncomingEdgeCount(vertex) == 1)
-              return (g.length(*g.in_begin(vertex)) > long_edge);
-        }
-
-        return false;
-    }
-
-    bool TipHasVeryLowRelativeCoverage(EdgeId tip) const {
-        double max_coverage = MaxCompetitorCoverage(tip);
-        return math::ls(200.*this->graph().coverage(tip), max_coverage);
-    }
-
-    bool TipHasLowRelativeCoverage(EdgeId tip) const {
-        double min_covlen = MinCompetitorCoverage(tip);  
-        if (final_stage_ && this->graph().length(tip) < this->graph().k() / 2)
-            return true;
-        return math::ls(this->graph().coverage(tip)/this->graph().length(tip), min_covlen);
-    }
-
-
-	/*virtual*/
-	bool AdditionalCondition(EdgeId tip) const {
-		if (this->graph().coverage(tip) > max_coverage_)
-			return false;
-		double max_coverage = MaxCompetitorCoverage(tip);
-		return math::le(this->graph().coverage(tip),
-                    max_relative_coverage_ * max_coverage);
-	}
-
-public:
-
-	AdvancedTipClipper(
-			Graph &graph,
-			size_t max_tip_length,
-			size_t max_coverage,
-			double max_relative_coverage,
-			size_t max_iterations,
-			size_t max_levenshtein,
-			size_t max_ec_length,
-			boost::function<void(EdgeId)> removal_handler = 0,
-			bool final_stage = false)
-				: base(graph, max_tip_length, removal_handler),
-				  max_coverage_(max_coverage),
-				  max_relative_coverage_(max_relative_coverage),
-				  max_iterations_(max_iterations),
-				  max_levenshtein_(max_levenshtein),
-				  max_ec_length_(max_ec_length),
-				  final_stage_(final_stage),
-				  tipchecker_(graph, tip_lock_, max_iterations_, max_levenshtein_, max_tip_length, max_ec_length_) {
-
-        removed_ = 0;
-        removed_with_check_ = 0;
-        locked_ = 0;
-	}
-
-
-	virtual void Preprocessing() {
-		TRACE("Tip clipping started");
-	}
-
-	virtual void Postprocessing() {
-		TRACE("Tip clipping finished");
-        DEBUG("REMOVED STATS " << removed_with_check_ << " " << removed_);
-        DEBUG("LOCKED " << locked_);
-	}
-
-    // Method deletes tips from the graph carefully, its work depends on the number of simplification iteration
-	virtual bool ProcessNext(const EdgeId& tip) {
-        TRACE("Use next edge");
-		TRACE("Checking edge for being a tip "  << this->graph().str(tip));
-
-		if (this->IsTip(tip)) {
-			TRACE("Edge "  << this->graph().str(tip) << " judged to look like tip topologically");
-			if (AdditionalCondition(tip)) {
-				TRACE("Additional checking");
-				removed_++;
-
-				// if tip was locked, we should not delete it
-				if (tip_lock_.IsLocked(tip)){
-					TRACE("Tip " << this->graph().str(tip) << " was locked => can not remove it");
-					locked_++;
-					return true;
-				}
-
-				// removing only if stage is final
-				if (final_stage_ && CheckUniqueExtension(tip)){
-					TRACE("Edge " << this->graph().str(tip) << " has a unique extension");
-					return this->TryToRemoveTip(tip);
-				}
-
-				// tricky condition -- not removing short edges with high coverage until the final stage
-				if (!TipHasLowRelativeCoverage(tip)){
-					TRACE("Tip is covered well too much => not removing");
-					return true;
-				}
-
-				// now we delete tip if we are not in the final stage
-				if (!final_stage_){
-					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
-					if (this->TryToRemoveTip(tip)) {
-						removed_with_check_++;
-						return true;
-					}
-					return false;
-				}
-
-				// now we are in the final stage
-				// if the tip is covered very badly we delete it with no doubt
-				if (TipHasVeryLowRelativeCoverage(tip)){
-					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip with a very low coverage");
-					if (this->TryToRemoveTip(tip)) {
-						removed_with_check_++;
-						return true;
-					}
-					return false;
-				}
-
-				// additional topology kind of check at the final stages
-				if (tipchecker_.TipCanBeProjected(tip)){
-					TRACE("Edge "  << this->graph().str(tip) << " judged to be a tip");
-					if (this->TryToRemoveTip(tip)) {
-						removed_with_check_++;
-						return true;
-					}
-					return false;
-				}
-				TRACE("Edge "  << this->graph().str(tip) << " is not a tip");
-			} else {
-				TRACE("Edge "  << this->graph().str(tip) << " judged NOT to be a tip");
-			}
-		} else {
-			TRACE("Edge "  << this->graph().str(tip) << " judged NOT to look like a tip topologically");
-		}
-
-		return true;
-	}
-
-
-private:
-	DECL_LOGGER("AdvancedTipClipper")
-};
-
-
-template <class Graph>
-class AdvancedTipClipperFactory : public SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> {
-
-public:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef SequentialAlgorihtmFactory<Graph, EdgeId> Base;
-	typedef typename Base::AlgorithmPtr AlgorithmPtr;
-
-	AdvancedTipClipperFactory (
-			size_t max_tip_length,
-			size_t max_coverage,
-			double max_relative_coverage,
-			size_t max_iterations,
-			size_t max_levenshtein,
-			size_t max_ec_length,
-			boost::function<void(EdgeId)> removal_handler = 0,
-			bool final_stage = false)
-				: 	max_tip_length_(max_tip_length),
-				  	max_coverage_(max_coverage),
-				  	max_relative_coverage_(max_relative_coverage),
-				  	max_iterations_(max_iterations),
-				  	max_levenshtein_(max_levenshtein),
-				  	max_ec_length_(max_ec_length),
-				  	removal_handler_(removal_handler),
-				  	final_stage_(final_stage) {
-	}
-
-	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
-		AlgorithmPtr ptr(
-			new AdvancedTipClipper<Graph>(
-					graph,
-					max_tip_length_,
-					max_coverage_,
-				  	max_relative_coverage_,
-				  	max_iterations_,
-				  	max_levenshtein_,
-				  	max_ec_length_,
-				  	removal_handler_,
-				  	final_stage_));
-
-		return ptr;
-	}
-
-private:
-	size_t max_tip_length_;
-	size_t max_coverage_;
-	double max_relative_coverage_;
-	size_t max_iterations_;
-	size_t max_levenshtein_;
-	size_t max_ec_length_;
-	boost::function<void(EdgeId)> removal_handler_;
-	bool final_stage_;
-
-};
+//
+//template <class Graph>
+//class AdvancedTipClipperFactory : public SequentialAlgorihtmFactory<Graph, typename Graph::EdgeId> {
+//
+//public:
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef SequentialAlgorihtmFactory<Graph, EdgeId> Base;
+//	typedef typename Base::AlgorithmPtr AlgorithmPtr;
+//
+//	AdvancedTipClipperFactory (
+//			size_t max_tip_length,
+//			size_t max_coverage,
+//			double max_relative_coverage,
+//			size_t max_iterations,
+//			size_t max_levenshtein,
+//			size_t max_ec_length,
+//			boost::function<void(EdgeId)> removal_handler = 0,
+//			bool final_stage = false)
+//				: 	max_tip_length_(max_tip_length),
+//				  	max_coverage_(max_coverage),
+//				  	max_relative_coverage_(max_relative_coverage),
+//				  	max_iterations_(max_iterations),
+//				  	max_levenshtein_(max_levenshtein),
+//				  	max_ec_length_(max_ec_length),
+//				  	removal_handler_(removal_handler),
+//				  	final_stage_(final_stage) {
+//	}
+//
+//	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
+//		AlgorithmPtr ptr(
+//			new AdvancedTipClipper<Graph>(
+//					graph,
+//					max_tip_length_,
+//					max_coverage_,
+//				  	max_relative_coverage_,
+//				  	max_iterations_,
+//				  	max_levenshtein_,
+//				  	max_ec_length_,
+//				  	removal_handler_,
+//				  	final_stage_));
+//
+//		return ptr;
+//	}
+//
+//private:
+//	size_t max_tip_length_;
+//	size_t max_coverage_;
+//	double max_relative_coverage_;
+//	size_t max_iterations_;
+//	size_t max_levenshtein_;
+//	size_t max_ec_length_;
+//	boost::function<void(EdgeId)> removal_handler_;
+//	bool final_stage_;
+//
+//};
 
 
 template<class Graph>

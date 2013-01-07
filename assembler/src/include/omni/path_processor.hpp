@@ -111,8 +111,10 @@ private:
       TRACE("Callback finished");
     }
     TRACE("Iterating through outgoing edges of vertex " << g_.int_id(v))
-    for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
-      EdgeId edge = *I;
+    // todo: doesn`t work with parallel simprification
+    //    for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
+	//      EdgeId edge = *I;
+    BOOST_FOREACH(EdgeId edge, g_.OutgoingEdges(v)) {
       TRACE("Processing outgoing edge " << g_.int_id(edge) << " started");
       path_.push_back(edge);
       result |= Go(g_.EdgeEnd(edge), current_path_length + g_.length(edge), distances_to_end);
