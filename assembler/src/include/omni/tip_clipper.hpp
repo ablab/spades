@@ -104,7 +104,6 @@ private:
 	typedef function<bool(EdgeId)> edge_condition_t;
 
 	Graph &graph_;
-	SmartSet<Graph, EdgeId> not_processed_edges_;
 	shared_ptr<Predicate<EdgeId>> additional_condition_;
 	size_t removed_;
 
@@ -177,9 +176,10 @@ protected:
 	}
 
 	virtual bool TryToRemoveTip(EdgeId tip) {
-		if (!graph_.IsInternalSafe(tip)) {
-			return false;
-		}
+		// TODO: WTF Sergey deleted this method???
+//		if (!graph_.IsInternalSafe(tip)) {
+//			return false;
+//		}
 
 		RemoveTip(tip);
 		TRACE("Edge removed");
@@ -205,14 +205,12 @@ public:
 	/**
 	 * Method clips tips of the graph.
 	 */
-	virtual void ProcessNext(const EdgeId& tip) {
+	virtual bool ProcessNext(const EdgeId& tip) {
 		TRACE("Checking edge for being tip " << this->graph().str(tip));
 		if (this->IsTip(tip)) {
-			TRACE(
-					"Edge " << this->graph().str(tip) << " judged to look like a tip topologically");
+			TRACE("Edge " << this->graph().str(tip) << " judged to look like a tip topologically");
 			if (additional_condition_->Check(tip)) {
-				TRACE(
-						"Edge " << this->graph().str(tip) << " judged to be a tip");
+				TRACE("Edge " << this->graph().str(tip) << " judged to be a tip");
 
 				if (this->TryToRemoveTip(tip)) {
 					removed_++;
@@ -221,13 +219,12 @@ public:
 				}
 
 			} else {
-				TRACE(
-						"Edge " << this->graph().str(tip) << " judged NOT to be tip");
+				TRACE("Edge " << this->graph().str(tip) << " judged NOT to be tip");
 			}
 		} else {
-			TRACE(
-					"Edge " << this->graph().str(tip) << " judged NOT to look like tip topologically");
+			TRACE("Edge " << this->graph().str(tip) << " judged NOT to look like tip topologically");
 		}
+		return true;
 	}
 
 	virtual void Preprocessing() {

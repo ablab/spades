@@ -858,6 +858,7 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 
 	DEBUG(iteration << " TipClipping");
 	NewClipTips(gp, max_coverage, removal_handler_f, iteration_count, iteration);
+//	ClipTips(gp, max_coverage, removal_handler_f, iteration_count, iteration);
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 

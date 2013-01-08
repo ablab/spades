@@ -31,9 +31,8 @@ class RelativeCoverageTipCondition: public EdgeCondition<Graph> {
 
 	const double max_relative_coverage_;
 
-	double MaxCompetitorCoverage(EdgeId tip,
-			typename Graph::edge_const_iterator begin,
-			typename Graph::edge_const_iterator end) const {
+	template<class IteratorType>
+	double MaxCompetitorCoverage(EdgeId tip, IteratorType begin, IteratorType end) const {
 		double result = 0;
 		for (auto it = begin; it != end; ++it) {
 			if (*it != tip)
@@ -45,10 +44,15 @@ class RelativeCoverageTipCondition: public EdgeCondition<Graph> {
 	double MaxCompetitorCoverage(EdgeId tip) const {
 		const Graph &g = this->g();
 		VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
+		auto out = g.OutgoingEdges(start);
+		auto in = g.IncomingEdges(end);
 		return std::max(
-				MaxCompetitorCoverage(tip, g.out_begin(start),
-						g.out_end(start)),
-				MaxCompetitorCoverage(tip, g.in_begin(end), g.in_end(end)));
+						MaxCompetitorCoverage(tip, out.begin(),	out.end()),
+						MaxCompetitorCoverage(tip, in.begin(), in.end()));
+//		return std::max(
+//				MaxCompetitorCoverage(tip, g.out_begin(start),
+//						g.out_end(start)),
+//				MaxCompetitorCoverage(tip, g.in_begin(end), g.in_end(end)));
 	}
 
 public:
