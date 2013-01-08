@@ -220,40 +220,42 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
 
 template<class Graph>
 void DataPrinter<Graph>::savePaired(const string& file_name,
-    const PairedInfoIndexT<Graph>& paired_index) 
+    const PairedInfoIndexT<Graph>& paired_index)
 {
   typedef set<Point> Histogram;
   FILE* file = fopen((file_name + ".prd").c_str(), "w");
   DEBUG("Saving paired info, " << file_name <<" created");
   VERIFY(file != NULL);
 
-  size_t size = 0;
-  map<EdgeId, InnerMap<Graph> > to_save;
-  for (auto it = component_.e_begin(); it != component_.e_end(); ++it) {
-    const InnerMap<Graph>& inner_map = paired_index.GetEdgeInfo(*it, 0);
-    for (auto it_2 = inner_map.begin(); it_2 != inner_map.end(); ++it_2) {
-      if (component_.contains(it_2->first)) { // if the second edge also lies in the same component
-        to_save[*it].insert(*it_2);
-        size += (it_2->second).size();
+  size_t comp_size = 0;
+  for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
+    EdgeId e1 = *I;
+    const InnerMap<Graph>& inner_map = paired_index.GetEdgeInfo(e1, 0);
+    for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
+      EdgeId e2 = II->first;
+      const Histogram& hist = II->second;
+      if (component_.contains(e2)) { // if the second edge also lies in the same component
+        comp_size += hist.size();
       }
     }
   }
 
-  fprintf(file, "%ld\n", size);
+  fprintf(file, "%ld\n", comp_size);
 
-  for (auto ext_it = to_save.begin(); ext_it != to_save.end(); ++ext_it) {
-    EdgeId first_edge = ext_it->first;
-    const InnerMap<Graph>& inner_map = ext_it->second;
-    for (auto inner_it = inner_map.begin(); inner_it != inner_map.end(); ++inner_it) {
-      EdgeId second_edge = inner_it->first;
-      Histogram hist = inner_it->second;
-      for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-        const Point& point = *iter; 
-        fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
-            int_ids_.ReturnIntId(first_edge),
-            int_ids_.ReturnIntId(second_edge), 
-            point.d, point.weight, point.var);
-      }
+  for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
+    EdgeId e1 = *I;
+    const InnerMap<Graph>& inner_map = paired_index.GetEdgeInfo(e1, 0);
+    for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
+      EdgeId e2 = II->first;
+      const Histogram& hist = II->second;
+      if (component_.contains(e2))
+        for (auto hist_it = hist.begin(); hist_it != hist.end(); ++hist_it) {
+          Point point = *hist_it;
+          fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
+              int_ids_.ReturnIntId(e1),
+              int_ids_.ReturnIntId(e2),
+              point.d, point.weight, point.var);
+        }
     }
   }
 
@@ -655,13 +657,13 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
     TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
     if (id_handler_.ReturnEdgeId(first_real_id) == EdgeId(NULL) || id_handler_.ReturnEdgeId(second_real_id) == EdgeId(NULL))
       continue;
-    TRACE(id_handler_.ReturnEdgeId(first_real_id) << " " 
-       << id_handler_.ReturnEdgeId(second_real_id) 
+    TRACE(id_handler_.ReturnEdgeId(first_real_id) << " "
+       << id_handler_.ReturnEdgeId(second_real_id)
        << " " << d << " " << w);
     paired_index.AddPairInfo(
         id_handler_.ReturnEdgeId(first_real_id),
         id_handler_.ReturnEdgeId(second_real_id), d, w, v, false);
-  } 
+  }
   DEBUG("PII SIZE " << paired_index.size());
   fclose(file);
 }
@@ -787,9 +789,9 @@ template<class graph_pack, class VertexIt>
 void PrintAll(const string& file_name, const graph_pack& gp, VertexIt begin,
     VertexIt end,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) 
+    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index)
 {
-  typename PrinterTraits<typename graph_pack::graph_t>::Printer 
+  typename PrinterTraits<typename graph_pack::graph_t>::Printer
                                         printer(gp.g, begin, end, gp.int_ids);
   PrintGraphPack(file_name, printer, gp);
   PrintPairedIndex(file_name, printer, paired_index);
@@ -799,7 +801,7 @@ void PrintAll(const string& file_name, const graph_pack& gp, VertexIt begin,
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) 
+    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index)
 {
   PrintAll(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index);
 }

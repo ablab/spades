@@ -959,9 +959,9 @@ public:
 
 template<class graph_pack, class PairedRead, class ConfigType> 
 bool RefineInsertSize(const graph_pack& gp,
-                        io::ReadStreamVector<io::IReader<PairedRead> >& streams,
-                        ConfigType& config,
-                        size_t edge_length_threshold) 
+                      io::ReadStreamVector<io::IReader<PairedRead> >& streams,
+                      ConfigType& config,
+                      size_t edge_length_threshold) 
 {
     double mean;
     double delta;
@@ -1003,48 +1003,65 @@ template<class Graph>
 void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index) 
 {
   typedef set<Point> Histogram;
-    for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
-      EdgeId first_edge = iter.first();
-      EdgeId second_edge = iter.second();
-      const Histogram& infos = *iter; 
-      auto prev_it = infos.begin();
-      auto it = prev_it;
-      ++it;
-      for (auto end_it = infos.end(); it != end_it; ++it) {
-        if (math::le(abs(it->d - prev_it->d), it->var + prev_it->var)) {
-          WARN("Clusters intersect, edges -- " << graph.int_id(first_edge) 
-              << " " << graph.int_id(second_edge));
-          INFO("Trying to handle this case");
-          // seeking the symmetric pair info to [i - 1]
-          bool success = false;
-          double total_weight = prev_it->weight;
-          for (auto inner_it = it; inner_it != end_it; ++inner_it) {
-            total_weight += inner_it->weight;
-            if (math::eq(inner_it->d + prev_it->d, 0.)) {
-              success = true;
-              double center = 0.;
-              double var = inner_it->d + inner_it->var;
-              for (auto inner_it_2 = prev_it; inner_it_2 != inner_it; ++inner_it_2) 
-              {
-                TRACE("Removing pair info " << *inner_it_2);
-                clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it_2);
-              }
-              clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it);
-              Point new_point(center, total_weight, var);
-              TRACE("Adding new pair info " << first_edge << " " << second_edge << " " << new_point);
-              clustered_index.AddPairInfo(first_edge, second_edge, new_point);
-              break;
+  for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
+    EdgeId first_edge = iter.first();
+    EdgeId second_edge = iter.second();
+    const Histogram& infos = *iter; 
+    auto prev_it = infos.begin();
+    auto it = prev_it;
+    ++it;
+    for (auto end_it = infos.end(); it != end_it; ++it) {
+      if (math::le(abs(it->d - prev_it->d), it->var + prev_it->var)) {
+        WARN("Clusters intersect, edges -- " << graph.int_id(first_edge) 
+            << " " << graph.int_id(second_edge));
+        INFO("Trying to handle this case");
+        // seeking the symmetric pair info to [i - 1]
+        bool success = false;
+        double total_weight = prev_it->weight;
+        for (auto inner_it = it; inner_it != end_it; ++inner_it) {
+          total_weight += inner_it->weight;
+          if (math::eq(inner_it->d + prev_it->d, 0.)) {
+            success = true;
+            double center = 0.;
+            double var = inner_it->d + inner_it->var;
+            for (auto inner_it_2 = prev_it; inner_it_2 != inner_it; ++inner_it_2) 
+            {
+              TRACE("Removing pair info " << *inner_it_2);
+              clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it_2);
             }
+            clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it);
+            Point new_point(center, total_weight, var);
+            TRACE("Adding new pair info " << first_edge << " " << second_edge << " " << new_point);
+            clustered_index.AddPairInfo(first_edge, second_edge, new_point);
+            break;
           }
-          INFO("Pair information was resolved");
-
-          if (!success)
-            WARN("This intersection can not be handled in the right way");
-          break;
         }
+        INFO("Pair information was resolved");
+
+        if (!success)
+          WARN("This intersection can not be handled in the right way");
+        break;
       }
     }
+  }
 }
 
+template<class graph_pack>
+void RemoveErroneousEdgesWithPI(graph_pack& gp,
+                                const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index)
+{
+  typedef typename graph_pack::graph_t Graph;
+  typedef typename Graph::EdgeId EdgeId;
+  EdgeQuality<Graph> quality_handler(gp.g, gp.index, gp.kmer_mapper, gp.genome);
+  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, quality_handler);
+  boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+      &QualityLoggingRemovalHandler<Graph>::HandleDelete,
+      &qual_removal_handler, _1);
+  EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
+  INFO("Pair info aware ErroneousConnectionsRemoval");
+  RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index, edge_remover);
+  INFO("Pair info aware ErroneousConnectionsRemoval stats");
+  CountStats(gp.g, gp.index, gp.genome, gp.k_value);
+}
 
 }

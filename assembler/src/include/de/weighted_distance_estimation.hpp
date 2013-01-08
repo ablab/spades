@@ -96,6 +96,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
         if (le(abs(forward[cur_dist] - point.d), max_dist))
           weights[cur_dist] += point.weight * weight_f_(forward[cur_dist] - point.d);
     }
+
     for (size_t i = 0; i < forward.size(); ++i)
       if (gr(weights[i], 0.))
         result.push_back(make_pair(forward[i], weights[i]));

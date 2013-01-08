@@ -59,53 +59,6 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 	gv.Visualize();
 }
 
-void save_distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index,
-    PairedIndexT& clustered_index) {
-  if (cfg::get().make_saves || cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
-    string p = path::append_path(cfg::get().output_saves, "distance_filling");
-    INFO("Saving current state to " << p);
-    PrintAll(p, gp, paired_index, clustered_index);
-    write_estimated_params(p);
-  }
-}
-
-bool try_load_distance_filling(conj_graph_pack& gp, PairedIndexT& clustered_index,
-    path::files_t* used_files)
-{
-  WARN("trying to load distance filling");
-  string p = path::append_path(cfg::get().load_from, "distance_filling");
-
-  FILE* file = fopen((p + ".grp").c_str(), "r");
-  if (file == NULL) {
-    return false;
-  }
-  fclose(file);
-
-  used_files->push_back(p);
-
-  clustered_index.Clear();
-  ScannerTraits<conj_graph_pack::graph_t>::Scanner scanner(gp.g,
-      gp.int_ids);
-  ScanClusteredIndex(p, scanner, clustered_index);
-
-  return true;
-}
-
-void distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index, PairedIndexT& clustered_index) 
-{
-    path::files_t used_files;
-    if (try_load_distance_filling(gp, clustered_index, &used_files)) {
-
-        link_files_by_prefix(used_files, cfg::get().output_saves);
-        INFO("Distance filling saves detected and loaded");
-    }
-    else {
-        INFO("Filling paired information");
-        PairInfoImprover<conj_graph_pack::graph_t> pi_imp(gp.g, clustered_index);
-        pi_imp.ImprovePairedInfo(cfg::get().use_multithreading, cfg::get().max_threads);
-        save_distance_filling(gp, paired_index, clustered_index);
-    }
-}
 
 void save_resolved(conj_graph_pack& resolved_gp,
         PairedIndexT& resolved_graph_paired_info,
@@ -118,8 +71,6 @@ void save_resolved(conj_graph_pack& resolved_gp,
     write_estimated_params(p);
   }
 }
-
-
 
 template<class graph_pack>
 void find_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_pack::graph_t>& labels_after, 	map<EdgeId, pair<size_t, size_t> >& distance_to_repeats_end){
@@ -166,7 +117,7 @@ void find_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_
 		fillComponentDistances(component, distance_to_repeats_end, gp);
 		component.clear();
 	}
-	string p = path::append_path(cfg::get().output_saves, "distance_filling");
+	string p = path::append_path(cfg::get().output_saves, "distance_from_repeats");
 	if (cfg::get().make_saves)
 		saveComponents(p, components, gp);
 }
@@ -996,10 +947,6 @@ void resolve_repeats() {
 
 		if (cfg::get().rr.symmetric_resolve) {
 
-      PairInfoImprover<conj_graph_pack::graph_t> pi_imp(conj_gp.g, clustered_index);
-      pi_imp.ImprovePairedInfo(cfg::get().use_multithreading, cfg::get().max_threads);
-			save_distance_filling(conj_gp, paired_index, clustered_index);
-
 			if (cfg::get().componential_resolve) {
 				make_dir(cfg::get().output_dir + "graph_components" + "/");
 				number_of_components = PrintGraphComponents(
@@ -1095,9 +1042,9 @@ void resolve_repeats() {
 	}
 
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
-	    if (cfg::get().pe_params.param_set.improve_paired_info) {
-	        distance_filling(conj_gp, paired_index, clustered_index);
-	    }
+			//if (cfg::get().pe_params.param_set.improve_paired_info) {
+					//distance_filling(conj_gp, paired_index, clustered_index);
+			//}
 
 	    if (cfg::get().pe_params.param_set.scaffolder_options.on) {
             if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
@@ -1133,8 +1080,6 @@ void resolve_repeats() {
 			&& !cfg::get().path_set_graph) {
 
         INFO("Combined resolving started");
-
-        distance_filling(conj_gp, paired_index, clustered_index);
 
         conj_graph_pack resolved_gp(cfg::get().K,
                                     cfg::get().output_dir,
@@ -1202,13 +1147,6 @@ void resolve_repeats() {
 	}
 
     if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
-
-        INFO("Preparing paired information for rectangles repeat resolution module");
-
-        PairInfoImprover<conj_graph_pack::graph_t> pi_imp(conj_gp.g, clustered_index);
-        pi_imp.ImprovePairedInfo(cfg::get().use_multithreading, cfg::get().max_threads);
-        save_distance_filling(conj_gp, paired_index, clustered_index);
-
         INFO("Ready to run rectangles repeat resolution module");
     }
 

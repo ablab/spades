@@ -149,7 +149,7 @@ size_t ConstructGraph(size_t k,
 
 	INFO("Condensing graph");
 	DeBruijnGraphConstructor<Graph, Seq> g_c(g, debruijn, k);
-  INFO("Constructor ok");
+  TRACE("Constructor ok");
 	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
 	TRACE("Graph condensed");
 

@@ -56,7 +56,7 @@ class GraphDistanceFinder {
     paths_proc.Process();
 
     vector<GraphLengths> result;
-    
+
     typename set<EdgeId>::const_iterator e2_iter = second_edges.cbegin();
     for (size_t i = 0; i < second_edges.size(); ++i, ++e2_iter) {
       GraphLengths lengths = callback.distances(i);
@@ -238,8 +238,13 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
   virtual void EstimateParallel(PairedInfoIndexT<Graph>& result, size_t nthreads) const {
     this->Init();
-    vector<pair<EdgeId, InnerMap<Graph>> > edge_infos(this->index().Begin(), this->index().End());
+    const PairedInfoIndexT<Graph>& index = this->index();
+
     INFO("Collecting edge infos");
+    vector<EdgeId> edges;
+    for (auto I = index.Begin(), E = index.End(); I != E; ++I) {
+      edges.push_back(I->first);
+    }
 
     vector<PairedInfoIndexT<Graph>*> buffer(nthreads);
     buffer[0] = &result;
@@ -255,10 +260,10 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     {
       perf_counter pc;
       #pragma omp for schedule(guided, 10)
-      for (size_t i = 0; i < edge_infos.size(); ++i)
+      for (size_t i = 0; i < edges.size(); ++i)
       {
-        EdgeId edge = edge_infos[i].first;
-        const InnerMap<Graph>& inner_map = edge_infos[i].second;
+        EdgeId edge = edges[i];
+        const InnerMap<Graph>& inner_map = index.GetEdgeInfo(edge, 0);
         ProcessEdge(edge, inner_map, *buffer[omp_get_thread_num()], pc);
 
         //if (i % 10000 == 0) {

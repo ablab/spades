@@ -66,7 +66,7 @@ public:
   {
   }
 
-  vector<PathInfo> ConvertPIToSplitPaths(const vector<PairInfo<EdgeId> >& pair_infos) const
+  vector<PathInfo> ConvertPIToSplitPaths(const vector<PairInfo<EdgeId>>& pair_infos) const
   {
     vector<PathInfo> result;
     if (pair_infos.size() == 0) 
@@ -74,25 +74,39 @@ public:
     else {
       EdgeId cur_edge = pair_infos[0].first;
       vector<bool> pair_info_used(pair_infos.size());
-      for (size_t i = pair_infos.size(); i > 0; --i){
+      TRACE("Preparing path_processor for this base edge");
+      size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(),
+                                                             *cfg::get().ds.IS,
+                                                             size_t(*cfg::get().ds.is_var));
+
+      PathStorageCallback<Graph> callback(graph_);
+      PathProcessor<Graph> path_processor(graph_,
+                                          path_upper_bound,
+                                          path_upper_bound,
+          graph_.EdgeEnd(cur_edge), graph_.EdgeStart(cur_edge), callback);
+
+      TRACE("Path_processor is done");
+
+      for (size_t i = pair_infos.size(); i > 0; --i) {
         const PairInfo<EdgeId>& cur_info = pair_infos[i - 1];
         if (math::le(cur_info.d(), 0.))
             continue;
-        if (pair_info_used[i - 1] )
+        if (pair_info_used[i - 1])
           continue;
         DEBUG("SPC: pi " << cur_info);
         vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge,
                                                        cur_info.second,
                                                        cur_info.d() - cur_info.var(),
-                                                       cur_info.d() + cur_info.var());
+                                                       cur_info.d() + cur_info.var(),
+                                                       path_processor);
         DEBUG("Found common part of size " << common_part.size());
         PathInfoClass<Graph> sub_res(cur_edge);
         if (common_part.size() > 0) {
           size_t total_length = 0;
-          for (size_t j = 0; j < common_part.size(); ++j) {
+          for (size_t j = 0; j < common_part.size(); ++j)
             total_length += graph_.length(common_part[j]);
-          }
-          DEBUG(ToString(common_part));
+          
+          DEBUG("Common part " << ToString(common_part));
           for (size_t j = 0; j < common_part.size(); ++j) {
             PairInfo<EdgeId> cur_pi(cur_edge, common_part[j],
                                     cur_info.d() - total_length,
@@ -102,15 +116,9 @@ public:
             sub_res.push_back(cur_pi);
             total_length -= graph_.length(common_part[j]);
             for (size_t ind = 0; ind + 1 < i; ++ind) {
-              if (cur_pi.first  == pair_infos[ind].first
-               && cur_pi.second == pair_infos[ind].second
-               && math::eq(cur_pi.d(), pair_infos[ind].d()))
-              {
+              if (cur_pi == pair_infos[ind])
                 pair_info_used[ind] = true;
-              }
-
             }
-
           }
         }
 

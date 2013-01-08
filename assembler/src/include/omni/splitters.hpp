@@ -72,18 +72,15 @@ class ComponentFinder: public UnorientedDijkstra<Graph, size_t> {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef UnorientedDijkstra<Graph, size_t> super;
-	set<EdgeId> &edges_;
+	typedef UnorientedDijkstra<Graph, size_t> base;
+	set<EdgeId>& edges_;
 
 public:
 	ComponentFinder(const Graph &g, set<EdgeId> &edges) :
-			super(g), edges_(edges) {
+			base(g), edges_(edges) {
 	}
 
-	virtual ~ComponentFinder() {
-	}
-
-	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) {
+	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) const {
 		return edges_.count(edge) != 0;
 	}
 };
@@ -93,23 +90,20 @@ class NeighbourhoodFinder: public UnorientedDijkstra<Graph, size_t> {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef UnorientedDijkstra<Graph, size_t> super;
-	set<EdgeId> &edges_;
+	typedef UnorientedDijkstra<Graph, size_t> base;
+	set<EdgeId>& edges_;
 	const size_t bound_;
 
 public:
 	NeighbourhoodFinder(const Graph &g, set<EdgeId> &edges, size_t bound) :
-			super(g), edges_(edges), bound_(bound) {
-	}
-
-	virtual ~NeighbourhoodFinder() {
+			base(g), edges_(edges), bound_(bound) {
 	}
 
 	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
 		return distance <= bound_;
 	}
 
-	virtual size_t GetLength(EdgeId edge) {
+	virtual size_t GetLength(EdgeId edge) const {
 		if (edges_.count(edge) != 0)
 			return 0;
 		else
@@ -123,18 +117,15 @@ class SubgraphDijkstra: public UnorientedDijkstra<Graph, size_t> {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef UnorientedDijkstra<Graph, size_t> super;
+	typedef UnorientedDijkstra<Graph, size_t> base;
 	const set<VertexId> &subgraph_;
 
 public:
-	SubgraphDijkstra(const Graph &g, const set<VertexId> &subgraph) :
-			super(g), subgraph_(subgraph) {
+	SubgraphDijkstra(const Graph& g, const set<VertexId>& subgraph) :
+			base(g), subgraph_(subgraph) {
 	}
 
-	virtual ~SubgraphDijkstra() {
-	}
-
-	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) {
+	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) const {
 		return subgraph_.count(vertex) != 0;
 	}
 
@@ -309,7 +300,7 @@ public:
 template<class Graph, typename distance_t = size_t>
 class CountingDijkstra: public UnorientedDijkstra<Graph, distance_t> {
 private:
-	typedef UnorientedDijkstra<Graph, distance_t> super;
+	typedef UnorientedDijkstra<Graph, distance_t> base;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
@@ -324,17 +315,14 @@ private:
 public:
 	CountingDijkstra(const Graph &graph, size_t max_size,
 			size_t edge_length_bound) :
-			super(graph), max_size_(max_size), edge_length_bound_(
+			base(graph), max_size_(max_size), edge_length_bound_(
 					edge_length_bound), current_(0) {
-	}
-
-	virtual ~CountingDijkstra() {
 	}
 
 	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge,
 			distance_t length) {
 		if (current_ < max_size_) {
-			current_++;
+			++current_;
 		}
 		if (current_ < max_size_ && GetLength(edge) < inf) {
 			return true;
@@ -350,7 +338,7 @@ public:
 		current_ = 0;
 	}
 
-	virtual size_t GetLength(EdgeId edge) {
+	virtual size_t GetLength(EdgeId edge) const {
 		if (this->graph().length(edge) <= edge_length_bound_)
 			//todo change back
 			return 1;
@@ -377,13 +365,13 @@ class CountingDijkstraForPaths: public CountingDijkstra<Graph, distance_t> {
 	}
 
 public:
-	CountingDijkstraForPaths(const Graph &graph, size_t max_size,
+	CountingDijkstraForPaths(const Graph& graph, size_t max_size,
 			size_t edge_length_bound, const vector<EdgeId>& path) :
 			base(graph, max_size, edge_length_bound), path_vertices_(
 					CollectVertices(path)) {
 	}
 
-	virtual size_t GetLength(EdgeId edge) {
+	virtual size_t GetLength(EdgeId edge) const {
 		if (path_vertices_.count(this->graph().EdgeStart(edge))
 				&& path_vertices_.count(this->graph().EdgeEnd(edge)))
 //				return min(int(base::GetLength(edge)), 200);
@@ -457,7 +445,7 @@ public:
 		return distance == 0;
 	}
 
-	virtual size_t GetLength(EdgeId edge) {
+	virtual size_t GetLength(EdgeId edge) const {
 		if (this->graph().length(edge) <= bound_)
 			return 0;
 		else

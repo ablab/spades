@@ -24,13 +24,12 @@ class PairInfoImprover {
   typedef pair<EdgeId, EdgeId> EdgePair;
 
  public:
-  PairInfoImprover(const Graph& g, PairedInfoIndexT<Graph>& clustered_index):
-  graph_(g), index_(clustered_index)
+  PairInfoImprover(const Graph& g, PairedInfoIndexT<Graph>& clustered_index) :
+                   graph_(g), index_(clustered_index)
   {
   }
 
-  void ImprovePairedInfo(bool parallel = false,
-                         size_t num_treads = 1)
+  void ImprovePairedInfo(bool parallel = false, size_t num_treads = 1)
   {
     if (parallel) {
       ParallelCorrectPairedInfo(num_treads);
@@ -152,7 +151,7 @@ class PairInfoImprover {
       #pragma omp for schedule(guided)
       for (size_t i = 0; i < infos.size(); ++i)
       {
-        const vector<PathInfoClass<Graph> >& paths = spc.ConvertPIToSplitPaths(infos[i]);
+        vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos[i]);
         paths_size += paths.size();
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
           TRACE("Path " << iter->PrintPath(graph_));
@@ -205,7 +204,7 @@ class PairInfoImprover {
     SplitPathConstructor<Graph> spc(graph_);
     for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       const PairInfos& infos = index_.GetEdgeInfo(*e_iter);
-      const vector<PathInfoClass<Graph> >& paths = spc.ConvertPIToSplitPaths(infos);
+      vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos);
       for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
         TRACE("Path " << iter->PrintPath(graph_));
         for (auto pi_iter = iter->begin(); pi_iter != iter->end(); ++pi_iter) {
@@ -330,12 +329,12 @@ class PairInfoImprover {
                         const Point& p,
                         bool reflected = true)
   {
-    Point point_to_add(p);
+    const Point& point_to_add = p;
 
-    Histogram histogram(clustered_index.GetEdgePairInfo(e1, e2));
+    const Histogram& histogram = clustered_index.GetEdgePairInfo(e1, e2);
     bool already_exist = false;
     for (auto it = histogram.begin(); it != histogram.end(); ++it) {
-      Point cur_point(*it);
+      const Point& cur_point = *it;
       if (ClustersIntersect(cur_point, point_to_add)) {
         already_exist = true;
         return false;

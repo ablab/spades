@@ -257,8 +257,8 @@ private:
 
 template<class Graph>
 class AssemblyPathCallback: public PathProcessor<Graph>::Callback {
-public:
 	typedef typename Graph::EdgeId EdgeId;
+  typedef typename vector<EdgeId> Path;
 
 private:
 	const Graph& g_;
@@ -266,7 +266,7 @@ private:
 	const TColorSet assembly_color_;
 	size_t edge_count_;
 
-	std::vector<vector<EdgeId>> paths_;
+	vector<Path> paths_;
 
 	bool CheckPath(const vector<EdgeId>& path) const {
 		DEBUG("Checking path " << g_.str(path));
@@ -285,14 +285,18 @@ private:
 	}
 
 public:
-
 	AssemblyPathCallback(const Graph& g, const ColorHandler<Graph>& coloring,
 			TColorSet assembly_color, size_t edge_count) :
 			g_(g), coloring_(coloring), assembly_color_(assembly_color), edge_count_(
 					edge_count) {
 	}
 
-	virtual void HandlePath(const vector<EdgeId>& path) {
+  virtual void Flush() {
+    //TODO do something?
+  }
+
+	virtual void HandleReversedPath(const Path& rev_path) {
+    Path path = this->ReversePath(rev_path);
 		if (CheckPath(path)) {
 			paths_.push_back(path);
 		}
@@ -302,7 +306,7 @@ public:
 		return paths_.size();
 	}
 
-	std::vector<vector<EdgeId>> paths() const {
+	vector<Path> paths() const {
 		return paths_;
 	}
 };

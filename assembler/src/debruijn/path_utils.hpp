@@ -7,23 +7,34 @@
 
 namespace debruijn_graph {
 
+  // TODO: rewrite this function
   template<class Graph>
     vector<typename Graph::EdgeId> GetCommonPathsEnd(
         const Graph& g,
         typename Graph::EdgeId e1,
         typename Graph::EdgeId e2,
         size_t min_dist,
-        size_t max_dist) 
+        size_t max_dist,
+        PathProcessor<Graph>& path_processor) 
   {
       typedef typename Graph::EdgeId EdgeId;
+      typedef vector<EdgeId> Path;
+
       PathStorageCallback<Graph> callback(g);
-      PathProcessor<Graph> path_processor(g,
-          min_dist - g.length(e1),
-          max_dist - g.length(e1),
-          g.EdgeEnd(e1), g.EdgeStart(e2), callback);
+      //PathProcessor<Graph> path_processor(g,
+                                          //min_dist - g.length(e1),
+                                          //max_dist - g.length(e1),
+          //g.EdgeEnd(e1), g.EdgeStart(e2), callback);
+
+      path_processor.SetMinLens({min_dist - g.length(e1)});
+      path_processor.SetMaxLen(max_dist - g.length(e1));
+      path_processor.SetEndPoints({g.EdgeStart(e2)});
+      path_processor.SetCallback(&callback);
+      path_processor.ResetCallCount();
       int error_code = path_processor.Process();
+      vector<Path> paths = callback.paths();
+
       vector<EdgeId> result;
-      auto paths = callback.paths();
       if (error_code != 0) {
         DEBUG("Edge " << g.int_id(e1) << " path_processor problem")
         return result;
@@ -34,7 +45,7 @@ namespace debruijn_graph {
         return paths[0];
       size_t j = 0;
       while (j < paths[0].size()) {
-        for (size_t i = 1;  i < paths.size(); ++i){
+        for (size_t i = 1;  i < paths.size(); ++i) {
           if (j == paths[i].size()) {
             vector<EdgeId> result(paths[0].begin()+(paths[0].size() - j), paths[0].end());
             return result;
