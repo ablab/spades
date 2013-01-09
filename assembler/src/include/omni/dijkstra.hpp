@@ -87,8 +87,9 @@ class Dijkstra {
   }
 
   virtual void AddNeighboursToQueue(VertexId cur_vertex, distance_t cur_dist, queue_t& queue) {
-    for (auto I = graph_.out_begin(cur_vertex), E = graph_.out_end(cur_vertex); I != E; ++I) {
-      EdgeId edge = *I;
+    BOOST_FOREACH(EdgeId edge, graph_.OutgoingEdges(cur_vertex)) {
+    //for (auto I = graph_.out_begin(cur_vertex), E = graph_.out_end(cur_vertex); I != E; ++I) {
+      //EdgeId edge = *I;
       //TRACE("Checking " << i << "th neighbour of vertex " << graph_.str(cur_vertex) << " started");
       VertexId neighbour = graph_.EdgeEnd(edge);
       if (!DistanceCounted(neighbour)) {
@@ -231,11 +232,11 @@ public:
       EdgeId edge = *I;
       //TRACE("Checking " << i << "th neighbour of vertex " << g.str(cur_vertex) << " started");
       VertexId neighbour = g.EdgeEnd(edge);
-      if (!DistanceCounted(neighbour)) {
+      if (!this->DistanceCounted(neighbour)) {
         //TRACE("Adding new entry to queue");
-        distance_t new_dist = GetLength(edge) + cur_dist;
+        distance_t new_dist = this->GetLength(edge) + cur_dist;
         //TRACE("Entry: vertex " << g.str(cur_vertex) << " distance " << new_distance);
-        if (CheckPutVertex(neighbour, edge, new_dist)) {
+        if (this->CheckPutVertex(neighbour, edge, new_dist)) {
         //TRACE("CheckPutVertex returned true and new entry is added");
           queue.push(make_pair(new_dist, neighbour));
         }
@@ -247,11 +248,11 @@ public:
       EdgeId edge = *I;
       //TRACE("Checking " << i << "th neighbour of vertex " << g.str(cur_vertex) << " started");
       VertexId neighbour = g.EdgeStart(edge);
-      if (!DistanceCounted(neighbour)) {
+      if (!this->DistanceCounted(neighbour)) {
         //TRACE("Adding new entry to queue");
-        distance_t new_dist = GetLength(edge) + cur_dist;
+        distance_t new_dist = this->GetLength(edge) + cur_dist;
         //TRACE("Entry: vertex " << g.str(cur_vertex) << " distance " << new_distance);
-        if (CheckPutVertex(neighbour, edge, new_dist)) {
+        if (this->CheckPutVertex(neighbour, edge, new_dist)) {
         //TRACE("CheckPutVertex returned true and new entry is added");
           queue.push(make_pair(new_dist, neighbour));
         }
@@ -291,9 +292,6 @@ class BackwardDijkstra: public Dijkstra<Graph, distance_t> {
 public:
   BackwardDijkstra(const Graph &graph) :
     base(graph) {
-  }
-
-  virtual ~BackwardDijkstra() {
   }
 
   virtual void AddNeighboursToQueue(VertexId cur_vertex, distance_t cur_dist, queue_t& queue) {

@@ -64,8 +64,8 @@ public:
 
 	virtual bool IsInComponentSafe(const EdgeId& edge) const {
 		return
-			IsInComponent(edge) &&
-			IsInComponent(this->graph_.conjugate(edge));
+			this->IsInComponent(edge) &&
+			this->IsInComponent(this->graph_.conjugate(edge));
 	}
 
 	virtual ~ConcurrentConjugateGraphComponent() {
