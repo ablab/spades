@@ -1,0 +1,19 @@
+Rectangle Graph for Repeat Resolution in Genome Assembly
+
+LINKS:
+======
+
+http://bioinf.spbau.ru/rectangles
+
+Nikolay Vyahhi, Son K. Pham, Pavel Pevzner.
+From de Bruijn Graphs to Rectangle Graphs for Genome Assembly,
+Lecture Notes in Bioinformatics 7534 (2012), pp. 249-261.
+
+USAGE:
+======
+
+1. Run SPAdes (http://bioinf.spbau.ru/en/spades) in debug mode (spades.py --debug), so it will produce saves directory.
+
+2. Run rectangle module by command line: python rrr.py -s project_name/saves [options] [-o out_dir=out]
+
+3. Check out_dir for contigs, log files and other interesting debug information.
