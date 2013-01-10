@@ -166,7 +166,7 @@ std::pair<size_t, size_t> KMerCoverageModel::EstimateCoverage(const std::vector<
 
   // Start finding the valley
   size_t Idx = 1;
-  while (cov[Idx] < Valley) {
+  while (cov[Idx] < Valley || Valley == 0) {
     Valley = cov[Idx];
     Idx += 1;
     if (Idx == cov.size() - 1)
