@@ -42,12 +42,14 @@ static double perr(size_t i, double scale, double shape) {
   return pow((1 + shape*(i-1)/scale), -1/shape) - pow((1 + shape*(i)/scale), -1/shape);
 }
 
-static double pgood(size_t i, double zp, double u, double sd, double shape) {
+static double pgood(size_t i, double zp, double u, double sd, double shape,
+                    double *mixprobs = NULL) {
   double res = 0;
 
   for (unsigned copy = 0; copy < MaxCopy; ++copy) {
     boost::math::skew_normal snormal((copy + 1)* u, sd * sqrt(copy + 1), shape);
-    res += dzeta(copy + 1, zp) * (boost::math::cdf(snormal, i + 1) - boost::math::cdf(snormal, i));
+    // res += (mixprobs ? mixprobs[copy] : dzeta(copy + 1, zp)) * (boost::math::cdf(snormal, i + 1) - boost::math::cdf(snormal, i));
+    res += (mixprobs ? mixprobs[copy] : dzeta(copy + 1, zp)) * boost::math::pdf(snormal, i);
   }
 
   return res;
@@ -119,15 +121,19 @@ class CovModelLogLikeEM : public Cloneable<CovModelLogLikeEM, FunctionEvaluator>
       kmer_probs[i] += z[i] * log(perr(i + 1, scale, shape));
     }
 
-
     // Good
+    // Pre-compute mixing probabilities
+    std::vector<double> mixprobs(MaxCopy, 0);
+    for (unsigned copy = 0; copy < MaxCopy; ++copy)
+      mixprobs[copy] = dzeta(copy + 1, zp);
+
+    // Compute the density
     for (size_t i = 0; i < kmer_probs.size(); ++i) {
-      double val = log(pgood(i + 1, zp, u, sd, shape2));
+      double val = log(pgood(i + 1, zp, u, sd, shape2, &mixprobs[0]));
       if (!isfinite(val))
         val = -1000.0;
       kmer_probs[i] += (1 - z[i]) * val;
     }
-
 
     double res = 0;
     for (size_t i = 0; i < kmer_probs.size(); ++i)
