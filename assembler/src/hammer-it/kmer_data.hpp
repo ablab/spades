@@ -6,12 +6,19 @@
 
 #include <vector>
 
+#include <cstdlib>
+
 namespace hammer {
 const uint32_t K = 16;
 typedef HSeq<K> HKMer;
 
 struct KMerStat {
   size_t count;
+  HKMer kmer;
+  double qual;
+
+  KMerStat(size_t count = 0, HKMer kmer = HKMer(), double qual = 1.0)
+      : count(count), kmer(kmer), qual(qual) {}
 };
   
 };

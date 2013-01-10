@@ -117,6 +117,26 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   return out;
 }
 
+static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
+  if (lhs.count == 0)
+    lhs.kmer = rhs.kmer;
+
+  lhs.count += rhs.count;
+  lhs.qual *= rhs.qual;
+}
+
+static void PushKMer(KMerData &data, HKMer kmer, double qual) {
+  KMerStat &kmc = data[kmer];
+  Merge(kmc, KMerStat(1, kmer, qual));
+}
+
+static void PushKMerRC(KMerData &data, HKMer kmer, double qual) {
+  kmer = !kmer;
+
+  KMerStat &kmc = data[kmer];
+  Merge(kmc, KMerStat(1, kmer, qual));
+}
+
 void KMerDataCounter::FillKMerData(KMerData &data) {
   std::string workdir(".");
 
@@ -135,15 +155,17 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
 
     ValidHKMerGenerator<hammer::K> gen(r);
     while (gen.HasMore()) {
-      HKMer seq = gen.kmer();
-      data[seq].count += 1;
-      data[!seq].count += 1;
+      HKMer kmer = gen.kmer();
+      double correct = gen.correct_probability();
+
+      PushKMer(data, kmer, 1 - correct);
+      PushKMerRC(data, kmer, 1 - correct);
       
       gen.Next();
     }
   }
 
-    INFO("Collection done, postprocessing.");
+  INFO("Collection done, postprocessing.");
 
   size_t singletons = 0;
   for (size_t i = 0; i < data.size(); ++i) {
