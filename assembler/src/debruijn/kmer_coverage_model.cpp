@@ -255,10 +255,12 @@ void KMerCoverageModel::Fit() {
 
   // Ensure that there will be at least 2 iterations.
   double PrevErrProb = 2;
+  const double ErrProbThr = 1e-6;
   auto GoodCov = cov_;
   GoodCov.resize(1.25 * MaxCopy * MaxCov_);
   bool Converged = true;
-  while (fabs(PrevErrProb - ErrorProb) > 1e-6) {
+  unsigned it = 1;
+  while (fabs(PrevErrProb - ErrorProb) > ErrProbThr) {
     // Recalculate the vector of posterior error probabilities
     std::vector<double> z = EStep(x0, ErrorProb, GoodCov.size());
 
@@ -268,11 +270,12 @@ void KMerCoverageModel::Fit() {
       ErrorProb += z[i] * GoodCov[i];
     ErrorProb /= 1.0 * Total;
 
-    bool LastIter = fabs(PrevErrProb - ErrorProb) <= 1e-6;
+    bool LastIter = fabs(PrevErrProb - ErrorProb) <= ErrProbThr;
 
     Function F(CovModelLogLikeEM(GoodCov, z), Function::DERIV_FDIFF_CENTRAL_2);
     auto Results = LRWWSimplex().solve(F, x0,
-                                       MaxNumIterTest(LastIter ? 100 : 50));
+                                       MaxNumIterTest((LastIter ? 2 : 1) * 5 * it));
+
     Converged = Results->converged;
 
     TRACE("Results: ");
@@ -284,6 +287,7 @@ void KMerCoverageModel::Fit() {
     TRACE("" << zp << " " << ErrorProb << " " << shape << " " << u << " " << sd << " " << scale << " " << shape2);
 
     x0 = Results->xMin;
+    it += 1;
   }
 
   // Now let us check whether we have sane results
