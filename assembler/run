@@ -15,6 +15,7 @@ tmp_cfg_dir="$output_base/tmp_configs"
 mkdir -p $tmp_cfg_dir
 cp -r configs $tmp_cfg_dir 
 cfg_debruijn="$tmp_cfg_dir/configs/debruijn"
+cfg_cap="$tmp_cfg_dir/configs/cap"
 
 function run_n_measure
 {
@@ -102,8 +103,8 @@ else
     'dt') run_n_measure build/debug/bin/debruijn_test && run_n_measure build/debug/bin/include_test ;;
     'rv' ) build/release/bin/online_vis $cfg_debruijn/config.info ;;
     'dv' ) build/debug/bin/online_vis $cfg_debruijn/config.info ;;
-    'rc' ) run_n_measure build/release/bin/cap --log_level=test_suite ;;
-    'dc' ) run_n_measure build/debug/bin/cap --log_level=test_suite ;;
+    'rc' ) run_n_measure build/release/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info --log_level=test_suite ;;
+    'dc' ) run_n_measure build/debug/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info --log_level=test_suite ;;
     'rct' ) run_n_measure build/release/bin/cap_test ;;
     'dct' ) run_n_measure build/debug/bin/cap_test ;;
 

@@ -1,0 +1,2 @@
+cache_root ./data/cap/cache
+desc_file_name description.txt

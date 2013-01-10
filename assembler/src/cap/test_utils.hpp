@@ -13,6 +13,15 @@
 #include <vector>
 #include <iostream>
 
+#include "compare_standard.hpp"
+
+namespace cap {
+typedef io::SingleRead Contig;
+typedef io::IReader<Contig> ContigStream;
+typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;
+typedef	io::RCReaderWrapper<io::SingleRead> RCWrapper;
+}
+
 namespace cap {
 
 namespace utils {
@@ -47,16 +56,38 @@ int add_time(double &time, int multiplier = 1, int ret = 0) {
   return ret;
 }
 
-void MakeDirPath(const string& path) {
+void MakeDirPath(const std::string& path) {
+  if (path.size() == 0) {
+    TRACE("Somewhat delirium: trying to create directory ``");
+    return;
+  }
+
   size_t slash_pos = 0;
-  while ((slash_pos = path.find_first_of('/', slash_pos + 1)) != string::npos) {
+  while ((slash_pos = path.find_first_of('/', slash_pos + 1)) != std::string::npos) {
     make_dir(path.substr(0, slash_pos));
+  }
+  if (path[path.size() - 1] != '/') {
+    make_dir(path);
   }
 }
 
-std::string GenMD5FromFiles(const std::vector<std::string> &paths) {
+bool DirExist(std::string path) {
+  struct stat st;
+  return (stat(path.c_str(), &st) == 0) && (S_ISDIR(st.st_mode));
+}
+
+vector<cap::ContigStream*> OpenStreams(const vector<string>& filenames) {
+  vector<ContigStream*> streams;
+  for (auto it = filenames.begin(); it != filenames.end(); ++it) {
+    DEBUG("Opening stream from " << *it);
+    streams.push_back(new io::Reader(*it));
+  }
+  return streams;
+}
+
+std::string GenMD5FromFiles(const std::vector<std::string> &paths, const std::string &salt = "") {
   std::vector<std::string> paths_s = paths;
-  std::sort(paths_s.begin(), paths_s.end());
+  //std::sort(paths_s.begin(), paths_s.end());
 
   std::string accum_string = "";
   for (auto it = paths_s.begin(); it != paths_s.end(); ++it) {
@@ -64,7 +95,7 @@ std::string GenMD5FromFiles(const std::vector<std::string> &paths) {
     accum_string += " ";
   }
 
-  FILE *md5_output = popen(("head -n 1000 " + accum_string + " | md5sum").c_str(), "r");
+  FILE *md5_output = popen(("(head -n 1000 " + accum_string + "&& echo " + salt + ") | md5sum").c_str(), "r");
   VERIFY(md5_output != NULL);
 
   char buf[20];

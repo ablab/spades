@@ -20,6 +20,9 @@
 // longseq
 #include "longseq.hpp"
 
+// config
+#include "cap_config_struct.hpp"
+
 // io
 #include "io/ireader.hpp"
 #include "io/converting_reader_wrapper.hpp"

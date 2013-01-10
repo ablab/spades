@@ -11,17 +11,38 @@ set(SPADES_MIN_K 1 CACHE INTEGER "Minimum k-mer length")
 set(SPADES_MAX_K 300 CACHE INTEGER "Maximum k-mer length")
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/k_range.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/k_range.hpp")
-include_directories(${CMAKE_SOURCE_DIR}/debruijn)
+include_directories(${CMAKE_SOURCE_DIR}/debruijn
+                    ${CMAKE_SOURCE_DIR}/online_vis)
+
+#add_executable(cap
+# ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
+# ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
+# ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
+# tools.cpp)
 
 add_executable(cap
- ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
- ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
- ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
- tools.cpp)
+  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
+  main.cpp)
 
 #if (DEFINED static_build)
 #  set_target_properties(cap PROPERTIES LINK_SEARCH_END_STATIC 1)
 #endif()
 
-target_link_libraries(cap input mph_index otkpp ${COMMON_LIBRARIES})
+if (READLINE_FOUND)
+  include_directories(${READLINE_INCLUDE_DIR})
+else(READLINE_FOUND)
+  #MESSAGE(WARNING "Library `readline' was not found (not installed?).")
+endif()
+if (CURSES_FOUND)
+  include_directories(${CURSES_INCLUDE_PATH})
+else(CURSES_FOUND)
+  #MESSAGE(WARNING "Library `ncurses' was not found (not installed?)")
+endif()
+include_directories(./drawing_commands)
+include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
+if (READLINE_FOUND AND CURSES_FOUND)
+  target_link_libraries(cap ${COMMON_LIBRARIES} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY} input mph_index otkpp )
+else()
+  target_link_libraries(cap ${COMMON_LIBRARIES} input mph_index otkpp )
+endif()
