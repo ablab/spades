@@ -16,7 +16,7 @@ union HomopolymerRun {
     uint8_t nucl : 2;
   };
 
-  HomopolymerRun() 
+  HomopolymerRun()
       : raw(0) {}
 
   bool operator==(const HomopolymerRun &that) const {
@@ -26,12 +26,18 @@ union HomopolymerRun {
 
 template <size_t N = 16>
 class HSeq {
-  std::array<HomopolymerRun, N> data_;
+  typedef std::array<HomopolymerRun, N> StorageType;
+  StorageType data_;
 
   const static size_t PrimeNum = 239;
 
 public:
   HSeq() {}
+
+  HSeq(typename StorageType::const_iterator Start,
+       typename StorageType::const_iterator End) {
+    std::copy(Start, End, data_.begin());
+  }
 
   typedef HomopolymerRun DataType;
   const static size_t DataSize = N;
@@ -45,11 +51,11 @@ public:
   const HomopolymerRun *data() const {
     return data_.data();
   }
-  
+
   size_t data_size() const {
     return DataSize;
   }
-  
+
   HomopolymerRun &operator[](size_t idx) {
     return data_[idx];
   }
@@ -115,7 +121,7 @@ public:
 
     return *this;
   }
-  
+
   HSeq<N> operator>>(char nucl) const {
     if (is_nucl(nucl))
       nucl = dignucl(nucl);
@@ -140,6 +146,9 @@ public:
   bool operator==(const HSeq<N> &that) const {
     return (data_ == that.data_);
   }
+  bool operator!=(const HSeq<N> &that) const {
+    return (data_ != that.data_);
+  }
 
   size_t size() const {
     size_t res = 0;
@@ -148,7 +157,7 @@ public:
 
     return res;
   }
-  
+
   std::string str() const {
     std::string res;
     for (size_t i = 0; i < N; ++i)
@@ -159,7 +168,7 @@ public:
 
   static size_t GetHash(const DataType *data, size_t sz = DataSize) {
     size_t hash = PrimeNum;
-    
+
     for (size_t i = 0; i < sz; i++) {
       hash = ((hash << 5) - hash) + data[i].raw;
     }
