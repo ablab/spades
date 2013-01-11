@@ -35,14 +35,23 @@ case $arg in
   'pec') $cmd configs/debruijn/path_extend/pe_config.info.template   configs/debruijn/path_extend/pe_config.info;;
   'pep') $cmd configs/debruijn/path_extend/pe_params.info.template   configs/debruijn/path_extend/pe_params.info;;
   '-all')
+  		echo ----------------------spades_config.info------------------------
         $cmd spades_config.info.template                            spades_config.info
+		echo -----------------configs/debruijn/config.info-------------------
         $cmd configs/debruijn/config.info.template                  configs/debruijn/config.info
+		echo ------------------configs/hammer/config.info--------------------
         $cmd configs/hammer/config.info.template                    configs/hammer/config.info
+		echo -------------configs/debruijn/simplification.info---------------
         $cmd configs/debruijn/simplification.info.template          configs/debruijn/simplification.info
+		echo -----------configs/debruijn/distance_estimation.info------------
         $cmd configs/debruijn/distance_estimation.info.template     configs/debruijn/distance_estimation.info
+		echo -----------configs/debruijn/detail_info_printer.info------------
         $cmd configs/debruijn/detail_info_printer.info.template     configs/debruijn/detail_info_printer.info
+		echo ----------------configs/debruijn/log.properties-----------------
         $cmd configs/debruijn/log.properties.template               configs/debruijn/log.properties
+		echo ----------configs/debruijn/path_extend/pe_config.info-----------
         $cmd configs/debruijn/path_extend/pe_config.info.template   configs/debruijn/path_extend/pe_config.info
+		echo ----------configs/debruijn/path_extend/pe_config.info-----------
         $cmd configs/debruijn/path_extend/pe_params.info.template   configs/debruijn/path_extend/pe_params.info;;
 esac
 
