@@ -799,6 +799,9 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 				rough_edge_remover);
 	}
 		break;
+	case sm_normal:
+		return false;
+		break;
 	default:
 		VERIFY(false);
 		return false;
