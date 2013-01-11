@@ -33,6 +33,17 @@ namespace online_visualization {
     cout << "Please try again" << endl;
   }
 
+  void FireBadArgument(const string& arg) {
+    cout << "Bad word specifier: `" << arg << "'" << endl; 
+    cout << "Please try again" << endl;
+  }
+  
+  void FireNumberOutOfBounds(int num_of_command) {
+    cout << "The command number parameter " << num_of_command
+         << " must be positive and not exceed the size of history" << endl;
+    cout << "Please try again" << endl;
+  }
+
   bool CheckFileExists(const string& file) {
     if (!path::is_regular_file(file)) {
       FireFileDoesNotExist(file);
@@ -54,7 +65,7 @@ namespace online_visualization {
 
   bool CheckIsNumber(const string& str) {
     if (!IsNumber(str)) {
-      cout << "The argument " << str << " is not a number" << endl;
+      cout << "The argument `" << str << "' is not a number" << endl;
       cout << "Please try again" << endl;   
       return false;
     }

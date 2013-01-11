@@ -5,6 +5,9 @@
 #include "omni/total_labeler.hpp"
 #include "omni/graph_labeler.hpp"
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 typedef debruijn_graph::conj_graph_pack GraphPack;
 typedef GraphPack::graph_t Graph;
 typedef EdgesPositionHandler<Graph> EdgePos;

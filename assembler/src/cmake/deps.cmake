@@ -1,8 +1,8 @@
 # -*- cmake -*-
 
 find_package(OpenMP)
-
 find_package(ZLIB)
+find_package(Readline)
 
 # Use included boost unless explicitly specified
 if (NOT SPADES_BOOST_ROOT)
