@@ -4,7 +4,7 @@
 using namespace boost::numeric::ublas;
 
 XDistToMinTest::XDistToMinTest(const vector< double > &xMin, double eps, bool relative) : 
-    eps_(eps), xMin_(xMin), relative_(relative) { }
+    eps_(eps), relative_(relative), xMin_(xMin) { }
 
 double XDistToMinTest::getTestValue(const NativeSolver &s) const
 {
