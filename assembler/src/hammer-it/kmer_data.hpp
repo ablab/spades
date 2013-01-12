@@ -16,9 +16,10 @@ struct KMerStat {
   size_t count;
   HKMer kmer;
   double qual;
+  unsigned changeto;
 
-  KMerStat(size_t count = 0, HKMer kmer = HKMer(), double qual = 1.0)
-      : count(count), kmer(kmer), qual(qual) {}
+  KMerStat(size_t count = 0, HKMer kmer = HKMer(), double qual = 1.0, unsigned changeto = -1)
+      : count(count), kmer(kmer), qual(qual), changeto(changeto) {}
 };
   
 };

@@ -86,7 +86,56 @@ int main(void) {
   uf.get_sets(classes);
   size_t num_classes = classes.size();
 
-#if 1
+  INFO("Assigning centers.");
+  for (size_t i = 0; i < classes.size(); ++i) {
+    auto cluster = classes[i];
+    hammer::HKMer c = center(kmer_data, cluster);
+    size_t idx = kmer_data.seq_idx(c);
+    if (kmer_data[idx].kmer != c)
+      idx = kmer_data.push_back(hammer::KMerStat(0, c, 1.0));
+    for (size_t j = 0; j < cluster.size(); ++j)
+      kmer_data[cluster[j]].changeto = idx;
+  }
+
+  INFO("Correcting reads.");
+  ireadstream irs("test.fastq", 33);
+  std::ofstream ors("test.fasta", std::ios::out);
+  while (!irs.eof()) {
+    namespace numeric = boost::numeric::ublas;
+
+    Read r;
+    irs >> r;
+
+    std::vector<numeric::matrix<double>> scores(r.size(), numeric::matrix<double>(4, 64, 0));
+
+    ValidHKMerGenerator<hammer::K> gen(r);
+    size_t pos = 0;
+    while (gen.HasMore()) {
+      hammer::HKMer seq = gen.kmer();
+      hammer::KMerStat k = kmer_data[kmer_data[seq].changeto];
+      hammer::HKMer center = k.kmer;
+
+      for (size_t i = 0; i < hammer::K; ++i)
+        scores[pos + i](center[i].nucl, center[i].len) += k.count * (1 - k.qual);
+
+      gen.Next();
+      pos += 1;
+    }
+
+    if (pos == 0)
+      continue;
+
+    std::string out;
+    for (size_t i = 0; i < pos + hammer::K; ++i) {
+      hammer::HomopolymerRun run = cns(scores[i]);
+      out += run.str();
+    }
+
+    ors << ">" << r.getName() << '\n';
+    ors << out << '\n';
+  }
+
+#if 0
   std::sort(classes.begin(), classes.end(),  UfCmp());
   for (size_t i = 0; i < classes.size(); ++i) {
     std::cerr << i << ": { \n";

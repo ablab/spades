@@ -160,7 +160,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
 
       PushKMer(data, kmer, 1 - correct);
       PushKMerRC(data, kmer, 1 - correct);
-      
+
       gen.Next();
     }
   }
@@ -174,8 +174,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
     if (data[i].count == 1)
       singletons += 1;
   }
-  
+
   INFO("Merge done. There are " << data.size() << " kmers in total. "
        "Among them " << singletons << " (" <<  100.0 * singletons / data.size() << "%) are singletons.");
 }
-
