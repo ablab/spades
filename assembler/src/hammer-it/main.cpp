@@ -28,10 +28,24 @@ struct UfCmp {
   }
 };
 
-hammer::HKMer center(const KMerData &data, std::vector<unsigned> kmers) {
-  hammer::HKMer res;
+hammer::HomopolymerRun cns(boost::numeric::ublas::matrix<double> scores) {
   double inf = -std::numeric_limits<double>::infinity();
 
+  unsigned nucl = 0, len = 1; double max = inf;
+  for (unsigned j = 0; j < 4; ++j)
+    for (unsigned k = 1; k < 64; ++k)
+      if (scores(j, k) > max) {
+        nucl = j;
+        len = k;
+        max = scores(j, k);
+      }
+
+  return hammer::HomopolymerRun(nucl, len);
+}
+
+
+hammer::HKMer center(const KMerData &data, std::vector<unsigned> kmers) {
+  hammer::HKMer res;
   namespace numeric = boost::numeric::ublas;
 
   for (unsigned i = 0; i < hammer::K; ++i) {
@@ -49,21 +63,11 @@ hammer::HKMer center(const KMerData &data, std::vector<unsigned> kmers) {
 #endif
     }
 
-    unsigned nucl = 0, len = 1; double max = inf;
-    for (unsigned j = 0; j < 4; ++j)
-      for (unsigned k = 1; k < 64; ++k)
-        if (scores(j, k) > max) {
-          nucl = j;
-          len = k;
-          max = scores(j, k);
-        }
-    res[i].nucl = nucl;
-    res[i].len = len;
+    res[i] = cns(scores);
   }
 
   return res;
 }
-
 
 int main(void) {
   srand(42);
