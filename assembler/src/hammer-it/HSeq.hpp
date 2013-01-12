@@ -18,9 +18,15 @@ union HomopolymerRun {
 
   HomopolymerRun()
       : raw(0) {}
+  HomopolymerRun(uint8_t nucl, uint8_t len)
+      : len(len), nucl(nucl) {}
 
   bool operator==(const HomopolymerRun &that) const {
     return raw == that.raw;
+  }
+
+  std::string str() const {
+    return std::string(len, ::nucl(nucl));
   }
 };
 
@@ -161,7 +167,7 @@ public:
   std::string str() const {
     std::string res;
     for (size_t i = 0; i < N; ++i)
-      res += std::string(data_[i].len, nucl(data_[i].nucl));
+      res += data_[i].str();
 
     return res;
   }
