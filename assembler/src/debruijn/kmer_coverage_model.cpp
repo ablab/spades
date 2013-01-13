@@ -114,10 +114,13 @@ class CovModelLogLikeEM : public Cloneable<CovModelLogLikeEM, FunctionEvaluator>
         !isfinite(scale) || !isfinite(shape2))
       return +std::numeric_limits<double>::infinity();
 
-    std::vector<double> kmer_probs(cov.size());
+    std::vector<double> kmer_probs(cov.size(), 0);
 
     // Error
     for (size_t i = 0; i < kmer_probs.size(); ++i) {
+      if (cov[i] == 0)
+        continue;
+
       kmer_probs[i] += z[i] * log(perr(i + 1, scale, shape));
     }
 
@@ -129,6 +132,9 @@ class CovModelLogLikeEM : public Cloneable<CovModelLogLikeEM, FunctionEvaluator>
 
     // Compute the density
     for (size_t i = 0; i < kmer_probs.size(); ++i) {
+      if (cov[i] == 0)
+        continue;
+
       double val = log(pgood(i + 1, zp, u, sd, shape2, &mixprobs[0]));
       if (!isfinite(val))
         val = -1000.0;
