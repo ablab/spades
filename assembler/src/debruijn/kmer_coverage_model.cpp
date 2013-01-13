@@ -182,7 +182,7 @@ std::pair<size_t, size_t> KMerCoverageModel::EstimateCoverage(const std::vector<
   INFO("Kmer coverage valley at: " << Idx);
 
   // Return max over the rest
-  size_t MaxHist = cov[Idx], MaxCov = Idx;
+  size_t MaxHist = cov[Idx + 1], MaxCov = Idx + 1;
   for (size_t i = Idx + 1; i < cov.size(); ++i) {
     if (cov[i] > MaxHist) {
       MaxHist = cov[i];
@@ -199,10 +199,13 @@ void KMerCoverageModel::Fit() {
   // Smooth the histogram
   std::vector<size_t> scov;
   math::Smooth3RS3R(scov, cov_);
-  
+
   // Find the maximal and minimal coverage points using smoothed histogram.
   auto CovData = EstimateCoverage(scov);
   MaxCov_ = CovData.second, Valley_ = CovData.first;
+
+  if (abs(MaxCov_ - Valley_) < 3)
+    WARN("Too much erroneous kmers, the estimates might be unreliable");
 
   // Estimate error probability as ratio of kmers before the valley.
   size_t BeforeValley = 0, Total = 0;
@@ -236,7 +239,7 @@ void KMerCoverageModel::Fit() {
     if (scov[sz - 1] > 0)
       break;
   }
-  
+
   auto GoodCov = cov_;
   GoodCov.resize(std::min(1.25 * MaxCopy * MaxCov_, sz));
   Function F(CovModelLogLike(GoodCov), Function::DERIV_FDIFF_CENTRAL_2);
@@ -318,10 +321,11 @@ void KMerCoverageModel::Fit() {
   }
 
   if (!Converged) {
-    WARN("Failed to determine erroneous kmer threshold");
     ErrorThreshold_ = Valley_;
+    WARN("Failed to determine erroneous kmer threshold. Threshold set to: " << ErrorThreshold_);
   }
 
+  // Now the bonus: estimate the genome size!
   GenomeSize_ = 0;
   for (size_t i = ErrorThreshold_ - 1; i < GoodCov.size(); ++i)
     GenomeSize_ += GoodCov[i];
