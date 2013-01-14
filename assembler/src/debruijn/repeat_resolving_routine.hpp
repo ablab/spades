@@ -487,8 +487,8 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp, EdgeL
 					double real_multiplicity = origin_gp.g.coverage(*iter) / resolved_gp.g.coverage(resolved_positions[j].first);
 
 					if (real_multiplicity * diff_res[resolved_positions[j].first]*mismatches[i].ratio > cutoff && real_count <= 5) {
-                                                INFO(origin_gp.g.int_id(*iter) << " position after: "<< resolved_positions[j].second << "position before: "<< mismatches[i].position << " edge length:  "<< origin_gp.g.length(*iter));
-                                                INFO(distance_to_repeats_end[*iter].first<< " " << distance_to_repeats_end[*iter].second );
+            DEBUG(origin_gp.g.int_id(*iter) << " position after: "<< resolved_positions[j].second << "position before: "<< mismatches[i].position << " edge length:  "<< origin_gp.g.length(*iter));
+            DEBUG(distance_to_repeats_end[*iter].first<< " " << distance_to_repeats_end[*iter].second );
  
 						resolved_gp.mismatch_masker.insert(resolved_positions[j].first, resolved_positions[j].second, real_multiplicity * mismatches[i].ratio, mismatches[i].counts, cutoff);
 						Ncount++;

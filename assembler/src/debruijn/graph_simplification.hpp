@@ -363,25 +363,26 @@ void NewClipTips(GraphPack& graph_pack, double max_coverage,
 
 template<class Graph>
 void NewClipTips(Graph& graph,
-		//todo what is this parameter for
-		size_t max_tip_length,
-		const shared_ptr<Predicate<typename Graph::EdgeId>>& condition,
-		boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0) {
+                 //todo what is this parameter for
+                 size_t max_tip_length,
+                 const shared_ptr<Predicate<typename Graph::EdgeId>>& condition,
+                 boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0) {
 
-	cout << "max_tip_length " << max_tip_length << endl;
+  DEBUG("Max tip length: " << max_tip_length);
+
 //	auto tc_config = cfg::get().simp.tc;
 
-	omnigraph::TipClipper<Graph> tc(graph, max_tip_length, condition,
-			raw_removal_handler);
+  omnigraph::TipClipper<Graph> tc(graph, max_tip_length, condition,
+                                  raw_removal_handler);
 
-	LengthComparator<Graph> comparator(graph);
-	for (auto iterator = graph.SmartEdgeBegin(comparator); !iterator.IsEnd();
-			++iterator) {
-		tc.ProcessNext(*iterator);
-	}
+  LengthComparator<Graph> comparator(graph);
+  for (auto iterator = graph.SmartEdgeBegin(comparator); !iterator.IsEnd();
+       ++iterator) {
+    tc.ProcessNext(*iterator);
+  }
 
-	Compressor<Graph> compressor(graph);
-	compressor.CompressAllVertices();
+  Compressor<Graph> compressor(graph);
+  compressor.CompressAllVertices();
 }
 template<class Graph>
 std::shared_ptr<
