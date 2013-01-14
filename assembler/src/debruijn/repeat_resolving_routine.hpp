@@ -92,7 +92,7 @@ void find_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_
 		wfs_set.insert(*not_unique.begin());
 		set<EdgeId> component;
 		while (!wfs_set.empty()) {
-			for (auto iter = wfs_set.begin(); iter != wfs_set.end(); ++iter) {
+			for (auto iter = wfs_set.begin(); iter != wfs_set.end(); ) {
 				component.insert(*iter);
 				VertexId start = gp.g.EdgeStart(*iter);
 				VertexId end = gp.g.EdgeEnd(*iter);
@@ -104,8 +104,11 @@ void find_distance_from_repeats(graph_pack& gp, EdgeLabelHandler<typename graph_
 				for (auto e_iter = next.begin(); e_iter != next.end(); e_iter++)
 					if (not_unique.find(*e_iter) != not_unique.end() && component.find(*e_iter) == component.end())
 						wfs_set.insert(*e_iter);
-
+				set<EdgeId>::iterator new_iter = iter ;
+				new_iter ++;
 				wfs_set.erase(iter);
+				iter = new_iter;
+
 			}
 		}
 		DEBUG("not_unique_component");
