@@ -310,7 +310,7 @@ private:
 
 	const size_t edge_length_bound_;
 
-	size_t current_;
+	mutable size_t current_;
 
 public:
 	CountingDijkstra(const Graph &graph, size_t max_size,
@@ -320,7 +320,7 @@ public:
 	}
 
 	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge,
-			distance_t length) {
+			distance_t length) const {
 		if (current_ < max_size_) {
 			++current_;
 		}
@@ -341,8 +341,8 @@ public:
 	virtual size_t GetLength(EdgeId edge) const {
 		if (this->graph().length(edge) <= edge_length_bound_)
 			//todo change back
-			return 1;
-//			return this->graph().length(edge);
+//			return 1;
+			return this->graph().length(edge);
 		else
 			return inf;
 	}
@@ -374,10 +374,10 @@ public:
 	virtual size_t GetLength(EdgeId edge) const {
 		if (path_vertices_.count(this->graph().EdgeStart(edge))
 				&& path_vertices_.count(this->graph().EdgeEnd(edge)))
-//				return min(int(base::GetLength(edge)), 200);
-			return 1;
-//		return base::GetLength(edge);
-		return 2;
+				return min(int(base::GetLength(edge)), 200);
+//			return 1;
+		return base::GetLength(edge);
+//		return 2;
 	}
 
 };
