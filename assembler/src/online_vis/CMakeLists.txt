@@ -8,7 +8,9 @@ project(online_vis CXX)
 
 add_executable(online_vis main.cpp)
 
-include_directories(${READLINE_INCLUDE_DIR})
+if (READLINE_FOUND)
+ include_directories(${READLINE_INCLUDE_DIR})
+endif()
 include_directories(./drawing_commands)
 include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
