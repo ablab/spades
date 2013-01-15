@@ -860,9 +860,19 @@ def main():
                 if os.path.isdir(tmp_dir):
                     shutil.rmtree(tmp_dir)
 
-            result_corrected_contigs_filename = os.path.join(corrector_cfg.o, "corrected_contigs.fasta")
+            # renaming assembled contigs to avoid colision in names
+            new_result_contigs_filename = os.path.join(os.path.dirname(result_contigs_filename), "assembled_contigs.fasta")
+            shutil.move(result_contigs_filename, new_result_contigs_filename)
+            result_contigs_filename = new_result_contigs_filename
+
+            result_corrected_contigs_filename = os.path.abspath(os.path.join(corrector_cfg.o, "corrected_contigs.fasta"))
             if not os.path.isfile(result_corrected_contigs_filename):
                 result_corrected_contigs_filename = ""
+            else:
+                # renaming corrected contigs 
+                new_result_corrected_contigs_filename = os.path.join(os.path.dirname(result_corrected_contigs_filename), "contigs.fasta")
+                shutil.move(result_corrected_contigs_filename, new_result_corrected_contigs_filename)
+                result_corrected_contigs_filename = new_result_corrected_contigs_filename
 
             log.info("\n===== Mismatch correction finished.\n")
 
