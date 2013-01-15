@@ -238,7 +238,7 @@ void save_distance_estimation(const conj_graph_pack& gp,
                               const PairedIndexT& paired_index,
                               const PairedIndexT& clustered_index)
 {
-  if (cfg::get().make_saves) {
+  if (cfg::get().make_saves || cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
     string p = path::append_path(cfg::get().output_saves, "distance_estimation");
     INFO("Saving current state to " << p);
     PrintAll(p, gp, paired_index, clustered_index);
