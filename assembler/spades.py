@@ -43,7 +43,7 @@ def print_used_values(cfg, log):
         log.info("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.' + str(sys.version_info[2]))
         # for more details: '[' + str(sys.version_info) + ']'
     except:
-        log.info("  Problem occured when getting system information")
+        log.info("  Problem occurred when getting system information")
     log.info("")
 
     # main
@@ -256,7 +256,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gap-closer disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction bwa=".split()
+               "config-file= dataset= mismatch-correction bwa= rectangles".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -300,6 +300,7 @@ def usage(show_hidden=False):
                          " (without assembler)"
     print >> sys.stderr, "--only-assembler\t\trun only assembler (without error"\
                          " correction)"
+    print >> sys.stderr, "--rectangles\t\t\tuse Rectangles algorithm for repeat resolution"
     print >> sys.stderr, "--mismatch-correction\t\trun post processing correction"\
                          " of mismathces and short indels"
     print >> sys.stderr, "--bwa\t<path>\t\t\tpath to BWA tool. Required for --mismatch-correction"\
@@ -391,6 +392,7 @@ def main():
         qvoffset = None
         iterations = None
 
+        rectangles = None
         #corrector
         mismatch_corrector = False
         bwa = None
@@ -451,6 +453,9 @@ def main():
 
             elif opt == "--debug":
                 developer_mode = True
+
+            elif opt == "--rectangles":
+                rectangles = True
 
             #corrector
             elif opt == "--mismatch-correction":
@@ -747,6 +752,9 @@ def main():
             spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir,
                 "simplified_contigs.fasta")
 
+            if rectangles:
+                spades_cfg.__dict__["resolving_mode"] = "rectangles"
+
             log.info("\n===== Assembling started.\n")
 
             if CONFIG_FILE:
@@ -789,9 +797,7 @@ def main():
                 execution_home, spades_cfg, log)
 
             #RECTANGLES
-            debruijn_config = load_config_from_file(os.path.join(latest_dir, "configs", "config.info"))
-
-            if spades_cfg.paired_mode and debruijn_config.resolving_mode == "rectangles":
+            if spades_cfg.paired_mode and rectangles:
                 rrr_input_dir = os.path.join(latest_dir, "saves")
                 rrr_outpath = os.path.join(spades_cfg.output_dir, "rectangles")
                 if not os.path.exists(rrr_outpath):
