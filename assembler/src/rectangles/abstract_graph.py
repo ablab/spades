@@ -125,6 +125,8 @@ class Abstract_Graph(object):
             if not self.is_connected(v, long_end, threshold):
                 return NO_LOOPS
         paths = self.get_paths(edge.v1, long_end, edge, int(1.5 * (threshold + 1)), False)
+        if len(paths) < 1:
+            return NO_LOOPS
         best_path = paths[0]
         best_len = self.path_len(best_path)
         """for path in paths:
