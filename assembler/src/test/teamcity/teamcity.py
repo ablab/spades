@@ -333,6 +333,9 @@ if 'contig_storage' in dataset_info.__dict__:
         os.makedirs(quast_contig_dir)
 
     name_prefix = datetime.datetime.now().strftime('%Y%m%d-%H%M')
+    if len(sys.argv) == 3:
+        name_prefix += "_" + sys.argv[2]
+
     shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + ".fasta"))
 
     scafs = os.path.join(output_dir, "scaffolds.fasta")
