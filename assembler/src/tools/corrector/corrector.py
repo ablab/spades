@@ -529,10 +529,10 @@ def init_config():
     config["skip_masked"] = 0;
     config["insert_size"] = int(400)
 
-def chouseLetters(first_node, second_node, prof, node, choused_letter, single_profile, interest, contig):
+def chouseLetters(first_node, second_node, prof, node, choused_letter, single_profile, interest, contig, logFile):
 #    print first_node;
 #    print second_node;
-    print "total factors num -- " + str(len(first_node))
+    logFile.write( "total factors number -- " + str(len(first_node)))
     if len(first_node) == 0:
         return
     current_nodes = [first_node[0], second_node[0]];
@@ -852,9 +852,9 @@ def process_contig(files):
     int_seq = [];
     int_nodes = [];
     int_seq_cnt = []; 
-    print str(contig_file)+": interest positions " + str(len(interest))
+    logFile.write( str(contig_file)+": interesting positions - " + str(len(interest)) )
 #    print str(contig_file)+": ", interest
-    print str(contig_file)+": working positions " + str(len(interest100))
+    logFile.write( str(contig_file)+": working positions " + str(len(interest100)))
     for i in interest100:
         pair_profile[i] = {}
         for j in interest100:
@@ -1006,7 +1006,7 @@ def process_contig(files):
     stime = ntime
     node = [];
     choused_letter = [];
-    chouseLetters(first_node, second_node, prof, node, choused_letter, profile, interest, contig)
+    chouseLetters(first_node, second_node, prof, node, choused_letter, profile, interest, contig, logFile)
 #    print "checked positions:"
 #    print node 
 #    print choused_letter
@@ -1131,8 +1131,9 @@ def main(args):
             tmp.append(contig_file)
             if (config["use_multiple_aligned"]):
                 tmp.append(mult_aligned_filename)
+            tmp.append(os.path.getsize(contig_file))
             pairs.append(tmp)
-    print pairs[0];
+    pairs.sort(key=lambda x: x[-1], reverse=True)
     Parallel(n_jobs=config["t"])(delayed(process_contig)(pair)for pair in pairs)
 #        inserted += loc_ins;
 #        replaced += loc_rep;
