@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "read/read.hpp"
+#include "io/single_read.hpp"
 #include "HSeq.hpp"
 
 #include <cstdint>
@@ -27,11 +27,11 @@ class ValidHKMerGenerator {
    * read.
    */
   // FIXME: Switch to delegating ctor.
-  explicit ValidHKMerGenerator(const Read &read,
+  explicit ValidHKMerGenerator(const io::SingleRead &read,
                                uint32_t bad_quality_threshold = 2) {
-    Reset(read.getSequenceString().data(),
-          read.getQualityString().data(),
-          read.getSequenceString().size(),
+    Reset(read.GetSequenceString().data(),
+          read.GetQualityString().data(),
+          read.GetSequenceString().size(),
           bad_quality_threshold);
   }
 

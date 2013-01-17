@@ -8,13 +8,14 @@
 #include "valid_hkmer_generator.hpp"
 
 #include "io/mmapped_writer.hpp"
-
-#include "read/read.hpp"
-#include "read/ireadstream.hpp"
+#include "io/reader.hpp"
+#include "io/read_processor.hpp"
 
 #include <libcxx/sort.hpp>
 
 using namespace hammer;
+
+class BufferFiller;
 
 class HammerKMerSplitter : public KMerSplitter<hammer::HKMer> {
   typedef std::vector<std::vector<HKMer> > KMerBuffer;
@@ -28,6 +29,8 @@ class HammerKMerSplitter : public KMerSplitter<hammer::HKMer> {
       : KMerSplitter<hammer::HKMer>(work_dir, hammer::K) {}
 
   virtual path::files_t Split(size_t num_files);
+
+  friend class BufferFiller;
 };
 
 void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
@@ -63,6 +66,40 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
   }
 }
 
+class BufferFiller {
+  std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries_;
+  size_t num_files_;
+  size_t cell_size_;
+  const HammerKMerSplitter &splitter_;
+
+ public:
+  BufferFiller(std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries, size_t cell_size, const HammerKMerSplitter &splitter):
+      tmp_entries_(tmp_entries), num_files_(tmp_entries[0].size()), cell_size_(cell_size), splitter_(splitter) {}
+
+  bool operator()(const io::SingleRead &r) {
+    ValidHKMerGenerator<hammer::K> gen(r);
+    HammerKMerSplitter::KMerBuffer &entry = tmp_entries_[omp_get_thread_num()];
+
+    bool stop = false;
+    while (gen.HasMore()) {
+      HKMer seq = gen.kmer(); size_t idx;
+
+      idx = splitter_.GetFileNumForSeq(seq, num_files_);
+      entry[idx].push_back(seq);
+      stop |= entry[idx].size() > cell_size_;
+
+      seq = !seq;
+
+      idx = splitter_.GetFileNumForSeq(seq, num_files_);
+      entry[idx].push_back(seq);
+      stop |= entry[idx].size() > cell_size_;
+
+      gen.Next();
+    }
+
+    return stop;
+  }
+};
 
 path::files_t HammerKMerSplitter::Split(size_t num_files) {
   unsigned nthreads = 1; // min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
@@ -79,8 +116,8 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     ostreams[i].open(out[i]);
 
   size_t read_buffer = 0; // cfg::get().count_split_buffer;
-  size_t cell_size = (read_buffer * (400 - hammer::K + 1)) /
-                      (nthreads * num_files * sizeof(HKMer));
+  size_t cell_size = read_buffer  /
+                     (nthreads * num_files * sizeof(HKMer));
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 1638400;
@@ -91,26 +128,17 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     KMerBuffer &entry = tmp_entries[i];
     entry.resize(num_files);
     for (unsigned j = 0; j < num_files; ++j) {
-      entry[j].reserve(1.25 * cell_size);
+      entry[j].reserve(1.1 * cell_size);
     }
   }
 
-  ireadstream irs("test.fastq", 33);
+  io::Reader irs("test.fastq", io::PhredOffset);
+  hammer::ReadProcessor rp(1);
   while (!irs.eof()) {
-    Read r;
-    irs >> r;
-
-    ValidHKMerGenerator<hammer::K> gen(r);
-    while (gen.HasMore()) {
-      HKMer seq = gen.kmer();
-      tmp_entries[omp_get_thread_num()][GetFileNumForSeq(seq, num_files)].push_back(seq);
-      seq = !seq;
-      tmp_entries[omp_get_thread_num()][GetFileNumForSeq(seq, num_files)].push_back(seq);
-      gen.Next();
-    }
+    BufferFiller filler(tmp_entries, cell_size, *this);
+    rp.Run(irs, filler);
+    DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
   }
-
-  DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
 
   delete[] ostreams;
 
@@ -137,6 +165,30 @@ static void PushKMerRC(KMerData &data, HKMer kmer, double qual) {
   Merge(kmc, KMerStat(1, kmer, qual));
 }
 
+class KMerDataFiller {
+  KMerData &data_;
+
+ public:
+  KMerDataFiller(KMerData &data)
+      : data_(data) {}
+
+  bool operator()(const io::SingleRead &r) const {
+    ValidHKMerGenerator<hammer::K> gen(r);
+    while (gen.HasMore()) {
+      HKMer kmer = gen.kmer();
+      double correct = gen.correct_probability();
+
+      PushKMer(data_, kmer, 1 - correct);
+      PushKMerRC(data_, kmer, 1 - correct);
+
+      gen.Next();
+    }
+
+    // Do not stop
+    return false;
+  }
+};
+
 void KMerDataCounter::FillKMerData(KMerData &data) {
   std::string workdir(".");
 
@@ -148,22 +200,9 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   INFO("Collecting K-mer information, this takes a while.");
   data.data_.resize(sz);
 
-  ireadstream irs("test.fastq", 33);
-  while (!irs.eof()) {
-    Read r;
-    irs >> r;
-
-    ValidHKMerGenerator<hammer::K> gen(r);
-    while (gen.HasMore()) {
-      HKMer kmer = gen.kmer();
-      double correct = gen.correct_probability();
-
-      PushKMer(data, kmer, 1 - correct);
-      PushKMerRC(data, kmer, 1 - correct);
-
-      gen.Next();
-    }
-  }
+  io::Reader irs("test.fastq", io::PhredOffset);
+  KMerDataFiller filler(data);
+  hammer::ReadProcessor(1).Run(irs, filler);
 
   INFO("Collection done, postprocessing.");
 

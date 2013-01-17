@@ -25,6 +25,14 @@ union HomopolymerRun {
     return raw == that.raw;
   }
 
+  bool operator!=(const HomopolymerRun &that) const {
+    return raw != that.raw;
+  }
+
+  bool operator<(const HomopolymerRun &that) const {
+    return raw < that.raw;
+  }
+
   std::string str() const {
     return std::string(len, ::nucl(nucl));
   }
