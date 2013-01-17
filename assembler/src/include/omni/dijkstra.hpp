@@ -29,14 +29,15 @@ public:
 
 template<class Graph, typename distance_t = size_t>
 class Dijkstra {
-
+protected:
   typedef typename Graph::VertexId VertexId;
   typedef typename Graph::EdgeId EdgeId;
-  typedef map<VertexId, distance_t> distances_map;
+  typedef distance_t DistanceType;
+  typedef std::map<VertexId, distance_t> distances_map;
   typedef typename distances_map::const_iterator distances_map_ci;
-  typedef  pair<distance_t, VertexId> element_t;
-  typedef typename std::priority_queue<element_t, vector<element_t>, 
-                        ReverseDistanceComparator<distance_t, VertexId>> queue_t;
+  typedef std::pair<distance_t, VertexId> element_t;
+  typedef typename std::priority_queue<element_t, vector<element_t>,
+                                       ReverseDistanceComparator<distance_t, VertexId>> queue_t;
 
  public:
   bool finished() const {
@@ -105,15 +106,6 @@ class Dijkstra {
     }
     TRACE("All neighbours of vertex " << graph_.str(cur_vertex) << " processed");
   }
-
-  //virtual vector<pair<VertexId, EdgeId>> Neighbours(VertexId vertex) {
-    //vector<pair<VertexId, EdgeId>> result;
-    //for (auto I = graph_.out_begin(vertex), E = graph_.out_end(vertex); I != E; ++I) {
-      //EdgeId edge = *I;
-      //result.push_back(make_pair(graph_.EdgeEnd(edge), edge));
-    //}
-    //return result;
-  //}
 
   void run(VertexId start) {
     TRACE("Starting dijkstra run from vertex " << graph_.str(start));
@@ -214,17 +206,16 @@ private:
 
 template<class Graph, typename distance_t = size_t>
 class UnorientedDijkstra: public Dijkstra<Graph, distance_t> {
+private:
   typedef Dijkstra<Graph, distance_t> base;
-  typedef typename Graph::VertexId VertexId;
-  typedef typename Graph::EdgeId EdgeId;
-  typedef  pair<distance_t, VertexId> element_t;
-  typedef typename std::priority_queue<element_t, vector<element_t>, 
-                        ReverseDistanceComparator<distance_t, VertexId>> queue_t;
+protected:
+  typedef typename base::VertexId VertexId;
+  typedef typename base::EdgeId EdgeId;
+  typedef typename base::element_t element_t;
+  typedef typename base::queue_t queue_t;
 
 public:
-  UnorientedDijkstra(const Graph &graph) : base(graph)
-  {
-  }
+  UnorientedDijkstra(const Graph &graph) : base(graph) {}
 
   virtual void AddNeighboursToQueue(VertexId cur_vertex, distance_t cur_dist, queue_t& queue) {
     const Graph& g = this->graph();
@@ -261,33 +252,16 @@ public:
     }
     TRACE("All neighbours of vertex " << g.str(cur_vertex) << " processed");
   }
-
-  //virtual vector<pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
-    //vector <pair<VertexId, EdgeId> > result;
-    //const Graph &g = this->graph();
-
-    //for (auto I = g.out_begin(vertex), E = g.out_end(vertex); I != E; ++I) {
-      //EdgeId edge = *I;
-      //result.push_back(make_pair(g.EdgeEnd(edge), edge));
-    //}
-
-    //vector <EdgeId> edges = g.IncomingEdges(vertex);
-    //for (size_t i = 0; i < edges.size(); i++) {
-      //result.push_back(make_pair(g.EdgeStart(edges[i]), edges[i]));
-    //}
-
-    //return result;
-  //}
 };
 
 template<class Graph, typename distance_t = size_t>
 class BackwardDijkstra: public Dijkstra<Graph, distance_t> {
   typedef Dijkstra<Graph, distance_t> base;
-  typedef typename Graph::VertexId VertexId;
-  typedef typename Graph::EdgeId EdgeId;
-  typedef  pair<distance_t, VertexId> element_t;
-  typedef typename std::priority_queue<element_t, vector<element_t>, 
-                        ReverseDistanceComparator<distance_t, VertexId>> queue_t;
+protected:
+  typedef typename base::VertexId VertexId;
+  typedef typename base::EdgeId EdgeId;
+  typedef typename base::element_t element_t;
+  typedef typename base::queue_t queue_t;
 
 public:
   BackwardDijkstra(const Graph &graph) :
@@ -314,17 +288,6 @@ public:
     TRACE("All neighbours of vertex " << g.str(cur_vertex) << " processed");
   }
 
-  //virtual vector<pair<VertexId, EdgeId> > Neighbours(VertexId vertex) {
-    ////TRACE("Starting to collect incoming edges for vertex " << this->graph().str(vertex));
-    //vector<pair<VertexId, EdgeId> > result;
-    //const Graph &g = this->graph();
-    //vector<EdgeId> edges = g.IncomingEdges(vertex);
-    ////TRACE("Vector of incoming edges fetched from graph");
-    //for (size_t i = 0; i < edges.size(); ++i)
-      //result.push_back(make_pair(g.EdgeStart(edges[i]), edges[i]));
-    ////TRACE("Incoming edges info for vertex " << this->graph().str(vertex) << " constructed");
-    //return result;
-  //}
 private:
   DECL_LOGGER("BackwardDijkstra");
 };
@@ -332,14 +295,13 @@ private:
 template<class Graph, typename distance_t = size_t>
 class BoundedDijkstra: public Dijkstra<Graph, distance_t> {
   typedef Dijkstra<Graph, distance_t> base;
-  typedef typename Graph::VertexId VertexId;
-  typedef typename Graph::EdgeId EdgeId;
+protected:
+  typedef typename base::VertexId VertexId;
+  typedef typename base::EdgeId EdgeId;
 
 public:
   BoundedDijkstra(const Graph &graph, distance_t bound) :
-    base(graph), bound_(bound)
-  {
-  }
+      base(graph), bound_(bound) {}
 
   virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, distance_t length) const {
     return (length <= bound_);
