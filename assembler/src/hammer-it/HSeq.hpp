@@ -86,7 +86,7 @@ public:
       front.nucl = complement(front.nucl);
       back.nucl = complement(back.nucl);
       res[i] = back;
-      res[N - i + 1] = front;
+      res[N - i - 1] = front;
     }
 
     if (N & 1)
