@@ -16,7 +16,7 @@ then
     exit $errlvl
 fi
 
-timestamp="`date +%Y-%m-%d_%H-%M-%S`"_$1
+timestamp="`date +%Y-%m-%d_%H-%M-%S`"
 if [ "$#" > 0 ]
 then
     timestamp=$timestamp"_"$1
