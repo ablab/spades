@@ -66,6 +66,7 @@ void load_estimated_params(const string& prefix) {
 
 void write_estimated_params(const string& prefix) {
   string filename = estimated_param_filename(prefix);
+  cout << filename << endl;
   write_param(filename, "RL", cfg::get().ds.RL);
   write_param(filename, "IS", cfg::get().ds.IS);
   write_param(filename, "is_var", cfg::get().ds.is_var);
@@ -74,6 +75,10 @@ void write_estimated_params(const string& prefix) {
   write_param(filename, "median", cfg::get().ds.median);
   write_param(filename, "mad", cfg::get().ds.mad);
   write_param_map(filename, "hist", cfg::get().ds.hist);
+}
+
+void return_estimated_params() {
+	write_estimated_params(cfg::get().output_dir + "/");
 }
 
 void load_construction(conj_graph_pack& gp, path::files_t* files) {
@@ -90,6 +95,7 @@ void save_construction(conj_graph_pack& gp) {
     PrintGraphPack(p, gp);
     write_estimated_params(p);
   }
+  return_estimated_params();
 }
 
 //boost::optional<string> single_reads_filename(
