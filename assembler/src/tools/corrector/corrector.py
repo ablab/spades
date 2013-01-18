@@ -480,12 +480,28 @@ def parse_profile(args):
             config["make_latest_symlink"] = False
         if opt in ('-c', "--contigs"):
             config["contigs"] = os.path.abspath(arg)
+            if not os.path.exists(config["contigs"]):
+                print "FILE WITH CONTIGS DOES NOT EXIST!"
+                usage()
+                exit(1)
         if opt in ('-1'):
             config["reads1"] = os.path.abspath(arg)
+            if not os.path.exists(config["reads1"]):
+                print "FILE WITH READS DOES NOT EXIST!"
+                usage()
+                exit(1)
         if opt in ('-2'):
             config["reads2"] = os.path.abspath(arg)
+            if not os.path.exists(config["reads2"]):
+                print "FILE WITH READS DOES NOT EXIST!"
+                usage()
+                exit(1)
         if opt in ('--12'):
             config["reads_mixed"] = os.path.abspath(arg)
+            if not os.path.exists(config["reads12"]):
+                print "FILE WITH READS DOES NOT EXIST!"
+                usage()
+                exit(1)
         if opt in ("--bwa"):
             config["bwa"] = os.path.abspath(arg)
         if opt in ('-t', "--threads"):
