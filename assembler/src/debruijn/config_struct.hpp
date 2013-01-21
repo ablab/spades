@@ -462,6 +462,7 @@ struct debruijn_config {
   info_printers_t info_printers;
 };
 
+
 void load(debruijn_config& cfg, const std::string &filename);
 
 } // debruijn_graph

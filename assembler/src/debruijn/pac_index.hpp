@@ -125,7 +125,6 @@ public :
 		}
 
 	}
-	int Count(Sequence &s);
 	MappingDescription Locate(Sequence &s);
 
 //for pairs of indexes on  edge and in Sequence.
@@ -278,6 +277,11 @@ public :
 //TODO:: NOT SAFE FOR WORK
 	vector<EdgeId> FillGapsInCluster(vector <pair<size_t,  typename ClustersSet::iterator> > &cur_cluster, Sequence &s) {
 
+		//debug stuff
+
+		set<int> interesting_starts({7969653, 7968954, 7968260, 7965581, 7966399});
+		set<int> interesting_ends({7973410, 7972240, 7971473, 7970031, 7969246});
+
 		vector<EdgeId> cur_sorted;
 		EdgeId prev_edge = EdgeId(0);
 		if (cur_cluster.size() > 1) {
@@ -294,25 +298,33 @@ public :
 				VertexId end_v = g_.EdgeStart(cur_edge);
 
 				//TODO: || (start_v == end_v && some condition on indexes)
-				if (start_v != end_v) {
-					auto prev_iter = iter - 1;
-					INFO("closing gap between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
 
+				auto prev_iter = iter - 1;
+
+				bool debug_info = false;
+				if (interesting_starts.find(g_.int_id(prev_edge)) != interesting_starts.end() && interesting_ends.find(g_.int_id(cur_edge)) != interesting_ends.end())
+					debug_info = true;
 //ignore non-unique kmers for distance determination
-					auto first_unique_iter = (iter->second->second.begin());
-					while (first_unique_iter != (iter->second->second.end() - 1)  && !first_unique_iter->IsUnique()) {
-						first_unique_iter += 1;
-					}
+				auto first_unique_iter = (iter->second->second.begin());
+				while (first_unique_iter != (iter->second->second.end() - 1)  && !first_unique_iter->IsUnique()) {
+					first_unique_iter += 1;
+				}
 
-					auto last_unique_iter = (prev_iter->second->second.end() - 1);
-					while (last_unique_iter != (iter->second->second.begin())  && !last_unique_iter->IsUnique()) {
-						last_unique_iter -= 1;
-					}
+				auto last_unique_iter = (prev_iter->second->second.end() - 1);
+				while (last_unique_iter != (iter->second->second.begin())  && !last_unique_iter->IsUnique()) {
+					last_unique_iter -= 1;
+				}
+				MappingInstance cur_first_index = *first_unique_iter;
+				MappingInstance prev_last_index = *(last_unique_iter);
+//TODO: reasonable constant?
+				if (start_v != end_v || (start_v == end_v && (cur_first_index.read_position - prev_last_index.read_position) > (cur_first_index.edge_position + g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
+
+					INFO("closing gap between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
 					//MappingInstance cur_first_index = *(iter->second->second.begin());
-					MappingInstance cur_first_index = *first_unique_iter;
+
 					INFO (" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
 
-					MappingInstance prev_last_index = *(last_unique_iter);
+
 					//MappingInstance prev_last_index = *(prev_iter->second->second.end()-1);
 					INFO (" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
 //					int seq_end = cur_first_index.second - cur_first_index.edge_position  + cfg::get().K;
@@ -326,10 +338,11 @@ public :
 					tmp = g_.EdgeNucls(cur_edge).str();
 					e_add = tmp.substr(0, cur_first_index.edge_position);
 //					e_add = tmp.substr(cfg::get().K - 1, max(0, int(cur_first_index.edge_position) - int(cfg::get().K - 1)));
-					vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, seq_start, seq_end, s_add, e_add);
+					vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, seq_start, seq_end, s_add, e_add, debug_info);
 					if (intermediate_path.size() == 0) {
 						WARN("Gap between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: "<< int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(cfg::get().K - K_ ) << " and seq "<< - seq_start + seq_end );
 						vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, seq_start, seq_end, s_add, e_add);
+						return intermediate_path;
 					}
 					for(auto j_iter = intermediate_path.begin(); j_iter != intermediate_path.end(); j_iter++) {
 						cur_sorted.push_back(*j_iter);
@@ -411,7 +424,8 @@ public :
  						}
  						vector <pair<size_t,  typename ClustersSet::iterator> > splitted_cluster(cur_cluster_start, next_iter);
  						vector<EdgeId> cur_sorted = FillGapsInCluster(splitted_cluster, s);
- 						sortedEdges.push_back(cur_sorted);
+ 						if (cur_sorted.size() > 0)
+ 							sortedEdges.push_back(cur_sorted);
  						cur_cluster_start = next_iter;
  					}
  				}
@@ -425,16 +439,16 @@ public :
 	int IsConsistent(Sequence &s, const ClusterDescription &a, const ClusterDescription &b) {
 		EdgeId a_edge = a.first;
 		EdgeId b_edge = b.first;
-		if (a_edge == b_edge){
-		//	return 0;
-			for (auto a_iter = a.second.begin(); a_iter != a.second.end(); ++a_iter)
-				for (auto b_iter = b.second.begin(); b_iter != b.second.end(); ++b_iter)
-					if (similar(*a_iter, *b_iter) ){
-						INFO("WTF?! Two clusters on edge " << g_.int_id(a_edge) << " have similar elements !!" );
-						return 1;
-					}
-			return 0;
-		}
+//		if (a_edge == b_edge){
+//		//	return 0;
+//			for (auto a_iter = a.second.begin(); a_iter != a.second.end(); ++a_iter)
+//				for (auto b_iter = b.second.begin(); b_iter != b.second.end(); ++b_iter)
+//					if (similar(*a_iter, *b_iter) ){
+//						INFO("WTF?! Two clusters on edge " << g_.int_id(a_edge) << " have similar elements !!" );
+//						return 1;
+//					}
+//			return 0;
+//		}
 
 		VertexId start_v = g_.EdgeEnd(a_edge);
 		size_t addition = g_.length(a_edge);
@@ -506,7 +520,7 @@ public :
 		return res;
 	}
 
-	vector<EdgeId> BestScoredPath(Sequence &s, VertexId start_v, VertexId end_v, int start_pos, int end_pos, string &s_add, string &e_add){
+	vector<EdgeId> BestScoredPath(Sequence &s, VertexId start_v, VertexId end_v, int start_pos, int end_pos, string &s_add, string &e_add, bool debug_info = false){
 		INFO("start and end vertices: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
 		int seq_len = -start_pos + end_pos;
 		PathStorageCallback<Graph> callback(g_);
@@ -536,6 +550,10 @@ public :
 			string cur_string = s_add + PathToString(paths[i]) + e_add;
 			if (paths.size() > 1 && paths.size() < 10) {
 				INFO ("candidate path number "<< i << " , len " << cur_string.length());
+				if (debug_info) {
+					INFO("graph candidate: " << cur_string);
+					INFO("in pacbio read: " << seq_string);
+				}
 				for(auto j_iter = paths[i].begin(); j_iter != paths[i].end();++j_iter) {
 					INFO (g_.int_id(*j_iter));
 				}
@@ -555,37 +573,6 @@ public :
 		return paths[best_path_ind];
 	}
 };
-
-template<class Graph>
-int PacBioMappingIndex<Graph>::Count(Sequence &s){
-	int res = 0;
-	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(K_);
-//	std::vector<runtime_k::RtSeq> buffer;
-//	buffer.push_back(kmer);
-	for (size_t j = K_; j < s.size(); ++j) {
-		kmer <<= s[j];
-//		INFO(kmer << kmer.GetHash());
-
-		size_t tmp = 	tmp_index.contains(kmer);
-//		buffer.push_back(kmer);
-		if (tmp) {
-			for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter){
-//				DEBUG(g_.int_id(iter->edgeId_));
-// TODO: operator< for RtSeqs
-				if ( banned_kmers.find(Sequence(kmer)) == banned_kmers.end()) {
-//Never trust a kmer on vertex
-					if (int(iter->offset_) >= int(cfg::get().K - this->K_) && int(iter->offset_) < int(g_.length(iter->edgeId_))  )
-						res++;
-				}
-			}
-		}
-	}
-	if (res != 0) {
-//		TRACE(res);
-		;
-	}
-	return res;
-}
 
 template<class Graph>
 typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::Locate(Sequence &s){

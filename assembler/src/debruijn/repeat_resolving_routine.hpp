@@ -874,7 +874,7 @@ void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
 	PacBioMappingIndex<Graph> pac_index(conj_gp.g, k_test);
 	ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, true);
     size_t n = 0;
-    map<int, int> profile;
+//    map<int, int> profile;
     map<int, int> different_edges_profile;
     int genomic_subreads = 0;
     int nongenomic_subreads = 0;
@@ -884,15 +884,16 @@ void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
 		ReadStream::read_type read;
 		*pacbio_read_stream>>read;
 		Sequence seq(read.sequence());
-	    size_t res_count = pac_index.Count(seq);
-	    if (profile.find(res_count) == profile.end())
-	    	profile.insert(make_pair(res_count, 0));
-	    profile[res_count] ++;
-	    if (res_count != 0){
-	    	DEBUG(read.sequence());
-	    	DEBUG(res_count);
-	    }
 	    auto location_map = pac_index.GetClusters(seq);
+	    //	    size_t res_count = pac_index.Count(seq);
+	    //	    if (profile.find(res_count) == profile.end())
+	    //	    	profile.insert(make_pair(res_count, 0));
+	    //	    profile[res_count] ++;
+	    //	    if (res_count != 0){
+	    //	    	DEBUG(read.sequence());
+	    //	    	DEBUG(res_count);
+	    //	    }
+
 	    different_edges_profile[location_map.size()]++;
 	    n++;
 	    if (location_map.size() <= 1){
@@ -946,15 +947,16 @@ void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
 	    VERBOSE_POWER(n, " reads processed");
 
 	}
-	long_reads.DumpToFile("long_reads2.mpr", conj_gp.edge_pos);
+	long_reads.DumpToFile("long_reads.mpr", conj_gp.edge_pos);
 	INFO("Total reads: " << n);
 	INFO("reads with rc edges:  " << rc_pairs);
 	INFO("Genomic/nongenomic subreads: "<<genomic_subreads <<" / " << nongenomic_subreads);
-	INFO("profile:")
-	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
-		if (iter->first < 100) {
-			INFO(iter->first <<" :  "<< iter->second);
-		}
+//	INFO("profile:")
+//	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
+//		if (iter->first < 100) {
+//			INFO(iter->first <<" :  "<< iter->second);
+//		}
+
 	INFO("different edges profile:")
 	for (auto iter = different_edges_profile.begin(); iter != different_edges_profile.end(); ++iter)
 		if (iter->first < 100) {
@@ -988,6 +990,7 @@ void resolve_repeats() {
 //			conj_gp.kmer_mapper.Detach();
 		}
 	}
+
 
 	exec_distance_estimation(conj_gp, paired_indices, clustered_indices);
 
