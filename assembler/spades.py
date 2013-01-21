@@ -302,7 +302,7 @@ def usage(show_hidden=False):
                          " correction)"
     print >> sys.stderr, "--rectangles\t\t\tuse Rectangles algorithm for repeat resolution"
     print >> sys.stderr, "--mismatch-correction\t\trun post processing correction"\
-                         " of mismathces and short indels"
+                         " of mismatches and short indels"
     print >> sys.stderr, "--bwa\t<path>\t\t\tpath to BWA tool. Required for --mismatch-correction"\
                          " if BWA is not in PATH"
     print >> sys.stderr, "--disable-gap-closer\t\tforces SPAdes not to use the gap"\
@@ -574,7 +574,7 @@ def main():
                 cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files
                 cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
 
-            #corrector can work only with -1 and -2 reads and only if contigs are exists (not only error correction)
+            #corrector can work only if contigs are exists (not only error correction)
             if (paired1 or paired) and (not only_error_correction) and mismatch_corrector:
                 cfg["mismatch_corrector"] = load_config_from_vars(dict())
                 cfg["mismatch_corrector"].__dict__["skip_masked"] = "NONE"
@@ -584,12 +584,12 @@ def main():
                     cfg["mismatch_corrector"].__dict__["t"] = cfg["common"].max_threads
                 if "output_dir" in cfg["common"].__dict__:
                     cfg["mismatch_corrector"].__dict__["o"] = cfg["common"].output_dir
-                    # reads
+                # reads
                 if paired1:
                     cfg["mismatch_corrector"].__dict__["1"] = paired1[0]
                     cfg["mismatch_corrector"].__dict__["2"] = paired2[0]
                 elif paired:
-                    cfg["mismatch_corrector"].__dict__["interleaved"] = paired[0]
+                    cfg["mismatch_corrector"].__dict__["12"] = paired[0]
 
     if CONFIG_FILE:
         cfg = load_config_from_info_file(CONFIG_FILE)
@@ -838,13 +838,7 @@ def main():
 
             tmp_dir = os.path.join(corrector_cfg.o, "tmp")
             if not os.path.isdir(tmp_dir):
-                os.makedirs(tmp_dir)
-
-            if "interleaved" in corrector_cfg.__dict__:
-                reads = bh_aux.split_paired_file(corrector_cfg.interleaved, tmp_dir, log)
-                del corrector_cfg.__dict__["interleaved"]
-                corrector_cfg.__dict__["1"] = reads[0]
-                corrector_cfg.__dict__["2"] = reads[1]
+                os.makedirs(tmp_dir)            
 
             args = []
             for k, v in corrector_cfg.__dict__.items():
