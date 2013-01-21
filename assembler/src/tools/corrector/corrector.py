@@ -498,7 +498,7 @@ def parse_profile(args):
                 exit(1)
         if opt in ('--12'):
             config["reads_mixed"] = os.path.abspath(arg)
-            if not os.path.exists(config["reads12"]):
+            if not os.path.exists(config["reads_mixed"]):
                 print "FILE WITH READS DOES NOT EXIST!"
                 usage()
                 exit(1)
