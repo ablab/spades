@@ -35,6 +35,8 @@
 #include "path_extend/path_extend_launch.hpp"
 #include "mismatch_masker.hpp"
 #include "contig_output.hpp"
+#include "pac_index.hpp"
+
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -913,8 +915,22 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 	estimate_with_estimator(gp.g, estimator, normalizer, filter,
 			clustered_index);
 }
+void pacbio_test(conj_graph_pack& conj_gp){
+	PacBioMappingIndex<Graph> pac_index(conj_gp.g);
+	ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, true);
+    size_t n = 0;
+    INFO("starting pacbio tests");
+	while (!pacbio_read_stream->eof()) {
+		typename ReadStream::read_type read;
+		*pacbio_read_stream>>read;
+	      pac_index.Count(read.sequence());
+	      VERBOSE_POWER(++n, " reads processed");
+	}
+
+}
 
 void resolve_repeats() {
+
 	Sequence genome =
 			cfg::get().developer_mode ?
 					cfg::get().ds.reference_genome : Sequence();
@@ -922,6 +938,7 @@ void resolve_repeats() {
 	conj_graph_pack conj_gp(cfg::get().K, cfg::get().output_dir, genome,
 			cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling, /*use_inner_ids*/
 			!cfg::get().developer_mode);
+
 	PairedIndexT paired_index(conj_gp.g);
 	PairedIndexT clustered_index(conj_gp.g);
 	if (!cfg::get().developer_mode) {
@@ -935,7 +952,7 @@ void resolve_repeats() {
 	}
 
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
-
+	pacbio_test(conj_gp, 21);
 //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");

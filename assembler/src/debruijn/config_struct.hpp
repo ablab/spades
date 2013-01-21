@@ -425,7 +425,7 @@ public:
     bool topology_simplif_enabled;
 	bool use_unipaths;
 	std::string additional_contigs;
-
+	std::string pacbio_reads;
 	std::string load_from;
 
 	working_stage entry_point;
@@ -881,6 +881,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.topology_simplif_enabled, pt, "topology_simplif_enabled");
 	load(cfg.use_unipaths, pt, "use_unipaths");
 
+	load(cfg.pacbio_reads, pt, "pacbio_reads");
 	load(cfg.additional_contigs, pt, "additional_contigs");
 
 	load(cfg.paired_mode, pt, "paired_mode");
