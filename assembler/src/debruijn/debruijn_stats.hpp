@@ -154,9 +154,9 @@ void CountPairedInfoStats(const Graph& g,
 }
 
 // leave only those pairs, which edges have no path in the graph between them
-void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index, 
-                            const PairedIndexT& index, 
-                            const conj_graph_pack &gp, 
+void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index,
+                            const PairedIndexT& index,
+                            const conj_graph_pack &gp,
                             const GraphDistanceFinder<Graph>& dist_finder)
 {
     for (auto it = index.begin(); it != index.end(); ++it) {
@@ -166,12 +166,12 @@ void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index,
         if (gp.g.OutgoingEdgeCount(gp.g.EdgeEnd(e1)) == 0 && gp.g.IncomingEdgeCount(gp.g.EdgeEnd(e1)) == 1 &&
             gp.g.IncomingEdgeCount(gp.g.EdgeStart(e2)) == 0 && gp.g.OutgoingEdgeCount(gp.g.EdgeStart(e2)) == 1)     {
       vector<size_t> dists = dist_finder.GetGraphDistancesLengths(e1, e2);
-      if (dists.size() == 0) 
+      if (dists.size() == 0)
         for (auto point_iter = histogram.begin(); point_iter != histogram.end(); ++point_iter)
           if (math::gr(point_iter->d, 0.)) {
             scaf_clustered_index.AddPairInfo(it.first(), it.second(),
                                              point_iter->d, point_iter->weight, 20.);
-            } 
+            }
         }
     }
 }
@@ -201,7 +201,7 @@ void FillAndCorrectEtalonPairedInfo(
             successful_load = true;
         }
     }
-    if (!successful_load) 
+    if (!successful_load)
 	    FillEtalonPairedIndex(etalon_index, gp.g,
 			gp.index, gp.kmer_mapper, insert_size, read_length, delta,
 			gp.genome, gp.k_value);
@@ -219,9 +219,9 @@ void FillAndCorrectEtalonPairedInfo(
     if (paired_index.GetEdgePairInfo(first_edge, second_edge).size() > 0) {
       for (auto point = histogram.begin(); point != histogram.end(); ++point)
         filtered_etalon_index.AddPairInfo(first_edge, second_edge, *point);
-    } 
+    }
     else
-      DEBUG("Filtering out pair_info " << gp.g.int_id(first_edge) << " " 
+      DEBUG("Filtering out pair_info " << gp.g.int_id(first_edge) << " "
                                        << gp.g.int_id(second_edge));
 	}
 
@@ -255,7 +255,7 @@ void FillAndCorrectEtalonPairedInfo(
 					cfg::get().output_dir + "scaf_etalon_filtered",
 					scaf_filtered_etalon_index);
         }
-		
+
         INFO("Everything saved");
 	}
 	INFO("Correction finished");
@@ -276,7 +276,7 @@ void GetAllDistances(const PairedInfoIndexT<Graph>& paired_index,
 }
 
 template<class Graph>
-void GetAllDistances(const Graph& g, 
+void GetAllDistances(const Graph& g,
                      const PairedInfoIndexT<Graph>& paired_index,
                      const PairedInfoIndexT<Graph>& clustered_index,
                      const IdTrackHandler<Graph>& int_ids,
@@ -295,7 +295,7 @@ void GetAllDistances(const Graph& g,
         for (size_t i = 0; i < raw_paths.size(); ++i) {
       Path path;
             path.push_back(first);
-      for (size_t j = 0; j < raw_paths[i].size(); ++j) 
+      for (size_t j = 0; j < raw_paths[i].size(); ++j)
                 path.push_back(raw_paths[i][j]);
             path.push_back(second);
 
@@ -306,7 +306,7 @@ void GetAllDistances(const Graph& g,
         for (size_t i = 0; i < paths.size(); ++i) {
             size_t len_total = 0 ;
             double weight_total = 0.;
-            for (size_t j = 0; j < paths[i].size(); ++j) { 
+            for (size_t j = 0; j < paths[i].size(); ++j) {
                 len_total += g.length(paths[i][j]);
                 size_t cur_length = 0;
                 for (size_t l = j + 1; l < paths[i].size(); ++l) {
@@ -327,10 +327,10 @@ void GetAllDistances(const Graph& g,
 
         for (size_t i = 0; i < paths.size(); ++i) {
             cout << int_ids.ReturnIntId(first) << "(" << g.length(first) << ") "
-        << int_ids.ReturnIntId(second) << "(" << g.length(second) << ") : " 
+        << int_ids.ReturnIntId(second) << "(" << g.length(second) << ") : "
         << (i + 1) << "-th path (" << path_lengths[i] << ", " << path_weights[i] << ")   :::   ";
             for (size_t j = 0; j < paths[i].size(); ++j) {
-                cout << int_ids.ReturnIntId(paths[i][j]) << "(" << g.length(paths[i][j]) << ") ";       
+                cout << int_ids.ReturnIntId(paths[i][j]) << "(" << g.length(paths[i][j]) << ") ";
             }
             cout << endl;
 		}
@@ -354,8 +354,8 @@ void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids,
     printer.savePaired(dir_name + "paths", all_paths);
 
     //PairedIndexT& all_paths_2(g);
-    //GetAllDistances<Graph>(g, 
-            //paired_index, clustered_index, 
+    //GetAllDistances<Graph>(g,
+            //paired_index, clustered_index,
             //int_ids,
             //all_paths_2,
             //GraphDistanceFinder<Graph>(g, *cfg::get().ds.IS, *cfg::get().ds.RL,
@@ -509,7 +509,7 @@ void WriteGraphComponentsAlongGenome(const Graph& g,
 void WriteGraphComponentsAlongContigs(const Graph& g,
 		const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper,
-		const GraphLabeler<Graph>& labeler, 
+		const GraphLabeler<Graph>& labeler,
         const Sequence& genome,
 		const string& folder,
 		size_t split_edge_length, size_t k) {
@@ -1019,14 +1019,14 @@ template<class gp_t>
 void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
 //  typedef typename gp_t::Graph::EdgeId EdgeId;
 	INFO("Threading large contigs");
-	io::EasyReader irs_raw(contig_file, true);
-	io::SplittingWrapper irs(irs_raw);
+	io::EasySplittingReader irs(contig_file, true);
 	while(!irs.eof()) {
 		io::SingleRead read;
 		irs >> read;
 		DEBUG("Contig " << read.name() << ", length: " << read.size());
 		if (!read.IsValid()) {
-			WARN("Attention: contig " << read.name() << " contains Ns");
+			WARN("Attention: contig " << read.name()
+					<< " is not valid (possibly contains N's)");
 			continue;
 		}
 		Sequence contig = read.sequence();

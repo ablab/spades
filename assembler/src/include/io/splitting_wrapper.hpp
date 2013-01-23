@@ -9,8 +9,8 @@
 
 namespace io {
 
-class SplittingWrapper: public DelegatingReaderWrapper<SingleRead> {
 	typedef SingleRead ReadType;
+class SplittingWrapper: public DelegatingReaderWrapper<SingleRead> {
 private:
 	std::vector<ReadType> buffer_;
 	size_t buffer_position_;
