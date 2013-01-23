@@ -265,7 +265,7 @@ void KMerCoverageModel::Fit() {
   double PrevErrProb = 2;
   const double ErrProbThr = 1e-6;
   auto GoodCov = cov_;
-  GoodCov.resize(1.25 * MaxCopy * MaxCov_);
+  GoodCov.resize(std::min(cov_.size(), 5 * MaxCopy * MaxCov_ / 4));
   bool Converged = true;
   unsigned it = 1;
   while (fabs(PrevErrProb - ErrorProb) > ErrProbThr) {
@@ -321,7 +321,7 @@ void KMerCoverageModel::Fit() {
   if (Converged) {
     std::vector<double> z = EStep(x0, ErrorProb, GoodCov.size());
 
-    INFO("Probability of erroneous kmer at valley: " << z[Valley_ - 1]);
+    INFO("Probability of erroneous kmer at valley: " << z[Valley_]);
     Converged = false;
     for (size_t i = 0; i < z.size(); ++i)
       if (z[i] < 0.05) {
