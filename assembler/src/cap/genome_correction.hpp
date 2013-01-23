@@ -2,16 +2,17 @@
 
 #include "utils.hpp"
 #include "coloring.hpp"
-//#include <map>;
+
+#include <vector>
+#include <map>
 
 namespace cap {
 
 template<class T>
 class bag {
-	/*std::*/
-	map<T, size_t> data_;
+  std::map<T, size_t> data_;
 public:
-	typedef typename map<T, size_t>::const_iterator const_iterator;
+	typedef typename std::map<T, size_t>::const_iterator const_iterator;
 
 	void put(const T& t, size_t mult) {
 		VERIFY(mult > 0);
@@ -258,7 +259,7 @@ private:
 template<class Graph>
 class AssemblyPathCallback: public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
-  typedef typename vector<EdgeId> Path;
+  typedef typename std::vector<EdgeId> Path;
 
 private:
 	const Graph& g_;
@@ -266,7 +267,7 @@ private:
 	const TColorSet assembly_color_;
 	size_t edge_count_;
 
-	vector<Path> paths_;
+  std::vector<Path> paths_;
 
 	bool CheckPath(const vector<EdgeId>& path) const {
 		DEBUG("Checking path " << g_.str(path));
