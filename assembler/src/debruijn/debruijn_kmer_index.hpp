@@ -33,9 +33,6 @@ struct EdgeInfo {
 
   EdgeInfo() :
       edgeId_(), offset_(-1), count_(0) { }
-
-//  EdgeInfo(IdType edgeId, size_t offset) :
-//      edgeId_(edgeId), offset_(offset), count_(1) { }
 };
 
 template <class Seq>
@@ -158,6 +155,26 @@ class DeBruijnKMerIndex {
     VERIFY(contains(idx));
     auto it = kmers->begin() + idx;
     return (typename traits::raw_create()(K_, *it));
+  }
+
+  template<class Writer>
+  void BinWrite(Writer &writer) const {
+    index_.serialize(writer);
+    size_t sz = data_.size();
+    writer.write((char*)&sz, sizeof(sz));
+    writer.write((char*)&data_[0], sz * sizeof(data_[0]));
+    traits::raw_serialize(writer, kmers);
+  }
+
+  template<class Reader>
+  void BinRead(Reader &reader, const std::string &FileName) {
+    clear();
+    index_.deserialize(reader);
+    size_t sz = 0;
+    reader.read((char*)&sz, sizeof(sz));
+    data_.resize(sz);
+    reader.read((char*)&data_[0], sz * sizeof(data_[0]));
+    kmers = traits::raw_deserialize(reader, FileName);
   }
 
   /**
@@ -627,6 +644,11 @@ class DeBruijnKMerIndexBuilder {
   void BuildIndexFromGraph(DeBruijnKMerIndex<IdType, Seq> &index,
                            const Graph &g) const;
 
+  template <class IdType, class Graph>
+  void UpdateIndexFromGraph(DeBruijnKMerIndex<IdType, Seq> &index,
+                            const Graph &g) const;
+
+
  protected:
   template <class KMerCounter, class Index>
   void SortUniqueKMers(KMerCounter &counter, Index &index) const;
@@ -691,7 +713,7 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
     SortUniqueKMers(counter, index);
 
     // Now use the index to fill the coverage and EdgeId's
-    INFO("Collecting k-mer coverage information, this takes a while.");
+    INFO("Collecting k-mer coverage information from reads, this takes a while.");
     index.data_.resize(sz);
 
     size_t rl = 0;
@@ -728,9 +750,15 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
     SortUniqueKMers(counter, index);
 
     // Now use the index to fill the coverage and EdgeId's
-    INFO("Collecting k-mer coverage information, this takes a while.");
+    INFO("Collecting k-mer coverage information from graph, this takes a while.");
     index.data_.resize(sz);
 
+    UpdateIndexFromGraph(index, g);
+  }
+
+  template <class IdType, class Graph>
+  void UpdateIndexFromGraph(DeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+                            const Graph &g) const {
     for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
       typename Graph::EdgeId edge = *it;
       index.RenewKMers(g.EdgeNucls(edge), edge);
