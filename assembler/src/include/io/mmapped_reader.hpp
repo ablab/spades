@@ -58,11 +58,11 @@ class MMappedReader {
 
  public:
   MMappedReader(const std::string &filename, bool unlink = false,
-                size_t blocksize = 64*1024*1024)
+                size_t blocksize = 64*1024*1024, size_t off = 0, size_t sz = 0)
       : Unlink(unlink), FileName(filename), BlockSize(blocksize) {
     struct stat buf;
 
-    FileSize = (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size);
+    FileSize = (sz ? sz : (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size));
 
     StreamFile = open(FileName.c_str(), O_RDONLY);
     VERIFY_MSG(StreamFile != -1,
@@ -77,7 +77,7 @@ class MMappedReader {
     if (BlockSize) {
       MappedRegion =
           (uint8_t*)mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
-                         StreamFile, 0);
+                         StreamFile, off);
       VERIFY_MSG((intptr_t)MappedRegion != -1L,
                  "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     } else
@@ -139,10 +139,10 @@ class MMappedRecordReader : public MMappedReader {
  public:
   typedef pointer_iterator<T> iterator;
   typedef const pointer_iterator<T> const_iterator;
-  
+
   MMappedRecordReader(const std::string &FileName, bool unlink = true,
-                      size_t blocksize = 64*1024*1024):
-      MMappedReader(FileName, unlink, blocksize) {
+                      size_t blocksize = 64*1024*1024, size_t off = 0, size_t sz = 0):
+      MMappedReader(FileName, unlink, blocksize, off, sz) {
     VERIFY(FileSize % sizeof(T) == 0);
   }
 
@@ -173,8 +173,9 @@ class MMappedRecordArrayReader : public MMappedReader {
 
   MMappedRecordArrayReader(const std::string &FileName,
                            size_t elcnt = 1,
-                           bool unlink = true):
-      MMappedReader(FileName, unlink, -1ULL), elcnt_(elcnt) {
+                           bool unlink = true,
+                           size_t off = 0, size_t sz = 0):
+      MMappedReader(FileName, unlink, -1ULL, off, sz), elcnt_(elcnt) {
     VERIFY(FileSize % (sizeof(T) * elcnt_) == 0);
   }
 
@@ -184,6 +185,7 @@ class MMappedRecordArrayReader : public MMappedReader {
 
   size_t size() const { return FileSize / sizeof(T) / elcnt_; }
   size_t data_size() const { return FileSize; }
+  size_t elcnt() const { return elcnt_; }
   T* data() { return (T*)MappedRegion; }
   const T* data() const { return (const T*)MappedRegion; }
   T& operator[](size_t idx) { return data()[idx*elcnt_]; }
