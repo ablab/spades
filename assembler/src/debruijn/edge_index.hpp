@@ -106,6 +106,10 @@ public:
   }
 
   InnerIndex &inner_index() {
+    return inner_index_;
+  }
+
+  const InnerIndex &inner_index() const {
     VERIFY(this->IsAttached());
     return inner_index_;
   }
@@ -148,6 +152,10 @@ public:
   void Refill() {
     clear();
     DeBruijnKMerIndexBuilder<Seq>().BuildIndexFromGraph(inner_index_, this->g());
+  }
+
+  void Update() {
+    DeBruijnKMerIndexBuilder<Seq>().UpdateIndexFromGraph(inner_index_, this->g());
   }
 
   void clear() {
