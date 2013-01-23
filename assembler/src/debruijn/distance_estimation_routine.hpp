@@ -183,6 +183,21 @@ void estimate_distance(conj_graph_pack& gp,
     PairInfoImprover<Graph> improver(gp.g, clustered_index);
     improver.ImprovePairedInfo(config.use_multithreading, config.max_threads);
     //save_distance_filling(gp, paired_index, clustered_index);
+
+    if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
+		FillPos(gp, gp.genome, "10");
+		FillPos(gp, !gp.genome, "11");
+		if (!cfg::get().pos.contigs_for_threading.empty()
+			&& FileExists(cfg::get().pos.contigs_for_threading)) {
+		  FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
+		}
+
+		if (!cfg::get().pos.contigs_to_analyze.empty()
+			&& FileExists(cfg::get().pos.contigs_to_analyze)) {
+		  FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+		}
+	}
+
   }
 }
 

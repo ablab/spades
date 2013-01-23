@@ -1,6 +1,6 @@
-paired_reads             "../../../data/input/E.coli/is220_bh/05.reads.right.corrected.fastq.gz ../../../data/input/E.coli/is220_bh/05.reads.left.corrected.fastq.gz "
-single_reads             "../../../data/input/E.coli/is220_bh/05.reads.left.unpaired.fastq.gz ../../../data/input/E.coli/is220_bh/05.reads.right.unpaired.fastq.gz "
+paired_reads             "/Johnny/smallnas/teamcity_ants/ace/3c84821930354741/assembler/spades_output/ECOLI_IS220_ACE/corrected/s_6_1.fastq.00.cor.fastq /Johnny/smallnas/teamcity_ants/ace/3c84821930354741/assembler/spades_output/ECOLI_IS220_ACE/corrected/s_6_2.fastq.00.cor.fastq"
+single_reads             "/Johnny/smallnas/teamcity_ants/ace/3c84821930354741/assembler/spades_output/ECOLI_IS220_ACE/corrected/s_6_unpaired.00.cor.fastq"
 RL                       100
-IS                       270
-single_cell              true
-reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
+IS                       220
+single_cell              false
+reference_genome         /acestorage/data/input/E.coli/MG1655-K12.fasta.gz

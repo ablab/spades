@@ -77,16 +77,17 @@ public:
 		}
 	}
 
-	bool followed_by(EdgePosition& ep, int max_dist = 1) {
+	bool followed_by(EdgePosition& ep,  int max_dist = 1, double relative_cutoff = 0) {
+
 		if (contigId_ != ep.contigId_)
 			return false;
-		if (end() > ep.start())
+		if (end() > ep.start() + max_dist)
 			return false;
 		if (end() + max_dist < ep.start())
 			return false;
-		if (m_end() > ep.m_start())
+		if (m_end() > ep.m_start()  + max_dist)
 			return false;
-		if (m_end() + max_dist < ep.m_start())
+		if (m_end() + max_dist < ep.m_start() )
 			return false;
 		return true;
 	}
@@ -269,14 +270,14 @@ public:
 		return it->second;
 	}
 
-	void FillPositionGaps(EdgeId NewEdgeId) {
+	void FillPositionGaps(EdgeId NewEdgeId, double relative_cutoff = 0) {
 		VERIFY(this->IsAttached());
 		vector<EdgePosition> new_vec;
 		if (EdgesPositions[NewEdgeId].size() > 0) {
 			EdgePosition activePosition = EdgesPositions[NewEdgeId][0];
 			for (size_t i = 1; i < EdgesPositions[NewEdgeId].size(); i++) {
 				if (activePosition.followed_by(EdgesPositions[NewEdgeId][i],
-						max_single_gap_)) {
+						  max(max_single_gap_, int(relative_cutoff*this->g().length(NewEdgeId) )))) {
 					activePosition.extend_by(EdgesPositions[NewEdgeId][i]);
 				} else {
 					new_vec.push_back(activePosition);
@@ -327,12 +328,26 @@ public:
 	}
 
 	bool IsConsistentWithGenome(vector<EdgeId> Path) {
+		for(size_t i = 0; i < Path.size(); i++){
+//TODO: magic constants
+			FillPositionGaps(Path[i], 0.2);
+		}
+		for(size_t i = 0; i < Path.size() - 1; i++){
+			if (this->g().EdgeStart(Path[i+1]) != this->g().EdgeEnd(Path[i]))
+				return false;
+		}
+
 		VERIFY(this->IsAttached());
 		if (Path.size() > 0) {
-
 			vector<EdgePosition> res = (EdgesPositions[Path[0]]);
+
+			DEBUG(
+					this->g().int_id(Path[0]) << "  "<< res.size() << " positions");
+
 			int len = this->g().length(Path[0]);
 			for (size_t i = 1; i < Path.size(); i++) {
+				INFO(
+						this->g().int_id(Path[i]) << "  "<< EdgesPositions[Path[i]].size() << " positions");
 				if (is_careful())
 					res = RangeGluePositionsLists(res, EdgesPositions[Path[i]],
 							max_single_gap_, len);
@@ -346,10 +361,10 @@ public:
 					for (size_t i = 0; i < res.size(); i++) {
 //						INFO(res[i].contigId_);
 						if (abs(res[i].m_end() - res[i].m_start() - len + 1)
-								< max_single_gap_)
+								< max(1.0*max_single_gap_, 0.07 * len))
 							//todo what was it???
 //					if (res[i].contigId_ < 15)
-							return true; //ToDo: Curent pipeline trace genome as contigsId 0, 1, 10 and 11 but in future it can be not true.
+							return true; //ToDo: Current pipeline trace genome as contigsId 0, 1, 10 and 11 but in future it can be not true.
 //						else
 //							INFO("that was the fail" << res[i].m_end() << " "<<  res[i].m_start() << " " << len );
 					}
@@ -464,16 +479,15 @@ public:
 						if (iter->m_end() <= length1) {
 							AddEdgePosition(newEdge1, iter->start(),
 									iter->end(), iter->contigId_,
-									iter->m_start(),
-									iter->m_end());
+									iter->m_start(), iter->m_end());
 						} else if (iter->m_start() > length1) {
 							AddEdgePosition(newEdge2, iter->start(),
 									iter->end(), iter->contigId_,
 									iter->m_start() - length1,
 									iter->m_end() - length1);
 						} else {
-							int segm1len = (size_t)(iter->end() - iter->start() + 1)
-									* (length1 - iter->m_start() + 1)
+							int segm1len = (size_t) (iter->end() - iter->start()
+									+ 1) * (length1 - iter->m_start() + 1)
 									/ (iter->m_end() - iter->m_start() + 1);
 							int segm2len = iter->m_end() - iter->m_start()
 									- segm1len + 1;

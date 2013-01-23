@@ -36,7 +36,7 @@
 #include "mismatch_masker.hpp"
 #include "contig_output.hpp"
 #include "pac_index.hpp"
-
+#include "long_read_storage.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -915,17 +915,102 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 	estimate_with_estimator(gp.g, estimator, normalizer, filter,
 			clustered_index);
 }
-void pacbio_test(conj_graph_pack& conj_gp){
-	PacBioMappingIndex<Graph> pac_index(conj_gp.g);
+void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
+	if (cfg::get().pacbio_test_on == false) return;
+    INFO("starting pacbio tests");
+	ofstream filestr("pacbio_mapped.mpr");
+	PacBioMappingIndex<Graph> pac_index(conj_gp.g, k_test);
 	ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, true);
     size_t n = 0;
-    INFO("starting pacbio tests");
+    map<int, int> profile;
+    map<int, int> different_edges_profile;
+    int genomic_subreads = 0;
+    int nongenomic_subreads = 0;
+    LongReadStorage<Graph> long_reads(conj_gp.g);
+    int rc_pairs = 0;
 	while (!pacbio_read_stream->eof()) {
-		typename ReadStream::read_type read;
+		ReadStream::read_type read;
 		*pacbio_read_stream>>read;
-	      pac_index.Count(read.sequence());
-	      VERBOSE_POWER(++n, " reads processed");
+		Sequence seq(read.sequence());
+	    size_t res_count = pac_index.Count(seq);
+	    if (profile.find(res_count) == profile.end())
+	    	profile.insert(make_pair(res_count, 0));
+	    profile[res_count] ++;
+	    if (res_count != 0){
+	    	DEBUG(read.sequence());
+	    	DEBUG(res_count);
+	    }
+	    auto location_map = pac_index.GetClusters(seq);
+	    different_edges_profile[location_map.size()]++;
+	    n++;
+	    if (location_map.size() <= 1){
+	    	TRACE("No significant clusters");
+	    	continue;
+	    }
+	    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
+	    	bool flag = false;
+		    for (auto j_iter = location_map.begin(); j_iter != location_map.end(); ++j_iter) {
+		    	if (iter != j_iter && conj_gp.g.conjugate(iter->first) == j_iter->first) {
+		    		flag = true;
+		    		break;
+		    	}
+		    }
+	    	if (flag == true) {
+	    		rc_pairs ++;
+	    		break;
+	    	}
+	    }
+	    //continue;
+	    filestr << n << "  " << location_map.size()<< ": \n";
+	    INFO(n << "  " << location_map.size()<< ": \n");
+	    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
+	    	filestr << conj_gp.g.int_id(iter->first) <<"("<<conj_gp.g.length(iter->first)<<")  " << iter->second.size() <<"\n";
+	    	for (auto set_iter = iter->second.begin(); set_iter != iter->second.end(); ++ set_iter)
+				filestr << set_iter->edge_position << "-" << set_iter->read_position << "   ";
+			filestr << " \n";
+	    }
+
+	    auto aligned_edges = pac_index.GetReadAlignment(seq);
+	    filestr <<"found "<< aligned_edges.size()  <<" aligned subreads.\n";
+	    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
+	    	string tmp = " ";
+	    	if (conj_gp.edge_pos.IsConsistentWithGenome(*iter)) {
+	    		genomic_subreads ++;
+	    	}else {
+	    		tmp = " NOT ";
+	    		nongenomic_subreads ++;
+	    	}
+	    	filestr <<"Alignment of "<< iter->size()  <<" edges is" << tmp <<"consistent with genome\n";
+	    	long_reads.AddPath(*iter);
+	    	for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter){
+	    		filestr << conj_gp.g.int_id(*j_iter) <<"("<<conj_gp.g.length(*j_iter)<<") ";
+
+	    	}
+	    	filestr << " \n";
+	    }
+
+	    filestr << " \n";
+	    filestr << " \n";
+	    VERBOSE_POWER(n, " reads processed");
+
 	}
+	long_reads.DumpToFile("long_reads2.mpr", conj_gp.edge_pos);
+	INFO("Total reads: " << n);
+	INFO("reads with rc edges:  " << rc_pairs);
+	INFO("Genomic/nongenomic subreads: "<<genomic_subreads <<" / " << nongenomic_subreads);
+	INFO("profile:")
+	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
+		if (iter->first < 100) {
+			INFO(iter->first <<" :  "<< iter->second);
+		}
+	INFO("different edges profile:")
+	for (auto iter = different_edges_profile.begin(); iter != different_edges_profile.end(); ++iter)
+		if (iter->first < 100) {
+			INFO(iter->first <<" :  "<< iter->second);
+		}
+
+
+	INFO("PacBio test finished");
 
 }
 
@@ -952,21 +1037,23 @@ void resolve_repeats() {
 	}
 
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
-	pacbio_test(conj_gp, 21);
-//	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
-	    if (!cfg::get().pos.contigs_for_threading.empty()
-	        && FileExists(cfg::get().pos.contigs_for_threading)) {
-	      FillPosWithRC(conj_gp, cfg::get().pos.contigs_for_threading, "thr_");
-	    }
+		if (!cfg::get().pos.contigs_for_threading.empty()
+			&& FileExists(cfg::get().pos.contigs_for_threading)) {
+		  FillPosWithRC(conj_gp, cfg::get().pos.contigs_for_threading, "thr_");
+		}
 
-	    if (!cfg::get().pos.contigs_to_analyze.empty()
-	        && FileExists(cfg::get().pos.contigs_to_analyze)) {
-	      FillPosWithRC(conj_gp, cfg::get().pos.contigs_to_analyze, "anlz_");
-	    }
+		if (!cfg::get().pos.contigs_to_analyze.empty()
+			&& FileExists(cfg::get().pos.contigs_to_analyze)) {
+		  FillPosWithRC(conj_gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+		}
 	}
+
+	pacbio_test(conj_gp, cfg::get().pacbio_k);
+//	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
+
 	//todo refactor labeler creation
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
