@@ -25,7 +25,6 @@
 #include <parallel/algorithm>
 #endif
 #include <vector>
-
 #include <cmath>
 
 template<class Index>
@@ -83,6 +82,34 @@ struct kmer_index_traits {
       return h;
     }
   };
+
+  template<class Writer>
+  static void raw_serialize(Writer &writer, RawKMerStorage *data) {
+    size_t sz = data->data_size(), elcnt = data->elcnt();
+    unsigned PageSize = getpagesize();
+    writer.write((char*)&sz, sizeof(sz));
+    writer.write((char*)&elcnt, sizeof(elcnt));
+    // Make sure data is aligned to the page boundary
+    size_t cpos = writer.tellp();
+    size_t pos = (cpos + PageSize - 1 + sizeof(size_t)) / PageSize * PageSize;
+    size_t off = pos - writer.tellp();
+    writer.write((char*)&off, sizeof(off));
+    writer.seekp(pos);
+    writer.write((char*)data->data(), data->data_size());
+  }
+
+  template<class Reader>
+  static RawKMerStorage *raw_deserialize(Reader &reader, const std::string &FileName) {
+    size_t sz, off, elcnt;
+    reader.read((char*)&sz, sizeof(sz));
+    reader.read((char*)&elcnt, sizeof(elcnt));
+    reader.read((char*)&off, sizeof(off));
+    off -= sizeof(off);
+    off += reader.tellg();
+
+    return new RawKMerStorage(FileName, elcnt, false, off, sz);
+  }
+
 };
 
 template<class Seq, class traits = kmer_index_traits<Seq>>
@@ -397,7 +424,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
       INFO("Something went really wrong (read = this should not happen). Try to restart and see if the problem will be fixed.");
       exit(-1);
     }
-    
+
     counter.ReleaseBucket(iFile);
   }
 
