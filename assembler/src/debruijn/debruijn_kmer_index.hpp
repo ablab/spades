@@ -26,6 +26,9 @@ namespace debruijn_graph {
 
 template <class Seq>
 class DeBruijnKMerIndexBuilder;
+template <class Seq>
+class DeBruijnEdgeIndexBuilder;
+
 
 template<class ValueType, class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >
@@ -353,7 +356,7 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
     }
   }
 
-  friend class DeBruijnKMerIndexBuilder<Seq>;
+  friend class DeBruijnEdgeIndexBuilder<Seq>;
 
 private:
   void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
@@ -642,7 +645,27 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
 
 template <class Seq>
 class DeBruijnKMerIndexBuilder {
+ public:
+  template <class IdType, class Read>
+  size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType, Seq> &index,
+                              io::ReadStreamVector<io::IReader<Read> > &streams,
+                              SingleReadStream* contigs_stream = 0) const;
 
+  template <class IdType, class Graph>
+  void BuildIndexFromGraph(DeBruijnKMerIndex<IdType, Seq> &index,
+                           const Graph &g) const;
+
+ protected:
+  template <class KMerCounter, class Index>
+  void SortUniqueKMers(KMerCounter &counter, Index &index) const;
+
+ protected:
+  DECL_LOGGER("K-mer Index Building");
+};
+
+
+template <class Seq>
+class DeBruijnEdgeIndexBuilder : public DeBruijnKMerIndexBuilder<Seq> {
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
                                 DeBruijnEdgeIndex<IdType, Seq> &index) const;
@@ -667,13 +690,77 @@ class DeBruijnKMerIndexBuilder {
   void SortUniqueKMers(KMerCounter &counter, Index &index) const;
 
  protected:
-  DECL_LOGGER("K-mer Index Building");
+  DECL_LOGGER("Edge Index Building");
 };
 
 
-// Specialized one
+// Specialized ones
 template <>
 class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
+ public:
+  template <class IdType, class Read>
+  size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+                              io::ReadStreamVector<io::IReader<Read> > &streams,
+                              SingleReadStream* contigs_stream = 0) const {
+    DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
+                                            index.K(),
+                                            streams,
+                                            contigs_stream);
+    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMerIndexT> builder(index.workdir(), 16, streams.size());
+    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
+
+    SortUniqueKMers(counter, index);
+
+    index.data_.resize(sz);
+
+    return 0;
+  }
+
+  template <class IdType, class Graph>
+  void BuildIndexFromGraph(DeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+                           const Graph &g) const {
+    DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.K(), g);
+    KMerDiskCounter<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMer> counter(index.workdir(), splitter);
+    KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMerIndexT> builder(index.workdir(), 16, 1);
+    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
+
+    SortUniqueKMers(counter, index);
+
+    index.data_.resize(sz);
+  }
+
+ protected:
+  template <class KMerCounter, class Index>
+  void SortUniqueKMers(KMerCounter &counter, Index &index) const {
+    if (!index.kmers)
+      index.kmers = counter.TransferBucket(0);
+
+    size_t swaps = 0;
+    INFO("Arranging kmers in hash map order");
+    for (auto I = index.kmers->begin(), E = index.kmers->end(); I != E; ++I) {
+      size_t cidx = I - index.kmers->begin();
+      size_t kidx = index.raw_seq_idx(*I);
+      while (cidx != kidx) {
+        auto J = index.kmers->begin() + kidx;
+        using std::swap;
+        swap(*I, *J);
+        swaps += 1;
+
+        kidx = index.raw_seq_idx(*I);
+      }
+    }
+    INFO("Done. Total swaps: " << swaps);
+  }
+
+ protected:
+  DECL_LOGGER("K-mer Index Building");
+};
+
+template <>
+class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
+      public DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
+  typedef DeBruijnKMerIndexBuilder<runtime_k::RtSeq> base;
 
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
@@ -715,19 +802,11 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
                               io::ReadStreamVector<io::IReader<Read> > &streams,
                               SingleReadStream* contigs_stream = 0) const {
     unsigned nthreads = streams.size();
-    DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
-                                            index.K(),
-                                            streams,
-                                            contigs_stream);
-    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnEdgeIndex<IdType>::KMerIndexT> builder(index.workdir(), 16, streams.size());
-    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
 
-    SortUniqueKMers(counter, index);
+    base::BuildIndexFromStream(index, streams, contigs_stream);
 
     // Now use the index to fill the coverage and EdgeId's
     INFO("Collecting k-mer coverage information from reads, this takes a while.");
-    index.data_.resize(sz);
 
     size_t rl = 0;
     streams.reset();
@@ -755,16 +834,10 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
   template <class IdType, class Graph>
   void BuildIndexFromGraph(DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
                            const Graph &g) const {
-    DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.K(), g);
-    KMerDiskCounter<typename DeBruijnEdgeIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMer> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnEdgeIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMerIndexT> builder(index.workdir(), 16, 1);
-    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
-
-    SortUniqueKMers(counter, index);
+    base::BuildIndexFromGraph(index, g);
 
     // Now use the index to fill the coverage and EdgeId's
     INFO("Collecting k-mer coverage information from graph, this takes a while.");
-    index.data_.resize(sz);
 
     UpdateIndexFromGraph(index, g);
   }
@@ -779,30 +852,7 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
   }
 
  protected:
-  template <class KMerCounter, class Index>
-  void SortUniqueKMers(KMerCounter &counter, Index &index) const {
-    if (!index.kmers)
-      index.kmers = counter.TransferBucket(0);
-
-    size_t swaps = 0;
-    INFO("Arranging kmers in hash map order");
-    for (auto I = index.kmers->begin(), E = index.kmers->end(); I != E; ++I) {
-      size_t cidx = I - index.kmers->begin();
-      size_t kidx = index.raw_seq_idx(*I);
-      while (cidx != kidx) {
-        auto J = index.kmers->begin() + kidx;
-        using std::swap;
-        swap(*I, *J);
-        swaps += 1;
-
-        kidx = index.raw_seq_idx(*I);
-      }
-    }
-    INFO("Done. Total swaps: " << swaps);
-  }
-
- protected:
-  DECL_LOGGER("K-mer Index Building");
+  DECL_LOGGER("Edge Index Building");
 };
 
 

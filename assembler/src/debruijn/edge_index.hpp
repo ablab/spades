@@ -151,11 +151,11 @@ public:
 
   void Refill() {
     clear();
-    DeBruijnKMerIndexBuilder<Seq>().BuildIndexFromGraph(inner_index_, this->g());
+    DeBruijnEdgeIndexBuilder<Seq>().BuildIndexFromGraph(inner_index_, this->g());
   }
 
   void Update() {
-    DeBruijnKMerIndexBuilder<Seq>().UpdateIndexFromGraph(inner_index_, this->g());
+    DeBruijnEdgeIndexBuilder<Seq>().UpdateIndexFromGraph(inner_index_, this->g());
   }
 
   void clear() {

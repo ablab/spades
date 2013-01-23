@@ -142,8 +142,8 @@ size_t ConstructGraph(size_t k,
 
 	TRACE("... in parallel");
 	DeBruijnEdgeIndex<typename Graph::EdgeId, Seq>& debruijn = index.inner_index();
-	rl = DeBruijnKMerIndexBuilder<Seq>().BuildIndexFromStream(debruijn, streams,
-			contigs_stream);
+	rl = DeBruijnEdgeIndexBuilder<Seq>().BuildIndexFromStream(debruijn, streams,
+                                                            contigs_stream);
 
 	TRACE("Filled indices");
 
