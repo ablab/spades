@@ -19,6 +19,7 @@
 #include "io/rc_reader_wrapper.hpp"
 #include "io/delegating_reader_wrapper.hpp"
 #include "io/easy_reader.hpp"
+#include "io/splitting_wrapper.hpp"
 #include "io/wrapper_collection.hpp"
 #include "read/osequencestream.hpp"
 
@@ -1018,7 +1019,8 @@ template<class gp_t>
 void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
 //  typedef typename gp_t::Graph::EdgeId EdgeId;
 	INFO("Threading large contigs");
-	io::EasyReader irs(contig_file, true);
+	io::EasyReader irs_raw(contig_file, true);
+	io::SplittingWrapper irs(irs_raw);
 	while(!irs.eof()) {
 		io::SingleRead read;
 		irs >> read;
@@ -1028,9 +1030,6 @@ void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
 			continue;
 		}
 		Sequence contig = read.sequence();
-		if (contig.size() < 1500000) {
-			//continue;
-		}
 		FillPos(gp, contig, prefix + read.name());
 	}
 }
