@@ -342,6 +342,10 @@ if 'contig_storage' in dataset_info.__dict__:
     if os.path.exists(scafs):
         shutil.copy(scafs, os.path.join(contig_dir, name_prefix + "_scafs.fasta"))
 
+    before_corr = os.path.join(output_dir, "assembled_contigs.fasta")
+    if os.path.exists(before_corr):
+        shutil.copy(before_corr, os.path.join(contig_dir, name_prefix + "_before_corr.fasta"))
+
     if quast_cmd != "":
         import glob
 #        sys.path.append('./src/tools/contig_analysis/')
