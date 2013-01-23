@@ -426,6 +426,8 @@ public:
 	bool use_unipaths;
 	std::string additional_contigs;
 	std::string pacbio_reads;
+	size_t	pacbio_k;
+	bool pacbio_test_on;
 	std::string load_from;
 
 	working_stage entry_point;
@@ -880,8 +882,15 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.use_additional_contigs, pt, "use_additional_contigs");
 	load(cfg.topology_simplif_enabled, pt, "topology_simplif_enabled");
 	load(cfg.use_unipaths, pt, "use_unipaths");
+	load(cfg.pacbio_test_on, pt, "pacbio_test_on");
+	if (cfg.pacbio_test_on) {
+		load(cfg.pacbio_reads, pt, "pacbio_reads");
+		load(cfg.pacbio_k, pt, "pacbio_k");
+	} else {
+		cfg.pacbio_reads = "";
+		cfg.pacbio_k = 0;
+	}
 
-	load(cfg.pacbio_reads, pt, "pacbio_reads");
 	load(cfg.additional_contigs, pt, "additional_contigs");
 
 	load(cfg.paired_mode, pt, "paired_mode");

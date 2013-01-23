@@ -499,6 +499,8 @@ class RuntimeSeq {
    * @see operator ==()
    */
 
+
+
   bool operator!=(const RuntimeSeq<max_size_, T>& s) const {
     return !operator==(s);
   }
@@ -519,6 +521,7 @@ class RuntimeSeq {
   std::string err() const {
     return "";
   }
+
 
   std::string full_str() const {
     std::string res(max_size, '-');
