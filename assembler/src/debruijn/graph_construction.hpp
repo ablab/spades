@@ -141,7 +141,7 @@ size_t ConstructGraph(size_t k,
 	VERIFY_MSG(streams.size(), "No input streams specified");
 
 	TRACE("... in parallel");
-	DeBruijnKMerIndex<typename Graph::EdgeId, Seq>& debruijn = index.inner_index();
+	DeBruijnEdgeIndex<typename Graph::EdgeId, Seq>& debruijn = index.inner_index();
 	rl = DeBruijnKMerIndexBuilder<Seq>().BuildIndexFromStream(debruijn, streams,
 			contigs_stream);
 

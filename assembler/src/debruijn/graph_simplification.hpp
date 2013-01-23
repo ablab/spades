@@ -903,7 +903,7 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 
 template<class Graph>
 double FindErroneousConnectionsCoverageThreshold(const Graph &graph,
-                                                 const DeBruijnKMerIndex<typename Graph::EdgeId> &index) {
+                                                 const DeBruijnEdgeIndex<typename Graph::EdgeId> &index) {
 	if (cfg::get().simp.ec.estimate_max_coverage) {
     double ECThreshold = (cfg::get().ds.single_cell ?
                           ErroneousConnectionThresholdFinder<Graph>(graph).FindThreshold() :

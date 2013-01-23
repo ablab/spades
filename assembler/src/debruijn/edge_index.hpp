@@ -24,7 +24,7 @@ namespace debruijn_graph {
 template<typename Graph, typename ElementId, typename Seq = runtime_k::RtSeq>
 class DataHashRenewer {
   typedef Seq Kmer;
-  typedef DeBruijnKMerIndex<EdgeId, Kmer> Index;
+  typedef DeBruijnEdgeIndex<EdgeId, Kmer> Index;
 
   const Graph &g_;
   Index &index_;
@@ -86,7 +86,7 @@ class EdgeIndex: public GraphActionHandler<Graph> {
 public:
   typedef Seq Kmer;
   typedef typename Graph::EdgeId EdgeId;
-  typedef DeBruijnKMerIndex<EdgeId, Kmer> InnerIndex;
+  typedef DeBruijnEdgeIndex<EdgeId, Kmer> InnerIndex;
   typedef typename InnerIndex::KMerIdx KMerIdx;
 
 private:

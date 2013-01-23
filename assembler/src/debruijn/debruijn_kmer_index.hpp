@@ -24,21 +24,10 @@
 
 namespace debruijn_graph {
 
-// Aux struct to count kmers during graph construction.
-template<class IdType>
-struct EdgeInfo {
-  IdType edgeId_;
-  int offset_;
-  int count_;
-
-  EdgeInfo() :
-      edgeId_(), offset_(-1), count_(0) { }
-};
-
 template <class Seq>
 class DeBruijnKMerIndexBuilder;
 
-template<class IdType, class Seq = runtime_k::RtSeq,
+template<class ValueType, class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >
 class DeBruijnKMerIndex {
  public:
@@ -46,7 +35,7 @@ class DeBruijnKMerIndex {
   typedef KMerIndex<KMer, traits>  KMerIndexT;
 
  protected:
-  typedef EdgeInfo<IdType> KMerIndexValueType;
+  typedef ValueType                       KMerIndexValueType;
   typedef std::vector<KMerIndexValueType> KMerIndexStorageType;
 
   unsigned K_;
@@ -177,158 +166,12 @@ class DeBruijnKMerIndex {
     kmers = traits::raw_deserialize(reader, FileName);
   }
 
-  /**
-   * Number of edges coming into param edge's end
-   */
-  unsigned RivalEdgeCount(const KMer &kmer) const {
-    KMer kmer2 = kmer << 'A';
-    unsigned res = 0;
-    for (char c = 0; c < 4; ++c)
-      if (contains(kmer2 >> c))
-        res += 1;
-
-    return res;
-  }
-
-  unsigned RivalEdgeCount(KMerIdx idx) const {
-    KMer kmer2 = kmer(idx) << 'A';
-    unsigned res = 0;
-    for (char c = 0; c < 4; ++c)
-      if (contains(kmer2 >> c))
-        res += 1;
-
-    return res;
-  }
-
-  /**
-   * Number of edges going out of the param edge's end
-   */
-  unsigned NextEdgeCount(const KMer &kmer) const {
-    unsigned res = 0;
-    for (char c = 0; c < 4; ++c) {
-      if (contains(kmer << c))
-        res += 1;
-    }
-
-    return res;
-  }
-
-  unsigned NextEdgeCount(KMerIdx idx) const {
-    KMer kmer = this->kmer(idx);
-
-    unsigned res = 0;
-    for (char c = 0; c < 4; ++c) {
-      if (contains(kmer << c))
-        res += 1;
-    }
-
-    return res;
-  }
-
-  KMer NextEdge(const KMer &kmer) const { // returns any next edge
-    for (char c = 0; c < 4; ++c) {
-      KMer s = kmer << c;
-      KMerIdx idx = seq_idx(s);
-      if (contains(idx))
-        return this->kmer(idx);
-
-//      if (contains(s))
-    }
-
-    VERIFY_MSG(false, "Couldn't find requested edge!");
-    return KMer(K_);
-    // no next edges (we should request one here).
-  }
-
-  KMer NextEdge(KMerIdx idx) const { // returns any next edge
-    KMer kmer = this->kmer(idx);
-
-    for (char c = 0; c < 4; ++c) {
-      KMer s = kmer << c;
-      if (contains(s))
-        return s;
-    }
-
-    VERIFY_MSG(false, "Couldn't find requested edge!");
-    return KMer(K_);
-    // no next edges (we should request one here).
-  }
-
-  std::pair<IdType, size_t> get(const KMer &kmer) const {
-    KMerIdx idx = seq_idx(kmer);
-    VERIFY(idx != InvalidKMerIdx);
-
-    const KMerIndexValueType &entry = operator[](idx);
-    return std::make_pair(entry.edgeId_, (size_t)entry.offset_);
-  }
-
-  std::pair<IdType, size_t> get(KMerIdx idx) const {
-    const KMerIndexValueType &entry = operator[](idx);
-    return std::make_pair(entry.edgeId_, (size_t)entry.offset_);
-  }
-
-  bool ContainsInIndex(KMerIdx idx) const {
-    const KMerIndexValueType &entry = operator[](idx);
-    return (entry.offset_ != -1);
-  }
-
-  bool ContainsInIndex(const KMer& kmer) const {
-    KMerIdx idx = seq_idx(kmer);
-
-    // Early exit if kmer has not been seen at all
-    if (idx == InvalidKMerIdx)
-      return false;
-
-    // Otherwise, check, whether it's attached to any edge
-    const KMerIndexValueType &entry = operator[](idx);
-    return (entry.offset_ != -1);
-  }
-
-  bool DeleteIfEqual(const KMer &kmer, IdType id) {
-    KMerIdx idx = seq_idx(kmer);
-
-    // Early exit if kmer has not been seen at all
-    if (idx == InvalidKMerIdx)
-      return false;
-
-    // Now we know that idx is in range. Check the edge id.
-    KMerIndexValueType &entry = operator[](idx);
-
-    if (entry.edgeId_ == id) {
-      entry.offset_ = -1;
-      return true;
-    }
-
-    return false;
-  }
-
-  void RenewKMers(const Sequence &nucls, IdType id, bool ignore_new_kmers = false) {
-    VERIFY(nucls.size() >= K_);
-    KMer kmer(K_, nucls);
-
-    PutInIndex(kmer, id, 0, ignore_new_kmers);
-    for (size_t i = K_, n = nucls.size(); i < n; ++i) {
-      kmer <<= nucls[i];
-      PutInIndex(kmer, id, i - K_ + 1, ignore_new_kmers);
-    }
-  }
-
-  void DeleteKMers(const Sequence &nucls, IdType id) {
-    VERIFY(nucls.size() >= K_);
-    KMer kmer(K_, nucls);
-    DeleteIfEqual(kmer, id);
-    for (size_t i = K_, n = nucls.size(); i < n; ++i) {
-      kmer <<= nucls[i];
-      DeleteIfEqual(kmer, id);
-    }
-  }
-
   const std::string &workdir() const {
     return workdir_;
   }
 
   friend class DeBruijnKMerIndexBuilder<Seq>;
- private:
+ protected:
   bool contains(KMerIdx idx, const KMer &k) const {
     // Sanity check
     if (idx >= data_.size())
@@ -342,13 +185,183 @@ class DeBruijnKMerIndex {
   size_t raw_seq_idx(const typename KMerIndexT::KMerRawReference s) const {
     return index_.raw_seq_idx(s);
   }
+};
 
+// Aux struct to count kmers during graph construction.
+template<class IdType>
+struct EdgeInfo {
+  IdType edgeId_;
+  int offset_;
+  int count_;
+
+  EdgeInfo() :
+      edgeId_(), offset_(-1), count_(0) { }
+};
+
+template<class IdType, class Seq = runtime_k::RtSeq,
+    class traits = kmer_index_traits<Seq> >
+class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits> {
+  typedef DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits> base;
+ public:
+  typedef Seq                      KMer;
+  typedef KMerIndex<KMer, traits>  KMerIndexT;
+
+  DeBruijnEdgeIndex(unsigned K, const std::string &workdir)
+      : base(K, workdir) {}
+
+  ~DeBruijnEdgeIndex() {}
+
+  bool ContainsInIndex(typename base::KMerIdx idx) const {
+    const typename base::KMerIndexValueType &entry = base::operator[](idx);
+    return (entry.offset_ != -1);
+  }
+
+  bool ContainsInIndex(const KMer& kmer) const {
+    typename base::KMerIdx idx = base::seq_idx(kmer);
+
+    // Early exit if kmer has not been seen at all
+    if (idx == base::InvalidKMerIdx)
+      return false;
+
+    // Otherwise, check, whether it's attached to any edge
+    const typename base::KMerIndexValueType &entry = base::operator[](idx);
+    return (entry.offset_ != -1);
+  }
+
+  /**
+   * Number of edges coming into param edge's end
+   */
+  unsigned RivalEdgeCount(const KMer &kmer) const {
+    KMer kmer2 = kmer << 'A';
+    unsigned res = 0;
+    for (char c = 0; c < 4; ++c)
+      if (base::contains(kmer2 >> c))
+        res += 1;
+
+    return res;
+  }
+
+  unsigned RivalEdgeCount(typename base::KMerIdx idx) const {
+    KMer kmer2 = kmer(idx) << 'A';
+    unsigned res = 0;
+    for (char c = 0; c < 4; ++c)
+      if (base::contains(kmer2 >> c))
+        res += 1;
+
+    return res;
+  }
+
+  /**
+   * Number of edges going out of the param edge's end
+   */
+  unsigned NextEdgeCount(const KMer &kmer) const {
+    unsigned res = 0;
+    for (char c = 0; c < 4; ++c)
+      if (base::contains(kmer << c))
+        res += 1;
+
+    return res;
+  }
+
+  unsigned NextEdgeCount(typename base::KMerIdx idx) const {
+    KMer kmer = this->kmer(idx);
+
+    unsigned res = 0;
+    for (char c = 0; c < 4; ++c)
+      if (contains(kmer << c))
+        res += 1;
+
+    return res;
+  }
+
+  KMer NextEdge(const KMer &kmer) const { // returns any next edge
+    for (char c = 0; c < 4; ++c) {
+      KMer s = kmer << c;
+      typename base::KMerIdx idx = base::seq_idx(s);
+      if (base::contains(idx))
+        return this->kmer(idx);
+    }
+
+    VERIFY_MSG(false, "Couldn't find requested edge!");
+    return KMer(base::K());
+    // no next edges (we should request one here).
+  }
+
+  KMer NextEdge(typename base::KMerIdx idx) const { // returns any next edge
+    KMer kmer = this->kmer(idx);
+
+    for (char c = 0; c < 4; ++c) {
+      KMer s = kmer << c;
+      if (base::contains(s))
+        return s;
+    }
+
+    VERIFY_MSG(false, "Couldn't find requested edge!");
+    return KMer(base::K());
+    // no next edges (we should request one here).
+  }
+
+  std::pair<IdType, size_t> get(const KMer &kmer) const {
+    typename base::KMerIdx idx = base::seq_idx(kmer);
+    VERIFY(idx != base::InvalidKMerIdx);
+
+    const typename base::KMerIndexValueType &entry = base::operator[](idx);
+    return std::make_pair(entry.edgeId_, (size_t)entry.offset_);
+  }
+
+  std::pair<IdType, size_t> get(typename base::KMerIdx idx) const {
+    const typename base::KMerIndexValueType &entry = base::operator[](idx);
+    return std::make_pair(entry.edgeId_, (size_t)entry.offset_);
+  }
+
+  bool DeleteIfEqual(const KMer &kmer, IdType id) {
+    typename base::KMerIdx idx = base::seq_idx(kmer);
+
+    // Early exit if kmer has not been seen at all
+    if (idx == base::InvalidKMerIdx)
+      return false;
+
+    // Now we know that idx is in range. Check the edge id.
+    typename base::KMerIndexValueType &entry = base::operator[](idx);
+
+    if (entry.edgeId_ == id) {
+      entry.offset_ = -1;
+      return true;
+    }
+
+    return false;
+  }
+
+  void RenewKMers(const Sequence &nucls, IdType id, bool ignore_new_kmers = false) {
+    VERIFY(nucls.size() >= base::K());
+    KMer kmer(base::K(), nucls);
+
+    PutInIndex(kmer, id, 0, ignore_new_kmers);
+    for (size_t i = base::K(), n = nucls.size(); i < n; ++i) {
+      kmer <<= nucls[i];
+      PutInIndex(kmer, id, i - base::K() + 1, ignore_new_kmers);
+    }
+  }
+
+  void DeleteKMers(const Sequence &nucls, IdType id) {
+    VERIFY(nucls.size() >= base::K());
+    KMer kmer(base::K(), nucls);
+    DeleteIfEqual(kmer, id);
+    for (size_t i = base::K(), n = nucls.size(); i < n; ++i) {
+      kmer <<= nucls[i];
+      DeleteIfEqual(kmer, id);
+    }
+  }
+
+  friend class DeBruijnKMerIndexBuilder<Seq>;
+
+private:
   void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
-    size_t idx = seq_idx(kmer);
-    if (contains(idx, kmer)) {
-        KMerIndexValueType &entry = operator[](idx);
-        entry.edgeId_ = id;
-        entry.offset_ = offset;
+    size_t idx = base::seq_idx(kmer);
+    if (base::contains(idx, kmer)) {
+      typename base::KMerIndexValueType &entry = base::operator[](idx);
+      entry.edgeId_ = id;
+      entry.offset_ = offset;
     } else {
       VERIFY(ignore_new_kmer);
     }
@@ -632,20 +645,20 @@ class DeBruijnKMerIndexBuilder {
 
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
-                                DeBruijnKMerIndex<IdType, Seq> &index) const;
+                                DeBruijnEdgeIndex<IdType, Seq> &index) const;
 
  public:
   template <class IdType, class Read>
-  size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType, Seq> &index,
+  size_t BuildIndexFromStream(DeBruijnEdgeIndex<IdType, Seq> &index,
                               io::ReadStreamVector<io::IReader<Read> > &streams,
                               SingleReadStream* contigs_stream = 0) const;
 
   template <class IdType, class Graph>
-  void BuildIndexFromGraph(DeBruijnKMerIndex<IdType, Seq> &index,
+  void BuildIndexFromGraph(DeBruijnEdgeIndex<IdType, Seq> &index,
                            const Graph &g) const;
 
   template <class IdType, class Graph>
-  void UpdateIndexFromGraph(DeBruijnKMerIndex<IdType, Seq> &index,
+  void UpdateIndexFromGraph(DeBruijnEdgeIndex<IdType, Seq> &index,
                             const Graph &g) const;
 
 
@@ -664,7 +677,7 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
 
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
-                                DeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index) const {
+                                DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index) const {
     unsigned K = index.K();
     size_t rl = 0;
 
@@ -698,7 +711,7 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
 
  public:
   template <class IdType, class Read>
-  size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+  size_t BuildIndexFromStream(DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
                               io::ReadStreamVector<io::IReader<Read> > &streams,
                               SingleReadStream* contigs_stream = 0) const {
     unsigned nthreads = streams.size();
@@ -707,7 +720,7 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
                                             streams,
                                             contigs_stream);
     KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMerIndexT> builder(index.workdir(), 16, streams.size());
+    KMerIndexBuilder<typename DeBruijnEdgeIndex<IdType>::KMerIndexT> builder(index.workdir(), 16, streams.size());
     size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
 
     SortUniqueKMers(counter, index);
@@ -740,11 +753,11 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
   }
 
   template <class IdType, class Graph>
-  void BuildIndexFromGraph(DeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+  void BuildIndexFromGraph(DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
                            const Graph &g) const {
     DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.K(), g);
-    KMerDiskCounter<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMer> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMerIndexT> builder(index.workdir(), 16, 1);
+    KMerDiskCounter<typename DeBruijnEdgeIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMer> counter(index.workdir(), splitter);
+    KMerIndexBuilder<typename DeBruijnEdgeIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMerIndexT> builder(index.workdir(), 16, 1);
     size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
 
     SortUniqueKMers(counter, index);
@@ -757,7 +770,7 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
   }
 
   template <class IdType, class Graph>
-  void UpdateIndexFromGraph(DeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+  void UpdateIndexFromGraph(DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
                             const Graph &g) const {
     for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
       typename Graph::EdgeId edge = *it;
