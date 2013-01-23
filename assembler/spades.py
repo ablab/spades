@@ -551,8 +551,9 @@ def main():
                 cfg["common"].__dict__["max_memory"] = memory
             if developer_mode:
                 cfg["common"].__dict__["developer_mode"] = developer_mode
-	    if mismatch_corrector:
-		cfg["common"].__dict__["mismatch-correction"] = mismatch_corrector
+            if mismatch_corrector:
+                cfg["common"].__dict__["mismatch-correction"] = mismatch_corrector
+
             # error correction
             if not only_assembler:
                 if tmp_dir:
@@ -577,19 +578,21 @@ def main():
             #corrector can work only if contigs are exists (not only error correction)
             if (paired1 or paired) and (not only_error_correction) and mismatch_corrector:
                 cfg["mismatch_corrector"] = load_config_from_vars(dict())
-                cfg["mismatch_corrector"].__dict__["skip_masked"] = "NONE"
+                cfg["mismatch_corrector"].__dict__["skip-masked"] = ""
+                if developer_mode:
+                    cfg["mismatch_corrector"].__dict__["debug"] = ""
                 if bwa:
                     cfg["mismatch_corrector"].__dict__["bwa"] = bwa
                 if "max_threads" in cfg["common"].__dict__:
-                    cfg["mismatch_corrector"].__dict__["t"] = cfg["common"].max_threads
+                    cfg["mismatch_corrector"].__dict__["threads"] = cfg["common"].max_threads
                 if "output_dir" in cfg["common"].__dict__:
-                    cfg["mismatch_corrector"].__dict__["o"] = cfg["common"].output_dir
+                    cfg["mismatch_corrector"].__dict__["output-dir"] = cfg["common"].output_dir
                 # reads
                 if paired1:
-                    cfg["mismatch_corrector"].__dict__["1"] = paired1[0]
-                    cfg["mismatch_corrector"].__dict__["2"] = paired2[0]
-                elif paired:
-                    cfg["mismatch_corrector"].__dict__["12"] = paired[0]
+                    cfg["mismatch_corrector"].__dict__["1"] = paired1
+                    cfg["mismatch_corrector"].__dict__["2"] = paired2
+                if paired:
+                    cfg["mismatch_corrector"].__dict__["12"] = paired
 
     if CONFIG_FILE:
         cfg = load_config_from_info_file(CONFIG_FILE)
@@ -831,35 +834,31 @@ def main():
             import corrector
 
             corrector_cfg = cfg["mismatch_corrector"]
-            corrector_log_filename = os.path.join(corrector_cfg.o, "mismatch_correction.log")
+            #corrector_log_filename = os.path.join(corrector_cfg.o, "mismatch_correction.log")
             corrector_cfg.__dict__["c"] = result_contigs_filename
 
             log.info("\n===== Mismatch correction started. \n")
 
-            tmp_dir = os.path.join(corrector_cfg.o, "tmp")
-            if not os.path.isdir(tmp_dir):
-                os.makedirs(tmp_dir)            
-
             args = []
-            for k, v in corrector_cfg.__dict__.items():
-                if len(k) == 1:
-                    args.append('-' + k)
-                else:
-                    args.append('--' + k)
-                if v != "NONE":
-                    args.append(v)
-            corrector.main(args)
-
-            if not cfg["common"].developer_mode:
-                if os.path.isdir(tmp_dir):
-                    shutil.rmtree(tmp_dir)
+            for key, values in corrector_cfg.__dict__.items():
+                # for processing list of reads
+                if not isinstance(values, list):
+                    values = [values]
+                for value in values:
+                    if len(key) == 1:
+                        args.append('-' + key)
+                    else:
+                        args.append('--' + key)
+                    if value:
+                        args.append(value)
+            corrector.main(args, log)
 
             # renaming assembled contigs to avoid colision in names
             new_result_contigs_filename = os.path.join(os.path.dirname(result_contigs_filename), "assembled_contigs.fasta")
             shutil.move(result_contigs_filename, new_result_contigs_filename)
             result_contigs_filename = new_result_contigs_filename
 
-            result_corrected_contigs_filename = os.path.abspath(os.path.join(corrector_cfg.o, "corrected_contigs.fasta"))
+            result_corrected_contigs_filename = os.path.abspath(os.path.join(corrector_cfg.__dict__["output-dir"], "corrected_contigs.fasta"))
             if not os.path.isfile(result_corrected_contigs_filename):
                 result_corrected_contigs_filename = ""
             else:
@@ -885,7 +884,7 @@ def main():
             log.info(" * Assembled scaffolds are " + result_scaffolds_filename)
         #log.info("")
 
-        #breaking sacffolds
+        #breaking scaffolds
         if os.path.isfile(result_scaffolds_filename):
             result_broken_scaffolds = os.path.join(spades_cfg.output_dir, "broken_scaffolds.fasta")
             sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/contig_analysis"))
