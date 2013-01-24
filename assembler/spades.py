@@ -835,7 +835,13 @@ def main():
 
             corrector_cfg = cfg["mismatch_corrector"]
             #corrector_log_filename = os.path.join(corrector_cfg.o, "mismatch_correction.log")
-            corrector_cfg.__dict__["c"] = result_contigs_filename
+            #corrector_cfg.__dict__["c"] = result_contigs_filename            
+            if os.path.isfile(result_scaffolds_filename):
+                correct_scaffolds = True
+                corrector_cfg.__dict__["c"] = result_scaffolds_filename
+            else:
+                correct_scaffolds = False
+                corrector_cfg.__dict__["c"] = result_contigs_filename
 
             log.info("\n===== Mismatch correction started. \n")
 
@@ -854,16 +860,24 @@ def main():
             corrector.main(args, log)
 
             # renaming assembled contigs to avoid colision in names
-            new_result_contigs_filename = os.path.join(os.path.dirname(result_contigs_filename), "assembled_contigs.fasta")
-            shutil.move(result_contigs_filename, new_result_contigs_filename)
-            result_contigs_filename = new_result_contigs_filename
+            if correct_scaffolds:
+                new_result_scaffolds_filename = os.path.join(os.path.dirname(result_scaffolds_filename), "assembled_scaffolds.fasta")
+                shutil.move(result_scaffolds_filename, new_result_scaffolds_filename)
+                result_scaffolds_filename = new_result_scaffolds_filename
+            else:
+                new_result_contigs_filename = os.path.join(os.path.dirname(result_contigs_filename), "assembled_contigs.fasta")
+                shutil.move(result_contigs_filename, new_result_contigs_filename)
+                result_contigs_filename = new_result_contigs_filename
 
             result_corrected_contigs_filename = os.path.abspath(os.path.join(corrector_cfg.__dict__["output-dir"], "corrected_contigs.fasta"))
             if not os.path.isfile(result_corrected_contigs_filename):
                 result_corrected_contigs_filename = ""
             else:
                 # renaming corrected contigs 
-                new_result_corrected_contigs_filename = os.path.join(os.path.dirname(result_corrected_contigs_filename), "contigs.fasta")
+                if correct_scaffolds:
+                    new_result_corrected_contigs_filename = os.path.join(os.path.dirname(result_corrected_contigs_filename), "scaffolds.fasta")
+                else:
+                    new_result_corrected_contigs_filename = os.path.join(os.path.dirname(result_corrected_contigs_filename), "contigs.fasta")
                 shutil.move(result_corrected_contigs_filename, new_result_corrected_contigs_filename)
                 result_corrected_contigs_filename = new_result_corrected_contigs_filename
 
@@ -879,7 +893,10 @@ def main():
             log.info(" * Assembled contigs are " + result_contigs_filename)
         #corrector
         if os.path.isfile(result_corrected_contigs_filename):
-            log.info(" * Corrected contigs are " + result_corrected_contigs_filename)
+            if correct_scaffolds:
+                log.info(" * Corrected scaffolds are " + result_corrected_contigs_filename)
+            else:
+                log.info(" * Corrected contigs are " + result_corrected_contigs_filename)
         if os.path.isfile(result_scaffolds_filename):
             log.info(" * Assembled scaffolds are " + result_scaffolds_filename)
         #log.info("")
@@ -890,8 +907,12 @@ def main():
             sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/contig_analysis"))
             import break_scaffolds_into_contigs
             threshold = 3
-            break_scaffolds_into_contigs.break_scaffolds(["", result_scaffolds_filename, str(threshold), result_broken_scaffolds])
-            log.info(" * Scaffolds broken by " + str(threshold) + " Ns are " + result_broken_scaffolds)
+            if os.path.isfile(result_corrected_contigs_filename):
+                break_scaffolds_into_contigs.break_scaffolds(["", result_corrected_contigs_filename, str(threshold), result_broken_scaffolds])
+                log.info(" * Corrected scaffolds broken by " + str(threshold) + " Ns are " + result_broken_scaffolds)
+            else:
+                break_scaffolds_into_contigs.break_scaffolds(["", result_scaffolds_filename, str(threshold), result_broken_scaffolds])
+                log.info(" * Scaffolds broken by " + str(threshold) + " Ns are " + result_broken_scaffolds)
 
         log.info("")
         log.info("Thank you for using SPAdes!")
