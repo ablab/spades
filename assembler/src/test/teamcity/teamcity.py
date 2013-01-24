@@ -350,7 +350,7 @@ if 'contig_storage' in dataset_info.__dict__:
     if os.path.exists(scaff_before_corr):
         shutil.copy(scaff_before_corr, os.path.join(contig_dir, name_prefix + "_scaff_before_corr.fasta"))
 
-    boken_scaff = os.path.join(output_dir, broken_scaffolds.fasta")
+    boken_scaff = os.path.join(output_dir, "broken_scaffolds.fasta")
     if os.path.exists(boken_scaff):
         shutil.copy(boken_scaff, os.path.join(contig_dir, name_prefix + "_scaff_broken.fasta"))
 
