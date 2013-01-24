@@ -34,9 +34,9 @@ rm -f ./ace_benchmark/ECOLI_IS480_QUAKE.log
 ./src/test/teamcity/teamcity.py /storage/acestorage/data/input/E.coli/is480/ECOLI_IS480_QUAKE_MANUAL.info >> ./ace_benchmark/ECOLI_IS480_QUAKE_$timestamp.log 2>> ./ace_benchmark/ECOLI_IS480_QUAKE_$timestamp.log 
 echo "finished with code "$?
 
-echo "Starting L.grasseri on ace..."
-rm -f ./ace_benchmark/LGRASSERI_QUAKE.log
-./src/test/teamcity/teamcity.py /storage/acestorage/data/input/L.grasseri/LGRASSERI_QUAKE_MANUAL.info >> ./ace_benchmark/LGRASSERI_QUAKE_$timestamp.log 2>> ./ace_benchmark/LGRASSERI_QUAKE_$timestamp.log 
+echo "Starting L.gasseri on ace..."
+rm -f ./ace_benchmark/LGASSERI_QUAKE.log
+./src/test/teamcity/teamcity.py /storage/acestorage/data/input/L.gasseri/LGASSERI_QUAKE_MANUAL.info >> ./ace_benchmark/LGASSERI_QUAKE_$timestamp.log 2>> ./ace_benchmark/LGASSERI_QUAKE_$timestamp.log 
 echo "finished with code "$?
 
 echo "Starting B.faecium on ace..."
