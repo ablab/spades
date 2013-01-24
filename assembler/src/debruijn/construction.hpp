@@ -66,7 +66,6 @@ void load_estimated_params(const string& prefix) {
 
 void write_estimated_params(const string& prefix) {
   string filename = estimated_param_filename(prefix);
-  cout << filename << endl;
   write_param(filename, "RL", cfg::get().ds.RL);
   write_param(filename, "IS", cfg::get().ds.IS);
   write_param(filename, "is_var", cfg::get().ds.is_var);
