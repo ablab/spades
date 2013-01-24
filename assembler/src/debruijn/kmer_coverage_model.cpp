@@ -261,6 +261,7 @@ void KMerCoverageModel::Fit() {
   x0[4] = 1;
   x0[5] = 0;
 
+  INFO("Fitting coverage model");
   // Ensure that there will be at least 2 iterations.
   double PrevErrProb = 2;
   const double ErrProbThr = 1e-6;
@@ -286,6 +287,7 @@ void KMerCoverageModel::Fit() {
 
     Converged = Results->converged;
 
+    VERBOSE_POWER_T2(it, 1, "... iteration " << it);
     TRACE("Results: ");
     TRACE("Converged: " << Results->converged << " " << "F: " << Results->fMin);
     TRACE("Num iterations: " << Results->numIter);

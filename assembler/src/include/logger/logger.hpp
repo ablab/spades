@@ -134,6 +134,8 @@ inline const char* __scope_source_name() {
 #define VERBOSE(n, message)                 VERBOSE_T((n), 10000, message)
 #define VERBOSE_POWER_T(n, T, message)      {size_t n_copy = (n); if ((n_copy & (n_copy - 1)) == 0 && (n_copy > T)) INFO(n_copy << message)}
 #define VERBOSE_POWER(n, message)           VERBOSE_POWER_T((n), 10000, message)
+#define VERBOSE_POWER_T2(n, T, message)     {size_t n_copy = (n); if ((n_copy & (n_copy - 1)) == 0 && (n_copy > T)) INFO(message)}
+#define VERBOSE_POWER2(n, message)          VERBOSE_POWER_T2((n), 10000, message)
 #define WARN(message)                       LOG_MSG(logging::L_WARN, message)
 #define ERROR(message)                      LOG_MSG(logging::L_ERROR, message)
 
