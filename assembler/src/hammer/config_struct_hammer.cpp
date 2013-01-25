@@ -19,8 +19,6 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
   using config_common::load;
   load(cfg.general_do_everything_after_first_iteration, pt, "general_do_everything_after_first_iteration");
   load(cfg.general_reconstruct_only, pt, "general_reconstruct_only");
-  load(cfg.general_change_n_to_a, pt, "general_change_n_to_a");
-  load(cfg.general_gzip, pt, "general_gzip");
   load(cfg.general_hard_memory_limit, pt, "general_hard_memory_limit");
   load(cfg.general_max_nthreads, pt, "general_max_nthreads");
   load(cfg.general_tau, pt, "general_tau");

@@ -37,66 +37,6 @@
 using namespace std;
 using namespace hammer;
 
-void HammerTools::ChangeNtoAinReadFiles() {
-	std::vector<pid_t> pids;
-	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		string cur_filename = HammerTools::getFilename(cfg::get().input_working_dir, Globals::input_filename_bases[iFile]);
-		pid_t cur_pid = vfork();
-		if (cur_pid == 0) {
-			INFO("  [" << getpid() << "] Child process for substituting Ns in " << Globals::input_filenames[iFile] << " starting.");
-			string cmd = string("sed \'n;s/\\([ACGT]\\)N\\([ACGT]\\)/\\1A\\2/g;n;n\' ") + Globals::input_filenames[iFile].c_str() + " > " + cur_filename.c_str();
-			int exitcode = system( cmd.c_str() );
-			if (exitcode != 0) {
-				INFO("  [" << getpid() << "] ERROR: finished with non-zero exit code " << exitcode);
-			}
-			_exit(0);
-		}
-		pids.push_back(cur_pid);
-		Globals::input_filenames[iFile] = cur_filename;
-	}
-	int childExitStatus;
-	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		waitpid(pids[iFile], &childExitStatus, 0);
-	}
-}
-
-void HammerTools::DecompressIfNeeded() {
-	struct stat st;
-	char f_cont[2];
-	vector<pid_t> pIDs(Globals::input_filenames.size(), 0);
-	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-        if (path::extension(Globals::input_filenames[iFile]) != ".gz")
-			continue;
-
-		stat(Globals::input_filenames[iFile].c_str(), &st);
-		std::ifstream ifs(Globals::input_filenames[iFile], std::ios::in | std::ios::binary );
-		ifs.read(f_cont, 2);
-		ifs.close();
-		if ( (f_cont[0] == (char)0x1f) && (f_cont[1] == (char)0x8b) ) {
-			string newFilename = HammerTools::getFilename(cfg::get().input_working_dir, Globals::input_filename_bases[iFile]);
-			string oldFilename = Globals::input_filenames[iFile];
-			Globals::input_filenames[iFile] = newFilename;
-            Globals::input_filename_bases[iFile] = path::basename(Globals::input_filename_bases[iFile]);
-
-			pIDs[iFile] = vfork();
-			if (pIDs[iFile] == 0) {
-				string systemcall = string("gunzip -c ") + oldFilename + string(" > ") + newFilename;
-				INFO("  [" << getpid() << "] " << systemcall);
-				if (system(systemcall.c_str())) {
-					INFO("  [" << getpid() << "] System error with unzipping input files!");
-				}
-			_exit(0);
-			}
-		}
-	}
-	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		if (pIDs[iFile] != 0) {
-			int childExitStatus;
-			waitpid(pIDs[iFile], &childExitStatus, 0);
-		}
-	}
-}
-
 namespace hammer_tools {
 size_t EstimateTotalReadSize(const std::vector<std::string> &fnames) {
   struct stat st;

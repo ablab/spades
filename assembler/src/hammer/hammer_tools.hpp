@@ -38,13 +38,6 @@ size_t EstimateTotalReadSize(const std::vector<std::string> &fnames);
  */
 class HammerTools {
 public:
-
-	/// decompress gzipped input files if needed
-	static void DecompressIfNeeded();
-
-	/// change single Ns to As in input read files
-	static void ChangeNtoAinReadFiles();
-
 	/// initialize subkmer positions and log about it
 	static void InitializeSubKMerPositions();
 
@@ -53,22 +46,12 @@ public:
 	/// read all input files into the blob
 	static void ReadAllFilesIntoBlob();
 
-	/// leave only minimizers
-	static void findMinimizers(vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers,
-                             vector< hint_t > & mmers, int which_first = 0 );
-	/// check whether this is a minimizer iteration
-	static bool doingMinimizers();
-
 	/// do one step of iterative expansion, return the number of new solid k-mers
 	static size_t IterativeExpansionStep(int expand_iter_no, int nthreads, KMerData &data);
 
 	/// print out the resulting set of k-mers
 	static void PrintKMerResult(std::ostream & outf, const vector<KMerStat> & kmers );
 
-	/// correct one read
-	static bool CorrectOneRead(const KMerData &data,
-                             size_t & changedReads, size_t & changedNucleotides,
-                             Read & r, bool correct_threshold, bool discard_singletons, bool discard_bad);
   /// parallel correction of batch of reads
 	static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
                                 size_t &changedReads, size_t &changedNucleotides,

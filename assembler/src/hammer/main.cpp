@@ -120,15 +120,12 @@ int main(int argc, char * argv[]) {
       INFO("Input file: " << Globals::input_filename_bases[iFile]);
     }
 
-    // decompress input reads if they are gzipped
-    HammerTools::DecompressIfNeeded();
-
     // determine quality offset if not specified
     if (!cfg::get().input_qvoffset_opt) {
       INFO("Trying to determine PHRED offset");
       int determined_offset = determine_offset(Globals::input_filenames.front());
       if (determined_offset < 0) {
-    	ERROR("Failed to determine offset! Specify it manually and restart, please!");
+        ERROR("Failed to determine offset! Specify it manually and restart, please!");
         return 0;
       } else {
         INFO("Determined value is " << determined_offset);
@@ -147,13 +144,6 @@ int main(int argc, char * argv[]) {
       Globals::quality_probs[qual] = 1 - Globals::quality_rprobs[qual];
       Globals::quality_lprobs[qual] = log(Globals::quality_probs[qual]);
       Globals::quality_lrprobs[qual] = log(Globals::quality_rprobs[qual]);
-    }
-
-    // if we need to change single Ns to As, this is the time
-    if (cfg::get().general_change_n_to_a && cfg::get().count_do) {
-      INFO("Changing single Ns to As in input read files.");
-      HammerTools::ChangeNtoAinReadFiles();
-      INFO("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
     }
 
     // estimate total read size
