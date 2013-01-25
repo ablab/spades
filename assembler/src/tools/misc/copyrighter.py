@@ -1,12 +1,19 @@
 #!/usr/bin/env python
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 import os
 import shutil
 import sys
 
 script_comment = [
     '############################################################################',
-    '# Copyright (c) 2011-2012 Saint-Petersburg Academic University',
+    '# Copyright (c) 2011-2013 Saint-Petersburg Academic University',
     '# All Rights Reserved',
     '# See file LICENSE for details.',
     '############################################################################', 
@@ -14,14 +21,16 @@ script_comment = [
 
 code_comment = [
     '//***************************************************************************',
-    '//* Copyright (c) 2011-2012 Saint-Petersburg Academic University',
+    '//* Copyright (c) 2011-2013 Saint-Petersburg Academic University',
     '//* All Rights Reserved',
     '//* See file LICENSE for details.',
     '//****************************************************************************',
     '']
 
 def insert_in_script(filename):
-    lines = open(filename).readlines()    
+    lines = open(filename).readlines()
+    if (script_comment[1] + '\n') in lines:
+        return
 
     modified = open(filename, 'w')
     if len(lines) and lines[0].startswith('#!'):
@@ -38,7 +47,9 @@ def insert_in_script(filename):
     modified.close() 
 
 def insert_in_code(filename):       
-    lines = open(filename).readlines()    
+    lines = open(filename).readlines()
+    if (code_comment[1] + '\n') in lines:
+        return
 
     modified = open(filename, 'w')
         
@@ -52,13 +63,16 @@ def insert_in_code(filename):
 
 def visit(arg, dirname, names):
     for name in names:
+        path = os.path.join(dirname, name)
+        if not os.path.isfile(path):
+            continue
         ext = os.path.splitext(name)[1]
         if arg and ext != arg:
             continue
         if (ext in ['.py', '.sh']) or name.lower().startswith('cmake'):
-            insert_in_script(os.path.join(dirname, name))
-        elif ext in ['.hpp', '.cpp']:
-            insert_in_code(os.path.join(dirname, name))
+            insert_in_script(path)
+        elif ext in ['.hpp', '.cpp', '.h', '.c']:
+            insert_in_code(path)
 
 if len(sys.argv) < 2:
     print ("Usage: " + sys.argv[0] + " <src folder> [.ext -- only file with this extension will be modified]")

@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 # Given sequence id, find that sequence in a big multifasta file using prebuilt index.
 
 import sys, os

@@ -1,5 +1,12 @@
 #!/bin/bash
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 velvethrun="velveth results 55"
 if [ -e "tmp/mixed/mixed.fasta" ] 
 then

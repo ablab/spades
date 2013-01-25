@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 # Makes changes to arb-silva's fasta file:
 # * RNA -> DNA (means U -> T)
 # * remove spaces in sequences

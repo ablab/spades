@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 #Convert any mixed fastq to 4 fastq files
 
 import sys

@@ -1,4 +1,11 @@
 #!/usr/bin/python
+
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 #
 # Requires Biopython (e.g. sudo apt-get install python-biopython) and internet conncetion to NCBI. 
 #

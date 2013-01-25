@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 ############################################################################
-# Copyright (c) 2011-2012 Saint-Petersburg Academic University
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
-
 
 import os
 import urllib2

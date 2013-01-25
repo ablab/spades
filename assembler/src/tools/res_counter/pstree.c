@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2013 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 /*	This is pstree written by Fred Hucht (c) 1993-2010	*
  *	EMail: fred AT thp.Uni-Duisburg.de			*
  *	Feel free to copy and redistribute in terms of the	*

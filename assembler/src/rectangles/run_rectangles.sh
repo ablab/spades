@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 python rrr.py -s /storage/labnas/students/igorbunova/spades_2.3/all_datasets_results/mc_220/saves -o /storage/labnas/students/igorbunova/spades_2.3/rectangles_result/ECOLI_MC220 --sc false
 python rrr.py -s /storage/labnas/students/igorbunova/spades_2.3/all_datasets_results/ECOLI_MC480/saves -o /storage/labnas/students/igorbunova/spades_2.3/rectangles_result/ECOLI_MC480 --sc false
 python rrr.py -s /storage/labnas/students/igorbunova/spades_2.3/all_datasets_results/ECOLI_SC_LANE1/saves -o /storage/labnas/students/igorbunova/spades_2.3/rectangles_result/ECOLI_SC_LANE1 --sc true

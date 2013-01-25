@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 #Filter read files by fastq
 #Leave only those that do not appear in fastq file
 

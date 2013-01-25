@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 # For filtering C. elegans data set. Some of reads were broken: reads between 103248 and 204343 were replaced by "^@^@^@^...^@^@^@^"
 
 import sys

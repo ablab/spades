@@ -1,5 +1,12 @@
 #!/bin/sh
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 if [ -z "$1" ]
 then
 	echo Usage: $0 reads.fastq [threads=1]

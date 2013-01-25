@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2013 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 #ifndef __CXXMPH_TRIGRAPH_H__
 #define __CXXMPH_TRIGRAPH_H__
 // Build a trigraph using a memory efficient representation.

@@ -1,5 +1,12 @@
 #!/bin/bash
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 # Blasts contigs against blast database and processes the output: finds the sequences to which the contigs match most often (100 most often occurring sequences). The script considers 30 best matches of each contig to the blast database.
 
 function usage ()

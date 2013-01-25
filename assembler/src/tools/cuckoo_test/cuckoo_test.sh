@@ -1,5 +1,12 @@
 #!/bin/bash
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 DATA_DIR=../../../data/input
 EXEC_DIR=../../build/tools/cuckoo_test
 

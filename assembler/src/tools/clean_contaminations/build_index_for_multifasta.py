@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 # Reads file <f.fasta> with multiple fasta sequences and builds an index <f.index>: "id start_position end_position".
 
 import sys, os

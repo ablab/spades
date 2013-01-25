@@ -1,5 +1,12 @@
 #!/bin/sh
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 PROJ_DIR=`pwd`
 OUTPUT_DIR=$PROJ_DIR/data/output/
 INPUT_DIR=$PROJ_DIR/data/input/

@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 # Before run: 
 # bowtie -p 6 --all --best --chunkmbs 1024 SSURef_108_tax_silva_trunc_DNA ecoli_mda_lane1.fastq > ecoli_mda_lane1_bowtie_allbest.sam
 # bowtie -p 6 -v 1 --all --best --chunkmbs 1024 SSURef_108_tax_silva_trunc_DNA ecoli_mda_lane1.fastq > ecoli_mda_lane1_bowtie_allbest.sam

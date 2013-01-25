@@ -1,5 +1,12 @@
 #!/bin/bash
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 dir_name="res_counter_`date +"%d.%m.%y_%T"`"
 if [ $# -gt 0 ]; then
     dir_name=$1

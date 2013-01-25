@@ -1,5 +1,12 @@
 #!/usr/bin/python -O
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 #Create raw file for paired reads using chromosome map file (optional)
 #Chromosome map file should contain choromosome name (as used in bowtie) and its start position in genome, one chromosome per line
 

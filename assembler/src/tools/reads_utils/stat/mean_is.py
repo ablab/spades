@@ -1,5 +1,12 @@
 #!/usr/bin/python -O
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 #Calculate mean and insert size using insert size distribution file
 
 import sys

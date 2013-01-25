@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2013 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 #ifndef CONCURRENTDSU_HPP_
 #define CONCURRENTDSU_HPP_
 

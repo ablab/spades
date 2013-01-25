@@ -1,5 +1,12 @@
 #!/bin/bash
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 # Matches reads by bowtie to genomes / sequences and throws out the reads that match.
 
 function usage ()

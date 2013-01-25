@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 #Convert any unordered 2 fastqs to 3 fastq files -- 2 paired and 1 single
 # does not imply /1 or /2 in reads ids
 

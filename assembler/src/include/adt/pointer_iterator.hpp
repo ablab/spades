@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011-2013 Saint-Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 #ifndef __HAMMER_POINTER_ITERATOR_HPP__
 #define __HAMMER_POINTER_ITERATOR_HPP__
 

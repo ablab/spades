@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 from django.shortcuts import render_to_response, get_object_or_404, redirect
 from django.http import HttpResponse
 from tasks.models import Task, TaskLog

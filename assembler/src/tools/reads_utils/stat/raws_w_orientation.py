@@ -1,5 +1,12 @@
 #!/usr/bin/python -O
 
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+
 #Make three (fr,rf,ff) raw files from one bowtie log file using chromosome map file (optional)
 #Chromosome map file should contain choromosome name (as used in bowtie) and its start position in genome, one chromosome per line
 
