@@ -6,8 +6,11 @@
 
 
 #pragma once
+
 #include "stacktrace.hpp"
-#include "signal.h"
+
+#include <boost/function.hpp>
+#include <signal.h>
 
 struct segfault_handler : boost::noncopyable {
   typedef boost::function<void ()> callback_t;
