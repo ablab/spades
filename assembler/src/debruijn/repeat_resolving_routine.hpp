@@ -1024,10 +1024,15 @@ void resolve_repeats() {
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
-		if (!cfg::get().pos.contigs_for_threading.empty()
-				&& fileExists(cfg::get().pos.contigs_for_threading)) {
-			FillPos(conj_gp, cfg::get().pos.contigs_for_threading, "thr_");
-		}
+	    if (!cfg::get().pos.contigs_for_threading.empty()
+	        && fileExists(cfg::get().pos.contigs_for_threading)) {
+	      FillPosWithRC(conj_gp, cfg::get().pos.contigs_for_threading, "thr_");
+	    }
+
+	    if (!cfg::get().pos.contigs_to_analyze.empty()
+	        && fileExists(cfg::get().pos.contigs_to_analyze)) {
+	      FillPosWithRC(conj_gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+	    }
 	}
 	//todo refactor labeler creation
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
