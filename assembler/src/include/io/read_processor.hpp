@@ -14,7 +14,7 @@ class ReadProcessor {
 
 private:
   template<class Reader, class Op>
-  bool RunSingle(Reader &irs, Op op) {
+  bool RunSingle(Reader &irs, Op &op) {
     while (!irs.eof()) {
       typename Reader::read_type r;
       irs >> r;
@@ -27,7 +27,7 @@ private:
   }
 
   template<class Reader, class Op, class Writer>
-  void RunSingle(Reader &irs, Op op, Writer &writer) {
+  void RunSingle(Reader &irs, Op &op, Writer &writer) {
     while (!irs.eof()) {
       typename Reader::read_type r;
       irs >> r;
@@ -44,7 +44,7 @@ public:
       : nthreads_(nthreads) {}
 
   template<class Reader, class Op>
-  bool Run(Reader &irs, Op op) {
+  bool Run(Reader &irs, Op &op) {
     gcl::buffer_queue<typename Reader::read_type> in_queue(nthreads_);
 
     if (nthreads_ < 2)
@@ -88,7 +88,7 @@ public:
   }
 
   template<class Reader, class Op, class Writer>
-  void Run(Reader &irs, Op op, Writer &writer) {
+  void Run(Reader &irs, Op &op, Writer &writer) {
     gcl::buffer_queue<typename Reader::read_type> in_queue(nthreads_), out_queue(nthreads_);
 
     if (nthreads_ < 2) {
