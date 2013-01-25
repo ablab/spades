@@ -20,7 +20,7 @@ bool Expander::operator()(const Read &r) {
     return false;
 
   std::vector<unsigned> covered_by_solid(sz, false);
-  std::vector<size_t> kmer_indices(sz, -1);
+  std::vector<size_t> kmer_indices(sz, -1ull);
     
   ValidKMerGenerator<hammer::K> gen(cr);
   while (gen.HasMore()) {
@@ -41,7 +41,7 @@ bool Expander::operator()(const Read &r) {
       return false;
 
   for (size_t j = 0; j < sz; ++j) {
-    if (kmer_indices[j] == -1)
+    if (kmer_indices[j] == -1ull)
       continue;
 
     // FIXME: Do not lock everything
