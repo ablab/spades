@@ -46,9 +46,6 @@ public:
 	/// read all input files into the blob
 	static void ReadAllFilesIntoBlob();
 
-	/// do one step of iterative expansion, return the number of new solid k-mers
-	static size_t IterativeExpansionStep(int expand_iter_no, int nthreads, KMerData &data);
-
 	/// print out the resulting set of k-mers
 	static void PrintKMerResult(std::ostream & outf, const vector<KMerStat> & kmers );
 

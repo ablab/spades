@@ -10,19 +10,7 @@
  *  Created on: 08.07.2011
  *      Author: snikolenko
  */
- 
-#include "standard.hpp"
-#include "logger/logger.hpp"
 
-#include <cmath>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <cstdlib>
-#include <vector>
-#include <algorithm>
-#include <cassert>
 
 #include "read/ireadstream.hpp"
 #include "adt/concurrent_dsu.hpp"
@@ -33,9 +21,24 @@
 #include "position_read.hpp"
 #include "globals.hpp"
 #include "kmer_data.hpp"
+#include "expander.hpp"
+#include "io/read_processor.hpp"
 
 #include "memory_limit.hpp"
+
+#include "logger/logger.hpp"
 #include "logger/log_writers.hpp"
+
+#include <algorithm>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <cassert>
+#include <cmath>
+#include <cstdlib>
 
 std::vector<std::string> Globals::input_filenames = std::vector<std::string>();
 std::vector<std::string> Globals::input_filename_bases = std::vector<std::string>();
@@ -71,13 +74,13 @@ struct UfCmp {
 };
 
 void create_console_logger() {
-	using namespace logging;
+  using namespace logging;
 
-	logger *lg = create_logger("");
-	lg->add_writer(std::make_shared<console_writer>());
+  logger *lg = create_logger("");
+  lg->add_writer(std::make_shared<console_writer>());
   attach_logger(lg);
 }
- 
+
 int main(int argc, char * argv[]) {
   segfault_handler sh;
 
@@ -166,7 +169,7 @@ int main(int argc, char * argv[]) {
     for (Globals::iteration_no = 0; Globals::iteration_no < max_iterations; ++Globals::iteration_no) {
       cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << endl;
       bool do_everything = cfg::get().general_do_everything_after_first_iteration && (Globals::iteration_no > 0);
-      
+
       // initialize k-mer structures
       Globals::kmer_data = new KMerData;
 
@@ -275,9 +278,25 @@ int main(int argc, char * argv[]) {
         unsigned expand_nthreads = std::min(cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
         INFO("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
         for (unsigned expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no) {
-          size_t res = HammerTools::IterativeExpansionStep(expand_iter_no, expand_nthreads, *Globals::kmer_data);
-          INFO("Solid k-mers iteration " << expand_iter_no << " produced " << res << " new k-mers.");
-          if (res < 10) break;
+          Expander expander(*Globals::kmer_data);
+          for (auto I = Globals::input_filenames.begin(), E = Globals::input_filenames.end(); I != E; ++I) {
+            ireadstream irs(*I, cfg::get().input_qvoffset);
+            hammer::ReadProcessor(expand_nthreads).Run(irs, expander);
+          }
+
+          if (cfg::get().expand_write_each_iteration) {
+            std::ofstream oftmp(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no).data());
+            for (size_t n = 0; n < Globals::kmer_data->size(); ++n) {
+              const KMerStat &kmer_data = (*Globals::kmer_data)[n];
+              if (kmer_data.isGoodForIterative())
+                oftmp << kmer_data.kmer().str() << "\n>" << n
+                      << "  cnt=" << kmer_data.count << "  tql=" << (1-kmer_data.totalQual) << "\n";
+            }
+          }
+
+          INFO("Solid k-mers iteration " << expand_iter_no << " produced " << expander.changed() << " new k-mers.");
+          if (expander.changed() < 10)
+            break;
         }
         INFO("Solid k-mers finalized");
 
@@ -327,5 +346,3 @@ int main(int argc, char * argv[]) {
 
   return 0;
 }
-
-

@@ -18,7 +18,7 @@ add_executable(hammer
                globals.cpp
                config_struct_hammer.cpp
                read_corrector.cpp
-               )
+               expander.cpp)
 
 if (SPADES_BUILD_INTERNAL)
   add_subdirectory(quake_count)

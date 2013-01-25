@@ -51,7 +51,7 @@ public:
       return RunSingle(irs, op);
 
     bool stop = false;
-#   pragma omp parallel shared(in_queue, irs, op, stop) num_threads(nthreads)
+#   pragma omp parallel shared(in_queue, irs, op, stop) num_threads(nthreads_)
     {
 #     pragma omp master
       {
@@ -96,7 +96,7 @@ public:
       return;
     }
 
-#   pragma omp parallel shared(in_queue, out_queue, irs, op, writer) num_threads(nthreads)
+#   pragma omp parallel shared(in_queue, out_queue, irs, op, writer) num_threads(nthreads_)
     {
 #     pragma omp master
       {
