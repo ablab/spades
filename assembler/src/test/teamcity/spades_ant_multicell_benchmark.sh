@@ -41,9 +41,9 @@ rm -f ./ant_benchmark/ECOLI_IS480_QUAKE.log
 srun -w ant17 ./src/test/teamcity/teamcity.py /tmp/data/input/E.coli/is480/ECOLI_IS480_QUAKE_MANUAL.info >> ./ant_benchmark/ECOLI_IS480_QUAKE_$timestamp.log 2>> ./ant_benchmark/ECOLI_IS480_QUAKE_$timestamp.log &
 echo "done"
 
-echo "Starting L.grasseri on ant03..."
-rm -f ./ant_benchmark/LGRASSERI_QUAKE.log
-srun -w ant18 ./src/test/teamcity/teamcity.py /tmp/data/input/L.grasseri/LGRASSERI_QUAKE_MANUAL.info >> ./ant_benchmark/LGRASSERI_QUAKE_$timestamp.log 2>> ./ant_benchmark/LGRASSERI_QUAKE_$timestamp.log &
+echo "Starting L.gasseri on ant03..."
+rm -f ./ant_benchmark/LGASSERI_QUAKE.log
+srun -w ant18 ./src/test/teamcity/teamcity.py /tmp/data/input/L.gasseri/LGASSERI_QUAKE_MANUAL.info >> ./ant_benchmark/LGASSERI_QUAKE_$timestamp.log 2>> ./ant_benchmark/LGASSERI_QUAKE_$timestamp.log &
 echo "done"
 
 
