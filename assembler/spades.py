@@ -297,7 +297,8 @@ def usage(show_hidden=False):
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
-    print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads [default: 16]"
+    print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads"
+    print >> sys.stderr, "\t\t\t\t[default: 16]"
     print >> sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
                          " (terminates if exceeded)"
     print >> sys.stderr, "\t\t\t\t[default: 250]"
@@ -308,7 +309,8 @@ def usage(show_hidden=False):
                          " (must be odd and"
     print >> sys.stderr, "\t\t\t\tless than 128) [default: 21,33,55]"
     print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for error"\
-                         " correction [default: 1]"
+                         " correction"
+    print >> sys.stderr, "\t\t\t\t[default: 1]"
     print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
                          " input reads (33 or 64)"
     print >> sys.stderr, "\t\t\t\t[default: auto-detect]"
@@ -884,15 +886,15 @@ def main():
         if os.path.isdir(os.path.dirname(bh_dataset_filename)):
             log.info(" * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/")
         if os.path.isfile(result_contigs_filename):
-            log.info(" * Assembled contigs are " + result_contigs_filename)
+            log.info(" * Assembled contigs are in " + result_contigs_filename)
         #corrector
         if os.path.isfile(result_corrected_contigs_filename):
             if correct_scaffolds:
-                log.info(" * Corrected scaffolds are " + result_corrected_contigs_filename)
+                log.info(" * Corrected scaffolds are in " + result_corrected_contigs_filename)
             else:
-                log.info(" * Corrected contigs are " + result_corrected_contigs_filename)
+                log.info(" * Corrected contigs are in " + result_corrected_contigs_filename)
         if os.path.isfile(result_scaffolds_filename):
-            log.info(" * Assembled scaffolds are " + result_scaffolds_filename)
+            log.info(" * Assembled scaffolds are in " + result_scaffolds_filename)
         #log.info("")
 
         #breaking scaffolds
@@ -903,10 +905,10 @@ def main():
             threshold = 3
             if os.path.isfile(result_corrected_contigs_filename):
                 break_scaffolds_into_contigs.break_scaffolds(["", result_corrected_contigs_filename, str(threshold), result_broken_scaffolds])
-                log.info(" * Corrected scaffolds broken by " + str(threshold) + " Ns are " + result_broken_scaffolds)
+                log.info(" * Corrected scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
             else:
                 break_scaffolds_into_contigs.break_scaffolds(["", result_scaffolds_filename, str(threshold), result_broken_scaffolds])
-                log.info(" * Scaffolds broken by " + str(threshold) + " Ns are " + result_broken_scaffolds)
+                log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
 
         log.info("")
         log.info("Thank you for using SPAdes!")
