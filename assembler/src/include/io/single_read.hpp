@@ -42,20 +42,18 @@ namespace io {
  * SolexaOffset is equal to "offset = 64".
  */
 enum OffsetType {
-  UnknownOffset, PhredOffset, SolexaOffset
+  UnknownOffset = 0,
+  PhredOffset   = 33,
+  SolexaOffset  = 64
 };
 
 //todo extract code about offset from here
 class SingleRead {
-
  public:
   static string EmptyQuality(const string& seq) {
     return std::string(seq.size(), (char) 33);
   }
 
-  static const int UNKNOWN_OFFSET = 0;
-  static const int PHRED_OFFSET = 33;
-  static const int SOLEXA_OFFSET = 64;
   static const int BAD_QUALITY_THRESHOLD = 2;
 
   /*
@@ -79,10 +77,9 @@ class SingleRead {
    * @param qual The quality of the SingleRead sequence.
    */
   SingleRead(const std::string& name, const std::string& seq,
-             const std::string& qual, OffsetType offset_type) :
+             const std::string& qual, OffsetType offset) :
       name_(name), seq_(seq), qual_(qual) {
     Init();
-    int offset = GetOffset(offset_type);
     for (size_t i = 0; i < qual_.size(); ++i) {
       qual_[i] -= offset;
     }
@@ -177,7 +174,7 @@ class SingleRead {
    * @return Modified SingleRead quality string.
    */
   std::string GetPhredQualityString() const {
-    int offset = PHRED_OFFSET;
+    int offset = PhredOffset;
     std::string res = qual_;
     for (size_t i = 0; i < res.size(); ++i) {
       res[i] += offset;
@@ -328,44 +325,6 @@ class SingleRead {
    * @variable The flag of SingleRead correctness.
    */
   bool valid_;
-
-  /*
-   * todo move from here!!!
-   * Return quality offset value from offset type.
-   *
-   * @param offset_type One of possible enum values.
-   * @return Quality offset value.
-   */
-  int GetOffset(OffsetType offset_type) const {
-    switch (offset_type) {
-      case UnknownOffset:
-        return 0;
-      case PhredOffset:
-        return 33;
-      case SolexaOffset:
-        return 64;
-    }
-    return -1;
-  }
-
-
-
-  //	/*
-  //   * Set quality of SingleRead.
-  //   *
-  //   * @param new_quality New quality of SingleRead.
-  //   * @param offset The offset of SingleRead quality
-  //   * (PHRED_OFFSET by default).
-  //   */
-  //	void SetQuality(const string& new_quality, OffsetType offset_type =
-  //			PhredOffset) {
-  //		int offset = GetOffset(offset_type);
-  //		qual_ = new_quality;
-  //		for (size_t i = 0; i < qual_.size(); ++i) { // oh, really does it work with char* copying?
-  //			qual_[i] -= offset;
-  //		}
-  //		cout << "Set quality" << endl;
-  //	}
 
   void Init() {
     VERIFY(seq_.size() == qual_.size());
