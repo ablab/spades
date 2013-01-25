@@ -38,12 +38,12 @@ echo "done"
 
 echo "Starting E.coli UCSD lane 1 on ant01..."
 rm -f ./ant_benchmark/ECOLI_SC_LANE_1.log
-srun -w ant01 ./src/test/teamcity/teamcity.py /tmp/data/input/E.coli/sc_lane_1/corrected/ECOLI_SC_LANE_1_CORR.info $1 >> ./ant_benchmark/ECOLI_SC_LANE_1_$timestamp.log 2>> ./ant_benchmark/ECOLI_SC_LANE_1_$timestamp.log &
+srun -w ant17 ./src/test/teamcity/teamcity.py /tmp/data/input/E.coli/sc_lane_1/corrected/ECOLI_SC_LANE_1_CORR.info $1 >> ./ant_benchmark/ECOLI_SC_LANE_1_$timestamp.log 2>> ./ant_benchmark/ECOLI_SC_LANE_1_$timestamp.log &
 echo "done"
 
 echo "Starting M.ruber JGI lane 9 on ant02..."
 rm -f ./ant_benchmark/MRUBER_JGI_LANE_9.log
-srun -w ant02 ./src/test/teamcity/teamcity.py /tmp/data/input/M.ruber/jgi_lane_9/MRUBER_JGI_LANE_9_MANUAL.info $1 >> ./ant_benchmark/MRUBER_JGI_LANE_9_$timestamp.log 2>> ./ant_benchmark/MRUBER_JGI_LANE_9_$timestamp.log &
+srun -w ant18 ./src/test/teamcity/teamcity.py /tmp/data/input/M.ruber/jgi_lane_9/MRUBER_JGI_LANE_9_MANUAL.info $1 >> ./ant_benchmark/MRUBER_JGI_LANE_9_$timestamp.log 2>> ./ant_benchmark/MRUBER_JGI_LANE_9_$timestamp.log &
 echo "done"
 
 
