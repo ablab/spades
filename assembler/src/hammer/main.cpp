@@ -278,6 +278,7 @@ int main(int argc, char * argv[]) {
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is);
       }
+      std::vector<std::vector<unsigned>>().swap(classes);
 
       // expand the set of solid k-mers
       if (cfg::get().expand_do || do_everything) {

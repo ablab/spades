@@ -27,13 +27,12 @@
 #include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_data.hpp"
+#include "read_corrector.hpp"
 
 #include "io/mmapped_writer.hpp"
 
 #include <sys/types.h>
 #include <sys/wait.h>
-
-#include <unordered_map>
 
 using namespace std;
 using namespace hammer;
@@ -221,57 +220,6 @@ string HammerTools::getFilename( const string & dirprefix, int iter_count, const
 	return tmp.str();
 }
 
-static bool internalCorrectReadProcedure(const std::string &seq, const KMerData &data,
-                                         size_t pos, const KMerStat & stat,
-                                         std::vector<std::vector<int> > & v,
-                                         int & left, int & right, bool & isGood,
-                                         ofstream * ofs,
-                                         bool revcomp, bool correct_threshold, bool discard_singletons) {
-  bool res = false;
-  if (stat.isGoodForIterative() || (correct_threshold && stat.isGood())) {
-    isGood = true;
-    if (ofs != NULL) *ofs << "\t\t\tsolid";
-    //cout << "\t\t\tsolid";
-    KMer kmer = stat.kmer();
-    if (revcomp)
-      kmer = !kmer;
-
-    for (size_t j = 0; j < K; ++j)
-      v[kmer[j]][pos + j]++;
-    if ((int) pos < left)
-      left = pos;
-    if ((int) pos > right)
-      right = pos;
-  } else {
-    // if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
-    if (stat.change() &&
-        (discard_singletons || data[stat.changeto].isGoodForIterative() ||
-         (correct_threshold && stat.isGood()))) {
-      if (ofs != NULL) *ofs << "\tchange to\n";
-      //cout << "  kmer " << kmer.start() << " " << kmer.str() << " wants to change to " << stat.changeto << " " << km[stat.changeto].first.str() << endl;
-      isGood = true;
-      if ((int) pos < left)
-        left = pos;
-      if ((int) pos > right)
-        right = pos;
-      KMer newkmer = data[stat.changeto].kmer();
-
-      for (size_t j = 0; j < K; ++j) {
-        v[newkmer[j]][pos + j]++;
-      }
-      // pretty print the k-mer
-      res = true;
-      if (ofs != NULL) {
-        for (size_t j = 0; j < pos; ++j)
-          *ofs << " ";
-        *ofs << newkmer.str().data();
-      }
-      //for (size_t j = 0; j < pos; ++j) cout << " "; cout << newkmer.str().data();
-    }
-  }
-  return res;
-}
-
 size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, KMerData &data) {
   size_t res = 0;
 
@@ -331,7 +279,7 @@ size_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, KMe
   }
 
   if (cfg::get().expand_write_each_iteration) {
-    ofstream oftmp(getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no ).data());
+    std::ofstream oftmp(getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no ).data());
     for (size_t n = 0; n < data.size(); ++n ) {
       if (data[n].isGoodForIterative() ) {
         oftmp << data[n].kmer().str() << "\n>" << n
@@ -355,84 +303,6 @@ void HammerTools::PrintKMerResult(std::ostream& outf, const vector<KMerStat> & k
   }
 }
 
-bool HammerTools::CorrectOneRead(const KMerData &data,
-                                 size_t & changedReads, size_t & changedNucleotides,
-                                 Read & r, bool correct_threshold, bool discard_singletons, bool discard_bad ) {
-  bool isGood = false;
-  std::string seq = r.getSequenceString();
-  const std::string &qual = r.getQualityString();
-  
-  size_t read_size = seq.size();
-
-  VERIFY(read_size >= K);
-
-  // create auxiliary structures for consensus
-  std::vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
-  std::vector<std::vector<int> > v;  // A=0, C=1, G=2, T=3
-  v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
-  isGood = false;
-
-  // getting the leftmost and rightmost positions of a solid kmer
-  int left = read_size; int right = -1;
-  bool changedRead = false;
-  ValidKMerGenerator<K> gen(seq.data(), qual.data(), read_size);
-  while (gen.HasMore()) {
-    size_t read_pos = gen.pos() - 1;
-    const KMerStat &kmer_data = data[gen.kmer()];
- 
-    changedRead = changedRead ||
-                  internalCorrectReadProcedure(seq, data, read_pos, kmer_data, v,
-                                               left, right, isGood, NULL, false, correct_threshold, discard_singletons);
-
-    gen.Next();
-  }
-
-  int left_rev = 0; int right_rev = read_size-(int)K;
-
-  if (left <= right && left_rev <= right_rev) {
-    left = std::min(left, (int)read_size - left_rev - (int)K);
-    right = std::max(right, (int)read_size - right_rev - (int)K);
-  } else if ( left > right && left_rev <= right_rev ) {
-    left = (int)read_size - left_rev - (int)K;
-    right = (int)read_size - right_rev - (int)K;
-  }
-
-  // at this point the array v contains votes for consensus
-  /*cout << "\n" << seq << "\n";
-  for (size_t k=0; k<4; ++k) {
-    for (size_t j=0; j<read_size; ++j) {
-      cout << v[k][j];
-    }
-    cout << "\n";
-  }*/
-
-  size_t res = 0; // how many nucleotides have really changed?
-  // find max consensus element
-  for (size_t j=0; j<read_size; ++j) {
-    char cmax = seq[j]; int nummax = 0;
-    for (size_t k=0; k<4; ++k) {
-      if (v[k][j] > nummax) {
-        cmax = nucl(k); nummax = v[k][j];
-      }
-    }
-    if (seq[j] != cmax) ++res;
-    seq[j] = cmax;
-  }
-
-  r.setSequence(seq.data(), /* preserve_trimming */ true);
-
-  //cout << seq << "\n";
-
-  // if discard_bad=false, we retain original sequences when needed
-  if (discard_bad) {
-    r.trimLeftRight(left, right+K-1);
-    if (left > 0 || right + K -1 < read_size) changedRead = true;
-  }
-
-  changedNucleotides += res;
-  if (res > 0) ++changedReads;
-  return isGood;
-}
 
 void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
                                     std::vector<Read> &reads, size_t buf_size,
@@ -443,27 +313,21 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
   bool correct_threshold = cfg::get().correct_use_threshold;
   bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
  
-  std::vector<size_t> changedReadBuf(correct_nthreads, 0);
-  std::vector<size_t> changedNuclBuf(correct_nthreads, 0);
- 
+  ReadCorrector corrector(data);
 # pragma omp parallel for shared(reads, res, data) num_threads(correct_nthreads)
   for (size_t i = 0; i < buf_size; ++i) {
     if (reads[i].size() >= K) {
       res[i] =
-          HammerTools::CorrectOneRead(data,
-                                      changedReadBuf[omp_get_thread_num()], changedNuclBuf[omp_get_thread_num()],
-                                      reads[i],
-                                      correct_threshold, discard_singletons, discard_bad);
+          corrector.CorrectOneRead(reads[i],
+                                   correct_threshold, discard_singletons, discard_bad);
     } else
       res[i] = false;
   }
- 
-  for (unsigned i = 0; i < correct_nthreads; ++i ) {
-    changedReads += changedReadBuf[i];
-    changedNucleotides += changedNuclBuf[i];
-  }
+
+  changedReads += corrector.changed_reads();
+  changedNucleotides += corrector.changed_nucleotides();
 }
- 
+
 void HammerTools::CorrectReadFile(const KMerData &data,
                                   size_t & changedReads, size_t & changedNucleotides,
                                   const std::string &fname,

@@ -9,14 +9,16 @@ project(hammer CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(hammer
-   main.cpp
-   hammer_tools.cpp
-   hamcluster.cpp
-   kmer_cluster.cpp
-   kmer_data.cpp
-   position_read.cpp
-   globals.cpp
-   config_struct_hammer.cpp)
+               main.cpp
+               hammer_tools.cpp
+               hamcluster.cpp
+               kmer_cluster.cpp
+               kmer_data.cpp
+               position_read.cpp
+               globals.cpp
+               config_struct_hammer.cpp
+               read_corrector.cpp
+               )
 
 if (SPADES_BUILD_INTERNAL)
   add_subdirectory(quake_count)
