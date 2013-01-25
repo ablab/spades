@@ -254,7 +254,7 @@ def fill_test_config(cfg):
 
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
-               "disable-gap-closer disable-gzip-output help test debug reference= "\
+               "disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
                "config-file= dataset= mismatch-correction bwa= rectangles".split()
 short_options = "o:1:2:s:k:t:m:i:h"
@@ -270,45 +270,49 @@ def usage(show_hidden=False):
     print >> sys.stderr, "SPAdes genome assembler"
     print >> sys.stderr, "Usage:", sys.argv[0], "[options] -o <output_dir>"
     print >> sys.stderr, ""
-    print >> sys.stderr, "Options:"
+    print >> sys.stderr, "Basic options:"
     print >> sys.stderr, "-o\t<output_dir>\tdirectory to store all the resulting files (required)"
     print >> sys.stderr, "--sc\t\t\tthis flag is required for MDA (single-cell)"\
                          " data"
-    print >> sys.stderr, "--12\t<filename>\tfile with interlaced left and right"\
-                         " paired end reads"
-    print >> sys.stderr, "-1\t<filename>\tfile with left paired end reads"
-    print >> sys.stderr, "-2\t<filename>\tfile with right paired end reads"
+    print >> sys.stderr, "--12\t<filename>\tfile with interlaced forward and reverse"\
+                         " paired-end reads"
+    print >> sys.stderr, "-1\t<filename>\tfile with forward paired-end reads"
+    print >> sys.stderr, "-2\t<filename>\tfile with reverse paired-end reads"
     print >> sys.stderr, "-s\t<filename>\tfile with unpaired reads"
+    print >> sys.stderr, "--test\t\t\truns SPAdes on toy dataset"
+    print >> sys.stderr, "-h/--help\t\tprints this usage message"
+
+    print >> sys.stderr, ""
+    print >> sys.stderr, "Pipeline options:"
+    print >> sys.stderr, "--only-error-correction\truns only error correction"\
+                         " (without assembler)"
+    print >> sys.stderr, "--only-assembler\truns only assembler (without error"\
+                         " correction)"
+    print >> sys.stderr, "--disable-gzip-output\tforces error correction not to"\
+                         " compress the corrected reads"
     print >> sys.stderr, "--generate-sam-file\tforces SPAdes to generate SAM-file"
+    print >> sys.stderr, "--mismatch-correction\truns post processing correction"\
+                         " of mismatches and short indels"
+    print >> sys.stderr, "--rectangles\t\tuses rectangle graph algtorithm for repeat resolution"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
     print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads [default: 16]"
     print >> sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
-                         " (terminates if exceeded) [default: 250]"
-    print >> sys.stderr, "--tmp-dir\t<dirname>\tdirectory for error correction's"\
-                         " temp files"
+                         " (terminates if exceeded)"
+    print >> sys.stderr, "\t\t\t\t[default: 250]"
+    print >> sys.stderr, "--tmp-dir\t<dirname>\tdirectory for error correction"\
+                         " temporary files"
     print >> sys.stderr, "\t\t\t\t[default: <output_dir>/corrected/tmp]"
-    print >> sys.stderr, "-k\t<int,int,...>\t\tcomma-separated list of k-mer sizes"\
-                         " (must be odd and less than 128)"
-    print >> sys.stderr, "\t\t\t\t[default: 21,33,55]"
+    print >> sys.stderr, "-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
+                         " (must be odd and"
+    print >> sys.stderr, "\t\t\t\tless than 128) [default: 21,33,55]"
     print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for error"\
-                         " correction"
+                         " correction [default: 1]"
     print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
-                         " input reads (33 or 64) [default: auto-detect]"
-    print >> sys.stderr, "--only-error-correction\t\trun only error correction"\
-                         " (without assembler)"
-    print >> sys.stderr, "--only-assembler\t\trun only assembler (without error"\
-                         " correction)"
-    print >> sys.stderr, "--rectangles\t\t\tuse Rectangles algorithm for repeat resolution"
-    print >> sys.stderr, "--mismatch-correction\t\trun post processing correction"\
-                         " of mismatches and short indels"
-    print >> sys.stderr, "--bwa\t<path>\t\t\tpath to BWA tool. Required for --mismatch-correction"\
-                         " if BWA is not in PATH"
-    print >> sys.stderr, "--disable-gap-closer\t\tforces SPAdes not to use the gap"\
-                         " closer"
-    print >> sys.stderr, "--disable-gzip-output\t\tforces error correction not to"\
-                         " compress the corrected reads"
+                         " input reads (33 or 64)"
+    print >> sys.stderr, "\t\t\t\t[default: auto-detect]"
+    print >> sys.stderr, "--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)"
 
     if show_hidden:
         print >> sys.stderr, ""
@@ -319,17 +323,11 @@ def usage(show_hidden=False):
                              " (WARN: works exclusively in --only-assembler mode)"
         print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
                              " (only in debug mode)"
-        print >> sys.stderr, "--bh-heap-check\t\t<value>\tset HEAPCHECK environment variable"\
+        print >> sys.stderr, "--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
                              " for BayesHammer"
-        print >> sys.stderr, "--spades-heap-check\t<value>\tset HEAPCHECK environment variable"\
+        print >> sys.stderr, "--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
                              " for SPAdes"
-
-    print >> sys.stderr, ""
-    print >> sys.stderr, "--test\t\trun SPAdes on toy dataset"
-    print >> sys.stderr, "--debug\t\trun SPAdes in debug mode"
-    print >> sys.stderr, "-h/--help\tprint this usage message"
-    if show_hidden:
-        print >> sys.stderr, "--help-hidden\tprint this usage message with all hidden options"
+        print >> sys.stderr, "--help-hidden\tprints this usage message with all hidden options"    
 
 
 def main():
@@ -377,7 +375,6 @@ def main():
         single_cell = False
         disable_gzip_output = False
         generate_sam_files = False
-        disable_gap_closer = False
 
         only_error_correction = False
         only_assembler = False
@@ -429,8 +426,6 @@ def main():
                 disable_gzip_output = True
             elif opt == "--generate-sam-file":
                 generate_sam_files = True
-            elif opt == "--disable-gap-closer":
-                disable_gap_closer = True
 
             elif opt == "--only-error-correction":
                 only_error_correction = True
@@ -572,8 +567,7 @@ def main():
                     cfg["assembly"].__dict__["iterative_K"] = k_mers
                 if spades_heap_check:
                     cfg["assembly"].__dict__["heap_check"] = spades_heap_check
-                cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files
-                cfg["assembly"].__dict__["gap_closer"] = not disable_gap_closer
+                cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files                
 
             #corrector can work only if contigs are exists (not only error correction)
             if (paired1 or paired) and (not only_error_correction) and mismatch_corrector:
