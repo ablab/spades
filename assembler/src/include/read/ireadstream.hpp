@@ -29,6 +29,8 @@ KSEQ_INIT(gzFile, gzread)
 class ireadstream {
 
 public:
+  typedef Read read_type;
+  
 	ireadstream(const std::string& filename) : offset_(Read::PHRED_OFFSET) {
 		filename_ = filename;
 		is_open_ = open(filename);
