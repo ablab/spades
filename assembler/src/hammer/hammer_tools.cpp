@@ -183,74 +183,6 @@ void HammerTools::ReadAllFilesIntoBlob() {
   INFO("All files were read. Used " << curpos << " bytes out of " << Globals::blob_max_size << " allocated.");
 }
 
-static bool compareSubKMersGreaterSimple( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
-  return (strncmp( Globals::blob + kmer1.first, Globals::blob + kmer2.first, K ) > 0);
-}
-
-static bool compareSubKMersLessSimple( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
-  return (strncmp( Globals::blob + kmer1.first, Globals::blob + kmer2.first, K ) < 0);
-}
-
-static bool compareSubKMersGFirst( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
-  for (uint32_t i = 0; i < K; ++i) {
-    if (Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ]) {
-      switch ( Globals::blob[ kmer1.first + i ] ) {
-				case 'G': return true;
-				case 'A': return ( Globals::blob [ kmer2.first + i ] != 'G' );
-				case 'T': return ( Globals::blob [ kmer2.first + i ] == 'C' );
-				case 'C': return false;
-				default: return false;
-      }
-    }
-  }
-  return false;
-}
-
-static bool compareSubKMersCFirst( const pair<hint_t, pair< double, size_t > > & kmer1, const pair<hint_t, pair< double, size_t > > & kmer2) {
-  for (uint32_t i = 0; i < K; ++i) {
-    if (Globals::blob[ kmer1.first + i ] != Globals::blob [ kmer2.first + i ]) {
-      switch ( Globals::blob[ kmer1.first + i ]) {
-				case 'C': return true;
-				case 'T': return (Globals::blob [kmer2.first + i] != 'C');
-				case 'A': return (Globals::blob [kmer2.first + i] == 'G');
-				case 'G': return false;
-				default: return false;
-      }
-    }
-  }
-  return false;
-}
-
-void HammerTools::findMinimizers( vector< pair<hint_t, pair< double, size_t > > > & v, int num_minimizers, vector< hint_t > & mmers, int which_first ) {
-	if (which_first == 0) {
-		sort(v.begin(), v.end(), compareSubKMersGreaterSimple);
-	} else if (which_first == 1) {
-		sort(v.begin(), v.end(), compareSubKMersLessSimple);
-	} else if (which_first == 2) {
-		sort(v.begin(), v.end(), compareSubKMersGFirst);
-	} else {
-		sort(v.begin(), v.end(), compareSubKMersCFirst);
-	}
-	vector< pair<hint_t, pair< double, size_t > > >::iterator it = v.begin();
-	vector< int > kmers_in_mmer(mmers.size(), 0); // count kmers in mmers
-
-	for ( ; it != v.end(); ) {
-/*		char c = Globals::blob[ it->first ];
-		if ( (which_first == 0) && ( (c == 'A') || (c == 'C') ) ) break;
-		if ( (which_first == 1) && ( (c == 'G') || (c == 'T') ) ) break;
-		if ( (which_first == 2) && ( (c == 'C') || (c == 'T') ) ) break;
-		if ( (which_first == 3) && ( (c == 'A') || (c == 'G') ) ) break;*/
-		bool erase = true;
-		for (size_t j=0; j < mmers.size(); ++j ) {
-			if ( (it->first >= mmers[j]) && (it->first <= mmers[j] + M - K) && (kmers_in_mmer[j] < num_minimizers) ) {
-				erase = false;
-				++kmers_in_mmer[j];
-			}
-		}
-		if ( erase ) it = v.erase(it); else ++it;
-	}
-}
-
 string HammerTools::getFilename( const string & dirprefix, const string & suffix ) {
 	ostringstream tmp;
 	tmp.str(""); tmp << dirprefix.data() << "/" << suffix.data();
@@ -501,11 +433,6 @@ bool HammerTools::CorrectOneRead(const KMerData &data,
   if (res > 0) ++changedReads;
   return isGood;
 }
-  
-bool HammerTools::doingMinimizers() {
-  return ( cfg::get().general_minimizers && (Globals::iteration_no < 8) );
-}
- 
 
 void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
                                     std::vector<Read> &reads, size_t buf_size,
@@ -515,7 +442,6 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
   bool discard_singletons = cfg::get().bayes_discard_only_singletons;
   bool correct_threshold = cfg::get().correct_use_threshold;
   bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
-  if (HammerTools::doingMinimizers()) discard_bad = false;
  
   std::vector<size_t> changedReadBuf(correct_nthreads, 0);
   std::vector<size_t> changedNuclBuf(correct_nthreads, 0);

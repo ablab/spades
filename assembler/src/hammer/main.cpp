@@ -171,7 +171,6 @@ int main(int argc, char * argv[]) {
     HammerTools::InitializeSubKMerPositions();
 
     int max_iterations = cfg::get().general_max_iterations;
-    if (HammerTools::doingMinimizers()) max_iterations = max_iterations+7;
 
     // now we can begin the iterations
     for (Globals::iteration_no = 0; Globals::iteration_no < max_iterations; ++Globals::iteration_no) {
@@ -280,8 +279,8 @@ int main(int argc, char * argv[]) {
         Globals::kmer_data->binary_read(is);
       }
 
-      // expand the set of solid k-mers (with minimizer iterations, we don't need it)
-      if ((cfg::get().expand_do || do_everything) && !HammerTools::doingMinimizers() ) {
+      // expand the set of solid k-mers
+      if (cfg::get().expand_do || do_everything) {
         unsigned expand_nthreads = std::min(cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
         INFO("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
         for (unsigned expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no) {
@@ -316,7 +315,7 @@ int main(int argc, char * argv[]) {
       delete Globals::kmer_data;
       delete Globals::pr;
 
-      if (totalReads < 1 && !HammerTools::doingMinimizers() ) {
+      if (totalReads < 1) {
         INFO("Too few reads have changed in this iteration. Exiting.");
         break;
       }
