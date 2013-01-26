@@ -28,7 +28,6 @@ buffer_size	      	512; in Megabytes
 
 
 entry_point construction
-;entry_point paired_info_count
 ;entry_point simplification
 ;entry_point late_pair_info_count
 ;entry_point distance_estimation

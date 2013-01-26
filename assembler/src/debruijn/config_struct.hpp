@@ -33,7 +33,6 @@ namespace debruijn_graph {
 
 enum working_stage {
 	ws_construction,
-	ws_paired_info_count,
 	ws_simplification,
 	ws_late_pair_info_count,
 	ws_distance_estimation,
@@ -134,7 +133,6 @@ struct debruijn_config {
 	static const stage_name_id_mapping FillStageInfo() {
 		stage_name_id_mapping::value_type info[] = {
       stage_name_id_mapping::value_type("construction", ws_construction),
-      stage_name_id_mapping::value_type("paired_info_count", ws_paired_info_count),
       stage_name_id_mapping::value_type("simplification", ws_simplification),
       stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count),
       stage_name_id_mapping::value_type("distance_estimation", ws_distance_estimation),
