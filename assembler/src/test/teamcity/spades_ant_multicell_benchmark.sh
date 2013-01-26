@@ -33,22 +33,22 @@ mkdir -p ./ant_benchmark
 
 echo "Starting E.coli is220 on ant16..."
 rm -f ./ant_benchmark/ECOLI_IS220.log
-srun -w ant16 ./src/test/teamcity/teamcity.py /tmp/data/input/E.coli/is220/ECOLI_IS200.info >> ./ant_benchmark/ECOLI_IS220_$timestamp.log 2>> ./ant_benchmark/ECOLI_IS220_$timestamp.log &
+srun -w ant16 ./src/test/teamcity/teamcity.py /tmp/data/input/E.coli/is220/ECOLI_IS200.info  $1 >> ./ant_benchmark/ECOLI_IS220_$timestamp.log 2>> ./ant_benchmark/ECOLI_IS220_$timestamp.log &
 echo "done"
 
 echo "Starting E.coli is480 on ant03..."
 rm -f ./ant_benchmark/ECOLI_IS480_QUAKE.log
-srun -w ant17 ./src/test/teamcity/teamcity.py /tmp/data/input/E.coli/is480/ECOLI_IS480_QUAKE_MANUAL.info >> ./ant_benchmark/ECOLI_IS480_QUAKE_$timestamp.log 2>> ./ant_benchmark/ECOLI_IS480_QUAKE_$timestamp.log &
+srun -w ant17 ./src/test/teamcity/teamcity.py /tmp/data/input/E.coli/is480/ECOLI_IS480_QUAKE_MANUAL.info $1 >> ./ant_benchmark/ECOLI_IS480_QUAKE_$timestamp.log 2>> ./ant_benchmark/ECOLI_IS480_QUAKE_$timestamp.log &
 echo "done"
 
 echo "Starting L.gasseri on ant03..."
 rm -f ./ant_benchmark/LGASSERI_QUAKE.log
-srun -w ant18 ./src/test/teamcity/teamcity.py /tmp/data/input/L.gasseri/LGASSERI_QUAKE_MANUAL.info >> ./ant_benchmark/LGASSERI_QUAKE_$timestamp.log 2>> ./ant_benchmark/LGASSERI_QUAKE_$timestamp.log &
+srun -w ant18 ./src/test/teamcity/teamcity.py /tmp/data/input/L.gasseri/LGASSERI_QUAKE_MANUAL.info $1 >> ./ant_benchmark/LGASSERI_QUAKE_$timestamp.log 2>> ./ant_benchmark/LGASSERI_QUAKE_$timestamp.log &
 echo "done"
 
 
 echo "Starting B.faecium on ant03..."
 rm -f ./ant_benchmark/BFAECIUM_QAUKE.log
-srun -w ant18 ./src/test/teamcity/teamcity.py /tmp/data/input/B.faecium/BFAECIUM_QAUKE_MANUAL.info >> ./ant_benchmark/BFAECIUM_QAUKE_$timestamp.log 2>> ./ant_benchmark/BFAECIUM_QAUKE_$timestamp.log &
+srun -w ant18 ./src/test/teamcity/teamcity.py /tmp/data/input/B.faecium/BFAECIUM_QAUKE_MANUAL.info $1 >> ./ant_benchmark/BFAECIUM_QAUKE_$timestamp.log 2>> ./ant_benchmark/BFAECIUM_QAUKE_$timestamp.log &
 echo "done"
 
