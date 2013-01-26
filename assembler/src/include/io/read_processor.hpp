@@ -71,7 +71,7 @@ public:
       }
 
       while (!in_queue.is_closed()) {
-      typename Reader::read_type r;
+        typename Reader::read_type r;
         if (in_queue.wait_pop(r) == gcl::queue_op_status::closed)
           break;
 
