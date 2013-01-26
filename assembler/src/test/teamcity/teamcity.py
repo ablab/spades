@@ -315,6 +315,7 @@ if 'quast_params' in dataset_info.__dict__:
 
 #etalon saves
 if 'etalon_saves' in dataset_info.__dict__:
+    print("Comparing etalon saves now")
     ecode = os.system("./src/test/teamcity/detect_diffs.sh " + output_dir + " " + dataset_info.etalon_saves)
     if ecode != 0:
         print("Comparing etalon saves finished abnormally with exit code " + str(ecode))
