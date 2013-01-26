@@ -70,4 +70,3 @@ def break_scaffolds(argv):
         for k in list_of_sizes:
             print k, sizes_of_Ns_regions[k]
 
-break_scaffolds(sys.argv)
