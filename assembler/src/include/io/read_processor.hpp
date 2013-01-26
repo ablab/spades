@@ -4,7 +4,7 @@
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 
-#include <gcl/buffer_queue.h>
+#include "io/mpmc_bounded.hpp"
 
 #include "openmp_wrapper.h"
 
@@ -45,10 +45,19 @@ public:
 
   template<class Reader, class Op>
   bool Run(Reader &irs, Op &op) {
-    gcl::buffer_queue<typename Reader::read_type> in_queue(nthreads_);
-
     if (nthreads_ < 2)
       return RunSingle(irs, op);
+
+    // Round nthreads to next power of two
+    unsigned bufsize = nthreads_ - 1;
+    bufsize = (bufsize >> 1) | bufsize;
+    bufsize = (bufsize >> 2) | bufsize;
+    bufsize = (bufsize >> 4) | bufsize;
+    bufsize = (bufsize >> 8) | bufsize;
+    bufsize = (bufsize >> 16) | bufsize;
+    bufsize += 1;
+
+    mpmc_bounded_queue<typename Reader::read_type> in_queue(2*bufsize);
 
     bool stop = false;
 #   pragma omp parallel shared(in_queue, irs, op, stop) num_threads(nthreads_)
@@ -59,10 +68,10 @@ public:
           typename Reader::read_type r;
           irs >> r;
 
-          auto status = in_queue.wait_push(r);
-          VERIFY(status == gcl::queue_op_status::success);
+          while (!in_queue.enqueue(r))
+            sched_yield();
 
-#         pragma omp flush(stop)
+#         pragma omp flush (stop)
           if (stop)
             break;
         }
@@ -70,9 +79,10 @@ public:
         in_queue.close();
       }
 
-      while (!in_queue.is_closed()) {
+      while (1) {
         typename Reader::read_type r;
-        if (in_queue.wait_pop(r) == gcl::queue_op_status::closed)
+
+        if (!in_queue.wait_dequeue(r))
           break;
 
         bool res = op(r);
@@ -89,13 +99,21 @@ public:
 
   template<class Reader, class Op, class Writer>
   void Run(Reader &irs, Op &op, Writer &writer) {
-    gcl::buffer_queue<typename Reader::read_type> in_queue(nthreads_), out_queue(nthreads_);
-
     if (nthreads_ < 2) {
       RunSingle(irs, op, writer);
       return;
     }
 
+    // Round nthreads to next power of two
+    unsigned bufsize = nthreads_ - 1;
+    bufsize = (bufsize >> 1) | bufsize;
+    bufsize = (bufsize >> 2) | bufsize;
+    bufsize = (bufsize >> 4) | bufsize;
+    bufsize = (bufsize >> 8) | bufsize;
+    bufsize = (bufsize >> 16) | bufsize;
+    bufsize += 1;
+
+    mpmc_bounded_queue<typename Reader::read_type> in_queue(bufsize), out_queue(bufsize);
 #   pragma omp parallel shared(in_queue, out_queue, irs, op, writer) num_threads(nthreads_)
     {
 #     pragma omp master
@@ -105,39 +123,41 @@ public:
           irs >> r;
 
           // First, try to provide read to the queue. If it's full, never mind.
-          auto status = in_queue.try_push(r);
-          VERIFY(status == gcl::queue_op_status::success ||
-                 status == gcl::queue_op_status::full);
+          bool status = in_queue.enqueue(r);
 
           // Flush down the output queue
-          while (!out_queue.is_empty())
-            writer << out_queue.value_pop();
+          typename Reader::read_type outr;
+          while (out_queue.dequeue(outr))
+            writer << outr;
 
           // If the input queue was originally full, wait until we can insert
           // the read once again.
-          if (status == gcl::queue_op_status::full)
-            in_queue.push(r);
+          if (!status)
+            while (!in_queue.enqueue(r))
+              sched_yield();
         }
 
         in_queue.close();
       }
 
-      while (!in_queue.is_closed()) {
+      while (1) {
         typename Reader::read_type r;
-        if (in_queue.wait_pop(r) == gcl::queue_op_status::closed)
+
+        if (!in_queue.wait_dequeue(r))
           break;
 
         auto res = op(r);
         if (res)
-          out_queue.push(*res);
+          while (!in_queue.enqueue(*res))
+            sched_yield();
       }
     }
 
     // Flush down the output queue
-    while (!out_queue.is_empty())
-      writer << out_queue.value_pop();
+    typename Reader::read_type outr;
+    while (out_queue.dequeue(outr))
+      writer << outr;
   }
-
 };
 
 }
