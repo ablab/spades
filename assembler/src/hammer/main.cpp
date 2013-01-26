@@ -241,7 +241,7 @@ int main(int argc, char * argv[]) {
           }
         }
       } else {
-        INFO("Reading clusters.");
+        INFO("Reading clusters");
 
         std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
         std::ifstream is(fname.c_str(), std::ios::binary | std::ios::in);
@@ -265,6 +265,19 @@ int main(int argc, char * argv[]) {
         KMerClustering kmc(*Globals::kmer_data, clustering_nthreads, cfg::get().input_working_dir);
         kmc.process(classes);
         INFO("Finished clustering.");
+
+        if (cfg::get().general_debug) {
+          INFO("Debug mode on. Dumping K-mer index");
+          std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
+          std::ofstream os(fname.c_str(), std::ios::binary);
+          Globals::kmer_data->binary_write(os);
+        }
+      } else {
+        INFO("Reading K-mer index");
+        std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
+        std::ifstream is(fname.c_str(), std::ios::binary);
+        VERIFY(is.good());
+        Globals::kmer_data->binary_read(is);
       }
 
       // expand the set of solid k-mers (with minimizer iterations, we don't need it)
@@ -276,7 +289,20 @@ int main(int argc, char * argv[]) {
           INFO("Solid k-mers iteration " << expand_iter_no << " produced " << res << " new k-mers.");
           if (res < 10) break;
         }
-        INFO("Solid k-mers finalized.");
+        INFO("Solid k-mers finalized");
+
+        if (cfg::get().general_debug) {
+          INFO("Debug mode on. Dumping K-mer index");
+          std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
+          std::ofstream os(fname.c_str(), std::ios::binary);
+          Globals::kmer_data->binary_write(os);
+        }
+      } else {
+        INFO("Reading K-mer index");
+        std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
+        std::ifstream is(fname.c_str(), std::ios::binary);
+        VERIFY(is.good());
+        Globals::kmer_data->binary_read(is);
       }
 
       size_t totalReads = 0;
