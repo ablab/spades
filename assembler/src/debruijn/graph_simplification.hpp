@@ -292,7 +292,6 @@ void RemoveBulges(conj_graph_pack& gp,
 
 	INFO("SUBSTAGE == Removing bulges");
 	Graph& graph = gp.g;
-	KmerMapper<Graph> kmer_mapper = gp.kmer_mapper;
 
 	size_t max_length = LengthThresholdFinder::MaxBulgeLength(graph.k(),
 			br_config.max_bulge_length_coefficient,

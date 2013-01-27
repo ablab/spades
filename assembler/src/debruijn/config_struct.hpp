@@ -299,13 +299,6 @@ struct debruijn_config {
 	struct simplification {
 		struct tip_clipper {
 			string condition;
-			double max_tip_length_coefficient;
-			double max_coverage;
-			double max_relative_coverage;
-            size_t max_iterations;
-            bool advanced_checks;
-            size_t max_levenshtein;
-            size_t max_ec_length;
 		};
 
 		struct bulge_remover {
@@ -577,13 +570,6 @@ inline void load(debruijn_config::simplification::tip_clipper& tc,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 	load(tc.condition					, pt, "condition"		 			);
-	load(tc.max_tip_length_coefficient	, pt, "max_tip_length_coefficient"	);
-	load(tc.max_coverage				, pt, "max_coverage"				);
-	load(tc.max_relative_coverage		, pt, "max_relative_coverage"		);
-	load(tc.max_iterations        		, pt, "max_iterations"       		);
-	load(tc.advanced_checks     		, pt, "advanced_checks_enabled"		);
-	load(tc.max_levenshtein     		, pt, "max_levenshtein"				);
-	load(tc.max_ec_length   		    , pt, "max_ec_length"				);
 }
 
 inline void load(working_stage& entry_point,
