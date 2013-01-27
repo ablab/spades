@@ -674,7 +674,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			distance_to_repeats_end);
 	for (size_t i = 0; i < iters; ++i) {
 		INFO("Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
-		ClipTipsForResolver(resolved_gp.g);
+//		ClipTipsForResolver(resolved_gp.g);
+		ClipTips(resolved_gp.g, cfg::get().simp.tc, /*max_coverage*/0.);
 
 		//if (cfg::get().path_set_graph == false) {
 		//PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(

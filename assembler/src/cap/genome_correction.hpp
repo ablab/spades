@@ -16,7 +16,7 @@ namespace cap {
 
 template<class T>
 class bag {
-  std::map<T, size_t> data_;
+	std::map<T, size_t> data_;
 public:
 	typedef typename std::map<T, size_t>::const_iterator const_iterator;
 
@@ -144,8 +144,10 @@ private:
 		size_t mult = edge_mult_.mult(edges[0]);
 		DEBUG("Mult of " << this->g().str(edges[0]) << " is " << mult);
 		for (size_t i = 1; i < edges.size(); ++i) {
-			DEBUG("Mult of " << this->g().str(edges[i]) << " is " << edge_mult_.mult(edges[i]));
-			if (!CheckConsistency(edges, i) || edge_mult_.mult(edges[i]) != mult) {
+			DEBUG(
+					"Mult of " << this->g().str(edges[i]) << " is " << edge_mult_.mult(edges[i]));
+			if (!CheckConsistency(edges, i)
+					|| edge_mult_.mult(edges[i]) != mult) {
 				return false;
 			}
 		}
@@ -220,7 +222,8 @@ public:
 
 	/*virtual*/
 	void HandleDelete(EdgeId e) {
-		DEBUG("Multiplicity of edge " << this->g().str(e) << " in delete " << edge_mult_.mult(e));
+		DEBUG(
+				"Multiplicity of edge " << this->g().str(e) << " in delete " << edge_mult_.mult(e));
 		VERIFY(edge_mult_.mult(e) == 0);
 	}
 
@@ -265,7 +268,7 @@ private:
 template<class Graph>
 class AssemblyPathCallback: public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
-  typedef typename std::vector<EdgeId> Path;
+	typedef typename std::vector<EdgeId> Path;
 
 private:
 	const Graph& g_;
@@ -273,7 +276,7 @@ private:
 	const TColorSet assembly_color_;
 	size_t edge_count_;
 
-  std::vector<Path> paths_;
+	std::vector<Path> paths_;
 
 	bool CheckPath(const vector<EdgeId>& path) const {
 		DEBUG("Checking path " << g_.str(path));
@@ -298,12 +301,8 @@ public:
 					edge_count) {
 	}
 
-  virtual void Flush() {
-    //TODO do something?
-  }
-
 	virtual void HandleReversedPath(const Path& rev_path) {
-    Path path = this->ReversePath(rev_path);
+		Path path = this->ReversePath(rev_path);
 		if (CheckPath(path)) {
 			paths_.push_back(path);
 		}
@@ -410,9 +409,8 @@ class SimpleInDelCorrector {
 	}
 
 	void RemoveObsoleteEdges(const vector<EdgeId>& edges) {
-		for (auto it = SmartSetIterator<Graph, EdgeId>(g_,
-						edges.begin(), edges.end()); !it.IsEnd();
-						++it) {
+		for (auto it = SmartSetIterator<Graph, EdgeId>(g_, edges.begin(),
+				edges.end()); !it.IsEnd(); ++it) {
 			if (coloring_.Color(*it) == genome_color_
 					&& genome_path_.mult(*it) == 0
 					&& genome_path_.mult(g_.conjugate(*it)) == 0) {
@@ -448,7 +446,8 @@ class SimpleInDelCorrector {
 		make_dir("ref_correction");
 		WriteComponentsAroundEdge(g_, e,
 				"ref_correction/" + ToString(cnt) + ".dot",
-				*ConstructColorer(coloring_), StrGraphLabeler<Graph>(g_), 100000, 10);
+				*ConstructColorer(coloring_), StrGraphLabeler<Graph>(g_),
+				100000, 10);
 	}
 
 	void CorrectGenomePath(size_t genome_start, size_t genome_end,
@@ -467,7 +466,10 @@ class SimpleInDelCorrector {
 		}
 		genome_path_.Substitute(genome_start, genome_end, assembly_path);
 		RemoveObsoleteEdges(genomic_edges);
-		GenPicAroundEdge(*((genome_start < genome_path_.size())?(genome_path_.begin() + genome_start):genome_path_.end()-1), cnt * 100 + 2);
+		GenPicAroundEdge(
+				*((genome_start < genome_path_.size()) ?
+						(genome_path_.begin() + genome_start) :
+						genome_path_.end() - 1), cnt * 100 + 2);
 	}
 
 //	pair<string, pair<size_t, size_t>> ContigIdAndPositions(EdgeId e) {
@@ -517,7 +519,7 @@ class SimpleInDelCorrector {
 
 	void AnalyzeAssemblyEdge(EdgeId e) {
 		DEBUG("Analysing shortcut assembly edge " << g_.str(e));
-		optional<pair<size_t, size_t>> genome_path = FindGenomePath(
+		optional < pair < size_t, size_t >> genome_path = FindGenomePath(
 				g_.EdgeStart(e), g_.EdgeEnd(e), /*edge count bound*//*100*/
 				300);
 		if (genome_path) {

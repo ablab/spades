@@ -17,16 +17,8 @@
 #include <set>
 
 #include "omni_utils.hpp"
-#include "sequential_algorithm.hpp"
-#include "sequential_algorihtm_factory.hpp"
 #include "xmath.h"
-#include "concurrent_conjugate_graph_component.hpp"
 #include "basic_edge_conditions.hpp"
-#include "concurrent_edge_algorithm.hpp"
-//
-//#define DEFAULT_COVERAGE_BOUND 1000
-//#define DEFAULT_RELATIVE_COVERAGE_BOUND 2.0
-//#define DEFAULT_MAX_TIP_LENGTH 50
 
 namespace omnigraph {
 
@@ -90,14 +82,14 @@ public:
 
 };
 
+
 /**
  * This class removes tips from given graph with the following algorithm: it iterates through all edges of
  * the graph(in order defined by certain comparator) and for each edge checks if this edge is likely to be
  * a tip and if edge is judged to be one it is removed.
  */
 template<class Graph>
-class TipClipper: public SequentialAlgorithm<typename Graph::EdgeId>,
-		private boost::noncopyable {
+class TipClipper: private boost::noncopyable {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -186,26 +178,10 @@ protected:
 		return true;
 	}
 
-public:
-
-	/**
-	 * Create TipClipper with specified parameters. Those parameters could probably be replaced later with
-	 * certain generic checker class.
-	 */
-	TipClipper(Graph &graph, size_t max_tip_length,
-			const shared_ptr<Predicate<EdgeId>>& additional_condition,
-			boost::function<void(EdgeId)> removal_handler = 0,
-			boost::function<double(EdgeId)> qual_f = 0) :
-			graph_(graph), additional_condition_(additional_condition), removed_(
-					0), max_tip_length_(max_tip_length), removal_handler_(
-					removal_handler) {
-
-	}
-
 	/**
 	 * Method clips tips of the graph.
 	 */
-	virtual bool ProcessNext(const EdgeId& tip) {
+	bool ProcessNext(const EdgeId& tip) {
 		TRACE("Checking edge for being tip " << this->graph().str(tip));
 		if (this->IsTip(tip)) {
 			TRACE("Edge " << this->graph().str(tip) << " judged to look like a tip topologically");
@@ -227,13 +203,31 @@ public:
 		return true;
 	}
 
-	virtual void Preprocessing() {
-		TRACE("Tip clipping (maximal corruption mode) started");
+public:
+
+	/**
+	 * Create TipClipper with specified parameters. Those parameters could probably be replaced later with
+	 * certain generic checker class.
+	 */
+	TipClipper(Graph &graph, size_t max_tip_length,
+			const shared_ptr<Predicate<EdgeId>>& additional_condition,
+			boost::function<void(EdgeId)> removal_handler = 0,
+			boost::function<double(EdgeId)> qual_f = 0) :
+			graph_(graph), additional_condition_(additional_condition), removed_(
+					0), max_tip_length_(max_tip_length), removal_handler_(
+					removal_handler) {
+
 	}
 
-	virtual void Postprocessing() {
-		TRACE("Tip clipping finished");
-		DEBUG("REMOVED " << removed_);
+	void ClipTips() {
+		LengthComparator<Graph> comparator(graph_);
+		for (auto iterator = graph_.SmartEdgeBegin(comparator); !iterator.IsEnd();
+				++iterator) {
+			EdgeId e = *iterator;
+			if (graph_.length(e) > max_tip_length_)
+				return;
+			this->ProcessNext(e);
+		}
 	}
 
 private:
@@ -292,40 +286,6 @@ private:
 //private:
 //	DECL_LOGGER("DefaultTipClipper")
 //};
-
-template<class Graph>
-class DefaultTipClipperFactory: public SequentialAlgorihtmFactory<Graph,
-		typename Graph::EdgeId> {
-
-public:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef SequentialAlgorihtmFactory<Graph, EdgeId> Base;
-	typedef typename Base::AlgorithmPtr AlgorithmPtr;
-
-	DefaultTipClipperFactory(size_t max_tip_length, size_t max_coverage,
-			double max_relative_coverage,
-			boost::function<void(EdgeId)> removal_handler = 0,
-			boost::function<double(EdgeId)> qual_f = 0) :
-			max_tip_length_(max_tip_length), max_coverage_(max_coverage), max_relative_coverage_(
-					max_relative_coverage), removal_handler_(removal_handler), qual_f_(
-					qual_f) {
-	}
-
-	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
-		AlgorithmPtr ptr(
-				new DefaultTipClipper<Graph>(graph, max_tip_length_,
-						max_coverage_, max_relative_coverage_, removal_handler_,
-						qual_f_));
-		return ptr;
-	}
-
-private:
-	size_t max_tip_length_;
-	size_t max_coverage_;
-	double max_relative_coverage_;
-	boost::function<void(EdgeId)> removal_handler_;
-	boost::function<double(EdgeId)> qual_f_;
-};
 
 //template<class Graph>
 //class AdvancedTipClipper: public TipClipper<Graph> {
@@ -547,48 +507,6 @@ private:
 //private:
 //	DECL_LOGGER("AdvancedTipClipper")
 //};
-//
-//template<class Graph>
-//class AdvancedTipClipperFactory: public SequentialAlgorihtmFactory<Graph,
-//		typename Graph::EdgeId> {
-//
-//public:
-//	typedef typename Graph::EdgeId EdgeId;
-//	typedef SequentialAlgorihtmFactory<Graph, EdgeId> Base;
-//	typedef typename Base::AlgorithmPtr AlgorithmPtr;
-//
-//	AdvancedTipClipperFactory(size_t max_tip_length, size_t max_coverage,
-//			double max_relative_coverage, size_t max_iterations,
-//			size_t max_levenshtein, size_t max_ec_length,
-//			boost::function<void(EdgeId)> removal_handler = 0,
-//			bool final_stage = false) :
-//			max_tip_length_(max_tip_length), max_coverage_(max_coverage), max_relative_coverage_(
-//					max_relative_coverage), max_iterations_(max_iterations), max_levenshtein_(
-//					max_levenshtein), max_ec_length_(max_ec_length), removal_handler_(
-//					removal_handler), final_stage_(final_stage) {
-//	}
-//
-//	virtual AlgorithmPtr CreateAlgorithm(Graph& graph) {
-//		AlgorithmPtr ptr(
-//				new AdvancedTipClipper<Graph>(graph, max_tip_length_,
-//						max_coverage_, max_relative_coverage_, max_iterations_,
-//						max_levenshtein_, max_ec_length_, removal_handler_,
-//						final_stage_));
-//
-//		return ptr;
-//	}
-//
-//private:
-//	size_t max_tip_length_;
-//	size_t max_coverage_;
-//	double max_relative_coverage_;
-//	size_t max_iterations_;
-//	size_t max_levenshtein_;
-//	size_t max_ec_length_;
-//	boost::function<void(EdgeId)> removal_handler_;
-//	bool final_stage_;
-//
-//};
 
 template<class Graph>
 class TopologyTipClipper: public TipClipper<Graph> {
@@ -610,23 +528,6 @@ private:
 	DECL_LOGGER("TopologyTipClipper")
 };
 
-template<class Graph>
-void RunTopologyTipClipper(Graph &graph, size_t max_tip_length,
-		size_t uniqueness_length, size_t plausibility_length,
-		boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-	ConcurrentConjugateGraphComponent<Graph> all_graph_component(graph,
-			restricted::PeriodicIdDistributor(
-					restricted::GlobalIdDistributor::GetInstance()->GetId(), 1),
-			graph.begin(), graph.end());
-	omnigraph::TopologyTipClipper<ConcurrentConjugateGraphComponent<Graph>> tc(
-			all_graph_component, max_tip_length, uniqueness_length,
-			plausibility_length, removal_handler);
-	SequentialEdgeAlgorithm<ConcurrentConjugateGraphComponent<Graph>,
-			omnigraph::TopologyTipClipper<
-					ConcurrentConjugateGraphComponent<Graph>>>(
-			all_graph_component, tc).Run();
-	all_graph_component.Synchronize();
-}
 
 } // namespace omnigraph
 
