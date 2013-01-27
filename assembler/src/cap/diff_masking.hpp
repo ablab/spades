@@ -62,7 +62,7 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 	br_config.max_relative_delta = 0.1;
 
 	INFO("Removing bulges");
-	RemoveBulges(gp.g, br_config);
+	RemoveBulges(g, br_config);
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
     

@@ -18,7 +18,7 @@ BOOST_FIXTURE_TEST_SUITE(basic_debruijn_graph_tests, TmpFolderFixture)
 BOOST_AUTO_TEST_CASE( EmptyGraphTest ) {
 	Graph g(11);
 	IdTrackHandler<Graph> int_ids(g);
-	BOOST_CHECK_EQUAL(11, g.k());
+	BOOST_CHECK_EQUAL(11u, g.k());
 	BOOST_CHECK_EQUAL(0u, g.size());
 }
 

@@ -75,9 +75,11 @@ private:
 	string input_;
 	queue<string> tokenized_input_;
 
+	size_t read_length_;
+	double max_coverage_;
+
 	size_t iteration_count_;
 	size_t iteration_;
-	double max_coverage_;
 
 	size_t max_length_bound_;
 
@@ -97,7 +99,7 @@ private:
 
 			DEBUG("Creating length bound " << length_coeff);
 			size_t length_bound = LengthThresholdFinder::MaxTipLength(
-					*cfg::get().ds.RL, g_.k(), length_coeff, iteration_count_,
+					read_length_, g_.k(), length_coeff, iteration_count_,
 					iteration_);
 
 			max_length_bound_ =
@@ -139,11 +141,12 @@ private:
 
 public:
 
-	ConditionParser(const Graph& g, string input, double max_coverage,
-			size_t iteration_count = 1, size_t iteration = 0) :
-			g_(g), input_(input), iteration_count_(iteration_count), iteration_(
-					iteration), max_coverage_(max_coverage), max_length_bound_(
-					0) {
+	ConditionParser(const Graph& g, string input, size_t read_length,
+			double max_coverage, size_t iteration_count = 1, size_t iteration =
+					0) :
+			g_(g), input_(input), read_length_(read_length), max_coverage_(
+					max_coverage), iteration_count_(iteration_count), iteration_(
+					iteration), max_length_bound_(0) {
 		DEBUG("Creating parser for string " << input);
 		using namespace boost;
 		vector<string> tmp_tokenized_input;
@@ -237,13 +240,14 @@ void ClipTips(Graph& graph,
 template<class Graph>
 void ClipTips(Graph& g,
 		const debruijn_config::simplification::tip_clipper& tc_config,
-		double detected_coverage_threshold,
+		size_t read_length,
+		double detected_coverage_threshold = 0.,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t iteration_count = 1, size_t iteration = 0) {
 
 	string condition_str = tc_config.condition;
 
-	ConditionParser<Graph> parser(g, condition_str, detected_coverage_threshold,
+	ConditionParser<Graph> parser(g, condition_str, read_length, detected_coverage_threshold,
 			iteration_count, iteration);
 
 	auto condition = parser();
@@ -255,7 +259,8 @@ void ClipTips(Graph& g,
 template<class gp_t>
 void ClipTipsWithProjection(gp_t& gp,
 		const debruijn_config::simplification::tip_clipper& tc_config,
-		double detected_coverage_threshold,
+		size_t read_length,
+		double detected_coverage_threshold = 0.,
 		boost::function<void(typename Graph::EdgeId)> removal_handler_f = 0,
 		size_t iteration_count = 1, size_t iteration = 0) {
 	boost::function<void(typename Graph::EdgeId)> tc_removal_handler =
@@ -272,8 +277,8 @@ void ClipTipsWithProjection(gp_t& gp,
 				boost::ref(removal_handler_f), projecting_callback);
 	}
 
-	ClipTips(gp.g, tc_config, detected_coverage_threshold,
-			tc_removal_handler, iteration_count, iteration);
+	ClipTips(gp.g, tc_config, read_length, detected_coverage_threshold, tc_removal_handler,
+			iteration_count, iteration);
 }
 
 template<class Graph>
@@ -285,15 +290,14 @@ typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF GetBulgeCondition(
 			_2);
 }
 
-void RemoveBulges(conj_graph_pack& gp,
+template<class Graph>
+void RemoveBulges(Graph& g,
 		const debruijn_config::simplification::bulge_remover& br_config,
 		boost::function<void(EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 
 	INFO("SUBSTAGE == Removing bulges");
-	Graph& graph = gp.g;
-
-	size_t max_length = LengthThresholdFinder::MaxBulgeLength(graph.k(),
+	size_t max_length = LengthThresholdFinder::MaxBulgeLength(g.k(),
 			br_config.max_bulge_length_coefficient,
 			br_config.max_additive_length_coefficient);
 
@@ -301,9 +305,9 @@ void RemoveBulges(conj_graph_pack& gp,
 		max_length = additional_length_bound;
 	}
 
-	BulgeRemover<Graph> br(gp.g, max_length, br_config.max_coverage,
+	BulgeRemover<Graph> br(g, max_length, br_config.max_coverage,
 			br_config.max_relative_coverage, br_config.max_delta,
-			br_config.max_relative_delta, GetBulgeCondition<Graph>(gp.g), 0,
+			br_config.max_relative_delta, GetBulgeCondition<Graph>(g), 0,
 			removal_handler);
 
 	br.RemoveBulges();
@@ -564,10 +568,11 @@ void PreSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 
 	INFO("Early tip clipping:");
 	//todo enable max_coverage, currently used only for mc and pre_simplif is for sc only
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, /*max_coverage*/0., removal_handler_f);
+	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL, /*max_coverage*/0.,
+			removal_handler_f);
 
 	INFO("Early bulge removal:");
-	RemoveBulges(gp, cfg::get().simp.br, removal_handler_f, gp.g.k() + 1);
+	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f, gp.g.k() + 1);
 
 	//INFO("Early ErroneousConnectionsRemoval");
 	//RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
@@ -581,13 +586,13 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
 	DEBUG(iteration << " TipClipping");
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, max_coverage,
+	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL, max_coverage,
 			removal_handler_f, iteration_count, iteration);
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
 	DEBUG(iteration << " BulgeRemoval");
-	RemoveBulges(gp, cfg::get().simp.br, removal_handler_f);
+	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
 	DEBUG(iteration << " BulgeRemoval stats");
 	printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
@@ -613,11 +618,12 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	INFO("Final tip clipping:");
 
 	//todo enable max_coverage usage
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, /*max_coverage*/0., removal_handler_f);
+	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL, /*max_coverage*/0.,
+			removal_handler_f);
 	printer(ipp_final_tip_clipping);
 
 	INFO("Final bulge removal:");
-	RemoveBulges(gp, cfg::get().simp.br, removal_handler_f);
+	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
 	printer(ipp_final_bulge_removal);
 
 }

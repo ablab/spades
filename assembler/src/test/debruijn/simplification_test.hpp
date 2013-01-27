@@ -75,9 +75,7 @@ debruijn_config::simplification::max_flow_ec_remover standard_mfec_config() {
 
 static debruijn_config::simplification::tip_clipper standard_tc_config_generation() {
 	debruijn_config::simplification::tip_clipper tc_config;
-	tc_config.max_coverage = 1000.;
-	tc_config.max_relative_coverage = 1.2;
-	tc_config.max_tip_length_coefficient = 2.5;
+	tc_config.condition = "{ lb 2.5, cb 1000, rctc 1.2 }";
 	return tc_config;
 }
 
@@ -97,11 +95,7 @@ void PrintGraph(const Graph & g) {
 }
 
 void DefaultClipTips(Graph& graph) {
-	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
-			standard_read_length(), graph.k(), standard_tc_config().max_tip_length_coefficient);
-
-	auto factory = 	GetDefaultTipClipperFactory<Graph>(standard_tc_config(), max_tip_length, 0);
-	ClipTips(graph, factory);
+	ClipTips(graph, standard_tc_config(), 100);
 }
 /*
 void DefaultRemoveBulges(Graph& graph) {
@@ -117,7 +111,7 @@ BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
 
 	DefaultClipTips(g);
 
-	BOOST_CHECK_EQUAL(g.size(), 4);
+	BOOST_CHECK_EQUAL(g.size(), 4u);
 }
 
 BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
@@ -125,10 +119,9 @@ BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
 
-	debruijn::BulgeRemoverFactory<Graph>* factory = GetBulgeRemoverFactory(g, standard_br_config());
-	RunConcurrentAlgorithm(g, FactoryInterfacePtr(factory), CoverageComparator<Graph>(g));
+	RemoveBulges(g, standard_br_config());
 
-	BOOST_CHECK_EQUAL(g.size(), 4);
+	BOOST_CHECK_EQUAL(g.size(), 4u);
 }
 
 BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
@@ -138,10 +131,9 @@ BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
 
 	DefaultClipTips(g);
 
-	debruijn::BulgeRemoverFactory<Graph>* factory = GetBulgeRemoverFactory(g, standard_br_config());
-	RunConcurrentAlgorithm(g, FactoryInterfacePtr(factory), CoverageComparator<Graph>(g));
+	RemoveBulges(g, standard_br_config());
 
-	BOOST_CHECK_EQUAL(g.size(), 16);
+	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
 
 BOOST_AUTO_TEST_CASE( IterUniquePath ) {
