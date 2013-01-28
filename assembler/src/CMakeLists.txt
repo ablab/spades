@@ -56,6 +56,7 @@ configure_file("${SPADES_MAIN_INCLUDE_DIR}/config.hpp.in"
 
 # Build external dependencies (if any)
 add_subdirectory("${EXT_DIR}/src" "${Project_BINARY_DIR}/ext")
+add_subdirectory("${EXT_DIR}/tools" "${Project_BINARY_DIR}/ext_tools")
 
 # sub projects
 add_subdirectory(io)

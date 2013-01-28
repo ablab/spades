@@ -16,9 +16,6 @@ INCLUDES=
 LIBS=		-lm -lz -lpthread
 SUBDIRS=	.
 
-#OBJ_DIR=    ../../../bin
-#LOBJS=   $(addprefix $(OUT_DIR)/,$(OBJS))
-
 .SUFFIXES:.c .o .cc
 
 .c.o:
