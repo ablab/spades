@@ -1,9 +1,0 @@
-Document: velvet
-Title: Velvet Manual
-Author: Daniel Zerbino
-Abstract: This manual describes how to install,
- use and tweak Velvet, a short sequence read assembler.
-Section: Science/Biology
-
-Format: PDF
-Files: /usr/share/doc/velvet/Manual.pdf

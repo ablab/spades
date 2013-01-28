@@ -1,9 +1,0 @@
-#!/usr/bin/env perl
-use POSIX;
-
-@numbers = <>;
-chomp @numbers;
-
-@ns = sort @numbers;
-$middle = POSIX::floor((scalar @ns) / 2);
-print "@ns[$middle]\n";

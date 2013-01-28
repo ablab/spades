@@ -1,5 +1,0 @@
-All of the modifications in this package was written by Hamidreza Chitsaz (chitsaz@cs.ucsd.edu).
-
-Many thanks to: 
-- Glenn Tesler for discussions.
-

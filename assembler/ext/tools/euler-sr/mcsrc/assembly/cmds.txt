@@ -1,8 +1,0 @@
-;; This buffer is for notes you don't want to save, and for Lisp evaluation.
-;; If you want to create a file, visit that file with C-x C-f,
-;; then enter the text in that file's own buffer.
-
-cd /data/mchaisso/ecoli/$rl; ~/projects/mcsrc/assembly/x86_64/buildMateTable ecoli.$rl ~/projects/mcsrc/assembly/readtitle.rules ecoli.$rl.matetable; ~/projects/mcsrc/assembly/x86_64/mateTransformGraph Simple/ecoli ecoli.$rl.matetable ~/projects/mcsrc/assembly/readtitle.rules MateTransformed/ecoli -notStrict -findPaths
-
-
-cd /state/partition1/mchaisso/yeast/$rl; ~/projects/mcsrc/assembly/assemble.pl yeast.$rl -vertexSize 24; ~/projects/mcsrc/assembly/x86_64/simplifyGraph yeast.$rl Simple/yeast.$rl -removeSimpleBulges 75 -removeBulges 75; ~/projects/mcsrc/assembly/x86_64/buildMateTable yeast.$rl ~/projects/mcsrc/assembly/readtitle.rules yeast.$rl.matetable; ~/projects/mcsrc/assembly/x86_64/mateTransformGraph Simple/yeast yeast.$rl.matetable ~/projects/mcsrc/assembly/readtitle.rules MateTransformed/yeast -notStrict -findPaths

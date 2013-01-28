@@ -1,7 +1,0 @@
-We are still in the process of tuning our Illumina assembler.  We have
-some decent results on the data that we have: a hunan BAC and fairly
-high coverage of e-coli (40-50X).  We appreciate your use of this
-software and note that because it is in pre-release your feedback is
-appreciated.
-
-

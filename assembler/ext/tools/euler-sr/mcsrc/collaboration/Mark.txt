@@ -1,7 +1,0 @@
--Modify IntegralPrintReadIntervals so that alternative edge lists are used 
-to map edges to the graph.
-
--Modify IntervalGraph.cpp to add a switch to turn off operations that check 
-balance.
-
--Modify SmallVertexDeBruijn.cpp to not add reverse complements.

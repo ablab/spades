@@ -1,4 +1,0 @@
-"([^/]*)/([12])" CloneLength=200 CloneVar=50       # Illumina mate-pair
-"([0-9]+_[0-9]+_[0-9]+_)([FR].)" CloneLength=1000 CloneVar=60 # ABI SOLID
-"(sim_1_.*)\.([ab])" CloneLength=1000 CloneVar=500 # Simulated data for distribution.
-"([0-9]+_[0-9]+_[0-9]+)\.([ab])" CloneLength=2500 CloneVar=500 #454 mate pair with coordinates

@@ -1,1 +1,0 @@
-cat EcoGene.txt | cut -f6-8 | gawk 'BEGIN{s=0; i=1;}{if(s==1) if($1 == "Clockwise") printf("gi|48994873|gb|U00096.2|\t%d\t%s\t%s\n", i++, $2, $3); else printf("gi|48994873|gb|U00096.2|\t%d\t%s\t%s\n", i++, $3, $2); else s++}END{}' > genes.txt
