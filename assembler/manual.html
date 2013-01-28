@@ -10,25 +10,123 @@
 <body>
 <h1>SPAdes 2.4.0 Manual</h1>
 
-<p>SPAdes stands for St. Petersburg genome assembler. It is intended for both standard isolates and single-cell MDA
-    bacteria  assemblies. This manual will help you to install and run SPAdes. You can find the latest SPAdes release
-at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. The latest version of this manual can be found <a href="http://spades.bioinf.spbau.ru/release2.4.0/manual.html">here</a>.
-    SPAdes version 2.4.0 was released under  GPLv2 on 30 November 2012.
-</p>
+1. <a href="#sec1">About SPAdes</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">Supported data types</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.2. <a href="#sec1.2">SPAdes pipeline</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.3. <a href="#sec1.3">SPAdes performance</a><br>
+2. <a href="#sec2">Installation</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.1. <a href="#sec2.1">Downloading SPAdes</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">Getiing SPAdes binaries</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.3">Verifying your installation</a><br>
+3. <a href="#sec3">Running SPAdes</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.1. <a href="#sec3.1">SPAdes input</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.2. <a href="#sec3.2">SPAdes command line options</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.3. <a href="#sec3.3">SPAdes output</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.4. <a href="#sec3.4">Assembly evaluation</a><br>
+4. <a href="#sec4">Citation</a><br>
+5. <a href="#sec5">Feedback and bug reports</a><br>
+<br>
+
+<a name="sec1"></a>
+<h2>1. About SPAdes</h2>
+<p>
+    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 2.4.0 was released under GPLv2 on ........ 2013 and can be downloaded from <a href="http://bioinf.spbau.ru/spades" target="_blank">http://bioinf.spbau.ru/spades</a>.
 
 
-<h2>1. Installation</h2>
+<a name="sec1.1"></a>
+<h3>1.1 Supported data types</h3>
+<p>
+    Current version of SPAdes works only with Illumina reads. Support for other technologies (e.g.  Roche 454, IonTorrent, PacBio) is currently in progress and probably will be included in one of the next releases. 
+<p>
+    SPAdes supports paired-end reads as well as unpaired reads. So far SPAdes takes as input only one paired-end library. We are currently working on mate-pairs and multiple libraries support &ndash; it is likely to come in the next major release.
+<p>
+    Also note, that SPAdes was initially designed for single-cell and standard bacterial data sets and is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it on your own risk.
+
+
+<a name="sec1.2"></a>
+<h3>1.2 SPAdes pipeline</h3>
+<p>
+SPAdes comes in three separate modules:
+    <ul>
+        <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; an error correction tool, which works well on both single-cell and standard data sets </li>
+        <li> SPAdes &ndash; iterative short-read genome assembly module; by default consecutively iterates through K value equal to 21, 33 and 55 </li>
+        <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>] and is turned off by default, see <a href="#correctoropt">SPAdes options section</a> </li>
+    </ul>
+<p>
+    We recommend to run SPAdes with BayesHammer to obtain high-quality assemblies. However, if you use your own error correction tool it is possible to turn BayesHammer off; and other way around it is possible to use only error correction stage, if you wish to use another assembler. See <a href="#pipelineopt">SPAdes options section</a>.
+
+
+<a name="sec1.3"></a>
+<h3>1.3 SPAdes performance</h3>
+<p>
+    In this section we give approximate data about SPAdes performance on two data sets:
+    <ul>
+        <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_mc/" target="_blank">Standard isolate <i>E.coli</i></a>; 6.2Gb, 28M reads, 2x100bp, insert size ~ 215bp </li>
+        <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/" target="_blank">MDA single-cell <i>E.coli</i></a>; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp </li>
+    </ul>
+<p>
+    We ran SPAdes with default parameters using 16 threads on server with Intel Xeon 2.27GHz processors. BayesHammer runs approximately 1 hour and takes up to 21Gb of RAM to perform error correction on each data set. Assembly takes 40 minutes and 3Gb of RAM for E.coli isolate data set; as for E.coli single-cell data set it takes twice more time  (80 minutes) and 5Gb of RAM. MismatchCorrector corrector runs for about 1,5 hour and requires up to 8Gb of RAM. See table below for more precise values.
 
 <p>
-    SPAdes requires a 64-bit Linux system.
-    We have two test datasets: <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/">single-cell  <i>E. coli</i> dataset</a> and
-    <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_mc/"><i>E. coli</i> isolates dataset</a>. SPAdes requires 24 Gb of RAM for processing these datasets. Also SPAdes requires  Python 2.4 or higher installed.
-</p>
+    <table border="1" cellpadding="4" cellspacing="0">
+        <tr>
+            <td align="right"> Data set &nbsp; </td>
+            <td colspan="2" align="center"> <i>E.coli</i> isolate </td> 
+            <td colspan="2" align="center"> <i>E.coli</i> single-cell </td>
+        </tr>
 
-<h3>1.1 SPAdes tar.gz file</h3>
+        <tr>
+            <td> Stage </td>
+            <td align="center"> &nbsp; Time (min) &nbsp; </td> 
+            <td align="center"> &nbsp; Peak RAM &nbsp;<br>&nbsp; usage (Gb) &nbsp; </td>
+            <td align="center"> &nbsp; Time (min) &nbsp; </td> 
+            <td align="center"> &nbsp; Peak RAM &nbsp;<br>&nbsp; usage (Gb) &nbsp; </td>
+        </tr>
 
-<p>To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/spades-2.4.0.tar.gz">SPAdes tar.gz</a> and extract it:
-</p>
+        <tr>
+            <td> BayesHammer </td>
+            <td align="center"> 60 </td> 
+            <td align="center"> 21 </td>
+            <td align="center"> 65 </td> 
+            <td align="center"> 21 </td>
+        </tr>
+
+        <tr>
+            <td> SPAdes </td>
+            <td align="center"> 40 </td> 
+            <td align="center"> 3 </td>
+            <td align="center"> 80 </td> 
+            <td align="center"> 5 </td>
+        </tr>
+
+        <tr>
+            <td> MismatchCorrector </td>
+            <td align="center"> 80 </td> 
+            <td align="center"> 7 </td>
+            <td align="center"> 90 </td> 
+            <td align="center"> 8 </td>
+        </tr>
+    </table>
+
+<p>
+    Notes:
+    <ul>
+        <li> Running SPAdes without preliminary error correction (e.g. without BayesHammer) will likely require more time and memory </li>
+        <li> BayesHammer and SPAdes require up to 10Gb of additional disc space on these data sets for temporary files </li>
+        <li> MismatchCorrector takes up to 15Gb of disk space for storing alignment data </li>
+        <li> Each module removes its temporary files as soon as it finishes </li>
+    </ul>
+
+
+<a name="sec2"></a>
+<h2>2. Installation</h2>
+<p>
+    SPAdes requires a 64-bit Linux system and Python 2.4 or higher to be pre-installed on it. 
+
+<a name="sec2.1"></a>
+<h3>2.1 Downloading SPAdes</h3>
+<p>
+    To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/spades-2.4.0.tar.gz">SPAdes tar.gz</a> and extract it run:
 
 <pre  class="code">
 <code>
@@ -37,13 +135,13 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
     cd spades-2.4.0
 </code>
 </pre>
-
-<h3>1.2 Getting SPAdes binaries</h3>
-
-    <p>There are two ways to obtain SPAdes binaries: download static builds from our server or compile SPAdes on your server.</p>
-
-    <p>We recommend to download binaries with the following script:</p>
-
+ 
+<a name="sec2.2"></a>
+<h3>2.2 Getting SPAdes binaries</h3>
+<p>
+    There are two ways to obtain SPAdes binaries: download static builds from our server or compile SPAdes on your server.
+<p>
+    If you wish to download binaries, run the following script:
 <pre class="code">
 <code>
     ./spades_download_binary.py
@@ -51,9 +149,7 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 </pre>
 
 <p>
-    Also you can compile SPAdes yourself, but SPAdes depends on the following libraries for compiling its code:
-</p>
-
+    Also you can compile SPAdes yourself. In this case you will need following libraries to be pre-installed:
     <ul>
         <li>g++ (version 4.4 or higher)</li>
         <li>cmake (version 2.8 or higher)</li>
@@ -61,8 +157,7 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
     </ul>
 
 <p>
-    If you meet these requirements you can build SPAdes with the following script:
-</p>
+    If you meet these requirements you can build SPAdes with the following script: 
 
 <pre class="code">
 <code>
@@ -70,15 +165,18 @@ at <a href="http://bioinf.spbau.ru/spades">http://bioinf.spbau.ru/spades</a>. Th
 </code>
 </pre>
 
-<p>In both cases you should get a <code>bin</code> directory with files <code>hammer</code> (error correcting module) ans <code>spades</code> (assembly module).
-</p>
-
-<a name="sec1.3"></a>
-<h3>1.3 Testing your installation</h3>
-
 <p>
-For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of <i>E. coli</i>). If you run <code>spades.py</code> with the parameter <code>--test</code>
-</p>
+    In both cases you should get a bin directory that contains the following files:
+    <ul>
+        <li><code>hammer</code>  (error correcting module)</li>
+        <li><code>spades</code>  (assembly module)</li>
+    </ul>
+
+
+<a name="sec2.3"></a>
+<h3>2.3 Verifying your installation</h3>
+<p>
+    For testing purposes, SPAdes comes with a &ldquo;toy data set&rdquo; (reads, that align to first 1000 bp of E. coli). To try SPAdes on this data set run:
 
 <pre class="code">
 <code>
@@ -87,14 +185,13 @@ For testing purposes, SPAdes comes with a toy dataset (first 1000 bp of <i>E. co
 </pre>
 
 <p>
-it will process this dataset and if the installation is successful you will see something like this at the end of the log:
-</p>
+    In case the installation is successful, you will find the following information at the end of the log:
 
 <pre class="code">
 <code>
  * Corrected reads are in spades_test/corrected/
- * Assembled contigs are spades_test/contigs.fasta
- * Assembled scaffolds are spades_test/scaffolds.fasta
+ * Assembled contigs are in spades_test/contigs.fasta
+ * Assembled scaffolds are in spades_test/scaffolds.fasta
 
 Thank you for using SPAdes!
 
@@ -102,53 +199,33 @@ Thank you for using SPAdes!
 </code>
 </pre>
 
-<h2>2 Running SPAdes</h2>
 
-<h3>2.1 Input data</h3>
+
+<a name="sec3"></a>
+<h2>3. Running SPAdes</h2>
+
+<a name="sec3.1"></a>
+<h3>3.1 SPAdes input</h3>
 <p>
-    SPAdes accepts single reads as well as forward-reverse paired end reads in FASTA and FASTQ format;
-    however, in order to run error correction, reads should be in FASTQ format. All files may be compressed
-    with gzip. At present, SPAdes can accept only one paired-end library as an input.
-</p>
-
+    SPAdes takes as input forward-reverse paired-end reads as well as single (unpaired) reads in FASTA or FASTQ format. However, in order to run error correction, reads should be in FASTQ format. Currently SPAdes accepts only one paired-end library, which can be stored in several files or several pairs of files. Number of unpaired libraries is unlimited. 
 <p>
-    SPAdes supports paired end reads organized in two separate files or combined in one:
+    Paired-end reads can be organized in two different ways:
 
-<ul>
-
-    <li>If the forward and reverse reads for each lane are split into separate FASTQ files (e.g.
-        <code>s_1_1_sequence.txt</code> and <code>s_1_2_sequence.txt</code> for the forward and reverse reads, respectively, from lane 1),
-        the two file  should have corresponding reads in the exact same order.
-    </li>
-    <li>
-        If you are using a single file containing reads in both orientations, interlace the corresponding reads such that each read from
-        <code>s_1_1_sequence.txt</code> is followed by the corresponding read from <code>s_1_2_sequence.txt</code>.
-    </li>
-
-
-</ul>
-
-<h3>2.2 SPAdes pipeline</h3>
-
-<p>SPAdes stores all of its output files in the directory <code>&lt;output_dir></code>.
-</p>
-
-<p>Before starting assembly, SPAdes runs <a href="http://bioinf.spbau.ru/en/spades/bayeshammer">BayesHammer</a> to correct errors in reads.
-   After that, the corrected reads are stored in the directory <code>&lt;output_dir>/corrected</code> in <code>*.fastq.gz</code> files.
-</p>
+    <ul>
+        <li> In file pairs. In this case forward and reverse reads are placed in different files and go in the same order in respective files </li>
+        <li> In merged files. In this case reads go interlacing between each other, so that each reverse read goes after corresponding forward read </li>
+    </ul>
 
 <p>
-    After assembly completion, the resulting contigs are stored in the file <code>&lt;output_dir>/contigs.fasta</code> and the resulting
-    scaffolds are stored in the file <code>&lt;output_dir>/scaffolds.fasta</code>.
-    If the <code>--generate-sam-file</code> option was used, a symlink <code>contigs.sam</code> to the SAM-file will also be created in the same directory.
-</p>
-
-
-<h3>2.3 SPAdes command line options </h3>
+    For example, Illumina produces paired-end reads in two files: <code>s_1_1_sequence.txt</code> and <code>s_1_2_sequence.txt</code>. If you choose to store reads in file pairs make sure that for every read from <code>s_1_1_sequence.txt</code> corresponding paired read from <code>s_1_2_sequence.txt</code> is placed in the respective paired file on the same line. If you choose to use merged files every read from <code>s_1_1_sequence.txt</code>  should be followed by corresponding paired read from <code>s_1_2_sequence.txt</code>.
 
 <p>
-    To run SPAdes from the command line, type
-</p>
+    Note, that SPAdes also accepts gzip-compressed files.
+
+<a name="sec3.2"></a>
+<h3>3.2 SPAdes command line options </h3>
+<p>
+    To run SPAdes from the command line, type 
 
 <pre class="code">
 <code>
@@ -156,9 +233,124 @@ Thank you for using SPAdes!
 </code>
 </pre>
 
+<a name="basicopt"></a>
+<h4>Basic options</h4>
 <p>
-    To run SPAdes on the toy dataset (see <a href="#sec1.3">section 1.3</a>), type
+    <code>-o &lt;output_dir> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Specify the output directory. Required option.
 </p>
+
+<p>
+    <code>--sc </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data.
+</p>
+
+<p>
+    <code>--12 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced forward and reverse paired-end reads.
+</p>
+
+<p>
+    <code>-1 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with forward reads.
+</p>
+
+<p>
+    <code>-2 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with reverse reads.
+</p>
+
+<p>
+    <code>-s &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads.
+</p>
+
+<p>
+    <code>--test</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the &ldquo;toy data set&rdquo;; see <a href="#sec2.3">section 2.3</a>.
+</p>
+
+<p>
+    <code>-h</code> (or <code>--help</code>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Prints help.
+</p>
+
+<a name="pipelineopt">
+<h4>Pipeline options</h4>
+
+<p>
+    <code>--only-error-correction</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Perfroms error correction only.
+</p>
+
+<p>
+    <code>--only-assembler</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs assembly module only.
+</p>
+
+<p>
+    <code>--disable-gzip-output</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Forces error correction not to compress the corrected reads. If this options is not set, corrected reads will be in <code>*.fastq.gz</code> format.
+</p>
+
+<p>
+    <code>--generate-sam-file</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Generates SAM file that contains information about alignments of the original reads to the resulting contigs. If this option is set symlink <code>contigs.sam</code> to the SAM-file will be created in the <code> &lt;output_dir></code>.
+</p>
+
+<a name="correctoropt">
+<p>
+    <code>--mismatch-correction</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs MismatchCorrector &ndash; a post processing tool for correction of mismatches and short indels which uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool (comes with SPAdes).
+</p>
+
+<p>
+    <code>--rectangles</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Uses <a href="http://bioinf.spbau.ru/rectangles" target="_blank">rectangle graph algorithm</a> for repeat resolution stage instead of usual SPAdes repeat resolution module.
+</p>
+
+<a name="advancedopt">
+<h4>Advanced options</h4>
+
+<p>
+    <code>-t &lt;int></code> (or <code>--threads &lt;int></code>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 16.
+</p>
+
+<p>
+    <code>-m &lt;int></code> (or <code>--memory &lt;int></code>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Set memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb. Actual amount of consumed RAM will be below this limit.
+</p>
+
+<p>
+    <code>--tmp-dir &lt;dir_name></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Set directory for temporary files from error correction. The default value is <code>&lt;output_dir>/corrected/tmp</code>.
+</p>
+
+<p>
+    <code>-k &lt;int,int,...></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order). The default value is 21,33,55.
+</p>
+
+<p>
+    <code>-i &lt;int></code> (or <code>--iterations &lt;int></code>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for error correction. The default value is 1.
+</p>
+
+<p>
+    <code>--phred-offse &lt;33 or 64></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.
+</p>
+
+<p>
+    <code>--debug</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes in debug mode, keeping intermediate results.
+</p>
+
+<a name="examples">
+<h4>Examples</h4>
+<p>
+    To test &ldquo;toy data set&rdquo; you can also run:
 
 <pre class="code">
 <code>
@@ -166,112 +358,113 @@ Thank you for using SPAdes!
 </code>
 </pre>
 
-    <p>Here is the description of options:</p>
-
 <p>
-    <code>-o &lt;output_dir> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Specify the output directory. Required option.
-</p>
+    If you have your library separated into several pairs of files, for example:
 
-<p><code>--sc</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data.</p>
-
-<p><code>--12 &lt;filename></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with merged left and right paired end reads.</p>
-
-<p><code>-1  &lt;filename></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with left paired end reads.</p>
-
-<p><code>-2  &lt;filename></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with right paired end reads.</p>
-
-<p><code>-s  &lt;filename></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads.</p>
-
-<p><code>--generate-sam-file</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Generate a SAM file that contains information about the alignment of the original reads to the resulting
-    contigs.</p>
-
-<p><code>-t &lt;int></code> (or <code>--threads &lt;int></code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 16.</p>
-
-<p><code>-m &lt;int></code> (or <code>--memory &lt;int></code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Sets the memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb.
-    Actually consumed physical memory will be smaller than this limit.</p>
-
-<p><code>--tmp-dir &lt;dirname></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Sets the directory to store temporary files from error correction.  The default value is <code>&lt;output_dir>/corrected/tmp</code>.</p>
-
-
-<p><code>-k &lt;int,int,...> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of k-mer sizes to be used (all values must be odd,
-    less than 128 and listed in ascending order). The default value is 21,33,55.</p>
-
-<p><code>-i &lt;int></code> (or <code>--iterations &lt;int></code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for error correction. The default value is 1.</p>
-
-<p><code>--phred-offset  &lt;33 or 64> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.</p>
-
-<p><code>--only-error-correction</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Runs error correction only.</p>
-
-<p><code>--only-assembler</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Runs assembly only.</p>
-
-<p><code>--disable-gzip-output</code> <br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Forces error correction not to compress the corrected reads.</p>
-
-<p><code>--test</code> <br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the toy dataset; see <a href="#sec1.3">section 1.3</a>.</p>
-
-<p><code>--debug</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes in debug mode, keeping intermediate results.</p>
-
-<p><code>-h</code> (or <code>--help</code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Prints help.</p>
-
-
-<h3>2.4 Files and directories</h3>
-
-<p>
-    The directory <code>&lt;output_dir></code> contains the following files:
-</p>
-
-<pre>
-    <code>contigs.fasta</code> - <i>resulting contigs</i>
-    <code>contigs.sam</code> - <i>SAM file, generated only with <code>--generate-sam-file</code> option</i>
-    <code>corrected/</code> - <i>files from error correction run</i>
-        <code>configs/</code> - <i>configuration files for error correction</i>
-        <code>dataset.info</code> - <i>internal configuration files</i>
-        <i>other error correction output file</i>
-    <code>dataset.info</code> - <i>internal configuration files</i>
-    <code>K21/</code> - <i>files from the run with K=21</i>
-    <code>K33/</code> - <i>files from the run with K=33</i>
-    <code>K55/</code> - <i>files from the run with K=55</i>
-    <code>params.txt</code> - <i>information about SPAdes parameters in this run</i>
-    <code>scaffolds.fasta</code> - <i>resulting scaffolds</i>
-    <code>spades.log</code> - <i>SPAdes log</i>
+<pre class="code">
+<code>
+    pe_forward_1.fastq
+    pe_reverse_1.fastq
+    pe_forward_2.fastq
+    pe_reverse_2.fastq
+</code>
 </pre>
 
 <p>
-    SPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir></code>.
-</p>
+    make sure that corresponding files go in the same order:
 
-<h3>2.5 Assembly evaluation</h3>
+<pre class="code">
+<code>
+    ./spades.py -1 pe_forward_1.fastq -2 pe_reverse_1.fastq -1 pe_forward_2.fastq -2 pe_reverse_2.fastq -o spades_output
+</code>
+</pre>
 
 <p>
-    We recommend using <a href="http://bioinf.spbau.ru/quast">QUAST</a> for assembly evaluation.
+    Files with interlacing paired-end reads or files with unpaired reads can be specified in any order with one file per option, for example:
+
+<pre class="code">
+<code>
+    ./spades.py --12 pe_1.fastq --12 pe_2.fastq -s unpaired_1.fastq -s unpaired_2.fastq -o spades_output    
+</code>
+</pre>
+
+
+<p>
+    Options <code>-1</code>, <code>-2</code>, <code>--12</code> and <code>-s</code> can be mixed together if needed.
+
+
+<a name="sec3.3">
+<h3>3.3 SPAdes output</h3>
+<p>
+    SPAdes stores all output files in <code>&lt;output_dir> </code>, which is set by user.
+
+    <ul>
+        <li><code>&lt;output_dir>/corrected/</code> directory contains reads corrected by BayesHammer in <code>*.fastq.gz</code> files; if compression is disabled reads are stored in usual <code>*.fastq</code> format</li>
+        <li><code>&lt;output_dir>/contigs.fasta</code> contains contigs resulting contigs</li>
+        <li><code>&lt;output_dir>/scaffolds.fasta</code> contains resulting scaffolds</li>
+    </ul>
+
+<p>
+    Note: scaffolds are not produced if no paired library is provided.
+
+<p>
+    If the
+    <code>--generate-sam-file</code>
+    option is set, a symlink <code>contigs.sam</code> to the SAM-file will also be created in the output directory.
+
+<p>
+Full list of <code>&lt;output_dir></code> content is presented below: 
 </p>
+<pre>
+    <code>contigs.fasta</code> &ndash; <i>resulting contigs</i>
+    <code>scaffolds.fasta</code> &ndash; <i>resulting scaffolds (will not be produced if input reads are unpaired)</i>
 
-<h2>3 Feedback and bug reports</h2>
+    <code>corrected/</code> &ndash; <i>files from error correction run</i>
+        <code>configs/</code> &ndash; <i>configuration files for error correction</i>
+        <code>dataset.info</code> &ndash; <i>internal configuration files</i>
+        Output files with corrected reads
 
-<p>Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes.</p>
+    <code>contigs.sam</code> &ndash; <i>SAM file, generated only with</i> <code>--generate-sam-file</code> <i>option</i>
 
-<p>In case you have troubles running SPAdes, please provide us with <code>params.txt</code> and <code>spades.log</code> files from the directory
-<code>&lt;output_dir></code>.
+    <code>params.txt</code> &ndash; <i>information about SPAdes parameters in this run</i>
+    <code>spades.log</code> &ndash; <i>SPAdes log</i>
+    <code>dataset.info</code> &ndash; <i>internal configuration files</i>
+    <code>K&lt;##>/</code> &ndash; <i>directory containing files from the run with K=&lt;##> (K21, K33 and K55 are created by default)</i>
+</pre>
 
-    <p>Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru">spades.support@bioinf.spbau.ru</a>.</p>
+<p>
+    SPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir></code>. 
+
+
+<a name="sec3.4">
+<h3>3.4 Assembly evaluation</h3>
+
+<p>
+    We recommend using <a href="http://bioinf.spbau.ru/quast" target="_blank">QUAST</a> for assembly evaluation. 
+<br>
+
+
+
+<a name="sec4">
+<h2>4. Citation</h2>
+<p>
+    If you use SPAdes in your research, we ask that you include in your publications reference to <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" target="_blank">Bankevich, Nurk et al., 2012</a>.
+
+<p>
+    In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.
+<br>
+
+
+<a name="sec5">
+<h2>5. Feedback and bug reports</h2>
+<p>
+    Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes.
+
+<p>
+    In case you have troubles running SPAdes, please provide us with <code>params.txt</code> and <code>spades.log</code> files from the directory <code>&lt;output_dir></code>. 
+
+<p>
+    Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.
 
 <br/><br/><br/><br/><br/>
 
