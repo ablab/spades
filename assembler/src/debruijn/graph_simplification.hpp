@@ -546,18 +546,6 @@ void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
 	DEBUG("Erroneous edges using paired info removed");
 }
 
-//todo use another edge remover
-template<class Graph>
-void RemoveLowCoverageEdgesForResolver(Graph &g) {
-	INFO("SUBSTAGE == Removing low coverage edges");
-	double max_coverage = cfg::get().simp.ec.max_coverage * 0.6;
-	//	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
-	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
-			10000000 * g.k(), max_coverage);
-	erroneous_edge_remover.RemoveEdges();
-	DEBUG("Low coverage edges removed");
-}
-
 void PreSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
 		detail_info_printer &printer, size_t iteration_count,
