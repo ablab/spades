@@ -356,6 +356,28 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
     }
   }
 
+  template<class Writer>
+  void BinWrite(Writer &writer) const {
+    base::index_.serialize(writer);
+    size_t sz = base::data_.size();
+    writer.write((char*)&sz, sizeof(sz));
+    for (size_t i = 0; i < sz; ++i)
+      writer.write((char*)&(base::data_[i].count_), sizeof(base::data_[0].count_));
+    traits::raw_serialize(writer, base::kmers);
+  }
+
+  template<class Reader>
+  void BinRead(Reader &reader, const std::string &FileName) {
+    base::clear();
+    base::index_.deserialize(reader);
+    size_t sz = 0;
+    reader.read((char*)&sz, sizeof(sz));
+    base::data_.resize(sz);
+    for (size_t i = 0; i < sz; ++i)
+      reader.read((char*)&(base::data_[i].count_), sizeof(base::data_[0].count_));
+    base::kmers = traits::raw_deserialize(reader, FileName);
+  }
+
   friend class DeBruijnEdgeIndexBuilder<Seq>;
 
 private:
