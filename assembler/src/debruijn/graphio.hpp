@@ -42,7 +42,7 @@ void SaveKmerMapper(const string& file_name,
   VERIFY(file.is_open());
 
   u_int32_t k_ = mapper.get_k();
-  file.write((char *) &k_, sizeof(u_int32_t));
+  file.write((char *) &k_, sizeof(uint32_t));
   mapper.BinWrite(file);
 
   file.close();
@@ -59,13 +59,48 @@ void LoadKmerMapper(const string& file_name,
   VERIFY(file.is_open());
 
   u_int32_t k_;
-  file.read((char *) &k_, sizeof(u_int32_t));
+  file.read((char *) &k_, sizeof(uint32_t));
 
   VERIFY_MSG(k_ == kmer_mapper.get_k(), "Cannot read kmer mapper, different Ks");
   kmer_mapper.BinRead(file);
 
   file.close();
 }
+
+template<class EdgeIndex>
+void SaveEdgeIndex(const std::string& file_name,
+                   const EdgeIndex& index) {
+  std::ofstream file;
+  file.open((file_name + ".kmidx").c_str(),
+            std::ios_base::binary | std::ios_base::out);
+  DEBUG("Saving kmer index, " << file_name <<" created");
+  VERIFY(file.is_open());
+
+  uint32_t k_ = index.K();
+  file.write((char *) &k_, sizeof(uint32_t));
+  index.BinWrite(file);
+
+  file.close();
+}
+
+template<class EdgeIndex>
+void LoadEdgeIndex(const std::string& file_name,
+                   EdgeIndex& index) {
+  std::ifstream file;
+  file.open((file_name + ".kmidx").c_str(),
+            std::ios_base::binary | std::ios_base::in);
+  DEBUG("Reading kmer index, " << file_name <<" started");
+  VERIFY(file.is_open());
+
+  uint32_t k_;
+  file.read((char *) &k_, sizeof(uint32_t));
+  VERIFY_MSG(k_ == index.K(), "Cannot read edge index, different Ks");
+
+  index.BinRead(file, file_name + ".kmidx");
+
+  file.close();
+}
+
 
 template<class Graph>
 class DataPrinter {
