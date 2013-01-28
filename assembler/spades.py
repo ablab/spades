@@ -262,7 +262,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction bwa= rectangles".split()
+               "config-file= dataset= mismatch-correction rectangles".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -299,7 +299,7 @@ def usage(show_hidden=False):
     print >> sys.stderr, "--generate-sam-file\tforces SPAdes to generate SAM-file"
     print >> sys.stderr, "--mismatch-correction\truns post processing correction"\
                          " of mismatches and short indels"
-    print >> sys.stderr, "--rectangles\t\tuses rectangle graph algtorithm for repeat resolution"
+    print >> sys.stderr, "--rectangles\t\tuses rectangle graph algorithm for repeat resolution"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
@@ -400,7 +400,7 @@ def main():
         rectangles = None
         #corrector
         mismatch_corrector = False
-        bwa = None
+        bwa = os.path.join(execution_home, "bwa") # it is hardcoded now instead of option
 
         for opt, arg in options:
             if opt == '-o':
@@ -463,9 +463,7 @@ def main():
             #corrector
             elif opt == "--mismatch-correction":
                 mismatch_corrector = True
-            elif opt == "--bwa":
-                bwa = arg
-
+            
             elif opt == '-h' or opt == "--help":
                 usage()
                 sys.exit(0)

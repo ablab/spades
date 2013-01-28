@@ -31,4 +31,11 @@ data = urllib2.urlopen('http://spades.bioinf.spbau.ru/release' + spades_version 
 file = os.path.join(spades_bin_dir, 'spades')
 support.save_data_to_file(data, file)
 print("\n======= SPAdes download finished.\n")
+
+print("\n======= BWA download started.\n")
+data = urllib2.urlopen('http://spades.bioinf.spbau.ru/release' + spades_version + '/bwa')
+file = os.path.join(spades_bin_dir, 'bwa')
+support.save_data_to_file(data, file)
+print("\n======= BWA download finished.\n")
+
 print("\n======= Binaries download finished.\n")

@@ -11,22 +11,32 @@ cp -r assembler/src/mph_index spades-$VERSION/src/mph_index
 cp -r assembler/src/rectangles spades-$VERSION/src/rectangles
 cp -r assembler/src/cmake spades-$VERSION/src/cmake
 cp -r assembler/src/spades_pipeline spades-$VERSION/src/spades_pipeline
-cp -r assembler/src/tools/corrector spades-$VERSION/src/tools/corrector
 cp assembler/src/CMakeLists.txt spades-$VERSION/src/CMakeLists.txt
 
 cp -r assembler/configs spades-$VERSION/configs
 cp -r assembler/ext spades-$VERSION/ext
 rm spades-$VERSION/ext/prepare_ext.sh
-rm -r spades-$VERSION/ext/tools
+rm -r spades-$VERSION/ext/tools/*
 rm -r spades-$VERSION/ext/include/cute
 rm -r spades-$VERSION/ext/include/teamcity_boost
+
+# for mismatch corrector
+cp -r assembler/src/tools/corrector spades-$VERSION/src/tools/corrector
+rm -r spades-$VERSION/src/tools/corrector/bowtie2-2.0.2
+cp -r assembler/ext/tools/bwa-0.6.2 spades-$VERSION/ext/tools/bwa-0.6.2
+
+# cleaning .pyc and .pyo
+rm spades-$VERSION/src/spades_pipeline/*.pyc
+rm spades-$VERSION/src/spades_pipeline/*.pyo
+rm spades-$VERSION/src/rectangles/*.pyc
+rm spades-$VERSION/src/tools/corrector/*.pyc
+rm spades-$VERSION/src/tools/corrector/libs/joblib/*.pyc
 
 cp -r assembler/test_dataset spades-$VERSION/test_dataset
 cp assembler/LICENSE spades-$VERSION
 cp assembler/README spades-$VERSION
 cp assembler/VERSION spades-$VERSION
 cp assembler/spades.py spades-$VERSION
-cp assembler/spades_config.info.template spades-$VERSION
 cp assembler/spades_download_binary.py spades-$VERSION
 cp assembler/spades_compile.sh spades-$VERSION
 cp assembler/spades_init.py spades-$VERSION
