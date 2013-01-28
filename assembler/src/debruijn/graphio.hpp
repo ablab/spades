@@ -769,12 +769,14 @@ void PrintBasicGraph(const string& file_name, DataPrinter<Graph>& printer) {
 
 template<class graph_pack>
 void PrintGraphPack(const string& file_name,
-    DataPrinter<typename graph_pack::graph_t>& printer,
-    const graph_pack& gp) {
+                    DataPrinter<typename graph_pack::graph_t>& printer,
+                    const graph_pack& gp) {
   PrintBasicGraph(file_name, printer);
 //  printer.savePaired(file_name + "_et", gp.etalon_paired_index);
   if (gp.edge_pos.IsAttached())
     printer.savePositions(file_name, gp.edge_pos);
+  if (gp.index.IsAttached())
+    SaveEdgeIndex(file_name, gp.index.inner_index());
   if (gp.kmer_mapper.IsAttached())
     SaveKmerMapper(file_name, gp.kmer_mapper);
 }
@@ -893,7 +895,8 @@ void ScanGraphPack(const string& file_name,
     DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp) {
   gp.index.Detach();
   ScanBasicGraph(file_name, scanner);
-  gp.index.Refill();
+  LoadEdgeIndex(file_name, gp.index.inner_index());
+  gp.index.Update();
   gp.index.Attach();
 //  scanner.loadPaired(file_name + "_et", gp.etalon_paired_index);
   scanner.loadPositions(file_name, gp.edge_pos);
