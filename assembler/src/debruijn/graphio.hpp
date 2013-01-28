@@ -84,13 +84,14 @@ void SaveEdgeIndex(const std::string& file_name,
 }
 
 template<class EdgeIndex>
-void LoadEdgeIndex(const std::string& file_name,
+bool LoadEdgeIndex(const std::string& file_name,
                    EdgeIndex& index) {
   std::ifstream file;
   file.open((file_name + ".kmidx").c_str(),
             std::ios_base::binary | std::ios_base::in);
   DEBUG("Reading kmer index, " << file_name <<" started");
-  VERIFY(file.is_open());
+  if (!file.is_open())
+    return false;
 
   uint32_t k_;
   file.read((char *) &k_, sizeof(uint32_t));
@@ -99,8 +100,9 @@ void LoadEdgeIndex(const std::string& file_name,
   index.BinRead(file, file_name + ".kmidx");
 
   file.close();
-}
 
+  return true;
+}
 
 template<class Graph>
 class DataPrinter {
@@ -895,8 +897,12 @@ void ScanGraphPack(const string& file_name,
     DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp) {
   gp.index.Detach();
   ScanBasicGraph(file_name, scanner);
-  LoadEdgeIndex(file_name, gp.index.inner_index());
-  gp.index.Update();
+  if (LoadEdgeIndex(file_name, gp.index.inner_index())) {
+    gp.index.Update();
+  } else {
+    WARN("Cannot load edge index, kmer coverages will be missed");
+    gp.index.Refill();
+  }
   gp.index.Attach();
 //  scanner.loadPaired(file_name + "_et", gp.etalon_paired_index);
   scanner.loadPositions(file_name, gp.edge_pos);
