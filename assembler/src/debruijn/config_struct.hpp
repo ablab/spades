@@ -297,6 +297,7 @@ struct debruijn_config {
 	}
 
 	struct simplification {
+
 		struct tip_clipper {
 			string condition;
 		};
@@ -311,9 +312,7 @@ struct debruijn_config {
 		};
 
 		struct erroneous_connections_remover {
-			double	max_ec_length_coefficient;
-            bool	estimate_max_coverage;
-			double	max_coverage;
+			string condition;
 		};
 
 		struct cheating_erroneous_connections_remover {
@@ -651,9 +650,7 @@ inline void load(
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(ec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
-	load(ec.estimate_max_coverage		, pt, "estimate_max_coverage"		);
-	load(ec.max_coverage    			, pt, "max_coverage"    			);
+	load(ec.condition					, pt, "condition"	);
 }
 
 inline void load(

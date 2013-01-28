@@ -11,7 +11,7 @@ sc_simplification
 	{
         ; rctc: tip_cov < rctc * not_tip_cov
         ; lb: max_tip_length = max((min(k, read_length / 2) * lb), read_length);
-        condition               "{ lb 3.5, cb 100000, rctc 10000 }"
+        condition               "{ tc_lb 3.5, cb 100000, rctc 10000 }"
 	}
 
 	; bulge remover:
@@ -28,9 +28,10 @@ sc_simplification
 	; erroneous connections remover:
 	ec
 	{
-		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
-		estimate_max_coverage		true
-		max_coverage			20.0
+       ; ec_lb: max_ec_length = k + ec_lb
+       ; icb: iterative coverage bound
+        condition               "{ ec_lb 30, icb auto }"
+       ; condition               "{ ec_lb 30, icb 20.0 }"
 	}
 	
 	; cheating erroneous connections remover
@@ -103,7 +104,7 @@ usual_simplification
 	{
         ; rctc: tip_cov < rctc * not_tip_cov
         ; lb: max_tip_length = max((min(k, read_length / 2) * lb), read_length);
-        condition               "{ lb 3.5, cb 1000, rctc 2.0 }"
+        condition               "{ tc_lb 3.5, cb 1000, rctc 2.0 }"
 	}
 	
 	; bulge remover:
@@ -120,9 +121,10 @@ usual_simplification
 	; erroneous connections remover:
 	ec
 	{
-		max_ec_length_coefficient	10	; max_ec_length = k + max_ec_length_coefficient
-        estimate_max_coverage		true
-		max_coverage			40.0	; erroneous_connection < this * not_erroneous_connection_cov
+       ; ec_lb: max_ec_length = k + ec_lb
+       ; icb: iterative coverage bound
+        condition               "{ ec_lb 10, icb auto }"
+       ; condition               "{ ec_lb 10, icb 40.0 }"
 	}
 	
 	; cheating erroneous connections remover

@@ -60,8 +60,8 @@ public:
 		return std::max((size_t) (k * coefficient), k + additive_coeff);
 	}
 
-	static size_t MaxErroneousConnectionLength(size_t k, size_t coefficient) {
-		return k + coefficient;
+	static size_t MaxErroneousConnectionLength(size_t k, size_t coef) {
+		return k + coef;
 	}
 };
 
@@ -76,12 +76,13 @@ private:
 	queue<string> tokenized_input_;
 
 	size_t read_length_;
-	double max_coverage_;
+	double detected_coverage_bound_;
 
 	size_t iteration_count_;
 	size_t iteration_;
 
 	size_t max_length_bound_;
+	double max_coverage_bound_;
 
 	string ReadNext() {
 		if (!tokenized_input_.empty()) {
@@ -93,8 +94,32 @@ private:
 		return next_token_;
 	}
 
+	bool RelaxMaxLengthBound(size_t length_bound) {
+		if (max_length_bound_ < length_bound) {
+			max_length_bound_ = length_bound;
+			return true;
+		}
+		return false;
+	}
+
+	bool RelaxMaxCoverageBound(double coverage_bound) {
+		if (max_coverage_bound_ < coverage_bound) {
+			max_coverage_bound_ = coverage_bound;
+			return true;
+		}
+		return false;
+	}
+
+	double GetCoverageBound() {
+		if (next_token_ == "auto") {
+			return detected_coverage_bound_;
+		} else {
+			return lexical_cast<double>(next_token_);
+		}
+	}
+
 	shared_ptr<Predicate<EdgeId>> ParseCondition() {
-		if (next_token_ == "lb") {
+		if (next_token_ == "tc_lb") {
 			double length_coeff = lexical_cast<double>(ReadNext());
 
 			DEBUG("Creating length bound " << length_coeff);
@@ -102,19 +127,30 @@ private:
 					read_length_, g_.k(), length_coeff, iteration_count_,
 					iteration_);
 
-			max_length_bound_ =
-					(max_length_bound_ < length_bound) ?
-							length_bound : max_length_bound_;
+			RelaxMaxLengthBound(length_bound);
+			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
+		} else if (next_token_ == "ec_lb") {
+			size_t length_coeff = lexical_cast<double>(ReadNext());
+
+			DEBUG("Creating length bound " << length_coeff);
+			size_t length_bound =
+					LengthThresholdFinder::MaxErroneousConnectionLength(g_.k(),
+							length_coeff);
+
+			RelaxMaxLengthBound(length_bound);
 			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
 		} else if (next_token_ == "cb") {
 			ReadNext();
-			size_t cov_bound;
-			if (next_token_ == "auto") {
-				cov_bound = max_coverage_;
-			} else {
-				cov_bound = lexical_cast<size_t>(next_token_);
-			}
+			double cov_bound = GetCoverageBound();
 			DEBUG("Creating coverage upper bound " << cov_bound);
+			RelaxMaxCoverageBound(cov_bound);
+			return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
+		} else if (next_token_ == "icb") {
+			ReadNext();
+			size_t cov_bound = GetCoverageBound();
+			cov_bound = cov_bound / iteration_count_ * (iteration_ + 1);
+			DEBUG("Creating iterative coverage upper bound " << cov_bound);
+			RelaxMaxCoverageBound(cov_bound);
 			return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
 		} else if (next_token_ == "rctc") {
 			ReadNext();
@@ -144,9 +180,9 @@ public:
 	ConditionParser(const Graph& g, string input, size_t read_length,
 			double max_coverage, size_t iteration_count = 1, size_t iteration =
 					0) :
-			g_(g), input_(input), read_length_(read_length), max_coverage_(
+			g_(g), input_(input), read_length_(read_length), detected_coverage_bound_(
 					max_coverage), iteration_count_(iteration_count), iteration_(
-					iteration), max_length_bound_(0) {
+					iteration), max_length_bound_(0), max_coverage_bound_(0.) {
 		DEBUG("Creating parser for string " << input);
 		using namespace boost;
 		vector<string> tmp_tokenized_input;
@@ -216,8 +252,6 @@ void Composition(EdgeId e, boost::function<void(EdgeId)> f1,
 	if (f2)
 		f2(e);
 }
-
-typedef const debruijn_config::simplification::tip_clipper& TcConfig;
 
 template<class Graph>
 void ClipTips(Graph& graph,
@@ -312,17 +346,19 @@ void RemoveBulges(Graph& g,
 }
 
 template<class Graph>
-void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
-		size_t iteration_count, size_t i, double max_coverage) {
+void RemoveLowCoverageEdges(Graph &g,
+		const debruijn_config::simplification::erroneous_connections_remover& ec_config,
+		EdgeRemover<Graph>& edge_remover, size_t read_length, double detected_coverage_threshold,
+		size_t iteration_count, size_t i) {
 	INFO("SUBSTAGE == Removing low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
+	ConditionParser<Graph> parser(g, ec_config.condition, read_length,
+			detected_coverage_threshold, iteration_count, i);
 
-	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-			g.k(), cfg::get().simp.ec.max_ec_length_coefficient);
+	auto condition = parser();
+
 	omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
-			max_length, max_coverage / iteration_count * (i + 1), edge_remover);
-	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-	//			max_length_div_K * g.k(), max_coverage);
+			condition, edge_remover);
 	erroneous_edge_remover.RemoveEdges();
 
 	DEBUG("Low coverage edges removed");
@@ -356,8 +392,6 @@ bool CheatingRemoveErroneousEdges(Graph &g,
 	size_t sufficient_neighbour_length = cec_config.sufficient_neighbour_length;
 	return omnigraph::TopologyBasedChimericEdgeRemover<Graph>(g, max_length,
 			coverage_gap, sufficient_neighbour_length, edge_remover).RemoveEdges();
-	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-	//			max_length_div_K * g.k(), max_coverage);
 }
 
 template<class Graph>
@@ -572,6 +606,8 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	DEBUG(iteration << " ErroneousConnectionsRemoval");
 	RemoveLowCoverageEdges(gp.g, edge_remover, iteration_count, iteration,
 			max_coverage);
+	RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, edge_remover,
+			iteration_count, iteration, max_coverage);
 	DEBUG(iteration << " ErroneousConnectionsRemoval stats");
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
@@ -608,18 +644,9 @@ void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 template<class Graph>
 double FindErroneousConnectionsCoverageThreshold(const Graph &graph,
 		const DeBruijnEdgeIndex<typename Graph::EdgeId> &index) {
-	if (cfg::get().simp.ec.estimate_max_coverage) {
-		double ECThreshold =
-				(cfg::get().ds.single_cell ?
-						ErroneousConnectionThresholdFinder<Graph>(graph).FindThreshold() :
-						MCErroneousConnectionThresholdFinder<Graph>(index).FindThreshold());
-		INFO("Coverage threshold value was calculated as " << ECThreshold);
-		return ECThreshold;
-	} else {
-		INFO(
-				"Coverage threshold value was set manually to " << cfg::get().simp.ec.max_coverage);
-		return cfg::get().simp.ec.max_coverage;
-	}
+	return cfg::get().ds.single_cell ?
+			ErroneousConnectionThresholdFinder<Graph>(graph).FindThreshold() :
+			MCErroneousConnectionThresholdFinder<Graph>(index).FindThreshold();
 }
 
 void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
@@ -638,13 +665,15 @@ void SimplifyGraph(conj_graph_pack &gp,
 		size_t iteration_count) {
 	printer(ipp_before_simplification);
 	DEBUG("Graph simplification started");
-	EdgeRemover<Graph> edge_remover(gp.g,
-			cfg::get().simp.removal_checks_enabled, removal_handler_f);
-
 	//ec auto threshold
 	double determined_coverage_threshold =
 			FindErroneousConnectionsCoverageThreshold(gp.g,
 					gp.index.inner_index());
+	INFO("Coverage threshold value was calculated as " << determined_coverage_threshold);
+
+	EdgeRemover<Graph> edge_remover(gp.g,
+		cfg::get().simp.removal_checks_enabled, removal_handler_f);
+
 
 	if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
 		CloseGaps(gp);

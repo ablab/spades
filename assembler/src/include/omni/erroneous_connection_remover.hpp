@@ -16,6 +16,7 @@
 
 #include "omni_tools.hpp"
 #include "omni_utils.hpp"
+#include "func.hpp"
 #include "xmath.h"
 
 namespace omnigraph {
@@ -139,15 +140,14 @@ class IterativeLowCoverageEdgeRemover: public ErroneousEdgeRemover<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef ErroneousEdgeRemover<Graph> base;
-	size_t max_length_;
 	double max_coverage_;
+	shared_ptr<Predicate<EdgeId>> condition_;
 
 public:
-	IterativeLowCoverageEdgeRemover(Graph& g, size_t max_length,
-			double max_coverage, AbstractEdgeRemover<Graph>& edge_remover) :
-			base(g, edge_remover), max_length_(max_length), max_coverage_(
-					max_coverage) {
-
+	IterativeLowCoverageEdgeRemover(Graph& g, double max_coverage,
+			shared_ptr<Predicate<EdgeId>> condition,
+			AbstractEdgeRemover<Graph>& edge_remover) :
+			base(g, edge_remover), max_coverage_(max_coverage), condition_(condition) {
 	}
 
 	void InnerRemoveEdges() {
@@ -161,7 +161,7 @@ public:
 				TRACE("Max coverage " << max_coverage_ << " achieved");
 				return;
 			}TRACE("Checking length");
-			if (this->graph().length(e) < max_length_) {
+			if (condition_->Check(e)) {
 				TRACE("Condition ok");
 				this->DeleteEdge(e);
 //				VertexId start = g_.EdgeStart(e);
