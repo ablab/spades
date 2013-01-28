@@ -8,6 +8,7 @@
 
 #include "logger/logger.hpp"
 #include "smooth.hpp"
+#include "verify.hpp"
 
 #include <boost/math/special_functions/zeta.hpp>
 #include <boost/math/distributions/normal.hpp>
@@ -195,6 +196,7 @@ std::pair<size_t, size_t> KMerCoverageModel::EstimateCoverage(const std::vector<
 }
 
 void KMerCoverageModel::Fit() {
+  VERIFY_MSG(cov_.size() > 10, "Invalid kmer coverage histogram");
   // Smooth the histogram
   std::vector<size_t> scov;
   math::Smooth3RS3R(scov, cov_);
