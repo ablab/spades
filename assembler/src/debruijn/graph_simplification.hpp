@@ -543,22 +543,13 @@ void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
 void PreSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
 		detail_info_printer &printer, size_t iteration_count,
-		double max_coverage) {
-	//INFO("Early ErroneousConnectionsRemoval");
-	//RemoveLowCoverageEdges(graph, edge_remover, 1, 0, 1.5);
-	//INFO("ErroneousConnectionsRemoval stats");
-
+		double determined_coverage_threshold) {
 	INFO("Early tip clipping:");
-	//todo enable max_coverage, currently used only for mc and pre_simplif is for sc only
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL, /*max_coverage*/
-	0., removal_handler_f);
+	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL,
+			determined_coverage_threshold, removal_handler_f);
 
 	INFO("Early bulge removal:");
 	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f, gp.g.k() + 1);
-
-	//INFO("Early ErroneousConnectionsRemoval");
-	//RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
-	//INFO("ErroneousConnectionsRemoval stats");
 }
 
 void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
@@ -651,8 +642,9 @@ void SimplifyGraph(conj_graph_pack &gp,
 			cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
 	//ec auto threshold
-	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g,
-			gp.index.inner_index());
+	double determined_coverage_threshold =
+			FindErroneousConnectionsCoverageThreshold(gp.g,
+					gp.index.inner_index());
 
 	if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
 		CloseGaps(gp);
@@ -667,7 +659,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 
 	if (cfg::get().ds.single_cell)
 		PreSimplification(gp, edge_remover, removal_handler_f, printer,
-				iteration_count, max_coverage);
+				iteration_count, determined_coverage_threshold);
 
 	for (size_t i = 0; i < iteration_count; i++) {
 		if ((cfg::get().gap_closer_enable) && (cfg::get().gc.in_simplify)) {
@@ -675,13 +667,13 @@ void SimplifyGraph(conj_graph_pack &gp,
 		}
 
 		SimplificationCycle(gp, edge_remover, removal_handler_f, printer,
-				iteration_count, i, max_coverage);
+				iteration_count, i, determined_coverage_threshold);
 		printer(ipp_err_con_removal,
 				str(format("_%d") % (i + iteration_count)));
 	}
 
 	PostSimplification(gp, edge_remover, removal_handler_f, printer,
-			max_coverage);
+			determined_coverage_threshold);
 
 	if (!cfg::get().developer_mode) {
 		INFO("Refilling index");
