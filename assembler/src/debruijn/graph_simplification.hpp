@@ -240,15 +240,14 @@ void ClipTips(Graph& graph,
 template<class Graph>
 void ClipTips(Graph& g,
 		const debruijn_config::simplification::tip_clipper& tc_config,
-		size_t read_length,
-		double detected_coverage_threshold = 0.,
+		size_t read_length, double detected_coverage_threshold = 0.,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t iteration_count = 1, size_t iteration = 0) {
 
 	string condition_str = tc_config.condition;
 
-	ConditionParser<Graph> parser(g, condition_str, read_length, detected_coverage_threshold,
-			iteration_count, iteration);
+	ConditionParser<Graph> parser(g, condition_str, read_length,
+			detected_coverage_threshold, iteration_count, iteration);
 
 	auto condition = parser();
 
@@ -259,8 +258,7 @@ void ClipTips(Graph& g,
 template<class gp_t>
 void ClipTipsWithProjection(gp_t& gp,
 		const debruijn_config::simplification::tip_clipper& tc_config,
-		size_t read_length,
-		double detected_coverage_threshold = 0.,
+		size_t read_length, double detected_coverage_threshold = 0.,
 		boost::function<void(typename Graph::EdgeId)> removal_handler_f = 0,
 		size_t iteration_count = 1, size_t iteration = 0) {
 	boost::function<void(typename Graph::EdgeId)> tc_removal_handler =
@@ -277,8 +275,8 @@ void ClipTipsWithProjection(gp_t& gp,
 				boost::ref(removal_handler_f), projecting_callback);
 	}
 
-	ClipTips(gp.g, tc_config, read_length, detected_coverage_threshold, tc_removal_handler,
-			iteration_count, iteration);
+	ClipTips(gp.g, tc_config, read_length, detected_coverage_threshold,
+			tc_removal_handler, iteration_count, iteration);
 }
 
 template<class Graph>
@@ -331,22 +329,20 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 }
 
 template<class Graph>
-void IterativeRemoveRelativelyLowCoverageEdges(Graph &g,
-		EdgeRemover<Graph>& edge_remover, size_t iteration_count, size_t i,
-		double max_coverage) {
+bool RemoveRelativelyLowCoverageEdges(Graph &g,
+		EdgeRemover<Graph>& edge_remover, double max_coverage) {
 	INFO("SUBSTAGE == Removing realtively low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
 			g.k(), cfg::get().simp.ec.max_ec_length_coefficient);
-	omnigraph::IterativeRelativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-			g, max_length, (max_coverage * 10 / iteration_count) * (i + 1), 50,
-			edge_remover);
-	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-	//			max_length_div_K * g.k(), max_coverage);
-	erroneous_edge_remover.RemoveEdges();
+	omnigraph::RelativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
+			max_length, max_coverage * 10, 50, edge_remover);
+
+	bool changed = erroneous_edge_remover.RemoveEdges();
 
 	DEBUG("Relatively Low coverage edges removed");
+	return changed;
 }
 
 template<class Graph>
@@ -493,41 +489,39 @@ bool AllTopology(Graph &g, EdgeRemover<Graph>& edge_remover,
 
 template<class Graph>
 bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
-		boost::function<void(EdgeId)> &removal_handler_f) {
+		boost::function<void(EdgeId)> &removal_handler_f,
+		double determined_coverage_threshold, size_t iteration) {
 	using debruijn_graph::simplification_mode;
+	bool changed = RemoveRelativelyLowCoverageEdges(g, edge_remover,
+			determined_coverage_threshold);
+
 	switch (cfg::get().simp.simpl_mode) {
 	case sm_cheating: {
-		return CheatingRemoveErroneousEdges(g, cfg::get().simp.cec,
+		changed |= CheatingRemoveErroneousEdges(g, cfg::get().simp.cec,
 				edge_remover);
 	}
 		break;
 	case sm_topology: {
-		bool res = false;
-		size_t iteration = 0;
-		while (AllTopology(g, edge_remover, removal_handler_f, iteration)) {
-			iteration++;
-			res = true;
-		}
-		return res;
+		changed |= AllTopology(g, edge_remover, removal_handler_f, iteration);
 	}
 		break;
 	case sm_chimeric: {
-		return ChimericRemoveErroneousEdges(g, edge_remover);
+		changed |= ChimericRemoveErroneousEdges(g, edge_remover);
 	}
 		break;
 	case sm_max_flow: {
 		EdgeRemover<Graph> rough_edge_remover(g, false, removal_handler_f);
-		return MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
+		changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
 				rough_edge_remover);
 	}
 		break;
 	case sm_normal:
-		return false;
 		break;
 	default:
 		VERIFY(false);
 		return false;
 	}
+	return changed;
 }
 
 template<class Graph>
@@ -556,8 +550,8 @@ void PreSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 
 	INFO("Early tip clipping:");
 	//todo enable max_coverage, currently used only for mc and pre_simplif is for sc only
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL, /*max_coverage*/0.,
-			removal_handler_f);
+	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL, /*max_coverage*/
+	0., removal_handler_f);
 
 	INFO("Early bulge removal:");
 	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f, gp.g.k() + 1);
@@ -574,8 +568,8 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
 	DEBUG(iteration << " TipClipping");
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL, max_coverage,
-			removal_handler_f, iteration_count, iteration);
+	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL,
+			max_coverage, removal_handler_f, iteration_count, iteration);
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
@@ -587,8 +581,6 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	DEBUG(iteration << " ErroneousConnectionsRemoval");
 	RemoveLowCoverageEdges(gp.g, edge_remover, iteration_count, iteration,
 			max_coverage);
-	IterativeRemoveRelativelyLowCoverageEdges(gp.g, edge_remover,
-			iteration_count, iteration, max_coverage);
 	DEBUG(iteration << " ErroneousConnectionsRemoval stats");
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
@@ -596,24 +588,30 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 
 void PostSimplification(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
-		detail_info_printer &printer, double max_coverage) {
+		detail_info_printer &printer, double determined_coverage_threshold) {
 	//todo put in cycle
 	INFO("Final erroneous connections removal:");
 	printer(ipp_before_final_err_con_removal);
-	FinalRemoveErroneousEdges(gp.g, edge_remover, removal_handler_f);
-	printer(ipp_final_err_con_removal);
+	size_t iteration = 0;
+	bool enable_flag = true;
+	while (enable_flag) {
+		INFO("Iteration " << iteration);
+		enable_flag = FinalRemoveErroneousEdges(gp.g, edge_remover,
+				removal_handler_f, determined_coverage_threshold, iteration);
+		printer(ipp_final_err_con_removal, str(format("_%d") % iteration));
 
-	INFO("Final tip clipping:");
+		INFO("Final tip clipping:");
 
-	//todo enable max_coverage usage
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL, /*max_coverage*/0.,
-			removal_handler_f);
-	printer(ipp_final_tip_clipping);
+		ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL,
+				determined_coverage_threshold, removal_handler_f);
+		printer(ipp_final_tip_clipping, str(format("_%d") % iteration));
 
-	INFO("Final bulge removal:");
-	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
-	printer(ipp_final_bulge_removal);
+		INFO("Final bulge removal:");
+		RemoveBulges(gp.g, cfg::get().simp.br, removal_handler_f);
+		printer(ipp_final_bulge_removal, str(format("_%d") % iteration));
 
+		iteration++;
+	}
 }
 
 template<class Graph>

@@ -193,7 +193,7 @@ private:
 
 
 template<class Graph>
-class IterativeRelativeLowCoverageEdgeRemover: public ErroneousEdgeRemover<Graph> {
+class RelativeLowCoverageEdgeRemover: public ErroneousEdgeRemover<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef ErroneousEdgeRemover<Graph> base;
@@ -202,7 +202,7 @@ class IterativeRelativeLowCoverageEdgeRemover: public ErroneousEdgeRemover<Graph
 	double max_relative_coverage_;
 
 public:
-	IterativeRelativeLowCoverageEdgeRemover(Graph& g, size_t max_length,
+	RelativeLowCoverageEdgeRemover(Graph& g, size_t max_length,
 			double max_coverage, double max_relative_coverage, AbstractEdgeRemover<Graph>& edge_remover) :
 			base(g, edge_remover), max_length_(max_length), max_coverage_(
 					max_coverage), max_relative_coverage_(max_relative_coverage) {
@@ -258,7 +258,7 @@ private:
 				CheckAlternativeCoverage(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)), e);
 	}
 
-	DECL_LOGGER("IterativeRelativeLowCoverageEdgeRemover");
+	DECL_LOGGER("RelativeLowCoverageEdgeRemover");
 };
 
 

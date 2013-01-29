@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE( IterUniquePath ) {
 	tec_config.uniqueness_length = 500;
 	MaxFlowRemoveErroneousEdges<Graph>(g, tec_config, edge_remover);
 
-	BOOST_CHECK_EQUAL(g.size(), 16);
+	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
 
 BOOST_AUTO_TEST_CASE( UniquePath ) {
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE( UniquePath ) {
 	tec_config.uniqueness_length = 400;
 	MaxFlowRemoveErroneousEdges<Graph>(g, tec_config, edge_remover);
 
-	BOOST_CHECK_EQUAL(g.size(), 12);
+	BOOST_CHECK_EQUAL(g.size(), 12u);
 }
 
 BOOST_AUTO_TEST_CASE( SelfComp ) {
