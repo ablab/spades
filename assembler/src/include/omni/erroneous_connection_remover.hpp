@@ -261,8 +261,6 @@ private:
 	DECL_LOGGER("RelativeLowCoverageEdgeRemover");
 };
 
-
-
 template<class T>
 void Append(vector<T>& current, const vector<T>& to_append) {
   Append(current, to_append.begin(), to_append.end());

@@ -94,17 +94,19 @@ private:
 		return next_token_;
 	}
 
-	bool RelaxMaxLengthBound(size_t length_bound) {
-		if (max_length_bound_ < length_bound) {
-			max_length_bound_ = length_bound;
+	template<typename T>
+	bool RelaxMax(T& cur_max, T t) {
+		if (t > cur_max) {
+			cur_max = t;
 			return true;
 		}
 		return false;
 	}
 
-	bool RelaxMaxCoverageBound(double coverage_bound) {
-		if (max_coverage_bound_ < coverage_bound) {
-			max_coverage_bound_ = coverage_bound;
+	template<typename T>
+	bool RelaxMin(T& cur_min, T t) {
+		if (t < cur_min) {
+			cur_min = t;
 			return true;
 		}
 		return false;
@@ -118,7 +120,7 @@ private:
 		}
 	}
 
-	shared_ptr<Predicate<EdgeId>> ParseCondition() {
+	shared_ptr<Predicate<EdgeId>> ParseCondition(size_t& min_length_bound, double& min_coverage_bound) {
 		if (next_token_ == "tc_lb") {
 			double length_coeff = lexical_cast<double>(ReadNext());
 
@@ -127,7 +129,7 @@ private:
 					read_length_, g_.k(), length_coeff, iteration_count_,
 					iteration_);
 
-			RelaxMaxLengthBound(length_bound);
+			RelaxMin(min_length_bound, length_bound);
 			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
 		} else if (next_token_ == "ec_lb") {
 			size_t length_coeff = lexical_cast<double>(ReadNext());
@@ -137,20 +139,20 @@ private:
 					LengthThresholdFinder::MaxErroneousConnectionLength(g_.k(),
 							length_coeff);
 
-			RelaxMaxLengthBound(length_bound);
+			RelaxMin(min_length_bound, length_bound);
 			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
 		} else if (next_token_ == "cb") {
 			ReadNext();
 			double cov_bound = GetCoverageBound();
 			DEBUG("Creating coverage upper bound " << cov_bound);
-			RelaxMaxCoverageBound(cov_bound);
+			RelaxMin(min_coverage_bound, cov_bound);
 			return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
 		} else if (next_token_ == "icb") {
 			ReadNext();
-			size_t cov_bound = GetCoverageBound();
+			double cov_bound = GetCoverageBound();
 			cov_bound = cov_bound / iteration_count_ * (iteration_ + 1);
 			DEBUG("Creating iterative coverage upper bound " << cov_bound);
-			RelaxMaxCoverageBound(cov_bound);
+			RelaxMin(min_coverage_bound, cov_bound);
 			return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
 		} else if (next_token_ == "rctc") {
 			ReadNext();
@@ -163,13 +165,13 @@ private:
 		}
 	}
 
-	shared_ptr<Predicate<EdgeId>> ParseConjunction() {
+	shared_ptr<Predicate<EdgeId>> ParseConjunction(size_t& min_length_bound, double& min_coverage_bound) {
 		shared_ptr<Predicate<EdgeId>> answer =
 				make_shared<AlwaysTrue<EdgeId>>();
 		VERIFY(next_token_ == "{");
 		ReadNext();
 		while (next_token_ != "}") {
-			answer = make_shared<AndOperator<EdgeId>>(answer, ParseCondition());
+			answer = make_shared<AndOperator<EdgeId>>(answer, ParseCondition(min_length_bound, min_coverage_bound));
 			ReadNext();
 		}
 		return answer;
@@ -200,8 +202,12 @@ public:
 				make_shared<AlwaysTrue<EdgeId>>());
 		VERIFY(next_token_ == "{");
 		while (next_token_ == "{") {
+			size_t min_length_bound = numeric_limits<size_t>::max();
+			double min_coverage_bound = numeric_limits<double>::max();
 			answer = make_shared<OrOperator<EdgeId>>(answer,
-					ParseConjunction());
+					ParseConjunction(min_length_bound, min_coverage_bound));
+			RelaxMax(max_length_bound_, min_length_bound);
+			RelaxMax(max_coverage_bound_, min_coverage_bound);
 			ReadNext();
 		}
 		return answer;
@@ -209,6 +215,10 @@ public:
 
 	size_t max_length_bound() const {
 		return max_length_bound_;
+	}
+
+	double max_coverage_bound() const {
+		return max_coverage_bound_;
 	}
 
 private:
