@@ -114,4 +114,4 @@ else
     esac
 fi
 
-
+rm -r $tmp_cfg_dir
