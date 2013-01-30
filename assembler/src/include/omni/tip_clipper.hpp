@@ -11,8 +11,7 @@
  *      Author: sergey
  */
 
-#ifndef TIP_CLIPPER_HPP_
-#define TIP_CLIPPER_HPP_
+#pragma once
 
 #include <set>
 
@@ -22,6 +21,7 @@
 
 namespace omnigraph {
 
+//todo extend from uniqueness condition and don't include tip's conditions here (checked twice)
 template<class Graph>
 class TopologyTipCondition: public EdgeCondition<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
@@ -530,5 +530,3 @@ private:
 
 
 } // namespace omnigraph
-
-#endif /* TIP_CLIPPER_HPP_ */

@@ -400,7 +400,7 @@ bool CheatingRemoveErroneousEdges(Graph &g,
 			g.k(), cec_config.max_ec_length_coefficient);
 	double coverage_gap = cec_config.coverage_gap;
 	size_t sufficient_neighbour_length = cec_config.sufficient_neighbour_length;
-	return omnigraph::TopologyBasedChimericEdgeRemover<Graph>(g, max_length,
+	return omnigraph::CheatingChimericEdgeRemover<Graph>(g, max_length,
 			coverage_gap, sufficient_neighbour_length, edge_remover).RemoveEdges();
 }
 
