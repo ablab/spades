@@ -10,7 +10,6 @@
 #Calculate coverage from raw file
 import glob
 import gzip
-import subprocess
 import sys
 import os
 import datetime
@@ -21,10 +20,12 @@ import shutil
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
-addsitedir(os.path.join(__location__, 'libs'))
+addsitedir(os.path.join(__location__, '../../ext/include/python_libs'))
 
 from joblib import Parallel, delayed
 from math import pow
+from support import universal_sys_call, error
+
 #profile = []
 #insertions = {}
 config = {}
@@ -433,13 +434,9 @@ def run_aligner(log):
 
     #    (contigs_name, path, suf) = fileparse(config.contigs)
     if not "contigs" in config:
-        log.info("NEED CONTIGS TO REFINE!!!")
-        usage()
-        sys.exit(1)
+        error("contigs were not specified!", log)
     if (not "reads1" in config or not "reads2" in config) and (not "reads_mixed" in config):
-        log.info("NEED READS TO REFINE!!!")
-        usage()
-        sys.exit(1)
+        error("reads were not specified!", log)
 
     # splitting and merging all provided reads files to get only two files with left and right reads respectively
     left = os.path.join(config["work_dir"], "reads_left.fastq")
@@ -480,55 +477,6 @@ def run_aligner(log):
     else:
         log.info("running bwa")
         run_bwa(log)
-
-
-def universal_sys_call(cmd, log, out_filename=None, err_filename=None):
-    '''
-    Runs cmd and redirects output to out_filename (if specified), err_filename (if specified), or to log otherwise
-    '''
-
-    import shlex
-    cmd_list = shlex.split(cmd)
-
-    if out_filename:
-        stdout = open(out_filename, 'w')
-    else:
-        stdout = subprocess.PIPE
-    if err_filename:
-        stderr = open(err_filename, 'w')
-    else:
-        stderr = subprocess.PIPE
-
-    proc = subprocess.Popen(cmd_list, stdout=stdout, stderr=stderr)
-
-    if log and (not out_filename or not err_filename):
-        while not proc.poll():
-            if not out_filename:
-                line = proc.stdout.readline()
-                if line != '':
-                    log.info(line.rstrip())
-            if not err_filename:
-                line = proc.stderr.readline()
-                if line != '':
-                    log.info(line.rstrip())
-            if proc.returncode is not None:
-                break
-
-        if not out_filename:
-            for line in proc.stdout.readlines():
-                if line != '':
-                    log.info(line.rstrip())
-        if not err_filename:
-            for line in proc.stderr.readlines():
-                if line != '':
-                    log.info(line.rstrip())
-    else:
-        proc.wait()
-
-    if out_filename:
-        stdout.close()
-    if err_filename:
-        stderr.close()
 
 
 def run_bowtie2(log):
@@ -581,9 +529,7 @@ def parse_profile(args, log):
     def check_file(f, type, log):
         f = os.path.abspath(f)
         if not os.path.isfile(f):
-            log.info("FILE WITH %s DOES NOT EXIST! CHECK %s" % (type, f))
-            usage()
-            sys.exit(1)
+            error("file with %s (%s) doesn't exist! " % (type, f), log)
         return f
 
     options, contigs_fpaths = getopt.gnu_getopt(args, short_options, long_options)
@@ -592,18 +538,18 @@ def parse_profile(args, log):
             config["output_dirpath"] = os.path.abspath(arg)
             config["make_latest_symlink"] = False
         if opt in ('-c', "--contigs"):
-            config["contigs"] = check_file(arg, "CONTIGS", log)
+            config["contigs"] = check_file(arg, "contigs", log)
         if opt == '-1':
-            reads1.append(check_file(arg, 'LEFT READS', log))
+            reads1.append(check_file(arg, 'left reads', log))
         if opt == '-2':
-            reads2.append(check_file(arg, 'RIGHT READS', log))
+            reads2.append(check_file(arg, 'right reads', log))
 #            config["reads2"] = os.path.abspath(arg)
 #            if not os.path.exists(config["reads2"]):
 #                log.info("FILE WITH READS DOES NOT EXIST!")
 #                usage()
 #                sys.exit(1)
         if opt == '--12':
-            reads_mixed.append(check_file(arg, 'INTERLEAVED LEFT AND RIGHT READS', log))
+            reads_mixed.append(check_file(arg, 'interleaved left and right reads', log))
 #            config["reads_mixed"] = os.path.abspath(arg)
 #            if not os.path.exists(config["reads_mixed"]):
 #                log.info("FILE WITH READS DOES NOT EXIST!")
@@ -635,9 +581,8 @@ def parse_profile(args, log):
             config["insert_size"] = int(arg)
 
     if len(reads1) != len(reads2):
-        log.info("NUMBER OF FILES WITH LEFT AND RIGHT READS IS NOT THE SAME!")
-        usage()
-        sys.exit(1)
+        error("the number of files with left paired reads is not equal to the"
+              " number of files with right paired reads!", log)
 
     if reads1:
         config["reads1"] = reads1

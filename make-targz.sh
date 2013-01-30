@@ -1,7 +1,6 @@
-rm -r spades-*
-
 VERSION="$(cat assembler/VERSION)"
-mkdir -p spades-$VERSION/src/tools
+rm -rf spades-$VERSION
+mkdir -p spades-$VERSION/src
 
 cp -r assembler/src/debruijn spades-$VERSION/src/debruijn
 cp -r assembler/src/hammer spades-$VERSION/src/hammer
@@ -15,22 +14,16 @@ cp assembler/src/CMakeLists.txt spades-$VERSION/src/CMakeLists.txt
 
 cp -r assembler/configs spades-$VERSION/configs
 cp -r assembler/ext spades-$VERSION/ext
-rm spades-$VERSION/ext/prepare_ext.sh
-rm -r spades-$VERSION/ext/tools/*
 rm -r spades-$VERSION/ext/include/cute
 rm -r spades-$VERSION/ext/include/teamcity_boost
 
-# for mismatch corrector
-cp -r assembler/src/tools/corrector spades-$VERSION/src/tools/corrector
-rm -r spades-$VERSION/src/tools/corrector/bowtie2-2.0.2
-cp -r assembler/ext/tools/bwa-0.6.2 spades-$VERSION/ext/tools/bwa-0.6.2
-
 # cleaning .pyc and .pyo
-rm spades-$VERSION/src/spades_pipeline/*.pyc
-rm spades-$VERSION/src/spades_pipeline/*.pyo
-rm spades-$VERSION/src/rectangles/*.pyc
-rm spades-$VERSION/src/tools/corrector/*.pyc
-rm spades-$VERSION/src/tools/corrector/libs/joblib/*.pyc
+rm -f spades-$VERSION/src/spades_pipeline/*.pyc
+rm -f spades-$VERSION/src/spades_pipeline/*.pyo
+rm -f spades-$VERSION/src/rectangles/*.pyc
+rm -f spades-$VERSION/src/rectangles/*.pyo
+rm -f spades-$VERSION/ext/include/python_libs/joblib/*.pyc
+rm -f spades-$VERSION/ext/include/python_libs/joblib/*.pyo
 
 cp -r assembler/test_dataset spades-$VERSION/test_dataset
 cp assembler/LICENSE spades-$VERSION
@@ -60,3 +53,4 @@ cp configs/debruijn/path_extend/pe_params.info.template configs/debruijn/path_ex
 cd ..
 
 tar -pczf spades-$VERSION.tar.gz spades-$VERSION
+rm -r spades-$VERSION

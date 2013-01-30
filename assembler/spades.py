@@ -24,8 +24,6 @@ from process_cfg import *
 import bh_logic
 import spades_logic
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "src/rectangles"))
-import rrr
 
 def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
@@ -801,6 +799,9 @@ def main():
 
             #RECTANGLES
             if spades_cfg.paired_mode and rectangles:
+                sys.path.append(os.path.join(os.path.dirname(__file__), "src/rectangles"))
+                import rrr
+
                 rrr_input_dir = os.path.join(latest_dir, "saves")
                 rrr_outpath = os.path.join(spades_cfg.output_dir, "rectangles")
                 if not os.path.exists(rrr_outpath):
@@ -830,7 +831,6 @@ def main():
         #corrector
         result_corrected_contigs_filename = ""
         if "mismatch_corrector" in cfg and os.path.isfile(result_contigs_filename):
-            sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/corrector"))
             import corrector
 
             corrector_cfg = cfg["mismatch_corrector"]
@@ -904,14 +904,12 @@ def main():
         #breaking scaffolds
         if os.path.isfile(result_scaffolds_filename):
             result_broken_scaffolds = os.path.join(spades_cfg.output_dir, "broken_scaffolds.fasta")
-            sys.path.append(os.path.join(os.path.dirname(__file__), "src/tools/contig_analysis"))
-            import break_scaffolds_into_contigs
             threshold = 3
             if os.path.isfile(result_corrected_contigs_filename):
-                break_scaffolds_into_contigs.break_scaffolds(["", result_corrected_contigs_filename, str(threshold), result_broken_scaffolds])
+                support.break_scaffolds(result_corrected_contigs_filename, threshold, result_broken_scaffolds)
                 log.info(" * Corrected scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
             else:
-                break_scaffolds_into_contigs.break_scaffolds(["", result_scaffolds_filename, str(threshold), result_broken_scaffolds])
+                support.break_scaffolds(result_scaffolds_filename, threshold, result_broken_scaffolds)
                 log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
 
         log.info("")
