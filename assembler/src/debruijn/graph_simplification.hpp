@@ -120,7 +120,8 @@ private:
 		}
 	}
 
-	shared_ptr<Predicate<EdgeId>> ParseCondition(size_t& min_length_bound, double& min_coverage_bound) {
+	shared_ptr<Predicate<EdgeId>> ParseCondition(size_t& min_length_bound,
+			double& min_coverage_bound) {
 		if (next_token_ == "tc_lb") {
 			double length_coeff = lexical_cast<double>(ReadNext());
 
@@ -165,13 +166,15 @@ private:
 		}
 	}
 
-	shared_ptr<Predicate<EdgeId>> ParseConjunction(size_t& min_length_bound, double& min_coverage_bound) {
+	shared_ptr<Predicate<EdgeId>> ParseConjunction(size_t& min_length_bound,
+			double& min_coverage_bound) {
 		shared_ptr<Predicate<EdgeId>> answer =
 				make_shared<AlwaysTrue<EdgeId>>();
 		VERIFY(next_token_ == "{");
 		ReadNext();
 		while (next_token_ != "}") {
-			answer = make_shared<AndOperator<EdgeId>>(answer, ParseCondition(min_length_bound, min_coverage_bound));
+			answer = make_shared<AndOperator<EdgeId>>(answer,
+					ParseCondition(min_length_bound, min_coverage_bound));
 			ReadNext();
 		}
 		return answer;
@@ -358,8 +361,8 @@ void RemoveBulges(Graph& g,
 template<class Graph>
 void RemoveLowCoverageEdges(Graph &g,
 		const debruijn_config::simplification::erroneous_connections_remover& ec_config,
-		EdgeRemover<Graph>& edge_remover, size_t read_length, double detected_coverage_threshold,
-		size_t iteration_count, size_t i) {
+		EdgeRemover<Graph>& edge_remover, size_t read_length,
+		double detected_coverage_threshold, size_t iteration_count, size_t i) {
 	INFO("SUBSTAGE == Removing low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 	ConditionParser<Graph> parser(g, ec_config.condition, read_length,
@@ -368,7 +371,7 @@ void RemoveLowCoverageEdges(Graph &g,
 	auto condition = parser();
 
 	omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
-			condition, edge_remover);
+			parser.max_coverage_bound(), condition, edge_remover);
 	erroneous_edge_remover.RemoveEdges();
 
 	DEBUG("Low coverage edges removed");
@@ -380,8 +383,9 @@ bool RemoveRelativelyLowCoverageEdges(Graph &g,
 	INFO("SUBSTAGE == Removing realtively low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 
+	//todo fix temporary hardcode
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-			g.k(), cfg::get().simp.ec.max_ec_length_coefficient);
+			g.k(), /*cfg::get().simp.ec.max_ec_length_coefficient*/30);
 	omnigraph::RelativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
 			max_length, max_coverage * 10, 50, edge_remover);
 
@@ -614,10 +618,8 @@ void SimplificationCycle(conj_graph_pack& gp, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
 	DEBUG(iteration << " ErroneousConnectionsRemoval");
-	RemoveLowCoverageEdges(gp.g, edge_remover, iteration_count, iteration,
-			max_coverage);
 	RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, edge_remover,
-			iteration_count, iteration, max_coverage);
+			*cfg::get().ds.RL, max_coverage, iteration_count, iteration);
 	DEBUG(iteration << " ErroneousConnectionsRemoval stats");
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
@@ -679,11 +681,11 @@ void SimplifyGraph(conj_graph_pack &gp,
 	double determined_coverage_threshold =
 			FindErroneousConnectionsCoverageThreshold(gp.g,
 					gp.index.inner_index());
-	INFO("Coverage threshold value was calculated as " << determined_coverage_threshold);
+	INFO(
+			"Coverage threshold value was calculated as " << determined_coverage_threshold);
 
 	EdgeRemover<Graph> edge_remover(gp.g,
-		cfg::get().simp.removal_checks_enabled, removal_handler_f);
-
+			cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
 	if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
 		CloseGaps(gp);

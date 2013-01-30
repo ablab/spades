@@ -28,8 +28,8 @@ class UniquenessPlausabilityCondition: public EdgeCondition<Graph> {
 
 	size_t uniqueness_length_;
 	size_t plausibility_length_;
-	UniquePF<Graph> unique_path_finder_;
-	PlausiblePF<Graph> plausible_path_finder_;
+	UniquePF unique_path_finder_;
+	PlausiblePF plausible_path_finder_;
 
 	bool CheckUniqueness(EdgeId e,
 			const AbstractDirection<Graph>& direction) const {
@@ -72,8 +72,10 @@ class UniquenessPlausabilityCondition: public EdgeCondition<Graph> {
 
 public:
 
-	UniquenessPlausabilityCondition(const Graph& g, size_t uniqueness_length, plausibility_length) :
-			base(g), uniqueness_length_(uniqueness_length), plausibility_length_(plausibility_length) {
+	UniquenessPlausabilityCondition(const Graph& g, const UniquePF& unique_path_finder, size_t uniqueness_length,
+			const PlausiblePF& plausible_path_finder, size_t plausibility_length) :
+			base(g), unique_path_finder_(unique_path_finder), uniqueness_length_(uniqueness_length),
+			plausible_path_finder_(plausible_path_finder), plausibility_length_(plausibility_length) {
 
 	}
 
@@ -755,9 +757,9 @@ protected:
 				"Checking " << this->graph().length(e) << " for plausibility in " << (forward ? "forward" : "backward") << " direction");
 		bool result = CummulativeLength(this->graph(),
 				forward ?
-						plausible_path_finder_.PlausiblePath(e,
+						plausible_path_finder_(e,
 								ForwardDirection<Graph>(this->graph())) :
-						plausible_path_finder_.PlausiblePath(e,
+						plausible_path_finder_(e,
 								BackwardDirection<Graph>(this->graph())))
 				>= this->plausibility_length();
 		TRACE(
@@ -808,9 +810,9 @@ protected:
 				"Checking " << this->graph().int_id(e) << " for plausibility in " << (forward ? "forward" : "backward") << " direction");
 		bool result = CummulativeLength(this->graph(),
 				forward ?
-						plausible_path_finder_.PlausiblePath(e,
+						plausible_path_finder_(e,
 								ForwardDirection<Graph>(this->graph())) :
-						plausible_path_finder_.PlausiblePath(e,
+						plausible_path_finder_(e,
 								BackwardDirection<Graph>(this->graph())))
 				>= this->plausibility_length();
 		TRACE(
