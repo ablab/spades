@@ -468,7 +468,7 @@ class TopologyAndReliablityBasedChimericEdgeRemover: public ErroneousEdgeRemover
 	}
 
 	bool CheckExtremelyUnreliable(EdgeId e) {
-		return this->graph().coverage(e) < max_coverage_;
+		return math::le(this->graph().coverage(e), max_coverage_);
 	}
 
 public:
