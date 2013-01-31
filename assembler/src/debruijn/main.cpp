@@ -149,14 +149,13 @@ int main(int argc, char** argv) {
     limit_memory(cfg::get().max_memory * GB);
 
     // assemble it!
-    INFO("Assembling " << cfg::get().dataset_name << " dataset (" << cfg::get().dataset_file << ")");
-    INFO("with K=" << cfg::get().K);
+    INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
 
     debruijn_graph::assemble_genome();
 
     link_output("latest_success");
 
-    INFO("Assembling " << cfg::get().dataset_name << " dataset with K=" << cfg::get().K << " finished");
+    INFO("Assembling with K=" << cfg::get().K << " finished");
 
   } catch (std::bad_alloc const& e) {
     std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;

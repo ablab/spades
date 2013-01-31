@@ -9,6 +9,7 @@ scripts/
 *.launch
 *.ebwt
 *.pyc
+*.pyo
 *.class
 tags
 spades_config.info

@@ -137,7 +137,6 @@ struct debruijn_config {
       stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count),
       stage_name_id_mapping::value_type("distance_estimation", ws_distance_estimation),
       stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving),
-      stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving),
       stage_name_id_mapping::value_type("n50_enlargement", ws_n50_enlargement)
     };
 
@@ -492,7 +491,6 @@ struct debruijn_config {
 public:
 
 	std::string dataset_file;
-	std::string dataset_name;
 	std::string project_name;
 	std::string input_dir;
 	std::string output_base;
@@ -925,10 +923,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 		cfg.output_base += '/';
 	}
 
-	// instead of dataset_name.
-    cfg.dataset_name = path::basename(cfg.dataset_file);
-
-    // TODO: remove this shit
+	// TODO: remove this shit
 	load(cfg.run_mode, pt, "run_mode");
     
 	if (cfg.run_mode) {
