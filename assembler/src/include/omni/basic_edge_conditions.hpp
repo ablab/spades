@@ -79,12 +79,11 @@ template<class Graph>
 class CoverageUpperBound: public EdgeCondition<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef EdgeCondition<Graph> base;
-	//todo why size_t???
-	const size_t max_coverage_;
+	const double max_coverage_;
 
 public:
 
-	CoverageUpperBound(const Graph& g, size_t max_coverage) :
+	CoverageUpperBound(const Graph& g, double max_coverage) :
 			base(g), max_coverage_(max_coverage) {
 	}
 
