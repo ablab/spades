@@ -24,7 +24,7 @@ public:
 };
 
 template <class Graph, class Comparator = std::less<typename Graph::EdgeId>>
-class EdgeProcessingAlgorithm : public ProcessingAlgorithm {
+class EdgeProcessingAlgorithm : public ProcessingAlgorithm<Graph> {
 	typedef ProcessingAlgorithm<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 
@@ -42,11 +42,11 @@ public:
 
 	bool Process() {
 		TRACE("Start processing");
-		bool triggered = false
+		bool triggered = false;
 		for (auto it = this->g().SmartEdgeBegin(comp_); !it.IsEnd(); ++it) {
 			if (!proceed_condition_->Check()) {
 				TRACE("Stop condition was reached.");
-				return triggered;
+				break;
 			}
 
 			TRACE("Processing edge " << this->g().str(*it));
@@ -66,35 +66,19 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm {
 	typedef typename Graph::EdgeId EdgeId;
 
 protected:
-	virtual bool Process(EdgeId e) = 0;
+	bool Process(EdgeId e) {
+
+	}
 
 public:
 	EdgeRemovingAlgorithm(Graph& g, const Comparator& c, shared_ptr<func::Predicate<EdgeId>> remove_condition
-			, shared_ptr<func::Predicate<EdgeId>> proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>())
+			, shared_ptr<func::Predicate<EdgeId>> proceed_condition)
 	: base(g, c, proceed_condition) {
 
 	}
 
-	bool Process() {
-		TRACE("Start processing");
-		bool triggered = false
-		for (auto it = this->g().SmartEdgeBegin(comp_); !it.IsEnd(); ++it) {
-			if (!proceed_condition_->Check()) {
-				TRACE("Stop condition was reached.");
-				return triggered;
-			}
-
-			TRACE("Processing edge " << this->g().str(*it));
-			triggered = Process(*it);
-		}
-		TRACE("Finished processing. Triggered = " << triggered);
-		return triggered;
-	}
-
 private:
-	DECL_LOGGER("EdgeProcessingAlgorithm");
+	DECL_LOGGER("EdgeRemovingAlgorithm");
 };
-
-
 
 }
