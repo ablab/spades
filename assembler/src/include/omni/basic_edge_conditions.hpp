@@ -89,7 +89,7 @@ public:
 	}
 
 	bool Check(EdgeId e) const {
-		return this->g().coverage(e) < max_coverage_;
+		return math::le(this->g().coverage(e), max_coverage_);
 	}
 
 };
