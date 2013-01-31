@@ -4,8 +4,8 @@
 
 namespace omnigraph {
 
-template <class Graph>
-class ProcessingAlgorithm : private boost::noncopyable {
+template<class Graph>
+class ProcessingAlgorithm: private boost::noncopyable {
 	Graph& g_;
 
 protected:
@@ -14,17 +14,19 @@ protected:
 	}
 
 public:
-	ProcessingAlgorithm(Graph& g) : g_(g) {
+	ProcessingAlgorithm(Graph& g) :
+			g_(g) {
 
 	}
 
-	virtual ~ProcessingAlgorithm() { }
+	virtual ~ProcessingAlgorithm() {
+	}
 
 	virtual bool Process() = 0;
 };
 
-template <class Graph, class Comparator = std::less<typename Graph::EdgeId>>
-class EdgeProcessingAlgorithm : public ProcessingAlgorithm<Graph> {
+template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
+class EdgeProcessingAlgorithm: public ProcessingAlgorithm<Graph> {
 	typedef ProcessingAlgorithm<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 
@@ -35,8 +37,10 @@ protected:
 	virtual bool Process(EdgeId e) = 0;
 
 public:
-	EdgeProcessingAlgorithm(Graph& g, const Comparator& c, shared_ptr<func::Predicate<EdgeId>> proceed_condition
-			= make_shared<func::AlwaysTrue<EdgeId>>()) : base(g), comp_(c), proceed_condition_(proceed_condition) {
+	EdgeProcessingAlgorithm(Graph& g, const Comparator& c = Comparator(),
+			shared_ptr<func::Predicate<EdgeId>> proceed_condition = make_shared<
+					func::AlwaysTrue<EdgeId>>()) :
+			base(g), comp_(c), proceed_condition_(proceed_condition) {
 
 	}
 
@@ -50,35 +54,76 @@ public:
 			}
 
 			TRACE("Processing edge " << this->g().str(*it));
-			triggered = Process(*it);
+			triggered |= Process(*it);
 		}
 		TRACE("Finished processing. Triggered = " << triggered);
 		return triggered;
 	}
 
 private:
-	DECL_LOGGER("EdgeProcessingAlgorithm");
+	DECL_LOGGER("EdgeProcessingAlgorithm")
+	;
 };
 
-template <class Graph, class Comparator = std::less<typename Graph::EdgeId>>
-class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm {
-	typedef EdgeProcessingAlgorithm<Graph> base;
+template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
+class EdgeRemovingAlgorithm: public EdgeProcessingAlgorithm<Graph, Comparator> {
+	typedef EdgeProcessingAlgorithm<Graph, Comparator> base;
 	typedef typename Graph::EdgeId EdgeId;
+
+	shared_ptr<func::Predicate<EdgeId>> remove_condition_;
+	boost::function<void(EdgeId)> removal_handler_;
 
 protected:
 	bool Process(EdgeId e) {
+		if (remove_condition_->Check(e)) {
+			TRACE("Deletion of edge " << this->g().str(e) << " was requested");
+			VertexId start = this->g().EdgeStart(e);
+			VertexId end = this->g().EdgeEnd(e);
 
+			//todo remove this stupid condition!!!
+			if (start == end) {
+				return false;
+			}
+
+			TRACE("Start " << this->g().str(start));
+			TRACE("End " << this->g().str(end));
+			if (removal_handler_) {
+				TRACE("Calling handler");
+				removal_handler_(e);
+			}
+
+			TRACE("Deleting edge");
+			this->g().DeleteEdge(e);
+			TRACE("Compressing locality");
+			if (!this->g().RelatedVertices(start, end)) {
+				TRACE("Vertices not related");
+				TRACE("Compressing end");
+				this->g().CompressVertex(end);
+				TRACE("End Compressed");
+			}
+			TRACE("Compressing start");
+			this->g().CompressVertex(start);
+			TRACE("Start compressed");
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 public:
-	EdgeRemovingAlgorithm(Graph& g, const Comparator& c, shared_ptr<func::Predicate<EdgeId>> remove_condition
-			, shared_ptr<func::Predicate<EdgeId>> proceed_condition)
-	: base(g, c, proceed_condition) {
+	EdgeRemovingAlgorithm(Graph& g,
+			shared_ptr<func::Predicate<EdgeId>> remove_condition,
+			boost::function<void(EdgeId)> removal_handler = boost::none,
+			const Comparator& c = Comparator(),
+			shared_ptr<func::Predicate<EdgeId>> proceed_condition = make_shared<
+					func::AlwaysTrue<EdgeId>>()) :
+			base(g, c, proceed_condition), remove_condition_(remove_condition) {
 
 	}
 
 private:
-	DECL_LOGGER("EdgeRemovingAlgorithm");
+	DECL_LOGGER("EdgeRemovingAlgorithm")
+	;
 };
 
 }

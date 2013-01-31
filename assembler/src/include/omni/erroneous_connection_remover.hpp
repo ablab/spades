@@ -14,6 +14,7 @@
 #pragma once
 
 #include "graph_processing_algorithm.hpp"
+#include "basic_edge_conditions.hpp"
 #include "omni_tools.hpp"
 #include "omni_utils.hpp"
 #include "func.hpp"
@@ -52,89 +53,92 @@ public:
 	}
 };
 
+template<class Graph, class PathFinder>
+shared_ptr<PathLengthLowerBound<Graph, PathFinder>> MakePathLengthLowerBound(
+		const Graph& g, const PathFinder& path_finder, size_t min_length) {
+	return make_shared<PathLengthLowerBound<Graph, PathFinder>>(g, path_finder,
+			min_length);
+}
+
 template<class Graph>
 class UniquenessPlausabilityCondition: public EdgeCondition<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef EdgeCondition<Graph> base;
 
-	size_t uniqueness_length_;
-	size_t plausibility_length_;
-//	shared_ptr<Predicate<EdgeId>> uniqueness_condition_;
-//	shared_ptr<Predicate<EdgeId>> plausiblity_condition_;
+	virtual bool CheckUniqueness(EdgeId e, bool forward) const = 0;
 
-	bool CheckUniqueness(EdgeId e,
-			const AbstractDirection<Graph>& direction) const {
-		size_t path_length = CummulativeLength(this->g(),
-				unique_path_finder_(e, direction));
-		return path_length >= uniqueness_length_;
-	}
+	virtual bool CheckPlausibility(EdgeId e, bool forward) const = 0;
 
-	bool CheckPlausibility(EdgeId e,
-			const AbstractDirection<Graph>& direction) const {
-		size_t path_length = CummulativeLength(this->graph(),
-				plausible_path_finder_(e, direction));
-		return path_length >= plausibility_length_;
-	}
-
-	bool SingleUnique(const vector<EdgeId>& edges,
-			const AbstractDirection<Graph>& direction) const {
-		return edges.size() == 1 && CheckUniqueness(*edges.begin(), direction);
+	bool SingleUnique(const vector<EdgeId>& edges, bool forward) const {
+		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
 	}
 
 	bool ExistPlausible(EdgeId init_e, const vector<EdgeId>& edges,
-			const AbstractDirection<Graph>& direction) const {
+			bool forward) const {
 		FOREACH(EdgeId e, edges) {
 			if (e == init_e)
 				continue;
-			if (CheckPlausibility(e, direction)) {
+			if (CheckPlausibility(e, forward)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	bool Check(EdgeId e, const AbstractDirection<Graph>& forward,
-			const AbstractDirection<Graph>& backward) const {
-		return SingleUnique(forward.IncomingEdges(forward.EdgeStart(e)),
-				backward)
+	bool Check(EdgeId e, const AbstractDirection<Graph>& direction) const {
+		return SingleUnique(direction.IncomingEdges(direction.EdgeStart(e)),
+				!direction.IsForward())
 				&& ExistPlausible(e,
-						forward.OutgoingEdges(forward.EdgeStart(e)), forward);
+						direction.OutgoingEdges(direction.EdgeStart(e)),
+						direction.IsForward());
 	}
 
 public:
 
-	UniquenessPlausabilityCondition(const Graph& g,
-			const UniquePF& unique_path_finder, size_t uniqueness_length,
-			const PlausiblePF& plausible_path_finder,
-			size_t plausibility_length) :
-			base(g), unique_path_finder_(unique_path_finder), uniqueness_length_(
-					uniqueness_length), plausible_path_finder_(
-					plausible_path_finder), plausibility_length_(
-					plausibility_length) {
+	UniquenessPlausabilityCondition(const Graph& g) :
+			base(g) {
 
 	}
 
 	bool Check(EdgeId e) const {
-		ForwardDirection<Graph> forward(this->g());
-		BackwardDirection<Graph> backward(this->g());
-		return Check(e, forward, backward) || Check(e, backward, forward);
+		return Check(e, ForwardDirection<Graph>(this->g()))
+				|| Check(e, BackwardDirection<Graph>(this->g()));
 	}
 
 };
 
-template<class Graph, class UniquePF, class PlausiblePF>
-shared_ptr<UniquenessPlausabilityCondition<Graph, UniquePF, PlausiblePF>> MakeUniquenessPlausabilityCondition(
-		const Graph& g, const UniquePF& unique_path_finder,
-		size_t uniqueness_length, const PlausiblePF& plausible_path_finder,
-		size_t plausibility_length) {
-	return make_shared<
-			UniquenessPlausabilityCondition<Graph, UniquePF, PlausiblePF>>(g,
-			unique_path_finder, uniqueness_length, plausible_path_finder,
-			plausibility_length);
-}
+template<class Graph>
+class PredicateUniquenessPlausabilityCondition: public UniquenessPlausabilityCondition<
+		Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef shared_ptr<Predicate<EdgeId>> EdgePredicate;
+	typedef UniquenessPlausabilityCondition<Graph> base;
 
-template<class Graph, class UniquePF, class PlausiblePF>
+	EdgePredicate uniqueness_condition_;
+	EdgePredicate plausiblity_condition_;
+
+	bool CheckUniqueness(EdgeId e, bool) const {
+		return uniqueness_condition_->Check(e);
+	}
+
+	bool CheckPlausibility(EdgeId e, bool) const {
+		return plausiblity_condition_->Check(e);
+	}
+
+public:
+
+	PredicateUniquenessPlausabilityCondition(const Graph& g,
+			EdgePredicate uniqueness_condition,
+			EdgePredicate plausiblity_condition) :
+			base(g), uniqueness_condition_(uniqueness_condition), plausiblity_condition_(
+					plausiblity_condition) {
+	}
+
+};
+
+template<class Graph>
 class AlternativesPresenceCondition: public EdgeCondition<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -174,46 +178,72 @@ public:
 
 };
 
-template<class Graph>
-class ErroneousEdgeRemover {
+template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
+class ChimericEdgeRemovingAlgorithm: public EdgeRemovingAlgorithm<Graph,
+		Comparator> {
+	typedef EdgeRemovingAlgorithm<Graph, Comparator> base;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	Graph& g_;
-	AbstractEdgeRemover<Graph>& edge_remover_;
-	bool graph_changed_;
+
+	shared_ptr<func::Predicate<EdgeId>> remove_condition_;
+	boost::function<void(EdgeId)> removal_handler_;
+
 public:
-	ErroneousEdgeRemover(Graph& g, AbstractEdgeRemover<Graph>& edge_remover) :
-			g_(g), edge_remover_(edge_remover), graph_changed_(false) {
 
-	}
-
-	virtual ~ErroneousEdgeRemover() {
-
-	}
-
-	bool RemoveEdges() {
-		InnerRemoveEdges();
-		omnigraph::Cleaner<Graph> cleaner(g_);
-		cleaner.Clean();
-		return graph_changed_;
-	}
-
-protected:
-	void DeleteEdge(EdgeId edge) {
-		TRACE("Transferring deletion task to edge remover");
-		graph_changed_ = edge_remover_.DeleteEdge(edge) || graph_changed_;
-	}
-
-	virtual void InnerRemoveEdges() = 0;
-
-	const Graph& graph() const {
-		return g_;
+	ChimericEdgeRemovingAlgorithm(Graph& g, size_t max_length,
+			shared_ptr<func::Predicate<EdgeId>> remove_condition,
+			boost::function<void(EdgeId)> removal_handler = boost::none,
+			const Comparator& c = Comparator(),
+			shared_ptr<func::Predicate<EdgeId>> proceed_condition = make_shared<
+					func::AlwaysTrue<EdgeId>>()) :
+			base(g,
+					func::And(remove_condition,
+							AlternativesPresenceCondition<Graph>()),
+					removal_handler, c, proceed_condition) {
 	}
 
 private:
-	DECL_LOGGER("ErroneousEdgeRemover")
+	DECL_LOGGER("EdgeRemovingAlgorithm")
 	;
 };
+
+//template<class Graph>
+//class ErroneousEdgeRemover {
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//	Graph& g_;
+//	AbstractEdgeRemover<Graph>& edge_remover_;
+//	bool graph_changed_;
+//public:
+//	ErroneousEdgeRemover(Graph& g, AbstractEdgeRemover<Graph>& edge_remover) :
+//			g_(g), edge_remover_(edge_remover), graph_changed_(false) {
+//	}
+//
+//	virtual ~ErroneousEdgeRemover() {
+//	}
+//
+//	bool RemoveEdges() {
+//		InnerRemoveEdges();
+//		omnigraph::Cleaner<Graph> cleaner(g_);
+//		cleaner.Clean();
+//		return graph_changed_;
+//	}
+//
+//protected:
+//	void DeleteEdge(EdgeId edge) {
+//		TRACE("Transferring deletion task to edge remover");
+//		graph_changed_ = edge_remover_.DeleteEdge(edge) || graph_changed_;
+//	}
+//
+//	virtual void InnerRemoveEdges() = 0;
+//
+//	const Graph& graph() const {
+//		return g_;
+//	}
+//
+//private:
+//	DECL_LOGGER("ErroneousEdgeRemover")
+//	;
+//};
 
 ////todo isn't this one cheating?!!!
 //template<class Graph>
@@ -262,7 +292,7 @@ private:
 //};
 
 //default comparator used
-template<class Graph, class UniquePF, class PlausiblePF>
+template<class Graph>
 class ChimericEdgeCondition: public EdgeCondition<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -279,8 +309,7 @@ class ChimericEdgeCondition: public EdgeCondition<Graph> {
 	}
 
 	bool CheckLength(EdgeId e) const {
-		return this->g().length(e) <= this->g().k()
-				&& this->g().length(e) >= this->g().k() - max_overlap_;
+		return this->g().length(e) >= this->g().k() - max_overlap_;
 	}
 
 public:
@@ -295,6 +324,41 @@ public:
 				&& CheckStart(this->g().EdgeEnd(e)) && CheckLength(e);
 	}
 
+};
+
+template<class Graph>
+class ChimericEdgesRemover: public ChimericEdgeRemovingAlgorithm<Graph> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ChimericEdgeRemovingAlgorithm<Graph> base;
+
+public:
+	ChimericEdgesRemover(Graph &g, size_t max_overlap,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g,
+					func::And(make_shared<LengthUpperBound<Graph>>(g, g.k()),
+							make_shared<ChimericEdgeCondition<Graph>>(g,
+									max_overlap)), removal_handler) {
+	}
+};
+
+//todo refactor
+template<class Graph>
+class IterativeLowCoverageEdgeRemover: public ChimericEdgeRemovingAlgorithm<
+		Graph, CoverageComparator<Graph>> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ChimericEdgeRemovingAlgorithm<Graph> base;
+
+public:
+	IterativeLowCoverageEdgeRemover(Graph &g, double max_coverage,
+			shared_ptr<Predicate<EdgeId>> condition,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g, condition, removal_handler, CoverageComparator<Graph>(g),
+					make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
+	}
 };
 
 //template<class Graph>
@@ -774,13 +838,137 @@ private:
 //	;
 //};
 
+//template<class Graph>
+//class ThornRemover: public ErroneousEdgeRemover<Graph> {
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//	typedef ErroneousEdgeRemover<Graph> base;
+//
+//	size_t max_length_;
+//	size_t uniqueness_length_;
+//	size_t dijkstra_depth_;
+//
+//	bool Unique(const vector<EdgeId>& edges, bool forward) const {
+//		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
+//	}
+//
+//	bool CheckUnique(EdgeId e) const {
+//		TRACE("Checking conditions for edge start");
+//		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)),
+//				false)
+//				|| Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
+//						true);
+//	}
+//
+//	bool CheckThorn(EdgeId e) {
+//		if (this->graph().EdgeStart(e) == this->graph().EdgeEnd(e))
+//			return false;
+//		if (this->graph().RelatedVertices(this->graph().EdgeStart(e),
+//				this->graph().EdgeEnd(e))) {
+//			return true;
+//		}
+//		if (this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e)) != 2)
+//			return false;
+//		if (this->graph().IncomingEdgeCount(this->graph().EdgeStart(e)) != 1)
+//			return false;
+//		if (this->graph().OutgoingEdgeCount(this->graph().EdgeEnd(e)) != 1)
+//			return false;
+//		if (this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e)) != 2)
+//			return false;
+//
+//		BoundedDijkstra<Graph> dij(this->graph(), dijkstra_depth_);
+//		dij.run(this->graph().EdgeStart(e));
+//		vector<VertexId> reached = dij.ReachedVertices();
+//		for (auto it = reached.begin(); it != reached.end(); ++it) {
+//			if (*it != this->graph().EdgeEnd(e)
+//					&& this->graph().RelatedVertices(*it,
+//							this->graph().EdgeEnd(e))) {
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
+//
+//	bool CheckAlternativeCoverage(const vector<EdgeId>& edges, EdgeId e) {
+//		for (auto it = edges.begin(); it != edges.end(); ++it) {
+//			if (*it != e && this->graph().length(*it) < 400
+//					&& this->graph().coverage(*it)
+//							< 15 * this->graph().coverage(e)) {
+//				return false;
+//			}
+//		}
+//		return true;
+//	}
+//
+//	bool CheckCoverageAround(EdgeId e) {
+//		return CheckAlternativeCoverage(
+//				this->graph().IncomingEdges(this->graph().EdgeStart(e)), e)
+//				&& CheckAlternativeCoverage(
+//						this->graph().OutgoingEdges(this->graph().EdgeStart(e)),
+//						e)
+//				&& CheckAlternativeCoverage(
+//						this->graph().IncomingEdges(this->graph().EdgeEnd(e)),
+//						e)
+//				&& CheckAlternativeCoverage(
+//						this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
+//						e);
+//	}
+//
+//	bool Check(EdgeId e) {
+//		bool tmp = (CheckUnique(e) || CheckCoverageAround(e));
+//		if (tmp)
+//			tmp &= CheckThorn(e);
+//		return tmp;
+//	}
+//
+//public:
+//	ThornRemover(Graph& g, size_t max_length, size_t uniqueness_length,
+//			size_t dijkstra_depth, AbstractEdgeRemover<Graph>& edge_remover) :
+//			base(g, edge_remover), max_length_(max_length), uniqueness_length_(
+//					uniqueness_length), dijkstra_depth_(dijkstra_depth) {
+//		VERIFY(max_length < uniqueness_length);
+//	}
+//
+//protected:
+//
+//	size_t uniqueness_length() const {
+//		return uniqueness_length_;
+//	}
+//
+//	virtual bool CheckUniqueness(EdgeId e, bool forward) const {
+//		return this->graph().length(e) >= uniqueness_length_;
+//	}
+//
+//	void InnerRemoveEdges() {
+//		LengthComparator<Graph> comparator(this->graph());
+//		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
+//				++it) {
+//			typename Graph::EdgeId e = *it;
+//			if (this->graph().length(e) > max_length_) {
+//				return;
+//			}
+//			TRACE("Checking edge " << this->graph().length(e));
+//			if (Check(e)) {
+//				TRACE("Deleting edge " << this->graph().length(e));
+//				this->DeleteEdge(e);
+//				TRACE("Edge was deleted");
+//			} else {
+//				TRACE("Edge " << this->graph().length(e) << " was not deleted");
+//			}
+//		}
+//	}
+//private:
+//	DECL_LOGGER("ThornRemover")
+//	;
+//};
+
+//todo refactor
 template<class Graph>
-class ThornRemover: public ErroneousEdgeRemover<Graph> {
+class ThornCondition: public EdgeCondition<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef ErroneousEdgeRemover<Graph> base;
+	typedef EdgeCondition<Graph> base;
 
-	size_t max_length_;
 	size_t uniqueness_length_;
 	size_t dijkstra_depth_;
 
@@ -850,52 +1038,28 @@ class ThornRemover: public ErroneousEdgeRemover<Graph> {
 						e);
 	}
 
-	bool Check(EdgeId e) {
+	bool CheckUniqueness(EdgeId e, bool forward) const {
+		return this->graph().length(e) >= uniqueness_length_;
+	}
+
+public:
+
+	ThornCondition(Graph& g, size_t uniqueness_length, size_t dijkstra_depth) :
+			base(g), uniqueness_length_(uniqueness_length), dijkstra_depth_(
+					dijkstra_depth) {
+	}
+
+	bool Check(EdgeId e) const {
 		bool tmp = (CheckUnique(e) || CheckCoverageAround(e));
 		if (tmp)
 			tmp &= CheckThorn(e);
 		return tmp;
 	}
 
-public:
-	ThornRemover(Graph& g, size_t max_length, size_t uniqueness_length,
-			size_t dijkstra_depth, AbstractEdgeRemover<Graph>& edge_remover) :
-			base(g, edge_remover), max_length_(max_length), uniqueness_length_(
-					uniqueness_length), dijkstra_depth_(dijkstra_depth) {
-		VERIFY(max_length < uniqueness_length);
-	}
-
-protected:
-
-	size_t uniqueness_length() const {
-		return uniqueness_length_;
-	}
-
-	virtual bool CheckUniqueness(EdgeId e, bool forward) const {
-		return this->graph().length(e) >= uniqueness_length_;
-	}
-
-	void InnerRemoveEdges() {
-		LengthComparator<Graph> comparator(this->graph());
-		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd();
-				++it) {
-			typename Graph::EdgeId e = *it;
-			if (this->graph().length(e) > max_length_) {
-				return;
-			}
-			TRACE("Checking edge " << this->graph().length(e));
-			if (Check(e)) {
-				TRACE("Deleting edge " << this->graph().length(e));
-				this->DeleteEdge(e);
-				TRACE("Edge was deleted");
-			} else {
-				TRACE("Edge " << this->graph().length(e) << " was not deleted");
-			}
-		}
-	}
 private:
-	DECL_LOGGER("ThornRemover")
+	DECL_LOGGER("ThornCondition")
 	;
+
 };
 
 //template<class Graph>
@@ -953,57 +1117,99 @@ private:
 //};
 
 template<class Graph>
-class SimpleMultiplicityCountingChimericEdgeRemover: public TopologyChimericEdgeRemover<
+class MultiplicityCountingCondition: public UniquenessPlausabilityCondition<
 		Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef TopologyChimericEdgeRemover<Graph> base;
+	typedef shared_ptr<Predicate<EdgeId>> EdgePredicate;
+	typedef UniquenessPlausabilityCondition<Graph> base;
 
 	MultiplicityCounter<Graph> multiplicity_counter_;
-
-	PlausiblePathFinder<Graph> plausible_path_finder_;
-
-public:
-	SimpleMultiplicityCountingChimericEdgeRemover(Graph& g, size_t max_length,
-			size_t uniqueness_length, size_t plausibility_length,
-			AbstractEdgeRemover<Graph>& edge_remover) :
-			base(g, max_length, uniqueness_length, plausibility_length,
-					edge_remover), multiplicity_counter_(g, uniqueness_length,
-					8), plausible_path_finder_(g, plausibility_length * 2) {
-
-	}
-
-protected:
+	EdgePredicate plausiblity_condition_;
 
 	bool CheckUniqueness(EdgeId e, bool forward) const {
 		TRACE(
-				"Checking " << this->graph().int_id(e) << " for uniqueness in " << (forward ? "forward" : "backward") << " direction");
+				"Checking " << this->g().int_id(e) << " for uniqueness in " << (forward ? "forward" : "backward") << " direction");
 		VertexId start =
-				forward ? this->graph().EdgeEnd(e) : this->graph().EdgeStart(e);
+				forward ? this->g().EdgeEnd(e) : this->g().EdgeStart(e);
 		bool result = multiplicity_counter_.count(e, start) <= 1;
 		TRACE(
-				"Edge " << this->graph().int_id(e) << " is" << (result ? "" : " not") << " unique");
+				"Edge " << this->g().int_id(e) << " is" << (result ? "" : " not") << " unique");
 		return result;
 	}
 
-	bool CheckPlausibility(EdgeId e, bool forward) const {
-		TRACE(
-				"Checking " << this->graph().int_id(e) << " for plausibility in " << (forward ? "forward" : "backward") << " direction");
-		bool result = CummulativeLength(this->graph(),
-				forward ?
-						plausible_path_finder_(e,
-								ForwardDirection<Graph>(this->graph())) :
-						plausible_path_finder_(e,
-								BackwardDirection<Graph>(this->graph())))
-				>= this->plausibility_length();
-		TRACE(
-				"Edge " << this->graph().int_id(e) << " is" << (result ? "" : " not") << " plausible");
-		return result;
+	bool CheckPlausibility(EdgeId e, bool) const {
+		return plausiblity_condition_->Check(e);
 	}
+
+public:
+
+	MultiplicityCountingCondition(const Graph& g, size_t uniqueness_length,
+			EdgePredicate plausiblity_condition) :
+			//todo why 8???
+			base(g), multiplicity_counter_(g, uniqueness_length, 8), plausiblity_condition_(
+					plausiblity_condition) {
+
+	}
+
 private:
-	DECL_LOGGER("SimpleMultiplicityCountingChimericEdgeRemover")
+
+	DECL_LOGGER("MultiplicityCountingCondition")
 	;
 };
+
+//template<class Graph>
+//class SimpleMultiplicityCountingChimericEdgeRemover: public TopologyChimericEdgeRemover<
+//		Graph> {
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//	typedef TopologyChimericEdgeRemover<Graph> base;
+//
+//	MultiplicityCounter<Graph> multiplicity_counter_;
+//
+//	PlausiblePathFinder<Graph> plausible_path_finder_;
+//
+//public:
+//	SimpleMultiplicityCountingChimericEdgeRemover(Graph& g, size_t max_length,
+//			size_t uniqueness_length, size_t plausibility_length,
+//			AbstractEdgeRemover<Graph>& edge_remover) :
+//			base(g, max_length, uniqueness_length, plausibility_length,
+//					edge_remover), multiplicity_counter_(g, uniqueness_length,
+//					8), plausible_path_finder_(g, plausibility_length * 2) {
+//
+//	}
+//
+//protected:
+//
+//	bool CheckUniqueness(EdgeId e, bool forward) const {
+//		TRACE(
+//				"Checking " << this->graph().int_id(e) << " for uniqueness in " << (forward ? "forward" : "backward") << " direction");
+//		VertexId start =
+//				forward ? this->graph().EdgeEnd(e) : this->graph().EdgeStart(e);
+//		bool result = multiplicity_counter_.count(e, start) <= 1;
+//		TRACE(
+//				"Edge " << this->graph().int_id(e) << " is" << (result ? "" : " not") << " unique");
+//		return result;
+//	}
+//
+//	bool CheckPlausibility(EdgeId e, bool forward) const {
+//		TRACE(
+//				"Checking " << this->graph().int_id(e) << " for plausibility in " << (forward ? "forward" : "backward") << " direction");
+//		bool result = CummulativeLength(this->graph(),
+//				forward ?
+//						plausible_path_finder_(e,
+//								ForwardDirection<Graph>(this->graph())) :
+//						plausible_path_finder_(e,
+//								BackwardDirection<Graph>(this->graph())))
+//				>= this->plausibility_length();
+//		TRACE(
+//				"Edge " << this->graph().int_id(e) << " is" << (result ? "" : " not") << " plausible");
+//		return result;
+//	}
+//private:
+//	DECL_LOGGER("SimpleMultiplicityCountingChimericEdgeRemover")
+//	;
+//};
 
 template<class Graph>
 class PairInfoAwareErroneousEdgeRemover: public ErroneousEdgeRemover<Graph> {

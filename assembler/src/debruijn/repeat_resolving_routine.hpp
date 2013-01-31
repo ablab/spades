@@ -664,8 +664,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //				cfg::get().output_dir + subfolder + graph_name + "_resolved.dot",
 //				"no_repeat_graph");
 
-	EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g,
-			false);
 	size_t iters = 3; // TODO Constant 3? Shouldn't it be taken from config?
 	map<EdgeId, pair<size_t, size_t> > distance_to_repeats_end;
 	FindDistanceFromRepeats(origin_gp, labels_after,
