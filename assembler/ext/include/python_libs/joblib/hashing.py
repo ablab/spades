@@ -14,7 +14,10 @@ hashing of numpy arrays.
 # License: BSD Style, 3 clauses.
 
 import pickle
-import hashlib
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 import sys
 import types
 import struct
@@ -46,7 +49,7 @@ class Hasher(pickle.Pickler):
         self.stream = StringIO()
         pickle.Pickler.__init__(self, self.stream, protocol=2)
         # Initialise the hash obj
-        self._hash = hashlib.new(hash_name)
+        self._hash = md5.new() # hashlib.new(hash_name) # replaced because python 2.4 doesn't support hashlib
 
     def hash(self, obj, return_digest=True):
         self.dump(obj)

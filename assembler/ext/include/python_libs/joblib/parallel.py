@@ -44,9 +44,9 @@ if multiprocessing:
         multiprocessing = None
         warnings.warn('%s.  joblib will operate in serial mode' % (e,))
 
-from .format_stack import format_exc, format_outer_frames
-from .logger import Logger, short_format_time
-from .my_exceptions import TransportableException, _mk_exception
+from format_stack import format_exc, format_outer_frames
+from logger import Logger, short_format_time
+from my_exceptions import TransportableException, _mk_exception
 
 
 ###############################################################################
@@ -322,12 +322,13 @@ class Parallel(Logger):
             self._lock.acquire()
             # If job.get() catches an exception, it closes the queue:
             try:
-                job = self._pool.apply_async(SafeFunction(func), args,
-                            kwargs, callback=CallBack(self.n_dispatched, self))
-                self._jobs.append(job)
-                self.n_dispatched += 1
-            except AssertionError:
-                print '[Parallel] Pool seems closed'
+                try:
+                    job = self._pool.apply_async(SafeFunction(func), args,
+                                kwargs, callback=CallBack(self.n_dispatched, self))
+                    self._jobs.append(job)
+                    self.n_dispatched += 1
+                except AssertionError:
+                    print '[Parallel] Pool seems closed'
             finally:
                 self._lock.release()
 

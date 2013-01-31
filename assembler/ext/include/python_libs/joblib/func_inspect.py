@@ -11,7 +11,6 @@ My own variation on function-specific inspect-like features.
 # Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
 # Copyright (c) 2009 Gael Varoquaux
 # License: BSD Style, 3 clauses.
-from __future__ import with_statement
 
 from itertools import islice
 import inspect
@@ -44,10 +43,11 @@ def get_func_code(func):
     try:
         # Try to retrieve the source code.
         source_file = func.func_code.co_filename
-        with open(source_file) as source_file_obj:
-            first_line = func.func_code.co_firstlineno
-            # All the lines after the function definition:
-            source_lines = list(islice(source_file_obj, first_line - 1, None))
+        source_file_obj = open(source_file)
+        first_line = func.func_code.co_firstlineno
+        # All the lines after the function definition:
+        source_lines = list(islice(source_file_obj, first_line - 1, None))
+        source_file_obj.close()
         return ''.join(inspect.getblock(source_lines)), source_file, first_line
     except:
         # If the source code fails, we use the hash. This is fragile and

@@ -14,8 +14,6 @@ This module needs much love to become useful.
 # Copyright (c) 2008 Gael Varoquaux
 # License: BSD Style, 3 clauses.
 
-from __future__ import with_statement
-
 import time
 import sys
 import os
@@ -23,7 +21,7 @@ import shutil
 import logging
 import pprint
 
-from .disk import mkdirp
+from disk import mkdirp
 
 
 def _squeeze_time(t):
@@ -121,9 +119,10 @@ class PrintTime(object):
                 except:
                     "No reason failing here"
             try:
-                with open(logfile, 'w') as logfile:
-                    logfile.write('\nLogging joblib python script\n')
-                    logfile.write('\n---%s---\n' % time.ctime(self.last_time))
+                logfile = open(logfile, 'w')
+                logfile.write('\nLogging joblib python script\n')
+                logfile.write('\n---%s---\n' % time.ctime(self.last_time))
+                logfile.close()
             except:
                 """ Multiprocessing writing to files can create race
                     conditions. Rather fail silently than crash the

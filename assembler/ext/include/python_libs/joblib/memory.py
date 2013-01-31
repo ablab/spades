@@ -15,7 +15,6 @@ is called with the same input arguments.
 # License: BSD Style, 3 clauses.
 
 
-from __future__ import with_statement
 import os
 import shutil
 import time
@@ -235,8 +234,9 @@ class MemorizedFunc(Logger):
         """ Write the function code and the filename to a file.
         """
         func_code = '%s %i\n%s' % (FIRST_LINE_TEXT, first_line, func_code)
-        with open(filename, 'w') as out:
-            out.write(func_code)
+        out = open(filename, 'w')
+        out.write(func_code)
+        out.close()
 
     def _check_previous_func_code(self, stacklevel=2):
         """
@@ -251,9 +251,9 @@ class MemorizedFunc(Logger):
         func_code_file = os.path.join(func_dir, 'func_code.py')
 
         try:
-            with open(func_code_file) as infile:
-                old_func_code, old_first_line = \
-                            extract_first_line(infile.read())
+            infile = open(func_code_file)
+            old_func_code, old_first_line = extract_first_line(infile.read())
+            infile.close()
         except IOError:
                 self._write_func_code(func_code_file, func_code, first_line)
                 return False
@@ -576,6 +576,9 @@ class Memory(Logger):
             In addition, when unpickling, we run the __init__
         """
         # We need to remove 'joblib' from the end of cachedir
-        cachedir = self.cachedir[:-7] if self.cachedir is not None else None
+        if self.cachedir is not None:
+            cachedir = self.cachedir[:-7]
+        else:
+            cachedir = None
         return (self.__class__, (cachedir,
                 self.mmap_mode, self.compress, self._verbose))
