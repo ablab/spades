@@ -48,7 +48,7 @@ public:
 		TRACE("Start processing");
 		bool triggered = false;
 		for (auto it = this->g().SmartEdgeBegin(comp_); !it.IsEnd(); ++it) {
-			if (!proceed_condition_->Check()) {
+			if (!proceed_condition_->Check(*it)) {
 				TRACE("Stop condition was reached.");
 				break;
 			}
@@ -71,40 +71,13 @@ class EdgeRemovingAlgorithm: public EdgeProcessingAlgorithm<Graph, Comparator> {
 	typedef typename Graph::EdgeId EdgeId;
 
 	shared_ptr<func::Predicate<EdgeId>> remove_condition_;
-	boost::function<void(EdgeId)> removal_handler_;
+//	boost::function<void(EdgeId)> removal_handler_;
+	EdgeRemover<Graph> edge_remover_;
 
 protected:
 	bool Process(EdgeId e) {
 		if (remove_condition_->Check(e)) {
-			TRACE("Deletion of edge " << this->g().str(e) << " was requested");
-			VertexId start = this->g().EdgeStart(e);
-			VertexId end = this->g().EdgeEnd(e);
-
-			//todo remove this stupid condition!!!
-			if (start == end) {
-				return false;
-			}
-
-			TRACE("Start " << this->g().str(start));
-			TRACE("End " << this->g().str(end));
-			if (removal_handler_) {
-				TRACE("Calling handler");
-				removal_handler_(e);
-			}
-
-			TRACE("Deleting edge");
-			this->g().DeleteEdge(e);
-			TRACE("Compressing locality");
-			if (!this->g().RelatedVertices(start, end)) {
-				TRACE("Vertices not related");
-				TRACE("Compressing end");
-				this->g().CompressVertex(end);
-				TRACE("End Compressed");
-			}
-			TRACE("Compressing start");
-			this->g().CompressVertex(start);
-			TRACE("Start compressed");
-			return true;
+			return edge_remover_.DeleteEdge(e);
 		} else {
 			return false;
 		}
@@ -117,7 +90,8 @@ public:
 			const Comparator& c = Comparator(),
 			shared_ptr<func::Predicate<EdgeId>> proceed_condition = make_shared<
 					func::AlwaysTrue<EdgeId>>()) :
-			base(g, c, proceed_condition), remove_condition_(remove_condition) {
+			base(g, c, proceed_condition), remove_condition_(remove_condition), edge_remover_(
+					g, removal_handler) {
 
 	}
 

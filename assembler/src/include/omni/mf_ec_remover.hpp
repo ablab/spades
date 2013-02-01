@@ -464,10 +464,10 @@ private:
 
 public:
 	MaxFlowECRemover(Graph& graph, size_t max_length, size_t uniqueness_length,
-			size_t plausibility_length, EdgeRemover<Graph>& edge_remover) :
+			size_t plausibility_length, boost::function<void (EdgeId)> removal_handler) :
 			graph_(graph), max_length_(max_length), uniqueness_length_(
 					uniqueness_length), plausibility_length_(
-					plausibility_length), edge_remover_(edge_remover) {
+					plausibility_length), edge_remover_(graph, removal_handler) {
 		VERIFY(uniqueness_length >= plausibility_length);
 		VERIFY(plausibility_length > max_length);
 	}

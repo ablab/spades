@@ -1057,9 +1057,8 @@ void RemoveErroneousEdgesWithPI(graph_pack& gp,
   boost::function<void(EdgeId)> removal_handler_f = boost::bind(
       &QualityLoggingRemovalHandler<Graph>::HandleDelete,
       &qual_removal_handler, _1);
-  EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
   INFO("Pair info aware ErroneousConnectionsRemoval");
-  RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index, edge_remover);
+  RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index, removal_handler_f);
   INFO("Pair info aware ErroneousConnectionsRemoval stats");
   CountStats(gp.g, gp.index, gp.genome, gp.k_value);
 }

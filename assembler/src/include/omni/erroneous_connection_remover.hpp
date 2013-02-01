@@ -196,7 +196,7 @@ public:
 			shared_ptr<func::Predicate<EdgeId>> proceed_condition = make_shared<
 					func::AlwaysTrue<EdgeId>>()) :
 			base(g,
-					func::And(remove_condition,
+					func::And<EdgeId>(remove_condition,
 							AlternativesPresenceCondition<Graph>()),
 					removal_handler, c, proceed_condition) {
 	}
@@ -337,7 +337,7 @@ public:
 	ChimericEdgesRemover(Graph &g, size_t max_overlap,
 			boost::function<void(EdgeId)> removal_handler) :
 			base(g,
-					func::And(make_shared<LengthUpperBound<Graph>>(g, g.k()),
+					func::And<EdgeId>(make_shared<LengthUpperBound<Graph>>(g, g.k()),
 							make_shared<ChimericEdgeCondition<Graph>>(g,
 									max_overlap)), removal_handler) {
 	}
@@ -350,7 +350,7 @@ class IterativeLowCoverageEdgeRemover: public ChimericEdgeRemovingAlgorithm<
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef ChimericEdgeRemovingAlgorithm<Graph> base;
+	typedef ChimericEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
 
 public:
 	IterativeLowCoverageEdgeRemover(Graph &g, double max_coverage,
@@ -447,6 +447,29 @@ private:
 	DECL_LOGGER("RelativeCoverageCondition")
 	;
 
+};
+
+template<class Graph>
+class RelativeLowCoverageEdgeRemover: public ChimericEdgeRemovingAlgorithm<
+		Graph, CoverageComparator<Graph>> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ChimericEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
+
+public:
+	RelativeLowCoverageEdgeRemover(Graph& g, size_t max_length,
+			double max_coverage, double max_relative_coverage,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g,
+					func::And<EdgeId>(
+							make_shared<RelativeCoverageCondition<Graph>>(g,
+									max_relative_coverage),
+							make_shared<LengthUpperBound<Graph>>(g,
+									max_length)), removal_handler,
+					CoverageComparator<Graph>(g),
+					make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
+	}
 };
 
 //template<class Graph>
@@ -559,7 +582,7 @@ class CheatingChimericEdgeCondition: public EdgeCondition<Graph> {
 	typedef EdgeCondition<Graph> base;
 
 	double coverage_gap_;
-	size_t neighbour_length_threshold;
+	size_t neighbour_length_threshold_;
 
 	bool StrongNeighbourCondition(EdgeId neighbour_edge, EdgeId possible_ec) {
 		return neighbour_edge == possible_ec
@@ -588,17 +611,37 @@ public:
 
 	bool Check(EdgeId e) const {
 		vector<EdgeId> adjacent_edges;
-		VertexId start = g.EdgeStart(e), end = g.EdgeEnd(e);
-		Append(adjacent_edges, g.out_begin(start), g.out_end(start));
-		Append(adjacent_edges, g.in_begin(start), g.in_end(start));
-		Append(adjacent_edges, g.out_begin(end), g.out_end(end));
-		Append(adjacent_edges, g.in_begin(end), g.in_end(end));
+		VertexId start = this->g().EdgeStart(e), end = this->g().EdgeEnd(e);
+		Append(adjacent_edges, this->g().out_begin(start), this->g().out_end(start));
+		Append(adjacent_edges, this->g().in_begin(start), this->g().in_end(start));
+		Append(adjacent_edges, this->g().out_begin(end), this->g().out_end(end));
+		Append(adjacent_edges, this->g().in_begin(end), this->g().in_end(end));
 		return CheckAdjacent(adjacent_edges, e);
 	}
 
 private:
 	DECL_LOGGER("CheatingChimericEdgeCondition")
 	;
+};
+
+template<class Graph>
+class CheatingChimericEdgeRemover: public ChimericEdgeRemovingAlgorithm<Graph,
+		LengthComparator<Graph>> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
+
+public:
+	CheatingChimericEdgeRemover(Graph& g, size_t max_length,
+			double coverage_gap, size_t neighbour_length_threshold,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g,
+					make_shared<CheatingChimericEdgeCondition<Graph>>(g,
+							coverage_gap, neighbour_length_threshold),
+					removal_handler, LengthComparator<Graph>(g),
+					make_shared<LengthUpperBound<Graph>>(g, max_length)) {
+	}
 };
 
 ////todo isn't it the same as relative coverage?!!!
@@ -669,6 +712,32 @@ private:
 ////		cleaner.Clean();
 //	}
 //};
+
+template<class Graph>
+class TopologyChimericEdgeRemover: public ChimericEdgeRemovingAlgorithm<Graph,
+		LengthComparator<Graph>> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
+
+public:
+	TopologyChimericEdgeRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length, size_t plausibility_length,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g,
+					make_shared<PredicateUniquenessPlausabilityCondition<Graph>>(
+							g,
+							/*uniqueness*/MakePathLengthLowerBound(g,
+									TrivialPathFinder<Graph>(g),
+									uniqueness_length),
+							/*plausibility*/MakePathLengthLowerBound(g,
+									TrivialPathFinder<Graph>(g),
+									plausibility_length)), removal_handler,
+					LengthComparator<Graph>(g),
+					make_shared<LengthUpperBound<Graph>>(g, max_length)) {
+	}
+};
 
 //template<class Graph>
 //class TopologyChimericEdgeRemover: public ErroneousEdgeRemover<Graph> {
@@ -770,6 +839,36 @@ private:
 //	;
 //};
 
+template<class Graph>
+class TopologyAndReliablityBasedChimericEdgeRemover: public ChimericEdgeRemovingAlgorithm<
+		Graph, LengthComparator<Graph>> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
+
+public:
+	TopologyAndReliablityBasedChimericEdgeRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length, double max_coverage,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g,
+					func::And<EdgeId>(
+							make_shared<CoverageUpperBound<Graph>>(g,
+									max_coverage),
+							make_shared<
+									PredicateUniquenessPlausabilityCondition<
+											Graph>>(g,
+									/*uniqueness*/
+									MakePathLengthLowerBound(g,
+											TrivialPathFinder<Graph>(g),
+											uniqueness_length),
+									/*plausibility*/make_shared<
+											func::AlwaysTrue<EdgeId>>())),
+					removal_handler, LengthComparator<Graph>(g),
+					make_shared<LengthUpperBound<Graph>>(g, max_length)) {
+	}
+};
+
 //template<class Graph>
 //class TopologyAndReliablityBasedChimericEdgeRemover: public ErroneousEdgeRemover<
 //		Graph> {
@@ -837,6 +936,126 @@ private:
 //	DECL_LOGGER("TopologyAndReliablityBasedChimericEdgeRemover")
 //	;
 //};
+
+//todo refactor
+template<class Graph>
+class ThornCondition: public EdgeCondition<Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef EdgeCondition<Graph> base;
+
+	size_t uniqueness_length_;
+	size_t dijkstra_depth_;
+
+	bool Unique(const vector<EdgeId>& edges, bool forward) const {
+		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
+	}
+
+	bool CheckUnique(EdgeId e) const {
+		TRACE("Checking conditions for edge start");
+		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)),
+				false)
+				|| Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
+						true);
+	}
+
+	bool CheckThorn(EdgeId e) {
+		if (this->graph().EdgeStart(e) == this->graph().EdgeEnd(e))
+			return false;
+		if (this->graph().RelatedVertices(this->graph().EdgeStart(e),
+				this->graph().EdgeEnd(e))) {
+			return true;
+		}
+		if (this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e)) != 2)
+			return false;
+		if (this->graph().IncomingEdgeCount(this->graph().EdgeStart(e)) != 1)
+			return false;
+		if (this->graph().OutgoingEdgeCount(this->graph().EdgeEnd(e)) != 1)
+			return false;
+		if (this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e)) != 2)
+			return false;
+
+		BoundedDijkstra<Graph> dij(this->graph(), dijkstra_depth_);
+		dij.run(this->graph().EdgeStart(e));
+		vector<VertexId> reached = dij.ReachedVertices();
+		for (auto it = reached.begin(); it != reached.end(); ++it) {
+			if (*it != this->graph().EdgeEnd(e)
+					&& this->graph().RelatedVertices(*it,
+							this->graph().EdgeEnd(e))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool CheckAlternativeCoverage(const vector<EdgeId>& edges, EdgeId e) {
+		for (auto it = edges.begin(); it != edges.end(); ++it) {
+			if (*it != e && this->graph().length(*it) < 400
+					&& this->graph().coverage(*it)
+							< 15 * this->graph().coverage(e)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool CheckCoverageAround(EdgeId e) {
+		return CheckAlternativeCoverage(
+				this->graph().IncomingEdges(this->graph().EdgeStart(e)), e)
+				&& CheckAlternativeCoverage(
+						this->graph().OutgoingEdges(this->graph().EdgeStart(e)),
+						e)
+				&& CheckAlternativeCoverage(
+						this->graph().IncomingEdges(this->graph().EdgeEnd(e)),
+						e)
+				&& CheckAlternativeCoverage(
+						this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
+						e);
+	}
+
+	bool CheckUniqueness(EdgeId e, bool forward) const {
+		return this->graph().length(e) >= uniqueness_length_;
+	}
+
+public:
+
+	ThornCondition(Graph& g, size_t uniqueness_length, size_t dijkstra_depth) :
+			base(g), uniqueness_length_(uniqueness_length), dijkstra_depth_(
+					dijkstra_depth) {
+	}
+
+	bool Check(EdgeId e) const {
+		bool tmp = (CheckUnique(e) || CheckCoverageAround(e));
+		if (tmp)
+			tmp &= CheckThorn(e);
+		return tmp;
+	}
+
+private:
+	DECL_LOGGER("ThornCondition")
+	;
+
+};
+
+template<class Graph>
+class ThornRemover: public ChimericEdgeRemovingAlgorithm<Graph,
+		LengthComparator<Graph>> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
+
+public:
+	ThornRemover(Graph& g, size_t max_length, size_t uniqueness_length,
+			size_t dijkstra_depth,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g,
+					make_shared<ThornCondition<Graph>>(g, uniqueness_length,
+							dijkstra_depth), removal_handler,
+					LengthComparator<Graph>(g),
+					make_shared<LengthUpperBound<Graph>>(g, max_length)) {
+	}
+};
 
 //template<class Graph>
 //class ThornRemover: public ErroneousEdgeRemover<Graph> {
@@ -962,104 +1181,31 @@ private:
 //	;
 //};
 
-//todo refactor
 template<class Graph>
-class ThornCondition: public EdgeCondition<Graph> {
+class AdvancedTopologyChimericEdgeRemover: public ChimericEdgeRemovingAlgorithm<
+		Graph, LengthComparator<Graph>> {
+private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef EdgeCondition<Graph> base;
-
-	size_t uniqueness_length_;
-	size_t dijkstra_depth_;
-
-	bool Unique(const vector<EdgeId>& edges, bool forward) const {
-		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
-	}
-
-	bool CheckUnique(EdgeId e) const {
-		TRACE("Checking conditions for edge start");
-		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)),
-				false)
-				|| Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
-						true);
-	}
-
-	bool CheckThorn(EdgeId e) {
-		if (this->graph().EdgeStart(e) == this->graph().EdgeEnd(e))
-			return false;
-		if (this->graph().RelatedVertices(this->graph().EdgeStart(e),
-				this->graph().EdgeEnd(e))) {
-			return true;
-		}
-		if (this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e)) != 2)
-			return false;
-		if (this->graph().IncomingEdgeCount(this->graph().EdgeStart(e)) != 1)
-			return false;
-		if (this->graph().OutgoingEdgeCount(this->graph().EdgeEnd(e)) != 1)
-			return false;
-		if (this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e)) != 2)
-			return false;
-
-		BoundedDijkstra<Graph> dij(this->graph(), dijkstra_depth_);
-		dij.run(this->graph().EdgeStart(e));
-		vector<VertexId> reached = dij.ReachedVertices();
-		for (auto it = reached.begin(); it != reached.end(); ++it) {
-			if (*it != this->graph().EdgeEnd(e)
-					&& this->graph().RelatedVertices(*it,
-							this->graph().EdgeEnd(e))) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	bool CheckAlternativeCoverage(const vector<EdgeId>& edges, EdgeId e) {
-		for (auto it = edges.begin(); it != edges.end(); ++it) {
-			if (*it != e && this->graph().length(*it) < 400
-					&& this->graph().coverage(*it)
-							< 15 * this->graph().coverage(e)) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	bool CheckCoverageAround(EdgeId e) {
-		return CheckAlternativeCoverage(
-				this->graph().IncomingEdges(this->graph().EdgeStart(e)), e)
-				&& CheckAlternativeCoverage(
-						this->graph().OutgoingEdges(this->graph().EdgeStart(e)),
-						e)
-				&& CheckAlternativeCoverage(
-						this->graph().IncomingEdges(this->graph().EdgeEnd(e)),
-						e)
-				&& CheckAlternativeCoverage(
-						this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
-						e);
-	}
-
-	bool CheckUniqueness(EdgeId e, bool forward) const {
-		return this->graph().length(e) >= uniqueness_length_;
-	}
+	typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
 
 public:
-
-	ThornCondition(Graph& g, size_t uniqueness_length, size_t dijkstra_depth) :
-			base(g), uniqueness_length_(uniqueness_length), dijkstra_depth_(
-					dijkstra_depth) {
+	AdvancedTopologyChimericEdgeRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length, size_t plausibility_length,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g,
+					make_shared<PredicateUniquenessPlausabilityCondition<Graph>>(
+							g,
+							/*uniqueness*/MakePathLengthLowerBound(g,
+									UniquePathFinder<Graph>(g),
+									uniqueness_length),
+							/*plausibility*/MakePathLengthLowerBound(g,
+									PlausiblePathFinder<Graph>(g,
+											2 * plausibility_length),
+									plausibility_length)), removal_handler,
+					LengthComparator<Graph>(g),
+					make_shared<LengthUpperBound<Graph>>(g, max_length)) {
 	}
-
-	bool Check(EdgeId e) const {
-		bool tmp = (CheckUnique(e) || CheckCoverageAround(e));
-		if (tmp)
-			tmp &= CheckThorn(e);
-		return tmp;
-	}
-
-private:
-	DECL_LOGGER("ThornCondition")
-	;
-
 };
 
 //template<class Graph>
@@ -1158,6 +1304,30 @@ private:
 	;
 };
 
+template<class Graph>
+class SimpleMultiplicityCountingChimericEdgeRemover: public ChimericEdgeRemovingAlgorithm<
+		Graph, LengthComparator<Graph>> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
+
+public:
+	SimpleMultiplicityCountingChimericEdgeRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length, size_t plausibility_length,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g,
+					make_shared<MultiplicityCountingCondition<Graph>>(g,
+							uniqueness_length,
+							/*plausibility*/MakePathLengthLowerBound(g,
+									PlausiblePathFinder<Graph>(g,
+											2 * plausibility_length),
+									plausibility_length)), removal_handler,
+					LengthComparator<Graph>(g),
+					make_shared<LengthUpperBound<Graph>>(g, max_length)) {
+	}
+};
+
 //template<class Graph>
 //class SimpleMultiplicityCountingChimericEdgeRemover: public TopologyChimericEdgeRemover<
 //		Graph> {
@@ -1212,29 +1382,16 @@ private:
 //};
 
 template<class Graph>
-class PairInfoAwareErroneousEdgeRemover: public ErroneousEdgeRemover<Graph> {
+class PairInfoAwareErroneousCondition: public EdgeCondition<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef ErroneousEdgeRemover<Graph> base;
+	typedef EdgeCondition<Graph> base;
 
 	const PairedInfoIndexT<Graph>& paired_index_;
-	size_t max_length_;
 	size_t min_neighbour_length_;
 	size_t insert_size_;
 	size_t read_length_;
 	size_t gap_;
-
-public:
-	PairInfoAwareErroneousEdgeRemover(Graph& g,
-			const PairedInfoIndexT<Graph>& paired_index, size_t max_length,
-			size_t min_neighbour_length, size_t insert_size, size_t read_length,
-			AbstractEdgeRemover<Graph>& edge_remover) :
-			base(g, edge_remover), paired_index_(paired_index), max_length_(
-					max_length), min_neighbour_length_(min_neighbour_length), insert_size_(
-					insert_size), read_length_(read_length), gap_(
-					insert_size_ - 2 * read_length_) {
-		VERIFY(insert_size_ >= 2 * read_length_);
-	}
 
 	bool ShouldContainInfo(EdgeId e1, EdgeId e2, size_t gap_length) {
 		//todo discuss addition of negative delta
@@ -1242,11 +1399,11 @@ public:
 		TRACE(
 				"Checking whether should be pair info between e1 " << PrintEdge(e1) << " and e2 " << PrintEdge(e2) << " with gap " << gap_length);
 		bool should_contain = gap_length
-				>= PairInfoPathLengthLowerBound(this->graph().k(),
-						this->graph().length(e1), this->graph().length(e2),
+				>= PairInfoPathLengthLowerBound(this->g().k(),
+						this->g().length(e1), this->g().length(e2),
 						gap_, 0.)
 				&& gap_length
-						<= PairInfoPathLengthUpperBound(this->graph().k(),
+						<= PairInfoPathLengthUpperBound(this->g().k(),
 								insert_size_, 0.);
 		TRACE("Result: " << should_contain);
 		return should_contain;
@@ -1270,16 +1427,15 @@ public:
 	}
 
 	bool CheckAnyPairInfoAbsense(EdgeId possible_ec) {
-		const Graph &g = this->graph();
 		TRACE("Checking pair info absense");
-		VertexId start = g.EdgeStart(possible_ec);
-		for (auto I1 = g.in_begin(start), E1 = g.in_end(start); I1 != E1;
+		VertexId start = this->g().EdgeStart(possible_ec);
+		for (auto I1 = this->g().in_begin(start), E1 = this->g().in_end(start); I1 != E1;
 				++I1) {
-			VertexId end = g.EdgeEnd(possible_ec);
-			for (auto I2 = g.out_begin(end), E2 = g.out_end(end); I2 != E2;
+			VertexId end = this->g().EdgeEnd(possible_ec);
+			for (auto I2 = this->g().out_begin(end), E2 = this->g().out_end(end); I2 != E2;
 					++I2)
-				if (!ShouldContainInfo(*I1, *I2, g.length(possible_ec))
-						|| ContainsInfo(*I1, *I2, g.length(possible_ec))) {
+				if (!ShouldContainInfo(*I1, *I2, this->g().length(possible_ec))
+						|| ContainsInfo(*I1, *I2, this->g().length(possible_ec))) {
 					TRACE("Check absense: fail");
 					return false;
 				}
@@ -1292,7 +1448,7 @@ public:
 		TRACE("Checking adjacent lengths");
 		TRACE("min_neighbour_length = " << min_neighbour_length_);
 		for (auto it = edges.begin(); it != edges.end(); ++it)
-			if (min_neighbour_length_ > this->graph().length(*it)) {
+			if (min_neighbour_length_ > this->g().length(*it)) {
 				TRACE(
 						"Check fail: edge " << PrintEdge(*it) << " was too short");
 				return false;
@@ -1303,52 +1459,198 @@ public:
 
 	string PrintEdge(EdgeId e) {
 		stringstream ss;
-		ss << this->graph().int_ids().ReturnIntId(e) << "(" << e << ") "
-				<< this->graph().length(e) << "(" << this->graph().coverage(e)
+		ss << this->g().int_ids().ReturnIntId(e) << "(" << e << ") "
+				<< this->g().length(e) << "(" << this->g().coverage(e)
 				<< ")";
 		return ss.str();
 	}
 
-	void InnerRemoveEdges() {
-		const Graph &g = this->graph();
+public:
 
-		TRACE("Removing erroneous edges based on pair info");
-		LengthComparator<Graph> comparator(g);
-		for (auto it = g.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
-			typename Graph::EdgeId e = *it;
-			TRACE("Considering edge " << PrintEdge(e));
-			if (g.length(e) > max_length_) {
-				TRACE("Max length bound = " << max_length_ << " was exceeded");
-				return;
-			}
-			vector<EdgeId> adjacent_edges;
-			VertexId start = g.EdgeStart(e), end = g.EdgeEnd(e);
-			Append(adjacent_edges, g.in_begin(start), g.in_end(start));
-			Append(adjacent_edges, g.out_begin(end), g.out_end(end));
-
-			if (CheckAdjacentLengths(adjacent_edges, e)
-					&& CheckAnyPairInfoAbsense(e)) {
-//				VertexId start = g_.EdgeStart(e);
-//				VertexId end = g_.EdgeEnd(e);
-//				TRACE("Try deleting edge " << PrintEdge(e));
-//				if (!g_.RelatedVertices(start, end)) {
-//					TRACE("Vertices not related");
-//					TRACE("Deleting edge " << PrintEdge(e));
-//					g_.DeleteEdge(e);
-//					TRACE("Compressing start");
-//					g_.CompressVertex(start);
-//					TRACE("Compressing end");
-//					g_.CompressVertex(end);
-//				} else {
-//					TRACE("Vertices are related");
-//				}
-				this->DeleteEdge(e);
-			}
-		}
+	PairInfoAwareErroneousCondition(Graph& g,
+			const PairedInfoIndexT<Graph>& paired_index,
+			size_t min_neighbour_length, size_t insert_size, size_t read_length) :
+			base(g), paired_index_(paired_index), min_neighbour_length_(
+					min_neighbour_length), insert_size_(insert_size), read_length_(
+					read_length), gap_(insert_size_ - 2 * read_length_) {
+		VERIFY(insert_size_ >= 2 * read_length_);
 	}
+
+	bool Check(EdgeId e) const {
+		vector<EdgeId> adjacent_edges;
+		VertexId start = this->g().EdgeStart(e), end = this->g().EdgeEnd(e);
+		Append(adjacent_edges, this->g().in_begin(start), this->g().in_end(start));
+		Append(adjacent_edges, this->g().out_begin(end), this->g().out_end(end));
+		return CheckAdjacentLengths(adjacent_edges, e)
+				&& CheckAnyPairInfoAbsense(e);
+	}
+
 private:
-	DECL_LOGGER("PairInfoAwareErroneousEdgeRemover")
+
+	DECL_LOGGER("PairInfoAwareErroneousCondition")
 	;
 };
+
+template<class Graph>
+class PairInfoAwareErroneousEdgeRemover: public ChimericEdgeRemovingAlgorithm<
+		Graph, LengthComparator<Graph>> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
+
+public:
+	PairInfoAwareErroneousEdgeRemover(Graph& g,
+			const PairedInfoIndexT<Graph>& paired_index, size_t max_length,
+			size_t min_neighbour_length, size_t insert_size, size_t read_length,
+			boost::function<void(EdgeId)> removal_handler) :
+			base(g,
+					make_shared<PairInfoAwareErroneousCondition<Graph>>(g,
+							paired_index, min_neighbour_length, insert_size,
+							read_length), removal_handler,
+					LengthComparator<Graph>(g),
+					make_shared<LengthUpperBound<Graph>>(g, max_length)) {
+	}
+};
+
+//template<class Graph>
+//class PairInfoAwareErroneousEdgeRemover: public ErroneousEdgeRemover<Graph> {
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//	typedef ErroneousEdgeRemover<Graph> base;
+//
+//	const PairedInfoIndexT<Graph>& paired_index_;
+//	size_t max_length_;
+//	size_t min_neighbour_length_;
+//	size_t insert_size_;
+//	size_t read_length_;
+//	size_t gap_;
+//
+//public:
+//	PairInfoAwareErroneousEdgeRemover(Graph& g,
+//			const PairedInfoIndexT<Graph>& paired_index, size_t max_length,
+//			size_t min_neighbour_length, size_t insert_size, size_t read_length,
+//			AbstractEdgeRemover<Graph>& edge_remover) :
+//			base(g, edge_remover), paired_index_(paired_index), max_length_(
+//					max_length), min_neighbour_length_(min_neighbour_length), insert_size_(
+//					insert_size), read_length_(read_length), gap_(
+//					insert_size_ - 2 * read_length_) {
+//		VERIFY(insert_size_ >= 2 * read_length_);
+//	}
+//
+//	bool ShouldContainInfo(EdgeId e1, EdgeId e2, size_t gap_length) {
+//		//todo discuss addition of negative delta
+//		//todo second condition may be included into the constructor warn/assert
+//		TRACE(
+//				"Checking whether should be pair info between e1 " << PrintEdge(e1) << " and e2 " << PrintEdge(e2) << " with gap " << gap_length);
+//		bool should_contain = gap_length
+//				>= PairInfoPathLengthLowerBound(this->graph().k(),
+//						this->graph().length(e1), this->graph().length(e2),
+//						gap_, 0.)
+//				&& gap_length
+//						<= PairInfoPathLengthUpperBound(this->graph().k(),
+//								insert_size_, 0.);
+//		TRACE("Result: " << should_contain);
+//		return should_contain;
+//	}
+//
+//	bool ContainsInfo(EdgeId e1, EdgeId e2, size_t ec_length) {
+//		TRACE(
+//				"Looking for pair info between e1 " << PrintEdge(e1) << " and e2 " << PrintEdge(e2));
+//		const set<Point>& infos = paired_index_.GetEdgePairInfo(e1, e2);
+//		for (auto it = infos.begin(); it != infos.end(); ++it) {
+//			const Point& point = *it;
+//			size_t distance = this->graph().length(e1) + ec_length;
+//			if (math::ge(distance + point.var, point.d)
+//					&& math::le(double(distance), point.d + point.var)) {
+//				TRACE("Pair info found");
+//				return true;
+//			}
+//		}
+//		TRACE("Pair info not found");
+//		return false;
+//	}
+//
+//	bool CheckAnyPairInfoAbsense(EdgeId possible_ec) {
+//		const Graph &g = this->graph();
+//		TRACE("Checking pair info absense");
+//		VertexId start = g.EdgeStart(possible_ec);
+//		for (auto I1 = g.in_begin(start), E1 = g.in_end(start); I1 != E1;
+//				++I1) {
+//			VertexId end = g.EdgeEnd(possible_ec);
+//			for (auto I2 = g.out_begin(end), E2 = g.out_end(end); I2 != E2;
+//					++I2)
+//				if (!ShouldContainInfo(*I1, *I2, g.length(possible_ec))
+//						|| ContainsInfo(*I1, *I2, g.length(possible_ec))) {
+//					TRACE("Check absense: fail");
+//					return false;
+//				}
+//			TRACE("Check absense: ok");
+//		}
+//		return true;
+//	}
+//
+//	bool CheckAdjacentLengths(const vector<EdgeId>& edges, EdgeId possible_ec) {
+//		TRACE("Checking adjacent lengths");
+//		TRACE("min_neighbour_length = " << min_neighbour_length_);
+//		for (auto it = edges.begin(); it != edges.end(); ++it)
+//			if (min_neighbour_length_ > this->graph().length(*it)) {
+//				TRACE(
+//						"Check fail: edge " << PrintEdge(*it) << " was too short");
+//				return false;
+//			}
+//		TRACE("Check ok");
+//		return true;
+//	}
+//
+//	string PrintEdge(EdgeId e) {
+//		stringstream ss;
+//		ss << this->graph().int_ids().ReturnIntId(e) << "(" << e << ") "
+//				<< this->graph().length(e) << "(" << this->graph().coverage(e)
+//				<< ")";
+//		return ss.str();
+//	}
+//
+//	void InnerRemoveEdges() {
+//		const Graph &g = this->graph();
+//
+//		TRACE("Removing erroneous edges based on pair info");
+//		LengthComparator<Graph> comparator(g);
+//		for (auto it = g.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
+//			typename Graph::EdgeId e = *it;
+//			TRACE("Considering edge " << PrintEdge(e));
+//			if (g.length(e) > max_length_) {
+//				TRACE("Max length bound = " << max_length_ << " was exceeded");
+//				return;
+//			}
+//			vector<EdgeId> adjacent_edges;
+//			VertexId start = g.EdgeStart(e), end = g.EdgeEnd(e);
+//			Append(adjacent_edges, g.in_begin(start), g.in_end(start));
+//			Append(adjacent_edges, g.out_begin(end), g.out_end(end));
+//
+//			if (CheckAdjacentLengths(adjacent_edges, e)
+//					&& CheckAnyPairInfoAbsense(e)) {
+////				VertexId start = g_.EdgeStart(e);
+////				VertexId end = g_.EdgeEnd(e);
+////				TRACE("Try deleting edge " << PrintEdge(e));
+////				if (!g_.RelatedVertices(start, end)) {
+////					TRACE("Vertices not related");
+////					TRACE("Deleting edge " << PrintEdge(e));
+////					g_.DeleteEdge(e);
+////					TRACE("Compressing start");
+////					g_.CompressVertex(start);
+////					TRACE("Compressing end");
+////					g_.CompressVertex(end);
+////				} else {
+////					TRACE("Vertices are related");
+////				}
+//				this->DeleteEdge(e);
+//			}
+//		}
+//	}
+//private:
+//	DECL_LOGGER("PairInfoAwareErroneousEdgeRemover")
+//	;
+//};
 
 }
