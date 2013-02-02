@@ -19,21 +19,25 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 Authors:
 
-    Anton Bankevich
-    Sergey Nurk     
-    Dmitry Antipov    
-    Alexey Gurevich 
-    Mikhail Dvorkin 
-    Alexander Kulikov 
-    Valery Lesin 
-    Sergey Nikolenko 
-    Son Pham   
-    Andrey Prjibelski 
-    Alexey Pyshkin 
-    Alexander Sirotkin 
-    Nikolay Vyahhi 
-    Glenn Tesler 
-    Max Alekseyev 
+    Anton Bankevich, 
+    Sergey Nurk, 
+    Dmitry Antipov, 
+    Alexey Gurevich, 
+    Mikhail Dvorkin, 
+    Alexander Kulikov, 
+    Valery Lesin,
+    Anton Korobeynikov,
+    Sergey Nikolenko, 
+    Son Pham, 
+    Andrey Prjibelski, 
+    Alexey Pyshkin,
+    Alexander Opeykin,
+    Alexander Sirotkin,
+    Yakov Sirotkin,
+    Nikolay Vyahhi,
+    Alla Lapidus,
+    Glenn Tesler, 
+    Max Alekseyev and 
     Pavel Pevzner
 
 Contact:
