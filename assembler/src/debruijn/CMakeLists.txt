@@ -17,7 +17,8 @@ if (SPADES_STATIC_BUILD)
 endif()
 
 install(TARGETS spades
-        RUNTIME DESTINATION bin)
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../configs/debruijn"
-        DESTINATION configs
+        DESTINATION bin
+        COMPONENT runtime)
+install(DIRECTORY "${SPADES_CFG_DIR}/debruijn"
+        DESTINATION share/spades/configs
         FILES_MATCHING PATTERN "*.info.template")

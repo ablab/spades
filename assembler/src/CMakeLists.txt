@@ -24,6 +24,7 @@ set(SPADES_TOOLS_BINARY_DIR ${SPADES_BINARY_DIR}/bin)
 set(SPADES_BUILT_INCLUDE_DIR ${SPADES_BINARY_DIR}/include)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${SPADES_TOOLS_BINARY_DIR})
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
+set(SPADES_CFG_DIR "${CMAKE_SOURCE_DIR}/../configs")
 
 # Everything option-dependent
 include(options)
@@ -63,6 +64,22 @@ add_subdirectory(io)
 add_subdirectory(mph_index)
 add_subdirectory(debruijn)
 add_subdirectory(hammer)
+add_subdirectory(rectangles)
+add_subdirectory(spades_pipeline)
+
+# Main pipeline script
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
+        DESTINATION bin
+        COMPONENT runtime
+        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                    GROUP_EXECUTE GROUP_READ)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../spades_init.py"
+        DESTINATION bin
+        COMPONENT runtime)
+# FIXME: Should we just configure spades_init instead?
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION"
+        DESTINATION share/spades
+        COMPONENT runtime)
 
 # Random stuff
 include(CMakeListsInternal.txt)
