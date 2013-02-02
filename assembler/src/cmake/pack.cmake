@@ -10,11 +10,11 @@ endif()
 
 set(CPACK_PACKAGE_NAME "SPAdes")
 set(CPACK_PACKAGE_VENDOR "Saint Petersburg Academic University")
-set(CPACK_PACKAGE_VERSION "2.3.0")
+set(CPACK_PACKAGE_VERSION "2.4.0")
 set(CPACK_PACKAGE_VERSION_MAJOR "2")
-set(CPACK_PACKAGE_VERSION_MINOR "3")
+set(CPACK_PACKAGE_VERSION_MINOR "4")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
-set(CPACK_STRIP_FILES bin/debruijn bin/hammer)
+set(CPACK_STRIP_FILES bin/debruijn bin/hammer bin/bwa)
 
 # Source stuff
 set(CPACK_SOURCE_GENERATOR "TBZ2")
