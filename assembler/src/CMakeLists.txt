@@ -80,6 +80,9 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../spades_init.py"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION"
         DESTINATION share/spades
         COMPONENT runtime)
+# Test dataset
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset"
+        DESTINATION share/spades)
 
 # Random stuff
 include(CMakeListsInternal.txt)
