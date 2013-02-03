@@ -189,7 +189,7 @@ class ChimericEdgeRemovingAlgorithm: public EdgeRemovingAlgorithm<Graph,
 
 public:
 
-	ChimericEdgeRemovingAlgorithm(Graph& g, size_t max_length,
+	ChimericEdgeRemovingAlgorithm(Graph& g,
 			shared_ptr<func::Predicate<EdgeId>> remove_condition,
 			boost::function<void(EdgeId)> removal_handler = boost::none,
 			const Comparator& c = Comparator(),
@@ -197,7 +197,7 @@ public:
 					func::AlwaysTrue<EdgeId>>()) :
 			base(g,
 					func::And<EdgeId>(remove_condition,
-							AlternativesPresenceCondition<Graph>()),
+							make_shared<AlternativesPresenceCondition<Graph>>(g)),
 					removal_handler, c, proceed_condition) {
 	}
 
@@ -412,7 +412,7 @@ class RelativeCoverageCondition: public EdgeCondition<Graph> {
 
 	double max_relative_coverage_;
 
-	bool CheckAlternativeCoverage(const vector<EdgeId> &edges, EdgeId e) {
+	bool CheckAlternativeCoverage(const vector<EdgeId> &edges, EdgeId e) const {
 		for (auto it = edges.begin(); it != edges.end(); ++it) {
 			//todo wtf?!!! remove 400 condition
 			if (*it != e && this->g().length(*it) < 400
@@ -584,7 +584,7 @@ class CheatingChimericEdgeCondition: public EdgeCondition<Graph> {
 	double coverage_gap_;
 	size_t neighbour_length_threshold_;
 
-	bool StrongNeighbourCondition(EdgeId neighbour_edge, EdgeId possible_ec) {
+	bool StrongNeighbourCondition(EdgeId neighbour_edge, EdgeId possible_ec) const {
 		return neighbour_edge == possible_ec
 				|| math::gr(this->g().coverage(neighbour_edge),
 						this->g().coverage(possible_ec) * coverage_gap_)
@@ -592,7 +592,7 @@ class CheatingChimericEdgeCondition: public EdgeCondition<Graph> {
 						>= neighbour_length_threshold_;
 	}
 
-	bool CheckAdjacent(const vector<EdgeId>& edges, EdgeId possible_ec) {
+	bool CheckAdjacent(const vector<EdgeId>& edges, EdgeId possible_ec) const {
 		FOREACH (EdgeId e, edges) {
 			if (!StrongNeighbourCondition(e, possible_ec))
 				return false;
@@ -953,68 +953,68 @@ class ThornCondition: public EdgeCondition<Graph> {
 
 	bool CheckUnique(EdgeId e) const {
 		TRACE("Checking conditions for edge start");
-		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)),
+		return Unique(this->g().IncomingEdges(this->g().EdgeStart(e)),
 				false)
-				|| Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
+				|| Unique(this->g().OutgoingEdges(this->g().EdgeEnd(e)),
 						true);
 	}
 
-	bool CheckThorn(EdgeId e) {
-		if (this->graph().EdgeStart(e) == this->graph().EdgeEnd(e))
+	bool CheckThorn(EdgeId e) const {
+		if (this->g().EdgeStart(e) == this->g().EdgeEnd(e))
 			return false;
-		if (this->graph().RelatedVertices(this->graph().EdgeStart(e),
-				this->graph().EdgeEnd(e))) {
+		if (this->g().RelatedVertices(this->g().EdgeStart(e),
+				this->g().EdgeEnd(e))) {
 			return true;
 		}
-		if (this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e)) != 2)
+		if (this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) != 2)
 			return false;
-		if (this->graph().IncomingEdgeCount(this->graph().EdgeStart(e)) != 1)
+		if (this->g().IncomingEdgeCount(this->g().EdgeStart(e)) != 1)
 			return false;
-		if (this->graph().OutgoingEdgeCount(this->graph().EdgeEnd(e)) != 1)
+		if (this->g().OutgoingEdgeCount(this->g().EdgeEnd(e)) != 1)
 			return false;
-		if (this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e)) != 2)
+		if (this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) != 2)
 			return false;
 
-		BoundedDijkstra<Graph> dij(this->graph(), dijkstra_depth_);
-		dij.run(this->graph().EdgeStart(e));
+		BoundedDijkstra<Graph> dij(this->g(), dijkstra_depth_);
+		dij.run(this->g().EdgeStart(e));
 		vector<VertexId> reached = dij.ReachedVertices();
 		for (auto it = reached.begin(); it != reached.end(); ++it) {
-			if (*it != this->graph().EdgeEnd(e)
-					&& this->graph().RelatedVertices(*it,
-							this->graph().EdgeEnd(e))) {
+			if (*it != this->g().EdgeEnd(e)
+					&& this->g().RelatedVertices(*it,
+							this->g().EdgeEnd(e))) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	bool CheckAlternativeCoverage(const vector<EdgeId>& edges, EdgeId e) {
+	bool CheckAlternativeCoverage(const vector<EdgeId>& edges, EdgeId e) const {
 		for (auto it = edges.begin(); it != edges.end(); ++it) {
-			if (*it != e && this->graph().length(*it) < 400
-					&& this->graph().coverage(*it)
-							< 15 * this->graph().coverage(e)) {
+			if (*it != e && this->g().length(*it) < 400
+					&& this->g().coverage(*it)
+							< 15 * this->g().coverage(e)) {
 				return false;
 			}
 		}
 		return true;
 	}
 
-	bool CheckCoverageAround(EdgeId e) {
+	bool CheckCoverageAround(EdgeId e) const {
 		return CheckAlternativeCoverage(
-				this->graph().IncomingEdges(this->graph().EdgeStart(e)), e)
+				this->g().IncomingEdges(this->g().EdgeStart(e)), e)
 				&& CheckAlternativeCoverage(
-						this->graph().OutgoingEdges(this->graph().EdgeStart(e)),
+						this->g().OutgoingEdges(this->g().EdgeStart(e)),
 						e)
 				&& CheckAlternativeCoverage(
-						this->graph().IncomingEdges(this->graph().EdgeEnd(e)),
+						this->g().IncomingEdges(this->g().EdgeEnd(e)),
 						e)
 				&& CheckAlternativeCoverage(
-						this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
+						this->g().OutgoingEdges(this->g().EdgeEnd(e)),
 						e);
 	}
 
 	bool CheckUniqueness(EdgeId e, bool forward) const {
-		return this->graph().length(e) >= uniqueness_length_;
+		return this->g().length(e) >= uniqueness_length_;
 	}
 
 public:
@@ -1393,7 +1393,7 @@ class PairInfoAwareErroneousCondition: public EdgeCondition<Graph> {
 	size_t read_length_;
 	size_t gap_;
 
-	bool ShouldContainInfo(EdgeId e1, EdgeId e2, size_t gap_length) {
+	bool ShouldContainInfo(EdgeId e1, EdgeId e2, size_t gap_length) const {
 		//todo discuss addition of negative delta
 		//todo second condition may be included into the constructor warn/assert
 		TRACE(
@@ -1409,13 +1409,13 @@ class PairInfoAwareErroneousCondition: public EdgeCondition<Graph> {
 		return should_contain;
 	}
 
-	bool ContainsInfo(EdgeId e1, EdgeId e2, size_t ec_length) {
+	bool ContainsInfo(EdgeId e1, EdgeId e2, size_t ec_length) const {
 		TRACE(
 				"Looking for pair info between e1 " << PrintEdge(e1) << " and e2 " << PrintEdge(e2));
 		const set<Point>& infos = paired_index_.GetEdgePairInfo(e1, e2);
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
 			const Point& point = *it;
-			size_t distance = this->graph().length(e1) + ec_length;
+			size_t distance = this->g().length(e1) + ec_length;
 			if (math::ge(distance + point.var, point.d)
 					&& math::le(double(distance), point.d + point.var)) {
 				TRACE("Pair info found");
@@ -1426,7 +1426,7 @@ class PairInfoAwareErroneousCondition: public EdgeCondition<Graph> {
 		return false;
 	}
 
-	bool CheckAnyPairInfoAbsense(EdgeId possible_ec) {
+	bool CheckAnyPairInfoAbsense(EdgeId possible_ec) const {
 		TRACE("Checking pair info absense");
 		VertexId start = this->g().EdgeStart(possible_ec);
 		for (auto I1 = this->g().in_begin(start), E1 = this->g().in_end(start); I1 != E1;
@@ -1444,7 +1444,7 @@ class PairInfoAwareErroneousCondition: public EdgeCondition<Graph> {
 		return true;
 	}
 
-	bool CheckAdjacentLengths(const vector<EdgeId>& edges, EdgeId possible_ec) {
+	bool CheckAdjacentLengths(const vector<EdgeId>& edges, EdgeId possible_ec) const {
 		TRACE("Checking adjacent lengths");
 		TRACE("min_neighbour_length = " << min_neighbour_length_);
 		for (auto it = edges.begin(); it != edges.end(); ++it)
@@ -1457,7 +1457,8 @@ class PairInfoAwareErroneousCondition: public EdgeCondition<Graph> {
 		return true;
 	}
 
-	string PrintEdge(EdgeId e) {
+	//todo remove
+	string PrintEdge(EdgeId e) const {
 		stringstream ss;
 		ss << this->g().int_ids().ReturnIntId(e) << "(" << e << ") "
 				<< this->g().length(e) << "(" << this->g().coverage(e)

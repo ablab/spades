@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "graph_processing_algorithm.hpp"
+
 namespace omnigraph {
 
 using std::set;
@@ -353,30 +355,30 @@ public:
 };
 
 template<class Graph>
-class MaxFlowECRemover {
+class MaxFlowECRemover: public ProcessingAlgorithm<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	Graph& graph_;
+	typedef ProcessingAlgorithm<Graph> base;
 	size_t max_length_;
 	size_t uniqueness_length_;
 	size_t plausibility_length_;
-	EdgeRemover<Graph>& edge_remover_;
+	EdgeRemover<Graph> edge_remover_;
 
 	bool IsTerminal(VertexId vertex) {
-		return graph_.OutgoingEdgeCount(vertex)
-				+ graph_.IncomingEdgeCount(vertex) == 1;
+		return this->g().OutgoingEdgeCount(vertex)
+				+ this->g().IncomingEdgeCount(vertex) == 1;
 	}
 
 	bool IsTip(EdgeId edge) {
-		VertexId start = graph_.EdgeStart(edge);
-		VertexId end = graph_.EdgeEnd(edge);
+		VertexId start = this->g().EdgeStart(edge);
+		VertexId end = this->g().EdgeEnd(edge);
 		return IsTerminal(start) || IsTerminal(end);
 	}
 
 
 	bool IsSuspicious(EdgeId edge) {
-		return graph_.length(edge) <= max_length_ && !IsTip(edge);
+		return this->g().length(edge) <= max_length_ && !IsTip(edge);
 	}
 
 	set<EdgeId> CollectUnusedEdges(set<VertexId> component, FlowGraph<Graph> fg,
@@ -385,11 +387,11 @@ private:
 		for (auto it_start = component.begin(); it_start != component.end();
 				++it_start) {
 			VertexId start = *it_start;
-			auto outgoing = graph_.OutgoingEdges(start);
+			auto outgoing = this->g().OutgoingEdges(start);
 			for (auto it_edge = outgoing.begin(); it_edge != outgoing.end();
 					++it_edge) {
 				EdgeId edge = *it_edge;
-				VertexId end = graph_.EdgeEnd(edge);
+				VertexId end = this->g().EdgeEnd(edge);
 				if (component.count(end) == 1 && IsSuspicious(edge)
 						&& colouring.find(fg.GetCorrespondingVertex(start))->second
 								!= colouring.find(
@@ -407,36 +409,36 @@ private:
 	}
 
 	bool IsPlausible(EdgeId edge) {
-		return graph_.length(edge) >= plausibility_length_ && !IsTip(edge);
+		return this->g().length(edge) >= plausibility_length_ && !IsTip(edge);
 	}
 
 	bool IsUnique(EdgeId edge) {
-		return graph_.length(edge) >= uniqueness_length_;
+		return this->g().length(edge) >= uniqueness_length_;
 	}
 
 	bool IsInnerShortEdge(set<VertexId> component, EdgeId edge) {
-		return !IsUnique(edge) && component.count(graph_.EdgeStart(edge)) == 1
-				&& component.count(graph_.EdgeEnd(edge)) == 1;
+		return !IsUnique(edge) && component.count(this->g().EdgeStart(edge)) == 1
+				&& component.count(this->g().EdgeEnd(edge)) == 1;
 	}
 
 	void ProcessShortEdge(FlowGraph<Graph> &fg, set<VertexId> component,
 			EdgeId edge) {
 		if (IsInnerShortEdge(component, edge)) {
-			fg.AddEdge(graph_.EdgeStart(edge), graph_.EdgeEnd(edge));
+			fg.AddEdge(this->g().EdgeStart(edge), this->g().EdgeEnd(edge));
 		}
 	}
 
 	void ProcessSource(FlowGraph<Graph> &fg, set<VertexId> component,
 			EdgeId edge) {
 		if (IsPlausible(edge) || IsUnique(edge)) {
-			fg.AddSource(graph_.EdgeEnd(edge), 1);
+			fg.AddSource(this->g().EdgeEnd(edge), 1);
 		}
 	}
 
 	void ProcessSink(FlowGraph<Graph> &fg, set<VertexId> component,
 			EdgeId edge) {
 		if (IsPlausible(edge) || IsUnique(edge)) {
-			fg.AddSink(graph_.EdgeStart(edge), 1);
+			fg.AddSink(this->g().EdgeStart(edge), 1);
 		}
 	}
 
@@ -446,14 +448,14 @@ private:
 		}
 		for (auto it = component.begin(); it != component.end(); ++it) {
 			VertexId vertex = *it;
-			auto outgoing = graph_.OutgoingEdges(vertex);
+			auto outgoing = this->g().OutgoingEdges(vertex);
 			for (auto it_edge = outgoing.begin(); it_edge != outgoing.end();
 					++it_edge) {
 				EdgeId edge = *it_edge;
 				ProcessShortEdge(fg, component, edge);
 				ProcessSink(fg, component, edge);
 			}
-			auto incoming = graph_.IncomingEdges(vertex);
+			auto incoming = this->g().IncomingEdges(vertex);
 			for (auto it_edge = incoming.begin(); it_edge != incoming.end();
 					++it_edge) {
 				EdgeId edge = *it_edge;
@@ -463,18 +465,18 @@ private:
 	}
 
 public:
-	MaxFlowECRemover(Graph& graph, size_t max_length, size_t uniqueness_length,
+	MaxFlowECRemover(Graph& g, size_t max_length, size_t uniqueness_length,
 			size_t plausibility_length, boost::function<void (EdgeId)> removal_handler) :
-			graph_(graph), max_length_(max_length), uniqueness_length_(
+			base(g), max_length_(max_length), uniqueness_length_(
 					uniqueness_length), plausibility_length_(
-					plausibility_length), edge_remover_(graph, removal_handler) {
+					plausibility_length), edge_remover_(g, removal_handler) {
 		VERIFY(uniqueness_length >= plausibility_length);
 		VERIFY(plausibility_length > max_length);
 	}
 
-	bool RemoveEdges() {
-		LongEdgesExclusiveSplitter<Graph> splitter(graph_, uniqueness_length_);
-		for (LongEdgesExclusiveSplitter<Graph> splitter(graph_,
+	bool Process() {
+		LongEdgesExclusiveSplitter<Graph> splitter(this->g(), uniqueness_length_);
+		for (LongEdgesExclusiveSplitter<Graph> splitter(this->g(),
 				uniqueness_length_); !splitter.Finished();) {
 			auto component_vector = splitter.NextComponent();
 			set<VertexId> component(component_vector.begin(), component_vector.end());
@@ -493,13 +495,13 @@ public:
 					component_finder.ColourComponents();
 			set<EdgeId> to_remove = CollectUnusedEdges(component, fg,
 					colouring);
-			for (SmartSetIterator<Graph, EdgeId> it(graph_, to_remove.begin(), to_remove.end()); !it.IsEnd(); ++it) {
+			for (SmartSetIterator<Graph, EdgeId> it(this->g(), to_remove.begin(), to_remove.end()); !it.IsEnd(); ++it) {
 				TRACE("Removing Edge");
 				edge_remover_.DeleteEdge(*it);
 			}
 		}
-		Compressor<Graph>(graph_).CompressAllVertices();
-		Cleaner<Graph>(graph_).Clean();
+		Compressor<Graph>(this->g()).CompressAllVertices();
+		Cleaner<Graph>(this->g()).Clean();
 		return false;
 	}
 private:

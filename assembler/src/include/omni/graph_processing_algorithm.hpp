@@ -34,7 +34,7 @@ class EdgeProcessingAlgorithm: public ProcessingAlgorithm<Graph> {
 	const shared_ptr<func::Predicate<EdgeId>> proceed_condition_;
 
 protected:
-	virtual bool Process(EdgeId e) = 0;
+	virtual bool ProcessEdge(EdgeId e) = 0;
 
 public:
 	EdgeProcessingAlgorithm(Graph& g, const Comparator& c = Comparator(),
@@ -54,7 +54,7 @@ public:
 			}
 
 			TRACE("Processing edge " << this->g().str(*it));
-			triggered |= Process(*it);
+			triggered |= ProcessEdge(*it);
 		}
 		TRACE("Finished processing. Triggered = " << triggered);
 		return triggered;
@@ -75,7 +75,7 @@ class EdgeRemovingAlgorithm: public EdgeProcessingAlgorithm<Graph, Comparator> {
 	EdgeRemover<Graph> edge_remover_;
 
 protected:
-	bool Process(EdgeId e) {
+	bool ProcessEdge(EdgeId e) {
 		if (remove_condition_->Check(e)) {
 			return edge_remover_.DeleteEdge(e);
 		} else {
