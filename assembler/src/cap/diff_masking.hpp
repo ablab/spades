@@ -62,33 +62,33 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 	br_config.max_relative_delta = 0.1;
 
 	INFO("Removing bulges");
-	RemoveBulges(g, br_config);
+	RemoveBulges(gp.g, br_config);
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
-    
-	debruijn_config::simplification::complex_bulge_remover cbr_config;
-    cbr_config.enabled = true;
-    cbr_config.pics_enabled = false;
-    cbr_config.folder = "";
-    cbr_config.max_relative_length = 3;
-    cbr_config.max_length_difference = 1000;
 
-    INFO("Removing complex bulges");
-    RemoveComplexBulges(gp.g, cbr_config);
+	debruijn_config::simplification::complex_bulge_remover cbr_config;
+	cbr_config.enabled = true;
+	cbr_config.pics_enabled = false;
+	cbr_config.folder = "";
+	cbr_config.max_relative_length = 3;
+	cbr_config.max_length_difference = 1000;
+
+	INFO("Removing complex bulges");
+	RemoveComplexBulges(gp.g, cbr_config);
 
 	TipsProjector<gp_t> tip_projector(gp);
 	boost::function<void(EdgeId)> projecting_callback = boost::bind(
 			&TipsProjector<gp_t>::ProjectTip, &tip_projector, _1);
 	debruijn_config::simplification::tip_clipper tc_config;
-	tc_config.max_coverage = 1000.;
-	tc_config.max_relative_coverage = 1.1;
-	tc_config.max_tip_length_coefficient = 2.;
+
+	tc_config.condition = "{ lb 2. }";
 
 	INFO("Clipping tips with projection");
 
-	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
-	/*read_length*/70, gp.k_value, tc_config.max_tip_length_coefficient);
-	ClipTips(gp.g, max_tip_length, tc_config, projecting_callback);
+//	size_t max_tip_length = LengthThresholdFinder::MaxTipLength(
+//	/*read_length*/70, gp.k_value, tc_config.max_tip_length_coefficient);
+
+	ClipTipsWithProjection(gp, tc_config, true);
 
 	INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 

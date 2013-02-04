@@ -125,7 +125,7 @@ private:
 		if (next_token_ == "tc_lb") {
 			double length_coeff = lexical_cast<double>(ReadNext());
 
-			DEBUG("Creating length bound " << length_coeff);
+			DEBUG("Creating tip length bound. Coeff " << length_coeff);
 			size_t length_bound = LengthThresholdFinder::MaxTipLength(
 					read_length_, g_.k(), length_coeff, iteration_count_,
 					iteration_);
@@ -133,12 +133,19 @@ private:
 			RelaxMin(min_length_bound, length_bound);
 			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
 		} else if (next_token_ == "ec_lb") {
-			size_t length_coeff = lexical_cast<double>(ReadNext());
+			size_t length_coeff = lexical_cast<size_t>(ReadNext());
 
-			DEBUG("Creating length bound " << length_coeff);
+			DEBUG("Creating ec length bound. Coeff " << length_coeff);
 			size_t length_bound =
 					LengthThresholdFinder::MaxErroneousConnectionLength(g_.k(),
 							length_coeff);
+
+			RelaxMin(min_length_bound, length_bound);
+			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
+		} else if (next_token_ == "lb") {
+			size_t length_bound = lexical_cast<size_t>(ReadNext());
+
+			DEBUG("Creating length bound. Value " << length_bound);
 
 			RelaxMin(min_length_bound, length_bound);
 			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
@@ -287,7 +294,7 @@ void ClipTips(Graph& graph,
 template<class Graph>
 void ClipTips(Graph& g,
 		const debruijn_config::simplification::tip_clipper& tc_config,
-		size_t read_length, double detected_coverage_threshold = 0.,
+		size_t read_length = 0, double detected_coverage_threshold = 0.,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t iteration_count = 1, size_t iteration = 0) {
 
@@ -302,28 +309,54 @@ void ClipTips(Graph& g,
 	ClipTips(g, parser.max_length_bound(), condition, removal_handler);
 }
 
+//template<class gp_t>
+//void ClipTipsWithProjection(gp_t& gp,
+//		const debruijn_config::simplification::tip_clipper& tc_config,
+//		size_t read_length, double detected_coverage_threshold = 0.,
+//		boost::function<void(typename Graph::EdgeId)> removal_handler_f = 0,
+//		size_t iteration_count = 1, size_t iteration = 0) {
+//	boost::function<void(typename Graph::EdgeId)> tc_removal_handler =
+//			removal_handler_f;
+//
+//	if (cfg::get().graph_read_corr.enable) {
+//		//enabling tip projection
+//		TipsProjector<gp_t> tip_projector(gp);
+//
+//		boost::function<void(EdgeId)> projecting_callback = boost::bind(
+//				&TipsProjector<gp_t>::ProjectTip, tip_projector, _1);
+//
+//		tc_removal_handler = boost::bind(Composition, _1,
+//				boost::ref(removal_handler_f), projecting_callback);
+//	}
+//
+//	ClipTips(gp.g, tc_config, read_length, detected_coverage_threshold,
+//			tc_removal_handler, iteration_count, iteration);
+//}
+
+//enabling tip projection
+template<class gp_t>
+boost::function<void(typename Graph::EdgeId)> EnableProjection(gp_t& gp,
+		boost::function<void(typename Graph::EdgeId)> removal_handler_f) {
+	TipsProjector<gp_t> tip_projector(gp);
+
+	boost::function<void(EdgeId)> projecting_callback = boost::bind(
+			&TipsProjector<gp_t>::ProjectTip, tip_projector, _1);
+
+	return boost::bind(Composition, _1, boost::ref(removal_handler_f),
+			projecting_callback);
+}
+
 template<class gp_t>
 void ClipTipsWithProjection(gp_t& gp,
 		const debruijn_config::simplification::tip_clipper& tc_config,
-		size_t read_length, double detected_coverage_threshold = 0.,
-		boost::function<void(typename Graph::EdgeId)> removal_handler_f = 0,
-		size_t iteration_count = 1, size_t iteration = 0) {
-	boost::function<void(typename Graph::EdgeId)> tc_removal_handler =
-			removal_handler_f;
-
-	if (cfg::get().graph_read_corr.enable) {
-		//enabling tip projection
-		TipsProjector<Graph> tip_projector(gp.g, gp.kmer_mapper);
-
-		boost::function<void(EdgeId)> projecting_callback = boost::bind(
-				&TipsProjector<Graph>::ProjectTip, tip_projector, _1);
-
-		tc_removal_handler = boost::bind(Composition, _1,
-				boost::ref(removal_handler_f), projecting_callback);
-	}
-
+		bool enable_projection, size_t read_length = 0,
+		double detected_coverage_threshold = 0.,
+		boost::function<void(typename gp_t::graph_t::EdgeId)> removal_handler_f =
+				0, size_t iteration_count = 1, size_t iteration = 0) {
 	ClipTips(gp.g, tc_config, read_length, detected_coverage_threshold,
-			tc_removal_handler, iteration_count, iteration);
+			enable_projection ?
+					EnableProjection(gp, removal_handler_f) : removal_handler_f,
+			iteration_count, iteration);
 }
 
 template<class Graph>
@@ -361,8 +394,9 @@ void RemoveBulges(Graph& g,
 template<class Graph>
 void RemoveLowCoverageEdges(Graph &g,
 		const debruijn_config::simplification::erroneous_connections_remover& ec_config,
-		boost::function<void(typename Graph::EdgeId)> removal_handler, size_t read_length,
-		double detected_coverage_threshold, size_t iteration_count, size_t i) {
+		boost::function<void(typename Graph::EdgeId)> removal_handler,
+		size_t read_length, double detected_coverage_threshold,
+		size_t iteration_count, size_t i) {
 	INFO("SUBSTAGE == Removing low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 	ConditionParser<Graph> parser(g, ec_config.condition, read_length,
@@ -379,7 +413,8 @@ void RemoveLowCoverageEdges(Graph &g,
 
 template<class Graph>
 bool RemoveRelativelyLowCoverageEdges(Graph &g,
-		boost::function<void(typename Graph::EdgeId)> removal_handler, double max_coverage) {
+		boost::function<void(typename Graph::EdgeId)> removal_handler,
+		double max_coverage) {
 	INFO("SUBSTAGE == Removing realtively low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 
@@ -479,7 +514,8 @@ bool TopologyReliabilityRemoveErroneousEdges(Graph &g,
 }
 
 template<class Graph>
-bool ChimericRemoveErroneousEdges(Graph &g, boost::function<void(typename Graph::EdgeId)> removal_handler) {
+bool ChimericRemoveErroneousEdges(Graph &g,
+		boost::function<void(typename Graph::EdgeId)> removal_handler) {
 	INFO("Simple removal of chimeric edges based only on length started");
 	ChimericEdgesRemover<Graph> remover(g, 10, removal_handler);
 	bool changed = remover.Process();
@@ -520,7 +556,9 @@ bool RemoveComplexBulges(Graph& g,
 }
 
 template<class Graph>
-bool AllTopology(Graph &g, boost::function<void(typename Graph::EdgeId)> removal_handler, size_t iteration) {
+bool AllTopology(Graph &g,
+		boost::function<void(typename Graph::EdgeId)> removal_handler,
+		size_t iteration) {
 	bool res = TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
 			removal_handler);
 	if (cfg::get().additional_ec_removing) {
@@ -535,7 +573,8 @@ bool AllTopology(Graph &g, boost::function<void(typename Graph::EdgeId)> removal
 }
 
 template<class Graph>
-bool FinalRemoveErroneousEdges(Graph &g, boost::function<void(typename Graph::EdgeId)> removal_handler,
+bool FinalRemoveErroneousEdges(Graph &g,
+		boost::function<void(typename Graph::EdgeId)> removal_handler,
 		double determined_coverage_threshold, size_t iteration) {
 	using debruijn_graph::simplification_mode;
 	bool changed = RemoveRelativelyLowCoverageEdges(g, removal_handler,
@@ -591,20 +630,23 @@ void PreSimplification(conj_graph_pack& gp,
 		double determined_coverage_threshold) {
 	INFO("Early tip clipping:");
 	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL,
-			determined_coverage_threshold, removal_handler);
+			cfg::get().graph_read_corr.enable, determined_coverage_threshold,
+			removal_handler);
 
 	INFO("Early bulge removal:");
 	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler, gp.g.k() + 1);
 }
 
-void SimplificationCycle(conj_graph_pack& gp, boost::function<void(EdgeId)> removal_handler,
+void SimplificationCycle(conj_graph_pack& gp,
+		boost::function<void(EdgeId)> removal_handler,
 		detail_info_printer &printer, size_t iteration_count, size_t iteration,
 		double max_coverage) {
 	INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
 	DEBUG(iteration << " TipClipping");
 	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL,
-			max_coverage, removal_handler, iteration_count, iteration);
+			cfg::get().graph_read_corr.enable, max_coverage, removal_handler,
+			iteration_count, iteration);
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
@@ -621,7 +663,8 @@ void SimplificationCycle(conj_graph_pack& gp, boost::function<void(EdgeId)> remo
 
 }
 
-void PostSimplification(conj_graph_pack& gp, boost::function<void(EdgeId)> &removal_handler,
+void PostSimplification(conj_graph_pack& gp,
+		boost::function<void(EdgeId)> &removal_handler,
 		detail_info_printer &printer, double determined_coverage_threshold) {
 	//todo put in cycle
 	INFO("Final erroneous connections removal:");
@@ -630,12 +673,14 @@ void PostSimplification(conj_graph_pack& gp, boost::function<void(EdgeId)> &remo
 	bool enable_flag = true;
 	while (enable_flag) {
 		INFO("Iteration " << iteration);
-		enable_flag = FinalRemoveErroneousEdges(gp.g, removal_handler, determined_coverage_threshold, iteration);
+		enable_flag = FinalRemoveErroneousEdges(gp.g, removal_handler,
+				determined_coverage_threshold, iteration);
 		printer(ipp_final_err_con_removal, str(format("_%d") % iteration));
 
 		INFO("Final tip clipping:");
 
 		ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL,
+				cfg::get().graph_read_corr.enable,
 				determined_coverage_threshold, removal_handler);
 		printer(ipp_final_tip_clipping, str(format("_%d") % iteration));
 
@@ -690,16 +735,16 @@ void SimplifyGraph(conj_graph_pack &gp,
 //	VERIFY(gp.kmer_mapper.IsAttached());
 
 	if (cfg::get().ds.single_cell)
-		PreSimplification(gp, removal_handler, printer,
-				iteration_count, determined_coverage_threshold);
+		PreSimplification(gp, removal_handler, printer, iteration_count,
+				determined_coverage_threshold);
 
 	for (size_t i = 0; i < iteration_count; i++) {
 		if ((cfg::get().gap_closer_enable) && (cfg::get().gc.in_simplify)) {
 			CloseGaps(gp);
 		}
 
-		SimplificationCycle(gp, removal_handler, printer,
-				iteration_count, i, determined_coverage_threshold);
+		SimplificationCycle(gp, removal_handler, printer, iteration_count, i,
+				determined_coverage_threshold);
 		printer(ipp_err_con_removal,
 				str(format("_%d") % (i + iteration_count)));
 	}
