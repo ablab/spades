@@ -87,9 +87,9 @@ class MMappedReader {
   }
 
   virtual ~MMappedReader() {
+    close(StreamFile);
     if (MappedRegion)
       munmap(MappedRegion, BlockSize);
-    close(StreamFile);
 
     if (Unlink) {
       int res = unlink(FileName.c_str());
