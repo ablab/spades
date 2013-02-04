@@ -50,147 +50,147 @@ enum simplification_mode {
 };
 
 enum paired_metrics {
-    pm_read_count,
-    pm_product
+	pm_read_count, pm_product
 };
 
 enum estimation_mode {
-    em_simple,
-    em_weighted,
-    em_extensive,
-    em_smoothing
+	em_simple, em_weighted, em_extensive, em_smoothing
 };
 
-enum resolving_mode
-{
-    rm_none           ,
-    rm_split          ,
-    rm_path_extend    ,
-    rm_combined       ,
-    rm_split_scaff    ,
-    rm_jump           ,
-    rm_rectangles
+enum resolving_mode {
+	rm_none,
+	rm_split,
+	rm_path_extend,
+	rm_combined,
+	rm_split_scaff,
+	rm_jump,
+	rm_rectangles
 };
 
 enum info_printer_pos {
-    ipp_default = 0,
-    ipp_before_first_gap_closer,
-    ipp_before_simplification,
-    ipp_tip_clipping,
-    ipp_bulge_removal,
-    ipp_err_con_removal,
-    ipp_before_final_err_con_removal,
-    ipp_final_err_con_removal,
-    ipp_final_tip_clipping,
-    ipp_final_bulge_removal,
-    ipp_removing_isolated_edges,
-    ipp_final_simplified,
-    ipp_before_repeat_resolution,
+	ipp_default = 0,
+	ipp_before_first_gap_closer,
+	ipp_before_simplification,
+	ipp_tip_clipping,
+	ipp_bulge_removal,
+	ipp_err_con_removal,
+	ipp_before_final_err_con_removal,
+	ipp_final_err_con_removal,
+	ipp_final_tip_clipping,
+	ipp_final_bulge_removal,
+	ipp_removing_isolated_edges,
+	ipp_final_simplified,
+	ipp_before_repeat_resolution,
 
-    ipp_total
+	ipp_total
 };
 
 namespace details {
 
 inline const char* info_printer_pos_name(size_t pos) {
-    const char* names[] = { "default", "before_first_gap_closer", "before_simplification", "tip_clipping",
-        "bulge_removal", "err_con_removal", "before_final_err_con_removal",
-        "final_err_con_removal", "final_tip_clipping",
-        "final_bulge_removal", "removing_isolated_edges",
-        "final_simplified", "before_repeat_resolution" };
+	const char* names[] = { "default", "before_first_gap_closer",
+			"before_simplification", "tip_clipping", "bulge_removal",
+			"err_con_removal", "before_final_err_con_removal",
+			"final_err_con_removal", "final_tip_clipping",
+			"final_bulge_removal", "removing_isolated_edges",
+			"final_simplified", "before_repeat_resolution" };
 
-    utils::check_array_size<ipp_total>(names);
-    return names[pos];
+	utils::check_array_size < ipp_total > (names);
+	return names[pos];
 }
 
 } // namespace details
 
 inline std::string MakeLaunchTimeDirName() {
-    time_t rawtime;
-    struct tm * timeinfo;
-    char buffer[80];
+	time_t rawtime;
+	struct tm * timeinfo;
+	char buffer[80];
 
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
 
-    strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
-    return std::string(buffer);
+	strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
+	return std::string(buffer);
 }
 
 // struct for debruijn project's configuration file
 struct debruijn_config {
-    typedef boost::bimap<string, working_stage> stage_name_id_mapping;
-    typedef boost::bimap<string, simplification_mode> simpl_mode_id_mapping;
-    typedef boost::bimap<string, estimation_mode> estimation_mode_id_mapping;
-    typedef boost::bimap<string, paired_metrics> paired_metrics_id_mapping;
-    typedef boost::bimap<string, resolving_mode> resolve_mode_id_mapping;
+	typedef boost::bimap<string, working_stage> stage_name_id_mapping;
+	typedef boost::bimap<string, simplification_mode> simpl_mode_id_mapping;
+	typedef boost::bimap<string, estimation_mode> estimation_mode_id_mapping;
+	typedef boost::bimap<string, paired_metrics> paired_metrics_id_mapping;
+	typedef boost::bimap<string, resolving_mode> resolve_mode_id_mapping;
 
 //  damn shit fix, it is to be removed! To determine is it started from run.sh or from spades.py
-    bool run_mode;
+	bool run_mode;
 
 	bool developer_mode;
 
 	static const stage_name_id_mapping FillStageInfo() {
 		stage_name_id_mapping::value_type info[] = {
-      stage_name_id_mapping::value_type("construction", ws_construction),
-      stage_name_id_mapping::value_type("simplification", ws_simplification),
-      stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count),
-      stage_name_id_mapping::value_type("distance_estimation", ws_distance_estimation),
-      stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving),
-      stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving),
-      stage_name_id_mapping::value_type("n50_enlargement", ws_n50_enlargement)
-    };
+				stage_name_id_mapping::value_type("construction",
+						ws_construction), stage_name_id_mapping::value_type(
+						"simplification", ws_simplification),
+				stage_name_id_mapping::value_type("late_pair_info_count",
+						ws_late_pair_info_count),
+				stage_name_id_mapping::value_type("distance_estimation",
+						ws_distance_estimation),
+				stage_name_id_mapping::value_type("repeats_resolving",
+						ws_repeats_resolving),
+				stage_name_id_mapping::value_type("repeats_resolving",
+						ws_repeats_resolving),
+				stage_name_id_mapping::value_type("n50_enlargement",
+						ws_n50_enlargement) };
 
 		return stage_name_id_mapping(info, utils::array_end(info));
 	}
 
 	static const simpl_mode_id_mapping FillSimplifModeInfo() {
 		simpl_mode_id_mapping::value_type info[] = {
-      simpl_mode_id_mapping::value_type("normal", sm_normal),
-      simpl_mode_id_mapping::value_type("pair_info_aware", sm_pair_info_aware),
-      simpl_mode_id_mapping::value_type("cheating", sm_cheating),
-      simpl_mode_id_mapping::value_type("topology", sm_topology),
-      simpl_mode_id_mapping::value_type("chimeric", sm_chimeric ),
-      simpl_mode_id_mapping::value_type("max_flow", sm_max_flow)
-    };
+				simpl_mode_id_mapping::value_type("normal", sm_normal),
+				simpl_mode_id_mapping::value_type("pair_info_aware",
+						sm_pair_info_aware), simpl_mode_id_mapping::value_type(
+						"cheating", sm_cheating),
+				simpl_mode_id_mapping::value_type("topology", sm_topology),
+				simpl_mode_id_mapping::value_type("chimeric", sm_chimeric),
+				simpl_mode_id_mapping::value_type("max_flow", sm_max_flow) };
 
 		return simpl_mode_id_mapping(info, utils::array_end(info));
 	}
 
-    static const estimation_mode_id_mapping FillEstimationModeInfo() {
-        estimation_mode_id_mapping::value_type info[] = {
-          estimation_mode_id_mapping::value_type("simple",      em_simple      ),
-          estimation_mode_id_mapping::value_type("weighted",    em_weighted    ),
-          estimation_mode_id_mapping::value_type("extensive",   em_extensive   ),
-          estimation_mode_id_mapping::value_type("smoothing",    em_smoothing  ),
-        };
-        return estimation_mode_id_mapping(info, utils::array_end(info));
-    }
+	static const estimation_mode_id_mapping FillEstimationModeInfo() {
+		estimation_mode_id_mapping::value_type info[] = {
+				estimation_mode_id_mapping::value_type("simple", em_simple),
+				estimation_mode_id_mapping::value_type("weighted", em_weighted),
+				estimation_mode_id_mapping::value_type("extensive",
+						em_extensive), estimation_mode_id_mapping::value_type(
+						"smoothing", em_smoothing), };
+		return estimation_mode_id_mapping(info, utils::array_end(info));
+	}
 
-    static const paired_metrics_id_mapping FillPairedMetricsInfo() {
-        paired_metrics_id_mapping::value_type info[] = { 
-          paired_metrics_id_mapping::value_type("read_count" ,      pm_read_count),
-          paired_metrics_id_mapping::value_type("product"    ,      pm_product)
-        };
+	static const paired_metrics_id_mapping FillPairedMetricsInfo() {
+		paired_metrics_id_mapping::value_type info[] = {
+				paired_metrics_id_mapping::value_type("read_count",
+						pm_read_count), paired_metrics_id_mapping::value_type(
+						"product", pm_product) };
 
-        return paired_metrics_id_mapping(info, utils::array_end(info));
-    }
+		return paired_metrics_id_mapping(info, utils::array_end(info));
+	}
 
-	static const resolve_mode_id_mapping FillResolveModeInfo()
-	{
-		resolve_mode_id_mapping::value_type info [] = {
-        resolve_mode_id_mapping::value_type("none"             , rm_none           ),
-        resolve_mode_id_mapping::value_type("split"  		   , rm_split		   ),
-        resolve_mode_id_mapping::value_type("path_extend"      , rm_path_extend    ),
-        resolve_mode_id_mapping::value_type("combined"         , rm_combined       ),
-        resolve_mode_id_mapping::value_type("split_scaff"      , rm_split_scaff    ),
-        resolve_mode_id_mapping::value_type("jump"             , rm_jump           ),
-        resolve_mode_id_mapping::value_type("rectangles"       , rm_rectangles     ),
-    };
+	static const resolve_mode_id_mapping FillResolveModeInfo() {
+		resolve_mode_id_mapping::value_type info[] = {
+				resolve_mode_id_mapping::value_type("none", rm_none),
+				resolve_mode_id_mapping::value_type("split", rm_split),
+				resolve_mode_id_mapping::value_type("path_extend",
+						rm_path_extend), resolve_mode_id_mapping::value_type(
+						"combined", rm_combined),
+				resolve_mode_id_mapping::value_type("split_scaff",
+						rm_split_scaff), resolve_mode_id_mapping::value_type(
+						"jump", rm_jump), resolve_mode_id_mapping::value_type(
+						"rectangles", rm_rectangles), };
 
 		return resolve_mode_id_mapping(info, utils::array_end(info));
 	}
-
 
 	static const stage_name_id_mapping& working_stages_info() {
 		static stage_name_id_mapping working_stages_info = FillStageInfo();
@@ -202,15 +202,17 @@ struct debruijn_config {
 		return simpl_mode_info;
 	}
 
-    static const estimation_mode_id_mapping& estimation_mode_info() {
-        static estimation_mode_id_mapping est_mode_info = FillEstimationModeInfo();
-        return est_mode_info;
-    }
+	static const estimation_mode_id_mapping& estimation_mode_info() {
+		static estimation_mode_id_mapping est_mode_info =
+				FillEstimationModeInfo();
+		return est_mode_info;
+	}
 
-    static const paired_metrics_id_mapping& paired_metrics_info() {
-        static paired_metrics_id_mapping paired_metrics_info = FillPairedMetricsInfo();
-        return paired_metrics_info;
-    }
+	static const paired_metrics_id_mapping& paired_metrics_info() {
+		static paired_metrics_id_mapping paired_metrics_info =
+				FillPairedMetricsInfo();
+		return paired_metrics_info;
+	}
 
 	static const resolve_mode_id_mapping& resolve_mode_info() {
 		static resolve_mode_id_mapping info = FillResolveModeInfo();
@@ -265,20 +267,20 @@ struct debruijn_config {
 		return it->second;
 	}
 
-    static const std::string& estimation_mode_name(estimation_mode est_id) {
-        auto it = estimation_mode_info().right.find(est_id);
-        VERIFY_MSG(it != estimation_mode_info().right.end(),
-                "No name for estimation mode id = " << est_id);
-        return it->second;
-    }
+	static const std::string& estimation_mode_name(estimation_mode est_id) {
+		auto it = estimation_mode_info().right.find(est_id);
+		VERIFY_MSG(it != estimation_mode_info().right.end(),
+				"No name for estimation mode id = " << est_id);
+		return it->second;
+	}
 
-    static estimation_mode estimation_mode_id(std::string name) { 
-        auto it = estimation_mode_info().left.find(name);
-        VERIFY_MSG(it != estimation_mode_info().left.end(),
-                "There is no estimation mode with name = " << name);
+	static estimation_mode estimation_mode_id(std::string name) {
+		auto it = estimation_mode_info().left.find(name);
+		VERIFY_MSG(it != estimation_mode_info().left.end(),
+				"There is no estimation mode with name = " << name);
 
-        return it->second;
-    }
+		return it->second;
+	}
 
 	static const std::string& resolving_mode_name(resolving_mode mode_id) {
 		auto it = resolve_mode_info().right.find(mode_id);
@@ -304,7 +306,7 @@ struct debruijn_config {
 
 		struct bulge_remover {
 			double max_bulge_length_coefficient;
-            size_t max_additive_length_coefficient;
+			size_t max_additive_length_coefficient;
 			double max_coverage;
 			double max_relative_coverage;
 			double max_delta;
@@ -353,7 +355,7 @@ struct debruijn_config {
 		struct complex_bulge_remover {
 			bool enabled;
 			bool pics_enabled;
-            std::string folder;
+			std::string folder;
 			double max_relative_length;
 			size_t max_length_difference;
 		};
@@ -369,8 +371,6 @@ struct debruijn_config {
 		pair_info_ec_remover piec;
 		isolated_edges_remover ier;
 		complex_bulge_remover cbr;
-
-		bool removal_checks_enabled;
 
 		//typedef map<>
 	};
@@ -443,24 +443,24 @@ struct debruijn_config {
 	};
 
 	struct gap_closer {
-		int     minimal_intersection;
-		bool    before_simplify;
-		bool    in_simplify;
-		bool    after_simplify;
-		double  weight_threshold;
+		int minimal_intersection;
+		bool before_simplify;
+		bool in_simplify;
+		bool after_simplify;
+		double weight_threshold;
 	};
 
 	struct info_printer {
-        bool print_stats;
-        bool write_components;
-        string components_for_kmer;
-        string components_for_genome_pos;
-        bool write_components_along_genome;
-        bool write_components_along_contigs;
-        bool save_full_graph;
-        bool write_error_loc;
-        bool write_full_graph;
-        bool write_full_nc_graph;
+		bool print_stats;
+		bool write_components;
+		string components_for_kmer;
+		string components_for_genome_pos;
+		bool write_components_along_genome;
+		bool write_components_along_contigs;
+		bool save_full_graph;
+		bool write_error_loc;
+		bool write_full_graph;
+		bool write_full_nc_graph;
 	};
 
 	struct jump_cfg {
@@ -517,7 +517,8 @@ public:
 
 	bool paired_mode;
 	bool additional_ec_removing;
-	bool divide_clusters;;
+	bool divide_clusters;
+	;
 	bool correct_mismatches;
 	bool paired_info_statistics;
 	bool paired_info_scaffolder;
@@ -536,15 +537,15 @@ public:
 
 	size_t K;
 
-    bool use_multithreading;
+	bool use_multithreading;
 	size_t max_threads;
 	size_t max_memory;
 
 //	size_t is_infinity;
 
-    paired_metrics paired_metr;
+	paired_metrics paired_metr;
 
-    estimation_mode est_mode;
+	estimation_mode est_mode;
 
 	resolving_mode rm;
 	path_extend::pe_config::MainPEParamsT pe_params;
@@ -568,7 +569,7 @@ public:
 inline void load(debruijn_config::simplification::tip_clipper& tc,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
-	load(tc.condition					, pt, "condition"		 			);
+	load(tc.condition, pt, "condition");
 }
 
 inline void load(working_stage& entry_point,
@@ -592,57 +593,58 @@ inline void load(simplification_mode& simp_mode,
 }
 
 inline void load(estimation_mode& est_mode,
-        boost::property_tree::ptree const& pt, std::string const& key,
-        bool complete) {
-    std::string ep = pt.get<std::string>(key);
-    est_mode = debruijn_config::estimation_mode_id(ep);
+		boost::property_tree::ptree const& pt, std::string const& key,
+		bool complete) {
+	std::string ep = pt.get<std::string>(key);
+	est_mode = debruijn_config::estimation_mode_id(ep);
 }
 
 inline void load(paired_metrics& paired_metr,
-        boost::property_tree::ptree const& pt, std::string const& key,
-        bool complete) {
-    std::string ep = pt.get<std::string>(key);
-    paired_metr = debruijn_config::paired_metrics_id(ep);
+		boost::property_tree::ptree const& pt, std::string const& key,
+		bool complete) {
+	std::string ep = pt.get<std::string>(key);
+	paired_metr = debruijn_config::paired_metrics_id(ep);
 }
 
 inline void load(debruijn_config::simplification::bulge_remover& br,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(br.max_bulge_length_coefficient	, pt, "max_bulge_length_coefficient"	);
-	load(br.max_additive_length_coefficient	, pt, "max_additive_length_coefficient"	);
-	load(br.max_coverage         			, pt, "max_coverage"					);
-	load(br.max_relative_coverage			, pt, "max_relative_coverage"			);
-	load(br.max_delta		     			, pt, "max_delta"			    		);
-	load(br.max_relative_delta   			, pt, "max_relative_delta"	    		);
+	load(br.max_bulge_length_coefficient, pt, "max_bulge_length_coefficient");
+	load(br.max_additive_length_coefficient, pt,
+			"max_additive_length_coefficient");
+	load(br.max_coverage, pt, "max_coverage");
+	load(br.max_relative_coverage, pt, "max_relative_coverage");
+	load(br.max_delta, pt, "max_delta");
+	load(br.max_relative_delta, pt, "max_relative_delta");
 }
 
 inline void load(debruijn_config::simplification::pair_info_ec_remover& ec,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(ec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
-	load(ec.min_neighbour_length		, pt, "min_neighbour_length"		);
+	load(ec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
+	load(ec.min_neighbour_length, pt, "min_neighbour_length");
 }
 
 inline void load(debruijn_config::simplification::isolated_edges_remover& ier,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(ier.max_length					, pt, "max_length"					);
-	load(ier.max_coverage				, pt, "max_coverage"				);
-	load(ier.max_length_any_cov			, pt, "max_length_any_cov"			);
+	load(ier.max_length, pt, "max_length");
+	load(ier.max_coverage, pt, "max_coverage");
+	load(ier.max_length_any_cov, pt, "max_length_any_cov");
 }
 
 inline void load(debruijn_config::simplification::complex_bulge_remover& cbr,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(cbr.enabled                    , pt, "enabled"                     );
-	load(cbr.pics_enabled               , pt, "pics_enabled"                );
-	load(cbr.folder                     , pt, "folder"                      );
-	load(cbr.max_relative_length		, pt, "max_relative_length"			);
-	load(cbr.max_length_difference		, pt, "max_length_difference"		);
+	load(cbr.enabled, pt, "enabled");
+	load(cbr.pics_enabled, pt, "pics_enabled");
+	load(cbr.folder, pt, "folder");
+	load(cbr.max_relative_length, pt, "max_relative_length");
+	load(cbr.max_length_difference, pt, "max_length_difference");
 }
 
 inline void load(
@@ -650,7 +652,7 @@ inline void load(
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(ec.condition					, pt, "condition"	);
+	load(ec.condition, pt, "condition");
 }
 
 inline void load(
@@ -658,9 +660,9 @@ inline void load(
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(cec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
-	load(cec.coverage_gap               , pt, "coverage_gap"				);
-	load(cec.sufficient_neighbour_length, pt, "sufficient_neighbour_length"	);
+	load(cec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
+	load(cec.coverage_gap, pt, "coverage_gap");
+	load(cec.sufficient_neighbour_length, pt, "sufficient_neighbour_length");
 }
 
 inline void load(
@@ -668,26 +670,26 @@ inline void load(
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(tec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
-	load(tec.plausibility_length		, pt, "plausibility_length"			);
-	load(tec.uniqueness_length			, pt, "uniqueness_length"			);
+	load(tec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
+	load(tec.plausibility_length, pt, "plausibility_length");
+	load(tec.uniqueness_length, pt, "uniqueness_length");
 }
 
 inline void load(debruijn_config::simplification::tr_based_ec_remover &trec,
 		boost::property_tree::ptree const &pt, bool complaete) {
 	using config_common::load;
-	load(trec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
-	load(trec.unreliable_coverage		, pt, "unreliable_coverage"			);
-	load(trec.uniqueness_length			, pt, "uniqueness_length"			);
+	load(trec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
+	load(trec.unreliable_coverage, pt, "unreliable_coverage");
+	load(trec.uniqueness_length, pt, "uniqueness_length");
 }
 
 inline void load(debruijn_config::simplification::max_flow_ec_remover& mfec,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(mfec.max_ec_length_coefficient	, pt, "max_ec_length_coefficient"	);
-	load(mfec.plausibility_length		, pt, "plausibility_length"			);
-	load(mfec.uniqueness_length			, pt, "uniqueness_length"  			);
+	load(mfec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
+	load(mfec.plausibility_length, pt, "plausibility_length");
+	load(mfec.uniqueness_length, pt, "uniqueness_length");
 }
 
 inline void load(debruijn_config::distance_estimator& de,
@@ -729,32 +731,32 @@ inline void load(debruijn_config::repeat_resolver& rr,
 inline void load(debruijn_config::position_handler& pos,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
-	load(pos.max_single_gap         , pt, "max_single_gap"		 );
-	load(pos.contigs_for_threading  , pt, "contigs_for_threading");
-	load(pos.contigs_to_analyze     , pt, "contigs_to_analyze"	 );
-	load(pos.late_threading         , pt, "late_threading"		 );
-	load(pos.careful_labeling       , pt, "careful_labeling"	 );
+	load(pos.max_single_gap, pt, "max_single_gap");
+	load(pos.contigs_for_threading, pt, "contigs_for_threading");
+	load(pos.contigs_to_analyze, pt, "contigs_to_analyze");
+	load(pos.late_threading, pt, "late_threading");
+	load(pos.careful_labeling, pt, "careful_labeling");
 }
 
 inline void load(debruijn_config::gap_closer& gc,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 	load(gc.minimal_intersection, pt, "minimal_intersection");
-	load(gc.before_simplify     , pt, "before_simplify"     );
-	load(gc.in_simplify         , pt, "in_simplify"         );
-	load(gc.after_simplify      , pt, "after_simplify"      );
-	load(gc.weight_threshold    , pt, "weight_threshold"    );
+	load(gc.before_simplify, pt, "before_simplify");
+	load(gc.in_simplify, pt, "in_simplify");
+	load(gc.after_simplify, pt, "after_simplify");
+	load(gc.weight_threshold, pt, "weight_threshold");
 }
 
 inline void load(debruijn_config::SAM_writer& sw,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
-	load(sw.output_map_format   , pt, "output_map_format"   );
-	load(sw.align_before_RR     , pt, "align_before_RR"     );
-	load(sw.align_after_RR      , pt, "align_after_RR"      );
-	load(sw.adjust_align        , pt, "adjust_align"        );
-	load(sw.align_only_paired   , pt, "align_only_paired"   );
-	load(sw.output_broken_pairs , pt, "output_broken_pairs" );
+	load(sw.output_map_format, pt, "output_map_format");
+	load(sw.align_before_RR, pt, "align_before_RR");
+	load(sw.align_after_RR, pt, "align_after_RR");
+	load(sw.adjust_align, pt, "adjust_align");
+	load(sw.align_only_paired, pt, "align_only_paired");
+	load(sw.output_broken_pairs, pt, "output_broken_pairs");
 	load(sw.align_original_reads, pt, "align_original_reads");
 	sw.print_quality = pt.get_optional<bool>("print_quality");
 }
@@ -762,25 +764,28 @@ inline void load(debruijn_config::SAM_writer& sw,
 inline void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
-	load(graph_read_corr.enable    , pt, "enable"    );
+	load(graph_read_corr.enable, pt, "enable");
 	load(graph_read_corr.output_dir, pt, "output_dir");
-	load(graph_read_corr.binary    , pt, "binary"    );
+	load(graph_read_corr.binary, pt, "binary");
 }
 
-inline void load_paired_reads(vector<vector<std::string> >& vec, boost::property_tree::ptree const& pt, string const& key) {
+inline void load_paired_reads(vector<vector<std::string> >& vec,
+		boost::property_tree::ptree const& pt, string const& key) {
 	vector<std::string> strings;
 	config_common::load(strings, pt, key);
 	for (auto it = strings.begin(); it != strings.end(); ++it) {
 		vector<std::string> paired_library;
 		config_common::split(paired_library, *it);
 		if (paired_library.size() < 1 || paired_library.size() > 2) {
-			VERIFY_MSG(false, "Invalid library of " << paired_library.size() << " input files with paired reads: \"" << *it << "\"");
+			VERIFY_MSG(false,
+					"Invalid library of " << paired_library.size() << " input files with paired reads: \"" << *it << "\"");
 		}
 		vec.push_back(paired_library);
 	}
 }
 
-inline void load_single_reads(vector<std::string>& vec, boost::property_tree::ptree const& pt, string const& key) {
+inline void load_single_reads(vector<std::string>& vec,
+		boost::property_tree::ptree const& pt, string const& key) {
 	vector<std::string> strings;
 	config_common::load(strings, pt, key);
 	for (auto it = strings.begin(); it != strings.end(); ++it) {
@@ -829,9 +834,9 @@ inline void load_reference_genome(debruijn_config::dataset& ds,
 	genome_stream >> genome;
 	VERIFY(genome.IsValid());
 //	if (VERIFY(genome.IsValid())) 
-   // {
+	// {
 	ds.reference_genome = genome.sequence();
-        //INFO("Reference genome loaded. Length " << ds.reference_genome.size());
+	//INFO("Reference genome loaded. Length " << ds.reference_genome.size());
 //        cout << "Reference genome loaded. Length " << ds.reference_genome.size() << endl;
 //	} 
 //    else {
@@ -855,28 +860,29 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.tec, pt, "tec"); // topology aware erroneous connections remover:
 	load(simp.trec, pt, "trec"); // topology and reliability based erroneous connections remover:
 	// need fix in config file
-    load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
+	load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
 	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
 	load(simp.ier, pt, "ier"); // isolated edges remover
 	load(simp.cbr, pt, "cbr"); // complex bulge remover
-
-	load(simp.removal_checks_enabled, pt, "removal_checks_enabled");
 }
 
-inline void load(debruijn_config::info_printer& printer, boost::property_tree::ptree const& pt, bool complete)
-{
-    using config_common::load;
+inline void load(debruijn_config::info_printer& printer,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
 
-    load(printer.print_stats				  ,	pt, "print_stats"                   , complete);
-    load(printer.write_components			  , pt, "write_components"              , complete);
-    load(printer.components_for_kmer		  , pt, "components_for_kmer"           , complete);
-    load(printer.components_for_genome_pos	  , pt, "components_for_genome_pos"     , complete);
-    load(printer.write_components_along_genome,	pt, "write_components_along_genome" , complete);
-    load(printer.write_components_along_contigs,pt, "write_components_along_contigs" , complete);
-    load(printer.save_full_graph			  ,	pt, "save_full_graph"			  	, complete);
-    load(printer.write_full_graph			  , pt, "write_full_graph"            , complete);
-    load(printer.write_full_nc_graph		  , pt, "write_full_nc_graph"            , complete);
-    load(printer.write_error_loc			  , pt, "write_error_loc"            , complete);
+	load(printer.print_stats, pt, "print_stats", complete);
+	load(printer.write_components, pt, "write_components", complete);
+	load(printer.components_for_kmer, pt, "components_for_kmer", complete);
+	load(printer.components_for_genome_pos, pt, "components_for_genome_pos",
+			complete);
+	load(printer.write_components_along_genome, pt,
+			"write_components_along_genome", complete);
+	load(printer.write_components_along_contigs, pt,
+			"write_components_along_contigs", complete);
+	load(printer.save_full_graph, pt, "save_full_graph", complete);
+	load(printer.write_full_graph, pt, "write_full_graph", complete);
+	load(printer.write_full_nc_graph, pt, "write_full_nc_graph", complete);
+	load(printer.write_error_loc, pt, "write_error_loc", complete);
 }
 
 inline void load(debruijn_config::info_printers_t& printers,
@@ -904,15 +910,16 @@ inline void load(debruijn_config::jump_cfg& jump,
 }
 
 // main debruijn config load function
-inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bool complete) {
+inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
+		bool complete) {
 	using config_common::load;
 
-    load(cfg.K, pt, "K");
+	load(cfg.K, pt, "K");
 
 	// input options:
 	load(cfg.dataset_file, pt, "dataset");
 	// input dir is based on dataset file location (all pathes in datasets are relative to its location)
-    cfg.input_dir = path::parent_path(cfg.dataset_file);
+	cfg.input_dir = path::parent_path(cfg.dataset_file);
 	if (cfg.input_dir[cfg.input_dir.length() - 1] != '/') {
 		cfg.input_dir += '/';
 	}
@@ -923,24 +930,25 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	}
 
 	// instead of dataset_name.
-    cfg.dataset_name = path::basename(cfg.dataset_file);
+	cfg.dataset_name = path::basename(cfg.dataset_file);
 
-    // TODO: remove this shit
+	// TODO: remove this shit
 	load(cfg.run_mode, pt, "run_mode");
-    
+
 	if (cfg.run_mode) {
-	    load(cfg.project_name, pt, "project_name");
-        cfg.output_root = cfg.project_name.empty()
-			? (cfg.output_base + "/K" + ToString(cfg.K) + "/")
-			: (cfg.output_base + cfg.project_name + "/K" + ToString(cfg.K) + "/");
-        cfg.output_suffix = MakeLaunchTimeDirName() + "/";
-        cfg.output_dir = cfg.output_root + cfg.output_suffix;
-    } 
-    else {
-        cfg.output_root = cfg.output_base + "/K" + ToString(cfg.K) + "/";
-        
-        cfg.output_dir = cfg.output_root;
-    }
+		load(cfg.project_name, pt, "project_name");
+		cfg.output_root =
+				cfg.project_name.empty() ?
+						(cfg.output_base + "/K" + ToString(cfg.K) + "/") :
+						(cfg.output_base + cfg.project_name + "/K"
+								+ ToString(cfg.K) + "/");
+		cfg.output_suffix = MakeLaunchTimeDirName() + "/";
+		cfg.output_dir = cfg.output_root + cfg.output_suffix;
+	} else {
+		cfg.output_root = cfg.output_base + "/K" + ToString(cfg.K) + "/";
+
+		cfg.output_dir = cfg.output_root;
+	}
 
 	cfg.output_saves = cfg.output_dir + "saves/";
 
@@ -964,10 +972,10 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.load_from, pt, "load_from");
 	if (cfg.load_from[0] != '/') { // relative path
-		if (cfg.run_mode) 
-            cfg.load_from = cfg.output_root + cfg.load_from;
-        else 
-            cfg.load_from = cfg.output_dir + cfg.load_from;
+		if (cfg.run_mode)
+			cfg.load_from = cfg.output_root + cfg.load_from;
+		else
+			cfg.load_from = cfg.output_dir + cfg.load_from;
 	}
 
 	load(cfg.entry_point, pt, "entry_point");
@@ -988,31 +996,32 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.gap_closer_enable, pt, "gap_closer_enable");
 	load(cfg.SAM_writer_enable, pt, "SAM_writer_enable");
 
-
-    load(cfg.buffer_size, pt, "buffer_size");
-    cfg.buffer_size <<= 20; //turn MB to bytes
+	load(cfg.buffer_size, pt, "buffer_size");
+	cfg.buffer_size <<= 20; //turn MB to bytes
 
 	load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
-    if (cfg.temp_bin_reads_dir[cfg.temp_bin_reads_dir.length() - 1] != '/') {
-        cfg.temp_bin_reads_dir += '/';
-    }
-    cfg.temp_bin_reads_path = cfg.project_name.empty()
-            ? (cfg.output_base + "/" + cfg.temp_bin_reads_dir)
-            : (cfg.output_base + cfg.project_name + "/" + cfg.temp_bin_reads_dir);
+	if (cfg.temp_bin_reads_dir[cfg.temp_bin_reads_dir.length() - 1] != '/') {
+		cfg.temp_bin_reads_dir += '/';
+	}
+	cfg.temp_bin_reads_path =
+			cfg.project_name.empty() ?
+					(cfg.output_base + "/" + cfg.temp_bin_reads_dir) :
+					(cfg.output_base + cfg.project_name + "/"
+							+ cfg.temp_bin_reads_dir);
 
-    cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
+	cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
 
 	cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
-	cfg.single_read_prefix =cfg.temp_bin_reads_path +  "_single";
+	cfg.single_read_prefix = cfg.temp_bin_reads_path + "_single";
 
 	load(cfg.use_multithreading, pt, "use_multithreading");
 	load(cfg.max_threads, pt, "max_threads");
-  // Fix number of threads according to OMP capabilities.
-  cfg.max_threads = std::min(cfg.max_threads, (size_t)omp_get_max_threads());
-  // Inform OpenMP runtime about this :)
-  omp_set_num_threads(cfg.max_threads);
+	// Fix number of threads according to OMP capabilities.
+	cfg.max_threads = std::min(cfg.max_threads, (size_t) omp_get_max_threads());
+	// Inform OpenMP runtime about this :)
+	omp_set_num_threads(cfg.max_threads);
 
-  load(cfg.max_memory, pt, "max_memory");
+	load(cfg.max_memory, pt, "max_memory");
 
 	checkFileExistenceFATAL(cfg.dataset_file);
 	boost::property_tree::ptree ds_pt;
@@ -1025,16 +1034,15 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.rr, pt, (cfg.ds.single_cell ? "sc_rr" : "usual_rr")); // repeat resolver:
 	load(cfg.pos, pt, "pos"); // position handler:
 
-    load(cfg.paired_metr, pt, "paired_metrics");
+	load(cfg.paired_metr, pt, "paired_metrics");
 
-    load(cfg.est_mode, pt, "estimation_mode");
+	load(cfg.est_mode, pt, "estimation_mode");
 
-	load(cfg.rm               , pt, "resolving_mode"   );
-    cfg.pe_params.name = cfg.ds.single_cell ? "singlecell" : "multicell";
-    load(cfg.pe_params, pt, "andrey_params"    );
-    load(cfg.use_scaffolder, pt, "use_scaffolder");
-    load(cfg.mask_all, pt, "mask_all");
-
+	load(cfg.rm, pt, "resolving_mode");
+	cfg.pe_params.name = cfg.ds.single_cell ? "singlecell" : "multicell";
+	load(cfg.pe_params, pt, "andrey_params");
+	load(cfg.use_scaffolder, pt, "use_scaffolder");
+	load(cfg.mask_all, pt, "mask_all");
 
 	load(cfg.gc, pt, "gap_closer");
 	load(cfg.sw, pt, "SAM_writer");
@@ -1044,16 +1052,14 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.path_set_graph, pt, "path_set_graph");
 	load(cfg.mismatch_ratio, pt, "mismatch_ratio");
 
-	load(
-			cfg.simp,
-			pt,
+	load(cfg.simp, pt,
 			(cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"));
 
-    cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
+	cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
 
 	load(cfg.info_printers, pt, "info_printers");
 	load(cfg.jump, pt, "jump");
-    
+
 	load_reference_genome(cfg.ds, cfg.input_dir);
 
 //	cfg.is_infinity = 100000000;
