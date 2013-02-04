@@ -298,7 +298,7 @@ public:
 
     INFO("Starting k-mer counting.");
     size_t kmers = 0;
-#   pragma omp parallel for shared(raw_kmers) num_threads(num_threads) schedule(dynamic)
+#   pragma omp parallel for shared(raw_kmers) num_threads(num_threads) schedule(dynamic) reduction(+:kmers)
     for (unsigned iFile = 0; iFile < raw_kmers.size(); ++iFile) {
       kmers += MergeKMers(raw_kmers[iFile], GetUniqueKMersFname(iFile), K);
     }
