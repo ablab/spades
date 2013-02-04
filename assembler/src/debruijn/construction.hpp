@@ -60,7 +60,10 @@ void load_estimated_params(const string& prefix) {
     load_param_map(filename, "perc", cfg::get_writable().ds.percentiles);
     load_param(filename, "avg_coverage",
         cfg::get_writable().ds.avg_coverage);
-        load_param_map(filename, "hist", cfg::get_writable().ds.hist);
+    load_param_map(filename, "hist", cfg::get_writable().ds.hist);
+    load_param(filename, "median", cfg::get_writable().ds.median);
+    load_param(filename, "mad", cfg::get_writable().ds.mad);
+    load_param_map(filename, "hist", cfg::get_writable().ds.hist);
   }
 }
 
