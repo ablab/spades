@@ -597,7 +597,7 @@ void PreSimplification(conj_graph_pack& gp,
 	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler, gp.g.k() + 1);
 }
 
-void SimplificationCycle(conj_graph_pack& gp, boost::function<void(typename Graph::EdgeId)> removal_handler,
+void SimplificationCycle(conj_graph_pack& gp, boost::function<void(EdgeId)> removal_handler,
 		detail_info_printer &printer, size_t iteration_count, size_t iteration,
 		double max_coverage) {
 	INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
