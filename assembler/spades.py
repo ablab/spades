@@ -133,6 +133,47 @@ def print_used_values(cfg, log):
     log.info("")
 
 
+def set_defaults(cfg):
+    ## setting default values in config
+
+    # common
+    if not "output_dir" in cfg["common"].__dict__:
+        cfg["common"].__dict__["output_dir"] = 'spades_output'
+
+    if not "max_threads" in cfg["common"].__dict__:
+        cfg["common"].__dict__["max_threads"] = 16
+
+    if not "max_memory" in cfg["common"].__dict__:
+        cfg["common"].__dict__["max_memory"] = 250
+
+    if not "output_to_console" in cfg["common"].__dict__:
+        cfg["common"].__dict__["output_to_console"] = True
+
+    if not "developer_mode" in cfg["common"].__dict__:
+        cfg["common"].__dict__["developer_mode"] = False
+
+    # dataset
+    if "dataset" in cfg:
+        if not "single_cell" in cfg["dataset"].__dict__:
+            cfg["dataset"].__dict__["single_cell"] = False
+
+    # error_correction
+    if "error_correction" in cfg:
+        if not "max_iterations" in cfg["error_correction"].__dict__:
+            cfg["error_correction"].__dict__["max_iterations"] = 1
+        if not "gzip_output" in cfg["error_correction"].__dict__:
+            cfg["error_correction"].__dict__["gzip_output"] = True
+
+    # assembly
+    if "assembly" in cfg:
+        if not "iterative_K" in cfg["assembly"].__dict__:
+            cfg["assembly"].__dict__["iterative_K"] = [21, 33, 55]
+        if not "generate_sam_files" in cfg["assembly"].__dict__:
+            cfg["assembly"].__dict__["generate_sam_files"] = False
+        if not "gap_closer" in cfg["assembly"].__dict__:
+            cfg["assembly"].__dict__["gap_closer"] = True
+
+
 def check_config(cfg, log):
     ## special case: 0 iterations for the error correction means "No error correction!"
 
@@ -174,58 +215,22 @@ def check_config(cfg, log):
         support.error("wrong options! You should specify at least one file with reads!", log)
         return False
 
-    ## setting default values if needed
-
-    # common 
-    if not "output_dir" in cfg["common"].__dict__:
-        cfg["common"].__dict__["output_dir"] = 'spades_output'
-
-    if not "max_threads" in cfg["common"].__dict__:
-        cfg["common"].__dict__["max_threads"] = 16
-
-    if not "max_memory" in cfg["common"].__dict__:
-        cfg["common"].__dict__["max_memory"] = 250
-
-    if not "output_to_console" in cfg["common"].__dict__:
-        cfg["common"].__dict__["output_to_console"] = True
-
-    if not "developer_mode" in cfg["common"].__dict__:
-        cfg["common"].__dict__["developer_mode"] = False
-
+    # expanding vars and setting defaults depended on other settings
     cfg["common"].output_dir = os.path.abspath(os.path.expandvars(cfg["common"].output_dir))
 
-    # dataset
-    if "dataset" in cfg:
-        if not "single_cell" in cfg["dataset"].__dict__:
-            cfg["dataset"].__dict__["single_cell"] = False
-
-    # error_correction
     if "error_correction" in cfg:
         cfg["error_correction"].__dict__["output_dir"] = os.path.join(
             cfg["common"].output_dir, "corrected")
-        if not "max_iterations" in cfg["error_correction"].__dict__:
-            cfg["error_correction"].__dict__["max_iterations"] = 1
-        if not "gzip_output" in cfg["error_correction"].__dict__:
-            cfg["error_correction"].__dict__["gzip_output"] = True
         if not "tmp_dir" in cfg["error_correction"].__dict__:
             cfg["error_correction"].__dict__["tmp_dir"] = cfg["error_correction"].output_dir
         cfg["error_correction"].tmp_dir = os.path.join(os.path.abspath(
             os.path.expandvars(cfg["error_correction"].tmp_dir)), 'tmp')
 
-    # assembly
-    if "assembly" in cfg:
-        if not "iterative_K" in cfg["assembly"].__dict__:
-            cfg["assembly"].__dict__["iterative_K"] = [21, 33, 55]
-        if not "generate_sam_files" in cfg["assembly"].__dict__:
-            cfg["assembly"].__dict__["generate_sam_files"] = False
-        if not "gap_closer" in cfg["assembly"].__dict__:
-            cfg["assembly"].__dict__["gap_closer"] = True
-
     return True
 
 
 def check_binaries(binary_dir, log):
-    for binary in ["hammer", "spades"]:
+    for binary in ["hammer", "spades", "bwa"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
             support.error("SPAdes binary file not found: " + binary_path +
@@ -249,11 +254,14 @@ def fill_test_config(cfg):
      os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz")]
     cfg["dataset"].__dict__["single_cell"] = False
 
-    # error_correction (load default params)
+    # error_correction (empty config, i.e. load default params)
     cfg["error_correction"] = load_config_from_vars(dict())
 
-    # assembly (load default params)
+    # assembly (empty config, i.e. load default params)
     cfg["assembly"] = load_config_from_vars(dict())
+
+    # loading default parameters
+    set_defaults(cfg)
 
 
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
@@ -540,6 +548,7 @@ def main():
                 cfg["error_correction"] = load_config_from_vars(dict())
             if not only_error_correction:
                 cfg["assembly"] = load_config_from_vars(dict())
+            set_defaults(cfg)
 
             # common
             if output_dir:
@@ -595,6 +604,7 @@ def main():
     if CONFIG_FILE:
         cfg = load_config_from_info_file(CONFIG_FILE)
         os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))
+        set_defaults(cfg)
 
     if not CONFIG_FILE and not options and not TEST:
         usage()
