@@ -59,8 +59,12 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_conti
     # removing template configs
     for root, dirs, files in os.walk(dst_configs):
         for cfg_file in files:
-            if cfg_file.endswith('.template'):
-                os.remove(os.path.join(root, cfg_file))
+            cfg_file = os.path.join(root, cfg_file)
+            if cfg_file.endswith('.info.template'):
+                if os.path.isfile(cfg_file.split('.template')[0]):
+                    os.remove(cfg_file)
+                else:
+                    os.rename(cfg_file, cfg_file.split('.template')[0])
 
     prepare_config_spades(cfg_file_name, cfg, log, use_additional_contigs, K, last_one)
     prev_K = K
@@ -96,7 +100,7 @@ def run_spades(configs_dir, execution_home, cfg, log):
         RL = get_read_length(cfg.output_dir, cfg.iterative_K[0])
         if (cfg.iterative_K[1] > RL):
             if cfg.paired_mode:
-                log.info("Second value of iterative K exceeded estimated read length. Reranning in paired mode for the first value of K")
+                log.info("Second value of iterative K exceeded estimated read length. Rerunning in paired mode for the first value of K")
                 run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, True)
                 K = cfg.iterative_K[0]
         else:

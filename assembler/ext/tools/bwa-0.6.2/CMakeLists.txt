@@ -4,14 +4,14 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(bwa C)
+project(bwa-spades C)
 
 find_package(Threads)
 if (CMAKE_USE_PTHREADS_INIT)
   add_definitions(-DHAVE_PTHREAD)
 endif()
 
-add_executable(bwa
+add_executable(bwa-spades
                bamlite.c
                bwa.c
                bwase.c
@@ -42,11 +42,11 @@ add_executable(bwa
                QSufSort.c
                stdaln.c)
 
-target_link_libraries(bwa ${COMMON_LIBRARIES} m)
+target_link_libraries(bwa-spades ${COMMON_LIBRARIES} m)
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(bwa PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(bwa-spades PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
-install(TARGETS bwa
+install(TARGETS bwa-spades
         RUNTIME DESTINATION bin)

@@ -17,7 +17,10 @@ import spades_init
 
 spades_init.init()
 spades_home = spades_init.spades_home
-execution_home = os.path.join(spades_home, 'bin')
+bin_home = spades_init.bin_home
+python_modules_home = spades_init.python_modules_home
+ext_python_modules_home = spades_init.ext_python_modules_home
+spades_version = spades_init.spades_version
 
 import support
 from process_cfg import *
@@ -42,10 +45,11 @@ def print_used_values(cfg, log):
     # system info
     log.info("System information:")
     try:
-        log.info("  OS: " + platform.platform())
-        # for more deatils: '[' + str(platform.uname()) + ']'
+        log.info("  SPAdes version: " + str(spades_version))
         log.info("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.' + str(sys.version_info[2]))
         # for more details: '[' + str(sys.version_info) + ']'
+        log.info("  OS: " + platform.platform())
+        # for more deatils: '[' + str(platform.uname()) + ']'
     except:
         log.info("  Problem occurred when getting system information")
     log.info("")
@@ -230,7 +234,7 @@ def check_config(cfg, log):
 
 
 def check_binaries(binary_dir, log):
-    for binary in ["hammer", "spades", "bwa"]:
+    for binary in ["hammer", "spades", "bwa-spades"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
             support.error("SPAdes binary file not found: " + binary_path +
@@ -279,7 +283,7 @@ def check_file(f, message, log):
 
 
 def usage(show_hidden=False):
-    print >> sys.stderr, "SPAdes genome assembler"
+    print >> sys.stderr, "SPAdes genome assembler v." + str(spades_version)
     print >> sys.stderr, "Usage:", sys.argv[0], "[options] -o <output_dir>"
     print >> sys.stderr, ""
     print >> sys.stderr, "Basic options:"
@@ -406,7 +410,7 @@ def main():
         rectangles = None
         #corrector
         mismatch_corrector = False
-        bwa = os.path.join(execution_home, "bwa") # it is hardcoded now instead of option
+        bwa = os.path.join(bin_home, "bwa-spades") # it is hardcoded now instead of option
 
         for opt, arg in options:
             if opt == '-o':
@@ -613,7 +617,7 @@ def main():
     if not check_config(cfg, log):
         return
 
-    if not check_binaries(execution_home, log):
+    if not check_binaries(bin_home, log):
         return
 
     if not os.path.isdir(cfg["common"].output_dir):
@@ -726,7 +730,7 @@ def main():
                         bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads,
                             bh_cfg.paired_reads, bh_cfg.working_dir, log)
 
-            bh_dataset_filename = bh_logic.run_bh(tmp_configs_dir, execution_home, bh_cfg, log)
+            bh_dataset_filename = bh_logic.run_bh(tmp_configs_dir, bin_home, bh_cfg, log)
 
             log.info("\n===== Error correction finished. \n")
 
@@ -805,11 +809,11 @@ def main():
                 spades_cfg.__dict__["dataset"] = dataset_filename
 
             result_contigs_filename, result_scaffolds_filename, latest_dir = spades_logic.run_spades(tmp_configs_dir,
-                execution_home, spades_cfg, log)
+                bin_home, spades_cfg, log)
 
             #RECTANGLES
             if spades_cfg.paired_mode and rectangles:
-                sys.path.append(os.path.join(os.path.dirname(__file__), "src/rectangles"))
+                sys.path.append(os.path.join(python_modules_home, "rectangles"))
                 import rrr
 
                 rrr_input_dir = os.path.join(latest_dir, "saves")
@@ -867,7 +871,7 @@ def main():
                         args.append('--' + key)
                     if value:
                         args.append(value)
-            corrector.main(args, log)
+            corrector.main(args, ext_python_modules_home, log)
 
             # renaming assembled contigs to avoid colision in names
             if correct_scaffolds:

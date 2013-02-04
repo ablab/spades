@@ -7,16 +7,28 @@
 import os
 import sys
 
-spades_home = os.path.abspath(sys.path[0])
+# developers configuration
+spades_home = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+bin_home = os.path.join(spades_home, 'bin')
+python_modules_home = os.path.join(spades_home, 'src')
+ext_python_modules_home = os.path.join(spades_home, 'ext', 'include', 'python_libs')
 spades_version = ''
 
 def init():
     global spades_home
+    global bin_home
+    global python_modules_home
     global spades_version
-    global spades_compilation_dir
-    if spades_home == "/usr/bin":
-        spades_home = "/usr/share/spades"
+    global ext_python_modules_home
 
-    sys.path.append(os.path.join(spades_home, "src/spades_pipeline/"))
+    # users configuration (spades_init.py and spades binary are in the same directory)
+    if os.path.isfile(os.path.join(spades_home, 'spades')):
+        install_prefix = os.path.dirname(spades_home)
+        bin_home = os.path.join(install_prefix, 'bin')
+        spades_home = os.path.join(install_prefix, 'share', 'spades')
+        python_modules_home = spades_home
+        ext_python_modules_home = spades_home
 
-    spades_version =  open(os.path.join(spades_home, 'VERSION'), 'r').readline()
+    sys.path.append(os.path.join(python_modules_home, 'spades_pipeline'))
+
+    spades_version = open(os.path.join(spades_home, 'VERSION'), 'r').readline()

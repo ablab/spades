@@ -18,11 +18,6 @@ from site import addsitedir
 import logging
 import shutil
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-
-addsitedir(os.path.join(__location__, '../../ext/include/python_libs'))
-
-from joblib import Parallel, delayed
 from math import pow
 from support import universal_sys_call, error
 
@@ -1163,10 +1158,12 @@ def process_contig(files):
 #    return inserted, replaced
 
 
-def main(args, log=None):
+def main(args, joblib_path, log=None):
     if len(args) < 1:
         usage()
         sys.exit(0)
+
+    addsitedir(joblib_path)
 
     init_config()
     parse_profile(args, log)
@@ -1230,6 +1227,7 @@ def main(args, log=None):
             tmp.append(os.path.getsize(contig_file))
             pairs.append(tmp)
     pairs.sort(key=lambda x: x[-1], reverse=True)
+    from joblib import Parallel, delayed
     Parallel(n_jobs=config["t"])(delayed(process_contig)(pair) for pair in pairs)
 #        inserted += loc_ins
 #        replaced += loc_rep
@@ -1264,6 +1262,7 @@ def main(args, log=None):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    joblib_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../ext/include/python_libs')
+    main(sys.argv[1:], joblib_path)
 
     

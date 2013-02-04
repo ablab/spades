@@ -47,8 +47,12 @@ def run_bh(configs_dir, execution_home, cfg, log):
     # removing template configs
     for root, dirs, files in os.walk(dst_configs):
         for cfg_file in files:
-            if cfg_file.endswith('.template'):
-                os.remove(os.path.join(root, cfg_file))
+            cfg_file = os.path.join(root, cfg_file)
+            if cfg_file.endswith('.info.template'):
+                if os.path.isfile(cfg_file.split('.template')[0]):
+                    os.remove(cfg_file)
+                else:
+                    os.rename(cfg_file, cfg_file.split('.template')[0])
 
     prepare_config_bh(cfg_file_name, cfg, log)
 
