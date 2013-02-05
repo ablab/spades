@@ -349,7 +349,7 @@ boost::function<void(typename Graph::EdgeId)> EnableProjection(gp_t& gp,
 template<class gp_t>
 void ClipTipsWithProjection(gp_t& gp,
 		const debruijn_config::simplification::tip_clipper& tc_config,
-		bool enable_projection, size_t read_length = 0,
+		bool enable_projection = true, size_t read_length = 0,
 		double detected_coverage_threshold = 0.,
 		boost::function<void(typename gp_t::graph_t::EdgeId)> removal_handler_f =
 				0, size_t iteration_count = 1, size_t iteration = 0) {
@@ -658,8 +658,11 @@ void PreSimplification(conj_graph_pack& gp,
 		detail_info_printer &printer, size_t iteration_count,
 		double determined_coverage_threshold) {
 	INFO("Early tip clipping:");
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL,
-			cfg::get().graph_read_corr.enable, determined_coverage_threshold,
+	//todo if we really want to change tip length with iteration,
+	//it should be minimal here!!!
+	ClipTipsWithProjection(gp, cfg::get().simp.tc, cfg::get().graph_read_corr.enable,
+			*cfg::get().ds.RL,
+			determined_coverage_threshold,
 			removal_handler);
 
 	INFO("Early bulge removal:");
@@ -673,8 +676,9 @@ void SimplificationCycle(conj_graph_pack& gp,
 	INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
 	DEBUG(iteration << " TipClipping");
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL,
-			cfg::get().graph_read_corr.enable, max_coverage, removal_handler,
+	ClipTipsWithProjection(gp, cfg::get().simp.tc, cfg::get().graph_read_corr.enable,
+			*cfg::get().ds.RL,
+			max_coverage, removal_handler,
 			iteration_count, iteration);
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
@@ -708,8 +712,8 @@ void PostSimplification(conj_graph_pack& gp,
 
 		INFO("Final tip clipping:");
 
-		ClipTipsWithProjection(gp, cfg::get().simp.tc, *cfg::get().ds.RL,
-				cfg::get().graph_read_corr.enable,
+		ClipTipsWithProjection(gp, cfg::get().simp.tc, cfg::get().graph_read_corr.enable,
+				*cfg::get().ds.RL,
 				determined_coverage_threshold, removal_handler);
 		printer(ipp_final_tip_clipping, str(format("_%d") % iteration));
 

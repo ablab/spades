@@ -870,7 +870,7 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.simpl_mode, pt, "simpl_mode");
 
 	load(simp.tc, pt, "tc"); // tip clipper:
-	load(simp.ttc, pt, "ttc"); // tip clipper:
+//	load(simp.ttc, pt, "ttc"); // tip clipper:
 	load(simp.br, pt, "br"); // bulge remover:
 	load(simp.ec, pt, "ec"); // erroneous connections remover:
 	load(simp.cec, pt, "cec"); // cheating erroneous connections remover:
