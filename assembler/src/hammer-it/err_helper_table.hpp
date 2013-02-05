@@ -9,6 +9,8 @@
 #include <cstdlib>
 #include <cassert>
 
+#include "logger/logger.hpp"
+
 namespace hammer {
 
 namespace errHelper {
@@ -21,6 +23,10 @@ enum Hint {
 };
 
 namespace internal {
+
+// maximum size of K-mers in the helper tables
+static const unsigned int MAX_K = 5;
+
 class HelperTable {
  public:
   // Load table from file stream
@@ -30,6 +36,7 @@ class HelperTable {
                   size_t x_offset, size_t y_offset,
                   size_t x_nfront, size_t y_nfront) const {
 
+    VERIFY(k_ <= MAX_K);
     unsigned x_code = getCode(x, x_offset, x_nfront, k_);
     unsigned y_code = getCode(y, y_offset, y_nfront, k_);
 
@@ -65,9 +72,6 @@ class HelperTable {
     assert(false);
   }
 };
-
-// maximum size of K-mers in the helper tables
-static const unsigned int MAX_K = 5;
 
 // tables for k = 1, 2, ..., MAX_K
 extern std::vector<HelperTable> helper_tables;

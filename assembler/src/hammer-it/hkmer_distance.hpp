@@ -4,6 +4,8 @@
 #include "hkmer.hpp"
 #include "err_helper_table.hpp"
 
+namespace hammer {
+
 static inline size_t hamdistKMer(hammer::HKMer x, hammer::HKMer y,
                                  unsigned tau = -1) {
   unsigned dist = 0;
@@ -41,24 +43,38 @@ static inline size_t distanceHKMer(const hammer::HKMer& x,
       continue;
     }
 
-    dist += 1;
-    if (dist > tau)
-      return dist;
+    if (cx.nucl == cy.nucl) {
 
-    using namespace hammer::errHelper;
-
-    auto hint = getHint(x, y, i, j, cx.len, cy.len);
-    
-    switch (hint) {
-      case kMismatch:
-        --cx.len, --cy.len;
-        break;
-      case kInsertion:
-        --cy.len;
-        break;
-      case kDeletion:
+      if (cx.len >= 4 && cy.len >= 4) {
+        ++i, ++j;
+        dist += abs(cx.len - cy.len);
+        if (dist > tau)
+          return dist;
+      } else {
         --cx.len;
-        break;
+        --cy.len;
+      }
+
+    } else {
+
+      dist += 1;
+      if (dist > tau)
+        return dist;
+
+      using namespace hammer::errHelper;
+      auto hint = getHint(x, y, i, j, cx.len, cy.len);
+      
+      switch (hint) {
+        case kMismatch:
+          --cx.len, --cy.len;
+          break;
+        case kInsertion:
+          --cy.len;
+          break;
+        case kDeletion:
+          --cx.len;
+          break;
+      }
     }
 
     if (cx.len == 0) 
@@ -70,4 +86,5 @@ static inline size_t distanceHKMer(const hammer::HKMer& x,
   return dist;
 }
 
+};
 #endif // __HAMMER_HKMER_DISTANCE_HPP__

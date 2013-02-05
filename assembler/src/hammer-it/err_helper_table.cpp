@@ -18,7 +18,7 @@ namespace internal {
 
 std::vector<HelperTable> helper_tables;
 
-HelperTable::HelperTable(unsigned k, std::istream& stream) {
+HelperTable::HelperTable(unsigned k, std::istream& stream) : k_(k) {
   size_t sz = 1 << (4 * k); // # of hints - 4 ^^ 2k 
   size_t bytes = sz / 4; // each char contains 4 hints
   storage_.resize(bytes);

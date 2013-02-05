@@ -93,7 +93,7 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
       hammer::HKMer kmery = data[y].kmer;
       if (uf.find_set(x) != uf.find_set(y) &&
           canMerge(uf, x, y) &&
-          distanceHKMer(kmerx, kmery, tau) <= tau) {
+          hammer::distanceHKMer(kmerx, kmery, tau) <= tau) {
         uf.unite(x, y);
       }
     }
