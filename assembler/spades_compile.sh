@@ -6,14 +6,17 @@
 # See file LICENSE for details.
 ############################################################################
 
-PREFIX=`pwd`
+if [ "x$PREFIX" == "x" ]; then
+  PREFIX=`pwd`
+fi
 BUILD_DIR=build_spades
+BASEDIR=`pwd`/`dirname $0`
 
-rm -rf $BUILD_DIR
-mkdir -p $BUILD_DIR
+rm -rf $BASEDIR/$BUILD_DIR
+mkdir -p $BASEDIR/$BUILD_DIR
 set -e
-cd $BUILD_DIR
-cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$PREFIX ../src $*
+cd $BASEDIR/$BUILD_DIR
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$PREFIX $BASEDIR/src $*
 make -j 8
 make install
 cd $PREFIX
