@@ -10,6 +10,7 @@
 #include "kmer_data.hpp"
 #include "hamcluster.hpp"
 #include "valid_hkmer_generator.hpp"
+#include "err_helper_table.hpp"
 
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
@@ -115,6 +116,8 @@ int main(void) {
   srandom(42);
 
   create_console_logger();
+
+  hammer::errHelper::initHelperTables("err_hints.dat");
 
   KMerData kmer_data;
   KMerDataCounter(1).FillKMerData(kmer_data);

@@ -2,15 +2,13 @@
 #define __HAMMER_KMER_DATA_HPP__
 
 #include "mph_index/kmer_index.hpp"
-#include "HSeq.hpp"
+#include "hkmer.hpp"
 
 #include <vector>
 
 #include <cstdlib>
 
 namespace hammer {
-const uint32_t K = 16;
-typedef HSeq<K> HKMer;
 
 struct KMerStat {
   size_t count;
@@ -23,23 +21,6 @@ struct KMerStat {
 };
   
 };
-
-static inline size_t hamdistKMer(hammer::HKMer x, hammer::HKMer y,
-                                 unsigned tau = -1) {
-  unsigned dist = 0;
-
-  for (size_t i = 0; i < hammer::K; ++i) {
-    hammer::HomopolymerRun cx = x[i], cy = y[i];
-    if (cx.raw != cy.raw) {
-      dist += (cx.nucl == cy.nucl ?
-               abs(cx.len - cy.len) :  cx.len + cy.len);
-      if (dist > tau)
-        return dist;
-    }
-  }
-
-  return dist;
-}
 
 typedef KMerIndex<hammer::HKMer> HammerKMerIndex;
 
@@ -112,5 +93,4 @@ class KMerDataCounter {
   DECL_LOGGER("K-mer Counting");
 };
 
-
-#endif
+#endif // __HAMMER_KMER_DATA_HPP__

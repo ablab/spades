@@ -6,6 +6,7 @@
 
 #include "hamcluster.hpp"
 
+#include "hkmer_distance.hpp"
 #include "adt/concurrent_dsu.hpp"
 #include "io/mmapped_reader.hpp"
 
@@ -92,7 +93,7 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
       hammer::HKMer kmery = data[y].kmer;
       if (uf.find_set(x) != uf.find_set(y) &&
           canMerge(uf, x, y) &&
-          hamdistKMer(kmerx, kmery, tau) <= tau) {
+          distanceHKMer(kmerx, kmery, tau) <= tau) {
         uf.unite(x, y);
       }
     }
