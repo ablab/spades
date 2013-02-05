@@ -304,6 +304,12 @@ struct debruijn_config {
 			string condition;
 		};
 
+		struct topology_tip_clipper {
+			size_t length_coeff;
+			size_t uniqueness_length;
+			size_t plausibility_length;
+		};
+
 		struct bulge_remover {
 			double max_bulge_length_coefficient;
 			size_t max_additive_length_coefficient;
@@ -362,6 +368,7 @@ struct debruijn_config {
 
 		simplification_mode simpl_mode;
 		tip_clipper tc;
+		topology_tip_clipper ttc;
 		bulge_remover br;
 		erroneous_connections_remover ec;
 		cheating_erroneous_connections_remover cec;
@@ -619,6 +626,15 @@ inline void load(debruijn_config::simplification::bulge_remover& br,
 	load(br.max_relative_delta, pt, "max_relative_delta");
 }
 
+inline void load(debruijn_config::simplification::topology_tip_clipper& ttc,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
+
+	load(ttc.length_coeff, pt, "length_coeff");
+	load(ttc.plausibility_length, pt, "plausibility_length");
+	load(ttc.uniqueness_length, pt, "uniqueness_length");
+}
+
 inline void load(debruijn_config::simplification::pair_info_ec_remover& ec,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
@@ -854,6 +870,7 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.simpl_mode, pt, "simpl_mode");
 
 	load(simp.tc, pt, "tc"); // tip clipper:
+	load(simp.ttc, pt, "ttc"); // tip clipper:
 	load(simp.br, pt, "br"); // bulge remover:
 	load(simp.ec, pt, "ec"); // erroneous connections remover:
 	load(simp.cec, pt, "cec"); // cheating erroneous connections remover:

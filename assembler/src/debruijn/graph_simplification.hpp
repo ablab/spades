@@ -394,9 +394,9 @@ void RemoveBulges(Graph& g,
 template<class Graph>
 void RemoveLowCoverageEdges(Graph &g,
 		const debruijn_config::simplification::erroneous_connections_remover& ec_config,
-		boost::function<void(typename Graph::EdgeId)> removal_handler,
-		size_t read_length, double detected_coverage_threshold,
-		size_t iteration_count, size_t i) {
+		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+		size_t read_length = 0, double detected_coverage_threshold = 0.,
+		size_t iteration_count = 1, size_t i = 0) {
 	INFO("SUBSTAGE == Removing low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 	ConditionParser<Graph> parser(g, ec_config.condition, read_length,
@@ -453,6 +453,35 @@ bool TopologyRemoveErroneousEdges(Graph &g,
 	return omnigraph::AdvancedTopologyChimericEdgeRemover<Graph>(g, max_length,
 			tec_config.uniqueness_length, tec_config.plausibility_length,
 			removal_handler).Process();
+//		omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
+//				g, tec_config.max_length, tec_config.uniqueness_length,
+//				tec_config.plausibility_length, edge_remover);
+//	omnigraph::TopologyTipClipper<Graph, omnigraph::LengthComparator<Graph>>(g, LengthComparator<Graph>(g), 300, 2000, 1000).ClipTips();
+//	if(cfg::get().simp.trec_on) {
+//		size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), trec_config.max_ec_length_coefficient);
+//		TopologyAndReliablityBasedChimericEdgeRemover<Graph>(g, 150,
+//				tec_config.uniqueness_length,
+//				2.5,
+//				edge_remover).Process();
+//	}
+}
+
+template<class Graph>
+bool TopologyClipTips(Graph &g,
+		const debruijn_config::simplification::topology_tip_clipper& ttc_config,
+		size_t read_length,
+		boost::function<void(typename Graph::EdgeId)> removal_handler) {
+	INFO("Removal of erroneous edges based on topology started");
+
+	size_t max_length = LengthThresholdFinder::MaxTipLength(read_length, g.k(),
+			ttc_config.length_coeff);
+
+	TopologyTipClipper<Graph>(g, max_length, ttc_config.uniqueness_length,
+			ttc_config.plausibility_length, removal_handler);
+
+	VERIFY(false);
+
+	return true;
 //		omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
 //				g, tec_config.max_length, tec_config.uniqueness_length,
 //				tec_config.plausibility_length, edge_remover);
@@ -526,7 +555,7 @@ bool ChimericRemoveErroneousEdges(Graph &g,
 template<class Graph>
 bool MaxFlowRemoveErroneousEdges(Graph &g,
 		const debruijn_config::simplification::max_flow_ec_remover& mfec_config,
-		boost::function<void(typename Graph::EdgeId)> removal_handler) {
+		boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 	INFO("Removal of erroneous edges based on max flow started");
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
 			g.k(), mfec_config.max_ec_length_coefficient);
