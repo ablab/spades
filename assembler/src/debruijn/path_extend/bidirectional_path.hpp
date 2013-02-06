@@ -569,6 +569,9 @@ public:
     }
 
     bool EndsWith(const BidirectionalPath& path) const {
+        if (Size() < path.Size()){
+            return false;
+        }
         return CompareFrom(Size() - path.Size(), path);
     }
 
