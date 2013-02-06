@@ -30,8 +30,8 @@ sc_simplification
 	{
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
-        condition               "{ ec_lb 30, icb auto }"
-       ; condition               "{ ec_lb 30, icb 20.0 }"
+        condition               "{ ec_lb 29, icb auto }"
+       ; condition               "{ ec_lb 29, icb 20.0 }"
 	}
 	
 	; cheating erroneous connections remover
@@ -130,8 +130,8 @@ usual_simplification
 	{
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
-        condition               "{ ec_lb 10, icb auto }"
-       ; condition               "{ ec_lb 10, icb 40.0 }"
+        condition               "{ ec_lb 9, icb auto }"
+       ; condition               "{ ec_lb 9, icb 40.0 }"
 	}
 	
 	; cheating erroneous connections remover
