@@ -24,7 +24,7 @@ from support import universal_sys_call, error
 #profile = []
 #insertions = {}
 config = {}
-total_contigs = 0
+#total_contigs
 
 
 def read_genome(filename):
@@ -275,7 +275,7 @@ def process_read_for_pairs(arr, l,m, pair_profile, symb_num, symb_pos, symb_stat
 
 
 def split_sam(filename, tmpdir, log):
-    global total_contigs
+    #global total_contigs
     separate_sams ={}
     mult_aligned = {}
     cashed_sams = {}
@@ -397,12 +397,12 @@ def split_reads(filename, left, right):
 
 
 def split_contigs(filename, tmpdir):
-    global total_contigs
+    #global total_contigs
     ref_seq = read_contigs(filename)
     for contig_desc in ref_seq:
         tfilename = os.path.join(tmpdir, contig_desc.split('.')[0] + '.fasta')
         #tfilename = tmpdir + '/' + contig_desc.split('_')[1] +'.fasta'
-        total_contigs += 1
+        #total_contigs += 1
         write_fasta([[contig_desc, ref_seq[contig_desc]]], tfilename)
 
 
@@ -596,6 +596,9 @@ def parse_profile(args, log):
 
 
 def init_config():
+    global config
+    config = {}
+
     now = datetime.datetime.now()
     config["output_dirpath"] = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
     config["bwa"] = "bwa"
@@ -1190,7 +1193,7 @@ def main(args, joblib_path, log=None):
         else:
             log.info("sam file found")
             tmp_sam_file_path = os.path.join(config["work_dir"], "tmp.sam")
-            shutil.copy2(config["sam_file"], sam_file_path) # Note: shutil.copy2 is similar to the Unix command cp -p
+            shutil.copy2(config["sam_file"], tmp_sam_file_path) # Note: shutil.copy2 is similar to the Unix command cp -p
             #os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
             config["sam_file"] = tmp_sam_file_path
 

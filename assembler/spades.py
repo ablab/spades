@@ -272,7 +272,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "generate-sam-file only-error-correction only-assembler "\
                "disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction rectangles".split()
+               "config-file= dataset= mismatch-correction careful rectangles".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 
@@ -307,7 +307,7 @@ def usage(show_hidden=False):
     print >> sys.stderr, "--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads"
     print >> sys.stderr, "--generate-sam-file\tforces SPAdes to generate SAM-file"
-    print >> sys.stderr, "--mismatch-correction\truns post processing correction"\
+    print >> sys.stderr, "--careful\t\ttries to reduce number"\
                          " of mismatches and short indels"
     print >> sys.stderr, "--rectangles\t\tuses rectangle graph algorithm for repeat resolution"
 
@@ -335,6 +335,8 @@ def usage(show_hidden=False):
     if show_hidden:
         print >> sys.stderr, ""
         print >> sys.stderr, "HIDDEN options:"
+        print >> sys.stderr, "--mismatch-correction\t\truns post processing correction"\
+                             " of mismatches and short indels"
         print >> sys.stderr, "--config-file\t<filename>\tconfiguration file for spades.py"\
                              " (WARN: all other options will be skipped)"
         print >> sys.stderr, "--dataset\t<filename>\tfile with dataset description"\
@@ -471,7 +473,7 @@ def main():
                 rectangles = True
 
             #corrector
-            elif opt == "--mismatch-correction":
+            elif opt == "--mismatch-correction" or opt == "--careful":
                 mismatch_corrector = True
             
             elif opt == '-h' or opt == "--help":
@@ -736,6 +738,7 @@ def main():
 
         result_contigs_filename = ""
         result_scaffolds_filename = ""
+        misc_dir = os.path.join(cfg["common"].output_dir, "misc")
         if "assembly" in cfg:
             spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
 
@@ -839,28 +842,32 @@ def main():
                         os.system('rm -r ' + rrr_outpath)
                         #EOR
 
+            if os.path.isdir(misc_dir):
+                shutil.rmtree(misc_dir)
+            os.makedirs(misc_dir)
+            if os.path.isfile(spades_cfg.additional_contigs):
+                shutil.move(spades_cfg.additional_contigs, misc_dir)
+
             log.info("\n===== Assembling finished. \n")
 
-
         #corrector
-        result_corrected_contigs_filename = ""
         if "mismatch_corrector" in cfg and os.path.isfile(result_contigs_filename):
             import corrector
 
             corrector_cfg = cfg["mismatch_corrector"]
-            #corrector_log_filename = os.path.join(corrector_cfg.o, "mismatch_correction.log")
-            #corrector_cfg.__dict__["c"] = result_contigs_filename            
-            if os.path.isfile(result_scaffolds_filename):
-                correct_scaffolds = True
-                corrector_cfg.__dict__["c"] = result_scaffolds_filename
-            else:
-                correct_scaffolds = False
-                corrector_cfg.__dict__["c"] = result_contigs_filename
 
-            log.info("\n===== Mismatch correction started. \n")
+            to_correct = dict()
+            to_correct["contigs"] = result_contigs_filename
+            if os.path.isfile(result_scaffolds_filename):
+                to_correct["scaffolds"] = result_scaffolds_filename
+
+            log.info("\n===== Mismatch correction started.")
 
             args = []
             for key, values in corrector_cfg.__dict__.items():
+                if key == "output-dir":
+                    continue
+
                 # for processing list of reads
                 if not isinstance(values, list):
                     values = [values]
@@ -871,29 +878,27 @@ def main():
                         args.append('--' + key)
                     if value:
                         args.append(value)
-            corrector.main(args, ext_python_modules_home, log)
 
-            # renaming assembled contigs to avoid colision in names
-            if correct_scaffolds:
-                new_result_scaffolds_filename = os.path.join(os.path.dirname(result_scaffolds_filename), "assembled_scaffolds.fasta")
-                shutil.move(result_scaffolds_filename, new_result_scaffolds_filename)
-                result_scaffolds_filename = new_result_scaffolds_filename
-            else:
-                new_result_contigs_filename = os.path.join(os.path.dirname(result_contigs_filename), "assembled_contigs.fasta")
-                shutil.move(result_contigs_filename, new_result_contigs_filename)
-                result_contigs_filename = new_result_contigs_filename
+            # processing contigs and scaffolds (or only contigs)
+            for k, v in to_correct.items():
+                log.info("\n== Processing " + k + "\n")
 
-            result_corrected_contigs_filename = os.path.abspath(os.path.join(corrector_cfg.__dict__["output-dir"], "corrected_contigs.fasta"))
-            if not os.path.isfile(result_corrected_contigs_filename):
-                result_corrected_contigs_filename = ""
-            else:
-                # renaming corrected contigs 
-                if correct_scaffolds:
-                    new_result_corrected_contigs_filename = os.path.join(os.path.dirname(result_corrected_contigs_filename), "scaffolds.fasta")
-                else:
-                    new_result_corrected_contigs_filename = os.path.join(os.path.dirname(result_corrected_contigs_filename), "contigs.fasta")
-                shutil.move(result_corrected_contigs_filename, new_result_corrected_contigs_filename)
-                result_corrected_contigs_filename = new_result_corrected_contigs_filename
+                cur_args = args[:]
+                cur_args += ['-c', v]
+                tmp_dir_for_corrector = os.path.join(corrector_cfg.__dict__["output-dir"], "mismatch_corrector_" + k)
+                cur_args += ['--output-dir', tmp_dir_for_corrector]
+
+                corrector.main(cur_args, ext_python_modules_home, log)
+
+                result_corrected_filename = os.path.abspath(os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta"))
+                if os.path.isfile(result_corrected_filename):
+                    # moving assembled contigs (scaffolds) to misc dir
+                    shutil.move(v, os.path.join(misc_dir, "assembled_" + k + ".fasta"))
+                    # moving corrected contigs (scaffolds) to SPAdes output dir
+                    shutil.move(result_corrected_filename, v)
+
+                if not cfg["common"].developer_mode and os.path.isdir(tmp_dir_for_corrector):
+                    shutil.rmtree(tmp_dir_for_corrector)
 
             log.info("\n===== Mismatch correction finished.\n")
 
@@ -905,12 +910,6 @@ def main():
             log.info(" * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/")
         if os.path.isfile(result_contigs_filename):
             log.info(" * Assembled contigs are in " + result_contigs_filename)
-        #corrector
-        if os.path.isfile(result_corrected_contigs_filename):
-            if correct_scaffolds:
-                log.info(" * Corrected scaffolds are in " + result_corrected_contigs_filename)
-            else:
-                log.info(" * Corrected contigs are in " + result_corrected_contigs_filename)
         if os.path.isfile(result_scaffolds_filename):
             log.info(" * Assembled scaffolds are in " + result_scaffolds_filename)
         #log.info("")
@@ -919,12 +918,8 @@ def main():
         if os.path.isfile(result_scaffolds_filename):
             result_broken_scaffolds = os.path.join(spades_cfg.output_dir, "broken_scaffolds.fasta")
             threshold = 3
-            if os.path.isfile(result_corrected_contigs_filename):
-                support.break_scaffolds(result_corrected_contigs_filename, threshold, result_broken_scaffolds)
-                log.info(" * Corrected scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
-            else:
-                support.break_scaffolds(result_scaffolds_filename, threshold, result_broken_scaffolds)
-                log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
+            support.break_scaffolds(result_scaffolds_filename, threshold, result_broken_scaffolds)
+            log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
 
         log.info("")
         log.info("Thank you for using SPAdes!")
