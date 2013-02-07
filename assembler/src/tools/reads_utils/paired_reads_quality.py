@@ -21,7 +21,7 @@ sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'conversion'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'stat'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../quality/libs'))
 
-bowtie_path  = os.path.join(os.path.abspath(sys.path[0]), '../../../ext/tools/bowtie-0.12.7')
+bowtie_path  = os.path.join(os.path.abspath(sys.path[0]), '../../../../external_tools/bowtie-0.12.7')
 bowtie_build = os.path.join(bowtie_path, "bowtie-build")
 bowtie       = os.path.join(bowtie_path, "bowtie")
 
@@ -33,11 +33,12 @@ kmer = 1
 make_latest_symlink = True
 reference = ""
 max_is = 1000000000
+skip_trimming = False
 
 ###################################################################
 
-long_options = "output-dir= reference= thread-num= bin-size= kmer-size= max-is=".split()
-short_options = "o:r:t:b:k:x:"
+long_options = "output-dir= reference= thread-num= bin-size= kmer-size= max-is= skip-trimming".split()
+short_options = "o:r:t:b:k:x:s"
 
 def usage():
     print 'Estimation reads quality'
@@ -48,6 +49,7 @@ def usage():
     print "-o\t--output-dir\tDirectory to store all result files"
     print "-t\t--thread-num\tMax number of threads (default is " + str(thread_num) + ")"
     print "-x\t--max-is\tMaximal inser size (default is none)"
+    print "-s\t--skip-trimming\tSkip N-trimming for speed-up"
     
 def check_file(f):
     if not os.path.isfile(f):
@@ -77,6 +79,8 @@ for opt, arg in options:
         max_is = int(arg)
         if max_is < 0:
             max_is = 1000000000
+    elif opt in ('-s', "--skip-trimming"):
+        skip_trimming = True
     else:
         raise ValueError
 
@@ -166,19 +170,23 @@ tmp_folder = os.path.join(output_dir, tmp_folder)
 if not os.path.exists(tmp_folder):
     os.makedirs(tmp_folder)
 
-print("Unpacking data (if needed) to temporary folder (" + tmp_folder + ") and N-trimming")
+if not skip_trimming:
+    print("Unpacking data (if needed) to temporary folder (" + tmp_folder + ") and N-trimming")
+else:
+    print("Unpacking data (if needed) to temporary folder (" + tmp_folder + ")")
 
 print("  reference...")
 reference = ungzip_if_needed(reference, tmp_folder)
 
 # TODO fastA analysis (we should convert all in fasta if there is at least one file in fasta)
-import trim_ns
 for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     ungzipped_reads = []
     for read in datasets_dict[dataset]:    
         copied_read = ungzip_if_needed(read, os.path.join(tmp_folder, dataset), True)
-        trim_ns.trim_file(copied_read, copied_read)
+        if not skip_trimming:
+            import trim_ns
+            trim_ns.trim_file(copied_read, copied_read)
         ungzipped_reads.append(copied_read)
     datasets_dict[dataset] = ungzipped_reads
 
