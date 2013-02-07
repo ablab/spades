@@ -31,15 +31,6 @@
 #include "gap_closer.hpp"
 #include "graph_read_correction.hpp"
 #include "ec_threshold_finder.hpp"
-#include "bulge_remover_factory.hpp"
-
-//#include "omni/devisible_tree.hpp"
-//
-//#include "omni/concurrent_graph_component.hpp"
-//#include "omni/concurrent_conjugate_graph_component.hpp"
-//#include "conjugate_vertex_glued_graph.hpp"
-
-#include "omni/concurrent_edge_algorithm.hpp"
 
 namespace debruijn_graph {
 
