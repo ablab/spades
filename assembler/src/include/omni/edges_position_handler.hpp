@@ -440,7 +440,6 @@ public:
 			TRACE("First: "<<str(edge1));
 			TRACE("Second: "<<str(edge2));
 		}
-
 		/*		 for( size_t i = 0; i< EdgesPositions[edge1].size(); i++){
 		 for( size_t j = 0; j< EdgesPositions[edge2].size(); j++){
 		 //				 TRACE(" "<<EdgesPositions[edge1])[i].start_<<" "<<EdgesPositions[edge1])[i].end_);
@@ -464,28 +463,31 @@ public:
 						if (iter->m_end() <= length1) {
 							AddEdgePosition(newEdge1, iter->start(),
 									iter->end(), iter->contigId_,
-									iter->m_start(), iter->m_end());
+									iter->m_start(),
+									iter->m_end());
 						} else if (iter->m_start() > length1) {
 							AddEdgePosition(newEdge2, iter->start(),
 									iter->end(), iter->contigId_,
 									iter->m_start() - length1,
 									iter->m_end() - length1);
 						} else {
-							int segm1len = (iter->end() - iter->start() + 1)
+							int segm1len = (size_t)(iter->end() - iter->start() + 1)
 									* (length1 - iter->m_start() + 1)
 									/ (iter->m_end() - iter->m_start() + 1);
 							int segm2len = iter->m_end() - iter->m_start()
 									- segm1len + 1;
-							if (segm1len > 0)
+							if (segm1len > 0) {
 								AddEdgePosition(newEdge1, iter->start(),
 										iter->start() + segm1len - 1,
 										iter->contigId_, iter->m_start(),
 										length1);
-							if (segm2len > 0)
+							}
+							if (segm2len > 0) {
 								AddEdgePosition(newEdge2,
 										iter->start() + segm1len, iter->end(),
 										iter->contigId_, 1,
 										iter->m_end() - length1);
+							}
 						}
 //						int end1 = iter->start_ + (length1*(iter->end_ - iter->start_))/(length1+length2);
 //						AddEdgePosition(newEdge1, iter->start_, end1, iter->contigId_);
@@ -516,7 +518,6 @@ public:
 	}
 
 	virtual void HandleMerge(const vector<EdgeId>& oldEdges, EdgeId newEdge) {
-//		 TRACE("HandleMerge by position handler");
 		// we assume that all edge have good ordered position labels.
 		size_t n = oldEdges.size();
 		vector<EdgePosition> res = (EdgesPositions[oldEdges[0]]);
