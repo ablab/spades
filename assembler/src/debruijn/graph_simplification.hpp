@@ -49,9 +49,9 @@ public:
 		return k + param;
 	}
 
-	static size_t MaxTipOriginatedEClength(size_t read_length, size_t k,
+	static size_t MaxTipOriginatedECLength(size_t read_length, size_t k,
 			double coeff) {
-		return MaxTipLength(read_length, k, coeff);
+		return 2 * MaxTipLength(read_length, k, coeff) - 1;
 	}
 };
 
@@ -117,6 +117,16 @@ private:
 
 			DEBUG("Creating tip length bound. Coeff " << length_coeff);
 			size_t length_bound = LengthThresholdFinder::MaxTipLength(
+					read_length_, g_.k(), length_coeff);
+
+			RelaxMin(min_length_bound, length_bound);
+			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
+		} else if (next_token_ == "to_ec_lb") {
+			double length_coeff = lexical_cast<double>(ReadNext());
+
+			DEBUG("Creating length bound for erroneous connections originated from tip merging. Coeff "
+					<< length_coeff);
+			size_t length_bound = LengthThresholdFinder::MaxTipOriginatedECLength(
 					read_length_, g_.k(), length_coeff);
 
 			RelaxMin(min_length_bound, length_bound);
@@ -290,7 +300,7 @@ void ClipTips(Graph& g,
 	ClipTips(g, parser.max_length_bound(), condition, removal_handler);
 }
 
-//enabling tip projection
+//enabling tip projection, todo optimize if hotspot
 template<class gp_t>
 boost::function<void(typename Graph::EdgeId)> EnableProjection(gp_t& gp,
 		boost::function<void(typename Graph::EdgeId)> removal_handler_f) {
@@ -318,6 +328,7 @@ void ClipTipsWithProjection(gp_t& gp,
 			iteration_count, iteration);
 }
 
+//todo optimize if hotspot
 template<class Graph>
 typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF GetBulgeCondition(
 		ConjugateDeBruijnGraph &graph) {
@@ -338,7 +349,10 @@ void RemoveBulges(Graph& g,
 			br_config.max_bulge_length_coefficient,
 			br_config.max_additive_length_coefficient);
 
+	DEBUG("Max bulge length " << max_length);
+
 	if (additional_length_bound != 0 && additional_length_bound < max_length) {
+		DEBUG("Setting additional bound " << additional_length_bound);
 		max_length = additional_length_bound;
 	}
 
