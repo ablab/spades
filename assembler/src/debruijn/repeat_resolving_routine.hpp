@@ -566,7 +566,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 		const string& subfolder = "", bool output_contigs = true, bool kill_loops = true) {
 	typename graph_pack::graph_t &g = origin_gp.g;
 	const PairedInfoIndexT<typename graph_pack::graph_t> &pii = clustered_index;
-	BadConnectionCutter<typename graph_pack::graph_t>(g, pii).CutConnections();
+	if(cfg::get().cut_bad_connections)
+		BadConnectionCutter<typename graph_pack::graph_t>(g, pii).CutConnections();
 //	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
 //			origin_gp.g);
 //	ProduceLongEdgesStat( origin_gp,  clustered_index);
@@ -738,11 +739,15 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			INFO("Outputting final masked contigs: ");
 			OutputMaskedContigs(resolved_gp.g,
 					cfg::get().output_dir + "final_contigs.fasta",
-					resolved_gp.mismatch_masker);
+					resolved_gp.mismatch_masker,
+					false, 0,
+					cfg::get().cut_bad_connections);
 		} else {
 			INFO("Outputting final NONmasked contigs: ");
 			OutputContigs(resolved_gp.g,
-					cfg::get().output_dir + "final_contigs.fasta");
+					cfg::get().output_dir + "final_contigs.fasta",
+					0,
+					cfg::get().cut_bad_connections);
 		}
 	}
 	OutputCutContigs(resolved_gp.g, cfg::get().output_dir + "cut.fasta");
