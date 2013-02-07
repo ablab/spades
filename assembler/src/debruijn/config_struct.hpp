@@ -305,7 +305,7 @@ struct debruijn_config {
 		};
 
 		struct topology_tip_clipper {
-			size_t length_coeff;
+			double length_coeff;
 			size_t uniqueness_length;
 			size_t plausibility_length;
 		};
@@ -629,7 +629,6 @@ inline void load(debruijn_config::simplification::bulge_remover& br,
 inline void load(debruijn_config::simplification::topology_tip_clipper& ttc,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
-
 	load(ttc.length_coeff, pt, "length_coeff");
 	load(ttc.plausibility_length, pt, "plausibility_length");
 	load(ttc.uniqueness_length, pt, "uniqueness_length");
@@ -870,7 +869,7 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.simpl_mode, pt, "simpl_mode");
 
 	load(simp.tc, pt, "tc"); // tip clipper:
-//	load(simp.ttc, pt, "ttc"); // tip clipper:
+	load(simp.ttc, pt, "ttc"); // topology tip clipper:
 	load(simp.br, pt, "br"); // bulge remover:
 	load(simp.ec, pt, "ec"); // erroneous connections remover:
 	load(simp.cec, pt, "cec"); // cheating erroneous connections remover:
