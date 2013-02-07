@@ -157,7 +157,7 @@ public:
 	}
 
 private:
-	DECL_LOGGER("Compressor")
+	DECL_LOGGER("Cleaner")
 };
 
 template<class Graph>

@@ -10,8 +10,8 @@ sc_simplification
 	tc
 	{
         ; rctc: tip_cov < rctc * not_tip_cov
-        ; lb: max_tip_length = max((min(k, read_length / 2) * lb), read_length);
-        condition               "{ lb 3.5, cb 100000, rctc 10000 }"
+        ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
+        condition               "{ tc_lb 3.5, cb 100000, rctc 10000 }"
 	}
 
 	; bulge remover:
@@ -28,9 +28,18 @@ sc_simplification
 	; erroneous connections remover:
 	ec
 	{
-		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
-		estimate_max_coverage		true
-		max_coverage			20.0
+       ; ec_lb: max_ec_length = k + ec_lb
+       ; icb: iterative coverage bound
+        condition               "{ ec_lb 29, icb auto }"
+       ; condition               "{ ec_lb 29, icb 20.0 }"
+	}
+	
+	; relative coverage erroneous connections remover:
+	rec
+	{
+        max_ec_length_coefficient   29
+        max_coverage_coeff  10.
+        coverage_gap    50.
 	}
 	
 	; cheating erroneous connections remover
@@ -79,6 +88,14 @@ sc_simplification
         max_length_any_cov          150
 	}
 
+	; topology tip clipper:
+	ttc
+	{
+        length_coeff    3.5
+        plausibility_length 250
+        uniqueness_length   1500
+	}
+
 	; complex bulge remover
 	cbr
 	{
@@ -89,7 +106,6 @@ sc_simplification
 		max_length_difference	5
 	}
 
-	removal_checks_enabled              true
 }
 
 usual_simplification
@@ -102,8 +118,8 @@ usual_simplification
 	tc
 	{
         ; rctc: tip_cov < rctc * not_tip_cov
-        ; lb: max_tip_length = max((min(k, read_length / 2) * lb), read_length);
-        condition               "{ lb 3.5, cb 1000, rctc 2.0 }"
+        ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
+        condition               "{ tc_lb 3.5, cb 1000, rctc 2.0 }"
 	}
 	
 	; bulge remover:
@@ -120,9 +136,18 @@ usual_simplification
 	; erroneous connections remover:
 	ec
 	{
-		max_ec_length_coefficient	10	; max_ec_length = k + max_ec_length_coefficient
-        estimate_max_coverage		true
-		max_coverage			40.0	; erroneous_connection < this * not_erroneous_connection_cov
+       ; ec_lb: max_ec_length = k + ec_lb
+       ; icb: iterative coverage bound
+        condition               "{ ec_lb 9, icb auto }"
+       ; condition               "{ ec_lb 9, icb 40.0 }"
+	}
+	
+	; relative coverage erroneous connections remover:
+	rec
+	{
+        max_ec_length_coefficient   29
+        max_coverage_coeff  10.
+        coverage_gap    50.
 	}
 	
 	; cheating erroneous connections remover
@@ -171,6 +196,14 @@ usual_simplification
         max_length_any_cov          150
 	}
 	
+	; topology tip clipper:
+	ttc
+	{
+        length_coeff    3.5
+        plausibility_length 250
+        uniqueness_length   1500
+	}
+
 	; complex bulge remover
 	cbr
 	{
@@ -181,5 +214,4 @@ usual_simplification
 		max_length_difference	5
 	}
 
-	removal_checks_enabled              true
 }

@@ -12,21 +12,21 @@
 
 namespace debruijn_graph {
 
-template<class Graph>
+template<class gp_t>
 class TipsProjector {
+	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 
-	const Graph& g_;
-	KmerMapper<Graph>& kmer_mapper_;
+	gp_t& gp_;
 
 	const UniquePathFinder<Graph> unique_path_finder_;
 
 	optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
 		vector<EdgeId> edges;
 		if (outgoing_tip) {
-			edges = g_.OutgoingEdges(g_.EdgeStart(tip));
+			edges = gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip));
 		} else {
-			edges = g_.IncomingEdges(g_.EdgeEnd(tip));
+			edges = gp_.g.IncomingEdges(gp_.g.EdgeEnd(tip));
 		}
 		restricted::set<EdgeId> edges_set(edges.begin(), edges.end());
 		edges_set.erase(tip);
@@ -70,7 +70,7 @@ class TipsProjector {
 		INFO(
 				"Remapping " << aligned_tip.size()
 						<< " kmers of aligned_tip to aligned_alt");
-		kmer_mapper_.RemapKmers(aligned_tip, aligned_alt);
+		gp_.kmer_mapper.RemapKmers(aligned_tip, aligned_alt);
 	}
 
 	void AlignAndProject(
@@ -89,31 +89,31 @@ class TipsProjector {
 	}
 
 public:
-	TipsProjector(const Graph& g, KmerMapper<Graph>& kmer_mapper) :
-			g_(g), kmer_mapper_(kmer_mapper), unique_path_finder_(g_) {
+	TipsProjector(gp_t& gp) :
+			gp_(gp), unique_path_finder_(gp.g) {
 
 	}
 
 	void ProjectTip(EdgeId tip) {
-		TRACE("Trying to project tip " << g_.str(tip));
-		bool outgoing_tip = g_.IsDeadEnd(g_.EdgeEnd(tip));
-		Sequence tip_seq = g_.EdgeNucls(tip);
+		TRACE("Trying to project tip " << gp_.g.str(tip));
+		bool outgoing_tip = gp_.g.IsDeadEnd(gp_.g.EdgeEnd(tip));
+		Sequence tip_seq = gp_.g.EdgeNucls(tip);
 		vector<EdgeId> alt_path = UniqueAlternativePath(tip, outgoing_tip);
 		if (alt_path.empty()) {
 			TRACE(
-					"Failed to find unique alt path for tip " << g_.str(tip)
+					"Failed to find unique alt path for tip " << gp_.g.str(tip)
 							<< ". Wasn't projected!!!");
 		} else {
-			Sequence alt_seq = MergeSequences(g_, alt_path);
+			Sequence alt_seq = MergeSequences(gp_.g, alt_path);
 			if (tip_seq.size() > alt_seq.size()) {
 				TRACE(
-						"Can't fully project tip " << g_.str(tip)
+						"Can't fully project tip " << gp_.g.str(tip)
 								<< " with seq length " << tip_seq.size()
 								<< " because alt path length is "
 								<< alt_seq.size()
 								<< ". Trying to project partially");
 			}
-			AlignAndProject(g_, tip_seq, alt_seq, outgoing_tip);
+			AlignAndProject(gp_.g, tip_seq, alt_seq, outgoing_tip);
 			TRACE("Tip projected");
 		}
 	}

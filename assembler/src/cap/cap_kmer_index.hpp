@@ -211,11 +211,11 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
 namespace debruijn_graph {
 
 template<>
-class DeBruijnKMerIndexBuilder<cap::LSeq> {
+class DeBruijnEdgeIndexBuilder<cap::LSeq> {
 
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
-                                DeBruijnKMerIndex<IdType, cap::LSeq> &index) const {
+                                DeBruijnEdgeIndex<IdType, cap::LSeq> &index) const {
     unsigned K = index.K();
     size_t rl = 0;
 
@@ -250,7 +250,7 @@ class DeBruijnKMerIndexBuilder<cap::LSeq> {
  public:
   template <class Read, class IdType>
   size_t BuildIndexFromStream(
-      DeBruijnKMerIndex<IdType, cap::LSeq> &index,
+      DeBruijnEdgeIndex<IdType, cap::LSeq> &index,
       io::ReadStreamVector<io::IReader<Read> > &streams,
       SingleReadStream* contigs_stream = 0) {
     cap::CapKMerCounter<Read> counter(index.K(), streams);
