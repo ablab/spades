@@ -476,23 +476,8 @@ bool TopologyClipTips(Graph &g,
 	size_t max_length = LengthThresholdFinder::MaxTipLength(read_length, g.k(),
 			ttc_config.length_coeff);
 
-	TopologyTipClipper<Graph>(g, max_length, ttc_config.uniqueness_length,
-			ttc_config.plausibility_length, removal_handler);
-
-	VERIFY(false);
-
-	return true;
-//		omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
-//				g, tec_config.max_length, tec_config.uniqueness_length,
-//				tec_config.plausibility_length, edge_remover);
-//	omnigraph::TopologyTipClipper<Graph, omnigraph::LengthComparator<Graph>>(g, LengthComparator<Graph>(g), 300, 2000, 1000).ClipTips();
-//	if(cfg::get().simp.trec_on) {
-//		size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(g.k(), trec_config.max_ec_length_coefficient);
-//		TopologyAndReliablityBasedChimericEdgeRemover<Graph>(g, 150,
-//				tec_config.uniqueness_length,
-//				2.5,
-//				edge_remover).Process();
-//	}
+	return TopologyTipClipper<Graph>(g, max_length, ttc_config.uniqueness_length,
+			ttc_config.plausibility_length, removal_handler).ClipTips();
 }
 
 template<class Graph>
@@ -588,7 +573,11 @@ template<class Graph>
 bool AllTopology(Graph &g,
 		boost::function<void(typename Graph::EdgeId)> removal_handler,
 		size_t iteration) {
-	bool res = TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
+	bool res = false;
+	//todo enable
+//	bool res = TopologyClipTips(g, cfg::get().simp.ttc,
+//			*cfg::get().ds.RL, removal_handler);
+	res |= TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
 			removal_handler);
 	if (cfg::get().additional_ec_removing) {
 		res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,

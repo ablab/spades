@@ -265,7 +265,7 @@ public:
 
 	}
 
-	void ClipTips() {
+	bool ClipTips() {
 		LengthComparator<Graph> comparator(graph_);
 		for (auto iterator = graph_.SmartEdgeBegin(comparator); !iterator.IsEnd();
 				++iterator) {
@@ -274,6 +274,7 @@ public:
 				return;
 			this->ProcessNext(e);
 		}
+		return removed_ > 0;
 	}
 
 private:
