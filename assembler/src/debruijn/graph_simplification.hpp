@@ -420,7 +420,7 @@ bool RemoveRelativelyLowCoverageEdges(Graph &g,
 
 	//todo fix temporary hardcode
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-			g.k(), /*cfg::get().simp.ec.max_ec_length_coefficient*/30);
+			g.k(), /*cfg::get().simp.ec.max_ec_length_coefficient*/29);
 	omnigraph::RelativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
 			max_length, max_coverage * 10, 50, removal_handler);
 
