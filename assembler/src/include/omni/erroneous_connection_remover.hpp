@@ -410,14 +410,14 @@ class RelativeCoverageCondition: public EdgeCondition<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef EdgeCondition<Graph> base;
 
-	double max_relative_coverage_;
+	double min_coverage_gap_;
 
 	bool CheckAlternativeCoverage(const vector<EdgeId> &edges, EdgeId e) const {
 		for (auto it = edges.begin(); it != edges.end(); ++it) {
 			//todo wtf?!!! remove 400 condition
 			if (*it != e && this->g().length(*it) < 400
 					&& this->g().coverage(*it)
-							< max_relative_coverage_ * this->g().coverage(e)) {
+							< min_coverage_gap_ * this->g().coverage(e)) {
 				return false;
 			}
 		}
@@ -427,8 +427,8 @@ class RelativeCoverageCondition: public EdgeCondition<Graph> {
 
 public:
 
-	RelativeCoverageCondition(Graph& g, double max_relative_coverage) :
-			base(g), max_relative_coverage_(max_relative_coverage) {
+	RelativeCoverageCondition(Graph& g, double min_coverage_gap) :
+			base(g), min_coverage_gap_(min_coverage_gap) {
 
 	}
 
@@ -459,12 +459,12 @@ private:
 
 public:
 	RelativeLowCoverageEdgeRemover(Graph& g, size_t max_length,
-			double max_coverage, double max_relative_coverage,
+			double max_coverage, double coverage_gap,
 			boost::function<void(EdgeId)> removal_handler) :
 			base(g,
 					func::And<EdgeId>(
 							make_shared<RelativeCoverageCondition<Graph>>(g,
-									max_relative_coverage),
+									coverage_gap),
 							make_shared<LengthUpperBound<Graph>>(g,
 									max_length)), removal_handler,
 					CoverageComparator<Graph>(g),

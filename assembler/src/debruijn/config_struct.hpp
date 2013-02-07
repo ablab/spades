@@ -323,6 +323,12 @@ struct debruijn_config {
 			string condition;
 		};
 
+		struct relative_coverage_ec_remover {
+			size_t max_ec_length_coefficient;
+			double max_coverage_coeff;
+			double coverage_gap;
+		};
+
 		struct cheating_erroneous_connections_remover {
 			double max_ec_length_coefficient;
 			size_t sufficient_neighbour_length;
@@ -371,6 +377,7 @@ struct debruijn_config {
 		topology_tip_clipper ttc;
 		bulge_remover br;
 		erroneous_connections_remover ec;
+		relative_coverage_ec_remover rec;
 		cheating_erroneous_connections_remover cec;
 		topology_based_ec_remover tec;
 		tr_based_ec_remover trec;
@@ -379,7 +386,6 @@ struct debruijn_config {
 		isolated_edges_remover ier;
 		complex_bulge_remover cbr;
 
-		//typedef map<>
 	};
 
 	std::string uncorrected_reads;
@@ -634,6 +640,14 @@ inline void load(debruijn_config::simplification::topology_tip_clipper& ttc,
 	load(ttc.uniqueness_length, pt, "uniqueness_length");
 }
 
+inline void load(debruijn_config::simplification::relative_coverage_ec_remover& rec,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
+	load(rec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
+	load(rec.max_coverage_coeff, pt, "max_coverage_coeff");
+	load(rec.coverage_gap, pt, "coverage_gap");
+}
+
 inline void load(debruijn_config::simplification::pair_info_ec_remover& ec,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
@@ -872,10 +886,10 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.ttc, pt, "ttc"); // topology tip clipper:
 	load(simp.br, pt, "br"); // bulge remover:
 	load(simp.ec, pt, "ec"); // erroneous connections remover:
+	load(simp.rec, pt, "rec"); // relative coverage erroneous connections remover:
 	load(simp.cec, pt, "cec"); // cheating erroneous connections remover:
 	load(simp.tec, pt, "tec"); // topology aware erroneous connections remover:
 	load(simp.trec, pt, "trec"); // topology and reliability based erroneous connections remover:
-	// need fix in config file
 	load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
 	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
 	load(simp.ier, pt, "ier"); // isolated edges remover

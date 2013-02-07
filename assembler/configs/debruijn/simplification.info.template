@@ -34,6 +34,14 @@ sc_simplification
        ; condition               "{ ec_lb 29, icb 20.0 }"
 	}
 	
+	; relative coverage erroneous connections remover:
+	rec
+	{
+        max_ec_length_coefficient   29
+        max_coverage_coeff  10.
+        coverage_gap    50.
+	}
+	
 	; cheating erroneous connections remover
 	cec
 	{
@@ -132,6 +140,14 @@ usual_simplification
        ; icb: iterative coverage bound
         condition               "{ ec_lb 9, icb auto }"
        ; condition               "{ ec_lb 9, icb 40.0 }"
+	}
+	
+	; relative coverage erroneous connections remover:
+	rec
+	{
+        max_ec_length_coefficient   29
+        max_coverage_coeff  10.
+        coverage_gap    50.
 	}
 	
 	; cheating erroneous connections remover

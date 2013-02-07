@@ -413,16 +413,20 @@ void RemoveLowCoverageEdges(Graph &g,
 
 template<class Graph>
 bool RemoveRelativelyLowCoverageEdges(Graph &g,
+		const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
 		boost::function<void(typename Graph::EdgeId)> removal_handler,
-		double max_coverage) {
+		double determined_coverage_threshold) {
 	INFO("SUBSTAGE == Removing realtively low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 
 	//todo fix temporary hardcode
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-			g.k(), /*cfg::get().simp.ec.max_ec_length_coefficient*/29);
+			g.k(), /*cfg::get().simp.ec.max_ec_length_coefficient*/
+			rec_config.max_ec_length_coefficient);
 	omnigraph::RelativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
-			max_length, max_coverage * 10, 50, removal_handler);
+			max_length,
+			determined_coverage_threshold * rec_config.max_coverage_coeff,
+			rec_config.coverage_gap, removal_handler);
 
 	bool changed = erroneous_edge_remover.Process();
 
@@ -476,8 +480,9 @@ bool TopologyClipTips(Graph &g,
 	size_t max_length = LengthThresholdFinder::MaxTipLength(read_length, g.k(),
 			ttc_config.length_coeff);
 
-	return TopologyTipClipper<Graph>(g, max_length, ttc_config.uniqueness_length,
-			ttc_config.plausibility_length, removal_handler).ClipTips();
+	return TopologyTipClipper<Graph>(g, max_length,
+			ttc_config.uniqueness_length, ttc_config.plausibility_length,
+			removal_handler).ClipTips();
 }
 
 template<class Graph>
@@ -649,10 +654,9 @@ void PreSimplification(conj_graph_pack& gp,
 	INFO("Early tip clipping:");
 	//todo if we really want to change tip length with iteration,
 	//it should be minimal here!!!
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, cfg::get().graph_read_corr.enable,
-			*cfg::get().ds.RL,
-			determined_coverage_threshold,
-			removal_handler);
+	ClipTipsWithProjection(gp, cfg::get().simp.tc,
+			cfg::get().graph_read_corr.enable, *cfg::get().ds.RL,
+			determined_coverage_threshold, removal_handler);
 
 	INFO("Early bulge removal:");
 	RemoveBulges(gp.g, cfg::get().simp.br, removal_handler, gp.g.k() + 1);
@@ -665,10 +669,9 @@ void SimplificationCycle(conj_graph_pack& gp,
 	INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
 	DEBUG(iteration << " TipClipping");
-	ClipTipsWithProjection(gp, cfg::get().simp.tc, cfg::get().graph_read_corr.enable,
-			*cfg::get().ds.RL,
-			max_coverage, removal_handler,
-			iteration_count, iteration);
+	ClipTipsWithProjection(gp, cfg::get().simp.tc,
+			cfg::get().graph_read_corr.enable, *cfg::get().ds.RL, max_coverage,
+			removal_handler, iteration_count, iteration);
 	DEBUG(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
@@ -701,8 +704,8 @@ void PostSimplification(conj_graph_pack& gp,
 
 		INFO("Final tip clipping:");
 
-		ClipTipsWithProjection(gp, cfg::get().simp.tc, cfg::get().graph_read_corr.enable,
-				*cfg::get().ds.RL,
+		ClipTipsWithProjection(gp, cfg::get().simp.tc,
+				cfg::get().graph_read_corr.enable, *cfg::get().ds.RL,
 				determined_coverage_threshold, removal_handler);
 		printer(ipp_final_tip_clipping, str(format("_%d") % iteration));
 
