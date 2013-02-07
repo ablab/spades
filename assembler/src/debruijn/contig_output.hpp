@@ -269,13 +269,19 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool output_unipath = false,
-		size_t solid_edge_length_bound = 0) {
+		size_t solid_edge_length_bound = 0,
+		bool cut_bad_connections = false) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
 	osequencestream_cov oss(contigs_output_filename);
 	if(!output_unipath) {
-		DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-		ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
+		if(!cut_bad_connections) {
+			DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
+			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
+		} else {
+			CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
+			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
+		}
 	} else {
 		UnipathConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 		ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
@@ -353,13 +359,19 @@ void OutputCutContigs(ConjugateDeBruijnGraph& g,
 void OutputMaskedContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename, MismatchMasker<ConjugateDeBruijnGraph>& masker,
 		bool output_unipath = false,
-		size_t solid_edge_length_bound = 0) {
+		size_t solid_edge_length_bound = 0,
+		bool cut_bad_connections = false) {
 	INFO("Outputting contigs with masked mismatches to " << contigs_output_filename);
 	MaskingContigCorrector<ConjugateDeBruijnGraph> corrector(g, masker);
 	osequencestream_cov oss(contigs_output_filename);
 	if(!output_unipath) {
-		DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-		ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
+		if(!cut_bad_connections) {
+			DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
+			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
+		} else {
+			CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
+			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
+		}
 	} else {
 		UnipathConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 		ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
