@@ -35,23 +35,23 @@ namespace debruijn_graph {
 
 class LengthThresholdFinder {
 public:
-	static size_t MaxTipLength(size_t read_length, size_t k, double coefficient,
-			size_t iteration_count = 1, size_t iteration = 0) {
-
-		size_t length = std::max(
-				(size_t) (std::min(k, read_length / 2) * coefficient),
+	static size_t MaxTipLength(size_t read_length, size_t k, double coeff) {
+		return std::max((size_t) (std::min(k, read_length / 2) * coeff),
 				read_length);
-		return (size_t) math::round(
-				(double) length / 2 * (1 + (iteration + 1.) / iteration_count));
 	}
 
-	static size_t MaxBulgeLength(size_t k, double coefficient,
+	static size_t MaxBulgeLength(size_t k, double coeff,
 			size_t additive_coeff) {
-		return std::max((size_t) (k * coefficient), k + additive_coeff);
+		return std::max((size_t) (k * coeff), k + additive_coeff);
 	}
 
-	static size_t MaxErroneousConnectionLength(size_t k, size_t coef) {
-		return k + coef;
+	static size_t MaxErroneousConnectionLength(size_t k, size_t param) {
+		return k + param;
+	}
+
+	static size_t MaxTipOriginatedEClength(size_t read_length, size_t k,
+			double coeff) {
+		return MaxTipLength(read_length, k, coeff);
 	}
 };
 
@@ -117,8 +117,7 @@ private:
 
 			DEBUG("Creating tip length bound. Coeff " << length_coeff);
 			size_t length_bound = LengthThresholdFinder::MaxTipLength(
-					read_length_, g_.k(), length_coeff, iteration_count_,
-					iteration_);
+					read_length_, g_.k(), length_coeff);
 
 			RelaxMin(min_length_bound, length_bound);
 			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
@@ -295,13 +294,15 @@ void ClipTips(Graph& g,
 template<class gp_t>
 boost::function<void(typename Graph::EdgeId)> EnableProjection(gp_t& gp,
 		boost::function<void(typename Graph::EdgeId)> removal_handler_f) {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef boost::function<void(EdgeId)> HandlerF;
 	TipsProjector<gp_t> tip_projector(gp);
 
-	boost::function<void(EdgeId)> projecting_callback = boost::bind(
-			&TipsProjector<gp_t>::ProjectTip, tip_projector, _1);
+	HandlerF projecting_callback = boost::bind(&TipsProjector<gp_t>::ProjectTip,
+			tip_projector, _1);
 
-	return boost::bind(func::Composition, _1, boost::ref(removal_handler_f),
-			projecting_callback);
+	return boost::bind(func::Composition<EdgeId>, _1,
+			boost::ref(removal_handler_f), projecting_callback);
 }
 
 template<class gp_t>
@@ -558,8 +559,8 @@ bool FinalRemoveErroneousEdges(Graph &g,
 		boost::function<void(typename Graph::EdgeId)> removal_handler,
 		double determined_coverage_threshold, size_t iteration) {
 	using debruijn_graph::simplification_mode;
-	bool changed = RemoveRelativelyLowCoverageEdges(g, cfg::get().simp.rec, removal_handler,
-			determined_coverage_threshold);
+	bool changed = RemoveRelativelyLowCoverageEdges(g, cfg::get().simp.rec,
+			removal_handler, determined_coverage_threshold);
 
 	switch (cfg::get().simp.simpl_mode) {
 	case sm_cheating: {
