@@ -11,8 +11,7 @@
  *      Author: sergey
  */
 
-#ifndef GRAPH_SIMPLIFICATION_HPP_
-#define GRAPH_SIMPLIFICATION_HPP_
+#pragma once
 
 #include "standard_base.hpp"
 #include "config_struct.hpp"
@@ -256,14 +255,6 @@ private:
 	;
 };
 
-void Composition(EdgeId e, boost::function<void(EdgeId)> f1,
-		boost::function<void(EdgeId)> f2) {
-	if (f1)
-		f1(e);
-	if (f2)
-		f2(e);
-}
-
 template<class Graph>
 void ClipTips(Graph& graph,
 		//todo what is this parameter for
@@ -300,30 +291,6 @@ void ClipTips(Graph& g,
 	ClipTips(g, parser.max_length_bound(), condition, removal_handler);
 }
 
-//template<class gp_t>
-//void ClipTipsWithProjection(gp_t& gp,
-//		const debruijn_config::simplification::tip_clipper& tc_config,
-//		size_t read_length, double detected_coverage_threshold = 0.,
-//		boost::function<void(typename Graph::EdgeId)> removal_handler_f = 0,
-//		size_t iteration_count = 1, size_t iteration = 0) {
-//	boost::function<void(typename Graph::EdgeId)> tc_removal_handler =
-//			removal_handler_f;
-//
-//	if (cfg::get().graph_read_corr.enable) {
-//		//enabling tip projection
-//		TipsProjector<gp_t> tip_projector(gp);
-//
-//		boost::function<void(EdgeId)> projecting_callback = boost::bind(
-//				&TipsProjector<gp_t>::ProjectTip, tip_projector, _1);
-//
-//		tc_removal_handler = boost::bind(Composition, _1,
-//				boost::ref(removal_handler_f), projecting_callback);
-//	}
-//
-//	ClipTips(gp.g, tc_config, read_length, detected_coverage_threshold,
-//			tc_removal_handler, iteration_count, iteration);
-//}
-
 //enabling tip projection
 template<class gp_t>
 boost::function<void(typename Graph::EdgeId)> EnableProjection(gp_t& gp,
@@ -333,7 +300,7 @@ boost::function<void(typename Graph::EdgeId)> EnableProjection(gp_t& gp,
 	boost::function<void(EdgeId)> projecting_callback = boost::bind(
 			&TipsProjector<gp_t>::ProjectTip, tip_projector, _1);
 
-	return boost::bind(Composition, _1, boost::ref(removal_handler_f),
+	return boost::bind(func::Composition, _1, boost::ref(removal_handler_f),
 			projecting_callback);
 }
 
@@ -801,4 +768,3 @@ void SimplifyGraph(conj_graph_pack &gp,
 }
 
 }
-#endif /* GRAPH_SIMPLIFICATION_HPP_ */

@@ -10,6 +10,15 @@
 
 namespace func {
 
+//to use with boost::function-s
+template <class T, class F>
+void Composition(T t, F f1, F f2) {
+	if (f1)
+		f1(t);
+	if (f2)
+		f2(t);
+}
+
 template<class A, class B>
 class Func {
 public:
