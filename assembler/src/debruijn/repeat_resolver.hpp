@@ -4,11 +4,26 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/*
- * Repeat_resolver.hpp
+
+
+/* Feeling responsible for this piece of s**tcode, let me explain what is written here.
+ * At first, forget about rectangles abstraction. This is another approach.
+ * This repeat resolver deals with compressed de Bruijn graph and transforms it into "splitted" compressed de Bruijn graph - the same object with condition on unique placement of k-mers broken.
+ * If some edge is detected to be repeat, it can be present multiple times.
+ * Initial compressed de Bruijn graph edges are "atomic" - they never can be broken at any point
  *
- *  Created on: May 5, 2011
- *      Author: antipov
+ *
+ * Main idea is quite simple - we iterate over vertices of the graph. For each given vertex V, we consider it's incoming and outgoing edges
+ * For each of this edges, we look on "paired information" - received with paired-end reads mapping and distance estimation module info about edges folllowing it.
+ * We have same "backward" info too, but we can not use forward and backward info simultaniously(will be explained later why).
+ * Thus information allows us to determine the expexted multiplicity of each incoming/outgoing edges.
+ * For example, if we have two elements of paired information matching one edge to unrelated places in graph, than that means that this edge has multiplicity at least two.
+ * Moreover, comparing such information from incoming and outgoing edges, we can determine which of them can follow each other.
+ * So, we color all incoming and outgoing edges(some - possibly with multiple colors), and then split vertex and possibly edges.
+ *
+ * NB - because we look on only forward information, when splitting edges we also are able to split paired information(splitting is done with help of this paired info)
+ *
+ * That's the main idea of this algorithm. Code related to components(i.e. fillVerticesComponents) is responsible to reverse-compliment structure handling
  */
 
 #ifndef REPEAT_RESOLVER_HPP_
@@ -133,7 +148,6 @@ public:
 			int len = old_graph.length(edge);
 			int other_len = old_graph.length(other_edge);
 
-//TODO:: SHURIK! UBERI ZA SOBOJ !!!
 			int forward_distance = distance_counter.GetDistances(v_e,
 					other_v_s);
 			int backward_distance = distance_counter.GetDistances(other_v_e,
@@ -182,9 +196,6 @@ public:
 				const TotalLabeler<Graph>& tot_lab,
 				const IdTrackHandler<Graph> &old_IDs,
 				FastDistanceCounter &distance_counter) {
-			//			DEBUG("comparation started: " << edge);
-
-//ToDo: Understand if it is very dirty hack.
 			if ((lp.first != other_info.lp.first)
 					&& (new_graph.EdgeStart(lp.first)
 							!= new_graph.EdgeEnd(lp.first))
@@ -365,7 +376,7 @@ public:
 			}
 		}
 
-		DEBUG("pi copied");
+		DEBUG("paired info copied");
 		int zero_paired_length = 0;
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			const PairInfos &pi = paired_di_data.GetEdgeInfos(
@@ -409,7 +420,6 @@ private:
 	map<int, VertexId> fillVerticesComponents();
 	map<int, VertexId> fillVerticesComponentsInNonVariableOrder();
 	size_t SplitResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler);
-	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v);
 	ConjugateDeBruijnGraph::VertexId conj_wrap(const ConjugateDeBruijnGraph& g,
 			ConjugateDeBruijnGraph::VertexId v);
@@ -426,7 +436,6 @@ private:
 	void WrappedSetCoverage(EdgeId e, int cov);
 	size_t GenerateVertexPairedInfo(Graph &g, MixedData &ind, VertexId vid);
 	vector<typename Graph::VertexId> MultiSplit(VertexId v);
-	int ColoringEdgesInfos(int &size, TotalLabeler<Graph>& tot_labler);
 	int ColoringEdgesInfosByPathes(int &size, TotalLabeler<Graph>& tot_labler,
 			VertexId V_Id);
 	vector<PathInfo> ConvertEdgeInfosToPathes();
@@ -487,11 +496,9 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	multisplit_time.start();
 	int k = 0;
 	vector<EdgeId> edgeIds[2];
-	//TODO: fix labels
 	edgeIds[0] = new_graph.OutgoingEdges(v);
 	edgeIds[1] = new_graph.IncomingEdges(v);
 	map<EdgeId, int> edgeCounts;
-//	set<EdgeId> conj_edges;
 	for (int i = 0; i < 2; i++) {
 		for (size_t j = 0; j < edgeIds[i].size(); j++) {
 			edgeCounts.insert(make_pair(edgeIds[i][j], 0));
@@ -640,13 +647,6 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	cutting_coverage = *cfg::get().ds.avg_coverage
 			* cfg::get().rr.inresolve_cutoff_proportion / 2;
 
-//	todo talk to Shurik!
-//	if (cfg::get().ds.avg_coverage) {
-//		cutting_coverage = *cfg::get().ds.avg_coverage *  cfg::get().rr.inresolve_cutoff_proportion / 2;
-//	}
-//	else {
-//		cutting_coverage = cfg::get().simp.ec.max_coverage * cfg::get().rr.inresolve_cutoff_proportion;
-//	}
 
 	for (int i = 0; i < k; i++) {
 		vector<EdgeId> split_edge;
@@ -782,14 +782,6 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	}
 
 	TRACE("process global cheaters");
-	/*int my_s = 0;
-	 for( auto itcp = OldCopyCnt.begin(); itcp != OldCopyCnt.end(); ++itcp){
-	 assert(itcp->second >= 0);
-	 my_s += itcp->second;
-	 }
-
-	 assert (my_s == LiveNewEdges.size());
-	 */
 	if (rc_mode) {
 		for (size_t i = 0; i < LiveNewEdges.size(); i++) {
 			if (OldCopyCnt[LiveProtoEdges[i]] > 1) {
@@ -873,7 +865,6 @@ NonconjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(
 	return v;
 }
 
-//TODO: Move to utils.
 template<class Graph>
 ConjugateDeBruijnGraph::EdgeId RepeatResolver<Graph>::conj_wrap(
 		const ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::EdgeId e) {
@@ -937,9 +928,7 @@ struct CompositIdCompare {
 
 template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponentsInNonVariableOrder() {
-
 	vector<details::VertexCompositId<Graph>> TemporaryOrderVect;
-
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
 	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, *cfg::get().ds.IS);
@@ -977,15 +966,12 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 		DEBUG("finished filling component " << comp_count);
 
 	}
-
 	sort(TemporaryOrderVect.begin(), TemporaryOrderVect.end(),
 			details::CompositIdCompare());
-
 	for (size_t i = 0; i < TemporaryOrderVect.size(); i++) {
 		vertices.insert(make_pair(count, TemporaryOrderVect[i].Id));
 		count++;
 	}
-
 	return vertices;
 }
 
@@ -1013,7 +999,6 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 			break;
 		comps = splitter.NextComponent();
 		DEBUG("finished filling component " << comp_count);
-
 	}
 	return vertices;
 
@@ -1031,109 +1016,103 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	TotalLabelerGraphStruct<Graph> graph_struct_after(new_graph, &new_IDs,
 			&new_pos, NULL);
 	TotalLabeler<Graph> TotLabAfter(&graph_struct_after, &graph_struct_before);
+	cheating_mode = 0;
 
-	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode;
-			cheating_mode++) {
-		INFO("Trying \"resolve mode\" " << cheating_mode);
-		bool changed = true;
-		map<int, VertexId> vertices;
-		int GraphCnt = 0;
-		set<VertexId> available_verices;
-		for (auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd();
-				++v_iter) {
-			available_verices.insert(*v_iter);
-		}
-		while (changed) {
-			changed = false;
-			if (rc_mode)
+	bool changed = true;
+	map<int, VertexId> vertices;
+	int GraphCnt = 0;
+	set<VertexId> available_verices;
+	for (auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd();
+			++v_iter) {
+		available_verices.insert(*v_iter);
+	}
+	while (changed) {
+		changed = false;
+		if (rc_mode)
 //				vertices = fillVerticesComponents();
-				vertices = fillVerticesComponentsInNonVariableOrder();
-			else
-				vertices = fillVerticesAuto();
-			INFO(
-					"Got "<< vertices.size() << " paired vertices, trying to split");
-			RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
+			vertices = fillVerticesComponentsInNonVariableOrder();
+		else
+			vertices = fillVerticesAuto();
+		INFO(
+				"Got "<< vertices.size() << " paired vertices, trying to split");
+		RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
 
-			long long counter = 0;
-			for (auto v_iter = vertices.begin(), v_end = vertices.end();
-					v_iter != v_end; ++v_iter) {
+		long long counter = 0;
+		for (auto v_iter = vertices.begin(), v_end = vertices.end();
+				v_iter != v_end; ++v_iter) {
 
-				DEBUG(
-						" resolving vertex "<<new_IDs.ReturnIntId(v_iter->second));
-				VERBOSE_POWER(++counter, " vertices processed");
+			DEBUG(
+					" resolving vertex "<<new_IDs.ReturnIntId(v_iter->second));
+			VERBOSE_POWER(++counter, " vertices processed");
 
-				if (rc_mode
-						&& deleted_handler.live_vertex.find(v_iter->second)
-								== deleted_handler.live_vertex.end()) {
-					DEBUG("already deleted");
-					continue;
-				} else {
-					DEBUG("not deleted");
-				}
+			if (rc_mode
+					&& deleted_handler.live_vertex.find(v_iter->second)
+							== deleted_handler.live_vertex.end()) {
+				DEBUG("already deleted");
+				continue;
+			} else {
+				DEBUG("not deleted");
+			}
 
-				vector<EdgeId> edgeIds[2];
-				int flag = 1;
+			vector<EdgeId> edgeIds[2];
+			int flag = 1;
 
-				if (available_verices.find(v_iter->second)
-						== available_verices.end()) {
-					continue;
-				}
+			if (available_verices.find(v_iter->second)
+					== available_verices.end()) {
+				continue;
+			}
 
-				edgeIds[0] = new_graph.OutgoingEdges(v_iter->second);
-				edgeIds[1] = new_graph.IncomingEdges(v_iter->second);
+			edgeIds[0] = new_graph.OutgoingEdges(v_iter->second);
+			edgeIds[1] = new_graph.IncomingEdges(v_iter->second);
 
-				set<VertexId> neighbours;
-				for (size_t j = 0; j < edgeIds[0].size(); j++) {
-					neighbours.insert(new_graph.EdgeEnd(edgeIds[0][j]));
-				}
-				for (size_t j = 0; j < edgeIds[1].size(); j++) {
-					neighbours.insert(new_graph.EdgeStart(edgeIds[1][j]));
-				}
+			set<VertexId> neighbours;
+			for (size_t j = 0; j < edgeIds[0].size(); j++) {
+				neighbours.insert(new_graph.EdgeEnd(edgeIds[0][j]));
+			}
+			for (size_t j = 0; j < edgeIds[1].size(); j++) {
+				neighbours.insert(new_graph.EdgeStart(edgeIds[1][j]));
+			}
 
-				for (int i = 0; i < 2; i++) {
-					for (size_t j = 0; j < edgeIds[i].size(); j++)
-						if (global_cheating_edges.find(edgeIds[i][j])
-								!= global_cheating_edges.end()) {
-							TRACE(
-									"Global cheater found "<<edgeIds[i][j]<<" id "<<new_graph.int_id(edgeIds[i][j]));
-							flag = 0;
-							break;
-						}
-				}
-				if (!flag) {
-					DEBUG(
-							"Cheaters are near" << new_IDs.ReturnIntId(v_iter->second));
-					continue;
-				}
-				size_t p_size = GenerateVertexPairedInfo(new_graph,
-						paired_di_data, v_iter->second);
-				DEBUG("paired info size: " << p_size);
-
-				int tcount;
-				resolve_time.start();
-				if (cheating_mode != 1)
-					tcount = SplitResolveVertex(v_iter->second, TotLabAfter);
-				else
-					tcount = CheatingResolveVertex(v_iter->second);
-				resolve_time.stop();
-				available_verices.erase(v_iter->second);
-
-				DEBUG("Vertex "<< v_iter->first<< " resolved to "<< tcount);
-				sum_count += tcount;
-				if (tcount > 1) {
-					for (auto it = neighbours.begin(); it != neighbours.end();
-							++it) {
-						available_verices.insert(*it);
+			for (int i = 0; i < 2; i++) {
+				for (size_t j = 0; j < edgeIds[i].size(); j++)
+					if (global_cheating_edges.find(edgeIds[i][j])
+							!= global_cheating_edges.end()) {
+						TRACE(
+								"Global cheater found "<<edgeIds[i][j]<<" id "<<new_graph.int_id(edgeIds[i][j]));
+						flag = 0;
+						break;
 					}
-					changed = true;
-					GraphCnt++;
-					if (cheating_mode == 0)
-						changed = true;
+			}
+			if (!flag) {
+				DEBUG(
+						"Cheaters are near" << new_IDs.ReturnIntId(v_iter->second));
+				continue;
+			}
+			size_t p_size = GenerateVertexPairedInfo(new_graph,
+					paired_di_data, v_iter->second);
+			DEBUG("paired info size: " << p_size);
+
+			int tcount;
+			resolve_time.start();
+			tcount = SplitResolveVertex(v_iter->second, TotLabAfter);
+			resolve_time.stop();
+			available_verices.erase(v_iter->second);
+
+			DEBUG("Vertex "<< v_iter->first<< " resolved to "<< tcount);
+			sum_count += tcount;
+			if (tcount > 1) {
+				for (auto it = neighbours.begin(); it != neighbours.end();
+						++it) {
+					available_verices.insert(*it);
 				}
+				changed = true;
+				GraphCnt++;
+				if (cheating_mode == 0)
+					changed = true;
 			}
 		}
-
 	}
+
 	INFO(
 			sum_count << " vertices processed while resolving non-primitive repeats");
 	INFO("Repeat resolver running time was "<< RR_time.time_ms()<< " ms");
@@ -1276,57 +1255,6 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 	produce_pair_info_time.stop();
 	return right_edges.size();
-}
-
-template<class Graph>
-int RepeatResolver<Graph>::ColoringEdgesInfos(int &size,
-		TotalLabeler<Graph>& tot_labler) {
-	rectangle_resolve_3_time.start();
-	edge_info_colors.resize(size);
-	for (int i = 0; i < size; i++) {
-		edge_info_colors[i] = -1;
-	}
-	vector<vector<int> > neighbours;
-	neighbours.resize(size);
-
-	for (int i = 0; i < size; i++) {
-		neighbours[i].resize(0);
-		neighbours[i].push_back(i);
-	}
-	rectangle_resolve_3_time.stop();
-
-	adjacent_time.start();
-	for (int i = 0; i < size; i++) {
-		for (int j = 0; j < size; j++) {
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph,
-					labels_after, tot_labler, old_IDs, distance_counter)
-					&& !edge_infos[j].isAdjacent(edge_infos[i], old_graph,
-							new_graph, labels_after, tot_labler, old_IDs,
-							distance_counter))
-				WARN(
-						"ASSYMETRIC: " << new_IDs.ReturnIntId(edge_infos[i].getEdge()) << " " << new_IDs.ReturnIntId(edge_infos[j].getEdge()));
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph,
-					labels_after, tot_labler, old_IDs, distance_counter)) {
-				neighbours[i].push_back(j);
-				neighbours[j].push_back(i);
-				TRACE(
-						old_IDs.ReturnIntId(edge_infos[i].lp.second) <<" " << edge_infos[i].d() << " is adjacent "<<old_IDs.ReturnIntId( edge_infos[j].lp.second) <<" " << edge_infos[j].d());
-			}
-		}
-	}
-
-	adjacent_time.stop();
-	rectangle_resolve_1_time.start();
-	int cur_color = 0;
-	DEBUG("dfs started");
-	for (int i = 0; i < size; i++) {
-		if (edge_info_colors[i] == -1) {
-			dfs(neighbours, edge_info_colors, i, cur_color);
-			cur_color++;
-		}
-	}
-	rectangle_resolve_1_time.stop();
-	return cur_color;
 }
 
 template<class Graph>
@@ -1640,7 +1568,7 @@ size_t RepeatResolver<Graph>::SplitResolveVertex(VertexId vid,
 		TotalLabeler<Graph>& tot_labler) {
 
 	rectangle_resolve_2_time.start();
-	DEBUG("Rectangle resolve vertex started");
+	DEBUG(" resolve vertex started");
 	int size = edge_infos.size();
 	if (cheating_mode) {
 		vector<EdgeId> edgeIds[2];
@@ -1666,132 +1594,8 @@ size_t RepeatResolver<Graph>::SplitResolveVertex(VertexId vid,
 
 	}
 	rectangle_resolve_2_time.stop();
-
-//	int cur_color = ColoringEdgesInfos(size, tot_labler);
 	int cur_color = ColoringEdgesInfosByPathes(size, tot_labler, vid);
-
-	DEBUG("Edge color info " << edge_info_colors);
-	if (cheating_mode) {
-		if (cur_color > 1) {
-			DEBUG("cheat_2 resolved vertex " << new_IDs.ReturnIntId(vid));
-		} else {
-			DEBUG("cheat_2 ignored vertex " << new_IDs.ReturnIntId(vid));
-		}
-	}
-	vector<typename Graph::VertexId> new_vertices = MultiSplit(vid);
-	return new_vertices.size();
-}
-
-template<class Graph>
-size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
-	DEBUG(
-			"ACHTUNG, cheating resolve vertex started "<<new_IDs.ReturnIntId(vid));
-	int size = edge_infos.size();
-	edge_info_colors.resize(size);
-	vector<EdgeId> edgeIds[2];
-	edgeIds[0] = new_graph.OutgoingEdges(vid);
-	edgeIds[1] = new_graph.IncomingEdges(vid);
-	map<EdgeId, int> EdgeIdMap[2];
-	size_t out_count = edgeIds[0].size();
-	size_t in_count = edgeIds[1].size();
-	size_t counts[2];
-	counts[0] = edgeIds[0].size();
-	counts[1] = edgeIds[1].size();
-	for (int ind = 0; ind < 2; ind++)
-		for (size_t i = 0; i < counts[ind]; i++) {
-			DEBUG(
-					"direction" << ind << " edge " << new_IDs.ReturnIntId(edgeIds[ind][i]));
-			EdgeIdMap[ind].insert(make_pair(edgeIds[ind][i], i));
-		}
-	vector<vector<int> > neighbours;
-	neighbours.resize(in_count + out_count);
-	for (int i = 0; i < size; i++) {
-		DEBUG(
-				"info N "<<i<<":" <<new_IDs.ReturnIntId(edge_infos[i].lp.first)<<" -> "<<old_IDs.ReturnIntId(edge_infos[i].lp.second)<<" dist "<< edge_infos[i].d);
-	}
-	for (int i = 0; i < size; i++) {
-		EdgeId second(NULL);
-		EdgeId first = edge_infos[i].lp.first;
-		DEBUG(
-				"trying first "<< new_IDs.ReturnIntId(first)<<" with paired "<< old_IDs.ReturnIntId(edge_infos[i].lp.second));
-		if (EdgeIdMap[0].find(first) == EdgeIdMap[0].end())
-			continue;
-		for (int j = 0; j < size; j++) {
-			if ((first != edge_infos[j].lp.first)
-					&& (edge_infos[i].d == edge_infos[j].d)/*(edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph))*/
-					&& (edge_infos[i].lp.second == edge_infos[j].lp.second)) {
-				if (second == EdgeId(NULL)) {
-					second = edge_infos[j].lp.first;
-				} else {
-					if (second != edge_infos[j].lp.first) {
-						second = EdgeId(NULL);
-						DEBUG("multiple pairing, break");
-						break;
-					}
-				}
-
-			}
-		}
-		if (second != EdgeId(NULL)) {
-			DEBUG("found second "<< new_IDs.ReturnIntId(second));
-
-			if (EdgeIdMap[1].find(second) == EdgeIdMap[1].end())
-				continue;
-			else {
-				size_t first_ind = EdgeIdMap[0][first];
-				size_t second_ind = EdgeIdMap[1][second];
-				DEBUG(first_ind <<" "<< second_ind);
-				neighbours[first_ind + counts[1]].push_back(second_ind);
-				neighbours[second_ind].push_back(first_ind + counts[1]);
-				DEBUG(
-						"neighbours "<<first_ind<<" + "<<counts[1]<<"  "<<second_ind);
-			}
-		}
-	}
-	DEBUG("cheater_colors creating");
-	vector<int> cheater_colors(counts[0] + counts[1], -1);
-
-	int cur_color = 0;
-	DEBUG("dfs started");
-	for (size_t i = 0; i < counts[0] + counts[1]; i++) {
-		if (cheater_colors[i] == -1) {
-			dfs(neighbours, cheater_colors, i, cur_color);
-			cur_color++;
-		}
-	}
-	DEBUG("Colours " << cheater_colors);
-
-	bool bad = true;
-	for (size_t i = 0; i < counts[0] + counts[1]; i++) {
-		bad = true;
-		for (size_t j = 0; j < counts[0] + counts[1]; j++) {
-			if ((i != j) && (cheater_colors[i] == cheater_colors[j])) {
-				bad = false;
-				break;
-			}
-		}
-		if (bad)
-			break;
-	}
-
-	if (bad) {
-		DEBUG("Cheat failed");
-		return 1;
-	}
-
-	for (size_t i = 0; i < edge_info_colors.size(); i++) {
-		if (EdgeIdMap[0].find(edge_infos[i].lp.first) != EdgeIdMap[0].end()) {
-			edge_info_colors[i] =
-					cheater_colors[EdgeIdMap[0][edge_infos[i].lp.first]
-							+ counts[1]];
-		} else {
-			if (EdgeIdMap[1].find(edge_infos[i].lp.first)
-					!= EdgeIdMap[1].end()) {
-				edge_info_colors[i] =
-						cheater_colors[EdgeIdMap[1][edge_infos[i].lp.first]];
-			}
-		}
-	}
+	DEBUG("Edge color info " << edge_info_colors << "cur color" << cur_color);
 
 	vector<typename Graph::VertexId> new_vertices = MultiSplit(vid);
 	return new_vertices.size();
