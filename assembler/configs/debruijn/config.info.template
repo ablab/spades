@@ -79,7 +79,6 @@ paired_info_scaffolder false
 estimation_mode simple
 ; simple, weighted, extensive, smoothing
 
-paired_metrics read_count
 ; read_count, product
 
 ;set it true to detach connections that are not supported by paired info before repeat resolution
@@ -170,12 +169,6 @@ need_consensus  false ; output is VERY large(gigabytes).
 uncorrected_reads	none
 
 mismatch_ratio 2.0;
-
-jump
-{
-	    load                false
-	    weight_threshold    0.05
-}
 
 graph_read_corr
 {

@@ -36,18 +36,13 @@ enum working_stage {
 	ws_simplification,
 	ws_late_pair_info_count,
 	ws_distance_estimation,
-	ws_repeats_resolving,
-	ws_n50_enlargement
+	ws_repeats_resolving
 };
 
 enum simplification_mode {
 	sm_normal,
 	sm_topology,
 	sm_max_flow,
-};
-
-enum paired_metrics {
-	pm_read_count, pm_product
 };
 
 enum estimation_mode {
@@ -115,7 +110,6 @@ struct debruijn_config {
 	typedef boost::bimap<string, working_stage> stage_name_id_mapping;
 	typedef boost::bimap<string, simplification_mode> simpl_mode_id_mapping;
 	typedef boost::bimap<string, estimation_mode> estimation_mode_id_mapping;
-	typedef boost::bimap<string, paired_metrics> paired_metrics_id_mapping;
 	typedef boost::bimap<string, resolving_mode> resolve_mode_id_mapping;
 
 //  damn shit fix, it is to be removed! To determine is it started from run.sh or from spades.py
@@ -129,8 +123,7 @@ struct debruijn_config {
       stage_name_id_mapping::value_type("simplification", ws_simplification),
       stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count),
       stage_name_id_mapping::value_type("distance_estimation", ws_distance_estimation),
-      stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving),
-      stage_name_id_mapping::value_type("n50_enlargement", ws_n50_enlargement)
+      stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving)
     };
 
 		return stage_name_id_mapping(info, utils::array_end(info));
@@ -155,15 +148,6 @@ struct debruijn_config {
 		return estimation_mode_id_mapping(info, utils::array_end(info));
 	}
 
-	static const paired_metrics_id_mapping FillPairedMetricsInfo() {
-		paired_metrics_id_mapping::value_type info[] = {
-				paired_metrics_id_mapping::value_type("read_count",
-						pm_read_count), paired_metrics_id_mapping::value_type(
-						"product", pm_product) };
-
-		return paired_metrics_id_mapping(info, utils::array_end(info));
-	}
-
 	static const resolve_mode_id_mapping FillResolveModeInfo() {
 		resolve_mode_id_mapping::value_type info[] = {
 				resolve_mode_id_mapping::value_type("none", rm_none),
@@ -173,7 +157,6 @@ struct debruijn_config {
 						"combined", rm_combined),
 				resolve_mode_id_mapping::value_type("split_scaff",
 						rm_split_scaff), resolve_mode_id_mapping::value_type(
-						"jump", rm_jump), resolve_mode_id_mapping::value_type(
 						"rectangles", rm_rectangles), };
 
 		return resolve_mode_id_mapping(info, utils::array_end(info));
@@ -193,12 +176,6 @@ struct debruijn_config {
 		static estimation_mode_id_mapping est_mode_info =
 				FillEstimationModeInfo();
 		return est_mode_info;
-	}
-
-	static const paired_metrics_id_mapping& paired_metrics_info() {
-		static paired_metrics_id_mapping paired_metrics_info =
-				FillPairedMetricsInfo();
-		return paired_metrics_info;
 	}
 
 	static const resolve_mode_id_mapping& resolve_mode_info() {
@@ -234,22 +211,6 @@ struct debruijn_config {
 		auto it = working_stages_info().left.find(name);
 		VERIFY_MSG(it != working_stages_info().left.end(),
 				"There is no working stage with name = " << name);
-
-		return it->second;
-	}
-
-	static const std::string& paired_metrics_name(paired_metrics metrics_id) {
-		auto it = paired_metrics_info().right.find(metrics_id);
-		VERIFY_MSG(it != paired_metrics_info().right.end(),
-				"No name for paired metrics id = " << metrics_id);
-
-		return it->second;
-	}
-
-	static paired_metrics paired_metrics_id(std::string name) {
-		auto it = paired_metrics_info().left.find(name);
-		VERIFY_MSG(it != paired_metrics_info().left.end(),
-				"There is no paired metrics with name = " << name);
 
 		return it->second;
 	}
@@ -449,11 +410,6 @@ struct debruijn_config {
 		bool write_full_nc_graph;
 	};
 
-	struct jump_cfg {
-		bool load;
-		double weight_threshold;
-	};
-
 	struct SAM_writer {
 		bool produce_align_files;
 		bool output_map_format;
@@ -526,8 +482,6 @@ public:
 	size_t max_threads;
 	size_t max_memory;
 
-	paired_metrics paired_metr;
-
 	estimation_mode est_mode;
 
 	resolving_mode rm;
@@ -541,7 +495,6 @@ public:
 	dataset ds;
 	position_handler pos;
 	gap_closer gc;
-	jump_cfg jump;
 	SAM_writer sw;
 	graph_read_corr_cfg graph_read_corr;
 	info_printers_t info_printers;
@@ -580,13 +533,6 @@ inline void load(estimation_mode& est_mode,
 		bool complete) {
 	std::string ep = pt.get<std::string>(key);
 	est_mode = debruijn_config::estimation_mode_id(ep);
-}
-
-inline void load(paired_metrics& paired_metr,
-		boost::property_tree::ptree const& pt, std::string const& key,
-		bool complete) {
-	std::string ep = pt.get<std::string>(key);
-	paired_metr = debruijn_config::paired_metrics_id(ep);
 }
 
 inline void load(debruijn_config::simplification::bulge_remover& br,
@@ -881,14 +827,6 @@ inline void load(debruijn_config::info_printers_t& printers,
 	}
 }
 
-inline void load(debruijn_config::jump_cfg& jump,
-		boost::property_tree::ptree const& pt, bool complete) {
-	using config_common::load;
-
-	load(jump.load, pt, "load");
-	load(jump.weight_threshold, pt, "weight_threshold");
-}
-
 // main debruijn config load function
 inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 		bool complete) {
@@ -1011,8 +949,6 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.rr, pt, (cfg.ds.single_cell ? "sc_rr" : "usual_rr")); // repeat resolver:
 	load(cfg.pos, pt, "pos"); // position handler:
 
-	load(cfg.paired_metr, pt, "paired_metrics");
-
 	load(cfg.est_mode, pt, "estimation_mode");
 
 	load(cfg.rm, pt, "resolving_mode");
@@ -1034,11 +970,8 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
 
 	load(cfg.info_printers, pt, "info_printers");
-	load(cfg.jump, pt, "jump");
 
 	load_reference_genome(cfg.ds, cfg.input_dir);
-
-//	cfg.is_infinity = 100000000;
 }
 
 } // debruijn_graph
