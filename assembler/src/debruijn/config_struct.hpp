@@ -42,11 +42,8 @@ enum working_stage {
 
 enum simplification_mode {
 	sm_normal,
-	sm_cheating,
 	sm_topology,
-	sm_chimeric,
 	sm_max_flow,
-	sm_pair_info_aware
 };
 
 enum paired_metrics {
@@ -142,11 +139,7 @@ struct debruijn_config {
 	static const simpl_mode_id_mapping FillSimplifModeInfo() {
 		simpl_mode_id_mapping::value_type info[] = {
 				simpl_mode_id_mapping::value_type("normal", sm_normal),
-				simpl_mode_id_mapping::value_type("pair_info_aware",
-						sm_pair_info_aware), simpl_mode_id_mapping::value_type(
-						"cheating", sm_cheating),
 				simpl_mode_id_mapping::value_type("topology", sm_topology),
-				simpl_mode_id_mapping::value_type("chimeric", sm_chimeric),
 				simpl_mode_id_mapping::value_type("max_flow", sm_max_flow) };
 
 		return simpl_mode_id_mapping(info, utils::array_end(info));
@@ -323,12 +316,6 @@ struct debruijn_config {
 			double coverage_gap;
 		};
 
-		struct cheating_erroneous_connections_remover {
-			double max_ec_length_coefficient;
-			size_t sufficient_neighbour_length;
-			double coverage_gap;
-		};
-
 		struct topology_based_ec_remover {
 			size_t max_ec_length_coefficient;
 			size_t uniqueness_length;
@@ -345,11 +332,6 @@ struct debruijn_config {
 			double max_ec_length_coefficient;
 			size_t uniqueness_length;
 			size_t plausibility_length;
-		};
-
-		struct pair_info_ec_remover {
-			double max_ec_length_coefficient;
-			size_t min_neighbour_length;
 		};
 
 		struct isolated_edges_remover {
@@ -372,11 +354,9 @@ struct debruijn_config {
 		bulge_remover br;
 		erroneous_connections_remover ec;
 		relative_coverage_ec_remover rec;
-		cheating_erroneous_connections_remover cec;
 		topology_based_ec_remover tec;
 		tr_based_ec_remover trec;
 		max_flow_ec_remover mfec;
-		pair_info_ec_remover piec;
 		isolated_edges_remover ier;
 		complex_bulge_remover cbr;
 
@@ -547,8 +527,6 @@ public:
 	size_t max_threads;
 	size_t max_memory;
 
-//	size_t is_infinity;
-
 	paired_metrics paired_metr;
 
 	estimation_mode est_mode;
@@ -641,14 +619,6 @@ inline void load(debruijn_config::simplification::relative_coverage_ec_remover& 
 	load(rec.coverage_gap, pt, "coverage_gap");
 }
 
-inline void load(debruijn_config::simplification::pair_info_ec_remover& ec,
-		boost::property_tree::ptree const& pt, bool complete) {
-	using config_common::load;
-
-	load(ec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
-	load(ec.min_neighbour_length, pt, "min_neighbour_length");
-}
-
 inline void load(debruijn_config::simplification::isolated_edges_remover& ier,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
@@ -675,16 +645,6 @@ inline void load(
 	using config_common::load;
 
 	load(ec.condition, pt, "condition");
-}
-
-inline void load(
-		debruijn_config::simplification::cheating_erroneous_connections_remover& cec,
-		boost::property_tree::ptree const& pt, bool complete) {
-	using config_common::load;
-
-	load(cec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
-	load(cec.coverage_gap, pt, "coverage_gap");
-	load(cec.sufficient_neighbour_length, pt, "sufficient_neighbour_length");
 }
 
 inline void load(
@@ -880,11 +840,9 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.br, pt, "br"); // bulge remover:
 	load(simp.ec, pt, "ec"); // erroneous connections remover:
 	load(simp.rec, pt, "rec"); // relative coverage erroneous connections remover:
-	load(simp.cec, pt, "cec"); // cheating erroneous connections remover:
 	load(simp.tec, pt, "tec"); // topology aware erroneous connections remover:
 	load(simp.trec, pt, "trec"); // topology and reliability based erroneous connections remover:
 	load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
-	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
 	load(simp.ier, pt, "ier"); // isolated edges remover
 	load(simp.cbr, pt, "cbr"); // complex bulge remover
 }

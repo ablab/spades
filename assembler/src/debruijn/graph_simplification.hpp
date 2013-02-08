@@ -410,19 +410,6 @@ bool RemoveRelativelyLowCoverageEdges(Graph &g,
 }
 
 template<class Graph>
-bool CheatingRemoveErroneousEdges(Graph &g,
-		const debruijn_config::simplification::cheating_erroneous_connections_remover& cec_config,
-		boost::function<void(typename Graph::EdgeId)> removal_handler) {
-	INFO("Cheating removal of erroneous edges started");
-	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-			g.k(), cec_config.max_ec_length_coefficient);
-	double coverage_gap = cec_config.coverage_gap;
-	size_t sufficient_neighbour_length = cec_config.sufficient_neighbour_length;
-	return omnigraph::CheatingChimericEdgeRemover<Graph>(g, max_length,
-			coverage_gap, sufficient_neighbour_length, removal_handler).Process();
-}
-
-template<class Graph>
 bool TopologyRemoveErroneousEdges(Graph &g,
 		const debruijn_config::simplification::topology_based_ec_remover& tec_config,
 		boost::function<void(typename Graph::EdgeId)> removal_handler) {
@@ -508,16 +495,6 @@ bool TopologyReliabilityRemoveErroneousEdges(Graph &g,
 }
 
 template<class Graph>
-bool ChimericRemoveErroneousEdges(Graph &g,
-		boost::function<void(typename Graph::EdgeId)> removal_handler) {
-	INFO("Simple removal of chimeric edges based only on length started");
-	ChimericEdgesRemover<Graph> remover(g, 10, removal_handler);
-	bool changed = remover.Process();
-	DEBUG("Removal of chimeric edges finished");
-	return changed;
-}
-
-template<class Graph>
 bool MaxFlowRemoveErroneousEdges(Graph &g,
 		const debruijn_config::simplification::max_flow_ec_remover& mfec_config,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
@@ -553,8 +530,10 @@ template<class Graph>
 bool AllTopology(Graph &g,
 		boost::function<void(typename Graph::EdgeId)> removal_handler,
 		size_t iteration) {
-	bool res = TopologyClipTips(g, cfg::get().simp.ttc,
-			*cfg::get().ds.RL, removal_handler);
+	bool res = false;
+	//todo enable later
+	/*TopologyClipTips(g, cfg::get().simp.ttc,
+			*cfg::get().ds.RL, removal_handler);*/
 	res |= TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
 			removal_handler);
 	if (cfg::get().additional_ec_removing) {
@@ -577,17 +556,8 @@ bool FinalRemoveErroneousEdges(Graph &g,
 			removal_handler, determined_coverage_threshold);
 
 	switch (cfg::get().simp.simpl_mode) {
-	case sm_cheating: {
-		changed |= CheatingRemoveErroneousEdges(g, cfg::get().simp.cec,
-				removal_handler);
-	}
-		break;
 	case sm_topology: {
 		changed |= AllTopology(g, removal_handler, iteration);
-	}
-		break;
-	case sm_chimeric: {
-		changed |= ChimericRemoveErroneousEdges(g, removal_handler);
 	}
 		break;
 	case sm_max_flow: {
@@ -602,22 +572,6 @@ bool FinalRemoveErroneousEdges(Graph &g,
 		return false;
 	}
 	return changed;
-}
-
-template<class Graph>
-void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
-		const PairedInfoIndexT<Graph>& paired_index,
-		boost::function<void(typename Graph::EdgeId)> removal_handler) {
-	INFO("Removing erroneous edges using paired info");
-	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-			g.k(), cfg::get().simp.piec.max_ec_length_coefficient);
-	size_t min_neighbour_length = cfg::get().simp.piec.min_neighbour_length;
-	omnigraph::PairInfoAwareErroneousEdgeRemover<Graph> erroneous_edge_remover(
-			g, paired_index, max_length, min_neighbour_length,
-			*cfg::get().ds.IS, *cfg::get().ds.RL, removal_handler);
-	erroneous_edge_remover.Process();
-
-	DEBUG("Erroneous edges using paired info removed");
 }
 
 void PreSimplification(conj_graph_pack& gp,

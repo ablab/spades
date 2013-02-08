@@ -42,14 +42,6 @@ sc_simplification
         coverage_gap    50.
 	}
 	
-	; cheating erroneous connections remover
-	cec
-	{
-		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient	
-		coverage_gap			5.0
-		sufficient_neighbour_length	1000
-	}
-
 	; topology based erroneous connection connections remover
 	tec
 	{
@@ -72,12 +64,6 @@ sc_simplification
 		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
 		uniqueness_length		1500
 		plausibility_length		200
-	}
-	
-	piec
-	{
-		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
-		min_neighbour_length		100
 	}
 	
 	; isolated edges remover
@@ -149,14 +135,6 @@ usual_simplification
         max_ec_length_coefficient   29
         max_coverage_coeff  10.
         coverage_gap    50.
-	}
-	
-	; cheating erroneous connections remover
-	cec
-	{
-		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
-		coverage_gap			5.0
-		sufficient_neighbour_length	1000
 	}
 	
 	; topology based erroneous connection connections remover

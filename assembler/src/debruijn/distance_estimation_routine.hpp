@@ -180,10 +180,6 @@ void estimate_distance(conj_graph_pack& gp,
     RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
     DEBUG("The refining of clustered pair information has been finished");    // if so, it resolves such conflicts.
 
-    //experimental [here we can remove some edges from the graph]
-    if (config.simp.simpl_mode == sm_pair_info_aware)
-      RemoveErroneousEdgesWithPI<conj_graph_pack>(gp, paired_index);
-
     INFO("Filling paired information");
     PairInfoImprover<Graph> improver(gp.g, clustered_index);
     improver.ImprovePairedInfo(config.use_multithreading, config.max_threads);
