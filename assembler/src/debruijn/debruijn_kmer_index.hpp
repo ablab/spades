@@ -853,16 +853,14 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
     }
 #endif
 
-    // Check sanity in developer mode
-    if (cfg::get().developer_mode) {
-      for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
-           idx != eidx; ++idx) {
-        runtime_k::RtSeq k = index.kmer(idx);
-        INFO("" << index[k].count_ << ":" << index[!k].count_);
+#ifndef NDEBUG
+    for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
+         idx != eidx; ++idx) {
+      runtime_k::RtSeq k = index.kmer(idx);
 
-        VERIFY(index[k].count_ == index[!k].count_);
-      }
+      VERIFY(index[k].count_ == index[!k].count_);
     }
+#endif
 
     return rl;
   }
