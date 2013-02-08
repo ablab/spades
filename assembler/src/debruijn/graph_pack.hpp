@@ -25,7 +25,6 @@
 namespace debruijn_graph {
 
 typedef PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
-//typedef PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 
 template<class Graph, class SeqType>
 struct graph_pack: private boost::noncopyable {

@@ -18,7 +18,6 @@
 #include "xmath.h"
 
 #include "path_set.hpp" 
-#include "matepair_transformer.hpp"
 #include "path_set_stats.hpp"
 
 #include <iostream>
