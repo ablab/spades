@@ -14,7 +14,7 @@
 #include "omni/abstract_conjugate_graph.hpp"
 #include "omni/abstract_nonconjugate_graph.hpp"
 #include "utils.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "levenshtein.hpp"
 
 #include "omni/omni_tools.hpp"

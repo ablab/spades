@@ -21,7 +21,7 @@
 
 #include "debruijn_graph_constructor.hpp"
 #include "debruijn_kmer_index.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "graphio.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"

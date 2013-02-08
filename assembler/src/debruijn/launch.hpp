@@ -27,7 +27,7 @@
 #include "de/paired_info.hpp"
 #include "de/distance_estimation.hpp"
 
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "config_struct.hpp"
 #include "debruijn_stats.hpp"
 #include "graphio.hpp"

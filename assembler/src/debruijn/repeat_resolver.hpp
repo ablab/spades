@@ -34,7 +34,7 @@
 #include "omni/total_labeler.hpp"
 #include "omni/dijkstra.hpp"
 
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "perfcounter.hpp"
 #include "split_path_constructor.hpp"
 

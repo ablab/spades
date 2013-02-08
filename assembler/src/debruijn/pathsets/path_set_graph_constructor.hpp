@@ -7,7 +7,7 @@
 #pragma once
 #include "matepair_transformer.hpp"
 #include "path_set.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"
 #include "omni/omni_utils.hpp"

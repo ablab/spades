@@ -7,7 +7,7 @@
 #pragma once
 
 #include "statistics.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "graph_construction.hpp"
 #include "graphio.hpp"
 #include "graph_read_correction.hpp"

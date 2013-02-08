@@ -15,7 +15,7 @@
 
 #include "omni/total_labeler.hpp"
 #include "omni/graph_labeler.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 
 namespace debruijn_graph
 {

@@ -16,7 +16,7 @@
 
 #include "de/paired_info.hpp"
 
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "graph_pack.hpp"
 
 namespace debruijn_graph {

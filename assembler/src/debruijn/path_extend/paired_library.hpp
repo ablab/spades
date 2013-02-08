@@ -14,7 +14,7 @@
 #ifndef PAIRED_LIBRARY_HPP_
 #define PAIRED_LIBRARY_HPP_
 
-#include "../new_debruijn.hpp"
+#include "../debruijn_graph.hpp"
 #include "xmath.h"
 
 using debruijn_graph::Graph;

@@ -26,7 +26,7 @@
 #include "omni/graph_component.hpp"
 
 #include "utils.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 
 namespace debruijn_graph {
 using namespace omnigraph;

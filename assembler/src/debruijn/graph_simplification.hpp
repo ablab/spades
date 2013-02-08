@@ -15,7 +15,7 @@
 
 #include "standard_base.hpp"
 #include "config_struct.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "debruijn_stats.hpp"
 
 #include "omni/omni_utils.hpp"

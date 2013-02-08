@@ -17,7 +17,7 @@
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "de/paired_info.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "config_struct.hpp"
 #include "graphio.hpp"
 #include "mismatch_masker.hpp"
