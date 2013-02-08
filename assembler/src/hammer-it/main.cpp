@@ -117,8 +117,6 @@ int main(void) {
 
   create_console_logger();
 
-  hammer::errHelper::initHelperTables("err_hints.dat");
-
   KMerData kmer_data;
   KMerDataCounter(1).FillKMerData(kmer_data);
 

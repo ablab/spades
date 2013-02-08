@@ -27,10 +27,9 @@ namespace internal {
 // maximum size of K-mers in the helper tables
 static const unsigned int MAX_K = 5;
 
-class HelperTable {
- public:
-  // Load table from file stream
-  HelperTable(unsigned k, std::istream& stream);
+struct HelperTable {
+  const unsigned k_;
+  const uint32_t* storage_;
 
   Hint lookupHint(const hammer::HKMer& x, const hammer::HKMer& y,
                   size_t x_offset, size_t y_offset,
@@ -41,14 +40,10 @@ class HelperTable {
     unsigned y_code = getCode(y, y_offset, y_nfront, k_);
 
     unsigned code = x_code + (y_code << (2 * k_));
-    char bt = storage_[code / 4];
-    unsigned shift = (code % 4) * 2;
+    uint32_t bt = storage_[code / 16]; // 16 hints per uint32_t
+    unsigned shift = (code % 16) * 2;
     return static_cast<Hint>((bt >> shift) & 0x3);
   }
-
- private:
-  unsigned k_;
-  std::vector<char> storage_;
 
   static unsigned getCode(const hammer::HKMer& x, size_t x_offset,
                           size_t x_nfront, size_t k) {
@@ -74,7 +69,7 @@ class HelperTable {
 };
 
 // tables for k = 1, 2, ..., MAX_K
-extern std::vector<HelperTable> helper_tables;
+extern const HelperTable helper_tables[];
 
 static inline size_t getNumberOfRemainingBases(const hammer::HKMer& x,
                                                size_t x_offset,
@@ -93,9 +88,6 @@ static inline size_t getNumberOfRemainingBases(const hammer::HKMer& x,
 }
 
 }; // namespace internal
-
-/// Load tables from file
-void initHelperTables(const std::string& filename);
 
 /// Estimate what kind of error occurred at the position
 static inline Hint getHint(const hammer::HKMer& x, const hammer::HKMer& y,

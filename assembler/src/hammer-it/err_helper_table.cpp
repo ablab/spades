@@ -8,24 +8,23 @@
 namespace hammer {
 namespace errHelper {
 
-void initHelperTables(const std::string& filename) {
-  std::ifstream stream(filename);
-  for (size_t i = 1; i <= internal::MAX_K; ++i)
-    internal::helper_tables.push_back(internal::HelperTable(i, stream));
-}
-
 namespace internal {
 
-std::vector<HelperTable> helper_tables;
+static const uint32_t helper_table_data[] = {
+#include "err_helper_table.inc"
+};
 
-HelperTable::HelperTable(unsigned k, std::istream& stream) : k_(k) {
-  size_t sz = 1 << (4 * k); // # of hints - 4 ^^ 2k 
-  size_t bytes = sz / 4; // each char contains 4 hints
-  storage_.resize(bytes);
-
-  VERIFY(stream.good());
-  stream.read(&storage_[0], bytes);
-}
+// numbers are cumulative sums of
+// (2 * 4^^2) / 32,
+// (2 * 4^^4) / 32,
+// ...
+const HelperTable helper_tables[] = {
+  { 1, helper_table_data },
+  { 2, helper_table_data + 1 },
+  { 3, helper_table_data + 17 },
+  { 4, helper_table_data + 273 },
+  { 5, helper_table_data + 4369 }
+};
 
 }; // namespace internal
 
