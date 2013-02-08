@@ -37,6 +37,6 @@ typedef LongSeq<MultiPolynomialHash<3, uint64_t> > LSeq;
 }
 
 // debruijn
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "graph_pack.hpp"
 #include "graph_construction.hpp"

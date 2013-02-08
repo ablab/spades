@@ -17,10 +17,6 @@
 #include "simple_tools.hpp"
 #include "xmath.h"
 
-#include "path_set.hpp" 
-#include "matepair_transformer.hpp"
-#include "path_set_stats.hpp"
-
 #include <iostream>
 #include <fstream>
 #include <map>

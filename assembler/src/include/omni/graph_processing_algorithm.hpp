@@ -65,13 +65,58 @@ private:
 	;
 };
 
+template<class Graph>
+class EdgeRemover {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef boost::function<void(EdgeId)> HandlerF;
+
+	Graph& g_;
+	HandlerF removal_handler_;
+
+public:
+	EdgeRemover(Graph& g,
+			HandlerF removal_handler = 0) :
+			g_(g), removal_handler_(removal_handler) {
+	}
+
+	bool DeleteEdge(EdgeId e) {
+		TRACE("Deletion of edge " << g_.str(e));
+		VertexId start = g_.EdgeStart(e);
+		VertexId end = g_.EdgeEnd(e);
+
+		TRACE("Start " << g_.str(start));
+		TRACE("End " << g_.str(end));
+		if (removal_handler_) {
+			TRACE("Calling handler");
+			removal_handler_(e);
+		}
+		TRACE("Deleting edge");
+		g_.DeleteEdge(e);
+		TRACE("Compressing locality");
+		if (!g_.RelatedVertices(start, end)) {
+			TRACE("Vertices not related");
+			TRACE("Compressing end");
+			g_.CompressVertex(end);
+			TRACE("End Compressed");
+		}
+		TRACE("Compressing start");
+		g_.CompressVertex(start);
+		TRACE("Start compressed");
+		return true;
+	}
+
+private:
+	DECL_LOGGER("EdgeRemover")
+	;
+};
+
 template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
 class EdgeRemovingAlgorithm: public EdgeProcessingAlgorithm<Graph, Comparator> {
 	typedef EdgeProcessingAlgorithm<Graph, Comparator> base;
 	typedef typename Graph::EdgeId EdgeId;
 
 	shared_ptr<func::Predicate<EdgeId>> remove_condition_;
-//	boost::function<void(EdgeId)> removal_handler_;
 	EdgeRemover<Graph> edge_remover_;
 
 protected:

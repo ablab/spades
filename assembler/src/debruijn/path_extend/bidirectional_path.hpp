@@ -14,7 +14,7 @@
 #ifndef BIDIRECTIONAL_PATH_H_
 #define BIDIRECTIONAL_PATH_H_
 
-#include "../new_debruijn.hpp"
+#include "../debruijn_graph.hpp"
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;

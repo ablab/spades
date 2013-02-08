@@ -14,7 +14,7 @@
 #ifndef DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
 #define DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
 #include "utils.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 
 namespace debruijn_graph {
 

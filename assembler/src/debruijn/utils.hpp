@@ -27,7 +27,7 @@
 
 #include "path_helper.hpp"
 
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "debruijn_kmer_index.hpp"
 #include "edge_index.hpp"
 #include "sequence_mapper.hpp"
@@ -1044,23 +1044,6 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
       }
     }
   }
-}
-
-template<class graph_pack>
-void RemoveErroneousEdgesWithPI(graph_pack& gp,
-                                const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index)
-{
-  typedef typename graph_pack::graph_t Graph;
-  typedef typename Graph::EdgeId EdgeId;
-  EdgeQuality<Graph> quality_handler(gp.g, gp.index, gp.kmer_mapper, gp.genome);
-  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, quality_handler);
-  boost::function<void(EdgeId)> removal_handler_f = boost::bind(
-      &QualityLoggingRemovalHandler<Graph>::HandleDelete,
-      &qual_removal_handler, _1);
-  INFO("Pair info aware ErroneousConnectionsRemoval");
-  RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index, removal_handler_f);
-  INFO("Pair info aware ErroneousConnectionsRemoval stats");
-  CountStats(gp.g, gp.index, gp.genome, gp.k_value);
 }
 
 }

@@ -11,7 +11,7 @@
 #include "omni/omni_utils.hpp"
 #include "adt/kmer_map.hpp"
 
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "standard.hpp"
 #include "debruijn_kmer_index.hpp"
 

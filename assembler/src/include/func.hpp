@@ -7,8 +7,19 @@
 #pragma once
 
 #include "standard_base.hpp"
+#include "boost/function.hpp"
 
 namespace func {
+
+//to use with boost::function-s
+template<class T>
+void Composition(T t, boost::function<void(T)> f1,
+		boost::function<void(T)> f2) {
+	if (f1)
+		f1(t);
+	if (f2)
+		f2(t);
+}
 
 template<class A, class B>
 class Func {

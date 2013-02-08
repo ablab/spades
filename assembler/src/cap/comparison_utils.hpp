@@ -8,7 +8,7 @@
 
 #include "graphio.hpp"
 #include "simple_tools.hpp"
-#include "new_debruijn.hpp"
+#include "debruijn_graph.hpp"
 #include "xmath.h"
 #include <iostream>
 #include "logger/logger.hpp"
