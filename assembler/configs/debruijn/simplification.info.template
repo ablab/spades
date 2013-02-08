@@ -2,9 +2,8 @@
 
 sc_simplification
 {
-	;simplification mode: normal, cheating, topology, chimeric, pair_info_aware, max_flow
+	;simplification mode: normal, topology, max_flow
 	simpl_mode topology
-	trec_on    true
 
 	; tip clipper:
 	tc
@@ -96,9 +95,8 @@ sc_simplification
 
 usual_simplification
 {
-	;simplification mode: normal, cheating, topology, chimeric, pair_info_aware
+	;simplification mode: normal, topology, max_flow
 	simpl_mode topology
-	trec_on    false
 	
 	; tip clipper:
 	tc
