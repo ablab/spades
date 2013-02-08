@@ -32,7 +32,6 @@ entry_point construction
 ;entry_point late_pair_info_count
 ;entry_point distance_estimation
 ;entry_point repeats_resolving
-;entry_point n50_enlargement
 
 developer_mode true
 
@@ -78,8 +77,6 @@ paired_info_scaffolder false
 
 estimation_mode simple
 ; simple, weighted, extensive, smoothing
-
-; read_count, product
 
 ;set it true to detach connections that are not supported by paired info before repeat resolution
 cut_bad_connections false
