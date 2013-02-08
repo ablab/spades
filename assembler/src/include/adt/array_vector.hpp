@@ -95,19 +95,47 @@ class __array {
   }
 
   bool operator<(const __array &that) const {
-    return 0 > memcmp(data(), that.data(), data_size());
+    __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return this_ptr[i] < that_ptr[i];
+    }
+
+    return false;
   }
 
   bool operator<(const __array_reference<_Cp> that) const {
-    return 0 > memcmp(data(), that.data(), data_size());
+    __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return this_ptr[i] < that_ptr[i];
+    }
+
+    return false;
   }
 
   bool operator==(const __array &that) const {
-    return 0 == memcmp(data(), that.data(), data_size());
+    __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return false;
+    }
+
+    return true;
   }
 
   bool operator==(const __array_reference<_Cp> that) const {
-    return 0 == memcmp(data(), that.data(), data_size());
+    __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return false;
+    }
+
+    return true;
   }
 
   bool operator!=(const __array &that) const {
@@ -179,20 +207,48 @@ class __array_reference {
     return *this;
   }
 
-  bool operator<(const __array_reference that) const {
-    return 0 > memcmp(data(), that.data(), data_size());
-  }
-
   bool operator<(const __array<_Cp> &that) const {
-    return 0 > memcmp(data(), that.data(), data_size());
+    __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return this_ptr[i] < that_ptr[i];
+    }
+
+    return false;
   }
 
-  bool operator==(const __array_reference that) const {
-    return 0 == memcmp(data(), that.data(), data_size());
+  bool operator<(const __array_reference that) const {
+    __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return this_ptr[i] < that_ptr[i];
+    }
+
+    return false;
   }
 
   bool operator==(const __array<_Cp> &that) const {
-    return 0 == memcmp(data(), that.data(), data_size());
+    __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return false;
+    }
+
+    return true;
+  }
+
+  bool operator==(const __array_reference that) const {
+    __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return false;
+    }
+
+    return true;
   }
 
   bool operator!=(const __array_reference that) const {
@@ -242,16 +298,38 @@ class __array_const_reference {
   __array_const_reference(const __array_const_reference &that)
       : ptr_(that.ptr_), size_(that.size_) {}
 
-  bool operator<(const __array_const_reference that) const {
-    return 0 > memcmp(data(), that.data(), data_size());
+  bool operator<(__array_const_reference that) const {
+    const __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return this_ptr[i] < that_ptr[i];
+    }
+
+     return false;
   }
 
-  bool operator==(const __array_const_reference that) const {
-    return 0 == memcmp(data(), that.data(), data_size());
+  bool operator==(__array_const_reference that) const {
+    const __storage_pointer this_ptr = data(), that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return false;
+    }
+
+    return true;
   }
 
   bool operator==(const __array_reference<_Cp> that) const {
-    return 0 == memcmp(data(), that.data(), data_size());
+    __const_storage_pointer this_ptr = data();
+    const __storage_pointer that_ptr = that.data();
+
+    for (size_t i = 0; i < size(); ++i) {
+      if (this_ptr[i] != that_ptr[i])
+        return false;
+    }
+
+    return true;
   }
 
   bool operator!=(const __array_const_reference that) const {
