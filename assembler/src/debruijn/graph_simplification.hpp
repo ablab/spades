@@ -119,6 +119,8 @@ private:
 			size_t length_bound = LengthThresholdFinder::MaxTipLength(
 					read_length_, g_.k(), length_coeff);
 
+			DEBUG("Length bound" << length_bound);
+
 			RelaxMin(min_length_bound, length_bound);
 			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
 		} else if (next_token_ == "to_ec_lb") {
@@ -128,6 +130,8 @@ private:
 					<< length_coeff);
 			size_t length_bound = LengthThresholdFinder::MaxTipOriginatedECLength(
 					read_length_, g_.k(), length_coeff);
+
+			DEBUG("Length bound" << length_bound);
 
 			RelaxMin(min_length_bound, length_bound);
 			return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
