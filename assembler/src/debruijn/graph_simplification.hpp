@@ -396,10 +396,8 @@ bool RemoveRelativelyLowCoverageEdges(Graph &g,
 	INFO("SUBSTAGE == Removing realtively low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 
-	//todo fix temporary hardcode
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-			g.k(), /*cfg::get().simp.ec.max_ec_length_coefficient*/
-			rec_config.max_ec_length_coefficient);
+			g.k(), rec_config.max_ec_length_coefficient);
 	omnigraph::RelativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
 			max_length,
 			determined_coverage_threshold * rec_config.max_coverage_coeff,
@@ -555,10 +553,8 @@ template<class Graph>
 bool AllTopology(Graph &g,
 		boost::function<void(typename Graph::EdgeId)> removal_handler,
 		size_t iteration) {
-	bool res = false;
-	//todo enable
-//	bool res = TopologyClipTips(g, cfg::get().simp.ttc,
-//			*cfg::get().ds.RL, removal_handler);
+	bool res = TopologyClipTips(g, cfg::get().simp.ttc,
+			*cfg::get().ds.RL, removal_handler);
 	res |= TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
 			removal_handler);
 	if (cfg::get().additional_ec_removing) {
