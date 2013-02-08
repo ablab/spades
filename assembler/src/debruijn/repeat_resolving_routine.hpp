@@ -19,7 +19,6 @@
 #include "logger/logger.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation_routine.hpp"
-//#include "path_set_graph_constructor.hpp"
 #include "io/careful_filtering_reader_wrapper.hpp"
 #include "io/is_corrupting_wrapper.hpp"
 #include "resolved_pair_info.hpp"
@@ -400,9 +399,6 @@ string GeneratePostfix() {
 
 	s += "k";
 	s += ToString(cfg::get().K);
-	if (cfg::get().path_set_graph) {
-		s += "_path_set";
-	}
 	if (cfg::get().rr.mode == 2) {
 		s += "_mode2";
 	} else {
@@ -596,20 +592,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	//cfg::get().output_dir + subfolder + graph_name
 	//+ "_2_before.dot", "no_repeat_graph");
 
-	if (cfg::get().path_set_graph) {
-		VERIFY(false);
-//		INFO("testing path-set graphs");
-//		PathSetGraphConstructor<graph_pack> path_set_constructor(origin_gp,
-//				clustered_index, resolved_gp);
-//		path_set_constructor.Construct();
-//		typedef typename graph_pack::graph_t::EdgeId EdgeId;
-//		map<EdgeId, EdgeId> edge_labels;
-//		map<EdgeId, EdgeId> rmap(path_set_constructor.GetEdgeLabels());
-//		rmap.Copy(edge_labels);
-//		labels_after.FillLabels(edge_labels);
-//		INFO("testing ended");
-	} else {
-
 //    CleanIsolated(origin_gp);
 		ResolveRepeats(origin_gp.g, origin_gp.int_ids, clustered_index,
 				origin_gp.edge_pos, resolved_gp.g, resolved_gp.int_ids,
@@ -622,8 +604,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
 //		SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
 		//Paired info for resolved graph generated
-
-	}
 
 	if (cfg::get().output_nonfinal_contigs && output_contigs) {
 		OutputContigs(resolved_gp.g,
@@ -648,10 +628,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	{
 		PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 				resolved_gp.g);
-		if (cfg::get().path_set_graph == false) {
 			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
 					labels_after, resolved_cleared_graph_paired_info_before);
-		}
 	}
 
 	INFO("SUBSTAGE == Clearing resolved graph");
@@ -676,24 +654,20 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //		ClipTipsForResolver(resolved_gp.g);
 		ClipTips(resolved_gp.g, cfg::get().simp.tc, *cfg::get().ds.RL, /*max_coverage*/0.);
 
-		//if (cfg::get().path_set_graph == false) {
 		//PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 		//resolved_gp.g);
 		//ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
 		//labels_after, resolved_cleared_graph_paired_info_before);
-		//}
 
 //		INFO("Erroneous remove "<<i);
 //        BulgeRemoveWrap      (resolved_gp.g);
 //		FinalRemoveErroneousEdges(resolved_gp.g, edge_remover);
 
-		//if (cfg::get().path_set_graph == false) {
 		//PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 		//resolved_gp.g);
 
 		//ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
 		//labels_after, resolved_cleared_graph_paired_info_before);
-		//}
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
 //		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
 //
@@ -714,7 +688,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	DEBUG("Clearing resolved graph complete");
 
 	//Generating paired info for resolved graph
-	if (cfg::get().path_set_graph == false) {
 		PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
 				resolved_gp.g);
 
@@ -722,7 +695,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 				labels_after, resolved_cleared_graph_paired_info);
 		SaveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info,
 				graph_name + "_resolved_cleared", subfolder);
-	}
 	//Paired info for resolved graph generated
 
 	DEBUG("Output Contigs");
@@ -1203,8 +1175,7 @@ void resolve_repeats() {
 
 	}
 
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_combined
-			&& !cfg::get().path_set_graph) {
+	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_combined) {
 
 		INFO("Combined resolving started");
 
