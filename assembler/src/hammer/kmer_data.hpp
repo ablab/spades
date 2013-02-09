@@ -50,6 +50,9 @@ class KMerData {
     size_t sz = data_.size();
     os.write((char*)&sz, sizeof(sz));
     os.write((char*)&data_[0], sz*sizeof(data_[0]));
+    sz = push_back_buffer_.size();
+    os.write((char*)&sz, sizeof(sz));
+    os.write((char*)&push_back_buffer_[0], sz*sizeof(push_back_buffer_[0]));
     index_.serialize(os);
   }
 
@@ -59,6 +62,9 @@ class KMerData {
     is.read((char*)&sz, sizeof(sz));
     data_.resize(sz);
     is.read((char*)&data_[0], sz*sizeof(data_[0]));
+    is.read((char*)&sz, sizeof(sz));
+    push_back_buffer_.resize(sz);
+    is.read((char*)&push_back_buffer_[0], sz*sizeof(push_back_buffer_[0]));
     index_.deserialize(is);
   }
 
