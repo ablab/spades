@@ -87,11 +87,6 @@ public:
 
 		TRACE("Start " << g_.str(start));
 		TRACE("End " << g_.str(end));
-
-		//todo disable
-		if (start==end) {
-			return false;
-		}
 		if (removal_handler_) {
 			TRACE("Calling handler");
 			removal_handler_(e);

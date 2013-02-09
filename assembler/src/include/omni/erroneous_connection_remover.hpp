@@ -511,7 +511,6 @@ public:
 	}
 };
 
-//todo rename
 template<class Graph>
 class AdvancedTopologyChimericEdgeRemover: public ChimericEdgeRemovingAlgorithm<
 		Graph, LengthComparator<Graph>> {
