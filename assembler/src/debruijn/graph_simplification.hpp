@@ -416,7 +416,7 @@ bool TopologyRemoveErroneousEdges(Graph &g,
 	INFO("Removal of erroneous edges based on topology started");
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
 			g.k(), tec_config.max_ec_length_coefficient);
-	return omnigraph::AdvancedTopologyChimericEdgeRemover<Graph>(g, max_length,
+	return omnigraph::TopologyChimericEdgeRemover<Graph>(g, max_length,
 			tec_config.uniqueness_length, tec_config.plausibility_length,
 			removal_handler).Process();
 }

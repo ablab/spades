@@ -66,6 +66,9 @@ additional_ec_removing    true
 ; set it true to separate the clusters after de stage
 divide_clusters false
 
+;enables mismatch careful mode (primary changes some simplification settings)
+mismatch_careful    false
+
 ;if true simple mismatches are corrected
 correct_mismatches          true
 

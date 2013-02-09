@@ -40,9 +40,7 @@ enum working_stage {
 };
 
 enum simplification_mode {
-	sm_normal,
-	sm_topology,
-	sm_max_flow,
+	sm_normal, sm_topology, sm_max_flow,
 };
 
 enum estimation_mode {
@@ -119,12 +117,15 @@ struct debruijn_config {
 
 	static const stage_name_id_mapping FillStageInfo() {
 		stage_name_id_mapping::value_type info[] = {
-      stage_name_id_mapping::value_type("construction", ws_construction),
-      stage_name_id_mapping::value_type("simplification", ws_simplification),
-      stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count),
-      stage_name_id_mapping::value_type("distance_estimation", ws_distance_estimation),
-      stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving)
-    };
+				stage_name_id_mapping::value_type("construction",
+						ws_construction), stage_name_id_mapping::value_type(
+						"simplification", ws_simplification),
+				stage_name_id_mapping::value_type("late_pair_info_count",
+						ws_late_pair_info_count),
+				stage_name_id_mapping::value_type("distance_estimation",
+						ws_distance_estimation),
+				stage_name_id_mapping::value_type("repeats_resolving",
+						ws_repeats_resolving) };
 
 		return stage_name_id_mapping(info, utils::array_end(info));
 	}
@@ -459,7 +460,8 @@ public:
 	bool paired_mode;
 	bool additional_ec_removing;
 	bool divide_clusters;
-	;
+
+	bool mismatch_careful;
 	bool correct_mismatches;
 	bool paired_info_statistics;
 	bool paired_info_scaffolder;
@@ -511,28 +513,36 @@ inline void load(debruijn_config::simplification::tip_clipper& tc,
 inline void load(working_stage& entry_point,
 		boost::property_tree::ptree const& pt, std::string const& key,
 		bool complete) {
-	std::string ep = pt.get<std::string>(key);
-	entry_point = debruijn_config::working_stage_id(ep);
+	if (complete || pt.find(key) != pt.not_found()) {
+		std::string ep = pt.get<std::string>(key);
+		entry_point = debruijn_config::working_stage_id(ep);
+	}
 }
 
 inline void load(resolving_mode& rm, boost::property_tree::ptree const& pt,
 		std::string const& key, bool complete) {
-	std::string ep = pt.get<std::string>(key);
-	rm = debruijn_config::resolving_mode_id(ep);
+	if (complete || pt.find(key) != pt.not_found()) {
+		std::string ep = pt.get<std::string>(key);
+		rm = debruijn_config::resolving_mode_id(ep);
+	}
 }
 
 inline void load(simplification_mode& simp_mode,
 		boost::property_tree::ptree const& pt, std::string const& key,
 		bool complete) {
-	std::string ep = pt.get<std::string>(key);
-	simp_mode = debruijn_config::simpl_mode_id(ep);
+	if (complete || pt.find(key) != pt.not_found()) {
+		std::string ep = pt.get<std::string>(key);
+		simp_mode = debruijn_config::simpl_mode_id(ep);
+	}
 }
 
 inline void load(estimation_mode& est_mode,
 		boost::property_tree::ptree const& pt, std::string const& key,
 		bool complete) {
-	std::string ep = pt.get<std::string>(key);
-	est_mode = debruijn_config::estimation_mode_id(ep);
+	if (complete || pt.find(key) != pt.not_found()) {
+		std::string ep = pt.get<std::string>(key);
+		est_mode = debruijn_config::estimation_mode_id(ep);
+	}
 }
 
 inline void load(debruijn_config::simplification::bulge_remover& br,
@@ -556,7 +566,8 @@ inline void load(debruijn_config::simplification::topology_tip_clipper& ttc,
 	load(ttc.uniqueness_length, pt, "uniqueness_length");
 }
 
-inline void load(debruijn_config::simplification::relative_coverage_ec_remover& rec,
+inline void load(
+		debruijn_config::simplification::relative_coverage_ec_remover& rec,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 	load(rec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
@@ -603,7 +614,7 @@ inline void load(
 }
 
 inline void load(debruijn_config::simplification::tr_based_ec_remover &trec,
-		boost::property_tree::ptree const &pt, bool complaete) {
+		boost::property_tree::ptree const &pt, bool complete) {
 	using config_common::load;
 	load(trec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
 	load(trec.unreliable_coverage, pt, "unreliable_coverage");
@@ -778,18 +789,18 @@ inline void load(debruijn_config::simplification& simp,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(simp.simpl_mode, pt, "simpl_mode");
+	load(simp.simpl_mode, pt, "simpl_mode", complete);
 
-	load(simp.tc, pt, "tc"); // tip clipper:
-	load(simp.ttc, pt, "ttc"); // topology tip clipper:
-	load(simp.br, pt, "br"); // bulge remover:
-	load(simp.ec, pt, "ec"); // erroneous connections remover:
-	load(simp.rec, pt, "rec"); // relative coverage erroneous connections remover:
-	load(simp.tec, pt, "tec"); // topology aware erroneous connections remover:
-	load(simp.trec, pt, "trec"); // topology and reliability based erroneous connections remover:
-	load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
-	load(simp.ier, pt, "ier"); // isolated edges remover
-	load(simp.cbr, pt, "cbr"); // complex bulge remover
+	load(simp.tc, pt, "tc", complete); // tip clipper:
+	load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
+	load(simp.br, pt, "br", complete); // bulge remover:
+	load(simp.ec, pt, "ec", complete); // erroneous connections remover:
+	load(simp.rec, pt, "rec", complete); // relative coverage erroneous connections remover:
+	load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
+	load(simp.trec, pt, "trec", complete); // topology and reliability based erroneous connections remover:
+	load(simp.mfec, pt, "mfec", complete); // max flow erroneous connections remover:
+	load(simp.ier, pt, "ier", complete); // isolated edges remover
+	load(simp.cbr, pt, "cbr", complete); // complex bulge remover
 }
 
 inline void load(debruijn_config::info_printer& printer,
@@ -903,6 +914,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.paired_mode, pt, "paired_mode");
 	load(cfg.additional_ec_removing, pt, "additional_ec_removing");
 	load(cfg.divide_clusters, pt, "divide_clusters");
+	load(cfg.mismatch_careful, pt, "mismatch_careful");
 	load(cfg.correct_mismatches, pt, "correct_mismatches");
 	load(cfg.paired_info_statistics, pt, "paired_info_statistics");
 	load(cfg.paired_info_scaffolder, pt, "paired_info_scaffolder");
@@ -964,8 +976,15 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.uncorrected_reads, pt, "uncorrected_reads");
 	load(cfg.mismatch_ratio, pt, "mismatch_ratio");
 
-	load(cfg.simp, pt,
-			(cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"));
+	load(cfg.simp, pt, "default");
+
+	if (cfg.ds.single_cell) {
+		load(cfg.simp, pt, "sc", false);
+	}
+
+	if (cfg.mismatch_careful) {
+		load(cfg.simp, pt, "careful", false);
+	}
 
 	cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
 

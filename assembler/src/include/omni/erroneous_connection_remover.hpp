@@ -512,7 +512,7 @@ public:
 };
 
 template<class Graph>
-class AdvancedTopologyChimericEdgeRemover: public ChimericEdgeRemovingAlgorithm<
+class TopologyChimericEdgeRemover: public ChimericEdgeRemovingAlgorithm<
 		Graph, LengthComparator<Graph>> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
@@ -520,7 +520,7 @@ private:
 	typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
 
 public:
-	AdvancedTopologyChimericEdgeRemover(Graph& g, size_t max_length,
+	TopologyChimericEdgeRemover(Graph& g, size_t max_length,
 			size_t uniqueness_length, size_t plausibility_length,
 			boost::function<void(EdgeId)> removal_handler) :
 			base(g,
