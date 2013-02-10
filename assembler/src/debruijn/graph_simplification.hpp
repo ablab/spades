@@ -374,7 +374,7 @@ void RemoveLowCoverageEdges(Graph &g,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t read_length = 0, double detected_coverage_threshold = 0.,
 		size_t iteration_count = 1, size_t i = 0) {
-	INFO("SUBSTAGE == Removing low coverage edges");
+	INFO("SUBSTAGE == Removing short low covered erroneous connections");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 	ConditionParser<Graph> parser(g, ec_config.condition, read_length,
 			detected_coverage_threshold, iteration_count, i);
@@ -393,7 +393,7 @@ bool RemoveRelativelyLowCoverageEdges(Graph &g,
 		const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
 		boost::function<void(typename Graph::EdgeId)> removal_handler,
 		double determined_coverage_threshold) {
-	INFO("SUBSTAGE == Removing realtively low coverage edges");
+  INFO("SUBSTAGE == Removing short relatively low covered erroneous connections");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
 
 	size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
