@@ -508,10 +508,8 @@ template<class Graph>
 bool AllTopology(Graph &g,
 		boost::function<void(typename Graph::EdgeId)> removal_handler,
 		size_t iteration) {
-	bool res = false;
-	//todo enable later
-	/*TopologyClipTips(g, cfg::get().simp.ttc,
-			*cfg::get().ds.RL, removal_handler);*/
+	bool res = TopologyClipTips(g, cfg::get().simp.ttc,
+			*cfg::get().ds.RL, removal_handler);
 	res |= TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
 			removal_handler);
 	if (cfg::get().additional_ec_removing) {

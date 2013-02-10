@@ -318,7 +318,7 @@ public:
 			size_t uniqueness_length, size_t plausibility_length,
 			boost::function<void(EdgeId)> removal_handler = 0) :
 			base(graph, max_tip_length,
-					TopologyTipCondition<Graph>(graph, uniqueness_length,
+					make_shared<TopologyTipCondition<Graph>>(graph, uniqueness_length,
 							plausibility_length), removal_handler) {
 	}
 
