@@ -37,8 +37,8 @@ default
 	; relative coverage erroneous connections remover:
 	rec
 	{
-        max_ec_length_coefficient   29
-        max_coverage_coeff  10.
+        max_coverage_coeff  0.
+        max_ec_length_coefficient   0
         coverage_gap    50.
 	}
 	
@@ -134,7 +134,7 @@ sc
 	rec
 	{
         max_ec_length_coefficient   29
-        max_coverage_coeff  10.
+        max_coverage_coeff  100000.
         coverage_gap    50.
 	}
 	
