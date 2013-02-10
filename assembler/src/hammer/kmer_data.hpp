@@ -19,8 +19,7 @@ class KMerData {
  public:
   KMerData() : index_(hammer::K) {}
 
-  size_t size() const { return data_.size(); }
-  size_t capacity() const { return data_.capacity(); }
+  size_t size() const { return data_.size() + push_back_buffer_.size(); }
   void clear() {
     data_.clear();
     push_back_buffer_.clear();
