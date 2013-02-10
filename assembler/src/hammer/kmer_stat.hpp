@@ -11,14 +11,17 @@
 
 #include "sequence/seq.hpp"
 
-#include <stdint.h>
+#include <functional>
 #include <vector>
 #include <iostream>
 #include <iomanip>
 #include <map>
 #include <string>
+
+#include <sched.h>
 #include <string.h>
-#include <functional>
+#include <stdint.h>
+
 
 namespace hammer {
 const uint32_t K = 21;
@@ -108,11 +111,11 @@ struct KMerStat {
     MarkedForGoodIter  = 5
   } KMerStatus;
 
-  KMerStat(uint32_t cnt, hammer::KMer k, float kquality, const unsigned char *quality) : lock_data(0), kmer_(k), totalQual(kquality), count(cnt), qual(quality) {
-    __sync_lock_release(&lock_data);
+  KMerStat(uint32_t cnt, hammer::KMer k, float kquality, const unsigned char *quality) : kmer_(k), totalQual(kquality), count(cnt), qual(quality), lock_(0) {
+    __sync_lock_release(&lock_);
   }
-  KMerStat() : lock_data(0), totalQual(1.0), count(0), qual() {
-    __sync_lock_release(&lock_data);
+  KMerStat() : totalQual(1.0), count(0), qual(), lock_(0) {
+    __sync_lock_release(&lock_);
   }
 
   union {
@@ -122,20 +125,20 @@ struct KMerStat {
       unsigned res    : 13;
     };
     uint64_t raw_data;
-    uint64_t lock_data;
   };
 
   hammer::KMer kmer_;
   float totalQual;
   uint32_t count;
   QualBitSet qual;
+  uint8_t lock_; // FIXME: Turn into single bit of status field.
 
   void lock() {
-    while (__sync_lock_test_and_set(&lock_data, 1) == 1)
-        ;
+    while (__sync_lock_test_and_set(&lock_, 1) == 1)
+      sched_yield();
   }
   void unlock() {
-    __sync_lock_release(&lock_data);
+    __sync_lock_release(&lock_);
   }
 
   bool isGood() const { return status >= Good; }

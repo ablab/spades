@@ -48,11 +48,12 @@ bool Expander::operator()(const Read &r) {
     KMerStat &kmer_data = data_[kmer_indices[j]];
     if (!kmer_data.isGoodForIterative() &&
         !kmer_data.isMarkedGoodForIterative()) {
-#      pragma omp critical
-      {
-        changed_ += 1;
-        kmer_data.makeGoodForIterative();
-      }
+#     pragma omp atomic
+      changed_ += 1;
+
+      kmer_data.lock();
+      kmer_data.makeGoodForIterative();
+      kmer_data.unlock();
     }
   }
     
