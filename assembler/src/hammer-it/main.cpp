@@ -11,8 +11,9 @@
 #include "hamcluster.hpp"
 #include "valid_hkmer_generator.hpp"
 #include "err_helper_table.hpp"
+#include "consensus.hpp"
+#include "read_corrector.hpp"
 
-#include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 
 void create_console_logger() {
@@ -30,23 +31,8 @@ struct UfCmp {
   }
 };
 
-hammer::HomopolymerRun cns(boost::numeric::ublas::matrix<double> scores) {
-  double inf = -std::numeric_limits<double>::infinity();
 
-  unsigned nucl = 0, len = 1; double max = inf;
-  for (unsigned j = 0; j < 4; ++j)
-    for (unsigned k = 1; k < 64; ++k)
-      if (scores(j, k) > max) {
-        nucl = j;
-        len = k;
-        max = scores(j, k);
-      }
-
-  return hammer::HomopolymerRun(nucl, len);
-}
-
-
-hammer::HKMer center(const KMerData &data, std::vector<unsigned> kmers) {
+hammer::HKMer center(const KMerData &data, const std::vector<unsigned>& kmers) {
   hammer::HKMer res;
   namespace numeric = boost::numeric::ublas;
 
@@ -65,51 +51,11 @@ hammer::HKMer center(const KMerData &data, std::vector<unsigned> kmers) {
 #endif
     }
 
-    res[i] = cns(scores);
+    res[i] = hammer::iontorrent::consensus(scores);
   }
 
   return res;
 }
-
-class SingleReadCorrector {
-  const KMerData &kmer_data_;
-
- public:
-  SingleReadCorrector(const KMerData &kmer_data) :
-      kmer_data_(kmer_data) {}
-
-  boost::optional<io::SingleRead> operator()(const io::SingleRead &r) {
-    namespace numeric = boost::numeric::ublas;
-
-    std::vector<numeric::matrix<double>> scores(r.size(), numeric::matrix<double>(4, 64, 0));
-
-    ValidHKMerGenerator<hammer::K> gen(r);
-    size_t pos = 0;
-    while (gen.HasMore()) {
-      hammer::HKMer seq = gen.kmer();
-      hammer::KMerStat k = kmer_data_[kmer_data_[seq].changeto];
-      hammer::HKMer center = k.kmer;
-
-      for (size_t i = 0; i < hammer::K; ++i)
-        scores[pos + i](center[i].nucl, center[i].len) += k.count * (1 - k.qual);
-
-      gen.Next();
-      pos += 1;
-    }
-
-    if (pos == 0)
-      return boost::optional<io::SingleRead>();
-
-
-    std::string res;
-    for (size_t i = 0; i < pos + hammer::K; ++i) {
-      hammer::HomopolymerRun run = cns(scores[i]);
-      res += run.str();
-    }
-
-    return io::SingleRead(r.name(), res);
-  }
-};
 
 int main(void) {
   srand(42);
@@ -132,7 +78,7 @@ int main(void) {
   INFO("Assigning centers");
   size_t nonread = 0;
   for (size_t i = 0; i < classes.size(); ++i) {
-    auto cluster = classes[i];
+    auto& cluster = classes[i];
     hammer::HKMer c = center(kmer_data, cluster);
     size_t idx = kmer_data.seq_idx(c);
     if (kmer_data[idx].kmer != c) {
@@ -147,7 +93,11 @@ int main(void) {
   INFO("Correcting reads.");
   io::Reader irs("test.fastq", io::PhredOffset);
   io::ofastastream ors("test.fasta");
-  hammer::ReadProcessor(1).Run(irs, SingleReadCorrector(kmer_data), ors);
+
+  using namespace hammer::correction;
+  EndsTrimmer trimmer(90, 90);
+  SingleReadCorrector<EndsTrimmer> read_corrector(kmer_data, trimmer);
+  hammer::ReadProcessor(1).Run(irs, read_corrector, ors);
 
 #if 0
   std::sort(classes.begin(), classes.end(),  UfCmp());
