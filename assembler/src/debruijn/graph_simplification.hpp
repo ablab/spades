@@ -512,14 +512,12 @@ bool AllTopology(Graph &g,
 			*cfg::get().ds.RL, removal_handler);
 	res |= TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
 			removal_handler);
-	if (cfg::get().additional_ec_removing) {
-		res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
-				removal_handler);
-		res |= RemoveThorns(g, cfg::get().simp.trec, removal_handler);
-		res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
-				removal_handler);
-		res |= RemoveComplexBulges(g, cfg::get().simp.cbr, iteration);
-	}
+	res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
+			removal_handler);
+	res |= RemoveThorns(g, cfg::get().simp.trec, removal_handler);
+	res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
+			removal_handler);
+	res |= RemoveComplexBulges(g, cfg::get().simp.cbr, iteration);
 	return res;
 }
 

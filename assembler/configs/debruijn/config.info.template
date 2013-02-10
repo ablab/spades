@@ -60,9 +60,6 @@ use_additional_contigs false
 ; use unipaths as additional contigs instead of just graph edges
 use_unipaths false
 
-;if true long ec are removed based on topology and coverage
-additional_ec_removing    true
-
 ; set it true to separate the clusters after de stage
 divide_clusters false
 

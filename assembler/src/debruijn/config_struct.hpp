@@ -912,7 +912,6 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.additional_contigs, pt, "additional_contigs");
 
 	load(cfg.paired_mode, pt, "paired_mode");
-	load(cfg.additional_ec_removing, pt, "additional_ec_removing");
 	load(cfg.divide_clusters, pt, "divide_clusters");
 	load(cfg.mismatch_careful, pt, "mismatch_careful");
 	load(cfg.correct_mismatches, pt, "correct_mismatches");
