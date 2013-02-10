@@ -168,44 +168,59 @@ static std::vector<double> EStep(const boost::numeric::ublas::vector<double> &x,
 
 // Estimate the coverage mean by finding the max past the
 // first valley.
-std::pair<size_t, size_t> KMerCoverageModel::EstimateCoverage(const std::vector<size_t> &cov) const {
-  size_t Valley = cov[0];
+size_t KMerCoverageModel::EstimateValley() const {
+  // Smooth the histogram
+  std::vector<size_t> scov;
+  math::Smooth3RS3R(scov, cov_);
+
+  size_t Valley = scov[0];
 
   // Start finding the valley
   size_t Idx = 1;
-  while (cov[Idx] < Valley && Idx < cov.size()) {
-    Valley = cov[Idx];
+  while (scov[Idx] < Valley && Idx < scov.size()) {
+    Valley = scov[Idx];
     Idx += 1;
   }
   Idx -= 1;
 
   INFO("Kmer coverage valley at: " << Idx);
 
-  // Return max over the rest
-  size_t MaxHist = cov[Idx + 1], MaxCov = Idx + 1;
-  for (size_t i = Idx + 1; i < cov.size(); ++i) {
-    if (cov[i] > MaxHist) {
-      MaxHist = cov[i];
-      MaxCov = i;
-    }
-  }
-
-  INFO("Estimated coverage: " << MaxCov);
-
-  return std::make_pair(Idx, MaxCov);
+  return Idx;
 }
 
 void KMerCoverageModel::Fit() {
   VERIFY_MSG(cov_.size() > 10, "Invalid kmer coverage histogram");
-  // Smooth the histogram
-  std::vector<size_t> scov;
-  math::Smooth3RS3R(scov, cov_);
 
-  // Find the maximal and minimal coverage points using smoothed histogram.
-  auto CovData = EstimateCoverage(scov);
-  MaxCov_ = CovData.second, Valley_ = CovData.first;
+  // Find the minimal coverage point using smoothed histogram.
+  Valley_ = EstimateValley();
 
-  if (abs(MaxCov_ - Valley_) < 3)
+  // First estimate of coverage is the first maximum after the valley.
+  MaxCov_ = Valley_ + 1;
+  size_t MaxHist = cov_[MaxCov_];
+  for (size_t i = Valley_ + 1; i < cov_.size(); ++i) {
+    if (cov_[i] > MaxHist) {
+      MaxHist = cov_[i];
+      MaxCov_ = i;
+    }
+  }
+
+  // Refine the estimate via median
+  size_t AfterValley = 0;
+  for (size_t i = Valley_ + 1; i < cov_.size(); ++i)
+    AfterValley += cov_[i];
+
+  size_t ccov = 0;
+  for (size_t i = Valley_ + 1; i < cov_.size(); ++i) {
+    if (ccov > AfterValley / 2) {
+      MaxCov_ = std::max(i, MaxCov_);
+      break;
+    }
+    ccov += cov_[i];
+  }
+
+  INFO("Estimated coverage: " << MaxCov_);
+
+  if (abs(cov_[Valley_] - cov_[MaxCov_] < 3))
     WARN("Too much erroneous kmers, the estimates might be unreliable");
 
   // Estimate error probability as ratio of kmers before the valley.

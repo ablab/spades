@@ -26,7 +26,7 @@ class KMerCoverageModel {
   size_t GetGenomeSize() const { return GenomeSize_; }
 
  private:
-  std::pair<size_t, size_t> EstimateCoverage(const std::vector<size_t> &cov) const;
+  size_t EstimateValley() const;
 };
 
 };
