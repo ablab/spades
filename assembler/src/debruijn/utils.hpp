@@ -104,7 +104,7 @@ class OldEtalonPairedInfoCounter {
 	}
 
 	void ProcessSequence(const Sequence& sequence,
-      omnigraph::PairedInfoIndexT<Graph>& paired_info) 
+      omnigraph::PairedInfoIndexT<Graph>& paired_info)
   {
 		SimpleSequenceMapper<Graph> sequence_mapper(g_, index_, k_ + 1);
 		Path<EdgeId> path = sequence_mapper.MapSequence(sequence);
@@ -200,7 +200,7 @@ class EtalonPairedInfoCounter {
     index.AddPairInfo(e1, e2, d, 1000., 0.);
 	}
 
-  void ProcessSequence(const Sequence& sequence, PairedInfoIndexT<Graph>& index) 
+  void ProcessSequence(const Sequence& sequence, PairedInfoIndexT<Graph>& index)
   {
 		int mod_gap = (gap_ + (int) k_ > (int) delta_ ) ? gap_ - (int) delta_ :int(0) -k_;
 		runtime_k::RtSeq left(k_ +1, sequence);
@@ -221,7 +221,7 @@ class EtalonPairedInfoCounter {
 			for (;
 					right_idx + k_ + 1 <= left_idx + insert_size_ + delta_
 							&& right_idx + k_ + 1 <= sequence.size();
-          ++right_idx) 
+          ++right_idx)
       {
 				right <<= sequence[right_idx + k_];
 				runtime_k::RtSeq right_upd = kmer_mapper_.Substitute(right);
@@ -250,7 +250,7 @@ public:
 //		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
-  void FillEtalonPairedInfo(const Sequence& genome, omnigraph::PairedInfoIndexT<Graph>& paired_info) 
+  void FillEtalonPairedInfo(const Sequence& genome, omnigraph::PairedInfoIndexT<Graph>& paired_info)
   {
     ProcessSequence(genome, paired_info);
     ProcessSequence(!genome, paired_info);
@@ -344,7 +344,7 @@ private:
 						- mapping_edge_2.second.mapped_range.end_pos;
 
         paired_index.AddPairInfo(mapping_edge_1.first,
-                                 mapping_edge_2.first, 
+                                 mapping_edge_2.first,
                                  (double) edge_distance, weight, 0.);
 			}
 		}
@@ -415,7 +415,7 @@ private:
             DEBUG("Merging " << omp_get_thread_num());
             paired_index.AddAll(*(buffer_pi[i]));
             DEBUG("Thread number " << omp_get_thread_num()
-               << " is going to increase its limit by " << coeff 
+               << " is going to increase its limit by " << coeff
                << " times, current limit is " << limit);
           }
           buffer_pi[i]->Clear();
@@ -444,100 +444,6 @@ private:
 	WeightF weight_f_;
 
 	DECL_LOGGER("LatePairedIndexFiller");
-};
-
-/**
- * This class finds how certain _paired_ read is mapped to genome. As it is now it is hoped to work correctly only if read
- * is mapped to graph ideally and in unique way.
- */
-template<class Graph>
-class TemplateReadMapper {
-public:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef EdgeIndex<Graph> Index;
-private:
-	SimpleSequenceMapper<Graph> read_seq_mapper;
-	io::IReader<io::SingleRead>& stream_;
-	size_t k_;
-public:
-	/**
-	 * Creates TemplateReadMapper for given graph. Also requires index_ which should be synchronized
-	 * with graph.
-	 * @param g graph sequences should be mapped to
-	 * @param index index syncronized with graph
-	 */
-	TemplateReadMapper(const Graph& g, const Index& index, io::IReader<io::SingleRead>& stream, size_t k) :
-			read_seq_mapper(g, index, k), stream_(stream), k_(k) {
-		stream_.reset();
-	}
-
-	/*	ReadThreaderResult<k + 1, Graph> ThreadNext() {
-	 if (!stream_.eof()) {
-	 io::PairedRead p_r;
-	 stream_ >> p_r;
-	 Sequence read1 = p_r.first().sequence();
-	 Sequence read2 = p_r.second().sequence();
-	 Path<EdgeId> aligned_read[2];
-	 aligned_read[0] = read_seq_mapper.MapSequence(read1);
-	 aligned_read[1] = read_seq_mapper.MapSequence(read2);
-	 size_t insert_size = p_r.insert_size();
-	 // TODO bug here with insert_size/distance
-	 int current_distance1 = insert_size + aligned_read[0].start_pos() - aligned_read[1].start_pos();
-	 return ReadThreaderResult<k + 1, Graph> (aligned_read[0],
-	 aligned_read[1], current_distance1);
-	 }
-	 //		else return NULL;
-	 }
-	 */
-};
-
-template<class Graph>
-class SingleReadMapper {
-public:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef EdgeIndex<Graph> Index;
-private:
-	SimpleSequenceMapper<Graph> read_seq_mapper;
-	const Graph& g_;
-	const Index& index_;
-	size_t k_;
-public:
-	/**
-	 * Creates SingleReadMapper for given graph. Also requires index_ which should be synchronized
-	 * with graph.
-	 * @param g graph sequences should be mapped to
-	 * @param index index syncronized with graph
-	 */
-	SingleReadMapper(const Graph& g, const Index& index, size_t k) :
-			read_seq_mapper(g, index, k), g_(g), index_(index), k_(k) {
-	}
-
-	vector<EdgeId> GetContainingEdges(io::SingleRead& p_r) {
-		vector<EdgeId> res;
-
-		Sequence read = p_r.sequence();
-		if (k_ + 1 <= read.size()) {
-			runtime_k::RtSeq kmer = read.start<runtime_k::RtSeq>(k_ + 1);
-			bool found;
-			for (size_t i = k_ + 1; i <= read.size(); ++i) {
-				if (index_.contains(kmer)) {
-					pair<EdgeId, size_t> position = index_.get(kmer);
-					found = false;
-					for (size_t j = 0; j < res.size(); j++)
-						if (res[j] == position.first) {
-							found = true;
-							break;
-						}
-					if (!found)
-						res.push_back(position.first);
-				}
-				if (i != read.size())
-					kmer <<= read[i];
-			}
-		}
-
-		return res;
-	}
 };
 
 template<class Graph>
@@ -682,8 +588,8 @@ public:
 		}else{
             black_removed_++;
         }
-        if ((total % (1<<10)) != 0)   
-            TRACE("Removed still " << black_removed_ << " " << total); 
+        if ((total % (1<<10)) != 0)
+            TRACE("Removed still " << black_removed_ << " " << total);
 	}
 
 private:
@@ -844,7 +750,7 @@ public:
             map<EdgeId, string> empty_coloring;
             EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
                     250);
-            
+
             WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
                     , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
                     , empty_coloring, labeler_);
@@ -870,16 +776,16 @@ public:
 			, const GraphLabeler<Graph>& labeler
 			, const string& output_folder
             , boost::function<double (EdgeId)> quality_f = 0) :
-			g_(g), 
+			g_(g),
 			labeler_(labeler), output_folder_(output_folder),
             quality_f_(quality_f){
 	}
 
 	void HandleDelete(EdgeId edge) {
             TRACE("Deleting edge " << g_.str(edge));
-            if (quality_f_ && math::gr(quality_f_(edge), 0.)) 
+            if (quality_f_ && math::gr(quality_f_(edge), 0.))
                 INFO("EdgeLocalityPrintRH handling the edge with positive quality : " << quality_f_(edge) << " " << g_.str(edge));
-        
+
             string folder = output_folder_ + "edges_deleted/";
             path::make_dir(folder);
             //todo magic constant
@@ -957,11 +863,11 @@ public:
     }
 };
 
-template<class graph_pack, class PairedRead, class ConfigType> 
+template<class graph_pack, class PairedRead, class ConfigType>
 bool RefineInsertSize(const graph_pack& gp,
                       io::ReadStreamVector<io::IReader<PairedRead> >& streams,
                       ConfigType& config,
-                      size_t edge_length_threshold) 
+                      size_t edge_length_threshold)
 {
     double mean;
     double delta;
@@ -995,24 +901,24 @@ bool RefineInsertSize(const graph_pack& gp,
 }
 
 double UnityFunction(int x) {
-    return 1.;   
+    return 1.;
 }
 
 //postprocessing, checking that clusters do not intersect
 template<class Graph>
-void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index) 
+void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index)
 {
   typedef set<Point> Histogram;
   for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
     EdgeId first_edge = iter.first();
     EdgeId second_edge = iter.second();
-    const Histogram& infos = *iter; 
+    const Histogram& infos = *iter;
     auto prev_it = infos.begin();
     auto it = prev_it;
     ++it;
     for (auto end_it = infos.end(); it != end_it; ++it) {
       if (math::le(abs(it->d - prev_it->d), it->var + prev_it->var)) {
-        WARN("Clusters intersect, edges -- " << graph.int_id(first_edge) 
+        WARN("Clusters intersect, edges -- " << graph.int_id(first_edge)
             << " " << graph.int_id(second_edge));
         INFO("Trying to handle this case");
         // seeking the symmetric pair info to [i - 1]
@@ -1024,7 +930,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
             success = true;
             double center = 0.;
             double var = inner_it->d + inner_it->var;
-            for (auto inner_it_2 = prev_it; inner_it_2 != inner_it; ++inner_it_2) 
+            for (auto inner_it_2 = prev_it; inner_it_2 != inner_it; ++inner_it_2)
             {
               TRACE("Removing pair info " << *inner_it_2);
               clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it_2);
