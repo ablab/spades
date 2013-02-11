@@ -413,6 +413,7 @@ def main():
         #corrector
         mismatch_corrector = False
         bwa = os.path.join(bin_home, "bwa-spades") # it is hardcoded now instead of option
+        careful = False
 
         for opt, arg in options:
             if opt == '-o':
@@ -473,8 +474,12 @@ def main():
                 rectangles = True
 
             #corrector
-            elif opt == "--mismatch-correction" or opt == "--careful":
+            elif opt == "--mismatch-correction":
                 mismatch_corrector = True
+
+            elif opt == "--careful":
+                mismatch_corrector = True
+                careful = True
             
             elif opt == '-h' or opt == "--help":
                 usage()
@@ -586,6 +591,7 @@ def main():
                     cfg["assembly"].__dict__["iterative_K"] = k_mers
                 if spades_heap_check:
                     cfg["assembly"].__dict__["heap_check"] = spades_heap_check
+                cfg["assembly"].__dict__["careful"] = careful
                 cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files                
 
             #corrector can work only if contigs are exists (not only error correction)

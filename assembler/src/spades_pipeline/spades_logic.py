@@ -39,6 +39,8 @@ def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
     subst_dict["correct_mismatches"] = bool_to_str(last_one)
     if "resolving_mode" in cfg.__dict__:
         subst_dict["resolving_mode"] = cfg.resolving_mode
+    if "careful" in cfg.__dict__:
+        subst_dict["mismatch_careful"] = bool_to_str(cfg.careful)
 
     process_cfg.substitute_params(filename, subst_dict, log)
 
