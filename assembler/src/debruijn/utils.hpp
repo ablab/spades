@@ -44,143 +44,6 @@ using omnigraph::MappingRange;
 using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
 
-template<typename Graph>
-class ReadThreaderResult {
-	typedef typename Graph::EdgeId EdgeId;
-
-	Path<EdgeId> left_read_, right_read_;
-	int gap_;
-public:
-	ReadThreaderResult(Path<EdgeId> left_read, Path<EdgeId> right_read, int gap) :
-			gap_(gap), left_read_(left_read), right_read_(right_read) {
-	}
-};
-
-template<typename Graph>
-class SingleReadThreaderResult {
-	typedef typename Graph::EdgeId EdgeId;
-public:
-	EdgeId edge_;
-	int read_position_;
-	int edge_position_;
-	SingleReadThreaderResult(EdgeId edge, int read_position, int edge_position) :
-			edge_(edge), read_position_(read_position), edge_position_(
-					edge_position) {
-	}
-};
-
-template<typename Graph>
-class ReadMappingResult {
-public:
-	Sequence read_;
-	vector<SingleReadThreaderResult<Graph> > res_;
-	ReadMappingResult(Sequence read,
-			vector<SingleReadThreaderResult<Graph> > res) :
-			read_(read), res_(res) {
-
-	}
-	ReadMappingResult() {
-
-	}
-};
-
-template<class Graph>
-class OldEtalonPairedInfoCounter {
-	typedef typename Graph::EdgeId EdgeId;
-
-	const Graph& g_;
-	const EdgeIndex<Graph>& index_;
-	size_t k_;
-
-	size_t insert_size_;
-	size_t read_length_;
-	size_t gap_;
-	size_t delta_;
-
-  void AddEtalonInfo(omnigraph::PairedInfoIndexT<Graph>& paired_info,
-			EdgeId e1, EdgeId e2, double d) {
-		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0, 0.);
-		paired_info.AddPairInfo(pair_info);
-	}
-
-	void ProcessSequence(const Sequence& sequence,
-      omnigraph::PairedInfoIndexT<Graph>& paired_info)
-  {
-		SimpleSequenceMapper<Graph> sequence_mapper(g_, index_, k_ + 1);
-		Path<EdgeId> path = sequence_mapper.MapSequence(sequence);
-
-		for (size_t i = 0; i < path.size(); ++i) {
-			EdgeId e = path[i];
-			if (g_.length(e) + delta_ > gap_ + k_ + 1) {
-				AddEtalonInfo(paired_info, e, e, 0);
-			}
-			size_t j = i + 1;
-			size_t length = 0;
-
-			while (j < path.size()
-					&& length
-							<= omnigraph::PairInfoPathLengthUpperBound(k_,
-									insert_size_, delta_)) {
-				if (length
-						>= omnigraph::PairInfoPathLengthLowerBound(k_,
-								g_.length(e), g_.length(path[j]), gap_, delta_)) {
-					AddEtalonInfo(paired_info, e, path[j],
-							g_.length(e) + length);
-				}
-				length += g_.length(path[j++]);
-			}
-		}
-
-	}
-
-	/* DEBUG method
-   void CheckPairInfo(const Sequence& genome, omnigraph::PairedInfoIndexT<Graph>& paired_info) {
-	 SimpleSequenceMapper<k + 1, Graph> mapper(g_, index_);
-	 Path<EdgeId> path = mapper.MapSequence(genome);
-	 vector<EdgeId> sequence = path.sequence();
-	 EdgeId prev = 0;
-	 for (auto it = sequence.begin(); it != sequence.end(); ++it) {
-	 if (prev != 0) {
-	 vector<PairInfo<EdgeId> > infos = paired_info.GetEdgePairInfo(prev, *it);
-	 bool imperfect_flag = false;
-	 bool perfect_flag = false;
-	 for (auto info_it = infos.begin(); info_it != infos.end(); info_it++) {
-	 if (abs((*info_it).d - g_.length(prev)) < 2) {
-	 imperfect_flag = true;
-	 }
-	 if (math::eq((*info_it).d, 0. + g_.length(prev))) {
-	 perfect_flag = true;
-	 break;
-	 }
-	 }
-	 if (!perfect_flag && imperfect_flag) {
-	 cerr<< "AAAAAAAAAAAAAAA" <<endl;
-	 }
-	 }
-	 prev = *it;
-	 }
-	 }*/
-
-public:
-
-	OldEtalonPairedInfoCounter(const Graph& g,
-			const EdgeIndex<Graph>& index, size_t insert_size,
-			size_t read_length, size_t delta, size_t k) :
-			g_(g), index_(index), k_(k), insert_size_(insert_size), read_length_(
-					read_length), gap_(insert_size_ - 2 * read_length_), delta_(
-					2 * delta) {
-		VERIFY(insert_size_ >= 2 * read_length_);
-	}
-
-	void FillEtalonPairedInfo(const Sequence& genome,
-      omnigraph::PairedInfoIndexT<Graph>& paired_info) {
-		ProcessSequence(genome, paired_info);
-		ProcessSequence(!genome, paired_info);
-		//DEBUG
-		//		CheckPairInfo(genome, paired_info);
-	}
-};
-
 //todo rewrite with extended sequence mapper!
 template<class Graph>
 class EtalonPairedInfoCounter {
@@ -638,10 +501,6 @@ public:
 	}
 };
 
-void EmptyHandleF(EdgeId edge) {
-
-}
-
 template<class Graph>
 class QualityEdgeLocalityPrintingRH {
 	typedef typename Graph::EdgeId EdgeId;
@@ -681,35 +540,6 @@ public:
 private:
 	DECL_LOGGER("QualityEdgeLocalityPrintingRH")
 	;
-};
-
-template<class Graph>
-class EdgePairInfoWrapper {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	typedef omnigraph::PairInfo<EdgeId> PairInfo;
-	typedef vector<PairInfo> PairInfos;
-	const Graph& g_;
-    const PairedInfoIndex<ConjugateDeBruijnGraph>& index_;
-//	size_t black_removed_;
-//	size_t colored_removed_;
-public:
-	EdgePairInfoWrapper(const Graph& g
-            , const PairedInfoIndex<ConjugateDeBruijnGraph>& index) :
-			g_(g), index_(index) {
-	}
-
-	double GetTotalWeight(EdgeId edge) {
-            PairInfos infos = index_.GetEdgeInfo(edge);
-            double total_weight = 0.;
-            for (size_t i = 0; i<infos.size(); i++){
-                total_weight += infos[i].weight;
-                INFO("Tip Info " << infos[i].first << " " << infos[i].second << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance);
-            }
-            return total_weight;
-	}
-
-private:
 };
 
 template<class Graph>
@@ -759,7 +589,6 @@ public:
 
 private:
 };
-
 
 template<class Graph>
 class EdgeLocalityPrintingRH {
