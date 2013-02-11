@@ -5,15 +5,18 @@
 //****************************************************************************
 
 #include "kmer_data.hpp"
+#include "io/read_processor.hpp"
 #include "valid_kmer_generator.hpp"
 
 #include "io/mmapped_writer.hpp"
-
+#include "read/ireadstream.hpp"
 #include "config_struct_hammer.hpp"
 
 #include <libcxx/sort.hpp>
 
 using namespace hammer;
+
+class BufferFiller;
 
 class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
   typedef std::vector<std::vector<KMer> > KMerBuffer;
@@ -27,6 +30,8 @@ class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
       : KMerSplitter<hammer::KMer>(work_dir, hammer::K) {}
 
   virtual path::files_t Split(size_t num_files);
+
+  friend class BufferFiller;
 };
 
 void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
@@ -63,8 +68,55 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
 }
 
 
+class BufferFiller {
+  std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries_;
+  size_t num_files_;
+  size_t cell_size_;
+  size_t processed_;
+  const HammerKMerSplitter &splitter_;
+
+ public:
+  BufferFiller(std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries, size_t cell_size, const HammerKMerSplitter &splitter):
+      tmp_entries_(tmp_entries), num_files_(tmp_entries[0].size()), cell_size_(cell_size), processed_(0), splitter_(splitter) {}
+
+  size_t processed() const { return processed_; }
+
+  bool operator()(const Read &r) {
+    int trim_quality = cfg::get().input_trim_quality;
+
+    // FIXME: Get rid of this
+    Read cr = r;
+    size_t sz = cr.trimNsAndBadQuality(trim_quality);
+
+    #pragma omp atomic
+    processed_ += 1;
+
+    if (sz < hammer::K)
+      return false;
+
+    HammerKMerSplitter::KMerBuffer &entry = tmp_entries_[omp_get_thread_num()];
+    ValidKMerGenerator<hammer::K> gen(cr);
+    bool stop = false;
+    while (gen.HasMore()) {
+      KMer seq = gen.kmer();
+      size_t idx = splitter_.GetFileNumForSeq(seq, num_files_);
+      entry[idx].push_back(seq);
+      stop |= entry[idx].size() > cell_size_;
+
+      seq = !seq;
+      idx = splitter_.GetFileNumForSeq(seq, num_files_);
+      entry[idx].push_back(seq);
+      stop |= entry[idx].size() > cell_size_;
+
+      gen.Next();
+    }
+
+    return stop;
+  }
+};
+
 path::files_t HammerKMerSplitter::Split(size_t num_files) {
-  unsigned nthreads = min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
+  unsigned nthreads = std::min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
 
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
@@ -78,8 +130,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     ostreams[i].open(out[i]);
 
   size_t read_buffer = cfg::get().count_split_buffer;
-  size_t cell_size = (read_buffer * (Globals::read_length - hammer::K + 1)) /
-                      (nthreads * num_files * sizeof(KMer));
+  size_t cell_size = (read_buffer / (nthreads * num_files * sizeof(KMer)));
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 16384;
@@ -90,53 +141,25 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     KMerBuffer &entry = tmp_entries[i];
     entry.resize(num_files);
     for (unsigned j = 0; j < num_files; ++j) {
-      entry[j].reserve(1.25 * cell_size);
+      entry[j].reserve(1.1 * cell_size);
     }
   }
 
-  size_t cur_i = 0, cur_limit = 0, n = 15;
-  size_t cur_fileindex = 0;
-  while (cur_i < Globals::pr->size()) {
-    cur_limit = std::min(cur_limit + read_buffer, Globals::pr->size());
+  size_t n = 15;
+  BufferFiller filler(tmp_entries, cell_size, *this);
+  for (auto I = Globals::input_filenames.begin(), E = Globals::input_filenames.end(); I != E; ++I) {
+    ireadstream irs(*I, cfg::get().input_qvoffset);
+    while (!irs.eof()) {
+      hammer::ReadProcessor(nthreads).Run(irs, filler);
+      DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
 
-    #pragma omp parallel for shared(tmp_entries) num_threads(nthreads)
-    for (size_t i = cur_i; i < cur_limit; ++i) {
-      const PositionRead &pr = Globals::pr->at(i);
-      // Skip opaque reads
-      if (!pr.valid())
-        continue;
-
-      size_t cpos = pr.start(), csize = pr.size();
-      const char *s = Globals::blob + cpos;
-      const char *q;
-      std::string q_common;
-      if (Globals::use_common_quality) {
-        q_common.assign(csize, (char)Globals::common_quality);
-        q = q_common.data();
-      } else {
-        q = Globals::blobquality + cpos;
-      }
-
-      ValidKMerGenerator<hammer::K> gen(s, q, csize);
-      while (gen.HasMore()) {
-        KMer seq = gen.kmer();
-        tmp_entries[omp_get_thread_num()][GetFileNumForSeq(seq, num_files)].push_back(seq);
-        seq = !seq;
-        tmp_entries[omp_get_thread_num()][GetFileNumForSeq(seq, num_files)].push_back(seq);
-        gen.Next();
+      if (filler.processed() >> n) {
+        INFO("Processed " << filler.processed() << " reads");
+        n += 1;
       }
     }
-    cur_i = cur_limit;
-
-    ++cur_fileindex;
-
-    if (cur_i >> n) {
-      INFO("Processed " << cur_i << " reads");
-      n += 1;
-    }
-
-    DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
   }
+  INFO("Processed " << filler.processed() << " reads");
 
   delete[] ostreams;
 
@@ -178,6 +201,39 @@ static void PushKMerRC(KMerData &data,
   kmc.unlock();
 }
 
+class KMerDataFiller {
+  KMerData &data_;
+
+ public:
+  KMerDataFiller(KMerData &data)
+      : data_(data) {}
+
+  bool operator()(const Read &r) {
+    int trim_quality = cfg::get().input_trim_quality;
+
+    // FIXME: Get rid of this
+    Read cr = r;
+    size_t sz = cr.trimNsAndBadQuality(trim_quality);
+
+    if (sz < hammer::K)
+      return false;
+
+    ValidKMerGenerator<hammer::K> gen(cr);
+    const char *q = cr.getQualityString().data();
+    while (gen.HasMore()) {
+      KMer kmer = gen.kmer();
+      const unsigned char *kq = (const unsigned char*)(q + gen.pos() - 1);
+
+      PushKMer(data_, kmer, kq, 1 - gen.correct_probability());
+      PushKMerRC(data_, kmer, kq, 1 - gen.correct_probability());
+
+      gen.Next();
+    }
+
+    return false;
+  }
+};
+
 void KMerDataCounter::FillKMerData(KMerData &data) {
   // Build the index
   std::string workdir = cfg::get().input_working_dir;
@@ -189,34 +245,10 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   INFO("Collecting K-mer information, this takes a while.");
   data.data_.resize(sz);
 
-# pragma omp parallel for shared(data)
-  for (size_t readno = 0; readno < Globals::pr->size(); ++readno) {
-    PositionRead &pr = Globals::pr->at(readno);
-
-    // skip opaque reads w/o kmers
-    if (!pr.valid()) continue;
-
-    size_t cpos = pr.start(), csize = pr.size();
-    const char *s = Globals::blob + cpos;
-    const char *q;
-    std::string q_common;
-    if (Globals::use_common_quality) {
-      q_common.assign(csize, (char)Globals::common_quality);
-      q = q_common.data();
-    } else {
-      q = Globals::blobquality + cpos;
-    }
-
-    ValidKMerGenerator<K> gen(s, q, csize);
-    while (gen.HasMore()) {
-      const KMer &kmer = gen.kmer();
-      const unsigned char *kq = (const unsigned char*)(q + gen.pos() - 1);
-
-      PushKMer(data, kmer, kq, 1 - gen.correct_probability());
-      PushKMerRC(data, kmer, kq, 1 - gen.correct_probability());
-
-      gen.Next();
-    }
+  KMerDataFiller filler(data);
+  for (auto I = Globals::input_filenames.begin(), E = Globals::input_filenames.end(); I != E; ++I) {
+    ireadstream irs(*I, cfg::get().input_qvoffset);
+    hammer::ReadProcessor(omp_get_max_threads()).Run(irs, filler);
   }
 
   INFO("Collection done, postprocessing.");

@@ -78,8 +78,6 @@ struct hammer_config
   unsigned correct_readbuffer;
   unsigned correct_nthreads;
   bool correct_notrim;
-
-  int common_quality;
 };
 
 

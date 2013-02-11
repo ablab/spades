@@ -57,9 +57,6 @@ size_t Globals::read_length = 0;
 char Globals::char_offset = 0;
 bool Globals::char_offset_user = true;
 
-bool Globals::use_common_quality = false;
-char Globals::common_quality = 0;
-double Globals::common_kmer_errprob = 0;
 double Globals::quality_probs[256] = { 0 };
 double Globals::quality_lprobs[256] = { 0 };
 double Globals::quality_rprobs[256] = { 0 };
@@ -94,14 +91,6 @@ int main(int argc, char * argv[]) {
     if (argc > 1) config_file = argv[1];
     INFO("Loading config from " << config_file.c_str());
     cfg::create_instance(config_file);
-
-    // general config parameters
-    Globals::use_common_quality = cfg::get().common_quality > 0;
-    Globals::common_quality = (char)cfg::get().common_quality;
-    Globals::common_kmer_errprob = 1.0;
-    for (size_t i=0; i < hammer::K; ++i)
-      Globals::common_kmer_errprob *= 1 - pow(10.0, - Globals::common_quality / 10.0);
-    Globals::common_kmer_errprob = 1 - Globals::common_kmer_errprob;
 
     // hard memory limit
     const size_t GB = 1 << 30;
@@ -157,7 +146,7 @@ int main(int argc, char * argv[]) {
     Globals::blob_size = totalReadSize + 1;
     Globals::blob_max_size = Globals::blob_size;
     Globals::blob = new char[Globals::blob_max_size];
-    if (!Globals::use_common_quality) Globals::blobquality = new char[Globals::blob_max_size];
+    Globals::blobquality = new char[Globals::blob_max_size];
     INFO("Max blob size as allocated is " << Globals::blob_max_size);
 
     // initialize subkmer positions
