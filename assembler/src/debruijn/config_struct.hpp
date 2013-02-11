@@ -450,6 +450,7 @@ public:
 	bool compute_paths_number;
 
 	bool use_additional_contigs;
+    bool additional_ec_removing;
 	bool use_unipaths;
 	std::string additional_contigs;
 
@@ -458,7 +459,6 @@ public:
 	working_stage entry_point;
 
 	bool paired_mode;
-	bool additional_ec_removing;
 	bool divide_clusters;
 
 	bool mismatch_careful;
@@ -907,6 +907,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.entry_point, pt, "entry_point");
 
 	load(cfg.use_additional_contigs, pt, "use_additional_contigs");
+	load(cfg.additional_ec_removing, pt, "additional_ec_removing");
 	load(cfg.use_unipaths, pt, "use_unipaths");
 
 	load(cfg.additional_contigs, pt, "additional_contigs");

@@ -57,6 +57,9 @@ compute_paths_number false
 ; iterative mode switcher, activates additional contigs usage
 use_additional_contigs false
 
+; enable advanced ec removal algo
+additional_ec_removing true
+
 ; use unipaths as additional contigs instead of just graph edges
 use_unipaths false
 
