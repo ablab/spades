@@ -43,6 +43,9 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
     for (size_t i = 0; i < nthreads; ++i)
       sz += buffers[i][k].size();
 
+    if (!sz)
+      continue;
+
     std::vector<KMer> SortBuffer;
     SortBuffer.reserve(sz);
     for (size_t i = 0; i < nthreads; ++i) {
