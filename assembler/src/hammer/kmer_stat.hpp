@@ -134,11 +134,12 @@ struct KMerStat {
   uint8_t lock_; // FIXME: Turn into single bit of status field.
 
   void lock() {
-    while (__sync_lock_test_and_set(&lock_, 1) == 1)
+    while (__sync_val_compare_and_swap(&lock_, 0, 1) == 1)
       sched_yield();
   }
   void unlock() {
-    __sync_lock_release(&lock_);
+    lock_ = 0;
+    __sync_synchronize();
   }
 
   bool isGood() const { return status >= Good; }
