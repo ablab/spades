@@ -188,7 +188,7 @@ class TopologyAndReliablityBasedChimericEdgeRemover :
                                    g,
                                    /*uniqueness*/
                                    MakePathLengthLowerBound(
-                                           g, TrivialPathFinder<Graph>(g),
+                                           g, UniquePathFinder<Graph>(g),
                                            uniqueness_length),
                                    /*plausibility*/make_shared<
                                            func::AlwaysTrue<EdgeId>>())),

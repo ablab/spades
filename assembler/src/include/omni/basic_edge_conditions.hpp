@@ -98,8 +98,11 @@ class PathLengthLowerBound : public EdgeCondition<Graph> {
     }
 
     bool Check(EdgeId e) const {
-        return std::max(CummulativePathLength(e, forward_),
-                        CummulativePathLength(e, backward_)) >= min_length_;
+        size_t forward = CummulativePathLength(e, forward_);
+        size_t backward = CummulativePathLength(e, backward_);
+        //checking that path was trivial in one of directions
+        VERIFY(forward == this->g().length(e) || backward == this->g().length(e));
+        return std::max(forward, backward) >= min_length_;
     }
 };
 
