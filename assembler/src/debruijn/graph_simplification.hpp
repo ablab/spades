@@ -528,7 +528,7 @@ bool FinalRemoveErroneousEdges(Graph &g,
 	using debruijn_graph::simplification_mode;
 	bool changed = RemoveRelativelyLowCoverageEdges(g, cfg::get().simp.rec,
 			removal_handler, determined_coverage_threshold);
-    
+
     if (!cfg::get().additional_ec_removing)
         return changed;
 

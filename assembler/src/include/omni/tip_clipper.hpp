@@ -67,71 +67,11 @@ public:
 	}
 };
 
-//todo extend from uniqueness condition and don't include tip's conditions here (checked twice)
-template<class Graph>
-class TopologyTipCondition: public EdgeCondition<Graph> {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef EdgeCondition<Graph> base;
-
-	size_t uniqueness_length_;
-	size_t plausibility_length_;
-	UniquePathFinder<Graph> unique_path_finder_;
-
-	boost::optional<EdgeId> PathStart(EdgeId tip, bool outgoing_tip) const {
-		vector<EdgeId> edges;
-		if (outgoing_tip) {
-			edges = this->g().IncomingEdges(this->g().EdgeStart(tip));
-		} else {
-			edges = this->g().OutgoingEdges(this->g().EdgeEnd(tip));
-		}
-		if (edges.size() == 1) {
-			return boost::optional<EdgeId>(*edges.begin());
-		} else {
-			return boost::none;
-		}
-	}
-
-	bool CheckPlausibleAlternative(const vector<EdgeId> &rivals) const {
-		for (auto it = rivals.begin(); it != rivals.end(); ++it) {
-			if (this->g().length(*it) >= plausibility_length_)
-				return true;
-		}
-		return false;
-	}
-
-public:
-
-	TopologyTipCondition(const Graph& g, size_t uniqueness_length,
-			size_t plausibility_length) :
-			base(g), uniqueness_length_(uniqueness_length), plausibility_length_(
-					plausibility_length), unique_path_finder_(g) {
-
-	}
-
-	bool Check(EdgeId e) const {
-		vector<EdgeId> unique_path;
-		vector<EdgeId> rivals;
-		if (this->g().IsDeadEnd(this->g().EdgeEnd(e))
-				&& this->g().CheckUniqueIncomingEdge(this->g().EdgeStart(e))) {
-			unique_path = unique_path_finder_.UniquePathBackward(
-					this->g().GetUniqueIncomingEdge(this->g().EdgeStart(e)));
-			rivals = this->g().OutgoingEdges(this->g().EdgeStart(e));
-		} else if (this->g().IsDeadStart(this->g().EdgeStart(e))
-				&& this->g().CheckUniqueOutgoingEdge(this->g().EdgeEnd(e))) {
-			unique_path = unique_path_finder_.UniquePathForward(
-					this->g().GetUniqueOutgoingEdge(this->g().EdgeEnd(e)));
-			rivals = this->g().IncomingEdges(this->g().EdgeEnd(e));
-		}
-		return CummulativeLength(this->g(), unique_path) >= uniqueness_length_
-				&& CheckPlausibleAlternative(rivals);
-	}
-
-};
-
 /**
  * This class removes tips from given graph with the following algorithm: it iterates through all edges of
  * the graph(in order defined by certain comparator) and for each edge checks if this edge is likely to be
  * a tip and if edge is judged to be one it is removed.
+ * todo should extend EdgeProcessingAlgorithm
  */
 template<class Graph>
 class TipClipper: private boost::noncopyable {
@@ -318,7 +258,7 @@ public:
 			size_t uniqueness_length, size_t plausibility_length,
 			boost::function<void(EdgeId)> removal_handler = 0) :
 			base(graph, max_tip_length,
-					make_shared<TopologyTipCondition<Graph>>(graph, uniqueness_length,
+					make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(graph, uniqueness_length,
 							plausibility_length), removal_handler) {
 	}
 

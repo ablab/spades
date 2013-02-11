@@ -11,7 +11,7 @@ default
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
         ; todo think about params one more time
-        condition               "{ tc_lb 3.5, cb 1000, rctc 2.0 } { tc_lb 15., cb auto }"
+        condition               "{ tc_lb 3.5, cb 1000000, rctc 2.0 } { tc_lb 15., cb auto }"
 	}
 	
 	; bulge remover:
