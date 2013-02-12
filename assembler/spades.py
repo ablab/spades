@@ -240,7 +240,7 @@ def check_binaries(binary_dir, log):
             support.error("SPAdes binary file not found: " + binary_path +
                           "\nYou can obtain SPAdes binaries in one of two ways:" +
                           "\n1. Download the binaries from SPAdes server with ./spades_download_binary.py script" +
-                          "\n2. Build source code with ./spades_compile.py script", log)
+                          "\n2. Build source code with ./spades_compile.sh script", log)
             return False
     return True
 

@@ -420,7 +420,7 @@ def usage():
     print >> sys.stderr, '  --use-quality use quality values as probabilities '
     print >> sys.stderr, '  --debug   save all intermediate files '
     print >> sys.stderr, '  --use-multiple-aligned  use paired reads with multiple alignment'
-    print >> sys.stderr, '  --skip-masked   do not correct single \'N\', provided by assembler'
+    print >> sys.stderr, '  --skip-masked   do not correct single \'N\' in contigs unless significant read support provided'
     print >> sys.stderr, '  --insert-size <int> estimation on insert size'
 
 
