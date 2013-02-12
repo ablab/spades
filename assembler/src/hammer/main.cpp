@@ -270,7 +270,9 @@ int main(int argc, char * argv[]) {
           Expander expander(*Globals::kmer_data);
           for (auto I = Globals::input_filenames.begin(), E = Globals::input_filenames.end(); I != E; ++I) {
             ireadstream irs(*I, cfg::get().input_qvoffset);
-            hammer::ReadProcessor(expand_nthreads).Run(irs, expander);
+            hammer::ReadProcessor rp(expand_nthreads);
+            rp.Run(irs, expander);
+            VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
           }
 
           if (cfg::get().expand_write_each_iteration) {

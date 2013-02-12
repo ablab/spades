@@ -153,8 +153,10 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   for (auto I = Globals::input_filenames.begin(), E = Globals::input_filenames.end(); I != E; ++I) {
     ireadstream irs(*I, cfg::get().input_qvoffset);
     while (!irs.eof()) {
-      hammer::ReadProcessor(nthreads).Run(irs, filler);
+      hammer::ReadProcessor rp(nthreads);
+      rp.Run(irs, filler);
       DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+      VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
       if (filler.processed() >> n) {
         INFO("Processed " << filler.processed() << " reads");
@@ -251,7 +253,9 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   KMerDataFiller filler(data);
   for (auto I = Globals::input_filenames.begin(), E = Globals::input_filenames.end(); I != E; ++I) {
     ireadstream irs(*I, cfg::get().input_qvoffset);
-    hammer::ReadProcessor(omp_get_max_threads()).Run(irs, filler);
+    hammer::ReadProcessor rp(omp_get_max_threads());
+    rp.Run(irs, filler);
+    VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
   }
 
   INFO("Collection done, postprocessing.");
