@@ -10,9 +10,15 @@
 
 namespace hammer {
 class ReadProcessor {
+  static size_t const         cacheline_size = 64;
+  typedef char                cacheline_pad_t [cacheline_size];
+
   unsigned nthreads_;
+  cacheline_pad_t pad0;
   size_t read_;
+  cacheline_pad_t pad1;
   size_t processed_;
+  cacheline_pad_t pad2;
 
 private:
   template<class Reader, class Op>
