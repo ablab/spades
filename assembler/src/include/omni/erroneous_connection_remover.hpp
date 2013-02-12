@@ -62,9 +62,8 @@ class ChimericEdgeRemovingAlgorithm : public EdgeRemovingAlgorithm<Graph,
                     func::AlwaysTrue<EdgeId>>())
             : base(g,
                    func::And<EdgeId>(
-                           remove_condition,
-                           make_shared<AlternativesPresenceCondition<Graph>>(
-                                   g)),
+                           make_shared<AlternativesPresenceCondition<Graph>>(g),
+                           remove_condition),
                    removal_handler, c, proceed_condition) {
     }
 
