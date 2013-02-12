@@ -27,8 +27,6 @@ using std::string;
 using std::pair;
 using std::set;
 
-//DECL_LOGGER("omg.graph")
-
 /**
  * ActionHandler is base listening class for graph events. All structures and information storages
  * which are meant to synchronize with graph should use this structure. In order to make handler listen
