@@ -11,6 +11,8 @@
 namespace hammer {
 class ReadProcessor {
   unsigned nthreads_;
+  size_t read_;
+  size_t processed_;
 
 private:
   template<class Reader, class Op>
@@ -18,7 +20,9 @@ private:
     while (!irs.eof()) {
       typename Reader::read_type r;
       irs >> r;
+      read_ += 1;
 
+      processed_ += 1;
       if (op(r))
         return true;
     }
@@ -31,8 +35,10 @@ private:
     while (!irs.eof()) {
       typename Reader::read_type r;
       irs >> r;
+      read_ += 1;
 
       auto res = op(r);
+      processed_ += 1;
 
       if (res)
         writer << *res;
@@ -41,7 +47,10 @@ private:
 
 public:
   ReadProcessor(unsigned nthreads)
-      : nthreads_(nthreads) {}
+      : nthreads_(nthreads), read_(0), processed_(0) {}
+
+  size_t read() const { return read_; }
+  size_t processed() const { return processed_; }
 
   template<class Reader, class Op>
   bool Run(Reader &irs, Op &op) {
@@ -67,6 +76,8 @@ public:
         while (!irs.eof()) {
           typename Reader::read_type r;
           irs >> r;
+#         pragma omp atomic
+          read_ += 1;
 
           while (!in_queue.enqueue(r))
             sched_yield();
@@ -84,6 +95,9 @@ public:
 
         if (!in_queue.wait_dequeue(r))
           break;
+
+#       pragma omp atomic
+        processed_ += 1;
 
         bool res = op(r);
         if (res) {
