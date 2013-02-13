@@ -23,8 +23,6 @@
 // struct for debruijn project's configuration file
 struct hammer_config
 {
-  bool input_gzipped;
-
   string input_paired_1;
   string input_paired_2;
   string input_single;
@@ -41,9 +39,6 @@ struct hammer_config
   unsigned general_max_nthreads;
   int general_tau;
   unsigned general_max_iterations;
-  double general_blob_margin;
-  double general_gzip_margin;
-  int general_file_buffer_exp;
   bool general_debug;
 
   bool count_do;

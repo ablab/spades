@@ -23,9 +23,6 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
   load(cfg.general_max_nthreads, pt, "general_max_nthreads");
   load(cfg.general_tau, pt, "general_tau");
   load(cfg.general_max_iterations, pt, "general_max_iterations");
-  load(cfg.general_blob_margin, pt, "general_blob_margin");
-  load(cfg.general_gzip_margin, pt, "general_gzip_margin");
-  load(cfg.general_file_buffer_exp, pt, "general_file_buffer_exp");
   load(cfg.general_debug, pt, "general_debug");
 
   load(cfg.count_do, pt, "count_do");

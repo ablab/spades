@@ -5,7 +5,6 @@ input_paired_1
 input_paired_2
 input_single                				
 input_trim_quality			4
-input_gzipped				0
 input_qvoffset				
 input_read_solid_kmers		0
 input_solid_kmers			
@@ -14,18 +13,11 @@ input_solid_kmers
 ; general options
 general_do_everything_after_first_iteration	1
 general_reconstruct_only	1
-general_change_n_to_a		0
 general_hard_memory_limit	150
 general_max_nthreads		16
 general_tau			1
-general_gzip			0
 general_max_iterations		1
-general_blob_margin		0.25
-general_gzip_margin		4.0
-general_file_buffer_exp		20
-general_common_quality		-1
 general_debug			0
-general_correct_from_memory	1
 
 ; count k-mers
 count_do				1
