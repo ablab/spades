@@ -1,6 +1,7 @@
 #include "expander.hpp"
 
 #include "config_struct_hammer.hpp"
+#include "globals.hpp"
 #include "kmer_data.hpp"
 #include "valid_kmer_generator.hpp"
 

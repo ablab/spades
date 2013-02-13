@@ -12,16 +12,16 @@
  */
 
 
-#include "read/ireadstream.hpp"
-#include "adt/concurrent_dsu.hpp"
-#include "segfault_handler.hpp"
 #include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"
-#include "position_read.hpp"
 #include "globals.hpp"
 #include "kmer_data.hpp"
 #include "expander.hpp"
+
+#include "read/ireadstream.hpp"
+#include "adt/concurrent_dsu.hpp"
+#include "segfault_handler.hpp"
 #include "io/read_processor.hpp"
 
 #include "memory_limit.hpp"
@@ -42,17 +42,9 @@
 
 std::vector<std::string> Globals::input_filenames = std::vector<std::string>();
 std::vector<std::string> Globals::input_filename_bases = std::vector<std::string>();
-std::vector<hint_t> Globals::input_file_blob_positions = std::vector<hint_t>();
-std::vector<size_t> Globals::input_file_sizes = std::vector<size_t>();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 KMerData *Globals::kmer_data = NULL;
 int Globals::iteration_no = 0;
-
-hint_t Globals::blob_size = 0;
-hint_t Globals::blob_max_size = 0;
-char * Globals::blob = NULL;
-char * Globals::blobquality = NULL;
-size_t Globals::read_length = 0;
 
 char Globals::char_offset = 0;
 bool Globals::char_offset_user = true;
@@ -61,8 +53,6 @@ double Globals::quality_probs[256] = { 0 };
 double Globals::quality_lprobs[256] = { 0 };
 double Globals::quality_rprobs[256] = { 0 };
 double Globals::quality_lrprobs[256] = { 0 };
-
-std::vector<PositionRead> * Globals::pr = NULL;
 
 struct UfCmp {
   bool operator()(const std::vector<int> &lhs, const std::vector<int> &rhs) {
@@ -138,17 +128,6 @@ int main(int argc, char * argv[]) {
       Globals::quality_lrprobs[qual] = log(Globals::quality_rprobs[qual]);
     }
 
-    // estimate total read size
-    size_t totalReadSize = hammer_tools::EstimateTotalReadSize(Globals::input_filenames);
-    INFO("Estimated total size of all reads is " << totalReadSize);
-
-    // allocate the blob
-    Globals::blob_size = totalReadSize + 1;
-    Globals::blob_max_size = Globals::blob_size;
-    Globals::blob = new char[Globals::blob_max_size];
-    Globals::blobquality = new char[Globals::blob_max_size];
-    INFO("Max blob size as allocated is " << Globals::blob_max_size);
-
     // initialize subkmer positions
     HammerTools::InitializeSubKMerPositions();
 
@@ -161,10 +140,6 @@ int main(int argc, char * argv[]) {
 
       // initialize k-mer structures
       Globals::kmer_data = new KMerData;
-
-      // read input reads into blob
-      Globals::pr = new vector<PositionRead>();
-      HammerTools::ReadAllFilesIntoBlob();
 
       // count k-mers
       if (cfg::get().count_do || do_everything) {
@@ -312,9 +287,7 @@ int main(int argc, char * argv[]) {
       }
 
       // prepare the reads for next iteration
-      // delete consensuses, clear kmer data, and restore correct revcomps
       delete Globals::kmer_data;
-      delete Globals::pr;
 
       if (totalReads < 1) {
         INFO("Too few reads have changed in this iteration. Exiting.");
@@ -326,8 +299,6 @@ int main(int argc, char * argv[]) {
     // clean up
     Globals::subKMerPositions->clear();
     delete Globals::subKMerPositions;
-    delete [] Globals::blob;
-    delete [] Globals::blobquality;
 
     INFO("All done. Exiting.");
   } catch (std::bad_alloc const& e) {

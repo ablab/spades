@@ -14,8 +14,6 @@ add_executable(hammer
                hamcluster.cpp
                kmer_cluster.cpp
                kmer_data.cpp
-               position_read.cpp
-               globals.cpp
                config_struct_hammer.cpp
                read_corrector.cpp
                expander.cpp)

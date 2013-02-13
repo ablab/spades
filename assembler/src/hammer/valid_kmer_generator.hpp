@@ -6,13 +6,18 @@
 
 #ifndef HAMMER_VALIDKMERGENERATOR_HPP_
 #define HAMMER_VALIDKMERGENERATOR_HPP_
-#include <stdint.h>
-#include <cmath>
-#include <string>
-#include <vector>
+
+#include "globals.hpp"
+
 #include "read/read.hpp"
 #include "sequence/seq.hpp"
-#include "position_read.hpp"
+
+#include <string>
+#include <vector>
+
+#include <cstdint>
+#include <cmath>
+
 /**
  * This class is designed to iterate through valid k-mers in read.
  * @example

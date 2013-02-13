@@ -12,7 +12,6 @@
 #include <vector>
 #include "read/read.hpp"
 #include "sequence/seq.hpp"
-#include "position_read.hpp"
 /**
  * This class is designed to iterate through valid k-mers in read.
  * @example
