@@ -49,7 +49,7 @@ struct hammer_config
   bool count_do;
   unsigned count_numfiles;
   unsigned count_merge_nthreads;
-  unsigned count_split_buffer;
+  size_t count_split_buffer;
 
   bool hamming_do;
   unsigned hamming_blocksize_quadratic_threshold;
