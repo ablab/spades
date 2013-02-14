@@ -1,6 +1,7 @@
 #pragma once
 
 #include "standard_base.hpp"
+#include "simple_tools.hpp"
 #include "comparison_utils.hpp"
 
 namespace cap {
@@ -13,13 +14,44 @@ typedef pair<Range, bool> Pos;
 typedef size_t GenomeId;
 
 typedef map<GenomeId, Pos> GenePosition;
+typedef vector<Range> Coordinates;
+
+Range NuclToKmerRange(Range nucl_range, size_t k) {
+    return Range(std::max(0, int(nucl_range.start_pos) - int(k)),
+                 nucl_range.end_pos);
+}
+
+Range KmerToNuclRange(Range kmer_range, size_t k) {
+    return Range(min(kmer_range.start_pos + k, kmer_range.end_pos - 1),
+                 kmer_range.end_pos);
+}
 
 struct GeneCollection {
-    vector<Genome> genomes;
+    map<GenomeId, Genome> genomes;
     vector<GenePosition> gene_positions;
-};
 
-typedef vector<Range> Coordinates;
+    template<class gp_t>
+    void Update(const gp_t& gp) {
+        CoordinatesUpdater<gp_t> updater(gp);
+        FOREACH(GenomeId genome_id, key_set(genomes)) {
+            Coordinates gene_coords;
+            vector<size_t> gene_ids;
+            for (size_t i = 0; i < gene_positions.size(); ++i) {
+                if (gene_positions[i].find(genome_id)) {
+                    gene_ids.push_back(i);
+                    VERIFY(gene_positions[i][genome_id].second);
+                    gene_coords.push_back(gene_positions[i][genome_id].first);
+                }
+            }
+            auto updated = updater.Update(genomes[genome_id], Coordinates);
+            genomes[genome_id] = updated.first;
+            for (size_t j = 0; j < gene_ids.size(); ++j) {
+                gene_positions[gene_ids[j]][genome_id]
+                                            = make_pair(updated.second[j], true);
+            }
+        }
+    }
+};
 
 template<class gp_t>
 class CoordinatesUpdater {
@@ -56,13 +88,15 @@ class CoordinatesUpdater {
 
     }
 
-    Coordinates Update(const Genome& genome, const Coordinates& coords) const {
-        Coordinates answer;
+    pair<Genome, Coordinates> Update(const Genome& genome, const Coordinates& coords) const {
+        pair<Genome, Coordinates> answer;
         auto mapper = *MapperInstance(gp_);
         auto mapping_path = mapper.MapSequence(genome);
         FOREACH(Range r, coords) {
-            answer.push_back(NewCoords(mapping_path, r));
+            answer.second.push_back(NewCoords(mapping_path, r));
         }
+        auto read_corrector = GraphReadCorrectorInstance(gp_.g, mapper);
+        answer.first = read_corrector.Modify(genome);
         return answer;
     }
 };

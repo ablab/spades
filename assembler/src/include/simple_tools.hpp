@@ -125,6 +125,24 @@ void insert_all(ContainerT1& target, const ContainerT2& to_insert) {
 	target.insert(to_insert.begin(), to_insert.end());
 }
 
+template<class MapT>
+std::set<typename MapT::key_type> key_set(const MapT& m) {
+    std::set<typename MapT::key_type> answer;
+    for (auto it = m.begin(); it != m.end(); ++it) {
+        answer.insert(it->first);
+    }
+    return answer;
+}
+
+template<class MapT>
+std::set<typename MapT::mapped_type> value_set(const MapT& m) {
+    std::set<typename MapT::mapped_type> answer;
+    for (auto it = m.begin(); it != m.end(); ++it) {
+        answer.insert(it->second);
+    }
+    return answer;
+}
+
 template <class map_t>
 const typename map_t::_Tp& get(const map_t& from, const typename map_t::_Key& key) {
 	auto it = from.find(key);

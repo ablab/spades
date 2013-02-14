@@ -21,24 +21,6 @@ namespace omnigraph {
 
 namespace complex_br {
 
-template<class MapT>
-set<typename MapT::key_type> KeySet(const MapT& m) {
-	set<typename MapT::key_type> answer;
-	for (auto it = m.begin(); it != m.end(); ++it) {
-		answer.insert(it->first);
-	}
-	return answer;
-}
-
-template<class MapT>
-set<typename MapT::mapped_type> ValueSet(const MapT& m) {
-	set<typename MapT::mapped_type> answer;
-	for (auto it = m.begin(); it != m.end(); ++it) {
-		answer.insert(it->second);
-	}
-	return answer;
-}
-
 //template<class Graph>
 //class MostCoveredPathChooser: public PathProcessor<Graph>::Callback {
 //	typedef typename Graph::EdgeId EdgeId;
@@ -667,7 +649,7 @@ public:
 	}
 
 	bool CheckCompleteness() const {
-		FOREACH (VertexId v, KeySet(vertex_depth_)) {
+		FOREACH (VertexId v, key_set(vertex_depth_)) {
 			if (v == start_vertex_)
 				continue;
 			if (!AllEdgeIn(v) && !AllEdgeOut(v))
@@ -709,7 +691,7 @@ public:
 
 	set<size_t> avg_distances() const {
 		set<size_t> distances;
-		FOREACH(VertexId v, KeySet(vertex_depth_)) {
+		FOREACH(VertexId v, key_set(vertex_depth_)) {
 			distances.insert(avg_distance(v));
 		}
 		return distances;
@@ -738,13 +720,13 @@ public:
 	}
 
 	GraphComponent<Graph> AsGraphComponent() const {
-		set<VertexId> vertices = KeySet(vertex_depth_);
+		set<VertexId> vertices = key_set(vertex_depth_);
 		return GraphComponent<Graph>(g_, vertices.begin(), vertices.end());
 	}
 
 	bool ContainsConjugateVertices() const {
 		set<VertexId> conjugate_vertices;
-		FOREACH (VertexId v, KeySet(vertex_depth_)) {
+		FOREACH (VertexId v, key_set(vertex_depth_)) {
 			if (conjugate_vertices.count(v) == 0) {
 				conjugate_vertices.insert(g_.conjugate(v));
 			} else {
@@ -1177,10 +1159,10 @@ class SkeletonTreeFinder {
 			}
 		}
 		size_t coverage = 0;
-		FOREACH (size_t cov, ValueSet(best_subtrees_coverage)) {
+		FOREACH (size_t cov, value_set(best_subtrees_coverage)) {
 			coverage += cov;
 		}
-		next_edges_[v] = SetAsVector<EdgeId>(ValueSet(best_alternatives));
+		next_edges_[v] = SetAsVector<EdgeId>(value_set(best_alternatives));
 		subtree_coverage_[v] = coverage;
 	}
 
