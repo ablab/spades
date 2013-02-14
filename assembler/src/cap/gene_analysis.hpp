@@ -8,11 +8,15 @@ namespace cap {
 typedef Sequence Genome;
 typedef map<Genome, Range> GeneCoordinates;
 
-struct GenePosition {
-    Genome genome;
-    //range of nucleotide positions!
-    Range range;
+//range of nucleotide positions; true if main strand
+typedef pair<Range, bool> Pos;
+typedef size_t GenomeId;
 
+typedef map<GenomeId, Pos> GenePosition;
+
+struct GeneCollection {
+    vector<Genome> genomes;
+    vector<GenePosition> gene_positions;
 };
 
 typedef vector<Range> Coordinates;
