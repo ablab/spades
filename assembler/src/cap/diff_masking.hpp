@@ -81,7 +81,7 @@ void ConstructGPForRefinement(gp_t& gp, const vector<ContigStream*>& contigs,
 			&TipsProjector<gp_t>::ProjectTip, &tip_projector, _1);
 	debruijn_config::simplification::tip_clipper tc_config;
 
-	tc_config.condition = "{ lb 2. }";
+	tc_config.condition = "{ tc_lb 2. }";
 
 	INFO("Clipping tips with projection");
 
@@ -270,6 +270,7 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 
 	vector<ContigStream*> corr_streams = OpenStreams(
 			CorrectPaths(suffixes, out_root, current_k));
+	//recursive call
 	MaskDifferencesAndSave(corr_streams, suffixes, out_root, k_values);
 
 	for (auto it = corr_streams.begin(); it != corr_streams.end(); ++it) {
