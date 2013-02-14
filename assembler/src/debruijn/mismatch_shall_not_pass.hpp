@@ -107,7 +107,7 @@ class MismatchStatistics {
     }
   }
 
-  void operator+=(MismatchStatistics<EdgeId> other) {
+  void operator+=(const MismatchStatistics<EdgeId> &other) {
     for(auto it = other.statistics_.begin(); it != other.statistics_.end(); ++it) {
       statistics_[it->first] += it->second;
     }
@@ -229,7 +229,7 @@ class MismatchShallNotPass {
     }
   }
 
-  EdgeId CorrectNucls(EdgeId edge, vector<pair<size_t, char>> mismatches) {
+  EdgeId CorrectNucls(EdgeId edge, const std::vector<pair<size_t, char>> &mismatches) {
     for (auto it = mismatches.rbegin(); it != mismatches.rend(); ++it) {
       edge = CorrectNucl(edge, it->first, it->second);
     }
@@ -321,7 +321,7 @@ class MismatchShallNotPass {
     return to_correct.size();
   }
 
-  size_t CorrectAllEdges(mismatches::MismatchStatistics<typename Graph::EdgeId> statistics) {
+  size_t CorrectAllEdges(const mismatches::MismatchStatistics<typename Graph::EdgeId> &statistics) {
     size_t res = 0;
     set<EdgeId> conjugate_fix;
     for(auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
@@ -375,7 +375,7 @@ class MismatchShallNotPass {
     return res;
   }
 
-  size_t ParallelStopAllMismatches(io::ReadStreamVector<io::IReader<read_type>> streams, size_t max_iterations = 1) {
+  size_t ParallelStopAllMismatches(io::ReadStreamVector<io::IReader<read_type>> &streams, size_t max_iterations = 1) {
     size_t res = 0;
     while(max_iterations > 0) {
       size_t last = ParallelStopMismatchIteration(streams);
