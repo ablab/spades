@@ -140,6 +140,12 @@ const typename map_t::_Tp& get(const map_t& from, const typename map_t::_Key& ke
 	return it->second;
 }
 
+template <class mmap_t>
+const std::vector<typename mmap_t::_Tp> get_all(const mmap_t& from, const typename mmap_t::_Key& key) {
+    std::vector<typename mmap_t::_Tp> answer(from.lower_bound(key), from.upper_bound(key));
+	return answer;
+}
+
 namespace std
 {
 template<class T1, class T2>
