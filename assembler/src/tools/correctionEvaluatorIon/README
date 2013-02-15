@@ -16,7 +16,7 @@ Evaluating quality of IonTorrent read correction.
   E.g. `./bam2fastq ~/data/myfile.bam` will create `~/data/myfile.bam.fastq`
 
   This will strip soft clips and insertions from both ends of each read,
-  and skip reads with very long indels (>10bp) in the middle.
+  and skip reads with very long indels (>5bp) in the middle.
 
 * Move it to the directory where `hammer-it` executable is located, and rename to test.fastq
 
