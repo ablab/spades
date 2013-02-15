@@ -11,7 +11,7 @@ import sys
 spades_home = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 bin_home = os.path.join(spades_home, 'bin')
 python_modules_home = os.path.join(spades_home, 'src')
-ext_python_modules_home = os.path.join(spades_home, 'ext', 'include', 'python_libs')
+ext_python_modules_home = os.path.join(spades_home, 'ext', 'src', 'python_libs')
 spades_version = ''
 
 def init():
