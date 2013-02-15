@@ -608,6 +608,18 @@ class RuntimeSeq {
 
 };
 
+template<size_t max_size_, typename T = seq_element_type>
+bool operator<(const RuntimeSeq<max_size_, T> &l, const RuntimeSeq<max_size_, T> &r) {
+  for (size_t i = 0; i < l.size(); ++i) {
+    if (l[i] != r[i]) {
+      return (l[i] < r[i]);
+    }
+  }
+
+  return l.size() < r.size();
+}
+
+
 template<size_t max_size_, typename T>
 std::ostream& operator<<(std::ostream& os, RuntimeSeq<max_size_, T> seq) {
   os << seq.str();

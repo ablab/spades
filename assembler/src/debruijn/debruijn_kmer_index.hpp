@@ -17,6 +17,8 @@
 
 #include "libcxx/sort.hpp"
 
+#include "boost/bimap.hpp"
+
 #include <vector>
 #include <cstdlib>
 #include <cstdio>
@@ -40,12 +42,16 @@ class DeBruijnKMerIndex {
  protected:
   typedef ValueType                       KMerIndexValueType;
   typedef std::vector<KMerIndexValueType> KMerIndexStorageType;
+  typedef boost::bimap<KMer, size_t>      KMerPushBackIndexType;
 
   unsigned K_;
   std::string workdir_;
   KMerIndexT index_;
   KMerIndexStorageType data_;
   typename traits::RawKMerStorage *kmers;
+  KMerPushBackIndexType push_back_index_;
+  KMerIndexStorageType push_back_buffer_;
+
 
  public:
   typedef typename KMerIndexStorageType::iterator value_iterator;
@@ -68,6 +74,8 @@ class DeBruijnKMerIndex {
     index_.clear();
     data_.clear();
     KMerIndexStorageType().swap(data_);
+    push_back_index_.clear();
+    push_back_buffer_.clear();
     delete kmers;
     kmers = NULL;
   }
@@ -75,7 +83,10 @@ class DeBruijnKMerIndex {
   unsigned K() const { return K_; }
 
   const KMerIndexValueType &operator[](KMerIdx idx) const {
-    return data_[idx];
+    if (idx < data_.size())
+      return data_[idx];
+
+    return push_back_buffer_[idx - data_.size()];
   }
   KMerIndexValueType &operator[](const KMer &s) {
     return operator[](index_.seq_idx(s));
@@ -84,14 +95,27 @@ class DeBruijnKMerIndex {
     return operator[](index_.seq_idx(s));
   }
   KMerIndexValueType &operator[](KMerIdx idx) {
-    return data_[idx];
+    if (idx < data_.size())
+      return data_[idx];
+
+    return push_back_buffer_[idx - data_.size()];
   }
   KMerIdx seq_idx(const KMer &s) const {
     KMerIdx idx = index_.seq_idx(s);
-    return (contains(idx, s) ? idx : InvalidKMerIdx);
+
+    // First, check whether we're insert index itself.
+    if (contains(idx, s, /* check push back */ false))
+      return idx;
+
+    // Maybe we're inside push_back buffer then?
+    auto it = push_back_index_.left.find(s);
+    if (it != push_back_index_.left.end())
+      return data_.size() + it->second;
+
+    return InvalidKMerIdx;
   }
 
-  size_t size() const { return data_.size(); }
+  size_t size() const { return data_.size() + push_back_buffer_.size(); }
 
   value_iterator value_begin() {
     return data_.begin();
@@ -140,13 +164,27 @@ class DeBruijnKMerIndex {
   }
 
   bool contains(KMerIdx idx) const {
-    return idx < data_.size();
+    return idx < size();
+  }
+
+  size_t insert(const KMer &s, const KMerIndexValueType &value) {
+    size_t idx = push_back_buffer_.size();
+    push_back_index_.insert(typename KMerPushBackIndexType::value_type(s, idx));
+    push_back_buffer_.push_back(value);
+
+    return idx;
   }
 
   KMer kmer(KMerIdx idx) const {
     VERIFY(contains(idx));
-    auto it = kmers->begin() + idx;
-    return (typename traits::raw_create()(K_, *it));
+
+    if (idx < data_.size()) {
+      auto it = kmers->begin() + idx;
+      return (typename traits::raw_create()(K_, *it));
+    }
+
+    idx -= data_.size();
+    return push_back_index_.right.find(idx)->second;
   }
 
   template<class Writer>
@@ -155,6 +193,14 @@ class DeBruijnKMerIndex {
     size_t sz = data_.size();
     writer.write((char*)&sz, sizeof(sz));
     writer.write((char*)&data_[0], sz * sizeof(data_[0]));
+    sz = push_back_buffer_.size();
+    writer.write((char*)&sz, sizeof(sz));
+    writer.write((char*)&push_back_buffer_[0], sz * sizeof(push_back_buffer_[0]));
+    for (auto it = push_back_index_.left.begin(), e = push_back_index_.left.end(); it != e; ++it) {
+      size_t idx = it->second;
+      it->first.BinWrite(writer);
+      writer.write((char*)&idx, sizeof(idx));
+    }
     traits::raw_serialize(writer, kmers);
   }
 
@@ -166,6 +212,19 @@ class DeBruijnKMerIndex {
     reader.read((char*)&sz, sizeof(sz));
     data_.resize(sz);
     reader.read((char*)&data_[0], sz * sizeof(data_[0]));
+    reader.read((char*)&sz, sizeof(sz));
+    push_back_buffer_.resize(sz);
+    reader.read((char*)&push_back_buffer_[0], sz * sizeof(push_back_buffer_[0]));
+    for (size_t i = 0; i < sz; ++i) {
+      KMer s;
+      size_t idx;
+
+      s.BinRead(reader);
+      reader.read((char*)&idx, sizeof(idx));
+
+      push_back_index_.insert(typename KMerPushBackIndexType::value_type(s, idx));
+    }
+
     kmers = traits::raw_deserialize(reader, FileName);
   }
 
@@ -175,14 +234,23 @@ class DeBruijnKMerIndex {
 
   friend class DeBruijnKMerIndexBuilder<Seq>;
  protected:
-  bool contains(KMerIdx idx, const KMer &k) const {
+  bool contains(KMerIdx idx, const KMer &k, bool check_push_back = true) const {
     // Sanity check
-    if (idx >= data_.size())
+    if (idx == InvalidKMerIdx || idx >= size())
       return false;
 
-    auto it = kmers->begin() + idx;
+    if (idx < data_.size()) {
+      auto it = kmers->begin() + idx;
+      return (typename traits::raw_equal_to()(k, *it));
+    }
 
-    return (typename traits::raw_equal_to()(k, *it));
+    if (check_push_back) {
+      auto it = push_back_index_.right.find(idx);
+      return (it != push_back_index_.right.end() &&
+              it -> second == k);
+    }
+
+    return false;
   }
 
   size_t raw_seq_idx(const typename KMerIndexT::KMerRawReference s) const {
@@ -197,8 +265,8 @@ struct EdgeInfo {
   int offset_;
   int count_;
 
-  EdgeInfo() :
-      edgeId_(), offset_(-1), count_(0) { }
+  EdgeInfo(IdType edgeId = IdType(), int offset = -1, int count = 0) :
+      edgeId_(edgeId), offset_(offset), count_(count) { }
 };
 
 template<class IdType, class Seq = runtime_k::RtSeq,
@@ -308,12 +376,12 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
     typename base::KMerIdx idx = base::seq_idx(kmer);
     VERIFY(idx != base::InvalidKMerIdx);
 
-    const typename base::KMerIndexValueType &entry = base::operator[](idx);
+    const EdgeInfo<IdType> &entry = base::operator[](idx);
     return std::make_pair(entry.edgeId_, (size_t)entry.offset_);
   }
 
   std::pair<IdType, size_t> get(typename base::KMerIdx idx) const {
-    const typename base::KMerIndexValueType &entry = base::operator[](idx);
+    const EdgeInfo<IdType> &entry = base::operator[](idx);
     return std::make_pair(entry.edgeId_, (size_t)entry.offset_);
   }
 
@@ -325,7 +393,7 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
       return false;
 
     // Now we know that idx is in range. Check the edge id.
-    typename base::KMerIndexValueType &entry = base::operator[](idx);
+    EdgeInfo<IdType> &entry = base::operator[](idx);
 
     if (entry.edgeId_ == id) {
       entry.offset_ = -1;
@@ -363,6 +431,15 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
     writer.write((char*)&sz, sizeof(sz));
     for (size_t i = 0; i < sz; ++i)
       writer.write((char*)&(base::data_[i].count_), sizeof(base::data_[0].count_));
+    sz = base::push_back_buffer_.size();
+    writer.write((char*)&sz, sizeof(sz));
+    for (size_t i = 0; i < sz; ++i)
+      writer.write((char*)&(base::push_back_buffer_[i].count_), sizeof(base::push_back_buffer_[0].count_));
+    for (auto it = base::push_back_index_.left.begin(), e = base::push_back_index_.left.end(); it != e; ++it) {
+      size_t idx = it->second;
+      it->first.BinWrite(writer);
+      writer.write((char*)&idx, sizeof(idx));
+    }
     traits::raw_serialize(writer, base::kmers);
   }
 
@@ -375,6 +452,19 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
     base::data_.resize(sz);
     for (size_t i = 0; i < sz; ++i)
       reader.read((char*)&(base::data_[i].count_), sizeof(base::data_[0].count_));
+    reader.read((char*)&sz, sizeof(sz));
+    base::push_back_buffer_.resize(sz);
+    for (size_t i = 0; i < sz; ++i)
+      reader.read((char*)&(base::push_back_buffer_[i].count_), sizeof(base::push_back_buffer_[0].count_));
+    for (size_t i = 0; i < sz; ++i) {
+      KMer s;
+      size_t idx;
+
+      s.BinRead(reader);
+      reader.read((char*)&idx, sizeof(idx));
+
+      base::push_back_index_.insert(typename base::KMerPushBackIndexType::value_type(s, idx));
+    }
     base::kmers = traits::raw_deserialize(reader, FileName);
   }
 
@@ -384,11 +474,14 @@ private:
   void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
     size_t idx = base::seq_idx(kmer);
     if (base::contains(idx, kmer)) {
-      typename base::KMerIndexValueType &entry = base::operator[](idx);
+      EdgeInfo<IdType> &entry = base::operator[](idx);
       entry.edgeId_ = id;
       entry.offset_ = offset;
     } else {
       VERIFY(ignore_new_kmer);
+      idx = base::insert(kmer, EdgeInfo<IdType>(id, offset, 1));
+
+      VERIFY(idx != base::InvalidKMerIdx);
     }
   }
 };

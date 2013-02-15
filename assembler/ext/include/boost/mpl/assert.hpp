@@ -146,8 +146,8 @@ template< typename P > struct assert_arg_pred
 template< typename P > struct assert_arg_pred_not
 {
     typedef typename P::type p_type;
-    BOOST_MPL_AUX_ASSERT_CONSTANT( bool, p = !p_type::value );
-    typedef typename assert_arg_pred_impl<p>::type type;
+    BOOST_MPL_AUX_ASSERT_CONSTANT( bool, __boost__p = !p_type::value );
+    typedef typename assert_arg_pred_impl<__boost__p>::type type;
 };
 
 template< typename Pred >
