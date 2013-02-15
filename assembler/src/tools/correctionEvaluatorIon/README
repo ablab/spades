@@ -1,0 +1,35 @@
+Evaluating quality of IonTorrent read correction.
+============
+
+1. Compilation
+
+    D compiler needs to be installed, see http://wiki.dlang.org/Installing_DMD
+    
+    $ git clone git://github.com/lomereiter/BioD.git
+    $ rdmd --build-only -O -release -inline -I./BioD bam2fastq.d
+    $ rdmd --build-only -O -release -inline -I./BioD comparator.d
+
+2. Usage
+    
+* Prepare FASTQ file from BAM.
+  
+  E.g. `./bam2fastq ~/data/myfile.bam` will create `~/data/myfile.bam.fastq`
+
+  This will strip soft clips and insertions from both ends of each read,
+  and skip reads with very long indels (>10bp) in the middle.
+
+* Move it to the directory where `hammer-it` executable is located, and rename to test.fastq
+
+* Run ./hammer-it
+
+* Run ./comparator <BAM filename> test.fasta
+
+  This consumes quite a bit of time - Levenshtein distance from reference sequence 
+  is computed for each read. 
+  (TODO: Ukkonen's optimization should give huge speedup - http://www.cs.helsinki.fi/u/ukkonen/InfCont85.PDF)
+
+  It will print a report with some statistics about read correction, and will write two files:
+  
+  * lev_dist.tab - distribution of Levenshtein distance to reference after correction
+  * worsened.txt - reads for which distance increased, and their corrected versions,
+                   together with edit paths in a human-readable format
