@@ -53,7 +53,7 @@ string estimated_param_filename(const string& prefix) {
 void load_estimated_params(const string& prefix) {
   string filename = estimated_param_filename(prefix);
   //todo think of better architecture
-  if (fileExists(filename)) {
+  if (FileExists(filename)) {
     load_param(filename, "RL", cfg::get_writable().ds.RL);
     load_param(filename, "IS", cfg::get_writable().ds.IS);
     load_param(filename, "is_var", cfg::get_writable().ds.is_var);
@@ -159,12 +159,12 @@ void exec_construction(conj_graph_pack& gp) {
     }
 
     if (!cfg::get().pos.contigs_for_threading.empty()
-        && fileExists(cfg::get().pos.contigs_for_threading)) {
+        && FileExists(cfg::get().pos.contigs_for_threading)) {
       FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
     }
 
     if (!cfg::get().pos.contigs_to_analyze.empty()
-        && fileExists(cfg::get().pos.contigs_to_analyze)) {
+        && FileExists(cfg::get().pos.contigs_to_analyze)) {
       FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
     }
   }

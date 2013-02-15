@@ -57,16 +57,6 @@ std::string ToString(std::set<T>& t) {
 	return ss.str();
 }
 
-//template <typename T>
-//std::string str(const T& t) {
-//	return ToString(t);
-//}
-//
-//template <typename T>
-//std::string str(std::vector<T>& t) {
-//	return ToString(t);
-//}
-
 //taken from http://habrahabr.ru/post/131977/
 class FormattedString {
 
@@ -89,18 +79,18 @@ class FormattedString {
   boost::format m_fmt;
 };
 
-template<typename EdgeId>
-inline const std::pair<EdgeId, EdgeId> ReversePair(std::pair<EdgeId, EdgeId> ep) {
-  return std::pair<EdgeId, EdgeId>(ep.second, ep.first);
+template<typename T>
+inline const std::pair<T, T> ReversePair(std::pair<T, T> ep) {
+  return std::pair<T, T>(ep.second, ep.first);
 }
 
 /**
  * Checks if file exists.
  * Analogs: http://www.techbytes.ca/techbyte103.html , http://www.gamedev.net/topic/211918-determining-if-a-file-exists-c/
  */
-bool fileExists(std::string filename);
+bool FileExists(std::string filename);
 
-inline bool fileExists(std::string filename) {
+inline bool FileExists(std::string filename) {
 
     struct stat st_buf;
     return stat(filename.c_str(), &st_buf) == 0 && S_ISREG(st_buf.st_mode);
@@ -109,8 +99,8 @@ inline bool fileExists(std::string filename) {
 /**
  * Exit(1) if file doesn't exists, writes FATAL log message.
  */
-inline void checkFileExistenceFATAL(std::string filename) {
-	if (!fileExists(filename)) {
+inline void CheckFileExistenceFATAL(std::string filename) {
+	if (!FileExists(filename)) {
 		VERIFY_MSG(false, "File " << filename << " doesn't exist or can't be read!\n");
 	}
 }

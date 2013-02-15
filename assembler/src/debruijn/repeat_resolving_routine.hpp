@@ -941,12 +941,12 @@ void resolve_repeats() {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
 	    if (!cfg::get().pos.contigs_for_threading.empty()
-	        && fileExists(cfg::get().pos.contigs_for_threading)) {
+	        && FileExists(cfg::get().pos.contigs_for_threading)) {
 	      FillPosWithRC(conj_gp, cfg::get().pos.contigs_for_threading, "thr_");
 	    }
 
 	    if (!cfg::get().pos.contigs_to_analyze.empty()
-	        && fileExists(cfg::get().pos.contigs_to_analyze)) {
+	        && FileExists(cfg::get().pos.contigs_to_analyze)) {
 	      FillPosWithRC(conj_gp, cfg::get().pos.contigs_to_analyze, "anlz_");
 	    }
 	}
