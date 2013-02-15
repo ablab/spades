@@ -95,8 +95,8 @@ int main(void) {
   io::ofastastream ors("test.fasta");
 
   using namespace hammer::correction;
-  EndsTrimmer trimmer(90, 90);
-  SingleReadCorrector<EndsTrimmer> read_corrector(kmer_data, trimmer);
+  EndsTrimmer trimmer(4, 4);
+  SingleReadCorrector<EndsTrimmer, KeepTrimmedEnds> read_corrector(kmer_data, trimmer);
   hammer::ReadProcessor(1).Run(irs, read_corrector, ors);
 
 #if 0
