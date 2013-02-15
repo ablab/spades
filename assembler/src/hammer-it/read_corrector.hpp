@@ -34,8 +34,6 @@ struct EndsTrimmer {
 struct ClipTrimmedEnds {
   ClipTrimmedEnds(const io::SingleRead &r) {}
 
-  void addRun(hammer::HomopolymerRun run) {} 
-
   std::string buildStart(size_t n) const { 
     return ""; 
   }
@@ -46,12 +44,8 @@ struct ClipTrimmedEnds {
 };
 
 struct KeepTrimmedEnds {
-  KeepTrimmedEnds(const io::SingleRead &r) {
-    runs_.reserve(r.size());
-  }
-
-  void addRun(hammer::HomopolymerRun run) {
-    runs_.push_back(run);
+  KeepTrimmedEnds(const io::SingleRead &r) : 
+    runs_(hammer::iontorrent::toHomopolymerRuns(r.GetSequenceString())) {
   }
 
   // n - number of nucs trimmed from the left end
@@ -103,13 +97,6 @@ class SingleReadCorrector {
 
       gen.Next();
        
-      if (pos == 0) {
-        for (size_t i = 0; i < hammer::K; ++i)
-          trim_policy.addRun(seq[i]);
-      } else {
-        trim_policy.addRun(seq[hammer::K - 1]);
-      }
-
       pos += 1;
     }
 

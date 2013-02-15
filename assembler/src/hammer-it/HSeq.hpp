@@ -4,6 +4,8 @@
 #include "sequence/nucl.hpp"
 
 #include <array>
+#include <string>
+#include <vector>
 
 #include <cstdint>
 
@@ -36,6 +38,10 @@ union HomopolymerRun {
   std::string str() const {
     return std::string(len, ::nucl(nucl));
   }
+};
+
+namespace iontorrent {
+  std::vector<HomopolymerRun> toHomopolymerRuns(const std::string &seq);
 };
 
 template <size_t N = 16>
