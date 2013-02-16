@@ -32,22 +32,22 @@ fi
 mkdir -p ./ace_benchmark
 
 echo "Starting E.coli is220 on ace..."
-rm -f ./ace_benchmark/ECOLI_IS220.log
-./src/test/teamcity/teamcity.py /storage/acestorage/data/input/E.coli/is220/ECOLI_IS220_QUAKE_BM.info $1 >> ./ace_benchmark/ECOLI_IS220_$timestamp.log 2>> ./ace_benchmark/ECOLI_IS220_$timestamp.log
+rm -f ./ace_benchmark/ECOLI_IS220_QUAKE.log
+./src/test/teamcity/teamcity.py /storage/acestorage/data/input/E.coli/is220/ECOLI_IS220_QUAKE_BM.info $1 >> ./ace_benchmark/ECOLI_IS220_QUAKE_$timestamp.log 2>> ./ace_benchmark/ECOLI_IS220_QUAKE_$timestamp.log
 echo "finished with code "$?
 
 echo "Starting E.coli is480 on ace..."
 rm -f ./ace_benchmark/ECOLI_IS480_QUAKE.log
-./src/test/teamcity/teamcity.py /storage/acestorage/data/input/E.coli/is480/ECOLI_IS480_QUAKE_MANUAL.info >> ./ace_benchmark/ECOLI_IS480_QUAKE_$timestamp.log 2>> ./ace_benchmark/ECOLI_IS480_QUAKE_$timestamp.log 
+./src/test/teamcity/teamcity.py /storage/acestorage/data/input/E.coli/is480/ECOLI_IS480_QUAKE_BM.info >> ./ace_benchmark/ECOLI_IS480_QUAKE_$timestamp.log 2>> ./ace_benchmark/ECOLI_IS480_QUAKE_$timestamp.log 
 echo "finished with code "$?
 
 echo "Starting B.faecium on ace..."
 rm -f ./ace_benchmark/BFAECIUM_QAUKE.log
-./src/test/teamcity/teamcity.py /storage/acestorage/data/input/B.faecium/BFAECIUM_QAUKE_MANUAL.info >> ./ace_benchmark/BFAECIUM_QAUKE_$timestamp.log 2>> ./ace_benchmark/BFAECIUM_QAUKE_$timestamp.log 
+./src/test/teamcity/teamcity.py /storage/acestorage/data/input/B.faecium/BFAECIUM_QAUKE_BM.info >> ./ace_benchmark/BFAECIUM_QAUKE_$timestamp.log 2>> ./ace_benchmark/BFAECIUM_QAUKE_$timestamp.log 
 echo "finished with code "$?
 
 echo "Starting L.gasseri on ace..."
 rm -f ./ace_benchmark/LGASSERI_QUAKE.log
-./src/test/teamcity/teamcity.py /storage/acestorage/data/input/L.gasseri/LGASSERI_QUAKE_MANUAL.info >> ./ace_benchmark/LGASSERI_QUAKE_$timestamp.log 2>> ./ace_benchmark/LGASSERI_QUAKE_$timestamp.log 
+./src/test/teamcity/teamcity.py /storage/acestorage/data/input/L.gasseri/LGASSERI_QUAKE_BM.info >> ./ace_benchmark/LGASSERI_QUAKE_$timestamp.log 2>> ./ace_benchmark/LGASSERI_QUAKE_$timestamp.log 
 echo "finished with code "$?
 

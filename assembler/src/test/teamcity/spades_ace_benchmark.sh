@@ -32,22 +32,22 @@ fi
 mkdir -p ./ace_benchmark
 
 echo "Starting E.coli is220 on ace..."
-rm -f ./ace_benchmark/ECOLI_IS220.log
-./src/test/teamcity/teamcity.py /storage/acestorage/data/input/E.coli/is220/ECOLI_IS220_QUAKE_BM.info $1 >> ./ace_benchmark/ECOLI_IS220_$timestamp.log 2>> ./ace_benchmark/ECOLI_IS220_$timestamp.log
+rm -f ./ace_benchmark/ECOLI_IS220_QUAKE.log
+./src/test/teamcity/teamcity.py /storage/acestorage/data/input/E.coli/is220/ECOLI_IS220_QUAKE_BM.info $1 >> ./ace_benchmark/ECOLI_IS22_QUAKE0_$timestamp.log 2>> ./ace_benchmark/ECOLI_IS220_QUAKE_$timestamp.log
 echo "finished with code "$?
 
 echo "Starting E.coli UCSD lane 1 on ace..."
 rm -f ./ace_benchmark/ECOLI_SC_LANE_1.log
-./src/test/teamcity/teamcity.py /storage/acestorage/data/input/E.coli/sc_lane_1/bh20130116/ECOLI_SC_LANE_1_CORR.info $1 >> ./ace_benchmark/ECOLI_SC_LANE_1_$timestamp.log 2>> ./ace_benchmark/ECOLI_SC_LANE_1_$timestamp.log
+./src/test/teamcity/teamcity.py /storage/acestorage/data/input/E.coli/sc_lane_1/corrected/ECOLI_SC_LANE_1_BH_BM.info $1 >> ./ace_benchmark/ECOLI_SC_LANE_1_$timestamp.log 2>> ./ace_benchmark/ECOLI_SC_LANE_1_$timestamp.log
 echo "finished with code "$?
 
 echo "Starting M.ruber JGI lane 9 on ace..."
 rm -f ./ace_benchmark/MRUBER_JGI_LANE_9.log
-./src/test/teamcity/teamcity.py /storage/acestorage/data/input/M.ruber/jgi_lane_9/MRUBER_JGI_LANE_9_MANUAL.info $1 >> ./ace_benchmark/MRUBER_JGI_LANE_9_$timestamp.log 2>> ./ace_benchmark/MRUBER_JGI_LANE_9_$timestamp.log
+./src/test/teamcity/teamcity.py /storage/acestorage/data/input/M.ruber/jgi_lane_9/MRUBER_JGI_LANE_9_BM.info $1 >> ./ace_benchmark/MRUBER_JGI_LANE_9_$timestamp.log 2>> ./ace_benchmark/MRUBER_JGI_LANE_9_$timestamp.log
 echo "finished with code "$?
 
 echo "Starting P.heparinus JGI lane 7 on ace..."
 rm -f ./ace_benchmark/PHEPARINUS_JGI_LANE_7.log
-./src/test/teamcity/teamcity.py /storage/acestorage/data/input/P.heparinus/jgi_lane_7/PHEPARINUS_JGI_LANE_7_MANUAL.info $1 >> ./ace_benchmark/PHEPARINUS_JGI_LANE_7_$timestamp.log 2>> ./ace_benchmark/PHEPARINUS_JGI_LANE_7_$timestamp.log
+./src/test/teamcity/teamcity.py /storage/acestorage/data/input/P.heparinus/jgi_lane_7/PHEPARINUS_JGI_LANE_7_BM.info $1 >> ./ace_benchmark/PHEPARINUS_JGI_LANE_7_$timestamp.log 2>> ./ace_benchmark/PHEPARINUS_JGI_LANE_7_$timestamp.log
 echo "finished with code "$?
 
