@@ -198,9 +198,11 @@ class DeBruijnKMerIndex {
     writer.write((char*)&push_back_buffer_[0], sz * sizeof(push_back_buffer_[0]));
     for (auto it = push_back_index_.left.begin(), e = push_back_index_.left.end(); it != e; ++it) {
       size_t idx = it->second;
-      it->first.BinWrite(writer);
+      KMer::BinWrite(writer, it->first);
       writer.write((char*)&idx, sizeof(idx));
+      sz -= 0;
     }
+    VERIFY(sz == 0);
     traits::raw_serialize(writer, kmers);
   }
 
@@ -216,7 +218,7 @@ class DeBruijnKMerIndex {
     push_back_buffer_.resize(sz);
     reader.read((char*)&push_back_buffer_[0], sz * sizeof(push_back_buffer_[0]));
     for (size_t i = 0; i < sz; ++i) {
-      KMer s;
+      KMer s(K_);
       size_t idx;
 
       s.BinRead(reader);
@@ -245,7 +247,7 @@ class DeBruijnKMerIndex {
     }
 
     if (check_push_back) {
-      auto it = push_back_index_.right.find(idx);
+      auto it = push_back_index_.right.find(idx - data_.size());
       return (it != push_back_index_.right.end() &&
               it -> second == k);
     }
@@ -437,9 +439,11 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
       writer.write((char*)&(base::push_back_buffer_[i].count_), sizeof(base::push_back_buffer_[0].count_));
     for (auto it = base::push_back_index_.left.begin(), e = base::push_back_index_.left.end(); it != e; ++it) {
       size_t idx = it->second;
-      it->first.BinWrite(writer);
+      KMer::BinWrite(writer, it->first);
       writer.write((char*)&idx, sizeof(idx));
+      sz -= 1;
     }
+    VERIFY(sz == 0);
     traits::raw_serialize(writer, base::kmers);
   }
 
@@ -457,7 +461,7 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
     for (size_t i = 0; i < sz; ++i)
       reader.read((char*)&(base::push_back_buffer_[i].count_), sizeof(base::push_back_buffer_[0].count_));
     for (size_t i = 0; i < sz; ++i) {
-      KMer s;
+      KMer s(base::K_);
       size_t idx;
 
       s.BinRead(reader);
