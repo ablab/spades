@@ -1900,6 +1900,7 @@ public:
 	}
 
 	bool Run() {
+        size_t cnt = 0;
 		INFO("Complex bulge remover started");
 		if (!pics_folder_.empty()) {
 //			remove_dir(pics_folder_);
@@ -1923,14 +1924,14 @@ public:
 							comp_finder.component();
 					if (ProcessComponent(component, candidate_cnt)) {
 						something_done_flag = true;
-						GraphComponent<Graph> gc = component.AsGraphComponent();
+						cnt++;
+                        GraphComponent<Graph> gc = component.AsGraphComponent();
 						vertices_to_post_process.insert(
 								vertices_to_post_process.end(), gc.v_begin(),
 								gc.v_end());
 						break;
 					}
 				}
-				DEBUG("Failed to find component candidate");
 			}
 			FOREACH (VertexId v, vertices_to_post_process) {
 				it.HandleAdd(v);
@@ -1938,6 +1939,7 @@ public:
 			}
 		}
 		INFO("Complex bulge remover finished");
+        INFO("Bulges processed " << cnt);
 		return something_done_flag;
 	}
 
