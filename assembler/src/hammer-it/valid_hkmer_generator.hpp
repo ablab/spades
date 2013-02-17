@@ -96,6 +96,20 @@ class ValidHKMerGenerator {
   }
 
   /**
+   * @result number of nucleotides trimmed from left end
+   */
+  size_t trimmed_left() const {
+    return beg_;
+  }
+
+  /**
+   * @result number of nucleotides trimmed from right end
+   */
+  size_t trimmed_right() const {
+    return len_ - end_;
+  }
+
+  /**
    * @result probability that last generated k-mer is correct.
    */
   double correct_probability() const {
@@ -127,6 +141,7 @@ class ValidHKMerGenerator {
   const char* seq_;
   const char* qual_;
   size_t pos_;
+  size_t beg_;
   size_t end_;
   size_t len_;
   double correct_probability_;
@@ -148,6 +163,7 @@ void ValidHKMerGenerator<kK>::TrimBadQuality() {
       if (GetQual(pos_) >= bad_quality_threshold_)
         break;
     }
+  beg_ = pos_;
   end_ = len_;
   if (qual_)
     for (; end_ > pos_; --end_) {

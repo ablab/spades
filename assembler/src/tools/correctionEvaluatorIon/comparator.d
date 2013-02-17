@@ -31,6 +31,11 @@ ProcessedPair process(Pair pair) {
   auto dist = lev_dist_and_path[0];
   auto path = lev_dist_and_path[1];
 
+  while (path.back == 'r') {
+      path.popBack();
+      --dist;
+  }
+
   return ProcessedPair(pair.read, pair.corrected_sequence, dist, path);
 }
 
@@ -222,6 +227,7 @@ class Comparator(R, CR)
 
     ++total_;
     delta_ += to!long(lev_dist) - to!long(old_lev_dist);
+    old_delta_ -= old_lev_dist;
 
     if (old_lev_dist == 0)
       ++n_perfect_;
@@ -297,7 +303,8 @@ class Comparator(R, CR)
     writeln("   not changed:                          ", perfect_read_no_change_);
     writeln("   worsened:                             ", perfect_read_worsened_);
     writeln("-----------------------------------------");
-    writeln("Average change in levenshtein distance:  ", to!double(delta_) / total_);
+    writeln("Average change in levenshtein distance:  ", to!double(delta_) / total_,
+            " / (max. possible ", to!double(old_delta_) / total_, ")");
 
     outputDistribution("lev_dist.tab", lev_distance_distribution_);
   }
@@ -308,6 +315,7 @@ class Comparator(R, CR)
     int[1024] lev_distance_distribution_;
 
     long delta_;
+    long old_delta_;
     ulong total_;
 
     ulong n_err_;

@@ -23,15 +23,24 @@ static inline size_t hamdistKMer(hammer::HKMer x, hammer::HKMer y,
   return dist;
 }
 
-static inline size_t distanceHKMer(const hammer::HKMer& x, 
-                                   const hammer::HKMer& y,
-                                   unsigned tau = -1) {
+template <int kMismatchCost=1, 
+          int kBaseInsertionCost=1,
+          int kRunInsertionCost=1,
+          int kBaseDeletionCost=1,
+          int kRunDeletionCost=1,
+          typename T1, 
+          typename T2>
+inline size_t distanceHKMer(const T1 &x, 
+                            const T2 &y,
+                            unsigned tau = -1) {
   unsigned dist = 0;
 
-  size_t i = 0, j = 0, ix = 0, iy = 0;
+  using hammer::internal::getSize;
+
+  size_t i = 0, j = 0, ix = 0, iy = 0, x_sz = getSize(x), y_sz = getSize(y);
   hammer::HomopolymerRun cx = x[0], cy = y[0];
 
-  while (i < hammer::K && j < hammer::K) {
+  while (i < x_sz && j < y_sz) {
     if (ix != i)
       cx = x[ix = i];
 
@@ -47,7 +56,10 @@ static inline size_t distanceHKMer(const hammer::HKMer& x,
 
       if (cx.len >= 4 && cy.len >= 4) {
         ++i, ++j;
-        dist += abs(cx.len - cy.len);
+        if (cx.len < cy.len)
+          dist += (cy.len - cx.len) * kBaseInsertionCost;
+        else
+          dist += (cx.len - cy.len) * kBaseDeletionCost;
         if (dist > tau)
           return dist;
       } else {
@@ -57,24 +69,26 @@ static inline size_t distanceHKMer(const hammer::HKMer& x,
 
     } else {
 
-      dist += 1;
-      if (dist > tau)
-        return dist;
-
       using namespace hammer::errHelper;
       auto hint = getHint(x, y, i, j, cx.len, cy.len);
       
       switch (hint) {
         case kMismatch:
           --cx.len, --cy.len;
+          dist += kMismatchCost;
           break;
         case kInsertion:
           --cy.len;
+          dist += kRunInsertionCost;
           break;
         case kDeletion:
           --cx.len;
+          dist += kRunDeletionCost;
           break;
       }
+
+      if (dist > tau)
+        return dist;
     }
 
     if (cx.len == 0) 

@@ -57,7 +57,7 @@ hammer::HKMer center(const KMerData &data, const std::vector<unsigned>& kmers) {
   return res;
 }
 
-int main(void) {
+int main(int argc, char** argv) {
   srand(42);
   srandom(42);
 
@@ -96,7 +96,13 @@ int main(void) {
 
   using namespace hammer::correction;
   EndsTrimmer trimmer(4, 4);
+#ifdef DEBUG_ION_CONSENSUS
+  std::string rname(argv[1]);
+  int startpos = std::atoi(argv[2]);
+  SingleReadCorrector<EndsTrimmer, KeepTrimmedEnds> read_corrector(kmer_data, trimmer, rname, startpos);
+#else
   SingleReadCorrector<EndsTrimmer, KeepTrimmedEnds> read_corrector(kmer_data, trimmer);
+#endif
   hammer::ReadProcessor(1).Run(irs, read_corrector, ors);
 
 #if 0

@@ -31,7 +31,8 @@ struct HelperTable {
   const unsigned k_;
   const uint32_t* storage_;
 
-  Hint lookupHint(const hammer::HKMer& x, const hammer::HKMer& y,
+  template <typename T1, typename T2>
+  Hint lookupHint(const T1 &x, const T1 &y,
                   size_t x_offset, size_t y_offset,
                   size_t x_nfront, size_t y_nfront) const {
 
@@ -45,7 +46,8 @@ struct HelperTable {
     return static_cast<Hint>((bt >> shift) & 0x3);
   }
 
-  static unsigned getCode(const hammer::HKMer& x, size_t x_offset,
+  template <typename Runs>
+  static unsigned getCode(const Runs& x, size_t x_offset,
                           size_t x_nfront, size_t k) {
     unsigned code = 0;
     unsigned len = 0;
@@ -71,14 +73,16 @@ struct HelperTable {
 // tables for k = 1, 2, ..., MAX_K
 extern const HelperTable helper_tables[];
 
-static inline size_t getNumberOfRemainingBases(const hammer::HKMer& x,
+template <typename Runs>
+static inline size_t getNumberOfRemainingBases(const Runs &x,
                                                size_t x_offset,
                                                size_t x_nfront) {
   size_t n = x_nfront;
   if (n >= MAX_K)
     return MAX_K;
 
-  for (size_t i = x_offset + 1; i < hammer::K; ++i) {
+  auto sz = hammer::internal::getSize(x);
+  for (size_t i = x_offset + 1; i < sz; ++i) {
     n += x[i].len;
     if (n >= MAX_K)
       return MAX_K;
@@ -90,14 +94,15 @@ static inline size_t getNumberOfRemainingBases(const hammer::HKMer& x,
 }; // namespace internal
 
 /// Estimate what kind of error occurred at the position
-static inline Hint getHint(const hammer::HKMer& x, const hammer::HKMer& y,
+template <typename T1, typename T2>
+static inline Hint getHint(const T1 &x, const T2 &y,
                            size_t x_offset, size_t y_offset,
                            size_t x_nfront, size_t y_nfront) {
   size_t x_rem = internal::getNumberOfRemainingBases(x, x_offset, x_nfront);
   size_t y_rem = internal::getNumberOfRemainingBases(y, y_offset, y_nfront);
 
   auto& table = internal::helper_tables[std::min(x_rem, y_rem) - 1];
-  return table.lookupHint(x, y, x_offset, y_offset, x_nfront, y_nfront);
+  return table.lookupHint<T1, T2>(x, y, x_offset, y_offset, x_nfront, y_nfront);
 }
 
 }; // namespace errHelper

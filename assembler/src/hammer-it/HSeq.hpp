@@ -228,6 +228,22 @@ std::ostream& operator<<(std::ostream& os, const HSeq<N> &seq) {
   return os;
 }
 
+namespace internal {
+  template <size_t N>
+  inline size_t getSize(const hammer::HSeq<N> &a) {
+    return N;
+  }
+
+  inline size_t getSize(const std::vector<hammer::HomopolymerRun> &a) {
+    return a.size();
+  }
+
+  template <size_t N>
+  inline size_t getSize(const std::array<hammer::HomopolymerRun, N> &a) {
+    return N;
+  }
+}
+
 };
 
 #endif // __HAMMER_HSEQ_HPP__
