@@ -216,13 +216,13 @@ public:
     bool EdgeInShortLoop() const;
 
     void Print() const {
-        INFO("== Detector data_ ==");
+        DEBUG("== Detector data_ ==");
         for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
-            INFO("Edge " << g_.length(iter->first));
+            DEBUG("Edge " << g_.length(iter->first));
 
             const LoopDetectorData::AltenativeMap& alts = iter->second->GetAlternatives();
             for(auto alt = alts.begin(); alt != alts.end(); ++alt) {
-                INFO("Edge " << g_.length(alt->first) << ", weight " << alt->second);
+                DEBUG("Edge " << g_.length(alt->first) << ", weight " << alt->second);
             }
         }
     }
@@ -629,11 +629,11 @@ public:
     }
 
     void Print() const {
-        INFO("Path " << id_);
-        INFO("Length " << totalLength_);
-        INFO("#, edge, length, total length");
+        DEBUG("Path " << id_);
+        DEBUG("Length " << totalLength_);
+        DEBUG("#, edge, length, total length");
         for(size_t i = 0; i < Size(); ++i) {
-            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
+            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
         }
     }
 
@@ -756,7 +756,7 @@ public:
     }
 
     void CheckSymmetry() const {
-        INFO("Checking symmetry");
+        DEBUG("Checking symmetry");
         for (size_t i = 0; i < size(); ++i) {
             if (Get(i)->Conjugate() != *GetConjugate(i)) {
                 Get(i)->Print();

@@ -132,8 +132,8 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
 	    resolver.removeOverlaps(paths, mainPE->GetCoverageMap());
 	}
 
-	mainPE->GetCoverageMap().PrintUncovered();
-	paths.CheckSymmetry();
+	//mainPE->GetCoverageMap().PrintUncovered();
+	//paths.CheckSymmetry();
 
 	DEBUG("Adding uncovered edges");
 	resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
