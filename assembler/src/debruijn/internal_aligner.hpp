@@ -18,7 +18,6 @@
 #include "levenshtein.hpp"
 
 #include "omni/omni_tools.hpp"
-#include "omni/omnigraph.hpp"
 
 #include "omni/id_track_handler.hpp"
 #include "omni/edge_labels_handler.hpp"

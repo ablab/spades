@@ -42,7 +42,6 @@
 
 #include "omni/omni_utils.hpp"
 #include "omni/omni_tools.hpp"
-#include "omni/omnigraph.hpp"
 #include "omni/splitters.hpp"
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"

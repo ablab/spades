@@ -34,7 +34,7 @@ private:
 
     void convert_reads_to_binary() {
 
-        if (fileExists(cfg::get().temp_bin_reads_info)) {
+        if (FileExists(cfg::get().temp_bin_reads_info)) {
             std::ifstream info;
             info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::in);
 

@@ -87,7 +87,7 @@ void copy_configs(string cfg_filename, string to) {
 }
 
 void load_config(string cfg_filename) {
-  checkFileExistenceFATAL(cfg_filename);
+  CheckFileExistenceFATAL(cfg_filename);
 
   cfg::create_instance(cfg_filename);
 
@@ -113,10 +113,10 @@ void create_console_logger(string cfg_filename) {
 
   string log_props_file = cfg::get().log_filename;
 
-  if (!fileExists(log_props_file))
+  if (!FileExists(log_props_file))
     log_props_file = path::append_path(path::parent_path(cfg_filename), cfg::get().log_filename);
 
-  logger *lg = create_logger(fileExists(log_props_file) ? log_props_file : "");
+  logger *lg = create_logger(FileExists(log_props_file) ? log_props_file : "");
   lg->add_writer(std::make_shared<console_writer>());
   attach_logger(lg);
 }

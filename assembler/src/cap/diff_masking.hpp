@@ -270,6 +270,7 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 
 	vector<ContigStream*> corr_streams = OpenStreams(
 			CorrectPaths(suffixes, out_root, current_k));
+	//recursive call
 	MaskDifferencesAndSave(corr_streams, suffixes, out_root, k_values);
 
 	for (auto it = corr_streams.begin(); it != corr_streams.end(); ++it) {

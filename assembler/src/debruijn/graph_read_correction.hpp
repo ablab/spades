@@ -122,25 +122,6 @@ private:
 	;
 };
 
-//template<class Graph>
-//const vector<vector<typename Graph::EdgeId>> SplitIntoContigousPaths(const Graph& g,
-//		const vector<typename Graph::EdgeId>& path) {
-//	typedef typename Graph::EdgeId EdgeId;
-//	if (path.empty()) {
-//		return vector<vector<EdgeId>>();
-//	}
-//	vector<vector<EdgeId>> answer;
-//	answer.push_back(vector<EdgeId>({path[0]}));
-//	for (size_t i = 1; i < path.size(); ++i) {
-//		if (g.EdgeStart(path[i]) == g.EdgeEnd(answer.back().back())) {
-//			answer.back().push_back(path[i]);
-//		} else {
-//			answer.push_back(vector<EdgeId>({path[i]}));
-//		}
-//	}
-//	return answer;
-//}
-
 template<class Graph>
 Sequence MergeSequences(const Graph& g,
 		const vector<typename Graph::EdgeId>& continuous_path) {

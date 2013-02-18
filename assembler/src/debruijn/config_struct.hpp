@@ -766,7 +766,7 @@ inline void load_reference_genome(debruijn_config::dataset& ds,
 	}
 	if (ds.reference_genome_filename[0] != '/')
 		ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
-	checkFileExistenceFATAL(ds.reference_genome_filename);
+	CheckFileExistenceFATAL(ds.reference_genome_filename);
 	io::Reader genome_stream(ds.reference_genome_filename);
 	io::SingleRead genome;
 	genome_stream >> genome;
@@ -950,7 +950,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
 	load(cfg.max_memory, pt, "max_memory");
 
-	checkFileExistenceFATAL(cfg.dataset_file);
+	CheckFileExistenceFATAL(cfg.dataset_file);
 	boost::property_tree::ptree ds_pt;
 	boost::property_tree::read_info(cfg.dataset_file, ds_pt);
 	load(cfg.ds, ds_pt, true);

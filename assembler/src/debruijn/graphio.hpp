@@ -19,7 +19,6 @@
 #include "omni/abstract_nonconjugate_graph.hpp"
 
 #include "omni/omni_tools.hpp"
-#include "omni/omnigraph.hpp"
 
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
