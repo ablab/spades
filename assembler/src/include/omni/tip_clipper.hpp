@@ -67,6 +67,7 @@ public:
 	}
 };
 
+//todo refactor
 /**
  * This class removes tips from given graph with the following algorithm: it iterates through all edges of
  * the graph(in order defined by certain comparator) and for each edge checks if this edge is likely to be

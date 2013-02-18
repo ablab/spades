@@ -269,7 +269,7 @@ private:
 };
 
 template<class Graph>
-void ClipTips(Graph& graph,
+bool ClipTips(Graph& graph,
 		//todo what is this parameter for
 		size_t max_tip_length,
 		const shared_ptr<Predicate<typename Graph::EdgeId>>& condition,
@@ -280,14 +280,11 @@ void ClipTips(Graph& graph,
 	omnigraph::TipClipper<Graph> tc(graph, max_tip_length, condition,
 			raw_removal_handler);
 
-	tc.ClipTips();
-
-	Compressor<Graph> compressor(graph);
-	compressor.CompressAllVertices();
+	return tc.ClipTips();
 }
 
 template<class Graph>
-void ClipTips(Graph& g,
+bool ClipTips(Graph& g,
 		const debruijn_config::simplification::tip_clipper& tc_config,
 		size_t read_length = 0, double detected_coverage_threshold = 0.,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
@@ -301,7 +298,7 @@ void ClipTips(Graph& g,
 	auto condition = parser();
 
 	INFO("SUBSTAGE == Clipping tips");
-	ClipTips(g, parser.max_length_bound(), condition, removal_handler);
+	return ClipTips(g, parser.max_length_bound(), condition, removal_handler);
 }
 
 //enabling tip projection, todo optimize if hotspot
@@ -320,13 +317,13 @@ boost::function<void(typename Graph::EdgeId)> EnableProjection(gp_t& gp,
 }
 
 template<class gp_t>
-void ClipTipsWithProjection(gp_t& gp,
+bool ClipTipsWithProjection(gp_t& gp,
 		const debruijn_config::simplification::tip_clipper& tc_config,
 		bool enable_projection = true, size_t read_length = 0,
 		double detected_coverage_threshold = 0.,
 		boost::function<void(typename gp_t::graph_t::EdgeId)> removal_handler_f =
 				0, size_t iteration_count = 1, size_t iteration = 0) {
-	ClipTips(gp.g, tc_config, read_length, detected_coverage_threshold,
+	return ClipTips(gp.g, tc_config, read_length, detected_coverage_threshold,
 			enable_projection ?
 					EnableProjection(gp, removal_handler_f) : removal_handler_f,
 			iteration_count, iteration);
@@ -343,7 +340,7 @@ typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF GetBulgeCondition(
 }
 
 template<class Graph>
-void RemoveBulges(Graph& g,
+bool RemoveBulges(Graph& g,
 		const debruijn_config::simplification::bulge_remover& br_config,
 		boost::function<void(EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
@@ -365,7 +362,7 @@ void RemoveBulges(Graph& g,
 			br_config.max_relative_delta, GetBulgeCondition<Graph>(g), 0,
 			removal_handler);
 
-	br.RemoveBulges();
+	return br.RemoveBulges();
 }
 
 template<class Graph>
@@ -517,7 +514,6 @@ bool AllTopology(Graph &g,
 	res |= RemoveThorns(g, cfg::get().simp.trec, removal_handler);
 	res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
 			removal_handler);
-	res |= RemoveComplexBulges(g, cfg::get().simp.cbr, iteration);
 	return res;
 }
 
@@ -616,6 +612,9 @@ void PostSimplification(conj_graph_pack& gp,
 		INFO("Final bulge removal:");
 		RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
 		printer(ipp_final_bulge_removal, str(format("_%d") % iteration));
+
+		INFO("Complex bulge removal:");
+	    RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
 
 		iteration++;
 	}

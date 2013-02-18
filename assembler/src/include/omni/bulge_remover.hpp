@@ -128,7 +128,7 @@ class BulgeRemover: private boost::noncopyable {
 
 	size_t PathLength(const vector<EdgeId>& path);
 
-	void ProcessNext(const EdgeId& edge);
+	bool ProcessNext(const EdgeId& edge);
 
 	/**
 	 * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
@@ -221,15 +221,17 @@ public:
 					opt_callback), removal_handler_(removal_handler) {
 	}
 
-	void RemoveBulges() {
+	bool RemoveBulges() {
+		bool changed = false;
 		CoverageComparator<Graph> comparator(graph_);
 		for (auto iterator = graph_.SmartEdgeBegin(comparator);
 				!iterator.IsEnd(); ++iterator) {
 			EdgeId e = *iterator;
 			if (math::ge(graph_.coverage(e), max_coverage_))
-				return;
-			this->ProcessNext(e);
+				break;
+			changed |= ProcessNext(e);
 		}
+		return changed;
 	}
 
 private:
@@ -262,7 +264,7 @@ size_t BulgeRemover<Graph>::PathLength(const vector<EdgeId>& path) {
 }
 
 template<class Graph>
-void BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
+bool BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 
 //	CoverageComparator<Graph> comparator(graph_);
 
@@ -271,7 +273,7 @@ void BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 	TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
 
 	if (!PossibleBulgeEdge(edge)) {
-		return;
+		return false;
 	}
 
 	size_t kplus_one_mer_coverage = math::round(
@@ -307,8 +309,10 @@ void BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 		TRACE("Satisfied condition");
 
 		ProcessBulge(edge, path);
+		return true;
 	} else {
 		TRACE("Didn't satisfy condition");
+		return false;
 	}
 }
 }
