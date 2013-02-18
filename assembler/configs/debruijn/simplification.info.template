@@ -2,9 +2,6 @@
 
 default
 {
-	;simplification mode: normal, topology, max_flow
-	simpl_mode topology
-	
 	; tip clipper:
 	tc
 	{
@@ -58,6 +55,14 @@ default
 		unreliable_coverage		2.5
 	}
 	
+	; interstrand erroneous connection connections remover (thorn remover)
+	isec
+	{
+		max_ec_length_coefficient	100	; max_ec_length = k + max_ec_length_coefficient
+		uniqueness_length		1500
+		span_distance		15000
+	}
+
 	; max flow erroneous connection connections remover
 	mfec
 	{

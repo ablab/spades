@@ -31,7 +31,7 @@ def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
     subst_dict["align_after_RR"] = bool_to_str(cfg.paired_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one and cfg.gap_closer)
     subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
-    subst_dict["additional_ec_removing"] = bool_to_str(last_one)
+    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory

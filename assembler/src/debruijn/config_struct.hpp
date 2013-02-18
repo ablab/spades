@@ -39,10 +39,6 @@ enum working_stage {
 	ws_repeats_resolving
 };
 
-enum simplification_mode {
-	sm_normal, sm_topology, sm_max_flow,
-};
-
 enum estimation_mode {
 	em_simple, em_weighted, em_extensive, em_smoothing
 };
@@ -106,7 +102,6 @@ inline std::string MakeLaunchTimeDirName() {
 // struct for debruijn project's configuration file
 struct debruijn_config {
 	typedef boost::bimap<string, working_stage> stage_name_id_mapping;
-	typedef boost::bimap<string, simplification_mode> simpl_mode_id_mapping;
 	typedef boost::bimap<string, estimation_mode> estimation_mode_id_mapping;
 	typedef boost::bimap<string, resolving_mode> resolve_mode_id_mapping;
 
@@ -128,15 +123,6 @@ struct debruijn_config {
 						ws_repeats_resolving) };
 
 		return stage_name_id_mapping(info, utils::array_end(info));
-	}
-
-	static const simpl_mode_id_mapping FillSimplifModeInfo() {
-		simpl_mode_id_mapping::value_type info[] = {
-				simpl_mode_id_mapping::value_type("normal", sm_normal),
-				simpl_mode_id_mapping::value_type("topology", sm_topology),
-				simpl_mode_id_mapping::value_type("max_flow", sm_max_flow) };
-
-		return simpl_mode_id_mapping(info, utils::array_end(info));
 	}
 
 	static const estimation_mode_id_mapping FillEstimationModeInfo() {
@@ -168,11 +154,6 @@ struct debruijn_config {
 		return working_stages_info;
 	}
 
-	static const simpl_mode_id_mapping& simpl_mode_info() {
-		static simpl_mode_id_mapping simpl_mode_info = FillSimplifModeInfo();
-		return simpl_mode_info;
-	}
-
 	static const estimation_mode_id_mapping& estimation_mode_info() {
 		static estimation_mode_id_mapping est_mode_info =
 				FillEstimationModeInfo();
@@ -182,22 +163,6 @@ struct debruijn_config {
 	static const resolve_mode_id_mapping& resolve_mode_info() {
 		static resolve_mode_id_mapping info = FillResolveModeInfo();
 		return info;
-	}
-
-	static const std::string& simpl_mode_name(simplification_mode mode_id) {
-		auto it = simpl_mode_info().right.find(mode_id);
-
-		VERIFY_MSG(it != simpl_mode_info().right.end(),
-				"No name for simplification mode id = " << mode_id);
-		return it->second;
-	}
-
-	static simplification_mode simpl_mode_id(std::string name) {
-		auto it = simpl_mode_info().left.find(name);
-		VERIFY_MSG(it != simpl_mode_info().left.end(),
-				"There is no simplification mode with name = " << name);
-
-		return it->second;
 	}
 
 	static const std::string& working_stage_name(working_stage stage_id) {
@@ -290,7 +255,14 @@ struct debruijn_config {
 			double unreliable_coverage;
 		};
 
+		struct interstrand_ec_remover {
+			size_t max_ec_length_coefficient;
+			size_t uniqueness_length;
+			size_t span_distance;
+		};
+
 		struct max_flow_ec_remover {
+		    bool enabled;
 			double max_ec_length_coefficient;
 			size_t uniqueness_length;
 			size_t plausibility_length;
@@ -310,7 +282,6 @@ struct debruijn_config {
 			size_t max_length_difference;
 		};
 
-		simplification_mode simpl_mode;
 		tip_clipper tc;
 		topology_tip_clipper ttc;
 		bulge_remover br;
@@ -318,6 +289,7 @@ struct debruijn_config {
 		relative_coverage_ec_remover rec;
 		topology_based_ec_remover tec;
 		tr_based_ec_remover trec;
+		interstrand_ec_remover isec;
 		max_flow_ec_remover mfec;
 		isolated_edges_remover ier;
 		complex_bulge_remover cbr;
@@ -450,7 +422,7 @@ public:
 	bool compute_paths_number;
 
 	bool use_additional_contigs;
-    bool additional_ec_removing;
+    bool topology_simplif_enabled;
 	bool use_unipaths;
 	std::string additional_contigs;
 
@@ -524,15 +496,6 @@ inline void load(resolving_mode& rm, boost::property_tree::ptree const& pt,
 	if (complete || pt.find(key) != pt.not_found()) {
 		std::string ep = pt.get<std::string>(key);
 		rm = debruijn_config::resolving_mode_id(ep);
-	}
-}
-
-inline void load(simplification_mode& simp_mode,
-		boost::property_tree::ptree const& pt, std::string const& key,
-		bool complete) {
-	if (complete || pt.find(key) != pt.not_found()) {
-		std::string ep = pt.get<std::string>(key);
-		simp_mode = debruijn_config::simpl_mode_id(ep);
 	}
 }
 
@@ -613,6 +576,14 @@ inline void load(
 	load(tec.uniqueness_length, pt, "uniqueness_length");
 }
 
+inline void load(debruijn_config::simplification::interstrand_ec_remover &isec,
+		boost::property_tree::ptree const &pt, bool complete) {
+	using config_common::load;
+	load(isec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
+	load(isec.uniqueness_length, pt, "uniqueness_length");
+	load(isec.span_distance, pt, "span_distance");
+}
+
 inline void load(debruijn_config::simplification::tr_based_ec_remover &trec,
 		boost::property_tree::ptree const &pt, bool complete) {
 	using config_common::load;
@@ -625,6 +596,7 @@ inline void load(debruijn_config::simplification::max_flow_ec_remover& mfec,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
+	load(mfec.enabled, pt, "enabled");
 	load(mfec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
 	load(mfec.plausibility_length, pt, "plausibility_length");
 	load(mfec.uniqueness_length, pt, "uniqueness_length");
@@ -789,8 +761,6 @@ inline void load(debruijn_config::simplification& simp,
 		boost::property_tree::ptree const& pt, bool complete) {
 	using config_common::load;
 
-	load(simp.simpl_mode, pt, "simpl_mode", complete);
-
 	load(simp.tc, pt, "tc", complete); // tip clipper:
 	load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
 	load(simp.br, pt, "br", complete); // bulge remover:
@@ -798,6 +768,7 @@ inline void load(debruijn_config::simplification& simp,
 	load(simp.rec, pt, "rec", complete); // relative coverage erroneous connections remover:
 	load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
 	load(simp.trec, pt, "trec", complete); // topology and reliability based erroneous connections remover:
+	load(simp.isec, pt, "isec", complete); // interstrand erroneous connections remover (thorn remover):
 	load(simp.mfec, pt, "mfec", complete); // max flow erroneous connections remover:
 	load(simp.ier, pt, "ier", complete); // isolated edges remover
 	load(simp.cbr, pt, "cbr", complete); // complex bulge remover
@@ -907,7 +878,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.entry_point, pt, "entry_point");
 
 	load(cfg.use_additional_contigs, pt, "use_additional_contigs");
-	load(cfg.additional_ec_removing, pt, "additional_ec_removing");
+	load(cfg.topology_simplif_enabled, pt, "topology_simplif_enabled");
 	load(cfg.use_unipaths, pt, "use_unipaths");
 
 	load(cfg.additional_contigs, pt, "additional_contigs");

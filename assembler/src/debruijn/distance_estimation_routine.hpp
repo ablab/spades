@@ -71,7 +71,6 @@ void estimate_distance(conj_graph_pack& gp,
                        const PairedIndexT& paired_index,
                              PairedIndexT& clustered_index)
 {
-  using debruijn_graph::simplification_mode;
   using debruijn_graph::estimation_mode;
 
   if (!cfg::get().developer_mode) {
