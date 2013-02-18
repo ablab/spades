@@ -76,7 +76,7 @@ class BEdge(Abstract_Edge):
             cur_len += diag.offsetc - diag.offseta
         return True
 
-    def get_seq_for_contig(self, K, d, is_sc):
+    def get_seq_for_contig(self, K, d, is_sc, is_careful):
         if is_sc:
             CUT_THRESHOLD = 2.0 #TODO: should take from histogram
             CUT_LENGTH_THRESHOLD = 5.0
@@ -90,10 +90,11 @@ class BEdge(Abstract_Edge):
         first = self.diagonals[0]
         last = self.diagonals[-1]
         if len(seq1) > MIN_LENGTH:
-            can_add_begin = self.__can_add(d, 1, 0, CUT_LENGTH_THRESHOLD, CUT_THRESHOLD)
-            can_add_end = self.__can_add(d, -1, len(self.diagonals) - 1, CUT_LENGTH_THRESHOLD, CUT_THRESHOLD)
-#            can_add_begin = False;
-#            can_add_end = False;
+            can_add_begin = False;
+            can_add_end = False;
+            if (not is_careful):
+                can_add_begin = self.__can_add(d, 1, 0, CUT_LENGTH_THRESHOLD, CUT_THRESHOLD)
+                can_add_end = self.__can_add(d, -1, len(self.diagonals) - 1, CUT_LENGTH_THRESHOLD, CUT_THRESHOLD)
             begin = first.rectangle.e1.seq[:first.offseta] if can_add_begin else ''
             end = last.rectangle.e2.seq[last.offsetd + K:] if can_add_end else ''
             if can_add_end or can_add_begin:
@@ -791,7 +792,7 @@ class BGraph(Abstract_Graph):
         self.logger.info("Condensed %d bi-vertices (out of %d). %d bi-vertices left." % (l - len(self.vs), l,
                                                                                          len(self.vs)))
 
-    def project(self, outpath, is_sc):
+    def project(self, outpath, is_sc, is_careful):
         g = graph.Graph()
         count = 0
         for key, be in self.es.items():
@@ -803,7 +804,7 @@ class BGraph(Abstract_Graph):
             x, y = be.conj.v1, be.conj.v2
             #assert v != w
             #assert v != x
-            seq = be.get_seq_for_contig(self.graph.K, self.d, is_sc)
+            seq = be.get_seq_for_contig(self.graph.K, self.d, is_sc, is_careful)
             cvr = be.get_cvr()
             g.add_vertex(v.vid, y.vid)
             g.add_vertex(y.vid, v.vid)

@@ -121,7 +121,7 @@ class Graph(Abstract_Graph):
                     edges_before_loop[e.eid] = result_loop
         return edges_before_loop
 
-    def fasta_for_long_contigs(self, K, d, is_sc, stream=sys.stdout, should_connect=dict(), scaffold=dict()):
+    def fasta_for_long_contigs(self, K, d, is_sc, is_careful,  stream=sys.stdout, should_connect=dict(), scaffold=dict()):
         in_paths = set()
         for edge_id, path in should_connect.items():
             in_paths.add(path[-1].eid)
@@ -138,7 +138,7 @@ class Graph(Abstract_Graph):
         contig_id = 0
         
         empty_format_function = lambda x : ""
-        scaffold_format_function = lambda be : be.get_seq_for_contig(K, d, is_sc) + "NNN"
+        scaffold_format_function = lambda be : be.get_seq_for_contig(K, d, is_sc, is_careful) + "NNN"
         should_connect_pre_format = lambda path : path[0].get_begin_seq(K, d, is_sc)
         should_connect_format = lambda be: be.get_midle_seq() 
         should_connect_post_format = lambda path : path[-1].get_end_seq(K, d, is_sc)
