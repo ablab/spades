@@ -115,7 +115,7 @@ void HammerTools::PrintKMerResult(std::ostream& outf, const vector<KMerStat> & k
 
 void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
                                     std::vector<Read> &reads, size_t buf_size,
-                                    size_t &changedReads, size_t &changedNucleotides,
+                                    size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                                     const KMerData &data) {
   unsigned correct_nthreads = min(cfg::get().correct_nthreads, cfg::get().general_max_nthreads);
   bool discard_singletons = cfg::get().bayes_discard_only_singletons;
@@ -135,10 +135,12 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
 
   changedReads += corrector.changed_reads();
   changedNucleotides += corrector.changed_nucleotides();
+  uncorrectedNucleotides += corrector.uncorrected_nucleotides();
+  totalNucleotides += corrector.total_nucleotides();
 }
 
 void HammerTools::CorrectReadFile(const KMerData &data,
-                                  size_t & changedReads, size_t & changedNucleotides,
+                                  size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                                   const std::string &fname,
                                   ofstream *outf_good, ofstream *outf_bad ) {
   int qvoffset = cfg::get().input_qvoffset;
@@ -162,7 +164,7 @@ void HammerTools::CorrectReadFile(const KMerData &data,
     INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
 
     HammerTools::CorrectReadsBatch(res, reads, buf_size,
-                                   changedReads, changedNucleotides,
+                                   changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
                                    data);
 
     INFO("Processed batch " << buffer_no);
@@ -175,7 +177,7 @@ void HammerTools::CorrectReadFile(const KMerData &data,
 }
 
 void HammerTools::CorrectPairedReadFiles(const KMerData &data,
-                                         size_t &changedReads, size_t &changedNucleotides,
+                                         size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                                          const std::string &fnamel, const std::string &fnamer,
                                          ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp) {
   int qvoffset = cfg::get().input_qvoffset;
@@ -203,10 +205,10 @@ void HammerTools::CorrectPairedReadFiles(const KMerData &data,
     INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
   
     HammerTools::CorrectReadsBatch(left_res, l, buf_size,
-                                   changedReads, changedNucleotides,
+                                   changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
                                    data);
     HammerTools::CorrectReadsBatch(right_res, r, buf_size,
-                                   changedReads, changedNucleotides,
+                                   changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
                                    data);
  
     INFO("Processed batch " << buffer_no);
@@ -239,6 +241,8 @@ hint_t HammerTools::CorrectAllReads() {
 	// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 	size_t changedReads = 0;
 	size_t changedNucleotides = 0;
+  size_t uncorrectedNucleotides = 0;
+  size_t totalNucleotides = 0;
 
 	int correct_nthreads = min( cfg::get().correct_nthreads, cfg::get().general_max_nthreads );
 
@@ -262,7 +266,7 @@ hint_t HammerTools::CorrectAllReads() {
 		ofstream ofunp (HammerTools::getReadsFilename(cfg::get().input_working_dir, 2,       Globals::iteration_no, "cor").c_str());
 
     HammerTools::CorrectPairedReadFiles(*Globals::kmer_data,
-                                        changedReads, changedNucleotides,
+                                        changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
                                         Globals::input_filenames[iFile], Globals::input_filenames[iFile+1],
                                         &ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp);
 		INFO("  " << Globals::input_filenames[iFile].c_str() << " and " << Globals::input_filenames[iFile+1].c_str() << " corrected as a pair.");
@@ -283,7 +287,7 @@ hint_t HammerTools::CorrectAllReads() {
 		ofstream ofgood(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor").c_str(), fstream::app);
 		ofstream ofbad( HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "bad").c_str());
     HammerTools::CorrectReadFile(*Globals::kmer_data,
-                                 changedReads, changedNucleotides,
+                                 changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
                                  Globals::input_filenames[iFile],
                                  &ofgood, &ofbad);
 		INFO("  " << Globals::input_filenames[iFile].c_str() << " corrected.");
@@ -297,5 +301,6 @@ hint_t HammerTools::CorrectAllReads() {
 	}
 
 	INFO("Correction done. Changed " << changedNucleotides << " bases in " << changedReads << " reads.");
+  INFO("Failed to correct " << uncorrectedNucleotides << " bases out of " << totalNucleotides << ".");
 	return changedReads;
 }

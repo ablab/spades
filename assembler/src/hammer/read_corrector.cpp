@@ -91,6 +91,7 @@ bool ReadCorrector::CorrectOneRead(Read & r,
   // at this point the array v contains votes for consensus
 
   size_t res = 0; // how many nucleotides have really changed?
+  size_t missed = 0;
   // find max consensus element
   for (size_t j=0; j < read_size; ++j) {
     char cmax = seq[j]; unsigned nummax = 0;
@@ -100,7 +101,11 @@ bool ReadCorrector::CorrectOneRead(Read & r,
       }
     }
     if (seq[j] != cmax)
-      ++res;
+      res += 1;
+    else if (nummax == 0)
+      missed += 1;
+
+
     seq[j] = cmax;
   }
 
@@ -120,6 +125,14 @@ bool ReadCorrector::CorrectOneRead(Read & r,
 #   pragma omp atomic
     changed_reads_ += 1;
   }
+
+  if (missed) {
+#   pragma omp atomic
+    uncorrected_nucleotides_ += missed;
+  }
+
+# pragma omp atomic
+  total_nucleotides_ += read_size;
 
   return isGood;
 }

@@ -51,16 +51,16 @@ public:
 
   /// parallel correction of batch of reads
 	static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
-                                size_t &changedReads, size_t &changedNucleotides,
+                                size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                                 const KMerData &data);
 	/// correct reads in a given file
 	static void CorrectReadFile(const KMerData &data,
-                              size_t & changedReads, size_t & changedNucleotides,
+                              size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                               const std::string &fname,
                               ofstream *outf_good, ofstream *outf_bad);
 	/// correct reads in a given pair of files
 	static void CorrectPairedReadFiles(const KMerData &data,
-                                     size_t & changedReads, size_t & changedNucleotides,
+                                     size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                                      const std::string &fnamel, const std::string &fnamer,
                                      ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp);
 	/// correct all reads
