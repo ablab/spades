@@ -65,7 +65,7 @@ SPAdes comes in three separate modules:
         <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/" target="_blank">MDA single-cell <i>E.coli</i></a>; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp </li>
     </ul>
 <p>
-    We ran SPAdes with default parameters using 16 threads on server with Intel Xeon 2.27GHz processors. BayesHammer runs approximately 1 hour and takes up to 15Gb of RAM to perform read error correction on each data set. Assembly takes 35 minutes and 4Gb of RAM for E.coli isolate data set; as for E.coli single-cell data set it takes 55 minutes and 6Gb of RAM. MismatchCorrector runs for about 2 hours and requires up to 8Gb of RAM. All modules also require additional disk space for temporary files. See table below for more precise values.
+    We ran SPAdes with default parameters using 16 threads on server with Intel Xeon 2.27GHz processors. BayesHammer runs approximately 1 hour and takes up to 15Gb of RAM to perform read error correction on each data set. Assembly takes 35 minutes and 4Gb of RAM for E.coli isolate data set; as for E.coli single-cell data set it takes 55 minutes and 6Gb of RAM. MismatchCorrector runs for about an hour on standard E.coli, about 2 hours on single-cell one and requires 8Gb of RAM. All modules also require additional disk space for temporary files. See table below for more precise values.
 
 <p>
     <table border="1" cellpadding="4" cellspacing="0">
@@ -107,12 +107,12 @@ SPAdes comes in three separate modules:
 
         <tr>
             <td> MismatchCorrector </td>
-            <td align="center"> 120 </td> 
-            <td align="center"> 7 </td>
-            <td align="center"> 21 </td>
-            <td align="center"> 150 </td> 
+            <td align="center"> 60 </td> 
             <td align="center"> 8 </td>
-            <td align="center"> 23 </td>
+            <td align="center"> 24 </td>
+            <td align="center"> 120 </td> 
+            <td align="center"> 8 </td>
+            <td align="center"> 24 </td>
         </tr>
     </table>
 
