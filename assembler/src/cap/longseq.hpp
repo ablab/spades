@@ -348,7 +348,7 @@ class LongSeq {
 
     if (size_ == 0) {
       return "";
-    } 
+    }
     //if (size_ == 1)
     if (HasExtraFrontChar()) {
       return "" + nucl(FirstChar());
@@ -444,6 +444,11 @@ class LongSeq {
       return l.FirstChar() == r.FirstChar() && l.LastChar() < r.LastChar();
     }
   };
+
+  bool operator<(const LongSeq<HashT>& that) const{
+      static less2 comp;
+      return comp(*this, that);
+  }
 
   /**
    * Denotes some (weird) order on k-mers. Works fast.

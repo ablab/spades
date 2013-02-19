@@ -63,7 +63,7 @@ void ConstructGraph(Graph& g, EdgeIndex<Graph>& index,
 }
 
 inline Sequence ReadGenome(const string& filename) {
-	checkFileExistenceFATAL(filename);
+	CheckFileExistenceFATAL(filename);
 	io::Reader genome_stream(filename);
 	return ReadSequence(genome_stream);
 }
@@ -96,7 +96,7 @@ inline vector<Sequence> AllSequences(ContigStream& stream) {
 }
 
 inline vector<Sequence> ReadContigs(const string& filename) {
-	checkFileExistenceFATAL(filename);
+	CheckFileExistenceFATAL(filename);
 	io::Reader genome_stream(filename);
 	return AllSequences(genome_stream);
 }
