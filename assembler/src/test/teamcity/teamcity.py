@@ -283,6 +283,7 @@ if 'quast_params' in dataset_info.__dict__:
 
         limit_map = {}
         if 'assess' in dataset_info.__dict__ and dataset_info.assess:
+            print("Assessing QUAST results...")
             limit_map = {}
             if 'min_n50' in dataset_info.__dict__:
                 limit_map["N50"] = (dataset_info.min_n50, True)
@@ -296,6 +297,8 @@ if 'quast_params' in dataset_info.__dict__:
                 limit_map["Mismatches"] = (dataset_info.max_indels, False)
             if 'max subs' in dataset_info.__dict__:
                 limit_map["Mismatches"] = (dataset_info.max_subs, False)
+        else:
+            print("Warning! QUAST results will not be assessed.")
             
         result = assess_quast(os.path.join(quast_output_dir, "transposed_report.tsv"), limit_map, "contigs")
         if result[0] != 0:
