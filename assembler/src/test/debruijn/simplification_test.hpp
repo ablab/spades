@@ -56,6 +56,7 @@ static debruijn_config::simplification::topology_based_ec_remover topology_based
 
 static debruijn_config::simplification::max_flow_ec_remover max_flow_based_ec_config_generation() {
 	debruijn_config::simplification::max_flow_ec_remover mfec_config;
+	mfec_config.enabled = true;
 	mfec_config.max_ec_length_coefficient = 20;
 	mfec_config.plausibility_length = 200;
 	mfec_config.uniqueness_length = 3000;
@@ -182,9 +183,9 @@ BOOST_AUTO_TEST_CASE( MFIterUniquePath ) {
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
 
-	debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
-	tec_config.uniqueness_length = 500;
-	MaxFlowRemoveErroneousEdges<Graph>(g, tec_config);
+	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
+	mfec_config.uniqueness_length = 500;
+	MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
 
 	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
@@ -194,9 +195,9 @@ BOOST_AUTO_TEST_CASE( MFUniquePath ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g, int_ids);
-	debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
-	tec_config.uniqueness_length = 400;
-	MaxFlowRemoveErroneousEdges<Graph>(g, tec_config);
+	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
+	mfec_config.uniqueness_length = 400;
+	MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
 
 	BOOST_CHECK_EQUAL(g.size(), 12u);
 }
@@ -217,9 +218,9 @@ BOOST_AUTO_TEST_CASE( SelfComp ) {
        Graph g(55);
        IdTrackHandler<Graph> int_ids(g);
        ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g, int_ids);
-       debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
-       tec_config.uniqueness_length = 1500;
-       MaxFlowRemoveErroneousEdges<Graph>(g, tec_config);
+       debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
+       mfec_config.uniqueness_length = 1500;
+       MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
 
        BOOST_CHECK_EQUAL(g.size(), 4u);
 }
