@@ -459,48 +459,45 @@ public:
 private:
 };
 
-template<class Graph>
-class EdgeNeighborhoodFinder: public omnigraph::GraphSplitter<Graph> {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	EdgeId edge_;
-	size_t max_size_;
-	size_t edge_length_bound_;
-	bool finished_;
-public:
-	EdgeNeighborhoodFinder(const Graph &graph, EdgeId edge, size_t max_size
-			, size_t edge_length_bound) :
-			GraphSplitter<Graph>(graph), edge_(edge), max_size_(
-					max_size), edge_length_bound_(edge_length_bound), finished_(
-					false) {
-	}
-
-	/*virtual*/ vector<VertexId> NextComponent() {
-		CountingDijkstra<Graph> cf(this->graph(), max_size_,
-				edge_length_bound_);
-		set<VertexId> result_set;
-		cf.run(this->graph().EdgeStart(edge_));
-		vector<VertexId> result_start = cf.ReachedVertices();
-		result_set.insert(result_start.begin(), result_start.end());
-		cf.run(this->graph().EdgeEnd(edge_));
-		vector<VertexId> result_end = cf.ReachedVertices();
-		result_set.insert(result_end.begin(), result_end.end());
-
-		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
-		cc.CloseComponent(result_set);
-
-		finished_ = true;
-		vector<VertexId> result;
-		for (auto it = result_set.begin(); it != result_set.end(); ++it)
-			result.push_back(*it);
-		return result;
-	}
-
-	/*virtual*/ bool Finished() {
-		return finished_;
-	}
-};
+//template<class Graph>
+//class EdgeNeighborhoodFinder: public omnigraph::GraphSplitter<Graph> {
+//private:
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//	EdgeId edge_;
+//	size_t max_size_;
+//	size_t edge_length_bound_;
+//	bool finished_;
+//public:
+//	EdgeNeighborhoodFinder(const Graph &graph, EdgeId edge, size_t max_size
+//			, size_t edge_length_bound) :
+//			GraphSplitter<Graph>(graph), edge_(edge), max_size_(
+//					max_size), edge_length_bound_(edge_length_bound), finished_(
+//					false) {
+//	}
+//
+//	GraphComponent<Graph> NextComponent() {
+//		CountingDijkstra<Graph> cf(this->graph(), max_size_,
+//				edge_length_bound_);
+//		set<VertexId> result_set;
+//		cf.run(this->graph().EdgeStart(edge_));
+//		vector<VertexId> result_start = cf.ReachedVertices();
+//		result_set.insert(result_start.begin(), result_start.end());
+//		cf.run(this->graph().EdgeEnd(edge_));
+//		vector<VertexId> result_end = cf.ReachedVertices();
+//		result_set.insert(result_end.begin(), result_end.end());
+//
+//		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
+//		cc.CloseComponent(result_set);
+//
+//		finished_ = true;
+//		return GraphComponent<Graph>(this->graph(), result_set.begin(), result_set.end());
+//	}
+//
+//	/*virtual*/ bool Finished() {
+//		return finished_;
+//	}
+//};
 
 template<class Graph, class Index>
 class QualityEdgeLocalityPrintingRH {
@@ -528,11 +525,10 @@ public:
             path::make_dir(folder);
 			//todo magic constant
 //			map<EdgeId, string> empty_coloring;
-			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-					250);
-			WriteComponents(g_, splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
+			shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50, 250);
+			omnigraph::visualization::WriteComponents(g_, *splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
-					, *DefaultColorer(g_), labeler_);
+					, *omnigraph::visualization::DefaultColorer(g_), labeler_);
 		} else {
 			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 		}
@@ -579,10 +575,10 @@ public:
                 }
             }
             map<EdgeId, string> empty_coloring;
-            EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
+            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50,
                     250);
 
-            WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+            omnigraph::visualization::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
                     , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
                     , empty_coloring, labeler_);
         }
@@ -620,10 +616,8 @@ public:
             path::make_dir(folder);
             //todo magic constant
             map<EdgeId, string> empty_coloring;
-            EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-                    250);
-
-            WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50, 250);
+            omnigraph::visualization::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
                     , folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
 	}
 

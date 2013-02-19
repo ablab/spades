@@ -13,7 +13,7 @@
 #include "graph_read_correction.hpp"
 #include "mismatch_masker.hpp"
 
-#include "omni/visualization_utils.hpp"
+#include "omni/visualization/visualization_utils.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/graph_component.hpp"
 #include "io/rc_reader_wrapper.hpp"
@@ -415,30 +415,28 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 }
 
 void WriteToDotFile(const Graph &g,
-                    const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
-                    string graph_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
-                    Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
-	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	omnigraph::WritePaired(g, labeler, file_name, graph_name, path1, path2);
-	INFO("Graph '" << graph_name << "' written to file " << file_name);
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
+		Path<EdgeId> path1/* = Path<EdgeId> ()*/,
+		Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
+	INFO("Writing graph to file " << file_name);
+	omnigraph::visualization::WritePaired(g, labeler, file_name, path1, path2);
+	INFO("Graph written to file " << file_name);
 }
 
 void WriteErrorLoc(const Graph &g,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
-		string graph_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
 		Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
-	INFO("Writing error localities for graph '" << graph_name << "' to file " << file_name);
-	omnigraph::WriteErrors(g, labeler, file_name, graph_name, path1, path2);
-	INFO("Error localities written '" << graph_name << "' written to file " << file_name);
+	INFO("Writing error localities for graph to folder " << folder_name);
+	omnigraph::visualization::WriteErrors(g, labeler, folder_name, path1, path2);
+	INFO("Error localities written written to folder " << folder_name);
 }
 
 void WriteToDotSimple(const Graph &g,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
-		string graph_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
 		Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
-	INFO("Writing paired graph '" << graph_name << "' to file " << file_name);
-	omnigraph::WriteSimple(g, labeler, file_name, graph_name, path1, path2);
-	INFO("Graph '" << graph_name << "' written to file " << file_name);
+	INFO("Writing paired graph to file " << file_name);
+	omnigraph::visualization::WriteSimple(g, labeler, file_name, path1, path2);
+	INFO("Graph written to file " << file_name);
 }
 
 template<class Graph, class Index>
@@ -457,31 +455,43 @@ MappingPath<typename Graph::EdgeId> FindGenomeMappingPath(
 	return srt.MapSequence(genome);
 }
 
-template<class gp_t>
-map<typename gp_t::graph_t::EdgeId, string> GraphColoring(const gp_t& gp, size_t k) {
-	return PathColorer<typename gp_t::graph_t>(
-			gp.g,
-			FindGenomeMappingPath(gp.genome, gp.g, gp.index, gp.kmer_mapper, k).simple_path(),
-			FindGenomeMappingPath(!gp.genome, gp.g, gp.index, gp.kmer_mapper, k).simple_path()).ColorPath();
-}
+//template<class gp_t>
+//map<typename gp_t::graph_t::EdgeId, string> GraphColoring(const gp_t& gp, size_t k) {
+//	return omnigraph::visualization::PathColorer<typename gp_t::graph_t>(
+//			gp.g,
+//			FindGenomeMappingPath(gp.genome, gp.g, gp.index, gp.kmer_mapper, k).simple_path(),
+//			FindGenomeMappingPath(!gp.genome, gp.g, gp.index, gp.kmer_mapper, k).simple_path()).ColorPath();
+//}
 
-template<class Graph, class Index>
-void ProduceInfo(const Graph& g, const Index& index,
-const omnigraph::GraphLabeler<Graph>& labeler, const Sequence& genome,
-const string& file_name, const string& graph_name, size_t k) {
-	CountStats(g, index, genome, k);
-	Path<typename Graph::EdgeId> path1 = FindGenomePath(genome, g, index, k);
-	Path<typename Graph::EdgeId> path2 = FindGenomePath(!genome, g, index, k);
-	WriteToDotFile(g, labeler, file_name, graph_name, path1, path2);
-}
+//template<class Graph, class Index>
+//void ProduceInfo(const Graph& g, const Index& index,
+//const omnigraph::GraphLabeler<Graph>& labeler, const Sequence& genome,
+//const string& file_name, size_t k) {
+//	CountStats(g, index, genome, k);
+//	Path<typename Graph::EdgeId> path1 = FindGenomePath(genome, g, index, k);
+//	Path<typename Graph::EdgeId> path2 = FindGenomePath(!genome, g, index, k);
+//	WriteToDotFile(g, labeler, file_name, path1, path2);
+//}
+//
+//void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<NCGraph>& index
+//		, const Sequence& genome,
+//		const string& work_tmp_dir,
+//		const IdTrackHandler<NCGraph> &IdTrackLabelerResolved,
+//		size_t k) {
+//
+//    //CountStats(g, index, genome, k);
+//    WARN("Non-conjugate graph is pure shit, no stats for you, badass.");
+//	//	omnigraph::WriteSimple( file_name, graph_name, g, IdTrackLabelerResolved);
+//	//	omnigraph::WriteSimple( work_tmp_dir, graph_name, g, IdTrackLabelerResolved);
+//
+//}
 
-template<class Graph, class Index>
 void WriteGraphComponentsAlongGenome(const Graph& g,
 		const IdTrackHandler<Graph>& /*int_ids*/,
 		const Index& index,
 		const KmerMapper<Graph>& kmer_mapper,
 		const GraphLabeler<Graph>& labeler, const Sequence& genome,
-		const string& folder, const string &file_name,
+		const string& folder,
 		size_t split_edge_length, size_t k) {
 
 	INFO("Writing graph components along genome");
@@ -492,7 +502,7 @@ void WriteGraphComponentsAlongGenome(const Graph& g,
 	map_path_t path2 = FindGenomeMappingPath(!genome, g, index, kmer_mapper, k);
 
 	make_dir(folder);
-	WriteComponentsAlongGenome(g, labeler, folder + file_name,
+	omnigraph::visualization::WriteComponentsAlongGenome(g, labeler, folder,
 			split_edge_length, path1, path2);
 
 	INFO("Writing graph components along genome finished");
@@ -507,12 +517,7 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
         const Sequence& genome,
 		const string& folder,
 		size_t split_edge_length, size_t k) {
-
 	INFO("Writing graph components along contigs");
-
-	//typedef MappingPath<EdgeId> map_path_t;
-
-	//typedef graph_pack<ConjugateDeBruijnGraph, K> gp_t;
 	io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze,
 			false/*true*/);
 	contigs_to_thread.reset();
@@ -527,25 +532,16 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
 		contigs_to_thread >> read;
 		make_dir(folder + read.name());
 		size_t component_vertex_number = 30;
-		WriteComponentsAlongPath(g, labeler,
-				folder + read.name() + "/" + "g.dot", split_edge_length,
-				component_vertex_number, mapper.MapSequence(read.sequence())
-//                , Path<Graph::EdgeId>(), Path<Graph::EdgeId>(), true);
-						, path1.simple_path(), path2.simple_path(), true);
-
-		//todo delete
-//    	ReliableSplitterAlongPath<Graph> splitter(g, component_vertex_number, split_edge_length, mapper.MapSequence(read.sequence()));
-//    	vector<VertexId> comp_vert = splitter.NextComponent();
-//    	GraphComponent<Graph> component(g, comp_vert.begin(), comp_vert.end());
-//    	ConjugateDataPrinter<Graph> printer(component, g.int_ids());
-//    	PrintBasicGraph<Graph>(folder + read.name() + "/" + "g", printer);
-		//todo end of delete
-
-	}INFO("Writing graph components along contigs finished");
+		omnigraph::visualization::WriteComponentsAlongPath(g, labeler,
+				folder + read.name() + "/", split_edge_length,
+				component_vertex_number, mapper.MapSequence(read.sequence()).simple_path()
+						, path1.simple_path(), path2.simple_path());
+	}
+	INFO("Writing graph components along contigs finished");
 }
 
 void WriteKmerComponent(conj_graph_pack &gp,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& file,
 		const Path<Graph::EdgeId>& path1, const Path<Graph::EdgeId>& path2,
 		runtime_k::RtSeq const& kp1mer, size_t is) {
 	if(!gp.index.contains(kp1mer)) {
@@ -553,11 +549,12 @@ void WriteKmerComponent(conj_graph_pack &gp,
 		return;
 	}
 	VERIFY(gp.index.contains(kp1mer));
-	EdgeNeighborhoodFinder<Graph> splitter(gp.g, gp.index.get(kp1mer).first, 50, is);
-	ComponentSizeFilter<Graph> filter(gp.g, 500, 2, 500);
-	PathColorer<Graph> colorer(gp.g, path1, path2);
-	WriteComponents<Graph>(gp.g, splitter, filter, folder + "kmer.dot",
-                         *DefaultColorer(gp.g, path1, path2), labeler);
+	auto pos = gp.index.get(kp1mer);
+	VertexId v = pos.second * 2 < gp.g.length(pos.first) ? gp.g.EdgeStart(pos.first) : gp.g.EdgeEnd(pos.first);
+	shared_ptr<GraphSplitter<Graph>> splitter = VertexNeighborhoodFinder<Graph>(gp.g, v, 50, is);
+//	omnigraph::visualization::PathColorer<Graph> colorer(gp.g, path1, path2);
+	GraphComponent<Graph> next = splitter->Next();
+	omnigraph::visualization::WriteComponent<Graph>(next, file, *omnigraph::visualization::DefaultColorer(gp.g, path1, path2), labeler);
 }
 
 optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
@@ -576,10 +573,12 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
 }
 
 void ProduceDetailedInfo(conj_graph_pack &gp,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
-		const string& file_name, const string& graph_name,
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& base_folder,
+		const string &pos_name,
 		info_printer_pos pos,
 		size_t k) {
+	string folder =  path::append_path(base_folder, pos_name + "/");
+
 	auto it = cfg::get().info_printers.find(pos);
 	VERIFY(it != cfg::get().info_printers.end());
 
@@ -613,40 +612,38 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
 	if (config.write_error_loc) {
 		make_dir(folder + "error_loc/");
-		WriteErrorLoc(gp.g, labeler, folder + "error_loc/" + file_name,
-				graph_name, path1, path2);
+		WriteErrorLoc(gp.g, labeler, folder + "error_loc/", path1, path2);
 	}
 
 	if (config.write_full_graph) {
-		make_dir(folder + "full_graph/");
-		WriteToDotFile(gp.g, labeler, folder + "full_graph/" + file_name,
-				graph_name, path1, path2);
+		WriteToDotFile(gp.g, labeler, folder + "full_graph.dot",
+				path1, path2);
 	}
 
 	if (config.write_full_nc_graph) {
-		make_dir(folder + "full_graph_nc/");
-		WriteToDotSimple(gp.g, labeler, folder + "full_graph_nc/" + file_name,
-				graph_name, path1, path2);
+		WriteToDotSimple(gp.g, labeler, folder + "full_graph_nc.dot",
+				path1, path2);
 	}
 
 	if (config.write_components) {
 		make_dir(folder + "components/");
 		size_t threshold = 500; //cfg::get().ds.IS ? *cfg::get().ds.IS : 250;
-		WriteComponents(gp.g, threshold, folder + "components/" + file_name,
-				*DefaultColorer(gp.g, path1, path2), labeler);
+		omnigraph::visualization::WriteComponents(gp.g, threshold, folder + "components/",
+				*omnigraph::visualization::DefaultColorer(gp.g, path1, path2), labeler);
 	}
 
 	if (!config.components_for_kmer.empty()) {
-		make_dir(folder + "kmer_loc/");
-		WriteKmerComponent(gp, labeler, folder + "kmer_loc/", path1, path2,
-		        runtime_k::RtSeq(k + 1, config.components_for_kmer.c_str()), cfg::get().ds.IS());
+		string kmer_folder = path::append_path(base_folder, "kmer_loc/");
+		make_dir(kmer_folder);
+		WriteKmerComponent(gp, labeler, path::append_path(kmer_folder, pos_name + ".dot"), path1, path2,
+		        runtime_k::RtSeq(k + 1, config.components_for_kmer.substr(0, k + 1).c_str()), cfg::get().ds.IS());
 	}
 
 	if (config.write_components_along_genome) {
 		make_dir(folder + "along_genome/");
 		size_t threshold = 500; //cfg::get().ds.IS ? *cfg::get().ds.IS : 250;
 		WriteGraphComponentsAlongGenome(gp.g, gp.int_ids, gp.index,
-				gp.kmer_mapper, labeler, gp.genome, folder, "along_genome/graph.dot",
+				gp.kmer_mapper, labeler, gp.genome, folder + "along_genome/",
 				threshold, k);
 	}
 
@@ -665,7 +662,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 	}
 
 	if (!config.components_for_genome_pos.empty()) {
-		string pos_loc_folder = folder + "pos_loc/";
+		string pos_loc_folder = path::append_path(base_folder, "pos_loc/");
 		make_dir(pos_loc_folder);
 		vector<string> positions;
 		boost::split(positions, config.components_for_genome_pos,
@@ -674,9 +671,9 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 			optional < runtime_k::RtSeq > close_kp1mer = FindCloseKP1mer(gp,
 					boost::lexical_cast<int>(*it), k);
 			if (close_kp1mer) {
-				string locality_folder = pos_loc_folder + *it + "/";
+				string locality_folder = path::append_path(pos_loc_folder, *it + "/");
 				make_dir(locality_folder);
-				WriteKmerComponent(gp, labeler, locality_folder, path1, path2,
+				WriteKmerComponent(gp, labeler, path::append_path(locality_folder, pos_name + ".dot"), path1, path2,
 						*close_kp1mer, cfg::get().ds.IS());
 			} else {
 				WARN(
@@ -689,31 +686,34 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
 struct detail_info_printer {
 	detail_info_printer(conj_graph_pack &gp,
-			const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
-			const string& file_name)
+			const omnigraph::GraphLabeler<Graph>& labeler, const string& folder)
 
 	:
 			folder_(folder), func_(
-					bind(&ProduceDetailedInfo, boost::ref(gp), boost::ref(labeler), _3,
-							file_name, _2, _1, gp.k_value)),
-							graph_(gp.g) {
+					bind(&ProduceDetailedInfo, boost::ref(gp),
+							boost::ref(labeler), _3, _2, _1, gp.k_value)), graph_(
+					gp.g), cnt(0) {
 	}
 
 	void operator()(info_printer_pos pos,
-			string const& folder_suffix = "") const {
+			string const& folder_suffix = "") {
+		cnt++;
 		string pos_name = details::info_printer_pos_name(pos);
 		VertexEdgeStat<conj_graph_pack::graph_t> stats(graph_);
 		TRACE("Number of vertices : " << stats.vertices() << ", number of edges : " << stats.edges() << ", sum length of edges : " << stats.edge_length());
 		func_(
 				pos,
-				pos_name,
-                (path::append_path(folder_, (pos_name + folder_suffix)) + "/"));
+				ToString(cnt, 2) + "_" + pos_name + folder_suffix,
+				folder_
+//                (path::append_path(folder_, (pos_name + folder_suffix)) + "/")
+                );
 	}
 
 private:
 	string folder_;
 	boost::function<void(info_printer_pos, string const&, string const&)> func_;
 	const conj_graph_pack::graph_t &graph_;
+	size_t cnt;
 };
 
 template<class Graph, class Index>
@@ -744,15 +744,15 @@ string ConstructComponentName(string file_name, size_t cnt) {
 template<class graph_pack>
 int PrintGraphComponents(const string& file_name, graph_pack& gp,
     size_t split_edge_length, PairedInfoIndexT<Graph> &clustered_index) {
-	LongEdgesInclusiveSplitter<Graph> inner_splitter(gp.g, split_edge_length);
-	ComponentSizeFilter<Graph> checker(gp.g, split_edge_length, 2, 300);
+    shared_ptr<GraphSplitter<Graph>> inner_splitter = ReliableSplitter<Graph>(gp.g, split_edge_length);
+    shared_ptr<GraphComponentFilter<Graph>> checker = make_shared<ComponentSizeFilter<Graph>>(gp.g, split_edge_length, 2, 300);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
-	while (!splitter.Finished() && cnt <= 1000) {
+	while (splitter.HasNext() && cnt <= 1000) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
-		auto component = splitter.NextComponent();
-		PrintWithClusteredIndex(component_name, gp, component.begin(),
-				component.end(), clustered_index);
+		auto component = splitter.Next();
+		PrintWithClusteredIndex(component_name, gp, component.vertices().begin(),
+				component.vertices().end(), clustered_index);
 		cnt++;
 	}
 	return (int) cnt - 1;

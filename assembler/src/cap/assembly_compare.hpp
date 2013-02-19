@@ -140,7 +140,7 @@ private:
 
 	template<class gp_t2>
 	void UniversalSaveGP(
-			const gp_t2& gp/*, const GraphColorer<typename gp_t2::graph_t> coloring*/,
+			const gp_t2& gp/*, const omnigraph::visualization::GraphColorer<typename gp_t2::graph_t> coloring*/,
 			const string& filename) {
 		typename PrinterTraits<Graph>::Printer printer(gp.g, gp.int_ids);
 		INFO("Saving graph to " << filename);
