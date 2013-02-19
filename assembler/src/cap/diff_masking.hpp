@@ -244,7 +244,7 @@ inline void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 	}
 }
 
-void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
+inline void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 		const vector<string>& suffixes, const string& out_root,
 		vector<size_t> &k_values) {
 
@@ -278,7 +278,7 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 	}
 }
 
-void MaskDifferencesAndSave(const vector<string>& in_files,
+inline void MaskDifferencesAndSave(const vector<string>& in_files,
 		const vector<string>& suffixes, const string& out_root,
 		vector<size_t> k_values) {
 //	remove_dir(out_root);
