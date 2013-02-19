@@ -165,7 +165,7 @@ sc
 	cbr
 	{
 		enabled	1
-		pics_enabled 1
+		pics_enabled 0
         folder  complex_br_components 
 		max_relative_length	5.
 		max_length_difference	5
