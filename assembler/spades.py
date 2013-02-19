@@ -909,10 +909,12 @@ def main():
 
         #breaking scaffolds
         if os.path.isfile(result_scaffolds_filename):
-            result_broken_scaffolds = os.path.join(spades_cfg.output_dir, "broken_scaffolds.fasta")
+            if not os.path.isdir(misc_dir):
+                os.makedirs(misc_dir)
+            result_broken_scaffolds = os.path.join(misc_dir, "broken_scaffolds.fasta")
             threshold = 3
             support.break_scaffolds(result_scaffolds_filename, threshold, result_broken_scaffolds)
-            log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
+            #log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
 
         log.info("")
         log.info("Thank you for using SPAdes!")
