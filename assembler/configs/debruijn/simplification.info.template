@@ -31,7 +31,7 @@ default
        ; condition               "{ ec_lb 9, icb 40.0 }"
 	}
 	
-	; relative coverage erroneous connections remover:
+	; relative coverage erroneous remover:
 	rec
 	{
         max_coverage_coeff  0.
@@ -39,7 +39,7 @@ default
         coverage_gap    50.
 	}
 	
-	; topology based erroneous connection connections remover
+	; topology based erroneous connection remover
 	tec
 	{
 		max_ec_length_coefficient	55	; max_ec_length = k + max_ec_length_coefficient
@@ -47,7 +47,7 @@ default
 		plausibility_length		200
 	}
 
-	; topology and reliability based erroneous connection connections remover
+	; topology and reliability based erroneous connection remover
 	trec
 	{
 		max_ec_length_coefficient	100	; max_ec_length = k + max_ec_length_coefficient
@@ -55,7 +55,7 @@ default
 		unreliable_coverage		2.5
 	}
 	
-	; interstrand erroneous connection connections remover (thorn remover)
+	; interstrand erroneous connection remover (thorn remover)
 	isec
 	{
 		max_ec_length_coefficient	100	; max_ec_length = k + max_ec_length_coefficient
@@ -63,7 +63,7 @@ default
 		span_distance		15000
 	}
 
-	; max flow erroneous connection connections remover
+	; max flow erroneous connection remover
 	mfec
 	{
         enabled false
@@ -136,7 +136,7 @@ sc
        ; condition               "{ ec_lb 29, icb 20.0 }"
 	}
 	
-	; relative coverage erroneous connections remover:
+	; relative coverage erroneous connection remover:
 	rec
 	{
         max_ec_length_coefficient   29
@@ -151,7 +151,7 @@ sc
 		plausibility_length		200
 	}
 	
-	; topology and reliability based erroneous connection connections remover
+	; topology and reliability based erroneous connection remover
 	trec
 	{
 		max_ec_length_coefficient	100	; max_ec_length = k + max_ec_length_coefficient
