@@ -15,6 +15,7 @@
 #include "genome_correction.hpp"
 #include "assembly_compare.hpp"
 #include "test_utils.hpp"
+#include "gene_analysis.hpp"
 
 namespace cap {
 
@@ -43,6 +44,7 @@ BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 }
 
 BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
+    return;
 	utils::TmpFolderFixture _("tmp");
 
 	std::string base_path = "ecoli/";
@@ -100,8 +102,22 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 //	INFO("result is stored with md5 of " << files_md5);
 
 	MaskDifferencesAndSave(paths, suffices,
-			//"bp_graph_" + files_md5 + 
+			//"bp_graph_" + files_md5 +
             "bp_graph/refined/", k_sequence);
+}
+
+BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {
+	utils::TmpFolderFixture _("tmp");
+	static size_t k = 25;
+	typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph, LSeq> gp_t;
+    gp_t gp(k, "tmp", Sequence(), 200, true);
+
+    GeneCollection gene_collection;
+    gene_collection.Load("/home/snurk/Dropbox/olga_gelf/genome_list.txt",
+                         "/home/snurk/Dropbox/olga_gelf/genomes/",
+                         "/home/snurk/Dropbox/olga_gelf/gs.25ESS_ver3_sf_TN.csv",
+                         "/home/snurk/Dropbox/olga_gelf/interesting_orthologs.txt");
+    gene_collection.Update(gp);
 }
 
 BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {

@@ -1,138 +1,309 @@
-//#pragma once
-//
-//#include "standard_base.hpp"
-//#include "simple_tools.hpp"
-//#include "comparison_utils.hpp"
-//
-//namespace cap {
-//
-//typedef Sequence Genome;
-//typedef map<Genome, Range> GeneCoordinates;
-//
-////range of nucleotide positions; true if main strand
-//typedef pair<Range, bool> Pos;
-//typedef size_t GenomeId;
-//
-//typedef multimap<GenomeId, Pos> GenePositions;
-//typedef vector<Range> Coordinates;
-//
-//class GeneInfo {
-//    GenePositions gene_positions;
-//}
-//
-//Range NuclToKmerRange(Range nucl_range, size_t k, size_t genome_length) {
+#pragma once
+
+#include "standard_base.hpp"
+#include "simple_tools.hpp"
+#include "omni/omni_utils.hpp"
+#include "comparison_utils.hpp"
+#include "boost/tokenizer.hpp"
+
+namespace cap {
+using namespace omnigraph;
+
+typedef Sequence Genome;
+typedef map<Genome, Range> GeneCoordinates;
+
+//range of nucleotide positions on main strand; true if main strand
+typedef pair<Range, bool> Pos;
+typedef size_t GenomeId;
+typedef size_t GeneId;
+
+typedef multimap<GenomeId, Pos> GenePositions;
+typedef vector<Range> Coordinates;
+
+struct GenomeInfo {
+    GenomeId id;
+    string name;
+    string short_name;
+    Sequence sequence;
+
+    GenomeInfo() : id(0) {
+
+    }
+
+    GenomeInfo(const GenomeId& id_, const string& name_,
+               const string& short_name_, const Sequence& sequence_)
+            : id(id_),
+              name(name_),
+              short_name(short_name_),
+              sequence(sequence_) {
+    }
+
+};
+
+struct GeneInfo {
+    GeneId id;
+//    string name;
+    GenePositions gene_positions;
+
+    GeneInfo() : id(0) {
+    }
+
+    GeneInfo(const GeneId& id_/*, const string& name_*/)
+            : id(id_)/*, name(name_)*/ {
+    }
+
+    void AddPosition(const GenomeId& genome_id, const Pos& pos) {
+        gene_positions.insert(make_pair(genome_id, pos));
+    }
+
+};
+
+Range VerifiedRange(Range r, size_t k, size_t genome_length) {
+    VERIFY(genome_length > k + 1);
+    VERIFY(r.start_pos < genome_length);
+    VERIFY(r.end_pos <= genome_length);
+    VERIFY(r.start_pos <= r.end_pos);
+    return r;
+}
+
+//ALL k-mers, lying in the nucl range
+Range NuclToKmerRange(Range nucl_range, size_t k, size_t genome_length) {
 //    return Range(std::max(0, int(nucl_range.start_pos) - int(k)),
 //                 nucl_range.end_pos);
-//}
-//
-//Range KmerToNuclRange(Range kmer_range, size_t k, size_t genome_length) {
+
+    size_t start_pos =
+            (nucl_range.start_pos + k + 1 > genome_length) ?
+                    genome_length - k - 1 : nucl_range.start_pos;
+    size_t end_pos = std::max((int) nucl_range.end_pos - (int) k,
+                              int(start_pos + 1));
+
+    return VerifiedRange(Range(start_pos, end_pos), k, genome_length);
+}
+
+//ALL nucls, covered by k-mer range
+Range KmerToNuclRange(Range kmer_range, size_t k, size_t genome_length) {
 //    return Range(min(kmer_range.start_pos + k, kmer_range.end_pos - 1),
 //                 kmer_range.end_pos);
-//}
-//
-//Range OppositeStrandNuclCoord(Range nucl_coord, size_t genome_length) {
-//    VERIFY(nucl_coord.end_pos <= genome_length);
-//    return Range(genome_length - 1 - nucl_coord.end_pos, genome_length - 1 - nucl_coord.start_pos);
-//}
-//
-//struct GeneCollection {
-//    map<GenomeId, Genome> genomes;
-//    vector<GenePositions> gene_positions;
-//
-// private:
-//
-//    void NormalizeAll() {
-//        FOREACH(GenePositions gene_poss, gene_positions)
-//    }
-//
-//    void Normalize(GenomeId genome_id, Pos& pos) {
-//        if (!pos.second) {
-//            pos.first = OppositeStrandNuclCoord(pos.first, genomes[genome_id].size());
-//            pos.second = true;
-//        }
-//    }
-//
-// public:
-//    template<class gp_t>
-//    void Update(const gp_t& gp) {
-//        CoordinatesUpdater<gp_t> updater(gp);
-//        FOREACH(GenomeId genome_id, key_set(genomes)) {
-//            Coordinates gene_coords;
-//            vector<size_t> gene_ids;
-//            for (size_t i = 0; i < gene_positions.size(); ++i) {
-//                std::multimap m;
-//
-//                FOREACH(Pos pos, get_all(gene_positions[i], genome_id)) {
-//                    gene_ids.push_back(i);
-//                    VERIFY(pos.second);
-//                    gene_coords.push_back(pos.first);
-//                }
-//            }
-//            auto updated = updater.Update(genomes[genome_id], Coordinates);
-//            genomes[genome_id] = updated.first;
-//
-//            FOREACH(GenePositions gene_poss, gene_positions) {
-//                gene_poss.clear();
-//            }
-//
-//            for (size_t j = 0; j < gene_ids.size(); ++j) {
-//                gene_positions[gene_ids[j]].insert(make_pair(genome_id, make_pair(updated.second[j], true)));
-//            }
-//        }
-//    }
-//};
-//
-//template<class gp_t>
-//class CoordinatesUpdater {
-//    typedef typename gp_t::graph_t Graph;
-//    typedef typename Graph::EdgeId EdgeId;
-//    typedef typename Graph::VertexId VertexId;
-//    typedef MappingPath<EdgeId> Path;
-//
-//    const gp_t& gp_;
-//
-//    Range NewCoords(const Path& path, Range coord) const {
-//        size_t cumm_length = 0;
-//        Range answer;
-//        int i = 0;
-//        for (; i < path.size() && path[i].second.initial_range.end_pos <= coord.start_pos; ++i) {
-//            cumm_length += gp_.g.length(path[i].first);
-//        }
-//        VERIFY(i < path.size());
-//        VERIFY(path[i].second.initial_range.end_pos > coord.start_pos);
-//        VERIFY(path[i].second.initial_range.start_pos <= coord.start_pos);
-//        answer.start_pos = cumm_length;
-//        for (; i < path.size() && path[i].second.initial_range.end_pos < coord.end_pos; ++i) {
-//            cumm_length += gp_.g.length(path[i].first);
-//        }
-//        VERIFY(i < path.size());
-//        VERIFY(path[i].second.initial_range.end_pos >= coord.end_pos);
-//        VERIFY(path[i].second.initial_range.start_pos < coord.end_pos);
-//        answer.end_pos = cumm_length + gp_.g.length(path[i].first);
-//        return answer;
-//    }
-//
-// public:
-//    CoordinatesUpdater(const gp_t& gp) : gp_(gp) {
-//
-//    }
-//
-//    pair<Genome, Coordinates> Update(const Genome& genome, const Coordinates& coords) const {
-//        pair<Genome, Coordinates> answer;
-//        auto mapper = *MapperInstance(gp_);
-//        auto mapping_path = mapper.MapSequence(genome);
-//        FOREACH(Range r, coords) {
-//            answer.second.push_back(NewCoords(mapping_path, r));
-//        }
-//        auto read_corrector = GraphReadCorrectorInstance(gp_.g, mapper);
-//        answer.first = read_corrector.Modify(genome);
-//        return answer;
-//    }
-//};
-//
-//template<class Graph>
-//void WriteGeneLocality(const GeneCoordinates& coords) {
-//
-//}
-//
-//}
+    return VerifiedRange(
+            Range(kmer_range.start_pos, kmer_range.end_pos + k + 1), k,
+            genome_length);
+}
+
+//todo fix
+Range OppositeStrandNuclCoord(Range nucl_coord, size_t genome_length) {
+    VERIFY(nucl_coord.end_pos <= genome_length);
+    return Range(genome_length - 1 - nucl_coord.end_pos,
+                 genome_length - 1 - nucl_coord.start_pos);
+}
+
+//Updates k-mer coordinates to the coordinates of start/end of condensed edge path in simplified graph
+// (gene is somewhere inside it)
+template<class gp_t>
+class CoordinatesUpdater {
+    typedef typename gp_t::graph_t Graph;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    const gp_t& gp_;
+
+    //Works with and returns k-mer coordinates!
+    Range NewCoords(const MappingPath<EdgeId>& path, Range coord) const {
+        size_t cumm_length = 0;
+        Range answer(0, 0);
+        int i = 0;
+        for (;
+                i < path.size()
+                        && path[i].second.initial_range.end_pos
+                                <= coord.start_pos; ++i) {
+            cumm_length += gp_.g.length(path[i].first);
+        }
+        VERIFY(i < path.size());
+        VERIFY(path[i].second.initial_range.end_pos > coord.start_pos);
+        VERIFY(path[i].second.initial_range.start_pos <= coord.start_pos);
+        answer.start_pos = cumm_length;
+        for (;
+                i < path.size()
+                        && path[i].second.initial_range.end_pos < coord.end_pos;
+                ++i) {
+            cumm_length += gp_.g.length(path[i].first);
+        }
+        VERIFY(i < path.size());
+        VERIFY(path[i].second.initial_range.end_pos >= coord.end_pos);
+        VERIFY(path[i].second.initial_range.start_pos < coord.end_pos);
+        answer.end_pos = cumm_length + gp_.g.length(path[i].first);
+        return answer;
+    }
+
+ public:
+    CoordinatesUpdater(const gp_t& gp)
+            : gp_(gp) {
+
+    }
+
+    pair<Genome, Coordinates> Update(const Genome& genome,
+                                     const Coordinates& coords) const {
+        pair<Genome, Coordinates> answer;
+        auto mapper = *MapperInstance(gp_);
+        auto mapping_path = mapper.MapSequence(genome);
+        FOREACH(Range r, coords) {
+            answer.second.push_back(
+                    KmerToNuclRange(
+                            NewCoords(
+                                    mapping_path,
+                                    NuclToKmerRange(r, gp_.k_value,
+                                                    genome.size())),
+                    gp_.k_value, genome.size()));
+        }
+        auto read_corrector = GraphReadCorrectorInstance(gp_.g, mapper);
+        answer.first = read_corrector->Modify(genome);
+        return answer;
+    }
+ private:
+    DECL_LOGGER("CoordinatesUpdater")
+    ;
+};
+
+//deals with nucleotide coordinates!
+struct GeneCollection {
+    map<GenomeId, GenomeInfo> genomes;
+    map<GeneId, GeneInfo> genes;
+
+    map<string, GenomeId> genome_name_id_mapping;
+ private:
+
+    void LoadGenomes(const set<string>& genome_names,
+                     const string& genomes_folder) {
+        size_t id = 0;
+        FOREACH(string name, genome_names) {
+            string filename = genomes_folder + name;
+            CheckFileExistenceFATAL(filename);
+            genomes.insert(
+                    make_pair(
+                            id,
+                            GenomeInfo(id, name, name, ReadGenome(filename))));
+            genome_name_id_mapping.insert(make_pair(name, id));
+            id++;
+        }
+    }
+
+    GenomeId genome_id(const string& name) {
+        //todo switch
+//        return get(genome_name_id_mapping, name);
+        return genome_name_id_mapping[name];
+    }
+
+    void LoadGenomes(const string& file_with_genomes,
+                     const string& genomes_folder) {
+        CheckFileExistenceFATAL(file_with_genomes);
+        ifstream stream(file_with_genomes);
+        set<string> genome_names;
+        string name;
+        while (!stream.eof()) {
+            stream >> name;
+            genome_names.insert(name);
+        }
+        LoadGenomes(genome_names, genomes_folder);
+    }
+
+    set<int> LoadGeneIDs(const string& file_with_ids) {
+        CheckFileExistenceFATAL(file_with_ids);
+        ifstream stream(file_with_ids);
+        set<int> gene_ids;
+        size_t id;
+        while (!stream.eof()) {
+            stream >> id;
+            gene_ids.insert(id);
+        }
+        return gene_ids;
+    }
+
+    void AddGeneInfo(const GeneId& gene_id, const GenomeId& genome_id, const Range& range, bool forward) {
+        if (genes.count(gene_id) == 0) {
+            genes.insert(make_pair(gene_id, GeneInfo(gene_id)));
+        }
+        genes.find(gene_id)->second.AddPosition(genome_id, Pos(range, forward));
+    }
+
+    //ortholog ids is better wording
+    void LoadGeneInfo(const string& filename, set<int> gene_ids) {
+        using boost::tokenizer;
+        using boost::escaped_list_separator;
+        CheckFileExistenceFATAL(filename);
+        ifstream stream(filename);
+        string line;
+        while (!stream.eof()) {
+            stream >> line;
+            tokenizer<escaped_list_separator<char>> tk(
+                    line, escaped_list_separator<char>('\t'));
+            vector<string> record(tk.begin(), tk.end());
+            //1 - id
+            //2 - gene product
+            //3 - genome name
+            //4 - locus tag
+            //5 - start
+            //6 - end
+            //7 - forward/reverse
+            VERIFY(record[7] == "reverse" || record[7] == "forward");
+            AddGeneInfo(lexical_cast<size_t>(record[1]), genome_id(record[3]),
+                        Range(lexical_cast<size_t>(record[5]), lexical_cast<size_t>(record[6]))
+                        , record[7] == "forward");
+        }
+    }
+
+ public:
+
+    GeneCollection() {}
+
+    //ortholog ids is better wording
+    void Load(const string& file_with_genomes, const string& genomes_folder,
+              const string& file_with_gene_info, const string& file_with_ids) {
+        LoadGenomes(file_with_genomes, genomes_folder);
+        LoadGeneInfo(file_with_gene_info, LoadGeneIDs(file_with_ids));
+    }
+
+    template<class gp_t>
+    void Update(const gp_t& gp) {
+        CoordinatesUpdater<gp_t> updater(gp);
+        FOREACH(GenomeId genome_id, key_set(genomes)) {
+            Coordinates gene_coords;
+            vector<GeneId> gene_ids;
+            FOREACH (GeneId gene_id, key_set(genes)) {
+                vector<Pos> poss;
+                for (auto it = genes.find(gene_id)->second.gene_positions.lower_bound(genome_id); it !=
+                                 genes.find(gene_id)->second.gene_positions.upper_bound(genome_id); ++it) {
+                    poss.push_back(it->second);
+                }
+                //todo switch
+                FOREACH(Pos pos, poss/*get_all(genes[gene_id].gene_positions, genome_id)*/) {
+                    gene_ids.push_back(gene_id);
+                    VERIFY(pos.second);
+                    gene_coords.push_back(pos.first);
+                }
+            }
+            auto updated = updater.Update(genomes.find(genome_id)->second.sequence, gene_coords);
+            genomes.find(genome_id)->second.sequence = updated.first;
+
+            //clearing gene positions
+            FOREACH(GeneId gene_id, key_set(genes)) {
+                genes[gene_id].gene_positions.clear();
+            }
+
+            //updating gene positions
+            for (size_t j = 0; j < gene_ids.size(); ++j) {
+                genes[gene_ids[j]].gene_positions.insert(
+                        make_pair(genome_id,
+                                  make_pair(updated.second[j], true)));
+            }
+        }
+    }
+ private:
+    DECL_LOGGER("GeneCollection")
+    ;
+};
+
+template<class Graph>
+void WriteGeneLocality(const GeneCoordinates& coords) {
+
+}
+
+}

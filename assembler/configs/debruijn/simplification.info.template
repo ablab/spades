@@ -27,6 +27,7 @@ default
 	{
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
+       ; to_ec_lb: max_ec_length = 2*tip_length(to_ec_lb) - 1
         condition               "{ to_ec_lb 7.5, icb auto }"
        ; condition               "{ ec_lb 9, icb 40.0 }"
 	}
