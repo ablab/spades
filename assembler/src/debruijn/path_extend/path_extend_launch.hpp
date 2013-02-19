@@ -43,7 +43,6 @@ size_t find_max_overlaped_len(vector<PairedInfoLibraries>& libes) {
 }
 
 size_t getMinInsertSize(const vector<PairedInfoLibraries>& libs) {
-
 	int min = 0;
 	size_t index = 0;
 	while (index < libs.size() && libs[index].size() == 0){
@@ -81,8 +80,7 @@ void debug_output_paths(ContigWriter& writer, conj_graph_pack& gp,
 		writer.writePathEdges(paths, output_dir + name + ".dat");
 	}
 	if (cfg::get().pe_params.viz.print_paths) {
-		visualizer.writeGraphWithPathsSimple(gp, etcDir + name + ".dot", name,
-				paths);
+		visualizer.writeGraphWithPathsSimple(gp, etcDir + name + ".dot", paths);
 		path_writer.writePaths(paths, etcDir + name + ".data");
 	}
 }

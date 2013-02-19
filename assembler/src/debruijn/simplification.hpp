@@ -93,8 +93,7 @@ void simplify_graph(conj_graph_pack& gp) {
 	total_labeler labeler/*tot_lab*/(&graph_struct);
 //	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
-	detail_info_printer printer(gp, labeler, cfg::get().output_dir,
-			"graph.dot");
+	detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 	printer(ipp_before_first_gap_closer);
 ;
 //	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);

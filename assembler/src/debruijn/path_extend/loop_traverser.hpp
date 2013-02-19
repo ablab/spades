@@ -111,12 +111,12 @@ public:
 
 	void TraverseAllLoops() {
 		DEBUG("TraverseAllLoops");
-		LongEdgesExclusiveSplitter<Graph> splitter(g_, 1000);
-		while (!splitter.Finished()) {
-			vector<VertexId> component = splitter.NextComponent();
-			if (component.size() > 10)
+		shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, 1000);
+		while (splitter->HasNext()) {
+			GraphComponent<Graph> component = splitter->Next();
+			if (component.v_size() > 10)
 				continue;
-			set<VertexId> component_set(component.begin(), component.end());
+			set<VertexId> component_set(component.v_begin(), component.v_end());
 			EdgeId start = FindStart(component_set);
 			EdgeId finish = FindFinish(component_set);
 			if (start == EdgeId() || finish == EdgeId()) {

@@ -15,7 +15,7 @@
 #define EDGES_POSITION_HANDLER_HPP_
 
 //#include "utils.hpp"
-#include "graph_labeler.hpp"
+#include "visualization/graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include "omni_utils.hpp"
 using namespace omnigraph;
