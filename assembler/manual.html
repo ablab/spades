@@ -48,12 +48,12 @@
 <p>
 SPAdes comes in three separate modules:
     <ul>
-        <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; an error correction tool, which works well on both single-cell and standard data sets </li>
+        <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; read error correction tool, which works well on both single-cell and standard data sets </li>
         <li> SPAdes &ndash; iterative short-read genome assembly module; by default consecutively iterates through K value equal to 21, 33 and 55 </li>
         <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>] and is turned off by default, see <a href="#correctoropt">SPAdes options section</a> </li>
     </ul>
 <p>
-    We recommend to run SPAdes with BayesHammer to obtain high-quality assemblies. However, if you use your own error correction tool it is possible to turn BayesHammer off; and other way around it is possible to use only error correction stage, if you wish to use another assembler. See <a href="#pipelineopt">SPAdes options section</a>.
+    We recommend to run SPAdes with BayesHammer to obtain high-quality assemblies. However, if you use your own read correction tool it is possible to turn BayesHammer off; and other way around it is possible to use only read error correction stage, if you wish to use another assembler. See <a href="#pipelineopt">SPAdes options section</a>.
 
 
 <a name="sec1.3"></a>
@@ -65,55 +65,61 @@ SPAdes comes in three separate modules:
         <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/" target="_blank">MDA single-cell <i>E.coli</i></a>; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp </li>
     </ul>
 <p>
-    We ran SPAdes with default parameters using 16 threads on server with Intel Xeon 2.27GHz processors. BayesHammer runs approximately 1 hour and takes up to 21Gb of RAM to perform error correction on each data set. Assembly takes 40 minutes and 3Gb of RAM for E.coli isolate data set; as for E.coli single-cell data set it takes twice more time  (80 minutes) and 5Gb of RAM. MismatchCorrector corrector runs for about 1,5 hour and requires up to 8Gb of RAM. See table below for more precise values.
+    We ran SPAdes with default parameters using 16 threads on server with Intel Xeon 2.27GHz processors. BayesHammer runs approximately 1 hour and takes up to 15Gb of RAM to perform read error correction on each data set. Assembly takes 35 minutes and 4Gb of RAM for E.coli isolate data set; as for E.coli single-cell data set it takes 55 minutes and 6Gb of RAM. MismatchCorrector runs for about 2 hours and requires up to 8Gb of RAM. All modules also require additional disk space for temporary files. See table below for more precise values.
 
 <p>
     <table border="1" cellpadding="4" cellspacing="0">
         <tr>
             <td align="right"> Data set &nbsp; </td>
-            <td colspan="2" align="center"> <i>E.coli</i> isolate </td> 
-            <td colspan="2" align="center"> <i>E.coli</i> single-cell </td>
+            <td colspan="3" align="center"> <i>E.coli</i> isolate </td> 
+            <td colspan="3" align="center"> <i>E.coli</i> single-cell </td>
         </tr>
 
         <tr>
             <td> Stage </td>
             <td align="center"> &nbsp; Time (min) &nbsp; </td> 
             <td align="center"> &nbsp; Peak RAM &nbsp;<br>&nbsp; usage (Gb) &nbsp; </td>
+            <td align="center"> &nbsp; Additional &nbsp;<br>&nbsp; disk space (Gb) &nbsp; </td>
             <td align="center"> &nbsp; Time (min) &nbsp; </td> 
             <td align="center"> &nbsp; Peak RAM &nbsp;<br>&nbsp; usage (Gb) &nbsp; </td>
+            <td align="center"> &nbsp; Additional &nbsp;<br>&nbsp; disk space (Gb) &nbsp; </td>
         </tr>
 
         <tr>
             <td> BayesHammer </td>
-            <td align="center"> 60 </td> 
-            <td align="center"> 21 </td>
-            <td align="center"> 65 </td> 
-            <td align="center"> 21 </td>
+            <td align="center"> 75 </td> 
+            <td align="center"> 14 </td>
+            <td align="center"> 13 </td>
+            <td align="center"> 75 </td> 
+            <td align="center"> 15 </td>
+            <td align="center"> 13 </td>
         </tr>
 
         <tr>
             <td> SPAdes </td>
-            <td align="center"> 40 </td> 
-            <td align="center"> 3 </td>
-            <td align="center"> 80 </td> 
-            <td align="center"> 5 </td>
+            <td align="center"> 35 </td> 
+            <td align="center"> 4 </td>
+            <td align="center"> 8 </td>
+            <td align="center"> 55 </td> 
+            <td align="center"> 6 </td>
+            <td align="center"> 8 </td>
         </tr>
 
         <tr>
             <td> MismatchCorrector </td>
-            <td align="center"> 80 </td> 
+            <td align="center"> 120 </td> 
             <td align="center"> 7 </td>
-            <td align="center"> 90 </td> 
+            <td align="center"> 21 </td>
+            <td align="center"> 150 </td> 
             <td align="center"> 8 </td>
+            <td align="center"> 23 </td>
         </tr>
     </table>
 
 <p>
     Notes:
     <ul>
-        <li> Running SPAdes without preliminary error correction (e.g. without BayesHammer) will likely require more time and memory </li>
-        <li> BayesHammer and SPAdes require up to 10Gb of additional disc space on these data sets for temporary files </li>
-        <li> MismatchCorrector takes up to 15Gb of disk space for storing alignment data </li>
+        <li> Running SPAdes without preliminary read error correction (e.g. without BayesHammer) will likely require more time and memory </li>
         <li> Each module removes its temporary files as soon as it finishes </li>
     </ul>
 
@@ -166,10 +172,11 @@ SPAdes comes in three separate modules:
 </pre>
 
 <p>
-    In both cases you should get a bin directory that contains the following files:
+    In both cases you should get a <code>bin</code> directory that contains the following files:
     <ul>
-        <li><code>hammer</code>  (error correcting module)</li>
+        <li><code>hammer</code>  (read error correcting module)</li>
         <li><code>spades</code>  (assembly module)</li>
+        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment modue which is required for mismatch correction)</li>
     </ul>
 
 
@@ -207,13 +214,13 @@ Thank you for using SPAdes!
 <a name="sec3.1"></a>
 <h3>3.1 SPAdes input</h3>
 <p>
-    SPAdes takes as input forward-reverse paired-end reads as well as single (unpaired) reads in FASTA or FASTQ format. However, in order to run error correction, reads should be in FASTQ format. Currently SPAdes accepts only one paired-end library, which can be stored in several files or several pairs of files. Number of unpaired libraries is unlimited. 
+    SPAdes takes as input forward-reverse paired-end reads as well as single (unpaired) reads in FASTA or FASTQ format. However, in order to run read error correction, reads should be in FASTQ format. Currently SPAdes accepts only one paired-end library, which can be stored in several files or several pairs of files. Number of unpaired libraries is unlimited. 
 <p>
     Paired-end reads can be organized in two different ways:
 
     <ul>
-        <li> In file pairs. In this case forward and reverse reads are placed in different files and go in the same order in respective files </li>
-        <li> In merged files. In this case reads go interlacing between each other, so that each reverse read goes after corresponding forward read </li>
+        <li> In file pairs. In this case forward and reverse reads are placed in different files and go in the same order in respective files. </li>
+        <li> In merged files. In this case reads go interlacing between each other, so that each reverse read goes after corresponding paired forward read. </li>
     </ul>
 
 <p>
@@ -280,7 +287,7 @@ Thank you for using SPAdes!
 
 <p>
     <code>--only-error-correction</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Perfroms error correction only.
+    &nbsp;&nbsp;&nbsp;&nbsp;Perfroms read error correction only.
 </p>
 
 <p>
@@ -288,25 +295,20 @@ Thank you for using SPAdes!
     &nbsp;&nbsp;&nbsp;&nbsp;Runs assembly module only.
 </p>
 
-<p>
-    <code>--disable-gzip-output</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Forces error correction not to compress the corrected reads. If this options is not set, corrected reads will be in <code>*.fastq.gz</code> format.
-</p>
-
-<p>
-    <code>--generate-sam-file</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Generates SAM file that contains information about alignments of the original reads to the resulting contigs. If this option is set symlink <code>contigs.sam</code> to the SAM-file will be created in the <code> &lt;output_dir></code>.
-</p>
-
 <a name="correctoropt">
 <p>
-    <code>--mismatch-correction</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Runs MismatchCorrector &ndash; a post processing tool for correction of mismatches and short indels which uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool (comes with SPAdes).
+    <code>--careful</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Tries to reduce number of mismatches and short indels. Also runs MismatchCorrector &ndash; a post processing tool, which uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool (comes with SPAdes).
+</p>
+
+<p>
+    <code>--disable-gzip-output</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Forces read error correction module not to compress the corrected reads. If this options is not set, corrected reads will be in <code>*.fastq.gz</code> format.
 </p>
 
 <p>
     <code>--rectangles</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Uses <a href="http://bioinf.spbau.ru/rectangles" target="_blank">rectangle graph algorithm</a> for repeat resolution stage instead of usual SPAdes repeat resolution module.
+    &nbsp;&nbsp;&nbsp;&nbsp;Uses <a href="http://bioinf.spbau.ru/en/rectangles" target="_blank">rectangle graph algorithm</a> for repeat resolution stage instead of usual SPAdes repeat resolution module (experimental).
 </p>
 
 <a name="advancedopt">
@@ -324,7 +326,7 @@ Thank you for using SPAdes!
 
 <p>
     <code>--tmp-dir &lt;dir_name></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Set directory for temporary files from error correction. The default value is <code>&lt;output_dir>/corrected/tmp</code>.
+    &nbsp;&nbsp;&nbsp;&nbsp;Set directory for temporary files from read error correction. The default value is <code>&lt;output_dir>/corrected/tmp</code>.
 </p>
 
 <p>
@@ -334,11 +336,11 @@ Thank you for using SPAdes!
 
 <p>
     <code>-i &lt;int></code> (or <code>--iterations &lt;int></code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for error correction. The default value is 1.
+    &nbsp;&nbsp;&nbsp;&nbsp;Number of iterations for read error correction. The default value is 1.
 </p>
 
 <p>
-    <code>--phred-offse &lt;33 or 64></code><br>
+    <code>--phred-offset &lt;33 or 64></code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.
 </p>
 
@@ -399,18 +401,13 @@ Thank you for using SPAdes!
     SPAdes stores all output files in <code>&lt;output_dir> </code>, which is set by user.
 
     <ul>
-        <li><code>&lt;output_dir>/corrected/</code> directory contains reads corrected by BayesHammer in <code>*.fastq.gz</code> files; if compression is disabled reads are stored in usual <code>*.fastq</code> format</li>
-        <li><code>&lt;output_dir>/contigs.fasta</code> contains contigs resulting contigs</li>
+        <li><code>&lt;output_dir>/corrected/</code> directory contains reads corrected by BayesHammer in <code>*.fastq.gz</code> files; if compression is disabled reads are stored in usual <code>*.fastq</code> files</li>
+        <li><code>&lt;output_dir>/contigs.fasta</code> contains resulting contigs</li>
         <li><code>&lt;output_dir>/scaffolds.fasta</code> contains resulting scaffolds</li>
     </ul>
 
 <p>
     Note: scaffolds are not produced if no paired library is provided.
-
-<p>
-    If the
-    <code>--generate-sam-file</code>
-    option is set, a symlink <code>contigs.sam</code> to the SAM-file will also be created in the output directory.
 
 <p>
 Full list of <code>&lt;output_dir></code> content is presented below: 
@@ -419,16 +416,14 @@ Full list of <code>&lt;output_dir></code> content is presented below:
     <code>contigs.fasta</code> &ndash; <i>resulting contigs</i>
     <code>scaffolds.fasta</code> &ndash; <i>resulting scaffolds (will not be produced if input reads are unpaired)</i>
 
-    <code>corrected/</code> &ndash; <i>files from error correction run</i>
-        <code>configs/</code> &ndash; <i>configuration files for error correction</i>
-        <code>dataset.info</code> &ndash; <i>internal configuration files</i>
+    <code>corrected/</code> &ndash; <i>files from read error correction</i>
+        <code>configs/</code> &ndash; <i>configuration files for read error correction</i>
+        <code>dataset.info</code> &ndash; <i>internal configuration file</i>
         Output files with corrected reads
-
-    <code>contigs.sam</code> &ndash; <i>SAM file, generated only with</i> <code>--generate-sam-file</code> <i>option</i>
 
     <code>params.txt</code> &ndash; <i>information about SPAdes parameters in this run</i>
     <code>spades.log</code> &ndash; <i>SPAdes log</i>
-    <code>dataset.info</code> &ndash; <i>internal configuration files</i>
+    <code>dataset.info</code> &ndash; <i>internal configuration file</i>
     <code>K&lt;##>/</code> &ndash; <i>directory containing files from the run with K=&lt;##> (K21, K33 and K55 are created by default)</i>
 </pre>
 
@@ -440,7 +435,7 @@ Full list of <code>&lt;output_dir></code> content is presented below:
 <h3>3.4 Assembly evaluation</h3>
 
 <p>
-    We recommend using <a href="http://bioinf.spbau.ru/quast" target="_blank">QUAST</a> for assembly evaluation. 
+    We recommend to use <a href="http://bioinf.spbau.ru/en/quast" target="_blank">QUAST</a> for assembly evaluation. 
 <br>
 
 
