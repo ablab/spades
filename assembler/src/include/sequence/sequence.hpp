@@ -330,7 +330,7 @@ Sequence Sequence::Subseq(size_t from) const {
 }
 
 /**
- * @todo : must be KMP or hashing instead of this shit
+ * @todo : must be KMP or hashing instead of this
  */
 int Sequence::find(const Sequence &t, int from) const {
   for (size_t i = from; i <= size() - t.size(); i++) {

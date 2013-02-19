@@ -105,7 +105,7 @@ struct debruijn_config {
 	typedef boost::bimap<string, estimation_mode> estimation_mode_id_mapping;
 	typedef boost::bimap<string, resolving_mode> resolve_mode_id_mapping;
 
-//  damn shit fix, it is to be removed! To determine is it started from run.sh or from spades.py
+//  bad fix, it is to be removed! To determine is it started from run.sh or from spades.py
 	bool run_mode;
 
 	bool developer_mode;
@@ -829,7 +829,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 		cfg.output_base += '/';
 	}
 
-	// TODO: remove this shit
+	// TODO: remove this option
 	load(cfg.run_mode, pt, "run_mode");
 
 	if (cfg.run_mode) {

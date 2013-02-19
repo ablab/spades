@@ -154,11 +154,6 @@ protected:
 	}
 
 	virtual bool TryToRemoveTip(EdgeId tip) {
-		// TODO: WTF Sergey deleted this method???
-//		if (!graph_.IsInternalSafe(tip)) {
-//			return false;
-//		}
-
 		RemoveTip(tip);
 		TRACE("Edge removed");
 		return true;

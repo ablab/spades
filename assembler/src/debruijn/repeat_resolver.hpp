@@ -6,7 +6,7 @@
 
 
 
-/* Feeling responsible for this piece of s**tcode, let me explain what is written here.
+/* Feeling responsible for this poor code, let me explain what is written here.
  * At first, forget about rectangles abstraction. This is another approach.
  * This repeat resolver deals with compressed de Bruijn graph and transforms it into "splitted" compressed de Bruijn graph - the same object with condition on unique placement of k-mers broken.
  * If some edge is detected to be repeat, it can be present multiple times.

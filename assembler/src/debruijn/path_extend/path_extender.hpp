@@ -473,7 +473,7 @@ public:
 
         if (!found) {
             if (initial_gap < maxMustHaveOverlap_) {
-                DEBUG("Initial gap looks like shit: " << initial_gap);
+                DEBUG("Gap looks like unrealiable: " << initial_gap);
                 best_gap = INVALID_GAP;
             }
 //            else if (initial_gap < (int) g_.k()) {

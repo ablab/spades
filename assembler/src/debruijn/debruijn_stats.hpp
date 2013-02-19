@@ -477,7 +477,7 @@ void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<NCGraph>& index
 		size_t k) {
 
     //CountStats(g, index, genome, k);
-    WARN("Non-conjugate graph is pure shit, no stats for you, badass.");
+    WARN("Non-conjugate graph is not supported anymore, no stats will be generated.");
 	//	omnigraph::WriteSimple( file_name, graph_name, g, IdTrackLabelerResolved);
 	//	omnigraph::WriteSimple( work_tmp_dir, graph_name, g, IdTrackLabelerResolved);
 
