@@ -26,7 +26,6 @@ def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
     subst_dict["additional_contigs"] = cfg.additional_contigs
     subst_dict["entry_point"] = "construction"
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
-    subst_dict["SAM_writer_enable"] = bool_to_str(cfg.generate_sam_files and last_one)
     subst_dict["align_original_reads"] = bool_to_str(cfg.align_original_reads)
     subst_dict["align_before_RR"] = bool_to_str(not cfg.paired_mode)
     subst_dict["align_after_RR"] = bool_to_str(cfg.paired_mode)
@@ -137,13 +136,6 @@ def run_spades(configs_dir, execution_home, cfg, log):
         os.symlink(os.path.join(latest, "saves"), saves_link)
 
     #    os.remove(cfg.additional_contigs)
-
-    #if glob.glob(os.path.join(latest, "*.sam")):
-    #    sam_file_linkname = os.path.join(os.path.dirname(cfg.result_contigs),
-    #        "contigs.sam")
-    #    if os.path.exists(sam_file_linkname):
-    #        os.remove(sam_file_linkname)
-    #    os.symlink(glob.glob(os.path.join(latest, "*.sam"))[0], sam_file_linkname)
 
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)

@@ -120,12 +120,6 @@ def print_used_values(cfg, log):
         log.info("Assembly parameters:")
         print_value(cfg, "assembly", "iterative_K", "k")
 
-        if cfg["assembly"].generate_sam_files:
-            log.info("  SAM file will be generated")
-        else:
-            log.info("  SAM file will NOT be generated (WARNING: SAM file are required "\
-                     "for some of postprocessing tools)")
-
         if cfg["assembly"].gap_closer:
             log.info("  The gap closer will be used")
         else:
@@ -172,8 +166,6 @@ def set_defaults(cfg):
     if "assembly" in cfg:
         if not "iterative_K" in cfg["assembly"].__dict__:
             cfg["assembly"].__dict__["iterative_K"] = [21, 33, 55]
-        if not "generate_sam_files" in cfg["assembly"].__dict__:
-            cfg["assembly"].__dict__["generate_sam_files"] = False
         if not "gap_closer" in cfg["assembly"].__dict__:
             cfg["assembly"].__dict__["gap_closer"] = True
 
@@ -269,7 +261,7 @@ def fill_test_config(cfg):
 
 
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
-               "generate-sam-file only-error-correction only-assembler "\
+               "only-error-correction only-assembler "\
                "disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
                "config-file= dataset= mismatch-correction careful rectangles".split()
@@ -306,7 +298,6 @@ def usage(show_hidden=False):
                          " correction)"
     print >> sys.stderr, "--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads"
-    print >> sys.stderr, "--generate-sam-file\tforces SPAdes to generate SAM-file"
     print >> sys.stderr, "--careful\t\ttries to reduce number"\
                          " of mismatches and short indels"
     print >> sys.stderr, "--rectangles\t\tuses rectangle graph algorithm for repeat resolution"
@@ -394,7 +385,6 @@ def main():
 
         single_cell = False
         disable_gzip_output = False
-        generate_sam_files = False
 
         only_error_correction = False
         only_assembler = False
@@ -445,8 +435,6 @@ def main():
                 single_cell = True
             elif opt == "--disable-gzip-output":
                 disable_gzip_output = True
-            elif opt == "--generate-sam-file":
-                generate_sam_files = True
 
             elif opt == "--only-error-correction":
                 only_error_correction = True
@@ -592,7 +580,6 @@ def main():
                 if spades_heap_check:
                     cfg["assembly"].__dict__["heap_check"] = spades_heap_check
                 cfg["assembly"].__dict__["careful"] = careful
-                cfg["assembly"].__dict__["generate_sam_files"] = generate_sam_files                
 
             #corrector can work only if contigs are exists (not only error correction)
             if (paired1 or paired) and (not only_error_correction) and mismatch_corrector:
