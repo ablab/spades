@@ -59,7 +59,7 @@ def run_bh(configs_dir, execution_home, cfg, log):
     command = os.path.join(execution_home, "hammer") + " " +\
                os.path.abspath(cfg_file_name)
 
-    log.info("\n== Running error correction tool: " + command + "\n")
+    log.info("\n== Running read error correction tool: " + command + "\n")
     support.sys_call(command, log)
 
     if cfg.gzip_output:

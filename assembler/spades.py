@@ -57,11 +57,11 @@ def print_used_values(cfg, log):
     # main
     print_value(cfg, "common", "output_dir", "", "")
     if ("error_correction" in cfg) and (not "assembly" in cfg):
-        log.info("Mode: ONLY error correction (without assembler)")
+        log.info("Mode: ONLY read error correction (without assembling)")
     elif (not "error_correction" in cfg) and ("assembly" in cfg):
-        log.info("Mode: ONLY assembler (without error correction)")
+        log.info("Mode: ONLY assembling (without read error correction)")
     else:
-        log.info("Mode: error correction and assembler")
+        log.info("Mode: read error correction and assembling")
     if ("common" in cfg) and ("developer_mode" in cfg["common"].__dict__):
         if cfg["common"].developer_mode:
             log.info("Debug mode turned ON")
@@ -104,7 +104,7 @@ def print_used_values(cfg, log):
 
     # error correction
     if "error_correction" in cfg:
-        log.info("Error correction parameters:")
+        log.info("Read error correction parameters:")
         print_value(cfg, "error_correction", "tmp_dir", "Dir for temp files")
         print_value(cfg, "error_correction", "max_iterations", "Iterations")
         print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
@@ -192,7 +192,7 @@ def check_config(cfg, log):
         return False
 
     if (not "error_correction" in cfg) and (not "assembly" in cfg):
-        support.error("wrong options! You should specify either '--only-error-correction' (for reads"
+        support.error("wrong options! You should specify either '--only-error-correction' (for read"
                       " error correction) or '--only-assembler' (for assembling) or none of these options (for both)!", log)
         return False
 
@@ -300,9 +300,9 @@ def usage(show_hidden=False):
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Pipeline options:"
-    print >> sys.stderr, "--only-error-correction\truns only error correction"\
-                         " (without assembler)"
-    print >> sys.stderr, "--only-assembler\truns only assembler (without error"\
+    print >> sys.stderr, "--only-error-correction\truns only read error correction"\
+                         " (without assembling)"
+    print >> sys.stderr, "--only-assembler\truns only assembling (without read error"\
                          " correction)"
     print >> sys.stderr, "--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads"
@@ -318,13 +318,13 @@ def usage(show_hidden=False):
     print >> sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
                          " (terminates if exceeded)"
     print >> sys.stderr, "\t\t\t\t[default: 250]"
-    print >> sys.stderr, "--tmp-dir\t<dirname>\tdirectory for error correction"\
+    print >> sys.stderr, "--tmp-dir\t<dirname>\tdirectory for read error correction"\
                          " temporary files"
     print >> sys.stderr, "\t\t\t\t[default: <output_dir>/corrected/tmp]"
     print >> sys.stderr, "-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
                          " (must be odd and"
     print >> sys.stderr, "\t\t\t\tless than 128) [default: 21,33,55]"
-    print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for error"\
+    print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for read error"\
                          " correction"
     print >> sys.stderr, "\t\t\t\t[default: 1]"
     print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
@@ -681,7 +681,7 @@ def main():
             if not os.path.exists(bh_cfg.working_dir):                
                 os.makedirs(bh_cfg.working_dir)
 
-            log.info("\n===== Error correction started. \n")
+            log.info("\n===== Read error correction started. \n")
 
             if CONFIG_FILE:
                 shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
@@ -740,7 +740,7 @@ def main():
 
             bh_dataset_filename = bh_logic.run_bh(tmp_configs_dir, bin_home, bh_cfg, log)
 
-            log.info("\n===== Error correction finished. \n")
+            log.info("\n===== Read error correction finished. \n")
 
         result_contigs_filename = ""
         result_scaffolds_filename = ""
