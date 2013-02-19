@@ -613,8 +613,11 @@ void PostSimplification(conj_graph_pack& gp,
     while (enable_flag) {
         INFO("Iteration " << iteration);
         INFO("Topology tip clipping:");
-        enable_flag = TopologyClipTips(gp.g, cfg::get().simp.ttc, *cfg::get().ds.RL,
-                                        removal_handler);
+        if (cfg::get().topology_simplif_enabled) {
+            enable_flag = TopologyClipTips(gp.g, cfg::get().simp.ttc, *cfg::get().ds.RL,
+                                           removal_handler);
+        }
+
         INFO("Final ec removal:");
         enable_flag = FinalRemoveErroneousEdges(gp.g, removal_handler,
                                                 determined_coverage_threshold,

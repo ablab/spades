@@ -66,6 +66,7 @@ default
 	; max flow erroneous connection connections remover
 	mfec
 	{
+        enabled false
 		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
 		uniqueness_length		1500
 		plausibility_length		200
