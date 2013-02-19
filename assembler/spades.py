@@ -834,7 +834,7 @@ def main():
                     "late_pair_info_counted_etalon_distance.txt")
                 rrr_test_util = rrr.TestUtils(rrr_reference_information_file,
                     os.path.join(rrr_outpath, "rectangles.log"))
-                rrr.resolve(rrr_input_dir, rrr_outpath, rrr_test_util, "", cfg["dataset"].single_cell)
+                rrr.resolve(rrr_input_dir, rrr_outpath, rrr_test_util, "", cfg["dataset"].single_cell, spades_cfg.careful)
 
                 shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend_before_scaffold.fasta"), spades_cfg.result_contigs)
                 shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
