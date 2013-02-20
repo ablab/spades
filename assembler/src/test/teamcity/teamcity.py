@@ -296,15 +296,15 @@ if 'quast_params' in dataset_info.__dict__:
             limit_map = {}
             if 'min_n50' in dataset_info.__dict__:
                 limit_map["N50"] = (dataset_info.min_n50, True)
-            if 'max mis' in dataset_info.__dict__:
-                limit_map["Misassemblies"] = (dataset_info.max_misassemblies, False)
+            if 'max_mis' in dataset_info.__dict__:
+                limit_map["Misassemblies"] = (dataset_info.max_mis, False)
             if 'min_genome_mapped' in dataset_info.__dict__:
                 limit_map["Genome mapped"] = (dataset_info.min_genome_mapped, True)
-            if 'min genes ' in dataset_info.__dict__:
+            if 'min_genes ' in dataset_info.__dict__:
                 limit_map["Genes"] = (dataset_info.min_genes, True)
-            if 'max indels' in dataset_info.__dict__:
+            if 'max_indels' in dataset_info.__dict__:
                 limit_map["Indels"] = (dataset_info.max_indels, False)
-            if 'max subs' in dataset_info.__dict__:
+            if 'max_subs' in dataset_info.__dict__:
                 limit_map["Mismatches"] = (dataset_info.max_subs, False)
 
         result = assess_quast(os.path.join(quast_output_dir, "transposed_report.tsv"), limit_map, "contigs")
