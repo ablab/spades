@@ -65,18 +65,25 @@ def assess_map(result_map, limit_map):
     log_str = ""
 
     for metric in sorted(result_map.keys()):
-        print(metric + " = " + str(result_map[metric]))
         log_str += metric + " = " + str(result_map[metric])
 
         if metric in limit_map:
-            if limit_map[metric][1] and result_map[metric] < limit_map[metric][0]:
-                print(metric + " is less than expected: " + str(limit_map[metric][0]))
-                log_str += " (bad)"
-                res = -1
-            elif not limit_map[metric][1] and result_map[metric] > limit_map[metric][0]:
-                print(metric + " is higher than expected: " + str(limit_map[metric][0]))
-                log_str += " (bad)"
-                res = -1
+            if limit_map[metric][1]:
+                if result_map[metric] < limit_map[metric][0]:
+                    print(metric + " = " + str(result_map[metric]) + " is less than expected: " + str(limit_map[metric][0]))
+                    log_str += " (bad)"
+                    res = -1
+                else:
+                    print(metric + " = " + str(result_map[metric]) + " >= " + str(limit_map[metric][0]) + " (OK)")
+
+            else:
+                if result_map[metric] > limit_map[metric][0]:
+                    print(metric + " = " + str(result_map[metric]) + " is higher than expected: " + str(limit_map[metric][0]))
+                    log_str += " (bad)"
+                    res = -1
+                else:
+                    print(metric + " = " + str(result_map[metric]) + " <= " + str(limit_map[metric][0]) + " (OK)")
+
 
         log_str += "; "
 
