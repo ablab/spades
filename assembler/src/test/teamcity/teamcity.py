@@ -84,7 +84,8 @@ def assess_map(result_map, limit_map):
                     res = -1
                 else:
                     print(metric + " = " + str(result_map[metric]) + " <= " + str(limit_map[metric][0]) + " (OK)")
-
+        else:   
+            print(metric + " cannot be assessed")
 
         log_str += "; "
 
