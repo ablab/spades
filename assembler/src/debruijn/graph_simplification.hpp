@@ -611,25 +611,27 @@ void PostSimplification(conj_graph_pack& gp,
     size_t iteration = 0;
     bool enable_flag = true;
     while (enable_flag) {
+        enable_flag = false;
+
         INFO("Iteration " << iteration);
 
         if (cfg::get().topology_simplif_enabled) {
-            enable_flag = TopologyClipTips(gp.g, cfg::get().simp.ttc, *cfg::get().ds.RL,
+            enable_flag |= TopologyClipTips(gp.g, cfg::get().simp.ttc, *cfg::get().ds.RL,
                                            removal_handler);
         }
 
-        enable_flag = FinalRemoveErroneousEdges(gp.g, removal_handler,
+        enable_flag |= FinalRemoveErroneousEdges(gp.g, removal_handler,
                                                 determined_coverage_threshold,
                                                 iteration);
 
-        enable_flag = ClipTipsWithProjection(gp, cfg::get().simp.tc,
+        enable_flag |= ClipTipsWithProjection(gp, cfg::get().simp.tc,
                                cfg::get().graph_read_corr.enable,
                                *cfg::get().ds.RL, determined_coverage_threshold,
                                removal_handler);
+        //todo enable_flag |= 
+        RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
 
-        enable_flag = RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
-
-        enable_flag = RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
+        enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
 
         iteration++;
 
