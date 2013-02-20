@@ -66,6 +66,7 @@ def assess_map(result_map, limit_map):
 
     for metric in sorted(result_map.keys()):
         log_str += metric + " = " + str(result_map[metric])
+        print(metric + " = " + str(result_map[metric]))
 
         if metric in limit_map:
             if limit_map[metric][1]:
@@ -294,19 +295,17 @@ if 'quast_params' in dataset_info.__dict__:
             limit_map = {}
             if 'min_n50' in dataset_info.__dict__:
                 limit_map["N50"] = (dataset_info.min_n50, True)
-            if 'max misassemblies' in dataset_info.__dict__:
+            if 'max mis' in dataset_info.__dict__:
                 limit_map["Misassemblies"] = (dataset_info.max_misassemblies, False)
             if 'min_genome_mapped' in dataset_info.__dict__:
                 limit_map["Genome mapped"] = (dataset_info.min_genome_mapped, True)
             if 'min genes ' in dataset_info.__dict__:
                 limit_map["Genes"] = (dataset_info.min_genes, True)
             if 'max indels' in dataset_info.__dict__:
-                limit_map["Mismatches"] = (dataset_info.max_indels, False)
+                limit_map["Indels"] = (dataset_info.max_indels, False)
             if 'max subs' in dataset_info.__dict__:
                 limit_map["Mismatches"] = (dataset_info.max_subs, False)
-        else:
-            print("Warning! QUAST results will not be assessed.")
-            
+
         result = assess_quast(os.path.join(quast_output_dir, "transposed_report.tsv"), limit_map, "contigs")
         if result[0] != 0:
             exit_code = 10
