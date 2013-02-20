@@ -611,6 +611,8 @@ void PostSimplification(conj_graph_pack& gp,
     size_t iteration = 0;
     bool enable_flag = true;
     while (enable_flag) {
+        enable_flag = false;
+
         INFO("Iteration " << iteration);
 
         if (cfg::get().topology_simplif_enabled) {
