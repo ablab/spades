@@ -66,7 +66,6 @@ def assess_map(result_map, limit_map):
 
     for metric in sorted(result_map.keys()):
         log_str += metric + " = " + str(result_map[metric])
-        print(metric + " = " + str(result_map[metric]))
 
         if metric in limit_map:
             if limit_map[metric][1]:
@@ -84,8 +83,9 @@ def assess_map(result_map, limit_map):
                     res = -1
                 else:
                     print(metric + " = " + str(result_map[metric]) + " <= " + str(limit_map[metric][0]) + " (OK)")
-        else:   
-            print(metric + " cannot be assessed")
+        else:
+            print(metric + " = " + str(result_map[metric]))
+
 
         log_str += "; "
 
@@ -300,7 +300,7 @@ if 'quast_params' in dataset_info.__dict__:
                 limit_map["Misassemblies"] = (int(dataset_info.max_mis), False)
             if 'min_genome_mapped' in dataset_info.__dict__:
                 limit_map["Genome mapped"] = (float(dataset_info.min_genome_mapped), True)
-            if 'min_genes ' in dataset_info.__dict__:
+            if 'min_genes' in dataset_info.__dict__:
                 limit_map["Genes"] = (int(dataset_info.min_genes), True)
             if 'max_indels' in dataset_info.__dict__:
                 limit_map["Indels"] = (float(dataset_info.max_indels), False)
