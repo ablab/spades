@@ -22,9 +22,9 @@ include_directories(./drawing_commands)
 include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
 if (READLINE_FOUND AND CURSES_FOUND)
-  target_link_libraries(online_vis ${COMMON_LIBRARIES} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY} input mph_index )
+  target_link_libraries(online_vis input mph_index ${COMMON_LIBRARIES} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY})
 else()
-  target_link_libraries(online_vis ${COMMON_LIBRARIES} input mph_index )
+  target_link_libraries(online_vis input mph_index ${COMMON_LIBRARIES})
 endif()
 
 if (DEFINED static_build)

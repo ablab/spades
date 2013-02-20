@@ -31,10 +31,10 @@ void create_console_logger(string const& cfg_filename) {
 
     string log_props_file = cfg::get().log_filename;
 
-    if (!fileExists(log_props_file))
+    if (!FileExists(log_props_file))
         log_props_file = path::append_path(path::parent_path(cfg_filename), cfg::get().log_filename);
 
-    logger *lg = create_logger(fileExists(log_props_file) ? log_props_file : "");
+    logger *lg = create_logger(FileExists(log_props_file) ? log_props_file : "");
     lg->add_writer(std::make_shared<console_writer>());
 
     attach_logger(lg);
@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 
         using namespace online_visualization;
         string cfg_filename = argv[1];
-        checkFileExistenceFATAL(cfg_filename);
+        CheckFileExistenceFATAL(cfg_filename);
 
         cfg::create_instance(cfg_filename);
 
