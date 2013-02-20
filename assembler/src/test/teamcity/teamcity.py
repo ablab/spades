@@ -251,9 +251,9 @@ if 'reads_quality_params' in dataset_info.__dict__:
         limit_map = {}
         if 'assess' in dataset_info.__dict__ and dataset_info.assess:
             if 'min_genome_mapped' in dataset_info.__dict__:
-                limit_map["Genome mapped"] = (dataset_info.min_genome_mapped, True)
+                limit_map["Genome mapped"] = (float(dataset_info.min_genome_mapped), True)
             if 'min_aligned' in dataset_info.__dict__:
-                limit_map["Aligned reads"] = (dataset_info.min_aligned, True)
+                limit_map["Aligned reads"] = (float(dataset_info.min_aligned), True)
             
         result = assess_reads(os.path.join(rq_output_dir, "report.horizontal.tsv"), limit_map)
         if result[0] != 0:
@@ -295,17 +295,17 @@ if 'quast_params' in dataset_info.__dict__:
             print("Assessing QUAST results...")
             limit_map = {}
             if 'min_n50' in dataset_info.__dict__:
-                limit_map["N50"] = (dataset_info.min_n50, True)
+                limit_map["N50"] = (int(dataset_info.min_n50), True)
             if 'max_mis' in dataset_info.__dict__:
-                limit_map["Misassemblies"] = (dataset_info.max_mis, False)
+                limit_map["Misassemblies"] = (int(dataset_info.max_mis), False)
             if 'min_genome_mapped' in dataset_info.__dict__:
-                limit_map["Genome mapped"] = (dataset_info.min_genome_mapped, True)
+                limit_map["Genome mapped"] = (float(dataset_info.min_genome_mapped), True)
             if 'min_genes ' in dataset_info.__dict__:
-                limit_map["Genes"] = (dataset_info.min_genes, True)
+                limit_map["Genes"] = (int(dataset_info.min_genes), True)
             if 'max_indels' in dataset_info.__dict__:
-                limit_map["Indels"] = (dataset_info.max_indels, False)
+                limit_map["Indels"] = (float(dataset_info.max_indels), False)
             if 'max_subs' in dataset_info.__dict__:
-                limit_map["Mismatches"] = (dataset_info.max_subs, False)
+                limit_map["Mismatches"] = (float(dataset_info.max_subs), False)
 
         result = assess_quast(os.path.join(quast_output_dir, "transposed_report.tsv"), limit_map, "contigs")
         if result[0] != 0:
