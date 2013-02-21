@@ -585,8 +585,6 @@ def main():
             if (paired1 or paired) and (not only_error_correction) and mismatch_corrector:
                 cfg["mismatch_corrector"] = load_config_from_vars(dict())
                 cfg["mismatch_corrector"].__dict__["skip-masked"] = ""
-                if developer_mode:
-                    cfg["mismatch_corrector"].__dict__["debug"] = ""
                 if bwa:
                     cfg["mismatch_corrector"].__dict__["bwa"] = bwa
                 if "max_threads" in cfg["common"].__dict__:
@@ -890,7 +888,7 @@ def main():
                     # moving corrected contigs (scaffolds) to SPAdes output dir
                     shutil.move(result_corrected_filename, v)
 
-                if not cfg["common"].developer_mode and os.path.isdir(tmp_dir_for_corrector):
+                if os.path.isdir(tmp_dir_for_corrector):
                     shutil.rmtree(tmp_dir_for_corrector)
 
             log.info("\n===== Mismatch correction finished.\n")
