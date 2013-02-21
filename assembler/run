@@ -6,9 +6,13 @@
 # See file LICENSE for details.
 ############################################################################
 
-
-tmp_cfg_dir="/tmp/spades_`date +%m.%d_%H.%M.%S`/"
-mkdir $tmp_cfg_dir
+## reading output_base
+read output_base <<< $(awk -v property="output_base" '{if ($1==property) print $2;}' configs/debruijn/config.info)
+## creating output_base dir if not exists
+mkdir -p $output_base
+## copying configs to temporary dir inside output_base
+tmp_cfg_dir="$output_base/tmp_configs"
+mkdir -p $tmp_cfg_dir
 cp -r configs $tmp_cfg_dir 
 cfg_debruijn="$tmp_cfg_dir/configs/debruijn"
 
@@ -77,9 +81,6 @@ function change_config
     mv config1.info $cfg_debruijn/config.info
 #   --------------------------------------------
 
-## creating output_base dir if not exists
-awk -v property="output_base" '{if ($1==property) {cmd="mkdir -p "$2; system(cmd)}}' $cfg_debruijn/config.info
-
 if [ $# = 0 ]
 then
     run_n_measure build/release/bin/spades $cfg_debruijn/config.info 
@@ -114,4 +115,5 @@ else
     esac
 fi
 
+# clearing temporary configs dir
 rm -r $tmp_cfg_dir
