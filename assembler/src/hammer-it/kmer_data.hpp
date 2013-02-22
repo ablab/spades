@@ -15,9 +15,19 @@ struct KMerStat {
   HKMer kmer;
   double qual;
   unsigned changeto;
+  uint8_t lock_;
 
   KMerStat(size_t count = 0, HKMer kmer = HKMer(), double qual = 1.0, unsigned changeto = -1)
-      : count(count), kmer(kmer), qual(qual), changeto(changeto) {}
+      : count(count), kmer(kmer), qual(qual), changeto(changeto), lock_(0) {}
+
+  void lock() {
+    while (__sync_val_compare_and_swap(&lock_, 0, 1) == 1)
+      sched_yield();
+  }
+  void unlock() {
+    lock_ = 0;
+    __sync_synchronize();
+  }
 };
   
 };
