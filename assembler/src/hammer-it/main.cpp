@@ -81,12 +81,17 @@ int main(int argc, char** argv) {
 
   INFO("Assigning centers");
   size_t nonread = 0;
+# pragma omp parallel for shared(nonread, classes, kmer_data)
   for (size_t i = 0; i < classes.size(); ++i) {
-    auto& cluster = classes[i];
+    const auto& cluster = classes[i];
     hammer::HKMer c = center(kmer_data, cluster);
     size_t idx = kmer_data.seq_idx(c);
     if (kmer_data[idx].kmer != c) {
-      idx = kmer_data.push_back(hammer::KMerStat(0, c, 1.0));
+#     pragma omp critical
+      {
+        idx = kmer_data.push_back(hammer::KMerStat(0, c, 1.0));
+      }
+#     pragma omp atomic
       nonread += 1;
     }
     for (size_t j = 0; j < cluster.size(); ++j)
