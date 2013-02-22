@@ -19,8 +19,8 @@
 #include <stdexcept>
 #include <iomanip>
 #include <fstream>
-#include "read/read.hpp"
-#include "read/ireadstream.hpp"
+#include "io/read.hpp"
+#include "io/ireadstream.hpp"
 #include "sequence/seq.hpp"
 #include "globals.hpp"
 #include "kmer_stat.hpp"

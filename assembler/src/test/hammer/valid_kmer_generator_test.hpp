@@ -10,9 +10,9 @@
 #include <cmath>
 #include <map>
 #include "cute/cute.h"
-#include "common/read/read.hpp"
-#include "common/sequence/seq.hpp"
-#include "hammer/valid_kmer_generator.hpp"
+#include "io/read.hpp"
+#include "sequence/seq.hpp"
+#include "valid_kmer_generator.hpp"
 
 void TestValidKMerGenerator() {
   Read r("TestRead1", "BACNTACGT", "\1\3\2\3\3\2\1\3\1");

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 #include "io/reader.hpp"
-#include "read/ireadstream.hpp"
+#include "io/ireadstream.hpp"
 
 // ToDo => to settings.hpp
 const uint32_t kK = 31;

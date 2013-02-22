@@ -19,8 +19,8 @@
 #include "omni_labelers.hpp"
 #include "omni/omni_tools.hpp"
 #include "internal_aligner.hpp"
-#include <io/single_read.hpp>
-#include <read/ireadstream.hpp>
+#include "io/single_read.hpp"
+#include "io/ireadstream.hpp"
 #include "mismatch_shall_not_pass.hpp"
 #include "contig_output.hpp"
 

@@ -21,7 +21,7 @@
 #include "io/easy_reader.hpp"
 #include "io/splitting_wrapper.hpp"
 #include "io/wrapper_collection.hpp"
-#include "read/osequencestream.hpp"
+#include "io/osequencestream.hpp"
 
 #include "de/distance_estimation.hpp"
 #include "de/pair_info_filters.hpp"

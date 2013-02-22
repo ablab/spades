@@ -19,10 +19,10 @@
 #include "kmer_data.hpp"
 #include "expander.hpp"
 
-#include "read/ireadstream.hpp"
 #include "adt/concurrent_dsu.hpp"
 #include "segfault_handler.hpp"
 #include "io/read_processor.hpp"
+#include "io/ireadstream.hpp"
 
 #include "memory_limit.hpp"
 

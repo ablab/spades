@@ -1,8 +1,8 @@
 #ifndef __HAMMER_READ_PROCESSOR_HPP__
 #define __HAMMER_READ_PROCESSOR_HPP__
 
-#include "read/read.hpp"
-#include "read/ireadstream.hpp"
+#include "io/read.hpp"
+#include "io/ireadstream.hpp"
 
 #include "io/mpmc_bounded.hpp"
 

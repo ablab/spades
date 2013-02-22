@@ -31,8 +31,8 @@
 #include <unordered_map>
 #include <vector>
 #include "logging.hpp"
-#include "read/ireadstream.hpp"
-#include "read/read.hpp"
+#include "io/ireadstream.hpp"
+#include "io/read.hpp"
 #include "sequence/seq.hpp"
 #include "valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))

@@ -7,7 +7,6 @@
 #pragma once
 
 #include <boost/test/unit_test.hpp>
-#include "read/read_generator.hpp"
 #include "launch.hpp"
 #include "graph_construction.hpp"
 #include "io/rc_reader_wrapper.hpp"

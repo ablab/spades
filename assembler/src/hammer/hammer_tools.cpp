@@ -20,7 +20,7 @@
 #include <sys/resource.h>
 #include <iomanip>
 
-#include "read/ireadstream.hpp"
+#include "io/ireadstream.hpp"
 #include "mathfunctions.hpp"
 #include "valid_kmer_generator.hpp"
 #include "globals.hpp"

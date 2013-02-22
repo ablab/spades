@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "read/ireadstream.hpp"
-#include "read/read.hpp"
+#include "io/ireadstream.hpp"
+#include "io/read.hpp"
 #include "sequence/seq.hpp"
 #include "valid_kmer_generator.hpp"
 #include "quake_enhanced/quake.hpp"

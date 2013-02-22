@@ -35,8 +35,8 @@
 #include <vector>
 #include <iostream>
 #include <iomanip>
-#include "read/ireadstream.hpp"
-#include "read/read.hpp"
+#include "io/ireadstream.hpp"
+#include "io/read.hpp"
 #include "sequence/seq.hpp"
 #include "kmer_freq_info.hpp"
 #include "valid_kmer_generator.hpp"

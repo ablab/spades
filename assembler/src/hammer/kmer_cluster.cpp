@@ -16,7 +16,7 @@
 #include <fstream>
 #include <algorithm>
 
-#include "read/ireadstream.hpp"
+#include "io/ireadstream.hpp"
 #include "mathfunctions.hpp"
 #include "hammer_tools.hpp"
 #include "hamcluster.hpp"

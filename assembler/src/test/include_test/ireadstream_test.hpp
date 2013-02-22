@@ -12,7 +12,7 @@
  */
 
 #include "cute/cute.h"
-#include "read/ireadstream.hpp"
+#include "io/ireadstream.hpp"
 
 void TestIReadStreamNoFile() {
 	ireadstream ifs("./no-file");

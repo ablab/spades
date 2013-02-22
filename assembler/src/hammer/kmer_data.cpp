@@ -9,7 +9,7 @@
 #include "valid_kmer_generator.hpp"
 
 #include "io/mmapped_writer.hpp"
-#include "read/ireadstream.hpp"
+#include "io/ireadstream.hpp"
 #include "config_struct_hammer.hpp"
 
 #include <libcxx/sort.hpp>

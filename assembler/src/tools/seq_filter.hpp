@@ -17,7 +17,7 @@
 
 #include <string>
 #include <vector>
-#include "common/read/ireadstream.hpp"
+#include "io/ireadstream.hpp"
 
 // @description Class seq_filter is used for getting all
 // k-mers from all reads of a given file

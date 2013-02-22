@@ -9,7 +9,7 @@
 
 #include "globals.hpp"
 
-#include "read/read.hpp"
+#include "io/read.hpp"
 #include "sequence/seq.hpp"
 
 #include <string>
