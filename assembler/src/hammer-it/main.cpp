@@ -14,6 +14,8 @@
 #include "consensus.hpp"
 #include "read_corrector.hpp"
 
+#include "openmp_wrapper.h"
+
 #include <boost/numeric/ublas/matrix.hpp>
 
 void create_console_logger() {
@@ -61,10 +63,12 @@ int main(int argc, char** argv) {
   srand(42);
   srandom(42);
 
+  omp_set_num_threads(16);
+
   create_console_logger();
 
   KMerData kmer_data;
-  KMerDataCounter(1).FillKMerData(kmer_data);
+  KMerDataCounter(omp_get_max_threads()).FillKMerData(kmer_data);
 
   ConcurrentDSU uf(kmer_data.size());
   KMerHamClusterer clusterer(1);
@@ -103,7 +107,7 @@ int main(int argc, char** argv) {
 #else
   SingleReadCorrector<EndsTrimmer, KeepTrimmedEnds> read_corrector(kmer_data, trimmer);
 #endif
-  hammer::ReadProcessor(1).Run(irs, read_corrector, ors);
+  hammer::ReadProcessor(omp_get_max_threads()).Run(irs, read_corrector, ors);
 
 #if 0
   std::sort(classes.begin(), classes.end(),  UfCmp());

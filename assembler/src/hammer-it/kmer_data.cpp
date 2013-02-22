@@ -102,7 +102,7 @@ class BufferFiller {
 };
 
 path::files_t HammerKMerSplitter::Split(size_t num_files) {
-  unsigned nthreads = 1; // min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
+  unsigned nthreads = omp_get_max_threads(); // min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
 
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
@@ -133,7 +133,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   }
 
   io::Reader irs("test.fastq", io::PhredOffset);
-  hammer::ReadProcessor rp(1);
+  hammer::ReadProcessor rp(nthreads);
   while (!irs.eof()) {
     BufferFiller filler(tmp_entries, cell_size, *this);
     rp.Run(irs, filler);
@@ -155,14 +155,18 @@ static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
 
 static void PushKMer(KMerData &data, HKMer kmer, double qual) {
   KMerStat &kmc = data[kmer];
+  kmc.lock();
   Merge(kmc, KMerStat(1, kmer, qual));
+  kmc.unlock();
 }
 
 static void PushKMerRC(KMerData &data, HKMer kmer, double qual) {
   kmer = !kmer;
 
   KMerStat &kmc = data[kmer];
+  kmc.lock();
   Merge(kmc, KMerStat(1, kmer, qual));
+  kmc.unlock();
 }
 
 class KMerDataFiller {
@@ -202,7 +206,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
 
   io::Reader irs("test.fastq", io::PhredOffset);
   KMerDataFiller filler(data);
-  hammer::ReadProcessor(1).Run(irs, filler);
+  hammer::ReadProcessor(omp_get_max_threads()).Run(irs, filler);
 
   INFO("Collection done, postprocessing.");
 
