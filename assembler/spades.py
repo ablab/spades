@@ -274,6 +274,12 @@ def check_file(f, message, log):
     return f
 
 
+def check_files_duplication(files, log):
+    for file in files:
+        if files.count(file) != 1:
+            support.error("file %s was specified at least twice" % file, log)
+
+
 def usage(show_hidden=False):
     print >> sys.stderr, "SPAdes genome assembler v." + str(spades_version)
     print >> sys.stderr, "Usage:", sys.argv[0], "[options] -o <output_dir>"
@@ -515,6 +521,7 @@ def main():
             else:
                 if not paired and not paired1 and not single:
                     support.error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!", log)
+                check_files_duplication(paired + paired1 + paired2 + single, log)
 
                 # creating empty "dataset" section
                 cfg["dataset"] = load_config_from_vars(dict())
