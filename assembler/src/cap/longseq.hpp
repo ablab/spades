@@ -460,6 +460,8 @@ class LongSeq {
    */
 };
 
+typedef LongSeq<MultiPolynomialHash<3, uint64_t> > LSeq;
+
 }
 
 namespace std {

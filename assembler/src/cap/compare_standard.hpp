@@ -19,6 +19,7 @@
 
 // longseq
 #include "longseq.hpp"
+#include "cap_kmer_index.hpp"
 
 // config
 #include "cap_config_struct.hpp"
@@ -36,7 +37,6 @@ typedef io::SingleRead Contig;
 typedef io::IReader<Contig> ContigStream;
 typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;
 typedef	io::RCReaderWrapper<io::SingleRead> RCWrapper;
-typedef LongSeq<MultiPolynomialHash<3, uint64_t> > LSeq;
 }
 
 // debruijn
