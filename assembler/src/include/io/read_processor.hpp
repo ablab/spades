@@ -168,7 +168,7 @@ public:
 
         auto res = op(r);
         if (res)
-          while (!in_queue.enqueue(*res))
+          while (!out_queue.enqueue(*res))
             sched_yield();
       }
     }
