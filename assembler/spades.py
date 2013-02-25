@@ -229,9 +229,9 @@ def check_binaries(binary_dir, log):
     for binary in ["hammer", "spades", "bwa-spades"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
-            support.error("SPAdes binary file not found: " + binary_path +
+            support.error("SPAdes binaries cannot found: " + binary_path +
                           "\nYou can obtain SPAdes binaries in one of two ways:" +
-                          "\n1. Download the binaries from SPAdes server with ./spades_download_binary.py script" +
+                          "\n1. Download SPAdes binaries from http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz" +
                           "\n2. Build source code with ./spades_compile.sh script", log)
             return False
     return True
