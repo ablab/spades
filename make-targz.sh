@@ -30,7 +30,6 @@ cp assembler/LICENSE SPAdes-$VERSION
 cp assembler/README SPAdes-$VERSION
 cp assembler/VERSION SPAdes-$VERSION
 cp assembler/spades.py SPAdes-$VERSION
-cp assembler/spades_download_binary.py SPAdes-$VERSION
 cp assembler/spades_compile.sh SPAdes-$VERSION
 cp assembler/spades_init.py SPAdes-$VERSION
 cp assembler/manual.html SPAdes-$VERSION
