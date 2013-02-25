@@ -15,8 +15,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;1.2. <a href="#sec1.2">SPAdes pipeline</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.3. <a href="#sec1.3">SPAdes performance</a><br>
 2. <a href="#sec2">Installation</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.1. <a href="#sec2.1">Downloading SPAdes</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">Getiing SPAdes binaries</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.1. <a href="#sec2.1">Downloading SPAdes binaries</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">Downloading and compiling SPAdes source code</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.3">Verifying your installation</a><br>
 3. <a href="#sec3">Running SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;3.1. <a href="#sec3.1">SPAdes input</a><br>
@@ -30,7 +30,7 @@
 <a name="sec1"></a>
 <h2>1. About SPAdes</h2>
 <p>
-    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 2.4.0 was released under GPLv2 on ........ 2013 and can be downloaded from <a href="http://bioinf.spbau.ru/spades" target="_blank">http://bioinf.spbau.ru/spades</a>.
+    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 2.4.0 was released under GPLv2 on ........ 2013 and can be downloaded from  <a href="http://bioinf.spbau.ru/spades" target="_blank">http://bioinf.spbau.ru/spades</a>.
 
 
 <a name="sec1.1"></a>
@@ -127,35 +127,35 @@ SPAdes comes in three separate modules:
 <a name="sec2"></a>
 <h2>2. Installation</h2>
 <p>
-    SPAdes requires a 64-bit Linux system and Python 2.4 or higher to be pre-installed on it. 
+    SPAdes requires a 64-bit Linux system and Python 2.4 or higher to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself.
 
 <a name="sec2.1"></a>
-<h3>2.1 Downloading SPAdes</h3>
+<h3>2.1 Downloading SPAdes binaries </h3>
+
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/spades-2.4.0.tar.gz">SPAdes tar.gz</a> and extract it run:
+    To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz">SPAdes binaries</a> and extract it run:
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release2.4.0/spades-2.4.0.tar.gz
-    tar -xzf spades-2.4.0.tar.gz
-    cd spades-2.4.0
-</code>
-</pre>
- 
-<a name="sec2.2"></a>
-<h3>2.2 Getting SPAdes binaries</h3>
-<p>
-    There are two ways to obtain SPAdes binaries: download static builds from our server or compile SPAdes on your server.
-<p>
-    If you wish to download binaries, run the following script:
-<pre class="code">
-<code>
-    ./spades_download_binary.py
+    wget http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz
+    tar -xzf SPAdes-2.4.0-Linux.tar.gz
+    cd SPAdes-2.4.0-Linux/bin/
 </code>
 </pre>
 
 <p>
-    Also you can compile SPAdes yourself. In this case you will need following libraries to be pre-installed:
+    In this case you do not need to run any installation scripts &ndash; SPAdes is ready to use. The following files are placed in <code>bin</code> directory:
+    <ul>
+        <li><code>spades.py</code>  (main executable script)</li>
+        <li><code>hammer</code>  (read error correcting module)</li>
+        <li><code>spades</code>  (assembly module)</li>
+        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
+    </ul>
+ 
+<a name="sec2.2"></a>
+<h3>2.2 Downloading and compiling SPAdes source code</h3>
+<p>
+    If you wish to compile SPAdes yourself you will need the following libraries to be pre-installed:
     <ul>
         <li>g++ (version 4.4 or higher)</li>
         <li>cmake (version 2.8 or higher)</li>
@@ -163,7 +163,18 @@ SPAdes comes in three separate modules:
     </ul>
 
 <p>
-    If you meet these requirements you can build SPAdes with the following script: 
+    If you meet these requirements you can download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0.tar.gz">SPAdes source code</a>: 
+
+<pre class="code">
+<code>
+    wget http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0.tar.gz
+    tar -xzf SPAdes-2.4.0.tar.gz
+    cd SPAdes-2.4.0
+</code>
+</pre>
+
+<p>
+    and build it with the following script:
 
 <pre class="code">
 <code>
@@ -171,14 +182,35 @@ SPAdes comes in three separate modules:
 </code>
 </pre>
 
+<p> 
+    In this case SPAdes will be built into <code>./bin</code> directory. If you wish to install SPAdes into another directory you can specify absolute path of destination folder by running:
+
+<pre class="code">
+<code>
+    PREFIX=&lt;destination_dir> ./spades_compile.sh
+</code>
+</pre>
+
 <p>
-    In both cases you should get a <code>bin</code> directory that contains the following files:
+    for example:
+
+<pre class="code">
+<code>
+    PREFIX=/usr/local ./spades_compile.sh
+</code>
+</pre>
+
+<p>
+   which will install SPAdes into <code>/usr/local/bin</code>.
+    
+<p>
+    After installation you will get the same files in <code>./bin</code> (or <code>&lt;destination_dir>/bin</code> in you specified PREFIX) directory:
     <ul>
+        <li><code>spades.py</code>  (main executable script)</li>
         <li><code>hammer</code>  (read error correcting module)</li>
         <li><code>spades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment modue which is required for mismatch correction)</li>
+        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
     </ul>
-
 
 <a name="sec2.3"></a>
 <h3>2.3 Verifying your installation</h3>
@@ -287,7 +319,7 @@ Thank you for using SPAdes!
 
 <p>
     <code>--only-error-correction</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Perfroms read error correction only.
+    &nbsp;&nbsp;&nbsp;&nbsp;Perfrorms read error correction only.
 </p>
 
 <p>
