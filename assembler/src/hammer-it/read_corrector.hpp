@@ -7,6 +7,10 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/storage.hpp>
 
+#include <deque>
+#include <vector>
+#include <algorithm>
+
 #ifdef DEBUG_ION_CONSENSUS
 #include <iomanip>
 #include <iostream>
@@ -131,6 +135,78 @@ class SingleReadCorrector {
   std::string NUCS;
 #endif
 
+  struct Right {
+    static size_t changingPosition() { return hammer::K - 1; }
+    static hammer::HKMer shift(const hammer::HKMer &kmer) {
+      hammer::HKMer res;
+      for (size_t i = 1; i < hammer::K; ++i)
+        res[i - 1] = kmer[i];
+      return res;
+    }
+    template <typename T, typename U>
+    static void append(T& cont, U obj) { cont.push_back(obj); }
+  }; 
+
+  struct Left {
+    static size_t changingPosition() { return 0; }
+    static hammer::HKMer shift(const hammer::HKMer &kmer) {
+      hammer::HKMer res;
+      for (size_t i = 1; i < hammer::K; ++i)
+        res[i] = kmer[i - 1];
+      return res;
+    }
+    template <typename T, typename U>
+    static void append(T& cont, U obj) { cont.push_front(obj); }
+  };
+
+  template <typename Side>
+  std::deque<hammer::HomopolymerRun> prolong(const hammer::HKMer &seed, 
+                                             size_t bases_to_recover,
+                                             Side) {
+    std::deque<hammer::HomopolymerRun> good_runs(hammer::K);
+    for (size_t i = 0; i < hammer::K; ++i)
+      good_runs[i] = seed[i];
+
+    auto good_kmer = seed;
+    auto changing_pos = Side::changingPosition();
+
+    for (size_t recov = 0; recov < bases_to_recover; ++recov) {
+      double inf = -std::numeric_limits<double>::infinity();
+      double best_qual = inf;
+      int best_nucl = -1;
+      int best_len = -1;
+      double next_best_qual = inf;
+
+      auto kmer = Side::shift(good_kmer);
+
+      for (size_t nucl = 0; nucl < 4; ++nucl) {
+        if (nucl == good_kmer[changing_pos].nucl)
+          continue;
+        for (size_t len = 1; len <= 4; ++len) {
+          kmer[changing_pos] = hammer::HomopolymerRun(nucl, len);
+          auto &k = kmer_data_[kmer];
+          auto qual = k.count * (1 - k.qual);
+          if (qual > best_qual) {
+            next_best_qual = best_qual;
+            best_qual = qual;
+            best_nucl = nucl;
+            best_len = len;
+          }
+        }
+      }
+
+      // stop if high-quality kmer is not unique
+      if (best_nucl == -1 || best_qual - next_best_qual < 0.8 * best_qual)
+        break;
+
+      kmer[changing_pos] = hammer::HomopolymerRun(best_nucl, best_len);
+      Side::append(good_runs, kmer[changing_pos]);
+      good_kmer = kmer;
+    }
+
+    return good_runs;
+  }
+
  public:
   SingleReadCorrector(const KMerData &kmer_data, const ReadTrimmer &trimmer) :
     kmer_data_(kmer_data), trimmer_(trimmer) {}
@@ -150,7 +226,7 @@ class SingleReadCorrector {
     int pos = -1;
     TrimPolicy trim_policy(r);
 
-    unsigned skipped_hkmers = 0; // number of consecutive hkmers with low quality
+    unsigned skipped = 0; // low-quality centers
     bool need_to_align = false; // this is done after low-quality hkmers
     int skipped_at_start = 0;
     int n_insertions = 0; // APPROXIMATE number of insertions on the read
@@ -164,22 +240,54 @@ class SingleReadCorrector {
 
       static const double QUALITY_THRESHOLD = 1e-11;
 
+      // TODO: better detection of low-quality centers,
+      //       based on _relative_ difference in quality
       if (k.qual < QUALITY_THRESHOLD) {
 
         if (need_to_align) {
           if (pos >= 0) {
-            int offset = alignH(last_good_center, skipped_hkmers + 1,
-                                center, 0);
 
-            if (offset < 0)
+            int offset; // of current good center relative to the previous one
+
+            if (skipped > hammer::K - 4) { 
+              // case of possible 'hole' -  try to recover a few extra bases
+              auto to_recover = skipped - hammer::K + 6;
+
+              auto left_runs = prolong(last_good_center, to_recover, Right());
+              auto recovered_left = left_runs.size() - hammer::K;
+              to_recover -= recovered_left;
+
+              auto right_runs = prolong(center, 
+                                        std::min(skipped - 3, to_recover), 
+                                        Left());
+              auto recovered_right = right_runs.size() - hammer::K;
+
+              int score;
+              offset = alignH(left_runs, skipped + 1 - recovered_right,
+                              right_runs, 0, 3, 5, &score);
+
+              if (score < 2) { // failed to get significant intersection
+                pos += recovered_left;
+                break; // for now, just abort the correction
+                // TODO:
+                // Align previous and current good centers to the read,
+                // copy bases from the 'hole', and continue processing.
+                // This approach won't introduce new errors.
+              }
+            } else {
+              offset = alignH(last_good_center, skipped + 1, center, 0);
+            }
+
+            if (offset < 0) {
               n_insertions -= offset;
-            pos += skipped_hkmers + offset + 1;
+            }
+            pos += skipped + offset + 1;
           } else {
             pos = 0;
           }
 
           need_to_align = false;
-          skipped_hkmers = 0;
+          skipped = 0;
         } else {
           ++pos;
         }
@@ -201,14 +309,9 @@ class SingleReadCorrector {
 
         last_good_center = center;
       } else {
-        if (skipped_hkmers >= hammer::K / 2) {
-          size_t start = pos + skipped_hkmers + 1;
-          for (size_t i = 0; i < hammer::K; ++i)
-            scores[start + i](center[i].nucl, center[i].len) += k.count * (1 - k.qual);
-        }
 
         need_to_align = true; 
-        ++skipped_hkmers;
+        ++skipped;
         if (pos == -1)
           ++skipped_at_start;
       }

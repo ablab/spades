@@ -6,6 +6,7 @@
 #include <array>
 #include <string>
 #include <vector>
+#include <deque>
 
 #include <cstdint>
 
@@ -235,6 +236,10 @@ namespace internal {
   }
 
   inline size_t getSize(const std::vector<hammer::HomopolymerRun> &a) {
+    return a.size();
+  }
+
+  inline size_t getSize(const std::deque<hammer::HomopolymerRun> &a) {
     return a.size();
   }
 
