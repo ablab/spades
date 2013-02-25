@@ -85,7 +85,36 @@ vector<cap::ContigStream*> OpenStreams(const vector<string>& filenames) {
   return streams;
 }
 
-std::string GenMD5FromFiles(const std::vector<std::string> &paths, const std::string &salt = "") {
+std::string GetMD5CommandString() {
+  static std::string answer = "";
+
+  if (answer != "") {
+    return answer;
+  }
+
+  FILE *output;
+  char buf[40];
+  
+  output = popen("echo a | md5sum 2> /dev/null", "r");
+  fscanf(output, "%s", buf);
+  if (strcmp(buf, "60b725f10c9c85c70d97880dfe8191b3") == 0) {
+    return answer = "md5sum ";
+  }
+  pclose(output);
+
+  output = popen("echo a | md5 2> /dev/null", "r");
+  fscanf(output, "%s", buf);
+  if (strcmp(buf, "60b725f10c9c85c70d97880dfe8191b3") == 0) {
+    return answer = "md5 ";
+  }
+  pclose(output);
+
+  return answer = "head -c 20 ";
+
+}
+
+std::string GenMD5FromFiles(const std::vector<std::string> &paths,
+                            const std::string &salt = "") {
   std::vector<std::string> paths_s = paths;
   //std::sort(paths_s.begin(), paths_s.end());
 
@@ -95,10 +124,13 @@ std::string GenMD5FromFiles(const std::vector<std::string> &paths, const std::st
     accum_string += " ";
   }
 
-  FILE *md5_output = popen(("(head -n 1000 " + accum_string + "&& echo " + salt + ") | md5sum").c_str(), "r");
+  std::cerr << "Using " << GetMD5CommandString() << std::endl;
+
+  FILE *md5_output = popen(("(head -n 1000 " + accum_string + "&& echo " + salt
+                                + ") | " + GetMD5CommandString()).c_str(), "r");
   VERIFY(md5_output != NULL);
 
-  char buf[20];
+  char buf[40];
   fscanf(md5_output, "%s", buf);
   pclose(md5_output);
 

@@ -56,7 +56,7 @@ class CapEnvironmentManager {
 
   template <class gp_t>
   shared_ptr<gp_t> BuildGPFromStreams(std::vector<ContigStream *> streams,
-                                                        unsigned k) const {
+                                      unsigned k, bool fill_pos = true) const {
     typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
 
     shared_ptr<gp_t> result(new gp_t(k, env_->kDefaultGPWorkdir));
@@ -76,6 +76,15 @@ class CapEnvironmentManager {
         *(env_->coloring_), *MapperInstance<gp_t>(*result));
     colored_graph_constructor.ConstructGraph(rc_contigs);
 
+    if (fill_pos) {
+      for (auto it = streams.begin(); it != streams.end(); ++it) {
+        ContigStream& stream = **it;
+        stream.reset();
+
+        FillPos(*result, stream);
+      }
+    }
+
     return result;
   }
 
@@ -88,7 +97,7 @@ class CapEnvironmentManager {
 				io::ofastastream out_stream(output_filename);
 				DEBUG("Saving to " << output_filename);
 
-        io::SequenceReader<io::SingleRead> stream(*env_->genomes_[i]);
+        io::SequenceReader<io::SingleRead> stream(*env_->genomes_[i], env_->genomes_names_[i]);
 				while (!stream.eof()) {
 					stream >> contig;
 					out_stream << contig;
@@ -100,7 +109,7 @@ class CapEnvironmentManager {
   template <class gp_t>
   void UpdateStreams(const gp_t &gp) {
 		for (size_t i = 0; i < env_->genomes_.size(); ++i) {
-      io::SequenceReader<io::SingleRead> stream(*env_->genomes_[i]);
+      io::SequenceReader<io::SingleRead> stream(*env_->genomes_[i], env_->genomes_names_[i]);
 
       io::ModifyingWrapper<io::SingleRead> refined_stream(
           stream, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
@@ -228,8 +237,9 @@ class CapEnvironmentManager {
 
   void ConstructGraph(unsigned k) {
     std::vector<ContigStream *> streams;
-    for (auto it = env_->genomes_.begin(); it != env_->genomes_.end(); ++it) {
-      streams.push_back(new io::SequenceReader<Contig>(**it));
+    for (size_t i = 0; i < env_->genomes_.size(); ++i) {
+      streams.push_back(new io::SequenceReader<io::SingleRead>(
+                    *env_->genomes_[i], env_->genomes_names_[i]));
     }
 
     ConstructGraphFromStreams(streams, k);
@@ -259,7 +269,8 @@ class CapEnvironmentManager {
         *env_->edge_pos_, folder + "/pics/graph.dot");
   }
 
-  void SetGenomes(const std::vector<std::string> &genomes_paths) const {
+  void SetGenomes(const std::vector<std::string> &genomes_paths,
+                  const std::vector<std::string> &genomes_names) const {
     VERIFY(env_->init_genomes_paths_.size() == 0);
 
     env_->init_genomes_paths_ = genomes_paths;
@@ -268,7 +279,8 @@ class CapEnvironmentManager {
   /*
    * Returns true if added successfully
    */
-  bool AddGenomeFromFile(const std::string &filename) const {
+  bool AddGenomeFromFile(const std::string &filename,
+                         const std::string &name) const {
     if (!CheckFileExists(filename)) {
       return false;
     }
@@ -283,6 +295,7 @@ class CapEnvironmentManager {
 
     env_->init_genomes_paths_.push_back(filename);
     env_->genomes_.push_back(std::make_shared<Sequence>(genome.sequence()));
+    env_->genomes_names_.push_back(name);
 
     return true;
   }

@@ -16,11 +16,12 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
            "  * further tracking of genome (incl. refinement, searching for diffs, drawing pics, etc.\n"
            "  * storing all genome sequence in RAM throughout usage of current environment\n"
            "Usage:\n"
-           "> add_genome <path_to_file>\n"
+           "> add_genome <path_to_file> [<genome_name> = <path_to_file>]\n"
            " You should specify path to file in which genome data is stored "
-           "(.fasta, .gb, etc.)\n"
+           "(.fasta, .gb, etc.). Also you can provide optional name for genome"
+           "to display in future output.\n"
            "For example:\n"
-           "> add_genome /home/puperuser/genomes/my_genome.fasta\n"
+           "> add_genome /home/puperuser/genomes/my_genome.fasta my_genome\n"
            " would add to the environment genome stored in file "
            "`my_genome.fasta` located in folder `/home/puperuser/genomes`\n";
   }
@@ -31,8 +32,12 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
     }
     const vector<string>& args = arg_list.GetAllArguments();
     const std::string &filename = args[1];
+    std::string name = filename;
+    if (args.size() > 2) {
+      name = args[2];
+    }
 
-    bool success = curr_env.manager().AddGenomeFromFile(filename);
+    bool success = curr_env.manager().AddGenomeFromFile(filename, name);
     if (!success) {
       std::cout << "Failed. Genome is not valid. Please check input.\n";
     }
@@ -45,8 +50,8 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
 
   virtual bool CheckCorrectness(const ArgumentList& arg_list) const {
     const vector<std::string> &args = arg_list.GetAllArguments();
-    if (args.size() != 2) {
-      std::cout << "Command takes exactly one parameter. Aborting.\n";
+    if (!CheckEnoughArguments(args)) {
+      std::cout << "Command takes one or more arguments. Aborting.\n";
       return false;
     }
     

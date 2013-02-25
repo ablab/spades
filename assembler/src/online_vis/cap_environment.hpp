@@ -38,6 +38,8 @@ class CapEnvironment : public Environment {
   // Genome sequences themselves. Yes, it may be lots of GBs.
   std::vector<std::shared_ptr<Sequence> > genomes_;
 
+  std::vector<std::string> genomes_names_;
+
   std::shared_ptr<RtSeqGraphPack> gp_rtseq_;
   std::shared_ptr<LSeqGraphPack> gp_lseq_;
 

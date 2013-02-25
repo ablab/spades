@@ -8,8 +8,9 @@ namespace io {
 template <class Read>
 class SequenceReader : public IReader<Read> {
  public:
-  explicit SequenceReader(const Sequence &sequence)
+  explicit SequenceReader(const Sequence &sequence, const std::string &name = "")
       : sequence_(sequence),
+        name_(name),
         opened_(true),
         eof_(false) {
   }
@@ -42,6 +43,7 @@ class SequenceReader : public IReader<Read> {
 
  private:
   Sequence sequence_;
+  std::string name_;
   bool opened_;
   bool eof_;
 };
@@ -49,7 +51,7 @@ class SequenceReader : public IReader<Read> {
 template <>
 SequenceReader<SingleRead> &SequenceReader<SingleRead>::operator>>(SingleRead &read) {
   if (!eof_) {
-    read = SingleRead("", sequence_.str());
+    read = SingleRead(name_, sequence_.str());
     eof_ = true;
   }
   return *this;
