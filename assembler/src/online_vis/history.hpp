@@ -24,13 +24,15 @@ namespace online_visualization {
 
     const char* operator[](size_t k) const {
       VERIFY(k < size_);
-      EntryT** my_history = history_list();
-      return my_history[k]->line;
+      //EntryT** my_history = history_list();
+      EntryT* entry = history_get(k);
+      return entry->line;
     }
 
     void SetEntry(size_t k, const string& entry) const {
       VERIFY(k < size_);
-      replace_history_entry(k, entry.c_str(), history_list()[k]->data);
+      //replace_history_entry(k, entry.c_str(), history_list()[k]->data);
+      replace_history_entry(k, entry.c_str(), history_get(k)->data);
     }
 
     size_t size() const {
