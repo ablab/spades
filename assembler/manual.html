@@ -133,7 +133,7 @@ SPAdes comes in three separate modules:
 <h3>2.1 Downloading SPAdes binaries </h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz">SPAdes binaries</a> and extract it run:
+    To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz">SPAdes binaries</a> and extract them, run:
 
 <pre  class="code">
 <code>
@@ -144,7 +144,7 @@ SPAdes comes in three separate modules:
 </pre>
 
 <p>
-    In this case you do not need to run any installation scripts &ndash; SPAdes is ready to use. The following files are placed in <code>bin</code> directory:
+    In this case you do not need to run any installation scripts &ndash; SPAdes is ready to use. The following files will be placed in <code>bin</code> directory:
     <ul>
         <li><code>spades.py</code>  (main executable script)</li>
         <li><code>hammer</code>  (read error correcting module)</li>
@@ -155,7 +155,7 @@ SPAdes comes in three separate modules:
 <a name="sec2.2"></a>
 <h3>2.2 Downloading and compiling SPAdes source code</h3>
 <p>
-    If you wish to compile SPAdes yourself you will need the following libraries to be pre-installed:
+    If you wish to compile SPAdes by yourself you will need the following libraries to be pre-installed:
     <ul>
         <li>g++ (version 4.4 or higher)</li>
         <li>cmake (version 2.8 or higher)</li>
@@ -163,7 +163,7 @@ SPAdes comes in three separate modules:
     </ul>
 
 <p>
-    If you meet these requirements you can download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0.tar.gz">SPAdes source code</a>: 
+    If you meet these requirements, you can download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0.tar.gz">SPAdes source code</a>: 
 
 <pre class="code">
 <code>
@@ -183,7 +183,7 @@ SPAdes comes in three separate modules:
 </pre>
 
 <p> 
-    In this case SPAdes will be built into <code>./bin</code> directory. If you wish to install SPAdes into another directory you can specify absolute path of destination folder by running:
+    In this case SPAdes will be built into <code>./bin</code> directory. If you wish to install SPAdes into another directory, you can specify full path of destination folder by running:
 
 <pre class="code">
 <code>
@@ -204,7 +204,7 @@ SPAdes comes in three separate modules:
    which will install SPAdes into <code>/usr/local/bin</code>.
     
 <p>
-    After installation you will get the same files in <code>./bin</code> (or <code>&lt;destination_dir>/bin</code> in you specified PREFIX) directory:
+    After installation you will get the same files in <code>./bin</code> (or <code>&lt;destination_dir>/bin</code> if you specified PREFIX) directory:
     <ul>
         <li><code>spades.py</code>  (main executable script)</li>
         <li><code>hammer</code>  (read error correcting module)</li>
@@ -388,7 +388,7 @@ Thank you for using SPAdes!
 
 <pre class="code">
 <code>
-    ./spades.py -1 test_dataset/ecoli_1K_1.fq.gz -2 test_dataset/ecoli_1K_2.fq.gz -o spades_test
+    ./spades.py -1 ../share/spades/test_dataset/ecoli_1K_1.fq.gz -2 ../share/spades/test_dataset/ecoli_1K_2.fq.gz -o spades_test
 </code>
 </pre>
 
