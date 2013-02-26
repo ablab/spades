@@ -34,7 +34,7 @@ inline void copy_file(string from_path, string to_path)
     make_full_path(to_path  );
 
     ifstream source(from_path, ios::binary);
-    ofstream dest  (to_path  , ios::binary);
+    ofstream dest  (to_path.c_str()  , ios::binary);
 
     dest << source.rdbuf();
 }
