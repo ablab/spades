@@ -83,11 +83,14 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION"
 # Test dataset
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset"
         DESTINATION share/spades)
-# manual and LICENSE
+# manual, LICENSE, and GPLv2
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE"
+        DESTINATION share/spades
+        COMPONENT runtime)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../GPLv2.txt"
         DESTINATION share/spades
         COMPONENT runtime)
 
