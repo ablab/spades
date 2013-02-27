@@ -33,6 +33,7 @@ cp assembler/spades.py SPAdes-$VERSION
 cp assembler/spades_compile.sh SPAdes-$VERSION
 cp assembler/spades_init.py SPAdes-$VERSION
 cp assembler/manual.html SPAdes-$VERSION
+cp assembler/GPLv2.txt SPAdes-$VERSION
 
 cd SPAdes-$VERSION
 touch src/CMakeListsInternal.txt
