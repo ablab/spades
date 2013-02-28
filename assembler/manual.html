@@ -15,9 +15,10 @@
 &nbsp;&nbsp;&nbsp;&nbsp;1.2. <a href="#sec1.2">SPAdes pipeline</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.3. <a href="#sec1.3">SPAdes performance</a><br>
 2. <a href="#sec2">Installation</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.1. <a href="#sec2.1">Downloading SPAdes binaries</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">Downloading and compiling SPAdes source code</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.3">Verifying your installation</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.1. <a href="#sec2.1">Downloading SPAdes Linux binaries</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">Downloading SPAdes binaries for Mac</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.3">Downloading and compiling SPAdes source code</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.4. <a href="#sec2.4">Verifying your installation</a><br>
 3. <a href="#sec3">Running SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;3.1. <a href="#sec3.1">SPAdes input</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;3.2. <a href="#sec3.2">SPAdes command line options</a><br>
@@ -127,13 +128,13 @@ SPAdes comes in three separate modules:
 <a name="sec2"></a>
 <h2>2. Installation</h2>
 <p>
-    SPAdes requires a 64-bit Linux system and Python 2.4 or higher (but not 3) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself.
+    SPAdes requires a 64-bit Linux system or Mac OS and Python 2.4 or higher (but not 3) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself.
 
 <a name="sec2.1"></a>
-<h3>2.1 Downloading SPAdes binaries </h3>
+<h3>2.1 Downloading SPAdes Linux binaries</h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz">SPAdes binaries</a> and extract them, run:
+    To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, run:
 
 <pre  class="code">
 <code>
@@ -153,7 +154,30 @@ SPAdes comes in three separate modules:
     </ul>
  
 <a name="sec2.2"></a>
-<h3>2.2 Downloading and compiling SPAdes source code</h3>
+<h3>2.2 Downloading SPAdes binaries for Mac</h3>
+
+<p>
+    To obtain <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, run:
+
+<pre  class="code">
+<code>
+    curl http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Darwin.tar.gz -o SPAdes-2.4.0-Darwin.tar.gz
+    tar -zxvf SPAdes-2.4.0-Darwin.tar.gz
+    cd SPAdes-2.4.0-Darwin/bin/
+</code>
+</pre>
+
+<p>
+    Just as in Linux, SPAdes is ready to use and no further installation steps are required. You will get the same files <code>bin</code> directory:
+    <ul>
+        <li><code>spades.py</code>  (main executable script)</li>
+        <li><code>hammer</code>  (read error correcting module)</li>
+        <li><code>spades</code>  (assembly module)</li>
+        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
+    </ul>
+ 
+<a name="sec2.3"></a>
+<h3>2.3 Downloading and compiling SPAdes source code</h3>
 <p>
     If you wish to compile SPAdes by yourself you will need the following libraries to be pre-installed:
     <ul>
@@ -212,7 +236,7 @@ SPAdes comes in three separate modules:
         <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
     </ul>
 
-<a name="sec2.3"></a>
+<a name="sec2.4"></a>
 <h3>2.3 Verifying your installation</h3>
 <p>
     For testing purposes, SPAdes comes with a &ldquo;toy data set&rdquo; (reads, that align to first 1000 bp of E. coli). To try SPAdes on this data set run:
