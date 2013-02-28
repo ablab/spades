@@ -32,7 +32,7 @@ struct HelperTable {
   const uint32_t* storage_;
 
   template <typename T1, typename T2>
-  Hint lookupHint(const T1 &x, const T1 &y,
+  Hint lookupHint(const T1 &x, const T2 &y,
                   size_t x_offset, size_t y_offset,
                   size_t x_nfront, size_t y_nfront) const {
 

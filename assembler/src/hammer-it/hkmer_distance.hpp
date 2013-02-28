@@ -32,13 +32,22 @@ template <int kMismatchCost=1,
           typename T2>
 inline size_t distanceHKMer(const T1 &x, 
                             const T2 &y,
-                            unsigned tau = -1) {
+                            unsigned tau = -1,
+                            size_t x_len = 0,
+                            size_t y_len = 0,
+                            size_t x_offset = 0,
+                            size_t y_offset = 0) {
   unsigned dist = 0;
 
   using hammer::internal::getSize;
 
-  size_t i = 0, j = 0, ix = 0, iy = 0, x_sz = getSize(x), y_sz = getSize(y);
-  hammer::HomopolymerRun cx = x[0], cy = y[0];
+  size_t i = x_offset, j = y_offset;
+  size_t ix = x_offset, iy = y_offset;
+  size_t x_sz = getSize(x), y_sz = getSize(y);
+  if (x_len > 0) x_sz = x_len;
+  if (y_len > 0) y_sz = y_len;
+
+  hammer::HomopolymerRun cx = x[ix], cy = y[iy];
 
   while (i < x_sz && j < y_sz) {
     if (ix != i)

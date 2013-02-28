@@ -81,6 +81,15 @@ struct KeepTrimmedEnds {
   std::vector<hammer::HomopolymerRun> runs_;
 };
 
+// finds such offset D that sequences a[a_offset + D ..] and b[b_offset .. ]
+// have longest common prefix
+//
+// parameters:
+//    a, b, a_offset, b_offset - sequences and offsets on them
+//    max_offset - maximum absolute value of offset that will be checked
+//    n_cmp - maximum number of compared elements
+//    p_score - address at which length of longest common prefix will be stored
+//              (this length can't be more than n_cmp)
 template <typename T1, typename T2>
 static int alignH(const T1 &a, size_t a_offset, const T2 &b, size_t b_offset,
                   size_t max_offset=3, size_t n_cmp=5, int* p_score=NULL) {
@@ -222,15 +231,17 @@ class SingleReadCorrector {
 
     ScoreStorage scores(r.size() * 3 / 2, ScoreMatrix(4, 64, 0));
 
+    std::string read_seq = r.GetSequenceString();
+    auto original_runs = hammer::iontorrent::toHomopolymerRuns(read_seq);
+
     ValidHKMerGenerator<hammer::K> gen(r);
-    int pos = -1;
+    int pos = -1; // offset on corrected read of 1st base of current center
     TrimPolicy trim_policy(r);
 
+    int n_beg = gen.trimmed_left(); // number of runs skipped at the start
     unsigned skipped = 0; // low-quality centers
     bool need_to_align = false; // this is done after low-quality hkmers
-    int skipped_at_start = 0;
     int n_insertions = 0; // APPROXIMATE number of insertions on the read
-
     hammer::HKMer last_good_center; // last high-quality center
 
     while (gen.HasMore()) {
@@ -266,22 +277,68 @@ class SingleReadCorrector {
               offset = alignH(left_runs, skipped + 1 - recovered_right,
                               right_runs, 0, 3, 5, &score);
 
-              if (score < 2) { // failed to get significant intersection
-                pos += recovered_left;
-                break; // for now, just abort the correction
-                // TODO:
-                // Align previous and current good centers to the read,
-                // copy bases from the 'hole', and continue processing.
-                // This approach won't introduce new errors.
+              if (score < 3) { // failed to get significant intersection
+                int score, d, d1;
+                // try to find right end of previous center on the read
+                // (looking for last bases of left_runs doesn't make
+                // much sense because the read is likely to have errors there)
+                size_t prev_offset = pos + n_beg + n_insertions;
+                d = alignH(original_runs, prev_offset + hammer::K - 5,
+                           last_good_center, hammer::K - 5, 2, 5, &score);
+                if (score < 4) {
+                  pos += recovered_left;
+                  break;
+                }
+                prev_offset += d;
+
+                // try to find left end of current center on the read
+                size_t curr_offset = prev_offset + skipped + 1;
+                d1 = alignH(original_runs, curr_offset, center, 0, 2, 5, 
+                            &score);
+                if (score < 4) {
+                  pos += recovered_left;
+                  break;
+                }
+                curr_offset += d1;
+
+                size_t read_offset_l = prev_offset + hammer::K;
+                size_t read_offset_r = curr_offset;
+                const double kCopiedScore = 1;
+
+                pos += hammer::K;
+                for (size_t j = read_offset_l; j < read_offset_r; ++j) {
+                  auto run = original_runs[j];
+                  scores[pos++](run.nucl, run.len) = kCopiedScore;
+                }
+                offset = skipped + 1 - curr_offset + prev_offset;
+                pos += offset;
+
+#ifdef DEBUG_ION_CONSENSUS
+                std::cerr << r.name() << std::endl;
+                for (size_t i = 0; i < 5; i++)
+                  std::cerr << last_good_center[hammer::K - 5 + i].str() << " ";
+                std::cerr << " | ";
+                for (size_t j = read_offset_l; j < read_offset_r; ++j) {
+                  auto run = original_runs[j];
+                  std::cerr << run.str() << " ";
+                }
+                std::cerr << "| ";
+                for (size_t i = 0; i < 5; i++)
+                  std::cerr << center[i].str() << " ";
+                std::cerr << std::endl << "offset: " << offset << std::endl;
+                std::cerr << "skipped: " << skipped << std::endl;
+#endif
+              } else { // the two centers have in intersection >= 3 runs
+                pos += skipped + offset + 1;
               }
             } else {
               offset = alignH(last_good_center, skipped + 1, center, 0);
+              pos += skipped + offset + 1;
             }
 
             if (offset < 0) {
               n_insertions -= offset;
             }
-            pos += skipped + offset + 1;
           } else {
             pos = 0;
           }
@@ -313,7 +370,7 @@ class SingleReadCorrector {
         need_to_align = true; 
         ++skipped;
         if (pos == -1)
-          ++skipped_at_start;
+          ++n_beg;
       }
 
       gen.Next();
@@ -330,10 +387,8 @@ class SingleReadCorrector {
     if (it_begin >= it_end)
       return boost::optional<io::SingleRead>();
 
-    size_t triml = gen.trimmed_left();
-
     // initialize sequence with bases trimmed from the left
-    int n_beg = it_begin - scores.begin() + triml + skipped_at_start;
+    n_beg += it_begin - scores.begin();
     std::string res = trim_policy.buildStart(n_beg);
 
     std::array<hammer::HomopolymerRun, 5> last_corrected_runs;
@@ -351,8 +406,6 @@ class SingleReadCorrector {
 
     // try to find trimmed bases
     if (it_end - it_begin >= n_tail && pos + n_beg + n_insertions >= n_tail) {
-      std::string seq = r.GetSequenceString();
-      auto original_runs = hammer::iontorrent::toHomopolymerRuns(seq);
       int next_base_pos = pos + n_beg + n_insertions;
       int score;
       next_base_pos -= alignH(original_runs, pos + n_beg + n_insertions - n_tail,
