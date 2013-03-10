@@ -38,43 +38,42 @@ size_t EstimateTotalReadSize(const std::vector<std::string> &fnames);
  */
 class HammerTools {
 public:
-	/// initialize subkmer positions and log about it
-	static void InitializeSubKMerPositions();
+  /// initialize subkmer positions and log about it
+  static void InitializeSubKMerPositions();
 
-	/// read one input file into the blob and output current position and read number
-	static std::pair<size_t, size_t> ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read);
-	/// read all input files into the blob
-	static void ReadAllFilesIntoBlob();
+  /// read one input file into the blob and output current position and read number
+  static std::pair<size_t, size_t> ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read);
+  /// read all input files into the blob
+  static void ReadAllFilesIntoBlob();
 
-	/// print out the resulting set of k-mers
-	static void PrintKMerResult(std::ostream & outf, const vector<KMerStat> & kmers );
+  /// print out the resulting set of k-mers
+  static void PrintKMerResult(std::ostream & outf, const vector<KMerStat> & kmers );
 
   /// parallel correction of batch of reads
-	static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
+  static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
                                 size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                                 const KMerData &data);
-	/// correct reads in a given file
-	static void CorrectReadFile(const KMerData &data,
+  /// correct reads in a given file
+  static void CorrectReadFile(const KMerData &data,
                               size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                               const std::string &fname,
                               ofstream *outf_good, ofstream *outf_bad);
-	/// correct reads in a given pair of files
-	static void CorrectPairedReadFiles(const KMerData &data,
+  /// correct reads in a given pair of files
+  static void CorrectPairedReadFiles(const KMerData &data,
                                      size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                                      const std::string &fnamel, const std::string &fnamer,
                                      ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp);
-	/// correct all reads
-	static hint_t CorrectAllReads();
+  /// correct all reads
+  static hint_t CorrectAllReads();
 
-	static string getFilename( const string & dirprefix, const string & suffix );
-	static string getFilename( const string & dirprefix, int iter_count, const string & suffix );
-	static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );
-	static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num, const string & suffix2 );
-	static string getFilename( const string & dirprefix, const string & suffix, int suffix_num );
-	static string getReadsFilename( const string & dirprefix, int read_file_no, int iter_no, const string & suffix );
+  static string getFilename( const string & dirprefix, const string & suffix );
+  static string getFilename( const string & dirprefix, unsigned iter_count, const string & suffix );
+  static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );
+  static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num, const string & suffix2 );
+  static string getFilename( const string & dirprefix, const string & suffix, int suffix_num );
+  static string getReadsFilename(const std::string & dirprefix, const std::string &fname, unsigned iter_no, const std::string & suffix);
 };
 
 
 
 #endif
-
