@@ -7,7 +7,7 @@ cd BioD
 git checkout d109ffc38
 cd ..
 make -j5
-wget https://dl.dropbox.com/u/7916095/const/sambamba_10_03_2012.bz2
-bunzip2 sambamba_10_03_2012.bz2
-mv sambamba_10_03_2012 sambamba
+wget https://dl.dropbox.com/u/7916095/const/sambamba_10_03_2013.bz2
+bunzip2 sambamba_10_03_2013.bz2
+mv sambamba_10_03_2013 sambamba
 chmod +x sambamba
