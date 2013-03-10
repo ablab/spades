@@ -16,16 +16,16 @@
 
 #include "standard.hpp"
 #include "config_common.hpp"
-#include "boost/optional.hpp"
+#include "io/library.hpp"
+
+#include <boost/optional.hpp>
 
 #define CONFIG_FILENAME "/home/snikolenko/algorithmic-biology/assembler/src/hammer/config.inp"
 
 // struct for debruijn project's configuration file
-struct hammer_config
-{
-  string input_paired_1;
-  string input_paired_2;
-  string input_single;
+struct hammer_config {
+  io::DataSet dataset;
+
   string input_solid_kmers;
   string input_working_dir;
   int input_trim_quality;

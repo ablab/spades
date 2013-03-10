@@ -58,9 +58,9 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
   load(cfg.correct_discard_bad, pt, "correct_discard_bad");
   cfg.correct_notrim = pt.get_optional<bool>("correct_notrim");
 
-  load(cfg.input_paired_1, pt, "input_paired_1");
-  load(cfg.input_paired_2, pt, "input_paired_2");
-  load(cfg.input_single, pt, "input_single");
+  std::string fname;
+  load(fname, pt, "dataset");
+  cfg.dataset.load(fname);
 
   load(cfg.input_solid_kmers, pt, "input_solid_kmers");
   load(cfg.input_working_dir, pt, "input_working_dir");

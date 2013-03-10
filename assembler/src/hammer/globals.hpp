@@ -13,8 +13,6 @@ class KMerData;
 
 struct Globals {
   static int iteration_no;
-  static std::vector<std::string> input_filenames;
-  static std::vector<std::string> input_filename_bases;
 
   static std::vector<uint32_t> * subKMerPositions;
   static KMerData *kmer_data;
