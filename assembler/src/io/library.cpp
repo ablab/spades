@@ -10,6 +10,14 @@ using namespace io;
 namespace YAML {
 template<>
 struct convert<DataSet> {
+  static Node encode(const DataSet& rhs) {
+    Node node;
+    for (auto it = rhs.library_begin(), et = rhs.library_end(); it != et; ++it)
+      node.push_back(*it);
+
+    return node;
+  }
+
   static bool decode(const Node& node, DataSet& rhs) {
     if (!node.IsSequence())
       return false;
@@ -21,6 +29,22 @@ struct convert<DataSet> {
 
 template<>
 struct convert<SequencingLibrary> {
+  static Node encode(const SequencingLibrary& rhs) {
+    Node node;
+
+    node["orientation"] = rhs.orientation();
+    node["type"] = rhs.type();
+
+    for (auto it = rhs.paired_begin(), et = rhs.paired_end(); et != it; ++it) {
+      node["left paired"].push_back(it->first);
+      node["right paired"].push_back(it->second);
+    }
+    for (auto it = rhs.single_begin(), et = rhs.single_end(); et != it; ++it)
+      node["single"].push_back(*it);
+
+    return node;
+  }
+
   static bool decode(const Node& node, SequencingLibrary& rhs) {
     rhs.load(node);
     return true;
@@ -29,6 +53,19 @@ struct convert<SequencingLibrary> {
 
 template<>
 struct convert<LibraryOrientation> {
+  static Node encode(const LibraryOrientation &rhs) {
+    switch (rhs) {
+      case LibraryOrientation::FR:
+        return Node("fr");
+      case LibraryOrientation::RF:
+        return Node("rf");
+      case LibraryOrientation::FF:
+        return Node("ff");
+      case LibraryOrientation::RR:
+        return Node("rr");
+    }
+  }
+
   static bool decode(const Node& node, LibraryOrientation& rhs) {
     std::string orientation = node.as<std::string>();
 
@@ -49,6 +86,19 @@ struct convert<LibraryOrientation> {
 
 template<>
 struct convert<LibraryType> {
+  static Node encode(const LibraryType &rhs) {
+    switch (rhs) {
+      case LibraryType::PairedEnd:
+        return Node("paired-end");
+      case LibraryType::SingleReads:
+        return Node("single");
+      case LibraryType::MatePairs:
+        return Node("mate-pairs");
+      case LibraryType::LongSingleReads:
+        return Node("long-single");
+    }
+  }
+
   static bool decode(const Node& node, LibraryType& rhs) {
     std::string type = node.as<std::string>();
 

@@ -118,7 +118,6 @@ int main(int argc, char * argv[]) {
     int max_iterations = cfg::get().general_max_iterations;
 
     // now we can begin the iterations
-    VERIFY(max_iterations == 1)
     for (Globals::iteration_no = 0; Globals::iteration_no < max_iterations; ++Globals::iteration_no) {
       cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << endl;
       bool do_everything = cfg::get().general_do_everything_after_first_iteration && (Globals::iteration_no > 0);

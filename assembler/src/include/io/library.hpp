@@ -142,6 +142,7 @@ class DataSet {
 
   void load(const std::string &);
   void load(const YAML::Node &node);
+  void print() const;
 
   void clear() { libraries_.clear(); }
   void push_back(const SequencingLibrary &lib) {

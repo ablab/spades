@@ -248,30 +248,46 @@ hint_t HammerTools::CorrectAllReads() {
 
   INFO("Starting read correction in " << correct_nthreads << " threads.");
 
-  // Correcting paired files
   const io::DataSet &dataset = cfg::get().dataset;
-  for (auto I = dataset.paired_begin(), E = dataset.paired_end(); I != E; ++I) {
-    INFO("Correcting pair of reads: " << I->first << " and " << I->second);
-    std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired" + path::extension(I->first);
+  io::DataSet outdataset;
+  for (auto it = dataset.library_begin(), et = dataset.library_end(); it != et; ++it) {
+    const io::SequencingLibrary &lib = *it;
+    io::SequencingLibrary outlib = lib;
+    outlib.clear();
 
-    std::ofstream ofcorl(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->first,  Globals::iteration_no, "cor").c_str());
-    std::ofstream ofbadl(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->first,  Globals::iteration_no, "bad").c_str());
-    std::ofstream ofcorr(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->second, Globals::iteration_no, "cor").c_str());
-    std::ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->second, Globals::iteration_no, "bad").c_str());
-    std::ofstream ofunp (HammerTools::getReadsFilename(cfg::get().input_working_dir, unpaired,  Globals::iteration_no, "cor").c_str());
+    for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I) {
+      INFO("Correcting pair of reads: " << I->first << " and " << I->second);
+      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired" + path::extension(I->first);
 
-    HammerTools::CorrectPairedReadFiles(*Globals::kmer_data,
-                                        changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
-                                        I->first, I->second,
-                                        &ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp);
+      std::string outcorl = HammerTools::getReadsFilename(cfg::get().input_working_dir, I->first,  Globals::iteration_no, "cor");
+      std::string outcorr = HammerTools::getReadsFilename(cfg::get().input_working_dir, I->second, Globals::iteration_no, "cor");
+      std::string outcoru = HammerTools::getReadsFilename(cfg::get().input_working_dir, unpaired,  Globals::iteration_no, "cor");
+
+      std::ofstream ofcorl(outcorl.c_str());
+      std::ofstream ofbadl(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->first,  Globals::iteration_no, "bad").c_str());
+      std::ofstream ofcorr(outcorr.c_str());
+      std::ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->second, Globals::iteration_no, "bad").c_str());
+      std::ofstream ofunp (outcoru.c_str());
+
+      HammerTools::CorrectPairedReadFiles(*Globals::kmer_data,
+                                          changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
+                                          I->first, I->second,
+                                          &ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp);
+      outlib.push_back_paired(outcorl, outcorr);
+      outlib.push_back_single(outcoru);
+    }
+
+    for (auto I = dataset.single_begin(), E = dataset.single_end(); I != E; ++I) {
+      INFO("Correcting single reads: " << *I);
+      std::string outcor = HammerTools::getReadsFilename(cfg::get().input_working_dir, *I,  Globals::iteration_no, "cor");
+      std::ofstream ofgood(outcor.c_str());
+      std::ofstream ofbad(HammerTools::getReadsFilename(cfg::get().input_working_dir, *I,  Globals::iteration_no, "bad").c_str());
+      outlib.push_back_single(outcor);
+    }
+    outdataset.push_back(outlib);
   }
 
-  for (auto I = dataset.single_begin(), E = dataset.single_end(); I != E; ++I) {
-    INFO("Correcting single reads: " << *I);
-
-    std::ofstream ofgood(HammerTools::getReadsFilename(cfg::get().input_working_dir, *I,  Globals::iteration_no, "cor").c_str());
-    std::ofstream ofbad(HammerTools::getReadsFilename(cfg::get().input_working_dir, *I,  Globals::iteration_no, "bad").c_str());
-  }
+  cfg::get_writable().dataset = outdataset;
 
   INFO("Correction done. Changed " << changedNucleotides << " bases in " << changedReads << " reads.");
   INFO("Failed to correct " << uncorrectedNucleotides << " bases out of " << totalNucleotides << ".");
