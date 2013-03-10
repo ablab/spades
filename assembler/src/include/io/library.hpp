@@ -71,6 +71,21 @@ class SequencingLibrary {
   LibraryType type() const { return type_; }
   LibraryOrientation orientation() const { return orientation_; }
 
+  void clear() {
+    left_paired_reads_.clear();
+    right_paired_reads_.clear();
+    single_reads_.clear();
+  }
+
+  void push_back_single(const std::string &reads) {
+    single_reads_.push_back(reads);
+  }
+
+  void push_back_paired(const std::string &left, const std::string &right) {
+    left_paired_reads_.push_back(left);
+    right_paired_reads_.push_back(right);
+  }
+
   paired_reads_iterator paired_begin() const {
     return paired_reads_iterator(left_paired_reads_.begin(), right_paired_reads_.begin());
   }
@@ -128,6 +143,10 @@ class DataSet {
   void load(const std::string &);
   void load(const YAML::Node &node);
 
+  void clear() { libraries_.clear(); }
+  void push_back(const SequencingLibrary &lib) {
+    libraries_.push_back(lib);
+  }
   SequencingLibrary& operator[](size_t n) { return libraries_[n]; }
   const SequencingLibrary& operator[](size_t n) const { return libraries_[n]; }
   iterator library_begin() { return libraries_.begin(); }
