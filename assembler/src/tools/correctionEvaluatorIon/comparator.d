@@ -1,4 +1,4 @@
-import bio.bam.reader, bio.bam.read, bio.bam.md.reconstruct, bio.bam.baseinfo;
+import bio.bam.reader, bio.bam.read, bio.bam.md.reconstruct, bio.bam.baseinfo, bio.bam.writer;
 import bio.core.sequence, bio.core.fasta, bio.core.base;
 import std.stdio, std.range, std.conv, std.algorithm, 
        std.parallelism, std.array, std.traits, std.exception;
@@ -6,109 +6,49 @@ import std.stdio, std.range, std.conv, std.algorithm,
 // FIXME: more fine-grained statistics about 
 //        corrected/miscorrected/uncorrected errors
 
-struct Pair {
-  BamRead read;
-  string corrected_sequence;
-}
-
-struct ProcessedPair {
-  BamRead read;
-  string corrected_sequence;
-  size_t edit_distance; // levenshtein distance b/w corrected read and reference
-  EditOp[] edit_path;
-}
-
-/// Align corrected read against reference
-ProcessedPair process(Pair pair) {
-  auto expected = to!string(dna(pair.read));
-
-  if (pair.read.strand == '-')
-    expected = to!string(nucleotideSequence(expected).reverse);
-
-  auto seq = pair.corrected_sequence;
-  auto lev_dist_and_path = levenshteinDistanceAndPath(expected, seq);
-
-  auto dist = lev_dist_and_path[0];
-  auto path = lev_dist_and_path[1];
-
-  while (path.back == 'r') {
-      path.popBack();
-      --dist;
-  }
-
-  return ProcessedPair(pair.read, pair.corrected_sequence, dist, path);
-}
-
-/// Takes BAM reads and corrected reads as input,
-/// yields pairs of corresponding ones.
-struct PairRange(R, CR) {
-  private {
-    R reads_;
-    CR corrected_reads_;
-
-    Pair front_;
-    bool empty_;
-  }
-
-  this(R reads, CR corrected_reads) {
-    reads_ = reads;
-    corrected_reads_ = corrected_reads;
-    popFront();
-  }
-
-  bool empty() @property {
-    return empty_;
-  }
-
-  Pair front() @property {
-    return front_;
-  }
-
-  void popFront() {
-    if (corrected_reads_.empty) {
-      empty_ = true;
-      return;
-    }
-
-    auto record = corrected_reads_.front();
-    while (!reads_.empty && reads_.front.name != record.header)
-      reads_.popFront();
-
-    if (reads_.empty) {
-      empty_ = true;
-      return;
-    }
-
-    front_ = Pair(reads_.front, record.sequence);
-    corrected_reads_.popFront();
-  }
-}
-
-class Comparator(R, CR) 
-  if (is(ElementType!R == BamRead) && is(ElementType!CR == FastaRecord))
+class Comparator
 {
   private {
-    PairRange!(R, CR) read_pairs_;
+    BamReader raw_;
+    BamReader corrected_;
+
+    BamWriter ruined_;
+    BamWriter damaged_;
   }
 
-  this(R reads, CR corrected_reads) {
-    read_pairs_ = PairRange!(R, CR)(reads, corrected_reads);
+  this(BamReader raw, BamReader corrected) {
+    raw_ = raw;
+    corrected_ = corrected;
+    
     worsened_ = File("worsened.txt", "w+");
   }
 
   /// Collect statistics
   void run() {
-    version (serial) {
-      auto processed_pairs = map!process(read_pairs_);
-    } else {
-      auto taskpool = new TaskPool(totalCPUs);
-      scope(exit) taskpool.finish();
 
-      auto processed_pairs = taskpool.map!process(read_pairs_);
-    }
+    ruined_ = new BamWriter("ruined.bam");
+    ruined_.writeSamHeader(corrected_.header);
+    ruined_.writeReferenceSequenceInfo(corrected_.reference_sequences);
+    scope (exit) ruined_.finish();
 
-    foreach (pair; processed_pairs) {
-      updateStats(pair);
+    damaged_ = new BamWriter("damaged.bam");
+    damaged_.writeSamHeader(corrected_.header);
+    damaged_.writeReferenceSequenceInfo(corrected_.reference_sequences);
+    scope (exit) damaged_.finish();
+
+    auto last_position = reduce!max(0, 
+                            raw_.reads().filter!"!a.is_unmapped"
+                                .map!"a.position + a.basesCovered() - 1");
+
+    auto raw_reads = raw_.reads;
+    foreach (r2; corrected_.reads) {
+      if (r2.position >= last_position)
+          continue;
+      while (!raw_reads.empty && raw_reads.front.name != r2.name)
+        raw_reads.popFront();
+      assert(!raw_reads.empty);
+      auto r1 = raw_reads.front;
+      updateStats(r1, r2);
     }
   }
 
@@ -160,14 +100,6 @@ class Comparator(R, CR)
     return path;
   }
 
-  private static size_t pathToDistance(in EditOp[] path) {
-    size_t dist;
-    foreach (edit_op; path)
-      if (edit_op != 'n')
-        ++dist;
-    return dist;
-  }
-
   // format read sequence so that it's aligned with edit path
   private static string sequenceStr(BamRead read) {
     auto cigar = read.cigar;
@@ -201,32 +133,36 @@ class Comparator(R, CR)
     return assumeUnique(res);
   }
 
-  // same for corrected sequence with known edit path
-  private static string corrSequenceStr(string corr, in EditOp[] path) {
-    string res;
-    foreach (op; path) {
-      if (op != 'r') {
-        res ~= corr.front;
-        corr.popFront();
-      } else {
-        res ~= '*';
-      }
-    }
-    return res;
-  }
+  private void updateStats(BamRead r1, BamRead r2) {
+    if (r1.is_unmapped || r2.is_unmapped)
+      return;
 
-  private void updateStats(ProcessedPair pair) {
-    auto lev_dist = pair.edit_distance;
-    auto path = pair.edit_path;
+    if (r1.strand != r2.strand)
+      return; // comparison is meaningless
 
-    lev_distance_distribution_[lev_dist] += 1;
+    if (r1.strand == '+' && r1.position != r2.position)
+        return;
 
-    // ------------- compare with CIGAR ----------------------------------
-    auto cigar_path = cigarPath(pair.read);
-    auto old_lev_dist = pathToDistance(cigar_path);
+    if (r1.strand == '-' && r1.position + r1.basesCovered() != r2.position + r2.basesCovered())
+        return; // one of reads was likely misaligned
+
+    if (r1["NM"].is_nothing || r2["NM"].is_nothing)
+      return;
+
+    auto old_cigar_path = cigarPath(r1);
+    auto old_lev_dist = to!long(r1["NM"]);
+    auto old_bc = r1.basesCovered();
+
+    auto new_cigar_path = cigarPath(r2);
+    auto new_lev_dist = to!long(r2["NM"]);
+    auto new_bc = r2.basesCovered();
+
+    delta_cov_ += to!long(new_bc) - to!long(old_bc);
+
+    lev_distance_distribution_[new_lev_dist] += 1;
 
     ++total_;
-    delta_ += to!long(lev_dist) - to!long(old_lev_dist);
+    delta_ += new_lev_dist - old_lev_dist;
     old_delta_ -= old_lev_dist;
 
     if (old_lev_dist == 0)
@@ -238,25 +174,29 @@ class Comparator(R, CR)
       ++n_one_err_;
 
     if (old_lev_dist == 0) {
-      if (lev_dist > 0)
+      if (new_lev_dist > 0) {
         ++perfect_read_worsened_;
+        ruined_.writeRecord(r2);
+      }
       else
         ++perfect_read_no_change_;
     } else {
-      if (lev_dist > old_lev_dist) {
+      if (new_lev_dist > old_lev_dist) {
         ++err_read_worsened_;
         if (old_lev_dist == 1)
           ++one_err_read_worsened_;
 
-      } else if (lev_dist < old_lev_dist) {
+        damaged_.writeRecord(r2);
+
+      } else if (new_lev_dist < old_lev_dist) {
         ++err_read_improved_;
-        if (lev_dist == 0)
+        if (new_lev_dist == 0)
           ++err_read_fully_corrected_;
 
         if (old_lev_dist == 1)
           ++one_err_read_corrected_;
 
-      } else if (equal(cigar_path, path)) {
+      } else if (equal(old_cigar_path, new_cigar_path)) {
         ++err_read_no_change_;
         if (old_lev_dist == 1)
           ++one_err_read_no_change_;
@@ -268,14 +208,13 @@ class Comparator(R, CR)
       }
     }
 
-    if (old_lev_dist < lev_dist) {
+    if (old_lev_dist < new_lev_dist) {
       worsened_.writeln("=================================================================");
-      worsened_.writeln("Read name: \n", pair.read.name);
-      worsened_.writeln("Read sequence: \n", sequenceStr(pair.read));
-      worsened_.writeln("CIGAR path: \n", cigar_path.map!(to!char)());
-      worsened_.writeln("Corrected read sequence: \n", 
-                        corrSequenceStr(pair.corrected_sequence, path));
-      worsened_.writeln("corr. path: \n", path.map!(to!char)());
+      worsened_.writeln("Read name: \n", r1.name);
+      worsened_.writeln("Read sequence: \n", sequenceStr(r1));
+      worsened_.writeln("CIGAR path: \n", old_cigar_path.map!(to!char)());
+      worsened_.writeln("Corrected read sequence: \n", sequenceStr(r2));
+      worsened_.writeln("corr. path: \n", new_cigar_path.map!(to!char)());
     }
   }
 
@@ -305,6 +244,7 @@ class Comparator(R, CR)
     writeln("-----------------------------------------");
     writeln("Average change in levenshtein distance:  ", to!double(delta_) / total_,
             " / (max. possible ", to!double(old_delta_) / total_, ")");
+    writeln("Average difference in # aligned bases:   ", to!double(delta_cov_) / total_);
 
     outputDistribution("lev_dist.tab", lev_distance_distribution_);
   }
@@ -317,6 +257,7 @@ class Comparator(R, CR)
     long delta_;
     long old_delta_;
     ulong total_;
+    long delta_cov_;
 
     ulong n_err_;
     ulong err_read_no_change_;
@@ -337,15 +278,14 @@ class Comparator(R, CR)
   }
 }
 
-auto makeComparator(R, CR)(R reads, CR corrected_reads) {
-  return new Comparator!(R, CR)(reads, corrected_reads);
-}
-
 void main(string[] args) {
-  auto bam = new BamReader(args[1]);
-  auto corrected = fastaRecords(args[2]);
+  if (args.length < 3) { stderr.writeln("Usage: ", args[0], " <raw.bam> <corrected.bam>"); return; }
+  auto pool = new TaskPool(16);
+  scope(exit) pool.finish();
+  auto raw = new BamReader(args[1], pool);
+  auto corrected = new BamReader(args[2], pool);
 
-  auto comparator = makeComparator(bam.reads, corrected);
+  auto comparator = new Comparator(raw, corrected);
   comparator.run();
   comparator.writeReports();
 }

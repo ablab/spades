@@ -136,6 +136,8 @@ template <typename ReadTrimmer,
 class SingleReadCorrector {
   const KMerData &kmer_data_;
   const ReadTrimmer &trimmer_;
+  const bool recover_holes_;
+  const bool keep_low_quality_ends_;
 
 #ifdef DEBUG_ION_CONSENSUS
   const std::string READ_NAME;
@@ -217,8 +219,13 @@ class SingleReadCorrector {
   }
 
  public:
-  SingleReadCorrector(const KMerData &kmer_data, const ReadTrimmer &trimmer) :
-    kmer_data_(kmer_data), trimmer_(trimmer) {}
+  SingleReadCorrector(const KMerData &kmer_data, 
+                      const ReadTrimmer &trimmer,
+                      bool try_to_recover_holes=true,
+                      bool keep_low_quality_ends=true) :
+    kmer_data_(kmer_data), trimmer_(trimmer), 
+    recover_holes_(try_to_recover_holes),
+    keep_low_quality_ends_(keep_low_quality_ends) {}
 
 #ifdef DEBUG_ION_CONSENSUS
   SingleReadCorrector(const KMerData &kmer_data, const ReadTrimmer &trimmer,
@@ -278,6 +285,11 @@ class SingleReadCorrector {
                               right_runs, 0, 3, 5, &score);
 
               if (score < 3) { // failed to get significant intersection
+
+                if (!recover_holes_) {
+                  break;
+                }
+
                 int score, d, d1;
                 // try to find right end of previous center on the read
                 // (looking for last bases of left_runs doesn't make
@@ -404,16 +416,18 @@ class SingleReadCorrector {
       }
     }
 
-    // try to find trimmed bases
-    if (it_end - it_begin >= n_tail && pos + n_beg + n_insertions >= n_tail) {
-      int next_base_pos = pos + n_beg + n_insertions;
-      int score;
-      next_base_pos -= alignH(original_runs, pos + n_beg + n_insertions - n_tail,
-                              last_corrected_runs, 0,
-                              1, 5, &score);
+    if (keep_low_quality_ends_) {
+      // try to find trimmed bases
+      if (it_end - it_begin >= n_tail && pos + n_beg + n_insertions >= n_tail) {
+        int next_base_pos = pos + n_beg + n_insertions;
+        int score;
+        next_base_pos -= alignH(original_runs, pos + n_beg + n_insertions - n_tail,
+                                last_corrected_runs, 0,
+                                1, 5, &score);
 
-      if (score == 5) {
-        res += trim_policy.buildEnd(next_base_pos);
+        if (score == 5) {
+          res += trim_policy.buildEnd(next_base_pos);
+        }
       }
     }
 

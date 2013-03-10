@@ -110,13 +110,25 @@ int main(int argc, char** argv) {
   int startpos = std::atoi(argv[2]);
   SingleReadCorrector<EndsTrimmer, KeepTrimmedEnds> read_corrector(kmer_data, trimmer, rname, startpos);
 #else
-  SingleReadCorrector<EndsTrimmer, KeepTrimmedEnds> read_corrector(kmer_data, trimmer);
+  SingleReadCorrector<EndsTrimmer, KeepTrimmedEnds> read_corrector(kmer_data, trimmer, false, false);
 #endif
   hammer::ReadProcessor(omp_get_max_threads()).Run(irs, read_corrector, ors);
 
-#if 0
+#if 1
   std::sort(classes.begin(), classes.end(),  UfCmp());
   for (size_t i = 0; i < classes.size(); ++i) {
+    unsigned modes = 0;
+    const unsigned kCountThreshold = 50;
+    for (size_t j = 0; j < classes[i].size(); ++j) {
+      if (kmer_data[classes[i][j]].count > kCountThreshold) {
+        ++modes;
+        if (modes >= 2)
+          break;
+      }
+    }
+
+    if (modes < 2) continue; // skip uninteresting clusters
+
     std::cerr << i << ": { \n";
     for (size_t j = 0; j < classes[i].size(); ++j)
       std::cerr << kmer_data[classes[i][j]].kmer << ": (" <<   kmer_data[classes[i][j]].count << ", " << 1 - kmer_data[classes[i][j]].qual << "), \n";
