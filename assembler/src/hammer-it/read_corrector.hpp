@@ -256,11 +256,18 @@ class SingleReadCorrector {
       hammer::KMerStat k = kmer_data_[kmer_data_[seq].changeto];
       hammer::HKMer center = k.kmer;
 
-      static const double QUALITY_THRESHOLD = 1e-11;
+      const double QUALITY_THRESHOLD = 1e-15;
+      const double WEAK_THRESHOLD = 1e-50;
+
+      bool low_qual = k.qual > QUALITY_THRESHOLD;
+      low_qual |= pos >= 0 && 
+                  k.qual > WEAK_THRESHOLD &&
+                  center[hammer::K / 2] != last_good_center[hammer::K / 2 + 1] &&
+                  kmer_data_[last_good_center].qual < k.qual;
 
       // TODO: better detection of low-quality centers,
       //       based on _relative_ difference in quality
-      if (k.qual < QUALITY_THRESHOLD) {
+      if (!low_qual) {
 
         if (need_to_align) {
           if (pos >= 0) {
@@ -282,9 +289,9 @@ class SingleReadCorrector {
 
               int score;
               offset = alignH(left_runs, skipped + 1 - recovered_right,
-                              right_runs, 0, 3, 5, &score);
+                              right_runs, 0, 0, 5, &score);
 
-              if (score < 3) { // failed to get significant intersection
+              if (score < 5) { // failed to get significant intersection
 
                 if (!recover_holes_) {
                   break;
