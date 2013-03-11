@@ -12,37 +12,37 @@
 namespace omnigraph {
 
 double get_median(const map<int, size_t> &hist) {
-	double S = 0;
-	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-		S += iter->second;
-	}
-	double sum = S;
-	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-		sum -= iter->second;
-		if (sum <= S / 2) {
-			return iter->first;
-		}
-	}
-	assert(false);
-	return -1;
+  double S = 0;
+  for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+    S += iter->second;
+  }
+  double sum = S;
+  for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+    sum -= iter->second;
+    if (sum <= S / 2) {
+      return iter->first;
+    }
+  }
+  assert(false);
+  return -1;
 }
 
 double get_mad(const map<int, size_t> &hist, double median) { // median absolute deviation
-	map<int, size_t> hist2;
-	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-		double x = fabs(iter->first - median);
-		hist2[x] = iter->second;
-	}
-	return get_median(hist2);
+  map<int, size_t> hist2;
+  for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+    double x = fabs(iter->first - median);
+    hist2[x] = iter->second;
+  }
+  return get_median(hist2);
 }
 
 void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, size_t>& res) {
-	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-		if (iter->first >= low && iter->first <= high) {
+  for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+    if (iter->first >= low && iter->first <= high) {
       DEBUG("Cropped histogram " <<  iter->first << " " << iter->second);
-			res.insert(*iter);
-		}
-	}
+      res.insert(*iter);
+    }
+  }
 }
 
 template<class graph_pack>
@@ -77,8 +77,8 @@ class InsertSizeHistogramCounter {
     }
   }
 
-  //TODO: complete it  
-  //void FilterValues() { 
+  //TODO: complete it
+  //void FilterValues() {
   //vector<size_t> maxima;
   //FindLocalMaxima(hist, maxima);
 
@@ -145,7 +145,7 @@ class InsertSizeHistogramCounter {
 
     }
 
-  void FindMean(double& mean, double& delta, std::map<size_t, size_t>& percentiles) const { 
+  void FindMean(double& mean, double& delta, std::map<size_t, size_t>& percentiles) const {
     size_t often = 0;
     size_t mode = -1;
     for (auto iter = hist_.begin(); iter != hist_.end(); ++iter) {
@@ -209,7 +209,7 @@ class InsertSizeHistogramCounter {
         if (m < scaled_q_i && mm >= scaled_q_i) {
           percentiles[q[i]] = iter->first;
         }
-      } 
+      }
       m = mm;
     }
   }
@@ -254,7 +254,7 @@ class InsertSizeHistogramCounter {
     if (pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
       return 0;
     }
-    int is = pos_right.second - pos_left.second - k_ - 1 - r.insert_size() 
+    int is = pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
              + sequence_left.size() + sequence_right.size();
     hist[is] += 1;
 
@@ -264,15 +264,15 @@ class InsertSizeHistogramCounter {
 
 typedef std::map<int, size_t> HistType;
 
-template<class graph_pack, class PairedRead> 
-void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams, graph_pack& gp, 
-        size_t edge_length_threshold, 
-        double& mean, 
-        double& delta, 
-        double& median, 
+template<class graph_pack, class PairedRead>
+void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams, graph_pack& gp,
+        size_t edge_length_threshold,
+        double& mean,
+        double& delta,
+        double& median,
         double& mad,
         std::map<size_t, size_t>& percentiles,
-        HistType& hist) 
+        HistType& hist)
   {
     INFO("SUBSTAGE == Refining insert size and its distribution");
     InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
@@ -296,12 +296,12 @@ void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams,
     hist_counter.FindMedian(median, mad, hist);
 }
 
-template<class graph_pack, class PairedRead> 
-void GetInsertSizeHistogram(io::ReadStreamVector< io::IReader<PairedRead> >& streams, 
-                            graph_pack& gp, 
-                            double insert_size, 
-                            double delta, 
-                            HistType& hist) 
+template<class graph_pack, class PairedRead>
+void GetInsertSizeHistogram(io::ReadStreamVector< io::IReader<PairedRead> >& streams,
+                            graph_pack& gp,
+                            double insert_size,
+                            double delta,
+                            HistType& hist)
 {
     size_t edge_length_threshold = Nx(gp.g, 50);//500;
     InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
@@ -312,7 +312,7 @@ void GetInsertSizeHistogram(io::ReadStreamVector< io::IReader<PairedRead> >& str
     }
     double low = insert_size - 5. * delta;
     double high = insert_size + 5. * delta;
-    
+
     INFO("Cropping the histogram");
     hist_crop(hist_counter.GetHist(), low, high, hist);
 }
