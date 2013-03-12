@@ -139,20 +139,19 @@ public:
           typename Reader::read_type r;
           irs >> r;
 
-          #pragma omp atomic
-          ++read_;
+          // First, try to provide read to the queue. If it's full, never mind.
+          bool status = in_queue.enqueue(r);
 
-          while (!in_queue.enqueue(r))
-            sched_yield();
-
-          // keep the two queues balanced
-          if (read_ > processed_ + bufsize / 2) {
-            typename Reader::read_type outr;
-            while (!out_queue.dequeue(outr)) {
-              sched_yield();
-            }
+          // Flush down the output queue
+          typename Reader::read_type outr;
+          while (out_queue.dequeue(outr))
             writer << outr;
-          }
+
+          // If the input queue was originally full, wait until we can insert
+          // the read once again.
+          if (!status)
+            while (!in_queue.enqueue(r))
+              sched_yield();
         }
 
         in_queue.close();
@@ -160,25 +159,14 @@ public:
 
       while (1) {
         typename Reader::read_type r;
-        bool stop = false;
-        while (!in_queue.dequeue(r)) {
-          if (in_queue.is_closed()) {
-            stop = true;
-            break;
-          }
-          sched_yield();
-        }
-        if (stop)
+
+        if (!in_queue.wait_dequeue(r))
           break;
 
         auto res = op(r);
-
         if (res)
           while (!out_queue.enqueue(*res))
             sched_yield();
-
-        #pragma omp atomic
-        processed_ += 1;
       }
     }
 
