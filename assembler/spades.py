@@ -850,17 +850,19 @@ def main():
 
         #corrector
         if "mismatch_corrector" in cfg and os.path.isfile(result_contigs_filename):
-            import corrector
-
-            corrector_cfg = cfg["mismatch_corrector"]
-
             to_correct = dict()
-            to_correct["contigs"] = result_contigs_filename
+            to_correct["contigs"] = (result_contigs_filename, os.path.join(misc_dir, "assembled_contigs.fasta"))
             if os.path.isfile(result_scaffolds_filename):
-                to_correct["scaffolds"] = result_scaffolds_filename
+                to_correct["scaffolds"] = (result_scaffolds_filename, os.path.join(misc_dir, "assembled_scaffolds.fasta"))
 
             log.info("\n===== Mismatch correction started.")
 
+            # moving assembled contigs (scaffolds) to misc dir
+            for k, (old, new) in to_correct.items():
+                shutil.move(old, new)
+
+            import corrector
+            corrector_cfg = cfg["mismatch_corrector"]
             args = []
             for key, values in corrector_cfg.__dict__.items():
                 if key == "output-dir":
@@ -878,22 +880,21 @@ def main():
                         args.append(value)
 
             # processing contigs and scaffolds (or only contigs)
-            for k, v in to_correct.items():
+            for k, (corrected, assembled) in to_correct.items():
                 log.info("\n== Processing " + k + "\n")
 
                 cur_args = args[:]
-                cur_args += ['-c', v]
+                cur_args += ['-c', assembled]
                 tmp_dir_for_corrector = os.path.join(corrector_cfg.__dict__["output-dir"], "mismatch_corrector_" + k)
                 cur_args += ['--output-dir', tmp_dir_for_corrector]
 
+                # correcting
                 corrector.main(cur_args, ext_python_modules_home, log)
 
                 result_corrected_filename = os.path.abspath(os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta"))
+                # moving corrected contigs (scaffolds) to SPAdes output dir
                 if os.path.isfile(result_corrected_filename):
-                    # moving assembled contigs (scaffolds) to misc dir
-                    shutil.move(v, os.path.join(misc_dir, "assembled_" + k + ".fasta"))
-                    # moving corrected contigs (scaffolds) to SPAdes output dir
-                    shutil.move(result_corrected_filename, v)
+                    shutil.move(result_corrected_filename, corrected)
 
                 if os.path.isdir(tmp_dir_for_corrector):
                     shutil.rmtree(tmp_dir_for_corrector)
@@ -927,7 +928,7 @@ def main():
         log.info("\n======= SPAdes pipeline finished. Log can be found here: " + log_filename + "\n")
     except Exception, e:
         log.exception(e)
-        sys.exit(1)
+        support.error("exception caught", log)
 
 
 if __name__ == '__main__':
