@@ -62,20 +62,6 @@ public:
 	}
 
 	/**
-	 * Event is triggered BEFORE either HandleMerge or HndleSplit or HandleMerge are triggered. Use really careful! It must not rely on any of the other graph handlers.
-	 * @param e new edge
-	 */
-	virtual void HandleAdding(EdgeId e) {
-	}
-
-	/**
-	 * Event is triggered BEFORE either HandleMerge or HndleSplit or HandleMerge are triggered. Use really careful! It must not rely on any of the other graph handlers.
-	 * @param e new edge
-	 */
-	virtual void HandleAdding(VertexId e) {
-	}
-
-	/**
 	 * Low level event which is triggered when vertex is added to graph.
 	 * @param v new vertex
 	 */
@@ -224,12 +210,6 @@ class HandlerApplier {
 public:
 
 	virtual void
-	ApplyAdding(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
-
-	virtual void
-	ApplyAdding(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const = 0;
-
-	virtual void
 	ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
 
 	virtual void
@@ -267,16 +247,6 @@ class SimpleHandlerApplier: public HandlerApplier<typename Graph::VertexId,
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-
-	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler,
-			VertexId v) const {
-		handler->HandleAdding(v);
-	}
-
-	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId e) const {
-		handler->HandleAdding(e);
-	}
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler,
 			VertexId v) const {
@@ -341,32 +311,6 @@ public:
 
 	PairedHandlerApplier(Graph &graph) :
 			graph_(graph) {
-	}
-
-	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler,
-			VertexId v) const {
-		VertexId rcv = graph_.conjugate(v);
-		//TRACE("Triggering add event of handler " << handler->name() << " to vertex " << v);
-		handler->HandleAdding(v);
-		if (v != rcv) {
-			//TRACE("Triggering add event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
-			handler->HandleAdding(rcv);
-		} else {
-			//TRACE("Vertex " << v << "is self-conjugate thus handler is not applied the second time");
-		}
-	}
-
-	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId e) const {
-		EdgeId rce = graph_.conjugate(e);
-		//TRACE("Triggering add event of handler " << handler->name() << " to edge " << e << ". Event is Add");
-		handler->HandleAdding(e);
-		if (e != rce) {
-			//TRACE("Triggering add event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
-			handler->HandleAdding(rce);
-		} else {
-			//TRACE("Edge " << e << "is self-conjugate thus handler is not applied the second time");
-		}
 	}
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler,
@@ -616,67 +560,6 @@ public:
 		} else {
 			this->base::insert(edges->begin(), edges->end());
 		}
-	}
-};
-
-template<class Graph, typename ElementId, typename Comparator = std::less<
-		ElementId> >
-class SmartSet: public GraphActionHandler<Graph> {
-public:
-	typedef typename set<ElementId, Comparator>::iterator iterator;
-	typedef typename set<ElementId, Comparator>::const_iterator const_iterator;
-private:
-	set<ElementId, Comparator> inner_set_;
-	const bool add_new_;
-
-public:
-	SmartSet(const Graph &graph, Comparator comparator = Comparator(),
-			bool add_new = true) :
-			GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(
-					comparator), add_new_(add_new) {
-	}
-
-	template<class Iter>
-	SmartSet(Iter begin, Iter end, const Graph &graph, Comparator comparator =
-			Comparator(), bool add_new = true) :
-			GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(begin, end,
-					comparator), add_new_(add_new) {
-	}
-
-	virtual ~SmartSet() {
-	}
-
-	virtual void HandleAdding(ElementId v) {
-		if (add_new_)
-			inner_set_.insert(v);
-	}
-
-	virtual void HandleDelete(ElementId v) {
-		inner_set_.erase(v);
-	}
-
-	iterator begin() {
-		return inner_set_.begin();
-	}
-
-	iterator end() {
-		return inner_set_.end();
-	}
-
-	const_iterator begin() const {
-		return inner_set_.begin();
-	}
-
-	const_iterator end() const {
-		return inner_set_.end();
-	}
-
-	pair<iterator, bool> insert(const ElementId& elem) {
-		return inner_set_.insert(elem);
-	}
-
-	const set<ElementId, Comparator> &inner_set() {
-		return inner_set_;
 	}
 };
 
