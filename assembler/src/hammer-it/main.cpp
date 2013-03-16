@@ -33,6 +33,17 @@ struct UfCmp {
   }
 };
 
+struct CountCmp {
+  const KMerData &kmer_data_;
+
+  CountCmp(const KMerData &kmer_data)
+      : kmer_data_(kmer_data) {}
+
+  bool operator()(unsigned lhs, unsigned rhs) {
+    return kmer_data_[lhs].count > kmer_data_[rhs].count;
+  }
+};
+
 
 hammer::HKMer center(const KMerData &data, const std::vector<unsigned>& kmers) {
   hammer::HKMer res;
@@ -111,9 +122,10 @@ int main(int argc, char** argv) {
   std::sort(classes.begin(), classes.end(),  UfCmp());
   for (size_t i = 0; i < classes.size(); ++i) {
     unsigned modes = 0;
+    auto& cluster = classes[i];
     const unsigned kCountThreshold = 50;
-    for (size_t j = 0; j < classes[i].size(); ++j) {
-      if (kmer_data[classes[i][j]].count > kCountThreshold) {
+    for (size_t j = 0; j < cluster.size(); ++j) {
+      if (kmer_data[cluster[j]].count > kCountThreshold) {
         ++modes;
         if (modes >= 2)
           break;
@@ -122,10 +134,12 @@ int main(int argc, char** argv) {
 
     if (modes < 2) continue; // skip uninteresting clusters
 
+    std::sort(cluster.begin(), cluster.end(), CountCmp(kmer_data));
+
     std::cerr << i << ": { \n";
-    for (size_t j = 0; j < classes[i].size(); ++j)
-      std::cerr << kmer_data[classes[i][j]].kmer << ": (" <<   kmer_data[classes[i][j]].count << ", " << 1 - kmer_data[classes[i][j]].qual << "), \n";
-    hammer::HKMer c = center(kmer_data, classes[i]);
+    for (size_t j = 0; j < cluster.size(); ++j)
+      std::cerr << kmer_data[cluster[j]].kmer << ": (" << kmer_data[cluster[j]].count << ", " << 1 - kmer_data[cluster[j]].qual << "), \n";
+    hammer::HKMer c = center(kmer_data, cluster);
     size_t idx = kmer_data.seq_idx(c);
     if (kmer_data[idx].kmer == c)
       std::cerr << "center: ok " << c << '\n';
