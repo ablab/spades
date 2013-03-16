@@ -42,17 +42,41 @@ union HomopolymerRun {
 };
 
 namespace iontorrent {
-  std::vector<HomopolymerRun> toHomopolymerRuns(const std::string &seq);
+  // Container shall have push_back method
+  template <typename Container>
+  void toHomopolymerRuns(const std::string &seq, Container& runs) {
+    if (seq.empty())
+      return;
+
+    char nucl = seq[0];
+    uint8_t len = 1;
+    for (size_t i = 1; i < seq.size(); ++i) {
+      if (seq[i] != nucl) {
+        runs.push_back(HomopolymerRun(dignucl(nucl), len));
+        len = 1;
+        nucl = seq[i];
+      } else {
+        ++len;
+      }
+    }
+    if (len > 0) {
+      runs.push_back(HomopolymerRun(dignucl(nucl), len));
+    }
+  }
+
 };
 
 template <size_t N = 16>
 class HSeq {
+ public:
   typedef std::array<HomopolymerRun, N> StorageType;
+
+ private:
   StorageType data_;
 
   const static size_t PrimeNum = 239;
 
-public:
+ public:
   HSeq() {}
 
   HSeq(typename StorageType::const_iterator Start,
@@ -67,6 +91,22 @@ public:
   static size_t GetDataSize(size_t size) {
     VERIFY(size == N);
     return N * sizeof(HomopolymerRun);
+  }
+
+  typename StorageType::const_iterator begin() const {
+    return data_.begin();
+  }
+
+  typename StorageType::const_iterator end() const {
+    return data_.end();
+  }
+
+  typename StorageType::const_reverse_iterator rbegin() const {
+    return data_.rbegin();
+  }
+
+  typename StorageType::const_reverse_iterator rend() const {
+    return data_.rend();
   }
 
   const HomopolymerRun *data() const {
@@ -235,17 +275,9 @@ namespace internal {
     return N;
   }
 
-  inline size_t getSize(const std::vector<hammer::HomopolymerRun> &a) {
-    return a.size();
-  }
-
-  inline size_t getSize(const std::deque<hammer::HomopolymerRun> &a) {
-    return a.size();
-  }
-
-  template <size_t N>
-  inline size_t getSize(const std::array<hammer::HomopolymerRun, N> &a) {
-    return N;
+  template <typename T>
+  inline size_t getSize(const T& a) { 
+    return a.size(); 
   }
 }
 

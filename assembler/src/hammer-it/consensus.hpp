@@ -7,7 +7,7 @@
 namespace hammer {
 namespace iontorrent {
 
-hammer::HomopolymerRun consensus(const boost::numeric::ublas::matrix<double>& scores) {
+std::pair<hammer::HomopolymerRun, double> consensus(const boost::numeric::ublas::matrix<double>& scores) {
   double inf = -std::numeric_limits<double>::infinity();
 
   unsigned nucl = 0, len = 1; double max = inf;
@@ -19,7 +19,7 @@ hammer::HomopolymerRun consensus(const boost::numeric::ublas::matrix<double>& sc
         max = scores(j, k);
       }
 
-  return hammer::HomopolymerRun(nucl, len);
+  return std::make_pair(hammer::HomopolymerRun(nucl, len), max);
 }
 
 };

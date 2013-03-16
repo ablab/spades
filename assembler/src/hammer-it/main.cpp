@@ -53,7 +53,7 @@ hammer::HKMer center(const KMerData &data, const std::vector<unsigned>& kmers) {
 #endif
     }
 
-    res[i] = hammer::iontorrent::consensus(scores);
+    res[i] = hammer::iontorrent::consensus(scores).first;
   }
 
   return res;
@@ -104,14 +104,7 @@ int main(int argc, char** argv) {
   io::ofastastream ors("test.fasta");
 
   using namespace hammer::correction;
-  EndsTrimmer trimmer(4, 4);
-#ifdef DEBUG_ION_CONSENSUS
-  std::string rname(argv[1]);
-  int startpos = std::atoi(argv[2]);
-  SingleReadCorrector<EndsTrimmer, KeepTrimmedEnds> read_corrector(kmer_data, trimmer, rname, startpos);
-#else
-  SingleReadCorrector<EndsTrimmer, KeepTrimmedEnds> read_corrector(kmer_data, trimmer, false, false);
-#endif
+  SingleReadCorrector read_corrector(kmer_data);
   hammer::ReadProcessor(omp_get_max_threads()).Run(irs, read_corrector, ors);
 
 #if 1
