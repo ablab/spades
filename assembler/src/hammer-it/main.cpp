@@ -70,6 +70,94 @@ hammer::HKMer center(const KMerData &data, const std::vector<unsigned>& kmers) {
   return res;
 }
 
+bool assign(KMerData &kmer_data, const std::vector<unsigned> &cluster) {
+  hammer::HKMer c = center(kmer_data, cluster);
+  bool nonread = false;
+
+  size_t idx = kmer_data.seq_idx(c);
+  if (kmer_data[idx].kmer != c) {
+#   pragma omp critical
+    {
+      idx = kmer_data.push_back(hammer::KMerStat(0, c, 1.0));
+    }
+    nonread = true;
+  }
+
+  for (size_t j = 0; j < cluster.size(); ++j)
+    kmer_data[cluster[j]].changeto = idx;
+
+  return nonread;
+}
+
+void dump(const KMerData &kmer_data, const std::vector<unsigned> &cluster) {
+  std::cerr << "{ \n";
+  for (size_t j = 0; j < cluster.size(); ++j)
+    std::cerr << kmer_data[cluster[j]].kmer << ": (" << kmer_data[cluster[j]].count << ", " << 1 - kmer_data[cluster[j]].qual << "), \n";
+  hammer::HKMer c = center(kmer_data, cluster);
+  size_t idx = kmer_data.seq_idx(c);
+  if (kmer_data[idx].kmer == c)
+    std::cerr << "center: ok " << c << '\n';
+  else
+    std::cerr << "center: not " << kmer_data[idx].kmer << ":" << c << '\n';
+  std::cerr << "}" << std::endl;
+}
+
+size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
+  size_t nonread = 0;
+
+  // First, sort the kmer indicies wrt count
+  std::sort(cluster.begin(), cluster.end(), CountCmp(kmer_data));
+
+  // The number of subclusters for now is really dumb: we assume that the quality should be 1.
+  size_t k = 0;
+  for (size_t i = 0; i < cluster.size(); ++i)
+    k += kmer_data[cluster[i]].qual < sqrt(std::numeric_limits<double>::epsilon());
+
+  if (k <= 1)
+    return assign(kmer_data, cluster);
+
+#if 0
+  dump(kmer_data, cluster);
+#endif
+
+  // Find the closest center
+  std::vector<std::vector<unsigned> > idx(k, std::vector<unsigned>());
+  for (size_t i = 0; i < k; ++i)
+    idx[i].push_back(cluster[i]);
+  for (size_t i = k; i < cluster.size(); ++i) {
+    unsigned dist = std::numeric_limits<unsigned>::max();
+    size_t cidx = k;
+    hammer::HKMer kmerx = kmer_data[cluster[i]].kmer;
+    for (size_t j = 0; j < k; ++j) {
+      hammer::HKMer kmery = kmer_data[cluster[j]].kmer;
+      unsigned cdist = hammer::distanceHKMer(kmerx.begin(), kmerx.end(),
+                                             kmery.begin(), kmery.end());
+      if (cdist < dist) {
+        cidx = j;
+        dist = cdist;
+      }
+    }
+    VERIFY(cidx < k);
+    idx[cidx].push_back(cluster[i]);
+  }
+
+#if 0
+  std::cerr << "k = " << k << std::endl;
+#endif
+  for (auto it = idx.begin(), et = idx.end(); it != et; ++it) {
+    const std::vector<unsigned> &subcluster = *it;
+
+    if (assign(kmer_data, cluster))
+      nonread += 1;
+
+#if 0
+    dump(kmer_data, subcluster);
+#endif
+  }
+
+  return nonread;
+}
+
 int main(int argc, char** argv) {
   srand(42);
   srandom(42);
@@ -90,24 +178,25 @@ int main(int argc, char** argv) {
   size_t num_classes = classes.size();
   INFO("Clustering done. Total clusters: " << num_classes);
 
-  INFO("Assigning centers");
   size_t nonread = 0;
+#if 1
+  INFO("Subclustering.");
 # pragma omp parallel for shared(nonread, classes, kmer_data)
   for (size_t i = 0; i < classes.size(); ++i) {
-    const auto& cluster = classes[i];
-    hammer::HKMer c = center(kmer_data, cluster);
-    size_t idx = kmer_data.seq_idx(c);
-    if (kmer_data[idx].kmer != c) {
-#     pragma omp critical
-      {
-        idx = kmer_data.push_back(hammer::KMerStat(0, c, 1.0));
-      }
-#     pragma omp atomic
-      nonread += 1;
-    }
-    for (size_t j = 0; j < cluster.size(); ++j)
-      kmer_data[cluster[j]].changeto = idx;
+    auto& cluster = classes[i];
+
+#   pragma omp atomic
+    nonread += subcluster(kmer_data, cluster);
   }
+#else
+# pragma omp parallel for shared(nonread, classes, kmer_data)
+  INFO("Assigning centers");
+  for (size_t i = 0; i < classes.size(); ++i) {
+    const auto& cluster = classes[i];
+#   pragma omp atomic
+    nonread += assign(kmer_data, cluster);
+  }
+#endif
   INFO("Total " << nonread << " nonread kmers were generated");
 
   INFO("Correcting reads.");
@@ -118,7 +207,7 @@ int main(int argc, char** argv) {
   SingleReadCorrector read_corrector(kmer_data);
   hammer::ReadProcessor(omp_get_max_threads()).Run(irs, read_corrector, ors);
 
-#if 1
+#if 0
   std::sort(classes.begin(), classes.end(),  UfCmp());
   for (size_t i = 0; i < classes.size(); ++i) {
     unsigned modes = 0;
