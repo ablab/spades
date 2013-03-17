@@ -5,7 +5,31 @@
 #include <yaml-cpp/yaml.h>
 #include <string>
 
-using namespace io;
+namespace YAML {
+template<>
+struct convert<hammer_config::HammerStage> {
+  static bool decode(const YAML::Node &node, hammer_config::HammerStage &rhs) {
+    std::string val = node.as<std::string>();
+
+    if (val == "count") {
+      rhs = hammer_config::HammerStage::KMerCounting;
+      return true;
+    } else if (val == "hamcluster") {
+      rhs = hammer_config::HammerStage::HammingClustering;
+      return true;
+    } else if (val == "subcluster") {
+      rhs = hammer_config::HammerStage::SubClustering;
+      return true;
+    } else if (val == "correct") {
+      rhs = hammer_config::HammerStage::ReadCorrection;
+      return true;
+    }
+
+    return false;
+  }
+};
+}
+
 
 namespace hammer_config {
 void load(hammer_config::hammer_config& cfg, const std::string &filename) {
@@ -23,8 +47,8 @@ void load(hammer_config::hammer_config& cfg, const std::string &filename) {
   omp_set_num_threads(cfg.max_nthreads);
 
   cfg.tau = config["tau"].as<unsigned>();
+
+  cfg.debug_mode = config["debug_mode"].as<bool>();
+  cfg.start_stage = config["start_stage"].as<HammerStage>();
 }
 }
-
-
-

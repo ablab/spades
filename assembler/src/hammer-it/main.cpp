@@ -182,38 +182,92 @@ int main(int argc, char** argv) {
     limit_memory(cfg::get().hard_memory_limit * GB);
 
     KMerData kmer_data;
-    // FIXME: Actually it's num_files here
-    KMerDataCounter(cfg::get().max_nthreads).FillKMerData(kmer_data);
+    if (cfg::get().start_stage <= hammer_config::HammerStage::KMerCounting) {
+      // FIXME: Actually it's num_files here
+      KMerDataCounter(cfg::get().max_nthreads).FillKMerData(kmer_data);
+      if (cfg::get().debug_mode) {
+        INFO("Debug mode on. Saving K-mer index.");
+        std::ofstream ofs("count.kmdata", std::ios::binary);
+        kmer_data.binary_write(ofs);
+      }
+    } else {
+      INFO("Loading K-mer index.");
+      std::ifstream ifs("count.kmdata", std::ios::binary);
+      VERIFY(ifs.good());
+      kmer_data.binary_read(ifs);
+    }
 
-    ConcurrentDSU uf(kmer_data.size());
-    KMerHamClusterer clusterer(cfg::get().tau);
-    INFO("Clustering Hamming graph.");
-    clusterer.cluster("kmers.hamcls", kmer_data, uf);
     std::vector<std::vector<unsigned> > classes;
-    uf.get_sets(classes);
-    size_t num_classes = classes.size();
-    INFO("Clustering done. Total clusters: " << num_classes);
+    if (cfg::get().start_stage <= hammer_config::HammerStage::HammingClustering) {
+      ConcurrentDSU uf(kmer_data.size());
+      KMerHamClusterer clusterer(cfg::get().tau);
+      INFO("Clustering Hamming graph.");
+      clusterer.cluster("kmers.hamcls", kmer_data, uf);
+      uf.get_sets(classes);
+      size_t num_classes = classes.size();
+      INFO("Clustering done. Total clusters: " << num_classes);
 
-    size_t nonread = 0;
+      if (cfg::get().debug_mode) {
+        INFO("Debug mode on. Writing down clusters.");
+        std::ofstream ofs("hamming.cls", std::ios::binary);
+
+        ofs.write((char*)&num_classes, sizeof(num_classes));
+        for (size_t i=0; i < classes.size(); ++i) {
+          size_t sz = classes[i].size();
+          ofs.write((char*)&sz, sizeof(sz));
+          ofs.write((char*)&classes[i][0], sz * sizeof(classes[i][0]));
+        }
+      }
+    } else {
+      std::ifstream ifs("hamming.cls", std::ios::binary);
+      VERIFY(ifs.good());
+
+      size_t num_classes = 0;
+      ifs.read((char*)&num_classes, sizeof(num_classes));
+      classes.resize(num_classes);
+
+      for (size_t i = 0; i < num_classes; ++i) {
+        size_t sz = 0;
+        ifs.read((char*)&sz, sizeof(sz));
+        classes[i].resize(sz);
+        ifs.read((char*)&classes[i][0], sz * sizeof(classes[i][0]));
+      }
+    }
+
+    if (cfg::get().start_stage <= hammer_config::HammerStage::SubClustering) {
+      size_t nonread = 0;
 #if 1
-    INFO("Subclustering.");
-#   pragma omp parallel for shared(nonread, classes, kmer_data)
-    for (size_t i = 0; i < classes.size(); ++i) {
-      auto& cluster = classes[i];
+      INFO("Subclustering.");
+#     pragma omp parallel for shared(nonread, classes, kmer_data)
+      for (size_t i = 0; i < classes.size(); ++i) {
+        auto& cluster = classes[i];
 
-#     pragma omp atomic
-      nonread += subcluster(kmer_data, cluster);
-    }
+#       pragma omp atomic
+        nonread += subcluster(kmer_data, cluster);
+      }
 #else
-#   pragma omp parallel for shared(nonread, classes, kmer_data)
-    INFO("Assigning centers");
-    for (size_t i = 0; i < classes.size(); ++i) {
-      const auto& cluster = classes[i];
-#     pragma omp atomic
-      nonread += assign(kmer_data, cluster);
-    }
+#     pragma omp parallel for shared(nonread, classes, kmer_data)
+      INFO("Assigning centers");
+      for (size_t i = 0; i < classes.size(); ++i) {
+        const auto& cluster = classes[i];
+#       pragma omp atomic
+        nonread += assign(kmer_data, cluster);
+      }
 #endif
-    INFO("Total " << nonread << " nonread kmers were generated");
+      INFO("Total " << nonread << " nonread kmers were generated");
+
+      if (cfg::get().debug_mode) {
+        INFO("Debug mode on. Saving K-mer index.");
+        std::ofstream ofs("cluster.kmdata", std::ios::binary);
+        kmer_data.binary_write(ofs);
+      }
+    } else {
+      INFO("Loading K-mer index.");
+      std::ifstream ifs("cluster.kmdata", std::ios::binary);
+      VERIFY(ifs.good());
+      kmer_data.binary_read(ifs);
+    }
+
 
     INFO("Correcting reads.");
     const io::DataSet &dataset = cfg::get().dataset;

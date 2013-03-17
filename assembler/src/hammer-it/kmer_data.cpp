@@ -135,8 +135,6 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
 
   const io::DataSet &dataset = cfg::get().dataset;
   for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
-    INFO("" << *it);
-
     io::Reader irs(*it, io::PhredOffset);
     hammer::ReadProcessor rp(nthreads);
     while (!irs.eof()) {
