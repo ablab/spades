@@ -21,6 +21,7 @@ class chained_iterator :
   void join(It begin, It end) {
     begins_.push_back(begin);
     ends_.push_back(end);
+    skip_empty();
   }
 
  private:
