@@ -133,12 +133,17 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     }
   }
 
-  io::Reader irs("test.fastq", io::PhredOffset);
-  hammer::ReadProcessor rp(nthreads);
-  while (!irs.eof()) {
-    BufferFiller filler(tmp_entries, cell_size, *this);
-    rp.Run(irs, filler);
-    DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+  const io::DataSet &dataset = cfg::get().dataset;
+  for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
+    INFO("" << *it);
+
+    io::Reader irs(*it, io::PhredOffset);
+    hammer::ReadProcessor rp(nthreads);
+    while (!irs.eof()) {
+      BufferFiller filler(tmp_entries, cell_size, *this);
+      rp.Run(irs, filler);
+      DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+    }
   }
 
   delete[] ostreams;
@@ -205,9 +210,12 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   INFO("Collecting K-mer information, this takes a while.");
   data.data_.resize(sz);
 
-  io::Reader irs("test.fastq", io::PhredOffset);
-  KMerDataFiller filler(data);
-  hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, filler);
+  const io::DataSet &dataset = cfg::get().dataset;
+  for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
+    io::Reader irs(*it, io::PhredOffset);
+    KMerDataFiller filler(data);
+    hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, filler);
+  }
 
   INFO("Collection done, postprocessing.");
 

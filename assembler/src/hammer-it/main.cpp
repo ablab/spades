@@ -216,12 +216,16 @@ int main(int argc, char** argv) {
     INFO("Total " << nonread << " nonread kmers were generated");
 
     INFO("Correcting reads.");
-    io::Reader irs("test.fastq", io::PhredOffset);
-    io::ofastastream ors("test.fasta");
+    const io::DataSet &dataset = cfg::get().dataset;
+    for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
+      INFO("Correcting " << *it);
+      io::Reader irs(*it, io::PhredOffset);
+      io::ofastastream ors(path::append_path(path::parent_path(*it), path::basename(*it) + ".fasta")); // FIXME: Proper filename
 
-    using namespace hammer::correction;
-    SingleReadCorrector read_corrector(kmer_data);
-    hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+      using namespace hammer::correction;
+      SingleReadCorrector read_corrector(kmer_data);
+      hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+    }
 
 #if 0
     std::sort(classes.begin(), classes.end(),  UfCmp());
