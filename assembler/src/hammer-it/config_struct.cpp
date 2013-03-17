@@ -1,6 +1,30 @@
 #include "config_struct.hpp"
 
+#include "openmp_wrapper.h"
+
+#include <yaml-cpp/yaml.h>
 #include <string>
 
-void load(hammer_config& cfg, const std::string &filename) {
+using namespace io;
+
+namespace hammer_config {
+void load(hammer_config::hammer_config& cfg, const std::string &filename) {
+  YAML::Node config = YAML::LoadFile(filename);
+
+  cfg.dataset.load(config["dataset"].as<std::string>());
+
+  // FIXME: Make trivial deserialization trivial
+  cfg.hard_memory_limit = config["hard_memory_limit"].as<unsigned>();
+
+  cfg.max_nthreads = config["max_nthreads"].as<unsigned>();
+  // Fix number of threads according to OMP capabilities.
+  cfg.max_nthreads = std::min(cfg.max_nthreads, (unsigned)omp_get_max_threads());
+  // Inform OpenMP runtime about this :)
+  omp_set_num_threads(cfg.max_nthreads);
+
+  cfg.tau = config["tau"].as<unsigned>();
 }
+}
+
+
+

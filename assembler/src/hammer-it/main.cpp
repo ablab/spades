@@ -6,6 +6,9 @@
 
 #include "adt/concurrent_dsu.hpp"
 
+#include "segfault_handler.hpp"
+#include "memory_limit.hpp"
+
 #include "HSeq.hpp"
 #include "kmer_data.hpp"
 #include "hamcluster.hpp"
@@ -18,6 +21,7 @@
 #include "openmp_wrapper.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
+#include <yaml-cpp/yaml.h>
 
 void create_console_logger() {
   using namespace logging;
@@ -160,89 +164,107 @@ size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
 }
 
 int main(int argc, char** argv) {
+  segfault_handler sh;
+
   srand(42);
   srandom(42);
 
-  std::string config_file = "hammer-it.cfg";
-  if (argc > 1) config_file = argv[1];
-  INFO("Loading config from " << config_file.c_str());
-  cfg::create_instance(config_file);
+  try {
+    create_console_logger();
 
-  omp_set_num_threads(16);
+    std::string config_file = "hammer-it.cfg";
+    if (argc > 1) config_file = argv[1];
+    INFO("Loading config from " << config_file.c_str());
+    cfg::create_instance(config_file);
 
-  create_console_logger();
+    // hard memory limit
+    const size_t GB = 1 << 30;
+    limit_memory(cfg::get().hard_memory_limit * GB);
 
-  KMerData kmer_data;
-  KMerDataCounter(omp_get_max_threads()).FillKMerData(kmer_data);
+    KMerData kmer_data;
+    KMerDataCounter(omp_get_max_threads()).FillKMerData(kmer_data);
 
-  ConcurrentDSU uf(kmer_data.size());
-  KMerHamClusterer clusterer(1);
-  INFO("Clustering Hamming graph.");
-  clusterer.cluster("kmers.hamcls", kmer_data, uf);
-  std::vector<std::vector<unsigned> > classes;
-  uf.get_sets(classes);
-  size_t num_classes = classes.size();
-  INFO("Clustering done. Total clusters: " << num_classes);
+    ConcurrentDSU uf(kmer_data.size());
+    KMerHamClusterer clusterer(1);
+    INFO("Clustering Hamming graph.");
+    clusterer.cluster("kmers.hamcls", kmer_data, uf);
+    std::vector<std::vector<unsigned> > classes;
+    uf.get_sets(classes);
+    size_t num_classes = classes.size();
+    INFO("Clustering done. Total clusters: " << num_classes);
 
-  size_t nonread = 0;
+    size_t nonread = 0;
 #if 1
-  INFO("Subclustering.");
-# pragma omp parallel for shared(nonread, classes, kmer_data)
-  for (size_t i = 0; i < classes.size(); ++i) {
-    auto& cluster = classes[i];
+    INFO("Subclustering.");
+#   pragma omp parallel for shared(nonread, classes, kmer_data)
+    for (size_t i = 0; i < classes.size(); ++i) {
+      auto& cluster = classes[i];
 
-#   pragma omp atomic
-    nonread += subcluster(kmer_data, cluster);
-  }
+#     pragma omp atomic
+      nonread += subcluster(kmer_data, cluster);
+    }
 #else
-# pragma omp parallel for shared(nonread, classes, kmer_data)
-  INFO("Assigning centers");
-  for (size_t i = 0; i < classes.size(); ++i) {
-    const auto& cluster = classes[i];
-#   pragma omp atomic
-    nonread += assign(kmer_data, cluster);
-  }
+#   pragma omp parallel for shared(nonread, classes, kmer_data)
+    INFO("Assigning centers");
+    for (size_t i = 0; i < classes.size(); ++i) {
+      const auto& cluster = classes[i];
+#     pragma omp atomic
+      nonread += assign(kmer_data, cluster);
+    }
 #endif
-  INFO("Total " << nonread << " nonread kmers were generated");
+    INFO("Total " << nonread << " nonread kmers were generated");
 
-  INFO("Correcting reads.");
-  io::Reader irs("test.fastq", io::PhredOffset);
-  io::ofastastream ors("test.fasta");
+    INFO("Correcting reads.");
+    io::Reader irs("test.fastq", io::PhredOffset);
+    io::ofastastream ors("test.fasta");
 
-  using namespace hammer::correction;
-  SingleReadCorrector read_corrector(kmer_data);
-  hammer::ReadProcessor(omp_get_max_threads()).Run(irs, read_corrector, ors);
+    using namespace hammer::correction;
+    SingleReadCorrector read_corrector(kmer_data);
+    hammer::ReadProcessor(omp_get_max_threads()).Run(irs, read_corrector, ors);
 
 #if 0
-  std::sort(classes.begin(), classes.end(),  UfCmp());
-  for (size_t i = 0; i < classes.size(); ++i) {
-    unsigned modes = 0;
-    auto& cluster = classes[i];
-    const unsigned kCountThreshold = 50;
-    for (size_t j = 0; j < cluster.size(); ++j) {
-      if (kmer_data[cluster[j]].count > kCountThreshold) {
-        ++modes;
-        if (modes >= 2)
-          break;
+    std::sort(classes.begin(), classes.end(),  UfCmp());
+    for (size_t i = 0; i < classes.size(); ++i) {
+      unsigned modes = 0;
+      auto& cluster = classes[i];
+      const unsigned kCountThreshold = 50;
+      for (size_t j = 0; j < cluster.size(); ++j) {
+        if (kmer_data[cluster[j]].count > kCountThreshold) {
+          ++modes;
+          if (modes >= 2)
+            break;
+        }
       }
+
+      if (modes < 2) continue; // skip uninteresting clusters
+
+      std::sort(cluster.begin(), cluster.end(), CountCmp(kmer_data));
+
+      std::cerr << i << ": { \n";
+      for (size_t j = 0; j < cluster.size(); ++j)
+        std::cerr << kmer_data[cluster[j]].kmer << ": (" << kmer_data[cluster[j]].count << ", " << 1 - kmer_data[cluster[j]].qual << "), \n";
+      hammer::HKMer c = center(kmer_data, cluster);
+      size_t idx = kmer_data.seq_idx(c);
+      if (kmer_data[idx].kmer == c)
+        std::cerr << "center: ok " << c << '\n';
+      else
+        std::cerr << "center: not " << kmer_data[idx].kmer << ":" << c << '\n';
+      std::cerr << "}" << std::endl;
     }
-
-    if (modes < 2) continue; // skip uninteresting clusters
-
-    std::sort(cluster.begin(), cluster.end(), CountCmp(kmer_data));
-
-    std::cerr << i << ": { \n";
-    for (size_t j = 0; j < cluster.size(); ++j)
-      std::cerr << kmer_data[cluster[j]].kmer << ": (" << kmer_data[cluster[j]].count << ", " << 1 - kmer_data[cluster[j]].qual << "), \n";
-    hammer::HKMer c = center(kmer_data, cluster);
-    size_t idx = kmer_data.seq_idx(c);
-    if (kmer_data[idx].kmer == c)
-      std::cerr << "center: ok " << c << '\n';
-    else
-      std::cerr << "center: not " << kmer_data[idx].kmer << ":" << c << '\n';
-    std::cerr << "}" << std::endl;
-  }
 #endif
+  } catch (std::bad_alloc const& e) {
+    std::cerr << "Not enough memory to run BayesHammer. " << e.what() << std::endl;
+    return EINTR;
+  } catch (const YAML::Exception &e) {
+    std::cerr << "Error reading config file: " << e.what() << std::endl;
+    return EINTR;
+  } catch (std::exception const& e) {
+    std::cerr << "Exception caught " << e.what() << std::endl;
+    return EINTR;
+  } catch (...) {
+    std::cerr << "Unknown exception caught " << std::endl;
+    return EINTR;
+  }
 
   return 0;
 }

@@ -15,7 +15,7 @@ add_executable(hammer-it
                config_struct.cpp
                main.cpp)
 
-target_link_libraries(hammer-it input mph_index ${COMMON_LIBRARIES})
+target_link_libraries(hammer-it input mph_index yaml-cpp ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(hammer-it PROPERTIES LINK_SEARCH_END_STATIC 1)

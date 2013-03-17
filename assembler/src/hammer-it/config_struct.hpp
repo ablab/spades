@@ -3,11 +3,20 @@
 
 #include "config_singl.hpp"
 
+#include "io/library.hpp"
+
+namespace hammer_config {
 struct hammer_config {
+  io::DataSet dataset;
+
+  unsigned max_nthreads;
+  unsigned tau;
+  unsigned hard_memory_limit;
 };
 
-void load(hammer_config& cfg, const std::string &filename);
+void load(hammer_config::hammer_config& cfg, const std::string &filename);
+}
 
-typedef config_common::config<hammer_config> cfg;
+typedef config_common::config<hammer_config::hammer_config> cfg;
 
 #endif // __HAMMER_IT_CONFIG_HPP__
