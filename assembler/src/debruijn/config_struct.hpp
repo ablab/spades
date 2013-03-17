@@ -978,6 +978,8 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 void load(debruijn_config& cfg, const std::string &filename) {
   boost::property_tree::ptree pt;
   boost::property_tree::read_info(filename, pt);
+
+  load(cfg, pt, true);
 }
 
 } // debruijn_graph
