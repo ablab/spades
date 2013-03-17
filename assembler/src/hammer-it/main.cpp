@@ -13,6 +13,7 @@
 #include "err_helper_table.hpp"
 #include "consensus.hpp"
 #include "read_corrector.hpp"
+#include "config_struct.hpp"
 
 #include "openmp_wrapper.h"
 
@@ -161,6 +162,11 @@ size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
 int main(int argc, char** argv) {
   srand(42);
   srandom(42);
+
+  std::string config_file = "hammer-it.cfg";
+  if (argc > 1) config_file = argv[1];
+  INFO("Loading config from " << config_file.c_str());
+  cfg::create_instance(config_file);
 
   omp_set_num_threads(16);
 

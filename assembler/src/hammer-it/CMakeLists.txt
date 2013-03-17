@@ -12,6 +12,7 @@ add_executable(hammer-it
                kmer_data.cpp
                hamcluster.cpp
                err_helper_table.cpp
+               config_struct.cpp
                main.cpp)
 
 target_link_libraries(hammer-it input mph_index ${COMMON_LIBRARIES})
