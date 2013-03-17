@@ -21,6 +21,8 @@
 void load(hammer_config& cfg, const std::string &filename) {
   boost::property_tree::ptree pt;
   boost::property_tree::read_info(filename, pt);
+
+  load(cfg, pt);
 }
 
 void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
