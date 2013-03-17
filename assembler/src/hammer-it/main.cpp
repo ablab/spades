@@ -161,6 +161,23 @@ size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
   return nonread;
 }
 
+
+// This is weird workaround for bug in gcc 4.4.7
+static bool stage(hammer_config::HammerStage start, hammer_config::HammerStage current) {
+  switch (start) {
+    case hammer_config::HammerStage::KMerCounting:
+      return true;
+    case hammer_config::HammerStage::HammingClustering:
+      return current != hammer_config::HammerStage::KMerCounting;
+    case hammer_config::HammerStage::SubClustering:
+      return (current != hammer_config::HammerStage::KMerCounting &&
+              current != hammer_config::HammerStage::HammingClustering);
+    case hammer_config::HammerStage::ReadCorrection:
+      return current != hammer_config::HammerStage::ReadCorrection;
+  }
+}
+
+
 int main(int argc, char** argv) {
   segfault_handler sh;
 
@@ -180,7 +197,7 @@ int main(int argc, char** argv) {
     limit_memory(cfg::get().hard_memory_limit * GB);
 
     KMerData kmer_data;
-    if (cfg::get().start_stage <= hammer_config::HammerStage::KMerCounting) {
+    if (stage(cfg::get().start_stage, hammer_config::HammerStage::KMerCounting)) {
       // FIXME: Actually it's num_files here
       KMerDataCounter(32).FillKMerData(kmer_data);
       if (cfg::get().debug_mode) {
@@ -196,7 +213,7 @@ int main(int argc, char** argv) {
     }
 
     std::vector<std::vector<unsigned> > classes;
-    if (cfg::get().start_stage <= hammer_config::HammerStage::HammingClustering) {
+    if (stage(cfg::get().start_stage, hammer_config::HammerStage::HammingClustering)) {
       ConcurrentDSU uf(kmer_data.size());
       KMerHamClusterer clusterer(cfg::get().tau);
       INFO("Clustering Hamming graph.");
@@ -233,7 +250,7 @@ int main(int argc, char** argv) {
       }
     }
 
-    if (cfg::get().start_stage <= hammer_config::HammerStage::SubClustering) {
+    if (stage(cfg::get().start_stage, hammer_config::HammerStage::SubClustering)) {
       size_t nonread = 0;
 #if 1
       INFO("Subclustering.");
@@ -266,7 +283,6 @@ int main(int argc, char** argv) {
       VERIFY(ifs.good());
       kmer_data.binary_read(ifs);
     }
-
 
     INFO("Correcting reads.");
     const io::DataSet &dataset = cfg::get().dataset;
