@@ -16,6 +16,7 @@
 
 #include "openmp_wrapper.h"
 
+#include "config_singl.hpp"
 #include "config_common.hpp"
 #include "path_extend/pe_config_struct.hpp"
 
@@ -972,6 +973,11 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.info_printers, pt, "info_printers");
 
 	load_reference_genome(cfg.ds, cfg.input_dir);
+}
+
+void load(debruijn_config& cfg, const std::string &filename) {
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_info(filename, pt);
 }
 
 } // debruijn_graph

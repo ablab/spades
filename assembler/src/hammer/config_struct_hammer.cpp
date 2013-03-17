@@ -12,10 +12,18 @@
  */
 
 #include "config_struct_hammer.hpp"
+#include "config_common.hpp"
 #include "openmp_wrapper.h"
 
-void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
-{
+#include <boost/property_tree/ptree.hpp>
+#include <string>
+
+void load(hammer_config& cfg, const std::string &filename) {
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_info(filename, pt);
+}
+
+void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   using config_common::load;
   load(cfg.general_do_everything_after_first_iteration, pt, "general_do_everything_after_first_iteration");
   load(cfg.general_reconstruct_only, pt, "general_reconstruct_only");

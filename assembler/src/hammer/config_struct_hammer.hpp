@@ -14,11 +14,14 @@
 #ifndef CONFIG_STRUCT_HAMMER_HPP_
 #define CONFIG_STRUCT_HAMMER_HPP_
 
-#include "standard.hpp"
-#include "config_common.hpp"
+#include "config_singl.hpp"
+
 #include "io/library.hpp"
 
 #include <boost/optional.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
+
+#include <string>
 
 #define CONFIG_FILENAME "/home/snikolenko/algorithmic-biology/assembler/src/hammer/config.inp"
 
@@ -26,8 +29,8 @@
 struct hammer_config {
   io::DataSet dataset;
 
-  string input_solid_kmers;
-  string input_working_dir;
+  std::string input_solid_kmers;
+  std::string input_working_dir;
   int input_trim_quality;
   boost::optional<int> input_qvoffset_opt;
   int input_qvoffset;
@@ -77,6 +80,7 @@ struct hammer_config {
 
 
 // main debruijn config load function
+void load(hammer_config& cfg, const std::string &filename);
 void load(hammer_config& cfg, boost::property_tree::ptree const& pt);
 
 typedef config_common::config<hammer_config> cfg;
