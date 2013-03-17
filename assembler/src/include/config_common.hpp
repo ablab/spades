@@ -141,44 +141,6 @@ template<class T>
 void load(T& value, boost::property_tree::ptree const& pt) {
   load(value, pt, true);
 }
-
-// config singleton-wrap
-template<class Config>
-struct config {
-  static std::string dirnameOf(const std::string& fname) {
-    size_t pos = fname.find_last_of("\\/");
-    return (std::string::npos == pos) ? "" : fname.substr(0, pos);
-  }
-
-  static void create_instance(std::string const& filename) {
-    boost::property_tree::ptree pt;
-    boost::property_tree::read_info(filename, pt);
-    load(inner_cfg(), pt);
-    is_initialized() = true;
-  }
-
-  static Config const& get() {
-    VERIFY(is_initialized());
-    return inner_cfg();
-  }
-
-  static Config& get_writable() {
-    VERIFY(is_initialized());
-    return inner_cfg();
-  }
-
- private:
-  static Config& inner_cfg() {
-    static Config config;
-    return config;
-  }
-
-  static bool& is_initialized() {
-    static bool is_initialized = false;
-    return is_initialized;
-  }
-};
-
 }
 
 template<class T>
