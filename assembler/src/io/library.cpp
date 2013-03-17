@@ -63,6 +63,8 @@ struct convert<LibraryOrientation> {
         return Node("ff");
       case LibraryOrientation::RR:
         return Node("rr");
+      case LibraryOrientation::Undefined:
+        return Node("undefined");
     }
   }
 
@@ -78,7 +80,7 @@ struct convert<LibraryOrientation> {
     else if (orientation == "rr")
       rhs = LibraryOrientation::RR;
     else
-      return false;
+      rhs = LibraryOrientation::Undefined;
 
     return true;
   }
@@ -122,7 +124,8 @@ void DataSet::load(const std::string &filename) {
 }
 
 void SequencingLibrary::load(const YAML::Node &node) {
-  orientation_ = node["orientation"].as<io::LibraryOrientation>();
+  orientation_ = (node["orientation"] ?
+                  node["orientation"].as<io::LibraryOrientation>() : LibraryOrientation::Undefined);
   type_ = node["type"].as<LibraryType>();
 
   switch (type_) {
@@ -132,6 +135,9 @@ void SequencingLibrary::load(const YAML::Node &node) {
 
       if (left_paired_reads_.size() != right_paired_reads_.size())
         throw("Left and right reads lists should have equal length");
+
+      if (orientation_ == LibraryOrientation::Undefined)
+        throw("Orientation for paired reads should be specified");
 
       // FALLTHROUGH in case of single reads present!
       if (!node["single reads"])
