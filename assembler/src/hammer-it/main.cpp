@@ -182,10 +182,11 @@ int main(int argc, char** argv) {
     limit_memory(cfg::get().hard_memory_limit * GB);
 
     KMerData kmer_data;
-    KMerDataCounter(omp_get_max_threads()).FillKMerData(kmer_data);
+    // FIXME: Actually it's num_files here
+    KMerDataCounter(cfg::get().max_nthreads).FillKMerData(kmer_data);
 
     ConcurrentDSU uf(kmer_data.size());
-    KMerHamClusterer clusterer(1);
+    KMerHamClusterer clusterer(cfg::get().tau);
     INFO("Clustering Hamming graph.");
     clusterer.cluster("kmers.hamcls", kmer_data, uf);
     std::vector<std::vector<unsigned> > classes;
@@ -220,7 +221,7 @@ int main(int argc, char** argv) {
 
     using namespace hammer::correction;
     SingleReadCorrector read_corrector(kmer_data);
-    hammer::ReadProcessor(omp_get_max_threads()).Run(irs, read_corrector, ors);
+    hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
 
 #if 0
     std::sort(classes.begin(), classes.end(),  UfCmp());

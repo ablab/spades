@@ -5,6 +5,7 @@
 //****************************************************************************
 
 #include "kmer_data.hpp"
+#include "config_struct.hpp"
 #include "valid_hkmer_generator.hpp"
 
 #include "io/mmapped_writer.hpp"
@@ -102,7 +103,7 @@ class BufferFiller {
 };
 
 path::files_t HammerKMerSplitter::Split(size_t num_files) {
-  unsigned nthreads = omp_get_max_threads(); // min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
+  unsigned nthreads = cfg::get().max_nthreads;
 
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
@@ -120,7 +121,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
                      (nthreads * num_files * sizeof(HKMer));
   // Set sane minimum cell size
   if (cell_size < 16384)
-    cell_size = 1638400;
+    cell_size = 16384;
 
   INFO("Using cell size of " << cell_size);
   std::vector<KMerBuffer> tmp_entries(nthreads);
@@ -194,11 +195,11 @@ class KMerDataFiller {
 };
 
 void KMerDataCounter::FillKMerData(KMerData &data) {
-  std::string workdir(".");
+  std::string workdir("."); // cfg
 
   HammerKMerSplitter splitter(workdir);
   KMerDiskCounter<hammer::HKMer> counter(workdir, splitter);
-  size_t sz = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter);
+  size_t sz = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
@@ -206,7 +207,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
 
   io::Reader irs("test.fastq", io::PhredOffset);
   KMerDataFiller filler(data);
-  hammer::ReadProcessor(omp_get_max_threads()).Run(irs, filler);
+  hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, filler);
 
   INFO("Collection done, postprocessing.");
 
