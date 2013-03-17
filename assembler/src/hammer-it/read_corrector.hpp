@@ -28,67 +28,161 @@ typedef numeric::matrix<double> ScoreMatrix;
 typedef std::vector<ScoreMatrix> ScoreStorage;
 
 template <typename It1, typename It2>
-static int alignH(It1 a_begin, It1 a_initial_pos, It1 a_end, 
-                  It2 b_initial_pos, It2 b_end,
-                  size_t max_offset=3, size_t n_cmp=5, unsigned* p_score=NULL) {
-
-  VERIFY(a_begin <= a_end);
-
-  // compute most probable offset
-  int best_offset = 0;
-  unsigned best_score = -1U;
-
-  int offset = 0;
-  for (size_t i = 1; i <= max_offset * 2 + 1; ++i) {
-    offset = (i / 2) * ((i & 1) ? 1 : -1); // 0, -1, 1, -2, 2, ...
-
-    if (a_initial_pos + offset >= a_end)
-      continue;
-
-    if (a_initial_pos + offset < a_begin)
-      continue;
-
+static bool exactAlignH(It1 a_begin, It1 a_initial_pos, It1 a_end,
+                        It2 b_initial_pos, It2 b_end,
+                        size_t max_offset, size_t n_cmp, int* p_offset)
+{
+  int M = max_offset * 2 + 1;
+  for (int i = 0; i <= M; i++) {
+    int offset = (i / 2) * ((i & 1) ? 1 : -1); // 0, -1, 1, -2, 2, ...
     auto a_it = a_initial_pos + offset;
     auto b_it = b_initial_pos;
-
-    unsigned score = 0;
-    hammer::IonPairAligner<It1, It2> aligner(a_it, a_end, b_it, b_end);
-    while (!aligner.empty()) {
-      auto event = aligner.front();
-      size_t x_offset = event.x_iter - a_it;
-      size_t y_offset = event.y_iter - b_it;
-      if (x_offset > n_cmp || y_offset > n_cmp)
+    if (a_it < a_begin || a_it + n_cmp > a_end)
+      continue;
+    bool match = true;
+    for (size_t j = 0; j < n_cmp; j++)
+      if ((a_it + j)->raw != (b_it + j)->raw) {
+        match = false;
         break;
-
-      switch (event.type) {
-        case kIonEventMismatch:
-          score += 9 * event.length; break;
-        case kIonEventBaseInsertion:
-        case kIonEventBaseDeletion:
-          score += 3 * event.length; break;
-        case kIonEventRunInsertion:
-        case kIonEventRunDeletion:
-          score += 5 * event.length; break;
       }
-
-      if (score > best_score)
-        break;
-      aligner.popFront();
+    if (match) {
+      *p_offset = offset;
+      return true;
     }
+  }
+  return false;
+}
 
-    if (score < best_score) {
-      best_score = score;
-      best_offset = offset;
-    }
+template <typename It1, typename It2>
+static int alignH(It1 read_begin, It1 read_end,
+                  It2 consensus_begin, It2 consensus_end,
+                  int approx_read_offset, size_t n_skip_consensus,
+                  size_t n_side = 5) {
 
-    if (best_score == 0)
-      break;
+  const int kRunsToCompare = 8;
+
+  int left_offset = n_side;
+
+  auto x_begin = read_begin + approx_read_offset - n_side;
+  if (x_begin + kRunsToCompare >= read_end) {
+    x_begin = read_end - kRunsToCompare - 2 * n_side;
+    left_offset = read_begin + approx_read_offset - x_begin;
   }
 
-  if (p_score != NULL)
-    *p_score = best_score;
+  if (x_begin < read_begin) {
+    x_begin = read_begin;
+    left_offset = approx_read_offset;
+  }
+ 
+  auto x_end = x_begin + 2 * n_side + kRunsToCompare;
+  if (x_end > read_end)
+    x_end = read_end;
 
-  return best_offset;
+  auto y_begin = consensus_begin + n_skip_consensus;
+  auto y_end = y_begin + kRunsToCompare;
+  if (y_end > consensus_end)
+    y_end = consensus_end;
+
+  // Smith-Waterman for homopolymer runs
+  const int kDirOffset = 16;
+  const int kScoreMask = (1 << kDirOffset) - 1;
+
+  const int kDirUpLeft = 0;
+  const int kDirUp = 1;
+  const int kDirLeft = 2;
+
+  const int kBaseDiff = -1;
+  const int kRunInsertion = -5;
+  const int kRunDeletion = -5;
+  const int kMismatch = -4;
+  const int kMatch = 3;
+
+  size_t m = x_end - x_begin;
+  size_t n = y_end - y_begin;
+
+  using namespace boost::numeric::ublas;
+  matrix<int> scores(m + 1, n + 1, 0);
+
+  size_t highest_x = 0, highest_y = 0;
+  int highest_entry = 0;
+
+  for (size_t i = 1; i <= m; i++) {
+    for (size_t j = 1; j <= n; j++) {
+      int best_score = 0;
+      int best_dir = 0;
+
+      auto run_x = *(x_begin + i - 1);
+      auto run_y = *(y_begin + j - 1);
+
+      int score;
+      if (run_x.raw == run_y.raw) {
+        score = kMatch + (scores(i - 1, j - 1) & kScoreMask);
+        if (score > best_score) {
+          best_score = score;
+          best_dir = kDirUpLeft;
+        }
+      } else if (run_x.nucl == run_y.nucl) {
+        score = kBaseDiff * std::abs(run_x.len - run_y.len);
+        score += scores(i - 1, j - 1) & kScoreMask;
+        if (score > best_score) {
+          best_score = score;
+          best_dir = kDirUpLeft;
+        }
+      } else {
+        score = kMismatch + (scores(i - 1, j - 1) & kScoreMask);
+        if (score > best_score) {
+          best_score = score;
+          best_dir = kDirUpLeft;
+        }
+      }
+ 
+      score = (scores(i - 1, j) & kScoreMask) + kRunDeletion;
+      if (score > best_score) {
+        best_score = score;
+        best_dir = kDirUp;
+      }
+
+      score = (scores(i, j - 1) & kScoreMask) + kRunInsertion;
+      if (score > best_score) {
+        best_score = score;
+        best_dir = kDirLeft;
+      }
+
+      scores(i, j) = best_score + (best_dir << kDirOffset);
+
+      if (best_score > highest_entry) {
+        highest_entry = best_score;
+        highest_x = i;
+        highest_y = j;
+      }
+    }
+  }
+
+  // if score is low, search on larger portion of the read
+  if (highest_entry < (kRunsToCompare * kMatch * 3) / 4 &&
+      (x_begin != read_begin || x_end != read_end))
+    return alignH(read_begin, read_end,
+                  consensus_begin, consensus_end,
+                  approx_read_offset, n_skip_consensus,
+                  n_side * 3);
+
+  int x = highest_x;
+  int y = highest_y;
+  while ((x >= 0 || y >= 0) && (scores(x, y) & kScoreMask) != 0) {
+    int dir = scores(x, y) >> kDirOffset;
+    switch (dir) {
+      case kDirUp:
+        --x; break;
+      case kDirLeft:
+        --y; break;
+      case kDirUpLeft:
+        --x, --y; break;
+      default:
+        break;
+    }
+  }
+
+  return x - y - left_offset;
 }
 
 // Not used now
@@ -177,6 +271,8 @@ class HKMerProlonger {
   HKMerProlonger(const KMerData& kmer_data) : kmer_data_(kmer_data) {}
 };
 
+static const double kLowScoreThreshold = 1.0;
+
 class CorrectedRead {
   FlowSpaceRead raw_read_; // Uncorrected read
   const KMerData& kmer_data_;
@@ -188,8 +284,6 @@ class CorrectedRead {
   struct ConsensusChunk {
     int approx_read_offset; // in the vector of raw read runs
 
-    static const double kLowScoreThreshold = 1.0;
-
     enum {
       kChunkLeftAligned,
       kChunkRightAligned,
@@ -197,6 +291,8 @@ class CorrectedRead {
     } alignment;
 
     const FlowSpaceRead& raw_read;
+    size_t trimmed_left;
+    size_t trimmed_right;
 
     std::vector<hammer::HomopolymerRun> consensus;
     std::vector<double> consensus_scores;
@@ -206,8 +302,8 @@ class CorrectedRead {
                    const FlowSpaceRead &read,
                    double trim_threshold=1.0)
         : approx_read_offset(approximate_read_offset), 
-          alignment(kChunkNotAligned),
-          raw_read(read)
+          alignment(kChunkNotAligned), raw_read(read),
+          trimmed_left(0), trimmed_right(0)
     {
       bool left_trim = true;
       for (size_t i = 0; i < scores.size(); ++i) {
@@ -216,6 +312,7 @@ class CorrectedRead {
         // trim low-quality runs from the left side
         if (run.second <= kLowScoreThreshold && left_trim) {
           approx_read_offset += 1;
+          trimmed_left += 1;
           continue;
         }
 
@@ -235,47 +332,56 @@ class CorrectedRead {
           break;
       }
 
+      trimmed_right = consensus.size() - right_end;
       consensus.resize(right_end);
       consensus_scores.resize(right_end);
     }
 
-    unsigned AlignLeftEndAgainstRead() {
-      unsigned score;
+    void AlignLeftEndAgainstRead(size_t skip=0) {
       const auto& data = raw_read.data();
-      int offset = alignH(data.begin(), 
-                          data.begin() + approx_read_offset,
-                          data.end(),
-                          consensus.begin(), consensus.end(), 5, 8, &score);
+
+#if 0
+      std::cerr << "[approx. read offset (left)] before: " << approx_read_offset << "; after: ";
+#endif
+      int offset = alignH(data.begin(), data.end(),
+                          consensus.begin(), consensus.end(),
+                          approx_read_offset, skip);
+
       approx_read_offset += offset;
+#if 0
+      std::cerr << approx_read_offset << std::endl;
+#endif
       alignment = kChunkLeftAligned;
-      return score;
     }
 
-    unsigned AlignRightEndAgainstRead() {
-      unsigned score;
+    void AlignRightEndAgainstRead(size_t skip=0) {
       const auto& data = raw_read.data();
+#if 0
+      std::cerr << "[approx. read offset (right)] before: " << approx_read_offset << "; after: ";
+#endif
+      int position_on_read = approx_read_offset + consensus.size() - 1;
+      int offset = alignH(data.rbegin(), data.rend(),
+                          consensus.rbegin(), consensus.rend(),
+                          data.size() - 1 - position_on_read, skip);
 
-      //    approx_read_offset        approx_read_offset + consensus.size() - 1
-      // ...--------------*----------------*-------------...                    <- read
-      //                 ------------------  <- consensus
-      int offset = alignH(data.rbegin(), 
-                          data.rend() - (approx_read_offset + consensus.size() - 1) - 1,
-                          data.rend(),
-                          consensus.rbegin(), consensus.rend(), 5, 8, &score);
       approx_read_offset -= offset;
+#if 0
+      std::cerr << approx_read_offset << std::endl;
+#endif
       alignment = kChunkRightAligned;
-      return score;
     }
 
-    bool TryMergeWith(ConsensusChunk& chunk) {
-      if (chunk.consensus.empty())
-        return true;
-     
-      if (alignment != kChunkRightAligned)
-        AlignRightEndAgainstRead();
-      if (chunk.alignment != kChunkLeftAligned)
-        chunk.AlignLeftEndAgainstRead();
+    int approx_end_read_offset() const {
+      return approx_read_offset + consensus.size();
+    }
+ 
+    int approx_end_read_offset_untrimmed() const {
+      return approx_end_read_offset() + trimmed_right;
+    }
 
+
+   private:
+    bool DoMerge(ConsensusChunk& chunk) {
       int right_end_offset = approx_read_offset + consensus.size();
 
 #if 0
@@ -301,6 +407,7 @@ class CorrectedRead {
 #endif
 
       if (right_end_offset <= chunk.approx_read_offset) {
+
         for (int i = right_end_offset; i < chunk.approx_read_offset; ++i) {
           if (i >= static_cast<int>(raw_read.size()))
             return false;
@@ -319,18 +426,9 @@ class CorrectedRead {
                                 chunk.consensus_scores.end());
 
       } else {
-        size_t overlap = right_end_offset - chunk.approx_read_offset;
-        if (overlap > chunk.consensus_scores.size())
+        int overlap = right_end_offset - chunk.approx_read_offset;
+        if (overlap > static_cast<int>(chunk.consensus.size()))
           return false;
-
-#if 0
-        for (size_t i = 0; i < overlap; i++)
-          std::cerr << *(consensus_scores.end() - i - 1) << ' ';
-        std::cerr << " | ";
-        for (size_t i = 0; i < overlap ; i++) 
-          std::cerr << chunk.consensus_scores[i] << ' ';
-        std::cerr << std::endl;
-#endif
 
         consensus.insert(consensus.end(),
                          chunk.consensus.begin() + overlap,
@@ -341,10 +439,65 @@ class CorrectedRead {
                                 chunk.consensus_scores.end());
       }
 
-      // right end needs to be aligned again
-      alignment = kChunkNotAligned;
       return true;
     }
+
+    bool MergeWithDisjointChunk(ConsensusChunk& chunk) {
+      AlignRightEndAgainstRead();
+      if (chunk.alignment != kChunkLeftAligned)
+        chunk.AlignLeftEndAgainstRead();
+      return DoMerge(chunk);
+    }
+
+    bool MergeWithOverlappingChunk(ConsensusChunk& chunk) {
+      int right_end_offset = approx_read_offset + consensus.size();
+      size_t overlap = right_end_offset - chunk.approx_read_offset;
+      if (overlap > chunk.consensus_scores.size())
+        return false;
+
+      // FIXME
+      size_t trim_r = 0, trim_l = 0;
+      /*
+      // remove low scored bases from the two ends
+      while (overlap != 0) {
+        size_t pos_r = consensus.size() - 1 - trim_r;
+        size_t pos_l = chunk.consensus.size() + trim_l;
+        if (pos_r == 0 || pos_l == chunk.consensus.size())
+          return false;
+
+        double score_r = consensus_scores[pos_r];
+        double score_l = chunk.consensus_scores[pos_l];
+        if (score_r > score_l)
+          ++trim_l;
+        else
+          ++trim_r;
+
+        if (std::min(score_r, score_l) / std::max(score_r, score_l) >= 0.1)
+          break;
+
+        --overlap;
+      }*/
+
+      AlignRightEndAgainstRead(trim_r);
+      chunk.AlignLeftEndAgainstRead(trim_l);
+      return DoMerge(chunk);
+    }
+
+   public:
+
+    bool TryMergeWith(ConsensusChunk& chunk) {
+      if (chunk.consensus.empty())
+        return true;
+
+      alignment = kChunkNotAligned;
+      int right_end_offset = approx_read_offset + consensus.size();
+
+      if (right_end_offset <= chunk.approx_read_offset)
+        return MergeWithDisjointChunk(chunk);
+      else
+        return MergeWithOverlappingChunk(chunk);
+    }
+
   };
 
   // Chunks where strong consensus was obtained
@@ -352,6 +505,11 @@ class CorrectedRead {
 
   void PushChunk(const ScoreStorage &scores, int approx_read_offset) {
     chunks_.push_back(ConsensusChunk(approx_read_offset, scores, raw_read_));
+    chunks_.back().AlignLeftEndAgainstRead();
+  }
+
+  const ConsensusChunk& LastChunk() const {
+    return chunks_.back();
   }
 
   void CollectChunks(const io::SingleRead& r) {
@@ -367,7 +525,8 @@ class CorrectedRead {
     bool need_to_align = false;
     int approx_read_offset = 0;
 
-    unsigned approx_n_insertions = 0; // approximate number of insertions
+    // approximate number of insertions in the current chunk
+    unsigned approx_n_insertions = 0;
 
     while (gen.HasMore()) {
       hammer::HKMer seq = gen.kmer();
@@ -376,54 +535,50 @@ class CorrectedRead {
       hammer::KMerStat k = kmer_data_[kmer_data_[seq].changeto];
       hammer::HKMer center = k.kmer;
 
+      const double LOW_QUALITY_THRESHOLD = 1e-11;
+
+      bool low_qual = k.qual > LOW_QUALITY_THRESHOLD;
+
       // if too many centers are skipped, start new chunk
       if (skipped > 4 && !start_new_chunk) {
         PushChunk(scores, approx_read_offset);
         start_new_chunk = true;
-        pos += skipped;
+        pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
+        pos += skipped + 1;
         last_good_center_is_defined = false;
       } else {
         // otherwise, compare current center with the last 'good' center.
         // if they differ too much or the center has low quality, skip it.
-        const double LOW_QUALITY_THRESHOLD = 1e-11;
-
-        bool low_qual = k.qual > LOW_QUALITY_THRESHOLD;
-
         if (last_good_center_is_defined && !low_qual) {
-          auto dist = distanceHKMer<2, 0, 1, 0, 1>
-                                   (last_good_center.begin() + skipped + 1,
-                                    last_good_center.end(),
-                                    center.begin(),
-                                    center.end() - 1 - skipped, 1);
-
-          if (dist > 0) {
-            low_qual = true;
-#if 0
-            std::cerr << "Skipped " << center 
-                      << " (distance = " << dist << ")" << std::endl;
-#endif
+          for (size_t i = 0; i < hammer::K - skipped - 1; ++i) {
+            if (last_good_center[i + skipped + 1].nucl != center[i].nucl) {
+              low_qual = true;
+              break;
+            }
           }
         }
+      }
 
-        if (low_qual) {
-          need_to_align = true;
-          skipped += 1;
-          goto process_next_kmer;
-        }
+      if (low_qual) {
+        need_to_align = true;
+        skipped += 1;
+        goto process_next_kmer;
       }
 
       if (need_to_align && last_good_center_is_defined) {
         VERIFY(skipped + 1 < hammer::K);
-        unsigned score;
-        int offset = alignH(last_good_center.begin(), 
-                            last_good_center.begin() + skipped + 1, 
-                            last_good_center.end(),
-                            center.begin(), center.end(), 3, 5, &score);
-        if (score != 0) {
-          if (!start_new_chunk)
+        int offset;
+        bool aligned = exactAlignH(last_good_center.begin(),
+                                   last_good_center.begin() + skipped + 1,
+                                   last_good_center.end(),
+                                   center.begin(), center.end(), 3, 5, &offset);
+        if (!aligned) {
+          if (!start_new_chunk) {
             PushChunk(scores, approx_read_offset);
+            pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
+            pos += skipped + 1;
+          }
           start_new_chunk = true;
-          pos += skipped;
         } else {
           if (offset < 0)
             approx_n_insertions -= offset;
@@ -436,6 +591,7 @@ class CorrectedRead {
         chunk_pos = 0;
         approx_read_offset = pos + approx_n_insertions;
         scores.clear();
+        approx_n_insertions = 0;
         start_new_chunk = false;
       }
 
@@ -474,17 +630,17 @@ process_next_kmer: ;
     auto iter = chunks_.begin();
     ConsensusChunk& merged = *iter;
 
+#if 0
     if (chunks_.size() == 1) {
       iter->AlignLeftEndAgainstRead();
-#if 0
       for (int i = 0; i < iter->approx_read_offset; ++i)
         for (int j = 0; j < raw_read_[i].len; ++j)
           std::cerr << ' ';
       for (int i = 0; i < iter->consensus.size(); ++i)
         std::cerr << iter->consensus[i].str();
       std::cerr << std::endl;
-#endif
     }
+#endif
 
     ++iter;
     while (iter != chunks_.end()) {
