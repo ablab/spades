@@ -24,7 +24,7 @@ struct hammer_config {
   HammerStage start_stage;
 };
 
-void load(hammer_config::hammer_config& cfg, const std::string &filename);
+void load(hammer_config& cfg, const std::string &filename);
 }
 
 typedef config_common::config<hammer_config::hammer_config> cfg;

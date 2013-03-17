@@ -182,7 +182,7 @@ int main(int argc, char** argv) {
     KMerData kmer_data;
     if (cfg::get().start_stage <= hammer_config::HammerStage::KMerCounting) {
       // FIXME: Actually it's num_files here
-      KMerDataCounter(cfg::get().max_nthreads).FillKMerData(kmer_data);
+      KMerDataCounter(32).FillKMerData(kmer_data);
       if (cfg::get().debug_mode) {
         INFO("Debug mode on. Saving K-mer index.");
         std::ofstream ofs("count.kmdata", std::ios::binary);
