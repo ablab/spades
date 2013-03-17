@@ -146,18 +146,16 @@ size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
     idx[cidx].push_back(cluster[i]);
   }
 
-#if 0
-  std::cerr << "k = " << k << std::endl;
-#endif
   for (auto it = idx.begin(), et = idx.end(); it != et; ++it) {
     const std::vector<unsigned> &subcluster = *it;
 
-    if (assign(kmer_data, cluster))
+    if (assign(kmer_data, subcluster)) {
       nonread += 1;
-
 #if 0
-    dump(kmer_data, subcluster);
+      dump(kmer_data, cluster);
+      dump(kmer_data, subcluster);
 #endif
+    }
   }
 
   return nonread;
@@ -219,6 +217,7 @@ int main(int argc, char** argv) {
         }
       }
     } else {
+      INFO("Loading clusters.");
       std::ifstream ifs("hamming.cls", std::ios::binary);
       VERIFY(ifs.good());
 
