@@ -29,7 +29,8 @@ enum class LibraryOrientation {
   FR,
   FF,
   RF,
-  RR
+  RR,
+  Undefined
 };
 
 class SequencingLibrary {
