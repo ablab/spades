@@ -28,8 +28,8 @@ class chained_iterator :
   friend class boost::iterator_core_access;
 
   void skip_empty() {
-    while (current_ == ends_[section_] &&
-           (section_ + 1) < begins_.size())
+    while ((section_ + 1) < begins_.size() &&
+           current_ == ends_[section_])
       current_ = begins_[++section_];
   }
 
