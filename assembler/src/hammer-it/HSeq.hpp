@@ -2,6 +2,7 @@
 #define __HAMMER_HSEQ_HPP__
 
 #include "sequence/nucl.hpp"
+#include "mph_index/MurmurHash3.h"
 
 #include <array>
 #include <string>
@@ -228,12 +229,9 @@ class HSeq {
   }
 
   static size_t GetHash(const DataType *data, size_t sz = DataSize) {
-    size_t hash = PrimeNum;
-
-    for (size_t i = 0; i < sz; i++) {
-      hash = ((hash << 5) - hash) + data[i].raw;
-    }
-    return hash;
+    uint64_t res[2];
+    MurmurHash3_x64_128(data, sz * sizeof(DataType), 0x9E3779B9, res);
+    return res[0] ^ res[1];
   }
 
   size_t GetHash() const {
