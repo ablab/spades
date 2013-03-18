@@ -130,7 +130,7 @@ public:
     bufsize = (bufsize >> 16) | bufsize;
     bufsize += 1;
 
-    mpmc_bounded_queue<typename Reader::read_type> in_queue(bufsize), out_queue(bufsize);
+    mpmc_bounded_queue<typename Reader::read_type> in_queue(bufsize), out_queue(2*bufsize);
 #   pragma omp parallel shared(in_queue, out_queue, irs, op, writer) num_threads(nthreads_)
     {
 #     pragma omp master
@@ -155,6 +155,11 @@ public:
         }
 
         in_queue.close();
+
+        // Flush down the output queue while in master threads.
+        typename Reader::read_type outr;
+        while (out_queue.dequeue(outr))
+          writer << outr;
       }
 
       while (1) {
