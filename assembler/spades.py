@@ -678,57 +678,49 @@ def main():
             if CONFIG_FILE:
                 shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
 
-            # parsing dataset section
+            ### parsing dataset section
             bh_cfg.__dict__["single_cell"] = cfg["dataset"].single_cell
-            bh_cfg.__dict__["paired_reads"] = []
-            bh_cfg.__dict__["single_reads"] = []
+            # saving reference to dataset in developer_mode
+            if bh_cfg.developer_mode:
+                if "reference" in cfg["dataset"].__dict__:
+                    bh_cfg.__dict__["reference_genome"] = os.path.abspath(
+                        os.path.expandvars(cfg["dataset"].reference))
+
+            # for creating YAML file
+            dataset_yaml = dict()
+            dataset_yaml["left reads"] = []
+            dataset_yaml["right reads"] = []
+            dataset_yaml["single reads"] = []
 
             import bh_aux
-
+            paired_end = False
             for k, v in cfg["dataset"].__dict__.items():
                 if not isinstance(v, list):
                     v = [v]
 
-                # saving original reads to dataset
-                if k.find("_reads") != -1:
-                    quoted_value = '"'
-                    for item in v:
-                        quoted_value += os.path.abspath(os.path.expandvars(item)) + ' '
-                    quoted_value += '"'
-                    bh_cfg.__dict__["original_" + k] = quoted_value
-
-                # saving reference to dataset in developer_mode
-                if bh_cfg.developer_mode:
-                    if "reference" in cfg["dataset"].__dict__:
-                        bh_cfg.__dict__["reference_genome"] = os.path.abspath(
-                            os.path.expandvars(cfg["dataset"].reference))
-
                 if k.startswith("single_reads"):
                     for item in v:
-                        item = os.path.abspath(os.path.expandvars(item))
-                        item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir, log)
-                        if not bh_cfg.single_reads:
-                            bh_cfg.single_reads.append(item)
-                        else:
-                            bh_cfg.single_reads[0] = bh_aux.merge_single_files(item,
-                                bh_cfg.single_reads[0], bh_cfg.working_dir, log)
+                        dataset_yaml["single reads"].append(os.path.abspath(os.path.expandvars(item)))
 
                 elif k.startswith("paired_reads"):
-                    cur_paired_reads = []
+                    paired_end = True
                     if len(v) == 1:
                         item = os.path.abspath(os.path.expandvars(v[0]))
-                        cur_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir, log)
-                    elif len(v) == 2:
-                        for item in v:
-                            item = os.path.abspath(os.path.expandvars(item))
-                            item = bh_aux.ungzip_if_needed(item, bh_cfg.working_dir, log)
-                            cur_paired_reads.append(item)
+                        split_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir, log)
+                    else: # len(v) == 2
+                        split_paired_reads = v
+                    dataset_yaml["left reads"].append(split_paired_reads[0])
+                    dataset_yaml["right reads"].append(split_paired_reads[1])
 
-                    if not bh_cfg.paired_reads:
-                        bh_cfg.paired_reads = cur_paired_reads
-                    else:
-                        bh_cfg.paired_reads = bh_aux.merge_paired_files(cur_paired_reads,
-                            bh_cfg.paired_reads, bh_cfg.working_dir, log)
+            if paired_end:
+                dataset_yaml["type"] = "paired-end"
+            else:
+                dataset_yaml["type"] = "single"
+            dataset_yaml["orientation"] = "fr" # TODO: only in paired-end mode
+            bh_cfg.__dict__["dataset_yaml_filename"] = os.path.join(bh_cfg.working_dir, "dataset.yaml")
+            support.save_to_yaml(dataset_yaml, bh_cfg.dataset_yaml_filename)
+            # Temporary (should be removed when BH will generate dataset.info/yaml by itself
+            bh_cfg.__dict__["dataset_yaml"] = dataset_yaml
 
             bh_dataset_filename = bh_logic.run_bh(tmp_configs_dir, bin_home, bh_cfg, log)
 

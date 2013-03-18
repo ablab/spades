@@ -120,6 +120,39 @@ def save_data_to_file(data, file):
     os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
+def save_to_yaml(data, filename):
+    INDENT = '  '
+    yaml = open(filename, 'w')
+    cur_indent = 0
+    yaml.write(cur_indent * INDENT + '[')
+    cur_indent += 1
+    yaml.write('\n' + cur_indent * INDENT + '{')
+    cur_indent += 1
+    first = True
+    for key, value in data.iteritems():
+        if not first:
+            yaml.write(',')
+        yaml.write('\n' + cur_indent * INDENT + key + ': ')
+        if isinstance(value, list):
+            yaml.write('[')
+            cur_indent += 1
+            first = True
+            for v in value:
+                if not first:
+                    yaml.write(',')
+                yaml.write('\n' + cur_indent * INDENT + '"' + str(v) + '"')
+                first = False
+            cur_indent -= 1
+            yaml.write('\n' + cur_indent * INDENT + ']')
+        else:
+            yaml.write('"' + str(value) + '"')
+        first = False
+    cur_indent -= 1
+    yaml.write('\n' + cur_indent * INDENT + '}')
+    cur_indent -= 1
+    yaml.write('\n' + cur_indent * INDENT + ']')
+
+
 def read_fasta(filename):
     """
         Returns list of FASTA entries (in tuples: name, seq)

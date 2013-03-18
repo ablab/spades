@@ -17,12 +17,7 @@ def prepare_config_bh(filename, cfg, log):
     subst_dict = dict()
     cfg.working_dir = os.path.abspath(cfg.working_dir)
 
-    if len(cfg.paired_reads) == 2:
-        subst_dict["input_paired_1"] = cfg.paired_reads[0]
-        subst_dict["input_paired_2"] = cfg.paired_reads[1]
-    if len(cfg.single_reads) == 1:
-        subst_dict["input_single"] = cfg.single_reads[0]
-
+    subst_dict["dataset"] = cfg.dataset_yaml_filename
     subst_dict["input_working_dir"] = cfg.working_dir
     subst_dict["general_max_iterations"] = cfg.max_iterations
     subst_dict["general_max_nthreads"] = cfg.max_threads
