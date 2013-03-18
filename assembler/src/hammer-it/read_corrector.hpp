@@ -33,7 +33,7 @@ static bool exactAlignH(It1 a_begin, It1 a_initial_pos, It1 a_end,
                         size_t max_offset, size_t n_cmp, int* p_offset)
 {
   int M = max_offset * 2 + 1;
-  for (int i = 0; i <= M; i++) {
+  for (int i = 0; i < M; i++) {
     int offset = (i / 2) * ((i & 1) ? 1 : -1); // 0, -1, 1, -2, 2, ...
     auto a_it = a_initial_pos + offset;
     auto b_it = b_initial_pos;
@@ -516,9 +516,9 @@ class CorrectedRead {
     ScoreStorage scores;
 
     ValidHKMerGenerator<hammer::K> gen(r);
-    size_t pos = gen.trimmed_left(); // current position
-    size_t chunk_pos = 0;
-    unsigned skipped = 0; // number of skipped centers of low quality
+    int pos = gen.trimmed_left(); // current position
+    int chunk_pos = 0;
+    int skipped = 0; // number of skipped centers of low quality
     hammer::HKMer last_good_center;
     bool last_good_center_is_defined = false;
     bool start_new_chunk = true;
@@ -540,10 +540,12 @@ class CorrectedRead {
       bool low_qual = k.qual > LOW_QUALITY_THRESHOLD;
 
       // if too many centers are skipped, start new chunk
-      if (skipped > 4 && !start_new_chunk) {
-        PushChunk(scores, approx_read_offset);
-        start_new_chunk = true;
-        pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
+      if (skipped > 4) {
+        if (!start_new_chunk) {
+          PushChunk(scores, approx_read_offset);
+          start_new_chunk = true;
+          pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
+        }
         pos += skipped + 1;
         last_good_center_is_defined = false;
       } else {
@@ -566,13 +568,12 @@ class CorrectedRead {
       }
 
       if (need_to_align && last_good_center_is_defined) {
-        VERIFY(skipped + 1 < hammer::K);
         int offset;
         bool aligned = exactAlignH(last_good_center.begin(),
                                    last_good_center.begin() + skipped + 1,
                                    last_good_center.end(),
                                    center.begin(), center.end(), 3, 5, &offset);
-        if (!aligned) {
+        if (!aligned || chunk_pos + skipped + offset < 0) {
           if (!start_new_chunk) {
             PushChunk(scores, approx_read_offset);
             pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
@@ -594,6 +595,9 @@ class CorrectedRead {
         approx_n_insertions = 0;
         start_new_chunk = false;
       }
+
+      VERIFY(chunk_pos >= 0);
+      VERIFY(chunk_pos < (1 << 16));
 
       if (chunk_pos + hammer::K > scores.size())
         scores.resize(chunk_pos + hammer::K, ScoreMatrix(4, 64, 0));
