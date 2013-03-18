@@ -95,15 +95,22 @@ bool assign(KMerData &kmer_data, const std::vector<unsigned> &cluster) {
 }
 
 void dump(const KMerData &kmer_data, const std::vector<unsigned> &cluster) {
-  std::cerr << "{ \n";
-  for (size_t j = 0; j < cluster.size(); ++j)
-    std::cerr << kmer_data[cluster[j]].kmer << ": (" << kmer_data[cluster[j]].count << ", " << 1 - kmer_data[cluster[j]].qual << "), \n";
+  std::cerr << "{ \n\"kmers\": {";
+  for (size_t j = 0; j < cluster.size(); ++j) {
+    if (j > 0) std::cerr << ", ";
+    std::cerr << '"' << kmer_data[cluster[j]].kmer << "\": ["
+              << kmer_data[cluster[j]].count << ", " 
+              << 1 - kmer_data[cluster[j]].qual << "] \n";
+  }
+  std::cerr << "}, \"center\": { \"status\": ";
   hammer::HKMer c = center(kmer_data, cluster);
   size_t idx = kmer_data.seq_idx(c);
-  if (kmer_data[idx].kmer == c)
-    std::cerr << "center: ok " << c << '\n';
-  else
-    std::cerr << "center: not " << kmer_data[idx].kmer << ":" << c << '\n';
+  if (kmer_data[idx].kmer == c) {
+    std::cerr << "\"ok\", \"center\": \"" << c << "\"}\n";
+  } else {
+    std::cerr << "\"not\", \"kmer\": \"" << kmer_data[idx].kmer 
+              << "\", \"center\": \"" << c << "\"}\n";
+  }
   std::cerr << "}" << std::endl;
 }
 
@@ -118,12 +125,12 @@ size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
   for (size_t i = 0; i < cluster.size(); ++i)
     k += kmer_data[cluster[i]].qual < sqrt(std::numeric_limits<double>::epsilon());
 
-  if (k <= 1)
-    return assign(kmer_data, cluster);
-
+  if (k <= 1) {
 #if 0
-  dump(kmer_data, cluster);
+    dump(kmer_data, cluster);
 #endif
+    return assign(kmer_data, cluster);
+  }
 
   // Find the closest center
   std::vector<std::vector<unsigned> > idx(k, std::vector<unsigned>());
@@ -152,7 +159,6 @@ size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
     if (assign(kmer_data, subcluster)) {
       nonread += 1;
 #if 0
-      dump(kmer_data, cluster);
       dump(kmer_data, subcluster);
 #endif
     }
@@ -262,8 +268,8 @@ int main(int argc, char** argv) {
         nonread += subcluster(kmer_data, cluster);
       }
 #else
-#     pragma omp parallel for shared(nonread, classes, kmer_data)
       INFO("Assigning centers");
+#     pragma omp parallel for shared(nonread, classes, kmer_data)
       for (size_t i = 0; i < classes.size(); ++i) {
         const auto& cluster = classes[i];
 #       pragma omp atomic
@@ -299,31 +305,9 @@ int main(int argc, char** argv) {
 #if 0
     std::sort(classes.begin(), classes.end(),  UfCmp());
     for (size_t i = 0; i < classes.size(); ++i) {
-      unsigned modes = 0;
       auto& cluster = classes[i];
-      const unsigned kCountThreshold = 50;
-      for (size_t j = 0; j < cluster.size(); ++j) {
-        if (kmer_data[cluster[j]].count > kCountThreshold) {
-          ++modes;
-          if (modes >= 2)
-            break;
-        }
-      }
-
-      if (modes < 2) continue; // skip uninteresting clusters
-
       std::sort(cluster.begin(), cluster.end(), CountCmp(kmer_data));
-
-      std::cerr << i << ": { \n";
-      for (size_t j = 0; j < cluster.size(); ++j)
-        std::cerr << kmer_data[cluster[j]].kmer << ": (" << kmer_data[cluster[j]].count << ", " << 1 - kmer_data[cluster[j]].qual << "), \n";
-      hammer::HKMer c = center(kmer_data, cluster);
-      size_t idx = kmer_data.seq_idx(c);
-      if (kmer_data[idx].kmer == c)
-        std::cerr << "center: ok " << c << '\n';
-      else
-        std::cerr << "center: not " << kmer_data[idx].kmer << ":" << c << '\n';
-      std::cerr << "}" << std::endl;
+      dump(kmer_data, cluster);
     }
 #endif
   } catch (std::bad_alloc const& e) {
