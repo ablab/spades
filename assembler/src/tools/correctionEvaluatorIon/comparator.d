@@ -3,6 +3,24 @@ import bio.core.sequence, bio.core.fasta, bio.core.base;
 import std.stdio, std.range, std.conv, std.algorithm, 
        std.parallelism, std.array, std.traits, std.exception;
 
+auto mapped_sequence(ref BamRead read) @property {
+  auto sequence = read.sequence;
+  auto cigar = read.cigar;
+  while (!cigar.empty && !cigar.front.is_reference_consuming)
+  {
+    sequence.popFrontN(cigar.front.length);
+    cigar.popFront();
+  }
+
+  while (!cigar.empty && !cigar.back.is_reference_consuming)
+  {
+    sequence.popBackN(cigar.back.length);
+    cigar.popBack();
+  }
+  
+  return sequence;
+}
+
 // FIXME: more fine-grained statistics about 
 //        corrected/miscorrected/uncorrected errors
 
@@ -173,21 +191,60 @@ class Comparator
     if (old_lev_dist == 1)
       ++n_one_err_;
 
+    bool degraded = old_lev_dist < new_lev_dist;
+
     if (old_lev_dist == 0) {
-      if (new_lev_dist > 0) {
-        ++perfect_read_worsened_;
-        ruined_.writeRecord(r2);
+      if (new_lev_dist > 0)
+      {
+        auto r1_seq = r1.mapped_sequence;
+        auto r2_seq = r2.mapped_sequence;
+        if (r2_seq.length >= r1_seq.length &&
+            ((r1.strand == '+' && equal(r1_seq, r2_seq.take(r1_seq.length))) ||
+             (r1.strand == '-' && equal(r1_seq.retro(), 
+                                        r2_seq.retro().take(r1_seq.length)))))
+        {
+          ++perfect_read_no_change_;
+          delta_ -= new_lev_dist;
+          degraded = false;
+        }
+        else
+        {
+          ++perfect_read_worsened_;
+          ruined_.writeRecord(r2);
+        }
       }
       else
         ++perfect_read_no_change_;
     } else {
-      if (new_lev_dist > old_lev_dist) {
+      auto bc = r1.basesCovered();
+      auto r1_seq = r1.mapped_sequence;
+      auto r2_seq = r2.mapped_sequence;
+      if (r2_seq.length > bc &&
+          ((r2.strand == '+' && equal(r2_seq.take(bc), r2.dna().take(bc))) ||
+           (r2.strand == '-' && equal(r2_seq.retro().take(bc),
+                                      r2.dna().to!string.retro.take(bc)))))
+      {
+        delta_ -= new_lev_dist - old_lev_dist;
+        degraded = false;
+        ++err_read_fully_corrected_;
+        if (old_lev_dist == 1)
+          ++one_err_read_corrected_;
+      } else if (r2_seq.length >= r1_seq.length &&
+          ((r2.strand == '+' && equal(r1_seq, r2_seq.take(r1_seq.length))) ||
+           (r2.strand == '-' && equal(r1_seq.retro(), 
+                                      r2_seq.retro().take(r1_seq.length)))))
+      {
+        delta_ -= new_lev_dist - old_lev_dist;
+        degraded = false;
+        ++err_read_no_change_;
+        if (old_lev_dist == 1)
+          ++one_err_read_no_change_;
+      } else if (new_lev_dist > old_lev_dist) {
         ++err_read_worsened_;
         if (old_lev_dist == 1)
           ++one_err_read_worsened_;
 
         damaged_.writeRecord(r2);
-
       } else if (new_lev_dist < old_lev_dist) {
         ++err_read_improved_;
         if (new_lev_dist == 0)
@@ -208,7 +265,7 @@ class Comparator
       }
     }
 
-    if (old_lev_dist < new_lev_dist) {
+    if (degraded) {
       worsened_.writeln("=================================================================");
       worsened_.writeln("Read name: \n", r1.name);
       worsened_.writeln("Read sequence: \n", sequenceStr(r1));

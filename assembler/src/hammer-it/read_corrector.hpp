@@ -92,8 +92,8 @@ static int alignH(It1 read_begin, It1 read_end,
   const int kDirLeft = 2;
 
   const int kBaseDiff = -1;
-  const int kRunInsertion = -5;
-  const int kRunDeletion = -5;
+  const int kRunInsertion = -3;
+  const int kRunDeletion = -3;
   const int kMismatch = -4;
   const int kMatch = 3;
 
@@ -130,6 +130,8 @@ static int alignH(It1 read_begin, It1 read_end,
         }
       } else {
         score = kMismatch + (scores(i - 1, j - 1) & kScoreMask);
+        score += kBaseDiff * std::abs(run_x.len - run_y.len);
+        
         if (score > best_score) {
           best_score = score;
           best_dir = kDirUpLeft;
