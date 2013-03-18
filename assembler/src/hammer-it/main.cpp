@@ -173,7 +173,7 @@ static bool stage(hammer_config::HammerStage start, hammer_config::HammerStage c
       return (current != hammer_config::HammerStage::KMerCounting &&
               current != hammer_config::HammerStage::HammingClustering);
     case hammer_config::HammerStage::ReadCorrection:
-      return current != hammer_config::HammerStage::ReadCorrection;
+      return current == hammer_config::HammerStage::ReadCorrection;
   }
 }
 
