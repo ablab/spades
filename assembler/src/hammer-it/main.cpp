@@ -258,6 +258,12 @@ int main(int argc, char** argv) {
       }
     }
 
+    size_t singletons = 0;
+    for (size_t i = 0; i < classes.size(); ++i)
+      if (classes[i].size() == 1)
+        singletons += 1;
+    INFO("Singleton clusters: " << singletons);
+
     if (stage(cfg::get().start_stage, hammer_config::HammerStage::SubClustering)) {
       size_t nonread = 0;
 #if 1
