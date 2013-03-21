@@ -88,7 +88,7 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
   for (size_t i = 0; i < blockSize; ++i) {
     size_t x = block[i];
     hammer::HKMer kmerx = data[x].kmer;
-    for (uint32_t j = i + 1; j < blockSize; j++) {
+    for (size_t j = i + 1; j < blockSize; j++) {
       size_t y = block[j];
       hammer::HKMer kmery = data[y].kmer;
       if (uf.find_set(x) != uf.find_set(y) &&
