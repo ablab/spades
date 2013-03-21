@@ -1,4 +1,4 @@
-all: bam2fastq comparator cluster_summaries error_sites fasta_slice
+all: bam2fastq comparator cluster_summaries error_sites fasta_slice singletons
 
 DC=dmd
 INCLUDES=-IBioD
@@ -24,3 +24,6 @@ error_sites: error_sites.d
 
 fasta_slice: fasta_slice.d
 	rdmd $(RDMD_OPTS) $(D_OPTS) $(INCLUDES) fasta_slice.d
+
+singletons: singletons.d
+	rdmd $(RDMD_OPTS) $(D_OPTS) $(INCLUDES) singletons.d
