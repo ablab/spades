@@ -18,12 +18,11 @@ tmap index -f $REFERENCE_REGION_FASTA
 ## Evaluation:
 
 # Run read correction, map corrected reads to the reference, and sorted resulted BAM file by name
-hammer-it 2>clusters.txt
+hammer-it hammer-it.cfg
 tmap mapall -f $REFERENCE_FASTA -r test.fasta -n 16 -o 1 -s corrected.bam -v stage1 map1 map2 map3 map4
 sambamba sort -n -t8 --tmpdir=. corrected.bam && mv corrected.sorted.bam corrected.bam
 
 # Evaluate clustering
-clusters.rb > kmers.fasta
 tmap mapall -f $REFERENCE_REGION_FASTA -r kmers.fasta -n 16 -o 1 -s kmers.bam -v stage1 map1 map2 map3 map4
 sambamba sort -n -t8 --tmpdir=. kmers.bam && mv kmers.sorted.bam kmers.bam
 cluster_summaries kmers.bam > cluster_summaries.txt

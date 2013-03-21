@@ -22,6 +22,8 @@
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <yaml-cpp/yaml.h>
+#include <fstream>
+#include <iomanip>
 
 void create_console_logger() {
   using namespace logging;
@@ -289,6 +291,27 @@ int main(int argc, char** argv) {
       VERIFY(ifs.good());
       kmer_data.binary_read(ifs);
     }
+
+#if 0
+    std::ofstream fasta_ofs("centers.fasta");
+    fasta_ofs << std::fixed << std::setprecision(6) << std::setfill('0');
+    std::sort(classes.begin(), classes.end(),  UfCmp());
+    for (size_t i = 0; i < classes.size(); ++i) {
+      auto& cluster = classes[i];
+      std::sort(cluster.begin(), cluster.end(), CountCmp(kmer_data));
+      hammer::HKMer c = center(kmer_data, cluster);
+      size_t idx = kmer_data.seq_idx(c);
+      if (kmer_data[idx].kmer == c) {
+        fasta_ofs << '>' << std::setw(6) << i
+                  << "-cov_" << std::setw(0) << kmer_data[idx].count
+                  << "-qual_" << 1.0 - kmer_data[idx].qual;
+
+        if (cluster.size() == 1)
+          fasta_ofs << "_singleton";
+        fasta_ofs << '\n' << c << '\n';
+      }
+    }
+#endif
 
     INFO("Correcting reads.");
     const io::DataSet &dataset = cfg::get().dataset;
