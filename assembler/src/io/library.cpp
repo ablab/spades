@@ -4,6 +4,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 
 using namespace io;
 
@@ -121,6 +122,11 @@ void DataSet::load(const std::string &filename) {
   YAML::Node config = YAML::LoadFile(filename);
 
   *this = config.as<DataSet>();
+}
+
+void DataSet::save(const std::string &filename) const {
+  std::ofstream ofs(filename.c_str());
+  ofs << YAML::Node(*this);
 }
 
 void SequencingLibrary::load(const YAML::Node &node) {
