@@ -18,7 +18,7 @@
 #include "io/vector_reader.hpp"
 #include "omni_labelers.hpp"
 #include "dataset_readers.hpp"
-//#include "online_pictures.hpp"
+#include "config_common.hpp" // FIXME: Get rid of this!
 
 namespace debruijn_graph {
 
@@ -51,15 +51,14 @@ string estimated_param_filename(const string& prefix) {
 }
 
 void load_estimated_params(const string& prefix) {
-  string filename = estimated_param_filename(prefix);
+  std::string filename = estimated_param_filename(prefix);
   //todo think of better architecture
   if (FileExists(filename)) {
     load_param(filename, "RL", cfg::get_writable().ds.RL);
     load_param(filename, "IS", cfg::get_writable().ds.IS);
     load_param(filename, "is_var", cfg::get_writable().ds.is_var);
     load_param_map(filename, "perc", cfg::get_writable().ds.percentiles);
-    load_param(filename, "avg_coverage",
-        cfg::get_writable().ds.avg_coverage);
+    load_param(filename, "avg_coverage", cfg::get_writable().ds.avg_coverage);
     load_param_map(filename, "hist", cfg::get_writable().ds.hist);
     load_param(filename, "median", cfg::get_writable().ds.median);
     load_param(filename, "mad", cfg::get_writable().ds.mad);
@@ -68,7 +67,7 @@ void load_estimated_params(const string& prefix) {
 }
 
 void write_estimated_params(const string& prefix) {
-  string filename = estimated_param_filename(prefix);
+  std::string filename = estimated_param_filename(prefix);
   write_param(filename, "RL", cfg::get().ds.RL);
   write_param(filename, "IS", cfg::get().ds.IS);
   write_param(filename, "is_var", cfg::get().ds.is_var);
@@ -84,10 +83,10 @@ void return_estimated_params() {
 }
 
 void load_construction(conj_graph_pack& gp, path::files_t* files) {
-    string p = path::append_path(cfg::get().load_from, "constructed_graph");
+  string p = path::append_path(cfg::get().load_from, "constructed_graph");
   files->push_back(p);
-    ScanGraphPack(p, gp);
-    load_estimated_params(p);
+  ScanGraphPack(p, gp);
+  load_estimated_params(p);
 }
 
 void save_construction(conj_graph_pack& gp) {
