@@ -78,7 +78,7 @@ string HammerTools::getReadsFilename(const std::string & dirprefix, const std::s
   ostringstream tmp;
   tmp.str("");
 
-  tmp << dirprefix.data() << "/" << path::basename(fname) << '.' << std::setfill('0') << std::setw(2) << iter_no << "." << suffix.data() << path::extension(fname);
+  tmp << dirprefix.data() << "/" << path::basename(fname) << '.' << std::setfill('0') << std::setw(2) << iter_no << "." << suffix.data();
   return tmp.str();
 }
 
@@ -259,14 +259,14 @@ hint_t HammerTools::CorrectAllReads() {
       INFO("Correcting pair of reads: " << I->first << " and " << I->second);
       std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired" + path::extension(I->first);
 
-      std::string outcorl = HammerTools::getReadsFilename(cfg::get().input_working_dir, I->first,  Globals::iteration_no, "cor");
-      std::string outcorr = HammerTools::getReadsFilename(cfg::get().input_working_dir, I->second, Globals::iteration_no, "cor");
-      std::string outcoru = HammerTools::getReadsFilename(cfg::get().input_working_dir, unpaired,  Globals::iteration_no, "cor");
+      std::string outcorl = HammerTools::getReadsFilename(cfg::get().input_working_dir, I->first,  Globals::iteration_no, "cor.fastq");
+      std::string outcorr = HammerTools::getReadsFilename(cfg::get().input_working_dir, I->second, Globals::iteration_no, "cor.fastq");
+      std::string outcoru = HammerTools::getReadsFilename(cfg::get().input_working_dir, unpaired,  Globals::iteration_no, "cor.fastq");
 
       std::ofstream ofcorl(outcorl.c_str());
-      std::ofstream ofbadl(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->first,  Globals::iteration_no, "bad").c_str());
+      std::ofstream ofbadl(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->first,  Globals::iteration_no, "bad.fastq").c_str());
       std::ofstream ofcorr(outcorr.c_str());
-      std::ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->second, Globals::iteration_no, "bad").c_str());
+      std::ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().input_working_dir, I->second, Globals::iteration_no, "bad.fastq").c_str());
       std::ofstream ofunp (outcoru.c_str());
 
       HammerTools::CorrectPairedReadFiles(*Globals::kmer_data,
@@ -279,9 +279,9 @@ hint_t HammerTools::CorrectAllReads() {
 
     for (auto I = dataset.single_begin(), E = dataset.single_end(); I != E; ++I) {
       INFO("Correcting single reads: " << *I);
-      std::string outcor = HammerTools::getReadsFilename(cfg::get().input_working_dir, *I,  Globals::iteration_no, "cor");
+      std::string outcor = HammerTools::getReadsFilename(cfg::get().input_working_dir, *I,  Globals::iteration_no, "cor.fastq");
       std::ofstream ofgood(outcor.c_str());
-      std::ofstream ofbad(HammerTools::getReadsFilename(cfg::get().input_working_dir, *I,  Globals::iteration_no, "bad").c_str());
+      std::ofstream ofbad(HammerTools::getReadsFilename(cfg::get().input_working_dir, *I,  Globals::iteration_no, "bad.fastq").c_str());
       outlib.push_back_single(outcor);
     }
     outdataset.push_back(outlib);
