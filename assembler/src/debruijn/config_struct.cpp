@@ -251,14 +251,7 @@ void load(debruijn_config::dataset& ds,
 
   load_paired_reads(ds.paired_reads, pt, "paired_reads");
   load_single_reads(ds.single_reads, pt, "single_reads");
-  load_paired_reads(ds.original_paired_reads, pt, "original_paired_reads");
-  load_single_reads(ds.original_single_reads, pt, "original_single_reads");
   load(ds.single_cell, pt, "single_cell");
-
-  ds.jumping_first = pt.get_optional<std::string>("jumping_first");
-  ds.jumping_second = pt.get_optional<std::string>("jumping_second");
-  ds.jump_is = pt.get_optional<size_t>("jump_is");
-  ds.jump_rl = pt.get_optional<size_t>("jump_rl");
 
   ds.RL = pt.get_optional<size_t>("RL");
   ds.is_var = pt.get_optional<size_t>("is_var");
