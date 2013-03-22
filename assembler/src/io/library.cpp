@@ -132,8 +132,7 @@ void DataSet::save(const std::string &filename) const {
 }
 
 void SequencingLibrary::load(const YAML::Node &node) {
-  orientation_ = (node["orientation"] ?
-                  node["orientation"].as<io::LibraryOrientation>() : LibraryOrientation::Undefined);
+  orientation_ = node["orientation"].as<io::LibraryOrientation>(LibraryOrientation::Undefined);
   type_ = node["type"].as<LibraryType>();
 
   switch (type_) {
@@ -147,8 +146,7 @@ void SequencingLibrary::load(const YAML::Node &node) {
       if (orientation_ == LibraryOrientation::Undefined)
         throw("Orientation for paired reads should be specified");
 
-      if (node["insert size"])
-        insert_size_ = node["insert size"].as<unsigned>();
+      insert_size_ = node["insert size"].as<unsigned>(0);
 
       // FALLTHROUGH in case of single reads present!
       if (!node["single reads"])
