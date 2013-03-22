@@ -25,13 +25,14 @@
 #ifndef COMMON_IO_SINGLEREAD_HPP_
 #define COMMON_IO_SINGLEREAD_HPP_
 
-#include <string>
 #include "verify.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
 #include "sequence/sequence_tools.hpp"
 #include "simple_tools.hpp"
+
+#include <string>
 
 namespace io {
 
@@ -50,7 +51,7 @@ enum OffsetType {
 //todo extract code about offset from here
 class SingleRead {
  public:
-  static string EmptyQuality(const string& seq) {
+  static std::string EmptyQuality(const std::string& seq) {
     return std::string(seq.size(), (char) 33);
   }
 
@@ -253,7 +254,7 @@ class SingleRead {
     return name_;
   }
 
-  pair<size_t, size_t> position_in_original() const {
+  std::pair<size_t, size_t> position_in_original() const {
     for (int i = name_.length() - 1; i >= 0; --i) {
       if (name_[i] != '_') {
         continue;
@@ -261,10 +262,10 @@ class SingleRead {
       if (name_.substr(i, 8) == "_SUBSTR(") {
         int from, to;
         sscanf(name_.substr(i + 8).c_str(), "%d,%d)", &from, &to);
-        return make_pair((size_t) from, (size_t) to);
+        return std::make_pair((size_t) from, (size_t) to);
       }
     }
-    return make_pair(0, size());
+    return std::make_pair(0, size());
   }
 
   /*
@@ -279,7 +280,7 @@ class SingleRead {
     return seq_ == singleread.seq_;
   }
 
-  void ChangeName(const string& new_name) {
+  void ChangeName(const std::string& new_name) {
     name_ = new_name;
   }
 
@@ -288,7 +289,7 @@ class SingleRead {
   //		UpdateValid();
   //	}
 
-  static bool IsValid(const string& seq) {
+  static bool IsValid(const std::string& seq) {
     for (size_t i = 0; i < seq.size(); ++i) {
       if (!is_nucl(seq[i])) {
         return false;
@@ -333,8 +334,8 @@ class SingleRead {
 
 };
 
-inline ostream& operator<<(ostream& os, const SingleRead& read) {
-  os << "Single read name=" << read.name() << " sequence=" << read.GetSequenceString() << endl;
+inline std::ostream& operator<<(std::ostream& os, const SingleRead& read) {
+  os << "Single read name=" << read.name() << " sequence=" << read.GetSequenceString() << std::endl;
   return os;
 }
 
@@ -382,8 +383,8 @@ class SingleReadSeq {
   Sequence seq_;
 };
 
-inline ostream& operator<<(ostream& os, const SingleReadSeq& read) {
-  os << "Single read sequence=" << read.sequence() << endl;
+inline std::ostream& operator<<(std::ostream& os, const SingleReadSeq& read) {
+  os << "Single read sequence=" << read.sequence() << std::endl;
   return os;
 }
 
