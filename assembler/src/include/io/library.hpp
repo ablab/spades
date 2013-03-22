@@ -65,12 +65,14 @@ class SequencingLibrary {
   typedef chained_iterator<std::vector<std::string>::const_iterator> single_reads_iterator;
 
   SequencingLibrary()
-      : type_(LibraryType::PairedEnd), orientation_(LibraryOrientation::FR) {}
+      : type_(LibraryType::PairedEnd), orientation_(LibraryOrientation::FR), insert_size_(0) {}
 
   void load(const YAML::Node &node);
 
   LibraryType type() const { return type_; }
   LibraryOrientation orientation() const { return orientation_; }
+  unsigned insert_size() const { return insert_size_; }
+  void set_insert_size(unsigned insert_size) { insert_size_ = insert_size; }
 
   void clear() {
     left_paired_reads_.clear();
@@ -119,6 +121,7 @@ class SequencingLibrary {
  private:
   LibraryType type_;
   LibraryOrientation orientation_;
+  unsigned insert_size_;
 
   std::vector<std::string> left_paired_reads_;
   std::vector<std::string> right_paired_reads_;

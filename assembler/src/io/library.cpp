@@ -35,6 +35,8 @@ struct convert<SequencingLibrary> {
 
     node["orientation"] = rhs.orientation();
     node["type"] = rhs.type();
+    if (rhs.insert_size())
+      node["insert size"] = rhs.insert_size();
 
     for (auto it = rhs.paired_begin(), et = rhs.paired_end(); et != it; ++it) {
       node["left reads"].push_back(it->first);
@@ -144,6 +146,9 @@ void SequencingLibrary::load(const YAML::Node &node) {
 
       if (orientation_ == LibraryOrientation::Undefined)
         throw("Orientation for paired reads should be specified");
+
+      if (node["insert size"])
+        insert_size_ = node["insert size"].as<unsigned>();
 
       // FALLTHROUGH in case of single reads present!
       if (!node["single reads"])
