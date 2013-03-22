@@ -281,6 +281,10 @@ int main(int argc, char * argv[]) {
       // break;
     }
 
+    std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, "corrected.yaml");
+    INFO("Saving corrected dataset description to " << fname);
+    cfg::get().dataset.save(fname);
+
     // clean up
     Globals::subKMerPositions->clear();
     delete Globals::subKMerPositions;
