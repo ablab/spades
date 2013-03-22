@@ -298,12 +298,6 @@ struct debruijn_config {
   struct dataset {
     std::vector<std::vector<std::string> > paired_reads;
     std::vector<std::string> single_reads;
-    std::vector<std::vector<std::string> > original_paired_reads;
-    std::vector<std::string> original_single_reads;
-    boost::optional<std::string> jumping_first;
-    boost::optional<std::string> jumping_second;
-    boost::optional<size_t> jump_is;
-    boost::optional<size_t> jump_rl;
     boost::optional<size_t> RL;
     boost::optional<double> IS;
     boost::optional<double> is_var;

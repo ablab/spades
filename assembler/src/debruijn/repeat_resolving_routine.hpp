@@ -266,10 +266,8 @@ void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 	if (cfg::get().sw.align_original_reads) {
 //			if (cfg::get().sw.original_first && cfg::get().sw.original_second)
 		{
-			auto paired_reads = paired_easy_reader(false, 0, false, false,
-					false, offset_type);
-			auto original_paired_reads = paired_easy_reader(false, 0, false,
-					false, true, offset_type);
+			auto paired_reads = paired_easy_reader(false, 0, false, false, offset_type);
+			auto original_paired_reads = paired_easy_reader(false, 0, false, false, offset_type);
 //				io::PairedEasyReader original_paired_reads(
 //								make_pair(input_file(*cfg::get().sw.original_first),
 //										input_file(*cfg::get().sw.original_second)),
@@ -291,10 +289,8 @@ void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
 					OutputFileName);
 		}
 	} else {
-		auto paired_reads = paired_easy_reader(false, 0, false, false, false,
-				offset_type);
-		auto single_reads = single_easy_reader(false, false, false,
-				offset_type);
+		auto paired_reads = paired_easy_reader(false, 0, false, false, offset_type);
+		auto single_reads = single_easy_reader(false, false, offset_type);
 
 		typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
 		SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
