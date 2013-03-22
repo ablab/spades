@@ -208,30 +208,6 @@ void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
   load(graph_read_corr.binary, pt, "binary");
 }
 
-void load_paired_reads(std::vector<std::vector<std::string> >& vec,
-                       boost::property_tree::ptree const& pt, std::string const& key) {
-  std::vector<std::string> strings;
-  config_common::load(strings, pt, key);
-  for (auto it = strings.begin(); it != strings.end(); ++it) {
-    std::vector<std::string> paired_library;
-    config_common::split(paired_library, *it);
-    if (paired_library.size() < 1 || paired_library.size() > 2) {
-      VERIFY_MSG(false,
-                 "Invalid library of " << paired_library.size() << " input files with paired reads: \"" << *it << "\"");
-    }
-    vec.push_back(paired_library);
-  }
-}
-
-void load_single_reads(std::vector<std::string>& vec,
-                       boost::property_tree::ptree const& pt, std::string const& key) {
-  std::vector<std::string> strings;
-  config_common::load(strings, pt, key);
-  for (auto it = strings.begin(); it != strings.end(); ++it) {
-    config_common::split(vec, *it);
-  }
-}
-
 void load(debruijn_config::dataset& ds,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
@@ -266,18 +242,7 @@ void load(debruijn_config::dataset& ds,
   io::SingleRead genome;
   genome_stream >> genome;
   VERIFY(genome.IsValid());
-  //	if (VERIFY(genome.IsValid()))
-  // {
   ds.reference_genome = genome.sequence();
-  //INFO("Reference genome loaded. Length " << ds.reference_genome.size());
-  //        cout << "Reference genome loaded. Length " << ds.reference_genome.size() << endl;
-  //	}
-  //    else {
-  //		//INFO("Reference genome (" + ds.reference_genome_filename + ") has non-ACGT characters. Skipping it");
-  //		cout << "Reference genome (" + ds.reference_genome_filename + ") has non-ACGT characters. Skipping it" << endl;
-  //		ds.reference_genome = Sequence();
-  //		ds.reference_genome_filename = "";
-  //	}
 }
 
 void load(debruijn_config::simplification& simp,
