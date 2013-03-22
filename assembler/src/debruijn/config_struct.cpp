@@ -200,19 +200,6 @@ void load(debruijn_config::gap_closer& gc,
   load(gc.weight_threshold, pt, "weight_threshold");
 }
 
-void load(debruijn_config::SAM_writer& sw,
-          boost::property_tree::ptree const& pt, bool complete) {
-  using config_common::load;
-  load(sw.output_map_format, pt, "output_map_format");
-  load(sw.align_before_RR, pt, "align_before_RR");
-  load(sw.align_after_RR, pt, "align_after_RR");
-  load(sw.adjust_align, pt, "adjust_align");
-  load(sw.align_only_paired, pt, "align_only_paired");
-  load(sw.output_broken_pairs, pt, "output_broken_pairs");
-  load(sw.align_original_reads, pt, "align_original_reads");
-  sw.print_quality = pt.get_optional<bool>("print_quality");
-}
-
 void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
@@ -434,7 +421,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.cut_bad_connections, pt, "cut_bad_connections");
   load(cfg.componential_resolve, pt, "componential_resolve");
   load(cfg.gap_closer_enable, pt, "gap_closer_enable");
-  load(cfg.SAM_writer_enable, pt, "SAM_writer_enable");
 
   load(cfg.buffer_size, pt, "buffer_size");
   cfg.buffer_size <<= 20; //turn MB to bytes
@@ -482,7 +468,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.mask_all, pt, "mask_all");
 
   load(cfg.gc, pt, "gap_closer");
-  load(cfg.sw, pt, "SAM_writer");
   load(cfg.graph_read_corr, pt, "graph_read_corr");
   load(cfg.need_consensus, pt, "need_consensus");
   load(cfg.uncorrected_reads, pt, "uncorrected_reads");

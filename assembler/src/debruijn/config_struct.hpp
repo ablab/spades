@@ -342,18 +342,6 @@ struct debruijn_config {
     bool write_full_nc_graph;
   };
 
-  struct SAM_writer {
-    bool produce_align_files;
-    bool output_map_format;
-    bool align_before_RR;
-    bool align_after_RR;
-    bool adjust_align;
-    bool align_only_paired;
-    bool output_broken_pairs;
-    bool align_original_reads;
-    boost::optional<bool> print_quality;
-  };
-
   struct graph_read_corr_cfg {
     bool enable;
     std::string output_dir;
@@ -402,7 +390,6 @@ struct debruijn_config {
   bool cut_bad_connections;
   bool componential_resolve;
   bool gap_closer_enable;
-  bool SAM_writer_enable;
 
   //Convertion options
   size_t buffer_size;
@@ -431,7 +418,6 @@ struct debruijn_config {
   dataset ds;
   position_handler pos;
   gap_closer gc;
-  SAM_writer sw;
   graph_read_corr_cfg graph_read_corr;
   info_printers_t info_printers;
 };

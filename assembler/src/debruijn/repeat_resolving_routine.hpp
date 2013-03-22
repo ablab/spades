@@ -27,7 +27,6 @@
 #include "de/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 
-#include "internal_aligner.hpp"
 #include "omni/loop_killer.hpp"
 #include "path_utils.hpp"
 #include "pair_info_improver.hpp"
@@ -252,64 +251,6 @@ void SaveComponents(string file_name, set<set<EdgeId> >& components,
 		fprintf(file, "\n");
 	}
 	fclose(file);
-}
-
-void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
-		EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
-
-	io::OffsetType offset_type = EvaluateOffset();
-	string OutputFileName =
-			(cfg::get().run_mode) ?
-					cfg::get().output_dir + "align_after_RR.sam" :
-					cfg::get().output_base + "contigs.sam";
-
-	if (cfg::get().sw.align_original_reads) {
-//			if (cfg::get().sw.original_first && cfg::get().sw.original_second)
-		{
-			auto paired_reads = paired_easy_reader(false, 0, false, false, offset_type);
-			auto original_paired_reads = paired_easy_reader(false, 0, false, false, offset_type);
-//				io::PairedEasyReader original_paired_reads(
-//								make_pair(input_file(*cfg::get().sw.original_first),
-//										input_file(*cfg::get().sw.original_second)),
-//								false,
-//								0);
-			typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-					conj_gp.k_value + 1);
-
-			bool print_quality = (
-					cfg::get().sw.print_quality ?
-							*cfg::get().sw.print_quality : false);
-			OriginalReadsResolvedInternalAligner<ConjugateDeBruijnGraph,
-					SequenceMapper> Aligner(resolved_gp.k_value, resolved_gp.g,
-					conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align,
-					cfg::get().sw.output_map_format,
-					cfg::get().sw.output_broken_pairs, print_quality);
-			Aligner.AlignPairedReads(*original_paired_reads, *paired_reads,
-					OutputFileName);
-		}
-	} else {
-		auto paired_reads = paired_easy_reader(false, 0, false, false, offset_type);
-		auto single_reads = single_easy_reader(false, false, offset_type);
-
-		typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-		SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-				conj_gp.k_value + 1);
-
-		bool print_quality = (
-				cfg::get().sw.print_quality ?
-						*cfg::get().sw.print_quality : false);
-		ResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(
-				resolved_gp.k_value, resolved_gp.g, conj_gp.g, mapper,
-				labels_after, cfg::get().sw.adjust_align,
-				cfg::get().sw.output_map_format,
-				cfg::get().sw.output_broken_pairs, print_quality);
-		if (cfg::get().sw.align_only_paired)
-			Aligner.AlignPairedReads(*paired_reads, OutputFileName);
-		else
-			Aligner.AlignReads(*paired_reads, *single_reads, OutputFileName);
-
-	}
 }
 
 template<class graph_pack>
@@ -1060,15 +1001,10 @@ void resolve_repeats() {
 	//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
 	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir,
-			"graph.dot");
+                              "graph.dot");
 	printer(ipp_before_repeat_resolution);
 
-	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_before_RR) {
-		SAMBeforeResolve(conj_gp);
-	}
-
-	if (!cfg::get().paired_mode
-			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
+	if (!cfg::get().paired_mode || cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 		return;
 	}
@@ -1151,10 +1087,6 @@ void resolve_repeats() {
 
 				SaveResolved(resolved_gp, resolved_graph_paired_info,
 						resolved_graph_paired_info_cl);
-			}
-
-			if (cfg::get().SAM_writer_enable && cfg::get().sw.align_after_RR) {
-				SAMAfterResolve(conj_gp, resolved_gp, labels_after);
 			}
 
 			if (cfg::get().componential_resolve) {
