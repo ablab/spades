@@ -12,6 +12,8 @@
 #include "sequence/sequence.hpp"
 #include "path_extend/pe_config_struct.hpp"
 
+#include "io/library.hpp"
+
 #include <boost/bimap.hpp>
 
 namespace debruijn_graph {
@@ -296,8 +298,7 @@ struct debruijn_config {
   };
 
   struct dataset {
-    std::vector<std::vector<std::string> > paired_reads;
-    std::vector<std::string> single_reads;
+    io::DataSet dataset;
     boost::optional<size_t> RL;
     boost::optional<double> IS;
     boost::optional<double> is_var;
