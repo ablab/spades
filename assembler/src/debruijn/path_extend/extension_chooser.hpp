@@ -416,7 +416,7 @@ public:
 			for (int j = 0; j < 2; ++j) {
                 int mean = CountMean(histogram);
                 int dev = CountDev(histogram, mean);
-                double cutoff = min(max_w * params.param_set.scaffolder_options.rel_cutoff, (double) params.param_set.scaffolder_options.cutoff);
+                double cutoff = min(max_w * cfg::get().pe_params.param_set.scaffolder_options.rel_cutoff, (double) cfg::get().pe_params.param_set.scaffolder_options.cutoff);
 //                if (mean != 0)
 //                    out << "Mean: " << mean << " " << dev << endl;
                 histogram = FilterHistogram(histogram, mean - (5 - j)  * dev, mean + (5 - j) * dev, cutoff);
@@ -427,7 +427,7 @@ public:
 			    sum += histogram[j].second;
 			}
 
-			if (sum > params.param_set.scaffolder_options.sum_threshold) {
+			if (sum > cfg::get().pe_params.param_set.scaffolder_options.sum_threshold) {
 				sort(histogram.begin(), histogram.end(), compare);
 				int gap = CountMean(histogram);
 
@@ -463,7 +463,7 @@ public:
                 sum += histogram[j].second;
             }
 
-            if (sum > params.param_set.scaffolder_options.cl_threshold) {
+            if (sum > cfg::get().pe_params.param_set.scaffolder_options.cl_threshold) {
                 sort(histogram.begin(), histogram.end(), compare);
                 int gap = CountMean(histogram);
 
