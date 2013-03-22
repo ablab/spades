@@ -18,48 +18,40 @@ typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::PairedRead> MultiPairedStream;
 typedef io::MultifileReader<io::SingleRead> MultiSingleStream;
 
-auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc,
-                                              size_t insert_size,
-                                              bool change_read_order = false,
-                                              bool revert_second = true,
-                                              io::OffsetType offset_type = io::PhredOffset) {
+std::auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc,
+                                                   size_t insert_size,
+                                                   bool change_read_order = false,
+                                                   bool revert_second = true,
+                                                   io::OffsetType offset_type = io::PhredOffset) {
   std::vector<PairedReadStream*> streams;
-	auto& paired_reads = cfg::get().ds.paired_reads;
-	for (auto it = paired_reads.begin(); it != paired_reads.end(); ++it) {
-		vector<string> filenames = *it;
-		io::PairedEasyReader* reader;
-		if (filenames.size() == 1) {
-			reader = new io::PairedEasyReader(input_file(filenames[0]), followed_by_rc, insert_size, change_read_order, revert_second, offset_type);
-		} else if (filenames.size() == 2) {
-			auto files = std::make_pair(input_file((*it)[0]), input_file(filenames[1]));
-			reader = new io::PairedEasyReader(files, followed_by_rc, insert_size, change_read_order, revert_second, offset_type);
-		} else {
-			VERIFY_MSG(false, "Can't handle the case with " << filenames.size() << " input files with paired reads");
-		}
-		streams.push_back(reader);
-	}
-	return auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
+  const io::DataSet &dataset = cfg::get().ds.dataset;
+  // FIXME: Should we use only first library?
+  for (auto it = dataset.paired_begin(); it != dataset.paired_end(); ++it) {
+    io::PairedEasyReader* reader = new io::PairedEasyReader(*it, followed_by_rc, insert_size, change_read_order, revert_second, offset_type);
+    streams.push_back(reader);
+  }
+  return auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
 }
 
-auto_ptr<ReadStream> single_easy_reader(bool followed_by_rc,
-                                        bool including_paired_reads,
-                                        io::OffsetType offset_type = io::PhredOffset) {
+std::auto_ptr<ReadStream> single_easy_reader(bool followed_by_rc,
+                                             bool including_paired_reads,
+                                             io::OffsetType offset_type = io::PhredOffset) {
   std::vector<ReadStream*> streams;
-	auto& single_reads = cfg::get().ds.single_reads;
-	if (including_paired_reads) {
-		auto& paired_reads = cfg::get().ds.paired_reads;
-		for (auto it = paired_reads.begin(); it != paired_reads.end(); ++it) {
-			for (auto it2 = it->begin(); it2 != it->end(); ++it2) {
-				streams.push_back(new io::EasyReader(input_file(*it2), followed_by_rc, offset_type));
-				DEBUG("Using input file: " << input_file(*it2));
-			}
-		}
-	}
-	for (auto it = single_reads.begin(); it != single_reads.end(); ++it) {
-		streams.push_back(new io::EasyReader(input_file(*it), followed_by_rc, offset_type));
-		DEBUG("Using input file: " << input_file(*it));
-	}
-	return auto_ptr<ReadStream>(new MultiSingleStream(streams, true));
+  const io::DataSet &dataset = cfg::get().ds.dataset;
+  // FIXME: Should we use only first library?
+  if (including_paired_reads) {
+    for (auto it = dataset.reads_begin(); it != dataset.reads_end(); ++it) {
+      streams.push_back(new io::EasyReader(input_file(*it), followed_by_rc, offset_type));
+      DEBUG("Using input file: " << input_file(*it));
+    }
+  } else {
+    for (auto it = dataset.single_begin(); it != dataset.single_end(); ++it) {
+      streams.push_back(new io::EasyReader(input_file(*it), followed_by_rc, offset_type));
+      DEBUG("Using input file: " << input_file(*it));
+    }
+  }
+
+  return std::auto_ptr<ReadStream>(new MultiSingleStream(streams, true));
 }
 
 }

@@ -236,8 +236,9 @@ void load(debruijn_config::dataset& ds,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
-  load_paired_reads(ds.paired_reads, pt, "paired_reads");
-  load_single_reads(ds.single_reads, pt, "single_reads");
+  std::string reads;
+  load(reads, pt, "reads");
+  ds.dataset.load(reads);
   load(ds.single_cell, pt, "single_cell");
 
   ds.RL = pt.get_optional<size_t>("RL");
