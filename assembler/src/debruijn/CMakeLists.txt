@@ -8,6 +8,7 @@ project(spades CXX)
 
 add_executable(spades
                kmer_coverage_model.cpp
+               config_struct.cpp
                main.cpp)
 
 target_link_libraries(spades ${COMMON_LIBRARIES} input mph_index otkpp)
