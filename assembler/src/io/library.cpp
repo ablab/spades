@@ -37,8 +37,8 @@ struct convert<SequencingLibrary> {
     node["type"] = rhs.type();
 
     for (auto it = rhs.paired_begin(), et = rhs.paired_end(); et != it; ++it) {
-      node["left paired"].push_back(it->first);
-      node["right paired"].push_back(it->second);
+      node["left reads"].push_back(it->first);
+      node["right reads"].push_back(it->second);
     }
     for (auto it = rhs.single_begin(), et = rhs.single_end(); et != it; ++it)
       node["single"].push_back(*it);
