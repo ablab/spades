@@ -11,5 +11,5 @@ add_library(input STATIC
             path_helper.cpp
             library.cpp)
 
-target_link_libraries(input)
+target_link_libraries(input yaml-cpp)
 
