@@ -147,13 +147,13 @@ protected:
 
     bool isEdgeSuitable(EdgeId e, double minEdgeCoverage = 0.0) {
         size_t len = g.length(e);
-        size_t delta = params.param_set.seed_selection.chimeric_delta;
+        size_t delta = cfg::get().pe_params.param_set.seed_selection.chimeric_delta;
         delta = delta > k_ ? k_ : delta;
 
         return math::ge(g.coverage(e), minEdgeCoverage) &&
-                (!params.param_set.seed_selection.exclude_chimeric
+                (!cfg::get().pe_params.param_set.seed_selection.exclude_chimeric
                         || (len < k_ - delta
-                        || len > k_ + params.param_set.seed_selection.chimeric_delta));
+                        || len > k_ + cfg::get().pe_params.param_set.seed_selection.chimeric_delta));
     }
 
 public:

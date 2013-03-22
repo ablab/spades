@@ -794,7 +794,7 @@ protected:
 				if (candidates.size() == 1) {
 					 DEBUG(candidates.size() << " " << g_.int_id(candidates[0].e_) << " Path id :" << path.GetId()<< "  Edge len : " << g_.length(candidates[0].e_))
 
-                     int gap = params.param_set.scaffolder_options.fix_gaps ?
+                     int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
                              gapJoiner_.FixGap(path.Back(), candidates.back().e_, candidates.back().d_) :
                              candidates.back().d_;
 
@@ -822,11 +822,11 @@ public:
 
     ScaffoldingPathExtender(Graph& g, ExtensionChooser * usualEC, ExtensionChooser * scaffoldingEC): SimplePathExtender(g, usualEC),
             scaffoldingExtensionChooser_(scaffoldingEC),
-            gapJoiner_(g, params.param_set.scaffolder_options.min_gap_score,
-                    (int) (params.param_set.scaffolder_options.max_must_overlap * g.k()),
-                    (int) (params.param_set.scaffolder_options.max_can_overlap * g.k()),
-                    params.param_set.scaffolder_options.short_overlap)
-                    //params.param_set.scaffolder_options.artificial_gap)
+            gapJoiner_(g, cfg::get().pe_params.param_set.scaffolder_options.min_gap_score,
+                    (int) (cfg::get().pe_params.param_set.scaffolder_options.max_must_overlap * g.k()),
+                    (int) (cfg::get().pe_params.param_set.scaffolder_options.max_can_overlap * g.k()),
+                    cfg::get().pe_params.param_set.scaffolder_options.short_overlap)
+                    //cfg::get().pe_paramsparam_set.scaffolder_options.artificial_gap)
     {
         InitSources();
     }
