@@ -18,7 +18,6 @@
 #include "gap_closer.hpp"
 #include "omni_labelers.hpp"
 #include "omni/omni_tools.hpp"
-#include "internal_aligner.hpp"
 #include "io/single_read.hpp"
 #include "io/ireadstream.hpp"
 #include "mismatch_shall_not_pass.hpp"
@@ -31,113 +30,6 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 
 // move impl to *.cpp
 namespace debruijn_graph {
-
-
-io::OffsetType EvaluateOffset() {
-	int offset = 0;
-	if (cfg::get().ds.paired_reads.size() > 0){
-		if (cfg::get().ds.paired_reads[0].size() > 0) {
-			offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
- 		}
-	}
-	if (offset == 0) {
-		if (cfg::get().ds.single_reads.size() > 0) {
-			offset = determine_offset(input_file(cfg::get().ds.single_reads[0]));
-		}
-	}
-	io::OffsetType offset_type;
-	if (offset == 33) {
-		INFO("Using offset +33");
-		offset_type = io::PhredOffset;
-	} else if (offset == 64) {
-		INFO("Using offset +64");
-		offset_type = io::SolexaOffset;
-	} else {
-		WARN("Unable to define offset type, assume +33");
-		offset_type = io::PhredOffset;
-	}
-	return offset_type;
-}
-
-
-void SAMBeforeResolve(conj_graph_pack& conj_gp) {
-	//assume same quality offset for all files!!!
-
-	io::OffsetType offset_type = EvaluateOffset();
-
-	string OutputFileName = (cfg::get().run_mode || cfg::get().paired_mode) ? cfg::get().output_dir + "align_before_RR.sam":  cfg::get().output_base + "contigs.sam";
-
-	if (cfg::get().sw.align_original_reads) {
-		{
-			if (cfg::get().paired_mode) {
-				auto paired_reads = paired_easy_reader(false, 0, false, false,
-						offset_type);
-				auto original_paired_reads = paired_easy_reader(false, 0, false,
-						false, offset_type);
-				typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-						conj_gp.k_value + 1);
-
-				bool print_quality = (
-						cfg::get().sw.print_quality ?
-								*cfg::get().sw.print_quality : false);
-				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph,
-						SequenceMapper> Aligner(conj_gp.k_value, conj_gp.g, mapper,
-						cfg::get().sw.adjust_align, cfg::get().sw.output_map_format,
-						cfg::get().sw.output_broken_pairs, print_quality);
-				Aligner.AlignPairedReads(*original_paired_reads, *paired_reads,
-						OutputFileName);
-			} else {
-				auto single_reads = single_easy_reader(false, false,
-						offset_type);
-				auto original_single_reads = single_easy_reader(false,
-						false, offset_type);
-				typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-						conj_gp.k_value + 1);
-
-				bool print_quality = (
-						cfg::get().sw.print_quality ?
-								*cfg::get().sw.print_quality : false);
-				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph,
-						SequenceMapper> Aligner(conj_gp.k_value, conj_gp.g, mapper,
-						cfg::get().sw.adjust_align, cfg::get().sw.output_map_format,
-						cfg::get().sw.output_broken_pairs, print_quality);
-				Aligner.AlignSingleReads(*original_single_reads, *single_reads,
-						OutputFileName);
-
-			}
-
-		}
-	} else {
-		auto paired_reads = paired_easy_reader(false, 0, false, false, offset_type);
-		auto single_reads = single_easy_reader(false, false, offset_type);
-
-		typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-		SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-				conj_gp.k_value + 1);
-
-		bool print_quality = (
-				cfg::get().sw.print_quality ?
-						*cfg::get().sw.print_quality : false);
-		SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(
-				conj_gp.k_value, conj_gp.g, mapper, cfg::get().sw.adjust_align,
-				cfg::get().sw.output_map_format,
-				cfg::get().sw.output_broken_pairs, print_quality);
-		if (cfg::get().paired_mode){
-			if (cfg::get().sw.align_only_paired)
-				Aligner.AlignPairedReads(*paired_reads,
-						OutputFileName);
-			else
-				Aligner.AlignReads(*paired_reads, *single_reads,
-						OutputFileName);
-		} else {
-			Aligner.AlignSingleReads(*single_reads,
-					OutputFileName);
-
-		}
-	}
-}
 
 void PrintWeightDistribution(Graph &g, const string &file_name, size_t k) {
 	ofstream os(file_name.c_str());
