@@ -501,14 +501,19 @@ class CorrectedRead {
 
       } else {
         int overlap = right_end_offset - chunk.approx_read_offset;
-        if (overlap > static_cast<int>(chunk.consensus.size()))
-          return false;
-
         overlap -= overlapAlignH(consensus.end() - overlap, 
                                  consensus.end(),
                                  chunk.consensus.begin(),
                                  chunk.consensus.begin() + overlap,
                                  5);
+
+        if (overlap > static_cast<int>(chunk.consensus.size()))
+          return false;
+
+        if (overlap < 0) {
+          chunk.approx_read_offset = right_end_offset - overlap;
+          return DoMerge(chunk);
+        }
 
         consensus.insert(consensus.end(),
                          chunk.consensus.begin() + overlap,
