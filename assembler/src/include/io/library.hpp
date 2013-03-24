@@ -4,15 +4,13 @@
 #include "adt/chained_iterator.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
+#include <yaml-cpp/yaml.h>
 
 #include <string>
 #include <vector>
 #include <utility>
 #include <iostream>
-
-namespace YAML {
-class Node;
-};
+#include <fstream>
 
 namespace io {
 
@@ -33,7 +31,7 @@ enum class LibraryOrientation {
   Undefined
 };
 
-class SequencingLibrary {
+class SequencingLibraryBase {
  public:
   class paired_reads_iterator :
       public boost::iterator_facade<paired_reads_iterator,
@@ -64,7 +62,7 @@ class SequencingLibrary {
 
   typedef chained_iterator<std::vector<std::string>::const_iterator> single_reads_iterator;
 
-  SequencingLibrary()
+  SequencingLibraryBase()
       : type_(LibraryType::PairedEnd), orientation_(LibraryOrientation::FR), insert_size_(0) {}
 
   void load(const YAML::Node &node);
@@ -126,34 +124,57 @@ class SequencingLibrary {
   std::vector<std::string> left_paired_reads_;
   std::vector<std::string> right_paired_reads_;
   std::vector<std::string> single_reads_;
-
-  friend class DataSet;
 };
 
-// Just convenient wrapper to "unwrap" the iterators over datasets.
+struct NoData {};
+
+template<class Data = NoData>
+class SequencingLibrary: public SequencingLibraryBase {
+};
+
+// Just convenient wrapper to "unwrap" the iterators over libraries.
+template<class Data = NoData>
 class DataSet {
-  typedef std::vector<SequencingLibrary> LibraryStorage;
+  typedef SequencingLibrary<Data> Library;
+  typedef std::vector<Library> LibraryStorage;
 
  public:
-  typedef LibraryStorage::iterator iterator;
-  typedef LibraryStorage::const_iterator const_iterator;
-  typedef chained_iterator<SequencingLibrary::single_reads_iterator> single_reads_iterator;
-  typedef chained_iterator<SequencingLibrary::paired_reads_iterator> paired_reads_iterator;
+  typedef typename LibraryStorage::iterator iterator;
+  typedef typename LibraryStorage::const_iterator const_iterator;
+  typedef chained_iterator<typename Library::single_reads_iterator> single_reads_iterator;
+  typedef chained_iterator<typename Library::paired_reads_iterator> paired_reads_iterator;
 
   DataSet() {}
   explicit DataSet(const std::string &path) { load(path); }
   DataSet(const YAML::Node &node) { load(node); }
 
-  void load(const std::string &);
-  void load(const YAML::Node &node);
-  void save(const std::string &) const;
+  void load(const std::string &filename) {
+    YAML::Node config = YAML::LoadFile(filename);
+
+    load(config);
+  }
+
+  void save(const std::string &filename) const {
+    std::ofstream ofs(filename.c_str());
+    YAML::Node node;
+
+    for (auto it = library_begin(), et = library_end(); it != et; ++it)
+      node.push_back(*it);
+
+    ofs << node;
+  }
+
+  void load(const YAML::Node &node) {
+    for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
+      libraries_.push_back(it->as<Library>());
+  }
 
   void clear() { libraries_.clear(); }
-  void push_back(const SequencingLibrary &lib) {
+  void push_back(const Library &lib) {
     libraries_.push_back(lib);
   }
-  SequencingLibrary& operator[](size_t n) { return libraries_[n]; }
-  const SequencingLibrary& operator[](size_t n) const { return libraries_[n]; }
+  Library& operator[](size_t n) { return libraries_[n]; }
+  const Library& operator[](size_t n) const { return libraries_[n]; }
   iterator library_begin() { return libraries_.begin(); }
   const_iterator library_begin() const { return libraries_.cbegin(); }
   const_iterator library_cbegin() const { return libraries_.cbegin(); }
@@ -207,7 +228,15 @@ class DataSet {
   LibraryStorage libraries_;
 };
 
-
 };
+
+namespace YAML {
+template<>
+struct convert<io::SequencingLibrary<> > {
+  static Node encode(const io::SequencingLibrary<>& rhs);
+  static bool decode(const Node& node, io::SequencingLibrary<>& rhs);
+};
+}
+
 
 #endif // __IO_LIBRARY_HPP__

@@ -248,11 +248,11 @@ hint_t HammerTools::CorrectAllReads() {
 
   INFO("Starting read correction in " << correct_nthreads << " threads.");
 
-  const io::DataSet &dataset = cfg::get().dataset;
-  io::DataSet outdataset;
+  const io::DataSet<> &dataset = cfg::get().dataset;
+  io::DataSet<> outdataset;
   for (auto it = dataset.library_begin(), et = dataset.library_end(); it != et; ++it) {
-    const io::SequencingLibrary &lib = *it;
-    io::SequencingLibrary outlib = lib;
+    const auto& lib = *it;
+    auto outlib = lib;
     outlib.clear();
 
     for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I) {

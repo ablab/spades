@@ -227,7 +227,7 @@ int main(int argc, char * argv[]) {
         INFO("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
         for (unsigned expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no) {
           Expander expander(*Globals::kmer_data);
-          const io::DataSet &dataset = cfg::get().dataset;
+          const io::DataSet<> &dataset = cfg::get().dataset;
           for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
             ireadstream irs(*I, cfg::get().input_qvoffset);
             hammer::ReadProcessor rp(expand_nthreads);

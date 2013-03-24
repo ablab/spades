@@ -4,33 +4,13 @@
 
 #include <string>
 #include <iostream>
-#include <fstream>
 
 using namespace io;
 
 namespace YAML {
 template<>
-struct convert<DataSet> {
-  static Node encode(const DataSet& rhs) {
-    Node node;
-    for (auto it = rhs.library_begin(), et = rhs.library_end(); it != et; ++it)
-      node.push_back(*it);
-
-    return node;
-  }
-
-  static bool decode(const Node& node, DataSet& rhs) {
-    if (!node.IsSequence())
-      return false;
-
-    rhs.load(node);
-    return true;
-  }
-};
-
-template<>
-struct convert<SequencingLibrary> {
-  static Node encode(const SequencingLibrary& rhs) {
+struct convert<SequencingLibraryBase> {
+  static Node encode(const SequencingLibraryBase& rhs) {
     Node node;
 
     node["orientation"] = rhs.orientation();
@@ -48,7 +28,7 @@ struct convert<SequencingLibrary> {
     return node;
   }
 
-  static bool decode(const Node& node, SequencingLibrary& rhs) {
+  static bool decode(const Node& node, SequencingLibraryBase& rhs) {
     rhs.load(node);
     return true;
   }
@@ -118,20 +98,19 @@ struct convert<LibraryType> {
   }
 
 };
+
+Node convert<io::SequencingLibrary<> >::encode(const io::SequencingLibrary<>& rhs) {
+  return convert<io::SequencingLibraryBase>::encode(rhs);
 }
 
-void DataSet::load(const std::string &filename) {
-  YAML::Node config = YAML::LoadFile(filename);
-
-  *this = config.as<DataSet>();
+bool convert<io::SequencingLibrary<> >::decode(const Node& node, io::SequencingLibrary<>& rhs) {
+  rhs.load(node);
+  return true;
 }
 
-void DataSet::save(const std::string &filename) const {
-  std::ofstream ofs(filename.c_str());
-  ofs << YAML::Node(*this);
-}
+} // namespace YAML
 
-void SequencingLibrary::load(const YAML::Node &node) {
+void SequencingLibraryBase::load(const YAML::Node &node) {
   orientation_ = node["orientation"].as<io::LibraryOrientation>(LibraryOrientation::Undefined);
   type_ = node["type"].as<LibraryType>();
 
@@ -159,9 +138,4 @@ void SequencingLibrary::load(const YAML::Node &node) {
       std::cerr << node << std::endl;
       throw("Unsupported library type");
   }
-}
-
-void DataSet::load(const YAML::Node &node) {
-  for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
-    libraries_.push_back(it->as<SequencingLibrary>());
 }

@@ -298,7 +298,7 @@ struct debruijn_config {
   };
 
   struct dataset {
-    io::DataSet dataset;
+    io::DataSet<> dataset;
     boost::optional<size_t> RL;
     boost::optional<double> IS;
     boost::optional<double> is_var;
