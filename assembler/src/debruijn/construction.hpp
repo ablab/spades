@@ -33,20 +33,18 @@ namespace debruijn_graph {
 
 template<class Read>
 void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
-    conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
+                     conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
   INFO("STAGE == Constructing Graph");
   size_t rl = ConstructGraphWithCoverage<Read>(cfg::get().K, streams, gp.g,
-      gp.index, contigs_stream);
-  if (!cfg::get().ds.RL.is_initialized()) {
+                                               gp.index, contigs_stream);
+  if (!cfg::get().ds.RL()) {
     INFO("Figured out: read length = " << rl);
-    cfg::get_writable().ds.RL = rl;
-  } else if (*cfg::get().ds.RL != rl) {
-    WARN(
-        "In datasets.info, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
-  }
+    cfg::get_writable().ds.set_RL(rl);
+  } else if (cfg::get().ds.RL() != rl)
+    WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL() << ", not " << rl);
 }
 
-string estimated_param_filename(const string& prefix) {
+std::string estimated_param_filename(const string& prefix) {
   return prefix + "_est_params.info";
 }
 
@@ -54,28 +52,40 @@ void load_estimated_params(const string& prefix) {
   std::string filename = estimated_param_filename(prefix);
   //todo think of better architecture
   if (FileExists(filename)) {
-    load_param(filename, "RL", cfg::get_writable().ds.RL);
-    load_param(filename, "IS", cfg::get_writable().ds.IS);
-    load_param(filename, "is_var", cfg::get_writable().ds.is_var);
-    load_param_map(filename, "perc", cfg::get_writable().ds.percentiles);
-    load_param(filename, "avg_coverage", cfg::get_writable().ds.avg_coverage);
-    load_param_map(filename, "hist", cfg::get_writable().ds.hist);
-    load_param(filename, "median", cfg::get_writable().ds.median);
-    load_param(filename, "mad", cfg::get_writable().ds.mad);
-    load_param_map(filename, "hist", cfg::get_writable().ds.hist);
+    boost::optional<size_t> val1; boost::optional<double> val2;
+    load_param(filename, "RL", val1);
+    if (val1)
+      cfg::get_writable().ds.set_RL(*val1);
+    load_param(filename, "IS", val1);
+    if (val1)
+      cfg::get_writable().ds.set_IS(*val1);
+    load_param(filename, "is_var", val2);
+    if (val2)
+      cfg::get_writable().ds.set_is_var(*val2);
+    load_param(filename, "avg_coverage", val2);
+    if (val2)
+      cfg::get_writable().ds.set_avg_coverage(*val2);
+    load_param(filename, "median", val2);
+    if (val2)
+      cfg::get_writable().ds.set_median(*val2);
+    load_param(filename, "mad", val2);
+    if (val2)
+      cfg::get_writable().ds.set_mad(*val2);
+    std::map<int, size_t> val3;
+    load_param_map(filename, "hist", val3);
+    cfg::get_writable().ds.set_hist(val3);
   }
 }
 
 void write_estimated_params(const string& prefix) {
   std::string filename = estimated_param_filename(prefix);
-  write_param(filename, "RL", cfg::get().ds.RL);
-  write_param(filename, "IS", cfg::get().ds.IS);
-  write_param(filename, "is_var", cfg::get().ds.is_var);
-  write_param_map(filename, "perc", cfg::get().ds.percentiles);
-  write_param(filename, "avg_coverage", cfg::get().ds.avg_coverage);
-  write_param(filename, "median", cfg::get().ds.median);
-  write_param(filename, "mad", cfg::get().ds.mad);
-  write_param_map(filename, "hist", cfg::get().ds.hist);
+  write_param(filename, "RL", cfg::get().ds.RL());
+  write_param(filename, "IS", cfg::get().ds.IS());
+  write_param(filename, "is_var", cfg::get().ds.is_var());
+  write_param(filename, "avg_coverage", cfg::get().ds.avg_coverage());
+  write_param(filename, "median", cfg::get().ds.median());
+  write_param(filename, "mad", cfg::get().ds.mad());
+  write_param_map(filename, "hist", cfg::get().ds.hist());
 }
 
 void return_estimated_params() {
