@@ -24,7 +24,7 @@ std::auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc,
                                                    bool revert_second = true,
                                                    io::OffsetType offset_type = io::PhredOffset) {
   std::vector<PairedReadStream*> streams;
-  const io::DataSet &dataset = cfg::get().ds.dataset;
+  const auto &dataset = cfg::get().ds.dataset;
   // FIXME: Should we use only first library?
   for (auto it = dataset.paired_begin(); it != dataset.paired_end(); ++it) {
     io::PairedEasyReader* reader = new io::PairedEasyReader(*it, followed_by_rc, insert_size, change_read_order, revert_second, offset_type);
@@ -37,7 +37,7 @@ std::auto_ptr<ReadStream> single_easy_reader(bool followed_by_rc,
                                              bool including_paired_reads,
                                              io::OffsetType offset_type = io::PhredOffset) {
   std::vector<ReadStream*> streams;
-  const io::DataSet &dataset = cfg::get().ds.dataset;
+  const auto &dataset = cfg::get().ds.dataset;
   // FIXME: Should we use only first library?
   if (including_paired_reads) {
     for (auto it = dataset.reads_begin(); it != dataset.reads_end(); ++it) {

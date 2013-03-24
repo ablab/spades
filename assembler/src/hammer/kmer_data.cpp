@@ -150,7 +150,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
 
   size_t n = 15;
   BufferFiller filler(tmp_entries, cell_size, *this);
-  const io::DataSet &dataset = cfg::get().dataset;
+  const auto& dataset = cfg::get().dataset;
   for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
     ireadstream irs(*I, cfg::get().input_qvoffset);
     while (!irs.eof()) {
@@ -252,7 +252,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   data.data_.resize(sz);
 
   KMerDataFiller filler(data);
-  const io::DataSet &dataset = cfg::get().dataset;
+  const auto& dataset = cfg::get().dataset;
   for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
     ireadstream irs(*I, cfg::get().input_qvoffset);
     hammer::ReadProcessor rp(omp_get_max_threads());

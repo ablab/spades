@@ -27,7 +27,7 @@
 
 // struct for debruijn project's configuration file
 struct hammer_config {
-  io::DataSet dataset;
+  io::DataSet<> dataset;
 
   std::string input_solid_kmers;
   std::string input_working_dir;
