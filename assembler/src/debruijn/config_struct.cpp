@@ -8,6 +8,23 @@
 #include <string>
 #include <vector>
 
+namespace YAML {
+template<>
+struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> > {
+  static Node encode(const io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &rhs);
+  static bool decode(const Node& node, io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &rhs) {
+    // First, load the "common stuff"
+    rhs.load(node);
+
+    // Now load the remaining stuff
+    rhs.data().read_length = node["RL"].as<size_t>(0);
+    rhs.data().mean_insert_size = node["IS"].as<size_t>(0);
+
+    return true;
+  }
+};
+}
+
 namespace debruijn_graph {
 static std::string MakeLaunchTimeDirName() {
   time_t rawtime;
@@ -214,12 +231,8 @@ void load(debruijn_config::dataset& ds,
 
   std::string reads;
   load(reads, pt, "reads");
-  ds.dataset.load(reads);
+  ds.reads.load(reads);
   load(ds.single_cell, pt, "single_cell");
-
-  ds.RL = pt.get_optional<size_t>("RL");
-  ds.is_var = pt.get_optional<size_t>("is_var");
-  ds.IS = pt.get_optional<size_t>("IS");
 
   ds.reference_genome_filename = "";
   boost::optional<std::string> refgen =
@@ -229,8 +242,8 @@ void load(debruijn_config::dataset& ds,
   }
 }
 
- void load_reference_genome(debruijn_config::dataset& ds,
-                            std::string input_dir) {
+void load_reference_genome(debruijn_config::dataset& ds,
+                           std::string input_dir) {
   if (ds.reference_genome_filename == "") {
     ds.reference_genome = Sequence();
     return;
@@ -462,5 +475,3 @@ void load(debruijn_config& cfg, const std::string &filename) {
 }
 
 };
-
-

@@ -195,79 +195,70 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& libs
 
 
 void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index,
-        const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
+                        const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
 
-    PairedInfoLibraries libs;
-    libs.push_back(new PairedInfoLibrary(k, gp.g, *cfg::get().ds.RL, *cfg::get().ds.IS, *cfg::get().ds.is_var, paired_index));
+  PairedInfoLibraries libs;
+  libs.push_back(new PairedInfoLibrary(k, gp.g, cfg::get().ds.RL(), cfg::get().ds.IS(), cfg::get().ds.is_var(), paired_index));
 
-    PairedInfoLibraries scaf_libs;
-
-    resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
+  PairedInfoLibraries scaf_libs;
+  resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
 }
 
 
 
 void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index, PairedInfoIndexT<Graph>& scaffolder_index,
         const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
+  PairedInfoLibraries libs;
+  libs.push_back(new PairedInfoLibrary(k, gp.g, cfg::get().ds.RL(), cfg::get().ds.IS(), cfg::get().ds.is_var(), paired_index));
 
+  PairedInfoLibraries scaf_libs;
+  scaf_libs.push_back(new PairedInfoLibrary(k, gp.g, cfg::get().ds.RL(), cfg::get().ds.IS(), cfg::get().ds.is_var(), scaffolder_index));
 
-    PairedInfoLibraries libs;
-    libs.push_back(new PairedInfoLibrary(k, gp.g, *cfg::get().ds.RL, *cfg::get().ds.IS, *cfg::get().ds.is_var, paired_index));
-
-    PairedInfoLibraries scaf_libs;
-    scaf_libs.push_back(new PairedInfoLibrary(k, gp.g, *cfg::get().ds.RL, *cfg::get().ds.IS, *cfg::get().ds.is_var, scaffolder_index));
-
-    resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
+  resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
 }
 
 void resolve_repeats_pe_wj(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index,
-        PairedInfoIndexT<Graph>& jpi,
-        const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
+                           PairedInfoIndexT<Graph>& jpi,
+                           const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
+  PairedInfoLibraries libs;
+  libs.push_back(new PairedInfoLibrary(k, gp.g, cfg::get().ds.RL(), cfg::get().ds.IS(), cfg::get().ds.is_var(), paired_index));
+  libs.push_back(new PairedInfoLibrary(k, gp.g, 150, 7495, 1290, jpi));
 
-    PairedInfoLibraries libs;
-    libs.push_back(new PairedInfoLibrary(k, gp.g, *cfg::get().ds.RL, *cfg::get().ds.IS, *cfg::get().ds.is_var, paired_index));
-    libs.push_back(new PairedInfoLibrary(k, gp.g, 150, 7495, 1290, jpi));
-
-    PairedInfoLibraries scaf_libs;
-
-    resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
+  PairedInfoLibraries scaf_libs;
+  resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
 }
 
 void resolve_repeats_pe_wj(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index,
-        PairedInfoIndexT<Graph>& jpi,
-        PairedInfoIndexT<Graph>& scaffolder_index,
-        PairedInfoIndexT<Graph>& jspi,
-        const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
+                           PairedInfoIndexT<Graph>& jpi,
+                           PairedInfoIndexT<Graph>& scaffolder_index,
+                           PairedInfoIndexT<Graph>& jspi,
+                           const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
+  PairedInfoLibraries libs;
+  libs.push_back(new PairedInfoLibrary(k, gp.g, cfg::get().ds.RL(), cfg::get().ds.IS(), cfg::get().ds.is_var(), paired_index));
+  libs.push_back(new PairedInfoLibrary(k, gp.g, 150, 7495, 1290, jpi));
 
-    PairedInfoLibraries libs;
-    libs.push_back(new PairedInfoLibrary(k, gp.g, *cfg::get().ds.RL, *cfg::get().ds.IS, *cfg::get().ds.is_var, paired_index));
-    libs.push_back(new PairedInfoLibrary(k, gp.g, 150, 7495, 1290, jpi));
+  PairedInfoLibraries scaf_libs;
+  scaf_libs.push_back(new PairedInfoLibrary(k, gp.g, cfg::get().ds.RL(), cfg::get().ds.IS(), cfg::get().ds.is_var(), scaffolder_index));
+  libs.push_back(new PairedInfoLibrary(k, gp.g, 150, 7495, 1290, jspi));
 
-    PairedInfoLibraries scaf_libs;
-    scaf_libs.push_back(new PairedInfoLibrary(k, gp.g, *cfg::get().ds.RL, *cfg::get().ds.IS, *cfg::get().ds.is_var, scaffolder_index));
-    libs.push_back(new PairedInfoLibrary(k, gp.g, 150, 7495, 1290, jspi));
-
-    resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
+  resolve_repeats_pe(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
 }
-
-
-
 
 void scaffold_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& scafolding_libs,
-        const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
-    make_dir(output_dir);
+                 const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
+  make_dir(output_dir);
 
-    std::string etcDir = output_dir + "path_extend/";
-    if (cfg::get().pe_params.debug_output) {
-        make_dir(etcDir);
-    }
+  std::string etcDir = output_dir + "path_extend/";
+  if (cfg::get().pe_params.debug_output) {
+    make_dir(etcDir);
+  }
 
-    if (!cfg::get().run_mode) {
-        cfg::get_writable().pe_params.output.DisableAll();
-        cfg::get_writable().pe_params.viz.DisableAll();
-    }
+  if (!cfg::get().run_mode) {
+    cfg::get_writable().pe_params.output.DisableAll();
+    cfg::get_writable().pe_params.viz.DisableAll();
+  }
 
-    INFO("Path extend scaffolding tool started");
+  INFO("Path extend scaffolding tool started");
 
     PathInfoWriter path_writer;
     PathVisualizer visualizer(k);
@@ -355,13 +346,12 @@ void scaffold_pe(size_t k, conj_graph_pack& gp, PairedInfoLibraries& scafolding_
 
 void scaffold_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& scaffolder_index,
         const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
+  PairedInfoLibraries libs;
 
-    PairedInfoLibraries libs;
+  PairedInfoLibraries scaf_libs;
+  scaf_libs.push_back(new PairedInfoLibrary(k, gp.g, cfg::get().ds.RL(), cfg::get().ds.IS(), cfg::get().ds.is_var(), scaffolder_index));
 
-    PairedInfoLibraries scaf_libs;
-    scaf_libs.push_back(new PairedInfoLibrary(k, gp.g, *cfg::get().ds.RL, *cfg::get().ds.IS, *cfg::get().ds.is_var, scaffolder_index));
-
-    scaffold_pe(k, gp, scaf_libs, output_dir, contigs_name, p);
+  scaffold_pe(k, gp, scaf_libs, output_dir, contigs_name, p);
 }
 
 } /* path_extend */

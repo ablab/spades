@@ -130,6 +130,16 @@ struct NoData {};
 
 template<class Data = NoData>
 class SequencingLibrary: public SequencingLibraryBase {
+ public:
+  const Data& data() const {
+    return data_;
+  }
+  Data& data() {
+    return data_;
+  }
+
+ private:
+  Data data_;
 };
 
 // Just convenient wrapper to "unwrap" the iterators over libraries.

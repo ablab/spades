@@ -40,9 +40,9 @@ namespace debruijn_graph {
         if (!success)
           return;
 
-        auto paired_streams = paired_binary_readers(true, *cfg::get().ds.IS);
+        MultiStreamType paired_streams = paired_binary_readers(true, cfg::get().ds.IS());
         FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
-            gp.kmer_mapper, paired_index, *paired_streams, gp.k_value);
+                                           gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
       } else {
         auto_ptr<PairedReadStream> stream = paired_easy_reader(false, 0);
         SingleStreamType streams(stream.get());
@@ -50,11 +50,11 @@ namespace debruijn_graph {
         if (!success)
           return;
 
-        auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(true, *cfg::get().ds.IS);
+        auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(true, cfg::get().ds.IS());
         SingleStreamType paired_streams(paired_stream.get());
 
         FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
-            gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
+                                           gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
       }
     }
   }

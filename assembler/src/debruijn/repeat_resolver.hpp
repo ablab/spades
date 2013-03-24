@@ -642,10 +642,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 
 	double cutting_coverage = 0;
 
-	VERIFY(cfg::get().ds.avg_coverage);
-	cutting_coverage = *cfg::get().ds.avg_coverage
-			* cfg::get().rr.inresolve_cutoff_proportion / 2;
-
+	VERIFY(cfg::get().ds.avg_coverage());
+	cutting_coverage = cfg::get().ds.avg_coverage() * cfg::get().rr.inresolve_cutoff_proportion / 2;
 
 	for (int i = 0; i < k; i++) {
 		vector<EdgeId> split_edge;
@@ -930,7 +928,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	vector<details::VertexCompositId<Graph>> TemporaryOrderVect;
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
-	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, *cfg::get().ds.IS);
+	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, cfg::get().ds.IS());
 
 	vector<VertexId> comps;
 	DEBUG("comp filling started");
@@ -978,7 +976,7 @@ template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents() {
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
-	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, *cfg::get().ds.IS);
+	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, cfg::get().ds.IS());
 
 	vector<VertexId> comps;
 	DEBUG("comp filling started");
@@ -1216,8 +1214,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 						EdgeInfo ei(tmp[j], dir, right_id, tmp[j].d() - dif_d);
 
-						int trusted_dist = *cfg::get().ds.IS
-								- *cfg::get().ds.RL;
+						int trusted_dist = cfg::get().ds.IS() - cfg::get().ds.RL();
 						if (cheating_mode == 2
 								&& ((tmp[j].d() - dif_d
 										+ old_graph.length(right_id)

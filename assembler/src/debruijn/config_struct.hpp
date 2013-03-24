@@ -297,17 +297,34 @@ struct debruijn_config {
     double derivative_threshold;
   };
 
-  struct dataset {
-    io::DataSet<> dataset;
-    boost::optional<size_t> RL;
-    boost::optional<double> IS;
-    boost::optional<double> is_var;
-    boost::optional<double> median;
-    boost::optional<double> mad;
-    std::map<int, size_t> hist;
+  struct DataSetData {
+    size_t read_length;
+    double mean_insert_size;
+    double insert_size_deviation;
+    double median_insert_size;
+    double insert_size_mad;
+    std::map<int, size_t> insert_size_distribution;
+    double average_coverage;
+  };
 
-    std::map<size_t, size_t> percentiles;
-    boost::optional<double> avg_coverage;
+  struct dataset {
+    io::DataSet<DataSetData> reads;
+
+    size_t RL() const { return reads[0].data().read_length; }
+    void set_RL(size_t RL) { reads[0].data().read_length = RL; }
+    size_t IS() const { return reads[0].data().mean_insert_size; }
+    void set_IS(size_t IS) { reads[0].data().mean_insert_size = IS; }
+    double is_var() const { return reads[0].data().insert_size_deviation; }
+    void set_is_var(double is_var) { reads[0].data().insert_size_deviation = is_var; }
+    double avg_coverage() const { return reads[0].data().average_coverage; }
+    void set_avg_coverage(double avg_coverage) { reads[0].data().average_coverage = avg_coverage; }
+    double median() const { return reads[0].data().median_insert_size; }
+    void set_median(double median) { reads[0].data().median_insert_size = median; }
+    double mad() const { return reads[0].data().insert_size_mad; }
+    void set_mad(double mad) { reads[0].data().insert_size_mad = mad; }
+    const std::map<int, size_t>& hist() const { return reads[0].data().insert_size_distribution; }
+    void set_hist(const std::map<int, size_t>& hist) {  reads[0].data().insert_size_distribution = hist; }
+
     bool single_cell;
     std::string reference_genome_filename;
 

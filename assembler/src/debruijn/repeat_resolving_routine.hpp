@@ -355,14 +355,12 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp,
 						labels_after.resolvedPositions(*iter,
 								mismatches[i].position);
 				double cutoff = 0.5;
-				if ((origin_gp.g.length(*iter) > *cfg::get().ds.IS
-						&& multiplicity > 1)
-						|| (distance_to_repeats_end[*iter].first
-								+ mismatches[i].position > *cfg::get().ds.IS
+				if ((origin_gp.g.length(*iter) > cfg::get().ds.IS()	&& multiplicity > 1) ||
+            (distance_to_repeats_end[*iter].first + mismatches[i].position > cfg::get().ds.IS()
 								&& distance_to_repeats_end[*iter].second
 										+ origin_gp.g.length(*iter)
 										- mismatches[i].position
-										> *cfg::get().ds.IS))
+             > cfg::get().ds.IS()))
 					cutoff /= (4); // /cfg::get().mismatch_ratio);
 				else {
 					cutoff *= 1.5; //* cfg::get().mismatch_ratio;
@@ -370,11 +368,11 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp,
 				bool cfg_corrector_on = true;
 				if (cfg_corrector_on
 						&& !(distance_to_repeats_end[*iter].first
-								+ mismatches[i].position > *cfg::get().ds.IS
-								&& distance_to_repeats_end[*iter].second
-										+ origin_gp.g.length(*iter)
-										- mismatches[i].position
-										> *cfg::get().ds.IS)) {
+                 + mismatches[i].position > cfg::get().ds.IS()
+                 && distance_to_repeats_end[*iter].second
+                 + origin_gp.g.length(*iter)
+                 - mismatches[i].position
+                 > cfg::get().ds.IS())) {
 					not_masked++;
 					origin_gp.mismatch_masker.mismatch_map[*iter][i].ratio = 0;
 					continue;
@@ -531,7 +529,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	for (size_t i = 0; i < iters; ++i) {
 		INFO("Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
 //		ClipTipsForResolver(resolved_gp.g);
-		ClipTips(resolved_gp.g, cfg::get().simp.tc, *cfg::get().ds.RL, /*max_coverage*/0.);
+		ClipTips(resolved_gp.g, cfg::get().simp.tc, cfg::get().ds.RL(), /*max_coverage*/0.);
 
 		//PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 		//resolved_gp.g);
@@ -653,8 +651,7 @@ void component_statistics(graph_pack & conj_gp, int component_id,
 	for (auto iter = conj_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		typename graph_pack::graph_t::VertexId start = conj_gp.g.EdgeStart(*iter);
 		typename graph_pack::graph_t::VertexId end = conj_gp.g.EdgeEnd(*iter);
-		if (conj_gp.g.length(*iter) > *cfg::get().ds.IS + 100) {
-
+		if (conj_gp.g.length(*iter) > cfg::get().ds.IS() + 100) {
 			if (conj_gp.g.IsDeadStart(
 					start) /*&& conj_gp.g.CheckUniqueOutgoingEdge(start)*/) {
 				incoming_edges.insert(*iter);
@@ -798,7 +795,7 @@ void prepare_jump_index(const Graph& g, const PairedIndexT& raw_jump_index,
 	PairedIndexT clustered_jump_index(g);
 	estimator.Estimate(clustered_jump_index);
 
-	JumpingNormalizerFunction<Graph> nf(g, *cfg::get().ds.RL, 500);
+	JumpingNormalizerFunction<Graph> nf(g, cfg::get().ds.RL(), 500);
 	PairedInfoNormalizer<Graph> normalizer(nf);
 	PairedIndexT normalized_jump_index(g);
 	normalizer.FillNormalizedIndex(clustered_jump_index, normalized_jump_index);
@@ -809,17 +806,16 @@ void prepare_jump_index(const Graph& g, const PairedIndexT& raw_jump_index,
 
 void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 		PairedIndexT& clustered_index) {
-	double is_var = *cfg::get().ds.is_var;
+	double is_var = cfg::get().ds.is_var();
 	size_t delta = size_t(is_var);
-	size_t linkage_distance = size_t(
-			cfg::get().de.linkage_distance_coeff * is_var);
-	GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS,
-			*cfg::get().ds.RL, delta);
+	size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
+	GraphDistanceFinder<Graph> dist_finder(gp.g,
+                                         cfg::get().ds.IS(), cfg::get().ds.RL(), delta);
 	size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 	boost::function<double(int)> weight_function;
 	INFO("Retaining insert size distribution for it");
-	map<int, size_t> insert_size_hist = cfg::get().ds.hist;
-	WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
+	map<int, size_t> insert_size_hist = cfg::get().ds.hist();
+	WeightDEWrapper wrapper(insert_size_hist, cfg::get().ds.IS());
 	INFO("Weight Wrapper Done");
 	weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
 
@@ -828,12 +824,12 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 		normalizing_f = &TrivialWeightNormalization<Graph>;
 	} else {
 		//todo reduce number of constructor params
-		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-				*cfg::get().ds.IS, *cfg::get().ds.is_var, *cfg::get().ds.RL,
-				gp.k_value, *cfg::get().ds.avg_coverage);
-		normalizing_f = boost::bind(
-				&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
-				weight_normalizer, _1, _2, _3);
+		PairedInfoWeightNormalizer<Graph>
+        weight_normalizer(gp.g,
+                          cfg::get().ds.IS(), cfg::get().ds.is_var(), cfg::get().ds.RL(),
+                          gp.k_value, cfg::get().ds.avg_coverage());
+		normalizing_f = boost::bind(&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
+                                weight_normalizer, _1, _2, _3);
 	}
 	PairedInfoNormalizer<Graph> normalizer(normalizing_f);
 	INFO("Normalizer Done");
@@ -1029,7 +1025,7 @@ void resolve_repeats() {
 				make_dir(cfg::get().output_dir + "graph_components" + "/");
 				number_of_components = PrintGraphComponents(
 						cfg::get().output_dir + "graph_components/graph_",
-						conj_gp, *cfg::get().ds.IS + 100, clustered_index);
+						conj_gp, cfg::get().ds.IS() + 100, clustered_index);
 				INFO("number of components " << number_of_components);
 			}
 

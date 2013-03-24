@@ -80,7 +80,7 @@ void simplify_graph(conj_graph_pack& gp) {
 	/*, etalon_paired_index*/);
 
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
-	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
+  cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
 
 	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
 
@@ -103,11 +103,11 @@ void simplify_graph(conj_graph_pack& gp) {
 }
 
 void load_simplification(conj_graph_pack& gp, path::files_t* used_files) {
-    string p = path::append_path(cfg::get().load_from, "simplified_graph");
+  std::string p = path::append_path(cfg::get().load_from, "simplified_graph");
 	used_files->push_back(p);
 
-    ScanGraphPack(p, gp);
-    load_estimated_params(p);
+  ScanGraphPack(p, gp);
+  load_estimated_params(p);
 }
 
 void save_simplification(conj_graph_pack& gp) {

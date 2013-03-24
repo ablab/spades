@@ -148,8 +148,7 @@ inline void load_param(const std::string& filename, const std::string& key,
                        boost::optional<T>& value) {
   boost::property_tree::ptree pt;
   boost::property_tree::read_info(filename, pt);
-  boost::optional<T> loaded_value = pt.get_optional<T>(key);
-  value = loaded_value;
+  value = pt.get_optional<T>(key);
 }
 
 template<class T>
@@ -159,6 +158,13 @@ inline void write_param(const std::string& filename, const std::string& key,
     std::ofstream params_stream(filename.c_str(), std::ios_base::app);
     params_stream << key << "\t" << value << std::endl;
   }
+}
+
+template<class T>
+inline void write_param(const std::string& filename, const std::string& key,
+                        const T &value) {
+  std::ofstream params_stream(filename.c_str(), std::ios_base::app);
+  params_stream << key << "\t" << value << std::endl;
 }
 
 template<class K, class V>

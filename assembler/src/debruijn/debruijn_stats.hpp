@@ -148,32 +148,35 @@ void CountPairedInfoStats(const Graph& g,
 	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-	UniquePathStat<Graph>(g, filtered_index, *cfg::get().ds.IS,	*cfg::get().ds.RL, 0.1 * (*cfg::get().ds.IS)).Count();
+  const auto& ds = cfg::get().ds;
+	UniquePathStat<Graph>(g, filtered_index,
+                        ds.IS(),
+                        ds.RL(),
+                        0.1 * ds.IS()).Count();
 	UniqueDistanceStat<Graph>(etalon_index).Count();
 	INFO("Paired info stats counted");
 }
 
 // leave only those pairs, which edges have no path in the graph between them
 void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index,
-                            const PairedIndexT& index,
-                            const conj_graph_pack &gp,
-                            const GraphDistanceFinder<Graph>& dist_finder)
-{
-    for (auto it = index.begin(); it != index.end(); ++it) {
-    const set<Point>& histogram = *it;
+                                  const PairedIndexT& index,
+                                  const conj_graph_pack &gp,
+                                  const GraphDistanceFinder<Graph>& dist_finder) {
+  for (auto it = index.begin(); it != index.end(); ++it) {
+    const std::set<Point>& histogram = *it;
     EdgeId e1 = it.first();
     EdgeId e2 = it.second();
-        if (gp.g.OutgoingEdgeCount(gp.g.EdgeEnd(e1)) == 0 && gp.g.IncomingEdgeCount(gp.g.EdgeEnd(e1)) == 1 &&
-            gp.g.IncomingEdgeCount(gp.g.EdgeStart(e2)) == 0 && gp.g.OutgoingEdgeCount(gp.g.EdgeStart(e2)) == 1)     {
+    if (gp.g.OutgoingEdgeCount(gp.g.EdgeEnd(e1)) == 0 && gp.g.IncomingEdgeCount(gp.g.EdgeEnd(e1)) == 1 &&
+        gp.g.IncomingEdgeCount(gp.g.EdgeStart(e2)) == 0 && gp.g.OutgoingEdgeCount(gp.g.EdgeStart(e2)) == 1)     {
       vector<size_t> dists = dist_finder.GetGraphDistancesLengths(e1, e2);
       if (dists.size() == 0)
         for (auto point_iter = histogram.begin(); point_iter != histogram.end(); ++point_iter)
           if (math::gr(point_iter->d, 0.)) {
             scaf_clustered_index.AddPairInfo(it.first(), it.second(),
                                              point_iter->d, point_iter->weight, 20.);
-            }
-        }
+          }
     }
+  }
 }
 
 void FillAndCorrectEtalonPairedInfo(
@@ -341,20 +344,22 @@ template<class Graph>
 void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids,
     const PairedInfoIndexT<Graph>& paired_index, const PairedInfoIndexT<Graph>& clustered_index) {
   PairedIndexT all_paths(g);
-    GetAllDistances<Graph>(
-            paired_index,
-            all_paths,
-            GraphDistanceFinder<Graph>(g, *cfg::get().ds.IS, *cfg::get().ds.RL,
-            size_t(*cfg::get().ds.is_var)));
+  const auto& ds = cfg::get().ds;
+  GetAllDistances<Graph>(paired_index,
+                         all_paths,
+                         GraphDistanceFinder<Graph>(g,
+                                                    ds.IS(),
+                                                    ds.RL(),
+                                                    size_t(ds.is_var())));
 
-	string dir_name = cfg::get().output_dir + "estimation_qual/";
+  std::string dir_name = cfg::get().output_dir + "estimation_qual/";
 	make_dir(dir_name);
 
 	typename PrinterTraits<Graph>::Printer printer(g, int_ids);
-    printer.savePaired(dir_name + "paths", all_paths);
+  printer.savePaired(dir_name + "paths", all_paths);
 
-    //PairedIndexT& all_paths_2(g);
-    //GetAllDistances<Graph>(g,
+  //PairedIndexT& all_paths_2(g);
+  //GetAllDistances<Graph>(g,
             //paired_index, clustered_index,
             //int_ids,
             //all_paths_2,
@@ -366,11 +371,13 @@ void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids,
 void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
     const PairedInfoIndexT<Graph> &paired_index,
     const PairedInfoIndexT<Graph> &clustered_index) {
-
   PairedIndexT etalon_index(gp.g);
 
-    FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
-			*cfg::get().ds.IS, *cfg::get().ds.RL, *cfg::get().ds.is_var, true);
+  const auto& ds = cfg::get().ds;
+  FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
+                                 ds.IS(),
+                                 ds.RL(),
+                                 ds.is_var(), true);
 
 	CountAndSaveAllPaths(gp.g, gp.int_ids, paired_index, clustered_index);
 
@@ -381,20 +388,24 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
   //estimation_stat.Count();
   //estimation_stat.SaveStats(cfg::get().output_dir + "estimation_qual/");
 
-	INFO("Counting overall cluster stat")
+	INFO("Counting overall cluster stat");
 	ClusterStat<Graph>(clustered_index).Count();
-	INFO("Overall cluster stat")
+	INFO("Overall cluster stat");
 
-    if (cfg::get().paired_info_scaffolder) {
+  if (cfg::get().paired_info_scaffolder) {
 		ConjugateDataPrinter<Graph> data_printer(gp.g, gp.int_ids);
-        INFO("Generating the statistics of pair info for scaffolding");
-        GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, *cfg::get().ds.is_var);
-        PairedIndexT scaf_clustered_index(gp.g);
-        FilterIndexWithExistingPaths(scaf_clustered_index, clustered_index, gp, dist_finder);
-        data_printer.savePaired(
-                cfg::get().output_dir + "scaf_clustered",
-                scaf_clustered_index);
-    }
+    INFO("Generating the statistics of pair info for scaffolding");
+    PairedIndexT scaf_clustered_index(gp.g);
+    const auto& ds = cfg::get().ds;
+    FilterIndexWithExistingPaths(scaf_clustered_index,
+                                 clustered_index, gp,
+                                 GraphDistanceFinder<Graph>(gp.g,
+                                                            ds.IS(),
+                                                            ds.RL(),
+                                                            size_t(ds.is_var())));
+    data_printer.savePaired(cfg::get().output_dir + "scaf_clustered",
+                            scaf_clustered_index);
+  }
   //  PairedInfoIndexT<Graph> etalon_clustered_index;
 	//	DistanceEstimator<Graph> estimator(g, etalon_index, insert_size,
 	//			max_read_length, cfg::get().de.delta,
@@ -411,9 +422,9 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 }
 
 void WriteToDotFile(const Graph &g,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
-		string graph_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
-		Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
+                    const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
+                    string graph_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
+                    Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
 	omnigraph::WritePaired(g, labeler, file_name, graph_name, path1, path2);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
@@ -560,11 +571,11 @@ void WriteKmerComponent(conj_graph_pack &gp,
 	}
 	VERIFY(gp.index.contains(kp1mer));
 	EdgeNeighborhoodFinder<Graph> splitter(gp.g, gp.index.get(kp1mer).first, 50,
-			*cfg::get().ds.IS);
+                                         cfg::get().ds.IS());
 	ComponentSizeFilter<Graph> filter(gp.g, 500, 2, 500);
 	PathColorer<Graph> colorer(gp.g, path1, path2);
 	WriteComponents<Graph>(gp.g, splitter, filter, folder + "kmer.dot",
-			*DefaultColorer(gp.g, path1, path2), labeler);
+                         *DefaultColorer(gp.g, path1, path2), labeler);
 }
 
 optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
@@ -844,7 +855,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 	int PosInfo = 0;
 	int AllignedPI = 0;
 	int ExactDPI = 0;
-	int OurD = *cfg::get().ds.IS - *cfg::get().ds.RL;
+	int OurD = cfg::get().ds.IS() - cfg::get().ds.RL();
 	for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 			p_iter != p_end_iter; ++p_iter) {
 		vector<PairInfo> pi = *p_iter;

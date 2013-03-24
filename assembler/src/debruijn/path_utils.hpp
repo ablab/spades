@@ -86,28 +86,27 @@ namespace debruijn_graph {
       return paths;
     }
 
-  template<class graph_pack>
-    size_t GetAllPathsQuantity(const graph_pack& origin_gp,
-        const typename graph_pack::graph_t::EdgeId& e1,
-        const typename graph_pack::graph_t::EdgeId& e2, double d)
-    {
-      PathStorageCallback<typename graph_pack::graph_t> callback(origin_gp.g);
-      PathProcessor<typename graph_pack::graph_t> path_processor(
-          origin_gp.g,
-          d - origin_gp.g.length(e1)
-          - size_t(*cfg::get().ds.is_var),
-          d - origin_gp.g.length(e1)
-          + size_t(*cfg::get().ds.is_var),
-          origin_gp.g.EdgeEnd(e1), 
-          origin_gp.g.EdgeStart(e2),
-          callback);
-      path_processor.Process();
-      auto paths = callback.paths();
-      TRACE(origin_gp.int_ids.ReturnIntId(e1) << " "
-          << origin_gp.int_ids.ReturnIntId(e2) << " "
-          << paths.size());
-      return paths.size();
-    }
+template<class graph_pack>
+size_t GetAllPathsQuantity(const graph_pack& origin_gp,
+                           const typename graph_pack::graph_t::EdgeId& e1,
+                           const typename graph_pack::graph_t::EdgeId& e2, double d) {
+  PathStorageCallback<typename graph_pack::graph_t> callback(origin_gp.g);
+  PathProcessor<typename graph_pack::graph_t>
+      path_processor(origin_gp.g,
+                     d - origin_gp.g.length(e1)
+                     - size_t(cfg::get().ds.is_var()),
+                     d - origin_gp.g.length(e1)
+                     + size_t(cfg::get().ds.is_var()),
+                     origin_gp.g.EdgeEnd(e1), 
+                     origin_gp.g.EdgeStart(e2),
+                     callback);
+  path_processor.Process();
+  auto paths = callback.paths();
+  TRACE(origin_gp.int_ids.ReturnIntId(e1) << " "
+        << origin_gp.int_ids.ReturnIntId(e2) << " "
+        << paths.size());
+  return paths.size();
+}
 
   template<class graph_pack>
     void GenerateMatePairStats(const graph_pack& origin_gp,
