@@ -1,11 +1,10 @@
 ; = HAMMER =
 ; input options: working dir, input files, offset, and possibly kmers
 dataset					dataset.yaml
-input_working_dir			./test_dataset/input/corrected
+input_working_dir			./test_dataset/input/corrected/tmp
 input_trim_quality			4
 input_qvoffset				
-input_read_solid_kmers		0
-input_solid_kmers			
+output_dir                              ./test_dataset/input/corrected
 
 ; == HAMMER GENERAL ==
 ; general options

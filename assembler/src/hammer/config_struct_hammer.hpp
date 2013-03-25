@@ -29,12 +29,11 @@
 struct hammer_config {
   io::DataSet<> dataset;
 
-  std::string input_solid_kmers;
   std::string input_working_dir;
   int input_trim_quality;
   boost::optional<int> input_qvoffset_opt;
   int input_qvoffset;
-  bool input_read_solid_kmers;
+  std::string output_dir;
 
   bool general_do_everything_after_first_iteration;
   bool general_reconstruct_only;
