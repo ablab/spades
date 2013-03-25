@@ -652,6 +652,43 @@ def main():
             shutil.rmtree(tmp_configs_dir)
         shutil.copytree(os.path.join(spades_home, "configs"), tmp_configs_dir)
 
+        # creating YAML with input reads
+        dataset_yaml_filename = os.path.join(cfg["common"].output_dir, "input_dataset.yaml")
+        dataset_yaml = dict()
+        dataset_yaml["left reads"] = []
+        dataset_yaml["right reads"] = []
+        dataset_yaml["single reads"] = []
+
+        import bh_aux
+        paired_end = False
+        for k, v in cfg["dataset"].__dict__.items():
+            if not isinstance(v, list):
+                v = [v]
+
+            if k.startswith("single_reads"):
+                for item in v:
+                    dataset_yaml["single reads"].append(os.path.abspath(os.path.expandvars(item)))
+
+            elif k.startswith("paired_reads"):
+                paired_end = True
+                if len(v) == 1:
+                    item = os.path.abspath(os.path.expandvars(v[0]))
+                    if "error_correction" in cfg:
+                        split_paired_reads = bh_aux.split_paired_file(item, cfg["error_correction"].tmp_dir, log)
+                    else:
+                        support.error("interlaced reads are not supported yet in YAML!", log)
+                else: # len(v) == 2
+                    split_paired_reads = v
+                dataset_yaml["left reads"].append(os.path.abspath(split_paired_reads[0]))
+                dataset_yaml["right reads"].append(os.path.abspath(split_paired_reads[1]))
+
+        if paired_end:
+            dataset_yaml["type"] = "paired-end"
+        else:
+            dataset_yaml["type"] = "single"
+        dataset_yaml["orientation"] = "fr" # TODO: only in paired-end mode
+        support.save_to_yaml(dataset_yaml, dataset_yaml_filename)
+
         bh_dataset_filename = ""
         if "error_correction" in cfg:
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
@@ -661,8 +698,6 @@ def main():
             if "heap_check" in bh_cfg.__dict__:
                 os.environ["HEAPCHECK"] = bh_cfg.heap_check
 
-            bh_cfg.__dict__["working_dir"] = bh_cfg.tmp_dir
-
             bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir,
                 "dataset.info")
 
@@ -670,8 +705,8 @@ def main():
                 shutil.rmtree(bh_cfg.output_dir)
 
             os.makedirs(bh_cfg.output_dir)
-            if not os.path.exists(bh_cfg.working_dir):                
-                os.makedirs(bh_cfg.working_dir)
+            if not os.path.exists(bh_cfg.tmp_dir):
+                os.makedirs(bh_cfg.tmp_dir)
 
             log.info("\n===== Read error correction started. \n")
 
@@ -686,41 +721,7 @@ def main():
                     bh_cfg.__dict__["reference_genome"] = os.path.abspath(
                         os.path.expandvars(cfg["dataset"].reference))
 
-            # for creating YAML file
-            dataset_yaml = dict()
-            dataset_yaml["left reads"] = []
-            dataset_yaml["right reads"] = []
-            dataset_yaml["single reads"] = []
-
-            import bh_aux
-            paired_end = False
-            for k, v in cfg["dataset"].__dict__.items():
-                if not isinstance(v, list):
-                    v = [v]
-
-                if k.startswith("single_reads"):
-                    for item in v:
-                        dataset_yaml["single reads"].append(os.path.abspath(os.path.expandvars(item)))
-
-                elif k.startswith("paired_reads"):
-                    paired_end = True
-                    if len(v) == 1:
-                        item = os.path.abspath(os.path.expandvars(v[0]))
-                        split_paired_reads = bh_aux.split_paired_file(item, bh_cfg.working_dir, log)
-                    else: # len(v) == 2
-                        split_paired_reads = v
-                    dataset_yaml["left reads"].append(split_paired_reads[0])
-                    dataset_yaml["right reads"].append(split_paired_reads[1])
-
-            if paired_end:
-                dataset_yaml["type"] = "paired-end"
-            else:
-                dataset_yaml["type"] = "single"
-            dataset_yaml["orientation"] = "fr" # TODO: only in paired-end mode
-            bh_cfg.__dict__["dataset_yaml_filename"] = os.path.join(bh_cfg.working_dir, "dataset.yaml")
-            support.save_to_yaml(dataset_yaml, bh_cfg.dataset_yaml_filename)
-            # Temporary (should be removed when BH will generate dataset.info/yaml by itself
-            bh_cfg.__dict__["dataset_yaml"] = dataset_yaml
+            bh_cfg.__dict__["dataset_yaml_filename"] = dataset_yaml_filename
 
             bh_dataset_filename = bh_logic.run_bh(tmp_configs_dir, bin_home, bh_cfg, log)
 
@@ -776,20 +777,9 @@ def main():
                 # creating dataset
                 dataset_filename = os.path.join(spades_cfg.output_dir, "dataset.info")
                 dataset_file = open(dataset_filename, 'w')
-                for k, v in cfg["dataset"].__dict__.iteritems():
-                    dataset_file.write(k + '\t')
-
-                    if isinstance(v, bool):
-                        dataset_file.write(bool_to_str(v))
-                    else:
-                        dataset_file.write('"')
-                        if not isinstance(v, list):
-                            v = [v]
-                        for item in v:
-                            item = os.path.abspath(os.path.expandvars(item))
-                            dataset_file.write(str(item) + ' ')
-                        dataset_file.write('"')
-                    dataset_file.write('\n')
+                import process_cfg
+                dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
+                dataset_file.write("reads" + '\t' + dataset_yaml_filename + '\n')
 
                 # saving reference to dataset in developer_mode
                 if spades_cfg.developer_mode:

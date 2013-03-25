@@ -13,85 +13,6 @@ import re
 import support
 
 
-def determine_it_count(tmp_dir, prefix):
-    import re
-
-    files = os.listdir(tmp_dir)
-    answer = 0
-    for f in files:
-        m = re.match(r"^" + prefix + "\.(\d{2})\..*", f)
-        if m:
-            val = int(m.group(1))
-            if (val > answer):
-                answer = val
-    return "%02d" % answer
-
-
-def determine_read_files(folder, str_it_count, input_files, num_paired, log):
-    answer = dict()
-    answer["paired_reads"] = '"'
-    answer["single_reads"] = '"'
-
-    # paired files
-    import glob
-    for id, input_file in enumerate(input_files):
-        def split_ext(filename):
-            base, ext = os.path.splitext(filename)
-            while ext.lower() in ['.fq', '.gz', '.fastq']:
-                filename = base
-                base, ext = os.path.splitext(filename)
-            return filename
-
-        pattern = folder + split_ext(os.path.basename(input_file)) + '*.' + str_it_count + '.cor*'
-        support.verify(len(glob.glob(pattern)) == 1, log, "failed to find corrected file by pattern: " + pattern)
-        full_name = glob.glob(pattern)[0]
-        support.verify(os.path.isfile(full_name), log, "corrected file not found: " + full_name)
-        if id < num_paired:
-            answer["paired_reads"] += full_name + '  '
-        else:
-            answer["single_reads"] += full_name + '  '
-
-    answer["paired_reads"] += '"'
-    answer["single_reads"] += '"'
-
-    if answer["paired_reads"] == '""':
-        del answer["paired_reads"]
-    if answer["single_reads"] == '""':
-        del answer["single_reads"]
-
-    return answer
-
-# based on "hammer" function in ./src/tools/datasets.py
-def hammer(given_props, output_dir, compress):
-    def read_files():
-        read_files = ["paired_reads", "single_reads"]
-        return read_files
-
-    cmd = []
-    dataset_entry = []
-    for prop in given_props.keys():
-        val = given_props[prop]
-        if prop in read_files():
-            new_val = '"'
-            for oldfile in val[1:-1].strip().split("  "):
-                newfile_relpath = os.path.basename(oldfile)
-                newfile = output_dir + "/" + newfile_relpath
-                cmd += ["cp " + oldfile + " " + output_dir + "/"]
-                if compress and not newfile.endswith('.gz'):
-                    cmd += ["gzip -9 -f " + newfile]
-                    newfile_relpath += ".gz"
-                    #newfile += ".gz"
-                new_val += newfile_relpath + '  '
-            new_val += '"'
-            val = new_val
-        dataset_entry += [(prop, val)]
-        #dataset_entry = map(lambda (a, b): a + "\t" + b, dataset_entry)
-    #dataset_entry = reduce(lambda x, y: x + "\n" + y, dataset_entry)
-    for c in cmd:
-        os.system(c)
-    return dataset_entry
-
-
 def dataset_print(dataset):
     result = ""
     dataset_dict = dict(dataset)
@@ -100,45 +21,15 @@ def dataset_print(dataset):
     return result
 
 
-def get_max_prefix(filename1, filename2):
-    str1 = os.path.basename(filename1)
-    str2 = os.path.basename(filename2)
-    prefix = ""
-    for i in range(min(len(str1), len(str2))):
-        if str1[i] == str2[i]:
-            prefix += str1[i]
-        else:
-            break
-    return prefix
-
-
-def generate_unpaired_basename(filename1, filename2):
-    prefix = get_max_prefix(filename1, filename2)
-    return prefix + "_unpaired"
-
-
-def generate_paired_basename(filename1, filename2, i):
-    prefix = get_max_prefix(filename1, filename2)
-    return prefix + "_paired_" + str(i + 1)
-
-
-def generate_dataset(cfg, log):
-    tmp_dir = cfg.working_dir
-    if len(cfg.dataset_yaml["single reads"]) == 0:
-        cfg.dataset_yaml["single reads"] = [generate_unpaired_basename(cfg.dataset_yaml["left reads"][0],
-                                            cfg.dataset_yaml["right reads"][0])]
-    input_files = cfg.dataset_yaml["left reads"] + cfg.dataset_yaml["right reads"] + cfg.dataset_yaml["single reads"]
-
-    str_it_count = determine_it_count(tmp_dir, os.path.basename(input_files[0]))
-
-    dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count, input_files, 2 * len(cfg.dataset_yaml["left reads"]), log)
-
+def generate_dataset(cfg):
     import process_cfg
+    dataset_cfg = dict()
     dataset_cfg["single_cell"] = process_cfg.bool_to_str(cfg.single_cell)
+    dataset_cfg["reads"] = os.path.join(cfg.tmp_dir, "corrected.yaml")
     if "reference_genome" in cfg.__dict__:
         dataset_cfg["reference_genome"] = cfg.reference_genome
 
-    return dataset_print(hammer(dataset_cfg, cfg.output_dir, cfg.gzip_output))
+    return dataset_print(dataset_cfg)
 
 
 #### auxiliary function to manage input files 
