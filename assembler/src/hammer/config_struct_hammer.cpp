@@ -72,12 +72,10 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   load(fname, pt, "dataset");
   cfg.dataset.load(fname);
 
-  load(cfg.input_solid_kmers, pt, "input_solid_kmers");
   load(cfg.input_working_dir, pt, "input_working_dir");
   load(cfg.input_trim_quality, pt, "input_trim_quality");
   cfg.input_qvoffset_opt = pt.get_optional<int>("input_qvoffset");
-  load(cfg.input_read_solid_kmers, pt, "input_read_solid_kmers");
-  load(cfg.input_solid_kmers, pt, "input_solid_kmers");
+  load(cfg.output_dir, pt, "output_dir");
 
   // Fix number of threads according to OMP capabilities.
   cfg.general_max_nthreads = std::min(cfg.general_max_nthreads, (unsigned)omp_get_max_threads());
