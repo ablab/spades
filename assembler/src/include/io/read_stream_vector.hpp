@@ -82,6 +82,14 @@ class ReadStreamVector {
       (*I)->reset();
   }
 
+  void release() {
+      destroy_readers_ = false;
+  }
+
+  const std::vector< Reader * >& get() const {
+      return streams_;
+  }
+
 };
 
 }
