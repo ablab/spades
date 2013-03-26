@@ -75,10 +75,6 @@ class FormattedString {
     return m_fmt.str();
   }
 
-  std::string str() const {
-    return m_fmt.str();
-  }
-
  protected:
   boost::format m_fmt;
 };

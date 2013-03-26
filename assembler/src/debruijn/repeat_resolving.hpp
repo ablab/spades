@@ -8,6 +8,7 @@
 
 #include "repeat_resolver.hpp"
 #include "graphio.hpp"
+#include "omni/one_many_contigs_enlarger.hpp"
 #include "omni/loop_resolver.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>

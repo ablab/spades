@@ -248,7 +248,6 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef int realIdType;
 
 	int max_single_gap_;
-	//todo rename
 	std::map<EdgeId, vector<EdgePosition>> EdgesPositions;
 	bool careful_ranges_;
 	size_t max_labels_;
@@ -563,12 +562,13 @@ public:
 		EdgesPositions.erase(e);
 	}
 
-	void HandleVertexSplit(VertexId, VertexId,
-                           const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-                           const vector<double>&) {
-		FOREACH (auto cur_edges_pair, old_2_new_edges) {
-			AddEdgePosition(cur_edges_pair.second,
-					EdgesPositions[cur_edges_pair.first]);
+	void HandleVertexSplit(VertexId newVertex,
+			vector<pair<EdgeId, EdgeId> > newEdges,
+			vector<double> &split_coefficients, VertexId oldVertex) {
+		for (auto cur_edges_pair = newEdges.begin();
+				cur_edges_pair != newEdges.end(); ++cur_edges_pair) {
+			AddEdgePosition(cur_edges_pair->second,
+					EdgesPositions[cur_edges_pair->first]);
 		}
 	}
 
