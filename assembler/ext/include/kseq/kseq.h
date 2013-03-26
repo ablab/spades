@@ -187,7 +187,7 @@ typedef struct __kstring_t {
 					kroundup32(seq->seq.m); /* rounded to next closest 2^k */ \
 					seq->seq.s = (char*)realloc(seq->seq.s, seq->seq.m); \
 				}														\
-				seq->seq.s[seq->seq.l++] = (char)c;						\
+				seq->seq.s[seq->seq.l++] = (char)toupper(c);			\
 			}															\
 		}																\
 		if (c == '>' || c == '@') seq->last_char = c; /* the first header char has been read */	\
