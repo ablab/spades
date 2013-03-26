@@ -13,6 +13,9 @@
 #include "path_extend/pe_config_struct.hpp"
 
 #include "io/library.hpp"
+#include "io/binary_streams.hpp"
+#include "io/rc_reader_wrapper.hpp"
+#include "io/read_stream_vector.hpp"
 
 #include <boost/bimap.hpp>
 
@@ -305,6 +308,53 @@ struct debruijn_config {
     double insert_size_mad;
     std::map<int, size_t> insert_size_distribution;
     double average_coverage;
+
+    bool converted;
+    std::string paired_read_prefix;
+    std::string single_read_prefix;
+    size_t thread_num;
+
+    typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
+    typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
+
+    std::vector< SequencePairedReadStream* > raw_paired_binary_readers(bool followed_by_rc, size_t insert_size = 0) const {
+        VERIFY(converted);
+
+        if (insert_size == 0) {
+            insert_size = (size_t) mean_insert_size;
+        }
+
+        std::vector<SequencePairedReadStream*> paired_streams(thread_num);
+        for (size_t i = 0; i < thread_num; ++i) {
+            paired_streams[i] = new io::SeqPairedReadStream(paired_read_prefix, i, insert_size);
+        }
+        return io::apply_paired_wrappers(followed_by_rc, paired_streams);
+    }
+
+    std::vector< SequenceSingleReadStream* > raw_single_binary_readers(bool followed_by_rc, bool including_paired_reads) const {
+        VERIFY(converted);
+
+        std::vector<SequenceSingleReadStream*> single_streams(thread_num);
+        for (size_t i = 0; i < thread_num; ++i) {
+            single_streams[i] = new io::SeqSingleReadStream(single_read_prefix, i);
+        }
+        if (including_paired_reads) {
+            std::vector<SequencePairedReadStream*> paired_streams(thread_num);
+            for (size_t i = 0; i < thread_num; ++i) {
+                paired_streams[i] = new io::SeqPairedReadStream(paired_read_prefix, i, 0);
+            }
+
+            return io::apply_single_wrappers(followed_by_rc, single_streams, &paired_streams);
+        }
+        else {
+            return io::apply_single_wrappers(followed_by_rc, single_streams);
+        }
+    }
+
+
+    DataSetData(): mean_insert_size(0.0), converted(false) {
+    }
+
   };
 
   struct dataset {

@@ -1,18 +1,12 @@
-//***************************************************************************
-//* Copyright (c) 2011-2013 Saint-Petersburg Academic University
-//* All Rights Reserved
-//* See file LICENSE for details.
-//****************************************************************************
-
 /*
- * binary_io.hpp
+ * binary_streams.hpp
  *
- *  Created on: Apr 12, 2012
+ *  Created on: Mar 28, 2013
  *      Author: andrey
  */
 
-#ifndef BINARY_IO_HPP_
-#define BINARY_IO_HPP_
+#ifndef BINARY_STREAMS_HPP_
+#define BINARY_STREAMS_HPP_
 
 #include <fstream>
 
@@ -26,199 +20,6 @@ namespace io {
 typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
 
-
-class BinaryWriter {
-
-private:
-    const std::string file_name_prefix_;
-
-    size_t file_num_;
-
-    std::vector<std::ofstream*> file_ds_;
-
-    size_t buf_size_;
-
-
-    template<class Read>
-    void FlushBuffer(const std::vector<Read>& buffer, std::ostream& file, size_t from, size_t to) {
-        for (size_t i = from; i < to; ++i) {
-            buffer[i].BinWrite(file);
-        }
-    }
-
-    template<class Read>
-    void FlushBuffer(const std::vector<Read>& buffer, std::ostream& file) {
-        FlushBuffer(buffer, file, 0, buffer.size());
-    }
-
-    template<class Read>
-    ReadStat ToBinary(io::IReader<Read>& stream, size_t buf_size) {
-        size_t buffer_reads = buf_size / (sizeof (Read) * 4);
-        size_t reads_to_flush = buffer_reads * file_num_;
-
-        std::vector< std::vector<Read> > buf(file_num_, std::vector<Read>(buffer_reads) );
-        std::vector< ReadStat > read_stats(file_num_);
-        std::vector< size_t > current_buf_sizes(file_num_, 0);
-        size_t read_count = 0;
-
-        for (size_t i = 0; i < file_num_; ++i) {
-            file_ds_[i]->seekp(0);
-            read_stats[i].write(*file_ds_[i]);
-        }
-
-        size_t buf_index;
-        while (!stream.eof()) {
-            buf_index = read_count % file_num_;
-
-            stream >> buf[buf_index][current_buf_sizes[buf_index]];
-            read_stats[buf_index].increase(buf[buf_index][current_buf_sizes[buf_index]]);
-
-            ++current_buf_sizes[buf_index];
-            VERBOSE_POWER(++read_count, " reads processed");
-
-            if (read_count % reads_to_flush == 0) {
-                for (size_t i = 0; i < file_num_; ++i) {
-                    FlushBuffer(buf[i], *file_ds_[i]);
-                    current_buf_sizes[i] = 0;
-                }
-            }
-        }
-
-        ReadStat result;
-        for (size_t i = 0; i < file_num_; ++i) {
-            buf[i].resize(current_buf_sizes[i]);
-            FlushBuffer(buf[i], *file_ds_[i]);
-
-            file_ds_[i]->seekp(0);
-            read_stats[i].write(*file_ds_[i]);
-            result.merge(read_stats[i]);
-        }
-
-        INFO(read_count << " reads written");
-        return result;
-    }
-
-
-    template<class Read>
-    ReadStat ToBinaryForThread(io::IReader<Read>& stream, size_t buf_size, size_t thread_num) {
-        size_t buffer_reads = buf_size / (sizeof (Read) * 4);
-        std::vector<Read> buf(buffer_reads);
-
-        ReadStat stat;
-        file_ds_[thread_num]->seekp(0);
-        stat.write(*file_ds_[thread_num]);
-
-        size_t current = 0;
-
-        while (!stream.eof()) {
-            stream >> buf[current];
-            stat.increase(buf[current]);
-            ++current;
-
-            if (stat.read_count_ % buffer_reads == 0) {
-                FlushBuffer(buf, *file_ds_[thread_num]);
-                current = 0;
-            }
-        }
-
-        buf.resize(current);
-        FlushBuffer(buf, *file_ds_[thread_num]);
-
-        file_ds_[thread_num]->seekp(0);
-        stat.write(*file_ds_[thread_num]);
-
-        return stat;
-    }
-
-
-public:
-
-    BinaryWriter(const std::string& file_name_prefix, size_t file_num, size_t buf_size):
-            file_name_prefix_(file_name_prefix), file_num_(file_num), file_ds_(), buf_size_(buf_size) {
-
-        std::string fname;
-        for (size_t i = 0; i < file_num_; ++i) {
-            fname = file_name_prefix_ + "_" + ToString(i) + ".seq";
-            file_ds_.push_back(new std::ofstream(fname, std::ios_base::binary));
-        }
-    }
-
-    ~BinaryWriter() {
-        for (size_t i = 0; i < file_num_; ++i) {
-            if (file_ds_[i]->is_open()) {
-                file_ds_[i]->close();
-            }
-            delete file_ds_[i];
-        }
-    }
-
-
-    ReadStat ToBinary(io::IReader<io::SingleReadSeq>& stream) {
-        return ToBinary(stream, buf_size_ / file_num_);
-    }
-
-    ReadStat ToBinary(io::IReader<io::SingleRead>& stream) {
-        return ToBinary(stream, buf_size_ / file_num_);
-    }
-
-    ReadStat ToBinary(io::IReader<io::PairedReadSeq>& stream) {
-        return ToBinary(stream, buf_size_ / (2 * file_num_));
-    }
-
-    ReadStat ToBinary(io::IReader<io::PairedRead>& stream) {
-        return ToBinary(stream, buf_size_ / (2 * file_num_));
-    }
-
-    ReadStat ToBinaryForThread(io::IReader<io::SingleReadSeq>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num);
-    }
-
-    ReadStat ToBinaryForThread(io::IReader<io::SingleRead>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num);
-    }
-
-    ReadStat ToBinaryForThread(io::IReader<io::PairedReadSeq>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num);
-    }
-
-    ReadStat ToBinaryForThread(io::IReader<io::PairedRead>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num);
-    }
-
-//    template<class Read>
-//    void WriteReads(std::vector<Read>& data) {
-//        size_t chunk_size = data.size() / file_num_;
-//        size_t last_chunk_size = chunk_size + data.size() % file_num_;
-//
-//        for (size_t i = 0; i < file_num_ - 1; ++i) {
-//            file_ds_[i]->write((const char *) &chunk_size, sizeof(chunk_size));
-//        }
-//        file_ds_.back()->write((const char *) &last_chunk_size, sizeof(last_chunk_size));
-//
-//        size_t start_pos = 0;
-//        for (size_t i = 0; i < file_num_ - 1; ++i, start_pos += chunk_size) {
-//            FlushBuffer(data, *file_ds_[i], start_pos, start_pos + chunk_size);
-//        }
-//        FlushBuffer(data, file_ds_.back(), start_pos, data.size());
-//    }
-//
-//    template<class Read>
-//    void WriteSeparatedReads(std::vector< std::vector<Read> >& data) {
-//        if (data.size() != file_num_) {
-//            WARN("Cannot write reads, number of vectors is not equal to thread number");
-//            return;
-//        }
-//
-//        for (size_t i = 0; i < file_num_; ++i) {
-//            size_t size = data[i].size();
-//            file_ds_[i]->write((const char *) &size, sizeof(size));
-//        }
-//
-//        for (size_t i = 0; i < file_num_; ++i) {
-//            FlushBuffer(data[i], *file_ds_[i]);
-//        }
-//    }
-};
 
 
 template<class Read>
@@ -638,7 +439,67 @@ public:
     }
 };
 
+
+typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
+typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
+
+inline std::vector< SequenceSingleReadStream* > apply_single_wrappers(bool followed_by_rc,
+        std::vector< SequenceSingleReadStream* >& single_readers,
+        std::vector< SequencePairedReadStream* > * paired_readers = 0) {
+
+    VERIFY(single_readers.size() != 0);
+    size_t size = single_readers.size();
+    std::vector<SequenceSingleReadStream*> raw_readers(size);
+
+    if (paired_readers != 0) {
+        VERIFY(single_readers.size() == paired_readers->size());
+
+        for (size_t i = 0; i < size; ++i) {
+            SequenceSingleReadStream * single_stream = single_readers.at(i);
+            SequencePairedReadStream * paired_stream = paired_readers->at(i);
+            io::CleanSeqSingleReadStreamWrapper * single_wrapper = new io::CleanSeqSingleReadStreamWrapper(paired_stream);
+
+            raw_readers[i] = new io::MultifileReader<io::SingleReadSeq>(*single_wrapper, *single_stream, true);
+        }
+    }
+    else {
+       for (size_t i = 0; i < size; ++i) {
+           raw_readers[i] = single_readers.at(i);
+       }
+    }
+
+    if (followed_by_rc) {
+        std::vector<SequenceSingleReadStream*> rc_readers(size);
+        for (size_t i = 0; i < size; ++i) {
+            rc_readers[i] = new io::CleanRCReaderWrapper<io::SingleReadSeq>(raw_readers[i]);
+        }
+        return rc_readers;
+    } else {
+        return raw_readers;
+    }
 }
 
 
-#endif /* BINARY_IO_HPP_ */
+inline std::vector< SequencePairedReadStream* > apply_paired_wrappers(bool followed_by_rc,
+        std::vector< SequencePairedReadStream* >& paired_readers) {
+
+    VERIFY(paired_readers.size() != 0);
+    size_t size = paired_readers.size();
+
+    if (followed_by_rc) {
+        std::vector<SequencePairedReadStream*> rc_readers(size);
+        for (size_t i = 0; i < size; ++i) {
+            rc_readers[i] = new io::CleanRCReaderWrapper<io::PairedReadSeq>(paired_readers[i]);
+        }
+        return rc_readers;
+    } else {
+        return paired_readers;
+    }
+}
+
+
+
+}
+
+
+#endif /* BINARY_STREAMS_HPP_ */

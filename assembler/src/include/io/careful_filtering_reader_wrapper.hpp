@@ -13,7 +13,7 @@ namespace io {
 
 const size_t none = -1;
 
-std::pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
+inline std::pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
 	size_t best_len = 0;
 	size_t best_pos = none;
 	size_t pos = none;
@@ -40,12 +40,12 @@ std::pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
 	return std::make_pair(best_pos, best_pos + best_len);
 }
 
-SingleRead longestValid(const SingleRead& r) {
+inline SingleRead longestValid(const SingleRead& r) {
 	std::pair<size_t, size_t> p = longestValidCoords(r);
 	return r.Substr(p.first, p.second);
 }
 
-PairedRead longestValid(const PairedRead& r) {
+inline PairedRead longestValid(const PairedRead& r) {
 	std::pair<size_t, size_t> c1 = longestValidCoords(r.first());
 	std::pair<size_t, size_t> c2 = longestValidCoords(r.second());
 	size_t len1 = c1.second - c1.first;
