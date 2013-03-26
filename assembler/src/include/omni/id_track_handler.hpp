@@ -179,11 +179,11 @@ public:
 //		AddEdgeIntId(new_edge, RealEdgeId);
 //	}
 
-	virtual void HandleAdding(EdgeId e) {
+	virtual void HandleAdd(EdgeId e) {
 		AddEdgeIntId(e);
 	}
 
-	virtual void HandleAdding(VertexId v) {
+	virtual void HandleAdd(VertexId v) {
 		AddVertexIntId(v);
 	}
 

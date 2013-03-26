@@ -7,6 +7,7 @@
 #ifndef OMNI_UTILS_HPP_
 #define OMNI_UTILS_HPP_
 
+#include "standard_base.hpp"
 #include "simple_tools.hpp"
 #include "adt/queue_iterator.hpp"
 #include "logger/logger.hpp"
@@ -59,20 +60,6 @@ public:
 	 */
 	const string& name() const {
 		return handler_name_;
-	}
-
-	/**
-	 * Event is triggered BEFORE either HandleMerge or HndleSplit or HandleMerge are triggered. Use really careful! It must not rely on any of the other graph handlers.
-	 * @param e new edge
-	 */
-	virtual void HandleAdding(EdgeId e) {
-	}
-
-	/**
-	 * Event is triggered BEFORE either HandleMerge or HndleSplit or HandleMerge are triggered. Use really careful! It must not rely on any of the other graph handlers.
-	 * @param e new edge
-	 */
-	virtual void HandleAdding(VertexId e) {
 	}
 
 	/**
@@ -224,12 +211,6 @@ class HandlerApplier {
 public:
 
 	virtual void
-	ApplyAdding(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
-
-	virtual void
-	ApplyAdding(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const = 0;
-
-	virtual void
 	ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
 
 	virtual void
@@ -267,16 +248,6 @@ class SimpleHandlerApplier: public HandlerApplier<typename Graph::VertexId,
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-
-	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler,
-			VertexId v) const {
-		handler->HandleAdding(v);
-	}
-
-	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId e) const {
-		handler->HandleAdding(e);
-	}
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler,
 			VertexId v) const {
@@ -341,32 +312,6 @@ public:
 
 	PairedHandlerApplier(Graph &graph) :
 			graph_(graph) {
-	}
-
-	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler,
-			VertexId v) const {
-		VertexId rcv = graph_.conjugate(v);
-		//TRACE("Triggering add event of handler " << handler->name() << " to vertex " << v);
-		handler->HandleAdding(v);
-		if (v != rcv) {
-			//TRACE("Triggering add event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
-			handler->HandleAdding(rcv);
-		} else {
-			//TRACE("Vertex " << v << "is self-conjugate thus handler is not applied the second time");
-		}
-	}
-
-	virtual void ApplyAdding(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId e) const {
-		EdgeId rce = graph_.conjugate(e);
-		//TRACE("Triggering add event of handler " << handler->name() << " to edge " << e << ". Event is Add");
-		handler->HandleAdding(e);
-		if (e != rce) {
-			//TRACE("Triggering add event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
-			handler->HandleAdding(rce);
-		} else {
-			//TRACE("Edge " << e << "is self-conjugate thus handler is not applied the second time");
-		}
 	}
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler,
@@ -608,75 +553,15 @@ public:
 					"SmartEdgeIterator " + ToString(get_id()), true, comparator) {
 		if (edges == 0) {
 			for (auto it = graph.begin(); it != graph.end(); ++it) {
-				auto out = graph.OutgoingEdges(*it);
-				this->base::insert(out.begin(), out.end());
-				// todo: doesn't work with parallel simplification
-				//        this->super::insert(graph.out_begin(*it), graph.out_end(*it));
+			    //todo: this solution doesn't work with parallel simplification
+				this->base::insert(graph.out_begin(*it), graph.out_end(*it));
+				//this does
+				//auto out = graph.OutgoingEdges(*it);
+				//this->base::insert(out.begin(), out.end());
 			}
 		} else {
 			this->base::insert(edges->begin(), edges->end());
 		}
-	}
-};
-
-template<class Graph, typename ElementId, typename Comparator = std::less<
-		ElementId> >
-class SmartSet: public GraphActionHandler<Graph> {
-public:
-	typedef typename set<ElementId, Comparator>::iterator iterator;
-	typedef typename set<ElementId, Comparator>::const_iterator const_iterator;
-private:
-	set<ElementId, Comparator> inner_set_;
-	const bool add_new_;
-
-public:
-	SmartSet(const Graph &graph, Comparator comparator = Comparator(),
-			bool add_new = true) :
-			GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(
-					comparator), add_new_(add_new) {
-	}
-
-	template<class Iter>
-	SmartSet(Iter begin, Iter end, const Graph &graph, Comparator comparator =
-			Comparator(), bool add_new = true) :
-			GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(begin, end,
-					comparator), add_new_(add_new) {
-	}
-
-	virtual ~SmartSet() {
-	}
-
-	virtual void HandleAdding(ElementId v) {
-		if (add_new_)
-			inner_set_.insert(v);
-	}
-
-	virtual void HandleDelete(ElementId v) {
-		inner_set_.erase(v);
-	}
-
-	iterator begin() {
-		return inner_set_.begin();
-	}
-
-	iterator end() {
-		return inner_set_.end();
-	}
-
-	const_iterator begin() const {
-		return inner_set_.begin();
-	}
-
-	const_iterator end() const {
-		return inner_set_.end();
-	}
-
-	pair<iterator, bool> insert(const ElementId& elem) {
-		return inner_set_.insert(elem);
-	}
-
-	const set<ElementId, Comparator> &inner_set() {
-		return inner_set_;
 	}
 };
 
@@ -978,6 +863,7 @@ size_t CummulativeLength(const Graph& g,
 }
 
 template<class Graph>
+
 class AbstractDirection {
 private:
 	typedef typename Graph::EdgeId EdgeId;
@@ -1181,6 +1067,7 @@ public:
 			const AbstractDirection<Graph> &direction) const {
 		return {e};
 	}
+
 };
 
 template<class Graph>
@@ -1330,6 +1217,132 @@ public:
 			return -result.first + result.second;
 		}
 	}
+};
+
+template<class Graph>
+class DominatedSetFinder {
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	const Graph& g_;
+	VertexId start_vertex_;
+	size_t max_length_;
+	size_t max_count_;
+
+	size_t cnt_;
+	map<VertexId, Range> dominated_;
+
+	bool CheckCanBeProcessed(VertexId v) const {
+		DEBUG(
+				"Check if vertex " << g_.str(v) << " is dominated close neighbour");
+		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
+			if (dominated_.count(g_.EdgeStart(e)) == 0) {
+				DEBUG(
+						"Blocked by external vertex " << g_.int_id(g_.EdgeStart(e)) << " that starts edge " << g_.int_id(e));
+				DEBUG("Check fail");
+				return false;
+			}
+		}
+		DEBUG("Check ok");
+		return true;
+	}
+
+	void UpdateCanBeProcessed(VertexId v,
+			std::queue<VertexId>& can_be_processed) const {
+		DEBUG("Updating can be processed")
+		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+			DEBUG("Considering edge " << ToString(e));
+			VertexId neighbour_v = g_.EdgeEnd(e);
+			if (CheckCanBeProcessed(neighbour_v)) {
+				can_be_processed.push(neighbour_v);
+			}
+		}
+	}
+
+	Range NeighbourDistanceRange(VertexId v, bool dominated_only = true) const {
+		DEBUG("Counting distance range for vertex " << g_.str(v));
+		size_t min = numeric_limits<size_t>::max();
+		size_t max = 0;
+		VERIFY(g_.IncomingEdgeCount(v) > 0);
+		VERIFY(!dominated_only || CheckCanBeProcessed(v));
+		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
+			//in case of dominated_only == false
+			if (dominated_.count(g_.EdgeStart(e)) == 0)
+				continue;
+			Range range = dominated_.find(g_.EdgeStart(e))->second;
+			range.shift(g_.length(e));
+			DEBUG("Edge " << g_.str(e) << " provide distance range " << range);
+			if (range.start_pos < min)
+				min = range.start_pos;
+			if (range.end_pos > max)
+				max = range.end_pos;
+		}
+		VERIFY((max > 0) && (min < numeric_limits<size_t>::max()) && (min <= max));
+		Range answer(min, max);
+		DEBUG("Range " << answer);
+		return answer;
+	}
+
+	bool CheckNoEdgeToStart(VertexId v) {
+		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+			if (g_.EdgeEnd(e) == start_vertex_) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+public:
+	DominatedSetFinder(const Graph& g, VertexId v, size_t max_length = -1, size_t max_count = -1) :
+			g_(g), start_vertex_(v), max_length_(max_length), max_count_(max_count), cnt_(0) {
+
+	}
+
+	//true if no thresholds exceeded
+	bool FillDominated() {
+		DEBUG("Adding starting vertex " << g_.str(start_vertex_) << " to dominated set");
+		dominated_.insert(make_pair(start_vertex_, Range(0, 0)));
+		cnt_++;
+		std::queue<VertexId> can_be_processed;
+		UpdateCanBeProcessed(start_vertex_, can_be_processed);
+		while (!can_be_processed.empty()) {
+			if (++cnt_ > max_count_) {
+				return false;
+			}
+			VertexId v = can_be_processed.front();
+			can_be_processed.pop();
+			Range r = NeighbourDistanceRange(v);
+			if (r.start_pos > max_length_) {
+				return false;
+			}
+			//Currently dominated vertices cannot have edge to start vertex
+			if (CheckNoEdgeToStart(v)) {
+				DEBUG("Adding vertex " << g_.str(v) << " to dominated set");
+				dominated_.insert(make_pair(v, r));
+				UpdateCanBeProcessed(v, can_be_processed);
+			}
+		}
+		return true;
+	}
+
+	const map<VertexId, Range>& dominated() const {
+		return dominated_;
+	}
+
+	//little meaning if FillDominated returned false
+	const map<VertexId, Range> CountBorder() const {
+		map<VertexId, Range> border;
+		FOREACH(VertexId v, key_set(border)) {
+			FOREACH(EdgeId e, g_.OutgoingEdges(v)) {
+				VertexId e_end = g_.EdgeEnd(e);
+				if (dominated_.count(e_end) == 0) {
+					border[e_end] = NeighbourDistanceRange(e_end, false);
+				}
+			}
+		}
+		return border;
+	}
+
 };
 
 inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size,

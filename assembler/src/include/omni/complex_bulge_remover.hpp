@@ -861,80 +861,6 @@ class LocalizedComponentFinder {
 		return ss.str();
 	}
 
-	bool CheckCanBeProcessed(VertexId v) const {
-		DEBUG("Check if vertex " << g_.str(v) << " is dominated close neighbour");
-		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
-			if (dominated_.count(g_.EdgeStart(e)) == 0) {
-				DEBUG("Blocked by external vertex " << g_.int_id(g_.EdgeStart(e)) << " that starts edge " << g_.int_id(e));
-				DEBUG("Check fail");
-				return false;
-			}
-		}
-		DEBUG("Check ok");
-		return true;
-	}
-
-	void UpdateCanBeProcessed(VertexId v,
-			std::queue<VertexId>& can_be_processed) const {
-		DEBUG("Updating can be processed")
-		FOREACH(EdgeId e, g_.OutgoingEdges(v)) {
-			DEBUG("Considering edge " << ToString(e));
-			VertexId neighbour_v = g_.EdgeEnd(e);
-			if (CheckCanBeProcessed(neighbour_v)) {
-				can_be_processed.push(neighbour_v);
-			}
-		}
-	}
-
-	Range NeighbourDistanceRange(VertexId v) const {
-		DEBUG("Counting distance range for vertex " << g_.str(v));
-		size_t min = numeric_limits<size_t>::max();
-		size_t max = 0;
-		VERIFY(g_.IncomingEdgeCount(v) > 0);
-		VERIFY(CheckCanBeProcessed(v));
-		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
-			Range range = dominated_.find(g_.EdgeStart(e))->second;
-			range.shift(g_.length(e));
-			DEBUG("Edge " << g_.str(e) << " provide distance range " << range);
-			if (range.start_pos < min)
-				min = range.start_pos;
-			if (range.end_pos > max)
-				max = range.end_pos;
-		}
-		VERIFY(
-				(max > 0) && (min < numeric_limits<size_t>::max()) && (min <= max));
-		Range answer(min, max);
-		DEBUG("Range " << answer);
-		return answer;
-	}
-
-	bool CheckNoEdgeToStart(VertexId v) {
-		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
-			if (g_.EdgeEnd(e) == comp_.start_vertex()) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	void FillDominated() {
-		DEBUG("Adding starting vertex "
-				<< g_.str(comp_.start_vertex()) << " to dominated set");
-		dominated_.insert(make_pair(comp_.start_vertex(), Range(0, 0)));
-		std::queue<VertexId> can_be_processed;
-		UpdateCanBeProcessed(comp_.start_vertex(), can_be_processed);
-		while (!can_be_processed.empty()) {
-			VertexId v = can_be_processed.front();
-			can_be_processed.pop();
-			Range r = NeighbourDistanceRange(v);
-			if (CheckNoEdgeToStart(v) && r.start_pos < max_length_) {
-				DEBUG("Adding vertex " << g_.str(v) << " to dominated set");
-				dominated_.insert(make_pair(v, r));
-				UpdateCanBeProcessed(v, can_be_processed);
-			}
-		}
-	}
-
 	bool CheckCompleteness() const {
 		if (interfering_.size() == 0) {
 			VERIFY(comp_.CheckCompleteness());
@@ -1049,7 +975,9 @@ public:
 					length_diff_threshold), comp_(g, start_v) {
 		DEBUG(
 				"Component finder from vertex " << g_.str(comp_.start_vertex()) << " created");
-		FillDominated();
+		DominatedSetFinder<Graph> dominated_set_finder(g_, start_v, max_length);
+		dominated_set_finder.FillDominated();
+		dominated_ = dominated_set_finder.dominated();
 //		ProcessStartVertex();
 	}
 

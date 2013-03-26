@@ -522,8 +522,6 @@ public:
 //		}
 //		cout << "Edges printed" << endl;
 		VertexId newVertex = HiddenAddVertex(vertex->data());
-		this->FireAddingVertex(newVertex);
-//		cout << "Added vertex " << newVertex << " conjugate " << conjugate(newVertex) << endl;
 		vector<pair<EdgeId, EdgeId>> edge_clones;
 		vector<pair<EdgeId, EdgeId>> rc_edge_clones;
 
@@ -535,12 +533,10 @@ public:
 			if (start_e == vertex)
 				start_e = newVertex;
 			EdgeId newEdge = HiddenAddEdge(start_v, start_e, splittingEdges[i]->data());
-			this->FireAddingEdge(newEdge);
-//			cout << "Added edge " << newEdge << " (start: " << EdgeStart(newEdge) << " end: " << EdgeEnd(newEdge) << " conjugate: " << conjugate(newEdge) << ") ; " << endl;
 			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
 			rc_edge_clones.push_back(make_pair((splittingEdges[i])->conjugate(), newEdge->conjugate()));
 		}
-//FIRE
+
 		this->FireVertexSplit(newVertex, edge_clones, split_coefficients, vertex);
 		this->FireAddVertex(newVertex);
 		for(size_t i = 0; i < splittingEdges.size(); i ++)
@@ -551,8 +547,6 @@ public:
 		for(size_t i = 0; i < splittingEdges.size(); i ++)
 			this->FireAddEdge(rc_edge_clones[i].second);
 
-
-//		cout << "------------------------------" << endl;
 		return make_pair(newVertex, edge_clones);
 	}
 

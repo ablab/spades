@@ -45,7 +45,7 @@ add_executable(bwa-spades
 target_link_libraries(bwa-spades ${COMMON_LIBRARIES} m)
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(bwa-spades PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(bwa-spades PROPERTIES LINK_SEARCH_START_STATIC 1)
 endif()
 
 install(TARGETS bwa-spades

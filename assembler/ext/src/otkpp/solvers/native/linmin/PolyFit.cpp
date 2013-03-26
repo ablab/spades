@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include <cassert>
-#include <math.h>
+#include <cmath>
 
 int cubic_minimizer (double a, double fa, double dfa,
                      double b, double fb, double dfb,
@@ -14,8 +14,8 @@ int cubic_minimizer (double a, double fa, double dfa,
   double denom;
   double D;
   
-  if(isnan(a) || isinf(a) || isnan(fa) || isinf(fa) || isnan(dfa) || isinf(dfa) || 
-     isnan(b) || isinf(b) || isnan(fb) || isinf(fb) || isnan(dfb) || isinf(dfb))
+  if(std::isnan(a) || std::isinf(a) || std::isnan(fa) || std::isinf(fa) || std::isnan(dfa) || std::isinf(dfa) || 
+     std::isnan(b) || std::isinf(b) || std::isnan(fb) || std::isinf(fb) || std::isnan(dfb) || std::isinf(dfb))
     return OTK::DOMAIN_ERROR;
   
   z = 3.0 * (fa - fb) / (b - a) + dfa + dfb;
@@ -45,9 +45,9 @@ int cubic_minimizer (double a, double fa, double dfa,
     return OTK::ZERO_DIVISION;
   
   *alpha_min = b - (b - a) * (dfb + w - z) / denom;
-  /*if(isnan(*alpha_min) || isinf(*alpha_min))
+  /*if(std::isnan(*alpha_min) || std::isinf(*alpha_min))
      return GSL_FAILURE;*/
-  assert(!isnan(*alpha_min) && !isinf(*alpha_min));
+  assert(!std::isnan(*alpha_min) && !std::isinf(*alpha_min));
   
   return OTK::SUCCESS;
 }
@@ -56,8 +56,8 @@ int quad_minimizer1 (double a, double fa, double dfa,
                      double b, double fb,
                      double *alpha_min)
 {
-  if(isnan(a) || isinf(a) || isnan(fa) || isinf(fa) || isnan(dfa) || isinf(dfa) || 
-     isnan(b) || isinf(b) || isnan(fb) || isinf(fb))
+  if(std::isnan(a) || std::isinf(a) || std::isnan(fa) || std::isinf(fa) || std::isnan(dfa) || std::isinf(dfa) || 
+     std::isnan(b) || std::isinf(b) || std::isnan(fb) || std::isinf(fb))
     return OTK::DOMAIN_ERROR;
   
   double denom = 2.0 * (fa - fb + (b - a) * dfa);
@@ -74,8 +74,8 @@ int quad_minimizer2 (double a, double dfa,
                      double b, double dfb,
                      double *alpha_min)
 {
-  if(isnan(a) || isinf(a) || isnan(dfa) || isinf(dfa) || 
-     isnan(b) || isinf(b) || isnan(dfb) || isinf(dfb))
+  if(std::isnan(a) || std::isinf(a) || std::isnan(dfa) || std::isinf(dfa) || 
+     std::isnan(b) || std::isinf(b) || std::isnan(dfb) || std::isinf(dfb))
     return OTK::DOMAIN_ERROR;
   
   double denom = dfa - dfb;

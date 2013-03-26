@@ -93,9 +93,15 @@ endif()
 add_definitions(-D_REENTRANT)
 add_definitions(-O3 -funroll-loops)
 
-check_c_source_compiles("__thread int x;
-int main(void) { x = 42; return 0; }" JEMALLOC_TLS)
-
+# TLS on Darwin is "fake". We cannot use it with jemalloc, because
+# emulated tls wants to use calloc() and friends
+if (APPLE)
+else()
+  set(CMAKE_REQUIRED_FLAGS "-Werror")
+  check_c_source_compiles("__thread int x;
+  int main(void) { x = 42; return 0; }" JEMALLOC_TLS)
+  set(CMAKE_REQUIRED_FLAGS)
+endif()
 check_function_exists(memalign JEMALLOC_OVERRIDE_MEMALIGN)
 check_function_exists(valloc JEMALLOC_OVERRIDE_VALLOC)
 

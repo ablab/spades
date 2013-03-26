@@ -11,6 +11,7 @@ import os
 import stat
 import sys
 
+
 def verify(expr, log, message):
     if (not (expr)):
         log.info ("Assertion failed. Message: " + message)
@@ -19,9 +20,13 @@ def verify(expr, log, message):
 
 def error(err_str, log=None, prefix="== Error == "):
     if log:
-        log.info("\n\n" + prefix + " " + err_str + "\n\n")
+        log.info("\n\n" + prefix + " " + err_str + "\n")
+        log.info("In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru")
+        log.info("Please provide us with params.txt and spades.log files from the output directory.\n")
     else:
-        print >>sys.stderr, "\n\n" + prefix + " " + err_str + "\n\n"
+        print >>sys.stderr, "\n\n" + prefix + " " + err_str + "\n"
+        print >>sys.stderr, "In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru"
+        print >>sys.stderr, "Please provide us with params.txt and spades.log files from the output directory.\n"
     sys.exit(1)
 
 

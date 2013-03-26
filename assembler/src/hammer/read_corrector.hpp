@@ -6,6 +6,7 @@ struct KMerStat;
 class Read;
 
 #include <vector>
+#include <cstddef>
 
 class ReadCorrector {
   const KMerData &data_;

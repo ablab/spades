@@ -1,41 +1,41 @@
 VERSION="$(cat assembler/VERSION)"
-rm -rf spades-$VERSION
-mkdir -p spades-$VERSION/src
+rm -rf SPAdes-$VERSION
+mkdir -p SPAdes-$VERSION/src
 
-cp -r assembler/src/debruijn spades-$VERSION/src/debruijn
-cp -r assembler/src/hammer spades-$VERSION/src/hammer
-cp -r assembler/src/include spades-$VERSION/src/include
-cp -r assembler/src/io spades-$VERSION/src/io
-cp -r assembler/src/mph_index spades-$VERSION/src/mph_index
-cp -r assembler/src/rectangles spades-$VERSION/src/rectangles
-cp -r assembler/src/cmake spades-$VERSION/src/cmake
-cp -r assembler/src/spades_pipeline spades-$VERSION/src/spades_pipeline
-cp assembler/src/CMakeLists.txt spades-$VERSION/src/CMakeLists.txt
+cp -r assembler/src/debruijn SPAdes-$VERSION/src/debruijn
+cp -r assembler/src/hammer SPAdes-$VERSION/src/hammer
+cp -r assembler/src/include SPAdes-$VERSION/src/include
+cp -r assembler/src/io SPAdes-$VERSION/src/io
+cp -r assembler/src/mph_index SPAdes-$VERSION/src/mph_index
+cp -r assembler/src/rectangles SPAdes-$VERSION/src/rectangles
+cp -r assembler/src/cmake SPAdes-$VERSION/src/cmake
+cp -r assembler/src/spades_pipeline SPAdes-$VERSION/src/spades_pipeline
+cp assembler/src/CMakeLists.txt SPAdes-$VERSION/src/CMakeLists.txt
 
-cp -r assembler/configs spades-$VERSION/configs
-cp -r assembler/ext spades-$VERSION/ext
-rm -r spades-$VERSION/ext/include/cute
-rm -r spades-$VERSION/ext/include/teamcity_boost
+cp -r assembler/configs SPAdes-$VERSION/configs
+cp -r assembler/ext SPAdes-$VERSION/ext
+rm -r SPAdes-$VERSION/ext/include/cute
+rm -r SPAdes-$VERSION/ext/include/teamcity_boost
 
 # cleaning .pyc and .pyo
-rm -f spades-$VERSION/src/spades_pipeline/*.pyc
-rm -f spades-$VERSION/src/spades_pipeline/*.pyo
-rm -f spades-$VERSION/src/rectangles/*.pyc
-rm -f spades-$VERSION/src/rectangles/*.pyo
-rm -f spades-$VERSION/ext/include/python_libs/joblib/*.pyc
-rm -f spades-$VERSION/ext/include/python_libs/joblib/*.pyo
+rm -f SPAdes-$VERSION/src/spades_pipeline/*.pyc
+rm -f SPAdes-$VERSION/src/spades_pipeline/*.pyo
+rm -f SPAdes-$VERSION/src/rectangles/*.pyc
+rm -f SPAdes-$VERSION/src/rectangles/*.pyo
+rm -f SPAdes-$VERSION/ext/include/python_libs/joblib/*.pyc
+rm -f SPAdes-$VERSION/ext/include/python_libs/joblib/*.pyo
 
-cp -r assembler/test_dataset spades-$VERSION/test_dataset
-cp assembler/LICENSE spades-$VERSION
-cp assembler/README spades-$VERSION
-cp assembler/VERSION spades-$VERSION
-cp assembler/spades.py spades-$VERSION
-cp assembler/spades_download_binary.py spades-$VERSION
-cp assembler/spades_compile.sh spades-$VERSION
-cp assembler/spades_init.py spades-$VERSION
-cp assembler/manual.html spades-$VERSION
+cp -r assembler/test_dataset SPAdes-$VERSION/test_dataset
+cp assembler/LICENSE SPAdes-$VERSION
+cp assembler/README SPAdes-$VERSION
+cp assembler/VERSION SPAdes-$VERSION
+cp assembler/spades.py SPAdes-$VERSION
+cp assembler/spades_compile.sh SPAdes-$VERSION
+cp assembler/spades_init.py SPAdes-$VERSION
+cp assembler/manual.html SPAdes-$VERSION
+cp assembler/GPLv2.txt SPAdes-$VERSION
 
-cd spades-$VERSION
+cd SPAdes-$VERSION
 touch src/CMakeListsInternal.txt
 rm -r configs/debruijn/datasets_archive
 rm -r configs/debruijn/datasets
@@ -52,5 +52,5 @@ cp configs/debruijn/path_extend/pe_params.info.template configs/debruijn/path_ex
 
 cd ..
 
-tar -pczf spades-$VERSION.tar.gz spades-$VERSION
-rm -r spades-$VERSION
+tar -pczf SPAdes-$VERSION.tar.gz SPAdes-$VERSION
+rm -r SPAdes-$VERSION

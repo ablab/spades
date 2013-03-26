@@ -1,6 +1,6 @@
 // just to check that headers from include and debruijn folders are correctly included
 #include "standard.hpp"
-#include "../online_vis/vis_logger.hpp"
+#include "cap_logger.hpp"
 
 #include "../online_vis/standard_vis.hpp"
 #include "segfault_handler.hpp"

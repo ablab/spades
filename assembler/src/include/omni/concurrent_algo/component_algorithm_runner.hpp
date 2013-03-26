@@ -23,6 +23,68 @@
 
 namespace omnigraph {
 
+//Deprecated! Use SmartSetIterator instead!
+template<class Graph, typename ElementId, typename Comparator = std::less<
+        ElementId> >
+class SmartSet: public GraphActionHandler<Graph> {
+public:
+    typedef typename set<ElementId, Comparator>::iterator iterator;
+    typedef typename set<ElementId, Comparator>::const_iterator const_iterator;
+private:
+    set<ElementId, Comparator> inner_set_;
+    const bool add_new_;
+
+public:
+    SmartSet(const Graph &graph, Comparator comparator = Comparator(),
+            bool add_new = true) :
+            GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(
+                    comparator), add_new_(add_new) {
+    }
+
+    template<class Iter>
+    SmartSet(Iter begin, Iter end, const Graph &graph, Comparator comparator =
+            Comparator(), bool add_new = true) :
+            GraphActionHandler<Graph>(graph, "SmartSet"), inner_set_(begin, end,
+                    comparator), add_new_(add_new) {
+    }
+
+    virtual ~SmartSet() {
+    }
+
+    virtual void HandleAdd(ElementId v) {
+        if (add_new_)
+            inner_set_.insert(v);
+    }
+
+    virtual void HandleDelete(ElementId v) {
+        inner_set_.erase(v);
+    }
+
+    iterator begin() {
+        return inner_set_.begin();
+    }
+
+    iterator end() {
+        return inner_set_.end();
+    }
+
+    const_iterator begin() const {
+        return inner_set_.begin();
+    }
+
+    const_iterator end() const {
+        return inner_set_.end();
+    }
+
+    pair<iterator, bool> insert(const ElementId& elem) {
+        return inner_set_.insert(elem);
+    }
+
+    const set<ElementId, Comparator> &inner_set() {
+        return inner_set_;
+    }
+};
+
 template <class Graph, class Argument>
 class ComponentAlgorithmRunner {
 

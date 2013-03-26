@@ -215,7 +215,7 @@ public:
     virtual size_t int_id(VertexId vertex) const {
         return graph_.int_id(vertex);
     }
-    
+
     virtual size_t int_id(EdgeId edge) const {
         return graph_.int_id(edge);
     }
@@ -336,7 +336,7 @@ public:
 		BOOST_FOREACH(VertexId vertex, deleted_vertices_) {
 			graph_.HiddenDeleteVertex(vertex);
 		}
-		
+
 		BOOST_FOREACH(VertexId vertex, vertices_to_compress_) {
 			if (graph_.CanCompressVertex(vertex)) {
 				base::CompressVertex(vertex);
@@ -401,16 +401,6 @@ protected:
 
 protected:
 	// observable graph methods.
-	virtual void FireAddingVertex(VertexId vertex) {
-		base::FireAddingVertex(vertex);
-		graph_.FireAddingVertex(vertex);
-	}
-
-	virtual void FireAddingEdge(EdgeId edge) {
-		base::FireAddingEdge(edge);
-		graph_.FireAddingEdge(edge);
-	}
-
 	virtual void FireAddVertex(VertexId vertex) {
 		base::FireAddVertex(vertex);
 		graph_.FireAddVertex(vertex);

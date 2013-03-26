@@ -92,19 +92,6 @@ private:
 //	GraphIdTrackHandler<ObservableGraph> element_order_;
 
 protected:
-	virtual void FireAddingVertex(VertexId v) {
-		for (auto it = action_handler_list_.begin();
-				it != action_handler_list_.end(); ++it) {
-			applier_->ApplyAdding(*it, v);
-		}
-	}
-
-	virtual void FireAddingEdge(EdgeId edge) {
-		for (auto it = action_handler_list_.begin();
-				it != action_handler_list_.end(); ++it) {
-			applier_->ApplyAdding(*it, edge);
-		}
-	}
 
 	virtual void FireAddVertex(VertexId v) {
 		for (auto it = action_handler_list_.begin();

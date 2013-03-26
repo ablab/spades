@@ -154,7 +154,7 @@ public:
   virtual edge_const_iterator out_begin(VertexId v) const = 0;
 
   virtual edge_const_iterator out_end(VertexId v) const = 0;
-  
+
 	virtual const vector<EdgeId> IncomingEdges(VertexId v) const = 0;
 
   virtual edge_const_iterator in_begin(VertexId v) const = 0;
@@ -202,7 +202,6 @@ public:
 	VertexId AddVertex(const VertexData& data) {
 		TRACE("Adding vertex");
 		VertexId v = HiddenAddVertex(data);
-		this->FireAddingVertex(v);
 		this->FireAddVertex(v);
 		TRACE("Vertex " << str(v) << " added");
 		return v;
@@ -228,7 +227,6 @@ public:
 	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
 		TRACE("Adding edge connecting " << str(v1) << " and " << str(v2));
 		EdgeId e = HiddenAddEdge(v1, v2, data);
-		this->FireAddingEdge(e);
 		this->FireAddEdge(e);
 		TRACE("Added edge " << str(e) << " connecting " << str(v1) << " and " << str(v2));
 		return e;
@@ -387,7 +385,6 @@ public:
 			to_merge.push_back(&(data(*it)));
 		}
 		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge));
-		this->FireAddingEdge(new_edge);
 		this->FireMerge(corrected_path, new_edge);
 
 		//		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
@@ -413,13 +410,10 @@ public:
 		pair<VertexData, pair<EdgeData, EdgeData>> newData = master_.SplitData(
 				data(edge), position);
 		VertexId splitVertex = HiddenAddVertex(newData.first);
-		this->FireAddingVertex(splitVertex);
 		EdgeId new_edge1 = HiddenAddEdge(EdgeStart(edge), splitVertex,
 				newData.second.first);
-		this->FireAddingEdge(new_edge1);
 		EdgeId new_edge2 = HiddenAddEdge(splitVertex, EdgeEnd(edge),
 				newData.second.second);
-		this->FireAddingEdge(new_edge2);
 		this->FireSplit(edge, new_edge1, new_edge2);
 		this->FireDeleteEdge(edge);
 		this->FireAddVertex(splitVertex);
@@ -437,7 +431,6 @@ public:
 				"Gluing edges " << str(edge1) << " and " << str(edge2));
 		EdgeId new_edge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),
 				master_.GlueData(data(edge1), data(edge2)));
-		this->FireAddingEdge(new_edge);
 		this->FireGlue(new_edge, edge1, edge2);
 		this->FireDeleteEdge(edge1);
 		this->FireDeleteEdge(edge2);
