@@ -104,7 +104,6 @@ class CoverageIndex : public GraphActionHandler<Graph> {
      * Method increases coverage value
      */
     void IncCoverage(EdgeId edge, int to_add) {
-        cout << "increasing coverage of e inner_id="<< edge.int_id() <<" on " << to_add << endl;
         edge->IncCoverage(to_add);
         VERIFY(edge->GetRawCoverage() >= 0);
     }
