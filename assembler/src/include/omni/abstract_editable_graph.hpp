@@ -55,11 +55,11 @@ private:
 
 	virtual void HiddenDeleteEdge(EdgeId edge) = 0;
 
-	virtual vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path) = 0;
+	virtual vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path) const = 0;
 
-	virtual vector<EdgeId> EdgesToDelete(const vector<EdgeId> &path) = 0;
+	virtual vector<EdgeId> EdgesToDelete(const vector<EdgeId> &path) const = 0;
 
-	virtual vector<VertexId> VerticesToDelete(const vector<EdgeId> &path) = 0;
+	virtual vector<VertexId> VerticesToDelete(const vector<EdgeId> &path) const = 0;
 
 	void DeleteAllOutgoing(VertexId v) {
 		TRACE("DeleteAllOutgoing " << OutgoingEdgeCount(v));
@@ -82,7 +82,7 @@ private:
 	}
 
 	void FireDeletePath(const vector<EdgeId> &edgesToDelete,
-			const vector<VertexId> &verticesToDelete) {
+			const vector<VertexId> &verticesToDelete) const {
 		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
 			this->FireDeleteEdge(*it);
 		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end();
@@ -173,6 +173,8 @@ public:
 
 	virtual bool RelatedVertices(VertexId v1, VertexId v2) const = 0;
 
+    virtual bool SplitCondition(VertexId vertex, const vector<EdgeId> &splitting_edges) const = 0;
+
 	bool CheckUniqueOutgoingEdge(VertexId v) const {
 		return OutgoingEdgeCount(v) == 1;
 	}
@@ -233,7 +235,7 @@ public:
 	}
 
 	//todo delete if not used
-	bool HasEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+	bool HasEdge(VertexId v1, VertexId v2, const EdgeData &data) const {
 		vector<EdgeId> out = OutgoingEdges(v1);
 		for (auto it = out.begin(); it != out.end(); ++it) {
 			if ((EdgeEnd(*it) == v2) && (master_.equals(data(*it), data))) {
@@ -244,7 +246,7 @@ public:
 	}
 
 	//todo delete if not used
-	EdgeId GetEdge(VertexId v1, VertexId v2, const EdgeData &edgeData) {
+	EdgeId GetEdge(VertexId v1, VertexId v2, const EdgeData &edgeData) const {
 		vector<EdgeId> out = OutgoingEdges(v1);
 		for (auto it = out.begin(); it != out.end(); ++it) {
 			if ((EdgeEnd(*it) == v2) && (master_.equals(data(*it), edgeData))) {
@@ -448,6 +450,41 @@ public:
 				"Edges glued into " << str(new_edge));
 		return new_edge;
 	}
+
+    pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId v, const vector<EdgeId> &splitting_edges, const vector<double> &split_coefficients) {
+        //TODO:: check whether we handle loops correctly!
+        VERIFY(splitting_edges.size() == split_coefficients.size());
+        VertexId new_vertex = HiddenAddVertex(data(v));
+        vector<pair<EdgeId, EdgeId>> old_2_new_edges;
+
+        FOREACH (EdgeId e, splitting_edges) {
+            VertexId start = this->EdgeStart(e);
+            VertexId end = this->EdgeEnd(e);
+            if (start == v) {
+                start = new_vertex;
+            } else if (end == v) {
+                end = new_vertex;
+            } else {
+                VERIFY(false);
+            }
+            EdgeId new_e = HiddenAddEdge(start, end, this->data(e));
+            old_2_new_edges.push_back(make_pair(e, new_e));
+        }
+
+        //firing events
+        this->FireVertexSplit(v, new_vertex, old_2_new_edges, split_coefficients);
+        this->FireAddVertex(new_vertex);
+        FOREACH(auto old_new_edge, old_2_new_edges) {
+            this->FireAddEdge(old_new_edge.second);
+        }
+
+        return make_pair(new_vertex, old_2_new_edges);
+    }
+
+    pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, const vector<EdgeId>& splitting_edges) {
+        vector<double> split_coefficients(splitting_edges.size(), 1);
+        return SplitVertex(vertex, splitting_edges, split_coefficients);
+    }
 
 private:
 	DECL_LOGGER("AbstractEditableGraph")

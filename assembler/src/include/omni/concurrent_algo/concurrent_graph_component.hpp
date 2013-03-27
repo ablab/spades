@@ -443,7 +443,6 @@ protected:
 		graph_.FireVertexSplit(newVertex, newEdges, split_coefficients, oldVertex);
 	}
 
-
 	// return edges that start from component. WARNING! border edges are included also
 	const vector<EdgeId> GetEdgesFromComponent(const std::vector<EdgeId>& edges) const {
 		vector<EdgeId> edges_from_component;
@@ -457,9 +456,6 @@ protected:
 
 		return edges_from_component;
 	}
-
-
-
 
 protected:
 

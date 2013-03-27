@@ -246,15 +246,15 @@ private:
 		delete edge.get();
 	}
 
-	virtual vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path) {
+	virtual vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path) const {
 		return path;
 	}
 
-	virtual vector<EdgeId> EdgesToDelete(const vector<EdgeId> &path) {
+	virtual vector<EdgeId> EdgesToDelete(const vector<EdgeId> &path) const {
 		return path;
 	}
 
-	virtual vector<VertexId> VerticesToDelete(const vector<EdgeId> &path) {
+	virtual vector<VertexId> VerticesToDelete(const vector<EdgeId> &path) const {
 		vector<VertexId> answer;
 		for (size_t i = 0; i + 1 < path.size(); i++) {
 			EdgeId e = path[i + 1];
@@ -264,11 +264,8 @@ private:
 		return answer;
 	}
 
-public:
 
-	bool SplitCondition(VertexId vertex, const vector<EdgeId> &splittingEdges) {
-		return true;
-	}
+public:
 
 	AbstractNonconjugateGraph(const DataMaster& master) :
 			base(new SimpleHandlerApplier<AbstractNonconjugateGraph>(), master) {
@@ -290,32 +287,9 @@ public:
 		return v1 == v2;
 	}
 
-	pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> splittingEdges) {
-		vector<double> split_coefficients(splittingEdges.size(),1);
-		return SplitVertex(vertex, splittingEdges, split_coefficients);
-	}
-
-	pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> &splittingEdges, vector<double> &split_coefficients) {
-		//TODO:: check whether we handle loops correctly!
-		VertexId newVertex = HiddenAddVertex(vertex->data());
-		vector<pair<EdgeId, EdgeId>> edge_clones;
-		for (size_t i = 0; i < splittingEdges.size(); i++) {
-			VertexId start_v = this->EdgeStart(splittingEdges[i]);
-			VertexId start_e = this->EdgeEnd(splittingEdges[i]);
-			if (start_v == vertex)
-			start_v = newVertex;
-			if (start_e == vertex)
-			start_e = newVertex;
-			EdgeId newEdge = HiddenAddEdge(start_v, start_e, splittingEdges[i]->data());
-			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
-		}
-		//FIRE
-		FireVertexSplit(newVertex, edge_clones, split_coefficients, vertex);
-		FireAddVertex(newVertex);
-		for(size_t i = 0; i < splittingEdges.size(); i ++)
-		FireAddEdge(edge_clones[i].second);
-		return make_pair(newVertex, edge_clones);
-	}
+    virtual bool SplitCondition(VertexId vertex, const vector<EdgeId> &splittingEdges) const {
+        return true;
+    }
 
 private:
 	DECL_LOGGER("AbstractNonconjugateGraph")

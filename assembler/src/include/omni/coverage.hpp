@@ -23,28 +23,28 @@
 namespace omnigraph {
 
 template<class Graph>
-class CoverageIndex: public GraphActionHandler<Graph> {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef unordered_map<EdgeId, int> map_type;
+class CoverageIndex : public GraphActionHandler<Graph> {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef unordered_map<EdgeId, int> map_type;
 
-private:
+ private:
 
 //	map_type storage_;
 
-	size_t KPlusOneMerCoverage(EdgeId edge) const {
-		return (size_t) (coverage(edge) * this->g().length(edge));
-	}
+    size_t KPlusOneMerCoverage(EdgeId edge) const {
+        return (size_t) (coverage(edge) * this->g().length(edge));
+    }
 
-
-	template<class ReadThreader>
-	Path<EdgeId> ProcessSequence(const ReadThreader& threader, const Sequence& sequence) const {
+    template<class ReadThreader>
+    Path<EdgeId> ProcessSequence(const ReadThreader& threader,
+                                 const Sequence& sequence) const {
         return threader.MapSequence(sequence);
     }
 
     void AddPathsToGraph(const Path<EdgeId>& path) {
 
-        if (path.sequence().size() == 0) 
+        if (path.sequence().size() == 0)
             return;
 
         const vector<EdgeId>& edges_list = path.sequence();
@@ -55,7 +55,7 @@ private:
         IncCoverage(edges_list[0], -int(path.start_pos()));
         EdgeId last = edges_list[edges_list.size() - 1];
         IncCoverage(last, int(path.end_pos()) - int(this->g().length(last)));
-	}
+    }
 
     void IncCoverageInMap(EdgeId edge, int toAdd, map_type& map) {
         //VERIFY(toAdd >= 0);
@@ -75,43 +75,46 @@ private:
         }
         IncCoverageInMap(edges_list[0], -int(path.start_pos()), map);
         EdgeId last = edges_list[edges_list.size() - 1];
-        IncCoverageInMap(last, int(path.end_pos()) - int(this->g().length(last)), map);
+        IncCoverageInMap(last,
+                         int(path.end_pos()) - int(this->g().length(last)),
+                         map);
     }
 
-public:
-	CoverageIndex(Graph &g) :
-		GraphActionHandler<Graph> (g, "CoverageIndex") {
-	}
+ public:
+    CoverageIndex(Graph &g)
+            : GraphActionHandler<Graph>(g, "CoverageIndex") {
+    }
 
-	virtual ~CoverageIndex() {
-	}
+    virtual ~CoverageIndex() {
+    }
 
-	void SetCoverage(EdgeId edge, int cov) {
-		VERIFY(cov >= 0);
-		edge->SetCoverage(cov);
-	}
+    void SetCoverage(EdgeId edge, int cov) {
+        VERIFY(cov >= 0);
+        edge->SetCoverage(cov);
+    }
 
-	/**
-	 * Returns average coverage of the edge
-	 */
-	double coverage(EdgeId edge) const {
-		return (double) edge->GetRawCoverage() / this->g().length(edge);
-	}
+    /**
+     * Returns average coverage of the edge
+     */
+    double coverage(EdgeId edge) const {
+        return (double) edge->GetRawCoverage() / this->g().length(edge);
+    }
 
-	/**
-	 * Method increases coverage value
-	 */
-	void IncCoverage(EdgeId edge, int toAdd) {
-		edge->IncCoverage(toAdd);
-		VERIFY(edge->GetRawCoverage() >= 0);
-	}
+    /**
+     * Method increases coverage value
+     */
+    void IncCoverage(EdgeId edge, int to_add) {
+        cout << "increasing coverage of e inner_id="<< edge.int_id() <<" on " << to_add << endl;
+        edge->IncCoverage(to_add);
+        VERIFY(edge->GetRawCoverage() >= 0);
+    }
 
-	/**
-	 * Method increases coverage value by 1
-	 */
-	void IncCoverage(EdgeId edge) {
-		IncCoverage(edge, 1);
-	}
+    /**
+     * Method increases coverage value by 1
+     */
+    void IncCoverage(EdgeId edge) {
+        IncCoverage(edge, 1);
+    }
 
     template<class ReadThreader, class Read>
     void FillIndex(io::IReader<Read>& stream, const ReadThreader& threader) {
@@ -132,25 +135,27 @@ public:
         INFO("DeBruijn graph coverage counted, reads used: " << counter);
     }
 
-	template<class ReadThreader, class Read>
-	void FillParallelIndex(io::ReadStreamVector< io::IReader<Read> >& streams, const ReadThreader& threader, size_t buffer_size) {
+    template<class ReadThreader, class Read>
+    void FillParallelIndex(io::ReadStreamVector<io::IReader<Read> >& streams,
+                           const ReadThreader& threader, size_t buffer_size) {
 
         INFO("Processing reads (takes a while)");
         perf_counter pc;
         size_t counter = 0;
 
         size_t nthreads = streams.size();
-        size_t buf_size = buffer_size / (nthreads * (sizeof(Path<EdgeId>) + 32) );
+        size_t buf_size = buffer_size
+                / (nthreads * (sizeof(Path<EdgeId> ) + 32));
 
-        #pragma omp parallel num_threads(nthreads)
+#pragma omp parallel num_threads(nthreads)
         {
-            #pragma omp for reduction(+ : counter)
+#pragma omp for reduction(+ : counter)
             for (size_t i = 0; i < nthreads; ++i) {
 
                 Read r;
                 io::IReader<Read>& stream = streams[i];
                 stream.reset();
-                std::vector< Path<EdgeId> > buffer(buf_size);
+                std::vector<Path<EdgeId> > buffer(buf_size);
 
                 size_t j = 0;
                 while (!stream.eof()) {
@@ -161,7 +166,7 @@ public:
                     if (j == buf_size) {
                         j = 0;
 
-                        #pragma omp critical
+#pragma omp critical
                         {
                             for (size_t l = 0; l < buf_size; ++l) {
                                 AddPathsToGraph(buffer[l]);
@@ -170,7 +175,7 @@ public:
                     }
                 }
 
-                #pragma omp critical
+#pragma omp critical
                 {
                     for (size_t l = 0; l < j; ++l) {
                         AddPathsToGraph(buffer[l]);
@@ -183,10 +188,12 @@ public:
         INFO("DeBruijn graph coverage counted, reads used: " << counter);
 
         INFO("Elapsed time: " << pc.time_ms());
-	}
+    }
 
     template<class ReadThreader, class Read>
-    void FillFastParallelIndex(io::ReadStreamVector< io::IReader<Read> >& streams, const ReadThreader& threader) {
+    void FillFastParallelIndex(
+            io::ReadStreamVector<io::IReader<Read> >& streams,
+            const ReadThreader& threader) {
 
         INFO("Processing reads (takes a while)");
         perf_counter pc;
@@ -201,10 +208,9 @@ public:
             maps[i] = new map_type();
         }
 
-
-        #pragma omp parallel num_threads(nthreads)
+#pragma omp parallel num_threads(nthreads)
         {
-            #pragma omp for reduction(+ : counter)
+#pragma omp for reduction(+ : counter)
             for (size_t i = 0; i < nthreads; ++i) {
 
                 Read r;
@@ -225,7 +231,7 @@ public:
         INFO("Merging maps");
         for (size_t i = 0; i < nthreads; ++i) {
             for (auto it = maps[i]->begin(); it != maps[i]->end(); ++it) {
-            	it->first->IncCoverage(it->second);
+                it->first->IncCoverage(it->second);
             }
             delete maps[i];
         }
@@ -235,26 +241,24 @@ public:
         INFO("Elapsed time: " << pc.time_ms());
     }
 
+    virtual void HandleDelete(EdgeId edge) {
+        SetCoverage(edge, 0);
+    }
 
-	virtual void HandleDelete(EdgeId edge) {
-		SetCoverage(edge, 0);
-	}
+    virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
+        size_t coverage = 0;
+        for (auto it = old_edges.begin(); it != old_edges.end(); ++it) {
+            coverage += KPlusOneMerCoverage(*it);
+        }
+        SetCoverage(new_edge, coverage);
+    }
 
-	virtual void HandleMerge(const vector<EdgeId>& oldEdges, EdgeId newEdge) {
-		size_t coverage = 0;
-		for (auto it = oldEdges.begin(); it
-				!= oldEdges.end(); ++it) {
-			coverage += KPlusOneMerCoverage(*it);
-		}
-		SetCoverage(newEdge, coverage);
-	}
+    virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+        IncCoverage(new_edge, KPlusOneMerCoverage(edge2));
+        IncCoverage(new_edge, KPlusOneMerCoverage(edge1));
+    }
 
-	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		IncCoverage(new_edge, KPlusOneMerCoverage(edge2));
-		IncCoverage(new_edge, KPlusOneMerCoverage(edge1));
-	}
-
-	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+    virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) {
 //		size_t length1 = this->g().length(newEdge1);
 //		size_t length = this->g().length(oldEdge);
 //		size_t coverage = KPlusOneMerCoverage(oldEdge);
@@ -266,27 +270,36 @@ public:
 //			coverage2 = 1;
 //		SetCoverage(newEdge1, coverage1);
 //		SetCoverage(newEdge2, coverage2);
-		double avg_cov = coverage(oldEdge);
-		SetCoverage(newEdge1, size_t(max(1., math::round(avg_cov * this->g().length(newEdge1)))));
-		SetCoverage(newEdge2, size_t(max(1., math::round(avg_cov * this->g().length(newEdge2)))));
-	}
+        double avg_cov = coverage(old_edge);
+        SetCoverage(
+                new_edge1,
+                size_t(max(1.,
+                           math::round(avg_cov * this->g().length(new_edge1)))));
+        SetCoverage(
+                new_edge2,
+                size_t(max(1.,
+                           math::round(avg_cov * this->g().length(new_edge2)))));
+    }
 
- 	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
-		 DEBUG("HandleMerge by coverage handler");
- 		 size_t n = newEdges.size();
-		 for(size_t j = 0; j < n; j++) {
-			 EdgeId old_ID = newEdges[j].first;
-			 EdgeId new_ID = newEdges[j].second;
-			 IncCoverage(new_ID, floor(KPlusOneMerCoverage(old_ID)*split_coefficients[j]));
-		 }
- 	 }
+    void HandleVertexSplit(VertexId, VertexId,
+                           const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
+                           const vector<double>& split_coefficients) {
+        cout << old_2_new_edges.size() << " " << split_coefficients.size();
+        for (size_t j = 0; j < old_2_new_edges.size(); ++j) {
+            EdgeId old_e = old_2_new_edges[j].first;
+            EdgeId new_e = old_2_new_edges[j].second;
+            IncCoverage(
+                    new_e,
+                    floor(KPlusOneMerCoverage(old_e) * split_coefficients[j]));
+        }
+    }
 
- 	/*
- 	 * Is thread safe if edges different threads process different edges.
- 	 */
-	bool IsThreadSafe() const {
-		return true;
-	}
+    /*
+     * Is thread safe if edges different threads process different edges.
+     */
+    bool IsThreadSafe() const {
+        return true;
+    }
 };
 
 }
