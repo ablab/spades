@@ -14,13 +14,15 @@
 #include "ireader.hpp"
 #include "single_read.hpp"
 #include "paired_read.hpp"
+#include "multifile_reader.hpp"
+#include "easy_reader.hpp"
 
 namespace io {
 
 typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
-
-
+typedef io::MultifileReader<io::PairedRead> MultiPairedStream;
+typedef io::MultifileReader<io::SingleRead> MultiSingleStream;
 
 template<class Read>
 class PredictableIReader: public io::IReader<Read> {
@@ -34,12 +36,9 @@ public:
 // Use FileReadStream and InsertSizeModyfing instead
 
 class SeqSingleReadStream: public io::PredictableIReader<io::SingleReadSeq> {
-
 private:
     std::ifstream stream_;
-
     ReadStat read_stat_;
-
     size_t current_;
 
 public:

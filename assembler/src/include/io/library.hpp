@@ -3,10 +3,6 @@
 
 #include "adt/chained_iterator.hpp"
 
-#include "io/multifile_reader.hpp"
-#include "io/easy_reader.hpp"
-
-
 #include <boost/iterator/iterator_facade.hpp>
 #include <yaml-cpp/yaml.h>
 
@@ -118,45 +114,6 @@ class SequencingLibraryBase {
     // NOTE: Do not forget about the contract with single_begin here!
     return single_reads_iterator(single_reads_.end(), single_reads_.end());
   }
-
-  typedef io::IReader<io::SingleRead> ReadStream;
-  typedef io::IReader<io::PairedRead> PairedReadStream;
-  typedef io::MultifileReader<io::PairedRead> MultiPairedStream;
-  typedef io::MultifileReader<io::SingleRead> MultiSingleStream;
-
-  std::auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc,
-                                                     size_t insert_size,
-                                                     bool change_read_order = false,
-                                                     bool revert_second = true,
-                                                     io::OffsetType offset_type = io::PhredOffset) const {
-    std::vector<PairedReadStream*> streams;
-    for (auto it = paired_begin(); it != paired_end(); ++it) {
-      io::PairedEasyReader* reader = new io::PairedEasyReader(*it, followed_by_rc, insert_size, change_read_order, revert_second, offset_type);
-      streams.push_back(reader);
-    }
-    return std::auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
-  }
-
-
-  std::auto_ptr<ReadStream> single_easy_reader(bool followed_by_rc,
-                                               bool including_paired_reads,
-                                               io::OffsetType offset_type = io::PhredOffset) const {
-
-    std::vector<ReadStream*> streams;
-    if (including_paired_reads) {
-      for (auto it = reads_begin(); it != reads_end(); ++it) {
-        //do we need input_file function here?
-        streams.push_back(new io::EasyReader(*it, followed_by_rc, offset_type));
-      }
-    } else {
-      for (auto it = single_begin(); it != single_end(); ++it) {
-        streams.push_back(new io::EasyReader(*it, followed_by_rc, offset_type));
-      }
-    }
-
-    return std::auto_ptr<ReadStream>(new MultiSingleStream(streams, true));
-  }
-
 
  private:
   LibraryType type_;
