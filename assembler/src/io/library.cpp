@@ -23,7 +23,7 @@ struct convert<SequencingLibraryBase> {
       node["right reads"].push_back(it->second);
     }
     for (auto it = rhs.single_begin(), et = rhs.single_end(); et != it; ++it)
-      node["single"].push_back(*it);
+      node["single reads"].push_back(*it);
 
     return node;
   }
