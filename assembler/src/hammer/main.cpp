@@ -281,7 +281,7 @@ int main(int argc, char * argv[]) {
       // break;
     }
 
-    std::string fname = HammerTools::getFilename(cfg::get().input_output_dir, "corrected.yaml");
+    std::string fname = HammerTools::getFilename(cfg::get().output_dir, "corrected.yaml");
     INFO("Saving corrected dataset description to " << fname);
     cfg::get().dataset.save(fname);
 
