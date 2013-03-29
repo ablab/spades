@@ -136,7 +136,7 @@
 #define JEMALLOC_TLS_MODEL @JEMALLOC_TLS_MODEL@
 
 /* JEMALLOC_CC_SILENCE enables code that silences unuseful compiler warnings. */
-#undef JEMALLOC_CC_SILENCE
+#define JEMALLOC_CC_SILENCE
 
 /*
  * JEMALLOC_DEBUG enables assertions and other sanity checks, and disables
