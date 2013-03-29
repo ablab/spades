@@ -25,7 +25,7 @@ def generate_dataset(cfg):
     import process_cfg
     dataset_cfg = dict()
     dataset_cfg["single_cell"] = process_cfg.bool_to_str(cfg.single_cell)
-    dataset_cfg["reads"] = os.path.join(cfg.tmp_dir, "corrected.yaml")
+    dataset_cfg["reads"] = os.path.join(cfg.output_dir, "corrected.yaml")
     if "reference_genome" in cfg.__dict__:
         dataset_cfg["reference_genome"] = cfg.reference_genome
 
