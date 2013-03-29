@@ -52,7 +52,7 @@ struct convert<LibraryOrientation> {
   }
 
   static bool decode(const Node& node, LibraryOrientation& rhs) {
-    std::string orientation = node.as<std::string>();
+    std::string orientation = node.as<std::string>("");
 
     if (orientation == "fr")
       rhs = LibraryOrientation::FR;
