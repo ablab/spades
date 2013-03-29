@@ -142,7 +142,7 @@ void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
 void HammerTools::CorrectReadFile(const KMerData &data,
                                   size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                                   const std::string &fname,
-                                  ofstream *outf_good, ofstream *outf_bad ) {
+                                  std::ofstream *outf_good, std::ofstream *outf_bad) {
   int qvoffset = cfg::get().input_qvoffset;
   int trim_quality = cfg::get().input_trim_quality;
 
@@ -282,6 +282,11 @@ hint_t HammerTools::CorrectAllReads() {
       std::string outcor = HammerTools::getReadsFilename(cfg::get().output_dir, *I,  Globals::iteration_no, "cor.fastq");
       std::ofstream ofgood(outcor.c_str());
       std::ofstream ofbad(HammerTools::getReadsFilename(cfg::get().output_dir, *I,  Globals::iteration_no, "bad.fastq").c_str());
+
+      HammerTools::CorrectReadFile(*Globals::kmer_data,
+                                   changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
+                                   *I,
+                                   &ofgood, &ofbad);
       outlib.push_back_single(outcor);
     }
     outdataset.push_back(outlib);
