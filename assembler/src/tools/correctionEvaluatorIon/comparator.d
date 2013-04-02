@@ -226,6 +226,7 @@ class Comparator
       {
         delta_ -= new_lev_dist - old_lev_dist;
         degraded = false;
+        ++err_read_improved_;
         ++err_read_fully_corrected_;
         if (old_lev_dist == 1)
           ++one_err_read_corrected_;

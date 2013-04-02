@@ -14,6 +14,7 @@
 
 #include <deque>
 #include <vector>
+#include <iterator>
 #include <limits>
 #include <cassert>
 #include <list>
@@ -76,6 +77,7 @@ static int overlapAlignH(It1 a_begin, It1 a_end, It2 b_begin, It2 b_end,
     for ( ; a_it != a_end && b_it != b_end; ++a_it, ++b_it)
       if (a_it->nucl == b_it->nucl)
         score += std::min(a_it->len, b_it->len);
+    score -= i / 4;
     if (score > best_score) {
       best_offset = offset;
       best_score = score;
@@ -147,13 +149,13 @@ static int alignH(It1 read_begin, It1 read_end,
   const int kDirUp = 1;
   const int kDirLeft = 2;
 
-  const int kBaseDiff = -2;
+  const int kBaseDiff = -3;
   const int kRunInsertionStart = -4;
-  const int kRunInsertionExtend = -2;
+  const int kRunInsertionExtend = -5;
   const int kRunDeletionStart = -4;
-  const int kRunDeletionExtend = -2;
+  const int kRunDeletionExtend = -5;
   const int kNuclMismatch = -5;
-  const int kNuclMatch = 2;
+  const int kNuclMatch = 1;
   const int kFullMatch = 5;
 
   size_t m = x_end - x_begin;
@@ -223,16 +225,21 @@ static int alignH(It1 read_begin, It1 read_end,
 
       scores(i, j) = Score(best_score, best_dir);
 
-      if ((i == m || j == n) && best_score > highest_entry) {
-        highest_entry = best_score;
-        highest_x = i;
-        highest_y = j;
+      if (i == m || j == n) {
+        const int kOffset = 4;
+        int approx_offset = i - j - left_offset;
+        int offset_penalty = std::abs(approx_offset) * kOffset;
+        if (best_score - offset_penalty > highest_entry) {
+          highest_entry = best_score;
+          highest_x = i;
+          highest_y = j;
+        }
       }
     }
   }
 
-  int min_acceptable_score = ((kNuclMatch + kFullMatch) * n_cmp * 3) / 4;
-  if (highest_entry < min_acceptable_score && n_cmp < 16U)
+  int min_acceptable_score = ((kNuclMatch + kFullMatch) * n_cmp * 4) / 5;
+  if (scores(highest_x, highest_y).value < min_acceptable_score && n_cmp < 16U)
     return alignH(read_begin, read_end,
                   consensus_begin, consensus_end,
                   approx_read_offset, n_skip_consensus,
@@ -515,12 +522,27 @@ class CorrectedRead {
           return DoMerge(chunk);
         }
 
+        int n_trim = 0;
+        int n_runs = consensus.size();
+
+        if (overlap >= 3 && n_runs > overlap) {
+          for ( ; n_trim < overlap / 3; ++n_trim) {
+            auto score1 = consensus_scores[n_runs - n_trim - 1];
+            auto score2 = chunk.consensus_scores[overlap - n_trim - 1];
+            if (score1 > score2)
+              break;
+          }
+
+          consensus.resize(consensus.size() - n_trim);
+          consensus_scores.resize(consensus_scores.size() - n_trim);
+        }
+
         consensus.insert(consensus.end(),
-                         chunk.consensus.begin() + overlap,
+                         chunk.consensus.begin() + overlap - n_trim,
                          chunk.consensus.end());
 
         consensus_scores.insert(consensus_scores.end(),
-                                chunk.consensus_scores.begin() + overlap,
+                                chunk.consensus_scores.begin() + overlap - n_trim,
                                 chunk.consensus_scores.end());
       }
 
@@ -541,7 +563,8 @@ class CorrectedRead {
         return false;
 
       AlignRightEndAgainstRead();
-      chunk.AlignLeftEndAgainstRead();
+      if (chunk.alignment != kChunkLeftAligned)
+        chunk.AlignLeftEndAgainstRead();
       return DoMerge(chunk);
     }
 
@@ -594,8 +617,18 @@ class CorrectedRead {
       hammer::HKMer seq = gen.kmer();
       gen.Next();
 
-      hammer::KMerStat k = kmer_data_[kmer_data_[seq].changeto];
-      hammer::HKMer center = k.kmer;
+      hammer::KMerStat k1 = kmer_data_[kmer_data_[seq].changeto];
+      hammer::KMerStat k2 = kmer_data_[kmer_data_[!seq].changeto];
+
+      hammer::KMerStat k;
+      hammer::HKMer center;
+      if (k1.qual < k2.qual) {
+        k = k1;
+        center = k.kmer;
+      } else {
+        k = k2;
+        center = !k.kmer;
+      }
 
       const double LOW_QUALITY_THRESHOLD = 1e-11;
 
@@ -604,9 +637,11 @@ class CorrectedRead {
       // if too many centers are skipped, start new chunk
       if (skipped > 4) {
         if (!start_new_chunk) {
-          PushChunk(scores, approx_read_offset);
           start_new_chunk = true;
-          pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
+          if (scores.size() > hammer::K) {
+            PushChunk(scores, approx_read_offset);
+            pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
+          }
         }
         pos += skipped + 1;
         skipped = 0;
@@ -638,11 +673,13 @@ class CorrectedRead {
                                    center.begin(), center.end(), 3, 5, &offset);
         if (!aligned || chunk_pos + skipped + offset < 0) {
           if (!start_new_chunk) {
-            PushChunk(scores, approx_read_offset);
-            pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
-            pos += skipped + 1;
-            skipped = 0;
+            if (scores.size() > hammer::K) {
+              PushChunk(scores, approx_read_offset);
+              pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
+            }
           }
+          pos += skipped + 1;
+          skipped = 0;
           start_new_chunk = true;
         } else {
           if (offset < 0)
@@ -712,15 +749,39 @@ process_next_kmer: ;
 
     ++iter;
     while (iter != chunks_.end()) {
-      merged.TryMergeWith(*iter);
+      if (iter->consensus.size() > hammer::K)
+        merged.TryMergeWith(*iter);
       iter = chunks_.erase(iter);
     }
 
     corrected_runs_ = std::move(merged.consensus);
   }
+
+  void AttachUncorrectedRuns() {
+    const auto& data = raw_read_.data();
+    int n_raw = raw_read_.size();
+    int n_corr = corrected_runs_.size();
+    const int skip_from_end = 3;
+    if (n_corr < skip_from_end) {
+      std::copy(data.begin(), data.end(), std::back_inserter(corrected_runs_));
+    } else {
+      const int eps = 3;
+      if (n_corr + eps < n_raw) {
+        int delta = alignH(data.rbegin(), data.rend(),
+                           corrected_runs_.rbegin(), corrected_runs_.rend(),
+                           n_raw - n_corr, skip_from_end);
+        int read_offset = n_corr - delta;
+        if (read_offset < n_raw) {
+          corrected_runs_.resize(n_corr - skip_from_end);
+          std::copy(data.begin() + read_offset, data.end(), 
+                    std::back_inserter(corrected_runs_));
+        }
+      }
+    }
+  }
   
   std::string GetSequenceString() const {
-    if (chunks_.empty())
+    if (chunks_.empty() && corrected_runs_.empty())
       return "";
     std::string res;
     if (!corrected_runs_.empty()) {
@@ -754,6 +815,7 @@ class SingleReadCorrector {
 
     CorrectedRead read(r, kmer_data_);
     read.MergeChunks();
+    read.AttachUncorrectedRuns();
 
     auto seq = read.GetSequenceString();
     if (seq.empty())
