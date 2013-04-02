@@ -77,7 +77,8 @@ public:
 		}
 	}
 
-	bool followed_by(EdgePosition& ep,  int max_dist = 1, double relative_cutoff = 0) {
+	bool followed_by(EdgePosition& ep, int max_dist = 1,
+			double relative_cutoff = 0) {
 
 		if (contigId_ != ep.contigId_)
 			return false;
@@ -85,9 +86,9 @@ public:
 			return false;
 		if (end() + max_dist < ep.start())
 			return false;
-		if (m_end() > ep.m_start()  + max_dist)
+		if (m_end() > ep.m_start() + max_dist)
 			return false;
-		if (m_end() + max_dist < ep.m_start() )
+		if (m_end() + max_dist < ep.m_start())
 			return false;
 		return true;
 	}
@@ -277,7 +278,7 @@ public:
 			EdgePosition activePosition = EdgesPositions[NewEdgeId][0];
 			for (size_t i = 1; i < EdgesPositions[NewEdgeId].size(); i++) {
 				if (activePosition.followed_by(EdgesPositions[NewEdgeId][i],
-						  max(max_single_gap_, int(relative_cutoff*this->g().length(NewEdgeId) )))) {
+						max(max_single_gap_, int(relative_cutoff * this->g().length(NewEdgeId))))) {
 					activePosition.extend_by(EdgesPositions[NewEdgeId][i]);
 				} else {
 					new_vec.push_back(activePosition);
@@ -328,12 +329,12 @@ public:
 	}
 
 	bool IsConsistentWithGenome(vector<EdgeId> Path) {
-		for(size_t i = 0; i < Path.size(); i++){
+		for (size_t i = 0; i < Path.size(); i++) {
 //TODO: magic constants
 			FillPositionGaps(Path[i], 0.2);
 		}
-		for(size_t i = 0; i < Path.size() - 1; i++){
-			if (this->g().EdgeStart(Path[i+1]) != this->g().EdgeEnd(Path[i]))
+		for (size_t i = 0; i < Path.size() - 1; i++) {
+			if (this->g().EdgeStart(Path[i + 1]) != this->g().EdgeEnd(Path[i]))
 				return false;
 		}
 
@@ -346,8 +347,7 @@ public:
 
 			int len = this->g().length(Path[0]);
 			for (size_t i = 1; i < Path.size(); i++) {
-				INFO(
-						this->g().int_id(Path[i]) << "  "<< EdgesPositions[Path[i]].size() << " positions");
+				DEBUG(this->g().int_id(Path[i]) << "  "<< EdgesPositions[Path[i]].size() << " positions");
 				if (is_careful())
 					res = RangeGluePositionsLists(res, EdgesPositions[Path[i]],
 							max_single_gap_, len);
@@ -361,7 +361,7 @@ public:
 					for (size_t i = 0; i < res.size(); i++) {
 //						INFO(res[i].contigId_);
 						if (abs(res[i].m_end() - res[i].m_start() - len + 1)
-								< max(1.0*max_single_gap_, 0.07 * len))
+								< max(1.0 * max_single_gap_, 0.07 * len))
 							//todo what was it???
 //					if (res[i].contigId_ < 15)
 							return true; //ToDo: Current pipeline trace genome as contigsId 0, 1, 10 and 11 but in future it can be not true.
@@ -578,21 +578,21 @@ public:
 	}
 
 	void HandleVertexSplit(VertexId, VertexId,
-                           const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-                           const vector<double>&) {
-		FOREACH (auto cur_edges_pair, old_2_new_edges) {
-			AddEdgePosition(cur_edges_pair.second,
-					EdgesPositions[cur_edges_pair.first]);
-		}
+			const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
+			const vector<double>&) {
+FOREACH	(auto cur_edges_pair, old_2_new_edges) {
+		AddEdgePosition(cur_edges_pair.second,
+				EdgesPositions[cur_edges_pair.first]);
 	}
+}
 
-	void clear() {
-		EdgesPositions.clear();
-	}
+void clear() {
+	EdgesPositions.clear();
+}
 
 private:
-	DECL_LOGGER("EdgesPositionHandler")
-	;
+DECL_LOGGER("EdgesPositionHandler")
+;
 };
 
 }
