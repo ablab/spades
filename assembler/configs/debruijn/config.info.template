@@ -132,8 +132,8 @@ pos
 	max_single_gap 50
 	contigs_for_threading ./data/debruijn/contigs.fasta
     contigs_to_analyze ./data/debruijn/contigs.fasta
-	late_threading false
-	careful_labeling false
+	late_threading true
+	careful_labeling true
 
 }
 
