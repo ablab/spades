@@ -80,7 +80,7 @@ public:
 			g_(g), removal_handler_(removal_handler) {
 	}
 
-	bool DeleteEdge(EdgeId e) {
+	bool DeleteEdge(EdgeId e) const {
 		TRACE("Deletion of edge " << g_.str(e));
 		VertexId start = g_.EdgeStart(e);
 		VertexId end = g_.EdgeEnd(e);

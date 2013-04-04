@@ -37,7 +37,6 @@ class CapEnvironment : public Environment {
   std::vector<std::string> init_genomes_paths_;
   // Genome sequences themselves. Yes, it may be lots of GBs.
   std::vector<std::shared_ptr<Sequence> > genomes_;
-
   std::vector<std::string> genomes_names_;
 
   std::shared_ptr<RtSeqGraphPack> gp_rtseq_;
@@ -51,6 +50,11 @@ class CapEnvironment : public Environment {
   EdgesPositionHandler<Graph> *edge_pos_;
 	IdTrackHandler<Graph> *int_ids_;
   
+  // Information concerning the default way to write out info about diversities
+  std::string event_log_path_;
+  // Either "w" or "a", and using the "a" mode during the environment load file
+  // will be anyway recreated (and purged) though.
+  std::string event_log_file_mode_;
 
   // Environment Manager for complex methods on this Environment
   std::shared_ptr<CapEnvironmentManager> manager_;
@@ -74,6 +78,8 @@ class CapEnvironment : public Environment {
         graph_(NULL),
         edge_pos_(NULL),
         int_ids_(NULL),
+        event_log_path_(dir_ + "/" + cap_cfg::get().default_log_filename),
+        event_log_file_mode_(cap_cfg::get().default_log_file_mode),
         manager_(std::make_shared<CapEnvironmentManager>(this)),
         kDefaultGPWorkdir("./tmp") {
     cap::utils::MakeDirPath(dir_);
@@ -119,6 +125,12 @@ class CapEnvironment : public Environment {
   }
   const ColorHandler &coloring() const {
     return *coloring_;
+  }
+  const std::string &event_log_path() {
+    return event_log_path_;
+  }
+  const std::string &event_log_file_mode() {
+    return event_log_file_mode_;
   }
   CapEnvironmentManager &manager() const {
     return *manager_;

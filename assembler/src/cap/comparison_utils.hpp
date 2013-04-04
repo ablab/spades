@@ -32,11 +32,13 @@ MappingRange TrivialRange(const Graph& g, typename Graph::EdgeId e, size_t& offs
 template <class Graph>
 MappingPath<EdgeId> TrivialMappingPath(const Graph& g
 		, const vector<typename Graph::EdgeId>& edges) {
+  INFO("start tripath");
 	vector<MappingRange> ranges;
 	size_t offset = 0;
 	for (auto it = edges.begin(); it != edges.end(); ++it) {
 		ranges.push_back(TrivialRange(g, *it, offset));
 	}
+  INFO("end tripath");
 	return MappingPath<EdgeId>(edges, ranges);
 }
 

@@ -15,6 +15,9 @@ class CapOnlineVisualizer : public OnlineVisualizer<CapEnvironment> {
     AddCommand(shared_ptr<Command<CapEnvironment> >(new RefineCommand));
     AddCommand(shared_ptr<Command<CapEnvironment> >(new SaveGenomesCommand));
     AddCommand(shared_ptr<Command<CapEnvironment> >(new SaveGraphCommand));
+    AddCommand(shared_ptr<Command<CapEnvironment> >(new FindIndelsCommand));
+    AddCommand(shared_ptr<Command<CapEnvironment> >(new FindInversionsCommand));
+    //AddCommand(shared_ptr<Command<CapEnvironment> >(new LoadGraphCommand));
   }
 
  public:

@@ -285,7 +285,7 @@ private:
 			return false;
 		}
 		for (auto it = path.begin(); it != path.end(); ++it) {
-			if ((coloring_.Color(*it)[assembly_color_]) == 0) {
+			if ((coloring_.Color(*it) & assembly_color_) == kEmptyColorSet) {
 				DEBUG("false");
 				return false;
 			}
@@ -436,14 +436,14 @@ class SimpleInDelCorrector {
 	}
 
 	void GenPicAlongPath(const vector<EdgeId> path, size_t cnt) {
-		make_dir("ref_correction");
+    utils::MakeDirPath("ref_correction");
 		WriteComponentsAlongPath(g_, StrGraphLabeler<Graph>(g_),
 				"ref_correction/" + ToString(cnt) + ".dot", 100000, 10,
 				TrivialMappingPath(g_, path), *ConstructColorer(coloring_));
 	}
 
 	void GenPicAroundEdge(EdgeId e, size_t cnt) {
-		make_dir("ref_correction");
+    utils::MakeDirPath("ref_correction");
 		WriteComponentsAroundEdge(g_, e,
 				"ref_correction/" + ToString(cnt) + ".dot",
 				*ConstructColorer(coloring_), StrGraphLabeler<Graph>(g_),
@@ -539,7 +539,7 @@ public:
 	}
 
 	void Analyze() {
-		remove_dir("ref_correction");
+		//remove_dir("ref_correction");
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			if (coloring_.Color(*it) == genome_color_
 					&& genome_path_.mult(*it) > 0) {
