@@ -154,7 +154,9 @@ class BuildGraphCommand : public LocalCommand<CapEnvironment> {
            " Sets K for multicolored De Bruijn graph and builds graph from genomes previously added to environment (see `add_genome`)\n"
            " K should be odd.\n"
            "Usage:\n"
-           "> build_graph <k>\n";
+           "> build_graph <k> [<fill_pos>=Y]\n"
+           "Where\n"
+           " <fill_pos> is either Y or N\n";
   }
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
@@ -163,8 +165,10 @@ class BuildGraphCommand : public LocalCommand<CapEnvironment> {
     if (!CheckEnoughArguments(args)) {
       return;
     }
-    std::stringstream ss(args[1]);
     size_t k;
+    bool fill_pos = true;
+
+    std::stringstream ss(args[1]);
     ss >> k;
 
     if (k % 2 == 0) {
@@ -172,8 +176,15 @@ class BuildGraphCommand : public LocalCommand<CapEnvironment> {
       return;
     }
 
+    if (args.size() > 2) {
+      VERIFY(args[2].size());
+      if (args[2][0] == 'N' || args[2][0] == 'n') {
+        fill_pos = false;
+      }
+    }
+
     cout << "Building graph..";
-    curr_env.manager().ConstructGraph(k);
+    curr_env.manager().ConstructGraph(k, fill_pos);
     cout << " Done.\n";
   }
 
@@ -291,5 +302,142 @@ class SaveGraphCommand : public LocalCommand<CapEnvironment> {
   }
 
 };
+
+class FindIndelsCommand : public LocalCommand<CapEnvironment> {
+ public:
+  FindIndelsCommand() : LocalCommand<CapEnvironment>("find_indels") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `find_indels`\n"
+           " Finds common in-del events that transform genomes into each other and writes out them.\n"
+           " If no output file is specified, the results are written to the default file (see `log_file`)\n"
+           " Also there is a feature to mask found indels in graph (!!! this does not affect sequences)\n"
+           " Note that graph should be built prior to finding indel events\n"
+           "Usage:\n"
+           "> find_indels [<mask>=N [<filename>]]\n"
+           "Where\n"
+           " <mask> is either Y or N\n"
+           "For example:\n"
+           "> find_indels Y ./indels/log5.txt\n"
+           "NOTE: when output file is specified it is overwritten if exists\n";
+  }
+
+  virtual void Execute(CapEnvironment &curr_env, const ArgumentList &arg_list) const {
+    if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
+      cout << "You should build graph prior to saving it. Aborting.\n";
+      return;
+    }
+
+    const vector<string> &args = arg_list.GetAllArguments();
+
+    bool mask_indels = false;
+    std::string filename = curr_env.event_log_path();
+    std::string mode = curr_env.event_log_file_mode();
+
+    if (args.size() > 1) {
+      VERIFY(args[1].size());
+      if (args[1][0] == 'Y' || args[1][0] == 'y') {
+        mask_indels = true;
+      }
+    }
+    if (args.size() > 2) {
+      filename = args[2];
+      mode = "w";
+    }
+
+    int code = curr_env.manager().FindIndels(mask_indels, filename, mode);
+    if (code == 1) {
+      cout << "Output file could not be opened for writing. Aborting.\n";
+    }
+  }
+
+};
+
+class FindInversionsCommand : public LocalCommand<CapEnvironment> {
+ public:
+  FindInversionsCommand() : LocalCommand<CapEnvironment>("find_inversions") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `find_inversions`\n"
+           " Finds common inversion events that transform genomes into each other and writes out them (actually, NO).\n"
+           " Note that graph should be built prior to finding inversion events\n"
+           "Usage:\n"
+           "> find_inversions\n";
+  }
+
+  virtual void Execute(CapEnvironment &curr_env, const ArgumentList &arg_list) const {
+    if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
+      cout << "You should build graph prior to saving it. Aborting.\n";
+      return;
+    }
+
+    const vector<string> &args = arg_list.GetAllArguments();
+
+    bool mask_inversions = false;
+    std::string filename = curr_env.event_log_path();
+    std::string mode = curr_env.event_log_file_mode();
+
+    /*
+    if (args.size() > 1) {
+      VERIFY(args[1].size());
+      if (args[1][0] == 'Y' || args[1][0] == 'y') {
+        mask_indels = true;
+      }
+    }
+    if (args.size() > 2) {
+      filename = args[2];
+      mode = "w";
+    }
+    */
+
+    int code = curr_env.manager().FindInversions(mask_inversions, filename, mode);
+    /*
+    if (code == 1) {
+      cout << "Output file could not be opened for writing. Aborting.\n";
+    }
+    */
+  }
+
+};
+
+/*
+class LoadGraphCommand : public LocalCommand<CapEnvironment> {
+ public:
+  LoadGraphCommand() : LocalCommand<CapEnvironment>("load_graph") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `load_graph`\n"
+           " Loads graph from previously saved saves\n"
+           "Usage:\n"
+           "> load_graph <K> <path>\n"
+           "For example:\n"
+           "> find_indels 55 ./masked/graph\n";
+  }
+
+  virtual void Execute(CapEnvironment &curr_env, const ArgumentList &arg_list) const {
+    if (!CheckCorrectness(arg_list)) {
+      return;
+    }
+
+    const vector<string> &args = arg_list.GetAllArguments();
+
+    size_t K = 21;
+    stringstream ss(args[1]);
+    ss >> K;
+    const std::string &path = args[2];
+
+    curr_env.manager().LoadGraphFromSaves(K, path);
+  }
+
+ protected:
+  virtual size_t MinArgNumber() const {
+    return 2;
+  }
+
+};
+*/
 
 }

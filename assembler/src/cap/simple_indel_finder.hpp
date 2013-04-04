@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include "coloring.hpp"
+#include "omni/graph_processing_algorithm.hpp"
 
 namespace cap {
 
@@ -21,12 +22,21 @@ class SimpleIndelFinder {
   gp_t &gp_;
   Graph &g_;
   ColorHandler<Graph> &coloring_;
+
   ostream &output_stream_;
+
+  bool mask_indels_;
+  EdgeRemover<Graph> edge_remover_;
 
   size_t colors_number_;
   size_t coloring_version_;
 
-  map<VertexId, u64int> processor_coloring_;
+  unordered_map<VertexId, u64int> processor_coloring_;
+  unordered_set<EdgeId> preserve_list_;
+
+  vector<EdgeId> sure_delete_list_;
+  vector<EdgeId> probable_delete_list_;
+
   VertexId restricted_vertex_;
 
   bool found_merge_point_;
@@ -54,7 +64,6 @@ class SimpleIndelFinder {
     if (!found_merge_point_) {
       LogHeader();
     }
-    found_merge_point_ = true;
 
     // Recover some thread params
     TColorSet thread_colorset = TColorSet::AllColorsSet(colors_number_);
@@ -152,7 +161,28 @@ class SimpleIndelFinder {
     path_seq.push_back(edge);
 
     if (GetVertexColor(vertex) == color_mask_needed) {
+      if (mask_indels_) {
+        char state = 0;
+        for (auto it = path_seq.rbegin(); it != path_seq.rend(); ++it) {
+          if (!found_merge_point_)
+            preserve_list_.insert(*it);
+          else {
+            if (preserve_list_.count(*it)) {
+              state = 0;
+            } else {
+              if (state == 0) {
+                sure_delete_list_.push_back(*it);
+              } else {
+                probable_delete_list_.push_back(*it);
+              }
+
+              state = 1;
+            }
+          }
+        }
+      }
       LogThread(path_seq);
+      found_merge_point_ = true;
 
       // dirty hack now
       coloring_.PaintEdge(edge, TColorSet::SingleColor(colors_number_));
@@ -182,9 +212,46 @@ class SimpleIndelFinder {
     return found_merge_point;
   }
 
+  void DeleteEdges() const {
+    TRACE("DELETE EDGES");
+    DeletingMergeHandler sure_merge_handler(sure_delete_list_);
+    ConditionedSmartSetIterator<Graph, EdgeId, DeletingMergeHandler> sure_smart_it(
+        g_, sure_delete_list_.begin(), sure_delete_list_.end(),
+        sure_merge_handler);
+
+    DeletingMergeHandler pro_merge_handler(probable_delete_list_);
+    ConditionedSmartSetIterator<Graph, EdgeId, DeletingMergeHandler> pro_smart_it(
+        g_, probable_delete_list_.begin(), probable_delete_list_.end(),
+        pro_merge_handler);
+
+    for (; !sure_smart_it.IsEnd(); ++sure_smart_it) {
+      edge_remover_.DeleteEdge(*sure_smart_it);
+    }
+
+    while (true) {
+      bool found = false;
+      for (; !pro_smart_it.IsEnd(); ++pro_smart_it) {
+        TRACE("Considering edge " << g_.str(*pro_smart_it));
+        VertexId edge_end = g_.EdgeEnd(*pro_smart_it);
+        if (g_.OutgoingEdgeCount(edge_end) == 0) {
+          found = true;
+          edge_remover_.DeleteEdge(*pro_smart_it);
+          break;
+        }
+      }
+
+      if (!found)
+        break;
+
+      pro_smart_it.reset();
+    }
+  }
+
   void CheckForIndelEvent(EdgeId starting_edge) {
     const VertexId starting_vertex = g_.EdgeEnd(starting_edge);
-    const vector<EdgeId> outgoing_edges = g_.OutgoingEdges(starting_vertex);
+    const vector<EdgeId> &outgoing_edges = g_.OutgoingEdges(starting_vertex);
+
+    TRACE("New indel event");
 
     // Check that is is interesting
     size_t outgoing_edges_number = outgoing_edges.size();
@@ -212,6 +279,10 @@ class SimpleIndelFinder {
     }
 
     found_merge_point_ = false;
+    preserve_list_.clear();
+    sure_delete_list_.clear();
+    probable_delete_list_.clear();
+
     vector<EdgeId> edge_seq_vector;
     for (auto it = outgoing_edges.begin(); it != outgoing_edges.end(); ++it) {
       GatheringDfs(*it, (1 << outgoing_edges_number) - 1, 0, edge_seq_vector);
@@ -220,19 +291,30 @@ class SimpleIndelFinder {
     if (found_merge_point_) {
       TRACE("Resolved split of color bunch");
       LogFooter();
+
+      if (mask_indels_) {
+        TRACE("Removing edges... (masking indels)");
+        DeleteEdges();
+        TRACE("Done");
+      }
     }
 
   }
 
  public:
-  SimpleIndelFinder(gp_t &gp, ColorHandler<Graph> &coloring, ostream &output_stream)
+  SimpleIndelFinder(gp_t &gp, ColorHandler<Graph> &coloring, ostream &output_stream, const bool mask_indels = false)
       : gp_(gp),
         g_(gp_.g),
         coloring_(coloring),
         output_stream_(output_stream),
+        mask_indels_(mask_indels),
+        edge_remover_(gp_.g),
         colors_number_(coloring.max_colors()),
         coloring_version_(0),
-        processor_coloring_() {
+        processor_coloring_(),
+        preserve_list_(),
+        sure_delete_list_(),
+        probable_delete_list_() {
   }
 
   void FindIndelEvents() {
@@ -242,6 +324,32 @@ class SimpleIndelFinder {
     }
     INFO("Searching for In-Del events ended");
   }
+
+ private:
+  class DeletingMergeHandler {
+   public:
+    DeletingMergeHandler(std::vector<EdgeId> to_delete)
+        : delete_set_(to_delete.begin(), to_delete.end()) {
+    }
+
+    bool operator()(const std::vector<EdgeId> &old_edges, EdgeId new_edge) {
+      bool ret = false;
+      for (auto it = old_edges.begin(); it != old_edges.end(); ++it) {
+        ret |= bool(delete_set_.count(*it));
+        delete_set_.erase(*it);
+      }
+      if (ret) {
+        delete_set_.insert(new_edge);
+      }
+      return ret;
+    }
+
+   private:
+    std::unordered_set<EdgeId> delete_set_;
+  };
+
+	DECL_LOGGER("SimpleIndelFinder")
+	;
 };
 
 }

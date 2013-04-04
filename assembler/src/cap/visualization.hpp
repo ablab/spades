@@ -80,6 +80,20 @@ void PrintColoredGraph(const Graph& g, const ColorHandler<Graph>& coloring,
 }
 
 template<class Graph>
+void PrintColoredGraphAroundEdge(const Graph& g,
+    const ColorHandler<Graph>& coloring, const EdgeId edge,
+    const EdgesPositionHandler<Graph>& pos, const string& output_filename) {
+  INFO(output_filename);
+	LengthIdGraphLabeler<Graph> basic_labeler(g);
+	EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
+
+	CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+	WriteComponentsAroundEdge(g, edge, output_filename,
+//				*ConstructColorer(coloring),
+			*ConstructBorderColorer(g, coloring), labeler);
+}
+
+template<class Graph>
 void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> &coloring,
     const EdgesPositionHandler<Graph> &pos, const string &output_filename) {
     

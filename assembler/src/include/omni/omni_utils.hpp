@@ -476,6 +476,69 @@ class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
     }
 };
 
+/*
+ * ConditionedSmartSetIterator acts much like SmartSetIterator, but, unlike the above case,
+ * one can (and must) provide merge handler that will decide whether to add merged edge to
+ * the set being iterated or not (extending add_new_ parameter logic of SmartIterator)
+ * Also has the ability to be `reset` (i.e. start from the begin-iterator with respect to
+ * added and deleted values)
+ * MergeHandler class/struct must provide:
+ *  bool operator()(const std::vector<ElementId> &, ElementId)
+ */
+template<class Graph, typename ElementId, class MergeHandler>
+class ConditionedSmartSetIterator : public SmartSetIterator<Graph, ElementId> {
+ public:
+  template <class Iterator>
+  ConditionedSmartSetIterator(const Graph &graph, Iterator begin, Iterator end,
+                              MergeHandler &merge_handler)
+      : SmartSetIterator<Graph, ElementId>(graph, begin, end),
+        merge_handler_(merge_handler),
+        true_elements_() {
+
+    for (auto it = begin; it != end; ++it) {
+      true_elements_.insert(*it);
+    }
+  }
+
+  virtual ~ConditionedSmartSetIterator() {
+  }
+
+  virtual void HandleAdd(ElementId v) {
+    TRACE("handleAdd " << this->g().str(v));
+    if (true_elements_.count(v)) {
+      this->push(v);
+    }
+  }
+
+  virtual void HandleDelete(ElementId v) {
+    TRACE("handleDel " << this->g().str(v));
+    super::HandleDelete(v);
+    true_elements_.erase(v);
+  }
+
+	virtual void HandleMerge(const std::vector<ElementId>& old_edges, ElementId new_edge) {
+    TRACE("handleMer " << this->g().str(new_edge));
+    if (merge_handler_(old_edges, new_edge)) {
+      true_elements_.insert(new_edge);
+    }
+  }
+
+  virtual void reset() {
+    TRACE("reset");
+    this->operator++();
+    this->insert(true_elements_.begin(), true_elements_.end());
+  }
+
+ private:
+  typedef SmartSetIterator<Graph, ElementId> super;
+
+  MergeHandler &merge_handler_;
+  std::unordered_set<ElementId> true_elements_;
+
+  DECL_LOGGER("ConditionedSmartSetIterator")
+  ;
+};
+
 /**
  * SmartVertexIterator iterates through vertices of graph. It listens to AddVertex/DeleteVertex graph events
  * and correspondingly edits the set of vertices to iterate through. Note: high level event handlers are

@@ -8,7 +8,7 @@
 
 namespace cap {
 
-const size_t kDefaultMaxColorsUsed = 100;
+const size_t kDefaultMaxColorsUsed = 8;
 
 typedef size_t TColor;
 
@@ -430,6 +430,7 @@ TColor kBlueColor = (TColor) 1;
 TColorSet kRedColorSet = TColorSet::SingleColor(kRedColor);
 TColorSet kBlueColorSet = TColorSet::SingleColor(kBlueColor);
 TColorSet kVioletColorSet = kRedColorSet | kBlueColorSet;
+TColorSet kEmptyColorSet = TColorSet(0);
 
 }
 

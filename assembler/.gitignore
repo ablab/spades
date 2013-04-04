@@ -12,5 +12,7 @@ scripts/
 *.pyo
 *.class
 tags
+.DS_Store
+._.DS_Store
 spades_config.info
 bh_config.info

@@ -10,10 +10,13 @@
 #include "repeat_masking.hpp"
 #include "genome_correction.hpp"
 #include "assembly_compare.hpp"
+#include "simple_indel_finder.hpp"
+#include "simple_inversion_finder.hpp"
 #include "test_utils.hpp"
 
 #include "cap_environment.hpp"
 #include "io/sequence_reader.hpp"
+#include "omni/loop_killer.hpp"
 
 namespace online_visualization {
 
@@ -76,14 +79,26 @@ class CapEnvironmentManager {
         *(env_->coloring_), *MapperInstance<gp_t>(*result));
     colored_graph_constructor.ConstructGraph(rc_contigs);
 
+    INFO("Filling positions");
     if (fill_pos) {
       for (auto it = streams.begin(); it != streams.end(); ++it) {
-        ContigStream& stream = **it;
+        cap::RCWrapper stream(**it);
         stream.reset();
 
         FillPos(*result, stream);
       }
     }
+    INFO("Filling positions done.");
+
+    return result;
+  }
+
+  template <class gp_t>
+  shared_ptr<gp_t> BuildGPFromSaves(const size_t K, const std::string path) const {
+    shared_ptr<gp_t> result(new gp_t(K, env_->kDefaultGPWorkdir));
+
+    //ScanGraphPack(path, *result);
+    // TODO
 
     return result;
   }
@@ -152,6 +167,8 @@ class CapEnvironmentManager {
     INFO("Removing complex bulges");
     RemoveComplexBulges(gp.g, cbr_config);
 
+    INFO("Clipping tips with projection");
+
     TipsProjector<gp_t> tip_projector(gp);
     boost::function<void(EdgeId)> projecting_callback = boost::bind(
         &TipsProjector<gp_t>::ProjectTip, &tip_projector, _1);
@@ -159,9 +176,12 @@ class CapEnvironmentManager {
 
     tc_config.condition = "{ tc_lb 2. }";
 
-    INFO("Clipping tips with projection");
-
     ClipTipsWithProjection(gp, tc_config, true);
+
+    //INFO("Killing loops");
+
+    //SimpleLoopKiller<typename gp_t::graph_t> loop_killer(gp.g, /*splitting_edge_len*/ env_->GetGraphK() * 3, /*max_component_size*/ 10);
+    //loop_killer.KillAllLoops();
 
     INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 
@@ -172,6 +192,24 @@ class CapEnvironmentManager {
     UpdateStreams(gp);
   }
 
+  template <class gp_t>
+  void FindIndelsTemplated(gp_t& gp, std::ofstream &stream, const bool mask_indels) const {
+    //SimpleIndelFinder<gp_t> indel_finder(gp, *env_->coloring_, stream, mask_indels);
+    //indel_finder.FindIndelEvents();
+
+    SimpleInDelCorrector<Graph> corrector(gp.g, *env_->coloring_,
+        (*MapperInstance(gp)).MapSequence(*env_->genomes_[0]).simple_path().sequence(), /*genome_color*/
+        kRedColorSet, /*assembly_color*/kBlueColorSet);
+    corrector.Analyze();
+  }
+
+  template <class gp_t>
+  void FindInversionsTemplated(gp_t& gp, const std::string &base_pic_file_name,
+      const bool mask_inversions) const {
+    SimpleInversionFinder<gp_t> finder(gp, *env_->coloring_,
+        base_pic_file_name, mask_inversions);
+    finder.FindInversionEvents();
+  }
 
  public:
   CapEnvironmentManager(CapEnvironment *env)
@@ -212,7 +250,7 @@ class CapEnvironmentManager {
     return env_dir + "/" + cache_dir + "/";
   }
 
-  void ConstructGraphFromStreams(const std::vector<ContigStream *> &streams, unsigned k) {
+  void ConstructGraphFromStreams(const std::vector<ContigStream *> &streams, unsigned k, bool fill_pos) {
     ClearEnvironment();
     env_->CheckConsistency();
     //last_streams_used_ = streams;
@@ -220,13 +258,13 @@ class CapEnvironmentManager {
     VERIFY(env_->gp_rtseq_ == NULL && env_->gp_lseq_ == NULL);
     if (env_->UseLSeqForThisK(k)) {
       env_->gp_lseq_ = BuildGPFromStreams<LSeqGP>(
-          streams, k);
+          streams, k, fill_pos);
       env_->graph_ = &(env_->gp_lseq_->g);
       env_->edge_pos_ = &(env_->gp_lseq_->edge_pos);
       env_->int_ids_ = &(env_->gp_lseq_->int_ids);
     } else {
       env_->gp_rtseq_ = BuildGPFromStreams<RtSeqGP>(
-          streams, k);
+          streams, k, fill_pos);
       env_->graph_ = &(env_->gp_rtseq_->g);
       env_->edge_pos_ = &(env_->gp_rtseq_->edge_pos);
       env_->int_ids_ = &(env_->gp_rtseq_->int_ids);
@@ -235,14 +273,14 @@ class CapEnvironmentManager {
     env_->CheckConsistency();
   }
 
-  void ConstructGraph(unsigned k) {
+  void ConstructGraph(unsigned k, bool fill_pos) {
     std::vector<ContigStream *> streams;
     for (size_t i = 0; i < env_->genomes_.size(); ++i) {
       streams.push_back(new io::SequenceReader<io::SingleRead>(
                     *env_->genomes_[i], env_->genomes_names_[i]));
     }
 
-    ConstructGraphFromStreams(streams, k);
+    ConstructGraphFromStreams(streams, k, fill_pos);
   }
 
   void SaveGraph(std::string folder) const {
@@ -327,7 +365,79 @@ class CapEnvironmentManager {
     env_->CheckConsistency();
   }
 
+  int FindIndels(const bool mask_indels, const std::string &output_file, const std::string &output_mode) const {
+    std::ios_base::openmode mode;
+    if (output_mode == "w") {
+      mode = std::ios_base::out;
+    } else {
+      mode = std::ios_base::app;
+    }
+    std::ofstream stream(output_file, mode);
 
+    if (stream.fail()) {
+      return 1;
+    }
+
+    if (env_->LSeqIsUsed()) {
+      FindIndelsTemplated(*env_->gp_lseq_, stream, mask_indels);
+    } else {
+      FindIndelsTemplated(*env_->gp_rtseq_, stream, mask_indels);
+    }
+
+    return 0;
+  }
+
+  int FindInversions(const bool mask_inversions, const std::string &output_file, const std::string &output_mode) const {
+    const std::string &dir = GetDirForCurrentState();
+    const std::string &base_pic_dir = dir + "/inversions";
+    const std::string &base_pic_file_name = base_pic_dir + "/inv";
+
+    cap::utils::MakeDirPath(base_pic_dir);
+    /*
+    std::ios_base::openmode mode;
+    if (output_mode == "w") {
+      mode = std::ios_base::out;
+    } else {
+      mode = std::ios_base::app;
+    }
+    std::ofstream stream(output_file, mode);
+
+    if (stream.fail()) {
+      return 1;
+    }
+    */
+
+    if (env_->LSeqIsUsed()) {
+      FindInversionsTemplated(*env_->gp_lseq_, base_pic_file_name, mask_inversions);
+    } else {
+      FindInversionsTemplated(*env_->gp_rtseq_, base_pic_file_name, mask_inversions);
+    }
+
+    return 0;
+  }
+
+  void LoadGraphFromSaves(const size_t K, const std::string &path) {
+    ClearEnvironment();
+    env_->CheckConsistency();
+    //last_streams_used_ = streams;
+
+    VERIFY(env_->gp_rtseq_ == NULL && env_->gp_lseq_ == NULL);
+    if (env_->UseLSeqForThisK(K)) {
+      env_->gp_lseq_ = BuildGPFromSaves<LSeqGP>(K, path);
+      env_->graph_ = &(env_->gp_lseq_->g);
+      env_->edge_pos_ = &(env_->gp_lseq_->edge_pos);
+      env_->int_ids_ = &(env_->gp_lseq_->int_ids);
+    } else {
+      env_->gp_rtseq_ = BuildGPFromSaves<RtSeqGP>(K, path);
+      env_->graph_ = &(env_->gp_rtseq_->g);
+      env_->edge_pos_ = &(env_->gp_rtseq_->edge_pos);
+      env_->int_ids_ = &(env_->gp_rtseq_->int_ids);
+    }
+
+    cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);
+
+    env_->CheckConsistency();
+  }
 };
 
 }

@@ -199,7 +199,6 @@ class ColoredGraphConstructor {
 
 	void PaintGraph(
 			const vector<pair<ContigStream*, TColorSet> >& stream_mapping) {
-		INFO("Coloring graph");
 		for (auto it = stream_mapping.begin(); it != stream_mapping.end();
 				++it) {
 			PaintGraph(*(it->first), it->second);
@@ -261,10 +260,14 @@ public:
 			++color_number;
 		}
 
+		INFO("Coloring graph");
 		PaintGraph(stream_mapping);
+		INFO("Coloring done.");
 
 		//situation in example 6 =)
+		INFO("Compressing graph");
 		CompressGraph(g_, coloring_);
+		INFO("Compressing done.");
 	}
 };
 
