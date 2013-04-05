@@ -131,7 +131,7 @@ private:
       for (auto I = this->g().out_begin(*it), E = this->g().out_end(*it); I != E; ++I) {
         EdgeId edge = *I;
 				if (component.count(this->g().EdgeEnd(edge)) == 1 && edges.count(edge) == 0 ) {
-					if (false && this->g().length(edge) > 500) {
+					if (this->g().length(edge) > 500) {
 						return false;
 					}
 					sum += this->g().length(edge);
@@ -141,7 +141,7 @@ private:
 //		if(sum <= 3000) {
 //			cout << sum << endl;
 //		}
-		return sum <= 30000;
+		return sum <= 3000;
 	}
 
 	void RemoveExtraEdges(const set<EdgeId> &edges, const set<VertexId> &component) {
