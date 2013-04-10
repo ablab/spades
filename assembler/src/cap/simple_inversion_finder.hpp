@@ -10,9 +10,12 @@
 #include "coloring.hpp"
 #include "compare_standard.hpp"
 #include "comparison_utils.hpp"
-#include "omni/path_processor.hpp"
+#include "omni/dijkstra.hpp"
 
 namespace cap {
+
+template <class Graph>
+class ReliableTargetedBoundedDijkstra;
 
 /*
  *  SimpleInversionFinder searches for inversions occured in a set of genomes
@@ -39,6 +42,7 @@ class SimpleInversionFinder {
         //output_stream_(output_stream),
         base_pic_file_name_(base_pic_file_name),
         num_cycles_found_(0),
+        found_lengths_(),
         mask_inversed_(false) {
   }
 
@@ -50,6 +54,17 @@ class SimpleInversionFinder {
       CheckForCycle(*it);
     }
     INFO("Searching for inversions done. Cycles found: " << num_cycles_found_);
+
+    INFO("Found lengths:");
+    const std::vector<size_t> found = found_lengths();
+    for (auto it = found.begin(); it != found.end(); ++it) {
+      INFO("" << *it);
+    }
+  }
+
+  std::vector<size_t> found_lengths() {
+    std::sort(found_lengths_.begin(), found_lengths_.end());
+    return found_lengths_;
   }
 
  private:
@@ -69,6 +84,7 @@ class SimpleInversionFinder {
   //ostream &output_stream_;
   std::string base_pic_file_name_;
   size_t num_cycles_found_;
+  std::vector<size_t> found_lengths_;
 
   bool mask_inversed_;
 
@@ -126,16 +142,31 @@ class SimpleInversionFinder {
     const std::string path_pic_name = base_pic_file_name_ + "_path_" +
         ToString(num_cycles_found_) + ".dot";
 
+    /*
     PrintColoredGraphAroundEdge(g_, coloring_, edge, gp_.edge_pos,
         edge_pic_name);
+        */
     
-    // Awful!...
+    int length = -1;
+    int l1 = FindAndPrintPath(cycle[0], g_.conjugate(cycle[2]), path_pic_name);
+    int l2 = FindAndPrintPath(g_.conjugate(cycle[2]), cycle[0], path_pic_name);
+    if (length < 0 || length > l1)
+      length = l1;
+    if (length < 0 || length > l2)
+      length = l2;
+      /*
     FindAndPrintPath(cycle[2], g_.conjugate(cycle[3]), path_pic_name) ||
     FindAndPrintPath(g_.conjugate(cycle[2]), cycle[3], path_pic_name) ||
     FindAndPrintPath(cycle[0], g_.conjugate(cycle[1]), path_pic_name) ||
     FindAndPrintPath(g_.conjugate(cycle[0]), cycle[1], path_pic_name);
+    */
 
+    if (length < 0) {
+      INFO("found cycle but not path!");
+      return;
+    }
     num_cycles_found_++;
+    found_lengths_.push_back(length);
   }
 
   std::vector<EdgeList> GetSoloColoredEdgeLists(const EdgeList &all_edges) const {
@@ -207,23 +238,18 @@ class SimpleInversionFinder {
     return result;
   }
 
-  inline bool FindAndPrintPath(const VertexId v1, const VertexId v2, const std::string &out_file) const {
+  inline int FindAndPrintPath(const VertexId v1, const VertexId v2, const std::string &out_file) const {
     TRACE("Finding paths from " << g_.str(v1) << " to " << g_.str(v2));
-    const static size_t max_length = 20000;
+    const static size_t max_length = 50000;
 
-    PathStorageCallback<Graph> callback(g_);
-    PathProcessor<Graph> pp(g_, 0, max_length, v1, v2, callback);
-    pp.Process();
-    const vector<EdgeList>& paths = callback.paths();
-
-    if (paths.size() == 0) {
-      INFO("Something's wrong!");
-      return false;
+    ReliableTargetedBoundedDijkstra<Graph> dijkstra(g_, v2, max_length, 500);
+    dijkstra.run(v1);
+    if (dijkstra.DistanceCounted(v2)) {
+      TRACE("Finding path done; length=" << dijkstra.GetDistance(v2));
+      return dijkstra.GetDistance(v2);
     }
-    //PrintPath(paths[0], out_file);
-    TRACE("Finding path done; length=" << PathLength(paths[0])
-        << "; written in " << out_file);
-    return true;
+
+    return -1;
   }
 
   inline void PrintPath(const EdgeList &path, const std::string out_file) const {
@@ -249,6 +275,48 @@ class SimpleInversionFinder {
 
   DECL_LOGGER("SimpleInversionFinder")
   ;
+};
+
+template<class Graph>
+class ReliableTargetedBoundedDijkstra : public Dijkstra<Graph> {
+  typedef typename Graph::VertexId VertexId;
+  typedef typename Graph::EdgeId EdgeId;
+  typedef Dijkstra<Graph> base;
+
+ public:
+  ReliableTargetedBoundedDijkstra(const Graph &g, const VertexId target,
+      const size_t bound, const size_t max_vertex_number)
+      : base(g),
+        target_(target),
+        bound_(bound),
+        max_vertex_number_(max_vertex_number),
+        vertices_number_(0),
+        vertex_limit_exceeded_(false) {
+  }
+
+  virtual bool CheckProcessVertex(const VertexId vertex, const size_t distance) {
+      ++vertices_number_;
+
+      if (vertices_number_ > max_vertex_number_)
+          vertex_limit_exceeded_ = true;
+
+      if (vertex == target_) {
+        this->set_finished(true);
+      }
+
+      return (vertices_number_ < max_vertex_number_) && (distance <= bound_);
+  }
+
+  bool VertexLimitExceeded() const {
+      return vertex_limit_exceeded_;
+  }
+
+ private:
+  const VertexId target_;
+  const size_t bound_;
+  const size_t max_vertex_number_;
+  size_t vertices_number_;
+  bool vertex_limit_exceeded_;
 };
 
 }
