@@ -309,7 +309,6 @@ struct debruijn_config {
     std::map<int, size_t> insert_size_distribution;
     double average_coverage;
 
-    bool converted;
     std::string paired_read_prefix;
     std::string single_read_prefix;
     size_t thread_num;
@@ -317,42 +316,7 @@ struct debruijn_config {
     typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
     typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-    std::vector< SequencePairedReadStream* > raw_paired_binary_readers(bool followed_by_rc, size_t insert_size = 0) const {
-        VERIFY(converted);
-
-        if (insert_size == 0) {
-            insert_size = (size_t) mean_insert_size;
-        }
-
-        std::vector<SequencePairedReadStream*> paired_streams(thread_num);
-        for (size_t i = 0; i < thread_num; ++i) {
-            paired_streams[i] = new io::SeqPairedReadStream(paired_read_prefix, i, insert_size);
-        }
-        return io::apply_paired_wrappers(followed_by_rc, paired_streams);
-    }
-
-    std::vector< SequenceSingleReadStream* > raw_single_binary_readers(bool followed_by_rc, bool including_paired_reads) const {
-        VERIFY(converted);
-
-        std::vector<SequenceSingleReadStream*> single_streams(thread_num);
-        for (size_t i = 0; i < thread_num; ++i) {
-            single_streams[i] = new io::SeqSingleReadStream(single_read_prefix, i);
-        }
-        if (including_paired_reads) {
-            std::vector<SequencePairedReadStream*> paired_streams(thread_num);
-            for (size_t i = 0; i < thread_num; ++i) {
-                paired_streams[i] = new io::SeqPairedReadStream(paired_read_prefix, i, 0);
-            }
-
-            return io::apply_single_wrappers(followed_by_rc, single_streams, &paired_streams);
-        }
-        else {
-            return io::apply_single_wrappers(followed_by_rc, single_streams);
-        }
-    }
-
-
-    DataSetData(): mean_insert_size(0.0), converted(false) {
+    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0) {
     }
 
   };
@@ -361,13 +325,21 @@ struct debruijn_config {
     io::DataSet<DataSetData> reads;
 
     size_t RL() const { return reads[0].data().read_length; }
-    void set_RL(size_t RL) { reads[0].data().read_length = RL; }
+    void set_RL(size_t RL) {
+        for (size_t i = 0; i < reads.lib_count(); ++i) {
+            reads[i].data().read_length = RL;
+        }
+    }
     size_t IS() const { return reads[0].data().mean_insert_size; }
     void set_IS(size_t IS) { reads[0].data().mean_insert_size = IS; }
     double is_var() const { return reads[0].data().insert_size_deviation; }
     void set_is_var(double is_var) { reads[0].data().insert_size_deviation = is_var; }
     double avg_coverage() const { return reads[0].data().average_coverage; }
-    void set_avg_coverage(double avg_coverage) { reads[0].data().average_coverage = avg_coverage; }
+    void set_avg_coverage(double avg_coverage) {
+        for (size_t i = 0; i < reads.lib_count(); ++i) {
+            reads[i].data().average_coverage = avg_coverage;
+        }
+    }
     double median() const { return reads[0].data().median_insert_size; }
     void set_median(double median) { reads[0].data().median_insert_size = median; }
     double mad() const { return reads[0].data().insert_size_mad; }

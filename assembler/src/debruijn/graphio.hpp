@@ -802,12 +802,29 @@ void PrintClusteredIndex(const string& file_name, DataPrinter<Graph>& printer,
   PrintPairedIndex(file_name + "_cl", printer, clustered_index);
 }
 
+template<class Graph>
+void PrintPairedIndices(const string& file_name, DataPrinter<Graph>& printer,
+    const PairedInfoIndicesT<Graph>& paired_indices) {
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        PrintPairedIndex(file_name + "_" + ToString(i), printer, paired_indices[i]);
+    }
+}
+
+template<class Graph>
+void PrintClusteredIndices(const string& file_name, DataPrinter<Graph>& printer,
+    const PairedInfoIndicesT<Graph>& paired_indices) {
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        PrintClusteredIndex(file_name  + "_" + ToString(i), printer, paired_indices[i]);
+    }
+}
+
 template<class graph_pack>
 void PrintWithPairedIndex(const string& file_name,
     DataPrinter<typename graph_pack::graph_t>& printer,
     const graph_pack& gp,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
     bool clustered_index = false) {
+
   PrintGraphPack(file_name, printer, gp);
   if (!clustered_index) {
     PrintPairedIndex(file_name, printer, paired_index);
@@ -822,6 +839,29 @@ void PrintWithClusteredIndex(const string& file_name,
     const graph_pack& gp,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index) {
   PrintWithPairedIndex(file_name, printer, gp, paired_index, true);
+}
+
+template<class graph_pack>
+void PrintWithPairedIndices(const string& file_name,
+    DataPrinter<typename graph_pack::graph_t>& printer,
+    const graph_pack& gp,
+    const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+    bool clustered_index = false) {
+
+  PrintGraphPack(file_name, printer, gp);
+  if (!clustered_index) {
+    PrintPairedIndices(file_name, printer, paired_indices);
+  } else {
+    PrintClusteredIndices(file_name, printer, paired_indices);
+  }
+}
+
+template<class graph_pack>
+void PrintWithClusteredIndices(const string& file_name,
+    DataPrinter<typename graph_pack::graph_t>& printer,
+    const graph_pack& gp,
+    const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
+  PrintWithPairedIndices(file_name, printer, gp, paired_indices, true);
 }
 
 template<class graph_pack, class VertexIt>
@@ -886,6 +926,37 @@ void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
   PrintWithPairedIndex(file_name, gp, clustered_index, true);
 }
 
+template<class graph_pack>
+void PrintAll(const string& file_name, const graph_pack& gp,
+        const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+        const PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices)
+{
+    typename PrinterTraits<typename graph_pack::graph_t>::Printer
+                                          printer(gp.g, gp.g.begin(), gp.g.end(), gp.int_ids);
+
+    PrintGraphPack(file_name, printer, gp);
+    PrintPairedIndices(file_name, printer, paired_indices);
+    PrintClusteredIndices(file_name, printer, clustered_indices);
+}
+
+template<class graph_pack>
+void PrintWithPairedIndices(const string& file_name, const graph_pack& gp,
+    const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+    bool clustered_index = false) {
+
+    typename PrinterTraits<typename graph_pack::graph_t>::Printer
+                                          printer(gp.g, gp.g.begin(), gp.g.end(), gp.int_ids);
+
+    PrintWithPairedIndices(file_name, printer, gp, paired_indices, clustered_index);
+}
+
+template<class graph_pack>
+void PrintWithClusteredIndices(const string& file_name, const graph_pack& gp,
+    const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
+  PrintWithPairedIndices(file_name, gp, paired_indices, true);
+}
+
+
 template<class Graph>
 void ScanBasicGraph(const string& file_name, DataScanner<Graph>& scanner) {
   scanner.loadGraph(file_name);
@@ -921,6 +992,23 @@ void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
   scanner.loadPaired(file_name + "_cl", clustered_index);
 }
 
+template<class Graph>
+void ScanPairedIndices(const string& file_name, DataScanner<Graph>& scanner,
+        PairedInfoIndicesT<Graph>& paired_indices) {
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        ScanPairedIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i]);
+    }
+}
+
+template<class Graph>
+void ScanClusteredIndices(const string& file_name, DataScanner<Graph>& scanner,
+        PairedInfoIndicesT<Graph>& paired_indices) {
+
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        ScanClusteredIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i]);
+    }
+}
+
 template<class graph_pack>
 void ScanWithPairedIndex(const string& file_name,
     DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
@@ -931,6 +1019,20 @@ void ScanWithPairedIndex(const string& file_name,
     ScanPairedIndex(file_name, scanner, paired_index);
   } else {
     ScanClusteredIndex(file_name, scanner, paired_index);
+  }
+}
+
+template<class graph_pack>
+void ScanWithPairedIndices(const string& file_name,
+    DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
+    PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+    bool clustered_index = false) {
+
+  ScanGraphPack(file_name, scanner, gp);
+  if (!clustered_index) {
+      ScanPairedIndices(file_name, scanner, paired_indices);
+  } else {
+      ScanClusteredIndices(file_name, scanner, paired_indices);
   }
 }
 
@@ -947,6 +1049,34 @@ void ScanWithPairedIndex(const string& file_name, graph_pack& gp,
     bool clustered_index = false) {
   typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
   ScanWithPairedIndex(file_name, scanner, gp, paired_index, clustered_index);
+}
+
+template<class graph_pack>
+void ScanWithClusteredIndex(const string& file_name, graph_pack& gp,
+    PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
+  ScanWithPairedIndex(file_name, gp, clustered_index, true);
+}
+
+template<class graph_pack>
+void ScanWithClusteredIndices(const string& file_name,
+    DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
+    PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
+  ScanWithPairedIndices(file_name, scanner, gp, paired_indices, true);
+}
+
+template<class graph_pack>
+void ScanWithPairedIndices(const string& file_name, graph_pack& gp,
+    PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+    bool clustered_index = false) {
+  typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
+  ScanWithPairedIndices(file_name, scanner, gp, paired_indices, clustered_index);
+}
+
+
+template<class graph_pack>
+void ScanWithClusteredIndices(const string& file_name, graph_pack& gp,
+        PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
+    ScanWithPairedIndices(file_name, gp, paired_indices, true);
 }
 
 template<class Graph>
@@ -975,9 +1105,14 @@ void ScanAll(const string& file_name, graph_pack& gp,
 }
 
 template<class graph_pack>
-void ScanWithClusteredIndex(const string& file_name, graph_pack& gp,
-    PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
-  ScanWithPairedIndex(file_name, gp, clustered_index, true);
+void ScanAll(const string& file_name, graph_pack& gp,
+        PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+        PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices) {
+  typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
+      gp.int_ids);
+  ScanGraphPack(file_name, scanner, gp);
+  ScanPairedIndices(file_name, scanner, paired_indices);
+  ScanClusteredIndices(file_name, scanner, clustered_indices);
 }
 
 }

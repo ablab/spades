@@ -107,7 +107,7 @@ void load_simplification(conj_graph_pack& gp, path::files_t* used_files) {
 	used_files->push_back(p);
 
   ScanGraphPack(p, gp);
-  load_estimated_params(p);
+  load_lib_data(p);
 }
 
 void save_simplification(conj_graph_pack& gp) {
@@ -115,7 +115,7 @@ void save_simplification(conj_graph_pack& gp) {
 		string p = path::append_path(cfg::get().output_saves, "simplified_graph");
 		INFO("Saving current state to " << p);
 		PrintGraphPack(p, gp);
-		write_estimated_params(p);
+		write_lib_data(p);
 	}
 	OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
 			cfg::get().simp.tec.plausibility_length

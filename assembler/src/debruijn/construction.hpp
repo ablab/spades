@@ -92,11 +92,77 @@ void return_estimated_params() {
 	write_estimated_params(cfg::get().output_dir + "/");
 }
 
+
+void load_lib_data(const string& prefix) {
+  std::string filename = estimated_param_filename(prefix);
+
+  if (!FileExists(filename)) {
+      WARN("Estimates params config " << prefix << " does not exist");
+  }
+
+  boost::optional<size_t> lib_count;
+  load_param(filename, "lib_count", lib_count);
+  if (!lib_count || lib_count != cfg::get().ds.reads.lib_count()) {
+      WARN("Estimated params file seems to be incorrect");
+      return;
+  }
+
+  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+      boost::optional<size_t> sizet_val;
+      boost::optional<double> double_val;
+
+      load_param(filename, "read_length_" + ToString(i), sizet_val);
+      if (sizet_val) {
+          cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
+      }
+      load_param(filename, "insert_size_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().mean_insert_size = *double_val;
+      }
+      load_param(filename, "insert_size_deviation_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().insert_size_deviation = *double_val;
+      }
+      load_param(filename, "insert_size_median_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().median_insert_size = *double_val;
+      }
+      load_param(filename, "insert_size_mad_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().insert_size_mad = *double_val;
+      }
+      load_param(filename, "average_coverage_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().average_coverage = *double_val;
+      }
+
+      load_param_map(filename, "histogram_" + ToString(i), cfg::get_writable().ds.reads[i].data().insert_size_distribution);
+  }
+
+}
+
+void write_lib_data(const string& prefix) {
+  std::string filename = estimated_param_filename(prefix);
+
+  write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
+
+  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+      write_param(filename, "read_length_" + ToString(i), cfg::get().ds.reads[i].data().read_length);
+      write_param(filename, "insert_size_" + ToString(i), cfg::get().ds.reads[i].data().mean_insert_size);
+      write_param(filename, "insert_size_deviation_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_deviation);
+      write_param(filename, "insert_size_median_" + ToString(i), cfg::get().ds.reads[i].data().median_insert_size);
+      write_param(filename, "insert_size_mad_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_mad);
+      write_param(filename, "average_coverage_" + ToString(i), cfg::get().ds.reads[i].data().average_coverage);
+      write_param_map(filename, "histogram_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_distribution);
+  }
+}
+
+
 void load_construction(conj_graph_pack& gp, path::files_t* files) {
   string p = path::append_path(cfg::get().load_from, "constructed_graph");
   files->push_back(p);
   ScanGraphPack(p, gp);
-  load_estimated_params(p);
+  load_lib_data(p);
 }
 
 void save_construction(conj_graph_pack& gp) {
@@ -104,7 +170,7 @@ void save_construction(conj_graph_pack& gp) {
     string p = path::append_path(cfg::get().output_saves, "constructed_graph");
     INFO("Saving current state to " << p);
     PrintGraphPack(p, gp);
-    write_estimated_params(p);
+    write_lib_data(p);
   }
   return_estimated_params();
 }
@@ -138,13 +204,20 @@ void exec_construction(conj_graph_pack& gp) {
           cfg::get().additional_contigs, true);
     }
 
+    std::vector<size_t> libs_for_construction;
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd || cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads) {
+            libs_for_construction.push_back(i);
+        }
+    }
+
     if (cfg::get().use_multithreading) {
-      auto streams = single_binary_readers(true, true);
+      auto streams = single_binary_readers_for_libs(libs_for_construction, true, true);
       construct_graph<io::SingleReadSeq>(streams, gp,
           additional_contigs_stream);
 
     } else {
-      auto single_stream = single_easy_reader(true, true);
+      auto single_stream = single_easy_reader_for_libs(libs_for_construction, true, true);
       io::ReadStreamVector<ReadStream> streams(single_stream.get());
       construct_graph<io::SingleRead>(streams, gp,
           additional_contigs_stream);
