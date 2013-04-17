@@ -502,8 +502,15 @@ void CloseGaps(conj_graph_pack& gp, io::ReadStreamVector<PairedStream>& streams)
 void CloseGaps(conj_graph_pack& gp) {
   INFO("SUBSTAGE == Closing gaps");
 
+  //TODO: discuss what to use for gap closing
+  size_t lib_index;
+  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+     if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
+         lib_index = i;
+     }
+  }
   if (cfg::get().use_multithreading) {
-    auto streams = paired_binary_readers(true, 0);
+    auto streams = paired_binary_readers(cfg::get().ds.reads[lib_index], true, 0);
 
     CloseGaps<io::IReader<io::PairedReadSeq>>(gp, *streams);
 
@@ -511,7 +518,7 @@ void CloseGaps(conj_graph_pack& gp) {
 //      delete streams[i];
 //    }
   } else {
-    auto_ptr<PairedReadStream> stream = paired_easy_reader(true, 0);
+    auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0);
         io::ReadStreamVector <PairedReadStream> streams(stream.get());
     CloseGaps<PairedReadStream>(gp, streams);
   }

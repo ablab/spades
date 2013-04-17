@@ -70,7 +70,7 @@ void SaveResolved(conj_graph_pack& resolved_gp,
 		INFO("Saving current state to " << p);
 		PrintAll(p, resolved_gp, resolved_graph_paired_info,
 				resolved_graph_paired_info_cl);
-		write_estimated_params(p);
+		write_lib_data(p);
 	}
 }
 
@@ -957,20 +957,22 @@ void resolve_repeats() {
 			cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling, /*use_inner_ids*/
 			!cfg::get().developer_mode);
 
-	PairedIndexT paired_index(conj_gp.g);
-	PairedIndexT clustered_index(conj_gp.g);
+	PairedIndicesT paired_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
+	PairedIndicesT clustered_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
+
 	if (!cfg::get().developer_mode) {
 		//Detaching edge_pos handler
 		conj_gp.edge_pos.Detach();
-		paired_index.Detach();
-		clustered_index.Detach();
+		paired_indices.Detach();
+		clustered_indices.Detach();
 		if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
 		    //todo ?
 //			conj_gp.kmer_mapper.Detach();
 		}
 	}
 
-	exec_distance_estimation(conj_gp, paired_index, clustered_index);
+	exec_distance_estimation(conj_gp, paired_indices, clustered_indices);
+
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
@@ -1007,8 +1009,18 @@ void resolve_repeats() {
 
 	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
 
+    size_t lib_index;
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+       if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
+           lib_index = i;
+       }
+    }
+    PairedIndexT& paired_index = paired_indices[lib_index];
+    PairedIndexT& clustered_index = clustered_indices[lib_index];
+
 	INFO("STAGE == Resolving Repeats");
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
+
 		int number_of_components = 0;
 
 //		if (cfg::get().componential_resolve) {

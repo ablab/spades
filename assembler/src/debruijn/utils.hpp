@@ -692,11 +692,13 @@ public:
     }
 };
 
+
 template<class graph_pack, class PairedRead, class ConfigType>
 bool RefineInsertSize(const graph_pack& gp,
                       io::ReadStreamVector<io::IReader<PairedRead> >& streams,
                       ConfigType& config,
                       size_t edge_length_threshold) {
+  size_t rl;
   double mean;
   double delta;
   double median;
@@ -704,7 +706,7 @@ bool RefineInsertSize(const graph_pack& gp,
   std::map<size_t, size_t> percentiles;
   std::map<int, size_t> hist;
   // calling default method
-  refine_insert_size(streams, gp, edge_length_threshold, mean, delta, median, mad, percentiles, hist);
+  refine_insert_size(streams, gp, edge_length_threshold, rl, mean, delta, median, mad, percentiles, hist);
 
   if (hist.size() == 0) {
     config.paired_mode = false;
@@ -726,6 +728,32 @@ bool RefineInsertSize(const graph_pack& gp,
 
   return true;
 }
+
+template<class graph_pack, class PairedRead>
+bool RefineInsertSizeForLib(const graph_pack& gp,
+                      io::ReadStreamVector<io::IReader<PairedRead> >& streams,
+                      debruijn_config::DataSetData& data,
+                      size_t edge_length_threshold) {
+
+  std::map<size_t, size_t> percentiles;
+  // calling default method
+  data.read_length = 0;
+  refine_insert_size(streams, gp, edge_length_threshold,
+          data.read_length,
+          data.mean_insert_size,
+          data.insert_size_deviation,
+          data.median_insert_size,
+          data.insert_size_mad,
+          percentiles,
+          data.insert_size_distribution);
+
+  if (data.insert_size_distribution.size() == 0) {
+    return false;
+  }
+
+  return true;
+}
+
 
 double UnityFunction(int x) {
   return 1.;

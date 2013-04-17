@@ -59,10 +59,11 @@ class InsertSizeHistogramCounter {
   size_t mapped() const { return counted_; }
 
   template<class PairedRead>
-  void Count(io::ReadStreamVector< io::IReader<PairedRead> >& streams) {
+  void Count(io::ReadStreamVector< io::IReader<PairedRead> >& streams, size_t& rl) {
     hist_.clear();
 
     size_t nthreads = streams.size();
+    std::vector<size_t> rls(nthreads, 0);
     std::vector<HistType*> hists(nthreads);
     hists[0] = &hist_;
     for (size_t i = 1; i < nthreads; ++i)
@@ -79,21 +80,25 @@ class InsertSizeHistogramCounter {
 
       while (!stream.eof()) {
         stream >> r;
-        counted += ProcessPairedRead(r, *hists[i]);
+        counted += ProcessPairedRead(r, *hists[i], rls[i]);
         ++total;
       }
     }
 
     total_ = total;
     counted_ = counted;
-    INFO("Merging insert size histogram");
+    rl = rls[0];
     for (size_t i = 1; i < nthreads; ++i) {
+      if (rl < rls[i]) {
+          rl = rls[i];
+      }
       for (auto it = hists[i]->begin(); it != hists[i]->end(); ++it) {
         (*hists[0])[it->first] += it->second;
       }
       delete hists[i];
     }
   }
+
 
   void FindMean(double& mean, double& delta, std::map<size_t, size_t>& percentiles) const {
     double median = get_median(hist_);
@@ -188,12 +193,20 @@ class InsertSizeHistogramCounter {
   bool ignore_negative_;
 
   template<class PairedRead>
-  size_t ProcessPairedRead(const PairedRead& r, HistType& hist) {
+  size_t ProcessPairedRead(const PairedRead& r, HistType& hist, size_t& rl) {
     Sequence sequence_left = r.first().sequence();
     Sequence sequence_right = r.second().sequence();
 
-    if (sequence_left.size() <= k_ || sequence_right.size() <= k_)
+    if (sequence_left.size() <= k_ || sequence_right.size() <= k_) {
       return 0;
+    }
+
+    if (sequence_left.size() > rl) {
+        rl = sequence_left.size();
+    }
+    if (sequence_right.size() > rl) {
+        rl = sequence_right.size();
+    }
 
     runtime_k::RtSeq left = sequence_left.end<runtime_k::RtSeq>(k_ + 1);
     runtime_k::RtSeq right = sequence_right.start<runtime_k::RtSeq>(k_ + 1);
@@ -221,13 +234,14 @@ typedef std::map<int, size_t> HistType;
 template<class graph_pack, class PairedRead>
 void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams, graph_pack& gp,
                         size_t edge_length_threshold,
+                        size_t& rl,
                         double& mean, double& delta,
                         double& median, double& mad,
                         std::map<size_t, size_t>& percentiles,
                         HistType& hist) {
   INFO("SUBSTAGE == Refining insert size and its distribution");
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
-  hist_counter.Count(streams);
+  hist_counter.Count(streams, rl);
 
   if (hist_counter.mapped() == 0)
     return;
@@ -243,8 +257,9 @@ void GetInsertSizeHistogram(io::ReadStreamVector< io::IReader<PairedRead> >& str
                             double insert_size, double delta,
                             HistType& hist) {
   size_t edge_length_threshold = Nx(gp.g, 50); //500;
+  size_t rl;
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
-  hist_counter.Count(streams);
+  hist_counter.Count(streams, rl);
 
   double low = insert_size - 5. * delta;
   double high = insert_size + 5. * delta;
