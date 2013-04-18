@@ -346,7 +346,7 @@ bool ClipTipsWithProjection(
 
 //todo optimize if hotspot
 template<class Graph>
-typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF GetBulgeCondition(
+typename omnigraph::BulgeRemover<Graph>::BulgeCallbackBoolF GetBulgeCondition(
         ConjugateDeBruijnGraph &graph) {
     return boost::bind(
             &omnigraph::SimplePathCondition<ConjugateDeBruijnGraph>::operator(),
@@ -358,6 +358,7 @@ template<class Graph>
 bool RemoveBulges(
         Graph& g,
         const debruijn_config::simplification::bulge_remover& br_config,
+        boost::function<void(EdgeId, const std::vector<EdgeId> &)> opt_handler = 0,
         boost::function<void(EdgeId)> removal_handler = 0,
         size_t additional_length_bound = 0) {
 
@@ -376,7 +377,7 @@ bool RemoveBulges(
     BulgeRemover<Graph> br(g, max_length, br_config.max_coverage,
                            br_config.max_relative_coverage, br_config.max_delta,
                            br_config.max_relative_delta,
-                           GetBulgeCondition<Graph>(g), 0, removal_handler);
+                           GetBulgeCondition<Graph>(g), opt_handler, removal_handler);
 
     return br.RemoveBulges();
 }
@@ -573,7 +574,7 @@ void PreSimplification(conj_graph_pack& gp,
                            determined_coverage_threshold, removal_handler);
 
     INFO("Early bulge removal");
-    RemoveBulges(gp.g, cfg::get().simp.br, removal_handler, gp.g.k() + 1);
+    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler, gp.g.k() + 1);
 }
 
 void SimplificationCycle(conj_graph_pack& gp,
@@ -590,7 +591,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
     DEBUG(iteration << " BulgeRemoval");
-    RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
+    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
     DEBUG(iteration << " BulgeRemoval stats");
     printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
@@ -629,7 +630,7 @@ void PostSimplification(conj_graph_pack& gp,
                                *cfg::get().ds.RL, determined_coverage_threshold,
                                removal_handler);
         //todo enable_flag |= 
-        RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
+        RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
 
         enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
 

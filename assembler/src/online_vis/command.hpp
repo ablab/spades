@@ -25,10 +25,6 @@ class Command {
     return 0;
   }
 
-  virtual bool CheckCorrectness(const ArgumentList& arg_list) const {
-    return false;
-  }
-
   bool CheckEnoughArguments(const vector<string>& args) const {
     bool result = (args.size() > MinArgNumber());
     if (!result)

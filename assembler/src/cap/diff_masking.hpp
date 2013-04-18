@@ -229,8 +229,8 @@ void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 
 	size_t last_slash_pos = out_files[0].find_last_of('/');
 	string out_root = out_files[0].substr(0, last_slash_pos + 1);
-	PrintColoredGraphWithColorFilter(gp2.g, coloring, gp2.edge_pos,
-			out_root + "after_pics/colored_split_graph.dot");
+	//PrintColoredGraphWithColorFilter(gp2.g, coloring, gp2.edge_pos,
+			//out_root + "after_pics/colored_split_graph.dot");
 }
 
 inline void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,

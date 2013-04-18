@@ -36,6 +36,7 @@ public:
 
 	/*virtual*/
 	bool Check(const vector<VertexId> &vertices) const {
+    return true;
         TRACE("Check component");
 		if (vertices.size() <= vertex_number_)
 			return false;
@@ -95,7 +96,7 @@ void PrintColoredGraphAroundEdge(const Graph& g,
 
 template<class Graph>
 void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> &coloring,
-    const EdgesPositionHandler<Graph> &pos, const string &output_filename) {
+    const CoordinatesHandler<Graph> &pos, const vector<string> &genome_names, const string &output_filename) {
     
   size_t edge_length_bound = 1000000;
   size_t colors_number = coloring.max_colors();
@@ -104,7 +105,7 @@ void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> 
 	ReliableSplitter<Graph> splitter(g, 30, edge_length_bound);
 	ComponentSingleColorFilter<Graph> filter(g, coloring, restricted_color, edge_length_bound, 2);
 	LengthIdGraphLabeler<Graph> basic_labeler(g);
-	EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
+	EdgeCoordinatesGraphLabeler<Graph> pos_labeler(g, pos, genome_names);
 
 	CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 	WriteComponents(g, splitter, filter, output_filename,
