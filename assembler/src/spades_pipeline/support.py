@@ -153,6 +153,19 @@ def save_to_yaml(data, filename):
     yaml.write('\n' + cur_indent * INDENT + ']')
 
 
+def get_from_yaml(key, filename):
+    yaml = open(filename, 'r')
+    value = None
+    for line in yaml:
+        if line.strip().startswith(key):
+            value = line.split(key + ":")[1].strip()
+            if value.startswith('"'):
+                value = value[1:-2]
+            break
+    yaml.close()
+    return value
+
+
 def read_fasta(filename):
     """
         Returns list of FASTA entries (in tuples: name, seq)
