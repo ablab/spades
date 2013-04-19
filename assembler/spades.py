@@ -189,27 +189,27 @@ def check_config(cfg, log):
         return False
 
     ## checking existence of all files in dataset section
-
-    no_files_with_reads = True
-    for k, v in cfg["dataset"].__dict__.items():
-        if k.startswith("single_reads") or k.startswith("paired_reads"):
-            no_files_with_reads = False
-            if not isinstance(v, list):
-                v = [v]
-            for reads_file in v:
-                if not os.path.isfile(os.path.expandvars(reads_file)):
-                    support.error("file with reads doesn't exist! " + os.path.expandvars(reads_file), log)
-                    return False
-                else:
-                    ext = os.path.splitext(os.path.expandvars(reads_file))[1]
-                    if ext not in ['.fa', '.fasta', '.fq', '.fastq', '.gz']:
-                        support.error("file with reads has unsupported format (only .fa, .fasta, .fq,"
-                                      " .fastq, .gz are supported)! " + os.path.expandvars(reads_file), log)
+    if not "yaml_filename" in cfg["dataset"].__dict__:
+        no_files_with_reads = True
+        for k, v in cfg["dataset"].__dict__.items():
+            if k.startswith("single_reads") or k.startswith("paired_reads"):
+                no_files_with_reads = False
+                if not isinstance(v, list):
+                    v = [v]
+                for reads_file in v:
+                    if not os.path.isfile(os.path.expandvars(reads_file)):
+                        support.error("file with reads doesn't exist! " + os.path.expandvars(reads_file), log)
                         return False
+                    else:
+                        ext = os.path.splitext(os.path.expandvars(reads_file))[1]
+                        if ext not in ['.fa', '.fasta', '.fq', '.fastq', '.gz']:
+                            support.error("file with reads has unsupported format (only .fa, .fasta, .fq,"
+                                          " .fastq, .gz are supported)! " + os.path.expandvars(reads_file), log)
+                            return False
 
-    if no_files_with_reads:
-        support.error("wrong options! You should specify at least one file with reads!", log)
-        return False
+        if no_files_with_reads:
+            support.error("wrong options! You should specify at least one file with reads!", log)
+            return False
 
     # expanding vars and setting defaults depended on other settings
     cfg["common"].output_dir = os.path.abspath(os.path.expandvars(cfg["common"].output_dir))
@@ -310,6 +310,7 @@ def usage(show_hidden=False):
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
+    print >> sys.stderr, "--dataset\t<filename>\tfile with dataset description in YAML format"
     print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads"
     print >> sys.stderr, "\t\t\t\t[default: 16]"
     print >> sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
@@ -336,8 +337,6 @@ def usage(show_hidden=False):
                              " of mismatches and short indels"
         print >> sys.stderr, "--config-file\t<filename>\tconfiguration file for spades.py"\
                              " (WARN: all other options will be skipped)"
-        print >> sys.stderr, "--dataset\t<filename>\tfile with dataset description"\
-                             " (WARN: works exclusively in --only-assembler mode)"
         print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
                              " (only in debug mode)"
         print >> sys.stderr, "--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
@@ -381,7 +380,7 @@ def main():
         output_dir = ""
         tmp_dir = ""
         reference = ""
-        dataset = ""
+        dataset_yaml_filename = ""
 
         paired = []
         paired1 = []
@@ -419,7 +418,7 @@ def main():
             elif opt == "--reference":
                 reference = check_file(arg, 'reference', log)
             elif opt == "--dataset":
-                dataset = check_file(arg, 'dataset', log)
+                dataset_yaml_filename = check_file(arg, 'dataset', log)
 
             elif opt == "--12":
                 paired.append(check_file(arg, 'paired', log))
@@ -501,30 +500,19 @@ def main():
                 support.error("the number of files with left paired reads is not equal to the"
                       " number of files with right paired reads!", log)
 
-            # processing hidden option "--dataset"
-            if dataset:
-                if not only_assembler:
-                    support.error("hidden option --dataset works exclusively in --only-assembler mode!", log)
-                # reading info about dataset from provided dataset file
-                cfg["dataset"] = load_config_from_file(dataset)
-                # correcting reads relative pathes (reads can be specified relatively to provided dataset file)
-                for k, v in cfg["dataset"].__dict__.iteritems():
-                    if k.find("_reads") != -1:
-                        corrected_reads_filenames = []
-                        if not isinstance(v, list):
-                            v = [v]
-                        for reads_filename in v:
-                            corrected_reads_filename = os.path.join(os.path.dirname(dataset), reads_filename)
-                            check_file(corrected_reads_filename, k + " in " + dataset, log)
-                            corrected_reads_filenames.append(corrected_reads_filename)
-                        cfg["dataset"].__dict__[k] = corrected_reads_filenames
+            # creating empty "dataset" section
+            cfg["dataset"] = load_config_from_vars(dict())
+            # filling other parameters
+            cfg["dataset"].__dict__["single_cell"] = single_cell
+            if developer_mode and reference:
+                cfg["dataset"].__dict__["reference"] = reference
+
+            if dataset_yaml_filename:
+                cfg["dataset"].__dict__["yaml_filename"] = os.path.abspath(dataset_yaml_filename)
             else:
                 if not paired and not paired1 and not single:
                     support.error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!", log)
                 check_files_duplication(paired + paired1 + paired2 + single, log)
-
-                # creating empty "dataset" section
-                cfg["dataset"] = load_config_from_vars(dict())
 
                 # filling reads
                 paired_counter = 0
@@ -542,11 +530,6 @@ def main():
 
                 if single:
                     cfg["dataset"].__dict__["single_reads"] = single
-
-                # filling other parameters
-                cfg["dataset"].__dict__["single_cell"] = single_cell
-                if developer_mode and reference:
-                    cfg["dataset"].__dict__["reference"] = reference
 
             # filling cfg
             cfg["common"] = load_config_from_vars(dict())
@@ -652,42 +635,44 @@ def main():
             shutil.rmtree(tmp_configs_dir)
         shutil.copytree(os.path.join(spades_home, "configs"), tmp_configs_dir)
 
-        # creating YAML with input reads
-        dataset_yaml_filename = os.path.join(cfg["common"].output_dir, "input_dataset.yaml")
-        dataset_yaml = dict()
-        dataset_yaml["left reads"] = []
-        dataset_yaml["right reads"] = []
-        dataset_yaml["single reads"] = []
+        # creating YAML with input reads if not specified
+        if not "yaml_filename" in cfg["dataset"].__dict__:
+            dataset_yaml_filename = os.path.join(cfg["common"].output_dir, "input_dataset.yaml")
+            cfg["dataset"].__dict__["yaml_filename"] = dataset_yaml_filename
+            dataset_yaml = dict()
+            dataset_yaml["left reads"] = []
+            dataset_yaml["right reads"] = []
+            dataset_yaml["single reads"] = []
 
-        import bh_aux
-        paired_end = False
-        for k, v in cfg["dataset"].__dict__.items():
-            if not isinstance(v, list):
-                v = [v]
+            import bh_aux
+            paired_end = False
+            for k, v in cfg["dataset"].__dict__.items():
+                if not isinstance(v, list):
+                    v = [v]
 
-            if k.startswith("single_reads"):
-                for item in v:
-                    dataset_yaml["single reads"].append(os.path.abspath(os.path.expandvars(item)))
+                if k.startswith("single_reads"):
+                    for item in v:
+                        dataset_yaml["single reads"].append(os.path.abspath(os.path.expandvars(item)))
 
-            elif k.startswith("paired_reads"):
-                paired_end = True
-                if len(v) == 1:
-                    item = os.path.abspath(os.path.expandvars(v[0]))
-                    if "error_correction" in cfg:
-                        split_paired_reads = bh_aux.split_paired_file(item, cfg["error_correction"].tmp_dir, log)
-                    else:
-                        support.error("interlaced reads are not supported yet in YAML!", log)
-                else: # len(v) == 2
-                    split_paired_reads = v
-                dataset_yaml["left reads"].append(os.path.abspath(split_paired_reads[0]))
-                dataset_yaml["right reads"].append(os.path.abspath(split_paired_reads[1]))
+                elif k.startswith("paired_reads"):
+                    paired_end = True
+                    if len(v) == 1:
+                        item = os.path.abspath(os.path.expandvars(v[0]))
+                        if "error_correction" in cfg:
+                            split_paired_reads = bh_aux.split_paired_file(item, cfg["error_correction"].tmp_dir, log)
+                        else:
+                            support.error("interlaced reads are not supported yet in YAML!", log)
+                    else: # len(v) == 2
+                        split_paired_reads = v
+                    dataset_yaml["left reads"].append(os.path.abspath(split_paired_reads[0]))
+                    dataset_yaml["right reads"].append(os.path.abspath(split_paired_reads[1]))
 
-        if paired_end:
-            dataset_yaml["type"] = "paired-end"
-        else:
-            dataset_yaml["type"] = "single"
-        dataset_yaml["orientation"] = "fr" # TODO: only in paired-end mode
-        support.save_to_yaml(dataset_yaml, dataset_yaml_filename)
+            if paired_end:
+                dataset_yaml["type"] = "paired-end"
+                dataset_yaml["orientation"] = "fr"
+            else:
+                dataset_yaml["type"] = "single"
+            support.save_to_yaml(dataset_yaml, dataset_yaml_filename)
 
         bh_dataset_filename = ""
         if "error_correction" in cfg:
@@ -721,7 +706,7 @@ def main():
                     bh_cfg.__dict__["reference_genome"] = os.path.abspath(
                         os.path.expandvars(cfg["dataset"].reference))
 
-            bh_cfg.__dict__["dataset_yaml_filename"] = dataset_yaml_filename
+            bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
 
             bh_dataset_filename = bh_logic.run_bh(tmp_configs_dir, bin_home, bh_cfg, log)
 
@@ -744,10 +729,15 @@ def main():
                 spades_cfg.__dict__["align_original_reads"] = False
 
             has_paired = False
-            for k in cfg["dataset"].__dict__.keys():
-                if k.startswith("paired_reads"):
+            if "yaml_filename" in cfg["dataset"].__dict__:
+                type = support.get_from_yaml("type", cfg["dataset"].__dict__["yaml_filename"])
+                if type == "paired-end":
                     has_paired = True
-                    break
+            else:
+                for k in cfg["dataset"].__dict__.keys():
+                    if k.startswith("paired_reads"):
+                        has_paired = True
+                        break
             if has_paired:
                 spades_cfg.__dict__["paired_mode"] = True
             else:
@@ -779,7 +769,7 @@ def main():
                 dataset_file = open(dataset_filename, 'w')
                 import process_cfg
                 dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
-                dataset_file.write("reads" + '\t' + dataset_yaml_filename + '\n')
+                dataset_file.write("reads" + '\t' + cfg["dataset"].yaml_filename + '\n')
 
                 # saving reference to dataset in developer_mode
                 if spades_cfg.developer_mode:

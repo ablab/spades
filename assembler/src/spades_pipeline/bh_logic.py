@@ -65,7 +65,6 @@ def run_bh(configs_dir, execution_home, cfg, log):
     dataset_file.close()
     log.info("\n== Dataset description file created: " + dataset_filename + "\n")
 
-    #TODO: uncomment removing when BH will generate corrected reads directly to <output>/corrected (NOT IN ../tmp)
-    #shutil.rmtree(cfg.tmp_dir)
+    shutil.rmtree(cfg.tmp_dir)
 
     return dataset_filename
