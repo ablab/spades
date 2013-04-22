@@ -46,6 +46,8 @@ void load(hammer_config::hammer_config& cfg, const std::string &filename) {
   // Inform OpenMP runtime about this :)
   omp_set_num_threads(cfg.max_nthreads);
 
+  cfg.kmer_qual_threshold = config["kmer_qual_threshold"].as<double>();
+  cfg.keep_uncorrected_ends = config["keep_uncorrected_ends"].as<bool>();
   cfg.tau = config["tau"].as<unsigned>();
 
   cfg.debug_mode = config["debug_mode"].as<bool>();

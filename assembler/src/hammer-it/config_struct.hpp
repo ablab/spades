@@ -19,6 +19,8 @@ struct hammer_config {
   unsigned max_nthreads;
   unsigned tau;
   unsigned hard_memory_limit;
+  double kmer_qual_threshold;
+  bool keep_uncorrected_ends;
 
   bool debug_mode;
   HammerStage start_stage;

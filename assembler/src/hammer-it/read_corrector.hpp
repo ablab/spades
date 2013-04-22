@@ -6,6 +6,7 @@
 #include "hkmer_distance.hpp"
 #include "consensus.hpp"
 #include "valid_hkmer_generator.hpp"
+#include "config_struct.hpp"
 #include "io/single_read.hpp"
 
 #include <boost/optional.hpp>
@@ -630,9 +631,9 @@ class CorrectedRead {
         center = !k.kmer;
       }
 
-      const double LOW_QUALITY_THRESHOLD = 1e-11;
+      double lowQualThreshold = cfg::get().kmer_qual_threshold;
 
-      bool low_qual = k.qual > LOW_QUALITY_THRESHOLD;
+      bool low_qual = k.qual > lowQualThreshold;
 
       // if too many centers are skipped, start new chunk
       if (skipped > 4) {
@@ -815,7 +816,8 @@ class SingleReadCorrector {
 
     CorrectedRead read(r, kmer_data_);
     read.MergeChunks();
-    read.AttachUncorrectedRuns();
+    if (cfg::get().keep_uncorrected_ends)
+      read.AttachUncorrectedRuns();
 
     auto seq = read.GetSequenceString();
     if (seq.empty())
