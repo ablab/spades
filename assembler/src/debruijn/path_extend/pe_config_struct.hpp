@@ -117,10 +117,10 @@ struct pe_config {
             : single_threshold(so.single_threshold), weight_threshold(so.weight_threshold), priority_coeff(so.priority_coeff) {}
       } select_options;
 
-      ExtensionOptionsT mate_pair_options;
-
 
     } extension_options;
+
+    ExtensionOptionsT mate_pair_options;
 
 
     struct ScaffolderOptionsT {
@@ -168,7 +168,7 @@ struct pe_config {
   struct MainPEParamsT {
     std::string name;
 
-    string additional_contigs;
+    std::string additional_contigs;
 
     bool debug_output;
 
