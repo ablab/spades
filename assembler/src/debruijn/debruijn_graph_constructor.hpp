@@ -36,21 +36,14 @@ class DeBruijnGraphConstructor {
   size_t kmer_size_;
 
   bool StepRightIfPossible(KPlusOneMer &edge) {
-//      TRACE("Considering edge " << edge << " contained: " <<
-//          origin_.contains(edge) << "; namely " << edge.err());
-
-    VERIFY(origin_.contains(edge));
+    // VERIFY(origin_.contains(edge));
     if (origin_.RivalEdgeCount(edge) == 1 &&
         origin_.NextEdgeCount(edge) == 1) {
       KPlusOneMer next_edge = origin_.NextEdge(edge);
-      //TRACE("Found extension " << next_edge);
-      VERIFY(origin_.contains(next_edge));
-      //if (edge != !next_edge) { // rev compl
+      // VERIFY(origin_.contains(next_edge));
       edge = next_edge;
       return true;
-      //}
     }
-    //TRACE("Stopped going right at " << edge);
     return false;
   }
 
@@ -88,9 +81,10 @@ class DeBruijnGraphConstructor {
   VertexId FindVertexByOutgoingEdges(Kmer kmer) {
     for (char c = 0; c < 4; ++c) {
       KPlusOneMer edge = kmer.pushBack(c);
-      if (origin_.ContainsInIndex(edge)) {
-        return graph_.EdgeStart(origin_.get(edge).first);
-      }
+      auto idx = origin_.seq_idx(edge);
+
+      if (origin_.ContainsInIndex(idx))
+        return graph_.EdgeStart(origin_.get(idx).first);
     }
     return VertexId(NULL);
   }
@@ -98,8 +92,10 @@ class DeBruijnGraphConstructor {
   VertexId FindVertexByIncomingEdges(Kmer kmer) {
     for (char c = 0; c < 4; ++c) {
       KPlusOneMer edge = kmer.pushFront(c);
-      if (origin_.ContainsInIndex(edge)) {
-        return graph_.EdgeEnd(origin_.get(edge).first);
+      auto idx = origin_.seq_idx(edge);
+
+      if (origin_.ContainsInIndex(idx)) {
+        return graph_.EdgeEnd(origin_.get(idx).first);
       }
     }
     return VertexId(NULL);
@@ -116,7 +112,7 @@ class DeBruijnGraphConstructor {
   }
 
   //todo discuss with Valera
-  VertexId FindEndMaybeMissing(ConjugateDeBruijnGraph& graph,
+  VertexId FindEndMaybeMissing(const ConjugateDeBruijnGraph& graph,
                                VertexId start,
                                Kmer start_kmer, Kmer end_kmer) {
     if (start_kmer == end_kmer) {
@@ -128,7 +124,7 @@ class DeBruijnGraphConstructor {
     }
   }
 
-  VertexId FindEndMaybeMissing(NonconjugateDeBruijnGraph& graph,
+  VertexId FindEndMaybeMissing(const NonconjugateDeBruijnGraph& graph,
                                VertexId start,
                                Kmer start_kmer, Kmer end_kmer) {
     if (start_kmer == end_kmer) {
@@ -159,7 +155,7 @@ class DeBruijnGraphConstructor {
   //	}
 
 
-  void ConstructPart(vector<KPlusOneMer>& kmers, vector<Sequence>& sequences) {
+  void ConstructPart(const std::vector<KPlusOneMer>& kmers, std::vector<Sequence>& sequences) {
     for (size_t i = 0; i < sequences.size(); ++i) {
       if (origin_.ContainsInIndex(kmers[i])) {
         continue;
@@ -180,9 +176,8 @@ class DeBruijnGraphConstructor {
     for (; kmers.size() != queueSize && it != end; ++it) {
       KPlusOneMer kmer(kmer_size_ + 1, (*it).data());
 
-      if (!origin_.ContainsInIndex(kmer)) {
+      if (!origin_.ContainsInIndex(kmer))
         kmers.push_back(kmer);
-      }
     }
   }
 

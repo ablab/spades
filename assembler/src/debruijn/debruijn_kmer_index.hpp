@@ -287,6 +287,9 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
   ~DeBruijnEdgeIndex() {}
 
   bool ContainsInIndex(typename base::KMerIdx idx) const {
+    if (idx == base::InvalidKMerIdx)
+      return false;
+
     const typename base::KMerIndexValueType &entry = base::operator[](idx);
     return (entry.offset_ != -1);
   }
@@ -1144,7 +1147,6 @@ class DeBruijnEdgeMultiIndexBuilder<runtime_k::RtSeq> :
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
                                 DeBruijnEdgeMultiIndex<IdType, runtime_k::RtSeq> &index) const {
-    unsigned K = index.K();
     size_t rl = 0;
 //TODO: not needed now, implement later
 //
