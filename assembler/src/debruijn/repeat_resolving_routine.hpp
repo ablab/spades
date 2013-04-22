@@ -878,12 +878,16 @@ void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
     map<int, int> different_edges_profile;
     int genomic_subreads = 0;
     int nongenomic_subreads = 0;
+    int nongenomic_edges = 0;
+    int total_length = 0;
+    int tlen = 0;
     LongReadStorage<Graph> long_reads(conj_gp.g);
     int rc_pairs = 0;
 	while (!pacbio_read_stream->eof()) {
 		ReadStream::read_type read;
 		*pacbio_read_stream>>read;
 		Sequence seq(read.sequence());
+		total_length += seq.size();
 	    auto location_map = pac_index.GetClusters(seq);
 	    //	    size_t res_count = pac_index.Count(seq);
 	    //	    if (profile.find(res_count) == profile.end())
@@ -931,13 +935,16 @@ void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
 	    		genomic_subreads ++;
 	    	}else {
 	    		tmp = " NOT ";
-	    		nongenomic_subreads ++;
+	    		if (iter->size() > 1)
+	    			nongenomic_subreads ++;
+	    		else
+	    			nongenomic_edges ++;
 	    	}
 	    	filestr <<"Alignment of "<< iter->size()  <<" edges is" << tmp <<"consistent with genome\n";
 	    	long_reads.AddPath(*iter);
 	    	for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter){
 	    		filestr << conj_gp.g.int_id(*j_iter) <<"("<<conj_gp.g.length(*j_iter)<<") ";
-
+	    		tlen += conj_gp.g.length(*j_iter);
 	    	}
 	    	filestr << " \n";
 	    }
@@ -949,8 +956,10 @@ void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
 	}
 	long_reads.DumpToFile("long_reads.mpr", conj_gp.edge_pos);
 	INFO("Total reads: " << n);
+	INFO("Mean read length: " << total_length * 0.1/ n)
+	INFO("Mean subread length: " << tlen * 0.1/ (genomic_subreads + nongenomic_subreads + nongenomic_edges))
 	INFO("reads with rc edges:  " << rc_pairs);
-	INFO("Genomic/nongenomic subreads: "<<genomic_subreads <<" / " << nongenomic_subreads);
+	INFO("Genomic/nongenomic subreads/nongenomic edges: "<<genomic_subreads <<" / " << nongenomic_subreads <<" / "<< nongenomic_edges);
 //	INFO("profile:")
 //	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
 //		if (iter->first < 100) {

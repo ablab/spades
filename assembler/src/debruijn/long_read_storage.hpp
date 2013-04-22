@@ -70,11 +70,38 @@ public:
 				}
 				if (edge_pos.IsConsistentWithGenome(j_iter->path))
 					filestr << "  genomic";
-				else
-					filestr << "  nongenomic";
+				else {
+					if (j_iter->w == 1)
+						filestr<< " low weight ng";
+					else
+						filestr << "  nongenomic";
+				}
 				filestr << endl;
 			}
 			filestr<< endl;
+		}
+		int noncontinued = 0;
+		int long_nongapped = 0;
+		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+			if (g_.length(*iter) > 500 && !g_.IsDeadEnd(g_.EdgeEnd(*iter))){
+				long_nongapped ++;
+				if (inner_index.find(*iter) == inner_index.end()) {
+					filestr << "bad  " << g_.int_id(*iter);
+					noncontinued ++;
+					continue;
+				}
+				bool flag = true;
+				for(auto j_iter= inner_index[*iter].begin(); j_iter != inner_index[*iter].end(); ++j_iter)
+					if (j_iter->path.size() > 1) {
+						flag = false;
+						break;
+					}
+				if (flag) {
+					filestr << "bad  " << g_.int_id(*iter);
+					noncontinued ++;
+				}
+			}
+			filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
 	}
 	typename InnerIndex::iterator begin() const {

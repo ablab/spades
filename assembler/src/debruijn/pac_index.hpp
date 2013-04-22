@@ -489,20 +489,34 @@ public :
 	int StringDistance(string &a, string &b){
 		int a_len = a.length();
 		int b_len = b.length();
+		int d = min(a_len/3, b_len/3);
+		d = max(d, 10);
+		DEBUG(a_len << " " << b_len << " " << d);
 		vector<vector<int> > table(a_len);
-
+		//int d =
 		for (int i = 0; i < a_len; i++){
 			table[i].resize(b_len);
-			for(int j = 0; j < b_len; j++)
+			int low = max(max(0, i - d - 1), i + b_len - a_len - d - 1);
+			int high = min(min(b_len, i + d  + 1), i + a_len - b_len + d + 1);
+			DEBUG(low << " " <<high);
+			for(int j = low; j < high; j++)
 				table[i][j] = 1000000000;
 		}
+		table[a_len - 1][b_len - 1] = 1000000000;
 		table[0][0] = 0;
 //free deletions on begin
 //		for(int j = 0; j < b_len; j++)
 //			table[0][j] = 0;
 
-		for (int i = 0; i < a_len; i++)
-			for(int j = 0; j < b_len; j++) {
+		for (int i = 0; i < a_len; i++) {
+			int low = max(max(0, i - d ), i + b_len - a_len - d );
+			int high = min(min(b_len, i + d  ), i + a_len - b_len + d );
+
+			DEBUG(low << " " <<high);
+			for(int j = low; j < high; j++) {
+
+//			for(int j = max(0, i - d); j < min(b_len, i + d); j++){
+			//for(int j = 0; j < b_len; j++) {
 				if (i > 0) table[i][j] = min(table[i][j], table[i-1][j] + 1);
 				if (j > 0) table[i][j] = min(table[i][j], table[i][j-1] + 1);
 				if (i>0 && j>0) {
@@ -511,9 +525,11 @@ public :
 					table[i][j] = min(table[i][j], table[i-1][j-1] + add);
 				}
 			}
+		}
 		//return table[a_len - 1][b_len - 1];
 //free deletions on end
 		int res = table[a_len - 1][b_len - 1];
+		DEBUG(res);
 //		for(int j = 0; j < b_len; j++){
 //			res = min(table[a_len - 1][j], res);
 //		}
@@ -567,9 +583,12 @@ public :
 				best_path_ind = i;
 			}
 		}
+		if (best_score == 1000000000)
+			return vector<EdgeId>(0);
 		if (paths.size() > 1 && paths.size() < 10){
 			INFO("best score found! Path " <<best_path_ind <<" score "<< best_score);
 		}
+
 		return paths[best_path_ind];
 	}
 };
