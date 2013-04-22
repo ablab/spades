@@ -1139,7 +1139,7 @@ void resolve_repeats() {
 	}
 
 	//todo magic constants!!!
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_mate_pair) {
+	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_jump) {
 		PairedIndexT mate_pair_index(conj_gp.g);
 		if (!try_load_paired_index(conj_gp, mate_pair_index,
 				"late_pair_info_counted_j")) {
