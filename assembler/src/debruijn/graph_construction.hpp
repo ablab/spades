@@ -146,7 +146,8 @@ size_t ConstructGraph(size_t k,
                                                             contigs_stream);
 
   VERIFY(k + 1== debruijn.K());
-  DeBruijnExtensionIndex<Seq> ext(k, debruijn.workdir());
+  // FIXME: output_dir here is damn ugly!
+  DeBruijnExtensionIndex<Seq> ext(k, cfg::get().output_dir);
   DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
 
 	TRACE("Filled indices");
