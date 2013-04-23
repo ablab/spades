@@ -150,7 +150,9 @@ public:
   }
 
   void Refill() {
+	  INFO("before clear");
     clear();
+    INFO("after clear");
     DeBruijnEdgeIndexBuilder<Seq>().BuildIndexFromGraph(inner_index_, this->g());
   }
 
