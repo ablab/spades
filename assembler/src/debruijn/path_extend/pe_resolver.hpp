@@ -416,12 +416,12 @@ protected:
     bool isEdgeSuitable(EdgeId e, double minEdgeCoverage = 0.0) {
         int len = g.length(e);
 
-        int max_len = cfg::get().pe_params.param_set.seed_selection.max_len >= 0 ?
+        int max_len = (int) cfg::get().K; /*cfg::get().pe_params.param_set.seed_selection.max_len >= 0 ?
                 cfg::get().pe_params.param_set.seed_selection.max_len :
-                -cfg::get().pe_params.param_set.seed_selection.max_len * (int) cfg::get().K;
+                -cfg::get().pe_params.param_set.seed_selection.max_len * (int) cfg::get().K;*/
 
         return math::ge(g.coverage(e), minEdgeCoverage) &&
-                !(cfg::get().pe_params.param_set.seed_selection.exclude_chimeric && len >= cfg::get().pe_params.param_set.seed_selection.min_len && len <= max_len);
+                !(cfg::get().pe_params.param_set.seed_selection.exclude_chimeric /*&& len >= cfg::get().pe_params.param_set.seed_selection.min_len && len <= max_len*/);
     }
 
 public:
