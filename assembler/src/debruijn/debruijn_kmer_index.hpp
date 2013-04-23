@@ -852,9 +852,6 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
     ostreams[i] = fopen(out[i].c_str(), "wb");
     VERIFY_MSG(ostreams[i], "Cannot open temporary file to write");
   }
-  INFO(sizeof(runtime_k::RtSeq::DataType));
-  INFO(num_files);
-  INFO(runtime_k::RtSeq::GetDataSize(K_));
   size_t cell_size = READS_BUFFER_SIZE /
                      (num_files * runtime_k::RtSeq::GetDataSize(K_) * sizeof(runtime_k::RtSeq::DataType));
   INFO("Using cell size of " << cell_size);
