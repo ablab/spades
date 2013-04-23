@@ -712,8 +712,8 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& 
 	//double threshold = finder.find_threshold();
 	//INFO("we found single threshold!! It is " << threshold);
 	PairedIndexT paired_index_not_clust(gp.g);
-	io::ReadStreamVector<SequencePairedReadStream> paired_streams = paired_binary_readers(true, cfg::get().ds.IS());
-	FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index, gp.kmer_mapper, paired_index_not_clust, paired_streams, gp.k_value);
+	//io::ReadStreamVector<SequencePairedReadStream> paired_streams = paired_binary_readers(true, cfg::get().ds.IS());
+	//FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index, gp.kmer_mapper, paired_index_not_clust, paired_streams, gp.k_value);
 	PairedInfoLibraries libs;
 	PairedInfoLibrary* lib = new PairedInfoLibrary(k, gp.g, cfg::get().ds.RL(), cfg::get().ds.IS(), cfg::get().ds.is_var(), paired_index, paired_index_not_clust);
 	//lib->SetSingleThreshold(threshold);
