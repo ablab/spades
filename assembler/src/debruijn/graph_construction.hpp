@@ -145,6 +145,10 @@ size_t ConstructGraph(size_t k,
 	rl = DeBruijnEdgeIndexBuilder<Seq>().BuildIndexFromStream(debruijn, streams,
                                                             contigs_stream);
 
+  VERIFY(k + 1== debruijn.K());
+  DeBruijnExtensionIndex<Seq> ext(k, debruijn.workdir());
+  DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
+
 	TRACE("Filled indices");
 
 	INFO("Condensing graph");

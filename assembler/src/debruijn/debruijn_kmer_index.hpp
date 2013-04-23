@@ -495,9 +495,6 @@ private:
   }
 };
 
-
-
-
 template<class IdType, class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >
 class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> {
@@ -515,10 +512,10 @@ class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<vector<EdgeInfo<IdType> 
     const typename base::KMerIndexValueType &entry = base::operator[](idx);
     bool res = false;
     for (auto iter = entry.begin(); iter != entry.end(); ++iter)
-    	if (iter->offset_ != -1) {
-    		res = true;
-    		break;
-    	}
+      if (iter->offset_ != -1) {
+        res = true;
+        break;
+      }
     return res;
   }
 
@@ -533,10 +530,10 @@ class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<vector<EdgeInfo<IdType> 
     const typename base::KMerIndexValueType &entry = base::operator[](idx);
     bool res = false;
     for (auto iter = entry.begin(); iter != entry.end(); ++iter)
-    	if (iter->offset_ != -1) {
-    		res = true;
-    		break;
-    	}
+      if (iter->offset_ != -1) {
+        res = true;
+        break;
+      }
     return res;
   }
 
@@ -609,6 +606,20 @@ private:
   }
 };
 
+
+template<class Seq = runtime_k::RtSeq,
+    class traits = kmer_index_traits<Seq> >
+class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, Seq, traits> {
+  typedef DeBruijnKMerIndex<uint8_t, Seq, traits> base;
+ public:
+  typedef Seq                      KMer;
+  typedef KMerIndex<KMer, traits>  KMerIndexT;
+
+  DeBruijnExtensionIndex(unsigned K, const std::string &workdir)
+      : base(K, workdir) {}
+
+  ~DeBruijnExtensionIndex() {}
+};
 
 
 // used for temporary reads storage during parallel reading
@@ -925,10 +936,6 @@ class DeBruijnEdgeIndexBuilder : public DeBruijnKMerIndexBuilder<Seq> {
 
 
  protected:
-  template <class KMerCounter, class Index>
-  void SortUniqueKMers(KMerCounter &counter, Index &index) const;
-
- protected:
   DECL_LOGGER("Edge Index Building");
 };
 
@@ -960,6 +967,19 @@ class DeBruijnEdgeMultiIndexBuilder : public DeBruijnKMerIndexBuilder<Seq> {
  protected:
   DECL_LOGGER("Edge MultiIndex Building");
 };
+
+template <class Seq>
+class DeBruijnExtensionIndexBuilder : public DeBruijnKMerIndexBuilder<Seq> {
+ public:
+  template <class Read>
+  size_t BuildIndexFromStream(DeBruijnExtensionIndex<Seq> &index,
+                              io::ReadStreamVector<io::IReader<Read> > &streams,
+                              SingleReadStream* contigs_stream = 0) const;
+
+ protected:
+  DECL_LOGGER("Extension Index Building");
+};
+
 
 // Specialized ones
 template <>
@@ -994,8 +1014,6 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
 
     SortUniqueKMers(counter, index);
     index.data_.resize(sz);
-    INFO("Index size:" << index.data_.size()<< " " << sz);
-
   }
 
  protected:
@@ -1048,13 +1066,17 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
       runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K);
 
       size_t idx = index.seq_idx(kmer);
+#ifndef NDEBUG
       VERIFY(index.contains(idx, kmer));
+#endif
 #   pragma omp atomic
       index.data_[idx].count_ += 1;
       for (size_t j = K; j < seq.size(); ++j) {
         kmer <<= seq[j];
         idx = index.seq_idx(kmer);
+#ifndef NDEBUG
         VERIFY(index.contains(idx, kmer));
+#endif
 
 #     pragma omp atomic
         index.data_[idx].count_ += 1;
@@ -1132,9 +1154,93 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
   }
 
  protected:
-  DECL_LOGGER("Edge Multi Index Building");
+  DECL_LOGGER("Edge Index Building");
 };
 
+
+template <>
+class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
+      public DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
+  typedef DeBruijnKMerIndexBuilder<runtime_k::RtSeq> base;
+
+  template <class ReadStream>
+  size_t FillExtensionsFromStream(ReadStream &stream,
+                                  DeBruijnExtensionIndex<runtime_k::RtSeq> &index) const {
+    unsigned K = index.K();
+    size_t rl = 0;
+
+    while (!stream.eof()) {
+      typename ReadStream::read_type r;
+      stream >> r;
+      rl = std::max(rl, r.size());
+
+      const Sequence &seq = r.sequence();
+      if (seq.size() < K + 1)
+        continue;
+
+      runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K);
+      size_t idx = index.seq_idx(kmer);
+
+      for (size_t j = K; j < seq.size(); ++j) {
+        char nnucl = seq[j], pnucl = kmer[0];
+        unsigned nmask = (1 << nnucl), pmask = (1 << (pnucl + 4));
+
+        if (index[idx] & nmask) {
+#         pragma omp atomic
+          index[idx] |= nmask;
+        }
+
+        kmer <<= nnucl;
+        idx = index.seq_idx(kmer);
+
+        if (index[idx] & pmask) {
+#         pragma omp atomic
+          index[idx] |= pmask;
+        }
+      }
+    }
+
+    return rl;
+  }
+
+ public:
+  template <class Read>
+  size_t BuildIndexFromStream(DeBruijnExtensionIndex<runtime_k::RtSeq> &index,
+                              io::ReadStreamVector<io::IReader<Read> > &streams,
+                              SingleReadStream* contigs_stream = 0) const {
+    unsigned nthreads = streams.size();
+
+    base::BuildIndexFromStream(index, streams, contigs_stream);
+
+    // Now use the index to fill the coverage and EdgeId's
+    INFO("Building k-mer extensions from reads, this takes a while.");
+
+    size_t rl = 0;
+    streams.reset();
+# pragma omp parallel for num_threads(nthreads) shared(rl)
+    for (size_t i = 0; i < nthreads; ++i) {
+      size_t crl = FillExtensionsFromStream(streams[i], index);
+
+      // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
+#   pragma omp flush(rl)
+      if (crl > rl)
+#     pragma omp critical
+      {
+        rl = std::max(rl, crl);
+      }
+    }
+
+    if (contigs_stream) {
+      contigs_stream->reset();
+      FillExtensionsFromStream(*contigs_stream, index);
+    }
+
+    return rl;
+  }
+
+ protected:
+  DECL_LOGGER("Extension Index Building");
+};
 
 template <>
 class DeBruijnEdgeMultiIndexBuilder<runtime_k::RtSeq> :
