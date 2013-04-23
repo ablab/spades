@@ -494,7 +494,7 @@ class CoverageBasedResolution {
 		}
 
 		for (int i = 0; i < Length; ++i){
-			pairsOfEdges.push_back( std::make_pair<EdgeId, EdgeId>(incomingEdgesCoverage[i].first, outgoingEdgesCoverage[i].first)  );
+			pairsOfEdges.push_back( std::make_pair(incomingEdgesCoverage[i].first, outgoingEdgesCoverage[i].first)  );
 		}
 
 	}
