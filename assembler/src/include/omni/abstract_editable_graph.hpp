@@ -22,17 +22,50 @@ namespace omnigraph {
 
 template<typename VertexIdT, typename EdgeIdT, class DataMasterT,
 		typename VertexIt>
+class AbstractEditableGraph;
+
+template<class Graph>
+class ConstructionHelper {
+	friend class AbstractEditableGraph<typename Graph::VertexId, typename Graph::EdgeId, typename Graph::DataMaster, typename Graph::VertexIterator>;
+private:
+	typedef typename Graph::DataMaster::EdgeData EdgeData;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	Graph &graph_;
+
+	ConstructionHelper(Graph &graph) : graph_(graph) {
+	}
+public:
+
+	EdgeId AddEdge(const EdgeData &data) {
+		return graph_.AddEdge(data);
+	}
+
+    void LinkIncomingEdge(VertexId v, EdgeId e) {
+    	graph_.LinkIncomingEdge(v, e);
+    }
+
+    void LinkOutgoingEdge(VertexId v, EdgeId e) {
+    	graph_.LinkOutgoingEdge(v, e);
+    }
+};
+
+template<typename VertexIdT, typename EdgeIdT, class DataMasterT,
+		typename VertexIt>
 class AbstractEditableGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIt> {
 	typedef ObservableGraph<VertexIdT, EdgeIdT, VertexIt> base;
 	//todo maybe rename template params themselves???
 public:
+	friend class ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>>;
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
 	typedef DataMasterT DataMaster;
 	typedef typename DataMaster::VertexData VertexData;
 	typedef typename DataMaster::EdgeData EdgeData;
 	typedef VertexIt VertexIterator;
-  typedef typename base::edge_const_iterator edge_const_iterator;
+	typedef typename base::edge_const_iterator edge_const_iterator;
+	typedef ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> Helper;
 
 private:
 	//todo think of necessity to pull these typedefs through hierarchy
@@ -42,16 +75,17 @@ private:
 
 	virtual VertexId CreateVertex(const VertexData &data) = 0;
 
-	virtual void DestroyVertex(VertexId vertex) = 0;
+//	virtual void DestroyVertex(VertexId vertex) = 0;
 
 	virtual VertexId HiddenAddVertex(const VertexData &data) = 0;
 
 	virtual void HiddenDeleteVertex(VertexId v) = 0;
 
-	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) = 0;
+	virtual EdgeId HiddenAddEdge(const EdgeData &data,
+            restricted::IdDistributor * id_distributor = restricted::GlobalIdDistributor::GetInstance()) = 0;
 
-	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
-			const EdgeData &data, restricted::IdDistributor * idDistributor) = 0;
+	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data,
+            restricted::IdDistributor * id_distributor = restricted::GlobalIdDistributor::GetInstance()) = 0;
 
 	virtual void HiddenDeleteEdge(EdgeId edge) = 0;
 
@@ -116,6 +150,12 @@ public:
 		//		}
 	}
 
+	ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> GetConstructionHelper() {
+//		TODO: fix everything and restore this check
+//		VERIFY(this->VerifyAllDetached());
+		return ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> (*this);
+	}
+
 	void set_int_ids(BaseIdTrackHandler<VertexIdT, EdgeIdT>* int_ids) const {
 		VERIFY(!int_ids_ || !int_ids);
 		int_ids_ = int_ids;
@@ -125,6 +165,7 @@ public:
 		VERIFY(int_ids_);
 		return *int_ids_;
 	}
+
 	BaseIdTrackHandler<VertexIdT, EdgeIdT>* ReturnIntIdPointer() const {return int_ids_;};
 
 	size_t int_id(EdgeId edge) const {
@@ -140,6 +181,7 @@ public:
 	const DataMaster& master() const {
 		return master_;
 	}
+
 protected:
 	virtual bool AdditionalCompressCondition(VertexId v) const {
 		return true;
@@ -151,15 +193,15 @@ public:
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const = 0;
 
-  virtual edge_const_iterator out_begin(VertexId v) const = 0;
+	virtual edge_const_iterator out_begin(VertexId v) const = 0;
 
-  virtual edge_const_iterator out_end(VertexId v) const = 0;
+	virtual edge_const_iterator out_end(VertexId v) const = 0;
 
 	virtual const vector<EdgeId> IncomingEdges(VertexId v) const = 0;
 
-  virtual edge_const_iterator in_begin(VertexId v) const = 0;
+	virtual edge_const_iterator in_begin(VertexId v) const = 0;
 
-  virtual edge_const_iterator in_end(VertexId v) const = 0;
+	virtual edge_const_iterator in_end(VertexId v) const = 0;
 
 	virtual size_t OutgoingEdgeCount(VertexId v) const = 0;
 
@@ -226,6 +268,21 @@ public:
 		TRACE("Vertex force-deleted");
 	}
 
+private:
+    virtual void LinkIncomingEdge(VertexId v, EdgeId e) = 0;
+
+    virtual void LinkOutgoingEdge(VertexId v, EdgeId e) = 0;
+
+public:
+	EdgeId AddEdge(const EdgeData &data) {
+		TRACE("Adding unlinked edge");
+		EdgeId e = HiddenAddEdge(data);
+		this->FireAddEdge(e);
+		TRACE("Added unlinked edge " << str(e) << " connecting ");
+		return e;
+	}
+
+public:
 	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
 		TRACE("Adding edge connecting " << str(v1) << " and " << str(v2));
 		EdgeId e = HiddenAddEdge(v1, v2, data);
@@ -278,11 +335,7 @@ public:
 //		TRACE("Outgoing check: " << (CheckUniqueOutgoingEdge(v)));
 //		TRACE("Incoming check: " << (IncomingEdgeCount(v) == 1));
 //		TRACE("Incoming check: " << (CheckUniqueIncomingEdge(v) == 1));
-//		cout << "oppa" << endl;
 //		if((OutgoingEdgeCount(v) == 1) && (IncomingEdgeCount(v) == 1)) {
-//			cout << "gopa " << endl;
-//			cout << GetUniqueOutgoingEdge(v) << graph_.length(it2->first)endl;
-//			cout << GetUniqueIncomingEdge(v) << endl;
 //			TRACE("Loop check: " << (GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v)));
 //			TRACE("Additional check: " << AdditionalCompressCondition(v));
 //		}

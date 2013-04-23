@@ -28,7 +28,7 @@
 #include "path_helper.hpp"
 
 #include "debruijn_graph.hpp"
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_kmer_index.hpp"
 #include "edge_index.hpp"
 #include "sequence_mapper.hpp"
 #include "standard.hpp"

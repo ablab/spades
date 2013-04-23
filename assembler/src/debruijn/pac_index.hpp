@@ -6,7 +6,7 @@
  */
 #pragma once
 
-#include "debruijn_kmer_index.hpp"
+#include "indices/edge_multi_index.hpp"
 #include "graph_pack.hpp"
 #include <algorithm>
 

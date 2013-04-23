@@ -39,6 +39,10 @@ enum working_stage {
 	ws_repeats_resolving
 };
 
+enum construction_mode {
+	con_old, con_extention
+};
+
 enum estimation_mode {
 	em_simple, em_weighted, em_extensive, em_smoothing
 };
@@ -102,6 +106,7 @@ inline std::string MakeLaunchTimeDirName() {
 // struct for debruijn project's configuration file
 struct debruijn_config {
 	typedef boost::bimap<string, working_stage> stage_name_id_mapping;
+	typedef boost::bimap<string, construction_mode> construction_mode_id_mapping;
 	typedef boost::bimap<string, estimation_mode> estimation_mode_id_mapping;
 	typedef boost::bimap<string, resolving_mode> resolve_mode_id_mapping;
 
@@ -123,6 +128,13 @@ struct debruijn_config {
 						ws_repeats_resolving) };
 
 		return stage_name_id_mapping(info, utils::array_end(info));
+	}
+
+	static const construction_mode_id_mapping FillConstructionModeInfo() {
+		construction_mode_id_mapping::value_type info[] = {
+				construction_mode_id_mapping::value_type("old", con_old),
+				construction_mode_id_mapping::value_type("extension", con_extention), };
+		return construction_mode_id_mapping(info, utils::array_end(info));
 	}
 
 	static const estimation_mode_id_mapping FillEstimationModeInfo() {
@@ -154,6 +166,12 @@ struct debruijn_config {
 		return working_stages_info;
 	}
 
+	static const construction_mode_id_mapping& construction_mode_info() {
+		static construction_mode_id_mapping con_mode_info =
+				FillConstructionModeInfo();
+		return con_mode_info;
+	}
+
 	static const estimation_mode_id_mapping& estimation_mode_info() {
 		static estimation_mode_id_mapping est_mode_info =
 				FillEstimationModeInfo();
@@ -177,6 +195,21 @@ struct debruijn_config {
 		auto it = working_stages_info().left.find(name);
 		VERIFY_MSG(it != working_stages_info().left.end(),
 				"There is no working stage with name = " << name);
+
+		return it->second;
+	}
+
+	static const std::string& construction_mode_name(construction_mode con_id) {
+		auto it = construction_mode_info().right.find(con_id);
+		VERIFY_MSG(it != construction_mode_info().right.end(),
+				"No name for construction mode id = " << con_id);
+		return it->second;
+	}
+
+	static construction_mode construction_mode_id(std::string name) {
+		auto it = construction_mode_info().left.find(name);
+		VERIFY_MSG(it != construction_mode_info().left.end(),
+				"There is no construction mode with name = " << name);
 
 		return it->second;
 	}
@@ -262,7 +295,7 @@ struct debruijn_config {
 		};
 
 		struct max_flow_ec_remover {
-		    bool enabled;
+			bool enabled;
 			double max_ec_length_coefficient;
 			size_t uniqueness_length;
 			size_t plausibility_length;
@@ -283,7 +316,7 @@ struct debruijn_config {
 		};
 
 		tip_clipper tc;
-		topology_tip_clipper ttc;
+        topology_tip_clipper ttc;
 		bulge_remover br;
 		erroneous_connections_remover ec;
 		relative_coverage_ec_remover rec;
@@ -293,7 +326,17 @@ struct debruijn_config {
 		max_flow_ec_remover mfec;
 		isolated_edges_remover ier;
 		complex_bulge_remover cbr;
+	};
 
+	struct construction {
+		struct early_tip_clipper {
+			bool enable;
+			boost::optional<size_t> length_bound;
+		};
+
+		construction_mode con_mode;
+		early_tip_clipper early_tc;
+		bool keep_perfect_loops;
 	};
 
 	std::string uncorrected_reads;
@@ -463,6 +506,7 @@ public:
 	resolving_mode rm;
 	path_extend::pe_config::MainPEParamsT pe_params;
 
+	construction con;
 	distance_estimator de;
 	smoothing_distance_estimator ade;
 	repeat_resolver rr;
@@ -499,6 +543,30 @@ inline void load(resolving_mode& rm, boost::property_tree::ptree const& pt,
 		std::string ep = pt.get<std::string>(key);
 		rm = debruijn_config::resolving_mode_id(ep);
 	}
+}
+
+inline void load(construction_mode& con_mode,
+		boost::property_tree::ptree const& pt, std::string const& key,
+		bool complete) {
+	if (complete || pt.find(key) != pt.not_found()) {
+		std::string ep = pt.get<std::string>(key);
+		con_mode = debruijn_config::construction_mode_id(ep);
+	}
+}
+
+inline void load(debruijn_config::construction::early_tip_clipper& etc,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
+	load(etc.enable, pt, "enable");
+	etc.length_bound = pt.get_optional<size_t>("length_bound");
+}
+
+inline void load(debruijn_config::construction& con,
+		boost::property_tree::ptree const& pt, bool complete) {
+	using config_common::load;
+	load(con.con_mode, pt, "mode", complete);
+	load(con.keep_perfect_loops, pt, "keep_perfect_loops", complete);
+	load(con.early_tc, pt, "early_tip_clipper", complete);
 }
 
 inline void load(estimation_mode& est_mode,
@@ -950,6 +1018,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 	load(cfg.use_scaffolder, pt, "use_scaffolder");
 	load(cfg.mask_all, pt, "mask_all");
 
+	load(cfg.con, pt, "construction");
 	load(cfg.gc, pt, "gap_closer");
 	load(cfg.sw, pt, "SAM_writer");
 	load(cfg.graph_read_corr, pt, "graph_read_corr");

@@ -43,12 +43,14 @@ using std::set;
 template<typename VertexId, typename EdgeId>
 class ActionHandler : boost::noncopyable {
     const string handler_name_;
+private:
+    bool attached_;
  public:
     /**
      * Create action handler with given name. With this name one can find out what tipe of handler is it.
      */
     ActionHandler(const string& name)
-            : handler_name_(name) {
+            : handler_name_(name), attached_(true) {
     }
 
     virtual ~ActionHandler() {
@@ -147,6 +149,21 @@ class ActionHandler : boost::noncopyable {
         return false;
     }
 
+    bool IsAttached() const {
+        return attached_;
+    }
+
+    void Attach() {
+        VERIFY(!attached_);
+//        g_.AddActionHandler(this);
+        attached_ = true;
+    }
+
+    void Detach() {
+        VERIFY(attached_);
+//        g_.RemoveActionHandler(this);
+        attached_ = false;
+    }
 };
 
 template<class Graph>
@@ -155,51 +172,31 @@ class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
     typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
 
     const Graph& g_;
-    bool attached_;
  protected:
     const Graph& g() const {
         return g_;
     }
 
  public:
-    bool IsAttached() const {
-        return attached_;
-    }
-
     GraphActionHandler(const Graph& g, const string& name)
             : base(name),
-              g_(g),
-              attached_(true) {
+              g_(g) {
         TRACE("Adding new action handler: " << this->name());
         g_.AddActionHandler(this);
     }
 
     GraphActionHandler(const GraphActionHandler<Graph> &other)
             : base(other.name()),
-              g_(other.g_),
-              attached_(true) {
+              g_(other.g_) {
         TRACE("Adding new action handler: " << this->name());
         g_.AddActionHandler(this);
     }
 
     virtual ~GraphActionHandler() {
         TRACE("Removing action handler: " << this->name());
-        if (attached_) {
-            g_.RemoveActionHandler(this);
-        }
-        attached_ = false;
-    }
-
-    void Attach() {
-        VERIFY(!attached_);
-        g_.AddActionHandler(this);
-        attached_ = true;
-    }
-
-    void Detach() {
-        VERIFY(attached_);
+        if(this->IsAttached())
+        	this->Detach();
         g_.RemoveActionHandler(this);
-        attached_ = false;
     }
 };
 
