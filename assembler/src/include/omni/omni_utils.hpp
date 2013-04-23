@@ -756,6 +756,13 @@ class MappingPath {
             return Path<ElementId>();
     }
 
+    void join(const MappingPath<ElementId>& that) {
+		for (size_t i = 0; i < that.size(); ++i) {
+			edges_.push_back(that.edges_[i]);
+			range_mappings_.push_back(that.range_mappings_[i]);
+		}
+	}
+
  private:
     vector<ElementId> edges_;
     vector<MappingRange> range_mappings_;

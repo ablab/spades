@@ -346,10 +346,10 @@ void resolve_repeats_pe_mp(size_t k, conj_graph_pack& gp,
 	make_dir(output_dir);
 	std::string etcDir = output_dir + "path_extend/";
 	make_dir(etcDir);
-	if (!cfg::get().run_mode) {
-		params.output.DisableAll();
-		params.viz.DisableAll();
-	}
+	/*if (!cfg::get().run_mode) {
+		cfg::get().pe_params.output.DisableAll();
+		cfg::get().pe_params.viz.DisableAll();
+	}*/
 	ofstream out("./scaffolder.log", ostream::out);
 	out.close();
 
@@ -510,10 +510,6 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 	std::string etcDir = output_dir + "path_extend/";
 	make_dir(etcDir);
 
-	if (!cfg::get().run_mode) {
-		cfg::get().pe_params.output.DisableAll();
-		cfg::get().pe_params.viz.DisableAll();
-	}
 	ofstream out("./scaffolder.log", ostream::out);
 	out.close();
 	size_t maxOverlapedLength = 0;
@@ -661,7 +657,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& 
     vector<PairedInfoLibraries> scafolding_libes;
 
     //resolve_repeats_pe_wcontigs(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
-    resolve_repeats_pe_many_libs(k, gp, libes, scafolding_libes, output_dir, contigs_name, p);
+    resolve_repeats_pe_many_libs(k, gp, libes, scafolding_libes, output_dir, contigs_name);
 }
 
 //TODO: use only this one
@@ -706,7 +702,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, vector<PairedIndexT>& pai
     scafolding_libes.push_back(scaf_libs_mp);
 
     resolve_repeats_pe_many_libs(k, gp, libes, scafolding_libes,
-          		output_dir, contigs_name, p);
+          		output_dir, contigs_name);
 }
 
 void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index, PairedInfoIndexT<Graph>& scaffolder_index,
@@ -734,7 +730,7 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& 
 
         //resolve_repeats_pe_wcontigs(k, gp, libs, scaf_libs, output_dir, contigs_name, p);
      resolve_repeats_pe_many_libs(k, gp, libes, scafolding_libes,
-          		output_dir, contigs_name, p);
+          		output_dir, contigs_name);
 }
 
 /*void resolve_repeats_pe_mp(size_t k, conj_graph_pack& gp, PairedIndexT& paired_index,
@@ -768,7 +764,7 @@ void resolve_repeats_pe_mp(size_t k, conj_graph_pack& gp, PairedIndexT& paired_i
     PairedInfoLibraries mp_scaf_libs;
     mp_scaf_libs.push_back(new PairedInfoLibrary(k, gp.g, 93, 2200, 1000,  mate_pair_scaffolding_index, true));
 
-    resolve_repeats_pe_mp(k, gp, libs, scaf_libs, mp_libs, mp_scaf_libs, output_dir, contigs_name, p);
+    resolve_repeats_pe_mp(k, gp, libs, scaf_libs, mp_libs, mp_scaf_libs, output_dir, contigs_name);
 }
 
 void resolve_repeats_pe_mp(size_t k, conj_graph_pack& gp, PairedIndexT& paired_index,
@@ -784,7 +780,7 @@ void resolve_repeats_pe_mp(size_t k, conj_graph_pack& gp, PairedIndexT& paired_i
     PairedInfoLibraries scaf_libs;
     PairedInfoLibraries mp_scaf_libs;
 
-    resolve_repeats_pe_mp(k, gp, libs, scaf_libs, mp_libs, mp_scaf_libs, output_dir, contigs_name, p);
+    resolve_repeats_pe_mp(k, gp, libs, scaf_libs, mp_libs, mp_scaf_libs, output_dir, contigs_name);
 }
 
 

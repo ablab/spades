@@ -726,7 +726,7 @@ public:
                 }
                 DEBUG(candidates.size() << " " << g_.int_id(candidates[0].e_) << " Path id :" << path.GetId()<< "  Edge len : " << g_.length(candidates[0].e_))
 
-                int gap = params.param_set.scaffolder_options.fix_gaps ?
+                int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
                      gapJoiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_) :
                      candidates.back().d_;
 

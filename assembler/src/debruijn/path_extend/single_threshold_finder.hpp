@@ -36,15 +36,16 @@ public:
 		gp.index.Attach();
 		gp.index.Refill();
 		PairedIndexT paired_index(gp.g);
-		io::ReadStreamVector<SequencePairedReadStream> paired_streams = paired_binary_readers(true, *cfg::get().ds.IS);
+		size_t is = cfg::get().ds.IS();
+		io::ReadStreamVector<io::IReader<io::PairedReadSeq>> paired_streams = paired_binary_readers(true, is);
 		FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
 				gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
 		PairedIndexT clustered_index(gp.g);
 		if (!is_mp_){
 			estimate_distance(gp, paired_index, clustered_index);
 		}
-		PairedInfoLibrary* lib_not_cl = new PairedInfoLibrary(cfg::get().K, gp.g, *cfg::get().ds.RL, *cfg::get().ds.IS, *cfg::get().ds.is_var, paired_index);
-		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, *cfg::get().ds.RL, *cfg::get().ds.IS, *cfg::get().ds.is_var, clustered_index);
+		PairedInfoLibrary* lib_not_cl = new PairedInfoLibrary(cfg::get().K, gp.g, cfg::get().ds.RL(), is, cfg::get().ds.is_var(), paired_index);
+		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, cfg::get().ds.RL(), is, cfg::get().ds.is_var(), clustered_index);
 
 		map<PairInfo<EdgeId>, double> good_pi;
 		map<PairInfo<EdgeId>, double> bad_pi;
