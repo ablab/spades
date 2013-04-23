@@ -52,6 +52,7 @@ singlecell {
 	    max_cycles     		    1
 
 	    exclude_chimeric  false
+        chimeric_delta    10
 	    min_len           0
         max_len           -1 ; -a = a * K
 	    check_trusted     true
@@ -146,6 +147,7 @@ multicell {
 	    max_cycles     		        1
 
 	    exclude_chimeric  false
+        chimeric_delta    10
         min_len           0
         max_len           -1 ; -a = a * K
 	    check_trusted     true

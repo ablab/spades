@@ -64,7 +64,7 @@ void load(pe_config::ParamSetT::SeedSelectionT& ss, boost::property_tree::ptree 
   load(ss.start_egde_coverage, pt, "start_egde_coverage");
   load(ss.max_cycles         , pt, "max_cycles"       );
   load(ss.exclude_chimeric   , pt, "exclude_chimeric");
-  load(ss.chimeric_delta     , pt, "chimeric_delta"    );
+  //load(ss.chimeric_delta     , pt, "chimeric_delta"    );
 
   load(ss.check_trusted      , pt, "check_trusted"    );
   load(ss.threshold          , pt, (ss.metric + "_trusted_threshold").c_str());

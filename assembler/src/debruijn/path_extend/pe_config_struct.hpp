@@ -95,7 +95,7 @@ struct pe_config {
       size_t max_cycles;
 
       bool exclude_chimeric;
-      int chimeric_delta;
+      //int chimeric_delta;
 
       bool check_trusted;
       double threshold;
