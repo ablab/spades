@@ -72,11 +72,14 @@ void estimate_distance(conj_graph_pack& gp,
                              PairedIndexT& clustered_index)
 {
   using debruijn_graph::estimation_mode;
-
+  INFO("Here");
   if (!cfg::get().developer_mode) {
-    clustered_index.Attach();
-    clustered_index.Init();
+    if (!clustered_index.IsAttached()){
+    	clustered_index.Attach();
+    	clustered_index.Init();
+    }
   }
+  INFO("after");
 
   const debruijn_config& config = cfg::get();
   if (config.paired_mode) {

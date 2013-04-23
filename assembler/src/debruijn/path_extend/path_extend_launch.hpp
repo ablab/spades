@@ -363,7 +363,7 @@ void resolve_repeats_pe_mp(size_t k, conj_graph_pack& gp,
 	PathInfoWriter path_writer;
 	PathVisualizer visualizer(k);
 	ContigWriter writer(gp, k, libs[0]->insert_size_);
-	writer.writeEdges(etcDir + "before_resolve.fasta");
+	//writer.writeEdges(etcDir + "before_resolve.fasta");
 
 	INFO("Initializing weight counters");
 	WeightCounter * wc = 0;
@@ -534,7 +534,7 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 	PathInfoWriter path_writer;
 	PathVisualizer visualizer(k);
 	ContigWriter writer(gp, k, minInsertSize);
-	if (cfg::get().pe_params.debug_output) {
+	if (cfg::get().developer_mode && cfg::get().pe_params.debug_output) {
 		writer.writeEdges(etcDir + "before_resolve.fasta");
 		visualizer.writeGraphSimple(gp, etcDir + "before_resolve.dot", "before_resolve");
 	}
@@ -633,11 +633,11 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 	paths.SortByLength();
 	INFO("Found " << paths.size() << " contigs");
 	writer.writePaths(paths, output_dir + contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_loop_tr.fasta");
-	if (cfg::get().pe_params.output.write_paths) {
+	if (cfg::get().developer_mode && cfg::get().pe_params.output.write_paths) {
 		writer.writePathEdges(paths, output_dir + "paths.dat");
 	}
 
-	if (cfg::get().pe_params.viz.print_paths) {
+	if (cfg::get().developer_mode && cfg::get().pe_params.viz.print_paths) {
 		visualizer.writeGraphWithPathsSimple(gp, etcDir + "paths.dot",
 				"Final_paths", paths);
 		path_writer.writePaths(paths, etcDir + "paths.data");
@@ -708,15 +708,15 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp, vector<PairedIndexT>& pai
 void resolve_repeats_pe(size_t k, conj_graph_pack& gp, PairedInfoIndexT<Graph>& paired_index, PairedInfoIndexT<Graph>& scaffolder_index,
         const std::string& output_dir, const std::string& contigs_name, const pe_config::MainPEParamsT& p) {
 
-	SingleThresholdFinder finder(cfg::get().ds.IS() - 2 * (cfg::get().ds.is_var()), cfg::get().ds.IS() + 2* (cfg::get().ds.is_var()), 100	);
-	double threshold = finder.find_threshold();
-	INFO("we found single threshold!! It is " << threshold);
+	//SingleThresholdFinder finder(cfg::get().ds.IS() - 2 * (cfg::get().ds.is_var()), cfg::get().ds.IS() + 2* (cfg::get().ds.is_var()), 100	);
+	//double threshold = finder.find_threshold();
+	//INFO("we found single threshold!! It is " << threshold);
 	PairedIndexT paired_index_not_clust(gp.g);
 	io::ReadStreamVector<SequencePairedReadStream> paired_streams = paired_binary_readers(true, cfg::get().ds.IS());
 	FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index, gp.kmer_mapper, paired_index_not_clust, paired_streams, gp.k_value);
 	PairedInfoLibraries libs;
 	PairedInfoLibrary* lib = new PairedInfoLibrary(k, gp.g, cfg::get().ds.RL(), cfg::get().ds.IS(), cfg::get().ds.is_var(), paired_index, paired_index_not_clust);
-	lib->SetSingleThreshold(threshold);
+	//lib->SetSingleThreshold(threshold);
 	libs.push_back(lib);
 
     PairedInfoLibraries scaf_libs;

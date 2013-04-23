@@ -3,17 +3,17 @@
 debug_output			false
 
 output {
-	write_seeds             true 
-	write_overlaped_paths   true
-	write_paths             true
+	write_seeds             false
+	write_overlaped_paths   false
+	write_paths             false
 	write_path_loc		    false
 }
 
 
 visualize {
-        print_seeds  		    true
-        print_overlaped_paths 	true
-        print_paths 		    true
+        print_seeds  		    false
+        print_overlaped_paths 	false
+        print_paths 		    false
 }
 
 
