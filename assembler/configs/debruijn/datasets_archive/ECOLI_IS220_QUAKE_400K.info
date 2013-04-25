@@ -1,4 +1,4 @@
-paired_reads             "../../../data/input/E.coli/is220/cropped/s_6.first400000_2.fastq.gz ../../../data/input/E.coli/is220/cropped/s_6.first400000_1.fastq.gz "
+reads			 /home/lab42/algorithmic-biology/assembler/configs/debruijn/datasets_archive/ECOLI_IS220_QUAKE_400K.yaml 
 RL                       100
 IS                       220
 single_cell              false
