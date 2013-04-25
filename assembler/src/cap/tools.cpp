@@ -113,11 +113,18 @@ BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {
     gp_t gp(k, "tmp", Sequence(), 200, true);
 
     GeneCollection gene_collection;
-    gene_collection.Load("/home/snurk/Dropbox/olga_gelf/genome_list.txt",
-                         "/home/snurk/Dropbox/olga_gelf/genomes/",
-                         "/home/snurk/Dropbox/olga_gelf/gs.25ESS_ver3_sf_TN.csv",
-                         "/home/snurk/Dropbox/olga_gelf/interesting_orthologs.txt");
+    string root = "/home/snurk/Dropbox/olga_gelf/";
+    gene_collection.Load(root, "genome_list.txt",
+                         "/genomes/",
+                         "gs.25ESS_ver3_sf_TN.csv",
+                         "interesting_orthologs.txt");
     gene_collection.Update(gp);
+
+    ColorHandler<typename gp_t::graph_t> coloring(gp.g);
+
+    make_dir(root + "out/");
+
+    WriteGeneLocality(gene_collection, gp, root + "out/", coloring);
 }
 
 BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {

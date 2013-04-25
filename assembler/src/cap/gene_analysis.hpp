@@ -5,6 +5,7 @@
 #include "omni/omni_utils.hpp"
 #include "comparison_utils.hpp"
 #include "boost/tokenizer.hpp"
+#include "coloring.hpp"
 
 namespace cap {
 using namespace omnigraph;
@@ -110,7 +111,7 @@ class CoordinatesUpdater {
     Range NewCoords(const MappingPath<EdgeId>& path, Range coord) const {
         size_t cumm_length = 0;
         Range answer(0, 0);
-        int i = 0;
+        size_t i = 0;
         for (;
                 i < path.size()
                         && path[i].second.initial_range.end_pos
@@ -186,10 +187,8 @@ struct GeneCollection {
         }
     }
 
-    GenomeId genome_id(const string& name) {
-        //todo switch
-//        return get(genome_name_id_mapping, name);
-        return genome_name_id_mapping[name];
+    GenomeId genome_id(const string& name) const {
+        return get(genome_name_id_mapping, name);
     }
 
     void LoadGenomes(const string& file_with_genomes,
@@ -221,7 +220,7 @@ struct GeneCollection {
         if (genes.count(gene_id) == 0) {
             genes.insert(make_pair(gene_id, GeneInfo(gene_id)));
         }
-        genes.find(gene_id)->second.AddPosition(genome_id, Pos(range, forward));
+        get(genes, gene_id).AddPosition(genome_id, Pos(range, forward));
     }
 
     //ortholog ids is better wording
@@ -243,10 +242,14 @@ struct GeneCollection {
             //5 - start
             //6 - end
             //7 - forward/reverse
+            VERIFY(record.size() == 8);
             VERIFY(record[7] == "reverse" || record[7] == "forward");
-            AddGeneInfo(lexical_cast<size_t>(record[1]), genome_id(record[3]),
-                        Range(lexical_cast<size_t>(record[5]), lexical_cast<size_t>(record[6]))
-                        , record[7] == "forward");
+            size_t gene_id = lexical_cast<size_t>(record[1]);
+            if (gene_ids.count(gene_id) > 0) {
+                AddGeneInfo(gene_id, genome_id(record[3]),
+                            Range(lexical_cast<size_t>(record[5]), lexical_cast<size_t>(record[6]))
+                            , record[7] == "forward");
+            }
         }
     }
 
@@ -255,10 +258,10 @@ struct GeneCollection {
     GeneCollection() {}
 
     //ortholog ids is better wording
-    void Load(const string& file_with_genomes, const string& genomes_folder,
+    void Load(const string& root_folder, const string& file_with_genomes, const string& genomes_folder,
               const string& file_with_gene_info, const string& file_with_ids) {
-        LoadGenomes(file_with_genomes, genomes_folder);
-        LoadGeneInfo(file_with_gene_info, LoadGeneIDs(file_with_ids));
+        LoadGenomes(root_folder + file_with_genomes, root_folder + genomes_folder);
+        LoadGeneInfo(root_folder + file_with_gene_info, LoadGeneIDs(root_folder + file_with_ids));
     }
 
     template<class gp_t>
@@ -268,13 +271,7 @@ struct GeneCollection {
             Coordinates gene_coords;
             vector<GeneId> gene_ids;
             FOREACH (GeneId gene_id, key_set(genes)) {
-                vector<Pos> poss;
-                for (auto it = genes.find(gene_id)->second.gene_positions.lower_bound(genome_id); it !=
-                                 genes.find(gene_id)->second.gene_positions.upper_bound(genome_id); ++it) {
-                    poss.push_back(it->second);
-                }
-                //todo switch
-                FOREACH(Pos pos, poss/*get_all(genes[gene_id].gene_positions, genome_id)*/) {
+                FOREACH(Pos pos, get_all(genes[gene_id].gene_positions, genome_id)) {
                     gene_ids.push_back(gene_id);
                     VERIFY(pos.second);
                     gene_coords.push_back(pos.first);
@@ -296,14 +293,29 @@ struct GeneCollection {
             }
         }
     }
+
  private:
     DECL_LOGGER("GeneCollection")
     ;
 };
 
-template<class Graph>
-void WriteGeneLocality(const GeneCoordinates& coords) {
+template<class gp_t>
+void WriteGeneLocality(const GeneCollection& gene_collection, const gp_t& gp, const string& folder,
+                       const ColorHandler<typename gp_t::graph_t>& coloring) {
+    for (auto it = gene_collection.genes.begin(); it != gene_collection.genes.end(); ++it) {
+//        make_dir(folder + ToString(it->first));
+        const GenePositions& gene_poss = it->second.gene_positions;
 
+        //todo improve later
+        Sequence total_gene_sequence;
+        FOREACH(GenomeId genome_id, key_set(gene_collection.genomes)) {
+            const Sequence& genome = get(gene_collection.genomes, genome_id).sequence;
+            FOREACH(Pos pos, get_all(gene_poss, genome_id)) {
+                total_gene_sequence = total_gene_sequence + genome.Subseq(pos.first.start_pos, pos.first.end_pos);
+            }
+        }
+        WriteComponentsAlongSequence(gp, folder + ToString(it->first) + ".dot", 100000, 50, total_gene_sequence, coloring);
+    }
 }
 
 }
