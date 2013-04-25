@@ -317,7 +317,6 @@ public:
         	if (result.size() == 1){
         		INFO("CHANGE RESULT");
         	}
-        	INFO("end result size more 1. result size " << result.size());
         }
         return result;
     }

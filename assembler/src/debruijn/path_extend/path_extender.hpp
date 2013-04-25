@@ -614,6 +614,7 @@ public:
         size_t current = 0;
 
         while (current < extenders_.size()) {
+        	INFO("step " << current << " from " <<extenders_.size());
             if (extenders_[current]->MakeGrowStep(path)) {
                 return true;
             }

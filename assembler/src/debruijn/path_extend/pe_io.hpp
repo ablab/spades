@@ -107,7 +107,7 @@ public:
     }
 
 
-    void writePathEdges(const PathContainer& paths, const string& filename) {
+    void writePathEdges(PathContainer& paths, const string& filename){
 		INFO("Outputting path data to " << filename);
 		ofstream oss;
         oss.open(filename.c_str());
@@ -151,7 +151,7 @@ class PathInfoWriter {
 
 public:
 
-    void writePaths(PathContainer& paths, const string& filename) {
+    void writePaths(PathContainer& paths, const string& filename){
         ofstream oss(filename);
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {

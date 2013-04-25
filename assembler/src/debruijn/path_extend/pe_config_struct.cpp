@@ -135,9 +135,11 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
 
   p.seed_selection.metric = p.metric;
   p.extension_options.metric = p.metric;
+  p.mate_pair_options.metric = "path_cover";
 
   load(p.seed_selection,    pt, "seed_selection");
   load(p.extension_options, pt, "extension_options");
+  load(p.mate_pair_options, pt, "mate_pair_options");
   load(p.scaffolder_options, pt, "scaffolder");
   load(p.loop_removal,      pt, "loop_removal");
   load(p.filter_options,    pt, "filter_options");
