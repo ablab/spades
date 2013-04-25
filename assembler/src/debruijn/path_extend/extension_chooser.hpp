@@ -578,8 +578,6 @@ public:
             return edges;
         }
         INFO("We in Filter of PathsDrivenExtension");
-        INFO("Path supporting EC for");
-        path.Print();
 
         set<EdgeId> candidatesSet;
         for (auto it = edges.begin(); it != edges.end(); ++it) {

@@ -27,16 +27,8 @@ protected:
     conj_graph_pack& gp_;
 
     size_t k_;
-    size_t insert_size;
-	string ToString(const BidirectionalPath& path, bool with_overlaps = true) const {
-		/*string overlap = "";
-		 if (with_overlaps && !path.isOverlap() && path.hasOverlapedBegin()){
-		 overlap = ToString(*path.getOverlapedBegin()[0], false);
-		 int begin = overlap.length() > insert_size? overlap.length() - insert_size: 0;
-		 overlap = overlap.substr(begin, overlap.length() - k_ + 1 - begin);
-		 }*/
+	string ToString(const BidirectionalPath& path) const {
 		stringstream ss;
-		//ss << overlap;
 		if (!path.Empty()) {
 			ss << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.001).substr(0, k_);
 		}
@@ -57,14 +49,6 @@ protected:
 				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001).substr(overlapLen);
 			}
 		}
-		/*overlap = "";
-		 if (with_overlaps &&!path.isOverlap() && path.hasOverlapedEnd()){
-		 path.getOverlapedEnd()[0]->Print();
-		 overlap = ToString(*path.getOverlapedEnd()[0], false);
-		 int begin = overlap.length() > k_ ? k_ + 1: k_;
-		 overlap =overlap.substr(begin, insert_size - k_);
-		 }
-		 ss << overlap;*/
 		return ss.str();
 	}
 
@@ -84,7 +68,7 @@ protected:
 
 
 public:
-    ContigWriter(conj_graph_pack& gp, size_t k, size_t insert_size_): gp_(gp), k_(k), insert_size(insert_size_){
+    ContigWriter(conj_graph_pack& gp, size_t k): gp_(gp), k_(k){
 
     }
 

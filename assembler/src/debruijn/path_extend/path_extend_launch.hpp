@@ -105,7 +105,7 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 	INFO("Using " << cfg::get().pe_params.param_set.metric << " metric");
 	INFO("count libs " << libes.size());
 	INFO("Scaffolder is " << (cfg::get().pe_params.param_set.scaffolder_options.on ? "on" : "off"));
-	ContigWriter writer(gp, gp.g.k(), -1);
+	ContigWriter writer(gp, gp.g.k());
 	debug_output_edges(writer, gp, output_dir, "before_resolve");
 	vector<WeightCounter*> wcs;
 	vector<WeightCounter*> scaf_wcs;

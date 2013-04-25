@@ -313,8 +313,6 @@ protected:
             double threshold = pairedInfoLibrary.single_threshold_ >= 0.0 ? pairedInfoLibrary.single_threshold_ : singleThreshold;
 
             double singleWeight = libs_[libIndex]->CountPairedInfo(path[iter->e_], e, path.LengthAt(iter->e_) + additionalGapLength);
-            INFO("paired lib threshold " << threshold);
-            INFO(g_.int_id(e) << " " << g_.int_id(path[iter->e_]) << " " << singleWeight);
             /*vector<bool> test_thresholds (20, true);
             if (e != path[iter->e_]) {
 				vector<bool> test_thresholds = normalize_weight_test(libIndex, singleWeight, path[iter->e_], e, iter->pi_);
@@ -336,7 +334,6 @@ protected:
             if (normalizeWightByCoverage_) {
                 singleWeight = pairedInfoLibrary.normalizeByCoverage(singleWeight) * avrageLibWeight_;
             }
-            INFO("curr weight " << singleWeight);
             if (math::ge(singleWeight, threshold)) {
                 weight += iter->pi_;
             }
