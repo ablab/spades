@@ -679,7 +679,7 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
   typedef typename Graph::EdgeId EdgeId;
   int read_count;
   FILE* file = fopen((file_name + ".prd").c_str(), "r");
-  DEBUG((file_name + ".prd"));
+  INFO((file_name + ".prd"));
   VERIFY(file != NULL);
   INFO("Reading paired info from " << file_name << " started");
   int paired_count;

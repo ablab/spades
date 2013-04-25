@@ -67,19 +67,13 @@ void estimate_with_estimator(const Graph& graph,
   DEBUG("Info Filtered");
 }
 
-void estimate_distance(conj_graph_pack& gp,
-                       const PairedIndexT& paired_index,
-                             PairedIndexT& clustered_index)
-{
-  using debruijn_graph::estimation_mode;
-  INFO("Here");
-  if (!cfg::get().developer_mode) {
-    if (!clustered_index.IsAttached()){
-    	clustered_index.Attach();
-    	clustered_index.Init();
-    }
-  }
-  INFO("after");
+void estimate_distance(conj_graph_pack& gp, const PairedIndexT& paired_index,
+		PairedIndexT& clustered_index) {
+	using debruijn_graph::estimation_mode;
+	if (!cfg::get().developer_mode && !clustered_index.IsAttached()) {
+		clustered_index.Attach();
+		clustered_index.Init();
+	}
 
   const debruijn_config& config = cfg::get();
   if (config.paired_mode) {

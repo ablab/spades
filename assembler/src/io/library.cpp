@@ -94,10 +94,9 @@ struct convert<LibraryType> {
     else if (type == "long-single")
       rhs = LibraryType::LongSingleReads;
     else if (type == "single")
-      rhs = LibraryType::SingleReads;
+        rhs = LibraryType::SingleReads;
     else
       return false;
-
     return true;
   }
 

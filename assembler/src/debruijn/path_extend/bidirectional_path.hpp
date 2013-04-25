@@ -968,11 +968,11 @@ public:
         std::stable_sort(data_.begin(), data_.end(), PathPairComparator());
     }
 
-    Iterator begin() {
+    Iterator begin(){
         return Iterator(data_.begin());
     }
 
-    Iterator end() {
+    Iterator end(){
         return Iterator(data_.end());
     }
 
