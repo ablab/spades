@@ -20,22 +20,18 @@ public:
 protected :
 	conj_graph_pack &gp_;
 	size_t k_test_;
-	PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index;
-
 private:
+
+
 	DECL_LOGGER("PacIndex")
 
 public :
 	typedef typename Graph::EdgeId EdgeId;
 
-	PacBioAligner(conj_graph_pack& conj_gp, size_t k_test):gp_(conj_gp), k_test_(k_test),pac_index(gp_.g, k_test){}
-
+	PacBioAligner(conj_graph_pack& conj_gp, size_t k_test):gp_(conj_gp), k_test_(k_test){}
 
 	void pacbio_test(){
-
 	    INFO("starting pacbio tests");
-		ofstream filestr("pacbio_mapped.mpr");
-
 		ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, true);
 	    size_t n = 0;
 	//    map<int, int> profile;
@@ -47,10 +43,55 @@ public :
 	    int tlen = 0;
 	    LongReadStorage<Graph> long_reads(gp_.g);
 	    int rc_pairs = 0;
+	    size_t read_buffer_size = 20000;
+	    std::vector<ReadStream::read_type> reads(read_buffer_size);
+	    ReadStream::read_type read;
+	    size_t buffer_no = 0;
+	    PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp_.g, k_test_);
 		while (!pacbio_read_stream->eof()) {
-			ReadStream::read_type read;
-			*pacbio_read_stream>>read;
-			Sequence seq(read.sequence());
+		   size_t buf_size = 0;
+		   for (; buf_size < read_buffer_size && !pacbio_read_stream->eof(); ++buf_size) {
+			   *pacbio_read_stream>>reads[buf_size];
+		   }
+		   INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
+		   INFO("master thread number " << omp_get_thread_num());
+		   ProcessReadsBatch(reads, pac_index, long_reads, buf_size, genomic_subreads, nongenomic_subreads, nongenomic_edges, total_length, tlen, n, different_edges_profile, rc_pairs);
+		   INFO("Processed batch " << buffer_no);
+		   ++buffer_no;
+		}
+
+		long_reads.DumpToFile("long_reads.mpr", gp_.edge_pos);
+		INFO("Total reads: " << n);
+		INFO("Mean read length: " << total_length * 0.1/ n)
+		INFO("Mean subread length: " << tlen * 0.1/ (genomic_subreads + nongenomic_subreads + nongenomic_edges))
+		INFO("reads with rc edges:  " << rc_pairs);
+		INFO("Genomic/nongenomic subreads/nongenomic edges: "<<genomic_subreads <<" / " << nongenomic_subreads <<" / "<< nongenomic_edges);
+	//	INFO("profile:")
+	//	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
+	//		if (iter->first < 100) {
+	//			INFO(iter->first <<" :  "<< iter->second);
+	//		}
+
+		INFO("different edges profile:")
+		for (auto iter = different_edges_profile.begin(); iter != different_edges_profile.end(); ++iter)
+			if (iter->first < 100) {
+				INFO(iter->first <<" :  "<< iter->second);
+			}
+		INFO("PacBio test finished");
+	}
+
+	void ProcessReadsBatch(std::vector<ReadStream::read_type>& reads, PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index, LongReadStorage<Graph>& long_reads, size_t buf_size, int& genomic_subreads, int& nongenomic_subreads, int& nongenomic_edges, int& total_length,int& tlen, size_t n, map<int, int>& different_edges_profile, int& rc_pairs) {
+		omp_lock_t tmp_file_output;
+		omp_init_lock(&tmp_file_output);
+		ofstream filestr("pacbio_mapped.mpr");
+
+
+	# pragma omp parallel for shared(reads, pac_index, n, long_reads, different_edges_profile) num_threads(cfg::get().max_threads)
+		for (size_t i = 0; i < buf_size; ++i) {
+			if (i % 1000 == 0) {
+				INFO("thread number " << omp_get_thread_num());
+			}
+			Sequence seq(reads[i].sequence());
 			total_length += seq.size();
 		    auto location_map = pac_index.GetClusters(seq);
 		    //	    size_t res_count = pac_index.Count(seq);
@@ -61,7 +102,6 @@ public :
 		    //	    	DEBUG(read.sequence());
 		    //	    	DEBUG(res_count);
 		    //	    }
-
 		    different_edges_profile[location_map.size()]++;
 		    n++;
 		    if (location_map.size() <= 1){
@@ -82,16 +122,19 @@ public :
 		    	}
 		    }
 		    //continue;
-		    filestr << n << "  " << location_map.size()<< ": \n";
+
 		    INFO(n << "  " << location_map.size()<< ": \n");
+		    auto aligned_edges = pac_index.GetReadAlignment(seq);
+
+//this block is something that should be removed
+		    omp_set_lock(&tmp_file_output);
+		    filestr << n << "  " << location_map.size()<< ": \n";
 		    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
 		    	filestr << gp_.g.int_id(iter->first) <<"("<<gp_.g.length(iter->first)<<")  " << iter->second.size() <<"\n";
 		    	for (auto set_iter = iter->second.begin(); set_iter != iter->second.end(); ++ set_iter)
 					filestr << set_iter->edge_position << "-" << set_iter->read_position << "   ";
 				filestr << " \n";
 		    }
-
-		    auto aligned_edges = pac_index.GetReadAlignment(seq);
 		    filestr <<"found "<< aligned_edges.size()  <<" aligned subreads.\n";
 		    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
 		    	string tmp = " ";
@@ -105,6 +148,7 @@ public :
 		    			nongenomic_edges ++;
 		    	}
 		    	filestr <<"Alignment of "<< iter->size()  <<" edges is" << tmp <<"consistent with genome\n";
+		    	//except this point
 		    	long_reads.AddPath(*iter);
 		    	for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter){
 		    		filestr << gp_.g.int_id(*j_iter) <<"("<<gp_.g.length(*j_iter)<<") ";
@@ -112,32 +156,15 @@ public :
 		    	}
 		    	filestr << " \n";
 		    }
+		    filestr << " \n";
+		    filestr << " \n";
 
-		    filestr << " \n";
-		    filestr << " \n";
+		    omp_unset_lock(&tmp_file_output);
+
+
 		    VERBOSE_POWER(n, " reads processed");
 
 		}
-		long_reads.DumpToFile("long_reads.mpr", gp_.edge_pos);
-		INFO("Total reads: " << n);
-		INFO("Mean read length: " << total_length * 0.1/ n)
-		INFO("Mean subread length: " << tlen * 0.1/ (genomic_subreads + nongenomic_subreads + nongenomic_edges))
-		INFO("reads with rc edges:  " << rc_pairs);
-		INFO("Genomic/nongenomic subreads/nongenomic edges: "<<genomic_subreads <<" / " << nongenomic_subreads <<" / "<< nongenomic_edges);
-	//	INFO("profile:")
-	//	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
-	//		if (iter->first < 100) {
-	//			INFO(iter->first <<" :  "<< iter->second);
-	//		}
-
-		INFO("different edges profile:")
-		for (auto iter = different_edges_profile.begin(); iter != different_edges_profile.end(); ++iter)
-			if (iter->first < 100) {
-				INFO(iter->first <<" :  "<< iter->second);
-			}
-
-
-		INFO("PacBio test finished");
 
 	}
 
