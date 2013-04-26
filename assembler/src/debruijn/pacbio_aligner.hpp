@@ -125,8 +125,19 @@ public :
 
 		    INFO(n << "  " << location_map.size()<< ": \n");
 		    auto aligned_edges = pac_index.GetReadAlignment(seq);
-
-//this block is something that should be removed
+		    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
+		    	long_reads.AddPath(*iter);
+		    	if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
+		    		genomic_subreads ++;
+		    	}else {
+					if (iter->size() > 1)
+						nongenomic_subreads ++;
+					else
+						nongenomic_edges ++;
+				}
+		    }
+//this block is something to be overcome
+		    /*
 		    omp_set_lock(&tmp_file_output);
 		    filestr << n << "  " << location_map.size()<< ": \n";
 		    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
@@ -139,17 +150,12 @@ public :
 		    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
 		    	string tmp = " ";
 		    	if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
-		    		genomic_subreads ++;
+
 		    	}else {
 		    		tmp = " NOT ";
-		    		if (iter->size() > 1)
-		    			nongenomic_subreads ++;
-		    		else
-		    			nongenomic_edges ++;
 		    	}
 		    	filestr <<"Alignment of "<< iter->size()  <<" edges is" << tmp <<"consistent with genome\n";
 		    	//except this point
-		    	long_reads.AddPath(*iter);
 		    	for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter){
 		    		filestr << gp_.g.int_id(*j_iter) <<"("<<gp_.g.length(*j_iter)<<") ";
 		    		tlen += gp_.g.length(*j_iter);
@@ -158,9 +164,8 @@ public :
 		    }
 		    filestr << " \n";
 		    filestr << " \n";
-
 		    omp_unset_lock(&tmp_file_output);
-
+*/
 
 		    VERBOSE_POWER(n, " reads processed");
 

@@ -46,7 +46,7 @@ public:
 	LongReadStorage(Graph &g):g_(g), inner_index(){
 
 	}
-	void AddPath(const vector<EdgeId> &p){
+	void AddPath(const vector<EdgeId> &p, int w  = 1){
 		if (p.size() == 0 ) return;
 		for (typename set<LongReadInfo<Graph> >::iterator iter = inner_index[p[0]].begin(); iter != inner_index[p[0]].end(); ++iter) {
 			if (iter->path == p) {
@@ -55,7 +55,7 @@ public:
 				return ;
 			}
 		}
-		inner_index[p[0]].insert(LongReadInfo<Graph>(p, 1));
+		inner_index[p[0]].insert(LongReadInfo<Graph>(p, w));
 	}
 
 	void DumpToFile(const string s, EdgesPositionHandler<Graph> &edge_pos){
@@ -104,6 +104,32 @@ public:
 			filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
 	}
+
+
+	void LoadFromFile(const string s){
+    	ifstream filestr(s);
+    	FILE* file = fopen((s).c_str(), "r");
+	    while (!feof(file)){
+
+	    	int n;
+	    	fscanf(file, "%d\n", n);
+	    	for (int i = 0; i < n; i ++ ){
+
+	    		int w, l;
+	    		fscanf(file, "Weight: %d length: %d", w, l);
+	    		vector<EdgeId> p;
+	    		for(int j = 0; j  < n; j++) {
+	    			int e, x;
+	    			fscanf(file, "%d(%d)", e, x);
+	    			p.push_back(e);
+	    		}
+	    		AddPath(p, w);
+
+
+	    	}
+	    }
+	}
+
 	typename InnerIndex::iterator begin() const {
 		return inner_index.begin();
 	}
