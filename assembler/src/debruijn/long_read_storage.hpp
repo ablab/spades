@@ -115,11 +115,11 @@ public:
 			return res;
 		}
 
+
 	void LoadFromFile(const string s){
-    	/*ifstream filestr(s);
+    	ifstream filestr(s);
     	FILE* file = fopen((s).c_str(), "r");
 	    while (!feof(file)){
-
 	    	int n;
 	    	fscanf(file, "%d\n", n);
 	    	for (int i = 0; i < n; i ++ ){
@@ -136,7 +136,7 @@ public:
 
 
 	    	}
-	    }*/
+	    }
 	}
 
 	typename InnerIndex::iterator begin() const {
