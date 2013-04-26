@@ -273,9 +273,7 @@ inline void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 	//recursive call
 	MaskDifferencesAndSave(corr_streams, suffixes, out_root, k_values);
 
-	for (auto it = corr_streams.begin(); it != corr_streams.end(); ++it) {
-		delete *it;
-	}
+    DisposeCollection(corr_streams);
 }
 
 inline void MaskDifferencesAndSave(const vector<string>& in_files,

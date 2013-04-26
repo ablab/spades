@@ -930,13 +930,13 @@ void resolve_repeats() {
 		paired_index.Detach();
 		clustered_index.Detach();
 		if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
+		    //todo ?
 //			conj_gp.kmer_mapper.Detach();
 		}
 	}
 
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
 
-//	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
