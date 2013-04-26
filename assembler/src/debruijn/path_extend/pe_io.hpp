@@ -95,12 +95,14 @@ public:
 		INFO("Outputting path data to " << filename);
 		ofstream oss;
         oss.open(filename.c_str());
-		for (size_t i = 0; i < paths.size(); ++i) {
-            oss << i << endl;
-            BidirectionalPath path = *paths.Get(i);
-            oss << "PATH " << paths.Get(i)->GetId() << " " << path.Size() << " " << path.Length() + k_ << endl;
-            for (size_t j = 0; j < path.Size(); ++j) {
-			    oss << gp_.g.int_id(path[j]) << " " << gp_.g.length(path[j]) << endl;
+        int i = 0;
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+			oss << i << endl;
+			i++;
+            BidirectionalPath* path = iter.get();
+            oss << "PATH " <<path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
+            for (size_t j = 0; j < path->Size(); ++j) {
+			    oss << gp_.g.int_id(path->At(j)) << " " << gp_.g.length(path->At(j)) << endl;
             }
             oss << endl;
 		}
