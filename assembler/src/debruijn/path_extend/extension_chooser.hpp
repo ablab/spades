@@ -737,7 +737,7 @@ private:
     	int cur_pos1 = path.Size() - 1;
     	int cur_pos2 = pos;
     	while (cur_pos1 >= 0 && cur_pos2 >=0){
-    		if (path.At(cur_pos1) == path.At(cur_pos2)){
+    		if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
     			cur_pos1--;
     			cur_pos2--;
     		} else {
