@@ -578,13 +578,9 @@ public:
             return edges;
         }
         INFO("We in Filter of PathsDrivenExtension");
-
         set<EdgeId> candidatesSet;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
             candidatesSet.insert(it->e_);
-        }
-        if (candidatesSet.size() != edges.size()) {
-            WARN("SAME EDGE IN SELECTIONS");
         }
 
         auto supportingPaths = coverageMap_.GetCoveringPaths(path.Back());
@@ -593,7 +589,6 @@ public:
         EdgeId nullEdge;
         for (auto it = supportingPaths.begin(); it != supportingPaths.end(); ++it) {
             auto positions = (*it)->FindAll(path.Back());
-
             for (size_t i = 0; i < positions.size(); ++i) {
                 if (positions[i] < (*it)->Size() - 1 && candidatesSet.count((*it)->At(positions[i] + 1)) > 0) {
                     supportPathCandidates.push_back(make_pair(*it, positions[i]));
@@ -676,6 +671,98 @@ public:
         }
         INFO("result size " << result.size());
         return result;
+    }
+};
+
+class LongReadsExtensionChooser: public ExtensionChooser {
+
+protected:
+
+    GraphCoverageMap coverageMap_;
+
+
+public:
+    LongReadsExtensionChooser(Graph& g, PathContainer& pc): ExtensionChooser(g, 0, .0), coverageMap_(g, pc) {
+
+    }
+
+    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+        if (edges.empty()) {
+            return edges;
+        }
+        INFO("We in Filter of PathsDrivenExtension");
+        map<EdgeId, double> weights_cands;
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            weights_cands.insert(make_pair(it->e_, 0));
+        }
+        auto supporting_paths = coverageMap_.GetCoveringPaths(path.Back());
+        set<EdgeId> filtered_cands;
+        EdgeId nullEdge;
+        for (auto it = supporting_paths.begin(); it != supporting_paths.end(); ++it) {
+            auto positions = (*it)->FindAll(path.Back());
+            for (size_t i = 0; i < positions.size(); ++i) {
+            	if (positions[i] < (*it)->Size() - 1 && covered_path(path, **it, positions[i])){
+            		EdgeId next = (*it)->At(positions[i] + 1);
+            		weights_cands[next] = weights_cands[next] + (*it)->getWeight();
+            		filtered_cands.insert(next);
+            	}
+            }
+        }
+
+        if (filtered_cands.size() > 1) {
+        	vector<pair<EdgeId, double> > sorted_candidates = to_vector(weights_cands);
+        	INFO("First extension " <<g_.int_id(sorted_candidates[0].first) << " weight " << sorted_candidates[0].second);
+        	INFO("First extension " <<g_.int_id(sorted_candidates[1].first) << " weight " << sorted_candidates[1].second);
+        	if (sorted_candidates[0].second > 1.5 * sorted_candidates[1].second){
+        		filtered_cands.clear();
+        		filtered_cands.insert(sorted_candidates[0].first);
+        	}
+        } else if (filtered_cands.size() == 1){
+        	EdgeId candidate = *(filtered_cands.begin());
+            INFO("Only one extension is supported: " << g_.int_id(candidate) << " with weight " << weights_cands[candidate]);
+        } else {
+            INFO("NO extensions is supported" );
+        }
+        EdgeContainer result;
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            if (filtered_cands.find(it->e_) != filtered_cands.end()) {
+                result.push_back(*it);
+            }
+        }
+        INFO("result size " << result.size());
+        return result;
+    }
+
+private:
+    bool covered_path(BidirectionalPath& path, BidirectionalPath& cov_path, size_t pos){
+    	size_t cur_pos1 = path.Size() - 1;
+    	size_t cur_pos2 = pos;
+    	while (cur_pos1 >= 0 && cur_pos2 >=0){
+    		if (path.At(cur_pos1) == path.At(cur_pos2)){
+    			cur_pos1--;
+    			cur_pos2--;
+    		} else {
+    			return false;
+    		}
+    	}
+    	return true;
+    }
+
+    vector<pair<EdgeId, double> > to_vector(map<EdgeId, double>& candidates){
+    	vector<pair<EdgeId, double> > result;
+    	while (candidates.size() > 0){
+    		double max = 0;
+    		EdgeId max_edge = candidates.begin()->first;
+    		for (auto iter = candidates.begin(); iter != candidates.end(); ++iter){
+    			if (iter->second > max){
+    				max = iter->second;
+    				max_edge = iter->first;
+    			}
+    		}
+    		result.push_back(make_pair(max_edge, max));
+    		candidates.erase(max_edge);
+    	}
+    	return result;
     }
 };
 

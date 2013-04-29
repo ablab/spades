@@ -1075,7 +1075,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 			}
 			INFO("Scaffolding");
 			resolve_repeats_pe(cfg::get().K, resolved_gp, pe_indexs,
-					pe_scaf_indexs, indexs, vector<vector<EdgeId> >(), cfg::get().output_dir, "scaffolds.fasta");
+					pe_scaf_indexs, indexs,  vector<LongReadInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta");
 			SaveResolved(resolved_gp, resolved_graph_paired_info,
 					resolved_graph_paired_info_cl);
 			delete resolved_graph_scaff_clustered;
@@ -1115,8 +1115,10 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 		name = "final_contigs.fasta";
 		pe_scaf_indexs.clear();
 	}
+	LongReadStorage<Graph> long_read(conj_gp.g);
+	long_read.LoadFromFile("/home/antipov/long_read_saves/ECOLI_IS220_QUAKE/long_reads.mpr");
 	resolve_repeats_pe(cfg::get().K, conj_gp, pe_indexs,
-			pe_scaf_indexs, indexs, vector<vector<EdgeId> >(), cfg::get().output_dir, name);
+			pe_scaf_indexs, indexs, long_read.GetAllPaths(), cfg::get().output_dir, name);
 	if (need_delete){
 		delete_index(pe_scaf_indexs);
 	}
@@ -1163,7 +1165,7 @@ void resolve_repeats() {
 		}
 	}
 
-	pacbio_test(conj_gp, cfg::get().pacbio_k);
+	//pacbio_test(conj_gp, cfg::get().pacbio_k);
 //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
 
 	//todo refactor labeler creation

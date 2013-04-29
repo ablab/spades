@@ -53,9 +53,11 @@ public:
 		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, var, clustered_index);
 		map<PairInfo<EdgeId>, double> good_pi;
 		map<PairInfo<EdgeId>, double> bad_pi;
+		INFO("analyze paths begin");
 		for (auto iter = goodPaths.begin(); iter != goodPaths.end(); ++iter) {
 			analyze_one_path(gp, *iter, lib_not_cl, lib_cl, good_pi, bad_pi);
 		}
+		INFO("analyze paths end");
 		writeToFile(gp, good_pi, bad_pi, lib_not_cl);
 		deletePaths(goodPaths);
 		vector<double> good_pi_val;

@@ -22,7 +22,7 @@
 #include "path_validator.hpp"
 #include "loop_traverser.h"
 #include "single_threshold_finder.hpp"
-
+#include "long_read_storage.hpp"
 #include "../include/omni/edges_position_handler.hpp"
 
 namespace path_extend {
@@ -86,17 +86,9 @@ double get_weight_threshold(PairedInfoLibraries& lib){
 
 }
 
-void add_paths_to_container(conj_graph_pack& gp, const std::vector< std::vector<EdgeId> >& paths, PathContainer& supportingContigs){
-	for (size_t i = 0; i < paths.size(); ++i){
-		BidirectionalPath* new_path = new BidirectionalPath(gp.g, paths[i]);
-		BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
-		supportingContigs.AddPair(new_path, conj_path);
-	}
-}
-
 void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libes, vector<PairedInfoLibraries>& scafolding_libes,
-		const std::vector< std::vector<EdgeId> >& true_paths,
+		const PathContainer& true_paths,
 		const std::string& output_dir, const std::string& contigs_name) {
 	INFO("Path extend repeat resolving tool started");
 	make_dir(output_dir);
@@ -110,7 +102,6 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 	vector<WeightCounter*> wcs;
 	vector<WeightCounter*> scaf_wcs;
 	PathContainer supportingContigs;
-	add_paths_to_container(gp, true_paths, supportingContigs);
 	if (FileExists(cfg::get().pe_params.additional_contigs)) {
 		INFO("Reading additional contigs " << cfg::get().pe_params.additional_contigs);
 		supportingContigs = CreatePathsFromContigs(gp, cfg::get().pe_params.additional_contigs);
@@ -159,7 +150,7 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 	}
 	PathExtendResolver resolver(gp.g, k);
 	auto seeds = resolver.makeSimpleSeeds();
-	ExtensionChooser * pdEC = new PathsDrivenExtensionChooser(gp.g, supportingContigs);
+	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs);
 	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, pdEC);
 
 	vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
@@ -232,9 +223,21 @@ void set_threshold(PairedInfoLibrary* lib, size_t index) {
 	lib->SetSingleThreshold(threshold);
 }
 
+void add_paths_to_container(conj_graph_pack& gp, const std::vector<LongReadInfo<Graph> >& paths, PathContainer& supportingContigs){
+	for (size_t i = 0; i < paths.size(); ++i){
+		LongReadInfo<Graph> path = paths[i];
+		vector<EdgeId> edges = path.getPath();
+		BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
+		BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
+		new_path->setWeight(path.getWeight());
+		conj_path->setWeight(path.getWeight());
+		supportingContigs.AddPair(new_path, conj_path);
+	}
+}
+
 void resolve_repeats_pe(size_t k, conj_graph_pack& gp,
 		vector<PairedIndexT*>& paired_index, vector<PairedIndexT*>& scaff_index,
-		vector<size_t>& indexs, const std::vector<std::vector<EdgeId> >& true_paths,
+		vector<size_t>& indexs, const std::vector<LongReadInfo<Graph> >& true_paths,
 		const std::string& output_dir, const std::string& contigs_name) {
 
 	PairedInfoLibraries libs;
@@ -262,7 +265,9 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp,
 	vector<PairedInfoLibraries> scaff_libes;
 	add_not_empty_lib(scaff_libes, scaf_libs);
 	add_not_empty_lib(scaff_libes, scaf_libs_mp);
-	resolve_repeats_pe_many_libs(k, gp, libes, scaff_libes, true_paths,
+	PathContainer supportingContigs;
+	add_paths_to_container(gp, true_paths, supportingContigs);
+	resolve_repeats_pe_many_libs(k, gp, libes, scaff_libes, supportingContigs,
 			output_dir, contigs_name);
 	delete_libs(libs);
 	delete_libs(libs_mp);
