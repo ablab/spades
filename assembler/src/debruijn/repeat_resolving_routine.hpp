@@ -1115,8 +1115,9 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 		name = "final_contigs.fasta";
 		pe_scaf_indexs.clear();
 	}
+	//LongReadStorage<Graph> long_read(conj_gp.g);
 	LongReadStorage<Graph> long_read = pacbio_test(conj_gp, cfg::get().pacbio_k);
-	//long_read.LoadFromFile("/home/antipov/long_read_saves/ECOLI_IS220_QUAKE/long_reads.mpr");
+	long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 
 	resolve_repeats_pe(cfg::get().K, conj_gp, pe_indexs,
 			pe_scaf_indexs, indexs, long_read.GetAllPaths(), cfg::get().output_dir, name);
