@@ -118,25 +118,42 @@ public:
 
 	void LoadFromFile(const string s){
     	ifstream filestr(s);
+    	INFO("loading from " << s);
+    	map<int, EdgeId> tmp_map;
+    	for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+    		tmp_map[g_.int_id(*iter)] = *iter;
+    	}
+    	int fl;
     	FILE* file = fopen((s).c_str(), "r");
+    	char ss[14];
 	    while (!feof(file)){
 	    	int n;
-	    	fscanf(file, "%d\n", n);
+
+	    	fl = fscanf(file, "%d\n", &n);
+	    	if (fl != 1) break;
+	    	TRACE(n);
 	    	for (int i = 0; i < n; i ++ ){
 
-	    		int w, l;
-	    		fscanf(file, "Weight: %d length: %d", w, l);
+	    		int w = -1, l = -1;
+	    		fl = fscanf(file, "Weight: %d length: %d", &w, &l);
+	    		TRACE(w << " " << l);
+	    		VERIFY(fl == 2);
 	    		vector<EdgeId> p;
-	    		for(int j = 0; j  < n; j++) {
+	    		for(int j = 0; j  < l; j++) {
 	    			int e, x;
-	    			fscanf(file, "%d(%d)", e, x);
-	    			p.push_back(e);
+	    			fl = fscanf(file, "%d(%d)", &e, &x);
+	    			VERIFY(fl == 2);
+	    			VERIFY(tmp_map.find(e) != tmp_map.end());
+	    			p.push_back(tmp_map[e]);
 	    		}
+	    		fl = fscanf(file, "%[^\n]\n", ss);
+	    		TRACE(ss[0]);
 	    		AddPath(p, w);
 
 
 	    	}
 	    }
+	    INFO("loading finished");
 	}
 
 	typename InnerIndex::iterator begin() const {
