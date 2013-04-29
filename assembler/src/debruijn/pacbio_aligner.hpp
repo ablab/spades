@@ -42,6 +42,10 @@ public :
 	    int total_length = 0;
 	    int tlen = 0;
 	    LongReadStorage<Graph> long_reads(gp_.g);
+//	    long_reads.LoadFromFile("long_reads.mpr");
+//	    INFO("dumping back");
+//	    long_reads.DumpToFile("long_reads2.mpr", gp_.edge_pos);
+
 	    int rc_pairs = 0;
 	    size_t read_buffer_size = 20000;
 	    std::vector<ReadStream::read_type> reads(read_buffer_size);
@@ -61,6 +65,7 @@ public :
 		}
 
 		long_reads.DumpToFile("long_reads.mpr", gp_.edge_pos);
+
 		INFO("Total reads: " << n);
 		INFO("Mean read length: " << total_length * 0.1/ n)
 		INFO("Mean subread length: " << tlen * 0.1/ (genomic_subreads + nongenomic_subreads + nongenomic_edges))
