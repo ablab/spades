@@ -20,17 +20,22 @@ public:
 	vector<EdgeId> getPath() {
 		return path;
 	}
-	size_t getWeight(){
+	size_t getWeight() {
 		return w;
 	}
-	void increaseWeight(){
+	void increaseWeight() {
 		w++;
 	}
 
 	bool operator<(const LongReadInfo<Graph> &other) const {
 		return path < other.path;
 	}
-	LongReadInfo(const vector<EdgeId> &p, size_t weight = 0):path(p), w(weight){
+	LongReadInfo(const vector<EdgeId> &p, size_t weight = 0) :
+			path(p), w(weight) {
+	}
+	LongReadInfo(const LongReadInfo<Graph> &other) {
+		path = other.path;
+		w = other.w;
 	}
 };
 
@@ -105,15 +110,17 @@ public:
 		}
 	}
 
-	vector<LongReadInfo<Graph> >  GetAllPaths(){
-			vector<LongReadInfo<Graph> > res;
-			for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter){
-				for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
-					res.push_back(*j_iter);
-				}
+	vector<LongReadInfo<Graph> > GetAllPaths() {
+		vector<LongReadInfo<Graph> > res;
+		for (auto iter = inner_index.begin(); iter != inner_index.end();
+				++iter) {
+			for (auto j_iter = iter->second.begin();
+					j_iter != iter->second.end(); ++j_iter) {
+				res.push_back(*j_iter);
 			}
-			return res;
 		}
+		return res;
+	}
 
 
 	void LoadFromFile(const string s){
