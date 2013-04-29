@@ -268,6 +268,8 @@ protected:
 	//Path listeners
 	std::vector <PathListener *> listeners_;
 
+	double weight;
+
 protected:
 	void Verify() {
 	    if (cumulativeLength_.empty() && totalLength_ != 0) {
@@ -390,6 +392,7 @@ public:
 	    Subscribe(&loopDetector_);
 	    Subscribe(&seedCoords_);
 	    overlap = false;
+	    weight = 1;
 	}
 
 	BidirectionalPath(Graph& g, std::vector < EdgeId > path): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_() {
@@ -406,6 +409,7 @@ public:
             now_ = path[path.size() - 1];
             RecountLengths();
 		}
+		weight = 1;
 	}
 
 	BidirectionalPath(const BidirectionalPath& path): g_(path.g_), id_(path.id_), data_(path.data_), cumulativeLength_(path.cumulativeLength_), gapLength_(path.gapLength_), totalLength_(path.totalLength_),
@@ -415,6 +419,7 @@ public:
 	    overlap = false;
 	    prev_ = data_.back();
 	    now_ = data_.back();
+	    weight = path.getWeight();
 	}
 
 	void setConjPath(BidirectionalPath* path) {
@@ -424,6 +429,14 @@ public:
 	BidirectionalPath* getConjPath() {
 		return conj_path;
 	}
+
+    void setWeight(double w){
+    	weight = w;
+    }
+
+    double getWeight() const{
+    	return weight;
+    }
 
 	void clearOverlapedEnd() {
 		overlaped_end.clear();
@@ -665,6 +678,7 @@ public:
         id_ = g_.int_id(startingEdge);
         prev_ = data_.back();
         now_ = data_.back();
+        weight = 1;
     }
 
     virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
