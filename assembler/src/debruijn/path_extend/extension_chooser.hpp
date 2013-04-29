@@ -711,8 +711,8 @@ public:
 
         if (filtered_cands.size() > 1) {
         	vector<pair<EdgeId, double> > sorted_candidates = to_vector(weights_cands);
-        	INFO("First extension " <<g_.int_id(sorted_candidates[0].first) << " weight " << sorted_candidates[0].second);
-        	INFO("First extension " <<g_.int_id(sorted_candidates[1].first) << " weight " << sorted_candidates[1].second);
+        	INFO("First extension is supported" <<g_.int_id(sorted_candidates[0].first) << " weight " << sorted_candidates[0].second);
+        	INFO("First extension is supported" <<g_.int_id(sorted_candidates[1].first) << " weight " << sorted_candidates[1].second);
         	if (sorted_candidates[0].second > 1.5 * sorted_candidates[1].second){
         		filtered_cands.clear();
         		filtered_cands.insert(sorted_candidates[0].first);
