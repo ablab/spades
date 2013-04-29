@@ -695,11 +695,10 @@ public:
         for (auto it = edges.begin(); it != edges.end(); ++it) {
             weights_cands.insert(make_pair(it->e_, 0));
         }
-        auto supporting_paths = coverageMap_.GetCoveringPaths(path.Back());
         set<EdgeId> filtered_cands;
-        EdgeId nullEdge;
+        auto supporting_paths = coverageMap_.GetCoveringPaths(path.Back());
         for (auto it = supporting_paths.begin(); it != supporting_paths.end(); ++it) {
-            auto positions = (*it)->FindAll(path.Back());
+        	auto positions = (*it)->FindAll(path.Back());
             for (size_t i = 0; i < positions.size(); ++i) {
             	if (positions[i] < (*it)->Size() - 1 && covered_path(path, **it, positions[i])){
             		EdgeId next = (*it)->At(positions[i] + 1);
@@ -735,8 +734,8 @@ public:
 
 private:
     bool covered_path(BidirectionalPath& path, BidirectionalPath& cov_path, size_t pos){
-    	size_t cur_pos1 = path.Size() - 1;
-    	size_t cur_pos2 = pos;
+    	int cur_pos1 = path.Size() - 1;
+    	int cur_pos2 = pos;
     	while (cur_pos1 >= 0 && cur_pos2 >=0){
     		if (path.At(cur_pos1) == path.At(cur_pos2)){
     			cur_pos1--;

@@ -88,7 +88,7 @@ double get_weight_threshold(PairedInfoLibraries& lib){
 
 void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libes, vector<PairedInfoLibraries>& scafolding_libes,
-		const PathContainer& true_paths,
+		PathContainer& true_paths,
 		const std::string& output_dir, const std::string& contigs_name) {
 	INFO("Path extend repeat resolving tool started");
 	make_dir(output_dir);
@@ -150,12 +150,15 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 	}
 	PathExtendResolver resolver(gp.g, k);
 	auto seeds = resolver.makeSimpleSeeds();
+	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths);
+	INFO("Long Reads supporting contigs " << true_paths.size());
+	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, longReadEC);
 	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs);
 	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, pdEC);
-
 	vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.push_back(pdPE);
+	all_libs.push_back(longReadPathExtender);
 	CoveringPathExtender * mainPE = new CompositePathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, all_libs);
 
 	seeds.SortByLength();
