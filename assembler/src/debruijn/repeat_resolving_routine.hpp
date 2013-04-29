@@ -873,9 +873,9 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 	estimate_with_estimator(gp.g, estimator, normalizer, filter,
 			clustered_index);
 }
-void pacbio_test(conj_graph_pack& conj_gp, size_t k_test) {
+LongReadStorage<Graph> pacbio_test(conj_graph_pack& conj_gp, size_t k_test) {
 	if (cfg::get().pacbio_test_on == false)
-		return;
+		return LongReadStorage<Graph>(conj_gp.g);
 	INFO("starting pacbio tests");
 	ofstream filestr("pacbio_mapped.mpr");
 	PacBioMappingIndex<Graph> pac_index(conj_gp.g, k_test);
@@ -981,8 +981,8 @@ void pacbio_test(conj_graph_pack& conj_gp, size_t k_test) {
 		if (iter->first < 100) {
 			INFO(iter->first <<" :  "<< iter->second);
 		}
-
 	INFO("PacBio test finished");
+	return long_reads;
 
 }
 
@@ -1115,8 +1115,9 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 		name = "final_contigs.fasta";
 		pe_scaf_indexs.clear();
 	}
-	LongReadStorage<Graph> long_read(conj_gp.g);
-	long_read.LoadFromFile("/home/antipov/long_read_saves/ECOLI_IS220_QUAKE/long_reads.mpr");
+	LongReadStorage<Graph> long_read = pacbio_test(conj_gp, cfg::get().pacbio_k);
+	//long_read.LoadFromFile("/home/antipov/long_read_saves/ECOLI_IS220_QUAKE/long_reads.mpr");
+
 	resolve_repeats_pe(cfg::get().K, conj_gp, pe_indexs,
 			pe_scaf_indexs, indexs, long_read.GetAllPaths(), cfg::get().output_dir, name);
 	if (need_delete){
@@ -1165,7 +1166,7 @@ void resolve_repeats() {
 		}
 	}
 
-	//pacbio_test(conj_gp, cfg::get().pacbio_k);
+
 //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
 
 	//todo refactor labeler creation
