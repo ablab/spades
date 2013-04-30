@@ -16,6 +16,18 @@
 
 namespace cap {
 
+template<class gp_t>
+class MaskHandler {
+    typedef typename gp_t::graph_t Graph;
+ public:
+
+    void HandleMasked(const gp_t& modified_gp, const ColorHandler<Graph>& modified_coloring,
+                      const vector<ContigStream*> modified_contigs) = 0;
+
+    virtual ~MaskHandler() {
+    }
+};
+
 template<class Collection>
 void DisposeCollection(Collection c) {
 	for (auto it = c.begin(); it != c.end(); ++it) {
