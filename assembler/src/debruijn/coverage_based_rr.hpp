@@ -978,7 +978,7 @@ class CoverageBasedResolution {
 
 	void WriteResolved( const std::set<EdgeId>& usedEdges, PathContainer& resolvedPaths, const std::string &fileName  ){
 
-		ContigWriter cw( *gp, cfg::get().K );
+		ContigWriter cw( *gp, cfg::get().K, 0 );
 		//cw.writePaths( resolvedPaths, fileName );
 		//PathContainer paths;
 		getOtherEdges( resolvedPaths, usedEdges );

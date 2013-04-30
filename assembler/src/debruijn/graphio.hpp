@@ -707,6 +707,7 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
   int read_count;
   FILE* file = fopen((file_name + ".prd").c_str(), "r");
   DEBUG((file_name + ".prd"));
+  //std::cout << file_name << std::endl;
   VERIFY(file != NULL);
   INFO("Reading paired info from " << file_name << " started");
   int paired_count;

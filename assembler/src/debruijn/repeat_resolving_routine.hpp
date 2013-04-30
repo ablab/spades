@@ -1203,10 +1203,11 @@ void resolve_repeats() {
 }
 
 void exec_repeat_resolving() {
+	
 	if (cfg::get().entry_point <= ws_repeats_resolving) {
 		resolve_repeats();
 		//todo why nothing to save???
-		// nothing to save yet
+		// nothsng to save yet
 	} else {
 		INFO("Loading Repeat Resolving");
 		INFO("Nothing to load");

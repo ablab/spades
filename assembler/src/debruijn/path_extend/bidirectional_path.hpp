@@ -859,21 +859,22 @@ public:
     }
 
     void Print() const {
-        INFO("Path " << id_);
+        /*INFO("Path " << id_);
         INFO("Length " << totalLength_);
         INFO("#, edge, length, total length");
         for(size_t i = 0; i < Size(); ++i) {
             INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
-        }
+        }*/
     }
 
     void Print(std::ostream& os) {
-        os << "Path " << GetId() << endl;
+        /*os << "Path " << GetId() << endl;
         os << "Length " << Length() << endl;
         os << "#, edge, length, total length" << endl;
         for(size_t i = 0; i < Size(); ++i) {
             os << i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i) << endl;
         }
+	*/
     }
 };
 

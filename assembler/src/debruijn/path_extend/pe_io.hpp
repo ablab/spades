@@ -135,7 +135,7 @@ public:
         	if (iter.get()->Length() < k_){
         		continue;
         	}
-        	INFO("NODE " << ++i);
+        	//INFO("NODE " << ++i);
         	iter.get()->Print();
         	oss.setID(iter.get()->GetId());
             oss.setCoverage(iter.get()->Coverage());
