@@ -29,13 +29,26 @@ namespace debruijn_graph {
 	
 			size_t K = cfg::get().K + 1;
 			DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(graph.index.inner_index().K(), cfg::get().output_dir);
-			std::string path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
-			bool val = LoadEdgeIndex(path, kmerIndex);
-			VERIFY_MSG(val, "can not open file "+path+".kmidx");
+			if (cfg::get().developer_mode) {
 
+				std::string path;
+				if (cfg::get().entry_point < ws_repeats_resolving) 
+					path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
+				else
+					path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
+				bool val = LoadEdgeIndex(path, kmerIndex);
+				VERIFY_MSG(val, "can not open file "+path+".kmidx");
+				INFO("Updating index from graph started");
+				DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, graph.g);
 
-			INFO("Updating index from graph started");
-			DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, graph.g);
+			}
+			else {
+
+				//INFO("Updating index from graph started");
+				//DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(graph.index.inner_index(), graph.g);
+				
+			}
+
 			int counter = 0;
   			for (auto e_iter = graph.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 				
@@ -55,10 +68,16 @@ namespace debruijn_graph {
 					for ( int j = i; j < K +i && j < len; ++j) {
 						kmer_in <<= seq[j];
 					}
-					if (!graph.index.inner_index().contains(kmer_in)) {
-						continue;
+					if (cfg::get().developer_mode) {
+						if (kmerIndex.contains(kmer_in)) {
+							coverage_in += kmerIndex[kmer_in].count_;
+						}
 					}
-					coverage_in += graph.index.inner_index()[kmer_in].count_;
+					else {
+						if (graph.index.inner_index().contains(kmer_in)) {
+							coverage_in += graph.index.inner_index()[kmer_in].count_;
+						}
+					}
 				}
 					
 				coverage_in = coverage_in / sizeBound;
@@ -70,14 +89,24 @@ namespace debruijn_graph {
 							
 						kmer_out <<= seq[j];
 					}
-					if (!graph.index.inner_index().contains(kmer_out)){
-						continue;
+					
+					if (cfg::get().developer_mode) {
+						if (kmerIndex.contains(kmer_out)) {
+							coverage_out += kmerIndex[kmer_out].count_;
+						}
 					}
-					coverage_out += graph.index.inner_index()[kmer_out].count_;
+					else {
+						if (graph.index.inner_index().contains(kmer_out)) {
+							coverage_out += graph.index.inner_index()[kmer_out].count_;
+						}
+					}
+
 
 				}
 				coverage_out = coverage_out / sizeBound;
 		
+				//if (coverage_in != graph.g.coverage(*e_iter))
+				//	std::cout << graph.g.int_id(*e_iter) << ": " << coverage_in << " " << coverage_out << " " << graph.g.coverage(*e_iter) << " " << graph.g.length(*e_iter) << std::endl;
 				inCoverage.insert(std::make_pair( *e_iter, coverage_in));
 				//inCoverage.insert(std::make_pair( *e_iter, graph.g.coverage(*e_iter)));
 				outCoverage.insert(std::make_pair( *e_iter, coverage_out));
@@ -86,6 +115,9 @@ namespace debruijn_graph {
 				//}
 			}
 			
+			if (cfg::get().developer_mode) {
+				kmerIndex.clear();
+			}
 		}
 	};
 

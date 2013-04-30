@@ -82,7 +82,10 @@ void simplify_graph(conj_graph_pack& gp) {
 	}
 */
 
-	SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction",gp.index.inner_index());
+	if (cfg::get().developer_mode) {	
+		INFO("developer mode - save edge index");
+		SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction",gp.index.inner_index());
+	}
 //	PrintWeightDistribution<K>(gp.g, "distribution.txt");
 
 //	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
@@ -106,6 +109,7 @@ void simplify_graph(conj_graph_pack& gp) {
 	
 	SimplifyGraph(gp, 0/*removal_handler_f*/, labeler, printer, 10
 	/*, etalon_paired_index*/);
+
 
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
   cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());

@@ -1183,18 +1183,18 @@ void resolve_repeats() {
 	
 	INFO("Resolving repeats by coverage");
 
-	//auto index = FlankingCoverage<EdgeId>(conj_gp, 50);
+	auto index = FlankingCoverage<EdgeId>(conj_gp, 50);
 /*	auto filter = LoopFilter<conj_graph_pack, FlankingCoverage<EdgeId>>(conj_gp, index);
 	filter.get_loopy_components(quality_labeler); */
-	//EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
+	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 
 
-	//auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp);
-	//cov_rr.resolve_repeats_by_coverage(index, labels_after, quality_labeler);
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp);
+	cov_rr.resolve_repeats_by_coverage(index, labels_after, quality_labeler, clustered_index);
 
-	//INFO("Repeats are resolved by coverage");
+	INFO("Repeats are resolved by coverage");
 
-	//SaveCoverageBasedRRPaths(conj_gp, cov_rr.filteredPaths, cfg::get().output_dir+"saves/coverage_based.paths");
+//	SaveCoverageBasedRRPaths(conj_gp, cov_rr.resultingPaths, cfg::get().output_dir+"saves/coverage_based.paths");
 
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
 		INFO("Ready to run rectangles repeat resolution module");

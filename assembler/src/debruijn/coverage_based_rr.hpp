@@ -8,6 +8,7 @@
 #include "graph_print_utils.hpp"
 #include "debruijn_kmer_index.hpp"
 #include "graph_pack.hpp"
+#include "pair_info_improver.hpp"
 #include "path_extend/pe_io.hpp"
 #include "graphio.hpp"
 
@@ -22,8 +23,6 @@ class CoverageBasedResolution {
 
 	//path with conjugate edges
 	std::vector< std::vector<EdgeId> > resolvedPaths;
-	//path without conjugate edges
-	std::vector< std::vector<EdgeId> > filteredPaths;
 
 	public:
 	CoverageBasedResolution( GraphPack *gpack_arg) {
@@ -31,6 +30,9 @@ class CoverageBasedResolution {
 	}
 	
 	
+	//path without conjugate edges
+	std::vector< std::vector<EdgeId> > filteredPaths;
+
 
 	private:
 	void joinPaths( std::vector<std::vector<EdgeId> >& paths, //std::vector< std::vector<EdgeId> >& paths, 
@@ -53,12 +55,13 @@ class CoverageBasedResolution {
 
 //TODO: assert that edge is not more than once first and not more than once last in these paths.	
 		for (auto path = bothPaths.begin(); path != bothPaths.end(); ++path) {
-			VERIFY(startEdgeToPath.find(path->front()) == startEdgeToPath.end());
+		//	std::cout << gp->g.int_id(path->front()) << std::endl;
+		//	VERIFY(startEdgeToPath.find(path->front()) == startEdgeToPath.end());
 			startEdgeToPath[path->front()] = *path;
 		}
 
 		for (auto path = bothPaths.begin(); path != bothPaths.end(); ++path) {
-			VERIFY(backEdgeToPath.find(path->back()) == backEdgeToPath.end());
+		//	VERIFY(backEdgeToPath.find(path->back()) == backEdgeToPath.end());
 			backEdgeToPath[path->back()] = *path;
 		}
 
@@ -106,7 +109,8 @@ class CoverageBasedResolution {
 	template <class DetailedCoverage>
 	void resolve_repeats_by_coverage( DetailedCoverage& coverage, 
 					EdgeLabelHandler<typename GraphPack::graph_t>& labels_after,
-					EdgeQuality<typename GraphPack::graph_t>& quality_labeler
+					EdgeQuality<typename GraphPack::graph_t>& quality_labeler,
+					PairedInfoIndexT<Graph>& clustered_index
 					//std::set<EdgeId>& prohibitedEdges,
 					//std::vector< std::vector<EdgeId>>& resolvedLoops ) 
 					) {
@@ -125,7 +129,7 @@ class CoverageBasedResolution {
 
 		std::vector<EdgeId> components, singles;
 		INFO("Getting components...");
-		getComponents(  components, singles, labels_after, quality_labeler, filter.prohibitedEdges );
+		getComponents(  components, singles, labels_after, quality_labeler, clustered_index, filter.prohibitedEdges );
 		//getComponentsWithReference(  components, singles, quality_labeler, prohibitedEdges );
 		//getComponents( gp, components, singles, quality_labeler, unresolvedLoops );
 
@@ -316,9 +320,35 @@ class CoverageBasedResolution {
 		return false;
 	}
 
+	template< class Graph>
+	bool checkIfComponentByPairedInfo( EdgeId edge, PairedInfoIndexT<Graph>& clustered_index, std::set<EdgeId>& prohibitedEdges ) {
+
+		auto improver = PairInfoImprover<Graph>(gp->g, clustered_index);
+		InnerMap<Graph> inner_map = clustered_index.GetEdgeInfo(edge, 0);
+		for (auto I_1 = inner_map.Begin(), E = inner_map.End(); I_1 != E; ++I_1) {
+			for (auto I_2 = inner_map.Begin(); I_2 != E; ++I_2) {
+				if (I_1 == I_2) continue;
+				EdgeId e1 = (*I_1).first;
+				const Point& p1 = (*I_1).second;
+				EdgeId e2 = (*I_2).first;
+				const Point& p2 = (*I_2).second;
+				
+				if (prohibitedEdges.find(e1) != prohibitedEdges.end() || prohibitedEdges.find(e2) != prohibitedEdges.end() ) continue;
+				if ( p1.d * p2.d < 0 || p2.d > p1.d ) continue;
+				if (!improver.IsConsistent(edge, e1, e2, p1, p2)) {
+					std::cout << "Inconsistent for " << gp->g.int_id(edge) << ": " << gp->g.int_id(e1) << " " << gp->g.int_id(e2) << std::endl;
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
 	void getComponents( std::vector<EdgeId>& components, std::vector<EdgeId>& singles, 
 				EdgeLabelHandler<typename GraphPack::graph_t>& labels_after,
 				EdgeQuality<Graph>& quality_labeler,
+				PairedInfoIndexT<Graph>& clustered_index,
 				std::set<EdgeId>& prohibitedEdges ){
 
 		typedef int times;
@@ -358,7 +388,7 @@ class CoverageBasedResolution {
 		}
 
 		std::cout << "Length cutoff: " << 0.25 * LengthCutoff / numEdges << std::endl;
-		LengthCutoff = 500;//	
+		LengthCutoff = 300;//	
 		for (auto e_iter = gp->g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter){
 
 			if ( prohibitedEdges.find(*e_iter) != prohibitedEdges.end() ){ 
@@ -370,7 +400,10 @@ class CoverageBasedResolution {
 
 			//std::cout << e_iter->int_id() << std::endl;
 			bool toComps = false;
-			if (! ( ((in_degree.find(from) == in_degree.end()) || out_degree[from] > 1) && ((out_degree.find(into) == out_degree.end()) || in_degree[into] > 1) )
+			if ( gp->g.length(*e_iter) >= cfg::get().rr.max_repeat_length ) {
+				singles.push_back(*e_iter);
+			}
+			else if (! ( ((in_degree.find(from) == in_degree.end()) || out_degree[from] > 1) && ((out_degree.find(into) == out_degree.end()) || in_degree[into] > 1) )
 				) {//&&
 				//	gp->g.length(*e_iter) > LengthCutoff){
 			//	if (gp->g.int_id(*e_iter) == 10021207) INFO(1);
@@ -386,7 +419,13 @@ class CoverageBasedResolution {
 					}
 				
 			}*/
-			else if( gp->g.length(*e_iter) < LengthCutoff ){
+			else if ( checkIfComponentByPairedInfo(*e_iter, clustered_index, prohibitedEdges ) ) {
+				components.push_back(*e_iter);
+				std::cout << "Component Edge Detected By Paired Info: " << gp->g.int_id(*e_iter) << std::endl;
+			}
+
+			// continue check if a short _terminal_ vertex
+			else if( gp->g.length(*e_iter) < LengthCutoff && (in_degree.find(from) != in_degree.end()) && (out_degree.find(into) != out_degree.end()) ){
 			//	if (gp->g.int_id(*e_iter) ==10021207) INFO(2);
 
 				components.push_back(*e_iter);
@@ -557,6 +596,23 @@ class CoverageBasedResolution {
 			}
 			if (incomingEdges.size() != outgoingEdges.size()) {
 				numberOfComponentWithDifferentInOutDegree += 1;
+				std::cout << "component with different in and out degree: ";
+				for ( auto iter = path.begin(); iter != path.end(); ++iter ) {
+					std::cout << gp->g.int_id(*iter)  << " ";
+				}
+				std::cout << std::endl;
+				std::cout << "incoming edges: ";
+				for ( auto iter = incomingEdges.begin(); iter != incomingEdges.end(); ++iter ) {
+					std::cout << gp->g.int_id(*iter)  << " ";
+				}
+				std::cout << std::endl;
+				std::cout << "outgoing edges: ";
+				for ( auto iter = outgoingEdges.begin(); iter != outgoingEdges.end(); ++iter ) {
+					std::cout << gp->g.int_id(*iter)  << " ";
+				}
+				std::cout << std::endl;
+				continue;
+
 			}
 			numberOfComponents += 1;
 			if ( incomingEdges.size() == 0 || outgoingEdges.size() == 0) {
@@ -836,8 +892,8 @@ class CoverageBasedResolution {
 		VertexId edgeEndVertex = gp->g.EdgeEnd(edge);
 
 		//std::cout << "visiting edge " << gp->g.int_id(edge) << " " << gp.g.int_id( edgeStartVertex ) << "," << gp.g.int_id( edgeEndVertex ) << std::endl;
-		VERIFY_MSG(singles.size() != 0, "size of singles in visit is zero!");
-		
+		//VERIFY_MSG(singles.size() != 0, "size of singles in visit is zero!");
+		if (singles.size() == 0) return;
 		//std::cout << "vertices of single edges: ";
 		for ( auto single_edge = singles.begin(); single_edge != singles.end(); ++single_edge ){
 		
