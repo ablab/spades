@@ -178,13 +178,13 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
     }
     paths.SortByLength();
     writer.writePaths(paths, output_dir + contigs_name);
+    debug_output_paths(writer, gp, output_dir, paths, "final_paths");
 	INFO("loop Traverser");
     LoopTraverser loopTraverser(gp.g, paths, mainPE->GetCoverageMap(), mainPE);
 	loopTraverser.TraverseAllLoops();
 	paths.SortByLength();
 	INFO("Found " << paths.size() << " contigs");
 	writer.writePaths(paths, output_dir + contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_loop_tr.fasta");
-	debug_output_paths(writer, gp, output_dir, paths, "final_paths");
 	INFO("Path extend repeat resolving tool finished");
 }
 
