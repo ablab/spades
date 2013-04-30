@@ -137,16 +137,26 @@ std::set<typename MapT::mapped_type> value_set(const MapT& m) {
     return answer;
 }
 
-template <class map_t>
-const typename map_t::_Tp& get(const map_t& from, const typename map_t::_Key& key) {
+template <class MapT>
+const typename MapT::mapped_type& get(const MapT& from, const typename MapT::key_type& key) {
 	auto it = from.find(key);
 	VERIFY(it != from.end());
 	return it->second;
 }
 
-template <class mmap_t>
-const std::vector<typename mmap_t::_Tp> get_all(const mmap_t& from, const typename mmap_t::_Key& key) {
-    std::vector<typename mmap_t::_Tp> answer(from.lower_bound(key), from.upper_bound(key));
+template <class MapT>
+typename MapT::mapped_type& get(MapT& from, const typename MapT::key_type& key) {
+	auto it = from.find(key);
+	VERIFY(it != from.end());
+	return it->second;
+}
+
+template <class MMapT>
+const std::vector<typename MMapT::mapped_type> get_all(const MMapT& from, const typename MMapT::key_type& key) {
+    std::vector<typename MMapT::mapped_type> answer;
+    for (auto it = from.lower_bound(key); it != from.upper_bound(key); ++it) {
+        answer.push_back(it->second);
+    }
 	return answer;
 }
 

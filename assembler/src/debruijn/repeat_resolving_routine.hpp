@@ -1032,6 +1032,7 @@ void resolve_repeats() {
 		paired_index.Detach();
 		clustered_index.Detach();
 		if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
+		    //todo ?
 //			conj_gp.kmer_mapper.Detach();
 		}
 	}

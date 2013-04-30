@@ -16,6 +16,18 @@
 
 namespace cap {
 
+template<class gp_t>
+class MaskHandler {
+    typedef typename gp_t::graph_t Graph;
+ public:
+
+    void HandleMasked(const gp_t& modified_gp, const ColorHandler<Graph>& modified_coloring,
+                      const vector<ContigStream*> modified_contigs) = 0;
+
+    virtual ~MaskHandler() {
+    }
+};
+
 template<class Collection>
 void DisposeCollection(Collection c) {
 	for (auto it = c.begin(); it != c.end(); ++it) {
@@ -273,9 +285,7 @@ inline void MaskDifferencesAndSave(/*const */vector<ContigStream*>& streams,
 	//recursive call
 	MaskDifferencesAndSave(corr_streams, suffixes, out_root, k_values);
 
-	for (auto it = corr_streams.begin(); it != corr_streams.end(); ++it) {
-		delete *it;
-	}
+    DisposeCollection(corr_streams);
 }
 
 inline void MaskDifferencesAndSave(const vector<string>& in_files,
