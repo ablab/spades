@@ -95,7 +95,7 @@ public:
 		INFO("Outputting path data to " << filename);
 		ofstream oss;
         oss.open(filename.c_str());
-        int i = 0;
+        int i = 1;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
 			oss << i << endl;
 			i++;
