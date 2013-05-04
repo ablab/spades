@@ -1002,7 +1002,7 @@ class BlockPrinter {
 	    if (id <= conj_id)
 	        return make_pair(id, true);
 	    else
-	        return make_paid(conj_id, false);
+	        return make_pair(conj_id, false);
 	}
 
 public:

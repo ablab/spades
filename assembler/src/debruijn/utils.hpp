@@ -166,11 +166,11 @@ class LatePairedIndexFiller {
 
 public:
 	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, PairedStream& stream, WeightF weight_f) :
-			graph_(graph), mapper_(mapper), streams_(1, &stream), weight_f_(weight_f)
+			graph_(graph), mapper_(mapper), streams_(stream), weight_f_(weight_f)
 	{
 	}
 
-  LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, const io::ReadStreamVector< PairedStream >& streams, WeightF weight_f) :
+  LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, io::ReadStreamVector< PairedStream >& streams, WeightF weight_f) :
     graph_(graph), mapper_(mapper), streams_(streams), weight_f_(weight_f)
   {
   }
@@ -303,7 +303,7 @@ private:
 private:
 	const Graph& graph_;
 	const SequenceMapper& mapper_;
-	io::ReadStreamVector< PairedStream > streams_;
+	io::ReadStreamVector<PairedStream>& streams_;
 	WeightF weight_f_;
 
 	DECL_LOGGER("LatePairedIndexFiller");

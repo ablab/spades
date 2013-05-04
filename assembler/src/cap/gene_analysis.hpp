@@ -264,6 +264,12 @@ struct GeneCollection {
         LoadGeneInfo(root_folder + file_with_gene_info, LoadGeneIDs(root_folder + file_with_ids));
     }
 
+    void Save(const string& root_folder, const string& genomes_folder,
+              const string& file_with_gene_info) {
+        SaveGenomes(root_folder + genomes_folder);
+        SaveGeneInfo(root_folder + file_with_gene_info);
+    }
+
     template<class gp_t>
     void Update(const gp_t& gp) {
         CoordinatesUpdater<gp_t> updater(gp);

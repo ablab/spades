@@ -168,10 +168,9 @@ std::vector< SequenceSingleReadStream* > raw_single_binary_readers(bool followed
     }
 }
 
-io::ReadStreamVector< SequenceSingleReadStream > single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
-    return io::ReadStreamVector< SequenceSingleReadStream >(raw_single_binary_readers(followed_by_rc, including_paired_reads));
+boost::shared_ptr<io::ReadStreamVector<SequenceSingleReadStream>> single_binary_readers(bool followed_by_rc, bool including_paired_reads) {
+    return boost::make_shared<io::ReadStreamVector<SequenceSingleReadStream>>(raw_single_binary_readers(followed_by_rc, including_paired_reads));
 }
-
 
 std::vector< SequencePairedReadStream* > raw_paired_binary_readers(bool followed_by_rc, size_t insert_size) {
     convert_if_needed();
@@ -183,8 +182,8 @@ std::vector< SequencePairedReadStream* > raw_paired_binary_readers(bool followed
     return apply_paired_wrappers(followed_by_rc, paired_streams);
 }
 
-io::ReadStreamVector< SequencePairedReadStream > paired_binary_readers(bool followed_by_rc, size_t insert_size) {
-    return io::ReadStreamVector< SequencePairedReadStream >(raw_paired_binary_readers(followed_by_rc, insert_size));
+boost::shared_ptr<io::ReadStreamVector<SequencePairedReadStream>> paired_binary_readers(bool followed_by_rc, size_t insert_size) {
+    return boost::make_shared<io::ReadStreamVector<SequencePairedReadStream>>(raw_paired_binary_readers(followed_by_rc, insert_size));
 }
 
 

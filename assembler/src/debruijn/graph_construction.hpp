@@ -78,7 +78,7 @@ void FillPairedIndexWithProductMetric(const Graph &g,
 void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const Graph &g, const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper, size_t is, size_t rs,
-		size_t delta, const Sequence& genome, size_t k) 
+		size_t delta, const Sequence& genome, size_t k)
 {
 	VERIFY_MSG(genome.size() > 0,
 			"The genome seems not to be loaded, program will exit");
@@ -129,11 +129,11 @@ void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
 	DEBUG("Coverage counted");
 }
 
-template<class Graph, class Read, class Seq>
+template<class Graph, class Readers, class Index>
 size_t ConstructGraph(size_t k,
-		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
-		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
-
+		Readers& streams, Graph& g,
+		Index& index, SingleReadStream* contigs_stream = 0) {
+    typedef typename Index::Kmer Seq;
 	INFO("Constructing DeBruijn graph");
 
 	TRACE("Filling indices");
@@ -156,15 +156,31 @@ size_t ConstructGraph(size_t k,
 	return rl;
 }
 
-template<class Read>
+template<class Graph, class Readers, class Index>
 size_t ConstructGraphWithCoverage(size_t k,
-		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
-		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
+		Readers& streams, Graph& g,
+		Index& index, SingleReadStream* contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
 
 	FillCoverageFromIndex(g, index, k);
 
 	return rl;
+}
+
+template<class Graph, class Reader, class Index>
+size_t ConstructGraphFromStream(size_t k,
+        Reader& stream, Graph& g,
+        Index& index, SingleReadStream* contigs_stream = 0) {
+    io::ReadStreamVector<io::IReader<typename Reader::read_type>> streams(stream);
+    return ConstructGraph(k, streams, g, index, contigs_stream);
+}
+
+template<class Graph, class Reader, class Index>
+size_t ConstructGraphWithCoverageFromStream(size_t k,
+        Reader& stream, Graph& g,
+        Index& index, SingleReadStream* contigs_stream = 0) {
+    io::ReadStreamVector<io::IReader<typename Reader::read_type>> streams(stream);
+    return ConstructGraph(k, streams, g, index, contigs_stream);
 }
 
 }

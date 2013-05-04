@@ -8,6 +8,8 @@
 
 #include "runtime_k.hpp"
 #include "cap_kmer_index.hpp"
+#include "graph_construction.hpp"
+#include "compare_standard.hpp"
 
 namespace cap {
 
@@ -152,12 +154,12 @@ class ColoredGraphConstructor {
 //		}
 //	}
 
-	void SplitGraph(const vector<ContigStream*>& streams) {
+	void SplitGraph(ContigStreams& streams) {
 		INFO("Determining covered ranges");
 		CoveredRangesFinder<Graph, Mapper> crs_finder(g_, mapper_);
 		vector<CoveredRanges> crss(streams.size());
 		for (size_t i = 0; i < streams.size(); ++i) {
-			crs_finder.FindCoveredRanges(crss[i], *streams[i]);
+			crs_finder.FindCoveredRanges(crss[i], streams[i]);
 			//		DEBUG("Printing covered ranges for stream i");
 			//		PrintCRS(crss[i]);
 		}
@@ -197,11 +199,10 @@ class ColoredGraphConstructor {
 		}
 	}
 
-	void PaintGraph(
-			const vector<pair<ContigStream*, TColorSet> >& stream_mapping) {
-		for (auto it = stream_mapping.begin(); it != stream_mapping.end();
-				++it) {
-			PaintGraph(*(it->first), it->second);
+	void PaintGraph(ContigStreams& streams, const vector<TColorSet>& stream_colors) {
+	    VERIFY(streams.size() == stream_colors.size());
+		for (size_t i = 0; i < streams.size(); ++i) {
+			PaintGraph(streams[i], stream_colors[i]);
 		}
 	}
 
@@ -231,7 +232,7 @@ public:
 
 	}
 
-	void ConstructGraph(const vector<ContigStream*>& streams) {
+	void ConstructGraph(ContigStreams& streams) {
 // It is not truth anymore?
 //		VERIFY(streams.size() == 2);
 
@@ -247,7 +248,7 @@ public:
 //			SaveOldGraph(output_folder + "saves/split_graph");
 //		}
 
-		vector < pair<ContigStream*, TColorSet> > stream_mapping;
+		vector<TColorSet> stream_colors;
 
 		// Obsolete two-coloring
 //		stream_mapping.push_back(make_pair(streams[0], kRedColorSet));
@@ -255,13 +256,12 @@ public:
 
 		TColor color_number = 0;
 		for (auto it = streams.begin(); it != streams.end(); ++it) {
-			stream_mapping.push_back(
-					make_pair(*it, TColorSet::SingleColor(color_number)));
+			stream_colors.push_back(TColorSet::SingleColor(color_number));
 			++color_number;
 		}
 
 		INFO("Coloring graph");
-		PaintGraph(stream_mapping);
+		PaintGraph(streams, stream_colors);
 		INFO("Coloring done.");
 
 		//situation in example 6 =)
@@ -290,19 +290,12 @@ void SimplifyGraph(Graph& g, size_t br_delta) {
 }
 
 template<class gp_t>
-void ConstructColoredGraph(gp_t& gp,
+void SplitAndColorGraph(gp_t& gp,
 		ColorHandler<typename gp_t::graph_t>& coloring,
-		vector<ContigStream*>& streams, bool fill_pos = true) {
-	typedef typename gp_t::graph_t Graph;
-	const size_t k = gp.k_value;
+		ContigStreams& streams, bool fill_pos = true) {
+
+    typedef typename gp_t::graph_t Graph;
 	typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
-
-	INFO("Constructing de Bruijn graph for k=" << k);
-
-	// false: do not delete streams after usage
-	io::ReadStreamVector<ContigStream> read_stream_vector(streams, false);
-	ConstructGraph<Graph, Contig, typename gp_t::seq_t>(k, read_stream_vector,
-			gp.g, gp.index);
 
 	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g, // MAPPER K+1!!
 			coloring, *MapperInstance<gp_t>(gp));
@@ -313,12 +306,26 @@ void ConstructColoredGraph(gp_t& gp,
 	if (fill_pos) {
 		INFO("Filling contig positions");
 		for (auto it = streams.begin(); it != streams.end(); ++it) {
-			ContigStream& stream = **it;
+			ContigStream& stream = *it;
 			stream.reset();
 
 			FillPos(gp, stream);
 		}
 	}
+}
+
+template<class gp_t>
+void ConstructColoredGraph(gp_t& gp,
+		ColorHandler<typename gp_t::graph_t>& coloring,
+		ContigStreams& streams, bool fill_pos = true) {
+
+    INFO("Constructing de Bruijn graph for k=" << gp.k_value);
+
+	// false: do not delete streams after usage
+	debruijn_graph::ConstructGraph(gp.k_value, streams,
+			gp.g, gp.index);
+
+	SplitAndColorGraph(gp, coloring, streams, fill_pos);
 }
 
 //template<class gp_t>

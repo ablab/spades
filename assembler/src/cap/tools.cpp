@@ -44,10 +44,10 @@ BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 }
 
 BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
-    return;
+//    return;
 	utils::TmpFolderFixture _("tmp");
 
-	std::string base_path = "ecoli/";
+	std::string base_path = "/home/snurk/Dropbox/olga_gelf/";
 
 	/*
 	 vector<std::string> paths = {
@@ -70,17 +70,16 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 	// E.Coli
 	vector<std::string> paths = {
 //    base_path + "EDL.fasta",
-			base_path + "H6.fasta",
+			base_path + "genomes/Escherichia coli 536.fasta",
 //    base_path + "HS.fasta",
-			base_path + "K12.fasta", base_path + "TW.fasta", base_path
-					+ "UTI.fasta" };
+			base_path + "genomes/Escherichia coli 55989.fasta"
+	};
 	vector<std::string> suffices = {
-//    "EDL",
-			"H6",
-//    "HS",
-			"K12", "TW", "UTI" };
+			"EC536",
+			"EC55989"
+	};
 
-	vector<size_t> k_sequence = { 1001, 501, 201, 101, 55, 21, 15 };
+	vector<size_t> k_sequence = { /*1001, 501, 201, 101, */55, 21, 15 };
 
 	/*
 	 std::string base_path = "/home/valich/work/human/";
@@ -103,7 +102,7 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 
 	MaskDifferencesAndSave(paths, suffices,
 			//"bp_graph_" + files_md5 +
-            "bp_graph/refined/", k_sequence);
+            base_path + "processed/", k_sequence);
 }
 
 BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {

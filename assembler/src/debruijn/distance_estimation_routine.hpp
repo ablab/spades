@@ -96,7 +96,7 @@ void estimate_distance(conj_graph_pack& gp,
       map<int, size_t> insert_size_hist = config.ds.hist;
       if (insert_size_hist.size() == 0) {
         auto streams = paired_binary_readers(false, 0);
-        GetInsertSizeHistogram(streams, gp, *config.ds.IS, *config.ds.is_var,
+        GetInsertSizeHistogram(*streams, gp, *config.ds.IS, *config.ds.is_var,
                                insert_size_hist);
       }
       WeightDEWrapper wrapper(insert_size_hist, *config.ds.IS);
@@ -234,7 +234,7 @@ void load_distance_estimation(conj_graph_pack& gp,
   //return true;
 //}
 
-//void distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index, PairedIndexT& clustered_index) 
+//void distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index, PairedIndexT& clustered_index)
 //{
     //path::files_t used_files;
     //if (try_load_distance_filling(gp, clustered_index, &used_files)) {

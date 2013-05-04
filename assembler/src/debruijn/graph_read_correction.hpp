@@ -145,6 +145,7 @@ bool CheckContiguous(const Graph& g, const vector<typename Graph::EdgeId>& path)
 	return true;
 }
 
+//todo improve logging
 template<class Graph, class Mapper>
 class GraphReadCorrector: public io::SequenceModifier {
 	typedef typename Graph::EdgeId EdgeId;

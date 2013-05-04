@@ -22,10 +22,14 @@
  * complimentary reads from given reader (one by one).
  */
 
-#ifndef COMMON_IO_RCREADERWRAPPER_HPP_
-#define COMMON_IO_RCREADERWRAPPER_HPP_
+#pragma once
 
-#include "io/ireader.hpp"
+#include <boost/noncopyable.hpp>
+#include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
+
+#include "ireader.hpp"
+#include "read_stream_vector.hpp"
 
 namespace io {
 
@@ -39,13 +43,6 @@ public:
 	 */
 	explicit RCReaderWrapper(IReader<ReadType>& reader) :
 			reader_(reader), rc_read_(), was_rc_(true) {
-	}
-
-	/*
-	 * Default destructor.
-	 */
-	/* virtual */
-	~RCReaderWrapper() {
 	}
 
 	/*
@@ -127,16 +124,9 @@ private:
 	 */
 	bool was_rc_;
 
-	/*
-	 * Hidden copy constructor.
-	 */
-	explicit RCReaderWrapper(const RCReaderWrapper<ReadType>& reader);
-	/*
-	 * Hidden assign operator.
-	 */
-	void operator=(const RCReaderWrapper<ReadType>& reader);
 };
 
+//todo what is this?
 template<typename ReadType>
 class CleanRCReaderWrapper: public IReader<ReadType> {
 public:
@@ -235,17 +225,15 @@ private:
 	 * last read read was already outputted.
 	 */
 	bool was_rc_;
-
-	/*
-	 * Hidden copy constructor.
-	 */
-	explicit CleanRCReaderWrapper(const CleanRCReaderWrapper<ReadType>& reader);
-	/*
-	 * Hidden assign operator.
-	 */
-	void operator=(const CleanRCReaderWrapper<ReadType>& reader);
 };
 
+template<class Reader>
+boost::shared_ptr<ReadStreamVector<Reader>> RCWrapStreams(ReadStreamVector<Reader>& streams) {
+    auto/*boost::shared_ptr<ReadStreamVector<Reader>>*/ rc_streams/*(new ReadStreamVector<Reader>());*/= boost::make_shared<ReadStreamVector<Reader>>();
+    BOOST_FOREACH(Reader& stream, streams) {
+        rc_streams->push_back(new RCReaderWrapper<typename Reader::read_type>(stream));
+    }
+    return rc_streams;
 }
 
-#endif /* COMMON_IO_RCREADERWRAPPER_HPP_ */
+}

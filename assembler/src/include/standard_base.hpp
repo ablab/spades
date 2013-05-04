@@ -89,6 +89,8 @@ using std::make_shared;
 
 #include <boost/optional.hpp>
 
+#include <boost/signals2.hpp>
+
 #include <boost/format.hpp>
 
 #include <boost/lexical_cast.hpp>
