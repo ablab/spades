@@ -26,7 +26,7 @@ private:
 	DECL_LOGGER("PacIndex")
 
 public :
-	typedef typename Graph::EdgeId EdgeId;
+	typedef Graph::EdgeId EdgeId;
 
 	PacBioAligner(conj_graph_pack& conj_gp, size_t k_test):gp_(conj_gp), k_test_(k_test){}
 

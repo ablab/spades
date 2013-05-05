@@ -10,14 +10,6 @@
 #include "graph_pack.hpp"
 #include <algorithm>
 
-//
-//template<class Graph>
-//struct position{
-//	typename Graph::EdgeId edgeId_;
-//	int offset_;
-//	position(typename Graph::EdgeId edgeId, int offset) :
-//	      edgeId_(edgeId), offset_(offset) { }
-//};
 
 //TODO: dangerousCode
 template<class T>
@@ -62,6 +54,41 @@ struct ReadPositionComparator{
     }
 };
 
+
+struct KmerCluster {
+
+
+	int last_trustable_index;
+	int first_trustable_index;
+	Graph::EdgeId edgeId;
+	vector<MappingInstance> sorted_positions;
+	int size;
+	KmerCluster(vector<MappingInstance>& v, EdgeId e){
+		last_trustable_index = 0;
+		first_trustable_index = 0;
+		edgeId = e;
+		size = v.size();
+		sorted_positions = v;
+		fillTrustableIndeces();
+	}
+private:
+
+	void fillTrustableIndeces(){
+		//ignore non-unique kmers for distance determination
+		int first_unique_ind = 0;
+		while (first_unique_ind != size - 1  && ! (sorted_positions[first_unique_ind].IsUnique())) {
+			first_unique_ind += 1;
+		}
+		int last_unique_ind = size - 1;
+		while (last_unique_ind != 0 &&  ! (sorted_positions[last_unique_ind].IsUnique())) {
+			last_unique_ind -= 1;
+		}
+		last_trustable_index = last_unique_ind;
+		first_trustable_index = first_unique_ind;
+	}
+
+};
+
 template<class Graph>
 struct MappingDescription {
 
@@ -70,9 +97,8 @@ template<class Graph>
 class PacBioMappingIndex{
 public:
 
-	//First - in edge, second - in Sequence(pacbio read)
 	typedef map<typename Graph::EdgeId, vector<MappingInstance > > MappingDescription;
-	typedef map<typename Graph::EdgeId, set<vector<MappingInstance > > > MappingClustersDescription;
+//	typedef map<typename Graph::EdgeId, set<vector<MappingInstance > > > MappingClustersDescription;
 	typedef pair<typename Graph::EdgeId, vector<MappingInstance > >   ClusterDescription;
 	typedef set<ClusterDescription> ClustersSet;
 
@@ -434,7 +460,20 @@ public :
 		return sortedEdges;
 	}
 
+/*	pair<int, int> GetPathLimits(const ClusterDescription &a, const ClusterDescription &b){
+		int seq_len = -start_pos + end_pos;
+		PathStorageCallback<Graph> callback(g_);
+//TODO::something more reasonable
+		int path_min_len = max(int(floor((seq_len  - int(cfg::get().K)) * 0.7)), 0);
+		int path_max_len = (seq_len  + int(cfg::get().K)) * 1.3;
+		if (seq_len < 0) {
+			WARN("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
+			return vector<EdgeId>(0);
+		}
+		path_min_len = max(path_min_len - int(s_add.length() + e_add.length()), 0);
+		path_max_len = max(path_max_len - int(s_add.length() + e_add.length()), 0);
 
+	} */
 //0 - No, 1 - Yes
 	int IsConsistent(Sequence &s, const ClusterDescription &a, const ClusterDescription &b) {
 		EdgeId a_edge = a.first;
