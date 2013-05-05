@@ -333,17 +333,24 @@ public :
 				if (interesting_starts.find(g_.int_id(prev_edge)) != interesting_starts.end() && interesting_ends.find(g_.int_id(cur_edge)) != interesting_ends.end())
 					debug_info = true;
 //ignore non-unique kmers for distance determination
-				auto first_unique_iter = (iter->second->sorted_positions.begin());
-				while (first_unique_iter != (iter->second->sorted_positions.end() - 1)  && !first_unique_iter->IsUnique()) {
-					first_unique_iter += 1;
-				}
+//				auto first_unique_iter = (iter->second->sorted_positions.begin());
+//				while (first_unique_iter != (iter->second->sorted_positions.end() - 1)  && !first_unique_iter->IsUnique()) {
+//					first_unique_iter += 1;
+//				}
+//
+//				auto last_unique_iter = (prev_iter->second->sorted_positions.end() - 1);
+//				while (last_unique_iter != (iter->second->sorted_positions.begin())  && !last_unique_iter->IsUnique()) {
+//					last_unique_iter -= 1;
+//				}
+//				MappingInstance cur_first_index = *first_unique_iter;
+//				MappingInstance prev_last_index = *(last_unique_iter);
 
-				auto last_unique_iter = (prev_iter->second->sorted_positions.end() - 1);
-				while (last_unique_iter != (iter->second->sorted_positions.begin())  && !last_unique_iter->IsUnique()) {
-					last_unique_iter -= 1;
-				}
-				MappingInstance cur_first_index = *first_unique_iter;
-				MappingInstance prev_last_index = *(last_unique_iter);
+				MappingInstance cur_first_index = iter->second->sorted_positions[iter->second->first_trustable_index];
+				MappingInstance prev_last_index = prev_iter->second->sorted_positions[prev_iter->second->last_trustable_index];
+
+//				MappingInstance prev_last_index = *(last_unique_iter);
+
+
 //TODO: reasonable constant?
 				if (start_v != end_v || (start_v == end_v && (cur_first_index.read_position - prev_last_index.read_position) > (cur_first_index.edge_position + g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
 
@@ -447,8 +454,10 @@ public :
 					auto next_iter = iter + 1;
  					if (next_iter == cur_cluster.end() || !IsConsistent(s, *(iter->second), *(next_iter->second))){
  						if (next_iter != cur_cluster.end()) {
- 							INFO("splitting cluster sequences...")
-
+ 							INFO("splitting cluster sequences...");
+ 							if (g_.conjugate(iter->second->edgeId) != next_iter->second->edgeId) {
+ 								WARN("interesting gap, edgeIds: " <<g_.int_id(g_.conjugate(iter->second->edgeId)) <<" " <<g_.int_id(next_iter->second->edgeId));
+ 							}
  						}
  						vector <pair<size_t,  typename ClustersSet::iterator> > splitted_cluster(cur_cluster_start, next_iter);
  						vector<EdgeId> cur_sorted = FillGapsInCluster(splitted_cluster, s);
