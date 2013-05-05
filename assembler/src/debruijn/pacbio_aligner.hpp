@@ -116,7 +116,7 @@ public :
 		    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
 		    	bool flag = false;
 			    for (auto j_iter = location_map.begin(); j_iter != location_map.end(); ++j_iter) {
-			    	if (iter != j_iter && gp_.g.conjugate(iter->first) == j_iter->first) {
+			    	if (iter != j_iter && gp_.g.conjugate(iter->edgeId) == j_iter->edgeId) {
 			    		flag = true;
 			    		break;
 			    	}

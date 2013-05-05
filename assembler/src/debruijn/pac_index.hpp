@@ -56,14 +56,12 @@ struct ReadPositionComparator{
 
 
 struct KmerCluster {
-
-
 	int last_trustable_index;
 	int first_trustable_index;
 	Graph::EdgeId edgeId;
 	vector<MappingInstance> sorted_positions;
 	int size;
-	KmerCluster(vector<MappingInstance>& v, EdgeId e){
+	KmerCluster( EdgeId e, vector<MappingInstance>& v){
 		last_trustable_index = 0;
 		first_trustable_index = 0;
 		edgeId = e;
@@ -71,7 +69,12 @@ struct KmerCluster {
 		sorted_positions = v;
 		fillTrustableIndeces();
 	}
-private:
+    bool operator < (const KmerCluster & b) const {
+		if (edgeId < b.edgeId  || (edgeId == b.edgeId && sorted_positions < b.sorted_positions))
+			return true;
+		else
+			return false;
+	}
 
 	void fillTrustableIndeces(){
 		//ignore non-unique kmers for distance determination
@@ -100,8 +103,8 @@ public:
 	typedef map<typename Graph::EdgeId, vector<MappingInstance > > MappingDescription;
 //	typedef map<typename Graph::EdgeId, set<vector<MappingInstance > > > MappingClustersDescription;
 	typedef pair<typename Graph::EdgeId, vector<MappingInstance > >   ClusterDescription;
-	typedef set<ClusterDescription> ClustersSet;
-
+//	typedef set<ClusterDescription> ClustersSet;
+	typedef set<KmerCluster> ClustersSet;
 	typedef typename Graph::VertexId VertexId;
 protected :
 	Graph &g_;
@@ -229,7 +232,7 @@ public :
 					if (count < to_add.size() && to_add.size() > min_cluster_size) {
 						DEBUG("in cluster size " << to_add.size() << ", " << to_add.size() - longest_len<<"were removed as trash")
 					}
-					res.insert(make_pair(iter->first, filtered));
+					res.insert(KmerCluster(iter->first, filtered));
 				}
 			}
 		}
@@ -240,26 +243,25 @@ public :
 	//filter clusters that are too small or fully located on a vertex or dominated by some other cluster.
 	void FilterClusters(ClustersSet &clusters){
 		for(auto i_iter = clusters.begin(); i_iter!= clusters.end(); ){
-			int  len = g_.length(i_iter->first);
-			auto sorted_by_edge = i_iter->second;
+			int  len = g_.length(i_iter->edgeId);
+			auto sorted_by_edge = i_iter->sorted_positions;
 			sort(sorted_by_edge.begin(), sorted_by_edge.end());
 			size_t good = 0;
 			for (auto iter = sorted_by_edge.begin(); iter < sorted_by_edge.end(); iter++) {
 				if (iter->IsUnique())
 					good ++;
 			}
-			if (good < min_cluster_size){
+			if (good < min_cluster_size || (len < short_edge_cutoff)){
+				if (len < short_edge_cutoff){
+					DEBUG("Life is too long, and edge is too short!");
+				}
 				auto tmp_iter = i_iter;
 				tmp_iter ++;
 				clusters.erase(i_iter);
-                                i_iter = tmp_iter;
-			} else if (len < short_edge_cutoff){
-				DEBUG("Life is too long, and edge is too short!");
+                i_iter = tmp_iter;
 			} else {
-
-				if (sorted_by_edge[0].edge_position >= len || sorted_by_edge[i_iter->second.size() -1 ].edge_position <= int(cfg::get().K) - int(K_)) {
+				if (sorted_by_edge[0].edge_position >= len || sorted_by_edge[i_iter->size -1 ].edge_position <= int(cfg::get().K) - int(K_)) {
  					DEBUG ("All anchors in vertex");
-
 					auto tmp_iter = i_iter;
 					tmp_iter ++;
 					clusters.erase(i_iter);
@@ -290,10 +292,10 @@ public :
 	}
 
 	//TODO:: non strictly dominates?
-	inline bool dominates (const ClusterDescription &a, const ClusterDescription &b) const{
-		size_t a_size = a.second.size();
-		size_t b_size = b.second.size();
-		if (a_size < b_size * domination_cutoff || a.second[0].read_position > b.second[0].read_position || a.second[a_size - 1].read_position < b.second[b_size -1].read_position) {
+	inline bool dominates (const KmerCluster &a, const KmerCluster &b) const{
+		size_t a_size = a.size;
+		size_t b_size = b.size;
+		if (a_size < b_size * domination_cutoff || a.first_trustable_index > b.first_trustable_index || a.last_trustable_index < b.last_trustable_index) {
 			return false;
 		} else {
 			return true;
@@ -312,12 +314,12 @@ public :
 		EdgeId prev_edge = EdgeId(0);
 		if (cur_cluster.size() > 1) {
 			for(auto iter = cur_cluster.begin(); iter != cur_cluster.end(); ++iter){
-				EdgeId cur_edge = iter->second->first;
+				EdgeId cur_edge = iter->second->edgeId;
 				INFO(g_.int_id(cur_edge));
 			}
 		}
 		for(auto iter = cur_cluster.begin(); iter != cur_cluster.end(); ++iter){
-			EdgeId cur_edge = iter->second->first;
+			EdgeId cur_edge = iter->second->edgeId;
 			if (prev_edge != EdgeId(0)) {
 //Need to find sequence of edges between clusters
 				VertexId start_v = g_.EdgeEnd(prev_edge);
@@ -331,13 +333,13 @@ public :
 				if (interesting_starts.find(g_.int_id(prev_edge)) != interesting_starts.end() && interesting_ends.find(g_.int_id(cur_edge)) != interesting_ends.end())
 					debug_info = true;
 //ignore non-unique kmers for distance determination
-				auto first_unique_iter = (iter->second->second.begin());
-				while (first_unique_iter != (iter->second->second.end() - 1)  && !first_unique_iter->IsUnique()) {
+				auto first_unique_iter = (iter->second->sorted_positions.begin());
+				while (first_unique_iter != (iter->second->sorted_positions.end() - 1)  && !first_unique_iter->IsUnique()) {
 					first_unique_iter += 1;
 				}
 
-				auto last_unique_iter = (prev_iter->second->second.end() - 1);
-				while (last_unique_iter != (iter->second->second.begin())  && !last_unique_iter->IsUnique()) {
+				auto last_unique_iter = (prev_iter->second->sorted_positions.end() - 1);
+				while (last_unique_iter != (iter->second->sorted_positions.begin())  && !last_unique_iter->IsUnique()) {
 					last_unique_iter -= 1;
 				}
 				MappingInstance cur_first_index = *first_unique_iter;
@@ -397,7 +399,7 @@ public :
 			colors[i] = i;
 		}
 		for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end(); ++i_iter, ++i){
-			cluster_size[i] = i_iter->second.size();
+			cluster_size[i] = i_iter->size;
 		}
 		i = 0;
 		if (len > 1) {
@@ -433,7 +435,7 @@ public :
 				int cur_color = colors[i];
 				for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end(); ++i_iter, ++j){
 					if (colors[j] == cur_color) {
-						cur_cluster.push_back(make_pair(i_iter->second.begin()->read_position, i_iter));
+						cur_cluster.push_back(make_pair(i_iter->sorted_positions.begin()->read_position, i_iter));
 						used[j] = 1;
 					}
 				}
@@ -460,7 +462,9 @@ public :
 		return sortedEdges;
 	}
 
-/*	pair<int, int> GetPathLimits(const ClusterDescription &a, const ClusterDescription &b){
+	std::pair<int, int> GetPathLimits(const KmerCluster &a, const KmerCluster &b, int s_add_len, int e_add_len){
+		int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
+		int end_pos = b.sorted_positions[a.first_trustable_index].read_position;
 		int seq_len = -start_pos + end_pos;
 		PathStorageCallback<Graph> callback(g_);
 //TODO::something more reasonable
@@ -468,16 +472,16 @@ public :
 		int path_max_len = (seq_len  + int(cfg::get().K)) * 1.3;
 		if (seq_len < 0) {
 			WARN("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
-			return vector<EdgeId>(0);
+			return std::make_pair(-1, -1);
 		}
-		path_min_len = max(path_min_len - int(s_add.length() + e_add.length()), 0);
-		path_max_len = max(path_max_len - int(s_add.length() + e_add.length()), 0);
-
-	} */
+		path_min_len = max(path_min_len - int(s_add_len + e_add_len), 0);
+		path_max_len = max(path_max_len - int(s_add_len + e_add_len), 0);
+		return std::make_pair(path_min_len, path_max_len);
+	}
 //0 - No, 1 - Yes
-	int IsConsistent(Sequence &s, const ClusterDescription &a, const ClusterDescription &b) {
-		EdgeId a_edge = a.first;
-		EdgeId b_edge = b.first;
+	int IsConsistent(Sequence &s, const KmerCluster &a, const KmerCluster &b) {
+		EdgeId a_edge = a.edgeId;
+		EdgeId b_edge = b.edgeId;
 //		if (a_edge == b_edge){
 //		//	return 0;
 //			for (auto a_iter = a.second.begin(); a_iter != a.second.end(); ++a_iter)
@@ -504,8 +508,8 @@ public :
 		result = distance_cashed[vertex_pair];
 		//TODO: Serious optimization possible
 		for (size_t i = 0; i < result.size(); i++) {
-			for (auto a_iter = a.second.begin(); a_iter != a.second.end(); ++a_iter)
-				for (auto b_iter = b.second.begin(); b_iter != b.second.end(); ++b_iter)
+			for (auto a_iter = a.sorted_positions.begin(); a_iter != a.sorted_positions.end(); ++a_iter)
+				for (auto b_iter = b.sorted_positions.begin(); b_iter != b.sorted_positions.end(); ++b_iter)
 					if (similar(*a_iter, *b_iter, result[i] + addition) ){
 						return 1;
 					}
