@@ -103,15 +103,11 @@ public:
 	}
 
 	bool contains(EdgeId e) const {
-		if (edges_.count(e) > 0)
-			return true;
-		return false;
+		return edges_.count(e) > 0;
 	}
 
 	bool contains(VertexId v) const {
-		if (vertices_.count(v) > 0)
-			return true;
-		return false;
+		return vertices_.count(v) > 0;
 	}
 
 	edge_iterator e_begin() const {
