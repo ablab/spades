@@ -44,14 +44,14 @@ private:
 	InnerIndex inner_index;
 public:
 	LongReadStorage(Graph &g):g_(g), inner_index(){
-
 	}
+
 	void AddPath(const vector<EdgeId> &p, int w  = 1){
 		if (p.size() == 0 ) return;
 		for (typename set<LongReadInfo<Graph> >::iterator iter = inner_index[p[0]].begin(); iter != inner_index[p[0]].end(); ++iter) {
 			if (iter->path == p) {
 
-				iter->w++;
+				iter->w += w;
 				return ;
 			}
 		}
@@ -147,15 +147,23 @@ public:
 	    INFO("loading finished");
 	}
 
-	typename InnerIndex::iterator begin() const {
-		return inner_index.begin();
+	void AddStorage(LongReadStorage<Graph> & to_add) {
+		for(auto iter = to_add.inner_index.begin(); iter != to_add.inner_index.end(); iter++) {
+			for(auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
+				this->AddPath(j_iter->path, j_iter->w);
+			}
+		}
 	}
 
-	typename InnerIndex::iterator end() const {
-		return inner_index.end();
-	}
-	typename InnerIndex::iterator operator*(){
-		return this->first;
-	}
+//	typename InnerIndex::iterator begin() const {
+//		return inner_index.begin();
+//	}
+//
+//	typename InnerIndex::iterator end() const {
+//		return inner_index.end();
+//	}
+//	typename InnerIndex::iterator operator*(){
+//		return this->first;
+//	}
 };
 

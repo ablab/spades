@@ -89,13 +89,19 @@ public :
 		omp_lock_t tmp_file_output;
 		omp_init_lock(&tmp_file_output);
 		ofstream filestr("pacbio_mapped.mpr");
+//		LongReadStorage<Graph> long_reads_by_thread[cfg::get().max_threads];
+		vector<LongReadStorage<Graph>> long_reads_by_thread(cfg::get().max_threads, LongReadStorage<Graph>(gp_.g));
 
+//		for (size_t i = 0; i < cfg::get().max_threads; i++){
+//			long_reads_by_thread[i] = LongReadStorage<Graph>(gp_.g);
+//		}
 
-	# pragma omp parallel for shared(reads, pac_index, n, long_reads, different_edges_profile) num_threads(cfg::get().max_threads)
+	# pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n,  different_edges_profile) num_threads(cfg::get().max_threads)
 		for (size_t i = 0; i < buf_size; ++i) {
 			if (i % 1000 == 0) {
 				INFO("thread number " << omp_get_thread_num());
 			}
+			size_t thread_num = omp_get_thread_num();
 			Sequence seq(reads[i].sequence());
 			total_length += seq.size();
 		    auto location_map = pac_index.GetClusters(seq);
@@ -131,7 +137,7 @@ public :
 		    INFO(n << "  " << location_map.size()<< ": \n");
 		    auto aligned_edges = pac_index.GetReadAlignment(seq);
 		    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
-		    	long_reads.AddPath(*iter);
+		    	long_reads_by_thread[thread_num].AddPath(*iter);
 		    	if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
 		    		genomic_subreads ++;
 		    	}else {
@@ -175,6 +181,11 @@ public :
 		    VERBOSE_POWER(n, " reads processed");
 
 		}
+		for (size_t i = 0; i < cfg::get().max_threads; i++){
+			long_reads.AddStorage(long_reads_by_thread[i]);
+		}
+
+
 
 	}
 
