@@ -65,6 +65,7 @@ add_subdirectory(mph_index)
 add_subdirectory(ssw)
 add_subdirectory(debruijn)
 add_subdirectory(hammer)
+add_subdirectory(cclean)
 add_subdirectory(spades_pipeline)
 
 # Main pipeline script
