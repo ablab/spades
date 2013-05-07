@@ -182,7 +182,7 @@ class CoverageBasedResolution {
 		for ( auto p = filteredPaths.begin(); p != filteredPaths.end(); ++p) {
 			//fprintf(file, "resolved path \n");
 			for ( auto iter = p->begin(); iter != p->end(); ++iter ) {
-				std::cout << gp->g.int_id(*iter) << "( " << gp->g.length(*iter) << "; " << coverage.inCoverage[*iter] << " " << coverage.outCoverage[*iter] << ") ";
+				std::cout << gp->g.int_id(*iter) << "( " << gp->g.length(*iter) << "; " << coverage.getInCov(*iter) << " " << coverage.getOutCov(*iter) << ") ";
 				//fprintf(file, "%d ", gp->g.int_id(*iter));
 				//fprintf(file, " ");
 			}
@@ -667,11 +667,11 @@ class CoverageBasedResolution {
 
 			//std::cout << "still on" << std::endl;
 			for ( auto inEdge = incomingEdges.begin(); inEdge != incomingEdges.end(); ++inEdge) {
-				incomingEdgesCoverage.push_back(std::make_pair(*inEdge,coverage.outCoverage[*inEdge]));
+				incomingEdgesCoverage.push_back(std::make_pair(*inEdge,coverage.getOutCov(*inEdge)));
 			}
 
 			for ( auto outEdge = outgoingEdges.begin(); outEdge != outgoingEdges.end(); ++outEdge) {
-				outgoingEdgesCoverage.push_back(std::make_pair(*outEdge,coverage.inCoverage[*outEdge]));
+				outgoingEdgesCoverage.push_back(std::make_pair(*outEdge,coverage.getInCov(*outEdge)));
 			}
 	
 			sort(incomingEdgesCoverage.begin(), incomingEdgesCoverage.end(), CompareSecond<EdgeId, coverage_value>());
@@ -694,8 +694,8 @@ class CoverageBasedResolution {
 			for ( auto edgePair = pairsOfEdges.begin(); edgePair != pairsOfEdges.end(); ++edgePair ){
 				BidirectionalPath* resolved_path = new BidirectionalPath( gp->g );
 				resolveRepeat( *edgePair, path, *resolved_path );
-				if (resolved_path->Size() < 3 || resolved_path->Front() == resolved_path->Back() || coverage.outCoverage[edgePair->first] < 5 
-					|| coverage.inCoverage[edgePair->second] < 5) {
+				if (resolved_path->Size() < 3 || resolved_path->Front() == resolved_path->Back() || coverage.getOutCov(edgePair->first) < 5 
+					|| coverage.getInCov(edgePair->second) < 5) {
 					continue;
 				}
 				//now put it into collection of paths

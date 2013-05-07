@@ -150,9 +150,9 @@ namespace debruijn_graph {
 			bool canBeResolved = true;
 
 			VertexId inVertex = graph_p->g.EdgeEnd( incomingEdge );
-			VertexId outVertex = graph_p->g.EdgeStart( outgoingEdge );
-			auto inCov = coverage->outCoverage[incomingEdge];
-			auto outCov = coverage->inCoverage[outgoingEdge];
+			//VertexId outVertex = graph_p->g.EdgeStart( outgoingEdge );
+			auto inCov = coverage->getOutCov(incomingEdge);
+			auto outCov = coverage->getInCov(outgoingEdge);
 			auto cov = (inCov + outCov) / 2.0;	
 			//auto cov = inCov;
 			//auto cov = min(inCov, outCov);	
@@ -180,7 +180,7 @@ namespace debruijn_graph {
 			auto ratio1 = modf( cov1 / cov, &intpart );
 			auto ratio2 = modf( cov2 / cov, &intpart );
 
-			if (ratio1 > ratioThresholdLower && ratio1 < ratioThresholdUpper || ratio2 > ratioThresholdLower && ratio2 < ratioThresholdUpper ) {
+			if ( ( ratio1 > ratioThresholdLower && ratio1 < ratioThresholdUpper ) || ( ratio2 > ratioThresholdLower && ratio2 < ratioThresholdUpper ) ) {
 
 				canBeResolved = false;
 			}

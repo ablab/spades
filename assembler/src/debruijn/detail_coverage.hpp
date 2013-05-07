@@ -14,8 +14,7 @@
 
 namespace debruijn_graph {
 
-	template <class IdType>
-	struct FlankingCoverage{
+	class FlankingCoverage{
 	/*
 	Iterates over kmer index saves values of coverage on the ends of edges
 	*/
@@ -23,7 +22,20 @@ namespace debruijn_graph {
 		std::map<EdgeId, double> inCoverage;
 		std::map<EdgeId, double> outCoverage;
 		int averageConst;
+
+	public:
+
 		
+		double getInCov( const EdgeId& inCov ){
+
+			return inCoverage[inCov];
+		}
+
+		double getOutCov( const EdgeId& outCov ){
+
+			return outCoverage[outCov];
+		}
+
 		FlankingCoverage( const conj_graph_pack& graph, const int avg ) : averageConst(avg) {
 
 	
