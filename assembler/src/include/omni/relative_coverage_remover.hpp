@@ -6,18 +6,38 @@
 
 namespace omnigraph {
 
+//currently works with conjugate graphs only (due to the assumption in the outer cycle)
 template<class Graph>
 class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
+ public:
   typedef EdgeProcessingAlgorithm<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
-  typedef boost::function<double(EdgeId, VertexId)> local_coverage_f_t;
+  typedef boost::function<double(EdgeId, VertexId)> LocalCoverageFT;
+  typedef boost::function<void(EdgeId)> HandlerF;
+ private:
 
+  LocalCoverageFT local_coverage_f_;
+  size_t length_bound_;
   double min_coverage_gap_;
-  local_coverage_f_t local_coverage_f_;
-  size_t vertex_count_limit_;
   size_t max_coverage_;
+  //bound on the number of inner vertices
+  size_t vertex_count_limit_;
   ComponentRemover<Graph> component_remover_;
+
+  double LocalCoverage(EdgeId e, VertexId v) const {
+    return local_coverage_f_(e, v);
+  }
+
+  bool CheckAnyHighlyCovered(const vector<EdgeId>& edges, VertexId v,
+                             double base_coverage) const {
+    FOREACH(EdgeId e, edges) {
+      //should be gr and not ge to deal with case of 0 local coverage in tests
+      if (math::gr(LocalCoverage(e, v), base_coverage * min_coverage_gap_))
+        return true;
+    }
+    return false;
+  }
 
   class RelativelyLowCoveredComponentSearcher;
 
@@ -31,67 +51,78 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     set<VertexId> border_;
    public:
     RelativelyLowCoveredComponentSearcher(
-        const RelativeCoverageComponentRemover& remover)
+        const RelativeCoverageComponentRemover& remover, EdgeId first_edge,
+        VertexId first_border_vertex)
         : remover_(remover) {
-
+      component_.insert(first_edge);
+      border_.insert(first_border_vertex);
     }
 
     bool FindComponent() {
       while (!border_.empty()) {
         VertexId v = *border_.begin();
-        //all the tips vere already removed
-        if (remover_.g.IsDeadEnd(v) || remover_.g.IsDeadStart(v))
+        border_.erase(v);
+
+        //all the tips were already removed! It is dangerous to support them here.
+        if (remover_.g().IsDeadEnd(v) || remover_.g().IsDeadStart(v))
           return false;
         //checking if there is a sufficient coverage gap
         if (!IsTerminateVertex(v)) {
-          border_.erase(v);
           inner_vertices_.insert(v);
           FOREACH(EdgeId e, AdjacentEdges(v)) {
-
+            //seems to correctly handle loops
+            component_.insert(e);
+            VertexId other_end = OppositeEnd(e, v);
+            if (inner_vertices_.count(other_end) == 0) {
+              border_.insert(other_end);
+            }
           }
+        } else {
+          //do nothing, we already erased v from the border
         }
-
-
+        if (inner_vertices_.size() > remover_.vertex_count_limit_) {
+          return false;
+        }
       }
+      return true;
+    }
+
+    const set<EdgeId>& component() const {
+      return component_;
     }
 
    private:
 
-    double LocalCoverage(EdgeId e, VertexId v) const {
-      return remover_.local_coverage_f_(e, v);
-    }
-
     bool IsTerminateVertex(VertexId v) const {
       double base_coverage = MaxLocalCoverage(
           RetainEdgesFromComponent(AdjacentEdges(v)), v);
-      return CheckAnyFilteredHighlyCovered(remover_.g.OutgoingEdges(v), v,
+      return CheckAnyFilteredHighlyCovered(remover_.g().OutgoingEdges(v), v,
                                            base_coverage)
-          && CheckAnyFilteredHighlyCovered(remover_.g.IncomingEdges(v), v,
+          && CheckAnyFilteredHighlyCovered(remover_.g().IncomingEdges(v), v,
                                            base_coverage);
     }
 
     bool CheckAnyFilteredHighlyCovered(const vector<EdgeId>& edges, VertexId v,
-                                       double base_coverage) {
-      return CheckAnyHighlyCovered(FilterEdgesFromComponent(edges), v,
-                                   base_coverage);
+                                       double base_coverage) const {
+      return remover_.CheckAnyHighlyCovered(FilterEdgesFromComponent(edges), v,
+                                            base_coverage);
     }
 
+    //if edge start = edge end = v returns v
     VertexId OppositeEnd(EdgeId e, VertexId v) const {
-      VERIFY(remover_.g.EdgeStart(e) != remover_.g.EdgeEnd(e));
-      if (remover_.g.EdgeStart(e) == v) {
-        return remover_.g.EdgeEnd(e);
-      } else if (remover_.g.EdgeEnd(e) == v) {
-        return remover_.g.EdgeStart(e);
+      VERIFY(remover_.g().EdgeStart(e) == v || remover_.g().EdgeEnd(e) == v);
+//      VERIFY(remover_.g.EdgeStart(e) != remover_.g.EdgeEnd(e));
+      if (remover_.g().EdgeStart(e) == v) {
+        return remover_.g().EdgeEnd(e);
       } else {
-        VERIFY(false);
-        return 0.0;
+        return remover_.g().EdgeStart(e);
       }
     }
 
     vector<EdgeId> AdjacentEdges(VertexId v) const {
       vector<EdgeId> answer;
-      push_back_all(answer, remover_.g.OutgoingEdges(v));
-      push_back_all(answer, remover_.g.IncomingEdges(v));
+      push_back_all(answer, remover_.g().OutgoingEdges(v));
+      push_back_all(answer, remover_.g().IncomingEdges(v));
       return answer;
     }
 
@@ -115,20 +146,10 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
       return answer;
     }
 
-    bool CheckAnyHighlyCovered(const vector<EdgeId>& edges, VertexId v,
-                               double base_coverage) const {
-      FOREACH(EdgeId e, edges) {
-        if (math::ge(LocalCoverage(e, v),
-                     base_coverage * remover_.min_coverage_gap_))
-          return true;
-      }
-      return false;
-    }
-
-    double MaxLocalCoverage(const vector<EdgeId>& edges, VertexId v) {
+    double MaxLocalCoverage(const vector<EdgeId>& edges, VertexId v) const {
       double answer = 0.0;
       FOREACH(EdgeId e, edges) {
-        answer = max(answer, LocalCoverage(e, v));
+        answer = max(answer, remover_.LocalCoverage(e, v));
       }
       return answer;
     }
@@ -138,22 +159,41 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
  public:
 //todo make some useful order and stop condition
   RelativeCoverageComponentRemover(
-      Graph& g, double min_coverage_gap, local_coverage_f_t local_coverage_f,
-      size_t vertex_count_limit = 10,
-      size_t max_coverage = std::numeric_limits<size_t>::max())
+      Graph& g, LocalCoverageFT local_coverage_f,
+      size_t length_bound,
+      double min_coverage_gap, size_t max_coverage = std::numeric_limits<size_t>::max(),
+      HandlerF handler_function = 0, size_t vertex_count_limit = 10)
       : base(g),
-        min_coverage_gap_(min_coverage_gap),
         local_coverage_f_(local_coverage_f),
-        vertex_count_limit_(vertex_count_limit),
+        length_bound_(length_bound),
+        min_coverage_gap_(min_coverage_gap),
         max_coverage_(max_coverage),
-        component_remover_(g) {
+        vertex_count_limit_(vertex_count_limit),
+        component_remover_(g, handler_function) {
+    VERIFY(math::gr(min_coverage_gap, 1.));
   }
 
  protected:
 
   /*virtual*/
   bool ProcessEdge(EdgeId e) {
-
+    //here we use that the graph is conjugate!
+    VertexId v = this->g().EdgeStart(e);
+    double local_cov = LocalCoverage(e, v);
+    //since min_coverage_gap_ > 1, we don't need to think about e here
+    if (CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, local_cov)
+        && CheckAnyHighlyCovered(this->g().IncomingEdges(v), v, local_cov)) {
+      //case of e being loop is handled implicitly!
+      RelativelyLowCoveredComponentSearcher/*<Graph>*/component_searcher(
+          *this, e, this->g().EdgeEnd(e));
+      if (component_searcher.FindComponent()) {
+        auto component = component_searcher.component();
+        component_remover_.DeleteComponent(component);
+        return true;
+      }
+    }
+    use length bound!!!
+    return false;
   }
 
 };

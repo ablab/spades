@@ -72,6 +72,15 @@ class EdgeProcessingAlgorithm : public ProcessingAlgorithm<Graph> {
 };
 
 template<class Graph>
+void RemoveIsolatedOrCompress(Graph& g, typename Graph::VertexId v) {
+  if (g.IsDeadStart(v) && g.IsDeadEnd(v)) {
+    g.DeleteVertex(v);
+  } else {
+    g.CompressVertex(v);
+  }
+}
+
+template<class Graph>
 class EdgeRemover {
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
@@ -87,7 +96,7 @@ class EdgeRemover {
   }
 
   //todo how is it even compiling with const?!!!
-  void DeleteEdge(EdgeId e) const {
+  void DeleteEdge(EdgeId e) {
     TRACE("Deletion of edge " << g_.str(e));
     VertexId start = g_.EdgeStart(e);
     VertexId end = g_.EdgeEnd(e);
@@ -103,13 +112,13 @@ class EdgeRemover {
     TRACE("Compressing locality");
     if (!g_.RelatedVertices(start, end)) {
       TRACE("Vertices not related");
-      TRACE("Compressing end");
-      g_.CompressVertex(end);
-      TRACE("End Compressed");
+      TRACE("Processing end");
+      RemoveIsolatedOrCompress(g_, end);
+      TRACE("End processed");
     }
-    TRACE("Compressing start");
-    g_.CompressVertex(start);
-    TRACE("Start compressed");
+    TRACE("Processing start");
+    RemoveIsolatedOrCompress(g_, start);
+    TRACE("Start processed");
   }
 
  private:
@@ -128,10 +137,10 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph, Comparator> 
  protected:
   bool ProcessEdge(EdgeId e) {
     if (remove_condition_->Check(e)) {
-      return edge_remover_.DeleteEdge(e);
-    } else {
-      return false;
+      edge_remover_.DeleteEdge(e);
+      return true;
     }
+    return false;
   }
 
  public:
@@ -162,14 +171,47 @@ class ComponentRemover {
   Graph& g_;
   HandlerF removal_handler_;
 
+  template<class ElemType>
+  void InsertIfNotConjugate(set<ElemType>& elems, ElemType elem) {
+    if (elems.count(g_.conjugate(elem)) == 0) {
+      elems.insert(elem);
+    }
+  }
+
  public:
   ComponentRemover(Graph& g, HandlerF removal_handler = 0)
       : g_(g),
         removal_handler_(removal_handler) {
   }
 
-  void DeleteComponent() {
-    //todo code here!
+  template<class EdgeIt>
+  void DeleteComponent(EdgeIt begin, EdgeIt end) {
+    set<EdgeId> edges;
+    set<VertexId> vertices;
+
+    //cleaning conjugates and gathering vertices
+    for (EdgeIt it = begin; it != end; ++it) {
+      EdgeId e = *it;
+      InsertIfNotConjugate(edges, e);
+      InsertIfNotConjugate(vertices, g_.EdgeStart(e));
+      InsertIfNotConjugate(vertices, g_.EdgeEnd(e));
+    }
+
+    FOREACH (EdgeId e, edges) {
+      if (removal_handler_) {
+        removal_handler_(e);
+      }
+      g_.DeleteEdge(e);
+    }
+
+    FOREACH (VertexId v, vertices) {
+      RemoveIsolatedOrCompress(g_, v);
+    }
+  }
+
+  template<class Container>
+  void DeleteComponent(const Container& container) {
+    DeleteComponent(container.begin(), container.end());
   }
 
 };
