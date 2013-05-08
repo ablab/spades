@@ -1183,7 +1183,7 @@ void resolve_repeats() {
 	
 	INFO("Resolving repeats by coverage");
 
-	auto index = FlankingCoverage<EdgeId>(conj_gp, 50);
+	auto index = FlankingCoverage(conj_gp, 50);
 /*	auto filter = LoopFilter<conj_graph_pack, FlankingCoverage<EdgeId>>(conj_gp, index);
 	filter.get_loopy_components(quality_labeler); */
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
