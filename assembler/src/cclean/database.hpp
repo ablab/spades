@@ -16,16 +16,12 @@ class DatabaseFiller {
 public:
 	DatabaseFiller() : 
 						name2seq(new std::map<std::string *, std::string *, Compare>()),
-						name2comment(new std::map<std::string *, std::string *, Compare>()),
 						seq2name(new std::map<std::string *, std::string *, Compare>()),
 						kmer2listOfSeq(new std::map<std::string *, std::vector<std::string * >, Compare>) {};
 	bool operator()(const Read &r);
 
 	std::map<std::string *, std::string *, Compare> * getName2seq() const {
 		return name2seq;
-	}
-	std::map<std::string *, std::string *, Compare> * getName2comment() const {
-		return name2comment;
 	}
 	std::map<std::string *, std::string *, Compare> * getSeq2name() const {
 		return seq2name;
@@ -37,7 +33,6 @@ public:
 private:
 	void insert2db(const cclean::KMer kmer, std::string * source_sequence);
 	std::map<std::string *, std::string *, Compare> * name2seq;
-	std::map<std::string *, std::string *, Compare> * name2comment;
 	std::map<std::string *, std::string *, Compare> * seq2name;
 	std::map<std::string *, std::vector<std::string *>, Compare> * kmer2listOfSeq;
 };
@@ -50,13 +45,11 @@ public:
 	int get_kmers_amount() const;
 	void get_sequence_by_name(const std::string& name, std::string & out_seq) const;
 	void get_name_by_sequence(const std::string& seq, std::string & out_name) const;
-	void get_comment_by_name(const std::string& name, std::string & out_comment) const;
 	void get_sequences_for_kmer(const std::string& kmer, std::vector<std::string *> & out_seq) const;
 	std::map<std::string *, std::string *>::const_iterator get_data_iterator() const;
 	std::map<std::string *, std::vector<std::string *>, Compare>::const_iterator get_kmer_iterator() const;
 private:
 	std::map<std::string *, std::string *, Compare> * name2seq;
-	std::map<std::string *, std::string *, Compare> * name2comment;
 	std::map<std::string *, std::string *, Compare> * seq2name;
 	std::map<std::string *, std::vector<std::string *>, Compare> * kmer2listOfSeq;
 };

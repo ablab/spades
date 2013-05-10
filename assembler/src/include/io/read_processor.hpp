@@ -25,6 +25,11 @@ private:
       irs >> r;
       read_ += 1;
 
+      if (read_ % 10 == 0) {
+    	  //no lock here is intentional - it is a master thread -> no race conditions
+    	  std::clog << read_ << " read from disk and processed\r";
+      }
+
       processed_ += 1;
       if (op(r))
         return true;
@@ -72,7 +77,7 @@ public:
     mpmc_bounded_queue<typename Reader::read_type> in_queue(2*bufsize);
 
     bool stop = false;
-#   pragma omp parallel shared(in_queue, irs, op, stop) num_threads(nthreads_)
+#   pragma omp parallel shared(in_queue, irs, stop) firstprivate(op) num_threads(nthreads_)
     {
 #     pragma omp master
       {
@@ -81,6 +86,11 @@ public:
           irs >> r;
 #         pragma omp atomic
           read_ += 1;
+
+          if (read_ % 10 == 0) {
+        	  //no lock here is intentional - it is a master thread -> no race conditions
+        	  std::clog << read_ << " read from disk and processed\r";
+          }
 
           while (!in_queue.enqueue(r))
             sched_yield();

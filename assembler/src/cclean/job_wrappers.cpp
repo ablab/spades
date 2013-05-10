@@ -17,15 +17,12 @@ bool AlignmentJobWrapper::operator()(const Read &r) {
 			StripedSmithWaterman::Alignment alignment;
 			const std::string &query = *(it->second);
 			aligner.Align(query.c_str(), ref.c_str(), ref.size(), filter, &alignment);
-
-			std::string database_comment;
 			std::string& database_name = *(it->first);
-			data->get_comment_by_name(database_name, database_comment);
 
 			if (alignment.mismatches < mismatch_threshold && is_alignment_good(alignment, query, aligned_part_fraction)) {
 #       pragma omp critical
         {
-          print_alignment(output, alignment, ref, query, name, database_name, database_comment);
+          print_alignment(output, alignment, ref, query, name, database_name);
           print_bed(bed, name, alignment.ref_begin, alignment.ref_end);
         }
 			}
@@ -91,15 +88,13 @@ bool ExactAndAlignJobWrapper::operator()(const Read &r) {
 			const std::string& query = *(*it);
 			aligner.Align(query.c_str(), sequence.c_str(), sequence.size(), filter, &alignment);
 
-			std::string database_comment;
 			std::string database_name;
 			data->get_name_by_sequence(query, database_name);
-			data->get_comment_by_name(database_name, database_comment);
 
 			if (alignment.mismatches < mismatch_threshold && is_alignment_good(alignment, query, aligned_part_fraction)) {
         #pragma omp critical
         {
-          print_alignment(output, alignment, sequence, query, name, database_name, database_comment);
+          print_alignment(output, alignment, sequence, query, name, database_name);
           print_bed(bed, name, alignment.ref_begin, alignment.ref_end);
         }
 			}

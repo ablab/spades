@@ -20,7 +20,7 @@ void exactMatch(std::ostream& output, std::ostream& bed, ireadstream * input, co
 	INFO("Done");
 
 	ExactMatchJobWrapper filler(data, output, bed, ahoCorasick);
-	hammer::ReadProcessor rp(omp_get_max_threads());
+	hammer::ReadProcessor rp(std::min(omp_get_max_threads(), cclean_cfg::get().nthreads));
 	rp.Run(*input, filler);
 	VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
@@ -41,7 +41,7 @@ void exactAndAlign(std::ostream& output, std::ostream& bed, ireadstream * input,
 	INFO("Done");
 
 	ExactAndAlignJobWrapper filler(data, output, bed, ahoCorasick);
-	hammer::ReadProcessor rp(omp_get_max_threads());
+	hammer::ReadProcessor rp(std::min(omp_get_max_threads(), cclean_cfg::get().nthreads));
 	rp.Run(*input, filler);
 	VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
@@ -50,7 +50,7 @@ void exactAndAlign(std::ostream& output, std::ostream& bed, ireadstream * input,
 
 void alignment(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data) {
 	AlignmentJobWrapper filler(data, output, bed);
-	hammer::ReadProcessor rp(omp_get_max_threads());
+	hammer::ReadProcessor rp(std::min(omp_get_max_threads(), cclean_cfg::get().nthreads));
 	rp.Run(*input, filler);
 	VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 }
