@@ -49,6 +49,9 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     set<EdgeId> component_;
     set<VertexId> inner_vertices_;
     set<VertexId> border_;
+
+    //maybe use something more sophisticated in future
+    size_t component_length_;
    public:
     RelativelyLowCoveredComponentSearcher(
         const RelativeCoverageComponentRemover& remover, EdgeId first_edge,
@@ -72,6 +75,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
           FOREACH(EdgeId e, AdjacentEdges(v)) {
             //seems to correctly handle loops
             component_.insert(e);
+            component_length_ += remover_.g().length(e);
             VertexId other_end = OppositeEnd(e, v);
             if (inner_vertices_.count(other_end) == 0) {
               border_.insert(other_end);
@@ -81,6 +85,9 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
           //do nothing, we already erased v from the border
         }
         if (inner_vertices_.size() > remover_.vertex_count_limit_) {
+          return false;
+        }
+        if (component_length_ > remover_.length_bound_) {
           return false;
         }
       }
@@ -192,7 +199,6 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         return true;
       }
     }
-    use length bound!!!
     return false;
   }
 
