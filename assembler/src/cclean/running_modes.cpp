@@ -6,21 +6,41 @@
 #include "job_wrappers.hpp"
 #include "logger/log_writers.hpp"
 
-void exactMatch(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data) {
-	INFO("Create Aho-Corasick pattern automata ... ");
+void getDbAhoCorasick(const Database * data, AhoCorasick& ahoCorasick) {
+	INFO("Create Aho-Corasick automata ... ");
+	auto it = data->get_data_iterator();
+	const int amount = data->get_sequences_amount();
 
-	std::map<std::string *, std::string *>::const_iterator it = data->get_data_iterator();
-	AhoCorasick ahoCorasick;
-	for (int i = 0; i < data->get_sequences_amount(); ++i) {
+	for (int i = 0; i < amount; ++i) {
 		ahoCorasick.addString(it->second);
 		it++;
 	}
 	ahoCorasick.init();
 
 	INFO("Done");
+}
+
+void getKmersAhoCorasick(const Database * data, AhoCorasick& ahoCorasick) {
+	INFO("Create Aho-Corasick automata for kmers... ");
+
+	auto it = data->get_kmer_iterator();
+	const int amount = data->get_kmers_amount();
+
+	for (int i = 0; i < amount; ++i) {
+		ahoCorasick.addString(it->first);
+		it++;
+	}
+	ahoCorasick.init();
+
+	INFO("Done");
+}
+
+void exactMatch(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data) {
+	AhoCorasick ahoCorasick;
+	getDbAhoCorasick(data, ahoCorasick);
 
 	ExactMatchJobWrapper filler(data, output, bed, ahoCorasick);
-	hammer::ReadProcessor rp(std::min(omp_get_max_threads(), cclean_cfg::get().nthreads));
+	hammer::ReadProcessor rp(cclean_cfg::get().nthreads);
 	rp.Run(*input, filler);
 	VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
@@ -28,29 +48,22 @@ void exactMatch(std::ostream& output, std::ostream& bed, ireadstream * input, co
 }
 
 void exactAndAlign(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data) {
-	INFO("Create Aho-Corasick automata for kmers... ");
+	AhoCorasick dbAhoCorasick, kmersAhoCorasick;
+	getDbAhoCorasick(data, dbAhoCorasick);
+	getKmersAhoCorasick(data, kmersAhoCorasick);
 
-	std::map<std::string *, std::vector<std::string *> >::const_iterator it = data->get_kmer_iterator();
-	AhoCorasick ahoCorasick;
-	for (int i = 0; i < data->get_kmers_amount(); ++i) {
-		ahoCorasick.addString(it->first);
-		it++;
-	}
-	ahoCorasick.init();
-
-	INFO("Done");
-
-	ExactAndAlignJobWrapper filler(data, output, bed, ahoCorasick);
-	hammer::ReadProcessor rp(std::min(omp_get_max_threads(), cclean_cfg::get().nthreads));
+	ExactAndAlignJobWrapper filler(data, output, bed, dbAhoCorasick, kmersAhoCorasick);
+	hammer::ReadProcessor rp(cclean_cfg::get().nthreads);
 	rp.Run(*input, filler);
 	VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
-	ahoCorasick.cleanup();
+	dbAhoCorasick.cleanup();
+	kmersAhoCorasick.cleanup();
 }
 
 void alignment(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data) {
 	AlignmentJobWrapper filler(data, output, bed);
-	hammer::ReadProcessor rp(std::min(omp_get_max_threads(), cclean_cfg::get().nthreads));
+	hammer::ReadProcessor rp(cclean_cfg::get().nthreads);
 	rp.Run(*input, filler);
 	VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 }

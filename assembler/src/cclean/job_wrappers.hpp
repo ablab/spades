@@ -40,8 +40,8 @@ private:
 
 class ExactAndAlignJobWrapper {
 public:
-	ExactAndAlignJobWrapper(const Database * data, std::ostream& output, std::ostream& bed, const AhoCorasick &a)
-		:data(data), output(output), bed(bed), ahoCorasick(a){};
+	ExactAndAlignJobWrapper(const Database * data, std::ostream& output, std::ostream& bed, const AhoCorasick &a, const AhoCorasick &b)
+		:data(data), output(output), bed(bed), dbAhoCorasick(a), kmersAhoCorasick(b) {};
 
 	bool operator()(const Read &r);
 
@@ -49,7 +49,8 @@ private:
 	const Database * data;
 	std::ostream& output;
 	std::ostream& bed;
-	AhoCorasick ahoCorasick;
+	AhoCorasick dbAhoCorasick;
+	AhoCorasick kmersAhoCorasick;
 	const int mismatch_threshold = cclean_cfg::get().mismatch_threshold;
 	const double aligned_part_fraction = cclean_cfg::get().aligned_part_fraction;
 };

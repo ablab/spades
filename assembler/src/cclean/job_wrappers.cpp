@@ -10,7 +10,7 @@ bool AlignmentJobWrapper::operator()(const Read &r) {
 	try {
 		const std::string &name = r.getName();
 		const std::string &ref = r.getSequenceString();
-		std::map<std::string *, std::string *>::const_iterator it = data->get_data_iterator();
+		auto it = data->get_data_iterator();
 		for (unsigned i = 0; i < data->get_sequences_amount(); ++i) {
 			StripedSmithWaterman::Aligner aligner;
 			StripedSmithWaterman::Filter filter;
@@ -36,10 +36,9 @@ bool AlignmentJobWrapper::operator()(const Read &r) {
 
 bool ExactMatchJobWrapper::operator()(const Read &r) {
 	try {
-		const std::string &name = r.getName();
-		const std::string &sequence = r.getSequenceString();
-		ahoCorasick.search(sequence);
-		std::map<std::string*, std::vector<int>, Compare> res = ahoCorasick.getMatch();
+		const std::string& name = r.getName();
+		const std::string& sequence = r.getSequenceString();
+		seq2index_t res = ahoCorasick.search(sequence);
 
 		if (res.size() > 0) {
 #     pragma omp critical
@@ -54,51 +53,45 @@ bool ExactMatchJobWrapper::operator()(const Read &r) {
 }
 
 bool ExactAndAlignJobWrapper::operator()(const Read &r) {
-	try {
-    const std::string &name = r.getName();
-		const std::string &sequence = r.getSequenceString();
-		ahoCorasick.search(sequence);
-		std::map<std::string*, std::vector<int>, Compare> matchingKmers = ahoCorasick.getMatch();
+	try{
+		const std::string& name = r.getName();
+		const std::string& sequence = r.getSequenceString();
 
-		std::set<std::string * , Compare> setOfContaminations2check;
-		for (auto it = matchingKmers.begin(), et = matchingKmers.end(); it != et; ++it) {
-			std::vector<std::string *> listOfseqs;
-			data->get_sequences_for_kmer(*(it->first), listOfseqs);
-			setOfContaminations2check.insert(listOfseqs.begin(), listOfseqs.end());
-		}
- 
-		// try to exact match the sequences
-		AhoCorasick ac;
-		for (auto it = setOfContaminations2check.begin(), et = setOfContaminations2check.end(); it != et; ++it) {
-			ac.addString(*it);
-		}
-
-		auto matchingSequences = ac.getMatch();
-		if (matchingSequences.size() > 0) {
-#     pragma omp critical
+		//try to exact match the sequences
+		auto matchingSequences = dbAhoCorasick.search(sequence);
+		if (!matchingSequences.empty()) {
+#pragma omp critical
 			print_match(output, bed, matchingSequences, name, sequence, data);
+			return false; //exact match is better than an alignment -> no need to align
 		}
-		ac.cleanup();
 
-		// try to align the sequences
-		for (auto it = setOfContaminations2check.begin(), et = setOfContaminations2check.end(); it != et; ++it) {
+		//try to search in kmers db
+		auto matchingKmers = kmersAhoCorasick.search(sequence);
+		std::set<std::string * , Compare> setOfContaminations2check;
+		for (auto it = matchingKmers.begin(); it != matchingKmers.end(); ++it) {
+			std::set<std::string *, Compare> setOfSeqs;
+			data->get_sequences_for_kmer(*(it->first), setOfSeqs);
+			setOfContaminations2check.insert(setOfSeqs.begin(), setOfSeqs.end());
+		}
+
+		//try to align the contaminations for corresponding kmers
+		for (auto it = setOfContaminations2check.begin(); it != setOfContaminations2check.end(); ++it) {
 			StripedSmithWaterman::Aligner aligner;
 			StripedSmithWaterman::Filter filter;
 			StripedSmithWaterman::Alignment alignment;
-			const std::string& query = *(*it);
+			std::string& query = *(*it);
 			aligner.Align(query.c_str(), sequence.c_str(), sequence.size(), filter, &alignment);
 
 			std::string database_name;
 			data->get_name_by_sequence(query, database_name);
 
+#pragma omp critical
 			if (alignment.mismatches < mismatch_threshold && is_alignment_good(alignment, query, aligned_part_fraction)) {
-        #pragma omp critical
-        {
-          print_alignment(output, alignment, sequence, query, name, database_name);
-          print_bed(bed, name, alignment.ref_begin, alignment.ref_end);
-        }
+				print_alignment(output, alignment, sequence, query, name, database_name);
+				print_bed(bed, name, alignment.ref_begin, alignment.ref_end);
 			}
 		}
+
 	} catch (std::exception& e) {
 		ERROR(e.what());
 	}

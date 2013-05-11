@@ -22,4 +22,7 @@ void load(cclean_config& cfg, boost::property_tree::ptree const& pt)
   load(cfg.output_file, pt, "output_file");
   load(cfg.output_bed, pt, "output_bed");
   load(cfg.nthreads, pt, "nthreads");
+
+  // Fix number of threads according to OMP capabilities.
+  	cfg.nthreads = std::min(cfg.nthreads, omp_get_max_threads());
 }

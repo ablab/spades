@@ -20,22 +20,22 @@ class Node {
   int word_index;
 };
 
+typedef std::map<std::string *, std::vector<int>, Compare> seq2index_t;
+
 class AhoCorasick {
  public:
   AhoCorasick() : root(new Node()) {};
   void cleanup();
   void addString(const std::string * str);
   void init();
-  void search(const std::string& str);
-  std::map<std::string*, std::vector<int>, Compare> getMatch() const;
+  seq2index_t search(const std::string& str);
  private:
   const Node * go(const Node * current_state, char c);
-  void isFound(const Node * current_state, int pos);
-  void insert_match(std::string * seq, int pos);
+  void isFound(const Node * current_state, int pos, seq2index_t& seq2index_match);
+  void insert_match(std::string * seq, int pos, seq2index_t& seq2index_match);
 
   Node * root;
   std::vector<std::string *> patterns;
-  std::map<std::string *, std::vector<int>, Compare> seq2index_match;
 };
 
 #endif /* AHO_CORASICK_H_ */

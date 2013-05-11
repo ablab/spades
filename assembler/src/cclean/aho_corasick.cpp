@@ -96,7 +96,7 @@ const Node * AhoCorasick::go(const Node * current_state, char c) {
   return root; //(2)
 }
 
-void AhoCorasick::insert_match(std::string * seq, int pos) {
+void AhoCorasick::insert_match(std::string * seq, int pos, seq2index_t& seq2index_match) {
   std::map<std::string*, std::vector<int>, Compare>::iterator it;
 
   if (seq2index_match.end() != (it = seq2index_match.find(seq))) {
@@ -111,32 +111,32 @@ void AhoCorasick::insert_match(std::string * seq, int pos) {
 //check if node is terminal and
 //traverse output links to find nay patterns
 //that are recognized at this state too
-void AhoCorasick::isFound(const Node * current_state, int pos) {
+void AhoCorasick::isFound(const Node * current_state, int pos, seq2index_t& seq2index_match) {
 
   if (current_state->isTerminal()) {
-    insert_match(patterns[current_state->word_index], pos - patterns[current_state->word_index]->length() + 1);
+    insert_match(patterns[current_state->word_index],
+    			pos - patterns[current_state->word_index]->length() + 1,
+    			seq2index_match);
   }
 
   const Node *terminal_node = current_state->output;
   //out(u):= out(u) U out(f(u)); => iterate through f(u), f(f(u)), etc
   //as if some pattern is recognized at f(u), it should be recognized at u too.
   while (terminal_node) {
-    insert_match(patterns[terminal_node->word_index], pos - patterns[terminal_node->word_index]->length() + 1);
+    insert_match(patterns[terminal_node->word_index],
+    			pos - patterns[terminal_node->word_index]->length() + 1,
+    			seq2index_match);
     terminal_node = terminal_node->output;
   }
 }
 
-void AhoCorasick::search(const std::string& str) {
-  seq2index_match.clear();
+seq2index_t AhoCorasick::search(const std::string& str) {
+  seq2index_t seq2index_match;
   const Node * current_state = root;
   std::vector<int> res;
   for (int i = 0; i < (int) str.length(); ++i) {
     current_state = go(current_state, str[i]);
-    isFound(current_state, i);
+    isFound(current_state, i, seq2index_match);
   }
-}
-
-std::map<std::string*, std::vector<int>, Compare> AhoCorasick::getMatch() const {
   return seq2index_match;
 }
-

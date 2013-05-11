@@ -10,18 +10,18 @@
 #include "config_struct_cclean.hpp"
 #include "valid_kmer_generator.hpp"
 
-void DatabaseFiller::insert2db(const cclean::KMer seq, std::string * sequence) {
+void DatabaseFiller::insert2db(const cclean::KMer & seq, std::string * sequence){
 	std::string * kmer = new std::string(seq.str());
 
 #pragma omp critical
 	{
 		std::string str = seq.str();
 		if (kmer2listOfSeq->end() == kmer2listOfSeq->find(&str)) {
-			std::vector<std::string * > source;
-			source.push_back(sequence);
+			std::set<std::string *, Compare> source;
+			source.insert(sequence);
 			kmer2listOfSeq->insert(std::make_pair(kmer, source));
 		} else {
-			(*kmer2listOfSeq)[kmer].push_back(sequence);
+			(*kmer2listOfSeq)[kmer].insert(sequence);
 		}
 	}
 }
@@ -41,7 +41,8 @@ bool DatabaseFiller::operator()(const Read &r) {
 			name2seq->insert(std::make_pair(name_c, sequence_c));
 			seq2name->insert(std::make_pair(sequence_c, name_c));
 		}
-		ValidKMerGenerator<cclean::K> gen(r);
+
+		ValidKMerGenerator<cclean::K> gen(r, 0);
 		while (gen.HasMore()) {
 			cclean::KMer seq = gen.kmer();
 			insert2db(seq, sequence);
@@ -53,6 +54,7 @@ bool DatabaseFiller::operator()(const Read &r) {
 		}
 
 	} catch (std::exception& e) {
+		//TODO do I need an error message here? ERROR(e.what() << " for " << r.getName() << " " << r.getSequenceString());
 	}
 	return false;
 }
@@ -60,7 +62,7 @@ bool DatabaseFiller::operator()(const Read &r) {
 Database::Database(const std::string& filename) {
 	ireadstream * input = new ireadstream(filename);
 	DatabaseFiller filler;
-	hammer::ReadProcessor rp(std::min(omp_get_max_threads(), cclean_cfg::get().nthreads));
+	hammer::ReadProcessor rp(cclean_cfg::get().nthreads);
 	rp.Run(*input, filler);
 	delete input;
 
@@ -70,12 +72,12 @@ Database::Database(const std::string& filename) {
 }
 
 Database::~Database() {
-	for (std::map<std::string *, std::string *>::const_iterator it = name2seq->begin(); it != name2seq->end(); ++it) {
+	for (auto it = name2seq->begin(); it != name2seq->end(); ++it) {
 		delete it->first;
 		delete it->second;
 	}
 
-	for (std::map<std::string *, std::vector<std::string *>, Compare>::const_iterator it = kmer2listOfSeq->begin(); it != kmer2listOfSeq->end(); ++it) {
+	for (auto it = kmer2listOfSeq->begin(); it != kmer2listOfSeq->end(); ++it) {
 		delete it->first;
 	}
 
@@ -85,7 +87,7 @@ Database::~Database() {
 }
 
 void Database::get_sequence_by_name(const std::string& name, std::string& out_seq) const {
-	std::map<std::string *, std::string *>::const_iterator it = name2seq->find(const_cast<std::string *>(&name));
+	auto it = name2seq->find(const_cast<std::string *>(&name));
 	if (name2seq->end() == it) {
 		throw QcException("Element not found: " + name);
 	}
@@ -93,17 +95,17 @@ void Database::get_sequence_by_name(const std::string& name, std::string& out_se
 }
 
 void Database::get_name_by_sequence(const std::string& seq, std::string& out_name) const {
-	std::map<std::string *, std::string *>::const_iterator it = seq2name->find(const_cast<std::string *>(&seq));
+	auto it = seq2name->find(const_cast<std::string *>(&seq));
 	if (name2seq->end() == it) {
 		throw QcException("Element not found: " + seq);
 	}
 	out_name.assign(*(it->second));
 }
 
-void Database::get_sequences_for_kmer(const std::string& kmer, std::vector<std::string *>& out_seq) const {
-	std::map<std::string *, std::vector<std::string *>, Compare>::const_iterator it = kmer2listOfSeq->find(const_cast<std::string *>(&kmer));
+void Database::get_sequences_for_kmer(const std::string& kmer, std::set<std::string *, Compare>& out_seq) const {
+	auto it = kmer2listOfSeq->find(const_cast<std::string *>(&kmer));
 	if (kmer2listOfSeq->end() != it) {
-		out_seq.assign(it->second.begin(), it->second.end());
+		out_seq.insert(it->second.begin(), it->second.end());
 	}
 }
 
@@ -119,6 +121,6 @@ std::map<std::string *, std::string *>::const_iterator Database::get_data_iterat
 	return name2seq->begin();
 }
 
-std::map<std::string *, std::vector<std::string *>, Compare>::const_iterator Database::get_kmer_iterator() const {
+std::map<std::string *, std::set<std::string *, Compare>, Compare>::const_iterator Database::get_kmer_iterator() const {
 	return kmer2listOfSeq->begin();
 }
