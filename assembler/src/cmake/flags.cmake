@@ -59,5 +59,5 @@ endif()
 
 # We will need this at least for jemalloc
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-all_load,-lstdc++")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-all_load")
 endif()
