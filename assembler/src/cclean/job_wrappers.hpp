@@ -12,38 +12,46 @@
 class AlignmentJobWrapper {
 public:
 	AlignmentJobWrapper(const Database * data, std::ostream& output, std::ostream& bed)
-		:data(data), output(output), bed(bed){};
+      :data(data), output(output), bed(bed), aligned_(0) {};
 
 	bool operator()(const Read &r);
 
+  size_t aligned() const { return aligned_; }
+  
 private:
 	const Database * data;
 	std::ostream& output;
 	std::ostream& bed;
 	const unsigned mismatch_threshold = cfg::get().mismatch_threshold;
 	const double aligned_part_fraction = cfg::get().aligned_part_fraction;
+  size_t aligned_;
 };
 
 class ExactMatchJobWrapper {
 public:
 	ExactMatchJobWrapper(const Database * data, std::ostream& output, std::ostream& bed, const AhoCorasick &a)
-		:data(data), output(output), bed(bed), ahoCorasick(a){};
+      :data(data), output(output), bed(bed), ahoCorasick(a), aligned_(0) {};
 
 	bool operator()(const Read &r);
+
+  size_t aligned() const { return aligned_; }
 
 private:
 	const Database * data;
 	std::ostream& output;
 	std::ostream& bed;
 	AhoCorasick ahoCorasick;
+  size_t aligned_;
 };
 
 class ExactAndAlignJobWrapper {
 public:
 	ExactAndAlignJobWrapper(const Database * data, std::ostream& output, std::ostream& bed, const AhoCorasick &a, const AhoCorasick &b)
-		:data(data), output(output), bed(bed), dbAhoCorasick(a), kmersAhoCorasick(b) {};
+      :data(data), output(output), bed(bed), dbAhoCorasick(a), kmersAhoCorasick(b), aligned_(0) {};
 
 	bool operator()(const Read &r);
+
+  size_t aligned() const { return aligned_; }
 
 private:
 	const Database * data;
@@ -53,6 +61,7 @@ private:
 	AhoCorasick kmersAhoCorasick;
 	const unsigned mismatch_threshold = cfg::get().mismatch_threshold;
 	const double aligned_part_fraction = cfg::get().aligned_part_fraction;
+  size_t aligned_;
 };
 
 #endif /* JOBWRAPERS_H_ */
