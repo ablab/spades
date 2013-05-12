@@ -162,6 +162,14 @@ class KMerIndex {
     return sz;
   }
 
+  size_t size() {
+    size_t sz = 0;
+    for (size_t i = 0; i < num_buckets_; ++i)
+      sz += index_[i].size();
+
+    return sz;
+  }
+
   size_t seq_idx(const KMerSeq &s) const {
     size_t bucket = seq_bucket(s);
 
