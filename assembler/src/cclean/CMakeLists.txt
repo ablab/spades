@@ -17,6 +17,7 @@ add_executable(cclean
                job_wrappers.cpp
                output.cpp
                config_struct_cclean.cpp
+               adapter_index.cpp
                main.cpp)
 
 target_link_libraries(cclean ssw input mph_index ${COMMON_LIBRARIES})

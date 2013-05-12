@@ -18,19 +18,21 @@
 #include "boost/optional.hpp"
 
 // struct for debruijn project's configuration file
-struct cclean_config
-{
-  int mismatch_threshold;
+struct cclean_config {
+  unsigned mismatch_threshold;
   double aligned_part_fraction;
   std::string output_file;
   std::string output_bed;
-  int nthreads;
+  unsigned nthreads;
+
+  std::string input_working_dir;
+  size_t count_split_buffer;
 };
 
 
 // main config load function
 void load(cclean_config& cfg, boost::property_tree::ptree const& pt);
 
-typedef config_common::config<cclean_config> cclean_cfg;
+typedef config_common::config<cclean_config> cfg;
 
 #endif

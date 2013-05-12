@@ -4,18 +4,10 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/*
- * config_struct_cclean.cpp
- *
- *  Created on: Oct 15, 2011
- *      Author: snikolenko
- */
-
 #include "config_struct_cclean.hpp"
 #include "openmp_wrapper.h"
 
-void load(cclean_config& cfg, boost::property_tree::ptree const& pt)
-{
+void load(cclean_config& cfg, boost::property_tree::ptree const& pt) {
   using config_common::load;
   load(cfg.mismatch_threshold, pt, "mismatch_threshold");
   load(cfg.aligned_part_fraction, pt, "aligned_part_fraction");
@@ -23,7 +15,11 @@ void load(cclean_config& cfg, boost::property_tree::ptree const& pt)
   load(cfg.output_bed, pt, "output_bed");
   load(cfg.nthreads, pt, "nthreads");
 
+  load(cfg.count_split_buffer, pt, "count_split_buffer");
+  load(cfg.input_working_dir, pt, "input_working_dir");
+
   // Fix number of threads according to OMP capabilities.
-  	cfg.nthreads = std::min(cfg.nthreads, omp_get_max_threads());
-    omp_set_num_threads(cfg.nthreads);
+  cfg.nthreads = std::min(cfg.nthreads, (unsigned)omp_get_max_threads());
+  // Inform OpenMP runtime about this :)
+  omp_set_num_threads(cfg.nthreads);
 }

@@ -11,6 +11,7 @@
 #include "ssw/ssw_cpp.h"
 #include "config_struct_cclean.hpp"
 #include "simple_tools.hpp"
+#include "adapter_index.hpp"
 
 void usage() {
 	std::cout << "This tool searches contaminations from UniVec db in provided file with reads" << std::endl;
@@ -27,61 +28,73 @@ void create_console_logger() {
 }
 
 int main(int argc, char *argv[]) {
+  try {
+    create_console_logger();
 
-	clock_t start = clock();
-	if(5 != argc || (strcmp(argv[2], "exact") && strcmp(argv[2], "align") && strcmp(argv[2], "both"))) {
-		usage();
-		return 0;
-	}
+    clock_t start = clock();
 
-	create_console_logger();
-	std::string cfg_filename = argv[1];
-	CheckFileExistenceFATAL(cfg_filename);
+    std::string config_file = "config.inp";
+    if (argc > 1) config_file = argv[1];
+    INFO("Loading config from " << config_file.c_str());
+    CheckFileExistenceFATAL(config_file);
+    cfg::create_instance(config_file);
 
-    INFO("Loading config from " << cfg_filename);
-    cclean_cfg::create_instance(cfg_filename);
+    // hard memory limit
+    // const size_t GB = 1 << 30;
+    // limit_memory(cfg::get().general_hard_memory_limit * GB);
 
-	const std::string mode(argv[2]);
-	std::string db(argv[3]);
-	const std::string dt(argv[4]);
+    #if 0
+    cclean::AdapterIndex index;
+    cclean::AdapterIndexBuilder(16).FillAdapterIndex(index);
+    #endif
 
-	Database * data;
-	ireadstream * input;
-	try {
-		INFO("Reading UniVec db at " << db <<  " ... ");
+    if (5 != argc || (strcmp(argv[2], "exact") && strcmp(argv[2], "align") && strcmp(argv[2], "both"))) {
+      usage();
+      return 0;
+    }
+
+    const std::string mode(argv[2]);
+    std::string db(argv[3]);
+    const std::string dt(argv[4]);
+
+    Database * data;
+    ireadstream * input;
+
+    INFO("Reading UniVec db at " << db <<  " ... ");
 		data = new Database(db);
 		INFO("Done");
 		INFO("Init file with reads-to-clean at " << dt << " ... ");
 		input = new ireadstream(dt);
 		INFO("Done");
+    
+    INFO("Start matching reads against UniVec ...");
+    std::ofstream output(cfg::get().output_file);
+    std::ofstream bed(cfg::get().output_bed);
+    if (!output.is_open() || !bed.is_open()) {
+      ERROR("Cannot open output file: " << cfg::get().output_file << " or " << cfg::get().output_bed);
+      return 0;
+    }
+
+    if (!mode.compare("exact")) {
+      exactMatch(output, bed, input, data);
+    } else if (!mode.compare("align")) {
+      alignment(output, bed, input, data);
+    } else if (!mode.compare("both")) {
+      exactAndAlign(output, bed, input, data);
+    }
+    output.close();
+    bed.close();
+
+    delete data; //NB Don't delete earlier than AhoCorasick, because otherwise all patterns will be deleted
+    delete input;
+
+    clock_t ends = clock();
+    INFO("Processor Time Spent: " << (double) (ends - start) / CLOCKS_PER_SEC << " seconds.");
+    INFO("Goodbye!");
 	} catch (std::exception& e) {
-		ERROR(e.what() << "Make sure that you provided correct path to fasta/fastq file\n");
+		ERROR("Error: " << e.what());
 		return 0;
 	}
 
-	INFO("Start matching reads against UniVec ...");
-	std::ofstream output(cclean_cfg::get().output_file);
-	std::ofstream bed(cclean_cfg::get().output_bed);
-	if (!output.is_open() || !bed.is_open()) {
-		ERROR("Cannot open output file: " << cclean_cfg::get().output_file << " or " << cclean_cfg::get().output_bed);
-		return 0;
-	}
-
-	if (!mode.compare("exact")) {
-		exactMatch(output, bed, input, data);
-	} else if (!mode.compare("align")) {
-		alignment(output, bed, input, data);
-	} else if (!mode.compare("both")) {
-		exactAndAlign(output, bed, input, data);
-	}
-	output.close();
-	bed.close();
-
-	delete data; //NB Don't delete earlier than AhoCorasick, because otherwise all patterns will be deleted
-	delete input;
-
-	clock_t ends = clock();
-	INFO("Processor Time Spent: " << (double) (ends - start) / CLOCKS_PER_SEC << " seconds.");
-	INFO("Goodbye!");
 	return 0;
 }

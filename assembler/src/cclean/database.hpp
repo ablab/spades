@@ -1,16 +1,12 @@
 #ifndef DATABASE_H_
 #define DATABASE_H_
 
-#include <string>
-#include <map>
-
 #include "comparator.hpp"
 #include "io/read.hpp"
+#include "adapter_index.hpp"
 
-namespace cclean {
-	const unsigned K = 11;
-	typedef Seq<K> KMer;
-};
+#include <string>
+#include <map>
 
 class DatabaseFiller {
 public:

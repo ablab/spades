@@ -20,8 +20,8 @@ private:
 	const Database * data;
 	std::ostream& output;
 	std::ostream& bed;
-	const int mismatch_threshold = cclean_cfg::get().mismatch_threshold;
-	const double aligned_part_fraction = cclean_cfg::get().aligned_part_fraction;
+	const unsigned mismatch_threshold = cfg::get().mismatch_threshold;
+	const double aligned_part_fraction = cfg::get().aligned_part_fraction;
 };
 
 class ExactMatchJobWrapper {
@@ -51,8 +51,8 @@ private:
 	std::ostream& bed;
 	AhoCorasick dbAhoCorasick;
 	AhoCorasick kmersAhoCorasick;
-	const int mismatch_threshold = cclean_cfg::get().mismatch_threshold;
-	const double aligned_part_fraction = cclean_cfg::get().aligned_part_fraction;
+	const unsigned mismatch_threshold = cfg::get().mismatch_threshold;
+	const double aligned_part_fraction = cfg::get().aligned_part_fraction;
 };
 
 #endif /* JOBWRAPERS_H_ */

@@ -62,7 +62,7 @@ bool DatabaseFiller::operator()(const Read &r) {
 Database::Database(const std::string& filename) {
 	ireadstream * input = new ireadstream(filename);
 	DatabaseFiller filler;
-	hammer::ReadProcessor rp(cclean_cfg::get().nthreads);
+	hammer::ReadProcessor rp(cfg::get().nthreads);
 	rp.Run(*input, filler);
 	delete input;
 
