@@ -11,56 +11,60 @@
 
 class AlignmentJobWrapper {
 public:
-	AlignmentJobWrapper(const Database * data, std::ostream& output, std::ostream& bed)
-      :data(data), output(output), bed(bed), aligned_(0) {};
+  AlignmentJobWrapper(const Database * data, std::ostream& output, std::ostream& bed)
+      :data(data), output(output), bed(bed),
+       mismatch_threshold(cfg::get().mismatch_threshold), aligned_part_fraction(cfg::get().aligned_part_fraction),
+       aligned_(0) {};
 
-	bool operator()(const Read &r);
+  bool operator()(const Read &r);
 
   size_t aligned() const { return aligned_; }
-  
+
 private:
-	const Database * data;
-	std::ostream& output;
-	std::ostream& bed;
-	const unsigned mismatch_threshold = cfg::get().mismatch_threshold;
-	const double aligned_part_fraction = cfg::get().aligned_part_fraction;
+  const Database * data;
+  std::ostream& output;
+  std::ostream& bed;
+  unsigned mismatch_threshold;
+  double aligned_part_fraction;
   size_t aligned_;
 };
 
 class ExactMatchJobWrapper {
 public:
-	ExactMatchJobWrapper(const Database * data, std::ostream& output, std::ostream& bed, const AhoCorasick &a)
+  ExactMatchJobWrapper(const Database * data, std::ostream& output, std::ostream& bed, const AhoCorasick &a)
       :data(data), output(output), bed(bed), ahoCorasick(a), aligned_(0) {};
 
-	bool operator()(const Read &r);
+  bool operator()(const Read &r);
 
   size_t aligned() const { return aligned_; }
 
 private:
-	const Database * data;
-	std::ostream& output;
-	std::ostream& bed;
-	AhoCorasick ahoCorasick;
+  const Database * data;
+  std::ostream& output;
+  std::ostream& bed;
+  AhoCorasick ahoCorasick;
   size_t aligned_;
 };
 
 class ExactAndAlignJobWrapper {
 public:
-	ExactAndAlignJobWrapper(const Database * data, std::ostream& output, std::ostream& bed, const AhoCorasick &a, const AhoCorasick &b)
-      :data(data), output(output), bed(bed), dbAhoCorasick(a), kmersAhoCorasick(b), aligned_(0) {};
+  ExactAndAlignJobWrapper(const Database * data, std::ostream& output, std::ostream& bed, const AhoCorasick &a, const AhoCorasick &b)
+      :data(data), output(output), bed(bed), dbAhoCorasick(a), kmersAhoCorasick(b),
+       mismatch_threshold(cfg::get().mismatch_threshold), aligned_part_fraction(cfg::get().aligned_part_fraction),
+       aligned_(0) {};
 
-	bool operator()(const Read &r);
+  bool operator()(const Read &r);
 
   size_t aligned() const { return aligned_; }
 
 private:
-	const Database * data;
-	std::ostream& output;
-	std::ostream& bed;
-	AhoCorasick dbAhoCorasick;
-	AhoCorasick kmersAhoCorasick;
-	const unsigned mismatch_threshold = cfg::get().mismatch_threshold;
-	const double aligned_part_fraction = cfg::get().aligned_part_fraction;
+  const Database * data;
+  std::ostream& output;
+  std::ostream& bed;
+  AhoCorasick dbAhoCorasick;
+  AhoCorasick kmersAhoCorasick;
+  unsigned mismatch_threshold;
+  double aligned_part_fraction;
   size_t aligned_;
 };
 

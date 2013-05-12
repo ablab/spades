@@ -108,7 +108,6 @@ int main(int argc, char *argv[]) {
     }
 
 #if USE_INDEX
-    size_t idx = 0, found = 0;
     DummyIndexMatcher matcher(index);
     hammer::ReadProcessor rp(cfg::get().nthreads);
     rp.Run(*input, matcher);
