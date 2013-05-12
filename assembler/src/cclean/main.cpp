@@ -2,7 +2,6 @@
 #include <map>
 #include <exception>
 
-#include "mph_index/kmer_index.hpp"
 #include "sequence/seq.hpp"
 #include "logger/log_writers.hpp"
 #include "memory_limit.hpp"
@@ -12,11 +11,13 @@
 #include "config_struct_cclean.hpp"
 #include "simple_tools.hpp"
 #include "adapter_index.hpp"
+#include "valid_kmer_generator.hpp"
+#include "io/read_processor.hpp"
 
 void usage() {
-	std::cout << "This tool searches contaminations from UniVec db in provided file with reads" << std::endl;
-	std::cout << "Usage: QC-pileline config_path mode:{exact, align, both} UniVec_path Fasta/Fastq.gz" << std::endl;
-	std::cout << "Currently only .gz files can be read" << std::endl;
+  std::cout << "This tool searches contaminations from UniVec db in provided file with reads" << std::endl;
+  std::cout << "Usage: QC-pileline config_path mode:{exact, align, both} UniVec_path Fasta/Fastq.gz" << std::endl;
+  std::cout << "Currently only .gz files can be read" << std::endl;
 }
 
 void create_console_logger() {
@@ -26,6 +27,37 @@ void create_console_logger() {
   lg->add_writer(std::make_shared<console_writer>());
   attach_logger(lg);
 }
+
+#define USE_INDEX 1
+
+class DummyIndexMatcher {
+  const cclean::AdapterIndex &index_;
+  size_t found_;
+
+ public:
+  DummyIndexMatcher(const cclean::AdapterIndex &index)
+      : index_(index), found_(0) {}
+
+  bool operator()(const Read &r) {
+    const std::string &seq = r.getSequenceString();
+    ValidKMerGenerator<cclean::K> gen(seq.c_str(), NULL, seq.size());
+    while (gen.HasMore()) {
+      cclean::KMer kmer = gen.kmer();
+      if (index_.contains(kmer)) {
+#       pragma omp atomic
+        found_ += 1;
+        // INFO("Contains: " << kmer << " at " << gen.pos() - 1 << " in " << r.getName());
+        break;
+      }
+      gen.Next();
+    }
+
+    return false;
+  }
+
+  size_t found() const { return found_; }
+};
+
 
 int main(int argc, char *argv[]) {
   try {
@@ -43,10 +75,10 @@ int main(int argc, char *argv[]) {
     // const size_t GB = 1 << 30;
     // limit_memory(cfg::get().general_hard_memory_limit * GB);
 
-    #if 0
+#if USE_INDEX
     cclean::AdapterIndex index;
     cclean::AdapterIndexBuilder(16).FillAdapterIndex(index);
-    #endif
+#endif
 
     if (5 != argc || (strcmp(argv[2], "exact") && strcmp(argv[2], "align") && strcmp(argv[2], "both"))) {
       usage();
@@ -61,12 +93,12 @@ int main(int argc, char *argv[]) {
     ireadstream * input;
 
     INFO("Reading UniVec db at " << db <<  " ... ");
-		data = new Database(db);
-		INFO("Done");
-		INFO("Init file with reads-to-clean at " << dt << " ... ");
-		input = new ireadstream(dt);
-		INFO("Done");
-    
+    data = new Database(db);
+    INFO("Done");
+    INFO("Init file with reads-to-clean at " << dt << " ... ");
+    input = new ireadstream(dt);
+    INFO("Done");
+
     INFO("Start matching reads against UniVec ...");
     std::ofstream output(cfg::get().output_file);
     std::ofstream bed(cfg::get().output_bed);
@@ -74,6 +106,17 @@ int main(int argc, char *argv[]) {
       ERROR("Cannot open output file: " << cfg::get().output_file << " or " << cfg::get().output_bed);
       return 0;
     }
+
+#if USE_INDEX
+    size_t idx = 0, found = 0;
+    DummyIndexMatcher matcher(index);
+    hammer::ReadProcessor rp(cfg::get().nthreads);
+    rp.Run(*input, matcher);
+    input->reset();
+    VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
+
+    INFO("Total " << rp.processed() << " reads processed. Matches found in " << matcher.found() << " reads");
+#endif
 
     if (!mode.compare("exact")) {
       exactMatch(output, bed, input, data);
@@ -91,10 +134,10 @@ int main(int argc, char *argv[]) {
     clock_t ends = clock();
     INFO("Processor Time Spent: " << (double) (ends - start) / CLOCKS_PER_SEC << " seconds.");
     INFO("Goodbye!");
-	} catch (std::exception& e) {
-		ERROR("Error: " << e.what());
-		return 0;
-	}
+  } catch (std::exception& e) {
+    ERROR("Error: " << e.what());
+    return 0;
+  }
 
-	return 0;
+  return 0;
 }
