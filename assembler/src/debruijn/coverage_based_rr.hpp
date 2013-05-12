@@ -399,7 +399,6 @@ class CoverageBasedResolution {
 			VertexId into = gp->g.EdgeEnd(*e_iter);
 
 			//std::cout << e_iter->int_id() << std::endl;
-			bool toComps = false;
 			if ( gp->g.length(*e_iter) >= cfg::get().rr.max_repeat_length ) {
 				singles.push_back(*e_iter);
 			}
@@ -512,9 +511,9 @@ class CoverageBasedResolution {
 			return;
 		}
 
-		if ( Length == incomingEdgesCoverage.size() ){
-			for (int i = Length - 1; i < outgoingEdgesCoverage.size() - 1; ++i){
-				double valueOneList = min (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second) / max (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second); 
+		if ( Length == (int) incomingEdgesCoverage.size() ){
+			for (unsigned i = Length - 1; i < outgoingEdgesCoverage.size() - 1; ++i){
+				double valueOneList = (double) min (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second) / max (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second); 
 				if (valueOneList > thresholdOneList){
 					return;
 				}
@@ -522,8 +521,8 @@ class CoverageBasedResolution {
 		}
 		else {
 		
-			for (int i = Length - 1; i < incomingEdgesCoverage.size() - 1; ++i){
-				double valueOneList = min (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second) / max (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second); 
+			for (unsigned i = Length - 1; i < incomingEdgesCoverage.size() - 1; ++i){
+				double valueOneList = (double) min (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second) / max (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second); 
 				if (valueOneList > thresholdOneList){
 					return;
 				}

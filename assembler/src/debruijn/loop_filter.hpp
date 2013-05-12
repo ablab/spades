@@ -81,7 +81,7 @@ namespace debruijn_graph {
 			
 
 			std::vector<std::vector<VertexId>> loops;
-			for ( int i = 0; i < order.size(); ++i ) {
+			for ( unsigned i = 0; i < order.size(); ++i ) {
 			
 				VertexId startVertex = order[order.size() - i - 1];
 				if ( usedVertices.find(startVertex) != usedVertices.end() ) 
@@ -189,7 +189,7 @@ namespace debruijn_graph {
 
 			std::cout << time1 << " " << time2 << std::endl;
 			std::cout << time1 * cov << " " << cov1 << " " << time2 * cov << " " << cov2 << std::endl;
-			double threshold = 0.75;
+			//double threshold = 0.75;
 			if (time1 - time2 != 1 || time2 == 0) {
 				canBeResolved = false;
 			}
