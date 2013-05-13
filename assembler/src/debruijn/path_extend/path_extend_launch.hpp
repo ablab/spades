@@ -257,12 +257,12 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp,
 		if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::PairedEnd) {
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, libs);
-			set_threshold(lib, indexs[i]);
+			//set_threshold(lib, indexs[i]);
 			add_lib(gp.g, scaff_index, indexs, i, scaf_libs);
 		} else if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::MatePairs) {
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, libs_mp);
-			set_threshold(lib, indexs[i]);
+			//set_threshold(lib, indexs[i]);
 			add_lib(gp.g, scaff_index, indexs, i, scaf_libs_mp);
 		}
 	}

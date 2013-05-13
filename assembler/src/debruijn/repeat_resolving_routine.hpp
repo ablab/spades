@@ -1109,7 +1109,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	if (cfg::get().pe_params.param_set.scaffolder_options.on && cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
         prepare_all_scaf_libs(conj_gp, pe_scaf_indexs);
         need_delete = true;
-	} else {
+	} else if (!cfg::get().pe_params.param_set.scaffolder_options.on) {
 		name = "final_contigs.fasta";
 		pe_scaf_indexs.clear();
 	}
