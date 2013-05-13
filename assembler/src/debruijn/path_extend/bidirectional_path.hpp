@@ -873,11 +873,11 @@ public:
     }
 
     void Print() const {
-        INFO("Path " << id_);
-        INFO("Length " << totalLength_);
-        INFO("#, edge, length, total length");
+        DEBUG("Path " << id_);
+        DEBUG("Length " << totalLength_);
+        DEBUG("#, edge, length, total length");
         for(size_t i = 0; i < Size(); ++i) {
-            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
+        	DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
         }
     }
 
