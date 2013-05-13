@@ -1075,7 +1075,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 				pe_scaf_indexs.push_back(&resolved_graph_paired_info);
 			}
 			INFO("Scaffolding");
-			resolve_repeats_pe(cfg::get().K, resolved_gp, pe_indexs,
+			resolve_repeats_pe(resolved_gp, pe_indexs,
 					pe_scaf_indexs, indexs,  vector<LongReadInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta");
 			SaveResolved(resolved_gp, resolved_graph_paired_info,
 					resolved_graph_paired_info_cl);
@@ -1092,35 +1092,32 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 }
 
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices) {
+
 	vector<PairedIndexT*> pe_indexs;
 	vector<PairedIndexT*> pe_scaf_indexs;
-	vector<size_t> indexs;
+	vector<size_t> indexes;
+
 	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
 		if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
 				|| cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
 			pe_indexs.push_back(&clustered_indices[i]);
 			pe_scaf_indexs.push_back(&paired_indices[i]);
-			indexs.push_back(i);
+			indexes.push_back(i);
 		}
 	}
 
-	std::string name = "scaffolds.fasta";
-	bool need_delete = false;
+    //LongReadStorage<Graph> long_read(conj_gp.g);
+    LongReadStorage<Graph> long_read = pacbio_test(conj_gp, cfg::get().pacbio_k);
+    //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
+
 	if (cfg::get().pe_params.param_set.scaffolder_options.on && cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
         prepare_all_scaf_libs(conj_gp, pe_scaf_indexs);
-        need_delete = true;
-	} else if (!cfg::get().pe_params.param_set.scaffolder_options.on) {
-		name = "final_contigs.fasta";
-		pe_scaf_indexs.clear();
+        resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta");
+        delete_index(pe_scaf_indexs);
 	}
-
-	//LongReadStorage<Graph> long_read(conj_gp.g);
-	LongReadStorage<Graph> long_read = pacbio_test(conj_gp, cfg::get().pacbio_k);
-	//long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
-
-	resolve_repeats_pe(cfg::get().K, conj_gp, pe_indexs, pe_scaf_indexs, indexs, long_read.GetAllPaths(), cfg::get().output_dir, name);
-	if (need_delete){
-		delete_index(pe_scaf_indexs);
+	else {
+		pe_scaf_indexs.clear();
+	    resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta");
 	}
 }
 

@@ -46,7 +46,7 @@ public:
 		//		gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
 		PairedIndexT clustered_index(gp.g);
 		if (!is_mp_){
-			estimate_distance(gp, paired_index, clustered_index);
+			estimate_distance(gp, cfg::get_writable().ds.reads[index], paired_index, clustered_index);
 		}
 		size_t RL = cfg::get().ds.reads[index].data().read_length;
 		double var = cfg::get().ds.reads[index].data().insert_size_deviation;

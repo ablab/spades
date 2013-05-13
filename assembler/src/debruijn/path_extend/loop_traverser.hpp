@@ -70,16 +70,9 @@ private:
 		if ((*startPath) == endPath->Conjugate()){
 			return;
 		}
-		DEBUG("TraverseLoop " << graph_.int_id(start) << " " << graph_.int_id(end));
-		DEBUG("begin path");
-		startPath->Print();
-		DEBUG("endPAth");
-		endPath->Print();
-		DEBUG("print all");
 		if (startPath->hasOverlapedEnd()) {
 			BidirectionalPath* overlap = *startPath->getOverlapedEnd().begin();
 			DEBUG("overlap");
-			overlap->Print();
 			if ((*overlap) != startPath->Conjugate()) {
 				for (size_t i = 0; i < overlap->Size(); ++i) {
 					startPath->PushBack(overlap->At(i));
@@ -89,8 +82,6 @@ private:
 					return;
 				}
 				overlap->Clear();
-				DEBUG("add overlap");
-				startPath->Print();
 			}
 		}
 		extender_->GrowPath(*startPath);
@@ -98,7 +89,6 @@ private:
 
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		if (commonSize == 0) {
-			DEBUG("non common edges. Need Deijkstra");
 			DijkstraSearcher pathSeacher(graph_);
 			VertexId lastVertex = graph_.EdgeEnd(
 					startPath->At(startPath->Size() - 1));
@@ -108,17 +98,15 @@ private:
 			for (size_t i = 0; i < pathToAdd.size(); ++i) {
 				startPath->PushBack(pathToAdd[i]);
 			}
-		} else {
-			DEBUG("common Edges " << commonSize);
 		}
+
 		for (size_t i = commonSize; i < endPath->Size(); ++i) {
 			startPath->PushBack(endPath->At(i));
 		}
+
 		startPath->clearOverlapedEnd();
 		startPath->addOverlapedEnd(endPath->getOverlapedEnd());
 		endPath->Clear();
-		DEBUG("result path");
-		startPath->Print();
 	}
 
 public:

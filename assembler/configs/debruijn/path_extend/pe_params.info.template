@@ -39,6 +39,8 @@ singlecell {
 
 	improve_paired_info	true
 
+	split_edge_length	99
+
 	; metric = path_cover | read_count 
 	metric 			        path_cover
 	normalize_weight        true
@@ -133,6 +135,8 @@ singlecell {
 multicell {
 
 	improve_paired_info     true
+
+	split_edge_length	99
 
 	; metric = path_cover | read_count 
 	metric 			        path_cover

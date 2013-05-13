@@ -441,9 +441,19 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.est_mode, pt, "estimation_mode");
 
   load(cfg.rm, pt, "resolving_mode");
+
   cfg.pe_params.name = cfg.ds.single_cell ? "singlecell" : "multicell";
   load(cfg.pe_params, pt, "andrey_params");
+  if (!cfg.developer_mode) {
+      cfg.pe_params.debug_output = false;
+      cfg.pe_params.viz.DisableAll();
+      cfg.pe_params.output.DisableAll();
+  }
   load(cfg.use_scaffolder, pt, "use_scaffolder");
+  if (!cfg.use_scaffolder) {
+      cfg.pe_params.param_set.scaffolder_options.on = false;
+  }
+
   load(cfg.mask_all, pt, "mask_all");
 
   load(cfg.gc, pt, "gap_closer");
