@@ -2,8 +2,9 @@
 #include "job_wrappers.hpp"
 #include "logger/log_writers.hpp"
 
-double is_alignment_good(const StripedSmithWaterman::Alignment& a, const std::string& query, int aligned_part_fraction) {
-  return (std::min(a.query_end, a.ref_end) - std::max(a.query_begin, a.ref_begin)) / (double) query.size() > aligned_part_fraction;
+bool is_alignment_good(const StripedSmithWaterman::Alignment& a, const std::string& query, double aligned_part_fraction) {
+  // FIXME: Check for the end of reference here (somehow)
+  return (std::min(a.query_end - a.query_begin + 1, a.ref_end - a.ref_begin + 1) / (double) query.size() > aligned_part_fraction);
 }
 
 bool AlignmentJobWrapper::operator()(const Read &r) {
