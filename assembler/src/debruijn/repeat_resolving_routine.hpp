@@ -849,6 +849,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 		normalizing_f = &TrivialWeightNormalization<Graph>;
 	} else {
 		//todo reduce number of constructor params
+	    //TODO: apply new system
 		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
 				cfg::get().ds.IS(), cfg::get().ds.is_var(), cfg::get().ds.RL(),
 				gp.k_value, cfg::get().ds.avg_coverage());
@@ -1090,9 +1091,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 	}
 }
 
-void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
-		PairedIndicesT& clustered_indices, Sequence& genome,
-		size_t pe_lib_index) {
+void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices) {
 	vector<PairedIndexT*> pe_indexs;
 	vector<PairedIndexT*> pe_scaf_indexs;
 	vector<size_t> indexs;
@@ -1104,23 +1103,22 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 			indexs.push_back(i);
 		}
 	}
+
 	std::string name = "scaffolds.fasta";
 	bool need_delete = false;
-	if (cfg::get().pe_params.param_set.scaffolder_options.on) {
-		if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-			prepare_all_scaf_libs(conj_gp, pe_scaf_indexs);
-			need_delete = true;
-		}
+	if (cfg::get().pe_params.param_set.scaffolder_options.on && cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs);
+        need_delete = true;
 	} else {
 		name = "final_contigs.fasta";
 		pe_scaf_indexs.clear();
 	}
+
 	//LongReadStorage<Graph> long_read(conj_gp.g);
 	LongReadStorage<Graph> long_read = pacbio_test(conj_gp, cfg::get().pacbio_k);
 	//long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 
-	resolve_repeats_pe(cfg::get().K, conj_gp, pe_indexs,
-			pe_scaf_indexs, indexs, long_read.GetAllPaths(), cfg::get().output_dir, name);
+	resolve_repeats_pe(cfg::get().K, conj_gp, pe_indexs, pe_scaf_indexs, indexs, long_read.GetAllPaths(), cfg::get().output_dir, name);
 	if (need_delete){
 		delete_index(pe_scaf_indexs);
 	}
@@ -1137,8 +1135,7 @@ void resolve_repeats() {
 			!cfg::get().developer_mode);
 
 	PairedIndicesT paired_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
-	PairedIndicesT clustered_indices(conj_gp.g,
-			cfg::get().ds.reads.lib_count());
+	PairedIndicesT clustered_indices(conj_gp.g,	cfg::get().ds.reads.lib_count());
 
 	if (!cfg::get().developer_mode) {
 		conj_gp.edge_pos.Detach();
@@ -1195,16 +1192,18 @@ void resolve_repeats() {
 		INFO("Split repeat resolving");
 		split_resolving(conj_gp, paired_indices, clustered_indices, genome,
 				pe_lib_index);
-	} else if (cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1
+	}
+	else if (cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1
 			|| cfg::get().rm
 					== debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");
-		pe_resolving(conj_gp, paired_indices, clustered_indices, genome,
-				pe_lib_index);
-	} else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
+		pe_resolving(conj_gp, paired_indices, clustered_indices);
+	}
+	else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
 		INFO("Ready to run rectangles repeat resolution module");
-	} else {
-		INFO("don't know such repeat resolver");
+	}
+	else {
+		INFO("Unsupported repeat resolver");
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 	}
 

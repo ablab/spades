@@ -28,7 +28,8 @@ public:
 		conj_graph_pack gp(cfg::get().K, cfg::get().output_dir, genome,
 				cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling,
 				!cfg::get().developer_mode);
-		INFO("single threshold finder");
+
+		DEBUG("Searching for paired info threshold");
 		exec_simplification(gp);
 		gp.index.Detach();
 		set<BidirectionalPath*> goodPaths;
@@ -53,11 +54,11 @@ public:
 		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, var, clustered_index);
 		map<PairInfo<EdgeId>, double> good_pi;
 		map<PairInfo<EdgeId>, double> bad_pi;
-		INFO("analyze paths begin");
+		DEBUG("analyze paths begin");
 		for (auto iter = goodPaths.begin(); iter != goodPaths.end(); ++iter) {
 			analyze_one_path(gp, *iter, lib_not_cl, lib_cl, good_pi, bad_pi);
 		}
-		INFO("analyze paths end");
+		DEBUG("analyze paths end");
 		writeToFile(gp, good_pi, bad_pi, lib_not_cl);
 		deletePaths(goodPaths);
 		vector<double> good_pi_val;
@@ -83,8 +84,8 @@ private:
 		double pi_norm1_aver = lib->get_all_norm_pi_aver(pi.first, true);
 		double pi_norm2_aver = lib->get_all_norm_pi_aver(pi.second, false);
 		double test1 = w / ideal_pi;
-		double test2 = (w / ideal_pi) / min(pi1, pi2);
-		double test3 = (w / ideal_pi) / min(pi_norm1, pi_norm2);
+//		double test2 = (w / ideal_pi) / min(pi1, pi2);
+//		double test3 = (w / ideal_pi) / min(pi_norm1, pi_norm2);
 		double test4 = test1 / min(pi_norm1_aver, pi_norm2_aver);
 		ss << pref << " " << (w / ideal_pi) << " " << w << " " << ideal_pi
 				<< " " << gp.g.str(pi.first) << " " << gp.g.str(pi.second)<<
@@ -147,7 +148,7 @@ private:
 	}
 
 	void split_long_edges(conj_graph_pack& gp, size_t length, set<BidirectionalPath*>& result) {
-		INFO("begin split long edges");
+		DEBUG("begin split long edges");
 		set<EdgeId> longEdges;
 		Graph& graph = gp.g;
 		size_t com_length = 0;
@@ -171,7 +172,7 @@ private:
 			edge_path.push_back(secondEdge);
 			result.insert(new BidirectionalPath(graph, edge_path));
 		}
-		INFO("end split long edges");
+		DEBUG("end split long edges");
 	}
 
 	void find_idel_pair_info(conj_graph_pack& gp, size_t from, BidirectionalPath* path,  PairedInfoLibrary* lib, map<EdgeId, PairInfo<EdgeId> >& idealPairInfo){

@@ -20,7 +20,7 @@
 #include "pe_io.hpp"
 #include "path_visualizer.hpp"
 #include "path_validator.hpp"
-#include "loop_traverser.h"
+#include "loop_traverser.hpp"
 #include "single_threshold_finder.hpp"
 #include "long_read_storage.hpp"
 #include "../include/omni/edges_position_handler.hpp"
@@ -72,7 +72,7 @@ void debug_output_edges(ContigWriter& writer, conj_graph_pack& gp,
 		}
 	PathVisualizer visualizer(gp.g.k());
 	string etcDir = get_etc_dir(output_dir);
-	INFO("debug_output " << cfg::get().pe_params.debug_output);
+	DEBUG("debug_output " << cfg::get().pe_params.debug_output);
 	if (cfg::get().pe_params.viz.print_paths) {
 		writer.writeEdges(etcDir + name + ".fasta");
 		visualizer.writeGraphSimple(gp, etcDir + name + ".dot", name);
@@ -87,15 +87,22 @@ double get_weight_threshold(PairedInfoLibraries& lib){
 }
 
 void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
-		vector<PairedInfoLibraries>& libes, vector<PairedInfoLibraries>& scafolding_libes,
+		vector<PairedInfoLibraries>& libes,
+		vector<PairedInfoLibraries>& scafolding_libes,
 		PathContainer& true_paths,
 		const std::string& output_dir, const std::string& contigs_name) {
+
 	INFO("Path extend repeat resolving tool started");
+	if (!cfg::get().developer_mode) {
+	    cfg::get_writable().pe_params.viz.DisableAll();
+	    cfg::get_writable().pe_params.output.DisableAll();
+	}
 	make_dir(output_dir);
 	std::string etcDir = get_etc_dir(output_dir);
 	make_dir(etcDir);
-	INFO("Using " << cfg::get().pe_params.param_set.metric << " metric");
-	INFO("count libs " << libes.size());
+
+	DEBUG("Using " << cfg::get().pe_params.param_set.metric << " metric");
+	INFO("Using " << libes.size() << " paird libs");
 	INFO("Scaffolder is " << (cfg::get().pe_params.param_set.scaffolder_options.on ? "on" : "off"));
 	ContigWriter writer(gp, gp.g.k());
 	debug_output_edges(writer, gp, output_dir, "before_resolve");
@@ -132,7 +139,7 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 		SimpleExtensionChooser * extensionChooser = new SimpleExtensionChooser(gp.g, wcs[i], priory_coef);
 		usualPEs.push_back( new SimplePathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, extensionChooser));
 	}
-	INFO("usualPE " << usualPEs.size());
+	DEBUG("usualPE " << usualPEs.size());
 	GapJoiner * gapJoiner = new HammingGapJoiner(gp.g,
 				cfg::get().pe_params.param_set.scaffolder_options.min_gap_score,
 				(int) (cfg::get().pe_params.param_set.scaffolder_options.max_must_overlap
@@ -173,13 +180,13 @@ void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
 	paths.CheckSymmetry();
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 	paths.SortByLength();
-    for (size_t i = 0; i < paths.size(); ++i){
-        paths.Get(i)->Print();
-    }
+//    for (size_t i = 0; i < paths.size(); ++i){
+//        paths.Get(i)->Print();
+//    }
     paths.SortByLength();
     writer.writePaths(paths, output_dir + contigs_name);
     debug_output_paths(writer, gp, output_dir, paths, "final_paths");
-	INFO("loop Traverser");
+	INFO("Traversing tandem repeats");
     LoopTraverser loopTraverser(gp.g, paths, mainPE->GetCoverageMap(), mainPE);
 	loopTraverser.TraverseAllLoops();
 	paths.SortByLength();
@@ -214,15 +221,13 @@ void delete_libs(PairedInfoLibraries& libs){
 }
 
 void set_threshold(PairedInfoLibrary* lib, size_t index) {
-	INFO("we are trying to find single threshold for library "
-						<< index << " is " << lib->insert_size_ << " var "
-						<< lib->is_variation_);
-	SingleThresholdFinder finder(lib->insert_size_ - 2 * lib->is_variation_,
-			lib->insert_size_ + 2 * lib->is_variation_, 99);
+	INFO("Searching for paired info threshold for lib #"
+						<< index << " (IS = " << lib->insert_size_ << ",  DEV = " << lib->is_variation_);
+
+	SingleThresholdFinder finder(lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_, 99);
 	double threshold = finder.find_threshold(index);
-	INFO("we found single threshold!! It is " << threshold << " library "
-					<< index << " is " << lib->insert_size_ << " var "
-					<< lib->is_variation_);
+
+	INFO("Paired info threshold is " << threshold);
 	lib->SetSingleThreshold(threshold);
 }
 
@@ -247,18 +252,17 @@ void resolve_repeats_pe(size_t k, conj_graph_pack& gp,
 	PairedInfoLibraries libs_mp;
 	PairedInfoLibraries scaf_libs;
 	PairedInfoLibraries scaf_libs_mp;
+
 	for (size_t i = 0; i < paired_index.size(); ++i) {
 		if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::PairedEnd) {
-			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i,
-					libs);
-			//set_threshold(lib, indexs[i]);
+			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, libs);
+			set_threshold(lib, indexs[i]);
 			add_lib(gp.g, scaff_index, indexs, i, scaf_libs);
 		} else if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::MatePairs) {
-			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i,
-					libs_mp);
-			//set_threshold(lib, indexs[i]);
+			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, libs_mp);
+			set_threshold(lib, indexs[i]);
 			add_lib(gp.g, scaff_index, indexs, i, scaf_libs_mp);
 		}
 	}

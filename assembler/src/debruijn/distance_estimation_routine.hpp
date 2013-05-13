@@ -119,7 +119,6 @@ void estimate_distance(conj_graph_pack& gp, const PairedIndexT& paired_index,
 
     PairInfoWeightFilter<Graph> filter(gp.g, config.de.filter_threshold);
     INFO("Weight Filter Done");
-
     switch (config.est_mode)
     {
       case em_simple :
@@ -197,97 +196,97 @@ void estimate_distance(conj_graph_pack& gp, const PairedIndexT& paired_index,
   }
 }
 
-void load_distance_estimation(conj_graph_pack& gp,
-                              PairedIndexT& paired_index,
-                              PairedIndexT& clustered_index,
-                              path::files_t* used_files)
-{
-  string p = path::append_path(cfg::get().load_from, "distance_estimation");
-  used_files->push_back(p);
-  ScanAll(p, gp, paired_index, clustered_index);
-  load_estimated_params(p);
-}
-
-//bool try_load_distance_filling(conj_graph_pack& gp, PairedIndexT& clustered_index,
-    //path::files_t* used_files)
+//void load_distance_estimation(conj_graph_pack& gp,
+//                              PairedIndexT& paired_index,
+//                              PairedIndexT& clustered_index,
+//                              path::files_t* used_files)
 //{
-  //WARN("trying to load distance filling");
-  //string p = path::append_path(cfg::get().load_from, "distance_filling");
-
-  //FILE* file = fopen((p + ".grp").c_str(), "r");
-  //if (file == NULL) {
-    //return false;
-  //}
-  //fclose(file);
-
-  //used_files->push_back(p);
-
-  //clustered_index.Clear();
-  //ScannerTraits<conj_graph_pack::graph_t>::Scanner scanner(gp.g,
-      //gp.int_ids);
-  //ScanClusteredIndex(p, scanner, clustered_index);
-
-  //return true;
+//  string p = path::append_path(cfg::get().load_from, "distance_estimation");
+//  used_files->push_back(p);
+//  ScanAll(p, gp, paired_index, clustered_index);
+//  load_estimated_params(p);
 //}
-
-//void distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index, PairedIndexT& clustered_index) 
+//
+////bool try_load_distance_filling(conj_graph_pack& gp, PairedIndexT& clustered_index,
+//    //path::files_t* used_files)
+////{
+//  //WARN("trying to load distance filling");
+//  //string p = path::append_path(cfg::get().load_from, "distance_filling");
+//
+//  //FILE* file = fopen((p + ".grp").c_str(), "r");
+//  //if (file == NULL) {
+//    //return false;
+//  //}
+//  //fclose(file);
+//
+//  //used_files->push_back(p);
+//
+//  //clustered_index.Clear();
+//  //ScannerTraits<conj_graph_pack::graph_t>::Scanner scanner(gp.g,
+//      //gp.int_ids);
+//  //ScanClusteredIndex(p, scanner, clustered_index);
+//
+//  //return true;
+////}
+//
+////void distance_filling(conj_graph_pack& gp, PairedIndexT& paired_index, PairedIndexT& clustered_index)
+////{
+//    //path::files_t used_files;
+//    //if (try_load_distance_filling(gp, clustered_index, &used_files)) {
+//
+//        //link_files_by_prefix(used_files, cfg::get().output_saves);
+//        //INFO("Distance filling saves detected and loaded");
+//    //}
+////}
+//
+//void save_distance_estimation(const conj_graph_pack& gp,
+//                              const PairedIndexT& paired_index,
+//                              const PairedIndexT& clustered_index)
 //{
-    //path::files_t used_files;
-    //if (try_load_distance_filling(gp, clustered_index, &used_files)) {
-
-        //link_files_by_prefix(used_files, cfg::get().output_saves);
-        //INFO("Distance filling saves detected and loaded");
-    //}
+//  if (cfg::get().make_saves || (cfg::get().paired_mode && cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles)) {
+//    string p = path::append_path(cfg::get().output_saves, "distance_estimation");
+//    INFO("Saving current state to " << p);
+//    PrintAll(p, gp, paired_index, clustered_index);
+//    write_estimated_params(p);
+//  }
 //}
-
-void save_distance_estimation(const conj_graph_pack& gp,
-                              const PairedIndexT& paired_index,
-                              const PairedIndexT& clustered_index)
-{
-  if (cfg::get().make_saves || (cfg::get().paired_mode && cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles)) {
-    string p = path::append_path(cfg::get().output_saves, "distance_estimation");
-    INFO("Saving current state to " << p);
-    PrintAll(p, gp, paired_index, clustered_index);
-    write_estimated_params(p);
-  }
-}
-
-//void save_distance_filling(const conj_graph_pack& gp,
-                           //const PairedIndexT& paired_index,
-                           //const PairedIndexT& clustered_index) {
-  //if (cfg::get().make_saves || cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
-    //string p = path::append_path(cfg::get().output_saves, "distance_filling");
-    //INFO("Saving current state to " << p);
-    //PrintAll(p, gp, paired_index, clustered_index);
-    //write_estimated_params(p);
-  //}
+//
+////void save_distance_filling(const conj_graph_pack& gp,
+//                           //const PairedIndexT& paired_index,
+//                           //const PairedIndexT& clustered_index) {
+//  //if (cfg::get().make_saves || cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
+//    //string p = path::append_path(cfg::get().output_saves, "distance_filling");
+//    //INFO("Saving current state to " << p);
+//    //PrintAll(p, gp, paired_index, clustered_index);
+//    //write_estimated_params(p);
+//  //}
+////}
+//
+//void count_estimated_info_stats(const conj_graph_pack& gp,
+//                                const PairedIndexT& paired_index,
+//                                const PairedIndexT& clustered_index)
+//{
+//  CountClusteredPairedInfoStats(gp, paired_index, clustered_index);
 //}
-
-void count_estimated_info_stats(const conj_graph_pack& gp,
-                                const PairedIndexT& paired_index,
-                                const PairedIndexT& clustered_index)
-{
-  CountClusteredPairedInfoStats(gp, paired_index, clustered_index);
-}
-
-void exec_distance_estimation(conj_graph_pack& gp,
-                             PairedIndexT& paired_index,
-                             PairedIndexT& clustered_index)
-{
-  if (cfg::get().entry_point <= ws_distance_estimation) {
-    exec_late_pair_info_count(gp, paired_index);
-    estimate_distance(gp, paired_index, clustered_index);
-    save_distance_estimation(gp, paired_index, clustered_index);
-  } else {
-    INFO("Loading Distance Estimation");
-    path::files_t used_files;
-    load_distance_estimation(gp, paired_index, clustered_index, &used_files);
-    link_files_by_prefix(used_files, cfg::get().output_saves);
-  }
-  if (cfg::get().paired_mode && cfg::get().paired_info_statistics)
-    count_estimated_info_stats(gp, paired_index, clustered_index);            // counting stats for paired index (etalon, false positives, etc.)
-}
-
+//
+//void exec_distance_estimation(conj_graph_pack& gp,
+//                             PairedIndexT& paired_index,
+//                             PairedIndexT& clustered_index)
+//{
+//  if (cfg::get().entry_point <= ws_distance_estimation) {
+//    exec_late_pair_info_count(gp, paired_index);
+//    estimate_distance(gp, paired_index, clustered_index);
+//    save_distance_estimation(gp, paired_index, clustered_index);
+//  } else {
+//    INFO("Loading Distance Estimation");
+//    path::files_t used_files;
+//    load_distance_estimation(gp, paired_index, clustered_index, &used_files);
+//    link_files_by_prefix(used_files, cfg::get().output_saves);
+//  }
+//  if (cfg::get().paired_mode && cfg::get().paired_info_statistics)
+//    count_estimated_info_stats(gp, paired_index, clustered_index);            // counting stats for paired index (etalon, false positives, etc.)
+//}
+//
 
 
 
