@@ -305,8 +305,7 @@ public :
 //TODO:: NOT SAFE FOR WORK
 	vector<EdgeId> FillGapsInCluster(vector <pair<size_t,  typename ClustersSet::iterator> > &cur_cluster, Sequence &s) {
 
-		//debug stuff
-
+//debug stuff
 		set<int> interesting_starts({7969653, 7968954, 7968260, 7965581, 7966399});
 		set<int> interesting_ends({7973410, 7972240, 7971473, 7970031, 7969246});
 
@@ -373,10 +372,12 @@ public :
 					tmp = g_.EdgeNucls(cur_edge).str();
 					e_add = tmp.substr(0, cur_first_index.edge_position);
 //					e_add = tmp.substr(cfg::get().K - 1, max(0, int(cur_first_index.edge_position) - int(cfg::get().K - 1)));
-					vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, seq_start, seq_end, s_add, e_add, debug_info);
+					pair<int, int> limits = GetPathLimits(*(prev_iter->second), *(iter->second) , s_add.length(), e_add.length());
+					vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, debug_info);
 					if (intermediate_path.size() == 0) {
 						WARN("Gap between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: "<< int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(cfg::get().K - K_ ) << " and seq "<< - seq_start + seq_end );
-						vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, seq_start, seq_end, s_add, e_add);
+//TODO:is it sitll necessary?
+						vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, debug_info);
 						return intermediate_path;
 					}
 					for(auto j_iter = intermediate_path.begin(); j_iter != intermediate_path.end(); j_iter++) {
@@ -456,7 +457,7 @@ public :
  						if (next_iter != cur_cluster.end()) {
  							INFO("splitting cluster sequences...");
  							if (g_.conjugate(iter->second->edgeId) != next_iter->second->edgeId) {
- 								WARN("interesting gap, edgeIds: " <<g_.int_id(g_.conjugate(iter->second->edgeId)) <<" " <<g_.int_id(next_iter->second->edgeId));
+ 								WARN("interesting gap, edgeIds: " <<g_.int_id(iter->second->edgeId) <<" " <<g_.int_id(next_iter->second->edgeId));
  							}
  						}
  						vector <pair<size_t,  typename ClustersSet::iterator> > splitted_cluster(cur_cluster_start, next_iter);
@@ -473,7 +474,7 @@ public :
 
 	std::pair<int, int> GetPathLimits(const KmerCluster &a, const KmerCluster &b, int s_add_len, int e_add_len){
 		int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
-		int end_pos = b.sorted_positions[a.first_trustable_index].read_position;
+		int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
 		int seq_len = -start_pos + end_pos;
 		PathStorageCallback<Graph> callback(g_);
 //TODO::something more reasonable
@@ -487,20 +488,11 @@ public :
 		path_max_len = max(path_max_len - int(s_add_len + e_add_len), 0);
 		return std::make_pair(path_min_len, path_max_len);
 	}
+
 //0 - No, 1 - Yes
 	int IsConsistent(Sequence &s, const KmerCluster &a, const KmerCluster &b) {
 		EdgeId a_edge = a.edgeId;
 		EdgeId b_edge = b.edgeId;
-//		if (a_edge == b_edge){
-//		//	return 0;
-//			for (auto a_iter = a.second.begin(); a_iter != a.second.end(); ++a_iter)
-//				for (auto b_iter = b.second.begin(); b_iter != b.second.end(); ++b_iter)
-//					if (similar(*a_iter, *b_iter) ){
-//						INFO("WTF?! Two clusters on edge " << g_.int_id(a_edge) << " have similar elements !!" );
-//						return 1;
-//					}
-//			return 0;
-//		}
 
 		VertexId start_v = g_.EdgeEnd(a_edge);
 		size_t addition = g_.length(a_edge);
@@ -588,21 +580,13 @@ public :
 		return res;
 	}
 
-	vector<EdgeId> BestScoredPath(Sequence &s, VertexId start_v, VertexId end_v, int start_pos, int end_pos, string &s_add, string &e_add, bool debug_info = false){
+	vector<EdgeId> BestScoredPath(Sequence &s, VertexId start_v, VertexId end_v, int path_min_length, int path_max_length, int start_pos, int end_pos, string &s_add, string &e_add, bool debug_info = false){
 		INFO("start and end vertices: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
-		int seq_len = -start_pos + end_pos;
+		//int seq_len = -start_pos + end_pos;
 		PathStorageCallback<Graph> callback(g_);
 //TODO::something more reasonable
-		int path_min_len = max(int(floor((seq_len  - int(cfg::get().K)) * 0.7)), 0);
-		int path_max_len = (seq_len  + int(cfg::get().K)) * 1.3;
-		if (seq_len < 0) {
-			WARN("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
-			return vector<EdgeId>(0);
-		}
-		path_min_len = max(path_min_len - int(s_add.length() + e_add.length()), 0);
-		path_max_len = max(path_max_len - int(s_add.length() + e_add.length()), 0);
-		INFO("path length limits: "<< path_min_len <<"  "<< path_max_len);
-		PathProcessor<Graph> path_processor(g_, path_min_len , path_max_len , start_v, end_v, callback);
+
+		PathProcessor<Graph> path_processor(g_, path_min_length , path_max_length , start_v, end_v, callback);
 		path_processor.Process();
 		vector<vector<EdgeId> > paths = callback.paths();
 		INFO("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());

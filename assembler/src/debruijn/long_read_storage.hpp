@@ -42,20 +42,29 @@ class LongReadStorage {
 private:
 	Graph &g_;
 	InnerIndex inner_index;
-public:
-	LongReadStorage(Graph &g):g_(g), inner_index(){
-	}
-
-	void AddPath(const vector<EdgeId> &p, int w  = 1){
+	void HiddenAddPath(const vector<EdgeId> &p, int w){
 		if (p.size() == 0 ) return;
 		for (typename set<LongReadInfo<Graph> >::iterator iter = inner_index[p[0]].begin(); iter != inner_index[p[0]].end(); ++iter) {
 			if (iter->path == p) {
-
 				iter->w += w;
-				return ;
+				return;
 			}
 		}
+
 		inner_index[p[0]].insert(LongReadInfo<Graph>(p, w));
+	}
+
+public:
+	LongReadStorage(Graph &g):g_(g), inner_index(){
+	}
+	void AddPath(const vector<EdgeId> &p, int w, bool add_rc = false){
+		HiddenAddPath(p, w);
+			if (add_rc) {
+
+			vector<EdgeId> rc_p ;
+			std::reverse_copy(p.begin(), p.end(), rc_p.begin());
+			HiddenAddPath(rc_p, w);
+		}
 	}
 
 	void DumpToFile(const string s, EdgesPositionHandler<Graph> &edge_pos){
@@ -101,8 +110,8 @@ public:
 					noncontinued ++;
 				}
 			}
-			filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
+		filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 	}
 
 
