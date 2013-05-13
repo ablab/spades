@@ -30,10 +30,6 @@ class PathGraphLabeler : public AbstractGraphLabeler<Graph> {
 
 public:
     PathGraphLabeler(Graph& g, PathContainer& paths) : base(g) {
-//      for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-//          labels_[*iter] = "";
-//      }
-
         for(size_t i = 0; i < paths.size(); ++i) {
             BidirectionalPath * path = paths.Get(i);
             for (size_t j = 0; j < path->Size(); ++j) {

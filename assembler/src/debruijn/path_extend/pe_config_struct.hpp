@@ -87,6 +87,8 @@ struct pe_config {
 
     bool improve_paired_info;
 
+    size_t split_edge_length;
+
     struct SeedSelectionT {
       std::string metric;
 
@@ -171,6 +173,7 @@ struct pe_config {
     std::string additional_contigs;
 
     bool debug_output;
+    std::string etc_dir;
 
     OutputParamsT output;
     VisualizeParamsT viz;

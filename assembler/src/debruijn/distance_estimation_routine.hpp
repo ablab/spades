@@ -67,136 +67,6 @@ void estimate_with_estimator(const Graph& graph,
   DEBUG("Info Filtered");
 }
 
-void estimate_distance(conj_graph_pack& gp, const PairedIndexT& paired_index,
-		PairedIndexT& clustered_index) {
-	using debruijn_graph::estimation_mode;
-	if (!cfg::get().developer_mode && !clustered_index.IsAttached()) {
-		clustered_index.Attach();
-		clustered_index.Init();
-	}
-
-  const debruijn_config& config = cfg::get();
-  if (config.paired_mode) {
-    INFO("STAGE == Estimating Distance");
-    double is_var = config.ds.is_var();
-    size_t delta = size_t(is_var);
-    size_t linkage_distance = size_t(config.de.linkage_distance_coeff * is_var);
-    GraphDistanceFinder<Graph> dist_finder(gp.g, config.ds.IS(), config.ds.RL(), delta);
-    size_t max_distance = size_t(config.de.max_distance_coeff * is_var);
-    boost::function<double(int)> weight_function;
-
-    if (config.est_mode == em_weighted                                        // in these cases we need a weight function
-     || config.est_mode == em_smoothing                                       // to estimate graph distances in the
-     || config.est_mode == em_extensive)                                      // histogram
-    {
-      INFO("Retaining insert size distribution for it");
-      std::map<int, size_t> insert_size_hist = config.ds.hist();
-      if (insert_size_hist.size() == 0) {
-        auto streams = paired_binary_readers(false, 0);
-        GetInsertSizeHistogram(streams, gp, config.ds.IS(), config.ds.is_var(),
-                               insert_size_hist);
-      }
-      WeightDEWrapper wrapper(insert_size_hist, config.ds.IS());
-      INFO("Weight Wrapper Done");
-      weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
-    }
-    else
-      weight_function = UnityFunction;
-
-    PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
-    if (config.ds.single_cell) {                                              // paired info normalization
-      normalizing_f = &TrivialWeightNormalization<Graph>;                     // only in the single-cell case,
-    } else {                                                                  // in the case of ``multi-cell''
-      // todo reduce number of constructor params                             // we use a trivial weight (equal to 1.)
-      PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-                                                          config.ds.IS(), config.ds.is_var(), config.ds.RL(),
-                                                          gp.k_value, config.ds.avg_coverage());
-      normalizing_f = boost::bind(&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
-                                  weight_normalizer, _1, _2, _3);
-    }
-    PairedInfoNormalizer<Graph> normalizer(normalizing_f);
-    INFO("Normalizer Done");
-
-    PairInfoWeightFilter<Graph> filter(gp.g, config.de.filter_threshold);
-    INFO("Weight Filter Done");
-    switch (config.est_mode)
-    {
-      case em_simple :
-        {
-          const AbstractDistanceEstimator<Graph>&
-              estimator =
-                  DistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
-                                              linkage_distance, max_distance);
-
-          estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
-          break;
-        }
-      case em_weighted :
-        {
-          const AbstractDistanceEstimator<Graph>&
-              estimator =
-                  WeightedDistanceEstimator<Graph>(gp.g, paired_index,
-                      dist_finder, weight_function, linkage_distance, max_distance);
-
-          estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
-          break;
-        }
-      case em_extensive :
-        {
-          const AbstractDistanceEstimator<Graph>&
-              estimator =
-                  ExtensiveDistanceEstimator<Graph>(gp.g, paired_index,
-                      dist_finder, weight_function, linkage_distance, max_distance);
-
-          estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
-          break;
-        }
-      case em_smoothing :
-        {
-          const AbstractDistanceEstimator<Graph>&
-              estimator =
-                  SmoothingDistanceEstimator<Graph>(gp.g, paired_index,
-                      dist_finder, weight_function, linkage_distance, max_distance,
-                      config.ade.threshold,
-                      config.ade.range_coeff,
-                      config.ade.delta_coeff, config.ade.cutoff,
-                      config.ade.min_peak_points,
-                      config.ade.inv_density,
-                      config.ade.percentage,
-                      config.ade.derivative_threshold);
-
-          estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
-          break;
-        }
-    }
-
-    INFO("Refining clustered pair information");                              // this procedure checks, whether index
-    RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
-    DEBUG("The refining of clustered pair information has been finished");    // if so, it resolves such conflicts.
-
-    INFO("Filling paired information");
-    PairInfoImprover<Graph> improver(gp.g, clustered_index);
-    improver.ImprovePairedInfo(config.use_multithreading, config.max_threads);
-    //save_distance_filling(gp, paired_index, clustered_index);
-
-    if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
-		FillPos(gp, gp.genome, "10");
-		FillPos(gp, !gp.genome, "11");
-		if (!cfg::get().pos.contigs_for_threading.empty()
-			&& FileExists(cfg::get().pos.contigs_for_threading)) {
-		  FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
-		}
-
-		if (!cfg::get().pos.contigs_to_analyze.empty()
-			&& FileExists(cfg::get().pos.contigs_to_analyze)) {
-		  FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
-		}
-	}
-
-  }
-}
-
-
 void estimate_distance(conj_graph_pack& gp,
                        io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                        const PairedIndexT& paired_index,
@@ -212,11 +82,11 @@ void estimate_distance(conj_graph_pack& gp,
   const debruijn_config& config = cfg::get();
   if (config.paired_mode) {
     INFO("STAGE == Estimating Distance");
-    double is_var = config.ds.is_var();
-    size_t delta = size_t(is_var);
-    size_t linkage_distance = size_t(config.de.linkage_distance_coeff * is_var);
-    GraphDistanceFinder<Graph> dist_finder(gp.g, config.ds.IS(), config.ds.RL(), delta);
-    size_t max_distance = size_t(config.de.max_distance_coeff * is_var);
+
+    size_t delta = size_t(lib.data().insert_size_deviation);
+    size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);
+    GraphDistanceFinder<Graph> dist_finder(gp.g,  lib.data().mean_insert_size, lib.data().read_length, delta);
+    size_t max_distance = size_t(config.de.max_distance_coeff * lib.data().insert_size_deviation);
     boost::function<double(int)> weight_function;
 
     if (config.est_mode == em_weighted                                        // in these cases we need a weight function

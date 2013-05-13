@@ -43,7 +43,7 @@ size_t find_max_overlaped_len(vector<PairedInfoLibraries>& libes) {
 }
 
 string get_etc_dir(const std::string& output_dir){
-	return output_dir + "path_extend/";
+	return output_dir + cfg::get().pe_params.etc_dir;
 }
 
 void debug_output_paths(ContigWriter& writer, conj_graph_pack& gp,
@@ -51,7 +51,7 @@ void debug_output_paths(ContigWriter& writer, conj_graph_pack& gp,
 		const string& name) {
 	PathInfoWriter path_writer;
 	PathVisualizer visualizer(gp.g.k());
-	string etcDir = get_etc_dir(output_dir);
+    string etcDir = get_etc_dir(output_dir);
 	if (!cfg::get().pe_params.debug_output){
 		return;
 	}
@@ -68,8 +68,8 @@ void debug_output_paths(ContigWriter& writer, conj_graph_pack& gp,
 void debug_output_edges(ContigWriter& writer, conj_graph_pack& gp,
 		const std::string& output_dir, const string& name) {
 	if (!cfg::get().pe_params.debug_output){
-			return;
-		}
+        return;
+    }
 	PathVisualizer visualizer(gp.g.k());
 	string etcDir = get_etc_dir(output_dir);
 	DEBUG("debug_output " << cfg::get().pe_params.debug_output);
@@ -80,112 +80,107 @@ void debug_output_edges(ContigWriter& writer, conj_graph_pack& gp,
 }
 
 double get_weight_threshold(PairedInfoLibraries& lib){
-	double pe_weight_threshold = cfg::get().pe_params.param_set.extension_options.select_options.weight_threshold;
-	double mp_weight_threshold = cfg::get().pe_params.param_set.mate_pair_options.select_options.weight_threshold;
-	return lib[0]->is_mate_pair_ ? mp_weight_threshold :pe_weight_threshold;
-
+	return lib[0]->is_mate_pair_ ?
+	        cfg::get().pe_params.param_set.mate_pair_options.select_options.weight_threshold :
+	        cfg::get().pe_params.param_set.extension_options.select_options.weight_threshold;
 }
 
-void resolve_repeats_pe_many_libs(size_t k, conj_graph_pack& gp,
-		vector<PairedInfoLibraries>& libes,
-		vector<PairedInfoLibraries>& scafolding_libes,
+double get_single_threshold(PairedInfoLibraries& lib){
+    return lib[0]->is_mate_pair_ ?
+            *cfg::get().pe_params.param_set.mate_pair_options.select_options.single_threshold :
+            *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
+}
+
+void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
+		vector<PairedInfoLibraries>& libs,
+		vector<PairedInfoLibraries>& scafolding_libs,
 		PathContainer& true_paths,
-		const std::string& output_dir, const std::string& contigs_name) {
+		const std::string& output_dir,
+		const std::string& contigs_name) {
 
 	INFO("Path extend repeat resolving tool started");
-	if (!cfg::get().developer_mode) {
-	    cfg::get_writable().pe_params.viz.DisableAll();
-	    cfg::get_writable().pe_params.output.DisableAll();
-	}
-	make_dir(output_dir);
-	std::string etcDir = get_etc_dir(output_dir);
-	make_dir(etcDir);
 
-	DEBUG("Using " << cfg::get().pe_params.param_set.metric << " metric");
-	INFO("Using " << libes.size() << " paird libs");
-	INFO("Scaffolder is " << (cfg::get().pe_params.param_set.scaffolder_options.on ? "on" : "off"));
+	make_dir(output_dir);
+	if (!cfg::get().developer_mode) {
+	    make_dir(get_etc_dir(output_dir));
+	}
+	const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
+
+	INFO("Using " << libs.size() << " paired libs");
+	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
+
 	ContigWriter writer(gp, gp.g.k());
 	debug_output_edges(writer, gp, output_dir, "before_resolve");
-	vector<WeightCounter*> wcs;
-	vector<WeightCounter*> scaf_wcs;
+
 	PathContainer supportingContigs;
 	if (FileExists(cfg::get().pe_params.additional_contigs)) {
 		INFO("Reading additional contigs " << cfg::get().pe_params.additional_contigs);
 		supportingContigs = CreatePathsFromContigs(gp, cfg::get().pe_params.additional_contigs);
-		writer.writePaths(supportingContigs, etcDir + "supporting_paths.fasta");
+		writer.writePaths(supportingContigs, get_etc_dir(output_dir) + "supporting_paths.fasta");
 	}
-	if (cfg::get().pe_params.param_set.metric == "read_count") {
-		for (size_t i = 0; i < libes.size(); ++i){
-			wcs.push_back(new ReadCountWeightCounter(gp.g, libes[i], get_weight_threshold(libes[i])));
-		}
-	} else if (cfg::get().pe_params.param_set.metric == "path_cover") {
-		for (size_t i = 0; i < libes.size(); ++i){
-			double pe_single_threshold = *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
-			double mp_single_threshold = *cfg::get().pe_params.param_set.mate_pair_options.select_options.single_threshold;
-			double single_threshold = libes[i][0]->is_mate_pair_ ? mp_single_threshold :pe_single_threshold;
-			wcs.push_back(new PathCoverWeightCounter(gp.g, libes[i], get_weight_threshold(libes[i]), single_threshold));
-		}
-	} else {
-		WARN("Unknown metric");
-		return;
-	}
+
+    vector<WeightCounter*> wcs;
+    vector<WeightCounter*> scaf_wcs;
+    for (size_t i = 0; i < libs.size(); ++i){
+        wcs.push_back(new PathCoverWeightCounter(gp.g, libs[i], get_weight_threshold(libs[i]), get_single_threshold(libs[i])));
+    }
+
 	vector<SimplePathExtender *> usualPEs;
 	for (size_t i = 0; i < wcs.size(); ++i){
-		wcs[i]->setNormalizeWeight(cfg::get().pe_params.param_set.normalize_weight);
-		wcs[i]->setNormalizeWightByCoverage(cfg::get().pe_params.param_set.normalize_by_coverage);
-		double mp_pr_coef = cfg::get().pe_params.param_set.mate_pair_options.select_options.priority_coeff;
-		double pe_pr_coef = cfg::get().pe_params.param_set.extension_options.select_options.priority_coeff;
-		double priory_coef = libes[i][0]->is_mate_pair_ ? mp_pr_coef : pe_pr_coef;
+		wcs[i]->setNormalizeWeight(pset.normalize_weight);
+		wcs[i]->setNormalizeWightByCoverage(pset.normalize_by_coverage);
+		double priory_coef = libs[i][0]->is_mate_pair_ ?
+		        pset.mate_pair_options.select_options.priority_coeff :
+		        pset.extension_options.select_options.priority_coeff;
 		SimpleExtensionChooser * extensionChooser = new SimpleExtensionChooser(gp.g, wcs[i], priory_coef);
-		usualPEs.push_back( new SimplePathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, extensionChooser));
+		usualPEs.push_back(new SimplePathExtender(gp.g, pset.loop_removal.max_loops, extensionChooser));
 	}
-	DEBUG("usualPE " << usualPEs.size());
+
 	GapJoiner * gapJoiner = new HammingGapJoiner(gp.g,
-				cfg::get().pe_params.param_set.scaffolder_options.min_gap_score,
-				(int) (cfg::get().pe_params.param_set.scaffolder_options.max_must_overlap
-						* gp.g.k()),
-				(int) (cfg::get().pe_params.param_set.scaffolder_options.max_can_overlap
-						* gp.g.k()),
-				cfg::get().pe_params.param_set.scaffolder_options.short_overlap);
+				pset.scaffolder_options.min_gap_score,
+				(int) (pset.scaffolder_options.max_must_overlap * gp.g.k()),
+				(int) (pset.scaffolder_options.max_can_overlap * gp.g.k()),
+				pset.scaffolder_options.short_overlap);
+
 	vector<ScaffoldingPathExtender*> scafPEs;
-	for (size_t i = 0; i < scafolding_libes.size(); ++i){
-		scaf_wcs.push_back(new ReadCountWeightCounter(gp.g, scafolding_libes[i]));
-		ScaffoldingExtensionChooser * scafExtensionChooser =
-					new ScaffoldingExtensionChooser(gp.g, scaf_wcs[i],
-							scafolding_libes[i][0]->is_mate_pair_?cfg::get().pe_params.param_set.mate_pair_options.select_options.priority_coeff : cfg::get().pe_params.param_set.extension_options.select_options.priority_coeff);
-		scafPEs.push_back(new ScaffoldingPathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, scafExtensionChooser, gapJoiner));
+	for (size_t i = 0; i < scafolding_libs.size(); ++i){
+		scaf_wcs.push_back(new ReadCountWeightCounter(gp.g, scafolding_libs[i]));
+		ScaffoldingExtensionChooser * scafExtensionChooser = new ScaffoldingExtensionChooser(gp.g, scaf_wcs[i],
+							scafolding_libs[i][0]->is_mate_pair_? pset.mate_pair_options.select_options.priority_coeff : pset.extension_options.select_options.priority_coeff);
+		scafPEs.push_back(new ScaffoldingPathExtender(gp.g, pset.loop_removal.max_loops, scafExtensionChooser, gapJoiner));
 	}
-	PathExtendResolver resolver(gp.g, k);
+
+	PathExtendResolver resolver(gp.g);
 	auto seeds = resolver.makeSimpleSeeds();
+
 	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths);
 	INFO("Long Reads supporting contigs " << true_paths.size());
-	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, longReadEC);
+	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC);
 	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs);
-	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, pdEC);
+	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC);
 	vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.push_back(pdPE);
 	all_libs.push_back(longReadPathExtender);
-	CoveringPathExtender * mainPE = new CompositePathExtender(gp.g, cfg::get().pe_params.param_set.loop_removal.max_loops, all_libs);
+	CoveringPathExtender * mainPE = new CompositePathExtender(gp.g, pset.loop_removal.max_loops, all_libs);
 
 	seeds.SortByLength();
 	INFO("Extending seeds");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
 	if (cfg::get().pe_params.output.write_overlaped_paths) {
-		writer.writePaths(paths, etcDir + "overlaped_paths.fasta");
+		writer.writePaths(paths, get_etc_dir(output_dir) + "overlaped_paths.fasta");
 	}
+
 	debug_output_paths(writer, gp, output_dir, paths, "overlaped_paths");
-    size_t max_over = find_max_overlaped_len(libes);
+    size_t max_over = find_max_overlaped_len(libs);
     resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over);
 	paths.CheckSymmetry();
+
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 	paths.SortByLength();
-//    for (size_t i = 0; i < paths.size(); ++i){
-//        paths.Get(i)->Print();
-//    }
-    paths.SortByLength();
     writer.writePaths(paths, output_dir + contigs_name);
     debug_output_paths(writer, gp, output_dir, paths, "final_paths");
+
 	INFO("Traversing tandem repeats");
     LoopTraverser loopTraverser(gp.g, paths, mainPE->GetCoverageMap(), mainPE);
 	loopTraverser.TraverseAllLoops();
@@ -204,6 +199,7 @@ void add_not_empty_lib(vector<PairedInfoLibraries>& libs, const PairedInfoLibrar
 PairedInfoLibrary* add_lib(conj_graph_pack::graph_t& g,
 		vector<PairedIndexT*>& paired_index, vector<size_t>& indexs,
 		size_t index, PairedInfoLibraries& libs) {
+
 	size_t read_length = cfg::get().ds.reads[indexs[index]].data().read_length;
 	double is = cfg::get().ds.reads[indexs[index]].data().mean_insert_size;
 	double var = cfg::get().ds.reads[indexs[index]].data().insert_size_deviation;
@@ -220,11 +216,11 @@ void delete_libs(PairedInfoLibraries& libs){
 	}
 }
 
-void set_threshold(PairedInfoLibrary* lib, size_t index) {
+void set_threshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_length) {
 	INFO("Searching for paired info threshold for lib #"
-						<< index << " (IS = " << lib->insert_size_ << ",  DEV = " << lib->is_variation_);
+						<< index << " (IS = " << lib->insert_size_ << ",  DEV = " << lib->is_variation_ << ")");
 
-	SingleThresholdFinder finder(lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_, 99);
+	SingleThresholdFinder finder(lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_, split_edge_length);
 	double threshold = finder.find_threshold(index);
 
 	INFO("Paired info threshold is " << threshold);
@@ -243,43 +239,47 @@ void add_paths_to_container(conj_graph_pack& gp, const std::vector<LongReadInfo<
 	}
 }
 
-void resolve_repeats_pe(size_t k, conj_graph_pack& gp,
+void resolve_repeats_pe(conj_graph_pack& gp,
 		vector<PairedIndexT*>& paired_index, vector<PairedIndexT*>& scaff_index,
 		vector<size_t>& indexs, const std::vector<LongReadInfo<Graph> >& true_paths,
 		const std::string& output_dir, const std::string& contigs_name) {
 
-	PairedInfoLibraries libs;
-	PairedInfoLibraries libs_mp;
-	PairedInfoLibraries scaf_libs;
-	PairedInfoLibraries scaf_libs_mp;
+    const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
+
+	PairedInfoLibraries paired_end_libs;
+	PairedInfoLibraries mate_pair_libs;
+	PairedInfoLibraries pe_scaf_libs;
+	PairedInfoLibraries mp_scaf_libs;
 
 	for (size_t i = 0; i < paired_index.size(); ++i) {
 		if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::PairedEnd) {
-			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, libs);
-			//set_threshold(lib, indexs[i]);
-			add_lib(gp.g, scaff_index, indexs, i, scaf_libs);
-		} else if (cfg::get().ds.reads[indexs[i]].type()
+			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, paired_end_libs);
+			set_threshold(lib, indexs[i], pset.split_edge_length);
+			add_lib(gp.g, scaff_index, indexs, i, pe_scaf_libs);
+		}
+		else if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::MatePairs) {
-			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, libs_mp);
-			//set_threshold(lib, indexs[i]);
-			add_lib(gp.g, scaff_index, indexs, i, scaf_libs_mp);
+			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, mate_pair_libs);
+			set_threshold(lib, indexs[i], pset.split_edge_length);
+			add_lib(gp.g, scaff_index, indexs, i, mp_scaf_libs);
 		}
 	}
-	vector<PairedInfoLibraries> libes;
-	add_not_empty_lib(libes, libs);
-	add_not_empty_lib(libes, libs_mp);
-	vector<PairedInfoLibraries> scaff_libes;
-	add_not_empty_lib(scaff_libes, scaf_libs);
-	add_not_empty_lib(scaff_libes, scaf_libs_mp);
+	vector<PairedInfoLibraries> rr_libs;
+	add_not_empty_lib(rr_libs, paired_end_libs);
+	add_not_empty_lib(rr_libs, mate_pair_libs);
+	vector<PairedInfoLibraries> scaff_libs;
+	add_not_empty_lib(scaff_libs, pe_scaf_libs);
+	add_not_empty_lib(scaff_libs, mp_scaf_libs);
 	PathContainer supportingContigs;
 	add_paths_to_container(gp, true_paths, supportingContigs);
-	resolve_repeats_pe_many_libs(k, gp, libes, scaff_libes, supportingContigs,
-			output_dir, contigs_name);
-	delete_libs(libs);
-	delete_libs(libs_mp);
-	delete_libs(scaf_libs);
-	delete_libs(scaf_libs_mp);
+
+	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name);
+
+	delete_libs(paired_end_libs);
+	delete_libs(mate_pair_libs);
+	delete_libs(pe_scaf_libs);
+	delete_libs(mp_scaf_libs);
 }
 
 

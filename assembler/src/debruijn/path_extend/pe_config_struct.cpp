@@ -132,6 +132,7 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
 
   load(p.improve_paired_info, pt,  "improve_paired_info");
 
+  load(p.split_edge_length, pt, "split_edge_length");
 
   p.seed_selection.metric = p.metric;
   p.extension_options.metric = p.metric;
@@ -158,6 +159,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bo
     p.output.DisableAll();
     p.viz.DisableAll();
   }
+  p.etc_dir = "path_extend";
 }
 
 

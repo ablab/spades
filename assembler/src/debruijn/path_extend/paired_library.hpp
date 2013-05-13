@@ -80,35 +80,6 @@ struct PairedInfoLibrary {
     	single_threshold_ = threshold;
     }
 
-
-//    void GapStat() {
-//        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-//            int total_sources = 0;
-//            int sources_wpi = 0;
-//            int sources_wpi_to_sinks = 0;
-//            int sources_wuniquepi_to_sinks = 0;
-//
-//            if (g_.OutgoingEdgeCount(g_.EdgeEnd(*iter)) == 0) {
-//                ++total_sources;
-//
-//                auto pi = index_.GetEdgeInfo(*iter);
-//                for (size_t i = 0; i < pi.size(); ++i) {
-//                    if (pi[i].first == *iter && pi[i].second != *iter && pi[i].d > 0) {
-//
-//                    }
-//                }
-//
-//                if (pi.size() > 0)
-//                    ++sources_wpi;
-//
-//
-//            }
-//
-//            INFO("Graph has " << total_sources << ", of which " << sources_wpi  << " have paired info")
-//            INFO(sources_wpi_to_sinks << " have paired info to source, of which " << sources_wuniquepi_to_sinks << " are unique");
-//        }
-//    }
-
     set<EdgeId> GetEdges(EdgeId e) {
         set<EdgeId> res;
         typedef set<Point> Histogram;

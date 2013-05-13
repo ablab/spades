@@ -215,7 +215,6 @@ public:
 
 
 
-
 struct paths_searcher_config{
     size_t max_num_vertices;
     size_t depth_neigh_search;
@@ -386,10 +385,6 @@ class SimpleMappingContig : public MappingContig{
 public:
 
     SimpleMappingContig(Sequence s, MappingPath<EdgeId> p) : seq(s), map_path(p) {}
-
-//    Sequence Seq() {
-//        return seq;
-//    }
 
     vector<EdgeId> PathSeq() {
         return map_path.simple_path().sequence();

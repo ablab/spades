@@ -19,157 +19,6 @@
 namespace path_extend {
 
 
-class OverlapRemover {
-
-protected:
-    Graph& g;
-
-    GraphCoverageMap& coverageMap;
-
-    std::set<EdgeId> multiCoveredEdges;
-
-
-    void findPathPairs(BidirectionalPath& sample, std::vector<BidirectionalPath*> * ending, std::vector<BidirectionalPath*> * starting) {
-        starting->clear();
-        ending->clear();
-
-        if (coverageMap.GetCoverage(sample) <= 1) {
-            return;
-        }
-
-        auto coveringPaths = coverageMap.GetCoveringPaths(sample);
-        for (auto iter = coveringPaths.begin(); iter != coveringPaths.end(); ++iter) {
-            if ((*iter)->StartsWith(sample)) {
-                starting->push_back(*iter);
-            }
-            else if ((*iter)->EndsWith(sample)) {
-                ending->push_back(*iter);
-            }
-        }
-    }
-
-    void cropOverlaps(std::vector<BidirectionalPath*> * ending, std::vector<BidirectionalPath*> * starting, size_t length) {
-
-//        if (ending->size() == 1 && starting->size() == 1) {
-//            DEBUG("In removing overlaps: " << ending->size() << " " << starting->size());
-//            starting->at(0)->SubPath(0, length).Print();
-//
-//            DEBUG("Ending");
-//            for (auto iter = ending->begin(); iter != ending->end(); ++iter) {
-//                (*iter)->Print();
-//            }
-//            DEBUG("Starting");
-//            for (auto iter = starting->begin(); iter != starting->end(); ++iter) {
-//                (*iter)->Print();
-//            }
-//        }
-
-        if (ending->size() <= starting->size()) {
-//            if (ending->size() > 0) {
-//                DEBUG("Removing overlap of length " << length);
-//                DEBUG("Starting paths")
-//                for (auto iter = starting->begin(); iter != starting->end(); ++iter) {
-//                    (*iter)->print();
-//                }
-//                DEBUG("Ending paths")
-//                for (auto iter = ending->begin(); iter != ending->end(); ++iter) {
-//                    (*iter)->print();
-//                }
-//            }
-
-            for (auto iter = ending->begin(); iter != ending->end(); ++iter) {
-                for (size_t i = 0; i < length; ++i) {
-                    if ((*iter)->Back() != g.conjugate((*iter)->Back())) {
-                        (*iter)->PopBack();
-                    }
-                }
-            }
-        }
-        //Removing overlaps from starting paths will be performed at RC strand
-    }
-
-
-    void JoinByOverlaps(BidirectionalPath * ending, BidirectionalPath * starting, size_t length) {
-        for (size_t i = length; i < starting->Size(); ++i) {
-            ending->PushBack(starting->At(i), starting->GapAt(i));
-        }
-
-        starting->Clear();
-    }
-
-
-    void removeOverlapsOfLength(PathContainer& paths, size_t length) {
-        std::vector<BidirectionalPath*> ending;
-        std::vector<BidirectionalPath*> starting;
-
-        for (auto iter = multiCoveredEdges.begin(); iter != multiCoveredEdges.end(); ++iter) {
-            auto coveringPaths = coverageMap.GetCoveringPaths(*iter);
-
-//            if (g.int_id(*iter) == 10087493) {
-//                DEBUG("Covering paths: " << coveringPaths.size());
-//
-//                for (auto pathIter = coveringPaths.begin(); pathIter != coveringPaths.end(); ++pathIter) {
-//                    (*pathIter)->Print();
-//                }
-//            }
-
-            for (auto pathIter = coveringPaths.begin(); pathIter != coveringPaths.end(); ++pathIter) {
-                if ((*pathIter)->Size() > length && (*pathIter)->At(length - 1) == *iter) {
-                    BidirectionalPath sample = (*pathIter)->SubPath(0, length);
-                    findPathPairs(sample, &starting, &ending);
-                    cropOverlaps(&starting, &ending, length);
-                }
-
-                if ((*pathIter)->Size() > length && (*pathIter)->ReverseAt(length - 1) == *iter) {
-                    BidirectionalPath sample = (*pathIter)->SubPath((*pathIter)->Size() - length);
-                    findPathPairs(sample, &starting, &ending);
-                    cropOverlaps(&starting, &ending, length);
-                }
-            }
-        }
-    }
-
-    void updateMultiCoveredEdges() {
-        for (auto iter = multiCoveredEdges.begin(); iter != multiCoveredEdges.end(); ) {
-            auto next = iter;
-            ++next;
-            if (coverageMap.GetCoverage(*iter) <= 1) {
-                multiCoveredEdges.erase(iter);
-            }
-            iter = next;
-        }
-    }
-
-
-public:
-    OverlapRemover(Graph& g_, GraphCoverageMap& cm): g(g_), coverageMap(cm), multiCoveredEdges() {
-        for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (coverageMap.GetCoverage(*iter) > 1) {
-                multiCoveredEdges.insert(*iter);
-            }
-        }
-    }
-
-    void removeOverlaps(PathContainer& paths) {
-        if (paths.size() == 0) {
-            return;
-        }
-
-        size_t maxLen = paths.Get(0)->Size();
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (iter.get()->Size() > maxLen) {
-                maxLen = iter.get()->Size();
-            }
-        }
-
-        for (size_t i = 1; i < maxLen; ++i) {
-            removeOverlapsOfLength(paths, i);
-            updateMultiCoveredEdges();
-        }
-    }
-
-};
-
 class SimpleOverlapRemover {
 
 protected:
@@ -178,7 +27,7 @@ protected:
 	GraphCoverageMap& coverageMap;
 
 private:
-	void ComparePathes(int startPosition1, int startPosition2, int& other_path_last_pos, int& this_path_last_pos, BidirectionalPath& first, BidirectionalPath& second, vector<int>& result){
+	void ComparePaths(int startPosition1, int startPosition2, int& other_path_last_pos, int& this_path_last_pos, BidirectionalPath& first, BidirectionalPath& second, vector<int>& result){
 		int end_position = startPosition1;
 		other_path_last_pos = startPosition2;
 		this_path_last_pos = end_position;
@@ -204,7 +53,7 @@ private:
 		}
 	}
 
-	bool isPathDifferent(BidirectionalPath* currentPath, vector<int> second_path_poses, int this_path_first_pos, int this_path_last_pos, int maxOverlapLength) {
+	bool IsPathDifferent(BidirectionalPath* currentPath, vector<int> second_path_poses, int this_path_first_pos, int this_path_last_pos, int maxOverlapLength) {
 		int diffLen = 0;
 		for (int i = this_path_first_pos; i <= this_path_last_pos; ++i) {
 			if (second_path_poses[i] == -1) {
@@ -297,13 +146,13 @@ public:
 						int path2_last = secondPath->FindFirst(*edge);
 						int path1_last = positions[index_in_posis];
 						vector<int> other_path_end;
-						ComparePathes(path1_last, path2_last, path2_last, path1_last, *currentPath, *secondPath, other_path_end);
+						ComparePaths(path1_last, path2_last, path2_last, path1_last, *currentPath, *secondPath, other_path_end);
 						BidirectionalPath* conj_current = paths.FindConjugate(currentPath);
 						BidirectionalPath* conj_second = paths.FindConjugate(secondPath);
 						int path1_first = conj_current->Size() - positions[index_in_posis] - 1;
 						int path2_first  = secondPath->Size() - secondPath->FindFirst(*edge) - 1;
 						vector<int> other_path_start_temp;
-						ComparePathes(path1_first, path2_first, path2_first, path1_first, *conj_current, *conj_second, other_path_start_temp);
+						ComparePaths(path1_first, path2_first, path2_first, path1_first, *conj_current, *conj_second, other_path_start_temp);
 						vector<int> other_path_start;
 						for(size_t i = 0; i < other_path_start_temp.size(); ++i){
 							other_path_start.push_back( other_path_start_temp[i] < 0 ?  other_path_start_temp[i] : conj_second->Size() - other_path_start_temp[i] - 1);
@@ -314,7 +163,7 @@ public:
 						other_path_start.pop_back();
 						other_path_start.insert(other_path_start.end(), other_path_end.begin(), other_path_end.end());
 						DEBUG("path1 begin "<< path1_first<< " path1 end "<<path1_last << " path2_begin " << path2_first << " path2_end " << path2_last);
-						bool different = isPathDifferent(currentPath, other_path_start, path1_first, path1_last, maxOverlapLength);
+						bool different = IsPathDifferent(currentPath, other_path_start, path1_first, path1_last, maxOverlapLength);
 						if (different){
 							DEBUG("different");
 							continue;
@@ -407,10 +256,129 @@ public:
 };
 
 
-class PathExtendResolver {
+// Old one
+
+class OverlapRemover {
 
 protected:
     Graph& g;
+
+    GraphCoverageMap& coverageMap;
+
+    std::set<EdgeId> multiCoveredEdges;
+
+
+    void findPathPairs(BidirectionalPath& sample, std::vector<BidirectionalPath*> * ending, std::vector<BidirectionalPath*> * starting) {
+        starting->clear();
+        ending->clear();
+
+        if (coverageMap.GetCoverage(sample) <= 1) {
+            return;
+        }
+
+        auto coveringPaths = coverageMap.GetCoveringPaths(sample);
+        for (auto iter = coveringPaths.begin(); iter != coveringPaths.end(); ++iter) {
+            if ((*iter)->StartsWith(sample)) {
+                starting->push_back(*iter);
+            }
+            else if ((*iter)->EndsWith(sample)) {
+                ending->push_back(*iter);
+            }
+        }
+    }
+
+    void cropOverlaps(std::vector<BidirectionalPath*> * ending, std::vector<BidirectionalPath*> * starting, size_t length) {
+        if (ending->size() <= starting->size()) {
+            for (auto iter = ending->begin(); iter != ending->end(); ++iter) {
+                for (size_t i = 0; i < length; ++i) {
+                    if ((*iter)->Back() != g.conjugate((*iter)->Back())) {
+                        (*iter)->PopBack();
+                    }
+                }
+            }
+        }
+        //Removing overlaps from starting paths will be performed at RC strand
+    }
+
+
+    void JoinByOverlaps(BidirectionalPath * ending, BidirectionalPath * starting, size_t length) {
+        for (size_t i = length; i < starting->Size(); ++i) {
+            ending->PushBack(starting->At(i), starting->GapAt(i));
+        }
+
+        starting->Clear();
+    }
+
+
+    void removeOverlapsOfLength(PathContainer& paths, size_t length) {
+        std::vector<BidirectionalPath*> ending;
+        std::vector<BidirectionalPath*> starting;
+
+        for (auto iter = multiCoveredEdges.begin(); iter != multiCoveredEdges.end(); ++iter) {
+            auto coveringPaths = coverageMap.GetCoveringPaths(*iter);
+
+            for (auto pathIter = coveringPaths.begin(); pathIter != coveringPaths.end(); ++pathIter) {
+                if ((*pathIter)->Size() > length && (*pathIter)->At(length - 1) == *iter) {
+                    BidirectionalPath sample = (*pathIter)->SubPath(0, length);
+                    findPathPairs(sample, &starting, &ending);
+                    cropOverlaps(&starting, &ending, length);
+                }
+
+                if ((*pathIter)->Size() > length && (*pathIter)->ReverseAt(length - 1) == *iter) {
+                    BidirectionalPath sample = (*pathIter)->SubPath((*pathIter)->Size() - length);
+                    findPathPairs(sample, &starting, &ending);
+                    cropOverlaps(&starting, &ending, length);
+                }
+            }
+        }
+    }
+
+    void updateMultiCoveredEdges() {
+        for (auto iter = multiCoveredEdges.begin(); iter != multiCoveredEdges.end(); ) {
+            auto next = iter;
+            ++next;
+            if (coverageMap.GetCoverage(*iter) <= 1) {
+                multiCoveredEdges.erase(iter);
+            }
+            iter = next;
+        }
+    }
+
+
+public:
+    OverlapRemover(Graph& g_, GraphCoverageMap& cm): g(g_), coverageMap(cm), multiCoveredEdges() {
+        for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+            if (coverageMap.GetCoverage(*iter) > 1) {
+                multiCoveredEdges.insert(*iter);
+            }
+        }
+    }
+
+    void removeOverlaps(PathContainer& paths) {
+        if (paths.size() == 0) {
+            return;
+        }
+
+        size_t maxLen = paths.Get(0)->Size();
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            if (iter.get()->Size() > maxLen) {
+                maxLen = iter.get()->Size();
+            }
+        }
+
+        for (size_t i = 1; i < maxLen; ++i) {
+            removeOverlapsOfLength(paths, i);
+            updateMultiCoveredEdges();
+        }
+    }
+
+};
+
+
+class PathExtendResolver {
+
+protected:
+    Graph& g_;
     size_t k_;
 
     bool isEdgeSuitable(EdgeId e, double minEdgeCoverage = 0.0) {
@@ -420,24 +388,24 @@ protected:
 //                cfg::get().pe_params.param_set.seed_selection.max_len :
 //                -cfg::get().pe_params.param_set.seed_selection.max_len * (int) cfg::get().K;*/
 
-        return math::ge(g.coverage(e), minEdgeCoverage) &&
+        return math::ge(g_.coverage(e), minEdgeCoverage) &&
                 !(cfg::get().pe_params.param_set.seed_selection.exclude_chimeric /*&& len >= cfg::get().pe_params.param_set.seed_selection.min_len && len <= max_len*/);
     }
 
 public:
-    PathExtendResolver(Graph& g_, size_t k): g(g_), k_(k) {
+    PathExtendResolver(Graph& g): g_(g), k_(g.k()) {
     }
 
     PathContainer ReturnEdges(double minEdgeCoverage){
         std::set<EdgeId> included;
         PathContainer edges;
         size_t count = 0;
-        for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0 && isEdgeSuitable(*iter, minEdgeCoverage)) {
                 count ++;
-                edges.AddPair(new BidirectionalPath(g, *iter), new BidirectionalPath(g, g.conjugate(*iter)));
+                edges.AddPair(new BidirectionalPath(g_, *iter), new BidirectionalPath(g_, g_.conjugate(*iter)));
                 included.insert(*iter);
-                included.insert(g.conjugate(*iter));
+                included.insert(g_.conjugate(*iter));
             }
         }
         return edges;
@@ -447,13 +415,13 @@ public:
 		std::set<EdgeId> included;
 		PathContainer edges;
 		size_t count = 0;
-		for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 			if (included.count(*iter) == 0 && isEdgeSuitable(*iter, minEdgeCoverage)) {
 				count ++;
 				if (!InCycle(*iter) and !InBuble(*iter)) {
-					edges.AddPair(new BidirectionalPath(g, *iter), new BidirectionalPath(g, g.conjugate(*iter)));
+					edges.AddPair(new BidirectionalPath(g_, *iter), new BidirectionalPath(g_, g_.conjugate(*iter)));
 					included.insert(*iter);
-					included.insert(g.conjugate(*iter));
+					included.insert(g_.conjugate(*iter));
 				}
 			}
 		}
@@ -462,10 +430,10 @@ public:
 
     bool InCycle(EdgeId e)
     {
-    	auto edges = g.OutgoingEdges(g.EdgeEnd(e));
+    	auto edges = g_.OutgoingEdges(g_.EdgeEnd(e));
     	if (edges.size() >= 1) {
 			for (auto it = edges.begin(); it != edges.end();  ++ it) {
-				if (g.EdgeStart(e) == g.EdgeEnd(*it)) {
+				if (g_.EdgeStart(e) == g_.EdgeEnd(*it)) {
 				   return true;
 				}
 			}
@@ -474,10 +442,10 @@ public:
     }
 
     bool InBuble(EdgeId e){
-    	auto edges = g.OutgoingEdges(g.EdgeStart(e));
-    	auto endVertex = g.EdgeEnd(e);
+    	auto edges = g_.OutgoingEdges(g_.EdgeStart(e));
+    	auto endVertex = g_.EdgeEnd(e);
     	for (auto it = edges.begin(); it != edges.end(); ++it){
-    		if ((g.EdgeEnd(*it) == endVertex) and (*it != e)){
+    		if ((g_.EdgeEnd(*it) == endVertex) and (*it != e)){
     			return true;
     		}
     	}
@@ -494,15 +462,15 @@ public:
     PathContainer makeSimpleSeeds() {
 		std::set<EdgeId> included;
 		PathContainer edges;
-		for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-			if (g.int_id(*iter) <= 0 or InCycle(*iter)) {
+		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			if (g_.int_id(*iter) <= 0 or InCycle(*iter)) {
 				continue;
 			}
 			if (included.count(*iter) == 0) {
-				edges.AddPair(new BidirectionalPath(g, *iter),
-						new BidirectionalPath(g, g.conjugate(*iter)));
+				edges.AddPair(new BidirectionalPath(g_, *iter),
+						new BidirectionalPath(g_, g_.conjugate(*iter)));
 				included.insert(*iter);
-				included.insert(g.conjugate(*iter));
+				included.insert(g_.conjugate(*iter));
 			}
 		}
 		return edges;
@@ -515,7 +483,7 @@ public:
     }
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverageMap, size_t maxOverlapedSize) {
-        SimpleOverlapRemover overlapRemover(g, coverageMap);
+        SimpleOverlapRemover overlapRemover(g_, coverageMap);
         INFO("Removing overlaps");
         overlapRemover.removeOverlaps(paths);
         DEBUG("remove equals paths");
@@ -525,11 +493,11 @@ public:
 
     void addUncoveredEdges(PathContainer& paths, GraphCoverageMap& coverageMap) {
         std::set<EdgeId> included;
-        for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0 && !coverageMap.IsCovered(*iter)) {
-                paths.AddPair(new BidirectionalPath(g, *iter), new BidirectionalPath(g, g.conjugate(*iter)));
+                paths.AddPair(new BidirectionalPath(g_, *iter), new BidirectionalPath(g_, g_.conjugate(*iter)));
                 included.insert(*iter);
-                included.insert(g.conjugate(*iter));
+                included.insert(g_.conjugate(*iter));
             }
         }
     }
