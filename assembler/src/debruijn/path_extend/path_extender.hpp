@@ -612,7 +612,7 @@ public:
         size_t current = 0;
 
         while (current < extenders_.size()) {
-        	INFO("step " << current << " from " <<extenders_.size());
+        	DEBUG("step " << current << " from " <<extenders_.size());
             if (extenders_[current]->MakeGrowStep(path)) {
                 return true;
             }
@@ -664,7 +664,7 @@ public:
                 loopResolver_.ResolveShortLoop(path);
             }
         } else if (candidates.size() >= 1){
-        	INFO("MORE 1 CANDIDATE");
+        	DEBUG("MORE 1 CANDIDATE");
         }
         return result;
     }

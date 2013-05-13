@@ -1,6 +1,6 @@
 ; output options
 
-debug_output			true
+debug_output			    false
 
 output {
 	write_seeds             true

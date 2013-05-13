@@ -84,7 +84,7 @@ estimation_mode simple
 cut_bad_connections false
 
 ; repeat resolving mode (none split path_extend combined rectangles)
-resolving_mode split
+resolving_mode path_extend
 
 use_scaffolder  true
 mask_all	true

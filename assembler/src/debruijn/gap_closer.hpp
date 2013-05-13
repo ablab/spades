@@ -507,6 +507,7 @@ void CloseGaps(conj_graph_pack& gp) {
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
      if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
          lib_index = i;
+         break;
      }
   }
   if (cfg::get().use_multithreading) {
