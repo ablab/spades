@@ -256,7 +256,7 @@ protected:
     void RemoveTrivialAndCommon(BidirectionalPath& path, EdgeId first, EdgeId second){
     	RemoveTrivial(path);
     	for (size_t index = 0; index < path.Size(); ++index){
-    		EdgeId current_edge = path.At(index);
+//    		EdgeId current_edge = path.At(index);
     		bool first_exist = wc_->PairInfoExist(path[index], first, path.LengthAt(index));
     		bool second_exist = wc_->PairInfoExist(path[index], second, path.LengthAt(index));
     		if (first_exist and second_exist){

@@ -129,7 +129,7 @@ public:
 
         INFO("Writing contigs to " << filename);
         osequencestream_with_data_for_scaffold oss(filename);
-        int i = 0;
+//        int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
 
         	if (iter.get()->Length() < k_){

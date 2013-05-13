@@ -16,13 +16,10 @@
 class PacBioAligner{
 public:
 
-
-protected :
-	conj_graph_pack &gp_;
-	size_t k_test_;
 private:
 
-
+	conj_graph_pack &gp_;
+	size_t k_test_;
 	DECL_LOGGER("PacIndex")
 
 public :
@@ -41,7 +38,7 @@ public :
 	    int nongenomic_edges = 0;
 	    int total_length = 0;
 	    int tlen = 0;
-	    LongReadStorage<Graph> long_reads(gp_.g);
+	    PathStorage<Graph> long_reads(gp_.g);
 //	    long_reads.LoadFromFile("long_reads.mpr");
 //	    INFO("dumping back");
 //	    long_reads.DumpToFile("long_reads2.mpr", gp_.edge_pos);
@@ -73,12 +70,6 @@ public :
 		INFO("Mean subread length: " << tlen * 0.1/ (genomic_subreads + nongenomic_subreads + nongenomic_edges))
 		INFO("reads with rc edges:  " << rc_pairs);
 		INFO("Genomic/nongenomic subreads/nongenomic edges: "<<genomic_subreads <<" / " << nongenomic_subreads <<" / "<< nongenomic_edges);
-	//	INFO("profile:")
-	//	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
-	//		if (iter->first < 100) {
-	//			INFO(iter->first <<" :  "<< iter->second);
-	//		}
-
 		INFO("different edges profile:")
 		for (auto iter = different_edges_profile.begin(); iter != different_edges_profile.end(); ++iter)
 			if (iter->first < 100) {
@@ -92,13 +83,13 @@ public :
 				(gp_.g.IsDeadStart(gp_.g.EdgeStart(first)) && gp_.g.IsDeadEnd(gp_.g.EdgeEnd(second))));
 	}
 
-	void ProcessReadsBatch(std::vector<ReadStream::read_type>& reads, PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index, LongReadStorage<Graph>& long_reads, size_t buf_size, int& genomic_subreads, int& nongenomic_subreads, int& nongenomic_edges, int& total_length,int& tlen, size_t& n, map<int, int>& different_edges_profile, int& rc_pairs){
+	void ProcessReadsBatch(std::vector<ReadStream::read_type>& reads, PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index, PathStorage<Graph>& long_reads, size_t buf_size, int& genomic_subreads, int& nongenomic_subreads, int& nongenomic_edges, int& total_length,int& tlen, size_t& n, map<int, int>& different_edges_profile, int& rc_pairs){
 		omp_lock_t tmp_file_output;
 		omp_init_lock(&tmp_file_output);
 	    ofstream filestr("pacbio_mapped.mpr", ofstream::app);
 
 //		LongReadStorage<Graph> long_reads_by_thread[cfg::get().max_threads];
-		vector<LongReadStorage<Graph>> long_reads_by_thread(cfg::get().max_threads, LongReadStorage<Graph>(gp_.g));
+		vector<PathStorage<Graph>> long_reads_by_thread(cfg::get().max_threads, PathStorage<Graph>(gp_.g));
 	    vector<map<pair<EdgeId, EdgeId>, int> >  gaps(cfg::get().max_threads);
 
 //		for (size_t i = 0; i < cfg::get().max_threads; i++){
@@ -114,14 +105,6 @@ public :
 			Sequence seq(reads[i].sequence());
 			total_length += seq.size();
 		    auto location_map = pac_index.GetClusters(seq);
-		    //	    size_t res_count = pac_index.Count(seq);
-		    //	    if (profile.find(res_count) == profile.end())
-		    //	    	profile.insert(make_pair(res_count, 0));
-		    //	    profile[res_count] ++;
-		    //	    if (res_count != 0){
-		    //	    	DEBUG(read.sequence());
-		    //	    	DEBUG(res_count);
-		    //	    }
 		    different_edges_profile[location_map.size()]++;
 		    n++;
 //		    if (location_map.size() <= 1){
@@ -146,6 +129,7 @@ public :
 		    auto aligned_edges = pac_index.GetReadAlignment(seq);
 		    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
 		    	for(auto j_iter = iter + 1; j_iter != aligned_edges.end(); ++ j_iter) {
+
 		    		if (iter->size() == 1 && j_iter->size() == 1  &&  gp_.g.conjugate((*iter)[0]) != (*j_iter)[0]) {
 		    			auto first = (*iter)[0];
 		    			auto second = (*j_iter)[j_iter->size() - 1];
@@ -159,12 +143,13 @@ public :
 		    			if (TopologyGap(first, second)) {
 		    				WARN("suspicious, that  gap is near: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
 			    			gaps[thread_num][tmp] ++;
-
 		    			}
 		    			else {
 		    				WARN("two independent edges, not dead-end: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
 			    			gaps[thread_num][tmp] --;
 		    			}
+		    			if (iter->size() == 1 && j_iter->size() == 1)
+		    				continue;
 		    			first = (*iter)[iter->size()-1];
 		    			second = (*j_iter)[0];
 		    			if (first <  second) {
@@ -238,8 +223,11 @@ public :
 			for(auto iter = gaps[i].begin(); iter != gaps[i].end(); ++ iter)
 				gaps_merged[iter->first] +=iter->second;
 		}
-		for(auto iter = gaps_merged.begin(); iter != gaps_merged.end(); ++ iter)
+		for(auto iter = gaps_merged.begin(); iter != gaps_merged.end(); ++ iter) {
+			if (abs(iter->second) == 1)
+				continue;
 			filestr<<"Gap: "<< gp_.g.int_id(iter->first.first) << " " << gp_.g.int_id(iter->first.second ) << " weight  "<< iter->second<<"\n";
+		}
 		filestr.close();
 	}
 

@@ -87,8 +87,8 @@ private:
 		double pi_norm1_aver = lib->get_all_norm_pi_aver(pi.first, true);
 		double pi_norm2_aver = lib->get_all_norm_pi_aver(pi.second, false);
 		double test1 = w / ideal_pi;
-		double test2 = (w / ideal_pi) / min(pi1, pi2);
-		double test3 = (w / ideal_pi) / min(pi_norm1, pi_norm2);
+//		double test2 = (w / ideal_pi) / min(pi1, pi2);
+//		double test3 = (w / ideal_pi) / min(pi_norm1, pi_norm2);
 		double test4 = test1 / min(pi_norm1_aver, pi_norm2_aver);
 		ss << pref << " " << (w / ideal_pi) << " " << w << " " << ideal_pi
 				<< " " << gp.g.str(pi.first) << " " << gp.g.str(pi.second)<<

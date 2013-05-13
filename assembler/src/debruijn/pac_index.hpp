@@ -9,66 +9,27 @@
 #include "debruijn_kmer_index.hpp"
 #include "graph_pack.hpp"
 #include <algorithm>
-
+#include "pacbio_read_structures.hpp"
 
 //TODO: dangerousCode
-template<class T>
-struct pair_iterator_less {
-    bool operator ()(pair<size_t, T>const& a, pair<size_t, T> const& b) const {
-    	if (a.first < b.first)
-    		return true;
-    	else
-    		return false;
-    }
-};
 
-
-struct MappingInstance {
-	int edge_position;
-	int read_position;
-	//Now - multiplicity, so best quality is 1,
-	int quality;
-	MappingInstance(int edge_position, int read_position, int quality): edge_position(edge_position), read_position(read_position), quality(quality) {}
-	inline bool IsUnique() const{
-		return (quality == 1);
-	}
-	string str(){
-		stringstream s;
-		s << "E: "<< edge_position << " R: " << read_position << " Q: " << quality;
-		return s.str();
-	}
-	bool operator < ( MappingInstance const& b) const {
-		if (edge_position< b.edge_position  || (edge_position == b.edge_position && read_position< b.read_position))
-			return true;
-		else
-			return false;
-	}
-};
-
-struct ReadPositionComparator{
-    bool operator ()(MappingInstance const& a, MappingInstance const& b) const {
-    	if (a.read_position< b.read_position  || (a.read_position == b.read_position && a.edge_position< b.edge_position))
-    		return true;
-    	else
-    		return false;
-    }
-};
-
-
+template<class Graph>
 struct KmerCluster {
 	int last_trustable_index;
 	int first_trustable_index;
-	Graph::EdgeId edgeId;
+	typename Graph::EdgeId edgeId;
 	vector<MappingInstance> sorted_positions;
 	int size;
+
 	KmerCluster( EdgeId e, vector<MappingInstance>& v){
 		last_trustable_index = 0;
 		first_trustable_index = 0;
 		edgeId = e;
 		size = v.size();
 		sorted_positions = v;
-		fillTrustableIndeces();
+		FillTrustableIndeces();
 	}
+
     bool operator < (const KmerCluster & b) const {
 		if (edgeId < b.edgeId  || (edgeId == b.edgeId && sorted_positions < b.sorted_positions))
 			return true;
@@ -76,7 +37,7 @@ struct KmerCluster {
 			return false;
 	}
 
-	void fillTrustableIndeces(){
+	void FillTrustableIndeces(){
 		//ignore non-unique kmers for distance determination
 		int first_unique_ind = 0;
 		while (first_unique_ind != size - 1  && ! (sorted_positions[first_unique_ind].IsUnique())) {
@@ -89,24 +50,23 @@ struct KmerCluster {
 		last_trustable_index = last_unique_ind;
 		first_trustable_index = first_unique_ind;
 	}
-
 };
 
 template<class Graph>
 struct MappingDescription {
 
 };
+
 template<class Graph>
 class PacBioMappingIndex{
 public:
-
 	typedef map<typename Graph::EdgeId, vector<MappingInstance > > MappingDescription;
-//	typedef map<typename Graph::EdgeId, set<vector<MappingInstance > > > MappingClustersDescription;
 	typedef pair<typename Graph::EdgeId, vector<MappingInstance > >   ClusterDescription;
-//	typedef set<ClusterDescription> ClustersSet;
-	typedef set<KmerCluster> ClustersSet;
+	typedef set<KmerCluster<Graph> > ClustersSet;
 	typedef typename Graph::VertexId VertexId;
-protected :
+	typedef typename Graph::EdgeId EdgeId;
+
+private:
 	Graph &g_;
 	size_t K_;
 	const static int short_edge_cutoff = 0;
@@ -116,25 +76,20 @@ protected :
 	set<Sequence> banned_kmers;
 	DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
 	map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;
-//	MappingDescription BanUselessMapping(MappingDescription res){
-//
-//	}
-private:
 	DECL_LOGGER("PacIndex")
 
 public :
-	typedef typename Graph::EdgeId EdgeId;
-
+	MappingDescription Locate(Sequence &s);
+//TODO:: place for tmp_index
 	PacBioMappingIndex(Graph &g, size_t k):g_(g), K_(k), tmp_index(K_, "tmp") {
 		DeBruijnEdgeMultiIndexBuilder<runtime_k::RtSeq> builder;
 		builder.BuildIndexFromGraph<typename Graph::EdgeId, Graph>(tmp_index, g_);
-		fill_banned_kmers();
+		FillBannedKmers();
 		compression_cutoff = 0.6;
 		domination_cutoff = 1.5;
-
 	}
-	void fill_banned_kmers(){
 
+	void FillBannedKmers(){
 		for (int i = 0; i < 4; i++){
 			auto base = nucl(i);
 			for (int j = 0; j < 4 ; j ++) {
@@ -147,16 +102,12 @@ public :
 						else
 							s += other;
 					}
-//					banned_kmers.insert(runtime_k::RtSeq(Sequence(s).start<runtime_k::RtSeq>(K_)));
 					banned_kmers.insert(Sequence(s));
 				}
 			}
 		}
-
 	}
-	MappingDescription Locate(Sequence &s);
 
-//for pairs of indexes on  edge and in Sequence.
 	inline bool similar(const MappingInstance &a, const MappingInstance &b, int shift = 0) const{
 		if (b.read_position + shift < a.read_position) {
 			return similar(b, a, -shift);
@@ -192,18 +143,6 @@ public :
 					vector<MappingInstance > to_add;
 					to_add.push_back(iter->second[i]);
 					dfs_cluster(used, to_add, i, iter);
-//					for (size_t  j = i+ 1; j < len; j++) {
-//						if (!used[j] && similar(iter->second[i], iter->second[j]) ) {
-//							to_add.push_back(iter->second[j]);
-//							used[j] = 1;
-//							for(size_t k = 0; k < len; k++) {
-//								if (!used[k] && similar(iter->second[j], iter->second[k])) {
-//									to_add.push_back(iter->second[k]);
-//									used[k] = 1;
-//								}
-//							}
-//						}
-//					}
 					sort(to_add.begin(), to_add.end(), ReadPositionComparator());
 					size_t count = 1;
 					size_t longest_len = 0;
@@ -212,7 +151,7 @@ public :
 					size_t j = 0;
 					for (auto j_iter = to_add.begin(); j_iter < to_add.end()- 1; j_iter ++, j++ ) {
 //Do not spilt clusters in the middle, only beginning is interesting.
-						if ((j* 5< to_add.size() || (j + 1 )*5 > to_add.size() * 4 ) && !similar(*j_iter, *(j_iter + 1))){
+						if ((j * 5 < to_add.size() || (j + 1 ) * 5 > to_add.size() * 4 ) && !similar(*j_iter, *(j_iter + 1))){
 							if (longest_len < count) {
 								longest_len = count;
 								best_start = cur_start;
@@ -227,12 +166,11 @@ public :
 						longest_len = count;
 						best_start = cur_start;
 					}
-
 					vector<MappingInstance > filtered(best_start, best_start + longest_len);
 					if (count < to_add.size() && to_add.size() > min_cluster_size) {
 						DEBUG("in cluster size " << to_add.size() << ", " << to_add.size() - longest_len<<"were removed as trash")
 					}
-					res.insert(KmerCluster(iter->first, filtered));
+					res.insert(KmerCluster<Graph>(iter->first, filtered));
 				}
 			}
 		}
@@ -292,7 +230,7 @@ public :
 	}
 
 	//TODO:: non strictly dominates?
-	inline bool dominates (const KmerCluster &a, const KmerCluster &b) const{
+	inline bool dominates (const KmerCluster<Graph> &a, const KmerCluster<Graph> &b) const{
 		size_t a_size = a.size;
 		size_t b_size = b.size;
 		if (a_size < b_size * domination_cutoff || a.first_trustable_index > b.first_trustable_index || a.last_trustable_index < b.last_trustable_index) {
@@ -304,11 +242,9 @@ public :
 
 //TODO:: NOT SAFE FOR WORK
 	vector<EdgeId> FillGapsInCluster(vector <pair<size_t,  typename ClustersSet::iterator> > &cur_cluster, Sequence &s) {
-
 //debug stuff
 		set<int> interesting_starts({7969653, 7968954, 7968260, 7965581, 7966399});
 		set<int> interesting_ends({7973410, 7972240, 7971473, 7970031, 7969246});
-
 		vector<EdgeId> cur_sorted;
 		EdgeId prev_edge = EdgeId(0);
 		if (cur_cluster.size() > 1) {
@@ -323,46 +259,19 @@ public :
 //Need to find sequence of edges between clusters
 				VertexId start_v = g_.EdgeEnd(prev_edge);
 				VertexId end_v = g_.EdgeStart(cur_edge);
-
-				//TODO: || (start_v == end_v && some condition on indexes)
-
 				auto prev_iter = iter - 1;
 
 				bool debug_info = false;
 				if (interesting_starts.find(g_.int_id(prev_edge)) != interesting_starts.end() && interesting_ends.find(g_.int_id(cur_edge)) != interesting_ends.end())
 					debug_info = true;
-//ignore non-unique kmers for distance determination
-//				auto first_unique_iter = (iter->second->sorted_positions.begin());
-//				while (first_unique_iter != (iter->second->sorted_positions.end() - 1)  && !first_unique_iter->IsUnique()) {
-//					first_unique_iter += 1;
-//				}
-//
-//				auto last_unique_iter = (prev_iter->second->sorted_positions.end() - 1);
-//				while (last_unique_iter != (iter->second->sorted_positions.begin())  && !last_unique_iter->IsUnique()) {
-//					last_unique_iter -= 1;
-//				}
-//				MappingInstance cur_first_index = *first_unique_iter;
-//				MappingInstance prev_last_index = *(last_unique_iter);
-
 				MappingInstance cur_first_index = iter->second->sorted_positions[iter->second->first_trustable_index];
 				MappingInstance prev_last_index = prev_iter->second->sorted_positions[prev_iter->second->last_trustable_index];
 
-//				MappingInstance prev_last_index = *(last_unique_iter);
-
-
 //TODO: reasonable constant?
 				if (start_v != end_v || (start_v == end_v && (cur_first_index.read_position - prev_last_index.read_position) > (cur_first_index.edge_position + g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
-
 					INFO("closing gap between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
-					//MappingInstance cur_first_index = *(iter->second->second.begin());
-
 					INFO (" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
-
-
-					//MappingInstance prev_last_index = *(prev_iter->second->second.end()-1);
 					INFO (" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
-//					int seq_end = cur_first_index.second - cur_first_index.edge_position  + cfg::get().K;
-//					int seq_start = prev_last_index.second - prev_last_index.edge_position + g_.length(prev_edge) ;
 					string s_add = "";
 					string e_add = "";
 					int seq_end = cur_first_index.read_position;
@@ -371,7 +280,6 @@ public :
 					s_add =  tmp.substr(prev_last_index.edge_position, g_.length(prev_edge) - prev_last_index.edge_position);
 					tmp = g_.EdgeNucls(cur_edge).str();
 					e_add = tmp.substr(0, cur_first_index.edge_position);
-//					e_add = tmp.substr(cfg::get().K - 1, max(0, int(cur_first_index.edge_position) - int(cfg::get().K - 1)));
 					pair<int, int> limits = GetPathLimits(*(prev_iter->second), *(iter->second) , s_add.length(), e_add.length());
 					vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, debug_info);
 					if (intermediate_path.size() == 0) {
@@ -447,7 +355,6 @@ public :
 						used[j] = 1;
 					}
 				}
-//TODO: check than consequent clusters are consistent!
  				sort(cur_cluster.begin(), cur_cluster.end(), pair_iterator_less<typename ClustersSet::iterator>());
  				VERIFY(cur_cluster.size() > 0);
  				auto cur_cluster_start = cur_cluster.begin();
@@ -472,7 +379,7 @@ public :
 		return sortedEdges;
 	}
 
-	std::pair<int, int> GetPathLimits(const KmerCluster &a, const KmerCluster &b, int s_add_len, int e_add_len){
+	std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a, const KmerCluster<Graph> &b, int s_add_len, int e_add_len){
 		int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
 		int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
 		int seq_len = -start_pos + end_pos;
@@ -490,7 +397,7 @@ public :
 	}
 
 //0 - No, 1 - Yes
-	int IsConsistent(Sequence &s, const KmerCluster &a, const KmerCluster &b) {
+	int IsConsistent(Sequence &s, const KmerCluster<Graph> &a, const KmerCluster<Graph> &b) {
 		EdgeId a_edge = a.edgeId;
 		EdgeId b_edge = b.edgeId;
 
@@ -521,7 +428,6 @@ public :
 
 	string PathToString( const vector<EdgeId>& path) const {
 		string res = "";
-//		bool first = true;
 		for(auto iter = path.begin(); iter != path.end(); iter ++){
 			size_t len = g_.length(*iter);
 			string tmp = g_.EdgeNucls(*iter).First(len).str();
@@ -582,10 +488,7 @@ public :
 
 	vector<EdgeId> BestScoredPath(Sequence &s, VertexId start_v, VertexId end_v, int path_min_length, int path_max_length, int start_pos, int end_pos, string &s_add, string &e_add, bool debug_info = false){
 		INFO("start and end vertices: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
-		//int seq_len = -start_pos + end_pos;
 		PathStorageCallback<Graph> callback(g_);
-//TODO::something more reasonable
-
 		PathProcessor<Graph> path_processor(g_, path_min_length , path_max_length , start_v, end_v, callback);
 		path_processor.Process();
 		vector<vector<EdgeId> > paths = callback.paths();
@@ -598,7 +501,6 @@ public :
 		if (paths.size() == 0)
 			return vector<EdgeId> (0);
 		for(size_t i = 0; i < paths.size(); i++){
-
 			string cur_string = s_add + PathToString(paths[i]) + e_add;
 			if (paths.size() > 1 && paths.size() < 10) {
 				INFO ("candidate path number "<< i << " , len " << cur_string.length());
@@ -624,15 +526,12 @@ public :
 		if (paths.size() > 1 && paths.size() < 10){
 			INFO("best score found! Path " <<best_path_ind <<" score "<< best_score);
 		}
-
 		return paths[best_path_ind];
 	}
 };
 
 template<class Graph>
 typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::Locate(Sequence &s){
-
-	//PacBioMappingIndex<Graph>::MappedPositionsVector res;
 	MappingDescription res;
 	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(K_);
 	for (size_t j = K_; j < s.size(); ++j) {
@@ -640,10 +539,7 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
 		if (tmp_index.contains(kmer)){
 			for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter){
 				int quality = tmp_index[kmer].size();
-//				DEBUG(g_.int_id(iter->edgeId_));
-// TODO: operator< for RtSeqs
 				if ( banned_kmers.find(Sequence(kmer)) == banned_kmers.end()) {
-//Never trust a kmer on vertex
 					if (int(iter->offset_) > int(cfg::get().K- this->K_ ) && int(iter->offset_) < int(g_.length(iter->edgeId_))  )
 						res[iter->edgeId_].push_back(MappingInstance(iter->offset_, size_t(j - K_+ 1), quality));
 				}
