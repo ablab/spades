@@ -130,11 +130,9 @@ void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
 	DEBUG("Coverage counted");
 }
 
-template<class Graph, class Read, class Seq>
-size_t ConstructGraph(size_t k,
+size_t ConstructGraphUsingOldIndex(size_t k,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
-
 	INFO("Constructing DeBruijn graph");
 
 	TRACE("Filling indices");
@@ -148,12 +146,6 @@ size_t ConstructGraph(size_t k,
 
 	VERIFY(k + 1== debruijn.K());
 	// FIXME: output_dir here is damn ugly!
-	DeBruijnExtensionIndex<Seq> ext(k, cfg::get().output_dir);
-	DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
-
-	TRACE("Early tip clipping");
-	INFO(EarlyTipClipper(ext, 10).ClipTips() << " " << (k+1) <<"-mers were removed by early tip clipper");
-
 
 	TRACE("Filled indices");
 
@@ -166,6 +158,46 @@ size_t ConstructGraph(size_t k,
 	return rl;
 }
 
+size_t ConstructGraphUsingExtentionIndex(size_t k,
+		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
+		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
+
+	INFO("Constructing DeBruijn graph");
+
+	TRACE("Filling indices");
+	size_t rl = 0;
+	VERIFY_MSG(streams.size(), "No input streams specified");
+
+	TRACE("... in parallel");
+	VERIFY(k + 1== debruijn.K());
+	// FIXME: output_dir here is damn ugly!
+	DeBruijnExtensionIndex<Seq> ext(k, cfg::get().output_dir);
+	DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
+
+	TRACE("Extention Index constructed");
+
+	TRACE("Early tip clipping");
+	size_t clipped_tips = EarlyTipClipper(ext, 10).ClipTips();
+	INFO(clipped_tips << " " << (k+1) <<"-mers were removed by early tip clipper");
+	TRACE("Early tip clipping finished");
+
+	INFO("Condensing graph");
+	DeBruijnGraphExtentionConstructor<Graph, Seq> g_c(g, ext, k);
+	g_c.ConstructGraph(100, 10000, 1.2);
+	TRACE("Graph condensed");
+
+	TRACE("Counting coverage");
+	return DeBruijnEdgeIndexBuilder<Seq>().BuildIndexWithCoverageFromGraph(g, index, streams, contigs_stream);
+}
+
+template<class Graph, class Read, class Seq>
+size_t ConstructGraph(size_t k,
+		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
+		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
+//	return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
+	return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
+}
+
 template<class Read>
 size_t ConstructGraphWithCoverage(size_t k,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
@@ -173,6 +205,7 @@ size_t ConstructGraphWithCoverage(size_t k,
 	size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
 
 	FillCoverageFromIndex(g, index, k);
+
 
 	return rl;
 }

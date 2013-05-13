@@ -1211,51 +1211,70 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
   }
 
  public:
-  template <class IdType, class Read>
-  size_t BuildIndexFromStream(DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
-                              io::ReadStreamVector<io::IReader<Read> > &streams,
-                              SingleReadStream* contigs_stream = 0) const {
-    unsigned nthreads = streams.size();
 
-    base::BuildIndexFromStream(index, streams, contigs_stream);
+  size_t ParallelFillCoverage(
+			DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
+			io::ReadStreamVector<io::IReader<Read> > &streams,
+			SingleReadStream* contigs_stream = 0) const {
+		INFO(
+				"Collecting k-mer coverage information from reads, this takes a while.");
 
-    // Now use the index to fill the coverage and EdgeId's
-    INFO("Collecting k-mer coverage information from reads, this takes a while.");
+		unsigned nthreads = streams.size();
+		size_t rl = 0;
+		streams.reset();
+#pragma omp parallel for num_threads(nthreads) shared(rl)
+		for (size_t i = 0; i < nthreads; ++i) {
+			size_t crl = FillCoverageFromStream(streams[i], index);
 
-    size_t rl = 0;
-    streams.reset();
-# pragma omp parallel for num_threads(nthreads) shared(rl)
-    for (size_t i = 0; i < nthreads; ++i) {
-      size_t crl = FillCoverageFromStream(streams[i], index);
+			// There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
+#pragma omp flush(rl)
+			if (crl > rl)
+#pragma omp critical
+					{
+				rl = std::max(rl, crl);
+			}
+		}
 
-      // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
-#   pragma omp flush(rl)
-      if (crl > rl)
-#     pragma omp critical
-      {
-        rl = std::max(rl, crl);
-      }
-    }
-
-    // Contigs have zero coverage!
+		// Contigs have zero coverage!
 #if 0
-    if (contigs_stream) {
-      contigs_stream->reset();
-      FillCoverageFromStream(*contigs_stream, index);
-    }
+		if (contigs_stream) {
+			contigs_stream->reset();
+			FillCoverageFromStream(*contigs_stream, index);
+		}
 #endif
 
 #ifndef NDEBUG
-    for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
-         idx != eidx; ++idx) {
-      runtime_k::RtSeq k = index.kmer(idx);
+		for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
+				idx != eidx; ++idx) {
+			runtime_k::RtSeq k = index.kmer(idx);
 
-      VERIFY(index[k].count_ == index[!k].count_);
-    }
+			VERIFY(index[k].count_ == index[!k].count_);
+		}
 #endif
+		return rl;
+	}
 
-    return rl;
-  }
+  template<class IdType, class Read>
+	size_t BuildIndexFromStream(
+			DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
+			io::ReadStreamVector<io::IReader<Read> > &streams,
+			SingleReadStream* contigs_stream = 0) const {
+		base::BuildIndexFromStream(index, streams, contigs_stream);
+
+		// Now use the index to fill the coverage and EdgeId's
+		return ParallelFillCoverage(index, streams, contigs_stream);
+	}
+
+	template<class IdType, class Read, class Graph>
+	size_t BuildIndexWithCoverageFromGraph(Graph &graph,
+			DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
+			io::ReadStreamVector<io::IReader<Read> > &streams,
+			SingleReadStream* contigs_stream = 0) const {
+		BuildIndexFromGraph(index, graph);
+
+		// Now use the index to fill the coverage and EdgeId's
+		return ParallelFillCoverage(index, streams, contigs_stream);
+	}
 
   template <class IdType, class Graph>
   void BuildIndexFromGraph(DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
