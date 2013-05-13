@@ -15,6 +15,7 @@
 #define DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
 #include "utils.hpp"
 #include "debruijn_graph.hpp"
+#include "omni/abstract_editable_graph.hpp"
 
 namespace debruijn_graph {
 
@@ -232,7 +233,7 @@ private:
 template<class Seq>
 class UnbranchingPathExtractor {
 private:
-	typedef typename DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
@@ -331,17 +332,17 @@ private:
 	DECL_LOGGER("UnbranchingPathExtractor")
 };
 
-template<class Graph, class Seq>
+template<class Graph>
 class GraphFromSequencesConstructor {
 private:
-	typedef typename DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef Seq Kmer;
+	typedef runtime_k::RtSeq Kmer;
 	typedef typename Index::kmer_iterator kmer_iterator;
 	size_t kmer_size_;
 
-	bool CheckAndAdd(const Seq &kmer, unordered_map<Seq, VertexId> &mapping, Graph &graph) {
+	bool CheckAndAdd(const Kmer &kmer, unordered_map<Kmer, VertexId> &mapping, Graph &graph) {
 		if(mapping.count(kmer) == 1) {
 			return false;
 		}
@@ -351,14 +352,14 @@ private:
 		return true;
 	}
 
-	void FillKmerVertexMapping(unordered_map<Seq, VertexId> &result, Graph &graph, const vector<Sequence> &sequences) {
+	void FillKmerVertexMapping(unordered_map<Kmer, VertexId> &result, Graph &graph, const vector<Sequence> &sequences) {
 		for(auto it = sequences.begin(); it != sequences.end(); ++it) {
 			CheckAndAdd(Kmer(kmer_size_, *it), result, graph);
 			CheckAndAdd(Kmer(kmer_size_, *it, it->size() - kmer_size_), result, graph);
 		}
 	}
 
-	void CreateEdges(Graph &graph, const vector<Sequence> &sequences, const unordered_map<Seq, VertexId> &kmer_vertex_mapping) {
+	void CreateEdges(Graph &graph, const vector<Sequence> &sequences, const unordered_map<Kmer, VertexId> &kmer_vertex_mapping) {
 		for(auto it = sequences.begin(); it != sequences.end(); ++it) {
 			Sequence s = *it;
 			VertexId start = kmer_vertex_mapping.find(Kmer(kmer_size_, s)).second;
@@ -372,7 +373,7 @@ public:
 	}
 
 	void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) {
-		unordered_map<Seq, VertexId> kmer_vertex_mapping;
+		unordered_map<Kmer, VertexId> kmer_vertex_mapping;
 		FillKmerVertexMapping(kmer_vertex_mapping, graph, sequences);
 		CreateEdges(graph, sequences, kmer_vertex_mapping);
 	}
@@ -387,7 +388,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
-	typedef typename DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
 	size_t kmer_size_;
 	Index &origin_;
 
@@ -454,7 +455,7 @@ private:
 			return LinkRecord(rchash, index, false, true);
 	}
 
-	void CollectLinkRecords(omnigraph::ConstructionHelper &helper, vector<LinkRecord> &records, const vector<Sequence> &sequences) {
+	void CollectLinkRecords(omnigraph::ConstructionHelper<Graph> &helper, vector<LinkRecord> &records, const vector<Sequence> &sequences) {
 		size_t size = sequences.size();
 		records.resize(size * 2);
 #   pragma omp parallel for schedule(guided)
@@ -466,7 +467,7 @@ private:
 		}
 	}
 
-	void LinkEdge(omnigraph::ConstructionHelper &helper, const Graph &graph, VertexId v, EdgeId edge, bool is_end, bool is_rc) {
+	void LinkEdge(omnigraph::ConstructionHelper<Graph> &helper, const Graph &graph, VertexId v, EdgeId edge, bool is_end, bool is_rc) {
 		if(is_rc) {
 			v = graph.conjugate(v);
 		}
@@ -482,7 +483,7 @@ public:
 	}
 
 	void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) {
-		omnigraph::ConstructionHelper helper = graph.GetConstructionHelper();
+		omnigraph::ConstructionHelper<Graph> helper = graph.GetConstructionHelper();
 		vector<LinkRecord> records;
 		CollectLinkRecords(helper, records, sequences);//TODO make parallel
 		std::sort(records.begin(), records.end());
@@ -529,10 +530,10 @@ private:
 	DeBruijn &origin_;
 	size_t kmer_size_;
 
-	void FilterRC(vector<Sequence> edgeSequences) {
+	void FilterRC(std::vector<Sequence> edgeSequences) {
 		size_t size = 0;
 		for(size_t i = 0; i < edgeSequences.size(); i++) {
-			if(edgeSequences[i] <= !edgeSequences[i]) {
+			if(!(edgeSequences[i] < !edgeSequences[i])) {
 				edgeSequences[size] = edgeSequences[i];
 				size++;
 			}
@@ -547,7 +548,7 @@ public:
 
 	void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,
 			double queueGrowthRate) {
-		vector<Sequence> edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
+		std::vector<Sequence> edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
 		FilterRC(edgeSequences);
 		GraphFromSequencesConstructor<Seq>(kmer_size_).ConstructGraph(graph_, edgeSequences);
 	}

@@ -24,15 +24,13 @@ template<typename VertexIdT, typename EdgeIdT, class DataMasterT,
 		typename VertexIt>
 class AbstractEditableGraph;
 
-template<typename VertexIdT, typename EdgeIdT, class DataMasterT,
-		typename VertexIt>
+template<class Graph>
 class ConstructionHelper {
-	friend class AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>;
+	friend class AbstractEditableGraph<typename Graph::VertexId, typename Graph::EdgeId, typename Graph::DataMaster, typename Graph::VertexIterator>;
 private:
-	typedef typename DataMasterT::EdgeData EdgeData;
-	typedef AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt> Graph;
-	typedef VertexIdT VertexId;
-	typedef EdgeIdT EdgeId;
+	typedef typename Graph::DataMaster::EdgeData EdgeData;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
 
 	Graph &graph_;
 
@@ -59,7 +57,7 @@ class AbstractEditableGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIt
 	typedef ObservableGraph<VertexIdT, EdgeIdT, VertexIt> base;
 	//todo maybe rename template params themselves???
 public:
-	friend class ConstructionHelper<VertexIdT, EdgeIdT, DataMasterT, VertexIt>;
+	friend class ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>>;
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
 	typedef DataMasterT DataMaster;
@@ -82,10 +80,11 @@ private:
 
 	virtual void HiddenDeleteVertex(VertexId v) = 0;
 
-	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) = 0;
+	virtual EdgeId HiddenAddEdge(const EdgeData &data,
+            restricted::IdDistributor * id_distributor = restricted::GlobalIdDistributor::GetInstance()) = 0;
 
-	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
-			const EdgeData &data, restricted::IdDistributor * idDistributor) = 0;
+	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data,
+            restricted::IdDistributor * id_distributor = restricted::GlobalIdDistributor::GetInstance()) = 0;
 
 	virtual void HiddenDeleteEdge(EdgeId edge) = 0;
 
@@ -150,8 +149,8 @@ public:
 		//		}
 	}
 
-	ConstructionHelper<VertexIdT, EdgeIdT, DataMasterT, VertexIt> GetConstructionHelper() {
-		return ConstructionHelper<VertexIdT, EdgeIdT, DataMasterT, VertexIt>(*this);
+	ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> GetConstructionHelper() {
+		return ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> (*this);
 	}
 
 	void set_int_ids(BaseIdTrackHandler<VertexIdT, EdgeIdT>* int_ids) const {

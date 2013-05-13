@@ -730,18 +730,17 @@ public:
 
 
   struct KmerWithHash {
-  	runtime_k::RtSeq kmer;
+  	Seq kmer;
   	size_t idx;
 
   	KmerWithHash(
-  			runtime_k::RtSeq _kmer,
-  			DeBruijnExtensionIndex<runtime_k::RtSeq,
-  					kmer_index_traits<runtime_k::RtSeq> > &index) :
+  			Seq _kmer,
+  			const DeBruijnExtensionIndex<Seq, traits> &index) :
   			kmer(_kmer), idx(index.seq_idx(kmer)) {
   	}
   };
 
-  KmerWithHash CreateKmerWithHash(runtime_k::RtSeq kmer) const {
+  KmerWithHash CreateKmerWithHash(Seq kmer) const {
   		return KmerWithHash(kmer, *this);
   }
 };
