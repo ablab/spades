@@ -172,8 +172,16 @@ private:
 		data_ = data;
 	}
 
+	void SetStartVertex(VertexId start) {
+		start_ = start;
+	}
+
 	VertexId start() const {
 		return start_;
+	}
+
+	void SetEndVertex(VertexId end) {
+		end_ = end;
 	}
 
 	VertexId end() const {
@@ -201,7 +209,7 @@ private:
 		return VertexId(new SingleVertex<DataMaster>(data));
 	}
 
-	virtual void DestroyVertex(VertexId vertex) {
+	/*virtual */void DestroyVertex(VertexId vertex) {
 		delete vertex.get();
 	}
 
@@ -224,12 +232,30 @@ private:
 		DestroyVertex(vertex);
 	}
 
-	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		return HiddenAddEdge(v1, v2, data, restricted::GlobalIdDistributor::GetInstance());
+//	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+//		return HiddenAddEdge(v1, v2, data, restricted::GlobalIdDistributor::GetInstance());
+//	}
+
+    virtual void LinkIncomingEdge(VertexId v, EdgeId e) {
+    	VERIFY(this->EdgeEnd(e) == VertexId(0));
+    	e->SetEndVertex(v);
+    	v->AddIncomingEdge(v);
+    }
+
+    virtual void LinkOutgoingEdge(VertexId v, EdgeId e) {
+    	VERIFY(this->EdgeStart(e) == VertexId(0));
+    	e->SetStartVertex(v);
+    	v->AddOutgpoingEdge(e);
+    }
+
+	virtual EdgeId HiddenAddEdge(const EdgeData &data,
+			restricted::IdDistributor * idDistributor = restricted::GlobalIdDistributor::GetInstance()) {
+		EdgeId newEdge(new SingleEdge<DataMaster>(VertexId(0), VertexId(0), data), idDistributor);
+		return newEdge;
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data,
-			restricted::IdDistributor * idDistributor) {
+			restricted::IdDistributor * idDistributor = restricted::GlobalIdDistributor::GetInstance()) {
 		VERIFY(
 				this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
 		EdgeId newEdge(new SingleEdge<DataMaster>(v1, v2, data), idDistributor);

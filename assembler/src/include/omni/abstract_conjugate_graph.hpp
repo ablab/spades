@@ -232,6 +232,7 @@ class PairedVertex {
     }
 
     void AddOutgoingEdge(EdgeId e) {
+    	VERIFY(this != 0);
         outgoing_edges_.push_back(e);
     }
 
@@ -298,6 +299,10 @@ class PairedEdge : public CoveredEdge {
         conjugate_ = conjugate;
     }
 
+    void SetEndVertex(VertexId end) {
+    	end_ = end;
+    }
+
     ~PairedEdge() {
     }
 
@@ -340,7 +345,7 @@ class AbstractConjugateGraph : public AbstractGraph<
         return CreateVertex(data, this->master().conjugate(data));
     }
 
-    virtual void DestroyVertex(VertexId vertex) {
+    /*virtual */void DestroyVertex(VertexId vertex) {
         VertexId conjugate = vertex->conjugate();
         delete vertex.get();
         delete conjugate.get();
@@ -367,14 +372,34 @@ class AbstractConjugateGraph : public AbstractGraph<
         return vertex;
     }
 
-    virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
-                                 const EdgeData &data) {
-        return HiddenAddEdge(v1, v2, data,
-                             restricted::GlobalIdDistributor::GetInstance());
+//    virtual EdgeId HiddenAddEdge(const EdgeData &data) {
+//        return HiddenAddEdge(data, restricted::GlobalIdDistributor::GetInstance());
+//    }
+
+//    virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
+//                                 const EdgeData &data) {
+//        return HiddenAddEdge(v1, v2, data,
+//                             restricted::GlobalIdDistributor::GetInstance());
+//    }
+
+    virtual EdgeId HiddenAddEdge(const EdgeData &data,
+                                 restricted::IdDistributor * id_distributor = restricted::GlobalIdDistributor::GetInstance()) {
+        EdgeId result = AddSingleEdge(VertexId(0), VertexId(0), data, id_distributor);
+
+        if (this->master().isSelfConjugate(data)) {
+
+            result->set_conjugate(result);
+            return result;
+        }
+        EdgeId rcEdge = AddSingleEdge(VertexId(0), VertexId(0), this->master().conjugate(data), id_distributor);
+        result->set_conjugate(rcEdge);
+        rcEdge->set_conjugate(result);
+        TRACE("Unlinked edges added");
+        return result;
     }
 
     virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data,
-                                 restricted::IdDistributor * id_distributor) {
+                                 restricted::IdDistributor * id_distributor = restricted::GlobalIdDistributor::GetInstance()) {
         TRACE("Adding edge between vertices " << this->str(v1) << " and " << this->str(v2));
 
 //      todo was suppressed for concurrent execution reasons (see concurrent_graph_component.hpp)
@@ -382,8 +407,10 @@ class AbstractConjugateGraph : public AbstractGraph<
 
         EdgeId result = AddSingleEdge(v1, v2, data, id_distributor);
 
-        if (this->master().isSelfConjugate(data) && v1 == conjugate(v2)) {
+        if (this->master().isSelfConjugate(data) && (v1 == conjugate(v2))) {
 //      	todo why was it removed???
+//			Because of some split issues: when self-conjugate edge is split armageddon happends
+//          VERIFY(v1 == conjugate(v2));
 //          VERIFY(v1 == conjugate(v2));
             result->set_conjugate(result);
             return result;
@@ -457,12 +484,24 @@ class AbstractConjugateGraph : public AbstractGraph<
     EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
                          IdDistributor * idDistributor) {
         EdgeId newEdge(new PairedEdge<DataMaster>(v2, data), idDistributor);
-        v1->AddOutgoingEdge(newEdge);
+        if(v1 != VertexId(0))
+        	v1->AddOutgoingEdge(newEdge);
         return newEdge;
     }
 
- public:
+    virtual void LinkIncomingEdge(VertexId v, EdgeId e) {
+    	VERIFY(this->EdgeEnd(e) == VertexId(0));
+    	this->conjugate(v)->AddOutgoingEdge(this->conjugate(e));
+    	e->SetEndVertex(v);
+    }
 
+    virtual void LinkOutgoingEdge(VertexId v, EdgeId e) {
+    	VERIFY(this->EdgeStart(e) == VertexId(0));
+    	v->AddOutgoingEdge(e);
+    	this->conjugate(e)->SetEndVertex(this->conjugate(v));
+    }
+
+public:
     AbstractConjugateGraph(const DataMaster& master)
             : base(new PairedHandlerApplier<AbstractConjugateGraph>(*this),
                    master) {

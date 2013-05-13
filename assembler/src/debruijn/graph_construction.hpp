@@ -26,6 +26,7 @@
 #include "graph_pack.hpp"
 #include "utils.hpp"
 #include "perfcounter.hpp"
+#include "early_simplification.hpp"
 
 #include "read_converter.hpp"
 
@@ -145,10 +146,14 @@ size_t ConstructGraph(size_t k,
 	rl = DeBruijnEdgeIndexBuilder<Seq>().BuildIndexFromStream(debruijn, streams,
                                                             contigs_stream);
 
-  VERIFY(k + 1== debruijn.K());
-  // FIXME: output_dir here is damn ugly!
-  DeBruijnExtensionIndex<Seq> ext(k, cfg::get().output_dir);
-  DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
+	VERIFY(k + 1== debruijn.K());
+	// FIXME: output_dir here is damn ugly!
+	DeBruijnExtensionIndex<Seq> ext(k, cfg::get().output_dir);
+	DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
+
+	TRACE("Early tip clipping");
+	INFO(EarlyTipClipper(ext, 10).ClipTips() << " " << (k+1) <<"-mers were removed by early tip clipper");
+
 
 	TRACE("Filled indices");
 

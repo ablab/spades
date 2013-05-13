@@ -195,7 +195,8 @@ class DeBruijnKMerIndex {
     size_t sz = data_.size();
     writer.write((char*)&sz, sizeof(sz));
     writer.write((char*)&data_[0], sz * sizeof(data_[0]));
-    sz = push_back_buffer_.size();
+    sz = push_back_buffer_.size();			for (size_t i = 0; i < 4; i++)
+
     writer.write((char*)&sz, sizeof(sz));
     writer.write((char*)&push_back_buffer_[0], sz * sizeof(push_back_buffer_[0]));
     for (auto it = push_back_index_.left.begin(), e = push_back_index_.left.end(); it != e; ++it) {
@@ -610,15 +611,139 @@ private:
 template<class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >
 class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, Seq, traits> {
+private:
   typedef DeBruijnKMerIndex<uint8_t, Seq, traits> base;
- public:
+
+  bool CheckUnique(uint8_t mask) const {
+	static bool unique[] = {0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
+	return unique[mask];
+  }
+
+  char GetUnique(uint8_t mask) const {
+	static char next[] = {-1, 0, 1, -1, 2, -1, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1};
+	return next[mask];
+  }
+
+  size_t Count(uint8_t mask) const {
+	static char count[] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
+	return count[mask];
+  }
+
+public:
   typedef Seq                      KMer;
   typedef KMerIndex<KMer, traits>  KMerIndexT;
 
   DeBruijnExtensionIndex(unsigned K, const std::string &workdir)
       : base(K, workdir) {}
 
+  void AddOutgoing(size_t idx, char nnucl) {
+	  unsigned nmask = (1 << nnucl);
+	  if (!(this->operator [](idx) & nmask)) {
+#         pragma omp atomic
+		  this->operator [](idx) |= nmask;
+	  }
+  }
+
+  void AddIncoming(size_t idx, char pnucl) {
+	  unsigned pmask = (1 << (pnucl + 4));
+
+	  if (!(this->operator [](idx) & pmask)) {
+#         pragma omp atomic
+		  this->operator [](idx) |= pmask;
+	  }
+  }
+
+  void DeleteOutgoing(size_t idx, char nnucl) {
+	  unsigned nmask = (1 << nnucl);
+	  if (this->operator [](idx) & nmask) {
+#         pragma omp atomic
+		  this->operator [](idx) &= ~nmask;
+	  }
+  }
+
+  void DeleteIncoming(size_t idx, char pnucl) {
+	  unsigned pmask = (1 << (pnucl + 4));
+
+	  if (this->operator [](idx) & pmask) {
+#         pragma omp atomic
+		  this->operator [](idx) &= ~pmask;
+	  }
+  }
+
+  void AddOutgoing(const runtime_k::RtSeq &kmer, char nnucl) {
+    AddOutgoing(this->seq_idx(kmer), nnucl);
+  }
+
+  void AddIncoming(const runtime_k::RtSeq &kmer, char pnucl) {
+    AddIncoming(this->seq_idx(kmer), pnucl);
+  }
+
+  void DeleteOutgoing(const runtime_k::RtSeq &kmer, char nnucl) {
+    DeleteOutgoing(this->seq_idx(kmer), nnucl);
+  }
+
+  void DeleteIncoming(const runtime_k::RtSeq &kmer, char pnucl) {
+    DeleteIncoming(this->seq_idx(kmer), pnucl);
+  }
+
+  bool CheckOutgoing(size_t idx, size_t nucl) {
+    return (this->operator [](idx)) & (1 << nucl);
+  }
+
+  bool CheckIncoming(size_t idx, size_t nucl) {
+    return (this->operator [](idx)) & (16 << nucl);
+  }
+
+  bool IsDeadEnd(size_t idx) const {
+    return !(this->operator [](idx) & 15);
+  }
+
+  bool IsDeadStart(size_t idx) const {
+    return !(this->operator [](idx) >> 4);
+  }
+
+  bool CheckUniqueOutgoing(size_t idx) const {
+    return CheckUnique(this->operator [](idx) & 15);
+  }
+
+  bool GetUniqueOutgoing(size_t idx) const {
+    return GetUnique(this->operator [](idx) & 15);
+  }
+
+  bool CheckUniqueIncoming(size_t idx) const {
+	return CheckUnique(this->operator [](idx) >> 4);
+  }
+
+  bool GetUniqueIncoming(size_t idx) const {
+	return GetUnique(this->operator [](idx) >> 4);
+  }
+
+  size_t OutgoingEdgeCount(size_t idx) const {
+    return Count(this->operator [](idx) & 15);
+  }
+
+  size_t IncomingEdgeCount(size_t idx) const {
+	return Count(this->operator [](idx) >> 4);
+  }
+
   ~DeBruijnExtensionIndex() {}
+
+
+  struct KmerWithHash {
+  	runtime_k::RtSeq kmer;
+  	size_t idx;
+
+  	KmerWithHash(
+  			runtime_k::RtSeq _kmer,
+  			DeBruijnExtensionIndex<runtime_k::RtSeq,
+  					kmer_index_traits<runtime_k::RtSeq> > &index) :
+  			kmer(_kmer), idx(index.seq_idx(kmer)) {
+  	}
+  };
+
+  KmerWithHash CreateKmerWithHash(runtime_k::RtSeq kmer) const {
+  		return KmerWithHash(kmer, *this);
+  }
 };
 
 
@@ -1179,24 +1304,29 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
         continue;
 
       runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K);
-      size_t idx = index.seq_idx(kmer);
+//      size_t idx = index.seq_idx(kmer);
 
       for (size_t j = K; j < seq.size(); ++j) {
         char nnucl = seq[j], pnucl = kmer[0];
-        unsigned nmask = (1 << nnucl), pmask = (1 << (pnucl + 4));
-
-        if (index[idx] & nmask) {
-#         pragma omp atomic
-          index[idx] |= nmask;
-        }
-
+        index.AddOutgoing(kmer, nnucl);
         kmer <<= nnucl;
-        idx = index.seq_idx(kmer);
-
-        if (index[idx] & pmask) {
-#         pragma omp atomic
-          index[idx] |= pmask;
-        }
+        index.AddIncoming(kmer, pnucl);
+//        char nnucl = seq[j], pnucl = kmer[0];
+//        unsigned nmask = (1 << nnucl), pmask = (1 << (pnucl + 4));
+//
+//        if (index[idx] & nmask) {
+//#         pragma omp atomic
+//          index[idx] |= nmask;
+//        }
+//
+//        index.AddOutgoing(kmer, nnucl);
+//        kmer <<= nnucl;
+//        idx = index.seq_idx(kmer);
+//
+//        if (index[idx] & pmask) {
+//#         pragma omp atomic
+//          index[idx] |= pmask;
+//        }
       }
     }
 
