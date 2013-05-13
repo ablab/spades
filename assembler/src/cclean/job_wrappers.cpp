@@ -12,12 +12,13 @@ bool AlignmentJobWrapper::operator()(const Read &r) {
     const std::string &name = r.getName();
     const std::string &ref = r.getSequenceString();
     auto it = data->get_data_iterator();
+    StripedSmithWaterman::Aligner aligner;
+    StripedSmithWaterman::Filter filter;
+    aligner.SetReferenceSequence(ref.c_str(), ref.size());
     for (unsigned i = 0; i < data->get_sequences_amount(); ++i) {
-      StripedSmithWaterman::Aligner aligner;
-      StripedSmithWaterman::Filter filter;
       StripedSmithWaterman::Alignment alignment;
       const std::string &query = *(it->second);
-      aligner.Align(query.c_str(), ref.c_str(), ref.size(), filter, &alignment);
+      aligner.Align(query.c_str(), filter, &alignment);
       std::string& database_name = *(it->first);
 
       if (alignment.mismatches < mismatch_threshold && is_alignment_good(alignment, query, aligned_part_fraction)) {
@@ -56,7 +57,7 @@ bool ExactMatchJobWrapper::operator()(const Read &r) {
 }
 
 bool ExactAndAlignJobWrapper::operator()(const Read &r) {
-  try{
+  try {
     const std::string& name = r.getName();
     const std::string& sequence = r.getSequenceString();
 
@@ -80,13 +81,14 @@ bool ExactAndAlignJobWrapper::operator()(const Read &r) {
       setOfContaminations2check.insert(setOfSeqs.begin(), setOfSeqs.end());
     }
 
-    //try to align the contaminations for corresponding kmers
+    // Try to align the contaminations for corresponding kmers
+    StripedSmithWaterman::Aligner aligner;
+    StripedSmithWaterman::Filter filter;
+    aligner.SetReferenceSequence(sequence.c_str(), sequence.size());
     for (auto it = setOfContaminations2check.begin(); it != setOfContaminations2check.end(); ++it) {
-      StripedSmithWaterman::Aligner aligner;
-      StripedSmithWaterman::Filter filter;
       StripedSmithWaterman::Alignment alignment;
-      std::string& query = *(*it);
-      aligner.Align(query.c_str(), sequence.c_str(), sequence.size(), filter, &alignment);
+      const std::string& query = *(*it);
+      aligner.Align(query.c_str(), filter, &alignment);
 
       std::string database_name;
       data->get_name_by_sequence(query, database_name);
