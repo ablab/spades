@@ -1,3 +1,4 @@
+#pragma once
 //***************************************************************************
 //* Copyright (c) 2011-2013 Saint-Petersburg Academic University
 //* All Rights Reserved
@@ -11,11 +12,10 @@
  *      Author: sergey
  */
 
-#ifndef DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
-#define DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
 #include "utils.hpp"
 #include "debruijn_graph.hpp"
 #include "omni/abstract_editable_graph.hpp"
+#include "standard_base.hpp"
 
 namespace debruijn_graph {
 
@@ -242,6 +242,16 @@ private:
 	struct KPlusOneMer {
 		Index::KmerWithHash kmer;
 		char next;
+		KPlusOneMer(Index::KmerWithHash _kmer, char _next) : kmer(_kmer), next(_next) {
+		}
+
+		bool operator==(const KPlusOneMer &other) {
+			return kmer.idx == other.kmer.idx && next == other.next;
+		}
+
+		bool operator!=(const KPlusOneMer &other) {
+			return !(*this == other);
+		}
 	};
 
 	Index &origin_;
@@ -249,7 +259,7 @@ private:
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 		// VERIFY(origin_.contains(edge));
-		Index::KmerWithHash next_vertex = origin_.CreateKmerWithHash(edge.kmer << edge.next);
+		Index::KmerWithHash next_vertex = origin_.CreateKmerWithHash(edge.kmer.kmer << edge.next);
 		if (origin_.CheckUniqueOutgoing(next_vertex.idx) && origin_.CheckUniqueIncoming(next_vertex.idx)) {
 			edge = KPlusOneMer(next_vertex, origin_.GetUniqueOutgoing(next_vertex.idx));
 			return true;
@@ -259,7 +269,7 @@ private:
 
 	Sequence ConstructSeqGoingRight(KPlusOneMer edge) {
 		SequenceBuilder s;
-		s.append(edge.kmer);
+		s.append(edge.kmer.kmer);
 		s.append(edge.next);
 		KPlusOneMer initial = edge;
 		while (StepRightIfPossible(edge) && edge != initial) {
@@ -306,9 +316,9 @@ public:
 	}
 
 	//TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
-	vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
+	const std::vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
 			double queueGrowthRate) {
-		vector<Sequence> result;
+		std::vector<Sequence> result;
 
 		size_t queueSize = queueMinSize;
 
@@ -332,52 +342,52 @@ private:
 	DECL_LOGGER("UnbranchingPathExtractor")
 };
 
-template<class Graph>
-class GraphFromSequencesConstructor {
-private:
-	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	typedef runtime_k::RtSeq Kmer;
-	typedef typename Index::kmer_iterator kmer_iterator;
-	size_t kmer_size_;
-
-	bool CheckAndAdd(const Kmer &kmer, unordered_map<Kmer, VertexId> &mapping, Graph &graph) {
-		if(mapping.count(kmer) == 1) {
-			return false;
-		}
-		VertexId v = graph.AddVertex();
-		mapping[kmer] = v;
-		mapping[!kmer] = graph.conjugate(v);
-		return true;
-	}
-
-	void FillKmerVertexMapping(unordered_map<Kmer, VertexId> &result, Graph &graph, const vector<Sequence> &sequences) {
-		for(auto it = sequences.begin(); it != sequences.end(); ++it) {
-			CheckAndAdd(Kmer(kmer_size_, *it), result, graph);
-			CheckAndAdd(Kmer(kmer_size_, *it, it->size() - kmer_size_), result, graph);
-		}
-	}
-
-	void CreateEdges(Graph &graph, const vector<Sequence> &sequences, const unordered_map<Kmer, VertexId> &kmer_vertex_mapping) {
-		for(auto it = sequences.begin(); it != sequences.end(); ++it) {
-			Sequence s = *it;
-			VertexId start = kmer_vertex_mapping.find(Kmer(kmer_size_, s)).second;
-			VertexId end = kmer_vertex_mapping.find(Kmer(kmer_size_, s, s.size() - kmer_size_)).second;
-			graph.AddEdge(start, end, s);
-		}
-	}
-
-public:
-	GraphFromSequencesConstructor(size_t k) : kmer_size_(k) {
-	}
-
-	void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) {
-		unordered_map<Kmer, VertexId> kmer_vertex_mapping;
-		FillKmerVertexMapping(kmer_vertex_mapping, graph, sequences);
-		CreateEdges(graph, sequences, kmer_vertex_mapping);
-	}
-};
+//template<class Graph>
+//class GraphFromSequencesConstructor {
+//private:
+//	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//	typedef runtime_k::RtSeq Kmer;
+//	typedef typename Index::kmer_iterator kmer_iterator;
+//	size_t kmer_size_;
+//
+//	bool CheckAndAdd(const Kmer &kmer, unordered_map<Kmer, VertexId, typename Kmer::hash> &mapping, Graph &graph) {
+//		if(mapping.count(kmer) == 1) {
+//			return false;
+//		}
+//		VertexId v = graph.AddVertex();
+//		mapping[kmer] = v;
+//		mapping[!kmer] = graph.conjugate(v);
+//		return true;
+//	}
+//
+//	void FillKmerVertexMapping(unordered_map<Kmer, VertexId, typename Kmer::hash> &result, Graph &graph, const vector<Sequence> &sequences) {
+//		for(auto it = sequences.begin(); it != sequences.end(); ++it) {
+//			CheckAndAdd(Kmer(kmer_size_, *it), result, graph);
+//			CheckAndAdd(Kmer(kmer_size_, *it, it->size() - kmer_size_), result, graph);
+//		}
+//	}
+//
+//	void CreateEdges(Graph &graph, const vector<Sequence> &sequences, const unordered_map<Kmer, VertexId, typename Kmer::hash> &kmer_vertex_mapping) {
+//		for(auto it = sequences.begin(); it != sequences.end(); ++it) {
+//			Sequence s = *it;
+//			VertexId start = kmer_vertex_mapping.find(Kmer(kmer_size_, s))->second;
+//			VertexId end = kmer_vertex_mapping.find(Kmer(kmer_size_, s, s.size() - kmer_size_))->second;
+//			graph.AddEdge(start, end, s);
+//		}
+//	}
+//
+//public:
+//	GraphFromSequencesConstructor(size_t k) : kmer_size_(k) {
+//	}
+//
+//	void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) {
+//		unordered_map<Kmer, VertexId, typename Kmer::hash> kmer_vertex_mapping(typename Kmer::hash());
+//		FillKmerVertexMapping(kmer_vertex_mapping, graph, sequences);
+//		CreateEdges(graph, sequences, kmer_vertex_mapping);
+//	}
+//};
 
 /*
  * Only works for Conjugate dbg
@@ -388,7 +398,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
-	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+	typedef DeBruijnExtensionIndex<Seq, kmer_index_traits<Seq> > Index;
 	size_t kmer_size_;
 	Index &origin_;
 
@@ -397,30 +407,30 @@ private:
 		size_t hash_and_mask_;
 		EdgeId edge_;
 
-		size_t BitBool(bool flag) {
+		size_t BitBool(bool flag) const {
 			if(flag)
 				return 1;
 			return 0;
 		}
 
 	public:
-		size_t GetHash() {
+		size_t GetHash() const {
 			return hash_and_mask_ >> 2;
 		}
 
-		size_t IsRC() {
+		size_t IsRC() const {
 			return hash_and_mask_ & 2;
 		}
 
-		size_t IsStart() {
+		size_t IsStart() const {
 			return hash_and_mask_ & 1;
 		}
 
-		size_t IsEnd() {
+		size_t IsEnd() const {
 			return !(hash_and_mask_ & 1);
 		}
 
-		size_t GetEdge() {
+		EdgeId GetEdge() const {
 			return edge_;
 		}
 
@@ -428,46 +438,46 @@ private:
 				hash_and_mask_((hash << 2) | (BitBool(is_rc) << 1)| BitBool(is_start)), edge_(edge) {
 		}
 
-		bool less(const LinkRecord &other) const {
+		bool operator<(const LinkRecord &other) const {
 			if(this->hash_and_mask_ == other.hash_and_mask_)
 				return this->edge_ < other.edge_;
 			return this->hash_and_mask_ < other.hash_and_mask_;
 		}
 	};
 
-	LinkRecord StartLink(const size_t index, const Sequence &sequence) {
+	LinkRecord StartLink(const EdgeId &edge, const Sequence &sequence) const {
 		Kmer kmer(kmer_size_, sequence);
 		size_t hash = origin_.seq_idx(kmer);
 		size_t rchash = origin_.seq_idx(!kmer);
 		if(hash <= rchash)
-			return LinkRecord(hash, index, true, false);
+			return LinkRecord(hash, edge, true, false);
 		else
-			return LinkRecord(rchash, index, true, true);
+			return LinkRecord(rchash, edge, true, true);
 	}
 
-	LinkRecord EndLink(const size_t index, Sequence sequence) {
+	LinkRecord EndLink(const EdgeId &edge, const Sequence &sequence) const {
 		Kmer kmer(kmer_size_, sequence, sequence.size() - kmer_size_);
 		size_t hash = origin_.seq_idx(kmer);
 		size_t rchash = origin_.seq_idx(!kmer);
 		if(hash <= rchash)
-			return LinkRecord(hash, index, false, false);
+			return LinkRecord(hash, edge, false, false);
 		else
-			return LinkRecord(rchash, index, false, true);
+			return LinkRecord(rchash, edge, false, true);
 	}
 
-	void CollectLinkRecords(omnigraph::ConstructionHelper<Graph> &helper, vector<LinkRecord> &records, const vector<Sequence> &sequences) {
+	void CollectLinkRecords(typename Graph::Helper &helper, vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
 		size_t size = sequences.size();
-		records.resize(size * 2);
+		records.resize(size * 2, LinkRecord(0, EdgeId(0), false, false));
 #   pragma omp parallel for schedule(guided)
 		for (size_t i = 0; i < size; ++i) {
 			size_t j = i << 1;
 			EdgeId edge = helper.AddEdge(DeBruijnEdgeData(sequences[i]));
-			records[j] = StartLink(i, edge);
-			records[j + 1] = EndLink(i, edge);
+			records[j] = StartLink(edge, sequences[i]);
+			records[j + 1] = EndLink(edge, sequences[i]);
 		}
 	}
 
-	void LinkEdge(omnigraph::ConstructionHelper<Graph> &helper, const Graph &graph, VertexId v, EdgeId edge, bool is_end, bool is_rc) {
+	void LinkEdge(typename Graph::Helper &helper, const Graph &graph, VertexId v, EdgeId edge, bool is_end, bool is_rc) const {
 		if(is_rc) {
 			v = graph.conjugate(v);
 		}
@@ -482,8 +492,8 @@ public:
 	FastGraphFromSequencesConstructor(size_t k, Index &origin) : kmer_size_(k), origin_(origin) {
 	}
 
-	void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) {
-		omnigraph::ConstructionHelper<Graph> helper = graph.GetConstructionHelper();
+	void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) const {
+		typename Graph::Helper helper = graph.GetConstructionHelper();
 		vector<LinkRecord> records;
 		CollectLinkRecords(helper, records, sequences);//TODO make parallel
 		std::sort(records.begin(), records.end());
@@ -509,8 +519,6 @@ public:
 				}
 			}
 		}
-
-//TODO FINISH IT
 	}
 };
 
@@ -521,7 +529,7 @@ template<class Graph, class Seq>
 class DeBruijnGraphExtentionConstructor {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef DeBruijnExtensionIndex<EdgeId, Seq> DeBruijn;
+	typedef DeBruijnExtensionIndex<Seq, kmer_index_traits<Seq>> DeBruijn;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
 	typedef typename DeBruijn::kmer_iterator kmer_iterator;
@@ -530,7 +538,7 @@ private:
 	DeBruijn &origin_;
 	size_t kmer_size_;
 
-	void FilterRC(std::vector<Sequence> edgeSequences) {
+	void FilterRC(std::vector<Sequence> &edgeSequences) {
 		size_t size = 0;
 		for(size_t i = 0; i < edgeSequences.size(); i++) {
 			if(!(edgeSequences[i] < !edgeSequences[i])) {
@@ -550,7 +558,8 @@ public:
 			double queueGrowthRate) {
 		std::vector<Sequence> edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
 		FilterRC(edgeSequences);
-		GraphFromSequencesConstructor<Seq>(kmer_size_).ConstructGraph(graph_, edgeSequences);
+//		GraphFromSequencesConstructor<Graph>(kmer_size_).ConstructGraph(graph_, edgeSequences);
+		FastGraphFromSequencesConstructor<Graph, Seq>(kmer_size_, origin_).ConstructGraph(graph_, edgeSequences);
 	}
 
 private:
@@ -558,4 +567,3 @@ private:
 };
 
 }
-#endif /* DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_ */

@@ -42,12 +42,12 @@ public:
 		return graph_.AddEdge(data);
 	}
 
-    virtual void LinkIncomingEdge(VertexId v, EdgeId e) {
+    void LinkIncomingEdge(VertexId v, EdgeId e) {
     	graph_.LinkIncomingEdge(v, e);
     }
 
-    virtual void LinkOutgoingEdge(VertexId v, EdgeId e) {
-    	LinkOutgoingEdge(v, e);
+    void LinkOutgoingEdge(VertexId v, EdgeId e) {
+    	graph_.LinkOutgoingEdge(v, e);
     }
 };
 
@@ -65,6 +65,7 @@ public:
 	typedef typename DataMaster::EdgeData EdgeData;
 	typedef VertexIt VertexIterator;
 	typedef typename base::edge_const_iterator edge_const_iterator;
+	typedef ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> Helper;
 
 private:
 	//todo think of necessity to pull these typedefs through hierarchy
@@ -150,6 +151,7 @@ public:
 	}
 
 	ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> GetConstructionHelper() {
+		VERIFY(this->VerifyAllDetached());
 		return ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> (*this);
 	}
 
@@ -162,6 +164,7 @@ public:
 		VERIFY(int_ids_);
 		return *int_ids_;
 	}
+
 	BaseIdTrackHandler<VertexIdT, EdgeIdT>* ReturnIntIdPointer() const {return int_ids_;};
 
 	int int_id(EdgeId edge) const {

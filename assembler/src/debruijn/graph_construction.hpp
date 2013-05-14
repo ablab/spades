@@ -130,6 +130,7 @@ void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
 	DEBUG("Coverage counted");
 }
 
+template<class Graph, class Read, class Seq>
 size_t ConstructGraphUsingOldIndex(size_t k,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
@@ -158,6 +159,7 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 	return rl;
 }
 
+template<class Graph, class Read, class Seq>
 size_t ConstructGraphUsingExtentionIndex(size_t k,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
@@ -165,11 +167,9 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 	INFO("Constructing DeBruijn graph");
 
 	TRACE("Filling indices");
-	size_t rl = 0;
 	VERIFY_MSG(streams.size(), "No input streams specified");
 
 	TRACE("... in parallel");
-	VERIFY(k + 1== debruijn.K());
 	// FIXME: output_dir here is damn ugly!
 	DeBruijnExtensionIndex<Seq> ext(k, cfg::get().output_dir);
 	DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
@@ -187,15 +187,19 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 	TRACE("Graph condensed");
 
 	TRACE("Counting coverage");
-	return DeBruijnEdgeIndexBuilder<Seq>().BuildIndexWithCoverageFromGraph(g, index, streams, contigs_stream);
+	DeBruijnEdgeIndex<typename Graph::EdgeId, Seq>& debruijn = index.inner_index();
+	TRACE("Building index of k+1-mers started");
+	size_t rl = DeBruijnEdgeIndexBuilder<Seq>().BuildIndexWithCoverageFromGraph(g, debruijn, streams, contigs_stream);
+	TRACE("Building index of k+1-mers finished");
+	return rl;
 }
 
 template<class Graph, class Read, class Seq>
 size_t ConstructGraph(size_t k,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
-//	return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
-	return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
+	return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
+//	return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
 }
 
 template<class Read>

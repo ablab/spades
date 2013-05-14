@@ -1212,6 +1212,7 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
 
  public:
 
+  template<class IdType, class Read>
   size_t ParallelFillCoverage(
 			DeBruijnEdgeIndex<IdType, runtime_k::RtSeq> &index,
 			io::ReadStreamVector<io::IReader<Read> > &streams,

@@ -50,7 +50,7 @@ private:
      * Create action handler with given name. With this name one can find out what tipe of handler is it.
      */
     ActionHandler(const string& name)
-            : handler_name_(name), attached_(false) {
+            : handler_name_(name), attached_(true) {
     }
 
     virtual ~ActionHandler() {
@@ -183,7 +183,6 @@ class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
               g_(g) {
         TRACE("Adding new action handler: " << this->name());
         g_.AddActionHandler(this);
-        this->Attach();
     }
 
     GraphActionHandler(const GraphActionHandler<Graph> &other)
@@ -195,7 +194,8 @@ class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
 
     virtual ~GraphActionHandler() {
         TRACE("Removing action handler: " << this->name());
-        this->Detach();
+        if(this->IsAttached())
+        	this->Detach();
         g_.RemoveActionHandler(this);
     }
 };
