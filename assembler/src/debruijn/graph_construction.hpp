@@ -133,6 +133,7 @@ template<class Graph, class Readers, class Index>
 size_t ConstructGraph(size_t k,
 		Readers& streams, Graph& g,
 		Index& index, SingleReadStream* contigs_stream = 0) {
+//	g.print_handlers();
     typedef typename Index::Kmer Seq;
 	INFO("Constructing DeBruijn graph");
 
