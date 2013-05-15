@@ -104,6 +104,9 @@ class DeBruijnKMerIndex {
   }
   KMerIdx seq_idx(const KMer &s) const {
     KMerIdx idx = index_.seq_idx(s);
+    if(push_back_index_.left.size() == 0) {
+    	return idx;
+    }
 
     // First, check whether we're insert index itself.
     if (contains(idx, s, /* check push back */ false))
@@ -1330,22 +1333,6 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
         index.AddOutgoing(kmer, nnucl);
         kmer <<= nnucl;
         index.AddIncoming(kmer, pnucl);
-//        char nnucl = seq[j], pnucl = kmer[0];
-//        unsigned nmask = (1 << nnucl), pmask = (1 << (pnucl + 4));
-//
-//        if (index[idx] & nmask) {
-//#         pragma omp atomic
-//          index[idx] |= nmask;
-//        }
-//
-//        index.AddOutgoing(kmer, nnucl);
-//        kmer <<= nnucl;
-//        idx = index.seq_idx(kmer);
-//
-//        if (index[idx] & pmask) {
-//#         pragma omp atomic
-//          index[idx] |= pmask;
-//        }
       }
     }
 
@@ -1383,6 +1370,7 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
       contigs_stream->reset();
       FillExtensionsFromStream(*contigs_stream, index);
     }
+    INFO("Building k-mer extensions from reads finished.");
 
     return rl;
   }

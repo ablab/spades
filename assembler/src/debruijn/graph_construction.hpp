@@ -176,8 +176,8 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 
 	TRACE("Extention Index constructed");
 
-	TRACE("Early tip clipping");
-	size_t clipped_tips = EarlyTipClipper(ext, 10).ClipTips();
+	INFO("Early tip clipping");
+	size_t clipped_tips = EarlyTipClipper(ext, 100).ClipTips();
 	INFO(clipped_tips << " " << (k+1) <<"-mers were removed by early tip clipper");
 	TRACE("Early tip clipping finished");
 
@@ -198,8 +198,8 @@ template<class Graph, class Read, class Seq>
 size_t ConstructGraph(size_t k,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
-	return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
-//	return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
+//	return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
+	return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
 }
 
 template<class Read>
