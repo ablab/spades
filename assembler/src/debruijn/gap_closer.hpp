@@ -503,7 +503,7 @@ void CloseGaps(conj_graph_pack& gp) {
   INFO("SUBSTAGE == Closing gaps");
 
   //TODO: discuss what to use for gap closing
-  size_t lib_index;
+  size_t lib_index = 0;
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
      if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
          lib_index = i;

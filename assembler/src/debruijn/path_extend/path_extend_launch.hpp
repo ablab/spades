@@ -19,7 +19,6 @@
 #include "pe_resolver.hpp"
 #include "pe_io.hpp"
 #include "path_visualizer.hpp"
-#include "path_validator.hpp"
 #include "loop_traverser.hpp"
 #include "single_threshold_finder.hpp"
 #include "long_read_storage.hpp"
@@ -106,7 +105,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	}
 	const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
-	INFO("Using " << libs.size() << " paired libs");
+	INFO("Using " << libs.size() << " paired lib(s)");
 	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
 
 	ContigWriter writer(gp, gp.g.k());
