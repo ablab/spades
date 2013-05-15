@@ -7,10 +7,12 @@
 
 #ifndef LOOP_TRAVERSER_H_
 #define LOOP_TRAVERSER_H_
+
 #include "path_extender.hpp"
 #include "pe_resolver.hpp"
 #include "path_visualizer.hpp"
-#include "path_validator.hpp"
+
+namespace path_extend {
 
 class LoopTraverser {
 	Graph& graph_;
@@ -133,5 +135,7 @@ public:
 
 	}
 };
+
+}
 
 #endif /* LOOP_TRAVERSER_H_ */

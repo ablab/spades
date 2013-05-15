@@ -12,6 +12,9 @@
 #include "late_pair_info_count.hpp"
 #include "graphio.hpp"
 using namespace debruijn_graph;
+
+namespace path_extend {
+
 class SingleThresholdFinder {
 
 public:
@@ -240,5 +243,6 @@ private:
 	}
 };
 
+}
 
 #endif /* SINGLE_THRESHOLD_FINDER_HPP_ */

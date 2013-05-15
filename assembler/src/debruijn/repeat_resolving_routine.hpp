@@ -1075,7 +1075,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 				pe_scaf_indexs.push_back(&resolved_graph_paired_info);
 			}
 			INFO("Scaffolding");
-			resolve_repeats_pe(resolved_gp, pe_indexs,
+			path_extend::resolve_repeats_pe(resolved_gp, pe_indexs,
 					pe_scaf_indexs, indexs,  vector<LongReadInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta");
 			SaveResolved(resolved_gp, resolved_graph_paired_info,
 					resolved_graph_paired_info_cl);
@@ -1112,12 +1112,12 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 
 	if (cfg::get().pe_params.param_set.scaffolder_options.on && cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
         prepare_all_scaf_libs(conj_gp, pe_scaf_indexs);
-        resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta");
+        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta");
         delete_index(pe_scaf_indexs);
 	}
 	else {
 		pe_scaf_indexs.clear();
-	    resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta");
+		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta");
 	}
 }
 
