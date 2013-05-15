@@ -18,7 +18,7 @@ private:
 	void CleanForwardLinks(Index::KmerWithHash &kh, char i) {
 		if(index_.CheckOutgoing(kh.idx, i)) {
 			Index::KmerWithHash next_kh = index_.CreateKmerWithHash(kh.kmer << i);
-			if(index_.CheckIncoming(next_kh.idx, kh.kmer[0])) {
+			if(!index_.CheckIncoming(next_kh.idx, kh.kmer[0])) {
 				index_.DeleteOutgoing(kh.idx, i);
 			}
 		}
@@ -27,7 +27,7 @@ private:
 	void CleanBackwardLinks(Index::KmerWithHash &kh, char i) {
 		if(index_.CheckIncoming(kh.idx, i)) {
 			Index::KmerWithHash prev_kh = index_.CreateKmerWithHash(kh.kmer >> i);
-			if(index_.CheckOutgoing(prev_kh.idx, kh.kmer[index_.K() - 1])) {
+			if(!index_.CheckOutgoing(prev_kh.idx, kh.kmer[index_.K() - 1])) {
 				index_.DeleteIncoming(kh.idx, i);
 			}
 		}
@@ -63,12 +63,12 @@ private:
 			tip.push_back(kh);
 			kh = index_.CreateKmerWithHash(kh.kmer << index_.GetUniqueOutgoing(kh.idx));
 		} while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx));
-		if(!index_.CheckUniqueOutgoing(kh.idx)) {
+		if(!index_.CheckUniqueIncoming(kh.idx)) {
 			for(size_t i = 0; i < tip.size(); i++) {
-				index_.DeleteOutgoing(tip[i].idx, index_.GetUniqueOutgoing(kh.idx));
+				index_.DeleteOutgoing(tip[i].idx, index_.GetUniqueOutgoing(tip[i].idx));
 			}
 			for(size_t i = 1; i < tip.size(); i++) {
-				index_.DeleteIncoming(tip[i].idx, index_.GetUniqueIncoming(kh.idx));
+				index_.DeleteIncoming(tip[i].idx, index_.GetUniqueIncoming(tip[i].idx));
 			}
 			return tip.size();
 		}
@@ -81,12 +81,12 @@ private:
 			tip.push_back(kh);
 			kh = index_.CreateKmerWithHash(kh.kmer >> index_.GetUniqueIncoming(kh.idx));
 		} while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx));
-		if(!index_.CheckUniqueIncoming(kh.idx)) {
+		if(!index_.CheckUniqueOutgoing(kh.idx)) {
 			for(size_t i = 0; i < tip.size(); i++) {
-				index_.DeleteIncoming(tip[i].idx, index_.GetUniqueIncoming(kh.idx));
+				index_.DeleteIncoming(tip[i].idx, index_.GetUniqueIncoming(tip[i].idx));
 			}
 			for(size_t i = 1; i < tip.size(); i++) {
-				index_.DeleteOutgoing(tip[i].idx, index_.GetUniqueOutgoing(kh.idx));
+				index_.DeleteOutgoing(tip[i].idx, index_.GetUniqueOutgoing(tip[i].idx));
 			}
 			return tip.size();
 		}

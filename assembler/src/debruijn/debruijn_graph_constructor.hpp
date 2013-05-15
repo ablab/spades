@@ -201,22 +201,15 @@ public:
 			double queueGrowthRate) {
 		kmer_iterator it = origin_.kmer_begin();
 		kmer_iterator end = origin_.kmer_end();
-
 		size_t queueSize = queueMinSize;
-
 		std::vector<KPlusOneMer> kmers;
 		std::vector<Sequence> sequences;
-
 		kmers.reserve(queueSize);
 		sequences.reserve(queueMaxSize);
-
 		while (it != end) {
 			AddKmers(it, end, queueSize, kmers); // format a queue of kmers that are not in index
-
 			CalculateSequences(kmers, sequences); // in parallel
-
 			ConstructPart(kmers, sequences);
-
 			kmers.clear();
 			queueSize = min(size_t(queueSize * queueGrowthRate), queueMaxSize);
 		}
@@ -284,18 +277,20 @@ private:
 	}
 
 	bool IsJunction(Index::KmerWithHash kh) {
-		return origin_.IsDeadEnd(kh.idx) || origin_.IsDeadStart(kh.idx) || (origin_.CheckUniqueOutgoing(kh.idx) && origin_.CheckUniqueIncoming(kh.idx));
+		return origin_.IsDeadEnd(kh.idx) || origin_.IsDeadStart(kh.idx) || !(origin_.CheckUniqueOutgoing(kh.idx) && origin_.CheckUniqueIncoming(kh.idx));
 	}
 
 	void AddKmers(kmer_iterator &it, kmer_iterator &end, size_t queueSize,
 			std::vector<KPlusOneMer>& kmers) {
 		for (; kmers.size() != queueSize && it != end; ++it) {
 			Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, (*it).data()));
-			if (IsJunction(kh))
+			if (IsJunction(kh)) {
 				for(char next = 0; next < 4; next++) {
-					if(origin_.CheckOutgoing(kh.idx, next))
+					if(origin_.CheckOutgoing(kh.idx, next)) {
 						kmers.push_back(KPlusOneMer(kh, next));
+					}
 				}
+			}
 		}
 	}
 
@@ -447,28 +442,28 @@ private:
 
 	LinkRecord StartLink(const EdgeId &edge, const Sequence &sequence) const {
 		Kmer kmer(kmer_size_, sequence);
-		size_t hash = origin_.seq_idx(kmer);
-		size_t rchash = origin_.seq_idx(!kmer);
-		if(hash <= rchash)
-			return LinkRecord(hash, edge, true, false);
+		Kmer kmer_rc = !kmer;
+		if(kmer < kmer_rc)
+			return LinkRecord(origin_.seq_idx(kmer), edge, true, false);
 		else
-			return LinkRecord(rchash, edge, true, true);
+			return LinkRecord(origin_.seq_idx(kmer_rc), edge, true, true);
 	}
 
 	LinkRecord EndLink(const EdgeId &edge, const Sequence &sequence) const {
 		Kmer kmer(kmer_size_, sequence, sequence.size() - kmer_size_);
-		size_t hash = origin_.seq_idx(kmer);
-		size_t rchash = origin_.seq_idx(!kmer);
-		if(hash <= rchash)
-			return LinkRecord(hash, edge, false, false);
+		Kmer kmer_rc = !kmer;
+		if(kmer < kmer_rc)
+			return LinkRecord(origin_.seq_idx(kmer), edge, false, false);
 		else
-			return LinkRecord(rchash, edge, false, true);
+			return LinkRecord(origin_.seq_idx(kmer_rc), edge, false, true);
 	}
 
 	void CollectLinkRecords(typename Graph::Helper &helper, vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
 		size_t size = sequences.size();
 		records.resize(size * 2, LinkRecord(0, EdgeId(0), false, false));
-#   pragma omp parallel for schedule(guided)
+//#   pragma omp parallel for schedule(guided)
+//		TODO: deal with handlers. The most troublesome is outer index handler. It probably should copy its values from inner index after the graph is created.
+//		Also inner indices are a problem.
 		for (size_t i = 0; i < size; ++i) {
 			size_t j = i << 1;
 			EdgeId edge = helper.AddEdge(DeBruijnEdgeData(sequences[i]));
@@ -477,14 +472,15 @@ private:
 		}
 	}
 
-	void LinkEdge(typename Graph::Helper &helper, const Graph &graph, VertexId v, EdgeId edge, bool is_end, bool is_rc) const {
+	void LinkEdge(typename Graph::Helper &helper, const Graph &graph, const VertexId v, const EdgeId edge, const bool is_end, const bool is_rc) const {
+		VertexId v1 = v;
 		if(is_rc) {
-			v = graph.conjugate(v);
+			v1 = graph.conjugate(v);
 		}
 		if(is_end) {
-			helper.LinkIncomingEdge(v, edge);
+			helper.LinkIncomingEdge(v1, edge);
 		} else {
-			helper.LinkOutgoingEdge(v, edge);
+			helper.LinkOutgoingEdge(v1, edge);
 		}
 	}
 
@@ -498,7 +494,8 @@ public:
 		CollectLinkRecords(helper, records, sequences);//TODO make parallel
 		std::sort(records.begin(), records.end());
 		size_t size = records.size();
-#   pragma omp parallel for schedule(guided)
+//#   pragma omp parallel for schedule(guided)
+//		TODO: make inner ids be the same in each run
 		for(size_t i = 0; i < size; i++) {
 			if(i != 0 && records[i].GetHash() == records[i - 1].GetHash()) {
 				continue;
@@ -508,15 +505,8 @@ public:
 			{
 				v = graph.AddVertex();
 			}
-			for(size_t j = i; j < size && records[i].GetHash() == records[i].GetHash(); j++) {
-				if(records[i].IsRC()) {
-					v = graph.conjugate(v);
-				}
-				if(records[i].IsEnd()) {
-					helper.LinkIncomingEdge(v, records[i].GetEdge());
-				} else {
-					helper.LinkOutgoingEdge(v, records[i].GetEdge());
-				}
+			for(size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
+				LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsEnd(), records[j].IsRC());
 			}
 		}
 	}

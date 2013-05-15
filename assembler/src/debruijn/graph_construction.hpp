@@ -173,6 +173,7 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 	// FIXME: output_dir here is damn ugly!
 	DeBruijnExtensionIndex<Seq> ext(k, cfg::get().output_dir);
 	DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
+	ext.DiscardKmers();//This effects the behavior of seq_idx function. This is extremely bad code. Refactoring required.
 
 	TRACE("Extention Index constructed");
 
@@ -182,15 +183,16 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 	TRACE("Early tip clipping finished");
 
 	INFO("Condensing graph");
+	index.Detach();
 	DeBruijnGraphExtentionConstructor<Graph, Seq> g_c(g, ext, k);
 	g_c.ConstructGraph(100, 10000, 1.2);
-	TRACE("Graph condensed");
+	index.Attach();
+	INFO("Graph condensed");
 
-	TRACE("Counting coverage");
+	INFO("Counting coverage");
 	DeBruijnEdgeIndex<typename Graph::EdgeId, Seq>& debruijn = index.inner_index();
-	TRACE("Building index of k+1-mers started");
 	size_t rl = DeBruijnEdgeIndexBuilder<Seq>().BuildIndexWithCoverageFromGraph(g, debruijn, streams, contigs_stream);
-	TRACE("Building index of k+1-mers finished");
+	INFO("Counting coverage finished");
 	return rl;
 }
 

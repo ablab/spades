@@ -54,6 +54,7 @@ class DeBruijnKMerIndex {
   KMerPushBackIndexType push_back_index_;
   KMerIndexStorageType push_back_buffer_;
 
+  bool discard_;
 
  public:
   typedef typename KMerIndexStorageType::iterator value_iterator;
@@ -64,12 +65,16 @@ class DeBruijnKMerIndex {
   static const size_t InvalidKMerIdx = SIZE_MAX;
 
   DeBruijnKMerIndex(unsigned K, const std::string &workdir)
-      : K_(K), index_(K), kmers(NULL) {
+      : K_(K), index_(K), kmers(NULL), discard_(false) {
     workdir_ = path::make_temp_dir(workdir, "kmeridx");
   }
   ~DeBruijnKMerIndex() {
     delete kmers;
     path::remove_dir(workdir_);
+  }
+
+  void DiscardKmers() {
+	  discard_ = true;
   }
 
   void clear() {
@@ -104,7 +109,7 @@ class DeBruijnKMerIndex {
   }
   KMerIdx seq_idx(const KMer &s) const {
     KMerIdx idx = index_.seq_idx(s);
-    if(push_back_index_.left.size() == 0) {
+    if(discard_) {
     	return idx;
     }
 
@@ -709,7 +714,7 @@ public:
     return CheckUnique(this->operator [](idx) & 15);
   }
 
-  bool GetUniqueOutgoing(size_t idx) const {
+  char GetUniqueOutgoing(size_t idx) const {
     return GetUnique(this->operator [](idx) & 15);
   }
 
@@ -717,7 +722,7 @@ public:
 	return CheckUnique(this->operator [](idx) >> 4);
   }
 
-  bool GetUniqueIncoming(size_t idx) const {
+  char GetUniqueIncoming(size_t idx) const {
 	return GetUnique(this->operator [](idx) >> 4);
   }
 
@@ -1193,20 +1198,17 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
       runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K);
 
       size_t idx = index.seq_idx(kmer);
-#ifndef NDEBUG
-      VERIFY(index.contains(idx, kmer));
-#endif
+      if(index.contains(idx, kmer)) {
 #   pragma omp atomic
-      index.data_[idx].count_ += 1;
+    	  index.data_[idx].count_ += 1;
+      }
       for (size_t j = K; j < seq.size(); ++j) {
         kmer <<= seq[j];
         idx = index.seq_idx(kmer);
-#ifndef NDEBUG
-        VERIFY(index.contains(idx, kmer));
-#endif
-
+        if(index.contains(idx, kmer)) {
 #     pragma omp atomic
-        index.data_[idx].count_ += 1;
+        	index.data_[idx].count_ += 1;
+        }
       }
     }
 

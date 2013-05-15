@@ -34,8 +34,7 @@ class ObservableGraph : private boost::noncopyable {
     bool VerifyAllDetached() {
         FOREACH (Handler* handler_ptr, action_handler_list_) {
             if(handler_ptr->IsAttached()) {
-            	cout << handler_ptr->name() << endl;
-//            	return false;
+            	return false;
             }
         }
         return true;

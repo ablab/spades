@@ -496,7 +496,7 @@ class AbstractConjugateGraph : public AbstractGraph<
     }
 
     virtual void LinkOutgoingEdge(VertexId v, EdgeId e) {
-    	VERIFY(this->EdgeStart(e) == VertexId(0));
+    	VERIFY(this->EdgeEnd(this->conjugate(e)) == VertexId(0));
     	v->AddOutgoingEdge(e);
     	this->conjugate(e)->SetEndVertex(this->conjugate(v));
     }
