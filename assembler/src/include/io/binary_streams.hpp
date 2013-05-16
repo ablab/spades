@@ -456,6 +456,7 @@ inline std::vector< SequenceSingleReadStream* > apply_single_wrappers(bool follo
         for (size_t i = 0; i < size; ++i) {
             SequenceSingleReadStream * single_stream = single_readers.at(i);
             SequencePairedReadStream * paired_stream = paired_readers->at(i);
+
             io::CleanSeqSingleReadStreamWrapper * single_wrapper = new io::CleanSeqSingleReadStreamWrapper(paired_stream);
 
             raw_readers[i] = new io::MultifileReader<io::SingleReadSeq>(*single_wrapper, *single_stream, true);
@@ -479,8 +480,7 @@ inline std::vector< SequenceSingleReadStream* > apply_single_wrappers(bool follo
 }
 
 
-inline std::vector< SequencePairedReadStream* > apply_paired_wrappers(bool followed_by_rc,
-        std::vector< SequencePairedReadStream* >& paired_readers) {
+inline std::vector< SequencePairedReadStream* > apply_paired_wrappers(bool followed_by_rc, std::vector< SequencePairedReadStream* >& paired_readers) {
 
     VERIFY(paired_readers.size() != 0);
     size_t size = paired_readers.size();
@@ -491,7 +491,8 @@ inline std::vector< SequencePairedReadStream* > apply_paired_wrappers(bool follo
             rc_readers[i] = new io::CleanRCReaderWrapper<io::PairedReadSeq>(paired_readers[i]);
         }
         return rc_readers;
-    } else {
+    }
+    else {
         return paired_readers;
     }
 }

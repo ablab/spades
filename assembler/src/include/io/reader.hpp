@@ -33,6 +33,7 @@
 #include "io/single_read.hpp"
 #include "io/paired_read.hpp"
 #include "io/parser.hpp"
+#include "orientation.hpp"
 #include "simple_tools.hpp"
 
 namespace io {
@@ -164,11 +165,12 @@ class SeparateReader : public IReader<PairedRead> {
    */
   explicit SeparateReader(const PairedRead::FilenamesType& filenames,
          size_t insert_size, bool change_order = false,
-         bool revert_second = true,
+         bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
          OffsetType offset_type = PhredOffset)
       : filenames_(filenames), insert_size_(insert_size),
         change_order_(change_order),
-        revert_second_(revert_second),
+        use_orientation_(use_orientation),
+        changer_(GetOrientationChanger<PairedRead>(orientation)),
         offset_type_(offset_type),
         first_(new Reader(filenames_.first, offset_type_)),
         second_(new Reader(filenames_.second, offset_type_)) {}
@@ -180,6 +182,7 @@ class SeparateReader : public IReader<PairedRead> {
     close();
     delete first_;
     delete second_;
+    delete changer_;
   }
 
   /*
@@ -212,9 +215,18 @@ class SeparateReader : public IReader<PairedRead> {
     SingleRead sr1, sr2;
     (*first_) >> sr1;
     (*second_) >> sr2;
-    if (revert_second_) sr2 = !sr2;
 
-    pairedread = change_order_ ? PairedRead(sr2, sr1, insert_size_) : PairedRead(sr1, sr2, insert_size_);
+    if (use_orientation_) {
+        pairedread = changer_->Perform(PairedRead(sr1, sr2, insert_size_));
+    }
+    else {
+        pairedread = PairedRead(sr1, sr2, insert_size_);
+    }
+
+    if (change_order_) {
+        pairedread = PairedRead(pairedread.second(), pairedread.first(), insert_size_);
+    }
+
     return *this;
   }
 
@@ -248,7 +260,9 @@ class SeparateReader : public IReader<PairedRead> {
 
   bool change_order_;
 
-  bool revert_second_;
+  bool use_orientation_;
+
+  OrientationChanger<PairedRead> * changer_;
 
   /*
    * @variable Quality offset type.
@@ -287,10 +301,13 @@ class MixedReader : public IReader<PairedRead> {
    * @param offset The offset of the read quality.
    */
   explicit MixedReader(const std::string& filename, size_t insert_size, bool change_order = false,
-		  bool revert_second = true, OffsetType offset_type = PhredOffset)
+		  bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
+		  OffsetType offset_type = PhredOffset)
       : filename_(filename), insert_size_(insert_size),
         change_order_(change_order),
-        revert_second_(revert_second), offset_type_(offset_type),
+        use_orientation_(use_orientation),
+        changer_(GetOrientationChanger<PairedRead>(orientation)),
+        offset_type_(offset_type),
         single_(new Reader(filename_, offset_type_)) {}
 
   /*
@@ -299,6 +316,7 @@ class MixedReader : public IReader<PairedRead> {
   /* virtual */ ~MixedReader() {
     close();
     delete single_;
+    delete changer_;
   }
 
   /*
@@ -332,9 +350,16 @@ class MixedReader : public IReader<PairedRead> {
     (*single_) >> sr1;
     (*single_) >> sr2;
 
-    if (revert_second_) sr2 = !sr2;
+    if (use_orientation_) {
+        pairedread = changer_->Perform(PairedRead(sr1, sr2, insert_size_));
+    }
+    else {
+        pairedread = PairedRead(sr1, sr2, insert_size_);
+    }
 
-    pairedread = change_order_ ? PairedRead(sr2, sr1, insert_size_) : PairedRead(sr1, sr2, insert_size_);
+    if (change_order_) {
+        pairedread = PairedRead(pairedread.second(), pairedread.first(), insert_size_);
+    }
 
     return *this;
   }
@@ -367,7 +392,9 @@ class MixedReader : public IReader<PairedRead> {
 
   bool change_order_;
 
-  bool revert_second_;
+  bool use_orientation_;
+
+  OrientationChanger<PairedRead> * changer_;
 
   /*
    * @variable Quality offset type.

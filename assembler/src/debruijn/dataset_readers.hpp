@@ -23,11 +23,11 @@ std::auto_ptr<PairedReadStream> paired_easy_reader(const io::SequencingLibrary<d
                                                    bool followed_by_rc,
                                                    size_t insert_size,
                                                    bool change_read_order = false,
-                                                   bool revert_second = true,
+                                                   bool use_orientation = true,
                                                    io::OffsetType offset_type = io::PhredOffset) {
   std::vector<PairedReadStream*> streams;
   for (auto it = lib.paired_begin(); it != lib.paired_end(); ++it) {
-    io::PairedEasyReader* reader = new io::PairedEasyReader(*it, followed_by_rc, insert_size, change_read_order, revert_second, offset_type);
+    io::PairedEasyReader* reader = new io::PairedEasyReader(*it, followed_by_rc, insert_size, change_read_order, use_orientation, lib.orientation(), offset_type);
     streams.push_back(reader);
   }
   return std::auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
@@ -57,12 +57,12 @@ std::auto_ptr<PairedReadStream> paired_easy_reader_for_libs(std::vector<size_t> 
                                                             bool followed_by_rc,
                                                             size_t insert_size,
                                                             bool change_read_order = false,
-                                                            bool revert_second = true,
+                                                            bool use_orientation = true,
                                                             io::OffsetType offset_type = io::PhredOffset) {
   std::vector<PairedReadStream*> streams;
   for (size_t i = 0; i < libs.size(); ++i) {
     std::auto_ptr<PairedReadStream> reader = paired_easy_reader(cfg::get().ds.reads[libs[i]],
-                                                                followed_by_rc, insert_size, change_read_order, revert_second, offset_type);
+                                                                followed_by_rc, insert_size, change_read_order, use_orientation, offset_type);
     streams.push_back(reader.get());
     reader.release();
   }
@@ -73,7 +73,7 @@ std::auto_ptr<PairedReadStream> paired_easy_reader_for_libs(std::vector<size_t> 
 std::auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc,
                                                    size_t insert_size,
                                                    bool change_read_order = false,
-                                                   bool revert_second = true,
+                                                   bool use_orientation = true,
                                                    io::OffsetType offset_type = io::PhredOffset) {
 
   std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
@@ -82,7 +82,7 @@ std::auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc,
 
   // FIXME: Should we use only first library?
   // No, this one is for all libs together
-  return paired_easy_reader_for_libs(all_libs, followed_by_rc, insert_size, change_read_order, revert_second, offset_type);
+  return paired_easy_reader_for_libs(all_libs, followed_by_rc, insert_size, change_read_order, use_orientation, offset_type);
 }
 
 
