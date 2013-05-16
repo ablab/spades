@@ -179,7 +179,7 @@ void estimate_distance(conj_graph_pack& gp,
     DEBUG("The refining of clustered pair information has been finished");    // if so, it resolves such conflicts.
 
     INFO("Filling paired information");
-    PairInfoImprover<Graph> improver(gp.g, clustered_index);
+    PairInfoImprover<Graph> improver(gp.g, clustered_index, lib);
     improver.ImprovePairedInfo(config.use_multithreading, config.max_threads);
   }
 }

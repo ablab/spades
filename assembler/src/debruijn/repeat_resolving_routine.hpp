@@ -472,7 +472,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //			origin_gp.g);
 //	ProduceLongEdgesStat( origin_gp,  clustered_index);
 	if (cfg::get().compute_paths_number)
-		GenerateMatePairStats(origin_gp, clustered_index);
+		GenerateMatePairStats(origin_gp, clustered_index, cfg::get().ds.is_var());
 	DEBUG("New index size: " << clustered_index.size());
 	// todo: make printGraph const to its arguments
 

@@ -139,6 +139,7 @@ const Sequence& genome, size_t k) {
 }
 
 void CountPairedInfoStats(const Graph& g,
+    const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
     const PairedInfoIndexT<Graph>& paired_index,
     const PairedInfoIndexT<Graph>& etalon_index,
     const string& output_folder) {
@@ -148,11 +149,10 @@ void CountPairedInfoStats(const Graph& g,
 	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-  const auto& ds = cfg::get().ds;
 	UniquePathStat<Graph>(g, filtered_index,
-                        ds.IS(),
-                        ds.RL(),
-                        0.1 * ds.IS()).Count();
+	                    lib.data().mean_insert_size,
+                        lib.data().read_length,
+                        0.1 * lib.data().mean_insert_size).Count();
 	UniqueDistanceStat<Graph>(etalon_index).Count();
 	INFO("Paired info stats counted");
 }

@@ -30,8 +30,8 @@ class PairInfoImprover {
   typedef pair<EdgeId, EdgeId> EdgePair;
 
  public:
-  PairInfoImprover(const Graph& g, PairedInfoIndexT<Graph>& clustered_index) :
-                   graph_(g), index_(clustered_index)
+  PairInfoImprover(const Graph& g, PairedInfoIndexT<Graph>& clustered_index, const io::SequencingLibrary<debruijn_config::DataSetData> &lib) :
+                   graph_(g), index_(clustered_index), lib_(lib)
   {
   }
 
@@ -157,7 +157,7 @@ class PairInfoImprover {
       #pragma omp for schedule(guided)
       for (size_t i = 0; i < infos.size(); ++i)
       {
-        vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos[i]);
+        vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos[i], lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
         paths_size += paths.size();
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
           TRACE("Path " << iter->PrintPath(graph_));
@@ -210,7 +210,7 @@ class PairInfoImprover {
     SplitPathConstructor<Graph> spc(graph_);
     for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       const PairInfos& infos = index_.GetEdgeInfo(*e_iter);
-      vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos);
+      vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos, lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
       for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
         TRACE("Path " << iter->PrintPath(graph_));
         for (auto pi_iter = iter->begin(); pi_iter != iter->end(); ++pi_iter) {
@@ -363,6 +363,7 @@ class PairInfoImprover {
 
   const Graph& graph_;
   PairedInfoIndexT<Graph>& index_;
+  const io::SequencingLibrary<debruijn_config::DataSetData>& lib_;
 
   DECL_LOGGER("PairInfoImprover")
 };
