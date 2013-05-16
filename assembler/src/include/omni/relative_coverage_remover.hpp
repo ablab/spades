@@ -6,6 +6,27 @@
 
 namespace omnigraph {
 
+template<class EdgeContainer>
+void SingleEdgeAdapter(
+    const EdgeContainer& edges,
+    boost::function<void(typename EdgeContainer::value_type)> single_edge_handler_f) {
+  FOREACH(auto e, edges) {
+    single_edge_handler_f(e);
+  }
+}
+
+template<class Graph>
+void VisualizeNontrivialComponent(const Graph& g,
+                                  const set<typename Graph::EdgeId>& edges,
+                                  const string& filename,
+                                  const GraphLabeler<Graph>& labeler,
+                                  const GraphColorer<Graph>& colorer) {
+  if (edges.size() > 1) {
+    WriteComponent(GraphComponent<Graph>(g, edges.begin(), edges.end()),
+                   filename, colorer, labeler);
+  }
+}
+
 //currently works with conjugate graphs only (due to the assumption in the outer cycle)
 template<class Graph>
 class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
@@ -14,7 +35,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
   typedef boost::function<double(EdgeId, VertexId)> LocalCoverageFT;
-  typedef boost::function<void(EdgeId)> HandlerF;
+  typedef typename ComponentRemover<Graph>::HandlerF HandlerF;
  private:
 
   LocalCoverageFT local_coverage_f_;
@@ -166,9 +187,9 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
  public:
 //todo make some useful order and stop condition
   RelativeCoverageComponentRemover(
-      Graph& g, LocalCoverageFT local_coverage_f,
-      size_t length_bound,
-      double min_coverage_gap, size_t max_coverage = std::numeric_limits<size_t>::max(),
+      Graph& g, LocalCoverageFT local_coverage_f, size_t length_bound,
+      double min_coverage_gap, size_t max_coverage =
+          std::numeric_limits<size_t>::max(),
       HandlerF handler_function = 0, size_t vertex_count_limit = 10)
       : base(g),
         local_coverage_f_(local_coverage_f),

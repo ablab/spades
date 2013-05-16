@@ -27,6 +27,7 @@ using namespace omnigraph;
 
 namespace omnigraph {
 
+//todo refactor!!!
 template<class Graph>
 class TotalLabelerGraphStruct
     : boost::noncopyable

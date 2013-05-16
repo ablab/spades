@@ -18,6 +18,7 @@
 #include "debruijn_graph.hpp"
 #include "debruijn_stats.hpp"
 
+#include "omni/graph_colorer.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/omni_tools.hpp"
 #include "omni/tip_clipper.hpp"
@@ -34,6 +35,18 @@
 #include "detail_coverage.hpp"
 
 namespace debruijn_graph {
+
+//todo move to visualization
+template <class graph_pack>
+auto_ptr<GraphColorer<typename graph_pack::graph_t>> DefaultColorer(const graph_pack& gp) {
+  typedef typename graph_pack::graph_t Graph;
+  typedef typename Graph::EdgeId EdgeId;
+
+  auto mapper = NewExtendedSequenceMapper(gp);
+  auto path1 = mapper->MapSequence(gp.g).simple_path();
+  auto path2 = mapper->MapSequence(!gp.g).simple_path();
+  return omnigraph::DefaultColorer(gp.g, path1, path2);
+}
 
 class LengthThresholdFinder {
  public:
@@ -420,7 +433,7 @@ bool RemoveRelativelyLowCoverageComponents(
     Graph &g,
     const FlankingCoverage& flanking_cov,
 //    const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
-    boost::function<void(typename Graph::EdgeId)> removal_handler,
+    typename ComponentRemover<Graph>::HandlerF removal_handler,
     size_t read_length = 0, double detected_coverage_threshold = 0.,
         size_t iteration_count = 1, size_t i = 0) {
   //todo use iteration numbers
@@ -605,12 +618,17 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage& flanking_c
   printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
   DEBUG(iteration << " ErroneousConnectionsRemoval");
-  RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, removal_handler,
+  RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/0,
                          *cfg::get().ds.RL, max_coverage, iteration_count,
                          iteration);
   DEBUG(iteration << " ErroneousConnectionsRemoval stats");
 
-  RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, /*cfg::get().simp.ec, */removal_handler,
+  //relative coverage remover
+  auto colorer = DefaultColorer(gp);
+
+
+
+  RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, boost::bind() removal_handler,
                                         *cfg::get().ds.RL, max_coverage, iteration_count,
                                         iteration);
 

@@ -164,10 +164,12 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph, Comparator> 
 
 template<class Graph>
 class ComponentRemover {
+ public:
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
-  typedef boost::function<void(EdgeId)> HandlerF;
+  typedef boost::function<void(const set<EdgeId>&)> HandlerF;
 
+ private:
   Graph& g_;
   HandlerF removal_handler_;
 
@@ -197,10 +199,11 @@ class ComponentRemover {
       InsertIfNotConjugate(vertices, g_.EdgeEnd(e));
     }
 
+    if (removal_handler_) {
+      removal_handler_(edges);
+    }
+
     FOREACH (EdgeId e, edges) {
-      if (removal_handler_) {
-        removal_handler_(e);
-      }
       g_.DeleteEdge(e);
     }
 
