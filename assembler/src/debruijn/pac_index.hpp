@@ -13,44 +13,6 @@
 
 //TODO: dangerousCode
 
-template<class Graph>
-struct KmerCluster {
-	int last_trustable_index;
-	int first_trustable_index;
-	typename Graph::EdgeId edgeId;
-	vector<MappingInstance> sorted_positions;
-	int size;
-
-	KmerCluster( EdgeId e, vector<MappingInstance>& v){
-		last_trustable_index = 0;
-		first_trustable_index = 0;
-		edgeId = e;
-		size = v.size();
-		sorted_positions = v;
-		FillTrustableIndeces();
-	}
-
-    bool operator < (const KmerCluster & b) const {
-		if (edgeId < b.edgeId  || (edgeId == b.edgeId && sorted_positions < b.sorted_positions))
-			return true;
-		else
-			return false;
-	}
-
-	void FillTrustableIndeces(){
-		//ignore non-unique kmers for distance determination
-		int first_unique_ind = 0;
-		while (first_unique_ind != size - 1  && ! (sorted_positions[first_unique_ind].IsUnique())) {
-			first_unique_ind += 1;
-		}
-		int last_unique_ind = size - 1;
-		while (last_unique_ind != 0 &&  ! (sorted_positions[last_unique_ind].IsUnique())) {
-			last_unique_ind -= 1;
-		}
-		last_trustable_index = last_unique_ind;
-		first_trustable_index = first_unique_ind;
-	}
-};
 
 template<class Graph>
 struct MappingDescription {
@@ -299,6 +261,11 @@ public :
 		return cur_sorted;
 	}
 
+	bool TopologyGap(EdgeId first, EdgeId second) const{
+		return ((g_.IsDeadEnd(g_.EdgeEnd(first)) && g_.IsDeadStart(g_.EdgeStart(second))) ||
+				(g_.IsDeadStart(g_.EdgeStart(first)) && g_.IsDeadEnd(g_.EdgeEnd(second))));
+	}
+
 	vector<vector<EdgeId> > GetReadAlignment(Sequence &s){
 		ClustersSet mapping_descr = GetClusters(s);
 		int len = mapping_descr.size();
@@ -341,6 +308,8 @@ public :
 			}
 		}
 		vector<vector<EdgeId> >sortedEdges;
+		vector<typename ClustersSet::iterator> start_clusters, end_clusters;
+		vector<GapDescription<Graph> > illumina_gaps;
 		for (i = 0; i < len; i ++)
 			used[i] = 0;
 		for (i = 0; i < len; i ++) {
@@ -369,15 +338,27 @@ public :
  						}
  						vector <pair<size_t,  typename ClustersSet::iterator> > splitted_cluster(cur_cluster_start, next_iter);
  						vector<EdgeId> cur_sorted = FillGapsInCluster(splitted_cluster, s);
- 						if (cur_sorted.size() > 0)
+ 						if (cur_sorted.size() > 0) {
+ 							start_clusters.push_back(cur_cluster_start->second);
+ 							end_clusters.push_back(iter->second);
  							sortedEdges.push_back(cur_sorted);
+ 						}
  						cur_cluster_start = next_iter;
  					}
  				}
 			}
 		}
+		int alignments = int(sortedEdges.size());
+		for(i = 0; i < alignments; i++) {
+			for(int j = 0; j < alignments; j++) {
+				if (i!= j && TopologyGap(sortedEdges[i][0],sortedEdges[j][sortedEdges[j].size() - 1] )){
+					illumina_gaps.push_back(GapDescription<Graph>(*end_clusters[i], *start_clusters[j], s, K_));
+				}
+			}
+		}
 		return sortedEdges;
 	}
+
 
 	std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a, const KmerCluster<Graph> &b, int s_add_len, int e_add_len){
 		int start_pos = a.sorted_positions[a.last_trustable_index].read_position;

@@ -55,12 +55,66 @@ struct ReadPositionComparator{
     }
 };
 
+template<class Graph>
+struct KmerCluster {
+	int last_trustable_index;
+	int first_trustable_index;
+	typename Graph::EdgeId edgeId;
+	vector<MappingInstance> sorted_positions;
+	int size;
 
-//template<class Graph>
-//struct OneReadMapping {
-//	typename Graph::EdgeId EdgeId;
-//	vector<vector<EdgeId> > main_storage;
-//
-//};
+	KmerCluster( EdgeId e, vector<MappingInstance>& v){
+		last_trustable_index = 0;
+		first_trustable_index = 0;
+		edgeId = e;
+		size = v.size();
+		sorted_positions = v;
+		FillTrustableIndeces();
+	}
+
+    bool operator < (const KmerCluster & b) const {
+		if (edgeId < b.edgeId  || (edgeId == b.edgeId && sorted_positions < b.sorted_positions))
+			return true;
+		else
+			return false;
+	}
+
+	void FillTrustableIndeces(){
+		//ignore non-unique kmers for distance determination
+		int first_unique_ind = 0;
+		while (first_unique_ind != size - 1  && ! (sorted_positions[first_unique_ind].IsUnique())) {
+			first_unique_ind += 1;
+		}
+		int last_unique_ind = size - 1;
+		while (last_unique_ind != 0 &&  ! (sorted_positions[last_unique_ind].IsUnique())) {
+			last_unique_ind -= 1;
+		}
+		last_trustable_index = last_unique_ind;
+		first_trustable_index = first_unique_ind;
+	}
+};
+
+
+template<class Graph>
+struct GapDescription{
+	typename Graph::EdgeId start, end;
+//	MappingInstance position_on_start, position_on_end;
+	int gap_start_position, gap_end_position;
+	Sequence s;
+	GapDescription(const KmerCluster<Graph> &a, const  KmerCluster<Graph> & b, Sequence & read, int pacbio_k) {
+		gap_start_position = a.sorted_positions[a.last_trustable_index].edge_position + pacbio_k;
+		gap_end_position = b.sorted_positions[b.first_trustable_index].edge_position;
+		s = read.Subseq(gap_start_position, gap_end_position);
+	}
+};
+
+template<class Graph>
+struct OneReadMapping {
+	typedef typename Graph::EdgeId EdgeId;
+	vector<vector<EdgeId> > main_storage;
+	vector<GapDescription<Graph> > gaps;
+	OneReadMapping(vector<vector<EdgeId> > &paths_description, vector<GapDescription<Graph> > &gaps_description): main_storage(paths_description), gaps(gaps_description) {}
+
+};
 
 

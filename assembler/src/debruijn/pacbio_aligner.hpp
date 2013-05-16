@@ -79,8 +79,9 @@ public :
 	}
 
 	bool TopologyGap(EdgeId first, EdgeId second){
-		return ((gp_.g.IsDeadEnd(gp_.g.EdgeEnd(first)) && gp_.g.IsDeadStart(gp_.g.EdgeStart(second))) ||
-				(gp_.g.IsDeadStart(gp_.g.EdgeStart(first)) && gp_.g.IsDeadEnd(gp_.g.EdgeEnd(second))));
+		return true;
+//		return ((gp_.g.IsDeadEnd(gp_.g.EdgeEnd(first)) && gp_.g.IsDeadStart(gp_.g.EdgeStart(second))) ||
+//				(gp_.g.IsDeadStart(gp_.g.EdgeStart(first)) && gp_.g.IsDeadEnd(gp_.g.EdgeEnd(second))));
 	}
 
 	void ProcessReadsBatch(std::vector<ReadStream::read_type>& reads, PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index, PathStorage<Graph>& long_reads, size_t buf_size, int& genomic_subreads, int& nongenomic_subreads, int& nongenomic_edges, int& total_length,int& tlen, size_t& n, map<int, int>& different_edges_profile, int& rc_pairs){
