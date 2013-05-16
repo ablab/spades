@@ -151,8 +151,8 @@ namespace debruijn_graph {
 
 			VertexId inVertex = graph_p->g.EdgeEnd( incomingEdge );
 			//VertexId outVertex = graph_p->g.EdgeStart( outgoingEdge );
-			auto inCov = coverage->getOutCov(incomingEdge);
-			auto outCov = coverage->getInCov(outgoingEdge);
+			auto inCov = coverage->GetOutCov(incomingEdge);
+			auto outCov = coverage->GetInCov(outgoingEdge);
 			auto cov = (inCov + outCov) / 2.0;	
 			//auto cov = inCov;
 			//auto cov = min(inCov, outCov);	

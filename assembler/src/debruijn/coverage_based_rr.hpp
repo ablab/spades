@@ -11,6 +11,7 @@
 #include "pair_info_improver.hpp"
 #include "path_extend/pe_io.hpp"
 #include "graphio.hpp"
+#include "long_read_storage.hpp"
 
 namespace debruijn_graph{
 
@@ -31,7 +32,7 @@ class CoverageBasedResolution {
 	
 	
 	//path without conjugate edges
-	std::vector< std::vector<EdgeId> > filteredPaths;
+	std::vector< PathInfo<typename GraphPack::graph_t> > filteredPaths;
 
 
 	private:
@@ -163,7 +164,7 @@ class CoverageBasedResolution {
 
 		joinPaths(resolvedPaths, filter.resolvedLoops, allPaths);
 		std::cout << "after joining: " << allPaths.size() << std::endl;
-		filterConjugate( usedEdges, allPaths, filteredPaths);
+		filterConjugate( usedEdges, allPaths);
 		std::cout << "before filtering size " << allPaths.size() << " filtered size: " << filteredPaths.size() << std::endl;
 
 		//FILE* file = fopen("/home/ksenia/path_resolved.log", "w");
@@ -181,8 +182,8 @@ class CoverageBasedResolution {
 		std::cout << "-------------------------" << std::endl;
 		for ( auto p = filteredPaths.begin(); p != filteredPaths.end(); ++p) {
 			//fprintf(file, "resolved path \n");
-			for ( auto iter = p->begin(); iter != p->end(); ++iter ) {
-				std::cout << gp->g.int_id(*iter) << "( " << gp->g.length(*iter) << "; " << coverage.getInCov(*iter) << " " << coverage.getOutCov(*iter) << ") ";
+			for ( auto iter = p->getPath().begin(); iter != p->getPath().end(); ++iter ) {
+				std::cout << gp->g.int_id(*iter) << "( " << gp->g.length(*iter) << "; " << coverage.GetInCov(*iter) << " " << coverage.GetOutCov(*iter) << ") ";
 				//fprintf(file, "%d ", gp->g.int_id(*iter));
 				//fprintf(file, " ");
 			}
@@ -198,7 +199,7 @@ class CoverageBasedResolution {
 		for ( auto p = filteredPaths.begin(); p != filteredPaths.end(); ++p) {
 			BidirectionalPath* bidirectional_path = new BidirectionalPath( gp->g );
 			BidirectionalPath* conjugate_path = new BidirectionalPath( gp->g );
-			for (auto it = p->begin(); it != p->end(); ++it ){
+			for (auto it = p->getPath().begin(); it != p->getPath().end(); ++it ){
 					
 					bidirectional_path->PushBack(*it);
 					EdgeId cedge = gp->g.conjugate(*it);
@@ -214,7 +215,7 @@ class CoverageBasedResolution {
 	private:
 
 	void filterConjugate( std::set<EdgeId>& usedEdges,
-				const std::vector< std::vector<EdgeId> > & paths, std::vector< std::vector<EdgeId> >  &filteredPaths){
+				const std::vector< std::vector<EdgeId> > & paths ){
 
 
 		for ( auto path = paths.begin(); path != paths.end(); ++path) {
@@ -230,13 +231,13 @@ class CoverageBasedResolution {
 
 			}
 			if (ifInsert) {
-				filteredPaths.push_back(*path);
+				filteredPaths.push_back(PathInfo<typename GraphPack::graph_t>(*path));
 				for (auto e = path->begin(); e != path->end(); ++e) 
 					usedEdges.insert(*e);
 				}
 		}
 		for ( auto path = filteredPaths.begin(); path != filteredPaths.end(); ++path )
-			for (auto e = path->begin(); e != path->end(); ++e) {
+			for (auto e = path->getPath().begin(); e != path->getPath().end(); ++e) {
 				usedEdges.insert(gp->g.conjugate(*e));
 			}
 
@@ -666,11 +667,11 @@ class CoverageBasedResolution {
 
 			//std::cout << "still on" << std::endl;
 			for ( auto inEdge = incomingEdges.begin(); inEdge != incomingEdges.end(); ++inEdge) {
-				incomingEdgesCoverage.push_back(std::make_pair(*inEdge,coverage.getOutCov(*inEdge)));
+				incomingEdgesCoverage.push_back(std::make_pair(*inEdge,coverage.GetOutCov(*inEdge)));
 			}
 
 			for ( auto outEdge = outgoingEdges.begin(); outEdge != outgoingEdges.end(); ++outEdge) {
-				outgoingEdgesCoverage.push_back(std::make_pair(*outEdge,coverage.getInCov(*outEdge)));
+				outgoingEdgesCoverage.push_back(std::make_pair(*outEdge,coverage.GetInCov(*outEdge)));
 			}
 	
 			sort(incomingEdgesCoverage.begin(), incomingEdgesCoverage.end(), CompareSecond<EdgeId, coverage_value>());
@@ -693,8 +694,8 @@ class CoverageBasedResolution {
 			for ( auto edgePair = pairsOfEdges.begin(); edgePair != pairsOfEdges.end(); ++edgePair ){
 				BidirectionalPath* resolved_path = new BidirectionalPath( gp->g );
 				resolveRepeat( *edgePair, path, *resolved_path );
-				if (resolved_path->Size() < 3 || resolved_path->Front() == resolved_path->Back() || coverage.getOutCov(edgePair->first) < 5 
-					|| coverage.getInCov(edgePair->second) < 5) {
+				if (resolved_path->Size() < 3 || resolved_path->Front() == resolved_path->Back() || coverage.GetOutCov(edgePair->first) < 5 
+					|| coverage.GetInCov(edgePair->second) < 5) {
 					continue;
 				}
 				//now put it into collection of paths

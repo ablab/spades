@@ -1183,8 +1183,22 @@ void resolve_repeats() {
 	
 	INFO("Resolving repeats by coverage");
 
-	auto index = FlankingCoverage(conj_gp, 50);
-/*	auto filter = LoopFilter<conj_graph_pack, FlankingCoverage<EdgeId>>(conj_gp, index);
+	DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), cfg::get().output_dir);
+	if (cfg::get().developer_mode) {
+  
+  		std::string path;
+		if (cfg::get().entry_point < ws_repeats_resolving) 
+			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
+		else
+			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
+		bool val = LoadEdgeIndex(path, kmerIndex);
+		VERIFY_MSG(val, "can not open file "+path+".kmidx");
+		INFO("Updating index from graph started");
+	                  DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, conj_gp.g);
+
+	}	
+	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
+	/*	auto filter = LoopFilter<conj_graph_pack, FlankingCoverage<EdgeId>>(conj_gp, index);
 	filter.get_loopy_components(quality_labeler); */
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 

@@ -14,122 +14,109 @@
 
 namespace debruijn_graph {
 
+
+	template <class Graph>
 	class FlankingCoverage{
+		typedef typename Graph::EdgeId EdgeId;
+		typedef typename Graph::VertexId VertexId;
 	/*
 	Iterates over kmer index saves values of coverage on the ends of edges
 	*/
 
-		std::map<EdgeId, double> inCoverage;
-		std::map<EdgeId, double> outCoverage;
-		unsigned averageConst;
+		std::map<EdgeId, double> in_coverage_;
+		std::map<EdgeId, double> out_coverage_;
+		const DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq>& kmer_index_;
+		const unsigned average_const_;
+		const unsigned K_;
 
 	public:
 
 		
-		double getInCov( const EdgeId& inCov ){
+		double GetInCov(EdgeId edge ) const {
 
-			return inCoverage[inCov];
+			auto coverage = in_coverage_.find(edge);
+			VERIFY(coverage != in_coverage_.end());
+			return coverage->second;
 		}
 
-		double getOutCov( const EdgeId& outCov ){
+		double GetOutCov(EdgeId edge) const {
 
-			return outCoverage[outCov];
+			auto coverage = out_coverage_.find(edge);
+			VERIFY(coverage != out_coverage_.end());
+			return coverage->second;
 		}
 
-		FlankingCoverage( const conj_graph_pack& graph, const unsigned avg ) : averageConst(avg) {
+	private:
+
+		double CountInCoverage ( const Sequence& seq, size_t size_bound ) const {
+
+			unsigned len = seq.size();
+			double edge_coverage_in(0.0);
+		
+			for (unsigned i = 0; i < size_bound; ++i) {
+				runtime_k::RtSeq kmer_in(K_);
+				for ( unsigned j = i; j < K_ + i && j < len; ++j) {
+					kmer_in <<= seq[j];
+				}
+				
+				edge_coverage_in += kmer_index_[kmer_in].count_;
+			}
+					
+			return edge_coverage_in / size_bound;
+
+
+		}
+
+		double CountOutCoverage ( const Sequence& seq, size_t size_bound ) const {
+
+			unsigned len = seq.size();
+			double edge_coverage_out(0.0);
+
+			for (unsigned i = 0; i < size_bound; ++i) {
+				runtime_k::RtSeq kmer_out;
+				for ( unsigned j = len-K_-i; j >= 0 && j < len - i; ++j) {
+							
+					kmer_out <<= seq[j];
+				}
+					
+				edge_coverage_out += kmer_index_[kmer_out].count_;
+
+
+				}
+			return edge_coverage_out / size_bound;
+
+
+		}
+	public:
+
+
+		FlankingCoverage( const Graph& g, const DeBruijnEdgeIndex<EdgeId>& kmer_index, unsigned avg, unsigned K ) : kmer_index_(kmer_index), average_const_(avg), K_(K) {
 
 	
-			size_t K = cfg::get().K + 1;
-			DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(graph.index.inner_index().K(), cfg::get().output_dir);
-			if (cfg::get().developer_mode) {
-
-				std::string path;
-				if (cfg::get().entry_point < ws_repeats_resolving) 
-					path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
-				else
-					path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
-				bool val = LoadEdgeIndex(path, kmerIndex);
-				VERIFY_MSG(val, "can not open file "+path+".kmidx");
-				INFO("Updating index from graph started");
-				DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, graph.g);
-
-			}
-			else {
-
-				//INFO("Updating index from graph started");
-				//DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(graph.index.inner_index(), graph.g);
-				
-			}
-
-  			for (auto e_iter = graph.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-				
-				auto seq = graph.g.EdgeNucls(*e_iter);
-				unsigned len = seq.size();
-				double coverage_in(0.0), coverage_out(0.0);
+  			for (auto e_iter = g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+			
+				double edge_coverage_in(0.0), edge_coverage_out(0.0);
 				//averageConst = graph.g.length(*e_iter);
-				unsigned sizeBound = averageConst;
+				unsigned size_bound = average_const_;
 				
-				if ( averageConst > graph.g.length(*e_iter) ){
-					sizeBound = graph.g.length(*e_iter);		
+				if ( average_const_ > g.length(*e_iter) ){
+					size_bound = g.length(*e_iter);		
 				}
 
-				// count incoming coverage
-				for (unsigned i = 0; i < sizeBound; ++i) {
-					runtime_k::RtSeq kmer_in(K);
-					for ( unsigned j = i; j < K + i && j < len; ++j) {
-						kmer_in <<= seq[j];
-					}
-					if (cfg::get().developer_mode) {
-						if (kmerIndex.contains(kmer_in)) {
-							coverage_in += kmerIndex[kmer_in].count_;
-						}
-					}
-					else {
-						if (graph.index.inner_index().contains(kmer_in)) {
-							coverage_in += graph.index.inner_index()[kmer_in].count_;
-						}
-					}
-				}
-					
-				coverage_in = coverage_in / sizeBound;
-
-				// count outgoing coverage
-				for (unsigned i = 0; i < sizeBound; ++i) {
-					runtime_k::RtSeq kmer_out;
-					for ( unsigned j = len-K-i; j >= 0 && j < len - i; ++j) {
-							
-						kmer_out <<= seq[j];
-					}
-					
-					if (cfg::get().developer_mode) {
-						if (kmerIndex.contains(kmer_out)) {
-							coverage_out += kmerIndex[kmer_out].count_;
-						}
-					}
-					else {
-						if (graph.index.inner_index().contains(kmer_out)) {
-							coverage_out += graph.index.inner_index()[kmer_out].count_;
-						}
-					}
-
-
-				}
-				coverage_out = coverage_out / sizeBound;
-		
-				//if (coverage_in != graph.g.coverage(*e_iter))
-				//	std::cout << graph.g.int_id(*e_iter) << ": " << coverage_in << " " << coverage_out << " " << graph.g.coverage(*e_iter) << " " << graph.g.length(*e_iter) << std::endl;
-				inCoverage.insert(std::make_pair( *e_iter, coverage_in));
+				auto seq = g.EdgeNucls(*e_iter);
+				edge_coverage_in = CountInCoverage( seq, size_bound );	
+				
+				edge_coverage_out = CountOutCoverage( seq, size_bound );	
+				in_coverage_.insert(std::make_pair( *e_iter, edge_coverage_in));
 				//inCoverage.insert(std::make_pair( *e_iter, graph.g.coverage(*e_iter)));
-				outCoverage.insert(std::make_pair( *e_iter, coverage_out));
+				out_coverage_.insert(std::make_pair( *e_iter, edge_coverage_out));
 				//outCoverage.insert(std::make_pair( *e_iter, graph.g.coverage(*e_iter)));
-				//	std::cout << graph.g.int_id(*e_iter) << " " << " " << graph.g.int_id( graph.g.EdgeStart(*e_iter)) << " " << graph.g.int_id(graph.g.EdgeEnd(*e_iter)) << " " << coverage_out << " " << graph.g.coverage(*e_iter) << " " << graph.g.length(*e_iter) << std::endl;
-				//}
 			}
 			
-			if (cfg::get().developer_mode) {
-				kmerIndex.clear();
-			}
 		}
+	private:
+		DECL_LOGGER("FlankingCoverage");
+
 	};
 
 }
