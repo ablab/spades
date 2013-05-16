@@ -20,11 +20,73 @@
 #include "ireader.hpp"
 #include "single_read.hpp"
 #include "paired_read.hpp"
+#include "library.hpp"
 
 namespace io {
 
 typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
+
+
+template<class Read>
+class ReadBinaryWriter {
+
+public:
+
+    ReadBinaryWriter(LibraryOrientation orientation = LibraryOrientation::Undefined) {
+    }
+
+    bool Write(std::ostream& file, const Read& r) const {
+        return r.BinWrite(file);
+    }
+};
+
+template<>
+class ReadBinaryWriter<PairedRead> {
+
+private:
+
+    bool rc1_;
+
+    bool rc2_;
+
+public:
+
+    ReadBinaryWriter(LibraryOrientation orientation) {
+        switch (orientation) {
+        case LibraryOrientation::FF:  {
+            rc1_ = false;
+            rc2_ = false;
+            break;
+        }
+        case LibraryOrientation::RR:  {
+            rc1_ = true;
+            rc2_ = true;
+            break;
+        }
+        case LibraryOrientation::FR:  {
+            rc1_ = false;
+            rc2_ = true;
+            break;
+        }
+        case LibraryOrientation::RF:  {
+            rc1_ = true;
+            rc2_ = false;
+            break;
+        }
+        default: {
+            rc1_ = false;
+            rc2_ = false;
+            break;
+        }
+        }
+
+    }
+
+    bool Write(std::ostream& file, const PairedRead& r) const {
+        return r.BinWrite(file, rc1_, rc2_);
+    }
+};
 
 
 class BinaryWriter {
@@ -38,21 +100,23 @@ private:
 
     size_t buf_size_;
 
-
     template<class Read>
-    void FlushBuffer(const std::vector<Read>& buffer, std::ostream& file, size_t from, size_t to) {
+    void FlushBuffer(const std::vector<Read>& buffer, const ReadBinaryWriter<Read>& read_writer, std::ostream& file, size_t from, size_t to) {
         for (size_t i = from; i < to; ++i) {
-            buffer[i].BinWrite(file);
+            read_writer.Write(file, buffer[i]);
         }
     }
 
     template<class Read>
-    void FlushBuffer(const std::vector<Read>& buffer, std::ostream& file) {
-        FlushBuffer(buffer, file, 0, buffer.size());
+    void FlushBuffer(const std::vector<Read>& buffer, const ReadBinaryWriter<Read>& read_writer, std::ostream& file) {
+        FlushBuffer(buffer, read_writer, file, 0, buffer.size());
     }
 
     template<class Read>
-    ReadStat ToBinary(io::IReader<Read>& stream, size_t buf_size) {
+    ReadStat ToBinary(io::IReader<Read>& stream, size_t buf_size,
+            LibraryOrientation orientation) {
+
+        ReadBinaryWriter<Read> read_writer(orientation);
         size_t buffer_reads = buf_size / (sizeof (Read) * 4);
         size_t reads_to_flush = buffer_reads * file_num_;
 
@@ -70,15 +134,16 @@ private:
         while (!stream.eof()) {
             buf_index = read_count % file_num_;
 
-            stream >> buf[buf_index][current_buf_sizes[buf_index]];
-            read_stats[buf_index].increase(buf[buf_index][current_buf_sizes[buf_index]]);
+            Read& r = buf[buf_index][current_buf_sizes[buf_index]];
+            stream >> r;
+            read_stats[buf_index].increase(r);
 
             ++current_buf_sizes[buf_index];
             VERBOSE_POWER(++read_count, " reads processed");
 
             if (read_count % reads_to_flush == 0) {
                 for (size_t i = 0; i < file_num_; ++i) {
-                    FlushBuffer(buf[i], *file_ds_[i]);
+                    FlushBuffer(buf[i], read_writer, *file_ds_[i]);
                     current_buf_sizes[i] = 0;
                 }
             }
@@ -87,7 +152,7 @@ private:
         ReadStat result;
         for (size_t i = 0; i < file_num_; ++i) {
             buf[i].resize(current_buf_sizes[i]);
-            FlushBuffer(buf[i], *file_ds_[i]);
+            FlushBuffer(buf[i], read_writer, *file_ds_[i]);
 
             file_ds_[i]->seekp(0);
             read_stats[i].write(*file_ds_[i]);
@@ -100,7 +165,10 @@ private:
 
 
     template<class Read>
-    ReadStat ToBinaryForThread(io::IReader<Read>& stream, size_t buf_size, size_t thread_num) {
+    ReadStat ToBinaryForThread(io::IReader<Read>& stream, size_t buf_size,
+            size_t thread_num, LibraryOrientation orientation) {
+
+        ReadBinaryWriter<Read> read_writer(orientation);
         size_t buffer_reads = buf_size / (sizeof (Read) * 4);
         std::vector<Read> buf(buffer_reads);
 
@@ -111,18 +179,19 @@ private:
         size_t current = 0;
 
         while (!stream.eof()) {
-            stream >> buf[current];
-            stat.increase(buf[current]);
+            Read& r = buf[current];
+            stream >> r;
+            stat.increase(r);
             ++current;
 
             if (stat.read_count_ % buffer_reads == 0) {
-                FlushBuffer(buf, *file_ds_[thread_num]);
+                FlushBuffer(buf, read_writer, *file_ds_[thread_num]);
                 current = 0;
             }
         }
 
         buf.resize(current);
-        FlushBuffer(buf, *file_ds_[thread_num]);
+        FlushBuffer(buf, read_writer, *file_ds_[thread_num]);
 
         file_ds_[thread_num]->seekp(0);
         stat.write(*file_ds_[thread_num]);
@@ -133,8 +202,10 @@ private:
 
 public:
 
-    BinaryWriter(const std::string& file_name_prefix, size_t file_num, size_t buf_size):
-            file_name_prefix_(file_name_prefix), file_num_(file_num), file_ds_(), buf_size_(buf_size) {
+    BinaryWriter(const std::string& file_name_prefix, size_t file_num,
+            size_t buf_size):
+                file_name_prefix_(file_name_prefix), file_num_(file_num),
+                file_ds_(), buf_size_(buf_size) {
 
         std::string fname;
         for (size_t i = 0; i < file_num_; ++i) {
@@ -154,35 +225,35 @@ public:
 
 
     ReadStat ToBinary(io::IReader<io::SingleReadSeq>& stream) {
-        return ToBinary(stream, buf_size_ / file_num_);
+        return ToBinary(stream, buf_size_ / file_num_, LibraryOrientation::Undefined);
     }
 
     ReadStat ToBinary(io::IReader<io::SingleRead>& stream) {
-        return ToBinary(stream, buf_size_ / file_num_);
+        return ToBinary(stream, buf_size_ / file_num_, LibraryOrientation::Undefined);
     }
 
     ReadStat ToBinary(io::IReader<io::PairedReadSeq>& stream) {
-        return ToBinary(stream, buf_size_ / (2 * file_num_));
+        return ToBinary(stream, buf_size_ / (2 * file_num_), LibraryOrientation::Undefined);
     }
 
-    ReadStat ToBinary(io::IReader<io::PairedRead>& stream) {
-        return ToBinary(stream, buf_size_ / (2 * file_num_));
+    ReadStat ToBinary(io::IReader<io::PairedRead>& stream, LibraryOrientation orientation) {
+        return ToBinary(stream, buf_size_ / (2 * file_num_), orientation);
     }
 
     ReadStat ToBinaryForThread(io::IReader<io::SingleReadSeq>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num);
+        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num, LibraryOrientation::Undefined);
     }
 
     ReadStat ToBinaryForThread(io::IReader<io::SingleRead>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num);
+        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num, LibraryOrientation::Undefined);
     }
 
     ReadStat ToBinaryForThread(io::IReader<io::PairedReadSeq>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num);
+        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num, LibraryOrientation::Undefined);
     }
 
-    ReadStat ToBinaryForThread(io::IReader<io::PairedRead>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num);
+    ReadStat ToBinaryForThread(io::IReader<io::PairedRead>& stream, size_t thread_num, LibraryOrientation orientation) {
+        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num, orientation);
     }
 
 //    template<class Read>

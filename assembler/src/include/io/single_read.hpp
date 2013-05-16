@@ -112,9 +112,9 @@ class SingleRead {
    *
    * @return SingleRead sequence.
    */
-  Sequence sequence() const {
+  Sequence sequence(bool rc = false) const {
     VERIFY(valid_);
-    return Sequence(seq_);
+    return Sequence(seq_, rc);
   }
 
   /*
@@ -299,8 +299,8 @@ class SingleRead {
   }
 
 
-  bool BinWrite(std::ostream& file) const {
-    return sequence().BinWrite(file);
+  bool BinWrite(std::ostream& file, bool rc = false) const {
+    return sequence(rc).BinWrite(file);
   }
 
 

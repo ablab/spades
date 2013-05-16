@@ -165,9 +165,9 @@ class PairedRead {
         insert_size_ == pairedread.insert_size_;
   }
 
-  bool BinWrite(std::ostream& file) const {
-    first_.BinWrite(file);
-    second_.BinWrite(file);
+  bool BinWrite(std::ostream& file, bool rc1 = false, bool rc2 = false) const {
+    first_.BinWrite(file, rc1);
+    second_.BinWrite(file, rc2);
 
 
     size_type is = insert_size_;
