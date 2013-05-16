@@ -71,7 +71,7 @@ private:
         info.close();
 
         io::ReadStat total_stat;
-        auto &dataset = cfg::get_writable().ds.reads;
+        auto& dataset = cfg::get_writable().ds.reads;
 
         INFO("Converting reads to binary format (takes a while)");
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
@@ -79,9 +79,9 @@ private:
             dataset[i].data().thread_num = cfg::get().max_threads;
             dataset[i].data().paired_read_prefix = cfg::get().paired_read_prefix + "_" + ToString(i);
 
-            auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(dataset[i], false, 0);
+            auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(dataset[i], false, 0, false, false);
             io::BinaryWriter paired_converter(dataset[i].data().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
-            io::ReadStat paired_stat = paired_converter.ToBinary(*paired_reader);
+            io::ReadStat paired_stat = paired_converter.ToBinary(*paired_reader, dataset[i].orientation());
             paired_stat.read_count_ *= 2;
             total_stat.merge(paired_stat);
 

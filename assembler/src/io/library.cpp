@@ -88,16 +88,15 @@ struct convert<LibraryType> {
     std::string type = node.as<std::string>();
 
     if (type == "paired-end")
-      rhs = LibraryType::PairedEnd;
+        rhs = LibraryType::PairedEnd;
     else if (type == "mate-pairs")
-      rhs = LibraryType::MatePairs;
+        rhs = LibraryType::MatePairs;
     else if (type == "long-single")
-      rhs = LibraryType::LongSingleReads;
+        rhs = LibraryType::LongSingleReads;
     else if (type == "single")
-      rhs = LibraryType::SingleReads;
+        rhs = LibraryType::SingleReads;
     else
       return false;
-
     return true;
   }
 

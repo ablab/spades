@@ -20,17 +20,20 @@ public:
 	vector<EdgeId> getPath() {
 		return path;
 	}
-	size_t getWeight(){
+	size_t getWeight() {
 		return w;
 	}
-	void increaseWeight(){
+	void increaseWeight() {
 		w++;
 	}
 
 	bool operator<(const PathInfo<Graph> &other) const {
 		return path < other.path;
 	}
-	PathInfo(const vector<EdgeId> &p, size_t weight = 0):path(p), w(weight){
+	PathInfo(const vector<EdgeId> &p, size_t weight = 0):path(p), w(weight){ }
+	PathInfo(const PathInfo<Graph> &other) {
+		path = other.path;
+		w = other.w;
 	}
 };
 
@@ -109,18 +112,32 @@ public:
 					noncontinued ++;
 				}
 			}
+			filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
-		filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
+	}
+
+	vector<PathInfo<Graph> > GetAllPaths() {
+		vector<PathInfo<Graph> > res;
+		for (auto iter = inner_index.begin(); iter != inner_index.end();
+				++iter) {
+			for (auto j_iter = iter->second.begin();
+					j_iter != iter->second.end(); ++j_iter) {
+				res.push_back(*j_iter);
+			}
+		}
+		return res;
 	}
 
 
+
+
 	void LoadFromFile(const string s){
-    	ifstream filestr(s);
+	ifstream filestr(s);
     	INFO("loading from " << s);
     	map<int, EdgeId> tmp_map;
-    	for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+   	for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
     		tmp_map[g_.int_id(*iter)] = *iter;
-    	}
+   	}
     	int fl;
     	FILE* file = fopen((s).c_str(), "r");
     	char ss[14];

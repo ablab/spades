@@ -352,7 +352,7 @@ public :
 		for(i = 0; i < alignments; i++) {
 			for(int j = 0; j < alignments; j++) {
 				if (i!= j && TopologyGap(sortedEdges[i][0],sortedEdges[j][sortedEdges[j].size() - 1] )){
-					illumina_gaps.push_back(GapDescription<Graph>(*end_clusters[i], *start_clusters[j], s, K_));
+				//	illumina_gaps.push_back(GapDescription<Graph>(*end_clusters[i], *start_clusters[j], s, K_));
 				}
 			}
 		}

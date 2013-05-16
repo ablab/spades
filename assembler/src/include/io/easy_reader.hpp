@@ -87,11 +87,11 @@ class PairedEasyReader: public DelegatingReaderWrapper<io::PairedRead> {
 public:
 	PairedEasyReader(const io::PairedRead::FilenamesType& filenames,
 			bool followed_by_rc, size_t insert_size, bool change_read_order =
-					false, bool revert_second = true, OffsetType offset_type =
-					PhredOffset) :
+					false, bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
+					OffsetType offset_type = PhredOffset) :
 			raw_reader_(
 					new SeparateReader(filenames, insert_size,
-							change_read_order, revert_second, offset_type)), filtered_reader_(
+							change_read_order, use_orientation, orientation, offset_type)), filtered_reader_(
 					*raw_reader_), rc_reader_(filtered_reader_) {
 		if (followed_by_rc) {
 			Init(rc_reader_);
@@ -102,10 +102,11 @@ public:
 
 	PairedEasyReader(const std::string& filename, bool followed_by_rc,
 			size_t insert_size, bool change_read_order = false,
-			bool revert_second = true, OffsetType offset_type = PhredOffset) :
+			bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
+			OffsetType offset_type = PhredOffset) :
 			raw_reader_(
 					new MixedReader(filename, insert_size, change_read_order,
-							revert_second, offset_type)), filtered_reader_(
+					        use_orientation, orientation, offset_type)), filtered_reader_(
 					*raw_reader_), rc_reader_(filtered_reader_) {
 		if (followed_by_rc) {
 			Init(rc_reader_);

@@ -27,7 +27,7 @@ public :
 
 	PacBioAligner(conj_graph_pack& conj_gp, size_t k_test):gp_(conj_gp), k_test_(k_test){}
 
-	void pacbio_test(){
+	void pacbio_test(PathStorage<Graph> &long_reads){
 	    INFO("starting pacbio tests");
 		ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, false);
 	    size_t n = 0;
@@ -38,7 +38,7 @@ public :
 	    int nongenomic_edges = 0;
 	    int total_length = 0;
 	    int tlen = 0;
-	    PathStorage<Graph> long_reads(gp_.g);
+//	    PathStorage<Graph> long_reads(gp_.g);
 //	    long_reads.LoadFromFile("long_reads.mpr");
 //	    INFO("dumping back");
 //	    long_reads.DumpToFile("long_reads2.mpr", gp_.edge_pos);
@@ -76,6 +76,7 @@ public :
 				INFO(iter->first <<" :  "<< iter->second);
 			}
 		INFO("PacBio test finished");
+//		return ;
 	}
 
 	bool TopologyGap(EdgeId first, EdgeId second){

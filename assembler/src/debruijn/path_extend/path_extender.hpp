@@ -130,7 +130,6 @@ public:
 
 				weight = chooser_.CountWeight(experiment, edges.second);
 				double weight2 = chooser_.CountWeight(experiment, edges.first);
-				INFO("make one more circle step i " << i << " weight " << weight << " weight 2 " << weight2);
 				if (weight > maxWeight
 						|| (weight == maxWeight && weight - weight2 > diff) || (weight == maxWeight && weight - weight2 == diff && i == 1)) {
 					maxWeight = weight;
@@ -139,7 +138,6 @@ public:
 				}
 			}
 		}
-		INFO("mac iter " << maxIter);
 		for (size_t i = 0; i < maxIter; ++i) {
 			MakeCycleStep(path, edges.first);
 		}
@@ -614,6 +612,7 @@ public:
         size_t current = 0;
 
         while (current < extenders_.size()) {
+        	DEBUG("step " << current << " from " <<extenders_.size());
             if (extenders_[current]->MakeGrowStep(path)) {
                 return true;
             }
@@ -665,7 +664,7 @@ public:
                 loopResolver_.ResolveShortLoop(path);
             }
         } else if (candidates.size() >= 1){
-        	INFO("MORE 1 CANDIDATE");
+        	DEBUG("MORE 1 CANDIDATE");
         }
         return result;
     }

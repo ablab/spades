@@ -1,5 +1,5 @@
 /*
- * loop_traverser.h
+ * loop_traverser.hpp
  *
  *  Created on: Jan 28, 2013
  *      Author: ira
@@ -7,10 +7,12 @@
 
 #ifndef LOOP_TRAVERSER_H_
 #define LOOP_TRAVERSER_H_
+
 #include "path_extender.hpp"
 #include "pe_resolver.hpp"
 #include "path_visualizer.hpp"
-#include "path_validator.hpp"
+
+namespace path_extend {
 
 class LoopTraverser {
 	Graph& graph_;
@@ -61,7 +63,7 @@ private:
 			}
 		}
 		if (coveredStartPaths.size() < 1 or coveredEndPaths.size() < 1) {
-			INFO(
+			DEBUG(
 					"TraverseLoop STRANGE SITUATION: start " << coveredStartPaths.size() << " end " << coveredEndPaths.size());
 			return;
 		}
@@ -70,16 +72,9 @@ private:
 		if ((*startPath) == endPath->Conjugate()){
 			return;
 		}
-		INFO("TraverseLoop " << graph_.int_id(start) << " " << graph_.int_id(end));
-		INFO("begin path");
-		startPath->Print();
-		INFO("endPAth");
-		endPath->Print();
-		INFO("print all");
 		if (startPath->hasOverlapedEnd()) {
 			BidirectionalPath* overlap = *startPath->getOverlapedEnd().begin();
-			INFO("overlap");
-			overlap->Print();
+			DEBUG("overlap");
 			if ((*overlap) != startPath->Conjugate()) {
 				for (size_t i = 0; i < overlap->Size(); ++i) {
 					startPath->PushBack(overlap->At(i));
@@ -89,8 +84,6 @@ private:
 					return;
 				}
 				overlap->Clear();
-				INFO("add overlap");
-				startPath->Print();
 			}
 		}
 		extender_->GrowPath(*startPath);
@@ -98,7 +91,6 @@ private:
 
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		if (commonSize == 0) {
-			INFO("non common edges. Need Deijkstra");
 			DijkstraSearcher pathSeacher(graph_);
 			VertexId lastVertex = graph_.EdgeEnd(
 					startPath->At(startPath->Size() - 1));
@@ -108,17 +100,15 @@ private:
 			for (size_t i = 0; i < pathToAdd.size(); ++i) {
 				startPath->PushBack(pathToAdd[i]);
 			}
-		} else {
-			INFO("common Edges " << commonSize);
 		}
+
 		for (size_t i = commonSize; i < endPath->Size(); ++i) {
 			startPath->PushBack(endPath->At(i));
 		}
+
 		startPath->clearOverlapedEnd();
 		startPath->addOverlapedEnd(endPath->getOverlapedEnd());
 		endPath->Clear();
-		INFO("result path");
-		startPath->Print();
 	}
 
 public:
@@ -128,7 +118,7 @@ public:
 	}
 
 	void TraverseAllLoops() {
-		INFO("TraverseAllLoops");
+		DEBUG("TraverseAllLoops");
 		LongEdgesExclusiveSplitter<Graph> splitter(graph_, 500);
 		while (!splitter.Finished()) {
 			vector<VertexId> component = splitter.NextComponent();
@@ -145,5 +135,7 @@ public:
 
 	}
 };
+
+}
 
 #endif /* LOOP_TRAVERSER_H_ */

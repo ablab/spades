@@ -12,6 +12,9 @@
 #include "late_pair_info_count.hpp"
 #include "graphio.hpp"
 using namespace debruijn_graph;
+
+namespace path_extend {
+
 class SingleThresholdFinder {
 
 public:
@@ -23,45 +26,42 @@ public:
 			insert_size_max(insert_size_max1), length_to_split(length_to_split1), is_mp_(is_mp) {
 	}
 
-	double find_threshold() {
+	double find_threshold(size_t index) {
 		Sequence genome = cfg::get().developer_mode ? cfg::get().ds.reference_genome : Sequence();
 		conj_graph_pack gp(cfg::get().K, cfg::get().output_dir, genome,
 				cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling,
 				!cfg::get().developer_mode);
-		INFO("single threshold finder");
+
+		DEBUG("Searching for paired info threshold");
 		exec_simplification(gp);
 		gp.index.Detach();
 		set<BidirectionalPath*> goodPaths;
 		split_long_edges(gp, length_to_split, goodPaths);
-		INFO("before attach");
 		gp.index.Attach();
-		INFO("after attach");
 		gp.index.Refill();
-		INFO("after refill");
 		PairedIndexT paired_index(gp.g);
-		INFO("after constucting of paired index");
-		size_t is = cfg::get().ds.IS();
-		io::ReadStreamVector<io::IReader<io::PairedReadSeq>> paired_streams = paired_binary_readers(true, is);
-		INFO("after taking paired reads");
-		FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
-				gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
-		INFO("after filling paired index");
+		size_t is = cfg::get().ds.reads[index].data().mean_insert_size;
+		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[index], true, cfg::get().ds.reads[index].data().mean_insert_size);
+		SingleStreamType paired_streams(paired_stream.get());
+		FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index, gp.kmer_mapper,paired_index, paired_streams, gp.k_value);
+		//io::ReadStreamVector<io::IReader<io::PairedReadSeq>> paired_streams = paired_binary_readers(true, is);
+		//FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
+		//		gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
 		PairedIndexT clustered_index(gp.g);
-		INFO("after making paired index");
 		if (!is_mp_){
-			estimate_distance(gp, paired_index, clustered_index);
-			INFO("after estimating distance");
+			estimate_distance(gp, cfg::get_writable().ds.reads[index], paired_index, clustered_index);
 		}
-		PairedInfoLibrary* lib_not_cl = new PairedInfoLibrary(cfg::get().K, gp.g, cfg::get().ds.RL(), is, cfg::get().ds.is_var(), paired_index);
-		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, cfg::get().ds.RL(), is, cfg::get().ds.is_var(), clustered_index);
-		INFO("after making libraries");
+		size_t RL = cfg::get().ds.reads[index].data().read_length;
+		double var = cfg::get().ds.reads[index].data().insert_size_deviation;
+		PairedInfoLibrary* lib_not_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, var, paired_index);
+		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, var, clustered_index);
 		map<PairInfo<EdgeId>, double> good_pi;
 		map<PairInfo<EdgeId>, double> bad_pi;
-		INFO("before analyze paths");
+		DEBUG("analyze paths begin");
 		for (auto iter = goodPaths.begin(); iter != goodPaths.end(); ++iter) {
 			analyze_one_path(gp, *iter, lib_not_cl, lib_cl, good_pi, bad_pi);
 		}
-		INFO("after analyze paths");
+		DEBUG("analyze paths end");
 		writeToFile(gp, good_pi, bad_pi, lib_not_cl);
 		deletePaths(goodPaths);
 		vector<double> good_pi_val;
@@ -151,7 +151,7 @@ private:
 	}
 
 	void split_long_edges(conj_graph_pack& gp, size_t length, set<BidirectionalPath*>& result) {
-		INFO("begin split long edges");
+		DEBUG("begin split long edges");
 		set<EdgeId> longEdges;
 		Graph& graph = gp.g;
 		size_t com_length = 0;
@@ -175,7 +175,7 @@ private:
 			edge_path.push_back(secondEdge);
 			result.insert(new BidirectionalPath(graph, edge_path));
 		}
-		INFO("end split long edges");
+		DEBUG("end split long edges");
 	}
 
 	void find_idel_pair_info(conj_graph_pack& gp, size_t from, BidirectionalPath* path,  PairedInfoLibrary* lib, map<EdgeId, PairInfo<EdgeId> >& idealPairInfo){
@@ -243,5 +243,6 @@ private:
 	}
 };
 
+}
 
 #endif /* SINGLE_THRESHOLD_FINDER_HPP_ */

@@ -132,12 +132,15 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
 
   load(p.improve_paired_info, pt,  "improve_paired_info");
 
+  load(p.split_edge_length, pt, "split_edge_length");
 
   p.seed_selection.metric = p.metric;
   p.extension_options.metric = p.metric;
+  p.mate_pair_options.metric = "path_cover";
 
   load(p.seed_selection,    pt, "seed_selection");
   load(p.extension_options, pt, "extension_options");
+  load(p.mate_pair_options, pt, "mate_pair_options");
   load(p.scaffolder_options, pt, "scaffolder");
   load(p.loop_removal,      pt, "loop_removal");
   load(p.filter_options,    pt, "filter_options");
@@ -156,6 +159,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bo
     p.output.DisableAll();
     p.viz.DisableAll();
   }
+  p.etc_dir = "path_extend";
 }
 
 

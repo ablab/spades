@@ -311,7 +311,7 @@ protected:
             }
 
             double threshold = pairedInfoLibrary.single_threshold_ >= 0.0 ? pairedInfoLibrary.single_threshold_ : singleThreshold;
-            //INFO("paired lib threshold " << threshold);
+
             double singleWeight = libs_[libIndex]->CountPairedInfo(path[iter->e_], e, path.LengthAt(iter->e_) + additionalGapLength);
             /*vector<bool> test_thresholds (20, true);
             if (e != path[iter->e_]) {
@@ -366,7 +366,7 @@ protected:
 		double test5 = test1 / min(pi_norm1_aver_cl, pi_norm2_aver_cl);
 		double test6 = test1 / min(pi_norm1_cl, pi_norm2_cl);
 
-		INFO("weight test " << test1 << " " << w << " " << ideal_pi << " "
+		DEBUG("weight test " << test1 << " " << w << " " << ideal_pi << " "
 						<< g_.str(e1) << " " << g_.str(e2) << " " << cov1 << " "
 						<< cov2 << " " << (w / ideal_pi) / min(cov1, cov2)
 						<< " " << pi1 << " " << (w / ideal_pi) / pi1 << " " <<

@@ -1,19 +1,19 @@
 ; output options
 
-debug_output			false
+debug_output			    false
 
 output {
-	write_seeds             false
-	write_overlaped_paths   false
-	write_paths             false
-	write_path_loc		    false
+	write_seeds             true
+	write_overlaped_paths   true
+	write_paths             true
+	write_path_loc		    true
 }
 
 
 visualize {
-        print_seeds  		    false
-        print_overlaped_paths 	false
-        print_paths 		    false
+        print_seeds  		    true
+        print_overlaped_paths 	true
+        print_paths 		    true
 }
 
 
@@ -38,6 +38,8 @@ additional_contigs ""
 singlecell {
 
 	improve_paired_info	true
+
+	split_edge_length	99
 
 	; metric = path_cover | read_count 
 	metric 			        path_cover
@@ -133,6 +135,8 @@ singlecell {
 multicell {
 
 	improve_paired_info     true
+
+	split_edge_length	99
 
 	; metric = path_cover | read_count 
 	metric 			        path_cover

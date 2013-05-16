@@ -10,6 +10,7 @@
 #include "graph_pack.hpp"
 #include "pair_info_improver.hpp"
 #include "path_extend/pe_io.hpp"
+#include "path_extend/bidirectional_path.hpp"
 #include "graphio.hpp"
 #include "long_read_storage.hpp"
 
@@ -195,10 +196,10 @@ class CoverageBasedResolution {
 		std::string fileName = cfg::get().output_dir + "resolved_by_coverage.fasta";
 		//INFO("Writing result");
 
-		PathContainer pathsToOutput;
+		path_extend::PathContainer pathsToOutput;
 		for ( auto p = filteredPaths.begin(); p != filteredPaths.end(); ++p) {
-			BidirectionalPath* bidirectional_path = new BidirectionalPath( gp->g );
-			BidirectionalPath* conjugate_path = new BidirectionalPath( gp->g );
+			path_extend::BidirectionalPath* bidirectional_path = new path_extend::BidirectionalPath( gp->g );
+			path_extend::BidirectionalPath* conjugate_path = new path_extend::BidirectionalPath( gp->g );
 			for (auto it = p->getPath().begin(); it != p->getPath().end(); ++it ){
 					
 					bidirectional_path->PushBack(*it);
@@ -692,14 +693,14 @@ class CoverageBasedResolution {
 			findClosest(incomingEdgesCoverage, outgoingEdgesCoverage, pairsOfEdges);
 			std::cout << "before repeat resolution " << incomingEdgesCoverage.size() << " " << outgoingEdgesCoverage.size() << " " << incomingEdges.size() << " " << path.size() << std::endl;
 			for ( auto edgePair = pairsOfEdges.begin(); edgePair != pairsOfEdges.end(); ++edgePair ){
-				BidirectionalPath* resolved_path = new BidirectionalPath( gp->g );
+				path_extend::BidirectionalPath* resolved_path = new path_extend::BidirectionalPath( gp->g );
 				resolveRepeat( *edgePair, path, *resolved_path );
 				if (resolved_path->Size() < 3 || resolved_path->Front() == resolved_path->Back() || coverage.GetOutCov(edgePair->first) < 5 
 					|| coverage.GetInCov(edgePair->second) < 5) {
 					continue;
 				}
 				//now put it into collection of paths
-				/*BidirectionalPath* conjugate_path = new BidirectionalPath( gp->g );
+				/*path_extend::BidirectionalPath* conjugate_path = new path_extend::BidirectionalPath( gp->g );
 				bool skip = false;
 				std::vector<EdgeId> tempPath = resolved_path->ToVector();
 				for (auto it = tempPath.begin(); it != tempPath.end(); ++it ){
@@ -752,7 +753,7 @@ class CoverageBasedResolution {
 	}
 
 	template <class EdgesPositionHandlerT> 
-	bool match( const BidirectionalPath& path, const int currentId, const int currentStart,
+	bool match( const path_extend::BidirectionalPath &path, const int currentId, const int currentStart,
 	                        EdgesPositionHandlerT& ref_pos) {
 		
 		//std::cout << "id: " << path.Size() << " " << currentId << std::endl;
@@ -787,7 +788,7 @@ class CoverageBasedResolution {
 	}
 
 
-	bool matchReference( const BidirectionalPath& path) {
+	bool matchReference( const path_extend::BidirectionalPath& path) {
 
 		auto ref_pos = gp->edge_pos;
 		EdgeId edge = path.At(0);
@@ -810,7 +811,7 @@ class CoverageBasedResolution {
 	}
 
 	void dfs( const VertexId& vStart, const VertexId& vEnd, const std::vector<EdgeId>& component,
-		std::set<EdgeId>& visited,  BidirectionalPath& path) {
+		std::set<EdgeId>& visited,  path_extend::BidirectionalPath& path) {
 
 		for ( auto edge = component.begin(); edge != component.end(); ++edge ){
 
@@ -846,7 +847,7 @@ class CoverageBasedResolution {
 	}
 
 	void resolveRepeat( const std::pair<EdgeId,EdgeId>& pairOfEdges,
-			const std::vector<EdgeId>& component, BidirectionalPath& path ) {
+			const std::vector<EdgeId>& component, path_extend::BidirectionalPath& path ) {
 	
 		//std::cout << "resolveing repeat" << std::endl;
 		EdgeId incomingEdge = pairOfEdges.first;
@@ -962,12 +963,12 @@ class CoverageBasedResolution {
 	}
 
 
-	void getOtherEdges(PathContainer& paths, const std::set<EdgeId>& usedEdges){
+	void getOtherEdges(path_extend::PathContainer& paths, const std::set<EdgeId>& usedEdges){
 	// adds edges from the rest of the graph (which was n)
 		std::set<EdgeId> included;
 		for (auto iter = gp->g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 			if (usedEdges.find(*iter) == usedEdges.end() && included.find(*iter) == included.end()){
-				paths.AddPair(new BidirectionalPath(gp->g, *iter), new BidirectionalPath(gp->g, gp->g.conjugate(*iter)));
+				paths.AddPair(new path_extend::BidirectionalPath(gp->g, *iter), new path_extend::BidirectionalPath(gp->g, gp->g.conjugate(*iter)));
 				included.insert(*iter);
 				included.insert(gp->g.conjugate(*iter));
 			}
@@ -976,9 +977,9 @@ class CoverageBasedResolution {
 	}
 
 
-	void WriteResolved( const std::set<EdgeId>& usedEdges, PathContainer& resolvedPaths, const std::string &fileName  ){
+	void WriteResolved( const std::set<EdgeId>& usedEdges, path_extend::PathContainer& resolvedPaths, const std::string &fileName  ){
 
-		ContigWriter cw( *gp, cfg::get().K, 0 );
+		path_extend::ContigWriter cw( *gp, cfg::get().K, 0 );
 		//cw.writePaths( resolvedPaths, fileName );
 		//PathContainer paths;
 		getOtherEdges( resolvedPaths, usedEdges );

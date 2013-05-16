@@ -378,7 +378,7 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
     virtual void ApplySplit(Handler& handler, EdgeId old_edge,
                             EdgeId new_edge_1, EdgeId new_edge2) const {
         EdgeId rce = graph_.conjugate(old_edge);
-        VERIFY(old_edge != rce);
+        //VERIFY(old_edge != rce);
         handler.HandleSplit(old_edge, new_edge_1, new_edge2);
         if (old_edge != rce) {
             handler.HandleSplit(rce, graph_.conjugate(new_edge2),

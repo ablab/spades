@@ -27,16 +27,8 @@ protected:
     conj_graph_pack& gp_;
 
     size_t k_;
-    size_t insert_size;
-	string ToString(const BidirectionalPath& path, bool with_overlaps = true) const {
-		/*string overlap = "";
-		 if (with_overlaps && !path.isOverlap() && path.hasOverlapedBegin()){
-		 overlap = ToString(*path.getOverlapedBegin()[0], false);
-		 int begin = overlap.length() > insert_size? overlap.length() - insert_size: 0;
-		 overlap = overlap.substr(begin, overlap.length() - k_ + 1 - begin);
-		 }*/
+	string ToString(const BidirectionalPath& path) const {
 		stringstream ss;
-		//ss << overlap;
 		if (!path.Empty()) {
 			ss << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.001).substr(0, k_);
 		}
@@ -58,14 +50,6 @@ protected:
 				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001).substr(overlapLen);
 			}
 		}
-		/*overlap = "";
-		 if (with_overlaps &&!path.isOverlap() && path.hasOverlapedEnd()){
-		 path.getOverlapedEnd()[0]->Print();
-		 overlap = ToString(*path.getOverlapedEnd()[0], false);
-		 int begin = overlap.length() > k_ ? k_ + 1: k_;
-		 overlap =overlap.substr(begin, insert_size - k_);
-		 }
-		 ss << overlap;*/
 		return ss.str();
 	}
 
@@ -85,7 +69,7 @@ protected:
 
 
 public:
-    ContigWriter(conj_graph_pack& gp, size_t k, size_t insert_size_): gp_(gp), k_(k), insert_size(insert_size_){
+    ContigWriter(conj_graph_pack& gp, size_t k): gp_(gp), k_(k){
 
     }
 
@@ -108,16 +92,18 @@ public:
     }
 
 
-    void writePathEdges(const PathContainer& paths, const string& filename) {
+    void writePathEdges(PathContainer& paths, const string& filename){
 		INFO("Outputting path data to " << filename);
 		ofstream oss;
         oss.open(filename.c_str());
-		for (size_t i = 0; i < paths.size(); ++i) {
-            oss << i << endl;
-            BidirectionalPath path = *paths.Get(i);
-            oss << "PATH " << paths.Get(i)->GetId() << " " << path.Size() << " " << path.Length() + k_ << endl;
-            for (size_t j = 0; j < path.Size(); ++j) {
-			    oss << gp_.g.int_id(path[j]) << " " << gp_.g.length(path[j]) << endl;
+        int i = 1;
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+			oss << i << endl;
+			i++;
+            BidirectionalPath* path = iter.get();
+            oss << "PATH " <<path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
+            for (size_t j = 0; j < path->Size(); ++j) {
+			    oss << gp_.g.int_id(path->At(j)) << " " << gp_.g.length(path->At(j)) << endl;
             }
             oss << endl;
 		}
@@ -129,14 +115,14 @@ public:
 
         INFO("Writing contigs to " << filename);
         osequencestream_with_data_for_scaffold oss(filename);
-//        int i = 0;
+        int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
 
         	if (iter.get()->Length() < k_){
         		continue;
         	}
-        	//INFO("NODE " << ++i);
-        	iter.get()->Print();
+        	DEBUG("NODE " << ++i);
+        	//iter.get()->Print();
         	oss.setID(iter.get()->GetId());
             oss.setCoverage(iter.get()->Coverage());
             //INFO("toString");
@@ -154,7 +140,7 @@ class PathInfoWriter {
 
 public:
 
-    void writePaths(PathContainer& paths, const string& filename) {
+    void writePaths(PathContainer& paths, const string& filename){
         ofstream oss(filename);
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
