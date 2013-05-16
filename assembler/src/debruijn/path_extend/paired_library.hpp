@@ -143,6 +143,27 @@ struct PairedInfoLibrary {
         return math::gr(w, 0.0) ? w : 0.0;
     }
 
+    double IdealPairedInfo(size_t length1, size_t length2, int distance) {
+		double w = 0.;
+		if (distance == 0) {
+			w = 0. + length1 - insert_size_ + 2 * read_size_ + 1 - k_;
+		} else {
+			if (distance < 0) {
+				size_t tmp = length1;
+				length1 = length2;
+				length2 = tmp;
+				distance = -distance;
+			}
+			int gap_len = distance - length1;
+			int right = std::min(insert_size_,
+					gap_len + length2 + read_size_);
+			int left = std::max(gap_len,
+					int(insert_size_) - int(read_size_) - int(length1));
+			w = 0. + right - left + 1 - k_ + is_variation_;
+		}
+		return math::gr(w, 0.0) ? w : 0.0;
+     }
+
     double NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
         double w = IdealPairedInfo(pair_info.first, pair_info.second, rounded_d(pair_info));
 

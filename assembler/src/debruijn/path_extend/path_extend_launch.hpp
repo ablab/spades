@@ -23,6 +23,7 @@
 #include "single_threshold_finder.hpp"
 #include "long_read_storage.hpp"
 #include "../include/omni/edges_position_handler.hpp"
+#include "split_graph_pair_info.hpp"
 
 namespace path_extend {
 
@@ -98,7 +99,6 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		const std::string& contigs_name) {
 
 	INFO("Path extend repeat resolving tool started");
-
 	make_dir(output_dir);
 	if (!cfg::get().developer_mode) {
 	    make_dir(get_etc_dir(output_dir));
@@ -219,10 +219,20 @@ void set_threshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_lengt
 	INFO("Searching for paired info threshold for lib #"
 						<< index << " (IS = " << lib->insert_size_ << ",  DEV = " << lib->is_variation_ << ")");
 
-	SingleThresholdFinder finder(lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_, split_edge_length);
+	SingleThresholdFinder finder(lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_, lib->read_size_);
 	double threshold = finder.find_threshold(index);
 
 	INFO("Paired info threshold is " << threshold);
+	lib->SetSingleThreshold(threshold);
+}
+
+void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index, size_t split_edge_length){
+	INFO("split graph");
+	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
+	INFO("constacted split graph");
+	splitGraph.ProcessReadPairs();
+	INFO("processed paired reads");
+	double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
 	lib->SetSingleThreshold(threshold);
 }
 
@@ -254,13 +264,19 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 		if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::PairedEnd) {
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, paired_end_libs);
-			set_threshold(lib, indexs[i], pset.split_edge_length);
+			INFO("BEGIN");
+			find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
+			INFO("END");
+			//set_threshold(lib, indexs[i], pset.split_edge_length);
 			add_lib(gp.g, scaff_index, indexs, i, pe_scaf_libs);
 		}
 		else if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::MatePairs) {
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, mate_pair_libs);
-			set_threshold(lib, indexs[i], pset.split_edge_length);
+			INFO("BEGIN");
+			find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
+			INFO("END");
+			//set_threshold(lib, indexs[i], pset.split_edge_length);
 			add_lib(gp.g, scaff_index, indexs, i, mp_scaf_libs);
 		}
 	}

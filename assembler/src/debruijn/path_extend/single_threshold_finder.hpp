@@ -13,7 +13,34 @@
 #include "graphio.hpp"
 using namespace debruijn_graph;
 
+
 namespace path_extend {
+
+double find_intersection(vector<double>& good_pi, vector<double>& bad_pi) {
+	INFO("find intersection");
+	std::sort(good_pi.begin(), good_pi.end());
+	INFO("sorted good pi");
+	std::sort(bad_pi.begin(), bad_pi.end());
+	INFO("sorted bad pi");
+	size_t good_iter = 0;
+	size_t bad_iter = 0;
+	double cur_threshold = 0.0;
+	double good_percent = 0;
+	double bad_percent = 1;
+	while (good_percent < bad_percent and good_iter < good_pi.size()
+			and bad_iter < bad_pi.size()) {
+		cur_threshold = good_pi[good_iter];
+		while (bad_iter < bad_pi.size() and bad_pi[bad_iter] <= cur_threshold) {
+			bad_iter++;
+		}
+		good_percent = (double) good_iter / (double) good_pi.size();
+		bad_percent = 1 - (double) bad_iter / (double) bad_pi.size();
+		good_iter += 1;
+	}
+	INFO("found percents");
+	return cur_threshold;
+}
+
 
 class SingleThresholdFinder {
 
@@ -68,7 +95,9 @@ public:
 		get_norm_pi(gp, good_pi, good_pi_val);
 		vector<double> bad_pi_val;
 		get_norm_pi(gp, bad_pi, bad_pi_val);
-		return find_intersection(good_pi_val, bad_pi_val);
+		double threshold = find_intersection(good_pi_val, bad_pi_val);
+		INFO("WE FOUND THRESHOLD " << threshold <<" good_pi_size " << good_pi.size() << " bad_pi_size " << bad_pi.size());
+		return threshold;;
 	}
 
 private:
@@ -123,25 +152,7 @@ private:
 		}
 	}
 
-	double find_intersection(vector<double>& good_pi, vector<double>& bad_pi) {
-		std::sort(good_pi.begin(), good_pi.end());
-		std::sort(bad_pi.begin(), bad_pi.end());
-		size_t good_iter = 0;
-		size_t bad_iter = 0;
-		double cur_threshold = 0.0;
-		double good_percent = 0;
-		double bad_percent = 1;
-		while (good_percent < bad_percent and good_iter < good_pi.size() and bad_iter < bad_pi.size()) {
-			cur_threshold = good_pi[good_iter];
-			while (bad_iter < bad_pi.size() and bad_pi[bad_iter] <= cur_threshold) {
-				bad_iter++;
-			}
-			good_percent = (double)good_iter / (double)good_pi.size();
-			bad_percent = 1 - (double)bad_iter / (double)bad_pi.size();
-			good_iter += 1;
-		}
-		return cur_threshold;
-	}
+
 
 
 	void deletePaths(set<BidirectionalPath*>& paths) {
