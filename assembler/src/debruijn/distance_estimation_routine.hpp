@@ -108,10 +108,12 @@ void estimate_distance(conj_graph_pack& gp,
 
     PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
     if (config.ds.single_cell) {                                              // paired info normalization
-      normalizing_f = &TrivialWeightNormalization<Graph>;                     // only in the single-cell case,
+    	INFO("Trivial weight normalizer");
+    	normalizing_f = &TrivialWeightNormalization<Graph>;                     // only in the single-cell case,
     } else {                                                                  // in the case of ``multi-cell''
       // todo reduce number of constructor params                             // we use a trivial weight (equal to 1.)
-      PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
+    	INFO("Not Trivial Weight normalizer");
+    	PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
               lib.data().mean_insert_size, lib.data().insert_size_deviation, lib.data().read_length,
                                                           gp.k_value, config.ds.avg_coverage());
       normalizing_f = boost::bind(&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
@@ -174,13 +176,14 @@ void estimate_distance(conj_graph_pack& gp,
         }
     }
 
-    INFO("Refining clustered pair information");                              // this procedure checks, whether index
+    INFO("Refining clustered pair information " << clustered_index.size());                              // this procedure checks, whether index
     RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
-    DEBUG("The refining of clustered pair information has been finished");    // if so, it resolves such conflicts.
+    INFO("The refining of clustered pair information has been finished " << clustered_index.size());    // if so, it resolves such conflicts.
 
     INFO("Filling paired information");
     PairInfoImprover<Graph> improver(gp.g, clustered_index, lib);
     improver.ImprovePairedInfo(config.use_multithreading, config.max_threads);
+    INFO("After Improving " << clustered_index.size());
   }
 }
 
