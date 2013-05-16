@@ -43,7 +43,7 @@ private:
 public :
 	MappingDescription Locate(Sequence &s);
 //TODO:: place for tmp_index
-	PacBioMappingIndex(Graph &g, size_t k):g_(g), K_(k), tmp_index(K_, "tmp") {
+	PacBioMappingIndex(Graph &g, size_t k):g_(g), K_(k), tmp_index(K_, cfg::get().output_dir) {
 		DeBruijnEdgeMultiIndexBuilder<runtime_k::RtSeq> builder;
 		builder.BuildIndexFromGraph<typename Graph::EdgeId, Graph>(tmp_index, g_);
 		FillBannedKmers();
@@ -210,9 +210,10 @@ public :
 		vector<EdgeId> cur_sorted;
 		EdgeId prev_edge = EdgeId(0);
 		if (cur_cluster.size() > 1) {
+			DEBUG("edges in cluster:")
 			for(auto iter = cur_cluster.begin(); iter != cur_cluster.end(); ++iter){
 				EdgeId cur_edge = iter->second->edgeId;
-				INFO(g_.int_id(cur_edge));
+				DEBUG(g_.int_id(cur_edge));
 			}
 		}
 		for(auto iter = cur_cluster.begin(); iter != cur_cluster.end(); ++iter){
@@ -231,9 +232,9 @@ public :
 
 //TODO: reasonable constant?
 				if (start_v != end_v || (start_v == end_v && (cur_first_index.read_position - prev_last_index.read_position) > (cur_first_index.edge_position + g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
-					INFO("closing gap between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
-					INFO (" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
-					INFO (" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
+					DEBUG(" traversing tangled region between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
+					DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
+					DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
 					string s_add = "";
 					string e_add = "";
 					int seq_end = cur_first_index.read_position;
@@ -245,7 +246,7 @@ public :
 					pair<int, int> limits = GetPathLimits(*(prev_iter->second), *(iter->second) , s_add.length(), e_add.length());
 					vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, debug_info);
 					if (intermediate_path.size() == 0) {
-						WARN("Gap between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: "<< int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(cfg::get().K - K_ ) << " and seq "<< - seq_start + seq_end );
+						INFO("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: "<< int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(cfg::get().K - K_ ) << " and seq "<< - seq_start + seq_end );
 //TODO:is it sitll necessary?
 						vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, debug_info);
 						return intermediate_path;
@@ -331,10 +332,7 @@ public :
 					auto next_iter = iter + 1;
  					if (next_iter == cur_cluster.end() || !IsConsistent(s, *(iter->second), *(next_iter->second))){
  						if (next_iter != cur_cluster.end()) {
- 							INFO("splitting cluster sequences...");
- 							if (g_.conjugate(iter->second->edgeId) != next_iter->second->edgeId) {
- 								WARN("interesting gap, edgeIds: " <<g_.int_id(iter->second->edgeId) <<" " <<g_.int_id(next_iter->second->edgeId));
- 							}
+ 							DEBUG("cluster splitted...");
  						}
  						vector <pair<size_t,  typename ClustersSet::iterator> > splitted_cluster(cur_cluster_start, next_iter);
  						vector<EdgeId> cur_sorted = FillGapsInCluster(splitted_cluster, s);
@@ -351,8 +349,17 @@ public :
 		int alignments = int(sortedEdges.size());
 		for(i = 0; i < alignments; i++) {
 			for(int j = 0; j < alignments; j++) {
-				if (i!= j && TopologyGap(sortedEdges[i][0],sortedEdges[j][sortedEdges[j].size() - 1] )){
-				//	illumina_gaps.push_back(GapDescription<Graph>(*end_clusters[i], *start_clusters[j], s, K_));
+				EdgeId before_gap = sortedEdges[j][sortedEdges[j].size() - 1] ;
+				EdgeId after_gap = sortedEdges[i][0];
+//do not add "gap" for rc-jumping
+				if (before_gap != after_gap && before_gap != g_.conjugate(after_gap)) {
+					if (i!= j && TopologyGap(before_gap, after_gap)){
+						if  (start_clusters[j]->CanFollow(*end_clusters[i])) {
+							illumina_gaps.push_back(GapDescription<Graph>(*end_clusters[i], *start_clusters[j], s, K_));
+						}
+
+
+					}
 				}
 			}
 		}
@@ -468,34 +475,34 @@ public :
 	}
 
 	vector<EdgeId> BestScoredPath(Sequence &s, VertexId start_v, VertexId end_v, int path_min_length, int path_max_length, int start_pos, int end_pos, string &s_add, string &e_add, bool debug_info = false){
-		INFO("start and end vertices: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
+		DEBUG(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
 		PathStorageCallback<Graph> callback(g_);
 		PathProcessor<Graph> path_processor(g_, path_min_length , path_max_length , start_v, end_v, callback);
 		path_processor.Process();
 		vector<vector<EdgeId> > paths = callback.paths();
-		INFO("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
+		DEBUG("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
 		int s_len = int(s.size());
 		string seq_string = s.Subseq(start_pos, min(end_pos + 1, s_len)).str();
 		size_t best_path_ind = paths.size();
 		size_t best_score = 1000000000;
-		INFO("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
+		DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
 		if (paths.size() == 0)
 			return vector<EdgeId> (0);
 		for(size_t i = 0; i < paths.size(); i++){
 			string cur_string = s_add + PathToString(paths[i]) + e_add;
 			if (paths.size() > 1 && paths.size() < 10) {
-				INFO ("candidate path number "<< i << " , len " << cur_string.length());
+				DEBUG ("candidate path number "<< i << " , len " << cur_string.length());
 				if (debug_info) {
-					INFO("graph candidate: " << cur_string);
-					INFO("in pacbio read: " << seq_string);
+					DEBUG("graph candidate: " << cur_string);
+					DEBUG("in pacbio read: " << seq_string);
 				}
 				for(auto j_iter = paths[i].begin(); j_iter != paths[i].end();++j_iter) {
-					INFO (g_.int_id(*j_iter));
+					DEBUG(g_.int_id(*j_iter));
 				}
 			}
 			size_t cur_score = StringDistance( cur_string, seq_string);
 			if (paths.size() > 1 && paths.size() < 10 ) {
-				INFO ("score: "<< cur_score);
+				DEBUG("score: "<< cur_score);
 			}
 			if (cur_score < best_score){
 				best_score = cur_score;
@@ -505,7 +512,7 @@ public :
 		if (best_score == 1000000000)
 			return vector<EdgeId>(0);
 		if (paths.size() > 1 && paths.size() < 10){
-			INFO("best score found! Path " <<best_path_ind <<" score "<< best_score);
+			DEBUG("best score found! Path " <<best_path_ind <<" score "<< best_score);
 		}
 		return paths[best_path_ind];
 	}

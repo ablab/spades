@@ -39,7 +39,7 @@ struct MappingInstance {
 	}
 //Less by EDGE position
 	bool operator < ( MappingInstance const& b) const {
-		if (edge_position< b.edge_position  || (edge_position == b.edge_position && read_position < b.read_position))
+		if (edge_position < b.edge_position  || (edge_position == b.edge_position && read_position < b.read_position))
 			return true;
 		else
 			return false;
@@ -48,7 +48,7 @@ struct MappingInstance {
 //Less by READ position
 struct ReadPositionComparator{
     bool operator ()(MappingInstance const& a, MappingInstance const& b) const {
-    	if (a.read_position< b.read_position  || (a.read_position == b.read_position && a.edge_position< b.edge_position))
+    	if (a.read_position < b.read_position  || (a.read_position == b.read_position && a.edge_position < b.edge_position))
     		return true;
     	else
     		return false;
@@ -79,6 +79,10 @@ struct KmerCluster {
 			return false;
 	}
 
+    bool CanFollow(const KmerCluster &b) const{
+    	return (b.sorted_positions[b.last_trustable_index].read_position < sorted_positions[first_trustable_index].read_position);
+    }
+
 	void FillTrustableIndeces(){
 		//ignore non-unique kmers for distance determination
 		int first_unique_ind = 0;
@@ -102,8 +106,11 @@ struct GapDescription{
 	int gap_start_position, gap_end_position;
 	Sequence s;
 	GapDescription(const KmerCluster<Graph> &a, const  KmerCluster<Graph> & b, Sequence & read, int pacbio_k) {
-		gap_start_position = a.sorted_positions[a.last_trustable_index].edge_position + pacbio_k;
-		gap_end_position = b.sorted_positions[b.first_trustable_index].edge_position;
+		gap_start_position = a.sorted_positions[a.last_trustable_index].read_position  ;
+		gap_end_position = b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1;
+		INFO(gap_start_position);
+		INFO(gap_end_position);
+		INFO(read.size())
 		s = read.Subseq(gap_start_position, gap_end_position);
 	}
 };
