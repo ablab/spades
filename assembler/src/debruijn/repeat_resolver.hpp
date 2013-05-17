@@ -83,6 +83,7 @@ public:
 		Graph &graph_;
 		int depth_;
 		BoundedDijkstra<Graph, int> dij;
+
 	public:
 
 		FastDistanceCounter(Graph &graph, int depth) :
@@ -240,17 +241,20 @@ public:
 		return edge_labels;
 	}
 
-	RepeatResolver(Graph &old_graph_, IdTrackHandler<Graph> &old_IDs_,
+	RepeatResolver(Graph &old_graph_,
+	        IdTrackHandler<Graph> &old_IDs_,
 			const PIIndex &ind, EdgesPositionHandler<Graph> &old_pos_,
 			Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_,
 			EdgesPositionHandler<Graph> &new_pos_,
 			DeletedVertexHandler<Graph> &deleted_handler_,
-			EdgeLabelHandler<Graph> &LabelsAfter_, bool developer_mode) :
+			EdgeLabelHandler<Graph> &LabelsAfter_, bool developer_mode,
+            const io::SequencingLibrary<debruijn_config::DataSetData> &lib
+			) :
 			new_graph(new_graph_), old_graph(old_graph_), new_IDs(new_IDs_), old_IDs(
 					old_IDs_), new_pos(new_pos_), old_pos(old_pos_), deleted_handler(
 					deleted_handler_), labels_after(LabelsAfter_), distance_counter(
 					old_graph_, cfg::get().rr.max_distance), developer_mode_(
-					developer_mode) {
+					developer_mode), lib_(lib) {
 
 		TRACE("Constructor started");
 		map<VertexId, VertexId> old_to_new;
@@ -482,6 +486,8 @@ private:
 	int sum_count;
 	FastDistanceCounter distance_counter;
 	const bool developer_mode_;
+
+	const io::SequencingLibrary<debruijn_config::DataSetData> &lib_;
 
 private:
 	DECL_LOGGER("RepeatResolver")
@@ -928,7 +934,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	vector<details::VertexCompositId<Graph>> TemporaryOrderVect;
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
-	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, cfg::get().ds.IS());
+	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, size_t(lib_.data().mean_insert_size));
 
 	vector<VertexId> comps;
 	DEBUG("comp filling started");
@@ -976,7 +982,7 @@ template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents() {
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
-	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, cfg::get().ds.IS());
+	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, size_t(lib_.data().mean_insert_size));
 
 	vector<VertexId> comps;
 	DEBUG("comp filling started");
@@ -1214,7 +1220,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 						EdgeInfo ei(tmp[j], dir, right_id, tmp[j].d() - dif_d);
 
-						int trusted_dist = cfg::get().ds.IS() - cfg::get().ds.RL();
+						int trusted_dist = size_t(lib_.data().mean_insert_size) - lib_.data().read_length;
 						if (cheating_mode == 2
 								&& ((tmp[j].d() - dif_d
 										+ old_graph.length(right_id)
