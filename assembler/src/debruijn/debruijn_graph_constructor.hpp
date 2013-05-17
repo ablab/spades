@@ -219,18 +219,23 @@ private:
 	DECL_LOGGER("DeBruijnGraphConstructor")
 };
 
-
-
-
-
 template<class Seq>
-class UnbranchingPathExtractor {
+class UnbranchingPathFinder {
 private:
 	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
 	typedef typename Index::kmer_iterator kmer_iterator;
+
+	Index &origin_;
+	size_t kmer_size_;
+	bool clean_condenced_;
+
+
+public:
+	UnbranchingPathFinder(Index &origin, size_t kmer_size, bool clean_condenced = false) : origin_(origin), kmer_size_(kmer_size), clean_condenced_(clean_condenced) {
+	}
 
 	struct KPlusOneMer {
 		Index::KmerWithHash kmer;
@@ -247,14 +252,13 @@ private:
 		}
 	};
 
-	Index &origin_;
-	size_t kmer_size_;
-
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 		// VERIFY(origin_.contains(edge));
 		Index::KmerWithHash next_vertex = origin_.CreateKmerWithHash(edge.kmer.kmer << edge.next);
 		if (origin_.CheckUniqueOutgoing(next_vertex.idx) && origin_.CheckUniqueIncoming(next_vertex.idx)) {
 			edge = KPlusOneMer(next_vertex, origin_.GetUniqueOutgoing(next_vertex.idx));
+			if(clean_condenced_)
+				origin_.IsolateVertex(next_vertex.idx);
 			return true;
 		}
 		return false;
@@ -276,8 +280,32 @@ private:
 		return ConstructSeqGoingRight(edge);
 	}
 
+	Sequence ConstructLoopFromVertex(Index::KmerWithHash kh) {
+		KPlusOneMer kpom(kh, origin_.GetUniqueOutgoing(kh.idx));
+		Sequence result = ConstructSequenceWithEdge(kpom);
+		if(clean_condenced_)
+			origin_.IsolateVertex(kh.idx);
+		return result;
+	}
+};
+
+
+template<class Seq>
+class UnbranchingPathExtractor {
+private:
+	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef Seq Kmer;
+	typedef typename Index::kmer_iterator kmer_iterator;
+	typedef typename  UnbranchingPathFinder<Seq>::KPlusOneMer KPlusOneMer;
+
+	Index &origin_;
+	size_t kmer_size_;
+	bool clean_condenced_;
+
 	bool IsJunction(Index::KmerWithHash kh) {
-		return origin_.IsDeadEnd(kh.idx) || origin_.IsDeadStart(kh.idx) || !(origin_.CheckUniqueOutgoing(kh.idx) && origin_.CheckUniqueIncoming(kh.idx));
+		return !(origin_.CheckUniqueOutgoing(kh.idx) && origin_.CheckUniqueIncoming(kh.idx));
 	}
 
 	void AddKmers(kmer_iterator &it, kmer_iterator &end, size_t queueSize,
@@ -295,42 +323,73 @@ private:
 	}
 
 	void CalculateSequences(std::vector<KPlusOneMer> &kmers,
-			std::vector<Sequence> &sequences) {
+			std::vector<Sequence> &sequences, UnbranchingPathFinder<Seq> &finder) {
 		size_t size = kmers.size();
 		size_t start = sequences.size();
 		sequences.resize(start + size);
 
 #   pragma omp parallel for schedule(guided)
 		for (size_t i = 0; i < size; ++i) {
-			sequences[start + i] = ConstructSequenceWithEdge(kmers[i]);
+			sequences[start + i] = finder.ConstructSequenceWithEdge(kmers[i]);
 		}
 	}
 
+	Sequence ConstructLoopFromVertex(Index::KmerWithHash kh) {
+		KPlusOneMer kpom(kh, origin_.GetUniqueOutgoing(kh.idx));
+		Sequence result = ConstructSequenceWithEdge(kpom);
+		origin_.IsolateVertex(kh.idx);
+		return result;
+	}
+
+	//This methods collects all loops that were not extracted by finding unbranching paths because there are no junctions on loops. Construction is performed in parallel
+	const std::vector<Sequence> CollectLoops() {
+		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, true);
+		std::vector<Sequence> result;
+		for (kmer_iterator it = origin_.kmer_begin(), end = origin_.kmer_end(); it != end; ++it) {
+			Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, (*it).data()));
+			if (!IsJunction(kh)) {
+				result.push_back(finder.ConstructLoopFromVertex(kh));
+				Index::KmerWithHash rc_kh = origin_.CreateKmerWithHash(!kh.kmer);
+				if (!IsJunction(rc_kh)) {
+					result.push_back(finder.ConstructLoopFromVertex(rc_kh));
+				}
+			}
+		}
+		return result;
+	}
+
 public:
-	UnbranchingPathExtractor(Index &origin, size_t k) : origin_(origin), kmer_size_(k) {
+	UnbranchingPathExtractor(Index &origin, size_t k, bool clean_condenced = false) : origin_(origin), kmer_size_(k), clean_condenced_(clean_condenced) {
 	}
 
 	//TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
 	const std::vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
-			double queueGrowthRate) {
+			double queueGrowthRate, bool clean_condenced = false) {
+		UnbranchingPathFinder<Seq> finder = UnbranchingPathFinder<Seq>(origin_, kmer_size_, clean_condenced);
 		std::vector<Sequence> result;
-
 		size_t queueSize = queueMinSize;
-
 		std::vector<KPlusOneMer> kmers;
 		std::vector<Sequence> sequences;
-
 		kmers.reserve(queueSize);
-
 		kmer_iterator it = origin_.kmer_begin();
 		kmer_iterator end = origin_.kmer_end();
 		while(it != end) {
 			AddKmers(it, end, queueSize, kmers); // format a queue of kmers that are not in index
-			CalculateSequences(kmers, sequences); // in parallel
+			CalculateSequences(kmers, sequences, finder); // in parallel
 			kmers.clear();
 			queueSize = min(size_t(queueSize * queueGrowthRate), queueMaxSize);
 		}
 		return sequences;
+	}
+
+	const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(size_t queueMinSize, size_t queueMaxSize,
+			double queueGrowthRate) {
+		vector<Sequence> result	= ExtractUnbranchingPaths(queueMinSize, queueMaxSize, true);
+		vector<Sequence> loops = CollectLoops();
+		for(auto it = loops.begin(); it != loops.end(); ++it) {
+			result.push_back(*it);
+		}
+		return result;
 	}
 
 private:
@@ -559,7 +618,7 @@ public:
 
 	void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,
 			double queueGrowthRate) {
-		std::vector<Sequence> edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
+		std::vector<Sequence> edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(queueMinSize, queueMaxSize, queueGrowthRate);
 		FilterRC(edgeSequences);
 //		GraphFromSequencesConstructor<Graph>(kmer_size_).ConstructGraph(graph_, edgeSequences);
 		FastGraphFromSequencesConstructor<Graph, Seq>(kmer_size_, origin_).ConstructGraph(graph_, edgeSequences);
