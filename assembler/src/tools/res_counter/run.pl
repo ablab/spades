@@ -13,7 +13,10 @@ exec "@ARGV 1>>rc_stdout.txt 2>>rc_stderr.txt" if $child == 0;
 print "started...\n";
 
 my $stat_proc = fork;
-exec "python $script_dir/stats_counter.py $child 1>>rc_stats.txt 2>>rc_stats.err" if $stat_proc == 0;
+if ($stat_proc == 0) {
+  exec "python $script_dir/stats_counter.py $child 1>>rc_stats.txt 2>>rc_stats.txt";
+}
 
 waitpid($child, 0);
+waitpid($stat_proc, 0);
 print "finished. Results are in rc_stats.txt\n";
