@@ -33,7 +33,7 @@ class CoverageBasedResolution {
 	
 	
 	//path without conjugate edges
-	std::vector< PathInfo<typename GraphPack::graph_t> > filteredPaths;
+//	std::vector< PathInfo<typename GraphPack::graph_t> > filteredPaths;
 
 
 	private:
@@ -112,7 +112,8 @@ class CoverageBasedResolution {
 	void resolve_repeats_by_coverage( DetailedCoverage& coverage, 
 					EdgeLabelHandler<typename GraphPack::graph_t>& labels_after,
 					EdgeQuality<typename GraphPack::graph_t>& quality_labeler,
-					PairedInfoIndexT<Graph>& clustered_index
+					PairedInfoIndexT<typename GraphPack::graph_t> & clustered_index,
+					std::vector< PathInfo<typename GraphPack::graph_t> >& filteredPaths
 					//std::set<EdgeId>& prohibitedEdges,
 					//std::vector< std::vector<EdgeId>>& resolvedLoops ) 
 					) {
@@ -165,7 +166,7 @@ class CoverageBasedResolution {
 
 		joinPaths(resolvedPaths, filter.resolvedLoops, allPaths);
 		std::cout << "after joining: " << allPaths.size() << std::endl;
-		filterConjugate( usedEdges, allPaths);
+		filterConjugate( usedEdges, allPaths, filteredPaths);
 		std::cout << "before filtering size " << allPaths.size() << " filtered size: " << filteredPaths.size() << std::endl;
 
 		//FILE* file = fopen("/home/ksenia/path_resolved.log", "w");
@@ -216,9 +217,11 @@ class CoverageBasedResolution {
 	private:
 
 	void filterConjugate( std::set<EdgeId>& usedEdges,
-				const std::vector< std::vector<EdgeId> > & paths ){
+				const std::vector< std::vector<EdgeId> > & paths,
+				std::vector< PathInfo<typename GraphPack::graph_t> >& filteredPaths) {
 
 
+		INFO("filtering conjugate edges");
 		for ( auto path = paths.begin(); path != paths.end(); ++path) {
 
 			bool ifInsert = true;
@@ -232,16 +235,23 @@ class CoverageBasedResolution {
 
 			}
 			if (ifInsert) {
+				INFO("inserting");
 				filteredPaths.push_back(PathInfo<typename GraphPack::graph_t>(*path));
 				for (auto e = path->begin(); e != path->end(); ++e) 
 					usedEdges.insert(*e);
 				}
 		}
-		for ( auto path = filteredPaths.begin(); path != filteredPaths.end(); ++path )
-			for (auto e = path->getPath().begin(); e != path->getPath().end(); ++e) {
+		
+		INFO("inserting paths into set of the used edges");
+		for ( auto path = filteredPaths.begin(); path != filteredPaths.end(); ++path ) {
+			auto p = path->getPath();
+			std::cout << "size of p: " << p.size() << std::endl;
+			for (auto e = p.begin(); e != p.end(); ++e) {
 				usedEdges.insert(gp->g.conjugate(*e));
 			}
+		}
 
+		INFO("out of filtering");
 	}
 
 	void getComponentsWithReference( std::vector<EdgeId>& components, std::vector<EdgeId>& singles,
@@ -979,7 +989,7 @@ class CoverageBasedResolution {
 
 	void WriteResolved( const std::set<EdgeId>& usedEdges, path_extend::PathContainer& resolvedPaths, const std::string &fileName  ){
 
-		path_extend::ContigWriter cw( *gp, cfg::get().K, 0 );
+		path_extend::ContigWriter cw( *gp, cfg::get().K );
 		//cw.writePaths( resolvedPaths, fileName );
 		//PathContainer paths;
 		getOtherEdges( resolvedPaths, usedEdges );

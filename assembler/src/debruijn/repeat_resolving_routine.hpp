@@ -985,7 +985,37 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 	}
 }
 
-void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices) {
+void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo<Graph> >& filteredPaths, 
+				PairedIndexT& clustered_index,
+				EdgeQuality<Graph>& quality_labeler ) {
+
+
+	DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), cfg::get().output_dir);
+	if (cfg::get().developer_mode) {
+
+		std::string path;
+		if (cfg::get().entry_point < ws_repeats_resolving) 
+			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
+		else
+			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
+		bool val = LoadEdgeIndex(path, kmerIndex);
+		VERIFY_MSG(val, "can not open file "+path+".kmidx");
+		INFO("Updating index from graph started");
+		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, conj_gp.g);
+	}
+
+	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
+	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp);
+	cov_rr.resolve_repeats_by_coverage(index, labels_after, quality_labeler, clustered_index, filteredPaths);
+
+	INFO("Repeats are resolved by coverage");
+
+}
+
+void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices,
+				EdgeQuality<Graph>& quality_labeler ) {
+
 
 	vector<PairedIndexT*> pe_indexs;
 	vector<PairedIndexT*> pe_scaf_indexs;
@@ -1001,6 +1031,10 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	}
     PathStorage<Graph> long_read(conj_gp.g);
     GapStorage<Graph> gaps(conj_gp.g);
+
+	std::vector< PathInfo<Graph> > filteredPaths;
+	resolve_repeats_by_coverage(conj_gp, filteredPaths, clustered_indices[0], quality_labeler);
+
     //LongReadStorage<Graph> long_read(conj_gp.g);
 	if (cfg::get().pacbio_test_on == true){
 		INFO("creating  multiindex with k = " << cfg::get().pacbio_k);
@@ -1018,7 +1052,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	}
 	else {
 		pe_scaf_indexs.clear();
-		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta");
+		//path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta");
+		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "final_contigs.fasta");
 	}
 }
 
@@ -1095,7 +1130,7 @@ void resolve_repeats() {
 			|| cfg::get().rm
 					== debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");
-		pe_resolving(conj_gp, paired_indices, clustered_indices);
+		pe_resolving(conj_gp, paired_indices, clustered_indices, quality_labeler);
 	}
 	else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
 		INFO("Ready to run rectangles repeat resolution module");
