@@ -105,14 +105,18 @@ struct GapDescription{
 //	MappingInstance position_on_start, position_on_end;
 	int gap_start_position, gap_end_position;
 	Sequence s;
-	GapDescription(const KmerCluster<Graph> &a, const  KmerCluster<Graph> & b, Sequence & read, int pacbio_k) {
+	GapDescription(const typename Graph::EdgeId start_e, const typename Graph::EdgeId end_e, const Sequence gap, const int gap_start, const int gap_end):start(start_e), end(end_e), s(gap), gap_start_position(gap_start), gap_end_position(gap_end){}
+	GapDescription(const KmerCluster<Graph> &a, const  KmerCluster<Graph> & b, Sequence read, int pacbio_k) {
 		gap_start_position = a.sorted_positions[a.last_trustable_index].read_position  ;
 		gap_end_position = b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1;
-		INFO(gap_start_position);
-		INFO(gap_end_position);
-		INFO(read.size())
+		DEBUG(" gap added " << gap_start_position << " " << gap_end_position << " " << read.size());
 		s = read.Subseq(gap_start_position, gap_end_position);
 	}
+	GapDescription<Graph> conjugate(Graph &g_) const {
+		return this;
+	}
+private:
+	DECL_LOGGER("PacIndex");
 };
 
 template<class Graph>

@@ -10,6 +10,7 @@
 #include "debruijn_kmer_index.hpp"
 #include "graph_pack.hpp"
 #include <algorithm>
+#include "pacbio_read_structures.hpp"
 
 template<class Graph>
 class PathInfo {
@@ -26,7 +27,6 @@ public:
 	void increaseWeight() {
 		w++;
 	}
-
 	bool operator<(const PathInfo<Graph> &other) const {
 		return path < other.path;
 	}
@@ -36,6 +36,33 @@ public:
 		w = other.w;
 	}
 };
+
+template<class Graph>
+class GapStorage {
+	typedef typename Graph::EdgeId EdgeId;
+private:
+	DECL_LOGGER("PacIndex");
+	Graph &g_;
+	map<EdgeId, vector<GapDescription<Graph> > > inner_index;
+	void HiddenAddGap(const GapDescription<Graph> &p){
+//TODO:: write something
+
+	}
+
+public:
+	GapStorage(Graph &g):g_(g), inner_index() {}
+
+	void AddGap(const GapDescription<Graph> &p, bool add_rc = false){
+		HiddenAddGap(p);
+		if (add_rc) {
+			HiddenAddGap(p.conjugate(g_));
+		}
+	}
+
+
+};
+
+
 
 template<class Graph>
 class PathStorage {

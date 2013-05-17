@@ -57,7 +57,7 @@ public :
 			   *pacbio_read_stream>>reads[buf_size];
 		   }
 		   INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
-		   INFO("master thread number " << omp_get_thread_num());
+		   DEBUG("master thread number " << omp_get_thread_num());
 		   ProcessReadsBatch(reads, pac_index, long_reads, buf_size, genomic_subreads, nongenomic_subreads, nongenomic_edges, total_length, tlen, n, different_edges_profile, rc_pairs);
 		   INFO("Processed batch " << buffer_no);
 		   ++buffer_no;
@@ -101,7 +101,7 @@ public :
 	# pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n,  different_edges_profile) num_threads(cfg::get().max_threads)
 		for (size_t i = 0; i < buf_size; ++i) {
 			if (i % 1000 == 0) {
-				INFO("thread number " << omp_get_thread_num());
+				DEBUG("thread number " << omp_get_thread_num());
 			}
 			size_t thread_num = omp_get_thread_num();
 			Sequence seq(reads[i].sequence());
@@ -127,53 +127,53 @@ public :
 		    	}
 		    }
 		    //continue;
-		    INFO(n << "  " << location_map.size()<< ": \n");
-		    auto aligned_edges = pac_index.GetReadAlignment(seq);
-		    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
-		    	for(auto j_iter = iter + 1; j_iter != aligned_edges.end(); ++ j_iter) {
-
-		    		if (iter->size() == 1 && j_iter->size() == 1  &&  gp_.g.conjugate((*iter)[0]) != (*j_iter)[0]) {
-		    			auto first = (*iter)[0];
-		    			auto second = (*j_iter)[j_iter->size() - 1];
-		    			if (first <  second) {
-		    				auto temp = first;
-		    				first = second;
-		    				second = temp;
-		    			}
-		    			auto tmp = std::make_pair(first, second);
-
-		    			if (TopologyGap(first, second)) {
-		    				WARN("suspicious, that  gap is near: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
-			    			gaps[thread_num][tmp] ++;
-		    			}
-		    			else {
-		    				WARN("two independent edges, not dead-end: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
-			    			gaps[thread_num][tmp] --;
-		    			}
-		    			if (iter->size() == 1 && j_iter->size() == 1)
-		    				continue;
-		    			first = (*iter)[iter->size()-1];
-		    			second = (*j_iter)[0];
-		    			if (first <  second) {
-							auto temp = first;
-							first = second;
-							second = temp;
-						}
-		    			tmp = std::make_pair(first, second);
-
-		    			if (TopologyGap(first, second)) {
-		    				WARN("suspicious, that  gap is near: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
-			    			gaps[thread_num][tmp] ++;
-
-		    			}
-		    			else {
-		    				WARN("two independent edges, not dead-end: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
-			    			gaps[thread_num][tmp] --;
-		    			}
-		    		}
-
-		    	}
-		    }
+		    DEBUG(n << "  " << location_map.size()<< ": \n");
+		    auto aligned_edges = pac_index.GetReadAlignment(seq).main_storage;
+//		    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
+//		    	for(auto j_iter = iter + 1; j_iter != aligned_edges.end(); ++ j_iter) {
+//
+//		    		if (iter->size() == 1 && j_iter->size() == 1  &&  gp_.g.conjugate((*iter)[0]) != (*j_iter)[0]) {
+//		    			auto first = (*iter)[0];
+//		    			auto second = (*j_iter)[j_iter->size() - 1];
+//		    			if (first <  second) {
+//		    				auto temp = first;
+//		    				first = second;
+//		    				second = temp;
+//		    			}
+//		    			auto tmp = std::make_pair(first, second);
+//
+//		    			if (TopologyGap(first, second)) {
+//		    				WARN("suspicious, that  gap is near: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
+//			    			gaps[thread_num][tmp] ++;
+//		    			}
+//		    			else {
+//		    				WARN("two independent edges, not dead-end: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
+//			    			gaps[thread_num][tmp] --;
+//		    			}
+//		    			if (iter->size() == 1 && j_iter->size() == 1)
+//		    				continue;
+//		    			first = (*iter)[iter->size()-1];
+//		    			second = (*j_iter)[0];
+//		    			if (first <  second) {
+//							auto temp = first;
+//							first = second;
+//							second = temp;
+//						}
+//		    			tmp = std::make_pair(first, second);
+//
+//		    			if (TopologyGap(first, second)) {
+//		    				WARN("suspicious, that  gap is near: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
+//			    			gaps[thread_num][tmp] ++;
+//
+//		    			}
+//		    			else {
+//		    				WARN("two independent edges, not dead-end: "<< gp_.g.int_id(first) << " " << gp_.g.int_id(second));
+//			    			gaps[thread_num][tmp] --;
+//		    			}
+//		    		}
+//
+//		    	}
+//		    }
 		    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
 		    	long_reads_by_thread[thread_num].AddPath(*iter, 1, true);
 		    	if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {

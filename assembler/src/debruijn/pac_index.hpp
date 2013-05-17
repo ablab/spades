@@ -267,7 +267,7 @@ public :
 				(g_.IsDeadStart(g_.EdgeStart(first)) && g_.IsDeadEnd(g_.EdgeEnd(second))));
 	}
 
-	vector<vector<EdgeId> > GetReadAlignment(Sequence &s){
+	OneReadMapping<Graph> GetReadAlignment(Sequence &s){
 		ClustersSet mapping_descr = GetClusters(s);
 		int len = mapping_descr.size();
 		vector<vector<int> > table(len);
@@ -363,7 +363,7 @@ public :
 				}
 			}
 		}
-		return sortedEdges;
+		return	OneReadMapping<Graph>(sortedEdges, illumina_gaps);
 	}
 
 
