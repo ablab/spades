@@ -433,6 +433,10 @@ private:
 				hash_and_mask_((hash << 2) | (BitBool(is_rc) << 1)| BitBool(is_start)), edge_(edge) {
 		}
 
+		LinkRecord() :
+				hash_and_mask_(0), edge_(0) {
+		}
+
 		bool operator<(const LinkRecord &other) const {
 			if(this->hash_and_mask_ == other.hash_and_mask_)
 				return this->edge_ < other.edge_;
@@ -458,7 +462,7 @@ private:
 			return LinkRecord(origin_.seq_idx(kmer_rc), edge, false, true);
 	}
 
-	void CollectLinkRecords(typename Graph::Helper &helper, vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
+	void CollectLinkRecords(typename Graph::Helper &helper, const Graph &graph, vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
 		size_t size = sequences.size();
 		records.resize(size * 2, LinkRecord(0, EdgeId(0), false, false));
 //#   pragma omp parallel for schedule(guided)
@@ -468,7 +472,10 @@ private:
 			size_t j = i << 1;
 			EdgeId edge = helper.AddEdge(DeBruijnEdgeData(sequences[i]));
 			records[j] = StartLink(edge, sequences[i]);
-			records[j + 1] = EndLink(edge, sequences[i]);
+			if(graph.conjugate(edge) == edge)
+				records[j + 1] = EndLink(edge, sequences[i]);
+			else
+				records[j + 1] = LinkRecord();
 		}
 	}
 
@@ -491,7 +498,7 @@ public:
 	void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) const {
 		typename Graph::Helper helper = graph.GetConstructionHelper();
 		vector<LinkRecord> records;
-		CollectLinkRecords(helper, records, sequences);//TODO make parallel
+		CollectLinkRecords(helper, graph, records, sequences);//TODO make parallel
 		std::sort(records.begin(), records.end());
 		size_t size = records.size();
 //#   pragma omp parallel for schedule(guided)
@@ -505,6 +512,8 @@ public:
 			{
 				v = graph.AddVertex();
 			}
+			if(v == VertexId(0))
+				continue;
 			for(size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
 				LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsEnd(), records[j].IsRC());
 			}
