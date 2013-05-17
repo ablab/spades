@@ -28,7 +28,7 @@ void VisualizeNontrivialComponentAutoInc(
       vertices.insert(g.EdgeEnd(e));
     }
     WriteComponent(GraphComponent<Graph>(g, vertices.begin(), vertices.end()),
-                   folder + ToString(cnt) + ".dot", colorer, labeler);
+                   folder + ToString(cnt++) + ".dot", colorer, labeler);
   }
 }
 
