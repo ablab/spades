@@ -128,9 +128,9 @@ public:
 					BidirectionalPath* currentPath = *(coveredPathes.begin());
 					BidirectionalPath* secondPath = *(++coveredPathes.begin());
 					DEBUG("delete similar paths");
-					//currentPath->Print();
-					//DEBUG("second path");
-					//secondPath->Print();
+					currentPath->Print();
+					DEBUG("second path");
+					secondPath->Print();
 					if ((*currentPath) == (*secondPath)){
 						secondPath->Clear();
 						change = true;

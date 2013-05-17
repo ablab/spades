@@ -106,6 +106,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
 	INFO("Using " << libs.size() << " paired lib(s)");
+	INFO("Using " << scafolding_libs.size() << " scaffolding libs");
 	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
 
 	ContigWriter writer(gp, gp.g.k());
@@ -251,7 +252,7 @@ void add_paths_to_container(conj_graph_pack& gp, const std::vector<LongReadInfo<
 void resolve_repeats_pe(conj_graph_pack& gp,
 		vector<PairedIndexT*>& paired_index, vector<PairedIndexT*>& scaff_index,
 		vector<size_t>& indexs, const std::vector<LongReadInfo<Graph> >& true_paths,
-		const std::string& output_dir, const std::string& contigs_name) {
+		const std::string& output_dir, const std::string& contigs_name, bool use_auto_threshold = true) {
 
     const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
@@ -264,18 +265,24 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 		if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::PairedEnd) {
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, paired_end_libs);
-			INFO("BEGIN");
-			find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
-			INFO("END");
+
+			if (use_auto_threshold){
+				INFO("BEGIN");
+				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
+				INFO("END");
+			}
+
 			//set_threshold(lib, indexs[i], pset.split_edge_length);
 			add_lib(gp.g, scaff_index, indexs, i, pe_scaf_libs);
 		}
 		else if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::MatePairs) {
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, mate_pair_libs);
-			INFO("BEGIN");
-			find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
-			INFO("END");
+			if (use_auto_threshold){
+				INFO("BEGIN");
+				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
+				INFO("END");
+			}
 			//set_threshold(lib, indexs[i], pset.split_edge_length);
 			add_lib(gp.g, scaff_index, indexs, i, mp_scaf_libs);
 		}
