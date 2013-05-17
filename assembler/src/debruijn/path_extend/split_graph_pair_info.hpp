@@ -188,7 +188,7 @@ public:
 		SingleStreamType paired_streams(paired_stream.get());
 		io::IReader<io::PairedRead>& stream = paired_streams.back();
 		stream.reset();
-		size_t n = 0;
+
 		while (!stream.eof()) {
 		    io::IReader<io::PairedRead>::read_type p_r;
 		    stream >> p_r;
@@ -199,8 +199,10 @@ public:
 					gp_.kmer_mapper, gp_.g.k() + 1);
 			MappingPath<EdgeId> path1 = mapper.MapSequence(read1);
 			MappingPath<EdgeId> path2 = mapper.MapSequence(read2);
+
 			for (size_t i = 0; i < path1.size(); ++i) {
 				pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+
 				for (size_t j = 0; j < path2.size(); ++j) {
 					pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
 					double weight = PairedReadCountWeight(mapping_edge_1.second,
@@ -231,6 +233,7 @@ public:
 		Graph& graph = gp_.g;
 		vector<double> good_pi;
 		vector<double> bad_pi;
+
 		for (auto edge = graph.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
 			if (graph.length(*edge) > min_length_long_edge) {
 				if (graph.int_id(*edge) <= 0) {
@@ -241,11 +244,13 @@ public:
 				if (edgePairInfo.size() == 0){
 					continue;
 				}
+
 				size_t countBackets = LastTestBasketIndex(*edge, insert_size_max, edgePairInfo);
 				for (size_t index = 0; index <= countBackets; ++index){
 					//INFO("index " << index);
 					map<Basket, PairInfo>& basketInfo = edgePairInfo.GetBasketInfo(index);
 					set<size_t> pairBaskets = GetPairBaskets(index, insert_size_min, insert_size_max, edgePairInfo);
+
 					for (auto pairBasketIter = basketInfo.begin(); pairBasketIter != basketInfo.end(); ++pairBasketIter){
 						PairInfo& pairInfo = pairBasketIter->second;
 						if (pairBasketIter->first.edgeId() == *edge && pairBaskets.find(pairBasketIter->first.index()) != pairBaskets.end()){
@@ -256,9 +261,11 @@ public:
 							bad_pi.push_back(GetNormalizedWeight(pairInfo));
 						}
 					}
+
 				}
 			}
 		}
+
 		INFO("Completed good pi and bad pi");
 		double threshold = find_intersection(good_pi, bad_pi);
 		INFO("WE FOUND THRESHOLD " << threshold <<" good_pi_size " << good_pi.size() << " bad_pi_size " << bad_pi.size());

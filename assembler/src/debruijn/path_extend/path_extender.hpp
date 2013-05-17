@@ -404,8 +404,9 @@ public:
 
     virtual void GrowPath(BidirectionalPath& path) {
         while (MakeGrowStep(path)) {
-            if (path.getLoopDetector().IsCycled(maxLoops_)) {
-                path.getLoopDetector().RemoveLoop();
+            size_t skip_identical_edges;
+            if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
+                path.getLoopDetector().RemoveLoop(skip_identical_edges);
                 return;
             }
         }
