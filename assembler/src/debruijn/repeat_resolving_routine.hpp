@@ -1000,13 +1000,14 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 		}
 	}
     PathStorage<Graph> long_read(conj_gp.g);
-
+    GapStorage<Graph> gaps(conj_gp.g);
     //LongReadStorage<Graph> long_read(conj_gp.g);
 	if (cfg::get().pacbio_test_on == true){
 		INFO("creating  multiindex with k = " << cfg::get().pacbio_k);
 		PacBioAligner pac_aligner(conj_gp, cfg::get().pacbio_k);
 		INFO("index created");
-		pac_aligner.pacbio_test(long_read);
+		pac_aligner.pacbio_test(long_read, gaps);
+
 	}
     //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 

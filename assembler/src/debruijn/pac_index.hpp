@@ -441,7 +441,7 @@ public:
 			table[i].resize(b_len);
 			int low = max(max(0, i - d - 1), i + b_len - a_len - d - 1);
 			int high = min(min(b_len, i + d + 1), i + a_len - b_len + d + 1);
-			DEBUG(low << " " <<high);
+			TRACE(low << " " <<high);
 			for (int j = low; j < high; j++)
 				table[i][j] = 1000000000;
 		}
@@ -455,7 +455,7 @@ public:
 			int low = max(max(0, i - d), i + b_len - a_len - d);
 			int high = min(min(b_len, i + d), i + a_len - b_len + d);
 
-			DEBUG(low << " " <<high);
+			TRACE(low << " " <<high);
 			for (int j = low; j < high; j++) {
 
 //			for(int j = max(0, i - d); j < min(b_len, i + d); j++){

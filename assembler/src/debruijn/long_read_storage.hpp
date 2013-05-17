@@ -52,8 +52,7 @@ private:
 	Graph &g_;
 	map<EdgeId, vector<GapDescription<Graph> > > inner_index;
 	void HiddenAddGap(const GapDescription<Graph> &p){
-//TODO:: write something
-
+		inner_index[p.start].push_back(p);
 	}
 
 public:
@@ -62,14 +61,30 @@ public:
 	void AddGap(const GapDescription<Graph> &p, bool add_rc = false){
 		HiddenAddGap(p);
 		if (add_rc) {
-			HiddenAddGap(p.conjugate(g_));
+			DEBUG("Addign conjugate");
+			HiddenAddGap(p.conjugate(g_, cfg::get().K - cfg::get().pacbio_k));
 		}
 	}
 
+	void AddStorage(GapStorage<Graph> & to_add) {
+		for(auto iter = to_add.inner_index.begin(); iter != to_add.inner_index.end(); ++iter) {
+			for(auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter)
+				inner_index[iter->first].push_back(*j_iter);
+		}
+	}
 
+	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos) {
+		ofstream filestr(filename);
+		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter) {
+			filestr << g_.int_id(iter->first)<< " " <<iter->second.size() << endl;
+			sort(iter->second.begin(), iter->second.end());
+			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
+				filestr << j_iter->str(g_);
+			}
+			filestr<< endl;
+		}
+	}
 };
-
-
 
 template<class Graph>
 class PathStorage {
@@ -103,8 +118,8 @@ public:
 		}
 	}
 
-	void DumpToFile(const string s, EdgesPositionHandler<Graph> &edge_pos){
-		ofstream filestr(s);
+	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos){
+		ofstream filestr(filename);
 		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter){
 			filestr<< iter->second.size() << endl;
 			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
@@ -161,8 +176,6 @@ public:
 		}
 		return res;
 	}
-
-
 
 
 	void LoadFromFile(const string s){

@@ -95,22 +95,44 @@ struct KmerCluster {
 
 template<class Graph>
 struct GapDescription {
+	typedef typename Graph::EdgeId EdgeId;
 	typename Graph::EdgeId start, end;
-//	MappingInstance position_on_start, position_on_end;
-	int gap_start_position, gap_end_position;
-	Sequence s;
-	GapDescription(const typename Graph::EdgeId start_e, const typename Graph::EdgeId end_e, const Sequence gap, const int gap_start, const int gap_end) :
-			start(start_e), end(end_e), s(gap), gap_start_position(gap_start), gap_end_position(gap_end) {
+	Sequence gap_seq;
+	int edge_gap_start_position, edge_gap_end_position;
+
+
+	GapDescription(EdgeId start_e, EdgeId end_e, const Sequence &gap, int gap_start, int gap_end) :
+			start(start_e), end(end_e), gap_seq(gap.str()), edge_gap_start_position(gap_start), edge_gap_end_position(gap_end) {
 	}
+
 	GapDescription(const KmerCluster<Graph> &a, const KmerCluster<Graph> & b, Sequence read, int pacbio_k) {
-		gap_start_position = a.sorted_positions[a.last_trustable_index].read_position;
-		gap_end_position = b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1;
-		DEBUG(" gap added " << gap_start_position << " " << gap_end_position << " " << read.size());
-		s = read.Subseq(gap_start_position, gap_end_position);
+		edge_gap_start_position = a.sorted_positions[a.last_trustable_index].edge_position;
+		edge_gap_end_position = b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k - 1;
+		start = a.edgeId;
+		end = b.edgeId;
+		DEBUG(read.str());
+		gap_seq = read.Subseq(a.sorted_positions[a.last_trustable_index].read_position, b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1);
+		DEBUG(gap_seq.str());
+		DEBUG("gap added");
 	}
-	GapDescription<Graph> conjugate(Graph &g_) const {
-		return this;
+
+	GapDescription<Graph> conjugate(Graph &g_, int shift) const {
+		 INFO(str(g_));
+		 GapDescription<Graph> res(g_.conjugate(end), g_.conjugate(start), (!gap_seq), g_.length(end) + shift - edge_gap_end_position,  g_.length(start) + shift - edge_gap_start_position);
+		 DEBUG("conjugate created" << res.str(g_));
+		 return res;
 	}
+	string str(Graph &g_) const {
+		stringstream s;
+		s << g_.int_id(start) << " " << edge_gap_start_position <<endl << g_.int_id(end) << " " << edge_gap_end_position << endl << gap_seq.str()<< endl;
+		return s.str();
+	}
+
+	bool operator <(const GapDescription & b) const {
+		return (start < b.start || (start == b.start &&  end < b.end) ||
+				(start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_end_position));
+	}
+
 private:
 	DECL_LOGGER("PacIndex")
 	;
