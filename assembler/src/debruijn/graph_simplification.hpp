@@ -599,7 +599,7 @@ void PreSimplification(conj_graph_pack& gp, const FlankingCoverage& flanking_cov
   RemoveBulges(gp.g, cfg::get().simp.br, removal_handler, gp.g.k() + 1);
 }
 
-void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage& flanking_cov,
+void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage& ,
                          boost::function<void(EdgeId)> removal_handler,
                          detail_info_printer &printer, size_t iteration_count,
                          size_t iteration, double max_coverage) {
@@ -626,6 +626,8 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage& flanking_c
   //todo temporary! relative coverage remover
   auto colorer = DefaultGPColorer(gp);
 
+  //todo do not refill on each step!!!
+  FlankingCoverage flanking_cov(gp, 50);
   //todo make this procedure easier
   EdgeQuality<Graph> edge_qual(gp.g, gp.index,
       gp.kmer_mapper, gp.genome);
