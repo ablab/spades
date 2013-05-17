@@ -16,14 +16,19 @@ void SingleEdgeAdapter(
 }
 
 template<class Graph>
-void VisualizeNontrivialComponent(const Graph& g,
-                                  const set<typename Graph::EdgeId>& edges,
-                                  const string& filename,
-                                  const GraphLabeler<Graph>& labeler,
-                                  const GraphColorer<Graph>& colorer) {
+void VisualizeNontrivialComponentAutoInc(
+    const Graph& g, const set<typename Graph::EdgeId>& edges,
+    const string& folder, const GraphLabeler<Graph>& labeler,
+    const GraphColorer<Graph>& colorer) {
+  static size_t cnt = 0;
   if (edges.size() > 1) {
-    WriteComponent(GraphComponent<Graph>(g, edges.begin(), edges.end()),
-                   filename, colorer, labeler);
+    set<typename Graph::VertexId> vertices;
+    FOREACH(auto e, edges) {
+      vertices.insert(g.EdgeStart(e));
+      vertices.insert(g.EdgeEnd(e));
+    }
+    WriteComponent(GraphComponent<Graph>(g, vertices.begin(), vertices.end()),
+                   folder + ToString(cnt) + ".dot", colorer, labeler);
   }
 }
 

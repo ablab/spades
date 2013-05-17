@@ -41,7 +41,7 @@ class MapGraphLabeler {
 
 public:
 
-	virtual string label(VertexId v) const {
+	/*virtual*/ string label(VertexId v) const {
 		auto it = vertex_map_.find(v);
 		if (it == vertex_map_.end())
 			return "";
@@ -49,7 +49,7 @@ public:
 			return it->second;
 	}
 
-	virtual string label(EdgeId e) const {
+	/*virtual*/ string label(EdgeId e) const {
 		auto it = edge_map_.find(e);
 		if (it == edge_map_.end())
 			return "";

@@ -38,13 +38,13 @@ namespace debruijn_graph {
 
 //todo move to visualization
 template <class graph_pack>
-auto_ptr<GraphColorer<typename graph_pack::graph_t>> DefaultColorer(const graph_pack& gp) {
+auto_ptr<GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(const graph_pack& gp) {
   typedef typename graph_pack::graph_t Graph;
   typedef typename Graph::EdgeId EdgeId;
 
-  auto mapper = NewExtendedSequenceMapper(gp);
-  auto path1 = mapper->MapSequence(gp.g).simple_path();
-  auto path2 = mapper->MapSequence(!gp.g).simple_path();
+  auto mapper = MapperInstance(gp);
+  auto path1 = mapper->MapSequence(gp.genome).simple_path();
+  auto path2 = mapper->MapSequence(!gp.genome).simple_path();
   return omnigraph::DefaultColorer(gp.g, path1, path2);
 }
 
@@ -618,17 +618,27 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage& flanking_c
   printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
   DEBUG(iteration << " ErroneousConnectionsRemoval");
-  RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/0,
+  RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/removal_handler,
                          *cfg::get().ds.RL, max_coverage, iteration_count,
                          iteration);
   DEBUG(iteration << " ErroneousConnectionsRemoval stats");
 
-  //relative coverage remover
-  auto colorer = DefaultColorer(gp);
+  //todo temporary! relative coverage remover
+  auto colorer = DefaultGPColorer(gp);
 
+  //todo make this procedure easier
+  EdgeQuality<Graph> edge_qual(gp.g, gp.index,
+      gp.kmer_mapper, gp.genome);
+  total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
+  total_labeler tot_lab(&graph_struct);
+  CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
+  const string folder = cfg::get().output_dir + "low_cov_components/";
+  make_dir(folder);
 
-  RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, boost::bind() removal_handler,
+  RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov,
+                                        boost::bind(&VisualizeNontrivialComponentAutoInc<Graph>,
+                                        boost::ref(gp.g), _1, folder, boost::ref(labeler), boost::ref(*colorer)),
                                         *cfg::get().ds.RL, max_coverage, iteration_count,
                                         iteration);
 
