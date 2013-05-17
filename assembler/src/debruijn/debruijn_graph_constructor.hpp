@@ -434,7 +434,11 @@ private:
 		}
 
 		LinkRecord() :
-				hash_and_mask_(0), edge_(0) {
+				hash_and_mask_(-1), edge_(0) {
+		}
+
+		bool IsInvalid() {
+			return hash_and_mask_ + 1 == 0 && edge_ == EdgeId(0);
 		}
 
 		bool operator<(const LinkRecord &other) const {
@@ -472,7 +476,7 @@ private:
 			size_t j = i << 1;
 			EdgeId edge = helper.AddEdge(DeBruijnEdgeData(sequences[i]));
 			records[j] = StartLink(edge, sequences[i]);
-			if(graph.conjugate(edge) == edge)
+			if(graph.conjugate(edge) != edge)
 				records[j + 1] = EndLink(edge, sequences[i]);
 			else
 				records[j + 1] = LinkRecord();
@@ -512,7 +516,7 @@ public:
 			{
 				v = graph.AddVertex();
 			}
-			if(v == VertexId(0))
+			if(records[i].IsInvalid())
 				continue;
 			for(size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
 				LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsEnd(), records[j].IsRC());

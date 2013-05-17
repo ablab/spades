@@ -65,10 +65,7 @@ private:
 		} while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx));
 		if(!index_.CheckUniqueIncoming(kh.idx)) {
 			for(size_t i = 0; i < tip.size(); i++) {
-				index_.DeleteOutgoing(tip[i].idx, index_.GetUniqueOutgoing(tip[i].idx));
-			}
-			for(size_t i = 1; i < tip.size(); i++) {
-				index_.DeleteIncoming(tip[i].idx, index_.GetUniqueIncoming(tip[i].idx));
+				index_.IsolateVertex(tip[i].idx);
 			}
 			return tip.size();
 		}
@@ -83,10 +80,7 @@ private:
 		} while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx));
 		if(!index_.CheckUniqueOutgoing(kh.idx)) {
 			for(size_t i = 0; i < tip.size(); i++) {
-				index_.DeleteIncoming(tip[i].idx, index_.GetUniqueIncoming(tip[i].idx));
-			}
-			for(size_t i = 1; i < tip.size(); i++) {
-				index_.DeleteOutgoing(tip[i].idx, index_.GetUniqueOutgoing(tip[i].idx));
+				index_.IsolateVertex(tip[i].idx);
 			}
 			return tip.size();
 		}

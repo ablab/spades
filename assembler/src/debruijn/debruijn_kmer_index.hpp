@@ -678,6 +678,10 @@ public:
 	  }
   }
 
+  void IsolateVertex(size_t idx) {
+	  this->operator [](idx) = 0;
+  }
+
   void AddOutgoing(const runtime_k::RtSeq &kmer, char nnucl) {
     AddOutgoing(this->seq_idx(kmer), nnucl);
   }
