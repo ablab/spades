@@ -120,7 +120,7 @@ public:
         		continue;
         	}
         	DEBUG("NODE " << ++i);
-        	//iter.get()->Print();
+        	iter.get()->Print();
         	oss.setID(iter.get()->GetId());
             oss.setCoverage(iter.get()->Coverage());
             oss << ToString(*iter.get());

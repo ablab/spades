@@ -107,7 +107,8 @@ void estimate_distance(conj_graph_pack& gp,
       weight_function = UnityFunction;
 
     PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
-    if (config.ds.single_cell) {                                              // paired info normalization
+    if (config.ds.single_cell ||
+    		cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {  // paired info normalization
     	INFO("Trivial weight normalizer");
     	normalizing_f = &TrivialWeightNormalization<Graph>;                     // only in the single-cell case,
     } else {                                                                  // in the case of ``multi-cell''
@@ -176,14 +177,13 @@ void estimate_distance(conj_graph_pack& gp,
         }
     }
 
-    INFO("Refining clustered pair information " << clustered_index.size());                              // this procedure checks, whether index
+    INFO("Refining clustered pair information ");                              // this procedure checks, whether index
     RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
-    INFO("The refining of clustered pair information has been finished " << clustered_index.size());    // if so, it resolves such conflicts.
+    INFO("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
 
     INFO("Filling paired information");
     PairInfoImprover<Graph> improver(gp.g, clustered_index, lib);
     improver.ImprovePairedInfo(config.use_multithreading, config.max_threads);
-    INFO("After Improving " << clustered_index.size());
   }
 }
 

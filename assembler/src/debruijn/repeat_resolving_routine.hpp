@@ -1076,7 +1076,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 			}
 			INFO("Scaffolding");
 			path_extend::resolve_repeats_pe(resolved_gp, pe_indexs,
-					pe_scaf_indexs, indexs,  vector<LongReadInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta");
+					pe_scaf_indexs, indexs,  vector<LongReadInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta", false);
 			SaveResolved(resolved_gp, resolved_graph_paired_info,
 					resolved_graph_paired_info_cl);
 			delete resolved_graph_scaff_clustered;

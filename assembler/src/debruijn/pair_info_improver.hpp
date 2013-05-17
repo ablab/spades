@@ -57,9 +57,7 @@ class PairInfoImprover {
   void ParallelCorrectPairedInfo(size_t nthreads) {
     size_t missing_paired_info_count = 0;
     size_t extra_paired_info_count = 0;
-    INFO(" before remove contraditional " << index_.size());
     extra_paired_info_count = ParallelRemoveContraditional(nthreads);
-    INFO(" before fill missing " << index_.size());
     missing_paired_info_count = ParallelFillMissing(nthreads);
 
     INFO("Paired info stats: missing = " << missing_paired_info_count
