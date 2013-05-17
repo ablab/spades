@@ -32,10 +32,7 @@ namespace debruijn_graph {
       if (cfg::get().developer_mode) {
 
         std::string path;
-        if (cfg::get().entry_point < ws_repeats_resolving)
-          path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
-        else
-          path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
+        path = cfg::get().load_from + "/constructed_graph";
         bool val = LoadEdgeIndex(path, kmerIndex);
         VERIFY_MSG(val, "can not open file "+path+".kmidx");
         INFO("Updating index from graph started");
