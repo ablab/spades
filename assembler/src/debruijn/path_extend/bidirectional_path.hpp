@@ -1137,9 +1137,6 @@ bool LoopDetector::PathIsLoop(size_t edges) const {
 
 
 size_t LoopDetector::LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const {
-    if (skip_identical_edges > 0) {
-        INFO("loop count " << skip_identical_edges);
-    }
     size_t edges = LoopEdges(skip_identical_edges, min_cycle_appearences);
     return LastLoopCount(edges);
 }
@@ -1171,13 +1168,9 @@ bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) cons
 
     while (loop_count > 0) {
         if (loop_count >= loopLimit) {
-            INFO("Really cycled " << skip_identical_edges);
             return true;
         }
         loop_count = LastLoopCount(++skip_identical_edges, loopLimit);
-        if (skip_identical_edges > 0) {
-            INFO("in is cycled " << skip_identical_edges);
-        }
     }
     return false;
 }
@@ -1197,19 +1190,14 @@ size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges, bool fullRemoval
         result = (count - 1) * edges - 1;
     }
 
-    INFO("Will remove " << result << " edges (" << edges << " * " << count << ")");
     return result < 0 ? 0 : result;
 }
 
 void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemoval) {
     auto toRemove = EdgesToRemove(skip_identical_edges, fullRemoval);
-    INFO("BEFORE");
-    path_->PrintInfo();
     for(size_t i = 0; i < toRemove; ++i) {
         path_->SafePopBack();
     }
-    INFO("AFTER");
-    path_->PrintInfo();
 }
 
 
