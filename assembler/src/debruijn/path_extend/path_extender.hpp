@@ -196,24 +196,11 @@ public:
             if (g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l) == g_.EdgeNucls(source).Subseq(0, l)) {
                 DEBUG("Found correct gap length");
                 DEBUG("Inintial: " << initial_gap << ", new gap: " << g_.k() - l);
-                DEBUG(g_.EdgeNucls(sink).Subseq(g_.length(sink)).str())
-                string s = "";
-                for (int i = 0; i < (int) g_.k() - l; ++i) {
-                    s += " ";
-                }
-                DEBUG(s << g_.EdgeNucls(source).Subseq(0, g_.k()).str());
                 return g_.k() - l;
             }
         }
 
-        string s = "";
-        for (int i = 0; i < initial_gap; ++i) {
-            s += " ";
-        }
-
         DEBUG("Perfect overlap is not found, inintial: " << initial_gap);
-        DEBUG(g_.EdgeNucls(sink).Subseq(g_.length(sink)).str())
-        DEBUG(s << g_.EdgeNucls(source).Subseq(0, g_.k()).str());
         return initial_gap;
     }
 
@@ -267,13 +254,11 @@ public:
             int mustHaveOverlap,
             int canHaveOverlap,
             int shortOverlap_):
-            //int artificalGap):
                 GapJoiner(g),
                 minGapScore_(minGapScore),
                 maxMustHaveOverlap_(mustHaveOverlap),
                 maxCanHaveOverlap_(canHaveOverlap),
                 shortOverlap_(shortOverlap_)
-                //noOverlapGap_(artificalGap)
     {
     }
 
@@ -322,7 +307,6 @@ public:
 //            }
             else {
                 DEBUG("Overlap is not found, initial gap: " << initial_gap << ", not changing.");
-                //best_gap = max(initial_gap, (int) g_.k() + noOverlapGap_);
                 best_gap = initial_gap;
             }
         }
@@ -331,14 +315,6 @@ public:
             DEBUG("Initial: " << initial_gap << ", new gap: " << best_gap);
         }
 
-
-        string s = "";
-        for (int i = 0; i < best_gap; ++i) {
-            s += " ";
-        }
-
-        DEBUG(g_.EdgeNucls(sink).Subseq(g_.length(sink)).str())
-        DEBUG(s << g_.EdgeNucls(source).Subseq(0, g_.k()).str());
         return best_gap;
     }
 
@@ -404,7 +380,7 @@ public:
 
     virtual void GrowPath(BidirectionalPath& path) {
         while (MakeGrowStep(path)) {
-            size_t skip_identical_edges;
+            size_t skip_identical_edges = 0;
             if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
                 path.getLoopDetector().RemoveLoop(skip_identical_edges);
                 return;
@@ -428,7 +404,8 @@ public:
                 GrowPath(*path);
                 conjugatePath->CheckGrow();
                 GrowPath(*conjugatePath);
-            } while (conjugatePath->CheckPrevious() || path->CheckPrevious());
+            }
+            while (conjugatePath->CheckPrevious() || path->CheckPrevious());
         }
     }
 
@@ -490,22 +467,21 @@ protected:
                 SubscribeCoverageMap(path);
                 SubscribeCoverageMap(conjugatePath);
 
-                if (!coverageMap_.IsCovered(*path) || !coverageMap_.IsCovered(*conjugatePath)) {
-                    DEBUG("Paths are not covered after subsciption");
-                }
+//                if (!coverageMap_.IsCovered(*path) || !coverageMap_.IsCovered(*conjugatePath)) {
+//                    DEBUG("Paths are not covered after subsciption");
+//                }
 
                 do {
 					path->CheckGrow();
 					GrowPath(*path);
-					//verifyMap(result);
 					conjugatePath->CheckGrow();
 					GrowPath(*conjugatePath);
-					//verifyMap(result);
-                } while (conjugatePath->CheckPrevious() || path->CheckPrevious());
-
-                if (!coverageMap_.IsCovered(*paths.Get(i)) || !coverageMap_.IsCovered(*paths.GetConjugate(i))) {
-                    DEBUG("Seeds are not covered after growing");
                 }
+                while (conjugatePath->CheckPrevious() || path->CheckPrevious());
+
+//                if (!coverageMap_.IsCovered(*paths.Get(i)) || !coverageMap_.IsCovered(*paths.GetConjugate(i))) {
+//                    DEBUG("Seeds are not covered after growing");
+//                }
                 path->CheckConjugateEnd();
             }
         }

@@ -327,8 +327,6 @@ public:
 
 class ScaffoldingExtensionChooser: public ExtensionChooser {
 
-    bool print_;
-
     static bool compare(pair<int,double> a, pair<int,double> b)
     {
         if (a.first < b.first) return true;
@@ -336,7 +334,7 @@ class ScaffoldingExtensionChooser: public ExtensionChooser {
     }
 
 public:
-	ScaffoldingExtensionChooser(Graph& g, WeightCounter * wc, double priority, bool dbg = false): ExtensionChooser(g, wc, priority), print_(dbg) {
+	ScaffoldingExtensionChooser(Graph& g, WeightCounter * wc, double priority): ExtensionChooser(g, wc, priority) {
 
     }
 
@@ -413,15 +411,6 @@ public:
 
 			if (distances.size() > 0) {
 				AddInfoFromEdge(distances, weights, histogram, path, j, 0);
-
-//				if (histogram.size() > 0) {
-//					if (print) {
-//						out << "\n************************" << endl;
-//						out << "New pair :" << path.GetId() << " (" << g_.length(path[j])<< ")" << " - " <<  g_.int_id(e) << " (" << g_.length(e)<< ")" << endl;
-//					}
-//					out << "Mean = " << mean << endl;
-//					print = false;
-//				}
 			}
 			distances.clear();
 		}
@@ -430,13 +419,6 @@ public:
 
     void FindBestFittedEdges(BidirectionalPath& path, EdgeContainer& edges, EdgeContainer& result)
     {
-        ofstream out("./scaffolder.log", ostream::app);
-        if (print_) {
-            out << "\n#########################################" << endl;
-            out << "Another path :" << path.GetId() << endl;
-            out << "Candidates:" << edges.size() << endl;
-        }
-
 		std::vector<pair<int,double> > histogram;
 		for (size_t i = 0; i < edges.size(); ++i){
 			histogram.clear();
@@ -446,8 +428,6 @@ public:
                 int mean = CountMean(histogram);
                 int dev = CountDev(histogram, mean);
                 double cutoff = min(max_w * cfg::get().pe_params.param_set.scaffolder_options.rel_cutoff, (double) cfg::get().pe_params.param_set.scaffolder_options.cutoff);
-//                if (mean != 0)
-//                    out << "Mean: " << mean << " " << dev << endl;
                 histogram = FilterHistogram(histogram, mean - (5 - j)  * dev, mean + (5 - j) * dev, cutoff);
 			}
 
@@ -460,28 +440,11 @@ public:
 				sort(histogram.begin(), histogram.end(), compare);
 				int gap = CountMean(histogram);
 
-		        if (print_) {
-                    out << "SUM: " << sum << endl;
-                    out << "Histogram size: " << histogram.size() << endl;
-                    out << "Avr gap value: " << gap << endl;
-                    out << "weightI: " << wc_->CountIdealInfo(path, edges[i].e_, gap) << endl;
-                    out << "weight1: " << wc_->CountWeight(path, edges[i].e_, gap) << endl;
-                    out << "Histogram: \n";
-                    for (size_t  ii = 0; ii < histogram.size(); ++ ii) {
-                        out << histogram[ii].first << " " << histogram[ii].second << endl;
-                    }
-		        }
-
-                if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
+				if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
 					result.push_back(EdgeWithDistance(edges[i].e_, gap));
-
-			        if (print_) {
-			            out << "Added" << endl;
-			        }
                 }
 			}
 		}
-		out.close();
     }
 
 
@@ -528,6 +491,7 @@ public:
 bool ReverseComparePairBySecond(const boost::tuple<EdgeId, int,int> & a, const boost::tuple<EdgeId, int, int>& b) {
     return get<1>(a) > get<1>(b);
 }
+
 //
 //class PathsDrivenExtensionChooser: public ExtensionChooser {
 //

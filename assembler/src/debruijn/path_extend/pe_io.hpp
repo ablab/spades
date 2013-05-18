@@ -100,7 +100,10 @@ public:
 			oss << i << endl;
 			i++;
             BidirectionalPath* path = iter.get();
-            oss << "PATH " <<path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
+            if (path->GetId() % 2 != 0) {
+                path = path->getConjPath();
+            }
+            oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
 			    oss << gp_.g.int_id(path->At(j)) << " " << gp_.g.length(path->At(j)) << endl;
             }
@@ -120,10 +123,14 @@ public:
         		continue;
         	}
         	DEBUG("NODE " << ++i);
-        	iter.get()->Print();
-        	oss.setID(iter.get()->GetId());
-            oss.setCoverage(iter.get()->Coverage());
-            oss << ToString(*iter.get());
+            BidirectionalPath* path = iter.get();
+            if (path->GetId() % 2 != 0) {
+                path = path->getConjPath();
+            }
+            path->Print();
+        	oss.setID(path->GetId());
+            oss.setCoverage(path->Coverage());
+            oss << ToString(*path);
         }
         INFO("Contigs written");
     }
