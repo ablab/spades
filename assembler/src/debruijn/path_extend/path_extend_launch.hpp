@@ -43,7 +43,7 @@ size_t find_max_overlaped_len(vector<PairedInfoLibraries>& libes) {
 }
 
 string get_etc_dir(const std::string& output_dir){
-	return output_dir + cfg::get().pe_params.etc_dir;
+	return output_dir + cfg::get().pe_params.etc_dir + "/";
 }
 
 void debug_output_paths(ContigWriter& writer, conj_graph_pack& gp,
@@ -100,7 +100,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 
 	INFO("Path extend repeat resolving tool started");
 	make_dir(output_dir);
-	if (!cfg::get().developer_mode) {
+	if (cfg::get().developer_mode) {
 	    make_dir(get_etc_dir(output_dir));
 	}
 	const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
@@ -268,7 +268,7 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 
 			if (use_auto_threshold){
 				INFO("BEGIN");
-				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
+				//find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
 				INFO("END");
 			}
 
@@ -280,7 +280,7 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, mate_pair_libs);
 			if (use_auto_threshold){
 				INFO("BEGIN");
-				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
+				//find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
 				INFO("END");
 			}
 			//set_threshold(lib, indexs[i], pset.split_edge_length);
