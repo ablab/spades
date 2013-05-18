@@ -268,7 +268,7 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 
 			if (use_auto_threshold){
 				INFO("BEGIN");
-				//find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
+				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
 				INFO("END");
 			}
 
@@ -280,7 +280,7 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, mate_pair_libs);
 			if (use_auto_threshold){
 				INFO("BEGIN");
-				//find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
+				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
 				INFO("END");
 			}
 			//set_threshold(lib, indexs[i], pset.split_edge_length);
