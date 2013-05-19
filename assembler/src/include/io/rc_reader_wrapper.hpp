@@ -26,7 +26,6 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
 
 #include "ireader.hpp"
 #include "read_stream_vector.hpp"
@@ -228,8 +227,8 @@ private:
 };
 
 template<class Reader>
-boost::shared_ptr<ReadStreamVector<Reader>> RCWrapStreams(ReadStreamVector<Reader>& streams) {
-    auto/*boost::shared_ptr<ReadStreamVector<Reader>>*/ rc_streams/*(new ReadStreamVector<Reader>());*/= boost::make_shared<ReadStreamVector<Reader>>();
+std::shared_ptr<ReadStreamVector<Reader>> RCWrapStreams(ReadStreamVector<Reader>& streams) {
+    auto/*std::shared_ptr<ReadStreamVector<Reader>>*/ rc_streams/*(new ReadStreamVector<Reader>());*/= std::make_shared<ReadStreamVector<Reader>>();
     BOOST_FOREACH(Reader& stream, streams) {
         rc_streams->push_back(new RCReaderWrapper<typename Reader::read_type>(stream));
     }

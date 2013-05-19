@@ -39,7 +39,7 @@ typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;
 typedef	io::RCReaderWrapper<io::SingleRead> RCWrapper;
 
 typedef io::ReadStreamVector<ContigStream> ContigStreams;
-typedef boost::shared_ptr<ContigStreams> ContigStreamsPtr;
+typedef std::shared_ptr<ContigStreams> ContigStreamsPtr;
 }
 
 // debruijn
