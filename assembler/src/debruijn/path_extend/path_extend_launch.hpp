@@ -271,9 +271,6 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
 				INFO("END");
 			}
-
-			//set_threshold(lib, indexs[i], pset.split_edge_length);
-			add_lib(gp.g, scaff_index, indexs, i, pe_scaf_libs);
 		}
 		else if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::MatePairs) {
@@ -283,10 +280,20 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
 				INFO("END");
 			}
-			//set_threshold(lib, indexs[i], pset.split_edge_length);
-			add_lib(gp.g, scaff_index, indexs, i, mp_scaf_libs);
 		}
 	}
+
+    for (size_t i = 0; i < scaff_index.size(); ++i) {
+        if (cfg::get().ds.reads[indexs[i]].type()
+                == io::LibraryType::PairedEnd) {
+            add_lib(gp.g, scaff_index, indexs, i, pe_scaf_libs);
+        }
+        else if (cfg::get().ds.reads[indexs[i]].type()
+                == io::LibraryType::MatePairs) {
+            add_lib(gp.g, scaff_index, indexs, i, mp_scaf_libs);
+        }
+    }
+
 	vector<PairedInfoLibraries> rr_libs;
 	add_not_empty_lib(rr_libs, paired_end_libs);
 	add_not_empty_lib(rr_libs, mate_pair_libs);
