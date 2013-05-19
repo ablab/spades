@@ -17,7 +17,6 @@
 
 namespace cap {
 
-
 template<class Stream1, class Stream2>
 void Transfer(Stream1& s1, Stream2& s2) {
     typename Stream1::read_type r;
@@ -26,7 +25,6 @@ void Transfer(Stream1& s1, Stream2& s2) {
         s2 << r;
     }
 }
-
 
 //todo changes the graph!!! color edge splitting!!!
 template<class gp_t>
@@ -43,7 +41,7 @@ void MakeSaves(gp_t& gp, ContigStreamsPtr streams, const string& root,
     using namespace debruijn_graph;
     ContigStreamsPtr rc_contigs = io::RCWrapStreams(*streams);
 
-    rc_contigs.reset();
+    rc_contigs->reset();
 
     ColorHandler<Graph> coloring(gp.g, rc_contigs->size());
     SplitAndColorGraph(gp, coloring, *rc_contigs, true);
@@ -103,7 +101,7 @@ void ConstructGPForRefinement(gp_t& gp, const ContigStreamsPtr& contigs,
     INFO("Constructing graph pack for refinement");
 
     ContigStreamsPtr rc_streams = io::RCWrapStreams(*contigs);
-    rc_streams.reset();
+    rc_streams->reset();
 
     ConstructGraph(gp.k_value, *rc_streams, gp.g, gp.index);
 
@@ -115,8 +113,9 @@ void ConstructGPForRefinement(gp_t& gp,
                               io::IReader<io::SingleRead>& raw_stream_1,
                               io::IReader<io::SingleRead>& raw_stream_2,
                               size_t delta = 5) {
-    vector<ContigStream*> contigs = { &raw_stream_1, &raw_stream_2 };
-    ConstructGPForRefinement(gp, contigs, delta);
+    ContigStreamsPtr streams_ptr = make_shared<ContigStreams>(
+        vector<ContigStream*>{&raw_stream_1, &raw_stream_2}, false);
+    ConstructGPForRefinement(gp, streams_ptr, delta);
 }
 
 template<size_t k, class Seq>
@@ -214,7 +213,7 @@ void MaskDifferencesAndSave(ContigStreamsPtr streams, const string& root,
     gp_t gp(k, "tmp");
 
     ContigStreamsPtr rc_streams = io::RCWrapStreams(*streams);
-    rc_streams.reset();
+    rc_streams->reset();
 
     ConstructGraph(gp.k_value, *rc_streams, gp.g, gp.index);
 

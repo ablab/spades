@@ -70,6 +70,12 @@ inline Sequence ReadGenome(const string& filename) {
 	return ReadSequence(genome_stream);
 }
 
+void WriteGenome(const Sequence& genome, const string& filename) {
+  io::ofastastream stream(filename);
+  io::SingleRead read("genome", genome.str());
+  stream << read;
+}
+
 inline vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
 	vector<io::SingleRead> ans;
 	for (size_t i = 0; i < ss.size(); ++i) {

@@ -11,6 +11,7 @@
 //#include "longseq_storage.hpp"
 #include "polynomial_hash.hpp"
 #include "debruijn_kmer_index.hpp"
+#include "adt/kmer_map.hpp"
 
 template<>
 struct kmer_index_traits<cap::LSeq> {
