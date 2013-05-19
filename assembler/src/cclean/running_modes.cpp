@@ -1,70 +1,16 @@
 #include "running_modes.hpp"
-#include "QcException.hpp"
-#include "aho_corasick.hpp"
-#include "output.hpp"
-#include "io/read_processor.hpp"
+
+#include "adapter_index.hpp"
 #include "job_wrappers.hpp"
+#include "output.hpp"
+
+#include "io/read_processor.hpp"
 #include "logger/log_writers.hpp"
 
-void getDbAhoCorasick(const Database * data, AhoCorasick& ahoCorasick) {
-  INFO("Create Aho-Corasick automata ... ");
-  auto it = data->get_data_iterator();
-  const int amount = data->get_sequences_amount();
 
-  for (int i = 0; i < amount; ++i) {
-    ahoCorasick.addString(it->second);
-    it++;
-  }
-  ahoCorasick.init();
-
-  INFO("Done");
-}
-
-void getKmersAhoCorasick(const Database * data, AhoCorasick& ahoCorasick) {
-  INFO("Create Aho-Corasick automata for kmers... ");
-
-  auto it = data->get_kmer_iterator();
-  const int amount = data->get_kmers_amount();
-
-  for (int i = 0; i < amount; ++i) {
-    ahoCorasick.addString(it->first);
-    it++;
-  }
-  ahoCorasick.init();
-
-  INFO("Done");
-}
-
-void exactMatch(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data) {
-  AhoCorasick ahoCorasick;
-  getDbAhoCorasick(data, ahoCorasick);
-
-  ExactMatchJobWrapper filler(data, output, bed, ahoCorasick);
-  hammer::ReadProcessor rp(cfg::get().nthreads);
-  rp.Run(*input, filler);
-  VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
-  INFO("Reads processed: " << rp.processed() << ". Reads aligned: " << filler.aligned());
-
-  ahoCorasick.cleanup();
-}
-
-void exactAndAlign(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data) {
-  AhoCorasick dbAhoCorasick, kmersAhoCorasick;
-  getDbAhoCorasick(data, dbAhoCorasick);
-  getKmersAhoCorasick(data, kmersAhoCorasick);
-
-  ExactAndAlignJobWrapper filler(data, output, bed, dbAhoCorasick, kmersAhoCorasick);
-  hammer::ReadProcessor rp(cfg::get().nthreads);
-  rp.Run(*input, filler);
-  VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
-  INFO("Reads processed: " << rp.processed() << ". Reads aligned: " << filler.aligned());
-
-  dbAhoCorasick.cleanup();
-  kmersAhoCorasick.cleanup();
-}
-
-void alignment(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data) {
-  AlignmentJobWrapper filler(data, output, bed);
+void exactAndAlign(std::ostream& output, std::ostream& bed, ireadstream * input,
+                   const cclean::AdapterIndex &index) {
+  ExactAndAlignJobWrapper filler(output, bed, index);
   hammer::ReadProcessor rp(cfg::get().nthreads);
   rp.Run(*input, filler);
   VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");

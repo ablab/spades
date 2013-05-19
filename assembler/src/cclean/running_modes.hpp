@@ -2,11 +2,12 @@
 #define RUNNING_MODES_H_
 
 #include <ostream>
-#include "database.hpp"
-#include "io/ireadstream.hpp"
 
-void exactMatch(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data);
-void alignment(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data);
-void exactAndAlign(std::ostream& output, std::ostream& bed, ireadstream * input, const Database * data);
+class ireadstream;
+namespace cclean {
+class AdapterIndex;
+}
+
+void exactAndAlign(std::ostream& output, std::ostream& bed, ireadstream * input, const cclean::AdapterIndex &index);
 
 #endif /* RUNNING_MODES_H_ */

@@ -12,69 +12,43 @@
 
 #include <string>
 #include <set>
-#include <vector>
+#include <unordered_map>
 
 namespace cclean {
 const unsigned K = 11;
 typedef Seq<K> KMer;
 
-typedef KMerIndex<KMer> Index;
-
 class AdapterIndex {
-  struct IndexValueType {
-    KMer kmer_;
-    std::set<std::string> seqs_;
-    uint32_t lock_;
-
-    IndexValueType() 
-        : lock_(0) {}
-    
-    void lock() {
-      while (__sync_val_compare_and_swap(&lock_, 0, 1) == 1)
-        sched_yield();
-    }
-    void unlock() {
-      lock_ = 0;
-      __sync_synchronize();
-    }
-  };
-  typedef std::vector<IndexValueType> IndexStorageType;
+  typedef std::set<std::size_t> IndexValueType;
+  std::unordered_map<KMer, IndexValueType, KMer::hash> index_;
 
  public:
-  AdapterIndex() : index_(cclean::K) {}
+  AdapterIndex() {}
 
-  size_t size() const { return data_.size(); }
   void clear() {
-    data_.clear();
+    index_.clear();
+    seqs_.clear();
   }
-  IndexValueType& operator[](size_t idx) {
-    return data_[idx];
-  }
-  const IndexValueType& operator[](size_t idx) const {
-    return data_[idx];
-  }
-  IndexValueType& operator[](cclean::KMer s) { return operator[](index_.seq_idx(s)); }
-  const IndexValueType& operator[](cclean::KMer s) const { return operator[](index_.seq_idx(s)); }
-  size_t seq_idx(cclean::KMer s) const { return index_.seq_idx(s); }
+  IndexValueType& operator[](cclean::KMer s) { return index_[s]; }
+  auto find(cclean::KMer s) const -> decltype(index_.find(s)) { return index_.find(s); }
+  auto end() const -> decltype(index_.end()) { return index_.end(); }
+
   bool contains(cclean::KMer s) const {
-    size_t idx = seq_idx(s);
-    return (data_[idx].kmer_ == s);
+    return index_.find(s) != index_.end();
   }
+  const std::string& seq(size_t idx) const { return seqs_[idx]; }
 
  private:
-  IndexStorageType data_;
-  Index index_;
+  std::vector<std::string> seqs_;
 
   friend class AdapterIndexBuilder;
 };
 
 class AdapterIndexBuilder {
-  unsigned num_files_;
-
  public:
-  AdapterIndexBuilder(unsigned num_files) : num_files_(num_files) {}
+  AdapterIndexBuilder() {}
 
-  void FillAdapterIndex(AdapterIndex &index);
+  void FillAdapterIndex(const std::string &db, AdapterIndex &index);
 
  private:
   DECL_LOGGER("Index Building");

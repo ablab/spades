@@ -5,8 +5,15 @@
 //****************************************************************************
 
 #include "config_struct_cclean.hpp"
+#include "config_common.hpp"
 #include "openmp_wrapper.h"
 
+void load(cclean_config& cfg, const std::string &filename) {
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_info(filename, pt);
+
+  load(cfg, pt);
+}
 void load(cclean_config& cfg, boost::property_tree::ptree const& pt) {
   using config_common::load;
   load(cfg.mismatch_threshold, pt, "mismatch_threshold");
@@ -15,7 +22,6 @@ void load(cclean_config& cfg, boost::property_tree::ptree const& pt) {
   load(cfg.output_bed, pt, "output_bed");
   load(cfg.nthreads, pt, "nthreads");
 
-  load(cfg.count_split_buffer, pt, "count_split_buffer");
   load(cfg.input_working_dir, pt, "input_working_dir");
 
   // Fix number of threads according to OMP capabilities.

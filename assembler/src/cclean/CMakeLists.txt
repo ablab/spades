@@ -9,10 +9,6 @@ project(cclean CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(cclean
-               aho_corasick.cpp
-               database.cpp
-               utils.cpp
-               QcException.cpp
                running_modes.cpp
                job_wrappers.cpp
                output.cpp

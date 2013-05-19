@@ -4,20 +4,12 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/*
- * config_struct_cclean.hpp
- *
- *  Created on: Aug 15, 2011
- *      Author: snikolenko
- */
-
 #ifndef CONFIG_STRUCT_CCLEAN_HPP_
 #define CONFIG_STRUCT_CCLEAN_HPP_
 
-#include "config_common.hpp"
-#include "boost/optional.hpp"
+#include "config_singl.hpp"
+#include <boost/property_tree/ptree_fwd.hpp>
 
-// struct for debruijn project's configuration file
 struct cclean_config {
   unsigned mismatch_threshold;
   double aligned_part_fraction;
@@ -26,11 +18,10 @@ struct cclean_config {
   unsigned nthreads;
 
   std::string input_working_dir;
-  size_t count_split_buffer;
 };
 
-
 // main config load function
+void load(cclean_config& cfg, const std::string &filename);
 void load(cclean_config& cfg, boost::property_tree::ptree const& pt);
 
 typedef config_common::config<cclean_config> cfg;
