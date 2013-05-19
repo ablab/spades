@@ -283,7 +283,7 @@ if 'quast_params' in dataset_info.__dict__:
         #CONTIGS
         quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS")
         quast_cmd = os.path.join(dataset_info.quast_dir, "quast.py") + " " + " ".join(quast_params)
-        ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + contigs)
+        ecode = os.system(quast_cmd + " --use-all-aligments -o " + quast_output_dir + " " + contigs)
         if ecode != 0:
             print("QUAST finished abnormally with exit code " + str(ecode))
             write_log(history_log, "", output_dir, dataset_info)
