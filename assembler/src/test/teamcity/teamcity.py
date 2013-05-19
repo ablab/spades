@@ -208,7 +208,7 @@ while i < len(dataset_info.spades_params):
         i += 1
     i += 1
 
-spades_cmd = "./spades.py --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
+spades_cmd = "./spades.py --debug --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
 
 #run spades
 ecode = os.system(spades_cmd)
