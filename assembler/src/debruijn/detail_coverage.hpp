@@ -1,5 +1,4 @@
-#ifndef DETAIL_COVERAGE_HPP
-#define DETAIL_COVERAGE_HPP
+#pragma once
 
 #include "debruijn_kmer_index.hpp"
 #include "graph_pack.hpp"
@@ -14,120 +13,95 @@
 
 namespace debruijn_graph {
 
-  struct FlankingCoverage{
+template<class Graph>
+class FlankingCoverage : public GraphActionHandler<Graph> {
+  typedef GraphActionHandler<Graph> base;
+  typedef typename Graph::EdgeId EdgeId;
+  typedef typename Graph::VertexId VertexId;
   /*
-  Iterates over kmer index saves values of coverage on the ends of edges
-  */
+   Iterates over kmer index saves values of coverage on the ends of edges
+   */
 
-    const Graph& g;
-    const size_t averageConst;
-    std::map<EdgeId, double> inCoverage;
-    std::map<EdgeId, double> outCoverage;
+  std::map<EdgeId, double> in_coverage_;
+  std::map<EdgeId, double> out_coverage_;
+  const DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq>& kmer_index_;
+  const size_t averaging_range_;
 
-    FlankingCoverage( const conj_graph_pack& graph, size_t avg ) : g(graph.g), averageConst(avg) {
+  double CountAvgCoverage(EdgeId e, size_t offset) const {
+    size_t k = this->g().k();
+    unsigned size_bound = std::min(averaging_range_, this->g().length(e));
+    const Sequence& seq = this->g().EdgeNucls(e);
 
+    double edge_coverage_in = 0.;
 
-      size_t K = cfg::get().K + 1;
-      DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(graph.index.inner_index().K(), cfg::get().output_dir);
-      if (cfg::get().developer_mode) {
-
-        std::string path;
-        path = cfg::get().load_from + "/constructed_graph";
-        bool val = LoadEdgeIndex(path, kmerIndex);
-        VERIFY_MSG(val, "can not open file "+path+".kmidx");
-        INFO("Updating index from graph started");
-        DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, graph.g);
-
-      }
-      else {
-
-        //INFO("Updating index from graph started");
-        //DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(graph.index.inner_index(), graph.g);
-
-      }
-
-        for (auto e_iter = graph.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-
-        auto seq = graph.g.EdgeNucls(*e_iter);
-        size_t len = seq.size();
-        double coverage_in(0.0), coverage_out(0.0);
-        //averageConst = graph.g.length(*e_iter);
-        size_t sizeBound = averageConst;
-
-        if ( averageConst > graph.g.length(*e_iter) ){
-          sizeBound = graph.g.length(*e_iter);
-        }
-
-        // count incoming coverage
-        for (size_t i = 0; i < sizeBound; ++i) {
-          runtime_k::RtSeq kmer_in(K);
-          for (size_t j = i; j < K +i && j < len; ++j) {
-            kmer_in <<= seq[j];
-          }
-          if (cfg::get().developer_mode) {
-            if (kmerIndex.contains(kmer_in)) {
-              coverage_in += kmerIndex[kmer_in].count_;
-            }
-          }
-          else {
-            if (graph.index.inner_index().contains(kmer_in)) {
-              coverage_in += graph.index.inner_index()[kmer_in].count_;
-            }
-          }
-        }
-
-        coverage_in = coverage_in / sizeBound;
-
-        // count outgoing coverage
-        for (size_t i = 0; i < sizeBound; ++i) {
-          runtime_k::RtSeq kmer_out;
-          for (size_t j = len-K-i; j >= 0 && j < len - i; ++j) {
-
-            kmer_out <<= seq[j];
-          }
-
-          if (cfg::get().developer_mode) {
-            if (kmerIndex.contains(kmer_out)) {
-              coverage_out += kmerIndex[kmer_out].count_;
-            }
-          }
-          else {
-            if (graph.index.inner_index().contains(kmer_out)) {
-              coverage_out += graph.index.inner_index()[kmer_out].count_;
-            }
-          }
-
-
-        }
-        coverage_out = coverage_out / sizeBound;
-
-        //if (coverage_in != graph.g.coverage(*e_iter))
-        //  std::cout << graph.g.int_id(*e_iter) << ": " << coverage_in << " " << coverage_out << " " << graph.g.coverage(*e_iter) << " " << graph.g.length(*e_iter) << std::endl;
-        inCoverage.insert(std::make_pair( *e_iter, coverage_in));
-        //inCoverage.insert(std::make_pair( *e_iter, graph.g.coverage(*e_iter)));
-        outCoverage.insert(std::make_pair( *e_iter, coverage_out));
-        //outCoverage.insert(std::make_pair( *e_iter, graph.g.coverage(*e_iter)));
-        //  std::cout << graph.g.int_id(*e_iter) << " " << " " << graph.g.int_id( graph.g.EdgeStart(*e_iter)) << " " << graph.g.int_id(graph.g.EdgeEnd(*e_iter)) << " " << coverage_out << " " << graph.g.coverage(*e_iter) << " " << graph.g.length(*e_iter) << std::endl;
-        //}
-      }
-
-      if (cfg::get().developer_mode) {
-        kmerIndex.clear();
-      }
+    runtime_k::RtSeq kpomer(k + 1, seq, offset);
+    kpomer >>= 0;
+    for (size_t i = 0; i < size_bound; ++i) {
+      kpomer <<= seq[i + k];
+      edge_coverage_in += kmer_index_[kpomer].count_;
     }
 
-    double LocalCoverage(EdgeId e, VertexId v) const {
-      if (g.EdgeStart(e) == v) {
-        return get(inCoverage, e);
-      } else if (g.EdgeEnd(e) == v) {
-        return get(outCoverage, e);
-      } else {
-        VERIFY(false);
-        return 0.0;
-      }
+    return edge_coverage_in / size_bound;
+  }
+
+  double CountInCoverage(EdgeId e) const {
+    return CountAvgCoverage(e, 0);
+  }
+
+  double CountOutCoverage(EdgeId e) const {
+    return CountAvgCoverage(e, std::max(int(this->g().length(e)) - int(averaging_range_), 0));
+  }
+
+ public:
+
+  FlankingCoverage(const Graph& g, const DeBruijnEdgeIndex<EdgeId>& kmer_index,
+                   unsigned avg)
+      : base(g, "FlankingCoverage"),
+        kmer_index_(kmer_index),
+        averaging_range_(avg) {
+    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+      EdgeId e = *it;
+      in_coverage_.insert(std::make_pair(*it, CountInCoverage(e)));
+      out_coverage_.insert(std::make_pair(*it, CountOutCoverage(e)));
     }
-  };
+  }
+
+  //todo rename
+  double GetInCov(EdgeId edge) const {
+    return get(in_coverage_, edge);
+  }
+
+  //todo rename
+  double GetOutCov(EdgeId edge) const {
+    return get(out_coverage_, edge);
+  }
+
+  /*virtual */
+  void HandleAdd(EdgeId e) {
+    in_coverage_.insert(std::make_pair(e, CountInCoverage(e)));
+    out_coverage_.insert(std::make_pair(e, CountOutCoverage(e)));
+  }
+
+  /*virtual*/
+  void HandleDelete(EdgeId e) {
+    in_coverage_.erase(e);
+    out_coverage_.erase(e);
+  }
+
+  double LocalCoverage(EdgeId e, VertexId v) const {
+    if (this->g().EdgeStart(e) == v) {
+      return get(in_coverage_, e);
+    } else if (this->g().EdgeEnd(e) == v) {
+      return get(out_coverage_, e);
+    } else {
+      VERIFY(false);
+      return 0.0;
+    }
+  }
+
+ private:
+  DECL_LOGGER("FlankingCoverage");
+
+};
 
 }
-
-#endif

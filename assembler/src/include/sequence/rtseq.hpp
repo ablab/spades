@@ -285,8 +285,7 @@ class RuntimeSeq {
    * @return 0123-char on position i
    */
   char operator[](const size_t i) const {
-    //VERIFY(i >= 0);
-    //VERIFY(i < size_);
+    VERIFY(i < size_);
     return (data_[i >> TNuclBits] >> ((i & (TNucl - 1)) << 1)) & 3;
   }
 
@@ -361,7 +360,7 @@ class RuntimeSeq {
     data_[data_size - 1] = (data_[data_size - 1] >> 2) | ((T) c << lastnuclshift_);
   }
 
-
+//todo naming convention violation!
   RuntimeSeq<max_size_, T> pushBack(char c) const {
     //VERIFY(size_ + 1 <= max_size_);
 
@@ -380,6 +379,7 @@ class RuntimeSeq {
   }
 
 
+//todo naming convention violation!
   void pushBackThis(char c) {
     VERIFY(size_ + 1 <= max_size_);
 
@@ -405,6 +405,7 @@ class RuntimeSeq {
   //        return RuntimeSeq<max_size_, T> (size_ + 1, nucl(c) + str());
   //    }
 
+  //todo naming convention violation!
   RuntimeSeq<max_size_, T>  pushFront(char c) const {
     VERIFY(size_ + 1 <= max_size_);
     if (is_nucl(c)) {
@@ -425,6 +426,7 @@ class RuntimeSeq {
     return res;
   }
 
+//todo naming convention violation!
   void pushFrontThis(char c)  {
     VERIFY(size_ + 1 <= max_size_);
 
@@ -470,6 +472,7 @@ class RuntimeSeq {
     return res;
   }
 
+  //todo remove code duplication!
   void operator>>=(char c) {
     if (is_nucl(c)) {
       c = dignucl(c);

@@ -431,7 +431,7 @@ void RemoveLowCoverageEdges(
 template<class Graph>
 bool RemoveRelativelyLowCoverageComponents(
     Graph &g,
-    const FlankingCoverage& flanking_cov,
+    const FlankingCoverage<Graph>& flanking_cov,
 //    const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
     typename ComponentRemover<Graph>::HandlerF removal_handler,
     size_t read_length = 0, double detected_coverage_threshold = 0.,
@@ -441,7 +441,7 @@ bool RemoveRelativelyLowCoverageComponents(
 
   omnigraph::RelativeCoverageComponentRemover<Graph> rel_rem(
       g,
-      boost::bind(&FlankingCoverage::LocalCoverage, boost::cref(flanking_cov),
+      boost::bind(&FlankingCoverage<Graph>::LocalCoverage, boost::cref(flanking_cov),
                   _1, _2),
       LengthThresholdFinder::MaxBulgeLength(
           g.k(), cfg::get().simp.br.max_bulge_length_coefficient,
@@ -585,7 +585,7 @@ bool FinalRemoveErroneousEdges(
   return changed;
 }
 
-void PreSimplification(conj_graph_pack& gp, const FlankingCoverage& flanking_cov,
+void PreSimplification(conj_graph_pack& gp, const FlankingCoverage<Graph>& flanking_cov,
                        boost::function<void(EdgeId)> removal_handler,
                        detail_info_printer &printer, size_t iteration_count,
                        double determined_coverage_threshold) {
@@ -599,7 +599,7 @@ void PreSimplification(conj_graph_pack& gp, const FlankingCoverage& flanking_cov
   RemoveBulges(gp.g, cfg::get().simp.br, removal_handler, gp.g.k() + 1);
 }
 
-void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage& ,
+void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage<Graph>& flanking_cov,
                          boost::function<void(EdgeId)> removal_handler,
                          detail_info_printer &printer, size_t iteration_count,
                          size_t iteration, double max_coverage) {
@@ -626,8 +626,6 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage& ,
   //todo temporary! relative coverage remover
   auto colorer = DefaultGPColorer(gp);
 
-  //todo do not refill on each step!!!
-  FlankingCoverage flanking_cov(gp, 50);
   //todo make this procedure easier
   EdgeQuality<Graph> edge_qual(gp.g, gp.index,
       gp.kmer_mapper, gp.genome);
@@ -648,7 +646,7 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage& ,
 
 }
 
-void PostSimplification(conj_graph_pack& gp, const FlankingCoverage& flanking_cov,
+void PostSimplification(conj_graph_pack& gp, const FlankingCoverage<Graph>& flanking_cov,
                         boost::function<void(EdgeId)> &removal_handler,
                         detail_info_printer &printer,
                         double determined_coverage_threshold) {
@@ -730,7 +728,7 @@ void SimplifyGraph(conj_graph_pack &gp,
   }
 //	VERIFY(gp.kmer_mapper.IsAttached());
 
-  FlankingCoverage flanking_cov(gp, 50);
+  FlankingCoverage<Graph> flanking_cov(gp.g, gp.index.inner_index(), 50);
 
   if (cfg::get().ds.single_cell)
     PreSimplification(gp, flanking_cov, removal_handler, printer,
