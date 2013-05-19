@@ -114,8 +114,8 @@ vector<Sequence> RepeatGraphEdges(const Sequence& genome) {
 
 bool CheckFileDiff(const string& file1, const string& file2) {
 	INFO("Checking differences between " << file1 << " and " << file2);
-	checkFileExistenceFATAL(file1);
-	checkFileExistenceFATAL(file2);
+	CheckFileExistenceFATAL(file1);
+	CheckFileExistenceFATAL(file2);
 	ifstream f1(file1.c_str());
 	ifstream f2(file2.c_str());
 	while (!f1.eof() && !f2.eof()) {
@@ -221,10 +221,10 @@ bool CheckColoredGraphIsomorphism(const string &prefix1, const string &prefix2) 
     string color_suffix = ".clr",
            label_suffix = ".sqn";
 
-    checkFileExistenceFATAL(prefix1 + color_suffix);
-    checkFileExistenceFATAL(prefix2 + color_suffix);
-    checkFileExistenceFATAL(prefix1 + label_suffix);
-    checkFileExistenceFATAL(prefix2 + label_suffix);
+    CheckFileExistenceFATAL(prefix1 + color_suffix);
+    CheckFileExistenceFATAL(prefix2 + color_suffix);
+    CheckFileExistenceFATAL(prefix1 + label_suffix);
+    CheckFileExistenceFATAL(prefix2 + label_suffix);
 
     std::map <int, EdgeData> edges1, edges2;
 

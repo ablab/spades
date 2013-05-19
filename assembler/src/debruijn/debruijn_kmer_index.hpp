@@ -11,6 +11,7 @@
 #include "standard.hpp"
 
 #include "io/multifile_reader.hpp"
+#include "io/read_stream_vector.hpp"
 
 #include "mph_index/kmer_index.hpp"
 #include "adt/kmer_vector.hpp"
