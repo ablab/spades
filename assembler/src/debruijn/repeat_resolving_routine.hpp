@@ -1117,8 +1117,10 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
     LongReadStorage<Graph> long_read = pacbio_test(conj_gp, cfg::get().pacbio_k);
     //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 
-	if (cfg::get().pe_params.param_set.scaffolder_options.on && cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
+	if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
+	    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
+	    }
         path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta");
         delete_index(pe_scaf_indexs);
 	}
