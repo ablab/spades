@@ -84,8 +84,9 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     RelativelyLowCoveredComponentSearcher(
         const RelativeCoverageComponentRemover& remover, EdgeId first_edge,
         VertexId first_border_vertex)
-        : remover_(remover) {
+        : remover_(remover), component_length_(0) {
       component_.insert(first_edge);
+      component_length_ += remover_.g().length(first_edge);
       border_.insert(first_border_vertex);
     }
 
