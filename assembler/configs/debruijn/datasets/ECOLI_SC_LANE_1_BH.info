@@ -1,2 +1,3 @@
 single_cell              true
 reads /home/ksenia/algorithmic-biology/assembler/configs/debruijn/ECOLI_SC_LANE_1_BH.new_dataset.yaml
+reference_genome /storage/data/input/E.coli.K12/MG1655-K12.fasta
