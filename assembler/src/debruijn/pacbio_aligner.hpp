@@ -67,6 +67,10 @@ public:
 
 		long_reads.DumpToFile("long_reads.mpr", gp_.edge_pos);
 		gaps.DumpToFile("gaps.mpr", gp_.edge_pos);
+		gaps.PadGapStrings();
+		gaps.DumpToFile("gaps_padded.mpr", gp_.edge_pos);
+		gaps.ConstructConsensus();
+		gaps.DumpToFile("gaps_padded_const.mpr", gp_.edge_pos);
 		INFO("Total reads: " << n);
 		INFO("Mean read length: " << total_length * 0.1/ n)
 		INFO("Mean subread length: " << tlen * 0.1/ (genomic_subreads + nongenomic_subreads + nongenomic_edges))

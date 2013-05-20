@@ -117,11 +117,11 @@ struct GapDescription {
 	}
 
 	GapDescription<Graph> conjugate(Graph &g_, int shift) const {
-		 INFO(str(g_));
 		 GapDescription<Graph> res(g_.conjugate(end), g_.conjugate(start), (!gap_seq), g_.length(end) + shift - edge_gap_end_position,  g_.length(start) + shift - edge_gap_start_position);
 		 DEBUG("conjugate created" << res.str(g_));
 		 return res;
 	}
+
 	string str(Graph &g_) const {
 		stringstream s;
 		s << g_.int_id(start) << " " << edge_gap_start_position <<endl << g_.int_id(end) << " " << edge_gap_end_position << endl << gap_seq.str()<< endl;
