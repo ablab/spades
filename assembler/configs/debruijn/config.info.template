@@ -38,7 +38,7 @@ entry_point construction
 developer_mode true
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
-paired_mode true
+paired_mode false
 
 ; The following parameters are used ONLY if developer_mode is true
 
@@ -137,7 +137,7 @@ pos
 
 }
 
-gap_closer_enable	true
+gap_closer_enable	false
 
 gap_closer
 {

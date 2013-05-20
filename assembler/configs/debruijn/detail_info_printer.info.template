@@ -38,9 +38,9 @@ info_printers
 
     final_simplified
     {
-;       write_components                 true
-;       write_components_along_genome    true
-;       write_error_loc                  true
+       write_components                 true
+       write_components_along_genome    true
+       write_error_loc                  true
     }
 
 ;    before_repeat_resolution
@@ -51,6 +51,3 @@ info_printers
 ;    }
 
 }
-
-
-  

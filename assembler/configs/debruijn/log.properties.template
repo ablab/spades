@@ -1,10 +1,12 @@
 default=INFO
 
+RelativeCoverageComponentRemover=TRACE
+#FlankingCoverage=TRACE
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE
-#QualityEdgeLocalityPrintingRH=TRACE
+QualityEdgeLocalityPrintingRH=TRACE
 #PairInfoAwareErroneousEdgeRemover=TRACE
-#QualityLoggingRemovalHandler=TRACE
+QualityLoggingRemovalHandler=TRACE
 #MatePairTransformStat=TRACE
 #EditDistanceTrackingCallback=TRACE
 #RepeatResolver=TRACE
@@ -18,3 +20,4 @@ default=INFO
 #PathSetGraphConstructor=TRACE
 #NewExtendedSequenceMapper=TRACE
 #JumpingPairInfoChecker=TRACE
+
