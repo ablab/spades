@@ -52,6 +52,8 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
   ComponentRemover<Graph> component_remover_;
 
   double LocalCoverage(EdgeId e, VertexId v) const {
+    TRACE("Local coverage of edge " << this->g().str(e) << " around vertex "
+        << this->g().str(v) << " was " << local_coverage_f_(e, v));
     return local_coverage_f_(e, v);
   }
 
@@ -204,14 +206,15 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         vertex_count_limit_(vertex_count_limit),
         component_remover_(g, handler_function) {
     VERIFY(math::gr(min_coverage_gap, 1.));
+    TRACE("Coverage gap " << min_coverage_gap_);
   }
-    
- //todo change qualifiers
+
+  //todo change qualifiers
  protected:
 
   /*virtual*/
   bool ProcessEdge(EdgeId e) {
-    TRACE("Processing edge " << this->g().str(e));  
+    TRACE("Processing edge " << this->g().str(e));
     //here we use that the graph is conjugate!
     VertexId v = this->g().EdgeStart(e);
     double local_cov = LocalCoverage(e, v);
@@ -238,7 +241,8 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     return false;
   }
  private:
-  DECL_LOGGER("RelativeCoverageComponentRemover");
+  DECL_LOGGER("RelativeCoverageComponentRemover")
+  ;
 };
 
 }
