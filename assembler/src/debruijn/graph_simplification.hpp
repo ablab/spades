@@ -744,8 +744,8 @@ void SimplifyGraph(conj_graph_pack &gp,
     printer(ipp_err_con_removal, str(format("_%d") % (i + iteration_count)));
   }
 
-  PostSimplification(gp, flanking_cov, removal_handler, printer,
-                     determined_coverage_threshold);
+//  PostSimplification(gp, flanking_cov, removal_handler, printer,
+//                     determined_coverage_threshold);
 
   if (!cfg::get().developer_mode) {
     INFO("Refilling index");

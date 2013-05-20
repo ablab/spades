@@ -205,29 +205,40 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         component_remover_(g, handler_function) {
     VERIFY(math::gr(min_coverage_gap, 1.));
   }
-
+    
+ //todo change qualifiers
  protected:
 
   /*virtual*/
   bool ProcessEdge(EdgeId e) {
+    TRACE("Processing edge " << this->g().str(e));  
     //here we use that the graph is conjugate!
     VertexId v = this->g().EdgeStart(e);
     double local_cov = LocalCoverage(e, v);
+    TRACE("Local coverage around start is " << local_cov);
     //since min_coverage_gap_ > 1, we don't need to think about e here
+    TRACE("Checking presence of highly covered edges around start")
     if (CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, local_cov)
         && CheckAnyHighlyCovered(this->g().IncomingEdges(v), v, local_cov)) {
+      TRACE("Looking for component");
       //case of e being loop is handled implicitly!
       RelativelyLowCoveredComponentSearcher/*<Graph>*/component_searcher(
           *this, e, this->g().EdgeEnd(e));
       if (component_searcher.FindComponent()) {
+        TRACE("Deleting component");
         auto component = component_searcher.component();
         component_remover_.DeleteComponent(component);
         return true;
+      } else {
+        TRACE("Failed to find component");
       }
+    } else {
+      TRACE("No highly covered edges around");
     }
     return false;
   }
-
+ private:
+  DECL_LOGGER("RelativeCoverageComponentRemover");
 };
 
 }
