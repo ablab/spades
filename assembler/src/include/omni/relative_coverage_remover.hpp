@@ -189,6 +189,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
       return answer;
     }
 
+    DECL_LOGGER("RelativelyLowCoveredComponentSearcher");
   };
 
  public:
@@ -217,12 +218,13 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     TRACE("Processing edge " << this->g().str(e));
     //here we use that the graph is conjugate!
     VertexId v = this->g().EdgeStart(e);
-    double local_cov = LocalCoverage(e, v);
 
     if (this->g().IsDeadEnd(v) || this->g().IsDeadStart(v)) {
       TRACE("Tip or isolated");
       return false;
     }
+
+    double local_cov = LocalCoverage(e, v);
 
     TRACE("Local coverage around start " << this->g().str(v) << " is " << local_cov);
     //since min_coverage_gap_ > 1, we don't need to think about e here

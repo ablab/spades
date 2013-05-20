@@ -81,6 +81,9 @@ class FlankingCoverage : public GraphActionHandler<Graph> {
 
   /*virtual */
   void HandleAdd(EdgeId e) {
+    TRACE("Adding edge " << this->g().str(e));
+    TRACE("Local in coverage " << CountInCoverage(e));
+    TRACE("Local out coverage " << CountOutCoverage(e));
     in_coverage_.insert(std::make_pair(e, CountInCoverage(e)));
     out_coverage_.insert(std::make_pair(e, CountOutCoverage(e)));
   }
