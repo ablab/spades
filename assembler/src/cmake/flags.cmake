@@ -14,7 +14,7 @@ else ()
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated")
-add_definitions(-Wall -Wno-long-long)
+add_definitions(-Wall -Wextra -Wconversion -Wno-long-long -Wwrite-strings)
 if (NOT OPENMP_FOUND)
   add_definitions(-Wno-unknown-pragmas)
 endif()
