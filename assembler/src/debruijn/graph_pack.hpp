@@ -42,6 +42,7 @@ struct graph_pack: private boost::noncopyable {
 	Sequence genome;
 	MismatchMasker<graph_t> mismatch_masker;
 
+	//todo review params
 	explicit graph_pack(size_t k, const std::string &workdir,
 			Sequence const& genome = Sequence(), size_t single_gap = 0,
 			bool careful_labeling = false, bool use_inner_ids = false) :

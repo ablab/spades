@@ -52,7 +52,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
   ComponentRemover<Graph> component_remover_;
 
   double LocalCoverage(EdgeId e, VertexId v) const {
-    TRACE("Local coverage of edge " << this->g().str(e) << " around vertex "
+    INFO("Local coverage of edge " << this->g().str(e) << " around vertex "
         << this->g().str(v) << " was " << local_coverage_f_(e, v));
     return local_coverage_f_(e, v);
   }
@@ -99,10 +99,10 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         if (remover_.g().IsDeadEnd(v) || remover_.g().IsDeadStart(v))
           return false;
 
-        TRACE("Checking if vertex " << remover_.g().str(v) << " is terminating.");
+        INFO("Checking if vertex " << remover_.g().str(v) << " is terminating.");
         //checking if there is a sufficient coverage gap
         if (!IsTerminateVertex(v)) {
-          TRACE("Not terminating, adding neighbourhood");
+          INFO("Not terminating, adding neighbourhood");
           inner_vertices_.insert(v);
           FOREACH(EdgeId e, AdjacentEdges(v)) {
             //seems to correctly handle loops
@@ -114,15 +114,15 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
             }
           }
         } else {
-          TRACE("Terminating");
+          INFO("Terminating");
           //do nothing, we already erased v from the border
         }
         if (inner_vertices_.size() > remover_.vertex_count_limit_) {
-          TRACE("Too many vertices! More than " << remover_.vertex_count_limit_);
+          INFO("Too many vertices! More than " << remover_.vertex_count_limit_);
           return false;
         }
         if (component_length_ > remover_.length_bound_) {
-          TRACE("Too long component! Longer than " << remover_.length_bound_);
+          INFO("Too long component! Longer than " << remover_.length_bound_);
           return false;
         }
       }
@@ -214,7 +214,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         vertex_count_limit_(vertex_count_limit),
         component_remover_(g, handler_function) {
     VERIFY(math::gr(min_coverage_gap, 1.));
-    TRACE("Coverage gap " << min_coverage_gap_);
+    INFO("Coverage gap " << min_coverage_gap_);
   }
 
   //todo change qualifiers
@@ -222,36 +222,36 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
 
   /*virtual*/
   bool ProcessEdge(EdgeId e) {
-    TRACE("Processing edge " << this->g().str(e));
+    INFO("Processing edge " << this->g().str(e));
     //here we use that the graph is conjugate!
     VertexId v = this->g().EdgeStart(e);
 
     if (this->g().IsDeadEnd(v) || this->g().IsDeadStart(v)) {
-      TRACE("Tip or isolated");
+      INFO("Tip or isolated");
       return false;
     }
 
     double local_cov = LocalCoverage(e, v);
 
-    TRACE("Local coverage around start " << this->g().str(v) << " is " << local_cov);
+    INFO("Local coverage around start " << this->g().str(v) << " is " << local_cov);
     //since min_coverage_gap_ > 1, we don't need to think about e here
-    TRACE("Checking presence of highly covered edges around start")
+    INFO("Checking presence of highly covered edges around start")
     if (CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, local_cov)
         && CheckAnyHighlyCovered(this->g().IncomingEdges(v), v, local_cov)) {
-      TRACE("Looking for component");
+      INFO("Looking for component");
       //case of e being loop is handled implicitly!
       RelativelyLowCoveredComponentSearcher/*<Graph>*/component_searcher(
           *this, e, this->g().EdgeEnd(e));
       if (component_searcher.FindComponent()) {
-        TRACE("Deleting component");
+        INFO("Deleting component");
         auto component = component_searcher.component();
         component_remover_.DeleteComponent(component);
         return true;
       } else {
-        TRACE("Failed to find component");
+        INFO("Failed to find component");
       }
     } else {
-      TRACE("No highly covered edges around");
+      INFO("No highly covered edges around");
     }
     return false;
   }

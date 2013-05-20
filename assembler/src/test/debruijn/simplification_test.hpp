@@ -263,4 +263,16 @@ BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
        BOOST_CHECK_EQUAL(gp.g.size(), 66u);
 }
 
+BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
+       conj_graph_pack gp(55, tmp_folder, Sequence(), 50, true, false);
+       ScanGraphPack("./src/test/debruijn/graph_fragments/rel_cov_ec/constructed_graph", gp);
+       INFO("Relative coverage component removal:");
+//       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+//       licvidator.Licvidate();
+       FlankingCoverage<Graph> flanking_cov(gp.g, gp.index.inner_index(), 50);
+       RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, 0, 100);
+//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
+       BOOST_CHECK_EQUAL(gp.g.size(), 28u);
+}
+
 BOOST_AUTO_TEST_SUITE_END()}

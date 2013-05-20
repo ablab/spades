@@ -439,13 +439,12 @@ bool RemoveRelativelyLowCoverageComponents(
   //todo use iteration numbers
   INFO("Removing relatively low covered connections");
 
+  //todo remove magic constants
   omnigraph::RelativeCoverageComponentRemover<Graph> rel_rem(
       g,
       boost::bind(&FlankingCoverage<Graph>::LocalCoverage, boost::cref(flanking_cov),
                   _1, _2),
-      LengthThresholdFinder::MaxBulgeLength(
-          g.k(), cfg::get().simp.br.max_bulge_length_coefficient,
-          cfg::get().simp.br.max_additive_length_coefficient) + 10,
+      200,
       10.0, std::numeric_limits<size_t>::max(), removal_handler);
   return rel_rem.Process();
 }
@@ -728,6 +727,7 @@ void SimplifyGraph(conj_graph_pack &gp,
   }
 //	VERIFY(gp.kmer_mapper.IsAttached());
 
+  //todo remove magic constants
   FlankingCoverage<Graph> flanking_cov(gp.g, gp.index.inner_index(), 50);
 
   if (cfg::get().ds.single_cell)
