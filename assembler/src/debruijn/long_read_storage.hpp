@@ -46,6 +46,7 @@ public:
 
 template<class Graph>
 class GapStorage {
+	friend class PacbioGapCloser;
 	typedef typename Graph::EdgeId EdgeId;
 private:
 	DECL_LOGGER("PacIndex");
