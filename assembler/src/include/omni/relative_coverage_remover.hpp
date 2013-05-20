@@ -218,7 +218,13 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     //here we use that the graph is conjugate!
     VertexId v = this->g().EdgeStart(e);
     double local_cov = LocalCoverage(e, v);
-    TRACE("Local coverage around start is " << local_cov);
+
+    if (this->g().IsDeadEnd(v) || this->g().IsDeadStart(v)) {
+      TRACE("Tip or isolated");
+      return false;
+    }
+
+    TRACE("Local coverage around start " << this->g().str(v) << " is " << local_cov);
     //since min_coverage_gap_ > 1, we don't need to think about e here
     TRACE("Checking presence of highly covered edges around start")
     if (CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, local_cov)
