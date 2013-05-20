@@ -97,8 +97,11 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         //all the tips were already removed! It is dangerous to support them here.
         if (remover_.g().IsDeadEnd(v) || remover_.g().IsDeadStart(v))
           return false;
+
+        TRACE("Checking if vertex " << remover_.g().str(v) << " is terminating.");
         //checking if there is a sufficient coverage gap
         if (!IsTerminateVertex(v)) {
+          TRACE("Not terminating, adding neighbourhood");
           inner_vertices_.insert(v);
           FOREACH(EdgeId e, AdjacentEdges(v)) {
             //seems to correctly handle loops
@@ -110,12 +113,15 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
             }
           }
         } else {
+          TRACE("Terminating");
           //do nothing, we already erased v from the border
         }
         if (inner_vertices_.size() > remover_.vertex_count_limit_) {
+          TRACE("Too many vertices! More than " << remover_.vertex_count_limit_);
           return false;
         }
         if (component_length_ > remover_.length_bound_) {
+          TRACE("Too long component! Longer than " << remover_.length_bound_);
           return false;
         }
       }
