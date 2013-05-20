@@ -254,13 +254,13 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 		if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::PairedEnd) {
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, paired_end_libs);
-			set_threshold(lib, indexs[i], pset.split_edge_length);
+			//set_threshold(lib, indexs[i], pset.split_edge_length);
 			add_lib(gp.g, scaff_index, indexs, i, pe_scaf_libs);
 		}
 		else if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::MatePairs) {
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, mate_pair_libs);
-			set_threshold(lib, indexs[i], pset.split_edge_length);
+			//set_threshold(lib, indexs[i], pset.split_edge_length);
 			add_lib(gp.g, scaff_index, indexs, i, mp_scaf_libs);
 		}
 	}

@@ -1033,6 +1033,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
     GapStorage<Graph> gaps(conj_gp.g);
 
 	std::vector< PathInfo<Graph> > filteredPaths;
+	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
 	resolve_repeats_by_coverage(conj_gp, filteredPaths, clustered_indices[0], quality_labeler);
 
     //LongReadStorage<Graph> long_read(conj_gp.g);
@@ -1047,7 +1048,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 
 	if (cfg::get().pe_params.param_set.scaffolder_options.on && cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
         prepare_all_scaf_libs(conj_gp, pe_scaf_indexs);
-        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta");
+        //path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta");
+	path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "final_contigs.fasta");
         delete_index(pe_scaf_indexs);
 	}
 	else {

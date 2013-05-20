@@ -236,6 +236,19 @@ class CoverageBasedResolution {
 			}
 			if (ifInsert) {
 				INFO("inserting");
+				if (! gp->edge_pos.IsConsistentWithGenome(*path)) {
+					std::cout << "not consistent with genome: ";
+					for (auto iter = path->begin(); iter != path->end(); ++iter) {
+						auto positions = gp->edge_pos.GetEdgePositions(*iter);
+						std::cout << gp->g.int_id(*iter) << " (";
+						for (auto pos = positions.begin(); pos != positions.end(); ++pos) {
+							std::cout << pos->start() << " - " << pos->end() << " ";
+						}
+						std::cout << ") ";
+					}
+					std::cout << std::endl;
+				}
+
 				filteredPaths.push_back(PathInfo<typename GraphPack::graph_t>(*path));
 				for (auto e = path->begin(); e != path->end(); ++e) 
 					usedEdges.insert(*e);
