@@ -63,7 +63,6 @@ inline void LoadAndRunBPG(const string& filename, const string& output_dir, cons
 		const string& example_id = "", bool regenerate_etalon = false) {
 	string add_saves_path = "";
 	if (regenerate_etalon) {
-//		string etalon_root = "./src/test/debruijn_tools/tests/etalon/";
 		remove_dir(etalon_root);
 		add_saves_path = etalon_root;
 		make_dir(add_saves_path);

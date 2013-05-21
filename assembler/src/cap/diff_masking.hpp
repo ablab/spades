@@ -74,7 +74,7 @@ void RefineGP(gp_t& gp, size_t delta = 5) {
     cbr_config.pics_enabled = false;
     cbr_config.folder = "";
     cbr_config.max_relative_length = 3;
-    cbr_config.max_length_difference = 1000;
+    cbr_config.max_length_difference = delta;
 
     INFO("Removing complex bulges");
     RemoveComplexBulges(gp.g, cbr_config);
