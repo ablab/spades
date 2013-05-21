@@ -3,6 +3,7 @@
 	<name>debruijn_test</name>
 	<comment></comment>
 	<projects>
+		<project>debruijn</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
