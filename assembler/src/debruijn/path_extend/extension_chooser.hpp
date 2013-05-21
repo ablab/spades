@@ -240,7 +240,6 @@ public:
 class SimpleExtensionChooser: public ExtensionChooser {
 
 protected:
-    bool print_;
 
     void RemoveTrivial(BidirectionalPath& path) {
         wc_->GetExcludedEdges().clear();
@@ -309,7 +308,7 @@ protected:
 		return result;
 	}
 public:
-    SimpleExtensionChooser(Graph& g, WeightCounter * wc, double priority, bool dbg = false): ExtensionChooser(g, wc, priority), print_(dbg) {
+    SimpleExtensionChooser(Graph& g, WeightCounter * wc, double priority): ExtensionChooser(g, wc, priority){
 
     }
 

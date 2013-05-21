@@ -91,12 +91,18 @@ double get_single_threshold(PairedInfoLibraries& lib){
             *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
 }
 
+string make_new_name(const std::string& contigs_name,
+		const std::string& subname){
+	return contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_" + subname + ".fasta";
+}
+
 void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libs,
 		vector<PairedInfoLibraries>& scafolding_libs,
 		PathContainer& true_paths,
 		const std::string& output_dir,
-		const std::string& contigs_name) {
+		const std::string& contigs_name,
+		bool investigateShortLoops) {
 
 	INFO("Path extend repeat resolving tool started");
 	make_dir(output_dir);
@@ -133,7 +139,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		        pset.mate_pair_options.select_options.priority_coeff :
 		        pset.extension_options.select_options.priority_coeff;
 		SimpleExtensionChooser * extensionChooser = new SimpleExtensionChooser(gp.g, wcs[i], priory_coef);
-		usualPEs.push_back(new SimplePathExtender(gp.g, pset.loop_removal.max_loops, extensionChooser));
+		usualPEs.push_back(new SimplePathExtender(gp.g, pset.loop_removal.max_loops, extensionChooser, investigateShortLoops));
 	}
 
 	GapJoiner * gapJoiner = new HammingGapJoiner(gp.g,
@@ -147,7 +153,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		scaf_wcs.push_back(new ReadCountWeightCounter(gp.g, scafolding_libs[i]));
 		ScaffoldingExtensionChooser * scafExtensionChooser = new ScaffoldingExtensionChooser(gp.g, scaf_wcs[i],
 							scafolding_libs[i][0]->is_mate_pair_? pset.mate_pair_options.select_options.priority_coeff : pset.extension_options.select_options.priority_coeff);
-		scafPEs.push_back(new ScaffoldingPathExtender(gp.g, pset.loop_removal.max_loops, scafExtensionChooser, gapJoiner));
+		scafPEs.push_back(new ScaffoldingPathExtender(gp.g, pset.loop_removal.max_loops, scafExtensionChooser, gapJoiner, investigateShortLoops));
 	}
 
 	PathExtendResolver resolver(gp.g);
@@ -155,14 +161,14 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 
 	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths);
 	INFO("Long Reads supporting contigs " << true_paths.size());
-	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC);
+	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC, false);
 	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs);
-	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC);
+	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC, false);
 	vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.push_back(pdPE);
 	all_libs.push_back(longReadPathExtender);
-	CoveringPathExtender * mainPE = new CompositePathExtender(gp.g, pset.loop_removal.max_loops, all_libs);
+	CoveringPathExtender * mainPE = new CompositePathExtender(gp.g, pset.loop_removal.max_loops, all_libs, investigateShortLoops);
 
 	seeds.SortByLength();
 	INFO("Extending seeds");
@@ -186,7 +192,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	loopTraverser.TraverseAllLoops();
 	paths.SortByLength();
 	INFO("Found " << paths.size() << " contigs");
-	writer.writePaths(paths, output_dir + contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_loop_tr.fasta");
+	writer.writePaths(paths, output_dir + make_new_name(contigs_name, "loop_tr"));
 	INFO("Path extend repeat resolving tool finished");
 }
 
@@ -228,11 +234,9 @@ void set_threshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_lengt
 }
 
 void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index, size_t split_edge_length){
-	INFO("split graph");
 	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
-	INFO("constacted split graph");
+	INFO("Begin processing paired reads to find threshold");
 	splitGraph.ProcessReadPairs();
-	INFO("processed paired reads");
 	double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
 	lib->SetSingleThreshold(threshold);
 }
@@ -267,18 +271,14 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, paired_end_libs);
 
 			if (use_auto_threshold){
-				INFO("BEGIN");
 				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
-				INFO("END");
 			}
 		}
 		else if (cfg::get().ds.reads[indexs[i]].type()
 				== io::LibraryType::MatePairs) {
 			PairedInfoLibrary* lib = add_lib(gp.g, paired_index, indexs, i, mate_pair_libs);
 			if (use_auto_threshold){
-				INFO("BEGIN");
 				find_new_threshold(gp, lib, indexs[i], pset.split_edge_length);
-				INFO("END");
 			}
 		}
 	}
@@ -303,7 +303,8 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 	PathContainer supportingContigs;
 	add_paths_to_container(gp, true_paths, supportingContigs);
 
-	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name);
+	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, false);
+	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, make_new_name(contigs_name, "with_trivial_loops"), true);
 
 	delete_libs(paired_end_libs);
 	delete_libs(mate_pair_libs);
