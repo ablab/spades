@@ -51,6 +51,21 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
   size_t vertex_count_limit_;
   ComponentRemover<Graph> component_remover_;
 
+//  double DetailLocalCoverage(EdgeId e, VertexId v) const {
+//    INFO("Local coverage of edge " << this->g().str(e) << " around vertex "
+//        << this->g().str(v) << " was " << local_coverage_f_(e, v));
+//    return local_coverage_f_(e, v);
+//  }
+//
+//  double MaxLocalCoverage(EdgeId e, VertexId v) const {
+//      return std::max(DetailLocalCoverage(e, v), this->graph().coverage(e));
+//  }
+//
+//
+//  double MinLocalCoverage(EdgeId e, VertexId v) const {
+//      return std::min(DetailLocalCoverage(e, v), this->graph().coverage(e));
+//  }
+
   double LocalCoverage(EdgeId e, VertexId v) const {
     INFO("Local coverage of edge " << this->g().str(e) << " around vertex "
         << this->g().str(v) << " was " << local_coverage_f_(e, v));

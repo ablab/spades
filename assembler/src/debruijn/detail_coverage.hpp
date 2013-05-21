@@ -29,10 +29,11 @@ class FlankingCoverage : public GraphActionHandler<Graph> {
 
   double CountAvgCoverage(EdgeId e, size_t offset) const {
     size_t k = this->g().k();
+    VERIFY(offset == 0 || offset + averaging_range_ == this->g().length(e));
     unsigned size_bound = std::min(averaging_range_, this->g().length(e));
     const Sequence& seq = this->g().EdgeNucls(e);
 
-    double edge_coverage_in = 0.;
+    size_t edge_coverage_in = 0;
 
     runtime_k::RtSeq kpomer(k + 1, seq, offset);
     kpomer >>= 0;
@@ -41,7 +42,25 @@ class FlankingCoverage : public GraphActionHandler<Graph> {
       edge_coverage_in += kmer_index_[kpomer].count_;
     }
 
-    return edge_coverage_in / size_bound;
+    return double(edge_coverage_in) / size_bound;
+  }
+
+  //tmp
+  double CountTotalAvgCoverage(EdgeId e) const {
+    size_t k = this->g().k();
+    unsigned size_bound = this->g().length(e);
+    const Sequence& seq = this->g().EdgeNucls(e);
+
+    size_t edge_coverage_in = 0;
+
+    runtime_k::RtSeq kpomer(k + 1, seq);
+    kpomer >>= 0;
+    for (size_t i = 0; i < size_bound; ++i) {
+      kpomer <<= seq[i + k];
+      edge_coverage_in += kmer_index_[kpomer].count_;
+    }
+
+    return double(edge_coverage_in) / size_bound;
   }
 
   double CountInCoverage(EdgeId e) const {
@@ -55,10 +74,10 @@ class FlankingCoverage : public GraphActionHandler<Graph> {
  public:
 
   FlankingCoverage(const Graph& g, const DeBruijnEdgeIndex<EdgeId>& kmer_index,
-                   unsigned avg)
+                   unsigned averaging_range)
       : base(g, "FlankingCoverage"),
         kmer_index_(kmer_index),
-        averaging_range_(avg) {
+        averaging_range_(averaging_range) {
     for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
       EdgeId e = *it;
       in_coverage_.insert(std::make_pair(*it, CountInCoverage(e)));
@@ -67,6 +86,14 @@ class FlankingCoverage : public GraphActionHandler<Graph> {
       TRACE("Local in coverage " << CountInCoverage(e));
       TRACE("Local out coverage " << CountOutCoverage(e));
     }
+  }
+
+  void CheckEdge(EdgeId e) const {
+      INFO("Info on edge " << this->g().str(e));
+      INFO("averaging_range " << averaging_range_);
+      INFO("InCoverage " << CountInCoverage(e));
+      INFO("OutCoverage " << CountOutCoverage(e));
+      INFO("Avg total coverage " << CountTotalAvgCoverage(e));
   }
 
   //todo rename
@@ -95,10 +122,11 @@ class FlankingCoverage : public GraphActionHandler<Graph> {
   }
 
   double LocalCoverage(EdgeId e, VertexId v) const {
+    CheckEdge(e);
     if (this->g().EdgeStart(e) == v) {
-      return get(in_coverage_, e);
+      return GetInCov(e);
     } else if (this->g().EdgeEnd(e) == v) {
-      return get(out_coverage_, e);
+      return GetOutCov(e);
     } else {
       VERIFY(false);
       return 0.0;
