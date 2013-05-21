@@ -352,7 +352,7 @@ protected:
     bool investigateShortLoops_;
 
 public:
-    LoopDetectingPathExtender(Graph & g, size_t max_loops): PathExtender(g), maxLoops_(max_loops), investigateShortLoops_(true)
+    LoopDetectingPathExtender(Graph & g, size_t max_loops): PathExtender(g), maxLoops_(max_loops), investigateShortLoops_(false)
     {
     }
 
@@ -636,7 +636,6 @@ public:
         if (candidates.size() == 1) {
             path.PushBack(candidates.back().e_, candidates.back().d_);
             result = true;
-
             if (investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop() && extensionChooser_->WeighConterBased()) {
                 loopResolver_.ResolveShortLoop(path);
             }
