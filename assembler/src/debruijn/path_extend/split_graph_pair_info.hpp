@@ -239,7 +239,6 @@ public:
 				if (graph.int_id(*edge) <= 0) {
 					continue;
 				}
-				//INFO("long edge")
 				EdgePairInfo& edgePairInfo = basketIndex_.GetEdgePairInfo(*edge);
 				if (edgePairInfo.size() == 0){
 					continue;
@@ -247,17 +246,14 @@ public:
 
 				size_t countBackets = LastTestBasketIndex(*edge, insert_size_max, edgePairInfo);
 				for (size_t index = 0; index <= countBackets; ++index){
-					//INFO("index " << index);
 					map<Basket, PairInfo>& basketInfo = edgePairInfo.GetBasketInfo(index);
 					set<size_t> pairBaskets = GetPairBaskets(index, insert_size_min, insert_size_max, edgePairInfo);
 
 					for (auto pairBasketIter = basketInfo.begin(); pairBasketIter != basketInfo.end(); ++pairBasketIter){
 						PairInfo& pairInfo = pairBasketIter->second;
 						if (pairBasketIter->first.edgeId() == *edge && pairBaskets.find(pairBasketIter->first.index()) != pairBaskets.end()){
-							//INFO("good " << GetNormalizedWeight(pairInfo) << " " <<pairInfo.weight_);
 							good_pi.push_back(GetNormalizedWeight(pairInfo));
 						} else {
-							//INFO("bad	 " << GetNormalizedWeight(pairInfo) << " " <<pairInfo.weight_);
 							bad_pi.push_back(GetNormalizedWeight(pairInfo));
 						}
 					}
@@ -265,8 +261,6 @@ public:
 				}
 			}
 		}
-
-		INFO("Completed good pi and bad pi");
 		double threshold = find_intersection(good_pi, bad_pi);
 		INFO("WE FOUND THRESHOLD " << threshold <<" good_pi_size " << good_pi.size() << " bad_pi_size " << bad_pi.size());
 		return threshold;
