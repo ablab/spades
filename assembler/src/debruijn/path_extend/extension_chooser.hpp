@@ -253,18 +253,30 @@ protected:
         }
     }
 
-    void RemoveTrivialAndCommon(BidirectionalPath& path, EdgeId first, EdgeId second){
-    	RemoveTrivial(path);
-    	for (size_t index = 0; index < path.Size(); ++index){
-    		//EdgeId current_edge = path.At(index);
-    		bool first_exist = wc_->PairInfoExist(path[index], first, path.LengthAt(index));
-    		bool second_exist = wc_->PairInfoExist(path[index], second, path.LengthAt(index));
-    		if (first_exist and second_exist){
-    			wc_->GetExcludedEdges().insert(index);
-    		}
+	void RemoveTrivialAndCommon(BidirectionalPath& path, EdgeId first,
+			EdgeId second) {
+		RemoveTrivial(path);
+		if (path.Size() == 0) {
+			return;
+		}
+		int index = path.Size() - 1;
+		while (index >= 0) {
+			bool common_edge = wc_->PairInfoExist(path[index], first,
+					path.LengthAt(index))
+					and wc_->PairInfoExist(path[index], second,
+							path.LengthAt(index));
+			bool ideal1 = wc_->CountIdealInfo(path[index], first,
+					path.LengthAt(index)) > 0.0;
+			bool ideal2 = wc_->CountIdealInfo(path[index], second,
+					path.LengthAt(index)) > 0.0;
+			if (common_edge or ideal1 != ideal2) {
+				wc_->GetExcludedEdges().insert(index);
+				DEBUG("excluded trivial and common " << index);
+			}
+			index--;
 
-    	}
-    }
+		}
+	}
 
 	void find_weights(BidirectionalPath& path, EdgeContainer& edges, AlternativeConteiner& weights) {
 		for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
