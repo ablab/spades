@@ -205,6 +205,7 @@ protected:
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
 			if (excludedEdges_.count(iter->e_) > 0) {
+				DEBUG("excluded " << iter->e_)
 				continue;
 			}
 			double w = libs_[libIndex]->CountPairedInfo(path[iter->e_], e,
@@ -395,7 +396,7 @@ public:
 					distance);
 			double w_ideal = libs_[libIndex]->IdealPairedInfo(first, second,
 					distance);
-			if (w_ideal == 0) {
+			if (w_ideal == 0.0) {
 				continue;
 			}
 			if (normalizeWeight_) {
@@ -405,6 +406,7 @@ public:
 					libs_[libIndex]->single_threshold_ >= 0.0 ?
 							libs_[libIndex]->single_threshold_ :
 							singleThreshold;
+			DEBUG("pair info exsist " <<g_.int_id(first) << "  " << g_.int_id(second) << " " << w << " " << distance << " " << threshold << " " << w_ideal);
 			if (w > threshold) {
 				return true;
 			}
