@@ -200,8 +200,8 @@ template<class Graph, class Read, class Seq>
 size_t ConstructGraph(size_t k,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
-//	return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
-	return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
+	return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
+//	return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
 }
 
 template<class Read>

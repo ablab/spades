@@ -365,7 +365,7 @@ public:
 	//TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
 	const std::vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
 			double queueGrowthRate, bool clean_condenced = false) {
-		UnbranchingPathFinder<Seq> finder = UnbranchingPathFinder<Seq>(origin_, kmer_size_, clean_condenced);
+		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, clean_condenced);
 		std::vector<Sequence> result;
 		size_t queueSize = queueMinSize;
 		std::vector<KPlusOneMer> kmers;
@@ -374,7 +374,7 @@ public:
 		kmer_iterator it = origin_.kmer_begin();
 		kmer_iterator end = origin_.kmer_end();
 		while(it != end) {
-			AddKmers(it, end, queueSize, kmers); // format a queue of kmers that are not in index
+			AddKmers(it, end, queueSize, kmers); // format a queue of junction kmers
 			CalculateSequences(kmers, sequences, finder); // in parallel
 			kmers.clear();
 			queueSize = min(size_t(queueSize * queueGrowthRate), queueMaxSize);
@@ -384,11 +384,15 @@ public:
 
 	const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(size_t queueMinSize, size_t queueMaxSize,
 			double queueGrowthRate) {
-		vector<Sequence> result	= ExtractUnbranchingPaths(queueMinSize, queueMaxSize, true);
+		INFO("Extracting unbranching paths");
+		vector<Sequence> result	= ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate, true);
+		INFO("Extracting unbranching paths finished");
+		INFO("Collecting perfect loops");
 		vector<Sequence> loops = CollectLoops();
 		for(auto it = loops.begin(); it != loops.end(); ++it) {
 			result.push_back(*it);
 		}
+		INFO("Collecting perfect loops finished");
 		return result;
 	}
 
@@ -619,6 +623,7 @@ public:
 	void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,
 			double queueGrowthRate) {
 		std::vector<Sequence> edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(queueMinSize, queueMaxSize, queueGrowthRate);
+//		std::vector<Sequence> edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
 		FilterRC(edgeSequences);
 //		GraphFromSequencesConstructor<Graph>(kmer_size_).ConstructGraph(graph_, edgeSequences);
 		FastGraphFromSequencesConstructor<Graph, Seq>(kmer_size_, origin_).ConstructGraph(graph_, edgeSequences);
