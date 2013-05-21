@@ -26,11 +26,14 @@ private:
 		inner_index[p.start].push_back(p);
 	}
 	vector<EdgeId> index;
+	set<pair<EdgeId, EdgeId> > nonempty_pairs;
+	set<pair<EdgeId, EdgeId> > transitively_ignored_pairs;
 
 public:
 	GapStorage(Graph &g):g_(g), inner_index() {}
 
 	size_t FillIndex(){
+		index.resize(0);
 		for (auto iter = inner_index.begin(); iter != inner_index.end(); iter ++){
 			index.push_back(iter->first);
 		}
@@ -41,6 +44,9 @@ public:
 		return index[i];
 	}
 
+	bool IsTransitivelyIgnored(pair<EdgeId, EdgeId> p) {
+		return (transitively_ignored_pairs.find(p) != transitively_ignored_pairs.end());
+	}
 	void AddGap(const GapDescription<Graph> &p, bool add_rc = false){
 		HiddenAddGap(p);
 		if (add_rc) {
@@ -53,6 +59,18 @@ public:
 		for(auto iter = to_add.inner_index.begin(); iter != to_add.inner_index.end(); ++iter) {
 			for(auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter)
 				inner_index[iter->first].push_back(*j_iter);
+		}
+	}
+
+	void PostProcess(){
+		FillIndex();
+		for(auto iter = nonempty_pairs.begin(); iter != nonempty_pairs.end(); ++iter) {
+			for (size_t i = 0; i < index.size(); i++ ) {
+				if (nonempty_pairs.find(make_pair(iter->first, index[i])) != nonempty_pairs.end() && nonempty_pairs.find(make_pair(index[i], iter->second)) != nonempty_pairs.end()) {
+					INFO("pair " << g_.int_id(iter->first) << "," << g_.int_id(iter->second) << " is ignored because of edge between " << g_.int_id(index[i]));
+					transitively_ignored_pairs.insert(make_pair(iter->first, iter->second));
+				}
+			}
 		}
 	}
 
@@ -80,6 +98,7 @@ public:
 	}
 
 	void PadGapStrings(EdgeId e) {
+		sort(inner_index[e].begin(), inner_index[e].end());
 		auto cl_start = inner_index[e].begin();
 		auto iter = inner_index[e].begin();
 		vector <GapDescription<Graph> > padded_gaps;
@@ -96,6 +115,10 @@ public:
 				}
 //				start_min = 0;
 //				end_max = g_.length(cl_start->end) - 1;
+				size_t len = next_iter - cl_start;
+				if (len > 1) {
+					nonempty_pairs.insert(make_pair(cl_start->start, cl_start->end));
+				}
 				for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
 					string s = g_.EdgeNucls(j_iter->start).Subseq(start_min, j_iter->edge_gap_start_position).str();
 					s += j_iter->gap_seq.str();
@@ -113,6 +136,7 @@ public:
 			INFO("Padding gaps for first edge " << g_.int_id(iter->first));
 			PadGapStrings(iter->first);
 		}
+		PostProcess();
 	}
 };
 
@@ -124,7 +148,6 @@ private:
 	DECL_LOGGER("PacIndex");
 	const Graph &g_;
 	map<EdgeId, map<EdgeId, pair<size_t, string> > > new_edges;
-
 
 	string RandomDeletion(string &s) {
 		int pos = rand() % s.length();
@@ -234,8 +257,9 @@ private:
 				res = new_res;
 			} else {
 				DEBUG("void mutation:(");
-				if (void_iterations % 200 == 0)
-					INFO(" random change " << void_iterations <<" failed")
+				if (void_iterations % 200 == 0) {
+					INFO(" random change " << void_iterations <<" failed in thread  " << omp_get_thread_num() );
+				}
 				void_iterations ++;
 			}
 		}
@@ -250,7 +274,7 @@ private:
 			auto next_iter = ++iter;
 			cur_len++;
 			if (next_iter == storage.inner_index[e].end() || next_iter->end != cl_start->end) {
-				if (cur_len > 1) {
+				if (cur_len > 1 && !storage.IsTransitivelyIgnored(make_pair(cl_start->start, cl_start->end))) {
 					vector<string> gap_variants;
 					for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
 						gap_variants.push_back(j_iter->gap_seq.str());
