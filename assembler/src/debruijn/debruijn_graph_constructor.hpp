@@ -386,13 +386,13 @@ public:
 			double queueGrowthRate) {
 		INFO("Extracting unbranching paths");
 		vector<Sequence> result	= ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate, true);
-		INFO("Extracting unbranching paths finished");
+		INFO("Extracting unbranching paths finished. " << result.size() << " sequences extracted");
 		INFO("Collecting perfect loops");
 		vector<Sequence> loops = CollectLoops();
 		for(auto it = loops.begin(); it != loops.end(); ++it) {
 			result.push_back(*it);
 		}
-		INFO("Collecting perfect loops finished");
+		INFO("Collecting perfect loops finished. " << loops.size() << " loops collected");
 		return result;
 	}
 
