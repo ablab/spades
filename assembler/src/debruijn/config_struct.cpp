@@ -381,6 +381,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.use_unipaths, pt, "use_unipaths");
 
   load(cfg.pacbio_test_on, pt, "pacbio_test_on");
+  load(cfg.coverage_based_rr, pt, "coverage_based_rr");
   if (cfg.pacbio_test_on) {
     load(cfg.pacbio_reads, pt, "pacbio_reads");
     load(cfg.pacbio_k, pt, "pacbio_k");

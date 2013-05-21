@@ -15,6 +15,7 @@ log_filename    log.properties
 output_base	      ./data/debruijn/
 
 additional_contigs	tmp_contigs.fasta
+coverage_based_rr	false
 pacbio_test_on		false
 pacbio_reads		tmp_contigs.fasta
 pacbio_k		21

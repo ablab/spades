@@ -1034,7 +1034,11 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 
 	std::vector< PathInfo<Graph> > filteredPaths;
 	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
-	resolve_repeats_by_coverage(conj_gp, filteredPaths, clustered_indices[0], quality_labeler);
+	if (cfg::get().coverage_based_rr == true){
+		resolve_repeats_by_coverage(conj_gp, filteredPaths, clustered_indices[0], quality_labeler);
+	}
+
+
 
     //LongReadStorage<Graph> long_read(conj_gp.g);
 	if (cfg::get().pacbio_test_on == true){
@@ -1042,7 +1046,6 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 		PacBioAligner pac_aligner(conj_gp, cfg::get().pacbio_k);
 		INFO("index created");
 		pac_aligner.pacbio_test(long_read, gaps);
-
 	}
     //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 

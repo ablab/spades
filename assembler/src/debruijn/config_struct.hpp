@@ -418,7 +418,7 @@ struct debruijn_config {
   std::string pacbio_reads;
   size_t  pacbio_k;
   bool pacbio_test_on;
-
+  bool coverage_based_rr;
   std::string load_from;
 
   working_stage entry_point;
