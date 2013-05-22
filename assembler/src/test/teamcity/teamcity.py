@@ -208,7 +208,7 @@ while i < len(dataset_info.spades_params):
         i += 1
     i += 1
 
-spades_cmd = "./spades.py --debug --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
+spades_cmd = "./spades.py --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
 
 #run spades
 ecode = os.system(spades_cmd)
@@ -321,6 +321,15 @@ if 'quast_params' in dataset_info.__dict__:
             else:
                 result = assess_quast(os.path.join(quast_output_scaf_dir, "transposed_report.tsv"), {}, "scaffolds")
                 new_log += result[1]
+
+        #ALL FASTA
+        print("Now running QUAST on all contigs...")
+        allfasta = os.path.join(output_dir, "*.fasta")
+        quast_output_dir_all = os.path.join(output_dir, "QUAST_RESULTS_ALL")
+        if os.system(quast_cmd + " -o " + quast_output_dir_all + " " + allfasta) != 0:
+            print("Failed to estimate all FASTA files")
+        else:
+            print("Ira, QUAST report for all contigs is in " + quast_output_dir_all)
 
 
 #etalon saves

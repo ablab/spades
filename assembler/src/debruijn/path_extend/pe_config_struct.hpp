@@ -28,6 +28,13 @@ const char * const pe_cfg_filename = "./config/debruijn/path_extend/lc_config.in
 
 // struct for long_contigs subproject's configuration file
 struct pe_config {
+
+  enum output_broken_scaffolds {
+      none,
+      break_gaps,
+      break_all
+  };
+
   struct DatasetT {
     struct PairedLibT {
       size_t read_size;

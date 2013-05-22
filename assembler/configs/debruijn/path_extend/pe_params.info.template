@@ -35,6 +35,9 @@ research {
 
 additional_contigs ""
 
+; none | break_gaps | break_all
+output_broken_scaffolds break_all
+
 singlecell {
 
 	improve_paired_info	true

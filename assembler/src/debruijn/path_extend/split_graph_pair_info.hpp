@@ -15,7 +15,7 @@ using namespace debruijn_graph;
 namespace path_extend {
 class Basket{
 
-private:
+public:
 	EdgeId edgeId_;
 	size_t index_;
 
@@ -67,10 +67,10 @@ struct PairInfo{
 
 class EdgePairInfo{
 
-private:
+public:
 	EdgeId edgeId_;
 	size_t basket_size_;
-	vector<map<Basket, PairInfo> > pair_info_;
+	vector< map<Basket, PairInfo> > pair_info_;
 
 public:
 	EdgePairInfo(){
@@ -106,6 +106,23 @@ public:
 		}
 	}
 
+	void AddPairInfo(const EdgePairInfo& edgePairInfo){
+	    for (size_t index = 0; index < pair_info_.size(); ++index){
+	        const map<Basket,PairInfo>& basketInfoToAdd = edgePairInfo.pair_info_[index];
+	        map<Basket,PairInfo>& oldBasketInfo = pair_info_[index];
+	        for (auto iter = basketInfoToAdd.begin(); iter != basketInfoToAdd.end(); ++iter){
+	            if (oldBasketInfo.find(iter->first) == oldBasketInfo.end()){
+	                oldBasketInfo[iter->first] = iter->second;
+	            } else {
+	                PairInfo& pairInfo = oldBasketInfo[iter->first];
+	                oldBasketInfo[iter->first] = PairInfo(pairInfo.weight_ + iter->second.weight_,
+	                        CountNewDistance(pairInfo, iter->second.distance_, iter->second.count_),
+	                        iter->second.count_ + pairInfo.count_);
+	            }
+	        }
+	    }
+	}
+
 	map<Basket, PairInfo>& GetBasketInfo(size_t index){
 		return pair_info_.at(index);
 	}
@@ -132,8 +149,8 @@ private:
 				oldPairInfo.count_ + 1);
 	}
 
-	double CountNewDistance(PairInfo& oldPairInfo, double distance){
-		return (oldPairInfo.distance_ * oldPairInfo.count_ + distance) / (oldPairInfo.count_ + 1);
+	double CountNewDistance(PairInfo& oldPairInfo, double distance, size_t count = 1){
+	    return (oldPairInfo.distance_* oldPairInfo.count_ + distance * count) / (oldPairInfo.count_ + count);
 	}
 
 	double GetBasketDistance(double edge_distance, double index1, double index2){
@@ -143,9 +160,11 @@ private:
 
 class BasketsPairInfoIndex{
 
-private:
+public:
 	conj_graph_pack& gp_;
+
 	size_t basket_size_;
+
 	map<EdgeId, EdgePairInfo> pair_info_;
 
 public:
@@ -163,8 +182,28 @@ public:
 		pair_info_[edgeId1].AddPairInfo(pos_begin1, pos_end1, edgeId2, pos_begin2, pos_end2, weight, edge_distance);
 	}
 
-	EdgePairInfo& GetEdgePairInfo(EdgeId edgeId){
+
+	EdgePairInfo& GetEdgePairInfo(EdgeId edgeId) {
 		return pair_info_[edgeId];
+	}
+
+	void AddAll(const BasketsPairInfoIndex& index) {
+	    for (auto it = index.pair_info_.begin(); it != index.pair_info_.end(); ++it) {
+	        if (pair_info_.find(it->first) == pair_info_.end()) {
+	            pair_info_.insert(make_pair(it->first, it->second));
+	        }
+	        else {
+	            pair_info_[it->first].AddPairInfo(it->second);
+	        }
+	    }
+	}
+
+	void Clear() {
+	    pair_info_.clear();
+	}
+
+	size_t size() const {
+	    return pair_info_.size();
 	}
 
 };
@@ -173,61 +212,173 @@ class SplitGraphPairInfo{
 
 private:
 	conj_graph_pack& gp_;
+
 	PairedInfoLibrary& lib_;
+
 	size_t lib_index_;
+
 	size_t basket_size_;
+
 	BasketsPairInfoIndex basketIndex_;
+
+	template<class PairedRead>
+	void ProcessPairedRead(BasketsPairInfoIndex& basket_index, const PairedRead& p_r)   {
+        Sequence read1 = p_r.first().sequence();
+        Sequence read2 = p_r.second().sequence();
+        size_t read_distance = p_r.distance();
+        debruijn_graph::NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index,  gp_.kmer_mapper, gp_.g.k() + 1);
+        MappingPath<EdgeId> path1 = mapper.MapSequence(read1);
+        MappingPath<EdgeId> path2 = mapper.MapSequence(read2);
+
+        for (size_t i = 0; i < path1.size(); ++i) {
+            pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+
+            for (size_t j = 0; j < path2.size(); ++j) {
+                pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
+                double weight = PairedReadCountWeight(mapping_edge_1.second,
+                        mapping_edge_2.second);
+
+                size_t kmer_distance = read_distance
+                        + mapping_edge_2.second.initial_range.end_pos
+                        - mapping_edge_1.second.initial_range.start_pos;
+                int edge_distance = kmer_distance
+                        + mapping_edge_1.second.mapped_range.start_pos
+                        - mapping_edge_2.second.mapped_range.end_pos;
+
+                basket_index.AddPairInfo(mapping_edge_1.first,
+                        mapping_edge_1.second.mapped_range.start_pos,
+                        mapping_edge_1.second.mapped_range.end_pos,
+                        mapping_edge_2.first,
+                        mapping_edge_2.second.mapped_range.start_pos,
+                        mapping_edge_2.second.mapped_range.end_pos,
+                        weight, (double)edge_distance
+                        );
+            }
+        }
+    }
+
 public:
 	SplitGraphPairInfo(conj_graph_pack& gp, PairedInfoLibrary& lib, size_t lib_index, size_t basket_size):
 		gp_(gp), lib_(lib), lib_index_(lib_index), basket_size_(basket_size), basketIndex_(gp, basket_size){
 
 	}
 
-	void ProcessReadPairs() {
-		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[lib_index_], true, cfg::get().ds.reads[lib_index_].data().mean_insert_size);
-		SingleStreamType paired_streams(paired_stream.get());
-		io::IReader<io::PairedRead>& stream = paired_streams.back();
+	template<class PairedRead>
+	void ProcessReadPairs(io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
+        INFO("Processing paired reads (takes a while)");
+		io::IReader<PairedRead>& stream = streams.back();
 		stream.reset();
 
 		while (!stream.eof()) {
-		    io::IReader<io::PairedRead>::read_type p_r;
+		    PairedRead p_r;
 		    stream >> p_r;
-		    Sequence read1 = p_r.first().sequence();
-		    Sequence read2 = p_r.second().sequence();
-			size_t read_distance = p_r.distance();
-			NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index,
-					gp_.kmer_mapper, gp_.g.k() + 1);
-			MappingPath<EdgeId> path1 = mapper.MapSequence(read1);
-			MappingPath<EdgeId> path2 = mapper.MapSequence(read2);
-
-			for (size_t i = 0; i < path1.size(); ++i) {
-				pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
-
-				for (size_t j = 0; j < path2.size(); ++j) {
-					pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
-					double weight = PairedReadCountWeight(mapping_edge_1.second,
-							mapping_edge_2.second);
-
-					size_t kmer_distance = read_distance
-							+ mapping_edge_2.second.initial_range.end_pos
-							- mapping_edge_1.second.initial_range.start_pos;
-					int edge_distance = kmer_distance
-							+ mapping_edge_1.second.mapped_range.start_pos
-							- mapping_edge_2.second.mapped_range.end_pos;
-
-					basketIndex_.AddPairInfo(mapping_edge_1.first,
-							mapping_edge_1.second.mapped_range.start_pos,
-							mapping_edge_1.second.mapped_range.end_pos,
-							mapping_edge_2.first,
-							mapping_edge_2.second.mapped_range.start_pos,
-							mapping_edge_2.second.mapped_range.end_pos,
-							weight, (double)edge_distance
-							);
-				}
-			}
-			//INFO(++n);
+		    ProcessPairedRead(basketIndex_, p_r);
 		}
+
+        INFO("Size of map is " << basketIndex_.size());
+
+        for (auto it = basketIndex_.pair_info_.begin(); it != basketIndex_.pair_info_.end(); ++it) {
+            INFO(it->second.pair_info_.size());
+            for (auto iter = it->second.pair_info_.begin(); iter != it->second.pair_info_.begin(); ++iter) {
+                INFO(iter->size());
+            }
+        }
+
+
+		INFO("Done");
 	}
+
+	template<class PairedRead>
+    void ProcessReadPairsParallel(io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
+        INFO("Processing paired reads (takes a while)");
+        size_t nthreads = streams.size();
+        vector<BasketsPairInfoIndex*> buffer_pi(nthreads);
+
+        for (size_t i = 0; i < nthreads; ++i) {
+            buffer_pi[i] = new BasketsPairInfoIndex(gp_, basket_size_);
+        }
+
+        size_t counter = 0;
+        static const double coeff = 1.3;
+        #pragma omp parallel num_threads(nthreads)
+        {
+            #pragma omp for reduction(+ : counter)
+            for (size_t i = 0; i < nthreads; ++i)
+            {
+                size_t size = 0;
+                size_t limit = 1000000;
+                PairedRead r;
+                io::IReader<PairedRead>& stream = streams[i];
+                stream.reset();
+                bool end_of_stream = false;
+
+                INFO("Starting " << omp_get_thread_num());
+                while (!end_of_stream) {
+                    end_of_stream = stream.eof();
+
+                    while (!end_of_stream && size < limit) {
+                        stream >> r;
+                        ++counter;
+                        ++size;
+
+                        //DEBUG("Processing paired read " << omp_get_thread_num());
+                        ProcessPairedRead(*(buffer_pi[i]), r);
+                        end_of_stream = stream.eof();
+                    }
+
+                    #pragma omp critical
+                    {
+                        INFO("Merging " << omp_get_thread_num() << " " << buffer_pi[i]->size());
+                        basketIndex_.AddAll(*(buffer_pi[i]));
+                        INFO("New basket size " << basketIndex_.size());
+                        INFO("Thread number " << omp_get_thread_num() << " is going to increase its limit by " << coeff << " times, current limit is " << limit);
+                    }
+                    buffer_pi[i]->Clear();
+                    limit = coeff * limit;
+                }
+            }
+            DEBUG("Thread number " << omp_get_thread_num() << " finished");
+        }
+        INFO("Used " << counter << " paired reads");
+
+        for (size_t i = 0; i < nthreads; ++i) {
+            INFO("Size of " << i << "-th map is " << buffer_pi[i]->size());
+        }
+
+        for (size_t i = 0; i < nthreads; ++i) {
+            delete buffer_pi[i];
+        }
+        INFO("Done");
+
+        for (auto it = basketIndex_.pair_info_.begin(); it != basketIndex_.pair_info_.end(); ++it) {
+            INFO(it->second.pair_info_.size());
+            for (auto iter = it->second.pair_info_.begin(); iter != it->second.pair_info_.begin(); ++iter) {
+                INFO(iter->size());
+            }
+        }
+
+        INFO("Size of map is " << basketIndex_.size());
+    }
+
+  	void ProcessReadPairs() {
+        if (cfg::get().use_multithreading) {
+            MultiStreamType paired_streams = paired_binary_readers(cfg::get().ds.reads[lib_index_], true, cfg::get().ds.reads[lib_index_].data().mean_insert_size);
+
+            if (paired_streams.size() == 1) {
+                ProcessReadPairs(paired_streams);
+            }
+            else {
+                ProcessReadPairsParallel(paired_streams);
+            }
+        }
+        else {
+            auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[lib_index_], true, cfg::get().ds.reads[lib_index_].data().mean_insert_size);
+            SingleStreamType paired_streams(paired_stream.get());
+
+            ProcessReadPairs(paired_streams);
+        }
+	}
+
 
 	double FindThreshold(double min_length_long_edge, int insert_size_min, int insert_size_max) {
 		Graph& graph = gp_.g;
