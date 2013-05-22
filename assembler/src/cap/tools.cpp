@@ -43,6 +43,29 @@ BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 					ref));
 }
 
+BOOST_AUTO_TEST_CASE( CompareEcoli ) {
+	utils::TmpFolderFixture _("tmp");
+
+	std::string base_path = "/home/snurk/ecoli_refs/";
+
+	vector<std::string> paths = {
+			base_path + "H6.fasta",
+			base_path + "K12.fasta"
+	};
+	vector<std::string> suffices = {
+			"H6",
+			"K12"
+	};
+
+	vector<size_t> k_sequence = { 1001, 501, 201, 101, 55, 21, 15 };
+
+//	std::string files_md5 = utils::GenMD5FromFiles(paths);
+//	INFO("result is stored with md5 of " << files_md5);
+
+	MaskDifferencesAndSave(paths, suffices,
+			//"bp_graph_" + files_md5 +
+            base_path + "H6_K12_processed/", k_sequence);
+}
 BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
     return;
 	utils::TmpFolderFixture _("tmp");
@@ -106,6 +129,7 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 }
 
 BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {
+    return;
 	utils::TmpFolderFixture _("tmp");
 	static size_t k = 25;
 	typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph, LSeq> gp_t;
@@ -119,7 +143,7 @@ BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {
                          "interesting_orthologs.txt");
     gene_collection.Update(gp);
 
-    ColorHandler<typename gp_t::graph_t> coloring(gp.g);
+    ColorHandler<gp_t::graph_t> coloring(gp.g);
 
     make_dir(root + "out/");
 

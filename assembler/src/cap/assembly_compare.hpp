@@ -220,8 +220,8 @@ public:
 		stream2_.reset();
 
 		PrepareDirs(output_folder, detailed_output);
-
-		ContigStreams streams(vector<ContigStream*>{ &stream1_, &stream2_ }, false);
+        vector<ContigStream*> stream_vec = { &stream1_, &stream2_ };
+		ContigStreams streams(stream_vec, false);
 		ConstructColoredGraph<gp_t>(gp_, coloring_, streams);
 
 		if (gp_.genome.size() > 0) {
