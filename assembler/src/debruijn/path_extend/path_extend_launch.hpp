@@ -207,6 +207,10 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
     std::string bs_name = make_new_name(contigs_name, "broken");
     output_broken_scaffolds(paths, gp.g.k(), writer, output_dir + bs_name);
 
+    if (!investigateShortLoops) {
+        output_broken_scaffolds(paths, gp.g.k(), writer, output_dir + "final_contigs.fasta");
+    }
+
 	INFO("Traversing tandem repeats");
     LoopTraverser loopTraverser(gp.g, paths, mainPE->GetCoverageMap(), mainPE);
 	loopTraverser.TraverseAllLoops();
