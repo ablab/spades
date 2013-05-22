@@ -78,7 +78,7 @@ struct kmer_index_traits {
 
     static cxxmph::h128 hash128(const Seq &k, uint32_t seed) {
       cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size() * sizeof(typename Seq::DataType), seed, &h);
+      MurmurHash3_x64_128(k.data(), (int)(k.data_size() * sizeof(typename Seq::DataType)), seed, &h);
       return h;
     }
   };

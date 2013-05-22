@@ -50,11 +50,11 @@ void TriGraph::AddEdge(const Edge& edge) {
 
 void TriGraph::RemoveEdge(uint32_t current_edge) {
   // cerr << "Removing edge " << current_edge << " from " << nedges_ << " existing edges " << endl;
-  for (int i = 0; i < 3; ++i) {
+  for (uint8_t i = 0; i < 3; ++i) {
     uint32_t vertex = edges_[current_edge][i];
     uint32_t edge1 = first_edge_[vertex];
     uint32_t edge2 = kInvalidEdge;
-    uint32_t j = 0;
+    uint8_t j = 0;
     while (edge1 != current_edge && edge1 != kInvalidEdge) {
       edge2 = edge1;
       if (edges_[edge1][0] == vertex) j = 0;

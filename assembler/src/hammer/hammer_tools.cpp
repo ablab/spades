@@ -45,7 +45,7 @@ size_t EstimateTotalReadSize(const std::vector<std::string> &fnames) {
     stat(I->c_str(), &st);
     totalReadSize += st.st_size;
   }
-  totalReadSize = totalReadSize / 2.0;
+  totalReadSize = totalReadSize / 2;
   return totalReadSize;
 }
 };
@@ -283,7 +283,7 @@ hint_t HammerTools::CorrectAllReads() {
 
 	// correcting single file
 	if (!single_created && (Globals::input_filenames.size() == 3 || Globals::input_filenames.size() == 1)) {
-		int iFile = Globals::input_filenames.size() - 1;
+		int iFile = (int)Globals::input_filenames.size() - 1;
 		ofstream ofgood(HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "cor").c_str(), fstream::app);
 		ofstream ofbad( HammerTools::getReadsFilename(cfg::get().input_working_dir, iFile, Globals::iteration_no, "bad").c_str());
     HammerTools::CorrectReadFile(*Globals::kmer_data,

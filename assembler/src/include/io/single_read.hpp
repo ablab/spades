@@ -81,7 +81,7 @@ class SingleRead {
       name_(name), seq_(seq), qual_(qual) {
     Init();
     for (size_t i = 0; i < qual_.size(); ++i) {
-      qual_[i] -= offset;
+      qual_[i] = (char)(qual_[i] - offset);
     }
   }
 
@@ -177,7 +177,7 @@ class SingleRead {
     int offset = PhredOffset;
     std::string res = qual_;
     for (size_t i = 0; i < res.size(); ++i) {
-      res[i] += offset;
+      res[i] = (char)(res[i] + offset);
     }
     return res;
   }
@@ -254,7 +254,7 @@ class SingleRead {
   }
 
   pair<size_t, size_t> position_in_original() const {
-    for (int i = name_.length() - 1; i >= 0; --i) {
+    for (int i = (int)name_.length() - 1; i >= 0; --i) {
       if (name_[i] != '_') {
         continue;
       }

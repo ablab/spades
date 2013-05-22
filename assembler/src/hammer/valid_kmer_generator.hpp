@@ -69,7 +69,7 @@ class ValidKMerGenerator {
 
   void Reset(const char *seq, const char *qual,
              size_t len,
-             uint32_t bad_quality_threshold = 2) {
+             uint8_t bad_quality_threshold = 2) {
     kmer_ = Seq<kK>();
     seq_ = seq;
     qual_ = qual;
@@ -101,7 +101,7 @@ class ValidKMerGenerator {
   /**
    * @result last k-mer position in initial read.
    */
-  int pos() const {
+  size_t pos() const {
     return pos_;
   }
   /**
@@ -120,7 +120,7 @@ class ValidKMerGenerator {
   double Prob(uint8_t qual) {
     return Globals::quality_probs[qual];
   }
-  uint32_t GetQual(uint32_t pos) {
+  uint8_t GetQual(uint32_t pos) {
     if (pos >= len_) {
       return 2;
     } else {
@@ -134,7 +134,7 @@ class ValidKMerGenerator {
   size_t end_;
   size_t len_;
   double correct_probability_;
-  uint32_t bad_quality_threshold_;
+  uint8_t bad_quality_threshold_;
   bool has_more_;
   bool first;
 
@@ -166,8 +166,8 @@ void ValidKMerGenerator<kK>::Next() {
   } else if (first || !is_nucl(seq_[pos_ + kK - 1])) {
     // in this case we have to look for new k-mer
     correct_probability_ = 1.0;
-    uint32_t start_hypothesis = pos_;
-    uint32_t i = pos_;
+    uint32_t start_hypothesis = (uint32_t)pos_;
+    uint32_t i = (uint32_t)pos_;
     for (; i < len_; ++i) {
       if (i == kK + start_hypothesis) {
         break;

@@ -189,7 +189,7 @@ class Seq {
       //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
 
       // we fill everything with zeros (As) by default.
-      char c = digit_str ? s[offset + i] : dignucl(s[offset + i]);
+      char c = digit_str ? s[offset + i] : (char)dignucl(s[offset + i]);
 
       data = data | (T(c) << cnt);
       cnt += 2;

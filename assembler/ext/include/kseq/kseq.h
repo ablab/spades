@@ -133,7 +133,7 @@ typedef struct __kstring_t {
 			str->s = (char*)calloc(1, 1);								\
 		}																\
 		str->s[str->l] = '\0';											\
-		return str->l;													\
+		return (int)str->l;												\
 	}
 
 #define KSTREAM_INIT(type_t, __read, __bufsize) \
@@ -192,7 +192,7 @@ typedef struct __kstring_t {
 		}																\
 		if (c == '>' || c == '@') seq->last_char = c; /* the first header char has been read */	\
 		seq->seq.s[seq->seq.l] = 0;	/* null terminated string */		\
-		if (c != '+') return seq->seq.l; /* FASTA */					\
+		if (c != '+') return (int)seq->seq.l; /* FASTA */				\
 		if (seq->qual.m < seq->seq.m) {	/* allocate enough memory */	\
 			seq->qual.m = seq->seq.m;									\
 			seq->qual.s = (char*)realloc(seq->qual.s, seq->qual.m);		\
@@ -204,7 +204,7 @@ typedef struct __kstring_t {
 		seq->qual.s[seq->qual.l] = 0; /* null terminated string */		\
 		seq->last_char = 0;	/* we have not come to the next header line */ \
 		if (seq->seq.l != seq->qual.l) return -2; /* qual string is shorter than seq string */ \
-		return seq->seq.l;												\
+		return (int)seq->seq.l;											\
 	}
 
 #define __KSEQ_TYPE(type_t)						\
