@@ -256,7 +256,7 @@ protected:
 	// L(e1), L(e1 + e2) ... L(e1 + ... + eN)
 	std::deque <size_t> cumulativeLength_;
 
-	// e1 - gap1 - e2 - ... - gap(N-1) - eN
+	// e1 - gap2 - e2 - ... - gapN - eN
 	std::deque <int> gapLength_;
 
 	// L(e1 + ... + eN)
@@ -558,6 +558,10 @@ public:
 
 	size_t Size() const {
 	    return data_.size();
+	}
+
+	Graph& graph() const {
+	    return g_;
 	}
 
 	bool Empty() const {
@@ -888,7 +892,7 @@ public:
         INFO("Length " << totalLength_);
         INFO("#, edge, length, total length");
         for(size_t i = 0; i < Size(); ++i) {
-            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
+            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i));
         }
     }
 
