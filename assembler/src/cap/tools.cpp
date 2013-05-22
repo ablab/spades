@@ -49,84 +49,81 @@ BOOST_AUTO_TEST_CASE( CompareEcoli ) {
 	std::string base_path = "/home/snurk/ecoli_refs/";
 
 	vector<std::string> paths = {
-			base_path + "H6.fasta",
-			base_path + "K12.fasta"
-	};
-	vector<std::string> suffices = {
-			"H6",
-			"K12"
+			"H6.fasta",
+			"K12.fasta"
 	};
 
-	vector<size_t> k_sequence = { 1001, 501, 201, 101, 55, 21, 15 };
+	vector<size_t> k_sequence = { 1001, 501, 201, 101, 55, 21 };
 
 //	std::string files_md5 = utils::GenMD5FromFiles(paths);
 //	INFO("result is stored with md5 of " << files_md5);
 
-	MaskDifferencesAndSave(paths, suffices,
+	MaskDifferencesAndSave(base_path, paths,
 			//"bp_graph_" + files_md5 +
             base_path + "H6_K12_processed/", k_sequence);
 }
-BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
-    return;
-	utils::TmpFolderFixture _("tmp");
 
-	std::string base_path = "/home/snurk/Dropbox/olga_gelf/";
-
-	/*
-	 vector<std::string> paths = {
-	 "/home/valich/mrsa/more_strains/MSSA476.fasta",
-	 "/home/valich/mrsa/more_strains/MRSA252.fasta",
-	 "/home/valich/mrsa/more_strains/TW20.fasta",
-	 "/home/valich/mrsa/more_strains/USA300.fasta"
-	 };
-	 vector<std::string> suffixes = {
-	 "mssa476",
-	 "rmsa252",
-	 "tw20",
-	 "usa300"
-	 };
-
-	 base_path + "CCDC5079.fasta",
-	 base_path + "CCDC5180.fasta"
-
-	 */
-	// E.Coli
-	vector<std::string> paths = {
-//    base_path + "EDL.fasta",
-			base_path + "genomes/Escherichia coli 536.fasta",
-//    base_path + "HS.fasta",
-			base_path + "genomes/Escherichia coli 55989.fasta"
-	};
-	vector<std::string> suffices = {
-			"EC536",
-			"EC55989"
-	};
-
-	vector<size_t> k_sequence = { /*1001, 501, 201, 101, */55, 21, 15 };
-
-	/*
-	 std::string base_path = "/home/valich/work/human/";
-
-	 vector<std::string> paths = {
-	 base_path + "homo_sapiens_X.fasta",
-	 base_path + "pan_troglodytes_X.fasta"
-	 };
-	 vector<std::string> suffices = {
-	 "homo_sapiens_X",
-	 "pan_troglodytes_X"
-	 };
-	 vector<size_t> k_sequence = {
-	 101, 55, 21, 15
-	 };
-	 */
-
-//	std::string files_md5 = utils::GenMD5FromFiles(paths);
-//	INFO("result is stored with md5 of " << files_md5);
-
-	MaskDifferencesAndSave(paths, suffices,
-			//"bp_graph_" + files_md5 +
-            base_path + "processed/", k_sequence);
-}
+//BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
+//    return;
+//	utils::TmpFolderFixture _("tmp");
+//
+//	std::string base_path = "/home/snurk/Dropbox/olga_gelf/";
+//
+//	/*
+//	 vector<std::string> paths = {
+//	 "/home/valich/mrsa/more_strains/MSSA476.fasta",
+//	 "/home/valich/mrsa/more_strains/MRSA252.fasta",
+//	 "/home/valich/mrsa/more_strains/TW20.fasta",
+//	 "/home/valich/mrsa/more_strains/USA300.fasta"
+//	 };
+//	 vector<std::string> suffixes = {
+//	 "mssa476",
+//	 "rmsa252",
+//	 "tw20",
+//	 "usa300"
+//	 };
+//
+//	 base_path + "CCDC5079.fasta",
+//	 base_path + "CCDC5180.fasta"
+//
+//	 */
+//	// E.Coli
+//	vector<std::string> paths = {
+////    base_path + "EDL.fasta",
+//			base_path + "genomes/Escherichia coli 536.fasta",
+////    base_path + "HS.fasta",
+//			base_path + "genomes/Escherichia coli 55989.fasta"
+//	};
+//	vector<std::string> suffices = {
+//			"EC536",
+//			"EC55989"
+//	};
+//
+//	vector<size_t> k_sequence = { /*1001, 501, 201, 101, */55, 21, 15 };
+//
+//	/*
+//	 std::string base_path = "/home/valich/work/human/";
+//
+//	 vector<std::string> paths = {
+//	 base_path + "homo_sapiens_X.fasta",
+//	 base_path + "pan_troglodytes_X.fasta"
+//	 };
+//	 vector<std::string> suffices = {
+//	 "homo_sapiens_X",
+//	 "pan_troglodytes_X"
+//	 };
+//	 vector<size_t> k_sequence = {
+//	 101, 55, 21, 15
+//	 };
+//	 */
+//
+////	std::string files_md5 = utils::GenMD5FromFiles(paths);
+////	INFO("result is stored with md5 of " << files_md5);
+//
+//	MaskDifferencesAndSave(paths, suffices,
+//			//"bp_graph_" + files_md5 +
+//            base_path + "processed/", k_sequence);
+//}
 
 BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {
     return;
