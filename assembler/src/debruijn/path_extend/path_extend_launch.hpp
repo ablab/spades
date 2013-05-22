@@ -96,6 +96,23 @@ string make_new_name(const std::string& contigs_name,
 	return contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_" + subname + ".fasta";
 }
 
+
+void output_broken_scaffolds(PathContainer& paths, int k, ContigWriter& writer, const std::string& filename) {
+    if (!cfg::get().pe_params.param_set.scaffolder_options.on or
+            !cfg::get().use_scaffolder or
+            cfg::get().pe_params.obs == obs_none) {
+        return;
+    }
+
+    int min_gap = cfg::get().pe_params.obs == obs_break_all ? 0 : k;
+
+    ScaffoldBreaker breaker(min_gap);
+    breaker.Split(paths);
+    breaker.container().SortByLength();
+    writer.writePaths(breaker.container(), filename);
+}
+
+
 void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libs,
 		vector<PairedInfoLibraries>& scafolding_libs,
@@ -187,12 +204,19 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
     writer.writePaths(paths, output_dir + contigs_name);
     debug_output_paths(writer, gp, output_dir, paths, "final_paths");
 
+    std::string bs_name = make_new_name(contigs_name, "broken");
+    output_broken_scaffolds(paths, gp.g.k(), writer, output_dir + bs_name);
+
 	INFO("Traversing tandem repeats");
     LoopTraverser loopTraverser(gp.g, paths, mainPE->GetCoverageMap(), mainPE);
 	loopTraverser.TraverseAllLoops();
 	paths.SortByLength();
 	INFO("Found " << paths.size() << " contigs");
 	writer.writePaths(paths, output_dir + make_new_name(contigs_name, "loop_tr"));
+
+    bs_name = make_new_name(contigs_name, "broken_ltr");
+    output_broken_scaffolds(paths, gp.g.k(), writer, output_dir + bs_name);
+
 	INFO("Path extend repeat resolving tool finished");
 }
 

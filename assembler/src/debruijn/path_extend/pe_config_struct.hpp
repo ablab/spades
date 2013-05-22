@@ -15,9 +15,11 @@
 #define LC_CONFIG_STRUCT_HPP_
 
 #include "config_singl.hpp"
+#include "cpp_utils.hpp"
 
 #include <boost/optional.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
+#include <boost/bimap.hpp>
 
 #include <string>
 #include <vector>
@@ -26,14 +28,47 @@ namespace path_extend {
 
 const char * const pe_cfg_filename = "./config/debruijn/path_extend/lc_config.info";
 
-// struct for long_contigs subproject's configuration file
+enum output_broken_scaffolds {
+    obs_none,
+    obs_break_gaps,
+    obs_break_all
+};
+
+// struct for path extend subproject's configuration file
 struct pe_config {
 
-  enum output_broken_scaffolds {
-      none,
-      break_gaps,
-      break_all
-  };
+  typedef boost::bimap<std::string, output_broken_scaffolds> output_broken_scaffolds_id_mapping;
+
+  static const output_broken_scaffolds_id_mapping FillOBSInfo() {
+    output_broken_scaffolds_id_mapping::value_type info[] = {
+              output_broken_scaffolds_id_mapping::value_type("none", obs_none),
+              output_broken_scaffolds_id_mapping::value_type("break_gaps", obs_break_gaps),
+              output_broken_scaffolds_id_mapping::value_type("break_all", obs_break_all)
+    };
+
+    return output_broken_scaffolds_id_mapping(info, utils::array_end(info));
+  }
+
+  static const output_broken_scaffolds_id_mapping& output_broken_scaffolds_info() {
+    static output_broken_scaffolds_id_mapping output_broken_scaffolds_info = FillOBSInfo();
+    return output_broken_scaffolds_info;
+  }
+
+  static const std::string& output_broken_scaffolds_name(output_broken_scaffolds obs) {
+    auto it = output_broken_scaffolds_info().right.find(obs);
+    VERIFY_MSG(it != output_broken_scaffolds_info().right.end(),
+               "No name for working stage id = " << obs);
+
+    return it->second;
+  }
+
+  static output_broken_scaffolds output_broken_scaffolds_id(std::string name) {
+    auto it = output_broken_scaffolds_info().left.find(name);
+    VERIFY_MSG(it != output_broken_scaffolds_info().left.end(),
+               "There is no working stage with name = " << name);
+
+    return it->second;
+  }
 
   struct DatasetT {
     struct PairedLibT {
@@ -178,6 +213,8 @@ struct pe_config {
     std::string name;
 
     std::string additional_contigs;
+
+    output_broken_scaffolds obs;
 
     bool debug_output;
     std::string etc_dir;

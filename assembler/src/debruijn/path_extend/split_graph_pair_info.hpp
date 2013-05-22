@@ -275,17 +275,6 @@ public:
 		    ProcessPairedRead(basketIndex_, p_r);
 		}
 
-        INFO("Size of map is " << basketIndex_.size());
-
-        for (auto it = basketIndex_.pair_info_.begin(); it != basketIndex_.pair_info_.end(); ++it) {
-            INFO(it->second.pair_info_.size());
-            for (auto iter = it->second.pair_info_.begin(); iter != it->second.pair_info_.begin(); ++iter) {
-                INFO(iter->size());
-            }
-        }
-
-
-		INFO("Done");
 	}
 
 	template<class PairedRead>
@@ -312,7 +301,7 @@ public:
                 stream.reset();
                 bool end_of_stream = false;
 
-                INFO("Starting " << omp_get_thread_num());
+                DEBUG("Starting " << omp_get_thread_num());
                 while (!end_of_stream) {
                     end_of_stream = stream.eof();
 
@@ -328,10 +317,10 @@ public:
 
                     #pragma omp critical
                     {
-                        INFO("Merging " << omp_get_thread_num() << " " << buffer_pi[i]->size());
+                        DEBUG("Merging " << omp_get_thread_num() << " " << buffer_pi[i]->size());
                         basketIndex_.AddAll(*(buffer_pi[i]));
-                        INFO("New basket size " << basketIndex_.size());
-                        INFO("Thread number " << omp_get_thread_num() << " is going to increase its limit by " << coeff << " times, current limit is " << limit);
+                        DEBUG("New basket size " << basketIndex_.size());
+                        DEBUG("Thread number " << omp_get_thread_num() << " is going to increase its limit by " << coeff << " times, current limit is " << limit);
                     }
                     buffer_pi[i]->Clear();
                     limit = coeff * limit;
@@ -339,25 +328,25 @@ public:
             }
             DEBUG("Thread number " << omp_get_thread_num() << " finished");
         }
-        INFO("Used " << counter << " paired reads");
+        DEBUG("Used " << counter << " paired reads");
 
         for (size_t i = 0; i < nthreads; ++i) {
-            INFO("Size of " << i << "-th map is " << buffer_pi[i]->size());
+            DEBUG("Size of " << i << "-th map is " << buffer_pi[i]->size());
         }
 
         for (size_t i = 0; i < nthreads; ++i) {
             delete buffer_pi[i];
         }
-        INFO("Done");
+        DEBUG("Done");
 
-        for (auto it = basketIndex_.pair_info_.begin(); it != basketIndex_.pair_info_.end(); ++it) {
-            INFO(it->second.pair_info_.size());
-            for (auto iter = it->second.pair_info_.begin(); iter != it->second.pair_info_.begin(); ++iter) {
-                INFO(iter->size());
-            }
-        }
+//        for (auto it = basketIndex_.pair_info_.begin(); it != basketIndex_.pair_info_.end(); ++it) {
+//            INFO(it->second.pair_info_.size());
+//            for (auto iter = it->second.pair_info_.begin(); iter != it->second.pair_info_.begin(); ++iter) {
+//                INFO(iter->size());
+//            }
+//        }
 
-        INFO("Size of map is " << basketIndex_.size());
+        DEBUG("Size of map is " << basketIndex_.size());
     }
 
   	void ProcessReadPairs() {
