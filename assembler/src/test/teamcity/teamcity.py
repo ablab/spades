@@ -324,12 +324,15 @@ if 'quast_params' in dataset_info.__dict__:
 
         #ALL FASTA
         print("Now running QUAST on all contigs...")
-        allfasta = os.path.join(output_dir, "*.fasta")
-        quast_output_dir_all = os.path.join(output_dir, "QUAST_RESULTS_ALL")
-        if os.system(quast_cmd + " -o " + quast_output_dir_all + " " + allfasta) != 0:
-            print("Failed to estimate all FASTA files")
+        if os.path.exists(os.path.join(output_dir, "K55")):
+            allfasta = os.path.join(output_dir, "K55/*.fasta")
+            quast_output_dir_all = os.path.join(output_dir, "QUAST_RESULTS_ALL")
+            if os.system(quast_cmd + " -o " + quast_output_dir_all + " " + allfasta) != 0:
+                print("Failed to estimate all FASTA files")
+            else:
+                print("Ira, QUAST report for all contigs is in " + quast_output_dir_all)
         else:
-            print("Ira, QUAST report for all contigs is in " + quast_output_dir_all)
+            print("K55 does not exist")
 
 
 #etalon saves
