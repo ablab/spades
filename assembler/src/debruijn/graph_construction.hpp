@@ -161,7 +161,7 @@ size_t ConstructGraph(size_t k,
 template<class Graph, class Readers, class Index>
 size_t ConstructGraphWithCoverage(size_t k,
 		Readers& streams, Graph& g,
-		Index& index, SingleReadStream* contigs_stream = 0) {
+		Index& index, SingleReadStream * contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
 
 	FillCoverageFromIndex(g, index, k);

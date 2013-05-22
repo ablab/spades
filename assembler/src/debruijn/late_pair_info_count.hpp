@@ -42,9 +42,9 @@ namespace debruijn_graph {
         if (!success)
           return;
 
-        MultiStreamType paired_streams = paired_binary_readers(true, cfg::get().ds.IS());
+        auto paired_streams = paired_binary_readers(true, cfg::get().ds.IS());
         FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
-                                           gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
+                                           gp.kmer_mapper, paired_index, *paired_streams, gp.k_value);
       } else {
         auto_ptr<PairedReadStream> stream = paired_easy_reader(false, 0);
         SingleStreamType streams(stream.get());
@@ -117,8 +117,8 @@ namespace debruijn_graph {
 
                bool success;
                if (cfg::get().use_multithreading) {
-                   MultiStreamType streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
-                   success = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
+                   auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
+                   success = RefineInsertSizeForLib(gp, *streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
                }
                else {
                    auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[i], false, 0);
@@ -136,9 +136,9 @@ namespace debruijn_graph {
                }
 
                if (cfg::get().use_multithreading) {
-                   MultiStreamType paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, cfg::get().ds.reads[i].data().mean_insert_size);
+                   auto paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, cfg::get().ds.reads[i].data().mean_insert_size);
                    FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
-                                                  gp.kmer_mapper, paired_indices[i], paired_streams, gp.k_value);
+                                                  gp.kmer_mapper, paired_indices[i], *paired_streams, gp.k_value);
                }
                else {
                    auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[i], true, cfg::get().ds.reads[i].data().mean_insert_size);

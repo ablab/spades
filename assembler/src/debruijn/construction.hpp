@@ -35,8 +35,8 @@ template<class Read>
 void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
                      conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
   INFO("STAGE == Constructing Graph");
-  size_t rl = ConstructGraphWithCoverage<Read>(cfg::get().K, streams, gp.g,
-                                               gp.index, contigs_stream);
+  size_t rl = ConstructGraphWithCoverage(cfg::get().K, streams, gp.g, gp.index, contigs_stream);
+
   if (!cfg::get().ds.RL()) {
     INFO("Figured out: read length = " << rl);
     cfg::get_writable().ds.set_RL(rl);
@@ -213,14 +213,12 @@ void exec_construction(conj_graph_pack& gp) {
 
     if (cfg::get().use_multithreading) {
       auto streams = single_binary_readers_for_libs(libs_for_construction, true, true);
-      construct_graph<io::SingleReadSeq>(streams, gp,
-          additional_contigs_stream);
+      construct_graph<io::SingleReadSeq>(*streams, gp, additional_contigs_stream);
 
     } else {
       auto single_stream = single_easy_reader_for_libs(libs_for_construction, true, true);
       io::ReadStreamVector<ReadStream> streams(single_stream.get());
-      construct_graph<io::SingleRead>(streams, gp,
-          additional_contigs_stream);
+      construct_graph<io::SingleRead>(streams, gp, additional_contigs_stream);
     }
 
     save_construction(gp);

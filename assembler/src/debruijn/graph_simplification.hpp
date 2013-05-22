@@ -717,7 +717,7 @@ void SimplifyGraph(conj_graph_pack &gp,
     INFO("Final index refill finished");
 
     INFO("Final isolated edges removal:");
-    size_t max_length = std::max(*cfg::get().ds.RL, cfg::get().simp.ier.max_length_any_cov);
+    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
     INFO("All edges of length smaller than " << max_length << " will be removed");
     IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
                                cfg::get().simp.ier.max_coverage,

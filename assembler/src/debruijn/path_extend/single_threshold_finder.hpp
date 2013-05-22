@@ -17,11 +17,11 @@ using namespace debruijn_graph;
 namespace path_extend {
 
 double find_intersection(vector<double>& good_pi, vector<double>& bad_pi) {
-	INFO("find intersection");
+	DEBUG("find intersection");
 	std::sort(good_pi.begin(), good_pi.end());
-	INFO("sorted good pi");
+	DEBUG("sorted good pi");
 	std::sort(bad_pi.begin(), bad_pi.end());
-	INFO("sorted bad pi");
+	DEBUG("sorted bad pi");
 	size_t good_iter = 0;
 	size_t bad_iter = 0;
 	double cur_threshold = 0.0;
@@ -37,7 +37,7 @@ double find_intersection(vector<double>& good_pi, vector<double>& bad_pi) {
 		bad_percent = 1 - (double) bad_iter / (double) bad_pi.size();
 		good_iter += 1;
 	}
-	INFO("found percents");
+	DEBUG("found percents");
 	return cur_threshold;
 }
 
