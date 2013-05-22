@@ -572,15 +572,11 @@ bool FinalRemoveErroneousEdges(
     Graph &g, boost::function<void(typename Graph::EdgeId)> removal_handler,
     double determined_coverage_threshold, size_t iteration) {
 
-  bool changed = false;/*RemoveRelativelyLowCoverageEdges(
-      g, cfg::get().simp.rec, removal_handler, determined_coverage_threshold);*/
+  bool changed = false;
 
-  if (cfg::get().topology_simplif_enabled) {
-    changed |= AllTopology(g, removal_handler, iteration);
-    changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
-                                           removal_handler);
-  }
-
+  changed |= AllTopology(g, removal_handler, iteration);
+  changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
+                                         removal_handler);
   return changed;
 }
 
@@ -616,10 +612,11 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage<Graph>& fla
   DEBUG(iteration << " BulgeRemoval stats");
   printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
-  DEBUG(iteration << " ErroneousConnectionsRemoval");
-  RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/removal_handler,
-                         *cfg::get().ds.RL, max_coverage, iteration_count,
-                         iteration);
+  //todo temporary disabled completely
+//  DEBUG(iteration << " ErroneousConnectionsRemoval");
+//  RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/removal_handler,
+//                         *cfg::get().ds.RL, max_coverage, iteration_count,
+//                         iteration);
   DEBUG(iteration << " ErroneousConnectionsRemoval stats");
 
   //todo temporary! relative coverage remover
@@ -657,21 +654,26 @@ void PostSimplification(conj_graph_pack& gp, const FlankingCoverage<Graph>& flan
 
     INFO("Iteration " << iteration);
 
+    //todo was it disabled long ago?!
+    enable_flag |= false;/*RemoveRelativelyLowCoverageEdges(
+      g, cfg::get().simp.rec, removal_handler, determined_coverage_threshold);*/
+
     if (cfg::get().topology_simplif_enabled) {
       enable_flag |= TopologyClipTips(gp.g, cfg::get().simp.ttc,
                                       *cfg::get().ds.RL, removal_handler);
-    }
 
-    enable_flag |= FinalRemoveErroneousEdges(gp.g, removal_handler,
+      enable_flag |= FinalRemoveErroneousEdges(gp.g, removal_handler,
                                              determined_coverage_threshold,
                                              iteration);
+    }
 
+    //todo if (enable_flag)
     enable_flag |= ClipTipsWithProjection(gp, cfg::get().simp.tc,
                                           cfg::get().graph_read_corr.enable,
                                           *cfg::get().ds.RL,
                                           determined_coverage_threshold,
                                           removal_handler);
-    //todo enable_flag |=
+    //todo faced some bug! enable_flag |=
     RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
 
     enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
@@ -744,8 +746,8 @@ void SimplifyGraph(conj_graph_pack &gp,
     printer(ipp_err_con_removal, str(format("_%d") % (i + iteration_count)));
   }
 
-//  PostSimplification(gp, flanking_cov, removal_handler, printer,
-//                     determined_coverage_threshold);
+  PostSimplification(gp, flanking_cov, removal_handler, printer,
+                     determined_coverage_threshold);
 
   if (!cfg::get().developer_mode) {
     INFO("Refilling index");

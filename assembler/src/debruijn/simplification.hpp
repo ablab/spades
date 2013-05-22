@@ -187,7 +187,7 @@ void simplify_graph(conj_graph_pack& gp) {
 			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 			boost::ref(qual_removal_handler), _1);
 
-	SimplifyGraph(gp, 0/*removal_handler_f*/, labeler, printer, 10
+	SimplifyGraph(gp, removal_handler_f, labeler, printer, 10
 	/*, etalon_paired_index*/);
 
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
