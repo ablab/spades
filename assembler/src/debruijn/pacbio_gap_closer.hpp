@@ -10,6 +10,8 @@
 #include "graph_pack.hpp"
 #include <algorithm>
 #include "pacbio_read_structures.hpp"
+#include "ssw/ssw_cpp.h"
+using namespace StripedSmithWaterman;
 
 template<class Graph>
 class PacbioGapCloser;
@@ -19,7 +21,7 @@ class GapStorage {
 	friend class PacbioGapCloser<Graph>;
 	typedef typename Graph::EdgeId EdgeId;
 private:
-	DECL_LOGGER("PacIndex");
+	DECL_LOGGER("PacbioGaps");
 	Graph &g_;
 	map<EdgeId, vector<GapDescription<Graph> > > inner_index;
 	void HiddenAddGap(const GapDescription<Graph> &p){
@@ -50,8 +52,8 @@ public:
 	void AddGap(const GapDescription<Graph> &p, bool add_rc = false){
 		HiddenAddGap(p);
 		if (add_rc) {
-			DEBUG("Addign conjugate");
-			HiddenAddGap(p.conjugate(g_, cfg::get().K - cfg::get().pacbio_k));
+			TRACE("Addign conjugate");
+			HiddenAddGap(p.conjugate(g_, cfg::get().K));
 		}
 	}
 
@@ -145,7 +147,7 @@ template<class Graph>
 class PacbioGapCloser {
 	typedef typename Graph::EdgeId EdgeId;
 private:
-	DECL_LOGGER("PacIndex");
+	DECL_LOGGER("PacbioGaps");
 	const Graph &g_;
 	map<EdgeId, map<EdgeId, pair<size_t, string> > > new_edges;
 
@@ -188,71 +190,52 @@ private:
 		return s;
 	}
 
-	int StringDistance(string &a, string &b) {
-			int a_len = a.length();
-			int b_len = b.length();
-			int d = min(a_len / 3, b_len / 3);
-			d = max(d, 10);
-			DEBUG(a_len << " " << b_len << " " << d);
-			vector<vector<int> > table(a_len);
-			//int d =
-			for (int i = 0; i < a_len; i++) {
-				table[i].resize(b_len);
-				int low = max(max(0, i - d - 1), i + b_len - a_len - d - 1);
-				int high = min(min(b_len, i + d + 1), i + a_len - b_len + d + 1);
-				TRACE(low << " " <<high);
-				for (int j = low; j < high; j++)
-					table[i][j] = 1000000000;
-			}
-			table[a_len - 1][b_len - 1] = 1000000000;
-			table[0][0] = 0;
-			for (int i = 0; i < a_len; i++) {
-				int low = max(max(0, i - d), i + b_len - a_len - d);
-				int high = min(min(b_len, i + d), i + a_len - b_len + d);
-
-				TRACE(low << " " <<high);
-				for (int j = low; j < high; j++) {
-
-	//			for(int j = max(0, i - d); j < min(b_len, i + d); j++){
-					//for(int j = 0; j < b_len; j++) {
-					if (i > 0)
-						table[i][j] = min(table[i][j], table[i - 1][j] + 1);
-					if (j > 0)
-						table[i][j] = min(table[i][j], table[i][j - 1] + 1);
-					if (i > 0 && j > 0) {
-						int add = 1;
-						if (a[i] == b[j])
-							add = 0;
-						table[i][j] = min(table[i][j], table[i - 1][j - 1] + add);
-					}
-				}
-			}
-			int res = table[a_len - 1][b_len - 1];
-			DEBUG(res);
-
-			return res;
-		}
-
-	int EditScore(string &consenus, vector<string> & variants) {
+	int EditScore(string &consenus, vector<string> & variants, Aligner &aligner) {
 		int res = 0;
-		for(size_t i = 0; i < variants.size(); i++ )
-			res += StringDistance(consenus, variants[i]);
+		StripedSmithWaterman::Filter filter;
+		StripedSmithWaterman::Alignment alignment;
+
+
+		for(size_t i = 0; i < variants.size(); i++ ) {
+//			res += StringDistance(consenus, variants[i]);
+//		}
+			aligner.Align(variants[i].c_str(), filter, &alignment);
+			DEBUG("scpre" << alignment.sw_score);
+			res += alignment.sw_score;
+			alignment.Clear();
+
+		}
 		return res;
 	}
 
+	inline int mean_len(vector<string> & v){
+		int res = 0;
+		for(size_t i = 0; i < v.size(); i ++)
+			res +=v[i].length();
+		return (res/v.size());
+	}
+
 	string ConstructStringConsenus(vector<string> &variants){
+		if (mean_len(variants) > 500) {
+			;
+		}
 		string res = variants[0];
 		for(size_t i = 0; i < variants.size(); i++)
 			if (res.length() > variants[i].length())
 				res = variants[i];
-		int best_score = EditScore(res, variants);
+		StripedSmithWaterman::Aligner aligner ;
+		aligner.SetReferenceSequence(res.c_str(), res.length());
+		aligner.SetGapPenalty(2, 1);
+		int best_score = EditScore(res, variants, aligner);
 		int void_iterations = 0;
+
 		while (void_iterations < 5000) {
 			string new_res = RandomMutation(res);
-			int current_score = EditScore(new_res, variants);
+			aligner.SetReferenceSequence(new_res.c_str(), new_res.length());
+			int current_score = EditScore(new_res, variants, aligner);
 			if (current_score < best_score) {
 				best_score = current_score;
-				DEBUG("cool mutation");
+				INFO ("cool mutation in thread " << omp_get_thread_num());
 				void_iterations = 0;
 				res = new_res;
 			} else {
@@ -277,7 +260,9 @@ private:
 				if (cur_len > 1 && !storage.IsTransitivelyIgnored(make_pair(cl_start->start, cl_start->end))) {
 					vector<string> gap_variants;
 					for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
-						gap_variants.push_back(j_iter->gap_seq.str());
+						string s = j_iter->gap_seq.str();
+						transform(s.begin(), s.end(), s.begin(), ::toupper);
+						gap_variants.push_back(s);
 					}
 					map<EdgeId, pair< size_t, string> > tmp;
 					string s = g_.EdgeNucls(cl_start->start).Subseq(0, cl_start->edge_gap_start_position).str();
