@@ -257,8 +257,6 @@ public:
 		Index::KmerWithHash next_vertex = origin_.CreateKmerWithHash(edge.kmer.kmer << edge.next);
 		if (origin_.CheckUniqueOutgoing(next_vertex.idx) && origin_.CheckUniqueIncoming(next_vertex.idx)) {
 			edge = KPlusOneMer(next_vertex, origin_.GetUniqueOutgoing(next_vertex.idx));
-			if(clean_condenced_)
-				origin_.IsolateVertex(next_vertex.idx);
 			return true;
 		}
 		return false;
@@ -272,6 +270,8 @@ public:
 		while (StepRightIfPossible(edge) && edge != initial) {
 			//todo comment
 			s.append(edge.next);
+			if(clean_condenced_)
+				origin_.IsolateVertex(edge.kmer.idx);
 		}
 		return s.BuildSequence();
 	}
@@ -288,7 +288,6 @@ public:
 		return result;
 	}
 };
-
 
 template<class Seq>
 class UnbranchingPathExtractor {
@@ -476,17 +475,14 @@ private:
 			return hash_and_mask_ >> 2;
 		}
 
-		size_t IsRC() const {
+		bool IsRC() const {
 			return hash_and_mask_ & 2;
 		}
 
-		size_t IsStart() const {
+		bool IsStart() const {
 			return hash_and_mask_ & 1;
 		}
 
-		size_t IsEnd() const {
-			return !(hash_and_mask_ & 1);
-		}
 
 		EdgeId GetEdge() const {
 			return edge_;
@@ -574,13 +570,13 @@ public:
 			if(i != 0 && records[i].GetHash() == records[i - 1].GetHash()) {
 				continue;
 			}
+			if(records[i].IsInvalid())
+				continue;
 			VertexId v(0);
 #   pragma omp critical
 			{
 				v = graph.AddVertex();
 			}
-			if(records[i].IsInvalid())
-				continue;
 			for(size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
 				LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsEnd(), records[j].IsRC());
 			}
