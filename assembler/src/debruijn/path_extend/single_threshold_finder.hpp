@@ -70,6 +70,7 @@ public:
 		size_t is = cfg::get().ds.reads[index].data().mean_insert_size;
 		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[index], true, cfg::get().ds.reads[index].data().mean_insert_size);
 		SingleStreamType paired_streams(paired_stream.get());
+		paired_stream.release();
 		FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index, gp.kmer_mapper,paired_index, paired_streams, gp.k_value);
 		//io::ReadStreamVector<io::IReader<io::PairedReadSeq>> paired_streams = paired_binary_readers(true, is);
 		//FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,

@@ -218,6 +218,7 @@ void exec_construction(conj_graph_pack& gp) {
     } else {
       auto single_stream = single_easy_reader_for_libs(libs_for_construction, true, true);
       io::ReadStreamVector<ReadStream> streams(single_stream.get());
+      single_stream.release();
       construct_graph<io::SingleRead>(streams, gp, additional_contigs_stream);
     }
 

@@ -363,6 +363,7 @@ public:
         else {
             auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[lib_index_], true, cfg::get().ds.reads[lib_index_].data().mean_insert_size);
             SingleStreamType paired_streams(paired_stream.get());
+            paired_stream.release();
 
             ProcessReadPairs(paired_streams);
         }
