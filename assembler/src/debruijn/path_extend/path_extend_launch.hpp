@@ -132,7 +132,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	INFO("Using " << scafolding_libs.size() << " scaffolding libs");
 	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
 
-	ContigWriter writer(gp, gp.g.k());
+	ContigWriter writer(gp.g);
 	debug_output_edges(writer, gp, output_dir, "before_resolve");
 
 	PathContainer supportingContigs;
@@ -196,9 +196,8 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 
 	debug_output_paths(writer, gp, output_dir, paths, "overlaped_paths");
     size_t max_over = find_max_overlaped_len(libs);
-    resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over);
+    resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over, writer, output_dir);
 	paths.CheckSymmetry();
-
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 	paths.SortByLength();
     writer.writePaths(paths, output_dir + contigs_name);
@@ -216,7 +215,6 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
         LoopTraverser loopTraverser(gp.g, paths, mainPE->GetCoverageMap(), mainPE);
         loopTraverser.TraverseAllLoops();
         paths.SortByLength();
-        INFO("Found " << paths.size() << " contigs");
         writer.writePaths(paths, output_dir + make_new_name(contigs_name, "loop_tr"));
 
         bs_name = make_new_name(contigs_name, "broken_ltr");
@@ -265,7 +263,7 @@ void set_threshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_lengt
 
 void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index, size_t split_edge_length){
 	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
-	INFO("Calculating paired info threshold threshold");
+	INFO("Calculating paired info threshold");
 	splitGraph.ProcessReadPairs();
 	double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
 	lib->SetSingleThreshold(threshold);

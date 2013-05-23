@@ -24,13 +24,13 @@ using namespace debruijn_graph;
 class ContigWriter {
 
 protected:
-    conj_graph_pack& gp_;
+	Graph& g_;
 
     size_t k_;
 	string ToString(const BidirectionalPath& path) const {
 		stringstream ss;
 		if (!path.Empty()) {
-			ss << gp_.g.EdgeNucls(path[0]).Subseq(0, k_).str();
+			ss <<g_.EdgeNucls(path[0]).Subseq(0, k_).str();
 		}
 
 		for (size_t i = 0; i < path.Size(); ++i) {
@@ -39,14 +39,14 @@ protected:
 				for (size_t j = 0; j < gap - k_; ++j) {
 					ss << "N";
 				}
-				ss << gp_.g.EdgeNucls(path[i]).str();
+				ss << g_.EdgeNucls(path[i]).str();
 			} else {
 				int overlapLen = k_ - gap;
-				if (overlapLen >= (int) gp_.g.length(path[i]) + (int) k_) {
+				if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
 					continue;
 				}
 
-				ss << gp_.g.EdgeNucls(path[i]).Subseq(overlapLen).str();
+				ss << g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
 			}
 		}
 		return ss.str();
@@ -56,10 +56,10 @@ protected:
         SequenceBuilder result;
 
         if (!path.Empty()) {
-            result.append(gp_.g.EdgeNucls(path[0]).Subseq(0, k_));
+            result.append(g_.EdgeNucls(path[0]).Subseq(0, k_));
         }
         for (size_t i = 0; i < path.Size(); ++i) {
-            result.append(gp_.g.EdgeNucls(path[i]).Subseq(k_));
+            result.append(g_.EdgeNucls(path[i]).Subseq(k_));
         }
 
         return result.BuildSequence();
@@ -68,7 +68,7 @@ protected:
 
 
 public:
-    ContigWriter(conj_graph_pack& gp, size_t k): gp_(gp), k_(k){
+    ContigWriter(Graph& g): g_(g), k_(g.k()){
 
     }
 
@@ -77,14 +77,14 @@ public:
         osequencestream_with_data_for_scaffold oss(filename);
 
         set<EdgeId> included;
-        for (auto iter = gp_.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0) {
-                oss.setCoverage(gp_.g.coverage(*iter));
-                oss.setID(gp_.g.int_id(*iter));
-                oss << gp_.g.EdgeNucls(*iter);
+                oss.setCoverage(g_.coverage(*iter));
+                oss.setID(g_.int_id(*iter));
+                oss << g_.EdgeNucls(*iter);
 
                 included.insert(*iter);
-                included.insert(gp_.g.conjugate(*iter));
+                included.insert(g_.conjugate(*iter));
             }
         }
         INFO("Contigs written");
@@ -105,7 +105,7 @@ public:
             }
             oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
-			    oss << gp_.g.int_id(path->At(j)) << " " << gp_.g.length(path->At(j)) << endl;
+			    oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) << endl;
             }
             oss << endl;
 		}
@@ -119,7 +119,7 @@ public:
         osequencestream_with_data_for_scaffold oss(filename);
         int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-        	if (iter.get()->Length() < k_){
+        	if (iter.get()->Length() <= 0){
         		continue;
         	}
         	DEBUG("NODE " << ++i);

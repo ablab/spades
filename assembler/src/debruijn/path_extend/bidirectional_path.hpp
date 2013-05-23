@@ -763,30 +763,27 @@ public:
         return result;
     }
 
-    size_t OverlapEndSize(const BidirectionalPath* path) const {
+	size_t OverlapEndSize(const BidirectionalPath* path2) const {
 		if (Size() == 0) {
 			return 0;
 		}
-		int last_index = Size() - 1;
-		int max_overlaped_size = 0;
-		vector<size_t> begins_in_path = path->FindAll(At(last_index));
-		for (size_t begin_index = 0; begin_index < begins_in_path.size(); ++begin_index) {
-			int begin_in_path = begins_in_path[begin_index];
-			int index_in_current_path = last_index;
-			while (begin_in_path > 0 && index_in_current_path > 0
-					&& path->At(begin_in_path - 1) == At(index_in_current_path - 1)) {
-				index_in_current_path--;
-				begin_in_path--;
+		int last1 = Size() - 1;
+		int max_over = 0;
+		vector<size_t> begins2 = path2->FindAll(At(last1));
+		for (size_t begin_i = 0; begin_i < begins2.size(); ++begin_i) {
+			int begin2 = begins2[begin_i];
+			int cur1 = last1;
+			while (begin2 > 0 && cur1 > 0
+					&& path2->At(begin2 - 1) == At(cur1 - 1)) {
+				cur1--;
+				begin2--;
 			}
-			int overlaped_size = last_index - index_in_current_path + 1;
-			if (begin_in_path == 0) {
-				if (index_in_current_path > 0
-						&& overlaped_size > max_overlaped_size) {
-					max_overlaped_size = overlaped_size;
-				}
+			int over = last1 - cur1 + 1;
+			if (begin2 == 0 && cur1 > 0 && over > max_over) {
+				max_over = over;
 			}
 		}
-		return max_overlaped_size;
+		return max_over;
 	}
 
     bool Contains(const BidirectionalPath& path) const {
