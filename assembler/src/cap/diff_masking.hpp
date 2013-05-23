@@ -203,11 +203,11 @@ inline ContigStreamsPtr OpenStreams(const string& root, const vector<string>& fi
 }
 
 template<class Seq>
-void MaskDifferencesAndSave(ContigStreamsPtr streams, const string& root,
+void PerformRefinement(ContigStreamsPtr streams, const string& root,
                             const vector<string>& suffixes, size_t k) {
     VERIFY(streams->size() == suffixes.size());
 
-    const size_t delta = std::max(size_t(5), k / 5);
+    const size_t delta = std::max(size_t(5), k /*/ 5*/);
     typedef graph_pack<ConjugateDeBruijnGraph, Seq> gp_t;
     typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
 
@@ -239,19 +239,13 @@ void MaskDifferencesAndSave(ContigStreamsPtr streams, const string& root,
     MakeSaves(gp, refined_streams, root + "after_refinement/", suffixes);
 }
 
-inline void MaskDifferencesAndSave(ContigStreamsPtr streams,
-                                   const vector<string>& suffixes,
-                                   const string& out_root) {
-    SaveAll(streams, suffixes, out_root + "final_contigs/");
-}
-
-inline void MaskDifferencesAndSave(ContigStreamsPtr streams,
+inline void PerformIterativeRefinement(ContigStreamsPtr streams,
                                    const vector<string>& suffixes,
                                    const string& out_root,
                                    vector<size_t> &k_values) {
 
     if (k_values.size() == 0) {
-        MaskDifferencesAndSave(streams, suffixes, out_root);
+        SaveAll(streams, suffixes, out_root + "final_contigs/");
         return;
     }
 
@@ -262,30 +256,30 @@ inline void MaskDifferencesAndSave(ContigStreamsPtr streams,
 
     if (utils::NeedToUseLongSeq(current_k)) {
         omp_set_num_threads(1);
-        MaskDifferencesAndSave<LSeq>(
+        PerformRefinement<LSeq>(
                 streams, root, suffixes,
                 current_k);
     } else {
         omp_set_num_threads(8);
-        MaskDifferencesAndSave<runtime_k::RtSeq>(
+        PerformRefinement<runtime_k::RtSeq>(
                 streams, root, suffixes,
                 current_k);
     }
 
     ContigStreamsPtr corr_streams = OpenStreams(root + "after_refinement/", suffixes);
     //recursive call
-    MaskDifferencesAndSave(corr_streams, suffixes, out_root, k_values);
+    PerformIterativeRefinement(corr_streams, suffixes, out_root, k_values);
 
 }
 
-inline void MaskDifferencesAndSave(const string& base_path,
+inline void PerformIterativeRefinement(const string& base_path,
                                    const vector<string>& suffixes,
                                    const string& out_root,
                                    vector<size_t>& k_values) {
 //	remove_dir(out_root);
     utils::MakeDirPath(out_root);
     ContigStreamsPtr streams = OpenStreams(base_path, suffixes);
-    MaskDifferencesAndSave(streams, suffixes, out_root, k_values);
+    PerformIterativeRefinement(streams, suffixes, out_root, k_values);
 }
 
 }

@@ -53,12 +53,12 @@ BOOST_AUTO_TEST_CASE( CompareEcoli ) {
 			"K12.fasta"
 	};
 
-	vector<size_t> k_sequence = { 1001, 501, 201, 101, 55, 21 };
+	vector<size_t> k_sequence = { 5001, 1001, 501, 201, 101, 55, 21 };
 
 //	std::string files_md5 = utils::GenMD5FromFiles(paths);
 //	INFO("result is stored with md5 of " << files_md5);
 
-	MaskDifferencesAndSave(base_path, paths,
+	PerformIterativeRefinement(base_path, paths,
 			//"bp_graph_" + files_md5 +
             base_path + "H6_K12_processed/", k_sequence);
 }
