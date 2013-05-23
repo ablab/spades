@@ -11,7 +11,7 @@
 #include <algorithm>
 #include "pacbio_read_structures.hpp"
 #include "ssw/ssw_cpp.h"
-using namespace StripedSmithWaterman;
+
 
 template<class Graph>
 class PacbioGapCloser;
@@ -190,12 +190,12 @@ private:
 		return s;
 	}
 
-	int EditScore(string &consenus, vector<string> & variants, Aligner &aligner) {
+	int EditScore(string &consenus, vector<string> & variants, StripedSmithWaterman::Aligner &aligner) {
 		int res = 0;
 		StripedSmithWaterman::Filter filter;
 		StripedSmithWaterman::Alignment alignment;
-
-
+		filter.report_begin_position = false;
+		filter.report_cigar = false;
 		for(size_t i = 0; i < variants.size(); i++ ) {
 //			res += StringDistance(consenus, variants[i]);
 //		}
@@ -214,7 +214,11 @@ private:
 			res +=v[i].length();
 		return (res/v.size());
 	}
-
+//
+//	vector<int> FindCommonKmer(vector<string> &variants) {
+//
+//	}
+//
 	string ConstructStringConsenus(vector<string> &variants){
 		if (mean_len(variants) > 500) {
 			;
@@ -235,15 +239,15 @@ private:
 			int current_score = EditScore(new_res, variants, aligner);
 			if (current_score < best_score) {
 				best_score = current_score;
-				INFO ("cool mutation in thread " << omp_get_thread_num());
+				DEBUG("cool mutation in thread " << omp_get_thread_num());
 				void_iterations = 0;
 				res = new_res;
 			} else {
 				DEBUG("void mutation:(");
+				void_iterations ++;
 				if (void_iterations % 200 == 0) {
 					INFO(" random change " << void_iterations <<" failed in thread  " << omp_get_thread_num() );
 				}
-				void_iterations ++;
 			}
 		}
 		return res;
