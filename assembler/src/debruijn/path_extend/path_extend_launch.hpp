@@ -333,8 +333,8 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 	PathContainer supportingContigs;
 	add_paths_to_container(gp, true_paths, supportingContigs);
 
-	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, false);
-	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, make_new_name(contigs_name, "with_trivial_loops"), true);
+	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, true);
+	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, make_new_name(contigs_name, "no_trivial_loops"), false);
 
 	delete_libs(paired_end_libs);
 	delete_libs(mate_pair_libs);
