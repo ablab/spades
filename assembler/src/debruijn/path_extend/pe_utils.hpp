@@ -822,6 +822,57 @@ PathContainer CreatePathsFromContigs(conj_graph_pack & gp, const string& filenam
     return bidirectionalPaths;
 }
 
+
+class ScaffoldBreaker {
+
+private:
+
+    int min_gap_;
+
+    PathContainer container_;
+
+    void SplitPath(const BidirectionalPath& path) {
+        size_t i = 0;
+
+        while (i < path.Size()) {
+            BidirectionalPath * p = new BidirectionalPath(path.graph(), path[i]);
+            size_t rc_id = path.graph().int_id(path.graph().conjugate(path[i]));
+            ++i;
+
+            while(i < path.Size() and path.GapAt(i) <= min_gap_) {
+                p->PushBack(path[i], path.GapAt(i));
+                ++i;
+            }
+
+            BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
+            cp->SetId(rc_id);
+            container_.AddPair(p, cp);
+        }
+    }
+
+public:
+
+    ScaffoldBreaker(int min_gap): min_gap_(min_gap) {
+
+    }
+
+    void Split(PathContainer& paths) {
+        for (auto it = paths.begin(); it != paths.end(); ++it) {
+            SplitPath(*it.get());
+        }
+    }
+
+
+    void clear() {
+        container_.clear();
+    }
+
+    PathContainer& container() {
+        return container_;
+    }
+
+};
+
 }
 
 #endif /* PE_UTILS_HPP_ */

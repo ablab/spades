@@ -30,7 +30,7 @@ protected:
 	string ToString(const BidirectionalPath& path) const {
 		stringstream ss;
 		if (!path.Empty()) {
-			ss << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.001).substr(0, k_);
+			ss << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.00001).substr(0, k_);
 		}
 
 
@@ -40,14 +40,14 @@ protected:
 				for (size_t j = 0; j < gap - k_; ++j) {
 					ss << "N";
 				}
-				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001);
+				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.00001);
 			} else {
 				int overlapLen = k_ - gap;
 				if (overlapLen >= (int) gp_.g.length(path[i]) + (int) k_) {
 					continue;
 				}
 
-				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.001).substr(overlapLen);
+				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.00001).substr(overlapLen);
 			}
 		}
 		return ss.str();
@@ -101,7 +101,10 @@ public:
 			oss << i << endl;
 			i++;
             BidirectionalPath* path = iter.get();
-            oss << "PATH " <<path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
+            if (path->GetId() % 2 != 0) {
+                path = path->getConjPath();
+            }
+            oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
 			    oss << gp_.g.int_id(path->At(j)) << " " << gp_.g.length(path->At(j)) << endl;
             }
@@ -122,11 +125,14 @@ public:
         		continue;
         	}
         	DEBUG("NODE " << ++i);
-        	//iter.get()->Print();
-        	oss.setID(iter.get()->GetId());
-            oss.setCoverage(iter.get()->Coverage());
-            //INFO("toString");
-            oss << ToString(*iter.get());
+            BidirectionalPath* path = iter.get();
+            if (path->GetId() % 2 != 0) {
+                path = path->getConjPath();
+            }
+            path->Print();
+        	oss.setID(path->GetId());
+            oss.setCoverage(path->Coverage());
+            oss << ToString(*path);
         }
         INFO("Contigs written");
     }

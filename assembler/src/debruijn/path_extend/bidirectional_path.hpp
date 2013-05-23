@@ -193,13 +193,15 @@ public:
 
     void SelectEdge(EdgeId e, double weight = 1);
 
-    size_t LoopEdges() const;
+    size_t LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const;
 
-    size_t LoopLength() const;
+    size_t LoopLength(size_t skip_identical_edges, size_t min_cycle_appearences) const;
 
-    bool PathIsLoop() const;
+    bool PathIsLoop(size_t edges) const;
 
-    size_t LastLoopCount() const;
+    size_t LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const;
+
+    size_t LastLoopCount(size_t edges) const;
 
     bool LoopBecameStable() const;
 
@@ -207,11 +209,11 @@ public:
 
     size_t GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, std::pair<size_t, size_t> iterationRange, double coeff) const;
 
-    bool IsCycled(size_t loopLimit) const;
+    bool IsCycled(size_t loopLimit, size_t& skip_identical_edges) const;
 
-    size_t EdgesToRemove(bool fullRemoval = false) const;
+    size_t EdgesToRemove(size_t skip_identical_edges, bool fullRemoval = false) const;
 
-    void RemoveLoop(bool fullRemoval = true);
+    void RemoveLoop(size_t skip_identical_edges, bool fullRemoval = true);
 
     bool EdgeInShortLoop() const;
 
@@ -254,7 +256,7 @@ protected:
 	// L(e1), L(e1 + e2) ... L(e1 + ... + eN)
 	std::deque <size_t> cumulativeLength_;
 
-	// e1 - gap1 - e2 - ... - gap(N-1) - eN
+	// e1 - gap2 - e2 - ... - gapN - eN
 	std::deque <int> gapLength_;
 
 	// L(e1 + ... + eN)
@@ -556,6 +558,10 @@ public:
 
 	size_t Size() const {
 	    return data_.size();
+	}
+
+	Graph& graph() const {
+	    return g_;
 	}
 
 	bool Empty() const {
@@ -881,14 +887,28 @@ public:
         }
     }
 
+    void PrintInfo() const {
+        INFO("Path " << id_);
+        INFO("Length " << totalLength_);
+        INFO("#, edge, length, total length");
+        for(size_t i = 0; i < Size(); ++i) {
+            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i));
+        }
+    }
+
     void Print(std::ostream& os) {
-        /*os << "Path " << GetId() << endl;
+
+        os << "Path " << GetId() << endl;
+
+        if (Empty()) {
+            return;
+        }
+        os << "Path " << GetId() << endl;
         os << "Length " << Length() << endl;
         os << "#, edge, length, total length" << endl;
         for(size_t i = 0; i < Size(); ++i) {
             os << i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i) << endl;
         }
-	*/
     }
 };
 
@@ -1076,44 +1096,41 @@ LoopDetector::~LoopDetector() {
 }
 
 
-
-size_t LoopDetector::LoopEdges() const {
+size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const {
     EdgeId e = path_->Head();
 
-    if (data_.count(e) <= 1) {
+    size_t count = data_.count(e);
+    if (count <= 1 || count < min_cycle_appearences * (skip_identical_edges + 1)) {
         return 0;
     }
 
     auto iter = data_.upper_bound(e);
     --iter;
     size_t loopSize = iter->second->GetIteration();
-    --iter;
+    for (size_t i = 0; i < skip_identical_edges + 1; ++i) {
+        --iter;
+    }
     loopSize -= iter->second->GetIteration();
 
     return loopSize;
 }
 
+//size_t LoopDetector::LoopLength(size_t skip_identical_edges, size_t min_cycle_appearences) const {
+//    if (skip_identical_edges > 0) {
+//        INFO("loop length " << skip_identical_edges);
+//    }
+//    size_t edges = LoopEdges(skip_identical_edges, min_cycle_appearences);
+//    size_t length = 0;
+//
+//    for (int i = path_->Size() - edges; i < (int) path_->Size(); ++i) {
+//        length += g_.length(path_->At(i));
+//    }
+//
+//    return length;
+//}
 
-size_t LoopDetector::LoopLength() const {
-    size_t edges = LoopEdges();
-    size_t length = 0;
 
-    for (int i = path_->Size() - edges; i < (int) path_->Size(); ++i) {
-        length += g_.length(path_->At(i));
-    }
-
-    return length;
-}
-
-
-
-bool LoopDetector::PathIsLoop() const {
-    size_t edges = LoopEdges();
-
-    if (edges <= path_->Size()) {
-        return false;
-    }
-
+bool LoopDetector::PathIsLoop(size_t edges) const {
     for (size_t i = 1; i <= edges; ++i) {
         EdgeId e = path_->operator [](path_->Size() - i);
         for (int j = path_->Size() - i - edges; j >= 0; j -= edges) {
@@ -1126,17 +1143,18 @@ bool LoopDetector::PathIsLoop() const {
 }
 
 
-size_t LoopDetector::LastLoopCount() const {
-    size_t edges = LoopEdges();
+size_t LoopDetector::LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const {
+    size_t edges = LoopEdges(skip_identical_edges, min_cycle_appearences);
+    return LastLoopCount(edges);
+}
 
+size_t LoopDetector::LastLoopCount(size_t edges) const {
     if (edges == 0) {
         return 0;
     }
 
     BidirectionalPath loop = path_->SubPath(path_->Size() - edges);
-    //EdgeId e = path_->head();
     size_t count = 0;
-
     int i = path_->Size() - edges ;
     int delta = -edges;
 
@@ -1144,13 +1162,51 @@ size_t LoopDetector::LastLoopCount() const {
         if (!path_->CompareFrom(i, loop)) {
             break;
         }
-
         ++count;
         i += delta;
     }
 
     return count;
 }
+
+bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) const {
+    skip_identical_edges = 0;
+    size_t loop_count = LastLoopCount(skip_identical_edges, loopLimit);
+
+    while (loop_count > 0) {
+        if (loop_count >= loopLimit) {
+            return true;
+        }
+        loop_count = LastLoopCount(++skip_identical_edges, loopLimit);
+    }
+    return false;
+}
+
+size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges, bool fullRemoval) const {
+    size_t edges = LoopEdges(skip_identical_edges, 1);
+    size_t count = LastLoopCount(edges);
+    bool onlyCycle = PathIsLoop(edges);
+    int result;
+
+    if (onlyCycle || path_->Size() <= count * edges + 1) {
+        result = path_->Size() - edges - 1;
+    }
+    else if (fullRemoval) {
+        result = count * edges - 1;
+    } else {
+        result = (count - 1) * edges - 1;
+    }
+
+    return result < 0 ? 0 : result;
+}
+
+void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemoval) {
+    auto toRemove = EdgesToRemove(skip_identical_edges, fullRemoval);
+    for(size_t i = 0; i < toRemove; ++i) {
+        path_->SafePopBack();
+    }
+}
+
 
 bool LoopDetector::LoopBecameStable() const {
     EdgeId e = path_->Head();
@@ -1196,35 +1252,6 @@ size_t LoopDetector::GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, std
         }
     }
     return maxIter;
-}
-
-bool LoopDetector::IsCycled(size_t loopLimit) const {
-    return LastLoopCount() >= loopLimit;
-}
-
-size_t LoopDetector::EdgesToRemove(bool fullRemoval) const {
-    size_t edges = LoopEdges();
-    size_t count = LastLoopCount();
-    bool onlyCycle = PathIsLoop();
-    int result;
-
-    if (onlyCycle || path_->Size() <= count * edges + 1) {
-        result = path_->Size() - edges - 1;
-    }
-    else if (fullRemoval) {
-        result = count * edges - 1;
-    } else {
-        result = (count - 1) * edges - 1;
-    }
-
-    return result < 0 ? 0 : result;
-}
-
-void LoopDetector::RemoveLoop(bool fullRemoval) {
-    auto toRemove = EdgesToRemove(fullRemoval);
-    for(size_t i = 0; i < toRemove; ++i) {
-        path_->SafePopBack();
-    }
 }
 
 bool LoopDetector::EdgeInShortLoop() const {

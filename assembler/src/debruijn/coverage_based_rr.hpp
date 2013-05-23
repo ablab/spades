@@ -348,7 +348,7 @@ class CoverageBasedResolution {
 	template< class Graph>
 	bool checkIfComponentByPairedInfo( EdgeId edge, PairedInfoIndexT<Graph>& clustered_index, std::set<EdgeId>& prohibitedEdges ) {
 
-		auto improver = PairInfoImprover<Graph>(gp->g, clustered_index);
+//		auto improver = PairInfoImprover<Graph>(gp->g, clustered_index);
 		InnerMap<Graph> inner_map = clustered_index.GetEdgeInfo(edge, 0);
 		for (auto I_1 = inner_map.Begin(), E = inner_map.End(); I_1 != E; ++I_1) {
 			for (auto I_2 = inner_map.Begin(); I_2 != E; ++I_2) {
@@ -360,10 +360,10 @@ class CoverageBasedResolution {
 				
 				if (prohibitedEdges.find(e1) != prohibitedEdges.end() || prohibitedEdges.find(e2) != prohibitedEdges.end() ) continue;
 				if ( p1.d * p2.d < 0 || p2.d > p1.d ) continue;
-				if (!improver.IsConsistent(edge, e1, e2, p1, p2)) {
-					std::cout << "Inconsistent for " << gp->g.int_id(edge) << ": " << gp->g.int_id(e1) << " " << gp->g.int_id(e2) << std::endl;
-					return true;
-				}
+//				if (!improver.IsConsistent(edge, e1, e2, p1, p2)) {
+//					std::cout << "Inconsistent for " << gp->g.int_id(edge) << ": " << gp->g.int_id(e1) << " " << gp->g.int_id(e2) << std::endl;
+//					return true;
+//				}
 			}
 		}
 

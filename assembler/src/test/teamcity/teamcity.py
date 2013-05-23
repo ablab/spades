@@ -283,7 +283,7 @@ if 'quast_params' in dataset_info.__dict__:
         #CONTIGS
         quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS")
         quast_cmd = os.path.join(dataset_info.quast_dir, "quast.py") + " " + " ".join(quast_params)
-        ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + contigs)
+        ecode = os.system(quast_cmd + " --use-all-alignments  -o " + quast_output_dir + " " + contigs)
         if ecode != 0:
             print("QUAST finished abnormally with exit code " + str(ecode))
             write_log(history_log, "", output_dir, dataset_info)
@@ -321,6 +321,18 @@ if 'quast_params' in dataset_info.__dict__:
             else:
                 result = assess_quast(os.path.join(quast_output_scaf_dir, "transposed_report.tsv"), {}, "scaffolds")
                 new_log += result[1]
+
+        #ALL FASTA
+        print("Now running QUAST on all contigs...")
+        if os.path.exists(os.path.join(output_dir, "K55")):
+            allfasta = os.path.join(output_dir, "K55/*.fasta")
+            quast_output_dir_all = os.path.join(output_dir, "QUAST_RESULTS_ALL")
+            if os.system(quast_cmd + " -o " + quast_output_dir_all + " " + allfasta) != 0:
+                print("Failed to estimate all FASTA files")
+            else:
+                print("Ira, QUAST report for all contigs is in " + quast_output_dir_all)
+        else:
+            print("K55 does not exist")
 
 
 #etalon saves
