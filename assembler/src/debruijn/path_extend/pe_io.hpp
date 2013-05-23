@@ -30,7 +30,7 @@ protected:
 	string ToString(const BidirectionalPath& path) const {
 		stringstream ss;
 		if (!path.Empty()) {
-			ss << gp_.mismatch_masker.MaskedEdgeNucls(path[0], 0.00001).substr(0, k_);
+			ss << gp_.g.EdgeNucls(path[0]).Subseq(0, k_).str();
 		}
 
 		for (size_t i = 0; i < path.Size(); ++i) {
@@ -39,14 +39,14 @@ protected:
 				for (size_t j = 0; j < gap - k_; ++j) {
 					ss << "N";
 				}
-				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.00001);
+				ss << gp_.g.EdgeNucls(path[i]).str();
 			} else {
 				int overlapLen = k_ - gap;
 				if (overlapLen >= (int) gp_.g.length(path[i]) + (int) k_) {
 					continue;
 				}
 
-				ss << gp_.mismatch_masker.MaskedEdgeNucls(path[i], 0.00001).substr(overlapLen);
+				ss << gp_.g.EdgeNucls(path[i]).Subseq(overlapLen).str();
 			}
 		}
 		return ss.str();
