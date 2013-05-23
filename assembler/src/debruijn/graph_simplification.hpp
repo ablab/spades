@@ -444,7 +444,7 @@ bool RemoveRelativelyLowCoverageComponents(
       g,
       boost::bind(&FlankingCoverage<Graph>::LocalCoverage, boost::cref(flanking_cov),
                   _1, _2),
-      200,
+      200, 100,
       10.0, std::numeric_limits<size_t>::max(), removal_handler);
   return rel_rem.Process();
 }

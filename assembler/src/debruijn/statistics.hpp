@@ -4,8 +4,7 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#ifndef STATISTICS_HPP_
-#define STATISTICS_HPP_
+#pragma once
 
 #include "standard.hpp"
 #include "omni/omni_tools.hpp"
@@ -509,7 +508,7 @@ class MatePairTransformStat: public AbstractStatCounter {
 
  public:
   MatePairTransformStat(const Graph& g, const PairedInfoIndexT<Graph>& pair_info) :
-        g_(g), pair_info_(pair_info), considered_dist_cnt_(0), 
+        g_(g), pair_info_(pair_info), considered_dist_cnt_(0),
         unique_distance_cnt_(0), non_unique_distance_cnt_(0)
   {
   }
@@ -566,7 +565,7 @@ class MatePairTransformStat: public AbstractStatCounter {
             ++unique_distance_cnt_;
           if (counter.size() > 1)
             ++non_unique_distance_cnt_;
-        } 
+        }
         else
           non_unique_distance_cnt_++;
 
@@ -1080,21 +1079,21 @@ private:
 
 template<class Graph>
 class CoverageStatistics{
-    
+
 private:
     Graph& graph_;
     EdgeQuality<Graph> & edge_qual_;
-    
-    
+
+
     bool DoesSuit(VertexId vertex){
         bool ans = true;
-        for (size_t i = 0; ans && i<graph_.OutgoingEdgeCount(vertex); i++) 
+        for (size_t i = 0; ans && i<graph_.OutgoingEdgeCount(vertex); i++)
             ans = ans & math::gr(edge_qual_.quality(graph_.OutgoingEdges(vertex)[i]), 0.);
-        for (size_t i = 0; ans && i<graph_.IncomingEdgeCount(vertex); i++) 
+        for (size_t i = 0; ans && i<graph_.IncomingEdgeCount(vertex); i++)
             ans = ans & math::gr(edge_qual_.quality(graph_.IncomingEdges(vertex)[i]), 0.);
-        return ans; 
+        return ans;
     }
-    
+
 public:
     CoverageStatistics(Graph& graph, EdgeQuality<Graph>& edge_qual):
     graph_(graph), edge_qual_(edge_qual){
@@ -1115,7 +1114,7 @@ public:
         for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
             len_map[graph_.length(*iter)]++;
         }
-        for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) 
+        for (auto iter = graph_.begin(); iter != graph_.end(); ++iter)
             if (true || DoesSuit(*iter) ){
 
                 double plus_cov = 0.;
@@ -1125,14 +1124,14 @@ public:
                 bool suit_us = true;
 
                 if (graph_.IncomingEdgeCount(*iter)*graph_.OutgoingEdgeCount(*iter) == 0) continue;
-                
-                for (size_t i = 0; suit_us && i<graph_.IncomingEdgeCount(*iter); i++) 
+
+                for (size_t i = 0; suit_us && i<graph_.IncomingEdgeCount(*iter); i++)
                     if (graph_.length(graph_.IncomingEdges(*iter)[i]) < 80){
                         if (math::ge(edge_qual_.quality(graph_.IncomingEdges(*iter)[i]), 1.))
                             plus_cov += graph_.coverage(graph_.IncomingEdges(*iter)[i]);
                         plus_all_cov += graph_.coverage(graph_.IncomingEdges(*iter)[i]);
                     }else suit_us = false;
-                for (size_t i = 0; suit_us && i<graph_.OutgoingEdgeCount(*iter); i++) 
+                for (size_t i = 0; suit_us && i<graph_.OutgoingEdgeCount(*iter); i++)
                     if (graph_.length(graph_.OutgoingEdges(*iter)[i]) < 80){
                         if (math::ge(edge_qual_.quality(graph_.OutgoingEdges(*iter)[i]), 1.))
                             min_cov += graph_.coverage(graph_.OutgoingEdges(*iter)[i]);
@@ -1144,7 +1143,7 @@ public:
                 if (math::eq(min_cov, 0.) || math::eq(plus_cov, 0.)) continue;
 
                 double delta_cov = math::round(1000.*(plus_cov - min_cov)/(plus_cov + min_cov));
-                
+
                 double ratio_cov = math::round(1000.*(plus_cov + min_cov)/(plus_all_cov + min_all_cov));
 
                 if (math::ls(abs(delta_cov), 150.)) area15++;
@@ -1152,10 +1151,10 @@ public:
                 if (math::ls(abs(delta_cov), 50.)) area5++;
                 if (math::ls(abs(delta_cov), 20.)) area2++;
                 area++;
-                
+
                 cov_map[delta_cov/10.]++;
                 ratio_map[ratio_cov/10.]++;
-            
+
         }
 
         for (auto iter = ratio_map.begin(); iter != ratio_map.end(); ++iter){
@@ -1167,15 +1166,150 @@ public:
         }
 
         INFO("stats_cov "  << area << " " << area2 << " " << area5 << " " << area10 << " " << area15);
-        
+
         for (auto iter = len_map.begin(); iter != len_map.end(); ++iter){
             INFO("Len " << (*iter).first << " " << (*iter).second);
         }
-           
+
     }
-    
+
+};
+
+template<class Graph>
+class ChimericEdgeClassifier{
+public:
+    ChimericEdgeClassifier(const Graph& g, const EdgeQuality<Graph>& edge_qual) {
+
+    }
+};
+
+template<class Graph>
+class ChimericEdgesLengthStats {
+    const static size_t infinity = -1u;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    const Graph& g_;
+    const EdgeQuality<Graph>& edge_qual_;
+    const MappingPath<EdgeId> genome_path_;
+    size_t thorn_dist_bound_;
+
+    bool Relax(size_t& a, size_t b) const {
+        if (b < a) {
+            a = b;
+            return true;
+        }
+        return false;
+    }
+
+    //todo rewrite and think of additionally detecting thorns with no path
+    size_t ThornDist(EdgeId e) const {
+        size_t answer = infinity;
+        EdgeId e1 = g_.GetUniqueIncomingEdge(g_.EdgeStart(e));
+        EdgeId e2 = g_.GetUniqueOutgoingEdge(g_.EdgeEnd(e));
+        if (g_.length(e2) > thorn_dist_bound_)
+            return -1;
+        Relax(answer,
+                ShortestGenomicDistance(e1, g_.conjugate(e2),
+                        thorn_dist_bound_ - g_.length(e2)));
+        Relax(answer,
+                ShortestGenomicDistance(e2, g_.conjugate(e1),
+                        thorn_dist_bound_ - g_.length(e2)));
+        return answer + g_.length(e2);
+    }
+
+    size_t GenomicDistance(size_t genome_path_pos, EdgeId e2,
+            size_t distance_bound) const {
+        for (size_t i = genome_path_pos + 1; i < genome_path_.size(); ++i) {
+            int gap =
+                    genome_path_[i].second.initial_range.start_pos
+                            - genome_path_[genome_path_pos].second.initial_range.end_pos;
+            VERIFY(gap >= 0);
+            if (size_t(gap) > distance_bound)
+                return infinity;
+            if (genome_path_[i].first == e2)
+                return gap;
+        }
+        return infinity;
+    }
+
+    size_t ShortestGenomicDistance(EdgeId e1, EdgeId e2,
+            size_t distance_bound) const {
+        size_t best = infinity;
+        for (size_t i = 0; i < genome_path_.size(); ++i) {
+            if (genome_path_[i].first == e1) {
+                Relax(best, GenomicDistance(i, e2, distance_bound));
+            }
+        }
+        return best;
+    }
+
+    vector<EdgeId> FilterNotEqual(const vector<EdgeId>& edges,
+            EdgeId edge) const {
+        vector<EdgeId> answer;
+        FOREACH(EdgeId e, edges) {
+            if (e != edge) {
+                answer.push_back(e);
+            }
+        }
+        return answer;
+    }
+
+    bool TopologyAndQualCheck(const vector<EdgeId>& edges) const {
+        return edges.size() == 1 && edge_qual_.IsPositiveQuality(edges.front());
+    }
+
+    bool TopologyAndQualCheck(VertexId v, EdgeId e) const {
+        return TopologyAndQualCheck(
+                FilterNotEqual(g_.OutgoingEdges(g_.EdgeStart(e)), e))
+                && TopologyAndQualCheck(
+                        FilterNotEqual(g_.IncomingEdges(g_.EdgeEnd(e)), e));
+    }
+
+    bool TopologyAndQualCheck(EdgeId e) const {
+        return TopologyAndQualCheck(g_.EdgeStart(e), e)
+                && TopologyAndQualCheck(g_.EdgeEnd(e), e) && g_.CheckUniqueIncomingEdge(g_.EdgeStart(e)) && g_.CheckUniqueOutgoingEdge(g_.EdgeEnd(e));
+    }
+
+public:
+    ChimericEdgesLengthStats(const Graph& g,
+            const EdgeQuality<Graph>& edge_qual,
+            const MappingPath<EdgeId>& genome_path, size_t thorn_dist_bound) :
+            g_(g), edge_qual_(edge_qual), genome_path_(genome_path), thorn_dist_bound_(
+                    thorn_dist_bound) {
+    }
+
+    void operator()() const {
+        set<EdgeId> visited;
+        for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+            if (visited.count(*it) > 0)
+                continue;
+            visited.insert(*it);
+            visited.insert(g_.conjugate(*it));
+            if (!edge_qual_.IsPositiveQuality(*it)
+                    && TopologyAndQualCheck(*it)) {
+                size_t min_dist = infinity;
+                EdgeId thorn;
+                if (Relax(min_dist, ThornDist(*it))) {
+                    thorn = *it;
+                }
+                if (Relax(min_dist, ThornDist(g_.conjugate(*it)))) {
+                    thorn = g_.conjugate(*it);
+                }
+                cerr << "chimeric: " << g_.int_id(*it) << " length: " << g_.length(*it) << " coverage: " << g_.coverage(*it);
+                if (min_dist < infinity) {
+                    VERIFY(min_dist <= thorn_dist_bound_);
+                    cerr << " thorn: 1 " << "dist: " << min_dist << endl;
+                } else {
+                    cerr << " thorn: 0 dist: 0 " << endl;
+                }
+            } else {
+                if (edge_qual_.IsPositiveQuality(*it)) {
+                    cerr << "real: " << g_.int_id(*it) << " length: " << g_.length(*it) << " coverage: " << g_.coverage(*it) << endl;
+                }
+            }
+        }
+    }
 };
 
 }
-
-#endif /* STATISTICS_HPP_ */
