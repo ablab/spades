@@ -42,7 +42,7 @@ class ValidKMerGenerator {
    * read.
    */
   explicit ValidKMerGenerator(const Read &read,
-                              uint32_t bad_quality_threshold = 2) {
+                              uint8_t bad_quality_threshold = 2) {
     Reset(read.getSequenceString().data(),
           read.getQualityString().data(),
           read.getSequenceString().size(),
@@ -57,7 +57,7 @@ class ValidKMerGenerator {
    */
   explicit ValidKMerGenerator(const char *seq, const char *qual,
                               size_t len,
-                              uint32_t bad_quality_threshold = 2) {
+                              uint8_t bad_quality_threshold = 2) {
     Reset(seq, qual, len, bad_quality_threshold);
   }
 
@@ -148,13 +148,13 @@ void ValidKMerGenerator<kK>::TrimBadQuality() {
   pos_ = 0;
   if (qual_)
     for (; pos_ < len_; ++pos_) {
-      if (GetQual(pos_) >= bad_quality_threshold_)
+      if (GetQual((uint32_t)pos_) >= bad_quality_threshold_)
         break;
     }
   end_ = len_;
   if (qual_)
     for (; end_ > pos_; --end_) {
-      if (GetQual(end_ - 1) >= bad_quality_threshold_)
+      if (GetQual((uint32_t)(end_ - 1)) >= bad_quality_threshold_)
         break;
   }
 }
@@ -189,8 +189,8 @@ void ValidKMerGenerator<kK>::Next() {
     // good case we can just shift our previous answer
     kmer_ = kmer_ << seq_[pos_ + kK - 1];
     if (qual_) {
-      correct_probability_ *= Prob(GetQual(pos_ + kK - 1));
-      correct_probability_ /= Prob(GetQual(pos_ - 1));
+      correct_probability_ *= Prob(GetQual((uint32_t)pos_ + kK - 1));
+      correct_probability_ /= Prob(GetQual((uint32_t)pos_ - 1));
     }
     ++pos_;
   }

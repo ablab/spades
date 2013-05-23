@@ -138,7 +138,7 @@ double KMerClustering::ClusterBIC(const vector<unsigned> & cl, const vector<Stri
 
   size_t nparams = (clusters - 1) + clusters*K + 2*clusters*K;
 
-  return loglik - nparams*log(blockSize) / 2;
+  return loglik - (double)nparams * log((double)blockSize) / 2.0;
 }
 
 double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> &kmerinds,
@@ -378,7 +378,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
           // OK, that's the situation, cluster k should be added to cluster s
           for (uint32_t i = 0; i < origBlockSize; i++) {
             if (indices[i] == k) {
-              indices[i] = s;
+              indices[i] = (unsigned)s;
               bestCenters[s].second.first++;
             }
           }

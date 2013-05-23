@@ -73,14 +73,14 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
 
 class BufferFiller {
   std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries_;
-  size_t num_files_;
+  unsigned num_files_;
   size_t cell_size_;
   size_t processed_;
   const HammerKMerSplitter &splitter_;
 
  public:
   BufferFiller(std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries, size_t cell_size, const HammerKMerSplitter &splitter):
-      tmp_entries_(tmp_entries), num_files_(tmp_entries[0].size()), cell_size_(cell_size), processed_(0), splitter_(splitter) {}
+      tmp_entries_(tmp_entries), num_files_((unsigned)tmp_entries[0].size()), cell_size_(cell_size), processed_(0), splitter_(splitter) {}
 
   size_t processed() const { return processed_; }
 
@@ -144,7 +144,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     KMerBuffer &entry = tmp_entries[i];
     entry.resize(num_files);
     for (unsigned j = 0; j < num_files; ++j) {
-      entry[j].reserve(1.1 * cell_size);
+      entry[j].reserve((long unsigned)(1.1 * (double)cell_size));
     }
   }
 
@@ -186,7 +186,7 @@ static void PushKMer(KMerData &data,
   KMerStat &kmc = data[kmer];
   kmc.lock();
   Merge(kmc,
-        KMerStat(1, kmer, prob, q));
+        KMerStat(1, kmer, (float)prob, q));
   kmc.unlock();
 }
 
@@ -202,7 +202,7 @@ static void PushKMerRC(KMerData &data,
   KMerStat &kmc = data[kmer];
   kmc.lock();
   Merge(kmc,
-        KMerStat(1, kmer, prob, rcq));
+        KMerStat(1, kmer, (float)prob, rcq));
   kmc.unlock();
 }
 
@@ -271,5 +271,5 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   }
 
   INFO("Merge done. There are " << data.size() << " kmers in total. "
-       "Among them " << singletons << " (" <<  100.0 * singletons / data.size() << "%) are singletons.");
+       "Among them " << singletons << " (" <<  100.0 * (double)singletons / (double)data.size() << "%) are singletons.");
 }

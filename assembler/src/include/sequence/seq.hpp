@@ -230,8 +230,8 @@ class Seq {
     for (size_t i = 0; i < (size_ >> 1); ++i) {
       T front = complement(res[i]);
       T end = complement(res[size_ - 1 - i]);
-      res.set(i, end);
-      res.set(size_ - 1 - i, front);
+      res.set(i, (char)end);
+      res.set(size_ - 1 - i, (char)front);
     }
     if ((size_ & 1) == 1) {
       res.set(size_ >> 1, complement(res[size_ >> 1]));

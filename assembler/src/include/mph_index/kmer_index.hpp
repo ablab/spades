@@ -66,13 +66,13 @@ struct kmer_index_traits {
   struct seeded_hash_function {
     static cxxmph::h128 hash128(const KMerRawData &k, uint32_t seed) {
       cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
+      MurmurHash3_x64_128(k.data(), (int)k.data_size(), seed, &h);
       return h;
     }
 
     static cxxmph::h128 hash128(const KMerRawReference k, uint32_t seed) {
       cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
+      MurmurHash3_x64_128(k.data(), (int)k.data_size(), seed, &h);
       return h;
     }
 
@@ -223,8 +223,8 @@ class KMerSplitter {
   std::string GetRawKMersFname(unsigned suffix) const {
     return path::append_path(work_dir_, "kmers.raw." + boost::lexical_cast<std::string>(suffix));
   }
-  unsigned GetFileNumForSeq(const Seq &s, size_t total) const {
-    return hash_(s) % total;
+  unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
+    return (unsigned)(hash_(s) % total);
   }
 
   DECL_LOGGER("K-mer Splitting");
@@ -268,7 +268,7 @@ public:
   void OpenBucket(size_t idx, bool unlink = true) {
     unsigned K = splitter_.K();
 
-    buckets_[idx] = new MMappedRecordArrayReader<typename Seq::DataType>(GetMergedKMersFname(idx), Seq::GetDataSize(K), unlink);
+    buckets_[idx] = new MMappedRecordArrayReader<typename Seq::DataType>(GetMergedKMersFname((unsigned)idx), Seq::GetDataSize(K), unlink);
   }
 
   void ReleaseBucket(size_t idx) {
@@ -420,7 +420,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
     counter.OpenBucket(iFile, !save_final);
     size_t sz = counter.bucket_end(iFile) - counter.bucket_begin(iFile);
     index.bucket_starts_[iFile + 1] = sz;
-    if (!data_index.Reset(counter.bucket_begin(iFile), counter.bucket_end(iFile), sz)) {
+    if (!data_index.Reset(counter.bucket_begin(iFile), counter.bucket_end(iFile), (unsigned)sz)) {
       INFO("Something went really wrong (read = this should not happen). Try to restart and see if the problem will be fixed.");
       exit(-1);
     }
@@ -435,7 +435,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   if (save_final)
     counter.MergeBuckets(num_buckets_);
 
-  double bits_per_kmer = 8.0 * index.mem_size() / kmers;
+  double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmers;
   INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
 
   return kmers;
