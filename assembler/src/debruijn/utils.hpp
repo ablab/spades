@@ -508,6 +508,7 @@ class QualityEdgeLocalityPrintingRH {
 	const Graph& g_;
 	const EdgeQuality<Graph>& quality_handler_;
 	const GraphLabeler<Graph>& labeler_;
+	const GraphColorer<Graph>& colorer_;
 	const string& output_folder_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
@@ -515,9 +516,10 @@ public:
 	QualityEdgeLocalityPrintingRH(const Graph& g
 			, const EdgeQuality<Graph>& quality_handler
 			, const GraphLabeler<Graph>& labeler
+			, const GraphColorer<Graph>& colorer
 			, const string& output_folder) :
 			g_(g), quality_handler_(quality_handler),
-			labeler_(labeler), output_folder_(output_folder){
+			labeler_(labeler), colorer_(colorer), output_folder_(output_folder){
 	}
 
 	void HandleDelete(EdgeId edge) {
@@ -531,7 +533,7 @@ public:
 					250);
 			WriteComponents(g_, splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
-					, *DefaultColorer(g_), labeler_);
+					, colorer_, labeler_);
 		} else {
 			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 		}

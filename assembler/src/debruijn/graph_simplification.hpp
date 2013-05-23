@@ -629,12 +629,30 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage<Graph>& fla
   total_labeler tot_lab(&graph_struct);
   CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
+  //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
+  QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, edge_qual,
+          labeler, *colorer, cfg::get().output_dir);
+
   const string folder = cfg::get().output_dir + "low_cov_components/";
   make_dir(folder);
 
+  boost::function<void(set<EdgeId>)> removal_handler_f_1 =
+          boost::bind(&VisualizeNontrivialComponentAutoInc<Graph>,
+                    boost::ref(gp.g), _1, folder, boost::ref(labeler), boost::ref(*colorer));
+
+  boost::function<void(EdgeId)> raw_removal_handler_f_2 = boost::bind(
+  //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
+         &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
+         boost::ref(qual_removal_handler), _1);
+
+  boost::function<void(set<EdgeId>)> removal_handler_f_2
+          = boost::bind(&SingleEdgeAdapter<set<EdgeId>>, _1, raw_removal_handler_f_2);
+
+  boost::function<void(set<EdgeId>)> rel_removal_handler
+          = boost::bind(&func::Composition<set<EdgeId>>, _1, removal_handler_f_1, removal_handler_f_2);
+
   RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov,
-                                        boost::bind(&VisualizeNontrivialComponentAutoInc<Graph>,
-                                        boost::ref(gp.g), _1, folder, boost::ref(labeler), boost::ref(*colorer)),
+                                        rel_removal_handler,
                                         *cfg::get().ds.RL, max_coverage, iteration_count,
                                         iteration);
 
