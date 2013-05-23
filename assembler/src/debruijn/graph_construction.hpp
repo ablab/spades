@@ -172,13 +172,13 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 	TRACE("... in parallel");
 	// FIXME: output_dir here is damn ugly!
 	DeBruijnExtensionIndex<Seq> ext(k, cfg::get().output_dir);
-	DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
+	size_t rl = DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
 	ext.DiscardKmers();//This effects the behavior of seq_idx function. This is extremely bad code. Refactoring required.
 
 	TRACE("Extention Index constructed");
 
 	INFO("Early tip clipping");
-	size_t clipped_tips = EarlyTipClipper(ext, 100).ClipTips();
+	size_t clipped_tips = EarlyTipClipper(ext, rl - k).ClipTips();
 	INFO(clipped_tips << " " << (k+1) <<"-mers were removed by early tip clipper");
 	TRACE("Early tip clipping finished");
 
@@ -191,7 +191,7 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 
 	INFO("Counting coverage");
 	DeBruijnEdgeIndex<typename Graph::EdgeId, Seq>& debruijn = index.inner_index();
-	size_t rl = DeBruijnEdgeIndexBuilder<Seq>().BuildIndexWithCoverageFromGraph(g, debruijn, streams, contigs_stream);
+	DeBruijnEdgeIndexBuilder<Seq>().BuildIndexWithCoverageFromGraph(g, debruijn, streams, contigs_stream);
 	INFO("Counting coverage finished");
 	return rl;
 }

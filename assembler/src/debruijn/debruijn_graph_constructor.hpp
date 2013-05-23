@@ -343,6 +343,7 @@ private:
 
 	//This methods collects all loops that were not extracted by finding unbranching paths because there are no junctions on loops. Construction is performed in parallel
 	const std::vector<Sequence> CollectLoops() {
+		INFO("Collecting perfect loops");
 		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, true);
 		std::vector<Sequence> result;
 		for (kmer_iterator it = origin_.kmer_begin(), end = origin_.kmer_end(); it != end; ++it) {
@@ -355,6 +356,7 @@ private:
 				}
 			}
 		}
+		INFO("Collecting perfect loops finished. " << result.size() << " loops collected");
 		return result;
 	}
 
@@ -365,6 +367,7 @@ public:
 	//TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
 	const std::vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
 			double queueGrowthRate, bool clean_condenced = false) {
+		INFO("Extracting unbranching paths");
 		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, clean_condenced);
 		std::vector<Sequence> result;
 		size_t queueSize = queueMinSize;
@@ -379,20 +382,17 @@ public:
 			kmers.clear();
 			queueSize = min(size_t(queueSize * queueGrowthRate), queueMaxSize);
 		}
+		INFO("Extracting unbranching paths finished. " << sequences.size() << " sequences extracted");
 		return sequences;
 	}
 
 	const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(size_t queueMinSize, size_t queueMaxSize,
 			double queueGrowthRate) {
-		INFO("Extracting unbranching paths");
 		vector<Sequence> result	= ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate, true);
-		INFO("Extracting unbranching paths finished. " << result.size() << " sequences extracted");
-		INFO("Collecting perfect loops");
 		vector<Sequence> loops = CollectLoops();
 		for(auto it = loops.begin(); it != loops.end(); ++it) {
 			result.push_back(*it);
 		}
-		INFO("Collecting perfect loops finished. " << loops.size() << " loops collected");
 		return result;
 	}
 
