@@ -542,15 +542,15 @@ private:
 		}
 	}
 
-	void LinkEdge(typename Graph::Helper &helper, const Graph &graph, const VertexId v, const EdgeId edge, const bool is_end, const bool is_rc) const {
+	void LinkEdge(typename Graph::Helper &helper, const Graph &graph, const VertexId v, const EdgeId edge, const bool is_start, const bool is_rc) const {
 		VertexId v1 = v;
 		if(is_rc) {
 			v1 = graph.conjugate(v);
 		}
-		if(is_end) {
-			helper.LinkIncomingEdge(v1, edge);
-		} else {
+		if(is_start) {
 			helper.LinkOutgoingEdge(v1, edge);
+		} else {
+			helper.LinkIncomingEdge(v1, edge);
 		}
 	}
 
@@ -578,7 +578,7 @@ public:
 				v = graph.AddVertex();
 			}
 			for(size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
-				LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsEnd(), records[j].IsRC());
+				LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());
 			}
 		}
 	}
@@ -617,11 +617,13 @@ public:
 	}
 
 	void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,
-			double queueGrowthRate) {
-		std::vector<Sequence> edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(queueMinSize, queueMaxSize, queueGrowthRate);
-//		std::vector<Sequence> edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
+			double queueGrowthRate, bool keep_perfect_loops) {
+		std::vector<Sequence> edgeSequences;
+		if(keep_perfect_loops)
+			edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(queueMinSize, queueMaxSize, queueGrowthRate);
+		else
+			edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
 		FilterRC(edgeSequences);
-//		GraphFromSequencesConstructor<Graph>(kmer_size_).ConstructGraph(graph_, edgeSequences);
 		FastGraphFromSequencesConstructor<Graph, Seq>(kmer_size_, origin_).ConstructGraph(graph_, edgeSequences);
 	}
 

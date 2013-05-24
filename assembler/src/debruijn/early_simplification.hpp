@@ -110,10 +110,14 @@ public:
 	 * Method returns the number of removed edges
 	 */
 	size_t ClipTips() {
+		INFO("Early tip clipping");
 		size_t result = RoughClipTips();
 		LinkCleaner(index_).CleanLinks();
+		INFO(result << " " << (index_.K()+1) <<"-mers were removed by early tip clipper");
 		return result;
 	}
+protected:
+	DECL_LOGGER("Early tip clipping");
 };
 
 }

@@ -177,15 +177,17 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 
 	TRACE("Extention Index constructed");
 
-	INFO("Early tip clipping");
-	size_t clipped_tips = EarlyTipClipper(ext, rl - k).ClipTips();
-	INFO(clipped_tips << " " << (k+1) <<"-mers were removed by early tip clipper");
-	TRACE("Early tip clipping finished");
+	if(cfg::get().con.early_tc.enable) {
+		size_t length_bound = rl - k;
+		if(cfg::get().con.early_tc.length_bound)
+			length_bound = cfg::get().con.early_tc.length_bound.get();
+		EarlyTipClipper(ext, length_bound).ClipTips();
+	}
 
 	INFO("Condensing graph");
 	index.Detach();
 	DeBruijnGraphExtentionConstructor<Graph, Seq> g_c(g, ext, k);
-	g_c.ConstructGraph(100, 10000, 1.2);
+	g_c.ConstructGraph(100, 10000, 1.2, cfg::get().con.keep_perfect_loops);//TODO move these parameters to config
 	index.Attach();
 	INFO("Graph condensed");
 
@@ -200,8 +202,14 @@ template<class Graph, class Read, class Seq>
 size_t ConstructGraph(size_t k,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
-//	return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
-	return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
+	if(cfg::get().con.con_mode == construction_mode::con_extention) {
+		return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
+	} else if(cfg::get().con.con_mode == construction_mode::con_old){
+		return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
+	} else {
+		INFO("Invalid construction mode")
+		VERIFY(false);
+	}
 }
 
 template<class Read>
