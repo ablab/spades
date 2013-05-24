@@ -270,9 +270,9 @@ BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
        FlankingCoverage<Graph> flanking_cov(gp.g, gp.index.inner_index(), 50);
-       RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, 0, 100);
+       RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, 0, 5., 100);
 //       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
-       BOOST_CHECK_EQUAL(gp.g.size(), 28u);
+       BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
 }
 
 BOOST_AUTO_TEST_SUITE_END()}

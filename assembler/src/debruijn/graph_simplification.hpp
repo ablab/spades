@@ -434,6 +434,7 @@ bool RemoveRelativelyLowCoverageComponents(
     const FlankingCoverage<Graph>& flanking_cov,
 //    const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
     typename ComponentRemover<Graph>::HandlerF removal_handler,
+    double coverage_gap,
     size_t read_length = 0, double detected_coverage_threshold = 0.,
         size_t iteration_count = 1, size_t i = 0) {
   //todo use iteration numbers
@@ -444,8 +445,7 @@ bool RemoveRelativelyLowCoverageComponents(
       g,
       boost::bind(&FlankingCoverage<Graph>::LocalCoverage, boost::cref(flanking_cov),
                   _1, _2),
-      200, 100,
-      10.0, std::numeric_limits<size_t>::max(), removal_handler);
+      200, coverage_gap, 200, std::numeric_limits<size_t>::max(), removal_handler);
   return rel_rem.Process();
 }
 
@@ -653,6 +653,7 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage<Graph>& fla
 
   RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov,
                                         rel_removal_handler,
+                                        10.,
                                         *cfg::get().ds.RL, max_coverage, iteration_count,
                                         iteration);
 

@@ -116,9 +116,13 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
                 VertexId v = *border_.begin();
                 border_.erase(v);
 
-                //if encountered tip, put a flag
-                contains_deadends_ |= remover_.g().IsDeadEnd(v);
-                contains_deadends_ |= remover_.g().IsDeadStart(v);
+                //if encountered tip, put a flag and proceed further
+                INFO("Checking if vertex " << remover_.g().str(v) << " is tip.");
+                if (remover_.g().IsDeadEnd(v) || remover_.g().IsDeadStart(v)) {
+                    INFO("Tip, flag put");
+                    contains_deadends_ = true;
+                    continue;
+                }
 
                 INFO("Checking if vertex " << remover_.g().str(v) << " is terminating.");
                 //checking if there is a sufficient coverage gap

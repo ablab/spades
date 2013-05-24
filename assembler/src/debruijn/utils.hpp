@@ -10,6 +10,7 @@
 
 #include "io/paired_read.hpp"
 #include "omni/omni_utils.hpp"
+#include "omni/graph_colorer.hpp"
 #include "omni/id_track_handler.hpp"
 #include "omni/splitters.hpp"
 #include "omni/path_processor.hpp"
@@ -507,16 +508,16 @@ class QualityEdgeLocalityPrintingRH {
 	typedef typename Graph::VertexId VertexId;
 	const Graph& g_;
 	const EdgeQuality<Graph>& quality_handler_;
-	const GraphLabeler<Graph>& labeler_;
-	const GraphColorer<Graph>& colorer_;
+	const omnigraph::GraphLabeler<Graph>& labeler_;
+	const omnigraph::GraphColorer<Graph>& colorer_;
 	const string& output_folder_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
 public:
 	QualityEdgeLocalityPrintingRH(const Graph& g
 			, const EdgeQuality<Graph>& quality_handler
-			, const GraphLabeler<Graph>& labeler
-			, const GraphColorer<Graph>& colorer
+			, const omnigraph::GraphLabeler<Graph>& labeler
+			, const omnigraph::GraphColorer<Graph>& colorer
 			, const string& output_folder) :
 			g_(g), quality_handler_(quality_handler),
 			labeler_(labeler), colorer_(colorer), output_folder_(output_folder){
