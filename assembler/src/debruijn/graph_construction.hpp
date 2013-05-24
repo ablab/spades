@@ -20,7 +20,7 @@
 #include "omni/edges_position_handler.hpp"
 
 #include "debruijn_graph_constructor.hpp"
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_kmer_index.hpp"
 #include "debruijn_graph.hpp"
 #include "graphio.hpp"
 #include "graph_pack.hpp"

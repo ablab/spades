@@ -1,6 +1,6 @@
 #pragma once
 #include "standard.hpp"
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_kmer_index.hpp"
 #include "runtime_k.hpp"
 #include "mph_index/kmer_index.hpp"
 
