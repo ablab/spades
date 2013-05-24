@@ -189,7 +189,7 @@ struct PairedInfoLibrary {
                 int left = std::max(len1 + gap_len - read_size_ + k_, insert_size_ - 2*read_size_ + k_ - is_variation_);
                 w = 0. + right - left + 1;
             }
-            INFO("distance " << distance << " " << w);
+            DEBUG("distance " << distance << " " << w);
             return math::gr(w, 0.0) ? w : 0.0;
     }
 
