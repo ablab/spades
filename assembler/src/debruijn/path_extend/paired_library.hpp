@@ -124,6 +124,31 @@ struct PairedInfoLibrary {
 
 
     double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance) {
+            double w = 0.;
+            if (distance == 0 && e1 == e2) {
+                w = 0. + g_.length(e1) - insert_size_ + 2 * read_size_ + 1 - k_;
+            }
+            else {
+                if (distance < 0) {
+                    EdgeId tmp = e1;
+                    e1 = e2;
+                    e2 = tmp;
+                    distance = -distance;
+                }
+                size_t len1 = g_.length(e1) + k_;
+                size_t len2 = g_.length(e2) + k_;
+
+                int gap_len = distance - len1;
+
+                int right = std::min(gap_len + len2, insert_size_ - read_size_ + is_variation_) - k_ + len1;
+                int left = std::max(len1 + gap_len - read_size_ + k_, insert_size_ - 2*read_size_ + k_ - is_variation_);
+                w = 0. + right - left + 1;
+            }
+            INFO("distance " << distance << " " << w);
+            return math::gr(w, 0.0) ? w : 0.0;
+    }
+
+    double IdealPairedInfo2(EdgeId e1, EdgeId e2, int distance) {
         double w = 0.;
         if (distance == 0 && e1 == e2) {
             w = 0. + g_.length(e1) - insert_size_ + 2 * read_size_ + 1 - k_;
@@ -144,6 +169,31 @@ struct PairedInfoLibrary {
     }
 
     double IdealPairedInfo(size_t length1, size_t length2, int distance) {
+            double w = 0.;
+            if (distance == 0) {
+                w = 0. + length1 - insert_size_ + 2 * read_size_ + 1 - k_;
+            }
+            else {
+                if (distance < 0) {
+                    size_t tmp = length1;
+                    length1 = length2;
+                    length2 = tmp;
+                    distance = -distance;
+                }
+                size_t len1 = length1 + k_;
+                size_t len2 = length2 + k_;
+
+                int gap_len = distance - len1;
+
+                int right = std::min(gap_len + len2, insert_size_ - read_size_ + is_variation_) - k_ + len1;
+                int left = std::max(len1 + gap_len - read_size_ + k_, insert_size_ - 2*read_size_ + k_ - is_variation_);
+                w = 0. + right - left + 1;
+            }
+            INFO("distance " << distance << " " << w);
+            return math::gr(w, 0.0) ? w : 0.0;
+    }
+
+    double IdealPairedInfo2(size_t length1, size_t length2, int distance) {
 		double w = 0.;
 		if (distance == 0) {
 			w = 0. + length1 - insert_size_ + 2 * read_size_ + 1 - k_;
