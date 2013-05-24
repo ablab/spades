@@ -1176,11 +1176,51 @@ public:
 };
 
 template<class Graph>
-class ChimericEdgeClassifier{
-public:
-    ChimericEdgeClassifier(const Graph& g, const EdgeQuality<Graph>& edge_qual) {
+class ChimericEdgeClassifier {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
 
+    const Graph& g_;
+    const EdgeQuality<Graph>& edge_qual_;
+
+    vector<EdgeId> FilterNotEqual(const vector<EdgeId>& edges,
+            EdgeId edge) const {
+        vector<EdgeId> answer;
+        FOREACH(EdgeId e, edges) {
+            if (e != edge) {
+                answer.push_back(e);
+            }
+        }
+        return answer;
     }
+
+    bool TopologyAndQualCheck(const vector<EdgeId>& edges) const {
+        return edges.size() == 1 && edge_qual_.IsPositiveQuality(edges.front());
+    }
+
+    bool TopologyAndQualCheck(VertexId v, EdgeId e) const {
+        return TopologyAndQualCheck(
+                FilterNotEqual(g_.OutgoingEdges(g_.EdgeStart(e)), e))
+                && TopologyAndQualCheck(
+                        FilterNotEqual(g_.IncomingEdges(g_.EdgeEnd(e)), e));
+    }
+
+    bool TopologyAndQualCheck(EdgeId e) const {
+        return TopologyAndQualCheck(g_.EdgeStart(e), e)
+                && TopologyAndQualCheck(g_.EdgeEnd(e), e) && g_.CheckUniqueIncomingEdge(g_.EdgeStart(e)) && g_.CheckUniqueOutgoingEdge(g_.EdgeEnd(e));
+    }
+
+public:
+    ChimericEdgeClassifier(const Graph& g, const EdgeQuality<Graph>& edge_qual)
+    : g_(g),
+      edge_qual_(edge_qual) {
+    }
+
+    bool IsTrivialChimeric(EdgeId e) {
+        return !edge_qual_.IsPositiveQuality(e)
+                && TopologyAndQualCheck(e);
+    }
+
 };
 
 template<class Graph>
@@ -1193,6 +1233,7 @@ class ChimericEdgesLengthStats {
     const EdgeQuality<Graph>& edge_qual_;
     const MappingPath<EdgeId> genome_path_;
     size_t thorn_dist_bound_;
+    const ChimericEdgeClassifier<Graph> chimeric_edge_classifier_;
 
     bool Relax(size_t& a, size_t b) const {
         if (b < a) {
@@ -1244,39 +1285,12 @@ class ChimericEdgesLengthStats {
         return best;
     }
 
-    vector<EdgeId> FilterNotEqual(const vector<EdgeId>& edges,
-            EdgeId edge) const {
-        vector<EdgeId> answer;
-        FOREACH(EdgeId e, edges) {
-            if (e != edge) {
-                answer.push_back(e);
-            }
-        }
-        return answer;
-    }
-
-    bool TopologyAndQualCheck(const vector<EdgeId>& edges) const {
-        return edges.size() == 1 && edge_qual_.IsPositiveQuality(edges.front());
-    }
-
-    bool TopologyAndQualCheck(VertexId v, EdgeId e) const {
-        return TopologyAndQualCheck(
-                FilterNotEqual(g_.OutgoingEdges(g_.EdgeStart(e)), e))
-                && TopologyAndQualCheck(
-                        FilterNotEqual(g_.IncomingEdges(g_.EdgeEnd(e)), e));
-    }
-
-    bool TopologyAndQualCheck(EdgeId e) const {
-        return TopologyAndQualCheck(g_.EdgeStart(e), e)
-                && TopologyAndQualCheck(g_.EdgeEnd(e), e) && g_.CheckUniqueIncomingEdge(g_.EdgeStart(e)) && g_.CheckUniqueOutgoingEdge(g_.EdgeEnd(e));
-    }
-
 public:
     ChimericEdgesLengthStats(const Graph& g,
             const EdgeQuality<Graph>& edge_qual,
             const MappingPath<EdgeId>& genome_path, size_t thorn_dist_bound) :
             g_(g), edge_qual_(edge_qual), genome_path_(genome_path), thorn_dist_bound_(
-                    thorn_dist_bound) {
+                    thorn_dist_bound), chimeric_edge_classifier_(g, edge_qual) {
     }
 
     void operator()() const {
@@ -1286,8 +1300,7 @@ public:
                 continue;
             visited.insert(*it);
             visited.insert(g_.conjugate(*it));
-            if (!edge_qual_.IsPositiveQuality(*it)
-                    && TopologyAndQualCheck(*it)) {
+            if (chimeric_edge_classifier_.IsTrivialChimeric(*it)) {
                 size_t min_dist = infinity;
                 EdgeId thorn;
                 if (Relax(min_dist, ThornDist(*it))) {

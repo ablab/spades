@@ -435,8 +435,7 @@ bool RemoveRelativelyLowCoverageComponents(
 //    const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
     typename ComponentRemover<Graph>::HandlerF removal_handler,
     double coverage_gap,
-    size_t read_length = 0, double detected_coverage_threshold = 0.,
-        size_t iteration_count = 1, size_t i = 0) {
+    size_t read_length = 0, boost::function<bool(typename Graph::EdgeId)> edge_classifier = 0) {
   //todo use iteration numbers
   INFO("Removing relatively low covered connections");
 
@@ -445,7 +444,8 @@ bool RemoveRelativelyLowCoverageComponents(
       g,
       boost::bind(&FlankingCoverage<Graph>::LocalCoverage, boost::cref(flanking_cov),
                   _1, _2),
-      200, coverage_gap, 200, std::numeric_limits<size_t>::max(), removal_handler);
+      200, coverage_gap, 200, std::numeric_limits<size_t>::max(), removal_handler, 10,
+      edge_classifier);
   return rel_rem.Process();
 }
 
@@ -651,11 +651,15 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage<Graph>& fla
   boost::function<void(set<EdgeId>)> rel_removal_handler
           = boost::bind(&func::Composition<set<EdgeId>>, _1, removal_handler_f_1, removal_handler_f_2);
 
+  ChimericEdgeClassifier<Graph> edge_classifier(gp.g, edge_qual);
+
+  boost::function<bool(EdgeId)> edge_classifier_f
+          = boost::bind(&ChimericEdgeClassifier<Graph>::IsTrivialChimeric, edge_classifier, _1);
+
   RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov,
                                         rel_removal_handler,
                                         10.,
-                                        *cfg::get().ds.RL, max_coverage, iteration_count,
-                                        iteration);
+                                        *cfg::get().ds.RL, edge_classifier_f);
 
   printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
