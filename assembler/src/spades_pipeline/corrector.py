@@ -550,7 +550,7 @@ def parse_profile(args, log):
 #                log.info("FILE WITH READS DOES NOT EXIST!")
 #                usage()
 #                sys.exit(1)
-        if opt in ("--bwa"):
+        if opt == "--bwa":
             config["bwa"] = os.path.abspath(arg)
         if opt in ('-t', "--threads"):
             config["t"] = int(arg)
@@ -562,17 +562,17 @@ def parse_profile(args, log):
             config["splitted_dir"] = os.path.abspath(arg)
         if opt in ('-q', "--use-quality"):
             config["use_quality"]= 1
-        if opt in ("--bowtie2"):
+        if opt == "--bowtie2":
             if arg != "bowtie2":
                 arg = os.path.abspath(arg)
             config["bowtie2"]= arg
-        if opt in ("--debug"):
+        if opt == "--debug":
             config["debug"] = 1
         if opt in ("--use-multiple-aligned"):
             config["use_multiple_aligned"] = 1
-        if opt in ("--skip-masked"):
+        if opt == "--skip-masked":
             config["skip_masked"] = 1
-        if opt in ('--insert-size'):
+        if opt == "--insert-size":
             config["insert_size"] = int(arg)
 
     if len(reads1) != len(reads2):
@@ -1165,7 +1165,6 @@ def main(args, joblib_path, log=None):
     if len(args) < 1:
         usage()
         sys.exit(0)
-
     addsitedir(joblib_path)
 
     init_config()
