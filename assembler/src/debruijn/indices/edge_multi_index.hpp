@@ -9,6 +9,8 @@
 #include "kmer_splitters.hpp"
 
 namespace debruijn_graph {
+template <class Seq>
+class DeBruijnEdgeMultiIndexBuilder;
 template<class IdType, class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >
 class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> {

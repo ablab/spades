@@ -28,11 +28,6 @@ namespace debruijn_graph {
 
 template <class Seq>
 class DeBruijnKMerIndexBuilder;
-template <class Seq>
-class DeBruijnEdgeIndexBuilder;
-template <class Seq>
-class DeBruijnEdgeMultiIndexBuilder;
-
 
 template<class ValueType, class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >

@@ -10,6 +10,10 @@
 #include "kmer_splitters.hpp"
 
 namespace debruijn_graph {
+
+template <class Seq>
+class DeBruijnEdgeIndexBuilder;
+
 // Aux struct to count kmers during graph construction.
 template<class IdType>
 struct EdgeInfo {
