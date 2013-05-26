@@ -21,7 +21,7 @@ namespace debruijn_graph {
 template<class Graph>
 class MCErroneousConnectionThresholdFinder {
   typedef typename Graph::EdgeId EdgeId;
-  typedef DeBruijnEdgeIndex<EdgeId> DeBruijn;
+  typedef DeBruijnEdgeIndex<Graph> DeBruijn;
 
  public:
   MCErroneousConnectionThresholdFinder(const DeBruijn &index)

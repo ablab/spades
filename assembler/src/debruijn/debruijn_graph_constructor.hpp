@@ -29,7 +29,7 @@ template<class Graph, class Seq>
 class DeBruijnGraphConstructor {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef DeBruijnEdgeIndex<EdgeId, Seq> DeBruijn;
+	typedef DeBruijnEdgeIndex<Graph, Seq> DeBruijn;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
 	typedef Seq KPlusOneMer;

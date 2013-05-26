@@ -13,8 +13,8 @@ template <class Seq>
 class DeBruijnEdgeMultiIndexBuilder;
 template<class IdType, class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >
-class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> {
-  typedef DeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> base;
+class DeBruijnEdgeMultiIndex : public EditableDeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> {
+  typedef EditableDeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> base;
  public:
   typedef Seq                      KMer;
   typedef KMerIndex<KMer, traits>  KMerIndexT;
