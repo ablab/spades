@@ -282,8 +282,10 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         //temporary
         if (edge_classifier_ && edge_classifier_(e)) {
             VertexId v2 = this->g().EdgeEnd(e);
-            INFO("Chimeric edge. Min relative coverage info "
-                    << std::min(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2))));
+            INFO("Chimeric edge. Relative coverage info: "
+                    << std::min(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2)))
+                    << " "
+                    << std::max(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2))));
         }
 
         //since min_coverage_gap_ > 1, we don't need to think about e here
