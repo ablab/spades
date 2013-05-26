@@ -34,7 +34,6 @@ template<class Graph>
 class EdgeLabelHandler : public GraphActionHandler<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef int realIdType;
  private:
     Graph &new_graph_;
     Graph &old_graph_;
@@ -117,7 +116,7 @@ class EdgeLabelHandler : public GraphActionHandler<Graph> {
 
     }
 
-    virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+    virtual void HandleSplit(EdgeId /*oldEdge*/, EdgeId /*newEdge1*/, EdgeId /*newEdge2*/) {
         WARN("EdgesLabelHandler does not support splits");
     }
 

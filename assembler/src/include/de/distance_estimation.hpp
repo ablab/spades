@@ -26,8 +26,8 @@ class GraphDistanceFinder {
   GraphDistanceFinder(const Graph& graph, size_t insert_size, size_t read_length, size_t delta) :
       graph_(graph),
       insert_size_(insert_size),
-      gap_((int) insert_size - 2 * read_length),
-      delta_(delta)
+      gap_((int) (insert_size - 2 * read_length)),
+      delta_((double) delta)
   {
   }
 
@@ -42,7 +42,7 @@ class GraphDistanceFinder {
       EdgeId second_edge = *I;
       end_points.push_back(graph_.EdgeStart(second_edge));
       path_lower_bounds.push_back(PairInfoPathLengthLowerBound(graph_.k(), graph_.length(e1),
-                                                    graph_.length(second_edge), gap_, delta_));
+		graph_.length(second_edge), gap_, delta_));
       TRACE("Bounds for paths are " << path_lower_bounds[i++]);
     }
 
@@ -124,7 +124,7 @@ class GraphDistanceFinder {
   const Graph& graph_;
   const size_t insert_size_;
   const int gap_;
-  const size_t delta_;
+  const double delta_;
 };
 
 template<class Graph>
@@ -168,7 +168,7 @@ class AbstractDistanceEstimator {
     return distance_finder_.GetGraphDistancesLengths(e1, second_edges);
   }
 
-  Histogram ClusterResult(EdgePair ep, const EstimHist& estimated) const
+  Histogram ClusterResult(EdgePair /*ep*/, const EstimHist& estimated) const
   {
     Histogram result;
     for (size_t i = 0; i < estimated.size(); ++i) {
@@ -329,7 +329,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     vector<double> weights(forward.size(), 0.);
     for (auto iter = histogram.begin(), end_iter = histogram.end(); iter != end_iter; ++iter) {
       const Point& point = *iter;
-      if (ls(2. * point.d + second_len, (double) first_len))
+      if (ls(2. * point.d + (double) second_len, (double) first_len))
           continue;
       while (cur_dist + 1 < forward.size() && forward[cur_dist + 1] < point.d)
         ++cur_dist;
@@ -372,7 +372,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   virtual void ProcessEdge(EdgeId e1,
                            const InnerMap<Graph>& inner_map,
                            PairedInfoIndexT<Graph>& result,
-                           perf_counter& pc) const
+                           perf_counter& /*pc*/) const
   {
     set<EdgeId> second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)

@@ -226,9 +226,8 @@ void FillAndCorrectEtalonPairedInfo(
 	}
 
 	INFO("Pushing etalon info through estimator");
-	GraphDistanceFinder<Graph> dist_finder(gp.g, insert_size, read_length,
-			delta);
-  DistanceEstimator<Graph> estimator(gp.g, filtered_etalon_index, dist_finder, 0., 4.);
+	GraphDistanceFinder<Graph> dist_finder(gp.g, insert_size, read_length, delta);
+	DistanceEstimator<Graph> estimator(gp.g, filtered_etalon_index, dist_finder, 0., 4.);
 	estimator.Estimate(corrected_etalon_index);
 	if (save_etalon_info_history) {
 		INFO("Saving etalon paired info indices on different stages");

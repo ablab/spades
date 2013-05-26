@@ -28,7 +28,7 @@ public:
 	int start_;
 	int end_;
 	int start() const {
-		return m_range_.initial_range.start_pos;
+		return (int) m_range_.initial_range.start_pos;
 	}
 	int end() const {
 		return m_range_.initial_range.end_pos;
@@ -247,7 +247,6 @@ template<class Graph>
 class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef int realIdType;
 
 	int max_single_gap_;
 	//todo rename
@@ -278,7 +277,7 @@ public:
 			EdgePosition activePosition = EdgesPositions[NewEdgeId][0];
 			for (size_t i = 1; i < EdgesPositions[NewEdgeId].size(); i++) {
 				if (activePosition.followed_by(EdgesPositions[NewEdgeId][i],
-						max(max_single_gap_, int(relative_cutoff * this->g().length(NewEdgeId))))) {
+						max(max_single_gap_, (int) (relative_cutoff * (double) this->g().length(NewEdgeId))))) {
 					activePosition.extend_by(EdgesPositions[NewEdgeId][i]);
 				} else {
 					new_vec.push_back(activePosition);
@@ -472,36 +471,36 @@ public:
 		if (EdgesPositions.find(oldEdge) != EdgesPositions.end()) {
 			if (EdgesPositions[oldEdge].size() > 0) {
 				if (careful_ranges_) {
-					int length1 = this->g().length(newEdge1);
+					size_t length1 = this->g().length(newEdge1);
 //					int length2 = this->g().length(newEdge2);
 					for (auto iter = EdgesPositions[oldEdge].begin();
 							iter != EdgesPositions[oldEdge].end(); ++iter) {
-						if (iter->m_end() <= length1) {
+						if (iter->m_end() <= (int) length1) {
 							AddEdgePosition(newEdge1, iter->start(),
 									iter->end(), iter->contigId_,
 									iter->m_start(), iter->m_end());
-						} else if (iter->m_start() > length1) {
+						} else if (iter->m_start() > (int) length1) {
 							AddEdgePosition(newEdge2, iter->start(),
 									iter->end(), iter->contigId_,
-									iter->m_start() - length1,
-									iter->m_end() - length1);
+									iter->m_start() - (int) length1,
+									iter->m_end() - (int) length1);
 						} else {
-							int segm1len = (size_t) (iter->end() - iter->start()
-									+ 1) * (length1 - iter->m_start() + 1)
+							size_t segm1len = (size_t) (iter->end() - iter->start() + 1)
+									* ((int) length1 - iter->m_start() + 1)
 									/ (iter->m_end() - iter->m_start() + 1);
-							int segm2len = iter->m_end() - iter->m_start()
+							size_t segm2len = iter->m_end() - iter->m_start()
 									- segm1len + 1;
 							if (segm1len > 0) {
 								AddEdgePosition(newEdge1, iter->start(),
-										iter->start() + segm1len - 1,
+										iter->start() + (int) segm1len - 1,
 										iter->contigId_, iter->m_start(),
-										length1);
+										(int) length1);
 							}
 							if (segm2len > 0) {
 								AddEdgePosition(newEdge2,
-										iter->start() + segm1len, iter->end(),
+										iter->start() + (int) segm1len, iter->end(),
 										iter->contigId_, 1,
-										iter->m_end() - length1);
+										iter->m_end() - (int) length1);
 							}
 						}
 //						int end1 = iter->start_ + (length1*(iter->end_ - iter->start_))/(length1+length2);
@@ -515,16 +514,13 @@ public:
 					size_t length2 = this->g().length(newEdge2);
 					for (auto iter = EdgesPositions[oldEdge].begin();
 							iter != EdgesPositions[oldEdge].end(); ++iter) {
-						int end1 = iter->start_
-								+ (length1 * (iter->end_ - iter->start_))
-										/ (length1 + length2);
-						AddEdgePosition(newEdge1, iter->start_, end1,
-								iter->contigId_);
+						int end1 = iter->start_ + ((int) length1 * (iter->end_ - iter->start_))
+								   / (int) (length1 + length2);
+						AddEdgePosition(newEdge1, iter->start_, end1, iter->contigId_);
 						if (iter->end_ >= end1 + 1)
-							AddEdgePosition(newEdge2, end1 + 1, iter->end_,
-									iter->contigId_);
-						TRACE(
-								"Contig "<<iter->contigId_<<" Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
+							AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
+						TRACE("Contig " << iter->contigId_ << " Split: " << iter->start_ <<
+								"--" << iter->end_ << " after pos " << end1);
 					}
 //				 TRACE("EdgesPositionHandler not handled Split yet");
 				}
@@ -536,29 +532,24 @@ public:
 		// we assume that all edge have good ordered position labels.
 		size_t n = oldEdges.size();
 		vector<EdgePosition> res = (EdgesPositions[oldEdges[0]]);
-		int shift = this->g().length(oldEdges[0]);
+		int shift = (int) this->g().length(oldEdges[0]);
 		bool positive_size = (res.size() > 0);
 		for (size_t i = 1; i < n; i++) {
 			if (careful_ranges_) {
-				res = RangeGluePositionsLists(res, EdgesPositions[oldEdges[i]],
-						max_single_gap_, shift);
-				shift += this->g().length(oldEdges[i]);
+				res = RangeGluePositionsLists(res, EdgesPositions[oldEdges[i]], max_single_gap_, shift);
+				shift += (int) this->g().length(oldEdges[i]);
 			} else {
-				res = GluePositionsLists(res, EdgesPositions[oldEdges[i]],
-						max_single_gap_);
+				res = GluePositionsLists(res, EdgesPositions[oldEdges[i]], max_single_gap_);
 			}
 
-			positive_size = positive_size
-					|| (EdgesPositions[oldEdges[i]].size() > 0);
+			positive_size = positive_size || (EdgesPositions[oldEdges[i]].size() > 0);
 		}
 
 		if (positive_size && (res.size() == 0)) {
 			TRACE("Merge operation broke some positions:");
 			for (size_t i = 0; i < n; i++) {
-				TRACE(
-						"Size "<<EdgesPositions[oldEdges[i]].size()<<" "<<str(oldEdges[i]));
-				positive_size = positive_size
-						|| (EdgesPositions[oldEdges[i]].size() > 0);
+				TRACE("Size "<<EdgesPositions[oldEdges[i]].size()<<" "<<str(oldEdges[i]));
+				positive_size = positive_size || (EdgesPositions[oldEdges[i]].size() > 0);
 			}
 		}
 		TRACE("NEW res.size = "<< res.size());

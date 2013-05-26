@@ -33,7 +33,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 //	map_type storage_;
 
     size_t KPlusOneMerCoverage(EdgeId edge) const {
-        return (size_t) (coverage(edge) * this->g().length(edge));
+        return (size_t) math::round(coverage(edge)) * this->g().length(edge);
     }
 
     template<class ReadThreader>
@@ -245,16 +245,16 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     }
 
     virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
-        size_t coverage = 0;
+        int coverage = 0;
         for (auto it = old_edges.begin(); it != old_edges.end(); ++it) {
-            coverage += KPlusOneMerCoverage(*it);
+            coverage += (int) KPlusOneMerCoverage(*it);
         }
         SetCoverage(new_edge, coverage);
     }
 
     virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-        IncCoverage(new_edge, KPlusOneMerCoverage(edge2));
-        IncCoverage(new_edge, KPlusOneMerCoverage(edge1));
+        IncCoverage(new_edge, (int) KPlusOneMerCoverage(edge2));
+        IncCoverage(new_edge, (int) KPlusOneMerCoverage(edge1));
     }
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) {
@@ -270,14 +270,8 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 //		SetCoverage(newEdge1, coverage1);
 //		SetCoverage(newEdge2, coverage2);
         double avg_cov = coverage(old_edge);
-        SetCoverage(
-                new_edge1,
-                size_t(max(1.,
-                           math::round(avg_cov * this->g().length(new_edge1)))));
-        SetCoverage(
-                new_edge2,
-                size_t(max(1.,
-                           math::round(avg_cov * this->g().length(new_edge2)))));
+        SetCoverage(new_edge1, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1))));
+        SetCoverage(new_edge2, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
     }
 
     void HandleVertexSplit(VertexId, VertexId,
@@ -287,9 +281,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
         for (size_t j = 0; j < old_2_new_edges.size(); ++j) {
             EdgeId old_e = old_2_new_edges[j].first;
             EdgeId new_e = old_2_new_edges[j].second;
-            IncCoverage(
-                    new_e,
-                    floor(KPlusOneMerCoverage(old_e) * split_coefficients[j]));
+            IncCoverage(new_e, (int) floor((double) KPlusOneMerCoverage(old_e) * split_coefficients[j]));
         }
     }
 

@@ -127,12 +127,12 @@ public:
 	}
 	BaseIdTrackHandler<VertexIdT, EdgeIdT>* ReturnIntIdPointer() const {return int_ids_;};
 
-	int int_id(EdgeId edge) const {
+	size_t int_id(EdgeId edge) const {
 		VERIFY(int_ids_);
 		return int_ids_->ReturnIntId(edge);
 	}
 
-	int int_id(VertexId vertex) const {
+	size_t int_id(VertexId vertex) const {
 		VERIFY(int_ids_);
 		return int_ids_->ReturnIntId(vertex);
 	}

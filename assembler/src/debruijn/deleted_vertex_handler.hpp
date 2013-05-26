@@ -30,7 +30,6 @@ template<class Graph>
 class DeletedVertexHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef int realIdType;
 private:
 	Graph &graph_;
 public:
