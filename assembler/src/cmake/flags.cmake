@@ -44,7 +44,12 @@ else()
   endif()
 
   add_definitions(-O2)
-  add_definitions(-DNDEBUG)
+  if (${CMAKE_BUILD_TYPE} STREQUAL "RelWithAsserts" OR
+      ${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
+    add_definitions(-UNDEBUG)
+  else()
+    add_definitions(-DNDEBUG)
+  endif()
 endif()
 
 # Make sure we're building with frame pointer if tcmalloc is in use

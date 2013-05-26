@@ -557,7 +557,7 @@ class RuntimeSeq {
 
   template<size_t size2_, typename T2 = T>
   Seq<size2_, T2> get_seq() const {
-    VERIFY_MSG(size2_ == size_, size2_ << " != " << size_ );
+    VERIFY(size2_ == size_);
     return Seq<size2_, T2>((T2*) data_.data());
   }
 
