@@ -409,8 +409,7 @@ class NewExtendedSequenceMapper {
   bool FindKmer(const Kmer &kmer, size_t kmer_pos, std::vector<EdgeId> &passed,
                 RangeMappings& range_mappings) const {
     KMerIdx idx = index_.seq_idx(kmer);
-    if (idx != KMerIndex::InvalidKMerIdx &&
-        index_.contains(idx)) {
+    if (index_.contains(idx, kmer)) {
       std::pair<EdgeId, size_t> position = index_.get(idx);
       if (passed.empty() || passed.back() != position.first ||
           kmer_pos != range_mappings.back().initial_range.end_pos ||

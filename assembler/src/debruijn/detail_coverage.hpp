@@ -27,7 +27,7 @@ namespace debruijn_graph {
 		FlankingCoverage( const conj_graph_pack& graph ) {
 	
 			size_t K = cfg::get().K + 1;
-			DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(graph.index.inner_index().K(), cfg::get().output_dir);
+			DeBruijnEdgeIndex<Graph, runtime_k::RtSeq> kmerIndex(graph.index.inner_index().K(), cfg::get().output_dir);
 			std::string path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
 			bool val = LoadEdgeIndex(path, kmerIndex);
 			VERIFY_MSG(val, "can not open file "+path+".kmidx");

@@ -141,7 +141,7 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 	VERIFY_MSG(streams.size(), "No input streams specified");
 
 	TRACE("... in parallel");
-	DeBruijnEdgeIndex<typename Graph::EdgeId, Seq>& debruijn = index.inner_index();
+	DeBruijnEdgeIndex<Graph, Seq>& debruijn = index.inner_index();
 	rl = DeBruijnEdgeIndexBuilder<Seq>().BuildIndexFromStream(debruijn, streams,
                                                             contigs_stream);
 
@@ -173,16 +173,15 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 	// FIXME: output_dir here is damn ugly!
 	DeBruijnExtensionIndex<Seq> ext(k, index.inner_index().workdir());
 	size_t rl = DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
-	ext.DiscardKmers();//This effects the behavior of seq_idx function. This is extremely bad code. Refactoring required.
 
 	TRACE("Extention Index constructed");
 
-	if(params.early_tc.enable) {
-		size_t length_bound = rl - k;
-		if(params.early_tc.length_bound)
-			length_bound = params.early_tc.length_bound.get();
-		EarlyTipClipper(ext, length_bound).ClipTips();
-	}
+    if (params.early_tc.enable) {
+        size_t length_bound = rl - k;
+        if (params.early_tc.length_bound)
+            length_bound = params.early_tc.length_bound.get();
+        EarlyTipClipper(ext, length_bound).ClipTips();
+    }
 
 	INFO("Condensing graph");
 	index.Detach();
@@ -192,16 +191,16 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 	INFO("Graph condensed");
 
 	INFO("Counting coverage");
-	DeBruijnEdgeIndex<typename Graph::EdgeId, Seq>& debruijn = index.inner_index();
+	auto& debruijn = index.inner_index();
 	DeBruijnEdgeIndexBuilder<Seq>().BuildIndexWithCoverageFromGraph(g, debruijn, streams, contigs_stream);
 	INFO("Counting coverage finished");
 	return rl;
 }
 
-template<class Graph, class Read, class Index>
-size_t ConstructGraph(size_t k, const debruijn_config::construction params,
+template<class Graph, class Read, class Seq>
+size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
-		Index& index, SingleReadStream* contigs_stream = 0) {
+		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
 	if(params.con_mode == construction_mode::con_extention) {
 		return ConstructGraphUsingExtentionIndex(k, params, streams, g, index, contigs_stream);
 	} else if(params.con_mode == construction_mode::con_old){
@@ -212,10 +211,10 @@ size_t ConstructGraph(size_t k, const debruijn_config::construction params,
 	}
 }
 
-template<class Graph, class Readers, class Index>
+template<class Read>
 size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction &params,
-		Readers& streams, Graph& g,
-		Index& index, SingleReadStream* contigs_stream = 0) {
+		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
+		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
 
 	FillCoverageFromIndex(g, index, k);

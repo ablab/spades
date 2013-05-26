@@ -219,8 +219,9 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 
 	PairedInfoIndexT<Graph> paired_index(gp.g);
 
-	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector(new SingleStream(paired_read_stream));
-	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
+	SingleStream single_stream(paired_read_stream);
+	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({&single_stream});
+	ConstructGraphWithCoverage<io::SingleRead>(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
 
 	FillPairedIndexWithReadCountMetric(gp.g,
 			gp.int_ids, gp.index,
