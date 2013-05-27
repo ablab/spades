@@ -269,14 +269,15 @@ public:
 		sz = push_back_buffer_.size();
 		writer.write((char*) &sz, sizeof(sz));
 		writer.write((char*) &push_back_buffer_[0],
-				sz * sizeof(push_back_buffer_[0]));
+                     sz * sizeof(push_back_buffer_[0]));
 		for (auto it = push_back_index_.left.begin(), e =
-				push_back_index_.left.end(); it != e; ++it) {
+                       push_back_index_.left.end(); it != e; ++it) {
 			size_t idx = it->second;
 			KMer::BinWrite(writer, it->first);
 			writer.write((char*) &idx, sizeof(idx));
 			sz -= 0;
-		}VERIFY(sz == 0);
+		}
+        VERIFY(sz == 0);
 		traits::raw_serialize(writer, kmers);
 	}
 
@@ -291,7 +292,7 @@ public:
 		reader.read((char*) &sz, sizeof(sz));
 		push_back_buffer_.resize(sz);
 		reader.read((char*) &push_back_buffer_[0],
-				sz * sizeof(push_back_buffer_[0]));
+                    sz * sizeof(push_back_buffer_[0]));
 		for (size_t i = 0; i < sz; ++i) {
 			KMer s(K_);
 			size_t idx;
@@ -318,7 +319,7 @@ public:
 
 protected:
 	bool contains(KMerIdx idx, const KMer &k,
-			bool check_push_back = true) const {
+                  bool check_push_back = true) const {
 		// Sanity check
 		if (idx == InvalidKMerIdx || idx >= size())
 			return false;
