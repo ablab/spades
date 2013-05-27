@@ -50,12 +50,15 @@ class MMappedReader {
     BytesRead += amount;
   }
 
-
  protected:
   uint8_t* MappedRegion;
   size_t FileSize, BlockOffset, BytesRead, BlockSize;
 
  public:
+  MMappedReader()
+      : StreamFile(-1), Unlink(false), FileName(""), MappedRegion(0), FileSize(0), BytesRead(0)
+    {}
+
   MMappedReader(const std::string &filename, bool unlink = false,
                 size_t blocksize = 64*1024*1024, size_t off = 0, size_t sz = 0)
       : Unlink(unlink), FileName(filename), BlockSize(blocksize) {
