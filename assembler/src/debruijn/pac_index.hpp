@@ -11,7 +11,6 @@
 #include <algorithm>
 #include "pacbio_read_structures.hpp"
 
-//TODO: dangerousCode
 
 template<class Graph>
 struct MappingDescription {
@@ -269,9 +268,10 @@ public:
 		return cur_sorted;
 	}
 
-	bool TopologyGap(EdgeId first, EdgeId second) const {
-		return ((g_.IsDeadEnd(g_.EdgeEnd(first)) && g_.IsDeadStart(g_.EdgeStart(second)))
-				|| (g_.IsDeadStart(g_.EdgeStart(first)) && g_.IsDeadEnd(g_.EdgeEnd(second))));
+	bool TopologyGap(EdgeId first, EdgeId second, bool oriented) const {
+		bool res = (g_.IsDeadStart(g_.EdgeStart(first)) && g_.IsDeadEnd(g_.EdgeEnd(second)));
+		if (!oriented) res |= g_.IsDeadEnd(g_.EdgeEnd(first)) && g_.IsDeadStart(g_.EdgeStart(second));
+		return res;
 	}
 
 	OneReadMapping<Graph> GetReadAlignment(Sequence &s) {
@@ -360,7 +360,7 @@ public:
 				EdgeId after_gap = sortedEdges[i][0];
 //do not add "gap" for rc-jumping
 				if (before_gap != after_gap && before_gap != g_.conjugate(after_gap)) {
-					if (i != j && TopologyGap(before_gap, after_gap)) {
+					if (i != j && TopologyGap(before_gap, after_gap, true)) {
 						if (start_clusters[j]->CanFollow(*end_clusters[i])) {
 							illumina_gaps.push_back(GapDescription<Graph>(*end_clusters[i], *start_clusters[j], s, K_));
 						}

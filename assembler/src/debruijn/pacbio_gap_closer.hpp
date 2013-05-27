@@ -30,12 +30,13 @@ private:
 	vector<EdgeId> index;
 	set<pair<EdgeId, EdgeId> > nonempty_pairs;
 	set<pair<EdgeId, EdgeId> > transitively_ignored_pairs;
-
+	set<pair<EdgeId, EdgeId> > symmetrically_ignored_pairs;
 public:
 	GapStorage(Graph &g):g_(g), inner_index() {}
 
 	size_t FillIndex(){
 		index.resize(0);
+		set<EdgeId> tmp;
 		for (auto iter = inner_index.begin(); iter != inner_index.end(); iter ++){
 			index.push_back(iter->first);
 		}
@@ -48,6 +49,13 @@ public:
 
 	bool IsTransitivelyIgnored(pair<EdgeId, EdgeId> p) {
 		return (transitively_ignored_pairs.find(p) != transitively_ignored_pairs.end());
+	}
+	bool IsSymmetricallyIgnored(pair<EdgeId, EdgeId> p) {
+		return (symmetrically_ignored_pairs.find(p) != symmetrically_ignored_pairs.end());
+	}
+
+	bool IsIgnored(pair<EdgeId, EdgeId> p) {
+		return (IsTransitivelyIgnored(p) || IsSymmetricallyIgnored(p));
 	}
 	void AddGap(const GapDescription<Graph> &p, bool add_rc = false){
 		HiddenAddGap(p);
@@ -66,13 +74,21 @@ public:
 
 	void PostProcess(){
 		FillIndex();
+		set<pair<EdgeId, EdgeId> > used_rc_pairs;
 		for(auto iter = nonempty_pairs.begin(); iter != nonempty_pairs.end(); ++iter) {
+			if (used_rc_pairs.find(*iter) != used_rc_pairs.end()) {
+				DEBUG("skipping pair " << g_.int_id(iter->first) << "," << g_.int_id(iter->second) );
+				symmetrically_ignored_pairs.insert(make_pair(iter->first, iter->second));
+			} else {
+				DEBUG("Using pair" << g_.int_id(iter->first) << "," << g_.int_id(iter->second) );
+			}
 			for (size_t i = 0; i < index.size(); i++ ) {
 				if (nonempty_pairs.find(make_pair(iter->first, index[i])) != nonempty_pairs.end() && nonempty_pairs.find(make_pair(index[i], iter->second)) != nonempty_pairs.end()) {
 					INFO("pair " << g_.int_id(iter->first) << "," << g_.int_id(iter->second) << " is ignored because of edge between " << g_.int_id(index[i]));
 					transitively_ignored_pairs.insert(make_pair(iter->first, iter->second));
 				}
 			}
+			used_rc_pairs.insert(make_pair(g_.conjugate(iter->second), g_.conjugate(iter->first)));
 		}
 	}
 
@@ -86,17 +102,6 @@ public:
 			}
 			filestr<< endl;
 		}
-//		filestr << "New edges: " << endl;
-//		for(auto iter = new_edges.begin(); iter != new_edges.end(); ++iter) {
-//			filestr << g_.int_id(iter->first)<< " " <<iter->second.size() << endl;
-//			if (iter->second.size() > 1) {
-//				WARN ("nontrivial gap closing for edge" <<g_.int_id(iter->first));
-//			}
-//			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
-//				filestr << g_.int_id(j_iter->first)<< " " << j_iter->second.first << endl;
-//				filestr << j_iter->second.second << endl;
-//			}
-//		}
 	}
 
 	void PadGapStrings(EdgeId e) {
@@ -109,12 +114,23 @@ public:
 			if (next_iter == inner_index[e].end() || next_iter->end != cl_start->end) {
 				int start_min = 1000000000;
 				int end_max = 0;
+				int long_seqs = 0;
+				int short_seqs = 0;
+				//TODO: to config
+				int long_seq_limit = 400;
+				bool exclude_long_seqs= false;
 				for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
+					if (j_iter->gap_seq.size() > long_seq_limit)
+						long_seqs ++;
+					else
+						short_seqs ++;
 					if (j_iter->edge_gap_start_position < start_min)
 						start_min = j_iter->edge_gap_start_position;
 					if (j_iter->edge_gap_end_position > end_max)
 						end_max = j_iter->edge_gap_end_position;
 				}
+				if (short_seqs >=2 && short_seqs > long_seqs)
+					exclude_long_seqs = true;
 //				start_min = 0;
 //				end_max = g_.length(cl_start->end) - 1;
 				size_t len = next_iter - cl_start;
@@ -122,6 +138,9 @@ public:
 					nonempty_pairs.insert(make_pair(cl_start->start, cl_start->end));
 				}
 				for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
+					if (exclude_long_seqs && j_iter->gap_seq.size() > long_seq_limit)
+						continue;
+
 					string s = g_.EdgeNucls(j_iter->start).Subseq(start_min, j_iter->edge_gap_start_position).str();
 					s += j_iter->gap_seq.str();
 					s += g_.EdgeNucls(j_iter->end).Subseq(j_iter->edge_gap_end_position, end_max).str();
@@ -254,6 +273,7 @@ private:
 	}
 
 	void ConstructConsensus(EdgeId e, GapStorage<Graph> &storage, map<EdgeId, map<EdgeId, pair<size_t, string> > > &new_edges_by_thread) {
+//		if (g_.int_id(e) != 7971869 &&  g_.int_id(e) != 7966314) return;
 		auto cl_start = storage.inner_index[e].begin();
 		auto iter = storage.inner_index[e].begin();
 		size_t cur_len = 0;
@@ -261,7 +281,7 @@ private:
 			auto next_iter = ++iter;
 			cur_len++;
 			if (next_iter == storage.inner_index[e].end() || next_iter->end != cl_start->end) {
-				if (cur_len > 1 && !storage.IsTransitivelyIgnored(make_pair(cl_start->start, cl_start->end))) {
+				if (cur_len > 1 && !storage.IsIgnored(make_pair(cl_start->start, cl_start->end))) {
 					vector<string> gap_variants;
 					for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
 						string s = j_iter->gap_seq.str();
