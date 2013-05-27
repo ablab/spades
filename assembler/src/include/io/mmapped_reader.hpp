@@ -151,6 +151,24 @@ class MMappedReader {
     read_internal(cbuf, amount);
   }
 
+  void* skip(size_t amount) {
+    // Easy case, no remapping is needed
+    if (BytesRead + amount < BlockOffset + BlockSize) {
+      void* out = MappedRegion + BytesRead - BlockOffset;
+      BytesRead += amount;
+
+      return out;
+    }
+
+    // Make sure data does not cross the block boundary
+    VERIFY(BytesRead  == BlockOffset + BlockSize);
+
+    // Now, remap and read from the beginning of the block
+    remap();
+
+    return skip(amount);
+  }
+
   bool good() const {
     return BytesRead < FileSize;
   }
