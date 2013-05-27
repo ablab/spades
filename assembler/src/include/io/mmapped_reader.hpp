@@ -27,7 +27,6 @@ class MMappedReader {
   int StreamFile;
   bool Unlink;
   std::string FileName;
-  MMappedReader(const MMappedReader &) = delete;
 
   void remap() {
     VERIFY(BlockSize != FileSize);
@@ -86,8 +85,33 @@ class MMappedReader {
     BlockOffset = BytesRead = 0;
   }
 
+  MMappedReader(MMappedReader &&other) {
+    // First, copy out the stuff
+    MappedRegion = other.MappedRegion;
+    FileSize = other.FileSize;
+    BlockOffset = other.BlockOffset;
+    BytesRead = other.BytesRead;
+    BlockSize = other.BlockSize;
+    FileName = std::move(other.FileName);
+    Unlink = other.Unlink;
+    StreamFile = other.StreamFile;
+
+    // Now, zero out inside other, so we won't do crazy thing in dtor
+    StreamFile = -1;
+    Unlink = false;
+    MappedRegion = 0;
+  }
+
+  MMappedReader& operator=(MMappedReader &&other) {
+    if (this != &other) {
+      *this = std::move(other);
+    }
+    return *this;
+  }
+
   virtual ~MMappedReader() {
-    close(StreamFile);
+    if (StreamFile != -1)
+      close(StreamFile);
     if (MappedRegion)
       munmap(MappedRegion, BlockSize);
 
