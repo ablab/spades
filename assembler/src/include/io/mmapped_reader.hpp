@@ -12,6 +12,8 @@
 
 #include "verify.hpp"
 
+#include <boost/iterator/iterator_facade.hpp>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -209,6 +211,42 @@ class MMappedRecordReader : public MMappedReader {
   const_iterator end() const { return const_iterator(data() + size()); }
 };
 
+template<class T>
+class MMappedFileRecordIterator :
+        public boost::iterator_facade<MMappedFileRecordIterator<T>,
+                                      const T,
+                                      std::input_iterator_tag> {
+  public:
+    // Default ctor, used to implement "end" iterator
+    MMappedFileRecordIterator() {}
+    MMappedFileRecordIterator(const std::string &FileName)
+            : reader_(FileName, false) {}
+    MMappedFileRecordIterator(MMappedRecordReader<T> &&reader)
+            : reader_(std::move(reader)) {}
+    bool good() const {
+        return reader_.good();
+    }
+
+  private:
+    friend class boost::iterator_core_access;
+
+    void increment() {
+        reader_.read(&value_, sizeof(value_));
+    }
+    bool equal(const MMappedFileRecordIterator &other) {
+        // Iterators are equal iff:
+        //   1) They both are not good (at the end of the stream),
+        //      or
+        //   2) Has the same mapped region
+        return ((!reader_.good() && !other.reader_.good()) ||
+                reader_.data() == other.reader_.data());
+    }
+    const T dereference() const { return value_; }
+
+    T value_;
+    MMappedRecordReader<T> reader_;
+};
+
 template<typename T>
 class MMappedRecordArrayReader : public MMappedReader {
   size_t elcnt_;
@@ -243,6 +281,39 @@ class MMappedRecordArrayReader : public MMappedReader {
   iterator end() { return iterator(data() + size()*elcnt_, elcnt_); }
   const_iterator end() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
   const_iterator cend() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
+};
+
+template<class T>
+class MMappedFileRecordArrayIterator :
+        public boost::iterator_facade<MMappedFileRecordArrayIterator<T>,
+                                      const T*,
+                                      std::input_iterator_tag> {
+  public:
+    // Default ctor, used to implement "end" iterator
+    MMappedFileRecordArrayIterator() {}
+    MMappedFileRecordArrayIterator(const std::string &FileName, size_t elcnt)
+            : reader_(FileName, false,
+                      64*1024*1024 / (sizeof(T) * getpagesize() * elcnt) * (sizeof(T) * getpagesize() * elcnt)),
+              elcnt_(elcnt) {}
+    MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
+            : reader_(std::move(reader)), elcnt_(elcnt) {}
+
+    bool good() const { return reader_.good(); }
+
+  private:
+    friend class boost::iterator_core_access;
+
+    void increment() {
+        value_ = reader_.skip(elcnt_ * sizeof(T));
+    }
+    bool equal(const MMappedFileRecordArrayIterator &other) {
+        return value_ == other.value_;
+    }
+    const T* dereference() const { return value_; }
+
+    T* value_;
+    MMappedRecordReader<T> reader_;
+    size_t elcnt_;
 };
 
 
