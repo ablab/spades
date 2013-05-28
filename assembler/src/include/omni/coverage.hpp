@@ -33,7 +33,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 //	map_type storage_;
 
     size_t KPlusOneMerCoverage(EdgeId edge) const {
-        return (size_t) math::round(coverage(edge)) * this->g().length(edge);
+        return (size_t) math::round(coverage(edge) * (double) this->g().length(edge));
     }
 
     template<class ReadThreader>
