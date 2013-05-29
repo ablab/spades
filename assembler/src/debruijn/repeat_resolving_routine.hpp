@@ -582,10 +582,14 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //				"no_repeat_graph");
 	}
 
-	if (kill_loops) {
-	}
 
-	OutputMaskedContigs(origin_gp.g,
+    if (kill_loops) {
+        SimpleLoopKiller<typename graph_pack::graph_t> lk(resolved_gp.g,
+                cfg::get().rr.max_repeat_length, 6);
+        lk.KillAllLoops();
+    }
+
+    OutputMaskedContigs(origin_gp.g,
 			cfg::get().output_dir + "before_resolve_masked.fasta",
 			origin_gp.mismatch_masker);
 
@@ -1083,7 +1087,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 			}
 			INFO("Scaffolding");
 			path_extend::resolve_repeats_pe(resolved_gp, pe_indexs,
-					pe_scaf_indexs, indexs,  vector<LongReadInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta", false);
+					pe_scaf_indexs, indexs,  vector<LongReadInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta", false, boost::none, false);
 			SaveResolved(resolved_gp, resolved_graph_paired_info,
 					resolved_graph_paired_info_cl);
 			delete resolved_graph_scaff_clustered;
@@ -1121,12 +1125,12 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
 	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
 	    }
-        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta");
+        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         delete_index(pe_scaf_indexs);
 	}
 	else {
 		pe_scaf_indexs.clear();
-		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta");
+		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
 	}
 }
 

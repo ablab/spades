@@ -141,7 +141,8 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		PathContainer& true_paths,
 		const std::string& output_dir,
 		const std::string& contigs_name,
-		bool investigateShortLoops) {
+		bool traversLoops,
+		boost::optional<std::string> broken_contigs) {
 
 	INFO("Path extend repeat resolving tool started");
 	make_dir(output_dir);
@@ -178,7 +179,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		        pset.mate_pair_options.select_options.priority_coeff :
 		        pset.extension_options.select_options.priority_coeff;
 		SimpleExtensionChooser * extensionChooser = new SimpleExtensionChooser(gp.g, wcs[i], priory_coef);
-		usualPEs.push_back(new SimplePathExtender(gp.g, pset.loop_removal.max_loops, extensionChooser, investigateShortLoops));
+		usualPEs.push_back(new SimplePathExtender(gp.g, pset.loop_removal.max_loops, extensionChooser));
 	}
 
 	GapJoiner * gapJoiner = new HammingGapJoiner(gp.g,
@@ -192,7 +193,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		scaf_wcs.push_back(new ReadCountWeightCounter(gp.g, scafolding_libs[i]));
 		ScaffoldingExtensionChooser * scafExtensionChooser = new ScaffoldingExtensionChooser(gp.g, scaf_wcs[i],
 							scafolding_libs[i][0]->is_mate_pair_? pset.mate_pair_options.select_options.priority_coeff : pset.extension_options.select_options.priority_coeff);
-		scafPEs.push_back(new ScaffoldingPathExtender(gp.g, pset.loop_removal.max_loops, scafExtensionChooser, gapJoiner, investigateShortLoops));
+		scafPEs.push_back(new ScaffoldingPathExtender(gp.g, pset.loop_removal.max_loops, scafExtensionChooser, gapJoiner));
 	}
 
 	PathExtendResolver resolver(gp.g);
@@ -207,7 +208,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.push_back(pdPE);
 	all_libs.push_back(longReadPathExtender);
-	CoveringPathExtender * mainPE = new CompositePathExtender(gp.g, pset.loop_removal.max_loops, all_libs, investigateShortLoops);
+	CoveringPathExtender * mainPE = new CompositePathExtender(gp.g, pset.loop_removal.max_loops, all_libs);
 
 	seeds.SortByLength();
 	INFO("Extending seeds");
@@ -223,28 +224,22 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	paths.CheckSymmetry();
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 	paths.SortByLength();
-    writer.writePaths(paths, output_dir + contigs_name);
     debug_output_paths(writer, gp, output_dir, paths, "final_paths");
 
-    std::string bs_name = make_new_name(contigs_name, "broken");
-    output_broken_scaffolds(paths, gp.g.k(), writer, output_dir + bs_name);
+	if (broken_contigs.is_initialized()) {
+	    output_broken_scaffolds(paths, gp.g.k(), writer, output_dir + broken_contigs.get());
+	}
 
-    if (investigateShortLoops) {
-        output_broken_scaffolds(paths, gp.g.k(), writer, output_dir + "final_contigs.fasta");
-    }
-
-    if (investigateShortLoops) {
+    if (traversLoops) {
         INFO("Traversing tandem repeats");
         LoopTraverser loopTraverser(gp.g, paths, mainPE->GetCoverageMap(), mainPE);
         loopTraverser.TraverseAllLoops();
         paths.SortByLength();
-        writer.writePaths(paths, output_dir + make_new_name(contigs_name, "loop_tr"));
-
-        bs_name = make_new_name(contigs_name, "broken_ltr");
-        output_broken_scaffolds(paths, gp.g.k(), writer, output_dir + bs_name);
     }
 
-	INFO("Path extend repeat resolving tool finished");
+    writer.writePaths(paths, output_dir + contigs_name);
+
+    INFO("Path extend repeat resolving tool finished");
 }
 
 void add_not_empty_lib(vector<PairedInfoLibraries>& libs, const PairedInfoLibraries& lib){
@@ -307,7 +302,7 @@ void add_paths_to_container(conj_graph_pack& gp, const std::vector<LongReadInfo<
 void resolve_repeats_pe(conj_graph_pack& gp,
 		vector<PairedIndexT*>& paired_index, vector<PairedIndexT*>& scaff_index,
 		vector<size_t>& indexs, const std::vector<LongReadInfo<Graph> >& true_paths,
-		const std::string& output_dir, const std::string& contigs_name, bool use_auto_threshold = true) {
+		const std::string& output_dir, const std::string& contigs_name, bool traverseLoops, boost::optional<std::string> broken_contigs, bool use_auto_threshold = true) {
 
     const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
@@ -354,7 +349,7 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 	PathContainer supportingContigs;
 	add_paths_to_container(gp, true_paths, supportingContigs);
 
-	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, true);
+	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, traverseLoops, broken_contigs);
 
 	delete_libs(paired_end_libs);
 	delete_libs(mate_pair_libs);

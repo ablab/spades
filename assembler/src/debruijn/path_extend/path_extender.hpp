@@ -565,7 +565,7 @@ public:
         extenders_.push_back(pe);
     }
 
-    CompositePathExtender(Graph & g, size_t max_loops, vector<PathExtender*> pes, bool investigateShortLoops) :
+    CompositePathExtender(Graph & g, size_t max_loops, vector<PathExtender*> pes, bool investigateShortLoops = true) :
 			CoveringPathExtender(g, max_loops, investigateShortLoops), extenders_() {
 		extenders_ = pes;
 	}
@@ -608,7 +608,7 @@ protected:
 
 public:
 
-    SimplePathExtender(Graph& g, size_t max_loops, ExtensionChooser * ec,  bool investigateShortLoops):
+    SimplePathExtender(Graph& g, size_t max_loops, ExtensionChooser * ec,  bool investigateShortLoops = true):
     	CoveringPathExtender(g, max_loops, investigateShortLoops), extensionChooser_(ec), loopResolver_(g, *extensionChooser_) {
     }
 
@@ -666,7 +666,7 @@ protected:
 
 public:
 
-    ScaffoldingPathExtender(Graph& g, size_t max_loops, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, bool investigateShortLoops):
+    ScaffoldingPathExtender(Graph& g, size_t max_loops, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, bool investigateShortLoops = true):
     	CoveringPathExtender(g, max_loops, investigateShortLoops),
             scaffoldingExtensionChooser_(scaffoldingEC),
             gapJoiner_(gapJoiner)

@@ -549,17 +549,11 @@ public:
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverageMap, size_t maxOverlapedSize, ContigWriter& writer, string output_dir) {
         SimpleOverlapRemover overlapRemover(g_, coverageMap);
-        paths.SortByLength();
         DEBUG("Removing overlaps");
-        paths.SortByLength();
         overlapRemover.removeOverlaps(paths);
-        paths.SortByLength();
         DEBUG("remove equals paths");
-        paths.SortByLength();
 		overlapRemover.removeSimilarPaths(paths, 0);
-		paths.SortByLength();
 		overlapRemover.removeSimilarPaths(paths, maxOverlapedSize);
-		paths.SortByLength();
 		DEBUG("end removing");
     }
 
