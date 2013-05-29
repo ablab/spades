@@ -92,7 +92,9 @@ private:
 				startPath->PushBack(pathToAdd[i]);
 			}*/
 		}
-		startPath->PushBack(endPath->At(commonSize), nLen);
+		if (commonSize < endPath->Size()){
+			startPath->PushBack(endPath->At(commonSize), nLen);
+		}
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
 			startPath->PushBack(endPath->At(i));
 		}
