@@ -1033,6 +1033,18 @@ public:
             }
         }
     }
+
+    void FilterEmptyPaths(){
+    	DEBUG ("try to delete empty paths");
+    	for (Iterator iter = begin(); iter != end(); ){
+    		if (iter.get()->Size() == 0){
+    			iter = erase(iter);
+    		} else {
+    			++iter;
+    		}
+    	}
+    	DEBUG("empty paths are removed");
+    }
 };
 
 

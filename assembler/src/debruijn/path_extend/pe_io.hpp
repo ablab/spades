@@ -25,9 +25,10 @@ class ContigWriter {
 
 protected:
 	Graph& g_;
-
     size_t k_;
-	string ToString(const BidirectionalPath& path) const {
+
+
+	string ToString(const BidirectionalPath& path) const{
 		stringstream ss;
 		if (!path.Empty()) {
 			ss <<g_.EdgeNucls(path[0]).Subseq(0, k_).str();

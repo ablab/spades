@@ -15,16 +15,16 @@
 namespace path_extend {
 
 class LoopTraverser {
-	Graph& graph_;
+	Graph& g_;
 	PathContainer& paths_;
-	GraphCoverageMap& coverageMap_;
+	GraphCoverageMap& covMap_;
 	PathExtender* extender_;
 private:
 	EdgeId FindStart(const set<VertexId>& component_set) const{
 		EdgeId result;
 		for (auto it = component_set.begin(); it != component_set.end(); ++it) {
-			for (auto eit = graph_.in_begin(*it); eit != graph_.in_end(*it); ++eit) {
-				if (component_set.count(graph_.EdgeStart(*eit)) == 0) {
+			for (auto eit = g_.in_begin(*it); eit != g_.in_end(*it); ++eit) {
+				if (component_set.count(g_.EdgeStart(*eit)) == 0) {
 					if (result != EdgeId()) {
 						return EdgeId();
 					}
@@ -38,9 +38,9 @@ private:
 	EdgeId FindFinish(const set<VertexId>& component_set) {
 		EdgeId result;
 		for (auto it = component_set.begin(); it != component_set.end(); ++it) {
-			for (auto I = graph_.out_begin(*it), E = graph_.out_end(*it);
+			for (auto I = g_.out_begin(*it), E = g_.out_end(*it);
 					I != E; ++I) {
-				if (component_set.count(graph_.EdgeEnd(*I)) == 0) {
+				if (component_set.count(g_.EdgeEnd(*I)) == 0) {
 					if (result != EdgeId()) {
 						return EdgeId();
 					}
@@ -53,9 +53,9 @@ private:
 
 	void TraverseLoop(EdgeId start, EdgeId end, set<VertexId>& component, PathContainer paths) {
 		std::set<BidirectionalPath*> coveredStartPaths =
-				coverageMap_.GetCoveringPaths(start);
+				covMap_.GetCoveringPaths(start);
 		std::set<BidirectionalPath*> coveredEndPaths =
-				coverageMap_.GetCoveringPaths(end);
+				covMap_.GetCoveringPaths(end);
 		for (auto startPath = coveredStartPaths.begin();
 				startPath != coveredStartPaths.end(); ++startPath) {
 			if ((*startPath)->FindAll(end).size() > 0) {
@@ -72,54 +72,44 @@ private:
 		if ((*startPath) == endPath->Conjugate()){
 			return;
 		}
-		if (startPath->hasOverlapedEnd()) {
-			BidirectionalPath* overlap = *startPath->getOverlapedEnd().begin();
-			DEBUG("overlap");
-			if ((*overlap) != startPath->Conjugate()) {
-				for (size_t i = 0; i < overlap->Size(); ++i) {
-					startPath->PushBack(overlap->At(i));
-				}
-				if ((overlap->FindAll(end)).size() != 0) {
-					overlap->Clear();
-					return;
-				}
-				overlap->Clear();
-			}
-		}
 		extender_->GrowPath(*startPath);
 		extender_->GrowPath(*endPath->getConjPath());
 
 		size_t commonSize = startPath->CommonEndSize(*endPath);
+		size_t nLen = 0;
 		if (commonSize == 0) {
-			DijkstraSearcher pathSeacher(graph_);
-			VertexId lastVertex = graph_.EdgeEnd(
+			DijkstraSearcher pathSeacher(g_);
+			VertexId lastVertex = g_.EdgeEnd(
 					startPath->At(startPath->Size() - 1));
-			VertexId firstVertex = graph_.EdgeStart(endPath->At(0));
+			VertexId firstVertex = g_.EdgeStart(endPath->At(0));
 			vector<EdgeId> pathToAdd = pathSeacher.FindShortestPathsFrom(
 					lastVertex)[firstVertex];
-			for (size_t i = 0; i < pathToAdd.size(); ++i) {
-				startPath->PushBack(pathToAdd[i]);
+			for (size_t i = 0; i < pathToAdd.size(); ++i){
+				nLen += g_.length(pathToAdd[i]);
 			}
+			nLen += g_.k();
+			/*for (size_t i = 0; i < pathToAdd.size(); ++i) {
+				startPath->PushBack(pathToAdd[i]);
+			}*/
 		}
-
-		for (size_t i = commonSize; i < endPath->Size(); ++i) {
+		startPath->PushBack(endPath->At(commonSize), nLen);
+		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
 			startPath->PushBack(endPath->At(i));
 		}
 
 		startPath->clearOverlapedEnd();
-		startPath->addOverlapedEnd(endPath->getOverlapedEnd());
 		endPath->Clear();
 	}
 
 public:
 	LoopTraverser(Graph& g, PathContainer& paths, GraphCoverageMap& coverageMap, PathExtender* extender) :
-			graph_(g), paths_(paths), coverageMap_(coverageMap), extender_(extender) {
+			g_(g), paths_(paths), covMap_(coverageMap), extender_(extender) {
 
 	}
 
 	void TraverseAllLoops() {
 		DEBUG("TraverseAllLoops");
-		LongEdgesExclusiveSplitter<Graph> splitter(graph_, 500);
+		LongEdgesExclusiveSplitter<Graph> splitter(g_, 1000);
 		while (!splitter.Finished()) {
 			vector<VertexId> component = splitter.NextComponent();
 			if (component.size() > 10)

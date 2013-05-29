@@ -42,6 +42,28 @@ size_t find_max_overlaped_len(vector<PairedInfoLibraries>& libes) {
 	return max;
 }
 
+size_t getMinInsertSize(const vector<PairedInfoLibraries>& libs) {
+
+	int min = 0;
+	size_t index = 0;
+	while (index < libs.size() && libs[index].size() == 0){
+		index++;
+	}
+	if (index == libs.size()){
+		return 0;
+	}
+	min = libs[index][0]->insert_size_ - libs[index][0]->read_size_ / 2;
+	for (size_t i = 0; i < libs.size(); ++i) {
+		for (size_t j = 0; j < libs[i].size(); ++j) {
+			int overlap = libs[i][j]->insert_size_ - libs[i][j]->read_size_ / 2;
+			if (overlap < min && overlap > 0) {
+				min = overlap;
+			}
+		}
+	}
+	return (size_t) min;
+}
+
 string get_etc_dir(const std::string& output_dir){
 	return output_dir + cfg::get().pe_params.etc_dir + "/";
 }
@@ -197,6 +219,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	debug_output_paths(writer, gp, output_dir, paths, "overlaped_paths");
     size_t max_over = find_max_overlaped_len(libs);
     resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over, writer, output_dir);
+    paths.FilterEmptyPaths();
 	paths.CheckSymmetry();
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 	paths.SortByLength();
@@ -332,7 +355,6 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 	add_paths_to_container(gp, true_paths, supportingContigs);
 
 	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, true);
-	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, make_new_name(contigs_name, "no_trivial_loops"), false);
 
 	delete_libs(paired_end_libs);
 	delete_libs(mate_pair_libs);
