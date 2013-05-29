@@ -126,7 +126,7 @@ void output_broken_scaffolds(PathContainer& paths, int k, ContigWriter& writer, 
         return;
     }
 
-    int min_gap = cfg::get().pe_params.obs == obs_break_all ? 0 : k;
+    int min_gap = cfg::get().pe_params.obs == obs_break_all ? k / 2 : k;
 
     ScaffoldBreaker breaker(min_gap);
     breaker.Split(paths);
