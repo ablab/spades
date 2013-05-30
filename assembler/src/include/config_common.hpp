@@ -100,7 +100,7 @@ void inline load_split(vector<string>& vec, boost::property_tree::ptree const& p
 }
 
 template<class T>
-void inline load(vector<T>& vec, boost::property_tree::ptree const& pt, string const& key, bool complete) {
+void inline load(vector<T>& vec, boost::property_tree::ptree const& pt, string const& key, bool /*complete*/) {
 	boost::optional<T> value = pt.get_optional<T>(key);
 	if (value) {
 		vec.push_back(*value);

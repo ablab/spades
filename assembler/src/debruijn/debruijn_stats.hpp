@@ -148,7 +148,7 @@ void CountPairedInfoStats(const Graph& g,
 	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-	UniquePathStat<Graph>(g, filtered_index, *cfg::get().ds.IS,	*cfg::get().ds.RL, 0.1 * (*cfg::get().ds.IS)).Count();
+	UniquePathStat<Graph>(g, filtered_index, (size_t)math::round(*cfg::get().ds.IS), *cfg::get().ds.RL, 0.1 * (*cfg::get().ds.IS)).Count();
 	UniqueDistanceStat<Graph>(etalon_index).Count();
 	INFO("Paired info stats counted");
 }
@@ -369,7 +369,8 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
   PairedIndexT etalon_index(gp.g);
 
     FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
-			*cfg::get().ds.IS, *cfg::get().ds.RL, *cfg::get().ds.is_var, true);
+    		(size_t)math::round(*cfg::get().ds.IS), *cfg::get().ds.RL,
+    		(size_t)math::round(*cfg::get().ds.is_var), true);
 
 	CountAndSaveAllPaths(gp.g, gp.int_ids, paired_index, clustered_index);
 
@@ -387,7 +388,8 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
     if (cfg::get().paired_info_scaffolder) {
 		ConjugateDataPrinter<Graph> data_printer(gp.g, gp.int_ids);
         INFO("Generating the statistics of pair info for scaffolding");
-        GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, *cfg::get().ds.RL, *cfg::get().ds.is_var);
+        GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t)math::round(*cfg::get().ds.IS),
+        		*cfg::get().ds.RL, (size_t)math::round(*cfg::get().ds.is_var));
         PairedIndexT scaf_clustered_index(gp.g);
         FilterIndexWithExistingPaths(scaf_clustered_index, clustered_index, gp, dist_finder);
         data_printer.savePaired(
@@ -469,11 +471,11 @@ const string& file_name, const string& graph_name, size_t k) {
 	WriteToDotFile(g, labeler, file_name, graph_name, path1, path2);
 }
 
-void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<NCGraph>& index
-		, const Sequence& genome,
-		const string& work_tmp_dir, const string& graph_name,
-		const IdTrackHandler<NCGraph> &IdTrackLabelerResolved,
-		size_t k) {
+void ProduceNonconjugateInfo(NCGraph& /*g*/, const EdgeIndex<NCGraph>& /*index*/
+		, const Sequence& /*genome*/,
+		const string& /*work_tmp_dir*/, const string& /*graph_name*/,
+		const IdTrackHandler<NCGraph> & /*IdTrackLabelerResolved*/,
+		size_t /*k*/) {
 
     //CountStats(g, index, genome, k);
     WARN("Non-conjugate graph is not supported anymore, no stats will be generated.");
@@ -483,7 +485,7 @@ void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<NCGraph>& index
 }
 
 void WriteGraphComponentsAlongGenome(const Graph& g,
-		const IdTrackHandler<Graph>& int_ids,
+		const IdTrackHandler<Graph>& /*int_ids*/,
 		const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper,
 		const GraphLabeler<Graph>& labeler, const Sequence& genome,
@@ -559,7 +561,7 @@ void WriteKmerComponent(conj_graph_pack &gp,
 	}
 	VERIFY(gp.index.contains(kp1mer));
 	EdgeNeighborhoodFinder<Graph> splitter(gp.g, gp.index.get(kp1mer).first, 50,
-			*cfg::get().ds.IS);
+			(size_t)(*cfg::get().ds.IS));
 	ComponentSizeFilter<Graph> filter(gp.g, 500, 2, 500);
 	PathColorer<Graph> colorer(gp.g, path1, path2);
 	WriteComponents<Graph>(gp.g, splitter, filter, folder + "kmer.dot",
@@ -722,13 +724,13 @@ private:
 	const conj_graph_pack::graph_t &graph_;
 };
 
-void WriteGraphComponents(const Graph& g, const EdgeIndex<Graph>& index,
-const GraphLabeler<Graph>& labeler, const Sequence& genome,
-const string& folder, const string &file_name,
-size_t split_edge_length, size_t k) {
+void WriteGraphComponents(const Graph& /*g*/, const EdgeIndex<Graph>& /*index*/,
+const GraphLabeler<Graph>& /*labeler*/, const Sequence& /*genome*/,
+const string& folder, const string & /*file_name*/,
+size_t /*split_edge_length*/, size_t /*k*/) {
 	make_dir(folder);
 
-	VERIFY_MSG(false, "ololo");
+	VERIFY_MSG(false, "WriteGraphComponents is under construction now");
 //	WriteComponents(
 //			g,
 //			split_edge_length,
@@ -807,7 +809,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 		bool new_edge_added = false;
 		EdgeId ei = m_path1[i].first;
 		MappingRange mr = m_path1[i].second;
-		int start = mr.initial_range.start_pos - mr.mapped_range.start_pos;
+		int start = (int)(mr.initial_range.start_pos - mr.mapped_range.start_pos);
 		if (inGenomeWay.find(ei) == inGenomeWay.end()) {
 			vector<pair<int, int>> tmp;
 			tmp.push_back(make_pair(CurI, start));
@@ -843,7 +845,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 	int PosInfo = 0;
 	int AllignedPI = 0;
 	int ExactDPI = 0;
-	int OurD = *cfg::get().ds.IS - *cfg::get().ds.RL;
+	int OurD = (int)math::round(*cfg::get().ds.IS - (double)(*cfg::get().ds.RL));
 	for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 			p_iter != p_end_iter; ++p_iter) {
 		vector<PairInfo> pi = *p_iter;
@@ -868,10 +870,10 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 									inGenomeWay[right_edge][right_i].second
 											- inGenomeWay[left_edge][left_i].second
                       - d)) {
-						best_d = abs(
+						best_d = (int)math::round(abs(
 								inGenomeWay[right_edge][right_i].second
 										- inGenomeWay[left_edge][left_i].second
-                    - d);
+                    - d));
 						best_t = inGenomeWay[right_edge][right_i].first
 								- inGenomeWay[left_edge][left_i].first;
 						DEBUG("best d " << best_d);
@@ -1040,7 +1042,7 @@ void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
 //}
 
 void OutputWrongContigs(Graph& g, EdgeIndex<Graph>& index,
-const Sequence& genome, size_t bound, const string &file_name, size_t k) {
+const Sequence& genome, size_t /*bound*/, const string &file_name, size_t k) {
     SimpleSequenceMapper<Graph> sequence_mapper(g, index, k + 1);
     Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
     Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));

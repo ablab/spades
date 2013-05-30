@@ -84,7 +84,7 @@ void estimate_distance(conj_graph_pack& gp,
     double is_var = *config.ds.is_var;
     size_t delta = size_t(is_var);
     size_t linkage_distance = size_t(config.de.linkage_distance_coeff * is_var);
-    GraphDistanceFinder<Graph> dist_finder(gp.g, *config.ds.IS, *config.ds.RL, delta);
+    GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t)math::round(*config.ds.IS), *config.ds.RL, delta);
     size_t max_distance = size_t(config.de.max_distance_coeff * is_var);
     boost::function<double(int)> weight_function;
 
@@ -112,7 +112,7 @@ void estimate_distance(conj_graph_pack& gp,
     } else {                                                                  // in the case of ``multi-cell''
       // todo reduce number of constructor params                             // we use a trivial weight (equal to 1.)
       PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-          *config.ds.IS, *config.ds.is_var, *config.ds.RL,
+          (size_t)math::round(*config.ds.IS), *config.ds.is_var, *config.ds.RL,
           gp.k_value, *config.ds.avg_coverage);
       normalizing_f = boost::bind(
           &PairedInfoWeightNormalizer<Graph>::NormalizeWeight,

@@ -97,7 +97,7 @@ void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		size_t k) {
 
 	FillEtalonPairedIndex(etalon_paired_index, g, index, kmer_mapper,
-			*cfg::get().ds.IS, *cfg::get().ds.RL, size_t(*cfg::get().ds.is_var),
+			(size_t)math::round(*cfg::get().ds.IS), *cfg::get().ds.RL, size_t(*cfg::get().ds.is_var),
 			genome, k);
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
@@ -117,7 +117,7 @@ void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 //	INFO("Etalon paired info counted");
 }
 
-void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
+void FillCoverageFromIndex(Graph& /*g*/, EdgeIndex<Graph>& index, size_t /*k*/) {
 	EdgeIndex<Graph>::InnerIndex &innerIndex = index.inner_index();
 
 	for (auto I = innerIndex.value_cbegin(), E = innerIndex.value_cend();

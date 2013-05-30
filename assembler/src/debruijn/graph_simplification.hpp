@@ -36,13 +36,13 @@ namespace debruijn_graph {
 class LengthThresholdFinder {
  public:
     static size_t MaxTipLength(size_t read_length, size_t k, double coeff) {
-        return std::max((size_t) (std::min(k, read_length / 2) * coeff),
+        return std::max((size_t) math::round((double)std::min(k, read_length / 2) * coeff),
                         read_length);
     }
 
     static size_t MaxBulgeLength(size_t k, double coeff,
                                  size_t additive_coeff) {
-        return std::max((size_t) (k * coeff), k + additive_coeff);
+        return std::max((size_t) math::round((double)k * coeff), k + additive_coeff);
     }
 
     static size_t MaxErroneousConnectionLength(size_t k, size_t param) {
@@ -564,7 +564,7 @@ bool FinalRemoveErroneousEdges(
 
 void PreSimplification(conj_graph_pack& gp,
                        boost::function<void(EdgeId)> removal_handler,
-                       detail_info_printer &printer, size_t iteration_count,
+                       detail_info_printer & /*printer*/, size_t /*iteration_count*/,
                        double determined_coverage_threshold) {
     INFO("PROCEDURE == Presimplification");
     INFO("Early tip clipping");
@@ -605,7 +605,7 @@ void SimplificationCycle(conj_graph_pack& gp,
 
 void PostSimplification(conj_graph_pack& gp,
                         boost::function<void(EdgeId)> &removal_handler,
-                        detail_info_printer &printer,
+                        detail_info_printer & /*printer*/,
                         double determined_coverage_threshold) {
     INFO("PROCEDURE == Post simplification");
     size_t iteration = 0;
@@ -663,7 +663,7 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
 
 void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
-                   omnigraph::GraphLabeler<Graph>& labeler,
+                   omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    detail_info_printer& printer, size_t iteration_count) {
     printer(ipp_before_simplification);
     DEBUG("Graph simplification started");
