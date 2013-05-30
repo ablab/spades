@@ -385,6 +385,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (cfg.pacbio_test_on) {
     load(cfg.pacbio_reads, pt, "pacbio_reads");
     load(cfg.pacbio_k, pt, "pacbio_k");
+    load(cfg.pacbio_optimized_sw, pt, "pacbio_optimized_sw");
   } else {
     cfg.pacbio_reads = "";
     cfg.pacbio_k = 0;

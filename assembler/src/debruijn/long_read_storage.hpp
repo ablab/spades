@@ -141,9 +141,9 @@ public:
 	ifstream filestr(s);
     	INFO("loading from " << s);
     	map<int, EdgeId> tmp_map;
-   	for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+    	for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
     		tmp_map[g_.int_id(*iter)] = *iter;
-   	}
+    	}
     	int fl;
     	FILE* file = fopen((s).c_str(), "r");
     	char ss[14];

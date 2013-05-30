@@ -104,6 +104,32 @@ public:
 		}
 	}
 
+	void LoadFromFile(const string s){
+		FILE* file = fopen((s).c_str(), "r");
+		int res;
+		char ss[5000];
+		map<int, EdgeId> tmp_map;
+		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+		  	tmp_map[g_.int_id(*iter)] = *iter;
+		}
+		while (!feof(file)){
+			int first_id, second_id, first_ind, second_ind;
+			int size;
+			res = fscanf(file, "%d %d\n", &first_id, &size);
+			VERIFY(res == 2);
+			for(int i = 0; i < size; i++) {
+				res = fscanf(file, "%d %d\n", &first_id, &first_ind);
+				VERIFY(res == 2);
+				res = fscanf(file, "%d %d\n", &second_id, &second_ind);
+				VERIFY(res == 2);
+				res = fscanf(file, "%s\n", ss);
+				VERIFY (res == 1);
+				GapDescription<Graph> gap(tmp_map[first_id], tmp_map[second_id],  Sequence(ss), first_ind, second_ind);
+				this->AddGap(gap);
+			}
+		}
+	}
+
 	void PadGapStrings(EdgeId e) {
 		sort(inner_index[e].begin(), inner_index[e].end());
 		auto cl_start = inner_index[e].begin();
@@ -117,7 +143,7 @@ public:
 				int long_seqs = 0;
 				int short_seqs = 0;
 				//TODO: to config
-				int long_seq_limit = 400;
+				size_t long_seq_limit = 400;
 				bool exclude_long_seqs= false;
 				for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
 					if (j_iter->gap_seq.size() > long_seq_limit)
@@ -140,7 +166,6 @@ public:
 				for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
 					if (exclude_long_seqs && j_iter->gap_seq.size() > long_seq_limit)
 						continue;
-
 					string s = g_.EdgeNucls(j_iter->start).Subseq(start_min, j_iter->edge_gap_start_position).str();
 					s += j_iter->gap_seq.str();
 					s += g_.EdgeNucls(j_iter->end).Subseq(j_iter->edge_gap_end_position, end_max).str();
@@ -165,15 +190,18 @@ public:
 template<class Graph>
 class PacbioGapCloser {
 	typedef typename Graph::EdgeId EdgeId;
+	typedef runtime_k::RtSeq Kmer;
+	typedef vector<map<Kmer, int> > KmerStorage;
 private:
 	DECL_LOGGER("PacbioGaps");
 	const Graph &g_;
+//first edge, second edge, weight, seq
 	map<EdgeId, map<EdgeId, pair<size_t, string> > > new_edges;
 
 	string RandomDeletion(string &s) {
 		int pos = rand() % s.length();
 		string res = s.substr(0, pos) + s.substr(pos+1);
-		DEBUG("trying deletion on " <<pos );
+		TRACE("trying deletion on " <<pos );
 		return res;
 	}
 
@@ -184,7 +212,7 @@ private:
 
 	string RandomInsertion(string &s) {
 		int pos = rand() % (s.length() + 1);
-		DEBUG("trying insertion on " << pos );
+		TRACE("trying insertion on " << pos );
 		string res = s.substr(0, pos) + RandomNucleotide() + s.substr(pos);
 		return res;
 	}
@@ -193,7 +221,7 @@ private:
 		int pos = rand() % s.length();
 		string res = s;
 		res[pos] = RandomNucleotide();
-		DEBUG("trying substitution on " <<pos );
+		TRACE("trying substitution on " <<pos );
 		return res;
 	}
 
@@ -209,20 +237,81 @@ private:
 		return s;
 	}
 
-	int EditScore(string &consenus, vector<string> & variants, StripedSmithWaterman::Aligner &aligner) {
+
+	int StringDistance(string &a, string &b) {
+		int a_len = a.length();
+		int b_len = b.length();
+		int d = min(a_len / 3, b_len / 3);
+		d = max(d, 10);
+//		DEBUG(a_len << " " << b_len << " " << d);
+		vector<vector<int> > table(a_len);
+		//int d =
+		for (int i = 0; i < a_len; i++) {
+			table[i].resize(b_len);
+			int low = max(max(0, i - d - 1), i + b_len - a_len - d - 1);
+			int high = min(min(b_len, i + d + 1), i + a_len - b_len + d + 1);
+//			TRACE(low << " " <<high);
+			for (int j = low; j < high; j++)
+				table[i][j] = 1000000000;
+		}
+		table[a_len - 1][b_len - 1] = 1000000000;
+		table[0][0] = 0;
+//free deletions on begin
+//		for(int j = 0; j < b_len; j++)
+//			table[0][j] = 0;
+
+		for (int i = 0; i < a_len; i++) {
+			int low = max(max(0, i - d), i + b_len - a_len - d);
+			int high = min(min(b_len, i + d), i + a_len - b_len + d);
+
+//			TRACE(low << " " <<high);
+			for (int j = low; j < high; j++) {
+
+//			for(int j = max(0, i - d); j < min(b_len, i + d); j++){
+				//for(int j = 0; j < b_len; j++) {
+				if (i > 0)
+					table[i][j] = min(table[i][j], table[i - 1][j] + 1);
+				if (j > 0)
+					table[i][j] = min(table[i][j], table[i][j - 1] + 1);
+				if (i > 0 && j > 0) {
+					int add = 1;
+					if (a[i] == b[j])
+						add = 0;
+					table[i][j] = min(table[i][j], table[i - 1][j - 1] + add);
+				}
+			}
+		}
+		//return table[a_len - 1][b_len - 1];
+//free deletions on end
+		int res = table[a_len - 1][b_len - 1];
+//		DEBUG(res);
+//		for(int j = 0; j < b_len; j++){
+//			res = min(table[a_len - 1][j], res);
+//		}
+		return res;
+	}
+
+
+	int EditScore(string &consensus, vector<string> & variants, StripedSmithWaterman::Aligner &aligner) {
 		int res = 0;
 		StripedSmithWaterman::Filter filter;
 		StripedSmithWaterman::Alignment alignment;
 		filter.report_begin_position = false;
-		filter.report_cigar = false;
+//		filter.report_cigar = false;
 		for(size_t i = 0; i < variants.size(); i++ ) {
-//			res += StringDistance(consenus, variants[i]);
-//		}
 			aligner.Align(variants[i].c_str(), filter, &alignment);
-			DEBUG("scpre" << alignment.sw_score);
-			res += alignment.sw_score;
-			alignment.Clear();
+			TRACE("scpre1:" << alignment.sw_score);
+			//TRACE("next best:" << alignment.sw_score_next_best);
+			TRACE("cigar1:" << alignment.cigar_string);
 
+			if (!cfg::get().pacbio_optimized_sw) {
+				int tmp = StringDistance(consensus, variants[i]) ;
+				TRACE("score3:" << tmp);
+				res += tmp;
+			}
+			else
+				res += alignment.sw_score;
+			alignment.Clear();
 		}
 		return res;
 	}
@@ -233,22 +322,104 @@ private:
 			res +=v[i].length();
 		return (res/v.size());
 	}
-//
-//	vector<int> FindCommonKmer(vector<string> &variants) {
-//
-//	}
-//
+
+	int CheckValidKmers(const Kmer &kmer, KmerStorage &kmap, const vector<string> &variants) const {
+		int res = 0;
+		for (size_t i = 0; i < kmap.size(); i++)
+			if (kmap[i].find(kmer) != kmap[i].end())
+				if (kmap[i][kmer] != -1) {
+					if ((kmap[i][kmer] > variants[i].length() * 0.3) && (kmap[i][kmer] < variants[i].length() * 0.7)) {
+						res ++;
+					} else {
+						TRACE("not in tehe middle" << kmap[i][kmer] <<" of " << variants[i].length());
+					}
+
+				}
+		return res;
+	}
+
+	vector<int> FindCommonKmer(const vector<string> &variants , int cur_k) {
+		KmerStorage kmap(variants.size());
+		vector<int> res;
+
+		for (size_t i = 0; i < variants.size(); i++) {
+			Kmer kmer(cur_k, variants[i].substr(0, cur_k).c_str());
+			for (size_t j = cur_k; j < variants[i].length(); ++j) {
+				kmer <<= variants[i][j];
+				if (kmap[i].find(kmer) != kmap[i].end()) {
+					kmap[i][kmer] = -1;
+					TRACE("non_unique for stirng " << i);
+				} else {
+					kmap[i][kmer] = j - cur_k;
+					TRACE("unique added for stirng " << i);
+				}
+			}
+		}
+		int best_number = 0;
+		Kmer best_kmer(cur_k);
+		for (size_t i = 0; i < variants.size(); i++) {
+			for (auto iter = kmap[i].begin(); iter != kmap[i].end(); ++iter) {
+				if (iter->second != -1) {
+					int tres = CheckValidKmers(iter->first, kmap, variants);
+					if (tres > best_number) {
+						best_number = tres;
+						best_kmer = iter->first;
+					}
+					if (best_number == int(variants.size())) break;
+				}
+			}
+		}
+		if (best_number == int(variants.size()))
+			for (size_t i = 0 ; i < kmap.size(); i ++)
+				if (kmap[i].find(best_kmer) != kmap[i].end())
+					res.push_back(kmap[i][best_kmer]);
+				else
+					res.push_back(-1);
+		DEBUG("splitting supported with " << best_number <<  " of " << variants.size());
+		return res;
+	}
+
 	string ConstructStringConsenus(vector<string> &variants){
-		if (mean_len(variants) > 500) {
-			;
+		//TODO: constant
+
+		int ml = mean_len(variants);
+		if (ml > 100) {
+			DEBUG("mean length too long " << ml <<" in thread  " << omp_get_thread_num() );
+			vector<int> kvals = {17, 15, 13, 11, 9};
+			for (size_t cur_k_ind = 0; cur_k_ind < kvals.size(); ++cur_k_ind) {
+				int cur_k = kvals[cur_k_ind];
+				DEBUG(" splitting with k = " << cur_k);
+				vector<int> middle_kmers = FindCommonKmer(variants, cur_k);
+				if (middle_kmers.size() > 0) {
+					DEBUG(" splitting with k = " << cur_k << "  win!!! in thread  " << omp_get_thread_num() );
+					vector<string> left;
+					vector<string> right;
+					string left_res;
+					string right_res;
+					string middle_kmer;
+					for(size_t i = 0 ; i < middle_kmers.size(); ++ i) {
+						if (middle_kmers[i] != -1) {
+							int middle = middle_kmers[i] + cur_k/2;
+							left.push_back(variants[i].substr(0, middle));
+							right.push_back(variants[i].substr(middle, string::npos));
+
+						}
+					}
+					left_res = ConstructStringConsenus(left);
+					right_res = ConstructStringConsenus(right);
+					return (left_res  + right_res);
+				} else {
+					DEBUG(" splitting with k = " << cur_k << "  failed, decreasing K in thread  " << omp_get_thread_num());
+				}
+			}
 		}
 		string res = variants[0];
 		for(size_t i = 0; i < variants.size(); i++)
 			if (res.length() > variants[i].length())
 				res = variants[i];
-		StripedSmithWaterman::Aligner aligner ;
+		StripedSmithWaterman::Aligner aligner(3, 3, 5, 3) ;
 		aligner.SetReferenceSequence(res.c_str(), res.length());
-		aligner.SetGapPenalty(2, 1);
+		//aligner.SetGapPenalty(2, 2);
 		int best_score = EditScore(res, variants, aligner);
 		int void_iterations = 0;
 
@@ -256,13 +427,14 @@ private:
 			string new_res = RandomMutation(res);
 			aligner.SetReferenceSequence(new_res.c_str(), new_res.length());
 			int current_score = EditScore(new_res, variants, aligner);
-			if (current_score < best_score) {
+			if (current_score > best_score) {
 				best_score = current_score;
-				DEBUG("cool mutation in thread " << omp_get_thread_num());
+				TRACE("cool mutation in thread " << omp_get_thread_num());
+				TRACE(new_res);
 				void_iterations = 0;
 				res = new_res;
 			} else {
-				DEBUG("void mutation:(");
+				TRACE("void mutation:(");
 				void_iterations ++;
 				if (void_iterations % 200 == 0) {
 					INFO(" random change " << void_iterations <<" failed in thread  " << omp_get_thread_num() );
@@ -273,7 +445,7 @@ private:
 	}
 
 	void ConstructConsensus(EdgeId e, GapStorage<Graph> &storage, map<EdgeId, map<EdgeId, pair<size_t, string> > > &new_edges_by_thread) {
-//		if (g_.int_id(e) != 7971869 &&  g_.int_id(e) != 7966314) return;
+//		if (g_.int_id(e) !=7964945 ) return;
 		auto cl_start = storage.inner_index[e].begin();
 		auto iter = storage.inner_index[e].begin();
 		size_t cur_len = 0;
@@ -290,7 +462,10 @@ private:
 					}
 					map<EdgeId, pair< size_t, string> > tmp;
 					string s = g_.EdgeNucls(cl_start->start).Subseq(0, cl_start->edge_gap_start_position).str();
-					s += ConstructStringConsenus(gap_variants);
+					string tmp_string = ConstructStringConsenus(gap_variants);
+					DEBUG("consenus for " << g_.int_id(cl_start->start) << " and " << g_.int_id(cl_start->end) << "found: " );
+					DEBUG(tmp_string);
+					s += tmp_string;
 					s += g_.EdgeNucls(cl_start->end).Subseq(cl_start->edge_gap_end_position, g_.length(cl_start->end) + g_.k()).str();
 					tmp.insert(make_pair(cl_start->end, make_pair(cur_len, s)));
 					new_edges[cl_start->start] = tmp;
@@ -339,4 +514,5 @@ public:
 			}
 		}
 	}
+
 };
