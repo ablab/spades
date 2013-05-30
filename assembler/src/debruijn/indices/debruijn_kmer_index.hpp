@@ -43,13 +43,13 @@ class DeBruijnKMerIndex {
   typedef ValueType KMerIndexValueType;
   typedef std::vector<KMerIndexValueType> KMerIndexStorageType;
   KMerIndexStorageType data_;
-  typename traits::RawKMerStorage *kmers;
+  typename traits::FinalKMerStorage *kmers;
 
  public:
   typedef typename KMerIndexStorageType::iterator value_iterator;
   typedef typename KMerIndexStorageType::const_iterator const_value_iterator;
-  typedef typename traits::RawKMerStorage::iterator kmer_iterator;
-  typedef typename traits::RawKMerStorage::const_iterator const_kmer_iterator;
+  typedef typename traits::FinalKMerStorage::iterator kmer_iterator;
+  typedef typename traits::FinalKMerStorage::const_iterator const_kmer_iterator;
   typedef size_t KMerIdx;
 
   DeBruijnKMerIndex(unsigned K, const std::string &workdir)
@@ -393,7 +393,7 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
     index.data_.resize(sz);
 
     if (!index.kmers)
-      index.kmers = counter.TransferBucket(0);
+      index.kmers = counter.GetFinalKMers();
 
     return 0;
   }
@@ -409,7 +409,7 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
     index.data_.resize(sz);
 
     if (!index.kmers)
-      index.kmers = counter.TransferBucket(0);
+      index.kmers = counter.GetFinalKMers();
   }
 
  protected:
@@ -432,7 +432,7 @@ class EditableDeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
     index.data_.resize(sz);
 
     if (!index.kmers)
-      index.kmers = counter.TransferBucket(0);
+      index.kmers = counter.GetFinalKMers();
 
     SortUniqueKMers(counter, index);
 
@@ -449,7 +449,7 @@ class EditableDeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
     index.data_.resize(sz);
 
     if (!index.kmers)
-      index.kmers = counter.TransferBucket(0);
+      index.kmers = counter.GetFinalKMers();
 
     SortUniqueKMers(counter, index);
   }

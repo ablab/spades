@@ -10,13 +10,14 @@
 #include "longseq.hpp"
 //#include "longseq_storage.hpp"
 #include "polynomial_hash.hpp" 
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_kmer_index.hpp"
 
 template<>
 struct kmer_index_traits<cap::LSeq> {
   typedef cap::LSeq SeqType;
   // FIXME: Provide implementation here
   typedef std::vector<cap::LSeq> RawKMerStorage;
+  typedef std::vector<cap::LSeq> FinalKMerStorage;
 
   typedef RawKMerStorage::iterator             raw_data_iterator;
   typedef RawKMerStorage::const_iterator       raw_data_const_iterator;
@@ -164,9 +165,6 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
 
   virtual void MergeBuckets(unsigned num_buckets) {
     VERIFY(bucket == NULL);
-
-    TRACE("MERGING BUckets");
-    OpenBucket(0); // great logic
   }
 
   virtual void OpenBucket(size_t idx, bool unlink = true) {
@@ -190,6 +188,16 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
     VERIFY(bucket != NULL);
     TRACE("TRANSFERRING BUCKET" <<
       "BUCKET size=" << bucket->size());
+
+    RawKMerStorage *ret = bucket;
+    bucket = NULL;
+
+    return ret;
+  }
+
+  virtual RawKMerStorage* GetFinalKMers() {
+    OpenBucket(0);
+    VERIFY(bucket != NULL);
 
     RawKMerStorage *ret = bucket;
     bucket = NULL;

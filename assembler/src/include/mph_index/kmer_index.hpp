@@ -34,6 +34,7 @@ template<class Seq>
 struct kmer_index_traits {
   typedef Seq SeqType;
   typedef MMappedRecordArrayReader<typename Seq::DataType> RawKMerStorage;
+  typedef MMappedRecordArrayReader<typename Seq::DataType> FinalKMerStorage;
   typedef typename RawKMerStorage::iterator             raw_data_iterator;
   typedef typename RawKMerStorage::const_iterator       raw_data_const_iterator;
   typedef typename RawKMerStorage::iterator::value_type KMerRawData;
@@ -236,6 +237,7 @@ class KMerCounter {
   typedef typename traits::raw_data_iterator       iterator;
   typedef typename traits::raw_data_const_iterator const_iterator;
   typedef typename traits::RawKMerStorage          RawKMerStorage;
+  typedef typename traits::FinalKMerStorage        FinalKMerStorage;
 
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) = 0;
   virtual void MergeBuckets(unsigned num_buckets) = 0;
@@ -243,6 +245,7 @@ class KMerCounter {
   virtual void OpenBucket(size_t idx, bool unlink = true) = 0;
   virtual void ReleaseBucket(size_t idx) = 0;
   virtual RawKMerStorage* TransferBucket(size_t idx) = 0;
+  virtual FinalKMerStorage* GetFinalKMers() = 0;
 
   virtual iterator bucket_begin(size_t idx) = 0;
   virtual iterator bucket_end(size_t idx) = 0;
@@ -326,7 +329,7 @@ public:
     for (unsigned i = 0; i < num_buckets; ++i)
       VERIFY(buckets_[i] == NULL);
 
-    buckets_.resize(1);
+    buckets_.clear();
 
     MMappedRecordArrayWriter<typename Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(K));
     std::string ofname = GetFinalKMersFname();
@@ -336,10 +339,13 @@ public:
       ofs.write((const char*)ins.data(), ins.data_size());
     }
     ofs.close();
-
-    buckets_[0] = new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
   }
 
+  typename __super::FinalKMerStorage *GetFinalKMers() {
+    unsigned K = splitter_.K();
+    return new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
+  }
+    
 private:
   std::string work_dir_;
   KMerSplitter<Seq> &splitter_;
