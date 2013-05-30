@@ -232,7 +232,7 @@ void KMerCoverageModel::Fit() {
       BeforeValley += cov_[i];
     Total += cov_[i];
   }
-  ErrorProb = 1.0 * (double)BeforeValley / (double)Total;
+  ErrorProb = (double)BeforeValley / (double)Total;
   // Allow some erroneous / good kmers.
   ErrorProb = std::min(1-1e-3, ErrorProb);
   ErrorProb = std::max(1e-3, ErrorProb);
@@ -246,8 +246,8 @@ void KMerCoverageModel::Fit() {
   x0[0] = 3;
   x0[1] = ErrorProb;
   x0[2] = 3;
-  x0[3] = MaxCov_;
-  x0[4] = sqrt(2.0*MaxCov_);
+  x0[3] = (double)MaxCov_;
+  x0[4] = sqrt(2.0 * (double)MaxCov_);
   x0[5] = 0;
 
   // Trim last zeros
@@ -258,7 +258,7 @@ void KMerCoverageModel::Fit() {
   }
 
   auto GoodCov = cov_;
-  GoodCov.resize(std::min(1.25 * MaxCopy * MaxCov_, sz));
+  GoodCov.resize(std::min((size_t)math::round(1.25 * (double)(MaxCopy * MaxCov_)), sz));
   Function F(CovModelLogLike(GoodCov), Function::DERIV_FDIFF_CENTRAL_2);
   auto Results = DoglegBFGS().solve(F, x0, GradNormTest(1e-3));
 

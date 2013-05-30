@@ -25,19 +25,20 @@ namespace omnigraph {
 class EdgePosition {
 public:
 	MappingRange m_range_;
+	//todo: change all from int to size_t!
 	int start_;
 	int end_;
 	int start() const {
-		return (int) m_range_.initial_range.start_pos;
+		return (int)m_range_.initial_range.start_pos;
 	}
 	int end() const {
-		return m_range_.initial_range.end_pos;
+		return (int)m_range_.initial_range.end_pos;
 	}
 	int m_start() const {
-		return m_range_.mapped_range.start_pos;
+		return (int)m_range_.mapped_range.start_pos;
 	}
 	int m_end() const {
-		return m_range_.mapped_range.end_pos;
+		return (int)m_range_.mapped_range.end_pos;
 	}
 
 	std::string contigId_;
@@ -51,8 +52,8 @@ public:
 //	};
 	EdgePosition(MappingRange& m_range, std::string contigId = "0", int shift =
 			0) :
-			m_range_(m_range), start_(m_range.initial_range.start_pos), end_(
-					m_range.initial_range.end_pos), contigId_(contigId) {
+			m_range_(m_range), start_((int)m_range.initial_range.start_pos), end_(
+					(int)m_range.initial_range.end_pos), contigId_(contigId) {
 		m_range.mapped_range.start_pos += shift;
 		m_range.mapped_range.end_pos += shift;
 	}
@@ -63,8 +64,8 @@ public:
 //	};
 
 	EdgePosition(const EdgePosition& e_pos, int shift = 0) :
-			m_range_(e_pos.m_range_), start_(m_range_.initial_range.start_pos), end_(
-					m_range_.initial_range.end_pos), contigId_(e_pos.contigId_) {
+			m_range_(e_pos.m_range_), start_((int)m_range_.initial_range.start_pos), end_(
+					(int)m_range_.initial_range.end_pos), contigId_(e_pos.contigId_) {
 		m_range_.mapped_range.start_pos += shift;
 		m_range_.mapped_range.end_pos += shift;
 	}
@@ -140,7 +141,7 @@ vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1,
 	}
 	set<size_t> used_seconds;
 	for (size_t i = 0; i < v1.size(); i++) {
-		int best_fit_j = -1;
+		size_t best_fit_j = -1ULL;
 		for (size_t j = 0; j < v2.size(); j++) {
 			if (v1[i].contigId_ == v2[j].contigId_) {
 				if ((v1[i].end() + 1 == v2[j].start())
@@ -154,7 +155,7 @@ vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1,
 							&& (v1[i].m_end() + max_single_gap + 1
 									>= v2[j].m_start() + shift)) {
 						//res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
-						if (best_fit_j < 0)
+						if (best_fit_j == -1ULL)
 							best_fit_j = j;
 						else if (v2[j].start() < v2[best_fit_j].start())
 							best_fit_j = j;
@@ -163,7 +164,7 @@ vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1,
 
 			}
 		}
-		if (best_fit_j != -1) {
+		if (best_fit_j != -1ULL) {
 			res.push_back(
 					EdgePosition(v1[i].start(), v2[best_fit_j].end(),
 							v1[i].contigId_, v1[i].m_start(),
@@ -208,7 +209,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1,
 		return res;
 	}
 	for (size_t i = 0; i < v1.size(); i++) {
-		int best_fit_j = -1;
+		size_t best_fit_j = -1ULL;
 		for (size_t j = 0; j < v2.size(); j++) {
 			if (v1[i].contigId_ == v2[j].contigId_) {
 				if (v1[i].end() + 1 == v2[j].start()) {
@@ -219,7 +220,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1,
 							&& (v1[i].end() + max_single_gap + 1
 									>= v2[j].start())) {
 						//res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
-						if (best_fit_j < 0)
+						if (best_fit_j == -1ULL)
 							best_fit_j = j;
 						else if (v2[j].start() < v2[best_fit_j].start())
 							best_fit_j = j;
@@ -228,7 +229,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1,
 
 			}
 		}
-		if (best_fit_j != -1) {
+		if (best_fit_j != -1ULL) {
 			res.push_back(
 					EdgePosition(v1[i].start(), v2[best_fit_j].end(),
 							v1[i].contigId_));

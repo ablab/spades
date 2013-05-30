@@ -123,7 +123,7 @@ pair<size_t, size_t> SubstitutionShifts(const io::SingleRead& s_r, const io::Sin
 	size_t best_diff = orig_s_r.size();
 	for (size_t i=0; i <= difference; i++){
 		size_t cur_diff = CountDiference(s_r, orig_s_r, i);
-		if (math::gr((double)(s_r.size() - cur_diff), threshhold * s_r.size())) return (make_pair(i,difference - i));
+		if (math::gr((double)(s_r.size() - cur_diff), threshhold * (double)s_r.size())) return (make_pair(i,difference - i));
 		else {
 			if (cur_diff < best_diff) {
 				best_diff = cur_diff;

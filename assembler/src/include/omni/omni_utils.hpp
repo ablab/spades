@@ -1414,13 +1414,13 @@ inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size,
                                            double delta) {
     double answer = 0. + (double) insert_size + delta - (double) k - 2.;
     VERIFY(math::gr(answer, 0.));
-    return std::floor(answer);
+    return (size_t)std::floor(answer);
 }
 
 inline size_t PairInfoPathLengthLowerBound(size_t k, size_t l1, size_t l2,
                                            int gap, double delta) {
     double answer = 0. + (double) gap + (double) k + 2. - (double) l1 - (double) l2 - delta;
-    return math::gr(answer, 0.) ? std::floor(answer) : 0;
+    return math::gr(answer, 0.) ? (size_t)std::floor(answer) : 0;
 }
 
 }

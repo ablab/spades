@@ -653,17 +653,17 @@ private:
         int prev = iter->first;
         size_t prev_val = iter->second;
 
-        new_hist.push_back((double)prev_val * 1. / (double)sum_weight);
+        new_hist.push_back((double)prev_val / (double)sum_weight);
         ++iter;
 
         for (; iter != hist.end(); ++iter) {
             int x = iter->first;
             size_t y = iter->second;
-            double tan = 1. * (double)(y - prev_val) / (x - prev);
+            double tan = ((double)y - (double)prev_val) / (x - prev);
 
             VERIFY(prev < x);
             for (int i = prev + 1; i <= x; ++i) {
-                new_hist.push_back(((double)prev_val + tan * (i - prev)) * 1. / (double)sum_weight);
+                new_hist.push_back(((double)prev_val + tan * (i - prev)) / (double)sum_weight);
             }
             prev = x;
             prev_val = y;
