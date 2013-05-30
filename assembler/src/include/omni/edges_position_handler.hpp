@@ -271,7 +271,7 @@ public:
 		return it->second;
 	}
 
-	void FillPositionGaps(EdgeId NewEdgeId, double relative_cutoff = 0) {
+	vector<EdgePosition> FillPositionGaps(EdgeId NewEdgeId, double relative_cutoff = 0) {
 		VERIFY(this->IsAttached());
 		vector<EdgePosition> new_vec;
 		if (EdgesPositions[NewEdgeId].size() > 0) {
@@ -286,8 +286,9 @@ public:
 				}
 			}
 			new_vec.push_back(activePosition);
-			EdgesPositions[NewEdgeId] = new_vec;
+			//EdgesPositions[NewEdgeId] = new_vec;
 		}
+		return new_vec;
 	}
 
 	void AddEdgePosition(EdgeId NewEdgeId, int start, int end,
@@ -321,40 +322,41 @@ public:
 		//	TRACE("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
 
 		if (EdgesPositions[NewEdgeId].size() > 1) {
-			std::sort(EdgesPositions[NewEdgeId].begin(),
-					EdgesPositions[NewEdgeId].end(), PosCompare);
+			std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
 		}
 		FillPositionGaps(NewEdgeId);
 
 	}
 
-	bool IsConsistentWithGenome(vector<EdgeId> Path) {
-		for (size_t i = 0; i < Path.size(); i++) {
+	bool IsConsistentWithGenome(vector<EdgeId> path) {
+		map<EdgeId, vector<EdgePosition> > tmp_pos;
+		for (size_t i = 0; i < path.size(); i++) {
 //TODO: magic constants
-			FillPositionGaps(Path[i], 0.2);
+
+			tmp_pos[path[i]] = FillPositionGaps(path[i], 0.2);
 		}
-		for (size_t i = 0; i < Path.size() - 1; i++) {
-			if (this->g().EdgeStart(Path[i + 1]) != this->g().EdgeEnd(Path[i]))
+		for (size_t i = 0; i < path.size() - 1; i++) {
+			if (this->g().EdgeStart(path[i + 1]) != this->g().EdgeEnd(path[i]))
 				return false;
 		}
 
 		VERIFY(this->IsAttached());
-		if (Path.size() > 0) {
-			vector<EdgePosition> res = (EdgesPositions[Path[0]]);
+		if (path.size() > 0) {
+			vector<EdgePosition> res = (tmp_pos[path[0]]);
 
 			DEBUG(
-					this->g().int_id(Path[0]) << "  "<< res.size() << " positions");
+					this->g().int_id(path[0]) << "  "<< res.size() << " positions");
 
-			int len = this->g().length(Path[0]);
-			for (size_t i = 1; i < Path.size(); i++) {
-				DEBUG(this->g().int_id(Path[i]) << "  "<< EdgesPositions[Path[i]].size() << " positions");
+			int len = this->g().length(path[0]);
+			for (size_t i = 1; i < path.size(); i++) {
+				DEBUG(this->g().int_id(path[i]) << "  "<< tmp_pos[path[i]].size() << " positions");
 				if (is_careful())
-					res = RangeGluePositionsLists(res, EdgesPositions[Path[i]],
+					res = RangeGluePositionsLists(res, tmp_pos[path[i]],
 							max_single_gap_, len);
 				else
-					res = GluePositionsLists(res, EdgesPositions[Path[i]],
+					res = GluePositionsLists(res, tmp_pos[path[i]],
 							max_single_gap_);
-				len += this->g().length(Path[i]);
+				len += this->g().length(path[i]);
 			}
 			if (res.size() > 0) {
 				if (is_careful()) {
