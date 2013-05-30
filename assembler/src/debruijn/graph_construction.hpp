@@ -160,7 +160,7 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 }
 
 template<class Graph, class Read, class Seq>
-size_t ConstructGraphUsingExtentionIndex(size_t k,
+size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::construction params,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
 
@@ -171,22 +171,22 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 
 	TRACE("... in parallel");
 	// FIXME: output_dir here is damn ugly!
-	DeBruijnExtensionIndex<Seq> ext(k, cfg::get().output_dir);
+	DeBruijnExtensionIndex<Seq> ext(k, index.inner_index().workdir());
 	size_t rl = DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
 
 	TRACE("Extention Index constructed");
 
-	if(cfg::get().con.early_tc.enable) {
+	if(params.early_tc.enable) {
 		size_t length_bound = rl - k;
-		if(cfg::get().con.early_tc.length_bound)
-			length_bound = cfg::get().con.early_tc.length_bound.get();
+		if(params.early_tc.length_bound)
+			length_bound = params.early_tc.length_bound.get();
 		EarlyTipClipper(ext, length_bound).ClipTips();
 	}
 
 	INFO("Condensing graph");
 	index.Detach();
 	DeBruijnGraphExtentionConstructor<Graph, Seq> g_c(g, ext, k);
-	g_c.ConstructGraph(100, 10000, 1.2, cfg::get().con.keep_perfect_loops);//TODO move these parameters to config
+	g_c.ConstructGraph(100, 10000, 1.2, params.keep_perfect_loops);//TODO move these parameters to config
 	index.Attach();
 	INFO("Graph condensed");
 
@@ -198,12 +198,12 @@ size_t ConstructGraphUsingExtentionIndex(size_t k,
 }
 
 template<class Graph, class Read, class Seq>
-size_t ConstructGraph(size_t k,
+size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
-	if(cfg::get().con.con_mode == construction_mode::con_extention) {
-		return ConstructGraphUsingExtentionIndex(k, streams, g, index, contigs_stream);
-	} else if(cfg::get().con.con_mode == construction_mode::con_old){
+	if(params.con_mode == construction_mode::con_extention) {
+		return ConstructGraphUsingExtentionIndex(k, params, streams, g, index, contigs_stream);
+	} else if(params.con_mode == construction_mode::con_old){
 		return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 	} else {
 		INFO("Invalid construction mode")
@@ -212,10 +212,10 @@ size_t ConstructGraph(size_t k,
 }
 
 template<class Read>
-size_t ConstructGraphWithCoverage(size_t k,
+size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction &params,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
 		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
-	size_t rl = ConstructGraph(k, streams, g, index, contigs_stream);
+	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
 
 	FillCoverageFromIndex(g, index, k);
 

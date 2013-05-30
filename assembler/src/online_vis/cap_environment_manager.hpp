@@ -17,6 +17,7 @@
 #include "cap_environment.hpp"
 #include "io/sequence_reader.hpp"
 #include "omni/loop_killer.hpp"
+#include "config_struct.hpp"
 
 namespace online_visualization {
 
@@ -57,6 +58,14 @@ class CapEnvironmentManager {
     WriteStateDesc(path + cap_cfg::get().desc_file_name);
   }
 
+  debruijn_config::construction CreateDefaultConstructionConfig() {
+  	  debruijn_config::construction config;
+  	  config.con_mode = construction_mode::con_extention;
+  	  config.early_tc.enable = false;
+  	  config.keep_perfect_loops = true;
+	  return config;
+  }
+
   template <class gp_t>
   shared_ptr<gp_t> BuildGPFromStreams(std::vector<ContigStream *> streams,
                                       unsigned k, bool fill_pos = true) const {
@@ -72,7 +81,7 @@ class CapEnvironmentManager {
 
     io::ReadStreamVector<ContigStream> rc_read_stream_vector(rc_contigs, false);
 
-    debruijn_graph::ConstructGraph(result->k_value, rc_read_stream_vector, result->g, result->index);
+    debruijn_graph::ConstructGraph(result->k_value, CreateDefaultConstructionConfig(), rc_read_stream_vector, result->g, result->index);
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(result->g, streams.size());
     ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(result->g,
