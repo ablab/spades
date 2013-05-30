@@ -352,6 +352,22 @@ class DeBruijnKMerIndexBuilder {
                            const Graph &g) const;
 
  protected:
+  DECL_LOGGER("K-mer Index Building");
+};
+
+template <class Seq>
+class EditableDeBruijnKMerIndexBuilder {
+ public:
+  template <class IdType, class Read>
+  size_t BuildIndexFromStream(EditableDeBruijnKMerIndex<IdType, Seq> &index,
+                              io::ReadStreamVector<io::IReader<Read> > &streams,
+                              SingleReadStream* contigs_stream = 0) const;
+
+  template <class IdType, class Graph>
+  void BuildIndexFromGraph(EditableDeBruijnKMerIndex<IdType, Seq> &index,
+                           const Graph &g) const;
+
+ protected:
   template <class KMerCounter, class Index>
   void SortUniqueKMers(KMerCounter &counter, Index &index) const;
 
@@ -369,15 +385,15 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
                               SingleReadStream* contigs_stream = 0) const {
     DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
                                             index.K(),
-                                            streams,
-                                            contigs_stream);
+                                            streams, contigs_stream);
     KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
     KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMerIndexT> builder(index.workdir(), 16, streams.size());
+
     size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
-
-    SortUniqueKMers(counter, index);
-
     index.data_.resize(sz);
+
+    if (!index.kmers)
+      index.kmers = counter.TransferBucket(0);
 
     return 0;
   }
@@ -388,18 +404,59 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
     DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.K(), g);
     KMerDiskCounter<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMer> counter(index.workdir(), splitter);
     KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMerIndexT> builder(index.workdir(), 16, 1);
+
     size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
+    index.data_.resize(sz);
+
+    if (!index.kmers)
+      index.kmers = counter.TransferBucket(0);
+  }
+
+ protected:
+  DECL_LOGGER("K-mer Index Building");
+};
+
+template <>
+class EditableDeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
+ public:
+  template <class IdType, class Read>
+  size_t BuildIndexFromStream(EditableDeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+                              io::ReadStreamVector<io::IReader<Read> > &streams,
+                              SingleReadStream* contigs_stream = 0) const {
+    DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
+                                            index.K(),
+                                            streams, contigs_stream);
+    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMerIndexT> builder(index.workdir(), 16, streams.size());
+    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
+    index.data_.resize(sz);
+
+    if (!index.kmers)
+      index.kmers = counter.TransferBucket(0);
 
     SortUniqueKMers(counter, index);
+
+    return 0;
+  }
+
+  template <class IdType, class Graph>
+  void BuildIndexFromGraph(EditableDeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+                           const Graph &g) const {
+    DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.K(), g);
+    KMerDiskCounter<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMer> counter(index.workdir(), splitter);
+    KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMerIndexT> builder(index.workdir(), 16, 1);
+    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
     index.data_.resize(sz);
+
+    if (!index.kmers)
+      index.kmers = counter.TransferBucket(0);
+
+    SortUniqueKMers(counter, index);
   }
 
  protected:
   template <class KMerCounter, class Index>
   void SortUniqueKMers(KMerCounter &counter, Index &index) const {
-    if (!index.kmers)
-      index.kmers = counter.TransferBucket(0);
-
     size_t swaps = 0;
     INFO("Arranging kmers in hash map order");
     for (auto I = index.kmers->begin(), E = index.kmers->end(); I != E; ++I) {
@@ -420,5 +477,6 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
  protected:
   DECL_LOGGER("K-mer Index Building");
 };
+
 
 }

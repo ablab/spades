@@ -13,6 +13,7 @@ template <class Seq>
 class DeBruijnEdgeMultiIndexBuilder;
 template<class IdType, class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >
+
 class DeBruijnEdgeMultiIndex : public EditableDeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> {
   typedef EditableDeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> base;
  public:
@@ -123,7 +124,7 @@ private:
 };
 
 template <class Seq>
-class DeBruijnEdgeMultiIndexBuilder : public DeBruijnKMerIndexBuilder<Seq> {
+class DeBruijnEdgeMultiIndexBuilder : public EditableDeBruijnKMerIndexBuilder<Seq> {
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
                                 DeBruijnEdgeMultiIndex<IdType, Seq> &index) const;
