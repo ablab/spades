@@ -11,7 +11,6 @@
 #include "polynomial_hash.hpp"
 #include "log.hpp"
 #include "sequence/sequence.hpp"
-#include "test_utils.hpp"
 #include "openmp_wrapper.h"
 
 namespace cap {

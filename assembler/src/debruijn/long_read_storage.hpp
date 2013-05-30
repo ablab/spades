@@ -38,6 +38,7 @@ public:
 	bool operator<(const PathInfo<Graph> &other) const {
 		return path < other.path;
 	}
+
 	PathInfo(const vector<EdgeId> &p, size_t weight = 0):path(p), w(weight){ }
 	PathInfo(const PathInfo<Graph> &other) {
 		path = other.path;
@@ -53,6 +54,7 @@ class PathStorage {
 private:
 	Graph &g_;
 	InnerIndex inner_index;
+
 	void HiddenAddPath(const vector<EdgeId> &p, int w){
 		if (p.size() == 0 ) return;
 		for (typename set<PathInfo<Graph> >::iterator iter = inner_index[p[0]].begin(); iter != inner_index[p[0]].end(); ++iter) {

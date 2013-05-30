@@ -97,7 +97,7 @@ void estimate_distance(conj_graph_pack& gp,
 
       if (lib.data().insert_size_distribution.size() == 0) {
         auto streams = paired_binary_readers(lib, false, 0);
-        GetInsertSizeHistogram(streams, gp, lib.data().mean_insert_size, lib.data().insert_size_deviation, lib.data().insert_size_distribution);
+        GetInsertSizeHistogram(*streams, gp, lib.data().mean_insert_size, lib.data().insert_size_deviation, lib.data().insert_size_distribution);
       }
       WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
       INFO("Weight Wrapper Done");

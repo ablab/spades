@@ -11,6 +11,7 @@
 #include "standard.hpp"
 
 #include "io/multifile_reader.hpp"
+#include "io/read_stream_vector.hpp"
 
 #include "mph_index/kmer_index.hpp"
 #include "adt/kmer_vector.hpp"
@@ -301,6 +302,9 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<IdType>, Seq, traits
   ~DeBruijnEdgeIndex() {}
 
   bool ContainsInIndex(typename base::KMerIdx idx) const {
+    if (idx == base::InvalidKMerIdx)
+      return false;
+
     const typename base::KMerIndexValueType &entry = base::operator[](idx);
     return (entry.offset_ != -1);
   }
@@ -863,9 +867,6 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
     ostreams[i] = fopen(out[i].c_str(), "wb");
     VERIFY_MSG(ostreams[i], "Cannot open temporary file to write");
   }
-  INFO(sizeof(runtime_k::RtSeq::DataType));
-  INFO(num_files);
-  INFO(runtime_k::RtSeq::GetDataSize(K_));
   size_t cell_size = READS_BUFFER_SIZE /
                      (num_files * runtime_k::RtSeq::GetDataSize(K_) * sizeof(runtime_k::RtSeq::DataType));
   INFO("Using cell size of " << cell_size);
@@ -1159,7 +1160,6 @@ class DeBruijnEdgeMultiIndexBuilder<runtime_k::RtSeq> :
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
                                 DeBruijnEdgeMultiIndex<IdType, runtime_k::RtSeq> &index) const {
-    unsigned K = index.K();
     size_t rl = 0;
 //TODO: not needed now, implement later
 //

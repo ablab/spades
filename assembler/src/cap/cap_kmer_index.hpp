@@ -9,8 +9,9 @@
 #include "compare_standard.hpp"
 #include "longseq.hpp"
 //#include "longseq_storage.hpp"
-#include "polynomial_hash.hpp" 
+#include "polynomial_hash.hpp"
 #include "debruijn_kmer_index.hpp"
+#include "adt/kmer_map.hpp"
 
 template<>
 struct kmer_index_traits<cap::LSeq> {
@@ -79,10 +80,10 @@ struct kmer_index_traits<cap::LSeq> {
 
 namespace cap {
 
-struct Foo {};  
+struct Foo {};
 
 class CapKMerIndexBuilder;
-  
+
 /*
 class CapKMerIndex: public debruijn_graph::DeBruijnKMerIndex<Foo,
                                       cap::LongSeq<DoublePolynomialHash<> > > {
@@ -99,7 +100,7 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
   io::ReadStreamVector<io::IReader<Read> > &streams_;
   std::unordered_set<LSeq, LSeq::hash, LSeq::equal_to> storage_;
   RawKMerStorage *bucket;
-  
+
   /*
   void UpdateTransition(const LSeq &l, const LSeq &r) {
     const LSeq &l_int = LongSeqStorage<LSeq>::Instance().Get(l),
@@ -248,12 +249,12 @@ class DeBruijnEdgeIndexBuilder<cap::LSeq> {
   }
 
  public:
-  template <class Read, class IdType>
+  template <class Reader, class IdType>
   size_t BuildIndexFromStream(
       DeBruijnEdgeIndex<IdType, cap::LSeq> &index,
-      io::ReadStreamVector<io::IReader<Read> > &streams,
+      io::ReadStreamVector<Reader> &streams,
       SingleReadStream* contigs_stream = 0) {
-    cap::CapKMerCounter<Read> counter(index.K(), streams);
+    cap::CapKMerCounter<typename Reader::read_type> counter(index.K(), streams);
     KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, cap::LSeq>::KMerIndexT> builder(index.workdir(),
                                                                 1 /* buckets */,
                                                                 1 /* threads */);

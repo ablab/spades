@@ -138,8 +138,7 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
 	Graph g(k);
 	EdgeIndex<Graph> index(g, k + 1, tmp_folder);
 
-	io::ReadStreamVector< io::IReader<SingleRead> > streams(&read_stream);
-	ConstructGraph(k, streams, g, index);
+	ConstructGraphFromStream(k, read_stream, g, index);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -204,7 +203,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 
 	RawStream raw_stream(MakePairedReads(paired_reads, insert_size));
 	PairedStream paired_read_stream(raw_stream);
-	io::ReadStreamVector<io::IReader<io::PairedRead>> paired_stream_vector({&paired_read_stream});
+	io::ReadStreamVector<io::IReader<io::PairedRead>> paired_stream_vector(paired_read_stream);
 	DEBUG("Streams initialized");
 
 	graph_pack<Graph, runtime_k::RtSeq> gp(k, tmp_folder, (Sequence()));
@@ -212,9 +211,8 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 
 	PairedInfoIndexT<Graph> paired_index(gp.g);
 
-	SingleStream single_stream(paired_read_stream);
-	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({&single_stream});
-	ConstructGraphWithCoverage<io::SingleRead>(k, single_stream_vector, gp.g, gp.index);
+	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector(new SingleStream(paired_read_stream));
+	ConstructGraphWithCoverage(k, single_stream_vector, gp.g, gp.index);
 
 	FillPairedIndexWithReadCountMetric(gp.g,
 			gp.int_ids, gp.index,

@@ -17,11 +17,11 @@ using namespace debruijn_graph;
 namespace path_extend {
 
 double find_intersection(vector<double>& good_pi, vector<double>& bad_pi) {
-	INFO("find intersection");
+	DEBUG("find intersection");
 	std::sort(good_pi.begin(), good_pi.end());
-	INFO("sorted good pi");
+	DEBUG("sorted good pi");
 	std::sort(bad_pi.begin(), bad_pi.end());
-	INFO("sorted bad pi");
+	DEBUG("sorted bad pi");
 	size_t good_iter = 0;
 	size_t bad_iter = 0;
 	double cur_threshold = 0.0;
@@ -37,7 +37,7 @@ double find_intersection(vector<double>& good_pi, vector<double>& bad_pi) {
 		bad_percent = 1 - (double) bad_iter / (double) bad_pi.size();
 		good_iter += 1;
 	}
-	INFO("found percents");
+	DEBUG("found percents");
 	return cur_threshold;
 }
 
@@ -70,6 +70,7 @@ public:
 		size_t is = cfg::get().ds.reads[index].data().mean_insert_size;
 		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[index], true, cfg::get().ds.reads[index].data().mean_insert_size);
 		SingleStreamType paired_streams(paired_stream.get());
+		paired_stream.release();
 		FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index, gp.kmer_mapper,paired_index, paired_streams, gp.k_value);
 		//io::ReadStreamVector<io::IReader<io::PairedReadSeq>> paired_streams = paired_binary_readers(true, is);
 		//FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,

@@ -351,19 +351,19 @@ public:
 
   	void ProcessReadPairs() {
         if (cfg::get().use_multithreading) {
-            MultiStreamType paired_streams = paired_binary_readers(cfg::get().ds.reads[lib_index_], true, cfg::get().ds.reads[lib_index_].data().mean_insert_size);
+            auto paired_streams = paired_binary_readers(cfg::get().ds.reads[lib_index_], true, cfg::get().ds.reads[lib_index_].data().mean_insert_size);
 
-            if (paired_streams.size() == 1) {
-                ProcessReadPairs(paired_streams);
+            if (paired_streams->size() == 1) {
+                ProcessReadPairs(*paired_streams);
             }
             else {
-                ProcessReadPairsParallel(paired_streams);
+                ProcessReadPairsParallel(*paired_streams);
             }
         }
         else {
             auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[lib_index_], true, cfg::get().ds.reads[lib_index_].data().mean_insert_size);
             SingleStreamType paired_streams(paired_stream.get());
-
+            paired_stream.release();
             ProcessReadPairs(paired_streams);
         }
 	}
@@ -402,7 +402,8 @@ public:
 			}
 		}
 		double threshold = find_intersection(good_pi, bad_pi);
-		INFO("WE FOUND THRESHOLD " << threshold <<" good_pi_size " << good_pi.size() << " bad_pi_size " << bad_pi.size());
+		INFO("Paired info threshold " << threshold);
+		DEBUG(" good_pi_size " << good_pi.size() << " bad_pi_size " << bad_pi.size());
 		return threshold;
 	}
 

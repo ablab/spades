@@ -44,7 +44,7 @@ private:
   typedef typename Graph::EdgeId EdgeId;
   const Graph &graph_;
   const SequenceMapper& mapper_;
-  io::ReadStreamVector<PairedStream> streams_;
+  io::ReadStreamVector<PairedStream>& streams_;
 
   map<EdgeId, pair<EdgeId, int> > OutTipMap;
   map<EdgeId, pair<EdgeId, int> > InTipMap;
@@ -193,7 +193,7 @@ private:
 public:
 
   GapCloserPairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
-      const io::ReadStreamVector<PairedStream>& streams) :
+      io::ReadStreamVector<PairedStream>& streams) :
       graph_(graph), mapper_(mapper), streams_(streams) {
 
   }
@@ -478,7 +478,7 @@ private:
 };
 
 template<class PairedStream>
-void CloseGaps(conj_graph_pack& gp, const io::ReadStreamVector<PairedStream>& streams) {
+void CloseGaps(conj_graph_pack& gp, io::ReadStreamVector<PairedStream>& streams) {
   const size_t k = gp.k_value;
   typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
   SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper, k + 1);
@@ -513,7 +513,7 @@ void CloseGaps(conj_graph_pack& gp) {
   if (cfg::get().use_multithreading) {
     auto streams = paired_binary_readers(cfg::get().ds.reads[lib_index], true, 0);
 
-    CloseGaps<io::IReader<io::PairedReadSeq>>(gp, streams);
+    CloseGaps<io::IReader<io::PairedReadSeq>>(gp, *streams);
 
 //    for (size_t i = 0; i < streams.size(); ++i) {
 //      delete streams[i];
@@ -521,6 +521,7 @@ void CloseGaps(conj_graph_pack& gp) {
   } else {
     auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0);
         io::ReadStreamVector <PairedReadStream> streams(stream.get());
+        streams.release();
     CloseGaps<PairedReadStream>(gp, streams);
   }
 

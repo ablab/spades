@@ -293,7 +293,6 @@ public:
     }
 };
 
-
 class SeqSingleReadStreamWrapper: public io::IReader<io::SingleReadSeq> {
 
 private:

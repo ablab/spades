@@ -587,10 +587,14 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //				"no_repeat_graph");
 	}
 
-	if (kill_loops) {
-	}
 
-	OutputMaskedContigs(origin_gp.g,
+    if (kill_loops) {
+        SimpleLoopKiller<typename graph_pack::graph_t> lk(resolved_gp.g,
+                cfg::get().rr.max_repeat_length, 6);
+        lk.KillAllLoops();
+    }
+
+    OutputMaskedContigs(origin_gp.g,
 			cfg::get().output_dir + "before_resolve_masked.fasta",
 			origin_gp.mismatch_masker);
 
@@ -888,6 +892,34 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 			clustered_index);
 }
 
+
+void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo<Graph> >& filteredPaths, 
+				PairedIndexT& clustered_index,
+				EdgeQuality<Graph>& quality_labeler ) {
+
+
+	DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), cfg::get().output_dir);
+	if (cfg::get().developer_mode) {
+
+		std::string path;
+		if (cfg::get().entry_point < ws_repeats_resolving) 
+			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
+		else
+			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
+		bool val = LoadEdgeIndex(path, kmerIndex);
+		VERIFY_MSG(val, "can not open file "+path+".kmidx");
+		INFO("Updating index from graph started");
+		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, conj_gp.g);
+	}
+
+	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
+	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp);
+	cov_rr.resolve_repeats_by_coverage(index, labels_after, quality_labeler, clustered_index, filteredPaths);
+
+	INFO("Repeats are resolved by coverage");
+}
+
 int get_first_pe_lib_index() {
 	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
 		if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
@@ -977,7 +1009,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 			}
 			INFO("Scaffolding");
 			path_extend::resolve_repeats_pe(resolved_gp, pe_indexs,
-					pe_scaf_indexs, indexs,  vector<PathInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta");
+					pe_scaf_indexs, indexs,  vector<PathInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta", false, boost::none, false);
 			SaveResolved(resolved_gp, resolved_graph_paired_info,
 					resolved_graph_paired_info_cl);
 			delete resolved_graph_scaff_clustered;
@@ -992,37 +1024,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 	}
 }
 
-void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo<Graph> >& filteredPaths, 
-				PairedIndexT& clustered_index,
-				EdgeQuality<Graph>& quality_labeler ) {
-
-
-	DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), cfg::get().output_dir);
-	if (cfg::get().developer_mode) {
-
-		std::string path;
-		if (cfg::get().entry_point < ws_repeats_resolving) 
-			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
-		else
-			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
-		bool val = LoadEdgeIndex(path, kmerIndex);
-		VERIFY_MSG(val, "can not open file "+path+".kmidx");
-		INFO("Updating index from graph started");
-		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, conj_gp.g);
-	}
-
-	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
-	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
-	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp);
-	cov_rr.resolve_repeats_by_coverage(index, labels_after, quality_labeler, clustered_index, filteredPaths);
-
-	INFO("Repeats are resolved by coverage");
-
-}
-
-void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices,
-				EdgeQuality<Graph>& quality_labeler ) {
-
+void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices, EdgeQuality<Graph>& quality_labeler) {
 
 	vector<PairedIndexT*> pe_indexs;
 	vector<PairedIndexT*> pe_scaf_indexs;
@@ -1036,6 +1038,10 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 			indexes.push_back(i);
 		}
 	}
+
+    //LongReadStorage<Graph> long_read(conj_gp.g);
+     //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
+
     PathStorage<Graph> long_read(conj_gp.g);
     GapStorage<Graph> gaps(conj_gp.g);
 
@@ -1055,20 +1061,17 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 		filteredPaths = long_read.GetAllPaths();
 		pac_aligner.pacbio_test(long_read, gaps);
 	}
-    //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 
 	if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
 	    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
 	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
 	    }
-        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "scaffolds.fasta");
-
+        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         delete_index(pe_scaf_indexs);
 	}
 	else {
 		pe_scaf_indexs.clear();
-		//path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta");
-		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "final_contigs.fasta");
+		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
 	}
 }
 
@@ -1090,6 +1093,7 @@ void resolve_repeats() {
 		paired_indices.Detach();
 		clustered_indices.Detach();
 		if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
+		    //todo ?
 //			conj_gp.kmer_mapper.Detach();
 		}
 	}

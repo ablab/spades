@@ -15,6 +15,7 @@
 #include "genome_correction.hpp"
 #include "assembly_compare.hpp"
 #include "test_utils.hpp"
+#include "gene_analysis.hpp"
 
 namespace cap {
 
@@ -43,9 +44,10 @@ BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 }
 
 BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
+    return;
 	utils::TmpFolderFixture _("tmp");
 
-	std::string base_path = "ecoli/";
+	std::string base_path = "/home/snurk/Dropbox/olga_gelf/";
 
 	/*
 	 vector<std::string> paths = {
@@ -68,17 +70,16 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 	// E.Coli
 	vector<std::string> paths = {
 //    base_path + "EDL.fasta",
-			base_path + "H6.fasta",
+			base_path + "genomes/Escherichia coli 536.fasta",
 //    base_path + "HS.fasta",
-			base_path + "K12.fasta", base_path + "TW.fasta", base_path
-					+ "UTI.fasta" };
+			base_path + "genomes/Escherichia coli 55989.fasta"
+	};
 	vector<std::string> suffices = {
-//    "EDL",
-			"H6",
-//    "HS",
-			"K12", "TW", "UTI" };
+			"EC536",
+			"EC55989"
+	};
 
-	vector<size_t> k_sequence = { 1001, 501, 201, 101, 55, 21, 15 };
+	vector<size_t> k_sequence = { /*1001, 501, 201, 101, */55, 21, 15 };
 
 	/*
 	 std::string base_path = "/home/valich/work/human/";
@@ -100,8 +101,29 @@ BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
 //	INFO("result is stored with md5 of " << files_md5);
 
 	MaskDifferencesAndSave(paths, suffices,
-			//"bp_graph_" + files_md5 + 
-            "bp_graph/refined/", k_sequence);
+			//"bp_graph_" + files_md5 +
+            base_path + "processed/", k_sequence);
+}
+
+BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {
+	utils::TmpFolderFixture _("tmp");
+	static size_t k = 25;
+	typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph, LSeq> gp_t;
+    gp_t gp(k, "tmp", Sequence(), 200, true);
+
+    GeneCollection gene_collection;
+    string root = "/home/snurk/Dropbox/olga_gelf/";
+    gene_collection.Load(root, "genome_list.txt",
+                         "/genomes/",
+                         "gs.25ESS_ver3_sf_TN.csv",
+                         "interesting_orthologs.txt");
+    gene_collection.Update(gp);
+
+    ColorHandler<typename gp_t::graph_t> coloring(gp.g);
+
+    make_dir(root + "out/");
+
+    WriteGeneLocality(gene_collection, gp, root + "out/", coloring);
 }
 
 BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {

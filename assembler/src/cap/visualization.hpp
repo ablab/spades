@@ -5,8 +5,12 @@
 //****************************************************************************
 
 #pragma once
+#include "sequence_mapper.hpp"
+#include "omni/visualization_utils.hpp"
 
 namespace cap {
+
+//todo refactor all these methods
 
 /*
  *  This filter restricts also components where all cops are borschs
@@ -96,7 +100,7 @@ void PrintColoredGraphAroundEdge(const Graph& g,
 template<class Graph>
 void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> &coloring,
     const EdgesPositionHandler<Graph> &pos, const string &output_filename) {
-    
+
   size_t edge_length_bound = 1000000;
   size_t colors_number = coloring.max_colors();
   TColorSet restricted_color = TColorSet::AllColorsSet(colors_number);
@@ -111,23 +115,43 @@ void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> 
 			*ConstructBorderColorer(g, coloring), labeler);
 }
 
+//todo alert!!! magic constants!!!
+//todo refactoring of params needed
+template<class gp_t>
+void WriteComponentsAlongSequence(
+        const gp_t& gp,
+        const string& file_name,
+        size_t split_edge_length, size_t component_vertex_number,
+        const Sequence& s, const ColorHandler<typename gp_t::graph_t>& coloring) {
+    typedef typename gp_t::graph_t Graph;
+    LengthIdGraphLabeler < Graph > basic_labeler(gp.g);
+    EdgePosGraphLabeler < Graph > pos_labeler(gp.g, gp.edge_pos);
+    CompositeLabeler < Graph > labeler(basic_labeler, pos_labeler);
+
+    WriteComponentsAlongPath(gp.g,
+            labeler, file_name,
+            split_edge_length, component_vertex_number,
+            MapperInstance(gp)->MapSequence(s),
+            *ConstructBorderColorer(gp.g, coloring));
+}
+
 template<class gp_t>
 void PrintColoredGraphAlongRef(const gp_t& gp,
-		const ColorHandler<Graph>& coloring,
-		const string& output_filename) {
-	LengthIdGraphLabeler < Graph > basic_labeler(gp.g);
-	EdgePosGraphLabeler < Graph > pos_labeler(gp.g, gp.edge_pos);
+        const ColorHandler<Graph>& coloring,
+        const string& output_filename) {
+    LengthIdGraphLabeler < Graph > basic_labeler(gp.g);
+    EdgePosGraphLabeler < Graph > pos_labeler(gp.g, gp.edge_pos);
 
-	CompositeLabeler < Graph > labeler(basic_labeler, pos_labeler);
+    CompositeLabeler < Graph > labeler(basic_labeler, pos_labeler);
 
-//		only breakpoints
-	TrivialBreakpointFinder<Graph> bp_f(gp.g, coloring, gp.edge_pos);
+//      only breakpoints
+    TrivialBreakpointFinder<Graph> bp_f(gp.g, coloring, gp.edge_pos);
 
-	WriteComponentsAlongPath(gp.g, bp_f, labeler, output_filename, 1000000,
-			30, MapperInstance(gp)->MapSequence(gp.genome),
-			*ConstructBorderColorer(gp.g, coloring)
-//				*ConstructColorer(coloring)
-					);
+    WriteComponentsAlongPath(gp.g, bp_f, labeler, output_filename, 1000000,
+            30, MapperInstance(gp)->MapSequence(gp.genome),
+            *ConstructBorderColorer(gp.g, coloring)
+//              *ConstructColorer(coloring)
+                    );
 }
 
 }

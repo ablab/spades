@@ -37,6 +37,9 @@ typedef io::SingleRead Contig;
 typedef io::IReader<Contig> ContigStream;
 typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;
 typedef	io::RCReaderWrapper<io::SingleRead> RCWrapper;
+
+typedef io::ReadStreamVector<ContigStream> ContigStreams;
+typedef std::shared_ptr<ContigStreams> ContigStreamsPtr;
 }
 
 // debruijn

@@ -221,7 +221,7 @@ public:
 
 		PrepareDirs(output_folder, detailed_output);
 
-		vector<ContigStream*> streams = { &stream1_, &stream2_ };
+		ContigStreams streams(vector<ContigStream*>{ &stream1_, &stream2_ }, false);
 		ConstructColoredGraph<gp_t>(gp_, coloring_, streams);
 
 		if (gp_.genome.size() > 0) {
@@ -383,10 +383,9 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 		refining_gp_t refining_gp(k, "tmp");
 		io::VectorReader<io::SingleRead> genome_stream(
 				io::SingleRead("genome", reference.str()));
-		vector<ContigStream*> comp_stream =
-				{ &stream1, &stream2, &genome_stream };
+    ContigStreamsPtr streams_ptr = make_shared<ContigStreams>(vector<ContigStream*>{&stream1, &stream2, &genome_stream}, false);
 
-		ConstructGPForRefinement(refining_gp, comp_stream, delta);
+		ConstructGPForRefinement(refining_gp, streams_ptr, delta);
 
 		io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1,
 				GraphReadCorrectorInstance(refining_gp.g,
@@ -506,28 +505,19 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
 
 	// ContigStream -> SplittingWrapper -> RCReaderWrapper -> PrefixAddingReaderWrapper
 
-	vector<ContigStream *> genomes_stream_pointers;
-	vector<ContigStream *> to_destroy;
-	for (auto it = genomes_paths.begin(); it != genomes_paths.end(); ++it) {
-		ContigStream *reader_ptr = new io::Reader(it->second);
-		ContigStream *pointer = new io::RCReaderWrapper<io::SingleRead>(
-				*reader_ptr);
+  ContigStreams streams;
+  for (auto it = genomes_paths.begin(); it != genomes_paths.end(); ++it) {
+    streams.push_back(new io::Reader(it->second));
+  }
 
-		genomes_stream_pointers.push_back(pointer);
-		to_destroy.push_back(reader_ptr);
-		to_destroy.push_back(pointer);
-	}
+  ContigStreamsPtr rc_wrapped = RCWrapStreams(streams);
 
-	ConstructColoredGraph(gp, coloring, genomes_stream_pointers, true);
+  ConstructColoredGraph(gp, coloring, *rc_wrapped, true);
 
 	ofstream indel_event_logger(output_folder + "/indel_events");
 
 	SimpleIndelFinder<gp_t> indel_finder(gp, coloring, indel_event_logger);
 	indel_finder.FindIndelEvents();
-
-	for (auto it = to_destroy.begin(); it != to_destroy.end(); ++it) {
-		delete (*it);
-	}
 
 //  UnversalSaveGP(gp, output_folder + "/colored_split_graph");
 //  SaveColoring(gp.g, gp.int_ids, coloring, output_folder + "/colored_split_graph");
