@@ -417,7 +417,7 @@ private:
 		for(size_t i = 0; i < variants.size(); i++)
 			if (res.length() > variants[i].length())
 				res = variants[i];
-		StripedSmithWaterman::Aligner aligner(3, 3, 5, 3) ;
+		StripedSmithWaterman::Aligner aligner(3, 3, 6, 6) ;
 		aligner.SetReferenceSequence(res.c_str(), res.length());
 		//aligner.SetGapPenalty(2, 2);
 		int best_score = EditScore(res, variants, aligner);
