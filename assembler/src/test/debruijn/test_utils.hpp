@@ -129,6 +129,14 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
 	EdgesEqual(edges, etalon_edges);
 }
 
+debruijn_config::construction CreateDefaultConstructionConfig() {
+	  debruijn_config::construction config;
+	  config.con_mode = construction_mode::con_extention;
+	  config.early_tc.enable = false;
+	  config.keep_perfect_loops = true;
+	  return config;
+}
+
 void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& etalon_edges) {
 	DEBUG("Asserting graph");
 	typedef io::VectorReader<SingleRead> RawStream;
@@ -138,7 +146,7 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
 	Graph g(k);
 	EdgeIndex<Graph> index(g, k + 1, tmp_folder);
 
-	ConstructGraphFromStream(k, read_stream, g, index);
+	ConstructGraphFromStream(k, CreateDefaultConstructionConfig(), read_stream, g, index);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -212,7 +220,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	PairedInfoIndexT<Graph> paired_index(gp.g);
 
 	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector(new SingleStream(paired_read_stream));
-	ConstructGraphWithCoverage(k, single_stream_vector, gp.g, gp.index);
+	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
 
 	FillPairedIndexWithReadCountMetric(gp.g,
 			gp.int_ids, gp.index,
