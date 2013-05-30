@@ -6,6 +6,7 @@
 
 #include "kmer_coverage_model.hpp"
 
+#include "xmath.h"
 #include "logger/logger.hpp"
 #include "smooth.hpp"
 #include "verify.hpp"

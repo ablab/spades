@@ -7,6 +7,7 @@
 #ifndef XMATH_H_
 #define XMATH_H_
 
+#include <limits>
 #include <cmath>
 
 namespace math {
