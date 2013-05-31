@@ -1216,7 +1216,7 @@ public:
       edge_qual_(edge_qual) {
     }
 
-    bool IsTrivialChimeric(EdgeId e) {
+    bool IsTrivialChimeric(EdgeId e) const {
         return !edge_qual_.IsPositiveQuality(e)
                 && TopologyAndQualCheck(e);
     }
