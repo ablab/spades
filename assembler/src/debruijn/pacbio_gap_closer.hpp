@@ -74,6 +74,22 @@ public:
 
 	void PostProcess(){
 		FillIndex();
+		for (auto j_iter = index.begin(); j_iter != index.end(); j_iter ++) {
+			EdgeId e = *j_iter;
+			auto cl_start = inner_index[e].begin();
+			auto iter = inner_index[e].begin();
+			vector <GapDescription<Graph> > padded_gaps;
+			while (iter != inner_index[e].end()) {
+				auto next_iter = ++iter;
+				if (next_iter == inner_index[e].end() || next_iter->end != cl_start->end) {
+					size_t len = next_iter - cl_start;
+					if (len > 1) {
+						nonempty_pairs.insert(make_pair(cl_start->start, cl_start->end));
+					}
+					cl_start = next_iter;
+				}
+			}
+		}
 		set<pair<EdgeId, EdgeId> > used_rc_pairs;
 		for(auto iter = nonempty_pairs.begin(); iter != nonempty_pairs.end(); ++iter) {
 			if (used_rc_pairs.find(*iter) != used_rc_pairs.end()) {
@@ -159,10 +175,6 @@ public:
 					exclude_long_seqs = true;
 //				start_min = 0;
 //				end_max = g_.length(cl_start->end) - 1;
-				size_t len = next_iter - cl_start;
-				if (len > 1) {
-					nonempty_pairs.insert(make_pair(cl_start->start, cl_start->end));
-				}
 				for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
 					if (exclude_long_seqs && j_iter->gap_seq.size() > long_seq_limit)
 						continue;
@@ -413,6 +425,7 @@ private:
 				}
 			}
 		}
+		DEBUG(" with mean length  " << ml <<" in thread  " << omp_get_thread_num()<< " starting to modify gap_closed");
 		string res = variants[0];
 		for(size_t i = 0; i < variants.size(); i++)
 			if (res.length() > variants[i].length())
@@ -441,6 +454,7 @@ private:
 				}
 			}
 		}
+		DEBUG("returning " << res);
 		return res;
 	}
 
