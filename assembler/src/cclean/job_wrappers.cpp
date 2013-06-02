@@ -8,9 +8,9 @@
 
 #include <set>
 
-static bool is_alignment_good(const StripedSmithWaterman::Alignment& a, const std::string& query, double aligned_part_fraction) {
-  // FIXME: Check for the end of reference here (somehow)
-  return (std::min(a.query_end - a.query_begin + 1, a.ref_end - a.ref_begin + 1) / (double) query.size() > aligned_part_fraction);
+static bool is_alignment_good(const StripedSmithWaterman::Alignment& a, const std::string& sequence, const std::string& query, double aligned_part_fraction) {
+  return (std::min(a.query_end - a.query_begin + 1, a.ref_end - a.ref_begin + 1) / (double) query.size() > aligned_part_fraction) &&
+		  (a.ref_begin == 0 || a.ref_end == sequence.size() - 1); //check that query adjoins or even overlaps the sequence edge
 }
 
 bool ExactAndAlignJobWrapper::operator()(const Read &r) {
@@ -42,7 +42,7 @@ bool ExactAndAlignJobWrapper::operator()(const Read &r) {
       // FIXME
       std::string database_name = "foo";
 
-      if (alignment.mismatches < mismatch_threshold && is_alignment_good(alignment, query, aligned_part_fraction)) {
+      if (alignment.mismatches < mismatch_threshold && is_alignment_good(alignment, sequence, query, aligned_part_fraction)) {
 #       pragma omp critical
         {
           aligned_ += 1;

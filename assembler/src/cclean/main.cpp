@@ -16,7 +16,7 @@
 
 void usage() {
   std::cout << "This tool searches contaminations from UniVec db in provided file with reads" << std::endl;
-  std::cout << "Usage: QC-pileline config_path mode:{exact, align, both} UniVec_path Fasta/Fastq.gz" << std::endl;
+  std::cout << "Usage: QC-pileline config_path UniVec_path Fasta/Fastq.gz" << std::endl;
   std::cout << "Currently only .gz files can be read" << std::endl;
 }
 
