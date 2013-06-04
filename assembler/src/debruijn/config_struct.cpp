@@ -382,6 +382,14 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.pacbio_test_on, pt, "pacbio_test_on");
   load(cfg.coverage_based_rr, pt, "coverage_based_rr");
+  if (cfg.coverage_based_rr) {
+    load(cfg.coverage_threshold_one_list, pt, "coverage_threshold_one_list");
+    load(cfg.coverage_threshold_match, pt, "coverage_threshold_match");
+    load(cfg.coverage_threshold_global, pt, "coverage_threshold_global");
+    load(cfg.tandem_ratio_lower_threshold, pt, "tandem_ratio_lower_threshold");
+    load(cfg.tandem_ratio_upper_threshold, pt, "tandem_ratio_upper_threshold");
+    load(cfg.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
+  }
   if (cfg.pacbio_test_on) {
     load(cfg.pacbio_reads, pt, "pacbio_reads");
     load(cfg.pacbio_k, pt, "pacbio_k");

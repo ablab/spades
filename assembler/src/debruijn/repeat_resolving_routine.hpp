@@ -914,7 +914,8 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo
 
 	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
-	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp);
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().coverage_threshold_one_list, cfg::get().coverage_threshold_match, 
+			cfg::get().coverage_threshold_global, cfg::get().tandem_ratio_lower_threshold, cfg::get().tandem_ratio_upper_threshold, cfg::get().repeat_length_upper_threshold);
 	cov_rr.resolve_repeats_by_coverage(index, labels_after, quality_labeler, clustered_index, filteredPaths);
 
 	INFO("Repeats are resolved by coverage");

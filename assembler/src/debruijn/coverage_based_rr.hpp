@@ -25,9 +25,23 @@ class CoverageBasedResolution {
 
 	//path with conjugate edges
 	std::vector< std::vector<EdgeId> > resolvedPaths;
-
+	
+	const double threshold_one_list_;
+	const double threshold_match_;
+	const double threshold_global_;
+	const double tandem_lower_threshold_;
+	const double tandem_upper_threshold_;
+	const double repeat_length_upper_threshold_;
+	
 	public:
-	CoverageBasedResolution( GraphPack *gpack_arg) {
+	CoverageBasedResolution( GraphPack *gpack_arg, double threshold_one_list, double threshold_match, 
+				double threshold_global, double tandem_lower_threshold, double tandem_upper_threshold, double repeat_length_upper_threshold) : 
+											threshold_one_list_(threshold_one_list), 
+											threshold_match_(threshold_match),
+											threshold_global_(threshold_global), 
+											tandem_lower_threshold_(tandem_lower_threshold), 
+											tandem_upper_threshold_(tandem_upper_threshold),
+											repeat_length_upper_threshold_(repeat_length_upper_threshold){
 		gp = gpack_arg;
 	}
 	
@@ -118,7 +132,7 @@ class CoverageBasedResolution {
 					//std::vector< std::vector<EdgeId>>& resolvedLoops ) 
 					) {
 
-		auto filter = LoopFilter<GraphPack, DetailedCoverage>(*gp, coverage);
+		auto filter = LoopFilter<GraphPack, DetailedCoverage>(*gp, coverage, tandem_lower_threshold_, tandem_upper_threshold_, repeat_length_upper_threshold_);
 		filter.get_loopy_components();
 
 
@@ -405,15 +419,16 @@ class CoverageBasedResolution {
 		}
 
 		//TODO LengthCutoff move to config
-		double LengthCutoff = 0.0;
-		int numEdges = 0;
+		//double LengthCutoff = 0.0;
+		/*int numEdges = 0;
 		for (auto e_iter = gp->g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter){
 			LengthCutoff += gp->g.length(*e_iter);	
 			numEdges += 1;
 		}
 
 		std::cout << "Length cutoff: " << 0.25 * LengthCutoff / numEdges << std::endl;
-		LengthCutoff = 300;//	
+		*/
+		//LengthCutoff = 300;//	
 		for (auto e_iter = gp->g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter){
 
 			if ( prohibitedEdges.find(*e_iter) != prohibitedEdges.end() ){ 
@@ -449,7 +464,7 @@ class CoverageBasedResolution {
 			}
 
 			// continue check if a short _terminal_ vertex
-			else if( gp->g.length(*e_iter) < LengthCutoff && (in_degree.find(from) != in_degree.end()) && (out_degree.find(into) != out_degree.end()) ){
+			else if( gp->g.length(*e_iter) < repeat_length_upper_threshold_ && (in_degree.find(from) != in_degree.end()) && (out_degree.find(into) != out_degree.end()) ){
 			//	if (gp->g.int_id(*e_iter) ==10021207) INFO(2);
 
 				components.push_back(*e_iter);
@@ -517,8 +532,8 @@ class CoverageBasedResolution {
 		int Length = min(incomingEdgesCoverage.size(),outgoingEdgesCoverage.size());
 
 		//TODO: Move to config
-		double thresholdOneList(0.80), thresholdPair(0.64);
-		//double thresholdOneList(0.80), thresholdPair(0.70);
+		//double threshold_one_list_(0.80), threshold_match_(0.64);
+		//double threshold_one_list_(0.80), threshold_match_(0.70);
 
 		for (int i = 0; i < Length - 1; ++i) {
 	
@@ -526,20 +541,20 @@ class CoverageBasedResolution {
 			double valueOneListOut = min (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second) / max (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second) ;
 			double valuePair = min (incomingEdgesCoverage[i].second, outgoingEdgesCoverage[i].second) / max (incomingEdgesCoverage[i].second, outgoingEdgesCoverage[i].second) ;
 
-			if ( valueOneListIn > thresholdOneList || valueOneListOut > thresholdOneList || valuePair < thresholdPair ){
+			if ( valueOneListIn > threshold_one_list_ || valueOneListOut > threshold_one_list_ || valuePair < threshold_match_ ){
 				return;
 			}
 		}
 		int i = Length - 1;
 		double valuePair = min (incomingEdgesCoverage[i].second, outgoingEdgesCoverage[i].second) / max (incomingEdgesCoverage[i].second, outgoingEdgesCoverage[i].second) ;
-		if ( valuePair < thresholdPair ){
+		if ( valuePair < threshold_match_ ){
 			return;
 		}
 
 		if ( Length == (int) incomingEdgesCoverage.size() ){
 			for (unsigned i = Length - 1; i < outgoingEdgesCoverage.size() - 1; ++i){
 				double valueOneList = (double) min (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second) / max (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second); 
-				if (valueOneList > thresholdOneList){
+				if (valueOneList > threshold_one_list_){
 					return;
 				}
 			}
@@ -548,7 +563,7 @@ class CoverageBasedResolution {
 		
 			for (unsigned i = Length - 1; i < incomingEdgesCoverage.size() - 1; ++i){
 				double valueOneList = (double) min (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second) / max (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second); 
-				if (valueOneList > thresholdOneList){
+				if (valueOneList > threshold_one_list_){
 					return;
 				}
 			}
@@ -718,8 +733,8 @@ class CoverageBasedResolution {
 			for ( auto edgePair = pairsOfEdges.begin(); edgePair != pairsOfEdges.end(); ++edgePair ){
 				path_extend::BidirectionalPath* resolved_path = new path_extend::BidirectionalPath( gp->g );
 				resolveRepeat( *edgePair, path, *resolved_path );
-				if (resolved_path->Size() < 3 || resolved_path->Front() == resolved_path->Back() || coverage.GetOutCov(edgePair->first) < 5 
-					|| coverage.GetInCov(edgePair->second) < 5) {
+				if (resolved_path->Size() < 3 || resolved_path->Front() == resolved_path->Back() || coverage.GetOutCov(edgePair->first) < threshold_global_ 
+					|| coverage.GetInCov(edgePair->second) < threshold_global_) {
 					continue;
 				}
 				//now put it into collection of paths
@@ -797,9 +812,10 @@ class CoverageBasedResolution {
 			
 			auto start = pos_it->second[i].start();
 
-		      std::cout << "    " << pos_it->second[i].contigId_ << " "
+		      /*std::cout << "    " << pos_it->second[i].contigId_ << " "
 		    			<< pos_it->second[i].start() << " - "
 				         << pos_it->second[i].end() << std::endl;
+			*/
 			if ( abs(start - currentStart) < 2 ) {
 
 				auto end = pos_it->second[i].end();
@@ -943,25 +959,7 @@ class CoverageBasedResolution {
 			VertexId componentEdgeStartVertex = gp->g.EdgeStart(*component_edge);
 			VertexId componentEdgeEndVertex = gp->g.EdgeEnd(*component_edge);
 			
-			/*if ( componentEdgeStartVertex == edgeEndVertex && componentEdgeEndVertex == edgeStartVertex ) {
-				// if a loop is met take the average coverage of the previous edge - thus count how many times the loop is traversed
-				coverage_value coverage_prev = gp->g.coverage(gp.g.IncomingEdges(componentEdgeStartVertex)[0]);
-				coverage_value component_coverage = gp->g.coverage(*component_edge);
-				coverage_value edge_coverage = gp->g.coverage(edge);
-				int nLoops = component_coverage / coverage_prev;
-				
-				//std::cout << "New loop edge " << gp->g.int_id( *component_edge ) << " " << nLoops << " " << current_coverage << " " << coverage_prev << std::endl;
-				for ( int i = 0; i < nLoops - 1; i++ ){
-					path.push_back(*component_edge);
-				}
-				int nLoops = edge_coverage / coverage_prev;
-				for ( int i = 0; i < nLoops - 1; i++ ){
-					path.push_back(edge);
-				}
-				visited_edges.insert(*component_edge);
-
-			}
-			else*/ if ( componentEdgeStartVertex == edgeEndVertex || componentEdgeEndVertex == edgeStartVertex ) {
+			if ( componentEdgeStartVertex == edgeEndVertex || componentEdgeEndVertex == edgeStartVertex ) {
 				 visit(*component_edge, visited_edges, path, components, singles, incoming_edges, outgoing_edges);
 			}
 

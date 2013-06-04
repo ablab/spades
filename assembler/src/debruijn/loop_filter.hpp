@@ -10,43 +10,6 @@ using omnigraph::FlowGraph;
 
 namespace debruijn_graph {
 	
-/*	template <class GraphPack>
-	void filter_loops( const GraphPack& graph_p ) {
-
-		StroglyConnectedComponentFinder<FlowGraph<typename GraphPack::graph_t>> finder(FlowGraph<typename GraphPack::graph_t>(graph_p.g));
-		auto labeledVertices = finder.ColourComponents();
-		
-		std::map<size_t, std::set<EdgeId>> setLoops;
-		for ( auto vIter = labeledVertices.begin(); vIter != labeledVertices.end(); ++vIter  ) {
-		
-			for ( auto eIter = graph_p.g.in_begin(*vIter); eIter != graph_p.g.in_end(); ++eIter ){
-				
-			//	auto vStart = graph_p.g.edgeStart( *eIter );
-			//	if ( labeledVertices[*vIter] == labeledVertices[vStart] ){
-				
-					setLoops[ labeledVertices[*vIter] ].insert(*eIter); 
-				
-			//	}
-			}
-		
-		
-			for ( auto eIter = graph_p.g.out_begin(*vIter); eIter != graph_p.g.out_end(); ++eIter ){
-				
-			//	auto vEnd = graph_p.g.edgeEnd( *eIter );
-			//	if ( labeledVertices[*vIter] == labeledVertices[vEnd] ){
-				
-					setLoops[ labeledVertices[*vIter] ].insert(*eIter); 
-				
-			//	}
-			}
-
-			
-		}
-
-
-	}
-*/
-
 	template <class GraphPack, class DetailedCoverage>
 	struct LoopFilter {
 
@@ -60,7 +23,14 @@ namespace debruijn_graph {
 		std::set<EdgeId> prohibitedEdges;
 		std::vector< std::vector<EdgeId> > resolvedLoops;
 
-		LoopFilter ( GraphPack& g, DetailedCoverage& index ) {
+		const double ratio_lower_threshold_;
+		const double ratio_upper_threshold_;
+		const double repeat_length_upper_threshold_;
+
+		LoopFilter ( GraphPack& g, DetailedCoverage& index, double ratio_lower_threshold, double ratio_upper_threshold, double repeat_length_upper_threshold ):
+													ratio_lower_threshold_(ratio_lower_threshold),
+													ratio_upper_threshold_(ratio_upper_threshold),
+													repeat_length_upper_threshold_(repeat_length_upper_threshold) {
 	
 			graph_p = &g;
 			coverage = &index;
@@ -175,12 +145,12 @@ namespace debruijn_graph {
 			auto cov2 = graph_p->g.coverage(loopEdge2);
 
 			double intpart;
-			double ratioThresholdLower = 0.3;
-			double ratioThresholdUpper = 0.7;
+			//double ratio_lower_threshold_ = 0.3;
+			//double ratio_upper_threshold_ = 0.7;
 			auto ratio1 = modf( cov1 / cov, &intpart );
 			auto ratio2 = modf( cov2 / cov, &intpart );
 
-			if ( ( ratio1 > ratioThresholdLower && ratio1 < ratioThresholdUpper ) || ( ratio2 > ratioThresholdLower && ratio2 < ratioThresholdUpper ) ) {
+			if ( ( ratio1 > ratio_lower_threshold_ && ratio1 < ratio_upper_threshold_ ) || ( ratio2 > ratio_lower_threshold_ && ratio2 < ratio_upper_threshold_ ) ) {
 
 				canBeResolved = false;
 			}
@@ -310,34 +280,6 @@ namespace debruijn_graph {
 
 		}
 
-		/*void sort_path( std::vector<EdgeId&> path ){
-
-			std::set<VertexId> vertices;
-
-			for ( auto e = path.begin(); e != path.end(); ++e){
-				vertices.insert(graph_p.g.EdgeStart(*e));
-				vertices.insert(graph_p.g.EdgeEnd(*e));
-			}
-			
-			auto e = path.begin(v);
-			for ( ; vertices.find(graph_p.g.EdgeStart(*e)) != vertices.end() || path.end(); ++e){
-				
-			}
-			if (e )
-		}*/
-
-		/*void  join_paths( std::vector<std::vector<EdgeId>>& paths ) {
-
-			for ( auto loop = loops.begin(); loop != loops.end(); ++loop ) {
-
-				std::vector<EdgeId> path;
-				if ( ifSimpleLoop(loop, path) ){
-					paths.push_back(path);
-				}
-
-			}
-
-		}*/
 
 		void dfs1( const VertexId& v ){
 
@@ -345,7 +287,7 @@ namespace debruijn_graph {
 
 			for ( auto incidentEdge = graph_p->g.out_begin(v); incidentEdge != graph_p->g.out_end(v); ++incidentEdge ){
 	
-				if ( graph_p->g.length(*incidentEdge) > 1000 ) continue;
+				if ( graph_p->g.length(*incidentEdge) > repeat_length_upper_threshold_ ) continue;
 
 				VertexId vOut = graph_p->g.EdgeEnd(*incidentEdge);
 				if (usedVertices.find(vOut) != usedVertices.end())
@@ -364,7 +306,7 @@ namespace debruijn_graph {
 
 			for ( auto incidentEdge = graph_p->g.in_begin(v); incidentEdge != graph_p->g.in_end(v); ++incidentEdge ) {
 				
-				if ( graph_p->g.length(*incidentEdge) > 1000 ) continue;
+				if ( graph_p->g.length(*incidentEdge) > repeat_length_upper_threshold_ ) continue;
 
 				VertexId vIn = graph_p->g.EdgeStart(*incidentEdge);
 				if (usedVertices.find(vIn) != usedVertices.end()) 

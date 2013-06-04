@@ -419,6 +419,12 @@ struct debruijn_config {
   size_t  pacbio_k;
   bool pacbio_test_on;
   bool coverage_based_rr;
+  double coverage_threshold_one_list;
+  double coverage_threshold_match;
+  double coverage_threshold_global;
+  double tandem_ratio_lower_threshold;
+  double tandem_ratio_upper_threshold;
+  double repeat_length_upper_threshold;
   bool pacbio_optimized_sw;
 
 
