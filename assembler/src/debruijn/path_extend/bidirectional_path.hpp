@@ -393,6 +393,8 @@ public:
     BidirectionalPath(Graph& g): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_(){
 	    Subscribe(&loopDetector_);
 	    Subscribe(&seedCoords_);
+	    overlaped_begin.clear();
+	    overlaped_end.clear();
 	    overlap = false;
 	    weight = 1;
 	}
@@ -402,6 +404,8 @@ public:
 		Subscribe(&loopDetector_);
 		Subscribe(&seedCoords_);
 		overlap = false;
+		overlaped_begin.clear();
+		overlaped_end.clear();
 		if (path.size() != 0) {
             id_ = g_.int_id(path[0]);
             for (size_t i = 0; i < path.size(); ++i) {
@@ -419,6 +423,8 @@ public:
 	    Subscribe(&loopDetector_);
 	    Subscribe(&seedCoords_);
 	    overlap = false;
+		overlaped_begin.clear();
+		overlaped_end.clear();
 	    prev_ = data_.back();
 	    now_ = data_.back();
 	    weight = path.getWeight();
@@ -455,7 +461,9 @@ private:
 		if (iter != overlaped_begin.end()) {
 			overlaped_begin.erase(iter);
 			iter = conj_path->overlaped_end.find(p->conj_path);
-			conj_path->overlaped_end.erase(iter);
+			if (iter != conj_path->overlaped_end.end()){
+				conj_path->overlaped_end.erase(iter);
+			}
 		}
 	}
 
@@ -499,7 +507,9 @@ private:
 		if (iter != overlaped_end.end()) {
 			overlaped_end.erase(iter);
 			iter = conj_path->overlaped_begin.find(p->conj_path);
-			conj_path->overlaped_begin.erase(iter);
+			if (iter != conj_path->overlaped_begin.end()){
+				conj_path->overlaped_begin.erase(iter);
+			}
 		}
 	}
 
@@ -546,8 +556,8 @@ public:
 
 	void setOverlap(bool isOverlap_ = true) {
 		overlap = isOverlap_;
-		if (!conj_path->isOverlap() != isOverlap_) {
-			conj_path->setOverlap(true);
+		if (conj_path->isOverlap() != isOverlap_) {
+			conj_path->setOverlap(isOverlap_);
 		}
 	}
 
@@ -680,6 +690,8 @@ public:
         Subscribe(&loopDetector_);
         Subscribe(&seedCoords_);
         overlap = false;
+		overlaped_begin.clear();
+		overlaped_end.clear();
         Push(startingEdge);
         id_ = g_.int_id(startingEdge);
         prev_ = data_.back();
