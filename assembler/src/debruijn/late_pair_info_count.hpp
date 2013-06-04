@@ -27,18 +27,6 @@ namespace debruijn_graph {
       paired_index.Init();
     }
 
-    EdgeQuality<Graph> edge_qual(gp.g, gp.index,
-        gp.kmer_mapper, gp.genome);
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-    total_labeler tot_lab(&graph_struct);
-    CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
-
-    auto mapper = MapperInstance(gp);
-
-    ChimericEdgesLengthStats<Graph> chimeric_stats(gp.g, edge_qual, mapper->MapSequence(gp.genome), 100000);
-
-    chimeric_stats();
-
     if (cfg::get().paired_mode) {
       typedef io::ReadStreamVector<SequencePairedReadStream> MultiStreamType;
       typedef io::ReadStreamVector<PairedReadStream> SingleStreamType;
