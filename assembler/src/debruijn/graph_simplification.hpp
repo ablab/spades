@@ -607,11 +607,6 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage<Graph>& fla
   DEBUG(iteration << " TipClipping stats");
   printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
-  DEBUG(iteration << " BulgeRemoval");
-  RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
-  DEBUG(iteration << " BulgeRemoval stats");
-  printer(ipp_bulge_removal, str(format("_%d") % iteration));
-
   //todo temporary disabled completely
 //  DEBUG(iteration << " ErroneousConnectionsRemoval");
 //  RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/removal_handler,
@@ -662,6 +657,11 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage<Graph>& fla
                                         *cfg::get().ds.RL, edge_classifier_f);
 
   printer(ipp_err_con_removal, str(format("_%d") % iteration));
+
+  DEBUG(iteration << " BulgeRemoval");
+  RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
+  DEBUG(iteration << " BulgeRemoval stats");
+  printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
 }
 
@@ -755,9 +755,9 @@ void SimplifyGraph(conj_graph_pack &gp,
   //todo remove magic constants
   FlankingCoverage<Graph> flanking_cov(gp.g, gp.index.inner_index(), 50);
 
-  if (cfg::get().ds.single_cell)
-    PreSimplification(gp, flanking_cov, removal_handler, printer,
-                      iteration_count, determined_coverage_threshold);
+//  if (cfg::get().ds.single_cell)
+//    PreSimplification(gp, flanking_cov, removal_handler, printer,
+//                      iteration_count, determined_coverage_threshold);
 
   for (size_t i = 0; i < iteration_count; i++) {
     if ((cfg::get().gap_closer_enable) && (cfg::get().gc.in_simplify)) {
