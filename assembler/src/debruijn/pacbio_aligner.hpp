@@ -39,12 +39,13 @@ public:
 		int nongenomic_edges = 0;
 		int total_length = 0;
 		int tlen = 0;
-		gaps.LoadFromFile("gaps_padded.mpr");
-		gaps.PostProcess();
-		PacbioGapCloser<Graph> gap1_closer(gp_.g);
-		gap1_closer.ConstructConsensus(cfg::get().max_threads, gaps);
-		gap1_closer.DumpToFile("gaps_closed2.fasta", gp_.edge_pos);
-		exit(0);
+//		gaps.LoadFromFile("gaps_padded.mpr");
+//		gaps.PostProcess();
+//		PacbioGapCloser<Graph> gap1_closer(gp_.g);
+//		gap1_closer.ConstructConsensus(cfg::get().max_threads, gaps);
+//		gap1_closer.DumpToFile("gaps_closed2.fasta", gp_.edge_pos);
+//		INFO("PacBio test finished");
+//		exit(0);
 		int rc_pairs = 0;
 		size_t read_buffer_size = 50000;
 		std::vector<ReadStream::read_type> reads(read_buffer_size);
@@ -84,7 +85,7 @@ public:
 				INFO(iter->first <<" :  "<< iter->second);
 			}
 		INFO("PacBio test finished");
-//		return ;
+		return ;
 	}
 
 	void ProcessReadsBatch(std::vector<ReadStream::read_type>& reads, PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index, PathStorage<Graph>& long_reads, GapStorage<Graph>& gaps,

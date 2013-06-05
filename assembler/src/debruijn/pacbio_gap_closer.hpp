@@ -264,9 +264,9 @@ private:
 			int high = min(min(b_len, i + d + 1), i + a_len - b_len + d + 1);
 //			TRACE(low << " " <<high);
 			for (int j = low; j < high; j++)
-				table[i][j] = 1000000000;
+				table[i][j] = 1000000;
 		}
-		table[a_len - 1][b_len - 1] = 1000000000;
+		table[a_len - 1][b_len - 1] = 1000000;
 		table[0][0] = 0;
 //free deletions on begin
 //		for(int j = 0; j < b_len; j++)
@@ -319,7 +319,7 @@ private:
 			if (!cfg::get().pacbio_optimized_sw) {
 				int tmp = StringDistance(consensus, variants[i]) ;
 				TRACE("score3:" << tmp);
-				res += tmp;
+				res -= tmp;
 			}
 			else
 				res += alignment.sw_score;
@@ -449,7 +449,7 @@ private:
 			} else {
 				TRACE("void mutation:(");
 				void_iterations ++;
-				if (void_iterations % 200 == 0) {
+				if (void_iterations % 500 == 0) {
 					INFO(" random change " << void_iterations <<" failed in thread  " << omp_get_thread_num() );
 				}
 			}
