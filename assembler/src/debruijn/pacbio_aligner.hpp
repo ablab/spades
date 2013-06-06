@@ -30,7 +30,7 @@ public:
 
 	void pacbio_test(PathStorage<Graph> &long_reads, GapStorage<Graph> &gaps) {
 		INFO("starting pacbio tests");
-		ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, false);
+		ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pb.pacbio_reads, false);
 		size_t n = 0;
 		//    map<int, int> profile;
 		map<int, int> different_edges_profile;
@@ -51,7 +51,7 @@ public:
 		std::vector<ReadStream::read_type> reads(read_buffer_size);
 		ReadStream::read_type read;
 		size_t buffer_no = 0;
-		PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp_.g, k_test_);
+		PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp_.g, k_test_, cfg::get().K);
 		ofstream filestr("pacbio_mapped.mpr");
 		filestr.close();
 		while (!pacbio_read_stream->eof()) {

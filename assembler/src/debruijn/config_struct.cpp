@@ -197,6 +197,27 @@ void load(debruijn_config::repeat_resolver& rr,
   load(rr.kill_loops, pt, "kill_loops");
 }
 
+
+void load(debruijn_config::pacbio_processor& pb,
+          boost::property_tree::ptree const& pt, bool complete) {
+  using config_common::load;
+  load(pb.pacbio_reads, pt, "pacbio_reads");
+  load(pb.pacbio_k, pt, "pacbio_k");
+  load(pb.pacbio_optimized_sw, pt, "pacbio_optimized_sw");
+  load(pb.compression_cutoff, pt, "compression_cutoff");
+  load(pb.domination_cutoff, pt, "domination_cutoff");
+  load(pb.path_limit_stretching, pt, "path_limit_stretching");
+  load(pb.path_limit_pressing, pt, "path_limit_pressing");
+  load(pb.gap_closing_iterations, pt, "gap_closing_iterations");
+  load(pb.long_seq_limit, pt, "long_seq_limit");
+  load(pb.split_cutoff, pt, "split_cutoff");
+  load(pb.match_value, pt, "match_value");
+  load(pb.mismatch_penalty, pt, "mismatch_penalty");
+  load(pb.insertion_penalty, pt, "insertion_penalty");
+  load(pb.deletion_penalty, pt, "deletion_penalty");
+}
+
+
 void load(debruijn_config::position_handler& pos,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
@@ -391,12 +412,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     load(cfg.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
   }
   if (cfg.pacbio_test_on) {
-    load(cfg.pacbio_reads, pt, "pacbio_reads");
-    load(cfg.pacbio_k, pt, "pacbio_k");
-    load(cfg.pacbio_optimized_sw, pt, "pacbio_optimized_sw");
+	load(cfg.pb, pt, "pacbio_processor");
   } else {
-    cfg.pacbio_reads = "";
-    cfg.pacbio_k = 0;
   }
 
   load(cfg.additional_contigs, pt, "additional_contigs");
