@@ -794,7 +794,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome, const
 			sub_dir, false);
 }
 
-void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
+void resolve_nonconjugate_component(int /*component_id*/, const Sequence& /*genome*/) {
 //	nonconj_graph_pack nonconj_gp(genome);
 //  PairedInfoIndexT<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
 //
@@ -818,8 +818,8 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 //			graph_name, sub_dir, false);
 }
 
-void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndexT<Graph>& index,
-		const PairedIndexT& jump_index) {
+void resolve_with_jumps(conj_graph_pack& /*gp*/, PairedInfoIndexT<Graph>& /*index*/,
+		const PairedIndexT& /*jump_index*/) {
 	WARN("Jump resolver not alailable");
 
 //	VERIFY(cfg::get().andrey_params.);
@@ -851,7 +851,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 	size_t delta = size_t(is_var);
 	size_t linkage_distance = size_t(
 			cfg::get().de.linkage_distance_coeff * is_var);
-	GraphDistanceFinder<Graph> dist_finder(gp.g, size_t(lib.data().mean_insert_size),
+	GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t)math::round(lib.data().mean_insert_size),
 	        lib.data().read_length, delta);
 	size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 	boost::function<double(int)> weight_function;
@@ -868,7 +868,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 		//todo reduce number of constructor params
 	    //TODO: apply new system
 		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-		        size_t(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
+                (size_t)math::round(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
 				gp.k_value, lib.data().average_coverage);
 		normalizing_f = boost::bind(
 				&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
@@ -891,7 +891,6 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 	estimate_with_estimator(gp.g, estimator, normalizer, filter,
 			clustered_index);
 }
-
 
 void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo<Graph> >& filteredPaths, 
 				PairedIndexT& clustered_index,

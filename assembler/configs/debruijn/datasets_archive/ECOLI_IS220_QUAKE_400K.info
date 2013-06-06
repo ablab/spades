@@ -2,4 +2,4 @@ reads			 /home/lab42/algorithmic-biology/assembler/configs/debruijn/datasets_arc
 RL                       100
 IS                       220
 single_cell              false
-reference_genome         ../../../data/input/E.coli/MG1655-K12.first400K.fasta.gz
+;reference_genome         ../../../data/input/E.coli/MG1655-K12.first400K.fasta.gz

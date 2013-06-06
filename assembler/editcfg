@@ -36,6 +36,8 @@ case $1 in
   'spt')   cfg="spades_config.info.template";;
   'pe')   cfg="configs/debruijn/path_extend/pe_config.info";;
   'pet')   cfg="configs/debruijn/path_extend/pe_config.info.template";;
+  'con')   cfg="configs/debruijn/construction.info";;
+  'cont')   cfg="configs/debruijn/construction.info.template";;
   
 esac
 

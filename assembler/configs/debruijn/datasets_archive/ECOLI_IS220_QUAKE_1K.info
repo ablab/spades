@@ -1,4 +1,4 @@
 paired_reads             "../../../data/input/E.coli/is220/cropped/s_6.first1000_2.fastq.gz ../../../data/input/E.coli/is220/cropped/s_6.first1000_1.fastq.gz "
 RL                       100
 single_cell              false
-reference_genome         ../../../data/input/E.coli/MG1655-K12.first1K.fasta.gz
+;reference_genome         ../../../data/input/E.coli/MG1655-K12.first1K.fasta.gz

@@ -74,11 +74,11 @@ protected:
 	}
 
 public:
-	/*virtual*/ std::string label(VertexId v) const {
+	/*virtual*/ std::string label(VertexId /*v*/) const {
 		return "";
 	}
 
-	/*virtual*/ std::string label(EdgeId e) const {
+	/*virtual*/ std::string label(EdgeId /*e*/) const {
 		return "";
 	}
 
@@ -96,11 +96,11 @@ class EmptyGraphLabeler : public GraphLabeler<Graph> {
 public:
 	EmptyGraphLabeler() {}
 
-	std::string label(VertexId v) const {
+	std::string label(VertexId /*v*/) const {
 		return "";
 	}
 
-	std::string label(EdgeId e) const {
+	std::string label(EdgeId /*e*/) const {
 		return "";
 	}
 };

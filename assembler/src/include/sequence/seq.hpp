@@ -189,7 +189,7 @@ class Seq {
       //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
 
       // we fill everything with zeros (As) by default.
-      char c = digit_str ? s[offset + i] : dignucl(s[offset + i]);
+      char c = digit_str ? s[offset + i] : (char)dignucl(s[offset + i]);
 
       data = data | (T(c) << cnt);
       cnt += 2;
@@ -230,8 +230,8 @@ class Seq {
     for (size_t i = 0; i < (size_ >> 1); ++i) {
       T front = complement(res[i]);
       T end = complement(res[size_ - 1 - i]);
-      res.set(i, end);
-      res.set(size_ - 1 - i, front);
+      res.set(i, (char)end);
+      res.set(size_ - 1 - i, (char)front);
     }
     if ((size_ & 1) == 1) {
       res.set(size_ >> 1, complement(res[size_ >> 1]));

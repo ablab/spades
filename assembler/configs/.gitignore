@@ -6,5 +6,6 @@ debruijn/log.properties
 debruijn/path_extend/pe_config.info
 debruijn/path_extend/pe_params.info
 debruijn/path_extend/pe_libs.info
+debruijn/construction.info
 hammer/config.info
 _generic/

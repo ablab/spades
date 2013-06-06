@@ -80,7 +80,7 @@ public:
       base(g), edges_(edges) {
   }
 
-  virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) const {
+  virtual bool CheckPutVertex(VertexId /*vertex*/, EdgeId edge, size_t /*length*/) const {
     return edges_.count(edge) != 0;
   }
 };
@@ -99,7 +99,7 @@ public:
       base(g), edges_(edges), bound_(bound) {
   }
 
-  virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
+  virtual bool CheckProcessVertex(VertexId /*vertex*/, size_t distance) {
     return distance <= bound_;
   }
 
@@ -125,7 +125,7 @@ public:
       base(g), subgraph_(subgraph) {
   }
 
-  virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) const {
+  virtual bool CheckPutVertex(VertexId vertex, EdgeId /*edge*/, size_t /*length*/) const {
     return subgraph_.count(vertex) != 0;
   }
 
@@ -199,15 +199,13 @@ public:
     ++iterator_;
     vector < VertexId > component = FindComponent(
         this->graph().EdgeEnd(next));
-    TRACE(
-        "Error edges component constructed. It contains "
+    TRACE("Error edges component constructed. It contains "
             << component.size() << " vertices");
     size_t component_size = FindDiameter(component);
     TRACE("Diameter of component is " << component_size);
     vector < VertexId > neighbourhood = FindNeighbourhood(
-        this->graph().EdgeEnd(next), 1.5 * component_size);
-    TRACE(
-        "Error edges component neighborhood constructed. It contains "
+        this->graph().EdgeEnd(next), (size_t) math::round(1.5 * (double) component_size));
+    TRACE("Error edges component neighborhood constructed. It contains "
             << neighbourhood.size() << " vertices");
     visited_.insert(component.begin(), component.end());
     return neighbourhood;
@@ -242,7 +240,7 @@ public:
       UnorientedDijkstra<Graph>(graph), bound_(bound) {
   }
 
-  virtual bool CheckProcessVertex(VertexId vertex, distance_t distance) {
+  virtual bool CheckProcessVertexVertexId (VertexId /*vertex*/, distance_t distance) {
     return distance == 0;
   }
 
@@ -323,8 +321,8 @@ public:
           edge_length_bound), current_(0) {
   }
 
-  virtual bool CheckPutVertex(VertexId vertex, EdgeId edge,
-      distance_t length) const {
+  virtual bool CheckPutVertex(VertexId /*vertex*/, EdgeId edge,
+      distance_t /*length*/) const {
     if (current_ < max_size_) {
       ++current_;
     }
@@ -334,11 +332,11 @@ public:
     return false;
   }
 
-  virtual bool CheckProcessVertex(VertexId vertex, distance_t distance) {
+  virtual bool CheckProcessVertex(VertexId /*vertex*/, distance_t /*distance*/) {
     return current_ < max_size_;
   }
 
-  virtual void init(VertexId start) {
+  virtual void init(VertexId /*start*/) {
     current_ = 0;
   }
 
@@ -449,7 +447,7 @@ public:
       base(graph), bound_(bound) {
   }
 
-  virtual bool CheckProcessVertex(VertexId vertex, distance_t distance) {
+  virtual bool CheckProcessVertex(VertexId /*vertex*/, distance_t distance) {
     return distance == 0;
   }
 
@@ -542,7 +540,7 @@ private:
   bool start_processed_;
 
   //todo edge not used in the body
-  bool EdgeCovered(EdgeId edge) {
+  bool EdgeCovered(EdgeId /*edge*/) {
     return last_component_.count(
         this->graph().EdgeStart(path_[current_index_].first)) == 1
         && last_component_.count(

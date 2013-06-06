@@ -1,7 +1,7 @@
 #ifndef DETAIL_COVERAGE_HPP
 #define DETAIL_COVERAGE_HPP
 
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_kmer_index.hpp"
 #include "graph_pack.hpp"
 #include "verify.hpp"
 #include "graphio.hpp"

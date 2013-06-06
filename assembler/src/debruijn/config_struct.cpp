@@ -61,6 +61,30 @@ void load(resolving_mode& rm, boost::property_tree::ptree const& pt,
   }
 }
 
+inline void load(construction_mode& con_mode,
+        boost::property_tree::ptree const& pt, std::string const& key,
+        bool complete) {
+    if (complete || pt.find(key) != pt.not_found()) {
+        std::string ep = pt.get<std::string>(key);
+        con_mode = debruijn_config::construction_mode_id(ep);
+    }
+}
+
+inline void load(debruijn_config::construction::early_tip_clipper& etc,
+        boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(etc.enable, pt, "enable");
+    etc.length_bound = pt.get_optional<size_t>("length_bound");
+}
+
+inline void load(debruijn_config::construction& con,
+        boost::property_tree::ptree const& pt, bool complete) {
+    using config_common::load;
+    load(con.con_mode, pt, "mode", complete);
+    load(con.keep_perfect_loops, pt, "keep_perfect_loops", complete);
+    load(con.early_tc, pt, "early_tip_clipper", complete);
+}
+
 void load(estimation_mode& est_mode,
           boost::property_tree::ptree const& pt, std::string const& key,
           bool complete) {
@@ -466,6 +490,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.mask_all, pt, "mask_all");
 
+  load(cfg.con, pt, "construction");
   load(cfg.gc, pt, "gap_closer");
   load(cfg.graph_read_corr, pt, "graph_read_corr");
   load(cfg.need_consensus, pt, "need_consensus");

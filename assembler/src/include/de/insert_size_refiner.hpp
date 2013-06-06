@@ -14,11 +14,11 @@ namespace omnigraph {
 double get_median(const std::map<int, size_t> &hist) {
   double S = 0;
   for (auto iter = hist.begin(); iter != hist.end(); ++iter)
-    S += iter->second;
+    S += (double) iter->second;
 
   double sum = S;
   for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-    sum -= iter->second;
+    sum -= (double) iter->second;
     if (sum <= S / 2) {
       return iter->first;
     }
@@ -30,7 +30,7 @@ double get_median(const std::map<int, size_t> &hist) {
 double get_mad(const std::map<int, size_t> &hist, double median) { // median absolute deviation
   std::map<int, size_t> hist2;
   for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-    double x = fabs(iter->first - median);
+	int x = abs(iter->first - math::round_to_zero(median));
     hist2[x] = iter->second;
   }
   return get_median(hist2);

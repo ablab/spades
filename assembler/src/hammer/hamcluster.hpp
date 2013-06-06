@@ -60,7 +60,7 @@ public:
   SubKMerData serialize(hammer::KMer k, size_t fidx) const {
     SubKMerData s;
 
-    s.idx = fidx;
+    s.idx = (uint32_t)fidx;
     // FIXME: Get rid of string here!
     std::string seq = k.str();
     s.data = SubKMer(seq.data(),
@@ -84,7 +84,7 @@ public:
   SubKMerData serialize(hammer::KMer k, size_t fidx) const {
     SubKMerData s;
 
-    s.idx = fidx;
+    s.idx = (uint32_t)fidx;
 
     size_t sz = (hammer::K - from_ + stride_ - 1) / stride_;
 

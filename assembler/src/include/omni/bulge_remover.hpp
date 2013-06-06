@@ -80,9 +80,9 @@ class MostCoveredAlternativePathChooser: public PathProcessor<Graph>::Callback {
 			EdgeId edge = path[i];
 			size_t length = g_.length(edge);
 			path_length += length;
-			unnormalized_coverage += g_.coverage(edge) * length;
+			unnormalized_coverage += g_.coverage(edge) * (double) length;
 		}
-		return unnormalized_coverage / path_length;
+		return unnormalized_coverage / (double) path_length;
 	}
 
 public:
@@ -278,10 +278,8 @@ bool BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 		return false;
 	}
 
-	size_t kplus_one_mer_coverage = math::round(
-			graph_.length(edge) * graph_.coverage(edge));
-	TRACE(
-			"Processing edge " << graph_.str(edge) << " and coverage " << kplus_one_mer_coverage);
+	size_t kplus_one_mer_coverage = (size_t) math::round((double) graph_.length(edge) * graph_.coverage(edge));
+	TRACE("Processing edge " << graph_.str(edge) << " and coverage " << kplus_one_mer_coverage);
 
 	VertexId start = graph_.EdgeStart(edge);
 	TRACE("Start " << graph_.str(start));
@@ -289,8 +287,7 @@ bool BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 	VertexId end = graph_.EdgeEnd(edge);
 	TRACE("End " << graph_.str(end));
 
-	size_t delta = std::floor(
-			std::max(max_relative_delta_ * graph_.length(edge), max_delta_));
+	size_t delta = (size_t) std::floor(std::max(max_relative_delta_ * (double) graph_.length(edge), max_delta_));
 
 	MostCoveredAlternativePathChooser<Graph> path_chooser(graph_, edge);
 

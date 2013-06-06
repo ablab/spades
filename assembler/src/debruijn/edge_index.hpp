@@ -13,7 +13,7 @@
 
 #include "debruijn_graph.hpp"
 #include "standard.hpp"
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_edge_index.hpp"
 
 namespace debruijn_graph {
 /**

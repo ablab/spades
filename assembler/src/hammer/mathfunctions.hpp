@@ -38,7 +38,7 @@ inline long double CNK(int n, int k) {
 }
 
 inline long double Bernoulli(int k, int n, long double p) {
-  return pow(p, k) * pow(1 - p, n - k) * CNK(n, k);
+  return pow((double)p, k) * pow((double)(1 - p), n - k) * CNK(n, k);
 }
 
 
