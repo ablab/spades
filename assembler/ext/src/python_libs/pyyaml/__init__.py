@@ -24,8 +24,10 @@ def scan(stream, Loader=Loader):
     try:
         while loader.check_token():
             yield loader.get_token()
-    finally:
+    except:
         loader.dispose()
+        raise
+    loader.dispose()
 
 def parse(stream, Loader=Loader):
     """
@@ -35,8 +37,10 @@ def parse(stream, Loader=Loader):
     try:
         while loader.check_event():
             yield loader.get_event()
-    finally:
+    except:
         loader.dispose()
+        raise
+    loader.dispose()
 
 def compose(stream, Loader=Loader):
     """
@@ -58,8 +62,10 @@ def compose_all(stream, Loader=Loader):
     try:
         while loader.check_node():
             yield loader.get_node()
-    finally:
+    except:
         loader.dispose()
+        raise
+    loader.dispose()
 
 def load(stream, Loader=Loader):
     """
@@ -81,8 +87,10 @@ def load_all(stream, Loader=Loader):
     try:
         while loader.check_data():
             yield loader.get_data()
-    finally:
+    except:
         loader.dispose()
+        raise
+    loader.dispose()
 
 def safe_load(stream):
     """

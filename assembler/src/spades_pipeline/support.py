@@ -259,11 +259,20 @@ def move_dataset_files(dataset_data, dst, log, gzip=False):
                 moved_reads_files = []
                 for reads_file in value:
                     dst_filename = os.path.join(dst, os.path.basename(reads_file))
-                    shutil.move(reads_file, dst_filename)
-                    if gzip:
-                        #log.info('Compressing ' + dst_filename + ' into ' + dst_filename + '.gz')
-                        sys_call('gzip -f -9 ' + dst_filename, log)
-                        dst_filename += '.gz'
+                    # TODO: fix problem with files with the same basenames in Hammer binary!
+                    if not os.path.isfile(reads_file):
+                        if (not gzip and os.path.isfile(dst_filename)) or (gzip and os.path.isfile(dst_filename + '.gz')):
+                            warning('file with corrected reads (' + reads_file + ') is the same in several libraries')
+                            if gzip:
+                                dst_filename += '.gz'
+                        else:
+                            error('something went wrong and file with corrected reads (' + reads_file + ') is missing!')
+                    else:
+                        shutil.move(reads_file, dst_filename)
+                        if gzip:
+                            #log.info('Compressing ' + dst_filename + ' into ' + dst_filename + '.gz')
+                            sys_call('gzip -f -9 ' + dst_filename, log)
+                            dst_filename += '.gz'
                     moved_reads_files.append(dst_filename)
                 reads_library[key] = moved_reads_files
 
