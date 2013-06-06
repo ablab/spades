@@ -1055,8 +1055,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 
     //LongReadStorage<Graph> long_read(conj_gp.g);
 	if (cfg::get().pacbio_test_on == true){
-		INFO("creating  multiindex with k = " << cfg::get().pacbio_k);
-		PacBioAligner pac_aligner(conj_gp, cfg::get().pacbio_k);
+		INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+		PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
 		INFO("index created");
 		filteredPaths = long_read.GetAllPaths();
 		pac_aligner.pacbio_test(long_read, gaps);
