@@ -307,7 +307,7 @@ def split_sam(filename, tmpdir, log):
         processed_reads += 1
         if processed_reads % max_cashed_lines == 0 and need_to_cashe:
             log.info(str(processed_reads))
-            drop_cash(cashed_sams , separate_sams, log, false)
+            drop_cash(cashed_sams , separate_sams, log, False)
         if len(arr) > 5:
             read_num += 1
             paired_read.append(line.strip())
@@ -369,7 +369,7 @@ def split_sam(filename, tmpdir, log):
                     separate_sams[contig[1]] = open(samfilename, 'w')
                     mult_aligned[contig[1]] = open(multalignedfilename , 'w')
     if need_to_cashe:
-        drop_cash(cashed_sams , separate_sams, log, true)
+        drop_cash(cashed_sams , separate_sams, log, True)
         cashed_sams = None
     else:
         for file_name in separate_sams:
