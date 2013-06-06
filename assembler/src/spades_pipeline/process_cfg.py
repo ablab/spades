@@ -130,6 +130,10 @@ def load_config_from_vars(cfg_vars):
     return cfg
 
 
+def empty_config():
+    return load_config_from_vars(dict())
+
+
 def load_config_from_file(filename):
     return load_config_from_vars(vars_from_lines(file_lines(filename)))
 

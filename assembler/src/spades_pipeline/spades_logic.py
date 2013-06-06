@@ -26,10 +26,7 @@ def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
     subst_dict["additional_contigs"] = cfg.additional_contigs
     subst_dict["entry_point"] = "construction"
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
-    subst_dict["align_original_reads"] = bool_to_str(cfg.align_original_reads)
-    subst_dict["align_before_RR"] = bool_to_str(not cfg.paired_mode)
-    subst_dict["align_after_RR"] = bool_to_str(cfg.paired_mode)
-    subst_dict["gap_closer_enable"] = bool_to_str(last_one and cfg.gap_closer)
+    subst_dict["gap_closer_enable"] = bool_to_str(last_one)
     subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
     subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
@@ -43,9 +40,11 @@ def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
 
     process_cfg.substitute_params(filename, subst_dict, log)
 
+
 def get_read_length(output_dir, K):
     estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % (K), "_est_params.info"))
     return estimated_params.__dict__["RL"]
+
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_contigs, last_one):
     data_dir = os.path.join(cfg.output_dir, "K%d" % (K))
@@ -83,6 +82,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_conti
     log.info("\n== Running assembler: " + ("K%d" % (K)) + "\n")
 
     support.sys_call(command, log, execution_home)
+
 
 def run_spades(configs_dir, execution_home, cfg, log):
     if not isinstance(cfg.iterative_K, list):

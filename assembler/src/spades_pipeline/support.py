@@ -10,6 +10,7 @@
 import os
 import stat
 import sys
+import shutil
 
 
 def verify(expr, log, message):
@@ -37,8 +38,24 @@ def warning(warn_str, log=None, prefix="== Warning == "):
         print "\n\n" + prefix + " " + warn_str + "\n\n"
 
 
-#TODO: error log -> log
-#TODO: os.sytem gives error -> stop
+def check_file_existence(filename, message, log):
+    if not os.path.isfile(filename):
+        error("file not found: %s (%s)" % (filename, message), log)
+    return filename
+
+
+def check_files_duplication(filenames, log):
+    for filename in filenames:
+        if filenames.count(filename) != 1:
+            error("file %s was specified at least twice" % filename, log)
+
+
+def check_reads_file_format(filename, message, log):
+    ext = os.path.splitext(filename)[1]
+    if ext.lower() not in ['.fa', '.fasta', '.fq', '.fastq', '.gz']:
+        error("file with reads has unsupported format (only .fa, .fasta, .fq,"
+              " .fastq, .gz are supported): %s (%s)" % (filename, message), log)
+
 
 def sys_call(cmd, log, cwd=None):
     import shlex
@@ -120,50 +137,135 @@ def save_data_to_file(data, file):
     os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def save_to_yaml(data, filename):
-    INDENT = '  '
-    yaml = open(filename, 'w')
-    cur_indent = 0
-    yaml.write(cur_indent * INDENT + '[')
-    cur_indent += 1
-    yaml.write('\n' + cur_indent * INDENT + '{')
-    cur_indent += 1
-    first = True
-    for key, value in data.iteritems():
-        if not first:
-            yaml.write(',')
-        yaml.write('\n' + cur_indent * INDENT + key + ': ')
-        if isinstance(value, list):
-            yaml.write('[')
-            cur_indent += 1
-            first = True
-            for v in value:
-                if not first:
-                    yaml.write(',')
-                yaml.write('\n' + cur_indent * INDENT + '"' + str(v) + '"')
-                first = False
-            cur_indent -= 1
-            yaml.write('\n' + cur_indent * INDENT + ']')
+### for processing YAML files
+def get_lib_type_and_number(option):
+    lib_type = 'pe'
+    lib_number = 1
+    if option.startswith('--mp'):
+        lib_type = 'mp'
+    if option.startswith('--mp') or option.startswith('--pe'): # don't process simple -1, -2, -s, --12 options
+        lib_number = int(option[4])
+    return lib_type, lib_number
+
+
+def get_data_type(option):
+    if option.endswith('-12'):
+        data_type = 'interlaced reads'
+        #TODO: fix this
+        warning("interlaced reads are not fully supported yet!")
+    elif option.endswith('-1'):
+        data_type = 'left reads'
+    elif option.endswith('-2'):
+        data_type = 'right reads'
+    elif option.endswith('-s'):
+        data_type = 'single reads'
+    else: # -rf, -ff, -fr
+        data_type = 'orientation'
+    return data_type
+
+
+def add_to_dataset(option, data, dataset_data):
+    lib_type, lib_number = get_lib_type_and_number(option)
+    data_type = get_data_type(option)
+    if data_type == 'orientation':
+        data = option[-2:]
+    total_libs_number = len(dataset_data) / 2
+
+    if lib_type == 'pe':
+        record_id = lib_number - 1
+    else: # mate-pair
+        record_id = total_libs_number + lib_number - 1
+
+    if not dataset_data[record_id]: # setting default values for a new record
+        if lib_type == 'pe':
+            dataset_data[record_id]['type'] = 'paired-end'
         else:
-            yaml.write('"' + str(value) + '"')
-        first = False
-    cur_indent -= 1
-    yaml.write('\n' + cur_indent * INDENT + '}')
-    cur_indent -= 1
-    yaml.write('\n' + cur_indent * INDENT + ']')
+            dataset_data[record_id]['type'] = 'mate-pair'
+    if data_type.endswith('reads'): # reads are stored as lists
+        if data_type in dataset_data[record_id]:
+            dataset_data[record_id][data_type].append(data)
+        else:
+            dataset_data[record_id][data_type] = [data]
+    else: # other values are stored as plain strings
+        dataset_data[record_id][data_type] = data
 
 
-def get_from_yaml(key, filename):
-    yaml = open(filename, 'r')
-    value = None
-    for line in yaml:
-        if line.strip().startswith(key):
-            value = line.split(key + ":")[1].strip()
-            if value.startswith('"'):
-                value = value[1:-2]
-            break
-    yaml.close()
-    return value
+def correct_dataset(dataset_data):
+    # removing empty reads libraries
+    corrected_dataset_data = []
+    for reads_library in dataset_data:
+        if not reads_library:
+            continue
+        has_reads = False
+        has_paired_reads = False
+        for key in reads_library.keys():
+            if key.endswith('reads'):
+                has_reads = True
+            if key in ['interlaced reads', 'left reads', 'right reads']:
+                has_paired_reads = True
+                break
+        if not has_reads:
+            continue
+        if not has_paired_reads and reads_library['type'] == 'paired-end':
+            reads_library['type'] = 'single'
+            if 'orientation' in reads_library:
+                del reads_library['orientation']
+        if 'orientation' not in reads_library:
+            if reads_library['type'] == 'paired-end':
+                reads_library['orientation'] = 'fr'
+            elif reads_library['type'] == 'mate-pair':
+                reads_library['orientation'] = 'rf'
+        corrected_dataset_data.append(reads_library)
+    return corrected_dataset_data
+
+
+def check_dataset(dataset_data, log):
+    all_files = []
+    for id, reads_library in enumerate(dataset_data):
+        left_number = 0
+        right_number = 0
+        for key, value in reads_library.items():
+            if key.endswith('reads'):
+                for reads_file in value:
+                    check_file_existence(os.path.abspath(reads_file), key + ', library number: ' + str(id + 1) +
+                                         ', library type: ' + reads_library['type'], log)
+                    check_reads_file_format(os.path.abspath(reads_file), key + ', library number: ' + str(id + 1) +
+                                            ', library type: ' + reads_library['type'], log)
+                    all_files.append(os.path.abspath(reads_file))
+                if key == 'left reads':
+                    left_number = len(value)
+                elif key == 'right reads':
+                    right_number = len(value)
+        if left_number != right_number:
+            error('the number of files with left paired reads is not equal to the number of files '
+                  'with right paired reads (library number: ' + str(id + 1) +
+                  ', library type: ' + reads_library['type'] + ')!', log)
+    if not len(all_files):
+        error("You should specify at least one file with reads!", log)
+    check_files_duplication(all_files, log)
+
+
+def dataset_has_paired_reads(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'] in ['paired-end', 'mate-pair']:
+            return True
+    return False
+
+
+def move_dataset_files(dataset_data, dst, log, gzip=False):
+    for reads_library in dataset_data:
+        for key, value in reads_library.items():
+            if key.endswith('reads'):
+                moved_reads_files = []
+                for reads_file in value:
+                    dst_filename = os.path.join(dst, os.path.basename(reads_file))
+                    shutil.move(reads_file, dst_filename)
+                    if gzip:
+                        #log.info('Compressing ' + dst_filename + ' into ' + dst_filename + '.gz')
+                        sys_call('gzip -f -9 ' + dst_filename, log)
+                        dst_filename += '.gz'
+                    moved_reads_files.append(dst_filename)
+                reads_library[key] = moved_reads_files
 
 
 def read_fasta(filename):
