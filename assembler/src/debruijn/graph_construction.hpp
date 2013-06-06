@@ -176,12 +176,12 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 
 	TRACE("Extention Index constructed");
 
-    if (params.early_tc.enable) {
-        size_t length_bound = rl - k;
-        if (params.early_tc.length_bound)
-            length_bound = params.early_tc.length_bound.get();
-        EarlyTipClipper(ext, length_bound).ClipTips();
-    }
+	if(params.early_tc.enable) {
+		size_t length_bound = rl - k;
+		if(params.early_tc.length_bound)
+			length_bound = params.early_tc.length_bound.get();
+		AlternativeEarlyTipClipper(ext, length_bound).ClipTips();
+	}
 
 	INFO("Condensing graph");
 	index.Detach();
