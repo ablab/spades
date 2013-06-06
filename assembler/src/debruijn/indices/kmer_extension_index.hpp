@@ -15,17 +15,17 @@ class DeBruijnExtensionIndexBuilder;
 
 template<class Seq>
 struct slim_kmer_index_traits : public kmer_index_traits<Seq> {
-  using typename kmer_index_traits<Seq>::RawKMerStorage;
+  typedef kmer_index_traits<Seq> __super;
 
   typedef MMappedRecordReader<typename Seq::DataType> FinalKMerStorage;
 
   template<class Writer>
-  static void raw_serialize(Writer&, RawKMerStorage*) {
+  static void raw_serialize(Writer&, typename __super::RawKMerStorage*) {
     VERIFY(false && "Cannot save extension index");
   }
 
   template<class Reader>
-  static RawKMerStorage *raw_deserialize(Reader&, const std::string &) {
+  static typename __super::RawKMerStorage *raw_deserialize(Reader&, const std::string &) {
     VERIFY(false && "Cannot load extension index");
     return NULL;
   }

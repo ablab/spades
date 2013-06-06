@@ -297,13 +297,14 @@ class MMappedFileRecordArrayIterator :
     // Default ctor, used to implement "end" iterator
     MMappedFileRecordArrayIterator(): value_(NULL), reader_(), elcnt_(0) {}
     MMappedFileRecordArrayIterator(const std::string &FileName, size_t elcnt)
-            : reader_(FileName, false,
+            : value_(NULL),
+              reader_(FileName, false,
                       64*1024*1024 / (sizeof(T) * getpagesize() * elcnt) * (sizeof(T) * getpagesize() * elcnt)),
-              elcnt_(elcnt), value_(NULL) {
+              elcnt_(elcnt) {
         value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
     }
     MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
-            : reader_(std::move(reader)), elcnt_(elcnt), value_(NULL) {
+            : value_(NULL), reader_(std::move(reader)),  elcnt_(elcnt) {
         value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
     }
 

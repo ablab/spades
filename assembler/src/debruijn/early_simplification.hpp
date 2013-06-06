@@ -56,8 +56,8 @@ private:
 	size_t length_bound_;
 
 //Not optimal with respect to the number of large array queries (the one that contains adjacency masks). Should be ok though in case cash works the way I think it does
-	size_t RemoveForward(typename Index::KmerWithHash kh) {
-        std::vector<typename Index::KmerWithHash> tip;
+	size_t RemoveForward(Index::KmerWithHash kh) {
+        std::vector<Index::KmerWithHash> tip;
 		do {
 			tip.push_back(kh);
 			kh = index_.CreateKmerWithHash(kh.kmer << index_.GetUniqueOutgoing(kh.idx));
@@ -71,7 +71,7 @@ private:
 		return 0;
 	}
 
-	size_t RemoveBackward(typename Index::KmerWithHash kh) {
+	size_t RemoveBackward(Index::KmerWithHash kh) {
         std::vector<Index::KmerWithHash> tip;
 		do {
 			tip.push_back(kh);
@@ -91,7 +91,7 @@ private:
 	size_t RoughClipTips() {
 		size_t result = 0;
 		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
-			typename Index::KmerWithHash kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.K(), *it));
+			Index::KmerWithHash kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.K(), *it));
 			if(index_.IsDeadEnd(kh.idx) && index_.CheckUniqueIncoming(kh.idx)) {
 				result += RemoveBackward(kh);
 			} else if(index_.IsDeadStart(kh.idx) && index_.CheckUniqueOutgoing(kh.idx)) {
