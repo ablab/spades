@@ -11,14 +11,14 @@
 namespace debruijn_graph {
 template <class Seq>
 class DeBruijnEdgeMultiIndexBuilder;
+
 template<class IdType, class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >
-
-class DeBruijnEdgeMultiIndex : public EditableDeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> {
-  typedef EditableDeBruijnKMerIndex<vector<EdgeInfo<IdType> >, Seq, traits> base;
+class DeBruijnEdgeMultiIndex : public EditableDeBruijnKMerIndex<vector<EdgeInfo<IdType> >, traits> {
+  typedef EditableDeBruijnKMerIndex<vector<EdgeInfo<IdType> >, traits> base;
  public:
-  typedef Seq                      KMer;
-  typedef KMerIndex<KMer, traits>  KMerIndexT;
+  typedef typename traits::SeqType KMer;
+  typedef KMerIndex<traits>        KMerIndexT;
 
   DeBruijnEdgeMultiIndex(unsigned K, const std::string &workdir)
       : base(K, workdir) {}
@@ -124,7 +124,7 @@ private:
 };
 
 template <class Seq>
-class DeBruijnEdgeMultiIndexBuilder : public EditableDeBruijnKMerIndexBuilder<Seq> {
+class DeBruijnEdgeMultiIndexBuilder : public EditableDeBruijnKMerIndexBuilder<kmer_index_traits<Seq>> {
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,
                                 DeBruijnEdgeMultiIndex<IdType, Seq> &index) const;
@@ -154,8 +154,8 @@ class DeBruijnEdgeMultiIndexBuilder : public EditableDeBruijnKMerIndexBuilder<Se
 
 template <>
 class DeBruijnEdgeMultiIndexBuilder<runtime_k::RtSeq> :
-      public DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
-  typedef DeBruijnKMerIndexBuilder<runtime_k::RtSeq> base;
+    public DeBruijnKMerIndexBuilder<kmer_index_traits<runtime_k::RtSeq>> {
+  typedef DeBruijnKMerIndexBuilder<kmer_index_traits<runtime_k::RtSeq>> base;
 
   template <class ReadStream, class IdType>
   size_t FillCoverageFromStream(ReadStream &stream,

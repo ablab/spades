@@ -8,7 +8,7 @@ namespace debruijn_graph {
 
 class LinkCleaner {
 private:
-	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+	typedef DeBruijnExtensionIndex<> Index;
 	Index &index_;
 
 //	KmerWithHash CreateKmerWithHash(runtime_k::RtSeq kmer) const {
@@ -34,8 +34,7 @@ private:
 	}
 
 public:
-	LinkCleaner(DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > &index) : index_(index) {
-	}
+	LinkCleaner(Index &index) : index_(index) {}
 
 	//TODO make parallel
 	void CleanLinks() {
@@ -52,13 +51,13 @@ public:
 
 class EarlyTipClipper {
 private:
-	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+	typedef DeBruijnExtensionIndex<> Index;
 	Index &index_;
 	size_t length_bound_;
 
 //Not optimal with respect to the number of large array queries (the one that contains adjacency masks). Should be ok though in case cash works the way I think it does
-	size_t RemoveForward(Index::KmerWithHash kh) {
-		vector<Index::KmerWithHash> tip;
+	size_t RemoveForward(typename Index::KmerWithHash kh) {
+        std::vector<typename Index::KmerWithHash> tip;
 		do {
 			tip.push_back(kh);
 			kh = index_.CreateKmerWithHash(kh.kmer << index_.GetUniqueOutgoing(kh.idx));
@@ -72,8 +71,8 @@ private:
 		return 0;
 	}
 
-	size_t RemoveBackward(Index::KmerWithHash kh) {
-		vector<Index::KmerWithHash> tip;
+	size_t RemoveBackward(typename Index::KmerWithHash kh) {
+        std::vector<Index::KmerWithHash> tip;
 		do {
 			tip.push_back(kh);
 			kh = index_.CreateKmerWithHash(kh.kmer >> index_.GetUniqueIncoming(kh.idx));
@@ -91,7 +90,7 @@ private:
 	size_t RoughClipTips() {
 		size_t result = 0;
 		for (auto it  = index_.kmer_begin(), et = index_.kmer_end(); it != et; ++it) {
-			Index::KmerWithHash kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.K(), (*it).data()));
+			typename Index::KmerWithHash kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.K(), (*it).data()));
 			if(index_.IsDeadEnd(kh.idx) && index_.CheckUniqueIncoming(kh.idx)) {
 				result += RemoveBackward(kh);
 			} else if(index_.IsDeadStart(kh.idx) && index_.CheckUniqueOutgoing(kh.idx)) {
@@ -103,8 +102,8 @@ private:
 
 
 public:
-	EarlyTipClipper(DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > &index, size_t length_bound) : index_(index), length_bound_(length_bound) {
-	}
+	EarlyTipClipper(Index &index, size_t length_bound) :
+            index_(index), length_bound_(length_bound) {}
 
 	/*
 	 * Method returns the number of removed edges

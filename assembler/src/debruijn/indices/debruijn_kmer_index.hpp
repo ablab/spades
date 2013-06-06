@@ -29,12 +29,11 @@ namespace debruijn_graph {
 template <class Seq>
 class DeBruijnKMerIndexBuilder;
 
-template<class ValueType, class Seq = runtime_k::RtSeq,
-    class traits = kmer_index_traits<Seq> >
+template<class ValueType, class traits>
 class DeBruijnKMerIndex {
  public:
-  typedef Seq                      KMer;
-  typedef KMerIndex<KMer, traits>  KMerIndexT;
+  typedef typename traits::SeqType KMer;
+  typedef KMerIndex<traits>        KMerIndexT;
 
  protected:
   unsigned K_;
@@ -61,13 +60,13 @@ class DeBruijnKMerIndex {
     path::remove_dir(workdir_);
   }
 
-	void clear() {
-		index_.clear();
-		data_.clear();
-		KMerIndexStorageType().swap(data_);
-		delete kmers;
-		kmers = NULL;
-	}
+  void clear() {
+    index_.clear();
+    data_.clear();
+    KMerIndexStorageType().swap(data_);
+    delete kmers;
+    kmers = NULL;
+  }
 
   unsigned K() const { return K_; }
 
@@ -84,7 +83,7 @@ class DeBruijnKMerIndex {
   }
 
   KMerIndexValueType &operator[](KMerIdx idx) {
-      return data_[idx];
+    return data_[idx];
   }
 
   KMerIdx seq_idx(const KMer &s) const {
@@ -163,30 +162,29 @@ class DeBruijnKMerIndex {
     return workdir_;
   }
 
-  friend class DeBruijnKMerIndexBuilder<Seq>;
+  friend class DeBruijnKMerIndexBuilder<traits>;
 };
 
-template<class ValueType, class Seq = runtime_k::RtSeq,
-class traits = kmer_index_traits<Seq> >
-class EditableDeBruijnKMerIndex: public DeBruijnKMerIndex<ValueType, Seq, traits> {
+template<class ValueType, class traits>
+class EditableDeBruijnKMerIndex: public DeBruijnKMerIndex<ValueType, traits> {
 public:
 	typedef size_t KMerIdx;
 private:
-	typedef Seq                      KMer;
-	typedef KMerIndex<KMer, traits>  KMerIndexT;
-	typedef ValueType KMerIndexValueType;
-	typedef std::vector<KMerIndexValueType> KMerIndexStorageType;
-	typedef boost::bimap<KMer, size_t> KMerPushBackIndexType;
-	KMerPushBackIndexType push_back_index_;
-	KMerIndexStorageType push_back_buffer_;
-	static const size_t InvalidKMerIdx = SIZE_MAX;
-	using DeBruijnKMerIndex<ValueType, Seq, traits>::index_;
-	using DeBruijnKMerIndex<ValueType, Seq, traits>::data_;
-	using DeBruijnKMerIndex<ValueType, Seq, traits>::kmers;
-	using DeBruijnKMerIndex<ValueType, Seq, traits>::K_;
+    typedef typename traits::SeqType KMer;
+    typedef KMerIndex<traits>  KMerIndexT;
+    typedef ValueType KMerIndexValueType;
+    typedef std::vector<KMerIndexValueType> KMerIndexStorageType;
+    typedef boost::bimap<KMer, size_t> KMerPushBackIndexType;
+    KMerPushBackIndexType push_back_index_;
+    KMerIndexStorageType push_back_buffer_;
+    static const size_t InvalidKMerIdx = SIZE_MAX;
+    using DeBruijnKMerIndex<ValueType, traits>::index_;
+    using DeBruijnKMerIndex<ValueType, traits>::data_;
+    using DeBruijnKMerIndex<ValueType, traits>::kmers;
+    using DeBruijnKMerIndex<ValueType, traits>::K_;
 public:
 	EditableDeBruijnKMerIndex(unsigned K, const std::string &workdir) :
-			DeBruijnKMerIndex<ValueType, Seq, traits>(K, workdir) {
+			DeBruijnKMerIndex<ValueType, traits>(K, workdir) {
 	}
 
 	KMerIdx seq_idx(const KMer &s) const {
@@ -339,32 +337,32 @@ protected:
 
 };
 
-template <class Seq>
+template <class kmer_index_traits>
 class DeBruijnKMerIndexBuilder {
  public:
   template <class IdType, class Read>
-  size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType, Seq> &index,
+  size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType, kmer_index_traits> &index,
                               io::ReadStreamVector<io::IReader<Read> > &streams,
                               SingleReadStream* contigs_stream = 0) const;
 
   template <class IdType, class Graph>
-  void BuildIndexFromGraph(DeBruijnKMerIndex<IdType, Seq> &index,
+  void BuildIndexFromGraph(DeBruijnKMerIndex<IdType, kmer_index_traits> &index,
                            const Graph &g) const;
 
  protected:
   DECL_LOGGER("K-mer Index Building");
 };
 
-template <class Seq>
+template <class kmer_index_traits>
 class EditableDeBruijnKMerIndexBuilder {
  public:
   template <class IdType, class Read>
-  size_t BuildIndexFromStream(EditableDeBruijnKMerIndex<IdType, Seq> &index,
+  size_t BuildIndexFromStream(EditableDeBruijnKMerIndex<IdType, kmer_index_traits> &index,
                               io::ReadStreamVector<io::IReader<Read> > &streams,
                               SingleReadStream* contigs_stream = 0) const;
 
   template <class IdType, class Graph>
-  void BuildIndexFromGraph(EditableDeBruijnKMerIndex<IdType, Seq> &index,
+  void BuildIndexFromGraph(EditableDeBruijnKMerIndex<IdType, kmer_index_traits> &index,
                            const Graph &g) const;
 
  protected:
@@ -377,17 +375,17 @@ class EditableDeBruijnKMerIndexBuilder {
 
 // Specialized ones
 template <>
-class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
+class DeBruijnKMerIndexBuilder<kmer_index_traits<runtime_k::RtSeq>> {
  public:
   template <class IdType, class Read>
-  size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+  size_t BuildIndexFromStream(DeBruijnKMerIndex<IdType, kmer_index_traits<runtime_k::RtSeq>> &index,
                               io::ReadStreamVector<io::IReader<Read> > &streams,
                               SingleReadStream* contigs_stream = 0) const {
     DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
                                             index.K(),
                                             streams, contigs_stream);
     KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMerIndexT> builder(index.workdir(), 16, streams.size());
+    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, streams.size());
 
     size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
     index.data_.resize(sz);
@@ -399,11 +397,11 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
   }
 
   template <class IdType, class Graph>
-  void BuildIndexFromGraph(DeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+  void BuildIndexFromGraph(DeBruijnKMerIndex<IdType, kmer_index_traits<runtime_k::RtSeq>> &index,
                            const Graph &g) const {
     DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.K(), g);
-    KMerDiskCounter<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMer> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMerIndexT> builder(index.workdir(), 16, 1);
+    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+    KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, 1);
 
     size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
     index.data_.resize(sz);
@@ -417,17 +415,17 @@ class DeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
 };
 
 template <>
-class EditableDeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
+class EditableDeBruijnKMerIndexBuilder<kmer_index_traits<runtime_k::RtSeq>> {
  public:
   template <class IdType, class Read>
-  size_t BuildIndexFromStream(EditableDeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+  size_t BuildIndexFromStream(EditableDeBruijnKMerIndex<IdType, kmer_index_traits<runtime_k::RtSeq>> &index,
                               io::ReadStreamVector<io::IReader<Read> > &streams,
                               SingleReadStream* contigs_stream = 0) const {
     DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
                                             index.K(),
                                             streams, contigs_stream);
     KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType>::KMerIndexT> builder(index.workdir(), 16, streams.size());
+    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, streams.size());
     size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
     index.data_.resize(sz);
 
@@ -443,8 +441,8 @@ class EditableDeBruijnKMerIndexBuilder<runtime_k::RtSeq> {
   void BuildIndexFromGraph(EditableDeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
                            const Graph &g) const {
     DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.K(), g);
-    KMerDiskCounter<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMer> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, runtime_k::RtSeq>::KMerIndexT> builder(index.workdir(), 16, 1);
+    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+    KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, 1);
     size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
     index.data_.resize(sz);
 

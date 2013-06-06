@@ -191,7 +191,7 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 	INFO("Graph condensed");
 
 	INFO("Counting coverage");
-	DeBruijnEdgeIndex<Graph, Seq>& debruijn = index.inner_index();
+	auto& debruijn = index.inner_index();
 	DeBruijnEdgeIndexBuilder<Seq>().BuildIndexWithCoverageFromGraph(g, debruijn, streams, contigs_stream);
 	INFO("Counting coverage finished");
 	return rl;
