@@ -1134,6 +1134,8 @@ void resolve_repeats() {
 			"graph.dot");
 	printer(ipp_before_repeat_resolution);
 
+	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_rr.fasta");
+
 	if (!cfg::get().paired_mode
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");

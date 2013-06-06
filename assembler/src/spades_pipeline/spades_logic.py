@@ -123,6 +123,8 @@ def run_spades(configs_dir, execution_home, cfg, log):
 
     latest = os.path.join(cfg.output_dir, "K%d" % (K))
 
+    if os.path.isfile(os.path.join(latest, "before_rr.fasta")):
+        shutil.copyfile(os.path.join(latest, "before_rr.fasta"), os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta"))
     if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):    
         shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.paired_mode:
