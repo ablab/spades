@@ -80,8 +80,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_conti
                 shutil.move(cor_filename, new_bin_filename)
 
     log.info("\n== Running assembler: " + ("K%d" % (K)) + "\n")
-
-    support.sys_call(command, log, execution_home)
+    support.sys_call(command, log)
 
 
 def run_spades(configs_dir, execution_home, cfg, log):
