@@ -8,32 +8,10 @@
 
 
 import os
-import sys
-import re
 import support
 
 
-def dataset_print(dataset):
-    result = ""
-    dataset_dict = dict(dataset)
-    for key, value in dataset_dict.items():
-        result += key + "\t" + value + "\n"
-    return result
-
-
-def generate_dataset(cfg):
-    import process_cfg
-    dataset_cfg = dict()
-    dataset_cfg["single_cell"] = process_cfg.bool_to_str(cfg.single_cell)
-    dataset_cfg["reads"] = os.path.join(cfg.output_dir, "corrected.yaml")
-    if "reference_genome" in cfg.__dict__:
-        dataset_cfg["reference_genome"] = cfg.reference_genome
-
-    return dataset_print(dataset_cfg)
-
-
-#### auxiliary function to manage input files 
-
+#### auxiliary functions to manage input files
 def split_paired_file(input_filename, output_folder, log):
     ext = os.path.splitext(input_filename)[1]
 
@@ -122,26 +100,4 @@ def merge_single_files(src_single_read, dst_single_read, output_folder, log):
     os.rename(dst_filename, merged_filename)
 
     return merged_filename
-
-
-def ungzip_if_needed(filename, output_folder, log):
-    file_basename, file_extension = os.path.splitext(filename)
-    if file_extension == ".gz":
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
-        ungzipped_filename = os.path.join(output_folder, os.path.basename(file_basename))
-        ungzipped_file = open(ungzipped_filename, 'w')
-
-        log.info("== Extracting " + filename + " into " + ungzipped_filename)
-
-        import subprocess
-
-        return_code = subprocess.call(['gunzip', filename, '-c'], stdout=ungzipped_file)
-        support.verify(return_code == 0, log, "GZIP failed to extract " + filename + ". Maybe the archive is broken.")
-
-        ungzipped_file.close()
-        filename = ungzipped_filename
-
-    return filename
-
 ####

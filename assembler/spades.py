@@ -8,13 +8,13 @@
 
 import os
 import shutil
+from site import addsitedir
 import sys
 import getopt
 import logging
 import platform
 
 import spades_init
-
 spades_init.init()
 spades_home = spades_init.spades_home
 bin_home = spades_init.bin_home
@@ -23,9 +23,12 @@ ext_python_modules_home = spades_init.ext_python_modules_home
 spades_version = spades_init.spades_version
 
 import support
-from process_cfg import *
+from process_cfg import merge_configs, empty_config
 import bh_logic
 import spades_logic
+import options_storage
+addsitedir(ext_python_modules_home)
+import pyyaml
 
 
 def print_used_values(cfg, log):
@@ -79,28 +82,31 @@ def print_used_values(cfg, log):
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
                      " was obtained with MDA (single-cell) technology")
 
-        no_single = True
-        no_paired = True
-        for k, v in cfg["dataset"].__dict__.items():
-            if k.startswith("single_reads") or k.startswith("paired_reads"):
-                if k.startswith("paired_reads"):
-                    no_paired = False
-                    if not isinstance(v, list):
-                        log.info("  Paired reads (file with interlaced reads):")
-                    else:
-                        log.info("  Paired reads (files with left and right reads):")
-                else:
-                    no_single = False
-                    log.info("  Single reads:")
-                if not isinstance(v, list):
-                    v = [v]
-                for reads_file in v:
-                    log.info("    " + os.path.abspath(os.path.expandvars(reads_file)))
-
-        if no_paired:
-            log.info("  Paired reads were not specified")
-        if no_single:
-            log.info("  Single reads were not specified")
+        # TODO: nice output of reads
+        log.info("  Reads in YAML:")
+        log.info(pyyaml.load(file(cfg["dataset"].yaml_filename, 'r')))
+#        no_single = True
+#        no_paired = True
+#        for k, v in cfg["dataset"].__dict__.items():
+#            if k.startswith("single_reads") or k.startswith("paired_reads"):
+#                if k.startswith("paired_reads"):
+#                    no_paired = False
+#                    if not isinstance(v, list):
+#                        log.info("  Paired reads (file with interlaced reads):")
+#                    else:
+#                        log.info("  Paired reads (files with left and right reads):")
+#                else:
+#                    no_single = False
+#                    log.info("  Single reads:")
+#                if not isinstance(v, list):
+#                    v = [v]
+#                for reads_file in v:
+#                    log.info("    " + os.path.abspath(os.path.expandvars(reads_file)))
+#
+#        if no_paired:
+#            log.info("  Paired reads were not specified")
+#        if no_single:
+#            log.info("  Single reads were not specified")
 
     # error correction
     if "error_correction" in cfg:
@@ -114,16 +120,10 @@ def print_used_values(cfg, log):
         else:
             log.info("  Corrected reads will NOT be compressed (with gzip)")
 
-
     # assembly
     if "assembly" in cfg:
         log.info("Assembly parameters:")
         print_value(cfg, "assembly", "iterative_K", "k")
-
-        if cfg["assembly"].gap_closer:
-            log.info("  The gap closer will be used")
-        else:
-            log.info("  The gap closer will NOT be used")
 
     log.info("Other parameters:")
     print_value(cfg, "common", "max_threads", "Threads")
@@ -131,238 +131,33 @@ def print_used_values(cfg, log):
     log.info("")
 
 
-def set_defaults(cfg):
-    ## setting default values in config
-
-    # common
-    if not "output_dir" in cfg["common"].__dict__:
-        cfg["common"].__dict__["output_dir"] = 'spades_output'
-
-    if not "max_threads" in cfg["common"].__dict__:
-        cfg["common"].__dict__["max_threads"] = 16
-
-    if not "max_memory" in cfg["common"].__dict__:
-        cfg["common"].__dict__["max_memory"] = 250
-
-    if not "output_to_console" in cfg["common"].__dict__:
-        cfg["common"].__dict__["output_to_console"] = True
-
-    if not "developer_mode" in cfg["common"].__dict__:
-        cfg["common"].__dict__["developer_mode"] = False
-
-    # dataset
-    if "dataset" in cfg:
-        if not "single_cell" in cfg["dataset"].__dict__:
-            cfg["dataset"].__dict__["single_cell"] = False
-
-    # error_correction
-    if "error_correction" in cfg:
-        if not "max_iterations" in cfg["error_correction"].__dict__:
-            cfg["error_correction"].__dict__["max_iterations"] = 1
-        if not "gzip_output" in cfg["error_correction"].__dict__:
-            cfg["error_correction"].__dict__["gzip_output"] = True
-
-    # assembly
-    if "assembly" in cfg:
-        if not "iterative_K" in cfg["assembly"].__dict__:
-            cfg["assembly"].__dict__["iterative_K"] = [21, 33, 55]
-        if not "gap_closer" in cfg["assembly"].__dict__:
-            cfg["assembly"].__dict__["gap_closer"] = True
-
-
-def check_config(cfg, log):
-    ## special case: 0 iterations for the error correction means "No error correction!"
-
-    if ("error_correction" in cfg) and ("max_iterations" in cfg["error_correction"].__dict__):
-        if cfg["error_correction"].max_iterations == 0:
-            del cfg["error_correction"]
-
-    ## checking mandatory sections
-
-    if (not "dataset" in cfg):
-        support.error("wrong config! You should specify 'dataset' section!", log)
-        return False
-
-    if (not "error_correction" in cfg) and (not "assembly" in cfg):
-        support.error("wrong options! You should specify either '--only-error-correction' (for read"
-                      " error correction) or '--only-assembler' (for assembling) or none of these options (for both)!", log)
-        return False
-
-    ## checking existence of all files in dataset section
-    if not "yaml_filename" in cfg["dataset"].__dict__:
-        no_files_with_reads = True
-        for k, v in cfg["dataset"].__dict__.items():
-            if k.startswith("single_reads") or k.startswith("paired_reads"):
-                no_files_with_reads = False
-                if not isinstance(v, list):
-                    v = [v]
-                for reads_file in v:
-                    if not os.path.isfile(os.path.expandvars(reads_file)):
-                        support.error("file with reads doesn't exist! " + os.path.expandvars(reads_file), log)
-                        return False
-                    else:
-                        ext = os.path.splitext(os.path.expandvars(reads_file))[1]
-                        if ext not in ['.fa', '.fasta', '.fq', '.fastq', '.gz']:
-                            support.error("file with reads has unsupported format (only .fa, .fasta, .fq,"
-                                          " .fastq, .gz are supported)! " + os.path.expandvars(reads_file), log)
-                            return False
-
-        if no_files_with_reads:
-            support.error("wrong options! You should specify at least one file with reads!", log)
-            return False
-
-    # expanding vars and setting defaults depended on other settings
-    cfg["common"].output_dir = os.path.abspath(os.path.expandvars(cfg["common"].output_dir))
-
-    if "error_correction" in cfg:
-        cfg["error_correction"].__dict__["output_dir"] = os.path.join(
-            cfg["common"].output_dir, "corrected")
-        if not "tmp_dir" in cfg["error_correction"].__dict__:
-            cfg["error_correction"].__dict__["tmp_dir"] = cfg["error_correction"].output_dir
-        cfg["error_correction"].tmp_dir = os.path.join(os.path.abspath(
-            os.path.expandvars(cfg["error_correction"].tmp_dir)), 'tmp')
-
-    return True
-
-
 def check_binaries(binary_dir, log):
     for binary in ["hammer", "spades", "bwa-spades"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
-            support.error("SPAdes binaries cannot found: " + binary_path +
+            support.error("SPAdes binaries not found: " + binary_path +
                           "\nYou can obtain SPAdes binaries in one of two ways:" +
-                          "\n1. Download SPAdes binaries from http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz" +
+                          "\n1. Download them from http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0-Linux.tar.gz" +
                           "\n2. Build source code with ./spades_compile.sh script", log)
-            return False
-    return True
-
-
-# for spades.py --test
-def fill_test_config(cfg):
-    # common
-    cfg["common"] = load_config_from_vars(dict())
-    cfg["common"].__dict__["output_dir"] = 'spades_test'
-
-    # dataset
-    cfg["dataset"] = load_config_from_vars(dict())
-    cfg["dataset"].__dict__["paired_reads"] =\
-    [os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"),
-     os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz")]
-    cfg["dataset"].__dict__["single_cell"] = False
-
-    # error_correction (empty config, i.e. load default params)
-    cfg["error_correction"] = load_config_from_vars(dict())
-
-    # assembly (empty config, i.e. load default params)
-    cfg["assembly"] = load_config_from_vars(dict())
-
-    # loading default parameters
-    set_defaults(cfg)
-
-
-long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
-               "only-error-correction only-assembler "\
-               "disable-gzip-output help test debug reference= "\
-               "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction careful rectangles".split()
-short_options = "o:1:2:s:k:t:m:i:h"
-
-
-def check_file(f, message, log):
-    if not os.path.isfile(f):
-        support.error("file not found (%s): %s" % (message, f), log)
-    return f
-
-
-def check_files_duplication(files, log):
-    for file in files:
-        if files.count(file) != 1:
-            support.error("file %s was specified at least twice" % file, log)
-
-
-def usage(show_hidden=False):
-    print >> sys.stderr, "SPAdes genome assembler v." + str(spades_version)
-    print >> sys.stderr, "Usage:", sys.argv[0], "[options] -o <output_dir>"
-    print >> sys.stderr, ""
-    print >> sys.stderr, "Basic options:"
-    print >> sys.stderr, "-o\t<output_dir>\tdirectory to store all the resulting files (required)"
-    print >> sys.stderr, "--sc\t\t\tthis flag is required for MDA (single-cell)"\
-                         " data"
-    print >> sys.stderr, "--12\t<filename>\tfile with interlaced forward and reverse"\
-                         " paired-end reads"
-    print >> sys.stderr, "-1\t<filename>\tfile with forward paired-end reads"
-    print >> sys.stderr, "-2\t<filename>\tfile with reverse paired-end reads"
-    print >> sys.stderr, "-s\t<filename>\tfile with unpaired reads"
-    print >> sys.stderr, "--test\t\t\truns SPAdes on toy dataset"
-    print >> sys.stderr, "-h/--help\t\tprints this usage message"
-
-    print >> sys.stderr, ""
-    print >> sys.stderr, "Pipeline options:"
-    print >> sys.stderr, "--only-error-correction\truns only read error correction"\
-                         " (without assembling)"
-    print >> sys.stderr, "--only-assembler\truns only assembling (without read error"\
-                         " correction)"
-    print >> sys.stderr, "--disable-gzip-output\tforces error correction not to"\
-                         " compress the corrected reads"
-    print >> sys.stderr, "--careful\t\ttries to reduce number"\
-                         " of mismatches and short indels"
-    print >> sys.stderr, "--rectangles\t\tuses rectangle graph algorithm for repeat resolution"
-
-    print >> sys.stderr, ""
-    print >> sys.stderr, "Advanced options:"
-    print >> sys.stderr, "--dataset\t<filename>\tfile with dataset description in YAML format"
-    print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads"
-    print >> sys.stderr, "\t\t\t\t[default: 16]"
-    print >> sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
-                         " (terminates if exceeded)"
-    print >> sys.stderr, "\t\t\t\t[default: 250]"
-    print >> sys.stderr, "--tmp-dir\t<dirname>\tdirectory for read error correction"\
-                         " temporary files"
-    print >> sys.stderr, "\t\t\t\t[default: <output_dir>/corrected/tmp]"
-    print >> sys.stderr, "-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
-                         " (must be odd and"
-    print >> sys.stderr, "\t\t\t\tless than 128) [default: 21,33,55]"
-    print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for read error"\
-                         " correction"
-    print >> sys.stderr, "\t\t\t\t[default: 1]"
-    print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
-                         " input reads (33 or 64)"
-    print >> sys.stderr, "\t\t\t\t[default: auto-detect]"
-    print >> sys.stderr, "--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)"
-
-    if show_hidden:
-        print >> sys.stderr, ""
-        print >> sys.stderr, "HIDDEN options:"
-        print >> sys.stderr, "--mismatch-correction\t\truns post processing correction"\
-                             " of mismatches and short indels"
-        print >> sys.stderr, "--config-file\t<filename>\tconfiguration file for spades.py"\
-                             " (WARN: all other options will be skipped)"
-        print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
-                             " (only in debug mode)"
-        print >> sys.stderr, "--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
-                             " for BayesHammer"
-        print >> sys.stderr, "--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
-                             " for SPAdes"
-        print >> sys.stderr, "--help-hidden\tprints this usage message with all hidden options"    
 
 
 def main():
     os.environ["LC_ALL"] = "C"
 
-    CONFIG_FILE = ""
-    options = None
-    TEST = False
-
     if len(sys.argv) == 1:
-        usage()
+        options_storage.usage(spades_version)
         sys.exit(0)
 
     try:
-        options, not_options = getopt.gnu_getopt(sys.argv, short_options, long_options)
+        options, not_options = getopt.gnu_getopt(sys.argv, options_storage.short_options, options_storage.long_options)
     except getopt.GetoptError, err:
         print >> sys.stderr, err
         print >> sys.stderr
-        usage()
+        options_storage.usage(spades_version)
+        sys.exit(1)
+
+    if not options:
+        options_storage.usage(spades_version)
         sys.exit(1)
 
     log = logging.getLogger('spades')
@@ -373,238 +168,166 @@ def main():
     console.setLevel(logging.DEBUG)
     log.addHandler(console)
 
+    check_binaries(bin_home, log)
+
     # all parameters are stored here
     cfg = dict()
+    # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
+    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * 2)]
 
-    if options:
-        output_dir = ""
-        tmp_dir = ""
-        reference = ""
-        dataset_yaml_filename = ""
+    
+    for opt, arg in options:
+        if opt == '-o':
+            options_storage.output_dir = arg
+        elif opt == "--tmp-dir":
+            options_storage.tmp_dir = arg
+        elif opt == "--reference":
+            options_storage.reference = support.check_file_existence(arg, 'reference', log)
+        elif opt == "--dataset":
+            options_storage.dataset_yaml_filename = support.check_file_existence(arg, 'dataset', log)
 
-        paired = []
-        paired1 = []
-        paired2 = []
-        single = []
-        k_mers = []
+        elif opt in options_storage.reads_options:            
+            support.add_to_dataset(opt, arg, dataset_data)
 
-        single_cell = False
-        disable_gzip_output = False
+        elif opt == '-k':
+            options_storage.k_mers = map(int, arg.split(","))
+            for k in options_storage.k_mers:
+                if k > 127:
+                    support.error('wrong k value ' + str(k) + ': all k values should be less than 128', log)
+                if k % 2 == 0:
+                    support.error('wrong k value ' + str(k) + ': all k values should be odd', log)
 
-        only_error_correction = False
-        only_assembler = False
+        elif opt == "--sc":
+            options_storage.single_cell = True
+        elif opt == "--disable-gzip-output":
+            options_storage.disable_gzip_output = True
 
-        bh_heap_check = ""
-        spades_heap_check = ""
+        elif opt == "--only-error-correction":
+            if options_storage.only_assembler:
+                support.error('you cannot specify --only-error-correction and --only-assembler simultaneously')
+            options_storage.only_error_correction = True
+        elif opt == "--only-assembler":
+            if options_storage.only_error_correction:
+                support.error('you cannot specify --only-error-correction and --only-assembler simultaneously')
+            options_storage.only_assembler = True
 
-        developer_mode = False
+        elif opt == "--bh-heap-check":
+            options_storage.bh_heap_check = arg
+        elif opt == "--spades-heap-check":
+            options_storage.spades_heap_check = arg
 
-        threads = None
-        memory = None
-        qvoffset = None
-        iterations = None
+        elif opt == '-t' or opt == "--threads":
+            options_storage.threads = int(arg)
+        elif opt == '-m' or opt == "--memory":
+            options_storage.memory = int(arg)
+        elif opt == "--phred-offset":
+            if int(arg) in [33, 64]:
+                options_storage.qvoffset = int(arg)
+            else:
+                support.error('wrong PHRED quality offset value ' + str(arg) + ': should be either 33 or 64', log)
+        elif opt == '-i' or opt == "--iterations":
+            options_storage.iterations = int(arg)
 
-        rectangles = None
+        elif opt == "--debug":
+            options_storage.developer_mode = True
+
+        elif opt == "--rectangles":
+            options_storage.rectangles = True
+
         #corrector
-        mismatch_corrector = False
-        bwa = os.path.join(bin_home, "bwa-spades") # it is hardcoded now instead of option
-        careful = False
+        elif opt == "--mismatch-correction":
+            options_storage.mismatch_corrector = True
 
-        for opt, arg in options:
-            if opt == '-o':
-                output_dir = arg
-            elif opt == "--tmp-dir":
-                tmp_dir = arg
-            elif opt == "--reference":
-                reference = check_file(arg, 'reference', log)
-            elif opt == "--dataset":
-                dataset_yaml_filename = check_file(arg, 'dataset', log)
+        elif opt == "--careful":
+            options_storage.mismatch_corrector = True
+            options_storage.careful = True
 
-            elif opt == "--12":
-                paired.append(check_file(arg, 'paired', log))
-            elif opt == '-1':
-                paired1.append(check_file(arg, 'left paired', log))
-            elif opt == '-2':
-                paired2.append(check_file(arg, 'right paired', log))
-            elif opt == '-s':
-                single.append(check_file(arg, 'single', log))
-            elif opt == '-k':
-                k_mers = map(int, arg.split(","))
-                for k in k_mers:
-                    if k > 127:
-                        support.error('wrong k value ' + str(k) + ': all k values should be less than 128', log)
-                    if k % 2 == 0:
-                        support.error('wrong k value ' + str(k) + ': all k values should be odd', log)
+        elif opt == '-h' or opt == "--help":
+            options_storage.usage(spades_version)
+            sys.exit(0)
+        elif opt == "--help-hidden":
+            options_storage.usage(spades_version, True)
+            sys.exit(0)
 
-            elif opt == "--sc":
-                single_cell = True
-            elif opt == "--disable-gzip-output":
-                disable_gzip_output = True
+        elif opt == "--test":
+            options_storage.set_test_options()
+            support.add_to_dataset('-1', os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), dataset_data)
+            support.add_to_dataset('-2', os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz"), dataset_data)
+            #break
+        else:
+            raise ValueError
+    
+        
+    if not options_storage.output_dir:
+        support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
+    if not os.path.isdir(options_storage.output_dir):
+        os.makedirs(options_storage.output_dir)
 
-            elif opt == "--only-error-correction":
-                only_error_correction = True
-            elif opt == "--only-assembler":
-                only_assembler = True
+    if options_storage.dataset_yaml_filename:
+        dataset_data = pyyaml.load(file(options_storage.dataset_yaml_filename, 'r'))
+    else:
+        dataset_data = support.correct_dataset(dataset_data)
+        options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
+        pyyaml.dump(dataset_data, file(options_storage.dataset_yaml_filename, 'w'))
+    support.check_dataset(dataset_data, log)
 
-            elif opt == "--bh-heap-check":
-                bh_heap_check = arg
-            elif opt == "--spades-heap-check":
-                spades_heap_check = arg
 
-            elif opt == '-t' or opt == "--threads":
-                threads = int(arg)
-            elif opt == '-m' or opt == "--memory":
-                memory = int(arg)
-            elif opt == "--phred-offset":
-                qvoffset = int(arg)
-            elif opt == '-i' or opt == "--iterations":
-                iterations = int(arg)
+    # filling cfg
+    cfg["common"] = empty_config()
+    cfg["dataset"] = empty_config()
+    if not options_storage.only_assembler:
+        cfg["error_correction"] = empty_config()
+    if not options_storage.only_error_correction:
+        cfg["assembly"] = empty_config()
 
-            elif opt == "--debug":
-                developer_mode = True
+    # common
+    cfg["common"].__dict__["output_dir"] = os.path.abspath(options_storage.output_dir)
+    cfg["common"].__dict__["max_threads"] = options_storage.threads
+    cfg["common"].__dict__["max_memory"] = options_storage.memory
+    cfg["common"].__dict__["developer_mode"] = options_storage.developer_mode
 
-            elif opt == "--rectangles":
-                rectangles = True
+    # dataset section
+    cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
+    cfg["dataset"].__dict__["yaml_filename"] = os.path.abspath(options_storage.dataset_yaml_filename)
+    if options_storage.developer_mode and options_storage.reference:
+        cfg["dataset"].__dict__["reference"] = options_storage.reference
 
-            #corrector
-            elif opt == "--mismatch-correction":
-                mismatch_corrector = True
+    # error correction
+    if (not options_storage.only_assembler) and (options_storage.iterations > 0):
+        cfg["error_correction"].__dict__["output_dir"] = os.path.join(cfg["common"].output_dir, "corrected")
+        cfg["error_correction"].__dict__["max_iterations"] = options_storage.iterations
+        cfg["error_correction"].__dict__["gzip_output"] = not options_storage.disable_gzip_output
+        if options_storage.qvoffset:
+            cfg["error_correction"].__dict__["qvoffset"] = options_storage.qvoffset
+        if options_storage.bh_heap_check:
+            cfg["error_correction"].__dict__["heap_check"] = options_storage.bh_heap_check
+        if options_storage.tmp_dir:
+            cfg["error_correction"].__dict__["tmp_dir"] = options_storage.tmp_dir
+        else:
+            cfg["error_correction"].__dict__["tmp_dir"] = cfg["error_correction"].output_dir
+        cfg["error_correction"].tmp_dir = os.path.join(os.path.abspath(cfg["error_correction"].tmp_dir), 'tmp')
 
-            elif opt == "--careful":
-                mismatch_corrector = True
-                careful = True
-            
-            elif opt == '-h' or opt == "--help":
-                usage()
-                sys.exit(0)
-            elif opt == "--help-hidden":
-                usage(True)
-                sys.exit(0)
+    # assembly
+    if not options_storage.only_error_correction:
+        cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
+        cfg["assembly"].__dict__["careful"] = options_storage.careful
+        if options_storage.spades_heap_check:
+            cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
 
-            elif opt == "--config-file":
-                CONFIG_FILE = check_file(arg, 'config file', log)
-                break
-
-            elif opt == "--test":
-                fill_test_config(cfg)
-                TEST = True
-                break
-            else:
-                raise ValueError
-
-        if not CONFIG_FILE and not TEST:
-            if not output_dir:
-                support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
-
-            if len(paired1) != len(paired2):
-                support.error("the number of files with left paired reads is not equal to the"
-                      " number of files with right paired reads!", log)
-
-            # creating empty "dataset" section
-            cfg["dataset"] = load_config_from_vars(dict())
-            # filling other parameters
-            cfg["dataset"].__dict__["single_cell"] = single_cell
-            if developer_mode and reference:
-                cfg["dataset"].__dict__["reference"] = reference
-
-            if dataset_yaml_filename:
-                cfg["dataset"].__dict__["yaml_filename"] = os.path.abspath(dataset_yaml_filename)
-            else:
-                if not paired and not paired1 and not single:
-                    support.error("you should specify either paired reads (-1, -2 or -12) or single reads (-s) or both!", log)
-                check_files_duplication(paired + paired1 + paired2 + single, log)
-
-                # filling reads
-                paired_counter = 0
-                if paired:
-                    for read in paired:
-                        paired_counter += 1
-                        cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = read
-
-                if paired1:
-                    for i in range(len(paired1)):
-                        paired_counter += 1
-                        cfg["dataset"].__dict__["paired_reads#" + str(paired_counter)] = [paired1[i],
-                                                                                          paired2[i]]
-                        #cfg["dataset"].__dict__["paired_reads"] = [paired1[i], paired2[i]]
-
-                if single:
-                    cfg["dataset"].__dict__["single_reads"] = single
-
-            # filling cfg
-            cfg["common"] = load_config_from_vars(dict())
-            if not only_assembler:
-                cfg["error_correction"] = load_config_from_vars(dict())
-            if not only_error_correction:
-                cfg["assembly"] = load_config_from_vars(dict())
-            set_defaults(cfg)
-
-            # common
-            if output_dir:
-                cfg["common"].__dict__["output_dir"] = output_dir
-            if threads:
-                cfg["common"].__dict__["max_threads"] = threads
-            if memory:
-                cfg["common"].__dict__["max_memory"] = memory
-            if developer_mode:
-                cfg["common"].__dict__["developer_mode"] = developer_mode
-            if mismatch_corrector:
-                cfg["common"].__dict__["mismatch-correction"] = mismatch_corrector
-
-            # error correction
-            if not only_assembler:
-                if tmp_dir:
-                    cfg["error_correction"].__dict__["tmp_dir"] = tmp_dir
-                if qvoffset:
-                    cfg["error_correction"].__dict__["qvoffset"] = qvoffset
-                if iterations != None:
-                    cfg["error_correction"].__dict__["max_iterations"] = iterations
-                if bh_heap_check:
-                    cfg["error_correction"].__dict__["heap_check"] = bh_heap_check
-                cfg["error_correction"].__dict__["gzip_output"] = not disable_gzip_output
-
-            # assembly
-            if not only_error_correction:
-                if k_mers:
-                    cfg["assembly"].__dict__["iterative_K"] = k_mers
-                if spades_heap_check:
-                    cfg["assembly"].__dict__["heap_check"] = spades_heap_check
-                cfg["assembly"].__dict__["careful"] = careful
-
-            #corrector can work only if contigs are exists (not only error correction)
-            if (paired1 or paired) and (not only_error_correction) and mismatch_corrector:
-                cfg["mismatch_corrector"] = load_config_from_vars(dict())
-                cfg["mismatch_corrector"].__dict__["skip-masked"] = ""
-                if bwa:
-                    cfg["mismatch_corrector"].__dict__["bwa"] = bwa
-                if "max_threads" in cfg["common"].__dict__:
-                    cfg["mismatch_corrector"].__dict__["threads"] = cfg["common"].max_threads
-                if "output_dir" in cfg["common"].__dict__:
-                    cfg["mismatch_corrector"].__dict__["output-dir"] = cfg["common"].output_dir
-                # reads
-                if paired1:
-                    cfg["mismatch_corrector"].__dict__["1"] = paired1
-                    cfg["mismatch_corrector"].__dict__["2"] = paired2
-                if paired:
-                    cfg["mismatch_corrector"].__dict__["12"] = paired
-
-    if CONFIG_FILE:
-        cfg = load_config_from_info_file(CONFIG_FILE)
-        os.environ["cfg"] = os.path.dirname(os.path.abspath(CONFIG_FILE))
-        set_defaults(cfg)
-
-    if not CONFIG_FILE and not options and not TEST:
-        usage()
-        sys.exit(1)
-
-    if not check_config(cfg, log):
-        return
-
-    if not check_binaries(bin_home, log):
-        return
-
-    if not os.path.isdir(cfg["common"].output_dir):
-        os.makedirs(cfg["common"].output_dir)
+    #corrector can work only if contigs exist (not only error correction)
+    #TODO: mismatch corrector and YAML
+    if (not options_storage.only_error_correction) and options_storage.mismatch_corrector and False:
+        cfg["mismatch_corrector"] = empty_config()
+        cfg["mismatch_corrector"].__dict__["skip-masked"] = ""
+        cfg["mismatch_corrector"].__dict__["bwa"] = os.path.join(bin_home, "bwa-spades")
+        cfg["mismatch_corrector"].__dict__["threads"] = options_storage.threads
+        cfg["mismatch_corrector"].__dict__["output-dir"] = options_storage.output_dir
+        # reads TODO
+        if paired1:
+            cfg["mismatch_corrector"].__dict__["1"] = paired1
+            cfg["mismatch_corrector"].__dict__["2"] = paired2
+        if paired:
+            cfg["mismatch_corrector"].__dict__["12"] = paired
 
     log_filename = os.path.join(cfg["common"].output_dir, "spades.log")
     log_handler = logging.FileHandler(log_filename, mode='w')
@@ -614,77 +337,71 @@ def main():
     params_handler = logging.FileHandler(params_filename, mode='w')
     log.addHandler(params_handler)
 
-    if CONFIG_FILE:
-        log.info("Using config file: " + CONFIG_FILE)
-    else:
-        command = "Command line:"
-        for v in sys.argv:
-            command += " " + v
-        log.info(command)
+    command = "Command line:"
+    for v in sys.argv:
+        command += " " + v
+    log.info(command)
 
     print_used_values(cfg, log)
-
     log.removeHandler(params_handler)
 
     log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
     try:
-        # copying configs before all computations (to prevent its changing between Hammer and SPAdes or during SPAdes iterations)
+        # copying configs before all computations (to prevent its changing at run time)
         tmp_configs_dir = os.path.join(cfg["common"].output_dir, "configs")
         if os.path.isdir(tmp_configs_dir):
             shutil.rmtree(tmp_configs_dir)
         shutil.copytree(os.path.join(spades_home, "configs"), tmp_configs_dir)
 
         # creating YAML with input reads if not specified
-        if not "yaml_filename" in cfg["dataset"].__dict__:
-            dataset_yaml_filename = os.path.join(cfg["common"].output_dir, "input_dataset.yaml")
-            cfg["dataset"].__dict__["yaml_filename"] = dataset_yaml_filename
-            dataset_yaml = dict()
-            dataset_yaml["left reads"] = []
-            dataset_yaml["right reads"] = []
-            dataset_yaml["single reads"] = []
+#        if not "yaml_filename" in cfg["dataset"].__dict__:
+#            dataset_yaml_filename = os.path.join(cfg["common"].output_dir, "input_dataset.yaml")
+#            cfg["dataset"].__dict__["yaml_filename"] = dataset_yaml_filename
+#            dataset_yaml = dict()
+#            dataset_yaml["left reads"] = []
+#            dataset_yaml["right reads"] = []
+#            dataset_yaml["single reads"] = []
+#
+#            import bh_aux
+#            paired_end = False
+#            for k, v in cfg["dataset"].__dict__.items():
+#                if not isinstance(v, list):
+#                    v = [v]
+#
+#                if k.startswith("single_reads"):
+#                    for item in v:
+#                        dataset_yaml["single reads"].append(os.path.abspath(os.path.expandvars(item)))
+#
+#                elif k.startswith("paired_reads"):
+#                    paired_end = True
+#                    if len(v) == 1:
+#                        item = os.path.abspath(os.path.expandvars(v[0]))
+#                        if "error_correction" in cfg:
+#                            split_paired_reads = bh_aux.split_paired_file(item, cfg["error_correction"].tmp_dir, log)
+#                        else:
+#                            support.error("interlaced reads are not supported yet in YAML!", log)
+#                    else: # len(v) == 2
+#                        split_paired_reads = v
+#                    dataset_yaml["left reads"].append(os.path.abspath(split_paired_reads[0]))
+#                    dataset_yaml["right reads"].append(os.path.abspath(split_paired_reads[1]))
+#
+#            if paired_end:
+#                dataset_yaml["type"] = "paired-end"
+#                dataset_yaml["orientation"] = "fr"
+#            else:
+#                dataset_yaml["type"] = "single"
+#            support.save_to_yaml(dataset_yaml, dataset_yaml_filename)
 
-            import bh_aux
-            paired_end = False
-            for k, v in cfg["dataset"].__dict__.items():
-                if not isinstance(v, list):
-                    v = [v]
-
-                if k.startswith("single_reads"):
-                    for item in v:
-                        dataset_yaml["single reads"].append(os.path.abspath(os.path.expandvars(item)))
-
-                elif k.startswith("paired_reads"):
-                    paired_end = True
-                    if len(v) == 1:
-                        item = os.path.abspath(os.path.expandvars(v[0]))
-                        if "error_correction" in cfg:
-                            split_paired_reads = bh_aux.split_paired_file(item, cfg["error_correction"].tmp_dir, log)
-                        else:
-                            support.error("interlaced reads are not supported yet in YAML!", log)
-                    else: # len(v) == 2
-                        split_paired_reads = v
-                    dataset_yaml["left reads"].append(os.path.abspath(split_paired_reads[0]))
-                    dataset_yaml["right reads"].append(os.path.abspath(split_paired_reads[1]))
-
-            if paired_end:
-                dataset_yaml["type"] = "paired-end"
-                dataset_yaml["orientation"] = "fr"
-            else:
-                dataset_yaml["type"] = "single"
-            support.save_to_yaml(dataset_yaml, dataset_yaml_filename)
-
-        bh_dataset_filename = ""
+        corrected_dataset_yaml_filename = ""
         if "error_correction" in cfg:
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
+            bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
 
             if "HEAPCHECK" in os.environ:
                 del os.environ["HEAPCHECK"]
             if "heap_check" in bh_cfg.__dict__:
                 os.environ["HEAPCHECK"] = bh_cfg.heap_check
-
-            bh_cfg.__dict__["dataset"] = os.path.join(bh_cfg.output_dir,
-                "dataset.info")
 
             if os.path.exists(bh_cfg.output_dir):
                 shutil.rmtree(bh_cfg.output_dir)
@@ -694,22 +411,8 @@ def main():
                 os.makedirs(bh_cfg.tmp_dir)
 
             log.info("\n===== Read error correction started. \n")
-
-            if CONFIG_FILE:
-                shutil.copy(CONFIG_FILE, bh_cfg.output_dir)
-
-            ### parsing dataset section
-            bh_cfg.__dict__["single_cell"] = cfg["dataset"].single_cell
-            # saving reference to dataset in developer_mode
-            if bh_cfg.developer_mode:
-                if "reference" in cfg["dataset"].__dict__:
-                    bh_cfg.__dict__["reference_genome"] = os.path.abspath(
-                        os.path.expandvars(cfg["dataset"].reference))
-
-            bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
-
-            bh_dataset_filename = bh_logic.run_bh(tmp_configs_dir, bin_home, bh_cfg, log)
-
+            corrected_dataset_yaml_filename = bh_logic.run_bh(
+                tmp_configs_dir, bin_home, bh_cfg, ext_python_modules_home, log)
             log.info("\n===== Read error correction finished. \n")
 
         result_contigs_filename = ""
@@ -717,75 +420,47 @@ def main():
         misc_dir = os.path.join(cfg["common"].output_dir, "misc")
         if "assembly" in cfg:
             spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
+            spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.output_dir, "contigs.fasta")
+            spades_cfg.__dict__["result_scaffolds"] = os.path.join(spades_cfg.output_dir, "scaffolds.fasta")
+            spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir, "simplified_contigs.fasta")
+
+            if corrected_dataset_yaml_filename:
+                dataset_data = pyyaml.load(file(corrected_dataset_yaml_filename, 'r'))
+            if support.dataset_has_paired_reads(dataset_data):
+                spades_cfg.__dict__["paired_mode"] = True
+            else:
+                spades_cfg.__dict__["paired_mode"] = False
+
+            if options_storage.rectangles:
+                spades_cfg.__dict__["resolving_mode"] = "rectangles"
 
             if "HEAPCHECK" in os.environ:
                 del os.environ["HEAPCHECK"]
             if "heap_check" in spades_cfg.__dict__:
                 os.environ["HEAPCHECK"] = spades_cfg.heap_check
 
-            if "error_correction" in cfg:
-                spades_cfg.__dict__["align_original_reads"] = True
-            else:
-                spades_cfg.__dict__["align_original_reads"] = False
-
-            has_paired = False
-            if "yaml_filename" in cfg["dataset"].__dict__:
-                type = support.get_from_yaml("type", cfg["dataset"].__dict__["yaml_filename"])
-                if type == "paired-end":
-                    has_paired = True
-            else:
-                for k in cfg["dataset"].__dict__.keys():
-                    if k.startswith("paired_reads"):
-                        has_paired = True
-                        break
-            if has_paired:
-                spades_cfg.__dict__["paired_mode"] = True
-            else:
-                spades_cfg.__dict__["paired_mode"] = False
-
-            spades_cfg.__dict__["result_contigs"] = os.path.join(spades_cfg.output_dir,
-                "contigs.fasta")
-            spades_cfg.__dict__["result_scaffolds"] = os.path.join(spades_cfg.output_dir,
-                "scaffolds.fasta")
-
-            spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir,
-                "simplified_contigs.fasta")
-
-            if rectangles:
-                spades_cfg.__dict__["resolving_mode"] = "rectangles"
-
             log.info("\n===== Assembling started.\n")
 
-            if CONFIG_FILE:
-                shutil.copy(CONFIG_FILE, spades_cfg.output_dir)
-
-            # dataset created during error correction
-            if bh_dataset_filename:
-                spades_cfg.__dict__["dataset"] = bh_dataset_filename
-
-            if not "dataset" in spades_cfg.__dict__:
-                # creating dataset
-                dataset_filename = os.path.join(spades_cfg.output_dir, "dataset.info")
-                dataset_file = open(dataset_filename, 'w')
-                import process_cfg
-                dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
+            # creating dataset
+            dataset_filename = os.path.join(spades_cfg.output_dir, "dataset.info")
+            dataset_file = open(dataset_filename, 'w')
+            import process_cfg
+            dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
+            if corrected_dataset_yaml_filename:
+                dataset_file.write("reads" + '\t' + corrected_dataset_yaml_filename + '\n')
+            else:
                 dataset_file.write("reads" + '\t' + cfg["dataset"].yaml_filename + '\n')
-
-                # saving reference to dataset in developer_mode
-                if spades_cfg.developer_mode:
-                    if "reference" in cfg["dataset"].__dict__:
-                        dataset_file.write("reference_genome" + '\t')
-                        dataset_file.write(os.path.abspath(
-                            os.path.expandvars(cfg["dataset"].reference)) + '\n')
-
-                dataset_file.close()
-                spades_cfg.__dict__["dataset"] = dataset_filename
+            if spades_cfg.developer_mode and "reference" in cfg["dataset"].__dict__:
+                dataset_file.write("reference_genome" + '\t')
+                dataset_file.write(os.path.abspath(cfg["dataset"].reference) + '\n')
+            dataset_file.close()
+            spades_cfg.__dict__["dataset"] = dataset_filename
 
             result_contigs_filename, result_scaffolds_filename, latest_dir = spades_logic.run_spades(tmp_configs_dir,
                 bin_home, spades_cfg, log)
 
             #RECTANGLES
-            if spades_cfg.paired_mode and rectangles:
+            if spades_cfg.paired_mode and options_storage.rectangles:
                 sys.path.append(os.path.join(python_modules_home, "rectangles"))
                 import rrr
 
@@ -877,8 +552,8 @@ def main():
             shutil.rmtree(tmp_configs_dir)
 
         log.info("")
-        if os.path.isdir(os.path.dirname(bh_dataset_filename)):
-            log.info(" * Corrected reads are in " + os.path.dirname(bh_dataset_filename) + "/")
+        if os.path.isdir(os.path.dirname(corrected_dataset_yaml_filename)):
+            log.info(" * Corrected reads are in " + os.path.dirname(corrected_dataset_yaml_filename) + "/")
         if os.path.isfile(result_contigs_filename):
             log.info(" * Assembled contigs are in " + result_contigs_filename)
         if os.path.isfile(result_scaffolds_filename):
