@@ -220,9 +220,13 @@ class MMappedFileRecordIterator :
     // Default ctor, used to implement "end" iterator
     MMappedFileRecordIterator() {}
     MMappedFileRecordIterator(const std::string &FileName)
-            : reader_(FileName, false) {}
+            : reader_(FileName, false) {
+        reader_.read(&value_, sizeof(value_));
+    }
     MMappedFileRecordIterator(MMappedRecordReader<T> &&reader)
-            : reader_(std::move(reader)) {}
+            : reader_(std::move(reader)) {
+        reader_.read(&value_, sizeof(value_));
+    }
     bool good() const {
         return reader_.good();
     }
@@ -287,16 +291,21 @@ template<class T>
 class MMappedFileRecordArrayIterator :
         public boost::iterator_facade<MMappedFileRecordArrayIterator<T>,
                                       const T*,
-                                      std::input_iterator_tag> {
+                                      std::input_iterator_tag,
+                                      const T*> {
   public:
     // Default ctor, used to implement "end" iterator
-    MMappedFileRecordArrayIterator() {}
+    MMappedFileRecordArrayIterator(): value_(NULL), reader_(), elcnt_(0) {}
     MMappedFileRecordArrayIterator(const std::string &FileName, size_t elcnt)
             : reader_(FileName, false,
                       64*1024*1024 / (sizeof(T) * getpagesize() * elcnt) * (sizeof(T) * getpagesize() * elcnt)),
-              elcnt_(elcnt) {}
+              elcnt_(elcnt), value_(NULL) {
+        value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
+    }
     MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
-            : reader_(std::move(reader)), elcnt_(elcnt) {}
+            : reader_(std::move(reader)), elcnt_(elcnt), value_(NULL) {
+        value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
+    }
 
     bool good() const { return reader_.good(); }
 
@@ -304,9 +313,9 @@ class MMappedFileRecordArrayIterator :
     friend class boost::iterator_core_access;
 
     void increment() {
-        value_ = reader_.skip(elcnt_ * sizeof(T));
+        value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
     }
-    bool equal(const MMappedFileRecordArrayIterator &other) {
+    bool equal(const MMappedFileRecordArrayIterator &other) const {
         return value_ == other.value_;
     }
     const T* dereference() const { return value_; }
