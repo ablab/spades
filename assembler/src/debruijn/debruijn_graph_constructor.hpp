@@ -173,7 +173,7 @@ private:
 	}
 
 	void AddKmers(kmer_iterator &it, kmer_iterator &end, size_t queueSize,
-			std::vector<KPlusOneMer>& kmers) {
+                  std::vector<KPlusOneMer>& kmers) {
 		for (; kmers.size() != queueSize && it != end; ++it) {
 			KPlusOneMer kmer(kmer_size_ + 1, (*it).data());
 
@@ -308,13 +308,13 @@ private:
 		return !(origin_.CheckUniqueOutgoing(kh.idx) && origin_.CheckUniqueIncoming(kh.idx));
 	}
 
-	void AddKmers(kmer_iterator &it, kmer_iterator &end, size_t queueSize,
+	void AddKmers(kmer_iterator &it, size_t queueSize,
                   std::vector<KPlusOneMer>& kmers) {
-		for (; kmers.size() != queueSize && it != end; ++it) {
-			typename Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, (*it).data()));
+		for (; kmers.size() != queueSize && it.good(); ++it) {
+			typename Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, *it));
 			if (IsJunction(kh)) {
-				for(char next = 0; next < 4; next++) {
-					if(origin_.CheckOutgoing(kh.idx, next)) {
+				for (char next = 0; next < 4; next++) {
+					if (origin_.CheckOutgoing(kh.idx, next)) {
 						kmers.push_back(KPlusOneMer(kh, next));
 					}
 				}
@@ -346,8 +346,8 @@ private:
 		INFO("Collecting perfect loops");
 		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, true);
 		std::vector<Sequence> result;
-		for (kmer_iterator it = origin_.kmer_begin(), end = origin_.kmer_end(); it != end; ++it) {
-			typename Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, (*it).data()));
+		for (kmer_iterator it = origin_.kmer_begin(); it.good(); ++it) {
+			typename Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, *it));
 			if (!IsJunction(kh)) {
 				result.push_back(finder.ConstructLoopFromVertex(kh));
 				typename Index::KmerWithHash rc_kh = origin_.CreateKmerWithHash(!kh.kmer);
@@ -366,7 +366,7 @@ public:
 
 	//TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
 	const std::vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
-			double queueGrowthRate, bool clean_condenced = false) {
+                                                        double queueGrowthRate, bool clean_condenced = false) {
 		INFO("Extracting unbranching paths");
 		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, clean_condenced);
 		std::vector<Sequence> result;
@@ -374,10 +374,9 @@ public:
 		std::vector<KPlusOneMer> kmers;
 		std::vector<Sequence> sequences;
 		kmers.reserve(queueSize);
-		kmer_iterator it = origin_.kmer_begin();
-		kmer_iterator end = origin_.kmer_end();
-		while(it != end) {
-			AddKmers(it, end, queueSize, kmers); // format a queue of junction kmers
+        auto it = origin_.kmer_begin();
+		while (it.good()) {
+			AddKmers(it, queueSize, kmers); // format a queue of junction kmers
 			CalculateSequences(kmers, sequences, finder); // in parallel
 			kmers.clear();
 			queueSize = min(size_t(queueSize * queueGrowthRate), queueMaxSize);
@@ -387,9 +386,9 @@ public:
 	}
 
 	const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(size_t queueMinSize, size_t queueMaxSize,
-			double queueGrowthRate) {
-		vector<Sequence> result	= ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate, true);
-		vector<Sequence> loops = CollectLoops();
+                                                                double queueGrowthRate) {
+        std::vector<Sequence> result	= ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate, true);
+        std::vector<Sequence> loops = CollectLoops();
 		for(auto it = loops.begin(); it != loops.end(); ++it) {
 			result.push_back(*it);
 		}
@@ -595,7 +594,7 @@ private:
 	typedef DeBruijnExtensionIndex<Seq> DeBruijn;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
-	typedef typename DeBruijn::kmer_iterator kmer_iterator;
+	typedef typename DeBruijn::const_kmer_iterator kmer_iterator;
 
 	Graph &graph_;
 	DeBruijn &origin_;

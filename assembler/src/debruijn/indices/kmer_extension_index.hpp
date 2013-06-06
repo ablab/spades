@@ -11,11 +11,28 @@
 namespace debruijn_graph {
 
 template<class Seq>
+class DeBruijnExtensionIndexBuilder;
+
+template<class Seq>
 struct slim_kmer_index_traits : public kmer_index_traits<Seq> {
-  typedef MMappedRecordArrayReader<typename Seq::DataType> FinalKMerStorage;
+  using typename kmer_index_traits<Seq>::RawKMerStorage;
+
+  typedef MMappedRecordReader<typename Seq::DataType> FinalKMerStorage;
+
+  template<class Writer>
+  static void raw_serialize(Writer&, RawKMerStorage*) {
+    VERIFY(false && "Cannot save extension index");
+  }
+
+  template<class Reader>
+  static RawKMerStorage *raw_deserialize(Reader&, const std::string &) {
+    VERIFY(false && "Cannot load extension index");
+    return NULL;
+  }
+
 };
 
-template<class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq> >
+template<class Seq = runtime_k::RtSeq, class traits = slim_kmer_index_traits<Seq> >
 class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
   private:
     typedef DeBruijnKMerIndex<uint8_t, traits> base;
@@ -35,13 +52,21 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         return count[mask];
     }
 
+    std::string KMersFilename_;
+
   public:
     typedef typename traits::SeqType KMer;
     typedef traits                   kmer_index_traits;
     typedef KMerIndex<traits>        KMerIndexT;
 
+    typedef MMappedFileRecordArrayIterator<typename KMer::DataType> kmer_iterator;
+
+    kmer_iterator kmer_begin() const {
+        return kmer_iterator(KMersFilename_, KMer::GetDataSize(base::K()));
+    }
+
     DeBruijnExtensionIndex(unsigned K, const std::string &workdir)
-            : base(K, workdir) {}
+            : base(K, workdir), KMersFilename_("") {}
 
     void AddOutgoing(size_t idx, char nnucl) {
         unsigned nmask = (1 << nnucl);
@@ -152,6 +177,32 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
     KmerWithHash CreateKmerWithHash(KMer kmer) const {
         return KmerWithHash(kmer, *this);
     }
+
+    friend class DeBruijnExtensionIndexBuilder<Seq>;
+};
+
+template <>
+class DeBruijnKMerIndexBuilder<slim_kmer_index_traits<runtime_k::RtSeq>> {
+ public:
+  template <class IdType, class Read>
+  std::string BuildIndexFromStream(DeBruijnKMerIndex<IdType, slim_kmer_index_traits<runtime_k::RtSeq>> &index,
+                                   io::ReadStreamVector<io::IReader<Read> > &streams,
+                                   SingleReadStream* contigs_stream = 0) const {
+    DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
+                                            index.K(),
+                                            streams, contigs_stream);
+    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, slim_kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, streams.size());
+
+    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
+    index.data_.resize(sz);
+    index.kmers = NULL;
+
+    return counter.GetFinalKMersFname();
+  }
+
+ protected:
+  DECL_LOGGER("K-mer Index Building");
 };
 
 template <class Seq>
@@ -205,7 +256,7 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
                                 SingleReadStream* contigs_stream = 0) const {
         unsigned nthreads = streams.size();
 
-        base::BuildIndexFromStream(index, streams, contigs_stream);
+        index.KMersFilename_ = base::BuildIndexFromStream(index, streams, contigs_stream);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Building k-mer extensions from reads, this takes a while.");

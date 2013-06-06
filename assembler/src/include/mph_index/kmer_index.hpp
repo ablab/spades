@@ -257,9 +257,9 @@ protected:
   DECL_LOGGER("K-mer Counting");
 };
 
-template<class Seq>
+template<class Seq, class traits = kmer_index_traits<Seq> >
 class KMerDiskCounter : public KMerCounter<Seq> {
-  typedef KMerCounter<Seq> __super;
+    typedef KMerCounter<Seq, traits> __super;
 public:
   KMerDiskCounter(const std::string &work_dir, KMerSplitter<Seq> &splitter)
       : work_dir_(work_dir), splitter_(splitter) { }
@@ -346,7 +346,11 @@ public:
     unsigned K = splitter_.K();
     return new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
   }
-    
+
+  std::string GetFinalKMersFname() const {
+    return path::append_path(work_dir_, "kmers.final");
+  }
+
 private:
   std::string work_dir_;
   KMerSplitter<Seq> &splitter_;
@@ -359,10 +363,6 @@ private:
 
   std::string GetMergedKMersFname(unsigned suffix) const {
     return path::append_path(work_dir_, "kmers.merged." + boost::lexical_cast<std::string>(suffix));
-  }
-
-  std::string GetFinalKMersFname() const {
-    return path::append_path(work_dir_, "kmers.final");
   }
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname,

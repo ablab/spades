@@ -38,8 +38,8 @@ public:
 
 	//TODO make parallel
 	void CleanLinks() {
-		for (auto it  = index_.kmer_begin(), et = index_.kmer_end(); it != et; ++it) {
-			Index::KmerWithHash kh(runtime_k::RtSeq(index_.K(), (*it).data()), index_);
+		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
+			Index::KmerWithHash kh(runtime_k::RtSeq(index_.K(), *it), index_);
 			for(char i = 0; i < 4; i++) {
 				CleanForwardLinks(kh, i);
 				CleanBackwardLinks(kh, i);
@@ -77,8 +77,9 @@ private:
 			tip.push_back(kh);
 			kh = index_.CreateKmerWithHash(kh.kmer >> index_.GetUniqueIncoming(kh.idx));
 		} while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx));
-		if(!index_.CheckUniqueOutgoing(kh.idx)) {
-			for(size_t i = 0; i < tip.size(); i++) {
+
+        if (!index_.CheckUniqueOutgoing(kh.idx)) {
+			for (size_t i = 0; i < tip.size(); i++) {
 				index_.IsolateVertex(tip[i].idx);
 			}
 			return tip.size();
@@ -89,8 +90,8 @@ private:
 	//TODO make parallel
 	size_t RoughClipTips() {
 		size_t result = 0;
-		for (auto it  = index_.kmer_begin(), et = index_.kmer_end(); it != et; ++it) {
-			typename Index::KmerWithHash kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.K(), (*it).data()));
+		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
+			typename Index::KmerWithHash kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.K(), *it));
 			if(index_.IsDeadEnd(kh.idx) && index_.CheckUniqueIncoming(kh.idx)) {
 				result += RemoveBackward(kh);
 			} else if(index_.IsDeadStart(kh.idx) && index_.CheckUniqueOutgoing(kh.idx)) {
