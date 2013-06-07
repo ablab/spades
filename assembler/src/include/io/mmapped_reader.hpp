@@ -218,24 +218,26 @@ class MMappedFileRecordIterator :
                                       std::input_iterator_tag> {
   public:
     // Default ctor, used to implement "end" iterator
-    MMappedFileRecordIterator() {}
+    MMappedFileRecordIterator() : good_(false) {}
     MMappedFileRecordIterator(const std::string &FileName)
-            : reader_(FileName, false) {
+            : reader_(FileName, false), good_(true) {
         reader_.read(&value_, sizeof(value_));
     }
     MMappedFileRecordIterator(MMappedRecordReader<T> &&reader)
-            : reader_(std::move(reader)) {
+            : reader_(std::move(reader)), good_(true) {
         reader_.read(&value_, sizeof(value_));
     }
     bool good() const {
-        return reader_.good();
+        return good_;
     }
 
   private:
     friend class boost::iterator_core_access;
 
     void increment() {
-        reader_.read(&value_, sizeof(value_));
+        good_ = reader_.good();
+        if (good_)
+            reader_.read(&value_, sizeof(value_));
     }
     bool equal(const MMappedFileRecordIterator &other) {
         // Iterators are equal iff:
@@ -249,6 +251,7 @@ class MMappedFileRecordIterator :
 
     T value_;
     MMappedRecordReader<T> reader_;
+    bool good_;
 };
 
 template<typename T>
@@ -295,26 +298,28 @@ class MMappedFileRecordArrayIterator :
                                       const T*> {
   public:
     // Default ctor, used to implement "end" iterator
-    MMappedFileRecordArrayIterator(): value_(NULL), reader_(), elcnt_(0) {}
+    MMappedFileRecordArrayIterator(): value_(NULL), reader_(), elcnt_(0), good_(false) {}
     MMappedFileRecordArrayIterator(const std::string &FileName, size_t elcnt)
             : value_(NULL),
               reader_(FileName, false,
                       64*1024*1024 / (sizeof(T) * getpagesize() * elcnt) * (sizeof(T) * getpagesize() * elcnt)),
-              elcnt_(elcnt) {
-        value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
+              elcnt_(elcnt), good_(true) {
+        increment();
     }
     MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
-            : value_(NULL), reader_(std::move(reader)),  elcnt_(elcnt) {
-        value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
+            : value_(NULL), reader_(std::move(reader)),  elcnt_(elcnt), good_(true) {
+        increment();
     }
 
-    bool good() const { return reader_.good(); }
+    bool good() const { return good_; }
 
   private:
     friend class boost::iterator_core_access;
 
     void increment() {
-        value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
+        good_ = reader_.good();
+        if (good_)
+            value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
     }
     bool equal(const MMappedFileRecordArrayIterator &other) const {
         return value_ == other.value_;
@@ -324,6 +329,7 @@ class MMappedFileRecordArrayIterator :
     T* value_;
     MMappedRecordReader<T> reader_;
     size_t elcnt_;
+    bool good_;
 };
 
 
