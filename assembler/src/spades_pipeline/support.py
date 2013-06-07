@@ -173,14 +173,14 @@ def add_to_dataset(option, data, dataset_data):
 
     if lib_type == 'pe':
         record_id = lib_number - 1
-    else: # mate-pair
+    else: # mate-pairs
         record_id = total_libs_number + lib_number - 1
 
     if not dataset_data[record_id]: # setting default values for a new record
         if lib_type == 'pe':
             dataset_data[record_id]['type'] = 'paired-end'
         else:
-            dataset_data[record_id]['type'] = 'mate-pair'
+            dataset_data[record_id]['type'] = 'mate-pairs'
     if data_type.endswith('reads'): # reads are stored as lists
         if data_type in dataset_data[record_id]:
             dataset_data[record_id][data_type].append(data)
@@ -213,13 +213,13 @@ def correct_dataset(dataset_data):
         if 'orientation' not in reads_library:
             if reads_library['type'] == 'paired-end':
                 reads_library['orientation'] = 'fr'
-            elif reads_library['type'] == 'mate-pair':
+            elif reads_library['type'] == 'mate-pairs':
                 reads_library['orientation'] = 'rf'
         corrected_dataset_data.append(reads_library)
     return corrected_dataset_data
 
 
-def check_dataset(dataset_data, log):
+def check_dataset_reads(dataset_data, log):
     all_files = []
     for id, reads_library in enumerate(dataset_data):
         left_number = 0
@@ -245,9 +245,16 @@ def check_dataset(dataset_data, log):
     check_files_duplication(all_files, log)
 
 
+def dataset_has_only_mate_pairs_libraries(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'] != 'mate-pairs':
+            return False
+    return True
+
+
 def dataset_has_paired_reads(dataset_data):
     for reads_library in dataset_data:
-        if reads_library['type'] in ['paired-end', 'mate-pair']:
+        if reads_library['type'] in ['paired-end', 'mate-pairs']:
             return True
     return False
 

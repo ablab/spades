@@ -184,6 +184,8 @@ namespace debruijn_graph {
       PrintWithPairedIndices(p, gp, paired_indices);
       write_lib_data(p);
     }
+    // for informing spades.py about estimated params
+    write_lib_data(cfg::get().output_dir + "/");
   }
 
   void exec_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {

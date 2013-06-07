@@ -43,7 +43,12 @@ def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
 
 def get_read_length(output_dir, K):
     estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % (K), "_est_params.info"))
-    return estimated_params.__dict__["RL"]
+    lib_count = int(estimated_params.__dict__["lib_count"])
+    max_read_length = 0
+    for i in range(lib_count):
+        if int(estimated_params.__dict__["read_length_" + str(i)]) > max_read_length:
+            max_read_length = int(estimated_params.__dict__["read_length_" + str(i)])
+    return max_read_length
 
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_contigs, last_one):

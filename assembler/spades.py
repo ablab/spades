@@ -23,7 +23,7 @@ ext_python_modules_home = spades_init.ext_python_modules_home
 spades_version = spades_init.spades_version
 
 import support
-from process_cfg import merge_configs, empty_config
+from process_cfg import merge_configs, empty_config, load_config_from_file
 import bh_logic
 import spades_logic
 import options_storage
@@ -269,10 +269,14 @@ def main():
         dataset_data = support.correct_dataset(dataset_data)
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
         pyyaml.dump(dataset_data, file(options_storage.dataset_yaml_filename, 'w'))
-    support.check_dataset(dataset_data, log)
 
+    support.check_dataset_reads(dataset_data, log)
+    if support.dataset_has_only_mate_pairs_libraries(dataset_data):
+        support.error('you should specify at least one paired-end or unpaired library (only mate-pairs libraries were found)!')
+    if options_storage.rectangles and (len(dataset_data) > 1):
+        support.error('rectangle graph algorithm for repeat resolution cannot work with multiple libraries!')
 
-    # filling cfg
+    ### FILLING cfg
     cfg["common"] = empty_config()
     cfg["dataset"] = empty_config()
     if not options_storage.only_assembler:
@@ -315,19 +319,13 @@ def main():
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
 
     #corrector can work only if contigs exist (not only error correction)
-    #TODO: mismatch corrector and YAML
-    if (not options_storage.only_error_correction) and options_storage.mismatch_corrector and False:
+    if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
         cfg["mismatch_corrector"] = empty_config()
         cfg["mismatch_corrector"].__dict__["skip-masked"] = ""
         cfg["mismatch_corrector"].__dict__["bwa"] = os.path.join(bin_home, "bwa-spades")
         cfg["mismatch_corrector"].__dict__["threads"] = options_storage.threads
         cfg["mismatch_corrector"].__dict__["output-dir"] = options_storage.output_dir
-        # reads TODO
-        if paired1:
-            cfg["mismatch_corrector"].__dict__["1"] = paired1
-            cfg["mismatch_corrector"].__dict__["2"] = paired2
-        if paired:
-            cfg["mismatch_corrector"].__dict__["12"] = paired
+    ###
 
     log_filename = os.path.join(cfg["common"].output_dir, "spades.log")
     log_handler = logging.FileHandler(log_filename, mode='w')
@@ -459,7 +457,7 @@ def main():
             result_contigs_filename, result_scaffolds_filename, latest_dir = spades_logic.run_spades(tmp_configs_dir,
                 bin_home, spades_cfg, log)
 
-            #RECTANGLES
+            #rectangles
             if spades_cfg.paired_mode and options_storage.rectangles:
                 sys.path.append(os.path.join(python_modules_home, "rectangles"))
                 import rrr
@@ -495,58 +493,78 @@ def main():
 
             log.info("\n===== Assembling finished. \n")
 
-        #corrector
-        if "mismatch_corrector" in cfg and os.path.isfile(result_contigs_filename):
-            to_correct = dict()
-            to_correct["contigs"] = (result_contigs_filename, os.path.join(misc_dir, "assembled_contigs.fasta"))
-            if os.path.isfile(result_scaffolds_filename):
-                to_correct["scaffolds"] = (result_scaffolds_filename, os.path.join(misc_dir, "assembled_scaffolds.fasta"))
+            #corrector
+            if "mismatch_corrector" in cfg and os.path.isfile(result_contigs_filename):
+                to_correct = dict()
+                to_correct["contigs"] = (result_contigs_filename, os.path.join(misc_dir, "assembled_contigs.fasta"))
+                if os.path.isfile(result_scaffolds_filename):
+                    to_correct["scaffolds"] = (result_scaffolds_filename, os.path.join(misc_dir, "assembled_scaffolds.fasta"))
 
-            log.info("\n===== Mismatch correction started.")
+                log.info("\n===== Mismatch correction started.")
 
-            # moving assembled contigs (scaffolds) to misc dir
-            for k, (old, new) in to_correct.items():
-                shutil.move(old, new)
+                # moving assembled contigs (scaffolds) to misc dir
+                for k, (old, new) in to_correct.items():
+                    shutil.move(old, new)
 
-            import corrector
-            corrector_cfg = cfg["mismatch_corrector"]
-            args = []
-            for key, values in corrector_cfg.__dict__.items():
-                if key == "output-dir":
-                    continue
+                # detecting paired-end library with the largest insert size
+                dataset_data = pyyaml.load(file(options_storage.dataset_yaml_filename, 'r')) ### initial dataset, i.e. before error correction
+                paired_end_libraries_ids = []
+                for id, reads_library in enumerate(dataset_data):
+                    if reads_library['type'] == 'paired-end':
+                        paired_end_libraries_ids.append(id)
+                if not len(paired_end_libraries_ids):
+                    support.error('Mismatch correction cannot be performed without at least one paired-end library!')
+                estimated_params = load_config_from_file(os.path.join(latest_dir, "_est_params.info"))
+                max_insert_size = -1
+                target_paired_end_library_id = -1
+                for id in paired_end_libraries_ids:
+                    if float(estimated_params.__dict__["insert_size_" + str(id)]) > max_insert_size:
+                        max_insert_size = float(estimated_params.__dict__["insert_size_" + str(id)])
+                        target_paired_end_library_id = id
+                cfg["mismatch_corrector"].__dict__["1"] = dataset_data[target_paired_end_library_id]['left reads']
+                cfg["mismatch_corrector"].__dict__["2"] = dataset_data[target_paired_end_library_id]['right reads']
+                cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
+                #TODO: add reads orientation
 
-                # for processing list of reads
-                if not isinstance(values, list):
-                    values = [values]
-                for value in values:
-                    if len(key) == 1:
-                        args.append('-' + key)
-                    else:
-                        args.append('--' + key)
-                    if value:
-                        args.append(value)
+                import corrector
+                corrector_cfg = cfg["mismatch_corrector"]
+                args = []
+                for key, values in corrector_cfg.__dict__.items():
+                    if key == "output-dir":
+                        continue
 
-            # processing contigs and scaffolds (or only contigs)
-            for k, (corrected, assembled) in to_correct.items():
-                log.info("\n== Processing " + k + "\n")
+                    # for processing list of reads
+                    if not isinstance(values, list):
+                        values = [values]
+                    for value in values:
+                        if len(key) == 1:
+                            args.append('-' + key)
+                        else:
+                            args.append('--' + key)
+                        if value:
+                            args.append(value)
 
-                cur_args = args[:]
-                cur_args += ['-c', assembled]
-                tmp_dir_for_corrector = os.path.join(corrector_cfg.__dict__["output-dir"], "mismatch_corrector_" + k)
-                cur_args += ['--output-dir', tmp_dir_for_corrector]
+                # processing contigs and scaffolds (or only contigs)
+                for k, (corrected, assembled) in to_correct.items():
+                    log.info("\n== Processing " + k + "\n")
 
-                # correcting
-                corrector.main(cur_args, ext_python_modules_home, log)
+                    cur_args = args[:]
+                    cur_args += ['-c', assembled]
+                    tmp_dir_for_corrector = os.path.join(corrector_cfg.__dict__["output-dir"], "mismatch_corrector_" + k)
+                    cur_args += ['--output-dir', tmp_dir_for_corrector]
 
-                result_corrected_filename = os.path.abspath(os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta"))
-                # moving corrected contigs (scaffolds) to SPAdes output dir
-                if os.path.isfile(result_corrected_filename):
-                    shutil.move(result_corrected_filename, corrected)
+                    # correcting
+                    corrector.main(cur_args, ext_python_modules_home, log)
 
-                if os.path.isdir(tmp_dir_for_corrector):
-                    shutil.rmtree(tmp_dir_for_corrector)
+                    result_corrected_filename = os.path.abspath(os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta"))
+                    # moving corrected contigs (scaffolds) to SPAdes output dir
+                    if os.path.isfile(result_corrected_filename):
+                        shutil.move(result_corrected_filename, corrected)
 
-            log.info("\n===== Mismatch correction finished.\n")
+                    if os.path.isdir(tmp_dir_for_corrector):
+                        shutil.rmtree(tmp_dir_for_corrector)
+
+                log.info("\n===== Mismatch correction finished.\n")
 
         if not cfg["common"].developer_mode and os.path.isdir(tmp_configs_dir):
             shutil.rmtree(tmp_configs_dir)
