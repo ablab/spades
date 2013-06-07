@@ -219,8 +219,8 @@ class DeBruijnExtensionIndexBuilder : public DeBruijnKMerIndexBuilder<typename D
 
 template <>
 class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
-            public DeBruijnKMerIndexBuilder<typename DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> {
-    typedef DeBruijnKMerIndexBuilder<typename DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> base;
+            public DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> {
+    typedef DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> base;
 
     template <class ReadStream>
     size_t FillExtensionsFromStream(ReadStream &stream,

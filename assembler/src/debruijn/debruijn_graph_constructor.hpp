@@ -334,7 +334,7 @@ private:
 		}
 	}
 
-	Sequence ConstructLoopFromVertex(typename Index::KmerWithHash kh) {
+	Sequence ConstructLoopFromVertex(Index::KmerWithHash kh) {
 		KPlusOneMer kpom(kh, origin_.GetUniqueOutgoing(kh.idx));
 		Sequence result = ConstructSequenceWithEdge(kpom);
 		origin_.IsolateVertex(kh.idx);

@@ -61,13 +61,15 @@ private:
 		do {
 			tip.push_back(kh);
 			kh = index_.CreateKmerWithHash(kh.kmer << index_.GetUniqueOutgoing(kh.idx));
-		} while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx));
-		if(!index_.CheckUniqueIncoming(kh.idx)) {
-			for(size_t i = 0; i < tip.size(); i++) {
+		} while (tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx));
+
+        if (!index_.CheckUniqueIncoming(kh.idx)) {
+			for (size_t i = 0; i < tip.size(); i++) {
 				index_.IsolateVertex(tip[i].idx);
 			}
 			return tip.size();
 		}
+
 		return 0;
 	}
 
@@ -92,7 +94,7 @@ private:
 		size_t result = 0;
 		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
 			Index::KmerWithHash kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.K(), *it));
-			if(index_.IsDeadEnd(kh.idx) && index_.CheckUniqueIncoming(kh.idx)) {
+			if (index_.IsDeadEnd(kh.idx) && index_.CheckUniqueIncoming(kh.idx)) {
 				result += RemoveBackward(kh);
 			} else if(index_.IsDeadStart(kh.idx) && index_.CheckUniqueOutgoing(kh.idx)) {
 				result += RemoveForward(kh);
