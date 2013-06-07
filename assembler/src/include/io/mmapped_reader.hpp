@@ -155,7 +155,7 @@ class MMappedReader {
 
   void* skip(size_t amount) {
     // Easy case, no remapping is needed
-    if (BytesRead + amount < BlockOffset + BlockSize) {
+    if (BytesRead + amount <= BlockOffset + BlockSize) {
       void* out = MappedRegion + BytesRead - BlockOffset;
       BytesRead += amount;
 
