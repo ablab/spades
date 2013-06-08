@@ -893,7 +893,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 }
 
 
-void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo<Graph> >& filteredPaths, 
+void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths, 
 				PairedIndexT& clustered_index,
 				EdgeQuality<Graph>& quality_labeler ) {
 
@@ -916,7 +916,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().coverage_threshold_one_list, cfg::get().coverage_threshold_match, 
 			cfg::get().coverage_threshold_global, cfg::get().tandem_ratio_lower_threshold, cfg::get().tandem_ratio_upper_threshold, cfg::get().repeat_length_upper_threshold);
-	cov_rr.resolve_repeats_by_coverage(index, labels_after, quality_labeler, clustered_index, filteredPaths);
+	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
 
 	INFO("Repeats are resolved by coverage");
 }
@@ -1049,7 +1049,9 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	std::vector< PathInfo<Graph> > filteredPaths;
 	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
 	if (cfg::get().coverage_based_rr == true){
-		resolve_repeats_by_coverage(conj_gp, filteredPaths, clustered_indices[0], quality_labeler);
+		int pe_lib_index = get_first_pe_lib_index();
+		const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
+		resolve_repeats_by_coverage(conj_gp, lib.data().mean_insert_size, filteredPaths, clustered_indices[0], quality_labeler);
 	}
 
 

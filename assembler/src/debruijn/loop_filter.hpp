@@ -36,7 +36,7 @@ namespace debruijn_graph {
 			coverage = &index;
 		}
 
-		void get_loopy_components( /*EdgeQuality<typename GraphPack::graph_t>& quality_labeler*/ ) {
+		void get_loopy_components( EdgeQuality<typename GraphPack::graph_t>& quality_labeler ) {
 
 			for ( auto v = graph_p->g.begin(); v != graph_p->g.end(); ++v ) {
 			
@@ -64,6 +64,8 @@ namespace debruijn_graph {
 			}
 
 			int L = 0;
+			int loopsCounter = 0;
+			int simpleLoopsCounter = 0;
 			//std::vector<EdgeId> resolvedLoops;
 			for (auto loop = loops.begin(); loop != loops.end(); ++loop ){
 
@@ -73,14 +75,15 @@ namespace debruijn_graph {
 				if (loop->size() == 1) {
 					continue;
 				}
+				loopsCounter++;
 				std::set<EdgeId> path;
 				std::vector<EdgeId> resolvedLoop;
 				EdgeId incomingEdge, outgoingEdge;
 				bool resolved = false;
 				bool ifSimple = ifSimpleLoop(*loop, path, incomingEdge, outgoingEdge);
-
 				std::cout << std::endl;
 				if (ifSimple) {
+					simpleLoopsCounter++;
 					std::cout << "simple loop " ;
 					if ( graph_p->g.int_id(incomingEdge) != 0 && graph_p->g.int_id(outgoingEdge) != 0 )
 						resolved = resolveSimpleLoop( resolvedLoop, incomingEdge, outgoingEdge );
@@ -103,12 +106,18 @@ namespace debruijn_graph {
 					std::cout <<  graph_p->g.int_id(graph_p->g.EdgeStart(*e)) << ", " << graph_p->g.int_id(graph_p->g.EdgeEnd(*e)) << ", ";
 				}*/
 
+				std::string str = "";
+				if (!resolved) str = "not ";
+
+				std::cout << str << "resolved ";
 				for (auto e = resolvedLoop.begin(); e != resolvedLoop.end(); ++e ) {
-					std::cout << graph_p->g.int_id(*e) << " (cov: " << graph_p->g.coverage(*e) << ", q: " ;//<< quality_labeler.quality(*e) << ") ";
+					std::cout << graph_p->g.int_id(*e) << /*" (cov: " << graph_p->g.coverage(*e) << ",*/" q: (" << quality_labeler.quality(*e) << ") ";
 				}
 				std::cout << std::endl << std::endl;
 			}
-			std::cout << "Overall length is " << L << std::endl;
+			std::cout << "Overall length is " << L << ", number of loops: " << loopsCounter << " " 
+					<< "number of resolved loops: " << resolvedLoops.size() << " " 
+						<< "simple loops: " << simpleLoopsCounter << std::endl;
 
 		}	
 
@@ -170,7 +179,7 @@ namespace debruijn_graph {
 			}
 		*/
 
-			if (canBeResolved) {
+			//if (canBeResolved) {
 				
 				resolvedLoop.push_back(incomingEdge);
 				resolvedLoop.push_back(loopEdge1);
@@ -182,7 +191,7 @@ namespace debruijn_graph {
 				}
 				resolvedLoop.push_back(outgoingEdge);
 				//if ( resolvedLoop.size() > 5 ) canBeResolved = false;
-			}
+			//}
 
 			return canBeResolved;
 		}
@@ -265,13 +274,6 @@ namespace debruijn_graph {
 			//	}
 
 			}
-
-			
-			/*for ( auto e = path.begin(); e != path.end(); ++e) {
-				if ( graph_p->g.length(*e) > 1000) {
-					return false;
-				}
-			}*/
 
 			for ( auto e = path.begin(); e != path.end(); ++e) {
 				prohibitedEdges.insert(*e);

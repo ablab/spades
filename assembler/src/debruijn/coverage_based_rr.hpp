@@ -124,6 +124,7 @@ class CoverageBasedResolution {
 	public :
 	template <class DetailedCoverage>
 	void resolve_repeats_by_coverage( DetailedCoverage& coverage, 
+					size_t insert_size,
 					EdgeLabelHandler<typename GraphPack::graph_t>& labels_after,
 					EdgeQuality<typename GraphPack::graph_t>& quality_labeler,
 					PairedInfoIndexT<typename GraphPack::graph_t> & clustered_index,
@@ -133,7 +134,7 @@ class CoverageBasedResolution {
 					) {
 
 		auto filter = LoopFilter<GraphPack, DetailedCoverage>(*gp, coverage, tandem_lower_threshold_, tandem_upper_threshold_, repeat_length_upper_threshold_);
-		filter.get_loopy_components();
+		filter.get_loopy_components( quality_labeler );
 
 
 		INFO("Resolving repeats by coverage...");
@@ -151,7 +152,7 @@ class CoverageBasedResolution {
 		//getComponents( gp, components, singles, quality_labeler, unresolvedLoops );
 
 		INFO("Traversing graph...");
-		traverseComponents( components, singles, coverage, resolvedPaths );
+		traverseComponents( components, singles, coverage, insert_size, resolvedPaths );
 
 		std::set<EdgeId> usedEdges;
 
@@ -443,9 +444,8 @@ class CoverageBasedResolution {
 				singles.push_back(*e_iter);
 			}
 			else if (! ( ((in_degree.find(from) == in_degree.end()) || out_degree[from] > 1) && ((out_degree.find(into) == out_degree.end()) || in_degree[into] > 1) )
-				) {//&&
-				//	gp->g.length(*e_iter) > LengthCutoff){
-			//	if (gp->g.int_id(*e_iter) == 10021207) INFO(1);
+			//else if (! ( ((in_degree.find(from) == in_degree.end()) || in_degree[from] > 1) || ((out_degree.find(into) == out_degree.end()) || out_degree[into] > 1) )
+				) {
 				components.push_back(*e_iter);
 			}
 			/*else if ( in_degree.find(from) != in_degree.end() && out_degree [from] == 2 && (out_degree.find(into) == out_degree.end()) || in_degree[into] > 1 ) {
@@ -601,10 +601,57 @@ class CoverageBasedResolution {
 		return false;
 	}
 
+	void bfs ( const EdgeId& edge,  std::set<EdgeId>& visited_edges, const std::vector<EdgeId>& component, int& curLen, int& maxPathLen) {
+
+		visited_edges.insert(edge);
+		auto incomingEdges = gp->g.IncomingEdges(gp->g.EdgeStart(edge));
+
+		for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e) {
+		
+			if ( std::find(component.begin(), component.end(), *e) != component.end() && visited_edges.find(*e) == visited_edges.end() ){
+				curLen += gp->g.length(*e);
+				if (curLen > maxPathLen) maxPathLen = curLen;
+				bfs(*e, visited_edges, component, curLen, maxPathLen);
+			}
+
+		}
+
+		auto outgoingEdges = gp->g.OutgoingEdges(gp->g.EdgeEnd(edge));
+		for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e) {
+			if ( std::find(component.begin(), component.end(), *e) != component.end() && visited_edges.find(*e) == visited_edges.end() ){
+				curLen += gp->g.length(*e);
+				if (curLen > maxPathLen) maxPathLen = curLen;
+				bfs(*e, visited_edges, component, curLen, maxPathLen);
+			}
+
+		}
+	}
+
+	int getLongestPathLength( const std::vector<EdgeId>& component ){
+	// gets a repetitive component and calculates the length of the longest path in it
+
+		std::set<EdgeId> visited_edges;
+		std::vector<std::vector<EdgeId>> paths;
+
+		int maxPathLen = 0;
+		for ( auto edge = component.begin(); edge != component.end(); ++edge ){
+
+			if (visited_edges.find(*edge) != visited_edges.end()) continue;
+			int curLen = gp->g.length(*edge);
+			visited_edges.insert(*edge);
+			bfs(*edge, visited_edges, component, curLen, maxPathLen);	
+			
+		}
+
+		return maxPathLen;
+
+	}
+
 	template <class DetailedCoverage>
 	void traverseComponents( const std::vector<EdgeId>& components, 
 				const std::vector<EdgeId>& singles, DetailedCoverage& coverage, 
 				//std::set<EdgeId>& usedEdges,
+				size_t insert_size,
 				std::vector< std::vector<EdgeId>> & resolvedPaths) {
 
 		std::set<EdgeId> visited_edges;
@@ -619,23 +666,32 @@ class CoverageBasedResolution {
 		int numberOfComponents = 0;
 		int numberOfComponentWithDifferentInOutDegree = 0;
 
+		int filteredByThresholds(0), resolvedPathsNum(0); 
 		for ( auto edge = components.begin(); edge != components.end(); ++edge ) {
 			
 			if ( visited_edges.find(*edge) != visited_edges.end() ){
 				continue;
 			}
 
+
 			std::set<EdgeId> incomingEdges, outgoingEdges;
 			std::vector<EdgeId> path;
 		
-			visit(*edge,  visited_edges, path, components, singles, incomingEdges, outgoingEdges);
+			visit(*edge, visited_edges, path, components, singles, incomingEdges, outgoingEdges);
+
+			
+			int longestPathLen = getLongestPathLength(path);
 
 			if ( containsSelfLoop( path ) ) {
 				continue;
 			}
-			if (incomingEdges.size() != outgoingEdges.size()) {
+			if ( insert_size < longestPathLen ) numberOfComponents += 1;
+
+			if (incomingEdges.size() != outgoingEdges.size() && insert_size < longestPathLen )
+				{
+
 				numberOfComponentWithDifferentInOutDegree += 1;
-				std::cout << "component with different in and out degree: ";
+				std::cout << "component with different in and out degree: " << longestPathLen << std::endl;
 				for ( auto iter = path.begin(); iter != path.end(); ++iter ) {
 					std::cout << gp->g.int_id(*iter)  << " ";
 				}
@@ -653,7 +709,6 @@ class CoverageBasedResolution {
 				continue;
 
 			}
-			numberOfComponents += 1;
 			if ( incomingEdges.size() == 0 || outgoingEdges.size() == 0) {
 				//std::cout << incomingEdges.size() << " " << outgoingEdges.size() << std::endl;
 				continue;
@@ -728,8 +783,14 @@ class CoverageBasedResolution {
 			}
 		*/
 			std::vector<std::pair<EdgeId,EdgeId>> pairsOfEdges;
+
+
 			findClosest(incomingEdgesCoverage, outgoingEdgesCoverage, pairsOfEdges);
-			std::cout << "before repeat resolution " << incomingEdgesCoverage.size() << " " << outgoingEdgesCoverage.size() << " " << incomingEdges.size() << " " << path.size() << std::endl;
+			//std::cout << "before repeat resolution " << incomingEdgesCoverage.size() << " " << outgoingEdgesCoverage.size() << " " << incomingEdges.size() << " " << path.size() << std::endl;
+			if ( insert_size < longestPathLen )
+				if (pairsOfEdges.size() == 0) 
+					filteredByThresholds += 1;
+
 			for ( auto edgePair = pairsOfEdges.begin(); edgePair != pairsOfEdges.end(); ++edgePair ){
 				path_extend::BidirectionalPath* resolved_path = new path_extend::BidirectionalPath( gp->g );
 				resolveRepeat( *edgePair, path, *resolved_path );
@@ -755,6 +816,9 @@ class CoverageBasedResolution {
 				if (!skip) {
 					
 					std::vector<EdgeId> tempPath = resolved_path->ToVector();
+			
+					if ( insert_size < longestPathLen )
+						resolvedPathsNum += 1;
 					resolvedPaths.push_back( tempPath );
 					/*resolvedPaths.AddPair( resolved_path, conjugate_path );
 					auto tmpPath = resolved_path->ToVector();
@@ -779,7 +843,7 @@ class CoverageBasedResolution {
 		
 		std::cout << "Number of components: " << numberOfComponents << std::endl;
 		std::cout << "Number of components with different in and out degree: " << numberOfComponentWithDifferentInOutDegree << std::endl;
-
+		std::cout << filteredByThresholds << " " << resolvedPathsNum << std::endl;
 	/*
 		for ( auto iter = usedEdges.begin(); iter != usedEdges.end(); ++iter ){
 			EdgeId cedge = gp->g.conjugate(*iter);
@@ -916,7 +980,7 @@ class CoverageBasedResolution {
 		std::cout << std::endl;
 		*/
 
-		}
+	}
 
 	void visit( const EdgeId& edge, std::set<EdgeId>& visited_edges, 
 		std::vector<EdgeId>& path, const std::vector<EdgeId>& components, 
