@@ -14,7 +14,7 @@ construction
 		enable true
 
 		; optional parameter. By default tips of length rl-k are removed
-;		length_bound
+		length_bound 10
 	}
 }
 
