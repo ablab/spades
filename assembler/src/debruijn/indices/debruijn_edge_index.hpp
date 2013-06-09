@@ -59,16 +59,19 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
         return kmer == KMer(this->K_, graph_.EdgeNucls(entry.edgeId_), entry.offset_);
     }
 
-    bool contains(const KMer& kmer) {
+    bool contains(const KMer& kmer) const {
         typename base::KMerIdx idx = base::seq_idx(kmer);
+        return contains(idx, kmer);
+    }
+
+    KMer kmer(typename base::KMerIdx idx) const {
         const typename base::KMerIndexValueType &entry = base::operator[](idx);
-        return kmer == KMer(this->K_, graph_.EdgeNucls(entry.edgeId_), entry.offset_);
+        return KMer(this->K_, graph_.EdgeNucls(entry.edgeId_), entry.offset_);
     }
 
   protected:
-    bool contains(typename base::KMerIdx idx, const KMer &kmer) const {
-        const typename base::KMerIndexValueType &entry = base::operator[](idx);
-        return kmer == KMer(this->K_, graph_.EdgeNucls(entry.edgeId_), entry.offset_);
+    bool contains(typename base::KMerIdx idx, const KMer &k) const {
+        return k == kmer(idx);
     }
 
   public:
