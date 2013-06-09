@@ -110,6 +110,8 @@ class mpmc_bounded_queue {
     bool res = false;
     do {
       res = dequeue(data);
+      if (!res)
+        usleep(1);
     } while (!res && !is_closed());
 
     return res;
