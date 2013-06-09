@@ -644,12 +644,12 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage<Graph>& fla
           = boost::bind(&SingleEdgeAdapter<set<EdgeId>>, _1, raw_removal_handler_f_2);
 
   boost::function<void(set<EdgeId>)> rel_removal_handler
-          = boost::bind(&func::Composition<set<EdgeId>>, _1, removal_handler_f_1, removal_handler_f_2);
+          = 0;// boost::bind(&func::Composition<set<EdgeId>>, _1, removal_handler_f_1, removal_handler_f_2);
 
   ChimericEdgeClassifier<Graph> edge_classifier(gp.g, edge_qual);
 
   boost::function<bool(EdgeId)> edge_classifier_f
-          = boost::bind(&ChimericEdgeClassifier<Graph>::IsTrivialChimeric, edge_classifier, _1);
+          = 0;//boost::bind(&ChimericEdgeClassifier<Graph>::IsTrivialChimeric, edge_classifier, _1);
 
   RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov,
                                         rel_removal_handler,
@@ -733,6 +733,8 @@ void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    omnigraph::GraphLabeler<Graph>& labeler,
                    detail_info_printer& printer, size_t iteration_count) {
+  WARN("Disabling removal handler ");
+  removal_handler = 0;
   printer(ipp_before_simplification);
   DEBUG("Graph simplification started");
   //ec auto threshold
