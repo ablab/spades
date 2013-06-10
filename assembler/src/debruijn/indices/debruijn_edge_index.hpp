@@ -51,7 +51,12 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
     }
 
     bool contains(typename base::KMerIdx idx, const KMer &k) const {
-        return k == kmer(idx);
+        const typename base::KMerIndexValueType &entry = base::operator[](idx);
+
+        if (entry.offset_ == -1)
+            return false;
+
+        return k == KMer(this->K_, graph_.EdgeNucls(entry.edgeId_), entry.offset_);
     }
 
   public:
