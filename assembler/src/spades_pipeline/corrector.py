@@ -199,15 +199,19 @@ def process_read(arr, l,m, profile, insertions):
     return 1
 
 
-def drop_cash(cashed_sams, separate_sams, log):
+def drop_cash(cashed_sams, separate_sams, log, last):
     log.info("dropping cashed lines...")
+    limit = 0
+    if not last:
+        limit = 100
     for contig_info in cashed_sams:
         file_name = separate_sams[contig_info]
-        file = open(file_name, "a")
-        for line in cashed_sams[contig_info]:
-            file.write(line)
-        file.close()
-        cashed_sams[contig_info] = []
+        if len(cashed_sams[contig_info]) > limit:
+            file = open(file_name, "a")
+            for line in cashed_sams[contig_info]:
+                file.write(line)
+            file.close()
+            cashed_sams[contig_info] = []
 
         
 def process_read_for_pairs(arr, l,m, pair_profile, symb_num, symb_pos, symb_state):
@@ -303,7 +307,7 @@ def split_sam(filename, tmpdir, log):
         processed_reads += 1
         if processed_reads % max_cashed_lines == 0 and need_to_cashe:
             log.info(str(processed_reads))
-            drop_cash(cashed_sams , separate_sams, log)
+            drop_cash(cashed_sams , separate_sams, log, false)
         if len(arr) > 5:
             read_num += 1
             paired_read.append(line.strip())
@@ -365,7 +369,7 @@ def split_sam(filename, tmpdir, log):
                     separate_sams[contig[1]] = open(samfilename, 'w')
                     mult_aligned[contig[1]] = open(multalignedfilename , 'w')
     if need_to_cashe:
-        drop_cash(cashed_sams , separate_sams, log)
+        drop_cash(cashed_sams , separate_sams, log, true)
         cashed_sams = None
     else:
         for file_name in separate_sams:
