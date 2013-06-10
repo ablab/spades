@@ -239,6 +239,7 @@ public:
 					tmp = g_.EdgeNucls(cur_edge).str();
 					e_add = tmp.substr(0, cur_first_index.edge_position);
 					pair<int, int> limits = GetPathLimits(*(prev_iter->second), *(iter->second), s_add.length(), e_add.length());
+					if (limits.first == -1) return vector<EdgeId> (0);
 					vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add,
 							debug_info);
 					if (intermediate_path.size() == 0) {
@@ -527,6 +528,7 @@ public:
 template<class Graph>
 typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::Locate(Sequence &s) {
 	MappingDescription res;
+	if (s.size() < pacbio_k) return res;
 	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(pacbio_k);
 	for (size_t j = pacbio_k; j < s.size(); ++j) {
 		kmer <<= s[j];
