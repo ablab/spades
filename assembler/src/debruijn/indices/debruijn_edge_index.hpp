@@ -45,12 +45,17 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
     }
 
     KMer kmer(typename base::KMerIdx idx) const {
+        VERIFY(idx < this->size());
         const typename base::KMerIndexValueType &entry = base::operator[](idx);
         VERIFY(entry.offset_ != -1);
         return KMer(this->K_, graph_.EdgeNucls(entry.edgeId_), entry.offset_);
     }
 
     bool contains(typename base::KMerIdx idx, const KMer &k) const {
+        // Sanity check
+        if (idx == base::InvalidKMerIdx || idx >= this->size())
+            return false;
+
         const typename base::KMerIndexValueType &entry = base::operator[](idx);
 
         if (entry.offset_ == -1)
@@ -218,10 +223,11 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
   private:
     void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
         size_t idx = base::seq_idx(kmer);
-        //    if (ContainsInIndex(idx, kmer)) {
-        EdgeInfo<IdType> &entry = base::operator[](idx);
-        entry.edgeId_ = id;
-        entry.offset_ = offset;
+        if (contains(idx, kmer)) {
+            EdgeInfo<IdType> &entry = base::operator[](idx);
+            entry.edgeId_ = id;
+            entry.offset_ = offset;
+        }
         //    } else {
         //      VERIFY(ignore_new_kmer);
         //      idx = base::insert(kmer, EdgeInfo<IdType>(id, offset, 1));
