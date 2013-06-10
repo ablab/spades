@@ -136,11 +136,13 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
                     inner_vertices_.insert(v);
                     FOREACH(EdgeId e, AdjacentEdges(v)) {
                         //seems to correctly handle loops
-                        component_.insert(e);
-                        component_length_ += remover_.g().length(e);
-                        VertexId other_end = OppositeEnd(e, v);
-                        if (inner_vertices_.count(other_end) == 0) {
-                            border_.insert(other_end);
+                        if (component_.count(e) == 0) {
+                            component_.insert(e);
+                            component_length_ += remover_.g().length(e);
+                            VertexId other_end = OppositeEnd(e, v);
+                            if (inner_vertices_.count(other_end) == 0) {
+                                border_.insert(other_end);
+                            }
                         }
                     }
                 } else {
