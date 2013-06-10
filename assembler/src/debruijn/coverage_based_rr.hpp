@@ -160,7 +160,7 @@ class CoverageBasedResolution {
 		for ( auto p = resolvedPaths.begin(); p != resolvedPaths.end(); ++p) {
 			//fprintf(file, "resolved path \n");
 			for ( auto iter = p->begin(); iter != p->end(); ++iter ) {
-				std::cout << gp->g.int_id(*iter) << " ";
+				std::cout << gp->g.int_id(*iter) << " (" << gp->g.int_id(gp->g.EdgeStart(*iter) ) << "," << gp->g.int_id(gp->g.EdgeEnd(*iter) ) << ") ";
 				//fprintf(file, "%d ", gp->g.int_id(*iter));
 				//fprintf(file, " ");
 			}
@@ -216,7 +216,8 @@ class CoverageBasedResolution {
 		for ( auto p = filteredPaths.begin(); p != filteredPaths.end(); ++p) {
 			path_extend::BidirectionalPath* bidirectional_path = new path_extend::BidirectionalPath( gp->g );
 			path_extend::BidirectionalPath* conjugate_path = new path_extend::BidirectionalPath( gp->g );
-			for (auto it = p->getPath().begin(); it != p->getPath().end(); ++it ){
+			auto tmpPath = p->getPath();
+			for (auto it = tmpPath.begin(); it != tmpPath.end(); ++it ){
 					
 					bidirectional_path->PushBack(*it);
 					EdgeId cedge = gp->g.conjugate(*it);
@@ -446,6 +447,7 @@ class CoverageBasedResolution {
 			else if (! ( ((in_degree.find(from) == in_degree.end()) || out_degree[from] > 1) && ((out_degree.find(into) == out_degree.end()) || in_degree[into] > 1) )
 			//else if (! ( ((in_degree.find(from) == in_degree.end()) || in_degree[from] > 1) || ((out_degree.find(into) == out_degree.end()) || out_degree[into] > 1) )
 				) {
+
 				components.push_back(*e_iter);
 			}
 			/*else if ( in_degree.find(from) != in_degree.end() && out_degree [from] == 2 && (out_degree.find(into) == out_degree.end()) || in_degree[into] > 1 ) {
@@ -685,9 +687,9 @@ class CoverageBasedResolution {
 			if ( containsSelfLoop( path ) ) {
 				continue;
 			}
-			if ( insert_size < longestPathLen ) numberOfComponents += 1;
+			if ( insert_size < (size_t)longestPathLen ) numberOfComponents += 1;
 
-			if (incomingEdges.size() != outgoingEdges.size() && insert_size < longestPathLen )
+			if (incomingEdges.size() != outgoingEdges.size() && insert_size < (size_t)longestPathLen )
 				{
 
 				numberOfComponentWithDifferentInOutDegree += 1;
@@ -787,7 +789,7 @@ class CoverageBasedResolution {
 
 			findClosest(incomingEdgesCoverage, outgoingEdgesCoverage, pairsOfEdges);
 			//std::cout << "before repeat resolution " << incomingEdgesCoverage.size() << " " << outgoingEdgesCoverage.size() << " " << incomingEdges.size() << " " << path.size() << std::endl;
-			if ( insert_size < longestPathLen )
+			if ( insert_size < (size_t)longestPathLen )
 				if (pairsOfEdges.size() == 0) 
 					filteredByThresholds += 1;
 
@@ -817,7 +819,7 @@ class CoverageBasedResolution {
 					
 					std::vector<EdgeId> tempPath = resolved_path->ToVector();
 			
-					if ( insert_size < longestPathLen )
+					if ( insert_size < (size_t)longestPathLen )
 						resolvedPathsNum += 1;
 					resolvedPaths.push_back( tempPath );
 					/*resolvedPaths.AddPair( resolved_path, conjugate_path );
