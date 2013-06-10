@@ -78,8 +78,9 @@ public:
 	}
 
 	bool followed_by(EdgePosition& ep, int max_dist = 1,
-			double relative_cutoff = 0) {
-
+			double relative_cutoff = 0, int genome_end = 0) {
+		if (ep.m_start() == 1 && m_end() == genome_end)
+			return true;
 		if (contigId_ != ep.contigId_)
 			return false;
 		if (end() > ep.start() + max_dist)
@@ -254,6 +255,15 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	std::map<EdgeId, vector<EdgePosition>> EdgesPositions;
 	bool careful_ranges_;
 	size_t max_labels_;
+	int max_genome_coords;
+private:
+	void find_genome_length(){
+		for (auto iter = EdgesPositions.begin(); iter != EdgesPositions.end(); ++iter) {
+			for(size_t i =  0; i < iter->second.size(); i++)
+				max_genome_coords = max(max_genome_coords, iter->second[i].m_end());
+		}
+	}
+
 public:
 	bool is_careful() const {
 		return careful_ranges_;
@@ -277,8 +287,7 @@ public:
 		if (EdgesPositions[NewEdgeId].size() > 0) {
 			EdgePosition activePosition = EdgesPositions[NewEdgeId][0];
 			for (size_t i = 1; i < EdgesPositions[NewEdgeId].size(); i++) {
-				if (activePosition.followed_by(EdgesPositions[NewEdgeId][i],
-						max(max_single_gap_, int(relative_cutoff * this->g().length(NewEdgeId))))) {
+				if (activePosition.followed_by(EdgesPositions[NewEdgeId][i], max(max_single_gap_, int(relative_cutoff * this->g().length(NewEdgeId))), 0 , max_genome_coords)) {
 					activePosition.extend_by(EdgesPositions[NewEdgeId][i]);
 				} else {
 					new_vec.push_back(activePosition);
@@ -330,6 +339,7 @@ public:
 
 	bool IsConsistentWithGenome(vector<EdgeId> path) {
 		map<EdgeId, vector<EdgePosition> > tmp_pos;
+		find_genome_length();
 		for (size_t i = 0; i < path.size(); i++) {
 //TODO: magic constants
 
