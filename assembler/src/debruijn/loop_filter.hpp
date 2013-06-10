@@ -69,9 +69,10 @@ namespace debruijn_graph {
 			//std::vector<EdgeId> resolvedLoops;
 			for (auto loop = loops.begin(); loop != loops.end(); ++loop ){
 
-				/*for (auto v = loop->begin(); v != loop->end(); ++v ) {
-					std::cout << graph_p->g.int_id(*v) << "  ";
-				}*/
+				//for (auto v = loop->begin(); v != loop->end(); ++v ) {
+				//	std::cout << graph_p->g.int_id(*v) << "  ";
+				//}
+				
 				if (loop->size() == 1) {
 					continue;
 				}
@@ -81,7 +82,6 @@ namespace debruijn_graph {
 				EdgeId incomingEdge, outgoingEdge;
 				bool resolved = false;
 				bool ifSimple = ifSimpleLoop(*loop, path, incomingEdge, outgoingEdge);
-				std::cout << std::endl;
 				if (ifSimple) {
 					simpleLoopsCounter++;
 					std::cout << "simple loop " ;
@@ -205,7 +205,7 @@ namespace debruijn_graph {
 		
 			for ( auto v = loop.begin(); v != loop.end(); ++v ) {
 
-				///std::cout << "vertex: " << graph_p->g.int_id(*v) << std::endl;
+				//std::cout << "vertex: " << graph_p->g.int_id(*v) << std::endl;
 				auto incomingEdges = graph_p->g.IncomingEdges(*v);
 
 				int prevVerticesInLoop = 0;
@@ -275,9 +275,14 @@ namespace debruijn_graph {
 
 			}
 
+			if (ifSimple) std::cout << "simple: " << std::endl;
+			else std::cout << "complex: " << std::endl;
 			for ( auto e = path.begin(); e != path.end(); ++e) {
 				prohibitedEdges.insert(*e);
+				std::cout << graph_p->g.int_id(*e) << "  ";
+			
 			}
+			std::cout << std::endl;
 			return ifSimple;
 
 		}
@@ -289,7 +294,7 @@ namespace debruijn_graph {
 
 			for ( auto incidentEdge = graph_p->g.out_begin(v); incidentEdge != graph_p->g.out_end(v); ++incidentEdge ){
 	
-				if ( graph_p->g.length(*incidentEdge) > repeat_length_upper_threshold_ ) continue;
+				if ( graph_p->g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
 
 				VertexId vOut = graph_p->g.EdgeEnd(*incidentEdge);
 				if (usedVertices.find(vOut) != usedVertices.end())
@@ -308,7 +313,7 @@ namespace debruijn_graph {
 
 			for ( auto incidentEdge = graph_p->g.in_begin(v); incidentEdge != graph_p->g.in_end(v); ++incidentEdge ) {
 				
-				if ( graph_p->g.length(*incidentEdge) > repeat_length_upper_threshold_ ) continue;
+				if ( graph_p->g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
 
 				VertexId vIn = graph_p->g.EdgeStart(*incidentEdge);
 				if (usedVertices.find(vIn) != usedVertices.end()) 
