@@ -57,7 +57,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     boost::function<bool(EdgeId)> edge_classifier_;
 
 //  double DetailLocalCoverage(EdgeId e, VertexId v) const {
-//    DEBUG("Local coverage of edge " << this->g().str(e) << " around vertex "
+//    INFO("Local coverage of edge " << this->g().str(e) << " around vertex "
 //        << this->g().str(v) << " was " << local_coverage_f_(e, v));
 //    return local_coverage_f_(e, v);
 //  }
@@ -72,7 +72,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
 //  }
 
     double LocalCoverage(EdgeId e, VertexId v) const {
-        DEBUG("Local coverage of edge " << this->g().str(e) << " around vertex " << this->g().str(v) << " was " << local_coverage_f_(e, v));
+        INFO("Local coverage of edge " << this->g().str(e) << " around vertex " << this->g().str(v) << " was " << local_coverage_f_(e, v));
         return local_coverage_f_(e, v);
     }
 
@@ -122,17 +122,17 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
                 border_.erase(v);
 
                 //if encountered tip, put a flag and proceed further
-                DEBUG("Checking if vertex " << remover_.g().str(v) << " is tip.");
+                INFO("Checking if vertex " << remover_.g().str(v) << " is tip.");
                 if (remover_.g().IsDeadEnd(v) || remover_.g().IsDeadStart(v)) {
-                    DEBUG("Tip, flag put");
+                    INFO("Tip, flag put");
                     contains_deadends_ = true;
                     continue;
                 }
 
-                DEBUG("Checking if vertex " << remover_.g().str(v) << " is terminating.");
+                INFO("Checking if vertex " << remover_.g().str(v) << " is terminating.");
                 //checking if there is a sufficient coverage gap
                 if (!IsTerminateVertex(v)) {
-                    DEBUG("Not terminating, adding neighbourhood");
+                    INFO("Not terminating, adding neighbourhood");
                     inner_vertices_.insert(v);
                     FOREACH(EdgeId e, AdjacentEdges(v)) {
                         //seems to correctly handle loops
@@ -146,21 +146,21 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
                         }
                     }
                 } else {
-                    DEBUG("Terminating");
+                    INFO("Terminating");
                     //do nothing, we already erased v from the border
                 }
                 if (inner_vertices_.size() > remover_.vertex_count_limit_) {
-                    DEBUG("Too many vertices! More than " << remover_.vertex_count_limit_);
+                    INFO("Too many vertices! More than " << remover_.vertex_count_limit_);
                     return false;
                 }
                 if (component_length_ > remover_.length_bound_) {
-                    DEBUG("Too long component of length " << component_length_ << "! Longer than length bound " << remover_.length_bound_);
+                    INFO("Too long component of length " << component_length_ << "! Longer than length bound " << remover_.length_bound_);
                     return false;
                 }
                 if (contains_deadends_
                         && component_length_
                                 > remover_.tip_allowing_length_bound_) {
-                    DEBUG("Too long component of length " << component_length_ << "! Longer than tip allowing length bound " << remover_.tip_allowing_length_bound_);
+                    INFO("Too long component of length " << component_length_ << "! Longer than tip allowing length bound " << remover_.tip_allowing_length_bound_);
                     return false;
                 }
             }
@@ -259,7 +259,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
               edge_classifier_(edge_classifier) {
         VERIFY(math::gr(min_coverage_gap, 1.));
         VERIFY(tip_allowing_length_bound <= length_bound);
-        DEBUG("Coverage gap " << min_coverage_gap_);
+        INFO("Coverage gap " << min_coverage_gap_);
     }
 
     //todo change qualifiers
@@ -267,48 +267,48 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
 
     /*virtual*/
     bool ProcessEdge(EdgeId e) {
-        DEBUG("Processing edge " << this->g().str(e));
+        INFO("Processing edge " << this->g().str(e));
 
         //here we use that the graph is conjugate!
         VertexId v = this->g().EdgeStart(e);
 
         if (this->g().IsDeadEnd(v) || this->g().IsDeadStart(v)) {
-            DEBUG("Tip or isolated");
+            INFO("Tip or isolated");
             return false;
         }
 
         double local_cov = LocalCoverage(e, v);
 
-        DEBUG("Local coverage around start " << this->g().str(v) << " is " << local_cov);
+        INFO("Local coverage around start " << this->g().str(v) << " is " << local_cov);
 
         //temporary
         if (edge_classifier_ && edge_classifier_(e)) {
             VertexId v2 = this->g().EdgeEnd(e);
-            DEBUG("Chimeric edge. Relative coverage info: "
+            INFO("Chimeric edge. Relative coverage info: "
                     << std::min(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2)))
                     << " "
                     << std::max(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2))));
         }
 
         //since min_coverage_gap_ > 1, we don't need to think about e here
-        DEBUG("Checking presence of highly covered edges around start")
+        INFO("Checking presence of highly covered edges around start")
         if (CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, local_cov)
                 && CheckAnyHighlyCovered(this->g().IncomingEdges(v), v,
                                          local_cov)) {
-            DEBUG("Looking for component");
+            INFO("Looking for component");
             //case of e being loop is handled implicitly!
             RelativelyLowCoveredComponentSearcher/*<Graph>*/component_searcher(
                     *this, e, this->g().EdgeEnd(e));
             if (component_searcher.FindComponent()) {
-                DEBUG("Deleting component");
+                INFO("Deleting component");
                 auto component = component_searcher.component();
                 component_remover_.DeleteComponent(component);
                 return true;
             } else {
-                DEBUG("Failed to find component");
+                INFO("Failed to find component");
             }
         } else {
-            DEBUG("No highly covered edges around");
+            INFO("No highly covered edges around");
         }
         return false;
     }
