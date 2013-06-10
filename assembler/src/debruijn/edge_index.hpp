@@ -132,15 +132,15 @@ public:
 
   bool contains(const Kmer& kmer) const {
     VERIFY(this->IsAttached());
-    return inner_index_.ContainsInIndex(kmer);
+    return inner_index_.contains(kmer);
   }
   bool contains(const KMerIdx idx) const {
     VERIFY(this->IsAttached());
-    return inner_index_.ContainsInIndex(idx);
+    return inner_index_.contains(idx);
   }
 
   bool contains(const KMerIdx idx, const Kmer& kmer) const {
-	return inner_index_.ContainsInIndex(idx, kmer);
+	return inner_index_.contains(idx, kmer);
   }
 
   const pair<EdgeId, size_t> get(const Kmer& kmer) const {
