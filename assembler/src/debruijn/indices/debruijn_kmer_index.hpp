@@ -49,7 +49,9 @@ class DeBruijnKMerIndex {
   typedef typename KMerIndexStorageType::const_iterator const_value_iterator;
   typedef typename traits::FinalKMerStorage::iterator kmer_iterator;
   typedef typename traits::FinalKMerStorage::const_iterator const_kmer_iterator;
+
   typedef size_t KMerIdx;
+  static const size_t InvalidKMerIdx = SIZE_MAX;
 
   DeBruijnKMerIndex(unsigned K, const std::string &workdir)
       : K_(K), index_(K), kmers(NULL) {
@@ -87,7 +89,16 @@ class DeBruijnKMerIndex {
   }
 
   KMerIdx seq_idx(const KMer &s) const {
-   	return index_.seq_idx(s);
+    size_t idx = index_.seq_idx(s);
+
+    if (contains(idx))
+      return idx;
+
+    return InvalidKMerIdx;
+  }
+
+  bool contains(KMerIdx idx) const {
+    return idx < size();
   }
 
  protected:
@@ -175,13 +186,15 @@ private:
     typedef ValueType KMerIndexValueType;
     typedef std::vector<KMerIndexValueType> KMerIndexStorageType;
     typedef boost::bimap<KMer, size_t> KMerPushBackIndexType;
+
     KMerPushBackIndexType push_back_index_;
     KMerIndexStorageType push_back_buffer_;
-    static const size_t InvalidKMerIdx = SIZE_MAX;
+
     using DeBruijnKMerIndex<ValueType, traits>::index_;
     using DeBruijnKMerIndex<ValueType, traits>::data_;
     using DeBruijnKMerIndex<ValueType, traits>::kmers;
     using DeBruijnKMerIndex<ValueType, traits>::K_;
+    using DeBruijnKMerIndex<ValueType, traits>::InvalidKMerIdx;
 public:
 	EditableDeBruijnKMerIndex(unsigned K, const std::string &workdir) :
 			DeBruijnKMerIndex<ValueType, traits>(K, workdir) {
