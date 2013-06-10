@@ -87,7 +87,7 @@ private:
 			KPlusOneMer edge = kmer.pushBack(c);
 			auto idx = origin_.seq_idx(edge);
 
-			if (origin_.ContainsInIndex(idx))
+			if (origin_.contains(idx))
 				return graph_.EdgeStart(origin_.get(idx).first);
 		}
 		return VertexId(NULL);
@@ -98,7 +98,7 @@ private:
 			KPlusOneMer edge = kmer.pushFront(c);
 			auto idx = origin_.seq_idx(edge);
 
-			if (origin_.ContainsInIndex(idx)) {
+			if (origin_.contains(idx)) {
 				return graph_.EdgeEnd(origin_.get(idx).first);
 			}
 		}
@@ -157,7 +157,7 @@ private:
 	void ConstructPart(const std::vector<KPlusOneMer>& kmers,
 			std::vector<Sequence>& sequences) {
 		for (size_t i = 0; i < sequences.size(); ++i) {
-			if (origin_.ContainsInIndex(kmers[i])) {
+			if (origin_.contains(kmers[i])) {
 				continue;
 			}
 
@@ -177,7 +177,7 @@ private:
 		for (; kmers.size() != queueSize && it != end; ++it) {
 			KPlusOneMer kmer(kmer_size_ + 1, (*it).data());
 
-			if (!origin_.ContainsInIndex(kmer))
+			if (!origin_.contains(kmer))
 				kmers.push_back(kmer);
 		}
 	}

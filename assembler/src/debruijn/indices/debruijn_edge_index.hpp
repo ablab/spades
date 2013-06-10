@@ -39,26 +39,6 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
 
     ~DeBruijnEdgeIndex() {}
 
-    bool ContainsInIndex(typename base::KMerIdx idx, const KMer& kmer) const {
-        const typename base::KMerIndexValueType &entry = base::operator[](idx);
-        return entry.offset_ != -1 && kmer == KMer(this->K_, graph_.EdgeNucls(entry.edgeId_), entry.offset_);
-    }
-
-    bool ContainsInIndex(typename base::KMerIdx idx) const {
-        return base::operator[](idx).offset_ != -1;
-    }
-
-    bool ContainsInIndex(const KMer& kmer) const {
-        typename base::KMerIdx idx = base::seq_idx(kmer);
-
-        const typename base::KMerIndexValueType &entry = base::operator[](idx);
-
-        if (entry.offset_ == -1)
-            return false;
-
-        return kmer == KMer(this->K_, graph_.EdgeNucls(entry.edgeId_), entry.offset_);
-    }
-
     bool contains(const KMer& kmer) const {
         typename base::KMerIdx idx = base::seq_idx(kmer);
         return contains(idx, kmer);
@@ -70,7 +50,6 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
         return KMer(this->K_, graph_.EdgeNucls(entry.edgeId_), entry.offset_);
     }
 
-  protected:
     bool contains(typename base::KMerIdx idx, const KMer &k) const {
         return k == kmer(idx);
     }
@@ -175,8 +154,9 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
 
     bool DeleteIfEqual(const KMer &kmer, IdType id) {
         typename base::KMerIdx idx = base::seq_idx(kmer);
-        if (!ContainsInIndex(idx, kmer))
+        if (!contains(idx, kmer))
             return false;
+
         EdgeInfo<IdType> &entry = base::operator[](idx);
         if (entry.edgeId_ == id) {
             entry.offset_ = -1;
