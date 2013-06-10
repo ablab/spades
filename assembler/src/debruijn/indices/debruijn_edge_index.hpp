@@ -223,38 +223,32 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
   private:
     void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
         size_t idx = base::seq_idx(kmer);
-        if (contains(idx, kmer)) {
+        if (!ignore_new_kmer || contains(idx, kmer)) {
             EdgeInfo<IdType> &entry = base::operator[](idx);
             entry.edgeId_ = id;
             entry.offset_ = offset;
         }
-        //    } else {
-        //      VERIFY(ignore_new_kmer);
-        //      idx = base::insert(kmer, EdgeInfo<IdType>(id, offset, 1));
-        //
-        //      VERIFY(idx != base::InvalidKMerIdx);
-        //    }
     }
 };
 
 template <class Seq>
-class DeBruijnEdgeIndexBuilder : public DeBruijnKMerIndexBuilder<kmer_index_traits<Seq>> {
+class DeBruijnEdgeIndexBuilder : public DeBruijnKMerIndexBuilder<kmer_index_traits<Seq> > {
     template <class ReadStream, class Graph>
     size_t FillCoverageFromStream(ReadStream &stream,
                                   DeBruijnEdgeIndex<Graph, Seq> &index) const;
 
   public:
     template <class Graph, class Read>
-            size_t BuildIndexFromStream(DeBruijnEdgeIndex<Graph, Seq> &index,
+    size_t BuildIndexFromStream(DeBruijnEdgeIndex<Graph, Seq> &index,
                                 io::ReadStreamVector<io::IReader<Read> > &streams,
                                 SingleReadStream* contigs_stream = 0) const;
 
     template <class Graph>
-            void BuildIndexFromGraph(DeBruijnEdgeIndex<Graph, Seq> &index,
+    void BuildIndexFromGraph(DeBruijnEdgeIndex<Graph, Seq> &index,
                              const Graph &g) const;
 
     template <class Graph>
-            void UpdateIndexFromGraph(DeBruijnEdgeIndex<Graph, Seq> &index,
+    void UpdateIndexFromGraph(DeBruijnEdgeIndex<Graph, Seq> &index,
                               const Graph &g) const;
 
 
@@ -305,10 +299,9 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
   public:
 
     template<class Graph, class Read>
-    size_t ParallelFillCoverage(
-        DeBruijnEdgeIndex<Graph, runtime_k::RtSeq> &index,
-        io::ReadStreamVector<io::IReader<Read> > &streams,
-        SingleReadStream* contigs_stream = 0) const {
+    size_t ParallelFillCoverage(DeBruijnEdgeIndex<Graph, runtime_k::RtSeq> &index,
+                                io::ReadStreamVector<io::IReader<Read> > &streams,
+                                SingleReadStream* contigs_stream = 0) const {
         INFO("Collecting k-mer coverage information from reads, this takes a while.");
 
         unsigned nthreads = streams.size();
@@ -338,6 +331,7 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
 #ifndef NDEBUG
         for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
              idx != eidx; ++idx) {
+
             runtime_k::RtSeq k = index.kmer(idx);
 
             VERIFY(index[k].count_ == index[!k].count_);
@@ -347,10 +341,9 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
     }
 
     template<class Graph, class Read>
-    size_t BuildIndexFromStream(
-        DeBruijnEdgeIndex<Graph, runtime_k::RtSeq> &index,
-        io::ReadStreamVector<io::IReader<Read> > &streams,
-        SingleReadStream* contigs_stream = 0) const {
+    size_t BuildIndexFromStream(DeBruijnEdgeIndex<Graph, runtime_k::RtSeq> &index,
+                                io::ReadStreamVector<io::IReader<Read> > &streams,
+                                SingleReadStream* contigs_stream = 0) const {
         base::BuildIndexFromStream(index, streams, contigs_stream);
 
         // Now use the index to fill the coverage and EdgeId's
@@ -384,7 +377,7 @@ class DeBruijnEdgeIndexBuilder<runtime_k::RtSeq> :
                               const Graph &g) const {
         for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
             typename Graph::EdgeId edge = *it;
-            index.RenewKMers(g.EdgeNucls(edge), edge);
+            index.RenewKMers(g.EdgeNucls(edge), edge, /* ignore new k-mers */ false);
         }
     }
 
