@@ -347,51 +347,22 @@ def main():
 
     log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
+    # splitting interlaced reads if needed
+    if support.dataset_has_interlaced_reads(dataset_data):
+        dir_for_split_reads = os.path.join(os.path.abspath(options_storage.output_dir), 'split_reads')
+        if not os.path.isdir(dir_for_split_reads):
+            os.makedirs(dir_for_split_reads)
+        support.split_interlaced_reads(dataset_data, dir_for_split_reads, log)
+        options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
+        pyyaml.dump(dataset_data, file(options_storage.dataset_yaml_filename, 'w'))
+        cfg["dataset"].yaml_filename = os.path.abspath(options_storage.dataset_yaml_filename)
+
     try:
         # copying configs before all computations (to prevent its changing at run time)
         tmp_configs_dir = os.path.join(cfg["common"].output_dir, "configs")
         if os.path.isdir(tmp_configs_dir):
             shutil.rmtree(tmp_configs_dir)
         shutil.copytree(os.path.join(spades_home, "configs"), tmp_configs_dir)
-
-        # creating YAML with input reads if not specified
-#        if not "yaml_filename" in cfg["dataset"].__dict__:
-#            dataset_yaml_filename = os.path.join(cfg["common"].output_dir, "input_dataset.yaml")
-#            cfg["dataset"].__dict__["yaml_filename"] = dataset_yaml_filename
-#            dataset_yaml = dict()
-#            dataset_yaml["left reads"] = []
-#            dataset_yaml["right reads"] = []
-#            dataset_yaml["single reads"] = []
-#
-#            import bh_aux
-#            paired_end = False
-#            for k, v in cfg["dataset"].__dict__.items():
-#                if not isinstance(v, list):
-#                    v = [v]
-#
-#                if k.startswith("single_reads"):
-#                    for item in v:
-#                        dataset_yaml["single reads"].append(os.path.abspath(os.path.expandvars(item)))
-#
-#                elif k.startswith("paired_reads"):
-#                    paired_end = True
-#                    if len(v) == 1:
-#                        item = os.path.abspath(os.path.expandvars(v[0]))
-#                        if "error_correction" in cfg:
-#                            split_paired_reads = bh_aux.split_paired_file(item, cfg["error_correction"].tmp_dir, log)
-#                        else:
-#                            support.error("interlaced reads are not supported yet in YAML!", log)
-#                    else: # len(v) == 2
-#                        split_paired_reads = v
-#                    dataset_yaml["left reads"].append(os.path.abspath(split_paired_reads[0]))
-#                    dataset_yaml["right reads"].append(os.path.abspath(split_paired_reads[1]))
-#
-#            if paired_end:
-#                dataset_yaml["type"] = "paired-end"
-#                dataset_yaml["orientation"] = "fr"
-#            else:
-#                dataset_yaml["type"] = "single"
-#            support.save_to_yaml(dataset_yaml, dataset_yaml_filename)
 
         corrected_dataset_yaml_filename = ""
         if "error_correction" in cfg:
