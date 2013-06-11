@@ -1,6 +1,3 @@
-paired_reads             "../../../data/input/S.aureus/sc_lane_7/bh20120117/00.reads.0.right.corrected.fastq.gz ../../../data/input/S.aureus/sc_lane_7/bh20120117/00.reads.0.left.corrected.fastq.gz "
-single_reads             "../../../data/input/S.aureus/sc_lane_7/bh20120117/00.reads.0.left.unpaired.fastq.gz ../../../data/input/S.aureus/sc_lane_7/bh20120117/00.reads.0.right.unpaired.fastq.gz "
-RL                       100
-IS                       300
 single_cell              true
 reference_genome         ../../../data/input/S.aureus/USA300_FPR3757.fasta.gz
+reads			/home/ksenia/algorithmic-biology/assembler/configs/debruijn/SAUREUS_SC_LANE_7_BH.new_dataset.yaml

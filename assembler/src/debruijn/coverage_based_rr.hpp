@@ -460,10 +460,10 @@ class CoverageBasedResolution {
 					}
 				
 			}*/
-			else if ( checkIfComponentByPairedInfo(*e_iter, clustered_index, prohibitedEdges ) ) {
+			/*else if ( checkIfComponentByPairedInfo(*e_iter, clustered_index, prohibitedEdges ) ) {
 				components.push_back(*e_iter);
 				std::cout << "Component Edge Detected By Paired Info: " << gp->g.int_id(*e_iter) << std::endl;
-			}
+			}*/
 
 			// continue check if a short _terminal_ vertex
 			else if( gp->g.length(*e_iter) < repeat_length_upper_threshold_ && (in_degree.find(from) != in_degree.end()) && (out_degree.find(into) != out_degree.end()) ){
