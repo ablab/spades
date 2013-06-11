@@ -151,8 +151,6 @@ def get_lib_type_and_number(option):
 def get_data_type(option):
     if option.endswith('-12'):
         data_type = 'interlaced reads'
-        #TODO: fix this
-        warning("interlaced reads are not fully supported yet!")
     elif option.endswith('-1'):
         data_type = 'left reads'
     elif option.endswith('-2'):
@@ -259,6 +257,13 @@ def dataset_has_paired_reads(dataset_data):
     return False
 
 
+def dataset_has_interlaced_reads(dataset_data):
+    for reads_library in dataset_data:
+        if 'interlaced reads' in reads_library:
+            return True
+    return False
+
+
 def move_dataset_files(dataset_data, dst, log, gzip=False):
     for reads_library in dataset_data:
         for key, value in reads_library.items():
@@ -282,6 +287,42 @@ def move_dataset_files(dataset_data, dst, log, gzip=False):
                             dst_filename += '.gz'
                     moved_reads_files.append(dst_filename)
                 reads_library[key] = moved_reads_files
+
+
+def split_interlaced_reads(dataset_data, dst, log):
+    for reads_library in dataset_data:
+        for key, value in reads_library.items():
+            if key == 'interlaced reads':
+                if 'left reads' not in reads_library:
+                    reads_library['left reads'] = []
+                    reads_library['right reads'] = []
+                for interlaced_reads in value:
+                    ext = os.path.splitext(interlaced_reads)[1]
+                    if ext == '.gz':
+                        import gzip
+                        input_file = gzip.open(interlaced_reads, 'r')
+                        ungzipped = os.path.splitext(interlaced_reads)[0]
+                        out_basename = os.path.splitext(os.path.basename(ungzipped))[0]
+                    else:
+                        input_file = open(interlaced_reads, 'r')
+                        out_basename = os.path.splitext(os.path.basename(interlaced_reads))[0]
+                    out_left_filename = os.path.join(dst, out_basename + "_1.fastq")
+                    out_right_filename = os.path.join(dst, out_basename + "_2.fastq")
+
+                    log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
+                    out_left_file = open(out_left_filename, 'w')
+                    out_right_file = open(out_right_filename, 'w')
+                    for id, line in enumerate(input_file):
+                        if id % 8 < 4:
+                            out_left_file.write(line)
+                        else:
+                            out_right_file.write(line)
+                    out_left_file.close()
+                    out_right_file.close()
+                    input_file.close()
+                    reads_library['left reads'].append(out_left_filename)
+                    reads_library['right reads'].append(out_right_filename)
+                del reads_library['interlaced reads']
 
 
 def read_fasta(filename):
