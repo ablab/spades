@@ -115,9 +115,9 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
             component_length_ += remover_.g().length(first_edge);
             border_.insert(first_border_vertex);
         }
-
+        
         bool FindComponent() {
-            while (!border_.empty()) {
+            while (!border_.empty() && CheckComponent()) {
                 VertexId v = *border_.begin();
                 border_.erase(v);
 
@@ -149,22 +149,8 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
                     INFO("Terminating");
                     //do nothing, we already erased v from the border
                 }
-                if (inner_vertices_.size() > remover_.vertex_count_limit_) {
-                    INFO("Too many vertices! More than " << remover_.vertex_count_limit_);
-                    return false;
-                }
-                if (component_length_ > remover_.length_bound_) {
-                    INFO("Too long component of length " << component_length_ << "! Longer than length bound " << remover_.length_bound_);
-                    return false;
-                }
-                if (contains_deadends_
-                        && component_length_
-                                > remover_.tip_allowing_length_bound_) {
-                    INFO("Too long component of length " << component_length_ << "! Longer than tip allowing length bound " << remover_.tip_allowing_length_bound_);
-                    return false;
-                }
             }
-            return true;
+            return CheckComponent();
         }
 
         const set<EdgeId>& component() const {
@@ -172,6 +158,24 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         }
 
      private:
+
+        bool CheckComponent() const {
+            if (inner_vertices_.size() > remover_.vertex_count_limit_) {
+                INFO("Too many vertices! More than " << remover_.vertex_count_limit_);
+                return false;
+            }
+            if (component_length_ > remover_.length_bound_) {
+                INFO("Too long component of length " << component_length_ << "! Longer than length bound " << remover_.length_bound_);
+                return false;
+            }
+            if (contains_deadends_
+                    && component_length_
+                            > remover_.tip_allowing_length_bound_) {
+                INFO("Too long component of length " << component_length_ << "! Longer than tip allowing length bound " << remover_.tip_allowing_length_bound_);
+                return false;
+            }
+            return true;
+        }
 
         bool IsTerminateVertex(VertexId v) const {
             double base_coverage = remover_.MaxLocalCoverage(

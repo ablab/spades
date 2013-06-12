@@ -536,7 +536,7 @@ public:
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
 					, colorer_, labeler_);
 		} else {
-			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
+			TRACE("Deleting edge " << g_.str(edge) << " with zero quality");
 		}
 	}
 
@@ -593,6 +593,7 @@ public:
 private:
 };
 
+//todo what is the difference with QELPRH?!
 template<class Graph>
 class EdgeLocalityPrintingRH {
 	typedef typename Graph::EdgeId EdgeId;
@@ -616,7 +617,7 @@ public:
 	void HandleDelete(EdgeId edge) {
             TRACE("Deleting edge " << g_.str(edge));
             if (quality_f_ && math::gr(quality_f_(edge), 0.))
-                INFO("EdgeLocalityPrintRH handling the edge with positive quality : " << quality_f_(edge) << " " << g_.str(edge));
+                INFO("Handling the edge with positive quality : " << quality_f_(edge) << " " << g_.str(edge));
 
             string folder = output_folder_ + "edges_deleted/";
             path::make_dir(folder);
@@ -630,7 +631,7 @@ public:
 	}
 
 private:
-	DECL_LOGGER("QualityEdgeLocalityPrintingRH")
+	DECL_LOGGER("EdgeLocalityPrintingRH")
 	;
 };
 
