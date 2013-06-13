@@ -137,7 +137,7 @@ def save_data_to_file(data, file):
     os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-### for processing YAML files
+### START for processing YAML files
 def get_lib_type_and_number(option):
     lib_type = 'pe'
     lib_number = 1
@@ -323,6 +323,21 @@ def split_interlaced_reads(dataset_data, dst, log):
                     reads_library['left reads'].append(out_left_filename)
                     reads_library['right reads'].append(out_right_filename)
                 del reads_library['interlaced reads']
+
+
+def pretty_print_reads(dataset_data, log, indent='    '):
+    READS_TYPES = ['left reads', 'right reads', 'interlaced reads', 'single reads']
+    for id, reads_library in enumerate(dataset_data):
+        log.info(indent + 'Library number: ' + str(id + 1) + ', library type: ' + reads_library['type'])
+        if 'orientation' in reads_library:
+            log.info(indent + '  orientation: ' + reads_library['orientation'])
+        for reads_type in READS_TYPES:
+            if reads_type not in reads_library:
+                value = 'not specified'
+            else:
+                value = str(map(os.path.abspath, reads_library[reads_type]))
+            log.info(indent + '  ' + reads_type + ': ' + value)
+### END: for processing YAML files
 
 
 def read_fasta(filename):

@@ -83,30 +83,8 @@ def print_used_values(cfg, log):
                      " was obtained with MDA (single-cell) technology")
 
         # TODO: nice output of reads
-        log.info("  Reads in YAML:")
-        log.info(pyyaml.load(file(cfg["dataset"].yaml_filename, 'r')))
-#        no_single = True
-#        no_paired = True
-#        for k, v in cfg["dataset"].__dict__.items():
-#            if k.startswith("single_reads") or k.startswith("paired_reads"):
-#                if k.startswith("paired_reads"):
-#                    no_paired = False
-#                    if not isinstance(v, list):
-#                        log.info("  Paired reads (file with interlaced reads):")
-#                    else:
-#                        log.info("  Paired reads (files with left and right reads):")
-#                else:
-#                    no_single = False
-#                    log.info("  Single reads:")
-#                if not isinstance(v, list):
-#                    v = [v]
-#                for reads_file in v:
-#                    log.info("    " + os.path.abspath(os.path.expandvars(reads_file)))
-#
-#        if no_paired:
-#            log.info("  Paired reads were not specified")
-#        if no_single:
-#            log.info("  Single reads were not specified")
+        log.info("  Reads:")
+        support.pretty_print_reads(pyyaml.load(file(cfg["dataset"].yaml_filename, 'r')), log)
 
     # error correction
     if "error_correction" in cfg:
@@ -264,7 +242,10 @@ def main():
         os.makedirs(options_storage.output_dir)
 
     if options_storage.dataset_yaml_filename:
-        dataset_data = pyyaml.load(file(options_storage.dataset_yaml_filename, 'r'))
+        try:
+            dataset_data = pyyaml.load(file(options_storage.dataset_yaml_filename, 'r'))
+        except pyyaml.YAMLError, exc:
+            support.error('exception caught while parsing YAML file (' + options_storage.dataset_yaml_filename + '):\n' + str(exc))
     else:
         dataset_data = support.correct_dataset(dataset_data)
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
