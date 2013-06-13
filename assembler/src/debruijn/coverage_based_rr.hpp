@@ -610,6 +610,18 @@ class CoverageBasedResolution {
 		return false;
 	}
 
+	bool containsOnlyShortEdges( const std::vector<EdgeId>& path){
+
+		for ( auto it = path.begin(); it != path.end(); ++it ) {
+			
+			if (gp->g.length(*it) >= repeat_length_upper_threshold_)
+				return false;
+			
+		}
+		return true;
+	}
+
+
 	void bfs ( const EdgeId& edge,  std::set<EdgeId>& visited_edges, const std::vector<EdgeId>& component, int& curLen, int& maxPathLen) {
 
 		visited_edges.insert(edge);
@@ -698,7 +710,12 @@ class CoverageBasedResolution {
 			int longestPathLen = getLongestPathLength(path);
 
 
-			if ( containsSelfLoop( path ) ) {
+			if ( containsSelfLoop(path) ) {
+				continue;
+			}
+
+			if ( containsOnlyShortEdges(path) ) {
+				INFO("contains only short edges");
 				continue;
 			}
 
