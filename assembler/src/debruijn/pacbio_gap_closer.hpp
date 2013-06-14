@@ -158,8 +158,7 @@ public:
 				int end_max = 0;
 				int long_seqs = 0;
 				int short_seqs = 0;
-				//TODO: to config
-				size_t long_seq_limit = 400;
+				size_t long_seq_limit = cfg::get().pb.long_seq_limit; //400
 				bool exclude_long_seqs= false;
 				for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
 					if (j_iter->gap_seq.size() > long_seq_limit)
@@ -282,11 +281,11 @@ private:
 //			for(int j = max(0, i - d); j < min(b_len, i + d); j++){
 				//for(int j = 0; j < b_len; j++) {
 				if (i > 0)
-					table[i][j] = min(table[i][j], table[i - 1][j] + 1);
+					table[i][j] = min(table[i][j], table[i - 1][j] + cfg::get().pb.insertion_penalty);
 				if (j > 0)
-					table[i][j] = min(table[i][j], table[i][j - 1] + 1);
+					table[i][j] = min(table[i][j], table[i][j - 1] + cfg::get().pb.deletion_penalty);
 				if (i > 0 && j > 0) {
-					int add = 1;
+					int add = cfg::get().pb.mismatch_penalty;
 					if (a[i] == b[j])
 						add = 0;
 					table[i][j] = min(table[i][j], table[i - 1][j - 1] + add);
@@ -316,8 +315,8 @@ private:
 			//TRACE("next best:" << alignment.sw_score_next_best);
 			TRACE("cigar1:" << alignment.cigar_string);
 
-			if (!cfg::get().pacbio_optimized_sw) {
-				int tmp = StringDistance(consensus, variants[i]) ;
+			if (!cfg::get().pb.pacbio_optimized_sw) {
+				int tmp = StringDistance(variants[i], consensus);
 				TRACE("score3:" << tmp);
 				res -= tmp;
 			}
@@ -392,10 +391,8 @@ private:
 	}
 
 	string ConstructStringConsenus(vector<string> &variants){
-		//TODO: constant
-
 		int ml = mean_len(variants);
-		if (ml > 100) {
+		if (ml > cfg::get().pb.split_cutoff) {  //100
 			DEBUG("mean length too long " << ml <<" in thread  " << omp_get_thread_num() );
 			vector<int> kvals = {17, 15, 13, 11, 9};
 			for (size_t cur_k_ind = 0; cur_k_ind < kvals.size(); ++cur_k_ind) {
@@ -430,13 +427,12 @@ private:
 		for(size_t i = 0; i < variants.size(); i++)
 			if (res.length() > variants[i].length())
 				res = variants[i];
-		StripedSmithWaterman::Aligner aligner(3, 3, 6, 6) ;
+		StripedSmithWaterman::Aligner aligner(cfg::get().pb.match_value, cfg::get().pb.mismatch_penalty, cfg::get().pb.insertion_penalty, cfg::get().pb.insertion_penalty) ; //1 1 2 2
 		aligner.SetReferenceSequence(res.c_str(), res.length());
-		//aligner.SetGapPenalty(2, 2);
 		int best_score = EditScore(res, variants, aligner);
 		int void_iterations = 0;
 
-		while (void_iterations < 5000) {
+		while (void_iterations < cfg:: get().pb.gap_closing_iterations ) {
 			string new_res = RandomMutation(res);
 			aligner.SetReferenceSequence(new_res.c_str(), new_res.length());
 			int current_score = EditScore(new_res, variants, aligner);
