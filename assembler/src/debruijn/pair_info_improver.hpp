@@ -244,7 +244,7 @@ class PairInfoImprover {
     }
   }
 
-public:
+//public:
 // Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
   bool IsConsistent(EdgeId e, EdgeId e1, EdgeId e2, const Point& p1, const Point& p2) const {
 	  if ((math::le(p1.d, 0.)
@@ -280,7 +280,7 @@ public:
     }
   }
 
-private:
+//private:
   size_t DeleteIfExist(EdgeId e1, EdgeId e2, const Histogram& infos) {
     size_t cnt = 0;
     const Histogram& histogram = index_.GetEdgePairInfo(e1, e2);
