@@ -166,6 +166,18 @@ class RuntimeSeq {
   }
 
 
+  explicit RuntimeSeq(size_t k, const T* data_array): size_(k) {
+    VERIFY(k <= max_size_);
+    std::fill(data_.begin(), data_.end(), 0);
+
+    size_t data_size = GetDataSize(size_);
+    memcpy(data_.data(), data_array, data_size * sizeof(T));
+
+    if (NuclsRemain(size_)) {
+      data_[data_size - 1] = data_[data_size - 1] & MaskForLastBucket(size_);
+    }
+  }
+
   explicit RuntimeSeq(size_t k, T* data_array): size_(k) {
     VERIFY(k <= max_size_);
     std::fill(data_.begin(), data_.end(), 0);
@@ -545,7 +557,7 @@ class RuntimeSeq {
 
   template<size_t size2_, typename T2 = T>
   Seq<size2_, T2> get_seq() const {
-    VERIFY_MSG(size2_ == size_, size2_ << " != " << size_ );
+    VERIFY(size2_ == size_);
     return Seq<size2_, T2>((T2*) data_.data());
   }
 

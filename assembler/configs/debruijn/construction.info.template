@@ -11,10 +11,10 @@ construction
 	early_tip_clipper
 	{
 		; tip clipper can be enabled only in extension mode
-		enable true
+		enable false
 
 		; optional parameter. By default tips of length rl-k are removed
-;		length_bound
+		length_bound 10
 	}
 }
 

@@ -35,6 +35,8 @@
 #include "sequence/nucl.hpp"
 #include "log.hpp"
 #include "seq_common.hpp"
+#include "mph_index/MurmurHash3.h"
+
 /**
  * @param T is max number of nucleotides, type for storage
  */
@@ -443,11 +445,9 @@ class Seq {
   }
 
   static size_t GetHash(const DataType *data, size_t sz = DataSize) {
-    size_t hash = PrimeNum;
-    for (size_t i = 0; i < sz; i++) {
-      hash = ((hash << 5) - hash) + data[i];
-    }
-    return hash;
+    uint64_t res[2];
+    MurmurHash3_x64_128(data, sz * sizeof(DataType), 0x9E3779B9, res);
+    return res[0] ^ res[1];
   }
 
   size_t GetHash() const {

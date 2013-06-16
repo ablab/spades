@@ -1,11 +1,11 @@
 # -*- cmake -*-
 
 # Default configuration
-set(SPADES_DEFAULT_BUILD_TYPE "RelWithDebInfo" CACHE STRING "SPAdes default build type")
+set(SPADES_DEFAULT_BUILD_TYPE "RelWithAsserts" CACHE STRING "SPAdes default build type")
 if (NOT CMAKE_BUILD_TYPE)
   message("Setting default build configuration: ${SPADES_DEFAULT_BUILD_TYPE}")
   set(CMAKE_BUILD_TYPE "${SPADES_DEFAULT_BUILD_TYPE}" CACHE STRING
-      "Choose the type of build, options are: None Debug Release RelWithDebInfo."
+      "Choose the type of build, options are: None Debug Release RelWithAsserts RelWithDebInfo."
       FORCE)
 endif()
 

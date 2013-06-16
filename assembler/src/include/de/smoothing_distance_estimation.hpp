@@ -65,6 +65,8 @@ protected:
                                 const vector<size_t>& /*forward*/) const {
     VERIFY_MSG(false, "Sorry, the SMOOOOTHING estimator is not available anymore." <<
                "SPAdes is going to terminate");
+
+    return EstimHist();
   }
 
 private:

@@ -29,7 +29,7 @@ template<class Graph, class Seq>
 class DeBruijnGraphConstructor {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef DeBruijnEdgeIndex<EdgeId, Seq> DeBruijn;
+	typedef DeBruijnEdgeIndex<Graph, Seq> DeBruijn;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
 	typedef Seq KPlusOneMer;
@@ -87,7 +87,7 @@ private:
 			KPlusOneMer edge = kmer.pushBack(c);
 			auto idx = origin_.seq_idx(edge);
 
-			if (origin_.ContainsInIndex(idx))
+			if (origin_.contains(idx))
 				return graph_.EdgeStart(origin_.get(idx).first);
 		}
 		return VertexId(NULL);
@@ -98,7 +98,7 @@ private:
 			KPlusOneMer edge = kmer.pushFront(c);
 			auto idx = origin_.seq_idx(edge);
 
-			if (origin_.ContainsInIndex(idx)) {
+			if (origin_.contains(idx)) {
 				return graph_.EdgeEnd(origin_.get(idx).first);
 			}
 		}
@@ -157,7 +157,7 @@ private:
 	void ConstructPart(const std::vector<KPlusOneMer>& kmers,
 			std::vector<Sequence>& sequences) {
 		for (size_t i = 0; i < sequences.size(); ++i) {
-			if (origin_.ContainsInIndex(kmers[i])) {
+			if (origin_.contains(kmers[i])) {
 				continue;
 			}
 
@@ -173,11 +173,11 @@ private:
 	}
 
 	void AddKmers(kmer_iterator &it, kmer_iterator &end, size_t queueSize,
-			std::vector<KPlusOneMer>& kmers) {
+                  std::vector<KPlusOneMer>& kmers) {
 		for (; kmers.size() != queueSize && it != end; ++it) {
 			KPlusOneMer kmer(kmer_size_ + 1, (*it).data());
 
-			if (!origin_.ContainsInIndex(kmer))
+			if (!origin_.contains(kmer))
 				kmers.push_back(kmer);
 		}
 	}
@@ -223,7 +223,7 @@ private:
 template<class Seq>
 class UnbranchingPathFinder {
 private:
-	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+	typedef DeBruijnExtensionIndex<Seq> Index;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
@@ -238,24 +238,24 @@ public:
 	UnbranchingPathFinder(Index &origin, size_t kmer_size, bool clean_condenced = false) : origin_(origin), kmer_size_(kmer_size), clean_condenced_(clean_condenced) {
 	}
 
-	struct KPlusOneMer {
-		Index::KmerWithHash kmer;
-		char next;
-		KPlusOneMer(Index::KmerWithHash _kmer, char _next) : kmer(_kmer), next(_next) {
-		}
+    struct KPlusOneMer {
+        typename Index::KmerWithHash kmer;
+        char next;
+        KPlusOneMer(typename Index::KmerWithHash _kmer, char _next) : kmer(_kmer), next(_next) {
+        }
 
-		bool operator==(const KPlusOneMer &other) {
-			return kmer.idx == other.kmer.idx && next == other.next;
-		}
+        bool operator==(const KPlusOneMer &other) {
+            return kmer.idx == other.kmer.idx && next == other.next;
+        }
 
-		bool operator!=(const KPlusOneMer &other) {
-			return !(*this == other);
-		}
+        bool operator!=(const KPlusOneMer &other) {
+            return !(*this == other);
+        }
 	};
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 		// VERIFY(origin_.contains(edge));
-		Index::KmerWithHash next_vertex = origin_.CreateKmerWithHash(edge.kmer.kmer << edge.next);
+		typename Index::KmerWithHash next_vertex = origin_.CreateKmerWithHash(edge.kmer.kmer << edge.next);
 		if (origin_.CheckUniqueOutgoing(next_vertex.idx) && origin_.CheckUniqueIncoming(next_vertex.idx)) {
 			edge = KPlusOneMer(next_vertex, origin_.GetUniqueOutgoing(next_vertex.idx));
 			return true;
@@ -281,10 +281,10 @@ public:
 		return ConstructSeqGoingRight(edge);
 	}
 
-	Sequence ConstructLoopFromVertex(Index::KmerWithHash kh) {
+	Sequence ConstructLoopFromVertex(typename Index::KmerWithHash kh) {
 		KPlusOneMer kpom(kh, origin_.GetUniqueOutgoing(kh.idx));
 		Sequence result = ConstructSequenceWithEdge(kpom);
-		if(clean_condenced_)
+		if (clean_condenced_)
 			origin_.IsolateVertex(kh.idx);
 		return result;
 	}
@@ -293,28 +293,28 @@ public:
 template<class Seq>
 class UnbranchingPathExtractor {
 private:
-	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
+	typedef DeBruijnExtensionIndex<Seq> Index;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
 	typedef typename Index::kmer_iterator kmer_iterator;
-	typedef typename  UnbranchingPathFinder<Seq>::KPlusOneMer KPlusOneMer;
+	typedef typename UnbranchingPathFinder<Seq>::KPlusOneMer KPlusOneMer;
 
 	Index &origin_;
 	size_t kmer_size_;
 	bool clean_condenced_;
 
-	bool IsJunction(Index::KmerWithHash kh) {
+	bool IsJunction(typename Index::KmerWithHash kh) {
 		return !(origin_.CheckUniqueOutgoing(kh.idx) && origin_.CheckUniqueIncoming(kh.idx));
 	}
 
-	void AddKmers(kmer_iterator &it, kmer_iterator &end, size_t queueSize,
-			std::vector<KPlusOneMer>& kmers) {
-		for (; kmers.size() != queueSize && it != end; ++it) {
-			Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, (*it).data()));
+	void AddKmers(kmer_iterator &it, size_t queueSize,
+                  std::vector<KPlusOneMer>& kmers) {
+		for (; kmers.size() != queueSize && it.good(); ++it) {
+			typename Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, *it));
 			if (IsJunction(kh)) {
-				for(char next = 0; next < 4; next++) {
-					if(origin_.CheckOutgoing(kh.idx, next)) {
+				for (char next = 0; next < 4; next++) {
+					if (origin_.CheckOutgoing(kh.idx, next)) {
 						kmers.push_back(KPlusOneMer(kh, next));
 					}
 				}
@@ -323,7 +323,7 @@ private:
 	}
 
 	void CalculateSequences(std::vector<KPlusOneMer> &kmers,
-			std::vector<Sequence> &sequences, UnbranchingPathFinder<Seq> &finder) {
+                            std::vector<Sequence> &sequences, UnbranchingPathFinder<Seq> &finder) {
 		size_t size = kmers.size();
 		size_t start = sequences.size();
 		sequences.resize(start + size);
@@ -334,7 +334,7 @@ private:
 		}
 	}
 
-	Sequence ConstructLoopFromVertex(Index::KmerWithHash kh) {
+	Sequence ConstructLoopFromVertex(typename Index::KmerWithHash kh) {
 		KPlusOneMer kpom(kh, origin_.GetUniqueOutgoing(kh.idx));
 		Sequence result = ConstructSequenceWithEdge(kpom);
 		origin_.IsolateVertex(kh.idx);
@@ -346,11 +346,11 @@ private:
 		INFO("Collecting perfect loops");
 		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, true);
 		std::vector<Sequence> result;
-		for (kmer_iterator it = origin_.kmer_begin(), end = origin_.kmer_end(); it != end; ++it) {
-			Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, (*it).data()));
+		for (kmer_iterator it = origin_.kmer_begin(); it.good(); ++it) {
+			typename Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, *it));
 			if (!IsJunction(kh)) {
 				result.push_back(finder.ConstructLoopFromVertex(kh));
-				Index::KmerWithHash rc_kh = origin_.CreateKmerWithHash(!kh.kmer);
+				typename Index::KmerWithHash rc_kh = origin_.CreateKmerWithHash(!kh.kmer);
 				if (!IsJunction(rc_kh)) {
 					result.push_back(finder.ConstructLoopFromVertex(rc_kh));
 				}
@@ -366,7 +366,7 @@ public:
 
 	//TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
 	const std::vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
-			double queueGrowthRate, bool clean_condenced = false) {
+                                                        double queueGrowthRate, bool clean_condenced = false) {
 		INFO("Extracting unbranching paths");
 		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, clean_condenced);
 		std::vector<Sequence> result;
@@ -374,10 +374,9 @@ public:
 		std::vector<KPlusOneMer> kmers;
 		std::vector<Sequence> sequences;
 		kmers.reserve(queueSize);
-		kmer_iterator it = origin_.kmer_begin();
-		kmer_iterator end = origin_.kmer_end();
-		while(it != end) {
-			AddKmers(it, end, queueSize, kmers); // format a queue of junction kmers
+        auto it = origin_.kmer_begin();
+		while (it.good()) {
+			AddKmers(it, queueSize, kmers); // format a queue of junction kmers
 			CalculateSequences(kmers, sequences, finder); // in parallel
 			kmers.clear();
 			queueSize = min(size_t(queueSize * queueGrowthRate), queueMaxSize);
@@ -387,9 +386,9 @@ public:
 	}
 
 	const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(size_t queueMinSize, size_t queueMaxSize,
-			double queueGrowthRate) {
-		vector<Sequence> result	= ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate, true);
-		vector<Sequence> loops = CollectLoops();
+                                                                double queueGrowthRate) {
+        std::vector<Sequence> result	= ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate, true);
+        std::vector<Sequence> loops = CollectLoops();
 		for(auto it = loops.begin(); it != loops.end(); ++it) {
 			result.push_back(*it);
 		}
@@ -456,7 +455,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
-	typedef DeBruijnExtensionIndex<Seq, kmer_index_traits<Seq> > Index;
+	typedef DeBruijnExtensionIndex<Seq> Index;
 	size_t kmer_size_;
 	Index &origin_;
 
@@ -592,10 +591,10 @@ template<class Graph, class Seq>
 class DeBruijnGraphExtentionConstructor {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef DeBruijnExtensionIndex<Seq, kmer_index_traits<Seq>> DeBruijn;
+	typedef DeBruijnExtensionIndex<Seq> DeBruijn;
 	typedef typename Graph::VertexId VertexId;
 	typedef Seq Kmer;
-	typedef typename DeBruijn::kmer_iterator kmer_iterator;
+	typedef typename DeBruijn::const_kmer_iterator kmer_iterator;
 
 	Graph &graph_;
 	DeBruijn &origin_;

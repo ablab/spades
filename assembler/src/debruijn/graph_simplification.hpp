@@ -644,7 +644,7 @@ void PostSimplification(conj_graph_pack& gp,
 template<class Graph>
 double FindErroneousConnectionsCoverageThreshold(
         const Graph &graph,
-        const DeBruijnEdgeIndex<typename Graph::EdgeId> &index) {
+        const DeBruijnEdgeIndex<Graph> &index) {
     return cfg::get().ds.single_cell ?
             ErroneousConnectionThresholdFinder<Graph>(graph).FindThreshold() :
             MCErroneousConnectionThresholdFinder<Graph>(index).FindThreshold();

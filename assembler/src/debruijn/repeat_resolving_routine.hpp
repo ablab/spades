@@ -897,7 +897,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo
 				EdgeQuality<Graph>& quality_labeler ) {
 
 
-	DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), cfg::get().output_dir);
+	DeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), conj_gp.g, cfg::get().output_dir);
 	if (cfg::get().developer_mode) {
 
 		std::string path;
@@ -908,10 +908,10 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo
 		bool val = LoadEdgeIndex(path, kmerIndex);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
 		INFO("Updating index from graph started");
-		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, conj_gp.g);
+		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph<conj_graph_pack::graph_t>(kmerIndex, conj_gp.g);
 	}
 
-	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
+	auto index = FlankingCoverage<conj_graph_pack::graph_t>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().coverage_threshold_one_list, cfg::get().coverage_threshold_match, 
 			cfg::get().coverage_threshold_global, cfg::get().tandem_ratio_lower_threshold, cfg::get().tandem_ratio_upper_threshold, cfg::get().repeat_length_upper_threshold);

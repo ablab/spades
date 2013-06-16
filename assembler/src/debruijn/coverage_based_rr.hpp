@@ -682,19 +682,19 @@ class CoverageBasedResolution {
 			} */
 			fprintf(file, "resolved path \n");
 			for ( auto iter = path.begin(); iter != path.end(); ++iter ) {
-				fprintf(file, "%d ", gp->g.int_id(*iter));
+				fprintf(file, "%lu ", gp->g.int_id(*iter));
 				fprintf(file, " ");
 			}
 			fprintf(file, "\nincoming edges: ");
 			for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e) {
 	
-				fprintf(file, "%d ", gp->g.int_id(*e));
+				fprintf(file, "%lu ", gp->g.int_id(*e));
 			}
 			fprintf(file,"\n");
 			fprintf(file,"outgoing edges: ");
 			for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e) {
 	
-				fprintf(file, "%d ", gp->g.int_id(*e));
+				fprintf(file, "%lu ", gp->g.int_id(*e));
 			}
 			fprintf(file,"\n");
 

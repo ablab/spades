@@ -51,8 +51,8 @@ public:
 	}
 
 	pair<EdgeId, size_t> OldEdgePositionInNewGraph(EdgeId old_edge) {
-		bool flag = MapsUniquely(old_edge);
-		VERIFY(flag);
+        bool flag = MapsUniquely(old_edge);
+        VERIFY(flag);
 		EdgeId new_edge = UniqueMapping(old_edge);
 		VERIFY(labels_.edge_labels.find(new_edge) != labels_.edge_labels.end());
 		const vector<EdgeId>& old_edges = labels_.edge_labels.find(new_edge)->second;
