@@ -239,7 +239,7 @@ private:
       entry.edgeId_ = id;
       entry.offset_ = offset;
     } else {
-      VERIFY(ignore_new_kmer);
+      //VERIFY(ignore_new_kmer);
       idx = base::insert(kmer, EdgeInfo<IdType>(id, offset, 1));
 
       VERIFY(idx != base::InvalidKMerIdx);
