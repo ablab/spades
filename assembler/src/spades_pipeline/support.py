@@ -137,7 +137,7 @@ def save_data_to_file(data, file):
     os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-### for processing YAML files
+### START for processing YAML files
 def get_lib_type_and_number(option):
     lib_type = 'pe'
     lib_number = 1
@@ -151,8 +151,6 @@ def get_lib_type_and_number(option):
 def get_data_type(option):
     if option.endswith('-12'):
         data_type = 'interlaced reads'
-        #TODO: fix this
-        warning("interlaced reads are not fully supported yet!")
     elif option.endswith('-1'):
         data_type = 'left reads'
     elif option.endswith('-2'):
@@ -173,14 +171,14 @@ def add_to_dataset(option, data, dataset_data):
 
     if lib_type == 'pe':
         record_id = lib_number - 1
-    else: # mate-pair
+    else: # mate-pairs
         record_id = total_libs_number + lib_number - 1
 
     if not dataset_data[record_id]: # setting default values for a new record
         if lib_type == 'pe':
             dataset_data[record_id]['type'] = 'paired-end'
         else:
-            dataset_data[record_id]['type'] = 'mate-pair'
+            dataset_data[record_id]['type'] = 'mate-pairs'
     if data_type.endswith('reads'): # reads are stored as lists
         if data_type in dataset_data[record_id]:
             dataset_data[record_id][data_type].append(data)
@@ -213,13 +211,13 @@ def correct_dataset(dataset_data):
         if 'orientation' not in reads_library:
             if reads_library['type'] == 'paired-end':
                 reads_library['orientation'] = 'fr'
-            elif reads_library['type'] == 'mate-pair':
+            elif reads_library['type'] == 'mate-pairs':
                 reads_library['orientation'] = 'rf'
         corrected_dataset_data.append(reads_library)
     return corrected_dataset_data
 
 
-def check_dataset(dataset_data, log):
+def check_dataset_reads(dataset_data, log):
     all_files = []
     for id, reads_library in enumerate(dataset_data):
         left_number = 0
@@ -245,9 +243,23 @@ def check_dataset(dataset_data, log):
     check_files_duplication(all_files, log)
 
 
+def dataset_has_only_mate_pairs_libraries(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'] != 'mate-pairs':
+            return False
+    return True
+
+
 def dataset_has_paired_reads(dataset_data):
     for reads_library in dataset_data:
-        if reads_library['type'] in ['paired-end', 'mate-pair']:
+        if reads_library['type'] in ['paired-end', 'mate-pairs']:
+            return True
+    return False
+
+
+def dataset_has_interlaced_reads(dataset_data):
+    for reads_library in dataset_data:
+        if 'interlaced reads' in reads_library:
             return True
     return False
 
@@ -275,6 +287,57 @@ def move_dataset_files(dataset_data, dst, log, gzip=False):
                             dst_filename += '.gz'
                     moved_reads_files.append(dst_filename)
                 reads_library[key] = moved_reads_files
+
+
+def split_interlaced_reads(dataset_data, dst, log):
+    for reads_library in dataset_data:
+        for key, value in reads_library.items():
+            if key == 'interlaced reads':
+                if 'left reads' not in reads_library:
+                    reads_library['left reads'] = []
+                    reads_library['right reads'] = []
+                for interlaced_reads in value:
+                    ext = os.path.splitext(interlaced_reads)[1]
+                    if ext == '.gz':
+                        import gzip
+                        input_file = gzip.open(interlaced_reads, 'r')
+                        ungzipped = os.path.splitext(interlaced_reads)[0]
+                        out_basename = os.path.splitext(os.path.basename(ungzipped))[0]
+                    else:
+                        input_file = open(interlaced_reads, 'r')
+                        out_basename = os.path.splitext(os.path.basename(interlaced_reads))[0]
+                    out_left_filename = os.path.join(dst, out_basename + "_1.fastq")
+                    out_right_filename = os.path.join(dst, out_basename + "_2.fastq")
+
+                    log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
+                    out_left_file = open(out_left_filename, 'w')
+                    out_right_file = open(out_right_filename, 'w')
+                    for id, line in enumerate(input_file):
+                        if id % 8 < 4:
+                            out_left_file.write(line)
+                        else:
+                            out_right_file.write(line)
+                    out_left_file.close()
+                    out_right_file.close()
+                    input_file.close()
+                    reads_library['left reads'].append(out_left_filename)
+                    reads_library['right reads'].append(out_right_filename)
+                del reads_library['interlaced reads']
+
+
+def pretty_print_reads(dataset_data, log, indent='    '):
+    READS_TYPES = ['left reads', 'right reads', 'interlaced reads', 'single reads']
+    for id, reads_library in enumerate(dataset_data):
+        log.info(indent + 'Library number: ' + str(id + 1) + ', library type: ' + reads_library['type'])
+        if 'orientation' in reads_library:
+            log.info(indent + '  orientation: ' + reads_library['orientation'])
+        for reads_type in READS_TYPES:
+            if reads_type not in reads_library:
+                value = 'not specified'
+            else:
+                value = str(map(os.path.abspath, reads_library[reads_type]))
+            log.info(indent + '  ' + reads_type + ': ' + value)
+### END: for processing YAML files
 
 
 def read_fasta(filename):

@@ -892,7 +892,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 			clustered_index);
 }
 
-void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo<Graph> >& filteredPaths, 
+void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths, 
 				PairedIndexT& clustered_index,
 				EdgeQuality<Graph>& quality_labeler ) {
 
@@ -915,7 +915,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, std::vector< PathInfo
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().coverage_threshold_one_list, cfg::get().coverage_threshold_match, 
 			cfg::get().coverage_threshold_global, cfg::get().tandem_ratio_lower_threshold, cfg::get().tandem_ratio_upper_threshold, cfg::get().repeat_length_upper_threshold);
-	cov_rr.resolve_repeats_by_coverage(index, labels_after, quality_labeler, clustered_index, filteredPaths);
+	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
 
 	INFO("Repeats are resolved by coverage");
 }
@@ -1048,7 +1048,9 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	std::vector< PathInfo<Graph> > filteredPaths;
 	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
 	if (cfg::get().coverage_based_rr == true){
-		resolve_repeats_by_coverage(conj_gp, filteredPaths, clustered_indices[0], quality_labeler);
+		int pe_lib_index = get_first_pe_lib_index();
+		const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
+		resolve_repeats_by_coverage(conj_gp, lib.data().mean_insert_size, filteredPaths, clustered_indices[0], quality_labeler);
 	}
 
 
@@ -1066,12 +1068,14 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
 	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
 	    }
-        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+        //path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         delete_index(pe_scaf_indexs);
 	}
 	else {
 		pe_scaf_indexs.clear();
-		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
+		//path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
+		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
 	}
 }
 
@@ -1133,6 +1137,17 @@ void resolve_repeats() {
 	if (!cfg::get().paired_mode
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
+		if (cfg::get().pacbio_test_on) {
+		    PathStorage<Graph> long_read(conj_gp.g);
+		    GapStorage<Graph> gaps(conj_gp.g);
+			std::vector< PathInfo<Graph> > filteredPaths;
+		    //LongReadStorage<Graph> long_read(conj_gp.g);
+			INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+			PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
+			INFO("index created");
+			filteredPaths = long_read.GetAllPaths();
+			pac_aligner.pacbio_test(long_read, gaps);
+		}
 		return;
 	}
 

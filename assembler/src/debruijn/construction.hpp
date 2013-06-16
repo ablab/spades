@@ -94,11 +94,6 @@ void write_estimated_params(const string& prefix) {
   write_param_map(filename, "hist", cfg::get().ds.hist());
 }
 
-void return_estimated_params() {
-	write_estimated_params(cfg::get().output_dir + "/");
-}
-
-
 void load_lib_data(const string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
@@ -178,7 +173,6 @@ void save_construction(conj_graph_pack& gp) {
     PrintGraphPack(p, gp);
     write_lib_data(p);
   }
-  return_estimated_params();
 }
 
 //boost::optional<string> single_reads_filename(

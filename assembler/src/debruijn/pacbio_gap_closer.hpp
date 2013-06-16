@@ -161,10 +161,15 @@ public:
 				size_t long_seq_limit = cfg::get().pb.long_seq_limit; //400
 				bool exclude_long_seqs= false;
 				for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
+					if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 ||  j_iter->edge_gap_end_position > 500  ) {
+						INFO("ignoring alingment to the middle of edge");
+						continue;
+					}
 					if (j_iter->gap_seq.size() > long_seq_limit)
 						long_seqs ++;
 					else
 						short_seqs ++;
+
 					if (j_iter->edge_gap_start_position < start_min)
 						start_min = j_iter->edge_gap_start_position;
 					if (j_iter->edge_gap_end_position > end_max)
@@ -175,6 +180,9 @@ public:
 //				start_min = 0;
 //				end_max = g_.length(cl_start->end) - 1;
 				for (auto j_iter = cl_start; j_iter != next_iter; j_iter ++) {
+					if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 ||  j_iter->edge_gap_end_position > 500  ) {
+						continue;
+					}
 					if (exclude_long_seqs && j_iter->gap_seq.size() > long_seq_limit)
 						continue;
 					string s = g_.EdgeNucls(j_iter->start).Subseq(start_min, j_iter->edge_gap_start_position).str();
