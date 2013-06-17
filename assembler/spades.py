@@ -82,9 +82,9 @@ def print_used_values(cfg, log):
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
                      " was obtained with MDA (single-cell) technology")
 
-        # TODO: nice output of reads
         log.info("  Reads:")
-        support.pretty_print_reads(pyyaml.load(file(cfg["dataset"].yaml_filename, 'r')), log)
+        support.pretty_print_reads(pyyaml.load(file(cfg["dataset"].yaml_filename, 'r')),
+            os.path.dirname(cfg["dataset"].yaml_filename), log)
 
     # error correction
     if "error_correction" in cfg:
@@ -251,7 +251,7 @@ def main():
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
         pyyaml.dump(dataset_data, file(options_storage.dataset_yaml_filename, 'w'))
 
-    support.check_dataset_reads(dataset_data, log)
+    support.check_dataset_reads(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename), log)
     if support.dataset_has_only_mate_pairs_libraries(dataset_data):
         support.error('you should specify at least one paired-end or unpaired library (only mate-pairs libraries were found)!')
     if options_storage.rectangles and (len(dataset_data) > 1):
@@ -473,8 +473,11 @@ def main():
                     if float(estimated_params.__dict__["insert_size_" + str(id)]) > max_insert_size:
                         max_insert_size = float(estimated_params.__dict__["insert_size_" + str(id)])
                         target_paired_end_library_id = id
-                cfg["mismatch_corrector"].__dict__["1"] = dataset_data[target_paired_end_library_id]['left reads']
-                cfg["mismatch_corrector"].__dict__["2"] = dataset_data[target_paired_end_library_id]['right reads']
+                yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
+                cfg["mismatch_corrector"].__dict__["1"] = map(lambda x: os.path.join(yaml_dirname, x),
+                    dataset_data[target_paired_end_library_id]['left reads'])
+                cfg["mismatch_corrector"].__dict__["2"] = map(lambda x: os.path.join(yaml_dirname, x),
+                    dataset_data[target_paired_end_library_id]['right reads'])
                 cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
                 #TODO: add reads orientation
 
