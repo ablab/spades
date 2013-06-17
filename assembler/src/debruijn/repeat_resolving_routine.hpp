@@ -1025,6 +1025,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 	}
 }
 
+
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices, EdgeQuality<Graph>& quality_labeler) {
 
 	vector<PairedIndexT*> pe_indexs;
@@ -1040,6 +1041,17 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 		}
 	}
 
+    PathStorage<Graph> long_single(conj_gp.g);
+    path_extend::SimpleLongReadMapper long_read_mapper(conj_gp);
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::LongSingleReads) {
+            auto streams = single_binary_readers(cfg::get().ds.reads[i], false, false);
+            streams->release();
+            io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
+
+            long_read_mapper.ProcessLib(stream, long_single);
+        }
+    }
     //LongReadStorage<Graph> long_read(conj_gp.g);
      //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 

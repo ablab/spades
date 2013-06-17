@@ -200,7 +200,7 @@ void exec_construction(conj_graph_pack& gp) {
 
     std::vector<size_t> libs_for_construction;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd || cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd || cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads  || cfg::get().ds.reads[i].type() == io::LibraryType::LongSingleReads) {
             libs_for_construction.push_back(i);
         }
     }
