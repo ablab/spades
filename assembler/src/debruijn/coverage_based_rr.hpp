@@ -19,6 +19,7 @@ namespace debruijn_graph{
 template <class GraphPack>
 class CoverageBasedResolution {
 	typedef double coverage_value;
+	typedef enum { TOPOLOGY, LENGTH, PAIREDINFO } kind_of_repeat; 
 	
 	GraphPack *gp;
 	std::vector< std::vector<EdgeId> > allPaths;
@@ -26,6 +27,8 @@ class CoverageBasedResolution {
 	//path with conjugate edges
 	std::vector< std::vector<EdgeId> > resolvedPaths;
 	
+	std::map<EdgeId, kind_of_repeat> edge_to_kind_;
+
 	const double threshold_one_list_;
 	const double threshold_match_;
 	const double threshold_global_;
@@ -124,6 +127,7 @@ class CoverageBasedResolution {
 	public :
 	template <class DetailedCoverage>
 	void resolve_repeats_by_coverage( DetailedCoverage& coverage, 
+					size_t insert_size,
 					EdgeLabelHandler<typename GraphPack::graph_t>& labels_after,
 					EdgeQuality<typename GraphPack::graph_t>& quality_labeler,
 					PairedInfoIndexT<typename GraphPack::graph_t> & clustered_index,
@@ -151,7 +155,7 @@ class CoverageBasedResolution {
 		//getComponents( gp, components, singles, quality_labeler, unresolvedLoops );
 
 		INFO("Traversing graph...");
-		traverseComponents( components, singles, coverage, resolvedPaths );
+		traverseComponents( components, singles, coverage, insert_size, resolvedPaths );
 
 		std::set<EdgeId> usedEdges;
 
@@ -450,7 +454,7 @@ class CoverageBasedResolution {
 			if ( gp->g.length(*e_iter) >= cfg::get().rr.max_repeat_length ) {
 				singles.push_back(*e_iter);
 			}
-			else if (! ( ((in_degree.find(from) == in_degree.end()) || out_degree[from] > 1) && ((out_degree.find(into) == out_degree.end()) || in_degree[into] > 1) )
+			else if (! ( ((in_degree.find(from) == in_degree.end()) || out_degree[from] > 1) && ((out_degree.find(into) == out_degree.end()) || in_degree[into] > 1) ) ) {
 				byTopology += 1;
 				if (checkIfComponentByPairedInfo(*e_iter, clustered_index, prohibitedEdges )) confirmedByPairedInfo++; 
 				edge_to_kind_[*e_iter] = TOPOLOGY;
@@ -606,10 +610,61 @@ class CoverageBasedResolution {
 		return false;
 	}
 
+
+	void bfs ( const EdgeId& edge,  std::set<EdgeId>& visited_edges, const std::vector<EdgeId>& component, int& curLen, int& maxPathLen) {
+
+		visited_edges.insert(edge);
+		auto incomingEdges = gp->g.IncomingEdges(gp->g.EdgeStart(edge));
+
+		for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e) {
+									
+		if ( std::find(component.begin(), component.end(), *e) != component.end() && visited_edges.find(*e) == visited_edges.end() ){
+				curLen += gp->g.length(*e);
+				if (curLen > maxPathLen) maxPathLen = curLen;
+				bfs(*e, visited_edges, component, curLen, maxPathLen);
+			}
+
+		}
+
+		auto outgoingEdges = gp->g.OutgoingEdges(gp->g.EdgeEnd(edge));
+		for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e) {
+	
+			if ( std::find(component.begin(), component.end(), *e) != component.end() && visited_edges.find(*e) == visited_edges.end() ){
+					
+					curLen += gp->g.length(*e);
+					if (curLen > maxPathLen) maxPathLen = curLen;
+					bfs(*e, visited_edges, component, curLen, maxPathLen);
+			}
+		}
+
+	}
+
+	int getLongestPathLength( const std::vector<EdgeId>& component ){
+	// gets a repetitive component and calculates the length of the longest path in it
+
+
+		std::set<EdgeId> visited_edges;
+		std::vector<std::vector<EdgeId>> paths;
+
+		int maxPathLen = 0;
+		for ( auto edge = component.begin(); edge != component.end(); ++edge ){
+
+			if (visited_edges.find(*edge) != visited_edges.end()) continue;
+			int curLen = gp->g.length(*edge);
+			visited_edges.insert(*edge);
+			bfs(*edge, visited_edges, component, curLen, maxPathLen);	
+
+		}
+
+		return maxPathLen;
+	}
+
+
 	template <class DetailedCoverage>
 	void traverseComponents( const std::vector<EdgeId>& components, 
 				const std::vector<EdgeId>& singles, DetailedCoverage& coverage, 
 				//std::set<EdgeId>& usedEdges,
+				size_t insert_size,
 				std::vector< std::vector<EdgeId>> & resolvedPaths) {
 
 		std::set<EdgeId> visited_edges;
@@ -638,6 +693,8 @@ class CoverageBasedResolution {
 			std::vector<EdgeId> path;
 		
 			visit(*edge,  visited_edges, path, components, singles, incomingEdges, outgoingEdges);
+
+			int longestPathLen = getLongestPathLength(path);
 
 			if ( containsSelfLoop( path ) ) {
 				continue;
