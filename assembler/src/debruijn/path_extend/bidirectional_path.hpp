@@ -890,7 +890,9 @@ public:
     void Print() const {
         DEBUG("Path " << id_);
         DEBUG("Length " << totalLength_);
+        DEBUG("Weight " << weight);
         DEBUG("#, edge, length, total length");
+
         for(size_t i = 0; i < Size(); ++i) {
         	DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
         }
@@ -899,6 +901,7 @@ public:
     void PrintInfo() const {
         INFO("Path " << id_);
         INFO("Length " << totalLength_);
+        INFO("Weight " << weight);
         INFO("#, edge, length, total length");
         for(size_t i = 0; i < Size(); ++i) {
             INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i));

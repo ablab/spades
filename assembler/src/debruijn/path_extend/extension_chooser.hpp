@@ -178,6 +178,21 @@ public:
         return wc_ != 0;
     }
 
+protected:
+    void RemoveTrivial(BidirectionalPath& path){
+        wc_->GetExcludedEdges().clear();
+
+        if (excludeTrivialWithBulges_)
+        {
+            analyzer_.ExcludeTrivialWithBulges(path, wc_->GetExcludedEdges());
+        }
+        else if (excludeTrivial_)
+        {
+            analyzer_.ExcludeTrivial(path, wc_->GetExcludedEdges());
+        }
+    }
+
+
 };
 
 
@@ -241,16 +256,6 @@ class SimpleExtensionChooser: public ExtensionChooser {
 
 protected:
 
-    void RemoveTrivial(BidirectionalPath& path) {
-        wc_->GetExcludedEdges().clear();
-
-        if (excludeTrivialWithBulges_) {
-            analyzer_.ExcludeTrivialWithBulges(path, wc_->GetExcludedEdges());
-        }
-        else if (excludeTrivial_) {
-            analyzer_.ExcludeTrivial(path, wc_->GetExcludedEdges());
-        }
-    }
 
 	void RemoveTrivialAndCommon(BidirectionalPath& path, EdgeId first,
 			EdgeId second) {
@@ -621,10 +626,12 @@ class LongReadsExtensionChooser: public ExtensionChooser {
 protected:
 
     GraphCoverageMap coverageMap_;
+    LongReadsWeightCounter weightCounter_;
 
 
 public:
-    LongReadsExtensionChooser(Graph& g, PathContainer& pc): ExtensionChooser(g, 0, .0), coverageMap_(g, pc) {
+    LongReadsExtensionChooser(Graph& g, PathContainer& pc, size_t RL = 50, double threshold = 0.0): ExtensionChooser(g, 0, .0), coverageMap_(g, pc),
+    weightCounter_(g_, pc, coverageMap_, RL, threshold) {
 
     }
 
@@ -632,23 +639,29 @@ public:
         if (edges.empty()) {
             return edges;
         }
+        RemoveTrivial(BidirectionalPath& path);
         DEBUG("We in Filter of PathsDrivenExtension");
         map<EdgeId, double> weights_cands;
-        for (auto it = edges.begin(); it != edges.end(); ++it) {
-            weights_cands.insert(make_pair(it->e_, 0));
-        }
         set<EdgeId> filtered_cands;
-        auto supporting_paths = coverageMap_.GetCoveringPaths(path.Back());
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            double weight =  weightCounter_.CountWeight(path, it->e_, 0.0);
+            weights_cands.insert(make_pair(it->e_,weight));
+            if (weight > 0.0){
+                filtered_cands.insert(next);
+            }
+        }
+
+        /*auto supporting_paths = coverageMap_.GetCoveringPaths(path.Back());
         for (auto it = supporting_paths.begin(); it != supporting_paths.end(); ++it) {
         	auto positions = (*it)->FindAll(path.Back());
             for (size_t i = 0; i < positions.size(); ++i) {
             	if (positions[i] < (*it)->Size() - 1 && covered_path(path, **it, positions[i])){
             		EdgeId next = (*it)->At(positions[i] + 1);
             		weights_cands[next] = weights_cands[next] + (*it)->getWeight();
-            		filtered_cands.insert(next);
+
             	}
             }
-        }
+        }*/
 
         if (filtered_cands.size() > 1) {
         	vector<pair<EdgeId, double> > sorted_candidates = to_vector(weights_cands);
@@ -705,6 +718,35 @@ private:
     	}
     	return result;
     }
+
+    /*size_t ideal_info(EdgeId e1, EdgeId e2, size_t RL, size_t gap = 0){
+        int res = std::min(g_.length(e1) + gap + g_.length(e2) - RL, g_.length(e1) - 1) - std::max(g_.length(e1) + gap + 1 - RL, 0) + 1;
+        return res > 0 ? res : 0;
+    }
+
+    double weight(EdgeId e1, EdgeId e2, size_t gap) {
+
+        auto supp_paths = coverageMap_.GetCoveringPaths(e1);
+        double weight = 0;
+        for (auto it = supp_paths.begin(); it != supp_paths.end(); ++it) {
+            BidirectionalPath* cur_path = *it;
+            auto poss = cur_path->FindAll(e1);
+            for (size_t i = 0; i < poss.size(); ++i) {
+                size_t pos = poss[i];
+                size_t cur_gap = 0;
+                while (pos < cur_path->Size() && cur_gap <= gap){
+                    EdgeId cur_edge = cur_path->At(pos);
+                    if (cur_edge == e2 && cur_gap == gap){
+                        weight += cur_path->getWeight();
+                        break;
+                    }
+                    cur_gap += g_.length(cur_edge);
+                    pos++;
+                }
+            }
+        }
+        return weight;
+    }*/
 };
 
 

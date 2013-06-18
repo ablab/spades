@@ -1045,6 +1045,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
     path_extend::SimpleLongReadMapper long_read_mapper(conj_gp);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         if (cfg::get().ds.reads[i].type() == io::LibraryType::LongSingleReads) {
+            INFO("Mapping long single reads from lib #" << i);
             auto streams = single_binary_readers(cfg::get().ds.reads[i], false, false);
             streams->release();
             io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
@@ -1082,13 +1083,13 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
 	    }
         //path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
-        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_single.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         delete_index(pe_scaf_indexs);
 	}
 	else {
 		pe_scaf_indexs.clear();
 		//path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
-		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
+		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_single.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
 	}
 }
 
@@ -1147,7 +1148,15 @@ void resolve_repeats() {
 			"graph.dot");
 	printer(ipp_before_repeat_resolution);
 
-	if (!cfg::get().paired_mode
+	bool long_single = false;
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::LongSingleReads) {
+            long_single = true;
+            break;
+        }
+    }
+
+	if ((!cfg::get().paired_mode && !long_single)
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 		if (cfg::get().pacbio_test_on) {
@@ -1168,12 +1177,12 @@ void resolve_repeats() {
 	int pe_lib_index = get_first_pe_lib_index();
 	INFO("STAGE == Resolving Repeats");
 	if (cfg::get().ds.reads.lib_count() == 1 && pe_lib_index >= 0
-			&& cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
+			&& cfg::get().rm == debruijn_graph::resolving_mode::rm_split && !long_single) {
 		INFO("Split repeat resolving");
 		split_resolving(conj_gp, paired_indices, clustered_indices, genome,
 				pe_lib_index);
 	}
-	else if (cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1
+	else if (long_single || cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1
 			|| cfg::get().rm
 					== debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");

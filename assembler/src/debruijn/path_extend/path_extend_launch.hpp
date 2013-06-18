@@ -238,6 +238,8 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
     }
 
     writer.writePaths(paths, output_dir + contigs_name);
+    INFO("Reads");
+    true_paths.print();
 
     INFO("Path extend repeat resolving tool finished");
 }
