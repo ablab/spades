@@ -697,7 +697,6 @@ class CoverageBasedResolution {
 			
 			int longestPathLen = getLongestPathLength(path);
 
-			int longestPathLen = getLongestPathLength(path);
 
 			if ( containsSelfLoop( path ) ) {
 				continue;

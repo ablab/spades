@@ -191,7 +191,7 @@ namespace debruijn_graph {
 				}
 				resolvedLoop.push_back(outgoingEdge);
 				if ( resolvedLoop.size() > 5 ) canBeResolved = false;
-			}
+			//}
 
 			return canBeResolved;
 		}
