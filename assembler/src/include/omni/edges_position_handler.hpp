@@ -260,7 +260,7 @@ private:
 	void find_genome_length(){
 		for (auto iter = EdgesPositions.begin(); iter != EdgesPositions.end(); ++iter) {
 			for(size_t i =  0; i < iter->second.size(); i++)
-				max_genome_coords = max(max_genome_coords, iter->second[i].m_end());
+				max_genome_coords = max(max_genome_coords, iter->second[i].end());
 		}
 	}
 
@@ -345,6 +345,11 @@ public:
 //TODO: magic constants
 
 			tmp_pos[path[i]] = FillPositionGaps(path[i], 0.2);
+			//hotfix for circular chromosomes
+			for(size_t j = 0; j < tmp_pos[path[i]].size(); j++) {
+				if (tmp_pos[path[i]][j].end() == max_genome_coords) return true;
+			}
+
 		}
 		for (size_t i = 0; i < path.size() - 1; i++) {
 			if (this->g().EdgeStart(path[i + 1]) != this->g().EdgeEnd(path[i]))
