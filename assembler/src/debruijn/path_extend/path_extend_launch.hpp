@@ -289,9 +289,13 @@ void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t inde
 	lib->SetSingleThreshold(threshold);
 }
 
-void add_paths_to_container(conj_graph_pack& gp, const std::vector<PathInfo<Graph> >& paths, PathContainer& supportingContigs){
+void add_paths_to_container(conj_graph_pack& gp, const std::vector<PathInfo<Graph> >& paths, PathContainer& supportingContigs,
+		size_t size_threshold, size_t weight_threshold){
 	for (size_t i = 0; i < paths.size(); ++i){
 		PathInfo<Graph> path = paths[i];
+		if (path.getPath().size() <= size_threshold or path.getWeight() <= weight_threshold){
+			continue;
+		}
 		vector<EdgeId> edges = path.getPath();
 		BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
 		BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
@@ -349,7 +353,7 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 	add_not_empty_lib(scaff_libs, pe_scaf_libs);
 	add_not_empty_lib(scaff_libs, mp_scaf_libs);
 	PathContainer supportingContigs;
-	add_paths_to_container(gp, true_paths, supportingContigs);
+	add_paths_to_container(gp, true_paths, supportingContigs, 1, 1);
 
 	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, traverseLoops, broken_contigs);
 

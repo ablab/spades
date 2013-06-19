@@ -454,6 +454,7 @@ public:
         std::vector<EdgeWithPairedInfo> coveredEdges;
         std::set<int> includedEdges;
         std::set<int> allEdges;
+        path.Print();
         for (int index = (int) path.Size() - 1; index >=0; --index) {
         	allEdges.insert(index);
         	if (excludedEdges_.count(index) > 0) {
@@ -461,16 +462,20 @@ public:
             }
         	EdgeId cur_edge = path.At(index);
         	double idealWeight = IdealWeightBetweenEdges(cur_edge, e, path.LengthAt(index));
+        	INFO("index " << index << " idealWeight " << idealWeight);
         	if (idealWeight > 0){
         		double singleWeight = Weight(cur_edge, e, path.LengthAt(index));
+        		INFO("single weight " << singleWeight);
         		singleWeight /= idealWeight;
         		if (math::ge(singleWeight, threshold_)){
         			includedEdges.insert(index);
         		}
         	}
+
         }
         double weight = CountIdealWeight(path, e, includedEdges);
         double commonIdealWeight = CountIdealWeight(path, e, allEdges);
+        INFO("weight " << weight << " common ideal weight " << commonIdealWeight);
 
         return math::gr(commonIdealWeight, 0.0) ? weight / commonIdealWeight : 0.0;
     }
@@ -512,6 +517,8 @@ public:
                    while (pos < cur_path->Size() && cur_gap <= gap){
                        EdgeId cur_edge = cur_path->At(pos);
                        if (cur_edge == e2 && cur_gap == gap){
+                    	   INFO("covered path");
+                    	   cur_path->Print();
                            weight += cur_path->getWeight();
                            break;
                        }
