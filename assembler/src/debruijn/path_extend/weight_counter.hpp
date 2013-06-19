@@ -478,7 +478,8 @@ public:
     double CountIdealWeight(BidirectionalPath& p, EdgeId e1,
 			set<int>& includedEdges) {
     	size_t common_length = 0;
-    	double weight =  RL_ - g_.k() - 1;
+    	double ideal_length = RL_ - g_.k() - 1;
+    	double weight =  min(ideal_length, (double)p.Length() - 1.);
 		for (int index = (int) p.Size() - 1; index >= 0; --index) {
 			EdgeId cur_edge = p.At(index);
 			if (common_length > RL_ - g_.k() - 1){
@@ -488,7 +489,7 @@ public:
 				common_length =  p.LengthAt(index);
 				continue;
 			}
-			common_length -= min(g_.length(cur_edge), RL_ - g_.k()- 1 - common_length);
+			common_length -= min(g_.length(cur_edge), RL_ - g_.k() - 1 - common_length);
 			common_length =  p.LengthAt(index);
 		}
 		return weight;
@@ -500,7 +501,6 @@ public:
     }
 
     double Weight(EdgeId e1, EdgeId e2, size_t gap) {
-
            auto supp_paths = coverageMap_.GetCoveringPaths(e1);
            double weight = 0;
            for (auto it = supp_paths.begin(); it != supp_paths.end(); ++it) {
