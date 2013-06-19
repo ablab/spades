@@ -451,13 +451,11 @@ public:
     virtual double CountWeight(BidirectionalPath& path, EdgeId e,
             int gapLength = 0)
     {
-
-        double weight = 0.0;
-        double commonIdealWeight = 0.0;
-
         std::vector<EdgeWithPairedInfo> coveredEdges;
-        set<int> includedEdges();
+        std::set<int> includedEdges;
+        std::set<int> allEdges;
         for (int index = (int) path.Size() - 1; index >=0; --index) {
+        	allEdges.insert(index);
         	if (excludedEdges_.count(index) > 0) {
             	continue;
             }
@@ -471,24 +469,8 @@ public:
         		}
         	}
         }
-        for (int index = (int) path.Size() - 1; index >=0; --index) {
-            EdgeId cur_edge = path.At(index);
-            if (excludedEdges_.count(index) > 0) {
-                continue;
-            }
-
-            double singleWeight = Weight(cur_edge, e, path.LengthAt(index));
-            double idealWeight = CountIdealInfo(cur_edge, e, path.LengthAt(index));
-            if (math::eq(idealWeight, 0.0)){
-                break;
-            }
-            singleWeight /= idealWeight;
-            if (math::ge(singleWeight, threshold_))
-            {
-                weight += idealWeight;
-            }
-            commonIdealWeight += idealWeight;
-        }
+        double weight = CountIdealWeight(path, e, includedEdges);
+        double commonIdealWeight = CountIdealWeight(path, e, allEdges);
 
         return math::gr(commonIdealWeight, 0.0) ? weight / commonIdealWeight : 0.0;
     }

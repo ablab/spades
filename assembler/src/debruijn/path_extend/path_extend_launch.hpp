@@ -24,7 +24,7 @@
 #include "long_read_storage.hpp"
 #include "../include/omni/edges_position_handler.hpp"
 #include "split_graph_pair_info.hpp"
-//#include "long_read_mapper.hpp"
+#include "long_read_mapper.hpp"
 
 namespace path_extend {
 
