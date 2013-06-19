@@ -464,7 +464,7 @@ public:
         	double idealWeight = IdealWeightBetweenEdges(cur_edge, e, path.LengthAt(index));
         	INFO("index " << index << " idealWeight " << idealWeight);
         	if (idealWeight > 0){
-        		double singleWeight = Weight(path, index, e, path.LengthAt(index));
+        		double singleWeight = Weight(path, index, e);
         		INFO("single weight " << singleWeight);
         		singleWeight /= idealWeight;
         		if (math::ge(singleWeight, threshold_)){
@@ -524,7 +524,7 @@ public:
        	return true;
    }
 
-    double Weight(BidirectionalPath& p, size_t pos1, EdgeId e2, size_t gap) {
+    double Weight(BidirectionalPath& p, size_t pos1, EdgeId e2) {
            auto supp_paths = coverageMap_.GetCoveringPaths(p.At(pos1));
            double weight = 0;
            for (auto it = supp_paths.begin(); it != supp_paths.end(); ++it) {
@@ -536,8 +536,7 @@ public:
                 	   continue;
                    }
                    if (pos_end + 1 < cur_path->Size() && cur_path->At(pos_end + 1) == e2){
-                	   INFO("covered path");
-                	   cur_path->Print();
+                	   INFO("covered path " << cur_path->getWeight());
                 	   weight += cur_path->getWeight();
                    }
                }
