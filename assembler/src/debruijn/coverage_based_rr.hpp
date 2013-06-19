@@ -149,9 +149,33 @@ class CoverageBasedResolution {
 		std::cout << std::endl;
 
 		std::vector<EdgeId> components, singles;
+		std::vector<EdgeId> componentsRef, singlesRef;
 		INFO("Getting components...");
 		getComponents(  components, singles, labels_after, quality_labeler, clustered_index, filter.prohibitedEdges );
-		//getComponentsWithReference(  components, singles, quality_labeler, filter.prohibitedEdges );
+		getComponentsWithReference(  componentsRef, singlesRef, quality_labeler, filter.prohibitedEdges );
+
+
+		std::cout << "in components but not in componentsRef: " << std::endl;
+		for (auto it = components.begin(); it != components.end(); ++it) {
+
+			if (std::find(componentsRef.begin(), componentsRef.end(), *it) == componentsRef.end()) {
+				std::cout << gp->g.int_id(*it) << ", ";
+			}
+
+		}
+		std::cout << std::endl;
+
+		std::cout << "in componentsRef but not in components: " << std::endl;
+		for (auto it = componentsRef.begin(); it != componentsRef.end(); ++it) {
+
+			if (std::find(components.begin(), components.end(), *it) == components.end()) {
+				std::cout << gp->g.int_id(*it) << ", ";
+			}
+
+		}
+		std::cout << std::endl;
+
+
 		//getComponents( gp, components, singles, quality_labeler, unresolvedLoops );
 
 		INFO("Traversing graph...");
