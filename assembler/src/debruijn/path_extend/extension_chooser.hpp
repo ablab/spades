@@ -628,7 +628,7 @@ protected:
 
 public:
 	LongReadsExtensionChooser(Graph& g, PathContainer& pc, size_t RL = 50,
-			double threshold = 0.0) :
+			double threshold = 0.5) :
 			ExtensionChooser(g), coverageMap_(g, pc) {
 		wc_ = new LongReadsWeightCounter(g_, coverageMap_, RL, threshold);
 
@@ -643,7 +643,7 @@ public:
         map<EdgeId, double> weights_cands;
         set<EdgeId> filtered_cands;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
-            double weight =  wc_->CountWeight(path, it->e_, 0.5);
+            double weight =  wc_->CountWeight(path, it->e_, 0.0);
             weights_cands.insert(make_pair(it->e_,weight));
             if (weight > 0.0){
                 filtered_cands.insert(it->e_);
@@ -687,19 +687,7 @@ public:
     }
 
 private:
-    bool covered_path(BidirectionalPath& path, BidirectionalPath& cov_path, size_t pos){
-    	int cur_pos1 = path.Size() - 1;
-    	int cur_pos2 = pos;
-    	while (cur_pos1 >= 0 && cur_pos2 >=0){
-    		if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
-    			cur_pos1--;
-    			cur_pos2--;
-    		} else {
-    			return false;
-    		}
-    	}
-    	return true;
-    }
+
 
     vector<pair<EdgeId, double> > to_vector(map<EdgeId, double>& candidates){
     	vector<pair<EdgeId, double> > result;

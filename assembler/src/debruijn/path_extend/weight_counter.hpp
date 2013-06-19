@@ -464,7 +464,7 @@ public:
         	double idealWeight = IdealWeightBetweenEdges(cur_edge, e, path.LengthAt(index));
         	INFO("index " << index << " idealWeight " << idealWeight);
         	if (idealWeight > 0){
-        		double singleWeight = Weight(cur_edge, e, path.LengthAt(index));
+        		double singleWeight = Weight(path, index, e, path.LengthAt(index));
         		INFO("single weight " << singleWeight);
         		singleWeight /= idealWeight;
         		if (math::ge(singleWeight, threshold_)){
@@ -487,16 +487,21 @@ public:
     	double weight =  min(ideal_length, (double)p.Length() - 1.);
 		for (int index = (int) p.Size() - 1; index >= 0; --index) {
 			EdgeId cur_edge = p.At(index);
-			if (common_length > RL_ - g_.k() - 1){
+			if (common_length > ideal_length){
 				break;
 			}
 			if (includedEdges.count(index) > 0) {
 				common_length =  p.LengthAt(index);
 				continue;
 			}
-			common_length -= min(g_.length(cur_edge), RL_ - g_.k() - 1 - common_length);
+			weight -= min(g_.length(cur_edge), RL_ - g_.k() - 1 - common_length);
 			common_length =  p.LengthAt(index);
 		}
+		INFO("include edges ");
+		for (auto iter = includedEdges.begin(); iter != includedEdges.end(); ++iter){
+			INFO(" " << *iter);
+		}
+		INFO("ideal weight result " << weight);
 		return weight;
 	}
 
@@ -505,25 +510,35 @@ public:
     	return std::max(w, 0.);
     }
 
-    double Weight(EdgeId e1, EdgeId e2, size_t gap) {
-           auto supp_paths = coverageMap_.GetCoveringPaths(e1);
+    bool covered_path(BidirectionalPath& path, BidirectionalPath& cov_path, size_t pos){
+       	int cur_pos1 = path.Size() - 1;
+       	int cur_pos2 = pos;
+       	while (cur_pos1 >= 0 && cur_pos2 >=0){
+       		if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
+       			cur_pos1--;
+       			cur_pos2--;
+       		} else {
+       			return false;
+       		}
+       	}
+       	return true;
+   }
+
+    double Weight(BidirectionalPath& p, size_t pos1, EdgeId e2, size_t gap) {
+           auto supp_paths = coverageMap_.GetCoveringPaths(p.At(pos1));
            double weight = 0;
            for (auto it = supp_paths.begin(); it != supp_paths.end(); ++it) {
                BidirectionalPath* cur_path = *it;
-               auto poss = cur_path->FindAll(e1);
+               auto poss = cur_path->FindAll(p.Head());
                for (size_t i = 0; i < poss.size(); ++i) {
-                   size_t pos = poss[i];
-                   size_t cur_gap = 0;
-                   while (pos < cur_path->Size() && cur_gap <= gap){
-                       EdgeId cur_edge = cur_path->At(pos);
-                       if (cur_edge == e2 && cur_gap == gap){
-                    	   INFO("covered path");
-                    	   cur_path->Print();
-                           weight += cur_path->getWeight();
-                           break;
-                       }
-                       cur_gap += g_.length(cur_edge);
-                       pos++;
+                   size_t pos_end = poss[i];
+                   if (!covered_path(p, *cur_path, pos_end)){
+                	   continue;
+                   }
+                   if (pos_end + 1 < cur_path->Size() && cur_path->At(pos_end + 1) == e2){
+                	   INFO("covered path");
+                	   cur_path->Print();
+                	   weight += cur_path->getWeight();
                    }
                }
            }
