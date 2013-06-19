@@ -611,8 +611,8 @@ class CloseGapsCorrector : public ContigCorrector{
                             new_path.push_back(*e);
                 }
                 else
-                    DEBUG("Gap from " + ToString(g_.int_id(start)) + " to " + ToString(g_.int_id(end))
-                            + " won't closed");
+//DEBUG("Gap from " + ToString(g_.int_id(start)) + " to " + ToString(g_.int_id(end))
+//                            + " won't closed");
                 current_gap++;
             }
         }

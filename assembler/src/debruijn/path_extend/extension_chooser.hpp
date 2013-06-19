@@ -180,8 +180,7 @@ public:
 
 protected:
     void RemoveTrivial(BidirectionalPath& path){
-        wc_->GetExcludedEdges().clear();
-
+    	wc_->GetExcludedEdges().clear();
         if (excludeTrivialWithBulges_)
         {
             analyzer_.ExcludeTrivialWithBulges(path, wc_->GetExcludedEdges());
@@ -625,15 +624,15 @@ class LongReadsExtensionChooser: public ExtensionChooser {
 
 protected:
     GraphCoverageMap coverageMap_;
-    LongReadsWeightCounter weightCounter_;
 
 
 public:
-    LongReadsExtensionChooser(Graph& g, PathContainer& pc, size_t RL = 50, double threshold = 0.0):
-    	ExtensionChooser(g, 0, .0),
-    	coverageMap_(g, pc), weightCounter_(g_, coverageMap_,  RL, threshold) {
+	LongReadsExtensionChooser(Graph& g, PathContainer& pc, size_t RL = 50,
+			double threshold = 0.0) :
+			ExtensionChooser(g), coverageMap_(g, pc) {
+		wc_ = new LongReadsWeightCounter(g_, coverageMap_, RL, threshold);
 
-    }
+	}
 
     virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
         if (edges.empty()) {
@@ -644,7 +643,7 @@ public:
         map<EdgeId, double> weights_cands;
         set<EdgeId> filtered_cands;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
-            double weight =  weightCounter_.CountWeight(path, it->e_, 0.0);
+            double weight =  wc_->CountWeight(path, it->e_, 0.5);
             weights_cands.insert(make_pair(it->e_,weight));
             if (weight > 0.0){
                 filtered_cands.insert(it->e_);
