@@ -63,8 +63,8 @@ public:
 			double w = lib_.IdealPairedInfo(path[i], candidate,
 					path.LengthAt(i));
 			if (math::gr(w, 0.)) {
-				edges.push_back(EdgeWithPairedInfo(i, w));
 			}
+				edges.push_back(EdgeWithPairedInfo(i, w));
 		}
 	}
 
@@ -417,6 +417,7 @@ public:
 };
 
 class LongReadsWeightCounter: public WeightCounter {
+
     size_t RL_;
     GraphCoverageMap& coverageMap_;
 
@@ -424,7 +425,7 @@ class LongReadsWeightCounter: public WeightCounter {
 public:
 
     LongReadsWeightCounter(Graph& g_,  GraphCoverageMap& covMap, size_t RL,
-            double threshold = 0.0): WeightCounter(g_, PairedInfoLibraries(), threshold), RL_(RL), coverageMap_(covMap)
+            double threshold = 0.0): WeightCounter(g_, *(new std::vector<PairedInfoLibrary *> ()), threshold), RL_(RL), coverageMap_(covMap)
             {
 
     }
@@ -434,7 +435,7 @@ public:
     }
 
     virtual double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) {
-        int res = std::min(g_.length(e1) + gap + g_.length(e2) - RL, g_.length(e1) - 1) - std::max(g_.length(e1) + gap + 1 - RL, 0) + 1;
+        int res = std::min(g_.length(e1) + dist + g_.length(e2) - RL_, g_.length(e1) - 1) - std::max(g_.length(e1) + dist + 1 - RL_, (size_t)0) + 1;
         return res > 0 ? res : 0;
     }
 
@@ -455,17 +456,29 @@ public:
         double commonIdealWeight = 0.0;
 
         std::vector<EdgeWithPairedInfo> coveredEdges;
-
-        std::set<int> excludedEdges(excludedEdges_);
+        set<int> includedEdges();
+        for (int index = (int) path.Size() - 1; index >=0; --index) {
+        	if (excludedEdges_.count(index) > 0) {
+            	continue;
+            }
+        	EdgeId cur_edge = path.At(index);
+        	double idealWeight = IdealWeightBetweenEdges(cur_edge, e, path.LengthAt(index));
+        	if (idealWeight > 0){
+        		double singleWeight = Weight(cur_edge, e, path.LengthAt(index));
+        		singleWeight /= idealWeight;
+        		if (math::ge(singleWeight, threshold_)){
+        			includedEdges.insert(index);
+        		}
+        	}
+        }
         for (int index = (int) path.Size() - 1; index >=0; --index) {
             EdgeId cur_edge = path.At(index);
-            if (excludedEdges.count(cur_edge) > 0) {
-                excludedEdges.erase(excludedEdges.find(cur_edge));
+            if (excludedEdges_.count(index) > 0) {
                 continue;
             }
 
-            double singleWeight = weight(cur_edge, e, path.LengthAt(cur_edge));
-            double idealWeight = CountIdealInfo(cur_edge, e, path.LengthAt(cur_edge));
+            double singleWeight = Weight(cur_edge, e, path.LengthAt(index));
+            double idealWeight = CountIdealInfo(cur_edge, e, path.LengthAt(index));
             if (math::eq(idealWeight, 0.0)){
                 break;
             }
@@ -480,7 +493,31 @@ public:
         return math::gr(commonIdealWeight, 0.0) ? weight / commonIdealWeight : 0.0;
     }
 
-    double weight(EdgeId e1, EdgeId e2, size_t gap) {
+    double CountIdealWeight(BidirectionalPath& p, EdgeId e1,
+			set<int>& includedEdges) {
+    	size_t common_length = 0;
+    	double weight =  RL_ - g_.k() - 1;
+		for (int index = (int) p.Size() - 1; index >= 0; --index) {
+			EdgeId cur_edge = p.At(index);
+			if (common_length > RL_ - g_.k() - 1){
+				break;
+			}
+			if (includedEdges.count(index) > 0) {
+				common_length =  p.LengthAt(index);
+				continue;
+			}
+			common_length -= min(g_.length(cur_edge), RL_ - g_.k()- 1 - common_length);
+			common_length =  p.LengthAt(index);
+		}
+		return weight;
+	}
+
+    double IdealWeightBetweenEdges(EdgeId e1, EdgeId e2, size_t dist){
+    	double w = RL_ - g_.k() - dist - 2 + g_.length(e1);
+    	return std::max(w, 0.);
+    }
+
+    double Weight(EdgeId e1, EdgeId e2, size_t gap) {
 
            auto supp_paths = coverageMap_.GetCoveringPaths(e1);
            double weight = 0;

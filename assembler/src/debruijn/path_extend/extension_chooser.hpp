@@ -624,14 +624,14 @@ bool ReverseComparePairBySecond(const boost::tuple<EdgeId, int,int> & a, const b
 class LongReadsExtensionChooser: public ExtensionChooser {
 
 protected:
-
     GraphCoverageMap coverageMap_;
     LongReadsWeightCounter weightCounter_;
 
 
 public:
-    LongReadsExtensionChooser(Graph& g, PathContainer& pc, size_t RL = 50, double threshold = 0.0): ExtensionChooser(g, 0, .0), coverageMap_(g, pc),
-    weightCounter_(g_, pc, coverageMap_, RL, threshold) {
+    LongReadsExtensionChooser(Graph& g, PathContainer& pc, size_t RL = 50, double threshold = 0.0):
+    	ExtensionChooser(g, 0, .0),
+    	coverageMap_(g, pc), weightCounter_(g_, coverageMap_,  RL, threshold) {
 
     }
 
@@ -639,7 +639,7 @@ public:
         if (edges.empty()) {
             return edges;
         }
-        RemoveTrivial(BidirectionalPath& path);
+        RemoveTrivial(path);
         DEBUG("We in Filter of PathsDrivenExtension");
         map<EdgeId, double> weights_cands;
         set<EdgeId> filtered_cands;
@@ -647,7 +647,7 @@ public:
             double weight =  weightCounter_.CountWeight(path, it->e_, 0.0);
             weights_cands.insert(make_pair(it->e_,weight));
             if (weight > 0.0){
-                filtered_cands.insert(next);
+                filtered_cands.insert(it->e_);
             }
         }
 
