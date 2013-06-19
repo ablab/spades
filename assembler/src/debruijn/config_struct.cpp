@@ -221,6 +221,18 @@ void load(debruijn_config::repeat_resolver& rr,
   load(rr.kill_loops, pt, "kill_loops");
 }
 
+void load(debruijn_config::coverage_based_rr& cbrr,
+          boost::property_tree::ptree const& pt, bool complete) {
+  using config_common::load;
+ 
+    load(cbrr.coverage_threshold_one_list, pt, "coverage_threshold_one_list");
+    load(cbrr.coverage_threshold_match, pt, "coverage_threshold_match");
+    load(cbrr.coverage_threshold_global, pt, "coverage_threshold_global");
+    load(cbrr.tandem_ratio_lower_threshold, pt, "tandem_ratio_lower_threshold");
+    load(cbrr.tandem_ratio_upper_threshold, pt, "tandem_ratio_upper_threshold");
+    load(cbrr.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
+ 
+}
 
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool complete) {
@@ -432,15 +444,10 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.use_unipaths, pt, "use_unipaths");
 
   load(cfg.pacbio_test_on, pt, "pacbio_test_on");
-  load(cfg.coverage_based_rr, pt, "coverage_based_rr");
-  if (cfg.coverage_based_rr) {
-    load(cfg.coverage_threshold_one_list, pt, "coverage_threshold_one_list");
-    load(cfg.coverage_threshold_match, pt, "coverage_threshold_match");
-    load(cfg.coverage_threshold_global, pt, "coverage_threshold_global");
-    load(cfg.tandem_ratio_lower_threshold, pt, "tandem_ratio_lower_threshold");
-    load(cfg.tandem_ratio_upper_threshold, pt, "tandem_ratio_upper_threshold");
-    load(cfg.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
-  }
+  load(cfg.coverage_based_rr_on, pt, "coverage_based_rr_on");
+  if (cfg.coverage_based_rr_on) {
+    load (cfg.cbrr, pt, "coverage_based_rr");
+}
   if (cfg.pacbio_test_on) {
 	load(cfg.pb, pt, "pacbio_processor");
   } else {

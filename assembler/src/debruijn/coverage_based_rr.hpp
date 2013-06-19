@@ -681,6 +681,7 @@ class CoverageBasedResolution {
 		int numberOfComponentWithDifferentInOutDegree = 0;
 
 		int filteredByThresholds(0), resolvedPathsNum(0); 
+		int resolvedComponentsByTopology(0), resolvedComponentsByLength(0);//, resolvedComponentsByLengthAndTopology(0);
 		for ( auto edge = components.begin(); edge != components.end(); ++edge ) {
 			
 			if ( visited_edges.find(*edge) != visited_edges.end() ){
