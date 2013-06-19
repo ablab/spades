@@ -627,7 +627,7 @@ protected:
 
 
 public:
-	LongReadsExtensionChooser(Graph& g, PathContainer& pc, size_t RL = 50,
+	LongReadsExtensionChooser(Graph& g, PathContainer& pc, size_t RL,
 			double threshold = 0.5) :
 			ExtensionChooser(g), coverageMap_(g, pc) {
 		wc_ = new LongReadsWeightCounter(g_, coverageMap_, RL, threshold);

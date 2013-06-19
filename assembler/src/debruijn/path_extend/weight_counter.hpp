@@ -506,7 +506,8 @@ public:
 	}
 
     double IdealWeightBetweenEdges(EdgeId e1, EdgeId e2, size_t dist){
-    	double w = RL_ - g_.k() - dist - 2 + g_.length(e1);
+        INFO("IDEAL " << RL_ << " " <<g_.k() << " " << dist << " " << g_.length(e1) );
+    	double w = (double) RL_ - (double) g_.k() - (double) dist - 2.0 + (double) g_.length(e1);
     	return std::max(w, 0.);
     }
 
@@ -526,6 +527,7 @@ public:
 
     double Weight(BidirectionalPath& p, size_t pos1, EdgeId e2) {
            auto supp_paths = coverageMap_.GetCoveringPaths(p.At(pos1));
+           INFO("SUPPORT PATHS " << supp_paths.size());
            double weight = 0;
            for (auto it = supp_paths.begin(); it != supp_paths.end(); ++it) {
                BidirectionalPath* cur_path = *it;
@@ -533,7 +535,11 @@ public:
                for (size_t i = 0; i < poss.size(); ++i) {
                    size_t pos_end = poss[i];
                    if (!covered_path(p, *cur_path, pos_end)){
+                       INFO("not covered etirely");
                 	   continue;
+                   }
+                   else {
+                       INFO("YEAH, covered etirely");
                    }
                    if (pos_end + 1 < cur_path->Size() && cur_path->At(pos_end + 1) == e2){
                 	   INFO("covered path " << cur_path->getWeight());

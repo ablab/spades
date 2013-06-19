@@ -199,10 +199,10 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	PathExtendResolver resolver(gp.g);
 	auto seeds = resolver.makeSimpleSeeds();
 
-	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths);
+	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths, 100);
 	INFO("Long Reads supporting contigs " << true_paths.size());
 	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC, false);
-	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs);
+	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs, 100);
 	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC, false);
 	vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
@@ -240,6 +240,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
     writer.writePaths(paths, output_dir + contigs_name);
     INFO("Reads");
     true_paths.print();
+    debug_output_paths(writer, gp, output_dir, true_paths, "long_reads");
 
     INFO("Path extend repeat resolving tool finished");
 }
@@ -291,6 +292,7 @@ void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t inde
 
 void add_paths_to_container(conj_graph_pack& gp, const std::vector<PathInfo<Graph> >& paths, PathContainer& supportingContigs,
 		size_t size_threshold, size_t weight_threshold){
+
 	for (size_t i = 0; i < paths.size(); ++i){
 		PathInfo<Graph> path = paths[i];
 		if (path.getPath().size() <= size_threshold or path.getWeight() <= weight_threshold){
@@ -298,7 +300,7 @@ void add_paths_to_container(conj_graph_pack& gp, const std::vector<PathInfo<Grap
 		}
 		vector<EdgeId> edges = path.getPath();
 		BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
-		BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
+		BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate(gp.g.int_id(gp.g.conjugate(edges.back()))));
 		new_path->setWeight(path.getWeight());
 		conj_path->setWeight(path.getWeight());
 		supportingContigs.AddPair(new_path, conj_path);
@@ -354,6 +356,15 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 	add_not_empty_lib(scaff_libs, mp_scaf_libs);
 	PathContainer supportingContigs;
 	add_paths_to_container(gp, true_paths, supportingContigs, 1, 1);
+
+	INFO("== Long reads paths == ");
+	for (auto it = true_paths.begin(); it != true_paths.end(); ++it) {
+	    INFO("Path " << gp.g.int_id(it->path[0]));
+	    for (auto e = it->path.begin(); e != it->path.end(); ++e) {
+	        INFO(gp.g.int_id(*e) << ", length " << gp.g.length(*e));
+	    }
+	}
+	INFO("==== ");
 
 	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, traverseLoops, broken_contigs);
 

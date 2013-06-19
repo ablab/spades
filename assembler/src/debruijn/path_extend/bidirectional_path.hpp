@@ -875,8 +875,13 @@ public:
         return cov / Length();
     }
 
-    BidirectionalPath Conjugate() const {
+    BidirectionalPath Conjugate(size_t id = 0) const {
         BidirectionalPath result(g_);
+        if (id == 0) {
+            result.SetId(id_ % 2 == 0 ? id_ + 1 : id_ - 1);
+        } else {
+            result.SetId(id);
+        }
         for (size_t i = 0; i < Size(); ++i) {
             result.PushFront(g_.conjugate(data_[i]));
         }

@@ -44,6 +44,7 @@ public:
 		path = other.path;
 		w = other.w;
 	}
+
 };
 
 template<class Graph>
@@ -137,6 +138,29 @@ public:
 		}
 		return res;
 	}
+
+    vector<PathInfo<Graph> > GetAllPathsNoConjugate() {
+        vector<PathInfo<Graph> > res;
+
+        std::set< PathInfo<Graph> > added;
+        for (auto iter = inner_index.begin(); iter != inner_index.end();  ++iter) {
+            for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
+                if (added.count(*j_iter) > 0) {
+                    continue;
+                }
+
+                added.insert(*j_iter);
+                vector<EdgeId> rc_p(j_iter->path.size()) ;
+                for (size_t i = 0; i < j_iter->path.size(); i++) {
+                    rc_p[i] = g_.conjugate(j_iter->path[j_iter->path.size() - 1 - i]);
+                }
+                added.insert(PathInfo<Graph>(rc_p, j_iter->getWeight()));
+
+                res.push_back(*j_iter);
+            }
+        }
+        return res;
+    }
 
 
 	void LoadFromFile(const string s){
