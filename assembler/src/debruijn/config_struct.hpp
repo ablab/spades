@@ -483,14 +483,17 @@ struct debruijn_config {
 
 
   bool pacbio_test_on;
-  bool coverage_based_rr;
+  bool coverage_based_rr_on;
+  struct coverage_based_rr {
   double coverage_threshold_one_list;
   double coverage_threshold_match;
   double coverage_threshold_global;
   double tandem_ratio_lower_threshold;
   double tandem_ratio_upper_threshold;
   double repeat_length_upper_threshold;
+ };
 
+  coverage_based_rr cbrr;
 
   std::string load_from;
 
