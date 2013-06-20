@@ -121,7 +121,7 @@ void ConstructGPForRefinement(gp_t& gp, const ContigStreamsPtr& contigs,
     ContigStreamsPtr rc_streams = io::RCWrapStreams(*contigs);
     rc_streams->reset();
 
-    ConstructGraph(gp.k_value, *rc_streams, gp.g, gp.index);
+    ConstructGraph(gp.k_value, CreateDefaultConstructionConfig(), *rc_streams, gp.g, gp.index);
 
     RefineGP(gp, delta);
 }
@@ -215,7 +215,7 @@ void PerformRefinement(ContigStreamsPtr streams, const string& root,
     ContigStreamsPtr rc_streams = io::RCWrapStreams(*streams);
     rc_streams->reset();
 
-    ConstructGraph(gp.k_value, *rc_streams, gp.g, gp.index);
+    CapConstructGraph(gp.k_value, *rc_streams, gp.g, gp.index);
 
     MakeSaves(gp, streams, root + "before_refinement/", suffixes);
 

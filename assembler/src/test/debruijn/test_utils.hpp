@@ -129,14 +129,6 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
 	EdgesEqual(edges, etalon_edges);
 }
 
-debruijn_config::construction CreateDefaultConstructionConfig() {
-	  debruijn_config::construction config;
-	  config.con_mode = construction_mode::con_extention;
-	  config.early_tc.enable = false;
-	  config.keep_perfect_loops = true;
-	  return config;
-}
-
 void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& etalon_edges) {
 	DEBUG("Asserting graph");
 	typedef io::VectorReader<SingleRead> RawStream;

@@ -10,7 +10,6 @@
 
 namespace debruijn_graph {
 
-template<class Seq>
 class DeBruijnExtensionIndexBuilder;
 
 template<class Seq>
@@ -32,7 +31,7 @@ struct slim_kmer_index_traits : public kmer_index_traits<Seq> {
 
 };
 
-template<class Seq = runtime_k::RtSeq, class traits = slim_kmer_index_traits<Seq> >
+template<class traits = slim_kmer_index_traits<runtime_k::RtSeq>>
 class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
   private:
     typedef DeBruijnKMerIndex<uint8_t, traits> base;
@@ -170,7 +169,7 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         size_t idx;
 
         KmerWithHash(KMer _kmer,
-                     const DeBruijnExtensionIndex<Seq, traits> &index) :
+                     const DeBruijnExtensionIndex<traits> &index) :
                 kmer(_kmer), idx(index.seq_idx(kmer)) { }
     };
 
@@ -178,7 +177,7 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         return KmerWithHash(kmer, *this);
     }
 
-    friend class DeBruijnExtensionIndexBuilder<Seq>;
+    friend class DeBruijnExtensionIndexBuilder;
 };
 
 template <>
@@ -205,26 +204,13 @@ class DeBruijnKMerIndexBuilder<slim_kmer_index_traits<runtime_k::RtSeq>> {
   DECL_LOGGER("K-mer Index Building");
 };
 
-template <class Seq>
-class DeBruijnExtensionIndexBuilder : public DeBruijnKMerIndexBuilder<typename DeBruijnExtensionIndex<Seq>::kmer_index_traits> {
-  public:
-    template <class Read>
-    size_t BuildIndexFromStream(DeBruijnExtensionIndex<Seq> &index,
-                                io::ReadStreamVector<io::IReader<Read> > &streams,
-                                SingleReadStream* contigs_stream = 0) const;
-
-  protected:
-    DECL_LOGGER("Extension Index Building");
-};
-
-template <>
-class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
-            public DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> {
-    typedef DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> base;
+class DeBruijnExtensionIndexBuilder :
+            public DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<>::kmer_index_traits> {
+    typedef DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<>::kmer_index_traits> base;
 
     template <class ReadStream>
     size_t FillExtensionsFromStream(ReadStream &stream,
-                                    DeBruijnExtensionIndex<runtime_k::RtSeq> &index) const {
+                                    DeBruijnExtensionIndex<> &index) const {
         unsigned K = index.K();
         size_t rl = 0;
 
@@ -251,7 +237,7 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
 
   public:
     template <class Read>
-    size_t BuildIndexFromStream(DeBruijnExtensionIndex<runtime_k::RtSeq> &index,
+    size_t BuildIndexFromStream(DeBruijnExtensionIndex<> &index,
                                 io::ReadStreamVector<io::IReader<Read> > &streams,
                                 SingleReadStream* contigs_stream = 0) const {
         unsigned nthreads = streams.size();

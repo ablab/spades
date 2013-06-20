@@ -7,9 +7,9 @@
 #pragma once
 
 #include "runtime_k.hpp"
+#include "compare_standard.hpp"
 #include "cap_kmer_index.hpp"
 #include "graph_construction.hpp"
-#include "compare_standard.hpp"
 
 namespace cap {
 
@@ -314,6 +314,13 @@ void SplitAndColorGraph(gp_t& gp,
 	}
 }
 
+template<class Graph, class Read, class Seq>
+size_t CapConstructGraph(size_t k,
+        io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
+        EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
+    return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
+}
+
 template<class gp_t>
 void ConstructColoredGraph(gp_t& gp,
 		ColorHandler<typename gp_t::graph_t>& coloring,
@@ -322,7 +329,7 @@ void ConstructColoredGraph(gp_t& gp,
     INFO("Constructing de Bruijn graph for k=" << gp.k_value);
 
 	// false: do not delete streams after usage
-	debruijn_graph::ConstructGraph(gp.k_value, streams,
+	debruijn_graph::ConstructGraph(gp.k_value, CreateDefaultConstructionConfig(), streams,
 			gp.g, gp.index);
 
 	SplitAndColorGraph(gp, coloring, streams, fill_pos);

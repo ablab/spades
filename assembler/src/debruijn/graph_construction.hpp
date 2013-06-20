@@ -152,17 +152,26 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 
 	INFO("Condensing graph");
 	DeBruijnGraphConstructor<Graph, Seq> g_c(g, debruijn, k);
-  TRACE("Constructor ok");
+	TRACE("Constructor ok");
 	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
 	TRACE("Graph condensed");
 
 	return rl;
 }
 
-template<class Graph, class Read, class Seq>
+void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t rl, DeBruijnExtensionIndex<>& ext) {
+    if (params.early_tc.enable) {
+        size_t length_bound = rl - k;
+        if (params.early_tc.length_bound)
+            length_bound = params.early_tc.length_bound.get();
+        EarlyTipClipper(ext, length_bound).ClipTips();
+    }
+}
+
+template<class Graph, class Read>
 size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::construction params,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
-		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
+		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
 
 	INFO("Constructing DeBruijn graph");
 
@@ -171,36 +180,31 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 
 	TRACE("... in parallel");
 	// FIXME: output_dir here is damn ugly!
-	DeBruijnExtensionIndex<Seq> ext(k, index.inner_index().workdir());
-	size_t rl = DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
+	DeBruijnExtensionIndex<> ext(k, index.inner_index().workdir());
+	size_t rl = DeBruijnExtensionIndexBuilder().BuildIndexFromStream(ext, streams, contigs_stream);
 
 	TRACE("Extention Index constructed");
 
-    if (params.early_tc.enable) {
-        size_t length_bound = rl - k;
-        if (params.early_tc.length_bound)
-            length_bound = params.early_tc.length_bound.get();
-        EarlyTipClipper(ext, length_bound).ClipTips();
-    }
+	EarlyClipTips(k, params, rl, ext);
 
 	INFO("Condensing graph");
 	index.Detach();
-	DeBruijnGraphExtentionConstructor<Graph, Seq> g_c(g, ext, k);
+	DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext, k);
 	g_c.ConstructGraph(100, 10000, 1.2, params.keep_perfect_loops);//TODO move these parameters to config
 	index.Attach();
 	INFO("Graph condensed");
 
 	INFO("Counting coverage");
 	auto& debruijn = index.inner_index();
-	DeBruijnEdgeIndexBuilder<Seq>().BuildIndexWithCoverageFromGraph(g, debruijn, streams, contigs_stream);
+	DeBruijnEdgeIndexBuilder().BuildIndexWithCoverageFromGraph(g, debruijn, streams, contigs_stream);
 	INFO("Counting coverage finished");
 	return rl;
 }
 
-template<class Graph, class Read, class Seq>
+template<class Graph, class Read>
 size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
 		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
-		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
+		EdgeIndex<Graph>& index, SingleReadStream* contigs_stream = 0) {
 	if(params.con_mode == construction_mode::con_extention) {
 		return ConstructGraphUsingExtentionIndex(k, params, streams, g, index, contigs_stream);
 	} else if(params.con_mode == construction_mode::con_old){

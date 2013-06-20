@@ -520,6 +520,14 @@ public:
 	info_printers_t info_printers;
 };
 
+inline debruijn_config::construction CreateDefaultConstructionConfig() {
+    debruijn_config::construction config;
+    config.con_mode = construction_mode::con_extention;
+    config.early_tc.enable = false;
+    config.keep_perfect_loops = true;
+    return config;
+}
+
 // specific load functions
 
 inline void load(debruijn_config::simplification::tip_clipper& tc,
@@ -813,12 +821,12 @@ inline void load_reference_genome(debruijn_config::dataset& ds,
 	io::SingleRead genome;
 	genome_stream >> genome;
 	VERIFY(genome.IsValid());
-//	if (VERIFY(genome.IsValid())) 
+//	if (VERIFY(genome.IsValid()))
 	// {
 	ds.reference_genome = genome.sequence();
 	//INFO("Reference genome loaded. Length " << ds.reference_genome.size());
 //        cout << "Reference genome loaded. Length " << ds.reference_genome.size() << endl;
-//	} 
+//	}
 //    else {
 //		//INFO("Reference genome (" + ds.reference_genome_filename + ") has non-ACGT characters. Skipping it");
 //		cout << "Reference genome (" + ds.reference_genome_filename + ") has non-ACGT characters. Skipping it" << endl;

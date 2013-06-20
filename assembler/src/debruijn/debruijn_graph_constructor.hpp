@@ -220,13 +220,12 @@ private:
 	DECL_LOGGER("DeBruijnGraphConstructor")
 };
 
-template<class Seq>
 class UnbranchingPathFinder {
 private:
-	typedef DeBruijnExtensionIndex<Seq> Index;
+	typedef DeBruijnExtensionIndex<> Index;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef Seq Kmer;
+	typedef runtime_k::RtSeq Kmer;
 	typedef typename Index::kmer_iterator kmer_iterator;
 
 	Index &origin_;
@@ -290,15 +289,14 @@ public:
 	}
 };
 
-template<class Seq>
 class UnbranchingPathExtractor {
 private:
-	typedef DeBruijnExtensionIndex<Seq> Index;
+	typedef DeBruijnExtensionIndex<> Index;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef Seq Kmer;
+	typedef runtime_k::RtSeq Kmer;
 	typedef typename Index::kmer_iterator kmer_iterator;
-	typedef typename UnbranchingPathFinder<Seq>::KPlusOneMer KPlusOneMer;
+	typedef typename UnbranchingPathFinder::KPlusOneMer KPlusOneMer;
 
 	Index &origin_;
 	size_t kmer_size_;
@@ -323,7 +321,7 @@ private:
 	}
 
 	void CalculateSequences(std::vector<KPlusOneMer> &kmers,
-                            std::vector<Sequence> &sequences, UnbranchingPathFinder<Seq> &finder) {
+                            std::vector<Sequence> &sequences, UnbranchingPathFinder &finder) {
 		size_t size = kmers.size();
 		size_t start = sequences.size();
 		sequences.resize(start + size);
@@ -449,13 +447,13 @@ private:
 /*
  * Only works for Conjugate dbg
  */
-template<class Graph, class Seq>
+template<class Graph>
 class FastGraphFromSequencesConstructor {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef Seq Kmer;
-	typedef DeBruijnExtensionIndex<Seq> Index;
+	typedef runtime_k::RtSeq Kmer;
+	typedef DeBruijnExtensionIndex<> Index;
 	size_t kmer_size_;
 	Index &origin_;
 
@@ -587,13 +585,13 @@ public:
 /*
  * Constructs DeBruijnGraph from DeBruijnExtensionIndex using "new DeBruijnGraphExtentionConstructor(DeBruijn).ConstructGraph(DeBruijnGraph, Index)"
  */
-template<class Graph, class Seq>
+template<class Graph>
 class DeBruijnGraphExtentionConstructor {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef DeBruijnExtensionIndex<Seq> DeBruijn;
+	typedef DeBruijnExtensionIndex<> DeBruijn;
 	typedef typename Graph::VertexId VertexId;
-	typedef Seq Kmer;
+	typedef runtime_k::RtSeq Kmer;
 	typedef typename DeBruijn::const_kmer_iterator kmer_iterator;
 
 	Graph &graph_;
@@ -620,9 +618,9 @@ public:
 			double queueGrowthRate, bool keep_perfect_loops) {
 		std::vector<Sequence> edgeSequences;
 		if(keep_perfect_loops)
-			edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(queueMinSize, queueMaxSize, queueGrowthRate);
+			edgeSequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(queueMinSize, queueMaxSize, queueGrowthRate);
 		else
-			edgeSequences = UnbranchingPathExtractor<Seq>(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
+			edgeSequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
 		FilterRC(edgeSequences);
 		FastGraphFromSequencesConstructor<Graph, Seq>(kmer_size_, origin_).ConstructGraph(graph_, edgeSequences);
 	}
