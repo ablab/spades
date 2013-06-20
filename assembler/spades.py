@@ -376,10 +376,14 @@ def main():
 
             if corrected_dataset_yaml_filename:
                 dataset_data = pyyaml.load(file(corrected_dataset_yaml_filename, 'r'))
-            if support.dataset_has_paired_reads(dataset_data):
+            if support.dataset_needs_paired_mode(dataset_data):
                 spades_cfg.__dict__["paired_mode"] = True
             else:
                 spades_cfg.__dict__["paired_mode"] = False
+            if support.dataset_needs_long_single_mode(dataset_data):
+                spades_cfg.__dict__["long_single_mode"] = True
+            else:
+                spades_cfg.__dict__["long_single_mode"] = False
 
             if options_storage.rectangles:
                 spades_cfg.__dict__["resolving_mode"] = "rectangles"

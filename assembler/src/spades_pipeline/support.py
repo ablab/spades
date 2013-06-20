@@ -250,9 +250,16 @@ def dataset_has_only_mate_pairs_libraries(dataset_data):
     return True
 
 
-def dataset_has_paired_reads(dataset_data):
+def dataset_needs_paired_mode(dataset_data):
     for reads_library in dataset_data:
         if reads_library['type'] in ['paired-end', 'mate-pairs']:
+            return True
+    return False
+
+
+def dataset_needs_long_single_mode(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'] in ['long-single']:
             return True
     return False
 
