@@ -645,9 +645,12 @@ public:
         for (auto it = edges.begin(); it != edges.end(); ++it) {
             double weight =  wc_->CountWeight(path, it->e_, 0.0);
             weights_cands.insert(make_pair(it->e_,weight));
-            if (weight > 0.0){
+            if (weight > 0.1){
                 filtered_cands.insert(it->e_);
             }
+        }
+        for (auto iter = weights_cands.begin(); iter != weights_cands.end(); ++iter){
+        	INFO("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
         }
 
         /*auto supporting_paths = coverageMap_.GetCoveringPaths(path.Back());

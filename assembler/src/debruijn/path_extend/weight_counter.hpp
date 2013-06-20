@@ -454,9 +454,7 @@ public:
         std::vector<EdgeWithPairedInfo> coveredEdges;
         std::set<int> includedEdges;
         std::set<int> allEdges;
-        path.Print();
         for (int index = (int) path.Size() - 1; index >=0; --index) {
-        	allEdges.insert(index);
         	if (excludedEdges_.count(index) > 0) {
             	continue;
             }
@@ -464,6 +462,7 @@ public:
         	double idealWeight = IdealWeightBetweenEdges(cur_edge, e, path.LengthAt(index));
         	INFO("index " << index << " idealWeight " << idealWeight);
         	if (idealWeight > 0){
+            	allEdges.insert(index);
         		double singleWeight = Weight(path, index, e);
         		INFO("single weight " << singleWeight);
         		singleWeight /= idealWeight;
@@ -497,11 +496,11 @@ public:
 			weight -= min(g_.length(cur_edge), RL_ - g_.k() - 1 - common_length);
 			common_length =  p.LengthAt(index);
 		}
-		INFO("include edges ");
+		/*INFO("include edges ");
 		for (auto iter = includedEdges.begin(); iter != includedEdges.end(); ++iter){
 			INFO(" " << *iter);
-		}
-		INFO("ideal weight result " << weight);
+		}*/
+		//INFO("ideal weight result " << weight);
 		return weight;
 	}
 
@@ -535,14 +534,10 @@ public:
                for (size_t i = 0; i < poss.size(); ++i) {
                    size_t pos_end = poss[i];
                    if (!covered_path(p, *cur_path, pos_end)){
-                       INFO("not covered etirely");
                 	   continue;
                    }
-                   else {
-                       INFO("YEAH, covered etirely");
-                   }
                    if (pos_end + 1 < cur_path->Size() && cur_path->At(pos_end + 1) == e2){
-                	   INFO("covered path " << cur_path->getWeight());
+                	   //INFO("covered path " << cur_path->getWeight());
                 	   weight += cur_path->getWeight();
                    }
                }

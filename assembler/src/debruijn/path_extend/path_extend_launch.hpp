@@ -139,6 +139,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libs,
 		vector<PairedInfoLibraries>& scafolding_libs,
 		PathContainer& true_paths,
+		size_t RL_true_paths,
 		const std::string& output_dir,
 		const std::string& contigs_name,
 		bool traversLoops,
@@ -199,10 +200,10 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	PathExtendResolver resolver(gp.g);
 	auto seeds = resolver.makeSimpleSeeds();
 
-	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths, 100);
+	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths, RL_true_paths);
 	INFO("Long Reads supporting contigs " << true_paths.size());
 	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC, false);
-	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs, 100);
+	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs, RL_true_paths);
 	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC, false);
 	vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
@@ -307,6 +308,14 @@ void add_paths_to_container(conj_graph_pack& gp, const std::vector<PathInfo<Grap
 	}
 }
 
+size_t get_max_read_length(){
+	size_t RL = 0;
+	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i){
+		RL = std::max(RL, cfg::get().ds.reads[i].data().read_length);
+	}
+	return RL;
+}
+
 void resolve_repeats_pe(conj_graph_pack& gp,
 		vector<PairedIndexT*>& paired_index, vector<PairedIndexT*>& scaff_index,
 		vector<size_t>& indexs, const std::vector<PathInfo<Graph> >& true_paths,
@@ -366,7 +375,9 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 	}
 	INFO("==== ");
 
-	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, traverseLoops, broken_contigs);
+
+
+	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, get_max_read_length(), output_dir, contigs_name, traverseLoops, broken_contigs);
 
 	delete_libs(paired_end_libs);
 	delete_libs(mate_pair_libs);
