@@ -452,6 +452,7 @@ struct debruijn_config {
   working_stage entry_point;
 
   bool paired_mode;
+  bool long_single_mode;
   bool divide_clusters;
 
   bool mismatch_careful;

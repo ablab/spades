@@ -1148,15 +1148,7 @@ void resolve_repeats() {
 			"graph.dot");
 	printer(ipp_before_repeat_resolution);
 
-	bool long_single = false;
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::LongSingleReads) {
-            long_single = true;
-            break;
-        }
-    }
-
-	if ((!cfg::get().paired_mode && !long_single)
+	if ((!cfg::get().paired_mode && !cfg::get().long_single_mode)
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 		if (cfg::get().pacbio_test_on) {
@@ -1177,12 +1169,12 @@ void resolve_repeats() {
 	int pe_lib_index = get_first_pe_lib_index();
 	INFO("STAGE == Resolving Repeats");
 	if (cfg::get().ds.reads.lib_count() == 1 && pe_lib_index >= 0
-			&& cfg::get().rm == debruijn_graph::resolving_mode::rm_split && !long_single) {
+			&& cfg::get().rm == debruijn_graph::resolving_mode::rm_split && !cfg::get().long_single_mode) {
 		INFO("Split repeat resolving");
 		split_resolving(conj_gp, paired_indices, clustered_indices, genome,
 				pe_lib_index);
 	}
-	else if (long_single || cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1
+	else if (cfg::get().long_single_mode || cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1
 			|| cfg::get().rm
 					== debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");
