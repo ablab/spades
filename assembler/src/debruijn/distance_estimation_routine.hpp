@@ -226,7 +226,9 @@ void exec_distance_estimation(conj_graph_pack& gp,
     exec_late_pair_info_count(gp, paired_indices);
     if (cfg::get().paired_mode) {
 		for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-			estimate_distance(gp, cfg::get_writable().ds.reads[i], paired_indices[i], clustered_indices[i]);
+	        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||  cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
+	            estimate_distance(gp, cfg::get_writable().ds.reads[i], paired_indices[i], clustered_indices[i]);
+	        }
 		}
     }
     save_distance_estimation(gp, paired_indices, clustered_indices);
