@@ -158,7 +158,8 @@ class CoverageBasedResolution {
 		std::cout << "in components but not in componentsRef: " << std::endl;
 		for (auto it = components.begin(); it != components.end(); ++it) {
 
-			if (std::find(componentsRef.begin(), componentsRef.end(), *it) == componentsRef.end()) {
+			if (std::find(componentsRef.begin(), componentsRef.end(), *it) == componentsRef.end() 
+				&& labels_after.edge_inclusions.find(*it) != labels_after.edge_inclusions.end() && labels_after.edge_inclusions[*it].size()> 1 ) {
 				std::cout << gp->g.int_id(*it) << ", ";
 			}
 
@@ -321,7 +322,7 @@ class CoverageBasedResolution {
 				continue;
 			}
 
-			if (quality_labeler.quality(*iter) > 1) {
+			if (quality_labeler.quality(*iter) > 1.5 ) {
 
 				components.push_back(*iter);
 			}
