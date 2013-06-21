@@ -901,15 +901,17 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	if (cfg::get().developer_mode) {
 
 		std::string path;
-		if (cfg::get().entry_point < ws_repeats_resolving) 
-			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
-		else
-			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
+		//if (cfg::get().entry_point < ws_repeats_resolving) 
+		//	path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
+		//else
+		path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
 		bool val = LoadEdgeIndex(path, kmerIndex);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
 		INFO("Updating index from graph started");
 		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, conj_gp.g);
+		SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction", kmerIndex);
 	}
+
 
 	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
