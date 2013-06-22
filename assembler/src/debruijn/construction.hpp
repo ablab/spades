@@ -37,8 +37,8 @@ void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
   INFO("STAGE == Constructing Graph");
   debruijn_config::construction params = cfg::get().con;
   params.early_tc.enable &= !cfg::get().ds.single_cell;
-  size_t rl = ConstructGraphWithCoverage<Read>(cfg::get().K, params, streams, gp.g,
-      gp.index, contigs_stream);
+  size_t rl = ConstructGraphWithCoverage(cfg::get().K, params, streams, gp.g,
+                                         gp.index, contigs_stream);
   if (!cfg::get().ds.RL.is_initialized()) {
     INFO("Figured out: read length = " << rl);
     cfg::get_writable().ds.RL = rl;

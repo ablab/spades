@@ -51,7 +51,7 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 			new FixedColorer<typename gp_t::graph_t::VertexId>("white"),
 			new PositionsEdgeColorer<typename gp_t::graph_t>(gp.g, gp.edge_pos));
 
-	EdgeQuality<typename gp_t::graph_t> edge_qual(gp.g, gp.index,
+	EdgeQuality<typename gp_t::graph_t, typename gp_t::index_t> edge_qual(gp.g, gp.index,
 			gp.kmer_mapper, gp.genome);
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
@@ -254,67 +254,67 @@ void SaveComponents(string file_name, set<set<EdgeId> >& components,
 	fclose(file);
 }
 
-void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
-		EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
-
-	io::OffsetType offset_type = EvaluateOffset();
-	string OutputFileName =
-			(cfg::get().run_mode) ?
-					cfg::get().output_dir + "align_after_RR.sam" :
-					cfg::get().output_base + "contigs.sam";
-
-	if (cfg::get().sw.align_original_reads) {
-//			if (cfg::get().sw.original_first && cfg::get().sw.original_second)
-		{
-			auto paired_reads = paired_easy_reader(false, 0, false, false,
-					false, offset_type);
-			auto original_paired_reads = paired_easy_reader(false, 0, false,
-					false, true, offset_type);
-//				io::PairedEasyReader original_paired_reads(
-//								make_pair(input_file(*cfg::get().sw.original_first),
-//										input_file(*cfg::get().sw.original_second)),
-//								false,
-//								0);
-			typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-					conj_gp.k_value + 1);
-
-			bool print_quality = (
-					cfg::get().sw.print_quality ?
-							*cfg::get().sw.print_quality : false);
-			OriginalReadsResolvedInternalAligner<ConjugateDeBruijnGraph,
-					SequenceMapper> Aligner(resolved_gp.k_value, resolved_gp.g,
-					conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align,
-					cfg::get().sw.output_map_format,
-					cfg::get().sw.output_broken_pairs, print_quality);
-			Aligner.AlignPairedReads(*original_paired_reads, *paired_reads,
-					OutputFileName);
-		}
-	} else {
-		auto paired_reads = paired_easy_reader(false, 0, false, false, false,
-				offset_type);
-		auto single_reads = single_easy_reader(false, false, false,
-				offset_type);
-
-		typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-		SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-				conj_gp.k_value + 1);
-
-		bool print_quality = (
-				cfg::get().sw.print_quality ?
-						*cfg::get().sw.print_quality : false);
-		ResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(
-				resolved_gp.k_value, resolved_gp.g, conj_gp.g, mapper,
-				labels_after, cfg::get().sw.adjust_align,
-				cfg::get().sw.output_map_format,
-				cfg::get().sw.output_broken_pairs, print_quality);
-		if (cfg::get().sw.align_only_paired)
-			Aligner.AlignPairedReads(*paired_reads, OutputFileName);
-		else
-			Aligner.AlignReads(*paired_reads, *single_reads, OutputFileName);
-
-	}
-}
+//void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
+//		EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
+//
+//	io::OffsetType offset_type = EvaluateOffset();
+//	string OutputFileName =
+//			(cfg::get().run_mode) ?
+//					cfg::get().output_dir + "align_after_RR.sam" :
+//					cfg::get().output_base + "contigs.sam";
+//
+//	if (cfg::get().sw.align_original_reads) {
+////			if (cfg::get().sw.original_first && cfg::get().sw.original_second)
+//		{
+//			auto paired_reads = paired_easy_reader(false, 0, false, false,
+//					false, offset_type);
+//			auto original_paired_reads = paired_easy_reader(false, 0, false,
+//					false, true, offset_type);
+////				io::PairedEasyReader original_paired_reads(
+////								make_pair(input_file(*cfg::get().sw.original_first),
+////										input_file(*cfg::get().sw.original_second)),
+////								false,
+////								0);
+//			typedef NewExtendedSequenceMapper<Graph, Index> SequenceMapper;
+//			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
+//					conj_gp.k_value + 1);
+//
+//			bool print_quality = (
+//					cfg::get().sw.print_quality ?
+//							*cfg::get().sw.print_quality : false);
+//			OriginalReadsResolvedInternalAligner<ConjugateDeBruijnGraph,
+//					SequenceMapper> Aligner(resolved_gp.k_value, resolved_gp.g,
+//					conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align,
+//					cfg::get().sw.output_map_format,
+//					cfg::get().sw.output_broken_pairs, print_quality);
+//			Aligner.AlignPairedReads(*original_paired_reads, *paired_reads,
+//					OutputFileName);
+//		}
+//	} else {
+//		auto paired_reads = paired_easy_reader(false, 0, false, false, false,
+//				offset_type);
+//		auto single_reads = single_easy_reader(false, false, false,
+//				offset_type);
+//
+//		typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
+//		SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
+//				conj_gp.k_value + 1);
+//
+//		bool print_quality = (
+//				cfg::get().sw.print_quality ?
+//						*cfg::get().sw.print_quality : false);
+//		ResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(
+//				resolved_gp.k_value, resolved_gp.g, conj_gp.g, mapper,
+//				labels_after, cfg::get().sw.adjust_align,
+//				cfg::get().sw.output_map_format,
+//				cfg::get().sw.output_broken_pairs, print_quality);
+//		if (cfg::get().sw.align_only_paired)
+//			Aligner.AlignPairedReads(*paired_reads, OutputFileName);
+//		else
+//			Aligner.AlignReads(*paired_reads, *single_reads, OutputFileName);
+//
+//	}
+//}
 
 template<class graph_pack>
 void CleanIsolated(graph_pack& gp) {
@@ -915,104 +915,104 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 	estimate_with_estimator(gp.g, estimator, normalizer, filter,
 			clustered_index);
 }
-void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
-	if (cfg::get().pacbio_test_on == false) return;
-    INFO("starting pacbio tests");
-	ofstream filestr("pacbio_mapped.mpr");
-	PacBioMappingIndex<Graph> pac_index(conj_gp.g, k_test);
-	ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, true);
-    size_t n = 0;
-    map<size_t, size_t> profile;
-    map<size_t, size_t> different_edges_profile;
-    int genomic_subreads = 0;
-    int nongenomic_subreads = 0;
-    LongReadStorage<Graph> long_reads(conj_gp.g);
-    int rc_pairs = 0;
-	while (!pacbio_read_stream->eof()) {
-		ReadStream::read_type read;
-		*pacbio_read_stream>>read;
-		Sequence seq(read.sequence());
-	    size_t res_count = pac_index.Count(seq);
-	    if (profile.find(res_count) == profile.end())
-	    	profile.insert(make_pair(res_count, 0));
-	    profile[res_count] ++;
-	    if (res_count != 0){
-	    	DEBUG(read.sequence());
-	    	DEBUG(res_count);
-	    }
-	    auto location_map = pac_index.GetClusters(seq);
-	    different_edges_profile[location_map.size()]++;
-	    n++;
-	    if (location_map.size() <= 1){
-	    	TRACE("No significant clusters");
-	    	continue;
-	    }
-	    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
-	    	bool flag = false;
-		    for (auto j_iter = location_map.begin(); j_iter != location_map.end(); ++j_iter) {
-		    	if (iter != j_iter && conj_gp.g.conjugate(iter->first) == j_iter->first) {
-		    		flag = true;
-		    		break;
-		    	}
-		    }
-	    	if (flag == true) {
-	    		rc_pairs ++;
-	    		break;
-	    	}
-	    }
-	    //continue;
-	    filestr << n << "  " << location_map.size()<< ": \n";
-	    INFO(n << "  " << location_map.size()<< ": \n");
-	    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
-	    	filestr << conj_gp.g.int_id(iter->first) <<"("<<conj_gp.g.length(iter->first)<<")  " << iter->second.size() <<"\n";
-	    	for (auto set_iter = iter->second.begin(); set_iter != iter->second.end(); ++ set_iter)
-				filestr << set_iter->edge_position << "-" << set_iter->read_position << "   ";
-			filestr << " \n";
-	    }
-
-	    auto aligned_edges = pac_index.GetReadAlignment(seq);
-	    filestr <<"found "<< aligned_edges.size()  <<" aligned subreads.\n";
-	    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
-	    	string tmp = " ";
-	    	if (conj_gp.edge_pos.IsConsistentWithGenome(*iter)) {
-	    		genomic_subreads ++;
-	    	}else {
-	    		tmp = " NOT ";
-	    		nongenomic_subreads ++;
-	    	}
-	    	filestr <<"Alignment of "<< iter->size()  <<" edges is" << tmp <<"consistent with genome\n";
-	    	long_reads.AddPath(*iter);
-	    	for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter){
-	    		filestr << conj_gp.g.int_id(*j_iter) <<"("<<conj_gp.g.length(*j_iter)<<") ";
-
-	    	}
-	    	filestr << " \n";
-	    }
-
-	    filestr << " \n";
-	    filestr << " \n";
-	    VERBOSE_POWER(n, " reads processed");
-
-	}
-	long_reads.DumpToFile("long_reads2.mpr", conj_gp.edge_pos);
-	INFO("Total reads: " << n);
-	INFO("reads with rc edges:  " << rc_pairs);
-	INFO("Genomic/nongenomic subreads: "<<genomic_subreads <<" / " << nongenomic_subreads);
-	INFO("profile:")
-	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
-		if (iter->first < 100) {
-			INFO(iter->first <<" :  "<< iter->second);
-		}
-	INFO("different edges profile:")
-	for (auto iter = different_edges_profile.begin(); iter != different_edges_profile.end(); ++iter)
-		if (iter->first < 100) {
-			INFO(iter->first <<" :  "<< iter->second);
-		}
-
-
-	INFO("PacBio test finished");
-
-}
+//void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
+//	if (cfg::get().pacbio_test_on == false) return;
+//    INFO("starting pacbio tests");
+//	ofstream filestr("pacbio_mapped.mpr");
+//	PacBioMappingIndex<Graph> pac_index(conj_gp.g, k_test);
+//	ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, true);
+//    size_t n = 0;
+//    map<size_t, size_t> profile;
+//    map<size_t, size_t> different_edges_profile;
+//    int genomic_subreads = 0;
+//    int nongenomic_subreads = 0;
+//    LongReadStorage<Graph> long_reads(conj_gp.g);
+//    int rc_pairs = 0;
+//	while (!pacbio_read_stream->eof()) {
+//		ReadStream::read_type read;
+//		*pacbio_read_stream>>read;
+//		Sequence seq(read.sequence());
+//	    size_t res_count = pac_index.Count(seq);
+//	    if (profile.find(res_count) == profile.end())
+//	    	profile.insert(make_pair(res_count, 0));
+//	    profile[res_count] ++;
+//	    if (res_count != 0){
+//	    	DEBUG(read.sequence());
+//	    	DEBUG(res_count);
+//	    }
+//	    auto location_map = pac_index.GetClusters(seq);
+//	    different_edges_profile[location_map.size()]++;
+//	    n++;
+//	    if (location_map.size() <= 1){
+//	    	TRACE("No significant clusters");
+//	    	continue;
+//	    }
+//	    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
+//	    	bool flag = false;
+//		    for (auto j_iter = location_map.begin(); j_iter != location_map.end(); ++j_iter) {
+//		    	if (iter != j_iter && conj_gp.g.conjugate(iter->first) == j_iter->first) {
+//		    		flag = true;
+//		    		break;
+//		    	}
+//		    }
+//	    	if (flag == true) {
+//	    		rc_pairs ++;
+//	    		break;
+//	    	}
+//	    }
+//	    //continue;
+//	    filestr << n << "  " << location_map.size()<< ": \n";
+//	    INFO(n << "  " << location_map.size()<< ": \n");
+//	    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
+//	    	filestr << conj_gp.g.int_id(iter->first) <<"("<<conj_gp.g.length(iter->first)<<")  " << iter->second.size() <<"\n";
+//	    	for (auto set_iter = iter->second.begin(); set_iter != iter->second.end(); ++ set_iter)
+//				filestr << set_iter->edge_position << "-" << set_iter->read_position << "   ";
+//			filestr << " \n";
+//	    }
+//
+//	    auto aligned_edges = pac_index.GetReadAlignment(seq);
+//	    filestr <<"found "<< aligned_edges.size()  <<" aligned subreads.\n";
+//	    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
+//	    	string tmp = " ";
+//	    	if (conj_gp.edge_pos.IsConsistentWithGenome(*iter)) {
+//	    		genomic_subreads ++;
+//	    	}else {
+//	    		tmp = " NOT ";
+//	    		nongenomic_subreads ++;
+//	    	}
+//	    	filestr <<"Alignment of "<< iter->size()  <<" edges is" << tmp <<"consistent with genome\n";
+//	    	long_reads.AddPath(*iter);
+//	    	for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter){
+//	    		filestr << conj_gp.g.int_id(*j_iter) <<"("<<conj_gp.g.length(*j_iter)<<") ";
+//
+//	    	}
+//	    	filestr << " \n";
+//	    }
+//
+//	    filestr << " \n";
+//	    filestr << " \n";
+//	    VERBOSE_POWER(n, " reads processed");
+//
+//	}
+//	long_reads.DumpToFile("long_reads2.mpr", conj_gp.edge_pos);
+//	INFO("Total reads: " << n);
+//	INFO("reads with rc edges:  " << rc_pairs);
+//	INFO("Genomic/nongenomic subreads: "<<genomic_subreads <<" / " << nongenomic_subreads);
+//	INFO("profile:")
+//	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
+//		if (iter->first < 100) {
+//			INFO(iter->first <<" :  "<< iter->second);
+//		}
+//	INFO("different edges profile:")
+//	for (auto iter = different_edges_profile.begin(); iter != different_edges_profile.end(); ++iter)
+//		if (iter->first < 100) {
+//			INFO(iter->first <<" :  "<< iter->second);
+//		}
+//
+//
+//	INFO("PacBio test finished");
+//
+//}
 
 void resolve_repeats() {
 
@@ -1052,14 +1052,14 @@ void resolve_repeats() {
 		}
 	}
 
-	pacbio_test(conj_gp, cfg::get().pacbio_k);
+//	pacbio_test(conj_gp, cfg::get().pacbio_k);
 //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
 
 	//todo refactor labeler creation
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
-	EdgeQuality<Graph> quality_labeler(conj_gp.g, conj_gp.index,
+	EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
 			conj_gp.kmer_mapper, conj_gp.genome);
 	//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
@@ -1067,9 +1067,9 @@ void resolve_repeats() {
 			"graph.dot");
 	printer(ipp_before_repeat_resolution);
 
-	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_before_RR) {
-		SAMBeforeResolve(conj_gp);
-	}
+//	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_before_RR) {
+//		SAMBeforeResolve(conj_gp);
+//	}
 
 	if (!cfg::get().paired_mode
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
@@ -1157,9 +1157,9 @@ void resolve_repeats() {
 						resolved_graph_paired_info_cl);
 			}
 
-			if (cfg::get().SAM_writer_enable && cfg::get().sw.align_after_RR) {
-				SAMAfterResolve(conj_gp, resolved_gp, labels_after);
-			}
+//			if (cfg::get().SAM_writer_enable && cfg::get().sw.align_after_RR) {
+//				SAMAfterResolve(conj_gp, resolved_gp, labels_after);
+//			}
 
 			if (cfg::get().componential_resolve) {
 				make_dir(cfg::get().output_dir + "resolve_components" + "/");

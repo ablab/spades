@@ -25,14 +25,15 @@ namespace debruijn_graph {
  *
  * Obsolete
  */
-template<class Graph, class Seq>
+template<class Graph, class Index>
 class DeBruijnGraphConstructor {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef DeBruijnEdgeIndex<Graph, Seq> DeBruijn;
+//	typedef DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<Graph, Seq>> DeBruijn;
+	typedef Index DeBruijn;
 	typedef typename Graph::VertexId VertexId;
-	typedef Seq Kmer;
-	typedef Seq KPlusOneMer;
+	typedef typename Index::KMer Kmer;
+	typedef Kmer KPlusOneMer;
 	typedef typename DeBruijn::kmer_iterator kmer_iterator;
 
 	Graph &graph_;
@@ -86,8 +87,7 @@ private:
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushBack(c);
 			auto idx = origin_.seq_idx(edge);
-
-			if (origin_.contains(idx))
+			if (origin_.contains(idx, kmer))
 				return graph_.EdgeStart(origin_.get(idx).first);
 		}
 		return VertexId(NULL);
@@ -98,7 +98,7 @@ private:
 			KPlusOneMer edge = kmer.pushFront(c);
 			auto idx = origin_.seq_idx(edge);
 
-			if (origin_.contains(idx)) {
+			if (origin_.contains(idx, kmer)) {
 				return graph_.EdgeEnd(origin_.get(idx).first);
 			}
 		}
@@ -223,8 +223,6 @@ private:
 class UnbranchingPathFinder {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
 	typedef runtime_k::RtSeq Kmer;
 	typedef typename Index::kmer_iterator kmer_iterator;
 
@@ -292,8 +290,6 @@ public:
 class UnbranchingPathExtractor {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
 	typedef runtime_k::RtSeq Kmer;
 	typedef typename Index::kmer_iterator kmer_iterator;
 	typedef typename UnbranchingPathFinder::KPlusOneMer KPlusOneMer;
@@ -332,17 +328,17 @@ private:
 		}
 	}
 
-	Sequence ConstructLoopFromVertex(typename Index::KmerWithHash kh) {
-		KPlusOneMer kpom(kh, origin_.GetUniqueOutgoing(kh.idx));
-		Sequence result = ConstructSequenceWithEdge(kpom);
-		origin_.IsolateVertex(kh.idx);
-		return result;
-	}
+//	Sequence ConstructLoopFromVertex(typename Index::KmerWithHash kh) {
+//		KPlusOneMer kpom(kh, origin_.GetUniqueOutgoing(kh.idx));
+//		Sequence result = ConstructSequenceWithEdge(kpom);
+//		origin_.IsolateVertex(kh.idx);
+//		return result;
+//	}
 
 	//This methods collects all loops that were not extracted by finding unbranching paths because there are no junctions on loops. Construction is performed in parallel
 	const std::vector<Sequence> CollectLoops() {
 		INFO("Collecting perfect loops");
-		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, true);
+		UnbranchingPathFinder finder(origin_, kmer_size_, true);
 		std::vector<Sequence> result;
 		for (kmer_iterator it = origin_.kmer_begin(); it.good(); ++it) {
 			typename Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, *it));
@@ -366,7 +362,7 @@ public:
 	const std::vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
                                                         double queueGrowthRate, bool clean_condenced = false) {
 		INFO("Extracting unbranching paths");
-		UnbranchingPathFinder<Seq> finder(origin_, kmer_size_, clean_condenced);
+		UnbranchingPathFinder finder(origin_, kmer_size_, clean_condenced);
 		std::vector<Sequence> result;
 		size_t queueSize = queueMinSize;
 		std::vector<KPlusOneMer> kmers;
@@ -622,7 +618,7 @@ public:
 		else
 			edgeSequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
 		FilterRC(edgeSequences);
-		FastGraphFromSequencesConstructor<Graph, Seq>(kmer_size_, origin_).ConstructGraph(graph_, edgeSequences);
+		FastGraphFromSequencesConstructor<Graph>(kmer_size_, origin_).ConstructGraph(graph_, edgeSequences);
 	}
 
 private:

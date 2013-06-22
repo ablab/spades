@@ -104,6 +104,10 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter {
         streams_(streams), contigs_(contigs_stream) {
   }
 
+  size_t recommended_thread_num() const {
+      return streams_.size();
+  }
+
   virtual path::files_t Split(size_t num_files);
 };
 
@@ -218,6 +222,10 @@ class DeBruijnGraphKMerSplitter : public DeBruijnKMerSplitter {
   DeBruijnGraphKMerSplitter(const std::string &work_dir,
                             unsigned K, const Graph &g)
       : DeBruijnKMerSplitter(work_dir, K), g_(g) {}
+
+  size_t recommended_thread_num() const {
+      return 1;
+  }
 
   virtual path::files_t Split(size_t num_files);
 };

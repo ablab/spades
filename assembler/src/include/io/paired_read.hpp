@@ -137,6 +137,7 @@ class PairedRead {
       return second_;
     }
     VERIFY(false);
+    return first_;
   }
 
   /*

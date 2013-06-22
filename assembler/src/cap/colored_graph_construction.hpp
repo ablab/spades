@@ -329,7 +329,7 @@ void ConstructColoredGraph(gp_t& gp,
     INFO("Constructing de Bruijn graph for k=" << gp.k_value);
 
 	// false: do not delete streams after usage
-	debruijn_graph::ConstructGraph(gp.k_value, CreateDefaultConstructionConfig(), streams,
+	CapConstructGraph(gp.k_value, streams,
 			gp.g, gp.index);
 
 	SplitAndColorGraph(gp, coloring, streams, fill_pos);
