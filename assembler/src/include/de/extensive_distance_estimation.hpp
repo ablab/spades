@@ -58,7 +58,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   virtual void ProcessEdge(EdgeId e1,
                            const InnerMap<Graph>& inner_map,
                            PairedInfoIndexT<Graph>& result,
-                           perf_counter& pc) const
+                           perf_counter& /*pc*/) const
   {
     set<EdgeId> second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
@@ -147,7 +147,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return hist;
     Histogram answer;
     for (auto iterator = hist.begin(); iterator != hist.end(); ++iterator) {
-      if (math::ge(2. * iterator->d + second_len, (double) first_len))
+      if (math::ge(2. * iterator->d + (double) second_len, (double) first_len))
         answer.insert(*iterator);
     }
     return answer;

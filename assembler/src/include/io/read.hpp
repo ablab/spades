@@ -39,7 +39,7 @@ public:
   }
 
   Sequence getSubSequence(size_t start, size_t length) const __attribute__ ((deprecated)) {
-    VERIFY(length > 0 && start >= 0 && start + length <= seq_.size());
+    VERIFY(length > 0 && start + length <= seq_.size());
     return Sequence(seq_.substr(start, length));
   }
 
@@ -59,7 +59,7 @@ public:
   std::string getPhredQualityString(int offset = PHRED_OFFSET) const {
     std::string res = qual_;
     for (size_t i = 0; i < res.size(); ++i) {
-      res[i] += offset;
+      res[i] = (char)(res[i] + offset);
     }
     return res;
   }
@@ -122,7 +122,7 @@ public:
    * @param start start point
    * @return the first starting point of a valid k-mer >=start; return -1 if no such place exists
    */
-  int firstValidKmer(size_t start, size_t k) const __attribute__ ((deprecated)) {
+  size_t firstValidKmer(size_t start, size_t k) const __attribute__ ((deprecated)) {
     size_t curHypothesis = start;
     size_t i = start;
     for (; i < seq_.size(); ++i) {
@@ -135,12 +135,12 @@ public:
     if (i >= k + curHypothesis) {
       return curHypothesis;
     }
-    return -1;
+    return -1ULL;
   }
 
   void setSequence(const char* s, bool preserve_trimming = false) {
     seq_ = s;
-    initial_size_ = seq_.size();
+    initial_size_ = (int)seq_.size();
     if (!preserve_trimming) {
       ltrim_ = 0; rtrim_ = initial_size_;
     }
@@ -149,7 +149,7 @@ public:
   void setQuality(const char* s, int offset = PHRED_OFFSET) {
     qual_ = s;
     for (size_t i = 0; i < qual_.size(); ++i) {
-      qual_[i] -= offset;
+      qual_[i] = (char)(qual_[i] - offset);
     }
   }
 
@@ -161,14 +161,14 @@ public:
 
   Read(const std::string &name, const std::string &seq, const std::string &qual) :
     name_(name), seq_(seq), qual_(qual) {  // for test only!
-    ltrim_ = 0; initial_size_ = rtrim_ = seq_.size();
+    ltrim_ = 0; initial_size_ = rtrim_ = (int)seq_.size();
     valid_ = updateValid();
   }
 
-  const int ltrim() const { return ltrim_; }
+  int ltrim() const { return ltrim_; }
   void set_ltrim(unsigned val) { ltrim_ = val; };
-  const int rtrim() const { return rtrim_; }
-  const int initial_size() const { return initial_size_; }
+  int rtrim() const { return rtrim_; }
+  int initial_size() const { return initial_size_; }
   
 private:
   std::string name_;
@@ -183,7 +183,7 @@ private:
   void setName(const char* s) {
     name_ = s;
   }
-  const bool updateValid() const {
+  bool updateValid() const {
     if (seq_.size() == 0) {
       return false;
     }

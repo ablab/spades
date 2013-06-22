@@ -443,7 +443,7 @@ private:
 	int prefix_or_included(PathInfo&path1, PathInfo&path2, int shift1,
 			int shift2);
 
-	int original_id(typename Graph::EdgeId e) {
+	size_t original_id(typename Graph::EdgeId e) {
 		return old_graph.int_id(labels_after.edge_labels[e][0]);
 	}
 
@@ -907,8 +907,8 @@ namespace details {
 template<class Graph>
 struct VertexCompositId {
 	typename Graph::VertexId Id;
-	int intId;
-	int componentId;
+	size_t intId;
+	size_t componentId;
 };
 
 struct CompositIdCompare {
@@ -944,7 +944,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 		DEBUG("filling component " << comp_count);
 		comp_count++;
 
-		int CompId = new_graph.int_id(comps[0]);
+		size_t CompId = new_graph.int_id(comps[0]);
 		for (size_t i = 1; i < comps.size(); i++) {
 			if (CompId > new_graph.int_id(comps[i]))
 				CompId = new_graph.int_id(comps[i]);

@@ -57,7 +57,7 @@ protected:
     return distances_.find(vertex) != distances_.end();
   }
 
-  virtual void init(VertexId start) {
+  virtual void init(VertexId /*start*/) {
   }
 
   distance_t GetDistance(VertexId vertex) const {
@@ -75,16 +75,16 @@ protected:
     finished_ = state;
   }
 
-  virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, distance_t length) const {
+  virtual bool CheckPutVertex(VertexId /*vertex*/, EdgeId /*edge*/, distance_t /*length*/) const {
     return true;
   }
 
-  virtual bool CheckProcessVertex(VertexId vertex, distance_t distance) {
+  virtual bool CheckProcessVertex(VertexId /*vertex*/, distance_t /*distance*/) {
     return true;
   }
 
   virtual distance_t GetLength(EdgeId edge) const {
-    return graph_.length(edge);
+    return (distance_t) graph_.length(edge);
   }
 
   virtual void AddNeighboursToQueue(VertexId cur_vertex, distance_t cur_dist, queue_t& queue) {
@@ -303,11 +303,11 @@ public:
   BoundedDijkstra(const Graph &graph, distance_t bound) :
       base(graph), bound_(bound) {}
 
-  virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, distance_t length) const {
+  virtual bool CheckPutVertex(VertexId /*vertex*/, EdgeId /*edge*/, distance_t length) const {
     return (length <= bound_);
   }
 
-  virtual bool CheckProcessVertex(VertexId vertex, distance_t distance) {
+  virtual bool CheckProcessVertex(VertexId /*vertex*/, distance_t distance) {
     return (distance <= bound_);
   }
 

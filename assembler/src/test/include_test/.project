@@ -3,6 +3,7 @@
 	<name>include_test</name>
 	<comment></comment>
 	<projects>
+		<project>include</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

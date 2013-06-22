@@ -21,13 +21,15 @@ def get_memory_stats(pid):
     
     mem_used = 0
     for line in lines:
+        if line.find('%') == -1:
+            continue
         cur_pid = int(line[line.find('%') + 2:].split()[0])    #     |     \-+-% 27271 gurevich FindErrors
         output = commands.getoutput("ps aux | grep ' " + str(cur_pid) + " '").splitlines() ##
         for finded in output:
             if (finded.split()[1] == str(cur_pid)):
                 mem_used += int(finded.split()[5])
                 break	
-    
+
     return mem_used
 
 
@@ -59,6 +61,6 @@ while (os.path.exists("/proc/" + str(pid))):
 #   pass
 
 ###
-print "Total stats:"
-print "time elapsed: ", elapsed
-print "max mem_used: ", max_mem_used / 1024, "M"
+print >> sys.stderr, "Total stats:"
+print >> sys.stderr, "time elapsed: ", elapsed
+print >> sys.stderr, "max mem_used: ", max_mem_used / 1024, "M"

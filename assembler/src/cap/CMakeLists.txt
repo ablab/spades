@@ -14,15 +14,15 @@ configure_file("${SPADES_MAIN_INCLUDE_DIR}/k_range.hpp.in"
 include_directories(${CMAKE_SOURCE_DIR}/debruijn
                     ${CMAKE_SOURCE_DIR}/online_vis)
 
-#add_executable(cap
-# ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
-# ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
-# ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
-# tools.cpp)
-
 add_executable(cap
-  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
-  main.cpp)
+ ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
+ ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
+ ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
+ tools.cpp)
+
+#add_executable(cap
+#  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
+#  main.cpp)
 
 #if (DEFINED static_build)
 #  set_target_properties(cap PROPERTIES LINK_SEARCH_END_STATIC 1)
@@ -42,7 +42,7 @@ include_directories(./drawing_commands)
 include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
 if (READLINE_FOUND AND CURSES_FOUND)
-  target_link_libraries(cap ${COMMON_LIBRARIES} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY} input mph_index otkpp )
+  target_link_libraries(cap input mph_index otkpp ${COMMON_LIBRARIES} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY})
 else()
-  target_link_libraries(cap ${COMMON_LIBRARIES} input mph_index otkpp )
+  target_link_libraries(cap input mph_index otkpp ${COMMON_LIBRARIES})
 endif()

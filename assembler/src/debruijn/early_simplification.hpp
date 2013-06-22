@@ -122,6 +122,7 @@ protected:
 	DECL_LOGGER("Early tip clipping");
 };
 
+
 class AlternativeEarlyTipClipper {
 private:
 	typedef DeBruijnExtensionIndex<> Index;

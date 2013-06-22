@@ -133,7 +133,7 @@ void exec_construction(conj_graph_pack& gp) {
 
     if (cfg::get().use_multithreading) {
       auto streams = single_binary_readers(true, true);
-      construct_graph<io::SingleReadSeq>(streams, gp,
+      construct_graph<io::SingleReadSeq>(*streams, gp,
           additional_contigs_stream);
 
     } else {

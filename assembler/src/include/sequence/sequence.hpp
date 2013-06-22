@@ -58,7 +58,7 @@ class Sequence {
 
     for (size_t i = 0; i < size_; ++i) {
       //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
-      char c = digit_str ? s[i] : dignucl(s[i]);
+      char c = digit_str ? s[i] : (char)dignucl(s[i]);
 
       data = data | (ST(c) << cnt);
       cnt += 2;
@@ -196,10 +196,10 @@ class Sequence {
   inline Sequence operator+(const Sequence &s) const;
 
   /////todo what are these methods???
-  inline int find(const Sequence &t, int from = 0) const;
-  inline int similar(const Sequence &t, int k, char directed = 0) const;
-  inline int leftSimilar(const Sequence &t, int k) const;
-  inline int rightSimilar(const Sequence &t, int k) const;
+  inline size_t find(const Sequence &t, size_t from = 0) const;
+  inline size_t similar(const Sequence &t, size_t k, char directed = 0) const;
+  inline size_t leftSimilar(const Sequence &t, size_t k) const;
+  inline size_t rightSimilar(const Sequence &t, size_t k) const;
 
   /**
    * @param from inclusive
@@ -314,7 +314,6 @@ bool Sequence::intersects(const Sequence &t) const {
 Sequence Sequence::Subseq(size_t from, size_t to) const {
   //	cerr << endl<<"subseq:" <<   from <<" " << to << " " <<  this->str() << endl;
   VERIFY(to >= from);
-  VERIFY(from >= 0);
   VERIFY(to <= size_);
   //VERIFY(to - from <= size_);
   if (rtl_) {
@@ -332,13 +331,13 @@ Sequence Sequence::Subseq(size_t from) const {
 /**
  * @todo : must be KMP or hashing instead of this
  */
-int Sequence::find(const Sequence &t, int from) const {
+size_t Sequence::find(const Sequence &t, size_t from) const {
   for (size_t i = from; i <= size() - t.size(); i++) {
     if (Subseq(i, i + t.size()) == t) {
       return i;
     }
   }
-  return -1;
+  return -1ULL;
 }
 
 /**
@@ -348,8 +347,8 @@ int Sequence::find(const Sequence &t, int from) const {
  *@return 0 - undirected similarity, 1: t extends this to right, -1: this extends t
  *
  */
-int Sequence::similar(const Sequence &t, int k, char directed) const {
-  int result = 0;
+size_t Sequence::similar(const Sequence &t, size_t k, char directed) const {
+  size_t result = 0;
   if (directed != -1)
     result |= rightSimilar(t, k);
   if (directed != 1)
@@ -357,18 +356,18 @@ int Sequence::similar(const Sequence &t, int k, char directed) const {
   return result;
 }
 
-int Sequence::leftSimilar(const Sequence &t, int k) const {
+size_t Sequence::leftSimilar(const Sequence &t, size_t k) const {
   return t.rightSimilar(*this, k);
 }
 
-int Sequence::rightSimilar(const Sequence &t, int k) const {
-  int tsz = t.size();
-  int sz = size();
+size_t Sequence::rightSimilar(const Sequence &t, size_t k) const {
+  size_t tsz = t.size();
+  size_t sz = size();
   Sequence d(t.Subseq(0, k));
-  for (int res = find(d, 0); res != -1; res = find(d, res + 1)) {
+  for (size_t res = find(d, 0); res != -1ULL; res = find(d, res + 1)) {
     if (res + tsz < sz)
       continue;
-    int i;
+    size_t i;
     for (i = k; i + res < sz; i++) {
       if (t[i] != this->operator[](i + res)) {
         break;

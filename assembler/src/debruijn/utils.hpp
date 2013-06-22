@@ -126,7 +126,7 @@ double PairedReadCountWeight(const MappingRange&, const MappingRange&) {
 
 double KmerCountProductWeight(const MappingRange& mr1,
         const MappingRange& mr2) {
-    return mr1.initial_range.size() * mr2.initial_range.size();
+    return (double)(mr1.initial_range.size() * mr2.initial_range.size());
 }
 
 ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g,
@@ -134,7 +134,7 @@ ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g,
 	return g.conjugate(e);
 }
 
-NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& g,
+NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& /*g*/,
 		NonconjugateDeBruijnGraph::EdgeId e) {
 	VERIFY(0);
 	return e;
@@ -166,11 +166,11 @@ class LatePairedIndexFiller {
 
 public:
 	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, PairedStream& stream, WeightF weight_f) :
-			graph_(graph), mapper_(mapper), streams_(1, &stream), weight_f_(weight_f)
+			graph_(graph), mapper_(mapper), streams_(stream), weight_f_(weight_f)
 	{
 	}
 
-  LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, const io::ReadStreamVector< PairedStream >& streams, WeightF weight_f) :
+  LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, io::ReadStreamVector< PairedStream >& streams, WeightF weight_f) :
     graph_(graph), mapper_(mapper), streams_(streams), weight_f_(weight_f)
   {
   }
@@ -303,7 +303,7 @@ private:
 private:
 	const Graph& graph_;
 	const SequenceMapper& mapper_;
-	io::ReadStreamVector< PairedStream > streams_;
+	io::ReadStreamVector<PairedStream>& streams_;
 	WeightF weight_f_;
 
 	DECL_LOGGER("LatePairedIndexFiller");
@@ -651,19 +651,19 @@ private:
         left_x = iter->first;
 
         int prev = iter->first;
-        int prev_val = iter->second;
+        size_t prev_val = iter->second;
 
-        new_hist.push_back(prev_val * 1. / sum_weight);
+        new_hist.push_back((double)prev_val / (double)sum_weight);
         ++iter;
 
         for (; iter != hist.end(); ++iter) {
             int x = iter->first;
-            int y = iter->second;
-            double tan = 1. * (y - prev_val) / (x - prev);
+            size_t y = iter->second;
+            double tan = ((double)y - (double)prev_val) / (x - prev);
 
             VERIFY(prev < x);
             for (int i = prev + 1; i <= x; ++i) {
-                new_hist.push_back((prev_val + tan * (i - prev)) * 1. / sum_weight);
+                new_hist.push_back(((double)prev_val + tan * (i - prev)) / (double)sum_weight);
             }
             prev = x;
             prev_val = y;
@@ -729,7 +729,7 @@ bool RefineInsertSize(const graph_pack& gp,
     return true;
 }
 
-double UnityFunction(int x) {
+double UnityFunction(int /*x*/) {
     return 1.;
 }
 

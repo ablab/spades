@@ -22,7 +22,7 @@ struct perf_counter
         struct timeval now;
         gettimeofday(&now, NULL);
 
-        return (now.tv_sec - time_.tv_sec) + (now.tv_usec - time_.tv_usec) * 1e-6;
+        return (double)(now.tv_sec - time_.tv_sec) + (double)(now.tv_usec - time_.tv_usec) * 1e-6;
     }
 
     double time_ms() const
@@ -101,7 +101,7 @@ struct avg_perf_counter
 
     double avg_time() const
     {
-        return counter_ > 0 ? whole_time_/counter_ : 0.;
+        return counter_ > 0 ? whole_time_/(double)counter_ : 0.;
     }
 
     double avg_time_ms() const

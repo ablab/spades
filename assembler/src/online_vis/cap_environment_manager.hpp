@@ -67,7 +67,7 @@ class CapEnvironmentManager {
   }
 
   template <class gp_t>
-  shared_ptr<gp_t> BuildGPFromStreams(std::vector<ContigStream *> streams,
+  shared_ptr<gp_t> BuildGPFromStreams(std::vector<ContigStream*> streams,
                                       unsigned k, bool fill_pos = true) const {
     typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
 
@@ -86,7 +86,7 @@ class CapEnvironmentManager {
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(result->g, streams.size());
     ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(result->g,
         *(env_->coloring_), *MapperInstance<gp_t>(*result));
-    colored_graph_constructor.ConstructGraph(rc_contigs);
+    colored_graph_constructor.ConstructGraph(rc_read_stream_vector);
 
     INFO("Filling positions");
     if (fill_pos) {
@@ -259,7 +259,7 @@ class CapEnvironmentManager {
     return env_dir + "/" + cache_dir + "/";
   }
 
-  void ConstructGraphFromStreams(const std::vector<ContigStream *> &streams, unsigned k, bool fill_pos) {
+  void ConstructGraphFromStreams(std::vector<ContigStream *> &streams, unsigned k, bool fill_pos) {
     ClearEnvironment();
     env_->CheckConsistency();
     //last_streams_used_ = streams;

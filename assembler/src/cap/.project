@@ -4,13 +4,17 @@
 	<comment></comment>
 	<projects>
 		<project>debruijn</project>
-		<project>include</project>
+		<project>online_vis</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
 			<name>org.eclipse.cdt.managedbuilder.core.genmakebuilder</name>
 			<triggers>clean,full,incremental,</triggers>
 			<arguments>
+				<dictionary>
+					<key>?children?</key>
+					<value>?name?=outputEntries\|?children?=?name?=entry\\\\\\\|\\\|\||</value>
+				</dictionary>
 				<dictionary>
 					<key>?name?</key>
 					<value></value>

@@ -11,12 +11,9 @@
  *      Author: andrey
  */
 
-#ifndef READ_STREAM_VECTOR_HPP_
-#define READ_STREAM_VECTOR_HPP_
-
+#pragma once
 
 namespace io {
-
 
 template <class Reader>
 bool ParallelStreamEOF(const std::vector< Reader* >& streams) {
@@ -28,30 +25,35 @@ bool ParallelStreamEOF(const std::vector< Reader* >& streams) {
   return true;
 }
 
-
+//todo check destroy_readers logic and usages
 template <class Reader>
-class ReadStreamVector {
+class ReadStreamVector : boost::noncopyable {
 
  private:
-  std::vector< Reader * > streams_;
-
+  mutable std::vector<Reader*> streams_;
   bool destroy_readers_;
 
   ReadStreamVector& operator=(const ReadStreamVector& that);
 
  public:
 
-  ReadStreamVector(std::vector< Reader *> streams, bool destroy_readers = true): streams_(streams.size()), destroy_readers_(destroy_readers) {
-    for (size_t i = 0; i < streams.size(); ++i) {
-      streams_[i] = streams[i];
-    }
+  typedef Reader ReaderType;
+
+  ReadStreamVector(const std::vector<Reader*>& streams, bool destroy_readers = true): streams_(streams.size()), destroy_readers_(destroy_readers) {
+    std::copy(streams.begin(), streams.end(), streams_.begin());
   }
 
-  ReadStreamVector(Reader* stream): streams_(1, stream), destroy_readers_(false) {
+  ReadStreamVector(bool destroy_readers = true): destroy_readers_(destroy_readers) {
   }
 
-  ReadStreamVector(const ReadStreamVector& that): streams_(that.streams_), destroy_readers_(false) {
+  ReadStreamVector(Reader* stream): streams_(1, stream), destroy_readers_(true) {
   }
+
+  ReadStreamVector(Reader& stream): streams_(1, &stream), destroy_readers_(false) {
+  }
+
+//  ReadStreamVector(const ReadStreamVector& that): streams_(that.streams_), destroy_readers_(false) {
+//  }
 
   ~ReadStreamVector() {
     if (destroy_readers_) {
@@ -61,11 +63,61 @@ class ReadStreamVector {
     }
   }
 
-  Reader& operator[](size_t i) const {
+  class iterator: public std::iterator<std::input_iterator_tag, Reader> {
+    typedef typename std::vector<Reader*>::iterator vec_it;
+    vec_it it_;
+   public:
+
+    iterator(vec_it it) : it_(it) {
+    }
+
+    void operator++ () {
+        ++it_;
+    }
+
+    bool operator== (const iterator& that) {
+        return it_ == that.it_;
+    }
+
+    bool operator!= (const iterator& that) {
+        return it_ != that.it_;
+    }
+
+    Reader& operator*() {
+        return *(*it_);
+    }
+  };
+
+  class const_iterator: public std::iterator<std::input_iterator_tag, Reader> {
+    typedef typename std::vector<Reader*>::iterator vec_it;
+    vec_it it_;
+   public:
+
+    const_iterator(vec_it it) : it_(it) {
+    }
+
+    void operator++ () {
+        ++it_;
+    }
+
+    bool operator== (const const_iterator& that) {
+        return it_ == that.it_;
+    }
+
+    bool operator!= (const const_iterator& that) {
+        return it_ != that.it_;
+    }
+
+    Reader& operator*() {
+        return *(*it_);
+    }
+  };
+
+  Reader& operator[](size_t i) {
     return *streams_.at(i);
   }
 
-  Reader& back() const {
+  Reader& back() {
     return *streams_.back();
   }
 
@@ -77,7 +129,27 @@ class ReadStreamVector {
     return ParallelStreamEOF(streams_);
   }
 
-  void reset() const {
+  iterator begin() {
+    return iterator(streams_.begin());
+  }
+
+  iterator end() {
+    return iterator(streams_.end());
+  }
+
+  const_iterator begin() const {
+    return iterator(streams_.begin());
+  }
+
+  const_iterator end() const {
+    return iterator(streams_.end());
+  }
+
+  void push_back(Reader* stream) {
+      streams_.push_back(stream);
+  }
+
+  void reset() {
     for (auto I = streams_.begin(), E = streams_.end(); I != E; ++I)
       (*I)->reset();
   }
@@ -85,5 +157,3 @@ class ReadStreamVector {
 };
 
 }
-
-#endif /* READ_STREAM_VECTOR_HPP_ */

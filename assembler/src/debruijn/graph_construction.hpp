@@ -79,7 +79,7 @@ void FillPairedIndexWithProductMetric(const Graph &g,
 void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const Graph &g, const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper, size_t is, size_t rs,
-		size_t delta, const Sequence& genome, size_t k) 
+		size_t delta, const Sequence& genome, size_t k)
 {
 	VERIFY_MSG(genome.size() > 0,
 			"The genome seems not to be loaded, program will exit");
@@ -97,7 +97,7 @@ void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		size_t k) {
 
 	FillEtalonPairedIndex(etalon_paired_index, g, index, kmer_mapper,
-			*cfg::get().ds.IS, *cfg::get().ds.RL, size_t(*cfg::get().ds.is_var),
+			(size_t)math::round(*cfg::get().ds.IS), *cfg::get().ds.RL, size_t(*cfg::get().ds.is_var),
 			genome, k);
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
@@ -117,7 +117,7 @@ void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 //	INFO("Etalon paired info counted");
 }
 
-void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
+void FillCoverageFromIndex(Graph& /*g*/, EdgeIndex<Graph>& index, size_t /*k*/) {
 	EdgeIndex<Graph>::InnerIndex &innerIndex = index.inner_index();
 
 	for (auto I = innerIndex.value_cbegin(), E = innerIndex.value_cend();
@@ -130,9 +130,9 @@ void FillCoverageFromIndex(Graph& g, EdgeIndex<Graph>& index, size_t k) {
 	DEBUG("Coverage counted");
 }
 
-template<class Graph, class Read, class Seq>
+template<class Graph, class Readers, class Seq>
 size_t ConstructGraphUsingOldIndex(size_t k,
-		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
+		Readers& streams, Graph& g,
 		EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
 	INFO("Constructing DeBruijn graph");
 
@@ -176,12 +176,16 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 
 	TRACE("Extention Index constructed");
 
-	if(params.early_tc.enable) {
-		size_t length_bound = rl - k;
-		if(params.early_tc.length_bound)
-			length_bound = params.early_tc.length_bound.get();
-		AlternativeEarlyTipClipper(ext, length_bound).ClipTips();
-	}
+    if (params.early_tc.enable) {
+        size_t length_bound = rl - k;
+        if (params.early_tc.length_bound)
+            length_bound = params.early_tc.length_bound.get();
+#if 1
+        EarlyTipClipper(ext, length_bound).ClipTips();
+#else
+        AlternativeEarlyTipClipper(ext, length_bound).ClipTips();
+#endif
+    }
 
 	INFO("Condensing graph");
 	index.Detach();
@@ -221,6 +225,22 @@ size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction 
 
 
 	return rl;
+}
+
+template<class Graph, class Reader, class Index>
+size_t ConstructGraphFromStream(size_t k, const debruijn_config::construction params,
+        Reader& stream, Graph& g,
+        Index& index, SingleReadStream* contigs_stream = 0) {
+    io::ReadStreamVector<io::IReader<typename Reader::read_type>> streams(stream);
+    return ConstructGraph(k, params, streams, g, index, contigs_stream);
+}
+
+template<class Graph, class Reader, class Index>
+size_t ConstructGraphWithCoverageFromStream(size_t k,
+        Reader& stream, Graph& g,
+        Index& index, SingleReadStream* contigs_stream = 0) {
+    io::ReadStreamVector<io::IReader<typename Reader::read_type>> streams(stream);
+    return ConstructGraph(k, streams, g, index, contigs_stream);
 }
 
 }

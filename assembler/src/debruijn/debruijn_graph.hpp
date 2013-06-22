@@ -70,7 +70,7 @@ public:
 						EdgeData(edge.nucls().Subseq(position))));
 	}
 
-	EdgeData GlueData(const EdgeData &data1, const EdgeData &data2) const {
+	EdgeData GlueData(const EdgeData & /*data1*/, const EdgeData &data2) const {
 		return data2;
 	}
 
@@ -82,11 +82,11 @@ public:
 		return EdgeData(!(data.nucls()));
 	}
 
-	VertexData conjugate(const VertexData &data) const {
+	VertexData conjugate(const VertexData & /*data*/) const {
 		return VertexData();
 	}
 
-	const size_t length(const EdgeData& data) const {
+	size_t length(const EdgeData& data) const {
 		return data.nucls().size() - k_;
 	}
 

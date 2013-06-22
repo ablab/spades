@@ -18,7 +18,7 @@ namespace debruijn_graph {
 
   void check_new_index(conj_graph_pack& gp);
 
-  void late_pair_info_count(conj_graph_pack& gp, PairedIndexT& paired_index) 
+  void late_pair_info_count(conj_graph_pack& gp, PairedIndexT& paired_index)
   {
     exec_simplification(gp);
 
@@ -35,14 +35,14 @@ namespace debruijn_graph {
       INFO("STAGE == Counting Late Pair Info");
 
       if (cfg::get().use_multithreading) {
-        MultiStreamType streams = paired_binary_readers(false, 0);
-        bool success = RefineInsertSize(gp, streams, cfg::get_writable(), edge_length_threshold);
+        auto streams = paired_binary_readers(false, 0);
+        bool success = RefineInsertSize(gp, *streams, cfg::get_writable(), edge_length_threshold);
         if (!success)
           return;
 
-        MultiStreamType paired_streams = paired_binary_readers(true, *cfg::get().ds.IS);
+        auto paired_streams = paired_binary_readers(true, (size_t)math::round(*cfg::get().ds.IS));
         FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
-            gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
+            gp.kmer_mapper, paired_index, *paired_streams, gp.k_value);
       } else {
         auto_ptr<PairedReadStream> stream = paired_easy_reader(false, 0);
         SingleStreamType streams(stream.get());
@@ -50,7 +50,7 @@ namespace debruijn_graph {
         if (!success)
           return;
 
-        auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(true, *cfg::get().ds.IS);
+        auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(true, (size_t)math::round(*cfg::get().ds.IS));
         SingleStreamType paired_streams(paired_stream.get());
 
         FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,

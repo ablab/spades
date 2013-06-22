@@ -7,6 +7,7 @@
 #ifndef XMATH_H_
 #define XMATH_H_
 
+#include <limits>
 #include <cmath>
 
 namespace math {
@@ -273,7 +274,7 @@ template<>
 inline double eps<double>() { return 1e-10; }
 
 template<>
-inline float eps<float>() { return 1e-5; }
+inline float eps<float>() { return (float)1e-5; }
 
 template<class T> inline
 bool eq(T lhs, T rhs) {

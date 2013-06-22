@@ -265,7 +265,7 @@ class ThornCondition : public EdgeCondition<Graph> {
                         this->g().OutgoingEdges(this->g().EdgeEnd(e)), e);
     }
 
-    bool CheckUniqueness(EdgeId e, bool forward) const {
+    bool CheckUniqueness(EdgeId e, bool /*forward*/) const {
         return this->g().length(e) >= uniqueness_length_;
     }
 

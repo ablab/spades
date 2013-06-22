@@ -235,7 +235,7 @@ class RuntimeSeq {
       //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
 
       // we fill everything with zeros (As) by default.
-      char c = digit_str ? s[offset + i] : dignucl(s[offset + i]);
+      char c = (char) (digit_str ? s[offset + i] : dignucl(s[offset + i]));
 
       data = data | (T(c) << cnt);
       cnt += 2;
@@ -310,8 +310,8 @@ class RuntimeSeq {
   RuntimeSeq<max_size_, T> operator!() const {
     RuntimeSeq<max_size_, T> res(*this);
     for (size_t i = 0; i < (size_ >> 1); ++i) {
-      T front = complement(res[i]);
-      T end = complement(res[size_ - 1 - i]);
+      auto front = complement(res[i]);
+      auto end = complement(res[size_ - 1 - i]);
       res.set(i, end);
       res.set(size_ - 1 - i, front);
     }
@@ -344,7 +344,7 @@ class RuntimeSeq {
       data[data_size - 1] = (data[data_size - 1] >> 2) | ((T) c << lastnuclshift_);
 
       if (data_size >= 2) { // if we have at least 2 elements in data
-        for (int i = data_size - 2; i >= 0; --i){
+        for (int i = (int) data_size - 2; i >= 0; --i){
           T new_rm = data[i] & 3;
           data[i] = (data[i] >> 2) | (rm << (TBits - 2)); // we need & here because if we shift negative, it fill with ones :(
           rm = new_rm;

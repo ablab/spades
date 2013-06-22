@@ -1,6 +1,7 @@
 ; input options:
 
 #include "simplification.info"
+#include "construction.info"
 #include "distance_estimation.info"
 #include "detail_info_printer.info"
 
@@ -15,9 +16,6 @@ log_filename    log.properties
 output_base	      ./data/debruijn/
 
 additional_contigs	tmp_contigs.fasta
-pacbio_test_on		false
-pacbio_reads		tmp_contigs.fasta
-pacbio_k		21
 load_from         latest/saves/ ; tmp or latest 
 
 
@@ -181,3 +179,8 @@ graph_read_corr
 
 ;temporary flag to generate saves even in non-developer mode
 force_make_saves false
+
+pacbio_test_on          false
+pacbio_reads            tmp_contigs.fasta
+pacbio_k                21
+

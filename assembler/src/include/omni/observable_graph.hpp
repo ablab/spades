@@ -23,6 +23,11 @@ class ObservableGraph : private boost::noncopyable {
     typedef SmartVertexIterator<ObservableGraph> SmartVertexIt;
     typedef SmartEdgeIterator<ObservableGraph> SmartEdgeIt;
 
+    virtual void print_handlers() const {
+        FOREACH (Handler* handler_ptr, action_handler_list_) {
+            cout << handler_ptr->name() << endl;
+        }
+    }
  private:
     typedef ActionHandler<VertexId, EdgeId> Handler;
 

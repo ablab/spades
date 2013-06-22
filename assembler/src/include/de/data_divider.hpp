@@ -85,14 +85,14 @@ class DataDivider {
     size_t begin = 0;
     for (size_t i = 0; i < points_.size(); ++i) {
       if (i == points_.size() - 1 || IsANewCluster(i)) {
-        int low_val = points_[begin].d;
-        int high_val = points_[i].d;
+        int low_val = rounded_d(points_[begin]);
+        int high_val = rounded_d(points_[i]);
         size_t new_begin = new_data.size();
         VERIFY(low_val <= high_val);
         for (int j = low_val; j <= high_val; ++j) {
           double val = 0.;
           for (size_t k = begin; k <= i; ++k) {
-            val += points_[k].weight * weight_f(j - points_[k].d);
+            val += points_[k].weight * weight_f(j - rounded_d(points_[k]));
           }
           new_data.push_back(PairInfo<EdgeId>(ep.first, ep.second, j, val, 0.)); 
         }

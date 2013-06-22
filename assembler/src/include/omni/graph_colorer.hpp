@@ -42,7 +42,7 @@ public:
 
 	}
 
-	string GetColour(ElementId element) const {
+	string GetColour(ElementId /*element*/) const {
 		return default_color_;
 	}
 
@@ -192,7 +192,7 @@ public:
 			graph_(graph) {
 	}
 
-	virtual string GetColour(VertexId element) const {
+	virtual string GetColour(VertexId /*element*/) const {
 		//TODO Explain why
 		//VERIFY(false);
 		return "white";

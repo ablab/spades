@@ -169,7 +169,7 @@ class PairedRead {
       second_.BinWrite(file);
 
 
-      size_type is = insert_size_;
+      size_type is = (size_type)insert_size_;
       file.write((const char *) &is, sizeof(is));
 
       return !file.fail();
@@ -234,7 +234,7 @@ public:
         first_.BinWrite(file);
         second_.BinWrite(file);
 
-        PairedRead::size_type is = insert_size_;
+        PairedRead::size_type is = (PairedRead::size_type)insert_size_;
         file.write((const char *) &is, sizeof(is));
 
         return !file.fail();

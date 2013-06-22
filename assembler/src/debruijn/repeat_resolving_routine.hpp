@@ -821,7 +821,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 			sub_dir, false);
 }
 
-void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
+void resolve_nonconjugate_component(int /*component_id*/, const Sequence& /*genome*/) {
 //	nonconj_graph_pack nonconj_gp(genome);
 //  PairedInfoIndexT<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
 //
@@ -845,8 +845,8 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 //			graph_name, sub_dir, false);
 }
 
-void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndexT<Graph>& index,
-		const PairedIndexT& jump_index) {
+void resolve_with_jumps(conj_graph_pack& /*gp*/, PairedInfoIndexT<Graph>& /*index*/,
+		const PairedIndexT& /*jump_index*/) {
 	WARN("Jump resolver not alailable");
 
 //	VERIFY(cfg::get().andrey_params.);
@@ -876,7 +876,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 	size_t delta = size_t(is_var);
 	size_t linkage_distance = size_t(
 			cfg::get().de.linkage_distance_coeff * is_var);
-	GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS,
+	GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t)math::round(*cfg::get().ds.IS),
 			*cfg::get().ds.RL, delta);
 	size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 	boost::function<double(int)> weight_function;
@@ -892,7 +892,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 	} else {
 		//todo reduce number of constructor params
 		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-				*cfg::get().ds.IS, *cfg::get().ds.is_var, *cfg::get().ds.RL,
+				(size_t)math::round(*cfg::get().ds.IS), *cfg::get().ds.is_var, *cfg::get().ds.RL,
 				gp.k_value, *cfg::get().ds.avg_coverage);
 		normalizing_f = boost::bind(
 				&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
@@ -922,8 +922,8 @@ void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
 	PacBioMappingIndex<Graph> pac_index(conj_gp.g, k_test);
 	ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, true);
     size_t n = 0;
-    map<int, int> profile;
-    map<int, int> different_edges_profile;
+    map<size_t, size_t> profile;
+    map<size_t, size_t> different_edges_profile;
     int genomic_subreads = 0;
     int nongenomic_subreads = 0;
     LongReadStorage<Graph> long_reads(conj_gp.g);
@@ -1032,6 +1032,7 @@ void resolve_repeats() {
 		paired_index.Detach();
 		clustered_index.Detach();
 		if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
+		    //todo ?
 //			conj_gp.kmer_mapper.Detach();
 		}
 	}
@@ -1096,7 +1097,7 @@ void resolve_repeats() {
 				make_dir(cfg::get().output_dir + "graph_components" + "/");
 				number_of_components = PrintGraphComponents(
 						cfg::get().output_dir + "graph_components/graph_",
-						conj_gp, *cfg::get().ds.IS + 100, clustered_index);
+						conj_gp, (size_t)math::round(*cfg::get().ds.IS + 100.), clustered_index);
 				INFO("number of components " << number_of_components);
 			}
 

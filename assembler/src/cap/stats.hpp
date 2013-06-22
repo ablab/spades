@@ -987,6 +987,49 @@ public:
 	}
 };
 
+template<class gp_t>
+class BlockPrinter {
+    typedef typename gp_t::graph_t Graph;
+	typedef typename Graph::EdgeId EdgeId;
+	const gp_t& gp_;
+	int curr_id_;
+	ofstream output_stream;
+	map<EdgeId, string> block_id_;
+
+	pair<size_t, bool> CanonicalRepresentation(EdgeId e) {
+	    size_t id = gp_.g.int_id(e);
+	    size_t conj_id = gp_.g.int_id(gp_.g.conjugate(e));
+	    if (id <= conj_id)
+	        return make_pair(id, true);
+	    else
+	        return make_pair(conj_id, false);
+	}
+
+public:
+
+	BlockPrinter(const gp_t& gp, const string& filename) :
+			gp_(gp), output_stream(filename) , curr_id_(1) {
+	}
+
+	//genome is supposed to perfectly correspond to some path in the graph
+	void ProcessGenome(string genome_id, const Sequence& genome) {
+	    MappingPath<EdgeId> genome_path = MapperInstance(gp_)->MapSequnce(genome);
+	    for (size_t i = 0; i < genome_path.size(); ++i) {
+	        EdgeId e = genome_path[i].first;
+	        MappingRange range = genome_path[i].second;
+	        auto canon = CanonicalRepresentation(e);
+	        output_stream << std::string(format("%s\t%l\t%l\t%l\t%s") % genome_id % canon.first % range.initial_range.start_pos % range.initial_range.end_pos % (canon.second) ? "+" : "-");
+//	        if (block_id_.count(e) == 0) {
+//	            block_id_[e] = ToString(curr_id_);
+//	            block_id_[gp_.g.conjugate(e)] = ToString(-curr_id_);
+//	            curr_id_++;
+//	        }
+	    }
+	}
+
+};
+
+
 template<class Graph, class Mapper>
 class ContigBlockStats {
 	typedef ThreadedGenomeEnumerator<Graph> Enumerator;

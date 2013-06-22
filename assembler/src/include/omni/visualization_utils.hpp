@@ -7,6 +7,7 @@
 #ifndef VISUALIZATIONUTILS_HPP_
 #define VISUALIZATIONUTILS_HPP_
 
+#include "standard_base.hpp"
 #include "graph_printer.hpp"
 #include "omni_utils.hpp"
 #include "dijkstra.hpp"
@@ -18,12 +19,6 @@
 namespace omnigraph {
 
 //DECL_LOGGER("omg.gvis")
-
-using omnigraph::GraphLabeler;
-using omnigraph::EmptyGraphLabeler;
-using omnigraph::SmartEdgeIterator;
-using omnigraph::Path;
-using omnigraph::UnorientedDijkstra;
 
 template<class Graph>
 class GraphVisualizer {
@@ -233,7 +228,7 @@ private:
 
 	//todo dirty hack!!!
 	auto_ptr<GraphPrinter<Graph>> PrinterInstance(
-			const AbstractConjugateGraph<typename Graph::DataMaster>& hack,
+			const AbstractConjugateGraph<typename Graph::DataMaster>& /*hack*/,
 			const Graph& graph,
 			const GraphLabeler<Graph>& labeler,
 			const GraphColorer<Graph>& colorer,

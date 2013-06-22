@@ -107,23 +107,23 @@ int CountDiference(ComparingObject const& s_r, ComparingObject const& orig_s_r, 
 	return diff;
 }
 
-int CountDiference(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, int shift){
+size_t CountDiference(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, size_t shift){
 	if (s_r.size() + shift > orig_s_r.size()){
 		return orig_s_r.size();
 	}
-	int diff = 0;
-	for (int i = 0; i < (int)s_r.size(); i++){
+	size_t diff = 0;
+	for (size_t i = 0; i < s_r.size(); i++){
 		if (s_r[i] != orig_s_r[i + shift] ) diff++;
 	}
 	return diff;
 }
-pair<int, int> SubstitutionShifts(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, double threshhold ){
-	int difference = (int)orig_s_r.size() - (int)s_r.size();
-	int best_i = 0;
-	int best_diff = orig_s_r.size();
-	for (int i=0; i <= difference; i++){
-		int cur_diff = CountDiference(s_r, orig_s_r, i);
-		if (s_r.size() - cur_diff > threshhold * s_r.size()) return (make_pair(i,difference - i));
+pair<size_t, size_t> SubstitutionShifts(const io::SingleRead& s_r, const io::SingleRead& orig_s_r, double threshhold ){
+	size_t difference = orig_s_r.size() - s_r.size();
+	size_t best_i = 0;
+	size_t best_diff = orig_s_r.size();
+	for (size_t i=0; i <= difference; i++){
+		size_t cur_diff = CountDiference(s_r, orig_s_r, i);
+		if (math::gr((double)(s_r.size() - cur_diff), threshhold * (double)s_r.size())) return (make_pair(i,difference - i));
 		else {
 			if (cur_diff < best_diff) {
 				best_diff = cur_diff;
@@ -137,7 +137,7 @@ void SubstituteByOriginalRead(MySamRecord& MySam, const io::SingleRead& s_r, con
 	io::SingleRead orig = orig_s_r;
 	if (MySam.FLAG & 0x10) orig = !orig;
 	if (s_r.size() < orig.size()){
-		pair<int, int> shifts = SubstitutionShifts(s_r, orig_s_r, 0.9);
+		pair<size_t, size_t> shifts = SubstitutionShifts(s_r, orig_s_r, 0.9);
 //		pair<int, int> shifts = s_r.position_in_original();
 //		shifts.second = orig_s_r.size() - shifts.second;
 		MySam.SEQ = orig.sequence().str();
