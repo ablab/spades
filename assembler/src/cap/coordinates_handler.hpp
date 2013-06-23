@@ -92,7 +92,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
         continue;
       }
       size_t cur_end = cur_start + g_->length(edge);
-      INFO("edge " << g_->str(edge));
+      //INFO("edge " << g_->str(edge));
       edge_ranges_[edge].AddGenomeRange(genome_id, Range(cur_start, cur_end));
       cur_start = cur_end;
     }
@@ -147,12 +147,12 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       }
     }
     std::sort(all_ranges.begin(), all_ranges.end());
-    
+    /*
     for (const auto &e : all_ranges) {
       INFO("genome " << int(e.first.first) << ", " << e.first.second << ": " <<
           g_->str(e.second));
     }
-    
+    */
     for (size_t i = 1; i < all_ranges.size(); ++i) {
       if (all_ranges[i].first.first != all_ranges[i - 1].first.first) continue;
       if (all_ranges[i].first.second.start_pos != all_ranges[i - 1].first.second.end_pos) {
@@ -264,7 +264,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     }
 
     inline void AddGenomeRange(const uchar genome_id, const Range &range) {
-      INFO("add genome range: genome " << int(genome_id) << ": " << range);
+      //INFO("add genome range: genome " << int(genome_id) << ": " << range);
       //INFO("initial " << DebugOutput());
       Range extended_range = range;
       auto connected_it = genome_ranges_backward_.find(
@@ -438,8 +438,8 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
     const std::vector<std::pair<uchar, size_t> > &threads_to_delete) {
 
   TRACE("ProjectPath Start");
-  VERIFY(CheckCorrectPathProjection(from, to));
-  INFO("Projecting " << Debug(from) << " to " << Debug(to));
+  //VERIFY(CheckCorrectPathProjection(from, to));
+  //INFO("Projecting " << Debug(from) << " to " << Debug(to));
 
 
   VERIFY(g_ != NULL);
@@ -463,7 +463,7 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
 
     std::vector<std::pair<uchar, Range> > genome_ranges_to_copy =
       PopAndUpdateRangesToCopy(edge1, cur_delete_positions);
-    VERIFY(genome_ranges_to_copy.size() == threads_to_delete.size());
+    //VERIFY(genome_ranges_to_copy.size() == threads_to_delete.size());
 
     while (cur_1_edge_len > 0 || edge1 == p1.back()) {
       VERIFY(it2 != p2.end());
@@ -484,8 +484,8 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
         const Range range_to_add(ranges.second.start_pos,
             ranges.second.start_pos + taken_length);
 
-        INFO("  Proj " << g_->str(edge1) << " -> " << g_->str(*it2) << ": "
-            << int(ranges.first) << ": " << ranges.second << "->" << range_to_add);
+        //INFO("  Proj " << g_->str(edge1) << " -> " << g_->str(*it2) << ": "
+        //    << int(ranges.first) << ": " << ranges.second << "->" << range_to_add);
         //INFO("DEBUG: " << range_to_add << " from range " << ranges.second);
         edge_ranges_[*it2].AddGenomeRange(ranges.first, range_to_add);
         ranges.second.start_pos += taken_length;
@@ -681,7 +681,6 @@ CoordinatesHandler<Graph>::FindGenomeFirstEdge(const uchar genome_id) const {
 template <class Graph>
 size_t CoordinatesHandler<Graph>::GetOriginalPos(
     const uchar genome_id, const size_t new_pos) const {
-  return new_pos;
   // No refinement has been done
   if (stored_threading_history_.size() == 0)
     return new_pos;
@@ -724,7 +723,6 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
 template<class Graph>
 size_t CoordinatesHandler<Graph>::GetNewestPos(
     const uchar genome_id, const size_t old_pos) const {
-  return old_pos;
   if (stored_threading_history_.size() == 0)
     return old_pos;
 
@@ -759,16 +757,18 @@ size_t CoordinatesHandler<Graph>::GetNewestPos(
  */
 template <class Graph>
 void CoordinatesHandler<Graph>::HandleDelete(EdgeId e) {
+  /*
   if (HasEdgeData(e)) {
     INFO("edge " << g_->str(e) << " " << edge_ranges_[e].DebugOutput());
   }
   VERIFY(!HasEdgeData(e));
+  */
   edge_ranges_.erase(e);
 }
 
 template <class Graph>
 void CoordinatesHandler<Graph>::HandleMerge(const vector<EdgeId> &old_edges, EdgeId new_edge) {
-  TRACE("HandleMerge : " << Debug(old_edges) << " -> " << g_->str(new_edge));
+  //TRACE("HandleMerge : " << Debug(old_edges) << " -> " << g_->str(new_edge));
   for (const auto &edge : old_edges) {
     if (HasEdgeData(edge)) {
       edge_ranges_[new_edge] += edge_ranges_[edge];
@@ -779,7 +779,7 @@ void CoordinatesHandler<Graph>::HandleMerge(const vector<EdgeId> &old_edges, Edg
 
 template <class Graph>
 void CoordinatesHandler<Graph>::HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-  TRACE("HandleGlue : " << g_->str(new_edge) << " <- " << g_->str(edge1) << " + " << g_->str(edge2));
+  //TRACE("HandleGlue : " << g_->str(new_edge) << " <- " << g_->str(edge1) << " + " << g_->str(edge2));
   if (HasEdgeData(edge1)) {
     edge_ranges_[new_edge] += edge_ranges_[edge1];
     edge_ranges_.erase(edge1);

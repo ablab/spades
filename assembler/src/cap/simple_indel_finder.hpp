@@ -183,17 +183,17 @@ class SimpleIndelFinder {
 
     if (GetVertexColor(vertex) == color_mask_needed) {
       found_merge_point_ = true;
-
-      INFO("found final vertex " << g_.str(vertex));
       alternative_paths_.push_back(path_seq);
+
+      /*
+      INFO("found final vertex " << g_.str(vertex));
       if (coordinates_handler_.GetContiguousThreads(path_seq).size() !=
              pos_array.size()) {
         INFO("" << coordinates_handler_.GetContiguousThreads(path_seq).size() << " " <<
             pos_array.size());
         VERIFY(false);
       }
-      // dirty hack now
-      //coloring_.PaintEdge(edge, TColorSet::SingleColor(colors_number_));
+      */
 
       path_seq.pop_back();
       return true;
@@ -277,13 +277,13 @@ class SimpleIndelFinder {
 
   void CollapsePaths() {
     alternative_paths_ = GetShortestConsistentPaths(alternative_paths_);
-    INFO("after shorting " << alternative_paths_.size() << " paths");
+    //INFO("after shorting " << alternative_paths_.size() << " paths");
     
     if (alternative_paths_.size() == 0)
       return;
     for (const auto &path : alternative_paths_) {
       if (GetPathLength(path) > 10 * g_.k()) {
-        INFO("Too long path: " << GetPathLength(path));
+        TRACE("Too long path: " << GetPathLength(path));
         alternative_paths_.clear();
         need_reflow_ = false;
         return;
@@ -465,15 +465,12 @@ class SimpleIndelFinder {
     for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
       do {
         need_reflow_ = false;
-        TRACE("in");
         CheckForIndelEvent(*it);
-        TRACE("out");
       } while (need_reflow_);
     }
     INFO("Found around " << snps_/2 << "+" << unknown_snp_/2 << "=" <<
         (snps_+unknown_snp_)/2 << " SNPs and " << indels_/2 << "+" <<
         unknown_indel_/2 << " indels");
-    INFO("Searching for In-Del events ended");
   }
 
  private:

@@ -63,6 +63,7 @@ class PathProjector {
 
     LockDelete();
     for (size_t i = 0; i < paths.size(); ++i) {
+      /*
       if (threads_to_delete[i].size() != rc_threads[i].size()) {
         INFO("failed: paths " << Debug(paths[i]) << " and " << Debug(rc_paths[i]));
         for (const auto &e : threads_to_delete[i])
@@ -77,10 +78,11 @@ class PathProjector {
           coordinates_handler_.DebugOutput(e);
         VERIFY(false);
       }
+      */
 
       if (i == chosen_path) continue;
       if (threads_to_delete[i].size() == 0) {
-        INFO("nothin to delete!");
+        TRACE("nothin to delete!");
         continue;
       }
       ProjectPath(paths[i], paths[chosen_path], threads_to_delete[i]);
@@ -189,7 +191,7 @@ class PathProjector {
   void ForceDeleteEdges(const std::vector<EdgeId> &edges) {
     VERIFY(!is_deleting_locked_);
 
-    TRACE("DeleteEdges Begin " << Debug(edges) << " of size " << edges.size());
+    //TRACE("DeleteEdges Begin " << Debug(edges) << " of size " << edges.size());
     DeletingMergeHandler merge_handler(edges);
     ConditionedSmartSetIterator<Graph, EdgeId, DeletingMergeHandler> smart_it(
         g_, edges.begin(), edges.end(), merge_handler);
