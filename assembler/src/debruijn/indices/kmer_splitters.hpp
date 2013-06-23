@@ -201,7 +201,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   delete[] ostreams;
 
   INFO("Used " << counter << " reads. Maximum read length " << rl);
-  rl = rl_;
+  rl_ = rl;
 
   return out;
 }
@@ -286,7 +286,7 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
 }
 
 class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter {
-  typedef MMappedFileRecordArrayIterator<typename runtime_k::RtSeq::DataType> kmer_iterator;
+  typedef MMappedFileRecordArrayIterator<runtime_k::RtSeq::DataType> kmer_iterator;
 
   unsigned K_source_;
   std::string kmers_;
