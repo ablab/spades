@@ -93,16 +93,20 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter {
                        KMerBuffer &tmp_entries,
                        unsigned num_files, size_t cell_size) const;
 
+  size_t rl_;
+
  public:
   DeBruijnReadKMerSplitter(const std::string &work_dir,
                            unsigned K,
                            io::ReadStreamVector< io::IReader<Read> >& streams,
                            SingleReadStream* contigs_stream = 0)
       : DeBruijnKMerSplitter(work_dir, K),
-        streams_(streams), contigs_(contigs_stream) {
+        streams_(streams), contigs_(contigs_stream), rl_(0) {
   }
 
   virtual path::files_t Split(size_t num_files);
+
+  size_t read_length() const { return rl_; }
 };
 
 template<class Read> template<class ReadStream>
@@ -197,6 +201,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   delete[] ostreams;
 
   INFO("Used " << counter << " reads. Maximum read length " << rl);
+  rl = rl_;
 
   return out;
 }
