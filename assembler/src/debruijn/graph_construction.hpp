@@ -173,7 +173,6 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 	// FIXME: output_dir here is damn ugly!
 	DeBruijnExtensionIndex<Seq> ext(k, index.inner_index().workdir());
 	size_t rl = DeBruijnExtensionIndexBuilder<Seq>().BuildIndexFromStream(ext, streams, contigs_stream);
-
 	TRACE("Extention Index constructed");
 
     if (params.early_tc.enable) {

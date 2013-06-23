@@ -249,40 +249,54 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
         return rl;
     }
 
+    void FillExtensionsFromIndex(std::string KPlusOneMersFilename,
+                                 DeBruijnExtensionIndex<runtime_k::RtSeq> &index) const {
+        unsigned KPlusOne = index.K() + 1;
+
+        DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_iterator it(KPlusOneMersFilename,
+                                                                   runtime_k::RtSeq::GetDataSize(KPlusOne));
+        for (; it.good(); ++it) {
+            runtime_k::RtSeq kpomer(KPlusOne, *it);
+
+            char pnucl = kpomer[0], nnucl = kpomer[KPlusOne - 1];
+            index.AddOutgoing(runtime_k::RtSeq(KPlusOne - 1, kpomer), nnucl);
+            // FIXME: This is extremely ugly. Needs to add start / end methods to extract first / last N symbols...
+            index.AddIncoming(runtime_k::RtSeq(KPlusOne - 1, kpomer << 0), pnucl);
+        }
+    }
+
+
   public:
     template <class Read>
     size_t BuildIndexFromStream(DeBruijnExtensionIndex<runtime_k::RtSeq> &index,
                                 io::ReadStreamVector<io::IReader<Read> > &streams,
                                 SingleReadStream* contigs_stream = 0) const {
-        unsigned nthreads = streams.size();
+        // First, build a k+1-mer index
+        DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
+                                                index.K() + 1,
+                                                streams, contigs_stream);
+        KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+        counter.CountAll(16, streams.size());
 
-        index.KMersFilename_ = base::BuildIndexFromStream(index, streams, contigs_stream);
+        // Now, count unique k-mers from k+1-mers
+        DeBruijnKMerKMerSplitter splitter2(index.workdir(),
+                                           index.K(),
+                                           counter.GetFinalKMersFname(), index.K() + 1);
+        KMerDiskCounter<runtime_k::RtSeq> counter2(index.workdir(), splitter2);
 
-        // Now use the index to fill the coverage and EdgeId's
-        INFO("Building k-mer extensions from reads, this takes a while.");
+        KMerIndexBuilder<typename DeBruijnKMerIndex<uint8_t, slim_kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, 1);
 
-        size_t rl = 0;
-        streams.reset();
-# pragma omp parallel for num_threads(nthreads) shared(rl)
-        for (size_t i = 0; i < nthreads; ++i) {
-            size_t crl = FillExtensionsFromStream(streams[i], index);
+        size_t sz = builder.BuildIndex(index.index_, counter2, /* save final */ true);
+        index.data_.resize(sz);
+        index.kmers = NULL;
+        index.KMersFilename_ = counter2.GetFinalKMersFname();
 
-            // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
-#   pragma omp flush(rl)
-            if (crl > rl)
-#     pragma omp critical
-            {
-                rl = std::max(rl, crl);
-            }
-        }
+        // Build the kmer extensions
+        INFO("Building k-mer extensions from k+1-mers");
+        FillExtensionsFromIndex(counter.GetFinalKMersFname(), index);
+        INFO("Building k-mer extensions from k+1-mers finished.");
 
-        if (contigs_stream) {
-            contigs_stream->reset();
-            FillExtensionsFromStream(*contigs_stream, index);
-        }
-        INFO("Building k-mer extensions from reads finished.");
-
-        return rl;
+        return splitter.read_length();
     }
 
   protected:
