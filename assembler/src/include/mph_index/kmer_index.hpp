@@ -262,11 +262,19 @@ class KMerDiskCounter : public KMerCounter<Seq> {
     typedef KMerCounter<Seq, traits> __super;
 public:
   KMerDiskCounter(const std::string &work_dir, KMerSplitter<Seq> &splitter)
-      : work_dir_(work_dir), splitter_(splitter) { }
+      : work_dir_(work_dir), splitter_(splitter) {
+    std::string prefix = path::append_path(work_dir, "kmers_XXXXXX");
+    char *tempprefix = strcpy(new char[prefix.length() + 1], prefix.c_str());
+    VERIFY_MSG(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
+    kmer_prefix_ = tempprefix;
+  }
 
   ~KMerDiskCounter() {
     for (size_t i = 0; i < buckets_.size(); ++i)
       ReleaseBucket(i);
+
+    ::close(fd_);
+    ::unlink(kmer_prefix_.c_str());
   }
 
   void OpenBucket(size_t idx, bool unlink = true) {
@@ -348,21 +356,23 @@ public:
   }
 
   std::string GetFinalKMersFname() const {
-    return path::append_path(work_dir_, "kmers.final");
+    return kmer_prefix_ + ".final";
   }
 
 private:
   std::string work_dir_;
   KMerSplitter<Seq> &splitter_;
+  int fd_;
+  std::string kmer_prefix_;
 
   std::vector<MMappedRecordArrayReader<typename Seq::DataType>*> buckets_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {
-    return path::append_path(work_dir_, "kmers.unique." + boost::lexical_cast<std::string>(suffix));
+    return kmer_prefix_ + ".unique." + boost::lexical_cast<std::string>(suffix);
   }
 
   std::string GetMergedKMersFname(unsigned suffix) const {
-    return path::append_path(work_dir_, "kmers.merged." + boost::lexical_cast<std::string>(suffix));
+    return kmer_prefix_ + ".merged." + boost::lexical_cast<std::string>(suffix);
   }
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname,
