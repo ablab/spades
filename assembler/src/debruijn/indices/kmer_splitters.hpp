@@ -285,4 +285,80 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
   return out;
 }
 
+class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter {
+  typedef MMappedFileRecordArrayIterator<typename runtime_k::RtSeq::DataType> kmer_iterator;
+
+  unsigned K_source_;
+  std::string kmers_;
+
+  size_t FillBufferFromKMers(kmer_iterator &kmer,
+                             KMerBuffer &tmp_entries,
+                             unsigned num_files, size_t cell_size) const;
+
+ public:
+  DeBruijnKMerKMerSplitter(const std::string &work_dir,
+                           unsigned K_target,
+                           std::string kmers, unsigned K_source)
+      : DeBruijnKMerSplitter(work_dir, K_target), K_source_(K_source), kmers_(kmers) {}
+
+  virtual path::files_t Split(size_t num_files);
+};
+
+size_t DeBruijnKMerKMerSplitter::FillBufferFromKMers(kmer_iterator &kmer,
+                                                     KMerBuffer &buffer,
+                                                     unsigned num_files, size_t cell_size) const {
+  size_t seqs = 0;
+  for (size_t kmers = 0; kmer.good() && kmers < num_files * cell_size; ++kmer) {
+    Sequence nucls(runtime_k::RtSeq(K_source_, *kmer), 0);
+    kmers += FillBufferFromSequence(nucls, buffer, num_files);
+    seqs += 1;
+  }
+
+  return seqs;
+}
+
+path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
+  INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
+
+  // Determine the set of output files
+  path::files_t out;
+  for (unsigned i = 0; i < num_files; ++i)
+    out.push_back(this->GetRawKMersFname(i));
+
+  FILE** ostreams = new FILE*[num_files];
+  for (unsigned i = 0; i < num_files; ++i) {
+    ostreams[i] = fopen(out[i].c_str(), "wb");
+    VERIFY_MSG(ostreams[i], "Cannot open temporary file to write");
+  }
+  size_t cell_size = READS_BUFFER_SIZE /
+                     (num_files * runtime_k::RtSeq::GetDataSize(K_) * sizeof(runtime_k::RtSeq::DataType));
+  INFO("Using cell size of " << cell_size);
+
+  std::vector<KMerBuffer> tmp_entries(1);
+  KMerBuffer &entry = tmp_entries[0];
+  entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
+
+  size_t counter = 0, n = 10;
+  for (kmer_iterator it(kmers_, runtime_k::RtSeq::GetDataSize(K_source_)); it.good(); ) {
+    counter += FillBufferFromKMers(it, tmp_entries[0], num_files, cell_size);
+
+    DumpBuffers(num_files, 1, tmp_entries, ostreams);
+
+    if (counter >> n) {
+      INFO("Processed " << counter << " kmers");
+      n += 1;
+    }
+  }
+
+  for (unsigned i = 0; i < num_files; ++i)
+    fclose(ostreams[i]);
+
+  delete[] ostreams;
+
+  INFO("Used " << counter << " kmers.");
+
+  return out;
+}
+
+
 }
