@@ -241,6 +241,7 @@ class KMerCounter {
   typedef typename traits::FinalKMerStorage        FinalKMerStorage;
 
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) = 0;
+  virtual size_t CountAll(unsigned num_buckets, unsigned num_threads) = 0;
   virtual void MergeBuckets(unsigned num_buckets) = 0;
 
   virtual void OpenBucket(size_t idx, bool unlink = true) = 0;
@@ -348,6 +349,13 @@ public:
       ofs.write((const char*)ins.data(), ins.data_size());
     }
     ofs.close();
+  }
+
+  size_t CountAll(unsigned num_buckets, unsigned num_threads) {
+    size_t kmers = Count(num_buckets, num_threads);
+    MergeBuckets(num_buckets);
+
+    return kmers;
   }
 
   typename __super::FinalKMerStorage *GetFinalKMers() {
