@@ -139,6 +139,7 @@ const Sequence& genome, size_t k) {
 }
 
 void CountPairedInfoStats(const Graph& g,
+    const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
     const PairedInfoIndexT<Graph>& paired_index,
     const PairedInfoIndexT<Graph>& etalon_index,
     const string& output_folder) {
@@ -148,32 +149,34 @@ void CountPairedInfoStats(const Graph& g,
 	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-	UniquePathStat<Graph>(g, filtered_index, (size_t)math::round(*cfg::get().ds.IS), *cfg::get().ds.RL, 0.1 * (*cfg::get().ds.IS)).Count();
+	UniquePathStat<Graph>(g, filtered_index,
+	                    (size_t)math::round(lib.data().mean_insert_size),
+                        lib.data().read_length,
+                        0.1 * lib.data().mean_insert_size).Count();
 	UniqueDistanceStat<Graph>(etalon_index).Count();
 	INFO("Paired info stats counted");
 }
 
 // leave only those pairs, which edges have no path in the graph between them
 void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index,
-                            const PairedIndexT& index,
-                            const conj_graph_pack &gp,
-                            const GraphDistanceFinder<Graph>& dist_finder)
-{
-    for (auto it = index.begin(); it != index.end(); ++it) {
-    const set<Point>& histogram = *it;
+                                  const PairedIndexT& index,
+                                  const conj_graph_pack &gp,
+                                  const GraphDistanceFinder<Graph>& dist_finder) {
+  for (auto it = index.begin(); it != index.end(); ++it) {
+    const std::set<Point>& histogram = *it;
     EdgeId e1 = it.first();
     EdgeId e2 = it.second();
-        if (gp.g.OutgoingEdgeCount(gp.g.EdgeEnd(e1)) == 0 && gp.g.IncomingEdgeCount(gp.g.EdgeEnd(e1)) == 1 &&
-            gp.g.IncomingEdgeCount(gp.g.EdgeStart(e2)) == 0 && gp.g.OutgoingEdgeCount(gp.g.EdgeStart(e2)) == 1)     {
+    if (gp.g.OutgoingEdgeCount(gp.g.EdgeEnd(e1)) == 0 && gp.g.IncomingEdgeCount(gp.g.EdgeEnd(e1)) == 1 &&
+        gp.g.IncomingEdgeCount(gp.g.EdgeStart(e2)) == 0 && gp.g.OutgoingEdgeCount(gp.g.EdgeStart(e2)) == 1)     {
       vector<size_t> dists = dist_finder.GetGraphDistancesLengths(e1, e2);
       if (dists.size() == 0)
         for (auto point_iter = histogram.begin(); point_iter != histogram.end(); ++point_iter)
           if (math::gr(point_iter->d, 0.)) {
             scaf_clustered_index.AddPairInfo(it.first(), it.second(),
                                              point_iter->d, point_iter->weight, 20.);
-            }
-        }
+          }
     }
+  }
 }
 
 void FillAndCorrectEtalonPairedInfo(
@@ -337,23 +340,24 @@ void GetAllDistances(const Graph& g,
 }
 
 template<class Graph>
-void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids,
+void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_config::DataSetData> &lib, const IdTrackHandler<Graph>& int_ids,
     const PairedInfoIndexT<Graph>& paired_index, const PairedInfoIndexT<Graph>& clustered_index) {
   PairedIndexT all_paths(g);
-    GetAllDistances<Graph>(
-            paired_index,
-            all_paths,
-            GraphDistanceFinder<Graph>(g, *cfg::get().ds.IS, *cfg::get().ds.RL,
-            size_t(*cfg::get().ds.is_var)));
+  GetAllDistances<Graph>(paired_index,
+                         all_paths,
+                         GraphDistanceFinder<Graph>(g,
+                                                    size_t(lib.data().mean_insert_size),
+                                                    lib.data().read_length,
+                                                    size_t(lib.data().insert_size_deviation)));
 
-	string dir_name = cfg::get().output_dir + "estimation_qual/";
+  std::string dir_name = cfg::get().output_dir + "estimation_qual/";
 	make_dir(dir_name);
 
 	typename PrinterTraits<Graph>::Printer printer(g, int_ids);
-    printer.savePaired(dir_name + "paths", all_paths);
+  printer.savePaired(dir_name + "paths", all_paths);
 
-    //PairedIndexT& all_paths_2(g);
-    //GetAllDistances<Graph>(g,
+  //PairedIndexT& all_paths_2(g);
+  //GetAllDistances<Graph>(g,
             //paired_index, clustered_index,
             //int_ids,
             //all_paths_2,
@@ -363,16 +367,17 @@ void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids,
 }
 
 void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
+    const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
     const PairedInfoIndexT<Graph> &paired_index,
     const PairedInfoIndexT<Graph> &clustered_index) {
-
   PairedIndexT etalon_index(gp.g);
 
-    FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
-    		(size_t)math::round(*cfg::get().ds.IS), *cfg::get().ds.RL,
-    		(size_t)math::round(*cfg::get().ds.is_var), true);
+  FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
+                                 (size_t)math::round(lib.data().mean_insert_size),
+                                 lib.data().read_length,
+                                 (size_t)math::round(lib.data().insert_size_deviation), true);
 
-	CountAndSaveAllPaths(gp.g, gp.int_ids, paired_index, clustered_index);
+	CountAndSaveAllPaths(gp.g, lib, gp.int_ids, paired_index, clustered_index);
 
 	INFO("Counting clustered info stats");
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
@@ -381,21 +386,23 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
   //estimation_stat.Count();
   //estimation_stat.SaveStats(cfg::get().output_dir + "estimation_qual/");
 
-	INFO("Counting overall cluster stat")
+	INFO("Counting overall cluster stat");
 	ClusterStat<Graph>(clustered_index).Count();
-	INFO("Overall cluster stat")
+	INFO("Overall cluster stat");
 
-    if (cfg::get().paired_info_scaffolder) {
+  if (cfg::get().paired_info_scaffolder) {
 		ConjugateDataPrinter<Graph> data_printer(gp.g, gp.int_ids);
-        INFO("Generating the statistics of pair info for scaffolding");
-        GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t)math::round(*cfg::get().ds.IS),
-        		*cfg::get().ds.RL, (size_t)math::round(*cfg::get().ds.is_var));
-        PairedIndexT scaf_clustered_index(gp.g);
-        FilterIndexWithExistingPaths(scaf_clustered_index, clustered_index, gp, dist_finder);
-        data_printer.savePaired(
-                cfg::get().output_dir + "scaf_clustered",
-                scaf_clustered_index);
-    }
+    INFO("Generating the statistics of pair info for scaffolding");
+    PairedIndexT scaf_clustered_index(gp.g);
+    FilterIndexWithExistingPaths(scaf_clustered_index,
+                                 clustered_index, gp,
+                                 GraphDistanceFinder<Graph>(gp.g,
+                                         (size_t)math::round(lib.data().mean_insert_size),
+                                         lib.data().read_length,
+                                         (size_t)math::round(lib.data().insert_size_deviation)));
+    data_printer.savePaired(cfg::get().output_dir + "scaf_clustered",
+                            scaf_clustered_index);
+  }
   //  PairedInfoIndexT<Graph> etalon_clustered_index;
 	//	DistanceEstimator<Graph> estimator(g, etalon_index, insert_size,
 	//			max_read_length, cfg::get().de.delta,
@@ -412,9 +419,9 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 }
 
 void WriteToDotFile(const Graph &g,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
-		string graph_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
-		Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
+                    const omnigraph::GraphLabeler<Graph>& labeler, const string& file_name,
+                    string graph_name, Path<EdgeId> path1/* = Path<EdgeId> ()*/,
+                    Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
 	omnigraph::WritePaired(g, labeler, file_name, graph_name, path1, path2);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
@@ -554,18 +561,17 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
 void WriteKmerComponent(conj_graph_pack &gp,
 		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
 		const Path<Graph::EdgeId>& path1, const Path<Graph::EdgeId>& path2,
-		runtime_k::RtSeq const& kp1mer) {
+		runtime_k::RtSeq const& kp1mer, size_t is) {
 	if(!gp.index.contains(kp1mer)) {
 		WARN("no such kmer in the graph");
 		return;
 	}
 	VERIFY(gp.index.contains(kp1mer));
-	EdgeNeighborhoodFinder<Graph> splitter(gp.g, gp.index.get(kp1mer).first, 50,
-			(size_t)(*cfg::get().ds.IS));
+	EdgeNeighborhoodFinder<Graph> splitter(gp.g, gp.index.get(kp1mer).first, 50, is);
 	ComponentSizeFilter<Graph> filter(gp.g, 500, 2, 500);
 	PathColorer<Graph> colorer(gp.g, path1, path2);
 	WriteComponents<Graph>(gp.g, splitter, filter, folder + "kmer.dot",
-			*DefaultColorer(gp.g, path1, path2), labeler);
+                         *DefaultColorer(gp.g, path1, path2), labeler);
 }
 
 optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
@@ -647,7 +653,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 	if (!config.components_for_kmer.empty()) {
 		make_dir(folder + "kmer_loc/");
 		WriteKmerComponent(gp, labeler, folder + "kmer_loc/", path1, path2,
-		        runtime_k::RtSeq(k + 1, config.components_for_kmer.c_str()));
+		        runtime_k::RtSeq(k + 1, config.components_for_kmer.c_str()), cfg::get().ds.IS());
 	}
 
 	if (config.write_components_along_genome) {
@@ -685,7 +691,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 				string locality_folder = pos_loc_folder + *it + "/";
 				make_dir(locality_folder);
 				WriteKmerComponent(gp, labeler, locality_folder, path1, path2,
-						*close_kp1mer);
+						*close_kp1mer, cfg::get().ds.IS());
 			} else {
 				WARN(
 						"Failed to find genome kp1mer close to the one at position "
@@ -845,7 +851,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 	int PosInfo = 0;
 	int AllignedPI = 0;
 	int ExactDPI = 0;
-	int OurD = (int)math::round(*cfg::get().ds.IS - (double)(*cfg::get().ds.RL));
+	int OurD = (int) cfg::get().ds.IS() - (int) cfg::get().ds.RL();
 	for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 			p_iter != p_end_iter; ++p_iter) {
 		vector<PairInfo> pi = *p_iter;

@@ -52,6 +52,11 @@ class ReadStreamVector : boost::noncopyable {
   ReadStreamVector(Reader& stream): streams_(1, &stream), destroy_readers_(false) {
   }
 
+  std::vector<Reader*>& get() {
+      destroy_readers_ = false;
+      return streams_;
+  }
+
 //  ReadStreamVector(const ReadStreamVector& that): streams_(that.streams_), destroy_readers_(false) {
 //  }
 
@@ -152,6 +157,14 @@ class ReadStreamVector : boost::noncopyable {
   void reset() {
     for (auto I = streams_.begin(), E = streams_.end(); I != E; ++I)
       (*I)->reset();
+  }
+
+  void release() {
+      destroy_readers_ = false;
+  }
+
+  const std::vector< Reader * >& get() const {
+      return streams_;
   }
 
 };

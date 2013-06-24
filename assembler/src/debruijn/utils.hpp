@@ -692,41 +692,66 @@ public:
     }
 };
 
+
 template<class graph_pack, class PairedRead, class ConfigType>
 bool RefineInsertSize(const graph_pack& gp,
                       io::ReadStreamVector<io::IReader<PairedRead> >& streams,
                       ConfigType& config,
-                      size_t edge_length_threshold)
-{
-    double mean;
-    double delta;
-    double median;
-    double mad;
-    std::map<size_t, size_t> percentiles;
-    std::map<int, size_t> hist;
-    // calling default method
-    refine_insert_size(streams, gp, edge_length_threshold, mean, delta, median, mad, percentiles, hist);
+                      size_t edge_length_threshold) {
+  size_t rl;
+  double mean;
+  double delta;
+  double median;
+  double mad;
+  std::map<size_t, size_t> percentiles;
+  std::map<int, size_t> hist;
+  // calling default method
+  refine_insert_size(streams, gp, edge_length_threshold, rl, mean, delta, median, mad, percentiles, hist);
 
-    if (hist.size() == 0) {
-        config.paired_mode = false;
-        WARN("Failed to estimate the insert size of paired reads, because none of the paired reads aligned to long edges.");
-        WARN("Paired reads will not be used.");
-        return false;
-    }
+  if (hist.size() == 0) {
+    config.paired_mode = false;
+    WARN("Failed to estimate the insert size of paired reads, because none of the paired reads aligned to long edges.");
+    WARN("Paired reads will not be used.");
+    return false;
+  }
 
-    config.ds.IS = mean;
-    config.ds.is_var = delta;
-    config.ds.median = median;
-    config.ds.mad = mad;
-    config.ds.percentiles = percentiles;
-    config.ds.hist = hist;
-    INFO("IS = " << mean);
-    INFO("Delta = " << delta);
-    INFO("Median = " << median);
-    INFO("MAD = " << mad);
-    DEBUG("Delta_Mad = " << 1.4826 * mad);
+  config.ds.set_IS(mean);
+  config.ds.set_is_var(delta);
+  config.ds.set_median(median);
+  config.ds.set_mad(mad);
+  config.ds.set_hist(hist);
+  INFO("Mean Insert Size = " << mean);
+  INFO("Insert Size stddev= " << delta);
+  INFO("Median Insert Size = " << median);
+  INFO("Insert Size MAD = " << mad);
+  DEBUG("Delta_Mad = " << 1.4826 * mad);
 
-    return true;
+  return true;
+}
+
+template<class graph_pack, class PairedRead>
+bool RefineInsertSizeForLib(const graph_pack& gp,
+                      io::ReadStreamVector<io::IReader<PairedRead> >& streams,
+                      debruijn_config::DataSetData& data,
+                      size_t edge_length_threshold) {
+
+  std::map<size_t, size_t> percentiles;
+  // calling default method
+  data.read_length = 0;
+  refine_insert_size(streams, gp, edge_length_threshold,
+          data.read_length,
+          data.mean_insert_size,
+          data.insert_size_deviation,
+          data.median_insert_size,
+          data.insert_size_mad,
+          percentiles,
+          data.insert_size_distribution);
+
+  if (data.insert_size_distribution.size() == 0) {
+    return false;
+  }
+
+  return true;
 }
 
 double UnityFunction(int /*x*/) {

@@ -36,8 +36,8 @@ case $arg in
   'pep') $cmd configs/debruijn/path_extend/pe_params.info.template   configs/debruijn/path_extend/pe_params.info;;
   'con') $cmd configs/debruijn/construction.info.template   configs/debruijn/construction.info;;
   '-all')
-  		echo ----------------------spades_config.info------------------------
-        $cmd spades_config.info.template                            spades_config.info
+#  		echo ----------------------spades_config.info------------------------
+#        $cmd spades_config.info.template                            spades_config.info
 		echo -----------------configs/debruijn/config.info-------------------
         $cmd configs/debruijn/config.info.template                  configs/debruijn/config.info
 		echo ------------------configs/hammer/config.info--------------------

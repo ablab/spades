@@ -26,6 +26,7 @@ namespace debruijn_graph {
 
 typedef PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 
+
 template<class Graph, class SeqType>
 struct graph_pack: private boost::noncopyable {
 	typedef Graph graph_t;
@@ -66,6 +67,9 @@ inline void Convert(const conj_graph_pack& gp1,
 	ScanWithClusteredIndex(p, gp2, clustered_index2);
 	remove_dir(conv_folder);
 }
+
+typedef omnigraph::PairedInfoIndicesT<ConjugateDeBruijnGraph> PairedIndicesT;
+
 
 } // namespace debruijn_graph
 

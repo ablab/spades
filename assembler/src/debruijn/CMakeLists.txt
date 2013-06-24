@@ -8,9 +8,11 @@ project(spades CXX)
 
 add_executable(spades
                kmer_coverage_model.cpp
+               config_struct.cpp
+               path_extend/pe_config_struct.cpp
                main.cpp)
 
-target_link_libraries(spades ${COMMON_LIBRARIES} input mph_index otkpp)
+target_link_libraries(spades  input mph_index otkpp  ${COMMON_LIBRARIES} ssw)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)

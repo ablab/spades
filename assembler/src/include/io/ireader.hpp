@@ -30,16 +30,12 @@ namespace io {
 
 
 struct ReadStat {
-
     size_t read_count_;
-
     size_t max_len_;
+    uint64_t total_len_;
 
-    u_int64_t total_len_;
 
-
-    ReadStat(): read_count_(0), max_len_(0), total_len_(0) {
-    }
+    ReadStat(): read_count_(0), max_len_(0), total_len_(0) { }
 
     void write(std::ostream& stream) const {
         stream.write((const char *) &read_count_, sizeof(read_count_));

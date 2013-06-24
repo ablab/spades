@@ -72,7 +72,7 @@ public:
   {
   }
 
-  vector<PathInfo> ConvertPIToSplitPaths(const vector<PairInfo<EdgeId>>& pair_infos) const
+  vector<PathInfo> ConvertPIToSplitPaths(const vector<PairInfo<EdgeId>>& pair_infos, double is, double is_var) const
   {
     vector<PathInfo> result;
     if (pair_infos.size() == 0) 
@@ -81,9 +81,7 @@ public:
       EdgeId cur_edge = pair_infos[0].first;
       vector<bool> pair_info_used(pair_infos.size());
       TRACE("Preparing path_processor for this base edge");
-      size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(),
-                                                             *cfg::get().ds.IS,
-                                                             size_t(*cfg::get().ds.is_var));
+      size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
 
       PathStorageCallback<Graph> callback(graph_);
       PathProcessor<Graph> path_processor(graph_,

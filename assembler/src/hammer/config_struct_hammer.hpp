@@ -14,24 +14,26 @@
 #ifndef CONFIG_STRUCT_HAMMER_HPP_
 #define CONFIG_STRUCT_HAMMER_HPP_
 
-#include "standard.hpp"
-#include "config_common.hpp"
-#include "boost/optional.hpp"
+#include "config_singl.hpp"
+
+#include "io/library.hpp"
+
+#include <boost/optional.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
+
+#include <string>
 
 #define CONFIG_FILENAME "/home/snikolenko/algorithmic-biology/assembler/src/hammer/config.inp"
 
 // struct for debruijn project's configuration file
-struct hammer_config
-{
-  string input_paired_1;
-  string input_paired_2;
-  string input_single;
-  string input_solid_kmers;
-  string input_working_dir;
+struct hammer_config {
+  io::DataSet<> dataset;
+
+  std::string input_working_dir;
   int input_trim_quality;
   boost::optional<int> input_qvoffset_opt;
   int input_qvoffset;
-  bool input_read_solid_kmers;
+  std::string output_dir;
 
   bool general_do_everything_after_first_iteration;
   bool general_reconstruct_only;
@@ -77,6 +79,7 @@ struct hammer_config
 
 
 // main debruijn config load function
+void load(hammer_config& cfg, const std::string &filename);
 void load(hammer_config& cfg, boost::property_tree::ptree const& pt);
 
 typedef config_common::config<hammer_config> cfg;

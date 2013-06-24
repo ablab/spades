@@ -86,32 +86,31 @@ namespace debruijn_graph {
       return paths;
     }
 
-  template<class graph_pack>
-    size_t GetAllPathsQuantity(const graph_pack& origin_gp,
-        const typename graph_pack::graph_t::EdgeId& e1,
-        const typename graph_pack::graph_t::EdgeId& e2, double d)
-    {
-      PathStorageCallback<typename graph_pack::graph_t> callback(origin_gp.g);
-      PathProcessor<typename graph_pack::graph_t> path_processor(
-          origin_gp.g,
-          d - origin_gp.g.length(e1)
-          - size_t(*cfg::get().ds.is_var),
-          d - origin_gp.g.length(e1)
-          + size_t(*cfg::get().ds.is_var),
-          origin_gp.g.EdgeEnd(e1), 
-          origin_gp.g.EdgeStart(e2),
-          callback);
-      path_processor.Process();
-      auto paths = callback.paths();
-      TRACE(origin_gp.int_ids.ReturnIntId(e1) << " "
-          << origin_gp.int_ids.ReturnIntId(e2) << " "
-          << paths.size());
-      return paths.size();
-    }
+template<class graph_pack>
+size_t GetAllPathsQuantity(const graph_pack& origin_gp,
+                           const typename graph_pack::graph_t::EdgeId& e1,
+                           const typename graph_pack::graph_t::EdgeId& e2, double d, double is_var) {
+  PathStorageCallback<typename graph_pack::graph_t> callback(origin_gp.g);
+  PathProcessor<typename graph_pack::graph_t>
+      path_processor(origin_gp.g,
+                     d - origin_gp.g.length(e1)
+                     - size_t(is_var),
+                     d - origin_gp.g.length(e1)
+                     + size_t(is_var),
+                     origin_gp.g.EdgeEnd(e1), 
+                     origin_gp.g.EdgeStart(e2),
+                     callback);
+  path_processor.Process();
+  auto paths = callback.paths();
+  TRACE(origin_gp.int_ids.ReturnIntId(e1) << " "
+        << origin_gp.int_ids.ReturnIntId(e2) << " "
+        << paths.size());
+  return paths.size();
+}
 
   template<class graph_pack>
     void GenerateMatePairStats(const graph_pack& origin_gp,
-        const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) 
+        const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index, double is_var)
     {
       typedef typename graph_pack::graph_t graph_t;
       typedef typename graph_t::EdgeId EdgeId;
@@ -127,7 +126,7 @@ namespace debruijn_graph {
           for (auto i_iter = hist.begin(); i_iter != hist.end(); ++i_iter) {
             if (math::ge(i_iter->d, (double) origin_gp.g.length(e1))) 
             {
-              size_t tmp = GetAllPathsQuantity(origin_gp, e1, e2, i_iter->d);
+              size_t tmp = GetAllPathsQuantity(origin_gp, e1, e2, i_iter->d, is_var);
               if (sizes.find(tmp) == sizes.end())
                 sizes.insert(make_pair(tmp, 0));
               ++sizes[tmp];

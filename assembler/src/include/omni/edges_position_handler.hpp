@@ -79,8 +79,9 @@ public:
 	}
 
 	bool followed_by(EdgePosition& ep, int max_dist = 1,
-			double relative_cutoff = 0) {
-
+			double relative_cutoff = 0, int genome_end = 0) {
+		if (ep.m_start() == 1 && m_end() == genome_end)
+			return true;
 		if (contigId_ != ep.contigId_)
 			return false;
 		if (end() > ep.start() + max_dist)
@@ -254,6 +255,15 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	std::map<EdgeId, vector<EdgePosition>> EdgesPositions;
 	bool careful_ranges_;
 	size_t max_labels_;
+	int max_genome_coords;
+private:
+	void find_genome_length(){
+		for (auto iter = EdgesPositions.begin(); iter != EdgesPositions.end(); ++iter) {
+			for(size_t i =  0; i < iter->second.size(); i++)
+				max_genome_coords = max(max_genome_coords, iter->second[i].m_end());
+		}
+	}
+
 public:
 	bool is_careful() const {
 		return careful_ranges_;
@@ -271,14 +281,14 @@ public:
 		return it->second;
 	}
 
-	void FillPositionGaps(EdgeId NewEdgeId, double relative_cutoff = 0) {
+	vector<EdgePosition> FillPositionGaps(EdgeId NewEdgeId, double relative_cutoff = 0) {
 		VERIFY(this->IsAttached());
 		vector<EdgePosition> new_vec;
 		if (EdgesPositions[NewEdgeId].size() > 0) {
 			EdgePosition activePosition = EdgesPositions[NewEdgeId][0];
 			for (size_t i = 1; i < EdgesPositions[NewEdgeId].size(); i++) {
 				if (activePosition.followed_by(EdgesPositions[NewEdgeId][i],
-						max(max_single_gap_, (int) (relative_cutoff * (double) this->g().length(NewEdgeId))))) {
+				        max(max_single_gap_, (int) (relative_cutoff * (double) this->g().length(NewEdgeId))), 0 , max_genome_coords)) {
 					activePosition.extend_by(EdgesPositions[NewEdgeId][i]);
 				} else {
 					new_vec.push_back(activePosition);
@@ -286,8 +296,9 @@ public:
 				}
 			}
 			new_vec.push_back(activePosition);
-			EdgesPositions[NewEdgeId] = new_vec;
+			//EdgesPositions[NewEdgeId] = new_vec;
 		}
+		return new_vec;
 	}
 
 	void AddEdgePosition(EdgeId NewEdgeId, int start, int end,
@@ -321,40 +332,42 @@ public:
 		//	TRACE("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
 
 		if (EdgesPositions[NewEdgeId].size() > 1) {
-			std::sort(EdgesPositions[NewEdgeId].begin(),
-					EdgesPositions[NewEdgeId].end(), PosCompare);
+			std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
 		}
 		FillPositionGaps(NewEdgeId);
 
 	}
 
-	bool IsConsistentWithGenome(vector<EdgeId> Path) {
-		for (size_t i = 0; i < Path.size(); i++) {
+	bool IsConsistentWithGenome(vector<EdgeId> path) {
+		map<EdgeId, vector<EdgePosition> > tmp_pos;
+		find_genome_length();
+		for (size_t i = 0; i < path.size(); i++) {
 //TODO: magic constants
-			FillPositionGaps(Path[i], 0.2);
+
+			tmp_pos[path[i]] = FillPositionGaps(path[i], 0.2);
 		}
-		for (size_t i = 0; i < Path.size() - 1; i++) {
-			if (this->g().EdgeStart(Path[i + 1]) != this->g().EdgeEnd(Path[i]))
+		for (size_t i = 0; i < path.size() - 1; i++) {
+			if (this->g().EdgeStart(path[i + 1]) != this->g().EdgeEnd(path[i]))
 				return false;
 		}
 
 		VERIFY(this->IsAttached());
-		if (Path.size() > 0) {
-			vector<EdgePosition> res = (EdgesPositions[Path[0]]);
+		if (path.size() > 0) {
+			vector<EdgePosition> res = (tmp_pos[path[0]]);
 
 			DEBUG(
-					this->g().int_id(Path[0]) << "  "<< res.size() << " positions");
+					this->g().int_id(path[0]) << "  "<< res.size() << " positions");
 
-			int len = this->g().length(Path[0]);
-			for (size_t i = 1; i < Path.size(); i++) {
-				DEBUG(this->g().int_id(Path[i]) << "  "<< EdgesPositions[Path[i]].size() << " positions");
+			int len = this->g().length(path[0]);
+			for (size_t i = 1; i < path.size(); i++) {
+				DEBUG(this->g().int_id(path[i]) << "  "<< tmp_pos[path[i]].size() << " positions");
 				if (is_careful())
-					res = RangeGluePositionsLists(res, EdgesPositions[Path[i]],
+					res = RangeGluePositionsLists(res, tmp_pos[path[i]],
 							max_single_gap_, len);
 				else
-					res = GluePositionsLists(res, EdgesPositions[Path[i]],
+					res = GluePositionsLists(res, tmp_pos[path[i]],
 							max_single_gap_);
-				len += this->g().length(Path[i]);
+				len += this->g().length(path[i]);
 			}
 			if (res.size() > 0) {
 				if (is_careful()) {

@@ -96,8 +96,9 @@ void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const KmerMapper<Graph>& kmer_mapper, const Sequence& genome,
 		size_t k) {
 
+  const auto& ds = cfg::get().ds;
 	FillEtalonPairedIndex(etalon_paired_index, g, index, kmer_mapper,
-			(size_t)math::round(*cfg::get().ds.IS), *cfg::get().ds.RL, size_t(*cfg::get().ds.is_var),
+                        ds.IS(), ds.RL(), size_t(ds.is_var()),
 			genome, k);
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
@@ -208,6 +209,7 @@ size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
 	} else {
 		INFO("Invalid construction mode")
 		VERIFY(false);
+		return 0;
 	}
 }
 

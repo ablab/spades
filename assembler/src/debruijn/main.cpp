@@ -30,6 +30,7 @@
 
 #include "runtime_k.hpp"
 
+
 void link_output(std::string const& link_name) {
   if (!cfg::get().run_mode)
     return;
@@ -155,7 +156,8 @@ int main(int /*argc*/, char** argv) {
 
     link_output("latest_success");
 
-    INFO("Assembling with K=" << cfg::get().K << " finished");
+    //INFO("Assembling " << cfg::get().dataset_name << " dataset with K=" << cfg::get().K << " finished");
+   
 
   } catch (std::bad_alloc const& e) {
     std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;
