@@ -1046,7 +1046,10 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
     GapStorage<Graph> gaps(conj_gp.g);
 
 	std::vector< PathInfo<Graph> > filteredPaths;
-	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
+	if (cfg::get().developer_mode) {
+	    OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
+	}
+
 	if (cfg::get().coverage_based_rr == true){
 		int pe_lib_index = get_first_pe_lib_index();
 		const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];

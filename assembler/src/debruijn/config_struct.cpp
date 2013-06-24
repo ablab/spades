@@ -483,8 +483,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   boost::property_tree::read_info(cfg.dataset_file, ds_pt);
   load(cfg.ds, ds_pt, true);
 
-  load(cfg.de, pt, (cfg.ds.single_cell ? "sc_de" : "usual_de"));
-
   load(cfg.ade, pt, (cfg.ds.single_cell ? "sc_ade" : "usual_ade")); // advanced distance estimator:
   load(cfg.rr, pt, (cfg.ds.single_cell ? "sc_rr" : "usual_rr")); // repeat resolver:
   load(cfg.pos, pt, "pos"); // position handler:
@@ -492,6 +490,13 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.est_mode, pt, "estimation_mode");
 
   load(cfg.rm, pt, "resolving_mode");
+
+  if (cfg.rm == rm_path_extend) {
+      load(cfg.de, pt, (cfg.ds.single_cell ? "sc_de" : "usual_de"));
+  }
+  else {
+      load(cfg.de, pt, (cfg.ds.single_cell ? "old_sc_de" : "old_usual_de"));
+  }
 
   cfg.pe_params.name = cfg.ds.single_cell ? "singlecell" : "multicell";
   load(cfg.pe_params, pt, "andrey_params");
