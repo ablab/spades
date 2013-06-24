@@ -61,6 +61,28 @@ class PathProjector {
       }
     }
 
+    if (!CheckDeletionOfIntouchables(paths, threads_to_delete, chosen_path))
+      return false;
+    std::unordered_set<size_t> bad_paths = GetIntersectingPaths(paths,
+        chosen_path);
+
+    if(bad_paths.size() == paths.size() - 1) {
+    for (size_t i = 0; i < paths.size(); ++i) {
+      INFO("failed: paths " << Debug(paths[i]) << " and " << Debug(rc_paths[i]));
+      for (const auto &e : threads_to_delete[i])
+        INFO("to delete 1: " << int(e.first) << " - " << e.second);
+      for (const auto &e : rc_threads[i])
+        INFO("to delete 2: " << int(e.first) << " - " << e.second);
+      INFO("---------paths1:");
+      for (const auto &e : paths[i])
+        coordinates_handler_.DebugOutput(e);
+      INFO("---------paths2:");
+      for (const auto &e : rc_paths[i])
+        coordinates_handler_.DebugOutput(e);
+    }
+      VERIFY(false);
+    }
+
     LockDelete();
     for (size_t i = 0; i < paths.size(); ++i) {
       /*
@@ -81,6 +103,8 @@ class PathProjector {
       */
 
       if (i == chosen_path) continue;
+      if (bad_paths.count(i) > 0) continue;
+
       if (threads_to_delete[i].size() == 0) {
         TRACE("nothin to delete!");
         continue;
@@ -163,6 +187,53 @@ class PathProjector {
                                                            paths[i]))
         return false;
     }
+    return true;
+  }
+
+  std::unordered_set<size_t> GetIntersectingPaths(const std::vector<Path> &paths,
+      const size_t chosen_path) {
+    std::unordered_set<EdgeId> intouchable_edges;
+    for (const auto e : paths[chosen_path]) {
+      intouchable_edges.insert(e);
+    }
+
+    std::unordered_set<size_t> result;
+    for (size_t i = 0; i < paths.size(); ++i) {
+      if (i == chosen_path) continue;
+
+      for (const auto e : paths[i]) {
+        if (intouchable_edges.count(e) > 0) {
+          result.insert(i);
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  bool CheckDeletionOfIntouchables(const std::vector<Path> &paths,
+      const std::vector<std::vector<std::pair<uchar, size_t> > > del_threads,
+      const size_t chosen_path) {
+    std::unordered_set<EdgeId> intouchable_edges;
+    for (const auto e : paths[chosen_path]) {
+      intouchable_edges.insert(e);
+      intouchable_edges.insert(g_.conjugate(e));
+    }
+    
+    for (size_t i = 0; i < paths.size(); ++i) {
+      if (i == chosen_path) continue;
+      const Path &path = paths[i];
+
+      for (const auto e : path) {
+        if (coordinates_handler_.GetMultiplicity(e) == del_threads[i].size()) {
+          if (intouchable_edges.count(e) > 0) {
+            return false;
+          }
+        }
+      }
+    }
+
     return true;
   }
 

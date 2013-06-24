@@ -125,13 +125,13 @@ class CapEnvironment : public Environment {
 
   void ClearGP() {
     // shared_ptr deletes automatically
+    coordinates_handler_.UnsetGraph();
     gp_rtseq_.reset();
     gp_lseq_.reset();
     graph_ = NULL;
     edge_pos_ = NULL;
     int_ids_ = NULL;
     coloring_.reset();
-    coordinates_handler_.UnsetGraph();
 
     CheckConsistency();
   }

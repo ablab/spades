@@ -40,6 +40,8 @@ class SimpleIndelFinder {
   VertexId restricted_vertex_;
 
   bool found_merge_point_;
+  VertexId best_vertex_;
+  size_t best_distance_to_vertex_;
   bool need_reflow_;
 
   vector<Path> alternative_paths_;
@@ -96,12 +98,28 @@ class SimpleIndelFinder {
 
 
   void ColoringDfs(const EdgeId edge, const PosArray &pos_array,
-                   const size_t color_mask, const size_t depth) {
+                   const size_t color_mask, const size_t path_length,
+                   const size_t depth) {
     const VertexId vertex = g_.EdgeEnd(edge);
     if (vertex == restricted_vertex_) {
       return;
     }
     OrVertexColor(vertex, color_mask);
+    if (__builtin_popcount(GetVertexColor(vertex)) >= 2) {
+      if (!found_merge_point_) {
+        best_vertex_ = vertex;
+        best_distance_to_vertex_ = path_length;
+
+        found_merge_point_ = true;
+        INFO("found merge point");
+      } else {
+        if (path_length < best_distance_to_vertex_) {
+          best_vertex_ = vertex;
+          best_distance_to_vertex_ = path_length;
+        }
+      }
+      return;
+    }
 
     if (depth >= kDfsDepthThreshold) {
       return;
@@ -112,13 +130,14 @@ class SimpleIndelFinder {
           pos_array, *it);
       if (further_array.size() == 0)
         continue;
-      ColoringDfs(*it, further_array, color_mask, depth + 1);
+      ColoringDfs(*it, further_array, color_mask,
+          path_length + g_.length(*it), depth + 1);
     }
   }
 
   // returns if endpoint was found or not
   bool GatheringDfs(const EdgeId edge, const PosArray &pos_array,
-                    const size_t color_mask_needed, const size_t depth,
+                    /*const size_t color_mask_needed,*/ const size_t depth,
                     vector<EdgeId> &path_seq) {
     VertexId vertex = g_.EdgeEnd(edge);
     if (vertex == restricted_vertex_) {
@@ -127,11 +146,9 @@ class SimpleIndelFinder {
 
     path_seq.push_back(edge);
 
-    if (GetVertexColor(vertex) == color_mask_needed) {
-      found_merge_point_ = true;
-      alternative_paths_.push_back(path_seq);
-
-      /*
+    //if (GetVertexColor(vertex) == color_mask_needed) {
+    //if (__builtin_popcount(GetVertexColor(vertex)) >= 2) {
+    if (vertex == best_vertex_) {
       INFO("found final vertex " << g_.str(vertex));
       if (coordinates_handler_.GetContiguousThreads(path_seq).size() !=
              pos_array.size()) {
@@ -150,7 +167,6 @@ class SimpleIndelFinder {
       return false;
     }
 
-    bool found_merge_point = false;
     vector<EdgeId> further_edges = g_.OutgoingEdges(vertex);
     for (auto it = further_edges.begin(); it != further_edges.end(); ++it) {
       const PosArray further_array = coordinates_handler_.FilterPosArray(
@@ -158,12 +174,12 @@ class SimpleIndelFinder {
       if (further_array.size() == 0)
         continue;
 
-      bool is_path_to_merge_point = GatheringDfs(*it, further_array,
-          color_mask_needed, depth + 1, path_seq);
-      found_merge_point |= is_path_to_merge_point;
+      GatheringDfs(*it, further_array,
+          /*color_mask_needed,*/ depth + 1, path_seq);
+      //found_merge_point |= is_path_to_merge_point;
     }
     path_seq.pop_back();
-    return found_merge_point;
+    return false;
   }
 
   void PaintPath(const Path &path) {
@@ -355,24 +371,23 @@ class SimpleIndelFinder {
  
     // Dfs and try to resolve all splits
     ++coloring_version_;
+    found_merge_point_ = false;
     restricted_vertex_ = starting_vertex;
     size_t branch_num = 0;
     for (auto it = outgoing_edges.begin(); it != outgoing_edges.end(); ++it) {
       const PosArray init_pos_array = coordinates_handler_.GetEndPosArray(*it);
-      ColoringDfs(*it, init_pos_array, 1 << branch_num, 0);
+      ColoringDfs(*it, init_pos_array, 1 << branch_num, g_.length(*it), 0);
       branch_num++;
     }
 
-    found_merge_point_ = false;
-
-    vector<EdgeId> edge_seq_vector;
-    for (auto it = outgoing_edges.begin(); it != outgoing_edges.end(); ++it) {
-      const PosArray init_pos_array = coordinates_handler_.GetEndPosArray(*it);
-      GatheringDfs(*it, init_pos_array,
-          (1 << outgoing_edges_number) - 1, 0, edge_seq_vector);
-    }
-
     if (found_merge_point_) {
+      vector<EdgeId> edge_seq_vector;
+      for (auto it = outgoing_edges.begin(); it != outgoing_edges.end(); ++it) {
+        const PosArray init_pos_array = coordinates_handler_.GetEndPosArray(*it);
+        GatheringDfs(*it, init_pos_array,
+            /*(1 << outgoing_edges_number) - 1,*/ 0, edge_seq_vector);
+      }
+
       AnalyseThreadLengths();
 
       TRACE("Resolved split of color bunch");
