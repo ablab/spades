@@ -43,7 +43,6 @@ class SimpleIndelFinder {
   bool need_reflow_;
 
   vector<Path> alternative_paths_;
-  vector<size_t> thread_lengths_;
   size_t snps_;
   size_t indels_;
   size_t unknown_snp_;
@@ -55,58 +54,6 @@ class SimpleIndelFinder {
   const static size_t kDfsDepthThreshold = 4;
   const static size_t kProcessorColorShift = 32;
   const static size_t kProcessorColorMask = (1ll << kProcessorColorShift) - 1;
-
-  inline void LogHeader() {
-    output_stream_ << "Indel event:" << std::endl;
-  }
-
-  inline void LogFooter() {
-    output_stream_ << "End indel event" << std::endl << std::endl;
-  }
-
-  inline void LogEdge(EdgeId edge) {
-    output_stream_ << gp_.edge_pos.str(edge);
-  }
-
-  inline void LogThread(const vector<EdgeId> &path_seq) {
-    if (!found_merge_point_) {
-      LogHeader();
-    }
-
-    // Recover some thread params
-    TColorSet thread_colorset = TColorSet::AllColorsSet(colors_number_);
-    size_t thread_length = 0;
-    for (auto it = path_seq.begin(); it != path_seq.end(); ++it) {
-      thread_colorset &= coloring_.Color(*it);
-      thread_length += g_.length(*it);
-    }
-    thread_lengths_.push_back(thread_length);
-
-    output_stream_ << "Thread: length " << thread_length << " genomes (";
-
-    bool is_first = true;
-    for (size_t i = 0; i < colors_number_; ++i) {
-      if (thread_colorset[i] == 0) {
-        continue;
-      }
-      if (!is_first) {
-        output_stream_ << ',';
-      } else {
-        is_first = false;
-      }
-      output_stream_ << i;
-    }
-
-    output_stream_ << ") path (" << std::endl;
-
-    is_first = true;
-    for (auto it = path_seq.begin(); it != path_seq.end(); ++it) {
-      LogEdge(*it);
-      output_stream_ << std::endl;
-    }
-
-    output_stream_ << ')' << std::endl;
-  }
 
   inline void OrVertexColor(VertexId vertex, size_t color_set) {
     u64int &current_val = processor_coloring_[vertex];
@@ -136,7 +83,6 @@ class SimpleIndelFinder {
     }
     return incoming_coloring;
   }
-
 
   inline bool CheckColorSetExistence(const vector<EdgeId> &edges,
       const TColorSet &coloring) const {
@@ -345,13 +291,17 @@ class SimpleIndelFinder {
   }
 
   void AnalyseThreadLengths() {
+    std::vector<size_t> thread_lengths;
+    for (const auto &path : alternative_paths_) {
+      thread_lengths.push_back(GetPathLength(path));
+    }
     bool is_simple_snp = true;
     bool is_simple_indel = false; 
     bool equal_lengths = true;
 
     size_t prev = 0;
     size_t min_branch = size_t(-1);
-    for (size_t len : thread_lengths_) {
+    for (size_t len : thread_lengths) {
       if (len != g_.k() + 1) {
         is_simple_snp = false;
       }
@@ -378,8 +328,6 @@ class SimpleIndelFinder {
       indels_++;
       unknown_snp_ += EstimateSNPNumber(min_branch) - 1;
     }
-
-    thread_lengths_.clear();
   }
 
   void CheckForIndelEvent(const VertexId starting_vertex) {
@@ -425,10 +373,9 @@ class SimpleIndelFinder {
     }
 
     if (found_merge_point_) {
-      //AnalyseThreadLengths();
+      AnalyseThreadLengths();
 
       TRACE("Resolved split of color bunch");
-      LogFooter();
 
       if (mask_indels_) {
         TRACE("Removing edges... (masking indels)");
