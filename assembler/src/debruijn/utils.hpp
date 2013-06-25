@@ -729,10 +729,10 @@ bool RefineInsertSize(const graph_pack& gp,
   return true;
 }
 
-template<class graph_pack, class PairedRead>
+template<class graph_pack, class PairedRead, class DataSet>
 bool RefineInsertSizeForLib(const graph_pack& gp,
                       io::ReadStreamVector<io::IReader<PairedRead> >& streams,
-                      debruijn_config::DataSetData& data,
+                      DataSet& data,
                       size_t edge_length_threshold) {
 
   std::map<size_t, size_t> percentiles;

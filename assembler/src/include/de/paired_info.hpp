@@ -1074,6 +1074,10 @@ struct PairedInfoIndicesT {
         return *data_[i];
     }
 
+    size_t size() const {
+        return data_.size();
+    }
+
 };
 
 /*----------------------------------------Old Index----------------------------------------------*/

@@ -832,7 +832,7 @@ void PrintClusteredIndex(const string& file_name, DataPrinter<Graph>& printer,
 template<class Graph>
 void PrintPairedIndices(const string& file_name, DataPrinter<Graph>& printer,
     const PairedInfoIndicesT<Graph>& paired_indices) {
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+    for (size_t i = 0; i < paired_indices.size(); ++i) {
         PrintPairedIndex(file_name + "_" + ToString(i), printer, paired_indices[i]);
     }
 }
@@ -840,7 +840,7 @@ void PrintPairedIndices(const string& file_name, DataPrinter<Graph>& printer,
 template<class Graph>
 void PrintClusteredIndices(const string& file_name, DataPrinter<Graph>& printer,
     const PairedInfoIndicesT<Graph>& paired_indices) {
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+    for (size_t i = 0; i < paired_indices.size(); ++i) {
         PrintClusteredIndex(file_name  + "_" + ToString(i), printer, paired_indices[i]);
     }
 }
@@ -1022,7 +1022,7 @@ void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
 template<class Graph>
 void ScanPairedIndices(const string& file_name, DataScanner<Graph>& scanner,
         PairedInfoIndicesT<Graph>& paired_indices) {
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+    for (size_t i = 0; i < paired_indices.size(); ++i) {
         ScanPairedIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i]);
     }
 }
@@ -1031,7 +1031,7 @@ template<class Graph>
 void ScanClusteredIndices(const string& file_name, DataScanner<Graph>& scanner,
         PairedInfoIndicesT<Graph>& paired_indices) {
 
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+    for (size_t i = 0; i < paired_indices.size(); ++i) {
         ScanClusteredIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i]);
     }
 }
