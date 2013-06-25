@@ -36,6 +36,7 @@ class SimpleIndelFinder {
   size_t coloring_version_;
 
   unordered_map<VertexId, u64int> processor_coloring_;
+  unordered_map<VertexId, size_t> vertices_distances_;
 
   VertexId restricted_vertex_;
 
@@ -96,6 +97,17 @@ class SimpleIndelFinder {
     return false;
   }
 
+  size_t RelaxVertexDist(const VertexId v, const size_t dist) {
+    const auto it = vertices_distances_.find(v);
+    if (it == vertices_distances_.end()) {
+      return vertices_distances_[v] = dist;
+    } else {
+      if (it->second > dist) {
+        it->second = dist;
+      } 
+      return it->second;
+    }
+  }
 
   void ColoringDfs(const EdgeId edge, const PosArray &pos_array,
                    const size_t color_mask, const size_t path_length,
@@ -105,18 +117,20 @@ class SimpleIndelFinder {
       return;
     }
     OrVertexColor(vertex, color_mask);
+    size_t cur_dist = RelaxVertexDist(vertex, path_length);
+
     if (__builtin_popcount(GetVertexColor(vertex)) >= 2) {
+      TRACE("checking vertex from edge " << g_.str(edge) << " of dist " << cur_dist);
       if (!found_merge_point_) {
         best_vertex_ = vertex;
-        best_distance_to_vertex_ = path_length;
+        best_distance_to_vertex_ = cur_dist;
 
         found_merge_point_ = true;
-        //INFO("found merge point");
-      } else {
-        if (path_length < best_distance_to_vertex_) {
-          best_vertex_ = vertex;
-          best_distance_to_vertex_ = path_length;
-        }
+        TRACE("found merge point from edge " << g_.str(edge) << " length " << cur_dist);
+      } else if (cur_dist < best_distance_to_vertex_) {
+        best_vertex_ = vertex;
+        best_distance_to_vertex_ = cur_dist;
+        TRACE("found merge point from edge " << g_.str(edge) << " length " << cur_dist);
       }
       return;
     }
@@ -381,6 +395,8 @@ class SimpleIndelFinder {
       ColoringDfs(*it, init_pos_array, 1 << branch_num, g_.length(*it), 0);
       branch_num++;
     }
+
+    vertices_distances_.clear();
 
     if (found_merge_point_) {
       vector<EdgeId> edge_seq_vector;
