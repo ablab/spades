@@ -111,7 +111,7 @@ class SimpleIndelFinder {
         best_distance_to_vertex_ = path_length;
 
         found_merge_point_ = true;
-        INFO("found merge point");
+        //INFO("found merge point");
       } else {
         if (path_length < best_distance_to_vertex_) {
           best_vertex_ = vertex;
@@ -149,6 +149,7 @@ class SimpleIndelFinder {
     //if (GetVertexColor(vertex) == color_mask_needed) {
     //if (__builtin_popcount(GetVertexColor(vertex)) >= 2) {
     if (vertex == best_vertex_) {
+      /*
       INFO("found final vertex " << g_.str(vertex));
       if (coordinates_handler_.GetContiguousThreads(path_seq).size() !=
              pos_array.size()) {
@@ -158,6 +159,7 @@ class SimpleIndelFinder {
       }
       */
 
+      alternative_paths_.push_back(path_seq);
       path_seq.pop_back();
       return true;
     }

@@ -217,13 +217,14 @@ class CapEnvironmentManager {
 
   template <class gp_t>
   void FindIndelsTemplated(gp_t& gp, std::ofstream &out_stream,
-      const bool mask_indels) const {
+      const bool mask_indels) {
     SimpleIndelFinder<gp_t> indel_finder(gp, *env_->coloring_, 
         env_->coordinates_handler_, out_stream, mask_indels);
     indel_finder.FindIndelEvents();
 
     if (mask_indels) {
       env_->coordinates_handler_.StoreGenomeThreads();
+      UpdateStreams(gp);
     }
 
     //SimpleInDelCorrector<Graph> corrector(gp.g, *env_->coloring_,
@@ -385,7 +386,8 @@ class CapEnvironmentManager {
     env_->CheckConsistency();
   }
 
-  int FindIndels(const bool mask_indels, const std::string &output_file, const std::string &output_mode) const {
+  int FindIndels(const bool mask_indels, const std::string &output_file,
+      const std::string &output_mode) {
     std::ios_base::openmode mode;
     if (output_mode == "w") {
       mode = std::ios_base::out;
