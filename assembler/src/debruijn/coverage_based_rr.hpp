@@ -155,32 +155,35 @@ class CoverageBasedResolution {
 		getComponentsWithReference(  componentsRef, singlesRef, quality_labeler, filter.prohibitedEdges );
 
 
-		std::cout << "in components but not in componentsRef: " << std::endl;
+		int fp(0), fn(0);
+		std::cout << "in components (size: " << components.size() << ") but not in componentsRef: " << std::endl;
 		for (auto it = components.begin(); it != components.end(); ++it) {
 
 			if (std::find(componentsRef.begin(), componentsRef.end(), *it) == componentsRef.end() 
-				&& labels_after.edge_inclusions.find(*it) != labels_after.edge_inclusions.end() && labels_after.edge_inclusions[*it].size()> 1 ) {
+				&& (quality_labeler.quality(*it) > 0.5) ) {
+				fp += 1;
 				std::cout << gp->g.int_id(*it) << ", ";
 			}
 
 		}
 		std::cout << std::endl;
 
-		std::cout << "in componentsRef but not in components: " << std::endl;
+		std::cout << "in componentsRef (size: " << componentsRef.size() << ") but not in components: " << std::endl;
 		for (auto it = componentsRef.begin(); it != componentsRef.end(); ++it) {
 
 			if (std::find(components.begin(), components.end(), *it) == components.end()) {
+				fn += 1;
 				std::cout << gp->g.int_id(*it) << ", ";
 			}
 
 		}
 		std::cout << std::endl;
-
+		std::cout << "False positives: " << (double) fp / components.size() << "False negatives: " << (double) fn / (fn + singles.size()) << std::endl;
 
 		//getComponents( gp, components, singles, quality_labeler, unresolvedLoops );
 
 		INFO("Traversing graph...");
-		traverseComponents( components, singles, coverage, insert_size, resolvedPaths );
+		traverseComponents( components, singles, coverage, insert_size, resolvedPaths, quality_labeler );
 
 		std::set<EdgeId> usedEdges;
 
@@ -702,7 +705,8 @@ class CoverageBasedResolution {
 				const std::vector<EdgeId>& singles, DetailedCoverage& coverage, 
 				//std::set<EdgeId>& usedEdges,
 				size_t insert_size,
-				std::vector< std::vector<EdgeId>> & resolvedPaths) {
+				std::vector< std::vector<EdgeId>> & resolvedPaths,
+				EdgeQuality<typename GraphPack::graph_t>& quality_labeler) {
 
 		std::set<EdgeId> visited_edges;
 		INFO("Traversing components");
@@ -720,6 +724,7 @@ class CoverageBasedResolution {
 
 		int filteredByThresholds(0), resolvedPathsNum(0); 
 		int resolvedComponentsByTopology(0), resolvedComponentsByLength(0);//, resolvedComponentsByLengthAndTopology(0);
+		std::vector<int> pathSizes(21,0);
 		for ( auto edge = components.begin(); edge != components.end(); ++edge ) {
 			
 			if ( visited_edges.find(*edge) != visited_edges.end() ){
@@ -738,6 +743,17 @@ class CoverageBasedResolution {
 
 			if ( containsSelfLoop(path) ) {
 				continue;
+			}
+
+			bool containsNotGenomicEdges = false;
+			for (auto iter = path.begin(); iter != path.end(); ++iter) {
+				if (quality_labeler.quality(*iter) < 0.5) {
+					containsNotGenomicEdges = true;
+				}
+			}
+
+			if (!containsNotGenomicEdges ) {
+				pathSizes[path.size() - 1] += 1;
 			}
 
 			if ( containsOnlyShortEdges(path) ) {
@@ -914,6 +930,14 @@ class CoverageBasedResolution {
 
 		}
 		
+		std::cout << "sizes of paths:" << std::endl;
+		for (auto iter = pathSizes.begin(); iter != pathSizes.end(); ++iter) {
+
+			std::cout << *iter << " ";
+		}
+
+		std::cout << std::endl;
+
 		std::cout << "Number of components : " << numberOfComponents << std::endl;
 		std::cout << "Number of components with length exceeding insert size: " << numberOfLargeComponents << std::endl;
 		std::cout << "Number of components with length exceeding insert size with different in and out degree: " << numberOfComponentWithDifferentInOutDegree << std::endl;
