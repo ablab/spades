@@ -121,10 +121,11 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
       Kmer new_kmer(k_, new_s, new_kmer_offest);
       auto it = mapping_.find(new_kmer);
       if (it != mapping_.end()) {
-        VERIFY(Substitute(new_kmer) == old_kmer);
+//        VERIFY(Substitute(new_kmer) == old_kmer);
         mapping_.erase(it);
       }
-      mapping_[old_kmer] = new_kmer;
+      if(old_kmer.str() != new_kmer.str())
+            mapping_[old_kmer] = new_kmer;
     }
   }
 

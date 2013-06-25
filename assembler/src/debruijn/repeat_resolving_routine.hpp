@@ -1141,6 +1141,9 @@ void resolve_repeats() {
 			std::vector< PathInfo<Graph> > filteredPaths;
 		    //LongReadStorage<Graph> long_read(conj_gp.g);
 			INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+			if (cfg::get().ds.reads.lib_count() == 1) {
+				clustered_indices[0].Attach();
+			}
 			PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
 			INFO("index created");
 			filteredPaths = long_read.GetAllPaths();

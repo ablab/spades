@@ -222,6 +222,10 @@ public:
     data_.insert(PairInfo<EdgeId>(newId, info.second, info.point));
   }
 
+  void ReplaceSecondEdge(const PairInfo<EdgeId>& info, EdgeId newId, int shift) {
+//     data_.insert(PairInfo<EdgeId>(info.first, newId, Point(info.point.d() + shift, info.point.weight(), info.point.var());
+   }
+
   PairInfoIndexData() :
       data_() {
   }
@@ -877,7 +881,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
   }
 
   virtual void HandleGlue(EdgeId new_edge, EdgeId e1, EdgeId e2) {
-    TRACE("Handling Glueing " << int_id(new_edge) << " " << int_id(e1) << " "
+    DEBUG("Handling Glueing " << int_id(new_edge) << " " << int_id(e1) << " "
         << int_id(e2));
     TransferInfo(e2, new_edge);
     TransferInfo(e1, new_edge);

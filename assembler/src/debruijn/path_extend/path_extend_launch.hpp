@@ -281,9 +281,10 @@ void set_threshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_lengt
 void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index, size_t split_edge_length){
 	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
 	INFO("Calculating paired info threshold");
-	splitGraph.ProcessReadPairs();
-	double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
-	lib->SetSingleThreshold(threshold);
+//	splitGraph.ProcessReadPairs();
+//	double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
+//	lib->SetSingleThreshold(threshold);
+	lib->SetSingleThreshold(1.83784);
 }
 
 void add_paths_to_container(conj_graph_pack& gp, const std::vector<PathInfo<Graph> >& paths, PathContainer& supportingContigs){

@@ -68,7 +68,35 @@ private:
 
 public:
 	PathStorage(Graph &g):g_(g), inner_index(){}
-
+	void ReplaceEdges(map<EdgeId, EdgeId> &old_to_new){
+		map<int, EdgeId> tmp_map;
+//		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+//	    	tmp_map[g_.int_id(*iter)] = *iter;
+//	    }
+		InnerIndex new_index;
+		for (auto iter = inner_index.begin(); iter != inner_index.end(); iter++) {
+			auto tmp = iter->second;
+			EdgeId new_first;
+			if (old_to_new.find(iter->first) == old_to_new.end())
+				new_first = iter->first;
+			else {
+				TRACE(g_.int_id(old_to_new[iter->first]));
+				new_first = old_to_new[iter->first];
+			}
+			set<PathInfo<Graph> > new_tmp;
+			for (auto j_iter = tmp.begin(); j_iter != tmp.end(); j_iter ++) {
+				PathInfo<Graph> pi = *(j_iter);
+				for (size_t k  = 0; k <  pi.path.size(); k ++)
+					if (old_to_new.find(pi.path[k]) != old_to_new.end()) {
+						TRACE(g_.int_id(old_to_new[pi.path[k]]));
+						pi.path[k] =old_to_new[pi.path[k]];
+					}
+				new_tmp.insert(pi);
+			}
+			new_index[new_first] = new_tmp;
+		}
+		inner_index = new_index;
+	}
 	void AddPath(const vector<EdgeId> &p, int w, bool add_rc = false){
 		HiddenAddPath(p, w);
 		if (add_rc) {

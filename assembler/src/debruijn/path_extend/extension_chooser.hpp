@@ -177,7 +177,8 @@ public:
     bool WeighConterBased() const {
         return wc_ != 0;
     }
-
+	protected:
+	DECL_LOGGER("ExtensionChooser");
 };
 
 
@@ -642,7 +643,7 @@ public:
         for (auto it = supporting_paths.begin(); it != supporting_paths.end(); ++it) {
         	auto positions = (*it)->FindAll(path.Back());
             for (size_t i = 0; i < positions.size(); ++i) {
-            	if (positions[i] < (*it)->Size() - 1 && covered_path(path, **it, positions[i])){
+            	if (positions[i] > 0 && positions[i] < (*it)->Size() - 1 && covered_path(path, **it, positions[i] ) && unique_back_path(**it, positions[i])){
             		EdgeId next = (*it)->At(positions[i] + 1);
             		weights_cands[next] = weights_cands[next] + (*it)->getWeight();
             		filtered_cands.insert(next);
@@ -654,11 +655,11 @@ public:
         	vector<pair<EdgeId, double> > sorted_candidates = to_vector(weights_cands);
         	DEBUG("First extension is supported" <<g_.int_id(sorted_candidates[0].first) << " weight " << sorted_candidates[0].second);
         	DEBUG("First extension is supported" <<g_.int_id(sorted_candidates[1].first) << " weight " << sorted_candidates[1].second);
-        	if (sorted_candidates[0].second > 1.5 * sorted_candidates[1].second){
+        	if (sorted_candidates[0].second > 1.5 * sorted_candidates[1].second && sorted_candidates[0].second > 1.5){
         		filtered_cands.clear();
         		filtered_cands.insert(sorted_candidates[0].first);
         	}
-        } else if (filtered_cands.size() == 1){
+        } else if (filtered_cands.size() == 1 && weights_cands[ *(filtered_cands.begin())] >1){
         	EdgeId candidate = *(filtered_cands.begin());
             DEBUG("Only one extension is supported: " << g_.int_id(candidate) << " with weight " << weights_cands[candidate]);
         } else {
@@ -675,6 +676,42 @@ public:
     }
 
 private:
+    bool unique_back_path( BidirectionalPath& cov_path, size_t pos) {
+    	DEBUG("running unique_path");
+    	int int_pos = pos;
+    	while (int_pos >=0) {
+    		DEBUG(int_pos <<" "<< g_.int_id(cov_path.At(int_pos) ) );
+    		if (unique_edge(cov_path.At(int_pos)) && g_.length(cov_path.At(int_pos)) > g_.k())
+    			return true;
+    		int_pos--;
+    	}
+    	DEBUG("path has no unique prefix");
+    	return false;
+    }
+
+    bool unique_edge(EdgeId e){
+    	//TODO: hack
+    	DEBUG("running unique_edge :"<< g_.int_id(e));
+    	if (g_.length(e) > cfg::get().rr.max_repeat_length) return true;
+        auto supporting_paths = coverageMap_.GetCoveringPaths(e);
+        for (auto it = supporting_paths.begin(); it != supporting_paths.end(); ++it) {
+        	auto positions = (*it)->FindAll(e);
+        	if (positions.size() > 1) return false;
+        	for (auto jit = it; jit!= supporting_paths.end(); jit ++) {
+            	auto j_positions = (*it)->FindAll(e);
+            	if (j_positions.size() > 1) return false;
+            	double w1 = (*it)->getWeight();
+            	double w2 = (*it)->getWeight();
+            	if (w1 < 1.5 || w2 < 1.5 || w1/w2 > 4 || w2/w1 > 4)
+            		 continue;
+				if (!consistent_path(**it, **jit, positions[0], j_positions[0]))
+					return false;
+        	}
+        }
+        DEBUG("edge was unique!");
+        return true;
+    }
+
     bool covered_path(BidirectionalPath& path, BidirectionalPath& cov_path, size_t pos){
     	int cur_pos1 = path.Size() - 1;
     	int cur_pos2 = pos;
@@ -686,6 +723,36 @@ private:
     			return false;
     		}
     	}
+    	return true;
+    }
+
+    bool consistent_path(BidirectionalPath& path, BidirectionalPath& cov_path, size_t pos, size_t cov_pos){
+    	DEBUG("running consistent path");
+    	path.Print();
+    	cov_path.Print();
+    	int cur_pos1 = pos;
+    	int cur_pos2 = cov_pos;
+    	while (cur_pos1 >= 0 && cur_pos2 >=0){
+    		if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
+    			cur_pos1--;
+    			cur_pos2--;
+    		} else {
+    			DEBUG("path are not consitent at "<< cur_pos1 <<" "<<cur_pos2);
+    			return false;
+    		}
+    	}
+    	cur_pos1 = pos;
+		cur_pos2 = cov_pos;
+		while (cur_pos1 < path.Size() && cur_pos2 < cov_path.Size()){
+			if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
+				cur_pos1++;
+				cur_pos2++;
+			} else {
+				DEBUG("path are not consitent at "<< cur_pos1 <<" "<<cur_pos2);
+				return false;
+			}
+		}
+		DEBUG("paths are consistent");
     	return true;
     }
 

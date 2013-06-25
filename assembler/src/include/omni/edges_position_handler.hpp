@@ -343,7 +343,6 @@ public:
 		find_genome_length();
 		for (size_t i = 0; i < path.size(); i++) {
 //TODO: magic constants
-
 			tmp_pos[path[i]] = FillPositionGaps(path[i], 0.2);
 			//hotfix for circular chromosomes
 			for(size_t j = 0; j < tmp_pos[path[i]].size(); j++) {

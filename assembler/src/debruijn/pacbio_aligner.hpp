@@ -67,12 +67,20 @@ public:
 			++buffer_no;
 		}
 
-		long_reads.DumpToFile("long_reads.mpr", gp_.edge_pos);
+		long_reads.DumpToFile("long_reads_before_rep.mpr", gp_.edge_pos);
 		gaps.DumpToFile("gaps.mpr", gp_.edge_pos);
 		gaps.PadGapStrings();
 		gaps.DumpToFile("gaps_padded.mpr", gp_.edge_pos);
 		PacbioGapCloser<Graph> gap_closer(gp_.g);
 		gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
+		map<EdgeId, EdgeId> replacement;
+		gap_closer.CloseGapsInGraph(replacement);
+		long_reads.ReplaceEdges(replacement);
+//		gp_.edge_pos.clear();
+//		FillPos(gp_, gp_.genome, "10");
+//		FillPos(gp_, !gp_.genome, "11");
+
+		long_reads.DumpToFile("long_reads.mpr", gp_.edge_pos);
 		gap_closer.DumpToFile("gaps_closed2.fasta", gp_.edge_pos);
 		INFO("Total reads: " << n);
 		INFO("Mean read length: " << total_length * 0.1/ n)
@@ -144,6 +152,7 @@ public:
 				}
 			}
 //this block is something to be overcome
+			/*
 			omp_set_lock(&tmp_file_output);
 			filestr << n << "  " << location_map.size() << ": \n";
 			for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
@@ -171,7 +180,7 @@ public:
 			filestr << " \n";
 			filestr << " \n";
 			omp_unset_lock(&tmp_file_output);
-
+*/
 			VERBOSE_POWER(n, " reads processed");
 
 		}
