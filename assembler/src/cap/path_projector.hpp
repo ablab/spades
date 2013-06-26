@@ -66,7 +66,7 @@ class PathProjector {
     std::unordered_set<size_t> bad_paths = GetIntersectingPaths(paths,
         chosen_path);
 
-    if(bad_paths.size() == paths.size() - 1) {
+    if(false && bad_paths.size() == paths.size() - 1) {
     for (size_t i = 0; i < paths.size(); ++i) {
       INFO("failed: paths " << Debug(paths[i]) << " and " << Debug(rc_paths[i]));
       for (const auto &e : threads_to_delete[i])

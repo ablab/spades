@@ -449,6 +449,8 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
          l2 = GetPathLength(p2);
   std::vector<std::pair<uchar, size_t> > cur_delete_positions =
       threads_to_delete;
+  // For suspended adding
+  std::vector<std::pair<EdgeId, std::pair<uchar, Range> > > adding_ranges;
 
   auto it2 = p2.begin();
 
@@ -487,7 +489,8 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
         //INFO("  Proj " << g_->str(edge1) << " -> " << g_->str(*it2) << ": "
         //    << int(ranges.first) << ": " << ranges.second << "->" << range_to_add);
         //INFO("DEBUG: " << range_to_add << " from range " << ranges.second);
-        edge_ranges_[*it2].AddGenomeRange(ranges.first, range_to_add);
+        //edge_ranges_[*it2].AddGenomeRange(ranges.first, range_to_add);
+        adding_ranges.push_back(make_pair(*it2, make_pair(ranges.first, range_to_add)));
         ranges.second.start_pos += taken_length;
       }
 
@@ -507,6 +510,10 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
         }
       }
     }
+  }
+
+  for (const auto &e : adding_ranges) {
+    edge_ranges_[e.first].AddGenomeRange(e.second.first, e.second.second);
   }
 
   TRACE("ProjectPath End");

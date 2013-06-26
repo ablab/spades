@@ -211,66 +211,25 @@ class SimpleIndelFinder {
     return res;
   }
 
-  std::vector<Path> GetShortestConsistentPaths(const std::vector<Path> &paths) {
-    std::vector<Path> good_paths;
-    for (size_t i = 0; i < paths.size(); ++i) {
-      bool found = false;
-      for (size_t j = 0; j < paths.size(); ++j) {
-        if (i == j) continue;
-        if (g_.EdgeEnd(paths[i].back()) == g_.EdgeEnd(paths[j].back())) {
-          found = true;
-          break;
-        }
-      }
-      if (found) {
-        good_paths.push_back(paths[i]);
-      }
-    }
-    size_t min_len = size_t(-1);
-    VertexId min_len_v = VertexId(0);
-    for (size_t i = 0; i < good_paths.size(); ++i) {
-      size_t cur_len = GetPathLength(good_paths[i]);
-      if (cur_len < min_len) {
-        min_len = cur_len;
-        min_len_v = g_.EdgeEnd(good_paths[i].back());
-      }
-    }
-    for (size_t i = 0; i < good_paths.size(); ++i) {
-      if (g_.EdgeEnd(good_paths[i].back()) != min_len_v) {
-        std::swap(good_paths[i], good_paths.back());
-        good_paths.pop_back();
-        i--;
-      }
-    }
-    if (good_paths.size() != paths.size()) {
-      if (good_paths.size() == 0) {
-        for (const auto &path : paths)
-          PaintPath(path);
-      } else {
-        need_reflow_ = true;
-      }
-    }
-    return good_paths;
-  }
-
   void CollapsePaths() {
-    alternative_paths_ = GetShortestConsistentPaths(alternative_paths_);
-    //INFO("after shorting " << alternative_paths_.size() << " paths");
-    
     if (alternative_paths_.size() == 0)
       return;
+    bool has_short_enough = false;
     for (const auto &path : alternative_paths_) {
-      if (GetPathLength(path) > 10 * g_.k()) {
-        TRACE("Too long path: " << GetPathLength(path));
-        alternative_paths_.clear();
-        need_reflow_ = false;
-        return;
+      if (GetPathLength(path) < 10 * g_.k()) {
+        //TRACE("Too long path: " << GetPathLength(path));
+        has_short_enough = true;
+        break;
       }
+    }
+    if (!has_short_enough) {
+      alternative_paths_.clear();
+      return;
     }
 
     bool success = path_projector_.CollapsePaths(alternative_paths_);
     if (!success) {
-      INFO("Could not collapse paths: " << alternative_paths_ << " ("
+      TRACE("Could not collapse paths: " << alternative_paths_ << " ("
           << alternative_paths_.size() << " paths)");
       for (const auto &path : alternative_paths_) {
         PaintPath(path);
