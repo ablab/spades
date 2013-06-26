@@ -236,7 +236,7 @@ class CapEnvironmentManager {
   template <class gp_t>
   void FindInversionsTemplated(gp_t& gp, const std::string &base_pic_file_name,
       const bool mask_inversions) const {
-    SimpleInversionFinder<gp_t> finder(gp, *env_->coloring_,
+    SimpleInversionFinder<gp_t> finder(gp, *env_->coloring_, env_->coordinates_handler_,
         base_pic_file_name, mask_inversions);
     finder.FindInversionEvents();
   }

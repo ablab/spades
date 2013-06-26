@@ -43,7 +43,7 @@ void write_fasta(const char *filename, const char *desc, const char *seq) {
 
 // Takes L and N --- length of the sequence and number of inversions
 int main() {
-  srand(239);
+  srand(2391);
 
   unsigned int L, N;
   char file1[30],
