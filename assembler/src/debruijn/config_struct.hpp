@@ -418,6 +418,7 @@ struct debruijn_config {
 
     bool single_cell;
     std::string reference_genome_filename;
+    std::string reads_filename;
 
     Sequence reference_genome;
   };

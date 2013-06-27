@@ -3,3 +3,5 @@ single_reads             "../../../data/input/HMP/hmp_mda_pilot_jcvi_0001/hammer
 RL                       100
 IS                       210
 single_cell              true
+
+reads	HMP_LANE_1_BH_20111203.yaml

@@ -3,3 +3,5 @@ single_reads             "../../../data/input/x5/b/left_l.cor_single.fastq.gz ..
 RL                       100
 IS                       280
 single_cell              false
+
+reads	X5_B_QUAKE.yaml

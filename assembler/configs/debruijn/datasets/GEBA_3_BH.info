@@ -3,3 +3,5 @@ single_reads             "../../../data/input/GEBA/0003/bh20120117/04.reads.0.le
 RL                       150
 IS                       300
 single_cell              true
+
+reads	GEBA_3_BH.yaml

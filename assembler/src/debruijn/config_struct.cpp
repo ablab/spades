@@ -274,9 +274,7 @@ void load(debruijn_config::dataset& ds,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
-  std::string reads;
-  load(reads, pt, "reads");
-  ds.reads.load(reads);
+  load(ds.reads_filename, pt, "reads");
   load(ds.single_cell, pt, "single_cell");
 
   ds.reference_genome_filename = "";
@@ -285,6 +283,14 @@ void load(debruijn_config::dataset& ds,
   if (refgen && *refgen != "N/A") {
     ds.reference_genome_filename = *refgen;
   }
+}
+
+void load_reads(debruijn_config::dataset& ds,
+        std::string input_dir) {
+  if (ds.reads_filename[0] != '/')
+    ds.reads_filename = input_dir + ds.reads_filename;
+  CheckFileExistenceFATAL(ds.reads_filename);
+  ds.reads.load(ds.reads_filename);
 }
 
 void load_reference_genome(debruijn_config::dataset& ds,
@@ -531,6 +537,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.info_printers, pt, "info_printers");
 
+  load_reads(cfg.ds, cfg.input_dir);
   load_reference_genome(cfg.ds, cfg.input_dir);
 }
 

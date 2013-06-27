@@ -3,3 +3,5 @@ RL                       100
 IS                       270
 single_cell              true
 reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
+
+reads	TRASH_SC_K35.yaml
