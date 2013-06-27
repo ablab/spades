@@ -109,12 +109,17 @@ public:
 
 	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos){
 		ofstream filestr(filename);
+		set<EdgeId> continued_edges;
 		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter){
 			filestr<< iter->second.size() << endl;
 			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
 				filestr<<"Weight: " << j_iter->getWeight();
 				filestr<< " length: " << j_iter->path.size() <<" ";
 				for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++ p_iter) {
+					if (p_iter != j_iter->path.end() - 1 && j_iter->getWeight() > 1) {
+						continued_edges.insert(*p_iter);
+					}
+
 					filestr << g_.int_id(*p_iter) <<"("<<g_.length(*p_iter)<<") ";
 				}
 				if (edge_pos.IsConsistentWithGenome(j_iter->path))
@@ -131,27 +136,22 @@ public:
 		}
 		int noncontinued = 0;
 		int long_nongapped = 0;
+		int long_gapped = 0;
 		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
-			if (g_.length(*iter) > 500 && !g_.IsDeadEnd(g_.EdgeEnd(*iter))){
-				long_nongapped ++;
-				if (inner_index.find(*iter) == inner_index.end()) {
-					filestr << "bad  " << g_.int_id(*iter);
-					noncontinued ++;
-					continue;
-				}
-				bool flag = true;
-				for(auto j_iter= inner_index[*iter].begin(); j_iter != inner_index[*iter].end(); ++j_iter)
-					if (j_iter->path.size() > 1) {
-						flag = false;
-						break;
+			if (g_.length(*iter) > 500) {
+				if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
+					if (continued_edges.find(*iter) == continued_edges.end()) {
+						INFO("dead end left " << g_.int_id(*iter));
+						noncontinued ++;
 					}
-				if (flag) {
-					filestr << "bad  " << g_.int_id(*iter);
-					noncontinued ++;
+				} else {
+					INFO("dead end left " << g_.int_id(*iter));
+					long_gapped ++;
 				}
 			}
-			filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
+			//filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
+		INFO("noncontinued/total long:" << noncontinued <<"/" << noncontinued + continued_edges.size());
 	}
 
 	vector<PathInfo<Graph> > GetAllPaths() {
