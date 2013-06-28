@@ -41,6 +41,7 @@
 #include "graphio.hpp"
 #include "coverage_based_rr.hpp"
 #include "pacbio_aligner.hpp"
+#include "bucket_mapper.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -901,10 +902,10 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	if (cfg::get().developer_mode) {
 
 		std::string path;
-		//if (cfg::get().entry_point < ws_repeats_resolving) 
-		//	path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
-		//else
-		path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
+		if (cfg::get().entry_point <= ws_simplification) 
+			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
+		else
+			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
 		bool val = LoadEdgeIndex(path, kmerIndex);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
 		INFO("Updating index from graph started");
@@ -913,12 +914,24 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	}
 
 
+	int number_of_buckets = 10;
+	auto bm = BucketMapper<conj_graph_pack::graph_t>(conj_gp.g, kmerIndex, cfg::get().K + 1, number_of_buckets);
+	bm.InitBuckets();
+
 	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
-	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
+	for (auto e = conj_gp.g.SmartEdgeBegin(); !e.IsEnd(); ++e) { 
+		
+		if ( index.GetInCov(*e) != index.GetInCov(conj_gp.g.conjugate(*e)) ) {
+			std::cout << index.GetInCov(*e) << " " << index.GetInCov(conj_gp.g.conjugate(*e)) << std::endl;
+		}
+
+
+	}
+/*	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match, 
 			cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
 	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
-
+*/
 	INFO("Repeats are resolved by coverage");
 }
 
@@ -1070,12 +1083,12 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
 	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
 	    }
-        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, /*long_read.GetAllPaths()*/ filteredPaths, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         delete_index(pe_scaf_indexs);
 	}
 	else {
 		pe_scaf_indexs.clear();
-		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
+		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, /*long_read.GetAllPaths()*/ filteredPaths, cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
 	}
 }
 
