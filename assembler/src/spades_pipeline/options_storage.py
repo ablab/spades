@@ -64,6 +64,26 @@ def usage(spades_version, show_hidden=False):
     print >> sys.stderr, "-1\t<filename>\tfile with forward paired-end reads"
     print >> sys.stderr, "-2\t<filename>\tfile with reverse paired-end reads"
     print >> sys.stderr, "-s\t<filename>\tfile with unpaired reads"
+    print >> sys.stderr, "--pe<#>-12\t<filename>\tfile with interlaced"\
+                         " reads for paired-end library number <#> (<#> = 1,2,3,4,5)"
+    print >> sys.stderr, "--pe<#>-1\t<filename>\tfile with forward reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5)"
+    print >> sys.stderr, "--pe<#>-2\t<filename>\tfile with reverse reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5)"
+    print >> sys.stderr, "--pe<#>-s\t<filename>\tfile with unpaired reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5)"
+    print >> sys.stderr, "--pe<#>-<or>\torientation of reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)"
+    print >> sys.stderr, "--mp<#>-12\t<filename>\tfile with interlaced"\
+                         " reads for mate-pair library number <#> (<#> = 1,2,3,4,5)"
+    print >> sys.stderr, "--mp<#>-1\t<filename>\tfile with forward reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)"
+    print >> sys.stderr, "--mp<#>-2\t<filename>\tfile with reverse reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)"
+    print >> sys.stderr, "--mp<#>-s\t<filename>\tfile with unpaired reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)"
+    print >> sys.stderr, "--mp<#>-<or>\torientation of reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)"
     print >> sys.stderr, "--test\t\t\truns SPAdes on toy dataset"
     print >> sys.stderr, "-h/--help\t\tprints this usage message"
 
