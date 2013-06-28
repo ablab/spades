@@ -57,6 +57,11 @@ def check_file(f):
         sys.exit(2)
     return f
 
+#####
+print "\n", sys.argv[0], "is DEPRECATED!\nUse reads_quality.py --paired-mode instead!", "\n"
+sys.exit(1)
+#####
+
 try:
     options, datasets = getopt.gnu_getopt(sys.argv[1:], short_options, long_options)
 except getopt.GetoptError, err:
