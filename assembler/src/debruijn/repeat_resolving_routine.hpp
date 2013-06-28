@@ -921,9 +921,9 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
 	for (auto e = conj_gp.g.SmartEdgeBegin(); !e.IsEnd(); ++e) { 
 		
-		if ( index.GetInCov(*e) != index.GetInCov(conj_gp.g.conjugate(*e)) ) {
+		/*if ( index.GetInCov(*e) != index.GetInCov(conj_gp.g.conjugate(*e)) ) {
 			std::cout << index.GetInCov(*e) << " " << index.GetInCov(conj_gp.g.conjugate(*e)) << std::endl;
-		}
+		}*/
 
 
 	}

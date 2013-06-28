@@ -208,11 +208,11 @@ namespace debruijn_graph {
 			}
 
 
-			/*for (auto it = histogram.begin(); it != histogram.end(); ++it) {
+			for (auto it = histogram.begin(); it != histogram.end(); ++it) {
 
 				*it = (double) *it / kmers_in_bucket_counter; 
 				//std::cout << *it << " ";
-			}*/
+			}
 			
 			
 		}
