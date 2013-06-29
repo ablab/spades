@@ -119,7 +119,7 @@ namespace debruijn_graph {
 				std::cout << *it << " ";
 			}
 			std::cout << std::endl;
-			int distance = 500;
+		/*	int distance = 500;
 			std::vector< std::vector<double> > bucketToBucket;
 			for ( unsigned id = 0; id < bucketNum_; ++id ) {
 			
@@ -140,7 +140,7 @@ namespace debruijn_graph {
 			}
 
 			std::cout << std::endl;
-
+		*/
 		}
 
 		int GetKmerBucket( const runtime_k::RtSeq& kmer ) {
@@ -216,6 +216,65 @@ namespace debruijn_graph {
 			
 			
 		}
+
+		void GetProbeblityFromBucketToBucketForDistance ( bucket_id id_from, bucket_id, id_to, int distance ) {
+
+			double probability = 0;
+			int kmers_in_bucket_counter = GetNumberKmersInBucket(id);
+
+			for (auto e = g_.SmartEdgeBegin(); !e.IsEnd(); ++e) {
+
+				if (g_.length(*e) >= cfg::get().rr.max_repeat_length) {
+ 
+					Sequence seq =  g_.EdgeNucls(*e) ;
+					runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K_);
+				
+					//std::cout << "Sequence: " << seq.str() << std::endl ;
+					//std::cout << "Sequence size: " << seq.size() << std::endl ;
+					//std::cout << "j min: " << K_ << " j max: "<< seq.size()  - K_ - distance  << std::endl;
+					//std::cout << "Kmer: " << kmer.str() << std::endl ;
+					for (size_t j = K_; j < seq.size() - K_ - distance + 1; kmer <<= seq[j], ++j ) {
+	
+						//std::cout << "Kmer2: " << kmer.str() << std::endl ;
+						//std::cout << "j = " << j << std::endl;
+						//std::cout << "kmer : " << kmer.str() << std::endl;
+						//int kmer_coverage = kmer_index_[kmer].count_;
+						bucket_id kmer_bucket_id = GetKmerBucket(kmer);
+						//std::cout << "kmer bucket id " << kmer_bucket_id << std::endl;
+
+						if (kmer_bucket_id != id) continue;
+
+						runtime_k::RtSeq kmer_d = seq.start<runtime_k::RtSeq>(K_);
+			
+						//std::cout << "i:" << std::endl;
+						for ( size_t i = j + distance; i < j + K_ + distance; ++i ) {
+						
+							//std::cout <<  i << ", ";
+
+							kmer_d <<= seq[i];
+							if (kmer_bucket_id != id_to) continue;
+						}
+						//std::cout << "Kmer_d: " << kmer_d.str() << std::endl ;
+					
+						int kmer_d_bucket_id = GetKmerBucket(kmer_d);
+						//std::cout << "kmer d bucket id" << kmer_d_bucket_id << std::endl;
+
+						probability += 1; 
+						
+						//std::cout << "end" << std::endl;
+						//std::cout << "Kmer3: " << kmer.str() << std::endl ;
+						//
+					}
+					//std::cout << "Kmer2: " << kmer.str() << std::endl ;
+				}
+			}
+
+
+
+			return probability / kmers_in_bucket_counter; 
+			
+		}
+
 
 	};
 }

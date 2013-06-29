@@ -563,6 +563,39 @@ class CoverageBasedResolution {
 
 	
 
+	bool matchPairs( std::vector<EdgeId>& incomingEdges,
+			 std::vector<EdgeId>& outgoingEdges,
+			 std::vector<std::pair<EdgeId,EdgeId>>& pairsOfEdges,
+			 const DeBruijnEdgeIndex<EdgeId>& kmer_index,
+			 int kmer_bound)  {
+
+		for ( auto in_edge = incomingEdges.begin(); in_edge != incomingEdges.end(); ++in_edge ) {
+
+			auto seq = g.EdgeNucls(*e_iter);
+
+			 for (unsigned i = 0; i < kmer_bound; ++i) {
+				runtime_k::RtSeq kmer_in(K_);
+				for ( unsigned j = i; j < K_ + i && j < len; ++j) {
+					 kmer_in <<= seq[j];
+				}
+
+			 }
+
+			
+		}
+
+		// for each incoming edge
+		// 	get last n kmers = last_n
+		// 	for each outgoing edge
+		//		get first n kmers = first_n 
+		//		for each last_n calc probability of corresponding first_n -> mulitply
+		//		probability of incoming-outgoing edge = multiplication value
+		//	choose outgoing edge with the greatest probability
+		// check if all incoming edges have different outgoing edges
+
+
+	}
+
 	void findClosest(std::vector<std::pair<EdgeId, coverage_value>>& incomingEdgesCoverage,
 			std::vector<std::pair<EdgeId, coverage_value>>& outgoingEdgesCoverage,
 			std::vector<std::pair<EdgeId,EdgeId>>& pairsOfEdges){
