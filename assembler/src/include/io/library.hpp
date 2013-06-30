@@ -11,9 +11,6 @@
 #include <utility>
 #include <iostream>
 #include <fstream>
-#include <functional>
-#include <algorithm>
-#include "path_helper.hpp"
 
 namespace io {
 
@@ -32,14 +29,6 @@ enum class LibraryOrientation {
   RF,
   RR,
   Undefined
-};
-
-struct update_relative_filename : public std::binary_function<std::string, std::string, std::string> {
-  std::string operator() (const std::string &filename, const std::string &input_dir) const {
-    if (filename[0] == '/')
-      return filename;
-    return input_dir + filename;
-  }
 };
 
 class SequencingLibraryBase {
@@ -87,12 +76,6 @@ class SequencingLibraryBase {
     left_paired_reads_.clear();
     right_paired_reads_.clear();
     single_reads_.clear();
-  }
-
-  void update_relative_reads_filenames(const std::string &input_dir) {
-	  std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
-	  std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
-	  std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
   }
 
   void push_back_single(const std::string &reads) {
@@ -177,15 +160,7 @@ class DataSet {
   void load(const std::string &filename) {
     YAML::Node config = YAML::LoadFile(filename);
 
-    std::string input_dir = path::parent_path(filename);
-    if (input_dir[input_dir.length() - 1] != '/')
-    	input_dir += '/';
-
     load(config);
-
-    for (auto it = libraries_.begin(); it != libraries_.end(); ++it) {
-    	it->update_relative_reads_filenames(input_dir);
-    }
   }
 
   void save(const std::string &filename) const {
@@ -263,7 +238,7 @@ class DataSet {
   LibraryStorage libraries_;
 };
 
-}
+};
 
 namespace YAML {
 template<>

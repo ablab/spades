@@ -217,7 +217,7 @@ def correct_dataset(dataset_data):
     return corrected_dataset_data
 
 
-def check_dataset_reads(dataset_data, dir_name, log):
+def check_dataset_reads(dataset_data, log):
     all_files = []
     for id, reads_library in enumerate(dataset_data):
         left_number = 0
@@ -225,11 +225,11 @@ def check_dataset_reads(dataset_data, dir_name, log):
         for key, value in reads_library.items():
             if key.endswith('reads'):
                 for reads_file in value:
-                    check_file_existence(os.path.join(dir_name, reads_file), key + ', library number: ' + str(id + 1) +
+                    check_file_existence(os.path.abspath(reads_file), key + ', library number: ' + str(id + 1) +
                                          ', library type: ' + reads_library['type'], log)
-                    check_reads_file_format(os.path.join(dir_name, reads_file), key + ', library number: ' + str(id + 1) +
+                    check_reads_file_format(os.path.abspath(reads_file), key + ', library number: ' + str(id + 1) +
                                             ', library type: ' + reads_library['type'], log)
-                    all_files.append(os.path.join(dir_name, reads_file))
+                    all_files.append(os.path.abspath(reads_file))
                 if key == 'left reads':
                     left_number = len(value)
                 elif key == 'right reads':
@@ -325,7 +325,7 @@ def split_interlaced_reads(dataset_data, dst, log):
                 del reads_library['interlaced reads']
 
 
-def pretty_print_reads(dataset_data, dir_name, log, indent='    '):
+def pretty_print_reads(dataset_data, log, indent='    '):
     READS_TYPES = ['left reads', 'right reads', 'interlaced reads', 'single reads']
     for id, reads_library in enumerate(dataset_data):
         log.info(indent + 'Library number: ' + str(id + 1) + ', library type: ' + reads_library['type'])
@@ -335,7 +335,7 @@ def pretty_print_reads(dataset_data, dir_name, log, indent='    '):
             if reads_type not in reads_library:
                 value = 'not specified'
             else:
-                value = str(map(lambda x: os.path.join(dir_name, x), reads_library[reads_type]))
+                value = str(map(os.path.abspath, reads_library[reads_type]))
             log.info(indent + '  ' + reads_type + ': ' + value)
 ### END: for processing YAML files
 

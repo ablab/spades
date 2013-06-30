@@ -547,4 +547,14 @@ void load(debruijn_config& cfg, const std::string &filename);
 
 typedef config_common::config<debruijn_graph::debruijn_config> cfg;
 
+namespace debruijn_graph {
+
+inline std::string input_file(std::string filename) {
+  if (filename[0] == '/')
+    return filename;
+  return cfg::get().input_dir + filename;
+}
+
+}
+
 #endif
