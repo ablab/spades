@@ -42,7 +42,7 @@ private:
 
 inline std::string human_readable_time(double time_in_sec)
 {
-    assert(time_in_sec > 0);
+//    assert(time_in_sec > 0);
 
     size_t msec  = size_t(time_in_sec * 1000) % 1000;
     size_t sec   = size_t(time_in_sec);

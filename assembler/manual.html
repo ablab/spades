@@ -33,15 +33,15 @@
 <a name="sec1"></a>
 <h2>1. About SPAdes</h2>
 <p>
-    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 2.5.0 was released under GPLv2 on 20 June 2013 and can be downloaded from  <a href="http://bioinf.spbau.ru/spades" target="_blank">http://bioinf.spbau.ru/spades</a>.
+    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 2.5.0 was released under GPLv2 on July 4, 2013 and can be downloaded from  <a href="http://bioinf.spbau.ru/spades" target="_blank">http://bioinf.spbau.ru/spades</a>.
 
 
 <a name="sec1.1"></a>
 <h3>1.1 Supported data types</h3>
 <p>
-    The current version of SPAdes works only with Illumina reads. Support for other technologies (e.g.  Roche 454, IonTorrent, PacBio) is currently in progress and probably will be included in one of the next releases. 
+    The current version of SPAdes works only with Illumina reads. Support for other technologies (e.g.  Roche 454, IonTorrent, PacBio) is currently in progress and will probably be included in one of the next releases. 
 <p>
-    SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries together. 
+    Version 2.5.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
 <p>
     Also note, that SPAdes was initially designed for single-cell and standard bacterial data sets and is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it at your own risk.
 
@@ -53,7 +53,7 @@ SPAdes comes in three separate modules:
     <ul>
         <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; read error correction tool, which works well on both single-cell and standard data sets </li>
         <li> SPAdes &ndash; iterative short-read genome assembly module; by default consecutively iterates through K value equal to 21, 33 and 55 </li>
-        <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>] and is turned off by default, see <a href="#correctoropt">SPAdes options section</a> </li>
+        <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>]; MismatchCorrector is turned off by default, but we recommend to turn it on (see <a href="#correctoropt">SPAdes options section</a>)</li>
     </ul>
 <p>
     We recommend to run SPAdes with BayesHammer to obtain high-quality assemblies. However, if you use your own read correction tool it is possible to turn BayesHammer off. It is also possible to use only the read error correction stage, if you wish to use another assembler. See the <a href="#pipelineopt">SPAdes options section</a>.
@@ -272,12 +272,16 @@ Thank you for using SPAdes!
 <a name="sec3.1"></a>
 <h3>3.1 SPAdes input</h3>
 <p>
-    SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA or FASTQ format. However, in order to run read error correction, reads should be in FASTQ format. 
-<p>
-    You can specify up to five different paired-end libraries and also up to five different mate-pair ones. The number of unpaired libraries is unlimited. It is not possible to run the assembler using only mate-pair libraries.
+    SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA or FASTQ format. However, in order to run read error correction, reads should be in FASTQ format.
 
-<p> 
-    By the default SPAdes assumes that paired-end reads have forward-reverse orientation and mate-pairs have reverse-forward one. However, different orientation can be set for any library by using <a href="#inputdata">SPAdes options</a>. We further refer to paired-end and mate-pair libraries simply as to read-pair libraries. 
+<p>
+    By using command line interface you can specify up to five different paired-end libraries and also up to five different mate-pair ones (if you wish to use more, please contact us <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>). The number of unpaired libraries is unlimited. SPAdes 2.5 should not be used if only mate-pair libraries are available. We further refer to paired-end and mate-pair libraries simply as to read-pair libraries.
+
+<p>
+    By default SPAdes assumes that paired-end reads have forward-reverse (fr) orientation and mate-pairs have reverse-forward (rf) one. However, different orientations can be set for any library by using SPAdes options. 
+
+<p>
+    To distinguish reads in pairs we refer to them as left and right reads. For forward-reverse orientation forward reads correspond to the left reads and reverse reads &ndash; to the right. Similarly, in reverse-forward orientation left and right reads correspond to reverse and forward reads respectively etc. 
 
 <p>
     Each read-pair library can be stored in several files or several pairs of files. Paired reads can be organized in two different ways:
@@ -330,7 +334,7 @@ Thank you for using SPAdes!
 <a name="inputdata"></a>
 <h4>Input data</h4>
 
-<i><b>&nbsp;&nbsp;Specifying single library (SPAdes 2.4 format)</i></b>
+<i><b>&nbsp;&nbsp;Specifying single library (previously used format)</i></b>
 <p>
     <code>--12 &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced forward and reverse paired-end reads.
@@ -354,7 +358,7 @@ Thank you for using SPAdes!
 <i><b>&nbsp;&nbsp;Specifying multiple libraries (new format)</i></b>
 <p>
     <code>--pe<b>&lt;#></b>-12 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5). For example, for first paired-end library the option is:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5). For example, for the first paired-end library the option is:
     <code>--pe1-12 &lt;file_name> </code><br>
 </p>
 
@@ -377,7 +381,7 @@ Thank you for using SPAdes!
 <p>
     <code>--pe<b>&lt;#></b>-<b>&lt;or></b> &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Default orientation for paired-end libraries is forward-reverse. For example, to specify reverse-forward orientation for the second paired-end library you should use flag:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Default orientation for paired-end libraries is forward-reverse. For example, to specify reverse-forward orientation for the second paired-end library you should use flag:
     <code>--pe2-rf </code><br>
 </p>
 <p>
@@ -397,7 +401,7 @@ Thank you for using SPAdes!
 <p>
     <code>--mp<b>&lt;#></b>-<b>&lt;or></b> &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Default orientation for mate-pair libraries is reverse-forward. For example, to specify forward-forward orientation for the first mate-pair library you should use flag:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Default orientation for mate-pair libraries is reverse-forward. For example, to specify forward-forward orientation for the first mate-pair library you should use flag:
     <code>--mp1-ff </code><br>
 </p>
 
@@ -417,7 +421,8 @@ Thank you for using SPAdes!
 <a name="correctoropt">
 <p>
     <code>--careful</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Tries to reduce number of mismatches and short indels. Also runs MismatchCorrector &ndash; a post processing tool, which uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool (comes with SPAdes).
+    &nbsp;&nbsp;&nbsp;&nbsp;Tries to reduce number of mismatches and short indels. Also runs MismatchCorrector &ndash; a post processing tool, which uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool (comes with SPAdes). This option is recommended. 
+
 </p>
 
 <p>
@@ -493,7 +498,7 @@ Thank you for using SPAdes!
 
 
 <p>
-    make sure that corresponding files go in the same order:
+    make sure that corresponding files are given in the same order:
 
 <pre class="code">
 <code>
@@ -548,7 +553,7 @@ Thank you for using SPAdes!
 </pre>
 
 <p>
-    All options for specifying input data can be mixed if needed, but make sure that files for each library are grouped and files with left and right paired reads go in the same order.
+    All options for specifying input data can be mixed if needed, but make sure that files for each library are grouped and files with left and right paired reads are listed in the same order.
 
 
 <a name="sec3.3">
@@ -631,7 +636,14 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
     </ul>
 
 <p>
-    Note: scaffolds are not produced if no paired library is provided.
+
+<p>
+    Notes:
+    <ul>
+        <li> Scaffolds are not produced if no read-pair library is provided </li>
+        <li> Scaffolding procedure in SPAdes is optimized for paired-end reads, but not yet for mate-pair libraries </li>
+        <li> You can use third-party scaffolder (e.g. <a href="http://sourceforge.net/projects/operasf/files/version%201.3.1/"  target="_blank">Opera</a>) if you have mate-pair libraries </li>
+    </ul>
 
 <p>
 Full list of <code>&lt;output_dir></code> content is presented below: 
