@@ -431,7 +431,16 @@ class CoverageBasedResolution {
 		typedef int times;
 		std::map<VertexId, times> out_degree;
 		std::map<VertexId, times> in_degree;
+		double LengthCutoff = 0.0;
 
+		int numEdges = 0;
+		for (auto e_iter = gp->g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter){
+			LengthCutoff += gp->g.length(*e_iter);	
+			numEdges += 1;
+		}
+
+		LengthCutoff = 0.25 * LengthCutoff / numEdges;	
+	
 		INFO("Getting Components");
 		INFO("Counting degrees of vertices");
 		for (auto e_iter = gp->g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter){
@@ -481,6 +490,7 @@ class CoverageBasedResolution {
 
 			//std::cout << e_iter->int_id() << std::endl;
 			if ( gp->g.length(*e_iter) >= cfg::get().rr.max_repeat_length ) {
+
 				singles.push_back(*e_iter);
 			}
 			else if (! ( ((in_degree.find(from) == in_degree.end()) || out_degree[from] > 1) && ((out_degree.find(into) == out_degree.end()) || in_degree[into] > 1) ) ) {
@@ -489,7 +499,6 @@ class CoverageBasedResolution {
 				edge_to_kind_[*e_iter] = TOPOLOGY;
 				components.push_back(*e_iter);
 			}
-	
 			else if ( checkIfComponentByPairedInfo(*e_iter, clustered_index, prohibitedEdges ) ) {
 				components.push_back(*e_iter);
 				//	std::cout << "Component Edge Detected By Paired Info: " << gp->g.int_id(*e_iter) << std::endl;
@@ -498,7 +507,7 @@ class CoverageBasedResolution {
 			}
 
 			// continue check if a short _terminal_ vertex
-			else if( gp->g.length(*e_iter) < repeat_length_upper_threshold_ && (in_degree.find(from) != in_degree.end()) && (out_degree.find(into) != out_degree.end()) ){
+			else if( gp->g.length(*e_iter) < LengthCutoff /*repeat_length_upper_threshold_*/ && (in_degree.find(from) != in_degree.end()) && (out_degree.find(into) != out_degree.end()) ){
 			//	if (gp->g.int_id(*e_iter) ==10021207) INFO(2);
 
 				edge_to_kind_[*e_iter] = LENGTH;
@@ -569,7 +578,7 @@ class CoverageBasedResolution {
 			 const DeBruijnEdgeIndex<EdgeId>& kmer_index,
 			 int kmer_bound)  {
 
-		for ( auto in_edge = incomingEdges.begin(); in_edge != incomingEdges.end(); ++in_edge ) {
+		/*for ( auto in_edge = incomingEdges.begin(); in_edge != incomingEdges.end(); ++in_edge ) {
 
 			auto seq = g.EdgeNucls(*e_iter);
 
@@ -582,7 +591,7 @@ class CoverageBasedResolution {
 			 }
 
 			
-		}
+		}*/
 
 		// for each incoming edge
 		// 	get last n kmers = last_n

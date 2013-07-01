@@ -217,10 +217,10 @@ namespace debruijn_graph {
 			
 		}
 
-		void GetProbeblityFromBucketToBucketForDistance ( bucket_id id_from, bucket_id, id_to, int distance ) {
+		void GetProbablityFromBucketToBucketForDistance ( bucket_id id_from, bucket_id id_to, int distance ) {
 
 			double probability = 0;
-			int kmers_in_bucket_counter = GetNumberKmersInBucket(id);
+			int kmers_in_bucket_counter = GetNumberKmersInBucket(id_from);
 
 			for (auto e = g_.SmartEdgeBegin(); !e.IsEnd(); ++e) {
 
@@ -242,7 +242,7 @@ namespace debruijn_graph {
 						bucket_id kmer_bucket_id = GetKmerBucket(kmer);
 						//std::cout << "kmer bucket id " << kmer_bucket_id << std::endl;
 
-						if (kmer_bucket_id != id) continue;
+						if (kmer_bucket_id != id_from) continue;
 
 						runtime_k::RtSeq kmer_d = seq.start<runtime_k::RtSeq>(K_);
 			
