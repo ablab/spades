@@ -137,13 +137,14 @@ public:
 		int noncontinued = 0;
 		int long_nongapped = 0;
 		int long_gapped = 0;
+		int continued = 0;
 		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
 			if (g_.length(*iter) > 500) {
 				if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
 					if (continued_edges.find(*iter) == continued_edges.end()) {
-						INFO("dead end left " << g_.int_id(*iter));
+						INFO("noncontinued end left " << g_.int_id(*iter));
 						noncontinued ++;
-					}
+					} else continued ++;
 				} else {
 					INFO("dead end left " << g_.int_id(*iter));
 					long_gapped ++;
@@ -151,7 +152,7 @@ public:
 			}
 			//filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
-		INFO("noncontinued/total long:" << noncontinued <<"/" << noncontinued + continued_edges.size());
+		INFO("noncontinued/total long:" << noncontinued <<"/" << noncontinued + continued);
 	}
 
 	vector<PathInfo<Graph> > GetAllPaths() {
