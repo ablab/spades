@@ -12,8 +12,8 @@ namespace debruijn_graph {
 
 		typedef int bucket_id;
 
-		const DeBruijnEdgeIndex<EdgeId>& kmer_index_;
 		const Graph& g_;
+		const DeBruijnEdgeIndex<EdgeId>& kmer_index_;
 		const unsigned K_;
 		const unsigned bucketNum_;
 

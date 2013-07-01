@@ -572,13 +572,13 @@ class CoverageBasedResolution {
 
 	
 
-	bool matchPairs( std::vector<EdgeId>& incomingEdges,
+	/*bool matchPairs( std::vector<EdgeId>& incomingEdges,
 			 std::vector<EdgeId>& outgoingEdges,
 			 std::vector<std::pair<EdgeId,EdgeId>>& pairsOfEdges,
 			 const DeBruijnEdgeIndex<EdgeId>& kmer_index,
 			 int kmer_bound)  {
 
-		/*for ( auto in_edge = incomingEdges.begin(); in_edge != incomingEdges.end(); ++in_edge ) {
+		for ( auto in_edge = incomingEdges.begin(); in_edge != incomingEdges.end(); ++in_edge ) {
 
 			auto seq = g.EdgeNucls(*e_iter);
 
@@ -591,7 +591,7 @@ class CoverageBasedResolution {
 			 }
 
 			
-		}*/
+		}
 
 		// for each incoming edge
 		// 	get last n kmers = last_n
@@ -603,7 +603,7 @@ class CoverageBasedResolution {
 		// check if all incoming edges have different outgoing edges
 
 
-	}
+	}*/
 
 	void findClosest(std::vector<std::pair<EdgeId, coverage_value>>& incomingEdgesCoverage,
 			std::vector<std::pair<EdgeId, coverage_value>>& outgoingEdgesCoverage,
