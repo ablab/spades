@@ -19,6 +19,41 @@ namespace debruijn_graph {
 
 		std::vector<std::pair<int, int> > coverage_to_multiplicity;
 		std::vector<int> buckets;
+   		std::vector<int> number_of_kmers_; 
+    		std::set<int> distance_values_;
+		std::map<int, std::vector<std::vector<double>> > cache_;
+
+    		double CacheSearch (int distance, int shift, bucket_id id_from, bucket_id id_to) {
+
+			int diff, min_diff = shift + 1;
+			int min_dist;
+			for (auto cached_distance = distance_values_.begin(); cached_distance != distance_values_.end(); ++cached_distance) {
+
+				diff = fabs(*cached_distance - distance);
+				if ( diff < min_diff ) {
+
+					min_diff = diff;
+					min_dist = *cached_distance;
+
+				}
+
+			}
+
+			if ( min_diff <= shift ) {
+
+				return cache_[min_dist][id_from][id_to];  
+			}
+
+			return -1.0;
+
+		}
+
+		void UpdateCache( int distance, const std::vector<std::vector<double>>& histogram ) {
+
+			distance_values_.insert(distance);
+			cache_[distance] = histogram;
+
+		}
 
 		int UpdateCoverageCounters( const Sequence& seq ){
 
@@ -48,22 +83,26 @@ namespace debruijn_graph {
 			return kmer_counter;
 		}
 
+		
 
-		int GetNumberKmersInBucket( int id ) {
+		int CountNumberKmersInBucket( ) {
 			
-			int number_of_kmers = 0;
-			int lower_coverage = 0, upper_coverage = buckets[id];
-			if ( id > 0 ){
-				lower_coverage = buckets[id - 1];
+			for ( int id = 0; id < bucketNum_; ++id) {
+				int number_of_kmers_i = 0;
+				int lower_coverage = 0, upper_coverage = buckets[id];
+				if ( id > 0 ){
+					lower_coverage = buckets[id - 1];
+				}
+			////std::cout << lower_coverage << " " << upper_coverage << std::endl;
+				for ( auto it = coverage_to_multiplicity.begin(); it != coverage_to_multiplicity.end(); ++it ){
+
+				//std::cout << it->first << std::endl;
+					if (it->first > lower_coverage && it->first <= upper_coverage) number_of_kmers_i += it->second;
+
+				}
+	
+				number_of_kmers_.push_back(number_of_kmers_i);
 			}
-			for ( auto it = coverage_to_multiplicity.begin(); it != coverage_to_multiplicity.end(); ++it ){
-
-				if (it->first > lower_coverage && it->first <= upper_coverage) number_of_kmers += it->second;
-
-			}
-
-			std::cout << "number of kmers in bucket "  << number_of_kmers << std::endl;
-			return number_of_kmers;
 
 		}
 
@@ -96,6 +135,10 @@ namespace debruijn_graph {
 		
 		}
 
+
+		unsigned getK() {
+			return K_;
+		}
 		void InitBuckets( ) {
 
 	
@@ -112,6 +155,7 @@ namespace debruijn_graph {
 			std::cout << "kmer_counter: " << kmer_counter << std::endl;
 			CountBuckets( kmer_counter / bucketNum_ );
 			
+			CountNumberKmersInBucket();
 			std::cout << "kmer_counter / bucketNum_: " << kmer_counter / bucketNum_ << std::endl;
 
 			std::cout << "Buckets: " << std::endl;
@@ -156,6 +200,24 @@ namespace debruijn_graph {
 			return id;
 		}
 
+		int GetCoverageBucket( int kmer_coverage ) {
+
+			 bucket_id id = 0;
+			 while ( id < buckets.size() - 1 && buckets[id] < kmer_coverage ) {
+				++id;
+			 }
+
+		//	 std::cout << "bucket: " << id << std::endl;
+			return id;
+		}
+
+
+
+		int GetNumberKmersInBucket( int id) {
+			
+			return number_of_kmers_[id];
+
+		}
 
 		void SetBucketsForDistance ( bucket_id id, int distance, std::vector<double>& histogram ) {
 
@@ -217,17 +279,38 @@ namespace debruijn_graph {
 			
 		}
 
-		void GetProbablityFromBucketToBucketForDistance ( bucket_id id_from, bucket_id id_to, int distance ) {
+		double GetProbablityFromBucketToBucketForDistance ( bucket_id id_from, bucket_id id_to, int distance, int shift ) {
 
-			double probability = 0;
-			int kmers_in_bucket_counter = GetNumberKmersInBucket(id_from);
+			double res = 0;
+			res = CacheSearch (distance, shift, id_from, id_to);
+
+			if (res != -1.0) return res;
+
+			std::vector< std::vector<double> > bucket_to_bucket;
+			for ( unsigned id = 0; id < bucketNum_; ++id ) {
+			
+				std::vector<double> histogram(bucketNum_,0);
+				SetBucketsForDistance (  id, distance, histogram );
+				bucket_to_bucket.push_back(histogram);
+			}
+
+
+			UpdateCache(distance,bucket_to_bucket);
+
+			return bucket_to_bucket[id_from][id_to];
+/*			int kmers_in_bucket_counter = GetNumberKmersInBucket(id_from);
+
 
 			for (auto e = g_.SmartEdgeBegin(); !e.IsEnd(); ++e) {
 
+				//std::cout << "next edge" << std::endl ;
 				if (g_.length(*e) >= cfg::get().rr.max_repeat_length) {
  
+					//std::cout << "length ok" << std::endl ;
 					Sequence seq =  g_.EdgeNucls(*e) ;
+					//std::cout << "Sequence ok " << seq.size() << std::endl ;
 					runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K_);
+					//std::cout << "kmer ok" << kmer.str()<< std::endl ;
 				
 					//std::cout << "Sequence: " << seq.str() << std::endl ;
 					//std::cout << "Sequence size: " << seq.size() << std::endl ;
@@ -239,7 +322,9 @@ namespace debruijn_graph {
 						//std::cout << "j = " << j << std::endl;
 						//std::cout << "kmer : " << kmer.str() << std::endl;
 						//int kmer_coverage = kmer_index_[kmer].count_;
+					//	std::cout << "computing kmer bucket id..." << std::endl;
 						bucket_id kmer_bucket_id = GetKmerBucket(kmer);
+					//	std::cout << "kmer_bucket_id: " << kmer_bucket_id << std::endl;
 						//std::cout << "kmer bucket id " << kmer_bucket_id << std::endl;
 
 						if (kmer_bucket_id != id_from) continue;
@@ -248,18 +333,20 @@ namespace debruijn_graph {
 			
 						//std::cout << "i:" << std::endl;
 						for ( size_t i = j + distance; i < j + K_ + distance; ++i ) {
-						
 							//std::cout <<  i << ", ";
 
 							kmer_d <<= seq[i];
-							if (kmer_bucket_id != id_to) continue;
 						}
+							
+					//	std::cout << "computing kmer_d bucket id..." << std::endl;
+						bucket_id kmer_d_bucket_id = GetKmerBucket(kmer_d);
+						if (kmer_d_bucket_id == id_to) probability += 1;
+					//	std::cout << probability << std::endl;
+					//	std::cout << "kmer_d_ bucket_id: " << kmer_d_bucket_id << std::endl;
 						//std::cout << "Kmer_d: " << kmer_d.str() << std::endl ;
 					
-						int kmer_d_bucket_id = GetKmerBucket(kmer_d);
 						//std::cout << "kmer d bucket id" << kmer_d_bucket_id << std::endl;
 
-						probability += 1; 
 						
 						//std::cout << "end" << std::endl;
 						//std::cout << "Kmer3: " << kmer.str() << std::endl ;
@@ -267,12 +354,13 @@ namespace debruijn_graph {
 					}
 					//std::cout << "Kmer2: " << kmer.str() << std::endl ;
 				}
+				//std::cout << "out of an edge " << g_.length(*e)  << std::endl;
 			}
 
 
-
+			std::cout << "out of GetNumberKmersInBucket" << std::endl;
 			return probability / kmers_in_bucket_counter; 
-			
+*/			
 		}
 
 
