@@ -13,6 +13,7 @@
 #include "path_extend/bidirectional_path.hpp"
 #include "graphio.hpp"
 #include "long_read_storage.hpp"
+#include "bucket_mapper.hpp"
 
 namespace debruijn_graph{
 
@@ -22,6 +23,7 @@ class CoverageBasedResolution {
 	typedef enum { TOPOLOGY, LENGTH, PAIREDINFO } kind_of_repeat; 
 	
 	GraphPack *gp;
+	const DeBruijnEdgeIndex<EdgeId>& kmer_index_;
 	std::vector< std::vector<EdgeId> > allPaths;
 
 	//path with conjugate edges
@@ -37,8 +39,9 @@ class CoverageBasedResolution {
 	const double repeat_length_upper_threshold_;
 	
 	public:
-	CoverageBasedResolution( GraphPack *gpack_arg, double threshold_one_list, double threshold_match, 
-				double threshold_global, double tandem_lower_threshold, double tandem_upper_threshold, double repeat_length_upper_threshold) : 
+	CoverageBasedResolution( GraphPack *gpack_arg, const DeBruijnEdgeIndex<EdgeId>& kmer_index, double threshold_one_list, double threshold_match, 
+				double threshold_global, double tandem_lower_threshold, double tandem_upper_threshold, double repeat_length_upper_threshold) :
+											kmer_index_(kmer_index),
 											threshold_one_list_(threshold_one_list), 
 											threshold_match_(threshold_match),
 											threshold_global_(threshold_global), 
@@ -258,7 +261,7 @@ class CoverageBasedResolution {
 			pathsToOutput.AddPair( bidirectional_path, conjugate_path );
 		}
 
-		WriteResolved( usedEdges, pathsToOutput, fileName);
+		//WriteResolved( usedEdges, pathsToOutput, fileName);
 	}
 
 	private:
@@ -431,7 +434,7 @@ class CoverageBasedResolution {
 		typedef int times;
 		std::map<VertexId, times> out_degree;
 		std::map<VertexId, times> in_degree;
-		double LengthCutoff = 0.0;
+	/*	double LengthCutoff = 0.0;
 
 		int numEdges = 0;
 		for (auto e_iter = gp->g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter){
@@ -440,7 +443,9 @@ class CoverageBasedResolution {
 		}
 
 		LengthCutoff = 0.25 * LengthCutoff / numEdges;	
-	
+	*/
+
+//		std::cout << "Length Cutoff: "  << LengthCutoff << std::endl;
 		INFO("Getting Components");
 		INFO("Counting degrees of vertices");
 		for (auto e_iter = gp->g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter){
@@ -466,7 +471,7 @@ class CoverageBasedResolution {
 		}
 
 		//TODO LengthCutoff move to config
-		//double LengthCutoff = 0.0;
+		double LengthCutoff = 0.0;
 		/*int numEdges = 0;
 		for (auto e_iter = gp->g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter){
 			LengthCutoff += gp->g.length(*e_iter);	
@@ -507,7 +512,7 @@ class CoverageBasedResolution {
 			}
 
 			// continue check if a short _terminal_ vertex
-			else if( gp->g.length(*e_iter) < LengthCutoff /*repeat_length_upper_threshold_*/ && (in_degree.find(from) != in_degree.end()) && (out_degree.find(into) != out_degree.end()) ){
+			else if( gp->g.length(*e_iter) < /* LengthCutoff */ repeat_length_upper_threshold_ && (in_degree.find(from) != in_degree.end()) && (out_degree.find(into) != out_degree.end()) ){
 			//	if (gp->g.int_id(*e_iter) ==10021207) INFO(2);
 
 				edge_to_kind_[*e_iter] = LENGTH;
@@ -572,27 +577,83 @@ class CoverageBasedResolution {
 
 	
 
-	/*bool matchPairs( std::vector<EdgeId>& incomingEdges,
-			 std::vector<EdgeId>& outgoingEdges,
-			 std::vector<std::pair<EdgeId,EdgeId>>& pairsOfEdges,
-			 const DeBruijnEdgeIndex<EdgeId>& kmer_index,
-			 int kmer_bound)  {
 
-		for ( auto in_edge = incomingEdges.begin(); in_edge != incomingEdges.end(); ++in_edge ) {
+	void CountDistance( const EdgeId& edge_in, const EdgeId& edge_out, const std::vector<EdgeId>& component, int& distance ){
+	// gets a repetitive component and calculates the length of the longest path in it
 
-			auto seq = g.EdgeNucls(*e_iter);
+		if ( gp->g.EdgeEnd(edge_in) == gp->g.EdgeStart(edge_out) ) return;
+	
+		for ( auto edge = component.begin(); edge != component.end(); ++edge ){
 
-			 for (unsigned i = 0; i < kmer_bound; ++i) {
-				runtime_k::RtSeq kmer_in(K_);
-				for ( unsigned j = i; j < K_ + i && j < len; ++j) {
-					 kmer_in <<= seq[j];
-				}
-
-			 }
-
+			if ( gp->g.EdgeEnd(edge_in) == gp->g.EdgeStart(*edge) ) {
+				distance += gp->g.length(*edge);
+				CountDistance( *edge, edge_out, component, distance);
+				return;
+			}
 			
 		}
 
+	}
+
+	template <class DetailedCoverage>
+	bool matchPairs( std::vector<EdgeId>& incomingEdges,
+			 std::vector<EdgeId>& outgoingEdges,
+			 std::vector<std::pair<EdgeId,EdgeId>>& pairsOfEdges,
+			 const std::vector<EdgeId>& component,
+			 BucketMapper<Graph> &bm,
+			 DetailedCoverage& coverage)  {
+
+
+		if (incomingEdges.size() > 10 || outgoingEdges.size() > 10) return false;
+		double shift = 25;
+
+		std::vector< std::vector <double> > transition_probabilities ;
+		for ( int i = 0; i < incomingEdges.size(); i++) {
+			 transition_probabilities.push_back(std::vector<double>(outgoingEdges.size(),1));
+		}
+
+		int in_edge_counter(0);
+
+		for ( auto in_edge = incomingEdges.begin(); in_edge != incomingEdges.end(); ++in_edge, ++in_edge_counter ) {
+	
+	
+			double in_cov = coverage.GetOutCov(*in_edge);
+			int in_bucket = bm.GetCoverageBucket(in_cov);
+			 
+			 	int out_edge_counter(0);
+				for ( auto out_edge = outgoingEdges.begin(); out_edge != outgoingEdges.end(); ++out_edge, ++out_edge_counter ) {
+				
+						double out_cov = coverage.GetInCov(*out_edge);
+						int out_bucket = bm.GetCoverageBucket(out_cov);
+
+						int distance(0);
+						CountDistance(*in_edge, *out_edge, component, distance);
+
+						//std::cout << distance << std::endl;
+						double probability = bm.GetProbablityFromBucketToBucketForDistance (in_bucket, out_bucket, distance, shift) ;
+						transition_probabilities[in_edge_counter][out_edge_counter] = probability;
+		        	} 
+		}
+
+
+	
+		
+			
+		std::cout << "transition probabilities" << incomingEdges.size() << "x" << outgoingEdges.size() << ":" << std::endl;
+		//std::cout.precision(4);
+		for (auto vec = transition_probabilities.begin(); vec != transition_probabilities.end(); ++vec ) {
+			
+			for ( auto prob = vec->begin(); prob != vec->end(); ++prob ) {
+
+				printf("%4.2f ", *prob);
+				//std::cout << std::setw(10) << std::setprecision(2) << *prob << " " ;
+			}
+			std::cout << std::endl;
+		}
+		
+	
+		
+		
 		// for each incoming edge
 		// 	get last n kmers = last_n
 		// 	for each outgoing edge
@@ -603,7 +664,7 @@ class CoverageBasedResolution {
 		// check if all incoming edges have different outgoing edges
 
 
-	}*/
+	}
 
 	void findClosest(std::vector<std::pair<EdgeId, coverage_value>>& incomingEdgesCoverage,
 			std::vector<std::pair<EdgeId, coverage_value>>& outgoingEdgesCoverage,
@@ -728,7 +789,7 @@ class CoverageBasedResolution {
 		std::set<EdgeId> visited_edges;
 		std::vector<std::vector<EdgeId>> paths;
 
-		int maxPathLen = 0;
+		int maxPathLen = gp->g.length(component[0]);
 		for ( auto edge = component.begin(); edge != component.end(); ++edge ){
 
 			if (visited_edges.find(*edge) != visited_edges.end()) continue;
@@ -767,6 +828,12 @@ class CoverageBasedResolution {
 		int filteredByThresholds(0), resolvedPathsNum(0); 
 		int resolvedComponentsByTopology(0), resolvedComponentsByLength(0);//, resolvedComponentsByLengthAndTopology(0);
 		std::vector<int> pathSizes(21,0);
+		
+        	int number_of_buckets = 10;
+		int K_ = cfg::get().K + 1;
+		auto bm = BucketMapper<conj_graph_pack::graph_t>(gp->g, kmer_index_, K_, number_of_buckets);
+		bm.InitBuckets( );
+
 		for ( auto edge = components.begin(); edge != components.end(); ++edge ) {
 			
 			if ( visited_edges.find(*edge) != visited_edges.end() ){
@@ -807,7 +874,7 @@ class CoverageBasedResolution {
 
 			numberOfComponents += 1;
 
-			if (incomingEdges.size() != outgoingEdges.size() && insert_size < (size_t)longestPathLen ){
+			if (incomingEdges.size() != outgoingEdges.size() /*&& insert_size < (size_t)longestPathLen */){
 
 				numberOfComponentWithDifferentInOutDegree += 1;
 				std::cout << "component with different in and out degree: " << longestPathLen << std::endl;
@@ -862,13 +929,13 @@ class CoverageBasedResolution {
 			fprintf(file, "\nincoming edges: ");
 			for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e) {
 	
-				fprintf(file, "%lu (%5.2f) ", gp->g.int_id(*e), coverage.GetInCov(*e));
+				fprintf(file, "%lu (%5.2f) ", gp->g.int_id(*e), coverage.GetOutCov(*e));
 			}
 			fprintf(file,"\n");
 			fprintf(file,"outgoing edges: ");
 			for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e) {
 	
-				fprintf(file, "%lu (%5.2f) ", gp->g.int_id(*e), coverage.GetOutCov(*e));
+				fprintf(file, "%lu (%5.2f) ", gp->g.int_id(*e), coverage.GetInCov(*e));
 			}
 			fprintf(file,"\n");
 
@@ -904,7 +971,40 @@ class CoverageBasedResolution {
 			std::vector<std::pair<EdgeId,EdgeId>> pairsOfEdges;
 
 
-			findClosest(incomingEdgesCoverage, outgoingEdgesCoverage, pairsOfEdges);
+			//findClosest(incomingEdgesCoverage, outgoingEdgesCoverage, pairsOfEdges);
+			//
+			std::vector<EdgeId> incoming_edges;
+			std::vector<EdgeId> outgoing_edges;
+
+			std::cout << "component: ";
+			for ( auto iter = path.begin(); iter != path.end(); ++iter ) {
+				std::cout << gp->g.int_id(*iter)  << " ";
+			}
+			std::cout << std::endl;
+			
+			
+			std::cout << "coverage vectors: " <<  std::endl;
+			for (auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e) {
+				printf("%4.2f ", coverage.GetOutCov(*e));
+				//std::cout << coverage.GetOutCov(*e) << " ";
+				incoming_edges.push_back(*e);
+			}
+
+			std::cout << std::endl;
+			for (auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e) {
+				printf("%4.2f ", coverage.GetInCov(*e));
+				//std::cout << coverage.GetInCov(*e) << " ";
+				outgoing_edges.push_back(*e);
+			}
+			std::cout << std::endl;
+
+
+
+			std::cout << "matching pairs of edges " <<  incoming_edges.size() << " " << outgoing_edges.size()  << std::endl;
+			//bool resolved = matchPairs( incoming_edges, outgoing_edges, pairsOfEdges, path, bm, coverage);
+
+			
+
 			//std::cout << "before repeat resolution " << incomingEdgesCoverage.size() << " " << outgoingEdgesCoverage.size() << " " << incomingEdges.size() << " " << path.size() << std::endl;
 			if ( insert_size < (size_t)longestPathLen )
 				if (pairsOfEdges.size() == 0) 
