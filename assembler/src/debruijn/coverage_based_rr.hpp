@@ -127,6 +127,67 @@ class CoverageBasedResolution {
 	}
 
 
+
+	bool verifyComponent( std::vector<EdgeId>& incomingEdges,
+			 std::vector<EdgeId>& outgoingEdges,
+		 	std::vector<EdgeId>& component ){
+
+		if ( incomingEdges.size() == outgoingEdges.size() ) {
+			return true;
+		}
+
+		int diff = incomingEdges.size() - outgoingEdges.size();
+
+		if ( diff < 0 ) {
+			
+			int counter = 0;
+			for ( auto edge = incomingEdges.begin(); edge != incomingEdges.end(); ++edge ) {
+
+				if ( gp->g.length(*edge) <= cfg::get().rr.max_repeat_length ) {
+					counter += 1;
+				}
+			}
+
+			if ( counter == -diff ) {
+				
+				std::cout << "INCOMING COMPONENT UPDATED" << std::endl;
+				/*for ( auto edge = incomingEdges.begin(); edge != incomingEdges.end(); ++edge ) {
+
+					if ( gp->g.length(*edge) <= cfg::get().rr.max_repeat_length ) {
+						components.push_back(*edge);	
+					}
+				}*/
+			}
+		
+		}
+
+		if ( diff > 0 ) {
+			
+			int counter = 0;
+			for ( auto edge = outgoingEdges.begin(); edge != outgoingEdges.end(); ++edge ) {
+
+				if ( gp->g.length(*edge) <= cfg::get().rr.max_repeat_length ) {
+					counter += 1;
+				}
+			}
+
+			if ( counter == -diff ) {
+				
+				std::cout << "OUTGOING COMPONENT UPDATED" << std::endl;
+				/*for ( auto edge = incomingEdges.begin(); edge != incomingEdges.end(); ++edge ) {
+
+					if ( gp->g.length(*edge) <= cfg::get().rr.max_repeat_length ) {
+						components.push_back(*edge);	
+					}
+				}*/
+			}
+		
+		}
+
+
+	}
+
+
 	public :
 	template <class DetailedCoverage>
 	void resolve_repeats_by_coverage( DetailedCoverage& coverage, 
@@ -877,6 +938,7 @@ class CoverageBasedResolution {
 			if (incomingEdges.size() != outgoingEdges.size() /*&& insert_size < (size_t)longestPathLen */){
 
 				numberOfComponentWithDifferentInOutDegree += 1;
+
 				std::cout << "component with different in and out degree: " << longestPathLen << std::endl;
 				for ( auto iter = path.begin(); iter != path.end(); ++iter ) {
 					std::cout << gp->g.int_id(*iter)  << " ";
@@ -892,7 +954,7 @@ class CoverageBasedResolution {
 					std::cout << gp->g.int_id(*iter)  << " ";
 				}
 				std::cout << std::endl;
-				continue;
+			//	continue;
 
 			}
 			if ( incomingEdges.size() == 0 || outgoingEdges.size() == 0) {
@@ -1000,6 +1062,7 @@ class CoverageBasedResolution {
 
 
 
+			verifyComponent(incoming_edges,outgoing_edges,path);
 			std::cout << "matching pairs of edges " <<  incoming_edges.size() << " " << outgoing_edges.size()  << std::endl;
 			//bool resolved = matchPairs( incoming_edges, outgoing_edges, pairsOfEdges, path, bm, coverage);
 
