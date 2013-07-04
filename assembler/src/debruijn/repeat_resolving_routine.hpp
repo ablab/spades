@@ -1155,7 +1155,8 @@ void resolve_repeats() {
 	if (!cfg::get().paired_mode
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
-		if (cfg::get().pacbio_test_on) {
+
+/*		if (cfg::get().pacbio_test_on) {
 		    PathStorage<Graph> long_read(conj_gp.g);
 		    GapStorage<Graph> gaps(conj_gp.g);
 			std::vector< PathInfo<Graph> > filteredPaths;
@@ -1169,6 +1170,7 @@ void resolve_repeats() {
 			filteredPaths = long_read.GetAllPaths();
 			pac_aligner.pacbio_test(long_read, gaps);
 		}
+*/
 		return;
 	}
 
