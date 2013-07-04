@@ -1,0 +1,4 @@
+- left reads: [/johnny/data/input/Bacteria/E.coli/K12/SRX000429/SRR001665_1.fastq]
+  orientation: fr
+  right reads: [/johnny/data/input/Bacteria/E.coli/K12/SRX000429/SRR001665_2.fastq]
+  type: paired-end
