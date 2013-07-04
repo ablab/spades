@@ -223,11 +223,14 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
   private:
     void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
         size_t idx = base::seq_idx(kmer);
-        if (!ignore_new_kmer || contains(idx, kmer)) {
-            EdgeInfo<IdType> &entry = base::operator[](idx);
-            entry.edgeId_ = id;
-            entry.offset_ = offset;
+        if (idx == base::InvalidKMerIdx) {
+           VERIFY(ignore_new_kmer);
+           return;
         }
+
+        EdgeInfo<IdType> &entry = base::operator[](idx);
+        entry.edgeId_ = id;
+        entry.offset_ = offset;
     }
 };
 
