@@ -10,8 +10,6 @@
 
 namespace debruijn_graph {
 
-//class DeBruijnExtensionIndexBuilder;
-
 template<class Seq>
 struct slim_kmer_index_traits : public kmer_index_traits<Seq> {
   typedef kmer_index_traits<Seq> __super;
@@ -178,101 +176,6 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
     }
 
 };
-
-//template <>
-//class DeBruijnKMerIndexBuilder<slim_kmer_index_traits<runtime_k::RtSeq>> {
-// public:
-//  template <class IdType, class Read>
-//  std::string BuildIndexFromStream(DeBruijnKMerIndex<IdType, slim_kmer_index_traits<runtime_k::RtSeq>> &index,
-//                                   io::ReadStreamVector<io::IReader<Read> > &streams,
-//                                   SingleReadStream* contigs_stream = 0) const {
-//    DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
-//                                            index.K(),
-//                                            streams, contigs_stream);
-//    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-//    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, slim_kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, streams.size());
-//
-//    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
-//    index.data_.resize(sz);
-//    index.kmers = NULL;
-//
-//    return counter.GetFinalKMersFname();
-//  }
-//
-// protected:
-//  DECL_LOGGER("K-mer Index Building");
-//};
-
-//class DeBruijnExtensionIndexBuilder :
-//            public DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<>::kmer_index_traits> {
-//    typedef DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<>::kmer_index_traits> base;
-//
-//    template <class ReadStream>
-//    size_t FillExtensionsFromStream(ReadStream &stream,
-//                                    DeBruijnExtensionIndex<> &index) const {
-//        unsigned K = index.K();
-//        size_t rl = 0;
-//
-//        while (!stream.eof()) {
-//            typename ReadStream::read_type r;
-//            stream >> r;
-//            rl = std::max(rl, r.size());
-//
-//            const Sequence &seq = r.sequence();
-//            if (seq.size() < K + 1)
-//                continue;
-//
-//            runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K);
-//            for (size_t j = K; j < seq.size(); ++j) {
-//                char nnucl = seq[j], pnucl = kmer[0];
-//                index.AddOutgoing(kmer, nnucl);
-//                kmer <<= nnucl;
-//                index.AddIncoming(kmer, pnucl);
-//            }
-//        }
-//
-//        return rl;
-//    }
-//
-//  public:
-//    template <class Read>
-//    size_t BuildIndexFromStream(DeBruijnExtensionIndex<> &index,
-//                                io::ReadStreamVector<io::IReader<Read> > &streams,
-//                                SingleReadStream* contigs_stream = 0) const {
-//        unsigned nthreads = streams.size();
-//
-//        index.KMersFilename_ = base::BuildIndexFromStream(index, streams, contigs_stream);
-//
-//        // Now use the index to fill the coverage and EdgeId's
-//        INFO("Building k-mer extensions from reads, this takes a while.");
-//
-//        size_t rl = 0;
-//        streams.reset();
-//# pragma omp parallel for num_threads(nthreads) shared(rl)
-//        for (size_t i = 0; i < nthreads; ++i) {
-//            size_t crl = FillExtensionsFromStream(streams[i], index);
-//
-//            // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
-//#   pragma omp flush(rl)
-//            if (crl > rl)
-//#     pragma omp critical
-//            {
-//                rl = std::max(rl, crl);
-//            }
-//        }
-//
-//        if (contigs_stream) {
-//            contigs_stream->reset();
-//            FillExtensionsFromStream(*contigs_stream, index);
-//        }
-//        INFO("Building k-mer extensions from reads finished.");
-//
-//        return rl;
-//    }
-//
-//  protected:
-//    DECL_LOGGER("Extension Index Building");
-//};
 
 template<class Builder>
 class DeBruijnExtensionIndexBuilder : public Builder {

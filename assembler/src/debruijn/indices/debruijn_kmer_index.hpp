@@ -182,8 +182,6 @@ class DeBruijnKMerIndex {
     return workdir_;
   }
 
-// todo fix friendship
-//  friend class DeBruijnKMerIndexBuilder<traits>;
 };
 
 //todo rename
@@ -227,30 +225,6 @@ class InnerDeBruijnKMerStoringIndexBuilder {
   }
 
 };
-
-//todo rename
-//use only for building KmerFreeDeBruijnEdgeIndex!
-//todo FIXME seems to be artifact of AntonB refactoring!
-//template <class traits, class Index>
-//class InnerDeBruijnKMerFreeIndexBuilder {
-// public:
-//  template <class KmerCounter>
-//  size_t BuildIndex(Index &index, KmerCounter& counter) const {
-//    KMerIndexBuilder<typename Index::KMerIndexT> builder(index.workdir(),
-//             /*todo what is this value and why it is 1 for cap?*/16, counter.recommended_thread_num());
-//
-//    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
-//    index.data_.resize(sz);
-//
-//    //SortUniqueKMers(counter, index);
-//    //todo WTF???!!! Why we have it in master
-//    if (!index.kmers)
-//      index.kmers = counter.GetFinalKMers();
-//
-//    return 0;
-//  }
-//
-//};
 
 //that seems to nullify the kmers link itself. Was used with slim traints (and extension index) only!
 //todo maybe here should be specialization for slim traits (as it used to be), otherwise remove traits template parameter

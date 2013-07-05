@@ -12,7 +12,6 @@
 
 namespace debruijn_graph {
 
-// Aux struct to count kmers during graph construction.
 template<class IdType>
 struct EdgeInfo {
     IdType edge_id;
@@ -21,206 +20,6 @@ struct EdgeInfo {
 
     EdgeInfo(IdType edge_id_ = IdType(), unsigned offset_ = -1u, unsigned count_ = 0) :
             edge_id(edge_id_), offset(offset_), count(count_) { }
-};
-
-template<class Index>
-class DeBruijnEdgeIndex : public Index {
-    typedef Index base;
-
-  public:
-    typedef typename base::traits_t traits_t;
-    typedef typename base::KMer KMer;
-    typedef typename base::KMerIdx KMerIdx;
-    typedef typename base::GraphT GraphT;
-    typedef typename base::IdType IdType;
-    typedef typename base::BuilderT BuilderT;
-
-    using base::contains;
-
-    DeBruijnEdgeIndex(unsigned K, const GraphT &graph, const std::string &workdir)
-            : base(K, graph, workdir) {}
-
-//    bool contains(KMerIdx idx, const KMer &k) const {
-//        // Sanity check
-//        if (!valid_idx(idx))
-//            return false;
-//
-//        const typename base::KMerIndexValueType &entry = base::operator[](idx);
-//
-//        if (entry.offset == -1u)
-//            return false;
-//
-//        return k == KMer(this->K_, graph_.EdgeNucls(entry.edge_id), entry.offset);
-//    }
-
-    bool contains(const KMer& kmer) const {
-        KMerIdx idx = seq_idx(kmer);
-        return contains(idx, kmer);
-    }
-//fixme
-//    //overriden to add VERIFY
-//    EdgeInfo<typename Graph::EdgeId> &operator[](const KMer &s) {
-//        VERIFY(contains(s));
-//        return operator[](s);
-//    }
-//
-//    //overriden to add VERIFY
-//    const EdgeInfo<typename Graph::EdgeId> &operator[](const KMer &s) const {
-//        VERIFY(contains(s));
-//        return operator[](s);
-//    }
-
-//    KMer kmer(typename base::KMerIdx idx) const {
-//        VERIFY(valid_idx(idx));
-//        const typename base::KMerIndexValueType &entry = base::operator[](idx);
-//        VERIFY(entry.offset != -1u);
-//        return KMer(this->K_, graph_.EdgeNucls(entry.edge_id), entry.offset);
-//    }
-
-    //todo why do we need to check equality???!!!
-    bool DeleteIfEqual(const KMer &kmer, EdgeId e) {
-        KMerIdx idx = seq_idx(kmer);
-        if (!contains(idx, kmer))
-            return false;
-
-        EdgeInfo<EdgeId> &entry = operator[](idx);
-        if (entry.edge_id == e) {
-            entry.offset = -1u;
-            return true;
-        }
-        return false;
-    }
-
-    //todo current strategy of putting in index if slot is vacant,
-    //can lead to funny behavior during gap closing regarding coverage of new k-mers!
-    //Currently used both for filling and update
-//    void PutInIndex(const KMer &kmer, IdType e, size_t offset) {
-//        KMerIdx idx = seq_idx(kmer);
-//        if (idx == base::InvalidKMerIdx || idx >= this->size())
-//            return;
-//        EdgeInfo<IdType>& entry = operator[](idx);
-//        // if slot is empty or it contains information about this k-mer
-//        // (second condition is almost always not useful)
-//        if (entry.offset == -1u || contains(idx, kmer)) {
-//            entry.edge_id = e;
-//            entry.offset = offset;
-//        }
-//    }
-
-    /**
-     * Number of edges coming into param edge's end
-     */
-    unsigned RivalEdgeCount(const KMer &kmer) const {
-      KMer kmer2 = kmer << 'A';
-      unsigned res = 0;
-      for (char c = 0; c < 4; ++c)
-        if (base::contains(kmer2 >> c))
-          res += 1;
-
-      return res;
-    }
-
-//    unsigned RivalEdgeCount(typename base::KMerIdx idx) const {
-//      KMer kmer2 = kmer(idx) << 'A';
-//      unsigned res = 0;
-//      for (char c = 0; c < 4; ++c)
-//        if (base::contains(kmer2 >> c))
-//          res += 1;
-//
-//      return res;
-//    }
-
-    /**
-     * Number of edges going out of the param edge's end
-     */
-    unsigned NextEdgeCount(const KMer &kmer) const {
-      unsigned res = 0;
-      for (char c = 0; c < 4; ++c)
-        if (base::contains(kmer << c))
-          res += 1;
-
-      return res;
-    }
-
-//    unsigned NextEdgeCount(typename base::KMerIdx idx) const {
-//      KMer kmer = this->kmer(idx);
-//
-//      unsigned res = 0;
-//      for (char c = 0; c < 4; ++c)
-//        if (contains(kmer << c))
-//          res += 1;
-//
-//      return res;
-//    }
-//
-//    KMer NextEdge(const KMer &kmer) const { // returns any next edge
-//      for (char c = 0; c < 4; ++c) {
-//        KMer s = kmer << c;
-//        typename base::KMerIdx idx = base::seq_idx(s);
-//        if (base::contains(idx))
-//          return this->kmer(idx);
-//      }
-//
-//      VERIFY_MSG(false, "Couldn't find requested edge!");
-//      return KMer(base::K());
-//      // no next edges (we should request one here).
-//    }
-
-    KMer NextEdge(const KMer &kmer) const { // returns any next edge
-      for (char c = 0; c < 4; ++c) {
-        KMer s = kmer << c;
-        if (base::contains(s))
-          return s;
-      }
-
-      VERIFY_MSG(false, "Couldn't find requested edge!");
-      return KMer(base::K());
-      // no next edges (we should request one here).
-    }
-
-    std::pair<IdType, size_t> get(KMerIdx idx, const KMer &kmer) const {
-        VERIFY(contains(idx, kmer));
-
-        const EdgeInfo<IdType> &entry = base::operator[](idx);
-        return std::make_pair(entry.edge_id, (size_t)entry.offset);
-    }
-
-    //todo change to unsigned
-    std::pair<IdType, size_t> get(const KMer &kmer) const {
-        typename base::KMerIdx idx = base::seq_idx(kmer);
-        return get(idx, kmer);
-    }
-
-//    std::pair<IdType, size_t> get(typename base::KMerIdx idx) const {
-//        VERIFY(valid_idx(idx));
-//        const EdgeInfo<IdType> &entry = base::operator[](idx);
-//        return std::make_pair(entry.edge_id, (size_t)entry.offset);
-//    }
-
-    //todo WTF???!!!
-    template<class Writer>
-    void BinWrite(Writer &writer) const {
-        this->index_.serialize(writer);
-        size_t sz = this->data_.size();
-        writer.write((char*)&sz, sizeof(sz));
-        for (size_t i = 0; i < sz; ++i)
-            writer.write((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
-        BinWriteKmers(writer);
-    }
-
-    //todo WTF???!!!
-    template<class Reader>
-    void BinRead(Reader &reader, const std::string &FileName) {
-        this->clear();
-        this->index_.deserialize(reader);
-        size_t sz = 0;
-        reader.read((char*)&sz, sizeof(sz));
-        this->data_.resize(sz);
-        for (size_t i = 0; i < sz; ++i)
-            reader.read((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
-        BinReadKmers(reader, FileName);
-    }
-
 };
 
 //fixme name
@@ -251,7 +50,6 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Gra
     KmerFreeDeBruijnEdgeIndex(unsigned K, const Graph &graph, const std::string &workdir)
             : base(K, workdir), graph_(graph) {}
 
-
     /**
      * Doesn't work without already constructed condensed graph!!!
      */
@@ -275,37 +73,6 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Gra
         return KMer(this->K(), graph_.EdgeNucls(entry.edge_id), entry.offset);
     }
 
-//    bool contains(const KMer& kmer) const {
-//        typename base::KMerIdx idx = base::seq_idx(kmer);
-//        return contains(idx, kmer);
-//    }
-//
-//    //overriden to add VERIFY
-//    EdgeInfo<typename Graph::EdgeId> &operator[](const KMer &s) {
-//        VERIFY(contains(s));
-//        return operator[](s);
-//    }
-//
-//    //overriden to add VERIFY
-//    const EdgeInfo<typename Graph::EdgeId> &operator[](const KMer &s) const {
-//        VERIFY(contains(s));
-//        return operator[](s);
-//    }
-//
-//    //todo why do we need to check equality???!!!
-//    bool DeleteIfEqual(const KMer &kmer, EdgeId e) {
-//        KMerIdx idx = seq_idx(kmer);
-//        if (!contains(idx, kmer))
-//            return false;
-//
-//        EdgeInfo<EdgeId> &entry = operator[](idx);
-//        if (entry.edge_id == e) {
-//            entry.offset = -1u;
-//            return true;
-//        }
-//        return false;
-//    }
-
     //todo current strategy of putting in index if slot is vacant,
     //can lead to funny behavior during gap closing regarding coverage of new k-mers!
     //Currently used both for filling and update
@@ -321,44 +88,6 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Gra
             entry.offset = offset;
         }
     }
-
-//    std::pair<IdType, size_t> get(const KMer &kmer) const {
-//        typename base::KMerIdx idx = base::seq_idx(kmer);
-//        VERIFY(contains(idx, kmer));
-//
-//        const EdgeInfo<IdType> &entry = base::operator[](idx);
-//        return std::make_pair(entry.edge_id, (size_t)entry.offset);
-//    }
-//
-//    std::pair<IdType, size_t> get(typename base::KMerIdx idx) const {
-//        VERIFY(valid_idx(idx));
-//        const EdgeInfo<IdType> &entry = base::operator[](idx);
-//        return std::make_pair(entry.edge_id, (size_t)entry.offset);
-//    }
-//
-//    //todo WTF???!!!
-//    template<class Writer>
-//    void BinWrite(Writer &writer) const {
-//        base::index_.serialize(writer);
-//        size_t sz = base::data_.size();
-//        writer.write((char*)&sz, sizeof(sz));
-//        for (size_t i = 0; i < sz; ++i)
-//            writer.write((char*)&(base::data_[i].count), sizeof(base::data_[0].count));
-//        traits::raw_serialize(writer, base::kmers);
-//    }
-//
-//    //todo WTF???!!!
-//    template<class Reader>
-//    void BinRead(Reader &reader, const std::string &FileName) {
-//        base::clear();
-//        base::index_.deserialize(reader);
-//        size_t sz = 0;
-//        reader.read((char*)&sz, sizeof(sz));
-//        base::data_.resize(sz);
-//        for (size_t i = 0; i < sz; ++i)
-//            reader.read((char*)&(base::data_[i].count), sizeof(base::data_[0].count));
-//        base::kmers = traits::raw_deserialize(reader, FileName);
-//    }
 
 };
 
@@ -391,26 +120,6 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename 
 
   ~KmerStoringDeBruijnEdgeIndex() {}
 
-//  bool ContainsInIndex(typename base::KMerIdx idx) const {
-//    if (idx == base::InvalidKMerIdx)
-//      return false;
-//
-//    const typename base::KMerIndexValueType &entry = base::operator[](idx);
-//    return (entry.offset_ != -1);
-//  }
-//
-//  bool ContainsInIndex(const KMer& kmer) const {
-//    typename base::KMerIdx idx = base::seq_idx(kmer);
-//
-//    // Early exit if kmer has not been seen at all
-//    if (idx == base::InvalidKMerIdx)
-//      return false;
-//
-//    // Otherwise, check, whether it's attached to any edge
-//    const typename base::KMerIndexValueType &entry = base::operator[](idx);
-//    return (entry.offset_ != -1);
-//  }
-
   bool contains(KMerIdx idx, const KMer &k) const {
       if (!valid_idx(idx))
         return false;
@@ -426,23 +135,7 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename 
       return (typename traits::raw_create()(this->K(), *it));
   }
 
-//  bool DeleteIfEqual(const KMer &kmer, IdType id) {
-//    typename base::KMerIdx idx = seq_idx(kmer);
-//
-//    if (!contains(idx, kmer))
-//      return false;
-//
-//    EdgeInfo<IdType> &entry = base::operator[](idx);
-//
-//    if (entry.edge_id == id) {
-//      entry.offset = -1u;
-//      return true;
-//    }
-//
-//    return false;
-//  }
-//
-// todo WTF? old strange version?
+// todo discuss with AntonK old strange version?
 //  template<class Writer>
 //  void BinWrite(Writer &writer) const {
 //    base::index_.serialize(writer);
@@ -498,6 +191,117 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename 
       entry.offset = offset;
     }
   }
+};
+
+template<class Index>
+class DeBruijnEdgeIndex : public Index {
+    typedef Index base;
+
+  public:
+    typedef typename base::traits_t traits_t;
+    typedef typename base::KMer KMer;
+    typedef typename base::KMerIdx KMerIdx;
+    typedef typename base::GraphT GraphT;
+    typedef typename base::IdType IdType;
+    typedef typename base::BuilderT BuilderT;
+
+    using base::contains;
+
+    DeBruijnEdgeIndex(unsigned K, const GraphT &graph, const std::string &workdir)
+            : base(K, graph, workdir) {}
+
+    bool contains(const KMer& kmer) const {
+        KMerIdx idx = seq_idx(kmer);
+        return contains(idx, kmer);
+    }
+
+    //todo why do we need to check equality???!!!
+    bool DeleteIfEqual(const KMer &kmer, EdgeId e) {
+        KMerIdx idx = seq_idx(kmer);
+        if (!contains(idx, kmer))
+            return false;
+
+        EdgeInfo<EdgeId> &entry = operator[](idx);
+        if (entry.edge_id == e) {
+            entry.offset = -1u;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Number of edges coming into param edge's end
+     */
+    unsigned RivalEdgeCount(const KMer &kmer) const {
+      KMer kmer2 = kmer << 'A';
+      unsigned res = 0;
+      for (char c = 0; c < 4; ++c)
+        if (contains(kmer2 >> c))
+          res += 1;
+
+      return res;
+    }
+
+    /**
+     * Number of edges going out of the param edge's end
+     */
+    unsigned NextEdgeCount(const KMer &kmer) const {
+      unsigned res = 0;
+      for (char c = 0; c < 4; ++c)
+        if (contains(kmer << c))
+          res += 1;
+
+      return res;
+    }
+
+    KMer NextEdge(const KMer &kmer) const { // returns any next edge
+      for (char c = 0; c < 4; ++c) {
+        KMer s = kmer << c;
+        if (contains(s))
+          return s;
+      }
+
+      VERIFY_MSG(false, "Couldn't find requested edge!");
+      return KMer(base::K());
+      // no next edges (we should request one here).
+    }
+
+    //todo change to unsigned
+    std::pair<IdType, size_t> get(KMerIdx idx, const KMer &kmer) const {
+        VERIFY(contains(idx, kmer));
+
+        const EdgeInfo<IdType> &entry = base::operator[](idx);
+        return std::make_pair(entry.edge_id, (size_t)entry.offset);
+    }
+
+    //todo change to unsigned
+    std::pair<IdType, size_t> get(const KMer &kmer) const {
+        typename base::KMerIdx idx = base::seq_idx(kmer);
+        return get(idx, kmer);
+    }
+
+    template<class Writer>
+    void BinWrite(Writer &writer) const {
+        this->index_.serialize(writer);
+        size_t sz = this->data_.size();
+        writer.write((char*)&sz, sizeof(sz));
+        for (size_t i = 0; i < sz; ++i)
+            writer.write((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
+        BinWriteKmers(writer);
+    }
+
+    template<class Reader>
+    void BinRead(Reader &reader, const std::string &FileName) {
+        this->clear();
+        this->index_.deserialize(reader);
+        size_t sz = 0;
+        reader.read((char*)&sz, sizeof(sz));
+        this->data_.resize(sz);
+        for (size_t i = 0; i < sz; ++i)
+            reader.read((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
+        BinReadKmers(reader, FileName);
+    }
+
 };
 
 template <class Builder>
@@ -626,22 +430,5 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
         return ParallelFillCoverage(index, streams, contigs_stream);
     }
 };
-
-//template <class Seq>
-//class NewDeBruijnEdgeIndexBuilder : public DeBruijnKMerIndexBuilder<kmer_index_traits<Seq> > {
-//
-//  public:
-//    template <class Graph, class Read>
-//    size_t BuildIndexFromStream(DeBruijnEdgeIndex<Graph, Seq> &index,
-//                                io::ReadStreamVector<io::IReader<Read> > &streams,
-//                                SingleReadStream* contigs_stream = 0) const;
-//
-//    template <class Graph>
-//    void BuildIndexFromGraph(DeBruijnEdgeIndex<Graph, Seq> &index,
-//                             const Graph &g) const;
-//
-//  protected:
-//    DECL_LOGGER("Edge Index Building");
-//};
 
 }
