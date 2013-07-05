@@ -1075,25 +1075,24 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 
 
 
-    //LongReadStorage<Graph> long_read(conj_gp.g);
 	if (cfg::get().pacbio_test_on == true){
 		INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
 		PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
 		INFO("index created");
-		filteredPaths = long_read.GetAllPaths();
 		pac_aligner.pacbio_test(long_read, gaps);
+		filteredPaths = long_read.GetAllPaths();
 	}
 
 	if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
 	    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
 	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
 	    }
-        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, /*long_read.GetAllPaths()*/ filteredPaths, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         delete_index(pe_scaf_indexs);
 	}
 	else {
 		pe_scaf_indexs.clear();
-		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, /*long_read.GetAllPaths()*/ filteredPaths, cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
+		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
 	}
 }
 

@@ -109,12 +109,16 @@ public:
 
 	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos){
 		ofstream filestr(filename);
+		ofstream filestr2(filename + "_yana");
 		set<EdgeId> continued_edges;
 		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter){
 			filestr<< iter->second.size() << endl;
+			int non1 = 0;
 			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
-				filestr<<"Weight: " << j_iter->getWeight();
-				filestr<< " length: " << j_iter->path.size() <<" ";
+				filestr<<" Weight: " << j_iter->getWeight();
+				if (j_iter->getWeight() > 1) non1 ++;
+
+				filestr<<" length: " << j_iter->path.size() <<" ";
 				for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++ p_iter) {
 					if (p_iter != j_iter->path.end() - 1 && j_iter->getWeight() > 1) {
 						continued_edges.insert(*p_iter);
@@ -133,6 +137,32 @@ public:
 				filestr << endl;
 			}
 			filestr<< endl;
+//to Yana's OLC assembler:
+			filestr2 << non1 << endl;
+			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
+				if (j_iter->getWeight() == 1) continue;
+				filestr2 <<" Weight: " << j_iter->getWeight();
+				filestr2 <<" length: " << j_iter->path.size() <<" ";
+				for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++ p_iter) {
+					if (p_iter != j_iter->path.end() - 1 && j_iter->getWeight() > 1) {
+						continued_edges.insert(*p_iter);
+					}
+
+					filestr2 << g_.int_id(*p_iter) << " ";
+				}
+/*				if (edge_pos.IsConsistentWithGenome(j_iter->path))
+					filestr2 << "  genomic";
+				else {
+					if (j_iter->getWeight() == 1)
+						filestr2<< " low weight ng";
+					else
+						filestr2 << "  nongenomic";
+				}
+				*/
+				filestr2 << endl;
+
+			}
+			filestr2<< endl;
 		}
 		int noncontinued = 0;
 		int long_nongapped = 0;

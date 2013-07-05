@@ -12,6 +12,7 @@
 #include <algorithm>
 #include "pac_index.hpp"
 #include "long_read_storage.hpp"
+#include "path_extend/pe_io.hpp"
 
 class PacBioAligner {
 public:
@@ -52,6 +53,8 @@ public:
 		ReadStream::read_type read;
 		size_t buffer_no = 0;
 		PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp_.g, k_test_, cfg::get().K);
+		path_extend::ContigWriter cw(gp_.g);
+		cw.writeEdges("before_rr_with_ids.fasta");
 		ofstream filestr("pacbio_mapped.mpr");
 		filestr.close();
 		while (!pacbio_read_stream->eof()) {
@@ -92,6 +95,7 @@ public:
 			if (iter->first < 100) {
 				INFO(iter->first <<" :  "<< iter->second);
 			}
+
 		INFO("PacBio test finished");
 		return ;
 	}
@@ -113,6 +117,7 @@ public:
 			size_t thread_num = omp_get_thread_num();
 			Sequence seq(reads[i].sequence());
 			total_length += seq.size();
+			n++;
 			auto location_map = pac_index.GetClusters(seq);
 			different_edges_profile[location_map.size()]++;
 			n++;
@@ -151,10 +156,8 @@ public:
 						nongenomic_edges++;
 				}
 			}
-//this block is something to be overcome
-			/*
 			omp_set_lock(&tmp_file_output);
-			filestr << n << "  " << location_map.size() << ": \n";
+			filestr << n<<"("<< seq.size() << ")  " << location_map.size() << ": \n";
 			for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
 				filestr << gp_.g.int_id(iter->edgeId) << "(" << gp_.g.length(iter->edgeId) << ")  " << iter->sorted_positions.size() << "\n";
 				for (auto set_iter = iter->sorted_positions.begin(); set_iter != iter->sorted_positions.end(); ++set_iter)
@@ -180,7 +183,7 @@ public:
 			filestr << " \n";
 			filestr << " \n";
 			omp_unset_lock(&tmp_file_output);
-*/
+
 			VERBOSE_POWER(n, " reads processed");
 
 		}
