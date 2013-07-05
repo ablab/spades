@@ -205,7 +205,7 @@ class DeBruijnEdgeIndex : public Index {
         writer.write((char*)&sz, sizeof(sz));
         for (size_t i = 0; i < sz; ++i)
             writer.write((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
-        traits_t::raw_serialize(writer, base::kmers);
+        BinWriteKmers(writer);
     }
 
     //todo WTF???!!!
@@ -218,7 +218,7 @@ class DeBruijnEdgeIndex : public Index {
         this->data_.resize(sz);
         for (size_t i = 0; i < sz; ++i)
             reader.read((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
-        this->kmers = traits_t::raw_deserialize(reader, FileName);
+        BinReadKmers(reader, FileName);
     }
 
 };
@@ -228,6 +228,17 @@ template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_tr
 class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> {
     typedef DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> base;
     const Graph &graph_;
+
+ protected:
+    template<class Writer>
+    void BinWriteKmers(Writer &writer) const {
+        //empty
+    }
+
+    template<class Reader>
+    void BinReadKmers(Reader &reader, const std::string &FileName) {
+        this->kmers = NULL;
+    }
 
   public:
     typedef typename base::traits_t traits_t;
@@ -355,6 +366,18 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Gra
 template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq>>
 class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> {
   typedef DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> base;
+
+ protected:
+  template<class Writer>
+  void BinWriteKmers(Writer &writer) const {
+      traits_t::raw_serialize(writer, this->kmers);
+  }
+
+  template<class Reader>
+  void BinReadKmers(Reader &reader, const std::string &FileName) {
+      this->kmers = traits_t::raw_deserialize(reader, FileName);
+  }
+
  public:
   typedef typename base::traits_t traits_t;
   typedef typename base::KMer KMer;
@@ -465,6 +488,7 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename 
 //    }
 //    base::kmers = traits::raw_deserialize(reader, FileName);
 //  }
+
 
   void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
     size_t idx = base::seq_idx(kmer);
