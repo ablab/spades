@@ -26,93 +26,77 @@
 
 namespace debruijn_graph {
 
-//template <class Seq>
-//class DeBruijnKMerIndexBuilder;
-
-template<class ValueType, class traits>
-class DeBruijnKMerIndex {
-  static const size_t InvalidKMerIdx = SIZE_MAX;
+//todo make better hierarchy
+template<class K, class V, class traits>
+class PerfectHashMap {
+  static const size_t InvalidIdx = SIZE_MAX;
  public:
-  typedef traits traits_t;
-  typedef typename traits::SeqType KMer;
-  typedef size_t KMerIdx;
+  typedef size_t IdxType;
+  typedef K KeyType;
+  typedef V ValueType;
 
  private:
-  unsigned K_;
   std::string workdir_;
   //fixme access levels!!! (this section used to be protected)
  public:
-  typedef KMerIndex<traits>        KMerIndexT;
-  KMerIndexT index_;
-  typedef ValueType KMerIndexValueType;
-  typedef std::vector<KMerIndexValueType> KMerIndexStorageType;
-  KMerIndexStorageType data_;
-  typename traits::FinalKMerStorage *kmers;
-  //fixme used in extension index only
-  std::string KMersFilename_;
+  typedef KMerIndex<traits>        IndexT;
+  IndexT index_;
+  typedef std::vector<V> StorageT;
+  StorageT data_;
 
-  bool valid_idx(KMerIdx idx) const {
-      return idx != InvalidKMerIdx && idx < size();
+  bool valid_idx(IdxType idx) const {
+      return idx != InvalidIdx && idx < size();
   }
 
  public:
-  typedef typename KMerIndexStorageType::iterator value_iterator;
-  typedef typename KMerIndexStorageType::const_iterator const_value_iterator;
-  typedef typename traits::FinalKMerStorage::iterator kmer_iterator;
-  typedef typename traits::FinalKMerStorage::const_iterator const_kmer_iterator;
+  typedef typename StorageT::iterator value_iterator;
+  typedef typename StorageT::const_iterator const_value_iterator;
 
-
-  DeBruijnKMerIndex(unsigned K, const std::string &workdir)
-      : K_(K), index_(K), kmers(NULL), KMersFilename_("") {
+  PerfectHashMap(/*size_t k, */const std::string &workdir)
+      /*: index_(k)*/ {
+    //fixme string literal
     workdir_ = path::make_temp_dir(workdir, "kmeridx");
   }
-  ~DeBruijnKMerIndex() {
-    delete kmers;
+
+  ~PerfectHashMap() {
     path::remove_dir(workdir_);
   }
 
   void clear() {
     index_.clear();
     data_.clear();
-    KMerIndexStorageType().swap(data_);
-    delete kmers;
-    kmers = NULL;
+    StorageT().swap(data_);
   }
 
-  unsigned K() const { return K_; }
-
-  const KMerIndexValueType &operator[](KMerIdx idx) const {
+  const V &operator[](IdxType idx) const {
     return data_[idx];
   }
 
-  KMerIndexValueType &operator[](const KMer &s) {
-    return operator[](index_.seq_idx(s));
+  V &operator[](const K &k) {
+    return operator[](index_.seq_idx(k));
   }
 
-  const KMerIndexValueType &operator[](const KMer &s) const {
-    return operator[](index_.seq_idx(s));
+  const V &operator[](const K &k) const {
+    return operator[](index_.seq_idx(k));
   }
 
-  KMerIndexValueType &operator[](KMerIdx idx) {
+  V &operator[](IdxType idx) {
     return data_[idx];
   }
 
-  KMerIdx seq_idx(const KMer &s) const {
-    size_t idx = index_.seq_idx(s);
+  IdxType seq_idx(const K &k) const {
+    size_t idx = index_.seq_idx(k);
 
     if (idx < size())
       return idx;
 
-    return InvalidKMerIdx;
+    return InvalidIdx;
   }
 
-//  bool contains(KMerIdx idx) const {
-//    return idx < size();
-//  }
-
  protected:
-  size_t raw_seq_idx(const typename KMerIndexT::KMerRawReference s) const {
-	return index_.raw_seq_idx(s);
+  //todo ask AntonK what it is...
+  size_t raw_seq_idx(const typename IndexT::KMerRawReference s) const {
+    return index_.raw_seq_idx(s);
   }
  public:
 
@@ -137,6 +121,72 @@ class DeBruijnKMerIndex {
     return data_.cend();
   }
 
+  template<class Writer>
+  void BinWrite(Writer &writer) const {
+    index_.serialize(writer);
+    size_t sz = data_.size();
+    writer.write((char*)&sz, sizeof(sz));
+    writer.write((char*)&data_[0], sz * sizeof(data_[0]));
+  }
+
+  template<class Reader>
+  void BinRead(Reader &reader, const std::string &FileName) {
+    clear();
+    index_.deserialize(reader);
+    size_t sz = 0;
+    reader.read((char*)&sz, sizeof(sz));
+    data_.resize(sz);
+    reader.read((char*)&data_[0], sz * sizeof(data_[0]));
+  }
+
+  const std::string &workdir() const {
+    return workdir_;
+  }
+
+};
+
+template<class ValueType, class traits>
+class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueType, traits> {
+  typedef PerfectHashMap<typename traits::SeqType, ValueType, traits> base;
+
+ protected:
+  template<class Writer>
+  void BinWriteKmers(Writer &writer) const {
+      traits_t::raw_serialize(writer, this->kmers);
+  }
+
+  template<class Reader>
+  void BinReadKmers(Reader &reader, const std::string &FileName) {
+      this->kmers = traits_t::raw_deserialize(reader, FileName);
+  }
+
+ public:
+  typedef typename base::traits_t traits_t;
+  typedef typename base::KeyType KMer;
+  typedef typename base::IdxType KMerIdx;
+  typedef typename traits::FinalKMerStorage::iterator kmer_iterator;
+  typedef typename traits::FinalKMerStorage::const_iterator const_kmer_iterator;
+
+ private:
+  unsigned K_;
+  //fixme access levels!!! (this section used to be protected)
+ public:
+  typename traits::FinalKMerStorage *kmers;
+  //fixme used in extension index only
+  std::string KMersFilename_;
+
+  KmerStoringIndex(size_t K, const std::string &workdir)
+          : base(workdir), K_(K), kmers(NULL), KMersFilename_("") {}
+
+  ~KmerStoringIndex() {
+    delete kmers;
+  }
+
+  void clear() {
+    base::clear();
+    kmers = NULL;
+  }
+
   kmer_iterator kmer_begin() {
     return kmers->begin();
   }
@@ -155,34 +205,117 @@ class DeBruijnKMerIndex {
   }
 
   KMerIdx kmer_idx_end() const {
-    return data_.size();
+    return base::size();
+  }
+
+  unsigned K() const { return K_; }
+
+  bool contains(KMerIdx idx, const KMer &k) const {
+      if (!valid_idx(idx))
+        return false;
+
+      auto it = this->kmers->begin() + idx;
+      return (typename traits::raw_equal_to()(k, *it));
+  }
+
+  bool contains(const KMer& kmer) const {
+      KMerIdx idx = seq_idx(kmer);
+      return contains(idx, kmer);
+  }
+
+  KMer kmer(typename base::KMerIdx idx) const {
+      VERIFY(valid_idx(idx));
+
+      auto it = this->kmers->begin() + idx;
+      return (typename traits::raw_create()(this->K(), *it));
   }
 
   template<class Writer>
   void BinWrite(Writer &writer) const {
-    index_.serialize(writer);
-    size_t sz = data_.size();
-    writer.write((char*)&sz, sizeof(sz));
-    writer.write((char*)&data_[0], sz * sizeof(data_[0]));
-    traits::raw_serialize(writer, kmers);
+    base::BinWrite(writer);
+    BinWriteKmers(writer);
   }
 
   template<class Reader>
   void BinRead(Reader &reader, const std::string &FileName) {
-    clear();
-    index_.deserialize(reader);
-    size_t sz = 0;
-    reader.read((char*)&sz, sizeof(sz));
-    data_.resize(sz);
-    reader.read((char*)&data_[0], sz * sizeof(data_[0]));
-    kmers = traits::raw_deserialize(reader, FileName);
-  }
-
-  const std::string &workdir() const {
-    return workdir_;
+    base::BinRead(reader, FileName);
+    BinReadKmers(reader, FileName);
   }
 
 };
+
+//template<class ValueType, class traits>
+//class DeBruijnKMerIndex : public PerfectHashMap<typename traits::SeqType, ValueType, traits> {
+// public:
+//  typedef PerfectHashMap<typename traits::SeqType, ValueType, traits> base;
+//  typedef traits traits_t;
+//  typedef typename traits::SeqType KMer;
+//  typedef size_t KMerIdx;
+//
+// private:
+//  unsigned K_;
+//  //fixme access levels!!! (this section used to be protected)
+// public:
+//  typename traits::FinalKMerStorage *kmers;
+//  //fixme used in extension index only
+//  std::string KMersFilename_;
+//
+// public:
+//  typedef typename traits::FinalKMerStorage::iterator kmer_iterator;
+//  typedef typename traits::FinalKMerStorage::const_iterator const_kmer_iterator;
+//
+//
+//  DeBruijnKMerIndex(unsigned K, const std::string &workdir)
+//      : base(workdir), K_(K), kmers(NULL), KMersFilename_("") {
+//  }
+//
+//  ~DeBruijnKMerIndex() {
+//    delete kmers;
+//  }
+//
+//  void clear() {
+//    base::clear();
+//    kmers = NULL;
+//  }
+//
+//  unsigned K() const { return K_; }
+//
+// public:
+//
+//  kmer_iterator kmer_begin() {
+//    return kmers->begin();
+//  }
+//  const_kmer_iterator kmer_begin() const {
+//    return kmers->cbegin();
+//  }
+//  kmer_iterator kmer_end() {
+//    return kmers->end();
+//  }
+//  const_kmer_iterator kmer_end() const {
+//    return kmers->cend();
+//  }
+//
+//  KMerIdx kmer_idx_begin() const {
+//    return 0;
+//  }
+//
+//  KMerIdx kmer_idx_end() const {
+//    return base::size();
+//  }
+//
+//  template<class Writer>
+//  void BinWrite(Writer &writer) const {
+//    base::BinWrite(writer);
+//    traits::raw_serialize(writer, kmers);
+//  }
+//
+//  template<class Reader>
+//  void BinRead(Reader &reader, const std::string &FileName) {
+//    base::BinRead(reader, FileName);
+//    kmers = traits::raw_deserialize(reader, FileName);
+//  }
+//
+//};
 
 //todo rename
 template <class Index>
@@ -235,7 +368,7 @@ class InnerDeBruijnTotallyKMerFreeIndexBuilder {
 
   template <class KmerCounter>
   size_t BuildIndex(Index &index, KmerCounter& counter) const {
-      KMerIndexBuilder<typename Index::KMerIndexT> builder(index.workdir(), 16, counter.recommended_thread_num());
+      KMerIndexBuilder<typename Index::IndexT> builder(index.workdir(), 16, counter.recommended_thread_num());
 
       size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
       index.data_.resize(sz);

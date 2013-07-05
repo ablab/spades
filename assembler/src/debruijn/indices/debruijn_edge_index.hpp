@@ -23,6 +23,7 @@ struct EdgeInfo {
 };
 
 //fixme name
+//todo reduce number of template parameters
 template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq>>
 class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> {
     typedef DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> base;
@@ -58,7 +59,7 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Gra
         if (!valid_idx(idx))
             return false;
 
-        const typename base::KMerIndexValueType &entry = base::operator[](idx);
+        const typename base::ValueType &entry = base::operator[](idx);
 
         if (entry.offset == -1u)
             return false;
@@ -66,9 +67,14 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Gra
         return k == KMer(this->K(), graph_.EdgeNucls(entry.edge_id), entry.offset);
     }
 
+    bool contains(const KMer& kmer) const {
+        KMerIdx idx = seq_idx(kmer);
+        return contains(idx, kmer);
+    }
+
     KMer kmer(typename base::KMerIdx idx) const {
         VERIFY(valid_idx(idx));
-        const typename base::KMerIndexValueType &entry = base::operator[](idx);
+        const typename base::ValueType &entry = base::operator[](idx);
         VERIFY(entry.offset != -1u);
         return KMer(this->K(), graph_.EdgeNucls(entry.edge_id), entry.offset);
     }
@@ -91,21 +97,112 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Gra
 
 };
 
+////fixme name
+//template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq>>
+//class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> {
+//  typedef DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> base;
+//
+// protected:
+//  template<class Writer>
+//  void BinWriteKmers(Writer &writer) const {
+//      traits_t::raw_serialize(writer, this->kmers);
+//  }
+//
+//  template<class Reader>
+//  void BinReadKmers(Reader &reader, const std::string &FileName) {
+//      this->kmers = traits_t::raw_deserialize(reader, FileName);
+//  }
+//
+// public:
+//  typedef typename base::traits_t traits_t;
+//  typedef typename base::KMer KMer;
+//  typedef typename base::KMerIdx KMerIdx;
+//  typedef Graph GraphT;
+//  typedef typename Graph::EdgeId IdType;
+//  typedef InnerDeBruijnKMerStoringIndexBuilder<KmerStoringDeBruijnEdgeIndex> BuilderT;
+//
+//  KmerStoringDeBruijnEdgeIndex(unsigned K, const Graph& , const std::string &workdir)
+//          : base(K, workdir) {}
+//
+//  ~KmerStoringDeBruijnEdgeIndex() {}
+//
+//  bool contains(KMerIdx idx, const KMer &k) const {
+//      if (!valid_idx(idx))
+//        return false;
+//
+//      auto it = this->kmers->begin() + idx;
+//      return (typename traits::raw_equal_to()(k, *it));
+//  }
+//
+//  KMer kmer(typename base::KMerIdx idx) const {
+//      VERIFY(valid_idx(idx));
+//
+//      auto it = this->kmers->begin() + idx;
+//      return (typename traits::raw_create()(this->K(), *it));
+//  }
+//
+//// todo discuss with AntonK old strange version?
+////  template<class Writer>
+////  void BinWrite(Writer &writer) const {
+////    base::index_.serialize(writer);
+////    size_t sz = base::data_.size();
+////    writer.write((char*)&sz, sizeof(sz));
+////    for (size_t i = 0; i < sz; ++i)
+////      writer.write((char*)&(base::data_[i].count_), sizeof(base::data_[0].count_));
+////    sz = base::push_back_buffer_.size();
+////    writer.write((char*)&sz, sizeof(sz));
+////    for (size_t i = 0; i < sz; ++i)
+////      writer.write((char*)&(base::push_back_buffer_[i].count_), sizeof(base::push_back_buffer_[0].count_));
+////    for (auto it = base::push_back_index_.left.begin(), e = base::push_back_index_.left.end(); it != e; ++it) {
+////      size_t idx = it->second;
+////      KMer::BinWrite(writer, it->first);
+////      writer.write((char*)&idx, sizeof(idx));
+////      sz -= 1;
+////    }
+////    VERIFY(sz == 0);
+////    traits::raw_serialize(writer, base::kmers);
+////  }
+////
+////  template<class Reader>
+////  void BinRead(Reader &reader, const std::string &FileName) {
+////    base::clear();
+////    base::index_.deserialize(reader);
+////    size_t sz = 0;
+////    reader.read((char*)&sz, sizeof(sz));
+////    base::data_.resize(sz);
+////    for (size_t i = 0; i < sz; ++i)
+////      reader.read((char*)&(base::data_[i].count_), sizeof(base::data_[0].count_));
+////    reader.read((char*)&sz, sizeof(sz));
+////    base::push_back_buffer_.resize(sz);
+////    for (size_t i = 0; i < sz; ++i)
+////      reader.read((char*)&(base::push_back_buffer_[i].count_), sizeof(base::push_back_buffer_[0].count_));
+////    for (size_t i = 0; i < sz; ++i) {
+////      KMer s(base::K_);
+////      size_t idx;
+////
+////      s.BinRead(reader);
+////      reader.read((char*)&idx, sizeof(idx));
+////
+////      base::push_back_index_.insert(typename base::KMerPushBackIndexType::value_type(s, idx));
+////    }
+////    base::kmers = traits::raw_deserialize(reader, FileName);
+////  }
+//
+//
+//  void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
+//    size_t idx = base::seq_idx(kmer);
+//    if (base::contains(idx, kmer)) {
+//      EdgeInfo<IdType> &entry = base::operator[](idx);
+//      entry.edge_id = id;
+//      entry.offset = offset;
+//    }
+//  }
+//};
+
 //fixme name
 template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq>>
-class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> {
-  typedef DeBruijnKMerIndex<EdgeInfo<typename Graph::EdgeId>, traits> base;
-
- protected:
-  template<class Writer>
-  void BinWriteKmers(Writer &writer) const {
-      traits_t::raw_serialize(writer, this->kmers);
-  }
-
-  template<class Reader>
-  void BinReadKmers(Reader &reader, const std::string &FileName) {
-      this->kmers = traits_t::raw_deserialize(reader, FileName);
-  }
+class KmerStoringDeBruijnEdgeIndex : public KmerStoringIndex<EdgeInfo<typename Graph::EdgeId>, traits> {
+  typedef KmerStoringIndex<EdgeInfo<typename Graph::EdgeId>, traits> base;
 
  public:
   typedef typename base::traits_t traits_t;
@@ -115,25 +212,10 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename 
   typedef typename Graph::EdgeId IdType;
   typedef InnerDeBruijnKMerStoringIndexBuilder<KmerStoringDeBruijnEdgeIndex> BuilderT;
 
-  KmerStoringDeBruijnEdgeIndex(unsigned K, const Graph& , const std::string &workdir)
+  KmerStoringDeBruijnEdgeIndex(size_t K, const Graph& , const std::string &workdir)
           : base(K, workdir) {}
 
   ~KmerStoringDeBruijnEdgeIndex() {}
-
-  bool contains(KMerIdx idx, const KMer &k) const {
-      if (!valid_idx(idx))
-        return false;
-
-      auto it = this->kmers->begin() + idx;
-      return (typename traits::raw_equal_to()(k, *it));
-  }
-
-  KMer kmer(typename base::KMerIdx idx) const {
-      VERIFY(valid_idx(idx));
-
-      auto it = this->kmers->begin() + idx;
-      return (typename traits::raw_create()(this->K(), *it));
-  }
 
 // todo discuss with AntonK old strange version?
 //  template<class Writer>
@@ -209,11 +291,6 @@ class DeBruijnEdgeIndex : public Index {
 
     DeBruijnEdgeIndex(unsigned K, const GraphT &graph, const std::string &workdir)
             : base(K, graph, workdir) {}
-
-    bool contains(const KMer& kmer) const {
-        KMerIdx idx = seq_idx(kmer);
-        return contains(idx, kmer);
-    }
 
     //todo why do we need to check equality???!!!
     bool DeleteIfEqual(const KMer &kmer, EdgeId e) {
@@ -302,133 +379,6 @@ class DeBruijnEdgeIndex : public Index {
         BinReadKmers(reader, FileName);
     }
 
-};
-
-template <class Builder>
-class GraphPositionFillingIndexBuilder : public Builder {
-    typedef Builder base;
-public:
-    typedef typename Builder::IndexT IndexT;
-    typedef typename IndexT::KMer Kmer;
-    typedef typename IndexT::GraphT GraphT;
-
-    void BuildIndexFromGraph(IndexT &index,
-                             const GraphT &g) const {
-        base::BuildIndexFromGraph(index, g);
-
-        // Now use the index to fill the coverage and EdgeId's
-        INFO("Collecting k-mer coverage information from graph, this takes a while.");
-        EdgeInfoUpdater<IndexT> updater(g, index);
-        updater.UpdateAll();
-    }
-
-};
-
-template <class Builder>
-class CoverageFillingEdgeIndexBuilder : public Builder {
-    typedef Builder base;
- public:
-    typedef typename Builder::IndexT IndexT;
-    typedef typename IndexT::KMer Kmer;
-    typedef typename IndexT::GraphT GraphT;
-
-    template<class ReadStream>
-    size_t FillCoverageFromStream(ReadStream &stream,
-                                  IndexT &index) const {
-        unsigned K = index.K();
-        size_t rl = 0;
-
-        while (!stream.eof()) {
-            typename ReadStream::read_type r;
-            stream >> r;
-            rl = std::max(rl, r.size());
-
-            const Sequence &seq = r.sequence();
-            if (seq.size() < K)
-                continue;
-
-            Kmer kmer = seq.start<Kmer>(K);
-
-            size_t idx = index.seq_idx(kmer);
-            if (index.contains(idx, kmer)) {
-#   pragma omp atomic
-                index[idx].count += 1;
-            }
-            for (size_t j = K; j < seq.size(); ++j) {
-                kmer <<= seq[j];
-                idx = index.seq_idx(kmer);
-                if (index.contains(idx, kmer)) {
-#     pragma omp atomic
-                    index[idx].count += 1;
-                }
-            }
-        }
-
-        return rl;
-    }
-
-    template<class Streams>
-    size_t ParallelFillCoverage(IndexT &index,
-                                Streams &streams,
-                                SingleReadStream* contigs_stream = 0) const {
-        INFO("Collecting k-mer coverage information from reads, this takes a while.");
-
-        unsigned nthreads = streams.size();
-        size_t rl = 0;
-        streams.reset();
-#pragma omp parallel for num_threads(nthreads) shared(rl)
-        for (size_t i = 0; i < nthreads; ++i) {
-            size_t crl = FillCoverageFromStream(streams[i], index);
-
-            // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
-#pragma omp flush(rl)
-            if (crl > rl)
-#pragma omp critical
-            {
-                rl = std::max(rl, crl);
-            }
-        }
-
-        // Contigs have zero coverage!
-#if 0
-        if (contigs_stream) {
-            contigs_stream->reset();
-            FillCoverageFromStream(*contigs_stream, index);
-        }
-#endif
-
-#ifndef NDEBUG
-        for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
-             idx != eidx; ++idx) {
-
-            runtime_k::RtSeq k = index.kmer(idx);
-
-            VERIFY(index[k].count == index[!k].count);
-        }
-#endif
-        return rl;
-    }
-
- public:
-
-    template<class Streams>
-    size_t BuildIndexFromStream(IndexT &index,
-                                /*io::ReadStreamVector<io::IReader<Read> >*/Streams &streams,
-                                SingleReadStream* contigs_stream = 0) const {
-        base::BuildIndexFromStream(index, streams, contigs_stream);
-
-        return ParallelFillCoverage(index, streams, contigs_stream);
-    }
-
-    template<class Streams>
-    size_t BuildIndexWithCoverageFromGraph(
-            GraphT &graph, IndexT &index,
-            /*io::ReadStreamVector<io::IReader<Read> >*/Streams &streams,
-            SingleReadStream* contigs_stream = 0) const {
-        BuildIndexFromGraph(index, graph);
-
-        return ParallelFillCoverage(index, streams, contigs_stream);
-    }
 };
 
 }

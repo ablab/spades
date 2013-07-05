@@ -13,26 +13,9 @@
 
 #include "debruijn_graph.hpp"
 #include "standard.hpp"
-#include "indices/debruijn_edge_index.hpp"
+#include "indices/edge_index_builders.hpp"
 
 namespace debruijn_graph {
-
-template<class Index>
-struct NewEdgeIndexHelper {
-    typedef Index IndexT;
-    typedef typename IndexT::GraphT GraphT;
-    typedef typename IndexT::KMer Kmer;
-    typedef typename IndexT::KMerIdx KMerIdx;
-    typedef typename Index::InnerIndexT InnerIndexT;
-    typedef typename InnerIndexT::traits_t traits_t;
-    typedef typename InnerIndexT::IdType IdType;
-    typedef typename InnerIndexT::BuilderT BuilderT;
-    typedef DeBruijnKMerIndexBuilder<Kmer, BuilderT> DeBruijnKMerIndexBuilderT;
-    typedef DeBruijnGraphKMerIndexBuilder<DeBruijnKMerIndexBuilderT> DeBruijnGraphKMerIndexBuilderT;
-    typedef GraphPositionFillingIndexBuilder<DeBruijnGraphKMerIndexBuilderT> GraphPositionFillingIndexBuilderT;
-    typedef CoverageFillingEdgeIndexBuilder<DeBruijnGraphKMerIndexBuilderT> CoverageFillingEdgeIndexBuilderT;
-    typedef CoverageFillingEdgeIndexBuilder<GraphPositionFillingIndexBuilderT> CoverageAndGraphPositionFillingIndexBuilderT;
-};
 
 /**
  * EdgeIndex is a structure to store info about location of certain k-mers in graph. It delegates all
@@ -119,11 +102,8 @@ public:
 
     void Refill() {
         clear();
-        typedef typename InnerIndexT::BuilderT BuilderT;
-        typedef DeBruijnKMerIndexBuilder<KMer, BuilderT> DeBruijnKMerIndexBuilderT;
-        typedef DeBruijnGraphKMerIndexBuilder<DeBruijnKMerIndexBuilderT> DeBruijnGraphKMerIndexBuilderT;
-        typedef GraphPositionFillingIndexBuilder<DeBruijnGraphKMerIndexBuilderT> GraphPositionFillingIndexBuilderT;
-        GraphPositionFillingIndexBuilderT().BuildIndexFromGraph(inner_index_, this->g());
+        typedef typename EdgeIndexHelper<InnerIndexT>::GraphPositionFillingIndexBuilderT IndexBuilder;
+        IndexBuilder().BuildIndexFromGraph(inner_index_, this->g());
         //Update();
     }
 

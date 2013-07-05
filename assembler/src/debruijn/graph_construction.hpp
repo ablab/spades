@@ -20,7 +20,7 @@
 #include "omni/edges_position_handler.hpp"
 
 #include "debruijn_graph_constructor.hpp"
-#include "indices/debruijn_edge_index.hpp"
+#include "indices/edge_index_builders.hpp"
 #include "debruijn_graph.hpp"
 #include "graphio.hpp"
 #include "graph_pack.hpp"
@@ -145,7 +145,7 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 
 	TRACE("... in parallel");
 	typedef typename Index::InnerIndexT InnerIndex;
-	typedef typename NewEdgeIndexHelper<Index>::CoverageFillingEdgeIndexBuilderT IndexBuilder;
+	typedef typename EdgeIndexHelper<InnerIndex>::CoverageFillingEdgeIndexBuilderT IndexBuilder;
 	InnerIndex& debruijn = index.inner_index();
 	rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, contigs_stream);
 
@@ -199,7 +199,7 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 	index.Attach();
 
     typedef typename Index::InnerIndexT InnerIndex;
-    typedef typename NewEdgeIndexHelper</*Inner*/Index>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
+    typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
 	INFO("Building index with coverage from graph")
 	IndexBuilder().BuildIndexWithCoverageFromGraph(g, index.inner_index(), streams, contigs_stream);
 	return rl;
