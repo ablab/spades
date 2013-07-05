@@ -236,9 +236,9 @@ public:
 	}
 
     struct KPlusOneMer {
-        typename Index::KmerWithHash kmer;
+        KmerWithHash<Kmer> kmer;
         char next;
-        KPlusOneMer(typename Index::KmerWithHash _kmer, char _next) : kmer(_kmer), next(_next) {
+        KPlusOneMer(KmerWithHash<Kmer> _kmer, char _next) : kmer(_kmer), next(_next) {
         }
 
         bool operator==(const KPlusOneMer &other) {
@@ -252,7 +252,7 @@ public:
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 		// VERIFY(origin_.contains(edge));
-		typename Index::KmerWithHash next_vertex = origin_.CreateKmerWithHash(edge.kmer.kmer << edge.next);
+		KmerWithHash<Kmer> next_vertex = origin_.CreateKmerWithHash(edge.kmer.kmer << edge.next);
 		if (origin_.CheckUniqueOutgoing(next_vertex.idx) && origin_.CheckUniqueIncoming(next_vertex.idx)) {
 			edge = KPlusOneMer(next_vertex, origin_.GetUniqueOutgoing(next_vertex.idx));
 			return true;
@@ -278,7 +278,7 @@ public:
 		return ConstructSeqGoingRight(edge);
 	}
 
-	Sequence ConstructLoopFromVertex(typename Index::KmerWithHash kh) {
+	Sequence ConstructLoopFromVertex(KmerWithHash<Kmer> kh) {
 		KPlusOneMer kpom(kh, origin_.GetUniqueOutgoing(kh.idx));
 		Sequence result = ConstructSequenceWithEdge(kpom);
 		if (clean_condenced_)
@@ -298,14 +298,14 @@ private:
 	size_t kmer_size_;
 	bool clean_condenced_;
 
-	bool IsJunction(typename Index::KmerWithHash kh) {
+	bool IsJunction(KmerWithHash<Kmer> kh) {
 		return !(origin_.CheckUniqueOutgoing(kh.idx) && origin_.CheckUniqueIncoming(kh.idx));
 	}
 
 	void AddKmers(kmer_iterator &it, size_t queueSize,
                   std::vector<KPlusOneMer>& kmers) {
 		for (; kmers.size() != queueSize && it.good(); ++it) {
-			typename Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, *it));
+		    KmerWithHash<Kmer> kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, *it));
 			if (IsJunction(kh)) {
 				for (char next = 0; next < 4; next++) {
 					if (origin_.CheckOutgoing(kh.idx, next)) {
@@ -341,10 +341,10 @@ private:
 		UnbranchingPathFinder finder(origin_, kmer_size_, true);
 		std::vector<Sequence> result;
 		for (kmer_iterator it = origin_.kmer_begin(); it.good(); ++it) {
-			typename Index::KmerWithHash kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, *it));
+			KmerWithHash<Kmer> kh = origin_.CreateKmerWithHash(Kmer(kmer_size_, *it));
 			if (!IsJunction(kh)) {
 				result.push_back(finder.ConstructLoopFromVertex(kh));
-				typename Index::KmerWithHash rc_kh = origin_.CreateKmerWithHash(!kh.kmer);
+				KmerWithHash<Kmer> rc_kh = origin_.CreateKmerWithHash(!kh.kmer);
 				if (!IsJunction(rc_kh)) {
 					result.push_back(finder.ConstructLoopFromVertex(rc_kh));
 				}

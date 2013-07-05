@@ -187,7 +187,7 @@ class DeBruijnKMerIndex {
 };
 
 //todo rename
-template <class traits, class Index>
+template <class Index>
 class InnerDeBruijnKMerStoringIndexBuilder {
 
   void SortUniqueKMers(Index &index) const {
@@ -254,11 +254,11 @@ class InnerDeBruijnKMerStoringIndexBuilder {
 
 //that seems to nullify the kmers link itself. Was used with slim traints (and extension index) only!
 //todo maybe here should be specialization for slim traits (as it used to be), otherwise remove traits template parameter
-template <class traits, class Index>
+template <class Index>
 class InnerDeBruijnTotallyKMerFreeIndexBuilder {
  public:
   typedef Index IndexT;
-  //todo WTF?! what is wrong with return value?!
+
   template <class KmerCounter>
   size_t BuildIndex(Index &index, KmerCounter& counter) const {
       KMerIndexBuilder<typename Index::KMerIndexT> builder(index.workdir(), 16, counter.recommended_thread_num());

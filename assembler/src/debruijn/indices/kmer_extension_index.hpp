@@ -64,7 +64,7 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
     typedef typename base::traits_t traits_t;
     typedef typename base::KMer KMer;
     typedef typename base::KMerIdx KMerIdx;
-    typedef InnerDeBruijnTotallyKMerFreeIndexBuilder<traits, DeBruijnExtensionIndex> BuilderT;
+    typedef InnerDeBruijnTotallyKMerFreeIndexBuilder<DeBruijnExtensionIndex> BuilderT;
 
     //    typedef KMerIndex<traits>        KMerIndexT;
 
@@ -173,11 +173,10 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
 
     ~DeBruijnExtensionIndex() {}
 
-    KmerWithHash CreateKmerWithHash(KMer kmer) const {
-        return KmerWithHash(kmer, seq_idx(kmer));
+    KmerWithHash<KMer> CreateKmerWithHash(KMer kmer) const {
+        return KmerWithHash<KMer>(kmer, seq_idx(kmer));
     }
 
-    friend class DeBruijnExtensionIndexBuilder;
 };
 
 //template <>
@@ -315,7 +314,6 @@ class DeBruijnExtensionIndexBuilder : public Builder {
                                 SingleReadStream* contigs_stream = 0) const {
         unsigned nthreads = streams.size();
 
-        //todo it returns read length
         BuildIndexFromStream(index, streams, contigs_stream);
 
         // Now use the index to fill the coverage and EdgeId's

@@ -332,5 +332,4 @@ class MMappedFileRecordArrayIterator :
     bool good_;
 };
 
-
 #endif // HAMMER_MMAPPED_READER_HPP

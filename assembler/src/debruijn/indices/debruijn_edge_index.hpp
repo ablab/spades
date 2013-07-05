@@ -235,7 +235,7 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Gra
     typedef typename base::KMerIdx KMerIdx;
     typedef Graph GraphT;
     typedef typename Graph::EdgeId IdType;
-    typedef InnerDeBruijnTotallyKMerFreeIndexBuilder<traits, KmerFreeDeBruijnEdgeIndex> BuilderT;
+    typedef InnerDeBruijnTotallyKMerFreeIndexBuilder<KmerFreeDeBruijnEdgeIndex> BuilderT;
 
     KmerFreeDeBruijnEdgeIndex(unsigned K, const Graph &graph, const std::string &workdir)
             : base(K, workdir), graph_(graph) {}
@@ -361,7 +361,7 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename 
   typedef typename base::KMerIdx KMerIdx;
   typedef Graph GraphT;
   typedef typename Graph::EdgeId IdType;
-  typedef InnerDeBruijnKMerStoringIndexBuilder<traits, KmerStoringDeBruijnEdgeIndex> BuilderT;
+  typedef InnerDeBruijnKMerStoringIndexBuilder<KmerStoringDeBruijnEdgeIndex> BuilderT;
 
   KmerStoringDeBruijnEdgeIndex(unsigned K, const Graph& , const std::string &workdir)
           : base(K, workdir) {}
