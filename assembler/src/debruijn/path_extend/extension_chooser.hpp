@@ -698,7 +698,7 @@ private:
         	auto positions = (*it)->FindAll(e);
         	if (positions.size() > 1) return false;
         	for (auto jit = it; jit!= supporting_paths.end(); jit ++) {
-            	auto j_positions = (*it)->FindAll(e);
+            	auto j_positions = (*jit)->FindAll(e);
             	if (j_positions.size() > 1) return false;
             	double w1 = (*it)->getWeight();
             	double w2 = (*it)->getWeight();
@@ -730,6 +730,8 @@ private:
     	DEBUG("running consistent path");
     	path.Print();
     	cov_path.Print();
+    	DEBUG(pos <<" " << path.Size());
+    	DEBUG(cov_pos <<" " << cov_path.Size());
     	int cur_pos1 = pos;
     	int cur_pos2 = cov_pos;
     	while (cur_pos1 >= 0 && cur_pos2 >=0){
