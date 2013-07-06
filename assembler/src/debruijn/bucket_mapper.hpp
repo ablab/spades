@@ -282,18 +282,24 @@ namespace debruijn_graph {
 		double GetProbablityFromBucketToBucketForDistance ( bucket_id id_from, bucket_id id_to, int distance, int shift ) {
 
 			double res = 0;
+
+			//std::cout << "search in cache" << std::endl;
 			res = CacheSearch (distance, shift, id_from, id_to);
 
 			if (res != -1.0) return res;
+			//std::cout << "not found" << std::endl;
 
 			std::vector< std::vector<double> > bucket_to_bucket;
+			std::cout << "buckets are updated..." << std::endl;
 			for ( unsigned id = 0; id < bucketNum_; ++id ) {
-			
+				
+				//std::cout << "id: " << id << std::endl;
 				std::vector<double> histogram(bucketNum_,0);
 				SetBucketsForDistance (  id, distance, histogram );
 				bucket_to_bucket.push_back(histogram);
 			}
 
+			//std::cout << "buckets updated" << std::endl;
 
 			UpdateCache(distance,bucket_to_bucket);
 

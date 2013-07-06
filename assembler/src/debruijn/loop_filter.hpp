@@ -277,11 +277,12 @@ namespace debruijn_graph {
 
 			if (ifSimple) std::cout << "simple: " << std::endl;
 			else std::cout << "complex: " << std::endl;
+			/*if (ifSimple)
 			for ( auto e = path.begin(); e != path.end(); ++e) {
 				prohibitedEdges.insert(*e);
 				std::cout << graph_p->g.int_id(*e) << "  ";
 			
-			}
+			}*/
 			std::cout << std::endl;
 			return ifSimple;
 

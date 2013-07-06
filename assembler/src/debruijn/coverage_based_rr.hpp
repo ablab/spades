@@ -92,21 +92,21 @@ class CoverageBasedResolution {
 				continue;
 			}
 
-			INFO("path before");
+			/*INFO("path before");
 			for ( auto e = path->begin(); e != path->end(); ++e ){
 				std::cout << gp->g.int_id(*e) <<  " ";
 			}
-			std::cout << std::endl;
+			std::cout << std::endl; */
 			bool updated = true;
 			while (updated) {
 				
 				auto foundPath = startEdgeToPath.find( path->back() );
 				if (foundPath != startEdgeToPath.end() ) {
-					INFO("found path before");
-					for ( auto e = foundPath->second.begin(); e != foundPath->second.end(); ++e ){
+					//INFO("found path before");
+					/*for ( auto e = foundPath->second.begin(); e != foundPath->second.end(); ++e ){
 						std::cout << gp->g.int_id(*e) <<  " ";
 					}
-					std::cout << std::endl;
+					std::cout << std::endl;*/
 					path->insert(path->end(), foundPath->second.begin() + 1, foundPath->second.end());
 				}
 
@@ -115,11 +115,11 @@ class CoverageBasedResolution {
 				}
 
 			}
-			INFO("path after");
+			/*INFO("path after");
 			for ( auto e = path->begin(); e != path->end(); ++e ){
 				std::cout << gp->g.int_id(*e) <<  " ";
 			}
-			std::cout << std::endl;
+			std::cout << std::endl;*/
 			allPaths.push_back(*path);
 		}
 		INFO("out of path joining");
@@ -220,7 +220,7 @@ class CoverageBasedResolution {
 
 
 		int fp(0), fn(0);
-		std::cout << "in components (size: " << components.size() << ") but not in componentsRef: " << std::endl;
+		/*std::cout << "in components (size: " << components.size() << ") but not in componentsRef: " << std::endl;
 		for (auto it = components.begin(); it != components.end(); ++it) {
 
 			if (std::find(componentsRef.begin(), componentsRef.end(), *it) == componentsRef.end() 
@@ -231,7 +231,8 @@ class CoverageBasedResolution {
 
 		}
 		std::cout << std::endl;
-
+		*/
+		/*
 		std::cout << "in componentsRef (size: " << componentsRef.size() << ") but not in components: " << std::endl;
 		for (auto it = componentsRef.begin(); it != componentsRef.end(); ++it) {
 
@@ -243,7 +244,7 @@ class CoverageBasedResolution {
 		}
 		std::cout << std::endl;
 		std::cout << "False positives: " << (double) fp / components.size() << "False negatives: " << (double) fn / (fn + singles.size()) << std::endl;
-
+		*/
 		//getComponents( gp, components, singles, quality_labeler, unresolvedLoops );
 
 		INFO("Traversing graph...");
@@ -251,7 +252,7 @@ class CoverageBasedResolution {
 
 		std::set<EdgeId> usedEdges;
 
-		std::cout << "Paths before joining: " << std::endl;
+		/*std::cout << "Paths before joining: " << std::endl;
 		for ( auto p = resolvedPaths.begin(); p != resolvedPaths.end(); ++p) {
 			//fprintf(file, "resolved path \n");
 			for ( auto iter = p->begin(); iter != p->end(); ++iter ) {
@@ -261,8 +262,8 @@ class CoverageBasedResolution {
 			}
 			std::cout << std::endl;
 			//fprintf(file,"\n");
-		}
-		std::cout << "Loops before joining: " << std::endl;
+		}*/
+		/*std::cout << "Loops before joining: " << std::endl;
 		for ( auto p = filter.resolvedLoops.begin(); p != filter.resolvedLoops.end(); ++p) {
 			//fprintf(file, "resolved path \n");
 			for ( auto iter = p->begin(); iter != p->end(); ++iter ) {
@@ -272,26 +273,22 @@ class CoverageBasedResolution {
 			}
 			std::cout << std::endl;
 			//fprintf(file,"\n");
-		}
+		}*/
 
 		joinPaths(resolvedPaths, filter.resolvedLoops, allPaths);
-		std::cout << "after joining: " << allPaths.size() << std::endl;
+		//std::cout << "after joining: " << allPaths.size() << std::endl;
 		filterConjugate( usedEdges, allPaths, filteredPaths);
-		std::cout << "before filtering size " << allPaths.size() << " filtered size: " << filteredPaths.size() << std::endl;
+		//std::cout << "before filtering size " << allPaths.size() << " filtered size: " << filteredPaths.size() << std::endl;
 
-		//FILE* file = fopen("/home/ksenia/path_resolved.log", "w");
+		/*
 		for ( auto p = allPaths.begin(); p != allPaths.end(); ++p) {
-			//fprintf(file, "resolved path \n");
 			for ( auto iter = p->begin(); iter != p->end(); ++iter ) {
 				std::cout << gp->g.int_id(*iter) << " ";
-				//fprintf(file, "%d ", gp->g.int_id(*iter));
-				//fprintf(file, " ");
 			}
 			std::cout << std::endl;
-			//fprintf(file,"\n");
-		}
+		}*/
 
-		std::cout << "-------------------------" << std::endl;
+		/*std::cout << "-------------------------" << std::endl;
 		for ( auto p = filteredPaths.begin(); p != filteredPaths.end(); ++p) {
 			//fprintf(file, "resolved path \n");
 			for ( auto iter = p->getPath().begin(); iter != p->getPath().end(); ++iter ) {
@@ -301,7 +298,7 @@ class CoverageBasedResolution {
 			}
 			std::cout << std::endl;
 			//fprintf(file,"\n");
-		}
+		}*/
 
 		//fclose(file);
 		std::string fileName = cfg::get().output_dir + "resolved_by_coverage.fasta";
@@ -346,18 +343,18 @@ class CoverageBasedResolution {
 
 			}
 			if (ifInsert) {
-				INFO("inserting");
+				//INFO("inserting");
 				if (! gp->edge_pos.IsConsistentWithGenome(*path)) {
-					std::cout << "not consistent with genome: ";
+					//std::cout << "not consistent with genome: ";
 					for (auto iter = path->begin(); iter != path->end(); ++iter) {
 						auto positions = gp->edge_pos.GetEdgePositions(*iter);
-						std::cout << gp->g.int_id(*iter) << " (";
-						for (auto pos = positions.begin(); pos != positions.end(); ++pos) {
-							std::cout << pos->start() << " - " << pos->end() << " ";
-						}
-						std::cout << ") ";
+					//	std::cout << gp->g.int_id(*iter) << " (";
+					//	for (auto pos = positions.begin(); pos != positions.end(); ++pos) {
+					//		std::cout << pos->start() << " - " << pos->end() << " ";
+					//	}
+					//	std::cout << ") ";
 					}
-					std::cout << std::endl;
+					//std::cout << std::endl;
 				}
 
 				filteredPaths.push_back(PathInfo<typename GraphPack::graph_t>(*path));
@@ -366,16 +363,16 @@ class CoverageBasedResolution {
 				}
 		}
 		
-		INFO("inserting paths into set of the used edges");
+		//INFO("inserting paths into set of the used edges");
 		for ( auto path = filteredPaths.begin(); path != filteredPaths.end(); ++path ) {
 			auto p = path->getPath();
-			std::cout << "size of p: " << p.size() << std::endl;
+			//std::cout << "size of p: " << p.size() << std::endl;
 			for (auto e = p.begin(); e != p.end(); ++e) {
 				usedEdges.insert(gp->g.conjugate(*e));
 			}
 		}
 
-		INFO("out of filtering");
+		//INFO("out of filtering");
 	}
 
 	void getComponentsWithReference( std::vector<EdgeId>& components, std::vector<EdgeId>& singles,
@@ -636,7 +633,38 @@ class CoverageBasedResolution {
 	    	}
 	};
 
+
+	bool IfSelfIntersection( const std::set<EdgeId>& incomingEdges, const std::set<EdgeId>& outgoingEdges ) {
+
+		std::vector<EdgeId> v(min(incomingEdges.size(), outgoingEdges.size()));
+		std::vector<EdgeId>::iterator it = std::set_intersection(incomingEdges.begin(), incomingEdges.end(), outgoingEdges.begin(), outgoingEdges.end(), v.begin());
+		                         
+		v.resize(it - v.begin());
+		if ( v.size() > 0 ) {
+			return true;
+		}
+
+		return false;
+
+	}
+
+	bool IfCycledComponent( const EdgeId& edge_in, const std::vector<EdgeId>& component, std::set<VertexId> visited_vertices ){
+
+
+		if (visited_vertices.size() == component.size() + 1) return false;
 	
+		for ( auto edge = component.begin(); edge != component.end(); ++edge ){
+				
+			if ( gp->g.EdgeEnd(edge_in) == gp->g.EdgeStart(*edge) ) {
+				if (visited_vertices.find( gp->g.EdgeEnd(edge_in) ) != visited_vertices.end()) return true;
+				return IfCycledComponent( *edge, component, visited_vertices );
+				
+			}
+
+
+		}
+	
+	}		
 
 
 	void CountDistance( const EdgeId& edge_in, const EdgeId& edge_out, const std::vector<EdgeId>& component, int& distance ){
@@ -645,7 +673,7 @@ class CoverageBasedResolution {
 		if ( gp->g.EdgeEnd(edge_in) == gp->g.EdgeStart(edge_out) ) return;
 	
 		for ( auto edge = component.begin(); edge != component.end(); ++edge ){
-
+				
 			if ( gp->g.EdgeEnd(edge_in) == gp->g.EdgeStart(*edge) ) {
 				distance += gp->g.length(*edge);
 				CountDistance( *edge, edge_out, component, distance);
@@ -665,7 +693,8 @@ class CoverageBasedResolution {
 			 DetailedCoverage& coverage)  {
 
 
-		if (incomingEdges.size() > 10 || outgoingEdges.size() > 10) return false;
+		std::cout << "in matching pairs" << std::endl;
+		if (incomingEdges.size() > 5 || outgoingEdges.size() > 5) return false;
 		double shift = 25;
 
 		std::vector< std::vector <double> > transition_probabilities ;
@@ -675,8 +704,11 @@ class CoverageBasedResolution {
 
 		int in_edge_counter(0);
 
+
+		//std::cout << "component size: " << component.size() << std::endl;
 		for ( auto in_edge = incomingEdges.begin(); in_edge != incomingEdges.end(); ++in_edge, ++in_edge_counter ) {
 	
+			//std::cout << "incoming edge " << gp->g.int_id(*in_edge) << std::endl;
 	
 			double in_cov = coverage.GetOutCov(*in_edge);
 			int in_bucket = bm.GetCoverageBucket(in_cov);
@@ -684,16 +716,22 @@ class CoverageBasedResolution {
 			 	int out_edge_counter(0);
 				for ( auto out_edge = outgoingEdges.begin(); out_edge != outgoingEdges.end(); ++out_edge, ++out_edge_counter ) {
 				
+						
+						//std::cout << "outgoing edge " << gp->g.int_id(*out_edge) << std::endl;
 						double out_cov = coverage.GetInCov(*out_edge);
+						//std::cout << "out_cov: " << out_cov << std::endl;
 						int out_bucket = bm.GetCoverageBucket(out_cov);
+						//std::cout << "out_bucket: " << out_bucket << std::endl;
 
 						int distance(0);
 						CountDistance(*in_edge, *out_edge, component, distance);
 
-						//std::cout << distance << std::endl;
+						std::cout << distance << " " << in_bucket << " " << out_bucket << std::endl;
 						double probability = bm.GetProbablityFromBucketToBucketForDistance (in_bucket, out_bucket, distance, shift) ;
+						std::cout << probability << std::endl;
 						transition_probabilities[in_edge_counter][out_edge_counter] = probability;
 		        	} 
+				std::cout << std::endl;
 		}
 
 
@@ -864,6 +902,37 @@ class CoverageBasedResolution {
 
 	}
 
+
+	bool checkRepeatDetection( const std::vector<EdgeId>& component, 
+				const std::set<EdgeId>& incomingEdges, 
+				const std::set<EdgeId>& outgoingEdges,
+				EdgeQuality<typename GraphPack::graph_t>& quality_labeler ) {
+
+		for ( auto e = component.begin(); e != component.end(); ++e ) {
+
+			if ( quality_labeler.quality(*e) <= 1.5 ) {
+				return false;
+			}
+		
+		}
+
+		for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e ) {
+			
+			if ( quality_labeler.quality(*e) > 1.5 ) {
+				return false;
+			}
+
+		}
+
+		for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e ) {
+			
+			if ( quality_labeler.quality(*e) > 1.5 ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	template <class DetailedCoverage>
 	void traverseComponents( const std::vector<EdgeId>& components, 
 				const std::vector<EdgeId>& singles, DetailedCoverage& coverage, 
@@ -895,6 +964,7 @@ class CoverageBasedResolution {
 		auto bm = BucketMapper<conj_graph_pack::graph_t>(gp->g, kmer_index_, K_, number_of_buckets);
 		bm.InitBuckets( );
 
+		int pure_tandem(0), repetitive_tandem(0), ordinal_repeat(0);
 		for ( auto edge = components.begin(); edge != components.end(); ++edge ) {
 			
 			if ( visited_edges.find(*edge) != visited_edges.end() ){
@@ -905,9 +975,26 @@ class CoverageBasedResolution {
 			std::set<EdgeId> incomingEdges, outgoingEdges;
 			std::vector<EdgeId> path;
 		
-			visit(*edge, visited_edges, path, components, singles, incomingEdges, outgoingEdges);
+			//std::cout << "getting path" << std::endl;
+			bool if_loop = false;
+			visit(*edge, visited_edges, path, components, singles, incomingEdges, outgoingEdges, if_loop);
+			if (if_loop) {
+				if (incomingEdges.size() == 1 && incomingEdges.size() == outgoingEdges.size() )
+					pure_tandem += 1;
+				else repetitive_tandem += 1;
+				std::cout << "loop!" << std::endl;
+				continue;
 
-			
+			}
+
+			if (path.size() == 0 ) {
+				continue;
+			}
+
+			if ( incomingEdges.size() == 0 || outgoingEdges.size() == 0) continue;
+
+			ordinal_repeat += 1;
+
 			int longestPathLen = getLongestPathLength(path);
 
 
@@ -927,9 +1014,19 @@ class CoverageBasedResolution {
 			}
 
 			if ( containsOnlyShortEdges(path) ) {
-				INFO("contains only short edges");
+				//INFO("contains only short edges");
 				continue;
 			}
+
+			/*if (IfSelfIntersection( incomingEdges, outgoingEdges )) {
+				std::cout << "SELF INTERSECTION" << std::endl;
+				continue;
+			}
+			std::set<VertexId> visited_vertices;
+			if (IfCycledComponent( *incomingEdges.begin(), path, visited_vertices ) ){
+				std::cout << "CYCLE" << std::endl;
+				continue;
+			}*/
 
 			if ( insert_size < (size_t)longestPathLen ) numberOfLargeComponents += 1;
 
@@ -939,7 +1036,7 @@ class CoverageBasedResolution {
 
 				numberOfComponentWithDifferentInOutDegree += 1;
 
-				std::cout << "component with different in and out degree: " << longestPathLen << std::endl;
+			/*	std::cout << "component with different in and out degree: " << longestPathLen << std::endl;
 				for ( auto iter = path.begin(); iter != path.end(); ++iter ) {
 					std::cout << gp->g.int_id(*iter)  << " ";
 				}
@@ -954,14 +1051,17 @@ class CoverageBasedResolution {
 					std::cout << gp->g.int_id(*iter)  << " ";
 				}
 				std::cout << std::endl;
-			//	continue;
+			*/
+				continue;
 
 			}
-			if ( incomingEdges.size() == 0 || outgoingEdges.size() == 0) {
-				//std::cout << incomingEdges.size() << " " << outgoingEdges.size() << std::endl;
-				continue;
-			}
 				
+			bool correct_component = checkRepeatDetection( path, incomingEdges, outgoingEdges, quality_labeler  );
+
+			if ( !correct_component ) {
+				std::cout << "incorrect" << std::endl;	
+			}
+
 			/*std::cout << "component: ";
 			for ( auto iter = path.begin(); iter != path.end(); ++iter ) {
 				std::cout << gp->g.int_id(*iter)  << " ";
@@ -970,10 +1070,6 @@ class CoverageBasedResolution {
 			*/
 			
 			//VERIFY_MSG(incomingEdges.size() != 0 and outgoingEdges.size() != 0, "vector of incoming and outgoing edges is zero length");
-			std::vector<EdgeId> v(min(incomingEdges.size(), outgoingEdges.size()));
-			std::vector<EdgeId>::iterator it = std::set_intersection(incomingEdges.begin(), incomingEdges.end(), outgoingEdges.begin(), outgoingEdges.end(), v.begin());
-		                         
-		 	v.resize(it - v.begin());
 			
 			/*if (v.size() > 0){
 
@@ -1060,11 +1156,21 @@ class CoverageBasedResolution {
 			}
 			std::cout << std::endl;
 
+			std::cout << "incoming edges: ";
+			for ( auto iter = incoming_edges.begin(); iter != incoming_edges.end(); ++iter ) {
+					std::cout << gp->g.int_id(*iter)  << " ";
+			}
+			std::cout << std::endl;
+			std::cout << "outgoing edges: ";
+			for ( auto iter = outgoing_edges.begin(); iter != outgoing_edges.end(); ++iter ) {
+					std::cout << gp->g.int_id(*iter)  << " ";
+			}
+			std::cout << std::endl;
 
 
-			verifyComponent(incoming_edges,outgoing_edges,path);
+			//verifyComponent(incoming_edges,outgoing_edges,path);
 			std::cout << "matching pairs of edges " <<  incoming_edges.size() << " " << outgoing_edges.size()  << std::endl;
-			//bool resolved = matchPairs( incoming_edges, outgoing_edges, pairsOfEdges, path, bm, coverage);
+			bool resolved = matchPairs( incoming_edges, outgoing_edges, pairsOfEdges, path, bm, coverage);
 
 			
 
@@ -1135,23 +1241,24 @@ class CoverageBasedResolution {
 
 		}
 		
-		std::cout << "sizes of paths:" << std::endl;
+		std::cout << "pure tandems: " << pure_tandem << std::endl << "repeats + tandems: " << repetitive_tandem << std::endl << "ordinal repeats: " << ordinal_repeat << std::endl
+		<< "comps with in degree not_equal out degree: " << numberOfComponentWithDifferentInOutDegree << std::endl;
+		/*std::cout << "sizes of paths:" << std::endl;
 		for (auto iter = pathSizes.begin(); iter != pathSizes.end(); ++iter) {
 
 			std::cout << *iter << " ";
 		}
 
 		std::cout << std::endl;
-
-		std::cout << "Number of components : " << numberOfComponents << std::endl;
-		std::cout << "Number of components with length exceeding insert size: " << numberOfLargeComponents << std::endl;
-		std::cout << "Number of components with length exceeding insert size with different in and out degree: " << numberOfComponentWithDifferentInOutDegree << std::endl;
-		std::cout << "Number of components with length exceeding insert size filtered by thresholds: " << filteredByThresholds << std::endl;
-		std::cout << "Number of resolved components with length exceeding insert size: " << resolvedPathsNum << std::endl;
-		std::cout << "Number of resolved components detected by topology : " << resolvedComponentsByTopology << std::endl;
-		std::cout << "Number of resolved components detected by length : " << resolvedComponentsByLength << std::endl;
-		//std::cout << "Number of resolved components detected by length and topology : " << resolvedCompo0nentsByLengthAndTopology << std::endl;
-		std::cout << "Number of edges detected by paired info in resolved comps: " << numberOfEdgesDetectedByPairedInfoInResolvedComps << std::endl;
+		*/
+		//std::cout << "Number of components : " << numberOfComponents << std::endl;
+		//std::cout << "Number of components with length exceeding insert size: " << numberOfLargeComponents << std::endl;
+		//std::cout << "Number of components with length exceeding insert size with different in and out degree: " << numberOfComponentWithDifferentInOutDegree << std::endl;
+		//std::cout << "Number of components with length exceeding insert size filtered by thresholds: " << filteredByThresholds << std::endl;
+		//std::cout << "Number of resolved components with length exceeding insert size: " << resolvedPathsNum << std::endl;
+		//std::cout << "Number of resolved components detected by topology : " << resolvedComponentsByTopology << std::endl;
+		//std::cout << "Number of resolved components detected by length : " << resolvedComponentsByLength << std::endl;
+		//std::cout << "Number of edges detected by paired info in resolved comps: " << numberOfEdgesDetectedByPairedInfoInResolvedComps << std::endl;
 	/*
 		for ( auto iter = usedEdges.begin(); iter != usedEdges.end(); ++iter ){
 			EdgeId cedge = gp->g.conjugate(*iter);
@@ -1292,14 +1399,18 @@ class CoverageBasedResolution {
 
 	void visit( const EdgeId& edge, std::set<EdgeId>& visited_edges, 
 		std::vector<EdgeId>& path, const std::vector<EdgeId>& components, 
-		const std::vector<EdgeId>& singles, std::set<EdgeId>& incoming_edges, std::set<EdgeId>& outgoing_edges ) {
+		const std::vector<EdgeId>& singles, std::set<EdgeId>& incoming_edges, std::set<EdgeId>& outgoing_edges, bool& if_loop ) {
 		
-		if (visited_edges.find(edge) != visited_edges.end()){
+		if ( visited_edges.find(edge) != visited_edges.end() ) {
+			if_loop = true;
 			return;
 		}
-
 		visited_edges.insert(edge);
+	//	std::cout << "new edge: " << gp->g.int_id(edge) << std::endl;
+	//	std::cout << "visited: " << visited_edges.size() << std::endl;
+
 		path.push_back(edge);
+	//	std::cout << "path: " << path.size() << std::endl;
 		VertexId edgeStartVertex = gp->g.EdgeStart(edge);
 		VertexId edgeEndVertex = gp->g.EdgeEnd(edge);
 
@@ -1324,16 +1435,26 @@ class CoverageBasedResolution {
 		//std::cout << "SIZE OF OUTGOING AND INCOMING EDGES RESPECTIVELY " << outgoing_edges.size() << " " << incoming_edges.size() << std::endl;
 		for ( auto component_edge = components.begin(); component_edge != components.end(); ++component_edge ){
 
-			if ( gp->g.int_id(*component_edge) == gp->g.int_id(edge) ){
+			if ( *component_edge == edge ){
 				continue;
 			}
-			//std::cout << "New component edge " << gp->g.int_id( *component_edge ) << std::endl;
+			//if (std::find(path.begin(), path.end(), *component_edge) != path.end())
+			//	return false;
+			
 			VertexId componentEdgeStartVertex = gp->g.EdgeStart(*component_edge);
 			VertexId componentEdgeEndVertex = gp->g.EdgeEnd(*component_edge);
 			
 			if ( componentEdgeStartVertex == edgeEndVertex || componentEdgeEndVertex == edgeStartVertex ) {
-				 visit(*component_edge, visited_edges, path, components, singles, incoming_edges, outgoing_edges);
+				
+			/*	if (std::find(path.begin(), path.end(), *component_edge) != path.end()) { 
+					if_loop = true;
+					return;
+				}*/ 
+				//std::cout << "visiting edge " << gp->g.int_id(*component_edge) << std::endl;
+				visit(*component_edge, visited_edges, path, components, singles, incoming_edges, outgoing_edges, if_loop);
+			//	break;
 			}
+
 
 		}
 
