@@ -40,8 +40,8 @@ struct KmerWithHash {
 };
 
 template<class traits = slim_kmer_index_traits<runtime_k::RtSeq>>
-class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
-    typedef DeBruijnKMerIndex<uint8_t, traits> base;
+class DeBruijnExtensionIndex : public KmerFreeIndex<uint8_t, traits> {
+    typedef KmerFreeIndex<uint8_t, traits> base;
 
     bool CheckUnique(uint8_t mask) const {
         static bool unique[] = {0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
@@ -60,17 +60,10 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
 
   public:
     typedef typename base::traits_t traits_t;
-    typedef typename base::KMer KMer;
-    typedef typename base::KMerIdx KMerIdx;
-    typedef InnerDeBruijnTotallyKMerFreeIndexBuilder<DeBruijnExtensionIndex> BuilderT;
+    typedef typename base::KeyType KMer;
+    typedef typename base::IdxType KMerIdx;
 
     //    typedef KMerIndex<traits>        KMerIndexT;
-
-    typedef MMappedFileRecordArrayIterator<typename KMer::DataType> kmer_iterator;
-
-    kmer_iterator kmer_begin() const {
-        return kmer_iterator(this->KMersFilename_, KMer::GetDataSize(base::K()));
-    }
 
     DeBruijnExtensionIndex(unsigned K, const std::string &workdir)
             : base(K, workdir) {}
@@ -186,7 +179,7 @@ class DeBruijnExtensionIndexBuilder : public Builder {
     template <class ReadStream>
     size_t FillExtensionsFromStream(ReadStream &stream,
                                     IndexT &index) const {
-        unsigned K = index.K();
+        unsigned k = index.k();
         size_t rl = 0;
 
         while (!stream.eof()) {
@@ -195,11 +188,11 @@ class DeBruijnExtensionIndexBuilder : public Builder {
             rl = std::max(rl, r.size());
 
             const Sequence &seq = r.sequence();
-            if (seq.size() < K + 1)
+            if (seq.size() < k + 1)
                 continue;
 
-            runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K);
-            for (size_t j = K; j < seq.size(); ++j) {
+            runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(k);
+            for (size_t j = k; j < seq.size(); ++j) {
                 char nnucl = seq[j], pnucl = kmer[0];
                 index.AddOutgoing(kmer, nnucl);
                 kmer <<= nnucl;
@@ -256,9 +249,8 @@ struct ExtensionIndexHelper {
     typedef typename IndexT::traits_t traits_t;
     typedef typename IndexT::KMer Kmer;
     typedef typename IndexT::KMerIdx KMerIdx;
-    typedef typename IndexT::BuilderT BuilderT;
-    typedef DeBruijnKMerIndexBuilder<Kmer, BuilderT> DeBruijnKMerIndexBuilderT;
-    typedef DeBruijnExtensionIndexBuilder<DeBruijnKMerIndexBuilderT> DeBruijnExtensionIndexBuilderT;
+    typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
+    typedef DeBruijnExtensionIndexBuilder<DeBruijnStreamKMerIndexBuilderT> DeBruijnExtensionIndexBuilderT;
 };
 
 }

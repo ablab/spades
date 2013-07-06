@@ -588,21 +588,20 @@ private:
 	typedef DeBruijnExtensionIndex<> DeBruijn;
 	typedef typename Graph::VertexId VertexId;
 	typedef runtime_k::RtSeq Kmer;
-	typedef typename DeBruijn::const_kmer_iterator kmer_iterator;
 
 	Graph &graph_;
 	DeBruijn &origin_;
 	size_t kmer_size_;
 
-	void FilterRC(std::vector<Sequence> &edgeSequences) {
+	void FilterRC(std::vector<Sequence> &edge_sequences) {
 		size_t size = 0;
-		for(size_t i = 0; i < edgeSequences.size(); i++) {
-			if(!(edgeSequences[i] < !edgeSequences[i])) {
-				edgeSequences[size] = edgeSequences[i];
+		for(size_t i = 0; i < edge_sequences.size(); i++) {
+			if(!(edge_sequences[i] < !edge_sequences[i])) {
+				edge_sequences[size] = edge_sequences[i];
 				size++;
 			}
 		}
-		edgeSequences.resize(size);
+		edge_sequences.resize(size);
 	}
 
 public:
@@ -612,13 +611,13 @@ public:
 
 	void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,
 			double queueGrowthRate, bool keep_perfect_loops) {
-		std::vector<Sequence> edgeSequences;
+		std::vector<Sequence> edge_sequences;
 		if(keep_perfect_loops)
-			edgeSequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(queueMinSize, queueMaxSize, queueGrowthRate);
+			edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(queueMinSize, queueMaxSize, queueGrowthRate);
 		else
-			edgeSequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
-		FilterRC(edgeSequences);
-		FastGraphFromSequencesConstructor<Graph>(kmer_size_, origin_).ConstructGraph(graph_, edgeSequences);
+			edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
+		FilterRC(edge_sequences);
+		FastGraphFromSequencesConstructor<Graph>(kmer_size_, origin_).ConstructGraph(graph_, edge_sequences);
 	}
 
 private:

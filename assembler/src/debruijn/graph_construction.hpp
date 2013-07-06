@@ -37,7 +37,6 @@ typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
 typedef io::ConvertingReaderWrapper UnitedStream;
 
-//fixme     NewExtendedSequenceMapper<Graph> mapper(g, index, kmer_mapper, k + 1);
 template<class PairedRead, class Graph, class Mapper>
 void FillPairedIndexWithReadCountMetric(const Graph &g,
                                         const Mapper& mapper,
@@ -53,7 +52,6 @@ void FillPairedIndexWithReadCountMetric(const Graph &g,
 	DEBUG("Paired info with read count weight counted");
 }
 
-//fixme	NewExtendedSequenceMapper<Graph> mapper(g, index, kmer_mapper, k + 1);
 template<class PairedRead, class Graph, class Mapper>
 void FillPairedIndexWithProductMetric(const Graph &g,
                                       const Mapper& mapper,

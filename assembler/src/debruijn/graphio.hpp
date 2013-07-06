@@ -75,7 +75,7 @@ void SaveEdgeIndex(const std::string& file_name,
   DEBUG("Saving kmer index, " << file_name <<" created");
   VERIFY(file.is_open());
 
-  uint32_t k_ = index.K();
+  uint32_t k_ = index.k();
   file.write((char *) &k_, sizeof(uint32_t));
   index.BinWrite(file);
 
@@ -94,8 +94,8 @@ bool LoadEdgeIndex(const std::string& file_name,
 
   uint32_t k_;
   file.read((char *) &k_, sizeof(uint32_t));
-  INFO(k_ <<" " <<  index.K());
-  VERIFY_MSG(k_ == index.K(), "Cannot read edge index, different Ks:");
+  INFO(k_ <<" " <<  index.k());
+  VERIFY_MSG(k_ == index.k(), "Cannot read edge index, different Ks:");
 
   index.BinRead(file, file_name + ".kmidx");
 

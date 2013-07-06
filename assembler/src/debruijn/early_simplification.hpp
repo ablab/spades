@@ -28,7 +28,7 @@ private:
 	void CleanBackwardLinks(KmerWithHash<Kmer> &kh, char i) {
 		if(index_.CheckIncoming(kh.idx, i)) {
 		    KmerWithHash<Kmer> prev_kh = index_.CreateKmerWithHash(kh.kmer >> i);
-			if(!index_.CheckOutgoing(prev_kh.idx, kh.kmer[index_.K() - 1])) {
+			if(!index_.CheckOutgoing(prev_kh.idx, kh.kmer[index_.k() - 1])) {
 				index_.DeleteIncoming(kh.idx, i);
 			}
 		}
@@ -40,7 +40,7 @@ public:
 	//TODO make parallel
 	void CleanLinks() {
 		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
-		    KmerWithHash<Kmer> kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.K(), *it));
+		    KmerWithHash<Kmer> kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.k(), *it));
 			for(char i = 0; i < 4; i++) {
 				CleanForwardLinks(kh, i);
 				CleanBackwardLinks(kh, i);
@@ -95,7 +95,7 @@ private:
 	size_t RoughClipTips() {
 		size_t result = 0;
 		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
-		    KmerWithHash<Kmer> kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.K(), *it));
+		    KmerWithHash<Kmer> kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.k(), *it));
 			if (index_.IsDeadEnd(kh.idx) && index_.CheckUniqueIncoming(kh.idx)) {
 				result += RemoveBackward(kh);
 			} else if(index_.IsDeadStart(kh.idx) && index_.CheckUniqueOutgoing(kh.idx)) {
@@ -117,7 +117,7 @@ public:
 		INFO("Early tip clipping");
 		size_t result = RoughClipTips();
 		LinkCleaner(index_).CleanLinks();
-		INFO(result << " " << (index_.K()+1) <<"-mers were removed by early tip clipper");
+		INFO(result << " " << (index_.k()+1) <<"-mers were removed by early tip clipper");
 		return result;
 	}
 protected:

@@ -10,247 +10,67 @@
 #include "kmer_splitters.hpp"
 
 namespace debruijn_graph {
-template <class Seq>
-class DeBruijnEdgeMultiIndexBuilder;
 
-//todo discuss extension of Editable...
-//todo does it currently work? k-mers seem to be not in memory!
 //todo it is not handling graph events!!!
-//template<class IdType, class Seq = runtime_k::RtSeq,
-//    class traits = kmer_index_traits<Seq> >
-//class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<vector<EdgeInfo<IdType>>, traits> {
-//  typedef DeBruijnKMerIndex<vector<EdgeInfo<IdType> >, traits> base;
-// public:
-//  typedef typename traits::SeqType KMer;
-//  typedef KMerIndex<traits>        KMerIndexT;
-//
-//  DeBruijnEdgeMultiIndex(unsigned K, const std::string &workdir)
-//      : base(K, workdir) {}
-//
-//  ~DeBruijnEdgeMultiIndex() {}
-//
-////  todo seem to have 0 chances to work
-////  bool ContainsInIndex(typename base::KMerIdx idx) const {
-////    const typename base::KMerIndexValueType &entry = base::operator[](idx);
-////    bool res = false;
-////    for (auto iter = entry.begin(); iter != entry.end(); ++iter)
-////      if (iter->offset_ != -1) {
-////        res = true;
-////        break;
-////      }
-////    return res;
-////  }
-//
-//  bool ContainsInIndex(const KMer& kmer) const {
+template<class IdType, class Seq = runtime_k::RtSeq,
+    class traits = kmer_index_traits<Seq> >
+class DeBruijnEdgeMultiIndex : public KmerStoringIndex<vector<EdgeInfo<IdType>>, traits> {
+  typedef KmerStoringIndex<vector<EdgeInfo<IdType>>, traits> base;
+ public:
+ public:
+  typedef typename base::traits_t traits_t;
+  typedef typename base::KMer KMer;
+  typedef typename base::KMerIdx KMerIdx;
+//  typedef typename base::IdType IdType;
+  //todo move this typedef up in hierarchy (need some c++ tricks)
+
+  DeBruijnEdgeMultiIndex(unsigned k, const std::string &workdir)
+      : base(k, workdir) {}
+
+  ~DeBruijnEdgeMultiIndex() {}
+
+  std::vector<EdgePosition> get(const KMer &kmer) const {
+    VERIFY(contains(kmer));
+    return base::operator[](kmer);
+  }
+
+  std::vector<EdgePosition> get(KMerIdx idx) const {
+    VERIFY(valid_idx(idx));
+    return base::operator[](idx);
+  }
+
+  void PutInIndex(const KMer &kmer, IdType id, int offset) {
+    size_t idx = base::seq_idx(kmer);
+    if (base::contains(idx, kmer)) {
+      std::vector<EdgeInfo<IdType> > &entry = base::operator[](idx);
+      EdgeInfo<IdType> new_entry;
+      new_entry.edge_id = id;
+      new_entry.offset = offset;
+      entry.push_back(new_entry);
+    }
+  }
+
+  //todo delete if equal seems to work improperly!!!
+  bool DeleteIfEqual(const KMer &kmer, IdType id) {
+      VERIFY(false);
+      return false;
 //    typename base::KMerIdx idx = base::seq_idx(kmer);
 //
 //    // Early exit if kmer has not been seen at all
 //    if (idx == base::InvalidKMerIdx)
 //      return false;
 //
-//    // Otherwise, check, whether it's attached to any edge
-//    //todo nucleotide check needed!!!
-//    const typename base::KMerIndexValueType &entry = base::operator[](idx);
-//    bool res = false;
-//    for (auto iter = entry.begin(); iter != entry.end(); ++iter)
-//      if (iter->offset != -1u) {
-//        res = true;
-//        break;
-//      }
-//    return res;
-//  }
+//    // Now we know that idx is in range. Check the edge id.
+//    typename base::KMerIndexValueType &entry = base::operator[](idx);
 //
-//  std::vector<EdgePosition> get(const KMer &kmer) const {
-//    typename base::KMerIdx idx = base::seq_idx(kmer);
-//    VERIFY(idx != base::InvalidKMerIdx);
-//
-//    const typename base::KMerIndexValueType &entry = base::operator[](idx);
-//    return entry;
-//  }
-//
-//  std::vector<EdgePosition> get(typename base::KMerIdx idx) const {
-//    const typename base::KMerIndexValueType &entry = base::operator[](idx);
-//    return entry;
-//  }
-//
-//  void PutInIndex(const KMer &kmer, IdType id, int offset) {
-//    size_t idx = base::seq_idx(kmer);
-//    if (base::contains(idx, kmer)) {
-//      std::vector<EdgeInfo<IdType> > &entry = base::operator[](idx);
-//      EdgeInfo<IdType> new_entry;
-//      new_entry.edgeId_ = id;
-//      new_entry.offset_ = offset;
-//      entry.push_back(new_entry);
+//    if (entry.edgeId_ == id) {
+//      entry.offset_ = -1;
+//      return true;
 //    }
-//  }
 //
-//  //todo delete if equal seems to work improperly!!!
-//  bool DeleteIfEqual(const KMer &kmer, IdType id) {
-//      VERIFY(false);
-//      return false;
-////    typename base::KMerIdx idx = base::seq_idx(kmer);
-////
-////    // Early exit if kmer has not been seen at all
-////    if (idx == base::InvalidKMerIdx)
-////      return false;
-////
-////    // Now we know that idx is in range. Check the edge id.
-////    typename base::KMerIndexValueType &entry = base::operator[](idx);
-////
-////    if (entry.edgeId_ == id) {
-////      entry.offset_ = -1;
-////      return true;
-////    }
-////
-////    return false;
-//  }
-//
-////  todo legacy!!!
-////
-////  void RenewKMers(const Sequence &nucls, IdType id) {
-////    VERIFY(nucls.size() >= base::K());
-////    KMer kmer(base::K(), nucls);
-////
-////    PutInIndex(kmer, id, 0);
-////    for (size_t i = base::K(), n = nucls.size(); i < n; ++i) {
-////      kmer <<= nucls[i];
-////      PutInIndex(kmer, id, i - base::K() + 1);
-////    }
-////  }
-////
-////  void DeleteKMers(const Sequence &nucls, IdType id) {
-////    VERIFY(nucls.size() >= base::K());
-////    KMer kmer(base::K(), nucls);
-////    DeleteIfEqual(kmer, id);
-////    for (size_t i = base::K(), n = nucls.size(); i < n; ++i) {
-////      kmer <<= nucls[i];
-////      DeleteIfEqual(kmer, id);
-////    }
-////  }
-//
-//  friend class DeBruijnEdgeMultiIndexBuilder<Seq>;
-//
-//};
+//    return false;
+  }
 
-//todo legacy!
-//template <class Seq>
-//class DeBruijnEdgeMultiIndexBuilder : public DeBruijnKMerIndexBuilder<kmer_index_traits<Seq>> {
-//  template <class ReadStream, class IdType>
-//  size_t FillCoverageFromStream(ReadStream &stream,
-//                                DeBruijnEdgeMultiIndex<IdType, Seq> &index) const;
-//
-// public:
-//  template <class IdType, class Read>
-//  size_t BuildIndexFromStream(DeBruijnEdgeMultiIndex<IdType, Seq> &index,
-//                              io::ReadStreamVector<io::IReader<Read> > &streams,
-//                              SingleReadStream* contigs_stream = 0) const;
-//
-//  template <class IdType, class Graph>
-//  void BuildIndexFromGraph(DeBruijnEdgeMultiIndex<IdType, Seq> &index,
-//                           const Graph &g) const;
-//
-//  template <class IdType, class Graph>
-//  void UpdateIndexFromGraph(DeBruijnEdgeMultiIndex<IdType, Seq> &index,
-//                            const Graph &g) const;
-//
-//
-// protected:
-//  template <class KMerCounter, class Index>
-//  void SortUniqueKMers(KMerCounter &counter, Index &index) const;
-//
-// protected:
-//  DECL_LOGGER("Edge MultiIndex Building");
-//};
-//
-//template <>
-//class DeBruijnEdgeMultiIndexBuilder<runtime_k::RtSeq> :
-//    public DeBruijnKMerIndexBuilder<kmer_index_traits<runtime_k::RtSeq>> {
-//  typedef DeBruijnKMerIndexBuilder<kmer_index_traits<runtime_k::RtSeq>> base;
-//
-//  template <class ReadStream, class IdType>
-//  size_t FillCoverageFromStream(ReadStream &stream,
-//                                DeBruijnEdgeMultiIndex<IdType, runtime_k::RtSeq> &index) const {
-//    size_t rl = 0;
-////TODO: not needed now, implement later
-////
-////    while (!stream.eof()) {
-////      typename ReadStream::read_type r;
-////      stream >> r;
-////      rl = std::max(rl, r.size());
-////
-////      const Sequence &seq = r.sequence();
-////      if (seq.size() < K)
-////        continue;
-////
-////      runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K);
-////
-////      size_t idx = index.seq_idx(kmer);
-////      VERIFY(index.contains(idx, kmer));
-////#   pragma omp atomic
-////      index.data_[idx].count_ += 1;
-////      for (size_t j = K; j < seq.size(); ++j) {
-////        kmer <<= seq[j];
-////        idx = index.seq_idx(kmer);
-////        VERIFY(index.contains(idx, kmer));
-////
-////#     pragma omp atomic
-////        index.data_[idx].count_ += 1;
-////      }
-////    }
-//
-//    return rl;
-//  }
-//
-// public:
-//  template <class IdType, class Read>
-//  size_t BuildIndexFromStream(DeBruijnEdgeMultiIndex<IdType, runtime_k::RtSeq> &index,
-//                              io::ReadStreamVector<io::IReader<Read> > &streams,
-//                              SingleReadStream* contigs_stream = 0) const {
-//    unsigned nthreads = streams.size();
-//
-//    base::BuildIndexFromStream(index, streams, contigs_stream);
-//
-//    // Now use the index to fill the coverage and EdgeId's
-//    INFO("Collecting k-mer coverage information from reads, this takes a while.");
-//
-//    size_t rl = 0;
-//    streams.reset();
-//# pragma omp parallel for num_threads(nthreads) shared(rl)
-//    for (size_t i = 0; i < nthreads; ++i) {
-//      size_t crl = FillCoverageFromStream(streams[i], index);
-//
-//      // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
-//#   pragma omp flush(rl)
-//      if (crl > rl)
-//#     pragma omp critical
-//      {
-//        rl = std::max(rl, crl);
-//      }
-//    }
-//
-//    if (contigs_stream) {
-//      contigs_stream->reset();
-//      FillCoverageFromStream(*contigs_stream, index);
-//    }
-//
-//    return rl;
-//  }
-//
-//  template <class IdType, class Graph>
-//  void BuildIndexFromGraph(DeBruijnEdgeMultiIndex<IdType, runtime_k::RtSeq> &index,
-//                           const Graph &g) const {
-//    base::BuildIndexFromGraph(index, g);
-//
-//    // Now use the index to fill the coverage and EdgeId's
-//    INFO("Collecting k-mer coverage information from graph, this takes a while.");
-//
-//    INFO("Collecting k-mer coverage information from graph, this takes a while.");
-//    EdgeInfoUpdater<Graph, DeBruijnEdgeMultiIndex<IdType, runtime_k::RtSeq>> updater(g, index);
-//    updater.UpdateAll();
-//  }
-//
-// protected:
-//  DECL_LOGGER("Edge Index Building");
-//};
+};
 
 }

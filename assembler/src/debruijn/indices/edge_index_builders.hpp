@@ -10,15 +10,16 @@ class GraphPositionFillingIndexBuilder : public Builder {
 public:
     typedef typename Builder::IndexT IndexT;
     typedef typename IndexT::KMer Kmer;
-    typedef typename IndexT::GraphT GraphT;
+//    typedef typename IndexT::GraphT GraphT;
 
+    template<class Graph>
     void BuildIndexFromGraph(IndexT &index,
-                             const GraphT &g) const {
+                             const Graph/*T*/ &g) const {
         base::BuildIndexFromGraph(index, g);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting k-mer coverage information from graph, this takes a while.");
-        EdgeInfoUpdater<IndexT> updater(g, index);
+        EdgeInfoUpdater<IndexT, Graph> updater(g, index);
         updater.UpdateAll();
     }
 
@@ -35,7 +36,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
     template<class ReadStream>
     size_t FillCoverageFromStream(ReadStream &stream,
                                   IndexT &index) const {
-        unsigned K = index.K();
+        unsigned k = index.k();
         size_t rl = 0;
 
         while (!stream.eof()) {
@@ -44,17 +45,17 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
             rl = std::max(rl, r.size());
 
             const Sequence &seq = r.sequence();
-            if (seq.size() < K)
+            if (seq.size() < k)
                 continue;
 
-            Kmer kmer = seq.start<Kmer>(K);
+            Kmer kmer = seq.start<Kmer>(k);
 
             size_t idx = index.seq_idx(kmer);
             if (index.contains(idx, kmer)) {
 #   pragma omp atomic
                 index[idx].count += 1;
             }
-            for (size_t j = K; j < seq.size(); ++j) {
+            for (size_t j = k; j < seq.size(); ++j) {
                 kmer <<= seq[j];
                 idx = index.seq_idx(kmer);
                 if (index.contains(idx, kmer)) {
@@ -134,19 +135,14 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
 template<class Index>
 struct EdgeIndexHelper {
     typedef Index IndexT;
-//    typedef typename IndexT::GraphT GraphT;
-//    typedef typename IndexT::KMer Kmer;
-//    typedef typename IndexT::KMerIdx KMerIdx;
-//    typedef typename Index::InnerIndexT InnerIndexT;
     typedef typename IndexT::KMer Kmer;
     typedef typename IndexT::KMerIdx KMerIdx;
     typedef typename IndexT::traits_t traits_t;
-    typedef typename IndexT::IdType IdType;
-    typedef typename IndexT::BuilderT BuilderT;
-    typedef DeBruijnKMerIndexBuilder<Kmer, BuilderT> DeBruijnKMerIndexBuilderT;
-    typedef DeBruijnGraphKMerIndexBuilder<DeBruijnKMerIndexBuilderT> DeBruijnGraphKMerIndexBuilderT;
+//    typedef typename IndexT::IdType IdType;
+    typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
+    typedef CoverageFillingEdgeIndexBuilder<DeBruijnStreamKMerIndexBuilderT> CoverageFillingEdgeIndexBuilderT;
+    typedef DeBruijnGraphKMerIndexBuilder<IndexT> DeBruijnGraphKMerIndexBuilderT;
     typedef GraphPositionFillingIndexBuilder<DeBruijnGraphKMerIndexBuilderT> GraphPositionFillingIndexBuilderT;
-    typedef CoverageFillingEdgeIndexBuilder<DeBruijnGraphKMerIndexBuilderT> CoverageFillingEdgeIndexBuilderT;
     typedef CoverageFillingEdgeIndexBuilder<GraphPositionFillingIndexBuilderT> CoverageAndGraphPositionFillingIndexBuilderT;
 };
 

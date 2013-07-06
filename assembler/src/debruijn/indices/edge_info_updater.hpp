@@ -4,31 +4,31 @@
 
 namespace debruijn_graph {
 
-template<typename Index>
+template<typename Index, typename Graph>
 class EdgeInfoUpdater {
     typedef typename Index::KMer Kmer;
-    typedef typename Index::GraphT Graph;
+//    typedef typename Index::GraphT Graph;
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &g_;
     Index &index_;
 
     void UpdateKMers(const Sequence &nucls, EdgeId e) {
-        VERIFY(nucls.size() >= index_.K());
-        Kmer kmer(index_.K(), nucls);
+        VERIFY(nucls.size() >= index_.k());
+        Kmer kmer(index_.k(), nucls);
 
         index_.PutInIndex(kmer, e, 0);
-        for (size_t i = index_.K(), n = nucls.size(); i < n; ++i) {
+        for (size_t i = index_.k(), n = nucls.size(); i < n; ++i) {
             kmer <<= nucls[i];
-            index_.PutInIndex(kmer, e, i - index_.K() + 1);
+            index_.PutInIndex(kmer, e, i - index_.k() + 1);
         }
     }
 
     void DeleteKMers(const Sequence &nucls, EdgeId e) {
-        VERIFY(nucls.size() >= index_.K());
-        Kmer kmer(index_.K(), nucls);
+        VERIFY(nucls.size() >= index_.k());
+        Kmer kmer(index_.k(), nucls);
         index_.DeleteIfEqual(kmer, e);
-        for (size_t i = index_.K(), n = nucls.size(); i < n; ++i) {
+        for (size_t i = index_.k(), n = nucls.size(); i < n; ++i) {
             kmer <<= nucls[i];
             index_.DeleteIfEqual(kmer, e);
         }

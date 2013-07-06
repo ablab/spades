@@ -38,7 +38,7 @@ public:
 
 private:
     Index inner_index_;
-    EdgeInfoUpdater<Index> updater_;
+    EdgeInfoUpdater<Index, Graph> updater_;
     bool delete_index_;
 
 public:
