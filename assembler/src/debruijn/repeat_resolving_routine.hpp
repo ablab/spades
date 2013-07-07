@@ -56,7 +56,7 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 			new PositionsEdgeColorer<typename gp_t::graph_t>(gp.g,
 					gp.edge_pos));
 
-	EdgeQuality<typename gp_t::graph_t> edge_qual(gp.g, gp.index,
+	EdgeQuality<typename gp_t::graph_t, typename gp_t::index_t> edge_qual(gp.g, gp.index,
 			gp.kmer_mapper, gp.genome);
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
@@ -1129,7 +1129,7 @@ void resolve_repeats() {
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
-	EdgeQuality<Graph> quality_labeler(conj_gp.g, conj_gp.index,
+	EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
 			conj_gp.kmer_mapper, conj_gp.genome);
 	//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);

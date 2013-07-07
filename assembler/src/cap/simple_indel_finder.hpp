@@ -212,7 +212,7 @@ class SimpleIndelFinder {
     return found_merge_point;
   }
 
-  void DeleteEdges() const {
+  void DeleteEdges() {
     TRACE("DELETE EDGES");
     DeletingMergeHandler sure_merge_handler(sure_delete_list_);
     ConditionedSmartSetIterator<Graph, EdgeId, DeletingMergeHandler> sure_smart_it(
@@ -268,7 +268,7 @@ class SimpleIndelFinder {
       // Nothing to do here
       return;
     }
- 
+
     // Dfs and try to resolve all splits
     ++coloring_version_;
     restricted_vertex_ = starting_vertex;

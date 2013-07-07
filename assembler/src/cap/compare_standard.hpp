@@ -19,7 +19,6 @@
 
 // longseq
 #include "longseq.hpp"
-#include "cap_kmer_index.hpp"
 
 // config
 #include "cap_config_struct.hpp"

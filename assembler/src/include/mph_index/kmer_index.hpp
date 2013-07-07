@@ -127,7 +127,7 @@ class KMerIndex {
   typedef KMerIndex __self;
 
  public:
-  KMerIndex(unsigned k):k_(k), index_(NULL),  num_buckets_(0) {}
+  KMerIndex(/*unsigned k*/):/*k_(k), */index_(NULL),  num_buckets_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -189,7 +189,7 @@ class KMerIndex {
   }
 
  private:
-  unsigned k_;
+//  unsigned k_;
   KMerDataIndex *index_;
 
   size_t num_buckets_;

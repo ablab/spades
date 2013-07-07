@@ -6,6 +6,8 @@
  *      Author: anton
  */
 
+#include "io/read_stream_vector.hpp"
+
 namespace debruijn_graph {
 // used for temporary reads storage during parallel reading
 static const size_t READS_BUFFER_SIZE = 536870912; // 512 MB in bytes

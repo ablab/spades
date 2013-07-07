@@ -11,9 +11,6 @@
 namespace debruijn_graph {
 
 template<class Seq>
-class DeBruijnExtensionIndexBuilder;
-
-template<class Seq>
 struct slim_kmer_index_traits : public kmer_index_traits<Seq> {
   typedef kmer_index_traits<Seq> __super;
 
@@ -32,10 +29,19 @@ struct slim_kmer_index_traits : public kmer_index_traits<Seq> {
 
 };
 
-template<class Seq = runtime_k::RtSeq, class traits = slim_kmer_index_traits<Seq> >
-class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
-  private:
-    typedef DeBruijnKMerIndex<uint8_t, traits> base;
+template<class Seq>
+struct KmerWithHash {
+    typedef size_t KMerIdx;
+    Seq kmer;
+    KMerIdx idx;
+
+    KmerWithHash(Seq kmer_, KMerIdx idx_) :
+            kmer(kmer_), idx(idx_) { }
+};
+
+template<class traits = slim_kmer_index_traits<runtime_k::RtSeq>>
+class DeBruijnExtensionIndex : public KmerFreeIndex<uint8_t, traits> {
+    typedef KmerFreeIndex<uint8_t, traits> base;
 
     bool CheckUnique(uint8_t mask) const {
         static bool unique[] = {0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
@@ -52,23 +58,17 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         return count[mask];
     }
 
-    std::string KMersFilename_;
-
   public:
-    typedef typename traits::SeqType KMer;
-    typedef traits                   kmer_index_traits;
-    typedef KMerIndex<traits>        KMerIndexT;
+    typedef typename base::traits_t traits_t;
+    typedef typename base::KeyType KMer;
+    typedef typename base::IdxType KMerIdx;
 
-    typedef MMappedFileRecordArrayIterator<typename KMer::DataType> kmer_iterator;
-
-    kmer_iterator kmer_begin() const {
-        return kmer_iterator(KMersFilename_, KMer::GetDataSize(base::K()));
-    }
+    //    typedef KMerIndex<traits>        KMerIndexT;
 
     DeBruijnExtensionIndex(unsigned K, const std::string &workdir)
-            : base(K, workdir), KMersFilename_("") {}
+            : base(K, workdir) {}
 
-    void AddOutgoing(size_t idx, char nnucl) {
+    void AddOutgoing(KMerIdx idx, char nnucl) {
         unsigned nmask = (1 << nnucl);
         if (!(this->operator [](idx) & nmask)) {
 #           pragma omp atomic
@@ -76,7 +76,7 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         }
     }
 
-    void AddIncoming(size_t idx, char pnucl) {
+    void AddIncoming(KMerIdx idx, char pnucl) {
         unsigned pmask = (1 << (pnucl + 4));
 
         if (!(this->operator [](idx) & pmask)) {
@@ -85,7 +85,7 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         }
     }
 
-    void DeleteOutgoing(size_t idx, char nnucl) {
+    void DeleteOutgoing(KMerIdx idx, char nnucl) {
         unsigned nmask = (1 << nnucl);
         if (this->operator [](idx) & nmask) {
 #           pragma omp atomic
@@ -93,7 +93,7 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         }
     }
 
-    void DeleteIncoming(size_t idx, char pnucl) {
+    void DeleteIncoming(KMerIdx idx, char pnucl) {
         unsigned pmask = (1 << (pnucl + 4));
 
         if (this->operator [](idx) & pmask) {
@@ -102,7 +102,7 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         }
     }
 
-    void IsolateVertex(size_t idx) {
+    void IsolateVertex(KMerIdx idx) {
         this->operator [](idx) = 0;
     }
 
@@ -122,110 +122,64 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         DeleteIncoming(this->seq_idx(kmer), pnucl);
     }
 
-    bool CheckOutgoing(size_t idx, size_t nucl) {
+    bool CheckOutgoing(KMerIdx idx, size_t nucl) {
         return (this->operator [](idx)) & (1 << nucl);
     }
 
-    bool CheckIncoming(size_t idx, size_t nucl) {
+    bool CheckIncoming(KMerIdx idx, size_t nucl) {
         return (this->operator [](idx)) & (16 << nucl);
     }
 
-    bool IsDeadEnd(size_t idx) const {
+    bool IsDeadEnd(KMerIdx idx) const {
         return !(this->operator [](idx) & 15);
     }
 
-    bool IsDeadStart(size_t idx) const {
+    bool IsDeadStart(KMerIdx idx) const {
         return !(this->operator [](idx) >> 4);
     }
 
-    bool CheckUniqueOutgoing(size_t idx) const {
+    bool CheckUniqueOutgoing(KMerIdx idx) const {
         return CheckUnique(this->operator [](idx) & 15);
     }
 
-    char GetUniqueOutgoing(size_t idx) const {
+    char GetUniqueOutgoing(KMerIdx idx) const {
         return GetUnique(this->operator [](idx) & 15);
     }
 
-    bool CheckUniqueIncoming(size_t idx) const {
+    bool CheckUniqueIncoming(KMerIdx idx) const {
         return CheckUnique(this->operator [](idx) >> 4);
     }
 
-    char GetUniqueIncoming(size_t idx) const {
+    char GetUniqueIncoming(KMerIdx idx) const {
         return GetUnique(this->operator [](idx) >> 4);
     }
 
-    size_t OutgoingEdgeCount(size_t idx) const {
+    size_t OutgoingEdgeCount(KMerIdx idx) const {
         return Count(this->operator [](idx) & 15);
     }
 
-    size_t IncomingEdgeCount(size_t idx) const {
+    size_t IncomingEdgeCount(KMerIdx idx) const {
         return Count(this->operator [](idx) >> 4);
     }
 
     ~DeBruijnExtensionIndex() {}
 
-
-    struct KmerWithHash {
-        KMer kmer;
-        size_t idx;
-
-        KmerWithHash(KMer _kmer,
-                     const DeBruijnExtensionIndex<Seq, traits> &index) :
-                kmer(_kmer), idx(index.seq_idx(kmer)) { }
-    };
-
-    KmerWithHash CreateKmerWithHash(KMer kmer) const {
-        return KmerWithHash(kmer, *this);
+    KmerWithHash<KMer> CreateKmerWithHash(KMer kmer) const {
+        return KmerWithHash<KMer>(kmer, seq_idx(kmer));
     }
 
-    friend class DeBruijnExtensionIndexBuilder<Seq>;
 };
 
-template <>
-class DeBruijnKMerIndexBuilder<slim_kmer_index_traits<runtime_k::RtSeq>> {
+template<class Builder>
+class DeBruijnExtensionIndexBuilder : public Builder {
+    typedef Builder base;
  public:
-  template <class IdType, class Read>
-  std::string BuildIndexFromStream(DeBruijnKMerIndex<IdType, slim_kmer_index_traits<runtime_k::RtSeq>> &index,
-                                   io::ReadStreamVector<io::IReader<Read> > &streams,
-                                   SingleReadStream* contigs_stream = 0) const {
-    DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
-                                            index.K(),
-                                            streams, contigs_stream);
-    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, slim_kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, streams.size());
-
-    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
-    index.data_.resize(sz);
-    index.kmers = NULL;
-
-    return counter.GetFinalKMersFname();
-  }
-
- protected:
-  DECL_LOGGER("K-mer Index Building");
-};
-
-template <class Seq>
-class DeBruijnExtensionIndexBuilder : public DeBruijnKMerIndexBuilder<typename DeBruijnExtensionIndex<Seq>::kmer_index_traits> {
-  public:
-    template <class Read>
-    size_t BuildIndexFromStream(DeBruijnExtensionIndex<Seq> &index,
-                                io::ReadStreamVector<io::IReader<Read> > &streams,
-                                SingleReadStream* contigs_stream = 0) const;
-
-  protected:
-    DECL_LOGGER("Extension Index Building");
-};
-
-template <>
-class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
-            public DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> {
-    typedef DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> base;
+    typedef typename Builder::IndexT IndexT;
 
     template <class ReadStream>
     size_t FillExtensionsFromStream(ReadStream &stream,
-                                    DeBruijnExtensionIndex<runtime_k::RtSeq> &index) const {
-        unsigned K = index.K();
+                                    IndexT &index) const {
+        unsigned k = index.k();
         size_t rl = 0;
 
         while (!stream.eof()) {
@@ -234,11 +188,11 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
             rl = std::max(rl, r.size());
 
             const Sequence &seq = r.sequence();
-            if (seq.size() < K + 1)
+            if (seq.size() < k + 1)
                 continue;
 
-            runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K);
-            for (size_t j = K; j < seq.size(); ++j) {
+            runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(k);
+            for (size_t j = k; j < seq.size(); ++j) {
                 char nnucl = seq[j], pnucl = kmer[0];
                 index.AddOutgoing(kmer, nnucl);
                 kmer <<= nnucl;
@@ -250,13 +204,13 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
     }
 
   public:
-    template <class Read>
-    size_t BuildIndexFromStream(DeBruijnExtensionIndex<runtime_k::RtSeq> &index,
-                                io::ReadStreamVector<io::IReader<Read> > &streams,
+    template <class Streams>
+    size_t BuildExtensionIndexFromStream(IndexT &index,
+                                Streams &streams,
                                 SingleReadStream* contigs_stream = 0) const {
         unsigned nthreads = streams.size();
 
-        index.KMersFilename_ = base::BuildIndexFromStream(index, streams, contigs_stream);
+        BuildIndexFromStream(index, streams, contigs_stream);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Building k-mer extensions from reads, this takes a while.");
@@ -285,8 +239,18 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
         return rl;
     }
 
-  protected:
-    DECL_LOGGER("Extension Index Building");
+  private:
+    DECL_LOGGER("DeBruijnExtensionIndexBuilder");
+};
+
+template<class Index>
+struct ExtensionIndexHelper {
+    typedef Index IndexT;
+    typedef typename IndexT::traits_t traits_t;
+    typedef typename IndexT::KMer Kmer;
+    typedef typename IndexT::KMerIdx KMerIdx;
+    typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
+    typedef DeBruijnExtensionIndexBuilder<DeBruijnStreamKMerIndexBuilderT> DeBruijnExtensionIndexBuilderT;
 };
 
 }

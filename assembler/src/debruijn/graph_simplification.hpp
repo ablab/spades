@@ -641,13 +641,13 @@ void PostSimplification(conj_graph_pack& gp,
   }
 }
 
-template<class Graph>
+template<class Graph, class KmerIndex>
 double FindErroneousConnectionsCoverageThreshold(
         const Graph &graph,
-        const DeBruijnEdgeIndex<Graph> &index) {
+        const KmerIndex &index) {
     return cfg::get().ds.single_cell ?
             ErroneousConnectionThresholdFinder<Graph>(graph).FindThreshold() :
-            MCErroneousConnectionThresholdFinder<Graph>(index).FindThreshold();
+            MCErroneousConnectionThresholdFinder<Graph, KmerIndex>(index).FindThreshold();
 }
 
 void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
@@ -700,9 +700,11 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     PostSimplification(gp, removal_handler, printer,
                        determined_coverage_threshold);
-
+//    typedef typename EdgeIndexHelper<typename conj_graph_pack::index_t>::GraphPositionFillingIndexBuilderT IndexBuilder;
+//    IndexBuilder index_builder;
     if (!cfg::get().developer_mode) {
         INFO("Refilling index");
+//        index_builder.BuildIndexFromGraph(gp.index.inner_index(), gp.g);
         gp.index.Refill();
         INFO("Index refilled");
         INFO("Attaching index");
@@ -714,6 +716,8 @@ void SimplifyGraph(conj_graph_pack &gp,
         CloseGaps(gp);
 
     INFO("Final index refill");
+    //todo second refill in ten lines!!!
+//    index_builder.BuildIndexFromGraph(gp.index.inner_index(), gp.g);
     gp.index.Refill();
     INFO("Final index refill finished");
 

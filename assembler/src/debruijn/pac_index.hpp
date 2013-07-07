@@ -42,7 +42,8 @@ public:
 	MappingDescription Locate(Sequence &s);
 	PacBioMappingIndex(Graph &g, size_t k, size_t debruijn_k_) :
 			g_(g), pacbio_k(k), debruijn_k(debruijn_k_), tmp_index(pacbio_k, cfg::get().output_dir) {
-		DeBruijnEdgeMultiIndexBuilder<runtime_k::RtSeq> builder;
+		typedef typename EdgeIndexHelper<DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::DeBruijnGraphKMerIndexBuilderT Builder;
+		Builder().BuildIndexFromGraph(tmp_index, g_);
 		builder.BuildIndexFromGraph<typename Graph::EdgeId, Graph>(tmp_index, g_);
 		FillBannedKmers();
 		compression_cutoff = cfg::get().pb.compression_cutoff;// 0.6
@@ -532,7 +533,7 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
 	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(pacbio_k);
 	for (size_t j = pacbio_k; j < s.size(); ++j) {
 		kmer <<= s[j];
-		if (tmp_index.contains(kmer)) {
+		if (tmp_index.valid_key(kmer)) {
 			for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter) {
 				int quality = tmp_index[kmer].size();
 				if (banned_kmers.find(Sequence(kmer)) == banned_kmers.end()) {

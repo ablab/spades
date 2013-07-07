@@ -153,7 +153,8 @@ class RuntimeSeq {
   /**
    * Default constructor, fills Seq with A's
    */
-  RuntimeSeq(size_t k): size_(k) {
+
+  explicit RuntimeSeq(size_t k): size_(k) {
     VERIFY(k <= max_size_);
     //VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
     std::fill(data_.begin(), data_.end(), 0);
