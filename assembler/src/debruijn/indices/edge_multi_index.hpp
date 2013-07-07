@@ -14,8 +14,8 @@ namespace debruijn_graph {
 //todo it is not handling graph events!!!
 template<class IdType, class Seq = runtime_k::RtSeq,
     class traits = kmer_index_traits<Seq> >
-class DeBruijnEdgeMultiIndex : public KmerStoringIndex<vector<EdgeInfo<IdType>>, traits> {
-  typedef KmerStoringIndex<vector<EdgeInfo<IdType>>, traits> base;
+class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<KmerStoringIndex<vector<EdgeInfo<IdType>>, traits>> {
+  typedef DeBruijnKMerIndex<KmerStoringIndex<vector<EdgeInfo<IdType>>, traits>> base;
  public:
  public:
   typedef typename base::traits_t traits_t;

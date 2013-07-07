@@ -47,11 +47,6 @@ class PerfectHashMap {
   std::string workdir_;
   unsigned k_;
 
- protected:
-  bool valid_idx(IdxType idx) const {
-      return idx != InvalidIdx && idx < size();
-  }
-
  public:
   typedef typename StorageT::iterator value_iterator;
   typedef typename StorageT::const_iterator const_value_iterator;
@@ -64,6 +59,10 @@ class PerfectHashMap {
 
   ~PerfectHashMap() {
     path::remove_dir(workdir_);
+  }
+
+  bool valid_idx(IdxType idx) const {
+      return idx != InvalidIdx && idx < size();
   }
 
   void clear() {
@@ -163,7 +162,6 @@ template<class ValueType, class traits>
 class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueType, traits> {
   typedef PerfectHashMap<typename traits::SeqType, ValueType, traits> base;
 
-  //fixme access levels!!! (this section used to be protected)
   typename traits::FinalKMerStorage *kmers_;
 
   void SortUniqueKMers() const {
@@ -228,7 +226,7 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
     return kmers_->cend();
   }
 
-  bool contains(KMerIdx idx, const KMer &k) const {
+  bool valid_key(KMerIdx idx, const KMer &k) const {
       if (!valid_idx(idx))
         return false;
 
@@ -236,23 +234,61 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
       return (typename traits::raw_equal_to()(k, *it));
   }
 
-  bool contains(const KMer& kmer) const {
-      KMerIdx idx = seq_idx(kmer);
-      return contains(idx, kmer);
+  bool valid_key(const KMer &kmer) const {
+    KMerIdx idx = seq_idx(kmer);
+    return valid_key(idx, kmer);
+  }
+
+  /**
+   * Number of edges going out of the param edge's end
+   */
+  unsigned NextEdgeCount(const KMer &kmer) const {
+    unsigned res = 0;
+    for (char c = 0; c < 4; ++c)
+      if (valid_key(kmer << c))
+        res += 1;
+
+    return res;
+  }
+
+  KMer NextEdge(const KMer &kmer) const { // returns any next edge
+    for (char c = 0; c < 4; ++c) {
+      KMer s = kmer << c;
+      if (valid_key(s))
+        return s;
+    }
+
+    VERIFY_MSG(false, "Couldn't find requested edge!");
+    return KMer(base::k());
+    // no next edges (we should request one here).
+  }
+
+  /**
+   * Number of edges coming into param edge's end
+   */
+  unsigned RivalEdgeCount(const KMer &kmer) const {
+    KMer kmer2 = kmer << 'A';
+    unsigned res = 0;
+    for (char c = 0; c < 4; ++c)
+      if (valid_key(kmer2 >> c))
+        res += 1;
+
+    return res;
   }
 
   KMer kmer(KMerIdx idx) const {
       VERIFY(valid_idx(idx));
 
       auto it = this->kmers_->begin() + idx;
-      return (typename traits::raw_create()(this->K(), *it));
+      return (typename traits::raw_create()(this->k(), *it));
   }
 
   template <class KmerCounter>
   void BuildIndex(KmerCounter& counter) {
       base::BuildIndex(counter);
       VERIFY(!kmers_);
-      kmers_ = counter.TransferBucket(0);
+      kmers_ = counter.GetFinalKMers();
+      VERIFY(kmers_);
       SortUniqueKMers();
   }
 };
@@ -306,6 +342,7 @@ class DeBruijnKMerIndex : public Index {
     typedef Index base;
 
  public:
+    typedef typename Index::KMer KMer;
     typedef typename Index::KMerIdx KMerIdx;
 
     DeBruijnKMerIndex(size_t K, const std::string &workdir) :
@@ -333,20 +370,6 @@ class DeBruijnKMerIndex : public Index {
     }
 
 };
-
-//template <class Index>
-//class DeBruijnKMerIndexBuilder {
-// public:
-//  template <class KmerCounter>
-//  void BuildIndex(Index &index, KmerCounter& counter) const {
-//    KMerIndexBuilder<typename Index::KMerIndexT> builder(index.workdir(),
-//             /*todo what is this value and why it is 1 for cap?*/16, counter.recommended_thread_num());
-//
-//    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
-//    index.data_.resize(sz);
-//  }
-//
-//};
 
 //Seq is here for partial specialization
 template <class Seq, class Index>

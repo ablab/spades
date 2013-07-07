@@ -566,9 +566,8 @@ int PacBioMappingIndex<Graph>::Count(Sequence &s){
 		kmer <<= s[j];
 //		INFO(kmer << kmer.GetHash());
 
-		size_t tmp = 	tmp_index.contains(kmer);
 //		buffer.push_back(kmer);
-		if (tmp) {
+		if (tmp_index.valid_key(kmer)) {
 			for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter){
 //				DEBUG(g_.int_id(iter->edgeId_));
 // TODO: operator< for RtSeqs
@@ -595,7 +594,7 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
 	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(K_);
 	for (size_t j = K_; j < s.size(); ++j) {
 		kmer <<= s[j];
-		if (tmp_index.contains(kmer)){
+		if (tmp_index.valid_key(kmer)){
 			for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter){
 				int quality = tmp_index[kmer].size();
 //				DEBUG(g_.int_id(iter->edgeId_));

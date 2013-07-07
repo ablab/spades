@@ -115,15 +115,10 @@ template<class Index>
 void FillCoverageFromIndex(Index& index) {
 	const auto& inner_index = index.inner_index();
 
-    for (auto I = inner_index.value_cbegin(), E = inner_index.value_cend();
-            I != E; ++I) {
-        const auto& edge_info = *I;
-        VERIFY(edge_info.offset != -1u);
-    }
-
 	for (auto I = inner_index.value_cbegin(), E = inner_index.value_cend();
 			I != E; ++I) {
 		const auto& edge_info = *I;
+        VERIFY(edge_info.offset != -1u);
 		VERIFY(edge_info.edge_id.get() != NULL);
 		edge_info.edge_id->IncCoverage(edge_info.count);
 	}
@@ -147,7 +142,7 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 	InnerIndex& debruijn = index.inner_index();
 	rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, contigs_stream);
 
-	VERIFY(k + 1== debruijn.K());
+	VERIFY(k + 1== debruijn.k());
 	// FIXME: output_dir here is damn ugly!
 
 	TRACE("Filled indices");

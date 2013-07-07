@@ -549,7 +549,6 @@ void WriteKmerComponent(conj_graph_pack &gp,
 		WARN("no such kmer in the graph");
 		return;
 	}
-	VERIFY(gp.index.contains(kp1mer));
 	EdgeNeighborhoodFinder<Graph> splitter(gp.g, gp.index.get(kp1mer).first, 50,
 			(size_t)(*cfg::get().ds.IS));
 	ComponentSizeFilter<Graph> filter(gp.g, 500, 2, 500);

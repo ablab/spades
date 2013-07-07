@@ -238,9 +238,9 @@ class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
   bool FindKmer(Kmer& kmer, std::vector<EdgeId> &passed, size_t& startPosition,
                 size_t& endPosition) const {
     //TRACE("CONTAINS kmer " << " " << omp_get_thread_num() );
-    if (index_.contains(kmer)) {
+    pair<EdgeId, size_t> position = index_.get(kmer);
+    if (position.second != -1u) {
       //TRACE("YES CONTAINS " << omp_get_thread_num());
-      pair<EdgeId, size_t> position = index_.get(kmer);
       //DEBUG("LENGTH " << g_.length(position.first));
       endPosition = position.second;
       if (passed.empty()) {

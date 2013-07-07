@@ -27,6 +27,7 @@ namespace debruijn_graph {
 
 typedef PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 
+/*KmerFree*//*KmerStoring*/
 template<class Graph, class SeqType, class KmerEdgeIndex = DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<Graph, SeqType>>>
 struct graph_pack: private boost::noncopyable {
 	typedef Graph graph_t;

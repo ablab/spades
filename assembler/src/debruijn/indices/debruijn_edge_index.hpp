@@ -40,7 +40,7 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerFreeIndex<EdgeInf
             : base(k, workdir), graph_(graph) {}
 
     /**
-     * Doesn't work without already constructed condensed graph!!!
+     * Shows if kmer has some entry associated with it
      */
     bool contains(KMerIdx idx, const KMer &k) const {
         // Sanity check
@@ -53,11 +53,6 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerFreeIndex<EdgeInf
             return false;
 
         return k == KMer(this->k(), graph_.EdgeNucls(entry.edge_id), entry.offset);
-    }
-
-    bool contains(const KMer& kmer) const {
-        KMerIdx idx = seq_idx(kmer);
-        return contains(idx, kmer);
     }
 
     KMer kmer(typename base::KMerIdx idx) const {
@@ -102,56 +97,20 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerStoringIndex<E
 
   ~KmerStoringDeBruijnEdgeIndex() {}
 
-// todo discuss with AntonK old strange version?
-//  template<class Writer>
-//  void BinWrite(Writer &writer) const {
-//    base::index_.serialize(writer);
-//    size_t sz = base::data_.size();
-//    writer.write((char*)&sz, sizeof(sz));
-//    for (size_t i = 0; i < sz; ++i)
-//      writer.write((char*)&(base::data_[i].count_), sizeof(base::data_[0].count_));
-//    sz = base::push_back_buffer_.size();
-//    writer.write((char*)&sz, sizeof(sz));
-//    for (size_t i = 0; i < sz; ++i)
-//      writer.write((char*)&(base::push_back_buffer_[i].count_), sizeof(base::push_back_buffer_[0].count_));
-//    for (auto it = base::push_back_index_.left.begin(), e = base::push_back_index_.left.end(); it != e; ++it) {
-//      size_t idx = it->second;
-//      KMer::BinWrite(writer, it->first);
-//      writer.write((char*)&idx, sizeof(idx));
-//      sz -= 1;
-//    }
-//    VERIFY(sz == 0);
-//    traits::raw_serialize(writer, base::kmers);
-//  }
-//
-//  template<class Reader>
-//  void BinRead(Reader &reader, const std::string &FileName) {
-//    base::clear();
-//    base::index_.deserialize(reader);
-//    size_t sz = 0;
-//    reader.read((char*)&sz, sizeof(sz));
-//    base::data_.resize(sz);
-//    for (size_t i = 0; i < sz; ++i)
-//      reader.read((char*)&(base::data_[i].count_), sizeof(base::data_[0].count_));
-//    reader.read((char*)&sz, sizeof(sz));
-//    base::push_back_buffer_.resize(sz);
-//    for (size_t i = 0; i < sz; ++i)
-//      reader.read((char*)&(base::push_back_buffer_[i].count_), sizeof(base::push_back_buffer_[0].count_));
-//    for (size_t i = 0; i < sz; ++i) {
-//      KMer s(base::K_);
-//      size_t idx;
-//
-//      s.BinRead(reader);
-//      reader.read((char*)&idx, sizeof(idx));
-//
-//      base::push_back_index_.insert(typename base::KMerPushBackIndexType::value_type(s, idx));
-//    }
-//    base::kmers = traits::raw_deserialize(reader, FileName);
-//  }
+  /**
+   * Shows if kmer has some entry associated with it
+   */
+  bool contains(KMerIdx idx, const KMer &k) const {
+      if (!valid_key(idx, k))
+          return false;
+
+      const typename base::ValueType &entry = base::operator[](idx);
+      return entry.offset != -1u;
+  }
 
   void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
     size_t idx = base::seq_idx(kmer);
-    if (base::contains(idx, kmer)) {
+    if (valid_key(idx, kmer)) {
       EdgeInfo<IdType> &entry = base::operator[](idx);
       entry.edge_id = id;
       entry.offset = offset;
@@ -190,43 +149,6 @@ class DeBruijnEdgeIndex : public Index {
         return false;
     }
 
-    /**
-     * Number of edges coming into param edge's end
-     */
-    unsigned RivalEdgeCount(const KMer &kmer) const {
-      KMer kmer2 = kmer << 'A';
-      unsigned res = 0;
-      for (char c = 0; c < 4; ++c)
-        if (contains(kmer2 >> c))
-          res += 1;
-
-      return res;
-    }
-
-    /**
-     * Number of edges going out of the param edge's end
-     */
-    unsigned NextEdgeCount(const KMer &kmer) const {
-      unsigned res = 0;
-      for (char c = 0; c < 4; ++c)
-        if (contains(kmer << c))
-          res += 1;
-
-      return res;
-    }
-
-    KMer NextEdge(const KMer &kmer) const { // returns any next edge
-      for (char c = 0; c < 4; ++c) {
-        KMer s = kmer << c;
-        if (contains(s))
-          return s;
-      }
-
-      VERIFY_MSG(false, "Couldn't find requested edge!");
-      return KMer(base::K());
-      // no next edges (we should request one here).
-    }
-
     //todo change to unsigned
     std::pair<IdType, size_t> get(KMerIdx idx, const KMer &kmer) const {
         VERIFY(contains(idx, kmer));
@@ -239,6 +161,14 @@ class DeBruijnEdgeIndex : public Index {
     std::pair<IdType, size_t> get(const KMer &kmer) const {
         typename base::KMerIdx idx = base::seq_idx(kmer);
         return get(idx, kmer);
+    }
+
+    /**
+     * Shows if kmer has some entry associated with it
+     */
+    bool contains(const KMer& kmer) const {
+        KMerIdx idx = seq_idx(kmer);
+        return contains(idx, kmer);
     }
 
     template<class Writer>

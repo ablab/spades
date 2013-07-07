@@ -29,7 +29,6 @@ template<class Graph, class Index>
 class DeBruijnGraphConstructor {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-//	typedef DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<Graph, Seq>> DeBruijn;
 	typedef Index DeBruijn;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Index::KMer Kmer;
@@ -88,7 +87,7 @@ private:
 			KPlusOneMer edge = kmer.pushBack(c);
 			auto idx = origin_.seq_idx(edge);
 			if (origin_.contains(idx, kmer))
-				return graph_.EdgeStart(origin_.get(idx).first);
+				return graph_.EdgeStart(origin_[idx].edge_id);
 		}
 		return VertexId(NULL);
 	}
@@ -99,7 +98,7 @@ private:
 			auto idx = origin_.seq_idx(edge);
 
 			if (origin_.contains(idx, kmer)) {
-				return graph_.EdgeEnd(origin_.get(idx).first);
+				return graph_.EdgeEnd(origin_[idx].edge_id);
 			}
 		}
 		return VertexId(NULL);

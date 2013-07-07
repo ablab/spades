@@ -80,7 +80,7 @@ public:
         if (!inner_index_.contains(idx, kmer)) {
             return make_pair(EdgeId(0), -1u);
         } else {
-            return inner_index_.get(kmer);
+            return inner_index_.get(idx, kmer);
         }
     }
 
