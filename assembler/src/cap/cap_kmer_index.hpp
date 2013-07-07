@@ -205,9 +205,6 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
     return bucket->end();
   }
 
-  size_t recommended_thread_num() const {
-      return 1;
-  }
 };
 
 }
@@ -225,65 +222,13 @@ class DeBruijnStreamKMerIndexBuilder<cap::LSeq, Index> {
                                 SingleReadStream* contigs_stream = 0) const {
         cap::CapKMerCounter<typename Streams::ReaderType::read_type> counter(index.k(), streams);
 
-        index.BuildIndex(counter);
+        index.BuildIndex(counter, 1, 1);
         return 0;
     }
 
 };
 
-//template<>
-//class DeBruijnEdgeIndexBuilder<cap::LSeq> {
-//
-// public:
-//  template <class Reader, class IdType>
-//  size_t BuildIndexFromStream(
-//      DeBruijnEdgeIndex<IdType, cap::LSeq> &index,
-//      io::ReadStreamVector<Reader> &streams,
-//      SingleReadStream* contigs_stream = 0) {
-//    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, kmer_index_traits<cap::LSeq>>::KMerIndexT> builder(index.workdir(),
-//                                                                1 /* buckets */,
-//                                                                1 /* threads */);
-//    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
-//
-//    SortUniqueKMers(counter, index);
-//
-//    // Now use the index to fill the coverage and EdgeId's
-//    INFO("Collecting k-mer coverage information, this takes a while.");
-//    index.data_.resize(sz);
-//
-//    return 0;
-//  }
-//
-// protected:
-//  template <class KMerCounter, class Index>
-//  void SortUniqueKMers(KMerCounter &counter, Index &index) const {
-//    if (!index.kmers)
-//      index.kmers = counter.TransferBucket(0);
-//
-//    size_t swaps = 0;
-//    INFO("Arranging kmers in hash map order");
-//    for (auto I = index.kmers->begin(), E = index.kmers->end(); I != E; ++I) {
-//      size_t cidx = I - index.kmers->begin();
-//      size_t kidx = index.raw_seq_idx(*I);
-//      while (cidx != kidx) {
-//        auto J = index.kmers->begin() + kidx;
-//        using std::swap;
-//        swap(*I, *J);
-//        swaps += 1;
-//
-//        kidx = index.raw_seq_idx(*I);
-//      }
-//    }
-//    INFO("Done. Total swaps: " << swaps);
-//  }
-//
-// protected:
-//  DECL_LOGGER("K-mer Index Building");
-//};
-
-
 }
-
 
 namespace runtime_k {
 

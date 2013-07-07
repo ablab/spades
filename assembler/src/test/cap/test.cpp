@@ -19,7 +19,7 @@
 {
 	//logging::create_logger("", logging::L_DEBUG);
 	//logging::__logger()->add_writer(make_shared<logging::console_writer>());
-  logging::logger *log = logging::create_logger("", logging::L_INFO);
+  logging::logger *log = logging::create_logger("", logging::L_TRACE/*L_INFO*/);
 	log->add_writer(std::make_shared<logging::console_writer>());
 	logging::attach_logger(log);
 
@@ -122,13 +122,14 @@ BOOST_AUTO_TEST_CASE( ColoringStringsTest ) {
 }
 */
 
+/*
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
   utils::TmpFolderFixture _("tmp");
 	make_dir("bp_graph_test");
 	LoadAndRunBPG<15, 25, runtime_k::RtSeq>("./src/test/cap/tests/synthetic/tests.xml",
 			"bp_graph_test/simulated_common/", "./src/test/cap/tests/synthetic/etalon/", "", false);
 	remove_dir("bp_graph_test");
-}
+}*/
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
 

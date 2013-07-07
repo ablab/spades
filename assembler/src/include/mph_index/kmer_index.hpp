@@ -217,8 +217,6 @@ class KMerSplitter {
 
   unsigned K() const { return K_; }
 
-  virtual size_t recommended_thread_num() const = 0;
-
  protected:
   const std::string &work_dir_;
   hash_function hash_;
@@ -351,10 +349,6 @@ public:
 
   std::string GetFinalKMersFname() const {
     return path::append_path(work_dir_, "kmers.final");
-  }
-
-  size_t recommended_thread_num() const {
-    return splitter_.recommended_thread_num();
   }
 
 private:

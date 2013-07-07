@@ -147,12 +147,15 @@ class PerfectHashMap {
     return workdir_;
   }
 
+  //todo think more about hierarchy
+ protected:
   template <class KmerCounter>
-  void BuildIndex(KmerCounter& counter) {
+  void BuildIndex(KmerCounter& counter, size_t bucket_num, size_t thread_num, bool save_final = true) {
     KMerIndexBuilder<KMerIndexT> builder(workdir_,
-             /*todo what is this value and why it is 1 for cap?*/16, counter.recommended_thread_num());
+                                         bucket_num,
+                                         thread_num);
 
-    size_t sz = builder.BuildIndex(index_, counter, /* save final */ true);
+    size_t sz = builder.BuildIndex(index_, counter, save_final);
     data_.resize(sz);
   }
 };
@@ -284,8 +287,8 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
   }
 
   template <class KmerCounter>
-  void BuildIndex(KmerCounter& counter) {
-      base::BuildIndex(counter);
+  void BuildIndex(KmerCounter& counter, size_t bucket_num, size_t thread_num) {
+      base::BuildIndex(counter, bucket_num, thread_num);
       VERIFY(!kmers_);
       kmers_ = counter.GetFinalKMers();
       VERIFY(kmers_);
@@ -331,8 +334,8 @@ class KmerFreeIndex : public PerfectHashMap<typename traits::SeqType, ValueType,
   }
 
   template <class KmerCounter>
-  void BuildIndex(KmerCounter& counter) {
-      base::BuildIndex(counter);
+  void BuildIndex(KmerCounter& counter, size_t bucket_num, size_t thread_num) {
+      base::BuildIndex(counter, bucket_num, thread_num);
       KMersFilename_ = counter.GetFinalKMersFname();
   }
 };
@@ -398,7 +401,7 @@ class DeBruijnStreamKMerIndexBuilder<runtime_k::RtSeq, Index> {
                                                 streams, contigs_stream);
         KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
 
-        index.BuildIndex(counter);
+        index.BuildIndex(counter, 16, streams.size());
         return 0;
     }
 
@@ -415,7 +418,7 @@ class DeBruijnGraphKMerIndexBuilder {
       DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.k(),
                                                 g);
       KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-      index.BuildIndex(counter);
+      index.BuildIndex(counter, 16, 1);
   }
 
 };
