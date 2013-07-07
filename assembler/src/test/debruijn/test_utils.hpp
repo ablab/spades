@@ -9,6 +9,7 @@
 #include <boost/test/unit_test.hpp>
 #include "launch.hpp"
 #include "graph_construction.hpp"
+#include "graph_pack.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "io/vector_reader.hpp"
 #include "io/converting_reader_wrapper.hpp"
@@ -136,7 +137,7 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
 	RawStream raw_stream(MakeReads(reads));
 	Stream read_stream(raw_stream);
 	Graph g(k);
-	EdgeIndex<Graph> index(g, k + 1, tmp_folder);
+	typename graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, k + 1, tmp_folder);
 
 	ConstructGraphFromStream(k, CreateDefaultConstructionConfig(), read_stream, g, index);
 
@@ -212,13 +213,12 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	PairedInfoIndexT<Graph> paired_index(gp.g);
 
 	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({new SingleStream(paired_read_stream)});
-	ConstructGraphWithCoverage<io::SingleRead>(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
+	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
 
 	FillPairedIndexWithReadCountMetric(gp.g,
-			gp.int_ids, gp.index,
-			gp.kmer_mapper,
-			paired_index,
-			paired_stream_vector, k);
+	                                   *MapperInstance(gp),
+	                                   paired_index,
+	                                   paired_stream_vector);
 
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
