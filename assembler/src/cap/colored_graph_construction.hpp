@@ -295,7 +295,8 @@ void SplitAndColorGraph(gp_t& gp,
 		ContigStreams& streams, bool fill_pos = true) {
 
     typedef typename gp_t::graph_t Graph;
-	typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
+    typedef typename gp_t::index_t Index;
+	typedef NewExtendedSequenceMapper<Graph, Index> Mapper;
 
 	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g, // MAPPER K+1!!
 			coloring, *MapperInstance<gp_t>(gp));
@@ -314,10 +315,10 @@ void SplitAndColorGraph(gp_t& gp,
 	}
 }
 
-template<class Graph, class Read, class Seq>
+template<class Graph, class Index, class Streams>
 size_t CapConstructGraph(size_t k,
-        io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
-        EdgeIndex<Graph, Seq>& index, SingleReadStream* contigs_stream = 0) {
+        Streams& streams, Graph& g,
+        Index& index, SingleReadStream* contigs_stream = 0) {
     return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 }
 

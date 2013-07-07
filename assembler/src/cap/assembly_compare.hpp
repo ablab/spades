@@ -476,8 +476,7 @@ void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
 	StrGraphLabeler<Graph> str_labeler(gp.g);
 	CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
 
-	NewExtendedSequenceMapper<Graph> mapper(gp.g, gp.index, // gp_t::k_value + 1
-			gp.kmer_mapper, gp_t::k_value + 1);
+	auto mapper = MapperInstance(gp);
 
 	assembly_to_thread.reset();
 	io::SingleRead read;
@@ -486,7 +485,7 @@ void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
 		make_dir(output_dir + read.name());
 		WriteComponentsAlongPath(gp.g, labeler,
 				output_dir + read.name() + "/.dot", /*split_edge_length*/400,
-				mapper.MapSequence(read.sequence()),
+				mapper->MapSequence(read.sequence()),
 				Path<typename Graph::EdgeId>(), Path<typename Graph::EdgeId>(),
 				true);
 	}

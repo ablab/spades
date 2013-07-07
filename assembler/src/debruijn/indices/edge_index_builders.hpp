@@ -99,7 +99,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
         for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
              idx != eidx; ++idx) {
 
-            runtime_k::RtSeq k = index.kmer(idx);
+            Kmer k = index.kmer(idx);
 
             VERIFY(index[k].count == index[!k].count);
         }

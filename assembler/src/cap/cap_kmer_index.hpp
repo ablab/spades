@@ -214,19 +214,19 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
 
 namespace debruijn_graph {
 
-template<class Builder>
-class DeBruijnKMerIndexBuilder<cap::LSeq, Builder>: public Builder {
+template<class Index>
+class DeBruijnStreamKMerIndexBuilder<cap::LSeq, Index> {
  public:
-    typedef typename Builder::IndexT Index;
-    typedef typename Index::GraphT Graph;
+    typedef Index IndexT;
 
     template <class Streams>
     size_t BuildIndexFromStream(Index &index,
                                 Streams &streams,
                                 SingleReadStream* contigs_stream = 0) const {
-        cap::CapKMerCounter<typename Streams::ReaderType::read_type> counter(index.K(), streams);
+        cap::CapKMerCounter<typename Streams::ReaderType::read_type> counter(index.k(), streams);
 
-        return BuildIndex(index, counter);
+        index.BuildIndex(counter);
+        return 0;
     }
 
 };

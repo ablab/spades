@@ -49,19 +49,19 @@ inline Sequence ReadSequence(ContigStream& reader) {
 	return read.sequence();
 }
 
-template<size_t k, class Graph>
-void ConstructGraph(Graph& g, EdgeIndex<Graph>& index,
+template<class Graph, class Index>
+void ConstructGraph(Graph& g, Index& index,
 		ContigStream& stream) {
 	vector<ContigStream*> streams = { &stream };
-	ConstructGraph<k, Graph>(streams, g, index);
+	ConstructGraph<Graph>(streams, g, index);
 }
 
-template<size_t k, class Graph>
-void ConstructGraph(Graph& g, EdgeIndex<Graph>& index,
+template<class Graph, class Index>
+void ConstructGraph(Graph& g, Index& index,
 		ContigStream& stream1,
 		ContigStream& stream2) {
 	io::MultifileReader<io::SingleRead> composite_reader(stream1, stream2);
-	ConstructGraph<k, Graph>(g, index, composite_reader);
+	ConstructGraph<Graph, Index>(g, index, composite_reader);
 }
 
 inline Sequence ReadGenome(const string& filename) {
