@@ -238,6 +238,11 @@ public:
 				EdgeId newEdge = g_.AddEdge(g_.EdgeStart(first), g_.EdgeEnd(second), Sequence( iter->second.begin()->second.second));
 				TRACE(g_.int_id(newEdge));
 				size_t len_split = size_t((1.0 * len_f * len_sum)/(len_s + len_f));
+				if (len_split == 0) {
+					WARN (" zero split length, length are:" << len_f <<" " << len_sum <<" " << len_s);
+					len_split = 1;
+				}
+
 				pair<EdgeId, EdgeId> split_result = g_.SplitEdge(
 						newEdge,
 						len_split);
