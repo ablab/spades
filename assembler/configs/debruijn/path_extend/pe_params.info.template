@@ -171,7 +171,10 @@ multicell {
 		    priority_coeff             2
 		}
 	 	path_cover  {
-		    single_threshold	       0.01
+		    single_threshold	       1.83784
+;	A.mirum threshold 0.076
+;	E.coli RL36 threshold 0.717949
+;	E.coli IS220 threshold 1.83784
 		    weight_threshold           0.5
 		    priority_coeff             1.5
 		}
