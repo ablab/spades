@@ -3,6 +3,7 @@
 #include "environment.hpp"
 #include "compare_standard.hpp"
 #include "coloring.hpp"
+#include "coordinates_handler.hpp"
 
 namespace online_visualization {
 
@@ -23,6 +24,7 @@ class CapEnvironment : public Environment {
   typedef debruijn_graph::graph_pack<Graph, cap::LSeq> LSeqGraphPack;
 
   typedef cap::ColorHandler<Graph> ColorHandler;
+  typedef cap::CoordinatesHandler<Graph> CoordinatesHandler;
 
   std::string name_;
   std::string dir_;
@@ -43,6 +45,8 @@ class CapEnvironment : public Environment {
   std::shared_ptr<LSeqGraphPack> gp_lseq_;
 
   std::shared_ptr<ColorHandler> coloring_;
+  
+  CoordinatesHandler coordinates_handler_;
 
   // Aliases to GraphPack parts:
   //
@@ -58,6 +62,28 @@ class CapEnvironment : public Environment {
 
   // Environment Manager for complex methods on this Environment
   std::shared_ptr<CapEnvironmentManager> manager_;
+
+  void AssignGPReferences() {
+    VERIFY(gp_lseq_ != NULL || gp_rtseq_ != NULL);
+    if (LSeqIsUsed()) {
+      graph_ = &(gp_lseq_->g);
+      edge_pos_ = &(gp_lseq_->edge_pos);
+      int_ids_ = &(gp_lseq_->int_ids);
+    } else {
+      graph_ = &(gp_rtseq_->g);
+      edge_pos_ = &(gp_rtseq_->edge_pos);
+      int_ids_ = &(gp_rtseq_->int_ids);
+    }
+    coordinates_handler_.SetGraph(graph_);
+  }
+
+  void set_gp(const std::shared_ptr<LSeqGraphPack> &gp_lseq) {
+    gp_lseq_ = gp_lseq;
+  }
+
+  void set_gp(const std::shared_ptr<RtSeqGraphPack> &gp_rtseq) {
+    gp_rtseq_ = gp_rtseq;
+  }
   
  public:
   static const size_t kNoGraphK = -1;
@@ -75,6 +101,7 @@ class CapEnvironment : public Environment {
         gp_rtseq_(),
         gp_lseq_(),
         coloring_(),
+        coordinates_handler_(),
         graph_(NULL),
         edge_pos_(NULL),
         int_ids_(NULL),
@@ -92,7 +119,29 @@ class CapEnvironment : public Environment {
       VERIFY(graph_ != NULL);
       VERIFY(edge_pos_ != NULL);
       VERIFY(int_ids_ != NULL);
+      VERIFY(coordinates_handler_.GetGraph() == graph_);
     }
+  }
+
+  void ClearGP() {
+    // shared_ptr deletes automatically
+    coordinates_handler_.UnsetGraph();
+    gp_rtseq_.reset();
+    gp_lseq_.reset();
+    graph_ = NULL;
+    edge_pos_ = NULL;
+    int_ids_ = NULL;
+    coloring_.reset();
+
+    CheckConsistency();
+  }
+
+  template <class GraphPack>
+  void SetGraphPack(const std::shared_ptr<GraphPack> &gp) {
+    VERIFY(gp_rtseq_ == NULL && gp_lseq_ == NULL);
+    set_gp(gp);
+    AssignGPReferences();
+    CheckConsistency();
   }
 
   size_t GetGraphK() const {
@@ -103,7 +152,7 @@ class CapEnvironment : public Environment {
     return graph_->k();
   }
   bool LSeqIsUsed() const {
-    return UseLSeqForThisK(GetGraphK());
+    return gp_lseq_ != NULL;
   }
 
   // Method defining of we use RtSeq or LSeq for particular K

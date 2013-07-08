@@ -99,7 +99,7 @@ public:
 
 	ElementId operator*() {
 		VERIFY(!queue_.empty());
-		if(!current_actual_) {
+		if(!current_actual_ || current_deleted_) {
 			current_ = queue_.top();
 			current_actual_ = true;
 			current_deleted_ = false;
