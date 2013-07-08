@@ -224,6 +224,11 @@ public:
 			} else {
 				EdgeId first = iter->first;
 				EdgeId second = (iter->second.begin()->first);
+				if (replacement.find(first) != replacement.end() || replacement.find(second) != replacement.end()) {
+					INFO ("sorry, gap chains are not supported yet");
+					continue;
+				}
+
 				EdgeId first_conj = g_.conjugate(first);
 				EdgeId second_conj = g_.conjugate(second);
 
@@ -231,7 +236,7 @@ public:
 				int second_id =  g_.int_id(second);
 				int first_id_conj = g_.int_id(g_.conjugate(first));
 				int second_id_conj = g_.int_id(g_.conjugate(second));
-
+				INFO("closing gaps between "<< first_id << " " << second_id);
 				size_t len_f = g_.length(first);
 				size_t len_s = g_.length(second);
 				size_t len_sum = iter->second.begin()->second.second.length();
