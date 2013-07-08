@@ -48,6 +48,7 @@ namespace debruijn_graph {
 
 	private:
 
+		FILE* file;
 		double CountInCoverage ( const Sequence& seq, size_t size_bound ) const {
 
 			unsigned len = seq.size();
@@ -60,12 +61,15 @@ namespace debruijn_graph {
 				}
 				
 				edge_coverage_in += kmer_index_[kmer_in].count_;
+				fprintf(file,"%d, ", kmer_index_[kmer_in].count_);
 			}
 					
+			fprintf(file,"\n");
 			return edge_coverage_in / size_bound;
 
 
 		}
+
 
 		double CountOutCoverage ( const Sequence& seq, size_t size_bound ) const {
 
@@ -81,7 +85,6 @@ namespace debruijn_graph {
 					
 				edge_coverage_out += kmer_index_[kmer_out].count_;
 
-
 				}
 			return edge_coverage_out / size_bound;
 
@@ -92,12 +95,13 @@ namespace debruijn_graph {
 
 		FlankingCoverage( const Graph& g, const DeBruijnEdgeIndex<EdgeId>& kmer_index, unsigned avg, unsigned K ) : kmer_index_(kmer_index), average_const_(avg), K_(K) {
 
+			file = fopen("/home/ksenia/coverage.log", "w");
 	
   			for (auto e_iter = g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 			
 				double edge_coverage_in(0.0), edge_coverage_out(0.0);
 				//averageConst = graph.g.length(*e_iter);
-				unsigned size_bound = average_const_;
+				unsigned size_bound = g.length(*e_iter); //average_const_;
 				
 				if ( average_const_ > g.length(*e_iter) ){
 					size_bound = g.length(*e_iter);		
@@ -106,12 +110,14 @@ namespace debruijn_graph {
 				auto seq = g.EdgeNucls(*e_iter);
 				edge_coverage_in = CountInCoverage( seq, size_bound );	
 				
+				//fprintf(file,"%d: ", g.int_id(*e_iter));
 				edge_coverage_out = CountOutCoverage( seq, size_bound );	
 				in_coverage_.insert(std::make_pair( *e_iter, edge_coverage_in));
 				//inCoverage.insert(std::make_pair( *e_iter, graph.g.coverage(*e_iter)));
 				out_coverage_.insert(std::make_pair( *e_iter, edge_coverage_out));
 				//outCoverage.insert(std::make_pair( *e_iter, graph.g.coverage(*e_iter)));
 			}
+			fclose(file);
 			
 		}
 	private:

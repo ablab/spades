@@ -10,7 +10,7 @@ namespace debruijn_graph {
 	template <class Graph>
 	class BucketMapper {
 
-		typedef int bucket_id;
+		typedef unsigned bucket_id;
 
 		const Graph& g_;
 		const DeBruijnEdgeIndex<EdgeId>& kmer_index_;
@@ -85,9 +85,9 @@ namespace debruijn_graph {
 
 		
 
-		int CountNumberKmersInBucket( ) {
+		void CountNumberKmersInBucket( ) {
 			
-			for ( int id = 0; id < bucketNum_; ++id) {
+			for ( unsigned id = 0; id < bucketNum_; ++id) {
 				int number_of_kmers_i = 0;
 				int lower_coverage = 0, upper_coverage = buckets[id];
 				if ( id > 0 ){
