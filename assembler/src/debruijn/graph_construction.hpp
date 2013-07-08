@@ -226,21 +226,13 @@ size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction 
 	return rl;
 }
 
-template<class Graph, class Reader, class Index>
-size_t ConstructGraphFromStream(size_t k, const debruijn_config::construction params,
-        Reader& stream, Graph& g,
-        Index& index, SingleReadStream* contigs_stream = 0) {
-    io::ReadStreamVector<io::IReader<typename Reader::read_type>> streams(stream);
-    return ConstructGraph(k, params, streams, g, index, contigs_stream);
-}
-
-template<class Graph, class Reader, class Index>
-size_t ConstructGraphWithCoverageFromStream(size_t k,
-        Reader& stream, Graph& g,
-        Index& index, SingleReadStream* contigs_stream = 0) {
-    io::ReadStreamVector<io::IReader<typename Reader::read_type>> streams(stream);
-    return ConstructGraph(k, streams, g, index, contigs_stream);
-}
+//template<class Graph, class Reader, class Index>
+//size_t ConstructGraphWithCoverageFromStream(size_t k,
+//        Reader& stream, Graph& g,
+//        Index& index, SingleReadStream* contigs_stream = 0) {
+//    io::ReadStreamVector<io::IReader<typename Reader::read_type>> streams(stream);
+//    return ConstructGraph(k, streams, g, index, contigs_stream);
+//}
 
 }
 

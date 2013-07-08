@@ -45,6 +45,16 @@ typedef multimap<MyEdgePair, pair<int, double>> EdgePairInfo;
 typedef map<MyEdge, double> CoverageInfo;
 typedef unordered_set<MyEdge> Edges;
 
+debruijn_config::construction CreateDefaultConstructionConfig() {
+    debruijn_config::construction config;
+    config.con_mode = construction_mode::con_extention;
+    debruijn_config::construction::early_tip_clipper early_tc;
+    early_tc.enable = false;
+    config.early_tc = early_tc;
+    config.keep_perfect_loops = true;
+    return config;
+}
+
 string print(const Edges& es) {
 	string s = "Edge set : {";
 	for (auto i = es.begin(); i != es.end(); ++i) {
@@ -128,6 +138,14 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
 		edges.insert(g.EdgeNucls(*it).str());
 	}
 	EdgesEqual(edges, etalon_edges);
+}
+
+template<class Graph, class Reader, class Index>
+size_t ConstructGraphFromStream(size_t k, const debruijn_config::construction params,
+        Reader& stream, Graph& g,
+        Index& index, SingleReadStream* contigs_stream = 0) {
+    io::ReadStreamVector<io::IReader<typename Reader::read_type>> streams(stream);
+    return ConstructGraph(k, params, streams, g, index, contigs_stream);
 }
 
 void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& etalon_edges) {

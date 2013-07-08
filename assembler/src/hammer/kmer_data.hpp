@@ -17,7 +17,7 @@ class KMerData {
   typedef std::vector<KMerStat> KMerDataStorageType;
 
  public:
-  KMerData() : index_(hammer::K) {}
+  KMerData() {}
 
   size_t size() const { return data_.size() + push_back_buffer_.size(); }
   void clear() {
