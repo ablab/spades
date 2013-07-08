@@ -226,9 +226,9 @@ private:
         Sequence read1 = p_r.first().sequence();
         Sequence read2 = p_r.second().sequence();
         size_t read_distance = p_r.distance();
-        debruijn_graph::NewExtendedSequenceMapper<Graph> mapper(gp_.g, gp_.index,  gp_.kmer_mapper, gp_.g.k() + 1);
-        MappingPath<EdgeId> path1 = mapper.MapSequence(read1);
-        MappingPath<EdgeId> path2 = mapper.MapSequence(read2);
+        auto mapper = MapperInstance(gp_);
+        MappingPath<EdgeId> path1 = mapper->MapSequence(read1);
+        MappingPath<EdgeId> path2 = mapper->MapSequence(read2);
 
         for (size_t i = 0; i < path1.size(); ++i) {
             pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];

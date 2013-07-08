@@ -53,6 +53,7 @@ public:
 			insert_size_max(insert_size_max1), length_to_split(length_to_split1), is_mp_(is_mp) {
 	}
 
+	//todo WTF?!!!
 	double find_threshold(size_t index) {
 		Sequence genome = cfg::get().developer_mode ? cfg::get().ds.reference_genome : Sequence();
 		conj_graph_pack gp(cfg::get().K, cfg::get().output_dir, genome,
@@ -71,7 +72,7 @@ public:
 		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[index], true, cfg::get().ds.reads[index].data().mean_insert_size);
 		SingleStreamType paired_streams(paired_stream.get());
 		paired_stream.release();
-		FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index, gp.kmer_mapper,paired_index, paired_streams, gp.k_value);
+		FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_index, paired_streams);
 		//io::ReadStreamVector<io::IReader<io::PairedReadSeq>> paired_streams = paired_binary_readers(true, is);
 		//FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
 		//		gp.kmer_mapper, paired_index, paired_streams, gp.k_value);

@@ -143,15 +143,13 @@ namespace debruijn_graph {
 
                if (cfg::get().use_multithreading) {
                    auto paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, cfg::get().ds.reads[i].data().mean_insert_size);
-                   FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
-                                                  gp.kmer_mapper, paired_indices[i], *paired_streams, gp.k_value);
+                   FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], *paired_streams);
                }
                else {
                    auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[i], true, cfg::get().ds.reads[i].data().mean_insert_size);
                    SingleStreamType paired_streams(paired_stream.get());
                    paired_stream.release();
-                   FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
-                                                      gp.kmer_mapper, paired_indices[i], paired_streams, gp.k_value);
+                   FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], paired_streams);
                }
 
            }

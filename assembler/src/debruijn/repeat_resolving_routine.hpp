@@ -892,28 +892,30 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 			clustered_index);
 }
 
-void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths, 
+void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths,
 				PairedIndexT& clustered_index,
-				EdgeQuality<Graph>& quality_labeler ) {
+				const EdgeQuality<Graph, Index>& quality_labeler ) {
 
+    typedef DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq>> KmerIndex;
 
-	DeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), conj_gp.g, cfg::get().output_dir);
+    KmerIndex kmer_index(conj_gp.g.k() + 1, conj_gp.g, cfg::get().output_dir);
 	if (cfg::get().developer_mode) {
 
 		std::string path;
-		if (cfg::get().entry_point < ws_repeats_resolving) 
+		if (cfg::get().entry_point < ws_repeats_resolving)
 			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
 		else
 			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
-		bool val = LoadEdgeIndex(path, kmerIndex);
+		bool val = LoadEdgeIndex(path, kmer_index);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
 		INFO("Updating index from graph started");
-		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph<conj_graph_pack::graph_t>(kmerIndex, conj_gp.g);
+        EdgeInfoUpdater<KmerIndex, Graph> updater(conj_gp.g, kmer_index);
+        updater.UpdateAll();
 	}
 
-	auto index = FlankingCoverage<conj_graph_pack::graph_t>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
+	FlankingCoverage<Graph, KmerIndex> index(conj_gp.g, kmer_index, 50, cfg::get().K + 1);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
-	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match, 
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match,
 			cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
 	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
 
@@ -1024,7 +1026,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 	}
 }
 
-void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices, EdgeQuality<Graph>& quality_labeler) {
+void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices, const EdgeQuality<Graph, Index>& quality_labeler) {
 
 	vector<PairedIndexT*> pe_indexs;
 	vector<PairedIndexT*> pe_scaf_indexs;
@@ -1182,7 +1184,7 @@ void resolve_repeats() {
 }
 
 void exec_repeat_resolving() {
-	
+
 	if (cfg::get().entry_point <= ws_repeats_resolving) {
 		resolve_repeats();
 		//todo why nothing to save???

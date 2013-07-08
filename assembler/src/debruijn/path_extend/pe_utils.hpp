@@ -762,14 +762,14 @@ PathContainer CreatePathsFromContigs(conj_graph_pack & gp, const string& filenam
     INFO(ToString(contigs.size()) + " contigs were read");
 
     vector< MappingPath<EdgeId> > paths;
-    ExtendedSequenceMapper<Graph> mapper(gp.g, gp.index, gp.kmer_mapper, gp.k_value + 1);
+    auto mapper = MapperInstance(gp);
 
     INFO("-- Paths before simplification");
 
     for(auto it = contigs.begin(); it != contigs.end(); it++) {
         MappingPath<EdgeId> path;
         for (auto seq = it->begin(); seq != it->end(); ++seq) {
-            path.join(mapper.MapSequence(*seq));
+            path.join(mapper->MapSequence(*seq));
         }
         if (path.size() == 0) {
             DEBUG("Empty path from");

@@ -44,7 +44,6 @@ public:
 			g_(g), pacbio_k(k), debruijn_k(debruijn_k_), tmp_index(pacbio_k, cfg::get().output_dir) {
 		typedef typename EdgeIndexHelper<DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::DeBruijnGraphKMerIndexBuilderT Builder;
 		Builder().BuildIndexFromGraph(tmp_index, g_);
-		builder.BuildIndexFromGraph<typename Graph::EdgeId, Graph>(tmp_index, g_);
 		FillBannedKmers();
 		compression_cutoff = cfg::get().pb.compression_cutoff;// 0.6
 		domination_cutoff = cfg::get().pb.domination_cutoff; //1.5
@@ -537,8 +536,8 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
 			for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter) {
 				int quality = tmp_index[kmer].size();
 				if (banned_kmers.find(Sequence(kmer)) == banned_kmers.end()) {
-					if (int(iter->offset_) > int(debruijn_k - pacbio_k) && int(iter->offset_) < int(g_.length(iter->edgeId_)))
-						res[iter->edgeId_].push_back(MappingInstance(iter->offset_, size_t(j - pacbio_k + 1), quality));
+					if (int(iter->offset) > int(debruijn_k - pacbio_k) && int(iter->offset) < int(g_.length(iter->edge_id)))
+						res[iter->edge_id].push_back(MappingInstance(iter->offset, size_t(j - pacbio_k + 1), quality));
 				}
 			}
 		}
