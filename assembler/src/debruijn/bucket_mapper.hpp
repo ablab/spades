@@ -13,7 +13,7 @@ namespace debruijn_graph {
 		typedef unsigned bucket_id;
 
 		const Graph& g_;
-		const DeBruijnEdgeIndex<EdgeId>& kmer_index_;
+		const DeBruijnEdgeIndex<Graph>& kmer_index_;
 		const unsigned K_;
 		const unsigned bucketNum_;
 
@@ -131,7 +131,7 @@ namespace debruijn_graph {
 
 		public:
 
-		BucketMapper( const Graph& g, const DeBruijnEdgeIndex<EdgeId>& kmer_index, unsigned K, unsigned bucketNum ) : g_(g), kmer_index_(kmer_index), K_(K), bucketNum_(bucketNum) {
+		BucketMapper( const Graph& g, const DeBruijnEdgeIndex<Graph>& kmer_index, unsigned K, unsigned bucketNum ) : g_(g), kmer_index_(kmer_index), K_(K), bucketNum_(bucketNum) {
 		
 		}
 

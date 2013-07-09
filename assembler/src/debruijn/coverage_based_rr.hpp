@@ -23,7 +23,7 @@ class CoverageBasedResolution {
 	typedef enum { TOPOLOGY, LENGTH, PAIREDINFO } kind_of_repeat; 
 	
 	GraphPack *gp;
-	const DeBruijnEdgeIndex<EdgeId>& kmer_index_;
+	const DeBruijnEdgeIndex<typename GraphPack::graph_t>& kmer_index_;
 	std::vector< std::vector<EdgeId> > allPaths;
 
 	//path with conjugate edges
@@ -39,7 +39,7 @@ class CoverageBasedResolution {
 	const double repeat_length_upper_threshold_;
 	
 	public:
-	CoverageBasedResolution( GraphPack *gpack_arg, const DeBruijnEdgeIndex<EdgeId>& kmer_index, double threshold_one_list, double threshold_match, 
+	CoverageBasedResolution( GraphPack *gpack_arg, const DeBruijnEdgeIndex<typename GraphPack::graph_t>& kmer_index, double threshold_one_list, double threshold_match,
 				double threshold_global, double tandem_lower_threshold, double tandem_upper_threshold, double repeat_length_upper_threshold) :
 											kmer_index_(kmer_index),
 											threshold_one_list_(threshold_one_list), 
