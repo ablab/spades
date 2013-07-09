@@ -165,7 +165,7 @@ class DeBruijnExtensionIndex : public KmerFreeIndex<uint8_t, traits> {
     ~DeBruijnExtensionIndex() {}
 
     KmerWithHash<KMer> CreateKmerWithHash(KMer kmer) const {
-        return KmerWithHash<KMer>(kmer, seq_idx(kmer));
+        return KmerWithHash<KMer>(kmer, this->seq_idx(kmer));
     }
 
 };
@@ -210,7 +210,7 @@ class DeBruijnExtensionIndexBuilder : public Builder {
                                 SingleReadStream* contigs_stream = 0) const {
         unsigned nthreads = streams.size();
 
-        BuildIndexFromStream(index, streams, contigs_stream);
+				base::BuildIndexFromStream(index, streams, contigs_stream);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Building k-mer extensions from reads, this takes a while.");
