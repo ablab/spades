@@ -135,6 +135,31 @@ void output_broken_scaffolds(PathContainer& paths, int k, ContigWriter& writer, 
     writer.writePaths(breaker.container(), filename);
 }
 
+vector<SimplePathExtender *> make_extenders(conj_graph_pack& gp,
+		const pe_config::ParamSetT& pset, vector<PairedInfoLibraries>& libs,
+		bool investigateShortLoops) {
+	vector<WeightCounter*> wcs;
+	for (size_t i = 0; i < libs.size(); ++i) {
+		wcs.push_back(new PathCoverWeightCounter(gp.g, libs[i],
+				get_weight_threshold(libs[i]), get_single_threshold(libs[i])));
+	}
+	vector<SimplePathExtender *> usualPEs;
+	for (size_t i = 0; i < libs.size(); ++i) {
+		wcs[i]->setNormalizeWeight(pset.normalize_weight);
+		wcs[i]->setNormalizeWightByCoverage(pset.normalize_by_coverage);
+		double
+				priory_coef =
+						libs[i][0]->is_mate_pair_ ? pset.mate_pair_options.select_options.priority_coeff
+								: pset.extension_options.select_options.priority_coeff;
+		SimpleExtensionChooser * extensionChooser = new SimpleExtensionChooser(
+				gp.g, wcs[i], priory_coef);
+		usualPEs.push_back(new SimplePathExtender(gp.g,
+				pset.loop_removal.max_loops, extensionChooser,
+				investigateShortLoops));
+	}
+	return usualPEs;
+}
+
 void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libs,
 		vector<PairedInfoLibraries>& scafolding_libs,
@@ -172,16 +197,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
         wcs.push_back(new PathCoverWeightCounter(gp.g, libs[i], get_weight_threshold(libs[i]), get_single_threshold(libs[i])));
     }
 
-	vector<SimplePathExtender *> usualPEs;
-	for (size_t i = 0; i < wcs.size(); ++i){
-		wcs[i]->setNormalizeWeight(pset.normalize_weight);
-		wcs[i]->setNormalizeWightByCoverage(pset.normalize_by_coverage);
-		double priory_coef = libs[i][0]->is_mate_pair_ ?
-		        pset.mate_pair_options.select_options.priority_coeff :
-		        pset.extension_options.select_options.priority_coeff;
-		SimpleExtensionChooser * extensionChooser = new SimpleExtensionChooser(gp.g, wcs[i], priory_coef);
-		usualPEs.push_back(new SimplePathExtender(gp.g, pset.loop_removal.max_loops, extensionChooser));
-	}
+	vector<SimplePathExtender *> usualPEs = make_extenders(gp, pset, libs, false);
 
 	GapJoiner * gapJoiner = new HammingGapJoiner(gp.g,
 				pset.scaffolder_options.min_gap_score,
@@ -205,10 +221,13 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC, false);
 	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs, RL_true_paths);
 	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC, false);
+	vector<SimplePathExtender *> shortLoopPEs = make_extenders(gp, pset, libs, true);
+
 	vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
-	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.push_back(pdPE);
 	all_libs.push_back(longReadPathExtender);
+	all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
+	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	CoveringPathExtender * mainPE = new CompositePathExtender(gp.g, pset.loop_removal.max_loops, all_libs);
 
 	seeds.SortByLength();
@@ -284,11 +303,15 @@ void set_threshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_lengt
 }
 
 void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index, size_t split_edge_length){
-	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
-	INFO("Calculating paired info threshold");
-	splitGraph.ProcessReadPairs();
-	double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
-	lib->SetSingleThreshold(threshold);
+	//SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
+	//INFO("Calculating paired info threshold");
+	//splitGraph.ProcessReadPairs();
+	//double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
+	//lib->SetSingleThreshold(threshold);
+	double tr = *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
+	INFO("threshold taken from config - "  << tr);
+	lib->SetSingleThreshold(tr);
+
 }
 
 void add_paths_to_container(conj_graph_pack& gp, const std::vector<PathInfo<Graph> >& paths, PathContainer& supportingContigs,

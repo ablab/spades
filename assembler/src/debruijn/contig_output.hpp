@@ -303,6 +303,8 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 //	}
 }
 
+
+
 bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
 	vector<EdgeId> edges = g.OutgoingEdges(v);
 	if(edges.size() == 0)

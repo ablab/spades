@@ -216,6 +216,7 @@ public:
     void RemoveLoop(size_t skip_identical_edges, bool fullRemoval = true);
 
     bool EdgeInShortLoop() const;
+    bool PrevEdgeInShortLoop() const;
 
     void Print() const {
         INFO("== Detector data_ ==");
@@ -1294,7 +1295,20 @@ bool LoopDetector::EdgeInShortLoop() const {
             return true;
         }
     }
+    return false;
+}
 
+bool LoopDetector::PrevEdgeInShortLoop() const {
+    if (path_->Size() <= 1){
+    	return false;
+    }
+	EdgeId e2 = path_->Head();
+    VertexId v1 = g_.EdgeEnd(e2);
+    EdgeId e1 = path_->At(path_->Size() - 2);
+    VertexId v2 = g_.EdgeEnd(e1);
+    if (g_.OutgoingEdgeCount(v2) == 2 && g_.EdgeEnd(e2)== g_.EdgeStart(e1) && g_.EdgeEnd(e1)== g_.EdgeStart(e2)) {
+        return true;
+    }
     return false;
 }
 

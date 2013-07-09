@@ -41,6 +41,7 @@
 #include "graphio.hpp"
 #include "coverage_based_rr.hpp"
 #include "pacbio_aligner.hpp"
+#include "bucket_mapper.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -901,19 +902,38 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	if (cfg::get().developer_mode) {
 
 		std::string path;
-		if (cfg::get().entry_point < ws_repeats_resolving) 
+		if (cfg::get().entry_point <= ws_simplification) 
 			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
 		else
 			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
 		bool val = LoadEdgeIndex(path, kmerIndex);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
 		INFO("Updating index from graph started");
-		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph<conj_graph_pack::graph_t>(kmerIndex, conj_gp.g);
+		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, conj_gp.g);
+		SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction", kmerIndex);
 	}
 
-	auto index = FlankingCoverage<conj_graph_pack::graph_t>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
+
+/*	int number_of_buckets = 10;
+	auto bm = BucketMapper<conj_graph_pack::graph_t>(conj_gp.g, kmerIndex, cfg::get().K + 1, number_of_buckets);
+	bm.InitBuckets();
+
+	int bucket_in = 0;
+	int bucket_out = 0;
+	int repeat_distance = 500;
+	double probability = bm.GetProbablityFromBucketToBucketForDistance (bucket_in, bucket_out, repeat_distance) ;
+*/
+	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
+//	for (auto e = conj_gp.g.SmartEdgeBegin(); !e.IsEnd(); ++e) { 
+		
+		/*if ( index.GetInCov(*e) != index.GetInCov(conj_gp.g.conjugate(*e)) ) {
+			std::cout << index.GetInCov(*e) << " " << index.GetInCov(conj_gp.g.conjugate(*e)) << std::endl;
+		}*/
+
+
+//	}
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
-	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match, 
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, kmerIndex, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match, 
 			cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
 	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
 
@@ -1059,10 +1079,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
     GapStorage<Graph> gaps(conj_gp.g);
 
 	std::vector< PathInfo<Graph> > filteredPaths;
-	if (cfg::get().developer_mode) {
-	    OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
-	}
-
+	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
 	if (cfg::get().coverage_based_rr_on == true){
 		int pe_lib_index = get_first_pe_lib_index();
 		const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
@@ -1071,13 +1088,12 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 
 
 
-    //LongReadStorage<Graph> long_read(conj_gp.g);
 	if (cfg::get().pacbio_test_on == true){
 		INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
 		PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
 		INFO("index created");
-		filteredPaths = long_read.GetAllPaths();
 		pac_aligner.pacbio_test(long_read, gaps);
+		filteredPaths = long_read.GetAllPaths();
 	}
 
 	if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
@@ -1086,6 +1102,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	    }
         //path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_single.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+
         delete_index(pe_scaf_indexs);
 	}
 	else {
@@ -1154,17 +1171,22 @@ void resolve_repeats() {
 	if ((!cfg::get().paired_mode && !cfg::get().long_single_mode)
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
-		if (cfg::get().pacbio_test_on) {
+		/*if (cfg::get().pacbio_test_on) {
+
 		    PathStorage<Graph> long_read(conj_gp.g);
 		    GapStorage<Graph> gaps(conj_gp.g);
 			std::vector< PathInfo<Graph> > filteredPaths;
 		    //LongReadStorage<Graph> long_read(conj_gp.g);
 			INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+
+			if (cfg::get().ds.reads.lib_count() == 1) {
+				clustered_indices[0].Attach();
+			}
 			PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
 			INFO("index created");
 			filteredPaths = long_read.GetAllPaths();
 			pac_aligner.pacbio_test(long_read, gaps);
-		}
+		}*/
 		return;
 	}
 

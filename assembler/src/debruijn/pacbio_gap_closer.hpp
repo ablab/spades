@@ -12,7 +12,6 @@
 #include "pacbio_read_structures.hpp"
 #include "ssw/ssw_cpp.h"
 
-
 template<class Graph>
 class PacbioGapCloser;
 
@@ -213,9 +212,71 @@ class PacbioGapCloser {
 	typedef vector<map<Kmer, int> > KmerStorage;
 private:
 	DECL_LOGGER("PacbioGaps");
-	const Graph &g_;
+	Graph &g_;
 //first edge, second edge, weight, seq
 	map<EdgeId, map<EdgeId, pair<size_t, string> > > new_edges;
+public:
+	void CloseGapsInGraph( map<EdgeId, EdgeId> &replacement){
+
+		for (auto iter = new_edges.begin(); iter != new_edges.end(); ++iter) {
+			if (iter->second.size() != 1) {
+				WARN("non-unique gap!!");
+			} else {
+				EdgeId first = iter->first;
+				EdgeId second = (iter->second.begin()->first);
+				if (replacement.find(first) != replacement.end() || replacement.find(second) != replacement.end()) {
+					INFO ("sorry, gap chains are not supported yet");
+					continue;
+				}
+
+				EdgeId first_conj = g_.conjugate(first);
+				EdgeId second_conj = g_.conjugate(second);
+
+				int first_id =  g_.int_id(first);
+				int second_id =  g_.int_id(second);
+				int first_id_conj = g_.int_id(g_.conjugate(first));
+				int second_id_conj = g_.int_id(g_.conjugate(second));
+				INFO("closing gaps between "<< first_id << " " << second_id);
+				size_t len_f = g_.length(first);
+				size_t len_s = g_.length(second);
+				size_t len_sum = iter->second.begin()->second.second.length();
+				EdgeId newEdge = g_.AddEdge(g_.EdgeStart(first), g_.EdgeEnd(second), Sequence( iter->second.begin()->second.second));
+				TRACE(g_.int_id(newEdge));
+				size_t len_split = size_t((1.0 * len_f * len_sum)/(len_s + len_f));
+				if (len_split == 0) {
+					WARN (" zero split length, length are:" << len_f <<" " << len_sum <<" " << len_s);
+					len_split = 1;
+				}
+
+				pair<EdgeId, EdgeId> split_result = g_.SplitEdge(
+						newEdge,
+						len_split);
+				TRACE("GlueEdges " << g_.str(split_result.first));
+//				g_.GlueEdges(first, split_result.first);
+//				g_.GlueEdges(second, split_result.second);
+				TRACE(g_.int_id(split_result.first));
+				TRACE(g_.int_id(split_result.second));
+				vector<EdgeId> to_merge;
+				EdgeId tmp1 = g_.GlueEdges(first, split_result.first);
+				EdgeId tmp2 = g_.GlueEdges(second, split_result.second);
+				TRACE(g_.int_id(tmp1));
+				TRACE(g_.int_id(tmp2));
+
+				to_merge.push_back(tmp1);
+				to_merge.push_back(tmp2);
+				newEdge = g_.MergePath(to_merge);
+				int next_id = g_.int_id(newEdge);
+				int next_id_conj = g_.int_id(g_.conjugate(newEdge));
+				TRACE(first_id << " " << second_id << " " << next_id << " " <<  first_id_conj << " " << second_id_conj << " " << next_id_conj << " " );
+				replacement[first] = newEdge;
+				replacement[second] = newEdge;
+				replacement[first_conj] = g_.conjugate(newEdge);
+				replacement[second_conj] = g_.conjugate(newEdge);
+			}
+		}
+		//TODO: chains of gaps!
+	}
+private:
 
 	string RandomDeletion(string &s) {
 		int pos = rand() % s.length();

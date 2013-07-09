@@ -231,6 +231,7 @@ class DeBruijnEdgeIndex : public DeBruijnKMerIndex<EdgeInfo<typename Graph::Edge
         EdgeInfo<IdType> &entry = base::operator[](idx);
         entry.edgeId_ = id;
         entry.offset_ = offset;
+
     }
 };
 

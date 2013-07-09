@@ -52,6 +52,7 @@ def get_read_length(output_dir, K):
     return max_read_length
 
 
+
 def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_contigs, last_one):
     data_dir = os.path.join(cfg.output_dir, "K%d" % (K))
     if os.path.exists(data_dir):

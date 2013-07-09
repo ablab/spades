@@ -69,7 +69,35 @@ private:
 
 public:
 	PathStorage(Graph &g):g_(g), inner_index(){}
-
+	void ReplaceEdges(map<EdgeId, EdgeId> &old_to_new){
+		map<int, EdgeId> tmp_map;
+//		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+//	    	tmp_map[g_.int_id(*iter)] = *iter;
+//	    }
+		InnerIndex new_index;
+		for (auto iter = inner_index.begin(); iter != inner_index.end(); iter++) {
+			auto tmp = iter->second;
+			EdgeId new_first;
+			if (old_to_new.find(iter->first) == old_to_new.end())
+				new_first = iter->first;
+			else {
+				TRACE(g_.int_id(old_to_new[iter->first]));
+				new_first = old_to_new[iter->first];
+			}
+			set<PathInfo<Graph> > new_tmp;
+			for (auto j_iter = tmp.begin(); j_iter != tmp.end(); j_iter ++) {
+				PathInfo<Graph> pi = *(j_iter);
+				for (size_t k  = 0; k <  pi.path.size(); k ++)
+					if (old_to_new.find(pi.path[k]) != old_to_new.end()) {
+						TRACE(g_.int_id(old_to_new[pi.path[k]]));
+						pi.path[k] =old_to_new[pi.path[k]];
+					}
+				new_tmp.insert(pi);
+			}
+			new_index[new_first] = new_tmp;
+		}
+		inner_index = new_index;
+	}
 	void AddPath(const vector<EdgeId> &p, int w, bool add_rc = false){
 		HiddenAddPath(p, w);
 		if (add_rc) {
@@ -82,12 +110,21 @@ public:
 
 	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos){
 		ofstream filestr(filename);
+		ofstream filestr2(filename + "_yana");
+		set<EdgeId> continued_edges;
 		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter){
 			filestr<< iter->second.size() << endl;
+			int non1 = 0;
 			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
-				filestr<<"Weight: " << j_iter->getWeight();
-				filestr<< " length: " << j_iter->path.size() <<" ";
+				filestr<<" Weight: " << j_iter->getWeight();
+				if (j_iter->getWeight() > 1) non1 ++;
+
+				filestr<<" length: " << j_iter->path.size() <<" ";
 				for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++ p_iter) {
+					if (p_iter != j_iter->path.end() - 1 && j_iter->getWeight() > 1) {
+						continued_edges.insert(*p_iter);
+					}
+
 					filestr << g_.int_id(*p_iter) <<"("<<g_.length(*p_iter)<<") ";
 				}
 				if (edge_pos.IsConsistentWithGenome(j_iter->path))
@@ -101,30 +138,51 @@ public:
 				filestr << endl;
 			}
 			filestr<< endl;
+//to Yana's OLC assembler:
+			filestr2 << non1 << endl;
+			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
+				if (j_iter->getWeight() == 1) continue;
+				filestr2 <<" Weight: " << j_iter->getWeight();
+				filestr2 <<" length: " << j_iter->path.size() <<" ";
+				for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++ p_iter) {
+					if (p_iter != j_iter->path.end() - 1 && j_iter->getWeight() > 1) {
+						continued_edges.insert(*p_iter);
+					}
+
+					filestr2 << g_.int_id(*p_iter) << " ";
+				}
+/*				if (edge_pos.IsConsistentWithGenome(j_iter->path))
+					filestr2 << "  genomic";
+				else {
+					if (j_iter->getWeight() == 1)
+						filestr2<< " low weight ng";
+					else
+						filestr2 << "  nongenomic";
+				}
+				*/
+				filestr2 << endl;
+
+			}
+			filestr2<< endl;
 		}
 		int noncontinued = 0;
-		int long_nongapped = 0;
+		int long_gapped = 0;
+		int continued = 0;
 		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
-			if (g_.length(*iter) > 500 && !g_.IsDeadEnd(g_.EdgeEnd(*iter))){
-				long_nongapped ++;
-				if (inner_index.find(*iter) == inner_index.end()) {
-					filestr << "bad  " << g_.int_id(*iter);
-					noncontinued ++;
-					continue;
-				}
-				bool flag = true;
-				for(auto j_iter= inner_index[*iter].begin(); j_iter != inner_index[*iter].end(); ++j_iter)
-					if (j_iter->path.size() > 1) {
-						flag = false;
-						break;
-					}
-				if (flag) {
-					filestr << "bad  " << g_.int_id(*iter);
-					noncontinued ++;
+			if (g_.length(*iter) > 500) {
+				if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
+					if (continued_edges.find(*iter) == continued_edges.end()) {
+						INFO("noncontinued end left " << g_.int_id(*iter));
+						noncontinued ++;
+					} else continued ++;
+				} else {
+					INFO("dead end left " << g_.int_id(*iter));
+					long_gapped ++;
 				}
 			}
-			filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
+			//filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
+		INFO("noncontinued/total long:" << noncontinued <<"/" << noncontinued + continued);
 	}
 
 	vector<PathInfo<Graph> > GetAllPaths() {
