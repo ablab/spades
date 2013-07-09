@@ -987,6 +987,7 @@ public:
 	}
 };
 
+//todo fixme use exact coordinates!
 template<class gp_t>
 class BlockPrinter {
     typedef typename gp_t::graph_t Graph;
@@ -1018,7 +1019,10 @@ public:
 	        EdgeId e = genome_path[i].first;
 	        MappingRange range = genome_path[i].second;
 	        auto canon = CanonicalRepresentation(e);
-	        output_stream << std::string(format("%s\t%l\t%l\t%l\t%s") % genome_id % canon.first % range.initial_range.start_pos % range.initial_range.end_pos % (canon.second) ? "+" : "-");
+	        output_stream << std::string(format("%s\t%l\t%l\t%l\t%s") % genome_id %
+	                                     canon.first % range.initial_range.start_pos %
+	                                     range.initial_range.end_pos %
+	                                     (canon.second) ? "+" : "-");
 //	        if (block_id_.count(e) == 0) {
 //	            block_id_[e] = ToString(curr_id_);
 //	            block_id_[gp_.g.conjugate(e)] = ToString(-curr_id_);
