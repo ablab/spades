@@ -298,14 +298,14 @@ void set_threshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_lengt
 }
 
 void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index, size_t split_edge_length){
-	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
-	INFO("Calculating paired info threshold");
-	splitGraph.ProcessReadPairs();
-	double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
-	lib->SetSingleThreshold(threshold);
-	//double tr = *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
-	//INFO("threshold taken from config - "  << tr);
-	//lib->SetSingleThreshold(tr);
+	//SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
+	//INFO("Calculating paired info threshold");
+	//splitGraph.ProcessReadPairs();
+	//double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
+	//lib->SetSingleThreshold(threshold);
+	double tr = *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
+	INFO("threshold taken from config - "  << tr);
+	lib->SetSingleThreshold(tr);
 
 }
 
