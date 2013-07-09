@@ -148,7 +148,7 @@ public:
         pair<EdgeId, EdgeId> edges;
 
         if (GetLoopAndExit(path, edges)) {
-            DEBUG("Resolving short loop...");
+        	DEBUG("Resolving short loop...");
             //path.Print();
             MakeBestChoice(path, edges);
             DEBUG("Resolving short loop done");
@@ -625,6 +625,15 @@ public:
             if (investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop() && extensionChooser_->WeighConterBased()) {
                 loopResolver_.ResolveShortLoop(path);
             }
+            if (!investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop()) {
+            	path.PopBack();
+            	result = false;
+            }
+        } else if (investigateShortLoops_ && path.getLoopDetector().PrevEdgeInShortLoop() && extensionChooser_->WeighConterBased()) {
+        	DEBUG("Prev edge in short loop");
+        	path.PopBack();
+        	loopResolver_.ResolveShortLoop(path);
+        	result = true;
         } else if (candidates.size() >= 1){
         	DEBUG("MORE 1 CANDIDATE");
         }
