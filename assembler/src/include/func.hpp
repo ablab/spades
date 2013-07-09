@@ -90,7 +90,7 @@ template<class T>
 class AlwaysTrue: public Predicate<T> {
 public:
 
-	bool Check(T t) const {
+	bool Check(T /*t*/) const {
 		return true;
 	}
 

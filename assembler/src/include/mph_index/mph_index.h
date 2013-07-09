@@ -149,7 +149,7 @@ bool MPHIndex::Reset(ForwardIterator begin, ForwardIterator end, uint32_t size) 
   nest_displacement_[1] = r_;
   nest_displacement_[2] = (r_ << 1);
   for (uint32_t i = 0; i < sizeof(threebit_mod3); ++i)
-    threebit_mod3[i] = i % 3;
+    threebit_mod3[i] = (uint8_t)(i % 3);
 
   n_ = 3*r_;
   k_ = 1U << b_;

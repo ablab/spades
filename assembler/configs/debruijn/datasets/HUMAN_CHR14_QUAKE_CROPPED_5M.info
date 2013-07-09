@@ -2,3 +2,5 @@ paired_reads             "../../../data/input/H.sapiens/chr14/cropped/frag_20M-2
 RL                       101
 IS                       155
 single_cell              false
+
+reads	HUMAN_CHR14_QUAKE_CROPPED_5M.yaml

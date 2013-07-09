@@ -85,8 +85,9 @@ void estimate_distance(conj_graph_pack& gp,
 
     size_t delta = size_t(lib.data().insert_size_deviation);
     size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);
-    GraphDistanceFinder<Graph> dist_finder(gp.g,  lib.data().mean_insert_size, lib.data().read_length, delta);
+    GraphDistanceFinder<Graph> dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().read_length, delta);
     size_t max_distance = size_t(config.de.max_distance_coeff * lib.data().insert_size_deviation);
+
     boost::function<double(int)> weight_function;
 
     if (config.est_mode == em_weighted                                        // in these cases we need a weight function
@@ -115,7 +116,7 @@ void estimate_distance(conj_graph_pack& gp,
       // todo reduce number of constructor params                             // we use a trivial weight (equal to 1.)
     	INFO("Not Trivial Weight normalizer");
     	PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-              lib.data().mean_insert_size, lib.data().insert_size_deviation, lib.data().read_length,
+    	        (size_t)math::round(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
                                                           gp.k_value, config.ds.avg_coverage());
       normalizing_f = boost::bind(&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
                                   weight_normalizer, _1, _2, _3);

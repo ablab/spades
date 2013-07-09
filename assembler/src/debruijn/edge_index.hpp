@@ -13,7 +13,7 @@
 
 #include "debruijn_graph.hpp"
 #include "standard.hpp"
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_edge_index.hpp"
 
 namespace debruijn_graph {
 /**
@@ -24,7 +24,7 @@ namespace debruijn_graph {
 template<typename Graph, typename ElementId, typename Seq = runtime_k::RtSeq>
 class DataHashRenewer {
   typedef Seq Kmer;
-  typedef DeBruijnEdgeIndex<EdgeId, Kmer> Index;
+  typedef DeBruijnEdgeIndex<Graph, Kmer> Index;
 
   const Graph &g_;
   Index &index_;
@@ -86,7 +86,7 @@ class EdgeIndex: public GraphActionHandler<Graph> {
 public:
   typedef Seq Kmer;
   typedef typename Graph::EdgeId EdgeId;
-  typedef DeBruijnEdgeIndex<EdgeId, Kmer> InnerIndex;
+  typedef DeBruijnEdgeIndex<Graph, Kmer> InnerIndex;
   typedef typename InnerIndex::KMerIdx KMerIdx;
 
 private:
@@ -97,7 +97,7 @@ private:
 public:
 
   EdgeIndex(const Graph& g, size_t k, const std::string &workdir) :
-      GraphActionHandler<Graph>(g, "EdgeIndex"), inner_index_(k, workdir),
+      GraphActionHandler<Graph>(g, "EdgeIndex"), inner_index_(k, g, workdir),
       renewer_(g, inner_index_, true), delete_index_(true) {
   }
 
@@ -132,11 +132,15 @@ public:
 
   bool contains(const Kmer& kmer) const {
     VERIFY(this->IsAttached());
-    return inner_index_.ContainsInIndex(kmer);
+    return inner_index_.contains(kmer);
   }
   bool contains(const KMerIdx idx) const {
     VERIFY(this->IsAttached());
-    return inner_index_.ContainsInIndex(idx);
+    return inner_index_.contains(idx);
+  }
+
+  bool contains(const KMerIdx idx, const Kmer& kmer) const {
+	return inner_index_.contains(idx, kmer);
   }
 
   const pair<EdgeId, size_t> get(const Kmer& kmer) const {

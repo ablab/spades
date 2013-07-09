@@ -14,7 +14,8 @@ else ()
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated")
-add_definitions(-Wall -Wno-long-long)
+#add_definitions(-Wall -Wextra -Wconversion -Wno-long-long -Wwrite-strings)
+add_definitions(-Wall)
 if (NOT OPENMP_FOUND)
   add_definitions(-Wno-unknown-pragmas)
 endif()
@@ -43,7 +44,12 @@ else()
   endif()
 
   add_definitions(-O2)
-  add_definitions(-DNDEBUG)
+  if (${CMAKE_BUILD_TYPE} STREQUAL "RelWithAsserts" OR
+      ${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
+    add_definitions(-UNDEBUG)
+  else()
+    add_definitions(-DNDEBUG)
+  endif()
 endif()
 
 # Make sure we're building with frame pointer if tcmalloc is in use

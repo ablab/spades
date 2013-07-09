@@ -223,7 +223,7 @@ exit_code = 0
 
 #reads quality
 if 'reads_quality_params' in dataset_info.__dict__:
-    corrected_reads_dataset = os.path.join(output_dir, "corrected/dataset.info")
+    corrected_reads_dataset = os.path.join(output_dir, "corrected/corrected.yaml")
 
     if not os.path.exists(corrected_reads_dataset):
         print("Corrected reads were not detected in " + corrected_reads_dataset)
@@ -283,7 +283,7 @@ if 'quast_params' in dataset_info.__dict__:
         #CONTIGS
         quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS")
         quast_cmd = os.path.join(dataset_info.quast_dir, "quast.py") + " " + " ".join(quast_params)
-        ecode = os.system(quast_cmd + " --use-all-alignments  -o " + quast_output_dir + " " + contigs)
+        ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + contigs)
         if ecode != 0:
             print("QUAST finished abnormally with exit code " + str(ecode))
             write_log(history_log, "", output_dir, dataset_info)
@@ -358,12 +358,20 @@ if 'contig_storage' in dataset_info.__dict__:
     name_prefix = datetime.datetime.now().strftime('%Y%m%d-%H%M')
     if len(sys.argv) == 3:
         name_prefix += "_" + sys.argv[2]
+    print("Contigs have prefix " + name_prefix)
 
     shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + ".fasta"))
+    print("Contigs saved to " + os.path.join(contig_dir, name_prefix + ".fasta"))
 
     scafs = os.path.join(output_dir, "scaffolds.fasta")
     if os.path.exists(scafs):
         shutil.copy(scafs, os.path.join(contig_dir, name_prefix + "_scafs.fasta"))
+        print("Scaffolds saved to " + os.path.join(contig_dir, name_prefix + "_scafs.fasta"))
+
+    before_rr = os.path.join(output_dir, "before_rr.fasta")
+    if os.path.exists(before_rr):
+        shutil.copy(before_rr, os.path.join(contig_dir, name_prefix + "_before_rr.fasta"))
+        print("Contigs before resolve saved to " + os.path.join(contig_dir, name_prefix + "_before_rr.fasta"))
 
     before_corr = os.path.join(output_dir, "assembled_contigs.fasta")
     if os.path.exists(before_corr):

@@ -102,8 +102,8 @@ inline std::pair<std::pair<int, int>, std::string> best_edit_distance_cigar(cons
 
   // Step 1
 
-  const int n = source.length();
-  const int m = target.length();
+  const size_t n = source.length();
+  const size_t m = target.length();
 //  if (n == 0) {
 //    return m;
 //  }
@@ -120,29 +120,29 @@ inline std::pair<std::pair<int, int>, std::string> best_edit_distance_cigar(cons
   // Size the vectors in the 2.nd dimension. Unfortunately C++ doesn't
   // allow for allocation on declaration of 2.nd dimension of vec of vec
 
-  for (int i = 0; i <= n; i++) {
+  for (size_t i = 0; i <= n; i++) {
     matrix[i].resize(m+1);
   }
 
   // Step 2
 
-  for (int i = 0; i <= n; i++) {
-    matrix[i][0]=i;
+  for (size_t i = 0; i <= n; i++) {
+    matrix[i][0]=(int)i;
   }
 
-  for (int j = 0; j <= m; j++) {
+  for (size_t j = 0; j <= m; j++) {
     matrix[0][j]=0; //free inserts in front
   }
 
   // Step 3
 
-  for (int i = 1; i <= n; i++) {
+  for (size_t i = 1; i <= n; i++) {
 
     const char s_i = source[i-1];
 
     // Step 4
 
-    for (int j = 1; j <= m; j++) {
+    for (size_t j = 1; j <= m; j++) {
 
       const char t_j = target[j-1];
 
@@ -182,9 +182,9 @@ inline std::pair<std::pair<int, int>, std::string> best_edit_distance_cigar(cons
 
   // Step 7
   int min = matrix[n][m];
-  int min_m = m;
+  size_t min_m = m;
 
-  for (int j = 0; j <= m; j++) {
+  for (size_t j = 0; j <= m; j++) {
 	  if (min > matrix[n][j]) {
 		  min = matrix[n][j];
 		  min_m = j;
@@ -195,8 +195,8 @@ inline std::pair<std::pair<int, int>, std::string> best_edit_distance_cigar(cons
   std::string res ="";
   char last_operation = 0;
   int cnt_last_operation = 0;
-  int cur_pos_i = n;
-  int cur_pos_j = min_m;
+  size_t cur_pos_i = n;
+  size_t cur_pos_j = min_m;
   char cur_operation = 0;
 
 

@@ -11,7 +11,7 @@
 #include "mph_index/kmer_index.hpp"
 #include <vector>
 
-typedef KMerIndex<hammer::KMer> HammerKMerIndex;
+typedef KMerIndex<kmer_index_traits<hammer::KMer> > HammerKMerIndex;
 
 class KMerData {
   typedef std::vector<KMerStat> KMerDataStorageType;

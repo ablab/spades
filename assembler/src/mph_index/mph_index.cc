@@ -77,7 +77,7 @@ namespace cxxmph {
       uint32_t current_edge = queue[queue_tail++];
       graph->RemoveEdge(current_edge);
       const TriGraph::Edge& e = graph->edges()[current_edge];
-      for (int i = 0; i < 3; ++i) {
+      for (uint8_t i = 0; i < 3; ++i) {
         uint32_t v = e[i];
         if (graph->vertex_degree(v) == 1) {
           uint32_t first_edge = graph->first_edge()[v];
@@ -125,17 +125,17 @@ namespace cxxmph {
           assert(marked_vertices.size() > e[2]);
           marked_vertices[e[2]] = true;
         }
-        g.set(e[0], (6 - (g[e[1]] + g[e[2]])) % 3);
+        g.set(e[0], (uint8_t)(6 - (g[e[1]] + g[e[2]])) % 3);
         marked_vertices[e[0]] = true;
       } else if (!marked_vertices[e[1]]) {
         if (!marked_vertices[e[2]]) {
           g.set(e[2], kUnassigned);
           marked_vertices[e[2]] = true;
         }
-        g.set(e[1], (7 - (g[e[0]] + g[e[2]])) % 3);
+        g.set(e[1], (uint8_t)(7 - (g[e[0]] + g[e[2]])) % 3);
         marked_vertices[e[1]] = true;
       } else {
-        g.set(e[2], (8 - (g[e[0]] + g[e[1]])) % 3);
+        g.set(e[2], (uint8_t)(8 - (g[e[0]] + g[e[1]])) % 3);
         marked_vertices[e[2]] = true;
       }
     /*

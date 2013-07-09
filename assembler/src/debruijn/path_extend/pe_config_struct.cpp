@@ -12,7 +12,7 @@ void load(output_broken_scaffolds& obs, boost::property_tree::ptree const& pt, s
 
 }
 
-void load(pe_config::OutputParamsT& o, boost::property_tree::ptree const& pt, bool complete) {
+void load(pe_config::OutputParamsT& o, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(o.write_seeds,             pt, "write_seeds"           );
@@ -21,14 +21,14 @@ void load(pe_config::OutputParamsT& o, boost::property_tree::ptree const& pt, bo
   load(o.write_path_loc,          pt, "write_path_loc"        );
 }
 
-void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt, bool complete) {
+void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(o.print_seeds,             pt, "print_seeds"           );
   load(o.print_overlaped_paths,   pt, "print_overlaped_paths" );
   load(o.print_paths,             pt, "print_paths"           );
 }
 
-void load(pe_config::UtilsT& u, boost::property_tree::ptree const& pt, bool complete)
+void load(pe_config::UtilsT& u, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
   load(u.mode, pt, "mode");
@@ -43,7 +43,7 @@ void load(pe_config::UtilsT& u, boost::property_tree::ptree const& pt, bool comp
 }
 
 
-void load(pe_config::DatasetT::PairedLibT& pl, boost::property_tree::ptree const& pt, bool complete)
+void load(pe_config::DatasetT::PairedLibT& pl, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
   load(pl.read_size  , pt, "read_size"  );
@@ -52,7 +52,7 @@ void load(pe_config::DatasetT::PairedLibT& pl, boost::property_tree::ptree const
   load(pl.path       , pt, "path"       );
 }
 
-void load(pe_config::DatasetT& ds, boost::property_tree::ptree const& pt, bool complete)
+void load(pe_config::DatasetT& ds, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
 
@@ -66,7 +66,7 @@ void load(pe_config::DatasetT& ds, boost::property_tree::ptree const& pt, bool c
 }
 
 
-void load(pe_config::ParamSetT::SeedSelectionT& ss, boost::property_tree::ptree const& pt, bool complete)
+void load(pe_config::ParamSetT::SeedSelectionT& ss, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
 
@@ -80,7 +80,7 @@ void load(pe_config::ParamSetT::SeedSelectionT& ss, boost::property_tree::ptree 
   load(ss.threshold          , pt, (ss.metric + "_trusted_threshold").c_str());
 }
 
-void load(pe_config::ParamSetT::ExtensionOptionsT::SelectOptionsT& so, boost::property_tree::ptree const& pt, bool complete) {
+void load(pe_config::ParamSetT::ExtensionOptionsT::SelectOptionsT& so, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(so.priority_coeff,     pt, "priority_coeff");
@@ -88,7 +88,7 @@ void load(pe_config::ParamSetT::ExtensionOptionsT::SelectOptionsT& so, boost::pr
   so.single_threshold = pt.get_optional<double>("single_threshold");
 }
 
-void load(pe_config::ParamSetT::ExtensionOptionsT& es, boost::property_tree::ptree const& pt, bool complete)
+void load(pe_config::ParamSetT::ExtensionOptionsT& es, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
 
@@ -96,7 +96,7 @@ void load(pe_config::ParamSetT::ExtensionOptionsT& es, boost::property_tree::ptr
   load(es.select_options  , pt, es.metric.c_str()          );
 }
 
-void load(pe_config::ParamSetT::LoopRemovalT& lr, boost::property_tree::ptree const& pt, bool complete)
+void load(pe_config::ParamSetT::LoopRemovalT& lr, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
   load(lr.inspect_short_loops, pt,"inspect_short_loops"      );
@@ -106,14 +106,14 @@ void load(pe_config::ParamSetT::LoopRemovalT& lr, boost::property_tree::ptree co
 }
 
 
-void load(pe_config::ParamSetT::FilterOptionsT& fo, boost::property_tree::ptree const& pt, bool complete)
+void load(pe_config::ParamSetT::FilterOptionsT& fo, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
   load(fo.remove_overlaps      , pt, "remove_overlaps"      );
 }
 
 
-void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_tree::ptree const& pt, bool complete)
+void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
   load(so.on      , pt, "on"      );
@@ -132,7 +132,7 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_tree::pt
   load(so.artificial_gap      , pt, "artificial_gap"      );
 }
 
-void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete) {
+void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool /*complete*/) {
 
   using config_common::load;
 
@@ -156,7 +156,7 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
   load(p.filter_options,    pt, "filter_options");
 }
 
-void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool complete) {
+void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(p.debug_output, pt,  "debug_output"   );
@@ -176,7 +176,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bo
 
 
 // main long contigs config load function
-void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool complete) {
+void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(pe_cfg.dataset_name           , pt, "dataset"               );

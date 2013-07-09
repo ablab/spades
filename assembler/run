@@ -34,8 +34,8 @@ function change_config
     ds_folder_prefix=${ds_folder//\//\\\/}
     dsa_folder_prefix=${dsa_folder//\//\\\/}
 
-    ls -t $ds_folder | sed -e "s/^/$ds_folder_prefix/" > temp
-    ls -t $dsa_folder | sed -e "s/^/$dsa_folder_prefix/" >> temp
+    ls -t $ds_folder/*.info > temp
+    ls -t $dsa_folder/*.info >> temp
     
     #awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets.info > temp
     #awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets_archive.info >> temp

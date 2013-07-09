@@ -38,7 +38,7 @@ def warning(warn_str, log=None, prefix="== Warning == "):
         print "\n\n" + prefix + " " + warn_str + "\n\n"
 
 
-def check_file_existence(filename, message, log):
+def check_file_existence(filename, message="", log=None):
     if not os.path.isfile(filename):
         error("file not found: %s (%s)" % (filename, message), log)
     return filename

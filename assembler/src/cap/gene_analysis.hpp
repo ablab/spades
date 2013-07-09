@@ -203,13 +203,13 @@ void LoadGenomes(const string& file_with_genomes,
   LoadGenomes(genome_names, genomes_folder);
 }
 
-void SaveGenomes(const string& folder) {
+void SaveGenomes(const string& folder) const {
   for (auto it = genomes.begin(); it != genomes.end(); ++it) {
     WriteGenome(it->second.sequence, it->second.name);
   }
 }
 
-void SaveGeneInfo(const string& filename) {
+void SaveGeneInfo(const string& filename) const {
   ofstream stream(filename);
   for (auto it1 = genes.begin(); it1 != genes.end(); ++it1) {
     for (auto it = it1->second.gene_positions.begin(); it != it1->second.gene_positions.end(); ++it) {
@@ -274,14 +274,14 @@ public:
 GeneCollection() {}
 
 //ortholog ids is better wording
-void Load(const string& root_folder, const string& file_with_genomes, const string& genomes_folder,
+void Load(const string& file_with_genomes, const string& genomes_folder,
     const string& file_with_gene_info, const string& file_with_ids) {
-  LoadGenomes(root_folder + file_with_genomes, root_folder + genomes_folder);
-  LoadGeneInfo(root_folder + file_with_gene_info, LoadGeneIDs(root_folder + file_with_ids));
+  LoadGenomes(file_with_genomes, genomes_folder);
+  LoadGeneInfo(file_with_gene_info, LoadGeneIDs(file_with_ids));
 }
 
 void Save(const string& root_folder, const string& genomes_folder,
-    const string& file_with_gene_info) {
+    const string& file_with_gene_info) const {
   SaveGenomes(root_folder + genomes_folder);
   SaveGeneInfo(root_folder + file_with_gene_info);
 }

@@ -9,7 +9,7 @@
 
 using namespace hammer;
 
-static bool update(const std::string &seq, const KMerData &data,
+static bool update(const KMerData &data,
                    size_t pos, const KMerStat & stat,
                    std::vector<std::vector<unsigned> > & v,
                    int & left, int & right, bool & isGood,
@@ -22,9 +22,9 @@ static bool update(const std::string &seq, const KMerData &data,
     for (size_t j = 0; j < K; ++j)
       v[kmer[j]][pos + j]++;
     if ((int) pos < left)
-      left = pos;
+      left = (int)pos;
     if ((int) pos > right)
-      right = pos;
+      right = (int)pos;
   } else {
     // if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
     if (stat.change() &&
@@ -33,9 +33,9 @@ static bool update(const std::string &seq, const KMerData &data,
 
       isGood = true;
       if ((int) pos < left)
-        left = pos;
+        left = (int)pos;
       if ((int) pos > right)
-        right = pos;
+        right = (int)pos;
       KMer newkmer = data[stat.changeto].kmer();
 
       for (size_t j = 0; j < K; ++j) {
@@ -55,7 +55,7 @@ bool ReadCorrector::CorrectOneRead(Read & r,
   std::string seq = r.getSequenceString();
   const std::string &qual = r.getQualityString();
   
-  unsigned read_size = seq.size();
+  unsigned read_size = (unsigned)seq.size();
 
   VERIFY(read_size >= K);
 
@@ -72,7 +72,7 @@ bool ReadCorrector::CorrectOneRead(Read & r,
     const KMerStat &kmer_data = data_[gen.kmer()];
  
     changedRead = changedRead ||
-                  update(seq, data_, read_pos, kmer_data, v,
+                  update(data_, read_pos, kmer_data, v,
                          left, right, isGood, correct_threshold, discard_singletons);
 
     gen.Next();
@@ -95,7 +95,7 @@ bool ReadCorrector::CorrectOneRead(Read & r,
   // find max consensus element
   for (size_t j=0; j < read_size; ++j) {
     char cmax = seq[j]; unsigned nummax = 0;
-    for (size_t k=0; k<4; ++k) {
+    for (unsigned char k=0; k < 4; ++k) {
       if (v[k][j] > nummax) {
         cmax = nucl(k); nummax = v[k][j];
       }

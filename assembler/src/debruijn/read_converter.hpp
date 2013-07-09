@@ -30,7 +30,7 @@ typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 class ReadConverter {
 
 private:
-    const static size_t current_bianry_format_verstion = 6;
+    const static size_t current_binary_format_version = 6;
 
     void convert_reads_to_binary() {
 
@@ -52,7 +52,7 @@ private:
 
             info.close();
 
-            if (thread_num == cfg::get().max_threads && format == current_bianry_format_verstion && lib_count == cfg::get().ds.reads.lib_count()) {
+            if (thread_num == cfg::get().max_threads && format == current_binary_format_version  && lib_count == cfg::get().ds.reads.lib_count()) {
                 INFO("Binary reads detected");
 
                 auto &dataset = cfg::get_writable().ds.reads;
@@ -93,7 +93,7 @@ private:
             total_stat.merge(single_stat);
         }
         info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
-        info << current_bianry_format_verstion << " " << cfg::get().max_threads << " " << cfg::get().ds.reads.lib_count() << " " <<
+        info << current_binary_format_version << " " << cfg::get().max_threads << " " << cfg::get().ds.reads.lib_count() << " " <<
                 total_stat.read_count_ << " " << total_stat.max_len_ << " " << total_stat.total_len_;
         info.close();
     }

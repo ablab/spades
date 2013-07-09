@@ -2,3 +2,5 @@ paired_reads             "../../../data/input/SAG_B_O11/04.reads.0.right.correct
 single_reads             "../../../data/input/SAG_B_O11/04.reads.0.left.unpaired.fastq ../../../data/input/SAG_B_O11/04.reads.0.right.unpaired.fastq "
 RL                       101
 single_cell              true
+
+reads	UNK_YALE_O11_BH4.yaml

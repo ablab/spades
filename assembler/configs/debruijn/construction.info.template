@@ -1,0 +1,20 @@
+; construction
+
+construction
+{
+	; mode of construction: extension (construct hash map of kmers to extentions), old (construct set of k+1-mers)
+	mode extension
+
+	; enable keeping in graph perfect cycles. This slows down condensing but some plasmids can be lost if this is turned off.
+	keep_perfect_loops true
+	
+	early_tip_clipper
+	{
+		; tip clipper can be enabled only in extension mode
+		enable false
+
+		; optional parameter. By default tips of length rl-k are removed
+		length_bound 10
+	}
+}
+

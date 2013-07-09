@@ -228,7 +228,7 @@ private:
 
 	//todo dirty hack!!!
 	auto_ptr<GraphPrinter<Graph>> PrinterInstance(
-			const AbstractConjugateGraph<typename Graph::DataMaster>& hack,
+			const AbstractConjugateGraph<typename Graph::DataMaster>& /*hack*/,
 			const Graph& graph,
 			const GraphLabeler<Graph>& labeler,
 			const GraphColorer<Graph>& colorer,

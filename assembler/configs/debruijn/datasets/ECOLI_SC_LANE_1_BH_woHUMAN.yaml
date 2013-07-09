@@ -1,0 +1,6 @@
+- left reads: [../../../data/input/E.coli/sc_lane_1/bh20111014/human_filtered_paired_right.fastq.gz]
+  orientation: fr
+  right reads: [../../../data/input/E.coli/sc_lane_1/bh20111014/human_filtered_paired_left.fastq.gz]
+  single reads: [../../../data/input/E.coli/sc_lane_1/bh20111014/human_filtered_single_left.fastq.gz,
+    ../../../data/input/E.coli/sc_lane_1/bh20111014/human_filtered_single_right.fastq.gz]
+  type: paired-end

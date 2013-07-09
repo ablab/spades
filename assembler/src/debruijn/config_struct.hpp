@@ -18,6 +18,7 @@
 #include "io/read_stream_vector.hpp"
 
 #include <boost/bimap.hpp>
+#include "xmath.h"
 
 namespace debruijn_graph {
 
@@ -27,6 +28,10 @@ enum working_stage {
   ws_late_pair_info_count,
   ws_distance_estimation,
   ws_repeats_resolving
+};
+
+enum construction_mode {
+	con_old, con_extention
 };
 
 enum estimation_mode {
@@ -84,6 +89,7 @@ inline const char* info_printer_pos_name(size_t pos) {
 struct debruijn_config {
 
   typedef boost::bimap<std::string, working_stage> stage_name_id_mapping;
+  typedef boost::bimap<std::string, construction_mode> construction_mode_id_mapping;
   typedef boost::bimap<std::string, estimation_mode> estimation_mode_id_mapping;
   typedef boost::bimap<std::string, resolving_mode> resolve_mode_id_mapping;
 
@@ -102,6 +108,13 @@ struct debruijn_config {
     };
 
     return stage_name_id_mapping(info, utils::array_end(info));
+  }
+
+  static const construction_mode_id_mapping FillConstructionModeInfo() {
+     construction_mode_id_mapping::value_type info[] = {
+         construction_mode_id_mapping::value_type("old", con_old),
+         construction_mode_id_mapping::value_type("extension", con_extention), };
+     return construction_mode_id_mapping(info, utils::array_end(info));
   }
 
   static const estimation_mode_id_mapping FillEstimationModeInfo() {
@@ -132,6 +145,12 @@ struct debruijn_config {
     return working_stages_info;
   }
 
+  static const construction_mode_id_mapping& construction_mode_info() {
+    static construction_mode_id_mapping con_mode_info =
+    FillConstructionModeInfo();
+    return con_mode_info;
+  }
+
   static const estimation_mode_id_mapping& estimation_mode_info() {
     static estimation_mode_id_mapping est_mode_info = FillEstimationModeInfo();
     return est_mode_info;
@@ -154,6 +173,21 @@ struct debruijn_config {
     auto it = working_stages_info().left.find(name);
     VERIFY_MSG(it != working_stages_info().left.end(),
                "There is no working stage with name = " << name);
+
+    return it->second;
+  }
+
+  static const std::string& construction_mode_name(construction_mode con_id) {
+    auto it = construction_mode_info().right.find(con_id);
+    VERIFY_MSG(it != construction_mode_info().right.end(),
+        "No name for construction mode id = " << con_id);
+    return it->second;
+  }
+
+  static construction_mode construction_mode_id(std::string name) {
+    auto it = construction_mode_info().left.find(name);
+    VERIFY_MSG(it != construction_mode_info().left.end(),
+        "There is no construction mode with name = " << name);
 
     return it->second;
   }
@@ -271,6 +305,17 @@ struct debruijn_config {
     complex_bulge_remover cbr;
   };
 
+  struct construction {
+      struct early_tip_clipper {
+          bool enable;
+          boost::optional<size_t> length_bound;
+      };
+
+      construction_mode con_mode;
+      early_tip_clipper early_tc;
+      bool keep_perfect_loops;
+  };
+
   std::string uncorrected_reads;
   bool need_consensus;
   double mismatch_ratio;
@@ -354,7 +399,7 @@ struct debruijn_config {
             reads[i].data().read_length = RL;
         }
     }
-    size_t IS() const { return reads[0].data().mean_insert_size; }
+    size_t IS() const { return (size_t) math::round(reads[0].data().mean_insert_size); }
     void set_IS(size_t IS) { reads[0].data().mean_insert_size = IS; }
     double is_var() const { return reads[0].data().insert_size_deviation; }
     void set_is_var(double is_var) { reads[0].data().insert_size_deviation = is_var; }
@@ -373,6 +418,7 @@ struct debruijn_config {
 
     bool single_cell;
     std::string reference_genome_filename;
+    std::string reads_filename;
 
     Sequence reference_genome;
   };
@@ -438,14 +484,17 @@ struct debruijn_config {
 
 
   bool pacbio_test_on;
-  bool coverage_based_rr;
+  bool coverage_based_rr_on;
+  struct coverage_based_rr {
   double coverage_threshold_one_list;
   double coverage_threshold_match;
   double coverage_threshold_global;
   double tandem_ratio_lower_threshold;
   double tandem_ratio_upper_threshold;
   double repeat_length_upper_threshold;
+ };
 
+  coverage_based_rr cbrr;
 
   std::string load_from;
 
@@ -482,6 +531,7 @@ struct debruijn_config {
   resolving_mode rm;
   path_extend::pe_config::MainPEParamsT pe_params;
 
+  construction con;
   distance_estimator de;
   smoothing_distance_estimator ade;
   repeat_resolver rr;

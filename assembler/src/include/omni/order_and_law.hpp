@@ -38,7 +38,7 @@ public:
   }
 
 private:
-  GlobalIdDistributor() : max_int_id_(1) { }
+  GlobalIdDistributor() : max_int_id_(2) { }
 
   size_t max_int_id_;
 };

@@ -214,20 +214,19 @@ public:
 
 	}
 
-	virtual void HandleDelete(EdgeId e) {
+	virtual void HandleDelete(EdgeId /*e*/) {
 		//empty for now
 	}
 
-	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
+	virtual void HandleMerge(const vector<EdgeId>& /*old_edges*/, EdgeId /*new_edge*/) {
 		VERIFY(false);
 	}
 
-	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+	virtual void HandleGlue(EdgeId /*new_edge*/, EdgeId /*edge1*/, EdgeId /*edge2*/) {
 		//empty for now
 	}
 
-	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-			EdgeId new_edge_2) {
+	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1, EdgeId /*new_edge_2*/) {
 		VertexId start = g_.EdgeStart(old_edge);
 		VertexId end = g_.EdgeEnd(old_edge);
 		if (contains(start)) {
@@ -235,7 +234,7 @@ public:
 			VERIFY(avg_distance(end) > avg_distance(start));
 			VertexId new_vertex = g_.EdgeEnd(new_edge_1);
 			Range new_vertex_depth(distance_range(start));
-			new_vertex_depth.shift(g_.length(new_edge_1));
+			new_vertex_depth.shift((int) g_.length(new_edge_1));
 			//todo do better later (needs to be synched with splitting strategy)
 //					+ (vertex_depth_[end] - vertex_depth_[start])
 //							* g_.length(new_edge_1) / g_.length(old_edge);
@@ -307,7 +306,7 @@ public:
 		VERIFY(!Contains(e));
 	}
 
-	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
+	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId /*new_edge*/) {
 		//verify false
 		FOREACH (EdgeId e, old_edges) {
 			VERIFY(!Contains(e));
@@ -317,8 +316,7 @@ public:
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 //		 verify edge2 in tree
 //		 put new_edge instead of edge2
-		DEBUG(
-				"Glueing " << br_comp_.g().str(new_edge) << " " << br_comp_.g().str(edge1) << " " << br_comp_.g().str(edge2));
+		DEBUG("Glueing " << br_comp_.g().str(new_edge) << " " << br_comp_.g().str(edge1) << " " << br_comp_.g().str(edge2));
 		if (Contains(edge2)) {
 			DEBUG("Erasing from tree: " << br_comp_.g().str(edge2));
 			DEBUG("Inserting to tree: " << br_comp_.g().str(new_edge));
@@ -384,7 +382,7 @@ public:
 	primitive_color_t GetAnyPrimitiveColor(mixed_color_t color) const {
 		for (size_t shift = 0; shift < color_cnt_; ++shift) {
 			if ((1 << shift & color) != 0) {
-				return shift;
+				return primitive_color_t(shift);
 			}
 		}
 		VERIFY(false);
@@ -462,11 +460,11 @@ public:
 		vertex_colors_.erase(v);
 	}
 
-	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
+	virtual void HandleMerge(const vector<EdgeId>& /*old_edges*/, EdgeId /*new_edge*/) {
 		VERIFY(false);
 	}
 
-	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+	virtual void HandleGlue(EdgeId /*new_edge*/, EdgeId edge1, EdgeId edge2) {
 		if (comp_.contains(edge1)) {
 			VERIFY(comp_.contains(edge2));
 			VERIFY(IsSubset(color(edge2), color(edge1)));
@@ -474,7 +472,7 @@ public:
 	}
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-			EdgeId new_edge_2) {
+			EdgeId /*new_edge_2*/) {
 		if (comp_.contains(old_edge)) {
 			CountAndSetVertexColor(comp_.g().EdgeEnd(new_edge_1));
 		}
@@ -598,7 +596,7 @@ class SkeletonTreeFinder {
 	}
 
 	size_t absolute_coverage(EdgeId e) {
-		return component_.g().coverage(e) * component_.g().length(e);
+		return (size_t) (component_.g().coverage(e) * (double) component_.g().length(e));
 	}
 
 	void UpdateNextEdgesAndCoverage(VertexId v) {

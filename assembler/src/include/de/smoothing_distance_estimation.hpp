@@ -60,12 +60,13 @@ protected:
   typedef vector<PairInfo<EdgeId> > PairInfos;
   typedef vector<size_t> GraphLengths;
 
-  virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
-                                const Histogram& raw_data,
-                                const vector<size_t>& forward) const
-  {
+  virtual EstimHist EstimateEdgePairDistances(EdgePair /*ep*/,
+                                const Histogram& /*raw_data*/,
+                                const vector<size_t>& /*forward*/) const {
     VERIFY_MSG(false, "Sorry, the SMOOOOTHING estimator is not available anymore." <<
                "SPAdes is going to terminate");
+
+    return EstimHist();
   }
 
 private:
@@ -92,8 +93,8 @@ private:
     for (auto I = raw_hist.begin(), E = raw_hist.end(); I != E; ++I)
     {
       const Point& p = *I;
-      if (math::ge(2. * rounded_d(p) + second_len, (double) first_len))
-        if (rounded_d(p) >= (int) first_len)
+      if (math::ge(2 * (long) rounded_d(p) + (long) second_len, (long) first_len))
+        if ((long) rounded_d(p) >= (long) first_len)
           data.insert(p);
     }
     EstimHist result;
@@ -121,8 +122,8 @@ private:
       size_t data_length = rounded_d(infos[end - 1]) - rounded_d(infos[begin]) + 1;
       TRACE("data length " << data_length);
       if (end - begin > min_peak_points_) {
-        size_t range = (size_t) math::round(data_length * range_coeff_);
-        size_t delta = (size_t) math::round(data_length * delta_coeff_);
+        size_t range = (size_t) math::round((double) data_length * range_coeff_);
+        size_t delta = (size_t) math::round((double) data_length * delta_coeff_);
         PeakFinder<EdgeId> peakfinder(infos, begin, end, range, delta, percentage_, deriv_thr);
         DEBUG("Processing window : " << rounded_d(infos[begin])
                               << " " << rounded_d(infos[end - 1]));

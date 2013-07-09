@@ -104,27 +104,27 @@ void inline load_split(std::vector<std::string>& vec, boost::property_tree::ptre
 }
 
 template<class T>
-void inline load(std::vector<T>& vec, boost::property_tree::ptree const& pt, std::string const& key, bool complete) {
-  boost::optional<T> value = pt.get_optional<T>(key);
-  if (value) {
-    vec.push_back(*value);
-    return;
-  }
-  for (size_t i = 1;; i++) {
-    value = pt.get_optional<std::string>(key + "#" + ToString(i));
-    if (value) {
-      vec.push_back(*value);
-      continue;
-    }
-    value = pt.get_optional<std::string>(key + "." + ToString(i));
-    if (value) {
-      vec.push_back(*value);
-      continue;
-    }
-    if (i > 0) {
-      return;
-    }
-  }
+void inline load(std::vector<T>& vec, boost::property_tree::ptree const& pt, std::string const& key, bool /*complete*/) {
+	boost::optional<T> value = pt.get_optional<T>(key);
+	if (value) {
+		vec.push_back(*value);
+		return;
+	}
+	for (size_t i = 1;; i++) {
+		value = pt.get_optional<std::string>(key + "#" + ToString(i));
+		if (value) {
+			vec.push_back(*value);
+			continue;
+		}
+		value = pt.get_optional<std::string>(key + "." + ToString(i));
+		if (value) {
+			vec.push_back(*value);
+			continue;
+		}
+		if (i > 0) {
+			return;
+		}
+	}
 }
 
 template<class T>

@@ -73,7 +73,7 @@ struct QualBitSet {
 
   QualBitSet& operator+=(const unsigned char *data) {
     for (size_t i = 0; i < hammer::K; ++i)
-      q_[i] = std::min(255, data[i] + q_[i]);
+      q_[i] = (unsigned char)std::min(255, data[i] + q_[i]);
 
     return *this;
   }
@@ -191,7 +191,7 @@ inline void binary_read(Reader &is, KMerStat &k) {
 }
 
 inline unsigned char getQual(const KMerStat & kmc, size_t i) {
-  return kmc.qual[i];
+  return (unsigned char)kmc.qual[i];
 }
 
 #endif //  HAMMER_KMERSTAT_HPP_

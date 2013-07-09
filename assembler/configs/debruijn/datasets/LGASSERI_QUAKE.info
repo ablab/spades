@@ -10,3 +10,5 @@ jump_is                  7450
 jump_rl                  150
 single_cell              false
 reference_genome         ../../../data/input/L.gasseri/ref.fasta.gz
+
+reads	LGASSERI_QUAKE.yaml

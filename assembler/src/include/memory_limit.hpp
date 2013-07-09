@@ -26,5 +26,5 @@ void limit_memory(size_t limit) {
   res = setrlimit(RLIMIT_AS, &rl);
   VERIFY_MSG(res == 0,
              "setrlimit(2) call failed, errno = " << errno);
-  INFO("Memory limit set to " << (1.0 * rl.rlim_cur / 1024 / 1024 / 1024) << " Gb");
+  INFO("Memory limit set to " << (1.0 * (double)rl.rlim_cur / 1024 / 1024 / 1024) << " Gb");
 }

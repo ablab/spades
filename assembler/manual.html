@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>SPAdes 2.4.0 Manual</title>
+    <title>SPAdes 2.5.0 Manual</title>
     <style type="text/css">
         .code {
             background-color: lightgray;
@@ -8,7 +8,7 @@
     </style>
 </head>
 <body>
-<h1>SPAdes 2.4.0 Manual</h1>
+<h1>SPAdes 2.5.0 Manual</h1>
 
 1. <a href="#sec1">About SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -22,8 +22,10 @@
 3. <a href="#sec3">Running SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;3.1. <a href="#sec3.1">SPAdes input</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;3.2. <a href="#sec3.2">SPAdes command line options</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;3.3. <a href="#sec3.3">SPAdes output</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;3.4. <a href="#sec3.4">Assembly evaluation</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.3. <a href="#sec3.3">Assembling long Illumina paired reads (2x150 and 2x250)</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.4. <a href="#sec3.4">SPAdes output</a><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;3.5. <a href="#sec3.5">Assembly evaluation</a><br>
 4. <a href="#sec4">Citation</a><br>
 5. <a href="#sec5">Feedback and bug reports</a><br>
 <br>
@@ -31,15 +33,15 @@
 <a name="sec1"></a>
 <h2>1. About SPAdes</h2>
 <p>
-    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 2.4.0 was released under GPLv2 on 26 February 2013 and can be downloaded from  <a href="http://bioinf.spbau.ru/spades" target="_blank">http://bioinf.spbau.ru/spades</a>.
+    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 2.5.0 was released under GPLv2 on 20 June 2013 and can be downloaded from  <a href="http://bioinf.spbau.ru/spades" target="_blank">http://bioinf.spbau.ru/spades</a>.
 
 
 <a name="sec1.1"></a>
 <h3>1.1 Supported data types</h3>
 <p>
-    Current version of SPAdes works only with Illumina reads. Support for other technologies (e.g.  Roche 454, IonTorrent, PacBio) is currently in progress and probably will be included in one of the next releases. 
+    The current version of SPAdes works only with Illumina reads. Support for other technologies (e.g.  Roche 454, IonTorrent, PacBio) is currently in progress and probably will be included in one of the next releases. 
 <p>
-    SPAdes supports paired-end reads as well as unpaired reads. So far SPAdes takes as input only one paired-end library. We are currently working on mate-pairs and multiple libraries support &ndash; it is likely to come in the next major release.
+    SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries together. 
 <p>
     Also note, that SPAdes was initially designed for single-cell and standard bacterial data sets and is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it at your own risk.
 
@@ -51,22 +53,22 @@ SPAdes comes in three separate modules:
     <ul>
         <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; read error correction tool, which works well on both single-cell and standard data sets </li>
         <li> SPAdes &ndash; iterative short-read genome assembly module; by default consecutively iterates through K value equal to 21, 33 and 55 </li>
-        <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>] and is turned off by default, see <a href="#correctoropt">SPAdes options section</a> </li>
+        <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>] and is turned off by default, see <a href="#correctoropt">SPAdes options section</a> </li>
     </ul>
 <p>
-    We recommend to run SPAdes with BayesHammer to obtain high-quality assemblies. However, if you use your own read correction tool it is possible to turn BayesHammer off; and other way around it is possible to use only read error correction stage, if you wish to use another assembler. See <a href="#pipelineopt">SPAdes options section</a>.
+    We recommend to run SPAdes with BayesHammer to obtain high-quality assemblies. However, if you use your own read correction tool it is possible to turn BayesHammer off. It is also possible to use only the read error correction stage, if you wish to use another assembler. See the <a href="#pipelineopt">SPAdes options section</a>.
 
 
 <a name="sec1.3"></a>
-<h3>1.3 SPAdes performance</h3>
+<h3>1.3 SPAdes' performance</h3>
 <p>
-    In this section we give approximate data about SPAdes performance on two data sets:
+    In this section we give approximate data about SPAdes' performance on two data sets:
     <ul>
-        <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_mc/" target="_blank">Standard isolate <i>E.coli</i></a>; 6.2Gb, 28M reads, 2x100bp, insert size ~ 215bp </li>
-        <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/" target="_blank">MDA single-cell <i>E.coli</i></a>; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp </li>
+        <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_mc/" target="_blank">Standard isolate <i>E. coli</i></a>; 6.2Gb, 28M reads, 2x100bp, insert size ~ 215bp </li>
+        <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/" target="_blank">MDA single-cell <i>E. coli</i></a>; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp </li>
     </ul>
 <p>
-    We ran SPAdes with default parameters using 16 threads on server with Intel Xeon 2.27GHz processors. BayesHammer runs approximately 1 hour and takes up to 15Gb of RAM to perform read error correction on each data set. Assembly takes 35 minutes and 4Gb of RAM for E.coli isolate data set; as for E.coli single-cell data set it takes 55 minutes and 6Gb of RAM. MismatchCorrector runs for about an hour on standard E.coli, about 2 hours on single-cell one and requires 8Gb of RAM. All modules also require additional disk space for temporary files. See table below for more precise values.
+    We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately 1 hour and takes up to 15Gb of RAM to perform read error correction on each data set. Assembly takes 35 minutes and 4Gb of RAM for the <i>E. coli</i> isolate data set. The <i>E. coli</i> single-cell data set takes 55 minutes and 6Gb of RAM. MismatchCorrector runs for about an hour on standard <i>E. coli</i>, about 2 hours on the single-cell data set, and requires 8Gb of RAM. All modules also require additional disk space for temporary files. See the table below for more precise values.
 
 <p>
     <table border="1" cellpadding="4" cellspacing="0">
@@ -134,13 +136,13 @@ SPAdes comes in three separate modules:
 <h3>2.1 Downloading SPAdes Linux binaries</h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, run:
+    To download <a href="http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, run:
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Linux.tar.gz
-    tar -xzf SPAdes-2.4.0-Linux.tar.gz
-    cd SPAdes-2.4.0-Linux/bin/
+    wget http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0-Linux.tar.gz
+    tar -xzf SPAdes-2.5.0-Linux.tar.gz
+    cd SPAdes-2.5.0-Linux/bin/
 </code>
 </pre>
 
@@ -157,18 +159,18 @@ SPAdes comes in three separate modules:
 <h3>2.2 Downloading SPAdes binaries for Mac</h3>
 
 <p>
-    To obtain <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, run:
+    To obtain <a href="http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, run:
 
 <pre  class="code">
 <code>
-    curl http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0-Darwin.tar.gz -o SPAdes-2.4.0-Darwin.tar.gz
-    tar -zxvf SPAdes-2.4.0-Darwin.tar.gz
-    cd SPAdes-2.4.0-Darwin/bin/
+    curl http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0-Darwin.tar.gz -o SPAdes-2.5.0-Darwin.tar.gz
+    tar -zxvf SPAdes-2.5.0-Darwin.tar.gz
+    cd SPAdes-2.5.0-Darwin/bin/
 </code>
 </pre>
 
 <p>
-    Just as in Linux, SPAdes is ready to use and no further installation steps are required. You will get the same files <code>bin</code> directory:
+    Just as in Linux, SPAdes is ready to use and no further installation steps are required. You will get the same files in <code>bin</code> directory:
     <ul>
         <li><code>spades.py</code>  (main executable script)</li>
         <li><code>hammer</code>  (read error correcting module)</li>
@@ -187,13 +189,13 @@ SPAdes comes in three separate modules:
     </ul>
 
 <p>
-    If you meet these requirements, you can download <a href="http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0.tar.gz">SPAdes source code</a>: 
+    If you meet these requirements, you can download <a href="http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0.tar.gz">SPAdes source code</a>: 
 
 <pre class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release2.4.0/SPAdes-2.4.0.tar.gz
-    tar -xzf SPAdes-2.4.0.tar.gz
-    cd SPAdes-2.4.0
+    wget http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0.tar.gz
+    tar -xzf SPAdes-2.5.0.tar.gz
+    cd SPAdes-2.5.0
 </code>
 </pre>
 
@@ -239,7 +241,7 @@ SPAdes comes in three separate modules:
 <a name="sec2.4"></a>
 <h3>2.3 Verifying your installation</h3>
 <p>
-    For testing purposes, SPAdes comes with a &ldquo;toy data set&rdquo; (reads, that align to first 1000 bp of E. coli). To try SPAdes on this data set run:
+    For testing purposes, SPAdes comes with a &ldquo;toy data set&rdquo; (reads, that align to first 1000 bp of <i>E. coli</i>). To try SPAdes on this data set run:
 
 <pre class="code">
 <code>
@@ -248,7 +250,7 @@ SPAdes comes in three separate modules:
 </pre>
 
 <p>
-    In case the installation is successful, you will find the following information at the end of the log:
+    If the installation is successful, you will find the following information at the end of the log:
 
 <pre class="code">
 <code>
@@ -270,20 +272,26 @@ Thank you for using SPAdes!
 <a name="sec3.1"></a>
 <h3>3.1 SPAdes input</h3>
 <p>
-    SPAdes takes as input forward-reverse paired-end reads as well as single (unpaired) reads in FASTA or FASTQ format. However, in order to run read error correction, reads should be in FASTQ format. Currently SPAdes accepts only one paired-end library, which can be stored in several files or several pairs of files. Number of unpaired libraries is unlimited. 
+    SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA or FASTQ format. However, in order to run read error correction, reads should be in FASTQ format. 
 <p>
-    Paired-end reads can be organized in two different ways:
+    You can specify up to five different paired-end libraries and also up to five different mate-pair ones. The number of unpaired libraries is unlimited. It is not possible to run the assembler using only mate-pair libraries.
+
+<p> 
+    By the default SPAdes assumes that paired-end reads have forward-reverse orientation and mate-pairs have reverse-forward one. However, different orientation can be set for any library by using <a href="#inputdata">SPAdes options</a>. We further refer to paired-end and mate-pair libraries simply as to read-pair libraries. 
+
+<p>
+    Each read-pair library can be stored in several files or several pairs of files. Paired reads can be organized in two different ways:
 
     <ul>
-        <li> In file pairs. In this case forward and reverse reads are placed in different files and go in the same order in respective files. </li>
-        <li> In merged files. In this case reads go interlacing between each other, so that each reverse read goes after corresponding paired forward read. </li>
+        <li> In file pairs. In this case left and right reads are placed in different files and go in the same order in respective files. </li>
+        <li> In merged files. In this case, the reads are interlaced, so that each right read goes after the corresponding paired left read. </li>
     </ul>
 
 <p>
-    For example, Illumina produces paired-end reads in two files: <code>s_1_1_sequence.txt</code> and <code>s_1_2_sequence.txt</code>. If you choose to store reads in file pairs make sure that for every read from <code>s_1_1_sequence.txt</code> corresponding paired read from <code>s_1_2_sequence.txt</code> is placed in the respective paired file on the same line. If you choose to use merged files every read from <code>s_1_1_sequence.txt</code>  should be followed by corresponding paired read from <code>s_1_2_sequence.txt</code>.
+    For example, Illumina produces paired-end reads in two files: <code>s_1_1_sequence.txt</code> and <code>s_1_2_sequence.txt</code>. If you choose to store reads in file pairs make sure that for every read from <code>s_1_1_sequence.txt</code> the corresponding paired read from <code>s_1_2_sequence.txt</code> is placed in the respective paired file on the same line number. If you choose to use merged files, every read from <code>s_1_1_sequence.txt</code> should be followed by the corresponding paired read from <code>s_1_2_sequence.txt</code>.
 
 <p>
-    Note, that SPAdes also accepts gzip-compressed files.
+    Note that SPAdes also accepts gzip-compressed files.
 
 <a name="sec3.2"></a>
 <h3>3.2 SPAdes command line options </h3>
@@ -309,6 +317,21 @@ Thank you for using SPAdes!
 </p>
 
 <p>
+    <code>--test</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the &ldquo;toy data set&rdquo;; see <a href="#sec2.3">section 2.3</a>.
+</p>
+
+<p>
+    <code>-h</code> (or <code>--help</code>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Prints help.
+</p>
+
+
+<a name="inputdata"></a>
+<h4>Input data</h4>
+
+<i><b>&nbsp;&nbsp;Specifying single library (SPAdes 2.4 format)</i></b>
+<p>
     <code>--12 &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced forward and reverse paired-end reads.
 </p>
@@ -328,14 +351,54 @@ Thank you for using SPAdes!
     &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads.
 </p>
 
+<i><b>&nbsp;&nbsp;Specifying multiple libraries (new format)</i></b>
 <p>
-    <code>--test</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the &ldquo;toy data set&rdquo;; see <a href="#sec2.3">section 2.3</a>.
+    <code>--pe<b>&lt;#></b>-12 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5). For example, for first paired-end library the option is:<br>
+    <code>--pe1-12 &lt;file_name> </code><br>
 </p>
 
 <p>
-    <code>-h</code> (or <code>--help</code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Prints help.
+    <code>--pe<b>&lt;#></b>-1 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+</p>
+
+<p>
+    <code>--pe<b>&lt;#></b>-2 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+</p>
+
+<p>
+    <code>--pe<b>&lt;#></b>-s &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads from paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5) <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;For exmaple, paired reads can become unpaired during error correction procedure.
+</p>
+
+<p>
+    <code>--pe<b>&lt;#></b>-<b>&lt;or></b> &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Default orientation for paired-end libraries is forward-reverse. For example, to specify reverse-forward orientation for the second paired-end library you should use flag:<br>
+    <code>--pe2-rf </code><br>
+</p>
+<p>
+    <code>--mp<b>&lt;#></b>-12 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+</p>
+
+<p>
+    <code>--mp<b>&lt;#></b>-1 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with leftreads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+</p>
+
+<p>
+    <code>--mp<b>&lt;#></b>-2 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+</p>
+<p>
+    <code>--mp<b>&lt;#></b>-<b>&lt;or></b> &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Default orientation for mate-pair libraries is reverse-forward. For example, to specify forward-forward orientation for the first mate-pair library you should use flag:<br>
+    <code>--mp1-ff </code><br>
 </p>
 
 <a name="pipelineopt">
@@ -412,7 +475,7 @@ Thank you for using SPAdes!
 
 <pre class="code">
 <code>
-    ./spades.py -1 ../share/spades/test_dataset/ecoli_1K_1.fq.gz -2 ../share/spades/test_dataset/ecoli_1K_2.fq.gz -o spades_test
+    ./spades.py --pe1-1 ../share/spades/test_dataset/ecoli_1K_1.fq.gz --pe1-2 ../share/spades/test_dataset/ecoli_1K_2.fq.gz -o spades_test
 </code>
 </pre>
 
@@ -421,19 +484,20 @@ Thank you for using SPAdes!
 
 <pre class="code">
 <code>
-    pe_forward_1.fastq
-    pe_reverse_1.fastq
-    pe_forward_2.fastq
-    pe_reverse_2.fastq
+    lib1_forward_1.fastq
+    lib1_reverse_1.fastq
+    lib1_forward_2.fastq
+    lib1_reverse_2.fastq
 </code>
 </pre>
+
 
 <p>
     make sure that corresponding files go in the same order:
 
 <pre class="code">
 <code>
-    ./spades.py -1 pe_forward_1.fastq -2 pe_reverse_1.fastq -1 pe_forward_2.fastq -2 pe_reverse_2.fastq -o spades_output
+    ./spades.py --pe1-1 lib1_forward_1.fastq --pe1-2 lib1_reverse_1.fastq --pe1-1 lib1_forward_2.fastq --pe1-2 lib1_reverse_2.fastq -o spades_output
 </code>
 </pre>
 
@@ -442,17 +506,121 @@ Thank you for using SPAdes!
 
 <pre class="code">
 <code>
-    ./spades.py --12 pe_1.fastq --12 pe_2.fastq -s unpaired_1.fastq -s unpaired_2.fastq -o spades_output    
+    ./spades.py --pe1-12 lib1_1.fastq --pe1-12 lib1_2.fastq --pe1-s lib1_unpaired_1.fastq --pe1-s lib1_unpaired_2.fastq -o spades_output    
 </code>
 </pre>
 
+<p>
+    In case you have several paired-end and mate-pair reads, for example:
+
+<li> paired-end library 1
+<pre class="code">
+<code>
+    lib_pe1_left.fastq
+    lib_pe1_right.fastq
+</code>
+</pre>
+<p>
+<li> mate-pair library 1
+
+<pre class="code">
+<code>
+    lib_mp1_left.fastq
+    lib_mp1_right.fastq
+</code>
+</pre>
+<p>
+<li> mate-pair library 2
+<pre class="code">
+<code>
+    lib_mp2_left.fastq
+    lib_mp2_right.fastq
+</code>
+</pre>
 
 <p>
-    Options <code>-1</code>, <code>-2</code>, <code>--12</code> and <code>-s</code> can be mixed together if needed.
+    make sure that files corresponding to each library are grouped together:
+
+<pre class="code">
+<code>
+    ./spades.py --pe1-1 lib_pe1_left.fastq --pe1-2 lib_pe1_right.fastq --mp1-1 lib_mp1_left.fastq --mp1-2 lib_mp1_right.fastq --mp2-1 lib_mp2_left.fastq --mp2-2 lib_mp2_right.fastq -o spades_output
+</code>
+</pre>
+
+<p>
+    All options for specifying input data can be mixed if needed, but make sure that files for each library are grouped and files with left and right paired reads go in the same order.
 
 
 <a name="sec3.3">
-<h3>3.3 SPAdes output</h3>
+<h3>3.3 Assembling long Illumina paired reads (2x150 and 2x250)</h3>
+<p>
+Recent advances in DNA sequencing technology led to rapid increase of a read length. Nowadays it is a common situation to have a dataset consisting of 2x150 or 2x250 paired-end reads produced by Illumina MiSeq or HiSeq2500. However, the use of longer reads alone will not automatically improve assembly quality. Proper assembler that can make use of all their advantages is needed.
+<p>
+As far as SPAdes uses iterative k-mer length, it allows to benefit from the full potential of the long paired-end reads. Currently one has to set the assembler options up manually but we plan to incorporate automatic calculation of necessary options soon.
+<p>
+Please note that not only the read length matters, but insert length does matter a lot. It is suboptimal to sequence 300bp fragment into a pair of 250bp reads. We suggest using 350-500 bp fragments with 2x150 reads and 550-700 bp fragments with 2x250 reads.
+
+<h4>Multi-cell dataset with read length 2 x 150</h4>
+<p>
+Make sure your reads are corrected prior to assembly with Quake (recommended), or BayesHammer (integrated into SPAdes pipeline).
+<p>
+The default selection of k-mer lengths is 21, 33, 55 and might work well. If you have enough coverage (50x+), then you may want to try to set k-mer lengths of 21, 33, 55, 77.
+<p>
+Make sure you run assembler with <code>--careful</code> option to minimize number of mismatches in the final contigs.
+<p>
+We recommend you to check the SPAdes log file at the end of the each iteration to control the average coverage of the contigs.
+
+<p>
+For reads corrected prior to assembly run: 
+<pre class="code">
+<code>
+    ./spades.py -k 21,33,55,77 --careful --only-assembler &lt;your reads> -o spades_output
+</code>
+</pre>
+ 
+<p>
+For non-corrected reads run:
+<pre class="code">
+<code>
+    ./spades.py -k 21,33,55,77 --careful r &lt;your reads> -o spades_output
+</code>
+</pre>
+
+<h4>Multi-cell dataset with read lengths 2 x 250</h4>
+<p>
+Make sure your reads are corrected prior to assembly with Quake (recommended), or BayesHammer (integrated into SPAdes pipeline).
+<p>
+By default we suggest to increase k-mer lengths in increments of 22 until the  k-mer length reaches 127. The exact length of the k-mer depends on the coverage: k-mer length of 127 corresponds to 50x k-mer coverage and higher.
+<p>
+Make sure you run assembler with <code>--careful</code> option to minimize number of mismatches in the final contigs.
+<p>
+We recommend you to check the SPAdes log file at the end of the each iteration to control the average coverage of the contigs.
+<p>
+For reads corrected prior to assembly run: 
+<pre class="code">
+<code>
+    ./spades.py -k 21,33,55,77,99,127 --careful --only-assembler &lt;your reads> -o spades_output
+</code>
+</pre>
+ 
+<p>
+For non-corrected reads run:
+<pre class="code">
+<code>
+    ./spades.py -k 21,33,55,77,99,127 --careful r &lt;your reads> -o spades_output
+</code>
+</pre>
+
+<h4>Single-cell dataset with read lengths 2 x 150 or 2 x 250</h4>
+<p>
+The default options are recommended.
+<p>
+However, it might be tricky to fully utilize the advantages of  long reads you have. Consider contacting us for more information & discussions of assembling strategy.
+<br>
+
+
+<a name="sec3.4">
+<h3>3.4 SPAdes output</h3>
 <p>
     SPAdes stores all output files in <code>&lt;output_dir> </code>, which is set by user.
 
@@ -487,8 +655,8 @@ Full list of <code>&lt;output_dir></code> content is presented below:
     SPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir></code>. 
 
 
-<a name="sec3.4">
-<h3>3.4 Assembly evaluation</h3>
+<a name="sec3.5">
+<h3>3.5 Assembly evaluation</h3>
 
 <p>
     We recommend to use <a href="http://bioinf.spbau.ru/en/quast" target="_blank">QUAST</a> for assembly evaluation. 
@@ -499,7 +667,7 @@ Full list of <code>&lt;output_dir></code> content is presented below:
 <a name="sec4">
 <h2>4. Citation</h2>
 <p>
-    If you use SPAdes in your research, we ask that you include in your publications reference to <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" target="_blank">Bankevich, Nurk et al., 2012</a>.
+    If you use SPAdes in your research, please include <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" target="_blank">Bankevich, Nurk et al., 2012</a> in your reference list.
 
 <p>
     In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.
@@ -512,7 +680,7 @@ Full list of <code>&lt;output_dir></code> content is presented below:
     Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes.
 
 <p>
-    In case you have troubles running SPAdes, please provide us with <code>params.txt</code> and <code>spades.log</code> files from the directory <code>&lt;output_dir></code>. 
+    If you have trouble running SPAdes, please provide us with the files <code>params.txt</code> and <code>spades.log</code> from the directory <code>&lt;output_dir></code>.
 
 <p>
     Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.

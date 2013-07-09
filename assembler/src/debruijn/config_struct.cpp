@@ -61,6 +61,30 @@ void load(resolving_mode& rm, boost::property_tree::ptree const& pt,
   }
 }
 
+inline void load(construction_mode& con_mode,
+        boost::property_tree::ptree const& pt, std::string const& key,
+        bool complete) {
+    if (complete || pt.find(key) != pt.not_found()) {
+        std::string ep = pt.get<std::string>(key);
+        con_mode = debruijn_config::construction_mode_id(ep);
+    }
+}
+
+inline void load(debruijn_config::construction::early_tip_clipper& etc,
+        boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(etc.enable, pt, "enable");
+    etc.length_bound = pt.get_optional<size_t>("length_bound");
+}
+
+inline void load(debruijn_config::construction& con,
+        boost::property_tree::ptree const& pt, bool complete) {
+    using config_common::load;
+    load(con.con_mode, pt, "mode", complete);
+    load(con.keep_perfect_loops, pt, "keep_perfect_loops", complete);
+    load(con.early_tc, pt, "early_tip_clipper", complete);
+}
+
 void load(estimation_mode& est_mode,
           boost::property_tree::ptree const& pt, std::string const& key,
           bool complete) {
@@ -197,6 +221,18 @@ void load(debruijn_config::repeat_resolver& rr,
   load(rr.kill_loops, pt, "kill_loops");
 }
 
+void load(debruijn_config::coverage_based_rr& cbrr,
+          boost::property_tree::ptree const& pt, bool complete) {
+  using config_common::load;
+ 
+    load(cbrr.coverage_threshold_one_list, pt, "coverage_threshold_one_list");
+    load(cbrr.coverage_threshold_match, pt, "coverage_threshold_match");
+    load(cbrr.coverage_threshold_global, pt, "coverage_threshold_global");
+    load(cbrr.tandem_ratio_lower_threshold, pt, "tandem_ratio_lower_threshold");
+    load(cbrr.tandem_ratio_upper_threshold, pt, "tandem_ratio_upper_threshold");
+    load(cbrr.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
+ 
+}
 
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool complete) {
@@ -250,9 +286,7 @@ void load(debruijn_config::dataset& ds,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
-  std::string reads;
-  load(reads, pt, "reads");
-  ds.reads.load(reads);
+  load(ds.reads_filename, pt, "reads");
   load(ds.single_cell, pt, "single_cell");
 
   ds.reference_genome_filename = "";
@@ -261,6 +295,14 @@ void load(debruijn_config::dataset& ds,
   if (refgen && *refgen != "N/A") {
     ds.reference_genome_filename = *refgen;
   }
+}
+
+void load_reads(debruijn_config::dataset& ds,
+        std::string input_dir) {
+  if (ds.reads_filename[0] != '/')
+    ds.reads_filename = input_dir + ds.reads_filename;
+  CheckFileExistenceFATAL(ds.reads_filename);
+  ds.reads.load(ds.reads_filename);
 }
 
 void load_reference_genome(debruijn_config::dataset& ds,
@@ -402,15 +444,10 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.use_unipaths, pt, "use_unipaths");
 
   load(cfg.pacbio_test_on, pt, "pacbio_test_on");
-  load(cfg.coverage_based_rr, pt, "coverage_based_rr");
-  if (cfg.coverage_based_rr) {
-    load(cfg.coverage_threshold_one_list, pt, "coverage_threshold_one_list");
-    load(cfg.coverage_threshold_match, pt, "coverage_threshold_match");
-    load(cfg.coverage_threshold_global, pt, "coverage_threshold_global");
-    load(cfg.tandem_ratio_lower_threshold, pt, "tandem_ratio_lower_threshold");
-    load(cfg.tandem_ratio_upper_threshold, pt, "tandem_ratio_upper_threshold");
-    load(cfg.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
-  }
+  load(cfg.coverage_based_rr_on, pt, "coverage_based_rr_on");
+  if (cfg.coverage_based_rr_on) {
+    load (cfg.cbrr, pt, "coverage_based_rr");
+}
   if (cfg.pacbio_test_on) {
 	load(cfg.pb, pt, "pacbio_processor");
   } else {
@@ -460,8 +497,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   boost::property_tree::read_info(cfg.dataset_file, ds_pt);
   load(cfg.ds, ds_pt, true);
 
-  load(cfg.de, pt, (cfg.ds.single_cell ? "sc_de" : "usual_de"));
-
   load(cfg.ade, pt, (cfg.ds.single_cell ? "sc_ade" : "usual_ade")); // advanced distance estimator:
   load(cfg.rr, pt, (cfg.ds.single_cell ? "sc_rr" : "usual_rr")); // repeat resolver:
   load(cfg.pos, pt, "pos"); // position handler:
@@ -469,6 +504,13 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.est_mode, pt, "estimation_mode");
 
   load(cfg.rm, pt, "resolving_mode");
+
+  if (cfg.rm == rm_path_extend) {
+      load(cfg.de, pt, (cfg.ds.single_cell ? "sc_de" : "usual_de"));
+  }
+  else {
+      load(cfg.de, pt, (cfg.ds.single_cell ? "old_sc_de" : "old_usual_de"));
+  }
 
   cfg.pe_params.name = cfg.ds.single_cell ? "singlecell" : "multicell";
   load(cfg.pe_params, pt, "andrey_params");
@@ -484,6 +526,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.mask_all, pt, "mask_all");
 
+  load(cfg.con, pt, "construction");
   load(cfg.gc, pt, "gap_closer");
   load(cfg.graph_read_corr, pt, "graph_read_corr");
   load(cfg.need_consensus, pt, "need_consensus");
@@ -502,6 +545,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.info_printers, pt, "info_printers");
 
+  load_reads(cfg.ds, cfg.input_dir);
   load_reference_genome(cfg.ds, cfg.input_dir);
 }
 

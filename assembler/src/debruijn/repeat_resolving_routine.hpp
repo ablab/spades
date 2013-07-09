@@ -794,7 +794,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome, const
 			sub_dir, false);
 }
 
-void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
+void resolve_nonconjugate_component(int /*component_id*/, const Sequence& /*genome*/) {
 //	nonconj_graph_pack nonconj_gp(genome);
 //  PairedInfoIndexT<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
 //
@@ -818,8 +818,8 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 //			graph_name, sub_dir, false);
 }
 
-void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndexT<Graph>& index,
-		const PairedIndexT& jump_index) {
+void resolve_with_jumps(conj_graph_pack& /*gp*/, PairedInfoIndexT<Graph>& /*index*/,
+		const PairedIndexT& /*jump_index*/) {
 	WARN("Jump resolver not alailable");
 
 //	VERIFY(cfg::get().andrey_params.);
@@ -851,7 +851,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 	size_t delta = size_t(is_var);
 	size_t linkage_distance = size_t(
 			cfg::get().de.linkage_distance_coeff * is_var);
-	GraphDistanceFinder<Graph> dist_finder(gp.g, size_t(lib.data().mean_insert_size),
+	GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t)math::round(lib.data().mean_insert_size),
 	        lib.data().read_length, delta);
 	size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 	boost::function<double(int)> weight_function;
@@ -868,7 +868,7 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 		//todo reduce number of constructor params
 	    //TODO: apply new system
 		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-		        size_t(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
+                (size_t)math::round(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
 				gp.k_value, lib.data().average_coverage);
 		normalizing_f = boost::bind(
 				&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
@@ -892,13 +892,12 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 			clustered_index);
 }
 
-
 void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths, 
 				PairedIndexT& clustered_index,
 				EdgeQuality<Graph>& quality_labeler ) {
 
 
-	DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), cfg::get().output_dir);
+	DeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), conj_gp.g, cfg::get().output_dir);
 	if (cfg::get().developer_mode) {
 
 		std::string path;
@@ -909,13 +908,13 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 		bool val = LoadEdgeIndex(path, kmerIndex);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
 		INFO("Updating index from graph started");
-		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, conj_gp.g);
+		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph<conj_graph_pack::graph_t>(kmerIndex, conj_gp.g);
 	}
 
-	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
+	auto index = FlankingCoverage<conj_graph_pack::graph_t>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
-	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().coverage_threshold_one_list, cfg::get().coverage_threshold_match, 
-			cfg::get().coverage_threshold_global, cfg::get().tandem_ratio_lower_threshold, cfg::get().tandem_ratio_upper_threshold, cfg::get().repeat_length_upper_threshold);
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match, 
+			cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
 	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
 
 	INFO("Repeats are resolved by coverage");
@@ -1060,8 +1059,11 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
     GapStorage<Graph> gaps(conj_gp.g);
 
 	std::vector< PathInfo<Graph> > filteredPaths;
-	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
-	if (cfg::get().coverage_based_rr == true){
+	if (cfg::get().developer_mode) {
+	    OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
+	}
+
+	if (cfg::get().coverage_based_rr_on == true){
 		int pe_lib_index = get_first_pe_lib_index();
 		const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
 		resolve_repeats_by_coverage(conj_gp, lib.data().mean_insert_size, filteredPaths, clustered_indices[0], quality_labeler);
@@ -1147,6 +1149,7 @@ void resolve_repeats() {
 	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir,
 			"graph.dot");
 	printer(ipp_before_repeat_resolution);
+	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_rr.fasta");
 
 	if ((!cfg::get().paired_mode && !cfg::get().long_single_mode)
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {

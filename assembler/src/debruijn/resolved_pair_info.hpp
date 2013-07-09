@@ -45,12 +45,14 @@ public:
 	}
 
 	EdgeId UniqueMapping(EdgeId old_edge) {
-		VERIFY(MapsUniquely(old_edge));
+		bool flag = MapsUniquely(old_edge);
+		VERIFY(flag);
 		return *(labels_.edge_inclusions.find(old_edge)->second.begin());
 	}
 
 	pair<EdgeId, size_t> OldEdgePositionInNewGraph(EdgeId old_edge) {
-		VERIFY(MapsUniquely(old_edge));
+        bool flag = MapsUniquely(old_edge);
+        VERIFY(flag);
 		EdgeId new_edge = UniqueMapping(old_edge);
 		VERIFY(labels_.edge_labels.find(new_edge) != labels_.edge_labels.end());
 		const vector<EdgeId>& old_edges = labels_.edge_labels.find(new_edge)->second;

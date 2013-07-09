@@ -5,31 +5,26 @@
 //****************************************************************************
 
 #pragma once
+#include "stacktrace.hpp"
+
 #include "boost/current_function.hpp"
 #include <sstream>
 #include <iostream>
-#include "stacktrace.hpp"
+#include <cassert>
 
-struct assertion_failed_exception : public std::exception {
-};
+#define VERIFY(expr)                                             \
+    do {                                                         \
+        assert(expr);                                            \
+    } while(0);
 
-#define VERIFY(expr) 																							\
-if (!(expr)) {																									\
-	std::stringstream ss;																						\
-	ss << "Verification of expression '" << #expr << "' failed in function '" <<  BOOST_CURRENT_FUNCTION << 	\
-	"'. In file '" << __FILE__ << " on line " << __LINE__ << "'." << std::endl;									\
-	std::cout << ss.str();																						\
-	std::cerr << ss.str();																						\
-	print_stacktrace();																						    \
-	throw((assertion_failed_exception()));																		\
-}
-
-#define VERIFY_MSG(expr, msg) 																					\
-if (!(expr)) {																									\
-	std::stringstream ss;																						\
-	ss << "Verification of expression '" << #expr << "' failed in function '" <<  BOOST_CURRENT_FUNCTION << 	\
-	"'. In file '" << __FILE__ << "' on line " << __LINE__ << ". Message '" << msg << "'." << std::endl;		\
-	std::cout << ss.str();																						\
-	std::cerr << ss.str();																						\
-	throw ((assertion_failed_exception()));																		\
-}
+#define VERIFY_MSG(expr, msg)                                           \
+    if (!(expr)) {                                                      \
+        std::stringstream ss;                                           \
+        ss << "Verification of expression '" << #expr << "' failed in function '" <<  BOOST_CURRENT_FUNCTION << \
+                "'. In file '" << __FILE__ << "' on line " << __LINE__ << ". Message '" << msg << "'." ; \
+        std::cout << ss.str() << std::endl;                             \
+        std::cerr << ss.str() << std::endl;                             \
+        fflush(stdout);                                                 \
+        fflush(stderr);                                                 \
+        assert(expr);                                                   \
+    }

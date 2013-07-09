@@ -88,7 +88,7 @@ KMer KMerClustering::ConsensusWithMask(const vector<unsigned> & cl, const vector
 
   std::string res(K, 'A');
   for (unsigned i = 0; i < K; ++i) {
-    res[i] = nucl(std::max_element(scores + 4*i, scores + 4*i + 4) - (scores + 4*i));
+    res[i] = nucl((unsigned char)(std::max_element(scores + 4*i, scores + 4*i + 4) - (scores + 4*i)));
   }
 
   return KMer(res);
@@ -113,7 +113,7 @@ KMer KMerClustering::Consensus(const vector<unsigned> & cl) const {
 
   std::string res(K, 'A');
   for (unsigned i = 0; i < K; ++i) {
-    res[i] = nucl(std::max_element(scores + 4*i, scores + 4*i + 4) - (scores + 4*i));
+    res[i] = nucl((unsigned char)(std::max_element(scores + 4*i, scores + 4*i + 4) - (scores + 4*i)));
   }
 
   return KMer(res);
@@ -136,9 +136,9 @@ double KMerClustering::ClusterBIC(const vector<unsigned> & cl, const vector<Stri
     total += cnt;
   }
 
-  unsigned nparams = (clusters - 1) + clusters*K + 2*clusters*K;
+  size_t nparams = (clusters - 1) + clusters*K + 2*clusters*K;
 
-  return loglik - nparams*log(blockSize) / 2;
+  return loglik - (double)nparams * log((double)blockSize) / 2.0;
 }
 
 double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> &kmerinds,
@@ -148,7 +148,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
   // if l==1 then clustering is trivial
   if (l == 1) {
     centers[0].first = Consensus(kmerinds);
-    centers[0].second.first = kmerinds.size();
+    centers[0].second.first = (uint32_t)kmerinds.size();
     centers[0].second.second = 1;
     for (size_t i = 0; i < kmerinds.size(); ++i)
       indices[i] = 0;
@@ -216,13 +216,13 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
       unsigned newInd = 0;
       for (unsigned j=0; j < l; ++j)
         loglike[j] = logLikelihoodKMer(centers[j].first, kms);
-      newInd = std::max_element(loglike.begin(), loglike.end()) - loglike.begin();
+      newInd = (unsigned)(std::max_element(loglike.begin(), loglike.end()) - loglike.begin());
 
       if (cfg::get().bayes_use_hamming_dist) {
         for (unsigned j=0; j < l; ++j)
           dists[j] = hamdistKMer(kmer, centers[j].first);
 
-        newInd = std::min_element(dists.begin(), dists.end()) - dists.begin();
+        newInd = (unsigned)(std::min_element(dists.begin(), dists.end()) - dists.begin());
       }
 
       curlik += loglike[newInd];
@@ -284,7 +284,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
     }
   }
 
-  size_t origBlockSize = block.size();
+  unsigned origBlockSize = (unsigned)block.size();
   if (origBlockSize == 0) return 0;
 
   // Ad-hoc max cluster limit: we start to consider only thous k-mers which
@@ -378,7 +378,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
           // OK, that's the situation, cluster k should be added to cluster s
           for (uint32_t i = 0; i < origBlockSize; i++) {
             if (indices[i] == k) {
-              indices[i] = s;
+              indices[i] = (unsigned)s;
               bestCenters[s].second.first++;
             }
           }
@@ -409,14 +409,14 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
     }
     std::vector<unsigned> v;
     if (bestCenters[k].second.first == 1) {
-      for (size_t i = 0; i < origBlockSize; i++) {
+      for (unsigned i = 0; i < origBlockSize; i++) {
         if (indices[i] == k) {
           v.push_back(block[i]);
           break;
         }
       }
     } else { // there are several kmers in this cluster
-      for (size_t i = 0; i < origBlockSize; i++) {
+      for (unsigned i = 0; i < origBlockSize; i++) {
         if (bestIndices[i] == k) {
           if (centersInCluster[k] == i) {
             v.insert(v.begin(), block[i]);
@@ -426,14 +426,14 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
         }
       }
       if (centersInCluster[k] == -1u) {
-        size_t new_idx = 0;
+        unsigned new_idx = 0;
         #pragma omp critical
         {
           KMer newkmer = bestCenters[k].first;
 
           KMerStat kms(0 /* cnt */, newkmer, 1.0 /* total quality */, NULL /*quality */);
           kms.status = KMerStat::GoodIter;
-          new_idx = data_.push_back(kms);
+          new_idx = (unsigned)data_.push_back(kms);
           if (data_[newkmer].kmer() != newkmer)
             newkmers += 1;
         }
@@ -619,15 +619,15 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
   numeric::matrix<double> err(4, 4);
   for (unsigned i = 0; i < 4; ++i)
     for (unsigned j = 0; j < 4; ++j)
-      err(i, j) = 1.0 * errs[0](i, j) / rowsums(i, 0);
+      err(i, j) = 1.0 * (double)errs[0](i, j) / (double)rowsums(i, 0);
 
   INFO("Subclustering done. Total " << newkmers << " non-read kmers were generated.");
   INFO("Subclustering statistics:");
-  INFO("  Total singleton hamming clusters: " << tsingl << ". Among them " << gsingl << " (" << 100.0 * gsingl / tsingl << "%) are good");
-  INFO("  Total singleton subclusters: " << tcsingl << ". Among them " << gcsingl << " (" << 100.0 * gcsingl / tcsingl << "%) are good");
-  INFO("  Total non-singleton subcluster centers: " << tcls << ". Among them " << gcls << " (" << 100.0 * gcls / tcls << "%) are good");
-  INFO("  Average size of non-trivial subcluster: " << 1.0 * tkmers / tcls << " kmers");
-  INFO("  Average number of sub-clusters per non-singleton cluster: " << 1.0 * (tcsingl + tcls) / tncls);
+  INFO("  Total singleton hamming clusters: " << tsingl << ". Among them " << gsingl << " (" << 100.0 * (double)gsingl / (double)tsingl << "%) are good");
+  INFO("  Total singleton subclusters: " << tcsingl << ". Among them " << gcsingl << " (" << 100.0 * (double)gcsingl / (double)tcsingl << "%) are good");
+  INFO("  Total non-singleton subcluster centers: " << tcls << ". Among them " << gcls << " (" << 100.0 * (double)gcls / (double)tcls << "%) are good");
+  INFO("  Average size of non-trivial subcluster: " << 1.0 * (double)tkmers / (double)tcls << " kmers");
+  INFO("  Average number of sub-clusters per non-singleton cluster: " << 1.0 * (double)(tcsingl + tcls) / (double)tncls);
   INFO("  Total solid k-mers: " << gsingl + gcsingl + gcls);
   INFO("  Substitution probabilities: " << err);
 }

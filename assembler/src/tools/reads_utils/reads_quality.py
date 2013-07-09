@@ -20,6 +20,10 @@ import subprocess
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'conversion'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'stat'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../quality/libs'))
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../../ext/src/python_libs'))
+import pyyaml
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../spades_pipeline'))
+import support
 
 bowtie_path  = os.path.join(os.path.abspath(sys.path[0]), '../../../../external_tools/bowtie-0.12.7')
 bowtie_build = os.path.join(bowtie_path, "bowtie-build")
@@ -33,30 +37,28 @@ kmer = 1
 make_latest_symlink = True
 reference = ""
 skip_trimming = False
+paired_mode=False
+max_is = 1000000000
 
 ###################################################################
 
-long_options = "output-dir= reference= thread-num= bin-size= kmer-size= skip-trimming".split()
-short_options = "o:r:t:b:k:s"
+long_options = "output-dir= reference= thread-num= bin-size= kmer-size= max-is= skip-trimming paired-mode".split()
+short_options = "o:r:t:b:k:x:sp"
 
 def usage():
     print 'Estimation reads quality'
-    print 'Usage:', sys.argv[0], ' [options described below] datasets description-file(s)'
+    print 'Usage:', sys.argv[0], ' [options described below] <datasets YAML description-file(s)>'
     print ""
-    print "Options with parameters:"
+    print "Options:"
+    print "-p\t--paired-mode\tStarts ReadsQuality in PAIRED mode (former paired_reads_quality)"
     print "-r\t--reference\tFile with reference genome (Mandatory parameter)"
     print "-o\t--output-dir\tDirectory to store all result files"
     print "-t\t--thread-num\tMax number of threads (default is " + str(thread_num) + ")"
     print "-k\t--kmer-size\tK-mer size for which coverage is counted (default is " + str(kmer) + ")"
     print "-b\t--bin-size\tSize of bins for counting coverage (default is " + str(bin_size) + ")"
+    print "-x\t--max-is\tMaximal inser size (default is none)"
     print "-s\t--skip-trimming\tSkip N-trimming for speed-up"
     
-def check_file(f):
-    if not os.path.isfile(f):
-        print "Error - file not found:", f
-        sys.exit(2)
-    return f
-
 try:
     options, datasets = getopt.gnu_getopt(sys.argv[1:], short_options, long_options)
 except getopt.GetoptError, err:
@@ -70,34 +72,38 @@ for opt, arg in options:
         output_dir = arg
         make_latest_symlink = False  
     elif opt in ('-r', "--reference"):
+        support.check_file_existence(arg, "reference")
         reference = arg
     elif opt in ('-t', "--thread-num"):
         thread_num = int(arg)
         if thread_num < 1:
             thread_num = 1 
-    elif opt in ('-b', "--bin-size"):
-        bin_size = int(arg)
-        if bin_size < 1:
-            bin_size = 1   
-    elif opt in ('-k', "--kmer-size"):
-        kmer = int(arg)
-        if kmer < 1:
-            kmer = 1 
+    elif opt in ('-b', "--bin-size"):        
+        if int(arg) > 0:
+            bin_size = int(arg)
+    elif opt in ('-k', "--kmer-size"):        
+        if int(arg) > 0:
+            kmer = int(arg)
+    elif opt in ('-x', "--max-is"):        
+        if int(arg) > 0:
+            max_is = int(arg)
     elif opt in ('-s', "--skip-trimming"):
         skip_trimming = True 
+    elif opt in ('-p', "--paired-mode"):
+        paired_mode = True
     else:
         raise ValueError
 
 for d in datasets:
-    check_file(d)    
+    support.check_file_existence(d)    
 
 if not datasets:
-    print "no datasets"
+    print >> sys.stderr, "no datasets"
     usage()
     sys.exit(1)   
 
 if not reference:
-    print 'no ref'
+    print >> sys.stderr, 'no reference'
     usage()
     sys.exit(1)   
 
@@ -139,29 +145,32 @@ datasets_dict = dict()
 print("Analyzing datasets")
 for dataset in datasets:
 
-    basename = os.path.splitext(os.path.basename(dataset))[0]
-    cur_key = basename
-    i = 1
-    while datasets_dict.has_key(cur_key):
-        cur_key = basename + "_" + str(i)
-
-    cur_reads = []
-    for line in open(dataset, 'r'):
-        if line.startswith("paired_reads") or line.startswith("single_reads"):
-            line = line.replace('"', '')
-            reads = line.split()[1:]
-            for read in reads:
-                cur_reads.append(get_full_path(dataset, read))            
-    
-    if len(cur_reads) == 0:
-        print("  " + dataset + " was skipped because it contains no reads")    
+    try:
+        dataset_data = pyyaml.load(file(dataset, 'r'))
+    except pyyaml.YAMLError, exc:
+        support.warning('skipping ' + dataset + ': exception caught while parsing YAML file (' + options_storage.dataset_yaml_filename + '):\n' + str(exc))
         continue
+
+    dataset_data = support.correct_dataset(dataset_data)
+    for id, library in enumerate(dataset_data):
+        print ("processing lib#" + str(id) + " of " + dataset)
+        basename = os.path.splitext(os.path.basename(dataset))[0]
+        cur_key = basename
+        i = 1
+        while datasets_dict.has_key(cur_key):
+            cur_key = basename + "_" + str(i)
+
+        cur_reads = []
+        for key, value in library.items():
+            if key.endswith('reads'):
+                for reads_file in value:
+                    cur_reads.append(get_full_path(dataset, reads_file))
         
-    datasets_dict[cur_key] = cur_reads   
-    print("  " + dataset + " ==> " + cur_key)
+        datasets_dict[cur_key] = cur_reads   
+        print("lib#" + str(id) + " of " + dataset + " ==> " + cur_key)
 
 if len(datasets_dict.keys()) == 0:
-    print("Can't continue estimation - all datasets were skipped")
+    support.error("can't continue estimation - all datasets were skipped")
     sys.exit(1)
 
 ###################################################################
@@ -208,22 +217,39 @@ index_log.close()
 index_err.close()
 
 # bowtie-ing
-print("Aligning")
-report_dict["header"] += ["Total reads", "Aligned reads", "Unaligned reads"]
+report_dict["header"] += ["Total reads"]
+if paired_mode:
+    print("Aligning (ignoring reads with multiple possible aligment)")
+    report_dict["header"] += ["Uniquely aligned reads", "Unaligned reads", "Non-niquely aligned reads"]
+    total_reads = {}
+else:
+    print("Aligning")
+    report_dict["header"] += ["Aligned reads", "Unaligned reads"]
 for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     align_log = open(os.path.join(output_dir, dataset + ".log"),'w')
     align_err = open(os.path.join(output_dir, dataset + ".err"),'w') 
     reads_string = reduce(lambda x, y: x + ',' + y, datasets_dict[dataset])   
-    subprocess.call([bowtie, '-c', '-q', '--suppress', '6,7,8', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
+    if paired_mode:    
+        subprocess.call([bowtie, '-c', '-q', '-m', '1', '--suppress', '6,7,8', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)   
+    else:
+        subprocess.call([bowtie, '-c', '-q', '--suppress', '6,7,8', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
     align_log.close()
     align_err.close() 
 
     align_err = open(os.path.join(output_dir, dataset + ".err"),'r') 
+    suppressed_added = False
     for line in align_err:
         if line.startswith("# reads processed") or line.startswith("# reads with at least one") or line.startswith("# reads that failed"):
             report_dict[dataset].append( (line.split(':')[1]).strip() )
-    align_err.close()       
+        elif paired_mode and line.startswith("# reads with alignments suppressed due to"):
+            report_dict[dataset].append( (line.split(':')[1]).strip() )
+            suppressed_added = True
+        if paired_mode and line.startswith("# reads processed"):
+            total_reads[dataset] = int((line.split(':')[1]).strip())
+    align_err.close() 
+    if paired_mode and not suppressed_added:
+        report_dict[dataset].append( "0 (0.00%)" )      
 
 # raw-single    
 print("Parsing Bowtie log")
@@ -243,6 +269,7 @@ for line in open(reference):
 # coverage # python reads_utils/stat/coverage.py ec.raw ec.cov 4639675 1000
 print("Analyzing coverage")
 report_dict["header"] += ["Genome mapped (%)"]
+gaps_dict = {}  # TODO: use it somewhere!
 import coverage
 for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
@@ -252,9 +279,38 @@ for dataset in datasets_dict.iterkeys():
     
     gaps_file  = os.path.join(output_dir, dataset + ".gaps")
     chunks_file  = os.path.join(output_dir, os.path.splitext(os.path.basename(reference))[0] + "gaps_" + dataset + ".fasta")
-    coverage.analyze_gaps(cov_file, gaps_file, reference, chunks_file, kmer)
+    gaps_dict[dataset] = coverage.analyze_gaps(cov_file, gaps_file, reference, chunks_file, kmer)
 
     report_dict[dataset].append( str(cov * 100) )
+
+# IS form logs    
+if paired_mode:
+    print("Retaining insert size")
+    report_dict["header"] += ["Read length", "FR read pairs", "Insert size (deviation)", "RF read pairs", "Insert size (deviation)", "FF read pairs", "Insert size (deviation)", "One uniquely aligned read in pair", "Suppressed due to insert size limit"]
+    import is_from_single_log
+    for dataset in datasets_dict.iterkeys():
+        print("  " + dataset + "...")
+        align_log = os.path.join(output_dir, dataset + ".log")
+        stat = is_from_single_log.stat_from_log(align_log, max_is)
+        stat[1]["FR"].write_hist(os.path.join(output_dir, dataset + "_FR.is"))
+        stat[1]["RF"].write_hist(os.path.join(output_dir, dataset + "_RF.is"))
+        stat[1]["FF"].write_hist(os.path.join(output_dir, dataset + "_FF.is"))
+
+        read_pairs = total_reads[dataset] / 2
+
+        report_dict[dataset].append( str(stat[0]) )
+
+        report_dict[dataset].append( str(stat[1]["FR"].count) + " (" + str(round( 100.0 * float(stat[1]["FR"].count) / float(read_pairs), 2) ) + "%)" )
+        report_dict[dataset].append( str(round(stat[1]["FR"].mean, 2)) + " (" + str(round(stat[1]["FR"].dev, 2)) + ")"  )
+
+        report_dict[dataset].append( str(stat[1]["RF"].count) + " (" + str(round( 100.0 * float(stat[1]["RF"].count) / float(read_pairs), 2) ) + "%)" )
+        report_dict[dataset].append( str(round(stat[1]["RF"].mean, 2)) + " (" + str(round(stat[1]["RF"].dev, 2)) + ")"  )
+
+        report_dict[dataset].append( str(stat[1]["FF"].count) + " (" + str(round( 100.0 * float(stat[1]["FF"].count) / float(read_pairs), 2) ) + "%)" )
+        report_dict[dataset].append( str(round(stat[1]["FF"].mean, 2)) + " (" + str(round(stat[1]["FF"].dev, 2)) + ")"  )
+
+        report_dict[dataset].append( str(stat[1]["AU"].count) + " (" + str(round( 100.0 * float(stat[1]["AU"].count) / float(read_pairs), 2) ) + "%)" )
+        report_dict[dataset].append( str(stat[1]["SP"].count) + " (" + str(round( 100.0 * float(stat[1]["SP"].count) / float(read_pairs), 2) ) + "%)" )
 
 # total report
 import report_maker

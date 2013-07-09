@@ -35,7 +35,7 @@ class ConcurrentDSU {
 
     data = new atomic_set_t[size];
     for (size_t i = 0; i < size; i++) {
-      data[i].next = i;
+      data[i].next = (uint32_t)i;
       data[i].size = 1;
       data[i].dirty = 0;
     }
@@ -105,7 +105,7 @@ class ConcurrentDSU {
   
   void get_sets(std::vector<std::vector<unsigned> > &otherWay) {
     otherWay.resize(size);
-    for (size_t i = 0; i < size; i++) {
+    for (unsigned i = 0; i < (unsigned)size; i++) {
       unsigned set = find_set(i);
       otherWay.at(set).push_back(i);
     }

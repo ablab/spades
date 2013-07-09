@@ -1,7 +1,7 @@
 #ifndef DETAIL_COVERAGE_HPP
 #define DETAIL_COVERAGE_HPP
 
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_kmer_index.hpp"
 #include "graph_pack.hpp"
 #include "verify.hpp"
 #include "graphio.hpp"
@@ -25,15 +25,22 @@ namespace debruijn_graph {
 
 		std::map<EdgeId, double> in_coverage_;
 		std::map<EdgeId, double> out_coverage_;
-		const DeBruijnEdgeIndex<EdgeId, runtime_k::RtSeq>& kmer_index_;
+		const DeBruijnEdgeIndex<Graph, runtime_k::RtSeq>& kmer_index_;
 		const unsigned average_const_;
 		const unsigned K_;
 
 	public:
 
-		
-		double GetInCov(EdgeId edge ) const {
+		FlankingCoverage( const conj_graph_pack& graph ) {
+	
+			size_t K = cfg::get().K + 1;
+			DeBruijnEdgeIndex<Graph, runtime_k::RtSeq> kmerIndex(graph.index.inner_index().K(), cfg::get().output_dir);
+			std::string path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
+			bool val = LoadEdgeIndex(path, kmerIndex);
+			VERIFY_MSG(val, "can not open file "+path+".kmidx");
+        }
 
+		double GetInCov(EdgeId edge ) const {
 			auto coverage = in_coverage_.find(edge);
 			VERIFY(coverage != in_coverage_.end());
 			return coverage->second;
@@ -90,7 +97,7 @@ namespace debruijn_graph {
 	public:
 
 
-		FlankingCoverage( const Graph& g, const DeBruijnEdgeIndex<EdgeId>& kmer_index, unsigned avg, unsigned K ) : kmer_index_(kmer_index), average_const_(avg), K_(K) {
+		FlankingCoverage( const Graph& g, const DeBruijnEdgeIndex<Graph>& kmer_index, unsigned avg, unsigned K ) : kmer_index_(kmer_index), average_const_(avg), K_(K) {
 
 	
   			for (auto e_iter = g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {

@@ -6,7 +6,7 @@
 #include <set>
 #include <list>
 #include "graph_print_utils.hpp"
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_kmer_index.hpp"
 #include "graph_pack.hpp"
 #include "pair_info_improver.hpp"
 #include "path_extend/pe_io.hpp"
@@ -681,6 +681,7 @@ class CoverageBasedResolution {
 		int numberOfComponentWithDifferentInOutDegree = 0;
 
 		int filteredByThresholds(0), resolvedPathsNum(0); 
+		int resolvedComponentsByTopology(0), resolvedComponentsByLength(0);//, resolvedComponentsByLengthAndTopology(0);
 		for ( auto edge = components.begin(); edge != components.end(); ++edge ) {
 			
 			if ( visited_edges.find(*edge) != visited_edges.end() ){
@@ -757,19 +758,19 @@ class CoverageBasedResolution {
 			} */
 			fprintf(file, "resolved path \n");
 			for ( auto iter = path.begin(); iter != path.end(); ++iter ) {
-				fprintf(file, "%d ", gp->g.int_id(*iter));
+				fprintf(file, "%lu ", gp->g.int_id(*iter));
 				fprintf(file, " ");
 			}
 			fprintf(file, "\nincoming edges: ");
 			for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e) {
 	
-				fprintf(file, "%d ", gp->g.int_id(*e));
+				fprintf(file, "%lu ", gp->g.int_id(*e));
 			}
 			fprintf(file,"\n");
 			fprintf(file,"outgoing edges: ");
 			for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e) {
 	
-				fprintf(file, "%d ", gp->g.int_id(*e));
+				fprintf(file, "%lu ", gp->g.int_id(*e));
 			}
 			fprintf(file,"\n");
 

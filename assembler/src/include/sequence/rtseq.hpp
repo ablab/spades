@@ -166,6 +166,18 @@ class RuntimeSeq {
   }
 
 
+  explicit RuntimeSeq(size_t k, const T* data_array): size_(k) {
+    VERIFY(k <= max_size_);
+    std::fill(data_.begin(), data_.end(), 0);
+
+    size_t data_size = GetDataSize(size_);
+    memcpy(data_.data(), data_array, data_size * sizeof(T));
+
+    if (NuclsRemain(size_)) {
+      data_[data_size - 1] = data_[data_size - 1] & MaskForLastBucket(size_);
+    }
+  }
+
   explicit RuntimeSeq(size_t k, T* data_array): size_(k) {
     VERIFY(k <= max_size_);
     std::fill(data_.begin(), data_.end(), 0);
@@ -223,7 +235,7 @@ class RuntimeSeq {
       //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
 
       // we fill everything with zeros (As) by default.
-      char c = digit_str ? s[offset + i] : dignucl(s[offset + i]);
+      char c = (char) (digit_str ? s[offset + i] : dignucl(s[offset + i]));
 
       data = data | (T(c) << cnt);
       cnt += 2;
@@ -298,8 +310,8 @@ class RuntimeSeq {
   RuntimeSeq<max_size_, T> operator!() const {
     RuntimeSeq<max_size_, T> res(*this);
     for (size_t i = 0; i < (size_ >> 1); ++i) {
-      T front = complement(res[i]);
-      T end = complement(res[size_ - 1 - i]);
+      auto front = complement(res[i]);
+      auto end = complement(res[size_ - 1 - i]);
       res.set(i, end);
       res.set(size_ - 1 - i, front);
     }
@@ -332,7 +344,7 @@ class RuntimeSeq {
       data[data_size - 1] = (data[data_size - 1] >> 2) | ((T) c << lastnuclshift_);
 
       if (data_size >= 2) { // if we have at least 2 elements in data
-        for (int i = data_size - 2; i >= 0; --i){
+        for (int i = (int) data_size - 2; i >= 0; --i){
           T new_rm = data[i] & 3;
           data[i] = (data[i] >> 2) | (rm << (TBits - 2)); // we need & here because if we shift negative, it fill with ones :(
           rm = new_rm;
@@ -545,7 +557,7 @@ class RuntimeSeq {
 
   template<size_t size2_, typename T2 = T>
   Seq<size2_, T2> get_seq() const {
-    VERIFY_MSG(size2_ == size_, size2_ << " != " << size_ );
+    VERIFY(size2_ == size_);
     return Seq<size2_, T2>((T2*) data_.data());
   }
 

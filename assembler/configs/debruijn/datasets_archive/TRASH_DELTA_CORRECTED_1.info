@@ -3,3 +3,5 @@ single_reads             "../../../data/input/Delta.Bacteria/lane1_reads_correct
 RL                       100
 IS                       250
 single_cell              true
+
+reads	TRASH_DELTA_CORRECTED_1.yaml

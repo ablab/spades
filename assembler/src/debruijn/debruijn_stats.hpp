@@ -150,7 +150,7 @@ void CountPairedInfoStats(const Graph& g,
 
 	//todo remove filtration if launch on etalon info is ok
 	UniquePathStat<Graph>(g, filtered_index,
-	                    lib.data().mean_insert_size,
+	                    (size_t)math::round(lib.data().mean_insert_size),
                         lib.data().read_length,
                         0.1 * lib.data().mean_insert_size).Count();
 	UniqueDistanceStat<Graph>(etalon_index).Count();
@@ -229,9 +229,8 @@ void FillAndCorrectEtalonPairedInfo(
 	}
 
 	INFO("Pushing etalon info through estimator");
-	GraphDistanceFinder<Graph> dist_finder(gp.g, insert_size, read_length,
-			delta);
-  DistanceEstimator<Graph> estimator(gp.g, filtered_etalon_index, dist_finder, 0., 4.);
+	GraphDistanceFinder<Graph> dist_finder(gp.g, insert_size, read_length, delta);
+	DistanceEstimator<Graph> estimator(gp.g, filtered_etalon_index, dist_finder, 0., 4.);
 	estimator.Estimate(corrected_etalon_index);
 	if (save_etalon_info_history) {
 		INFO("Saving etalon paired info indices on different stages");
@@ -374,9 +373,9 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
   PairedIndexT etalon_index(gp.g);
 
   FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
-                                 size_t(lib.data().mean_insert_size),
+                                 (size_t)math::round(lib.data().mean_insert_size),
                                  lib.data().read_length,
-                                 lib.data().insert_size_deviation, true);
+                                 (size_t)math::round(lib.data().insert_size_deviation), true);
 
 	CountAndSaveAllPaths(gp.g, lib, gp.int_ids, paired_index, clustered_index);
 
@@ -398,9 +397,9 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
     FilterIndexWithExistingPaths(scaf_clustered_index,
                                  clustered_index, gp,
                                  GraphDistanceFinder<Graph>(gp.g,
-                                         size_t(lib.data().mean_insert_size),
+                                         (size_t)math::round(lib.data().mean_insert_size),
                                          lib.data().read_length,
-                                         size_t(lib.data().insert_size_deviation)));
+                                         (size_t)math::round(lib.data().insert_size_deviation)));
     data_printer.savePaired(cfg::get().output_dir + "scaf_clustered",
                             scaf_clustered_index);
   }
@@ -479,11 +478,11 @@ const string& file_name, const string& graph_name, size_t k) {
 	WriteToDotFile(g, labeler, file_name, graph_name, path1, path2);
 }
 
-void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<NCGraph>& index
-		, const Sequence& genome,
-		const string& work_tmp_dir, const string& graph_name,
-		const IdTrackHandler<NCGraph> &IdTrackLabelerResolved,
-		size_t k) {
+void ProduceNonconjugateInfo(NCGraph& /*g*/, const EdgeIndex<NCGraph>& /*index*/
+		, const Sequence& /*genome*/,
+		const string& /*work_tmp_dir*/, const string& /*graph_name*/,
+		const IdTrackHandler<NCGraph> & /*IdTrackLabelerResolved*/,
+		size_t /*k*/) {
 
     //CountStats(g, index, genome, k);
     WARN("Non-conjugate graph is not supported anymore, no stats will be generated.");
@@ -493,7 +492,7 @@ void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<NCGraph>& index
 }
 
 void WriteGraphComponentsAlongGenome(const Graph& g,
-		const IdTrackHandler<Graph>& int_ids,
+		const IdTrackHandler<Graph>& /*int_ids*/,
 		const EdgeIndex<Graph>& index,
 		const KmerMapper<Graph>& kmer_mapper,
 		const GraphLabeler<Graph>& labeler, const Sequence& genome,
@@ -731,13 +730,13 @@ private:
 	const conj_graph_pack::graph_t &graph_;
 };
 
-void WriteGraphComponents(const Graph& g, const EdgeIndex<Graph>& index,
-const GraphLabeler<Graph>& labeler, const Sequence& genome,
-const string& folder, const string &file_name,
-size_t split_edge_length, size_t k) {
+void WriteGraphComponents(const Graph& /*g*/, const EdgeIndex<Graph>& /*index*/,
+const GraphLabeler<Graph>& /*labeler*/, const Sequence& /*genome*/,
+const string& folder, const string & /*file_name*/,
+size_t /*split_edge_length*/, size_t /*k*/) {
 	make_dir(folder);
 
-	VERIFY_MSG(false, "ololo");
+	VERIFY_MSG(false, "WriteGraphComponents is under construction now");
 //	WriteComponents(
 //			g,
 //			split_edge_length,
@@ -816,7 +815,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 		bool new_edge_added = false;
 		EdgeId ei = m_path1[i].first;
 		MappingRange mr = m_path1[i].second;
-		int start = mr.initial_range.start_pos - mr.mapped_range.start_pos;
+		int start = (int)(mr.initial_range.start_pos - mr.mapped_range.start_pos);
 		if (inGenomeWay.find(ei) == inGenomeWay.end()) {
 			vector<pair<int, int>> tmp;
 			tmp.push_back(make_pair(CurI, start));
@@ -852,7 +851,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 	int PosInfo = 0;
 	int AllignedPI = 0;
 	int ExactDPI = 0;
-	int OurD = cfg::get().ds.IS() - cfg::get().ds.RL();
+	int OurD = (int) cfg::get().ds.IS() - (int) cfg::get().ds.RL();
 	for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 			p_iter != p_end_iter; ++p_iter) {
 		vector<PairInfo> pi = *p_iter;
@@ -877,10 +876,10 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 									inGenomeWay[right_edge][right_i].second
 											- inGenomeWay[left_edge][left_i].second
                       - d)) {
-						best_d = abs(
+						best_d = (int)math::round(abs(
 								inGenomeWay[right_edge][right_i].second
 										- inGenomeWay[left_edge][left_i].second
-                    - d);
+                    - d));
 						best_t = inGenomeWay[right_edge][right_i].first
 								- inGenomeWay[left_edge][left_i].first;
 						DEBUG("best d " << best_d);
@@ -1049,7 +1048,7 @@ void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
 //}
 
 void OutputWrongContigs(Graph& g, EdgeIndex<Graph>& index,
-const Sequence& genome, size_t bound, const string &file_name, size_t k) {
+const Sequence& genome, size_t /*bound*/, const string &file_name, size_t k) {
     SimpleSequenceMapper<Graph> sequence_mapper(g, index, k + 1);
     Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
     Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));

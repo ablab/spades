@@ -9,3 +9,5 @@ IS                       170
 delta                    21
 single_cell              false
 reference_genome         ../../../data/input/S.aureus/USA300_FPR3757.fasta.gz
+
+reads	SAUREUS_BENCHMARK_QUAKE.yaml

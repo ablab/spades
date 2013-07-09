@@ -49,7 +49,7 @@ void link_previous_run(std::string const& previous_link_name, std::string const&
 
   std::string link = cfg::get().output_dir + previous_link_name;
   unlink(link.c_str());
-  int count = readlink((cfg::get().output_root + link_name).c_str(), buf, sizeof(buf) - 1);
+  ssize_t count = readlink((cfg::get().output_root + link_name).c_str(), buf, sizeof(buf) - 1);
   if (count >= 0){
     buf[count] = '\0';
     std::string previous_run("../");
@@ -122,7 +122,7 @@ void create_console_logger(string cfg_filename) {
   attach_logger(lg);
 }
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char** argv) {
   perf_counter pc;
 
   const size_t GB = 1 << 30;
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
     return EINTR;
   }
 
-  unsigned ms = pc.time_ms();
+  unsigned ms = (unsigned)pc.time_ms();
   unsigned secs = (ms / 1000) % 60;
   unsigned mins = (ms / 1000 / 60) % 60;
   unsigned hours = (ms / 1000 / 60 / 60);
