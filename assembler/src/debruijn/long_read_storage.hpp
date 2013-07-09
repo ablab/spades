@@ -165,7 +165,6 @@ public:
 			filestr2<< endl;
 		}
 		int noncontinued = 0;
-		int long_nongapped = 0;
 		int long_gapped = 0;
 		int continued = 0;
 		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){

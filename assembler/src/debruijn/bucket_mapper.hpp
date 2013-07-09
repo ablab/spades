@@ -26,7 +26,7 @@ namespace debruijn_graph {
     		double CacheSearch (int distance, int shift, bucket_id id_from, bucket_id id_to) {
 
 			int diff, min_diff = shift + 1;
-			int min_dist;
+			int min_dist = 0;
 			for (auto cached_distance = distance_values_.begin(); cached_distance != distance_values_.end(); ++cached_distance) {
 
 				diff = fabs(*cached_distance - distance);

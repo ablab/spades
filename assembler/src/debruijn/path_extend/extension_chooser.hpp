@@ -745,7 +745,7 @@ private:
     	}
     	cur_pos1 = pos;
 		cur_pos2 = cov_pos;
-		while (cur_pos1 < path.Size() && cur_pos2 < cov_path.Size()){
+		while (cur_pos1 < (int)path.Size() && cur_pos2 < (int)cov_path.Size()){
 			if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
 				cur_pos1++;
 				cur_pos2++;

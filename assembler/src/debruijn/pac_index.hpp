@@ -98,7 +98,7 @@ public:
 		ClustersSet res;
 		bool debug_info = false;
 		for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
-			int edge_id = g_.int_id(iter->first);
+			//int edge_id = g_.int_id(iter->first);
 
 
 			set<vector<MappingInstance> > edge_cluster_set;
@@ -166,7 +166,7 @@ public:
 	//filter clusters that are too small or fully located on a vertex or dominated by some other cluster.
 	void FilterClusters(ClustersSet &clusters) {
 		for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
-			int edge_id = g_.int_id(i_iter->edgeId);
+			//int edge_id = g_.int_id(i_iter->edgeId);
 			int len = g_.length(i_iter->edgeId);
 			auto sorted_by_edge = i_iter->sorted_positions;
 			sort(sorted_by_edge.begin(), sorted_by_edge.end());
@@ -212,7 +212,7 @@ public:
 		}
 		for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
 			int edge_id = g_.int_id(i_iter->edgeId);
-			int len = g_.length(i_iter->edgeId);
+			//int len = g_.length(i_iter->edgeId);
 			auto sorted_by_edge = i_iter->sorted_positions;
 
 			DEBUG ("filtering  with cluster edge, stage 2 "<< edge_id << " len " <<  sorted_by_edge.size() << " clusters still alive: "<< clusters.size());
@@ -600,7 +600,7 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
 	}
 
 	for (auto iter = res.begin(); iter != res.end(); ++iter) {
-		int edge_id =  g_.int_id(iter->first);
+		//int edge_id =  g_.int_id(iter->first);
 
 		sort(iter->second.begin(), iter->second.end());
 		if (read_count == 151) {
