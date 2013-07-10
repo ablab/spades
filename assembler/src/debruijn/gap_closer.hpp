@@ -496,8 +496,8 @@ void CloseGaps(conj_graph_pack& gp, Streams& streams) {
 //    printer.savePaired("tip_info", tips_paired_idx);
 //  }
   GapCloser<Graph, Mapper> gap_closer(gp.g, tips_paired_idx,
-      cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold,
-      boost::bind(&CheckNoKmerClash<Mapper>, _1, ref(*mapper)));
+                                      cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold,
+                                      boost::bind(&CheckNoKmerClash<Mapper>, _1, boost::ref(*mapper)));
   gap_closer.CloseShortGaps();
 }
 
